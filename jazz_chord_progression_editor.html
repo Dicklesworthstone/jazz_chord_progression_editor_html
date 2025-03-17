@@ -509,47 +509,9 @@
                 <button @click="openImportModal()" class="btn btn-xs sm:btn-sm btn-ghost">
                     <i class="fas fa-upload sm:mr-1"></i><span class="hidden sm:inline">Import</span>
                 </button>
-                <div class="dropdown mobile-dropdown sm:hidden">
-                    <label tabindex="0" class="btn btn-sm btn-circle"><i class="fas fa-sliders-h"></i></label>
-                    <ul tabindex="0" class="dropdown-content menu p-3 shadow bg-base-100 rounded-box w-64 z-50">
-                        <li class="mb-2">
-                            <div class="w-full">
-                                <label class="label font-semibold">Instrument</label>
-                                <select x-model="instrument" @change="changeInstrument()"
-                                    class="select select-bordered w-full">
-                                    <option value="piano">Piano</option>
-                                    <option value="rhodes">Electric Piano</option>
-                                    <option value="synth">Moog Synth</option>
-                                    <option value="warm-pad">Warm Pad</option>
-                                    <option value="analog-saw">Analog Saw</option>
-                                    <option value="marimba">Marimba</option>
-                                    <option value="vibraphone">Vibraphone</option>
-                                </select>
-                            </div>
-                        </li>
-                        <li class="mb-2">
-                            <div class="w-full">
-                                <label class="label font-semibold">Volume</label>
-                                <input type="range" min="0" max="1" step="0.1" x-model="volume" @change="updateVolume()"
-                                    class="range range-primary w-full">
-                            </div>
-                        </li>
-                        <li>
-                            <div class="w-full">
-                                <label class="label font-semibold">Tempo</label>
-                                <select x-model="tempo" @change="updateTempo()" class="select select-bordered w-full">
-                                    <option value="40">40 BPM</option>
-                                    <option value="60">60 BPM</option>
-                                    <option value="80">80 BPM</option>
-                                    <option value="100">100 BPM</option>
-                                    <option value="120">120 BPM</option>
-                                    <option value="140">140 BPM</option>
-                                    <option value="160">160 BPM</option>
-                                </select>
-                            </div>
-                        </li>
-                    </ul>
-                </div>
+                <button @click="showMobileSettingsModal = true" class="btn btn-sm btn-circle sm:hidden">
+                    <i class="fas fa-sliders-h"></i>
+                </button>
             </div>
         </nav>
 
@@ -1445,6 +1407,60 @@
             </div>
         </div>
 
+        <!-- Mobile Settings Modal -->
+        <div class="modal" :class="{'modal-open': showMobileSettingsModal}">
+            <div class="modal-box w-11/12 max-w-sm">
+                <h3 class="font-bold text-lg mb-4">Playback Settings</h3>
+
+                <div class="form-control mb-4">
+                    <label class="label">
+                        <span class="label-text">Instrument</span>
+                    </label>
+                    <select x-model="instrument" @change="changeInstrument()" class="select select-bordered w-full">
+                        <option value="piano">Piano</option>
+                        <option value="rhodes">Electric Piano</option>
+                        <option value="synth">Moog Synth</option>
+                        <option value="warm-pad">Warm Pad</option>
+                        <option value="analog-saw">Analog Saw</option>
+                        <option value="marimba">Marimba</option>
+                        <option value="vibraphone">Vibraphone</option>
+                    </select>
+                </div>
+
+                <div class="form-control mb-4">
+                    <label class="label">
+                        <span class="label-text">Volume</span>
+                    </label>
+                    <input type="range" min="0" max="1" step="0.1" x-model="volume" @change="updateVolume()"
+                        class="range range-primary">
+                    <div class="flex justify-between text-xs px-2 mt-1">
+                        <span>0%</span>
+                        <span>50%</span>
+                        <span>100%</span>
+                    </div>
+                </div>
+
+                <div class="form-control mb-4">
+                    <label class="label">
+                        <span class="label-text">Tempo</span>
+                    </label>
+                    <select x-model="tempo" @change="updateTempo()" class="select select-bordered w-full">
+                        <option value="40">40 BPM</option>
+                        <option value="60">60 BPM</option>
+                        <option value="80">80 BPM</option>
+                        <option value="100">100 BPM</option>
+                        <option value="120">120 BPM</option>
+                        <option value="140">140 BPM</option>
+                        <option value="160">160 BPM</option>
+                    </select>
+                </div>
+
+                <div class="modal-action">
+                    <button @click="showMobileSettingsModal = false" class="btn">Close</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Import Modal -->
         <div class="modal" :class="{'modal-open': showImportModal}">
             <div class="modal-box w-11/12 max-w-2xl">
@@ -1788,6 +1804,7 @@
                 showNameEditModal: false,
                 showAnnotationModal: false,
                 showPresetsModal: false,
+                showMobileSettingsModal: false,
                 activeChordCategory: 'basic',
                 editChordTab: 'basic',
                 importTab: 'file',
