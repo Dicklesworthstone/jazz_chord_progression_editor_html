@@ -1,6 +1,6 @@
 # Jazz Chord Progression Editor
 
-![Jazz Chord Progression Editor](https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html/raw/refs/heads/main/illustration.webp)
+![Jazz Chord Progression Editor](https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html/blob/main/illustration.webp)
 
 ## Table of Contents
 
