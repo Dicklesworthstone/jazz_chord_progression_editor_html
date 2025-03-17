@@ -6,7 +6,7 @@
     <title>Jazz Chord Progression Editor & Player</title>
     <!-- Make sure this meta tag is present in your head section -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    
+
     <!-- Add these meta tags for better mobile experience -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -183,108 +183,254 @@
             bottom: 2px;
         }
 
-    /* Improved touch targets */
-    @media (max-width: 767px) {
-        .btn {
-            min-height: 2.5rem; /* Larger touch targets on mobile */
+        /* Improved touch targets */
+        @media (max-width: 767px) {
+            .btn {
+                min-height: 2.5rem;
+                /* Larger touch targets on mobile */
+            }
+
+            .btn-circle {
+                height: 2rem;
+                width: 2rem;
+                min-height: 2rem;
+            }
+
+            .chord-card {
+                padding: 0.75rem;
+                margin-bottom: 0.5rem;
+            }
+
+            .dropdown-content {
+                min-width: 12rem;
+                /* Wider dropdowns on mobile */
+            }
+
+            /* Increase spacing for piano keys on touch devices */
+            .piano-key {
+                height: 80px;
+            }
+
+            .white-key {
+                width: 40px;
+            }
+
+            .black-key {
+                width: 24px;
+                height: 50px;
+                margin-left: -12px;
+            }
         }
-        
-        .btn-circle {
+
+        /* Better mobile scrolling */
+        .overflow-y-auto,
+        .overflow-x-auto {
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Prevent zooming when tapping inputs on iOS */
+        @media (max-width: 767px) {
+
+            input,
+            select,
+            textarea,
+            button {
+                font-size: 16px !important;
+            }
+        }
+
+        /* Improved touch area for range sliders */
+        input[type="range"] {
             height: 2rem;
-            width: 2rem;
-            min-height: 2rem;
         }
-        
-        .chord-card {
-            padding: 0.75rem;
-            margin-bottom: 0.5rem;
-        }
-        
-        .dropdown-content {
-            min-width: 12rem; /* Wider dropdowns on mobile */
-        }
-        
-        /* Increase spacing for piano keys on touch devices */
-        .piano-key {
-            height: 80px;
-        }
-        
-        .white-key {
-            width: 40px;
-        }
-        
-        .black-key {
-            width: 24px;
-            height: 50px;
-            margin-left: -12px;
-        }
-    }
-    
-    /* Better mobile scrolling */
-    .overflow-y-auto, .overflow-x-auto {
-        -webkit-overflow-scrolling: touch;
-    }
-    
-    /* Prevent zooming when tapping inputs on iOS */
-    @media (max-width: 767px) {
-        input, select, textarea, button {
-            font-size: 16px !important;
-        }
-    }
-    
-    /* Improved touch area for range sliders */
-    input[type="range"] {
-        height: 2rem;
-    }
-    
-    /* Add momentum-based scrolling on iOS */
-    .chord-palette-mobile {
-        height: 80vh;
-        max-height: 80vh;
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        z-index: 40;
-        border-top-left-radius: 1rem;
-        border-top-right-radius: 1rem;
-        box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.2);
-        transform: translateY(100%);
-        transition: transform 0.3s ease-out;
-    }
-    
-    .chord-palette-mobile.open {
-        transform: translateY(0);
-    }
-    
-    /* Add a safe area for iOS notches and home indicators */
-    @supports (padding-bottom: env(safe-area-inset-bottom)) {
-        .player-controls {
-            padding-bottom: calc(1rem + env(safe-area-inset-bottom));
-        }
-        
+
+        /* Add momentum-based scrolling on iOS */
         .chord-palette-mobile {
-            padding-bottom: env(safe-area-inset-bottom);
-        }
-    }
-    
-    /* Add tap highlight transparency for better mobile feel */
-    * {
-        -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
-    }
-    
-    /* More space for mobile modals */
-    @media (max-width: 767px) {
-        .modal-box {
+            height: 80vh;
             max-height: 80vh;
-            overflow-y: auto;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 40;
+            border-top-left-radius: 1rem;
+            border-top-right-radius: 1rem;
+            box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.2);
+            transform: translateY(100%);
+            transition: transform 0.3s ease-out;
         }
-    }
-    
-    /* Helper class for better touch targets */
-    .touch-manipulation {
-        touch-action: manipulation;
-    }        
+
+        .chord-palette-mobile.open {
+            transform: translateY(0);
+        }
+
+        /* Add a safe area for iOS notches and home indicators */
+        @supports (padding-bottom: env(safe-area-inset-bottom)) {
+            .player-controls {
+                padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+            }
+
+            .chord-palette-mobile {
+                padding-bottom: env(safe-area-inset-bottom);
+            }
+        }
+
+        /* Add tap highlight transparency for better mobile feel */
+        * {
+            -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+        }
+
+        /* More space for mobile modals */
+        @media (max-width: 767px) {
+            .modal-box {
+                max-height: 80vh;
+                overflow-y: auto;
+            }
+        }
+
+        /* Helper class for better touch targets */
+        .touch-manipulation {
+            touch-action: manipulation;
+        }
+
+        /* Add to your CSS */
+        .chord-card {
+            transition: transform 0.2s, opacity 0.2s, box-shadow 0.2s;
+            touch-action: pan-y;
+            /* Allow vertical scrolling but capture horizontal swipes */
+        }
+
+        .chord-card:active {
+            transform: scale(0.98);
+            opacity: 0.9;
+        }
+
+        .sortable-chosen {
+            background-color: rgba(139, 92, 246, 0.1) !important;
+            border-color: #8b5cf6 !important;
+            box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.4) !important;
+            z-index: 10;
+        }
+
+        .sortable-drag {
+            opacity: 0.8 !important;
+            transform: scale(1.02) !important;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
+        }
+
+        .sortable-ghost {
+            background: rgba(255, 255, 255, 0.1) !important;
+            opacity: 0.3 !important;
+            border: 2px dashed rgba(139, 92, 246, 0.5) !important;
+        }
+
+        /* Add swipe hint animation */
+        @media (max-width: 768px) {
+            .chord-card::after {
+                content: '';
+                position: absolute;
+                top: 50%;
+                width: 30px;
+                height: 30px;
+                transform: translateY(-50%);
+                background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(139, 92, 246, 0.3)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17 8l4 4-4 4M3 12h18'/%3E%3C/svg%3E");
+                background-repeat: no-repeat;
+                opacity: 0;
+                transition: opacity 0.3s;
+                pointer-events: none;
+            }
+
+            .chord-card:active::after {
+                opacity: 0.7;
+                animation: swipeHint 1s infinite;
+            }
+        }
+
+        @keyframes swipeHint {
+            0% {
+                right: 10px;
+                opacity: 0;
+            }
+
+            50% {
+                right: 5px;
+                opacity: 0.5;
+            }
+
+            100% {
+                right: 0px;
+                opacity: 0;
+            }
+        }
+
+        @media (max-width: 768px) {
+
+            /* Ensure full width for chord cards */
+            .chord-card {
+                width: 100% !important;
+                max-width: 100% !important;
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+            }
+
+            /* Reduce unnecessary padding */
+            .p-4,
+            .p-6 {
+                padding: 0.5rem !important;
+            }
+
+            /* Ensure the main editor uses full width */
+            .flex-1 {
+                width: 100% !important;
+            }
+
+            /* Make sure the sections use full width */
+            [id^="chords-container-"] {
+                width: 100% !important;
+                display: grid;
+                grid-template-columns: 1fr !important;
+                /* Force single column on small screens */
+            }
+        }
+
+        /* Add to your CSS */
+        @media (max-width: 768px) {
+
+            /* Edge-to-edge design for mobile */
+            body {
+                margin: 0;
+                padding: 0;
+                width: 100vw;
+                overflow-x: hidden;
+            }
+
+            /* Remove rounded corners on mobile for edge-to-edge feel */
+            .rounded-lg,
+            .rounded-md {
+                border-radius: 0 !important;
+            }
+
+            /* Remove horizontal padding on container elements */
+            .container,
+            .mx-auto {
+                padding-left: 0 !important;
+                padding-right: 0 !important;
+                max-width: 100vw !important;
+            }
+
+            /* Add padding to inner content instead */
+            .chord-card {
+                padding: 0.75rem !important;
+                border-radius: 0.5rem !important;
+                /* Keep some rounding on cards */
+                margin-bottom: 0.5rem !important;
+            }
+
+            /* Add stretch animation for chord card interaction */
+            .chord-card:active {
+                transform: scaleX(0.98);
+            }
+        }
     </style>
 </head>
 
@@ -299,13 +445,13 @@
                 <i class="fas fa-music text-violet-400 text-xl sm:text-2xl mr-2"></i>
                 <h1 class="text-lg sm:text-xl font-bold truncate">Jazz Chord Progression Editor</h1>
             </div>
-        
+
             <div class="flex space-x-1 sm:space-x-2">
                 <button @click="emergencyResetAudio()" class="btn btn-xs sm:btn-sm btn-ghost"
                     title="Emergency Reset for Stuck Audio">
                     <i class="fas fa-bolt sm:mr-1"></i><span class="hidden sm:inline">Reset Audio</span>
                 </button>
-        
+
                 <!-- Inline toggle for Advanced Voicing, neatly fitting in the nav row -->
                 <div class="hidden md:flex items-center space-x-2">
                     <label class="label cursor-pointer m-0 gap-2">
@@ -317,7 +463,7 @@
                             : 'Using simpler chord-voicing logic.'">
                     </span>
                 </div>
-        
+
                 <button @click="newProgression()" class="btn btn-xs sm:btn-sm btn-ghost">
                     <i class="fas fa-file sm:mr-1"></i><span class="hidden sm:inline">New</span>
                 </button>
@@ -337,9 +483,11 @@
                     <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
                         <li><a @click="openSettingsModal()"><i class="fas fa-cog mr-2"></i> Settings</a></li>
                         <li><a @click="openHelpModal()"><i class="fas fa-question-circle mr-2"></i> Help</a></li>
-                        <li class="md:hidden"><a @click="toggleAdvancedVoicing()"><i class="fas fa-sliders-h mr-2"></i> 
-                            <span x-text="useAdvancedVoicing ? 'Simple Voicing' : 'Advanced Voicing'"></span></a></li>
-                        <li><a @click="copyCurrentProgressionAsText()"><i class="fas fa-copy mr-2"></i> Copy as Text</a></li>
+                        <li class="md:hidden"><a @click="toggleAdvancedVoicing()"><i class="fas fa-sliders-h mr-2"></i>
+                                <span x-text="useAdvancedVoicing ? 'Simple Voicing' : 'Advanced Voicing'"></span></a>
+                        </li>
+                        <li><a @click="copyCurrentProgressionAsText()"><i class="fas fa-copy mr-2"></i> Copy as Text</a>
+                        </li>
                     </ul>
                 </div>
             </div>
@@ -349,27 +497,24 @@
         <div class="flex-1 flex flex-col md:flex-row overflow-hidden">
             <!-- Left Sidebar - Chord Palette -->
             <div class="w-full md:w-72 bg-gray-800 p-4 overflow-y-auto fixed md:static inset-0 z-30"
-            x-show="showChordPalette" 
-            x-transition:enter="transition ease-out duration-300 transform"
-            x-transition:enter-start="translate-y-full md:translate-y-0"
-            x-transition:enter-end="translate-y-0"
-            x-transition:leave="transition ease-in duration-200 transform"
-            x-transition:leave-start="translate-y-0"
-            x-transition:leave-end="translate-y-full md:translate-y-0"
-            @click.away="if(window.innerWidth < 768) toggleChordPalette()">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-lg font-bold text-violet-400">Chord Palette</h2>
-                <button @click="toggleChordPalette()" class="btn btn-sm btn-ghost md:hidden">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
+                x-show="showChordPalette" x-transition:enter="transition ease-out duration-300 transform"
+                x-transition:enter-start="translate-y-full md:translate-y-0" x-transition:enter-end="translate-y-0"
+                x-transition:leave="transition ease-in duration-200 transform" x-transition:leave-start="translate-y-0"
+                x-transition:leave-end="translate-y-full md:translate-y-0"
+                @click.away="if(window.innerWidth < 768) toggleChordPalette()">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-bold text-violet-400">Chord Palette</h2>
+                    <button @click="toggleChordPalette()" class="btn btn-sm btn-ghost md:hidden">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
 
-            <!-- Add a floating button to open the chord palette on mobile -->
-            <button @click="toggleChordPalette()" 
-            class="fixed bottom-20 right-4 z-20 btn btn-primary btn-circle md:hidden shadow-lg"
-            x-show="!showChordPalette">
-            <i class="fas fa-book"></i>
-            </button>
+                <!-- Add a floating button to open the chord palette on mobile -->
+                <button @click="toggleChordPalette()"
+                    class="fixed bottom-20 right-4 z-20 btn btn-primary btn-circle md:hidden shadow-lg"
+                    x-show="!showChordPalette">
+                    <i class="fas fa-book"></i>
+                </button>
 
 
                 <div class="mb-4">
@@ -525,11 +670,13 @@
             </div>
 
             <!-- Main Editor Area -->
-            <div class="flex-1 p-3 sm:p-6 overflow-y-auto relative">
+            <div class="flex-1 p-2 sm:p-4 md:p-6 overflow-y-auto relative w-full">
+
                 <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-2">
                     <div>
                         <h2 class="text-xl sm:text-2xl font-bold">
-                            <span x-text="currentProgression.name || 'Untitled Progression'" class="truncate block"></span>
+                            <span x-text="currentProgression.name || 'Untitled Progression'"
+                                class="truncate block"></span>
                             <button @click="editProgressionName()" class="btn btn-xs btn-ghost ml-2">
                                 <i class="fas fa-edit"></i>
                             </button>
@@ -538,7 +685,7 @@
                             <span x-text="currentProgression.description"></span>
                         </p>
                     </div>
-            
+
                     <div class="flex gap-2">
                         <button @click="toggleChordPalette()" class="btn btn-sm btn-outline md:hidden">
                             <i class="fas fa-book"></i> Palette
@@ -550,7 +697,7 @@
                 </div>
                 <div class="space-y-6 mb-10">
                     <template x-for="(section, sectionIndex) in currentProgression.sections" :key="sectionIndex">
-                        <div class="bg-gray-800 rounded-lg p-3 sm:p-4">
+                        <div class="bg-gray-800 rounded-lg p-2 sm:p-4 w-full">
                             <div class="flex justify-between items-center mb-3 sm:mb-4">
                                 <div class="flex items-center max-w-[70%]">
                                     <button class="btn btn-xs btn-circle mr-2"
@@ -558,7 +705,7 @@
                                         <i class="fas"
                                             :class="section.collapsed ? 'fa-chevron-down' : 'fa-chevron-up'"></i>
                                     </button>
-            
+
                                     <div x-show="!section.isEditingName" class="flex items-center">
                                         <h3 class="text-lg sm:text-xl font-bold truncate" x-text="section.name"></h3>
                                         <button @click="startEditSectionName(sectionIndex)"
@@ -566,7 +713,7 @@
                                             <i class="fas fa-edit"></i>
                                         </button>
                                     </div>
-            
+
                                     <div x-show="section.isEditingName" class="flex">
                                         <input type="text" class="input input-xs sm:input-sm input-bordered mr-2"
                                             x-model="section.editNameValue"
@@ -576,7 +723,7 @@
                                         </button>
                                     </div>
                                 </div>
-            
+
                                 <div class="flex gap-1">
                                     <button class="btn btn-xs btn-outline" @click="playSection(sectionIndex)">
                                         <i class="fas fa-play"></i>
@@ -610,8 +757,9 @@
                                     </div>
                                 </div>
                             </div>
-            
-                            <div x-show="section.annotation" class="bg-base-300 rounded-md p-2 sm:p-3 mb-3 sm:mb-4 text-xs sm:text-sm">
+
+                            <div x-show="section.annotation"
+                                class="bg-base-300 rounded-md p-2 sm:p-3 mb-3 sm:mb-4 text-xs sm:text-sm">
                                 <div class="flex justify-between">
                                     <p x-text="section.annotation"></p>
                                     <button @click="editSectionAnnotation(sectionIndex)" class="btn btn-xs btn-ghost">
@@ -619,19 +767,38 @@
                                     </button>
                                 </div>
                             </div>
-            
+
                             <div x-show="!section.collapsed">
                                 <div :id="'chords-container-' + sectionIndex"
-                                    class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                                    class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 w-full max-w-full">
                                     <template x-for="(chord, chordIndex) in section.chords" :key="chordIndex">
                                         <div class="chord-card border border-gray-700 rounded-md p-2 sm:p-3 transition-all touch-manipulation"
                                             :class="{'playing': isChordPlaying(sectionIndex, chordIndex), 'active': selectedChordIndices.section === sectionIndex && selectedChordIndices.chord === chordIndex}">
+
+                                            <div class="absolute left-0 top-0 bottom-0 w-12 opacity-0 hover:opacity-30 active:opacity-50 bg-gradient-to-r from-red-500 to-transparent md:hidden"
+                                                @click="moveChordLeft(sectionIndex, chordIndex)"
+                                                x-show="chordIndex > 0">
+                                                <div class="flex h-full items-center justify-center">
+                                                    <i class="fas fa-chevron-left text-white"></i>
+                                                </div>
+                                            </div>
+
+                                            <div class="absolute right-0 top-0 bottom-0 w-12 opacity-0 hover:opacity-30 active:opacity-50 bg-gradient-to-l from-green-500 to-transparent md:hidden"
+                                                @click="moveChordRight(sectionIndex, chordIndex)"
+                                                x-show="chordIndex < section.chords.length - 1">
+                                                <div class="flex h-full items-center justify-center">
+                                                    <i class="fas fa-chevron-right text-white"></i>
+                                                </div>
+                                            </div>
+
+
                                             <div class="flex justify-between items-start">
                                                 <div>
                                                     <div class="text-lg font-bold" x-text="getChordDisplayName(chord)">
                                                     </div>
                                                     <div class="text-xs text-gray-400 mt-1">
-                                                        <span x-text="formatChordNotes(chord.notes)" class="truncate block max-w-[120px] sm:max-w-full"></span>
+                                                        <span x-text="formatChordNotes(chord.notes)"
+                                                            class="truncate block max-w-[120px] sm:max-w-full"></span>
                                                     </div>
                                                 </div>
                                                 <div class="flex gap-1">
@@ -650,9 +817,10 @@
                                                                     <i class="fas fa-edit mr-2"></i> Edit Chord
                                                                 </a></li>
                                                             <li>
-                                                                    @click="addChordAnnotation(sectionIndex, chordIndex)">
-                                                                    <i class="fas fa-comment mr-2"></i> Add Annotation
-                                                                </a></li>
+                                                                @click="addChordAnnotation(sectionIndex, chordIndex)">
+                                                                <i class="fas fa-comment mr-2"></i> Add Annotation
+                                                                </a>
+                                                            </li>
                                                             <li><a @click="duplicateChord(sectionIndex, chordIndex)">
                                                                     <i class="fas fa-copy mr-2"></i> Duplicate
                                                                 </a></li>
@@ -672,7 +840,7 @@
                                                     </div>
                                                 </div>
                                             </div>
-            
+
                                             <div x-show="chord.annotation"
                                                 class="mt-2 sm:mt-3 text-xs bg-base-300 p-1 sm:p-2 rounded text-gray-300">
                                                 <div class="flex justify-between">
@@ -784,12 +952,13 @@
                                 </div>
                                 <div class="p-2">
                                     <label class="label">Volume</label>
-                                    <input type="range" min="0" max="1" step="0.1" x-model="volume" @change="updateVolume()"
-                                        class="range range-xs range-primary w-full">
+                                    <input type="range" min="0" max="1" step="0.1" x-model="volume"
+                                        @change="updateVolume()" class="range range-xs range-primary w-full">
                                 </div>
                                 <div class="p-2">
                                     <label class="label">Tempo</label>
-                                    <select x-model="tempo" @change="updateTempo()" class="select select-sm select-bordered w-full">
+                                    <select x-model="tempo" @change="updateTempo()"
+                                        class="select select-sm select-bordered w-full">
                                         <option value="40">40 BPM</option>
                                         <option value="60">60 BPM</option>
                                         <option value="80">80 BPM</option>
@@ -1580,7 +1749,7 @@
                 volume: 0.7,
                 isMobile: window.innerWidth < 768,
                 safeAreaBottom: 0,
-                
+
                 // Editing State
                 editingSectionIndex: null,
                 editingChordIndex: null,
@@ -1830,6 +1999,41 @@
                         // Validate progression notes
                         this.validateProgressionNotes();
 
+                        // Add event listeners for custom swipe events
+                        document.addEventListener('move-chord-right', (e) => {
+                            const { sectionIndex, chordIndex } = e.detail;
+                            this.moveChordRight(sectionIndex, chordIndex);
+                        });
+
+                        document.addEventListener('move-chord-left', (e) => {
+                            const { sectionIndex, chordIndex } = e.detail;
+                            this.moveChordLeft(sectionIndex, chordIndex);
+                        });
+
+                        // Initialize swipe gestures when DOM is ready
+                        this.$nextTick(() => {
+                            this.initSwipeGestures();
+
+                            // Re-initialize after any section changes
+                            this.$watch('currentProgression.sections', () => {
+                                setTimeout(() => {
+                                    this.initSwipeGestures();
+                                }, 200);
+                            }, { deep: true });
+                        });
+
+                        // Track touch start position for swipe detection
+                        this.touchStartX = null;
+
+                        document.addEventListener('touchstart', e => {
+                            this.touchStartX = e.changedTouches[0].pageX;
+                        });
+
+                        // Add touch indicators on mobile
+                        if (window.innerWidth < 768) {
+                            this.addTouchIndicators();
+                        }
+
 
                     } catch (e) {
                         console.error("Error initializing app:", e);
@@ -1881,28 +2085,96 @@
                 mounted() {
                     // Check if device is mobile
                     this.isMobile = window.innerWidth < 768;
-                    
+
                     // Add resize listener
                     window.addEventListener('resize', () => {
                         this.isMobile = window.innerWidth < 768;
                     });
-                    
+
                     // Get safe area insets for iOS
                     if (CSS.supports('padding-bottom: env(safe-area-inset-bottom)')) {
                         const safeAreaValue = getComputedStyle(document.documentElement).getPropertyValue('--sat-safe-area-bottom');
                         this.safeAreaBottom = parseInt(safeAreaValue) || 0;
                     }
                 },
-                
+
                 // Improved modal handling for mobile
                 openModalMobile(modalName) {
                     this[modalName] = true;
                     document.body.style.overflow = 'hidden';
                 },
-                
+
                 closeModalMobile(modalName) {
                     this[modalName] = false;
                     document.body.style.overflow = '';
+                },
+
+                // Add this method to your Alpine.js component
+                addTouchIndicators() {
+                    // Create visual indicators for touch actions
+                    const touchIndicators = {
+                        left: document.createElement('div'),
+                        right: document.createElement('div')
+                    };
+
+                    // Style the indicators
+                    Object.values(touchIndicators).forEach(indicator => {
+                        indicator.style.position = 'fixed';
+                        indicator.style.top = '50%';
+                        indicator.style.transform = 'translateY(-50%)';
+                        indicator.style.width = '40px';
+                        indicator.style.height = '40px';
+                        indicator.style.borderRadius = '50%';
+                        indicator.style.display = 'flex';
+                        indicator.style.alignItems = 'center';
+                        indicator.style.justifyContent = 'center';
+                        indicator.style.color = 'white';
+                        indicator.style.fontSize = '1.5rem';
+                        indicator.style.zIndex = '9999';
+                        indicator.style.opacity = '0';
+                        indicator.style.transition = 'opacity 0.2s';
+                        document.body.appendChild(indicator);
+                    });
+
+                    // Left indicator
+                    touchIndicators.left.style.left = '10px';
+                    touchIndicators.left.style.backgroundColor = 'rgba(255, 0, 0, 0.5)';
+                    touchIndicators.left.innerHTML = '<i class="fas fa-chevron-left"></i>';
+
+                    // Right indicator
+                    touchIndicators.right.style.right = '10px';
+                    touchIndicators.right.style.backgroundColor = 'rgba(0, 255, 0, 0.5)';
+                    touchIndicators.right.innerHTML = '<i class="fas fa-chevron-right"></i>';
+
+                    // Show indicators based on swipe direction
+                    document.addEventListener('touchmove', e => {
+                        if (!this.touchStartX) return;
+
+                        const touchObj = e.changedTouches[0];
+                        const distX = touchObj.pageX - this.touchStartX;
+
+                        if (Math.abs(distX) > 50) {
+                            if (distX < 0) {
+                                // Swiping left
+                                touchIndicators.left.style.opacity = '0.7';
+                                touchIndicators.right.style.opacity = '0';
+                            } else {
+                                // Swiping right
+                                touchIndicators.right.style.opacity = '0.7';
+                                touchIndicators.left.style.opacity = '0';
+                            }
+                        } else {
+                            // Reset if not enough movement
+                            touchIndicators.left.style.opacity = '0';
+                            touchIndicators.right.style.opacity = '0';
+                        }
+                    });
+
+                    // Hide indicators when touch ends
+                    document.addEventListener('touchend', () => {
+                        touchIndicators.left.style.opacity = '0';
+                        touchIndicators.right.style.opacity = '0';
+                    });
                 },
 
                 // New method to create an overlay that requires user interaction
@@ -2459,6 +2731,64 @@
                     }
                 },
 
+                // Add this function to your JavaScript
+                initSwipeGestures() {
+                    // Find all chord cards
+                    document.querySelectorAll('.chord-card').forEach(card => {
+                        let startX, startY, distX, distY;
+                        let threshold = 100; // minimum distance for a swipe
+                        let restraint = 100; // maximum perpendicular distance allowed
+                        let allowedTime = 300; // maximum time allowed for the swipe
+                        let startTime;
+
+                        card.addEventListener('touchstart', function (e) {
+                            const touchObj = e.changedTouches[0];
+                            startX = touchObj.pageX;
+                            startY = touchObj.pageY;
+                            startTime = new Date().getTime();
+                            e.preventDefault();
+                        }, { passive: false });
+
+                        card.addEventListener('touchend', function (e) {
+                            const touchObj = e.changedTouches[0];
+                            distX = touchObj.pageX - startX;
+                            distY = touchObj.pageY - startY;
+                            const elapsedTime = new Date().getTime() - startTime;
+
+                            // Check if swipe meets criteria
+                            if (elapsedTime <= allowedTime) {
+                                if (Math.abs(distX) >= threshold && Math.abs(distY) <= restraint) {
+                                    // Horizontal swipe detected
+                                    const direction = distX < 0 ? 'left' : 'right';
+
+                                    // Find the section and chord index
+                                    const sectionEl = card.closest('[id^="chords-container-"]');
+                                    if (sectionEl) {
+                                        const sectionIndex = parseInt(sectionEl.id.replace('chords-container-', ''));
+                                        const cards = Array.from(sectionEl.querySelectorAll('.chord-card'));
+                                        const chordIndex = cards.indexOf(card);
+
+                                        // Execute the move based on direction
+                                        if (direction === 'left' && chordIndex < cards.length - 1) {
+                                            // Use Alpine.js function to move right (counter-intuitive, but this is what "moveChordRight" does)
+                                            const moveEvent = new CustomEvent('move-chord-right', {
+                                                detail: { sectionIndex, chordIndex }
+                                            });
+                                            document.dispatchEvent(moveEvent);
+                                        } else if (direction === 'right' && chordIndex > 0) {
+                                            // Use Alpine.js function to move left
+                                            const moveEvent = new CustomEvent('move-chord-left', {
+                                                detail: { sectionIndex, chordIndex }
+                                            });
+                                            document.dispatchEvent(moveEvent);
+                                        }
+                                    }
+                                }
+                            }
+                        }, { passive: false });
+                    });
+                },
+
                 // Initialize sortable for a specific section
                 initSectionSortable(sectionIndex) {
                     // Initialize sortable with a slight delay to ensure DOM is ready
@@ -2469,8 +2799,37 @@
                                 new Sortable(el, {
                                     animation: 150,
                                     ghostClass: 'sortable-ghost',
+                                    // Enhanced mobile settings
+                                    delay: 0,                  // No delay for mobile
+                                    delayOnTouchOnly: false,   // Disable delay on touch
+                                    touchStartThreshold: 3,    // Reduce touch threshold for faster response
+                                    forceFallback: false,      // Use native drag when possible
+                                    fallbackTolerance: 3,      // Lower tolerance for better response
+                                    scrollSpeed: 40,           // Faster scrolling
+                                    scrollSensitivity: 80,     // More sensitive scrolling
+                                    swapThreshold: 0.5,        // Threshold for swapping
+                                    direction: "horizontal",   // Force horizontal direction for mobile
+                                    // Enhanced touch feedback
+                                    chosenClass: "sortable-chosen",  // Add visual feedback class
+                                    dragClass: "sortable-drag",      // Class during dragging
+                                    // When grid layout is used, we need to specify this to ensure horizontal movement
+                                    gridClass: el.classList.contains('grid') ? 'grid-sizer' : null,
+                                    onStart: function (evt) {
+                                        // Add haptic feedback if available
+                                        if (navigator.vibrate) {
+                                            navigator.vibrate(10);
+                                        }
+                                        // Add visual feedback
+                                        evt.item.classList.add('opacity-70', 'scale-105', 'shadow-lg');
+                                    },
                                     onEnd: (evt) => {
                                         try {
+                                            // Remove visual feedback
+                                            evt.item.classList.remove('opacity-70', 'scale-105', 'shadow-lg');
+                                            // Provide completion feedback
+                                            if (navigator.vibrate) {
+                                                navigator.vibrate(5);
+                                            }
                                             // Update the chord order in the data model
                                             const chords = [...this.currentProgression.sections[sectionIndex].chords];
                                             const movedChord = chords.splice(evt.oldIndex, 1)[0];
