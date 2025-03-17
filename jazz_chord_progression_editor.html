@@ -145,6 +145,24 @@
             box-shadow: 0 0 3px rgba(0, 0, 0, 0.4);
         }
 
+        @media (max-width: 767px) {
+            body {
+                overflow-x: hidden;
+                position: relative;
+                width: 100%;
+            }
+
+            /* Make section headings smaller and add truncation */
+            .section-heading {
+                font-size: 1rem !important;
+                max-width: 60% !important;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+        }
+
         /* Virtual piano keyboard */
         .piano-key {
             height: 60px;
@@ -710,7 +728,8 @@
                                     </button>
 
                                     <div x-show="!section.isEditingName" class="flex items-center">
-                                        <h3 class="text-lg sm:text-xl font-bold truncate" x-text="section.name"></h3>
+                                        <h3 class="text-lg sm:text-xl font-bold section-heading truncate"
+                                            x-text="section.name"></h3>
                                         <button @click="startEditSectionName(sectionIndex)"
                                             class="btn btn-xs btn-ghost ml-2">
                                             <i class="fas fa-edit"></i>
