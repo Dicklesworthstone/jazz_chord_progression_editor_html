@@ -420,6 +420,25 @@
                 height: 50px;
                 margin-left: -12px;
             }
+
+            .player-controls .dropdown button,
+            .player-controls select,
+            .player-controls .btn {
+                min-height: 2.5rem !important;
+                min-width: 2.5rem !important;
+                z-index: 5;
+                position: relative;
+            }
+
+            /* Increase the dropdown z-index to ensure it appears above other elements */
+            .player-controls .dropdown-content {
+                z-index: 30 !important;
+            }
+
+            /* Add some spacing to prevent overlap */
+            .player-controls .flex {
+                gap: 0.5rem !important;
+            }
         }
     </style>
 </head>
@@ -856,7 +875,7 @@
         </div>
 
         <!-- Inside the Player Controls div -->
-        <div class="bg-gray-800 border-t border-gray-700 p-4 shadow-lg">
+        <div class="bg-gray-800 border-t border-gray-700 p-4 shadow-lg player-controls">
             <div class="container mx-auto">
                 <!-- Replace the existing content with this enhanced version -->
                 <div class="flex flex-col lg:flex-row justify-between items-center gap-4">
