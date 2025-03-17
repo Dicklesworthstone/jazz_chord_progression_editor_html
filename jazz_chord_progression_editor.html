@@ -3,8 +3,14 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Jazz Chord Progression Editor & Player</title>
+    <!-- Make sure this meta tag is present in your head section -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <!-- Add these meta tags for better mobile experience -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1f2937">
 
     <!-- Load FontAwesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -176,6 +182,109 @@
             color: white;
             bottom: 2px;
         }
+
+    /* Improved touch targets */
+    @media (max-width: 767px) {
+        .btn {
+            min-height: 2.5rem; /* Larger touch targets on mobile */
+        }
+        
+        .btn-circle {
+            height: 2rem;
+            width: 2rem;
+            min-height: 2rem;
+        }
+        
+        .chord-card {
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .dropdown-content {
+            min-width: 12rem; /* Wider dropdowns on mobile */
+        }
+        
+        /* Increase spacing for piano keys on touch devices */
+        .piano-key {
+            height: 80px;
+        }
+        
+        .white-key {
+            width: 40px;
+        }
+        
+        .black-key {
+            width: 24px;
+            height: 50px;
+            margin-left: -12px;
+        }
+    }
+    
+    /* Better mobile scrolling */
+    .overflow-y-auto, .overflow-x-auto {
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Prevent zooming when tapping inputs on iOS */
+    @media (max-width: 767px) {
+        input, select, textarea, button {
+            font-size: 16px !important;
+        }
+    }
+    
+    /* Improved touch area for range sliders */
+    input[type="range"] {
+        height: 2rem;
+    }
+    
+    /* Add momentum-based scrolling on iOS */
+    .chord-palette-mobile {
+        height: 80vh;
+        max-height: 80vh;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 40;
+        border-top-left-radius: 1rem;
+        border-top-right-radius: 1rem;
+        box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.2);
+        transform: translateY(100%);
+        transition: transform 0.3s ease-out;
+    }
+    
+    .chord-palette-mobile.open {
+        transform: translateY(0);
+    }
+    
+    /* Add a safe area for iOS notches and home indicators */
+    @supports (padding-bottom: env(safe-area-inset-bottom)) {
+        .player-controls {
+            padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+        }
+        
+        .chord-palette-mobile {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+    }
+    
+    /* Add tap highlight transparency for better mobile feel */
+    * {
+        -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+    }
+    
+    /* More space for mobile modals */
+    @media (max-width: 767px) {
+        .modal-box {
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+    }
+    
+    /* Helper class for better touch targets */
+    .touch-manipulation {
+        touch-action: manipulation;
+    }        
     </style>
 </head>
 
@@ -185,21 +294,20 @@
     <!-- Main layout -->
     <div class="flex flex-col h-screen">
         <!-- Top Navigation Bar -->
-        <nav class="bg-gray-800 shadow-lg p-4 flex items-center justify-between">
+        <nav class="bg-gray-800 shadow-lg p-2 sm:p-4 flex items-center justify-between">
             <div class="flex items-center">
-                <i class="fas fa-music text-violet-400 text-2xl mr-2"></i>
-                <h1 class="text-xl font-bold">Jazz Chord Progression Editor</h1>
+                <i class="fas fa-music text-violet-400 text-xl sm:text-2xl mr-2"></i>
+                <h1 class="text-lg sm:text-xl font-bold truncate">Jazz Chord Progression Editor</h1>
             </div>
-
-            <div class="flex space-x-2">
-
-                <button @click="emergencyResetAudio()" class="btn btn-sm btn-ghost"
+        
+            <div class="flex space-x-1 sm:space-x-2">
+                <button @click="emergencyResetAudio()" class="btn btn-xs sm:btn-sm btn-ghost"
                     title="Emergency Reset for Stuck Audio">
-                    <i class="fas fa-bolt mr-1"></i> Reset Audio
+                    <i class="fas fa-bolt sm:mr-1"></i><span class="hidden sm:inline">Reset Audio</span>
                 </button>
-
+        
                 <!-- Inline toggle for Advanced Voicing, neatly fitting in the nav row -->
-                <div class="flex items-center space-x-2">
+                <div class="hidden md:flex items-center space-x-2">
                     <label class="label cursor-pointer m-0 gap-2">
                         <span class="text-sm">Advanced Voicing</span>
                         <input type="checkbox" class="toggle toggle-primary toggle-sm" x-model="useAdvancedVoicing" />
@@ -209,28 +317,29 @@
                             : 'Using simpler chord-voicing logic.'">
                     </span>
                 </div>
-
-                <button @click="newProgression()" class="btn btn-sm btn-ghost">
-                    <i class="fas fa-file mr-1"></i> New
+        
+                <button @click="newProgression()" class="btn btn-xs sm:btn-sm btn-ghost">
+                    <i class="fas fa-file sm:mr-1"></i><span class="hidden sm:inline">New</span>
                 </button>
-                <button @click="openPresetsModal()" class="btn btn-sm btn-ghost btn-primary text-white">
-                    <i class="fas fa-star mr-1"></i> Presets
+                <button @click="openPresetsModal()" class="btn btn-xs sm:btn-sm btn-ghost btn-primary text-white">
+                    <i class="fas fa-star sm:mr-1"></i><span class="hidden sm:inline">Presets</span>
                 </button>
-                <button @click="saveProgressionToFile()" class="btn btn-sm btn-ghost">
-                    <i class="fas fa-download mr-1"></i> Export
+                <button @click="saveProgressionToFile()" class="btn btn-xs sm:btn-sm btn-ghost">
+                    <i class="fas fa-download sm:mr-1"></i><span class="hidden sm:inline">Export</span>
                 </button>
-                <button @click="openImportModal()" class="btn btn-sm btn-ghost">
-                    <i class="fas fa-upload mr-1"></i> Import
+                <button @click="openImportModal()" class="btn btn-xs sm:btn-sm btn-ghost">
+                    <i class="fas fa-upload sm:mr-1"></i><span class="hidden sm:inline">Import</span>
                 </button>
                 <div class="dropdown dropdown-end">
-                    <label tabindex="0" class="btn btn-sm btn-ghost">
+                    <label tabindex="0" class="btn btn-xs sm:btn-sm btn-ghost">
                         <i class="fas fa-ellipsis-v"></i>
                     </label>
                     <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
                         <li><a @click="openSettingsModal()"><i class="fas fa-cog mr-2"></i> Settings</a></li>
                         <li><a @click="openHelpModal()"><i class="fas fa-question-circle mr-2"></i> Help</a></li>
-                        <li><a @click="copyCurrentProgressionAsText()"><i class="fas fa-copy mr-2"></i> Copy as Text</a>
-                        </li>
+                        <li class="md:hidden"><a @click="toggleAdvancedVoicing()"><i class="fas fa-sliders-h mr-2"></i> 
+                            <span x-text="useAdvancedVoicing ? 'Simple Voicing' : 'Advanced Voicing'"></span></a></li>
+                        <li><a @click="copyCurrentProgressionAsText()"><i class="fas fa-copy mr-2"></i> Copy as Text</a></li>
                     </ul>
                 </div>
             </div>
@@ -239,13 +348,29 @@
         <!-- Main Content Area -->
         <div class="flex-1 flex flex-col md:flex-row overflow-hidden">
             <!-- Left Sidebar - Chord Palette -->
-            <div class="w-full md:w-72 bg-gray-800 p-4 overflow-y-auto" x-show="showChordPalette">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-lg font-bold text-violet-400">Chord Palette</h2>
-                    <button @click="toggleChordPalette()" class="btn btn-sm btn-ghost md:hidden">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
+            <div class="w-full md:w-72 bg-gray-800 p-4 overflow-y-auto fixed md:static inset-0 z-30"
+            x-show="showChordPalette" 
+            x-transition:enter="transition ease-out duration-300 transform"
+            x-transition:enter-start="translate-y-full md:translate-y-0"
+            x-transition:enter-end="translate-y-0"
+            x-transition:leave="transition ease-in duration-200 transform"
+            x-transition:leave-start="translate-y-0"
+            x-transition:leave-end="translate-y-full md:translate-y-0"
+            @click.away="if(window.innerWidth < 768) toggleChordPalette()">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-bold text-violet-400">Chord Palette</h2>
+                <button @click="toggleChordPalette()" class="btn btn-sm btn-ghost md:hidden">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Add a floating button to open the chord palette on mobile -->
+            <button @click="toggleChordPalette()" 
+            class="fixed bottom-20 right-4 z-20 btn btn-primary btn-circle md:hidden shadow-lg"
+            x-show="!showChordPalette">
+            <i class="fas fa-book"></i>
+            </button>
+
 
                 <div class="mb-4">
                     <div class="form-control">
@@ -400,51 +525,50 @@
             </div>
 
             <!-- Main Editor Area -->
-            <div class="flex-1 p-6 overflow-y-auto relative">
-                <div class="flex justify-between items-center mb-6">
+            <div class="flex-1 p-3 sm:p-6 overflow-y-auto relative">
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-2">
                     <div>
-                        <h2 class="text-2xl font-bold">
-                            <span x-text="currentProgression.name || 'Untitled Progression'"></span>
+                        <h2 class="text-xl sm:text-2xl font-bold">
+                            <span x-text="currentProgression.name || 'Untitled Progression'" class="truncate block"></span>
                             <button @click="editProgressionName()" class="btn btn-xs btn-ghost ml-2">
                                 <i class="fas fa-edit"></i>
                             </button>
                         </h2>
-                        <p class="text-gray-400" x-show="currentProgression.description">
+                        <p class="text-gray-400 text-sm" x-show="currentProgression.description">
                             <span x-text="currentProgression.description"></span>
                         </p>
                     </div>
-
+            
                     <div class="flex gap-2">
                         <button @click="toggleChordPalette()" class="btn btn-sm btn-outline md:hidden">
                             <i class="fas fa-book"></i> Palette
                         </button>
                         <button @click="createNewSection()" class="btn btn-sm btn-primary">
-                            <i class="fas fa-plus"></i> Add Section
+                            <i class="fas fa-plus"></i> <span class="hidden xs:inline">Add Section</span>
                         </button>
                     </div>
                 </div>
-
-                <div class="space-y-8 mb-10">
+                <div class="space-y-6 mb-10">
                     <template x-for="(section, sectionIndex) in currentProgression.sections" :key="sectionIndex">
-                        <div class="bg-gray-800 rounded-lg p-4">
-                            <div class="flex justify-between items-center mb-4">
-                                <div class="flex items-center">
+                        <div class="bg-gray-800 rounded-lg p-3 sm:p-4">
+                            <div class="flex justify-between items-center mb-3 sm:mb-4">
+                                <div class="flex items-center max-w-[70%]">
                                     <button class="btn btn-xs btn-circle mr-2"
                                         @click="toggleSectionCollapse(sectionIndex)">
                                         <i class="fas"
                                             :class="section.collapsed ? 'fa-chevron-down' : 'fa-chevron-up'"></i>
                                     </button>
-
+            
                                     <div x-show="!section.isEditingName" class="flex items-center">
-                                        <h3 class="text-xl font-bold" x-text="section.name"></h3>
+                                        <h3 class="text-lg sm:text-xl font-bold truncate" x-text="section.name"></h3>
                                         <button @click="startEditSectionName(sectionIndex)"
                                             class="btn btn-xs btn-ghost ml-2">
                                             <i class="fas fa-edit"></i>
                                         </button>
                                     </div>
-
+            
                                     <div x-show="section.isEditingName" class="flex">
-                                        <input type="text" class="input input-sm input-bordered mr-2"
+                                        <input type="text" class="input input-xs sm:input-sm input-bordered mr-2"
                                             x-model="section.editNameValue"
                                             @keyup.enter="saveSectionName(sectionIndex)">
                                         <button @click="saveSectionName(sectionIndex)" class="btn btn-xs btn-primary">
@@ -452,13 +576,13 @@
                                         </button>
                                     </div>
                                 </div>
-
+            
                                 <div class="flex gap-1">
                                     <button class="btn btn-xs btn-outline" @click="playSection(sectionIndex)">
                                         <i class="fas fa-play"></i>
                                     </button>
                                     <button class="btn btn-xs btn-outline" @click="addChordToSection(sectionIndex)">
-                                        <i class="fas fa-plus"></i> Add Chord
+                                        <i class="fas fa-plus"></i> <span class="hidden xs:inline">Add</span>
                                     </button>
                                     <div class="dropdown dropdown-end">
                                         <label tabindex="0" class="btn btn-xs btn-ghost">
@@ -486,8 +610,8 @@
                                     </div>
                                 </div>
                             </div>
-
-                            <div x-show="section.annotation" class="bg-base-300 rounded-md p-3 mb-4 text-sm">
+            
+                            <div x-show="section.annotation" class="bg-base-300 rounded-md p-2 sm:p-3 mb-3 sm:mb-4 text-xs sm:text-sm">
                                 <div class="flex justify-between">
                                     <p x-text="section.annotation"></p>
                                     <button @click="editSectionAnnotation(sectionIndex)" class="btn btn-xs btn-ghost">
@@ -495,19 +619,19 @@
                                     </button>
                                 </div>
                             </div>
-
+            
                             <div x-show="!section.collapsed">
                                 <div :id="'chords-container-' + sectionIndex"
-                                    class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                                    class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                                     <template x-for="(chord, chordIndex) in section.chords" :key="chordIndex">
-                                        <div class="chord-card border border-gray-700 rounded-md p-3 transition-all"
+                                        <div class="chord-card border border-gray-700 rounded-md p-2 sm:p-3 transition-all touch-manipulation"
                                             :class="{'playing': isChordPlaying(sectionIndex, chordIndex), 'active': selectedChordIndices.section === sectionIndex && selectedChordIndices.chord === chordIndex}">
                                             <div class="flex justify-between items-start">
                                                 <div>
                                                     <div class="text-lg font-bold" x-text="getChordDisplayName(chord)">
                                                     </div>
                                                     <div class="text-xs text-gray-400 mt-1">
-                                                        <span x-text="formatChordNotes(chord.notes)"></span>
+                                                        <span x-text="formatChordNotes(chord.notes)" class="truncate block max-w-[120px] sm:max-w-full"></span>
                                                     </div>
                                                 </div>
                                                 <div class="flex gap-1">
@@ -525,7 +649,7 @@
                                                             <li><a @click="editChord(sectionIndex, chordIndex)">
                                                                     <i class="fas fa-edit mr-2"></i> Edit Chord
                                                                 </a></li>
-                                                            <li><a
+                                                            <li>
                                                                     @click="addChordAnnotation(sectionIndex, chordIndex)">
                                                                     <i class="fas fa-comment mr-2"></i> Add Annotation
                                                                 </a></li>
@@ -548,9 +672,9 @@
                                                     </div>
                                                 </div>
                                             </div>
-
+            
                                             <div x-show="chord.annotation"
-                                                class="mt-3 text-xs bg-base-300 p-2 rounded text-gray-300">
+                                                class="mt-2 sm:mt-3 text-xs bg-base-300 p-1 sm:p-2 rounded text-gray-300">
                                                 <div class="flex justify-between">
                                                     <p x-text="chord.annotation"></p>
                                                     <button @click="editChordAnnotation(sectionIndex, chordIndex)"
@@ -569,9 +693,10 @@
             </div>
         </div>
 
-        <!-- Player Controls (Fixed at Bottom) -->
+        <!-- Inside the Player Controls div -->
         <div class="bg-gray-800 border-t border-gray-700 p-4 shadow-lg">
             <div class="container mx-auto">
+                <!-- Replace the existing content with this enhanced version -->
                 <div class="flex flex-col lg:flex-row justify-between items-center gap-4">
                     <div class="flex items-center gap-4 w-full lg:w-auto">
                         <div class="flex gap-2">
@@ -579,7 +704,7 @@
                                 <i class="fas fa-step-backward"></i>
                             </button>
 
-                            <button @click="togglePlay()" class="btn btn-circle btn-sm">
+                            <button @click="togglePlay()" class="btn btn-circle btn-md sm:btn-sm">
                                 <i :class="isPlaying ? 'fas fa-pause' : 'fas fa-play'"></i>
                             </button>
 
@@ -605,8 +730,9 @@
                         </div>
                     </div>
 
+                    <!-- Mobile-optimized controls with dropdown for settings -->
                     <div class="flex items-center gap-4 w-full lg:w-auto">
-                        <div class="flex items-center gap-2">
+                        <div class="hidden sm:flex items-center gap-2">
                             <i class="fas fa-music text-sm"></i>
                             <select x-model="instrument" @change="changeInstrument()"
                                 class="select select-sm select-bordered">
@@ -620,13 +746,13 @@
                             </select>
                         </div>
 
-                        <div class="flex items-center gap-2">
+                        <div class="hidden sm:flex items-center gap-2">
                             <i class="fas fa-volume-up text-sm"></i>
                             <input type="range" min="0" max="1" step="0.1" x-model="volume" @change="updateVolume()"
                                 class="range range-xs range-primary w-20">
                         </div>
 
-                        <div class="flex items-center gap-2">
+                        <div class="hidden sm:flex items-center gap-2">
                             <i class="fas fa-tachometer-alt text-sm"></i>
                             <select x-model="tempo" @change="updateTempo()" class="select select-sm select-bordered">
                                 <option value="40">40 BPM</option>
@@ -639,6 +765,42 @@
                             </select>
                         </div>
 
+                        <!-- Mobile-only dropdown for settings -->
+                        <div class="dropdown dropdown-top dropdown-end sm:hidden">
+                            <button class="btn btn-sm btn-circle"><i class="fas fa-sliders-h"></i></button>
+                            <div class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
+                                <div class="p-2">
+                                    <label class="label">Instrument</label>
+                                    <select x-model="instrument" @change="changeInstrument()"
+                                        class="select select-sm select-bordered w-full">
+                                        <option value="piano">Piano</option>
+                                        <option value="rhodes">Electric Piano</option>
+                                        <option value="synth">Moog Synth</option>
+                                        <option value="warm-pad">Warm Pad</option>
+                                        <option value="analog-saw">Analog Saw</option>
+                                        <option value="marimba">Marimba</option>
+                                        <option value="vibraphone">Vibraphone</option>
+                                    </select>
+                                </div>
+                                <div class="p-2">
+                                    <label class="label">Volume</label>
+                                    <input type="range" min="0" max="1" step="0.1" x-model="volume" @change="updateVolume()"
+                                        class="range range-xs range-primary w-full">
+                                </div>
+                                <div class="p-2">
+                                    <label class="label">Tempo</label>
+                                    <select x-model="tempo" @change="updateTempo()" class="select select-sm select-bordered w-full">
+                                        <option value="40">40 BPM</option>
+                                        <option value="60">60 BPM</option>
+                                        <option value="80">80 BPM</option>
+                                        <option value="100">100 BPM</option>
+                                        <option value="120">120 BPM</option>
+                                        <option value="140">140 BPM</option>
+                                        <option value="160">160 BPM</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -647,7 +809,7 @@
         <!-- Modals -->
         <!-- Presets Modal -->
         <div class="modal" :class="{'modal-open': showPresetsModal}">
-            <div class="modal-box max-w-4xl">
+            <div class="modal-box w-11/12 max-w-2xl">
                 <h3 class="font-bold text-lg mb-4">Jazz Progression Presets</h3>
                 <p class="text-sm text-gray-400 mb-6">Select a professionally crafted jazz chord progression to use as a
                     starting point</p>
@@ -754,7 +916,7 @@
 
         <!-- Edit Chord Modal -->
         <div class="modal" :class="{'modal-open': showEditChordModal}">
-            <div class="modal-box max-w-2xl">
+            <div class="modal-box w-11/12 max-w-2xl">
                 <h3 class="font-bold text-lg mb-4">Edit Chord</h3>
 
                 <div class="tabs tabs-boxed mb-4">
@@ -1047,7 +1209,7 @@
 
         <!-- Import Modal -->
         <div class="modal" :class="{'modal-open': showImportModal}">
-            <div class="modal-box">
+            <div class="modal-box w-11/12 max-w-2xl">
                 <h3 class="font-bold text-lg mb-4">Import Progression</h3>
 
                 <div class="tabs tabs-boxed mb-4">
@@ -1092,7 +1254,7 @@
 
         <!-- Settings Modal -->
         <div class="modal" :class="{'modal-open': showSettingsModal}">
-            <div class="modal-box">
+            <div class="modal-box w-11/12 max-w-2xl">
                 <h3 class="font-bold text-lg mb-4">Settings</h3>
 
                 <div class="form-control">
@@ -1147,7 +1309,7 @@
 
         <!-- Help Modal -->
         <div class="modal" :class="{'modal-open': showHelpModal}">
-            <div class="modal-box max-w-2xl">
+            <div class="modal-box w-11/12 max-w-2xl">
                 <h3 class="font-bold text-lg mb-4">Jazz Chord Progression Editor Help</h3>
 
                 <div class="tabs tabs-boxed mb-4">
@@ -1327,7 +1489,7 @@
 
         <!-- Name Edit Modal -->
         <div class="modal" :class="{'modal-open': showNameEditModal}">
-            <div class="modal-box">
+            <div class="modal-box w-11/12 max-w-2xl">
                 <h3 class="font-bold text-lg mb-4">Edit Progression Details</h3>
 
                 <div class="form-control mb-4">
@@ -1355,7 +1517,7 @@
 
         <!-- Annotation Modal -->
         <div class="modal" :class="{'modal-open': showAnnotationModal}">
-            <div class="modal-box">
+            <div class="modal-box w-11/12 max-w-2xl">
                 <h3 class="font-bold text-lg mb-4" x-text="annotationModalTitle"></h3>
 
                 <div class="form-control">
@@ -1416,7 +1578,9 @@
                 instrument: "synth",
                 reverb: 0.7,
                 volume: 0.7,
-
+                isMobile: window.innerWidth < 768,
+                safeAreaBottom: 0,
+                
                 // Editing State
                 editingSectionIndex: null,
                 editingChordIndex: null,
@@ -1480,6 +1644,10 @@
                 voiceLeadingState: {
                     previousNotes: null,
                     currentVoicing: null
+                },
+
+                toggleAdvancedVoicing() {
+                    this.useAdvancedVoicing = !this.useAdvancedVoicing;
                 },
 
                 // Current progression data
@@ -1708,6 +1876,33 @@
                     } catch (e) {
                         console.error("Error during cleanup:", e);
                     }
+                },
+
+                mounted() {
+                    // Check if device is mobile
+                    this.isMobile = window.innerWidth < 768;
+                    
+                    // Add resize listener
+                    window.addEventListener('resize', () => {
+                        this.isMobile = window.innerWidth < 768;
+                    });
+                    
+                    // Get safe area insets for iOS
+                    if (CSS.supports('padding-bottom: env(safe-area-inset-bottom)')) {
+                        const safeAreaValue = getComputedStyle(document.documentElement).getPropertyValue('--sat-safe-area-bottom');
+                        this.safeAreaBottom = parseInt(safeAreaValue) || 0;
+                    }
+                },
+                
+                // Improved modal handling for mobile
+                openModalMobile(modalName) {
+                    this[modalName] = true;
+                    document.body.style.overflow = 'hidden';
+                },
+                
+                closeModalMobile(modalName) {
+                    this[modalName] = false;
+                    document.body.style.overflow = '';
                 },
 
                 // New method to create an overlay that requires user interaction
@@ -2322,6 +2517,14 @@
 
                 toggleChordPalette() {
                     this.showChordPalette = !this.showChordPalette;
+                    // Prevent body scrolling when palette is open on mobile
+                    if (window.innerWidth < 768) {
+                        if (this.showChordPalette) {
+                            document.body.style.overflow = 'hidden';
+                        } else {
+                            document.body.style.overflow = '';
+                        }
+                    }
                 },
 
                 applyTheme() {
