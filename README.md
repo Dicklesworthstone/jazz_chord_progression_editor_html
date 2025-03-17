@@ -314,11 +314,11 @@ This structure allows for:
 
 ### Simple Setup
 
-1. Clone the repository or download the HTML file
-2. Open the HTML file in a modern web browser
+1. Simply download the single HTML file to your computer, that's it!
+2. Open the HTML file in Chrome
 3. Start creating your jazz chord progressions!
 
-The application runs entirely in the browser with no server dependencies.
+The application runs entirely in the browser.
 
 ### Basic Usage
 
