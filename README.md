@@ -18,7 +18,7 @@
 
 ## Overview
 
-The **Jazz Chord Progression Editor** is a sophisticated web application designed for creating, editing, playing, and analyzing jazz chord progressions. It features an intuitive interface coupled with advanced music theory algorithms that provide proper jazz chord voicings and voice leading. 
+The **Jazz Chord Progression Editor** is a sophisticated web application designed for creating, editing, playing, and analyzing jazz chord progressions. Despite that, it can be used by anyone, even with no technical sophistication, simply by downloading the single HTML file from this repository and saving it to your machine and opening it in the Chrome browser. It can also be accessed at [jazzchords.org](https://jazzchords.com). It features an intuitive interface coupled with advanced music theory algorithms that provide proper jazz chord voicings and voice leading. 
 
 This tool bridges the gap between music theory, computational harmony, and practical application, allowing musicians, composers, and educators to experiment with complex jazz harmonies and instantly hear the results.
 
