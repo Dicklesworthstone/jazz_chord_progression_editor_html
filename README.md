@@ -53,6 +53,10 @@ The goal shifted from simply "hearing what the AI created" to building a tool th
 - **Multiple Instrument Timbres**: Choose between piano, electric piano, various synths, and more
 - **Audio Control**: Fine-tune reverb, volume, and other playback parameters
 
+| ![Screenshot of it in Action](https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html/blob/main/screenshot.png) | 
+|:--:| 
+| *Screenshot of it in Action* |
+
 ### How to Use the Jazz Chord Progression Editor
 
 #### Getting Started
