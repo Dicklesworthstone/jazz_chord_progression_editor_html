@@ -192,6 +192,24 @@
             </div>
 
             <div class="flex space-x-2">
+
+                <button @click="emergencyResetAudio()" class="btn btn-sm btn-ghost"
+                    title="Emergency Reset for Stuck Audio">
+                    <i class="fas fa-bolt mr-1"></i> Reset Audio
+                </button>
+
+                <!-- Inline toggle for Advanced Voicing, neatly fitting in the nav row -->
+                <div class="flex items-center space-x-2">
+                    <label class="label cursor-pointer m-0 gap-2">
+                        <span class="text-sm">Advanced Voicing</span>
+                        <input type="checkbox" class="toggle toggle-primary toggle-sm" x-model="useAdvancedVoicing" />
+                    </label>
+                    <span class="text-xs text-gray-400" x-text="useAdvancedVoicing
+                            ? 'Advanced chord-voicing system enabled.'
+                            : 'Using simpler chord-voicing logic.'">
+                    </span>
+                </div>
+
                 <button @click="newProgression()" class="btn btn-sm btn-ghost">
                     <i class="fas fa-file mr-1"></i> New
                 </button>
@@ -620,6 +638,7 @@
                                 <option value="160">160 BPM</option>
                             </select>
                         </div>
+
                     </div>
                 </div>
             </div>
@@ -1383,7 +1402,8 @@
                 },
 
                 // Player State
-                isPlaying: false,
+                isPlaying: true,
+                useAdvancedVoicing: false,
                 tempo: 60,
                 chordDuration: 2,
                 currentChordIndex: 0,
@@ -1393,8 +1413,8 @@
                 progressPercentage: 0,
                 elapsedTime: 0,
                 totalTime: 0,
-                instrument: "piano",
-                reverb: 0.5,
+                instrument: "synth",
+                reverb: 0.7,
                 volume: 0.7,
 
                 // Editing State
@@ -1830,13 +1850,6 @@
                     }
                 },
 
-                /**
-                 * Initializes the audio system with a master EQ and smoother envelope for improved sound quality.
-                 * @param {AudioContext} audioCtx - The Web Audio API context.
-                 * @param {HTMLElement} button - The button element to update.
-                 * @param {HTMLElement} errorContainer - Container for error messages.
-                 * @param {HTMLElement} overlay - The overlay to remove on success.
-                 */
                 initSimpleTone(audioCtx, button, errorContainer, overlay) {
                     try {
                         // Clean up any existing Tone Transport or events
@@ -1867,48 +1880,99 @@
                         Tone.setContext(audioCtx);
 
                         // Create a limiter to prevent clipping
-                        this.limiter = new Tone.Limiter(-3).toDestination();
+                        this.limiter = new Tone.Limiter(-2).toDestination();
 
-                        // Create a reverb effect with warmer settings
+                        // Create a reverb effect with controlled settings
                         this.reverb_effect = new Tone.Reverb({
-                            decay: 1.5,
-                            wet: this.reverb || 0.3, // Use existing reverb setting or default
+                            decay: 1.2,
+                            wet: this.reverb || 0.6,
                             preDelay: 0.01
                         }).connect(this.limiter);
 
                         // Create a master EQ for better frequency balance
                         this.masterEQ = new Tone.EQ3({
-                            low: -3,      // Reduce muddy low frequencies slightly
-                            mid: 0,       // Keep mids neutral
-                            high: 3,      // Brighten highs for clarity
-                            lowFrequency: 200,
-                            highFrequency: 2000
+                            low: 0,      // Neutral lows
+                            mid: -1,     // Slight mid scoop for clarity
+                            high: 1,     // Slight boost to highs for clarity
+                            lowFrequency: 250,
+                            highFrequency: 2500
                         }).connect(this.reverb_effect);
 
-                        // IMPROVED: Use higher maxPolyphony to never drop notes
-                        this.synth = new Tone.PolySynth(Tone.Synth, {
-                            maxPolyphony: 256, // Boosted from original 128
-                            oscillator: {
-                                type: "triangle" // Triangle wave is smoother for jazz chords
-                            },
-                            envelope: {
-                                attack: 0.1,   // Slightly longer attack for smoother onset
-                                decay: 0.3,    // Moderately fast initial decay
-                                sustain: 0.6,  // Medium sustain level for good balance
-                                release: 2.0   // Longer release for nice decay
-                            }
-                        });
+                        // Check if we're using the Moog synth (instrument === "synth")
+                        if (this.instrument === "synth") {
+                            // Create a balanced Moog-style synth
+                            this.synth = new Tone.PolySynth(Tone.Synth, {
+                                maxPolyphony: 24,
+                                oscillator: {
+                                    type: "sawtooth" // Classic Moog sawtooth
+                                },
+                                envelope: {
+                                    attack: 0.05,  // Moderate attack
+                                    decay: 0.2,
+                                    sustain: 0.7,
+                                    release: 0.6   // Good balance for chord transitions
+                                }
+                            });
 
-                        // Chain through EQ, reverb, limiter
-                        this.synth.chain(this.masterEQ, this.reverb_effect, this.limiter);
+                            // Add a filter for Moog character
+                            const filter = new Tone.Filter({
+                                type: "lowpass",
+                                frequency: 2500,
+                                rolloff: -12,
+                                Q: 2
+                            });
 
-                        // Overall volume level with headroom
-                        this.synth.volume.value = -8;
+                            // Add subtle chorus for analog warmth
+                            const chorus = new Tone.Chorus({
+                                frequency: 1.5,
+                                delayTime: 3.5,
+                                depth: 0.3,
+                                spread: 180,
+                                wet: 0.2
+                            }).start();
+
+                            // Connect components
+                            this.synth.chain(filter, chorus);
+
+                            // Connect to master chain
+                            chorus.connect(this.masterEQ);
+
+                            // Store effects for later cleanup
+                            this.instrumentEffects = [filter, chorus];
+
+                            // Set volume
+                            this.synth.volume.value = -4;
+                        } else {
+                            // Standard synth for other instruments
+                            this.synth = new Tone.PolySynth(Tone.Synth, {
+                                maxPolyphony: 32,
+                                oscillator: {
+                                    type: "triangle"
+                                },
+                                envelope: {
+                                    attack: 0.03,
+                                    decay: 0.15,
+                                    sustain: 0.6,
+                                    release: 0.4
+                                }
+                            });
+
+                            // Chain through EQ, reverb, limiter
+                            this.synth.chain(this.masterEQ, this.reverb_effect, this.limiter);
+
+                            // Set volume
+                            this.synth.volume.value = -5;
+                        }
+
+                        // Make sure the context is running
+                        if (audioCtx.state !== "running") {
+                            audioCtx.resume();
+                        }
 
                         // Mark as successfully initialized
                         this.audioInitialized = true;
 
-                        console.log("Full audio system initialized successfully!");
+                        console.log(`Audio system initialized successfully with ${this.instrument === "synth" ? "balanced Moog" : "jazz-optimized"} settings!`);
                     } catch (e) {
                         console.error("Error in Tone.js initialization:", e);
                         this.showAudioError("Could not initialize audio system. Please try again.", button, errorContainer);
@@ -1917,63 +1981,6 @@
                     }
                 },
 
-                /**
-                 * Optimizes chord notes for playback to prevent polyphony issues and ensure key chord tones.
-                 * @param {string[]} notes - Array of note strings (e.g., ['C3', 'E3', 'G3']).
-                 * @returns {string[]} Optimized array of note strings.
-                 */
-                optimizeChordNotes(notes) {
-                    if (!notes || !Array.isArray(notes)) return [];
-
-                    // Parse notes into objects with pitch values
-                    const noteObjects = notes.map(note => {
-                        const name = note.slice(0, -1);
-                        const octave = parseInt(note.slice(-1));
-                        const pitch = this.getNoteIndex(name) + octave * 12;
-                        return { note, pitch, name, octave };
-                    });
-
-                    // Remove duplicates by pitch
-                    const uniqueNotes = [];
-                    const seenPitches = new Set();
-                    noteObjects.forEach(n => {
-                        if (!seenPitches.has(n.pitch)) {
-                            seenPitches.add(n.pitch);
-                            uniqueNotes.push(n);
-                        }
-                    });
-
-                    // Sort by pitch (low to high)
-                    uniqueNotes.sort((a, b) => a.pitch - b.pitch);
-
-                    // Limit to max polyphony and optimize for jazz sound
-                    const MAX_NOTES = 8; // Reasonable for rich jazz chords
-                    if (uniqueNotes.length > MAX_NOTES) {
-                        // Prioritize root (lowest), 3rd, 7th, then highest tensions
-                        const optimized = [];
-                        const root = uniqueNotes[0]; // Assume lowest is root
-                        optimized.push(root);
-
-                        // Find 3rd and 7th based on typical jazz intervals (approx)
-                        const rootPitch = root.pitch;
-                        const candidates = uniqueNotes.slice(1);
-                        const third = candidates.find(n => [3, 4].includes((n.pitch - rootPitch) % 12)) || candidates[0];
-                        const seventh = candidates.find(n => [10, 11].includes((n.pitch - rootPitch) % 12)) || candidates[1];
-                        if (third && !optimized.some(n => n.pitch === third.pitch)) optimized.push(third);
-                        if (seventh && !optimized.some(n => n.pitch === seventh.pitch)) optimized.push(seventh);
-
-                        // Fill remaining slots with highest tensions
-                        const remaining = candidates.filter(n => !optimized.some(o => o.pitch === n.pitch));
-                        remaining.sort((a, b) => b.pitch - a.pitch); // Highest first
-                        while (optimized.length < MAX_NOTES && remaining.length > 0) {
-                            optimized.push(remaining.shift());
-                        }
-
-                        return optimized.map(n => n.note);
-                    }
-
-                    return uniqueNotes.map(n => n.note);
-                },
 
                 getNoteIndex(noteName) {
                     // Expanded noteMap to include flats so we don't get undefined for "Eb","Ab","Bb", etc.
@@ -2675,46 +2682,40 @@
                     return Promise.resolve();
                 },
 
-                /**
-      * Simple and reliable playChord function
-      */
+                // Update the playChord method
                 playChord(chord) {
-                    if (!this.synth || !Tone.context) {
-                        console.warn("Cannot play chord - audio not initialized yet");
-                        return;
-                    }
-
-                    if (!chord || !chord.notes || !Array.isArray(chord.notes) || chord.notes.length === 0) {
-                        console.warn("Invalid chord for playback:", chord);
+                    if (!this.synth || !chord || !chord.notes || !Array.isArray(chord.notes)) {
                         return;
                     }
 
                     try {
-                        // Filter and validate notes
-                        const validNotes = chord.notes.filter(note =>
-                            typeof note === 'string' && /^[A-G][#b]?[0-9]$/.test(note)
-                        );
+                        // First release any currently playing notes
+                        this.synth.releaseAll();
 
-                        if (validNotes.length === 0) {
-                            console.warn("No valid notes to play in chord:", chord.notes);
-                            return;
-                        }
+                        // Small delay to ensure release has been processed
+                        setTimeout(() => {
+                            try {
+                                // Filter out any invalid notes
+                                const validNotes = (chord.playbackNotes || chord.notes).filter(note =>
+                                    typeof note === 'string' && /^[A-G][#b]?[0-9]$/.test(note)
+                                );
 
-                        // IMPORTANT: Special handling for the notorious Gmaj9 chord
-                        if (validNotes.includes('G2') && validNotes.includes('B2') && validNotes.includes('D3')) {
-                            console.log("Detected problematic Gmaj9 chord - applying special handling");
+                                if (validNotes.length === 0) return;
 
-                            // Just a very minimal intervention - slightly longer duration
-                            this.synth.triggerAttackRelease(validNotes, 0.6);
-                        } else {
-                            // Play normally
-                            this.synth.triggerAttackRelease(validNotes, 0.5);
-                        }
-                    } catch (err) {
-                        console.error("Error playing chord:", err);
+                                // Calculate a slightly shorter duration than the full chord duration
+                                // to ensure a tiny gap between chords
+                                const playDuration = this.chordDuration * 0.9;
+
+                                // Play the chord with proper timing
+                                this.synth.triggerAttackRelease(validNotes, playDuration);
+                            } catch (e) {
+                                console.error("Error in chord playback:", e);
+                            }
+                        }, 10);
+                    } catch (e) {
+                        console.error("Error preparing chord playback:", e);
                     }
                 },
-
 
                 previewChord(event, chord) {
                     // If you already use Alpine’s @click.stop, you can omit the next line.
@@ -2885,16 +2886,22 @@
                     // Update chord intervals based on selected type
                     const intervals = this.getIntervalsForChordType(this.editingChord.type);
 
+                    // FIXED: Clear any existing notes and regenerate
+                    this.editingChord.notes = [];
+
                     // Regenerate notes
                     this.regenerateChordNotes();
                 },
 
-                /**
-                 * Regenerates the notes for the editing chord based on its properties, incorporating voice-leading and tension handling.
-                 */
                 regenerateChordNotes() {
-                    // Get base intervals for the chord type (assumes getIntervalsForChordType exists)
+                    // Get base intervals for the chord type
                     const baseIntervals = this.getIntervalsForChordType(this.editingChord.type);
+
+                    // FIXED: Properly handle the chord type
+                    const isMajor = !this.editingChord.type?.includes('m') && !this.editingChord.type?.includes('dim');
+                    const isDominant = this.editingChord.type?.includes('7') && !this.editingChord.type?.includes('maj7');
+                    const hasMajor7 = this.editingChord.type?.includes('maj7');
+                    const isMinor = this.editingChord.type?.includes('m');
 
                     // Add extensions based on density and tensions
                     let intervals = [...baseIntervals];
@@ -2934,26 +2941,161 @@
                         if (idx !== -1) intervals[idx] = '#5';
                     }
 
-                    // Generate the actual notes (assumes generateChordNotes exists)
-                    let notes = this.generateChordNotes(this.editingChord.root, intervals);
+                    // Generate the actual notes
+                    // FIXED: Generate notes with proper octaves for jazz
+                    const baseOctave = parseInt(this.editingChord.baseOctave) || 3;
 
-                    // Apply voicing style (assumes applyVoicingStyle exists)
-                    notes = this.applyVoicingStyle(notes, this.editingChord.voicingStyle);
+                    // Generate proper jazz voicing based on chord type
+                    let notes = [];
+
+                    // Always add root in bass register
+                    notes.push(this.editingChord.root + (baseOctave - 1));
+
+                    // Add 3rd and 7th in middle register (core jazz sound)
+                    if (isMajor) {
+                        notes.push(this.getChordToneByInterval(this.editingChord.root, '3') + baseOctave);
+                    } else if (isMinor) {
+                        notes.push(this.getChordToneByInterval(this.editingChord.root, 'b3') + baseOctave);
+                    }
+
+                    if (hasMajor7) {
+                        notes.push(this.getChordToneByInterval(this.editingChord.root, '7') + baseOctave);
+                    } else if (isDominant || this.editingChord.type?.includes('m7')) {
+                        notes.push(this.getChordToneByInterval(this.editingChord.root, 'b7') + baseOctave);
+                    }
+
+                    // Add fifth
+                    let fifth = this.editingChord.b5 ? 'b5' : (this.editingChord.s5 ? '#5' : '5');
+                    notes.push(this.getChordToneByInterval(this.editingChord.root, fifth) + baseOctave);
+
+                    // Add extensions in higher register
+                    if (this.editingChord.b9) {
+                        notes.push(this.getChordToneByInterval(this.editingChord.root, 'b9') + (baseOctave + 1));
+                    } else if (this.editingChord.s9) {
+                        notes.push(this.getChordToneByInterval(this.editingChord.root, '#9') + (baseOctave + 1));
+                    } else if (this.editingChord.type?.includes('9')) {
+                        notes.push(this.getChordToneByInterval(this.editingChord.root, '9') + (baseOctave + 1));
+                    }
+
+                    if (this.editingChord.s11) {
+                        notes.push(this.getChordToneByInterval(this.editingChord.root, '#11') + (baseOctave + 1));
+                    } else if (this.editingChord.type?.includes('11') && isMinor) {
+                        notes.push(this.getChordToneByInterval(this.editingChord.root, '11') + (baseOctave + 1));
+                    }
+
+                    if (this.editingChord.b13) {
+                        notes.push(this.getChordToneByInterval(this.editingChord.root, 'b13') + (baseOctave + 1));
+                    } else if (this.editingChord.type?.includes('13')) {
+                        notes.push(this.getChordToneByInterval(this.editingChord.root, '13') + (baseOctave + 1));
+                    }
+
+                    // Apply voicing style (but with fixed jazz-appropriate approach)
+                    notes = this.applyJazzVoicingStyle(notes, this.editingChord.voicingStyle);
 
                     // Apply octave range with limitation for smaller chords
-                    notes = this.applyOctaveRange(notes, parseInt(this.editingChord.baseOctave), parseInt(this.editingChord.octaveSpan));
-
-                    // Apply voice-leading for smoother transitions
-                    notes = this.applyVoiceLeading(notes);
+                    notes = this.applyOctaveRange(notes, baseOctave, parseInt(this.editingChord.octaveSpan));
 
                     // Add bass note for slash chords
                     if (this.editingChord.bass && this.editingChord.bass !== this.editingChord.root) {
                         notes = notes.filter(note => !note.startsWith(this.editingChord.bass));
-                        notes.unshift(this.editingChord.bass + (parseInt(this.editingChord.baseOctave) - 1));
+                        notes.unshift(this.editingChord.bass + (baseOctave - 1));
                     }
 
                     // Update the notes in the editing chord
                     this.editingChord.notes = notes;
+                },
+
+                // New jazz-focused voicing style application
+                applyJazzVoicingStyle(notes, style) {
+                    // First sort by pitch
+                    const sortedNotes = [...notes].sort((a, b) => this.getMIDI(a) - this.getMIDI(b));
+
+                    if (sortedNotes.length < 3) return sortedNotes; // Not enough notes for voicing techniques
+
+                    // Create note objects for easier manipulation
+                    const noteObjects = sortedNotes.map(note => {
+                        const noteName = note.slice(0, -1);
+                        const octave = parseInt(note.slice(-1));
+                        return { name: noteName, octave: octave };
+                    });
+
+                    // Apply different voicing styles
+                    let revoiced = [...noteObjects];
+
+                    switch (style) {
+                        case 'drop2':
+                            // Drop 2 voicing: move the second highest note down an octave
+                            if (noteObjects.length >= 4) {
+                                revoiced[revoiced.length - 2].octave -= 1;
+                            }
+                            break;
+
+                        case 'drop3':
+                            // Drop 3 voicing: move the third highest note down an octave
+                            if (noteObjects.length >= 5) {
+                                revoiced[revoiced.length - 3].octave -= 1;
+                            }
+                            break;
+
+                        case 'open':
+                            // Open voicing: spread out middle voices
+                            if (noteObjects.length >= 4) {
+                                // Keep bass and lead notes, spread middle voices
+                                for (let i = 2; i < revoiced.length - 1; i += 2) {
+                                    revoiced[i].octave += 1;
+                                }
+                            }
+                            break;
+
+                        case 'spread':
+                            // Spread voicing: gradually increase octaves for upper voices
+                            for (let i = 2; i < revoiced.length; i++) {
+                                revoiced[i].octave += 1;
+                            }
+                            break;
+
+                        case 'quartal':
+                            // Best for sus chords and modal sounds
+                            // Just distribute notes in proper registers
+                            if (noteObjects.length >= 4) {
+                                revoiced[1].octave = noteObjects[1].octave;
+                                revoiced[2].octave = noteObjects[1].octave;
+                                for (let i = 3; i < revoiced.length; i++) {
+                                    revoiced[i].octave = noteObjects[1].octave + 1;
+                                }
+                            }
+                            break;
+
+                        case 'cluster':
+                            // Used for altered dominants and non-functional harmony
+                            if (noteObjects.length >= 5) {
+                                // Keep bass, group upper notes more closely
+                                revoiced[1].octave = noteObjects[1].octave;
+                                revoiced[2].octave = noteObjects[1].octave;
+                                for (let i = 3; i < revoiced.length; i++) {
+                                    revoiced[i].octave = noteObjects[1].octave + 1;
+                                }
+                            }
+                            break;
+
+                        case 'close':
+                        default:
+                            // Close position: keep lowest 4 notes in same octave, higher notes up an octave
+                            const baseOctave = noteObjects[1].octave;
+                            revoiced[0].octave = noteObjects[0].octave; // Keep bass note position
+
+                            for (let i = 1; i < Math.min(revoiced.length, 5); i++) {
+                                revoiced[i].octave = baseOctave;
+                            }
+
+                            for (let i = 5; i < revoiced.length; i++) {
+                                revoiced[i].octave = baseOctave + 1;
+                            }
+                            break;
+                    }
+
+                    // Convert back to note strings
+                    return revoiced.map(note => note.name + note.octave);
                 },
 
                 applyVoicingStyle(notes, style) {
@@ -3212,15 +3354,56 @@
                     }
                 },
 
+                preparePlayback() {
+                    // Stop any current playback and ensure we're in a clean state
+                    if (this.isPlaying) {
+                        this.stopPlayback();
 
-                /**
-                 * Modified startPlayback function with voice leading
-                 */
+                        // Give a short delay to ensure cleanup completes
+                        return new Promise(resolve => {
+                            const checkCleanup = () => {
+                                if (this.audioCleanupInProgress) {
+                                    setTimeout(checkCleanup, 50);
+                                } else {
+                                    resolve();
+                                }
+                            };
+                            setTimeout(checkCleanup, 50);
+                        });
+                    }
+
+                    // Reset voice leading state to ensure clean start
+                    this.voiceLeadingState = {
+                        previousNotes: null,
+                        currentVoicing: null
+                    };
+
+                    // We're ready to play
+                    return Promise.resolve();
+                },
+
+
                 async startPlayback() {
+                    // Use the consolidated preparation function
+                    await this.preparePlayback();
+
+                    if (!this.synth || !Tone.context) {
+                        console.warn("Cannot start playback - audio not initialized yet");
+                        alert("Please enable audio first by clicking the 'Enable Audio' button");
+                        return;
+                    }
+
+                    // FIXED: Wait for any audio cleanup to complete
+                    if (this.audioCleanupInProgress) {
+                        console.log("Audio cleanup in progress, delaying playback start");
+                        setTimeout(() => this.startPlayback(), 150);
+                        return;
+                    }
+
                     // First, stop any current playback
                     this.stopPlayback();
 
-                    if (!this.synth) {
+                    if (!this.synth || !Tone.context) {
                         console.warn("Cannot start playback - audio not initialized yet");
                         alert("Please enable audio first by clicking the 'Enable Audio' button");
                         return;
@@ -3251,56 +3434,88 @@
                             return;
                         }
 
+                        // Check if chordDuration is too short for the envelope
+                        if (this.chordDuration < 1.0) {
+                            console.warn(`Warning: Chord duration (${this.chordDuration}s) may be too short for clean playback.`);
+                        }
+
                         // Reset voice leading state
                         this.voiceLeadingState = {
                             previousNotes: null,
                             currentVoicing: null
                         };
 
-                        // Apply voice leading to first chord
-                        const firstChordInfo = allChords[0];
-                        const voicedFirstChord = this.applyInitialVoiceLeading(firstChordInfo.chord);
-
-                        // CRITICAL: Play the first chord immediately
-                        console.log("PLAYING FIRST CHORD IMMEDIATELY");
-                        this.playVoicedChord(voicedFirstChord);
-
-                        // Update UI for first chord
-                        this.currentChordName = this.getChordDisplayName(firstChordInfo.chord);
-                        this.currentSectionName = firstChordInfo.sectionName;
-                        this.selectedChordIndices = {
-                            section: firstChordInfo.sectionIndex,
-                            chord: firstChordInfo.chordIndex
-                        };
-
                         // Set playing state
                         this.isPlaying = true;
                         this.totalTime = allChords.length * this.chordDuration;
 
-                        // Only schedule the remaining chords
-                        if (allChords.length > 1) {
-                            this.scheduleRemainingChordsWithVoiceLeading(allChords.slice(1));
-                        } else {
-                            // If only one chord, set a timer to finish playback
+                        // Start from the first chord
+                        let currentIndex = 0;
+
+                        // Function to play each chord with proper timing
+                        const playNextChord = () => {
+                            if (!this.isPlaying || currentIndex >= allChords.length) {
+                                this.stopPlayback();
+                                return;
+                            }
+
+                            // Get current chord info
+                            const chordInfo = allChords[currentIndex];
+                            const currentChord = chordInfo.chord;
+
+                            // Critical fix: Always release all previous notes first
+                            this.synth.releaseAll();
+
+                            // Add a very small delay to ensure audio engine has processed the release
                             setTimeout(() => {
-                                this.progressPercentage = 100;
-                                setTimeout(() => {
-                                    this.isPlaying = false;
-                                    this.currentChordName = "";
-                                    this.currentSectionName = "";
-                                    this.selectedChordIndices = { section: null, chord: null };
-                                }, 500);
-                            }, this.chordDuration * 1000);
-                        }
+                                try {
+                                    // Apply voice leading and play the chord
+                                    let voicedChord;
+                                    if (this.useAdvancedVoicing) {
+                                        // Call your "advanced" logic (the formerly unused functions).
+                                        // E.g.:
+                                        const func = this.determineChordFunction(chord);
+                                        const advancedNotes = this.generateJazzVoicing(chord, func, chord.notes);
+                                        voicedChord = { ...chord, playbackNotes: advancedNotes };
+                                    } else {
+                                        // The simple approach, as before:
+                                        voicedChord = this.applyVoiceLeadingToNextChord(chord);
+                                    }
+                                    this.playVoicedChord(voicedChord);
+
+                                    // Update UI
+                                    this.currentChordName = this.getChordDisplayName(currentChord);
+                                    this.currentSectionName = chordInfo.sectionName;
+                                    this.selectedChordIndices = {
+                                        section: chordInfo.sectionIndex,
+                                        chord: chordInfo.chordIndex
+                                    };
+
+                                    // Update progress
+                                    this.elapsedTime = currentIndex * this.chordDuration;
+                                    this.progressPercentage = (currentIndex / allChords.length) * 100;
+
+                                    // Schedule next chord with proper timing
+                                    currentIndex++;
+                                    this.playbackTimer = setTimeout(playNextChord, this.chordDuration * 1000);
+                                } catch (e) {
+                                    console.error("Error playing chord:", e);
+                                    currentIndex++;
+                                    this.playbackTimer = setTimeout(playNextChord, this.chordDuration * 1000);
+                                }
+                            }, 20); // 20ms delay for clean separation
+                        };
+
+                        // Start the playback chain
+                        playNextChord();
+
                     } catch (e) {
                         console.error("Failed to start playback:", e);
                         alert("Failed to start audio. Please try again.");
+                        this.isPlaying = false;
                     }
                 },
 
-                /**
-                 * Apply initial voice leading to the first chord
-                 */
                 applyInitialVoiceLeading(chord) {
                     if (!chord || !chord.notes || !Array.isArray(chord.notes)) {
                         console.warn("Invalid chord for voice leading:", chord);
@@ -3352,26 +3567,101 @@
                     }
                 },
 
-                /**
-                 * Schedule remaining chords with voice leading
-                 */
                 scheduleRemainingChordsWithVoiceLeading(chords) {
                     let currentIndex = 0;
 
                     const playNextChord = () => {
-                        // Check if we should stop
-                        if (!this.isPlaying || currentIndex >= chords.length) {
+                        // Check if we should stop - add check for cleanup in progress
+                        if (!this.isPlaying || this.audioCleanupInProgress || currentIndex >= chords.length) {
                             this.progressPercentage = 100;
+
+                            // NUCLEAR OPTION STARTS EARLIER - 75% through the last chord
+                            const cleanupDelay = this.chordDuration * 750; // 75% of chord duration in ms
+
+                            console.log(`🧨 END OF PROGRESSION: Nuclear cleanup will begin in ${cleanupDelay}ms`);
+
                             setTimeout(() => {
-                                this.isPlaying = false;
-                                this.currentChordName = "";
-                                this.currentSectionName = "";
-                                this.selectedChordIndices = { section: null, chord: null };
-                            }, 500);
+                                console.log("🧨 END OF PROGRESSION: Nuclear cleanup beginning");
+
+                                // Mark cleanup as in progress to prevent other operations
+                                this.audioCleanupInProgress = true;
+
+                                // Stop any running timers
+                                if (this.playbackTimer) {
+                                    clearTimeout(this.playbackTimer);
+                                    this.playbackTimer = null;
+                                }
+
+                                // IMMEDIATELY silence everything
+                                if (this.synth) {
+                                    this.synth.volume.value = -Infinity;
+
+                                    // Stop all active notes
+                                    this.synth.releaseAll();
+
+                                    // Cancel any scheduled events in Tone.js
+                                    Tone.Transport.cancel();
+
+                                    // Complete disposal of the synth
+                                    try {
+                                        console.log("💥 Disposing synth after final chord");
+
+                                        // Disconnect and dispose
+                                        this.synth.disconnect();
+                                        this.synth.dispose();
+                                        this.synth = null;
+
+                                        // Create a new minimal synth
+                                        setTimeout(() => {
+                                            try {
+                                                console.log("🔧 Creating new synth");
+
+                                                // Create a simple synth with minimal settings
+                                                this.synth = new Tone.PolySynth(Tone.Synth, {
+                                                    oscillator: { type: "triangle" },
+                                                    envelope: {
+                                                        attack: 0.03,
+                                                        decay: 0.2,
+                                                        sustain: 0.7,
+                                                        release: 0.5
+                                                    }
+                                                }).toDestination();
+
+                                                // Set volume to normal level
+                                                this.synth.volume.value = Tone.gainToDb(this.volume || 0.7);
+
+                                                console.log("✅ End of progression cleanup complete");
+                                            } catch (e) {
+                                                console.error("Error creating new synth:", e);
+                                            } finally {
+                                                // Always update UI and clear flags
+                                                this.isPlaying = false;
+                                                this.currentChordName = "";
+                                                this.currentSectionName = "";
+                                                this.selectedChordIndices = { section: null, chord: null };
+                                                this.audioCleanupInProgress = false;
+                                            }
+                                        }, 50);
+                                    } catch (e) {
+                                        console.error("Error disposing synth:", e);
+                                        // Make sure to reset flags even if there's an error
+                                        this.isPlaying = false;
+                                        this.audioCleanupInProgress = false;
+                                    }
+                                } else {
+                                    // No synth to dispose
+                                    this.isPlaying = false;
+                                    this.audioCleanupInProgress = false;
+                                    this.currentChordName = "";
+                                    this.currentSectionName = "";
+                                    this.selectedChordIndices = { section: null, chord: null };
+                                }
+                            }, cleanupDelay); // Start cleanup earlier
+
                             return;
                         }
 
-                        // Get current chord info
+                        // Rest of the function remains the same
                         const chordInfo = chords[currentIndex];
                         const currentChord = chordInfo.chord;
 
@@ -3406,117 +3696,1861 @@
                     this.playbackTimer = setTimeout(playNextChord, this.chordDuration * 1000);
                 },
 
+                playChord(chord) {
+                    if (!this.synth || !Tone.context) {
+                        console.warn("Cannot play chord - audio not initialized yet");
+                        return;
+                    }
+
+                    if (!chord || (!chord.notes && !chord.playbackNotes) ||
+                        (chord.notes && (!Array.isArray(chord.notes) || chord.notes.length === 0)) &&
+                        (chord.playbackNotes && (!Array.isArray(chord.playbackNotes) || chord.playbackNotes.length === 0))) {
+                        console.warn("Invalid chord for playback:", chord);
+                        return;
+                    }
+
+                    try {
+                        // Always release previous notes first
+                        this.synth.releaseAll();
+
+                        // Temporarily silence the synth during transition
+                        const originalVolume = this.synth.volume.value;
+                        this.synth.volume.value = -Infinity;
+
+                        // Increased delay to ensure complete release (from 10ms to 30ms)
+                        setTimeout(() => {
+                            try {
+                                // Restore volume
+                                this.synth.volume.value = originalVolume;
+
+                                // FIXED: Prefer playbackNotes if available, otherwise fall back to notes
+                                const notesToUse = chord.playbackNotes || chord.notes;
+
+                                // Filter and validate notes
+                                const validNotes = notesToUse.filter(note =>
+                                    typeof note === 'string' && /^[A-G][#b]?[0-9]$/.test(note)
+                                );
+
+                                if (validNotes.length === 0) {
+                                    console.warn("No valid notes to play in chord:", notesToUse);
+                                    return;
+                                }
+
+                                // Limit the number of notes and remove duplicates
+                                const optimizedNotes = this.optimizeChordNotes(validNotes);
+
+                                // Use a shorter duration to ensure gap between chords
+                                const playDuration = Math.min(this.chordDuration * 0.8, 1.5);
+
+                                this.synth.triggerAttackRelease(optimizedNotes, playDuration);
+                            } catch (innerErr) {
+                                console.error("Error playing chord notes:", innerErr);
+                            }
+                        }, 30); // Increased from 10ms to 30ms for more reliable release
+                    } catch (err) {
+                        console.error("Error in chord playback:", err);
+                    }
+                },
+
+
+                optimizeChordNotes(notes) {
+                    if (!notes || !Array.isArray(notes)) {
+                        console.warn("Invalid notes array in optimizeChordNotes:", notes);
+                        return [];
+                    }
+                    // Remove duplicates using Set
+                    const uniqueNotes = [...new Set(notes)];
+                    // Sort by MIDI value for logical order
+                    uniqueNotes.sort((a, b) => this.getMIDI(a) - this.getMIDI(b));
+                    // Limit to 12 notes, keeping lowest 6 and highest 6 for balance
+                    if (uniqueNotes.length > 12) {
+                        const lowest = uniqueNotes.slice(0, 6);
+                        const highest = uniqueNotes.slice(-6);
+                        const optimized = [...new Set([...lowest, ...highest])];
+                        console.log(`Optimized notes (reduced from ${uniqueNotes.length} to ${optimized.length}):`, optimized);
+                        return optimized;
+                    }
+                    console.log("Optimized notes (no reduction needed):", uniqueNotes);
+                    return uniqueNotes;
+                },
+
                 /**
-                 * Apply voice leading to next chord based on previous chord
+                 * Comprehensive stopPlayback with thorough cleanup
                  */
+                // Fix for the stopPlayback function
+                stopPlayback() {
+                    try {
+                        // Mark cleanup as in progress to prevent race conditions
+                        this.audioCleanupInProgress = true;
+
+                        // Clear any scheduled timers
+                        if (this.playbackTimer) {
+                            clearTimeout(this.playbackTimer);
+                            this.playbackTimer = null;
+                        }
+
+                        if (this.progressUpdateInterval) {
+                            clearInterval(this.progressUpdateInterval);
+                            this.progressUpdateInterval = null;
+                        }
+
+                        // Clear problematic chord safety timer
+                        if (this.problematicChordTimer) {
+                            clearTimeout(this.problematicChordTimer);
+                            this.problematicChordTimer = null;
+                        }
+
+                        // Cancel all Tone.js scheduled events
+                        Tone.Transport.stop();
+                        Tone.Transport.cancel(0);
+
+                        // Three-step note release process for maximum reliability:
+                        if (this.synth) {
+                            // Step 1: Call triggerRelease on all currently active notes
+                            this.synth.triggerRelease();
+
+                            // Step 2: Immediately silence to stop any lingering sounds
+                            const originalVolume = this.synth.volume.value;
+                            this.synth.volume.value = -Infinity;
+
+                            // Step 3: Reset the synth's internal state
+                            this.synth.releaseAll();
+
+                            // Step 4: Disconnect the synth completely
+                            let destination = null;
+                            if (this.synth.context && this.synth.context.destination) {
+                                destination = this.synth.context.destination;
+                            }
+                            this.synth.disconnect();
+
+                            // Restore settings after a longer delay (150ms instead of 100ms)
+                            setTimeout(() => {
+                                try {
+                                    // Reconnect the synth
+                                    if (this.synth) {
+                                        if (this.masterEQ) {
+                                            this.synth.connect(this.masterEQ);
+                                        } else if (destination) {
+                                            this.synth.connect(destination);
+                                        }
+
+                                        // Restore volume
+                                        this.synth.volume.value = originalVolume;
+                                    }
+
+                                    // Mark cleanup as complete
+                                    this.audioCleanupInProgress = false;
+                                } catch (innerE) {
+                                    console.error("Error reconnecting audio chain:", innerE);
+                                    this.audioCleanupInProgress = false;
+                                }
+                            }, 150);
+                        } else {
+                            // If no synth, still clear the flag
+                            this.audioCleanupInProgress = false;
+                        }
+
+                        // Reset playback state
+                        this.isPlaying = false;
+                        this.currentChordName = "";
+                        this.currentSectionName = "";
+                        this.selectedChordIndices = { section: null, chord: null };
+                        this.progressPercentage = 0;
+                        this.elapsedTime = 0;
+                    } catch (e) {
+                        console.error("Error in stopPlayback:", e);
+                        // Clear flag even in case of error
+                        this.audioCleanupInProgress = false;
+                        // Try emergency reset as last resort
+                        this.emergencyResetAudio();
+                    }
+                },
+
+                emergencyResetAudio() {
+                    console.warn("Performing emergency audio reset");
+
+                    // Cancel any pending operations immediately
+                    if (this.playbackTimer) {
+                        clearTimeout(this.playbackTimer);
+                        this.playbackTimer = null;
+                    }
+
+                    if (this.problematicChordTimer) {
+                        clearTimeout(this.problematicChordTimer);
+                        this.problematicChordTimer = null;
+                    }
+
+                    // Set playing to false immediately to prevent further scheduling
+                    this.isPlaying = false;
+
+                    // Force cleanup in progress flag to prevent other operations
+                    this.audioCleanupInProgress = true;
+
+                    if (this.synth) {
+                        try {
+                            // Force volume to zero immediately
+                            this.synth.volume.value = -Infinity;
+                            // Release all notes
+                            this.synth.releaseAll();
+                            // Disconnect
+                            this.synth.disconnect();
+                            // Dispose
+                            this.synth.dispose();
+                            this.synth = null;
+                        } catch (e) {
+                            console.error("Error disposing synth:", e);
+                        }
+                    }
+
+                    if (Tone.context) {
+                        try {
+                            Tone.context.close().then(() => {
+                                console.log("Audio context closed as emergency measure");
+                                // Reinitialize on next user interaction
+                                this.audioInitialized = false;
+                                // Create overlay for user to re-initialize
+                                this.createAudioEnableOverlay();
+                                // Clear the cleanup flag
+                                this.audioCleanupInProgress = false;
+                            }).catch(e => {
+                                console.error("Error closing audio context:", e);
+                                this.audioCleanupInProgress = false;
+                                this.audioInitialized = false;
+                                this.createAudioEnableOverlay();
+                            });
+                        } catch (e2) {
+                            console.error("Failed emergency audio stop:", e2);
+                            this.audioCleanupInProgress = false;
+                            this.audioInitialized = false;
+                            this.createAudioEnableOverlay();
+                        }
+                    } else {
+                        this.audioCleanupInProgress = false;
+                        this.audioInitialized = false;
+                        this.createAudioEnableOverlay();
+                    }
+
+                    // Reset all state
+                    this.currentChordName = "";
+                    this.currentSectionName = "";
+                    this.selectedChordIndices = { section: null, chord: null };
+                    this.progressPercentage = 0;
+                    this.elapsedTime = 0;
+                },
+
+                initSimpleTone(audioCtx, button, errorContainer, overlay) {
+                    try {
+                        // Clean up any existing Tone Transport or events
+                        if (Tone.Transport) {
+                            Tone.Transport.stop();
+                            Tone.Transport.cancel(0);
+                        }
+
+                        // Dispose of previous instances to prevent memory leaks
+                        if (this.synth) {
+                            this.synth.dispose();
+                            this.synth = null;
+                        }
+                        if (this.reverb_effect) {
+                            this.reverb_effect.dispose();
+                            this.reverb_effect = null;
+                        }
+                        if (this.masterEQ) {
+                            this.masterEQ.dispose();
+                            this.masterEQ = null;
+                        }
+                        if (this.limiter) {
+                            this.limiter.dispose();
+                            this.limiter = null;
+                        }
+
+                        // Ensure Tone is using the provided AudioContext
+                        Tone.setContext(audioCtx);
+
+                        // Create a limiter to prevent clipping
+                        this.limiter = new Tone.Limiter(-2).toDestination();
+
+                        // Create a reverb effect with controlled settings
+                        this.reverb_effect = new Tone.Reverb({
+                            decay: 1.2,
+                            wet: this.reverb || 0.3,
+                            preDelay: 0.01
+                        }).connect(this.limiter);
+
+                        // Create a master EQ for better frequency balance
+                        this.masterEQ = new Tone.EQ3({
+                            low: -1,      // Slight reduction of lows to reduce muddiness
+                            mid: 0,       // Keep mids neutral
+                            high: 1,      // Slight boost to highs for clarity
+                            lowFrequency: 250,
+                            highFrequency: 2500
+                        }).connect(this.reverb_effect);
+
+                        // CRITICAL IMPROVEMENT: Jazz-optimized synth settings
+                        this.synth = new Tone.PolySynth(Tone.Synth, {
+                            maxPolyphony: 32, // Reasonable polyphony that won't overwhelm the system
+                            oscillator: {
+                                type: "triangle" // Triangle is smoother for chords
+                            },
+                            envelope: {
+                                attack: 0.03,   // Slightly faster attack for jazz clarity
+                                decay: 0.15,    // Quicker decay for definition
+                                sustain: 0.6,   // Lower sustain to reduce overlap
+                                release: 0.4    // CRITICAL: Much shorter release for clean transitions
+                            }
+                        });
+
+                        // Chain through EQ, reverb, limiter
+                        this.synth.chain(this.masterEQ, this.reverb_effect, this.limiter);
+
+                        // Overall volume level
+                        this.synth.volume.value = -5;
+
+                        // Make sure the context is running
+                        if (audioCtx.state !== "running") {
+                            audioCtx.resume();
+                        }
+
+                        // Mark as successfully initialized
+                        this.audioInitialized = true;
+
+                        console.log("Audio system initialized successfully with jazz-optimized envelope!");
+                    } catch (e) {
+                        console.error("Error in Tone.js initialization:", e);
+                        this.showAudioError("Could not initialize audio system. Please try again.", button, errorContainer);
+                        // Reset audio initialization flag
+                        this.audioInitialized = false;
+                    }
+                },
+
                 applyVoiceLeadingToNextChord(chord) {
+                    console.group("VOICE LEADING");
+                    console.log("🎵 Processing voice leading for chord:", this.getChordDisplayName(chord));
+
                     if (!chord || !chord.notes || !Array.isArray(chord.notes)) {
-                        console.warn("Invalid chord for voice leading:", chord);
+                        console.warn("⚠️ Invalid chord for voice leading:", chord);
+                        console.groupEnd();
                         return chord;
                     }
 
                     try {
                         // Generate a note pool for this chord
+                        console.log("⚙️ Generating note pool from chord properties");
                         const pool = this.getChordNotePool(chord);
+                        console.log("📝 Available note pool:", pool);
 
                         if (!this.voiceLeadingState.previousNotes || !Array.isArray(this.voiceLeadingState.previousNotes)) {
-                            // If no previous notes, initialize with this chord's notes
-                            return this.applyInitialVoiceLeading(chord);
+                            console.log("🔄 No previous voicing found - initializing with algorithmic voicing");
+                            // First chord - create a balanced initial voicing
+                            const balancedVoicing = this.createBalancedInitialVoicing(chord);
+                            console.log("✨ Initial balanced voicing:", balancedVoicing);
+
+                            this.voiceLeadingState.previousNotes = balancedVoicing.slice();
+                            this.voiceLeadingState.currentVoicing = balancedVoicing.slice();
+
+                            console.log("🏁 Returning initial voicing (no voice leading applied yet)");
+                            console.groupEnd();
+                            return {
+                                ...chord,
+                                playbackNotes: balancedVoicing
+                            };
                         }
 
-                        // Find closest notes from previous chord
-                        const newNotes = this.voiceLeadingState.previousNotes.map(prevNote => {
-                            try {
-                                return this.findClosestNote(prevNote, pool);
-                            } catch (e) {
-                                console.warn("Error finding closest note:", e);
-                                return pool[0]; // Fallback to first note in pool
-                            }
-                        });
+                        // Find closest notes from previous chord with fallback
+                        console.log("🔄 Finding closest notes from previous voicing");
+                        console.log("📝 Previous voicing:", this.voiceLeadingState.previousNotes);
 
-                        // Adjust octaves for smoothness
-                        const adjustedNotes = newNotes.map((note, i) => {
-                            try {
-                                if (i < this.voiceLeadingState.previousNotes.length) {
-                                    return this.adjustOctaveForSmoothness(note, this.voiceLeadingState.previousNotes[i]);
+                        // Define essential chord tones based on chord type
+                        const essential = this.getEssentialChordTones(chord);
+                        console.log("📝 Essential chord tones:", essential);
+
+                        // Create a mapping of previous notes to new notes
+                        const voiceAssignments = [];
+
+                        // COMPLETELY NEW APPROACH: 
+                        // 1. First, handle essential chord tones with minimal movement
+                        // 2. Then add non-essential tones
+
+                        // Step 1: First, assign essential chord tones with minimal movement
+                        const usedPrevNotes = new Set();
+                        const usedNewNotes = new Set();
+
+                        essential.forEach(essentialNote => {
+                            // Find the closest previous note to this essential tone
+                            let bestPrevNote = null;
+                            let minDistance = Infinity;
+
+                            this.voiceLeadingState.previousNotes.forEach(prevNote => {
+                                if (usedPrevNotes.has(prevNote)) return; // Skip already used notes
+
+                                const distance = Math.abs(this.getMIDI(prevNote) - this.getMIDI(essentialNote));
+                                if (distance < minDistance) {
+                                    minDistance = distance;
+                                    bestPrevNote = prevNote;
                                 }
-                                return note;
-                            } catch (e) {
-                                console.warn("Error adjusting octave:", e);
-                                return note;
+                            });
+
+                            if (bestPrevNote) {
+                                console.log(`👉 Essential tone ${essentialNote} paired with previous ${bestPrevNote} (distance: ${minDistance} semitones)`);
+                                voiceAssignments.push({
+                                    prevNote: bestPrevNote,
+                                    newNote: essentialNote,
+                                    prevMidi: this.getMIDI(bestPrevNote),
+                                    newMidi: this.getMIDI(essentialNote),
+                                    isEssential: true
+                                });
+
+                                usedPrevNotes.add(bestPrevNote);
+                                usedNewNotes.add(essentialNote);
                             }
                         });
 
-                        // Add bass note for slash chords if it doesn't exist in the voicing
-                        if (chord.bass && chord.bass !== chord.root) {
-                            const bassNote = chord.bass + "2"; // Place the bass note in octave 2
-                            if (!adjustedNotes.some(note => note.startsWith(chord.bass))) {
-                                adjustedNotes.unshift(bassNote);
-                            }
-                        }
+                        // Step 2: For each remaining previous note, find closest new note
+                        this.voiceLeadingState.previousNotes.forEach(prevNote => {
+                            if (usedPrevNotes.has(prevNote)) return; // Skip already used notes
 
-                        // Ensure root is present in some octave
-                        if (!adjustedNotes.some(note => note.startsWith(chord.root))) {
-                            const rootNote = chord.root + "3"; // Add root in octave 3
-                            adjustedNotes.push(rootNote);
-                        }
+                            let bestNewNote = null;
+                            let minDistance = Infinity;
+
+                            // Find closest unused note from the pool
+                            pool.forEach(newNote => {
+                                const newNoteName = newNote.slice(0, -1);
+                                // Skip if this note name is already used
+                                if ([...usedNewNotes].some(used => used.startsWith(newNoteName))) return;
+
+                                const distance = Math.abs(this.getMIDI(prevNote) - this.getMIDI(newNote));
+                                if (distance < minDistance) {
+                                    minDistance = distance;
+                                    bestNewNote = newNote;
+                                }
+                            });
+
+                            if (bestNewNote) {
+                                console.log(`👉 Previous note ${prevNote} moves to closest available ${bestNewNote} (distance: ${minDistance} semitones)`);
+                                voiceAssignments.push({
+                                    prevNote,
+                                    newNote: bestNewNote,
+                                    prevMidi: this.getMIDI(prevNote),
+                                    newMidi: this.getMIDI(bestNewNote),
+                                    isEssential: false
+                                });
+
+                                usedNewNotes.add(bestNewNote);
+                            }
+                        });
+
+                        console.log("📝 Voice assignments before adjustment:", voiceAssignments);
+
+                        // Step 3: Adjust octaves to minimize movement (MAX_JUMP = 5 semitones for smooth voice leading)
+                        const MAX_JUMP = 5; // Perfect 4th is preferred maximum for smooth voice leading
+                        const adjustedAssignments = voiceAssignments.map(assignment => {
+                            const { prevNote, newNote, prevMidi, newMidi, isEssential } = assignment;
+                            const noteNameOnly = newNote.slice(0, -1);
+                            const currentOctave = parseInt(newNote.slice(-1));
+
+                            // Calculate current jump size
+                            const currentJump = Math.abs(newMidi - prevMidi);
+
+                            // For essential tones, preserve the octave even with larger jumps
+                            if (isEssential && currentJump <= 7) {
+                                console.log(`👉 Essential note ${noteNameOnly}: Jump of ${currentJump} semitones is acceptable`);
+                                return assignment;
+                            }
+
+                            if (currentJump <= MAX_JUMP) {
+                                // Jump is already acceptable
+                                console.log(`👉 Note ${noteNameOnly}: Jump of ${currentJump} semitones is acceptable`);
+                                return assignment;
+                            }
+
+                            // Try different octaves to find minimum jump
+                            let bestOctave = currentOctave;
+                            let minJump = currentJump;
+
+                            // Try octaves 2-5 (standard piano range for jazz voicings)
+                            for (let oct = 2; oct <= 5; oct++) {
+                                const testNote = noteNameOnly + oct;
+                                const testMidi = this.getMIDI(testNote);
+                                const testJump = Math.abs(testMidi - prevMidi);
+
+                                if (testJump < minJump) {
+                                    minJump = testJump;
+                                    bestOctave = oct;
+                                }
+                            }
+
+                            const adjustedNote = noteNameOnly + bestOctave;
+                            console.log(`👉 Note ${noteNameOnly}: Adjusted from ${newNote} to ${adjustedNote} (jump reduced from ${currentJump} to ${minJump} semitones)`);
+
+                            return {
+                                prevNote,
+                                newNote: adjustedNote,
+                                prevMidi,
+                                newMidi: this.getMIDI(adjustedNote),
+                                isEssential
+                            };
+                        });
+
+                        console.log("📝 Voice assignments after adjustment:", adjustedAssignments);
+
+                        // Step 4: Extract the adjusted notes in the correct order
+                        let adjustedNotes = adjustedAssignments.map(a => a.newNote);
+                        console.log("📝 After octave adjustment:", adjustedNotes);
+
+                        // Step 5: Apply further optimizations for jazz voicing
+                        adjustedNotes = this.optimizeJazzVoicing(chord, adjustedNotes);
+                        console.log("✨ Final voice-led voicing:", adjustedNotes);
 
                         // Update state for next chord
                         this.voiceLeadingState.previousNotes = adjustedNotes.slice();
                         this.voiceLeadingState.currentVoicing = adjustedNotes.slice();
 
-                        // Return a copy of the chord with voice-led notes
+                        console.log("🏁 Completed voice leading");
+                        console.groupEnd();
+
+                        // Return a copy of the chord with the voice-led notes
                         return {
                             ...chord,
                             playbackNotes: adjustedNotes
                         };
                     } catch (e) {
-                        console.error("Error in voice leading for next chord:", e);
+                        console.error("❌ Error in voice leading for next chord:", e);
+                        console.groupEnd();
                         return chord; // Return original chord as fallback
                     }
                 },
 
-                /**
-                 * Play a chord with voice-led notes
-                 */
+                // Helper function to get essential chord tones with proper octaves
+                getEssentialChordTones(chord) {
+                    const root = chord.root;
+                    if (!root) return [];
+
+                    // Determine if chord is major, minor, dominant, etc.
+                    const isMajor = !chord.type?.includes('m') && !chord.type?.includes('dim');
+                    const isDominant = chord.type?.includes('7') && !chord.type?.includes('maj7');
+                    const isMinor = chord.type?.includes('m');
+                    const hasMajor7 = chord.type?.includes('maj7');
+
+                    // Always include root in bass register
+                    const essentialTones = [root + '2'];
+
+                    // Add third (essential for chord quality)
+                    const third = isMajor ? this.getChordToneByInterval(root, '3') :
+                        this.getChordToneByInterval(root, 'b3');
+                    essentialTones.push(third + '3'); // Mid register for third
+
+                    // Add seventh if applicable (essential for chord function)
+                    if (hasMajor7) {
+                        essentialTones.push(this.getChordToneByInterval(root, '7') + '3');
+                    } else if (isDominant || chord.type?.includes('m7')) {
+                        essentialTones.push(this.getChordToneByInterval(root, 'b7') + '3');
+                    }
+
+                    // Add fifth (less essential, but still part of the core)
+                    let fifth = chord.b5 ? this.getChordToneByInterval(root, 'b5') :
+                        chord.s5 ? this.getChordToneByInterval(root, '#5') :
+                            this.getChordToneByInterval(root, '5');
+                    essentialTones.push(fifth + '3');
+
+                    // For altered dominants, add ONE characteristic alteration in higher register
+                    if (isDominant && (chord.b9 || chord.s9 || chord.b5 || chord.s5 || chord.b13)) {
+                        if (chord.b9) {
+                            essentialTones.push(this.getChordToneByInterval(root, 'b9') + '4');
+                        } else if (chord.s9) {
+                            essentialTones.push(this.getChordToneByInterval(root, '#9') + '4');
+                        } else if (chord.b13) {
+                            essentialTones.push(this.getChordToneByInterval(root, 'b13') + '4');
+                        }
+                    }
+
+                    // For Lydian chords, add #11 in higher register
+                    if (chord.s11) {
+                        essentialTones.push(this.getChordToneByInterval(root, '#11') + '4');
+                    }
+
+                    return essentialTones;
+                },
+
+                createBalancedInitialVoicing(chord) {
+                    try {
+                        // Get basic chord tones from the chord's root and type
+                        const root = chord.root;
+                        if (!root) return chord.notes;
+
+                        // Determine if chord is major, minor, dominant, etc.
+                        const isMajor = !chord.type?.includes('m') && !chord.type?.includes('dim');
+                        const isDominant = chord.type?.includes('7') && !chord.type?.includes('maj7');
+                        const isMinor = chord.type?.includes('m');
+                        const hasMajor7 = chord.type?.includes('maj7');
+                        const hasAlterations = chord.b5 || chord.s5 || chord.b9 || chord.s9 || chord.s11 || chord.b13;
+
+                        // Build a balanced voicing with proper spacing
+                        const voicing = [];
+
+                        // Add root in bass register (octave 2)
+                        voicing.push(root + '2');
+
+                        // Add chord tones in middle register (octave 3)
+                        // For jazz voicings, the 3rd and 7th are most important
+                        if (isMajor) {
+                            voicing.push(this.getChordToneByInterval(root, '3') + '3');
+                        } else if (isMinor) {
+                            voicing.push(this.getChordToneByInterval(root, 'b3') + '3');
+                        } else if (chord.type?.includes('sus4')) {
+                            voicing.push(this.getChordToneByInterval(root, '4') + '3');
+                        } else if (chord.type?.includes('sus2')) {
+                            voicing.push(this.getChordToneByInterval(root, '2') + '3');
+                        } else {
+                            // Default to major third if type is unclear
+                            voicing.push(this.getChordToneByInterval(root, '3') + '3');
+                        }
+
+                        // Add seventh or sixth if applicable
+                        if (hasMajor7) {
+                            voicing.push(this.getChordToneByInterval(root, '7') + '3');
+                        } else if (isDominant || chord.type?.includes('m7')) {
+                            voicing.push(this.getChordToneByInterval(root, 'b7') + '3');
+                        } else if (chord.type?.includes('dim7')) {
+                            voicing.push(this.getChordToneByInterval(root, 'bb7') + '3');
+                        } else if (chord.type?.includes('6')) {
+                            voicing.push(this.getChordToneByInterval(root, '6') + '3');
+                        }
+
+                        // Add fifth (but respect alterations)
+                        let fifth = '5';
+                        if (chord.b5) fifth = 'b5';
+                        if (chord.s5) fifth = '#5';
+
+                        // Place fifth in appropriate register
+                        if (chord.type?.includes('dim') || chord.type?.includes('b5')) {
+                            // For diminished chords, place fifth in middle register
+                            voicing.push(this.getChordToneByInterval(root, fifth) + '3');
+                        } else {
+                            // For other chords, can place fifth in higher register
+                            voicing.push(this.getChordToneByInterval(root, fifth) + '4');
+                        }
+
+                        // Add extensions in upper register (octave 4)
+                        // This follows proper jazz practice of placing extensions above the 7th
+
+                        // Ninth extensions
+                        if (chord.type?.includes('9') || chord.b9 || chord.s9) {
+                            let ninth;
+                            if (chord.b9) ninth = 'b9';
+                            else if (chord.s9) ninth = '#9';
+                            else ninth = '9';
+
+                            voicing.push(this.getChordToneByInterval(root, ninth) + '4');
+                        }
+
+                        // Eleventh extensions
+                        if (chord.type?.includes('11') || chord.s11) {
+                            let eleventh = chord.s11 ? '#11' : '11';
+                            // #11 always goes in upper register
+                            if (eleventh === '#11') {
+                                voicing.push(this.getChordToneByInterval(root, eleventh) + '4');
+                            }
+                            // Natural 11 only used in minor chords typically
+                            else if (isMinor || chord.type?.includes('sus')) {
+                                voicing.push(this.getChordToneByInterval(root, eleventh) + '4');
+                            }
+                        }
+
+                        // Thirteenth extensions
+                        if (chord.type?.includes('13') || chord.b13) {
+                            let thirteenth = chord.b13 ? 'b13' : '13';
+                            voicing.push(this.getChordToneByInterval(root, thirteenth) + '4');
+                        }
+
+                        // Handle altered dominants specially (very important for jazz sound)
+                        if (isDominant && hasAlterations && chord.type?.includes('alt')) {
+                            // For altered dominants, create a more compact voicing 
+                            // with a clear harmonic function
+                            return this.createAlteredDominantVoicing(chord);
+                        }
+
+                        // Sort by pitch to ensure logical order
+                        return voicing.sort((a, b) => this.getMIDI(a) - this.getMIDI(b));
+                    } catch (e) {
+                        console.error("Error creating balanced initial voicing:", e);
+                        return chord.notes || []; // Return original notes as fallback
+                    }
+                },
+
+                // Helper function for specialized altered dominant voicings
+                createAlteredDominantVoicing(chord) {
+                    const root = chord.root;
+                    const voicing = [];
+
+                    // Add root in bass register
+                    voicing.push(root + '2');
+
+                    // 3rd and b7th define dominant function
+                    voicing.push(this.getChordToneByInterval(root, '3') + '3');
+                    voicing.push(this.getChordToneByInterval(root, 'b7') + '3');
+
+                    // Add altered tones selectively to avoid overcrowding
+                    // Add altered 5ths
+                    if (chord.b5) {
+                        voicing.push(this.getChordToneByInterval(root, 'b5') + '3');
+                    } else if (chord.s5) {
+                        voicing.push(this.getChordToneByInterval(root, '#5') + '3');
+                    }
+
+                    // Add altered 9ths in upper register
+                    if (chord.b9) {
+                        voicing.push(this.getChordToneByInterval(root, 'b9') + '4');
+                    }
+                    if (chord.s9) {
+                        voicing.push(this.getChordToneByInterval(root, '#9') + '4');
+                    }
+
+                    // Add other alterations (sparingly)
+                    if (chord.b13) {
+                        voicing.push(this.getChordToneByInterval(root, 'b13') + '4');
+                    }
+
+                    // Sort by pitch
+                    return voicing.sort((a, b) => this.getMIDI(a) - this.getMIDI(b));
+                },
+
+                // If we have too many notes, prioritize the most important ones
+                prioritizeChordTones(notes, chord, chordFunction) {
+                    // Sort by pitch
+                    const sortedNotes = [...notes].sort((a, b) => this.getMIDI(a) - this.getMIDI(b));
+
+                    // Convert to note names (without octaves) for easier comparison
+                    const noteNames = sortedNotes.map(note => note.slice(0, -1));
+
+                    // Identify root, third, seventh, and fifth correctly
+                    const root = chord.root;
+                    const third = chordFunction.isMajor ? this.getChordToneByInterval(root, '3') : this.getChordToneByInterval(root, 'b3');
+                    const fifth = this.getChordToneByInterval(root, chordFunction.hasB5 ? 'b5' :
+                        (chordFunction.hasS5 ? '#5' : '5'));
+                    const seventh = chordFunction.isTonic ? this.getChordToneByInterval(root, '7') :
+                        (chordFunction.isDominant || chord.type?.includes('m7') ? this.getChordToneByInterval(root, 'b7') : null);
+
+                    // Keep track of which notes to keep
+                    const keepIndices = [];
+
+                    // Always keep bass note
+                    keepIndices.push(0);
+
+                    // Keep most important chord tones - ROOT AND THIRD ARE MANDATORY
+                    for (let i = 0; i < sortedNotes.length; i++) {
+                        const noteName = noteNames[i];
+
+                        // Root and third are most important in jazz
+                        if (noteName === root || noteName === third) {
+                            if (!keepIndices.includes(i)) {
+                                keepIndices.push(i);
+                            }
+                        }
+                    }
+
+                    // Add seventh if applicable (critical for jazz harmony)
+                    if (seventh) {
+                        let foundSeventh = false;
+                        for (let i = 0; i < sortedNotes.length; i++) {
+                            if (noteNames[i] === seventh && !keepIndices.includes(i)) {
+                                keepIndices.push(i);
+                                foundSeventh = true;
+                                break;
+                            }
+                        }
+
+                        // If we didn't find a seventh, we need to add one with appropriate octave
+                        if (!foundSeventh && seventh) {
+                            // Add seventh in proper register (around middle C)
+                            const seventhOctave = 3; // Middle register for sevenths
+                            sortedNotes.push(seventh + seventhOctave);
+                            keepIndices.push(sortedNotes.length - 1);
+                        }
+                    }
+
+                    // Add fifth (less important in jazz than R, 3, 7)
+                    for (let i = 0; i < sortedNotes.length; i++) {
+                        if (noteNames[i] === fifth && !keepIndices.includes(i)) {
+                            keepIndices.push(i);
+                            break;
+                        }
+                    }
+
+                    // If we're an altered dominant, include one alteration - CRITICAL FOR THE SOUND
+                    if (chordFunction.isAltered) {
+                        // Look for b9, #9, b5, #5
+                        const alterations = [
+                            this.getChordToneByInterval(root, 'b9'),
+                            this.getChordToneByInterval(root, '#9'),
+                            this.getChordToneByInterval(root, 'b5'),
+                            this.getChordToneByInterval(root, '#5'),
+                            this.getChordToneByInterval(root, 'b13')
+                        ];
+
+                        let foundAlteration = false;
+                        // Try to find an alteration in upper register for better sound
+                        for (let i = sortedNotes.length - 1; i >= 0; i--) {
+                            if (alterations.includes(noteNames[i]) && !keepIndices.includes(i)) {
+                                keepIndices.push(i);
+                                foundAlteration = true;
+                                break;
+                            }
+                        }
+
+                        // If no alteration found but we need one, add b9 in proper register
+                        if (!foundAlteration && chord.b9) {
+                            const b9Note = this.getChordToneByInterval(root, 'b9');
+                            // Add b9 in upper register for proper altered sound
+                            sortedNotes.push(b9Note + '4');
+                            keepIndices.push(sortedNotes.length - 1);
+                        }
+                    }
+
+                    // If we're a major7#11, include the #11 - CRITICAL FOR LYDIAN SOUND
+                    if (chord.type?.includes('maj7') && chordFunction.hasS11) {
+                        const sharpEleven = this.getChordToneByInterval(root, '#11');
+                        let foundSharpEleven = false;
+
+                        for (let i = 0; i < sortedNotes.length; i++) {
+                            if (noteNames[i] === sharpEleven && !keepIndices.includes(i)) {
+                                keepIndices.push(i);
+                                foundSharpEleven = true;
+                                break;
+                            }
+                        }
+
+                        // If no #11 found but we need one, add it in upper register
+                        if (!foundSharpEleven) {
+                            sortedNotes.push(sharpEleven + '4'); // Add #11 in upper register
+                            keepIndices.push(sortedNotes.length - 1);
+                        }
+                    }
+
+                    // Fill remaining slots with other notes, prioritizing higher ones for color
+                    while (keepIndices.length < 8 && keepIndices.length < sortedNotes.length) {
+                        for (let i = sortedNotes.length - 1; i >= 0; i--) {
+                            if (!keepIndices.includes(i)) {
+                                keepIndices.push(i);
+                                break;
+                            }
+                        }
+                    }
+
+                    // Sort indices and get the corresponding notes
+                    keepIndices.sort((a, b) => a - b);
+                    const result = keepIndices.map(i => sortedNotes[i]);
+
+                    return result;
+                },
+
+
+                // New helper function to get chord tones by interval
+                getChordToneByInterval(rootNote, interval) {
+                    const noteMap = {
+                        'C': 0, 'C#': 1, 'Db': 1, 'D': 2, 'D#': 3, 'Eb': 3, 'E': 4,
+                        'F': 5, 'F#': 6, 'Gb': 6, 'G': 7, 'G#': 8, 'Ab': 8, 'A': 9,
+                        'A#': 10, 'Bb': 10, 'B': 11
+                    };
+
+                    const intervalMap = {
+                        '1': 0, 'b2': 1, '2': 2, '#2': 3,
+                        'b3': 3, '3': 4,
+                        '4': 5, '#4': 6,
+                        'b5': 6, '5': 7, '#5': 8,
+                        'b6': 8, '6': 9, '#6': 10,
+                        'b7': 10, '7': 11,
+                        'b9': 1, '9': 2, '#9': 3,
+                        'b11': 4, '11': 5, '#11': 6,
+                        'b13': 8, '13': 9
+                    };
+
+                    if (rootNote in noteMap && interval in intervalMap) {
+                        const rootIndex = noteMap[rootNote];
+                        const intervalValue = intervalMap[interval];
+
+                        // Calculate the target note index
+                        const targetIndex = (rootIndex + intervalValue) % 12;
+
+                        // Find the note name for this index (preferring standard jazz notation)
+                        // Jazz typically uses flats rather than sharps, except for F# and C#
+                        if (targetIndex === 1) return 'Db';
+                        if (targetIndex === 3) return 'Eb';
+                        if (targetIndex === 6) return 'F#'; // Exception - F# is common in jazz
+                        if (targetIndex === 8) return 'Ab';
+                        if (targetIndex === 10) return 'Bb';
+
+                        // For the rest, find the matching note name
+                        for (const [note, index] of Object.entries(noteMap)) {
+                            if (index === targetIndex && note.length === 1) {
+                                return note; // Return natural notes as priority
+                            }
+                        }
+
+                        // Fallback to first found match
+                        for (const [note, index] of Object.entries(noteMap)) {
+                            if (index === targetIndex) {
+                                return note;
+                            }
+                        }
+                    }
+
+                    // Fallback to root note if something goes wrong
+                    return rootNote;
+                },
+
                 playVoicedChord(chord) {
                     try {
+                        console.group("CHORD PLAYBACK");
+                        console.log("🎹 PLAYING CHORD:", this.getChordDisplayName(chord));
+
                         // Use voice-led notes if available, otherwise use original notes
                         const notesToPlay = chord.playbackNotes || chord.notes;
 
+                        console.log("⚙️ Chord details:", {
+                            root: chord.root,
+                            type: chord.type,
+                            bass: chord.bass,
+                            alterations: {
+                                b5: chord.b5,
+                                s5: chord.s5,
+                                b9: chord.b9,
+                                s9: chord.s9,
+                                s11: chord.s11,
+                                b13: chord.b13
+                            }
+                        });
+
                         if (!notesToPlay || !Array.isArray(notesToPlay) || notesToPlay.length === 0) {
-                            console.warn("No valid notes to play in chord:", chord);
+                            console.error("❌ ERROR: No valid notes to play in chord:", chord);
+                            console.groupEnd();
                             return;
                         }
 
-                        // Filter for valid notes
-                        const validNotes = notesToPlay.filter(note =>
-                            typeof note === 'string' && /^[A-G][#b]?[0-9]$/.test(note)
-                        );
+                        console.log("📝 Original notes array:", notesToPlay);
 
-                        if (validNotes.length === 0) {
-                            console.warn("No valid notes after filtering:", notesToPlay);
-                            return;
-                        }
+                        // CRITICAL FIX: Always use releaseAll with proper timing
+                        if (this.synth) {
+                            // First silence the synth immediately to stop any ongoing sound
+                            const originalVolume = this.synth.volume.value;
+                            this.synth.volume.value = -Infinity;
 
-                        // Play the chord with optimized notes
-                        const optimizedNotes = this.optimizeChordNotes(validNotes);
+                            console.log("🔇 Set synth volume to -Infinity for clean transition");
 
-                        // IMPORTANT: Special handling for the notorious Gmaj9 chord
-                        if (validNotes.includes('G2') && validNotes.includes('B2') && validNotes.includes('D3')) {
-                            console.log("Detected potentially problematic Gmaj9 chord - applying special handling");
-                            this.synth.triggerAttackRelease(optimizedNotes, 0.6);
+                            // Then release all notes
+                            this.synth.releaseAll();
+                            console.log("🔓 Released all previous notes");
+
+                            // Set a clean delay between release and new attack
+                            setTimeout(() => {
+                                try {
+                                    // Restore volume
+                                    this.synth.volume.value = originalVolume;
+                                    console.log("🔊 Restored synth volume to", originalVolume);
+
+                                    // Filter for valid notes
+                                    const validNotes = notesToPlay.filter(note =>
+                                        typeof note === 'string' && /^[A-G][#b]?[0-9]$/.test(note)
+                                    );
+
+                                    console.log("✅ Valid notes after filtering:", validNotes);
+
+                                    if (validNotes.length === 0) {
+                                        console.error("❌ ERROR: No valid notes after filtering:", notesToPlay);
+                                        console.groupEnd();
+                                        return;
+                                    }
+
+                                    // NEW APPROACH: Always use our algorithmic voicing system
+                                    console.log("🔄 Running optimized jazz voicing algorithm...");
+                                    const optimizedVoicing = this.optimizeJazzVoicing(chord, validNotes);
+
+                                    console.log("✨ Final optimized voicing:", optimizedVoicing);
+                                    console.log("📊 MIDI values:", optimizedVoicing.map(note => ({
+                                        note: note,
+                                        midi: this.getMIDI(note)
+                                    })));
+
+                                    // Check if the voicing might be problematic
+                                    if (this.hasDenseClusterVoicing(optimizedVoicing)) {
+                                        console.warn("⚠️ WARNING: Dense cluster voicing detected, may sound dissonant");
+                                    }
+
+                                    if (this.hasExtremeIntervalSpread(optimizedVoicing)) {
+                                        console.warn("⚠️ WARNING: Extreme interval spread detected, may sound disconnected");
+                                    }
+
+                                    // Use consistent duration
+                                    const playDuration = Math.min(this.chordDuration * 0.8, 1.5);
+                                    console.log("⏱️ Play duration:", playDuration, "seconds");
+
+                                    // Play the optimized jazz voicing
+                                    console.log("▶️ TRIGGERING CHORD PLAYBACK with", optimizedVoicing.length, "notes");
+                                    this.synth.triggerAttackRelease(optimizedVoicing, playDuration);
+
+                                } catch (e) {
+                                    console.error("❌ ERROR playing voiced chord:", e);
+                                    this.synth.releaseAll(); // Ensure notes are released on error
+                                }
+                                console.groupEnd();
+                            }, 40); // 40ms clean delay between release and attack
                         } else {
-                            this.synth.triggerAttackRelease(optimizedNotes, 0.5);
+                            console.error("❌ ERROR: No synth available for playback");
+                            console.groupEnd();
                         }
                     } catch (e) {
-                        console.error("Error playing voiced chord:", e);
-                        // Fallback to basic playChord if there's an error
-                        this.playChord(chord);
+                        console.error("❌ CRITICAL ERROR in playVoicedChord:", e);
+                        if (this.synth) this.synth.releaseAll(); // Safety release
+                        console.groupEnd();
                     }
                 },
 
 
+                // New helper function to detect genuinely problematic voicings
+                hasDenseClusterVoicing(notes) {
+                    if (notes.length < 4) return false;
+
+                    // Convert to MIDI numbers
+                    const midiNotes = notes.map(note => this.getMIDI(note)).sort((a, b) => a - b);
+
+                    // Count how many semitone clusters exist (notes only 1 semitone apart)
+                    let clusterCount = 0;
+                    for (let i = 1; i < midiNotes.length; i++) {
+                        if (midiNotes[i] - midiNotes[i - 1] === 1) {
+                            clusterCount++;
+                        }
+                    }
+
+                    // More than 2 semitone clusters is genuinely problematic
+                    return clusterCount > 2;
+                },
+
+
+                hasExtremeIntervalSpread(notes) {
+                    if (notes.length < 2) return false;
+
+                    // Convert to MIDI numbers
+                    const midiNotes = notes.map(note => this.getMIDI(note)).sort((a, b) => a - b);
+
+                    // More than 4 octaves (48 semitones) is extreme
+                    return (midiNotes[midiNotes.length - 1] - midiNotes[0]) > 48;
+                },
+
+
+                // Fully algorithmic jazz voicing system
+                optimizeJazzVoicing(chord, notes) {
+                    console.group("JAZZ VOICING OPTIMIZATION");
+                    console.log("🎵 Optimizing voicing for chord:", this.getChordDisplayName(chord));
+                    console.log("📝 Input notes:", notes);
+
+                    try {
+                        // REVISED APPROACH: Focus on proper jazz voicing principles
+
+                        // Step 1: Make sure we have the right root, and add it if missing
+                        let rootNote = chord.root + '2'; // Bass register for root
+                        let hasRoot = notes.some(note => note.startsWith(chord.root));
+                        let workingNotes = [...notes];
+
+                        if (!hasRoot) {
+                            workingNotes.unshift(rootNote);
+                            console.log("📝 Added missing root note:", rootNote);
+                        }
+
+                        // Step 2: Identify the chord type for proper voicing
+                        const isMajor = !chord.type?.includes('m') && !chord.type?.includes('dim');
+                        const isDominant = chord.type?.includes('7') && !chord.type?.includes('maj7');
+                        const isMinor = chord.type?.includes('m') || chord.type?.includes('min');
+                        const hasAlterations = chord.b5 || chord.s5 || chord.b9 || chord.s9 || chord.s11 || chord.b13;
+
+                        // Step 3: Ensure presence of critical chord tones
+                        // Get the third (major or minor)
+                        const thirdDegree = isMajor ? '3' : 'b3';
+                        const thirdNote = this.getChordToneByInterval(chord.root, thirdDegree);
+                        let hasThird = workingNotes.some(note => note.slice(0, -1) === thirdNote);
+
+                        if (!hasThird) {
+                            // Add third in middle register - critical for chord quality
+                            workingNotes.push(thirdNote + '3');
+                            console.log("📝 Added missing third:", thirdNote + '3');
+                        }
+
+                        // Get the seventh if applicable
+                        if (chord.type?.includes('7') || chord.type?.includes('9') ||
+                            chord.type?.includes('11') || chord.type?.includes('13')) {
+
+                            const seventhDegree = isDominant || isMinor ? 'b7' : '7';
+                            const seventhNote = this.getChordToneByInterval(chord.root, seventhDegree);
+                            let hasSeventh = workingNotes.some(note => note.slice(0, -1) === seventhNote);
+
+                            if (!hasSeventh) {
+                                // Add seventh in middle register
+                                workingNotes.push(seventhNote + '3');
+                                console.log("📝 Added missing seventh:", seventhNote + '3');
+                            }
+                        }
+
+                        // Step 4: Handle alterations properly
+                        if (hasAlterations) {
+                            // For altered chords, ensure alterations are in UPPER registers
+                            // Check and add alterations in upper register if missing
+                            if (chord.b9) {
+                                const b9Note = this.getChordToneByInterval(chord.root, 'b9');
+                                if (!workingNotes.some(note => note.slice(0, -1) === b9Note)) {
+                                    workingNotes.push(b9Note + '4'); // Upper register for tension
+                                    console.log("📝 Added missing b9 alteration:", b9Note + '4');
+                                }
+                            }
+
+                            if (chord.s9) {
+                                const s9Note = this.getChordToneByInterval(chord.root, '#9');
+                                if (!workingNotes.some(note => note.slice(0, -1) === s9Note)) {
+                                    workingNotes.push(s9Note + '4'); // Upper register for tension
+                                    console.log("📝 Added missing #9 alteration:", s9Note + '4');
+                                }
+                            }
+
+                            if (chord.s11) {
+                                const s11Note = this.getChordToneByInterval(chord.root, '#11');
+                                if (!workingNotes.some(note => note.slice(0, -1) === s11Note)) {
+                                    workingNotes.push(s11Note + '4'); // Upper register for tension
+                                    console.log("📝 Added missing #11 alteration:", s11Note + '4');
+                                }
+                            }
+                        }
+
+                        // Step 5: Apply proper voicing type based on chord quality
+                        console.log("📝 Applying proper voicing type for chord quality");
+
+                        if (isDominant && hasAlterations) {
+                            console.log("📝 Using altered dominant voicing structure");
+                            // Altered dominants need careful voicing
+                            workingNotes = this.applyAlteredDominantVoicing(chord, workingNotes);
+                        } else if (chord.type?.includes('maj') && chord.s11) {
+                            console.log("📝 Using maj7#11 Lydian voicing structure");
+                            // Lydian major voicings need the #11 properly placed
+                            workingNotes = this.applyLydianVoicing(chord, workingNotes);
+                        } else if (isMinor && chord.type?.includes('11')) {
+                            console.log("📝 Using minor 11 voicing structure");
+                            // Minor 11 voicings benefit from quartal structures
+                            workingNotes = this.applyMinor11Voicing(chord, workingNotes);
+                        }
+
+                        // Step 6: Ensure proper register spacing with emphasis on mid-range
+                        workingNotes = this.applyProperJazzRegisters(workingNotes);
+                        console.log("📝 After register adjustments:", workingNotes);
+
+                        // Step 7: Remove duplicate notes and sort
+                        const uniqueNotes = [];
+                        const seenNoteNames = new Set();
+
+                        for (const note of workingNotes) {
+                            const noteName = note.slice(0, -1);
+                            if (!seenNoteNames.has(noteName)) {
+                                seenNoteNames.add(noteName);
+                                uniqueNotes.push(note);
+                            }
+                        }
+
+                        console.log("📝 After removing duplicates:", uniqueNotes);
+
+                        // Step 8: Final sorting by MIDI note number for logical voicing order
+                        const result = uniqueNotes.sort((a, b) => this.getMIDI(a) - this.getMIDI(b));
+
+                        // Limit number of notes for playability
+                        const finalVoicing = result.slice(0, Math.min(result.length, 6));
+
+                        console.log("✨ Final optimized jazz voicing:", finalVoicing);
+                        console.log("📊 MIDI values:", finalVoicing.map(note => ({
+                            note: note,
+                            midi: this.getMIDI(note)
+                        })));
+
+                        console.groupEnd();
+                        return finalVoicing;
+                    } catch (e) {
+                        console.error("❌ Error in jazz voicing optimization:", e);
+                        console.groupEnd();
+                        // Return the original notes as fallback
+                        return notes;
+                    }
+                },
+
+                // New helper methods for optimizeJazzVoicing:
+                applyAlteredDominantVoicing(chord, notes) {
+                    // For altered dominants, we want:
+                    // - Root in bass
+                    // - Third and seventh in mid register
+                    // - Alterations in upper register
+
+                    const root = chord.root;
+                    const third = this.getChordToneByInterval(root, '3');
+                    const seventh = this.getChordToneByInterval(root, 'b7');
+
+                    // Find existing notes by name
+                    const notesWithoutOctave = notes.map(note => note.slice(0, -1));
+
+                    // Create the new voicing
+                    let voicing = [];
+
+                    // Start with root in bass
+                    voicing.push(root + '2');
+
+                    // Add third and seventh in middle register
+                    voicing.push(third + '3');
+                    voicing.push(seventh + '3');
+
+                    // Add alterations in upper register
+                    if (chord.b5 || chord.s5) {
+                        const fifth = chord.b5 ? this.getChordToneByInterval(root, 'b5') :
+                            this.getChordToneByInterval(root, '#5');
+                        voicing.push(fifth + '4');
+                    }
+
+                    if (chord.b9 || chord.s9) {
+                        const ninth = chord.b9 ? this.getChordToneByInterval(root, 'b9') :
+                            this.getChordToneByInterval(root, '#9');
+                        voicing.push(ninth + '4');
+                    }
+
+                    if (chord.b13) {
+                        voicing.push(this.getChordToneByInterval(root, 'b13') + '4');
+                    }
+
+                    // Ensure we preserve any other notes that might be important
+                    notes.forEach(note => {
+                        const noteName = note.slice(0, -1);
+                        // Skip notes we've already added
+                        if (!voicing.some(v => v.startsWith(noteName))) {
+                            // For any remaining notes, add them in upper register
+                            const octave = Math.max(parseInt(note.slice(-1)), 4);
+                            voicing.push(noteName + octave);
+                        }
+                    });
+
+                    return voicing;
+                },
+
+                applyLydianVoicing(chord, notes) {
+                    // For Lydian Major (maj7#11) voicings:
+                    // - Root in bass
+                    // - 3, 5, 7 in middle register
+                    // - #11 and 9 (if present) in upper register
+
+                    const root = chord.root;
+                    const third = this.getChordToneByInterval(root, '3');
+                    const fifth = this.getChordToneByInterval(root, '5');
+                    const seventh = this.getChordToneByInterval(root, '7');
+                    const sharpEleven = this.getChordToneByInterval(root, '#11');
+
+                    // Create the new voicing
+                    let voicing = [];
+
+                    // Start with root in bass
+                    voicing.push(root + '2');
+
+                    // Add third, fifth, seventh in middle register
+                    voicing.push(third + '3');
+                    voicing.push(fifth + '3');
+                    voicing.push(seventh + '3');
+
+                    // Add #11 in upper register
+                    voicing.push(sharpEleven + '4');
+
+                    // Add 9 in upper register if present in chord type
+                    if (chord.type?.includes('9')) {
+                        voicing.push(this.getChordToneByInterval(root, '9') + '4');
+                    }
+
+                    return voicing;
+                },
+
+                applyMinor11Voicing(chord, notes) {
+                    // For minor 11 voicings:
+                    // - Root in bass
+                    // - b3, 5, b7 in middle
+                    // - 9, 11 in upper register
+
+                    const root = chord.root;
+                    const flatThird = this.getChordToneByInterval(root, 'b3');
+                    const fifth = this.getChordToneByInterval(root, '5');
+                    const flatSeventh = this.getChordToneByInterval(root, 'b7');
+                    const ninth = this.getChordToneByInterval(root, '9');
+                    const eleventh = this.getChordToneByInterval(root, '11');
+
+                    // Create the new voicing
+                    let voicing = [];
+
+                    // Start with root in bass
+                    voicing.push(root + '2');
+
+                    // Add b3, 5, b7 in middle register
+                    voicing.push(flatThird + '3');
+                    voicing.push(fifth + '3');
+                    voicing.push(flatSeventh + '3');
+
+                    // Add 9, 11 in upper register
+                    voicing.push(ninth + '4');
+                    voicing.push(eleventh + '4');
+
+                    return voicing;
+                },
+
+                applyProperJazzRegisters(notes) {
+                    // First, sort notes by pitch
+                    const sortedNotes = [...notes].sort((a, b) => this.getMIDI(a) - this.getMIDI(b));
+
+                    // If no notes, return empty array
+                    if (sortedNotes.length === 0) return [];
+
+                    // Identify the lowest note (usually root)
+                    const lowestNote = sortedNotes[0];
+                    const lowestNoteName = lowestNote.slice(0, -1);
+
+                    // We'll keep the lowest note in position, but adjust others
+                    const result = [lowestNote];
+
+                    // For jazz voicings, we want the next few notes in the middle register (3-4)
+                    // and upper extensions in higher registers
+                    for (let i = 1; i < sortedNotes.length; i++) {
+                        const noteName = sortedNotes[i].slice(0, -1);
+                        let targetOctave;
+
+                        if (i <= 3) {
+                            // Middle voices (typically 3rd, 5th, 7th) go in mid register
+                            targetOctave = 3;
+                        } else {
+                            // Upper extensions (9ths, 11ths, 13ths) go in upper register
+                            targetOctave = 4;
+                        }
+
+                        result.push(noteName + targetOctave);
+                    }
+
+                    return result;
+                },
+
+                // Analyze the harmonic function and character of the chord
+                determineChordFunction(chord) {
+                    console.group("CHORD FUNCTION ANALYSIS");
+                    console.log("🎵 Analyzing chord function for:", this.getChordDisplayName(chord));
+
+                    if (!chord || typeof chord !== 'object') {
+                        console.warn("Invalid chord in determineChordFunction:", chord);
+                        console.groupEnd();
+                        return {};
+                    }
+
+                    // Checks for chord’s structural hints
+                    const isMajor = !chord.type?.includes('m') && !chord.type?.includes('dim');
+                    const isMinor = chord.type?.includes('m') && !chord.type?.includes('maj7');
+                    const isDominant = chord.type?.includes('7') && !chord.type?.includes('maj7');
+                    const isHalfDiminished = chord.type?.includes('m7b5');
+                    const isDiminished = chord.type?.includes('dim7') || chord.type === 'dim';
+                    const isSus = chord.type?.includes('sus');
+
+                    // If chord explicitly has these properties set
+                    const hasB5 = chord.b5 === true;
+                    const hasS5 = chord.s5 === true;
+                    const hasB9 = chord.b9 === true;
+                    const hasS9 = chord.s9 === true;
+                    const hasS11 = chord.s11 === true;
+                    const hasB13 = chord.b13 === true;
+
+                    // “Altered” if either chord.type says "alt" or it’s a dominant with typical alterations
+                    const isAltered = chord.type?.includes('alt') ||
+                        (isDominant && (hasB5 || hasS5 || hasB9 || hasS9 || hasB13 || hasS11));
+
+                    // Additional “function” hints from your advanced code
+                    const isMinorTonic = (isMinor && chord.type?.includes('maj7')) || chord.type === 'm6';
+                    const isTonic = isMajor && chord.type?.includes('maj7') && !isDominant;
+                    const isModal = isSus || isMinorTonic || (isMajor && hasS11);
+
+                    // Preferences for certain voicing styles
+                    const preferQuartal = (isSus || chord.type?.includes('11')) && !isAltered;
+                    const useCluster = (hasB9 && hasS9) || (isAltered && hasB5 && hasS5);
+
+                    const chordFunction = {
+                        isMajor,
+                        isMinor,
+                        isDominant,
+                        isDiminished,
+                        isHalfDiminished,
+                        isSus,
+                        isAltered,
+                        isTonic,
+                        isMinorTonic,
+                        isModal,
+                        preferQuartal,
+                        useCluster,
+                        hasB5,
+                        hasS5,
+                        hasB9,
+                        hasS9,
+                        hasS11,
+                        hasB13
+                    };
+
+                    console.log("🔍 Determined chord function:", chordFunction);
+                    console.groupEnd();
+                    return chordFunction;
+                },
+
+                // Generate the actual jazz voicing based on chord properties and function
+                generateJazzVoicing(chord, chordFunction, originalNotes) {
+                    console.group("ADVANCED VOICING: generateJazzVoicing");
+                    console.log("🎵 Generating advanced voicing for chord:", this.getChordDisplayName(chord));
+                    console.log("🔧 chordFunction:", chordFunction);
+                    console.log("🎼 Original chord notes for reference:", originalNotes);
+
+                    // Step 1: pick a voicing style
+                    const voicingType = this.selectVoicingType(chord, chordFunction);
+                    console.log("🎨 Chosen voicingType:", voicingType);
+
+                    // Step 2: get the chord’s fundamental intervals
+                    let coreIntervals = this.getCoreIntervals(chord, chordFunction);
+                    console.log("🔩 coreIntervals:", coreIntervals);
+
+                    // Step 3: add chord extensions and/or alterations
+                    let fullIntervals = this.addExtensionsAndAlterations(coreIntervals, chord, chordFunction);
+                    console.log("🎨 after addExtensionsAndAlterations:", fullIntervals);
+
+                    // Step 4: apply a voicing technique (drop2, cluster, spread, etc.)
+                    let voicedIntervals = this.applyVoicingTechnique(fullIntervals, voicingType, chord);
+                    console.log("🎨 after applyVoicingTechnique:", voicedIntervals);
+
+                    // Step 5: convert those intervals to actual note strings (C3, D#4, etc.)
+                    let noteList = this.intervalsToNotes(chord.root, voicedIntervals);
+                    console.log("🎹 intervalsToNotes =>", noteList);
+
+                    // Step 6: handle slash chords if chord.bass differs from chord.root
+                    if (chord.bass && chord.bass !== chord.root) {
+                        console.log("🪗 Handling slash chord - forcing bass:", chord.bass);
+                        noteList = this.ensureCorrectBass(noteList, chord.bass);
+                    }
+
+                    // Step 7: do register-range adjustments (avoid muddy lows or too-wide spans)
+                    noteList = this.applyRegisterAdjustments(noteList);
+                    console.log("✅ final advanced voicing noteList:", noteList);
+
+                    console.groupEnd();
+                    return noteList;
+                },
+
+
+                // Select the appropriate jazz voicing technique
+                selectVoicingType(chord, chordFunction) {
+                    console.group("selectVoicingType");
+                    console.log("🎵 Deciding voicing type for chord:", this.getChordDisplayName(chord));
+                    console.log("🔧 chordFunction data:", chordFunction);
+
+                    let voicingType = 'close'; // default fallback
+
+                    // Use your advanced logic to pick a style
+                    if (chordFunction.isAltered && chordFunction.isDominant) {
+                        voicingType = 'altered';
+                        console.log("🔮 isAltered + isDominant => 'altered' voicing");
+                    } else if (chordFunction.useCluster) {
+                        voicingType = 'cluster';
+                        console.log("🔊 chordFunction.useCluster => 'cluster' voicing");
+                    } else if (chordFunction.preferQuartal || chordFunction.isSus) {
+                        voicingType = 'quartal';
+                        console.log("🧱 preferQuartal or isSus => 'quartal' voicing");
+                    } else if (chordFunction.isMinor) {
+                        voicingType = 'drop2';
+                        console.log("🎵 isMinor => 'drop2' voicing (example preference)");
+                    } else if (chordFunction.isMajor && !chordFunction.isAltered) {
+                        voicingType = 'open';
+                        console.log("🪘 isMajor => 'open' voicing");
+                    } else {
+                        console.log("No specialized logic triggered; using 'close' by default.");
+                    }
+
+                    console.log("🎨 final voicingType:", voicingType);
+                    console.groupEnd();
+                    return voicingType;
+                },
+
+                // Get the core intervals for this chord type
+                getCoreIntervals(chord, chordFunction) {
+                    console.group("getCoreIntervals");
+                    console.log("🧩 Determining core intervals for chord:", this.getChordDisplayName(chord));
+                    const intervals = [];
+
+                    // 1) root
+                    intervals.push({ degree: '1', octaveOffset: 0 });
+
+                    // 2) third or sus
+                    if (chordFunction.isSus) {
+                        if (chord.type?.includes('sus2')) {
+                            intervals.push({ degree: '2', octaveOffset: 0 });
+                        } else {
+                            intervals.push({ degree: '4', octaveOffset: 0 });
+                        }
+                    } else if (chordFunction.isMinor || chordFunction.isHalfDiminished || chordFunction.isDiminished) {
+                        intervals.push({ degree: 'b3', octaveOffset: 0 });
+                    } else {
+                        intervals.push({ degree: '3', octaveOffset: 0 });
+                    }
+
+                    // 3) fifth (may get replaced by b5/#5 later if chord says so)
+                    intervals.push({ degree: '5', octaveOffset: 0 });
+
+                    // 4) seventh if chord type includes 7,9,11,13
+                    if (chord.type?.includes('7') || chord.type?.includes('9') ||
+                        chord.type?.includes('11') || chord.type?.includes('13')) {
+                        if (chord.type?.includes('maj7')) {
+                            intervals.push({ degree: '7', octaveOffset: 0 });
+                        } else if (chordFunction.isDiminished) {
+                            intervals.push({ degree: 'bb7', octaveOffset: 0 });
+                        } else {
+                            intervals.push({ degree: 'b7', octaveOffset: 0 });
+                        }
+                    }
+
+                    console.log("🧩 coreIntervals result:", intervals);
+                    console.groupEnd();
+                    return intervals;
+                },
+
+                // Add extensions and alterations based on chord properties
+                addExtensionsAndAlterations(intervals, chord, chordFunction) {
+                    console.group("addExtensionsAndAlterations");
+                    console.log("Before:", intervals);
+                    const result = [...intervals];
+
+                    // If chord or chordFunction indicates b5 / #5, replace the existing '5'
+                    if (chordFunction.hasB5) {
+                        const idx5 = result.findIndex(x => x.degree === '5');
+                        if (idx5 >= 0) {
+                            result[idx5].degree = 'b5';
+                        }
+                    } else if (chordFunction.hasS5) {
+                        const idx5 = result.findIndex(x => x.degree === '5');
+                        if (idx5 >= 0) {
+                            result[idx5].degree = '#5';
+                        }
+                    }
+
+                    // For typical jazz usage, put altered tensions an octave higher
+                    if (chordFunction.hasB9) {
+                        result.push({ degree: 'b9', octaveOffset: 1 });
+                    }
+                    if (chordFunction.hasS9) {
+                        result.push({ degree: '#9', octaveOffset: 1 });
+                    }
+                    if (chordFunction.hasS11) {
+                        result.push({ degree: '#11', octaveOffset: 1 });
+                    }
+                    if (chordFunction.hasB13) {
+                        result.push({ degree: 'b13', octaveOffset: 1 });
+                    }
+
+                    console.log("After applying chord’s extensions/alterations:", result);
+                    console.groupEnd();
+                    return result;
+                },
+
+
+                // Apply the selected voicing technique to the intervals
+                applyVoicingTechnique(intervals, voicingType, chord) {
+                    console.group("applyVoicingTechnique");
+                    console.log("🎵 voicingType:", voicingType);
+                    console.log("Intervals before technique:", intervals);
+
+                    // Sort intervals by scale-degree value so we know which is highest, second-highest, etc.
+                    let result = [...intervals];
+                    result.sort((a, b) => this.getDegreeValue(a.degree) - this.getDegreeValue(b.degree));
+
+                    switch (voicingType) {
+                        case 'close':
+                            console.log("Applying close voicing (minimal spacing).");
+                            // We keep them as is, no special offset changes
+                            break;
+
+                        case 'open':
+                            console.log("Applying open voicing (wider spacing).");
+                            // E.g. raise every other note by +1 octave
+                            for (let i = 1; i < result.length; i += 2) {
+                                result[i].octaveOffset += 1;
+                            }
+                            break;
+
+                        case 'drop2':
+                            console.log("Applying drop2 voicing.");
+                            if (result.length >= 4) {
+                                const secondHighest = result.length - 2;
+                                result[secondHighest].octaveOffset -= 1;
+                            }
+                            break;
+
+                        case 'drop3':
+                            console.log("Applying drop3 voicing.");
+                            if (result.length >= 4) {
+                                const thirdHighest = result.length - 3;
+                                result[thirdHighest].octaveOffset -= 1;
+                            }
+                            break;
+
+                        case 'spread':
+                            console.log("Applying spread voicing (gradual bigger intervals).");
+                            for (let i = 1; i < result.length; i++) {
+                                result[i].octaveOffset += Math.floor(i / 2);
+                            }
+                            break;
+
+                        case 'quartal':
+                            console.log("Applying quartal voicing (stacking in 4ths).");
+                            // If you want a naive approach: raise each subsequent note by i//2
+                            // or do something more complex for real 4th alignment
+                            for (let i = 1; i < result.length; i++) {
+                                result[i].octaveOffset += Math.floor(i / 2);
+                            }
+                            break;
+
+                        case 'cluster':
+                            console.log("Applying cluster voicing (tight spacing for upper notes).");
+                            // Keep the first few intervals close, push some up one octave
+                            for (let i = 0; i < result.length; i++) {
+                                if (i > 2) {
+                                    result[i].octaveOffset += 1;
+                                }
+                            }
+                            break;
+
+                        case 'shell':
+                            console.log("Applying shell voicing (just root, 3rd, 7th).");
+                            // Filter out everything except 1, 3/b3, 7/b7
+                            result = result.filter(iv => (
+                                iv.degree === '1' || iv.degree === '3' || iv.degree === 'b3' ||
+                                iv.degree === '7' || iv.degree === 'b7'
+                            ));
+                            break;
+
+                        case 'altered':
+                            console.log("Applying 'altered' voicing technique for heavily changed dominants.");
+                            // Maybe cluster all extended notes above the 5th
+                            for (let i = 0; i < result.length; i++) {
+                                if (this.getDegreeValue(result[i].degree) >= this.getDegreeValue('b9')) {
+                                    // push them at least an octave up
+                                    result[i].octaveOffset = Math.max(result[i].octaveOffset, 1);
+                                }
+                            }
+                            break;
+
+                        case 'upper-structure':
+                            console.log("Applying upper-structure triad approach (like partial triad on top).");
+                            // E.g. keep root & 7 in lower octave, push 3 or 5 or tensions up
+                            if (result.length >= 4) {
+                                result[1].octaveOffset += 1;
+                                result[2].octaveOffset += 1;
+                            }
+                            break;
+
+                        default:
+                            console.log("Unknown voicingType; applying close by default.");
+                            break;
+                    }
+
+                    console.log("Result after voicing technique:", result);
+                    console.groupEnd();
+                    return result;
+                },
+
+                // Convert interval notation to semitone values
+                getDegreeValue(degree) {
+                    // Return 0..11 for the basic chord tones, plus typical tensions
+                    const map = {
+                        '1': 0, 'b2': 1, '2': 2, '#2': 3, 'b3': 3, '3': 4, '4': 5, '#4': 6,
+                        'b5': 6, '5': 7, '#5': 8, 'b6': 8, '6': 9, 'b7': 10, '7': 11,
+                        'b9': 1, '9': 2, '#9': 3, '11': 5, '#11': 6, 'b13': 8, '13': 9,
+                        'bb7': 9 // for fully diminished 7th
+                    };
+                    return map[degree] !== undefined ? map[degree] : 0;
+                },
+
+
+                // Convert intervals to actual note names with octaves
+                intervalsToNotes(root, intervals) {
+                    console.group("intervalsToNotes");
+                    console.log("Converting intervals => notes. root:", root, intervals);
+
+                    // We assume there's a base octave of 3. If you had a chord baseOctave, you can incorporate that.
+                    const baseOctave = 3;
+
+                    const finalNotes = intervals.map(iv => {
+                        const semitonesFromRoot = this.getDegreeValue(iv.degree);
+                        // get the numerical index for root
+                        const rootVal = this.getNoteIndex(root); // define getNoteIndex(...) or use this.noteMap
+                        const totalSemitones = rootVal + semitonesFromRoot;
+                        const noteOctave = baseOctave + (iv.octaveOffset || 0) + Math.floor(totalSemitones / 12);
+                        const noteIndex = ((totalSemitones % 12) + 12) % 12;
+
+                        // find the best note name from your noteMap
+                        const possibleNames = Object.keys(this.noteMap).filter(k => this.noteMap[k] === noteIndex);
+                        // prefer a natural or sharp name if possible
+                        let noteName = possibleNames.find(n => !n.includes('b')) || possibleNames[0] || 'C';
+
+                        return noteName + noteOctave;
+                    });
+
+                    console.log("=> intervalsToNotes result:", finalNotes);
+                    console.groupEnd();
+                    return finalNotes;
+                },
+
+                // Ensure slash chords have correct bass note
+                ensureCorrectBass(noteList, bassNote) {
+                    console.group("ensureCorrectBass");
+                    console.log("Original noteList:", noteList, "slash chord bassNote:", bassNote);
+
+                    // remove any occurrence of that noteName (any octave), to avoid duplicates
+                    let filtered = noteList.filter(n => {
+                        // e.g. if it starts with “C#”, that’s the same letter as “C#” ignoring the octave
+                        const noteLetter = n.replace(/[0-9]/g, '');
+                        return noteLetter !== bassNote;
+                    });
+
+                    // pick an octave for the slash note. Usually 2 or 3
+                    const forcedOctave = 2;
+                    const slashNote = bassNote + forcedOctave;
+                    filtered.unshift(slashNote);
+
+                    console.log("Result with forced slash chord bass:", filtered);
+                    console.groupEnd();
+                    return filtered;
+                },
+
+                // Apply register-specific spacing adjustments
+                applyRegisterAdjustments(noteList) {
+                    console.group("applyRegisterAdjustments");
+                    console.log("Before register fix:", noteList);
+
+                    // convert to MIDI for analysis
+                    let midiData = noteList.map(nt => {
+                        return { note: nt, midi: this.getMIDI(nt) }; // we assume you have this.getMIDI(nt)
+                    });
+                    midiData.sort((a, b) => a.midi - b.midi);
+
+                    if (midiData.length > 1) {
+                        // for example, if top minus bottom is more than 24 semitones, try moving top down
+                        const maxSpan = 24;
+                        while ((midiData[midiData.length - 1].midi - midiData[0].midi) > maxSpan) {
+                            midiData[midiData.length - 1].midi -= 12;
+                            midiData.sort((a, b) => a.midi - b.midi);
+                        }
+
+                        // also ensure bottom note isn't below MIDI 36 (C2). If it is, push it up
+                        // you can adapt for your preference
+                        const minMIDI = 36;
+                        if (midiData[0].midi < minMIDI) {
+                            let diff = minMIDI - midiData[0].midi;
+                            for (let i = 0; i < midiData.length; i++) {
+                                midiData[i].midi += diff;
+                            }
+                            midiData.sort((a, b) => a.midi - b.midi);
+                        }
+                    }
+
+                    // Rebuild final noteList
+                    const finalList = midiData.map(obj => {
+                        const semitone = obj.midi % 12;
+                        const octave = Math.floor(obj.midi / 12) - 1;
+                        const possible = Object.keys(this.noteMap).filter(k => this.noteMap[k] === semitone);
+                        // prefer a “natural or sharp” name if possible
+                        let noteName = possible.find(x => !x.includes('b')) || possible[0] || 'C';
+                        return noteName + octave;
+                    });
+
+                    console.log("After register adjustments:", finalList);
+                    console.groupEnd();
+                    return finalList;
+                },
+
+                // If we have too many notes, prioritize the most important ones
+                prioritizeChordTones(notes, chord, chordFunction) {
+                    // Sort by pitch
+                    const sortedNotes = [...notes].sort((a, b) => this.getMIDI(a) - this.getMIDI(b));
+
+                    // Convert to note names (without octaves) for easier comparison
+                    const noteNames = sortedNotes.map(note => note.slice(0, -1));
+
+                    // Identify root, third, seventh, and fifth
+                    const root = chord.root;
+                    const third = this.getChordToneByInterval(root, chordFunction.isMajor ? '3' : 'b3');
+                    const fifth = this.getChordToneByInterval(root, chordFunction.hasB5 ? 'b5' :
+                        (chordFunction.hasS5 ? '#5' : '5'));
+                    const seventh = this.getChordToneByInterval(root, chordFunction.isTonic ? '7' : 'b7');
+
+                    // Keep track of which notes to keep
+                    const keepIndices = [];
+
+                    // Always keep bass note
+                    keepIndices.push(0);
+
+                    // Keep most important chord tones
+                    for (let i = 0; i < sortedNotes.length; i++) {
+                        const noteName = noteNames[i];
+
+                        // Root, third, and seventh are most important in jazz
+                        if (noteName === root || noteName === third || noteName === seventh) {
+                            if (!keepIndices.includes(i)) {
+                                keepIndices.push(i);
+                            }
+                        }
+                    }
+
+                    // Add fifth (less important in jazz than R, 3, 7)
+                    for (let i = 0; i < sortedNotes.length; i++) {
+                        if (noteNames[i] === fifth && !keepIndices.includes(i)) {
+                            keepIndices.push(i);
+                        }
+                    }
+
+                    // If we're an altered dominant, include one alteration
+                    if (chordFunction.isAltered) {
+                        // Look for b9, #9, b5, #5
+                        const alterations = [
+                            this.getChordToneByInterval(root, 'b9'),
+                            this.getChordToneByInterval(root, '#9'),
+                            this.getChordToneByInterval(root, 'b5'),
+                            this.getChordToneByInterval(root, '#5'),
+                            this.getChordToneByInterval(root, 'b13')
+                        ];
+
+                        // Add first found alteration
+                        for (let i = 0; i < sortedNotes.length; i++) {
+                            if (alterations.includes(noteNames[i]) && !keepIndices.includes(i)) {
+                                keepIndices.push(i);
+                                break;
+                            }
+                        }
+                    }
+
+                    // If we're a major7#11, include the #11
+                    if (chord.type?.includes('maj7') && chordFunction.hasS11) {
+                        const sharpEleven = this.getChordToneByInterval(root, '#11');
+                        for (let i = 0; i < sortedNotes.length; i++) {
+                            if (noteNames[i] === sharpEleven && !keepIndices.includes(i)) {
+                                keepIndices.push(i);
+                            }
+                        }
+                    }
+
+                    // Fill remaining slots with other notes, prioritizing higher ones for color
+                    while (keepIndices.length < 8 && keepIndices.length < sortedNotes.length) {
+                        for (let i = sortedNotes.length - 1; i >= 0; i--) {
+                            if (!keepIndices.includes(i)) {
+                                keepIndices.push(i);
+                                break;
+                            }
+                        }
+                    }
+
+                    // Sort indices and get the corresponding notes
+                    keepIndices.sort((a, b) => a - b);
+                    const result = keepIndices.map(i => sortedNotes[i]);
+
+                    return result;
+                },
                 /**
                  * Clears progress update interval timer.
                  */
@@ -3527,13 +5561,15 @@
                     }
                 },
 
-
-                /**
-    * Play a section with voice leading
-    */
                 async playSection(sectionIndex) {
                     // First, stop any current playback
-                    this.stopPlayback();
+                    try {
+                        this.stopPlayback();
+                    } catch (stopError) {
+                        console.error("Error stopping playback:", stopError);
+                        // If stopping fails, don't continue with playback
+                        return;
+                    }
 
                     if (!this.synth) {
                         console.warn("Cannot play section - audio not initialized yet");
@@ -3583,9 +5619,10 @@
                         this.isPlaying = true;
                         this.totalTime = chords.length * this.chordDuration;
 
-                        // Schedule remaining chords if any
+                        // In the playSection method, replace the single-chord case:
+
                         if (chords.length > 1) {
-                            // Create chord info objects for the remaining chords
+                            // Multi-chord case (unchanged)
                             const remainingChords = chords.slice(1).map((chord, idx) => ({
                                 chord: chord,
                                 sectionIndex: sectionIndex,
@@ -3595,17 +5632,88 @@
 
                             this.scheduleRemainingChordsWithVoiceLeading(remainingChords);
                         } else {
-                            // If only one chord, set a timer to finish playback
+                            // SINGLE CHORD CASE - EARLIER NUCLEAR CLEANUP
+                            const cleanupDelay = this.chordDuration * 750; // 75% of chord duration in ms
+
+                            console.log(`🧨 SINGLE CHORD: Nuclear cleanup will begin in ${cleanupDelay}ms`);
+
+                            // If only one chord, use the nuclear option after 75% of chord duration
                             setTimeout(() => {
-                                this.isPlaying = false;
-                                this.currentChordName = "";
-                                this.currentSectionName = "";
-                                this.selectedChordIndices = { section: null, chord: null };
-                            }, this.chordDuration * 1000);
+                                console.log("🧨 SINGLE CHORD: Nuclear cleanup beginning");
+
+                                // Mark cleanup as in progress to prevent other operations
+                                this.audioCleanupInProgress = true;
+
+                                // First silence everything IMMEDIATELY
+                                if (this.synth) {
+                                    this.synth.volume.value = -Infinity;
+
+                                    // Stop all active notes
+                                    this.synth.releaseAll();
+
+                                    // Cancel any scheduled events in Tone.js
+                                    Tone.Transport.cancel();
+
+                                    // Complete disposal of the synth immediately
+                                    try {
+                                        console.log("💥 Disposing synth after single chord");
+
+                                        // Disconnect and dispose
+                                        this.synth.disconnect();
+                                        this.synth.dispose();
+                                        this.synth = null;
+
+                                        // Create a new minimal synth
+                                        setTimeout(() => {
+                                            try {
+                                                console.log("🔧 Creating new synth");
+
+                                                // Create a simple synth with minimal settings
+                                                this.synth = new Tone.PolySynth(Tone.Synth, {
+                                                    oscillator: { type: "triangle" },
+                                                    envelope: {
+                                                        attack: 0.03,
+                                                        decay: 0.2,
+                                                        sustain: 0.7,
+                                                        release: 0.5
+                                                    }
+                                                }).toDestination();
+
+                                                // Set volume to normal level
+                                                this.synth.volume.value = Tone.gainToDb(this.volume || 0.7);
+
+                                                console.log("✅ Single chord cleanup complete");
+                                            } catch (e) {
+                                                console.error("Error creating new synth:", e);
+                                            } finally {
+                                                // Always update UI and clear flags
+                                                this.isPlaying = false;
+                                                this.currentChordName = "";
+                                                this.currentSectionName = "";
+                                                this.selectedChordIndices = { section: null, chord: null };
+                                                this.audioCleanupInProgress = false;
+                                            }
+                                        }, 50);
+                                    } catch (e) {
+                                        console.error("Error disposing synth:", e);
+                                        // Make sure to reset flags even if there's an error
+                                        this.isPlaying = false;
+                                        this.audioCleanupInProgress = false;
+                                    }
+                                } else {
+                                    // No synth to dispose
+                                    this.isPlaying = false;
+                                    this.audioCleanupInProgress = false;
+                                    this.currentChordName = "";
+                                    this.currentSectionName = "";
+                                    this.selectedChordIndices = { section: null, chord: null };
+                                }
+                            }, cleanupDelay); // Start cleanup at 75% of chord duration
                         }
                     } catch (e) {
                         console.error("Error playing section:", e);
                         this.isPlaying = false;
+                        this.stopPlayback();
                     }
                 },
 
@@ -3634,51 +5742,146 @@
                     this.totalTime = validChords.length * this.chordDuration;
                 },
 
-
-                /**
-  /**
-   * Enhanced stop playback that ensures proper cleanup.
-   */
                 stopPlayback() {
                     try {
-                        // Clear any scheduled timeout
+                        // Mark cleanup as in progress to prevent race conditions
+                        this.audioCleanupInProgress = true;
+
+                        // Clear any scheduled timers immediately
                         if (this.playbackTimer) {
                             clearTimeout(this.playbackTimer);
                             this.playbackTimer = null;
                         }
 
-                        // Clear progress update interval
-                        this.clearProgressTimer();
+                        if (this.progressUpdateInterval) {
+                            clearInterval(this.progressUpdateInterval);
+                            this.progressUpdateInterval = null;
+                        }
 
-                        // Stop and clear Tone.Transport
+                        // Clear problematic chord safety timer
+                        if (this.problematicChordTimer) {
+                            clearTimeout(this.problematicChordTimer);
+                            this.problematicChordTimer = null;
+                        }
+
+                        // Cancel all Tone.js scheduled events
                         if (Tone.Transport) {
                             Tone.Transport.stop();
                             Tone.Transport.cancel(0);
                         }
 
-                        // Silence synth immediately, then release
+                        // IMPROVED: Three-step clean note release process
                         if (this.synth) {
-                            const currentVolume = this.synth.volume.value;
-                            this.synth.volume.value = -Infinity; // Immediate silence
+                            // Step 1: Immediately silence the synth to stop any sound
+                            const originalVolume = this.synth.volume.value;
+                            this.synth.volume.value = -Infinity;
+
+                            // Step 2: Release all notes with multiple methods for maximum reliability
                             this.synth.releaseAll();
+
+                            // Step 3: Briefly disconnect from audio chain
+                            try {
+                                this.synth.disconnect();
+                            } catch (disconnectErr) {
+                                console.warn("Non-critical disconnect error:", disconnectErr);
+                            }
+
+                            // Reconnect and restore after a safe delay
                             setTimeout(() => {
-                                this.synth.volume.value = currentVolume; // Restore volume
-                            }, 50); // Brief delay to ensure release completes
+                                try {
+                                    // Reconnect if possible
+                                    if (this.synth) {
+                                        if (this.masterEQ) {
+                                            try {
+                                                this.synth.connect(this.masterEQ);
+                                            } catch (reconnectErr) {
+                                                console.warn("Reconnect to EQ failed, trying direct connection");
+                                                this.synth.toDestination();
+                                            }
+                                        } else {
+                                            this.synth.toDestination();
+                                        }
+
+                                        // Restore volume
+                                        this.synth.volume.value = originalVolume;
+                                    }
+                                } catch (finalErr) {
+                                    console.warn("Error in final audio restore:", finalErr);
+                                    // Try emergency reset as last resort if reconnection fails
+                                    this.tryRecreateBasicSynth();
+                                } finally {
+                                    // Always mark cleanup as complete
+                                    this.audioCleanupInProgress = false;
+                                }
+                            }, 150); // Slightly longer delay (150ms) for more reliable cleanup
+                        } else {
+                            this.audioCleanupInProgress = false;
                         }
 
                         // Reset playback state
                         this.isPlaying = false;
                         this.currentChordName = "";
                         this.currentSectionName = "";
+                        this.selectedChordIndices = { section: null, chord: null };
                         this.progressPercentage = 0;
                         this.elapsedTime = 0;
-
-                        // Clear selection
-                        this.selectedChordIndices = { section: null, chord: null };
-
-                        console.log("Playback stopped - cleaned up resources with immediate silence");
                     } catch (e) {
-                        console.error("Error stopping playback:", e);
+                        console.error("Error in stopPlayback:", e);
+                        this.audioCleanupInProgress = false;
+
+                        // Last resort emergency measure
+                        this.tryRecreateBasicSynth();
+                    }
+                },
+
+                // Simple function to recreate the synth as a last resort
+                tryRecreateBasicSynth() {
+                    try {
+                        if (this.synth) {
+                            try {
+                                this.synth.dispose();
+                            } catch (e) {
+                                console.warn("Failed to dispose old synth");
+                            }
+                            this.synth = null;
+                        }
+
+                        // Create a minimal, basic synth
+                        this.synth = new Tone.PolySynth(Tone.Synth, {
+                            maxPolyphony: 16,
+                            envelope: {
+                                attack: 0.05,
+                                decay: 0.1,
+                                sustain: 0.7,
+                                release: 0.3
+                            }
+                        }).toDestination();
+
+                        this.synth.volume.value = -5;
+
+                        console.log("Created basic fallback synth");
+                    } catch (e) {
+                        console.error("Failed to create fallback synth:", e);
+                    }
+                },
+
+                /**
+                 * Emergency audio reset for worst-case scenarios
+                 */
+                emergencyResetAudio() {
+                    console.warn("Performing emergency audio reset");
+                    if (Tone.context) {
+                        try {
+                            Tone.context.close().then(() => {
+                                console.log("Audio context closed as emergency measure");
+                                // Reinitialize on next user interaction
+                                this.audioInitialized = false;
+                                // Create overlay for user to re-initialize
+                                this.createAudioEnableOverlay();
+                            });
+                        } catch (e2) {
+                            console.error("Failed emergency audio stop:", e2);
+                        }
                     }
                 },
 
@@ -3830,328 +6033,175 @@
                     }
                 },
 
-                /**
-                 * Changes the instrument used for playback with high-quality analog-style sounds.
-                 * Completely redesigned for better audio quality with warm subtractive synthesis.
-                 */
                 changeInstrument() {
                     try {
                         // Track previous playing state
                         const wasPlaying = this.isPlaying;
 
-                        // Stop any current playback temporarily
+                        // Stop any current playback
                         if (wasPlaying) {
                             this.stopPlayback();
                         }
 
-                        // Dispose of the old synth and effects
-                        if (this.synth) {
-                            this.synth.disconnect();
-                            this.synth.dispose();
-                        }
-
-                        // Clean up previous effects
-                        if (this.instrumentEffects) {
-                            this.instrumentEffects.forEach(effect => {
-                                if (effect && typeof effect.dispose === 'function') {
-                                    effect.dispose();
+                        // FIXED: Use a promise to ensure everything happens in the right order
+                        const performChange = async () => {
+                            try {
+                                // Wait for any ongoing cleanup to complete
+                                while (this.audioCleanupInProgress) {
+                                    await new Promise(resolve => setTimeout(resolve, 50));
                                 }
-                            });
-                        }
-                        this.instrumentEffects = [];
 
-                        // Create shared components we'll use across multiple instruments
-                        const filter = new Tone.Filter({
-                            type: "lowpass",
-                            frequency: 3000,
-                            Q: 1
-                        });
-                        this.instrumentEffects.push(filter);
+                                // Dispose of the old synth
+                                if (this.synth) {
+                                    this.synth.releaseAll();
+                                    this.synth.disconnect();
+                                    this.synth.dispose();
+                                    this.synth = null;
+                                }
 
-                        // Create a subtle chorus for richness
-                        const chorus = new Tone.Chorus({
-                            frequency: 1.5,
-                            delayTime: 3.5,
-                            depth: 0.7,
-                            wet: 0.3,
-                        }).start();
-                        this.instrumentEffects.push(chorus);
+                                // Clean up effects
+                                if (this.instrumentEffects) {
+                                    this.instrumentEffects.forEach(effect => {
+                                        if (effect && typeof effect.dispose === 'function') {
+                                            effect.disconnect();
+                                            effect.dispose();
+                                        }
+                                    });
+                                }
+                                this.instrumentEffects = [];
 
-                        // Create a compressor for better dynamics
-                        const compressor = new Tone.Compressor({
-                            threshold: -24,
-                            ratio: 3,
-                            attack: 0.05,
-                            release: 0.1
-                        });
-                        this.instrumentEffects.push(compressor);
+                                // --- CUSTOM MOOG SETUP FOR SYNTH INSTRUMENT ---
+                                if (this.instrument === "synth") {
+                                    // Create a balanced Moog-style synth
+                                    this.synth = new Tone.PolySynth(Tone.Synth, {
+                                        maxPolyphony: 24,
+                                        oscillator: {
+                                            type: "sawtooth" // Classic Moog sawtooth
+                                        },
+                                        envelope: {
+                                            attack: 0.05,  // Moderate attack
+                                            decay: 0.2,
+                                            sustain: 0.7,
+                                            release: 0.6   // Good balance for chord transitions
+                                        }
+                                    });
 
-                        // Create a new synth based on the selected instrument (with better sounds)
-                        switch (this.instrument) {
-                            case "piano":
-                                // Warm grand piano approximation
-                                this.synth = new Tone.PolySynth(Tone.Synth, {
-                                    maxPolyphony: 256,
-                                    oscillator: {
-                                        type: "triangle",
-                                    },
-                                    envelope: {
-                                        attack: 0.008,   // Fast but not instant
-                                        decay: 0.6,      // Moderate decay
-                                        sustain: 0.4,    // Medium sustain for warmth
-                                        release: 1.8     // Long, natural release
-                                    },
-                                    volume: -3           // Proper volume level
-                                });
-
-                                // Piano-specific filter
-                                const pianoFilter = new Tone.Filter({
-                                    type: "lowpass",
-                                    frequency: 5000,     // Brighter sound
-                                    Q: 0.5
-                                });
-                                this.instrumentEffects.push(pianoFilter);
-
-                                // Chain through effects
-                                this.synth.chain(pianoFilter, compressor, this.masterEQ || Tone.Destination);
-                                break;
-
-                            case "rhodes":
-                                // Warm electric piano with subtle drive
-                                this.synth = new Tone.PolySynth(Tone.Synth, {
-                                    maxPolyphony: 256,
-                                    oscillator: {
-                                        type: "sine",
-                                    },
-                                    envelope: {
-                                        attack: 0.05,    // Soft attack
-                                        decay: 0.7,      // Medium decay
-                                        sustain: 0.5,    // Moderate sustain
-                                        release: 2.0     // Long release
-                                    },
-                                    volume: -2           // Slightly louder
-                                });
-
-                                // Add subtle drive for warmth
-                                const drive = new Tone.Distortion({
-                                    distortion: 0.1,
-                                    wet: 0.2
-                                });
-                                this.instrumentEffects.push(drive);
-
-                                // Add subtle phaser for movement
-                                const phaser = new Tone.Phaser({
-                                    frequency: 0.5,
-                                    octaves: 3,
-                                    baseFrequency: 400,
-                                    wet: 0.3
-                                });
-                                this.instrumentEffects.push(phaser);
-
-                                // Chain through effects
-                                this.synth.chain(drive, phaser, compressor, this.masterEQ || Tone.Destination);
-                                break;
-
-                            case "synth":
-                                // Rich Moog-inspired synth
-                                this.synth = new Tone.PolySynth(Tone.MonoSynth, {
-                                    maxPolyphony: 256,
-                                    oscillator: {
-                                        type: "sawtooth",
-                                    },
-                                    filter: {
-                                        Q: 2,
+                                    // Add a filter for Moog character
+                                    const filter = new Tone.Filter({
                                         type: "lowpass",
+                                        frequency: 2500,
                                         rolloff: -12,
-                                        frequency: 1000
-                                    },
-                                    envelope: {
-                                        attack: 0.1,
-                                        decay: 0.3,
-                                        sustain: 0.6,
-                                        release: 1.5
-                                    },
-                                    filterEnvelope: {
-                                        attack: 0.8,
-                                        decay: 1.0,
-                                        sustain: 0.4,
-                                        release: 1.5,
-                                        baseFrequency: 400,
-                                        octaves: 2
-                                    },
-                                    volume: -5
-                                });
+                                        Q: 2
+                                    });
 
-                                // Chain through subtle chorus for warmth
-                                this.synth.chain(chorus, compressor, this.masterEQ || Tone.Destination);
-                                break;
+                                    // Add subtle chorus for analog warmth
+                                    const chorus = new Tone.Chorus({
+                                        frequency: 1.5,
+                                        delayTime: 3.5,
+                                        depth: 0.3,
+                                        spread: 180,
+                                        wet: 0.2
+                                    }).start();
 
-                            case "marimba":
-                                // Properly audible and warm marimba sound
-                                this.synth = new Tone.PolySynth(Tone.Synth, {
-                                    maxPolyphony: 256,
-                                    oscillator: {
-                                        type: "sine",
-                                    },
-                                    envelope: {
-                                        attack: 0.001,   // Very fast attack
-                                        decay: 0.4,      // Moderate decay
-                                        sustain: 0.01,   // Low sustain for percussive feel
-                                        release: 0.7     // Quick release
-                                    },
-                                    volume: 2            // LOUDER - properly audible now
-                                });
+                                    // Connect components
+                                    this.synth.chain(filter, chorus);
 
-                                // Add a filter envelope for the characteristic marimba sound
-                                const marimbaFilter = new Tone.AutoFilter({
-                                    frequency: 4,
-                                    type: "sine",
-                                    depth: 0.5,
-                                    baseFrequency: 200,
-                                    octaves: 3,
-                                    filter: {
-                                        type: "lowpass",
-                                        rolloff: -12,
-                                        Q: 1
-                                    },
-                                    wet: 0.5
-                                }).start();
-                                this.instrumentEffects.push(marimbaFilter);
+                                    // Connect to master chain
+                                    if (this.masterEQ) {
+                                        chorus.connect(this.masterEQ);
+                                    } else {
+                                        chorus.toDestination();
+                                    }
 
-                                // Chain through effects
-                                this.synth.chain(marimbaFilter, this.masterEQ || Tone.Destination);
-                                break;
+                                    // Store effects for later cleanup
+                                    this.instrumentEffects = [filter, chorus];
 
-                            case "vibraphone":
-                                // Warm vibraphone with natural tremolo
-                                this.synth = new Tone.PolySynth(Tone.Synth, {
-                                    maxPolyphony: 256,
-                                    oscillator: {
-                                        type: "sine",
-                                    },
-                                    envelope: {
-                                        attack: 0.03,    // Soft attack
-                                        decay: 0.7,      // Moderate decay
-                                        sustain: 0.2,    // Low sustain for percussive feel
-                                        release: 2.0     // Longer release for resonance
-                                    },
-                                    volume: 0            // Standard volume
-                                });
+                                    // Set volume
+                                    this.synth.volume.value = -4;
+                                } else {
+                                    // Create a basic synth with appropriate envelope for other instruments
+                                    this.synth = new Tone.PolySynth(Tone.Synth, {
+                                        maxPolyphony: 512,
+                                        oscillator: {
+                                            type: this.getOscillatorTypeForInstrument()
+                                        },
+                                        envelope: {
+                                            attack: this.getAttackForInstrument(),
+                                            decay: 0.2,
+                                            sustain: 0.7,
+                                            release: 1.0
+                                        },
+                                        volume: this.getVolumeForInstrument()
+                                    });
 
-                                // Classic vibraphone tremolo
-                                const tremolo = new Tone.Tremolo({
-                                    frequency: 7,
-                                    depth: 0.8,
-                                    spread: 180,
-                                    wet: 0.7
-                                }).start();
-                                this.instrumentEffects.push(tremolo);
+                                    // Connect to the master chain
+                                    if (this.masterEQ) {
+                                        this.synth.connect(this.masterEQ);
+                                    } else {
+                                        this.synth.toDestination();
+                                    }
+                                }
 
-                                // Chain through effects
-                                this.synth.chain(tremolo, compressor, this.masterEQ || Tone.Destination);
-                                break;
+                                // Apply current volume setting
+                                this.updateVolume();
 
-                            case "warm-pad":
-                                // NEW: Rich warm pad sound
-                                this.synth = new Tone.PolySynth(Tone.Synth, {
-                                    maxPolyphony: 256,
-                                    oscillator: {
-                                        type: "sine",
-                                    },
-                                    envelope: {
-                                        attack: 0.8,     // Slow, gentle attack
-                                        decay: 1.2,      // Slow decay
-                                        sustain: 0.7,    // High sustain
-                                        release: 3.0     // Very long release
-                                    },
-                                    volume: -6           // Quieter for background
-                                });
+                                // Restart playback if it was playing before
+                                if (wasPlaying) {
+                                    // Allow a moment for the new instrument to fully initialize
+                                    await new Promise(resolve => setTimeout(resolve, 100));
+                                    this.startPlayback();
+                                }
 
-                                // Add subtle chorus and reverb
-                                const padChorus = new Tone.Chorus({
-                                    frequency: 0.6,
-                                    delayTime: 4,
-                                    depth: 0.9,
-                                    spread: 180,
-                                    wet: 0.5
-                                }).start();
-                                this.instrumentEffects.push(padChorus);
+                                console.log(`Changed instrument to ${this.instrument} with reliable settings`);
+                            } catch (e) {
+                                console.error("Error changing instrument:", e);
+                                alert("There was an error changing the instrument. Please try again.");
+                            }
+                        };
 
-                                const padReverb = new Tone.Reverb({
-                                    decay: 3.0,
-                                    wet: 0.4
-                                });
-                                this.instrumentEffects.push(padReverb);
-
-                                // Chain through effects
-                                this.synth.chain(padChorus, padReverb, this.masterEQ || Tone.Destination);
-                                break;
-
-                            case "analog-saw":
-                                // NEW: Warm detuned analog saw sound
-                                this.synth = new Tone.PolySynth(Tone.FatOscillator, {
-                                    maxPolyphony: 256,
-                                    oscillator: {
-                                        type: "sawtooth",
-                                        count: 3,        // 3 oscillators for fatness
-                                        spread: 30,      // Slight detuning
-                                    },
-                                    envelope: {
-                                        attack: 0.05,
-                                        decay: 0.2,
-                                        sustain: 0.7,
-                                        release: 1.5
-                                    },
-                                    volume: -8           // Keep it balanced
-                                });
-
-                                // Add analog-style filter
-                                const analogFilter = new Tone.Filter({
-                                    type: "lowpass",
-                                    frequency: 1200,
-                                    Q: 1,
-                                    rolloff: -24
-                                });
-                                this.instrumentEffects.push(analogFilter);
-
-                                // Chain through effects
-                                this.synth.chain(analogFilter, compressor, this.masterEQ || Tone.Destination);
-                                break;
-
-                            default:
-                                // Default to a clean, warm synth sound
-                                this.synth = new Tone.PolySynth(Tone.Synth, {
-                                    maxPolyphony: 256,
-                                    oscillator: {
-                                        type: "triangle"
-                                    },
-                                    envelope: {
-                                        attack: 0.05,
-                                        decay: 0.3,
-                                        sustain: 0.7,
-                                        release: 1.5
-                                    },
-                                    volume: -4
-                                });
-
-                                // Chain through master processing
-                                this.synth.chain(filter, compressor, this.masterEQ || Tone.Destination);
-                        }
-
-                        // Apply current volume setting
-                        this.updateVolume();
-
-                        // Restart playback if it was playing before
-                        if (wasPlaying) {
-                            setTimeout(() => {
-                                this.startPlayback();
-                            }, 100);
-                        }
-
-                        console.log(`Changed instrument to ${this.instrument}`);
+                        // Execute the change process
+                        performChange();
                     } catch (e) {
-                        console.error("Error changing instrument:", e);
-                        alert("There was an error changing the instrument. Please try again.");
+                        console.error("Error in changeInstrument:", e);
+                    }
+                },
+
+                /**
+                 * Helper methods for instrument configuration
+                 */
+                getOscillatorTypeForInstrument() {
+                    switch (this.instrument) {
+                        case "piano": return "triangle";
+                        case "rhodes": return "sine";
+                        case "synth": return "sawtooth"; // Keep sawtooth as base but we'll enhance it
+                        case "warm-pad": return "sine";
+                        case "vibraphone": return "sine";
+                        case "marimba": return "sine";
+                        default: return "triangle";
+                    }
+                },
+
+                getAttackForInstrument() {
+                    switch (this.instrument) {
+                        case "piano": return 0.01;
+                        case "rhodes": return 0.05;
+                        case "synth": return 0.08; // Slightly slower attack for vintage Moog feel
+                        case "warm-pad": return 0.5;
+                        case "vibraphone": return 0.03;
+                        case "marimba": return 0.005;
+                        default: return 0.02;
+                    }
+                },
+
+                getVolumeForInstrument() {
+                    switch (this.instrument) {
+                        case "piano": return -4;
+                        case "rhodes": return -3;
+                        case "synth": return -5; // Slightly louder for better presence
+                        case "warm-pad": return -8;
+                        case "vibraphone": return -2;
+                        case "marimba": return 0; // Louder for percussion
+                        default: return -4;
                     }
                 },
 
