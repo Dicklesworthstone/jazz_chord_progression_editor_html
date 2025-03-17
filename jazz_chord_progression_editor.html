@@ -355,10 +355,17 @@
                 overflow-x: hidden;
             }
 
+            /* Prevent horizontal touch scrolling in the main content area */
+            .progression-container {
+                touch-action: pan-y;
+                overflow-x: hidden;
+                max-width: 100%;
+            }
+
             /* Make section headings smaller and add truncation */
             .section-heading {
-                font-size: 1rem !important;
-                max-width: 60% !important;
+                font-size: 0.8rem !important;
+                max-width: 85% !important;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
@@ -681,7 +688,7 @@
                         </button>
                     </div>
                 </div>
-                <div class="space-y-6 mb-10">
+                <div class="space-y-6 mb-10 progression-container">
                     <template x-for="(section, sectionIndex) in currentProgression.sections" :key="sectionIndex">
                         <div class="bg-gray-800 rounded-lg p-2 sm:p-4 w-full">
                             <div class="flex justify-between items-center mb-3 sm:mb-4">
