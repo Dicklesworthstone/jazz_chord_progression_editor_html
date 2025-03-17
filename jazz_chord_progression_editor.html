@@ -968,9 +968,10 @@
                         </div>
 
                         <!-- Mobile-only dropdown for settings -->
-                        <div class="dropdown dropdown-top dropdown-end sm:hidden">
-                            <button class="btn btn-sm btn-circle"><i class="fas fa-sliders-h"></i></button>
-                            <div class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
+                        <div class="dropdown dropdown-top dropdown-end sm:hidden mobile-dropdown">
+                            <button tabindex="0" class="btn btn-sm btn-circle"><i class="fas fa-sliders-h"></i></button>
+                            <div tabindex="0"
+                                class="dropdown-content z-[30] menu p-2 shadow bg-base-100 rounded-box w-52">
                                 <div class="p-2">
                                     <label class="label">Instrument</label>
                                     <select x-model="instrument" @change="changeInstrument()"
