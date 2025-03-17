@@ -968,43 +968,50 @@
                         </div>
 
                         <!-- Mobile-only dropdown for settings -->
-                        <div class="dropdown dropdown-top dropdown-end sm:hidden mobile-dropdown">
-                            <button tabindex="0" class="btn btn-sm btn-circle"><i class="fas fa-sliders-h"></i></button>
-                            <div tabindex="0"
-                                class="dropdown-content z-[30] menu p-2 shadow bg-base-100 rounded-box w-52">
-                                <div class="p-2">
-                                    <label class="label">Instrument</label>
-                                    <select x-model="instrument" @change="changeInstrument()"
-                                        class="select select-sm select-bordered w-full">
-                                        <option value="piano">Piano</option>
-                                        <option value="rhodes">Electric Piano</option>
-                                        <option value="synth">Moog Synth</option>
-                                        <option value="warm-pad">Warm Pad</option>
-                                        <option value="analog-saw">Analog Saw</option>
-                                        <option value="marimba">Marimba</option>
-                                        <option value="vibraphone">Vibraphone</option>
-                                    </select>
-                                </div>
-                                <div class="p-2">
-                                    <label class="label">Volume</label>
-                                    <input type="range" min="0" max="1" step="0.1" x-model="volume"
-                                        @change="updateVolume()" class="range range-xs range-primary w-full">
-                                </div>
-                                <div class="p-2">
-                                    <label class="label">Tempo</label>
-                                    <select x-model="tempo" @change="updateTempo()"
-                                        class="select select-sm select-bordered w-full">
-                                        <option value="40">40 BPM</option>
-                                        <option value="60">60 BPM</option>
-                                        <option value="80">80 BPM</option>
-                                        <option value="100">100 BPM</option>
-                                        <option value="120">120 BPM</option>
-                                        <option value="140">140 BPM</option>
-                                        <option value="160">160 BPM</option>
-                                    </select>
-                                </div>
-                            </div>
+                        <div class="dropdown dropdown-end sm:hidden">
+                            <label tabindex="0" class="btn btn-sm btn-circle"><i class="fas fa-sliders-h"></i></label>
+                            <ul tabindex="0"
+                                class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52 mt-4 z-40">
+                                <li>
+                                    <div class="p-2 w-full">
+                                        <label class="label">Instrument</label>
+                                        <select x-model="instrument" @change="changeInstrument()"
+                                            class="select select-sm select-bordered w-full">
+                                            <option value="piano">Piano</option>
+                                            <option value="rhodes">Electric Piano</option>
+                                            <option value="synth">Moog Synth</option>
+                                            <option value="warm-pad">Warm Pad</option>
+                                            <option value="analog-saw">Analog Saw</option>
+                                            <option value="marimba">Marimba</option>
+                                            <option value="vibraphone">Vibraphone</option>
+                                        </select>
+                                    </div>
+                                </li>
+                                <li>
+                                    <div class="p-2 w-full">
+                                        <label class="label">Volume</label>
+                                        <input type="range" min="0" max="1" step="0.1" x-model="volume"
+                                            @change="updateVolume()" class="range range-xs range-primary w-full">
+                                    </div>
+                                </li>
+                                <li>
+                                    <div class="p-2 w-full">
+                                        <label class="label">Tempo</label>
+                                        <select x-model="tempo" @change="updateTempo()"
+                                            class="select select-sm select-bordered w-full">
+                                            <option value="40">40 BPM</option>
+                                            <option value="60">60 BPM</option>
+                                            <option value="80">80 BPM</option>
+                                            <option value="100">100 BPM</option>
+                                            <option value="120">120 BPM</option>
+                                            <option value="140">140 BPM</option>
+                                            <option value="160">160 BPM</option>
+                                        </select>
+                                    </div>
+                                </li>
+                            </ul>
                         </div>
+
                     </div>
                 </div>
             </div>
