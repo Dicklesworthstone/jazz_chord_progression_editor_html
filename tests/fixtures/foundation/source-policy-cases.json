@@ -1,0 +1,147 @@
+{
+  "schemaVersion": 1,
+  "capabilityCases": [
+    {
+      "id": "fetch-direct",
+      "path": "src/application/fetch.ts",
+      "source": "export async function load() { return fetch('/remote.json'); }",
+      "codes": ["SOURCE_PROHIBITED_FETCH"]
+    },
+    {
+      "id": "fetch-computed",
+      "path": "src/application/fetch-computed.ts",
+      "source": "export function load() { return globalThis['fetch']('/remote.json'); }",
+      "codes": ["SOURCE_PROHIBITED_FETCH"]
+    },
+    {
+      "id": "network-constructors",
+      "path": "src/application/network.ts",
+      "source": "new XMLHttpRequest(); new WebSocket('wss://invalid.test'); new EventSource('/events');",
+      "codes": ["SOURCE_PROHIBITED_EVENT_SOURCE", "SOURCE_PROHIBITED_WEB_SOCKET", "SOURCE_PROHIBITED_XML_HTTP_REQUEST"]
+    },
+    {
+      "id": "beacon-and-service-worker",
+      "path": "src/application/background.ts",
+      "source": "navigator.sendBeacon('/metrics', 'x'); navigator.serviceWorker.register('/sw.js');",
+      "codes": ["SOURCE_PROHIBITED_SEND_BEACON", "SOURCE_PROHIBITED_SERVICE_WORKER"]
+    },
+    {
+      "id": "workers-and-worklet",
+      "path": "src/application/workers.ts",
+      "source": "new Worker('/worker.js'); new SharedWorker('/shared.js'); context.audioWorklet.addModule('/processor.js');",
+      "codes": ["SOURCE_PROHIBITED_SHARED_WORKER", "SOURCE_PROHIBITED_WORKER", "SOURCE_PROHIBITED_WORKLET_MODULE"]
+    },
+    {
+      "id": "dynamic-import-and-require",
+      "path": "src/application/loading.ts",
+      "source": "void import('./later'); const value = require('./legacy'); void value;",
+      "codes": ["SOURCE_PROHIBITED_DYNAMIC_IMPORT", "SOURCE_PROHIBITED_REQUIRE"]
+    },
+    {
+      "id": "html-sinks",
+      "path": "src/ui/html.tsx",
+      "source": "element.innerHTML = value; element.insertAdjacentHTML('beforeend', value); const view = <div dangerouslySetInnerHTML={{ __html: value }} />; void view;",
+      "codes": ["SOURCE_PROHIBITED_HTML_INJECTION"]
+    },
+    {
+      "id": "dynamic-resource-and-popup",
+      "path": "src/ui/resource.ts",
+      "source": "document.createElement('script'); window.open('https://invalid.test');",
+      "codes": ["SOURCE_PROHIBITED_DYNAMIC_RESOURCE", "SOURCE_PROHIBITED_POPUP_NAVIGATION"]
+    },
+    {
+      "id": "code-evaluation",
+      "path": "src/application/eval.ts",
+      "source": "eval(source); new Function(source); setTimeout('run()', 1);",
+      "codes": ["SOURCE_PROHIBITED_CODE_EVALUATION"]
+    },
+    {
+      "id": "web-audio-wrong-owner",
+      "path": "src/ui/audio.ts",
+      "source": "const context = new AudioContext(); void context;",
+      "codes": ["SOURCE_WEB_AUDIO_OWNER"]
+    },
+    {
+      "id": "web-audio-correct-owner",
+      "path": "src/audio/context.ts",
+      "source": "export const context = new AudioContext();",
+      "codes": []
+    },
+    {
+      "id": "safe-text-and-object-url",
+      "path": "src/ui/safe.ts",
+      "source": "element.textContent = userText; const url = URL.createObjectURL(new Blob([userText])); URL.revokeObjectURL(url);",
+      "codes": []
+    }
+  ],
+  "exportCases": [
+    {
+      "id": "duplicate-value-export",
+      "sources": [
+        {
+          "path": "src/domain/duplicate.ts",
+          "source": "export const value = 1; export const value = 2;"
+        }
+      ],
+      "expectedDuplicateExports": 1
+    },
+    {
+      "id": "duplicate-explicit-reexport",
+      "sources": [
+        {
+          "path": "src/domain/index.ts",
+          "source": "export { left as value } from './left'; export { right as value } from './right';"
+        }
+      ],
+      "expectedDuplicateExports": 1
+    },
+    {
+      "id": "duplicate-default-export",
+      "sources": [
+        {
+          "path": "src/domain/defaults.ts",
+          "source": "export default 1; export default 2;"
+        }
+      ],
+      "expectedDuplicateExports": 1
+    },
+    {
+      "id": "legal-exported-overloads",
+      "sources": [
+        {
+          "path": "src/domain/overloads.ts",
+          "source": "export function parse(value: string): string; export function parse(value: number): number; export function parse(value: string | number) { return value; }"
+        }
+      ],
+      "expectedDuplicateExports": 0
+    },
+    {
+      "id": "type-and-value-namespace",
+      "sources": [
+        {
+          "path": "src/domain/namespaces.ts",
+          "source": "export interface Result { ok: true } export const Result = { ok: true } as const;"
+        }
+      ],
+      "expectedDuplicateExports": 0
+    },
+    {
+      "id": "star-reexport-collision",
+      "sources": [
+        {
+          "path": "src/domain/index.ts",
+          "source": "export * from './left'; export * from './right';"
+        },
+        {
+          "path": "src/domain/left.ts",
+          "source": "export const shared = 1;"
+        },
+        {
+          "path": "src/domain/right.ts",
+          "source": "export const shared = 2;"
+        }
+      ],
+      "expectedDuplicateExports": 1
+    }
+  ]
+}

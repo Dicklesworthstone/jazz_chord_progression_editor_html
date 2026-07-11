@@ -1,0 +1,125 @@
+{
+  "schema": "changes.fixtures.f1-operation-state.v1",
+  "defaultSeedId": "F1-SEED-BOUNDARY",
+  "applicabilityVocabulary": [
+    "required",
+    "not-applicable"
+  ],
+  "cases": [
+    {
+      "id": "F1-OPSTATE-001",
+      "traceIds": ["F1-TRACE-BOUNDED-OPERATIONS", "F1-TRACE-PURE-BOUNDARY"],
+      "authorityIds": ["F1-AUTH-PITCH", "F1-AUTH-VALIDATION"],
+      "operation": "projectSpelledPitch",
+      "operationClass": "pure synchronous value projection",
+      "cancellation": {"applicability": "not-applicable", "reason": "constant bounded arithmetic has no cancellation observation point"},
+      "staleRevision": {"applicability": "not-applicable", "reason": "the operation has no document or base revision"},
+      "expected": {"owner": "F1", "deterministicWorkBound": "constant", "deterministicMemoryBound": "constant", "stateMutation": "none"}
+    },
+    {
+      "id": "F1-OPSTATE-002",
+      "traceIds": ["F1-TRACE-BOUNDED-OPERATIONS", "F1-TRACE-PURE-BOUNDARY"],
+      "authorityIds": ["F1-AUTH-TIME", "F1-AUTH-VALIDATION"],
+      "operation": "normalize/add/subtract/compare BeatValue",
+      "operationClass": "pure synchronous exact arithmetic",
+      "cancellation": {"applicability": "not-applicable", "reason": "each operation has a fixed number of BigInt integer steps"},
+      "staleRevision": {"applicability": "not-applicable", "reason": "BeatValue operands carry no revision"},
+      "expected": {"owner": "F1", "deterministicWorkBound": "constant", "deterministicMemoryBound": "constant bounded BigInt operands", "stateMutation": "none"}
+    },
+    {
+      "id": "F1-OPSTATE-003",
+      "traceIds": ["F1-TRACE-BOUNDED-OPERATIONS", "F1-TRACE-PURE-BOUNDARY", "F1-TRACE-METER-CAPACITY"],
+      "authorityIds": ["F1-AUTH-TIME", "F1-AUTH-VALIDATION"],
+      "operation": "measureCapacity",
+      "operationClass": "pure synchronous exact arithmetic",
+      "cancellation": {"applicability": "not-applicable", "reason": "capacity uses a fixed number of bounded integer operations"},
+      "staleRevision": {"applicability": "not-applicable", "reason": "meter carries no document or base revision"},
+      "expected": {"owner": "F1", "deterministicWorkBound": "constant", "deterministicMemoryBound": "constant", "stateMutation": "none"}
+    },
+    {
+      "id": "F1-OPSTATE-004",
+      "traceIds": ["F1-TRACE-BOUNDED-OPERATIONS", "F1-TRACE-PURE-BOUNDARY", "F1-TRACE-ID-TRANSACTION"],
+      "authorityIds": ["F1-AUTH-ID", "F1-AUTH-VALIDATION"],
+      "operation": "allocateCopyRemap",
+      "operationClass": "pure synchronous preorder allocation plan",
+      "cancellation": {"applicability": "not-applicable", "reason": "copy size is already bounded and no partial plan is published"},
+      "staleRevision": {"applicability": "not-applicable", "reason": "the F1 allocator accepts a value and factory only; a later application command owns revision checks"},
+      "expected": {"owner": "F1", "deterministicWorkBound": "one factory call per copied node until first refusal", "deterministicMemoryBound": "linear in copied nodes with at most 73793 remap entries under document limits", "stateMutation": "none", "partialCommit": false}
+    },
+    {
+      "id": "F1-OPSTATE-005",
+      "traceIds": ["F1-TRACE-BOUNDED-OPERATIONS", "F1-TRACE-PURE-BOUNDARY", "F1-TRACE-DECODER-RESULT"],
+      "authorityIds": ["F1-AUTH-VALIDATION"],
+      "operation": "decodeDocumentShape",
+      "operationClass": "total synchronous decoder over preflight-bounded unknown input",
+      "cancellation": {"applicability": "not-applicable", "reason": "F2 owns a synchronous decoder capped at 2 MiB, depth 32, and declared collection limits"},
+      "staleRevision": {"applicability": "not-applicable", "reason": "the decoder builds a temporary result and does not publish into current state"},
+      "expected": {"owner": "F2", "deterministicWorkBound": "bounded by declared byte, depth, and collection limits", "deterministicMemoryBound": "one temporary bounded candidate plus nonempty diagnostics; no proportional allocation before preflight limits", "stateMutation": "none", "partialValueOnError": false}
+    },
+    {
+      "id": "F1-OPSTATE-006",
+      "traceIds": ["F1-TRACE-PURE-BOUNDARY", "F1-TRACE-MEASURE-STATE"],
+      "authorityIds": ["F1-AUTH-DOCUMENT", "F1-AUTH-VALIDATION"],
+      "operation": "update event duration and completion together",
+      "operationClass": "application command outside F1",
+      "cancellation": {"applicability": "not-applicable", "reason": "the eventual command is synchronous and atomic"},
+      "staleRevision": {"applicability": "required", "reason": "A0 application command must reject a stale base revision before committing either field", "ownedBy": "A0"},
+      "expected": {"f1ImplementationRequired": false, "laterCommandAtomic": true, "partialCommit": false}
+    },
+    {
+      "id": "F1-OPSTATE-007",
+      "traceIds": ["F1-TRACE-PURE-BOUNDARY", "F1-TRACE-VOICING-EXACT"],
+      "authorityIds": ["F1-AUTH-VOICING", "F1-AUTH-VALIDATION"],
+      "operation": "Frozen to Auto transition",
+      "operationClass": "application command outside F1 value decoding",
+      "cancellation": {"applicability": "not-applicable", "reason": "the eventual transition is synchronous"},
+      "staleRevision": {"applicability": "required", "reason": "the eventual A0 command mutates document data", "ownedBy": "A0"},
+      "expected": {"f1Requirement": "represent both states and require explicit Auto settings", "silentDerivedSettings": false}
+    },
+    {
+      "id": "F1-OPSTATE-008",
+      "traceIds": ["F1-TRACE-PURE-BOUNDARY", "F1-TRACE-VOICING-CONDITIONAL", "F1-TRACE-DECODER-RESULT"],
+      "authorityIds": ["F1-AUTH-VOICING", "F1-AUTH-VALIDATION"],
+      "operation": "Custom chord pitch-name to stored-voicing correspondence",
+      "operationClass": "semantic publication check outside F1 structural shape",
+      "cancellation": {"applicability": "not-applicable", "reason": "the later F3 semantic check is synchronous"},
+      "staleRevision": {"applicability": "not-applicable", "reason": "F3 validates an immutable candidate before publication; publication command revision ownership is separate"},
+      "expected": {
+        "f1TypeConstraints": ["pitchNames nonempty", "Manual or Frozen voicing nonempty", "Auto unrepresentable"],
+        "f2RuntimeShapeChecks": ["pitchNames nonempty", "Manual or Frozen voicing nonempty", "Auto refused"],
+        "deferredToF3": ["pitch-class correspondence", "degree/category/sourceText semantics"]
+      }
+    },
+    {
+      "id": "F1-OPSTATE-009",
+      "traceIds": ["F1-TRACE-ID-TRANSACTION", "F1-TRACE-PURE-BOUNDARY", "F1-TRACE-DECODER-RESULT"],
+      "authorityIds": ["F1-AUTH-ID", "F1-AUTH-VALIDATION"],
+      "operation": "validate stored ID references in v2",
+      "operationClass": "explicit schema applicability declaration",
+      "cancellation": {"applicability": "not-applicable", "reason": "the v2 document stores node identities but no cross-node ID-reference field"},
+      "staleRevision": {"applicability": "not-applicable", "reason": "there is no live reference lookup at the F1 value layer"},
+      "expected": {
+        "storedCrossNodeReferenceFields": [],
+        "missingReferenceIssueAtV2": "not-applicable",
+        "reservedFutureIssueCode": "id.reference_missing",
+        "futureRule": "any added reference field must be remapped and validated transactionally"
+      }
+    },
+    {
+      "id": "F1-OPSTATE-010",
+      "traceIds": ["F1-TRACE-BOUNDED-OPERATIONS", "F1-TRACE-PURE-BOUNDARY", "F1-TRACE-MEASURE-STATE"],
+      "authorityIds": ["F1-AUTH-TIME", "F1-AUTH-VALIDATION"],
+      "operation": "validateMeasureCompletionSemantics",
+      "operationClass": "pure synchronous semantic fold over an already bounded event list",
+      "cancellation": {"applicability": "not-applicable", "reason": "the event list is bounded before F3 validation and the fold is synchronous"},
+      "staleRevision": {"applicability": "not-applicable", "reason": "F3 validates an immutable candidate before the application publication step"},
+      "expected": {
+        "owner": "F3",
+        "deterministicWorkBound": "linear in measure event count with an 8192-document event ceiling",
+        "deterministicMemoryBound": "linear only in emitted diagnostics and otherwise constant",
+        "stateMutation": "none",
+        "issues": "all independently true issues sorted by path then code"
+      }
+    }
+  ]
+}

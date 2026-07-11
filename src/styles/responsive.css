@@ -1,0 +1,115 @@
+@media (max-width: 52rem) {
+  .site-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .welcome-panel {
+    min-height: 24rem;
+  }
+}
+
+@media (max-width: 35rem) {
+  .site-header,
+  .workspace,
+  .site-footer {
+    width: min(calc(100% - 2rem), var(--content-width));
+  }
+
+  .site-header {
+    padding-block: var(--space-5);
+  }
+
+  .brand-lockup {
+    align-items: flex-start;
+  }
+
+  .brand-mark {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .ready-status {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .workspace {
+    padding-block: var(--space-5);
+  }
+
+  .welcome-panel,
+  .readiness-panel {
+    border-radius: var(--radius-medium);
+  }
+
+  .welcome-panel {
+    min-height: 0;
+    padding: var(--space-6) var(--space-5);
+  }
+
+  .welcome-panel h2 {
+    font-size: clamp(2.375rem, 13vw, 3.75rem);
+  }
+
+  .foundation-facts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-5);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .brand-mark,
+  .ready-status,
+  .welcome-panel,
+  .readiness-panel,
+  .readiness-list span {
+    border: 0.0625rem solid CanvasText;
+    box-shadow: none;
+  }
+
+  .status-light {
+    border: 0.0625rem solid CanvasText;
+    background: Highlight;
+    box-shadow: none;
+  }
+
+  .readiness-list span {
+    color: CanvasText;
+    background: Canvas;
+  }
+}
+
+@media print {
+  body {
+    color: #000;
+    background: #fff;
+  }
+
+  .skip-link,
+  .ready-status {
+    display: none;
+  }
+
+  .welcome-panel,
+  .readiness-panel {
+    border-color: #777;
+    color: #000;
+    background: #fff;
+    box-shadow: none;
+  }
+}

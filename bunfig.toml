@@ -1,0 +1,11 @@
+[install]
+exact = true
+
+[test]
+root = "tests"
+retry = 0
+pathIgnorePatterns = [
+  "tests/e2e/**",
+  "tests/fixtures/**",
+  "tests/visual/**",
+]

@@ -1,0 +1,549 @@
+{
+  "schema": "changes.fixtures.f1-beat-value.v1",
+  "defaultSeedId": "F1-SEED-BEAT",
+  "ppq": 960,
+  "normalizationOrder": [
+    "require finite safe integer numerator and denominator",
+    "require numerator nonnegative and denominator positive",
+    "reduce by greatest common divisor using integer arithmetic",
+    "check the reduced numerator bound",
+    "check that the reduced denominator divides 960"
+  ],
+  "divisorCases": [
+    {
+      "id": "F1-BEAT-DIV-001",
+      "traceIds": ["F1-TRACE-TIME-DENOMINATORS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "denominator": 1,
+      "unitTicks": 960,
+      "doubleUnit": {"numerator": 2, "denominator": 1}
+    },
+    {
+      "id": "F1-BEAT-DIV-002",
+      "traceIds": ["F1-TRACE-TIME-DENOMINATORS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "denominator": 2,
+      "unitTicks": 480,
+      "doubleUnit": {"numerator": 1, "denominator": 1}
+    },
+    {
+      "id": "F1-BEAT-DIV-003",
+      "traceIds": ["F1-TRACE-TIME-DENOMINATORS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "denominator": 3,
+      "unitTicks": 320,
+      "doubleUnit": {"numerator": 2, "denominator": 3}
+    },
+    {
+      "id": "F1-BEAT-DIV-004",
+      "traceIds": ["F1-TRACE-TIME-DENOMINATORS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "denominator": 4,
+      "unitTicks": 240,
+      "doubleUnit": {"numerator": 1, "denominator": 2}
+    },
+    {
+      "id": "F1-BEAT-DIV-005",
+      "traceIds": ["F1-TRACE-TIME-DENOMINATORS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "denominator": 5,
+      "unitTicks": 192,
+      "doubleUnit": {"numerator": 2, "denominator": 5}
+    },
+    {
+      "id": "F1-BEAT-DIV-006",
+      "traceIds": ["F1-TRACE-TIME-DENOMINATORS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "denominator": 6,
+      "unitTicks": 160,
+      "doubleUnit": {"numerator": 1, "denominator": 3}
+    },
+    {
+      "id": "F1-BEAT-DIV-007",
+      "traceIds": ["F1-TRACE-TIME-DENOMINATORS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "denominator": 8,
+      "unitTicks": 120,
+      "doubleUnit": {"numerator": 1, "denominator": 4}
+    },
+    {
+      "id": "F1-BEAT-DIV-008",
+      "traceIds": ["F1-TRACE-TIME-DENOMINATORS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "denominator": 10,
+      "unitTicks": 96,
+      "doubleUnit": {"numerator": 1, "denominator": 5}
+    },
+    {
+      "id": "F1-BEAT-DIV-009",
+      "traceIds": ["F1-TRACE-TIME-DENOMINATORS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "denominator": 12,
+      "unitTicks": 80,
+      "doubleUnit": {"numerator": 1, "denominator": 6}
+    },
+    {
+      "id": "F1-BEAT-DIV-010",
+      "traceIds": ["F1-TRACE-TIME-DENOMINATORS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "denominator": 15,
+      "unitTicks": 64,
+      "doubleUnit": {"numerator": 2, "denominator": 15}
+    },
+    {
+      "id": "F1-BEAT-DIV-011",
+      "traceIds": ["F1-TRACE-TIME-DENOMINATORS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "denominator": 16,
+      "unitTicks": 60,
+      "doubleUnit": {"numerator": 1, "denominator": 8}
+    },
+    {
+      "id": "F1-BEAT-DIV-012",
+      "traceIds": ["F1-TRACE-TIME-DENOMINATORS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "denominator": 20,
+      "unitTicks": 48,
+      "doubleUnit": {"numerator": 1, "denominator": 10}
+    },
+    {
+      "id": "F1-BEAT-DIV-013",
+      "traceIds": ["F1-TRACE-TIME-DENOMINATORS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "denominator": 24,
+      "unitTicks": 40,
+      "doubleUnit": {"numerator": 1, "denominator": 12}
+    },
+    {
+      "id": "F1-BEAT-DIV-014",
+      "traceIds": ["F1-TRACE-TIME-DENOMINATORS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "denominator": 30,
+      "unitTicks": 32,
+      "doubleUnit": {"numerator": 1, "denominator": 15}
+    },
+    {
+      "id": "F1-BEAT-DIV-015",
+      "traceIds": ["F1-TRACE-TIME-DENOMINATORS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "denominator": 32,
+      "unitTicks": 30,
+      "doubleUnit": {"numerator": 1, "denominator": 16}
+    },
+    {
+      "id": "F1-BEAT-DIV-016",
+      "traceIds": ["F1-TRACE-TIME-DENOMINATORS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "denominator": 40,
+      "unitTicks": 24,
+      "doubleUnit": {"numerator": 1, "denominator": 20}
+    },
+    {
+      "id": "F1-BEAT-DIV-017",
+      "traceIds": ["F1-TRACE-TIME-DENOMINATORS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "denominator": 48,
+      "unitTicks": 20,
+      "doubleUnit": {"numerator": 1, "denominator": 24}
+    },
+    {
+      "id": "F1-BEAT-DIV-018",
+      "traceIds": ["F1-TRACE-TIME-DENOMINATORS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "denominator": 60,
+      "unitTicks": 16,
+      "doubleUnit": {"numerator": 1, "denominator": 30}
+    },
+    {
+      "id": "F1-BEAT-DIV-019",
+      "traceIds": ["F1-TRACE-TIME-DENOMINATORS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "denominator": 64,
+      "unitTicks": 15,
+      "doubleUnit": {"numerator": 1, "denominator": 32}
+    },
+    {
+      "id": "F1-BEAT-DIV-020",
+      "traceIds": ["F1-TRACE-TIME-DENOMINATORS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "denominator": 80,
+      "unitTicks": 12,
+      "doubleUnit": {"numerator": 1, "denominator": 40}
+    },
+    {
+      "id": "F1-BEAT-DIV-021",
+      "traceIds": ["F1-TRACE-TIME-DENOMINATORS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "denominator": 96,
+      "unitTicks": 10,
+      "doubleUnit": {"numerator": 1, "denominator": 48}
+    },
+    {
+      "id": "F1-BEAT-DIV-022",
+      "traceIds": ["F1-TRACE-TIME-DENOMINATORS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "denominator": 120,
+      "unitTicks": 8,
+      "doubleUnit": {"numerator": 1, "denominator": 60}
+    },
+    {
+      "id": "F1-BEAT-DIV-023",
+      "traceIds": ["F1-TRACE-TIME-DENOMINATORS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "denominator": 160,
+      "unitTicks": 6,
+      "doubleUnit": {"numerator": 1, "denominator": 80}
+    },
+    {
+      "id": "F1-BEAT-DIV-024",
+      "traceIds": ["F1-TRACE-TIME-DENOMINATORS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "denominator": 192,
+      "unitTicks": 5,
+      "doubleUnit": {"numerator": 1, "denominator": 96}
+    },
+    {
+      "id": "F1-BEAT-DIV-025",
+      "traceIds": ["F1-TRACE-TIME-DENOMINATORS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "denominator": 240,
+      "unitTicks": 4,
+      "doubleUnit": {"numerator": 1, "denominator": 120}
+    },
+    {
+      "id": "F1-BEAT-DIV-026",
+      "traceIds": ["F1-TRACE-TIME-DENOMINATORS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "denominator": 320,
+      "unitTicks": 3,
+      "doubleUnit": {"numerator": 1, "denominator": 160}
+    },
+    {
+      "id": "F1-BEAT-DIV-027",
+      "traceIds": ["F1-TRACE-TIME-DENOMINATORS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "denominator": 480,
+      "unitTicks": 2,
+      "doubleUnit": {"numerator": 1, "denominator": 240}
+    },
+    {
+      "id": "F1-BEAT-DIV-028",
+      "traceIds": ["F1-TRACE-TIME-DENOMINATORS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "denominator": 960,
+      "unitTicks": 1,
+      "doubleUnit": {"numerator": 1, "denominator": 480}
+    }
+  ],
+  "pairwiseClosureCases": [
+    {
+      "id": "F1-BEAT-PAIRWISE-001",
+      "traceIds": [
+        "F1-TRACE-TIME-DENOMINATORS",
+        "F1-TRACE-TIME-ARITHMETIC"
+      ],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "kind": "cartesian-unit-fraction-closure",
+      "leftAndRightCaseIds": [
+        "F1-BEAT-DIV-001", "F1-BEAT-DIV-002", "F1-BEAT-DIV-003", "F1-BEAT-DIV-004",
+        "F1-BEAT-DIV-005", "F1-BEAT-DIV-006", "F1-BEAT-DIV-007", "F1-BEAT-DIV-008",
+        "F1-BEAT-DIV-009", "F1-BEAT-DIV-010", "F1-BEAT-DIV-011", "F1-BEAT-DIV-012",
+        "F1-BEAT-DIV-013", "F1-BEAT-DIV-014", "F1-BEAT-DIV-015", "F1-BEAT-DIV-016",
+        "F1-BEAT-DIV-017", "F1-BEAT-DIV-018", "F1-BEAT-DIV-019", "F1-BEAT-DIV-020",
+        "F1-BEAT-DIV-021", "F1-BEAT-DIV-022", "F1-BEAT-DIV-023", "F1-BEAT-DIV-024",
+        "F1-BEAT-DIV-025", "F1-BEAT-DIV-026", "F1-BEAT-DIV-027", "F1-BEAT-DIV-028"
+      ],
+      "orderedPairCount": 784,
+      "independentTickOracle": {
+        "oracleVersion": "ppq-integer-ticks-v1",
+        "tickSources": {
+          "left": "divisorCases.unitTicks",
+          "right": "divisorCases.unitTicks"
+        },
+        "addition": {
+          "operation": "add-integer-ticks",
+          "result": "reduce-ticks-over-ppq"
+        },
+        "subtraction": {
+          "operation": "subtract-integer-ticks",
+          "negativeWhen": "leftTicks<rightTicks",
+          "negativeCode": "beat.negative_result",
+          "result": "reduce-ticks-over-ppq"
+        },
+        "comparison": {
+          "operation": "compare-integer-ticks",
+          "less": -1,
+          "equal": 0,
+          "greater": 1
+        },
+        "closure": {
+          "successfulDenominatorSet": "divisorCases.denominator"
+        },
+        "expectedComparisonPartition": {
+          "less": 378,
+          "equal": 28,
+          "greater": 378
+        }
+      }
+    }
+  ],
+  "edgeCases": [
+    {
+      "id": "F1-BEAT-EDGE-001",
+      "traceIds": ["F1-TRACE-TIME-ARITHMETIC"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "kind": "normalize",
+      "input": {"numerator": 0, "denominator": 960},
+      "expected": {"ok": true, "value": {"numerator": 0, "denominator": 1}}
+    },
+    {
+      "id": "F1-BEAT-EDGE-002",
+      "traceIds": ["F1-TRACE-TIME-ARITHMETIC"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "kind": "normalize",
+      "input": {"numerator": 2, "denominator": 4},
+      "expected": {"ok": true, "value": {"numerator": 1, "denominator": 2}}
+    },
+    {
+      "id": "F1-BEAT-EDGE-003",
+      "traceIds": ["F1-TRACE-TIME-ARITHMETIC"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "kind": "normalize-before-denominator-check",
+      "input": {"numerator": 7, "denominator": 7},
+      "expected": {"ok": true, "value": {"numerator": 1, "denominator": 1}}
+    },
+    {
+      "id": "F1-BEAT-EDGE-004",
+      "traceIds": ["F1-TRACE-TIME-ARITHMETIC", "F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "kind": "normalize-before-numerator-bound",
+      "input": {"numerator": 4294967294, "denominator": 2},
+      "expected": {"ok": true, "value": {"numerator": 2147483647, "denominator": 1}}
+    },
+    {
+      "id": "F1-BEAT-EDGE-005",
+      "traceIds": ["F1-TRACE-TIME-ARITHMETIC"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "kind": "normalize",
+      "input": {"numerator": 15, "denominator": 960},
+      "expected": {"ok": true, "value": {"numerator": 1, "denominator": 64}}
+    },
+    {
+      "id": "F1-BEAT-EDGE-006",
+      "traceIds": ["F1-TRACE-TIME-DENOMINATORS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "kind": "normalize",
+      "input": {"numerator": 1, "denominator": 7},
+      "expected": {"ok": false, "issue": {"code": "beat.denominator_not_ppq_divisor", "path": ["denominator"]}}
+    },
+    {
+      "id": "F1-BEAT-EDGE-007",
+      "traceIds": ["F1-TRACE-TIME-DENOMINATORS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "kind": "normalize",
+      "input": {"numerator": 1, "denominator": 128},
+      "expected": {"ok": false, "issue": {"code": "beat.denominator_not_ppq_divisor", "path": ["denominator"]}}
+    },
+    {
+      "id": "F1-BEAT-EDGE-008",
+      "traceIds": ["F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "kind": "normalize",
+      "input": {"numerator": 1, "denominator": 0},
+      "expected": {"ok": false, "issue": {"code": "beat.denominator_not_positive", "path": ["denominator"]}}
+    },
+    {
+      "id": "F1-BEAT-EDGE-009",
+      "traceIds": ["F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "kind": "normalize",
+      "input": {"numerator": 1, "denominator": -2},
+      "expected": {"ok": false, "issue": {"code": "beat.denominator_not_positive", "path": ["denominator"]}}
+    },
+    {
+      "id": "F1-BEAT-EDGE-010",
+      "traceIds": ["F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "kind": "normalize",
+      "input": {"numerator": -1, "denominator": 4},
+      "expected": {"ok": false, "issue": {"code": "beat.numerator_negative", "path": ["numerator"]}}
+    },
+    {
+      "id": "F1-BEAT-EDGE-011",
+      "traceIds": ["F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "kind": "normalize",
+      "input": {"numerator": 0.5, "denominator": 4},
+      "expected": {"ok": false, "issue": {"code": "beat.numerator_not_safe_integer", "path": ["numerator"]}}
+    },
+    {
+      "id": "F1-BEAT-EDGE-012",
+      "traceIds": ["F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "kind": "normalize",
+      "input": {"numerator": 1, "denominator": 2.5},
+      "expected": {"ok": false, "issue": {"code": "beat.denominator_not_safe_integer", "path": ["denominator"]}}
+    },
+    {
+      "id": "F1-BEAT-EDGE-013",
+      "traceIds": ["F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "kind": "normalize",
+      "input": {"numerator": 2147483647, "denominator": 1},
+      "expected": {"ok": true, "value": {"numerator": 2147483647, "denominator": 1}}
+    },
+    {
+      "id": "F1-BEAT-EDGE-014",
+      "traceIds": ["F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "kind": "normalize",
+      "input": {"numerator": 2147483648, "denominator": 1},
+      "expected": {"ok": false, "issue": {"code": "beat.numerator_out_of_range", "path": ["numerator"]}}
+    },
+    {
+      "id": "F1-BEAT-EDGE-015",
+      "traceIds": ["F1-TRACE-TIME-ARITHMETIC", "F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "kind": "add-with-bigint-intermediate-then-reduce",
+      "left": {"numerator": 2147483647, "denominator": 960},
+      "right": {"numerator": 2147483647, "denominator": 960},
+      "expected": {"ok": true, "value": {"numerator": 2147483647, "denominator": 480}}
+    },
+    {
+      "id": "F1-BEAT-EDGE-016",
+      "traceIds": ["F1-TRACE-TIME-ARITHMETIC", "F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "kind": "add-overflow-after-reduction",
+      "left": {"numerator": 2147483647, "denominator": 1},
+      "right": {"numerator": 1, "denominator": 1},
+      "expected": {"ok": false, "issue": {"code": "beat.numerator_out_of_range", "path": []}}
+    },
+    {
+      "id": "F1-BEAT-EDGE-017",
+      "traceIds": ["F1-TRACE-TIME-ARITHMETIC"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "kind": "add",
+      "left": {"numerator": 1, "denominator": 3},
+      "right": {"numerator": 1, "denominator": 5},
+      "expected": {"ok": true, "value": {"numerator": 8, "denominator": 15}}
+    },
+    {
+      "id": "F1-BEAT-EDGE-018",
+      "traceIds": ["F1-TRACE-TIME-ARITHMETIC"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "kind": "subtract",
+      "left": {"numerator": 1, "denominator": 3},
+      "right": {"numerator": 1, "denominator": 5},
+      "expected": {"ok": true, "value": {"numerator": 2, "denominator": 15}}
+    },
+    {
+      "id": "F1-BEAT-EDGE-019",
+      "traceIds": ["F1-TRACE-TIME-ARITHMETIC"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "kind": "subtract",
+      "left": {"numerator": 1, "denominator": 5},
+      "right": {"numerator": 1, "denominator": 3},
+      "expected": {"ok": false, "issue": {"code": "beat.negative_result", "path": []}}
+    },
+    {
+      "id": "F1-BEAT-EDGE-020",
+      "traceIds": ["F1-TRACE-TIME-ARITHMETIC"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "kind": "compare",
+      "left": {"numerator": 1, "denominator": 2},
+      "right": {"numerator": 1, "denominator": 2},
+      "expected": {"ordering": 0}
+    },
+    {
+      "id": "F1-BEAT-EDGE-021",
+      "traceIds": ["F1-TRACE-TIME-ARITHMETIC"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "kind": "decode-position",
+      "input": {"numerator": 0, "denominator": 1},
+      "expected": {"ok": true, "value": {"numerator": 0, "denominator": 1}}
+    },
+    {
+      "id": "F1-BEAT-EDGE-022",
+      "traceIds": ["F1-TRACE-TIME-ARITHMETIC"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "kind": "decode-duration",
+      "input": {"numerator": 0, "denominator": 1},
+      "expected": {"ok": false, "issue": {"code": "beat.duration_not_positive", "path": ["numerator"]}}
+    },
+    {
+      "id": "F1-BEAT-EDGE-023",
+      "traceIds": ["F1-TRACE-TIME-ARITHMETIC"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "kind": "decode-range",
+      "input": {"start": {"numerator": 0, "denominator": 1}, "end": {"numerator": 1, "denominator": 960}},
+      "expected": {"ok": true}
+    },
+    {
+      "id": "F1-BEAT-EDGE-024",
+      "traceIds": ["F1-TRACE-TIME-ARITHMETIC"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "kind": "decode-range",
+      "input": {"start": {"numerator": 1, "denominator": 1}, "end": {"numerator": 1, "denominator": 1}},
+      "expected": {"ok": false, "issue": {"code": "beat.range_empty", "path": ["end"]}}
+    },
+    {
+      "id": "F1-BEAT-EDGE-025",
+      "traceIds": ["F1-TRACE-TIME-ARITHMETIC"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "kind": "decode-range",
+      "input": {"start": {"numerator": 2, "denominator": 1}, "end": {"numerator": 1, "denominator": 1}},
+      "expected": {"ok": false, "issue": {"code": "beat.range_reversed", "path": ["end"]}}
+    },
+    {
+      "id": "F1-BEAT-EDGE-026",
+      "traceIds": ["F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "kind": "accumulate-timeline",
+      "input": [
+        {"numerator": 999999, "denominator": 1},
+        {"numerator": 1, "denominator": 1}
+      ],
+      "expected": {"ok": true, "total": {"numerator": 1000000, "denominator": 1}}
+    },
+    {
+      "id": "F1-BEAT-EDGE-027",
+      "traceIds": ["F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "kind": "accumulate-timeline",
+      "input": [
+        {"numerator": 1000000, "denominator": 1},
+        {"numerator": 1, "denominator": 960}
+      ],
+      "oracleEvidence": {"computedTotal": {"numerator": 960000001, "denominator": 960}},
+      "expected": {"ok": false, "issue": {"code": "timeline.total_exceeded", "path": []}, "partialValueReturned": false}
+    },
+    {
+      "id": "F1-BEAT-EDGE-028",
+      "traceIds": ["F1-TRACE-TIME-ARITHMETIC", "F1-TRACE-DECODER-RESULT"],
+      "authorityIds": ["F1-AUTH-TIME", "F1-AUTH-VALIDATION"],
+      "kind": "decode-canonical-wire-beat",
+      "input": {"numerator": 2, "denominator": 4},
+      "contrast": "F1-BEAT-EDGE-002 proves the explicit value constructor may normalize the same raw pair",
+      "expected": {
+        "ok": false,
+        "issue": {"code": "beat.not_normalized", "path": []}
+      }
+    },
+    {
+      "id": "F1-BEAT-EDGE-029",
+      "traceIds": ["F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "kind": "normalize",
+      "input": {"numerator": 9007199254740992, "denominator": 1},
+      "expected": {"ok": false, "issue": {"code": "beat.numerator_not_safe_integer", "path": ["numerator"]}}
+    },
+    {
+      "id": "F1-BEAT-EDGE-030",
+      "traceIds": ["F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "kind": "normalize",
+      "input": {"numerator": 1, "denominator": 9007199254740992},
+      "expected": {"ok": false, "issue": {"code": "beat.denominator_not_safe_integer", "path": ["denominator"]}}
+    }
+  ]
+}

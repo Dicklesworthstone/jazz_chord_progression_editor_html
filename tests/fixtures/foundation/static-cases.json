@@ -1,0 +1,458 @@
+{
+  "schemaVersion": 1,
+  "dependencyCases": [
+    {
+      "id": "boundary-same-layer",
+      "from": "domain",
+      "to": "domain",
+      "syntax": "import-type",
+      "expected": "allow"
+    },
+    {
+      "id": "boundary-theory-domain",
+      "from": "theory",
+      "to": "domain",
+      "syntax": "import",
+      "expected": "allow"
+    },
+    {
+      "id": "boundary-domain-theory",
+      "from": "domain",
+      "to": "theory",
+      "syntax": "import",
+      "expected": "reject",
+      "codes": [
+        "BOUNDARY_LAYER_DIRECTION"
+      ]
+    },
+    {
+      "id": "boundary-ui-application",
+      "from": "ui",
+      "to": "application",
+      "syntax": "re-export",
+      "expected": "allow"
+    },
+    {
+      "id": "boundary-ui-audio",
+      "from": "ui",
+      "to": "audio",
+      "syntax": "import-type",
+      "expected": "reject",
+      "codes": [
+        "BOUNDARY_LAYER_DIRECTION"
+      ]
+    },
+    {
+      "id": "boundary-theory-content",
+      "from": "theory",
+      "to": "content",
+      "syntax": "multiline-import",
+      "expected": "reject",
+      "codes": [
+        "BOUNDARY_THEORY_CONTENT"
+      ]
+    },
+    {
+      "id": "boundary-application-audio",
+      "from": "application",
+      "to": "audio",
+      "syntax": "import",
+      "expected": "allow"
+    },
+    {
+      "id": "boundary-production-test-support",
+      "from": "application",
+      "to": "test-support",
+      "syntax": "import",
+      "expected": "reject",
+      "codes": [
+        "BOUNDARY_TEST_SUPPORT"
+      ]
+    },
+    {
+      "id": "boundary-preact-ui",
+      "from": "ui",
+      "toPackage": "preact",
+      "syntax": "import",
+      "expected": "allow"
+    },
+    {
+      "id": "boundary-preact-theory",
+      "from": "theory",
+      "toPackage": "preact",
+      "syntax": "import",
+      "expected": "reject",
+      "codes": [
+        "BOUNDARY_PREACT_OWNER"
+      ]
+    },
+    {
+      "id": "boundary-private-traversal",
+      "from": "ui",
+      "to": "application",
+      "syntax": "private-path-traversal",
+      "expected": "reject",
+      "codes": [
+        "BOUNDARY_PRIVATE_IMPORT"
+      ]
+    }
+  ],
+  "duplicateCases": [
+    {
+      "id": "duplicate-object-method",
+      "source": "const service = { run() {}, run() {} };",
+      "expected": "reject",
+      "codes": [
+        "SOURCE_DUPLICATE_MEMBER"
+      ]
+    },
+    {
+      "id": "duplicate-object-property",
+      "source": "const state = { status: 'idle', status: 'playing' };",
+      "expected": "reject",
+      "codes": [
+        "SOURCE_DUPLICATE_MEMBER"
+      ]
+    },
+    {
+      "id": "duplicate-class-method",
+      "source": "class Transport { stop() {} stop() {} }",
+      "expected": "reject",
+      "codes": [
+        "SOURCE_DUPLICATE_MEMBER"
+      ]
+    },
+    {
+      "id": "accessor-pair",
+      "source": "class Meter { get value() { return 1; } set value(next: number) { void next; } }",
+      "expected": "allow",
+      "codes": []
+    },
+    {
+      "id": "overload-set",
+      "source": "class Parser { parse(value: string): string; parse(value: number): number; parse(value: string | number) { return value; } }",
+      "expected": "allow",
+      "codes": []
+    },
+    {
+      "id": "computed-members-not-guessed",
+      "source": "const a = 'x'; const b = 'x'; const value = { [a]: 1, [b]: 2 };",
+      "expected": "allow",
+      "codes": []
+    }
+  ],
+  "artifactCases": [
+    {
+      "id": "artifact-minimal-local",
+      "source": "<!doctype html><html><body><a href=\"#main\">Skip</a><img src=\"data:image/svg+xml,%3Csvg/%3E\" alt=\"\"><script>document.body.dataset.appReady='true'</script></body></html>",
+      "expected": "allow",
+      "codes": []
+    },
+    {
+      "id": "artifact-external-script",
+      "source": "<script src=\"https://cdn.example/app.js\"></script>",
+      "expected": "reject",
+      "codes": [
+        "ARTIFACT_EXTERNAL_SCRIPT"
+      ]
+    },
+    {
+      "id": "artifact-relative-script-sidecar",
+      "source": "<script src=\"./chunk.js\"></script>",
+      "expected": "reject",
+      "codes": [
+        "ARTIFACT_RUNTIME_SIDECAR"
+      ]
+    },
+    {
+      "id": "artifact-external-stylesheet",
+      "source": "<link rel=\"stylesheet\" href=\"https://cdn.example/app.css\">",
+      "expected": "reject",
+      "codes": [
+        "ARTIFACT_EXTERNAL_STYLESHEET"
+      ]
+    },
+    {
+      "id": "artifact-css-font-url",
+      "source": "<style>@font-face{src:url('https://fonts.example/jazz.woff2')}</style>",
+      "expected": "reject",
+      "codes": [
+        "ARTIFACT_EXTERNAL_FONT"
+      ]
+    },
+    {
+      "id": "artifact-module-preload",
+      "source": "<link rel=\"modulepreload\" href=\"./chunk.js\">",
+      "expected": "reject",
+      "codes": [
+        "ARTIFACT_RUNTIME_SIDECAR"
+      ]
+    },
+    {
+      "id": "artifact-external-image",
+      "source": "<img src=\"//images.example/cover.png\" alt=\"Cover\">",
+      "expected": "reject",
+      "codes": [
+        "ARTIFACT_EXTERNAL_IMAGE"
+      ]
+    },
+    {
+      "id": "artifact-srcset-remote-candidate",
+      "source": "<img src=\"data:image/gif;base64,R0lGODlhAQABAAAAACw=\" srcset=\"data:image/gif;base64,R0lGODlhAQABAAAAACw= 1x, https://images.example/cover.png 2x\" alt=\"Cover\">",
+      "expected": "reject",
+      "codes": [
+        "ARTIFACT_EXTERNAL_SRCSET"
+      ]
+    },
+    {
+      "id": "artifact-svg-image",
+      "source": "<svg><image href=\"https://images.example/cover.svg\"></image></svg>",
+      "expected": "reject",
+      "codes": [
+        "ARTIFACT_EXTERNAL_IMAGE"
+      ]
+    },
+    {
+      "id": "artifact-navigation-elements",
+      "source": "<base href=\"https://example.test/\"><iframe src=\"./frame.html\"></iframe><object data=\"./score.pdf\"></object><form action=\"/send\"></form>",
+      "expected": "reject",
+      "codes": [
+        "ARTIFACT_BASE_URL",
+        "ARTIFACT_EXTERNAL_FORM_ACTION",
+        "ARTIFACT_EXTERNAL_FRAME",
+        "ARTIFACT_EXTERNAL_OBJECT"
+      ]
+    },
+    {
+      "id": "artifact-meta-refresh",
+      "source": "<meta http-equiv=\"refresh\" content=\"0; url=https://example.test\">",
+      "expected": "reject",
+      "codes": [
+        "ARTIFACT_META_REFRESH"
+      ]
+    },
+    {
+      "id": "artifact-external-anchor",
+      "source": "<a href=\"https://example.test\">Leave application</a>",
+      "expected": "reject",
+      "codes": [
+        "ARTIFACT_EXTERNAL_ANCHOR"
+      ]
+    },
+    {
+      "id": "artifact-css-import",
+      "source": "<style>@import url('./theme.css');</style>",
+      "expected": "reject",
+      "codes": [
+        "ARTIFACT_CSS_IMPORT"
+      ]
+    },
+    {
+      "id": "artifact-css-image-set",
+      "source": "<style>.hero{background-image:image-set(url('data:image/png;base64,AA==') 1x,url('https://images.example/hero.png') 2x)}</style>",
+      "expected": "reject",
+      "codes": [
+        "ARTIFACT_CSS_EXTERNAL_ASSET"
+      ]
+    },
+    {
+      "id": "artifact-static-import",
+      "source": "<script type=\"module\">import './later.js';</script>",
+      "expected": "reject",
+      "codes": [
+        "ARTIFACT_STATIC_IMPORT"
+      ]
+    },
+    {
+      "id": "artifact-dynamic-import",
+      "source": "<script>void import('./later.js')</script>",
+      "expected": "reject",
+      "codes": [
+        "ARTIFACT_DYNAMIC_IMPORT"
+      ]
+    },
+    {
+      "id": "artifact-fetch-call",
+      "source": "<script>fetch('/presets.json')</script>",
+      "expected": "reject",
+      "codes": [
+        "ARTIFACT_FETCH"
+      ]
+    },
+    {
+      "id": "artifact-computed-fetch-call",
+      "source": "<script>globalThis['fetch']('/presets.json')</script>",
+      "expected": "reject",
+      "codes": [
+        "ARTIFACT_FETCH"
+      ]
+    },
+    {
+      "id": "artifact-network-api-group",
+      "source": "<script>new XMLHttpRequest(); new EventSource('/events'); navigator.sendBeacon('/metrics','x')</script>",
+      "expected": "reject",
+      "codes": [
+        "ARTIFACT_EVENT_SOURCE",
+        "ARTIFACT_SEND_BEACON",
+        "ARTIFACT_XML_HTTP_REQUEST"
+      ]
+    },
+    {
+      "id": "artifact-worker",
+      "source": "<script>new Worker('engine.js')</script>",
+      "expected": "reject",
+      "codes": [
+        "ARTIFACT_WORKER"
+      ]
+    },
+    {
+      "id": "artifact-worker-api-group",
+      "source": "<script>new SharedWorker('engine.js'); navigator.serviceWorker.register('sw.js'); audioContext.audioWorklet.addModule('processor.js')</script>",
+      "expected": "reject",
+      "codes": [
+        "ARTIFACT_SERVICE_WORKER",
+        "ARTIFACT_SHARED_WORKER",
+        "ARTIFACT_WORKLET_MODULE"
+      ]
+    },
+    {
+      "id": "artifact-websocket",
+      "source": "<script>new WebSocket('wss://example.test')</script>",
+      "expected": "reject",
+      "codes": [
+        "ARTIFACT_WEB_SOCKET"
+      ]
+    },
+    {
+      "id": "artifact-source-map",
+      "source": "<script>console.log('ready')\n//# sourceMappingURL=app.js.map</script>",
+      "expected": "reject",
+      "codes": [
+        "ARTIFACT_SOURCE_MAP"
+      ]
+    },
+    {
+      "id": "artifact-harmless-license-url",
+      "source": "<script>const licenseNotice = 'Project homepage: https://example.test'; document.body.textContent = licenseNotice;</script>",
+      "expected": "allow",
+      "codes": []
+    },
+    {
+      "id": "artifact-prohibited-names-in-comments",
+      "source": "<script>/* fetch XMLHttpRequest Worker */ const prose = 'WebSocket and EventSource are not used'; document.body.textContent = prose;</script>",
+      "expected": "allow",
+      "codes": []
+    },
+    {
+      "id": "artifact-object-url-local-export",
+      "source": "<script>const url=URL.createObjectURL(new Blob(['local'])); URL.revokeObjectURL(url)</script>",
+      "expected": "allow",
+      "codes": []
+    },
+    {
+      "id": "artifact-executable-data-script",
+      "source": "<script src=\"data:text/javascript,alert(1)\"></script>",
+      "expected": "reject",
+      "codes": [
+        "ARTIFACT_EXECUTABLE_DATA_URL"
+      ]
+    },
+    {
+      "id": "artifact-popup-navigation",
+      "source": "<script>window.open('https://example.test')</script>",
+      "expected": "reject",
+      "codes": [
+        "ARTIFACT_POPUP_NAVIGATION"
+      ]
+    }
+  ],
+  "sizeCases": [
+    {
+      "id": "artifact-size-boundary",
+      "bytes": 1572864,
+      "expected": "allow"
+    },
+    {
+      "id": "artifact-size-plus-one",
+      "bytes": 1572865,
+      "expected": "reject",
+      "codes": [
+        "ARTIFACT_SIZE_BUDGET"
+      ]
+    }
+  ],
+  "runtimeCases": [
+    {
+      "id": "runtime-file-no-network",
+      "mode": "file",
+      "expectedReady": true,
+      "maxForbiddenRequests": 0,
+      "maxPageErrors": 0,
+      "maxUnexpectedConsoleErrors": 0
+    },
+    {
+      "id": "runtime-http-no-network",
+      "mode": "http",
+      "expectedReady": true,
+      "maxForbiddenRequests": 0,
+      "maxPageErrors": 0,
+      "maxUnexpectedConsoleErrors": 0
+    },
+    {
+      "id": "runtime-negative-external-request",
+      "mode": "http-no-csp-negative-control",
+      "fixture": "external-image",
+      "expectedDetected": true,
+      "expectedDisposition": "blocked"
+    },
+    {
+      "id": "runtime-negative-sidecar",
+      "mode": "http-no-csp-negative-control",
+      "fixture": "relative-script",
+      "expectedDetected": true,
+      "expectedDisposition": "blocked"
+    },
+    {
+      "id": "runtime-negative-bad-response",
+      "mode": "http-no-csp-negative-control",
+      "fixture": "http-404",
+      "expectedDetected": true,
+      "expectedResponseStatus": 404
+    },
+    {
+      "id": "runtime-negative-page-error",
+      "mode": "http-no-csp-negative-control",
+      "fixture": "throw-error",
+      "expectedDetected": true,
+      "expectedEvent": "pageerror"
+    },
+    {
+      "id": "runtime-negative-console-error",
+      "mode": "http-no-csp-negative-control",
+      "fixture": "console-error",
+      "expectedDetected": true,
+      "expectedEvent": "console"
+    },
+    {
+      "id": "runtime-negative-popup",
+      "mode": "http-no-csp-negative-control",
+      "fixture": "popup",
+      "expectedDetected": true,
+      "expectedEvent": "page"
+    },
+    {
+      "id": "runtime-negative-worker",
+      "mode": "http-no-csp-negative-control",
+      "fixture": "worker",
+      "expectedDetected": true,
+      "expectedEvent": "worker"
+    },
+    {
+      "id": "runtime-negative-websocket",
+      "mode": "http-no-csp-negative-control",
+      "fixture": "websocket",
+      "expectedDetected": true,
+      "expectedEvent": "websocket"
+    }
+  ]
+}

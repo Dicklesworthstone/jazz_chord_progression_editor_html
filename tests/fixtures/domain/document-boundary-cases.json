@@ -1,0 +1,786 @@
+{
+  "schema": "changes.fixtures.f1-document-boundary.v1",
+  "defaultSeedId": "F1-SEED-BOUNDARY",
+  "idSyntax": {
+    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+    "maximumAsciiCharacters": 128,
+    "caseSensitive": true,
+    "scope": "global across all persisted ID kinds"
+  },
+  "specialInputDescriptors": {
+    "repeatAscii": "materialize the named ASCII character count before decoding",
+    "repeatCodePoint": "materialize the Unicode scalar value count before decoding",
+    "specialNumber": "materialize NaN or positive/negative Infinity at the total runtime decoder boundary",
+    "loneSurrogate": "materialize exactly one unpaired UTF-16 surrogate code unit",
+    "utf8Bytes": "materialize an input byte sequence of exactly the declared UTF-8 length; byte preflight runs before JSON parsing",
+    "jsonNestingDepth": "materialize alternating object/array containers with the root container counted as depth one",
+    "shapeCount": "materialize a structurally minimal valid collection with the declared count and globally unique IDs"
+  },
+  "textValidationMatrix": {
+    "fields": ["documentTitle", "documentDescription", "sectionName", "annotation", "chordSourceText", "customChordLabel", "partialMeasureReason", "engineVersion"],
+    "lengthUnit": "Unicode scalar values",
+    "rejects": ["unpaired high surrogate", "unpaired low surrogate"],
+    "nonblankCheck": "Unicode whitespace trim for required fields only",
+    "storedValuePolicy": "preserve the original nonblank string without trimming or normalization"
+  },
+  "cases": [
+    {
+      "id": "F1-DOC-001",
+      "traceIds": ["F1-TRACE-DOCUMENT-TYPES", "F1-TRACE-DECODER-RESULT"],
+      "authorityIds": ["F1-AUTH-DOCUMENT", "F1-AUTH-VALIDATION"],
+      "kind": "minimal-empty-document",
+      "inputSummary": {
+        "schema": "changes.progression.v2",
+        "id": "Empty-Doc:1",
+        "title": "Untitled",
+        "description": "",
+        "meter": {"beatsPerBar": 4, "beatUnit": 4},
+        "tempoBpm": 120,
+        "key": null,
+        "sections": [],
+        "playback": {"instrumentId": "mellow-keys", "masterVolume": 0.8, "reverbAmount": 0.2, "countInBars": 0}
+      },
+      "expected": {"ok": true, "warnings": [], "sectionsLength": 0}
+    },
+    {
+      "id": "F1-DOC-002",
+      "traceIds": ["F1-TRACE-DOCUMENT-TYPES", "F1-TRACE-DECODER-RESULT"],
+      "authorityIds": ["F1-AUTH-DOCUMENT", "F1-AUTH-VALIDATION"],
+      "kind": "empty-section",
+      "inputSummary": {
+        "schema": "changes.progression.v2",
+        "id": "Document.EmptySection",
+        "title": "Named empty section",
+        "description": "",
+        "meter": {"beatsPerBar": 4, "beatUnit": 4},
+        "tempoBpm": 120,
+        "key": null,
+        "sections": [{"id": "Section.Empty", "name": "Empty", "annotation": "", "keyOverride": null, "voiceLeadingBoundary": "continue", "measures": []}],
+        "playback": {"instrumentId": "mellow-keys", "masterVolume": 0.8, "reverbAmount": 0.2, "countInBars": 0}
+      },
+      "expected": {"ok": true, "sectionsLength": 1, "section0MeasuresLength": 0}
+    },
+    {
+      "id": "F1-DOC-003",
+      "traceIds": ["F1-TRACE-DOCUMENT-TYPES"],
+      "authorityIds": ["F1-AUTH-DOCUMENT"],
+      "kind": "instrument-id-set",
+      "input": ["mellow-keys", "fm-electric-piano", "vibraphone", "warm-pad", "analog-poly"],
+      "expected": {"allValid": true, "preservedOrder": ["mellow-keys", "fm-electric-piano", "vibraphone", "warm-pad", "analog-poly"]}
+    },
+    {
+      "id": "F1-DOC-004",
+      "traceIds": ["F1-TRACE-DOCUMENT-TYPES", "F1-TRACE-DECODER-RESULT"],
+      "authorityIds": ["F1-AUTH-DOCUMENT", "F1-AUTH-VALIDATION"],
+      "kind": "instrument-id-unsupported",
+      "input": "grand-piano",
+      "expected": {"ok": false, "issue": {"code": "document.instrument_id_invalid", "path": ["playback", "instrumentId"]}}
+    },
+    {
+      "id": "F1-DOC-005",
+      "traceIds": ["F1-TRACE-KEY-CONTEXT"],
+      "authorityIds": ["F1-AUTH-KEY"],
+      "kind": "key-mode-set",
+      "tonic": {"step": "C", "alter": 0},
+      "inputModes": ["major", "natural-minor", "harmonic-minor", "melodic-minor"],
+      "expected": {"allValid": true, "inferredOrPersistedModes": []}
+    },
+    {
+      "id": "F1-DOC-006",
+      "traceIds": ["F1-TRACE-KEY-CONTEXT"],
+      "authorityIds": ["F1-AUTH-KEY"],
+      "kind": "absent-key-context",
+      "input": {"documentKey": null, "sectionKeyOverride": null},
+      "expected": {"ok": true, "silentInferenceForbidden": true}
+    },
+    {
+      "id": "F1-DOC-007",
+      "traceIds": ["F1-TRACE-KEY-CONTEXT"],
+      "authorityIds": ["F1-AUTH-KEY"],
+      "kind": "invalid-key-mode",
+      "input": {"tonic": {"step": "C", "alter": 0}, "mode": "dorian"},
+      "expected": {"ok": false, "issue": {"code": "key.mode_invalid", "path": ["mode"]}}
+    },
+    {
+      "id": "F1-DOC-008",
+      "traceIds": ["F1-TRACE-KEY-CONTEXT"],
+      "authorityIds": ["F1-AUTH-KEY"],
+      "kind": "invalid-key-tonic",
+      "input": {"tonic": {"step": "H", "alter": 0}, "mode": "major"},
+      "expected": {"ok": false, "issue": {"code": "pitch.step_invalid", "path": ["tonic", "step"]}}
+    },
+    {
+      "id": "F1-DOC-009",
+      "traceIds": ["F1-TRACE-DECODER-RESULT"],
+      "authorityIds": ["F1-AUTH-VALIDATION"],
+      "kind": "root-not-object-null",
+      "input": null,
+      "expected": {"ok": false, "errors": [{"code": "document.root_not_object", "path": []}], "partialValueReturned": false}
+    },
+    {
+      "id": "F1-DOC-010",
+      "traceIds": ["F1-TRACE-DECODER-RESULT"],
+      "authorityIds": ["F1-AUTH-VALIDATION"],
+      "kind": "root-not-object-array",
+      "input": [],
+      "expected": {"ok": false, "errors": [{"code": "document.root_not_object", "path": []}], "partialValueReturned": false}
+    },
+    {
+      "id": "F1-DOC-011",
+      "traceIds": ["F1-TRACE-DOCUMENT-TYPES", "F1-TRACE-DECODER-RESULT"],
+      "authorityIds": ["F1-AUTH-DOCUMENT", "F1-AUTH-VALIDATION"],
+      "kind": "schema-invalid",
+      "input": {"schema": "changes.progression.v1"},
+      "expected": {"ok": false, "issue": {"code": "document.schema_invalid", "path": ["schema"]}}
+    },
+    {
+      "id": "F1-DOC-012",
+      "traceIds": ["F1-TRACE-DOCUMENT-TYPES", "F1-TRACE-DECODER-RESULT"],
+      "authorityIds": ["F1-AUTH-DOCUMENT", "F1-AUTH-VALIDATION"],
+      "kind": "schema-missing",
+      "input": {},
+      "expected": {"ok": false, "issue": {"code": "document.schema_missing", "path": ["schema"]}}
+    },
+    {
+      "id": "F1-DOC-013",
+      "traceIds": ["F1-TRACE-ID-STABILITY"],
+      "authorityIds": ["F1-AUTH-ID"],
+      "kind": "id-valid-syntax",
+      "input": "A-z_9.part:take-2",
+      "expected": {"ok": true, "value": "A-z_9.part:take-2", "casePreserved": true}
+    },
+    {
+      "id": "F1-DOC-014",
+      "traceIds": ["F1-TRACE-ID-STABILITY", "F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-ID", "F1-AUTH-VALIDATION"],
+      "kind": "id-length-exact",
+      "inputDescriptor": {"repeatAscii": "A", "count": 128},
+      "expected": {"ok": true, "characterCount": 128}
+    },
+    {
+      "id": "F1-DOC-015",
+      "traceIds": ["F1-TRACE-ID-STABILITY", "F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-ID", "F1-AUTH-VALIDATION"],
+      "kind": "id-length-plus-one",
+      "inputDescriptor": {"repeatAscii": "A", "count": 129},
+      "expected": {"ok": false, "issue": {"code": "id.length_exceeded", "path": ["id"]}}
+    },
+    {
+      "id": "F1-DOC-016",
+      "traceIds": ["F1-TRACE-ID-STABILITY"],
+      "authorityIds": ["F1-AUTH-ID"],
+      "kind": "id-empty",
+      "input": "",
+      "expected": {"ok": false, "issue": {"code": "id.syntax_invalid", "path": ["id"]}}
+    },
+    {
+      "id": "F1-DOC-017",
+      "traceIds": ["F1-TRACE-ID-STABILITY"],
+      "authorityIds": ["F1-AUTH-ID"],
+      "kind": "id-leading-punctuation",
+      "input": "_starts-wrong",
+      "expected": {"ok": false, "issue": {"code": "id.syntax_invalid", "path": ["id"]}}
+    },
+    {
+      "id": "F1-DOC-018",
+      "traceIds": ["F1-TRACE-ID-STABILITY"],
+      "authorityIds": ["F1-AUTH-ID"],
+      "kind": "id-space",
+      "input": "has space",
+      "expected": {"ok": false, "issue": {"code": "id.syntax_invalid", "path": ["id"]}}
+    },
+    {
+      "id": "F1-DOC-019",
+      "traceIds": ["F1-TRACE-ID-STABILITY"],
+      "authorityIds": ["F1-AUTH-ID"],
+      "kind": "id-other-printable-punctuation",
+      "input": "has/slash",
+      "expected": {"ok": false, "issue": {"code": "id.syntax_invalid", "path": ["id"]}}
+    },
+    {
+      "id": "F1-DOC-020",
+      "traceIds": ["F1-TRACE-ID-STABILITY"],
+      "authorityIds": ["F1-AUTH-ID"],
+      "kind": "id-control",
+      "input": "line\nbreak",
+      "expected": {"ok": false, "issue": {"code": "id.syntax_invalid", "path": ["id"]}}
+    },
+    {
+      "id": "F1-DOC-021",
+      "traceIds": ["F1-TRACE-ID-STABILITY"],
+      "authorityIds": ["F1-AUTH-ID"],
+      "kind": "id-non-ascii",
+      "input": "café",
+      "expected": {"ok": false, "issue": {"code": "id.syntax_invalid", "path": ["id"]}}
+    },
+    {
+      "id": "F1-DOC-022",
+      "traceIds": ["F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-VALIDATION"],
+      "kind": "import-bytes-exact",
+      "inputDescriptor": {"utf8Bytes": 2097152},
+      "expected": {"preflightOk": true, "jsonOrShapeOutcome": "not asserted by this byte-boundary case", "owner": "F2"}
+    },
+    {
+      "id": "F1-DOC-023",
+      "traceIds": ["F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-VALIDATION"],
+      "kind": "import-bytes-plus-one",
+      "inputDescriptor": {"utf8Bytes": 2097153},
+      "expected": {"ok": false, "issue": {"code": "limit.import_bytes_exceeded", "path": []}, "allocationBeforeRefusal": false}
+    },
+    {
+      "id": "F1-DOC-024",
+      "traceIds": ["F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-VALIDATION"],
+      "kind": "json-depth-exact",
+      "inputDescriptor": {"jsonNestingDepth": 32},
+      "expected": {"preflightOk": true, "rootContainerDepth": 1, "owner": "F2"}
+    },
+    {
+      "id": "F1-DOC-025",
+      "traceIds": ["F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-VALIDATION"],
+      "kind": "json-depth-plus-one",
+      "inputDescriptor": {"jsonNestingDepth": 33},
+      "expected": {"ok": false, "issue": {"code": "limit.json_depth_exceeded", "path": []}, "proportionalAllocationBeforeRefusal": false}
+    },
+    {
+      "id": "F1-DOC-026",
+      "traceIds": ["F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-VALIDATION"],
+      "kind": "sections-exact",
+      "inputDescriptor": {"shapeCount": "sections", "count": 64},
+      "expected": {"ok": true, "count": 64}
+    },
+    {
+      "id": "F1-DOC-027",
+      "traceIds": ["F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-VALIDATION"],
+      "kind": "sections-plus-one",
+      "inputDescriptor": {"shapeCount": "sections", "count": 65},
+      "expected": {"ok": false, "issue": {"code": "limit.sections_exceeded", "path": ["sections"]}, "proportionalOutputAllocatedBeforeRefusal": false, "maximumCountObservedBeforeRefusal": 65}
+    },
+    {
+      "id": "F1-DOC-028",
+      "traceIds": ["F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-VALIDATION"],
+      "kind": "measures-per-section-exact",
+      "inputDescriptor": {"shapeCount": "measuresInSection0", "count": 1024},
+      "expected": {"ok": true, "count": 1024}
+    },
+    {
+      "id": "F1-DOC-029",
+      "traceIds": ["F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-VALIDATION"],
+      "kind": "measures-per-section-plus-one",
+      "inputDescriptor": {"shapeCount": "measuresInSection0", "count": 1025},
+      "expected": {"ok": false, "issue": {"code": "limit.measures_per_section_exceeded", "path": ["sections", 0, "measures"]}, "proportionalOutputAllocatedBeforeRefusal": false, "maximumCountObservedBeforeRefusal": 1025}
+    },
+    {
+      "id": "F1-DOC-030",
+      "traceIds": ["F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-VALIDATION"],
+      "kind": "events-per-document-exact",
+      "inputDescriptor": {"shapeCount": "eventsAcrossDocument", "count": 8192},
+      "expected": {"ok": true, "count": 8192}
+    },
+    {
+      "id": "F1-DOC-031",
+      "traceIds": ["F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-VALIDATION"],
+      "kind": "events-per-document-plus-one",
+      "inputDescriptor": {"shapeCount": "eventsAcrossDocument", "count": 8193},
+      "expected": {"ok": false, "issue": {"code": "limit.events_per_document_exceeded", "path": ["sections"]}, "proportionalOutputAllocatedBeforeRefusal": false, "maximumCountObservedBeforeRefusal": 8193}
+    },
+    {
+      "id": "F1-DOC-032",
+      "traceIds": ["F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-VALIDATION"],
+      "kind": "symbol-code-points-exact",
+      "inputDescriptor": {"field": "sourceText", "repeatCodePoint": "U+0043", "count": 256},
+      "expected": {"ok": true, "codePointCount": 256}
+    },
+    {
+      "id": "F1-DOC-033",
+      "traceIds": ["F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-VALIDATION"],
+      "kind": "symbol-code-points-plus-one",
+      "inputDescriptor": {"field": "sourceText", "repeatCodePoint": "U+0043", "count": 257},
+      "expected": {"ok": false, "issue": {"code": "limit.symbol_code_points_exceeded", "path": ["sourceText"]}}
+    },
+    {
+      "id": "F1-DOC-034",
+      "traceIds": ["F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-VALIDATION"],
+      "kind": "annotation-code-points-exact",
+      "inputDescriptor": {"field": "annotation", "repeatCodePoint": "U+0061", "count": 2000},
+      "expected": {"ok": true, "codePointCount": 2000}
+    },
+    {
+      "id": "F1-DOC-035",
+      "traceIds": ["F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-VALIDATION"],
+      "kind": "annotation-code-points-plus-one",
+      "inputDescriptor": {"field": "annotation", "repeatCodePoint": "U+0061", "count": 2001},
+      "expected": {"ok": false, "issue": {"code": "limit.annotation_code_points_exceeded", "path": ["annotation"]}}
+    },
+    {
+      "id": "F1-DOC-036",
+      "traceIds": ["F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-VALIDATION"],
+      "kind": "title-astral-code-points-exact",
+      "inputDescriptor": {"field": "title", "repeatCodePoint": "U+1D11E", "count": 256},
+      "expected": {"ok": true, "codePointCount": 256, "utf16CodeUnitCount": 512}
+    },
+    {
+      "id": "F1-DOC-037",
+      "traceIds": ["F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-VALIDATION"],
+      "kind": "title-astral-code-points-plus-one",
+      "inputDescriptor": {"field": "title", "repeatCodePoint": "U+1D11E", "count": 257},
+      "expected": {"ok": false, "issue": {"code": "limit.title_code_points_exceeded", "path": ["title"]}}
+    },
+    {
+      "id": "F1-DOC-038",
+      "traceIds": ["F1-TRACE-TIME-LIMITS", "F1-TRACE-DECODER-RESULT"],
+      "authorityIds": ["F1-AUTH-VALIDATION"],
+      "kind": "lone-surrogate-rejected",
+      "inputDescriptor": {"field": "title", "loneSurrogate": "U+D800"},
+      "expected": {"ok": false, "issue": {"code": "string.invalid_unicode_scalar", "path": ["title"]}}
+    },
+    {
+      "id": "F1-DOC-039",
+      "traceIds": ["F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-VALIDATION"],
+      "kind": "tempo-minimum",
+      "input": 20,
+      "expected": {"ok": true, "value": 20}
+    },
+    {
+      "id": "F1-DOC-040",
+      "traceIds": ["F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-VALIDATION"],
+      "kind": "tempo-maximum",
+      "input": 400,
+      "expected": {"ok": true, "value": 400}
+    },
+    {
+      "id": "F1-DOC-041",
+      "traceIds": ["F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-VALIDATION"],
+      "kind": "tempo-below-minimum",
+      "input": 19,
+      "expected": {"ok": false, "issue": {"code": "tempo.out_of_range", "path": ["tempoBpm"]}}
+    },
+    {
+      "id": "F1-DOC-042",
+      "traceIds": ["F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-VALIDATION"],
+      "kind": "tempo-above-maximum",
+      "input": 401,
+      "expected": {"ok": false, "issue": {"code": "tempo.out_of_range", "path": ["tempoBpm"]}}
+    },
+    {
+      "id": "F1-DOC-043",
+      "traceIds": ["F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-VALIDATION"],
+      "kind": "tempo-noninteger",
+      "input": 120.5,
+      "expected": {"ok": false, "issue": {"code": "tempo.not_integer", "path": ["tempoBpm"]}}
+    },
+    {
+      "id": "F1-DOC-044",
+      "traceIds": ["F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-VALIDATION"],
+      "kind": "tempo-nan",
+      "inputDescriptor": {"specialNumber": "NaN"},
+      "expected": {"ok": false, "issue": {"code": "tempo.not_finite", "path": ["tempoBpm"]}}
+    },
+    {
+      "id": "F1-DOC-045",
+      "traceIds": ["F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-VALIDATION"],
+      "kind": "tempo-positive-infinity",
+      "inputDescriptor": {"specialNumber": "+Infinity"},
+      "expected": {"ok": false, "issue": {"code": "tempo.not_finite", "path": ["tempoBpm"]}}
+    },
+    {
+      "id": "F1-DOC-046",
+      "traceIds": ["F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-VALIDATION"],
+      "kind": "tempo-negative-infinity",
+      "inputDescriptor": {"specialNumber": "-Infinity"},
+      "expected": {"ok": false, "issue": {"code": "tempo.not_finite", "path": ["tempoBpm"]}}
+    },
+    {
+      "id": "F1-DOC-047",
+      "traceIds": ["F1-TRACE-METER-CAPACITY", "F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-TIME", "F1-AUTH-VALIDATION"],
+      "kind": "beats-per-bar-boundaries",
+      "input": [1, 32],
+      "expected": {"allValid": true}
+    },
+    {
+      "id": "F1-DOC-048",
+      "traceIds": ["F1-TRACE-METER-CAPACITY", "F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-TIME", "F1-AUTH-VALIDATION"],
+      "kind": "beats-per-bar-out-of-range",
+      "input": [0, 33],
+      "expected": {
+        "issues": [
+          {"input": 0, "code": "meter.beats_per_bar_out_of_range"},
+          {"input": 33, "code": "meter.beats_per_bar_out_of_range"}
+        ]
+      }
+    },
+    {
+      "id": "F1-DOC-049",
+      "traceIds": ["F1-TRACE-METER-CAPACITY", "F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-TIME", "F1-AUTH-VALIDATION"],
+      "kind": "beat-unit-set",
+      "input": [2, 4, 8],
+      "expected": {"allValid": true}
+    },
+    {
+      "id": "F1-DOC-050",
+      "traceIds": ["F1-TRACE-METER-CAPACITY", "F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-TIME", "F1-AUTH-VALIDATION"],
+      "kind": "beat-unit-invalid",
+      "input": [1, 16],
+      "expected": {
+        "issues": [
+          {"input": 1, "code": "meter.beat_unit_invalid"},
+          {"input": 16, "code": "meter.beat_unit_invalid"}
+        ]
+      }
+    },
+    {
+      "id": "F1-DOC-051",
+      "traceIds": ["F1-TRACE-DECODER-RESULT", "F1-TRACE-ID-TRANSACTION"],
+      "authorityIds": ["F1-AUTH-VALIDATION", "F1-AUTH-ID"],
+      "kind": "multi-error-deterministic-order",
+      "inputSummary": {
+        "titleCodePoints": 257,
+        "tempoBpm": 19,
+        "section0Id": "same-id",
+        "section0Measure0Event0Id": "same-id",
+        "section0Measure0Event0Duration": {"numerator": 0, "denominator": 1}
+      },
+      "expected": {
+        "ok": false,
+        "errorsInOrder": [
+          {"code": "id.duplicate", "path": ["sections", 0, "id"], "role": "first"},
+          {"code": "beat.duration_not_positive", "path": ["sections", 0, "measures", 0, "events", 0, "duration", "numerator"]},
+          {"code": "id.duplicate", "path": ["sections", 0, "measures", 0, "events", 0, "id"], "role": "duplicate"},
+          {"code": "tempo.out_of_range", "path": ["tempoBpm"]},
+          {"code": "limit.title_code_points_exceeded", "path": ["title"]}
+        ],
+        "orderingRule": "path segments compare lexically for strings and numerically for indices, then stable issue code at an identical path",
+        "partialValueReturned": false,
+        "currentStateUnchanged": true
+      }
+    },
+    {
+      "id": "F1-DOC-052",
+      "traceIds": ["F1-TRACE-DECODER-RESULT"],
+      "authorityIds": ["F1-AUTH-VALIDATION"],
+      "kind": "decode-result-exclusive-shape",
+      "inputSummary": "invalid document",
+      "expected": {
+        "ok": false,
+        "hasErrors": true,
+        "hasValue": false,
+        "hasWarnings": false,
+        "transactional": true
+      }
+    },
+    {
+      "id": "F1-DOC-053",
+      "traceIds": ["F1-TRACE-TIME-LIMITS", "F1-TRACE-DOCUMENT-TYPES"],
+      "authorityIds": ["F1-AUTH-DOCUMENT", "F1-AUTH-VALIDATION"],
+      "kind": "custom-label-code-points-exact",
+      "inputDescriptor": {"field": "customChordLabel", "repeatCodePoint": "U+004C", "count": 256},
+      "expected": {"ok": true, "codePointCount": 256}
+    },
+    {
+      "id": "F1-DOC-054",
+      "traceIds": ["F1-TRACE-TIME-LIMITS", "F1-TRACE-DOCUMENT-TYPES"],
+      "authorityIds": ["F1-AUTH-DOCUMENT", "F1-AUTH-VALIDATION"],
+      "kind": "custom-label-code-points-plus-one",
+      "inputDescriptor": {"field": "customChordLabel", "repeatCodePoint": "U+004C", "count": 257},
+      "expected": {"ok": false, "issue": {"code": "limit.custom_label_code_points_exceeded", "path": ["label"]}}
+    },
+    {
+      "id": "F1-DOC-055",
+      "traceIds": ["F1-TRACE-TIME-LIMITS", "F1-TRACE-DOCUMENT-TYPES"],
+      "authorityIds": ["F1-AUTH-DOCUMENT", "F1-AUTH-VALIDATION"],
+      "kind": "section-name-code-points-exact",
+      "inputDescriptor": {"field": "sectionName", "repeatCodePoint": "U+0053", "count": 256},
+      "expected": {"ok": true, "codePointCount": 256}
+    },
+    {
+      "id": "F1-DOC-056",
+      "traceIds": ["F1-TRACE-TIME-LIMITS", "F1-TRACE-DOCUMENT-TYPES"],
+      "authorityIds": ["F1-AUTH-DOCUMENT", "F1-AUTH-VALIDATION"],
+      "kind": "section-name-code-points-plus-one",
+      "inputDescriptor": {"field": "sectionName", "repeatCodePoint": "U+0053", "count": 257},
+      "expected": {"ok": false, "issue": {"code": "limit.section_name_code_points_exceeded", "path": ["sections", 0, "name"]}}
+    },
+    {
+      "id": "F1-DOC-057",
+      "traceIds": ["F1-TRACE-TIME-LIMITS", "F1-TRACE-DOCUMENT-TYPES"],
+      "authorityIds": ["F1-AUTH-DOCUMENT", "F1-AUTH-VALIDATION"],
+      "kind": "description-code-points-exact",
+      "inputDescriptor": {"field": "documentDescription", "repeatCodePoint": "U+0064", "count": 2000},
+      "expected": {"ok": true, "codePointCount": 2000}
+    },
+    {
+      "id": "F1-DOC-058",
+      "traceIds": ["F1-TRACE-TIME-LIMITS", "F1-TRACE-DOCUMENT-TYPES"],
+      "authorityIds": ["F1-AUTH-DOCUMENT", "F1-AUTH-VALIDATION"],
+      "kind": "description-code-points-plus-one",
+      "inputDescriptor": {"field": "documentDescription", "repeatCodePoint": "U+0064", "count": 2001},
+      "expected": {"ok": false, "issue": {"code": "limit.description_code_points_exceeded", "path": ["description"]}}
+    },
+    {
+      "id": "F1-DOC-059",
+      "traceIds": ["F1-TRACE-TIME-LIMITS", "F1-TRACE-MEASURE-STATE"],
+      "authorityIds": ["F1-AUTH-DOCUMENT", "F1-AUTH-VALIDATION"],
+      "kind": "partial-reason-code-points-exact",
+      "inputDescriptor": {"field": "partialMeasureReason", "repeatCodePoint": "U+0072", "count": 2000},
+      "expected": {"ok": true, "codePointCount": 2000}
+    },
+    {
+      "id": "F1-DOC-060",
+      "traceIds": ["F1-TRACE-TIME-LIMITS", "F1-TRACE-MEASURE-STATE"],
+      "authorityIds": ["F1-AUTH-DOCUMENT", "F1-AUTH-VALIDATION"],
+      "kind": "partial-reason-code-points-plus-one",
+      "inputDescriptor": {"field": "partialMeasureReason", "repeatCodePoint": "U+0072", "count": 2001},
+      "expected": {"ok": false, "issue": {"code": "limit.reason_code_points_exceeded", "path": ["completion", "reason"]}}
+    },
+    {
+      "id": "F1-DOC-061",
+      "traceIds": ["F1-TRACE-DOCUMENT-TYPES", "F1-TRACE-DECODER-RESULT"],
+      "authorityIds": ["F1-AUTH-DOCUMENT", "F1-AUTH-VALIDATION"],
+      "kind": "title-blank",
+      "input": "   \t",
+      "expected": {"ok": false, "issue": {"code": "string.blank", "path": ["title"]}}
+    },
+    {
+      "id": "F1-DOC-062",
+      "traceIds": ["F1-TRACE-DOCUMENT-TYPES", "F1-TRACE-DECODER-RESULT"],
+      "authorityIds": ["F1-AUTH-DOCUMENT", "F1-AUTH-VALIDATION"],
+      "kind": "section-name-blank",
+      "input": "\n",
+      "expected": {"ok": false, "issue": {"code": "string.blank", "path": ["sections", 0, "name"]}}
+    },
+    {
+      "id": "F1-DOC-063",
+      "traceIds": ["F1-TRACE-DOCUMENT-TYPES", "F1-TRACE-DECODER-RESULT"],
+      "authorityIds": ["F1-AUTH-DOCUMENT", "F1-AUTH-VALIDATION"],
+      "kind": "chord-source-text-blank",
+      "input": "",
+      "expected": {"ok": false, "issue": {"code": "string.blank", "path": ["chord", "sourceText"]}}
+    },
+    {
+      "id": "F1-DOC-064",
+      "traceIds": ["F1-TRACE-DOCUMENT-TYPES", "F1-TRACE-DECODER-RESULT"],
+      "authorityIds": ["F1-AUTH-DOCUMENT", "F1-AUTH-VALIDATION"],
+      "kind": "custom-label-blank",
+      "input": "  ",
+      "expected": {"ok": false, "issue": {"code": "string.blank", "path": ["chord", "label"]}}
+    },
+    {
+      "id": "F1-DOC-065",
+      "traceIds": ["F1-TRACE-DOCUMENT-TYPES", "F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-DOCUMENT", "F1-AUTH-VALIDATION"],
+      "kind": "playback-level-boundaries",
+      "input": [
+        {"field": "masterVolume", "value": 0},
+        {"field": "masterVolume", "value": 1},
+        {"field": "reverbAmount", "value": 0},
+        {"field": "reverbAmount", "value": 1}
+      ],
+      "expected": {"allValid": true}
+    },
+    {
+      "id": "F1-DOC-066",
+      "traceIds": ["F1-TRACE-DOCUMENT-TYPES", "F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-DOCUMENT", "F1-AUTH-VALIDATION"],
+      "kind": "playback-level-below-minimum",
+      "input": {"field": "masterVolume", "value": -0.001},
+      "expected": {"ok": false, "issue": {"code": "playback.level_out_of_range", "path": ["playback", "masterVolume"]}}
+    },
+    {
+      "id": "F1-DOC-067",
+      "traceIds": ["F1-TRACE-DOCUMENT-TYPES", "F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-DOCUMENT", "F1-AUTH-VALIDATION"],
+      "kind": "playback-level-above-maximum",
+      "input": {"field": "reverbAmount", "value": 1.001},
+      "expected": {"ok": false, "issue": {"code": "playback.level_out_of_range", "path": ["playback", "reverbAmount"]}}
+    },
+    {
+      "id": "F1-DOC-068",
+      "traceIds": ["F1-TRACE-DOCUMENT-TYPES", "F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-DOCUMENT", "F1-AUTH-VALIDATION"],
+      "kind": "playback-level-nan",
+      "inputDescriptor": {"field": "masterVolume", "specialNumber": "NaN"},
+      "expected": {"ok": false, "issue": {"code": "playback.level_not_finite", "path": ["playback", "masterVolume"]}}
+    },
+    {
+      "id": "F1-DOC-069",
+      "traceIds": ["F1-TRACE-DOCUMENT-TYPES", "F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-DOCUMENT", "F1-AUTH-VALIDATION"],
+      "kind": "playback-level-infinity",
+      "inputDescriptor": {"field": "reverbAmount", "specialNumber": "+Infinity"},
+      "expected": {"ok": false, "issue": {"code": "playback.level_not_finite", "path": ["playback", "reverbAmount"]}}
+    },
+    {
+      "id": "F1-DOC-070",
+      "traceIds": ["F1-TRACE-DOCUMENT-TYPES", "F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-DOCUMENT", "F1-AUTH-VALIDATION"],
+      "kind": "count-in-bars-set",
+      "input": [0, 1, 2],
+      "expected": {"allValid": true}
+    },
+    {
+      "id": "F1-DOC-071",
+      "traceIds": ["F1-TRACE-DOCUMENT-TYPES", "F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-DOCUMENT", "F1-AUTH-VALIDATION"],
+      "kind": "count-in-bars-invalid",
+      "input": [-1, 1.5, 3],
+      "expected": {
+        "issues": [
+          {"input": -1, "code": "playback.count_in_bars_invalid"},
+          {"input": 1.5, "code": "playback.count_in_bars_invalid"},
+          {"input": 3, "code": "playback.count_in_bars_invalid"}
+        ]
+      }
+    },
+    {
+      "id": "F1-DOC-072",
+      "traceIds": ["F1-TRACE-DOCUMENT-TYPES", "F1-TRACE-DECODER-RESULT"],
+      "authorityIds": ["F1-AUTH-DOCUMENT", "F1-AUTH-VALIDATION"],
+      "kind": "section-voice-leading-boundary-invalid",
+      "input": "merge",
+      "expected": {"ok": false, "issue": {"code": "section.voice_leading_boundary_invalid", "path": ["sections", 0, "voiceLeadingBoundary"]}}
+    },
+    {
+      "id": "F1-DOC-073",
+      "traceIds": ["F1-TRACE-DECODER-RESULT"],
+      "authorityIds": ["F1-AUTH-VALIDATION"],
+      "kind": "strict-unknown-field",
+      "inputSummary": {"otherwiseValidDocument": true, "extraField": "layout"},
+      "expected": {"ok": false, "issue": {"code": "shape.unknown_field", "path": ["layout"]}, "unknownFieldIgnored": false}
+    },
+    {
+      "id": "F1-DOC-074",
+      "traceIds": ["F1-TRACE-DECODER-RESULT"],
+      "authorityIds": ["F1-AUTH-VALIDATION"],
+      "kind": "invalid-field-type",
+      "inputSummary": {"otherwiseValidDocument": true, "sections": {}},
+      "expected": {"ok": false, "issue": {"code": "shape.invalid_type", "path": ["sections"]}, "partialValueReturned": false}
+    },
+    {
+      "id": "F1-DOC-075",
+      "traceIds": ["F1-TRACE-DECODER-RESULT"],
+      "authorityIds": ["F1-AUTH-VALIDATION"],
+      "kind": "multi-error-numeric-path-order",
+      "inputSummary": {"otherwiseValidDocument": true, "invalidEventIndices": [10, 2], "field": "duration"},
+      "expected": {
+        "ok": false,
+        "errorsInOrder": [
+          {"code": "beat.duration_not_positive", "path": ["sections", 0, "measures", 0, "events", 2, "duration", "numerator"]},
+          {"code": "beat.duration_not_positive", "path": ["sections", 0, "measures", 0, "events", 10, "duration", "numerator"]}
+        ],
+        "numericSegmentsComparedNumerically": true
+      }
+    },
+    {
+      "id": "F1-DOC-076",
+      "traceIds": ["F1-TRACE-DECODER-RESULT", "F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-VALIDATION"],
+      "kind": "multi-error-identical-path-code-order",
+      "inputDescriptor": {"field": "title", "repeatCodePoint": "U+0020", "count": 257},
+      "expected": {
+        "ok": false,
+        "errorsInOrder": [
+          {"code": "limit.title_code_points_exceeded", "path": ["title"]},
+          {"code": "string.blank", "path": ["title"]}
+        ],
+        "identicalPathTiebreak": "code lexical order"
+      }
+    },
+    {
+      "id": "F1-DOC-077",
+      "traceIds": ["F1-TRACE-DECODER-RESULT", "F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-VALIDATION"],
+      "kind": "lone-low-surrogate-rejected",
+      "inputDescriptor": {"field": "title", "loneSurrogate": "U+DC00"},
+      "expected": {"ok": false, "issue": {"code": "string.invalid_unicode_scalar", "path": ["title"]}}
+    },
+    {
+      "id": "F1-DOC-078",
+      "traceIds": ["F1-TRACE-DOCUMENT-TYPES", "F1-TRACE-DECODER-RESULT"],
+      "authorityIds": ["F1-AUTH-DOCUMENT", "F1-AUTH-VALIDATION"],
+      "kind": "required-text-unicode-whitespace-blank",
+      "inputDescriptor": {"field": "title", "repeatCodePoint": "U+2003", "count": 3},
+      "expected": {"ok": false, "issue": {"code": "string.blank", "path": ["title"]}}
+    },
+    {
+      "id": "F1-DOC-079",
+      "traceIds": ["F1-TRACE-DOCUMENT-TYPES"],
+      "authorityIds": ["F1-AUTH-DOCUMENT", "F1-AUTH-VALIDATION"],
+      "kind": "nonblank-text-whitespace-preserved",
+      "input": {"field": "title", "value": "  Blue in Green  "},
+      "expected": {"ok": true, "valueExactly": "  Blue in Green  ", "trimmedForBlankCheckOnly": true, "normalizationApplied": false}
+    },
+    {
+      "id": "F1-DOC-080",
+      "traceIds": ["F1-TRACE-ID-STABILITY"],
+      "authorityIds": ["F1-AUTH-ID"],
+      "kind": "id-case-sensitive-distinct",
+      "input": ["Case", "case"],
+      "expected": {"ok": true, "distinct": true, "normalizationApplied": false}
+    },
+    {
+      "id": "F1-DOC-081",
+      "traceIds": ["F1-TRACE-ID-STABILITY"],
+      "authorityIds": ["F1-AUTH-ID"],
+      "kind": "id-leading-trailing-whitespace-not-trimmed",
+      "input": [" valid", "valid "],
+      "expected": {
+        "issues": [
+          {"inputIndex": 0, "code": "id.syntax_invalid", "path": ["id"]},
+          {"inputIndex": 1, "code": "id.syntax_invalid", "path": ["id"]}
+        ],
+        "trimmingApplied": false
+      }
+    },
+    {
+      "id": "F1-DOC-082",
+      "traceIds": ["F1-TRACE-ID-STABILITY"],
+      "authorityIds": ["F1-AUTH-ID"],
+      "kind": "id-one-character-digit-leading-valid",
+      "input": "7",
+      "expected": {"ok": true, "valueExactly": "7"}
+    },
+    {
+      "id": "F1-DOC-083",
+      "traceIds": ["F1-TRACE-DECODER-RESULT"],
+      "authorityIds": ["F1-AUTH-VALIDATION"],
+      "kind": "strict-nested-unknown-field-matrix",
+      "inputSummary": {"otherwiseValidDocument": true, "oneExtraFieldPerMutation": true},
+      "mutatedPaths": [
+        ["playback", "extra"],
+        ["sections", 0, "extra"],
+        ["sections", 0, "measures", 0, "extra"],
+        ["sections", 0, "measures", 0, "events", 0, "extra"],
+        ["sections", 0, "measures", 0, "events", 0, "chord", "extra"],
+        ["sections", 0, "measures", 0, "events", 0, "voicing", "extra"]
+      ],
+      "expectedEveryMutation": {"ok": false, "code": "shape.unknown_field", "pathExactlyMutated": true, "unknownFieldIgnored": false}
+    }
+  ]
+}

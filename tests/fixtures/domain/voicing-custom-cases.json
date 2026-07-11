@@ -1,0 +1,655 @@
+{
+  "schema": "changes.fixtures.f1-voicing-custom.v1",
+  "defaultSeedId": "F1-SEED-VOICING",
+  "manualFrozenBassContract": {
+    "policies": ["included", "external"],
+    "slashIncluded": "the exact slash spelling is the lowest stored pitch",
+    "slashExternal": "the slash spelling is absent from stored pitches",
+    "nonSlashExternal": "invalid because there is no named external bass",
+    "roundTrip": "preserve pitch spelling, octave, order, and duplicates exactly"
+  },
+  "autoPolicyMatrix": [
+    {
+      "id": "F1-VOICE-AUTO-MATRIX-001",
+      "traceIds": ["F1-TRACE-VOICING-CONDITIONAL"],
+      "authorityIds": ["F1-AUTH-VOICING"],
+      "family": "balanced",
+      "expectedByChordBass": {
+        "noSlash": {"generated": "valid", "external": "valid", "none": "valid"},
+        "slash": {"generated": "valid", "external": "valid", "none": "invalid:voicing.slash_bass_policy_none"}
+      }
+    },
+    {
+      "id": "F1-VOICE-AUTO-MATRIX-002",
+      "traceIds": ["F1-TRACE-VOICING-CONDITIONAL"],
+      "authorityIds": ["F1-AUTH-VOICING"],
+      "family": "shell",
+      "expectedByChordBass": {
+        "noSlash": {"generated": "valid", "external": "valid", "none": "valid"},
+        "slash": {"generated": "valid", "external": "valid", "none": "invalid:voicing.slash_bass_policy_none"}
+      }
+    },
+    {
+      "id": "F1-VOICE-AUTO-MATRIX-003",
+      "traceIds": ["F1-TRACE-VOICING-CONDITIONAL"],
+      "authorityIds": ["F1-AUTH-VOICING"],
+      "family": "rootless-a",
+      "expectedByChordBass": {
+        "noSlash": {"generated": "invalid:voicing.rootless_requires_external", "external": "valid", "none": "invalid:voicing.rootless_requires_external"},
+        "slash": {"generated": "invalid:voicing.rootless_requires_external", "external": "valid", "none": "invalid:voicing.rootless_requires_external"}
+      }
+    },
+    {
+      "id": "F1-VOICE-AUTO-MATRIX-004",
+      "traceIds": ["F1-TRACE-VOICING-CONDITIONAL"],
+      "authorityIds": ["F1-AUTH-VOICING"],
+      "family": "rootless-b",
+      "expectedByChordBass": {
+        "noSlash": {"generated": "invalid:voicing.rootless_requires_external", "external": "valid", "none": "invalid:voicing.rootless_requires_external"},
+        "slash": {"generated": "invalid:voicing.rootless_requires_external", "external": "valid", "none": "invalid:voicing.rootless_requires_external"}
+      }
+    },
+    {
+      "id": "F1-VOICE-AUTO-MATRIX-005",
+      "traceIds": ["F1-TRACE-VOICING-CONDITIONAL"],
+      "authorityIds": ["F1-AUTH-VOICING"],
+      "family": "open",
+      "expectedByChordBass": {
+        "noSlash": {"generated": "valid", "external": "valid", "none": "valid"},
+        "slash": {"generated": "valid", "external": "valid", "none": "invalid:voicing.slash_bass_policy_none"}
+      }
+    },
+    {
+      "id": "F1-VOICE-AUTO-MATRIX-006",
+      "traceIds": ["F1-TRACE-VOICING-CONDITIONAL"],
+      "authorityIds": ["F1-AUTH-VOICING"],
+      "family": "drop2",
+      "expectedByChordBass": {
+        "noSlash": {"generated": "valid", "external": "valid", "none": "valid"},
+        "slash": {"generated": "valid", "external": "valid", "none": "invalid:voicing.slash_bass_policy_none"}
+      }
+    },
+    {
+      "id": "F1-VOICE-AUTO-MATRIX-007",
+      "traceIds": ["F1-TRACE-VOICING-CONDITIONAL"],
+      "authorityIds": ["F1-AUTH-VOICING"],
+      "family": "quartal",
+      "expectedByChordBass": {
+        "noSlash": {"generated": "valid", "external": "valid", "none": "valid"},
+        "slash": {"generated": "valid", "external": "valid", "none": "invalid:voicing.slash_bass_policy_none"}
+      }
+    }
+  ],
+  "customAutoPolicyMatrix": [
+    {
+      "id": "F1-VOICE-CUSTOM-AUTO-MATRIX-001",
+      "traceIds": ["F1-TRACE-VOICING-CONDITIONAL"],
+      "authorityIds": ["F1-AUTH-VOICING"],
+      "kind": "cartesian-custom-auto-refusal",
+      "families": ["balanced", "shell", "rootless-a", "rootless-b", "open", "drop2", "quartal"],
+      "bassPolicies": ["generated", "external", "none"],
+      "customChordBassStates": ["noSlash", "slash"],
+      "matrixCellCount": 42,
+      "expectedEveryCell": "invalid:custom.auto_voicing_forbidden",
+      "note": "Custom chords have literal pitch sets without semantic degree roles; no Auto family or bass policy is silently substituted."
+    }
+  ],
+  "cases": [
+    {
+      "id": "F1-VOICE-001",
+      "traceIds": ["F1-TRACE-VOICING-EXACT"],
+      "authorityIds": ["F1-AUTH-VOICING"],
+      "kind": "manual-round-trip",
+      "chordBass": null,
+      "input": {
+        "mode": "manual",
+        "bassPolicy": "included",
+        "pitches": [
+          {"step": "C", "alter": 0, "octave": 4},
+          {"step": "C", "alter": 0, "octave": 3},
+          {"step": "B", "alter": 1, "octave": 3},
+          {"step": "G", "alter": 0, "octave": 3},
+          {"step": "C", "alter": 0, "octave": 4}
+        ]
+      },
+      "expected": {
+        "ok": true,
+        "pitchesExactly": [
+          {"step": "C", "alter": 0, "octave": 4},
+          {"step": "C", "alter": 0, "octave": 3},
+          {"step": "B", "alter": 1, "octave": 3},
+          {"step": "G", "alter": 0, "octave": 3},
+          {"step": "C", "alter": 0, "octave": 4}
+        ],
+        "duplicatesPreserved": true,
+        "enharmonicSpellingsPreserved": true,
+        "sortingApplied": false,
+        "deduplicated": false,
+        "respellingsApplied": false
+      }
+    },
+    {
+      "id": "F1-VOICE-002",
+      "traceIds": ["F1-TRACE-VOICING-EXACT"],
+      "authorityIds": ["F1-AUTH-VOICING"],
+      "kind": "frozen-round-trip",
+      "chordBass": null,
+      "input": {
+        "mode": "frozen",
+        "bassPolicy": "included",
+        "pitches": [
+          {"step": "B", "alter": -1, "octave": 3},
+          {"step": "D", "alter": -1, "octave": 3},
+          {"step": "F", "alter": 1, "octave": 3},
+          {"step": "C", "alter": 1, "octave": 3}
+        ],
+        "generatedBy": {"engineVersion": "voicing-fixture-1", "family": "drop2"}
+      },
+      "expected": {
+        "ok": true,
+        "pitchesExactly": [
+          {"step": "B", "alter": -1, "octave": 3},
+          {"step": "D", "alter": -1, "octave": 3},
+          {"step": "F", "alter": 1, "octave": 3},
+          {"step": "C", "alter": 1, "octave": 3}
+        ],
+        "generatedByExactly": {"engineVersion": "voicing-fixture-1", "family": "drop2"},
+        "sortingApplied": false
+      }
+    },
+    {
+      "id": "F1-VOICE-003",
+      "traceIds": ["F1-TRACE-VOICING-EXACT"],
+      "authorityIds": ["F1-AUTH-VOICING"],
+      "kind": "manual-empty",
+      "input": {"mode": "manual", "bassPolicy": "included", "pitches": []},
+      "expected": {"ok": false, "issue": {"code": "voicing.pitches_empty", "path": ["pitches"]}}
+    },
+    {
+      "id": "F1-VOICE-004",
+      "traceIds": ["F1-TRACE-VOICING-EXACT"],
+      "authorityIds": ["F1-AUTH-VOICING"],
+      "kind": "frozen-empty",
+      "input": {"mode": "frozen", "bassPolicy": "included", "pitches": [], "generatedBy": {"engineVersion": "1", "family": "shell"}},
+      "expected": {"ok": false, "issue": {"code": "voicing.pitches_empty", "path": ["pitches"]}}
+    },
+    {
+      "id": "F1-VOICE-005",
+      "traceIds": ["F1-TRACE-VOICING-EXACT", "F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-VOICING", "F1-AUTH-VALIDATION"],
+      "kind": "manual-note-limit-exact",
+      "inputDescriptor": {"mode": "manual", "bassPolicy": "included", "repeatPitch": {"step": "C", "alter": 0, "octave": 4}, "count": 16},
+      "expected": {"ok": true, "pitchCount": 16, "allDuplicatesPreserved": true}
+    },
+    {
+      "id": "F1-VOICE-006",
+      "traceIds": ["F1-TRACE-VOICING-EXACT", "F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-VOICING", "F1-AUTH-VALIDATION"],
+      "kind": "manual-note-limit-plus-one",
+      "inputDescriptor": {"mode": "manual", "bassPolicy": "included", "repeatPitch": {"step": "C", "alter": 0, "octave": 4}, "count": 17},
+      "expected": {"ok": false, "issue": {"code": "limit.voicing_notes_exceeded", "path": ["pitches"]}}
+    },
+    {
+      "id": "F1-VOICE-007",
+      "traceIds": ["F1-TRACE-VOICING-CONDITIONAL"],
+      "authorityIds": ["F1-AUTH-VOICING"],
+      "kind": "manual-slash-included-valid",
+      "chordBass": {"step": "C", "alter": 0},
+      "input": {
+        "mode": "manual",
+        "bassPolicy": "included",
+        "pitches": [
+          {"step": "E", "alter": 0, "octave": 3},
+          {"step": "G", "alter": 0, "octave": 3},
+          {"step": "C", "alter": 0, "octave": 3}
+        ]
+      },
+      "expected": {"ok": true, "lowestPitchIndex": 2}
+    },
+    {
+      "id": "F1-VOICE-008",
+      "traceIds": ["F1-TRACE-VOICING-CONDITIONAL"],
+      "authorityIds": ["F1-AUTH-VOICING"],
+      "kind": "manual-slash-included-lowest-mismatch",
+      "chordBass": {"step": "C", "alter": 0},
+      "input": {
+        "mode": "manual",
+        "bassPolicy": "included",
+        "pitches": [
+          {"step": "C", "alter": 0, "octave": 4},
+          {"step": "E", "alter": 0, "octave": 3},
+          {"step": "G", "alter": 0, "octave": 3}
+        ]
+      },
+      "expected": {"ok": false, "firstPitchMatchesBassButIsNotLowest": true, "issue": {"code": "voicing.included_bass_not_lowest", "path": ["pitches", 1]}}
+    },
+    {
+      "id": "F1-VOICE-009",
+      "traceIds": ["F1-TRACE-VOICING-CONDITIONAL", "F1-TRACE-PITCH-IDENTITY"],
+      "authorityIds": ["F1-AUTH-VOICING", "F1-AUTH-PITCH"],
+      "kind": "manual-slash-included-enharmonic-mismatch",
+      "chordBass": {"step": "B", "alter": 1},
+      "input": {
+        "mode": "manual",
+        "bassPolicy": "included",
+        "pitches": [
+          {"step": "C", "alter": 0, "octave": 3},
+          {"step": "E", "alter": 0, "octave": 3},
+          {"step": "G", "alter": 0, "octave": 3}
+        ]
+      },
+      "expected": {"ok": false, "sameMidiIsInsufficient": true, "issue": {"code": "voicing.included_bass_spelling_mismatch", "path": ["pitches", 0]}}
+    },
+    {
+      "id": "F1-VOICE-010",
+      "traceIds": ["F1-TRACE-VOICING-CONDITIONAL"],
+      "authorityIds": ["F1-AUTH-VOICING"],
+      "kind": "manual-slash-external-valid",
+      "chordBass": {"step": "C", "alter": 0},
+      "input": {
+        "mode": "manual",
+        "bassPolicy": "external",
+        "pitches": [
+          {"step": "E", "alter": 0, "octave": 3},
+          {"step": "G", "alter": 0, "octave": 3},
+          {"step": "B", "alter": -1, "octave": 3}
+        ]
+      },
+      "expected": {"ok": true, "externalBassSoundedOnVoicingTrack": false}
+    },
+    {
+      "id": "F1-VOICE-011",
+      "traceIds": ["F1-TRACE-VOICING-CONDITIONAL"],
+      "authorityIds": ["F1-AUTH-VOICING"],
+      "kind": "manual-slash-external-stored-bass-invalid",
+      "chordBass": {"step": "C", "alter": 0},
+      "input": {
+        "mode": "manual",
+        "bassPolicy": "external",
+        "pitches": [
+          {"step": "E", "alter": 0, "octave": 3},
+          {"step": "G", "alter": 0, "octave": 3},
+          {"step": "C", "alter": 0, "octave": 4}
+        ]
+      },
+      "expected": {"ok": false, "issue": {"code": "voicing.external_bass_included", "path": ["pitches", 2]}}
+    },
+    {
+      "id": "F1-VOICE-012",
+      "traceIds": ["F1-TRACE-VOICING-CONDITIONAL"],
+      "authorityIds": ["F1-AUTH-VOICING"],
+      "kind": "manual-nonslash-external-invalid",
+      "chordBass": null,
+      "input": {"mode": "manual", "bassPolicy": "external", "pitches": [{"step": "E", "alter": 0, "octave": 3}]},
+      "expected": {"ok": false, "issue": {"code": "voicing.external_without_slash_bass", "path": ["bassPolicy"]}}
+    },
+    {
+      "id": "F1-VOICE-013",
+      "traceIds": ["F1-TRACE-VOICING-CONDITIONAL"],
+      "authorityIds": ["F1-AUTH-VOICING"],
+      "kind": "frozen-slash-included-valid",
+      "chordBass": {"step": "D", "alter": -1},
+      "input": {
+        "mode": "frozen",
+        "bassPolicy": "included",
+        "pitches": [
+          {"step": "D", "alter": -1, "octave": 3},
+          {"step": "F", "alter": 0, "octave": 3},
+          {"step": "A", "alter": -1, "octave": 3}
+        ],
+        "generatedBy": {"engineVersion": "fixture-v1", "family": "open"}
+      },
+      "expected": {"ok": true}
+    },
+    {
+      "id": "F1-VOICE-014",
+      "traceIds": ["F1-TRACE-VOICING-CONDITIONAL"],
+      "authorityIds": ["F1-AUTH-VOICING"],
+      "kind": "custom-manual-valid-shape",
+      "chord": {
+        "kind": "custom",
+        "sourceText": "Glass cluster",
+        "label": "Glass cluster",
+        "pitchNames": [{"step": "C", "alter": 0}, {"step": "D", "alter": -1}],
+        "bass": null
+      },
+      "voicing": {
+        "mode": "manual",
+        "bassPolicy": "included",
+        "pitches": [{"step": "F", "alter": 1, "octave": 4}]
+      },
+      "expected": {
+        "ok": true,
+        "pitchClassCorrespondenceCheckedAtF1": false,
+        "deferredIssueIfAny": "F3 custom pitch-to-voicing semantic correspondence"
+      }
+    },
+    {
+      "id": "F1-VOICE-015",
+      "traceIds": ["F1-TRACE-VOICING-CONDITIONAL"],
+      "authorityIds": ["F1-AUTH-VOICING"],
+      "kind": "custom-frozen-valid-shape",
+      "chord": {
+        "kind": "custom",
+        "sourceText": "Stack",
+        "label": "Stack",
+        "pitchNames": [{"step": "C", "alter": 0}],
+        "bass": null
+      },
+      "voicing": {
+        "mode": "frozen",
+        "bassPolicy": "included",
+        "pitches": [{"step": "C", "alter": 0, "octave": 4}],
+        "generatedBy": {"engineVersion": "fixture-v1", "family": "quartal"}
+      },
+      "expected": {"ok": true}
+    },
+    {
+      "id": "F1-VOICE-016",
+      "traceIds": ["F1-TRACE-VOICING-CONDITIONAL"],
+      "authorityIds": ["F1-AUTH-VOICING"],
+      "kind": "custom-auto-invalid",
+      "chord": {
+        "kind": "custom",
+        "sourceText": "Stack",
+        "label": "Stack",
+        "pitchNames": [{"step": "C", "alter": 0}],
+        "bass": null
+      },
+      "voicing": {
+        "mode": "auto",
+        "family": "balanced",
+        "voiceCount": 4,
+        "range": {"lowMidi": 48, "highMidi": 84},
+        "bassPolicy": "generated"
+      },
+      "expected": {"ok": false, "issue": {"code": "custom.auto_voicing_forbidden", "path": ["voicing", "mode"]}}
+    },
+    {
+      "id": "F1-VOICE-017",
+      "traceIds": ["F1-TRACE-VOICING-CONDITIONAL"],
+      "authorityIds": ["F1-AUTH-VOICING"],
+      "kind": "custom-empty-pitch-names",
+      "chord": {"kind": "custom", "sourceText": "Empty", "label": "Empty", "pitchNames": [], "bass": null},
+      "voicing": {"mode": "manual", "bassPolicy": "included", "pitches": [{"step": "C", "alter": 0, "octave": 4}]},
+      "expected": {"ok": false, "issue": {"code": "custom.pitch_names_empty", "path": ["chord", "pitchNames"]}}
+    },
+    {
+      "id": "F1-VOICE-018",
+      "traceIds": ["F1-TRACE-VOICING-CONDITIONAL"],
+      "authorityIds": ["F1-AUTH-VOICING"],
+      "kind": "custom-empty-manual",
+      "chord": {"kind": "custom", "sourceText": "One", "label": "One", "pitchNames": [{"step": "C", "alter": 0}], "bass": null},
+      "voicing": {"mode": "manual", "bassPolicy": "included", "pitches": []},
+      "expected": {"ok": false, "issue": {"code": "voicing.pitches_empty", "path": ["voicing", "pitches"]}}
+    },
+    {
+      "id": "F1-VOICE-019",
+      "traceIds": ["F1-TRACE-VOICING-CONDITIONAL"],
+      "authorityIds": ["F1-AUTH-VOICING"],
+      "kind": "auto-voice-count-low",
+      "input": {"mode": "auto", "family": "balanced", "voiceCount": 2, "range": {"lowMidi": 48, "highMidi": 84}, "bassPolicy": "generated"},
+      "expected": {"ok": false, "issue": {"code": "voicing.voice_count_invalid", "path": ["voiceCount"]}}
+    },
+    {
+      "id": "F1-VOICE-020",
+      "traceIds": ["F1-TRACE-VOICING-CONDITIONAL"],
+      "authorityIds": ["F1-AUTH-VOICING"],
+      "kind": "auto-voice-count-high",
+      "input": {"mode": "auto", "family": "balanced", "voiceCount": 8, "range": {"lowMidi": 48, "highMidi": 84}, "bassPolicy": "generated"},
+      "expected": {"ok": false, "issue": {"code": "voicing.voice_count_invalid", "path": ["voiceCount"]}}
+    },
+    {
+      "id": "F1-VOICE-021",
+      "traceIds": ["F1-TRACE-VOICING-CONDITIONAL"],
+      "authorityIds": ["F1-AUTH-VOICING"],
+      "kind": "auto-range-reversed",
+      "input": {"mode": "auto", "family": "balanced", "voiceCount": 4, "range": {"lowMidi": 85, "highMidi": 84}, "bassPolicy": "generated"},
+      "expected": {"ok": false, "issue": {"code": "voicing.range_reversed", "path": ["range", "highMidi"]}}
+    },
+    {
+      "id": "F1-VOICE-022",
+      "traceIds": ["F1-TRACE-VOICING-CONDITIONAL"],
+      "authorityIds": ["F1-AUTH-VOICING"],
+      "kind": "auto-range-midi-low",
+      "input": {"mode": "auto", "family": "balanced", "voiceCount": 4, "range": {"lowMidi": -1, "highMidi": 84}, "bassPolicy": "generated"},
+      "expected": {"ok": false, "issue": {"code": "pitch.midi_out_of_range", "path": ["range", "lowMidi"]}}
+    },
+    {
+      "id": "F1-VOICE-023",
+      "traceIds": ["F1-TRACE-VOICING-CONDITIONAL"],
+      "authorityIds": ["F1-AUTH-VOICING"],
+      "kind": "auto-range-midi-high",
+      "input": {"mode": "auto", "family": "balanced", "voiceCount": 4, "range": {"lowMidi": 48, "highMidi": 128}, "bassPolicy": "generated"},
+      "expected": {"ok": false, "issue": {"code": "pitch.midi_out_of_range", "path": ["range", "highMidi"]}}
+    },
+    {
+      "id": "F1-VOICE-024",
+      "traceIds": ["F1-TRACE-VOICING-EXACT"],
+      "authorityIds": ["F1-AUTH-VOICING"],
+      "kind": "frozen-to-auto-requires-settings",
+      "input": {
+        "mode": "frozen",
+        "bassPolicy": "included",
+        "pitches": [{"step": "C", "alter": 0, "octave": 4}],
+        "generatedBy": {"engineVersion": "old-engine", "family": "shell"}
+      },
+      "requestedTransition": {"mode": "auto"},
+      "expected": {
+        "ok": false,
+        "issue": {"code": "voicing.auto_settings_required", "path": ["requestedTransition"]},
+        "silentReuseOfGeneratedByForbidden": true
+      }
+    },
+    {
+      "id": "F1-VOICE-025",
+      "traceIds": ["F1-TRACE-VOICING-EXACT"],
+      "authorityIds": ["F1-AUTH-VOICING"],
+      "kind": "frozen-to-auto-explicit-settings",
+      "input": {
+        "mode": "frozen",
+        "bassPolicy": "included",
+        "pitches": [{"step": "C", "alter": 0, "octave": 4}],
+        "generatedBy": {"engineVersion": "old-engine", "family": "shell"}
+      },
+      "requestedTransition": {
+        "mode": "auto",
+        "family": "shell",
+        "voiceCount": 3,
+        "range": {"lowMidi": 48, "highMidi": 84},
+        "bassPolicy": "generated"
+      },
+      "expected": {"ok": true, "storedPitchesRemovedOnlyByExplicitTransition": true}
+    },
+    {
+      "id": "F1-VOICE-026",
+      "traceIds": ["F1-TRACE-VOICING-EXACT", "F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-VOICING", "F1-AUTH-VALIDATION"],
+      "kind": "frozen-engine-version-code-points-exact",
+      "inputDescriptor": {
+        "mode": "frozen",
+        "bassPolicy": "included",
+        "pitches": [{"step": "C", "alter": 0, "octave": 4}],
+        "generatedBy": {"repeatEngineVersionCodePoint": "U+1D11E", "count": 64, "family": "shell"}
+      },
+      "expected": {"ok": true, "engineVersionCodePointCount": 64}
+    },
+    {
+      "id": "F1-VOICE-027",
+      "traceIds": ["F1-TRACE-VOICING-EXACT", "F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-VOICING", "F1-AUTH-VALIDATION"],
+      "kind": "frozen-engine-version-code-points-plus-one",
+      "inputDescriptor": {
+        "mode": "frozen",
+        "bassPolicy": "included",
+        "pitches": [{"step": "C", "alter": 0, "octave": 4}],
+        "generatedBy": {"repeatEngineVersionCodePoint": "U+1D11E", "count": 65, "family": "shell"}
+      },
+      "expected": {"ok": false, "issue": {"code": "limit.engine_version_code_points_exceeded", "path": ["generatedBy", "engineVersion"]}}
+    },
+    {
+      "id": "F1-VOICE-028",
+      "traceIds": ["F1-TRACE-VOICING-EXACT", "F1-TRACE-DECODER-RESULT"],
+      "authorityIds": ["F1-AUTH-VOICING", "F1-AUTH-VALIDATION"],
+      "kind": "frozen-engine-version-blank",
+      "input": {
+        "mode": "frozen",
+        "bassPolicy": "included",
+        "pitches": [{"step": "C", "alter": 0, "octave": 4}],
+        "generatedBy": {"engineVersion": "   ", "family": "shell"}
+      },
+      "expected": {"ok": false, "issue": {"code": "voicing.engine_version_invalid", "path": ["generatedBy", "engineVersion"]}}
+    },
+    {
+      "id": "F1-VOICE-029",
+      "traceIds": ["F1-TRACE-VOICING-CONDITIONAL", "F1-TRACE-PITCH-MIDI"],
+      "authorityIds": ["F1-AUTH-VOICING", "F1-AUTH-PITCH"],
+      "kind": "auto-midi-range-boundaries",
+      "input": {"mode": "auto", "family": "balanced", "voiceCount": 7, "range": {"lowMidi": 0, "highMidi": 127}, "bassPolicy": "generated"},
+      "expected": {"ok": true}
+    },
+    {
+      "id": "F1-VOICE-030",
+      "traceIds": ["F1-TRACE-VOICING-CONDITIONAL"],
+      "authorityIds": ["F1-AUTH-VOICING"],
+      "kind": "auto-voice-count-set",
+      "input": [3, 4, 5, 6, 7],
+      "expected": {"allValid": true}
+    },
+    {
+      "id": "F1-VOICE-031",
+      "traceIds": ["F1-TRACE-VOICING-CONDITIONAL", "F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-VOICING", "F1-AUTH-VALIDATION"],
+      "kind": "custom-pitch-name-limit-exact",
+      "inputDescriptor": {"kind": "custom", "repeatPitchName": {"step": "C", "alter": 0}, "count": 16},
+      "expected": {"ok": true, "pitchNameCount": 16}
+    },
+    {
+      "id": "F1-VOICE-032",
+      "traceIds": ["F1-TRACE-VOICING-CONDITIONAL", "F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-VOICING", "F1-AUTH-VALIDATION"],
+      "kind": "custom-pitch-name-limit-plus-one",
+      "inputDescriptor": {"kind": "custom", "repeatPitchName": {"step": "C", "alter": 0}, "count": 17},
+      "expected": {"ok": false, "issue": {"code": "limit.voicing_notes_exceeded", "path": ["pitchNames"]}}
+    },
+    {
+      "id": "F1-VOICE-033",
+      "traceIds": ["F1-TRACE-VOICING-EXACT", "F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-VOICING", "F1-AUTH-VALIDATION"],
+      "kind": "frozen-note-limit-exact",
+      "inputDescriptor": {"mode": "frozen", "bassPolicy": "included", "repeatPitch": {"step": "C", "alter": 0, "octave": 4}, "count": 16, "generatedBy": {"engineVersion": "v1", "family": "shell"}},
+      "expected": {"ok": true, "pitchCount": 16, "allDuplicatesPreserved": true}
+    },
+    {
+      "id": "F1-VOICE-034",
+      "traceIds": ["F1-TRACE-VOICING-EXACT", "F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-VOICING", "F1-AUTH-VALIDATION"],
+      "kind": "frozen-note-limit-plus-one",
+      "inputDescriptor": {"mode": "frozen", "bassPolicy": "included", "repeatPitch": {"step": "C", "alter": 0, "octave": 4}, "count": 17, "generatedBy": {"engineVersion": "v1", "family": "shell"}},
+      "expected": {"ok": false, "issue": {"code": "limit.voicing_notes_exceeded", "path": ["pitches"]}}
+    },
+    {
+      "id": "F1-VOICE-035",
+      "traceIds": ["F1-TRACE-VOICING-CONDITIONAL", "F1-TRACE-PITCH-IDENTITY"],
+      "authorityIds": ["F1-AUTH-VOICING", "F1-AUTH-PITCH"],
+      "kind": "manual-slash-external-enharmonic-bass-invalid",
+      "chordBass": {"step": "B", "alter": 1},
+      "input": {
+        "mode": "manual",
+        "bassPolicy": "external",
+        "pitches": [
+          {"step": "E", "alter": 0, "octave": 3},
+          {"step": "G", "alter": 0, "octave": 3},
+          {"step": "C", "alter": 0, "octave": 4}
+        ]
+      },
+      "expected": {"ok": false, "comparison": "sounding pitch class", "issue": {"code": "voicing.external_bass_included", "path": ["pitches", 2]}}
+    },
+    {
+      "id": "F1-VOICE-036",
+      "traceIds": ["F1-TRACE-VOICING-CONDITIONAL"],
+      "authorityIds": ["F1-AUTH-VOICING"],
+      "kind": "frozen-slash-included-lowest-mismatch",
+      "chordBass": {"step": "D", "alter": -1},
+      "input": {
+        "mode": "frozen",
+        "bassPolicy": "included",
+        "pitches": [
+          {"step": "D", "alter": -1, "octave": 4},
+          {"step": "F", "alter": 0, "octave": 3},
+          {"step": "A", "alter": -1, "octave": 3}
+        ],
+        "generatedBy": {"engineVersion": "fixture-v1", "family": "open"}
+      },
+      "expected": {"ok": false, "firstPitchMatchesBassButIsNotLowest": true, "issue": {"code": "voicing.included_bass_not_lowest", "path": ["pitches", 1]}}
+    },
+    {
+      "id": "F1-VOICE-037",
+      "traceIds": ["F1-TRACE-VOICING-CONDITIONAL"],
+      "authorityIds": ["F1-AUTH-VOICING"],
+      "kind": "frozen-slash-external-valid",
+      "chordBass": {"step": "D", "alter": -1},
+      "input": {
+        "mode": "frozen",
+        "bassPolicy": "external",
+        "pitches": [
+          {"step": "F", "alter": 0, "octave": 3},
+          {"step": "A", "alter": -1, "octave": 3},
+          {"step": "C", "alter": 0, "octave": 4}
+        ],
+        "generatedBy": {"engineVersion": "fixture-v1", "family": "open"}
+      },
+      "expected": {"ok": true, "externalBassSoundedOnVoicingTrack": false}
+    },
+    {
+      "id": "F1-VOICE-038",
+      "traceIds": ["F1-TRACE-VOICING-CONDITIONAL", "F1-TRACE-PITCH-IDENTITY"],
+      "authorityIds": ["F1-AUTH-VOICING", "F1-AUTH-PITCH"],
+      "kind": "frozen-slash-external-enharmonic-bass-invalid",
+      "chordBass": {"step": "B", "alter": 1},
+      "input": {
+        "mode": "frozen",
+        "bassPolicy": "external",
+        "pitches": [
+          {"step": "E", "alter": 0, "octave": 3},
+          {"step": "G", "alter": 0, "octave": 3},
+          {"step": "C", "alter": 0, "octave": 4}
+        ],
+        "generatedBy": {"engineVersion": "fixture-v1", "family": "open"}
+      },
+      "expected": {"ok": false, "comparison": "sounding pitch class", "issue": {"code": "voicing.external_bass_included", "path": ["pitches", 2]}}
+    },
+    {
+      "id": "F1-VOICE-039",
+      "traceIds": ["F1-TRACE-VOICING-CONDITIONAL"],
+      "authorityIds": ["F1-AUTH-VOICING"],
+      "kind": "frozen-nonslash-external-invalid",
+      "chordBass": null,
+      "input": {
+        "mode": "frozen",
+        "bassPolicy": "external",
+        "pitches": [{"step": "E", "alter": 0, "octave": 3}],
+        "generatedBy": {"engineVersion": "fixture-v1", "family": "shell"}
+      },
+      "expected": {"ok": false, "issue": {"code": "voicing.external_without_slash_bass", "path": ["bassPolicy"]}}
+    },
+    {
+      "id": "F1-VOICE-040",
+      "traceIds": ["F1-TRACE-VOICING-EXACT"],
+      "authorityIds": ["F1-AUTH-VOICING", "F1-AUTH-PITCH"],
+      "kind": "manual-exactness-under-parallel-transposition",
+      "sourcePitches": [
+        {"step": "E", "alter": 0, "octave": 4},
+        {"step": "C", "alter": 0, "octave": 4},
+        {"step": "G", "alter": 0, "octave": 3}
+      ],
+      "semitones": 2,
+      "transposedPitches": [
+        {"step": "F", "alter": 1, "octave": 4},
+        {"step": "D", "alter": 0, "octave": 4},
+        {"step": "A", "alter": 0, "octave": 3}
+      ],
+      "expected": {"orderPreserved": true, "cardinalityPreserved": true, "silentSortOrRespell": false, "transpositionImplementationOwnedBy": "H1"}
+    }
+  ]
+}

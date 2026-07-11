@@ -1,0 +1,238 @@
+{
+  "schema": "changes.fixtures.f1-domain-contract.v1",
+  "contractVersion": "1.0.0",
+  "package": "F1",
+  "beadId": "jcpe-milestone-foundation-vc2.2.1",
+  "domainSchema": "changes.progression.v2",
+  "description": "Manifest for independently authored F1 spelling, identity, exact-time, voicing, measure, and bounded-decoder authority fixtures.",
+  "authorityPolicy": {
+    "expectedValuesGeneratedByProduction": false,
+    "productionModulesImported": false,
+    "productionArtifactUsedAsAuthority": false,
+    "authoringMethod": "manual derivation from reviewed contracts and explicit arithmetic",
+    "reviewState": "independent-fixture-author complete; package verifier pending",
+    "forbiddenShortcuts": [
+      "Do not regenerate expected values from the implementation under test.",
+      "Do not collapse spelled identity to MIDI or pitch-class equality.",
+      "Do not use floating-point equality for beat arithmetic.",
+      "Do not repair, sort, respell, deduplicate, or optimize Manual or Frozen pitches.",
+      "Do not partially commit an ID remap after any allocation collision.",
+      "Do not silently relax a limit or completion declaration.",
+      "Do not invent cancellation or revision-staleness semantics inside synchronous F1 value operations."
+    ]
+  },
+  "determinism": {
+    "caseOrdering": "lexicographic by globally unique case ID",
+    "integerArithmetic": "BigInt intermediates, reduced before the bounded-number conversion",
+    "propertyGenerator": "xorshift32-v1",
+    "seedUse": "Seeds control future mutation/property input order only; checked-in expected values remain hand-authored.",
+    "stableSeeds": [
+      {
+        "id": "F1-SEED-PITCH",
+        "value": 2718281828,
+        "purpose": "spelling and pitch projection mutations"
+      },
+      {
+        "id": "F1-SEED-BEAT",
+        "value": 3141592653,
+        "purpose": "rational normalization, closure, and ordering mutations"
+      },
+      {
+        "id": "F1-SEED-METER",
+        "value": 1618033988,
+        "purpose": "meter capacity and measure completion mutations"
+      },
+      {
+        "id": "F1-SEED-IDENTITY",
+        "value": 1414213562,
+        "purpose": "ID collision and deep-remap schedules"
+      },
+      {
+        "id": "F1-SEED-VOICING",
+        "value": 1732050807,
+        "purpose": "voicing compatibility matrix mutations"
+      },
+      {
+        "id": "F1-SEED-BOUNDARY",
+        "value": 2236067977,
+        "purpose": "decoder limit and malformed-shape mutations"
+      }
+    ]
+  },
+  "fixedConstants": {
+    "midiPpq": 960,
+    "allowedBeatDenominators": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      8,
+      10,
+      12,
+      15,
+      16,
+      20,
+      24,
+      30,
+      32,
+      40,
+      48,
+      60,
+      64,
+      80,
+      96,
+      120,
+      160,
+      192,
+      240,
+      320,
+      480,
+      960
+    ],
+    "maxBeatNumerator": 2147483647,
+    "maxTimelineQuarterNoteBeats": 1000000,
+    "midiMinimum": 0,
+    "midiMaximum": 127,
+    "tempoMinimum": 20,
+    "tempoMaximum": 400,
+    "maxSections": 64,
+    "maxMeasuresPerSection": 1024,
+    "maxEventsPerDocument": 8192,
+    "maxVoicingNotes": 16,
+    "maxImportBytes": 2097152,
+    "maxJsonDepth": 32,
+    "maxStableIdAsciiCharacters": 128,
+    "maxSymbolCodePoints": 256,
+    "maxCustomLabelCodePoints": 256,
+    "maxTitleCodePoints": 256,
+    "maxSectionNameCodePoints": 256,
+    "maxAnnotationCodePoints": 2000,
+    "maxDescriptionCodePoints": 2000,
+    "maxPartialMeasureReasonCodePoints": 2000,
+    "maxEngineVersionCodePoints": 64,
+    "minimumPlaybackLevel": 0,
+    "maximumPlaybackLevel": 1,
+    "countInBars": [0, 1, 2]
+  },
+  "coverageSummary": {
+    "companionFiles": 10,
+    "fixtureCaseRecords": 297,
+    "traceRecords": 18,
+    "authorityRecords": 9,
+    "stableSeeds": 6,
+    "allowedBeatDivisors": 28,
+    "orderedPairwiseBeatClosureChecks": 784,
+    "coreMeterCapacityCases": 15,
+    "additionalCompoundMeterNearMisses": 1,
+    "autoVoicingPolicyMatrixCells": 42,
+    "customAutoRefusalMatrixCells": 42,
+    "expectedDiagnosticCodes": 84
+  },
+  "assumptions": [
+    {
+      "id": "F1-ASSUMPTION-COMPLETION-DURATION",
+      "text": "For pickup and incomplete states, expectedDuration is the exact declared occupied duration and must equal the sum of event durations; that duration is positive and below ordinary meter capacity."
+    },
+    {
+      "id": "F1-ASSUMPTION-CODEPOINT-LIMITS",
+      "text": "Text limits count Unicode code points, not UTF-16 code units or UTF-8 bytes."
+    },
+    {
+      "id": "F1-ASSUMPTION-PURE-OPERATIONS",
+      "text": "Pitch projection, beat arithmetic, capacity calculation, shape construction, and copy-plan allocation are synchronous pure F1 operations with no base revision and no cancellation token."
+    },
+    {
+      "id": "F1-ASSUMPTION-AUTO-BASS",
+      "text": "For non-rootless Auto families without a slash bass, generated, external, and none are structurally legal; with a slash bass, generated and external are legal and none is not. Rootless families require external in both cases."
+    }
+  ],
+  "companions": [
+    {
+      "path": "pitch-cases.json",
+      "schema": "changes.fixtures.f1-pitch.v1",
+      "role": "spelled pitch identity, MIDI projection, frequency, and boundary refusals",
+      "recordCollections": [
+        "cases"
+      ]
+    },
+    {
+      "path": "chord-shape-cases.json",
+      "schema": "changes.fixtures.f1-chord-shape.v1",
+      "role": "degree identity and parsed/custom structural distinctions",
+      "recordCollections": [
+        "cases"
+      ]
+    },
+    {
+      "path": "beat-value-cases.json",
+      "schema": "changes.fixtures.f1-beat-value.v1",
+      "role": "all PPQ divisors, normalized exact arithmetic, ranges, overflow, and timeline boundaries",
+      "recordCollections": [
+        "divisorCases",
+        "pairwiseClosureCases",
+        "edgeCases"
+      ]
+    },
+    {
+      "path": "meter-measure-cases.json",
+      "schema": "changes.fixtures.f1-meter-measure.v1",
+      "role": "all fifteen 2/2 through 6/8 capacities and completion states",
+      "recordCollections": [
+        "capacityCases",
+        "completionCases"
+      ]
+    },
+    {
+      "path": "identity-cases.json",
+      "schema": "changes.fixtures.f1-identity.v1",
+      "role": "stable IDs, deep copy remaps, duplicate paths, and atomic collision failures",
+      "recordCollections": [
+        "cases"
+      ]
+    },
+    {
+      "path": "voicing-custom-cases.json",
+      "schema": "changes.fixtures.f1-voicing-custom.v1",
+      "role": "Auto policy matrix, Manual/Frozen exactness, and Custom chord conditions",
+      "recordCollections": [
+        "autoPolicyMatrix",
+        "customAutoPolicyMatrix",
+        "cases"
+      ]
+    },
+    {
+      "path": "document-boundary-cases.json",
+      "schema": "changes.fixtures.f1-document-boundary.v1",
+      "role": "document/key/instrument shapes plus positive, malformed, and exact limit boundaries",
+      "recordCollections": [
+        "cases"
+      ]
+    },
+    {
+      "path": "operation-state-cases.json",
+      "schema": "changes.fixtures.f1-operation-state.v1",
+      "role": "explicit cancellation and stale-state applicability declarations",
+      "recordCollections": [
+        "cases"
+      ]
+    },
+    {
+      "path": "trace-ledger.json",
+      "schema": "changes.fixtures.f1-trace-ledger.v1",
+      "role": "exact requirement-to-fixture traceability",
+      "recordCollections": [
+        "traces"
+      ]
+    },
+    {
+      "path": "provenance-ledger.json",
+      "schema": "changes.fixtures.f1-provenance-ledger.v1",
+      "role": "authority and independent-authoring provenance",
+      "recordCollections": [
+        "authorities"
+      ]
+    }
+  ]
+}

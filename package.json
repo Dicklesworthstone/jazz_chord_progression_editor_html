@@ -1,0 +1,42 @@
+{
+  "name": "changes-jazz-progression-studio",
+  "version": "2.0.0-dev.0",
+  "private": true,
+  "description": "An offline, deterministic jazz chord-progression studio.",
+  "license": "MIT",
+  "type": "module",
+  "packageManager": "bun@1.3.14",
+  "engines": {
+    "bun": "1.3.14",
+    "node": "^22.0.0 || ^24.0.0 || ^26.0.0"
+  },
+  "scripts": {
+    "dev": "bun scripts/dev.ts",
+    "doctor:toolchain": "bun scripts/toolchain-doctor.ts",
+    "validate:f0-contract": "bun scripts/validate-f0-contract.ts",
+    "validate:f1-contract": "bun scripts/validate-f1-contract.ts",
+    "typecheck": "bun scripts/typecheck.ts",
+    "lint": "bun scripts/lint.ts",
+    "test": "bun test",
+    "test:e2e": "bun scripts/run-playwright.ts test",
+    "build": "bun scripts/build.ts",
+    "verify:standalone": "bun scripts/verify-standalone.ts",
+    "verify:reproducible": "bun scripts/verify-reproducible.ts",
+    "verify:licenses": "bun scripts/verify-licenses.ts",
+    "verify": "bun scripts/verify.ts"
+  },
+  "dependencies": {
+    "preact": "10.29.7"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.12.1",
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.61.1",
+    "@types/bun": "1.3.14",
+    "@types/node": "26.1.1",
+    "eslint": "10.7.0",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.63.0"
+  },
+  "trustedDependencies": []
+}

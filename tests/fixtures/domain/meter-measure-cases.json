@@ -1,0 +1,368 @@
+{
+  "schema": "changes.fixtures.f1-meter-measure.v1",
+  "defaultSeedId": "F1-SEED-METER",
+  "capacityFormula": "beatsPerBar * 4 / beatUnit",
+  "storageUnit": "quarter-note beat",
+  "capacityCases": [
+    {
+      "id": "F1-METER-CAP-001",
+      "traceIds": ["F1-TRACE-METER-CAPACITY"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "meter": {"beatsPerBar": 2, "beatUnit": 2},
+      "expectedCapacity": {"numerator": 4, "denominator": 1}
+    },
+    {
+      "id": "F1-METER-CAP-002",
+      "traceIds": ["F1-TRACE-METER-CAPACITY"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "meter": {"beatsPerBar": 3, "beatUnit": 2},
+      "expectedCapacity": {"numerator": 6, "denominator": 1}
+    },
+    {
+      "id": "F1-METER-CAP-003",
+      "traceIds": ["F1-TRACE-METER-CAPACITY"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "meter": {"beatsPerBar": 4, "beatUnit": 2},
+      "expectedCapacity": {"numerator": 8, "denominator": 1}
+    },
+    {
+      "id": "F1-METER-CAP-004",
+      "traceIds": ["F1-TRACE-METER-CAPACITY"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "meter": {"beatsPerBar": 5, "beatUnit": 2},
+      "expectedCapacity": {"numerator": 10, "denominator": 1}
+    },
+    {
+      "id": "F1-METER-CAP-005",
+      "traceIds": ["F1-TRACE-METER-CAPACITY"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "meter": {"beatsPerBar": 6, "beatUnit": 2},
+      "expectedCapacity": {"numerator": 12, "denominator": 1}
+    },
+    {
+      "id": "F1-METER-CAP-006",
+      "traceIds": ["F1-TRACE-METER-CAPACITY"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "meter": {"beatsPerBar": 2, "beatUnit": 4},
+      "expectedCapacity": {"numerator": 2, "denominator": 1}
+    },
+    {
+      "id": "F1-METER-CAP-007",
+      "traceIds": ["F1-TRACE-METER-CAPACITY"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "meter": {"beatsPerBar": 3, "beatUnit": 4},
+      "expectedCapacity": {"numerator": 3, "denominator": 1}
+    },
+    {
+      "id": "F1-METER-CAP-008",
+      "traceIds": ["F1-TRACE-METER-CAPACITY"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "meter": {"beatsPerBar": 4, "beatUnit": 4},
+      "expectedCapacity": {"numerator": 4, "denominator": 1}
+    },
+    {
+      "id": "F1-METER-CAP-009",
+      "traceIds": ["F1-TRACE-METER-CAPACITY"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "meter": {"beatsPerBar": 5, "beatUnit": 4},
+      "expectedCapacity": {"numerator": 5, "denominator": 1}
+    },
+    {
+      "id": "F1-METER-CAP-010",
+      "traceIds": ["F1-TRACE-METER-CAPACITY"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "meter": {"beatsPerBar": 6, "beatUnit": 4},
+      "expectedCapacity": {"numerator": 6, "denominator": 1}
+    },
+    {
+      "id": "F1-METER-CAP-011",
+      "traceIds": ["F1-TRACE-METER-CAPACITY"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "meter": {"beatsPerBar": 2, "beatUnit": 8},
+      "expectedCapacity": {"numerator": 1, "denominator": 1}
+    },
+    {
+      "id": "F1-METER-CAP-012",
+      "traceIds": ["F1-TRACE-METER-CAPACITY"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "meter": {"beatsPerBar": 3, "beatUnit": 8},
+      "expectedCapacity": {"numerator": 3, "denominator": 2}
+    },
+    {
+      "id": "F1-METER-CAP-013",
+      "traceIds": ["F1-TRACE-METER-CAPACITY"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "meter": {"beatsPerBar": 4, "beatUnit": 8},
+      "expectedCapacity": {"numerator": 2, "denominator": 1}
+    },
+    {
+      "id": "F1-METER-CAP-014",
+      "traceIds": ["F1-TRACE-METER-CAPACITY"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "meter": {"beatsPerBar": 5, "beatUnit": 8},
+      "expectedCapacity": {"numerator": 5, "denominator": 2}
+    },
+    {
+      "id": "F1-METER-CAP-015",
+      "traceIds": ["F1-TRACE-METER-CAPACITY"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "meter": {"beatsPerBar": 6, "beatUnit": 8},
+      "expectedCapacity": {"numerator": 3, "denominator": 1}
+    },
+    {
+      "id": "F1-METER-CAP-016",
+      "traceIds": ["F1-TRACE-METER-CAPACITY"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "meter": {"beatsPerBar": 12, "beatUnit": 8},
+      "expectedCapacity": {"numerator": 6, "denominator": 1},
+      "note": "Compound-meter near-miss against treating dotted-quarter pulses as stored beats."
+    }
+  ],
+  "completionCases": [
+    {
+      "id": "F1-MEASURE-001",
+      "traceIds": ["F1-TRACE-MEASURE-STATE"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "meter": {"beatsPerBar": 4, "beatUnit": 4},
+      "eventDurations": [],
+      "completion": {"kind": "empty"},
+      "expected": {"ok": true, "sum": {"numerator": 0, "denominator": 1}}
+    },
+    {
+      "id": "F1-MEASURE-002",
+      "traceIds": ["F1-TRACE-MEASURE-STATE"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "meter": {"beatsPerBar": 4, "beatUnit": 4},
+      "eventDurations": [{"numerator": 1, "denominator": 1}],
+      "completion": {"kind": "empty"},
+      "expected": {"ok": false, "issue": {"code": "measure.empty_has_events", "path": ["events", 0]}}
+    },
+    {
+      "id": "F1-MEASURE-003",
+      "traceIds": ["F1-TRACE-MEASURE-STATE"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "meter": {"beatsPerBar": 4, "beatUnit": 4},
+      "eventDurations": [{"numerator": 4, "denominator": 1}],
+      "completion": {"kind": "complete"},
+      "expected": {"ok": true, "sum": {"numerator": 4, "denominator": 1}}
+    },
+    {
+      "id": "F1-MEASURE-004",
+      "traceIds": ["F1-TRACE-MEASURE-STATE"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "meter": {"beatsPerBar": 4, "beatUnit": 4},
+      "eventDurations": [
+        {"numerator": 1, "denominator": 1},
+        {"numerator": 3, "denominator": 1}
+      ],
+      "completion": {"kind": "complete"},
+      "expected": {"ok": true, "sum": {"numerator": 4, "denominator": 1}}
+    },
+    {
+      "id": "F1-MEASURE-005",
+      "traceIds": ["F1-TRACE-MEASURE-STATE"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "meter": {"beatsPerBar": 4, "beatUnit": 4},
+      "eventDurations": [{"numerator": 3, "denominator": 1}],
+      "completion": {"kind": "complete"},
+      "expected": {"ok": false, "issue": {"code": "measure.complete_duration_mismatch", "path": ["completion"]}}
+    },
+    {
+      "id": "F1-MEASURE-006",
+      "traceIds": ["F1-TRACE-MEASURE-STATE"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "meter": {"beatsPerBar": 4, "beatUnit": 4},
+      "eventDurations": [{"numerator": 5, "denominator": 1}],
+      "completion": {"kind": "complete"},
+      "expected": {
+        "ok": false,
+        "issuesInOrder": [
+          {"code": "measure.complete_duration_mismatch", "path": ["completion"]},
+          {"code": "measure.duration_over_capacity", "path": ["events", 0, "duration"]}
+        ]
+      }
+    },
+    {
+      "id": "F1-MEASURE-007",
+      "traceIds": ["F1-TRACE-MEASURE-STATE"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "meter": {"beatsPerBar": 4, "beatUnit": 4},
+      "measureIndex": 0,
+      "eventDurations": [{"numerator": 1, "denominator": 1}],
+      "completion": {"kind": "pickup", "expectedDuration": {"numerator": 1, "denominator": 1}, "reason": "One-beat anacrusis"},
+      "expected": {"ok": true, "positionConstraint": "none"}
+    },
+    {
+      "id": "F1-MEASURE-008",
+      "traceIds": ["F1-TRACE-MEASURE-STATE"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "meter": {"beatsPerBar": 4, "beatUnit": 4},
+      "measureIndex": 3,
+      "eventDurations": [{"numerator": 1, "denominator": 1}],
+      "completion": {"kind": "pickup", "expectedDuration": {"numerator": 1, "denominator": 1}, "reason": "Explicit imported pickup marker"},
+      "expected": {"ok": true, "positionConstraint": "none", "complementaryMeasureRequired": false}
+    },
+    {
+      "id": "F1-MEASURE-009",
+      "traceIds": ["F1-TRACE-MEASURE-STATE"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "meter": {"beatsPerBar": 4, "beatUnit": 4},
+      "eventDurations": [{"numerator": 3, "denominator": 1}],
+      "completion": {"kind": "incomplete", "expectedDuration": {"numerator": 3, "denominator": 1}, "reason": "Source chart intentionally stops early"},
+      "expected": {"ok": true}
+    },
+    {
+      "id": "F1-MEASURE-010",
+      "traceIds": ["F1-TRACE-MEASURE-STATE"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "meter": {"beatsPerBar": 4, "beatUnit": 4},
+      "eventDurations": [{"numerator": 1, "denominator": 1}],
+      "completion": {"kind": "pickup", "expectedDuration": {"numerator": 2, "denominator": 1}, "reason": "Declared two beats"},
+      "expected": {"ok": false, "issue": {"code": "measure.expected_duration_mismatch", "path": ["completion", "expectedDuration"]}}
+    },
+    {
+      "id": "F1-MEASURE-011",
+      "traceIds": ["F1-TRACE-MEASURE-STATE"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "meter": {"beatsPerBar": 4, "beatUnit": 4},
+      "eventDurations": [{"numerator": 2, "denominator": 1}],
+      "completion": {"kind": "incomplete", "expectedDuration": {"numerator": 3, "denominator": 1}, "reason": "Declared three beats"},
+      "expected": {"ok": false, "issue": {"code": "measure.expected_duration_mismatch", "path": ["completion", "expectedDuration"]}}
+    },
+    {
+      "id": "F1-MEASURE-012",
+      "traceIds": ["F1-TRACE-MEASURE-STATE"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "meter": {"beatsPerBar": 4, "beatUnit": 4},
+      "eventDurations": [],
+      "completion": {"kind": "pickup", "expectedDuration": {"numerator": 0, "denominator": 1}, "reason": "Zero is not a pickup"},
+      "expected": {
+        "ok": false,
+        "issuesInOrder": [
+          {"code": "measure.expected_duration_not_positive", "path": ["completion", "expectedDuration"]},
+          {"code": "measure.nonempty_has_no_events", "path": ["events"]}
+        ]
+      }
+    },
+    {
+      "id": "F1-MEASURE-013",
+      "traceIds": ["F1-TRACE-MEASURE-STATE"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "meter": {"beatsPerBar": 4, "beatUnit": 4},
+      "eventDurations": [{"numerator": 4, "denominator": 1}],
+      "completion": {"kind": "incomplete", "expectedDuration": {"numerator": 4, "denominator": 1}, "reason": "Actually complete"},
+      "expected": {"ok": false, "issue": {"code": "measure.expected_duration_not_short", "path": ["completion", "expectedDuration"]}}
+    },
+    {
+      "id": "F1-MEASURE-014",
+      "traceIds": ["F1-TRACE-MEASURE-STATE"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "meter": {"beatsPerBar": 4, "beatUnit": 4},
+      "eventDurations": [{"numerator": 1, "denominator": 1}],
+      "completion": {"kind": "pickup", "expectedDuration": {"numerator": 1, "denominator": 1}, "reason": ""},
+      "expected": {"ok": false, "issue": {"code": "measure.reason_blank", "path": ["completion", "reason"]}}
+    },
+    {
+      "id": "F1-MEASURE-015",
+      "traceIds": ["F1-TRACE-MEASURE-STATE"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "meter": {"beatsPerBar": 4, "beatUnit": 4},
+      "eventDurations": [{"numerator": 2, "denominator": 1}],
+      "completion": {"kind": "incomplete", "expectedDuration": {"numerator": 2, "denominator": 1}, "reason": "   \t"},
+      "expected": {"ok": false, "issue": {"code": "measure.reason_blank", "path": ["completion", "reason"]}}
+    },
+    {
+      "id": "F1-MEASURE-016",
+      "traceIds": ["F1-TRACE-MEASURE-STATE"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "meter": {"beatsPerBar": 4, "beatUnit": 4},
+      "eventDurations": [{"numerator": 5, "denominator": 1}],
+      "completion": {"kind": "pickup", "expectedDuration": {"numerator": 5, "denominator": 1}, "reason": "Overfilled pickup"},
+      "expected": {
+        "ok": false,
+        "issuesInOrder": [
+          {"code": "measure.expected_duration_not_short", "path": ["completion", "expectedDuration"]},
+          {"code": "measure.duration_over_capacity", "path": ["events", 0, "duration"]}
+        ]
+      }
+    },
+    {
+      "id": "F1-MEASURE-017",
+      "traceIds": ["F1-TRACE-MEASURE-STATE"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "meter": {"beatsPerBar": 4, "beatUnit": 4},
+      "eventDurations": [{"numerator": 5, "denominator": 1}],
+      "completion": {"kind": "incomplete", "expectedDuration": {"numerator": 5, "denominator": 1}, "reason": "Overfilled incomplete bar"},
+      "expected": {
+        "ok": false,
+        "issuesInOrder": [
+          {"code": "measure.expected_duration_not_short", "path": ["completion", "expectedDuration"]},
+          {"code": "measure.duration_over_capacity", "path": ["events", 0, "duration"]}
+        ]
+      }
+    },
+    {
+      "id": "F1-MEASURE-018",
+      "traceIds": ["F1-TRACE-MEASURE-STATE"],
+      "authorityIds": ["F1-AUTH-TIME", "F1-AUTH-DOCUMENT"],
+      "meter": {"beatsPerBar": 4, "beatUnit": 4},
+      "eventDurations": [],
+      "completion": {"kind": "complete"},
+      "expected": {
+        "ok": false,
+        "issuesInOrder": [
+          {"code": "measure.complete_duration_mismatch", "path": ["completion"]},
+          {"code": "measure.nonempty_has_no_events", "path": ["events"]}
+        ]
+      }
+    },
+    {
+      "id": "F1-MEASURE-019",
+      "traceIds": ["F1-TRACE-MEASURE-STATE", "F1-TRACE-METER-CAPACITY"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "meter": {"beatsPerBar": 3, "beatUnit": 8},
+      "eventDurations": [
+        {"numerator": 1, "denominator": 2},
+        {"numerator": 1, "denominator": 1}
+      ],
+      "completion": {"kind": "complete"},
+      "expected": {"ok": true, "sum": {"numerator": 3, "denominator": 2}}
+    },
+    {
+      "id": "F1-MEASURE-020",
+      "traceIds": ["F1-TRACE-MEASURE-STATE"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "meter": {"beatsPerBar": 4, "beatUnit": 4},
+      "eventDurations": [
+        {"numerator": 3, "denominator": 1},
+        {"numerator": 2, "denominator": 1}
+      ],
+      "completion": {"kind": "complete"},
+      "expected": {
+        "ok": false,
+        "issuesInOrder": [
+          {"code": "measure.complete_duration_mismatch", "path": ["completion"]},
+          {"code": "measure.duration_over_capacity", "path": ["events", 1, "duration"]}
+        ]
+      }
+    },
+    {
+      "id": "F1-MEASURE-021",
+      "traceIds": ["F1-TRACE-MEASURE-STATE"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "meter": {"beatsPerBar": 4, "beatUnit": 4},
+      "eventDurations": [{"numerator": 3, "denominator": 1}],
+      "completion": {"kind": "pickup", "expectedDuration": {"numerator": 2, "denominator": 1}, "reason": "Declared two beats"},
+      "expected": {"ok": false, "issue": {"code": "measure.expected_duration_mismatch", "path": ["completion", "expectedDuration"]}}
+    },
+    {
+      "id": "F1-MEASURE-022",
+      "traceIds": ["F1-TRACE-MEASURE-STATE"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "meter": {"beatsPerBar": 4, "beatUnit": 4},
+      "eventDurations": [{"numerator": 3, "denominator": 1}],
+      "completion": {"kind": "incomplete", "expectedDuration": {"numerator": 2, "denominator": 1}, "reason": "Declared two beats"},
+      "expected": {"ok": false, "issue": {"code": "measure.expected_duration_mismatch", "path": ["completion", "expectedDuration"]}}
+    }
+  ]
+}

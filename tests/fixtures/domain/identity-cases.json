@@ -1,0 +1,403 @@
+{
+  "schema": "changes.fixtures.f1-identity.v1",
+  "defaultSeedId": "F1-SEED-IDENTITY",
+  "allocationOrder": "preorder: copied root, then each descendant in stored section/measure/event order",
+  "collisionScope": "global across document, section, measure, and event kinds",
+  "transactionRule": "allocate and validate the complete remap before exposing a copied value; fail on the first injected collision and leave source/current state byte-for-byte unchanged",
+  "sharedGraphs": {
+    "source-document-a": {
+      "kind": "document",
+      "id": "doc-A",
+      "sections": [
+        {
+          "kind": "section",
+          "id": "section-A1",
+          "measures": [
+            {
+              "kind": "measure",
+              "id": "measure-A1-1",
+              "events": [
+                {"kind": "event", "id": "event-A1-1-1"},
+                {"kind": "event", "id": "event-A1-1-2"}
+              ]
+            },
+            {
+              "kind": "measure",
+              "id": "measure-A1-2",
+              "events": [
+                {"kind": "event", "id": "event-A1-2-1"}
+              ]
+            }
+          ]
+        },
+        {
+          "kind": "section",
+          "id": "section-A2",
+          "measures": [
+            {
+              "kind": "measure",
+              "id": "measure-A2-1",
+              "events": [
+                {"kind": "event", "id": "event-A2-1-1"}
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "cases": [
+    {
+      "id": "F1-ID-001",
+      "traceIds": [
+        "F1-TRACE-ID-STABILITY",
+        "F1-TRACE-ID-TRANSACTION"
+      ],
+      "authorityIds": ["F1-AUTH-ID"],
+      "kind": "duplicate-document",
+      "sourceGraphRef": "source-document-a",
+      "factoryOutputs": [
+        "doc-B",
+        "section-B1",
+        "measure-B1-1",
+        "event-B1-1-1",
+        "event-B1-1-2",
+        "measure-B1-2",
+        "event-B1-2-1",
+        "section-B2",
+        "measure-B2-1",
+        "event-B2-1-1"
+      ],
+      "expected": {
+        "ok": true,
+        "factoryCallOrder": [
+          {"kind": "document", "oldId": "doc-A"},
+          {"kind": "section", "oldId": "section-A1"},
+          {"kind": "measure", "oldId": "measure-A1-1"},
+          {"kind": "event", "oldId": "event-A1-1-1"},
+          {"kind": "event", "oldId": "event-A1-1-2"},
+          {"kind": "measure", "oldId": "measure-A1-2"},
+          {"kind": "event", "oldId": "event-A1-2-1"},
+          {"kind": "section", "oldId": "section-A2"},
+          {"kind": "measure", "oldId": "measure-A2-1"},
+          {"kind": "event", "oldId": "event-A2-1-1"}
+        ],
+        "remap": {
+          "doc-A": "doc-B",
+          "section-A1": "section-B1",
+          "measure-A1-1": "measure-B1-1",
+          "event-A1-1-1": "event-B1-1-1",
+          "event-A1-1-2": "event-B1-1-2",
+          "measure-A1-2": "measure-B1-2",
+          "event-A1-2-1": "event-B1-2-1",
+          "section-A2": "section-B2",
+          "measure-A2-1": "measure-B2-1",
+          "event-A2-1-1": "event-B2-1-1"
+        },
+        "sourceUnchanged": true,
+        "allNonIdFieldsDeepEqual": true
+      }
+    },
+    {
+      "id": "F1-ID-002",
+      "traceIds": ["F1-TRACE-ID-TRANSACTION"],
+      "authorityIds": ["F1-AUTH-ID"],
+      "kind": "duplicate-section",
+      "sourceGraphRef": "source-document-a.sections[0]",
+      "factoryOutputs": [
+        "section-C1",
+        "measure-C1-1",
+        "event-C1-1-1",
+        "event-C1-1-2",
+        "measure-C1-2",
+        "event-C1-2-1"
+      ],
+      "expected": {
+        "ok": true,
+        "factoryCallKinds": ["section", "measure", "event", "event", "measure", "event"],
+        "remap": {
+          "section-A1": "section-C1",
+          "measure-A1-1": "measure-C1-1",
+          "event-A1-1-1": "event-C1-1-1",
+          "event-A1-1-2": "event-C1-1-2",
+          "measure-A1-2": "measure-C1-2",
+          "event-A1-2-1": "event-C1-2-1"
+        }
+      }
+    },
+    {
+      "id": "F1-ID-003",
+      "traceIds": ["F1-TRACE-ID-TRANSACTION"],
+      "authorityIds": ["F1-AUTH-ID"],
+      "kind": "duplicate-measure",
+      "sourceGraphRef": "source-document-a.sections[0].measures[0]",
+      "factoryOutputs": ["measure-C2-1", "event-C2-1-1", "event-C2-1-2"],
+      "expected": {
+        "ok": true,
+        "factoryCallKinds": ["measure", "event", "event"],
+        "remap": {
+          "measure-A1-1": "measure-C2-1",
+          "event-A1-1-1": "event-C2-1-1",
+          "event-A1-1-2": "event-C2-1-2"
+        }
+      }
+    },
+    {
+      "id": "F1-ID-004",
+      "traceIds": ["F1-TRACE-ID-STABILITY", "F1-TRACE-ID-TRANSACTION"],
+      "authorityIds": ["F1-AUTH-ID"],
+      "kind": "instantiate-lesson",
+      "sourceGraphRef": "source-document-a",
+      "factoryOutputs": [
+        "lesson-doc-1", "lesson-section-1", "lesson-measure-1", "lesson-event-1", "lesson-event-2",
+        "lesson-measure-2", "lesson-event-3", "lesson-section-2", "lesson-measure-3", "lesson-event-4"
+      ],
+      "expected": {
+        "ok": true,
+        "orderedRemapEntries": [
+          {"kind": "document", "from": "doc-A", "to": "lesson-doc-1", "sourcePath": ["id"]},
+          {"kind": "section", "from": "section-A1", "to": "lesson-section-1", "sourcePath": ["sections", 0, "id"]},
+          {"kind": "measure", "from": "measure-A1-1", "to": "lesson-measure-1", "sourcePath": ["sections", 0, "measures", 0, "id"]},
+          {"kind": "event", "from": "event-A1-1-1", "to": "lesson-event-1", "sourcePath": ["sections", 0, "measures", 0, "events", 0, "id"]},
+          {"kind": "event", "from": "event-A1-1-2", "to": "lesson-event-2", "sourcePath": ["sections", 0, "measures", 0, "events", 1, "id"]},
+          {"kind": "measure", "from": "measure-A1-2", "to": "lesson-measure-2", "sourcePath": ["sections", 0, "measures", 1, "id"]},
+          {"kind": "event", "from": "event-A1-2-1", "to": "lesson-event-3", "sourcePath": ["sections", 0, "measures", 1, "events", 0, "id"]},
+          {"kind": "section", "from": "section-A2", "to": "lesson-section-2", "sourcePath": ["sections", 1, "id"]},
+          {"kind": "measure", "from": "measure-A2-1", "to": "lesson-measure-3", "sourcePath": ["sections", 1, "measures", 0, "id"]},
+          {"kind": "event", "from": "event-A2-1-1", "to": "lesson-event-4", "sourcePath": ["sections", 1, "measures", 0, "events", 0, "id"]}
+        ],
+        "samePreorderAsDocumentDuplication": true,
+        "allTenIdsRemapped": true,
+        "sourceUnchanged": true,
+        "allNonIdFieldsDeepEqual": true
+      }
+    },
+    {
+      "id": "F1-ID-005",
+      "traceIds": ["F1-TRACE-ID-STABILITY"],
+      "authorityIds": ["F1-AUTH-ID"],
+      "kind": "reorder-preserves-identity",
+      "sourceGraphRef": "source-document-a",
+      "operation": {
+        "sectionOrder": ["section-A2", "section-A1"],
+        "measureOrderWithinSectionA1": ["measure-A1-2", "measure-A1-1"],
+        "eventOrderWithinMeasureA11": ["event-A1-1-2", "event-A1-1-1"]
+      },
+      "expected": {
+        "allocatedIds": [],
+        "documentId": "doc-A",
+        "sectionOrder": ["section-A2", "section-A1"],
+        "sectionA2MeasureOrder": ["measure-A2-1"],
+        "sectionA1MeasureOrder": ["measure-A1-2", "measure-A1-1"],
+        "measureA12EventOrder": ["event-A1-2-1"],
+        "measureA11EventOrder": ["event-A1-1-2", "event-A1-1-1"],
+        "preservedIdSet": [
+          "doc-A", "section-A1", "measure-A1-1", "event-A1-1-1", "event-A1-1-2",
+          "measure-A1-2", "event-A1-2-1", "section-A2", "measure-A2-1", "event-A2-1-1"
+        ],
+        "sourceUnchanged": true,
+        "allNonOrderNonIdFieldsDeepEqual": true
+      }
+    },
+    {
+      "id": "F1-ID-006",
+      "traceIds": ["F1-TRACE-ID-TRANSACTION"],
+      "authorityIds": ["F1-AUTH-ID"],
+    "kind": "collision-with-existing-cross-kind-id",
+    "sourceGraphRef": "source-document-a",
+    "occupiedGraphRef": "source-document-a",
+      "factoryOutputs": ["event-A2-1-1", "unobserved-output"],
+      "expected": {
+        "ok": false,
+        "factoryCalls": 1,
+      "issue": {
+        "code": "id.collision_existing",
+        "requested": {"kind": "document", "pathRoot": "copy-root", "path": ["id"]},
+        "occupied": {"kind": "event", "pathRoot": "occupied-document", "path": ["sections", 1, "measures", 0, "events", 0, "id"]},
+        "collidingId": "event-A2-1-1"
+        },
+        "sourceUnchanged": true,
+        "currentStateUnchanged": true,
+        "partialCopyExposed": false
+      }
+    },
+    {
+      "id": "F1-ID-007",
+      "traceIds": ["F1-TRACE-ID-TRANSACTION"],
+      "authorityIds": ["F1-AUTH-ID"],
+      "kind": "collision-among-new-cross-kind-ids",
+      "sourceGraphRef": "source-document-a",
+      "factoryOutputs": ["new-doc", "new-shared", "new-shared", "unobserved-output"],
+      "expected": {
+        "ok": false,
+        "factoryCalls": 3,
+      "issue": {
+        "code": "id.collision_allocated",
+        "requested": {"kind": "measure", "pathRoot": "copy-root", "path": ["sections", 0, "measures", 0, "id"]},
+        "firstAllocated": {"kind": "section", "pathRoot": "copy-root", "path": ["sections", 0, "id"]},
+        "collidingId": "new-shared"
+        },
+        "sourceUnchanged": true,
+        "currentStateUnchanged": true,
+        "partialCopyExposed": false
+      }
+    },
+    {
+      "id": "F1-ID-008",
+      "traceIds": ["F1-TRACE-ID-TRANSACTION"],
+      "authorityIds": ["F1-AUTH-ID"],
+      "kind": "factory-exhausted",
+      "sourceGraphRef": "source-document-a.sections[0].measures[0]",
+      "factoryOutputs": ["new-measure", "new-event-only"],
+      "expected": {
+        "ok": false,
+        "factoryCalls": 3,
+        "issue": {
+          "code": "id.factory_exhausted",
+          "kind": "event",
+          "path": ["events", 1, "id"]
+        },
+        "sourceUnchanged": true,
+        "currentStateUnchanged": true,
+        "partialCopyExposed": false
+      }
+    },
+    {
+      "id": "F1-ID-009",
+      "traceIds": ["F1-TRACE-ID-TRANSACTION", "F1-TRACE-DECODER-RESULT"],
+      "authorityIds": ["F1-AUTH-ID", "F1-AUTH-VALIDATION"],
+      "kind": "decode-duplicate-id-same-measure",
+      "inputSummary": {
+        "firstPath": ["sections", 0, "measures", 0, "events", 0, "id"],
+        "duplicatePath": ["sections", 0, "measures", 0, "events", 1, "id"],
+        "value": "event-duplicate"
+      },
+      "expected": {
+        "ok": false,
+        "issuesInOrder": [
+          {"code": "id.duplicate", "path": ["sections", 0, "measures", 0, "events", 0, "id"], "role": "first"},
+          {"code": "id.duplicate", "path": ["sections", 0, "measures", 0, "events", 1, "id"], "role": "duplicate"}
+        ],
+        "partialValueReturned": false,
+        "currentStateUnchanged": true
+      }
+    },
+    {
+      "id": "F1-ID-010",
+      "traceIds": ["F1-TRACE-ID-TRANSACTION", "F1-TRACE-DECODER-RESULT"],
+      "authorityIds": ["F1-AUTH-ID", "F1-AUTH-VALIDATION"],
+      "kind": "decode-duplicate-id-cross-kind",
+      "inputSummary": {
+        "firstPath": ["id"],
+        "duplicatePath": ["sections", 1, "measures", 0, "id"],
+        "firstKind": "document",
+        "duplicateKind": "measure",
+        "value": "globally-duplicated"
+      },
+      "expected": {
+        "ok": false,
+        "issuesInOrder": [
+          {"code": "id.duplicate", "path": ["id"], "role": "first"},
+          {"code": "id.duplicate", "path": ["sections", 1, "measures", 0, "id"], "role": "duplicate"}
+        ],
+        "partialValueReturned": false,
+        "currentStateUnchanged": true
+      }
+    },
+    {
+      "id": "F1-ID-011",
+      "traceIds": ["F1-TRACE-ID-TRANSACTION"],
+      "authorityIds": ["F1-AUTH-ID"],
+    "kind": "collision-with-existing-same-kind-id",
+    "sourceGraphRef": "source-document-a.sections[0].measures[0]",
+    "occupiedGraphRef": "source-document-a",
+      "factoryOutputs": ["measure-A2-1", "unobserved-output"],
+      "expected": {
+        "ok": false,
+        "factoryCalls": 1,
+      "issue": {
+        "code": "id.collision_existing",
+        "requested": {"kind": "measure", "pathRoot": "copy-root", "path": ["id"]},
+        "occupied": {"kind": "measure", "pathRoot": "occupied-document", "path": ["sections", 1, "measures", 0, "id"]},
+        "collidingId": "measure-A2-1"
+        },
+        "sourceUnchanged": true,
+        "currentStateUnchanged": true,
+        "partialCopyExposed": false
+      }
+    },
+    {
+      "id": "F1-ID-012",
+      "traceIds": ["F1-TRACE-ID-TRANSACTION"],
+      "authorityIds": ["F1-AUTH-ID"],
+      "kind": "collision-among-new-same-kind-ids",
+      "sourceGraphRef": "source-document-a.sections[0].measures[0]",
+      "factoryOutputs": ["new-measure-2", "new-event-shared", "new-event-shared", "unobserved-output"],
+      "expected": {
+        "ok": false,
+        "factoryCalls": 3,
+      "issue": {
+        "code": "id.collision_allocated",
+        "requested": {"kind": "event", "pathRoot": "copy-root", "path": ["events", 1, "id"]},
+        "firstAllocated": {"kind": "event", "pathRoot": "copy-root", "path": ["events", 0, "id"]},
+        "collidingId": "new-event-shared"
+        },
+        "sourceUnchanged": true,
+        "currentStateUnchanged": true,
+        "partialCopyExposed": false
+      }
+    },
+    {
+      "id": "F1-ID-013",
+      "traceIds": ["F1-TRACE-ID-TRANSACTION", "F1-TRACE-BOUNDED-OPERATIONS"],
+      "authorityIds": ["F1-AUTH-ID", "F1-AUTH-VALIDATION"],
+      "kind": "production-entropy-unavailable",
+      "availableEntropy": {"cryptoRandomUuid": false, "cryptoGetRandomValues": false, "mathRandom": true},
+      "expected": {
+        "ok": false,
+        "issue": {"code": "id.entropy_unavailable", "kind": "document", "path": ["id"]},
+        "mathRandomUsed": false,
+        "currentStateUnchanged": true
+      }
+    },
+    {
+      "id": "F1-ID-014",
+      "traceIds": ["F1-TRACE-ID-TRANSACTION"],
+      "authorityIds": ["F1-AUTH-ID"],
+      "kind": "reject-incomplete-deep-remap",
+      "sourceGraphRef": "source-document-a.sections[0].measures[0]",
+      "candidateRemap": {
+        "measure-A1-1": "copy-measure",
+        "event-A1-1-1": "copy-event-1"
+      },
+      "missingSourceId": "event-A1-1-2",
+      "expected": {
+        "ok": false,
+        "issue": {"code": "id.remap_incomplete", "kind": "event", "source": "event-A1-1-2", "path": ["events", 1, "id"]},
+        "sourceUnchanged": true,
+        "currentStateUnchanged": true,
+        "partialCopyExposed": false
+      }
+    },
+    {
+      "id": "F1-ID-015",
+      "traceIds": ["F1-TRACE-ID-STABILITY", "F1-TRACE-ID-TRANSACTION", "F1-TRACE-BOUNDED-OPERATIONS"],
+      "authorityIds": ["F1-AUTH-ID", "F1-AUTH-VALIDATION"],
+      "kind": "production-random-uuid-success",
+      "requestedKind": "document",
+      "availableEntropy": {"cryptoRandomUuid": true, "cryptoGetRandomValues": true, "mathRandom": true},
+      "entropyOutput": "550e8400-e29b-41d4-a716-446655440000",
+      "expected": {"ok": true, "value": "550e8400-e29b-41d4-a716-446655440000", "source": "crypto.randomUUID", "mathRandomUsed": false}
+    },
+    {
+      "id": "F1-ID-016",
+      "traceIds": ["F1-TRACE-ID-STABILITY", "F1-TRACE-ID-TRANSACTION", "F1-TRACE-BOUNDED-OPERATIONS"],
+      "authorityIds": ["F1-AUTH-ID", "F1-AUTH-VALIDATION"],
+      "kind": "production-random-values-fallback-success",
+      "requestedKind": "event",
+      "availableEntropy": {"cryptoRandomUuid": false, "cryptoGetRandomValues": true, "mathRandom": true},
+      "entropyBytes": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+      "expected": {"ok": true, "value": "00010203-0405-4607-8809-0a0b0c0d0e0f", "source": "crypto.getRandomValues", "rfc4122Version": 4, "rfc4122Variant": "10", "mathRandomUsed": false}
+    }
+  ]
+}

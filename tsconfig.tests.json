@@ -1,0 +1,27 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact",
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "rootDir": ".",
+    "types": [
+      "bun"
+    ]
+  },
+  "include": [
+    "src/test-support/**/*.ts",
+    "src/test-support/**/*.tsx",
+    "tests/**/*.test.ts",
+    "tests/**/*.test.tsx"
+  ],
+  "exclude": [
+    "tests/e2e/**",
+    "tests/fixtures/**",
+    "tests/visual/**"
+  ]
+}

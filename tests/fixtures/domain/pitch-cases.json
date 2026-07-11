@@ -1,0 +1,572 @@
+{
+  "schema": "changes.fixtures.f1-pitch.v1",
+  "defaultSeedId": "F1-SEED-PITCH",
+  "frequencyFormula": "440 * 2^((midi - 69) / 12)",
+  "frequencyAbsoluteToleranceHz": 1e-9,
+  "cases": [
+    {
+      "id": "F1-PITCH-001",
+      "traceIds": [
+        "F1-TRACE-PITCH-IDENTITY",
+        "F1-TRACE-PITCH-MIDI",
+        "F1-TRACE-PITCH-FREQUENCY"
+      ],
+      "authorityIds": [
+        "F1-AUTH-PITCH",
+        "F1-AUTH-TEMPERAMENT"
+      ],
+      "kind": "project-spelled-pitch",
+      "input": {
+        "step": "B",
+        "alter": 1,
+        "octave": 3
+      },
+      "notation": "B#3",
+      "expected": {
+        "ok": true,
+        "pitchClass": 0,
+        "midi": 60,
+        "frequencyHz": 261.6255653005986
+      }
+    },
+    {
+      "id": "F1-PITCH-002",
+      "traceIds": [
+        "F1-TRACE-PITCH-IDENTITY",
+        "F1-TRACE-PITCH-MIDI",
+        "F1-TRACE-PITCH-FREQUENCY"
+      ],
+      "authorityIds": [
+        "F1-AUTH-PITCH",
+        "F1-AUTH-TEMPERAMENT"
+      ],
+      "kind": "project-spelled-pitch",
+      "input": {
+        "step": "C",
+        "alter": 0,
+        "octave": 4
+      },
+      "notation": "C4",
+      "expected": {
+        "ok": true,
+        "pitchClass": 0,
+        "midi": 60,
+        "frequencyHz": 261.6255653005986
+      }
+    },
+    {
+      "id": "F1-PITCH-003",
+      "traceIds": [
+        "F1-TRACE-PITCH-IDENTITY",
+        "F1-TRACE-PITCH-MIDI",
+        "F1-TRACE-PITCH-FREQUENCY"
+      ],
+      "authorityIds": [
+        "F1-AUTH-PITCH",
+        "F1-AUTH-TEMPERAMENT"
+      ],
+      "kind": "project-spelled-pitch",
+      "input": {
+        "step": "C",
+        "alter": -1,
+        "octave": 4
+      },
+      "notation": "Cb4",
+      "expected": {
+        "ok": true,
+        "pitchClass": 11,
+        "midi": 59,
+        "frequencyHz": 246.94165062806206
+      }
+    },
+    {
+      "id": "F1-PITCH-004",
+      "traceIds": [
+        "F1-TRACE-PITCH-IDENTITY"
+      ],
+      "authorityIds": [
+        "F1-AUTH-PITCH"
+      ],
+      "kind": "compare-spelled-pitches",
+      "left": {
+        "step": "B",
+        "alter": 1,
+        "octave": 3
+      },
+      "right": {
+        "step": "C",
+        "alter": 0,
+        "octave": 4
+      },
+      "expected": {
+        "spelledEqual": false,
+        "midiEqual": true,
+        "pitchClassEqual": true
+      }
+    },
+    {
+      "id": "F1-PITCH-005",
+      "traceIds": [
+        "F1-TRACE-PITCH-IDENTITY"
+      ],
+      "authorityIds": [
+        "F1-AUTH-PITCH"
+      ],
+      "kind": "compare-spelled-pitches",
+      "left": {
+        "step": "C",
+        "alter": 0,
+        "octave": 4
+      },
+      "right": {
+        "step": "C",
+        "alter": -1,
+        "octave": 4
+      },
+      "expected": {
+        "spelledEqual": false,
+        "midiEqual": false,
+        "pitchClassEqual": false
+      }
+    },
+    {
+      "id": "F1-PITCH-006",
+      "traceIds": [
+        "F1-TRACE-PITCH-MIDI",
+        "F1-TRACE-PITCH-FREQUENCY"
+      ],
+      "authorityIds": [
+        "F1-AUTH-PITCH",
+        "F1-AUTH-TEMPERAMENT"
+      ],
+      "kind": "project-spelled-pitch",
+      "input": {
+        "step": "A",
+        "alter": 0,
+        "octave": 4
+      },
+      "notation": "A4",
+      "expected": {
+        "ok": true,
+        "pitchClass": 9,
+        "midi": 69,
+        "frequencyHz": 440
+      }
+    },
+    {
+      "id": "F1-PITCH-007",
+      "traceIds": [
+        "F1-TRACE-PITCH-MIDI",
+        "F1-TRACE-PITCH-FREQUENCY"
+      ],
+      "authorityIds": [
+        "F1-AUTH-PITCH",
+        "F1-AUTH-TEMPERAMENT"
+      ],
+      "kind": "project-spelled-pitch",
+      "input": {
+        "step": "C",
+        "alter": 0,
+        "octave": -1
+      },
+      "notation": "C-1",
+      "expected": {
+        "ok": true,
+        "pitchClass": 0,
+        "midi": 0,
+        "frequencyHz": 8.175798915643707
+      }
+    },
+    {
+      "id": "F1-PITCH-008",
+      "traceIds": [
+        "F1-TRACE-PITCH-MIDI",
+        "F1-TRACE-PITCH-FREQUENCY"
+      ],
+      "authorityIds": [
+        "F1-AUTH-PITCH",
+        "F1-AUTH-TEMPERAMENT"
+      ],
+      "kind": "project-spelled-pitch",
+      "input": {
+        "step": "G",
+        "alter": 0,
+        "octave": 9
+      },
+      "notation": "G9",
+      "expected": {
+        "ok": true,
+        "pitchClass": 7,
+        "midi": 127,
+        "frequencyHz": 12543.853951415975
+      }
+    },
+    {
+      "id": "F1-PITCH-009",
+      "traceIds": [
+        "F1-TRACE-PITCH-MIDI"
+      ],
+      "authorityIds": [
+        "F1-AUTH-PITCH"
+      ],
+      "kind": "project-spelled-pitch",
+      "input": {
+        "step": "C",
+        "alter": -1,
+        "octave": -1
+      },
+      "notation": "Cb-1",
+      "expected": {
+        "ok": false,
+        "projectedMidi": -1,
+        "spelledValueRetained": true,
+        "issue": {
+          "code": "pitch.midi_out_of_range",
+          "path": [
+            "octave"
+          ]
+        }
+      }
+    },
+    {
+      "id": "F1-PITCH-010",
+      "traceIds": [
+        "F1-TRACE-PITCH-MIDI"
+      ],
+      "authorityIds": [
+        "F1-AUTH-PITCH"
+      ],
+      "kind": "project-spelled-pitch",
+      "input": {
+        "step": "G",
+        "alter": 1,
+        "octave": 9
+      },
+      "notation": "G#9",
+      "expected": {
+        "ok": false,
+        "projectedMidi": 128,
+        "spelledValueRetained": true,
+        "issue": {
+          "code": "pitch.midi_out_of_range",
+          "path": [
+            "octave"
+          ]
+        }
+      }
+    },
+    {
+      "id": "F1-PITCH-011",
+      "traceIds": [
+        "F1-TRACE-PITCH-MIDI",
+        "F1-TRACE-PITCH-FREQUENCY"
+      ],
+      "authorityIds": [
+        "F1-AUTH-PITCH",
+        "F1-AUTH-TEMPERAMENT"
+      ],
+      "kind": "project-spelled-pitch",
+      "input": {
+        "step": "C",
+        "alter": -2,
+        "octave": 4
+      },
+      "notation": "Cbb4",
+      "expected": {
+        "ok": true,
+        "pitchClass": 10,
+        "midi": 58,
+        "frequencyHz": 233.08188075904496
+      }
+    },
+    {
+      "id": "F1-PITCH-012",
+      "traceIds": [
+        "F1-TRACE-PITCH-MIDI",
+        "F1-TRACE-PITCH-FREQUENCY"
+      ],
+      "authorityIds": [
+        "F1-AUTH-PITCH",
+        "F1-AUTH-TEMPERAMENT"
+      ],
+      "kind": "project-spelled-pitch",
+      "input": {
+        "step": "B",
+        "alter": 2,
+        "octave": 3
+      },
+      "notation": "B##3",
+      "expected": {
+        "ok": true,
+        "pitchClass": 1,
+        "midi": 61,
+        "frequencyHz": 277.1826309768721
+      }
+    },
+    {
+      "id": "F1-PITCH-013",
+      "traceIds": [
+        "F1-TRACE-PITCH-MIDI"
+      ],
+      "authorityIds": [
+        "F1-AUTH-PITCH"
+      ],
+      "kind": "decode-spelled-pitch",
+      "input": {
+        "step": "C",
+        "alter": -3,
+        "octave": 4
+      },
+      "expected": {
+        "ok": false,
+        "issue": {
+          "code": "pitch.alter_out_of_range",
+          "path": [
+            "alter"
+          ]
+        }
+      }
+    },
+    {
+      "id": "F1-PITCH-014",
+      "traceIds": [
+        "F1-TRACE-PITCH-MIDI"
+      ],
+      "authorityIds": [
+        "F1-AUTH-PITCH"
+      ],
+      "kind": "decode-spelled-pitch",
+      "input": {
+        "step": "C",
+        "alter": 3,
+        "octave": 4
+      },
+      "expected": {
+        "ok": false,
+        "issue": {
+          "code": "pitch.alter_out_of_range",
+          "path": [
+            "alter"
+          ]
+        }
+      }
+    },
+    {
+      "id": "F1-PITCH-015",
+      "traceIds": [
+        "F1-TRACE-PITCH-MIDI"
+      ],
+      "authorityIds": [
+        "F1-AUTH-PITCH"
+      ],
+      "kind": "decode-spelled-pitch",
+      "input": {
+        "step": "C",
+        "alter": 0,
+        "octave": 4.5
+      },
+      "expected": {
+        "ok": false,
+        "issue": {
+          "code": "pitch.octave_not_integer",
+          "path": [
+            "octave"
+          ]
+        }
+      }
+    },
+    {
+      "id": "F1-PITCH-016",
+      "traceIds": [
+        "F1-TRACE-PITCH-MIDI"
+      ],
+      "authorityIds": [
+        "F1-AUTH-PITCH"
+      ],
+      "kind": "decode-spelled-pitch",
+      "input": {
+        "step": "H",
+        "alter": 0,
+        "octave": 4
+      },
+      "expected": {
+        "ok": false,
+        "issue": {
+          "code": "pitch.step_invalid",
+          "path": [
+            "step"
+          ]
+        }
+      }
+    },
+    {
+      "id": "F1-PITCH-017",
+      "traceIds": [
+        "F1-TRACE-PITCH-FREQUENCY"
+      ],
+      "authorityIds": [
+        "F1-AUTH-PITCH",
+        "F1-AUTH-TEMPERAMENT"
+      ],
+      "kind": "midi-to-frequency",
+      "input": {
+        "midi": -1
+      },
+      "expected": {
+        "ok": false,
+        "issue": {
+          "code": "pitch.midi_out_of_range",
+          "path": [
+            "midi"
+          ]
+        }
+      }
+    },
+    {
+      "id": "F1-PITCH-018",
+      "traceIds": [
+        "F1-TRACE-PITCH-FREQUENCY"
+      ],
+      "authorityIds": [
+        "F1-AUTH-PITCH",
+        "F1-AUTH-TEMPERAMENT"
+      ],
+      "kind": "midi-to-frequency",
+      "input": {
+        "midi": 128
+      },
+      "expected": {
+        "ok": false,
+        "issue": {
+          "code": "pitch.midi_out_of_range",
+          "path": [
+            "midi"
+          ]
+        }
+      }
+    },
+    {
+      "id": "F1-PITCH-019",
+      "traceIds": [
+        "F1-TRACE-PITCH-FREQUENCY"
+      ],
+      "authorityIds": [
+        "F1-AUTH-PITCH",
+        "F1-AUTH-TEMPERAMENT"
+      ],
+      "kind": "midi-to-frequency",
+      "input": {
+        "midi": 69.5
+      },
+      "expected": {
+        "ok": false,
+        "issue": {
+          "code": "pitch.midi_not_integer",
+          "path": [
+            "midi"
+          ]
+        }
+      }
+    },
+    {
+      "id": "F1-PITCH-020",
+      "traceIds": [
+        "F1-TRACE-PITCH-IDENTITY",
+        "F1-TRACE-PITCH-MIDI"
+      ],
+      "authorityIds": [
+        "F1-AUTH-PITCH"
+      ],
+      "kind": "natural-step-projection-set",
+      "inputSteps": ["A", "B", "C", "D", "E", "F", "G"],
+      "expectedNaturalPitchClasses": [9, 11, 0, 2, 4, 5, 7]
+    },
+    {
+      "id": "F1-PITCH-021",
+      "traceIds": [
+        "F1-TRACE-PITCH-IDENTITY",
+        "F1-TRACE-PITCH-MIDI"
+      ],
+      "authorityIds": [
+        "F1-AUTH-PITCH"
+      ],
+      "kind": "allowed-alter-projection-set",
+      "input": {"step": "D", "octave": 4, "alters": [-2, -1, 0, 1, 2]},
+      "expectedMidi": [60, 61, 62, 63, 64],
+      "expectedPitchClasses": [0, 1, 2, 3, 4]
+    },
+    {
+      "id": "F1-PITCH-022",
+      "traceIds": [
+        "F1-TRACE-PITCH-MIDI"
+      ],
+      "authorityIds": [
+        "F1-AUTH-PITCH"
+      ],
+      "kind": "decode-spelled-pitch",
+      "input": {
+        "step": "C",
+        "alter": 0,
+        "octave": 9007199254740992
+      },
+      "expected": {
+        "ok": false,
+        "issue": {
+          "code": "pitch.octave_not_safe_integer",
+          "path": [
+            "octave"
+          ]
+        }
+      }
+    },
+    {
+      "id": "F1-PITCH-023",
+      "traceIds": ["F1-TRACE-PITCH-IDENTITY", "F1-TRACE-PITCH-MIDI"],
+      "authorityIds": ["F1-AUTH-PITCH", "F1-AUTH-TEMPERAMENT"],
+      "kind": "compare-spelled-pitches",
+      "left": {"step": "C", "alter": 0, "octave": 4},
+      "right": {"step": "C", "alter": 0, "octave": 4},
+      "expected": {"spelledEqual": true, "midiEqual": true, "pitchClassEqual": true}
+    },
+    {
+      "id": "F1-PITCH-024",
+      "traceIds": ["F1-TRACE-PITCH-IDENTITY", "F1-TRACE-PITCH-MIDI"],
+      "authorityIds": ["F1-AUTH-PITCH", "F1-AUTH-TEMPERAMENT"],
+      "kind": "compare-spelled-pitches",
+      "left": {"step": "C", "alter": 0, "octave": 3},
+      "right": {"step": "C", "alter": 0, "octave": 4},
+      "expected": {"spelledEqual": false, "midiEqual": false, "pitchClassEqual": true}
+    },
+    {
+      "id": "F1-PITCH-025",
+      "traceIds": ["F1-TRACE-PITCH-IDENTITY"],
+      "authorityIds": ["F1-AUTH-PITCH"],
+      "kind": "compare-spelling-step-order",
+      "input": ["A", "B", "C", "D", "E", "F", "G"],
+      "expectedOrder": ["C", "D", "E", "F", "G", "A", "B"]
+    },
+    {
+      "id": "F1-PITCH-026",
+      "traceIds": ["F1-TRACE-PITCH-IDENTITY", "F1-TRACE-PITCH-MIDI"],
+      "authorityIds": ["F1-AUTH-PITCH", "F1-AUTH-TEMPERAMENT"],
+      "kind": "parallel-transposed-enharmonic-pair",
+      "source": [
+        {"step": "B", "alter": 1, "octave": 3},
+        {"step": "C", "alter": 0, "octave": 4}
+      ],
+      "semitones": 2,
+      "transposed": [
+        {"step": "C", "alter": 2, "octave": 4},
+        {"step": "D", "alter": 0, "octave": 4}
+      ],
+      "expected": {
+        "sourceMidi": [60, 60],
+        "transposedMidi": [62, 62],
+        "sourceSpelledEqual": false,
+        "transposedSpelledEqual": false,
+        "identityPreservedUnderRelation": true,
+        "transpositionImplementationOwnedBy": "H1"
+      }
+    }
+  ]
+}

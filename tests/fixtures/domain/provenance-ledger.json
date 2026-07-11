@@ -1,0 +1,78 @@
+{
+  "schema": "changes.fixtures.f1-provenance-ledger.v1",
+  "ledgerVersion": "1.0.0",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "authoringStatement": "Every concrete expected value was manually transcribed or derived from the reviewed definition before F1 production implementation existed. The 784-pair arithmetic oracle uses only the checked-in hand-authored PPQ tick table.",
+  "reviewState": {
+    "fixtureAuthoring": "complete",
+    "productionIndependence": "complete",
+    "independentPackageVerification": "pending F1/verify bead",
+    "humanAestheticJudgment": "not applicable; this corpus contains definitions and structural policy, not taste claims"
+  },
+  "authorities": [
+    {
+      "id": "F1-AUTH-ID",
+      "sourceRefs": ["docs/REBUILD_PLAN.md section 9.1 IDs", "docs/F1_DOMAIN_CONTRACT.md section Identity contract", "active bead jcpe-milestone-foundation-vc2.2.1"],
+      "authorityClass": "reviewed product contract",
+      "covers": "global stable IDs, duplicate-path rejection, preorder deep remap, and atomic collision failure",
+      "judgmentBearing": false
+    },
+    {
+      "id": "F1-AUTH-PITCH",
+      "sourceRefs": ["docs/REBUILD_PLAN.md section 9.2 Spelled pitch types", "docs/F1_DOMAIN_CONTRACT.md section Spelling and pitch projection"],
+      "authorityClass": "reviewed project spelling convention",
+      "covers": "spelling identity, accidental bounds, the C4 octave convention, and projection-time MIDI refusal",
+      "judgmentBearing": true
+    },
+    {
+      "id": "F1-AUTH-TEMPERAMENT",
+      "sourceRefs": ["docs/REBUILD_PLAN.md section 9.2 Spelled pitch types", "docs/F1_DOMAIN_CONTRACT.md section Spelling and pitch projection"],
+      "authorityClass": "external scientific-pitch and twelve-tone equal-temperament definition",
+      "covers": "MIDI 69 as A4=440 Hz and frequency = 440 * 2^((midi - 69) / 12)",
+      "judgmentBearing": false
+    },
+    {
+      "id": "F1-AUTH-DEGREE",
+      "sourceRefs": ["docs/REBUILD_PLAN.md sections 9.3 Degree types and 9.4 Chord AST", "docs/F1_DOMAIN_CONTRACT.md section Chords and voicings"],
+      "authorityClass": "reviewed domain distinction",
+      "covers": "diatonic degree identity, permitted degree numbers, sixth representation, and parsed/custom separation",
+      "judgmentBearing": false
+    },
+    {
+      "id": "F1-AUTH-VOICING",
+      "sourceRefs": ["docs/REBUILD_PLAN.md section 9.5 Voicing state", "docs/F1_DOMAIN_CONTRACT.md section Chords and voicings", "active bead jcpe-milestone-foundation-vc2.2.1"],
+      "authorityClass": "reviewed structural policy",
+      "covers": "Auto family/bass matrix, exact Manual/Frozen persistence, slash bass policy, and Custom conditional invariants",
+      "judgmentBearing": true
+    },
+    {
+      "id": "F1-AUTH-TIME",
+      "sourceRefs": ["docs/REBUILD_PLAN.md section 9.6 Musical timeline", "docs/F1_DOMAIN_CONTRACT.md sections Exact musical time and Measure and document states"],
+      "authorityClass": "reviewed exact-arithmetic definition",
+      "covers": "PPQ-960 rational closure, BigInt reduction, meter capacity, completion state, MIDI ticks, and total timeline",
+      "judgmentBearing": false
+    },
+    {
+      "id": "F1-AUTH-DOCUMENT",
+      "sourceRefs": ["docs/REBUILD_PLAN.md section 9.7 Progression document v2", "docs/F1_DOMAIN_CONTRACT.md sections Measure and document states and Persisted limits"],
+      "authorityClass": "reviewed schema contract",
+      "covers": "ProgressionDocumentV2, sections, events, playback identifiers, and absence of UI state",
+      "judgmentBearing": false
+    },
+    {
+      "id": "F1-AUTH-KEY",
+      "sourceRefs": ["docs/REBUILD_PLAN.md section 11.2 Key context", "docs/F1_DOMAIN_CONTRACT.md section Measure and document states"],
+      "authorityClass": "reviewed domain vocabulary",
+      "covers": "four declared KeyMode values, nullable context, and no silently persisted inference",
+      "judgmentBearing": false
+    },
+    {
+      "id": "F1-AUTH-VALIDATION",
+      "sourceRefs": ["docs/REBUILD_PLAN.md section 9.8 Validation result", "docs/F1_DOMAIN_CONTRACT.md sections Scope and ownership and Results diagnostics and ordering", "docs/ARCHITECTURE.md sections Module ownership and TypeScript invariants"],
+      "authorityClass": "reviewed validation and layering contract",
+      "covers": "total result shapes, limits, deterministic diagnostics, temporary values, and F1/F2/F3 ownership boundaries",
+      "judgmentBearing": false
+    }
+  ]
+}

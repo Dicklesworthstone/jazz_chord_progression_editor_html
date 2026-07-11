@@ -1,0 +1,366 @@
+{
+  "schema": "changes.fixtures.f1-chord-shape.v1",
+  "defaultSeedId": "F1-SEED-PITCH",
+  "cases": [
+    {
+      "id": "F1-CHORD-001",
+      "traceIds": [
+        "F1-TRACE-DEGREE-IDENTITY"
+      ],
+      "authorityIds": [
+        "F1-AUTH-DEGREE"
+      ],
+      "kind": "compare-degrees",
+      "left": {
+        "number": 9,
+        "alter": 1
+      },
+      "right": {
+        "number": 3,
+        "alter": -1
+      },
+      "expected": {
+        "degreeEqual": false,
+        "pitchClassProjectionEqual": true,
+        "leftSemitonesAboveRoot": 15,
+        "rightSemitonesAboveRoot": 3
+      }
+    },
+    {
+      "id": "F1-CHORD-002",
+      "traceIds": [
+        "F1-TRACE-DEGREE-IDENTITY"
+      ],
+      "authorityIds": [
+        "F1-AUTH-DEGREE"
+      ],
+      "kind": "decode-degree-number-set",
+      "input": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        9,
+        11,
+        13
+      ],
+      "expected": {
+        "ok": true,
+        "preservedOrder": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          9,
+          11,
+          13
+        ]
+      }
+    },
+    {
+      "id": "F1-CHORD-003",
+      "traceIds": [
+        "F1-TRACE-DEGREE-IDENTITY"
+      ],
+      "authorityIds": [
+        "F1-AUTH-DEGREE"
+      ],
+      "kind": "decode-degree",
+      "input": {
+        "number": 8,
+        "alter": 0
+      },
+      "expected": {
+        "ok": false,
+        "issue": {
+          "code": "chord.degree_number_invalid",
+          "path": [
+            "number"
+          ]
+        }
+      }
+    },
+    {
+      "id": "F1-CHORD-004",
+      "traceIds": [
+        "F1-TRACE-DEGREE-IDENTITY"
+      ],
+      "authorityIds": [
+        "F1-AUTH-DEGREE"
+      ],
+      "kind": "decode-degree",
+      "input": {
+        "number": 9,
+        "alter": 3
+      },
+      "expected": {
+        "ok": false,
+        "issue": {
+          "code": "chord.degree_alter_out_of_range",
+          "path": [
+            "alter"
+          ]
+        }
+      }
+    },
+    {
+      "id": "F1-CHORD-005",
+      "traceIds": [
+        "F1-TRACE-DEGREE-IDENTITY",
+        "F1-TRACE-DOCUMENT-TYPES"
+      ],
+      "authorityIds": [
+        "F1-AUTH-DEGREE",
+        "F1-AUTH-DOCUMENT"
+      ],
+      "kind": "parsed-sixth-shape",
+      "input": {
+        "sourceText": "C6",
+        "triad": "major",
+        "sixth": {
+          "number": 6,
+          "alter": 0
+        }
+      },
+      "expected": {
+        "ok": true,
+        "sixth": {
+          "number": 6,
+          "alter": 0
+        }
+      }
+    },
+    {
+      "id": "F1-CHORD-006",
+      "traceIds": [
+        "F1-TRACE-DEGREE-IDENTITY",
+        "F1-TRACE-DOCUMENT-TYPES"
+      ],
+      "authorityIds": [
+        "F1-AUTH-DEGREE",
+        "F1-AUTH-DOCUMENT"
+      ],
+      "kind": "parsed-sixth-shape",
+      "input": {
+        "sourceText": "Cm6",
+        "triad": "minor",
+        "sixth": {
+          "number": 6,
+          "alter": 0
+        }
+      },
+      "expected": {
+        "ok": true,
+        "sixth": {
+          "number": 6,
+          "alter": 0
+        }
+      }
+    },
+    {
+      "id": "F1-CHORD-007",
+      "traceIds": [
+        "F1-TRACE-DOCUMENT-TYPES",
+        "F1-TRACE-VOICING-CONDITIONAL"
+      ],
+      "authorityIds": [
+        "F1-AUTH-DOCUMENT",
+        "F1-AUTH-VOICING"
+      ],
+      "kind": "custom-literal-shape",
+      "input": {
+        "kind": "custom",
+        "sourceText": "Glass cluster",
+        "label": "Glass cluster",
+        "pitchNames": [
+          {
+            "step": "C",
+            "alter": 0
+          },
+          {
+            "step": "D",
+            "alter": -1
+          },
+          {
+            "step": "F",
+            "alter": 1
+          }
+        ],
+        "bass": null
+      },
+      "expected": {
+        "ok": true,
+        "sourceTextPreserved": "Glass cluster",
+        "labelPreserved": "Glass cluster",
+        "pitchNamesExactly": [
+          {"step": "C", "alter": 0},
+          {"step": "D", "alter": -1},
+          {"step": "F", "alter": 1}
+        ],
+        "bassPreserved": null,
+        "theoryResolutionAuthorizedAtF1": false
+      }
+    },
+    {
+      "id": "F1-CHORD-008",
+      "traceIds": [
+        "F1-TRACE-DECODER-RESULT"
+      ],
+      "authorityIds": [
+        "F1-AUTH-VALIDATION"
+      ],
+      "kind": "stage-ownership",
+      "input": {
+        "kind": "parsed",
+        "sourceText": "Dm7",
+        "root": {
+          "step": "C",
+          "alter": 0
+        },
+        "triad": "major"
+      },
+      "expected": {
+        "shapeStage": "accepted-if-all-structural-fields-are-valid",
+        "semanticStage": "refused",
+        "semanticIssue": {"code": "chord.source_semantic_mismatch"},
+        "ownedBy": "F3 application semantic publication gate"
+      }
+    },
+    {
+      "id": "F1-CHORD-009",
+      "traceIds": ["F1-TRACE-DEGREE-IDENTITY", "F1-TRACE-DECODER-RESULT"],
+      "authorityIds": ["F1-AUTH-DEGREE", "F1-AUTH-VALIDATION"],
+      "kind": "degree-array-order-near-miss",
+      "field": "extensions",
+      "input": [
+        {"number": 9, "alter": 0},
+        {"number": 7, "alter": 0}
+      ],
+      "expected": {"ok": false, "issue": {"code": "chord.degree_order", "path": ["extensions"]}}
+    },
+    {
+      "id": "F1-CHORD-010",
+      "traceIds": ["F1-TRACE-DEGREE-IDENTITY", "F1-TRACE-DECODER-RESULT"],
+      "authorityIds": ["F1-AUTH-DEGREE", "F1-AUTH-VALIDATION"],
+      "kind": "degree-array-exact-duplicate",
+      "field": "additions",
+      "input": [
+        {"number": 9, "alter": 0},
+        {"number": 9, "alter": 0}
+      ],
+      "expected": {"ok": false, "issue": {"code": "chord.degree_duplicate", "path": ["additions", 1]}}
+    },
+    {
+      "id": "F1-CHORD-011",
+      "traceIds": ["F1-TRACE-DEGREE-IDENTITY"],
+      "authorityIds": ["F1-AUTH-DEGREE"],
+      "kind": "degree-array-canonical-order",
+      "field": "alterations",
+      "input": [
+        {"number": 9, "alter": -1},
+        {"number": 9, "alter": 1},
+        {"number": 13, "alter": -1}
+      ],
+      "expected": {"ok": true, "preservedExactly": true}
+    },
+    {
+      "id": "F1-CHORD-012",
+      "traceIds": ["F1-TRACE-DEGREE-IDENTITY", "F1-TRACE-DECODER-RESULT"],
+      "authorityIds": ["F1-AUTH-DEGREE", "F1-AUTH-VALIDATION"],
+      "kind": "degree-array-same-number-order-near-miss",
+      "field": "alterations",
+      "input": [
+        {"number": 9, "alter": 1},
+        {"number": 9, "alter": -1}
+      ],
+      "expected": {"ok": false, "issue": {"code": "chord.degree_order", "path": ["alterations"]}}
+    },
+    {
+      "id": "F1-CHORD-013",
+      "traceIds": ["F1-TRACE-DEGREE-IDENTITY", "F1-TRACE-DECODER-RESULT"],
+      "authorityIds": ["F1-AUTH-DEGREE", "F1-AUTH-VALIDATION"],
+      "kind": "degree-duplicate-across-categories-stage-boundary",
+      "input": {
+        "extensions": [{"number": 9, "alter": 0}],
+        "additions": [{"number": 9, "alter": 0}],
+        "alterations": []
+      },
+      "expected": {
+        "f1PerArrayOrderAndDuplicateCheck": "accepted",
+        "crossCategoryFormulaDecisionOwnedBy": "F3",
+        "silentCategoryRewrite": false
+      }
+    },
+    {
+      "id": "F1-CHORD-014",
+      "traceIds": ["F1-TRACE-DEGREE-IDENTITY", "F1-TRACE-DOCUMENT-TYPES"],
+      "authorityIds": ["F1-AUTH-DEGREE", "F1-AUTH-DOCUMENT"],
+      "kind": "complete-parsed-chord-shape-round-trip",
+      "input": {
+        "kind": "parsed",
+        "sourceText": "C13(b9,#11)/Db",
+        "root": {"step": "C", "alter": 0},
+        "triad": "major",
+        "sixth": null,
+        "seventh": "minor",
+        "extensions": [{"number": 9, "alter": 0}, {"number": 13, "alter": 0}],
+        "additions": [{"number": 11, "alter": 1}],
+        "alterations": [{"number": 5, "alter": -1}, {"number": 9, "alter": -1}],
+        "omissions": [5, 11],
+        "bass": {"step": "D", "alter": -1},
+        "colorPolicy": "altered-dominant"
+      },
+      "expected": {"ok": true, "allFieldsPreservedExactly": true, "sourceSemanticAgreementCheckedAtF3": true}
+    },
+    {
+      "id": "F1-CHORD-015",
+      "traceIds": ["F1-TRACE-DEGREE-IDENTITY", "F1-TRACE-DOCUMENT-TYPES"],
+      "authorityIds": ["F1-AUTH-DEGREE", "F1-AUTH-DOCUMENT"],
+      "kind": "chord-vocabulary-sets",
+      "input": {
+        "triadQualities": ["major", "minor", "diminished", "augmented", "sus2", "sus4", "power"],
+        "seventhQualities": ["major", "minor", "diminished"],
+        "colorPolicies": ["none", "altered-dominant"]
+      },
+      "expected": {"allValid": true, "preservedOrder": true}
+    },
+    {
+      "id": "F1-CHORD-016",
+      "traceIds": ["F1-TRACE-DEGREE-IDENTITY", "F1-TRACE-DOCUMENT-TYPES", "F1-TRACE-VOICING-CONDITIONAL"],
+      "authorityIds": ["F1-AUTH-DEGREE", "F1-AUTH-DOCUMENT", "F1-AUTH-VOICING"],
+      "kind": "custom-pitch-name-exact-round-trip",
+      "input": {
+        "kind": "custom",
+        "sourceText": "Unsorted literal",
+        "label": "Unsorted literal",
+        "pitchNames": [
+          {"step": "F", "alter": 1},
+          {"step": "C", "alter": 0},
+          {"step": "F", "alter": 1},
+          {"step": "D", "alter": -1}
+        ],
+        "bass": {"step": "B", "alter": 1}
+      },
+      "expected": {"ok": true, "allFieldsPreservedExactly": true, "orderPreserved": true, "duplicatesPreserved": true}
+    },
+    {
+      "id": "F1-CHORD-017",
+      "traceIds": ["F1-TRACE-DEGREE-IDENTITY"],
+      "authorityIds": ["F1-AUTH-DEGREE"],
+      "kind": "degree-identity-under-root-transposition",
+      "degrees": [{"number": 9, "alter": 1}, {"number": 3, "alter": -1}],
+      "rootPitchClasses": [0, 2, 11],
+      "expected": {
+        "degreeEqualAtEveryRoot": false,
+        "pitchClassProjectionEqualAtEveryRoot": true,
+        "transpositionImplementationOwnedBy": "H1"
+      }
+    }
+  ]
+}

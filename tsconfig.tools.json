@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "lib": [
+      "ES2022"
+    ],
+    "rootDir": ".",
+    "types": [
+      "bun",
+      "node"
+    ]
+  },
+  "include": [
+    "scripts/**/*.ts"
+  ]
+}
