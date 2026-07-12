@@ -496,7 +496,7 @@ const EXPECTED_REVIEWED_FILE_SHA256 = new Map<string, string>([
   ["operation-state-cases.json", "b01bb5d272100f665d6c1bda2c18d2dbb82add04ebefee20c750597f98ba3a6e"],
   ["pitch-cases.json", "103337d26bfe3695c5eda09b111d96f110a5c4584b84a374a3b8e2ba924d02d0"],
   ["provenance-ledger.json", "818f49f8559afe22cb270cd04678b03703c80a880ca58159446e92020d8889be"],
-  ["trace-ledger.json", "bd402e10a8d6fcf996e4b336c9d8fac606c71d28efd5e0dbb7cfb81c93655f35"],
+  ["trace-ledger.json", "eeaeff77cc55a75fdcd5401d4a0f2216423be836d8b4f92d0dfeb4b4b06216d7"],
   ["voicing-custom-cases.json", "e861316a17dab641a8da04381470def08a8231ffd49cd0eafdec3c82250cd293"],
 ]);
 const ISSUE_CODE_VALUES = new Set<string>(F1_REVIEWED_ISSUE_CODES);

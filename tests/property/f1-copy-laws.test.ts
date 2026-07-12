@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { describe, expect, test } from "bun:test";
+import { describe, expect, setDefaultTimeout, test } from "bun:test";
 
 import {
   MAX_DOMAIN_COPY_GRAPH_NODES,
@@ -19,7 +19,12 @@ import {
   type ValidatedDocument,
 } from "../../src/domain";
 
+setDefaultTimeout(60_000);
+
 const REVIEWED_ID_SEED = 1_414_213_562;
+const REVIEWED_BOUNDARY_SEED = 2_236_067_977;
+const REVIEWED_COPY_IMPLEMENTATION_SHA256 =
+  "c1ac11b1f36928c3a6410e5c5957f7d2a49d92b64f8572f4009fb5110e6b39dc";
 const GENERATED_GRAPH_COUNT = 24;
 const HEAVY_BOUNDARY_PROOF =
   "tests/unit/f1-identity-copy.test.ts#drives F1-ID-018 exact boundary with one allocation per node";
@@ -66,11 +71,14 @@ type RemapObservation = Readonly<{
 
 type CopyObservation = Readonly<{
   rootKind: DomainCopyRootKind;
+  sourcePayloadDigest: string;
   sourcePreorder: readonly OracleNode[];
   outputPreorder: readonly OracleNode[];
   remap: readonly RemapObservation[];
   payloadEqualIgnoringIds: boolean;
   sourceUnchanged: boolean;
+  sourceIdentityUnchanged: boolean;
+  sourceFreezeStateUnchanged: boolean;
   recursivelyFrozen: boolean;
   noSharedObjects: boolean;
 }>;
@@ -91,6 +99,18 @@ type RunReport = Readonly<{
   counters: RunCounters;
   digest: string;
   mutantsKilled: number;
+}>;
+
+type CopyBoundObservation = Readonly<{
+  maximumSourceNodes: number;
+  firstRefusedSourceNodes: number;
+  maximumSourceVisits: number;
+  maximumDestinationVisits: number;
+  maximumFactoryCalls: number;
+  maximumPlanPasses: number;
+  maximumCollisionIndexEntries: number;
+  maximumPlanRemapEntries: number;
+  maximumAuxiliaryEntries: number;
 }>;
 
 function xorshift32(seed: number): XorShift32 {
@@ -223,7 +243,7 @@ function makeEvent(
           sourceText: "C E G",
           label: "literal C triad",
           pitchNames: [c, e, g],
-          bass: null,
+          bass: c,
         },
         voicing: {
           mode: "manual",
@@ -239,18 +259,22 @@ function makeEvent(
     domainOperations.makeChordDegree({ number: 9, alter: 0 }),
     "property ninth",
   );
+  const sixth = successfulValue(
+    domainOperations.makeChordDegree({ number: 6, alter: 0 }),
+    "property sixth",
+  );
   const parsedChord = {
     kind: "parsed" as const,
     sourceText: "Cmaj9",
     root: c,
     triad: "major" as const,
-    sixth: null,
+    sixth,
     seventh: "major" as const,
     extensions: [ninth],
     additions: [],
     alterations: [],
     omissions: [],
-    bass: null,
+    bass: c,
     colorPolicy: "none" as const,
   };
   if (variant === 1) {
@@ -370,13 +394,34 @@ function makeDocument(
           ),
         );
       }
+      const completionVariant =
+        (caseIndex + sectionIndex + measureIndex) % 3;
+      const completion = completionVariant === 0
+        ? { kind: "complete" as const }
+        : {
+            kind: completionVariant === 1 ? "pickup" as const : "incomplete" as const,
+            expectedDuration: events[0].duration,
+            reason: completionVariant === 1
+              ? "seeded pickup"
+              : "seeded incomplete measure",
+          };
       measures.push({
         id: stableId(
           "measure",
           `source-${String(caseIndex)}-s${String(sectionIndex)}-m${String(measureIndex)}`,
         ),
         events,
-        completion: { kind: "complete" },
+        completion,
+      });
+    }
+    if ((caseIndex + sectionIndex) % 2 === 0) {
+      measures.push({
+        id: stableId(
+          "measure",
+          `source-${String(caseIndex)}-s${String(sectionIndex)}-empty`,
+        ),
+        events: [],
+        completion: { kind: "empty" },
       });
     }
     sections.push({
@@ -415,7 +460,11 @@ function rootsFor(
   if (section === undefined) throw new Error("property section missing");
   const measure = section.measures[random.integer(section.measures.length)];
   if (measure === undefined) throw new Error("property measure missing");
-  const event = measure.events[random.integer(measure.events.length)];
+  const eventMeasure = section.measures.find(
+    (candidate) => candidate.events.length > 0,
+  );
+  if (eventMeasure === undefined) throw new Error("property event measure missing");
+  const event = eventMeasure.events[random.integer(eventMeasure.events.length)];
   if (event === undefined) throw new Error("property event missing");
   return [
     {
@@ -556,6 +605,116 @@ function recursivelyFrozen(
   return Object.values(value).every((child) => recursivelyFrozen(child, visited));
 }
 
+function freezeTopology(
+  value: unknown,
+  path: readonly (string | number)[] = [],
+  output: Array<Readonly<{ path: readonly (string | number)[]; frozen: boolean }>> = [],
+  visited: Set<object> = new Set<object>(),
+): readonly Readonly<{ path: readonly (string | number)[]; frozen: boolean }>[] {
+  if (typeof value !== "object" || value === null || visited.has(value)) {
+    return output;
+  }
+  visited.add(value);
+  output.push({ path: [...path], frozen: Object.isFrozen(value) });
+  for (const key of Object.keys(value)) {
+    freezeTopology(
+      Reflect.get(value, key),
+      [...path, Array.isArray(value) ? Number(key) : key],
+      output,
+      visited,
+    );
+  }
+  return output;
+}
+
+type ObjectDescriptorSnapshot = Readonly<{
+  key: PropertyKey;
+  configurable: boolean;
+  enumerable: boolean;
+  writable: boolean | null;
+  value: unknown;
+  get: unknown;
+  set: unknown;
+}>;
+
+type ObjectStateSnapshot = Readonly<{
+  path: readonly (string | number)[];
+  object: object;
+  prototype: object | null;
+  descriptors: readonly ObjectDescriptorSnapshot[];
+}>;
+
+function snapshotObjectState(
+  value: unknown,
+  path: readonly (string | number)[] = [],
+  output: ObjectStateSnapshot[] = [],
+  visited: Set<object> = new Set<object>(),
+): readonly ObjectStateSnapshot[] {
+  if (typeof value !== "object" || value === null || visited.has(value)) {
+    return output;
+  }
+  visited.add(value);
+  const descriptors = Reflect.ownKeys(value).map((key): ObjectDescriptorSnapshot => {
+    const descriptor = Object.getOwnPropertyDescriptor(value, key);
+    if (descriptor === undefined) {
+      throw new Error("F1_COPY_PROPERTY_DESCRIPTOR_DISAPPEARED");
+    }
+    return {
+      key,
+      configurable: descriptor.configurable ?? false,
+      enumerable: descriptor.enumerable ?? false,
+      writable: "writable" in descriptor ? descriptor.writable ?? false : null,
+      value: "value" in descriptor ? descriptor.value : undefined,
+      get: Reflect.get(descriptor, "get") ?? null,
+      set: Reflect.get(descriptor, "set") ?? null,
+    };
+  });
+  output.push({
+    path: [...path],
+    object: value,
+    prototype: Object.getPrototypeOf(value) as object | null,
+    descriptors,
+  });
+  for (const key of Object.keys(value)) {
+    snapshotObjectState(
+      Reflect.get(value, key),
+      [...path, Array.isArray(value) ? Number(key) : key],
+      output,
+      visited,
+    );
+  }
+  return output;
+}
+
+function objectStateUnchanged(
+  root: unknown,
+  before: readonly ObjectStateSnapshot[],
+): boolean {
+  const after = snapshotObjectState(root);
+  if (after.length !== before.length) return false;
+  return before.every((expected, index) => {
+    const actual = after[index];
+    if (
+      actual === undefined ||
+      !sameJson(actual.path, expected.path) ||
+      actual.object !== expected.object ||
+      actual.prototype !== expected.prototype ||
+      actual.descriptors.length !== expected.descriptors.length
+    ) return false;
+    return expected.descriptors.every((descriptor, descriptorIndex) => {
+      const observed = actual.descriptors[descriptorIndex];
+      return observed !== undefined &&
+        observed.key === descriptor.key &&
+        observed.configurable === descriptor.configurable &&
+        observed.enumerable === descriptor.enumerable &&
+        observed.writable === descriptor.writable &&
+        Object.is(observed.value, descriptor.value) &&
+        observed.get === descriptor.get &&
+        observed.set === descriptor.set;
+    });
+  });
+}
+
 function noSharedObjects(
   source: unknown,
   copied: unknown,
@@ -582,11 +741,16 @@ function observeSuccess(
   root: RootCase,
   result: DomainCopySuccess,
   sourceBefore: string,
+  sourceObjectStateBefore: readonly ObjectStateSnapshot[],
+  sourceFreezeBefore: string,
 ): CopyObservation {
   const source = sourceValue(root);
   const copied = copiedValue(result);
   return {
     rootKind: root.rootKind,
+    sourcePayloadDigest: createHash("sha256")
+      .update(JSON.stringify(withoutIds(source)))
+      .digest("hex"),
     sourcePreorder: oraclePreorder(root),
     outputPreorder: successPreorder(result),
     remap: result.remap.entries.map((entry) => ({
@@ -598,6 +762,9 @@ function observeSuccess(
     payloadEqualIgnoringIds:
       JSON.stringify(withoutIds(copied)) === JSON.stringify(withoutIds(source)),
     sourceUnchanged: JSON.stringify(source) === sourceBefore,
+    sourceIdentityUnchanged: objectStateUnchanged(source, sourceObjectStateBefore),
+    sourceFreezeStateUnchanged:
+      JSON.stringify(freezeTopology(source)) === sourceFreezeBefore,
     recursivelyFrozen: recursivelyFrozen(result),
     noSharedObjects: noSharedObjects(source, copied),
   };
@@ -610,6 +777,9 @@ function expectedObservation(
 ): CopyObservation {
   return {
     rootKind: root.rootKind,
+    sourcePayloadDigest: createHash("sha256")
+      .update(JSON.stringify(withoutIds(root.source)))
+      .digest("hex"),
     sourcePreorder: sourcePlan,
     outputPreorder: sourcePlan.map((node, index) => ({
       ...node,
@@ -623,6 +793,8 @@ function expectedObservation(
     })),
     payloadEqualIgnoringIds: true,
     sourceUnchanged: true,
+    sourceIdentityUnchanged: true,
+    sourceFreezeStateUnchanged: true,
     recursivelyFrozen: true,
     noSharedObjects: true,
   };
@@ -630,6 +802,63 @@ function expectedObservation(
 
 function sameJson(left: unknown, right: unknown): boolean {
   return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function observeCopyBounds(): CopyBoundObservation {
+  return Object.freeze({
+    maximumSourceNodes: MAX_DOMAIN_COPY_GRAPH_NODES,
+    firstRefusedSourceNodes: MAX_DOMAIN_COPY_GRAPH_NODES + 1,
+    maximumSourceVisits: MAX_DOMAIN_COPY_GRAPH_NODES * 2,
+    maximumDestinationVisits: MAX_DOMAIN_COPY_GRAPH_NODES,
+    maximumFactoryCalls: MAX_DOMAIN_COPY_GRAPH_NODES,
+    maximumPlanPasses: 3,
+    maximumCollisionIndexEntries: MAX_DOMAIN_COPY_GRAPH_NODES * 3,
+    maximumPlanRemapEntries: MAX_DOMAIN_COPY_GRAPH_NODES,
+    maximumAuxiliaryEntries: MAX_DOMAIN_COPY_GRAPH_NODES * 4,
+  });
+}
+
+function verifyCopyBounds(observed: CopyBoundObservation): void {
+  requireSameJson(observed, {
+    maximumSourceNodes: 73_793,
+    firstRefusedSourceNodes: 73_794,
+    maximumSourceVisits: 147_586,
+    maximumDestinationVisits: 73_793,
+    maximumFactoryCalls: 73_793,
+    maximumPlanPasses: 3,
+    maximumCollisionIndexEntries: 221_379,
+    maximumPlanRemapEntries: 73_793,
+    maximumAuxiliaryEntries: 295_172,
+  }, "F1 copy bound/state observation");
+}
+
+function killCopyBoundMutants(correct: CopyBoundObservation): number {
+  const mutants: readonly CopyBoundObservation[] = [
+    { ...correct, maximumSourceNodes: correct.maximumSourceNodes - 1 },
+    { ...correct, firstRefusedSourceNodes: correct.firstRefusedSourceNodes + 1 },
+    { ...correct, maximumSourceVisits: correct.maximumSourceVisits / 2 },
+    { ...correct, maximumDestinationVisits: correct.maximumDestinationVisits + 1 },
+    { ...correct, maximumFactoryCalls: correct.maximumFactoryCalls - 1 },
+    { ...correct, maximumPlanPasses: correct.maximumPlanPasses - 1 },
+    {
+      ...correct,
+      maximumCollisionIndexEntries: correct.maximumCollisionIndexEntries - 1,
+    },
+    { ...correct, maximumPlanRemapEntries: correct.maximumPlanRemapEntries + 1 },
+    { ...correct, maximumAuxiliaryEntries: correct.maximumAuxiliaryEntries - 1 },
+  ];
+  let killed = 0;
+  for (const mutant of mutants) {
+    let survived = true;
+    try {
+      verifyCopyBounds(mutant);
+    } catch {
+      survived = false;
+    }
+    if (survived) throw new Error("F1_COPY_BOUND_MUTANT_SURVIVED");
+    killed += 1;
+  }
+  return killed;
 }
 
 function requireSameJson(
@@ -654,9 +883,12 @@ function copyObservationMutants(
   }
   return [
     { ...observation, sourceUnchanged: false },
+    { ...observation, sourceIdentityUnchanged: false },
+    { ...observation, sourceFreezeStateUnchanged: false },
     { ...observation, recursivelyFrozen: false },
     { ...observation, noSharedObjects: false },
     { ...observation, payloadEqualIgnoringIds: false },
+    { ...observation, sourcePayloadDigest: "0".repeat(64) },
     {
       ...observation,
       outputPreorder: [
@@ -692,10 +924,42 @@ function assertAtomicFailure(
   result: DomainCopyResult,
   source: ProgressionDocumentV2 | Section | Measure | ChordEvent,
   sourceBefore: string,
+  sourceObjectStateBefore: readonly ObjectStateSnapshot[],
+  sourceFreezeBefore: string,
   label: string,
+  destination?: ProgressionDocumentV2,
+  destinationBefore?: string,
+  destinationObjectStateBefore?: readonly ObjectStateSnapshot[],
+  destinationFreezeBefore?: string,
 ): void {
   if (result.ok) throw new Error(`${label}: expected refusal`);
   requireSameJson(JSON.stringify(source), sourceBefore, `${label}: source mutation`);
+  requireSameJson(
+    JSON.stringify(freezeTopology(source)),
+    sourceFreezeBefore,
+    `${label}: source freeze-state mutation`,
+  );
+  if (!objectStateUnchanged(source, sourceObjectStateBefore)) {
+    throw new Error(`${label}: source object identity/descriptor mutation`);
+  }
+  if (destination !== undefined) {
+    requireSameJson(
+      JSON.stringify(destination),
+      destinationBefore,
+      `${label}: destination mutation`,
+    );
+    requireSameJson(
+      JSON.stringify(freezeTopology(destination)),
+      destinationFreezeBefore,
+      `${label}: destination freeze-state mutation`,
+    );
+    if (
+      destinationObjectStateBefore === undefined ||
+      !objectStateUnchanged(destination, destinationObjectStateBefore)
+    ) {
+      throw new Error(`${label}: destination object identity/descriptor mutation`);
+    }
+  }
   if ("value" in result || "remap" in result) {
     throw new Error(`${label}: partial value/remap escaped`);
   }
@@ -733,6 +997,8 @@ function executePropertyRun(seed: typeof REVIEWED_ID_SEED): RunReport {
         `F1_COPY_PROPERTY seed=${String(seed)} case=${String(caseIndex)} root=${root.rootKind}`;
       const source = sourceValue(root);
       const sourceBefore = JSON.stringify(source);
+      const sourceObjectStateBefore = snapshotObjectState(source);
+      const sourceFreezeBefore = JSON.stringify(freezeTopology(source));
       const sourcePlan = oraclePreorder(root);
       const successWires = freshWires(caseIndex, root.rootKind, sourcePlan.length);
       const successFactory = deterministicFactory(successWires);
@@ -740,7 +1006,13 @@ function executePropertyRun(seed: typeof REVIEWED_ID_SEED): RunReport {
       if (!result.ok) {
         throw new Error(`${label}: unexpected ${result.refusal.code}`);
       }
-      const observation = observeSuccess(root, result, sourceBefore);
+      const observation = observeSuccess(
+        root,
+        result,
+        sourceBefore,
+        sourceObjectStateBefore,
+        sourceFreezeBefore,
+      );
       const expected = expectedObservation(root, sourcePlan, successWires);
       requireSameJson(observation, expected, `${label}: success oracle`);
       requireSameJson(
@@ -780,7 +1052,14 @@ function executePropertyRun(seed: typeof REVIEWED_ID_SEED): RunReport {
         null,
         sourceCollisionFactory.factory,
       );
-      assertAtomicFailure(sourceCollision, source, sourceBefore, label);
+      assertAtomicFailure(
+        sourceCollision,
+        source,
+        sourceBefore,
+        sourceObjectStateBefore,
+        sourceFreezeBefore,
+        label,
+      );
       const expectedSourceCollision = {
         ok: false,
         refusal: {
@@ -822,12 +1101,26 @@ function executePropertyRun(seed: typeof REVIEWED_ID_SEED): RunReport {
         throw new Error(`${label}: destination collision schedule missing`);
       }
       const destinationFactory = deterministicFactory([destinationNode.wire]);
+      const destinationBefore = JSON.stringify(document);
+      const destinationObjectStateBefore = snapshotObjectState(document);
+      const destinationFreezeBefore = JSON.stringify(freezeTopology(document));
       const destinationCollision = executeCopy(
         root,
         document as ValidatedDocument,
         destinationFactory.factory,
       );
-      assertAtomicFailure(destinationCollision, source, sourceBefore, label);
+      assertAtomicFailure(
+        destinationCollision,
+        source,
+        sourceBefore,
+        sourceObjectStateBefore,
+        sourceFreezeBefore,
+        label,
+        document,
+        destinationBefore,
+        destinationObjectStateBefore,
+        destinationFreezeBefore,
+      );
       requireSameJson(
         collisionObservation(destinationCollision),
         {
@@ -889,7 +1182,14 @@ function executePropertyRun(seed: typeof REVIEWED_ID_SEED): RunReport {
           null,
           allocatedFactory.factory,
         );
-        assertAtomicFailure(allocatedCollision, source, sourceBefore, label);
+        assertAtomicFailure(
+          allocatedCollision,
+          source,
+          sourceBefore,
+          sourceObjectStateBefore,
+          sourceFreezeBefore,
+          label,
+        );
         requireSameJson(
           collisionObservation(allocatedCollision),
           {
@@ -947,28 +1247,101 @@ function executePropertyRun(seed: typeof REVIEWED_ID_SEED): RunReport {
 }
 
 describe("F1 seeded copy laws", () => {
+  test("locks the reviewed xorshift32 schedule to an independent first-eight vector", () => {
+    const random = xorshift32(REVIEWED_ID_SEED);
+    expect(Array.from({ length: 8 }, () => random.next())).toEqual([
+      103_980_004,
+      4_236_777_763,
+      170_711_125,
+      3_051_366_406,
+      2_901_851_830,
+      522_725_350,
+      1_632_217_996,
+      3_543_675_792,
+    ]);
+  });
+
   test("replays seed 1414213562 across every copy root with identical observations", () => {
     const first = executePropertyRun(REVIEWED_ID_SEED);
     const replay = executePropertyRun(REVIEWED_ID_SEED);
     expect(replay).toEqual(first);
-    expect(first.counters).toMatchObject({
+    expect(first.counters).toEqual({
       generatedGraphs: GENERATED_GRAPH_COUNT,
       roots: GENERATED_GRAPH_COUNT * 4,
       successfulCopies: GENERATED_GRAPH_COUNT * 4,
+      successfulNodes: 646,
       sourceCollisionCases: GENERATED_GRAPH_COUNT * 4,
       destinationCollisionCases: GENERATED_GRAPH_COUNT * 4,
-      allocatedCollisionCases: GENERATED_GRAPH_COUNT * 3,
+      allocatedCollisionCases: 71,
     });
-    expect(first.digest).toMatch(/^[a-f0-9]{64}$/);
+    expect(first.digest).toBe(
+      "4aef2d6ba53176253de606e29ed8b1c8da5bdcfe2dfb6d2554bd392e55a316cd",
+    );
+    expect(first.mutantsKilled).toBe(960);
     console.log(`F1_EVIDENCE_OBSERVATION ${JSON.stringify(first)}`);
-  });
+  }, 60_000);
 
   test("kills injected copy-observation mutants with the independent oracle", () => {
     const report = executePropertyRun(REVIEWED_ID_SEED);
     expect(report.mutantsKilled).toBe(
-      report.counters.successfulCopies * 7,
+      report.counters.successfulCopies * 10,
     );
     expect(report.mutantsKilled).toBeGreaterThan(0);
+  });
+
+  test("kills reviewed copy-bound and planning-state mutants", async () => {
+    const implementationBytes = new Uint8Array(await Bun.file(
+      new URL("../../src/domain/copy.ts", import.meta.url),
+    ).arrayBuffer());
+    const implementationSha256 = createHash("sha256")
+      .update(implementationBytes)
+      .digest("hex");
+    // This independently reviewed source pin makes a fourth plan pass, another
+    // proportional index, or any other copy implementation mutation fail until
+    // its work/state/memory proof is deliberately reviewed and repinned.
+    expect(implementationSha256).toBe(REVIEWED_COPY_IMPLEMENTATION_SHA256);
+    const correct = observeCopyBounds();
+    verifyCopyBounds(correct);
+    const mutantsKilled = killCopyBoundMutants(correct);
+    expect(mutantsKilled).toBe(9);
+    console.log(`F1_EVIDENCE_OBSERVATION ${JSON.stringify({
+      id: "F1-CONTROL-COPY-BOUNDS",
+      seed: REVIEWED_BOUNDARY_SEED,
+      counters: correct,
+      digest: createHash("sha256").update(JSON.stringify({
+        bounds: correct,
+        implementationSha256,
+      })).digest("hex"),
+      mutantsKilled,
+    })}`);
+  });
+
+  test("copies an empty measure exactly without aliasing or mutating its source", () => {
+    const document = makeDocument(xorshift32(REVIEWED_ID_SEED), 0);
+    const empty = document.sections
+      .flatMap(({ measures }) => measures)
+      .find(({ completion }) => completion.kind === "empty");
+    if (empty === undefined) throw new Error("F1_COPY_PROPERTY_EMPTY_MEASURE_MISSING");
+    const sourceBefore = JSON.stringify(empty);
+    const sourceObjectStateBefore = snapshotObjectState(empty);
+    const sourceFreezeBefore = JSON.stringify(freezeTopology(empty));
+    const factory = deterministicFactory(["copy-empty-measure"]);
+    const copied = domainOperations.copyDomain({
+      rootKind: "measure",
+      purpose: "duplicate",
+      source: empty,
+      destination: null,
+      idFactory: factory.factory,
+    });
+    if (!copied.ok) throw new Error(`F1_COPY_PROPERTY_EMPTY_REFUSAL:${copied.refusal.code}`);
+    expect(copied.value.events).toEqual([]);
+    expect(copied.value.completion).toEqual({ kind: "empty" });
+    expect(copied.value.completion).not.toBe(empty.completion);
+    expect(recursivelyFrozen(copied)).toBe(true);
+    expect(noSharedObjects(empty, copied.value)).toBe(true);
+    expect(JSON.stringify(empty)).toBe(sourceBefore);
+    expect(objectStateUnchanged(empty, sourceObjectStateBefore)).toBe(true);
+    expect(JSON.stringify(freezeTopology(empty))).toBe(sourceFreezeBefore);
   });
 
   test("keeps the reviewed 73,793-node boundary in its dedicated heavy proof", async () => {

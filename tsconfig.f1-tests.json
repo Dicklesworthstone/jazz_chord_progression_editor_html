@@ -1,0 +1,22 @@
+{
+  "extends": "./tsconfig.tests.json",
+  "include": [],
+  "files": [
+    "tests/domain/duration.test.ts",
+    "tests/integration/f1-domain-package.test.ts",
+    "tests/property/f1-copy-laws.test.ts",
+    "tests/property/f1-domain-laws.test.ts",
+    "tests/static/dependency-boundaries.test.ts",
+    "tests/static/f1-chord-runtime-build.test.ts",
+    "tests/static/f1-contract.test.ts",
+    "tests/static/f1-domain-operations-runtime.test.ts",
+    "tests/static/f1-domain-types.test.ts",
+    "tests/static/f1-evidence.test.ts",
+    "tests/static/f1-pitch-values-runtime.test.ts",
+    "tests/static/f1-production-chord-conformance.test.ts",
+    "tests/static/f1-production-conformance.test.ts",
+    "tests/static/f1-production-values-conformance.test.ts",
+    "tests/static/validated-document-cast-policy.test.ts",
+    "tests/unit/f1-identity-copy.test.ts"
+  ]
+}

@@ -27,7 +27,8 @@
       "requiredCaseIds": ["F1-PITCH-001", "F1-PITCH-002", "F1-PITCH-003", "F1-PITCH-004", "F1-PITCH-005", "F1-PITCH-023", "F1-PITCH-024", "F1-PITCH-025", "F1-PITCH-026", "F1-VOICE-009", "F1-VOICE-035", "F1-VOICE-038", "F1-VOICE-041", "F1-VOICE-042"],
       "proofKinds": ["positive", "enharmonic-near-miss", "octave-near-miss", "comparator", "transposition"],
       "proofCaseIds": {"positive": ["F1-PITCH-023", "F1-VOICE-041"], "enharmonic-near-miss": ["F1-PITCH-004", "F1-VOICE-009", "F1-VOICE-035", "F1-VOICE-038", "F1-VOICE-042"], "octave-near-miss": ["F1-PITCH-024"], "comparator": ["F1-PITCH-025"], "transposition": ["F1-PITCH-026"]},
-      "mutationProofOwner": "F1/verify"
+      "mutationProofOwner": "F1/verify",
+      "downstreamProofOwners": ["H1"]
     },
     {
       "id": "F1-TRACE-PITCH-MIDI",
@@ -36,7 +37,8 @@
       "requiredCaseIds": ["F1-PITCH-001", "F1-PITCH-002", "F1-PITCH-003", "F1-PITCH-006", "F1-PITCH-007", "F1-PITCH-008", "F1-PITCH-009", "F1-PITCH-010", "F1-PITCH-011", "F1-PITCH-012", "F1-PITCH-013", "F1-PITCH-014", "F1-PITCH-015", "F1-PITCH-016", "F1-PITCH-022", "F1-PITCH-023", "F1-PITCH-024", "F1-PITCH-026", "F1-PITCH-027", "F1-PITCH-028"],
       "proofKinds": ["positive", "lower-bound", "upper-bound", "refusal", "malformed", "transposition"],
       "proofCaseIds": {"positive": ["F1-PITCH-002", "F1-PITCH-011", "F1-PITCH-012", "F1-PITCH-023"], "lower-bound": ["F1-PITCH-007", "F1-PITCH-009"], "upper-bound": ["F1-PITCH-008", "F1-PITCH-010"], "refusal": ["F1-PITCH-009", "F1-PITCH-010"], "malformed": ["F1-PITCH-013", "F1-PITCH-014", "F1-PITCH-015", "F1-PITCH-016", "F1-PITCH-022", "F1-PITCH-027", "F1-PITCH-028"], "transposition": ["F1-PITCH-026"]},
-      "mutationProofOwner": "F1/verify"
+      "mutationProofOwner": "F1/verify",
+      "downstreamProofOwners": ["H1"]
     },
     {
       "id": "F1-TRACE-PITCH-FREQUENCY",

@@ -1,9 +1,17 @@
-import { beforeAll, describe, expect, test } from "bun:test";
+import {
+  beforeAll,
+  describe,
+  expect,
+  setDefaultTimeout,
+  test,
+} from "bun:test";
 import { cp, mkdir, mkdtemp, readFile, symlink, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 
 import { buildStandalone } from "../../scripts/build";
 import { verifyStandalone } from "../../scripts/verify-standalone";
+
+setDefaultTimeout(60_000);
 
 const checkoutSource = process.cwd();
 const canonicalArtifact = "jazz_chord_progression_editor.html";
@@ -143,5 +151,5 @@ describe("standalone source/artifact staleness guard", () => {
     expect(await rejectionMessage(() => verifyStandalone(root))).toMatch(
       /ARTIFACT_MANIFEST_STALE: build\.sourceSha256 does not match the current src tree \(manifest [0-9a-f]{64}; actual [0-9a-f]{64}\)\./,
     );
-  });
+  }, 60_000);
 });

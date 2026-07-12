@@ -353,6 +353,7 @@ type PitchObservation = Readonly<{
   semitone: number;
   pitchClass: number;
   midi: number | null;
+  frequencyHz: number | null;
 }>;
 
 function observePitch(input: PitchCase): PitchObservation {
@@ -362,6 +363,7 @@ function observePitch(input: PitchCase): PitchObservation {
     semitone: Number(soundingSemitoneOf(written)),
     pitchClass: pitchClassOf(written),
     midi: projection.ok ? Number(projection.value.midi) : null,
+    frequencyHz: projection.ok ? projection.value.frequencyHz : null,
   });
 }
 
@@ -376,6 +378,13 @@ function verifyPitchObservation(input: PitchCase, observed: PitchObservation): v
     ? expectedSemitone
     : null;
   invariant(observed.midi === expectedMidi, "pitch MIDI mismatch");
+  const expectedFrequency = expectedMidi === null
+    ? null
+    : 440 * 2 ** ((expectedMidi - 69) / 12);
+  invariant(
+    observed.frequencyHz === expectedFrequency,
+    "pitch frequency mismatch",
+  );
 }
 
 function greatestCommonDivisor(left: bigint, right: bigint): bigint {
@@ -676,6 +685,7 @@ type TimeObservation = Readonly<{
   rightTicks: number;
   comparison: number;
   sumTicks: number;
+  meterCapacityTicks: number;
 }>;
 
 function observeTimeLaw(): TimeObservation {
@@ -688,11 +698,16 @@ function observeTimeLaw(): TimeObservation {
     "time observation right",
   );
   const sum = unwrap(addBeatValues(left, right), "time observation sum");
+  const meter = unwrap(
+    makeMeter({ beatsPerBar: 6, beatUnit: 8 }),
+    "time observation meter",
+  );
   return Object.freeze({
     leftTicks: Number(beatValueToMidiTicks(left)),
     rightTicks: Number(beatValueToMidiTicks(right)),
     comparison: compareBeatValues(left, right),
     sumTicks: Number(beatValueToMidiTicks(sum)),
+    meterCapacityTicks: Number(beatValueToMidiTicks(measureCapacity(meter))),
   });
 }
 
@@ -701,6 +716,7 @@ function verifyTimeObservation(observed: TimeObservation): void {
   invariant(observed.rightTicks === 192, "right ticks mismatch");
   invariant(observed.comparison === 1, "comparison mismatch");
   invariant(observed.sumTicks === 512, "sum ticks mismatch");
+  invariant(observed.meterCapacityTicks === 2_880, "meter capacity mismatch");
 }
 
 function compareDegreeTuples(left: DegreeTuple, right: DegreeTuple): number {
@@ -1126,7 +1142,7 @@ describe("F1 independent seeded domain laws", () => {
         enharmonicIdentityPairs: first.enharmonicIdentityPairs,
       },
       first.scheduleDigest,
-      3,
+      4,
     );
   });
 
@@ -1160,7 +1176,15 @@ describe("F1 independent seeded domain laws", () => {
       invariant(mutantComparison !== 0, "enharmonic spellings compared equal");
     });
     mutantsKilled += 1;
-    expect(mutantsKilled).toBe(3);
+    expectMutantKilled("pitch-frequency-semitone-ratio", () => {
+      const observed = observePitch(c4);
+      verifyPitchObservation(c4, {
+        ...observed,
+        frequencyHz: (observed.frequencyHz ?? 0) * 2,
+      });
+    });
+    mutantsKilled += 1;
+    expect(mutantsKilled).toBe(4);
   });
 
   test("replays exact rational time and meter laws byte-for-byte", () => {
@@ -1210,9 +1234,9 @@ describe("F1 independent seeded domain laws", () => {
         beat: first.beatScheduleDigest,
         meter: first.meterScheduleDigest,
       }),
-      3,
+      4,
     );
-  }, 30_000);
+  }, 60_000);
 
   test("kills deliberately wrong exact-time observations", () => {
     const correct = observeTimeLaw();
@@ -1230,7 +1254,14 @@ describe("F1 independent seeded domain laws", () => {
       verifyTimeObservation({ ...correct, sumTicks: correct.sumTicks - 1 });
     });
     mutantsKilled += 1;
-    expect(mutantsKilled).toBe(3);
+    expectMutantKilled("meter-capacity-uses-beat-count-as-quarters", () => {
+      verifyTimeObservation({
+        ...correct,
+        meterCapacityTicks: correct.meterCapacityTicks + REVIEWED_PPQ,
+      });
+    });
+    mutantsKilled += 1;
+    expect(mutantsKilled).toBe(4);
   });
 
   test("replays degree, chord, and voicing laws byte-for-byte", () => {
@@ -1275,7 +1306,7 @@ describe("F1 independent seeded domain laws", () => {
       first.scheduleDigest,
       6,
     );
-  }, 30_000);
+  }, 60_000);
 
   test("kills deliberately wrong degree, Auto-policy, and stored-voicing observations", () => {
     const correct = observeHarmonyLaw();

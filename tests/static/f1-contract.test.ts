@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, setDefaultTimeout, test } from "bun:test";
 import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -8,6 +8,8 @@ import {
   validateF1Contract,
   type F1ContractValidationReport,
 } from "../../scripts/validate-f1-contract";
+
+setDefaultTimeout(60_000);
 
 type JsonObject = Record<string, unknown>;
 

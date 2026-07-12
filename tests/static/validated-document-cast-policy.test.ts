@@ -1,9 +1,11 @@
-import { expect, test } from "bun:test";
+import { expect, setDefaultTimeout, test } from "bun:test";
 import { mkdir, mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
+
+setDefaultTimeout(60_000);
 
 const sourceRoot = fileURLToPath(new URL("../../src", import.meta.url));
 const policySupportFile = fileURLToPath(
@@ -240,4 +242,4 @@ test("catches multiline, alias, qualified, union, generic, and angle assertions"
   } finally {
     await rm(root, { recursive: true, force: true });
   }
-});
+}, 60_000);
