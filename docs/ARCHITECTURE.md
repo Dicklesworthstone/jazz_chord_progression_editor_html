@@ -18,6 +18,9 @@ what the release artifact is, and how those claims are proved.
 - `tests/fixtures/foundation/foundation-contract.json` is the machine-readable
   F0 contract. Static/build tests consume it; build code must not generate its
   own expected values.
+- `tests/fixtures/decoder/f2-decoder-contract.json` and its declared companions
+  are the machine-readable F2 structural-decoder authority. Production decoder
+  output may be compared with it but may never generate its expectations.
 - The legacy HTML remains evidence until the replacement has passed the release
   gate. New production code must not import or evaluate it.
 
@@ -61,6 +64,7 @@ The manifest exposes these stable commands:
 | `bun run doctor:toolchain` | verify exact Bun/package pins and a real supported Node for Playwright |
 | `bun run validate:f0-contract` | validate the machine-readable standalone-foundation contract |
 | `bun run validate:f1-contract` | validate the independent spelling, identity, exact-time, voicing, and boundary authority corpus |
+| `bun run validate:f2-contract` | validate the independent structural-decoder schema, adversarial cases, trace ledger, and mutation controls |
 | `bun run typecheck` | strict `tsc --noEmit` |
 | `bun run lint` | ESLint plus source-integrity and dependency-boundary checks |
 | `bun test` | Bun unit, property, golden, conformance, integration, and static tests |

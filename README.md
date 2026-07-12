@@ -2,7 +2,7 @@
 
 An offline, deterministic jazz chord-progression studio designed to turn lead-sheet changes into an explainable, playable, portable chart—without accounts, telemetry, cloud services, or runtime AI.
 
-> **Development status:** the visible application is still the **F0 standalone foundation shell**, not yet a chord editor. The source tree now includes the headless F1 spelling-first domain runtime, but it is not wired into the page. Chart authoring, music-theory analysis, playback, persistence, import/export, presets, and the planned discovery tools are not shipped yet.
+> **Development status:** the visible application is still the **F0 standalone foundation shell**, not yet a chord editor. The source tree now includes the headless F1 spelling-first domain runtime and the independently reviewed F2 decoder contract, but the production decoder and UI wiring are not built yet. Chart authoring, music-theory analysis, playback, persistence, import/export, presets, and the planned discovery tools are not shipped yet.
 
 ## Why Changes
 
@@ -27,6 +27,7 @@ That is the release direction, not a description of the current visible shell. S
 | Reproducible build contract | Source-driven build, generated-file banner, byte-equality checks, size budget, CSP hashes, license inventory |
 | Verification scaffold | Static policy tests, type checking, linting, reproducibility checks, and Chromium/Firefox/WebKit E2E harnesses |
 | F1 domain runtime | Headless spelling-first identities, pitch projection, exact rational time, chord/voicing construction, immutable bounded copy/remap, and a 317-case reviewed authority corpus; decoder, semantic publication, and UI integration remain downstream |
+| F2 decoder contract | Exact public types plus a production-independent 65-case structural/adversarial corpus, 12 requirement traces, 8 deterministic seeds, and 234 named mutation controls; the production decoder remains the next package |
 
 The visible page intentionally reports **Foundation ready** and names the next gate. There is no hidden legacy editor behind it.
 
@@ -113,6 +114,7 @@ If source and artifact disagree, regenerate the artifact; do not copy changes ba
 | `bun run validate:f0-contract` | Validate the machine-readable F0 contract without third-party packages |
 | `bun scripts/validate-f0-contract.ts` | Equivalent direct foundation-contract command documented for automation |
 | `bun run validate:f1-contract` | Validate the independently authored F1 domain authority corpus, trace ledger, limits, matrices, and mutation-sensitive contract |
+| `bun run validate:f2-contract` | Validate the independently authored F2 decoder schema, adversarial corpus, trace ledger, and mutation controls |
 | `bun run typecheck` | Run strict TypeScript checks across app, tools, tests, and E2E code |
 | `bun run lint` | Run ESLint, source-integrity checks, and dependency-boundary checks |
 | `bun test` | Run Bun unit/static tests |
@@ -165,12 +167,16 @@ For the normative contracts, read [Architecture](docs/ARCHITECTURE.md) and the [
 
 ## Roadmap
 
-Every row after the current F0 shell is planned work. A capability is not considered shipped until its production implementation and independent proof are both complete.
+The F0 shell and headless F1 domain package are current source capabilities;
+the visible editor and every later row remain planned work. A capability is not
+considered shipped until its production implementation and independent proof
+are both complete.
 
 | Gate | Status | Intended outcome |
 |---|---|---|
 | F0 standalone shell | Current | Pinned toolchain, strict source boundaries, self-contained generated page, offline/reproducibility verification |
-| Remaining foundation | Planned | Spelling-first domain model, exact rational time, total document decoder, chord parser/resolver, independent theory corpus |
+| F1 headless domain | Current | Spelling-first IDs and pitches, exact rational time, chord/voicing values, immutable bounded copy/remap, and independently reviewed fixtures |
+| Foundation continuation | Planned | Total document decoder and semantic publication, chord parser/resolver, and independent theory corpus |
 | Reliable studio | Planned | Chart editing, commands/history, recovery, exact manual/frozen voicings, deterministic transport/audio, JSON and text workflows |
 | Musical intelligence | Planned | Evidence-bearing analysis, transposition, tonal journeys, reviewed Atlas, fingerprints, and plural contextual continuation options |
 | Advanced craft | Planned | Bounded route and constraint search, proof-carrying reharmonization, guide-tone/color/rhythm/tension/sequence tools, MIDI, and practice workflows |
