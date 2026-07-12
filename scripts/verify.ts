@@ -13,14 +13,18 @@ const gates: Gate[] = [
     id: "f1-domain-contract",
     command: [process.execPath, "scripts/validate-f1-contract.ts"],
   },
+  {
+    id: "f2-decoder-contract",
+    command: [process.execPath, "scripts/validate-f2-contract.ts"],
+  },
   { id: "typecheck", command: [process.execPath, "scripts/typecheck.ts"] },
   { id: "lint", command: [process.execPath, "scripts/lint.ts"] },
   { id: "bun-tests", command: [process.execPath, "test"] },
+  { id: "build", command: [process.execPath, "scripts/build.ts"] },
   {
     id: "f1-evidence",
     command: [process.execPath, "scripts/verify-f1-evidence.ts"],
   },
-  { id: "build", command: [process.execPath, "scripts/build.ts"] },
   {
     id: "standalone-static",
     command: [process.execPath, "scripts/verify-standalone.ts", "--static-only"],
