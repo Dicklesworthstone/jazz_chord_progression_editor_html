@@ -975,9 +975,10 @@ not a stale derived note list. Freeze copies the current derived voicing into
 document data through an undoable command.
 
 Manual and Frozen arrays are nonempty and preserve order, spelling, octave, and
-duplicates exactly. For a slash chord, `included` requires the exact slash pitch
-as the lowest stored pitch; `external` delegates it and excludes it from stored
-and sounded pitches by sounding pitch class, including enharmonic spellings. A
+duplicates exactly. For a slash chord, `included` requires at least one exact
+slash spelling among all pitches tied at the minimum projected MIDI; enharmonic
+co-minima may coexist. `external` delegates the slash bass and excludes it from
+stored and sounded pitches by sounding pitch class, including enharmonic spellings. A
 non-slash Manual/Frozen voicing cannot be `external`.
 Returning from Frozen to Auto requires a complete new Auto configuration; the
 application never guesses discarded range/count/bass settings.
@@ -1163,6 +1164,8 @@ proportionally to untrusted input:
 | Sections | 64 |
 | Measures per section | 1,024 |
 | Chord events per document | 8,192 |
+| Nodes in one copy source/destination | 73,793 each; count source once, emit its plan once, and index destination once before ID allocation |
+| Copy auxiliary planning/index entries | 295,172 maximum, plus the bounded returned copy graph |
 | Notes in a custom/manual/frozen voicing | 16 |
 | Symbol/annotation/title string | 256 / 2,000 / 256 code points |
 | Tempo | integer 20-400 quarter-notes/minute |
@@ -1170,6 +1173,11 @@ proportionally to untrusted input:
 | Beat numerator / denominator | 0-2,147,483,647 / positive divisor of 960 |
 | Total document time | 1,000,000 quarter-note beats |
 | MIDI pitch | 0-127 |
+
+Text limits count Unicode scalar values, reject lone UTF-16 surrogates, and use
+ECMAScript `String.prototype.trim()` only to decide required-field blankness.
+Thus U+FEFF is blank and U+0085 is not; accepted stored strings are never
+trimmed or normalized.
 
 Imports exceeding a limit fail with a stable issue code and leave current state
 unchanged. Decoders validate into a temporary value and never partially mutate
@@ -3030,9 +3038,9 @@ octaves. Labels respect spelling preference while each key exposes MIDI pitch,
 spelled note, octave, selected state, and action. Keyboard alternatives use a
 list/spin control for adding/removing notes; no user must play a visual keyboard.
 
-Manual mode preserves pitch order after normalizing presentation from low to
-high and rejects duplicate exact MIDI notes unless explicitly supported. A
-pitch-class duplicate at another octave remains valid. Switching Auto to Manual
+Manual mode preserves stored pitch order, spelling, octave, and duplicate or
+unison entries exactly. The piano may offer a separate low-to-high visual lens,
+but it never rewrites the stored array. Switching Auto to Manual
 copies the current realized pitches as one command; switching back requires a
 family/range choice and never discards manual data without confirmation/undo.
 

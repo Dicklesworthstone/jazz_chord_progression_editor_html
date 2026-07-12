@@ -304,19 +304,19 @@
       "kind": "complete-parsed-chord-shape-round-trip",
       "input": {
         "kind": "parsed",
-        "sourceText": "C13(b9,#11)/Db",
+        "sourceText": "C13(add2,#11,b5,no3)/Db",
         "root": {"step": "C", "alter": 0},
         "triad": "major",
         "sixth": null,
         "seventh": "minor",
         "extensions": [{"number": 9, "alter": 0}, {"number": 13, "alter": 0}],
-        "additions": [{"number": 11, "alter": 1}],
-        "alterations": [{"number": 5, "alter": -1}, {"number": 9, "alter": -1}],
-        "omissions": [5, 11],
+        "additions": [{"number": 2, "alter": 0}, {"number": 11, "alter": 1}],
+        "alterations": [{"number": 5, "alter": -1}],
+        "omissions": [3],
         "bass": {"step": "D", "alter": -1},
         "colorPolicy": "altered-dominant"
       },
-      "expected": {"ok": true, "allFieldsPreservedExactly": true, "sourceSemanticAgreementCheckedAtF3": true}
+      "expected": {"ok": true, "allFieldsPreservedExactly": true, "sourceSemanticAgreementCheckedByThisCase": false, "sourceSemanticAgreementOwnedBy": "F3"}
     },
     {
       "id": "F1-CHORD-015",
@@ -360,6 +360,82 @@
         "degreeEqualAtEveryRoot": false,
         "pitchClassProjectionEqualAtEveryRoot": true,
         "transpositionImplementationOwnedBy": "H1"
+      }
+    },
+    {
+      "id": "F1-CHORD-018",
+      "traceIds": ["F1-TRACE-DEGREE-IDENTITY"],
+      "authorityIds": ["F1-AUTH-DEGREE"],
+      "kind": "omission-array-canonical-order",
+      "field": "omissions",
+      "input": [3, 5, 7, 9],
+      "expected": {"ok": true, "preservedExactly": true}
+    },
+    {
+      "id": "F1-CHORD-019",
+      "traceIds": ["F1-TRACE-DEGREE-IDENTITY", "F1-TRACE-DECODER-RESULT"],
+      "authorityIds": ["F1-AUTH-DEGREE", "F1-AUTH-VALIDATION"],
+      "kind": "omission-array-exact-duplicate",
+      "field": "omissions",
+      "input": [3, 3],
+      "expected": {"ok": false, "issue": {"code": "chord.degree_duplicate", "path": ["omissions", 1]}}
+    },
+    {
+      "id": "F1-CHORD-020",
+      "traceIds": ["F1-TRACE-DEGREE-IDENTITY", "F1-TRACE-DECODER-RESULT"],
+      "authorityIds": ["F1-AUTH-DEGREE", "F1-AUTH-VALIDATION"],
+      "kind": "omission-array-order-near-miss",
+      "field": "omissions",
+      "input": [7, 3],
+      "expected": {"ok": false, "issue": {"code": "chord.degree_order", "path": ["omissions"]}}
+    },
+    {
+      "id": "F1-CHORD-021",
+      "traceIds": ["F1-TRACE-DEGREE-IDENTITY"],
+      "authorityIds": ["F1-AUTH-DEGREE"],
+      "kind": "decode-degree-number-fractional",
+      "input": {"number": 3.5, "alter": 0},
+      "expected": {"ok": false, "issue": {"code": "chord.degree_number_invalid", "path": ["number"]}}
+    },
+    {
+      "id": "F1-CHORD-022",
+      "traceIds": ["F1-TRACE-DEGREE-IDENTITY"],
+      "authorityIds": ["F1-AUTH-DEGREE", "F1-AUTH-VALIDATION"],
+      "kind": "decode-degree-number-nan",
+      "inputDescriptor": {"number": {"specialNumber": "NaN"}, "alter": 0},
+      "expected": {"ok": false, "issue": {"code": "chord.degree_number_invalid", "path": ["number"]}}
+    },
+    {
+      "id": "F1-CHORD-023",
+      "traceIds": ["F1-TRACE-DEGREE-IDENTITY"],
+      "authorityIds": ["F1-AUTH-DEGREE"],
+      "kind": "decode-degree-alter-fractional",
+      "input": {"number": 3, "alter": 0.5},
+      "expected": {"ok": false, "issue": {"code": "chord.degree_alter_out_of_range", "path": ["alter"]}}
+    },
+    {
+      "id": "F1-CHORD-024",
+      "traceIds": ["F1-TRACE-DEGREE-IDENTITY"],
+      "authorityIds": ["F1-AUTH-DEGREE", "F1-AUTH-VALIDATION"],
+      "kind": "decode-degree-alter-nan",
+      "inputDescriptor": {"number": 3, "alter": {"specialNumber": "NaN"}},
+      "expected": {"ok": false, "issue": {"code": "chord.degree_alter_out_of_range", "path": ["alter"]}}
+    },
+    {
+      "id": "F1-CHORD-025",
+      "traceIds": ["F1-TRACE-DEGREE-IDENTITY"],
+      "authorityIds": ["F1-AUTH-DEGREE"],
+      "kind": "decode-degree-alter-membership",
+      "input": {"number": 3, "alters": [-3, -2, -1, 0, 1, 2]},
+      "expected": {
+        "independentResults": [
+          {"alter": -3, "ok": false, "code": "chord.degree_alter_out_of_range", "path": ["alter"]},
+          {"alter": -2, "ok": true},
+          {"alter": -1, "ok": true},
+          {"alter": 0, "ok": true},
+          {"alter": 1, "ok": true},
+          {"alter": 2, "ok": true}
+        ]
       }
     }
   ]

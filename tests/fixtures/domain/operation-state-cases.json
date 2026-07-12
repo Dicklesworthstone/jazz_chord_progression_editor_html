@@ -41,10 +41,10 @@
       "traceIds": ["F1-TRACE-BOUNDED-OPERATIONS", "F1-TRACE-PURE-BOUNDARY", "F1-TRACE-ID-TRANSACTION"],
       "authorityIds": ["F1-AUTH-ID", "F1-AUTH-VALIDATION"],
       "operation": "allocateCopyRemap",
-      "operationClass": "pure synchronous preorder allocation plan",
-      "cancellation": {"applicability": "not-applicable", "reason": "copy size is already bounded and no partial plan is published"},
-      "staleRevision": {"applicability": "not-applicable", "reason": "the F1 allocator accepts a value and factory only; a later application command owns revision checks"},
-      "expected": {"owner": "F1", "deterministicWorkBound": "one factory call per copied node until first refusal", "deterministicMemoryBound": "linear in copied nodes with at most 73793 remap entries under document limits", "stateMutation": "none", "partialCommit": false}
+      "operationClass": "pure synchronous source/destination preflight plus preorder allocation plan",
+      "cancellation": {"applicability": "not-applicable", "reason": "source and validated destination are bounded before allocation and no partial plan is published"},
+      "staleRevision": {"applicability": "not-applicable", "reason": "the F1 allocator accepts immutable source/destination values and a factory only; a later application command owns revision checks"},
+      "expected": {"owner": "F1", "deterministicWorkBound": "at most 147586 source graph visits (one count pass plus one plan-emission pass), 73793 validated-destination graph visits, 73793 factory calls, and three 73793-entry plan passes before success; stop at the first refusal", "deterministicMemoryBound": "at most 221379 collision-index entries (destination originals plus source originals plus allocated candidates) and 73793 plan/remap entries (295172 auxiliary entries), plus a 73793-node returned copy graph", "stateMutation": "none", "partialCommit": false}
     },
     {
       "id": "F1-OPSTATE-005",

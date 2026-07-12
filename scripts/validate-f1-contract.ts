@@ -1,33 +1,7 @@
+import { createHash } from "node:crypto";
 import { readdir, readFile } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-
-import {
-  ALLOWED_BEAT_DENOMINATORS,
-  AUTO_BASS_POLICIES,
-  AUTO_VOICING_FAMILIES,
-  DOMAIN_VALIDATION_ISSUE_CODES,
-  MAX_DOCUMENT_CHORD_EVENTS,
-  MAX_DOCUMENT_SECTIONS,
-  MAX_ENGINE_VERSION_CODE_POINTS,
-  MAX_JSON_NESTING_DEPTH,
-  MAX_LONG_TEXT_CODE_POINTS,
-  MAX_MIDI_PITCH,
-  MAX_NORMALIZED_BEAT_NUMERATOR,
-  MAX_PLAYBACK_LEVEL,
-  MAX_SECTION_MEASURES,
-  MAX_SHORT_TEXT_CODE_POINTS,
-  MAX_TEMPO_BPM,
-  MAX_TIMELINE_QUARTER_NOTE_BEATS,
-  MAX_UTF8_IMPORT_BYTES,
-  MAX_VOICING_PITCHES,
-  MIDI_PPQ,
-  MIN_MIDI_PITCH,
-  MIN_PLAYBACK_LEVEL,
-  MIN_TEMPO_BPM,
-  PROGRESSION_DOCUMENT_SCHEMA,
-  STABLE_ID_MAX_ASCII_LENGTH,
-} from "../src/domain";
 
 type JsonObject = Record<string, unknown>;
 
@@ -66,45 +40,241 @@ type FixtureCase = Readonly<{
   authorityIds: readonly string[];
 }>;
 
+const MIDI_PPQ = 960;
+const ALLOWED_BEAT_DENOMINATORS = [
+  1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 16, 20, 24, 30, 32, 40, 48, 60,
+  64, 80, 96, 120, 160, 192, 240, 320, 480, 960,
+] as const;
+const AUTO_VOICING_FAMILIES = [
+  "balanced", "shell", "rootless-a", "rootless-b", "open", "drop2", "quartal",
+] as const;
+const AUTO_BASS_POLICIES = ["generated", "external", "none"] as const;
+const MIN_MIDI_PITCH = 0;
+const MAX_MIDI_PITCH = 127;
+const PROGRESSION_DOCUMENT_SCHEMA = "changes.progression.v2";
+
+/** Independent reviewed literals. Production conformance is tested separately. */
+export const F1_REVIEWED_PUBLIC_CONSTANTS = {
+  progressionDocumentSchema: "changes.progression.v2",
+  progressionDocumentSchemaVersion: 2,
+  stableIdPatternSource: "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+  midiPpq: 960,
+  allowedBeatDenominators: [...ALLOWED_BEAT_DENOMINATORS],
+  maxBeatNumerator: 2_147_483_647,
+  maxTimelineQuarterNoteBeats: 1_000_000,
+  midiMinimum: 0,
+  midiMaximum: 127,
+  minimumAlteration: -2,
+  maximumAlteration: 2,
+  middleCMidi: 60,
+  concertAMidi: 69,
+  concertAFrequencyHz: 440,
+  tempoMinimum: 20,
+  tempoMaximum: 400,
+  minimumBeatsPerBar: 1,
+  maximumBeatsPerBar: 32,
+  maxSections: 64,
+  maxMeasuresPerSection: 1_024,
+  maxEventsPerDocument: 8_192,
+  maxCopyGraphNodes: 73_793,
+  maxVoicingNotes: 16,
+  maxImportBytes: 2_097_152,
+  maxJsonDepth: 32,
+  maxStableIdAsciiCharacters: 128,
+  maxSymbolCodePoints: 256,
+  maxCustomLabelCodePoints: 256,
+  maxTitleCodePoints: 256,
+  maxSectionNameCodePoints: 256,
+  maxAnnotationCodePoints: 2_000,
+  maxDescriptionCodePoints: 2_000,
+  maxPartialMeasureReasonCodePoints: 2_000,
+  maxEngineVersionCodePoints: 64,
+  minimumPlaybackLevel: 0,
+  maximumPlaybackLevel: 1,
+  countInBars: [0, 1, 2],
+} as const;
+
+export const F1_REVIEWED_ISSUE_CODES = [
+  "shape.unknown_field",
+  "shape.invalid_type",
+  "document.root_not_object",
+  "document.schema_invalid",
+  "document.schema_missing",
+  "limit.import_bytes_exceeded",
+  "limit.json_depth_exceeded",
+  "limit.sections_exceeded",
+  "limit.measures_per_section_exceeded",
+  "limit.events_per_document_exceeded",
+  "limit.copy_nodes_exceeded",
+  "id.syntax_invalid",
+  "id.length_exceeded",
+  "id.duplicate",
+  "id.reference_missing",
+  "id.collision_existing",
+  "id.collision_allocated",
+  "id.factory_exhausted",
+  "id.entropy_unavailable",
+  "id.remap_incomplete",
+  "string.blank",
+  "limit.symbol_code_points_exceeded",
+  "limit.annotation_code_points_exceeded",
+  "limit.title_code_points_exceeded",
+  "limit.section_name_code_points_exceeded",
+  "limit.custom_label_code_points_exceeded",
+  "limit.description_code_points_exceeded",
+  "limit.reason_code_points_exceeded",
+  "limit.engine_version_code_points_exceeded",
+  "string.invalid_unicode_scalar",
+  "pitch.step_invalid",
+  "pitch.alter_out_of_range",
+  "pitch.octave_not_integer",
+  "pitch.octave_not_safe_integer",
+  "pitch.midi_not_integer",
+  "pitch.midi_out_of_range",
+  "key.mode_invalid",
+  "document.instrument_id_invalid",
+  "chord.degree_number_invalid",
+  "chord.degree_alter_out_of_range",
+  "chord.degree_order",
+  "chord.degree_duplicate",
+  "chord.source_semantic_mismatch",
+  "custom.pitch_names_empty",
+  "custom.pitch_voicing_mismatch",
+  "custom.auto_voicing_forbidden",
+  "voicing.pitches_empty",
+  "limit.voicing_notes_exceeded",
+  "voicing.range_reversed",
+  "voicing.voice_count_invalid",
+  "voicing.rootless_requires_external",
+  "voicing.slash_bass_policy_none",
+  "voicing.external_without_slash_bass",
+  "voicing.included_bass_not_lowest",
+  "voicing.included_bass_spelling_mismatch",
+  "voicing.external_bass_included",
+  "voicing.engine_version_invalid",
+  "voicing.auto_settings_required",
+  "beat.numerator_not_safe_integer",
+  "beat.numerator_negative",
+  "beat.numerator_out_of_range",
+  "beat.denominator_not_safe_integer",
+  "beat.denominator_not_positive",
+  "beat.denominator_not_ppq_divisor",
+  "beat.not_normalized",
+  "beat.duration_not_positive",
+  "beat.negative_result",
+  "beat.range_empty",
+  "beat.range_reversed",
+  "timeline.total_exceeded",
+  "meter.beats_per_bar_out_of_range",
+  "meter.beat_unit_invalid",
+  "tempo.not_finite",
+  "tempo.not_integer",
+  "tempo.out_of_range",
+  "playback.level_not_finite",
+  "playback.level_out_of_range",
+  "playback.count_in_bars_invalid",
+  "section.voice_leading_boundary_invalid",
+  "measure.empty_has_events",
+  "measure.nonempty_has_no_events",
+  "measure.complete_duration_mismatch",
+  "measure.duration_over_capacity",
+  "measure.expected_duration_not_short",
+  "measure.expected_duration_not_positive",
+  "measure.expected_duration_mismatch",
+  "measure.reason_blank",
+] as const;
+
+export const F1_REVIEWED_TEXT_FIELD_CODE_POINT_LIMITS = {
+  chordSourceText: 256,
+  customChordLabel: 256,
+  documentTitle: 256,
+  sectionName: 256,
+  annotation: 2_000,
+  documentDescription: 2_000,
+  partialMeasureReason: 2_000,
+} as const;
+
+export const F1_REVIEWED_NONBLANK_TEXT_FIELDS = [
+  "chordSourceText",
+  "customChordLabel",
+  "documentTitle",
+  "sectionName",
+  "partialMeasureReason",
+  "engineVersion",
+] as const;
+
+export const F1_REVIEWED_STAGE_ISSUE_CODES = {
+  F1: [
+    "id.syntax_invalid", "id.length_exceeded", "id.collision_existing",
+    "id.collision_allocated", "id.factory_exhausted", "id.entropy_unavailable",
+    "id.remap_incomplete", "limit.copy_nodes_exceeded", "pitch.step_invalid",
+    "pitch.alter_out_of_range", "pitch.octave_not_integer",
+    "pitch.octave_not_safe_integer", "pitch.midi_not_integer",
+    "pitch.midi_out_of_range", "key.mode_invalid",
+    "document.instrument_id_invalid", "chord.degree_number_invalid",
+    "chord.degree_alter_out_of_range", "chord.degree_order",
+    "chord.degree_duplicate", "custom.pitch_names_empty",
+    "custom.auto_voicing_forbidden", "voicing.pitches_empty",
+    "limit.voicing_notes_exceeded", "voicing.range_reversed",
+    "voicing.voice_count_invalid", "voicing.rootless_requires_external",
+    "voicing.slash_bass_policy_none", "voicing.external_without_slash_bass",
+    "voicing.included_bass_not_lowest",
+    "voicing.included_bass_spelling_mismatch", "voicing.external_bass_included",
+    "voicing.engine_version_invalid", "voicing.auto_settings_required",
+    "beat.numerator_not_safe_integer", "beat.numerator_negative",
+    "beat.numerator_out_of_range", "beat.denominator_not_safe_integer",
+    "beat.denominator_not_positive", "beat.denominator_not_ppq_divisor",
+    "beat.duration_not_positive", "beat.negative_result", "beat.range_empty",
+    "beat.range_reversed", "timeline.total_exceeded",
+    "meter.beats_per_bar_out_of_range", "meter.beat_unit_invalid",
+    "tempo.not_finite", "tempo.not_integer", "tempo.out_of_range",
+    "playback.level_not_finite", "playback.level_out_of_range",
+    "playback.count_in_bars_invalid",
+  ],
+  F2: [
+    "shape.unknown_field", "shape.invalid_type", "document.root_not_object",
+    "document.schema_invalid", "document.schema_missing",
+    "limit.import_bytes_exceeded", "limit.json_depth_exceeded",
+    "limit.sections_exceeded", "limit.measures_per_section_exceeded",
+    "limit.events_per_document_exceeded", "id.duplicate", "id.reference_missing",
+    "string.blank", "limit.symbol_code_points_exceeded",
+    "limit.annotation_code_points_exceeded", "limit.title_code_points_exceeded",
+    "limit.section_name_code_points_exceeded",
+    "limit.custom_label_code_points_exceeded",
+    "limit.description_code_points_exceeded", "limit.reason_code_points_exceeded",
+    "limit.engine_version_code_points_exceeded", "string.invalid_unicode_scalar",
+    "beat.not_normalized", "section.voice_leading_boundary_invalid",
+  ],
+  F3: [
+    "chord.source_semantic_mismatch", "custom.pitch_voicing_mismatch",
+    "measure.empty_has_events", "measure.nonempty_has_no_events",
+    "measure.complete_duration_mismatch", "measure.duration_over_capacity",
+    "measure.expected_duration_not_short",
+    "measure.expected_duration_not_positive",
+    "measure.expected_duration_mismatch", "measure.reason_blank",
+  ],
+} as const;
+
+function numberedIds(prefix: string, count: number): string[] {
+  return Array.from(
+    { length: count },
+    (_, index) => `${prefix}${String(index + 1).padStart(3, "0")}`,
+  );
+}
+
 const DEFAULT_FIXTURE_ROOT = fileURLToPath(
   new URL("../tests/fixtures/domain", import.meta.url),
 );
 const MANIFEST_FILENAME = "f1-domain-contract.json";
 const EXPECTED_MANIFEST_IDENTITY = {
   schema: "changes.fixtures.f1-domain-contract.v1",
-  contractVersion: "1.0.0",
+  contractVersion: "1.0.1",
   package: "F1",
   beadId: "jcpe-milestone-foundation-vc2.2.1",
   domainSchema: PROGRESSION_DOCUMENT_SCHEMA,
 } as const;
-const EXPECTED_FIXED_CONSTANTS: Readonly<JsonObject> = {
-  midiPpq: MIDI_PPQ,
-  allowedBeatDenominators: [...ALLOWED_BEAT_DENOMINATORS],
-  maxBeatNumerator: MAX_NORMALIZED_BEAT_NUMERATOR,
-  maxTimelineQuarterNoteBeats: MAX_TIMELINE_QUARTER_NOTE_BEATS,
-  midiMinimum: MIN_MIDI_PITCH,
-  midiMaximum: MAX_MIDI_PITCH,
-  tempoMinimum: MIN_TEMPO_BPM,
-  tempoMaximum: MAX_TEMPO_BPM,
-  maxSections: MAX_DOCUMENT_SECTIONS,
-  maxMeasuresPerSection: MAX_SECTION_MEASURES,
-  maxEventsPerDocument: MAX_DOCUMENT_CHORD_EVENTS,
-  maxVoicingNotes: MAX_VOICING_PITCHES,
-  maxImportBytes: MAX_UTF8_IMPORT_BYTES,
-  maxJsonDepth: MAX_JSON_NESTING_DEPTH,
-  maxStableIdAsciiCharacters: STABLE_ID_MAX_ASCII_LENGTH,
-  maxSymbolCodePoints: MAX_SHORT_TEXT_CODE_POINTS,
-  maxCustomLabelCodePoints: MAX_SHORT_TEXT_CODE_POINTS,
-  maxTitleCodePoints: MAX_SHORT_TEXT_CODE_POINTS,
-  maxSectionNameCodePoints: MAX_SHORT_TEXT_CODE_POINTS,
-  maxAnnotationCodePoints: MAX_LONG_TEXT_CODE_POINTS,
-  maxDescriptionCodePoints: MAX_LONG_TEXT_CODE_POINTS,
-  maxPartialMeasureReasonCodePoints: MAX_LONG_TEXT_CODE_POINTS,
-  maxEngineVersionCodePoints: MAX_ENGINE_VERSION_CODE_POINTS,
-  minimumPlaybackLevel: MIN_PLAYBACK_LEVEL,
-  maximumPlaybackLevel: MAX_PLAYBACK_LEVEL,
-  countInBars: [0, 1, 2],
-};
+const EXPECTED_FIXED_CONSTANTS: Readonly<JsonObject> =
+  F1_REVIEWED_PUBLIC_CONSTANTS;
 const EXPECTED_COMPANION_KEYS = [
   "path",
   "recordCollections",
@@ -204,18 +374,53 @@ const EXPECTED_AUTHORITY_IDS = [
 ] as const;
 const EXPECTED_COVERAGE_SUMMARY: Readonly<JsonObject> = {
   companionFiles: 10,
-  fixtureCaseRecords: 297,
+  fixtureCaseRecords: 317,
   traceRecords: 18,
   authorityRecords: 9,
   stableSeeds: 6,
   allowedBeatDivisors: 28,
   orderedPairwiseBeatClosureChecks: 784,
+  orderedPairwiseBeatAdditionChecks: 784,
+  orderedPairwiseBeatComparisonChecks: 784,
+  orderedPairwiseBeatSubtractionValueChecks: 406,
+  orderedPairwiseBeatSubtractionRefusalChecks: 378,
   coreMeterCapacityCases: 15,
   additionalCompoundMeterNearMisses: 1,
   autoVoicingPolicyMatrixCells: 42,
   customAutoRefusalMatrixCells: 42,
-  expectedDiagnosticCodes: 84,
+  expectedDiagnosticCodes: 85,
 };
+const EXPECTED_OBSERVATION_CONTRACT: Readonly<JsonObject> = {
+  purpose: "expected records are independent oracle observations, not serialized production result envelopes",
+  singleDiagnosticKey: "issue",
+  multipleDiagnosticKey: "issuesInOrder",
+  batchedIndependentResultsKey: "independentResults",
+  decoderAdapter: "compares fixture diagnostics with DecodeResult.errors and proves no partial value",
+  valueAdapter: "compares fixture diagnostics with the refusal member of the named F1 value result; for a nested document observation it first prefixes the operation-relative path exactly once",
+  successAdapter: "compares exact value fields or the explicit boolean/property observation named by the case",
+};
+const EXPECTED_STAGE_OWNERSHIP: Readonly<JsonObject> = {
+  F1: "opaque values, public immutable shapes, value constructors/projections, exact arithmetic, ID factories/remap/copy contracts, and capacity arithmetic",
+  F2: "total unknown decoding, byte/depth/collection preflight, strict fields, runtime structural compatibility, and duplicate-ID diagnostics",
+  F3: "source/AST/formula/custom correspondence, measure-completion semantics, playback realizability, and sole semantic publication input",
+  A0: "revision-aware atomic editing transitions and history",
+};
+const EXPECTED_AUTHORITY_CLASSIFICATION_POLICY: Readonly<JsonObject> = {
+  "reviewed-project-policy": "an explicit product, schema, API, or domain choice frozen by reviewed project contracts and not derived from implementation output",
+  "external-definition": "a fact or convention adopted from a named outside standards source; at least one sourceRef is an absolute HTTPS URL",
+  "judgment-bearing-musical-policy": "a musically interpretive or taste-bearing choice that requires explicit human review rather than arithmetic derivation",
+};
+const EXPECTED_AUTHORITY_EXPECTATION_CLASS = new Map<string, string>([
+  ["F1-AUTH-ID", "reviewed-project-policy"],
+  ["F1-AUTH-PITCH", "reviewed-project-policy"],
+  ["F1-AUTH-TEMPERAMENT", "external-definition"],
+  ["F1-AUTH-DEGREE", "reviewed-project-policy"],
+  ["F1-AUTH-VOICING", "judgment-bearing-musical-policy"],
+  ["F1-AUTH-TIME", "reviewed-project-policy"],
+  ["F1-AUTH-DOCUMENT", "reviewed-project-policy"],
+  ["F1-AUTH-KEY", "reviewed-project-policy"],
+  ["F1-AUTH-VALIDATION", "reviewed-project-policy"],
+]);
 const EXPECTED_PAIRWISE_TICK_ORACLE: Readonly<JsonObject> = {
   oracleVersion: "ppq-integer-ticks-v1",
   tickSources: {
@@ -246,17 +451,70 @@ const EXPECTED_PAIRWISE_TICK_ORACLE: Readonly<JsonObject> = {
     equal: 28,
     greater: 378,
   },
+  expectedExecutionCounts: {
+    additions: 784,
+    comparisons: 784,
+    subtractionValues: 406,
+    subtractionNegativeRefusals: 378,
+  },
 };
-const ISSUE_CODE_VALUES = new Set<string>(
-  Object.values(DOMAIN_VALIDATION_ISSUE_CODES),
+const EXPECTED_CASE_IDS_BY_COLLECTION = new Map<string, readonly string[]>([
+  ["pitch-cases.json#cases", numberedIds("F1-PITCH-", 28)],
+  ["chord-shape-cases.json#cases", numberedIds("F1-CHORD-", 25)],
+  ["beat-value-cases.json#divisorCases", numberedIds("F1-BEAT-DIV-", 28)],
+  ["beat-value-cases.json#pairwiseClosureCases", ["F1-BEAT-PAIRWISE-001"]],
+  ["beat-value-cases.json#edgeCases", numberedIds("F1-BEAT-EDGE-", 31)],
+  ["meter-measure-cases.json#capacityCases", numberedIds("F1-METER-CAP-", 16)],
+  ["meter-measure-cases.json#completionCases", numberedIds("F1-MEASURE-", 22)],
+  ["identity-cases.json#cases", numberedIds("F1-ID-", 19)],
+  ["voicing-custom-cases.json#autoPolicyMatrix", numberedIds("F1-VOICE-AUTO-MATRIX-", 7)],
+  ["voicing-custom-cases.json#customAutoPolicyMatrix", ["F1-VOICE-CUSTOM-AUTO-MATRIX-001"]],
+  ["voicing-custom-cases.json#cases", numberedIds("F1-VOICE-", 44)],
+  ["document-boundary-cases.json#cases", numberedIds("F1-DOC-", 85)],
+  ["operation-state-cases.json#cases", numberedIds("F1-OPSTATE-", 10)],
+]);
+const EXPECTED_ROOT_KEYS = new Map<string, readonly string[]>([
+  [MANIFEST_FILENAME, ["assumptions", "authorityPolicy", "beadId", "companions", "contractVersion", "coverageSummary", "description", "determinism", "domainSchema", "fixedConstants", "fixtureObservationContract", "package", "schema", "stageOwnership"]],
+  ["pitch-cases.json", ["cases", "defaultSeedId", "frequencyAbsoluteToleranceHz", "frequencyFormula", "schema"]],
+  ["chord-shape-cases.json", ["cases", "defaultSeedId", "schema"]],
+  ["beat-value-cases.json", ["defaultSeedId", "divisorCases", "edgeCases", "normalizationOrder", "pairwiseClosureCases", "ppq", "schema"]],
+  ["meter-measure-cases.json", ["capacityCases", "capacityFormula", "completionCases", "defaultSeedId", "schema", "storageUnit"]],
+  ["identity-cases.json", ["allocationOrder", "cases", "collisionScope", "defaultSeedId", "schema", "sharedGraphs", "transactionRule"]],
+  ["voicing-custom-cases.json", ["autoPolicyMatrix", "cases", "customAutoPolicyMatrix", "defaultSeedId", "manualFrozenBassContract", "schema"]],
+  ["document-boundary-cases.json", ["cases", "defaultSeedId", "idSyntax", "schema", "specialInputDescriptors", "textValidationMatrix"]],
+  ["operation-state-cases.json", ["applicabilityVocabulary", "cases", "defaultSeedId", "schema"]],
+  ["trace-ledger.json", ["schema", "tracePolicy", "traces"]],
+  ["provenance-ledger.json", ["authoringStatement", "authorities", "classificationPolicy", "expectedValuesGenerated", "ledgerVersion", "productionOutputUsed", "reviewState", "schema"]],
+]);
+const EXPECTED_REVIEWED_FILE_SHA256 = new Map<string, string>([
+  ["beat-value-cases.json", "cb1e89b2cd756d02dbf8c385d751191dac8c52041a151f60dd67d9aa44dfae42"],
+  ["chord-shape-cases.json", "f9b99efb4510ad36e21dd3719d90687af97d43b12adc612e42b83aa365e4ea48"],
+  ["document-boundary-cases.json", "a9dadf8dd458b15522c502794bd8f9123cc11a6f2f9acd8b18812361aade6246"],
+  ["f1-domain-contract.json", "2608955ebcc092843c348236b8e74deb9f46b0e8d0d5eb514bde673ddff325f3"],
+  ["identity-cases.json", "caa285efd879394c002af71de8c2ed0ab2d46cab040be5e3155dbd4952a165dc"],
+  ["meter-measure-cases.json", "5e35c53ae5aebfe02115a907a3798f6efeb0d0b42a02902e901b2531387b9d1d"],
+  ["operation-state-cases.json", "b01bb5d272100f665d6c1bda2c18d2dbb82add04ebefee20c750597f98ba3a6e"],
+  ["pitch-cases.json", "103337d26bfe3695c5eda09b111d96f110a5c4584b84a374a3b8e2ba924d02d0"],
+  ["provenance-ledger.json", "818f49f8559afe22cb270cd04678b03703c80a880ca58159446e92020d8889be"],
+  ["trace-ledger.json", "bd402e10a8d6fcf996e4b336c9d8fac606c71d28efd5e0dbb7cfb81c93655f35"],
+  ["voicing-custom-cases.json", "e861316a17dab641a8da04381470def08a8231ffd49cd0eafdec3c82250cd293"],
+]);
+const ISSUE_CODE_VALUES = new Set<string>(F1_REVIEWED_ISSUE_CODES);
+const EXPECTED_FIXTURE_ISSUE_CODES = F1_REVIEWED_ISSUE_CODES.filter(
+  (code) => code !== "id.reference_missing" &&
+    code !== "custom.pitch_voicing_mismatch",
 );
 
 function isObject(value: unknown): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function codeUnitCompare(left: string, right: string): number {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
 function sortedStrings(values: readonly string[]): string[] {
-  return [...values].sort();
+  return [...values].sort(codeUnitCompare);
 }
 
 function sameStringArray(
@@ -370,9 +628,7 @@ async function parseJsonObject(
       path: filename,
       message: nodeErrorCode(error) === "ENOENT"
         ? `Required JSON file ${JSON.stringify(filename)} is missing.`
-        : error instanceof Error
-          ? error.message
-          : "Unable to read JSON file.",
+        : `Unable to read required JSON file ${JSON.stringify(filename)} (${nodeErrorCode(error) ?? "unknown error"}).`,
     });
     return null;
   }
@@ -399,10 +655,54 @@ async function parseJsonObject(
   return parsed;
 }
 
+async function validateReviewedFileDigests(
+  fixtureRoot: string,
+  findings: F1ContractFinding[],
+): Promise<void> {
+  for (const [filename, expected] of EXPECTED_REVIEWED_FILE_SHA256) {
+    try {
+      const source = await readFile(join(fixtureRoot, filename));
+      const actual = createHash("sha256").update(source).digest("hex");
+      if (actual !== expected) {
+        findings.push({
+          code: "F1_CORPUS_DIGEST",
+          path: filename,
+          message: "File bytes do not match the independently reviewed F1 corpus digest.",
+        });
+      }
+    } catch (error) {
+      findings.push({
+        code: "F1_CORPUS_DIGEST",
+        path: filename,
+        message: `Unable to hash reviewed JSON file (${nodeErrorCode(error) ?? "unknown error"}).`,
+      });
+    }
+  }
+}
+
+function validateRootKeys(
+  filename: string,
+  root: JsonObject,
+  findings: F1ContractFinding[],
+): void {
+  const expected = EXPECTED_ROOT_KEYS.get(filename);
+  if (
+    expected === undefined ||
+    !sameStringArray(Object.keys(root).sort(), sortedStrings(expected))
+  ) {
+    findings.push({
+      code: "F1_ROOT_KEYS",
+      path: `${filename}:$`,
+      message: "JSON root keys must match the exact reviewed schema surface.",
+    });
+  }
+}
+
 function validateManifestIdentity(
   manifest: JsonObject,
   findings: F1ContractFinding[],
 ): void {
+  validateRootKeys(MANIFEST_FILENAME, manifest, findings);
   for (const [key, expected] of Object.entries(EXPECTED_MANIFEST_IDENTITY)) {
     if (manifest[key] !== expected) {
       findings.push({
@@ -411,6 +711,20 @@ function validateManifestIdentity(
         message: `Expected ${JSON.stringify(expected)}; received ${JSON.stringify(manifest[key])}.`,
       });
     }
+  }
+  if (!jsonEqual(manifest["fixtureObservationContract"], EXPECTED_OBSERVATION_CONTRACT)) {
+    findings.push({
+      code: "F1_OBSERVATION_CONTRACT",
+      path: `${MANIFEST_FILENAME}:$.fixtureObservationContract`,
+      message: "Fixture observations must retain their exact adapter contract to public result envelopes.",
+    });
+  }
+  if (!jsonEqual(manifest["stageOwnership"], EXPECTED_STAGE_OWNERSHIP)) {
+    findings.push({
+      code: "F1_STAGE_OWNERSHIP",
+      path: `${MANIFEST_FILENAME}:$.stageOwnership`,
+      message: "F1/F2/F3/A0 ownership seams must remain explicit and unchanged.",
+    });
   }
 }
 
@@ -679,7 +993,7 @@ async function validateCompanionInventory(
     findings.push({
       code: "F1_COMPANION_INVENTORY",
       path: ".",
-      message: error instanceof Error ? error.message : "Unable to enumerate fixture root.",
+      message: `Unable to enumerate fixture root (${nodeErrorCode(error) ?? "unknown error"}).`,
     });
   }
   const declared = new Set(declarations.map((item) => item.path));
@@ -702,6 +1016,7 @@ async function validateCompanionInventory(
       "F1_COMPANION_MISSING",
     );
     if (!root) continue;
+    validateRootKeys(declaration.path, root, findings);
     if (root["schema"] !== declaration.schema) {
       findings.push({
         code: "F1_COMPANION_SCHEMA",
@@ -721,6 +1036,41 @@ async function validateCompanionInventory(
     parsed.push({ ...declaration, root });
   }
   return parsed;
+}
+
+function validateCaseInventories(
+  companions: readonly ParsedCompanion[],
+  findings: F1ContractFinding[],
+): void {
+  const seenCollections = new Set<string>();
+  for (const companion of companions) {
+    for (const collection of companion.recordCollections) {
+      const key = `${companion.path}#${collection}`;
+      const expectedIds = EXPECTED_CASE_IDS_BY_COLLECTION.get(key);
+      if (expectedIds === undefined) continue;
+      seenCollections.add(key);
+      const rows = companion.root[collection];
+      const actualIds = Array.isArray(rows)
+        ? rows.map((row) => isObject(row) ? row["id"] : null)
+        : [];
+      if (!jsonEqual(actualIds, expectedIds)) {
+        findings.push({
+          code: "F1_CASE_INVENTORY",
+          path: `${companion.path}:$.${collection}`,
+          message: "Case IDs must match the exact reviewed collection inventory and order.",
+        });
+      }
+    }
+  }
+  for (const key of EXPECTED_CASE_IDS_BY_COLLECTION.keys()) {
+    if (!seenCollections.has(key)) {
+      findings.push({
+        code: "F1_CASE_INVENTORY",
+        path: key,
+        message: "Reviewed case collection is missing from parsed companions.",
+      });
+    }
+  }
 }
 
 function fixtureCases(
@@ -881,12 +1231,13 @@ function validateLedgerInventories(
     if (
       typeof authority["covers"] !== "string" ||
       authority["covers"].trim().length === 0 ||
-      typeof authority["judgmentBearing"] !== "boolean"
+      authority["expectationClass"] !==
+        EXPECTED_AUTHORITY_EXPECTATION_CLASS.get(id)
     ) {
       findings.push({
         code: "F1_AUTHORITY_LEDGER",
         path,
-        message: "Authority requires coverage text and an explicit judgment-bearing classification.",
+        message: "Authority requires coverage text and its exact reviewed expectation class.",
       });
     }
   }
@@ -898,6 +1249,16 @@ function validateProvenancePolicy(
   findings: F1ContractFinding[],
 ): void {
   if (!provenance) return;
+  if (!jsonEqual(
+    provenance.root["classificationPolicy"],
+    EXPECTED_AUTHORITY_CLASSIFICATION_POLICY,
+  )) {
+    findings.push({
+      code: "F1_AUTHORITY_POLICY",
+      path: `${provenance.path}:$.classificationPolicy`,
+      message: "Authority expectation classes must retain their exact reviewed definitions.",
+    });
+  }
   for (const flag of ["productionOutputUsed", "expectedValuesGenerated"] as const) {
     if (provenance.root[flag] !== false) {
       findings.push({
@@ -931,6 +1292,20 @@ function validateProvenancePolicy(
         path: `${provenance.path}:$.authorities.${id}.authorityClass`,
         message: "Production output or implementation cannot be fixture authority.",
       });
+    }
+    if (authority["expectationClass"] === "external-definition") {
+      const sourceRefs = Array.isArray(authority["sourceRefs"])
+        ? authority["sourceRefs"]
+        : [];
+      if (!sourceRefs.some((sourceRef) =>
+        typeof sourceRef === "string" && /^https:\/\//.test(sourceRef)
+      )) {
+        findings.push({
+          code: "F1_AUTHORITY_POLICY",
+          path: `${provenance.path}:$.authorities.${id}.sourceRefs`,
+          message: "External definitions require at least one absolute HTTPS standards source.",
+        });
+      }
     }
   }
 }
@@ -1007,17 +1382,70 @@ function validateTraceAndAuthorityReferences(
         prefixes,
         `trace-ledger.json:$.traces.${traceId}.requiredFixturePrefixes`,
         findings,
-        { unique: true },
+        { nonempty: true, unique: true },
       )) {
-        const covered = cases.some(
-          (item) => item.id.startsWith(prefix) && item.traceIds.includes(traceId),
-        );
-        if (!covered) {
+        const matchingCases = cases.filter((item) => item.id.startsWith(prefix));
+        if (matchingCases.length === 0) {
           findings.push({
             code: "F1_TRACE_PREFIX_UNCOVERED",
             path: `trace-ledger.json:$.traces.${traceId}.requiredFixturePrefixes`,
-            message: `No ${prefix}* case links to ${traceId}.`,
+            message: `No fixture case matches required prefix ${prefix}*.`,
           });
+          continue;
+        }
+        for (const matchingCase of matchingCases) {
+          if (!matchingCase.traceIds.includes(traceId)) {
+            findings.push({
+              code: "F1_TRACE_PREFIX_BACKLINK",
+              path: `${matchingCase.path}.traceIds`,
+              message: `${matchingCase.id} matches ${prefix}* but does not link back to ${traceId}.`,
+            });
+          }
+        }
+      }
+    }
+
+    const proofKinds = Array.isArray(trace["proofKinds"])
+      ? trace["proofKinds"].filter((value): value is string =>
+          typeof value === "string" && value.length > 0
+        )
+      : [];
+    const proofCaseIds = trace["proofCaseIds"];
+    if (
+      !isObject(proofCaseIds) ||
+      !sameStringArray(
+        Object.keys(proofCaseIds).sort(),
+        sortedStrings(proofKinds),
+      )
+    ) {
+      findings.push({
+        code: "F1_TRACE_PROOF_MAP",
+        path: `trace-ledger.json:$.traces.${traceId}.proofCaseIds`,
+        message: "Every declared proof kind must map to one or more exact fixture case IDs.",
+      });
+    } else {
+      for (const proofKind of proofKinds) {
+        const ids = stringsFromUnknown(
+          proofCaseIds[proofKind],
+          `trace-ledger.json:$.traces.${traceId}.proofCaseIds.${proofKind}`,
+          findings,
+          { nonempty: true, unique: true },
+        );
+        for (const caseId of ids) {
+          const fixtureCase = casesById.get(caseId);
+          if (!fixtureCase) {
+            findings.push({
+              code: "F1_TRACE_PROOF_CASE_UNKNOWN",
+              path: `trace-ledger.json:$.traces.${traceId}.proofCaseIds.${proofKind}`,
+              message: `Proof case ${caseId} does not exist.`,
+            });
+          } else if (!fixtureCase.traceIds.includes(traceId)) {
+            findings.push({
+              code: "F1_TRACE_PROOF_CASE_BACKLINK",
+              path: `${fixtureCase.path}.traceIds`,
+              message: `Proof case ${caseId} does not link back to ${traceId}.`,
+            });
+          }
         }
       }
     }
@@ -1037,7 +1465,9 @@ function collectCodeProperties(value: unknown, path: string): Array<Readonly<{ c
   const result: Array<Readonly<{ code: string; path: string }>> = [];
   const visit = (current: unknown, currentPath: string): void => {
     if (Array.isArray(current)) {
-      current.forEach((item, index) => visit(item, `${currentPath}[${String(index)}]`));
+      current.forEach((item, index) => {
+        visit(item, `${currentPath}[${String(index)}]`);
+      });
       return;
     }
     if (!isObject(current)) return;
@@ -1067,7 +1497,9 @@ function collectInvalidStatuses(
       return;
     }
     if (Array.isArray(current)) {
-      current.forEach((item, index) => visit(item, `${currentPath}[${String(index)}]`));
+      current.forEach((item, index) => {
+        visit(item, `${currentPath}[${String(index)}]`);
+      });
       return;
     }
     if (!isObject(current)) return;
@@ -1082,7 +1514,8 @@ function collectInvalidStatuses(
 function validateExpectedIssueCodes(
   cases: readonly FixtureCase[],
   findings: F1ContractFinding[],
-): void {
+): Set<string> {
+  const observedCodes = new Set<string>();
   for (const fixtureCase of cases) {
     const expected = fixtureCase.record["expected"];
     if (isObject(expected)) {
@@ -1097,6 +1530,7 @@ function validateExpectedIssueCodes(
         }
       } else {
         for (const item of codes) {
+          observedCodes.add(item.code);
           if (!ISSUE_CODE_VALUES.has(item.code)) {
             findings.push({
               code: "F1_EXPECTED_ISSUE_CODE_UNKNOWN",
@@ -1108,6 +1542,7 @@ function validateExpectedIssueCodes(
       }
     }
     for (const item of collectInvalidStatuses(fixtureCase.record, fixtureCase.path)) {
+      observedCodes.add(item.code);
       if (!ISSUE_CODE_VALUES.has(item.code)) {
         findings.push({
           code: "F1_EXPECTED_ISSUE_CODE_UNKNOWN",
@@ -1117,20 +1552,245 @@ function validateExpectedIssueCodes(
       }
     }
   }
+  if (!sameStringArray(
+    sortedStrings([...observedCodes]),
+    sortedStrings(EXPECTED_FIXTURE_ISSUE_CODES),
+  )) {
+    findings.push({
+      code: "F1_EXPECTED_ISSUE_CODE_INVENTORY",
+      path: "$computedExpectedIssueCodes",
+      message: "Expected issue codes must match the exact reviewed 85-code inventory.",
+    });
+  }
+  return observedCodes;
+}
+
+const NATURAL_PITCH_CLASSES: Readonly<Record<string, number>> = {
+  C: 0,
+  D: 2,
+  E: 4,
+  F: 5,
+  G: 7,
+  A: 9,
+  B: 11,
+};
+
+function euclideanModulo(value: number, modulus: number): number {
+  return ((value % modulus) + modulus) % modulus;
+}
+
+function independentPitchProjection(value: JsonObject): Readonly<{
+  constructionCode?: string;
+  pitchClass?: number;
+  projectedMidi?: number;
+  frequencyHz?: number;
+}> {
+  const step = value["step"];
+  const alter = value["alter"];
+  const octave = value["octave"];
+  if (typeof step !== "string" || NATURAL_PITCH_CLASSES[step] === undefined) {
+    return { constructionCode: "pitch.step_invalid" };
+  }
+  if (typeof alter !== "number" || !Number.isInteger(alter) || alter < -2 || alter > 2) {
+    return { constructionCode: "pitch.alter_out_of_range" };
+  }
+  if (typeof octave !== "number" || !Number.isInteger(octave)) {
+    return { constructionCode: "pitch.octave_not_integer" };
+  }
+  if (!Number.isSafeInteger(octave)) {
+    return { constructionCode: "pitch.octave_not_safe_integer" };
+  }
+  const chromatic = (NATURAL_PITCH_CLASSES[step] ?? 0) + alter;
+  const projectedMidi = 12 * (octave + 1) + chromatic;
+  return {
+    pitchClass: euclideanModulo(chromatic, 12),
+    projectedMidi,
+    frequencyHz: 440 * 2 ** ((projectedMidi - 69) / 12),
+  };
+}
+
+function validatePitchCases(
+  pitch: ParsedCompanion | undefined,
+  findings: F1ContractFinding[],
+): void {
+  if (!pitch) return;
+  if (
+    pitch.root["frequencyFormula"] !== "440 * 2^((midi - 69) / 12)" ||
+    pitch.root["frequencyAbsoluteToleranceHz"] !== 1e-9
+  ) {
+    findings.push({
+      code: "F1_PITCH_AUTHORITY",
+      path: `${pitch.path}:$`,
+      message: "Pitch authority must retain the reviewed 12-TET formula and absolute tolerance.",
+    });
+  }
+  const rows = pitch.root["cases"];
+  if (!Array.isArray(rows)) return;
+  for (const [index, raw] of rows.entries()) {
+    if (!isObject(raw)) continue;
+    const path = `${pitch.path}:$.cases[${String(index)}]`;
+    const kind = raw["kind"];
+    const expected = raw["expected"];
+    if (kind === "project-spelled-pitch" && isObject(raw["input"]) && isObject(expected)) {
+      const projection = independentPitchProjection(raw["input"]);
+      const inMidi = projection.projectedMidi !== undefined &&
+        projection.projectedMidi >= MIN_MIDI_PITCH &&
+        projection.projectedMidi <= MAX_MIDI_PITCH;
+      if (projection.constructionCode !== undefined) {
+        findings.push({ code: "F1_PITCH_ORACLE", path, message: "Projection fixture must begin with a constructible spelled pitch." });
+      } else if (inMidi) {
+        const actualFrequency = expected["frequencyHz"];
+        if (
+          expected["ok"] !== true ||
+          expected["pitchClass"] !== projection.pitchClass ||
+          expected["midi"] !== projection.projectedMidi ||
+          typeof actualFrequency !== "number" ||
+          projection.frequencyHz === undefined ||
+          Math.abs(actualFrequency - projection.frequencyHz) > 1e-9
+        ) {
+          findings.push({ code: "F1_PITCH_ORACLE", path: `${path}.expected`, message: "Pitch-class, MIDI, or frequency golden disagrees with independent scientific-pitch arithmetic." });
+        }
+      } else if (
+        expected["ok"] !== false ||
+        expected["projectedMidi"] !== projection.projectedMidi ||
+        expected["spelledValueRetained"] !== true ||
+        !isObject(expected["issue"]) ||
+        expected["issue"]["code"] !== "pitch.midi_out_of_range"
+      ) {
+        findings.push({ code: "F1_PITCH_ORACLE", path: `${path}.expected`, message: "Out-of-MIDI projection must refuse while retaining spelling and exact projected value." });
+      }
+    } else if (kind === "compare-spelled-pitches" && isObject(raw["left"]) && isObject(raw["right"]) && isObject(expected)) {
+      const left = raw["left"];
+      const right = raw["right"];
+      const leftProjection = independentPitchProjection(left);
+      const rightProjection = independentPitchProjection(right);
+      const spelledEqual = left["step"] === right["step"] &&
+        left["alter"] === right["alter"] && left["octave"] === right["octave"];
+      if (
+        expected["spelledEqual"] !== spelledEqual ||
+        expected["midiEqual"] !==
+          (leftProjection.projectedMidi === rightProjection.projectedMidi) ||
+        expected["pitchClassEqual"] !==
+          (leftProjection.pitchClass === rightProjection.pitchClass)
+      ) {
+        findings.push({ code: "F1_PITCH_ORACLE", path: `${path}.expected`, message: "Spelled/MIDI/pitch-class equality observation is incorrect." });
+      }
+    } else if (kind === "midi-to-frequency" && isObject(raw["input"]) && isObject(expected)) {
+      const midi = raw["input"]["midi"];
+      const expectedCode = typeof midi !== "number" || !Number.isInteger(midi)
+        ? "pitch.midi_not_integer"
+        : midi < 0 || midi > 127
+          ? "pitch.midi_out_of_range"
+          : null;
+      if (
+        expectedCode === null ||
+        expected["ok"] !== false ||
+        !isObject(expected["issue"]) ||
+        expected["issue"]["code"] !== expectedCode
+      ) {
+        findings.push({ code: "F1_PITCH_ORACLE", path: `${path}.expected`, message: "MIDI-to-frequency refusal observation is incorrect." });
+      }
+    } else if (kind === "decode-spelled-pitch" && isObject(raw["input"]) && isObject(expected)) {
+      const projection = independentPitchProjection(raw["input"]);
+      if (
+        projection.constructionCode === undefined ||
+        expected["ok"] !== false ||
+        !isObject(expected["issue"]) ||
+        expected["issue"]["code"] !== projection.constructionCode
+      ) {
+        findings.push({ code: "F1_PITCH_ORACLE", path: `${path}.expected`, message: "Spelled-pitch construction refusal disagrees with the independent bounds." });
+      }
+    } else if (kind === "natural-step-projection-set") {
+      if (
+        !jsonEqual(raw["inputSteps"], ["A", "B", "C", "D", "E", "F", "G"]) ||
+        !jsonEqual(raw["expectedNaturalPitchClasses"], [9, 11, 0, 2, 4, 5, 7])
+      ) {
+        findings.push({ code: "F1_PITCH_ORACLE", path, message: "Natural step projection table is incomplete or incorrect." });
+      }
+    } else if (kind === "allowed-alter-projection-set") {
+      if (
+        !jsonEqual(raw["expectedMidi"], [60, 61, 62, 63, 64]) ||
+        !jsonEqual(raw["expectedPitchClasses"], [0, 1, 2, 3, 4])
+      ) {
+        findings.push({ code: "F1_PITCH_ORACLE", path, message: "D4 double-flat through double-sharp projection table is incorrect." });
+      }
+    } else if (kind === "compare-spelling-step-order") {
+      if (!jsonEqual(raw["expectedOrder"], ["C", "D", "E", "F", "G", "A", "B"])) {
+        findings.push({ code: "F1_PITCH_ORACLE", path, message: "Spelling comparator order must remain C through B." });
+      }
+    } else if (kind === "parallel-transposed-enharmonic-pair" && isObject(expected)) {
+      const source = Array.isArray(raw["source"])
+        ? raw["source"].filter(isObject).map(independentPitchProjection)
+        : [];
+      const transposed = Array.isArray(raw["transposed"])
+        ? raw["transposed"].filter(isObject).map(independentPitchProjection)
+        : [];
+      const sourceMidi = source.map((item) => item.projectedMidi);
+      const transposedMidi = transposed.map((item) => item.projectedMidi);
+      const spelledInterval = raw["spelledInterval"];
+      const semitones = isObject(spelledInterval)
+        ? spelledInterval["semitones"]
+        : undefined;
+      if (
+        !isObject(spelledInterval) ||
+        spelledInterval["diatonicSteps"] !== 1 ||
+        spelledInterval["direction"] !== "up" ||
+        semitones !== 2 ||
+        !jsonEqual(expected["sourceMidi"], sourceMidi) ||
+        !jsonEqual(expected["transposedMidi"], transposedMidi) ||
+        !transposedMidi.every((midi, midiIndex) =>
+          typeof midi === "number" && typeof sourceMidi[midiIndex] === "number" &&
+          midi - (sourceMidi[midiIndex] ?? 0) === semitones
+        )
+      ) {
+        findings.push({ code: "F1_PITCH_ORACLE", path, message: "Transposed enharmonic relation does not preserve the declared semitone delta." });
+      }
+    }
+  }
+}
+
+type PairwiseExecutionMetrics = Readonly<{
+  orderedPairs: number;
+  additions: number;
+  comparisons: number;
+  subtractionValues: number;
+  subtractionNegativeRefusals: number;
+}>;
+
+function reducedTicks(value: JsonObject): number | null {
+  const numerator = value["numerator"];
+  const denominator = value["denominator"];
+  if (
+    typeof numerator !== "number" ||
+    typeof denominator !== "number" ||
+    !Number.isInteger(numerator) ||
+    !Number.isInteger(denominator) ||
+    denominator <= 0 ||
+    MIDI_PPQ % denominator !== 0
+  ) return null;
+  return numerator * (MIDI_PPQ / denominator);
 }
 
 function validateBeatCoverage(
   beat: ParsedCompanion | undefined,
   findings: F1ContractFinding[],
-): void {
-  if (!beat) return;
+): PairwiseExecutionMetrics {
+  const metrics = {
+    orderedPairs: 0,
+    additions: 0,
+    comparisons: 0,
+    subtractionValues: 0,
+    subtractionNegativeRefusals: 0,
+  };
+  if (!beat) return metrics;
   if (beat.root["ppq"] !== MIDI_PPQ) {
     findings.push({ code: "F1_BEAT_DIVISOR_COVERAGE", path: `${beat.path}:$.ppq`, message: `Expected PPQ ${String(MIDI_PPQ)}.` });
   }
   const rawDivisors = beat.root["divisorCases"];
-  if (!Array.isArray(rawDivisors)) return;
+  if (!Array.isArray(rawDivisors)) return metrics;
   const denominators: number[] = [];
   const divisorCaseIds: string[] = [];
+  const unitTicksByDenominator = new Map<number, number>();
   rawDivisors.forEach((raw, index) => {
     const path = `${beat.path}:$.divisorCases[${String(index)}]`;
     if (!isObject(raw)) return;
@@ -1143,6 +1803,8 @@ function validateBeatCoverage(
     }
     if (raw["unitTicks"] !== MIDI_PPQ / denominator) {
       findings.push({ code: "F1_BEAT_DIVISOR_COVERAGE", path: `${path}.unitTicks`, message: "unitTicks must be the independent PPQ unit-fraction oracle." });
+    } else if (typeof raw["unitTicks"] === "number") {
+      unitTicksByDenominator.set(denominator, raw["unitTicks"]);
     }
     if (!jsonEqual(raw["doubleUnit"], reduced(2, denominator))) {
       findings.push({ code: "F1_BEAT_DIVISOR_COVERAGE", path: `${path}.doubleUnit`, message: "doubleUnit must be independently reduced." });
@@ -1162,7 +1824,7 @@ function validateBeatCoverage(
       path: `${beat.path}:$.pairwiseClosureCases`,
       message: "Exactly one declared pairwise closure oracle is required.",
     });
-    return;
+    return metrics;
   }
   const oracleRow = pairwise[0];
   if (
@@ -1177,25 +1839,73 @@ function validateBeatCoverage(
     });
   }
   const oracle = oracleRow["independentTickOracle"];
-  const requiredKeys = [
-    "addition",
-    "closureExpectation",
-    "comparison",
-    "leftTicks",
-    "rightTicks",
-    "subtraction",
-  ];
-  if (
-    !isObject(oracle) ||
-    !sameStringArray(Object.keys(oracle).sort(), requiredKeys) ||
-    requiredKeys.some((key) => typeof oracle[key] !== "string" || oracle[key].trim().length === 0)
-  ) {
+  if (!jsonEqual(oracle, EXPECTED_PAIRWISE_TICK_ORACLE)) {
     findings.push({
       code: "F1_PAIRWISE_ORACLE",
       path: `${beat.path}:$.pairwiseClosureCases[0].independentTickOracle`,
-      message: "Independent tick oracle must declare all six nonempty arithmetic rules.",
+      message: "Independent tick oracle must retain the exact executable PPQ-integer operation contract.",
     });
   }
+
+  const allowedDenominators = new Set<number>(ALLOWED_BEAT_DENOMINATORS);
+  const partition = { less: 0, equal: 0, greater: 0 };
+  let closureFailure = false;
+  for (const leftDenominator of ALLOWED_BEAT_DENOMINATORS) {
+    for (const rightDenominator of ALLOWED_BEAT_DENOMINATORS) {
+      const leftTicks = unitTicksByDenominator.get(leftDenominator);
+      const rightTicks = unitTicksByDenominator.get(rightDenominator);
+      if (leftTicks === undefined || rightTicks === undefined) {
+        closureFailure = true;
+        continue;
+      }
+      metrics.orderedPairs += 1;
+      metrics.comparisons += 1;
+      if (leftTicks < rightTicks) partition.less += 1;
+      else if (leftTicks > rightTicks) partition.greater += 1;
+      else partition.equal += 1;
+
+      const sum = reduced(leftTicks + rightTicks, MIDI_PPQ);
+      metrics.additions += 1;
+      if (
+        typeof sum["denominator"] !== "number" ||
+        !allowedDenominators.has(sum["denominator"]) ||
+        reducedTicks(sum) !== leftTicks + rightTicks
+      ) {
+        closureFailure = true;
+      }
+      if (leftTicks >= rightTicks) {
+        const difference = reduced(leftTicks - rightTicks, MIDI_PPQ);
+        metrics.subtractionValues += 1;
+        if (
+          typeof difference["denominator"] !== "number" ||
+          !allowedDenominators.has(difference["denominator"]) ||
+          reducedTicks(difference) !== leftTicks - rightTicks
+        ) {
+          closureFailure = true;
+        }
+      } else {
+        metrics.subtractionNegativeRefusals += 1;
+      }
+    }
+  }
+  if (
+    closureFailure ||
+    !jsonEqual(metrics, {
+      orderedPairs: 784,
+      additions: 784,
+      comparisons: 784,
+      subtractionValues: 406,
+      subtractionNegativeRefusals: 378,
+    }) ||
+    !jsonEqual(partition, { less: 378, equal: 28, greater: 378 })
+  ) {
+    findings.push({
+      code: "F1_PAIRWISE_ORACLE_EXECUTION",
+      path: `${beat.path}:$.pairwiseClosureCases[0]`,
+      message: "The independent tick oracle must execute 784 exact additions, 784 comparisons, 406 subtraction values, and 378 negative-result refusals.",
+    });
+  }
+  return metrics;
 }
 
 function expectedMeterGrid(): Array<Readonly<{ beatsPerBar: number; beatUnit: number }>> {
@@ -1256,6 +1966,162 @@ function validateMeterGrid(
       path: `${meter.path}:$.capacityCases`,
       message: "Exactly one explicit 12/8 => 6 quarter-note-beat near-miss is required.",
     });
+  }
+}
+
+type LocalDiagnostic = Readonly<{
+  code: string;
+  path: readonly (string | number)[];
+}>;
+
+function compareDiagnosticPath(
+  left: readonly (string | number)[],
+  right: readonly (string | number)[],
+): number {
+  const length = Math.min(left.length, right.length);
+  for (let index = 0; index < length; index += 1) {
+    const leftSegment = left[index];
+    const rightSegment = right[index];
+    if (leftSegment === rightSegment) continue;
+    if (typeof leftSegment === "number" && typeof rightSegment === "number") {
+      return leftSegment - rightSegment;
+    }
+    return codeUnitCompare(String(leftSegment), String(rightSegment));
+  }
+  return left.length - right.length;
+}
+
+function sortLocalDiagnostics(diagnostics: LocalDiagnostic[]): LocalDiagnostic[] {
+  return diagnostics.sort(
+    (left, right) =>
+      compareDiagnosticPath(left.path, right.path) ||
+      codeUnitCompare(left.code, right.code),
+  );
+}
+
+function beatTicks(value: unknown): number | null {
+  if (!isObject(value)) return null;
+  const numerator = value["numerator"];
+  const denominator = value["denominator"];
+  if (
+    typeof numerator !== "number" ||
+    typeof denominator !== "number" ||
+    !Number.isSafeInteger(numerator) ||
+    !Number.isSafeInteger(denominator) ||
+    denominator <= 0 ||
+    MIDI_PPQ % denominator !== 0
+  ) return null;
+  return numerator * (MIDI_PPQ / denominator);
+}
+
+function expectedDiagnosticsFromCase(expected: unknown): LocalDiagnostic[] | null {
+  if (!isObject(expected)) return null;
+  const rows = Array.isArray(expected["issuesInOrder"])
+    ? expected["issuesInOrder"]
+    : isObject(expected["issue"])
+      ? [expected["issue"]]
+      : [];
+  const result: LocalDiagnostic[] = [];
+  for (const row of rows) {
+    if (
+      !isObject(row) ||
+      typeof row["code"] !== "string" ||
+      !Array.isArray(row["path"]) ||
+      !row["path"].every((segment) =>
+        typeof segment === "string" || typeof segment === "number"
+      )
+    ) return null;
+    result.push({ code: row["code"], path: row["path"] });
+  }
+  return result;
+}
+
+function validateMeasureCompletionCases(
+  meter: ParsedCompanion | undefined,
+  findings: F1ContractFinding[],
+): void {
+  if (!meter) return;
+  const rows = meter.root["completionCases"];
+  if (!Array.isArray(rows)) return;
+  for (const [index, raw] of rows.entries()) {
+    if (
+      !isObject(raw) ||
+      !isObject(raw["meter"]) ||
+      !Array.isArray(raw["eventDurations"]) ||
+      !isObject(raw["completion"])
+    ) continue;
+    const path = `${meter.path}:$.completionCases[${String(index)}]`;
+    const beatsPerBar = raw["meter"]["beatsPerBar"];
+    const beatUnit = raw["meter"]["beatUnit"];
+    if (typeof beatsPerBar !== "number" || typeof beatUnit !== "number") continue;
+    const capacityTicks = beatsPerBar * 4 * MIDI_PPQ / beatUnit;
+    const eventTicks = raw["eventDurations"].map(beatTicks);
+    if (eventTicks.some((ticks) => ticks === null)) {
+      findings.push({ code: "F1_MEASURE_ORACLE", path, message: "Completion fixture contains a noncanonical event duration." });
+      continue;
+    }
+    const diagnostics: LocalDiagnostic[] = [];
+    let totalTicks = 0;
+    let overfillReported = false;
+    eventTicks.forEach((ticks, eventIndex) => {
+      totalTicks += ticks ?? 0;
+      if (!overfillReported && totalTicks > capacityTicks) {
+        diagnostics.push({
+          code: "measure.duration_over_capacity",
+          path: ["events", eventIndex, "duration"],
+        });
+        overfillReported = true;
+      }
+    });
+    const completion = raw["completion"];
+    const kind = completion["kind"];
+    if (kind === "empty") {
+      if (eventTicks.length > 0) {
+        diagnostics.push({ code: "measure.empty_has_events", path: ["events", 0] });
+      }
+    } else {
+      if (eventTicks.length === 0) {
+        diagnostics.push({ code: "measure.nonempty_has_no_events", path: ["events"] });
+      }
+      if (kind === "complete") {
+        if (totalTicks !== capacityTicks) {
+          diagnostics.push({ code: "measure.complete_duration_mismatch", path: ["completion"] });
+        }
+      } else if (kind === "pickup" || kind === "incomplete") {
+        const expectedTicks = beatTicks(completion["expectedDuration"]);
+        if (expectedTicks === null) {
+          findings.push({ code: "F1_MEASURE_ORACLE", path: `${path}.completion.expectedDuration`, message: "Partial measure expectedDuration must be canonical." });
+          continue;
+        }
+        if (expectedTicks <= 0) {
+          diagnostics.push({ code: "measure.expected_duration_not_positive", path: ["completion", "expectedDuration"] });
+        }
+        if (expectedTicks >= capacityTicks) {
+          diagnostics.push({ code: "measure.expected_duration_not_short", path: ["completion", "expectedDuration"] });
+        }
+        if (expectedTicks !== totalTicks) {
+          diagnostics.push({ code: "measure.expected_duration_mismatch", path: ["completion", "expectedDuration"] });
+        }
+        if (typeof completion["reason"] !== "string" || completion["reason"].trim().length === 0) {
+          diagnostics.push({ code: "measure.reason_blank", path: ["completion", "reason"] });
+        }
+      }
+    }
+    const actual = sortLocalDiagnostics(diagnostics);
+    const expectedDiagnostics = expectedDiagnosticsFromCase(raw["expected"]);
+    if (expectedDiagnostics === null || !jsonEqual(actual, expectedDiagnostics)) {
+      findings.push({
+        code: "F1_MEASURE_ORACLE",
+        path: `${path}.expected`,
+        message: "Measure completion diagnostics disagree with the independent exact-tick semantic fold.",
+      });
+    }
+    if (actual.length === 0 && isObject(raw["expected"]) && raw["expected"]["sum"] !== undefined) {
+      const expectedSum = reduced(totalTicks, MIDI_PPQ);
+      if (!jsonEqual(raw["expected"]["sum"], expectedSum)) {
+        findings.push({ code: "F1_MEASURE_ORACLE", path: `${path}.expected.sum`, message: "Successful completion sum is incorrect." });
+      }
+    }
   }
 }
 
@@ -1329,6 +2195,29 @@ function validateAutoBassMatrix(
       message: "Matrix must cover all seven public Auto families and all three bass policies in canonical order.",
     });
   }
+
+  const customMatrix: unknown = voicing.root["customAutoPolicyMatrix"];
+  const customRow: unknown = Array.isArray(customMatrix)
+    ? customMatrix[0]
+    : undefined;
+  if (
+    !Array.isArray(customMatrix) ||
+    customMatrix.length !== 1 ||
+    !isObject(customRow) ||
+    customRow["kind"] !== "cartesian-custom-auto-refusal" ||
+    !jsonEqual(customRow["families"], AUTO_VOICING_FAMILIES) ||
+    !jsonEqual(customRow["bassPolicies"], AUTO_BASS_POLICIES) ||
+    !jsonEqual(customRow["customChordBassStates"], ["noSlash", "slash"]) ||
+    customRow["matrixCellCount"] !== 42 ||
+    customRow["expectedEveryCell"] !==
+      "invalid:custom.auto_voicing_forbidden"
+  ) {
+    findings.push({
+      code: "F1_CUSTOM_AUTO_MATRIX",
+      path: `${voicing.path}:$.customAutoPolicyMatrix`,
+      message: "Custom+Auto must exhaustively refuse all 7x3x2 family/policy/slash cells without substitution.",
+    });
+  }
 }
 
 function validateOperationStates(
@@ -1345,14 +2234,15 @@ function validateOperationStates(
   }
   const cases = operationStates.root["cases"];
   if (!Array.isArray(cases)) return;
-  const requiredPureIds = new Set([
+  const requiredRevisionFreeIds = new Set([
     "F1-OPSTATE-001",
     "F1-OPSTATE-002",
     "F1-OPSTATE-003",
     "F1-OPSTATE-004",
     "F1-OPSTATE-005",
+    "F1-OPSTATE-010",
   ]);
-  const foundPureIds = new Set<string>();
+  const foundRevisionFreeIds = new Set<string>();
   cases.forEach((raw, index) => {
     const path = `${operationStates.path}:$.cases[${String(index)}]`;
     if (!isObject(raw) || typeof raw["id"] !== "string") return;
@@ -1365,13 +2255,28 @@ function validateOperationStates(
         message: "F1 and its declared downstream synchronous operations do not invent cancellation semantics.",
       });
     }
-    if (requiredPureIds.has(raw["id"])) {
-      foundPureIds.add(raw["id"]);
+    if (requiredRevisionFreeIds.has(raw["id"])) {
+      foundRevisionFreeIds.add(raw["id"]);
       if (!isObject(stale) || stale["applicability"] !== "not-applicable") {
         findings.push({
           code: "F1_OPERATION_STATE",
           path: `${path}.staleRevision`,
-          message: "Pure F1 value operations have no revision and must declare staleness not applicable.",
+          message: "Pure synchronous value/validation operations have no live revision and declare staleness not applicable.",
+        });
+      }
+      const expected = raw["expected"];
+      if (
+        !isObject(expected) ||
+        typeof expected["deterministicWorkBound"] !== "string" ||
+        expected["deterministicWorkBound"].trim().length === 0 ||
+        typeof expected["deterministicMemoryBound"] !== "string" ||
+        expected["deterministicMemoryBound"].trim().length === 0 ||
+        expected["stateMutation"] !== "none"
+      ) {
+        findings.push({
+          code: "F1_OPERATION_BOUND",
+          path: `${path}.expected`,
+          message: "Every bounded synchronous operation declares deterministic work, memory, and zero state mutation.",
         });
       }
     } else if (isObject(stale) && stale["applicability"] === "required") {
@@ -1384,11 +2289,90 @@ function validateOperationStates(
       }
     }
   });
-  if (!sameStringArray(sortedStrings([...foundPureIds]), sortedStrings([...requiredPureIds]))) {
+  if (!sameStringArray(
+    sortedStrings([...foundRevisionFreeIds]),
+    sortedStrings([...requiredRevisionFreeIds]),
+  )) {
     findings.push({
       code: "F1_OPERATION_STATE",
       path: `${operationStates.path}:$.cases`,
-      message: "All five pure/bounded F1 operation classes require explicit cancellation/stale N/A declarations.",
+      message: "All six pure/bounded value and validation operation classes require explicit cancellation/stale N/A declarations.",
+    });
+  }
+}
+
+function validateCoverageSummary(
+  manifest: JsonObject,
+  companions: readonly ParsedCompanion[],
+  cases: readonly FixtureCase[],
+  traces: ReadonlyMap<string, JsonObject>,
+  authorities: ReadonlyMap<string, JsonObject>,
+  seedIds: ReadonlySet<string>,
+  expectedIssueCodes: ReadonlySet<string>,
+  pairwiseMetrics: PairwiseExecutionMetrics,
+  findings: F1ContractFinding[],
+): void {
+  if (!jsonEqual(manifest["coverageSummary"], EXPECTED_COVERAGE_SUMMARY)) {
+    findings.push({
+      code: "F1_COVERAGE_SUMMARY",
+      path: `${MANIFEST_FILENAME}:$.coverageSummary`,
+      message: "Coverage summary must match the reviewed exact F1 corpus inventory.",
+    });
+  }
+  const beat = companions.find((item) => item.path === "beat-value-cases.json");
+  const meter = companions.find((item) => item.path === "meter-measure-cases.json");
+  const voicing = companions.find((item) => item.path === "voicing-custom-cases.json");
+  const divisorRows = beat?.root["divisorCases"];
+  const capacityRows = meter?.root["capacityCases"];
+  const autoRows = voicing?.root["autoPolicyMatrix"];
+  const customRows = voicing?.root["customAutoPolicyMatrix"];
+  const coreMeterCapacityCases = Array.isArray(capacityRows)
+    ? capacityRows.filter((row) =>
+        isObject(row) && isObject(row["meter"]) &&
+        typeof row["meter"]["beatsPerBar"] === "number" &&
+        row["meter"]["beatsPerBar"] >= 2 &&
+        row["meter"]["beatsPerBar"] <= 6 &&
+        [2, 4, 8].includes(Number(row["meter"]["beatUnit"]))
+      ).length
+    : 0;
+  const compoundNearMisses = Array.isArray(capacityRows)
+    ? capacityRows.filter((row) =>
+        isObject(row) && isObject(row["meter"]) &&
+        row["meter"]["beatsPerBar"] === 12 && row["meter"]["beatUnit"] === 8
+      ).length
+    : 0;
+  const customMatrixCellCount =
+    Array.isArray(customRows) && isObject(customRows[0]) &&
+      typeof customRows[0]["matrixCellCount"] === "number"
+      ? customRows[0]["matrixCellCount"]
+      : 0;
+  const computed = {
+    companionFiles: companions.length,
+    fixtureCaseRecords: cases.length,
+    traceRecords: traces.size,
+    authorityRecords: authorities.size,
+    stableSeeds: seedIds.size,
+    allowedBeatDivisors: Array.isArray(divisorRows) ? divisorRows.length : 0,
+    orderedPairwiseBeatClosureChecks: pairwiseMetrics.orderedPairs,
+    orderedPairwiseBeatAdditionChecks: pairwiseMetrics.additions,
+    orderedPairwiseBeatComparisonChecks: pairwiseMetrics.comparisons,
+    orderedPairwiseBeatSubtractionValueChecks:
+      pairwiseMetrics.subtractionValues,
+    orderedPairwiseBeatSubtractionRefusalChecks:
+      pairwiseMetrics.subtractionNegativeRefusals,
+    coreMeterCapacityCases,
+    additionalCompoundMeterNearMisses: compoundNearMisses,
+    autoVoicingPolicyMatrixCells: Array.isArray(autoRows)
+      ? autoRows.length * 2 * 3
+      : 0,
+    customAutoRefusalMatrixCells: customMatrixCellCount,
+    expectedDiagnosticCodes: expectedIssueCodes.size,
+  };
+  if (!jsonEqual(computed, EXPECTED_COVERAGE_SUMMARY)) {
+    findings.push({
+      code: "F1_COVERAGE_COMPUTED",
+      path: "$computedCoverage",
+      message: "Computed companion/case/trace/authority/seed/diagnostic counts must match the reviewed corpus.",
     });
   }
 }
@@ -1396,9 +2380,9 @@ function validateOperationStates(
 function sortFindings(findings: F1ContractFinding[]): F1ContractFinding[] {
   return findings.sort(
     (left, right) =>
-      left.path.localeCompare(right.path) ||
-      left.code.localeCompare(right.code) ||
-      left.message.localeCompare(right.message),
+      codeUnitCompare(left.path, right.path) ||
+      codeUnitCompare(left.code, right.code) ||
+      codeUnitCompare(left.message, right.message),
   );
 }
 
@@ -1407,6 +2391,7 @@ export async function validateF1Contract(
 ): Promise<F1ContractValidationReport> {
   const normalizedRoot = resolve(fixtureRoot);
   const findings: F1ContractFinding[] = [];
+  await validateReviewedFileDigests(normalizedRoot, findings);
   const manifest = await parseJsonObject(
     normalizedRoot,
     MANIFEST_FILENAME,
@@ -1434,6 +2419,7 @@ export async function validateF1Contract(
     declarations,
     findings,
   );
+  validateCaseInventories(companions, findings);
   const cases = fixtureCases(companions, seedIds, findings);
   const traceCompanion = companions.find((item) => item.path === "trace-ledger.json");
   const provenanceCompanion = companions.find(
@@ -1451,14 +2437,23 @@ export async function validateF1Contract(
     "F1_AUTHORITY_LEDGER",
     findings,
   );
+  validateLedgerInventories(traces, authorities, findings);
   validateProvenancePolicy(provenanceCompanion, authorities, findings);
   validateTraceAndAuthorityReferences(cases, traces, authorities, findings);
-  validateExpectedIssueCodes(cases, findings);
-  validateBeatCoverage(
+  const expectedIssueCodes = validateExpectedIssueCodes(cases, findings);
+  validatePitchCases(
+    companions.find((item) => item.path === "pitch-cases.json"),
+    findings,
+  );
+  const pairwiseMetrics = validateBeatCoverage(
     companions.find((item) => item.path === "beat-value-cases.json"),
     findings,
   );
   validateMeterGrid(
+    companions.find((item) => item.path === "meter-measure-cases.json"),
+    findings,
+  );
+  validateMeasureCompletionCases(
     companions.find((item) => item.path === "meter-measure-cases.json"),
     findings,
   );
@@ -1468,6 +2463,17 @@ export async function validateF1Contract(
   );
   validateOperationStates(
     companions.find((item) => item.path === "operation-state-cases.json"),
+    findings,
+  );
+  validateCoverageSummary(
+    manifest,
+    companions,
+    cases,
+    traces,
+    authorities,
+    seedIds,
+    expectedIssueCodes,
+    pairwiseMetrics,
     findings,
   );
 

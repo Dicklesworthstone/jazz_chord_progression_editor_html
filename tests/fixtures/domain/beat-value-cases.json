@@ -283,6 +283,12 @@
           "less": 378,
           "equal": 28,
           "greater": 378
+        },
+        "expectedExecutionCounts": {
+          "additions": 784,
+          "comparisons": 784,
+          "subtractionValues": 406,
+          "subtractionNegativeRefusals": 378
         }
       }
     }
@@ -544,6 +550,14 @@
       "kind": "normalize",
       "input": {"numerator": 1, "denominator": 9007199254740992},
       "expected": {"ok": false, "issue": {"code": "beat.denominator_not_safe_integer", "path": ["denominator"]}}
+    },
+    {
+      "id": "F1-BEAT-EDGE-031",
+      "traceIds": ["F1-TRACE-TIME-ARITHMETIC"],
+      "authorityIds": ["F1-AUTH-TIME"],
+      "kind": "accumulate-empty-timeline",
+      "input": [],
+      "expected": {"ok": true, "total": {"numerator": 0, "denominator": 1}, "resultKind": "position-not-duration"}
     }
   ]
 }

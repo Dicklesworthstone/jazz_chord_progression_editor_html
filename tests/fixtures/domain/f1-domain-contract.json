@@ -1,6 +1,6 @@
 {
   "schema": "changes.fixtures.f1-domain-contract.v1",
-  "contractVersion": "1.0.0",
+  "contractVersion": "1.0.1",
   "package": "F1",
   "beadId": "jcpe-milestone-foundation-vc2.2.1",
   "domainSchema": "changes.progression.v2",
@@ -10,7 +10,7 @@
     "productionModulesImported": false,
     "productionArtifactUsedAsAuthority": false,
     "authoringMethod": "manual derivation from reviewed contracts and explicit arithmetic",
-    "reviewState": "independent-fixture-author complete; package verifier pending",
+    "reviewState": "independent fixture authoring and package verification complete",
     "forbiddenShortcuts": [
       "Do not regenerate expected values from the implementation under test.",
       "Do not collapse spelled identity to MIDI or pitch-class equality.",
@@ -22,7 +22,7 @@
     ]
   },
   "determinism": {
-    "caseOrdering": "lexicographic by globally unique case ID",
+    "caseOrdering": "lexicographic by globally unique case ID within each record collection",
     "integerArithmetic": "BigInt intermediates, reduced before the bounded-number conversion",
     "propertyGenerator": "xorshift32-v1",
     "seedUse": "Seeds control future mutation/property input order only; checked-in expected values remain hand-authored.",
@@ -60,6 +60,9 @@
     ]
   },
   "fixedConstants": {
+    "progressionDocumentSchema": "changes.progression.v2",
+    "progressionDocumentSchemaVersion": 2,
+    "stableIdPatternSource": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
     "midiPpq": 960,
     "allowedBeatDenominators": [
       1,
@@ -95,11 +98,19 @@
     "maxTimelineQuarterNoteBeats": 1000000,
     "midiMinimum": 0,
     "midiMaximum": 127,
+    "minimumAlteration": -2,
+    "maximumAlteration": 2,
+    "middleCMidi": 60,
+    "concertAMidi": 69,
+    "concertAFrequencyHz": 440,
     "tempoMinimum": 20,
     "tempoMaximum": 400,
+    "minimumBeatsPerBar": 1,
+    "maximumBeatsPerBar": 32,
     "maxSections": 64,
     "maxMeasuresPerSection": 1024,
     "maxEventsPerDocument": 8192,
+    "maxCopyGraphNodes": 73793,
     "maxVoicingNotes": 16,
     "maxImportBytes": 2097152,
     "maxJsonDepth": 32,
@@ -118,17 +129,36 @@
   },
   "coverageSummary": {
     "companionFiles": 10,
-    "fixtureCaseRecords": 297,
+    "fixtureCaseRecords": 317,
     "traceRecords": 18,
     "authorityRecords": 9,
     "stableSeeds": 6,
     "allowedBeatDivisors": 28,
     "orderedPairwiseBeatClosureChecks": 784,
+    "orderedPairwiseBeatAdditionChecks": 784,
+    "orderedPairwiseBeatComparisonChecks": 784,
+    "orderedPairwiseBeatSubtractionValueChecks": 406,
+    "orderedPairwiseBeatSubtractionRefusalChecks": 378,
     "coreMeterCapacityCases": 15,
     "additionalCompoundMeterNearMisses": 1,
     "autoVoicingPolicyMatrixCells": 42,
     "customAutoRefusalMatrixCells": 42,
-    "expectedDiagnosticCodes": 84
+    "expectedDiagnosticCodes": 85
+  },
+  "fixtureObservationContract": {
+    "purpose": "expected records are independent oracle observations, not serialized production result envelopes",
+    "singleDiagnosticKey": "issue",
+    "multipleDiagnosticKey": "issuesInOrder",
+    "batchedIndependentResultsKey": "independentResults",
+    "decoderAdapter": "compares fixture diagnostics with DecodeResult.errors and proves no partial value",
+    "valueAdapter": "compares fixture diagnostics with the refusal member of the named F1 value result; for a nested document observation it first prefixes the operation-relative path exactly once",
+    "successAdapter": "compares exact value fields or the explicit boolean/property observation named by the case"
+  },
+  "stageOwnership": {
+    "F1": "opaque values, public immutable shapes, value constructors/projections, exact arithmetic, ID factories/remap/copy contracts, and capacity arithmetic",
+    "F2": "total unknown decoding, byte/depth/collection preflight, strict fields, runtime structural compatibility, and duplicate-ID diagnostics",
+    "F3": "source/AST/formula/custom correspondence, measure-completion semantics, playback realizability, and sole semantic publication input",
+    "A0": "revision-aware atomic editing transitions and history"
   },
   "assumptions": [
     {
@@ -137,7 +167,7 @@
     },
     {
       "id": "F1-ASSUMPTION-CODEPOINT-LIMITS",
-      "text": "Text limits count Unicode code points, not UTF-16 code units or UTF-8 bytes."
+      "text": "Text limits count Unicode scalar values after rejecting unpaired surrogates; they do not count UTF-16 code units or UTF-8 bytes."
     },
     {
       "id": "F1-ASSUMPTION-PURE-OPERATIONS",

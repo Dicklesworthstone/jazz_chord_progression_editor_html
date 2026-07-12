@@ -2,48 +2,84 @@
   "schema": "changes.fixtures.f1-identity.v1",
   "defaultSeedId": "F1-SEED-IDENTITY",
   "allocationOrder": "preorder: copied root, then each descendant in stored section/measure/event order",
-  "collisionScope": "global across document, section, measure, and event kinds",
-  "transactionRule": "allocate and validate the complete remap before exposing a copied value; fail on the first injected collision and leave source/current state byte-for-byte unchanged",
+  "collisionScope": "global across document, section, measure, and event kinds; source originals and allocations use copy-root paths, destination originals use occupied-document paths, and destination originals take precedence",
+  "transactionRule": "allocate and validate the complete remap before exposing a copied value; fail on the first injected collision; leave source/current values deeply unchanged; publish only fresh recursively frozen domain values",
   "sharedGraphs": {
     "source-document-a": {
-      "kind": "document",
+      "schema": "changes.progression.v2",
       "id": "doc-A",
+      "title": "Source A",
+      "description": "preserve exactly",
+      "meter": {"beatsPerBar": 4, "beatUnit": 4},
+      "tempoBpm": 120,
+      "key": null,
       "sections": [
         {
-          "kind": "section",
           "id": "section-A1",
+          "name": "A1",
+          "annotation": "first section",
+          "keyOverride": null,
+          "voiceLeadingBoundary": "continue",
           "measures": [
             {
-              "kind": "measure",
               "id": "measure-A1-1",
               "events": [
-                {"kind": "event", "id": "event-A1-1-1"},
-                {"kind": "event", "id": "event-A1-1-2"}
-              ]
+                {
+                  "id": "event-A1-1-1",
+                  "duration": {"numerator": 1, "denominator": 1},
+                  "annotation": "keep",
+                  "chord": {"kind": "custom", "sourceText": "C E G", "label": "C triad", "pitchNames": [{"step": "C", "alter": 0}, {"step": "E", "alter": 0}, {"step": "G", "alter": 0}], "bass": null},
+                  "voicing": {"mode": "manual", "bassPolicy": "included", "pitches": [{"step": "C", "alter": 0, "octave": 4}, {"step": "E", "alter": 0, "octave": 4}, {"step": "G", "alter": 0, "octave": 4}, {"step": "C", "alter": 0, "octave": 5}]}
+                },
+                {
+                  "id": "event-A1-1-2",
+                  "duration": {"numerator": 3, "denominator": 1},
+                  "annotation": "second",
+                  "chord": {"kind": "custom", "sourceText": "Db F Ab", "label": "Db triad", "pitchNames": [{"step": "D", "alter": -1}, {"step": "F", "alter": 0}, {"step": "A", "alter": -1}], "bass": null},
+                  "voicing": {"mode": "manual", "bassPolicy": "included", "pitches": [{"step": "D", "alter": -1, "octave": 4}, {"step": "F", "alter": 0, "octave": 4}, {"step": "A", "alter": -1, "octave": 4}]}
+                }
+              ],
+              "completion": {"kind": "complete"}
             },
             {
-              "kind": "measure",
               "id": "measure-A1-2",
               "events": [
-                {"kind": "event", "id": "event-A1-2-1"}
-              ]
+                {
+                  "id": "event-A1-2-1",
+                  "duration": {"numerator": 1, "denominator": 1},
+                  "annotation": "pickup",
+                  "chord": {"kind": "custom", "sourceText": "G B D", "label": "G triad", "pitchNames": [{"step": "G", "alter": 0}, {"step": "B", "alter": 0}, {"step": "D", "alter": 0}], "bass": null},
+                  "voicing": {"mode": "manual", "bassPolicy": "included", "pitches": [{"step": "G", "alter": 0, "octave": 3}, {"step": "B", "alter": 0, "octave": 3}, {"step": "D", "alter": 0, "octave": 4}]}
+                }
+              ],
+              "completion": {"kind": "pickup", "expectedDuration": {"numerator": 1, "denominator": 1}, "reason": "anacrusis"}
             }
           ]
         },
         {
-          "kind": "section",
           "id": "section-A2",
+          "name": "A2",
+          "annotation": "second section",
+          "keyOverride": {"tonic": {"step": "D", "alter": -1}, "mode": "natural-minor"},
+          "voiceLeadingBoundary": "reset",
           "measures": [
             {
-              "kind": "measure",
               "id": "measure-A2-1",
               "events": [
-                {"kind": "event", "id": "event-A2-1-1"}
-              ]
+                {
+                  "id": "event-A2-1-1",
+                  "duration": {"numerator": 3, "denominator": 2},
+                  "annotation": "last",
+                  "chord": {"kind": "custom", "sourceText": "F Ab C", "label": "F minor", "pitchNames": [{"step": "F", "alter": 0}, {"step": "A", "alter": -1}, {"step": "C", "alter": 0}], "bass": null},
+                  "voicing": {"mode": "manual", "bassPolicy": "included", "pitches": [{"step": "F", "alter": 0, "octave": 3}, {"step": "A", "alter": -1, "octave": 3}, {"step": "C", "alter": 0, "octave": 4}]}
+                }
+              ],
+              "completion": {"kind": "incomplete", "expectedDuration": {"numerator": 3, "denominator": 2}, "reason": "open ending"}
             }
           ]
         }
-      ]
+      ],
+      "playback": {"instrumentId": "mellow-keys", "masterVolume": 0.8, "reverbAmount": 0.2, "countInBars": 1}
     }
   },
   "cases": [
@@ -122,7 +158,9 @@
           "event-A1-1-2": "event-C1-1-2",
           "measure-A1-2": "measure-C1-2",
           "event-A1-2-1": "event-C1-2-1"
-        }
+        },
+        "sourceUnchanged": true,
+        "allNonIdFieldsDeepEqual": true
       }
     },
     {
@@ -139,7 +177,9 @@
           "measure-A1-1": "measure-C2-1",
           "event-A1-1-1": "event-C2-1-1",
           "event-A1-1-2": "event-C2-1-2"
-        }
+        },
+        "sourceUnchanged": true,
+        "allNonIdFieldsDeepEqual": true
       }
     },
     {
@@ -387,7 +427,15 @@
       "requestedKind": "document",
       "availableEntropy": {"cryptoRandomUuid": true, "cryptoGetRandomValues": true, "mathRandom": true},
       "entropyOutput": "550e8400-e29b-41d4-a716-446655440000",
-      "expected": {"ok": true, "value": "550e8400-e29b-41d4-a716-446655440000", "source": "crypto.randomUUID", "mathRandomUsed": false}
+      "expected": {
+        "ok": true,
+        "value": "550e8400-e29b-41d4-a716-446655440000",
+        "source": "crypto.randomUUID",
+        "mathRandomUsed": false,
+        "deterministicWorkBound": "one crypto.randomUUID call and one stable-ID syntax check",
+        "deterministicMemoryBound": "constant space for one 128-bit identifier string",
+        "stateMutation": "none"
+      }
     },
     {
       "id": "F1-ID-016",
@@ -397,7 +445,48 @@
       "requestedKind": "event",
       "availableEntropy": {"cryptoRandomUuid": false, "cryptoGetRandomValues": true, "mathRandom": true},
       "entropyBytes": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
-      "expected": {"ok": true, "value": "00010203-0405-4607-8809-0a0b0c0d0e0f", "source": "crypto.getRandomValues", "rfc4122Version": 4, "rfc4122Variant": "10", "mathRandomUsed": false}
+      "expected": {
+        "ok": true,
+        "value": "00010203-0405-4607-8809-0a0b0c0d0e0f",
+        "source": "crypto.getRandomValues",
+        "rfc4122Version": 4,
+        "rfc4122Variant": "10",
+        "mathRandomUsed": false,
+        "deterministicWorkBound": "one 16-byte crypto.getRandomValues call plus fixed RFC 4122 formatting",
+        "deterministicMemoryBound": "constant space for 16 entropy bytes and one identifier string",
+        "stateMutation": "none"
+      }
+    },
+    {
+      "id": "F1-ID-017",
+      "traceIds": ["F1-TRACE-ID-STABILITY", "F1-TRACE-ID-TRANSACTION"],
+      "authorityIds": ["F1-AUTH-ID"],
+      "kind": "duplicate-event",
+      "sourceGraphRef": "source-document-a.sections[0].measures[0].events[0]",
+      "factoryOutputs": ["event-C3"],
+      "expected": {
+        "ok": true,
+        "factoryCallKinds": ["event"],
+        "remap": {"event-A1-1-1": "event-C3"},
+        "sourceUnchanged": true,
+        "allNonIdFieldsDeepEqual": true
+      }
+    },
+    {
+      "id": "F1-ID-018",
+      "traceIds": ["F1-TRACE-ID-TRANSACTION", "F1-TRACE-TIME-LIMITS", "F1-TRACE-BOUNDED-OPERATIONS"],
+      "authorityIds": ["F1-AUTH-ID", "F1-AUTH-VALIDATION"],
+      "kind": "copy-graph-node-count-exact-boundary",
+      "inputDescriptor": {"rootKind": "document", "sections": 64, "measures": 65536, "events": 8192, "derivedNodeCount": 73793},
+      "expected": {"ok": true, "derivedNodeCount": 73793, "completeCountPrecedesFirstFactoryCall": true, "deterministicWorkBound": "one constant-memory preorder count visit and one preorder plan-emission visit per source node before allocation", "deterministicMemoryBound": "constant counters plus a maximum four-level traversal stack during count; source plan allocation begins only after the count succeeds", "stateMutation": "none before allocation"}
+    },
+    {
+      "id": "F1-ID-019",
+      "traceIds": ["F1-TRACE-ID-TRANSACTION", "F1-TRACE-TIME-LIMITS", "F1-TRACE-BOUNDED-OPERATIONS"],
+      "authorityIds": ["F1-AUTH-ID", "F1-AUTH-VALIDATION"],
+      "kind": "copy-graph-node-count-plus-one",
+      "inputDescriptor": {"rootKind": "document", "sections": 64, "measures": 65536, "events": 8193, "derivedNodeCount": 73794, "structuralLimitDefenseInDepth": true},
+      "expected": {"ok": false, "issue": {"code": "limit.copy_nodes_exceeded", "path": ["source"]}, "factoryCallCount": 0, "partialRemapReturned": false, "deterministicWorkBound": "stop on the 73794th preorder source-node visit", "deterministicMemoryBound": "constant counters plus a maximum four-level traversal stack", "stateMutation": "none"}
     }
   ]
 }

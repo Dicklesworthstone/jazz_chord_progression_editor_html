@@ -20,7 +20,8 @@
     "fields": ["documentTitle", "documentDescription", "sectionName", "annotation", "chordSourceText", "customChordLabel", "partialMeasureReason", "engineVersion"],
     "lengthUnit": "Unicode scalar values",
     "rejects": ["unpaired high surrogate", "unpaired low surrogate"],
-    "nonblankCheck": "Unicode whitespace trim for required fields only",
+    "nonblankCheck": "ECMAScript String.prototype.trim for required fields only; blank iff the trimmed UTF-16 string has length zero",
+    "discriminatorCases": {"U+FEFF": "blank", "U+0085": "nonblank"},
     "storedValuePolicy": "preserve the original nonblank string without trimming or normalization"
   },
   "cases": [
@@ -115,7 +116,7 @@
       "authorityIds": ["F1-AUTH-VALIDATION"],
       "kind": "root-not-object-null",
       "input": null,
-      "expected": {"ok": false, "errors": [{"code": "document.root_not_object", "path": []}], "partialValueReturned": false}
+      "expected": {"ok": false, "issue": {"code": "document.root_not_object", "path": []}, "partialValueReturned": false}
     },
     {
       "id": "F1-DOC-010",
@@ -123,7 +124,7 @@
       "authorityIds": ["F1-AUTH-VALIDATION"],
       "kind": "root-not-object-array",
       "input": [],
-      "expected": {"ok": false, "errors": [{"code": "document.root_not_object", "path": []}], "partialValueReturned": false}
+      "expected": {"ok": false, "issue": {"code": "document.root_not_object", "path": []}, "partialValueReturned": false}
     },
     {
       "id": "F1-DOC-011",
@@ -426,11 +427,13 @@
       "traceIds": ["F1-TRACE-METER-CAPACITY", "F1-TRACE-TIME-LIMITS"],
       "authorityIds": ["F1-AUTH-TIME", "F1-AUTH-VALIDATION"],
       "kind": "beats-per-bar-out-of-range",
-      "input": [0, 33],
+      "input": [0, 0.5, 33, {"specialNumber": "NaN"}],
       "expected": {
-        "issues": [
+        "independentResults": [
           {"input": 0, "code": "meter.beats_per_bar_out_of_range"},
-          {"input": 33, "code": "meter.beats_per_bar_out_of_range"}
+          {"input": 0.5, "code": "meter.beats_per_bar_out_of_range"},
+          {"input": 33, "code": "meter.beats_per_bar_out_of_range"},
+          {"inputDescriptor": {"specialNumber": "NaN"}, "code": "meter.beats_per_bar_out_of_range"}
         ]
       }
     },
@@ -447,11 +450,13 @@
       "traceIds": ["F1-TRACE-METER-CAPACITY", "F1-TRACE-TIME-LIMITS"],
       "authorityIds": ["F1-AUTH-TIME", "F1-AUTH-VALIDATION"],
       "kind": "beat-unit-invalid",
-      "input": [1, 16],
+      "input": [1, 4.5, 16, {"specialNumber": "NaN"}],
       "expected": {
-        "issues": [
+        "independentResults": [
           {"input": 1, "code": "meter.beat_unit_invalid"},
-          {"input": 16, "code": "meter.beat_unit_invalid"}
+          {"input": 4.5, "code": "meter.beat_unit_invalid"},
+          {"input": 16, "code": "meter.beat_unit_invalid"},
+          {"inputDescriptor": {"specialNumber": "NaN"}, "code": "meter.beat_unit_invalid"}
         ]
       }
     },
@@ -469,7 +474,7 @@
       },
       "expected": {
         "ok": false,
-        "errorsInOrder": [
+        "issuesInOrder": [
           {"code": "id.duplicate", "path": ["sections", 0, "id"], "role": "first"},
           {"code": "beat.duration_not_positive", "path": ["sections", 0, "measures", 0, "events", 0, "duration", "numerator"]},
           {"code": "id.duplicate", "path": ["sections", 0, "measures", 0, "events", 0, "id"], "role": "duplicate"},
@@ -651,7 +656,7 @@
       "kind": "count-in-bars-invalid",
       "input": [-1, 1.5, 3],
       "expected": {
-        "issues": [
+        "independentResults": [
           {"input": -1, "code": "playback.count_in_bars_invalid"},
           {"input": 1.5, "code": "playback.count_in_bars_invalid"},
           {"input": 3, "code": "playback.count_in_bars_invalid"}
@@ -690,7 +695,7 @@
       "inputSummary": {"otherwiseValidDocument": true, "invalidEventIndices": [10, 2], "field": "duration"},
       "expected": {
         "ok": false,
-        "errorsInOrder": [
+        "issuesInOrder": [
           {"code": "beat.duration_not_positive", "path": ["sections", 0, "measures", 0, "events", 2, "duration", "numerator"]},
           {"code": "beat.duration_not_positive", "path": ["sections", 0, "measures", 0, "events", 10, "duration", "numerator"]}
         ],
@@ -705,7 +710,7 @@
       "inputDescriptor": {"field": "title", "repeatCodePoint": "U+0020", "count": 257},
       "expected": {
         "ok": false,
-        "errorsInOrder": [
+        "issuesInOrder": [
           {"code": "limit.title_code_points_exceeded", "path": ["title"]},
           {"code": "string.blank", "path": ["title"]}
         ],
@@ -751,7 +756,7 @@
       "kind": "id-leading-trailing-whitespace-not-trimmed",
       "input": [" valid", "valid "],
       "expected": {
-        "issues": [
+        "independentResults": [
           {"inputIndex": 0, "code": "id.syntax_invalid", "path": ["id"]},
           {"inputIndex": 1, "code": "id.syntax_invalid", "path": ["id"]}
         ],
@@ -781,6 +786,22 @@
         ["sections", 0, "measures", 0, "events", 0, "voicing", "extra"]
       ],
       "expectedEveryMutation": {"ok": false, "code": "shape.unknown_field", "pathExactlyMutated": true, "unknownFieldIgnored": false}
+    },
+    {
+      "id": "F1-DOC-084",
+      "traceIds": ["F1-TRACE-DOCUMENT-TYPES", "F1-TRACE-DECODER-RESULT"],
+      "authorityIds": ["F1-AUTH-DOCUMENT", "F1-AUTH-VALIDATION"],
+      "kind": "required-text-byte-order-mark-blank",
+      "inputDescriptor": {"field": "title", "repeatCodePoint": "U+FEFF", "count": 1},
+      "expected": {"ok": false, "issue": {"code": "string.blank", "path": ["title"]}}
+    },
+    {
+      "id": "F1-DOC-085",
+      "traceIds": ["F1-TRACE-DOCUMENT-TYPES", "F1-TRACE-DECODER-RESULT"],
+      "authorityIds": ["F1-AUTH-DOCUMENT", "F1-AUTH-VALIDATION"],
+      "kind": "required-text-next-line-code-point-nonblank",
+      "input": {"field": "title", "value": "\u0085"},
+      "expected": {"ok": true, "valueExactly": "\u0085", "ecmascriptTrimmedLength": 1, "normalizationApplied": false}
     }
   ]
 }

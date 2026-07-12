@@ -554,7 +554,11 @@
         {"step": "B", "alter": 1, "octave": 3},
         {"step": "C", "alter": 0, "octave": 4}
       ],
-      "semitones": 2,
+      "spelledInterval": {
+        "diatonicSteps": 1,
+        "semitones": 2,
+        "direction": "up"
+      },
       "transposed": [
         {"step": "C", "alter": 2, "octave": 4},
         {"step": "D", "alter": 0, "octave": 4}
@@ -567,6 +571,22 @@
         "identityPreservedUnderRelation": true,
         "transpositionImplementationOwnedBy": "H1"
       }
+    },
+    {
+      "id": "F1-PITCH-027",
+      "traceIds": ["F1-TRACE-PITCH-MIDI"],
+      "authorityIds": ["F1-AUTH-PITCH"],
+      "kind": "decode-spelled-pitch-alter-fractional",
+      "input": {"step": "C", "alter": 0.5, "octave": 4},
+      "expected": {"ok": false, "issue": {"code": "pitch.alter_out_of_range", "path": ["alter"]}}
+    },
+    {
+      "id": "F1-PITCH-028",
+      "traceIds": ["F1-TRACE-PITCH-MIDI"],
+      "authorityIds": ["F1-AUTH-PITCH", "F1-AUTH-VALIDATION"],
+      "kind": "decode-spelled-pitch-alter-nan",
+      "inputDescriptor": {"step": "C", "alter": {"specialNumber": "NaN"}, "octave": 4},
+      "expected": {"ok": false, "issue": {"code": "pitch.alter_out_of_range", "path": ["alter"]}}
     }
   ]
 }

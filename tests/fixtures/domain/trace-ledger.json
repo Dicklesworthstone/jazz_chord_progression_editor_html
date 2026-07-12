@@ -4,34 +4,38 @@
   "traces": [
     {
       "id": "F1-TRACE-ID-STABILITY",
-      "parentClause": "Every document, section, measure, and event has a stable opaque globally unique ID; F1 proves shape, syntax, case sensitivity, and reorder preservation while downstream packages prove import/playback/selection/history continuity.",
+      "parentClause": "Every document, section, measure, and event has a stable opaque globally unique ID; F1 proves shape, syntax, case sensitivity, value preservation, and copy remapping while A0 proves reorder preservation and downstream packages prove import/playback/selection/history continuity.",
       "sourceRefs": ["REBUILD_PLAN 9.1", "F1 parent invariants and success criteria"],
-      "requiredCaseIds": ["F1-ID-001", "F1-ID-004", "F1-ID-005", "F1-ID-015", "F1-ID-016", "F1-DOC-013", "F1-DOC-014", "F1-DOC-015", "F1-DOC-016", "F1-DOC-017", "F1-DOC-018", "F1-DOC-019", "F1-DOC-020", "F1-DOC-021", "F1-DOC-080", "F1-DOC-081", "F1-DOC-082"],
+      "requiredCaseIds": ["F1-ID-001", "F1-ID-004", "F1-ID-005", "F1-ID-015", "F1-ID-016", "F1-ID-017", "F1-DOC-013", "F1-DOC-014", "F1-DOC-015", "F1-DOC-016", "F1-DOC-017", "F1-DOC-018", "F1-DOC-019", "F1-DOC-020", "F1-DOC-021", "F1-DOC-080", "F1-DOC-081", "F1-DOC-082"],
       "proofKinds": ["positive", "boundary", "malformed"],
+      "proofCaseIds": {"positive": ["F1-ID-001", "F1-ID-005", "F1-ID-015", "F1-ID-016", "F1-ID-017", "F1-DOC-013", "F1-DOC-080", "F1-DOC-082"], "boundary": ["F1-DOC-014", "F1-DOC-015"], "malformed": ["F1-DOC-016", "F1-DOC-017", "F1-DOC-018", "F1-DOC-019", "F1-DOC-020", "F1-DOC-021", "F1-DOC-081"]},
       "mutationProofOwner": "F1/verify",
       "downstreamProofOwners": ["A0", "P0", "E0"]
     },
     {
       "id": "F1-TRACE-ID-TRANSACTION",
-      "parentClause": "Duplication and lesson instantiation remap every descendant in deterministic preorder and fail atomically at the first existing/new/cross-kind collision.",
+      "parentClause": "Duplication and lesson instantiation derive and enforce the source-node bound before any factory call, remap every descendant in deterministic preorder, and fail atomically at the first existing/new/cross-kind collision.",
       "sourceRefs": ["REBUILD_PLAN 9.1", "F1 test plan"],
-      "requiredCaseIds": ["F1-ID-001", "F1-ID-002", "F1-ID-003", "F1-ID-004", "F1-ID-006", "F1-ID-007", "F1-ID-008", "F1-ID-009", "F1-ID-010", "F1-ID-011", "F1-ID-012", "F1-ID-013", "F1-ID-014", "F1-ID-015", "F1-ID-016", "F1-DOC-051", "F1-OPSTATE-004"],
-      "proofKinds": ["positive", "collision", "exhaustion", "duplicate-path", "atomicity"]
+      "requiredCaseIds": ["F1-ID-001", "F1-ID-002", "F1-ID-003", "F1-ID-004", "F1-ID-006", "F1-ID-007", "F1-ID-008", "F1-ID-009", "F1-ID-010", "F1-ID-011", "F1-ID-012", "F1-ID-013", "F1-ID-014", "F1-ID-015", "F1-ID-016", "F1-ID-017", "F1-ID-018", "F1-ID-019", "F1-DOC-051", "F1-OPSTATE-004"],
+      "proofKinds": ["positive", "collision", "exhaustion", "duplicate-path", "atomicity", "copy-bound"],
+      "proofCaseIds": {"positive": ["F1-ID-001", "F1-ID-002", "F1-ID-003", "F1-ID-004", "F1-ID-017"], "collision": ["F1-ID-006", "F1-ID-007", "F1-ID-011", "F1-ID-012"], "exhaustion": ["F1-ID-008", "F1-ID-013"], "duplicate-path": ["F1-ID-009", "F1-ID-010"], "atomicity": ["F1-ID-006", "F1-ID-007", "F1-ID-008", "F1-ID-011", "F1-ID-012", "F1-ID-014"], "copy-bound": ["F1-ID-018", "F1-ID-019"]}
     },
     {
       "id": "F1-TRACE-PITCH-IDENTITY",
       "parentClause": "Spelling is identity; equal MIDI or pitch-class projection does not collapse spelled values.",
       "sourceRefs": ["REBUILD_PLAN 4.4", "REBUILD_PLAN 9.2"],
-      "requiredCaseIds": ["F1-PITCH-001", "F1-PITCH-002", "F1-PITCH-003", "F1-PITCH-004", "F1-PITCH-005", "F1-PITCH-023", "F1-PITCH-024", "F1-PITCH-025", "F1-PITCH-026", "F1-VOICE-009", "F1-VOICE-035", "F1-VOICE-038"],
+      "requiredCaseIds": ["F1-PITCH-001", "F1-PITCH-002", "F1-PITCH-003", "F1-PITCH-004", "F1-PITCH-005", "F1-PITCH-023", "F1-PITCH-024", "F1-PITCH-025", "F1-PITCH-026", "F1-VOICE-009", "F1-VOICE-035", "F1-VOICE-038", "F1-VOICE-041", "F1-VOICE-042"],
       "proofKinds": ["positive", "enharmonic-near-miss", "octave-near-miss", "comparator", "transposition"],
+      "proofCaseIds": {"positive": ["F1-PITCH-023", "F1-VOICE-041"], "enharmonic-near-miss": ["F1-PITCH-004", "F1-VOICE-009", "F1-VOICE-035", "F1-VOICE-038", "F1-VOICE-042"], "octave-near-miss": ["F1-PITCH-024"], "comparator": ["F1-PITCH-025"], "transposition": ["F1-PITCH-026"]},
       "mutationProofOwner": "F1/verify"
     },
     {
       "id": "F1-TRACE-PITCH-MIDI",
       "parentClause": "Scientific spelling projects with C4=60, admits double accidentals, and refuses projected MIDI outside 0-127 without destroying the spelling.",
       "sourceRefs": ["REBUILD_PLAN 9.2", "F1 test plan"],
-      "requiredCaseIds": ["F1-PITCH-001", "F1-PITCH-002", "F1-PITCH-003", "F1-PITCH-006", "F1-PITCH-007", "F1-PITCH-008", "F1-PITCH-009", "F1-PITCH-010", "F1-PITCH-011", "F1-PITCH-012", "F1-PITCH-013", "F1-PITCH-014", "F1-PITCH-015", "F1-PITCH-016", "F1-PITCH-023", "F1-PITCH-024", "F1-PITCH-026"],
+      "requiredCaseIds": ["F1-PITCH-001", "F1-PITCH-002", "F1-PITCH-003", "F1-PITCH-006", "F1-PITCH-007", "F1-PITCH-008", "F1-PITCH-009", "F1-PITCH-010", "F1-PITCH-011", "F1-PITCH-012", "F1-PITCH-013", "F1-PITCH-014", "F1-PITCH-015", "F1-PITCH-016", "F1-PITCH-022", "F1-PITCH-023", "F1-PITCH-024", "F1-PITCH-026", "F1-PITCH-027", "F1-PITCH-028"],
       "proofKinds": ["positive", "lower-bound", "upper-bound", "refusal", "malformed", "transposition"],
+      "proofCaseIds": {"positive": ["F1-PITCH-002", "F1-PITCH-011", "F1-PITCH-012", "F1-PITCH-023"], "lower-bound": ["F1-PITCH-007", "F1-PITCH-009"], "upper-bound": ["F1-PITCH-008", "F1-PITCH-010"], "refusal": ["F1-PITCH-009", "F1-PITCH-010"], "malformed": ["F1-PITCH-013", "F1-PITCH-014", "F1-PITCH-015", "F1-PITCH-016", "F1-PITCH-022", "F1-PITCH-027", "F1-PITCH-028"], "transposition": ["F1-PITCH-026"]},
       "mutationProofOwner": "F1/verify"
     },
     {
@@ -39,14 +43,16 @@
       "parentClause": "MIDI frequency projection uses twelve-tone equal temperament with A4=440.",
       "sourceRefs": ["REBUILD_PLAN 9.2"],
       "requiredCaseIds": ["F1-PITCH-001", "F1-PITCH-002", "F1-PITCH-003", "F1-PITCH-006", "F1-PITCH-007", "F1-PITCH-008", "F1-PITCH-011", "F1-PITCH-012", "F1-PITCH-017", "F1-PITCH-018", "F1-PITCH-019"],
-      "proofKinds": ["golden", "boundary", "refusal"]
+      "proofKinds": ["golden", "boundary", "refusal"],
+      "proofCaseIds": {"golden": ["F1-PITCH-001", "F1-PITCH-002", "F1-PITCH-003", "F1-PITCH-006", "F1-PITCH-011", "F1-PITCH-012"], "boundary": ["F1-PITCH-007", "F1-PITCH-008"], "refusal": ["F1-PITCH-017", "F1-PITCH-018", "F1-PITCH-019"]}
     },
     {
       "id": "F1-TRACE-DEGREE-IDENTITY",
-      "parentClause": "Chord degrees retain diatonic number and alteration; enharmonic chromatic projection is not degree equality.",
+      "parentClause": "Chord degrees retain diatonic number and alteration; enharmonic chromatic projection is not degree equality; Parsed/Custom vocabularies and shapes round-trip exactly; every degree and omission array is canonically ordered and internally duplicate-free.",
       "sourceRefs": ["REBUILD_PLAN 9.3", "REBUILD_PLAN 9.4"],
-      "requiredCaseIds": ["F1-CHORD-001", "F1-CHORD-002", "F1-CHORD-003", "F1-CHORD-004", "F1-CHORD-005", "F1-CHORD-006", "F1-CHORD-009", "F1-CHORD-010", "F1-CHORD-011", "F1-CHORD-012", "F1-CHORD-013", "F1-CHORD-014", "F1-CHORD-015", "F1-CHORD-016", "F1-CHORD-017"],
+      "requiredCaseIds": ["F1-CHORD-001", "F1-CHORD-002", "F1-CHORD-003", "F1-CHORD-004", "F1-CHORD-005", "F1-CHORD-006", "F1-CHORD-009", "F1-CHORD-010", "F1-CHORD-011", "F1-CHORD-012", "F1-CHORD-013", "F1-CHORD-014", "F1-CHORD-015", "F1-CHORD-016", "F1-CHORD-017", "F1-CHORD-018", "F1-CHORD-019", "F1-CHORD-020", "F1-CHORD-021", "F1-CHORD-022", "F1-CHORD-023", "F1-CHORD-024", "F1-CHORD-025"],
       "proofKinds": ["positive", "near-miss", "malformed", "transposition", "stage-boundary"],
+      "proofCaseIds": {"positive": ["F1-CHORD-002", "F1-CHORD-005", "F1-CHORD-006", "F1-CHORD-011", "F1-CHORD-014", "F1-CHORD-015", "F1-CHORD-016", "F1-CHORD-018", "F1-CHORD-025"], "near-miss": ["F1-CHORD-001", "F1-CHORD-009", "F1-CHORD-012", "F1-CHORD-020"], "malformed": ["F1-CHORD-003", "F1-CHORD-004", "F1-CHORD-010", "F1-CHORD-019", "F1-CHORD-021", "F1-CHORD-022", "F1-CHORD-023", "F1-CHORD-024", "F1-CHORD-025"], "transposition": ["F1-CHORD-017"], "stage-boundary": ["F1-CHORD-013"]},
       "mutationProofOwner": "F1/verify"
     },
     {
@@ -55,6 +61,7 @@
       "sourceRefs": ["REBUILD_PLAN 4.7", "REBUILD_PLAN 9.5", "F1 parent invariants"],
       "requiredCaseIds": ["F1-VOICE-001", "F1-VOICE-002", "F1-VOICE-003", "F1-VOICE-004", "F1-VOICE-005", "F1-VOICE-006", "F1-VOICE-024", "F1-VOICE-025", "F1-VOICE-026", "F1-VOICE-027", "F1-VOICE-028", "F1-VOICE-033", "F1-VOICE-034", "F1-VOICE-040", "F1-OPSTATE-007"],
       "proofKinds": ["round-trip", "boundary", "refusal", "state-transition", "transposition"],
+      "proofCaseIds": {"round-trip": ["F1-VOICE-001", "F1-VOICE-002"], "boundary": ["F1-VOICE-005", "F1-VOICE-006", "F1-VOICE-026", "F1-VOICE-027", "F1-VOICE-033", "F1-VOICE-034"], "refusal": ["F1-VOICE-003", "F1-VOICE-004", "F1-VOICE-024", "F1-VOICE-028"], "state-transition": ["F1-VOICE-024", "F1-VOICE-025", "F1-OPSTATE-007"], "transposition": ["F1-VOICE-040"]},
       "mutationProofOwner": "F1/verify"
     },
     {
@@ -62,8 +69,9 @@
       "parentClause": "Auto family/bass/slash combinations and Custom/Manual/Frozen conditional invariants are explicit and never silently repaired.",
       "sourceRefs": ["REBUILD_PLAN 9.5", "REBUILD_PLAN 9.6", "F1 parent invariants"],
       "requiredFixturePrefixes": ["F1-VOICE-AUTO-MATRIX-", "F1-VOICE-CUSTOM-AUTO-MATRIX-"],
-      "requiredCaseIds": ["F1-CHORD-007", "F1-CHORD-016", "F1-VOICE-007", "F1-VOICE-008", "F1-VOICE-009", "F1-VOICE-010", "F1-VOICE-011", "F1-VOICE-012", "F1-VOICE-013", "F1-VOICE-014", "F1-VOICE-015", "F1-VOICE-016", "F1-VOICE-017", "F1-VOICE-018", "F1-VOICE-019", "F1-VOICE-020", "F1-VOICE-021", "F1-VOICE-022", "F1-VOICE-023", "F1-VOICE-029", "F1-VOICE-030", "F1-VOICE-031", "F1-VOICE-032", "F1-VOICE-035", "F1-VOICE-036", "F1-VOICE-037", "F1-VOICE-038", "F1-VOICE-039", "F1-OPSTATE-008"],
+      "requiredCaseIds": ["F1-CHORD-007", "F1-CHORD-016", "F1-VOICE-007", "F1-VOICE-008", "F1-VOICE-009", "F1-VOICE-010", "F1-VOICE-011", "F1-VOICE-012", "F1-VOICE-013", "F1-VOICE-014", "F1-VOICE-015", "F1-VOICE-016", "F1-VOICE-017", "F1-VOICE-018", "F1-VOICE-019", "F1-VOICE-020", "F1-VOICE-021", "F1-VOICE-022", "F1-VOICE-023", "F1-VOICE-029", "F1-VOICE-030", "F1-VOICE-031", "F1-VOICE-032", "F1-VOICE-035", "F1-VOICE-036", "F1-VOICE-037", "F1-VOICE-038", "F1-VOICE-039", "F1-VOICE-041", "F1-VOICE-042", "F1-VOICE-043", "F1-VOICE-044", "F1-OPSTATE-008"],
       "proofKinds": ["exhaustive-matrix", "positive", "near-miss", "malformed", "deferred-boundary"],
+      "proofCaseIds": {"exhaustive-matrix": ["F1-VOICE-AUTO-MATRIX-001", "F1-VOICE-AUTO-MATRIX-002", "F1-VOICE-AUTO-MATRIX-003", "F1-VOICE-AUTO-MATRIX-004", "F1-VOICE-AUTO-MATRIX-005", "F1-VOICE-AUTO-MATRIX-006", "F1-VOICE-AUTO-MATRIX-007", "F1-VOICE-CUSTOM-AUTO-MATRIX-001"], "positive": ["F1-VOICE-007", "F1-VOICE-010", "F1-VOICE-013", "F1-VOICE-014", "F1-VOICE-015", "F1-VOICE-029", "F1-VOICE-030", "F1-VOICE-031", "F1-VOICE-037", "F1-VOICE-041"], "near-miss": ["F1-VOICE-008", "F1-VOICE-009", "F1-VOICE-011", "F1-VOICE-012", "F1-VOICE-035", "F1-VOICE-036", "F1-VOICE-038", "F1-VOICE-039", "F1-VOICE-042"], "malformed": ["F1-VOICE-016", "F1-VOICE-017", "F1-VOICE-018", "F1-VOICE-019", "F1-VOICE-020", "F1-VOICE-021", "F1-VOICE-022", "F1-VOICE-023", "F1-VOICE-032", "F1-VOICE-043", "F1-VOICE-044"], "deferred-boundary": ["F1-CHORD-007", "F1-CHORD-016", "F1-VOICE-014", "F1-OPSTATE-008"]},
       "mutationProofOwner": "F1/verify"
     },
     {
@@ -72,22 +80,27 @@
       "sourceRefs": ["REBUILD_PLAN 9.6", "F1 test plan"],
       "requiredFixturePrefixes": ["F1-BEAT-DIV-"],
       "requiredCaseIds": ["F1-BEAT-PAIRWISE-001", "F1-BEAT-EDGE-006", "F1-BEAT-EDGE-007"],
-      "proofKinds": ["exhaustive-enumeration", "pairwise-closure", "near-miss"]
+      "proofKinds": ["exhaustive-enumeration", "pairwise-closure", "near-miss"],
+      "proofCaseIds": {"exhaustive-enumeration": ["F1-BEAT-PAIRWISE-001"], "pairwise-closure": ["F1-BEAT-PAIRWISE-001"], "near-miss": ["F1-BEAT-EDGE-006", "F1-BEAT-EDGE-007"]}
     },
     {
       "id": "F1-TRACE-TIME-ARITHMETIC",
       "parentClause": "Beat arithmetic normalizes, orders, adds and subtracts exactly using integer intermediates; zero position differs from zero duration and ranges are nonempty.",
       "sourceRefs": ["REBUILD_PLAN 9.6", "F1 success criteria"],
-      "requiredCaseIds": ["F1-BEAT-PAIRWISE-001", "F1-BEAT-EDGE-001", "F1-BEAT-EDGE-002", "F1-BEAT-EDGE-003", "F1-BEAT-EDGE-004", "F1-BEAT-EDGE-005", "F1-BEAT-EDGE-015", "F1-BEAT-EDGE-016", "F1-BEAT-EDGE-017", "F1-BEAT-EDGE-018", "F1-BEAT-EDGE-019", "F1-BEAT-EDGE-020", "F1-BEAT-EDGE-021", "F1-BEAT-EDGE-022", "F1-BEAT-EDGE-023", "F1-BEAT-EDGE-024", "F1-BEAT-EDGE-025"],
-      "proofKinds": ["normalization", "pairwise-property", "overflow", "range-near-miss"]
+      "requiredCaseIds": ["F1-BEAT-PAIRWISE-001", "F1-BEAT-EDGE-001", "F1-BEAT-EDGE-002", "F1-BEAT-EDGE-003", "F1-BEAT-EDGE-004", "F1-BEAT-EDGE-005", "F1-BEAT-EDGE-015", "F1-BEAT-EDGE-016", "F1-BEAT-EDGE-017", "F1-BEAT-EDGE-018", "F1-BEAT-EDGE-019", "F1-BEAT-EDGE-020", "F1-BEAT-EDGE-021", "F1-BEAT-EDGE-022", "F1-BEAT-EDGE-023", "F1-BEAT-EDGE-024", "F1-BEAT-EDGE-025", "F1-BEAT-EDGE-031"],
+      "proofKinds": ["normalization", "pairwise-property", "overflow", "range-near-miss", "zero-fold"],
+      "proofCaseIds": {"normalization": ["F1-BEAT-EDGE-001", "F1-BEAT-EDGE-002", "F1-BEAT-EDGE-003", "F1-BEAT-EDGE-004", "F1-BEAT-EDGE-005"], "pairwise-property": ["F1-BEAT-PAIRWISE-001"], "overflow": ["F1-BEAT-EDGE-015", "F1-BEAT-EDGE-016"], "range-near-miss": ["F1-BEAT-EDGE-023", "F1-BEAT-EDGE-024", "F1-BEAT-EDGE-025"], "zero-fold": ["F1-BEAT-EDGE-031"]},
+      "implementationProofOwner": "F1/build",
+      "mutationProofOwner": "F1/verify"
     },
     {
       "id": "F1-TRACE-TIME-LIMITS",
       "parentClause": "Reduced numerators, total timeline, meter/tempo, collection, text, and voicing bounds accept exact limits and refuse limit plus one before disproportionate allocation.",
       "sourceRefs": ["REBUILD_PLAN 9.6", "REBUILD_PLAN 9.8", "F1 parent limits"],
       "requiredFixturePrefixes": ["F1-DOC-03", "F1-DOC-04"],
-      "requiredCaseIds": ["F1-BEAT-EDGE-004", "F1-BEAT-EDGE-008", "F1-BEAT-EDGE-009", "F1-BEAT-EDGE-010", "F1-BEAT-EDGE-011", "F1-BEAT-EDGE-012", "F1-BEAT-EDGE-013", "F1-BEAT-EDGE-014", "F1-BEAT-EDGE-015", "F1-BEAT-EDGE-016", "F1-BEAT-EDGE-026", "F1-BEAT-EDGE-027", "F1-BEAT-EDGE-029", "F1-BEAT-EDGE-030", "F1-DOC-014", "F1-DOC-015", "F1-DOC-022", "F1-DOC-023", "F1-DOC-024", "F1-DOC-025", "F1-DOC-026", "F1-DOC-027", "F1-DOC-028", "F1-DOC-029", "F1-DOC-050", "F1-DOC-053", "F1-DOC-054", "F1-DOC-055", "F1-DOC-056", "F1-DOC-057", "F1-DOC-058", "F1-DOC-059", "F1-DOC-060", "F1-DOC-065", "F1-DOC-066", "F1-DOC-067", "F1-DOC-068", "F1-DOC-069", "F1-DOC-070", "F1-DOC-071", "F1-DOC-076", "F1-DOC-077", "F1-VOICE-005", "F1-VOICE-006", "F1-VOICE-026", "F1-VOICE-027", "F1-VOICE-031", "F1-VOICE-032", "F1-VOICE-033", "F1-VOICE-034"],
-      "proofKinds": ["exact-boundary", "plus-one", "malformed", "preflight"]
+      "requiredCaseIds": ["F1-BEAT-EDGE-004", "F1-BEAT-EDGE-008", "F1-BEAT-EDGE-009", "F1-BEAT-EDGE-010", "F1-BEAT-EDGE-011", "F1-BEAT-EDGE-012", "F1-BEAT-EDGE-013", "F1-BEAT-EDGE-014", "F1-BEAT-EDGE-015", "F1-BEAT-EDGE-016", "F1-BEAT-EDGE-026", "F1-BEAT-EDGE-027", "F1-BEAT-EDGE-029", "F1-BEAT-EDGE-030", "F1-ID-018", "F1-ID-019", "F1-DOC-014", "F1-DOC-015", "F1-DOC-022", "F1-DOC-023", "F1-DOC-024", "F1-DOC-025", "F1-DOC-026", "F1-DOC-027", "F1-DOC-028", "F1-DOC-029", "F1-DOC-050", "F1-DOC-053", "F1-DOC-054", "F1-DOC-055", "F1-DOC-056", "F1-DOC-057", "F1-DOC-058", "F1-DOC-059", "F1-DOC-060", "F1-DOC-065", "F1-DOC-066", "F1-DOC-067", "F1-DOC-068", "F1-DOC-069", "F1-DOC-070", "F1-DOC-071", "F1-DOC-076", "F1-DOC-077", "F1-VOICE-005", "F1-VOICE-006", "F1-VOICE-026", "F1-VOICE-027", "F1-VOICE-031", "F1-VOICE-032", "F1-VOICE-033", "F1-VOICE-034"],
+      "proofKinds": ["exact-boundary", "plus-one", "malformed", "preflight"],
+      "proofCaseIds": {"exact-boundary": ["F1-BEAT-EDGE-004", "F1-BEAT-EDGE-013", "F1-BEAT-EDGE-026", "F1-ID-018", "F1-DOC-014", "F1-DOC-022", "F1-DOC-024", "F1-DOC-026", "F1-DOC-028", "F1-DOC-030"], "plus-one": ["F1-BEAT-EDGE-014", "F1-BEAT-EDGE-027", "F1-ID-019", "F1-DOC-015", "F1-DOC-023", "F1-DOC-025", "F1-DOC-027", "F1-DOC-029", "F1-DOC-031"], "malformed": ["F1-BEAT-EDGE-008", "F1-BEAT-EDGE-009", "F1-BEAT-EDGE-010", "F1-BEAT-EDGE-011", "F1-BEAT-EDGE-012", "F1-BEAT-EDGE-029", "F1-BEAT-EDGE-030"], "preflight": ["F1-ID-018", "F1-ID-019", "F1-DOC-022", "F1-DOC-023", "F1-DOC-024", "F1-DOC-025", "F1-DOC-026", "F1-DOC-027", "F1-DOC-028", "F1-DOC-029", "F1-DOC-030", "F1-DOC-031"]}
     },
     {
       "id": "F1-TRACE-METER-CAPACITY",
@@ -95,7 +108,8 @@
       "sourceRefs": ["REBUILD_PLAN 9.6", "F1 test plan"],
       "requiredFixturePrefixes": ["F1-METER-CAP-"],
       "requiredCaseIds": ["F1-DOC-047", "F1-DOC-048", "F1-DOC-049", "F1-DOC-050", "F1-MEASURE-019", "F1-OPSTATE-003"],
-      "proofKinds": ["exhaustive-matrix", "near-miss", "boundary"]
+      "proofKinds": ["exhaustive-matrix", "near-miss", "boundary"],
+      "proofCaseIds": {"exhaustive-matrix": ["F1-METER-CAP-001", "F1-METER-CAP-002", "F1-METER-CAP-003", "F1-METER-CAP-004", "F1-METER-CAP-005", "F1-METER-CAP-006", "F1-METER-CAP-007", "F1-METER-CAP-008", "F1-METER-CAP-009", "F1-METER-CAP-010", "F1-METER-CAP-011", "F1-METER-CAP-012", "F1-METER-CAP-013", "F1-METER-CAP-014", "F1-METER-CAP-015"], "near-miss": ["F1-METER-CAP-016", "F1-MEASURE-019"], "boundary": ["F1-DOC-047", "F1-DOC-048", "F1-DOC-049", "F1-DOC-050"]}
     },
     {
       "id": "F1-TRACE-MEASURE-STATE",
@@ -103,42 +117,51 @@
       "sourceRefs": ["REBUILD_PLAN 9.6", "F1 required implementation"],
       "requiredFixturePrefixes": ["F1-MEASURE-"],
       "requiredCaseIds": ["F1-OPSTATE-006", "F1-OPSTATE-010"],
-      "proofKinds": ["all-states", "underfill", "overfill", "mismatch", "blank", "position-policy"]
+      "proofKinds": ["all-states", "underfill", "overfill", "mismatch", "blank", "position-policy"],
+      "proofCaseIds": {"all-states": ["F1-MEASURE-001", "F1-MEASURE-003", "F1-MEASURE-007", "F1-MEASURE-009"], "underfill": ["F1-MEASURE-005", "F1-MEASURE-010", "F1-MEASURE-011", "F1-MEASURE-021", "F1-MEASURE-022"], "overfill": ["F1-MEASURE-006", "F1-MEASURE-016", "F1-MEASURE-017", "F1-MEASURE-020"], "mismatch": ["F1-MEASURE-010", "F1-MEASURE-011", "F1-MEASURE-021", "F1-MEASURE-022"], "blank": ["F1-MEASURE-014", "F1-MEASURE-015"], "position-policy": ["F1-MEASURE-007", "F1-MEASURE-008"]},
+      "representationMutationProofOwner": "F1/verify",
+      "semanticImplementationProofOwner": "F3/build",
+      "semanticMutationProofOwner": "F3/verify"
     },
     {
       "id": "F1-TRACE-DOCUMENT-TYPES",
       "parentClause": "ProgressionDocumentV2 and nested structural values carry the reviewed schema, instrument, key, section, measure, event, chord, and playback forms without UI state.",
       "sourceRefs": ["REBUILD_PLAN 9.4", "REBUILD_PLAN 9.7"],
-      "requiredCaseIds": ["F1-DOC-001", "F1-DOC-002", "F1-DOC-003", "F1-DOC-004", "F1-DOC-078", "F1-DOC-079", "F1-CHORD-005", "F1-CHORD-006", "F1-CHORD-007", "F1-CHORD-014", "F1-CHORD-015", "F1-CHORD-016"],
-      "proofKinds": ["positive", "empty", "vocabulary", "malformed"]
+      "requiredCaseIds": ["F1-DOC-001", "F1-DOC-002", "F1-DOC-003", "F1-DOC-004", "F1-DOC-078", "F1-DOC-079", "F1-DOC-084", "F1-DOC-085", "F1-CHORD-005", "F1-CHORD-006", "F1-CHORD-007", "F1-CHORD-014", "F1-CHORD-015", "F1-CHORD-016"],
+      "proofKinds": ["positive", "empty", "vocabulary", "malformed"],
+      "proofCaseIds": {"positive": ["F1-DOC-001", "F1-DOC-002", "F1-DOC-079", "F1-DOC-085", "F1-CHORD-014"], "empty": ["F1-DOC-001", "F1-DOC-002"], "vocabulary": ["F1-DOC-003", "F1-CHORD-015"], "malformed": ["F1-DOC-004", "F1-DOC-078", "F1-DOC-084"]}
     },
     {
       "id": "F1-TRACE-KEY-CONTEXT",
       "parentClause": "KeyContext supports exactly the four declared modes, nullable document/section contexts, and never silently persists an inferred key.",
       "sourceRefs": ["REBUILD_PLAN 11.2"],
       "requiredCaseIds": ["F1-DOC-005", "F1-DOC-006", "F1-DOC-007", "F1-DOC-008"],
-      "proofKinds": ["vocabulary", "absent", "malformed"]
+      "proofKinds": ["vocabulary", "absent", "malformed"],
+      "proofCaseIds": {"vocabulary": ["F1-DOC-005"], "absent": ["F1-DOC-006"], "malformed": ["F1-DOC-007", "F1-DOC-008"]}
     },
     {
       "id": "F1-TRACE-DECODER-RESULT",
       "parentClause": "Total decoders return the exclusive DecodeResult union with stable ordered issues, no partial value, and unchanged current state; F1/F2/F3 ownership remains explicit.",
       "sourceRefs": ["REBUILD_PLAN 9.8", "ARCHITECTURE module ownership"],
-      "requiredCaseIds": ["F1-BEAT-EDGE-028", "F1-CHORD-008", "F1-CHORD-009", "F1-CHORD-010", "F1-CHORD-012", "F1-CHORD-013", "F1-ID-009", "F1-ID-010", "F1-DOC-001", "F1-DOC-009", "F1-DOC-010", "F1-DOC-011", "F1-DOC-012", "F1-DOC-038", "F1-DOC-051", "F1-DOC-052", "F1-DOC-075", "F1-DOC-076", "F1-DOC-077", "F1-DOC-078", "F1-DOC-083", "F1-VOICE-028", "F1-OPSTATE-005", "F1-OPSTATE-008", "F1-OPSTATE-009"],
-      "proofKinds": ["positive", "malformed", "multi-error-order", "transactional", "stage-boundary"]
+      "requiredCaseIds": ["F1-BEAT-EDGE-028", "F1-CHORD-008", "F1-CHORD-009", "F1-CHORD-010", "F1-CHORD-012", "F1-CHORD-013", "F1-CHORD-019", "F1-CHORD-020", "F1-ID-009", "F1-ID-010", "F1-DOC-001", "F1-DOC-009", "F1-DOC-010", "F1-DOC-011", "F1-DOC-012", "F1-DOC-038", "F1-DOC-051", "F1-DOC-052", "F1-DOC-075", "F1-DOC-076", "F1-DOC-077", "F1-DOC-078", "F1-DOC-083", "F1-DOC-084", "F1-DOC-085", "F1-VOICE-028", "F1-OPSTATE-005", "F1-OPSTATE-008", "F1-OPSTATE-009"],
+      "proofKinds": ["positive", "malformed", "multi-error-order", "transactional", "stage-boundary"],
+      "proofCaseIds": {"positive": ["F1-DOC-001", "F1-DOC-085"], "malformed": ["F1-CHORD-019", "F1-CHORD-020", "F1-DOC-009", "F1-DOC-010", "F1-DOC-011", "F1-DOC-012", "F1-DOC-038", "F1-DOC-077", "F1-DOC-078", "F1-DOC-083", "F1-DOC-084"], "multi-error-order": ["F1-DOC-051", "F1-DOC-075", "F1-DOC-076"], "transactional": ["F1-ID-009", "F1-ID-010", "F1-DOC-052"], "stage-boundary": ["F1-CHORD-008", "F1-CHORD-013", "F1-OPSTATE-008", "F1-OPSTATE-009"]}
     },
     {
       "id": "F1-TRACE-BOUNDED-OPERATIONS",
       "parentClause": "Every bounded operation states deterministic work/state/memory termination; wall time is never a semantic cutoff.",
       "sourceRefs": ["AGENTS verification discipline", "THEORY_IDEA_WIZARD shared acceptance laws"],
-      "requiredCaseIds": ["F1-ID-015", "F1-ID-016", "F1-OPSTATE-001", "F1-OPSTATE-002", "F1-OPSTATE-003", "F1-OPSTATE-004", "F1-OPSTATE-005", "F1-OPSTATE-010"],
-      "proofKinds": ["work-bound-declaration", "state-bound-declaration"]
+      "requiredCaseIds": ["F1-ID-015", "F1-ID-016", "F1-ID-018", "F1-ID-019", "F1-OPSTATE-001", "F1-OPSTATE-002", "F1-OPSTATE-003", "F1-OPSTATE-004", "F1-OPSTATE-005", "F1-OPSTATE-010"],
+      "proofKinds": ["work-bound-declaration", "state-bound-declaration"],
+      "proofCaseIds": {"work-bound-declaration": ["F1-ID-015", "F1-ID-016", "F1-ID-018", "F1-ID-019", "F1-OPSTATE-001", "F1-OPSTATE-002", "F1-OPSTATE-003", "F1-OPSTATE-004", "F1-OPSTATE-005", "F1-OPSTATE-010"], "state-bound-declaration": ["F1-ID-015", "F1-ID-016", "F1-ID-018", "F1-ID-019", "F1-OPSTATE-001", "F1-OPSTATE-002", "F1-OPSTATE-003", "F1-OPSTATE-004", "F1-OPSTATE-005", "F1-OPSTATE-010"]}
     },
     {
       "id": "F1-TRACE-PURE-BOUNDARY",
       "parentClause": "F1 is pure domain: cancellation and stale-state behavior are explicitly not applicable where no such state exists, while later command ownership is named instead of guessed.",
       "sourceRefs": ["ARCHITECTURE module ownership", "F1 non-goals"],
       "requiredFixturePrefixes": ["F1-OPSTATE-"],
-      "proofKinds": ["not-applicable-declaration", "downstream-ownership"]
+      "proofKinds": ["not-applicable-declaration", "downstream-ownership"],
+      "proofCaseIds": {"not-applicable-declaration": ["F1-OPSTATE-001", "F1-OPSTATE-002", "F1-OPSTATE-003", "F1-OPSTATE-004", "F1-OPSTATE-005", "F1-OPSTATE-008", "F1-OPSTATE-009", "F1-OPSTATE-010"], "downstream-ownership": ["F1-OPSTATE-006", "F1-OPSTATE-007", "F1-OPSTATE-008", "F1-OPSTATE-010"]}
     }
   ]
 }
