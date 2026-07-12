@@ -15,6 +15,7 @@
     "doctor:toolchain": "bun scripts/toolchain-doctor.ts",
     "validate:f0-contract": "bun scripts/validate-f0-contract.ts",
     "validate:f1-contract": "bun scripts/validate-f1-contract.ts",
+    "validate:f2-contract": "bun scripts/validate-f2-contract.ts",
     "typecheck": "bun scripts/typecheck.ts",
     "lint": "bun scripts/lint.ts",
     "test": "bun test",

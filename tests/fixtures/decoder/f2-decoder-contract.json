@@ -1,0 +1,165 @@
+{
+  "schema": "changes.fixtures.f2-decoder-contract.v1",
+  "contractVersion": "1.0.0",
+  "package": "F2",
+  "beadId": "jcpe-milestone-foundation-vc2.3.1",
+  "contractDocument": "docs/F2_DECODER_CONTRACT.md",
+  "description": "Independent structural-decoder authority for the bounded changes.progression.v2 wire shape.",
+  "authorityPolicy": {
+    "expectedValuesGeneratedByProduction": false,
+    "productionModulesImported": false,
+    "productionArtifactUsedAsAuthority": false,
+    "authoringMethod": "manual review of the frozen domain wire contract, explicit boundary arithmetic, and adversarial ECMAScript descriptors",
+    "forbiddenShortcuts": [
+      "Do not generate expected diagnostics with the decoder under test.",
+      "Do not property-read, spread, iterate, revive, stringify, normalize, or repair untrusted shape data.",
+      "Do not treat structural success as ValidatedDocument publication.",
+      "Do not move source-text, formula, custom-correspondence, or measure-completion semantics into F2.",
+      "Do not use wall time as a correctness or musical cutoff."
+    ]
+  },
+  "publicSurface": {
+    "contractSchema": "changes.domain.document-decoder-contract.v1",
+    "operations": [
+      {
+        "name": "preflightDocumentImportBytes",
+        "input": "number observed from the original UTF-8 payload",
+        "success": "DecodeResult<{utf8ByteLength:number}, shape.invalid_type|limit.import_bytes_exceeded>",
+        "doesNotOwn": ["UTF-8 decoding", "JSON parsing", "shape decoding"]
+      },
+      {
+        "name": "decodeDocumentShape",
+        "input": "unknown already-materialized value",
+        "success": "DecodeResult<ProgressionDocumentShapeV2,DocumentShapeIssueCode>",
+        "doesNotOwn": ["original byte measurement", "theory semantics", "ValidatedDocument cast"]
+      }
+    ],
+    "operationOrder": ["preflightDocumentImportBytes", "decodeDocumentShape"],
+    "operationsValue": {"name": "documentDecodeOperations", "ownKeysInOrder": ["preflightDocumentImportBytes", "decodeDocumentShape"], "membersEqualNamedFunctionExports": true, "recursivelyFrozen": true, "reexportedFromDomainIndex": true},
+    "successWarnings": [],
+    "failureHasPartialValue": false
+  },
+  "internalEvidenceSurface": {"module": "src/domain/document-decoder.ts", "seams": ["preflightDocumentImportBytesWithEvidence", "decodeDocumentShapeWithEvidence"], "resultOwnKeysInOrder": ["result", "evidence"], "decoderEvidenceCounterCount": 28, "harnessObservationCounterCount": 7, "publicIndexExported": false, "hiddenMutableState": false},
+  "stageOwnership": {
+    "importAdapter": "fatal UTF-8 decode and JSON.parse without a reviver after the F2 byte preflight",
+    "F2": "own-field shape, values, limits, canonical wire time, chord/voicing structural compatibility, global ID uniqueness, freshness, and immutable temporary candidate",
+    "T1F3": "source/AST/formula agreement, custom pitch/voicing correspondence, completion semantics, playback realizability, promotion, and sole publication cast",
+    "A0": "revision-aware atomic publication, cancellation, stale results, selection, and history"
+  },
+  "fixedLimits": {
+    "maxUtf8ImportBytes": 2097152,
+    "maxJsonDepth": 32,
+    "rootContainerDepth": 1,
+    "maxSections": 64,
+    "maxMeasuresPerSection": 1024,
+    "maxEventsPerDocument": 8192,
+    "maxStableIdAsciiCharacters": 128,
+    "maxShortTextCodePoints": 256,
+    "maxLongTextCodePoints": 2000,
+    "maxEngineVersionCodePoints": 64,
+    "maxVoicingPitches": 16,
+    "maxBeatNumerator": 2147483647,
+    "midiPpq": 960,
+    "maxTimelineQuarterNoteBeats": 1000000,
+    "minimumTempoBpm": 20,
+    "maximumTempoBpm": 400,
+    "minimumBeatsPerBar": 1,
+    "maximumBeatsPerBar": 32,
+    "minimumMidi": 0,
+    "maximumMidi": 127,
+    "minimumPlaybackLevel": 0,
+    "maximumPlaybackLevel": 1
+  },
+  "fixedInventories": {
+    "documentSchema": ["changes.progression.v2"],
+    "stableIdPattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+    "steps": ["C", "D", "E", "F", "G", "A", "B"],
+    "alterations": [-2, -1, 0, 1, 2],
+    "beatDenominators": [1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 16, 20, 24, 30, 32, 40, 48, 60, 64, 80, 96, 120, 160, 192, 240, 320, 480, 960],
+    "beatUnits": [2, 4, 8],
+    "keyModes": ["major", "natural-minor", "harmonic-minor", "melodic-minor"],
+    "instrumentIds": ["mellow-keys", "fm-electric-piano", "vibraphone", "warm-pad", "analog-poly"],
+    "completionKinds": ["empty", "complete", "pickup", "incomplete"],
+    "voiceLeadingBoundaries": ["continue", "reset"],
+    "chordKinds": ["parsed", "custom"],
+    "triadQualities": ["major", "minor", "diminished", "augmented", "sus2", "sus4", "power"],
+    "seventhQualities": ["major", "minor", "diminished"],
+    "colorPolicies": ["none", "altered-dominant"],
+    "degreeNumbers": [1, 2, 3, 4, 5, 6, 7, 9, 11, 13],
+    "autoFamilies": ["balanced", "shell", "rootless-a", "rootless-b", "open", "drop2", "quartal"],
+    "autoVoiceCounts": [3, 4, 5, 6, 7],
+    "autoBassPolicies": ["generated", "external", "none"],
+    "storedBassPolicies": ["included", "external"],
+    "voicingModes": ["auto", "manual", "frozen"],
+    "countInBars": [0, 1, 2]
+  },
+  "objectSchemas": [
+    {"id": "auto-voicing", "discriminator": {"field": "mode", "values": ["auto"]}, "requiredFields": ["bassPolicy", "family", "mode", "range", "voiceCount"]},
+    {"id": "beat-value", "requiredFields": ["denominator", "numerator"]},
+    {"id": "chord-degree", "requiredFields": ["alter", "number"]},
+    {"id": "completion-complete", "discriminator": {"field": "kind", "values": ["complete"]}, "requiredFields": ["kind"]},
+    {"id": "completion-empty", "discriminator": {"field": "kind", "values": ["empty"]}, "requiredFields": ["kind"]},
+    {"id": "completion-partial", "discriminator": {"field": "kind", "values": ["incomplete", "pickup"]}, "requiredFields": ["expectedDuration", "kind", "reason"]},
+    {"id": "custom-chord", "discriminator": {"field": "kind", "values": ["custom"]}, "requiredFields": ["bass", "kind", "label", "pitchNames", "sourceText"]},
+    {"id": "document", "requiredFields": ["description", "id", "key", "meter", "playback", "schema", "sections", "tempoBpm", "title"]},
+    {"id": "event", "requiredFields": ["annotation", "chord", "duration", "id", "voicing"]},
+    {"id": "frozen-provenance", "requiredFields": ["engineVersion", "family"]},
+    {"id": "frozen-voicing", "discriminator": {"field": "mode", "values": ["frozen"]}, "requiredFields": ["bassPolicy", "generatedBy", "mode", "pitches"]},
+    {"id": "key-context", "requiredFields": ["mode", "tonic"]},
+    {"id": "manual-voicing", "discriminator": {"field": "mode", "values": ["manual"]}, "requiredFields": ["bassPolicy", "mode", "pitches"]},
+    {"id": "measure", "requiredFields": ["completion", "events", "id"]},
+    {"id": "meter", "requiredFields": ["beatUnit", "beatsPerBar"]},
+    {"id": "midi-range", "requiredFields": ["highMidi", "lowMidi"]},
+    {"id": "parsed-chord", "discriminator": {"field": "kind", "values": ["parsed"]}, "requiredFields": ["additions", "alterations", "bass", "colorPolicy", "extensions", "kind", "omissions", "root", "seventh", "sixth", "sourceText", "triad"]},
+    {"id": "playback", "requiredFields": ["countInBars", "instrumentId", "masterVolume", "reverbAmount"]},
+    {"id": "section", "requiredFields": ["annotation", "id", "keyOverride", "measures", "name", "voiceLeadingBoundary"]},
+    {"id": "spelled-pitch", "requiredFields": ["alter", "octave", "step"]},
+    {"id": "spelled-pitch-class", "requiredFields": ["alter", "step"]}
+  ],
+  "diagnostics": {
+    "stableFields": ["code", "path"],
+    "requiredNonstableFields": ["message"],
+    "issueOwnKeysLexical": ["code", "message", "path"],
+    "forbiddenIssueKeys": ["sourceText", "suggestion"],
+    "successKeys": ["ok", "value", "warnings"],
+    "failureKeys": ["errors", "ok"],
+    "ordering": ["path", "code"],
+    "numericPathSegments": "numeric ascending",
+    "stringPathSegments": "ECMAScript code-unit lexical ascending",
+    "equalPrefix": "shorter first",
+    "duplicateCodePathPairs": "collapse",
+    "diagnosticCap": "none beyond the supported-path 2 MiB input bound"
+  },
+  "termination": {
+    "correctnessClock": "deterministic counters only",
+    "externalResourceBoundary": "preflighted payload at most 2 MiB",
+    "shapeDecoderScope": "terminating ECMAScript reflection operations",
+    "explicitExclusion": "a Proxy trap that never returns",
+    "candidateAllocation": "none proportional to an oversized declared collection before its limit check"
+  },
+  "companions": [
+    {"path": "shape-cases.json", "schema": "changes.fixtures.f2-shape-cases.v1", "recordCollections": ["cases"]},
+    {"path": "adversarial-cases.json", "schema": "changes.fixtures.f2-adversarial-cases.v1", "recordCollections": ["cases"]},
+    {"path": "trace-ledger.json", "schema": "changes.fixtures.f2-trace-ledger.v1", "recordCollections": ["traces"]},
+    {"path": "provenance-ledger.json", "schema": "changes.fixtures.f2-provenance-ledger.v1", "recordCollections": ["authorities"]}
+  ],
+  "reviewedDigests": {
+    "contractDocumentSha256": "3d2014aedb34cbd4e81beba25793359963ee42af171af8b4bc7be331b67b3f7a",
+    "companionsSha256": {
+      "adversarial-cases.json": "e98aacbccb9b87a004902e5bdc56001e5bd588822dd0a565242e1033ba14570b",
+      "provenance-ledger.json": "e9a24fdb862292cc774e5866c704160d33110f270aa43fe058cc55d390daef99",
+      "shape-cases.json": "d741788eef36a4571fca283362a291219db747e4cb0c4e29a42e096944a61307",
+      "trace-ledger.json": "8dbb886ca41310234af8ef4a8af6bb3628a53e99ab1b705765f0fbacae5bb599"
+    }
+  },
+  "coverageSummary": {
+    "companionFiles": 4,
+    "shapeCaseRecords": 33,
+    "adversarialCaseRecords": 32,
+    "traceRecords": 12,
+    "authorityRecords": 5,
+    "objectSchemaVariants": 21,
+    "stableSeeds": 8,
+    "mutationControls": 234
+  }
+}

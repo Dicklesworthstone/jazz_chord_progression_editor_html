@@ -1,0 +1,5569 @@
+{
+  "schema": "changes.fixtures.f2-adversarial-cases.v1",
+  "descriptorProtocol": {
+    "allHostObjectsRemainTestOwned": true,
+    "accessor": "Define an own accessor descriptor and count every getter/setter invocation.",
+    "proxy": "Wrap the named node in a throwing or revoked Proxy; a trap that never returns is explicitly outside the totality claim.",
+    "depth": "Materialize alternating ordinary object/array containers; the root container is depth one.",
+    "shapeCount": "Use shape-cases.json representativeDocument as the base. sections count n becomes n sections in index order with id section-limit-NNNN, name SNNNN, annotation empty, keyOverride null, voiceLeadingBoundary continue, and measures empty. measuresInSection0 count n keeps only the first representative section and replaces measures with n measures in index order having id measure-limit-NNNN, events empty, and completion {kind:'empty'}. eventsAcrossDocument count n uses up to eight fresh representative-event clones per measure; without distributedAcrossSections it keeps one section with ceil(n/8) measures, while distributedAcrossSections:true fills exactly 1024 such measures per section before continuing in a fresh section. Section i is section-limit-NNNN; each global measure i is measure-limit-NNNN with completion {kind:'complete'}; each global event j is event-limit-NNNNN with duration 1/960, annotation empty, and otherwise exact representative chord/voicing. N fields are zero-padded decimal indices of the stated width. A case's more exact distribution descriptor overrides only this distribution recipe.",
+    "repeatCodePoint": "A descriptor object shaped exactly as {repeatCodePoint:'U+HHHH',count:n} becomes n copies of that Unicode scalar value.",
+    "specialNumber": "A descriptor object shaped exactly as {specialNumber:'NaN'|'+Infinity'|'-Infinity'|'-0'|'unsafe-positive'|'unsafe-negative'} is replaced in memory; unsafe-positive is exactly 9007199254740992 and unsafe-negative is exactly -9007199254740992. Bare strings remain strings.",
+    "specialPrimitive": "A descriptor object shaped exactly as {specialPrimitive:'undefined'|'bigint-one'|'symbol-test'|'callable-function'|'boxed-number'|'boxed-string'|'boxed-boolean'|'boxed-bigint'|'boxed-symbol'} becomes undefined, 1n, a fresh Symbol('test'), a fresh ordinary function, new Number(1), new String('boxed'), new Boolean(true), Object(1n), or Object(a fresh Symbol('boxed')) respectively.",
+    "instrumentedCallback": "A descriptor object shaped exactly as {instrumentedCallback:name,behavior:'throw-if-called'} becomes a fresh function that increments the named fixture counter and throws a fixed test-owned Error when invoked.",
+    "candidateAllocation": "Instrument only decoder-owned decoded-document candidate objects/arrays, excluding result envelopes, diagnostics, caller-owned input graphs, fixture materialization, and engine reflection arrays.",
+    "expectedValuesGeneratedByProduction": false
+  },
+  "limitDescriptorProtocol": {
+    "indexN": "For an inputDescriptor indexN key, define exactly array index N on the named shapeCount array. The literal 'throwing getter' is an enumerable configurable own getter backed by getterCallbacks/throw-if-called. An object value is materialized recursively by these rules.",
+    "structurallyInspectableSection": "Create the exact section-limit-NNNN record from shapeCount, then use measuresCount dense measures, distribute eventsAcrossThoseMeasures in measure order with at most eight exact shapeCount events per measure, and set the first stored voicing pitches length to firstStoredPitchCount using LIMIT-011 manual.pitches elements.",
+    "lowerPriorityOversize": "For measuresInSection0, materialize the 1,025 dense exact measures first; put eventsAcrossDocument exact events into their event arrays in measure order and, when named, put firstCustomPitchNameCount exact LIMIT-011 pitch names on global event 0. This data is present only to prove the higher-priority fatal wins.",
+    "sectionDescriptors": "A cell inputDescriptor.sections array is literal chronology. For each entry, id is exact and remaining required section fields use the exact shapeCount section recipe. measuresOwnDataValue replaces its own measures field with that literal. measuresCount creates that many dense exact empty measures. A measures array is materialized in listed order: false stays false; an object becomes an exact measure with its listed id and events. measureEventArrayLengths creates one exact measure per listed length and fills its dense events with fresh shapeCount event clones and globally unique event-limit-NNNNN IDs. Event false stays false. An event object with template representative event is a fresh clone with the next unique event-limit ID; apply activation through shape-cases activationProtocol, then recursively apply overrides as own-field replacements.",
+    "event0": "After a shapeCount eventsAcrossDocument graph is built, apply event0 activation and customPitchNameCount/storedPitchCount using LIMIT-011 element protocols to global event index 0.",
+    "rawEventSlotCount": "Assert, but do not synthesize from, the sum of materialized event-array lengths; mismatch is a fixture materialization failure."
+  },
+  "stableSeeds": [
+    {
+      "id": "F2-SEED-BOUNDS",
+      "value": 4071718401,
+      "hex": "0xF2B17E01",
+      "casePrefixes": [
+        "F2-BOUNDARY-",
+        "F2-LIMIT-"
+      ],
+      "purpose": "byte, depth, and collection boundary replay order"
+    },
+    {
+      "id": "F2-SEED-CHORD",
+      "value": 4072934661,
+      "hex": "0xF2C40D05",
+      "casePrefixes": [
+        "F2-CHORD-",
+        "F2-VOICE-"
+      ],
+      "purpose": "chord and voicing matrix replay order"
+    },
+    {
+      "id": "F2-SEED-HOSTILE",
+      "value": 4070713863,
+      "hex": "0xF2A22A07",
+      "casePrefixes": [
+        "F2-HOST-"
+      ],
+      "purpose": "descriptor, sparse-array, Proxy, and cycle replay order"
+    },
+    {
+      "id": "F2-SEED-IDS",
+      "value": 4062007300,
+      "hex": "0xF21D5004",
+      "casePrefixes": [
+        "F2-ID-"
+      ],
+      "purpose": "global duplicate-cluster replay order"
+    },
+    {
+      "id": "F2-SEED-ORDER",
+      "value": 4060995080,
+      "hex": "0xF20DDE08",
+      "casePrefixes": [
+        "F2-ORDER-"
+      ],
+      "purpose": "key insertion and diagnostic permutation order"
+    },
+    {
+      "id": "F2-SEED-SHAPE",
+      "value": 4066024962,
+      "hex": "0xF25A9E02",
+      "casePrefixes": [
+        "F2-FIELD-",
+        "F2-FRESH-",
+        "F2-SHAPE-"
+      ],
+      "purpose": "known-field, discriminator, freshness, and document-shape replay order"
+    },
+    {
+      "id": "F2-SEED-TIME",
+      "value": 4067536390,
+      "hex": "0xF271AE06",
+      "casePrefixes": [
+        "F2-TIME-",
+        "F2-VALUE-"
+      ],
+      "purpose": "canonical rational, numeric, and timeline replay order"
+    },
+    {
+      "id": "F2-SEED-UNICODE",
+      "value": 4072726019,
+      "hex": "0xF2C0DE03",
+      "casePrefixes": [
+        "F2-TEXT-"
+      ],
+      "purpose": "scalar counting, surrogate, and blankness replay order"
+    }
+  ],
+  "seededReplayProtocol": {
+    "prng": "xorshift32-v1",
+    "transition": "one nextUint32 call applies state=(state^(state<<13))>>>0, then state=(state^(state>>>17))>>>0, then state=(state^(state<<5))>>>0, and returns exactly that one final unsigned state; intermediate states are never emitted",
+    "selection": "collect all checked-in case IDs matching a seed's prefixes except the exact excludedCaseIds, in lexical order, then Fisher-Yates shuffle from i=n-1 down to 1 using j=nextUint32%(i+1)",
+    "excludedCaseIds": [
+      {
+        "id": "F2-LIMIT-003",
+        "reason": "internal depth-preflight near-miss intentionally has no asserted public shape result"
+      }
+    ],
+    "expectationPolicy": "Seeds schedule checked-in cases and cells only; they never generate expected values.",
+    "caseMaterialization": "Materialize all atomic cells for one scheduled case in the companion shape-cases.json materializationProtocol order. For an adversarial case, an explicit cellExpansion is exhaustive and the defaults do not run; otherwise use these defaults. Ordinary inputs, cells, ownKeys, and values arrays are independent fresh cells in checked-in order. F2-HOST-001 is path-major then descriptor-minor Cartesian order. F2-LIMIT-011 is collection-major then count-minor Cartesian order, followed by combinedOversizeCell, followed by continuationCells in checked-in order. A singular inputDescriptor or materialization recipe is one cell. No other adversarial arrays form an implicit Cartesian product.",
+    "replay": "For each scheduled case, materialize all of that case's atomic cells in fixed case-internal order. Decode every cell twice through the public operation and twice through the matching private evidence seam using four referentially fresh equivalent inputs. Require the public result to equal the private seam's result for both pairs, require all four result projections to be deeply equal, then verify exact private evidence, public invariants, and all case assertions before recording one projected case observation. Result messages, decoded success values, counters, and heterogeneous assertion labels are verified but deliberately excluded from the digest projection.",
+    "caseObservation": "The JSON-only digest projection is exactly {cells:[...]}. Each success cell is exactly {ok:true}. Each failure cell is exactly {ok:false,errors:[...]}, where every error is exactly {code,path}; errors and paths retain public result order. This is a projection for deterministic replay evidence, not the full conformance oracle.",
+    "canonicalJson": "Recursively copy the projected case observation with every object key sorted by ascending ECMAScript UTF-16 code-unit order and every array preserved in case-internal order, then encode the no-replacer, no-space JSON.stringify result as UTF-8. Its only numbers are nonnegative safe-integer path indices; messages, arbitrary decoded numbers, and non-finite hostile inputs never enter this projection.",
+    "caseLine": "For each scheduled case emit ASCII caseId, one U+0009 TAB, lowercase hexadecimal SHA-256 of its canonicalJson bytes, and one U+000A LF. Case IDs cannot contain TAB or LF.",
+    "seedDigests": "Produce exactly one digest per stable seed. For each seed, concatenate its caseLine records in that seed's shuffled schedule order with no header and no extra final bytes, then record the lowercase hexadecimal SHA-256. Store the eight {seedId,digest} records in F2-WORK-001.campaign.seedIds order. F2/build freezes the first independently reviewed seed digests before production conformance is accepted.",
+    "cellIndexForbidden": true
+  },
+  "arrayConsumerTargets": [
+    {
+      "id": "sections",
+      "activation": null,
+      "path": [
+        "sections"
+      ],
+      "validElement": "fresh representative section"
+    },
+    {
+      "id": "measures",
+      "activation": null,
+      "path": [
+        "sections",
+        0,
+        "measures"
+      ],
+      "validElement": "fresh representative measure"
+    },
+    {
+      "id": "events",
+      "activation": null,
+      "path": [
+        "sections",
+        0,
+        "measures",
+        0,
+        "events"
+      ],
+      "validElement": "fresh representative event"
+    },
+    {
+      "id": "extensions",
+      "activation": "parsedDegree",
+      "path": [
+        "sections",
+        0,
+        "measures",
+        0,
+        "events",
+        0,
+        "chord",
+        "extensions"
+      ],
+      "validElement": {
+        "number": 9,
+        "alter": 0
+      }
+    },
+    {
+      "id": "additions",
+      "activation": "parsedAdditionDegree",
+      "path": [
+        "sections",
+        0,
+        "measures",
+        0,
+        "events",
+        0,
+        "chord",
+        "additions"
+      ],
+      "validElement": {
+        "number": 9,
+        "alter": 0
+      }
+    },
+    {
+      "id": "alterations",
+      "activation": "parsedAlterationDegree",
+      "path": [
+        "sections",
+        0,
+        "measures",
+        0,
+        "events",
+        0,
+        "chord",
+        "alterations"
+      ],
+      "validElement": {
+        "number": 9,
+        "alter": 0
+      }
+    },
+    {
+      "id": "omissions",
+      "activation": "parsedOmission",
+      "path": [
+        "sections",
+        0,
+        "measures",
+        0,
+        "events",
+        0,
+        "chord",
+        "omissions"
+      ],
+      "validElement": 3
+    },
+    {
+      "id": "custom-pitch-names",
+      "activation": "customChord",
+      "path": [
+        "sections",
+        0,
+        "measures",
+        0,
+        "events",
+        0,
+        "chord",
+        "pitchNames"
+      ],
+      "validElement": {
+        "step": "C",
+        "alter": 0
+      }
+    },
+    {
+      "id": "manual-pitches",
+      "activation": "manualVoicing",
+      "path": [
+        "sections",
+        0,
+        "measures",
+        0,
+        "events",
+        0,
+        "voicing",
+        "pitches"
+      ],
+      "validElement": {
+        "step": "C",
+        "alter": 0,
+        "octave": 4
+      }
+    },
+    {
+      "id": "frozen-pitches",
+      "activation": "frozenVoicing",
+      "path": [
+        "sections",
+        0,
+        "measures",
+        0,
+        "events",
+        0,
+        "voicing",
+        "pitches"
+      ],
+      "validElement": {
+        "step": "C",
+        "alter": 0,
+        "octave": 4
+      }
+    }
+  ],
+  "arrayConsumerProtocol": "Start each cell from a fresh shape-cases.json representativeDocument, resolve every non-null activation through shape-cases.json activationProtocol, then resolve path and clone validElement exactly; target records are visited in checked-in order.",
+  "mutationControls": [
+    {
+      "id": "F2-MUT-001",
+      "owner": "F2",
+      "fault": "byte comparison uses greater-than-or-equal instead of greater-than",
+      "caseIds": [
+        "F2-LIMIT-001",
+        "F2-LIMIT-002"
+      ]
+    },
+    {
+      "id": "F2-MUT-002",
+      "owner": "E0",
+      "fault": "byte count uses UTF-16 code units",
+      "caseIds": [
+        "F2-IMPORT-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-003",
+      "owner": "E0",
+      "fault": "adapter parses before byte preflight",
+      "caseIds": [
+        "F2-IMPORT-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-004",
+      "owner": "F2",
+      "fault": "root depth starts at zero",
+      "caseIds": [
+        "F2-LIMIT-003",
+        "F2-LIMIT-004"
+      ]
+    },
+    {
+      "id": "F2-MUT-005",
+      "owner": "F2",
+      "fault": "arrays do not contribute to depth",
+      "caseIds": [
+        "F2-LIMIT-003",
+        "F2-LIMIT-004"
+      ]
+    },
+    {
+      "id": "F2-MUT-006",
+      "owner": "F2",
+      "fault": "brackets inside string scalar values contribute to graph depth",
+      "caseIds": [
+        "F2-LIMIT-003"
+      ]
+    },
+    {
+      "id": "F2-MUT-007",
+      "owner": "F2",
+      "fault": "unknown data branches bypass depth scan",
+      "caseIds": [
+        "F2-HOST-010"
+      ]
+    },
+    {
+      "id": "F2-MUT-008",
+      "owner": "F2",
+      "fault": "unknown root fields are ignored",
+      "caseIds": [
+        "F2-FIELD-003"
+      ]
+    },
+    {
+      "id": "F2-MUT-009",
+      "owner": "F2",
+      "fault": "unknown nested fields are ignored",
+      "caseIds": [
+        "F2-FIELD-003"
+      ]
+    },
+    {
+      "id": "F2-MUT-010",
+      "owner": "F2",
+      "fault": "missing fields receive defaults",
+      "caseIds": [
+        "F2-FIELD-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-011",
+      "owner": "F2",
+      "fault": "future schema falls back to v2",
+      "caseIds": [
+        "F2-SHAPE-010"
+      ]
+    },
+    {
+      "id": "F2-MUT-012",
+      "owner": "F2",
+      "fault": "property reads invoke getters",
+      "caseIds": [
+        "F2-HOST-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-013",
+      "owner": "F2",
+      "fault": "for-in traverses prototypes",
+      "caseIds": [
+        "F2-HOST-002"
+      ]
+    },
+    {
+      "id": "F2-MUT-014",
+      "owner": "F2",
+      "fault": "an own __proto__ key is special-cased as allowed instead of diagnosed as unknown",
+      "caseIds": [
+        "F2-HOST-003"
+      ]
+    },
+    {
+      "id": "F2-MUT-015",
+      "owner": "F2",
+      "fault": "an input Symbol.iterator is invoked to traverse an array",
+      "caseIds": [
+        "F2-HOST-005"
+      ]
+    },
+    {
+      "id": "F2-MUT-016",
+      "owner": "F2",
+      "fault": "sparse array holes are skipped",
+      "caseIds": [
+        "F2-HOST-004"
+      ]
+    },
+    {
+      "id": "F2-MUT-017",
+      "owner": "F2",
+      "fault": "symbol keys are ignored",
+      "caseIds": [
+        "F2-HOST-006"
+      ]
+    },
+    {
+      "id": "F2-MUT-018",
+      "owner": "F2",
+      "fault": "non-enumerable known field is accepted",
+      "caseIds": [
+        "F2-HOST-002"
+      ]
+    },
+    {
+      "id": "F2-MUT-019",
+      "owner": "F2",
+      "fault": "Proxy reflection exception escapes",
+      "caseIds": [
+        "F2-HOST-008"
+      ]
+    },
+    {
+      "id": "F2-MUT-020",
+      "owner": "F2",
+      "fault": "cycle recurses until stack overflow",
+      "caseIds": [
+        "F2-HOST-009"
+      ]
+    },
+    {
+      "id": "F2-MUT-021",
+      "owner": "F2",
+      "fault": "the sections maximum is raised from 64 to 65",
+      "caseIds": [
+        "F2-LIMIT-006"
+      ]
+    },
+    {
+      "id": "F2-MUT-022",
+      "owner": "F2",
+      "fault": "the per-section measures maximum is raised from 1024 to 1025",
+      "caseIds": [
+        "F2-LIMIT-008"
+      ]
+    },
+    {
+      "id": "F2-MUT-023",
+      "owner": "F2",
+      "fault": "the document event maximum is raised from 8192 to 8193",
+      "caseIds": [
+        "F2-LIMIT-010"
+      ]
+    },
+    {
+      "id": "F2-MUT-024",
+      "owner": "F2",
+      "fault": "event counter resets per section",
+      "caseIds": [
+        "F2-LIMIT-010"
+      ]
+    },
+    {
+      "id": "F2-MUT-025",
+      "owner": "F2",
+      "fault": "the stored-pitch maximum is raised from 16 to 17",
+      "caseIds": [
+        "F2-LIMIT-011"
+      ]
+    },
+    {
+      "id": "F2-MUT-026",
+      "owner": "F2",
+      "fault": "the Custom pitch-name maximum is raised from 16 to 17",
+      "caseIds": [
+        "F2-LIMIT-011"
+      ]
+    },
+    {
+      "id": "F2-MUT-027",
+      "owner": "F2",
+      "fault": "ID uniqueness is per kind instead of global",
+      "caseIds": [
+        "F2-ID-002"
+      ]
+    },
+    {
+      "id": "F2-MUT-028",
+      "owner": "F2",
+      "fault": "ID uniqueness is case folded",
+      "caseIds": [
+        "F2-ID-005"
+      ]
+    },
+    {
+      "id": "F2-MUT-029",
+      "owner": "F2",
+      "fault": "IDs are trimmed before validation",
+      "caseIds": [
+        "F2-ID-006"
+      ]
+    },
+    {
+      "id": "F2-MUT-030",
+      "owner": "F2",
+      "fault": "only later duplicate occurrences are reported",
+      "caseIds": [
+        "F2-ID-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-031",
+      "owner": "F2",
+      "fault": "duplicate detection performs a prior-occurrence pairwise scan instead of one Map lookup-update per valid ID",
+      "caseIds": [
+        "F2-ID-003",
+        "F2-ID-004"
+      ]
+    },
+    {
+      "id": "F2-MUT-032",
+      "owner": "F2",
+      "fault": "invalid IDs enter the duplicate index",
+      "caseIds": [
+        "F2-ID-006"
+      ]
+    },
+    {
+      "id": "F2-MUT-033",
+      "owner": "F2",
+      "fault": "diagnostics preserve insertion order",
+      "caseIds": [
+        "F2-ORDER-004"
+      ]
+    },
+    {
+      "id": "F2-MUT-034",
+      "owner": "F2",
+      "fault": "numeric path indices sort lexically",
+      "caseIds": [
+        "F2-ORDER-002"
+      ]
+    },
+    {
+      "id": "F2-MUT-035",
+      "owner": "F2",
+      "fault": "identical paths do not tie-break by code",
+      "caseIds": [
+        "F2-ORDER-003"
+      ]
+    },
+    {
+      "id": "F2-MUT-036",
+      "owner": "F2",
+      "fault": "text length counts UTF-16 code units",
+      "caseIds": [
+        "F2-TEXT-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-037",
+      "owner": "F2",
+      "fault": "lone surrogates are accepted",
+      "caseIds": [
+        "F2-FIELD-005",
+        "F2-TEXT-002"
+      ]
+    },
+    {
+      "id": "F2-MUT-038",
+      "owner": "F2",
+      "fault": "accepted strings are trimmed",
+      "caseIds": [
+        "F2-TEXT-002"
+      ]
+    },
+    {
+      "id": "F2-MUT-039",
+      "owner": "F2",
+      "fault": "accepted strings are NFC normalized",
+      "caseIds": [
+        "F2-TEXT-002"
+      ]
+    },
+    {
+      "id": "F2-MUT-040",
+      "owner": "F2",
+      "fault": "U+FEFF is treated as nonblank",
+      "caseIds": [
+        "F2-TEXT-002"
+      ]
+    },
+    {
+      "id": "F2-MUT-041",
+      "owner": "F2",
+      "fault": "persisted BeatValue is normalized",
+      "caseIds": [
+        "F2-TIME-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-042",
+      "owner": "F2",
+      "fault": "arbitrary beat denominator is accepted",
+      "caseIds": [
+        "F2-TIME-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-043",
+      "owner": "F2",
+      "fault": "zero event duration is accepted",
+      "caseIds": [
+        "F2-TIME-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-044",
+      "owner": "F2",
+      "fault": "timeline ceiling is omitted",
+      "caseIds": [
+        "F2-TIME-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-045",
+      "owner": "F2",
+      "fault": "out-of-range tempo is clamped into 20 through 400",
+      "caseIds": [
+        "F2-VALUE-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-046",
+      "owner": "F2",
+      "fault": "fractional meter beatsPerBar is rounded to an integer",
+      "caseIds": [
+        "F2-VALUE-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-047",
+      "owner": "F2",
+      "fault": "lowMidi accepts -1 as in range",
+      "caseIds": [
+        "F2-VALUE-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-048",
+      "owner": "F2",
+      "fault": "playback levels are clamped",
+      "caseIds": [
+        "F2-VALUE-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-049",
+      "owner": "F2",
+      "fault": "unsupported instrument receives a fallback",
+      "caseIds": [
+        "F2-FIELD-005"
+      ]
+    },
+    {
+      "id": "F2-MUT-050",
+      "owner": "F2",
+      "fault": "invalid count-in receives a fallback",
+      "caseIds": [
+        "F2-VALUE-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-051",
+      "owner": "F2",
+      "fault": "Custom plus Auto is silently converted",
+      "caseIds": [
+        "F2-CHORD-004"
+      ]
+    },
+    {
+      "id": "F2-MUT-052",
+      "owner": "F2",
+      "fault": "a rootless Auto family accepts a non-external bass policy",
+      "caseIds": [
+        "F2-VOICE-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-053",
+      "owner": "F2",
+      "fault": "stored pitches are sorted by sounding MIDI value",
+      "caseIds": [
+        "F2-VOICE-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-054",
+      "owner": "F2",
+      "fault": "output aliases input containers",
+      "caseIds": [
+        "F2-FRESH-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-055",
+      "owner": "F2",
+      "fault": "failure returns a partial candidate",
+      "caseIds": [
+        "F2-FRESH-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-056",
+      "owner": "F2",
+      "fault": "source AST mismatch is rejected by F2",
+      "caseIds": [
+        "F2-SHAPE-003"
+      ]
+    },
+    {
+      "id": "F2-MUT-057",
+      "owner": "F2",
+      "fault": "custom pitch voicing mismatch is rejected by F2",
+      "caseIds": [
+        "F2-SHAPE-005"
+      ]
+    },
+    {
+      "id": "F2-MUT-058",
+      "owner": "F2",
+      "fault": "measure completion mismatch is rejected by F2",
+      "caseIds": [
+        "F2-SHAPE-006"
+      ]
+    },
+    {
+      "id": "F2-MUT-059",
+      "owner": "F2",
+      "fault": "blank partial reason is rejected by F2",
+      "caseIds": [
+        "F2-SHAPE-007"
+      ]
+    },
+    {
+      "id": "F2-MUT-060",
+      "owner": "F2",
+      "fault": "the internal evidence seam is publicly exported from the Domain index",
+      "caseIds": [
+        "F2-STATIC-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-061",
+      "owner": "F2",
+      "fault": "byte preflight accepts negative zero as canonical zero",
+      "caseIds": [
+        "F2-BOUNDARY-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-062",
+      "owner": "F2",
+      "fault": "byte preflight coerces BigInt with Number(value)",
+      "caseIds": [
+        "F2-BOUNDARY-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-063",
+      "owner": "F2",
+      "fault": "an unknown accessor is read instead of diagnosed from its descriptor",
+      "caseIds": [
+        "F2-HOST-006"
+      ]
+    },
+    {
+      "id": "F2-MUT-064",
+      "owner": "F2",
+      "fault": "final exact code-path diagnostic collapse is omitted",
+      "caseIds": [
+        "F2-HOST-006"
+      ]
+    },
+    {
+      "id": "F2-MUT-065",
+      "owner": "F2",
+      "fault": "an inherited array index is treated as filling an own hole",
+      "caseIds": [
+        "F2-HOST-004"
+      ]
+    },
+    {
+      "id": "F2-MUT-066",
+      "owner": "F2",
+      "fault": "known Proxy field values are obtained through [[Get]] instead of own data descriptors",
+      "caseIds": [
+        "F2-HOST-008"
+      ]
+    },
+    {
+      "id": "F2-MUT-067",
+      "owner": "F2",
+      "fault": "object cycle edges are traversed in insertion order instead of lexical order",
+      "caseIds": [
+        "F2-HOST-009"
+      ]
+    },
+    {
+      "id": "F2-MUT-068",
+      "owner": "F2",
+      "fault": "depth is incremented before checking a repeated ancestor edge",
+      "caseIds": [
+        "F2-HOST-009"
+      ]
+    },
+    {
+      "id": "F2-MUT-069",
+      "owner": "F2",
+      "fault": "collection limits run before the iterative depth and cycle preflight",
+      "caseIds": [
+        "F2-LIMIT-004"
+      ]
+    },
+    {
+      "id": "F2-MUT-070",
+      "owner": "F2",
+      "fault": "stored voicing pitches are checked before Custom pitchNames in the same event",
+      "caseIds": [
+        "F2-LIMIT-011"
+      ]
+    },
+    {
+      "id": "F2-MUT-071",
+      "owner": "F2",
+      "fault": "collection preflight returns after a malformed event instead of continuing later events",
+      "caseIds": [
+        "F2-LIMIT-011"
+      ]
+    },
+    {
+      "id": "F2-MUT-072",
+      "owner": "F2",
+      "fault": "timeline ceiling is compared against each duration independently instead of the cumulative sum",
+      "caseIds": [
+        "F2-TIME-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-073",
+      "owner": "F2",
+      "fault": "a duration is accumulated only after its entire event decodes successfully",
+      "caseIds": [
+        "F2-TIME-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-074",
+      "owner": "F2",
+      "fault": "degree ordering compares number only and ignores alter as the secondary key",
+      "caseIds": [
+        "F2-CHORD-001",
+        "F2-CHORD-002"
+      ]
+    },
+    {
+      "id": "F2-MUT-075",
+      "owner": "F2",
+      "fault": "raw omission members bypass the fixed degree-number inventory",
+      "caseIds": [
+        "F2-VALUE-002"
+      ]
+    },
+    {
+      "id": "F2-MUT-076",
+      "owner": "F2",
+      "fault": "the accepted triad inventory is replaced by only major",
+      "caseIds": [
+        "F2-CHORD-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-077",
+      "owner": "F2",
+      "fault": "every Custom chord paired with Frozen voicing is rejected",
+      "caseIds": [
+        "F2-VOICE-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-078",
+      "owner": "F2",
+      "fault": "stored-bass compatibility runs only when slash bass is C natural",
+      "caseIds": [
+        "F2-VOICE-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-079",
+      "owner": "F2",
+      "fault": "invalid Unicode returns before an independently true title-length diagnostic",
+      "caseIds": [
+        "F2-TEXT-002"
+      ]
+    },
+    {
+      "id": "F2-MUT-080",
+      "owner": "F2",
+      "fault": "equivalent public calls memoize and reuse a prior result envelope",
+      "caseIds": [
+        "F2-FRESH-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-081",
+      "owner": "F2",
+      "fault": "positive interior byte lengths below the limit are rejected",
+      "caseIds": [
+        "F2-LIMIT-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-082",
+      "owner": "F2",
+      "fault": "a boxed Number is classified as an ordinary persisted record",
+      "caseIds": [
+        "F2-FIELD-002",
+        "F2-SHAPE-008"
+      ]
+    },
+    {
+      "id": "F2-MUT-083",
+      "owner": "F2",
+      "fault": "a non-enumerable unknown string field is ignored",
+      "caseIds": [
+        "F2-HOST-006"
+      ]
+    },
+    {
+      "id": "F2-MUT-084",
+      "owner": "F2",
+      "fault": "Proxy getPrototypeOf is consulted during record or array classification",
+      "caseIds": [
+        "F2-HOST-008"
+      ]
+    },
+    {
+      "id": "F2-MUT-085",
+      "owner": "F2",
+      "fault": "ancestor-cycle detection is omitted for arrays",
+      "caseIds": [
+        "F2-HOST-009"
+      ]
+    },
+    {
+      "id": "F2-MUT-086",
+      "owner": "F2",
+      "fault": "the cumulative event cap is checked before all section measure caps",
+      "caseIds": [
+        "F2-LIMIT-008"
+      ]
+    },
+    {
+      "id": "F2-MUT-087",
+      "owner": "F2",
+      "fault": "per-section measure caps are scanned in reverse section chronology",
+      "caseIds": [
+        "F2-LIMIT-008"
+      ]
+    },
+    {
+      "id": "F2-MUT-088",
+      "owner": "F2",
+      "fault": "pitch-array caps are checked before the cumulative event cap",
+      "caseIds": [
+        "F2-LIMIT-010"
+      ]
+    },
+    {
+      "id": "F2-MUT-089",
+      "owner": "F2",
+      "fault": "collection traversal returns after a malformed section",
+      "caseIds": [
+        "F2-LIMIT-011"
+      ]
+    },
+    {
+      "id": "F2-MUT-090",
+      "owner": "F2",
+      "fault": "collection traversal returns after a malformed measure",
+      "caseIds": [
+        "F2-LIMIT-011"
+      ]
+    },
+    {
+      "id": "F2-MUT-091",
+      "owner": "F2",
+      "fault": "collection traversal returns after a malformed chord",
+      "caseIds": [
+        "F2-LIMIT-011"
+      ]
+    },
+    {
+      "id": "F2-MUT-092",
+      "owner": "F2",
+      "fault": "degree-array validation returns after the first invalid sibling collection",
+      "caseIds": [
+        "F2-CHORD-003"
+      ]
+    },
+    {
+      "id": "F2-MUT-093",
+      "owner": "F2",
+      "fault": "a valid spelled-pitch step is accepted only at the document-key consumer",
+      "caseIds": [
+        "F2-VALUE-002"
+      ]
+    },
+    {
+      "id": "F2-MUT-094",
+      "owner": "F2",
+      "fault": "a valid Custom slash chord with Manual included-bass voicing is rejected",
+      "caseIds": [
+        "F2-VOICE-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-095",
+      "owner": "F2",
+      "fault": "included-bass exact spelling is compared only by chromatic pitch class",
+      "caseIds": [
+        "F2-VOICE-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-096",
+      "owner": "F2",
+      "fault": "public decoder issues expose a sourceText field",
+      "caseIds": [
+        "F2-FRESH-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-097",
+      "owner": "F2",
+      "fault": "decoded sections measures and events are sorted by ID",
+      "caseIds": [
+        "F2-SHAPE-002"
+      ]
+    },
+    {
+      "id": "F2-MUT-098",
+      "owner": "F2",
+      "fault": "Custom pitchNames are sorted by chromatic pitch class",
+      "caseIds": [
+        "F2-VOICE-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-099",
+      "owner": "F2",
+      "fault": "pitch-array limits are guessed from branch fields after an invalid union discriminator",
+      "caseIds": [
+        "F2-FIELD-004"
+      ]
+    },
+    {
+      "id": "F2-MUT-100",
+      "owner": "F2",
+      "fault": "cross-field validation stops after the first event with an issue",
+      "caseIds": [
+        "F2-VOICE-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-101",
+      "owner": "F2",
+      "fault": "a nested BigInt numeric field is coerced with Number(value)",
+      "caseIds": [
+        "F2-FIELD-002"
+      ]
+    },
+    {
+      "id": "F2-MUT-102",
+      "owner": "F2",
+      "fault": "stable-ID length validation runs only for the document ID",
+      "caseIds": [
+        "F2-VALUE-002"
+      ]
+    },
+    {
+      "id": "F2-MUT-103",
+      "owner": "F2",
+      "fault": "canonical beat denominator validation runs only for event duration",
+      "caseIds": [
+        "F2-TIME-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-104",
+      "owner": "F2",
+      "fault": "playback level range validation runs only for masterVolume",
+      "caseIds": [
+        "F2-VALUE-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-105",
+      "owner": "F2",
+      "fault": "MIDI range bounds run only for lowMidi",
+      "caseIds": [
+        "F2-VALUE-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-106",
+      "owner": "F2",
+      "fault": "section keyOverride mode bypasses the reviewed key-mode inventory",
+      "caseIds": [
+        "F2-FIELD-005",
+        "F2-VALUE-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-107",
+      "owner": "F2",
+      "fault": "degree ordering runs only for the extensions consumer",
+      "caseIds": [
+        "F2-CHORD-002"
+      ]
+    },
+    {
+      "id": "F2-MUT-108",
+      "owner": "F2",
+      "fault": "a Symbol-keyed depth-33 data value is traversed during depth preflight",
+      "caseIds": [
+        "F2-HOST-006"
+      ]
+    },
+    {
+      "id": "F2-MUT-109",
+      "owner": "F2",
+      "fault": "a setter-only array index is accepted as a data slot",
+      "caseIds": [
+        "F2-HOST-005"
+      ]
+    },
+    {
+      "id": "F2-MUT-110",
+      "owner": "F2",
+      "fault": "collection limits run before a throwing reflection preflight",
+      "caseIds": [
+        "F2-HOST-008"
+      ]
+    },
+    {
+      "id": "F2-MUT-111",
+      "owner": "F2",
+      "fault": "collection limits run before an ancestor-cycle preflight",
+      "caseIds": [
+        "F2-HOST-009"
+      ]
+    },
+    {
+      "id": "F2-MUT-112",
+      "owner": "F2",
+      "fault": "each event duration is rounded to integer quarter-note beats before timeline accumulation",
+      "caseIds": [
+        "F2-TIME-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-113",
+      "owner": "F2",
+      "fault": "a nested Symbol numeric field is converted to a fallback number",
+      "caseIds": [
+        "F2-FIELD-002"
+      ]
+    },
+    {
+      "id": "F2-MUT-114",
+      "owner": "F2",
+      "fault": "public decoder issues expose a suggestion field",
+      "caseIds": [
+        "F2-FRESH-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-115",
+      "owner": "F2",
+      "fault": "a valid Custom slash chord with Frozen external-bass voicing is rejected",
+      "caseIds": [
+        "F2-VOICE-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-116",
+      "owner": "F2",
+      "fault": "a present undefined nullable field is coerced to null",
+      "caseIds": [
+        "F2-FIELD-002"
+      ]
+    },
+    {
+      "id": "F2-MUT-117",
+      "owner": "F2",
+      "fault": "field decoding returns immediately after a missing or invalid document schema",
+      "caseIds": [
+        "F2-SHAPE-009",
+        "F2-SHAPE-010"
+      ]
+    },
+    {
+      "id": "F2-MUT-118",
+      "owner": "F2",
+      "fault": "string path segments are sorted with localeCompare instead of ECMAScript UTF-16 code-unit order",
+      "caseIds": [
+        "F2-ORDER-004"
+      ]
+    },
+    {
+      "id": "F2-MUT-119",
+      "owner": "F2",
+      "fault": "numeric and string path segments are sorted without the required numeric-before-string type rank",
+      "caseIds": [
+        "F2-ORDER-004"
+      ]
+    },
+    {
+      "id": "F2-MUT-120",
+      "owner": "F2",
+      "fault": "a descendant diagnostic sorts before its otherwise equal containing path",
+      "caseIds": [
+        "F2-ORDER-004"
+      ]
+    },
+    {
+      "id": "F2-MUT-121",
+      "owner": "F2",
+      "fault": "stable-ID syntax is checked before the 128-character length ceiling",
+      "caseIds": [
+        "F2-VALUE-002"
+      ]
+    },
+    {
+      "id": "F2-MUT-122",
+      "owner": "F2",
+      "fault": "tempo range is checked before integer refusal",
+      "caseIds": [
+        "F2-VALUE-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-123",
+      "owner": "F2",
+      "fault": "MIDI range is checked before integer refusal",
+      "caseIds": [
+        "F2-VALUE-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-124",
+      "owner": "F2",
+      "fault": "Beat numerator range is checked before safe-integer refusal",
+      "caseIds": [
+        "F2-TIME-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-125",
+      "owner": "F2",
+      "fault": "degree-array consumers reject valid single-flat and single-sharp alterations",
+      "caseIds": [
+        "F2-CHORD-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-126",
+      "owner": "F2",
+      "fault": "stored pitch octaves are clamped to an arbitrary musical range",
+      "caseIds": [
+        "F2-VALUE-002"
+      ]
+    },
+    {
+      "id": "F2-MUT-127",
+      "owner": "F2",
+      "fault": "array extra-string data values are skipped during depth and cycle preflight",
+      "caseIds": [
+        "F2-HOST-006"
+      ]
+    },
+    {
+      "id": "F2-MUT-128",
+      "owner": "F2",
+      "fault": "documentDecodeOperations is omitted from the public Domain surface",
+      "caseIds": [
+        "F2-STATIC-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-129",
+      "owner": "F2",
+      "fault": "an invalid union discriminator returns before common fields and truly unknown keys are diagnosed",
+      "caseIds": [
+        "F2-FIELD-004"
+      ]
+    },
+    {
+      "id": "F2-MUT-130",
+      "owner": "F2",
+      "fault": "accepted reverbAmount negative zero is normalized to positive zero",
+      "caseIds": [
+        "F2-VALUE-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-131",
+      "owner": "F2",
+      "fault": "an input-supplied array map method is invoked during traversal",
+      "caseIds": [
+        "F2-HOST-005"
+      ]
+    },
+    {
+      "id": "F2-MUT-132",
+      "owner": "F2",
+      "fault": "U+0085 is treated as blank",
+      "caseIds": [
+        "F2-TEXT-002"
+      ]
+    },
+    {
+      "id": "F2-MUT-133",
+      "owner": "F2",
+      "fault": "fractional tempo is rounded to an integer",
+      "caseIds": [
+        "F2-VALUE-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-134",
+      "owner": "F2",
+      "fault": "out-of-range meter beatsPerBar is clamped into 1 through 32",
+      "caseIds": [
+        "F2-VALUE-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-135",
+      "owner": "F2",
+      "fault": "a slash chord accepts Auto bassPolicy none",
+      "caseIds": [
+        "F2-VOICE-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-136",
+      "owner": "F2",
+      "fault": "duplicate stored pitches are deduplicated",
+      "caseIds": [
+        "F2-VOICE-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-137",
+      "owner": "F2",
+      "fault": "F2 casts a structural candidate to ValidatedDocument",
+      "caseIds": [
+        "F2-STATIC-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-138",
+      "owner": "F2",
+      "fault": "F2 uses an unchecked ProgressionDocumentShapeV2 assertion",
+      "caseIds": [
+        "F2-STATIC-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-139",
+      "owner": "F2",
+      "fault": "duplicate Custom pitchNames are deduplicated",
+      "caseIds": [
+        "F2-VOICE-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-140",
+      "owner": "F2",
+      "fault": "a Symbol-keyed self-cycle data value is traversed during cycle preflight",
+      "caseIds": [
+        "F2-HOST-006"
+      ]
+    },
+    {
+      "id": "F2-MUT-141",
+      "owner": "F2",
+      "fault": "documentDecodeOperations is published without recursive freezing",
+      "caseIds": [
+        "F2-STATIC-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-142",
+      "owner": "F2",
+      "fault": "an empty measure ID is accepted",
+      "caseIds": [
+        "F2-VALUE-002"
+      ]
+    },
+    {
+      "id": "F2-MUT-143",
+      "owner": "F2",
+      "fault": "degree number 8 is accepted in chord additions",
+      "caseIds": [
+        "F2-VALUE-002"
+      ]
+    },
+    {
+      "id": "F2-MUT-144",
+      "owner": "F2",
+      "fault": "a fractional Frozen pitch octave is accepted",
+      "caseIds": [
+        "F2-VALUE-002"
+      ]
+    },
+    {
+      "id": "F2-MUT-145",
+      "owner": "F2",
+      "fault": "an unsafe-integer Frozen pitch octave is accepted",
+      "caseIds": [
+        "F2-VALUE-002"
+      ]
+    },
+    {
+      "id": "F2-MUT-146",
+      "owner": "F2",
+      "fault": "an invalid chord discriminator prunes a valid stored-voicing pitch-limit branch in the same event",
+      "caseIds": [
+        "F2-LIMIT-011"
+      ]
+    },
+    {
+      "id": "F2-MUT-147",
+      "owner": "F2",
+      "fault": "documentDecodeOperations own keys are inserted in reverse order",
+      "caseIds": [
+        "F2-STATIC-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-148",
+      "owner": "F2",
+      "fault": "documentDecodeOperations members are wrapper functions instead of the named function exports",
+      "caseIds": [
+        "F2-STATIC-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-149",
+      "owner": "F2",
+      "fault": "documentDecodeOperations exists in its module but is not re-exported from the Domain index",
+      "caseIds": [
+        "F2-STATIC-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-150",
+      "owner": "F2",
+      "fault": "the decoder invokes JSON.stringify on the input and triggers toJSON",
+      "caseIds": [
+        "F2-HOST-003",
+        "F2-STATIC-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-151",
+      "owner": "F2",
+      "fault": "a nested object in a successful decoded value is left mutable",
+      "caseIds": [
+        "F2-FRESH-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-152",
+      "owner": "F2",
+      "fault": "a failure issue path array is left mutable",
+      "caseIds": [
+        "F2-FRESH-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-153",
+      "owner": "F2",
+      "fault": "a public result envelope is left mutable",
+      "caseIds": [
+        "F2-FRESH-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-154",
+      "owner": "F2",
+      "fault": "the decoder writes a normalized value into an input container and restores the original descriptor before return",
+      "caseIds": [
+        "F2-FRESH-001",
+        "F2-STATIC-001",
+        "F2-TEXT-002"
+      ]
+    },
+    {
+      "id": "F2-MUT-155",
+      "owner": "F2",
+      "fault": "the decoder retains the latest input in an unfrozen module-scope reference binding",
+      "caseIds": [
+        "F2-STATIC-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-156",
+      "owner": "F2",
+      "fault": "depth preflight recursively calls itself instead of using a local worklist loop",
+      "caseIds": [
+        "F2-STATIC-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-157",
+      "owner": "F2",
+      "fault": "a valid flat spelling is rewritten enharmonically in the successful output",
+      "caseIds": [
+        "F2-VALUE-002"
+      ]
+    },
+    {
+      "id": "F2-MUT-158",
+      "owner": "F2",
+      "fault": "bytesObserved always reports zero",
+      "caseIds": [
+        "F2-WORK-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-159",
+      "owner": "F2",
+      "fault": "maxDepthObserved always reports zero",
+      "caseIds": [
+        "F2-WORK-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-160",
+      "owner": "F2",
+      "fault": "recordsInspected always reports zero",
+      "caseIds": [
+        "F2-WORK-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-161",
+      "owner": "F2",
+      "fault": "arraysInspected always reports zero",
+      "caseIds": [
+        "F2-WORK-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-162",
+      "owner": "F2",
+      "fault": "scalarFieldsInspected always reports zero",
+      "caseIds": [
+        "F2-WORK-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-163",
+      "owner": "F2",
+      "fault": "descriptorReads always reports zero",
+      "caseIds": [
+        "F2-WORK-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-164",
+      "owner": "F2",
+      "fault": "arraySlotsRead always reports zero",
+      "caseIds": [
+        "F2-WORK-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-165",
+      "owner": "F2",
+      "fault": "collectionLengthsObserved always reports zero",
+      "caseIds": [
+        "F2-WORK-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-166",
+      "owner": "F2",
+      "fault": "document-decoder construction calls Object.assign on untrusted input",
+      "caseIds": [
+        "F2-STATIC-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-167",
+      "owner": "F2",
+      "fault": "document-decoder construction spreads an untrusted input record",
+      "caseIds": [
+        "F2-STATIC-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-168",
+      "owner": "F2",
+      "fault": "the inclusive 64-section maximum is rejected by a greater-than-or-equal comparison",
+      "caseIds": [
+        "F2-LIMIT-005"
+      ]
+    },
+    {
+      "id": "F2-MUT-169",
+      "owner": "F2",
+      "fault": "the inclusive 1024-measure maximum is rejected by a greater-than-or-equal comparison",
+      "caseIds": [
+        "F2-LIMIT-007"
+      ]
+    },
+    {
+      "id": "F2-MUT-170",
+      "owner": "F2",
+      "fault": "the inclusive 8192-event maximum is rejected by a greater-than-or-equal comparison",
+      "caseIds": [
+        "F2-LIMIT-009"
+      ]
+    },
+    {
+      "id": "F2-MUT-171",
+      "owner": "F2",
+      "fault": "the inclusive 16 stored-pitch maximum is rejected",
+      "caseIds": [
+        "F2-LIMIT-011"
+      ]
+    },
+    {
+      "id": "F2-MUT-172",
+      "owner": "F2",
+      "fault": "the inclusive 16 Custom pitch-name maximum is rejected",
+      "caseIds": [
+        "F2-LIMIT-011"
+      ]
+    },
+    {
+      "id": "F2-MUT-173",
+      "owner": "F2",
+      "fault": "highMidi accepts 128 as in range",
+      "caseIds": [
+        "F2-VALUE-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-174",
+      "owner": "F2",
+      "fault": "preflightDocumentImportBytesWithEvidence is omitted",
+      "caseIds": [
+        "F2-STATIC-001",
+        "F2-WORK-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-175",
+      "owner": "F2",
+      "fault": "DocumentDecoderEvidence omits descriptorReads",
+      "caseIds": [
+        "F2-STATIC-001",
+        "F2-WORK-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-176",
+      "owner": "F2",
+      "fault": "a private evidence result record is left mutable",
+      "caseIds": [
+        "F2-STATIC-001",
+        "F2-WORK-001"
+      ]
+    },
+    {
+      "id": "F2-MUT-177",
+      "owner": "F2",
+      "fault": "repeated private seam calls reuse one evidence record",
+      "caseIds": [
+        "F2-WORK-001"
+      ]
+    },
+    {"id": "F2-MUT-178", "owner": "F2", "fault": "pickup completion reason bypasses the shared Unicode, length, preservation, and blank-allowed laws", "caseIds": ["F2-TEXT-001", "F2-TEXT-002"]},
+    {"id": "F2-MUT-179", "owner": "F2", "fault": "non-title free-text consumers normalize NFD text to NFC", "caseIds": ["F2-TEXT-002"]},
+    {"id": "F2-MUT-180", "owner": "F2", "fault": "a non-title free-text consumer returns after invalid Unicode and suppresses an independently true length issue", "caseIds": ["F2-TEXT-002"]},
+    {"id": "F2-MUT-181", "owner": "F2", "fault": "Frozen engineVersion blankness short-circuits its independently true length issue", "caseIds": ["F2-TEXT-002"]},
+    {"id": "F2-MUT-182", "owner": "F2", "fault": "pickup expectedDuration bypasses Beat numerator and denominator validation", "caseIds": ["F2-TIME-001"]},
+    {"id": "F2-MUT-183", "owner": "F2", "fault": "pickup expectedDuration incorrectly imports F3 positivity and rejects canonical zero", "caseIds": ["F2-TIME-001"]},
+    {"id": "F2-MUT-184", "owner": "F2", "fault": "completion expectedDuration hardcodes only denominators 1 and 960", "caseIds": ["F2-TIME-001"]},
+    {"id": "F2-MUT-185", "owner": "F2", "fault": "event duration omits the maximum normalized Beat numerator refusal", "caseIds": ["F2-TIME-001"]},
+    {"id": "F2-MUT-186", "owner": "F2", "fault": "locally invalid event durations are still added to the timeline counters", "caseIds": ["F2-TIME-001", "F2-WORK-001"]},
+    {"id": "F2-MUT-187", "owner": "F2", "fault": "Custom pitchNames collection preflight runs only when the voicing is Manual and skips Frozen", "caseIds": ["F2-LIMIT-011"]},
+    {"id": "F2-MUT-188", "owner": "F2", "fault": "Custom plus Auto compatibility runs before the Custom pitchNames fatal preflight", "caseIds": ["F2-LIMIT-011"]},
+    {"id": "F2-MUT-189", "owner": "F2", "fault": "Manual bass-policy semantics run before the stored-pitch fatal preflight", "caseIds": ["F2-LIMIT-011"]},
+    {"id": "F2-MUT-190", "owner": "F2", "fault": "Frozen bass-policy semantics run before the stored-pitch fatal preflight", "caseIds": ["F2-LIMIT-011"]},
+    {"id": "F2-MUT-191", "owner": "F2", "fault": "an invalid voicing discriminator prunes a valid Custom pitchNames fatal branch in the same event", "caseIds": ["F2-LIMIT-011"]},
+    {"id": "F2-MUT-192", "owner": "F2", "fault": "F2 performs the deferred Custom pitch-to-voicing correspondence check only for Frozen voicings", "caseIds": ["F2-SHAPE-005"]},
+    {"id": "F2-MUT-193", "owner": "F2", "fault": "MIDI range endpoints normalize negative zero to positive zero", "caseIds": ["F2-VALUE-002"]},
+    {"id": "F2-MUT-194", "owner": "F2", "fault": "spelled pitch-class alter consumers normalize negative zero to positive zero", "caseIds": ["F2-VALUE-002"]},
+    {"id": "F2-MUT-195", "owner": "F2", "fault": "stored-pitch alter consumers normalize negative zero to positive zero", "caseIds": ["F2-VALUE-002"]},
+    {"id": "F2-MUT-196", "owner": "F2", "fault": "chord-degree alter consumers normalize negative zero to positive zero", "caseIds": ["F2-VALUE-002"]},
+    {"id": "F2-MUT-197", "owner": "F2", "fault": "countInBars normalizes negative zero to positive zero", "caseIds": ["F2-VALUE-002"]},
+    {"id": "F2-MUT-198", "owner": "F2", "fault": "boxed BigInt and boxed Symbol are treated as ordinary nested records", "caseIds": ["F2-FIELD-002"]},
+    {"id": "F2-MUT-199", "owner": "F2", "fault": "present undefined is coalesced to null at one or more nullable consumers", "caseIds": ["F2-FIELD-002"]},
+    {"id": "F2-MUT-200", "owner": "F2", "fault": "a present array slot with the wrong whole-element runtime type is assumed to have the consumer element shape", "caseIds": ["F2-HOST-004"]},
+    {"id": "F2-MUT-201", "owner": "F2", "fault": "an array Symbol-keyed depth-33 data value is traversed during depth preflight", "caseIds": ["F2-HOST-006"]},
+    {"id": "F2-MUT-202", "owner": "F2", "fault": "an array Symbol-keyed cycle data value is traversed during cycle preflight", "caseIds": ["F2-HOST-006"]},
+    {"id": "F2-MUT-203", "owner": "F2", "fault": "array Proxy ownKeys, descriptor, or revoked-operation exceptions escape the decoder", "caseIds": ["F2-HOST-008"]},
+    {"id": "F2-MUT-204", "owner": "F2", "fault": "already-frozen input containers are returned by reference instead of freshly copied", "caseIds": ["F2-FRESH-001"]},
+    {"id": "F2-MUT-205", "owner": "F2", "fault": "an issue message interpolates a hostile unknown key or value", "caseIds": ["F2-FRESH-001"]},
+    {"id": "F2-MUT-206", "owner": "F2", "fault": "a valid ID is inserted into the duplicate index only after its containing node has no unrelated issues", "caseIds": ["F2-ID-003"]},
+    {"id": "F2-MUT-207", "owner": "F2", "fault": "a recursively frozen module constant contains a mutable Map or Set cache", "caseIds": ["F2-STATIC-001"]},
+    {"id": "F2-MUT-208", "owner": "F2", "fault": "the decoder retains input-derived state on a function object property", "caseIds": ["F2-STATIC-001"]},
+    {"id": "F2-MUT-209", "owner": "F2", "fault": "a specialized decoder directly member-reads an untrusted nested container outside the reflection snapshot routine", "caseIds": ["F2-STATIC-001"]},
+    {"id": "F2-MUT-210", "owner": "F2", "fault": "a correctness traversal stops when a wall-clock or timer threshold is reached", "caseIds": ["F2-STATIC-001", "F2-WORK-001"]},
+    {"id": "F2-MUT-211", "owner": "F2", "fault": "decoded candidate flow escapes through an any assertion or unchecked assertion helper", "caseIds": ["F2-STATIC-001"]},
+    {"id": "F2-MUT-212", "owner": "F2", "fault": "the public wrapper diverges from the private evidence core on hostile or variant cells", "caseIds": ["F2-STATIC-001", "F2-WORK-001"]},
+    {"id": "F2-MUT-213", "owner": "F2", "fault": "a decoded candidate container is created outside the counter-incrementing candidate factories", "caseIds": ["F2-STATIC-001", "F2-WORK-001"]},
+    {"id": "F2-MUT-214", "owner": "F2", "fault": "the decoder calls makeChordEvent and creates a replacement chord wrapper with first-refusal aggregation", "caseIds": ["F2-STATIC-001"]},
+    {"id": "F2-MUT-215", "owner": "F2", "fault": "sectionSlotsObserved always reports zero", "caseIds": ["F2-WORK-001"]},
+    {"id": "F2-MUT-216", "owner": "F2", "fault": "maxMeasuresPerSectionObserved always reports zero", "caseIds": ["F2-WORK-001"]},
+    {"id": "F2-MUT-217", "owner": "F2", "fault": "eventSlotsObserved always reports zero", "caseIds": ["F2-WORK-001"]},
+    {"id": "F2-MUT-218", "owner": "F2", "fault": "maxPitchArraySlotsObserved always reports zero", "caseIds": ["F2-WORK-001", "F2-LIMIT-011"]},
+    {"id": "F2-MUT-219", "owner": "F2", "fault": "sectionElementsSemanticallyDecoded always reports zero", "caseIds": ["F2-WORK-001"]},
+    {"id": "F2-MUT-220", "owner": "F2", "fault": "measureElementsSemanticallyDecoded always reports zero", "caseIds": ["F2-WORK-001"]},
+    {"id": "F2-MUT-221", "owner": "F2", "fault": "eventValuesSemanticallyDecoded always reports zero", "caseIds": ["F2-WORK-001"]},
+    {"id": "F2-MUT-222", "owner": "F2", "fault": "pitchElementsSemanticallyDecoded always reports zero", "caseIds": ["F2-WORK-001", "F2-LIMIT-011"]},
+    {"id": "F2-MUT-223", "owner": "F2", "fault": "sectionElementsCopied always reports zero", "caseIds": ["F2-WORK-001"]},
+    {"id": "F2-MUT-224", "owner": "F2", "fault": "measureElementsCopied always reports zero", "caseIds": ["F2-WORK-001"]},
+    {"id": "F2-MUT-225", "owner": "F2", "fault": "eventValuesCopied always reports zero", "caseIds": ["F2-WORK-001"]},
+    {"id": "F2-MUT-226", "owner": "F2", "fault": "pitchElementsCopied always reports zero", "caseIds": ["F2-WORK-001", "F2-LIMIT-011"]},
+    {"id": "F2-MUT-227", "owner": "F2", "fault": "candidateObjectsAllocated always reports zero", "caseIds": ["F2-WORK-001"]},
+    {"id": "F2-MUT-228", "owner": "F2", "fault": "candidateArraysAllocated always reports zero", "caseIds": ["F2-WORK-001"]},
+    {"id": "F2-MUT-229", "owner": "F2", "fault": "diagnosticCandidatesProduced always reports zero", "caseIds": ["F2-WORK-001", "F2-HOST-006"]},
+    {"id": "F2-MUT-230", "owner": "F2", "fault": "idOccurrences always reports zero", "caseIds": ["F2-WORK-001", "F2-ID-003", "F2-ID-006"]},
+    {"id": "F2-MUT-231", "owner": "F2", "fault": "idClusters always reports zero", "caseIds": ["F2-ID-003", "F2-ID-004"]},
+    {"id": "F2-MUT-232", "owner": "F2", "fault": "idDuplicateWorkUnits always reports zero", "caseIds": ["F2-ID-003", "F2-ID-004", "F2-ID-006"]},
+    {"id": "F2-MUT-233", "owner": "F2", "fault": "timelineAdditions always reports zero", "caseIds": ["F2-WORK-001", "F2-TIME-001"]},
+    {"id": "F2-MUT-234", "owner": "F2", "fault": "timelineTicksObserved always reports zero", "caseIds": ["F2-WORK-001", "F2-TIME-001"]}
+  ],
+  "cases": [
+    {
+      "id": "F2-BOUNDARY-001",
+      "traceIds": [
+        "F2-TRACE-API",
+        "F2-TRACE-LIMITS",
+        "F2-TRACE-TOTALITY"
+      ],
+      "authorityIds": [
+        "F2-AUTH-PROJECT-SCHEMA",
+        "F2-AUTH-SECURITY-BOUNDARY"
+      ],
+      "kind": "byte-preflight-runtime-type-matrix",
+      "operation": "preflightDocumentImportBytes",
+      "inputs": [
+        -1,
+        0.5,
+        {
+          "specialNumber": "NaN"
+        },
+        {
+          "specialNumber": "+Infinity"
+        },
+        {
+          "specialNumber": "-Infinity"
+        },
+        {
+          "specialNumber": "unsafe-positive"
+        },
+        {
+          "specialNumber": "-0"
+        },
+        "2097152",
+        null,
+        true,
+        {},
+        [],
+        {
+          "specialPrimitive": "undefined"
+        },
+        {
+          "specialPrimitive": "bigint-one"
+        },
+        {
+          "specialPrimitive": "symbol-test"
+        },
+        {
+          "specialPrimitive": "callable-function"
+        },
+        {
+          "specialPrimitive": "boxed-number"
+        }
+      ],
+      "expected": {
+        "everyCell": {
+          "ok": false,
+          "issues": [
+            {
+              "code": "shape.invalid_type",
+              "path": []
+            }
+          ]
+        },
+        "noThrow": true
+      }
+    },
+    {
+      "id": "F2-FRESH-001",
+      "traceIds": [
+        "F2-TRACE-FRESHNESS",
+        "F2-TRACE-TOTALITY",
+        "F2-TRACE-API"
+      ],
+      "authorityIds": [
+        "F2-AUTH-PROJECT-SCHEMA",
+        "F2-AUTH-SECURITY-BOUNDARY"
+      ],
+      "kind": "freshness-freeze-transaction-matrix",
+      "cellExpansion": [
+        {
+          "id": "shape-success",
+          "operation": "decodeDocumentShape",
+          "template": "shape-cases.json:templates.representativeDocument"
+        },
+        {
+          "id": "shape-success-recursively-frozen-input",
+          "operation": "decodeDocumentShape",
+          "template": "shape-cases.json:templates.representativeDocument",
+          "recursivelyFreezeInputBeforeDecode": true
+        },
+        {
+          "id": "shape-success-recursive-write-traps",
+          "operation": "decodeDocumentShape",
+          "template": "shape-cases.json:templates.representativeDocument",
+          "recursivelyProxyEveryInputContainer": {
+            "forwardReadTraps": ["ownKeys", "getOwnPropertyDescriptor"],
+            "instrumentAndThrowWriteTraps": ["set", "defineProperty", "deleteProperty", "setPrototypeOf"]
+          }
+        },
+        {
+          "id": "shape-schema-failure",
+          "operation": "decodeDocumentShape",
+          "template": "shape-cases.json:templates.representativeDocument",
+          "mutation": {
+            "operation": "delete",
+            "path": [
+              "schema"
+            ]
+          }
+        },
+        {
+          "id": "shape-redaction-failure",
+          "operation": "decodeDocumentShape",
+          "template": "shape-cases.json:templates.representativeDocument",
+          "mutation": {
+            "operation": "set",
+            "path": [
+              "sections",
+              0,
+              "measures",
+              0,
+              "events",
+              0,
+              "id"
+            ],
+            "value": "LEAK SENTINEL 6f6f1e5a"
+          }
+        },
+        {
+          "id": "shape-unknown-key-redaction-failure",
+          "operation": "decodeDocumentShape",
+          "template": "shape-cases.json:templates.representativeDocument",
+          "mutation": {
+            "operation": "add",
+            "path": ["LEAK-UNKNOWN-KEY-a49e7d2c"],
+            "value": "LEAK-UNKNOWN-VALUE-b177f1c4"
+          }
+        },
+        {
+          "id": "byte-success",
+          "operation": "preflightDocumentImportBytes",
+          "input": 2097152
+        },
+        {
+          "id": "byte-failure",
+          "operation": "preflightDocumentImportBytes",
+          "input": 2097153
+        }
+      ],
+      "checks": [
+        "every accepted output object and array is recursively frozen",
+        "every output object and array differs by reference from every input container",
+        "successful shape input/output persisted-data projections have exact schema-canonical record field sets/values, exact array order, exact spelling, and Object.is scalar identity",
+        "input descriptors and values unchanged after success",
+        "input unchanged after every failure",
+        "output mutation cannot affect input",
+        "failure result has errors and no value or warnings",
+        "success result has value and warnings empty and no errors",
+        "every result envelope is frozen",
+        "every success value, warnings tuple, and nested container is frozen",
+        "every failure errors tuple, issue record, and issue path array is frozen",
+        "repeated shape-success calls return deeply equal but referentially distinct result, value, warnings, and every corresponding nested object or array",
+        "repeated shape-schema-failure calls return deeply equal but referentially distinct result, errors, every issue, and every issue path",
+        "repeated shape-redaction-failure calls return deeply equal but referentially distinct result, errors, every issue, and every issue path",
+        "repeated byte-success calls return deeply equal but referentially distinct result, value, and warnings containers",
+        "repeated byte-failure calls return deeply equal but referentially distinct result, errors, issue, and path containers",
+        "every issue message is a deterministic nonblank string",
+        "shape-redaction-failure issue messages do not contain the exact LEAK SENTINEL 6f6f1e5a input value",
+        "shape-unknown-key-redaction-failure issue messages contain neither LEAK-UNKNOWN-KEY-a49e7d2c nor LEAK-UNKNOWN-VALUE-b177f1c4 even though the required issue path retains the hostile key",
+        "every issue own-key set is exactly code, message, path",
+        "suggestion and sourceText are absent from every issue"
+      ],
+      "expected": {
+        "allChecks": true,
+        "warnings": [],
+        "partialCandidate": false,
+        "atomicCellOrder": [
+          "shape-success",
+          "shape-success-recursively-frozen-input",
+          "shape-success-recursive-write-traps",
+          "shape-schema-failure",
+          "shape-redaction-failure",
+          "shape-unknown-key-redaction-failure",
+          "byte-success",
+          "byte-failure"
+        ],
+        "operationsCovered": [
+          "decodeDocumentShape",
+          "preflightDocumentImportBytes"
+        ],
+        "crossCallShapeSuccessAllContainersDistinct": true,
+        "frozenInputSuccessHasNoInputOutputContainerIdentityOverlap": true,
+        "recursiveInputWriteTrapCallbacks": 0,
+        "successfulShapePersistedDataProjectionExact": true,
+        "crossCallShapeFailuresAllContainersDistinct": true,
+        "crossCallByteResultsAllContainersDistinct": true,
+        "failureIssueOwnKeysLexical": [
+          "code",
+          "message",
+          "path"
+        ],
+        "forbiddenIssueKeys": [
+          "sourceText",
+          "suggestion"
+        ],
+        "forbiddenMessageSubstring": "LEAK SENTINEL 6f6f1e5a",
+        "forbiddenMessageSubstrings": [
+          "LEAK SENTINEL 6f6f1e5a",
+          "LEAK-UNKNOWN-KEY-a49e7d2c",
+          "LEAK-UNKNOWN-VALUE-b177f1c4"
+        ],
+        "failureErrorsFrozen": true,
+        "failureIssueRecordsFrozen": true,
+        "failureMessagesNonblank": true
+      }
+    },
+    {
+      "id": "F2-HOST-001",
+      "traceIds": [
+        "F2-TRACE-TOTALITY",
+        "F2-TRACE-STRICT-SHAPE",
+        "F2-TRACE-BOUNDS"
+      ],
+      "authorityIds": [
+        "F2-AUTH-ECMASCRIPT-DATA",
+        "F2-AUTH-SECURITY-BOUNDARY"
+      ],
+      "kind": "own-accessor-known-field-matrix",
+      "paths": [
+        [
+          "schema"
+        ],
+        [
+          "title"
+        ],
+        [
+          "sections",
+          0,
+          "measures",
+          0,
+          "events",
+          0,
+          "chord",
+          "root"
+        ],
+        [
+          "playback",
+          "masterVolume"
+        ]
+      ],
+      "descriptors": [
+        "getter",
+        "setter-only"
+      ],
+      "expected": {
+        "code": "shape.invalid_type",
+        "path": "exact accessor field path including present root schema",
+        "schemaAccessorIsNotMissing": true,
+        "getterCallbacks": 0,
+        "setterCallbacks": 0
+      }
+    },
+    {
+      "id": "F2-HOST-002",
+      "traceIds": [
+        "F2-TRACE-TOTALITY",
+        "F2-TRACE-STRICT-SHAPE",
+        "F2-TRACE-FRESHNESS"
+      ],
+      "authorityIds": [
+        "F2-AUTH-ECMASCRIPT-DATA"
+      ],
+      "kind": "prototype-and-descriptor-matrix",
+      "cells": [
+        {
+          "id": "null-prototype",
+          "rootPrototype": null,
+          "ownFields": "all representative document own fields"
+        },
+        {
+          "id": "custom-prototype",
+          "rootPrototype": {
+            "sentinel": true
+          },
+          "ownFields": "all representative document own fields"
+        },
+        {
+          "id": "frozen-input",
+          "freezeInputRecursively": true
+        },
+        {
+          "id": "inherited-required-getters",
+          "omitOwnFields": [
+            "schema",
+            "title"
+          ],
+          "prototypeDescriptors": {
+            "schema": {
+              "enumerable": true,
+              "get": {
+                "instrumentedCallback": "prototypeCallbacks",
+                "behavior": "throw-if-called"
+              }
+            },
+            "title": {
+              "enumerable": true,
+              "get": {
+                "instrumentedCallback": "prototypeCallbacks",
+                "behavior": "throw-if-called"
+              }
+            }
+          }
+        },
+        {
+          "id": "enumerable-nonwritable-title",
+          "ownDescriptor": {
+            "path": [
+              "title"
+            ],
+            "value": "Changes",
+            "enumerable": true,
+            "writable": false,
+            "configurable": true
+          }
+        },
+        {
+          "id": "nonenumerable-title",
+          "ownDescriptor": {
+            "path": [
+              "title"
+            ],
+            "value": "Changes",
+            "enumerable": false,
+            "writable": true,
+            "configurable": true
+          }
+        },
+        {
+          "id": "nonenumerable-schema",
+          "ownDescriptor": {
+            "path": [
+              "schema"
+            ],
+            "value": "changes.progression.v2",
+            "enumerable": false,
+            "writable": true,
+            "configurable": true
+          }
+        }
+      ],
+      "expected": {
+        "okCellIds": [
+          "null-prototype",
+          "custom-prototype",
+          "frozen-input",
+          "enumerable-nonwritable-title"
+        ],
+        "inheritedSchemaIssues": [
+          {
+            "code": "document.schema_missing",
+            "path": [
+              "schema"
+            ]
+          },
+          {
+            "code": "shape.invalid_type",
+            "path": [
+              "title"
+            ]
+          }
+        ],
+        "nonenumerableTitle": {
+          "code": "shape.invalid_type",
+          "path": [
+            "title"
+          ]
+        },
+        "nonenumerablePresentSchema": {
+          "code": "shape.invalid_type",
+          "path": [
+            "schema"
+          ],
+          "missingCodeForbidden": true
+        },
+        "prototypeCallbacks": 0
+      }
+    },
+    {
+      "id": "F2-HOST-003",
+      "traceIds": [
+        "F2-TRACE-STRICT-SHAPE",
+        "F2-TRACE-TOTALITY"
+      ],
+      "authorityIds": [
+        "F2-AUTH-SECURITY-BOUNDARY"
+      ],
+      "kind": "dangerous-name-and-tojson-matrix",
+      "cells": [
+        {
+          "id": "proto-key",
+          "ownKey": "__proto__",
+          "descriptor": {
+            "value": true,
+            "enumerable": true,
+            "writable": true,
+            "configurable": true
+          }
+        },
+        {
+          "id": "constructor-key",
+          "ownKey": "constructor",
+          "descriptor": {
+            "value": true,
+            "enumerable": true,
+            "writable": true,
+            "configurable": true
+          }
+        },
+        {
+          "id": "prototype-key",
+          "ownKey": "prototype",
+          "descriptor": {
+            "value": true,
+            "enumerable": true,
+            "writable": true,
+            "configurable": true
+          }
+        },
+        {
+          "id": "tojson-callback",
+          "ownKey": "toJSON",
+          "descriptor": {
+            "value": {
+              "instrumentedCallback": "toJSONCallbacks",
+              "behavior": "throw-if-called"
+            },
+            "enumerable": true,
+            "writable": true,
+            "configurable": true
+          }
+        }
+      ],
+      "expected": {
+        "everyCellCode": "shape.unknown_field",
+        "path": "exact cell ownKey at root",
+        "toJSONCallbacks": 0,
+        "objectPrototypeUnchanged": true
+      }
+    },
+    {
+      "id": "F2-HOST-004",
+      "traceIds": [
+        "F2-TRACE-TOTALITY",
+        "F2-TRACE-STRICT-SHAPE",
+        "F2-TRACE-BOUNDS"
+      ],
+      "authorityIds": [
+        "F2-AUTH-ECMASCRIPT-DATA",
+        "F2-AUTH-SECURITY-BOUNDARY"
+      ],
+      "kind": "sparse-array-and-inherited-index",
+      "targetSource": "arrayConsumerTargets",
+      "probes": [
+        {
+          "id": "plain-hole",
+          "arrayLength": 1,
+          "ownIndexDescriptors": []
+        },
+        {
+          "id": "hole-with-inherited-index",
+          "arrayLength": 1,
+          "ownIndexDescriptors": [],
+          "prototypeIndexDescriptor": {
+            "index": 0,
+            "value": "fresh clone of target validElement",
+            "enumerable": true,
+            "writable": true,
+            "configurable": true
+          }
+        },
+        {
+          "id": "wrong-element-runtime-type",
+          "arrayLength": 1,
+          "ownIndexDescriptors": [
+            {
+              "index": 0,
+              "value": false,
+              "enumerable": true,
+              "writable": true,
+              "configurable": true
+            }
+          ]
+        }
+      ],
+      "cellExpansion": {
+        "mode": "target-probe-cartesian",
+        "axisOrderOuterToInner": [
+          "arrayConsumerTargets",
+          "probes"
+        ],
+        "materialization": "apply target activation, replace target path with the probe array, and clone target validElement where requested",
+        "atomicCellCount": 30
+      },
+      "expected": {
+        "everyCell": {
+          "ok": false,
+          "code": "shape.invalid_type",
+          "path": "target path plus numeric index 0"
+        },
+        "prototypeReads": 0,
+        "arrayConsumerCount": 10,
+        "wrongElementRuntimeTypeCoveredAtEveryConsumer": true,
+        "candidatePublished": false
+      }
+    },
+    {
+      "id": "F2-HOST-005",
+      "traceIds": [
+        "F2-TRACE-TOTALITY",
+        "F2-TRACE-STRICT-SHAPE",
+        "F2-TRACE-BOUNDS"
+      ],
+      "authorityIds": [
+        "F2-AUTH-ECMASCRIPT-DATA",
+        "F2-AUTH-SECURITY-BOUNDARY"
+      ],
+      "kind": "array-accessor-and-poisoned-prototype",
+      "targetSource": "arrayConsumerTargets",
+      "probes": [
+        {
+          "id": "own-index-getter",
+          "kind": "invalid-index",
+          "arrayLength": 1,
+          "ownIndexDescriptor": {
+            "index": 0,
+            "enumerable": true,
+            "get": {
+              "instrumentedCallback": "getterCallbacks",
+              "behavior": "throw-if-called"
+            }
+          }
+        },
+        {
+          "id": "own-index-setter",
+          "kind": "invalid-index",
+          "arrayLength": 1,
+          "ownIndexDescriptor": {
+            "index": 0,
+            "enumerable": true,
+            "configurable": true,
+            "set": {
+              "instrumentedCallback": "getterCallbacks",
+              "behavior": "throw-if-called"
+            }
+          }
+        },
+        {
+          "id": "own-index-nonenumerable",
+          "kind": "invalid-index",
+          "arrayLength": 1,
+          "ownIndexDescriptor": {
+            "index": 0,
+            "enumerable": false,
+            "writable": true,
+            "configurable": true,
+            "value": "fresh clone of target validElement"
+          }
+        },
+        {
+          "id": "prototype-iterator",
+          "kind": "valid-poisoned-prototype",
+          "prototypeDescriptor": {
+            "key": "Symbol.iterator",
+            "value": {
+              "instrumentedCallback": "iteratorCallbacks",
+              "behavior": "throw-if-called"
+            }
+          }
+        },
+        {
+          "id": "prototype-map",
+          "kind": "valid-poisoned-prototype",
+          "prototypeDescriptor": {
+            "key": "map",
+            "value": {
+              "instrumentedCallback": "prototypeCallbacks",
+              "behavior": "throw-if-called"
+            }
+          }
+        },
+        {
+          "id": "prototype-slice",
+          "kind": "valid-poisoned-prototype",
+          "prototypeDescriptor": {
+            "key": "slice",
+            "value": {
+              "instrumentedCallback": "prototypeCallbacks",
+              "behavior": "throw-if-called"
+            }
+          }
+        },
+        {
+          "id": "prototype-foreach",
+          "kind": "valid-poisoned-prototype",
+          "prototypeDescriptor": {
+            "key": "forEach",
+            "value": {
+              "instrumentedCallback": "prototypeCallbacks",
+              "behavior": "throw-if-called"
+            }
+          }
+        }
+      ],
+      "cellExpansion": {
+        "mode": "target-probe-cartesian",
+        "axisOrderOuterToInner": [
+          "arrayConsumerTargets",
+          "probes"
+        ],
+        "materialization": "apply target activation; invalid-index probes replace the target with the exact descriptor array, while valid-poisoned-prototype probes clone the valid target array then define the exact own prototype descriptor",
+        "atomicCellCount": 70
+      },
+      "expected": {
+        "invalidProbeIds": [
+          "own-index-getter",
+          "own-index-setter",
+          "own-index-nonenumerable"
+        ],
+        "invalidOwnSlot": {
+          "code": "shape.invalid_type",
+          "path": "target path plus numeric index 0"
+        },
+        "okProbeIds": [
+          "prototype-iterator",
+          "prototype-map",
+          "prototype-slice",
+          "prototype-foreach"
+        ],
+        "arrayConsumerCount": 10,
+        "getterCallbacks": 0,
+        "iteratorCallbacks": 0,
+        "prototypeCallbacks": 0
+      }
+    },
+    {
+      "id": "F2-HOST-006",
+      "traceIds": [
+        "F2-TRACE-STRICT-SHAPE",
+        "F2-TRACE-DIAGNOSTICS",
+        "F2-TRACE-TOTALITY"
+      ],
+      "authorityIds": [
+        "F2-AUTH-ECMASCRIPT-DATA"
+      ],
+      "kind": "container-extra-own-key-matrix",
+      "cells": [
+        {
+          "id": "array-ordinary-extra",
+          "targetPath": [
+            "sections"
+          ],
+          "entries": [
+            {
+              "key": {
+                "kind": "string",
+                "value": "evil"
+              },
+              "descriptor": {
+                "value": true,
+                "enumerable": true,
+                "writable": true,
+                "configurable": true
+              }
+            }
+          ],
+          "expected": {
+            "issues": [
+              {
+                "code": "shape.unknown_field",
+                "path": [
+                  "sections",
+                  "evil"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "array-noncanonical-index-string",
+          "targetPath": [
+            "sections"
+          ],
+          "entries": [
+            {
+              "key": {
+                "kind": "string",
+                "value": "01"
+              },
+              "descriptor": {
+                "value": true,
+                "enumerable": true,
+                "writable": true,
+                "configurable": true
+              }
+            }
+          ],
+          "expected": {
+            "issues": [
+              {
+                "code": "shape.unknown_field",
+                "path": [
+                  "sections",
+                  "01"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "array-one-symbol",
+          "targetPath": [
+            "sections"
+          ],
+          "entries": [
+            {
+              "key": {
+                "kind": "symbol",
+                "description": "array-a"
+              },
+              "descriptor": {
+                "value": true,
+                "enumerable": true,
+                "writable": true,
+                "configurable": true
+              }
+            }
+          ],
+          "expected": {
+            "issues": [
+              {
+                "code": "shape.invalid_type",
+                "path": [
+                  "sections"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "array-two-symbols-collapse",
+          "targetPath": [
+            "sections"
+          ],
+          "entries": [
+            {
+              "key": {
+                "kind": "symbol",
+                "description": "array-a"
+              },
+              "descriptor": {
+                "value": true,
+                "enumerable": true,
+                "writable": true,
+                "configurable": true
+              }
+            },
+            {
+              "key": {
+                "kind": "symbol",
+                "description": "array-b"
+              },
+              "descriptor": {
+                "value": true,
+                "enumerable": true,
+                "writable": true,
+                "configurable": true
+              }
+            }
+          ],
+          "expected": {
+            "issues": [
+              {
+                "code": "shape.invalid_type",
+                "path": [
+                  "sections"
+                ]
+              }
+            ],
+            "rawIssueIdentitiesBeforeCollapse": 2,
+            "diagnosticCandidatesProduced": 2,
+            "publishedIssueCount": 1
+          }
+        },
+        {
+          "id": "array-symbol-depth-value-not-descended",
+          "targetPath": ["sections"],
+          "entries": [{"key": {"kind": "symbol", "description": "array-depth"}, "descriptor": {"value": {"hostGraph": "depth-33-ordinary-chain"}, "enumerable": true, "writable": true, "configurable": true}}],
+          "expected": {"issues": [{"code": "shape.invalid_type", "path": ["sections"]}], "depthIssueCount": 0}
+        },
+        {
+          "id": "array-symbol-cycle-value-not-descended",
+          "targetPath": ["sections"],
+          "entries": [{"key": {"kind": "symbol", "description": "array-cycle"}, "descriptor": {"value": {"hostGraph": "self-cycle"}, "enumerable": true, "writable": true, "configurable": true}}],
+          "expected": {"issues": [{"code": "shape.invalid_type", "path": ["sections"]}], "cycleIssueCount": 0}
+        },
+        {
+          "id": "root-unknown-accessor",
+          "targetPath": [],
+          "entries": [
+            {
+              "key": {
+                "kind": "string",
+                "value": "extraGetter"
+              },
+              "descriptor": {
+                "enumerable": true,
+                "configurable": true,
+                "get": {
+                  "instrumentedCallback": "getterCallbacks",
+                  "behavior": "throw-if-called"
+                }
+              }
+            }
+          ],
+          "expected": {
+            "issues": [
+              {
+                "code": "shape.unknown_field",
+                "path": [
+                  "extraGetter"
+                ]
+              }
+            ],
+            "getterCallbacks": 0
+          }
+        },
+        {
+          "id": "nested-unknown-accessor",
+          "targetPath": [
+            "playback"
+          ],
+          "entries": [
+            {
+              "key": {
+                "kind": "string",
+                "value": "extraGetter"
+              },
+              "descriptor": {
+                "enumerable": true,
+                "configurable": true,
+                "get": {
+                  "instrumentedCallback": "getterCallbacks",
+                  "behavior": "throw-if-called"
+                }
+              }
+            }
+          ],
+          "expected": {
+            "issues": [
+              {
+                "code": "shape.unknown_field",
+                "path": [
+                  "playback",
+                  "extraGetter"
+                ]
+              }
+            ],
+            "getterCallbacks": 0
+          }
+        },
+        {
+          "id": "root-nonenumerable-unknown",
+          "targetPath": [],
+          "entries": [
+            {
+              "key": {
+                "kind": "string",
+                "value": "extraHidden"
+              },
+              "descriptor": {
+                "value": true,
+                "enumerable": false,
+                "writable": true,
+                "configurable": true
+              }
+            }
+          ],
+          "expected": {
+            "issues": [
+              {
+                "code": "shape.unknown_field",
+                "path": [
+                  "extraHidden"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "nested-nonenumerable-unknown",
+          "targetPath": [
+            "playback"
+          ],
+          "entries": [
+            {
+              "key": {
+                "kind": "string",
+                "value": "extraHidden"
+              },
+              "descriptor": {
+                "value": true,
+                "enumerable": false,
+                "writable": true,
+                "configurable": true
+              }
+            }
+          ],
+          "expected": {
+            "issues": [
+              {
+                "code": "shape.unknown_field",
+                "path": [
+                  "playback",
+                  "extraHidden"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "record-one-symbol",
+          "targetPath": [
+            "playback"
+          ],
+          "entries": [
+            {
+              "key": {
+                "kind": "symbol",
+                "description": "record-a"
+              },
+              "descriptor": {
+                "value": true,
+                "enumerable": true,
+                "writable": true,
+                "configurable": true
+              }
+            }
+          ],
+          "expected": {
+            "issues": [
+              {
+                "code": "shape.invalid_type",
+                "path": [
+                  "playback"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "record-nonenumerable-symbol",
+          "targetPath": [
+            "playback"
+          ],
+          "entries": [
+            {
+              "key": {
+                "kind": "symbol",
+                "description": "record-hidden"
+              },
+              "descriptor": {
+                "value": true,
+                "enumerable": false,
+                "writable": true,
+                "configurable": true
+              }
+            }
+          ],
+          "expected": {
+            "issues": [
+              {
+                "code": "shape.invalid_type",
+                "path": [
+                  "playback"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "record-symbol-depth-value-not-descended",
+          "targetPath": [
+            "playback"
+          ],
+          "entries": [
+            {
+              "key": {
+                "kind": "symbol",
+                "description": "record-depth"
+              },
+              "descriptor": {
+                "value": {
+                  "hostGraph": "depth-33-ordinary-chain"
+                },
+                "enumerable": true,
+                "writable": true,
+                "configurable": true
+              }
+            }
+          ],
+          "expected": {
+            "issues": [
+              {
+                "code": "shape.invalid_type",
+                "path": [
+                  "playback"
+                ]
+              }
+            ],
+            "depthIssueCount": 0
+          }
+        },
+        {
+          "id": "record-symbol-cycle-value-not-descended",
+          "targetPath": [
+            "playback"
+          ],
+          "entries": [
+            {
+              "key": {
+                "kind": "symbol",
+                "description": "record-cycle"
+              },
+              "descriptor": {
+                "value": {
+                  "hostGraph": "self-cycle"
+                },
+                "enumerable": true,
+                "writable": true,
+                "configurable": true
+              }
+            }
+          ],
+          "expected": {
+            "issues": [
+              {
+                "code": "shape.invalid_type",
+                "path": [
+                  "playback"
+                ]
+              }
+            ],
+            "cycleIssueCount": 0
+          }
+        },
+        {
+          "id": "record-two-symbols-collapse",
+          "targetPath": [
+            "playback"
+          ],
+          "entries": [
+            {
+              "key": {
+                "kind": "symbol",
+                "description": "record-a"
+              },
+              "descriptor": {
+                "value": true,
+                "enumerable": true,
+                "writable": true,
+                "configurable": true
+              }
+            },
+            {
+              "key": {
+                "kind": "symbol",
+                "description": "record-b"
+              },
+              "descriptor": {
+                "value": true,
+                "enumerable": true,
+                "writable": true,
+                "configurable": true
+              }
+            }
+          ],
+          "expected": {
+            "issues": [
+              {
+                "code": "shape.invalid_type",
+                "path": [
+                  "playback"
+                ]
+              }
+            ],
+            "rawIssueIdentitiesBeforeCollapse": 2,
+            "diagnosticCandidatesProduced": 2,
+            "publishedIssueCount": 1
+          }
+        }
+      ],
+      "cellMaterialization": "resolve targetPath on a fresh representative document and define entries in checked-in order with Object.defineProperty; create a fresh Symbol from every symbol description and materialize instrumented callbacks without invoking them; descriptor value {hostGraph:'depth-33-ordinary-chain'} becomes a fresh 33-container ordinary next-chain and {hostGraph:'self-cycle'} becomes a fresh object whose enumerable own self field points to itself; neither hostGraph descriptor enters decoder input",
+      "arrayConsumerProbes": [
+        {
+          "id": "extra-string",
+          "kind": "string",
+          "value": "matrixExtra",
+          "descriptor": {
+            "value": true,
+            "enumerable": true,
+            "writable": true,
+            "configurable": true
+          },
+          "expected": {
+            "code": "shape.unknown_field",
+            "path": "target path plus matrixExtra"
+          }
+        },
+        {
+          "id": "extra-string-nonenumerable",
+          "kind": "string",
+          "value": "matrixHidden",
+          "descriptor": {
+            "value": true,
+            "enumerable": false,
+            "writable": true,
+            "configurable": true
+          },
+          "expected": {
+            "code": "shape.unknown_field",
+            "path": "target path plus matrixHidden"
+          }
+        },
+        {
+          "id": "extra-string-accessor",
+          "kind": "string",
+          "value": "matrixAccessor",
+          "descriptor": {
+            "enumerable": true,
+            "configurable": true,
+            "get": {
+              "instrumentedCallback": "getterCallbacks",
+              "behavior": "throw-if-called"
+            }
+          },
+          "expected": {
+            "code": "shape.unknown_field",
+            "path": "target path plus matrixAccessor",
+            "getterCallbacks": 0
+          }
+        },
+        {
+          "id": "one-symbol",
+          "kind": "symbol",
+          "descriptions": [
+            "matrix-a"
+          ],
+          "expected": {
+            "code": "shape.invalid_type",
+            "path": "target path"
+          }
+        },
+        {
+          "id": "two-symbols-collapse",
+          "kind": "symbol",
+          "descriptions": [
+            "matrix-a",
+            "matrix-b"
+          ],
+          "expected": {
+            "code": "shape.invalid_type",
+            "path": "target path",
+            "rawIssueIdentitiesBeforeCollapse": 2,
+            "diagnosticCandidatesProduced": 2,
+            "publishedIssueCount": 1
+          }
+        }
+      ],
+      "arrayTraversalCells": [
+        {
+          "id": "array-extra-string-depth",
+          "targetPath": [
+            "sections"
+          ],
+          "cloneValidArray": true,
+          "entry": {
+            "key": "zDepth",
+            "descriptor": {
+              "value": {
+                "hostGraph": "depth-33-ordinary-chain"
+              },
+              "enumerable": true,
+              "writable": true,
+              "configurable": true
+            }
+          },
+          "expected": {
+            "issues": [
+              {
+                "code": "limit.json_depth_exceeded",
+                "path": []
+              }
+            ],
+            "unknownFieldIssueCount": 0
+          }
+        },
+        {
+          "id": "array-extra-string-cycle",
+          "targetPath": [
+            "sections"
+          ],
+          "cloneValidArray": true,
+          "entry": {
+            "key": "zCycle",
+            "descriptor": {
+              "valueGraph": "fresh object whose enumerable back field points to the target array",
+              "enumerable": true,
+              "writable": true,
+              "configurable": true
+            }
+          },
+          "expected": {
+            "issues": [
+              {
+                "code": "shape.invalid_type",
+                "path": [
+                  "sections",
+                  "zCycle",
+                  "back"
+                ]
+              }
+            ],
+            "unknownFieldIssueCount": 0
+          }
+        }
+      ],
+      "arrayTraversalMaterialization": "clone the valid sections array, define the exact entry, materialize hostGraph by cellMaterialization, and for valueGraph create the exact fresh object/back reference after the target array exists",
+      "cellExpansion": {
+        "mode": "ordered-expansion-groups",
+        "groups": [
+          {
+            "source": "cells",
+            "order": "checked-in order",
+            "atomicCellCount": 15
+          },
+          {
+            "source": "arrayConsumerTargets x arrayConsumerProbes",
+            "order": "target-major then probe-minor",
+            "materialization": "apply target activation and define each probe's exact descriptor keys on its fresh valid array",
+            "atomicCellCount": 50
+          },
+          {
+            "source": "arrayTraversalCells",
+            "order": "checked-in order",
+            "atomicCellCount": 2
+          }
+        ],
+        "atomicCellCount": 67
+      },
+      "expected": {
+        "getterCallbacks": 0,
+        "arrayConsumerCount": 10,
+        "arrayAndRecordSymbolBranchesCovered": true,
+        "unknownArrayAndRecordAccessorsNeverInvoked": true,
+        "nonenumerableUnknownArrayAndRecordFieldsRejected": true,
+        "arrayExtraStringDepthAndCycleTraversalCovered": true,
+        "duplicateCodePathPairsCollapsed": true
+      }
+    },
+    {
+      "id": "F2-HOST-007",
+      "traceIds": [
+        "F2-TRACE-STRICT-SHAPE",
+        "F2-TRACE-TOTALITY"
+      ],
+      "authorityIds": [
+        "F2-AUTH-ECMASCRIPT-DATA"
+      ],
+      "kind": "array-like-is-not-array-matrix",
+      "hostValues": [
+        {
+          "id": "uint8array",
+          "materialization": "new Uint8Array([1])"
+        },
+        {
+          "id": "int32array",
+          "materialization": "new Int32Array([1])"
+        },
+        {
+          "id": "arguments",
+          "materialization": "the arguments object returned by a test-owned non-arrow function invoked with the single exact argument true"
+        },
+        {
+          "id": "plain-length",
+          "materialization": {
+            "0": "value",
+            "length": 1
+          }
+        },
+        {
+          "id": "set",
+          "materialization": "new Set([target validElement])"
+        },
+        {
+          "id": "iterable",
+          "materialization": "ordinary object whose Symbol.iterator is an instrumented throw-if-called callback"
+        }
+      ],
+      "cellExpansion": {
+        "mode": "target-value-cartesian",
+        "axisOrderOuterToInner": [
+          "arrayConsumerTargets",
+          "hostValues"
+        ],
+        "materialization": "apply target activation then replace target path with the exact host value",
+        "atomicCellCount": 60
+      },
+      "expected": {
+        "everyCell": {
+          "code": "shape.invalid_type",
+          "path": "exact target path"
+        },
+        "arrayConsumerCount": 10,
+        "iteratorCallbacks": 0
+      }
+    },
+    {
+      "id": "F2-HOST-008",
+      "traceIds": [
+        "F2-TRACE-TOTALITY",
+        "F2-TRACE-DIAGNOSTICS"
+      ],
+      "authorityIds": [
+        "F2-AUTH-ECMASCRIPT-DATA",
+        "F2-AUTH-SECURITY-BOUNDARY"
+      ],
+      "kind": "throwing-and-revoked-proxy-matrix",
+      "cells": [
+        {
+          "id": "throw-ownkeys",
+          "path": [],
+          "proxy": {
+            "target": "representative document root",
+            "trap": "ownKeys",
+            "behavior": "throw fixed test-owned Error"
+          },
+          "expected": {
+            "issues": [
+              {
+                "code": "shape.invalid_type",
+                "path": []
+              }
+            ]
+          }
+        },
+        {
+          "id": "revoked-root",
+          "path": [],
+          "proxy": {
+            "target": "representative document root",
+            "revokedBeforeDecode": true
+          },
+          "expected": {
+            "issues": [
+              {
+                "code": "shape.invalid_type",
+                "path": []
+              }
+            ]
+          }
+        },
+        {
+          "id": "throw-descriptor",
+          "path": [
+            "playback"
+          ],
+          "proxy": {
+            "target": "representative playback record",
+            "trap": "getOwnPropertyDescriptor",
+            "behavior": "throw fixed test-owned Error"
+          },
+          "expected": {
+            "issues": [
+              {
+                "code": "shape.invalid_type",
+                "path": [
+                  "playback"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "throw-descriptor-precedes-collection-and-sibling",
+          "inputSetup": {
+            "shapeCount": "sections",
+            "count": 65,
+            "afterShapeCountMutations": [
+              {
+                "operation": "set",
+                "path": [
+                  "title"
+                ],
+                "value": false
+              }
+            ]
+          },
+          "path": [
+            "playback"
+          ],
+          "proxy": {
+            "target": "representative playback record",
+            "trap": "getOwnPropertyDescriptor",
+            "behavior": "throw fixed test-owned Error"
+          },
+          "expected": {
+            "issues": [
+              {
+                "code": "shape.invalid_type",
+                "path": [
+                  "playback"
+                ]
+              }
+            ],
+            "sectionLimitIssueCount": 0,
+            "titleIssueCount": 0,
+            "fatalPreflightAlone": true
+          }
+        },
+        {
+          "id": "transparent-root-poisoned-read",
+          "path": [],
+          "proxy": {
+            "target": "representative document root",
+            "forwardTraps": [
+              "ownKeys",
+              "getOwnPropertyDescriptor"
+            ],
+            "poisonTraps": {
+              "get": {
+                "instrumentedCallback": "propertyGetCallbacks",
+                "behavior": "throw-if-called"
+              },
+              "getPrototypeOf": {
+                "instrumentedCallback": "prototypeCallbacks",
+                "behavior": "throw-if-called"
+              }
+            }
+          },
+          "expected": {
+            "ok": true,
+            "propertyGetCallbacks": 0,
+            "prototypeCallbacks": 0
+          }
+        },
+        {
+          "id": "transparent-nested-poisoned-read",
+          "path": [
+            "playback"
+          ],
+          "proxy": {
+            "target": "representative playback record",
+            "forwardTraps": [
+              "ownKeys",
+              "getOwnPropertyDescriptor"
+            ],
+            "poisonTraps": {
+              "get": {
+                "instrumentedCallback": "propertyGetCallbacks",
+                "behavior": "throw-if-called"
+              },
+              "getPrototypeOf": {
+                "instrumentedCallback": "prototypeCallbacks",
+                "behavior": "throw-if-called"
+              }
+            }
+          },
+          "expected": {
+            "ok": true,
+            "propertyGetCallbacks": 0,
+            "prototypeCallbacks": 0
+          }
+        },
+        {
+          "id": "transparent-array-poisoned-read",
+          "path": [
+            "sections"
+          ],
+          "proxy": {
+            "target": "representative sections array",
+            "forwardTraps": [
+              "ownKeys",
+              "getOwnPropertyDescriptor"
+            ],
+            "poisonTraps": {
+              "get": {
+                "instrumentedCallback": "propertyGetCallbacks",
+                "behavior": "throw-if-called"
+              },
+              "getPrototypeOf": {
+                "instrumentedCallback": "prototypeCallbacks",
+                "behavior": "throw-if-called"
+              }
+            }
+          },
+          "expected": {
+            "ok": true,
+            "propertyGetCallbacks": 0,
+            "prototypeCallbacks": 0
+          }
+        },
+        {
+          "id": "throw-array-ownkeys",
+          "path": ["sections"],
+          "proxy": {"target": "representative sections array", "trap": "ownKeys", "behavior": "throw fixed test-owned Error"},
+          "expected": {"issues": [{"code": "shape.invalid_type", "path": ["sections"]}]}
+        },
+        {
+          "id": "throw-array-index-descriptor",
+          "path": ["sections"],
+          "proxy": {"target": "representative sections array", "trap": "getOwnPropertyDescriptor", "throwKey": "0", "behavior": "throw fixed test-owned Error"},
+          "expected": {"issues": [{"code": "shape.invalid_type", "path": ["sections"]}]}
+        },
+        {
+          "id": "revoked-array",
+          "path": ["sections"],
+          "proxy": {"target": "representative sections array", "revokedBeforeDecode": true},
+          "expected": {"issues": [{"code": "shape.invalid_type", "path": ["sections"]}]}
+        }
+      ],
+      "cellMaterialization": "start from a fresh representative document; when inputSetup is present first apply adversarial descriptorProtocol.shapeCount, then its afterShapeCountMutations in order; replace path by the exact Proxy only after setup; transparent targets forward only ownKeys and getOwnPropertyDescriptor while poison traps remain instrumented",
+      "cellExpansion": {
+        "mode": "independent-list",
+        "source": "cells",
+        "order": [
+          "throw-ownkeys",
+          "revoked-root",
+          "throw-descriptor",
+          "throw-descriptor-precedes-collection-and-sibling",
+          "transparent-root-poisoned-read",
+          "transparent-nested-poisoned-read",
+          "transparent-array-poisoned-read",
+          "throw-array-ownkeys",
+          "throw-array-index-descriptor",
+          "revoked-array"
+        ],
+        "atomicCellCount": 10
+      },
+      "expected": {
+        "failureCellIds": [
+          "throw-ownkeys",
+          "revoked-root",
+          "throw-descriptor",
+          "throw-descriptor-precedes-collection-and-sibling",
+          "throw-array-ownkeys",
+          "throw-array-index-descriptor",
+          "revoked-array"
+        ],
+        "successCellIds": [
+          "transparent-root-poisoned-read",
+          "transparent-nested-poisoned-read",
+          "transparent-array-poisoned-read"
+        ],
+        "noExceptionEscapes": true,
+        "propertyGetCallbacks": 0,
+        "prototypeCallbacks": 0,
+        "nonterminatingTrapExcluded": true
+      }
+    },
+    {
+      "id": "F2-HOST-009",
+      "traceIds": [
+        "F2-TRACE-TOTALITY",
+        "F2-TRACE-FRESHNESS",
+        "F2-TRACE-DIAGNOSTICS"
+      ],
+      "authorityIds": [
+        "F2-AUTH-ECMASCRIPT-DATA",
+        "F2-AUTH-SECURITY-BOUNDARY"
+      ],
+      "kind": "cycle-and-shared-dag-matrix",
+      "cells": [
+        {
+          "id": "object-self-cycle",
+          "graph": "add meter.loop as own enumerable data pointing to meter itself",
+          "expected": {
+            "ok": false,
+            "issues": [
+              {
+                "code": "shape.invalid_type",
+                "path": [
+                  "meter",
+                  "loop"
+                ]
+              }
+            ],
+            "fatalPreflightAlone": true
+          }
+        },
+        {
+          "id": "root-back-cycle",
+          "graph": "add root extra={back:root}",
+          "expected": {
+            "ok": false,
+            "issues": [
+              {
+                "code": "shape.invalid_type",
+                "path": [
+                  "extra",
+                  "back"
+                ]
+              }
+            ],
+            "fatalPreflightAlone": true
+          }
+        },
+        {
+          "id": "shared-dag",
+          "graph": "reuse one ordinary pitch-class object as document key.tonic and section keyOverride.tonic",
+          "expected": {
+            "ok": true,
+            "outputTonicReferencesDistinct": true
+          }
+        },
+        {
+          "id": "lexical-cycle-winner",
+          "graph": {
+            "insertOwnRootKeysInOrder": [
+              "zeta",
+              "alpha"
+            ],
+            "eachValue": "fresh object whose back field points to document root"
+          },
+          "expected": {
+            "ok": false,
+            "issues": [
+              {
+                "code": "shape.invalid_type",
+                "path": [
+                  "alpha",
+                  "back"
+                ]
+              }
+            ],
+            "insertionOrderWinnerForbidden": true
+          }
+        },
+        {
+          "id": "array-numeric-cycle-winner",
+          "graph": {
+            "rootExtra": "fresh array length 1",
+            "insertExtraStringKeyFirst": "alpha",
+            "extraStringValue": "array itself",
+            "index0Value": "array itself"
+          },
+          "expected": {
+            "ok": false,
+            "issues": [
+              {
+                "code": "shape.invalid_type",
+                "path": [
+                  "extra",
+                  0
+                ]
+              }
+            ],
+            "stringEdgeWinnerForbidden": true
+          }
+        },
+        {
+          "id": "cycle-at-depth-32",
+          "graph": {
+            "rootExtraDepth": 2,
+            "nextContainerCount": 30,
+            "finalBackReference": "root extra container",
+            "insertion": "every next/back is an enumerable writable configurable own data property"
+          },
+          "expected": {
+            "ok": false,
+            "issues": [
+              {
+                "code": "shape.invalid_type",
+                "path": [
+                  "extra",
+                  "next",
+                  "next",
+                  "next",
+                  "next",
+                  "next",
+                  "next",
+                  "next",
+                  "next",
+                  "next",
+                  "next",
+                  "next",
+                  "next",
+                  "next",
+                  "next",
+                  "next",
+                  "next",
+                  "next",
+                  "next",
+                  "next",
+                  "next",
+                  "next",
+                  "next",
+                  "next",
+                  "next",
+                  "next",
+                  "next",
+                  "next",
+                  "next",
+                  "next",
+                  "next",
+                  "back"
+                ]
+              }
+            ],
+            "globalDepthIssueCount": 0,
+            "cycleCheckedBeforeDepthIncrement": true
+          }
+        }
+      ],
+      "sharedDagMaterialization": "For shared-dag, apply shape-cases sectionKeyOverride, create exactly one ordinary {step:'C',alter:0} data object, assign that same input reference to document key.tonic and section keyOverride.tonic, and set both modes to major; this overrides the shorter graph label.",
+      "precedenceCells": [
+        {
+          "id": "cycle-before-sections-limit",
+          "inputSetup": {
+            "shapeCount": "sections",
+            "count": 65
+          },
+          "graph": "add meter.loop as own enumerable data pointing to meter itself after shapeCount materialization",
+          "expected": {
+            "ok": false,
+            "issues": [
+              {
+                "code": "shape.invalid_type",
+                "path": [
+                  "meter",
+                  "loop"
+                ]
+              }
+            ],
+            "sectionLimitIssueCount": 0,
+            "fatalPreflightAlone": true
+          }
+        }
+      ],
+      "cellExpansion": {
+        "mode": "ordered-expansion-groups",
+        "groups": [
+          {
+            "source": "cells",
+            "order": [
+              "object-self-cycle",
+              "root-back-cycle",
+              "shared-dag",
+              "lexical-cycle-winner",
+              "array-numeric-cycle-winner",
+              "cycle-at-depth-32"
+            ],
+            "atomicCellCount": 6
+          },
+          {
+            "source": "precedenceCells",
+            "order": [
+              "cycle-before-sections-limit"
+            ],
+            "materialization": "apply descriptorProtocol.shapeCount inputSetup before graph construction",
+            "atomicCellCount": 1
+          }
+        ],
+        "atomicCellCount": 7
+      },
+      "expected": {
+        "cycleTraversal": "object string keys lexical, arrays numeric then string",
+        "cycleBeforeDepthIncrement": true,
+        "objectAndArrayCyclesCovered": true,
+        "unknownFieldIssuesSuppressedByFatalCycle": true,
+        "sharedAcyclicOk": true
+      }
+    },
+    {
+      "id": "F2-HOST-010",
+      "traceIds": [
+        "F2-TRACE-LIMITS",
+        "F2-TRACE-TOTALITY",
+        "F2-TRACE-STRICT-SHAPE"
+      ],
+      "authorityIds": [
+        "F2-AUTH-SECURITY-BOUNDARY"
+      ],
+      "kind": "unknown-data-branch-participates-in-depth-preflight",
+      "materialization": "add root extra as an own enumerable data property containing a depth-33 ordinary graph",
+      "expected": {
+        "ok": false,
+        "issues": [
+          {
+            "code": "limit.json_depth_exceeded",
+            "path": []
+          }
+        ],
+        "unknownFieldIssueSuppressedByFatalDepth": true,
+        "accessorsInvoked": 0
+      }
+    },
+    {
+      "id": "F2-IMPORT-001",
+      "traceIds": [
+        "F2-TRACE-API",
+        "F2-TRACE-STAGE-OWNERSHIP",
+        "F2-TRACE-BOUNDS"
+      ],
+      "authorityIds": [
+        "F2-AUTH-SECURITY-BOUNDARY",
+        "F2-AUTH-STAGE-OWNERSHIP"
+      ],
+      "kind": "raw-parser-obligations-not-fabricated-by-f2",
+      "cells": [
+        {
+          "id": "invalid-utf8",
+          "rawBytesHex": "22c32822",
+          "expected": {
+            "fatalUtf8": true,
+            "jsonParseCalls": 0
+          }
+        },
+        {
+          "id": "malformed-json",
+          "rawUtf8": "{\"x\":",
+          "expected": {
+            "fatalJson": true,
+            "jsonParseCalls": 1
+          }
+        },
+        {
+          "id": "duplicate-raw-key",
+          "rawUtf8": "{\"x\":1,\"x\":2}",
+          "expected": {
+            "duplicateRawKey": "x",
+            "shapeDecoderCalls": 0
+          }
+        },
+        {
+          "id": "escape-equivalent-duplicate-key",
+          "rawUtf8": "{\"x\":1,\"\\u0078\":2}",
+          "expected": {
+            "duplicateDecodedKey": "x",
+            "shapeDecoderCalls": 0
+          }
+        },
+        {
+          "id": "no-reviver",
+          "rawUtf8": "{}",
+          "jsonParseInstrumentation": "capture argument count and second argument",
+          "expected": {
+            "jsonParseCalls": 1,
+            "argumentCount": 1,
+            "reviver": "absent"
+          }
+        },
+        {
+          "id": "multibyte-plus-one",
+          "rawPayloadDescriptor": {
+            "jsonStringCodePoint": "U+00E9",
+            "count": 1048575,
+            "suffix": "A",
+            "exactUtf8BytesIncludingQuotes": 2097153,
+            "utf16CodeUnitsIncludingQuotes": 1048578
+          },
+          "expected": {
+            "issues": [
+              {
+                "code": "limit.import_bytes_exceeded",
+                "path": []
+              }
+            ],
+            "jsonParseCalls": 0,
+            "shapeDecoderCalls": 0
+          }
+        },
+        {
+          "id": "oversized-malformed-before-parse",
+          "rawPayloadDescriptor": {
+            "repeatAscii": "{",
+            "count": 2097153,
+            "exactUtf8Bytes": 2097153
+          },
+          "expected": {
+            "issues": [
+              {
+                "code": "limit.import_bytes_exceeded",
+                "path": []
+              }
+            ],
+            "jsonParseCalls": 0,
+            "shapeDecoderCalls": 0
+          }
+        }
+      ],
+      "cellExpansion": {
+        "mode": "independent-list",
+        "source": "cells",
+        "order": [
+          "invalid-utf8",
+          "malformed-json",
+          "duplicate-raw-key",
+          "escape-equivalent-duplicate-key",
+          "no-reviver",
+          "multibyte-plus-one",
+          "oversized-malformed-before-parse"
+        ],
+        "atomicCellCount": 7
+      },
+      "expected": {
+        "f2Applicability": "byte preflight only; remaining ownership is E0 import integration",
+        "owner": "E0 import integration",
+        "f2IssueCodeInvented": false,
+        "shapeDecoderCalledOnAnyFailure": false,
+        "utf8VsUtf16BoundaryKilled": true,
+        "parseBeforePreflightKilled": true
+      }
+    },
+    {
+      "id": "F2-LIMIT-001",
+      "traceIds": [
+        "F2-TRACE-LIMITS",
+        "F2-TRACE-API",
+        "F2-TRACE-BOUNDS"
+      ],
+      "authorityIds": [
+        "F2-AUTH-PROJECT-SCHEMA"
+      ],
+      "kind": "import-bytes-exact",
+      "cells": [
+        {
+          "id": "zero",
+          "input": 0,
+          "expected": {
+            "ok": true,
+            "value": {
+              "utf8ByteLength": 0
+            },
+            "positiveZero": true,
+            "warnings": []
+          }
+        },
+        {
+          "id": "one",
+          "input": 1,
+          "expected": {
+            "ok": true,
+            "value": {
+              "utf8ByteLength": 1
+            },
+            "warnings": []
+          }
+        },
+        {
+          "id": "interior",
+          "input": 1048576,
+          "expected": {
+            "ok": true,
+            "value": {
+              "utf8ByteLength": 1048576
+            },
+            "warnings": []
+          }
+        },
+        {
+          "id": "maximum",
+          "input": 2097152,
+          "expected": {
+            "ok": true,
+            "value": {
+              "utf8ByteLength": 2097152
+            },
+            "warnings": []
+          }
+        }
+      ],
+      "cellExpansion": {
+        "mode": "independent-list",
+        "source": "cells",
+        "order": [
+          "zero",
+          "one",
+          "interior",
+          "maximum"
+        ],
+        "atomicCellCount": 4
+      },
+      "expected": {
+        "everyCellOk": true,
+        "valuesPreservedExactly": [
+          0,
+          1,
+          1048576,
+          2097152
+        ]
+      }
+    },
+    {
+      "id": "F2-LIMIT-002",
+      "traceIds": [
+        "F2-TRACE-LIMITS",
+        "F2-TRACE-API",
+        "F2-TRACE-BOUNDS"
+      ],
+      "authorityIds": [
+        "F2-AUTH-PROJECT-SCHEMA"
+      ],
+      "kind": "import-bytes-plus-one",
+      "input": 2097153,
+      "expected": {
+        "ok": false,
+        "issues": [
+          {
+            "code": "limit.import_bytes_exceeded",
+            "path": []
+          }
+        ],
+        "shapeDecoderCalls": 0,
+        "candidateObjectsAllocated": 0,
+        "candidateArraysAllocated": 0
+      }
+    },
+    {
+      "id": "F2-LIMIT-003",
+      "traceIds": [
+        "F2-TRACE-LIMITS",
+        "F2-TRACE-BOUNDS"
+      ],
+      "authorityIds": [
+        "F2-AUTH-PROJECT-SCHEMA"
+      ],
+      "kind": "json-depth-exact-preflight",
+      "inputDescriptor": {
+        "jsonNestingDepth": 32,
+        "rootContainerDepth": 1,
+        "stringScalarNearMiss": "an own unknown data field whose string value is 64 opening brackets followed by 64 closing brackets"
+      },
+      "expected": {
+        "depthPreflightOk": true,
+        "stringScalarAddsDepth": false,
+        "subsequentShapeOutcome": "unknown-field refusal is allowed and not asserted by this depth-only case"
+      }
+    },
+    {
+      "id": "F2-LIMIT-004",
+      "traceIds": [
+        "F2-TRACE-LIMITS",
+        "F2-TRACE-BOUNDS",
+        "F2-TRACE-DIAGNOSTICS"
+      ],
+      "authorityIds": [
+        "F2-AUTH-PROJECT-SCHEMA"
+      ],
+      "kind": "json-depth-plus-one",
+      "cells": [
+        {
+          "id": "depth-only",
+          "inputDescriptor": {
+            "jsonNestingDepth": 33,
+            "rootContainerDepth": 1
+          }
+        },
+        {
+          "id": "depth-before-sections",
+          "inputDescriptor": {
+            "jsonNestingDepth": 33,
+            "rootContainerDepth": 1,
+            "sectionsCount": 65
+          }
+        }
+      ],
+      "cellExpansion": {
+        "mode": "independent-list",
+        "source": "cells",
+        "order": [
+          "depth-only",
+          "depth-before-sections"
+        ],
+        "atomicCellCount": 2
+      },
+      "expected": {
+        "everyCell": {
+          "ok": false,
+          "issues": [
+            {
+              "code": "limit.json_depth_exceeded",
+              "path": []
+            }
+          ]
+        },
+        "depthFatalPrecedesCollectionFatal": true,
+        "candidateObjectsAllocated": 0,
+        "candidateArraysAllocated": 0
+      }
+    },
+    {
+      "id": "F2-LIMIT-005",
+      "traceIds": [
+        "F2-TRACE-LIMITS",
+        "F2-TRACE-BOUNDS"
+      ],
+      "authorityIds": [
+        "F2-AUTH-PROJECT-SCHEMA"
+      ],
+      "kind": "sections-exact",
+      "inputDescriptor": {
+        "shapeCount": "sections",
+        "count": 64
+      },
+      "expected": {
+        "ok": true,
+        "count": 64,
+        "sectionSlotsObserved": 64
+      }
+    },
+    {
+      "id": "F2-LIMIT-006",
+      "traceIds": [
+        "F2-TRACE-LIMITS",
+        "F2-TRACE-BOUNDS",
+        "F2-TRACE-DIAGNOSTICS"
+      ],
+      "authorityIds": [
+        "F2-AUTH-PROJECT-SCHEMA"
+      ],
+      "kind": "sections-plus-one-is-fatal-alone",
+      "inputDescriptor": {
+        "shapeCount": "sections",
+        "count": 65,
+        "index0": {
+          "structurallyInspectableSection": true,
+          "measuresCount": 1025,
+          "eventsAcrossThoseMeasures": 8193,
+          "firstStoredPitchCount": 17
+        },
+        "index1": "throwing getter"
+      },
+      "expected": {
+        "ok": false,
+        "issues": [
+          {
+            "code": "limit.sections_exceeded",
+            "path": [
+              "sections"
+            ]
+          }
+        ],
+        "sectionSlotsObserved": 65,
+        "fatalIssueAlone": true,
+        "sectionsPrecedeMeasuresEventsAndPitches": true,
+        "sectionElementsSemanticallyDecoded": 0,
+        "sectionElementsCopied": 0,
+        "getterCallbacks": 0,
+        "candidateObjectsAllocated": 0,
+        "candidateArraysAllocated": 0,
+        "depthDescriptorReadsMayBeNonzero": true
+      }
+    },
+    {
+      "id": "F2-LIMIT-007",
+      "traceIds": [
+        "F2-TRACE-LIMITS",
+        "F2-TRACE-BOUNDS"
+      ],
+      "authorityIds": [
+        "F2-AUTH-PROJECT-SCHEMA"
+      ],
+      "kind": "measures-per-section-exact",
+      "inputDescriptor": {
+        "shapeCount": "measuresInSection0",
+        "count": 1024
+      },
+      "expected": {
+        "ok": true,
+        "count": 1024,
+        "maxMeasuresPerSectionObserved": 1024
+      }
+    },
+    {
+      "id": "F2-LIMIT-008",
+      "traceIds": [
+        "F2-TRACE-LIMITS",
+        "F2-TRACE-BOUNDS",
+        "F2-TRACE-DIAGNOSTICS"
+      ],
+      "authorityIds": [
+        "F2-AUTH-PROJECT-SCHEMA"
+      ],
+      "kind": "measures-per-section-plus-one-is-fatal-alone",
+      "cells": [
+        {
+          "id": "section-zero-measures-before-events-and-pitches",
+          "inputDescriptor": {
+            "shapeCount": "measuresInSection0",
+            "count": 1025,
+            "lowerPriorityOversize": {
+              "eventsAcrossDocument": 8193,
+              "firstCustomPitchNameCount": 17
+            }
+          },
+          "expected": {
+            "issues": [
+              {
+                "code": "limit.measures_per_section_exceeded",
+                "path": [
+                  "sections",
+                  0,
+                  "measures"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "later-section-measures-before-earlier-events",
+          "inputDescriptor": {
+            "sections": [
+              {
+                "id": "early-events",
+                "measureEventArrayLengths": [
+                  8193
+                ]
+              },
+              {
+                "id": "later-measures",
+                "measuresCount": 1025
+              }
+            ],
+            "rawEventSlotCount": 8193,
+            "chronologyOrder": true
+          },
+          "expected": {
+            "issues": [
+              {
+                "code": "limit.measures_per_section_exceeded",
+                "path": [
+                  "sections",
+                  1,
+                  "measures"
+                ]
+              }
+            ],
+            "eventLimitIssueCount": 0
+          }
+        },
+        {
+          "id": "measure-cap-section-chronology",
+          "inputDescriptor": {
+            "sections": [
+              {
+                "id": "first-oversize",
+                "measuresCount": 1025
+              },
+              {
+                "id": "second-oversize",
+                "measuresCount": 1025
+              }
+            ],
+            "rawEventSlotCount": 0,
+            "chronologyOrder": true
+          },
+          "expected": {
+            "issues": [
+              {
+                "code": "limit.measures_per_section_exceeded",
+                "path": [
+                  "sections",
+                  0,
+                  "measures"
+                ]
+              }
+            ],
+            "laterMeasureLimitIssueCount": 0
+          }
+        }
+      ],
+      "cellExpansion": {
+        "mode": "independent-list",
+        "source": "cells",
+        "order": [
+          "section-zero-measures-before-events-and-pitches",
+          "later-section-measures-before-earlier-events",
+          "measure-cap-section-chronology"
+        ],
+        "atomicCellCount": 3
+      },
+      "expected": {
+        "everyCellOk": false,
+        "maxMeasuresPerSectionObserved": 1025,
+        "fatalIssueAlone": true,
+        "allSectionMeasureCapsPrecedeCumulativeEventsAndPitches": true,
+        "measureElementsSemanticallyDecoded": 0,
+        "measureElementsCopied": 0,
+        "candidateObjectsAllocated": 0,
+        "candidateArraysAllocated": 0,
+        "depthDescriptorReadsMayBeNonzero": true
+      }
+    },
+    {
+      "id": "F2-LIMIT-009",
+      "traceIds": [
+        "F2-TRACE-LIMITS",
+        "F2-TRACE-BOUNDS"
+      ],
+      "authorityIds": [
+        "F2-AUTH-PROJECT-SCHEMA"
+      ],
+      "kind": "events-per-document-exact",
+      "inputDescriptor": {
+        "shapeCount": "eventsAcrossDocument",
+        "count": 8192
+      },
+      "expected": {
+        "ok": true,
+        "count": 8192,
+        "eventSlotsObserved": 8192
+      }
+    },
+    {
+      "id": "F2-LIMIT-010",
+      "traceIds": [
+        "F2-TRACE-LIMITS",
+        "F2-TRACE-BOUNDS",
+        "F2-TRACE-DIAGNOSTICS"
+      ],
+      "authorityIds": [
+        "F2-AUTH-PROJECT-SCHEMA"
+      ],
+      "kind": "events-per-document-plus-one-is-fatal-alone",
+      "cells": [
+        {
+          "id": "valid-branches",
+          "inputDescriptor": {
+            "shapeCount": "eventsAcrossDocument",
+            "count": 8193,
+            "distributedAcrossSections": true
+          }
+        },
+        {
+          "id": "prune-malformed-section",
+          "inputDescriptor": {
+            "sections": [
+              {
+                "id": "early-unusable",
+                "measuresOwnDataValue": false
+              },
+              {
+                "id": "later-counted",
+                "measureEventArrayLengths": [
+                  1024,
+                  1024,
+                  1024,
+                  1024,
+                  1024,
+                  1024,
+                  1024,
+                  1024,
+                  1
+                ]
+              }
+            ],
+            "rawEventSlotCount": 8193,
+            "chronologyOrder": true
+          }
+        },
+        {
+          "id": "prune-malformed-measure",
+          "inputDescriptor": {
+            "sections": [
+              {
+                "id": "early",
+                "measures": [
+                  false
+                ]
+              },
+              {
+                "id": "later-counted",
+                "measureEventArrayLengths": [
+                  1024,
+                  1024,
+                  1024,
+                  1024,
+                  1024,
+                  1024,
+                  1024,
+                  1024,
+                  1
+                ]
+              }
+            ],
+            "rawEventSlotCount": 8193,
+            "chronologyOrder": true
+          }
+        },
+        {
+          "id": "count-malformed-event-slot",
+          "inputDescriptor": {
+            "sections": [
+              {
+                "id": "early",
+                "measures": [
+                  {
+                    "id": "early-measure",
+                    "events": [
+                      false
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "later-counted",
+                "measureEventArrayLengths": [
+                  1024,
+                  1024,
+                  1024,
+                  1024,
+                  1024,
+                  1024,
+                  1024,
+                  1024
+                ]
+              }
+            ],
+            "rawEventSlotCount": 8193,
+            "chronologyOrder": true
+          }
+        },
+        {
+          "id": "count-event-with-malformed-chord",
+          "inputDescriptor": {
+            "sections": [
+              {
+                "id": "early",
+                "measures": [
+                  {
+                    "id": "early-measure",
+                    "events": [
+                      {
+                        "template": "representative event",
+                        "overrides": {
+                          "chord": false
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "later-counted",
+                "measureEventArrayLengths": [
+                  1024,
+                  1024,
+                  1024,
+                  1024,
+                  1024,
+                  1024,
+                  1024,
+                  1024
+                ]
+              }
+            ],
+            "rawEventSlotCount": 8193,
+            "chronologyOrder": true
+          }
+        },
+        {
+          "id": "events-before-pitches",
+          "inputDescriptor": {
+            "shapeCount": "eventsAcrossDocument",
+            "count": 8193,
+            "event0": {
+              "activation": "customChord-plus-manualVoicing",
+              "customPitchNameCount": 17,
+              "storedPitchCount": 17
+            }
+          }
+        }
+      ],
+      "cellExpansion": {
+        "mode": "independent-list",
+        "source": "cells",
+        "order": [
+          "valid-branches",
+          "prune-malformed-section",
+          "prune-malformed-measure",
+          "count-malformed-event-slot",
+          "count-event-with-malformed-chord",
+          "events-before-pitches"
+        ],
+        "freshInputPerCell": true,
+        "atomicCellCount": 6
+      },
+      "expected": {
+        "everyCell": {
+          "ok": false,
+          "issues": [
+            {
+              "code": "limit.events_per_document_exceeded",
+              "path": [
+                "sections"
+              ]
+            }
+          ]
+        },
+        "fatalIssueAlone": true,
+        "maximumCountObserved": 8193,
+        "eventSlotsObserved": 8193,
+        "eventsPrecedePitchArrays": true,
+        "eventSlotsCountedFromRawArrays": true,
+        "malformedBranchKinds": [
+          "section",
+          "measure",
+          "event",
+          "chord"
+        ],
+        "malformedEarlierBranchPruned": true,
+        "laterSiblingScanned": true,
+        "eventValuesSemanticallyDecoded": 0,
+        "eventValuesCopied": 0,
+        "candidateObjectsAllocated": 0,
+        "candidateArraysAllocated": 0,
+        "depthDescriptorReadsMayBeNonzero": true
+      }
+    },
+    {
+      "id": "F2-LIMIT-011",
+      "traceIds": [
+        "F2-TRACE-LIMITS",
+        "F2-TRACE-BOUNDS",
+        "F2-TRACE-CHORD-VOICING"
+      ],
+      "authorityIds": [
+        "F2-AUTH-F1-VALUES",
+        "F2-AUTH-PROJECT-SCHEMA"
+      ],
+      "kind": "custom-and-stored-pitch-limit-matrix",
+      "collections": [
+        "chord.pitchNames",
+        "manual.pitches",
+        "frozen.pitches"
+      ],
+      "counts": [
+        1,
+        16,
+        17
+      ],
+      "collectionElementProtocol": {
+        "chord.pitchNames": "at index i clone [C natural,E-flat,G natural][i%3] as a spelled pitch class; activate customChord-plus-manualVoicing",
+        "manual.pitches": "at index i clone [C4,E-flat4,G4][i%3] as a spelled pitch; activate manualVoicing with chord.bass null and bassPolicy included",
+        "frozen.pitches": "at index i clone [C4,E4,G4,B4][i%4] as a spelled pitch; activate frozenVoicing with chord.bass null, bassPolicy included, and the exact checked-in generatedBy fragment"
+      },
+      "combinedOversizeCell": {
+        "activation": "customChord-plus-manualVoicing",
+        "customPitchNameCount": 17,
+        "storedPitchCount": 17,
+        "expected": {
+          "issues": [
+            {
+              "code": "limit.voicing_notes_exceeded",
+              "path": [
+                "sections",
+                0,
+                "measures",
+                0,
+                "events",
+                0,
+                "chord",
+                "pitchNames"
+              ]
+            }
+          ],
+          "fatalAlone": true
+        }
+      },
+      "preflightBeforeSemanticCells": [
+        {
+          "id": "custom-plus-frozen-pitch-limit",
+          "event": {"fragments": {"chord": "customChord", "voicing": "frozenVoicing"}, "customPitchNameCount": 17},
+          "expected": {"issues": [{"code": "limit.voicing_notes_exceeded", "path": ["sections", 0, "measures", 0, "events", 0, "chord", "pitchNames"]}], "fatalAlone": true}
+        },
+        {
+          "id": "custom-plus-auto-limit-precedes-compatibility",
+          "event": {"fragments": {"chord": "customChord"}, "retainRepresentativeAutoVoicing": true, "customPitchNameCount": 17},
+          "expected": {"issues": [{"code": "limit.voicing_notes_exceeded", "path": ["sections", 0, "measures", 0, "events", 0, "chord", "pitchNames"]}], "customAutoIssueCount": 0, "fatalAlone": true}
+        },
+        {
+          "id": "manual-limit-precedes-bass-policy",
+          "event": {"fragments": {"voicing": "manualVoicing"}, "overrides": {"voicing.bassPolicy": "external"}, "storedPitchCount": 17},
+          "expected": {"issues": [{"code": "limit.voicing_notes_exceeded", "path": ["sections", 0, "measures", 0, "events", 0, "voicing", "pitches"]}], "bassPolicyIssueCount": 0, "fatalAlone": true}
+        },
+        {
+          "id": "frozen-limit-precedes-bass-policy",
+          "event": {"fragments": {"voicing": "frozenVoicing"}, "overrides": {"voicing.bassPolicy": "external"}, "storedPitchCount": 17},
+          "expected": {"issues": [{"code": "limit.voicing_notes_exceeded", "path": ["sections", 0, "measures", 0, "events", 0, "voicing", "pitches"]}], "bassPolicyIssueCount": 0, "fatalAlone": true}
+        }
+      ],
+      "crossSiblingReachabilityCells": [
+        {
+          "id": "invalid-chord-still-checks-valid-stored-branch",
+          "event": {
+            "activation": "manualVoicing",
+            "overrides": {
+              "chord.kind": "symbol"
+            },
+            "storedPitchCount": 17
+          },
+          "expected": {
+            "issues": [
+              {
+                "code": "limit.voicing_notes_exceeded",
+                "path": [
+                  "sections",
+                  0,
+                  "measures",
+                  0,
+                  "events",
+                  0,
+                  "voicing",
+                  "pitches"
+                ]
+              }
+            ],
+            "chordDiscriminatorIssueCount": 0,
+            "fatalAlone": true
+          }
+        },
+        {
+          "id": "invalid-voicing-still-checks-valid-custom-branch",
+          "event": {
+            "activation": "customChord-plus-manualVoicing",
+            "overrides": {
+              "voicing.mode": {
+                "specialPrimitive": "symbol-test"
+              }
+            },
+            "customPitchNameCount": 17
+          },
+          "expected": {
+            "issues": [
+              {
+                "code": "limit.voicing_notes_exceeded",
+                "path": [
+                  "sections",
+                  0,
+                  "measures",
+                  0,
+                  "events",
+                  0,
+                  "chord",
+                  "pitchNames"
+                ]
+              }
+            ],
+            "voicingDiscriminatorIssueCount": 0,
+            "fatalAlone": true
+          }
+        }
+      ],
+      "continuationCells": [
+        {
+          "id": "malformed-event-then-stored-oversize",
+          "events": [
+            false,
+            {
+              "template": "representative event",
+              "activation": "manualVoicing",
+              "storedPitchCount": 17
+            }
+          ],
+          "expected": {
+            "issues": [
+              {
+                "code": "limit.voicing_notes_exceeded",
+                "path": [
+                  "sections",
+                  0,
+                  "measures",
+                  0,
+                  "events",
+                  1,
+                  "voicing",
+                  "pitches"
+                ]
+              }
+            ],
+            "fatalAlone": true
+          }
+        },
+        {
+          "id": "malformed-chord-then-custom-oversize",
+          "events": [
+            {
+              "template": "representative event",
+              "overrides": {
+                "chord": false
+              }
+            },
+            {
+              "template": "representative event",
+              "activation": "customChord-plus-manualVoicing",
+              "customPitchNameCount": 17
+            }
+          ],
+          "expected": {
+            "issues": [
+              {
+                "code": "limit.voicing_notes_exceeded",
+                "path": [
+                  "sections",
+                  0,
+                  "measures",
+                  0,
+                  "events",
+                  1,
+                  "chord",
+                  "pitchNames"
+                ]
+              }
+            ],
+            "fatalAlone": true
+          }
+        },
+        {
+          "id": "chronology-before-pitch-kind",
+          "events": [
+            {
+              "template": "representative event",
+              "activation": "manualVoicing",
+              "storedPitchCount": 17
+            },
+            {
+              "template": "representative event",
+              "activation": "customChord-plus-manualVoicing",
+              "customPitchNameCount": 17
+            }
+          ],
+          "expected": {
+            "issues": [
+              {
+                "code": "limit.voicing_notes_exceeded",
+                "path": [
+                  "sections",
+                  0,
+                  "measures",
+                  0,
+                  "events",
+                  0,
+                  "voicing",
+                  "pitches"
+                ]
+              }
+            ],
+            "fatalAlone": true
+          }
+        },
+        {
+          "id": "malformed-section-then-stored-oversize",
+          "sections": [
+            {
+              "id": "malformed-section",
+              "measuresOwnDataValue": false
+            },
+            {
+              "id": "later-section",
+              "measures": [
+                {
+                  "id": "later-measure",
+                  "events": [
+                    {
+                      "template": "representative event",
+                      "activation": "manualVoicing",
+                      "storedPitchCount": 17
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "expected": {
+            "issues": [
+              {
+                "code": "limit.voicing_notes_exceeded",
+                "path": [
+                  "sections",
+                  1,
+                  "measures",
+                  0,
+                  "events",
+                  0,
+                  "voicing",
+                  "pitches"
+                ]
+              }
+            ],
+            "fatalAlone": true
+          }
+        },
+        {
+          "id": "malformed-measure-then-stored-oversize",
+          "sections": [
+            {
+              "id": "section-one",
+              "measures": [
+                false,
+                {
+                  "id": "later-measure",
+                  "events": [
+                    {
+                      "template": "representative event",
+                      "activation": "manualVoicing",
+                      "storedPitchCount": 17
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "expected": {
+            "issues": [
+              {
+                "code": "limit.voicing_notes_exceeded",
+                "path": [
+                  "sections",
+                  0,
+                  "measures",
+                  1,
+                  "events",
+                  0,
+                  "voicing",
+                  "pitches"
+                ]
+              }
+            ],
+            "fatalAlone": true
+          }
+        }
+      ],
+      "sectionContinuationMaterialization": "For a continuation cell with sections, apply limitDescriptorProtocol.sectionDescriptors. For every listed representative event, apply its activation and then materialize customPitchNameCount or storedPitchCount from this case's exact collectionElementProtocol before decoding.",
+      "cellExpansion": {
+        "mode": "ordered-expansion-groups",
+        "groups": [
+          {
+            "source": "collections x counts",
+            "order": "collection-major then count-minor",
+            "atomicCellCount": 9
+          },
+        {
+          "source": "combinedOversizeCell",
+          "atomicCellCount": 1
+        },
+        {
+          "source": "preflightBeforeSemanticCells",
+          "order": "checked-in order",
+          "materialization": "apply event fragments, then dotted-path overrides, then exact LIMIT-011 pitch-count materialization",
+          "atomicCellCount": 4
+        },
+          {
+            "source": "crossSiblingReachabilityCells",
+            "order": "checked-in order",
+            "materialization": "apply event activation, then dotted-path overrides, then exact LIMIT-011 pitch-count materialization",
+            "atomicCellCount": 2
+          },
+          {
+            "source": "continuationCells",
+            "order": "checked-in order",
+            "atomicCellCount": 5
+          }
+        ],
+        "atomicCellCount": 21
+      },
+      "expected": {
+        "oneAndSixteenOk": true,
+        "seventeenCode": "limit.voicing_notes_exceeded",
+        "seventeenPath": "exact collection path",
+        "maxPitchArraySlotsObservedAtSeventeen": 17,
+        "unionPitchBranchesPrunedIndependentlyWithinOneEvent": true,
+        "customLimitCrossedWithManualFrozenAndAutoVoicing": true,
+        "pitchPreflightPrecedesCrossFieldSemantics": true,
+        "malformedSectionMeasureEventAndChordBranchesPrunedBeforeLaterPitchArrays": true,
+        "eventChronologyPrecedesPitchArrayKind": true,
+        "successCellCounterOracle": {
+          "manualOrFrozenCollection": {
+            "appliesTo": "manual.pitches or frozen.pitches collection-count cells whose count is 1 or 16",
+            "pitchElementsSemanticallyDecoded": "exactly the cell count",
+            "pitchElementsCopied": "exactly the cell count"
+          },
+          "customCollection": {
+            "appliesTo": "chord.pitchNames collection-count cells whose count is 1 or 16",
+            "pitchElementsSemanticallyDecoded": "exactly the cell count plus the three retained Manual pitches",
+            "pitchElementsCopied": "exactly the cell count plus the three retained Manual pitches"
+          },
+          "candidateObjectsAllocated": "positive",
+          "candidateArraysAllocated": "positive"
+        },
+        "fatalCellCounterOracle": {
+          "appliesTo": "collection-count cells whose count is 17, combinedOversizeCell, every preflightBeforeSemanticCell, every crossSiblingReachabilityCell, and every continuationCell",
+          "pitchElementsSemanticallyDecoded": 0,
+          "pitchElementsCopied": 0,
+          "candidateObjectsAllocated": 0,
+          "candidateArraysAllocated": 0,
+          "depthDescriptorReadsMayBeNonzero": true
+        }
+      }
+    },
+    {
+      "id": "F2-MUTATION-001",
+      "traceIds": [
+        "F2-TRACE-BOUNDS",
+        "F2-TRACE-DIAGNOSTICS",
+        "F2-TRACE-STAGE-OWNERSHIP"
+      ],
+      "authorityIds": [
+        "F2-AUTH-SECURITY-BOUNDARY",
+        "F2-AUTH-STAGE-OWNERSHIP"
+      ],
+      "kind": "named-control-campaign",
+      "source": "mutationControls",
+      "expected": {
+        "definedControls": 234,
+        "f2OwnedControls": 232,
+        "e0OwnedControls": 2,
+        "everyControlMapsToCaseIds": true,
+        "futureGate": "F2/build kills all 232 F2 controls; E0 integration later kills the 2 E0 controls",
+        "specDoesNotClaimControlsAlreadyExecuted": true
+      }
+    },
+    {
+      "id": "F2-ORDER-001",
+      "traceIds": [
+        "F2-TRACE-DIAGNOSTICS",
+        "F2-TRACE-IDS",
+        "F2-TRACE-TIME",
+        "F2-TRACE-TEXT"
+      ],
+      "authorityIds": [
+        "F2-AUTH-PROJECT-SCHEMA"
+      ],
+      "kind": "multi-error-golden-order",
+      "inputSummary": {
+        "titleDescriptor": {
+          "repeatCodePoint": "U+0054",
+          "count": 257
+        },
+        "tempoBpm": 19,
+        "section0Id": "same-id",
+        "event0Id": "same-id",
+        "event0Duration": {
+          "numerator": 0,
+          "denominator": 1
+        }
+      },
+      "materialization": "clone the representative document once and apply every inputSummary field exactly at title, tempoBpm, first section id, first event id, and first event duration",
+      "expected": {
+        "ok": false,
+        "issues": [
+          {
+            "code": "id.duplicate",
+            "path": [
+              "sections",
+              0,
+              "id"
+            ]
+          },
+          {
+            "code": "beat.duration_not_positive",
+            "path": [
+              "sections",
+              0,
+              "measures",
+              0,
+              "events",
+              0,
+              "duration",
+              "numerator"
+            ]
+          },
+          {
+            "code": "id.duplicate",
+            "path": [
+              "sections",
+              0,
+              "measures",
+              0,
+              "events",
+              0,
+              "id"
+            ]
+          },
+          {
+            "code": "tempo.out_of_range",
+            "path": [
+              "tempoBpm"
+            ]
+          },
+          {
+            "code": "limit.title_code_points_exceeded",
+            "path": [
+              "title"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "F2-ORDER-002",
+      "traceIds": [
+        "F2-TRACE-DIAGNOSTICS",
+        "F2-TRACE-TIME"
+      ],
+      "authorityIds": [
+        "F2-AUTH-PROJECT-SCHEMA"
+      ],
+      "kind": "numeric-index-order",
+      "inputSummary": {
+        "invalidEventIndices": [
+          10,
+          2
+        ],
+        "fault": "zero duration"
+      },
+      "materialization": "replace the first measure events with 11 fresh representative-event clones in numeric order, assign exact IDs event-order-0 through event-order-10, set every duration to 1/960, then set indices 10 and 2 to canonical 0/1 in the inputSummary insertion order",
+      "expected": {
+        "issueIndicesInOrder": [
+          2,
+          10
+        ],
+        "lexicalIndexOrderForbidden": true
+      }
+    },
+    {
+      "id": "F2-ORDER-003",
+      "traceIds": [
+        "F2-TRACE-DIAGNOSTICS",
+        "F2-TRACE-TEXT"
+      ],
+      "authorityIds": [
+        "F2-AUTH-PROJECT-SCHEMA"
+      ],
+      "kind": "same-path-code-order",
+      "inputDescriptor": {
+        "field": "title",
+        "repeatCodePoint": "U+0020",
+        "count": 257
+      },
+      "expected": {
+        "issues": [
+          {
+            "code": "limit.title_code_points_exceeded",
+            "path": [
+              "title"
+            ]
+          },
+          {
+            "code": "string.blank",
+            "path": [
+              "title"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "F2-ORDER-004",
+      "traceIds": [
+        "F2-TRACE-DIAGNOSTICS",
+        "F2-TRACE-STRICT-SHAPE"
+      ],
+      "authorityIds": [
+        "F2-AUTH-ECMASCRIPT-DATA"
+      ],
+      "kind": "insertion-order-independence",
+      "cells": [
+        {
+          "id": "alpha-mu-zeta",
+          "insertionOrder": [
+            "alpha",
+            "mu",
+            "zeta"
+          ]
+        },
+        {
+          "id": "alpha-zeta-mu",
+          "insertionOrder": [
+            "alpha",
+            "zeta",
+            "mu"
+          ]
+        },
+        {
+          "id": "mu-alpha-zeta",
+          "insertionOrder": [
+            "mu",
+            "alpha",
+            "zeta"
+          ]
+        },
+        {
+          "id": "mu-zeta-alpha",
+          "insertionOrder": [
+            "mu",
+            "zeta",
+            "alpha"
+          ]
+        },
+        {
+          "id": "zeta-alpha-mu",
+          "insertionOrder": [
+            "zeta",
+            "alpha",
+            "mu"
+          ]
+        },
+        {
+          "id": "zeta-mu-alpha",
+          "insertionOrder": [
+            "zeta",
+            "mu",
+            "alpha"
+          ]
+        }
+      ],
+      "cellMaterialization": "against a fresh representative document, define each insertionOrder key in sequence as an enumerable writable configurable own data property with value true",
+      "comparatorCells": [
+        {
+          "id": "utf16-code-unit-order",
+          "rootUnknownKeysInInsertionOrder": [
+            "é",
+            "a",
+            "Z"
+          ],
+          "expected": {
+            "issues": [
+              {
+                "code": "shape.unknown_field",
+                "path": [
+                  "Z"
+                ]
+              },
+              {
+                "code": "shape.unknown_field",
+                "path": [
+                  "a"
+                ]
+              },
+              {
+                "code": "shape.unknown_field",
+                "path": [
+                  "é"
+                ]
+              }
+            ],
+            "localeOrCaseFoldOrderForbidden": true
+          }
+        },
+        {
+          "id": "array-numeric-before-string",
+          "sectionsArray": {
+            "length": 1,
+            "ownIndexDescriptors": [],
+            "extraStringEntries": [
+              {
+                "key": "a",
+                "value": true
+              }
+            ]
+          },
+          "expected": {
+            "issues": [
+              {
+                "code": "shape.invalid_type",
+                "path": [
+                  "sections",
+                  0
+                ]
+              },
+              {
+                "code": "shape.unknown_field",
+                "path": [
+                  "sections",
+                  "a"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "shorter-container-before-descendant",
+          "sectionsArray": {
+            "cloneRepresentative": true,
+            "symbolEntries": [
+              {
+                "description": "container"
+              }
+            ],
+            "extraStringEntries": [
+              {
+                "key": "a",
+                "value": true
+              }
+            ]
+          },
+          "expected": {
+            "issues": [
+              {
+                "code": "shape.invalid_type",
+                "path": [
+                  "sections"
+                ]
+              },
+              {
+                "code": "shape.unknown_field",
+                "path": [
+                  "sections",
+                  "a"
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "comparatorCellMaterialization": "rootUnknownKeysInInsertionOrder defines exact root data properties in listed order; sectionsArray length/descriptor cells replace sections with the exact descriptor array, while cloneRepresentative starts from a fresh valid sections array; symbol entries use fresh Symbols and extraStringEntries are enumerable writable configurable own data properties",
+      "cellExpansion": {
+        "mode": "ordered-expansion-groups",
+        "groups": [
+          {
+            "source": "cells",
+            "order": [
+              "alpha-mu-zeta",
+              "alpha-zeta-mu",
+              "mu-alpha-zeta",
+              "mu-zeta-alpha",
+              "zeta-alpha-mu",
+              "zeta-mu-alpha"
+            ],
+            "atomicCellCount": 6
+          },
+          {
+            "source": "comparatorCells",
+            "order": [
+              "utf16-code-unit-order",
+              "array-numeric-before-string",
+              "shorter-container-before-descendant"
+            ],
+            "atomicCellCount": 3
+          }
+        ],
+        "atomicCellCount": 9
+      },
+      "expected": {
+        "permutationIssueSequencesEqual": true,
+        "permutationPathsInOrder": [
+          [
+            "alpha"
+          ],
+          [
+            "mu"
+          ],
+          [
+            "zeta"
+          ]
+        ],
+        "utf16NumericAndPrefixComparatorBranchesCovered": true,
+        "messagesContainUserValues": false
+      }
+    },
+    {
+      "id": "F2-STATE-001",
+      "traceIds": [
+        "F2-TRACE-API",
+        "F2-TRACE-STAGE-OWNERSHIP",
+        "F2-TRACE-BOUNDS"
+      ],
+      "authorityIds": [
+        "F2-AUTH-STAGE-OWNERSHIP"
+      ],
+      "kind": "operation-applicability",
+      "expected": {
+        "operationClass": "synchronous pure decoder",
+        "cancellation": {
+          "applicability": "not-applicable",
+          "owner": "later asynchronous adapters"
+        },
+        "resume": {
+          "applicability": "not-applicable"
+        },
+        "staleRevision": {
+          "applicability": "not-applicable",
+          "owner": "A0"
+        },
+        "cleanupCallback": {
+          "applicability": "not-applicable"
+        },
+        "stateWrites": 0,
+        "partialValueOnError": false
+      }
+    },
+    {
+      "id": "F2-STATIC-001",
+      "traceIds": [
+        "F2-TRACE-BOUNDS",
+        "F2-TRACE-STAGE-OWNERSHIP",
+        "F2-TRACE-STRICT-SHAPE"
+      ],
+      "authorityIds": [
+        "F2-AUTH-PROJECT-SCHEMA",
+        "F2-AUTH-STAGE-OWNERSHIP"
+      ],
+      "kind": "decoder-publication-and-import-boundary-static-proof",
+      "expected": {
+        "decoderModule": "src/domain/document-decoder.ts",
+        "publicRuntimeExports": [
+          "preflightDocumentImportBytes",
+          "decodeDocumentShape",
+          "documentDecodeOperations"
+        ],
+        "operationsValue": "documentDecodeOperations",
+        "operationsOwnKeysInOrder": [
+          "preflightDocumentImportBytes",
+          "decodeDocumentShape"
+        ],
+        "operationsMembersEqualNamedFunctionExports": true,
+        "operationsValueRecursivelyFrozen": true,
+        "operationsAndNamedFunctionsReexportedFromDomainIndex": true,
+        "evidenceSeams": [
+          {
+            "name": "preflightDocumentImportBytesWithEvidence",
+            "signature": "(utf8ByteLength:number)=>DocumentImportBytePreflightWithEvidenceResult"
+          },
+          {
+            "name": "decodeDocumentShapeWithEvidence",
+            "signature": "(input:unknown)=>DocumentShapeDecodeWithEvidenceResult"
+          }
+        ],
+        "evidenceSeamsPublic": false,
+        "evidenceResultOwnKeysInOrder": [
+          "result",
+          "evidence"
+        ],
+        "evidenceResultsRecursivelyFrozen": true,
+        "evidenceHasNoHiddenMutableState": true,
+        "decoderEvidenceKeys": [
+          "bytesObserved",
+          "maxDepthObserved",
+          "recordsInspected",
+          "arraysInspected",
+          "scalarFieldsInspected",
+          "descriptorReads",
+          "arraySlotsRead",
+          "collectionLengthsObserved",
+          "sectionSlotsObserved",
+          "maxMeasuresPerSectionObserved",
+          "eventSlotsObserved",
+          "maxPitchArraySlotsObserved",
+          "sectionElementsSemanticallyDecoded",
+          "measureElementsSemanticallyDecoded",
+          "eventValuesSemanticallyDecoded",
+          "pitchElementsSemanticallyDecoded",
+          "sectionElementsCopied",
+          "measureElementsCopied",
+          "eventValuesCopied",
+          "pitchElementsCopied",
+          "candidateObjectsAllocated",
+          "candidateArraysAllocated",
+          "diagnosticCandidatesProduced",
+          "idOccurrences",
+          "idClusters",
+          "idDuplicateWorkUnits",
+          "timelineAdditions",
+          "timelineTicksObserved"
+        ],
+        "harnessObservationKeys": [
+          "getterCallbacks",
+          "propertyGetCallbacks",
+          "prototypeCallbacks",
+          "iteratorCallbacks",
+          "toJSONCallbacks",
+          "sourceMutations",
+          "stateWrites"
+        ],
+        "forbiddenPublicExports": [
+          "preflightDocumentImportBytesWithEvidence",
+          "decodeDocumentShapeWithEvidence",
+          "DocumentDecoderEvidence",
+          "DocumentImportBytePreflightWithEvidenceResult",
+          "DocumentShapeDecodeWithEvidenceResult",
+          "PreflightDocumentImportBytesWithEvidence",
+          "DecodeDocumentShapeWithEvidence"
+        ],
+        "moduleRetentionStaticPolicy": {
+          "moduleScopeLetOrVarCount": 0,
+          "unfrozenModuleScopeReferenceBindings": 0,
+          "writesToFunctionImportOrModuleBindings": 0,
+          "mutableBuiltInModuleConstants": 0,
+          "allowedReferenceBindings": "only named function declarations with no writes, recursively frozen acyclic plain literal record/array lookup constants, and recursively frozen documentDecodeOperations",
+          "forbiddenNestedConstantKinds": [
+            "Map",
+            "Set",
+            "WeakMap",
+            "WeakSet",
+            "typed array",
+            "Date",
+            "RegExp",
+            "class instance",
+            "function",
+            "accessor"
+          ]
+        },
+        "untrustedInputStaticPolicy": {
+          "singleReviewedReflectionSnapshotRoutine": true,
+          "directContainerReadsOutsideSnapshot": 0,
+          "inputSuppliedHelperOrIterationCalls": 0,
+          "taintedContainerWrites": 0,
+          "runtimeFullGraphWriteTrapCallbacks": 0
+        },
+        "candidateConstructionStaticPolicy": {
+          "localCounterIncrementingFactoriesRequired": [
+            "allocateCandidateObject",
+            "allocateCandidateArray"
+          ],
+          "candidateContainersCreatedOutsideFactories": 0,
+          "f1ReturnedContainersAttachedToCandidateGraph": 0,
+          "forbiddenCompositeConstructorCalls": [
+            "makeChordEvent"
+          ]
+        },
+        "publicPrivateParityStaticPolicy": {
+          "oneSharedCore": true,
+          "publicWrapperSemanticBranches": 0,
+          "publicResultEqualsPrivateResultForEveryMaterializedCell": true
+        },
+        "iterativeDepthStaticPolicy": {
+          "explicitLocalWorklistLoopRequired": true,
+          "depthPreflightCallGraphCycleCount": 0,
+          "recursiveDepthTraversalForbidden": true
+        },
+        "forbiddenAstPatterns": [
+          "Object.assign call",
+          "JSON.stringify call",
+          "untrusted SpreadElement",
+          "untrusted container MemberExpression or destructuring read outside snapshot",
+          "untrusted Reflect.get or input-supplied helper call",
+          "untrusted assignment, update, delete, define, set, setPrototypeOf, or mutating method call",
+          "candidate object or array construction outside the reviewed counter-incrementing factories",
+          "F1-returned container attached to the candidate graph",
+          "makeChordEvent call",
+          "Date.now, performance.now, Temporal.Now, setTimeout, setInterval, or timer API",
+          "any assertion or unchecked assertion helper in candidate flow",
+          "module-scope let or var",
+          "unfrozen module-scope reference binding",
+          "mutable built-in nested in a module constant",
+          "write to a function, function property, import, or module binding",
+          "recursive depth-preflight call-graph cycle"
+        ],
+        "forbiddenImports": [
+          "application",
+          "theory",
+          "content",
+          "ui",
+          "audio",
+          "persistence",
+          "export",
+          "tests",
+          "test-support"
+        ],
+        "forbiddenSyntax": [
+          "as ValidatedDocument",
+          "satisfies ValidatedDocument",
+          "ValidatedDocument constructor",
+          "ValidatedDocument assertion function",
+          "as ProgressionDocumentShapeV2",
+          "as unknown as ProgressionDocumentShapeV2",
+          "ProgressionDocumentShapeV2 assertion function",
+          "as any in decoded candidate flow",
+          "any or unknown assertion helper that returns a decoded candidate type"
+        ],
+        "successType": "ProgressionDocumentShapeV2",
+        "soleCastOwner": "src/application/document-validation.ts",
+        "sourcePolicyFindings": 0
+      }
+    },
+    {
+      "id": "F2-WORK-001",
+      "traceIds": [
+        "F2-TRACE-BOUNDS",
+        "F2-TRACE-TOTALITY",
+        "F2-TRACE-LIMITS"
+      ],
+      "authorityIds": [
+        "F2-AUTH-SECURITY-BOUNDARY",
+        "F2-AUTH-PROJECT-SCHEMA"
+      ],
+      "kind": "deterministic-property-campaign",
+      "generator": "seededReplayProtocol",
+      "campaign": {
+        "seedIds": [
+          "F2-SEED-BOUNDS",
+          "F2-SEED-CHORD",
+          "F2-SEED-HOSTILE",
+          "F2-SEED-IDS",
+          "F2-SEED-ORDER",
+          "F2-SEED-SHAPE",
+          "F2-SEED-TIME",
+          "F2-SEED-UNICODE"
+        ],
+        "decodesPerMaterializedCell": 2,
+        "seedDigests": 8,
+        "excludedCaseIds": [
+          "F2-LIMIT-003"
+        ],
+        "mutationControlsDefined": 234,
+        "generatedPermutations": 0,
+        "generatedAliasGraphs": 0
+      },
+      "decoderEvidenceCounters": [
+        "bytesObserved",
+        "maxDepthObserved",
+        "recordsInspected",
+        "arraysInspected",
+        "scalarFieldsInspected",
+        "descriptorReads",
+        "arraySlotsRead",
+        "collectionLengthsObserved",
+        "sectionSlotsObserved",
+        "maxMeasuresPerSectionObserved",
+        "eventSlotsObserved",
+        "maxPitchArraySlotsObserved",
+        "sectionElementsSemanticallyDecoded",
+        "measureElementsSemanticallyDecoded",
+        "eventValuesSemanticallyDecoded",
+        "pitchElementsSemanticallyDecoded",
+        "sectionElementsCopied",
+        "measureElementsCopied",
+        "eventValuesCopied",
+        "pitchElementsCopied",
+        "candidateObjectsAllocated",
+        "candidateArraysAllocated",
+        "diagnosticCandidatesProduced",
+        "idOccurrences",
+        "idClusters",
+        "idDuplicateWorkUnits",
+        "timelineAdditions",
+        "timelineTicksObserved"
+      ],
+      "harnessObservationCounters": [
+        "getterCallbacks",
+        "propertyGetCallbacks",
+        "prototypeCallbacks",
+        "iteratorCallbacks",
+        "toJSONCallbacks",
+        "sourceMutations",
+        "stateWrites"
+      ],
+      "requiredCounters": [
+        "bytesObserved",
+        "maxDepthObserved",
+        "recordsInspected",
+        "arraysInspected",
+        "scalarFieldsInspected",
+        "descriptorReads",
+        "arraySlotsRead",
+        "collectionLengthsObserved",
+        "sectionSlotsObserved",
+        "maxMeasuresPerSectionObserved",
+        "eventSlotsObserved",
+        "maxPitchArraySlotsObserved",
+        "sectionElementsSemanticallyDecoded",
+        "measureElementsSemanticallyDecoded",
+        "eventValuesSemanticallyDecoded",
+        "pitchElementsSemanticallyDecoded",
+        "sectionElementsCopied",
+        "measureElementsCopied",
+        "eventValuesCopied",
+        "pitchElementsCopied",
+        "candidateObjectsAllocated",
+        "candidateArraysAllocated",
+        "diagnosticCandidatesProduced",
+        "idOccurrences",
+        "idClusters",
+        "idDuplicateWorkUnits",
+        "timelineAdditions",
+        "timelineTicksObserved",
+        "getterCallbacks",
+        "propertyGetCallbacks",
+        "prototypeCallbacks",
+        "iteratorCallbacks",
+        "toJSONCallbacks",
+        "sourceMutations",
+        "stateWrites"
+      ],
+      "counterPolicy": {
+        "type": "nonnegative safe integer",
+        "decoderEvidenceReset": "a fresh local 28-counter record starts at zero inside each private seam call",
+        "hiddenMutableDecoderState": false,
+        "privateSeamResult": "recursively frozen exact {result,evidence}",
+        "harnessMerge": "after the call, merge the returned decoderEvidenceCounters with the seven externally observed harnessObservationCounters in requiredCounters order",
+        "repeat": "the first and second decode of equivalent fresh inputs must have exactly equal merged counters",
+        "privateSeamFreshness": "repeated equivalent calls return referentially distinct frozen {result,evidence} records and distinct evidence records",
+        "fixtureWorkExcluded": true,
+        "reflectionSnapshot": "one cached own-key and own-descriptor snapshot per reached container occurrence, reused across depth, collection, and semantic phases"
+      },
+      "counterSemantics": {
+        "bytesObserved": "preflightDocumentImportBytesWithEvidence records the canonical nonnegative safe-integer argument, including max+1; every noncanonical or invalid argument including negative, fractional, non-finite, unsafe, negative zero, or wrong runtime type records zero, and every decodeDocumentShapeWithEvidence call records zero",
+        "maxDepthObserved": "maximum root-inclusive ordinary object or array depth whose container was entered by decodeDocumentShape before success or fatal preflight; scalar roots and byte preflight record zero",
+        "recordsInspected": "one per reached non-array record occurrence when its single cached reflection snapshot begins, including an attempt whose Proxy reflection throws; later decoder phases reuse that snapshot",
+        "arraysInspected": "one per reached genuine-array occurrence when its single cached reflection snapshot begins, including an audit whose Proxy reflection throws; later decoder phases reuse that snapshot and individual keys or slots do not add arraysInspected units",
+        "scalarFieldsInspected": "one when a known scalar own data-descriptor value first enters semantic leaf validation; the same field cannot increment twice, and unknown fields or descendants suppressed by an invalid container or discriminator do not increment it",
+        "descriptorReads": "one per own-property descriptor captured in a container's single cached reflection snapshot, including the intrinsic array length descriptor and an attempt whose Proxy trap throws; ownKeys observations themselves are excluded",
+        "arraySlotsRead": "one per attempted own numeric-index descriptor observation in any decoder phase; it is a subset of descriptorReads and excludes the intrinsic length property",
+        "collectionLengthsObserved": "number of recognized sections, measures, events, chord.pitchNames, or voicing.pitches array length values examined during collection preflight; this counts checks, not the sum of lengths",
+        "sectionSlotsObserved": "min(recognized root sections length,65), or zero when sections is not a recognized genuine array",
+        "maxMeasuresPerSectionObserved": "largest min(recognized section measures length,1025) observed across sections visited in chronology, or zero when none is recognized",
+        "eventSlotsObserved": "cumulative recognized event-array slots observed in chronology, saturated exactly at 8193",
+        "maxPitchArraySlotsObserved": "largest recognized Custom pitchNames or stored voicing pitches length observed in chronology, saturated exactly at 17",
+        "sectionElementsSemanticallyDecoded": "section array elements whose known fields begin semantic shape validation after every fatal collection preflight completes",
+        "measureElementsSemanticallyDecoded": "measure array elements whose known fields begin semantic shape validation after every fatal collection preflight completes",
+        "eventValuesSemanticallyDecoded": "event array elements whose known fields begin semantic shape validation after every fatal collection preflight completes",
+        "pitchElementsSemanticallyDecoded": "custom pitchNames or Manual/Frozen pitches elements whose known fields begin semantic shape validation after every fatal collection preflight completes",
+        "sectionElementsCopied": "successfully decoded section values appended to a decoder-owned candidate array",
+        "measureElementsCopied": "successfully decoded measure values appended to a decoder-owned candidate array",
+        "eventValuesCopied": "successfully decoded event values appended to a decoder-owned candidate array",
+        "pitchElementsCopied": "successfully decoded pitch values appended to a decoder-owned candidate array",
+        "candidateObjectsAllocated": "decoded-document candidate graph object nodes created and attached to the in-progress candidate graph; each accepted persisted object is assembled exactly once, discarded or replacement candidate objects are forbidden, and F1 refusal/result envelopes, unattached leaf validation records, diagnostics, evidence, reflection snapshots, worklists, and fixture inputs are excluded",
+        "candidateArraysAllocated": "decoded-document candidate graph array nodes created and attached to the in-progress candidate graph; each accepted persisted array is assembled exactly once, discarded or replacement candidate arrays are forbidden, and result envelopes, diagnostic paths/errors, reflection arrays, worklists, and fixture inputs are excluded",
+        "diagnosticCandidatesProduced": "raw issue candidates appended before exact code/path collapse; distinct independently true codes at one path each count once",
+        "idOccurrences": "syntactically valid stable-ID occurrences inserted into the global duplicate index; invalid or missing IDs do not increment it",
+        "idClusters": "distinct stable-ID strings with two or more indexed occurrences after traversal",
+        "idDuplicateWorkUnits": "one per valid-ID Map lookup/update plus one per clustered occurrence emitted; any prior-occurrence scan comparison adds one extra unit, so F2-ID-003 is exactly 7 and F2-ID-004 exactly 8 and a pairwise algorithm exceeds the oracle",
+        "timelineAdditions": "locally valid event-duration rationals added to the document timeline, including events with unrelated invalid siblings; invalid durations do not increment it",
+        "timelineTicksObserved": "exact cumulative locally valid event duration in PPQ-960 integer ticks, saturated only at 960000001; exact ceiling is 960000000 and the one-tick-over witness is 960000001",
+        "getterCallbacks": "own accessor getter or setter callbacks observed by fixture instrumentation",
+        "propertyGetCallbacks": "Proxy get-trap callbacks caused by direct or indirect property reads",
+        "prototypeCallbacks": "getPrototypeOf traps, inherited getters, methods, or other prototype callbacks observed by fixture instrumentation",
+        "iteratorCallbacks": "Symbol.iterator or iterator next callbacks observed by fixture instrumentation",
+        "toJSONCallbacks": "toJSON function callbacks observed by fixture instrumentation",
+        "sourceMutations": "input containers whose own keys, descriptors, or data values differ from the pre-decode descriptor snapshot",
+        "stateWrites": "decoder writes to application document, selection, history, transport, recovery, audio, persistence, or any other external state sentinel"
+      },
+      "zeroDecoderEvidence": {
+        "bytesObserved": 0,
+        "maxDepthObserved": 0,
+        "recordsInspected": 0,
+        "arraysInspected": 0,
+        "scalarFieldsInspected": 0,
+        "descriptorReads": 0,
+        "arraySlotsRead": 0,
+        "collectionLengthsObserved": 0,
+        "sectionSlotsObserved": 0,
+        "maxMeasuresPerSectionObserved": 0,
+        "eventSlotsObserved": 0,
+        "maxPitchArraySlotsObserved": 0,
+        "sectionElementsSemanticallyDecoded": 0,
+        "measureElementsSemanticallyDecoded": 0,
+        "eventValuesSemanticallyDecoded": 0,
+        "pitchElementsSemanticallyDecoded": 0,
+        "sectionElementsCopied": 0,
+        "measureElementsCopied": 0,
+        "eventValuesCopied": 0,
+        "pitchElementsCopied": 0,
+        "candidateObjectsAllocated": 0,
+        "candidateArraysAllocated": 0,
+        "diagnosticCandidatesProduced": 0,
+        "idOccurrences": 0,
+        "idClusters": 0,
+        "idDuplicateWorkUnits": 0,
+        "timelineAdditions": 0,
+        "timelineTicksObserved": 0
+      },
+      "counterGoldenCells": [
+        {
+          "id": "representative-shape",
+          "operation": "decodeDocumentShapeWithEvidence",
+          "template": "shape-cases.json:representativeDocument",
+          "expectedResult": {
+            "ok": true
+          },
+          "expectedDecoderEvidence": {
+            "bytesObserved": 0,
+            "maxDepthObserved": 9,
+            "recordsInspected": 14,
+            "arraysInspected": 7,
+            "scalarFieldsInspected": 40,
+            "descriptorReads": 67,
+            "arraySlotsRead": 3,
+            "collectionLengthsObserved": 3,
+            "sectionSlotsObserved": 1,
+            "maxMeasuresPerSectionObserved": 1,
+            "eventSlotsObserved": 1,
+            "maxPitchArraySlotsObserved": 0,
+            "sectionElementsSemanticallyDecoded": 1,
+            "measureElementsSemanticallyDecoded": 1,
+            "eventValuesSemanticallyDecoded": 1,
+            "pitchElementsSemanticallyDecoded": 0,
+            "sectionElementsCopied": 1,
+            "measureElementsCopied": 1,
+            "eventValuesCopied": 1,
+            "pitchElementsCopied": 0,
+            "candidateObjectsAllocated": 14,
+            "candidateArraysAllocated": 7,
+            "diagnosticCandidatesProduced": 0,
+            "idOccurrences": 4,
+            "idClusters": 0,
+            "idDuplicateWorkUnits": 4,
+            "timelineAdditions": 1,
+            "timelineTicksObserved": 3840
+          },
+          "expectedHarnessObservations": {
+            "getterCallbacks": 0,
+            "propertyGetCallbacks": 0,
+            "prototypeCallbacks": 0,
+            "iteratorCallbacks": 0,
+            "toJSONCallbacks": 0,
+            "sourceMutations": 0,
+            "stateWrites": 0
+          }
+        },
+        {
+          "id": "byte-max-plus-one",
+          "operation": "preflightDocumentImportBytesWithEvidence",
+          "input": 2097153,
+          "expectedResult": {
+            "ok": false,
+            "issues": [
+              {
+                "code": "limit.import_bytes_exceeded",
+                "path": []
+              }
+            ]
+          },
+          "expectedDecoderEvidenceBase": "zeroDecoderEvidence",
+          "expectedDecoderEvidenceOverrides": {
+            "bytesObserved": 2097153,
+            "diagnosticCandidatesProduced": 1
+          },
+          "expectedHarnessObservations": {
+            "getterCallbacks": 0,
+            "propertyGetCallbacks": 0,
+            "prototypeCallbacks": 0,
+            "iteratorCallbacks": 0,
+            "toJSONCallbacks": 0,
+            "sourceMutations": 0,
+            "stateWrites": 0
+          }
+        },
+        {
+          "id": "byte-invalid-negative",
+          "operation": "preflightDocumentImportBytesWithEvidence",
+          "input": -1,
+          "expectedResult": {
+            "ok": false,
+            "issues": [
+              {
+                "code": "shape.invalid_type",
+                "path": []
+              }
+            ]
+          },
+          "expectedDecoderEvidenceBase": "zeroDecoderEvidence",
+          "expectedDecoderEvidenceOverrides": {
+            "diagnosticCandidatesProduced": 1
+          },
+          "expectedHarnessObservations": {
+            "getterCallbacks": 0,
+            "propertyGetCallbacks": 0,
+            "prototypeCallbacks": 0,
+            "iteratorCallbacks": 0,
+            "toJSONCallbacks": 0,
+            "sourceMutations": 0,
+            "stateWrites": 0
+          }
+        }
+      ],
+      "counterGoldenMaterialization": "For a Base plus Overrides evidence oracle, deep-clone zeroDecoderEvidence, replace exactly the listed keys, assert its own keys equal decoderEvidenceCounters in order, and compare every numeric value. The representative input is a fresh independent fixture clone; harness observations are captured outside the seam and merged only after exact decoder-evidence comparison.",
+      "expected": {
+        "decoderEvidenceCounterCount": 28,
+        "harnessObservationCounterCount": 7,
+        "requiredCounterCount": 35,
+        "counterGoldenCellCount": 3,
+        "successfulShapePersistedDataRoundTripEveryCell": true,
+        "publicPrivateResultParityEveryMaterializedCell": true,
+        "getterCallbacks": 0,
+        "propertyGetCallbacks": 0,
+        "prototypeCallbacks": 0,
+        "iteratorCallbacks": 0,
+        "toJSONCallbacks": 0,
+        "sourceMutations": 0,
+        "stateWrites": 0,
+        "semanticGatesUseWallTime": false,
+        "rssIsObservationOnly": true,
+        "scheduledCaseCoverageExact": true,
+        "stableDigestOwner": "F2/build executable independent materializer",
+        "digestProjection": "result ok plus failure code/path only"
+      }
+    }
+  ]
+}

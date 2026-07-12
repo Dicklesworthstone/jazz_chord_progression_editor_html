@@ -1,0 +1,101 @@
+{
+  "schema": "changes.fixtures.f2-trace-ledger.v1",
+  "traces": [
+    {
+      "id": "F2-TRACE-API",
+      "parentClause": "F2 exposes a separate byte-law preflight and total structural shape decoder with exclusive DecodeResult branches.",
+      "sourceRefs": ["docs/F2_DECODER_CONTRACT.md#public-surface-and-boundary-split", "docs/F2_DECODER_CONTRACT.md#diagnostics"],
+      "requiredCaseIds": ["F2-BOUNDARY-001", "F2-LIMIT-001", "F2-LIMIT-002", "F2-SHAPE-001", "F2-STATE-001"],
+      "proofKinds": ["positive", "negative", "boundary", "applicability"],
+      "proofCaseIds": {"positive": ["F2-SHAPE-001"], "negative": ["F2-BOUNDARY-001"], "boundary": ["F2-LIMIT-001", "F2-LIMIT-002"], "applicability": ["F2-STATE-001"]}
+    },
+    {
+      "id": "F2-TRACE-BOUNDS",
+      "parentClause": "Every correctness limit has deterministic work/allocation counters and wall time is never a cutoff.",
+      "sourceRefs": ["docs/F2_DECODER_CONTRACT.md#deterministic-work-and-memory-evidence"],
+      "requiredCaseIds": ["F2-HOST-004", "F2-LIMIT-006", "F2-LIMIT-008", "F2-LIMIT-010", "F2-MUTATION-001", "F2-STATIC-001", "F2-WORK-001"],
+      "proofKinds": ["preflight", "mutation", "property", "static"],
+      "proofCaseIds": {"preflight": ["F2-HOST-004", "F2-LIMIT-006", "F2-LIMIT-008", "F2-LIMIT-010"], "mutation": ["F2-MUTATION-001"], "property": ["F2-WORK-001"], "static": ["F2-STATIC-001"]}
+    },
+    {
+      "id": "F2-TRACE-CHORD-VOICING",
+      "parentClause": "Parsed/custom chord shapes and Auto/Manual/Frozen compatibility are structural, spelling-first, and never repaired.",
+      "sourceRefs": ["docs/F2_DECODER_CONTRACT.md#local-value-and-structural-compatibility-laws"],
+      "requiredCaseIds": ["F2-CHORD-001", "F2-CHORD-002", "F2-CHORD-003", "F2-CHORD-004", "F2-CHORD-005", "F2-CHORD-006", "F2-VALUE-002", "F2-VOICE-001"],
+      "proofKinds": ["positive", "negative", "boundary", "transposition", "stage-contrast"],
+      "proofCaseIds": {"positive": ["F2-CHORD-001"], "negative": ["F2-CHORD-002", "F2-CHORD-003", "F2-CHORD-004", "F2-CHORD-005", "F2-VALUE-002"], "boundary": ["F2-VOICE-001"], "transposition": ["F2-VOICE-001"], "stage-contrast": ["F2-CHORD-006"]}
+    },
+    {
+      "id": "F2-TRACE-DIAGNOSTICS",
+      "parentClause": "Failures aggregate independently reachable issues, deduplicate code/path identity, and sort by numeric-aware path then code.",
+      "sourceRefs": ["docs/F2_DECODER_CONTRACT.md#diagnostics"],
+      "requiredCaseIds": ["F2-FIELD-001", "F2-HOST-006", "F2-ORDER-001", "F2-ORDER-002", "F2-ORDER-003", "F2-ORDER-004"],
+      "proofKinds": ["aggregate", "dedupe", "numeric-order", "code-order", "permutation"],
+      "proofCaseIds": {"aggregate": ["F2-FIELD-001", "F2-ORDER-001"], "dedupe": ["F2-HOST-006"], "numeric-order": ["F2-ORDER-002"], "code-order": ["F2-ORDER-003"], "permutation": ["F2-ORDER-004"]}
+    },
+    {
+      "id": "F2-TRACE-FRESHNESS",
+      "parentClause": "Success is recursively frozen and fresh; failure exposes no partial candidate; input and current state never change.",
+      "sourceRefs": ["docs/F2_DECODER_CONTRACT.md#freshness-immutability-and-state"],
+      "requiredCaseIds": ["F2-FRESH-001", "F2-SHAPE-002"],
+      "proofKinds": ["success", "failure", "replay"],
+      "proofCaseIds": {"success": ["F2-SHAPE-002"], "failure": ["F2-FRESH-001"], "replay": ["F2-FRESH-001"]}
+    },
+    {
+      "id": "F2-TRACE-IDS",
+      "parentClause": "IDs are exact case-sensitive wire values in one global cross-kind namespace and every duplicate occurrence is diagnosed once.",
+      "sourceRefs": ["docs/F2_DECODER_CONTRACT.md#scalar-text-and-collection-laws"],
+      "requiredCaseIds": ["F2-ID-001", "F2-ID-002", "F2-ID-003", "F2-ID-004", "F2-ID-005", "F2-ID-006", "F2-VALUE-002"],
+      "proofKinds": ["same-kind", "cross-kind", "cluster", "near-miss", "malformed"],
+      "proofCaseIds": {"same-kind": ["F2-ID-001"], "cross-kind": ["F2-ID-002"], "cluster": ["F2-ID-003", "F2-ID-004"], "near-miss": ["F2-ID-005"], "malformed": ["F2-ID-006", "F2-VALUE-002"]}
+    },
+    {
+      "id": "F2-TRACE-LIMITS",
+      "parentClause": "Byte, depth, section, measure, event, text, pitch-array, beat, and timeline maxima accept exact limits and refuse plus one.",
+      "sourceRefs": ["docs/F2_DECODER_CONTRACT.md#scalar-text-and-collection-laws", "docs/F2_DECODER_CONTRACT.md#required-phases-and-failure-precedence"],
+      "requiredCaseIds": ["F2-LIMIT-001", "F2-LIMIT-002", "F2-LIMIT-003", "F2-LIMIT-004", "F2-LIMIT-005", "F2-LIMIT-006", "F2-LIMIT-007", "F2-LIMIT-008", "F2-LIMIT-009", "F2-LIMIT-010", "F2-LIMIT-011", "F2-TEXT-001", "F2-TIME-001", "F2-VALUE-002"],
+      "proofKinds": ["exact", "plus-one", "text", "time"],
+      "proofCaseIds": {"exact": ["F2-LIMIT-001", "F2-LIMIT-003", "F2-LIMIT-005", "F2-LIMIT-007", "F2-LIMIT-009", "F2-LIMIT-011", "F2-VALUE-002"], "plus-one": ["F2-LIMIT-002", "F2-LIMIT-004", "F2-LIMIT-006", "F2-LIMIT-008", "F2-LIMIT-010", "F2-LIMIT-011", "F2-VALUE-002"], "text": ["F2-TEXT-001"], "time": ["F2-TIME-001"]}
+    },
+    {
+      "id": "F2-TRACE-STAGE-OWNERSHIP",
+      "parentClause": "F2 returns ProgressionDocumentShapeV2 and leaves source/AST, formula, custom correspondence, measure semantics, and publication to T1/F3.",
+      "sourceRefs": ["docs/F2_DECODER_CONTRACT.md#deliberate-f3-boundary"],
+      "requiredCaseIds": ["F2-IMPORT-001", "F2-SHAPE-003", "F2-SHAPE-004", "F2-SHAPE-005", "F2-SHAPE-006", "F2-SHAPE-007", "F2-STATIC-001"],
+      "proofKinds": ["import-owner", "source", "formula", "custom", "completion", "reason", "static-publication"],
+      "proofCaseIds": {"import-owner": ["F2-IMPORT-001"], "source": ["F2-SHAPE-003"], "formula": ["F2-SHAPE-004"], "custom": ["F2-SHAPE-005"], "completion": ["F2-SHAPE-006"], "reason": ["F2-SHAPE-007"], "static-publication": ["F2-STATIC-001"]}
+    },
+    {
+      "id": "F2-TRACE-STRICT-SHAPE",
+      "parentClause": "Every persisted object has an exact own enumerable data-field surface and every union uses an exact discriminator.",
+      "sourceRefs": ["docs/F2_DECODER_CONTRACT.md#exact-persisted-schema", "docs/F2_DECODER_CONTRACT.md#totality-and-observable-input-model"],
+      "requiredCaseIds": ["F2-FIELD-001", "F2-FIELD-002", "F2-FIELD-003", "F2-FIELD-004", "F2-FIELD-005", "F2-SHAPE-001", "F2-SHAPE-009", "F2-SHAPE-010", "F2-STATIC-001", "F2-VALUE-001", "F2-VALUE-002"],
+      "proofKinds": ["positive", "missing", "wrong-type", "unknown", "discriminator", "enum", "schema", "static"],
+      "proofCaseIds": {"positive": ["F2-SHAPE-001"], "missing": ["F2-FIELD-001"], "wrong-type": ["F2-FIELD-002"], "unknown": ["F2-FIELD-003"], "discriminator": ["F2-FIELD-004"], "enum": ["F2-FIELD-005", "F2-VALUE-001"], "schema": ["F2-SHAPE-009", "F2-SHAPE-010", "F2-VALUE-002"], "static": ["F2-STATIC-001"]}
+    },
+    {
+      "id": "F2-TRACE-TEXT",
+      "parentClause": "Persisted strings use scalar-value limits, reject lone surrogates, preserve code units, and apply the frozen blankness split.",
+      "sourceRefs": ["docs/F2_DECODER_CONTRACT.md#scalar-text-and-collection-laws"],
+      "requiredCaseIds": ["F2-SHAPE-007", "F2-TEXT-001", "F2-TEXT-002"],
+      "proofKinds": ["boundary", "unicode", "stage-contrast"],
+      "proofCaseIds": {"boundary": ["F2-TEXT-001"], "unicode": ["F2-TEXT-002"], "stage-contrast": ["F2-SHAPE-007"]}
+    },
+    {
+      "id": "F2-TRACE-TIME",
+      "parentClause": "Wire beats are canonical exact rationals, event durations are positive, and total timeline accumulation is bounded and exact.",
+      "sourceRefs": ["docs/F2_DECODER_CONTRACT.md#local-value-and-structural-compatibility-laws"],
+      "requiredCaseIds": ["F2-ORDER-001", "F2-SHAPE-006", "F2-TIME-001"],
+      "proofKinds": ["positive", "negative", "timeline", "stage-contrast"],
+      "proofCaseIds": {"positive": ["F2-TIME-001"], "negative": ["F2-ORDER-001"], "timeline": ["F2-TIME-001"], "stage-contrast": ["F2-SHAPE-006"]}
+    },
+    {
+      "id": "F2-TRACE-TOTALITY",
+      "parentClause": "Finite ordinary malformed values and terminating reflection failures return deterministic results without getters, inherited reads, or uncaught throws.",
+      "sourceRefs": ["docs/F2_DECODER_CONTRACT.md#totality-and-observable-input-model"],
+      "requiredCaseIds": ["F2-BOUNDARY-001", "F2-HOST-001", "F2-HOST-002", "F2-HOST-003", "F2-HOST-004", "F2-HOST-005", "F2-HOST-007", "F2-HOST-008", "F2-HOST-009", "F2-HOST-010", "F2-SHAPE-008"],
+      "proofKinds": ["primitive", "accessor", "prototype", "sparse", "proxy", "cycle", "depth"],
+      "proofCaseIds": {"primitive": ["F2-BOUNDARY-001", "F2-HOST-007", "F2-SHAPE-008"], "accessor": ["F2-HOST-001", "F2-HOST-003", "F2-HOST-005"], "prototype": ["F2-HOST-002"], "sparse": ["F2-HOST-004"], "proxy": ["F2-HOST-008"], "cycle": ["F2-HOST-009"], "depth": ["F2-HOST-010"]}
+    }
+  ]
+}

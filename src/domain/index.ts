@@ -104,6 +104,12 @@ export {
   F3_SEMANTIC_ISSUE_CODES,
   VALIDATION_DIAGNOSTIC_ORDER,
 } from "./validated-document";
+export {
+  DOCUMENT_DECODER_CONTRACT_SCHEMA,
+  DOCUMENT_DECODER_OPERATION_NAMES,
+  DOCUMENT_IMPORT_BYTE_ISSUE_CODES,
+  DOCUMENT_SHAPE_ISSUE_CODES,
+} from "./document-decoder-contract";
 export { domainOperations } from "./operations";
 
 export type {
@@ -285,6 +291,19 @@ export type {
   ValidationDiagnosticComparator,
   ValidationIssue,
 } from "./validated-document";
+export type {
+  DecodeDocumentShape,
+  DocumentDecodeOperations,
+  DocumentDecoderIssue,
+  DocumentDecoderOperationName,
+  DocumentImportByteIssueCode,
+  DocumentImportByteObservation,
+  DocumentImportBytePreflightResult,
+  DocumentShapeDecodeResult,
+  DocumentShapeIssueCode,
+  PreflightDocumentImportBytes,
+  WarningFreeDecodeResult,
+} from "./document-decoder-contract";
 export type { DomainOperations } from "./operations";
 export type {
   Comparison,

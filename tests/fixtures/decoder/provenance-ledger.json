@@ -1,0 +1,49 @@
+{
+  "schema": "changes.fixtures.f2-provenance-ledger.v1",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "authoringStatement": "Expected codes, paths, values, counters, and stage decisions were manually authored before the F2 production decoder and are not regenerated from it.",
+  "classificationPolicy": {
+    "external-definition": "A language or encoding definition maintained outside this project.",
+    "inherited-reviewed-project-decision": "A literal or law independently frozen and proven by the preceding F1 package.",
+    "reviewed-project-decision": "A product/schema/security boundary selected and checked into this repository.",
+    "stage-ownership-decision": "A deliberate package boundary that keeps structural and semantic authority separate."
+  },
+  "authorities": [
+    {
+      "id": "F2-AUTH-ECMASCRIPT-DATA",
+      "authorityClass": "ECMAScript language definition",
+      "expectationClass": "external-definition",
+      "sourceRefs": ["https://tc39.es/ecma262/#sec-object-internal-methods-and-internal-slots", "https://tc39.es/ecma262/#sec-string.prototype.trim"],
+      "covers": "own descriptors, accessors, arrays, reflection exceptions, lexical string comparison, and trim blankness"
+    },
+    {
+      "id": "F2-AUTH-F1-VALUES",
+      "authorityClass": "preceding independent F1 authority corpus",
+      "expectationClass": "inherited-reviewed-project-decision",
+      "sourceRefs": ["docs/F1_DOMAIN_CONTRACT.md#persisted-limits", "tests/fixtures/domain/f1-domain-contract.json"],
+      "covers": "pitch, identity, exact time, meter, tempo, instrument, playback, chord, voicing, text, and issue-code literals"
+    },
+    {
+      "id": "F2-AUTH-PROJECT-SCHEMA",
+      "authorityClass": "reviewed F2 wire-shape decision",
+      "expectationClass": "reviewed-project-decision",
+      "sourceRefs": ["docs/F2_DECODER_CONTRACT.md#exact-persisted-schema", "docs/F2_DECODER_CONTRACT.md#required-phases-and-failure-precedence"],
+      "covers": "exact fields, discriminators, limit precedence, duplicate clusters, paths, freshness, and immutable output"
+    },
+    {
+      "id": "F2-AUTH-SECURITY-BOUNDARY",
+      "authorityClass": "reviewed local hostile-input boundary",
+      "expectationClass": "reviewed-project-decision",
+      "sourceRefs": ["docs/F2_DECODER_CONTRACT.md#totality-and-observable-input-model", "docs/F2_DECODER_CONTRACT.md#deterministic-work-and-memory-evidence"],
+      "covers": "no getters/prototypes/iterators/repair, Proxy caveat, byte-bound external path, depth/cycle scan, and allocation counters"
+    },
+    {
+      "id": "F2-AUTH-STAGE-OWNERSHIP",
+      "authorityClass": "reviewed F2 versus T1/F3 package boundary",
+      "expectationClass": "stage-ownership-decision",
+      "sourceRefs": ["docs/F2_DECODER_CONTRACT.md#deliberate-f3-boundary", "docs/F1_DOMAIN_CONTRACT.md#scope-and-ownership"],
+      "covers": "ProgressionDocumentShapeV2 success, semantic near-miss acceptance, import-adapter parsing, and prohibition on publication casts"
+    }
+  ]
+}
