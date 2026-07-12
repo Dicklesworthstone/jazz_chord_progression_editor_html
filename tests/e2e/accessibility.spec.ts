@@ -305,6 +305,11 @@ async function runAccessibilityCell(
 }
 
 test.describe("F0 automated accessibility baseline", () => {
+  // Axe plus two real navigations has exceeded 50 seconds on a contended host.
+  // Correctness waits retain their stricter action, assertion, and navigation
+  // limits; this total budget adds no retry or relaxed assertion.
+  test.describe.configure({ timeout: 90_000 });
+
   for (const mode of ["file", "http"] as const) {
     test(`${mode} shell has accessible structure and resilient focus`, async ({
       browserName,
