@@ -3,14 +3,17 @@
   "descriptorProtocol": {
     "allHostObjectsRemainTestOwned": true,
     "accessor": "Define an own accessor descriptor and count every getter/setter invocation.",
-    "proxy": "Wrap the named node in a throwing or revoked Proxy; a trap that never returns is explicitly outside the totality claim.",
+    "proxy": "Wrap the named node in a throwing, forwarding/poisoned, or revoked Proxy. Array targets remain genuine arrays under Array.isArray. A named throwKey limits a getOwnPropertyDescriptor throw to that exact key. A trap that never returns is explicitly outside the totality claim.",
     "depth": "Materialize alternating ordinary object/array containers; the root container is depth one.",
     "shapeCount": "Use shape-cases.json representativeDocument as the base. sections count n becomes n sections in index order with id section-limit-NNNN, name SNNNN, annotation empty, keyOverride null, voiceLeadingBoundary continue, and measures empty. measuresInSection0 count n keeps only the first representative section and replaces measures with n measures in index order having id measure-limit-NNNN, events empty, and completion {kind:'empty'}. eventsAcrossDocument count n uses up to eight fresh representative-event clones per measure; without distributedAcrossSections it keeps one section with ceil(n/8) measures, while distributedAcrossSections:true fills exactly 1024 such measures per section before continuing in a fresh section. Section i is section-limit-NNNN; each global measure i is measure-limit-NNNN with completion {kind:'complete'}; each global event j is event-limit-NNNNN with duration 1/960, annotation empty, and otherwise exact representative chord/voicing. N fields are zero-padded decimal indices of the stated width. A case's more exact distribution descriptor overrides only this distribution recipe.",
     "repeatCodePoint": "A descriptor object shaped exactly as {repeatCodePoint:'U+HHHH',count:n} becomes n copies of that Unicode scalar value.",
     "specialNumber": "A descriptor object shaped exactly as {specialNumber:'NaN'|'+Infinity'|'-Infinity'|'-0'|'unsafe-positive'|'unsafe-negative'} is replaced in memory; unsafe-positive is exactly 9007199254740992 and unsafe-negative is exactly -9007199254740992. Bare strings remain strings.",
     "specialPrimitive": "A descriptor object shaped exactly as {specialPrimitive:'undefined'|'bigint-one'|'symbol-test'|'callable-function'|'boxed-number'|'boxed-string'|'boxed-boolean'|'boxed-bigint'|'boxed-symbol'} becomes undefined, 1n, a fresh Symbol('test'), a fresh ordinary function, new Number(1), new String('boxed'), new Boolean(true), Object(1n), or Object(a fresh Symbol('boxed')) respectively.",
     "instrumentedCallback": "A descriptor object shaped exactly as {instrumentedCallback:name,behavior:'throw-if-called'} becomes a fresh function that increments the named fixture counter and throws a fixed test-owned Error when invoked.",
-    "candidateAllocation": "Instrument only decoder-owned decoded-document candidate objects/arrays, excluding result envelopes, diagnostics, caller-owned input graphs, fixture materialization, and engine reflection arrays.",
+    "candidateAllocation": "Count only decoded-document candidate graph object/array nodes created and attached by the reviewed local candidate factories. Each accepted persisted node is assembled exactly once. Exclude discarded F1 validation values, result/evidence envelopes, diagnostics/paths, caller-owned inputs, fixture materialization, worklists, and reflection snapshots.",
+    "eventFragments": "For a LIMIT-011 event.fragments record, start from a fresh representative event and, in chord then voicing key order, deep-clone the exact named shape-cases branchFragment into that event field. An omitted voicing with retainRepresentativeAutoVoicing true keeps the untouched representative Auto voicing. Apply dotted-path overrides next and pitch counts last.",
+    "recursivelyFreezeInputBeforeDecode": "After all fixture materialization, recursively Object.freeze every test-owned input record and array before invoking the decoder; freezing does not authorize output aliasing.",
+    "recursivelyProxyEveryInputContainer": "After materialization, replace every reachable test-owned record/array edge with a fresh same-kind Proxy. Forward only the named reflection read traps. Every named write trap increments sourceMutations and throws a fixed test-owned Error; success requires no callback.",
     "expectedValuesGeneratedByProduction": false
   },
   "limitDescriptorProtocol": {
@@ -111,7 +114,7 @@
       }
     ],
     "expectationPolicy": "Seeds schedule checked-in cases and cells only; they never generate expected values.",
-    "caseMaterialization": "Materialize all atomic cells for one scheduled case in the companion shape-cases.json materializationProtocol order. For an adversarial case, an explicit cellExpansion is exhaustive and the defaults do not run; otherwise use these defaults. Ordinary inputs, cells, ownKeys, and values arrays are independent fresh cells in checked-in order. F2-HOST-001 is path-major then descriptor-minor Cartesian order. F2-LIMIT-011 is collection-major then count-minor Cartesian order, followed by combinedOversizeCell, followed by continuationCells in checked-in order. A singular inputDescriptor or materialization recipe is one cell. No other adversarial arrays form an implicit Cartesian product.",
+    "caseMaterialization": "Materialize all atomic cells for one scheduled case in the companion shape-cases.json materializationProtocol order. For an adversarial case, an explicit cellExpansion is exhaustive and the defaults do not run; otherwise use these defaults. Ordinary inputs, cells, ownKeys, and values arrays are independent fresh cells in checked-in order. F2-HOST-001 is path-major then descriptor-minor Cartesian order. F2-LIMIT-011 is collection-major then count-minor Cartesian order, followed by combinedOversizeCell, preflightBeforeSemanticCells, crossSiblingReachabilityCells, and continuationCells in their checked-in order. A singular inputDescriptor or materialization recipe is one cell. No other adversarial arrays form an implicit Cartesian product.",
     "replay": "For each scheduled case, materialize all of that case's atomic cells in fixed case-internal order. Decode every cell twice through the public operation and twice through the matching private evidence seam using four referentially fresh equivalent inputs. Require the public result to equal the private seam's result for both pairs, require all four result projections to be deeply equal, then verify exact private evidence, public invariants, and all case assertions before recording one projected case observation. Result messages, decoded success values, counters, and heterogeneous assertion labels are verified but deliberately excluded from the digest projection.",
     "caseObservation": "The JSON-only digest projection is exactly {cells:[...]}. Each success cell is exactly {ok:true}. Each failure cell is exactly {ok:false,errors:[...]}, where every error is exactly {code,path}; errors and paths retain public result order. This is a projection for deterministic replay evidence, not the full conformance oracle.",
     "canonicalJson": "Recursively copy the projected case observation with every object key sorted by ascending ECMAScript UTF-16 code-unit order and every array preserved in case-internal order, then encode the no-replacer, no-space JSON.stringify result as UTF-8. Its only numbers are nonnegative safe-integer path indices; messages, arbitrary decoded numbers, and non-finite hostile inputs never enter this projection.",
@@ -1765,7 +1768,17 @@
     {"id": "F2-MUT-231", "owner": "F2", "fault": "idClusters always reports zero", "caseIds": ["F2-ID-003", "F2-ID-004"]},
     {"id": "F2-MUT-232", "owner": "F2", "fault": "idDuplicateWorkUnits always reports zero", "caseIds": ["F2-ID-003", "F2-ID-004", "F2-ID-006"]},
     {"id": "F2-MUT-233", "owner": "F2", "fault": "timelineAdditions always reports zero", "caseIds": ["F2-WORK-001", "F2-TIME-001"]},
-    {"id": "F2-MUT-234", "owner": "F2", "fault": "timelineTicksObserved always reports zero", "caseIds": ["F2-WORK-001", "F2-TIME-001"]}
+    {"id": "F2-MUT-234", "owner": "F2", "fault": "timelineTicksObserved always reports zero", "caseIds": ["F2-WORK-001", "F2-TIME-001"]},
+    {"id": "F2-MUT-235", "owner": "F2", "fault": "the string key 4294967295 is misclassified as a canonical array index and ignored", "caseIds": ["F2-HOST-006"]},
+    {"id": "F2-MUT-236", "owner": "F2", "fault": "negative Infinity playback levels are sent to range validation instead of non-finite refusal", "caseIds": ["F2-VALUE-001"]},
+    {"id": "F2-MUT-237", "owner": "F2", "fault": "Auto voiceCount inventory is widened to accept 8", "caseIds": ["F2-VALUE-002"]},
+    {"id": "F2-MUT-238", "owner": "F2", "fault": "a parsed sixth degree accepts a degree number other than 6", "caseIds": ["F2-CHORD-005"]},
+    {"id": "F2-MUT-239", "owner": "F2", "fault": "F2 rejects a structurally valid cross-category chord formula conflict owned by F3", "caseIds": ["F2-SHAPE-004"]},
+    {"id": "F2-MUT-240", "owner": "F2", "fault": "an array consumer accepts or iterates a typed array, arguments object, Set, or plain array-like", "caseIds": ["F2-HOST-007"]},
+    {"id": "F2-MUT-241", "owner": "F2", "fault": "the pure decoder writes to an external application, transport, audio, persistence, or recovery state sentinel", "caseIds": ["F2-STATE-001", "F2-WORK-001"]},
+    {"id": "F2-MUT-242", "owner": "F2", "fault": "F2 rejects a structurally valid stored spelled pitch solely because its octave is not MIDI-realizable", "caseIds": ["F2-CHORD-006"]},
+    {"id": "F2-MUT-243", "owner": "F2", "fault": "a valid minimal document with an empty sections array is rejected or warned", "caseIds": ["F2-SHAPE-001"]},
+    {"id": "F2-MUT-244", "owner": "F2", "fault": "mixed ID, Beat, tempo, and text diagnostics retain phase or insertion order instead of the global path-code comparator", "caseIds": ["F2-ORDER-001"]}
   ],
   "cases": [
     {
@@ -2486,6 +2499,17 @@
           }
         },
         {
+          "id": "array-arrayindex-upper-exclusion",
+          "targetPath": ["sections"],
+          "entries": [
+            {
+              "key": {"kind": "string", "value": "4294967295"},
+              "descriptor": {"value": true, "enumerable": true, "writable": true, "configurable": true}
+            }
+          ],
+          "expected": {"issues": [{"code": "shape.unknown_field", "path": ["sections", "4294967295"]}]}
+        },
+        {
           "id": "array-one-symbol",
           "targetPath": [
             "sections"
@@ -3010,7 +3034,7 @@
           {
             "source": "cells",
             "order": "checked-in order",
-            "atomicCellCount": 15
+            "atomicCellCount": 16
           },
           {
             "source": "arrayConsumerTargets x arrayConsumerProbes",
@@ -3024,12 +3048,13 @@
             "atomicCellCount": 2
           }
         ],
-        "atomicCellCount": 67
+        "atomicCellCount": 68
       },
       "expected": {
         "getterCallbacks": 0,
         "arrayConsumerCount": 10,
         "arrayAndRecordSymbolBranchesCovered": true,
+        "arrayIndexUpperExclusionKeyCovered": "4294967295",
         "unknownArrayAndRecordAccessorsNeverInvoked": true,
         "nonenumerableUnknownArrayAndRecordFieldsRejected": true,
         "arrayExtraStringDepthAndCycleTraversalCovered": true,
@@ -4690,11 +4715,11 @@
       "kind": "named-control-campaign",
       "source": "mutationControls",
       "expected": {
-        "definedControls": 234,
-        "f2OwnedControls": 232,
+        "definedControls": 244,
+        "f2OwnedControls": 242,
         "e0OwnedControls": 2,
         "everyControlMapsToCaseIds": true,
-        "futureGate": "F2/build kills all 232 F2 controls; E0 integration later kills the 2 E0 controls",
+        "futureGate": "F2/build kills all 242 F2 controls; E0 integration later kills the 2 E0 controls",
         "specDoesNotClaimControlsAlreadyExecuted": true
       }
     },
@@ -5281,7 +5306,7 @@
         "excludedCaseIds": [
           "F2-LIMIT-003"
         ],
-        "mutationControlsDefined": 234,
+        "mutationControlsDefined": 244,
         "generatedPermutations": 0,
         "generatedAliasGraphs": 0
       },
@@ -5406,7 +5431,7 @@
         "prototypeCallbacks": "getPrototypeOf traps, inherited getters, methods, or other prototype callbacks observed by fixture instrumentation",
         "iteratorCallbacks": "Symbol.iterator or iterator next callbacks observed by fixture instrumentation",
         "toJSONCallbacks": "toJSON function callbacks observed by fixture instrumentation",
-        "sourceMutations": "input containers whose own keys, descriptors, or data values differ from the pre-decode descriptor snapshot",
+        "sourceMutations": "one per recursive input Proxy set, defineProperty, deleteProperty, or setPrototypeOf trap callback, plus one per untrapped input container whose own keys, descriptors, or data values differ from its pre-decode snapshot; a trapped attempt that throws is not counted again by the final snapshot",
         "stateWrites": "decoder writes to application document, selection, history, transport, recovery, audio, persistence, or any other external state sentinel"
       },
       "zeroDecoderEvidence": {
@@ -5443,7 +5468,7 @@
         {
           "id": "representative-shape",
           "operation": "decodeDocumentShapeWithEvidence",
-          "template": "shape-cases.json:representativeDocument",
+          "template": "shape-cases.json:templates.representativeDocument",
           "expectedResult": {
             "ok": true
           },

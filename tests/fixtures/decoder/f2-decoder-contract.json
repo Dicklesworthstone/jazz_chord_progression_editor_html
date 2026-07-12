@@ -144,12 +144,12 @@
     {"path": "provenance-ledger.json", "schema": "changes.fixtures.f2-provenance-ledger.v1", "recordCollections": ["authorities"]}
   ],
   "reviewedDigests": {
-    "contractDocumentSha256": "3d2014aedb34cbd4e81beba25793359963ee42af171af8b4bc7be331b67b3f7a",
+    "contractDocumentSha256": "55aae7c1406642741047a403c68c0b976a89812e8a84e10fdf5c54799f8401cc",
     "companionsSha256": {
-      "adversarial-cases.json": "e98aacbccb9b87a004902e5bdc56001e5bd588822dd0a565242e1033ba14570b",
+      "adversarial-cases.json": "a6a8573e53b11e044e22a267d82ddf57f930913f966d157ed4e4e0d96ded5243",
       "provenance-ledger.json": "e9a24fdb862292cc774e5866c704160d33110f270aa43fe058cc55d390daef99",
-      "shape-cases.json": "d741788eef36a4571fca283362a291219db747e4cb0c4e29a42e096944a61307",
-      "trace-ledger.json": "8dbb886ca41310234af8ef4a8af6bb3628a53e99ab1b705765f0fbacae5bb599"
+      "shape-cases.json": "a489060fb2c17c4429e62c7d496a00b919e6378703c096a0e6079ea9c1f6d06a",
+      "trace-ledger.json": "664427ba257c0a6efcad69d926b472def777d20326c24cf22f62dd79c90ad6cd"
     }
   },
   "coverageSummary": {
@@ -160,6 +160,6 @@
     "authorityRecords": 5,
     "objectSchemaVariants": 21,
     "stableSeeds": 8,
-    "mutationControls": 234
+    "mutationControls": 244
   }
 }

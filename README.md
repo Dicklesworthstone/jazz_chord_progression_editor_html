@@ -27,7 +27,7 @@ That is the release direction, not a description of the current visible shell. S
 | Reproducible build contract | Source-driven build, generated-file banner, byte-equality checks, size budget, CSP hashes, license inventory |
 | Verification scaffold | Static policy tests, type checking, linting, reproducibility checks, and Chromium/Firefox/WebKit E2E harnesses |
 | F1 domain runtime | Headless spelling-first identities, pitch projection, exact rational time, chord/voicing construction, immutable bounded copy/remap, and a 317-case reviewed authority corpus; decoder, semantic publication, and UI integration remain downstream |
-| F2 decoder contract | Exact public types plus a production-independent 65-case structural/adversarial corpus, 12 requirement traces, 8 deterministic seeds, and 234 named mutation controls; the production decoder remains the next package |
+| F2 decoder contract | Exact public types plus a production-independent 65-case structural/adversarial corpus, 12 requirement traces, 8 deterministic seeds, and 244 named mutation controls; the production decoder remains the next package |
 
 The visible page intentionally reports **Foundation ready** and names the next gate. There is no hidden legacy editor behind it.
 

@@ -17,13 +17,18 @@
     "specialPrimitive": "A descriptor object shaped exactly as {specialPrimitive:'undefined'|'bigint-one'|'symbol-test'|'boxed-number'|'boxed-string'|'boxed-boolean'|'boxed-bigint'|'boxed-symbol'} becomes undefined, 1n, a fresh Symbol('test'), new Number(1), new String('boxed'), new Boolean(true), Object(1n), or Object(a fresh Symbol('boxed')) respectively.",
     "stringSegments": "A descriptor object shaped exactly as {stringSegments:[...]} materializes each listed repeatCodePoint, repeatAscii, specialString, or literal string segment in order and concatenates the resulting JavaScript strings without normalization.",
     "specialNumber": "A descriptor object shaped exactly as {specialNumber:'NaN'|'+Infinity'|'-Infinity'|'-0'|'unsafe-positive'|'unsafe-negative'} is replaced in memory; unsafe-positive is exactly 9007199254740992 and unsafe-negative is exactly -9007199254740992. A bare string remains a string.",
+    "registeredTargetCell": "Resolve targetId only against the case's checked-in target registry, apply that target's activation when non-null, materialize the cell value through this protocol, and replace the exact target path. Missing, duplicate, or cross-case target IDs are fixture errors.",
+    "consumerCoDiagnosticCell": "Each F2-TEXT-002 consumerCoDiagnosticCells entry is one atomic registeredTargetCell. Compare the exact expectedCodes sequence at the target's exact path; no implied Cartesian product or fallback diagnostic is allowed.",
+    "negativeZeroAxisCell": "For a named pitch-class or stored-pitch target, apply its activation, set its exact alter field to in-memory negative zero, require decode success, and require Object.is on the decoded alter. Explicit degree/MIDI/playback negative-zero cells apply preMutations before target replacement and assert their exact objectIs location.",
+    "counterpartExpansion": "A named primary-plus-counterpart cellExpansion runs each named mutation recipe once against its own fresh representativeDocument in listed order.",
+    "expectedDurationExpansion": "For F2-TIME-001, iterate expectedDurationConsumerTargets target-major then expectedDurationBeatCells cell-minor; apply target activation, materialize a fresh Beat record, replace expectedDuration, and prefix a refusal path from that exact target.",
     "matrix": "Run every atomic cell independently against a fresh template and compare the exact expected code/path sequence.",
     "ordinaryArrayExpansion": "Unless a case supplies cellExpansion, visit top-level cells, acceptedCells, rejectedCells, fields, inputs, values, and nodePaths in that field order when present and visit each array in checked-in JSON order. Each entry is one atomic cell against a fresh template. If an entry has a values array, expand it in place as one atomic cell per value in checked-in order. No ordinary array forms an implicit Cartesian product with another array.",
     "mutationExpansion": "A singular mutation is one atomic cell. A mutations array is one atomic cell whose operations are applied from left to right against one fresh template; it is not one cell per operation.",
     "caseExpansionPrecedence": "An explicit cellExpansion is exhaustive. Otherwise apply ordinaryArrayExpansion or mutationExpansion when present. A template-only case or a case with one singular prose materialization recipe is exactly one atomic cell. No fallback runs in addition to an earlier rule.",
     "explicitCartesianOnly": "A Cartesian product exists only where cellExpansion explicitly names the Cartesian scope. Its axes and outer-to-inner nesting order must be listed by that case.",
     "caseObservationOrder": "A case observation contains its atomic cell observations in the expansion order defined here or by its cellExpansion override. No materializer may reorder, omit, deduplicate, or add cells.",
-    "successfulShapeRoundTrip": "For every successful decodeDocumentShape cell, the independent harness projects the recognized persisted data tree from the pre-decode own-data descriptor snapshot and from the decoded value. Record fields are canonicalized by the reviewed schema field order and require the same exact field set and values; input record insertion order is irrelevant. Arrays retain exact order and scalars use Object.is. Descriptor flags, prototypes, result envelopes, and diagnostic-only metadata are excluded; spelling, source text, duplicate/order-bearing arrays, exact numbers including negative zero, IDs, and durations are included. The production decoder never supplies either projection.",
+    "successfulShapeRoundTrip": "For every successful decodeDocumentShape cell, the independent harness projects the recognized persisted data tree from the pre-decode own-data descriptor snapshot and from the decoded value. Record fields are canonicalized by the reviewed schema field order and require the same exact field set and values; input record insertion order is irrelevant. Arrays retain exact order and scalars use Object.is. It also records every input container identity and requires zero identity overlap with every output container, including recursively frozen inputs. Descriptor flags, prototypes, result envelopes, and diagnostic-only metadata are excluded; spelling, source text, duplicate/order-bearing arrays, exact numbers including negative zero, IDs, and durations are included. The production decoder never supplies either projection.",
     "productionOracleForbidden": true
   },
   "templates": {
@@ -7007,6 +7012,9 @@
             },
             {
               "specialNumber": "+Infinity"
+            },
+            {
+              "specialNumber": "-Infinity"
             }
           ],
           "code": "playback.level_not_finite"
@@ -7033,10 +7041,10 @@
           {
             "source": "playbackLevelTargets x playbackLevelFaultGroups values",
             "order": "target-major then group-major then value-minor",
-            "atomicCellCount": 8
+            "atomicCellCount": 10
           }
         ],
-        "atomicCellCount": 86
+        "atomicCellCount": 88
       },
       "expected": {
         "exactNestedPaths": true,
@@ -7056,7 +7064,7 @@
           "instrumentIds",
           "countInBars"
         ],
-        "materializedCellCount": 86
+        "materializedCellCount": 88
       }
     },
     {
@@ -7389,7 +7397,10 @@
             "voicing",
             "voiceCount"
           ],
-          "value": 2,
+          "values": [
+            2,
+            8
+          ],
           "expected": {
             "code": "voicing.voice_count_invalid",
             "path": [
@@ -7893,7 +7904,7 @@
           {
             "source": "rejectedCells",
             "order": "checked-in order",
-            "atomicCellCount": 12
+            "atomicCellCount": 13
           },
           {
             "source": "invalidPitchClassConsumerTargets x invalidPitchClassFaults",
@@ -7961,7 +7972,7 @@
           }
         ],
         "freshTemplatePerCell": true,
-        "atomicCellCount": 192
+        "atomicCellCount": 193
       },
       "expected": {
         "everyCellUsesOneFreshRepresentativeDocument": true,
@@ -7976,13 +7987,14 @@
         "storedPitchOctaveRefusalsCoveredAtBothModes": true,
         "degreeAlterConsumerPathsCovered": 4,
         "degreeNumberRefusalCoversAdditions": true,
+        "autoVoiceCountUpperRefusal": 8,
         "negativeZeroAlterConsumersPreservedWithObjectIs": 12,
         "negativeZeroMidiEndpointsAndCountInBarsPreservedWithObjectIs": 3,
         "acceptedInventoriesCoveredAtEveryConsumer": [
           "steps",
           "alterations"
         ],
-        "materializedCellCount": 192
+        "materializedCellCount": 193
       }
     },
     {

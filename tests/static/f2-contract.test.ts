@@ -258,7 +258,7 @@ describe("F2 independently authored decoder contract", () => {
         traces: 12,
         authorities: 5,
         seeds: 8,
-        mutationControls: 234,
+        mutationControls: 244,
         objectSchemas: 21,
       },
       findings: [],
@@ -623,6 +623,35 @@ describe("F2 independently authored decoder contract", () => {
     });
   });
 
+  test("rejects exact numeric counter-golden drift", async () => {
+    await withFixtureCopy(async (root) => {
+      await mutateJson(root, "adversarial-cases.json", (fixture) => {
+        const cases = requireArray(fixture["cases"], "adversarial cases");
+        const work = requireObject(
+          cases.find(
+            (raw) => isObject(raw) && raw["id"] === "F2-WORK-001",
+          ),
+          "work campaign",
+        );
+        const goldens = requireArray(
+          work["counterGoldenCells"],
+          "counter golden cells",
+        );
+        requireObject(
+          requireObject(goldens[0], "representative golden")[
+            "expectedDecoderEvidence"
+          ],
+          "representative decoder evidence",
+        )["maxDepthObserved"] = 8;
+      });
+      await expectRejected(
+        root,
+        "F2_COUNTER_GOLDEN",
+        "F2_SEMANTIC_SNAPSHOT",
+      );
+    });
+  });
+
   test("rejects exact protocol and counter-semantics weakening", async () => {
     await withFixtureCopy(async (root) => {
       await mutateJson(root, "shape-cases.json", (fixture) => {
@@ -691,10 +720,23 @@ describe("F2 independently authored decoder contract", () => {
         );
         requireObject(event["fragments"], "event fragments")["voicing"] =
           "autoVoicing";
+        const freshness = requireObject(
+          cases.find(
+            (raw) => isObject(raw) && raw["id"] === "F2-FRESH-001",
+          ),
+          "freshness case",
+        );
+        const freshnessCells = requireArray(
+          freshness["cellExpansion"],
+          "freshness cells",
+        );
+        requireObject(freshnessCells[0], "first freshness cell")["template"] =
+          "shape-cases.json:templates.missingDocument";
       });
       await expectRejected(
         root,
         "F2_FRAGMENT_REFERENCE",
+        "F2_MATERIALIZATION_REFERENCE",
         "F2_SEMANTIC_SNAPSHOT",
       );
     });
@@ -1026,6 +1068,34 @@ describe("F2 independently authored decoder contract", () => {
         ];
       });
       await expectRejected(root, "F2_MUTATION_CASE_UNKNOWN");
+    });
+  });
+
+  test("rejects loss of an executable case's killer mapping", async () => {
+    await withFixtureCopy(async (root) => {
+      await mutateJson(root, "adversarial-cases.json", (fixture) => {
+        const controls = requireArray(
+          fixture["mutationControls"],
+          "mutation controls",
+        );
+        const soleChordMapping = controls.find(
+          (raw) =>
+            isObject(raw) &&
+            Array.isArray(raw["caseIds"]) &&
+            raw["caseIds"].some(
+              (caseId: unknown) => caseId === "F2-CHORD-003",
+            ),
+        );
+        requireObject(soleChordMapping, "sole chord mapping")["caseIds"] = [
+          "F2-SHAPE-001",
+        ];
+      });
+      await expectRejected(
+        root,
+        "F2_MUTATION_CASE_COVERAGE",
+        "F2_MUTATION_LEDGER",
+        "F2_SEMANTIC_SNAPSHOT",
+      );
     });
   });
 

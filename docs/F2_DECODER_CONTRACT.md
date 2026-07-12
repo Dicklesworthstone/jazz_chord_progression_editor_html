@@ -527,7 +527,17 @@ requires zero `set`, `defineProperty`, `deleteProperty`, or
 The depth-preflight call graph must be acyclic and contain an explicit
 function-local worklist loop, with no direct or indirect recursive traversal.
 The gate also rejects `Object.assign`, `JSON.stringify`, and untrusted spread
-in the decoder module.
+in the decoder module. No correctness path may read `Date.now`,
+`performance.now`, `Temporal.Now`, a timer, or another wall-clock API; elapsed
+time may be recorded only outside the semantic gate as performance evidence.
+Candidate flow also rejects `any` assertions, double casts, and unchecked
+assertion helpers, while still allowing reviewed literal-narrowing `as const`.
+
+Every checked-in materialized cell runs on fresh equivalent inputs through
+both the public operation and its private evidence seam. The public result must
+exactly equal the private `{result,evidence}.result`; the static gate separately
+requires both wrappers to call one shared core and forbids semantic branches in
+the public wrapper.
 
 `candidateObjectsAllocated` and `candidateArraysAllocated` count only nodes of
 the decoded-document candidate graph: a node increments exactly once when the

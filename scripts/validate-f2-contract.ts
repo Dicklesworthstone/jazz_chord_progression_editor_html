@@ -204,16 +204,16 @@ const EXPECTED_TERMINATION = {
 
 const EXPECTED_REVIEWED_DIGESTS = {
   contractDocumentSha256:
-    "3d2014aedb34cbd4e81beba25793359963ee42af171af8b4bc7be331b67b3f7a",
+    "55aae7c1406642741047a403c68c0b976a89812e8a84e10fdf5c54799f8401cc",
   companionsSha256: {
     "adversarial-cases.json":
-      "e98aacbccb9b87a004902e5bdc56001e5bd588822dd0a565242e1033ba14570b",
+      "a6a8573e53b11e044e22a267d82ddf57f930913f966d157ed4e4e0d96ded5243",
     "provenance-ledger.json":
       "e9a24fdb862292cc774e5866c704160d33110f270aa43fe058cc55d390daef99",
     "shape-cases.json":
-      "d741788eef36a4571fca283362a291219db747e4cb0c4e29a42e096944a61307",
+      "a489060fb2c17c4429e62c7d496a00b919e6378703c096a0e6079ea9c1f6d06a",
     "trace-ledger.json":
-      "8dbb886ca41310234af8ef4a8af6bb3628a53e99ab1b705765f0fbacae5bb599",
+      "664427ba257c0a6efcad69d926b472def777d20326c24cf22f62dd79c90ad6cd",
   },
 } as const;
 
@@ -227,34 +227,36 @@ const EXPECTED_REVIEWED_DIGESTS = {
 const EXPECTED_SEMANTIC_SNAPSHOT_DIGESTS = {
   json: {
     "f2-decoder-contract.json":
-      "c0a51e62d727caaec75d48d39ea3aa222e384d50cc766a11cdb6bc655862bd46",
+      "a5ec89058c84126dcb5d3ca8700858a14dd7a2a733581e39248c8472dfb4a300",
     "adversarial-cases.json":
-      "c9b698b15211179bd3f85d20c56e7c3d4b1b3762ed213907ee442077327db317",
+      "4a321bf2437b7a4ee37861f7dd387ab50b3d2b11bc51e553ed791752047f2f69",
     "provenance-ledger.json":
       "45eabc724d9d0a4e9ca2fab5bc1189c1eb042b0b1272fcdf6f3b37d88a9ffef1",
     "shape-cases.json":
-      "327c036830be7f1257eab051aca67eb0e348915bd16305085429f120631d4672",
+      "22e88ab313dc5ca6354fa17d5af60e99ca2ebe0174ff8eca4f9996d73f156bf9",
     "trace-ledger.json":
       "bf61e11d067bbcf466fa8e9a376dbf23007f1eb7f28705010679ac0760100199",
   },
   contractDocumentNormalizedSha256:
-    "861e2d2160d7a57c699b4fcff6c531353d6df54ff8b7fc91de68a756a93076b2",
+    "55aae7c1406642741047a403c68c0b976a89812e8a84e10fdf5c54799f8401cc",
 } as const;
 
 const EXPECTED_MATERIALIZATION_PROTOCOL_SHA256 =
-  "741f3c49b7c0877c97d436f31cb5487eca7e63150997a455a37144f88cdb9bfc";
+  "65bbd4d9b381c411fe30996859455de0ad66726f082cdfc9631572e99a4d924a";
 const EXPECTED_SEEDED_REPLAY_PROTOCOL_SHA256 =
-  "d0f843eefe01e9444c39db9cfadc28969b29309f10be93dfaa9e06a070fec260";
+  "28a90d57cf20664ae699e3bc5db792847627cfdbd41912beccf7fbf83c519e40";
 const EXPECTED_COUNTER_SEMANTICS_SHA256 =
-  "4b3ea9480e6b7600f96235cf02e71572d32ef3dbc97fb511b434e966c0c3c6d7";
+  "f8e9cb38730af20fb644a58419fb18afd45e837ba0e1a1ba19ca8dfce913c51d";
 const EXPECTED_TRACE_PROOF_CLASSIFICATION_SHA256 =
   "3a25bc570804871008800f5a0c27b4f0b6742f2df00c051f335b54407205b5c5";
 const EXPECTED_MUTATION_LEDGER_SHA256 =
-  "cd435e3e2823e1110f9c678cbaed70038d22a4a225b72ad52ae78c4818d313fc";
+  "a564e4a7f7225b0959b770b41fdd622aa2b3c39698b42673aee089e1e2fdbae7";
 const EXPECTED_TARGET_REGISTRIES_SHA256 =
-  "b9def9d45f6a2ccad9b779321e190d974fc9d410f3714b8aa2731607ba964b39";
+  "3312b9bd8a4464b637428c009fa1c4aac3ec7730083d349c7ad9212f0a6ac192";
 const EXPECTED_CRITICAL_CELL_INVENTORIES_SHA256 =
-  "0ffae6b769beaca812662f4c8cecd4d288e6b48a9d9106df048e2fdf75f8354f";
+  "e3028c5e0232ec5e742104f66f575a3f1ab8a849fd71fa7285a24db1cb97cd97";
+const EXPECTED_WORK_EVIDENCE_CONTRACT_SHA256 =
+  "ef4ca43432eaca00231d4cc53e63fff727e933361c8cf910e9fc2ac331c915c9";
 
 const EXPECTED_INVENTORIES = {
   documentSchema: ["changes.progression.v2"],
@@ -428,6 +430,11 @@ const REQUIRED_MATERIALIZATION_PROTOCOL_KEYS = [
   "specialPrimitive",
   "stringSegments",
   "specialNumber",
+  "registeredTargetCell",
+  "consumerCoDiagnosticCell",
+  "negativeZeroAxisCell",
+  "counterpartExpansion",
+  "expectedDurationExpansion",
   "matrix",
   "ordinaryArrayExpansion",
   "mutationExpansion",
@@ -632,12 +639,12 @@ const EXPECTED_STATIC_OBLIGATIONS = {
 } as const;
 
 const EXPECTED_MUTATION_SUMMARY = {
-  definedControls: 234,
-  f2OwnedControls: 232,
+  definedControls: 244,
+  f2OwnedControls: 242,
   e0OwnedControls: 2,
   everyControlMapsToCaseIds: true,
   futureGate:
-    "F2/build kills all 232 F2 controls; E0 integration later kills the 2 E0 controls",
+    "F2/build kills all 242 F2 controls; E0 integration later kills the 2 E0 controls",
   specDoesNotClaimControlsAlreadyExecuted: true,
 } as const;
 
@@ -1566,6 +1573,56 @@ function validateEmbeddedFixtureReferences(
   }
 }
 
+function validateQualifiedShapeReferences(
+  value: unknown,
+  path: string,
+  shape: JsonObject,
+  findings: F2ContractFinding[],
+): void {
+  if (typeof value === "string") {
+    const prefix = "shape-cases.json:";
+    if (!value.startsWith(prefix)) return;
+    const segments = value.slice(prefix.length).split(".");
+    let cursor: unknown = shape;
+    for (const segment of segments) {
+      if (
+        !isObject(cursor) ||
+        !Object.prototype.hasOwnProperty.call(cursor, segment)
+      ) {
+        finding(
+          findings,
+          "F2_MATERIALIZATION_REFERENCE",
+          path,
+          `Qualified shape fixture reference ${value} does not resolve exactly.`,
+        );
+        return;
+      }
+      cursor = cursor[segment];
+    }
+    return;
+  }
+  if (Array.isArray(value)) {
+    value.forEach((child: unknown, index: number) => {
+      validateQualifiedShapeReferences(
+        child,
+        `${path}[${String(index)}]`,
+        shape,
+        findings,
+      );
+    });
+    return;
+  }
+  if (!isObject(value)) return;
+  for (const [key, child] of Object.entries(value)) {
+    validateQualifiedShapeReferences(
+      child,
+      `${path}.${key}`,
+      shape,
+      findings,
+    );
+  }
+}
+
 function validateMaterializationProtocols(
   shape: JsonObject | undefined,
   adversarial: JsonObject | undefined,
@@ -1720,6 +1777,18 @@ function validateMaterializationProtocols(
     "adversarial-cases.json:$",
     executableActivations,
     fragmentIds,
+    findings,
+  );
+  validateQualifiedShapeReferences(
+    shape,
+    "shape-cases.json:$",
+    shape,
+    findings,
+  );
+  validateQualifiedShapeReferences(
+    adversarial,
+    "adversarial-cases.json:$",
+    shape,
     findings,
   );
   return { activationProtocol, branchFragments, representative };
@@ -1986,6 +2055,7 @@ function validateReviewedSemanticInventories(
       values?.["degreeNegativeZeroPreservationCells"],
     additionalNegativeZeroPreservationCells:
       values?.["additionalNegativeZeroPreservationCells"],
+    valueCaseExpected: values?.["expected"],
     hostileCaseRecords: allCases
       .filter((fixtureCase) => fixtureCase.id.startsWith("F2-HOST-"))
       .map((fixtureCase) => fixtureCase.record),
@@ -2405,8 +2475,11 @@ function expansionGroupCount(
   if (isObject(value)) return 1;
   if (!Array.isArray(value)) return undefined;
   if (
-    typeof group["order"] === "string" &&
-    group["order"].includes("nested values")
+    (typeof group["order"] === "string" &&
+      group["order"].includes("nested values")) ||
+    value.some(
+      (cell: unknown) => isObject(cell) && Array.isArray(cell["values"]),
+    )
   ) {
     return value.reduce((count: number, cell: unknown) => {
       if (!isObject(cell) || !Array.isArray(cell["values"])) return count + 1;
@@ -2863,6 +2936,26 @@ function validateWorkEvidenceContract(
   findings: F2ContractFinding[],
 ): void {
   if (!work) return;
+  const exactEvidenceContract = {
+    decoderEvidenceCounters: work["decoderEvidenceCounters"],
+    harnessObservationCounters: work["harnessObservationCounters"],
+    counterPolicy: work["counterPolicy"],
+    zeroDecoderEvidence: work["zeroDecoderEvidence"],
+    counterGoldenCells: work["counterGoldenCells"],
+    counterGoldenMaterialization: work["counterGoldenMaterialization"],
+    expected: work["expected"],
+  };
+  if (
+    semanticSha256(exactEvidenceContract) !==
+    EXPECTED_WORK_EVIDENCE_CONTRACT_SHA256
+  ) {
+    finding(
+      findings,
+      "F2_COUNTER_GOLDEN",
+      "adversarial-cases.json:F2-WORK-001",
+      "Counter partitions, policy, zero record, three numeric goldens, materialization, and expected obligations drifted from the exact reviewed evidence contract.",
+    );
+  }
   const decoderEvidenceCounters = work["decoderEvidenceCounters"];
   const harnessObservationCounters = work["harnessObservationCounters"];
   if (
@@ -2978,7 +3071,7 @@ function validateWorkEvidenceContract(
       !isObject(representative) ||
       representative["operation"] !== "decodeDocumentShapeWithEvidence" ||
       representative["template"] !==
-        "shape-cases.json:representativeDocument" ||
+        "shape-cases.json:templates.representativeDocument" ||
       !exactCounterRecord(
         representative["expectedDecoderEvidence"],
         EXPECTED_DECODER_EVIDENCE_COUNTERS,
@@ -3343,8 +3436,9 @@ function validateSeedsAndMutations(
         "Mutation IDs, owners, fault definitions, and exact killer-case mappings drifted from the independently reviewed ledger.",
       );
     }
-    const expectedIds = Array.from({ length: 234 }, (_, index) => `F2-MUT-${String(index + 1).padStart(3, "0")}`);
+    const expectedIds = Array.from({ length: 244 }, (_, index) => `F2-MUT-${String(index + 1).padStart(3, "0")}`);
     const actualIds = rawMutations.map((raw: unknown) => isObject(raw) ? raw["id"] : undefined);
+    const mappedCaseIds = new Set<string>();
     let f2Owners = 0;
     let e0Owners = 0;
     for (let index = 0; index < rawMutations.length; index += 1) {
@@ -3360,11 +3454,25 @@ function validateSeedsAndMutations(
       for (const caseId of mappedCases) {
         if (!caseIds.has(caseId)) {
           finding(findings, "F2_MUTATION_CASE_UNKNOWN", `adversarial-cases.json:$.mutationControls[${String(index)}].caseIds`, `Unknown mapped case ${caseId}.`);
+        } else {
+          mappedCaseIds.add(caseId);
         }
       }
     }
-    if (!jsonEqual(actualIds, expectedIds) || rawMutations.some((raw: unknown) => !isObject(raw) || typeof raw["fault"] !== "string" || raw["fault"].trim().length === 0) || f2Owners !== 232 || e0Owners !== 2) {
-      finding(findings, "F2_MUTATION_INVENTORY", "adversarial-cases.json:$.mutationControls", "Exactly 234 named ordered mutation controls are required: 232 F2 and 2 E0.");
+    const unmappedCaseIds = [...caseIds].filter(
+      (caseId) =>
+        caseId !== "F2-MUTATION-001" && !mappedCaseIds.has(caseId),
+    );
+    if (unmappedCaseIds.length > 0) {
+      finding(
+        findings,
+        "F2_MUTATION_CASE_COVERAGE",
+        "adversarial-cases.json:$.mutationControls",
+        `Every executable case except the mutation-summary case requires a killer mapping; unmapped: ${unmappedCaseIds.join(", ")}.`,
+      );
+    }
+    if (!jsonEqual(actualIds, expectedIds) || rawMutations.some((raw: unknown) => !isObject(raw) || typeof raw["fault"] !== "string" || raw["fault"].trim().length === 0) || f2Owners !== 242 || e0Owners !== 2) {
+      finding(findings, "F2_MUTATION_INVENTORY", "adversarial-cases.json:$.mutationControls", "Exactly 244 named ordered mutation controls are required: 242 F2 and 2 E0.");
     }
   }
   const rawCases = adversarial["cases"];
@@ -3381,7 +3489,7 @@ function validateSeedsAndMutations(
       findings,
       "F2_MUTATION_SUMMARY",
       "adversarial-cases.json:F2-MUTATION-001.expected",
-      "Mutation summary must retain the exact 234-control, 232-F2, 2-E0 ownership handoff.",
+      "Mutation summary must retain the exact 244-control, 242-F2, 2-E0 ownership handoff.",
     );
   }
   return {
