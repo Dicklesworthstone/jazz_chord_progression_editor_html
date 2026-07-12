@@ -23,6 +23,7 @@
     "verify:standalone": "bun scripts/verify-standalone.ts",
     "verify:reproducible": "bun scripts/verify-reproducible.ts",
     "verify:licenses": "bun scripts/verify-licenses.ts",
+    "verify:f1-evidence": "bun scripts/verify-f1-evidence.ts",
     "verify": "bun scripts/verify.ts"
   },
   "dependencies": {

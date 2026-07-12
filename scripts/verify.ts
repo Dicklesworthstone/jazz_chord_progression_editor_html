@@ -16,6 +16,10 @@ const gates: Gate[] = [
   { id: "typecheck", command: [process.execPath, "scripts/typecheck.ts"] },
   { id: "lint", command: [process.execPath, "scripts/lint.ts"] },
   { id: "bun-tests", command: [process.execPath, "test"] },
+  {
+    id: "f1-evidence",
+    command: [process.execPath, "scripts/verify-f1-evidence.ts"],
+  },
   { id: "build", command: [process.execPath, "scripts/build.ts"] },
   {
     id: "standalone-static",
