@@ -2,7 +2,7 @@
 
 An offline, deterministic jazz chord-progression studio designed to turn lead-sheet changes into an explainable, playable, portable chart—without accounts, telemetry, cloud services, or runtime AI.
 
-> **Development status:** the checked-in application is the **F0 standalone foundation shell**, not yet a chord editor. It boots locally as one self-contained Preact page. Chart authoring, music-theory analysis, playback, persistence, import/export, presets, and the planned discovery tools are not shipped yet.
+> **Development status:** the visible application is still the **F0 standalone foundation shell**, not yet a chord editor. The source tree now includes the headless F1 spelling-first domain runtime, but it is not wired into the page. Chart authoring, music-theory analysis, playback, persistence, import/export, presets, and the planned discovery tools are not shipped yet.
 
 ## Why Changes
 
@@ -15,7 +15,7 @@ Jazz harmony tools often force a poor choice: move slowly through generic forms,
 - keep every search bounded, deterministic, explainable, and reproducible;
 - keep the complete runtime in one file that works with the network blocked.
 
-That is the release direction, not a description of the current F0 shell. See [Roadmap](#roadmap) for the unshipped work.
+That is the release direction, not a description of the current visible shell. See [Roadmap](#roadmap) for the unshipped work.
 
 ## What works today
 
@@ -26,7 +26,7 @@ That is the release direction, not a description of the current F0 shell. See [R
 | UI foundation | Strict TypeScript, Preact, local CSS tokens, responsive layout, skip link, reduced-motion and forced-colors handling |
 | Reproducible build contract | Source-driven build, generated-file banner, byte-equality checks, size budget, CSP hashes, license inventory |
 | Verification scaffold | Static policy tests, type checking, linting, reproducibility checks, and Chromium/Firefox/WebKit E2E harnesses |
-| F1 domain specification | Public spelling-first types plus 297 independently authored identity, pitch, exact-time, voicing, measure, and boundary cases; production algorithms are not shipped yet |
+| F1 domain runtime | Headless spelling-first identities, pitch projection, exact rational time, chord/voicing construction, immutable bounded copy/remap, and a 317-case reviewed authority corpus; decoder, semantic publication, and UI integration remain downstream |
 
 The visible page intentionally reports **Foundation ready** and names the next gate. There is no hidden legacy editor behind it.
 
@@ -121,9 +121,13 @@ If source and artifact disagree, regenerate the artifact; do not copy changes ba
 | `bun run verify:standalone` | Run static inspection plus six-cell offline, negative-control, and F0 accessibility browser proofs |
 | `bun run verify:reproducible` | Rebuild in isolated paths with different mtimes and compare bytes/manifests |
 | `bun run verify:licenses` | Verify production package and embedded-asset provenance |
+| `bun run verify:f1-evidence` | Run the exact F1 suite and emit a hash-bound trace/seed/mutation ledger under `test-results/` |
 | `bun run verify` | Run the aggregate release-facing gate in dependency order |
 
 The aggregate gate does not silently skip, retry, quarantine, or relax a failed check.
+The F1 evidence gate snapshots its complete source/fixture/test input closure
+before and after the run, rejects drift, and records deterministic work counters;
+measured wall time and process resources are observations, never musical cutoffs.
 
 ## Architecture
 

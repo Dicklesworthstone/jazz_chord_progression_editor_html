@@ -69,6 +69,7 @@ The manifest exposes these stable commands:
 | `bun run verify:standalone` | static and browser no-network artifact proof |
 | `bun run verify:reproducible` | build in two isolated absolute paths and compare bytes/manifests |
 | `bun run verify:licenses` | verify production dependency and embedded-asset provenance |
+| `bun run verify:f1-evidence` | run the exact F1 package suite and emit a hash-bound trace, seed, mutation, and resource ledger |
 | `bun run verify` | aggregate type, lint, tests, build, artifact, and E2E gates |
 
 ## Module ownership
