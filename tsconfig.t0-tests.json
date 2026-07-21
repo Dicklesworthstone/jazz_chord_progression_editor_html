@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.tests.json",
+  "include": [],
+  "files": [
+    "tests/conformance/t0-mutation-controls.test.ts",
+    "tests/conformance/t0-production-conformance.test.ts",
+    "tests/conformance/t0-roundtrip-laws.test.ts",
+    "tests/integration/t0-theory-package.test.ts",
+    "tests/static/dependency-boundaries.test.ts",
+    "tests/static/t0-contract.test.ts",
+    "tests/static/t0-evidence.test.ts",
+    "tests/static/validated-document-cast-policy.test.ts",
+    "tests/unit/t0-chart-formatter.test.ts",
+    "tests/unit/t0-chart-parser.test.ts",
+    "tests/unit/t0-chord-symbol.test.ts"
+  ]
+}

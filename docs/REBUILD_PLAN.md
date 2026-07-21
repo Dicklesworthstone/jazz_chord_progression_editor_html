@@ -2398,18 +2398,26 @@ The pure compiler turns a validated document plus realized voicings into:
 ```ts
 type CompilePlaybackPlanRequest = {
   document: ValidatedDocument;
-  realizedVoicings: ReadonlyMap<string, RealizedVoicing>;
+  realizedVoicings: ReadonlyMap<ChordEventId, PlaybackRealizationBinding>;
   loop: BeatRange | null;
 };
 
 type PlaybackEvent = {
-  eventId: string;
-  sectionId: string;
-  measureId: string;
+  eventId: ChordEventId;
+  sectionId: SectionId;
+  measureId: MeasureId;
+  sourceStartBeat: BeatPosition;
+  sourceDurationBeats: BeatDuration;
   startBeat: BeatPosition;
   durationBeats: BeatDuration;
   gateDurationBeats: BeatDuration;
+  sourceStartTick: MidiTick;
+  sourceDurationTicks: MidiTick;
+  startTick: MidiTick;
+  durationTicks: MidiTick;
+  gateDurationTicks: MidiTick;
   pitches: SpelledPitch[];
+  midiPitches: MidiPitch[];
   velocity: number;
 };
 
@@ -2417,10 +2425,18 @@ type PlaybackPlan = {
   tempoBpm: number;
   meter: Meter;
   events: PlaybackEvent[];
-  totalBeats: BeatDuration;
+  totalBeats: BeatPosition;
+  totalTicks: MidiTick;
   loop: BeatRange | null;
+  loopTicks: { start: MidiTick; end: MidiTick } | null;
 };
 ```
+
+Complete, pickup, and intentionally incomplete measures advance by their exact
+event sum. An explicit empty measure advances by one exact meter capacity as
+silence without synthesizing a playback event; an empty section advances zero,
+and a document with no measures has a zero-beat/tick timeline. P0 refuses before
+the source end crosses the one-million-quarter-note timeline ceiling.
 
 Loop is ephemeral transport/application state supplied explicitly in the compile
 request, not document data. The compiler validates it against total exact time,
@@ -2434,9 +2450,14 @@ value or refuse; audio attack/release milliseconds belong to the instrument
 recipe and do not leak into MIDI timing.
 
 The compiler does not touch Web Audio. All plan time remains normalized rational
-beat data; MIDI converts it to exact integer ticks at PPQ 960, and audio converts
-it to seconds only when scheduling against a context epoch. It is unit-tested
-with exact beat timelines and serves MIDI export as well as playback.
+beat data with exact integer mirrors at PPQ 960; MIDI consumes those ticks, and
+audio converts beats to seconds only when scheduling against a context epoch. It
+is unit-tested with exact beat timelines and serves MIDI export as well as
+playback.
+
+The exact public identities, binding shapes, 24-tick release-gap rule,
+half-open loop projection, byte order, refusals, and bounded work/memory
+accounting are frozen in `docs/P0_PLAYBACK_PLAN_CONTRACT.md`.
 
 ### 13.7 Transport state machine
 
@@ -2692,23 +2713,48 @@ revision/request no longer matches. Audio transitions are serialized by the
 transport service. UI components never sequence these effects themselves.
 
 New, starter-lesson load, canonical import, and legacy import all use one
-replacement transaction. After confirmation it:
+replacement transaction. Trusted A0/X1 ports are bound once at the application
+composition root; the public operation accepts only its request. After
+confirmation it:
 
-1. waits behind any active transport transition;
-2. retires progression and preview generations and awaits the strict
+1. revalidates the already-decoded replacement, request identity,
+   confirmation, history impact, and prepared bookmarks before any retirement,
+   reserving one bounded single-use A0 publication capability;
+2. enters the serialized X1 call and waits there behind any active transport
+   transition; the request-bound A0 capability remains private and live across
+   that wait and is invalidated if the request becomes stale;
+3. retires progression and preview generations and awaits the strict
    no-future-attack postcondition;
-3. validates the already-decoded replacement and prepares history/bookmarks;
 4. atomically publishes the document command;
 5. installs its playback plan in `ready` at beat zero;
 6. clears old event announcements, selection, insertion, and range, then chooses
    the first valid insertion target;
 7. queues recovery and restores focus.
 
-If a pre-commit audio retirement or validation step fails, the document command
-does not publish and authoritative state remains unchanged. Cancel never begins
-the transaction. Fake-clock and real-browser tests cover every replacement while
+If validation fails, retirement never starts. A normal retirement refusal
+certifies that it changed no transport authority and E0 synchronously
+invalidates the reserved A0 capability before returning. Invalid success
+evidence also invalidates the capability and returns an explicit
+reconciliation-required result. The runtime must enter a safe stopped-state
+reconciliation before permitting further transport or document work; the E0
+result does not claim that repair completed. Successful publication consumes it,
+so every terminal path has zero live capability entries for the request. The
+document command never publishes after either failure. Cancel never begins the
+transaction. Fake-clock and real-browser tests cover every replacement while
 playing, paused, previewing, and ready, plus cancellation and decode/audio
 failure.
+
+The A0/E0 owner bridge is explicit dependency work, not an adapter-shaped
+assumption inside E0. A0 exposes the private replacement preparation/discard/
+publication registry, a synchronous latest `{ documentId, revision }` read from
+controller-owned current `AppState`, and an atomic canonical-export marker CAS.
+The CAS validates the publication and compares document/revision against the
+latest state inside one operation, preserves unrelated current fields, and
+returns only a state-free receipt or refusal. Public asynchronous E0 results
+never return `AppState`, so a late A1 completion cannot reinstall historical
+state over a newer edit. The phase DAG is E0/spec -> A0/E0 bridge spec/build ->
+E0/build -> A0/E0 bridge verify -> E0/verify; the bridge verification exercises
+the real controller and E0 composition boundary.
 
 ### 14.5 Derived state
 
@@ -2763,11 +2809,21 @@ type RecoveryEnvelope = {
 
 The checksum detects truncation/accidental corruption; it is not described as a
 security signature. Persistence keeps current and previous validated envelopes.
-A successful canonical JSON export computes the semantic document hash and
-persists this marker separately and in the next recovery envelope; changing a
-title, chord, timing, or setting therefore makes Changed since export
-deterministic across reload. Export download cancellation/failure never advances
-the marker.
+A canonical JSON export first prepares one private, revision-bound artifact and
+byte copy outside the browser-activation task. The single-use click path starts
+delivery synchronously before any await, then derives its checked timestamp and
+uses A0's atomic latest-state document/revision compare-and-set; click-time
+state and caller-supplied receipts/markers are not authority. Only a successful
+bound delivery plus A0 publication queues artifact-bound persistence through
+A1. A1 stores the complete versioned document/artifact/
+policy binding separately; `RecoveryEnvelope.lastExport` is only its derived
+display subset. Only exact A1 success establishes cross-reload marker durability
+and permits that subset in a later recovery envelope; unavailable, failed, or
+malformed persistence remains visibly pending without a reload claim. Export
+download cancellation/failure never advances the in-session marker. An edit
+while a picker/write is pending may still leave an honestly delivered older
+snapshot, but A0 preserves the newer state, refuses the stale marker, and makes
+no A1 call.
 A mutation marks recovery pending immediately and queues a write after 400 ms of
 inactivity, with a maximum two-second delay during continuous editing. A final
 best-effort write is requested on visibility change; correctness never depends
@@ -2833,13 +2889,14 @@ Migration rules are conservative:
 | `name` parses; notes absent | parsed chord + default Balanced Auto policy, with missing-notes report |
 | `name` parses; valid notes disagree | Custom chord labeled by `name` + exact Manual voicing; report all conflicting fields |
 | `name` fails/missing; valid `root` + allow-listed `type` builds a symbol; notes agree/absent | parsed chord + Manual when notes exist, otherwise Balanced Auto |
-| constructed symbol and valid notes disagree | Custom chord + Manual, using constructed text only as label |
+| constructed symbol and valid notes disagree | Custom chord + Manual; preserve a usable nonempty legacy `name`, otherwise use the exact bounded constructed text |
 | no parseable symbol but valid notes exist | Custom chord + Manual; label preserves nonempty `name` or bounded root/type text |
 | neither parseable symbol nor valid notes | reject that event at its exact path; do not insert a fallback chord |
 
 The allow-listed type-to-suffix map is checked in and exhaustive for the legacy
 palette: `major -> ''`, `minor -> m`, `dim`, `aug`, `sus2`, `sus4`, `6`, `m6`,
-`maj7`, `7`, `m7`, `mMaj7`, `m7b5`, `dim7`, `aug7`, `augMaj7`, `maj9`, `9`,
+`maj7`, `7`, `m7`, `mMaj7`, `m7b5`, `dim7`, `aug7 -> 7#5`,
+`augMaj7 -> aug(maj7)`, `maj9`, `9`,
 `m9`, `11`, `m11`, `13`, `maj13`, `m13`, `7b9`, `7#9`, `7#11`, `7b13`,
 `7b5`, `7#5`, `alt -> 7alt`, `maj7#11`, `m9b5`, `9sus4`, `13sus4`,
 `7b9sus4`, `m6/9`, `6/9`, and `9b5`. Unknown values are not stripped or
@@ -2886,10 +2943,14 @@ recovery metadata, and history are excluded. Export performs a decode round trip
 and semantic equality check before offering bytes. The filename is a sanitized
 title plus `.changes.json`; an empty title uses `untitled-changes.json`.
 
-Use the File System Access API only as progressive enhancement after a user
-gesture. The universal path is a Blob plus temporary download anchor, implemented
-locally without FileSaver or a network dependency. Object URLs are revoked after
-activation.
+Use the File System Access API only as progressive enhancement after a real
+transient user activation. Canonical marker-capable export performs asynchronous
+encode/hash preparation ahead of the click, consumes one private prepared entry,
+and synchronously invokes the picker or anchor before the first await or queued
+microtask. The universal path is a Blob plus temporary download anchor,
+implemented locally without FileSaver or a network dependency. Object URLs are
+revoked after activation; exact cleanup failure and cleanup-unknown protocol
+failure remain marker-ineligible reconciliation outcomes.
 
 ### 16.2 Lead-sheet text
 
@@ -3188,7 +3249,7 @@ heading.
 |---|---|---|---|---|
 | L-RUNTIME-01 | whole-chart undefined chord/silence | X1 | `tests/integration/transport-play.test.ts` | `audio/whole-chart` |
 | L-RUNTIME-02 | preview argument/notes mismatch | U2 | `tests/e2e/preview.spec.ts` | `audio/preview` |
-| L-RUNTIME-03 | advanced undefined note map | V1 | `tests/unit/voice-assignment.test.ts` | `theory/voice-assignment` |
+| L-RUNTIME-03 | advanced undefined note map | V1 | `tests/unit/v1-voice-assignment.test.ts` | `theory/voice-assignment` |
 | L-AUDIO-01 | callbacks attack after Stop | X1 | `tests/integration/transport-stop-stress.test.ts` | `audio/stop-stress` |
 | L-AUDIO-02 | section bypasses effects/recipe | X0 | `tests/integration/audio-routing.test.ts` | `audio/routing` |
 | L-AUDIO-03 | BPM/scrubber/duration are inert | X1 | `tests/integration/transport-time.test.ts` | `audio/time-controls` |
@@ -3198,7 +3259,7 @@ heading.
 | L-THEORY-03 | displayed alterations do not alter notes | U2 | `tests/e2e/structured-chord-edit.spec.ts` | `theory/structured-edit` |
 | L-DATA-01 | root edit relabels stale notes | A0 | `tests/integration/chord-command.test.ts` | `data/command-integrity` |
 | L-VOICE-01 | manual notes are reoptimized | P0 | `tests/unit/playback-plan-manual.test.ts` | `theory/manual-exactness` |
-| L-VOICE-02 | prefix equality confuses C/C-sharp | V1 | `tests/unit/voice-identity.test.ts` | `theory/pitch-identity` |
+| L-VOICE-02 | prefix equality confuses C/C-sharp | V1 | `tests/unit/v1-voice-assignment.test.ts` | `theory/pitch-identity` |
 | L-STATE-01 | index identity drifts after reorder | A0 | `tests/property/stable-id-reorder.test.ts` | `data/stable-ids` |
 | L-STATE-02 | initial UI falsely reports playing | U4 | `tests/e2e/initial-transport.spec.ts` | `ux/transport-status` |
 | L-TOUCH-01 | touch listeners suppress/multiply taps | U1 | `tests/e2e/touch-chart.spec.ts` | `ux/touch` |
@@ -3348,7 +3409,7 @@ private code.
 | G9 | Deterministic chart-to-practice engine | G1, G2, G5, G6, G7, G8 | finite-answer/seed/grading tests |
 | X0 | Persistent audio graph, instruments, voice registry | F0, F1 | fake/offline render and leak tests |
 | X1 | Transport state machine and lookahead scheduler | X0, P0 | transition/stale-callback stress suite |
-| E0 | JSON and chart-text import/export | F3, T0, C0, A0 | transactional and round-trip suite |
+| E0 | JSON and chart-text import/export | F3, T0, C0, A0 plus the phase-gated A0/E0 owner bridge | transactional, round-trip, real-controller CAS, and state-isolation suite |
 | E1 | MIDI export | P0, V2 | parsed golden SMF suite with progression voicings |
 | U0 | Tokens, primitives, responsive app shell | F0, A0 | visual/a11y primitive evidence |
 | U1 | Quick entry and lead-sheet chart editor | U0, T0, A0 | keyboard/touch/edit E2E |

@@ -1,0 +1,929 @@
+{
+  "schema": "changes.ui.u0-shell-matrix.v1",
+  "fixtureVersion": 1,
+  "expectedValuesGenerated": false,
+  "productionOutputUsed": false,
+  "shellModes": [
+    {
+      "id": "compact",
+      "contentWidth": "below-640-css-px",
+      "layout": "compact-header plus full-width chart plus persistent-bottom-transport",
+      "library": "named-modal-or-nonmodal-sheet",
+      "harmonyLens": "bottom-sheet-with-visible-close"
+    },
+    {
+      "id": "balanced",
+      "contentWidth": "at-least-640-and-below-1100-css-px",
+      "layout": "header plus library sheet plus chart plus persistent Harmony Lens rail plus persistent transport",
+      "library": "named-sheet",
+      "harmonyLens": "persistent-rail"
+    },
+    {
+      "id": "wide",
+      "contentWidth": "at-least-1100-css-px",
+      "layout": "header plus persistent Library rail plus largest chart column plus persistent Harmony Lens rail plus spanning transport",
+      "library": "persistent-collapsible-rail",
+      "harmonyLens": "persistent-collapsible-rail"
+    }
+  ],
+  "landmarkContract": {
+    "skipLinkTarget": "workspace",
+    "headings": "exactly-one-h1-then-logical-section-headings",
+    "landmarks": [
+      {
+        "id": "app-header",
+        "role": "banner",
+        "name": null
+      },
+      {
+        "id": "workspace",
+        "role": "main",
+        "name": null
+      },
+      {
+        "id": "library-rail",
+        "role": "complementary",
+        "name": "Library"
+      },
+      {
+        "id": "chart-workspace",
+        "role": "region",
+        "name": "Chart workspace"
+      },
+      {
+        "id": "harmony-lens-rail",
+        "role": "complementary",
+        "name": "Harmony Lens"
+      },
+      {
+        "id": "transport-bar",
+        "role": "region",
+        "name": "Transport"
+      }
+    ],
+    "tabOrder": [
+      "skip-link",
+      "app-header",
+      "library-rail",
+      "chart-workspace",
+      "harmony-lens-rail",
+      "transport-bar"
+    ],
+    "chartSemantics": "labelled-region-with-section-headings-and-ordered-measure-lists",
+    "chordCardSemantics": "focusable-group-with-primary-action-and-separate-named-more-menu",
+    "landmarkTokens": [
+      "app-header/banner",
+      "workspace/main",
+      "library-rail/complementary",
+      "chart-workspace/region-within-main",
+      "harmony-lens-rail/complementary",
+      "transport-bar/named-region"
+    ]
+  },
+  "viewportCases": [
+    {
+      "id": "U0-VIEW-001",
+      "kind": "positive",
+      "viewport": {
+        "width": 320,
+        "height": 568,
+        "deviceScaleFactor": 1
+      },
+      "expectedMode": "compact",
+      "expected": [
+        "no-horizontal-page-scroll",
+        "chart-remains-visible",
+        "compact-document-menu",
+        "library-is-named-drawer",
+        "harmony-lens-is-bottom-sheet",
+        "transport-is-persistent-and-uncovered",
+        "visible-play-pause-stop-current-chord-loop",
+        "safe-area-padding-css-only"
+      ],
+      "traceIds": [
+        "TR-U0-MOBILE",
+        "TR-U0-REFLOW"
+      ],
+      "authorityIds": [
+        "AUTH-PROJECT-UX"
+      ]
+    },
+    {
+      "id": "U0-VIEW-002",
+      "kind": "positive",
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "deviceScaleFactor": 1
+      },
+      "expectedMode": "compact",
+      "expected": [
+        "full-width-chart",
+        "drawer-and-sheet-triggers-visible",
+        "transport-is-persistent-and-uncovered",
+        "primary-authoring-needs-no-swipe-or-drag"
+      ],
+      "traceIds": [
+        "TR-U0-MOBILE"
+      ],
+      "authorityIds": [
+        "AUTH-PROJECT-UX"
+      ]
+    },
+    {
+      "id": "U0-VIEW-003",
+      "kind": "positive",
+      "viewport": {
+        "width": 768,
+        "height": 1024,
+        "deviceScaleFactor": 1
+      },
+      "expectedMode": "balanced",
+      "expected": [
+        "chart-has-largest-visible-area",
+        "library-is-named-drawer",
+        "harmony-lens-is-persistent-complementary-rail",
+        "transport-remains-visible",
+        "tab-order-is-contract-order"
+      ],
+      "traceIds": [
+        "TR-U0-LANDMARKS",
+        "TR-U0-SHELL"
+      ],
+      "authorityIds": [
+        "AUTH-PLAN-VISUAL"
+      ]
+    },
+    {
+      "id": "U0-VIEW-004",
+      "kind": "positive",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      },
+      "expectedMode": "wide",
+      "expected": [
+        "three-column-workspace",
+        "chart-column-is-largest",
+        "both-rails-can-collapse",
+        "transport-spans-shell",
+        "no-content-clipping"
+      ],
+      "traceIds": [
+        "TR-U0-SHELL"
+      ],
+      "authorityIds": [
+        "AUTH-PLAN-VISUAL"
+      ]
+    },
+    {
+      "id": "U0-VIEW-005",
+      "kind": "positive",
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "deviceScaleFactor": 1
+      },
+      "expectedMode": "wide",
+      "expected": [
+        "three-column-workspace",
+        "stable-reading-and-tab-order",
+        "rail-widths-use-layout-tokens",
+        "transport-spans-shell",
+        "no-unbounded-empty-gutters"
+      ],
+      "traceIds": [
+        "TR-U0-SHELL",
+        "TR-U0-TOKENS"
+      ],
+      "authorityIds": [
+        "AUTH-PLAN-VISUAL"
+      ]
+    }
+  ],
+  "environmentCases": [
+    {
+      "id": "U0-ENV-001",
+      "kind": "positive",
+      "environment": "200-percent-browser-zoom-at-1280-by-800",
+      "expected": [
+        "css-layout-reflows-from-effective-content-width",
+        "no-two-dimensional-page-scroll",
+        "primary-controls-remain-operable",
+        "transport-remains-visible"
+      ],
+      "claimBoundary": "project zoom case; not mislabeled as the 320 CSS pixel equivalent in WCAG 1.4.10",
+      "traceIds": [
+        "TR-U0-AXE",
+        "TR-U0-REFLOW",
+        "TR-U0-STATES"
+      ],
+      "authorityIds": [
+        "AUTH-PROJECT-UX"
+      ]
+    },
+    {
+      "id": "U0-ENV-002",
+      "kind": "positive",
+      "environment": "forced-colors-active",
+      "expected": [
+        "selection-playhead-error-focus-and-dialog-boundaries-remain-visible",
+        "system-colors-and-borders-are-used",
+        "no-state-depends-on-background-image"
+      ],
+      "traceIds": [
+        "TR-U0-AXE",
+        "TR-U0-FORCED"
+      ],
+      "authorityIds": [
+        "AUTH-PLAN-A11Y",
+        "AUTH-WCAG22"
+      ],
+      "claimBoundary": "project forced-colors evidence for focus selection error playhead and overlay boundaries"
+    },
+    {
+      "id": "U0-ENV-003",
+      "kind": "positive",
+      "environment": "prefers-reduced-motion-reduce",
+      "expected": [
+        "pulse-shimmer-large-transform-and-smooth-scroll-absent",
+        "focus-and-transport-state-change-remain-perceivable"
+      ],
+      "traceIds": [
+        "TR-U0-AXE",
+        "TR-U0-MOTION"
+      ],
+      "authorityIds": [
+        "AUTH-PLAN-A11Y",
+        "AUTH-WCAG22"
+      ],
+      "claimBoundary": "project reduced-motion evidence; state remains perceivable without pulse transform shimmer or smooth scroll"
+    },
+    {
+      "id": "U0-ENV-004",
+      "kind": "positive",
+      "environment": "coarse-pointer-and-no-hover",
+      "expected": [
+        "primary-and-standalone-controls-at-least-44-css-px",
+        "all-primary-actions-visible",
+        "drag-alternatives-complete"
+      ],
+      "traceIds": [
+        "TR-U0-KEYBOARD",
+        "TR-U0-MOBILE",
+        "TR-U0-TOUCH"
+      ],
+      "authorityIds": [
+        "AUTH-PROJECT-UX"
+      ],
+      "claimBoundary": "project 44 CSS pixel primary-target policy is stricter than the external 24 CSS pixel floor"
+    },
+    {
+      "id": "U0-ENV-005",
+      "kind": "positive",
+      "environment": "nonzero-safe-area-insets",
+      "expected": [
+        "header-sheet-and-transport-pad-with-env-safe-area-values",
+        "no-javascript-geometry-guess",
+        "close-actions-remain-reachable"
+      ],
+      "traceIds": [
+        "TR-U0-MOBILE"
+      ],
+      "authorityIds": [
+        "AUTH-PROJECT-UX"
+      ],
+      "claimBoundary": "project CSS safe-area contract without JavaScript geometry guesses"
+    },
+    {
+      "id": "U0-ENV-006",
+      "kind": "positive",
+      "environment": "mobile-virtual-keyboard-open",
+      "expected": [
+        "active-chord-input-scrolls-into-view",
+        "transport-remains-reachable",
+        "sheet-can-close",
+        "no-authoritative-draft-commit-on-resize"
+      ],
+      "traceIds": [
+        "TR-U0-MOBILE"
+      ],
+      "authorityIds": [
+        "AUTH-PROJECT-UX"
+      ],
+      "claimBoundary": "project virtual-keyboard usability contract without authoritative draft mutation"
+    },
+    {
+      "id": "U0-ENV-007",
+      "kind": "positive",
+      "environment": "prefers-contrast-more",
+      "expected": [
+        "border-and-state-separation-increase",
+        "semantic-layout-and-reading-order-unchanged",
+        "focus-perimeter-remains-at-least-project-policy"
+      ],
+      "traceIds": [
+        "TR-U0-FORCED"
+      ],
+      "authorityIds": [
+        "AUTH-PLAN-A11Y",
+        "AUTH-WCAG22"
+      ],
+      "claimBoundary": "project increased-contrast evidence with unchanged semantic order"
+    },
+    {
+      "id": "U0-ENV-008",
+      "kind": "near-miss",
+      "environment": "actual-320-css-pixel-wide-viewport",
+      "expected": [
+        "reflow-is-tested-directly-at-320",
+        "this-project-case-is-separate-from-200-percent-zoom"
+      ],
+      "traceIds": [
+        "TR-U0-REFLOW"
+      ],
+      "authorityIds": [
+        "AUTH-WCAG22"
+      ],
+      "claimBoundary": "actual 320 CSS pixel project viewport case; WCAG 2.2 SC 1.4.10 uses a 320 CSS pixel equivalent commonly reached at 400 percent from 1280 CSS pixels"
+    }
+  ],
+  "overlayCases": [
+    {
+      "id": "U0-OVR-001",
+      "kind": "positive",
+      "action": "open-dialog-from-connected-trigger",
+      "expected": [
+        "sole-modal-scope-acquired",
+        "background-inert",
+        "label-and-description-resolve",
+        "declared-initial-focus-receives-focus"
+      ],
+      "traceIds": [
+        "TR-U0-FOCUS",
+        "TR-U0-OVERLAY"
+      ],
+      "authorityIds": [
+        "AUTH-PLAN-UI"
+      ]
+    },
+    {
+      "id": "U0-OVR-002",
+      "kind": "positive",
+      "action": "press-Escape-on-topmost-dismissible-surface",
+      "expected": [
+        "only-topmost-surface-closes",
+        "underlying-state-unchanged",
+        "focus-return-policy-runs"
+      ],
+      "traceIds": [
+        "TR-U0-FOCUS",
+        "TR-U0-OVERLAY"
+      ],
+      "authorityIds": [
+        "AUTH-PLAN-UI"
+      ]
+    },
+    {
+      "id": "U0-OVR-003",
+      "kind": "positive",
+      "action": "activate-visible-Close",
+      "expected": [
+        "surface-closes",
+        "no-commit-intent-dispatched",
+        "focus-returns"
+      ],
+      "traceIds": [
+        "TR-U0-FOCUS",
+        "TR-U0-OVERLAY"
+      ],
+      "authorityIds": [
+        "AUTH-PLAN-UI"
+      ]
+    },
+    {
+      "id": "U0-OVR-004",
+      "kind": "cancellation",
+      "action": "activate-visible-Cancel",
+      "expected": [
+        "local-draft-discard-or-preserve-policy-runs-explicitly",
+        "authoritative-document-unchanged",
+        "focus-returns"
+      ],
+      "traceIds": [
+        "TR-U0-FOCUS",
+        "TR-U0-OVERLAY"
+      ],
+      "authorityIds": [
+        "AUTH-PLAN-UI"
+      ]
+    },
+    {
+      "id": "U0-OVR-005",
+      "kind": "positive",
+      "action": "dismiss-with-connected-trigger",
+      "expected": [
+        "focus-returns-to-exact-trigger-stable-id",
+        "no-body-focus"
+      ],
+      "traceIds": [
+        "TR-U0-FOCUS",
+        "TR-U0-OVERLAY"
+      ],
+      "authorityIds": [
+        "AUTH-PLAN-UI"
+      ]
+    },
+    {
+      "id": "U0-OVR-006",
+      "kind": "stale",
+      "action": "dismiss-after-trigger-was-deleted",
+      "expected": [
+        "deleted-trigger-is-not-focused",
+        "exact-trigger-then-a0-workflow-target-then-workspace",
+        "no-body-focus",
+        "diagnostic-ui.stale_owner-is-recorded"
+      ],
+      "traceIds": [
+        "TR-U0-FOCUS",
+        "TR-U0-OVERLAY"
+      ],
+      "authorityIds": [
+        "AUTH-PLAN-UI"
+      ],
+      "focusFallbackOrder": "exact-trigger-then-a0-workflow-target-then-workspace"
+    },
+    {
+      "id": "U0-OVR-007",
+      "kind": "malformed",
+      "action": "open-second-modal-while-one-modal-scope-active",
+      "expected": [
+        "refuse-ui.modal_scope_limit",
+        "existing-modal-remains-authoritative",
+        "no-nested-modal"
+      ],
+      "traceIds": [
+        "TR-U0-LIMITS",
+        "TR-U0-OVERLAY"
+      ],
+      "authorityIds": [
+        "AUTH-PLAN-UI"
+      ]
+    },
+    {
+      "id": "U0-OVR-008",
+      "kind": "near-miss",
+      "action": "open-mobile-sheet-while-dialog-active",
+      "expected": [
+        "sheet-either-replaces-active-modal-or-is-nonmodal-descendant",
+        "never-two-aria-modal-true-scopes",
+        "visible-close-remains"
+      ],
+      "traceIds": [
+        "TR-U0-MOBILE",
+        "TR-U0-OVERLAY"
+      ],
+      "authorityIds": [
+        "AUTH-PLAN-UI"
+      ]
+    },
+    {
+      "id": "U0-OVR-009",
+      "kind": "positive",
+      "action": "outside-pointer-on-dismissible-nonmodal-popover",
+      "expected": [
+        "bounded-owner-ancestry-is-checked",
+        "popover-closes-once",
+        "trigger-focus-is-not-stolen-from-new-valid-target"
+      ],
+      "traceIds": [
+        "TR-U0-OVERLAY"
+      ],
+      "authorityIds": [
+        "AUTH-PLAN-UI"
+      ]
+    },
+    {
+      "id": "U0-OVR-010",
+      "kind": "positive",
+      "action": "keyboard-focus-opens-tooltip-immediately-then-Escape-is-pressed",
+      "expected": [
+        "tooltip-closes",
+        "trigger-retains-focus",
+        "no-application-intent",
+        "500-ms-open-delay-applies-only-to-pointer-hover"
+      ],
+      "traceIds": [
+        "TR-U0-OVERLAY"
+      ],
+      "authorityIds": [
+        "AUTH-PLAN-UI"
+      ]
+    },
+    {
+      "id": "U0-OVR-011",
+      "kind": "positive",
+      "action": "open-destructive-alert-dialog",
+      "expected": [
+        "safe-cancel-receives-initial-focus",
+        "consequence-and-preserved-data-are-named",
+        "destructive-action-is-not-default"
+      ],
+      "traceIds": [
+        "TR-U0-OVERLAY"
+      ],
+      "authorityIds": [
+        "AUTH-PLAN-UI"
+      ]
+    },
+    {
+      "id": "U0-OVR-012",
+      "kind": "limit",
+      "action": "owner-ancestry-at-8-and-exact-plus-one",
+      "expected": [
+        "8-ancestors-resolve-deterministically",
+        "exact-plus-one-refuses-ui.dismiss_depth_limit",
+        "listeners-and-pointer-capture-release-on-cancel-and-unmount"
+      ],
+      "traceIds": [
+        "TR-U0-LIMITS",
+        "TR-U0-OVERLAY"
+      ],
+      "authorityIds": [
+        "AUTH-MECHANICAL"
+      ]
+    }
+  ],
+  "systemStateCases": [
+    {
+      "id": "U0-STATE-001",
+      "kind": "positive",
+      "state": "blank-chart",
+      "expected": "valid Empty chart view with visible insertion and quick-entry actions; not an underfill error",
+      "traceIds": [
+        "TR-U0-EMPTY-ERROR"
+      ],
+      "authorityIds": [
+        "AUTH-PLAN-A11Y"
+      ]
+    },
+    {
+      "id": "U0-STATE-002",
+      "kind": "positive",
+      "state": "empty-inspector",
+      "expected": "named prompt to select a chord; no stale prior chord details",
+      "traceIds": [
+        "TR-U0-EMPTY-ERROR"
+      ],
+      "authorityIds": [
+        "AUTH-PLAN-A11Y"
+      ]
+    },
+    {
+      "id": "U0-STATE-003",
+      "kind": "positive",
+      "state": "no-search-results",
+      "expected": "query retained with Custom chord and Help routes",
+      "traceIds": [
+        "TR-U0-EMPTY-ERROR"
+      ],
+      "authorityIds": [
+        "AUTH-PLAN-A11Y"
+      ]
+    },
+    {
+      "id": "U0-STATE-004",
+      "kind": "malformed",
+      "state": "token-parse-errors",
+      "expected": "invalid tokens individually identified; valid source text retained; no guessed commit",
+      "traceIds": [
+        "TR-U0-EMPTY-ERROR",
+        "TR-U0-STATUS"
+      ],
+      "authorityIds": [
+        "AUTH-PLAN-A11Y"
+      ]
+    },
+    {
+      "id": "U0-STATE-005",
+      "kind": "positive",
+      "state": "recovery-current",
+      "expected": "visible Recovery current text state",
+      "traceIds": [
+        "TR-U0-STATUS"
+      ],
+      "authorityIds": [
+        "AUTH-A0"
+      ]
+    },
+    {
+      "id": "U0-STATE-006",
+      "kind": "positive",
+      "state": "changes-pending-recovery",
+      "expected": "visible Changes pending recovery text state and editing remains available",
+      "traceIds": [
+        "TR-U0-STATUS"
+      ],
+      "authorityIds": [
+        "AUTH-A0"
+      ]
+    },
+    {
+      "id": "U0-STATE-007",
+      "kind": "positive",
+      "state": "storage-unavailable",
+      "expected": "inline actionable Storage unavailable notice; document and export remain usable",
+      "traceIds": [
+        "TR-U0-EMPTY-ERROR",
+        "TR-U0-STATUS"
+      ],
+      "authorityIds": [
+        "AUTH-A0"
+      ]
+    },
+    {
+      "id": "U0-STATE-008",
+      "kind": "limit",
+      "state": "quota-exceeded",
+      "expected": "specific quota message names preserved document and recommends Export JSON",
+      "traceIds": [
+        "TR-U0-EMPTY-ERROR",
+        "TR-U0-STATUS"
+      ],
+      "authorityIds": [
+        "AUTH-A0"
+      ]
+    },
+    {
+      "id": "U0-STATE-009",
+      "kind": "malformed",
+      "state": "corrupted-recovery-copy",
+      "expected": "corruption path and Keep current or inspect details actions; current document unchanged",
+      "traceIds": [
+        "TR-U0-EMPTY-ERROR",
+        "TR-U0-STATUS"
+      ],
+      "authorityIds": [
+        "AUTH-A0"
+      ]
+    },
+    {
+      "id": "U0-STATE-010",
+      "kind": "positive",
+      "state": "export-recommended",
+      "expected": "visible Export recommended status; never labelled Save",
+      "traceIds": [
+        "TR-U0-STATUS"
+      ],
+      "authorityIds": [
+        "AUTH-A0"
+      ]
+    },
+    {
+      "id": "U0-STATE-011",
+      "kind": "positive",
+      "state": "audio-locked",
+      "expected": "inline transport status invites Play gesture without blocking workspace",
+      "traceIds": [
+        "TR-U0-STATUS"
+      ],
+      "authorityIds": [
+        "AUTH-A0"
+      ]
+    },
+    {
+      "id": "U0-STATE-012",
+      "kind": "positive",
+      "state": "audio-ready",
+      "expected": "visible Ready text and icon",
+      "traceIds": [
+        "TR-U0-STATUS"
+      ],
+      "authorityIds": [
+        "AUTH-A0"
+      ]
+    },
+    {
+      "id": "U0-STATE-013",
+      "kind": "positive",
+      "state": "audio-playing",
+      "expected": "visible Playing text icon and current chord; restrained live update",
+      "traceIds": [
+        "TR-U0-STATUS"
+      ],
+      "authorityIds": [
+        "AUTH-A0"
+      ]
+    },
+    {
+      "id": "U0-STATE-014",
+      "kind": "positive",
+      "state": "audio-paused",
+      "expected": "visible Paused text and resume action",
+      "traceIds": [
+        "TR-U0-STATUS"
+      ],
+      "authorityIds": [
+        "AUTH-A0"
+      ]
+    },
+    {
+      "id": "U0-STATE-015",
+      "kind": "positive",
+      "state": "audio-interrupted",
+      "expected": "visible Interrupted message with Resume audio action; chart remains editable",
+      "traceIds": [
+        "TR-U0-EMPTY-ERROR",
+        "TR-U0-STATUS"
+      ],
+      "authorityIds": [
+        "AUTH-A0"
+      ]
+    },
+    {
+      "id": "U0-STATE-016",
+      "kind": "positive",
+      "state": "audio-unavailable",
+      "expected": "visible Audio unavailable reason and safe next action; editing and export remain available",
+      "traceIds": [
+        "TR-U0-EMPTY-ERROR",
+        "TR-U0-STATUS"
+      ],
+      "authorityIds": [
+        "AUTH-A0"
+      ]
+    },
+    {
+      "id": "U0-STATE-017",
+      "kind": "malformed",
+      "state": "import-failed",
+      "expected": "message names failing path and states current chart was not changed",
+      "traceIds": [
+        "TR-U0-EMPTY-ERROR"
+      ],
+      "authorityIds": [
+        "AUTH-A0"
+      ]
+    },
+    {
+      "id": "U0-STATE-018",
+      "kind": "positive",
+      "state": "analysis-busy",
+      "expected": "nonblocking busy state associated with analysis region; prior factual result is marked stale or retained explicitly",
+      "traceIds": [
+        "TR-U0-STATUS"
+      ],
+      "authorityIds": [
+        "AUTH-A0"
+      ]
+    },
+    {
+      "id": "U0-STATE-019",
+      "kind": "positive",
+      "state": "duplicate-notice",
+      "expected": "same stable notice identity deduplicates; count and sequence update deterministically",
+      "traceIds": [
+        "TR-U0-STATUS"
+      ],
+      "authorityIds": [
+        "AUTH-A0"
+      ]
+    },
+    {
+      "id": "U0-STATE-020",
+      "kind": "malformed",
+      "state": "export-failed",
+      "expected": "failure names what was preserved and offers retry or alternate local export; recovery status unchanged",
+      "traceIds": [
+        "TR-U0-EMPTY-ERROR",
+        "TR-U0-STATUS"
+      ],
+      "authorityIds": [
+        "AUTH-A0"
+      ]
+    }
+  ],
+  "refusalCases": [
+    {
+      "id": "U0-REF-001",
+      "kind": "malformed",
+      "input": "nested aria-modal=true dialog or sheet",
+      "expected": "ui.modal_scope_limit",
+      "traceIds": [
+        "TR-U0-OVERLAY"
+      ],
+      "authorityIds": [
+        "AUTH-PLAN-UI"
+      ]
+    },
+    {
+      "id": "U0-REF-002",
+      "kind": "malformed",
+      "input": "dismissible dialog or sheet without visible Close and required Cancel",
+      "expected": "ui.description_invalid",
+      "traceIds": [
+        "TR-U0-OVERLAY"
+      ],
+      "authorityIds": [
+        "AUTH-PLAN-UI"
+      ]
+    },
+    {
+      "id": "U0-REF-003",
+      "kind": "stale",
+      "input": "removed trigger and no declared stable fallback",
+      "expected": "ui.stale_owner",
+      "traceIds": [
+        "TR-U0-OVERLAY"
+      ],
+      "authorityIds": [
+        "AUTH-PLAN-UI"
+      ]
+    },
+    {
+      "id": "U0-REF-004",
+      "kind": "malformed",
+      "input": "navigator userAgent screen class or width read selects shell mode",
+      "expected": "ui.value_malformed",
+      "traceIds": [
+        "TR-U0-REFLOW"
+      ],
+      "authorityIds": [
+        "AUTH-PROJECT-UX"
+      ]
+    },
+    {
+      "id": "U0-REF-005",
+      "kind": "malformed",
+      "input": "maximum-scale user-scalable=no or keyboard zoom prevention",
+      "expected": "ui.value_malformed",
+      "traceIds": [
+        "TR-U0-REFLOW"
+      ],
+      "authorityIds": [
+        "AUTH-PROJECT-UX"
+      ]
+    },
+    {
+      "id": "U0-REF-006",
+      "kind": "malformed",
+      "input": "UI imports or calls audio persistence export or parser adapter directly",
+      "expected": "ui.application_intent_required",
+      "traceIds": [
+        "TR-U0-BOUNDARY"
+      ],
+      "authorityIds": [
+        "AUTH-ARCH"
+      ]
+    },
+    {
+      "id": "U0-REF-007",
+      "kind": "malformed",
+      "input": "React Radix Tailwind shadcn preact compat CSS runtime icon modal or drag dependency",
+      "expected": "ui.value_malformed",
+      "traceIds": [
+        "TR-U0-SOURCE"
+      ],
+      "authorityIds": [
+        "AUTH-ARCH"
+      ]
+    },
+    {
+      "id": "U0-REF-008",
+      "kind": "malformed",
+      "input": "component gallery module or gallery marker found in release artifact",
+      "expected": "ui.value_malformed",
+      "traceIds": [
+        "TR-U0-GALLERY"
+      ],
+      "authorityIds": [
+        "AUTH-ARCH"
+      ]
+    },
+    {
+      "id": "U0-REF-009",
+      "kind": "near-miss",
+      "input": "mobile notice or sheet overlaps any transport control by one CSS pixel",
+      "expected": "ui.range_invalid",
+      "traceIds": [
+        "TR-U0-MOBILE"
+      ],
+      "authorityIds": [
+        "AUTH-PROJECT-UX"
+      ]
+    },
+    {
+      "id": "U0-REF-010",
+      "kind": "malformed",
+      "input": "shell has zero or multiple h1 or skip target is missing",
+      "expected": "ui.description_invalid",
+      "traceIds": [
+        "TR-U0-LANDMARKS"
+      ],
+      "authorityIds": [
+        "AUTH-PLAN-A11Y"
+      ]
+    }
+  ]
+}

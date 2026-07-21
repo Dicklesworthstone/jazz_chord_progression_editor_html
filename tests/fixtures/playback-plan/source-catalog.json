@@ -1,0 +1,307 @@
+{
+  "schema": "changes.fixtures.p0-source-catalog.v1",
+  "fixtureVersion": "1.0.0",
+  "status": "independently-authored-pre-production",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "materializationPolicy": {
+    "validatedDocument": "Test support must construct the literal source records through the already-green F1/F3 public constructors and publication gate. A production playback compiler may never construct its own expected document.",
+    "generatedCandidate": "autoRequestSeed plus candidateSeed freeze every P0-observable V0 request/outcome field. Test support may fill non-P0 T1/V0 payloads only from independently checked T1/V0 fixture materializers; it may not call compilePlaybackPlan or copy a production playback result.",
+    "storedBinding": "storedBypassSeed is a fresh exact V0 StoredVoicingBypass. Pitch order, spelling, octave, and duplicates are observable; chord-only edits do not stale this result.",
+    "crossFileReferences": "sourceRef and candidateSeedRef values are stable IDs resolved only within this checked-in fixture package."
+  },
+  "sources": [
+    {
+      "id": "P0-SOURCE-AUTO-CMAJ7",
+      "description": "Four-voice generated C major-seven realization used by ordinary timing and loop cases.",
+      "chord": {
+        "kind": "parsed",
+        "sourceText": "Cmaj7",
+        "root": {"step": "C", "alter": 0},
+        "triad": "major",
+        "sixth": null,
+        "seventh": "major",
+        "extensions": [],
+        "additions": [],
+        "alterations": [],
+        "omissions": [],
+        "bass": null,
+        "colorPolicy": "none"
+      },
+      "voicing": {
+        "mode": "auto",
+        "family": "balanced",
+        "voiceCount": 4,
+        "range": {"lowMidi": 48, "highMidi": 84},
+        "bassPolicy": "generated"
+      },
+      "bindingKind": "generated",
+      "autoRequestSeed": {
+        "schema": "changes.theory.voicing-request.v1",
+        "kind": "auto",
+        "resolvedFixtureRef": "tests/fixtures/resolution/literal-cases.json#T1-LIT-012",
+        "resolvedSourceMustEqualChord": true,
+        "realizationId": "literal",
+        "policyRef": "voicing",
+        "quartalContext": null
+      },
+      "candidateSeed": {
+        "id": "P0-CAND-AUTO-CMAJ7",
+        "candidateFixtureRef": "tests/fixtures/voicing/candidate-cases.json#V0-CAND-001",
+        "schema": "changes.theory.voicing-candidate.v1",
+        "engineId": "changes.voicing-candidates",
+        "engineVersion": 1,
+        "family": "balanced",
+        "realizationId": "literal",
+        "voices": [
+          {"ordinal": 0, "pitch": {"step": "C", "alter": 0, "octave": 3}, "midi": 48, "degree": {"number": 1, "alter": 0}, "sourceDegreeIndex": 0, "provenance": "realization"},
+          {"ordinal": 1, "pitch": {"step": "G", "alter": 0, "octave": 3}, "midi": 55, "degree": {"number": 5, "alter": 0}, "sourceDegreeIndex": 2, "provenance": "realization"},
+          {"ordinal": 2, "pitch": {"step": "B", "alter": 0, "octave": 3}, "midi": 59, "degree": {"number": 7, "alter": 0}, "sourceDegreeIndex": 3, "provenance": "realization"},
+          {"ordinal": 3, "pitch": {"step": "E", "alter": 0, "octave": 4}, "midi": 64, "degree": {"number": 3, "alter": 0}, "sourceDegreeIndex": 1, "provenance": "realization"}
+        ],
+        "pitches": [
+          {"step": "C", "alter": 0, "octave": 3},
+          {"step": "G", "alter": 0, "octave": 3},
+          {"step": "B", "alter": 0, "octave": 3},
+          {"step": "E", "alter": 0, "octave": 4}
+        ]
+      },
+      "traceIds": ["P0-TRACE-REALIZATION", "P0-TRACE-TIMELINE"],
+      "authorityIds": ["P0-AUTH-V0", "P0-AUTH-CONTRACT"]
+    },
+    {
+      "id": "P0-SOURCE-AUTO-DM7",
+      "description": "Three-voice Shell D minor-seven generated seed authored independently for source-order cases and cross-checked against the exact V0 request.",
+      "chord": {
+        "kind": "parsed",
+        "sourceText": "Dm7",
+        "root": {"step": "D", "alter": 0},
+        "triad": "minor",
+        "sixth": null,
+        "seventh": "minor",
+        "extensions": [],
+        "additions": [],
+        "alterations": [],
+        "omissions": [],
+        "bass": null,
+        "colorPolicy": "none"
+      },
+      "voicing": {
+        "mode": "auto",
+        "family": "shell",
+        "voiceCount": 3,
+        "range": {"lowMidi": 48, "highMidi": 84},
+        "bassPolicy": "generated"
+      },
+      "bindingKind": "generated",
+      "autoRequestSeed": {
+        "schema": "changes.theory.voicing-request.v1",
+        "kind": "auto",
+        "resolvedFixtureRef": "independent-inline:P0-RESOLVED-DM7",
+        "resolvedSourceMustEqualChord": true,
+        "realizationId": "literal",
+        "policyRef": "voicing",
+        "quartalContext": null
+      },
+      "candidateSeed": {
+        "id": "P0-CAND-AUTO-DM7",
+        "candidateFixtureRef": "independent-inline:P0-CAND-AUTO-DM7",
+        "schema": "changes.theory.voicing-candidate.v1",
+        "engineId": "changes.voicing-candidates",
+        "engineVersion": 1,
+        "family": "shell",
+        "realizationId": "literal",
+        "voices": [
+          {"ordinal": 0, "pitch": {"step": "D", "alter": 0, "octave": 3}, "midi": 50, "degree": {"number": 1, "alter": 0}, "sourceDegreeIndex": 0, "provenance": "realization"},
+          {"ordinal": 1, "pitch": {"step": "F", "alter": 0, "octave": 4}, "midi": 65, "degree": {"number": 3, "alter": -1}, "sourceDegreeIndex": 1, "provenance": "realization"},
+          {"ordinal": 2, "pitch": {"step": "C", "alter": 0, "octave": 5}, "midi": 72, "degree": {"number": 7, "alter": -1}, "sourceDegreeIndex": 3, "provenance": "realization"}
+        ],
+        "pitches": [
+          {"step": "D", "alter": 0, "octave": 3},
+          {"step": "F", "alter": 0, "octave": 4},
+          {"step": "C", "alter": 0, "octave": 5}
+        ]
+      },
+      "traceIds": ["P0-TRACE-REALIZATION", "P0-TRACE-SOURCE-IDS"],
+      "authorityIds": ["P0-AUTH-V0", "P0-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "P0-SOURCE-AUTO-G7",
+      "description": "Four-voice generated dominant realization used after section and measure boundaries.",
+      "chord": {
+        "kind": "parsed",
+        "sourceText": "G7",
+        "root": {"step": "G", "alter": 0},
+        "triad": "major",
+        "sixth": null,
+        "seventh": "minor",
+        "extensions": [],
+        "additions": [],
+        "alterations": [],
+        "omissions": [],
+        "bass": null,
+        "colorPolicy": "none"
+      },
+      "voicing": {
+        "mode": "auto",
+        "family": "balanced",
+        "voiceCount": 4,
+        "range": {"lowMidi": 48, "highMidi": 84},
+        "bassPolicy": "generated"
+      },
+      "bindingKind": "generated",
+      "autoRequestSeed": {
+        "schema": "changes.theory.voicing-request.v1",
+        "kind": "auto",
+        "resolvedFixtureRef": "independent-inline:P0-RESOLVED-G7",
+        "resolvedSourceMustEqualChord": true,
+        "realizationId": "literal",
+        "policyRef": "voicing",
+        "quartalContext": null
+      },
+      "candidateSeed": {
+        "id": "P0-CAND-AUTO-G7",
+        "candidateFixtureRef": "independent-inline:P0-CAND-AUTO-G7",
+        "schema": "changes.theory.voicing-candidate.v1",
+        "engineId": "changes.voicing-candidates",
+        "engineVersion": 1,
+        "family": "balanced",
+        "realizationId": "literal",
+        "voices": [
+          {"ordinal": 0, "pitch": {"step": "G", "alter": 0, "octave": 3}, "midi": 55, "degree": {"number": 1, "alter": 0}, "sourceDegreeIndex": 0, "provenance": "realization"},
+          {"ordinal": 1, "pitch": {"step": "D", "alter": 0, "octave": 4}, "midi": 62, "degree": {"number": 5, "alter": 0}, "sourceDegreeIndex": 2, "provenance": "realization"},
+          {"ordinal": 2, "pitch": {"step": "F", "alter": 0, "octave": 4}, "midi": 65, "degree": {"number": 7, "alter": -1}, "sourceDegreeIndex": 3, "provenance": "realization"},
+          {"ordinal": 3, "pitch": {"step": "B", "alter": 0, "octave": 4}, "midi": 71, "degree": {"number": 3, "alter": 0}, "sourceDegreeIndex": 1, "provenance": "realization"}
+        ],
+        "pitches": [
+          {"step": "G", "alter": 0, "octave": 3},
+          {"step": "D", "alter": 0, "octave": 4},
+          {"step": "F", "alter": 0, "octave": 4},
+          {"step": "B", "alter": 0, "octave": 4}
+        ]
+      },
+      "traceIds": ["P0-TRACE-REALIZATION", "P0-TRACE-SOURCE-IDS"],
+      "authorityIds": ["P0-AUTH-V0", "P0-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "P0-SOURCE-MANUAL-LEGACY",
+      "description": "L-VOICE-01 witness: deliberately unsorted, doubled exact pitches are authoritative.",
+      "chord": {
+        "kind": "parsed",
+        "sourceText": "Cmaj7",
+        "root": {"step": "C", "alter": 0},
+        "triad": "major",
+        "sixth": null,
+        "seventh": "major",
+        "extensions": [],
+        "additions": [],
+        "alterations": [],
+        "omissions": [],
+        "bass": null,
+        "colorPolicy": "none"
+      },
+      "voicing": {
+        "mode": "manual",
+        "pitches": [
+          {"step": "B", "alter": 0, "octave": 4},
+          {"step": "E", "alter": 0, "octave": 4},
+          {"step": "G", "alter": 0, "octave": 4},
+          {"step": "C", "alter": 0, "octave": 4},
+          {"step": "E", "alter": 0, "octave": 4}
+        ],
+        "bassPolicy": "included"
+      },
+      "bindingKind": "stored",
+      "storedBypassSeed": {
+        "schema": "changes.theory.voicing-result.v1",
+        "kind": "stored-bypass",
+        "voicingRef": "voicing",
+        "candidateGenerationPerformed": false,
+        "rawCandidateCount": 0,
+        "retainedCandidateCount": 0
+      },
+      "traceIds": ["P0-TRACE-STORED", "P0-TRACE-LEGACY"],
+      "authorityIds": ["P0-AUTH-DOMAIN", "P0-AUTH-LEGACY"]
+    },
+    {
+      "id": "P0-SOURCE-FROZEN-DB7-CB",
+      "description": "Frozen slash voicing preserves generatedBy metadata and exact flat spellings while P0 copies only its pitches.",
+      "chord": {
+        "kind": "parsed",
+        "sourceText": "Db7/Cb",
+        "root": {"step": "D", "alter": -1},
+        "triad": "major",
+        "sixth": null,
+        "seventh": "minor",
+        "extensions": [],
+        "additions": [],
+        "alterations": [],
+        "omissions": [],
+        "bass": {"step": "C", "alter": -1},
+        "colorPolicy": "none"
+      },
+      "voicing": {
+        "mode": "frozen",
+        "pitches": [
+          {"step": "C", "alter": -1, "octave": 3},
+          {"step": "D", "alter": -1, "octave": 4},
+          {"step": "F", "alter": 0, "octave": 4},
+          {"step": "A", "alter": -1, "octave": 4},
+          {"step": "C", "alter": -1, "octave": 5}
+        ],
+        "bassPolicy": "included",
+        "generatedBy": {
+          "engineVersion": "changes.voicing-candidates.v1",
+          "family": "drop2"
+        }
+      },
+      "bindingKind": "stored",
+      "storedBypassSeed": {
+        "schema": "changes.theory.voicing-result.v1",
+        "kind": "stored-bypass",
+        "voicingRef": "voicing",
+        "candidateGenerationPerformed": false,
+        "rawCandidateCount": 0,
+        "retainedCandidateCount": 0
+      },
+      "traceIds": ["P0-TRACE-STORED", "P0-TRACE-MIDI"],
+      "authorityIds": ["P0-AUTH-DOMAIN", "P0-AUTH-F3"]
+    },
+    {
+      "id": "P0-SOURCE-CUSTOM-GLASS",
+      "description": "Custom chord remains literal and playable only through its stored Manual pitches.",
+      "chord": {
+        "kind": "custom",
+        "sourceText": "Glass",
+        "label": "Glass",
+        "pitchNames": [
+          {"step": "C", "alter": 0},
+          {"step": "E", "alter": 0},
+          {"step": "G", "alter": 1}
+        ],
+        "bass": null
+      },
+      "voicing": {
+        "mode": "manual",
+        "pitches": [
+          {"step": "G", "alter": 1, "octave": 4},
+          {"step": "C", "alter": 0, "octave": 4},
+          {"step": "E", "alter": 0, "octave": 4},
+          {"step": "C", "alter": 0, "octave": 5}
+        ],
+        "bassPolicy": "included"
+      },
+      "bindingKind": "stored",
+      "storedBypassSeed": {
+        "schema": "changes.theory.voicing-result.v1",
+        "kind": "stored-bypass",
+        "voicingRef": "voicing",
+        "candidateGenerationPerformed": false,
+        "rawCandidateCount": 0,
+        "retainedCandidateCount": 0
+      },
+      "traceIds": ["P0-TRACE-CUSTOM", "P0-TRACE-STORED"],
+      "authorityIds": ["P0-AUTH-DOMAIN", "P0-AUTH-F3"]
+    }
+  ]
+}

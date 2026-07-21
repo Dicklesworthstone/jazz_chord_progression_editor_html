@@ -1,0 +1,43 @@
+{
+  "schema": "changes.fixtures.h0-limit-cases.v1",
+  "fixtureVersion": "1.0.0",
+  "expectedValuesGenerated": false,
+  "productionOutputUsed": false,
+  "boundaryMatrixId": "H0-LIMIT-BOUNDARY-MATRIX-001",
+  "boundaryRows": [
+    {"id":"H0-LIMIT-REQUEST-ID","field":"requestIdAsciiCharacters","maximum":64,"nMinusOne":{"value":63,"accepted":true},"n":{"value":64,"accepted":true},"nPlusOne":{"value":65,"accepted":false,"refusalCode":"harmony.request_id_invalid"},"additionalInvalid":[{"value":1,"content":"non-ASCII","refusalCode":"harmony.request_id_invalid"}]},
+    {"id":"H0-LIMIT-BASE-REVISION","field":"baseRevision","maximum":9007199254740991,"nMinusOne":{"value":9007199254740990,"accepted":true},"n":{"value":9007199254740991,"accepted":true},"nPlusOne":{"value":9007199254740992,"accepted":false,"refusalCode":"harmony.base_revision_invalid"},"additionalInvalid":[{"value":-1,"refusalCode":"harmony.base_revision_invalid"},{"value":0.5,"refusalCode":"harmony.base_revision_invalid"}]},
+    {"id":"H0-LIMIT-CONTEXT-EVENTS","field":"contextEvents","maximum":3,"nMinusOne":{"value":2,"accepted":true},"n":{"value":3,"accepted":true},"nPlusOne":{"value":4,"accepted":false,"refusalCode":"limit.harmony_context_events_exceeded"}},
+    {"id":"H0-LIMIT-PREVIOUS-EVENTS","field":"previousEvents","maximum":1,"nMinusOne":{"value":0,"accepted":true},"n":{"value":1,"accepted":true},"nPlusOne":{"value":2,"accepted":false,"refusalCode":"limit.harmony_context_events_exceeded"}},
+    {"id":"H0-LIMIT-NEXT-EVENTS","field":"nextEvents","maximum":1,"nMinusOne":{"value":0,"accepted":true},"n":{"value":1,"accepted":true},"nPlusOne":{"value":2,"accepted":false,"refusalCode":"limit.harmony_context_events_exceeded"}},
+    {"id":"H0-LIMIT-T1-RESOLUTIONS","field":"t1Resolutions","maximum":3,"nMinusOne":{"value":2,"accepted":true},"n":{"value":3,"accepted":true},"nPlusOne":{"value":4,"accepted":false,"refusalCode":"limit.harmony_context_events_exceeded"}},
+    {"id":"H0-LIMIT-CONTEXT-EDGES","field":"contextEdges","maximum":2,"nMinusOne":{"value":1,"accepted":true},"n":{"value":2,"accepted":true},"nPlusOne":{"value":3,"accepted":false,"refusalCode":"limit.harmony_context_events_exceeded"}},
+    {"id":"H0-LIMIT-DEGREES","field":"selectedRealizationDegrees","maximum":16,"nMinusOne":{"value":15,"accepted":true},"n":{"value":16,"accepted":true},"nPlusOne":{"value":17,"accepted":false,"refusalCode":"limit.harmony_work_exceeded"}},
+    {"id":"H0-LIMIT-SCALE-DEGREES","field":"scaleDegrees","maximum":8,"nMinusOne":{"value":7,"accepted":true},"n":{"value":8,"accepted":true},"nPlusOne":{"value":9,"accepted":false,"refusalCode":"limit.harmony_work_exceeded"}},
+    {"id":"H0-LIMIT-READINGS","field":"readings","maximum":12,"nMinusOne":{"value":11,"accepted":true},"n":{"value":12,"accepted":true},"nPlusOne":{"value":13,"accepted":false,"refusalCode":"limit.harmony_readings_exceeded"}},
+    {"id":"H0-LIMIT-SCALE-OPTIONS","field":"scaleOptions","maximum":12,"nMinusOne":{"value":11,"accepted":true},"n":{"value":12,"accepted":true},"nPlusOne":{"value":13,"accepted":false,"refusalCode":"limit.harmony_scale_options_exceeded"}},
+    {"id":"H0-LIMIT-EVIDENCE","field":"evidencePerReading","maximum":16,"nMinusOne":{"value":15,"accepted":true},"n":{"value":16,"accepted":true},"nPlusOne":{"value":17,"accepted":false,"refusalCode":"limit.harmony_evidence_records_exceeded"}},
+    {"id":"H0-LIMIT-COUNTEREVIDENCE","field":"counterevidencePerReading","maximum":8,"nMinusOne":{"value":7,"accepted":true},"n":{"value":8,"accepted":true},"nPlusOne":{"value":9,"accepted":false,"refusalCode":"limit.harmony_evidence_records_exceeded"}},
+    {"id":"H0-LIMIT-MISSING-EVIDENCE","field":"missingEvidencePerReading","maximum":8,"nMinusOne":{"value":7,"accepted":true},"n":{"value":8,"accepted":true},"nPlusOne":{"value":9,"accepted":false,"refusalCode":"limit.harmony_evidence_records_exceeded"}},
+    {"id":"H0-LIMIT-LIMITATIONS","field":"limitations","maximum":8,"nMinusOne":{"value":7,"accepted":true},"n":{"value":8,"accepted":true},"nPlusOne":{"value":9,"accepted":false,"refusalCode":"limit.harmony_evidence_records_exceeded"}},
+    {"id":"H0-LIMIT-RULE-IDS","field":"ruleIdsPerReading","maximum":8,"nMinusOne":{"value":7,"accepted":true},"n":{"value":8,"accepted":true},"nPlusOne":{"value":9,"accepted":false,"refusalCode":"limit.harmony_evidence_records_exceeded"}},
+    {"id":"H0-LIMIT-MATCH-COMPONENTS","field":"matchComponents","maximum":16,"nMinusOne":{"value":15,"accepted":true},"n":{"value":16,"accepted":true},"nPlusOne":{"value":17,"accepted":false,"refusalCode":"limit.harmony_evidence_records_exceeded"}},
+    {"id":"H0-LIMIT-TENSIONS","field":"tensionsPerOption","maximum":8,"nMinusOne":{"value":7,"accepted":true},"n":{"value":8,"accepted":true},"nPlusOne":{"value":9,"accepted":false,"refusalCode":"limit.harmony_evidence_records_exceeded"}},
+    {"id":"H0-LIMIT-CLASHES","field":"clashesPerOption","maximum":8,"nMinusOne":{"value":7,"accepted":true},"n":{"value":8,"accepted":true},"nPlusOne":{"value":9,"accepted":false,"refusalCode":"limit.harmony_evidence_records_exceeded"}},
+    {"id":"H0-LIMIT-EXCEPTIONS","field":"exceptionsPerOption","maximum":8,"nMinusOne":{"value":7,"accepted":true},"n":{"value":8,"accepted":true},"nPlusOne":{"value":9,"accepted":false,"refusalCode":"limit.harmony_evidence_records_exceeded"}},
+    {"id":"H0-LIMIT-ANALYSIS-EVALS","field":"analysisRuleEvaluations","maximum":16,"nMinusOne":{"value":15,"accepted":true},"n":{"value":16,"accepted":true},"nPlusOne":{"value":17,"accepted":false,"refusalCode":"limit.harmony_work_exceeded"}},
+    {"id":"H0-LIMIT-SCALE-EVALS","field":"scaleMappingEvaluations","maximum":13,"nMinusOne":{"value":12,"accepted":true},"n":{"value":13,"accepted":true},"nPlusOne":{"value":14,"accepted":false,"refusalCode":"limit.harmony_work_exceeded"}},
+    {"id":"H0-LIMIT-DEGREE-COMPARISONS","field":"degreeComparisons","maximum":4096,"nMinusOne":{"value":4095,"accepted":true},"n":{"value":4096,"accepted":true},"nPlusOne":{"value":4097,"accepted":false,"refusalCode":"limit.harmony_work_exceeded"}},
+    {"id":"H0-LIMIT-EMITTED","field":"emittedRecords","maximum":512,"nMinusOne":{"value":511,"accepted":true},"n":{"value":512,"accepted":true},"nPlusOne":{"value":513,"accepted":false,"refusalCode":"limit.harmony_work_exceeded"}},
+    {"id":"H0-LIMIT-TRACKED","field":"trackedRecords","maximum":1024,"nMinusOne":{"value":1023,"accepted":true},"n":{"value":1024,"accepted":true},"nPlusOne":{"value":1025,"accepted":false,"refusalCode":"limit.harmony_work_exceeded"}}
+  ],
+  "combinedPrecedenceCases": [
+    {"id":"H0-LIMIT-PRECEDENCE-001","violations":["requestIdAsciiCharacters","baseRevision","contextEvents"],"expectedRefusalCode":"harmony.request_id_invalid"},
+    {"id":"H0-LIMIT-PRECEDENCE-002","violations":["baseRevision","contextEvents","analysisRuleEvaluations"],"expectedRefusalCode":"harmony.base_revision_invalid"},
+    {"id":"H0-LIMIT-PRECEDENCE-003","violations":["contextEvents","readings","scaleOptions"],"expectedRefusalCode":"limit.harmony_context_events_exceeded"},
+    {"id":"H0-LIMIT-PRECEDENCE-004","violations":["readings","scaleOptions","evidencePerReading"],"expectedRefusalCode":"limit.harmony_readings_exceeded"},
+    {"id":"H0-LIMIT-PRECEDENCE-005","violations":["scaleOptions","evidencePerReading","degreeComparisons"],"expectedRefusalCode":"limit.harmony_scale_options_exceeded"}
+  ],
+  "terminationEvidence": {"wallTimeIsSemanticCutoff":false,"exactCountersRequired":["analysisRuleEvaluations","scaleMappingEvaluations","degreeComparisons","emittedRecords","trackedRecords"],"silentTruncationForbidden":true},
+  "traceIds": ["H0-TRACE-LIMITS","H0-TRACE-REFUSALS","H0-TRACE-DETERMINISM"]
+}

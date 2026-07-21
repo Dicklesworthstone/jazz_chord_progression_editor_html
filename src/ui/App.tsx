@@ -1,96 +1,311 @@
-const foundationFacts = [
-  {
-    label: "Runtime",
-    value: "Offline",
-  },
-  {
-    label: "Method",
-    value: "Deterministic",
-  },
-  {
-    label: "Workspace",
-    value: "Local-first",
-  },
-] as const;
+import { useEffect, useRef, useState } from "preact/hooks";
 
-const readinessChecks = [
-  "The source-driven standalone shell is active.",
-  "Preact is rendering without a remote dependency.",
-  "No account, analytics, or cloud service is connected.",
-] as const;
+import type {
+  StudioControllerActionResult,
+  StudioRailSide,
+  StudioViewModel,
+} from "../application";
+import { MAX_SHORT_TEXT_CODE_POINTS } from "../domain";
+import {
+  StudioShell,
+  type StudioPanelSide,
+  type StudioShellView,
+  type StudioTitleFeedback,
+} from "./studio";
 
-export function App() {
+export type AppActions = Readonly<{
+  setTitle: (value: string) => StudioControllerActionResult;
+  undo: () => StudioControllerActionResult;
+  redo: () => StudioControllerActionResult;
+  setRailCollapsed: (
+    side: StudioRailSide,
+    collapsed: boolean,
+  ) => StudioControllerActionResult;
+}>;
+
+export type AppProps = Readonly<{
+  snapshot: StudioViewModel;
+  actions: AppActions;
+}>;
+
+function countLabel(count: number, singular: string, plural = `${singular}s`): string {
+  return `${String(count)} ${count === 1 ? singular : plural}`;
+}
+
+function viewFromSnapshot(
+  snapshot: StudioViewModel,
+  titleDraft: string,
+  titleFeedback: StudioTitleFeedback,
+  activeSheet: StudioPanelSide | null,
+  uiRefusal: StudioShellView["layout"]["uiRefusal"],
+): StudioShellView {
+  const chordCount = snapshot.sections.reduce(
+    (total, section) =>
+      total + section.measures.reduce(
+        (sectionTotal, measure) => sectionTotal + measure.eventCount,
+        0,
+      ),
+    0,
+  );
+
+  return Object.freeze({
+    document: Object.freeze({
+      committedTitle: snapshot.title,
+      titleDraft,
+      titleMaxCodePoints: MAX_SHORT_TEXT_CODE_POINTS,
+      lifecycleLabel: snapshot.dirty.label,
+      revisionLabel: `Revision ${String(snapshot.revision)}`,
+      dirty: snapshot.dirty.sinceExport,
+      titleFeedback,
+      canCommitTitle: titleDraft !== snapshot.title,
+      canResetTitleDraft:
+        titleDraft !== snapshot.title || titleFeedback.kind === "refused",
+      canUndo: snapshot.history.canUndo,
+      canRedo: snapshot.history.canRedo,
+      undoDescription: snapshot.history.undoLabel === null
+        ? "Nothing to undo"
+        : `Undo ${snapshot.history.undoLabel}`,
+      redoDescription: snapshot.history.redoLabel === null
+        ? "Nothing to redo"
+        : `Redo ${snapshot.history.redoLabel}`,
+    }),
+    chart: Object.freeze({
+      sectionCountLabel: countLabel(snapshot.sections.length, "section"),
+      measureCountLabel: countLabel(snapshot.measureCount, "measure"),
+      chordCountLabel: countLabel(chordCount, "chord"),
+      sections: Object.freeze(
+        snapshot.sections.map((section) =>
+          Object.freeze({
+            id: section.id,
+            label: section.name,
+            measureCountLabel: countLabel(section.measures.length, "measure"),
+            measures: Object.freeze(
+              section.measures.map((measure) =>
+                Object.freeze({
+                  id: measure.id,
+                  number: measure.ordinal,
+                  meterLabel: snapshot.meterLabel,
+                  durationLabel: `${measure.durationBeatLabel} beats`,
+                  capacityLabel: `${measure.capacityBeatLabel} beats`,
+                  startBeatLabel: measure.startBeatLabel,
+                  endBeatLabel: measure.endBeatLabel,
+                  chordCountLabel: countLabel(measure.eventCount, "chord"),
+                  state: measure.eventCount === 0 ? "empty" : "populated",
+                }),
+              ),
+            ),
+          }),
+        ),
+      ),
+    }),
+    harmony: Object.freeze({
+      selectedChordLabel: null,
+      selectionStatusLabel: chordCount === 0
+        ? "No chord events in this chart"
+        : "No chord selected",
+      emptyTitle: chordCount === 0
+        ? "Harmony begins with a real chord"
+        : "Select a chord to inspect it",
+      emptyDescription: chordCount === 0
+        ? "This new chart is intentionally empty. Analysis will appear only for validated chord events."
+        : "The Harmony Lens will explain the selected event without rewriting its source spelling.",
+      documentFacts: Object.freeze([
+        Object.freeze({ id: "meter", label: "Meter", value: snapshot.meterLabel }),
+        Object.freeze({ id: "key", label: "Key", value: snapshot.keyLabel }),
+        Object.freeze({
+          id: "tempo",
+          label: "Tempo",
+          value: `${String(snapshot.tempoBpm)} BPM`,
+        }),
+        Object.freeze({
+          id: "measures",
+          label: "Form",
+          value: `${countLabel(snapshot.sections.length, "section")} · ${countLabel(snapshot.measureCount, "measure")}`,
+        }),
+      ]),
+    }),
+    transport: Object.freeze({
+      audioState: "unavailable",
+      audioStatusLabel: snapshot.transport.statusLabel,
+      audioStatusDetail:
+        "Playback is visible but disabled until a playback plan is connected to the verified audio engine.",
+      tempoBpm: snapshot.tempoBpm,
+      instrumentLabel: snapshot.instrumentLabel,
+      positionLabel: `${snapshot.transport.playheadBeatLabel} beats`,
+      currentChordLabel: null,
+    }),
+    layout: Object.freeze({
+      libraryCollapsed: snapshot.panels.leftRailCollapsed,
+      harmonyCollapsed: snapshot.panels.rightRailCollapsed,
+      activeSheet,
+      uiRefusal,
+    }),
+  });
+}
+
+function feedbackFromRefusal(
+  result: Extract<StudioControllerActionResult, { ok: false }>,
+): StudioTitleFeedback {
+  return Object.freeze({
+    kind: "refused",
+    message: `${result.refusal.message} ${result.refusal.recoveryAction}`,
+  });
+}
+
+export function App({ snapshot, actions }: AppProps) {
+  const [titleDraft, setTitleDraft] = useState(snapshot.title);
+  const previousCommittedTitle = useRef(snapshot.title);
+  const [activeSheet, setActiveSheet] = useState<StudioPanelSide | null>(null);
+  const [uiRefusal, setUiRefusal] = useState<
+    StudioShellView["layout"]["uiRefusal"]
+  >(null);
+  const [titleFeedback, setTitleFeedback] = useState<StudioTitleFeedback>(() =>
+    Object.freeze({
+      kind: "idle",
+      message: "The committed document title is shown above.",
+    }),
+  );
+
+  useEffect(() => {
+    const previousTitle = previousCommittedTitle.current;
+    if (previousTitle === snapshot.title) return;
+    previousCommittedTitle.current = snapshot.title;
+
+    if (titleDraft === previousTitle) {
+      setTitleDraft(snapshot.title);
+      setTitleFeedback(
+        Object.freeze({
+          kind: "idle",
+          message: "The committed document title changed outside this field.",
+        }),
+      );
+      return;
+    }
+    if (titleDraft !== snapshot.title) {
+      setTitleFeedback(
+        Object.freeze({
+          kind: "refused",
+          message:
+            "The document title changed while this raw draft was open. Reset the draft or review it before applying.",
+        }),
+      );
+    }
+  }, [snapshot.title, titleDraft]);
+
+  const resetDraft = (): void => {
+    setTitleDraft(snapshot.title);
+    setTitleFeedback(
+      Object.freeze({
+        kind: "idle",
+        message: "Draft reset to the committed document title.",
+      }),
+    );
+  };
+
+  const applyHistoryResult = (
+    result: StudioControllerActionResult,
+    successMessage: string,
+  ): void => {
+    if (!result.ok) {
+      setTitleFeedback(feedbackFromRefusal(result));
+      return;
+    }
+    setTitleDraft(result.snapshot.title);
+    setTitleFeedback(
+      Object.freeze({ kind: "committed", message: successMessage }),
+    );
+  };
+
+  const view = viewFromSnapshot(
+    snapshot,
+    titleDraft,
+    titleFeedback,
+    activeSheet,
+    uiRefusal,
+  );
+
   return (
-    <div class="app-shell" data-app-ready="true">
-      <a class="skip-link" href="#workspace">
-        Skip to workspace
-      </a>
+    <StudioShell
+      view={view}
+      callbacks={{
+        onTitleDraftChange: (value) => {
+          setTitleDraft(value);
+          setTitleFeedback(
+            Object.freeze({
+              kind: value === snapshot.title ? "idle" : "dirty",
+              message: value === snapshot.title
+                ? "The draft matches the committed title."
+                : "Draft only — apply it to create an undoable document change.",
+            }),
+          );
+        },
+        onCommitTitle: (value) => {
+          const result = actions.setTitle(value);
+          if (!result.ok) {
+            setTitleFeedback(feedbackFromRefusal(result));
+            return;
+          }
+          setTitleDraft(result.snapshot.title);
+          setTitleFeedback(
+            Object.freeze({
+              kind: "committed",
+              message: "Title committed as an undoable document change.",
+            }),
+          );
+        },
+        onResetTitleDraft: resetDraft,
+        onUndo: () => {
+          applyHistoryResult(actions.undo(), "The last document change was undone.");
+        },
+        onRedo: () => {
+          applyHistoryResult(actions.redo(), "The document change was restored.");
+        },
+        onRailCollapsedChange: (side, collapsed) => {
+          actions.setRailCollapsed(
+            side === "library" ? "left" : "right",
+            collapsed,
+          );
+        },
+        onRequestPanelSheet: (side) => {
+          setUiRefusal(null);
+          setActiveSheet(side);
+        },
+        onDismissPanelSheet: () => {
+          setActiveSheet(null);
+        },
+        onUiContractRefusal: (diagnostic) => {
+          setActiveSheet(null);
+          setUiRefusal(
+            Object.freeze({
+              message: diagnostic.message,
+              recoveryAction: diagnostic.recoveryAction,
+            }),
+          );
+        },
+        onDismissUiRefusal: () => {
+          setUiRefusal(null);
+        },
+      }}
+    />
+  );
+}
 
-      <header class="site-header">
-        <div class="brand-lockup">
-          <span class="brand-mark" aria-hidden="true">
-            C
-          </span>
-          <div>
-            <p class="eyebrow">Offline composition workspace</p>
-            <h1>Changes</h1>
-            <p class="subtitle">Jazz Progression Studio</p>
-          </div>
-        </div>
+export type StudioStartupFailureProps = Readonly<{
+  message: string;
+  recoveryAction: string;
+}>;
 
-        <p class="ready-status" role="status" aria-label="Application status">
-          <span class="status-light" aria-hidden="true" />
-          Foundation ready
-        </p>
-      </header>
-
-      <main class="workspace" id="workspace" tabIndex={-1}>
-        <section class="welcome-panel" aria-labelledby="welcome-title">
-          <p class="section-kicker">A new foundation</p>
-          <h2 id="welcome-title">
-            Shape the harmony. Keep every choice explainable.
-          </h2>
-          <p class="welcome-copy">
-            Changes is being rebuilt as a focused place to write, hear, and
-            understand jazz progressions. This shell is already local and
-            self-contained; editing, playback, and harmonic discovery will
-            appear only as their tested engines are completed.
-          </p>
-
-          <dl class="foundation-facts" aria-label="Foundation properties">
-            {foundationFacts.map((fact) => (
-              <div class="fact" key={fact.label}>
-                <dt>{fact.label}</dt>
-                <dd>{fact.value}</dd>
-              </div>
-            ))}
-          </dl>
-        </section>
-
-        <aside class="readiness-panel" aria-labelledby="readiness-title">
-          <div>
-            <p class="section-kicker">Current build</p>
-            <h2 id="readiness-title">Studio foundation</h2>
-          </div>
-
-          <ul class="readiness-list">
-            {readinessChecks.map((check) => (
-              <li key={check}>
-                <span aria-hidden="true">✓</span>
-                {check}
-              </li>
-            ))}
-          </ul>
-
-          <p class="next-step">
-            Next foundation gate: a trustworthy chord and document model.
-          </p>
-        </aside>
-      </main>
-
-      <footer class="site-footer">
-        <p>Deterministic by design. Your musical work stays on your device.</p>
-      </footer>
-    </div>
+export function StudioStartupFailure({
+  message,
+  recoveryAction,
+}: StudioStartupFailureProps) {
+  return (
+    <main class="studio-startup-failure" data-app-ready="false">
+      <p class="studio-kicker">Local startup stopped safely</p>
+      <h1>Changes</h1>
+      <h2>The blank studio could not be validated.</h2>
+      <p>{message}</p>
+      <p>{recoveryAction}</p>
+    </main>
   );
 }

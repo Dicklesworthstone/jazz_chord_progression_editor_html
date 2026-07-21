@@ -1,0 +1,175 @@
+{
+  "schema": "changes.fixtures.v1-provenance-ledger.v1",
+  "fixtureVersion": "1.0.0",
+  "status": "independently-authored-pre-production",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "authoringStatement": {
+    "productionOracleUsed": false,
+    "humanReviewClaimed": false,
+    "domainExpertReviewClaimed": false,
+    "statement": "This ledger separates checked-in contracts, inherited validated facts, algorithmic laws, project policy, resource policy, and independent test-oracle policy. It does not claim external domain-expert review."
+  },
+  "authorityClasses": [
+    "algorithmic-law",
+    "checked-in-project-contract",
+    "independent-oracle-policy",
+    "inherited-validated-contract",
+    "pre-production-project-policy",
+    "pre-production-resource-policy"
+  ],
+  "authorities": [
+    {
+      "id": "V1-AUTH-CONTRACT",
+      "authorityClass": "checked-in-project-contract",
+      "title": "V1 public package contract",
+      "sourceRefs": [
+        "docs/REBUILD_PLAN.md#124-transition-assignment",
+        "docs/V1_VOICE_ASSIGNMENT_CONTRACT.md",
+        "src/theory/voice-assignment-contract.ts"
+      ],
+      "claims": [
+        {"id": "V1-CLAIM-ARC-SHAPES", "text": "Matched, entering, and leaving arcs have exact correlated endpoint, motion, identity, and gap shapes."},
+        {"id": "V1-CLAIM-BOUNDARY", "text": "V1 is a pure synchronous theory operation over exact V0 automatic-candidate frames."},
+        {"id": "V1-CLAIM-REFUSALS", "text": "Schema, policy, frame, role, identity, lock, no-assignment, and work-limit failures are typed and all-or-nothing."},
+        {"id": "V1-CLAIM-VOICE-IDS", "text": "Voice identities are request-local, canonical, inherited on match, retired on leave, and allocated after path selection on enter."}
+      ],
+      "traceIds": [
+        "V1-TRACE-BOUNDARY",
+        "V1-TRACE-COSTS",
+        "V1-TRACE-DETERMINISM",
+        "V1-TRACE-DP-ORDER",
+        "V1-TRACE-GAPS",
+        "V1-TRACE-GUIDE-TONES",
+        "V1-TRACE-IDENTITY",
+        "V1-TRACE-IMMUTABILITY",
+        "V1-TRACE-LEGACY",
+        "V1-TRACE-LIMITS",
+        "V1-TRACE-LOCKS",
+        "V1-TRACE-MOTION",
+        "V1-TRACE-REFUSALS",
+        "V1-TRACE-TIES",
+        "V1-TRACE-VOICE-IDS"
+      ]
+    },
+    {
+      "id": "V1-AUTH-INDEPENDENCE",
+      "authorityClass": "independent-oracle-policy",
+      "title": "Independent fixture and brute-force proof policy",
+      "sourceRefs": [
+        "AGENTS.md#verification-discipline",
+        "docs/V1_VOICE_ASSIGNMENT_CONTRACT.md#14-independent-fixture-package",
+        "tests/fixtures/voice-assignment/mutation-controls.json",
+        "tests/fixtures/voice-assignment/trace-ledger.json"
+      ],
+      "claims": [
+        {"id": "V1-CLAIM-DETERMINISM", "text": "Replay, immutable outputs, and input nonmutation are independently proven without clocks or ambient state."},
+        {"id": "V1-CLAIM-ORACLE", "text": "Reviewed small cases are exhaustively enumerated by a test-only oracle that shares no selection code with production."},
+        {"id": "V1-CLAIM-TAMPER", "text": "Positive, near-miss, transposition, and mutation witnesses are linked reciprocally by stable IDs."}
+      ],
+      "traceIds": [
+        "V1-TRACE-BOUNDARY",
+        "V1-TRACE-DETERMINISM",
+        "V1-TRACE-DP-ORDER",
+        "V1-TRACE-IMMUTABILITY",
+        "V1-TRACE-REFUSALS",
+        "V1-TRACE-TIES",
+        "V1-TRACE-VOICE-IDS"
+      ]
+    },
+    {
+      "id": "V1-AUTH-LIMITS",
+      "authorityClass": "pre-production-resource-policy",
+      "title": "Deterministic V1 work, memory, numeric, role, and payload limits",
+      "sourceRefs": [
+        "docs/V1_VOICE_ASSIGNMENT_CONTRACT.md#12-deterministic-work-and-memory-bounds",
+        "src/theory/voice-assignment-contract.ts",
+        "tests/fixtures/voice-assignment/limit-cases.json"
+      ],
+      "claims": [
+        {"id": "V1-CLAIM-BOUNDED-DP", "text": "Production visits a bounded dynamic-programming matrix and never enumerates permutations or every Delannoy path."},
+        {"id": "V1-CLAIM-LIMIT-FAILURE", "text": "A breached test-seam counter returns limit.voice_assignment_work_exceeded with no partial result."},
+        {"id": "V1-CLAIM-RESOURCE-CAPS", "text": "Every work and tracked-record population has an explicit exact maximum and reviewed exact-plus-one seam witness."}
+      ],
+      "traceIds": [
+        "V1-TRACE-DP-ORDER",
+        "V1-TRACE-GAPS",
+        "V1-TRACE-LIMITS",
+        "V1-TRACE-REFUSALS"
+      ]
+    },
+    {
+      "id": "V1-AUTH-ORDER-PRESERVING",
+      "authorityClass": "algorithmic-law",
+      "title": "Order-preserving sequence-alignment law",
+      "sourceRefs": [
+        "docs/V1_VOICE_ASSIGNMENT_CONTRACT.md#6-exact-order-preserving-alignment",
+        "tests/fixtures/voice-assignment/assignment-policy.json"
+      ],
+      "claims": [
+        {"id": "V1-CLAIM-NONCROSSING", "text": "Every match advances both low-to-high prefixes, so crossing is structurally impossible."},
+        {"id": "V1-CLAIM-OPERATIONS", "text": "Only correlated match, leave, and enter predecessor records form a complete path."},
+        {"id": "V1-CLAIM-PATH-ORDER", "text": "Path comparison uses the complete bounded record sequence with declared operation and ordinal order."}
+      ],
+      "traceIds": [
+        "V1-TRACE-DP-ORDER",
+        "V1-TRACE-GAPS",
+        "V1-TRACE-IDENTITY",
+        "V1-TRACE-LIMITS",
+        "V1-TRACE-LOCKS"
+      ]
+    },
+    {
+      "id": "V1-AUTH-PROJECT-POLICY",
+      "authorityClass": "pre-production-project-policy",
+      "title": "Versioned V1 cost, role-reporting, motion, and deterministic path policy",
+      "sourceRefs": [
+        "docs/V1_VOICE_ASSIGNMENT_CONTRACT.md#10-motion-relations",
+        "docs/V1_VOICE_ASSIGNMENT_CONTRACT.md#11-cost-and-explanation-payload",
+        "tests/fixtures/voice-assignment/assignment-policy.json"
+      ],
+      "claims": [
+        {"id": "V1-CLAIM-GAP-COST", "text": "Enter and leave each cost exactly 12 in policy version 1."},
+        {"id": "V1-CLAIM-PLURAL-COSTS", "text": "Motion, common-tone, spacing, guide-doubling, omitted-color, and span facts remain inspectable instead of becoming one taste score."},
+        {"id": "V1-CLAIM-RELATIONS", "text": "Stationary-pair, oblique, contrary, parallel, and similar are distinct mechanical motion relations."}
+      ],
+      "traceIds": [
+        "V1-TRACE-COSTS",
+        "V1-TRACE-DETERMINISM",
+        "V1-TRACE-DP-ORDER",
+        "V1-TRACE-GAPS",
+        "V1-TRACE-GUIDE-TONES",
+        "V1-TRACE-IDENTITY",
+        "V1-TRACE-MOTION",
+        "V1-TRACE-TIES"
+      ]
+    },
+    {
+      "id": "V1-AUTH-V0-DOMAIN",
+      "authorityClass": "inherited-validated-contract",
+      "title": "Inherited domain and V0 spelling, provenance, role-source, and spacing laws",
+      "sourceRefs": [
+        "src/domain/chord.ts",
+        "src/domain/pitch.ts",
+        "src/theory/voicing-candidates-contract.ts",
+        "tests/fixtures/domain/f1-domain-contract.json",
+        "tests/fixtures/voicing/v0-voicing-contract.json"
+      ],
+      "claims": [
+        {"id": "V1-CLAIM-EXACT-DEGREES", "text": "Degree identity includes number and alteration; null slash-bass provenance is never fabricated into a degree role."},
+        {"id": "V1-CLAIM-EXACT-PITCH", "text": "MIDI, pitch class, spelled pitch class, spelled pitch, and octave remain separate exact questions."},
+        {"id": "V1-CLAIM-INHERITED-SPACING", "text": "crowdedLowIntervals uses the exact versioned V0 low-register spacing bands."},
+        {"id": "V1-CLAIM-ROLE-SOURCE", "text": "Guide and color roles come from exact selected-realization degree lists and correlated per-voice provenance."}
+      ],
+      "traceIds": [
+        "V1-TRACE-BOUNDARY",
+        "V1-TRACE-COSTS",
+        "V1-TRACE-GUIDE-TONES",
+        "V1-TRACE-IDENTITY",
+        "V1-TRACE-LEGACY",
+        "V1-TRACE-LOCKS",
+        "V1-TRACE-REFUSALS"
+      ]
+    }
+  ]
+}

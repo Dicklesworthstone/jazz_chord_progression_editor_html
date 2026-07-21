@@ -1,0 +1,626 @@
+{
+  "schema": "changes.fixtures.v0-candidate-cases.v1",
+  "fixtureVersion": "1.0.0",
+  "status": "independently-authored-pre-production",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "pitchConvention": "Scientific pitch notation with MIDI C4=60; spellings are semantic and are not replaced by enharmonic aliases.",
+  "casePolicy": {
+    "successMeaning": "The final retained set must contain the exact candidate; it need not be candidate-000 unless topRankRequired is true.",
+    "refusalMeaning": "The operation returns no candidate value and the named refusal is the precedence winner.",
+    "fixedTemplateOmissions": "A fixed row may omit a T1-required extension only when the row says so; expected omitted degrees remain visible.",
+    "oracleIndependence": "Pitch spellings, MIDI values, transforms, and refusal expectations were authored without executing V0 production generation."
+  },
+  "cases": [
+    {
+      "id": "V0-CAND-001",
+      "description": "balanced major seventh preserves root, guide tones, optional fifth, and exact spelling",
+      "sourceSymbol": "Cmaj7",
+      "realizationId": "literal",
+      "policy": {"family":"balanced","voiceCount":4,"range":{"lowMidi":48,"highMidi":84},"bassPolicy":"generated"},
+      "expected": {
+        "kind": "must-contain-candidate",
+        "voices": [
+          {"spelling":{"step":"C","alter":0,"octave":3},"midi":48,"degree":"1","sourceDegreeIndex":0,"provenance":"realization"},
+          {"spelling":{"step":"G","alter":0,"octave":3},"midi":55,"degree":"5","sourceDegreeIndex":2,"provenance":"realization"},
+          {"spelling":{"step":"B","alter":0,"octave":3},"midi":59,"degree":"7","sourceDegreeIndex":3,"provenance":"realization"},
+          {"spelling":{"step":"E","alter":0,"octave":4},"midi":64,"degree":"3","sourceDegreeIndex":1,"provenance":"realization"}
+        ],
+        "omittedDegrees": [],
+        "externalBass": null
+      },
+      "traceIds": ["V0-TRACE-FAMILIES","V0-TRACE-DEGREES","V0-TRACE-SPACING"],
+      "authorityIds": ["V0-AUTH-T1","V0-AUTH-TEMPLATES","V0-AUTH-SPACING"]
+    },
+    {
+      "id": "V0-CAND-002",
+      "description": "major-nine shell intentionally exposes its fixed-row extension omission",
+      "sourceSymbol": "Cmaj9",
+      "realizationId": "literal",
+      "policy": {"family":"shell","voiceCount":3,"range":{"lowMidi":60,"highMidi":84},"bassPolicy":"generated"},
+      "expected": {
+        "kind": "must-contain-candidate",
+        "templateId": "shell-major-v1",
+        "voices": [
+          {"spelling":{"step":"C","alter":0,"octave":4},"midi":60,"degree":"1","sourceDegreeIndex":0,"provenance":"realization"},
+          {"spelling":{"step":"E","alter":0,"octave":4},"midi":64,"degree":"3","sourceDegreeIndex":1,"provenance":"realization"},
+          {"spelling":{"step":"B","alter":0,"octave":4},"midi":71,"degree":"7","sourceDegreeIndex":3,"provenance":"realization"}
+        ],
+        "omittedDegrees": ["5","9"],
+        "externalBass": null
+      },
+      "traceIds": ["V0-TRACE-FAMILIES","V0-TRACE-DEGREES"],
+      "authorityIds": ["V0-AUTH-T1","V0-AUTH-TEMPLATES"]
+    },
+    {
+      "id": "V0-CAND-003",
+      "description": "open major seventh has the declared wide gap and nineteen-semitone span",
+      "sourceSymbol": "Cmaj7",
+      "realizationId": "literal",
+      "policy": {"family":"open","voiceCount":4,"range":{"lowMidi":48,"highMidi":84},"bassPolicy":"generated"},
+      "expected": {
+        "kind": "must-contain-candidate",
+        "voices": [
+          {"spelling":{"step":"C","alter":0,"octave":3},"midi":48,"degree":"1","sourceDegreeIndex":0,"provenance":"realization"},
+          {"spelling":{"step":"B","alter":0,"octave":3},"midi":59,"degree":"7","sourceDegreeIndex":3,"provenance":"realization"},
+          {"spelling":{"step":"E","alter":0,"octave":4},"midi":64,"degree":"3","sourceDegreeIndex":1,"provenance":"realization"},
+          {"spelling":{"step":"G","alter":0,"octave":4},"midi":67,"degree":"5","sourceDegreeIndex":2,"provenance":"realization"}
+        ],
+        "spanSemitones": 19,
+        "atLeastOneAdjacentGapSemitones": 11
+      },
+      "traceIds": ["V0-TRACE-FAMILIES","V0-TRACE-SPACING"],
+      "authorityIds": ["V0-AUTH-TEMPLATES","V0-AUTH-SPACING"]
+    },
+    {
+      "id": "V0-CAND-004",
+      "description": "four-note Drop-2 inversion lowers the root and revalidates generated root bass",
+      "sourceSymbol": "Cmaj7",
+      "realizationId": "literal",
+      "policy": {"family":"drop2","voiceCount":4,"range":{"lowMidi":48,"highMidi":84},"bassPolicy":"generated"},
+      "expected": {
+        "kind": "must-contain-candidate",
+        "voices": [
+          {"spelling":{"step":"C","alter":0,"octave":3},"midi":48,"degree":"1","sourceDegreeIndex":0,"provenance":"realization"},
+          {"spelling":{"step":"G","alter":0,"octave":3},"midi":55,"degree":"5","sourceDegreeIndex":2,"provenance":"realization"},
+          {"spelling":{"step":"B","alter":0,"octave":3},"midi":59,"degree":"7","sourceDegreeIndex":3,"provenance":"realization"},
+          {"spelling":{"step":"E","alter":0,"octave":4},"midi":64,"degree":"3","sourceDegreeIndex":1,"provenance":"realization"}
+        ],
+        "drop2": {"closedSourceMidi":[55,59,60,64],"secondFromTopSourceOrdinal":2,"loweredBySemitones":12,"transformedMidi":[48,55,59,64]}
+      },
+      "traceIds": ["V0-TRACE-DROP2","V0-TRACE-FAMILIES"],
+      "authorityIds": ["V0-AUTH-DROP2","V0-AUTH-TEMPLATES"]
+    },
+    {
+      "id": "V0-CAND-005",
+      "description": "five-note Drop-2 with no reserved bass still identifies the second voice from the top by MIDI",
+      "sourceSymbol": "Cmaj9",
+      "realizationId": "literal",
+      "policy": {"family":"drop2","voiceCount":5,"range":{"lowMidi":48,"highMidi":84},"bassPolicy":"none"},
+      "expected": {
+        "kind": "must-contain-candidate",
+        "voices": [
+          {"spelling":{"step":"G","alter":0,"octave":3},"midi":55,"degree":"5","sourceDegreeIndex":2,"provenance":"realization"},
+          {"spelling":{"step":"C","alter":0,"octave":4},"midi":60,"degree":"1","sourceDegreeIndex":0,"provenance":"realization"},
+          {"spelling":{"step":"D","alter":0,"octave":4},"midi":62,"degree":"9","sourceDegreeIndex":4,"provenance":"realization"},
+          {"spelling":{"step":"E","alter":0,"octave":4},"midi":64,"degree":"3","sourceDegreeIndex":1,"provenance":"realization"},
+          {"spelling":{"step":"B","alter":0,"octave":4},"midi":71,"degree":"7","sourceDegreeIndex":3,"provenance":"realization"}
+        ],
+        "drop2": {"closedSourceMidi":[60,62,64,67,71],"secondFromTopSourceOrdinal":3,"loweredBySemitones":12,"transformedMidi":[55,60,62,64,71]}
+      },
+      "traceIds": ["V0-TRACE-DROP2","V0-TRACE-DEGREES"],
+      "authorityIds": ["V0-AUTH-DROP2","V0-AUTH-T1"]
+    },
+    {
+      "id": "V0-CAND-006",
+      "description": "Rootless A major-thirteen uses its exact low-to-high recipe and delegates C bass",
+      "sourceSymbol": "Cmaj13",
+      "realizationId": "literal",
+      "policy": {"family":"rootless-a","voiceCount":4,"range":{"lowMidi":60,"highMidi":84},"bassPolicy":"external"},
+      "expected": {
+        "kind": "must-contain-candidate",
+        "templateId": "rootless-a-major-v1",
+        "voices": [
+          {"spelling":{"step":"E","alter":0,"octave":4},"midi":64,"degree":"3","sourceDegreeIndex":1,"provenance":"realization"},
+          {"spelling":{"step":"B","alter":0,"octave":4},"midi":71,"degree":"7","sourceDegreeIndex":3,"provenance":"realization"},
+          {"spelling":{"step":"D","alter":0,"octave":5},"midi":74,"degree":"9","sourceDegreeIndex":4,"provenance":"realization"},
+          {"spelling":{"step":"G","alter":0,"octave":5},"midi":79,"degree":"5","sourceDegreeIndex":2,"provenance":"realization"}
+        ],
+        "externalBass": {"step":"C","alter":0},
+        "omittedDegrees": ["1","11","13"]
+      },
+      "traceIds": ["V0-TRACE-FAMILIES","V0-TRACE-BASS","V0-TRACE-DEGREES"],
+      "authorityIds": ["V0-AUTH-F1","V0-AUTH-T1","V0-AUTH-TEMPLATES"]
+    },
+    {
+      "id": "V0-CAND-007",
+      "description": "Rootless B dominant-thirteen is distinct from Rootless A",
+      "sourceSymbol": "C13",
+      "realizationId": "literal",
+      "policy": {"family":"rootless-b","voiceCount":4,"range":{"lowMidi":48,"highMidi":84},"bassPolicy":"external"},
+      "expected": {
+        "kind": "must-contain-candidate",
+        "templateId": "rootless-b-dominant-v1",
+        "voices": [
+          {"spelling":{"step":"B","alter":-1,"octave":3},"midi":58,"degree":"b7","sourceDegreeIndex":3,"provenance":"realization"},
+          {"spelling":{"step":"D","alter":0,"octave":4},"midi":62,"degree":"9","sourceDegreeIndex":4,"provenance":"realization"},
+          {"spelling":{"step":"E","alter":0,"octave":4},"midi":64,"degree":"3","sourceDegreeIndex":1,"provenance":"realization"},
+          {"spelling":{"step":"A","alter":0,"octave":4},"midi":69,"degree":"13","sourceDegreeIndex":6,"provenance":"realization"}
+        ],
+        "externalBass": {"step":"C","alter":0}
+      },
+      "traceIds": ["V0-TRACE-FAMILIES","V0-TRACE-BASS"],
+      "authorityIds": ["V0-AUTH-F1","V0-AUTH-TEMPLATES"]
+    },
+    {
+      "id": "V0-CAND-008",
+      "description": "Rootless B minor-eleven preserves b3 rather than enharmonic #9",
+      "sourceSymbol": "Cm11",
+      "realizationId": "literal",
+      "policy": {"family":"rootless-b","voiceCount":4,"range":{"lowMidi":48,"highMidi":84},"bassPolicy":"external"},
+      "expected": {
+        "kind": "must-contain-candidate",
+        "voices": [
+          {"spelling":{"step":"B","alter":-1,"octave":3},"midi":58,"degree":"b7","sourceDegreeIndex":3,"provenance":"realization"},
+          {"spelling":{"step":"D","alter":0,"octave":4},"midi":62,"degree":"9","sourceDegreeIndex":4,"provenance":"realization"},
+          {"spelling":{"step":"E","alter":-1,"octave":4},"midi":63,"degree":"b3","sourceDegreeIndex":1,"provenance":"realization"},
+          {"spelling":{"step":"F","alter":0,"octave":4},"midi":65,"degree":"11","sourceDegreeIndex":5,"provenance":"realization"}
+        ],
+        "externalBass": {"step":"C","alter":0}
+      },
+      "traceIds": ["V0-TRACE-FAMILIES","V0-TRACE-DEGREES"],
+      "authorityIds": ["V0-AUTH-T1","V0-AUTH-TEMPLATES"]
+    },
+    {
+      "id": "V0-CAND-009",
+      "description": "Lydian-compatible injected evidence yields an exact fourth stack from Cmaj13 members",
+      "sourceSymbol": "Cmaj13",
+      "realizationId": "literal",
+      "policy": {"family":"quartal","voiceCount":4,"range":{"lowMidi":48,"highMidi":84},"bassPolicy":"external"},
+      "quartalContext": {"evidenceKind":"compatible-chord-scale","evidenceId":"fixture-lydian-cmaj13","evidenceVersion":1,"degreeSequence":["7","3","13","9"]},
+      "expected": {
+        "kind": "must-contain-candidate",
+        "voices": [
+          {"spelling":{"step":"B","alter":0,"octave":3},"midi":59,"degree":"7","sourceDegreeIndex":3,"provenance":"realization"},
+          {"spelling":{"step":"E","alter":0,"octave":4},"midi":64,"degree":"3","sourceDegreeIndex":1,"provenance":"realization"},
+          {"spelling":{"step":"A","alter":0,"octave":4},"midi":69,"degree":"13","sourceDegreeIndex":6,"provenance":"realization"},
+          {"spelling":{"step":"D","alter":0,"octave":5},"midi":74,"degree":"9","sourceDegreeIndex":4,"provenance":"realization"}
+        ],
+        "adjacentSemitones": [5,5,5],
+        "externalBass": {"step":"C","alter":0}
+      },
+      "traceIds": ["V0-TRACE-QUARTAL","V0-TRACE-DEGREES"],
+      "authorityIds": ["V0-AUTH-T1","V0-AUTH-TEMPLATES"]
+    },
+    {
+      "id": "V0-CAND-010",
+      "description": "Dorian-compatible minor-thirteen quartal evidence admits both perfect and augmented fourths",
+      "sourceSymbol": "Cm13",
+      "realizationId": "literal",
+      "policy": {"family":"quartal","voiceCount":4,"range":{"lowMidi":48,"highMidi":84},"bassPolicy":"external"},
+      "quartalContext": {"evidenceKind":"compatible-chord-scale","evidenceId":"fixture-dorian-cm13","evidenceVersion":1,"degreeSequence":["b7","b3","13","9"]},
+      "expected": {
+        "kind": "must-contain-candidate",
+        "voices": [
+          {"spelling":{"step":"B","alter":-1,"octave":3},"midi":58,"degree":"b7","sourceDegreeIndex":3,"provenance":"realization"},
+          {"spelling":{"step":"E","alter":-1,"octave":4},"midi":63,"degree":"b3","sourceDegreeIndex":1,"provenance":"realization"},
+          {"spelling":{"step":"A","alter":0,"octave":4},"midi":69,"degree":"13","sourceDegreeIndex":6,"provenance":"realization"},
+          {"spelling":{"step":"D","alter":0,"octave":5},"midi":74,"degree":"9","sourceDegreeIndex":4,"provenance":"realization"}
+        ],
+        "adjacentSemitones": [5,6,5],
+        "externalBass": {"step":"C","alter":0}
+      },
+      "traceIds": ["V0-TRACE-QUARTAL","V0-TRACE-DEGREES"],
+      "authorityIds": ["V0-AUTH-T1","V0-AUTH-TEMPLATES"]
+    },
+    {
+      "id": "V0-CAND-011",
+      "description": "suspended dominant modal evidence is a real five-member fourth stack",
+      "sourceSymbol": "C13sus4",
+      "realizationId": "literal",
+      "policy": {"family":"quartal","voiceCount":5,"range":{"lowMidi":48,"highMidi":84},"bassPolicy":"none"},
+      "quartalContext": {"evidenceKind":"declared-suspended-template","evidenceId":"fixture-suspended-c13","evidenceVersion":1,"degreeSequence":["9","5","1","4","b7"]},
+      "expected": {
+        "kind": "must-contain-candidate",
+        "voices": [
+          {"spelling":{"step":"D","alter":0,"octave":4},"midi":62,"degree":"9","sourceDegreeIndex":4,"provenance":"realization"},
+          {"spelling":{"step":"G","alter":0,"octave":4},"midi":67,"degree":"5","sourceDegreeIndex":2,"provenance":"realization"},
+          {"spelling":{"step":"C","alter":0,"octave":5},"midi":72,"degree":"1","sourceDegreeIndex":0,"provenance":"realization"},
+          {"spelling":{"step":"F","alter":0,"octave":5},"midi":77,"degree":"4","sourceDegreeIndex":1,"provenance":"realization"},
+          {"spelling":{"step":"B","alter":-1,"octave":5},"midi":82,"degree":"b7","sourceDegreeIndex":3,"provenance":"realization"}
+        ],
+        "adjacentSemitones": [5,5,5,5],
+        "omittedDegrees": ["11","13"]
+      },
+      "traceIds": ["V0-TRACE-QUARTAL","V0-TRACE-FAMILIES"],
+      "authorityIds": ["V0-AUTH-TEMPLATES"]
+    },
+    {
+      "id": "V0-CAND-012",
+      "description": "one explicit altered-dominant realization stays selected and keeps b9/b5 spelling",
+      "sourceSymbol": "C7alt",
+      "realizationId": "alt-b9-b5",
+      "policy": {"family":"balanced","voiceCount":5,"range":{"lowMidi":60,"highMidi":84},"bassPolicy":"generated"},
+      "expected": {
+        "kind": "must-contain-candidate",
+        "voices": [
+          {"spelling":{"step":"C","alter":0,"octave":4},"midi":60,"degree":"1","sourceDegreeIndex":0,"provenance":"realization"},
+          {"spelling":{"step":"E","alter":0,"octave":4},"midi":64,"degree":"3","sourceDegreeIndex":1,"provenance":"realization"},
+          {"spelling":{"step":"G","alter":-1,"octave":4},"midi":66,"degree":"b5","sourceDegreeIndex":2,"provenance":"realization"},
+          {"spelling":{"step":"B","alter":-1,"octave":4},"midi":70,"degree":"b7","sourceDegreeIndex":3,"provenance":"realization"},
+          {"spelling":{"step":"D","alter":-1,"octave":5},"midi":73,"degree":"b9","sourceDegreeIndex":4,"provenance":"realization"}
+        ],
+        "noOtherAlteredRealizationMerged": true
+      },
+      "traceIds": ["V0-TRACE-DEGREES","V0-TRACE-ALT-SELECTION"],
+      "authorityIds": ["V0-AUTH-T1","V0-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "V0-CAND-013",
+      "description": "generated non-member slash bass is lowest and never receives a fabricated degree",
+      "sourceSymbol": "Cmaj7/Eb",
+      "realizationId": "literal",
+      "policy": {"family":"balanced","voiceCount":4,"range":{"lowMidi":48,"highMidi":84},"bassPolicy":"generated"},
+      "expected": {
+        "kind": "must-contain-candidate",
+        "voices": [
+          {"spelling":{"step":"E","alter":-1,"octave":3},"midi":51,"degree":null,"sourceDegreeIndex":null,"provenance":"slash-bass"},
+          {"spelling":{"step":"C","alter":0,"octave":4},"midi":60,"degree":"1","sourceDegreeIndex":0,"provenance":"realization"},
+          {"spelling":{"step":"E","alter":0,"octave":4},"midi":64,"degree":"3","sourceDegreeIndex":1,"provenance":"realization"},
+          {"spelling":{"step":"B","alter":0,"octave":4},"midi":71,"degree":"7","sourceDegreeIndex":3,"provenance":"realization"}
+        ],
+        "slashBassSourceDegreeIndex": null
+      },
+      "traceIds": ["V0-TRACE-BASS","V0-TRACE-DEGREES"],
+      "authorityIds": ["V0-AUTH-F1","V0-AUTH-T1"]
+    },
+    {
+      "id": "V0-CAND-014",
+      "description": "external slash bass is named but absent from voices and count",
+      "sourceSymbol": "Cmaj7/Eb",
+      "realizationId": "literal",
+      "policy": {"family":"balanced","voiceCount":4,"range":{"lowMidi":60,"highMidi":84},"bassPolicy":"external"},
+      "expected": {
+        "kind": "must-contain-candidate",
+        "voices": [
+          {"spelling":{"step":"C","alter":0,"octave":4},"midi":60,"degree":"1","sourceDegreeIndex":0,"provenance":"realization"},
+          {"spelling":{"step":"E","alter":0,"octave":4},"midi":64,"degree":"3","sourceDegreeIndex":1,"provenance":"realization"},
+          {"spelling":{"step":"G","alter":0,"octave":4},"midi":67,"degree":"5","sourceDegreeIndex":2,"provenance":"realization"},
+          {"spelling":{"step":"B","alter":0,"octave":4},"midi":71,"degree":"7","sourceDegreeIndex":3,"provenance":"realization"}
+        ],
+        "externalBass": {"step":"E","alter":-1},
+        "externalBassVoiceCounted": false
+      },
+      "traceIds": ["V0-TRACE-BASS","V0-TRACE-FAMILIES"],
+      "authorityIds": ["V0-AUTH-F1","V0-AUTH-TEMPLATES"]
+    },
+    {
+      "id": "V0-CAND-015",
+      "description": "power chord reaches three voices only by its declared root octave copy",
+      "sourceSymbol": "C5",
+      "realizationId": "literal",
+      "policy": {"family":"balanced","voiceCount":3,"range":{"lowMidi":48,"highMidi":72},"bassPolicy":"generated"},
+      "expected": {
+        "kind": "must-contain-candidate",
+        "voices": [
+          {"spelling":{"step":"C","alter":0,"octave":3},"midi":48,"degree":"1","sourceDegreeIndex":0,"provenance":"realization"},
+          {"spelling":{"step":"G","alter":0,"octave":3},"midi":55,"degree":"5","sourceDegreeIndex":1,"provenance":"realization"},
+          {"spelling":{"step":"C","alter":0,"octave":4},"midi":60,"degree":"1","sourceDegreeIndex":0,"provenance":"doubling"}
+        ],
+        "doubledDegrees": ["1"]
+      },
+      "traceIds": ["V0-TRACE-DEGREES","V0-TRACE-FAMILIES"],
+      "authorityIds": ["V0-AUTH-T1","V0-AUTH-TEMPLATES"]
+    },
+    {
+      "id": "V0-CAND-016",
+      "description": "diminished shell preserves double-flat seventh spelling",
+      "sourceSymbol": "Cdim7",
+      "realizationId": "literal",
+      "policy": {"family":"shell","voiceCount":4,"range":{"lowMidi":60,"highMidi":84},"bassPolicy":"generated"},
+      "expected": {
+        "kind": "must-contain-candidate",
+        "voices": [
+          {"spelling":{"step":"C","alter":0,"octave":4},"midi":60,"degree":"1","sourceDegreeIndex":0,"provenance":"realization"},
+          {"spelling":{"step":"E","alter":-1,"octave":4},"midi":63,"degree":"b3","sourceDegreeIndex":1,"provenance":"realization"},
+          {"spelling":{"step":"G","alter":-1,"octave":4},"midi":66,"degree":"b5","sourceDegreeIndex":2,"provenance":"realization"},
+          {"spelling":{"step":"B","alter":-2,"octave":4},"midi":69,"degree":"bb7","sourceDegreeIndex":3,"provenance":"realization"}
+        ]
+      },
+      "traceIds": ["V0-TRACE-DEGREES","V0-TRACE-FAMILIES"],
+      "authorityIds": ["V0-AUTH-T1","V0-AUTH-TEMPLATES"]
+    },
+    {
+      "id": "V0-CAND-017",
+      "description": "suspended-four dominant shell uses the declared fourth identity",
+      "sourceSymbol": "C7sus4",
+      "realizationId": "literal",
+      "policy": {"family":"shell","voiceCount":3,"range":{"lowMidi":60,"highMidi":84},"bassPolicy":"generated"},
+      "expected": {
+        "kind": "must-contain-candidate",
+        "voices": [
+          {"spelling":{"step":"C","alter":0,"octave":4},"midi":60,"degree":"1","sourceDegreeIndex":0,"provenance":"realization"},
+          {"spelling":{"step":"F","alter":0,"octave":4},"midi":65,"degree":"4","sourceDegreeIndex":1,"provenance":"realization"},
+          {"spelling":{"step":"B","alter":-1,"octave":4},"midi":70,"degree":"b7","sourceDegreeIndex":3,"provenance":"realization"}
+        ]
+      },
+      "traceIds": ["V0-TRACE-FAMILIES","V0-TRACE-DEGREES"],
+      "authorityIds": ["V0-AUTH-T1","V0-AUTH-TEMPLATES"]
+    },
+    {
+      "id": "V0-CAND-018",
+      "description": "suspended-four Rootless A thirteen uses exact color recipe",
+      "sourceSymbol": "C13sus4",
+      "realizationId": "literal",
+      "policy": {"family":"rootless-a","voiceCount":4,"range":{"lowMidi":60,"highMidi":84},"bassPolicy":"external"},
+      "expected": {
+        "kind": "must-contain-candidate",
+        "voices": [
+          {"spelling":{"step":"F","alter":0,"octave":4},"midi":65,"degree":"4","sourceDegreeIndex":1,"provenance":"realization"},
+          {"spelling":{"step":"B","alter":-1,"octave":4},"midi":70,"degree":"b7","sourceDegreeIndex":3,"provenance":"realization"},
+          {"spelling":{"step":"D","alter":0,"octave":5},"midi":74,"degree":"9","sourceDegreeIndex":4,"provenance":"realization"},
+          {"spelling":{"step":"A","alter":0,"octave":5},"midi":81,"degree":"13","sourceDegreeIndex":6,"provenance":"realization"}
+        ],
+        "externalBass": {"step":"C","alter":0}
+      },
+      "traceIds": ["V0-TRACE-FAMILIES","V0-TRACE-BASS"],
+      "authorityIds": ["V0-AUTH-F1","V0-AUTH-TEMPLATES"]
+    },
+    {
+      "id": "V0-CAND-019",
+      "description": "Cmaj7 cannot fabricate the ninth required by Rootless A",
+      "sourceSymbol": "Cmaj7",
+      "realizationId": "literal",
+      "policy": {"family":"rootless-a","voiceCount":4,"range":{"lowMidi":48,"highMidi":84},"bassPolicy":"external"},
+      "expected": {"kind":"refusal","code":"voicing.constraints_unsatisfied","termination":"constraints-unsatisfied","primaryReason":"template-degree-absent","absentDegrees":["9"]},
+      "traceIds": ["V0-TRACE-REFUSAL","V0-TRACE-DEGREES"],
+      "authorityIds": ["V0-AUTH-T1","V0-AUTH-TEMPLATES"]
+    },
+    {
+      "id": "V0-CAND-020",
+      "description": "C9 cannot fabricate the thirteenth required by Rootless B",
+      "sourceSymbol": "C9",
+      "realizationId": "literal",
+      "policy": {"family":"rootless-b","voiceCount":4,"range":{"lowMidi":48,"highMidi":84},"bassPolicy":"external"},
+      "expected": {"kind":"refusal","code":"voicing.constraints_unsatisfied","termination":"constraints-unsatisfied","primaryReason":"template-degree-absent","absentDegrees":["13"]},
+      "traceIds": ["V0-TRACE-REFUSAL","V0-TRACE-DEGREES"],
+      "authorityIds": ["V0-AUTH-T1","V0-AUTH-TEMPLATES"]
+    },
+    {
+      "id": "V0-CAND-021",
+      "description": "Cm7 cannot fabricate ninth or eleventh for Rootless B",
+      "sourceSymbol": "Cm7",
+      "realizationId": "literal",
+      "policy": {"family":"rootless-b","voiceCount":4,"range":{"lowMidi":48,"highMidi":84},"bassPolicy":"external"},
+      "expected": {"kind":"refusal","code":"voicing.constraints_unsatisfied","termination":"constraints-unsatisfied","primaryReason":"template-degree-absent","absentDegrees":["9","11"]},
+      "traceIds": ["V0-TRACE-REFUSAL","V0-TRACE-DEGREES"],
+      "authorityIds": ["V0-AUTH-T1","V0-AUTH-TEMPLATES"]
+    },
+    {
+      "id": "V0-CAND-022",
+      "description": "minor-major seventh Rootless B cannot invent 9 or 6",
+      "sourceSymbol": "Cm(maj7)",
+      "realizationId": "literal",
+      "policy": {"family":"rootless-b","voiceCount":4,"range":{"lowMidi":48,"highMidi":84},"bassPolicy":"external"},
+      "expected": {"kind":"refusal","code":"voicing.constraints_unsatisfied","termination":"constraints-unsatisfied","primaryReason":"template-degree-absent","absentDegrees":["9","6"]},
+      "traceIds": ["V0-TRACE-REFUSAL","V0-TRACE-DEGREES"],
+      "authorityIds": ["V0-AUTH-T1","V0-AUTH-TEMPLATES"]
+    },
+    {
+      "id": "V0-CAND-023",
+      "description": "half-diminished Rootless A cannot invent eleventh",
+      "sourceSymbol": "Cm7b5",
+      "realizationId": "literal",
+      "policy": {"family":"rootless-a","voiceCount":4,"range":{"lowMidi":48,"highMidi":84},"bassPolicy":"external"},
+      "expected": {"kind":"refusal","code":"voicing.constraints_unsatisfied","termination":"constraints-unsatisfied","primaryReason":"template-degree-absent","absentDegrees":["11"]},
+      "traceIds": ["V0-TRACE-REFUSAL","V0-TRACE-DEGREES"],
+      "authorityIds": ["V0-AUTH-T1","V0-AUTH-TEMPLATES"]
+    },
+    {
+      "id": "V0-CAND-024",
+      "description": "sus2 dominant is not silently treated as the sus4 fixed shell row",
+      "sourceSymbol": "C7sus2",
+      "realizationId": "literal",
+      "policy": {"family":"shell","voiceCount":3,"range":{"lowMidi":48,"highMidi":84},"bassPolicy":"generated"},
+      "expected": {"kind":"refusal","code":"voicing.constraints_unsatisfied","termination":"constraints-unsatisfied","primaryReason":"template-degree-absent","absentDegrees":["4"]},
+      "traceIds": ["V0-TRACE-REFUSAL","V0-TRACE-DEGREES"],
+      "authorityIds": ["V0-AUTH-T1","V0-AUTH-TEMPLATES"]
+    },
+    {
+      "id": "V0-CAND-025",
+      "description": "Drop-2 refuses three voices rather than relabeling a spread triad",
+      "sourceSymbol": "Cmaj7",
+      "realizationId": "literal",
+      "policy": {"family":"drop2","voiceCount":3,"range":{"lowMidi":48,"highMidi":84},"bassPolicy":"generated"},
+      "expected": {"kind":"refusal","code":"voicing.constraints_unsatisfied","termination":"constraints-unsatisfied","primaryReason":"voice-count-below-template-minimum"},
+      "traceIds": ["V0-TRACE-DROP2","V0-TRACE-REFUSAL"],
+      "authorityIds": ["V0-AUTH-DROP2","V0-AUTH-TEMPLATES"]
+    },
+    {
+      "id": "V0-CAND-026",
+      "description": "quartal request without context refuses before family search",
+      "sourceSymbol": "Cmaj13",
+      "realizationId": "literal",
+      "policy": {"family":"quartal","voiceCount":4,"range":{"lowMidi":48,"highMidi":84},"bassPolicy":"none"},
+      "quartalContext": null,
+      "expected": {"kind":"refusal","code":"voicing.quartal_context_required","termination":"quartal-context-required"},
+      "traceIds": ["V0-TRACE-QUARTAL","V0-TRACE-REFUSAL"],
+      "authorityIds": ["V0-AUTH-CONTRACT","V0-AUTH-TEMPLATES"]
+    },
+    {
+      "id": "V0-CAND-027",
+      "description": "tertian reordering with a context label is not quartal evidence",
+      "sourceSymbol": "Cmaj13",
+      "realizationId": "literal",
+      "policy": {"family":"quartal","voiceCount":4,"range":{"lowMidi":48,"highMidi":84},"bassPolicy":"none"},
+      "quartalContext": {"evidenceKind":"compatible-chord-scale","evidenceId":"fixture-invalid-tertian","evidenceVersion":1,"degreeSequence":["1","3","5","7"]},
+      "expected": {"kind":"refusal","code":"voicing.quartal_context_invalid","termination":"quartal-context-invalid","reason":"adjacency-not-perfect-or-augmented-fourth"},
+      "traceIds": ["V0-TRACE-QUARTAL","V0-TRACE-REFUSAL"],
+      "authorityIds": ["V0-AUTH-CONTRACT","V0-AUTH-TEMPLATES"]
+    },
+    {
+      "id": "V0-CAND-028",
+      "description": "quartal evidence cannot import a scale degree absent from the selected realization",
+      "sourceSymbol": "Cmaj7",
+      "realizationId": "literal",
+      "policy": {"family":"quartal","voiceCount":3,"range":{"lowMidi":48,"highMidi":84},"bassPolicy":"none"},
+      "quartalContext": {"evidenceKind":"compatible-chord-scale","evidenceId":"fixture-absent-degree","evidenceVersion":1,"degreeSequence":["1","4","b7"]},
+      "expected": {"kind":"refusal","code":"voicing.quartal_context_invalid","termination":"quartal-context-invalid","reason":"degree-absent-from-realization"},
+      "traceIds": ["V0-TRACE-QUARTAL","V0-TRACE-REFUSAL"],
+      "authorityIds": ["V0-AUTH-T1","V0-AUTH-CONTRACT"]
+    },
+    {
+      "id": "V0-CAND-029",
+      "description": "range too narrow returns a constraint report rather than arbitrary notes",
+      "sourceSymbol": "Cmaj7",
+      "realizationId": "literal",
+      "policy": {"family":"balanced","voiceCount":4,"range":{"lowMidi":60,"highMidi":62},"bassPolicy":"generated"},
+      "expected": {"kind":"refusal","code":"voicing.constraints_unsatisfied","termination":"constraints-unsatisfied","primaryReason":"range-insufficient"},
+      "traceIds": ["V0-TRACE-REFUSAL","V0-TRACE-SPACING"],
+      "authorityIds": ["V0-AUTH-CONTRACT","V0-AUTH-SPACING"]
+    },
+    {
+      "id": "V0-CAND-030",
+      "description": "selected altered realization ID must exist exactly in the resolved chord",
+      "sourceSymbol": "Cmaj7",
+      "realizationId": "alt-b9-b5",
+      "policy": {"family":"balanced","voiceCount":4,"range":{"lowMidi":48,"highMidi":84},"bassPolicy":"generated"},
+      "expected": {"kind":"refusal","code":"voicing.realization_unavailable","termination":"realization-unavailable","available":["literal"]},
+      "traceIds": ["V0-TRACE-ALT-SELECTION","V0-TRACE-REFUSAL"],
+      "authorityIds": ["V0-AUTH-T1","V0-AUTH-CONTRACT"]
+    },
+    {
+      "id": "V0-CAND-031",
+      "description": "Manual voicing bypasses every generation phase and preserves duplicates",
+      "request": {"kind":"stored","voicing":{"mode":"manual","bassPolicy":"included","pitches":[{"step":"D","alter":-1,"octave":4},{"step":"F","alter":0,"octave":4},{"step":"D","alter":-1,"octave":4}]}},
+      "expected": {"kind":"stored-bypass","candidateGenerationPerformed":false,"sameObjectValue":true,"rawCandidateCount":0,"retainedCandidateCount":0,"allCounters":0,"termination":"complete-bypass"},
+      "traceIds": ["V0-TRACE-BYPASS","V0-TRACE-IMMUTABILITY"],
+      "authorityIds": ["V0-AUTH-F1","V0-AUTH-CONTRACT"]
+    },
+    {
+      "id": "V0-CAND-032",
+      "description": "Frozen voicing bypasses generation and retains provenance metadata",
+      "request": {"kind":"stored","voicing":{"mode":"frozen","bassPolicy":"included","pitches":[{"step":"G","alter":-1,"octave":3},{"step":"C","alter":0,"octave":4},{"step":"E","alter":0,"octave":4},{"step":"B","alter":0,"octave":4}],"generatedBy":{"engineVersion":"changes.voicing-candidates.v1","family":"drop2"}}},
+      "expected": {"kind":"stored-bypass","candidateGenerationPerformed":false,"sameObjectValue":true,"generatedByUnchanged":true,"rawCandidateCount":0,"retainedCandidateCount":0,"allCounters":0,"termination":"complete-bypass"},
+      "traceIds": ["V0-TRACE-BYPASS","V0-TRACE-DROP2","V0-TRACE-IMMUTABILITY"],
+      "authorityIds": ["V0-AUTH-F1","V0-AUTH-CONTRACT"]
+    },
+    {
+      "id": "V0-CAND-033",
+      "description": "supported three-voice altered Balanced request reports exact unplaceable required and guide suffixes rather than raising the template minimum",
+      "sourceSymbol": "C7alt",
+      "realizationId": "alt-b9-b5",
+      "policy": {"family":"balanced","voiceCount":3,"range":{"lowMidi":60,"highMidi":84},"bassPolicy":"generated"},
+      "expected": {
+        "kind":"refusal",
+        "code":"voicing.constraints_unsatisfied",
+        "termination":"constraints-unsatisfied",
+        "primaryReason":"required-degree-omitted",
+        "reasons":["required-degree-omitted","guide-tone-omitted"],
+        "omittedRequiredDegrees":["b7","b9"],
+        "omittedGuideToneDegrees":["b7"]
+      },
+      "traceIds": ["V0-TRACE-DEGREES","V0-TRACE-FAMILIES","V0-TRACE-REFUSAL","V0-TRACE-ALT-SELECTION"],
+      "authorityIds": ["V0-AUTH-T1","V0-AUTH-TEMPLATES","V0-AUTH-CONTRACT","V0-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "V0-CAND-034",
+      "description": "six-note Drop-2 preserves the literal transform without imposing the sparse-voicing wide-gap heuristic",
+      "sourceSymbol": "C11",
+      "realizationId": "literal",
+      "policy": {"family":"drop2","voiceCount":6,"range":{"lowMidi":67,"highMidi":82},"bassPolicy":"none"},
+      "expected": {
+        "kind": "must-contain-candidate",
+        "voices": [
+          {"spelling":{"step":"G","alter":0,"octave":4},"midi":67,"degree":"5","sourceDegreeIndex":2,"provenance":"realization"},
+          {"spelling":{"step":"C","alter":0,"octave":5},"midi":72,"degree":"1","sourceDegreeIndex":0,"provenance":"realization"},
+          {"spelling":{"step":"D","alter":0,"octave":5},"midi":74,"degree":"9","sourceDegreeIndex":4,"provenance":"realization"},
+          {"spelling":{"step":"E","alter":0,"octave":5},"midi":76,"degree":"3","sourceDegreeIndex":1,"provenance":"realization"},
+          {"spelling":{"step":"F","alter":0,"octave":5},"midi":77,"degree":"11","sourceDegreeIndex":5,"provenance":"realization"},
+          {"spelling":{"step":"B","alter":-1,"octave":5},"midi":82,"degree":"b7","sourceDegreeIndex":3,"provenance":"realization"}
+        ],
+        "spanSemitones": 15,
+        "exactAdjacentSemitones": [5,2,2,1,5],
+        "drop2": {"closedSourceMidi":[72,74,76,77,79,82],"secondFromTopSourceOrdinal":4,"loweredBySemitones":12,"transformedMidi":[67,72,74,76,77,82]},
+        "rawCandidateCount": 1,
+        "retainedCandidateCount": 1,
+        "localScore": {"optionalDegreesOmitted":0,"nonPreferredDoublings":0,"guideToneDoublings":0,"templateOrderDisplacement":10,"targetSpanDistance":4,"rangeCenterDistanceTwice":0}
+      },
+      "traceIds": ["V0-TRACE-DROP2","V0-TRACE-FAMILIES","V0-TRACE-DEGREES"],
+      "authorityIds": ["V0-AUTH-DROP2","V0-AUTH-TEMPLATES","V0-AUTH-T1","V0-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "V0-CAND-035",
+      "description": "seven-note Drop-2 preserves the literal transform without inventing an impossible seven-semitone gap",
+      "sourceSymbol": "C13",
+      "realizationId": "literal",
+      "policy": {"family":"drop2","voiceCount":7,"range":{"lowMidi":69,"highMidi":82},"bassPolicy":"none"},
+      "expected": {
+        "kind": "must-contain-candidate",
+        "voices": [
+          {"spelling":{"step":"A","alter":0,"octave":4},"midi":69,"degree":"13","sourceDegreeIndex":6,"provenance":"realization"},
+          {"spelling":{"step":"C","alter":0,"octave":5},"midi":72,"degree":"1","sourceDegreeIndex":0,"provenance":"realization"},
+          {"spelling":{"step":"D","alter":0,"octave":5},"midi":74,"degree":"9","sourceDegreeIndex":4,"provenance":"realization"},
+          {"spelling":{"step":"E","alter":0,"octave":5},"midi":76,"degree":"3","sourceDegreeIndex":1,"provenance":"realization"},
+          {"spelling":{"step":"F","alter":0,"octave":5},"midi":77,"degree":"11","sourceDegreeIndex":5,"provenance":"realization"},
+          {"spelling":{"step":"G","alter":0,"octave":5},"midi":79,"degree":"5","sourceDegreeIndex":2,"provenance":"realization"},
+          {"spelling":{"step":"B","alter":-1,"octave":5},"midi":82,"degree":"b7","sourceDegreeIndex":3,"provenance":"realization"}
+        ],
+        "spanSemitones": 13,
+        "exactAdjacentSemitones": [3,2,2,1,2,3],
+        "drop2": {"closedSourceMidi":[72,74,76,77,79,81,82],"secondFromTopSourceOrdinal":5,"loweredBySemitones":12,"transformedMidi":[69,72,74,76,77,79,82]},
+        "rawCandidateCount": 1,
+        "retainedCandidateCount": 1,
+        "localScore": {"optionalDegreesOmitted":0,"nonPreferredDoublings":0,"guideToneDoublings":0,"templateOrderDisplacement":18,"targetSpanDistance":6,"rangeCenterDistanceTwice":0}
+      },
+      "traceIds": ["V0-TRACE-DROP2","V0-TRACE-FAMILIES","V0-TRACE-DEGREES"],
+      "authorityIds": ["V0-AUTH-DROP2","V0-AUTH-TEMPLATES","V0-AUTH-T1","V0-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "V0-CAND-036",
+      "description": "diminished-seventh Drop-2 refuses when no closed-source inversion can produce the required sparse four-voice shape",
+      "sourceSymbol": "Cdim7",
+      "realizationId": "literal",
+      "policy": {"family":"drop2","voiceCount":4,"range":{"lowMidi":24,"highMidi":95},"bassPolicy":"none"},
+      "expected": {"kind":"refusal","code":"voicing.constraints_unsatisfied","termination":"constraints-unsatisfied","primaryReason":"family-transform-invalid"},
+      "traceIds": ["V0-TRACE-DROP2","V0-TRACE-FAMILIES","V0-TRACE-REFUSAL"],
+      "authorityIds": ["V0-AUTH-DROP2","V0-AUTH-TEMPLATES","V0-AUTH-T1","V0-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "V0-CAND-037",
+      "description": "suspended-nine Drop-2 refuses pitch-class-coincident second and ninth before register search",
+      "sourceSymbol": "C9sus2",
+      "realizationId": "literal",
+      "policy": {"family":"drop2","voiceCount":4,"range":{"lowMidi":24,"highMidi":95},"bassPolicy":"none"},
+      "expected": {"kind":"refusal","code":"voicing.constraints_unsatisfied","termination":"constraints-unsatisfied","primaryReason":"family-transform-invalid"},
+      "traceIds": ["V0-TRACE-DROP2","V0-TRACE-FAMILIES","V0-TRACE-REFUSAL"],
+      "authorityIds": ["V0-AUTH-DROP2","V0-AUTH-TEMPLATES","V0-AUTH-T1","V0-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "V0-CAND-038",
+      "description": "bass-aware Drop-2 preflight includes a feasible generated slash pitch class before register search",
+      "sourceSymbol": "C13/Db",
+      "realizationId": "literal",
+      "policy": {"family":"drop2","voiceCount":5,"range":{"lowMidi":48,"highMidi":84},"bassPolicy":"generated"},
+      "expected": {
+        "kind": "must-contain-candidate",
+        "voices": [
+          {"spelling":{"step":"D","alter":-1,"octave":4},"midi":61,"degree":null,"sourceDegreeIndex":null,"provenance":"slash-bass"},
+          {"spelling":{"step":"A","alter":0,"octave":4},"midi":69,"degree":"13","sourceDegreeIndex":6,"provenance":"realization"},
+          {"spelling":{"step":"B","alter":-1,"octave":4},"midi":70,"degree":"b7","sourceDegreeIndex":3,"provenance":"realization"},
+          {"spelling":{"step":"C","alter":0,"octave":5},"midi":72,"degree":"1","sourceDegreeIndex":0,"provenance":"realization"},
+          {"spelling":{"step":"E","alter":0,"octave":5},"midi":76,"degree":"3","sourceDegreeIndex":1,"provenance":"realization"}
+        ],
+        "spanSemitones": 15,
+        "exactAdjacentSemitones": [8,1,2,4],
+        "slashBassSourceDegreeIndex": null,
+        "drop2": {"closedSourceMidi":[69,70,72,73,76],"secondFromTopSourceOrdinal":3,"loweredBySemitones":12,"transformedMidi":[61,69,70,72,76]},
+        "rawCandidateCount": 1,
+        "retainedCandidateCount": 1,
+        "localScore": {"optionalDegreesOmitted":3,"nonPreferredDoublings":0,"guideToneDoublings":0,"templateOrderDisplacement":8,"targetSpanDistance":4,"rangeCenterDistanceTwice":5}
+      },
+      "traceIds": ["V0-TRACE-DROP2","V0-TRACE-FAMILIES","V0-TRACE-BASS","V0-TRACE-DEGREES"],
+      "authorityIds": ["V0-AUTH-DROP2","V0-AUTH-TEMPLATES","V0-AUTH-T1","V0-AUTH-F1","V0-AUTH-INDEPENDENCE"]
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "schema": "changes.fixtures.h0-chord-scale-mappings.v1",
+  "fixtureVersion": "1.0.0",
+  "expectedValuesGenerated": false,
+  "productionOutputUsed": false,
+  "tableId": "changes.chord-scale-mappings",
+  "tableVersion": 1,
+  "mappings": [
+    {"id":"h0.scale.ionian","family":"ionian","scaleDegrees":["1","2","3","4","5","6","7"],"requiredChordDegrees":["1","3","5"],"contextPredicates":["major-triad-or-sixth-or-tonic-major-seventh"],"availableTensions":["9","13"],"clashes":[{"tension":"11","chordTone":"3","interval":"minor-ninth"}],"exceptions":[],"forbiddenChordDegrees":["#11"],"authorityIds":["H0-AUTH-PLAN"]},
+    {"id":"h0.scale.lydian","family":"lydian","scaleDegrees":["1","2","3","#4","5","6","7"],"requiredChordDegrees":["1","3","5","7"],"contextPredicates":["non-tonic-major-seventh-with-exact-sharp-four-context-or-explicit-sharp-eleven"],"availableTensions":["9","#11","13"],"clashes":[],"exceptions":[],"forbiddenChordDegrees":["11"],"authorityIds":["H0-AUTH-PLAN"]},
+    {"id":"h0.scale.mixolydian","family":"mixolydian","scaleDegrees":["1","2","3","4","5","6","b7"],"requiredChordDegrees":["1","3","5","b7"],"contextPredicates":["unaltered-dominant-seven-nine-or-thirteen"],"availableTensions":["9","13"],"clashes":[{"tension":"11","chordTone":"3","interval":"minor-ninth"}],"exceptions":[],"forbiddenChordDegrees":["#11","b9","#9","b5","#5"],"authorityIds":["H0-AUTH-PLAN"]},
+    {"id":"h0.scale.lydian-dominant","family":"lydian-dominant","scaleDegrees":["1","2","3","#4","5","6","b7"],"requiredChordDegrees":["1","3","5","b7","#11"],"contextPredicates":["dominant-with-explicit-sharp-eleven"],"availableTensions":["9","#11","13"],"clashes":[],"exceptions":[],"forbiddenChordDegrees":["11"],"authorityIds":["H0-AUTH-PLAN"]},
+    {"id":"h0.scale.altered","family":"altered","scaleDegrees":["1","b2","#2","3","b5","#5","b7"],"requiredChordDegrees":["1","3","b7"],"contextPredicates":["explicit-selected-altered-dominant-realization"],"availableTensions":["b9","#9","b5","#5"],"clashes":[{"tension":"b9","chordTone":"1","interval":"minor-ninth"}],"exceptions":[{"id":"altered-root-b9","treatment":"named-altered-tension-remains-available-while-clash-is-visible"}],"forbiddenChordDegrees":["5","9","11","13"],"authorityIds":["H0-AUTH-PLAN"]},
+    {"id":"h0.scale.whole-tone","family":"whole-tone","scaleDegrees":["1","2","3","#4","#5","b7"],"requiredChordDegrees":["1","3","#5","b7"],"contextPredicates":["augmented-dominant-or-explicit-sharp-five-without-conflicting-colors"],"availableTensions":["9","#11"],"clashes":[],"exceptions":[],"forbiddenChordDegrees":["5","b9","#9","11","b13"],"authorityIds":["H0-AUTH-PLAN"]},
+    {"id":"h0.scale.half-whole-diminished","family":"half-whole-diminished","scaleDegrees":["1","b2","#2","3","#4","5","6","b7"],"requiredChordDegrees":["1","3","5","b7"],"contextPredicates":["dominant-with-selected-altered-ninth-and-explicit-diminished-evidence"],"availableTensions":["b9","#9","#11","13"],"clashes":[{"tension":"b9","chordTone":"1","interval":"minor-ninth"}],"exceptions":[{"id":"diminished-dominant-b9","treatment":"named-altered-tension-remains-available-while-clash-is-visible"}],"forbiddenChordDegrees":["b5","#5"],"authorityIds":["H0-AUTH-PLAN"]},
+    {"id":"h0.scale.whole-half-diminished","family":"whole-half-diminished","scaleDegrees":["1","2","b3","4","b5","b6","bb7","7"],"requiredChordDegrees":["1","b3","b5","bb7"],"contextPredicates":["fully-diminished-seventh"],"availableTensions":["9","11","b13","7"],"clashes":[],"exceptions":[],"forbiddenChordDegrees":["b7","6"],"authorityIds":["H0-AUTH-PLAN"]},
+    {"id":"h0.scale.dorian","family":"dorian","scaleDegrees":["1","2","b3","4","5","6","b7"],"requiredChordDegrees":["1","b3","5","b7"],"contextPredicates":["minor-six-seven-nine-or-eleven-with-versioned-Dorian-compatible-context"],"availableTensions":["9","11","13"],"clashes":[],"exceptions":[],"forbiddenChordDegrees":["b13","7"],"authorityIds":["H0-AUTH-PLAN"]},
+    {"id":"h0.scale.melodic-minor","family":"melodic-minor","scaleDegrees":["1","2","b3","4","5","6","7"],"requiredChordDegrees":["1","b3","5"],"contextPredicates":["minor-major-or-tonic-melodic-minor-context"],"availableTensions":["9","11","13"],"clashes":[],"exceptions":[],"forbiddenChordDegrees":["b7","b13"],"authorityIds":["H0-AUTH-PLAN"]},
+    {"id":"h0.scale.locrian","family":"locrian","scaleDegrees":["1","b2","b3","4","b5","b6","b7"],"requiredChordDegrees":["1","b3","b5","b7"],"contextPredicates":["half-diminished-with-versioned-flat-nine-support"],"availableTensions":["b9","11","b13"],"clashes":[{"tension":"b9","chordTone":"1","interval":"minor-ninth"}],"exceptions":[{"id":"locrian-root-b9","treatment":"scale-member-and-visible-clash-not-universal-avoid-claim"}],"forbiddenChordDegrees":["9"],"authorityIds":["H0-AUTH-PLAN"]},
+    {"id":"h0.scale.locrian-natural-2","family":"locrian-natural-2","scaleDegrees":["1","2","b3","4","b5","b6","b7"],"requiredChordDegrees":["1","b3","b5","b7","9"],"contextPredicates":["half-diminished-with-versioned-natural-nine-support"],"availableTensions":["9","11","b13"],"clashes":[],"exceptions":[],"forbiddenChordDegrees":["b9"],"authorityIds":["H0-AUTH-PLAN"]},
+    {"id":"h0.scale.suspended-dominant","family":"mixolydian","scaleDegrees":["1","2","4","5","6","b7"],"requiredChordDegrees":["1","4","5","b7"],"contextPredicates":["suspended-dominant"],"availableTensions":["9","13"],"clashes":[],"exceptions":[{"id":"suspended-fourth-is-chord-tone","treatment":"degree-four-is-contained-chord-tone-not-eleven-avoid-note"}],"forbiddenChordDegrees":["3"],"authorityIds":["H0-AUTH-PLAN"]}
+  ],
+  "proofOwnership": [
+    {"ruleId":"h0.scale.ionian","positiveCaseIds":["H0-SCALE-ION-001"],"nearMissCaseIds":["H0-SCALE-ION-NEAR-001"],"transpositionCaseIds":["H0-TRANS-009"],"mutationControlIds":["H0-MUT-013"],"traceIds":["H0-TRACE-SCALES"]},
+    {"ruleId":"h0.scale.lydian","positiveCaseIds":["H0-SCALE-LYD-001"],"nearMissCaseIds":["H0-SCALE-LYD-NEAR-001"],"transpositionCaseIds":["H0-TRANS-009"],"mutationControlIds":["H0-MUT-013"],"traceIds":["H0-TRACE-SCALES"]},
+    {"ruleId":"h0.scale.mixolydian","positiveCaseIds":["H0-SCALE-MIX-001"],"nearMissCaseIds":["H0-SCALE-MIX-NEAR-001"],"transpositionCaseIds":["H0-TRANS-009"],"mutationControlIds":["H0-MUT-013"],"traceIds":["H0-TRACE-SCALES"]},
+    {"ruleId":"h0.scale.lydian-dominant","positiveCaseIds":["H0-SCALE-LYDDOM-001"],"nearMissCaseIds":["H0-SCALE-LYDDOM-NEAR-001"],"transpositionCaseIds":["H0-TRANS-009"],"mutationControlIds":["H0-MUT-013"],"traceIds":["H0-TRACE-SCALES"]},
+    {"ruleId":"h0.scale.altered","positiveCaseIds":["H0-SCALE-ALT-001","H0-SCALE-ALT-002","H0-SCALE-ALT-003","H0-SCALE-ALT-004"],"nearMissCaseIds":["H0-SCALE-ALT-NEAR-001","H0-SCALE-ALT-NEAR-002"],"transpositionCaseIds":["H0-TRANS-009","H0-TRANS-010"],"mutationControlIds":["H0-MUT-018"],"traceIds":["H0-TRACE-SCALES","H0-TRACE-ALTERED"]},
+    {"ruleId":"h0.scale.whole-tone","positiveCaseIds":["H0-SCALE-WT-001"],"nearMissCaseIds":["H0-SCALE-WT-NEAR-001","H0-SCALE-WT-NEAR-002"],"transpositionCaseIds":["H0-TRANS-009"],"mutationControlIds":["H0-MUT-014"],"traceIds":["H0-TRACE-SCALES"]},
+    {"ruleId":"h0.scale.half-whole-diminished","positiveCaseIds":["H0-SCALE-HW-001"],"nearMissCaseIds":["H0-SCALE-HW-NEAR-001","H0-SCALE-HW-NEAR-002"],"transpositionCaseIds":["H0-TRANS-009"],"mutationControlIds":["H0-MUT-013","H0-MUT-015"],"traceIds":["H0-TRACE-SCALES","H0-TRACE-CLASHES"]},
+    {"ruleId":"h0.scale.whole-half-diminished","positiveCaseIds":["H0-SCALE-WH-001"],"nearMissCaseIds":["H0-SCALE-WH-NEAR-001"],"transpositionCaseIds":["H0-TRANS-009"],"mutationControlIds":["H0-MUT-017"],"traceIds":["H0-TRACE-SCALES"]},
+    {"ruleId":"h0.scale.dorian","positiveCaseIds":["H0-SCALE-DOR-001"],"nearMissCaseIds":["H0-SCALE-DOR-NEAR-001"],"transpositionCaseIds":["H0-TRANS-009"],"mutationControlIds":["H0-MUT-013"],"traceIds":["H0-TRACE-SCALES"]},
+    {"ruleId":"h0.scale.melodic-minor","positiveCaseIds":["H0-SCALE-MM-001"],"nearMissCaseIds":["H0-SCALE-MM-NEAR-001"],"transpositionCaseIds":["H0-TRANS-009"],"mutationControlIds":["H0-MUT-023"],"traceIds":["H0-TRACE-SCALES"]},
+    {"ruleId":"h0.scale.locrian","positiveCaseIds":["H0-SCALE-LOC-001"],"nearMissCaseIds":["H0-SCALE-LOC-NEAR-001"],"transpositionCaseIds":["H0-TRANS-009"],"mutationControlIds":["H0-MUT-019"],"traceIds":["H0-TRACE-SCALES","H0-TRACE-CLASHES"]},
+    {"ruleId":"h0.scale.locrian-natural-2","positiveCaseIds":["H0-SCALE-LOCN2-001"],"nearMissCaseIds":["H0-SCALE-LOCN2-NEAR-001"],"transpositionCaseIds":["H0-TRANS-009"],"mutationControlIds":["H0-MUT-019"],"traceIds":["H0-TRACE-SCALES"]},
+    {"ruleId":"h0.scale.suspended-dominant","positiveCaseIds":["H0-SCALE-SUS-001"],"nearMissCaseIds":["H0-SCALE-SUS-NEAR-001"],"transpositionCaseIds":["H0-TRANS-009"],"mutationControlIds":["H0-MUT-016"],"traceIds":["H0-TRACE-SCALES","H0-TRACE-SUSPENSION"]}
+  ],
+  "containmentPolicy": {
+    "id": "changes.degree-class-containment",
+    "version": 1,
+    "compoundEquivalenceClasses": [[2,9],[4,11],[6,13]],
+    "sameAlterationRequired": true,
+    "pitchClassOnlyMatchForbidden": true,
+    "clashesRemainVisibleWhenAnExceptionMakesTheTensionAvailable": true
+  },
+  "traceIds": ["H0-TRACE-SCALES","H0-TRACE-CONTAINMENT","H0-TRACE-CLASHES","H0-TRACE-SUSPENSION","H0-TRACE-ALTERED"]
+}

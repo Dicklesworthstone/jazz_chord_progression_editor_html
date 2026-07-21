@@ -1,0 +1,333 @@
+{
+  "schema": "changes.fixtures.t0-syntax-contract.v1",
+  "contractVersion": "1.1.0",
+  "status": "independently-authored-pre-production",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "publicContract": "src/theory/syntax-contract.ts",
+  "grammar": {
+    "symbol": {
+      "id": "changes.chord-symbol",
+      "version": 1
+    },
+    "chart": {
+      "id": "changes.chart-text",
+      "version": 1
+    },
+    "draftSchema": "changes.theory.chart-text-draft.v1"
+  },
+  "sourceRanges": {
+    "base": 0,
+    "end": "exclusive",
+    "unit": "ECMAScript UTF-16 code unit",
+    "diagnosticOrdering": [
+      "range.start",
+      "range.end",
+      "code"
+    ],
+    "didYouMeanOrdering": [
+      "case-sensitive Levenshtein distance over Unicode scalar values",
+      "canonical spelling before accepted alias",
+      "ECMAScript code-unit lexical order"
+    ],
+    "didYouMeanMaximumEditDistance": 3,
+    "didYouMeanMaximumResults": 3,
+    "didYouMeanMaximumComparisons": 64,
+    "didYouMeanRootPreserving": true,
+    "didYouMeanSuggestionsMustParse": true,
+    "limitDiagnosticRanges": "first excess scalar, token, modifier item, or structured node in original UTF-16 coordinates; chart byte limit covers the scalar whose UTF-8 encoding crosses the budget"
+  },
+  "suggestionPolicy": {
+    "id": "changes.chord-symbol-suggestions",
+    "version": 1,
+    "maximumComparisons": 64,
+    "maximumResults": 3,
+    "rootPreserving": true,
+    "candidateSource": "closed replacement table only",
+    "replacements": [
+      {
+        "grammarRegion": "quality",
+        "failedToken": "foo",
+        "replacementToken": ""
+      },
+      {
+        "grammarRegion": "quality",
+        "failedToken": "dom7",
+        "replacementToken": "7"
+      },
+      {
+        "grammarRegion": "quality",
+        "failedToken": "mi7",
+        "replacementToken": "m7"
+      },
+      {
+        "grammarRegion": "quality",
+        "failedToken": "Maj7",
+        "replacementToken": "maj7"
+      },
+      {
+        "grammarRegion": "sixth-family",
+        "failedToken": "/8",
+        "replacementToken": "/9"
+      },
+      {
+        "grammarRegion": "quality",
+        "failedToken": "x",
+        "replacementToken": ""
+      },
+      {
+        "grammarRegion": "quality",
+        "failedToken": "x",
+        "replacementToken": "m"
+      },
+      {
+        "grammarRegion": "quality",
+        "failedToken": "x",
+        "replacementToken": "-"
+      },
+      {
+        "grammarRegion": "quality",
+        "failedToken": "x",
+        "replacementToken": "dim"
+      }
+    ]
+  },
+  "symbolPolicy": {
+    "standaloneWhitespace": "reject leading, trailing, or inter-region whitespace; whitespace is accepted only inside a parenthesized modifier list where the grammar declares it",
+    "extensionStorage": "highest named extension only; T1 owns semantic closure",
+    "sourceText": "preserve every accepted code unit exactly",
+    "unknownInput": "typed refusal; never strip suffixes or default to a major triad",
+    "limitDiagnosticPrecedence": "a symbol code-point, token, or modifier limit is the sole diagnostic in that delegated symbol result; earlier ordinary diagnostics are suppressed",
+    "unicodeAccidentals": "accepted for roots, slash basses, and supported modifier accidentals; formatting follows the requested accidental style",
+    "modifierOrdering": [
+      "extension",
+      "suspension",
+      "structural-alteration",
+      "color-alteration",
+      "addition",
+      "omission",
+      "slash-bass"
+    ]
+  },
+  "chartPolicy": {
+    "documentMode": "headers and at least one named section are required; @meter is mandatory",
+    "fragmentMode": "headers are forbidden; named sections or one implicit section are accepted; request meter supplies capacity",
+    "repeatScope": "nearest preceding expanded chord event in the same section, including a prior repeat, across measure boundaries; reset at every section",
+    "repeatCopies": "ChordSpec only; never annotation, duration, range, ordinal, or persistent identity",
+    "durationArithmetic": "exact normalized quarter-note rationals only; no floating-point allocation",
+    "wholeDraftApply": "authorized only on an ok result; insertableChords never authorize partial chart commit",
+    "attachedSectionRecovery": "malformed material attached directly to a section marker invalidates that same-line body; a later LF or CRLF is an explicit recovery boundary for independently valid insertable chords, while bare CR is not a line end and never reopens recovery",
+    "limitDiagnosticPrecedence": "an outer chart limit is the sole outer diagnostic; a localized delegated symbol limit is one translated diagnostic while other safely delimited chart spans may still contribute diagnostics",
+    "canonicalExport": "canonical headers, named sections, explicit reduced durations, nonempty JSON-string annotations, no comments; a repeat emits slash syntax only when it links the nearest coherent immediately reusable event in the same section",
+    "emptyAnnotationNormalization": "absent and explicitly empty section/event annotations both mean no semantic annotation; parser sourceText and event annotationRange retain source syntax, while canonical formatting intentionally omits empty JSON strings"
+  },
+  "limits": {
+    "symbolCodePoints": 256,
+    "symbolTokens": 64,
+    "symbolModifiers": 32,
+    "chartUtf8Bytes": 2097152,
+    "chartTokens": 65536,
+    "chartSections": 64,
+    "chartMeasuresPerSection": 1024,
+    "chartEvents": 8192,
+    "titleAndSectionNameCodePoints": 256,
+    "descriptionAndAnnotationCodePoints": 2000,
+    "tempoBpm": {
+      "minimum": 20,
+      "maximum": 400
+    },
+    "beatsPerBar": {
+      "minimum": 1,
+      "maximum": 32
+    },
+    "beatUnits": [
+      2,
+      4,
+      8
+    ],
+    "durationNumeratorMaximum": 2147483647,
+    "durationDenominatorDivides": 960,
+    "totalDraftQuarterNoteBeats": 1000000,
+    "totalDraftLimitReachability": "dominated: 8192 events times maximum 64 quarter-note measure capacity equals 524288, below 1000000"
+  },
+  "workEvidence": {
+    "counters": [
+      "sourceUtf16CodeUnits",
+      "sourceCodePoints",
+      "sourceUtf8Bytes",
+      "maxDecodedTextCodePointsObserved",
+      "lexerCodePointsVisited",
+      "tokensProduced",
+      "parserTransitions",
+      "modifierItemsObserved",
+      "headersObserved",
+      "sectionsObserved",
+      "measuresObserved",
+      "slotsObserved",
+      "chordDelegations",
+      "allocationDivisions",
+      "numericComponentsCompared",
+      "maxSourceBigIntDigits",
+      "suggestionsCompared",
+      "diagnosticsProduced",
+      "insertableCandidatesProduced",
+      "peakTokenRecords",
+      "peakDraftNodes",
+      "peakSuggestionRecords",
+      "termination"
+    ],
+    "terminationValues": [
+      "complete",
+      "symbol-code-points",
+      "symbol-tokens",
+      "symbol-modifiers",
+      "chart-bytes",
+      "chart-tokens",
+      "chart-text-code-points",
+      "chart-sections",
+      "chart-measures",
+      "chart-events"
+    ],
+    "counterSemantics": {
+      "sourceUtf16CodeUnits": "input string length, observed without traversal",
+      "sourceCodePoints": "well-formed Unicode scalar values visited by preflight before completion or the first invalid scalar",
+      "sourceUtf8Bytes": "UTF-8 bytes visited through the same valid scalar prefix; full byte count for well-formed input",
+      "maxDecodedTextCodePointsObserved": "largest decoded header, section-name, or annotation scalar count reached",
+      "lexerCodePointsVisited": "well-formed scalar values consumed after preflight by this operation's own lexical layer",
+      "tokensProduced": "complete syntax tokens emitted by this operation's own grammar layer, including the first token beyond its token limit",
+      "parserTransitions": "own-layer produced tokens consumed or explicitly skipped by deterministic recovery, one transition per token",
+      "modifierItemsObserved": "complete normalized modifier items observed by a symbol operation, including the first item beyond the modifier limit; zero for chart operations",
+      "headersObserved": "complete header directives observed",
+      "sectionsObserved": "complete section records observed, including the first section beyond the section limit",
+      "measuresObserved": "complete measure records observed globally, including the first measure beyond a per-section limit",
+      "slotsObserved": "complete chord or repeat slots observed, including the first slot beyond the event limit",
+      "chordDelegations": "complete chord-symbol spans actually delegated to the symbol parser",
+      "allocationDivisions": "successful exact remainder-by-undurated-slot divisions performed",
+      "numericComponentsCompared": "explicit duration numerator and denominator significant slices checked for zero and bounded decimal magnitude; zero outside chart parsing",
+      "maxSourceBigIntDigits": "maximum significant decimal source digits passed to BigInt; zero when no source component is constructed and never greater than 13",
+      "suggestionsCompared": "versioned suggestion-table candidates actually compared by a symbol operation; zero for chart operations",
+      "diagnosticsProduced": "diagnostic records on the returned branch: errors on failure or warnings on success",
+      "insertableCandidatesProduced": "insertableChords entries present on the returned failure branch",
+      "peakTokenRecords": "maximum simultaneously retained operation-owned token records, including an active delegated symbol parser",
+      "peakDraftNodes": "maximum simultaneously retained draft root, section, measure, and event records allocated or copied by the operation; caller-owned input is excluded",
+      "peakSuggestionRecords": "maximum simultaneously retained suggestion candidates"
+    },
+    "operationSemantics": {
+      "parseChordSymbol": {
+        "sourceTextOwner": "sourceText argument",
+        "evidenceMode": "lex and parse the bounded symbol source"
+      },
+      "parseChartText": {
+        "sourceTextOwner": "sourceText argument",
+        "evidenceMode": "lex and parse the bounded chart source with chart-only lexical counters plus ordered per-delegation symbol evidence"
+      },
+      "formatChordSymbol": {
+        "sourceTextOwner": "chord.sourceText",
+        "evidenceMode": "preflight chord.sourceText for well-formed Unicode, then validate and format the supplied AST without lexing or reparsing sourceText",
+        "zeroCounters": [
+          "lexerCodePointsVisited",
+          "tokensProduced",
+          "parserTransitions",
+          "modifierItemsObserved",
+          "headersObserved",
+          "sectionsObserved",
+          "measuresObserved",
+          "slotsObserved",
+          "chordDelegations",
+          "allocationDivisions",
+          "numericComponentsCompared",
+          "maxSourceBigIntDigits",
+          "suggestionsCompared",
+          "insertableCandidatesProduced",
+          "peakTokenRecords",
+          "peakDraftNodes",
+          "peakSuggestionRecords"
+        ]
+      },
+      "formatChartText": {
+        "sourceTextOwner": "draft.sourceText",
+        "evidenceMode": "preflight draft.sourceText for well-formed Unicode, then validate draft records in the documented exact order and delegate each reached event chord to the symbol formatter without lexing or reparsing sourceText; structural and returned-diagnostic counters are exact",
+        "nestedSymbolDiagnosticRange": "replace every delegated formatter diagnostic range with the current chart event symbolRange for literal and repeat events; never offset chord.sourceText coordinates",
+        "unaddressableDecodedFieldRefusal": "never reparse sourceText or guess a component range: decoded header faults use chart.draft_unformattable at zero range, section name/annotation faults use the owning section range, event decoded-invalid-scalar faults use the event range, and only an event text-limit fault may use its stored complete annotationRange",
+        "zeroCounters": [
+          "lexerCodePointsVisited",
+          "tokensProduced",
+          "parserTransitions",
+          "modifierItemsObserved",
+          "allocationDivisions",
+          "numericComponentsCompared",
+          "maxSourceBigIntDigits",
+          "suggestionsCompared",
+          "insertableCandidatesProduced",
+          "peakTokenRecords",
+          "peakDraftNodes",
+          "peakSuggestionRecords"
+        ]
+      }
+    },
+    "delegatedSymbolEvidence": {
+      "owner": "ParseChartTextWithEvidence.delegatedSymbols",
+      "order": "zero-based delegationOrdinal in ascending chart symbolRange source order",
+      "range": "chart-coordinate range of the complete delegated literal chord span",
+      "evidence": "byte-identical SyntaxWorkEvidence from parseChordSymbol over the parseChartText input sourceText.slice(symbolRange.start, symbolRange.end)",
+      "outerCounters": "outer source, lexer, token, parser, modifier, suggestion, and termination counters never sum delegated values; modifierItemsObserved and suggestionsCompared are zero",
+      "outerPeaks": "peakTokenRecords and peakSuggestionRecords remain operation-wide and include the one active delegated parser",
+      "recovery": "a localized delegated limit keeps its nested symbol termination while outer termination remains complete when chart recovery reaches end of source"
+    },
+    "bounds": {
+      "preflightUtf16VisitsPerCodeUnit": 1,
+      "additionalLexerVisitsPerCodeUnit": 1,
+      "parserConsumesEachProducedTokenAtMost": 1,
+      "durationFoldVisitsPerSlotAtMost": 2,
+      "chordDelegationsAtMost": 8192,
+      "delegatedSymbolSummariesAtMost": 8192,
+      "tokensPerChordDelegationAtMost": 65,
+      "symbolTokensProducedAtMost": 65,
+      "chartTokensProducedAtMost": 65537,
+      "symbolModifierItemsObservedAtMost": 33,
+      "numericComponentsComparedAtMost": 16384,
+      "maxSourceBigIntDigitsAtMost": 13,
+      "allocationDivisions": "exactly one per nonempty measure with at least one undurated slot that reaches allocation",
+      "symbolSuggestionComparisonsAtMost": 64,
+      "suggestionsReturnedAtMost": 3,
+      "peakTokenRecordsAtMost": 65600,
+      "peakDraftNodesAtMost": 73793,
+      "peakSuggestionRecordsAtMost": 64
+    },
+    "boundaryEvidencePolicy": "Every parse-side limit recipe is independently materialized from an exact expression, pins the resulting source length, identifies the zero-based first-excess scalar, token, modifier item, decoded text field, section, measure, or event, and pins that diagnostic's literal half-open UTF-16 range plus the exact terminating counter projection and termination value. Other counters are checked against these independent semantic definitions and bounds rather than implementation-specific allocation totals.",
+    "hostileDurationDecimalPolicy": "Strip leading ASCII zeroes before bounds comparison while preserving raw source; an all-zero numerator or denominator is invalid and never reaches BigInt. Integer :p is bounded by 2147483647. Fraction :p/q first bounds q to a three-digit divisor of 960, then bounds p by 2147483647 multiplied by q before F1 reduction. Construct BigInt only from bounded significant slices. Reviewed exact maxima, max-plus-one, all-zero, near-2-MiB integer, rational-numerator, rational-denominator, and byte-max-plus-one recipes prove rejection and precedence with numeric work evidence.",
+    "scratchMemory": "bounded by source plus operation-owned peakTokenRecords, peakDraftNodes, and peakSuggestionRecords; caller-owned formatter input is excluded; wall time and process RSS are observations only",
+    "wallTimeSemanticCutoff": false,
+    "residentMemorySemanticCutoff": false
+  },
+  "fixtureFiles": [
+    "symbol-cases.json",
+    "chart-cases.json",
+    "roundtrip-cases.json",
+    "trace-ledger.json",
+    "provenance-ledger.json",
+    "mutation-controls.json"
+  ],
+  "requiredCaseKinds": [
+    "symbol-success",
+    "symbol-alias",
+    "symbol-failure",
+    "symbol-format-failure",
+    "chart-success",
+    "chart-failure",
+    "boundary-recipe",
+    "metamorphic-law"
+  ],
+  "forbiddenShortcuts": [
+    "substring quality classification",
+    "failed-suffix stripping",
+    "unknown-quality major-triad default",
+    "C9 or C13 represented without a minor seventh",
+    "6/9 lexed as slash bass",
+    "floating-point beat allocation",
+    "repeat annotation or identity copying",
+    "repeat lookup across section boundaries",
+    "partial chart publication",
+    "production parser, formatter, or resolver used as fixture oracle"
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "extends": "./tsconfig.tests.json",
+  "include": [],
+  "files": [
+    "tests/static/u0-contract.test.ts",
+    "tests/static/u0-gallery-exclusion.test.ts"
+  ]
+}

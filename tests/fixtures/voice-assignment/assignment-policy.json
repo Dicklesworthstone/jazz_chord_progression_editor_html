@@ -1,0 +1,163 @@
+{
+  "schema": "changes.fixtures.v1-assignment-policy.v1",
+  "fixtureVersion": "1.0.0",
+  "status": "independently-authored-pre-production",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "alignmentPolicy": {
+    "id": "changes.voice-assignment.order-preserving-smooth",
+    "version": 1,
+    "algorithm": "prefix dynamic programming over low-to-high source and target sequences",
+    "matrixShape": "(sourceVoiceCount + 1) * (targetVoiceCount + 1)",
+    "gapCost": 12,
+    "legalPredecessors": [
+      { "kind": "match", "sourceConsumed": 1, "targetConsumed": 1, "costFormula": "abs(target.midi - source.midi)" },
+      { "kind": "leave", "sourceConsumed": 1, "targetConsumed": 0, "costFormula": "12" },
+      { "kind": "enter", "sourceConsumed": 0, "targetConsumed": 1, "costFormula": "12" }
+    ],
+    "canonicalOperationOrder": ["match", "leave", "enter"],
+    "scoreVector": [
+      "alignmentCost",
+      "commonTonesLost",
+      "guideTonesLost",
+      "gapCount",
+      "negativeExactSustains",
+      "negativeSpelledPitchContinuities",
+      "operationPath"
+    ],
+    "nonSelectionReportedFacts": ["maximumAbsoluteLeap"],
+    "optimalSubstructureRule": "one predecessor per 2D cell requires extension-stable selection axes; a running maximum is reported but cannot rank prefixes",
+    "operationPathShape": {
+      "container": "readonly records",
+      "minimumTransitionLength": 3,
+      "maximumTransitionLength": 14,
+      "match": { "sourceOrdinal": "number", "targetOrdinal": "number" },
+      "leave": { "sourceOrdinal": "number", "targetOrdinal": null },
+      "enter": { "sourceOrdinal": null, "targetOrdinal": "number" },
+      "comparison": "operation rank, then source ordinal, then target ordinal, over the complete path"
+    },
+    "crossingRule": "impossible because each match advances both prefixes",
+    "lockRule": "a locked source cannot leave and its resolved target cannot enter or match another source",
+    "wallTimeRule": "elapsed time cannot truncate work or change selection"
+  },
+  "costPolicy": {
+    "alignmentCost": "totalAbsoluteMotion + 12 * gapCount",
+    "gapCount": "enteringVoices + leavingVoices",
+    "totalAbsoluteMotion": "sum absoluteSemitones over matched arcs",
+    "maximumAbsoluteLeap": "maximum matched absoluteSemitones, or zero with no matches",
+    "pitchClassCommonTones": "count matched pitchClassIdentity facts",
+    "exactSustains": "count matched exactMidiIdentity facts",
+    "spelledPitchClassContinuities": "count matched spelledPitchClassIdentity facts",
+    "spelledPitchContinuities": "count matched spelledPitchIdentity facts",
+    "commonTonesLost": "pitch-class multiset intersection size minus pitchClassCommonTones",
+    "guideToneContinuities": "count matched exact non-null guide degree continuities",
+    "guideTonesLost": "source guide-tone voice occurrences minus guideToneContinuities",
+    "crowdedLowIntervals": "count adjacent target intervals below the inherited V0 band minimum",
+    "lowRegisterSpacingBands": [
+      {"maximumLowerMidi": 35, "minimumSemitones": 10},
+      {"maximumLowerMidi": 47, "minimumSemitones": 7},
+      {"maximumLowerMidi": 59, "minimumSemitones": 4},
+      {"maximumLowerMidi": 127, "minimumSemitones": 1}
+    ],
+    "doubledGuideTones": "sum target exact guide-degree multiplicity above one",
+    "omittedColors": "count declared exact target color degrees absent from target voices",
+    "totalSpan": "highest target MIDI minus lowest target MIDI"
+  },
+  "rolePolicy": {
+    "id": "changes.voice-assignment.v0-template-roles",
+    "version": 1,
+    "guideSource": "selected T1 realization guide degrees bound through V0 candidate evidence",
+    "colorSource": "degrees explicitly labeled color by the selected V0 template/role projection",
+    "optionalImpliesColor": false,
+    "nullDegreeMayBeRole": false,
+    "sourceIdentity": ["candidateId", "realizationId", "sourceId", "sourceVersion"]
+  },
+  "identityPolicy": {
+    "id": "changes.voice-identity",
+    "version": 1,
+    "exactMidi": "source.midi === target.midi",
+    "pitchClass": "source.midi modulo 12 === target.midi modulo 12",
+    "spelledPitchClass": "step and alteration are equal",
+    "spelledPitch": "step, alteration, and octave are equal",
+    "degree": "number and alteration are equal, including exact null handling",
+    "commonTone": "pitchClassIdentity",
+    "guideToneContinuity": "both endpoints are guides with equal non-null exact degrees",
+    "gapIdentity": "identity fields are null and commonTone/guideToneContinuity are false"
+  },
+  "motionPolicy": {
+    "signedSemitones": "target.midi - source.midi",
+    "absoluteSemitones": "abs(signedSemitones)",
+    "gapSemitones": null,
+    "relations": [
+      { "kind": "stationary-pair", "predicate": "both motions are zero" },
+      { "kind": "oblique", "predicate": "exactly one motion is zero" },
+      { "kind": "contrary", "predicate": "both nonzero signs differ" },
+      { "kind": "parallel", "predicate": "both nonzero signed motions are equal" },
+      { "kind": "similar", "predicate": "both nonzero signs agree but signed motions differ" }
+    ]
+  },
+  "identityLifecycle": {
+    "initialize": "allocate voice-0000 upward in low-to-high order",
+    "match": "propagate one exact identity and serial",
+    "enter": "allocate after path selection in target order",
+    "leave": "retire without request-local reuse",
+    "nextSerialSentinel": 4096,
+    "requestBoundary": "a new request must initialize a new namespace",
+    "pathSelectionCapacityInput": "excluded: choose the canonical musical path without namespace serial capacity",
+    "exhaustionCheck": "after selection require nextVoiceSerial + enteringVoices <= 4096",
+    "capacityFallback": "none: never select a lower-ranked musical path to conserve serials",
+    "selectionInvariance": "namespace serial cannot change the canonical musical path while allocation is feasible",
+    "matrixStateIncludesIdentityCapacity": false
+  },
+  "trackedRecordPolicy": {
+    "countsVariableCollectionMembers": true,
+    "countsImmutableOutputCopies": true,
+    "countsFixedShapeContainersSeparately": false,
+    "conservativeAllPopulationsCoexist": true,
+    "populations": {
+      "inputVoices": 14,
+      "inputRoleDegrees": 64,
+      "matrixCells": 64,
+      "predecessors": 63,
+      "scoreRecords": 64,
+      "pathSteps": 14,
+      "arcs": 14,
+      "arcEndpoints": 14,
+      "arcIdentities": 14,
+      "outputVoices": 7,
+      "outputRoleDegrees": 32,
+      "relations": 21,
+      "inputLocks": 7,
+      "lockEvidence": 7,
+      "aggregate": 399
+    }
+  },
+  "independentOracle": {
+    "id": "v1-small-complete-order-preserving-path-enumerator",
+    "implementationBoundary": "tests only",
+    "maximumSourceVoices": 4,
+    "maximumTargetVoices": 4,
+    "pathCounts": { "3x3": 63, "3x4": 129, "4x3": 129, "4x4": 321 },
+    "sharedSelectionCodeWithProduction": false,
+    "mismatchLog": ["scoreMatrix", "predecessors", "winningPath", "tiedMinima", "backtrace"]
+  },
+  "traceIds": [
+    "V1-TRACE-COSTS",
+    "V1-TRACE-DP-ORDER",
+    "V1-TRACE-GAPS",
+    "V1-TRACE-GUIDE-TONES",
+    "V1-TRACE-IDENTITY",
+    "V1-TRACE-LIMITS",
+    "V1-TRACE-MOTION",
+    "V1-TRACE-TIES",
+    "V1-TRACE-VOICE-IDS"
+  ],
+  "authorityIds": [
+    "V1-AUTH-CONTRACT",
+    "V1-AUTH-INDEPENDENCE",
+    "V1-AUTH-LIMITS",
+    "V1-AUTH-ORDER-PRESERVING",
+    "V1-AUTH-PROJECT-POLICY",
+    "V1-AUTH-V0-DOMAIN"
+  ]
+}

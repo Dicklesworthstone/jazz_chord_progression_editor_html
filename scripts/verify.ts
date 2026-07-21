@@ -17,6 +17,54 @@ const gates: Gate[] = [
     id: "f2-decoder-contract",
     command: [process.execPath, "scripts/validate-f2-contract.ts"],
   },
+  {
+    id: "t0-syntax-contract",
+    command: [process.execPath, "scripts/validate-t0-contract.ts"],
+  },
+  {
+    id: "t1-resolution-contract",
+    command: [process.execPath, "scripts/validate-t1-contract.ts"],
+  },
+  {
+    id: "h0-harmony-analysis-contract",
+    command: [process.execPath, "scripts/validate-h0-contract.ts"],
+  },
+  {
+    id: "v0-voicing-contract",
+    command: [process.execPath, "scripts/validate-v0-contract.ts"],
+  },
+  {
+    id: "v1-voice-assignment-contract",
+    command: [process.execPath, "scripts/validate-v1-contract.ts"],
+  },
+  {
+    id: "f3-publication-contract",
+    command: [process.execPath, "scripts/validate-f3-contract.ts"],
+  },
+  {
+    id: "p0-playback-plan-contract",
+    command: [process.execPath, "scripts/validate-p0-contract.ts"],
+  },
+  {
+    id: "a0-application-contract",
+    command: [process.execPath, "scripts/validate-a0-contract.ts"],
+  },
+  {
+    id: "u0-ui-contract",
+    command: [process.execPath, "scripts/validate-u0-contract.ts"],
+  },
+  {
+    id: "c0-legacy-migration-contract",
+    command: [process.execPath, "scripts/validate-c0-contract.ts"],
+  },
+  {
+    id: "e0-interchange-contract",
+    command: [process.execPath, "scripts/validate-e0-contract.ts"],
+  },
+  {
+    id: "x0-audio-engine-contract",
+    command: [process.execPath, "scripts/validate-x0-contract.ts"],
+  },
   { id: "typecheck", command: [process.execPath, "scripts/typecheck.ts"] },
   { id: "lint", command: [process.execPath, "scripts/lint.ts"] },
   { id: "bun-tests", command: [process.execPath, "test"] },
@@ -24,6 +72,50 @@ const gates: Gate[] = [
   {
     id: "f1-evidence",
     command: [process.execPath, "scripts/verify-f1-evidence.ts"],
+  },
+  {
+    id: "f2-evidence",
+    command: [process.execPath, "scripts/verify-f2-evidence.ts"],
+  },
+  {
+    id: "t0-evidence",
+    command: [process.execPath, "scripts/verify-t0-evidence.ts"],
+  },
+  {
+    id: "t1-evidence",
+    command: [process.execPath, "scripts/verify-t1-evidence.ts"],
+  },
+  {
+    id: "v0-evidence",
+    command: [process.execPath, "scripts/verify-v0-evidence.ts"],
+  },
+  {
+    id: "v1-evidence",
+    command: [process.execPath, "scripts/verify-v1-evidence.ts"],
+  },
+  {
+    id: "f3-evidence",
+    command: [process.execPath, "scripts/verify-f3-evidence.ts"],
+  },
+  {
+    id: "p0-evidence",
+    command: [process.execPath, "scripts/verify-p0-evidence.ts"],
+  },
+  {
+    id: "a0-evidence",
+    command: [process.execPath, "scripts/verify-a0-evidence.ts"],
+  },
+  {
+    id: "u0-evidence",
+    command: [process.execPath, "scripts/verify-u0-evidence.ts"],
+  },
+  {
+    id: "c0-evidence",
+    command: [process.execPath, "scripts/verify-c0-evidence.ts"],
+  },
+  {
+    id: "x0-evidence",
+    command: [process.execPath, "scripts/verify-x0-evidence.ts"],
   },
   {
     id: "standalone-static",
@@ -44,6 +136,10 @@ const gates: Gate[] = [
   {
     id: "f0-evidence",
     command: [process.execPath, "scripts/verify-f0-evidence.ts"],
+  },
+  {
+    id: "x0-audio-evidence",
+    command: [process.execPath, "scripts/verify-x0-evidence.ts"],
   },
 ];
 

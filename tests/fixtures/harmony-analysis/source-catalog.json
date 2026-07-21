@@ -1,0 +1,2423 @@
+{
+  "schema": "changes.fixtures.h0-source-catalog.v1",
+  "fixtureVersion": "1.0.0",
+  "expectedValuesGenerated": false,
+  "productionOutputUsed": false,
+  "t1AuthoritySnapshot": {
+    "contractSchema": "changes.theory.resolution-contract.v1",
+    "resolvedChordSchema": "changes.theory.resolved-chord.v1",
+    "formulaTableId": "changes.chord-formulas",
+    "formulaTableVersion": 1,
+    "degreeSpellingPolicyId": "changes.degree-spelling",
+    "degreeSpellingPolicyVersion": 1,
+    "degreeRolePolicyId": "changes.balanced-degree-roles",
+    "degreeRolePolicyVersion": 1,
+    "semanticRealizationIds": [
+      "literal",
+      "alt-b9-b5",
+      "alt-b9-sharp5",
+      "alt-sharp9-b5",
+      "alt-sharp9-sharp5"
+    ],
+    "customRealizationId": "custom"
+  },
+  "t1DegreeTokenVocabulary": [
+    {
+      "token": "1",
+      "number": 1,
+      "alter": 0,
+      "directedSemitones": 0,
+      "pitchClassOffset": 0,
+      "diatonicSteps": 0
+    },
+    {
+      "token": "b2",
+      "number": 2,
+      "alter": -1,
+      "directedSemitones": 1,
+      "pitchClassOffset": 1,
+      "diatonicSteps": 1
+    },
+    {
+      "token": "2",
+      "number": 2,
+      "alter": 0,
+      "directedSemitones": 2,
+      "pitchClassOffset": 2,
+      "diatonicSteps": 1
+    },
+    {
+      "token": "b3",
+      "number": 3,
+      "alter": -1,
+      "directedSemitones": 3,
+      "pitchClassOffset": 3,
+      "diatonicSteps": 2
+    },
+    {
+      "token": "3",
+      "number": 3,
+      "alter": 0,
+      "directedSemitones": 4,
+      "pitchClassOffset": 4,
+      "diatonicSteps": 2
+    },
+    {
+      "token": "4",
+      "number": 4,
+      "alter": 0,
+      "directedSemitones": 5,
+      "pitchClassOffset": 5,
+      "diatonicSteps": 3
+    },
+    {
+      "token": "b5",
+      "number": 5,
+      "alter": -1,
+      "directedSemitones": 6,
+      "pitchClassOffset": 6,
+      "diatonicSteps": 4
+    },
+    {
+      "token": "5",
+      "number": 5,
+      "alter": 0,
+      "directedSemitones": 7,
+      "pitchClassOffset": 7,
+      "diatonicSteps": 4
+    },
+    {
+      "token": "#5",
+      "number": 5,
+      "alter": 1,
+      "directedSemitones": 8,
+      "pitchClassOffset": 8,
+      "diatonicSteps": 4
+    },
+    {
+      "token": "6",
+      "number": 6,
+      "alter": 0,
+      "directedSemitones": 9,
+      "pitchClassOffset": 9,
+      "diatonicSteps": 5
+    },
+    {
+      "token": "bb7",
+      "number": 7,
+      "alter": -2,
+      "directedSemitones": 9,
+      "pitchClassOffset": 9,
+      "diatonicSteps": 6
+    },
+    {
+      "token": "b7",
+      "number": 7,
+      "alter": -1,
+      "directedSemitones": 10,
+      "pitchClassOffset": 10,
+      "diatonicSteps": 6
+    },
+    {
+      "token": "7",
+      "number": 7,
+      "alter": 0,
+      "directedSemitones": 11,
+      "pitchClassOffset": 11,
+      "diatonicSteps": 6
+    },
+    {
+      "token": "b9",
+      "number": 9,
+      "alter": -1,
+      "directedSemitones": 13,
+      "pitchClassOffset": 1,
+      "diatonicSteps": 8
+    },
+    {
+      "token": "9",
+      "number": 9,
+      "alter": 0,
+      "directedSemitones": 14,
+      "pitchClassOffset": 2,
+      "diatonicSteps": 8
+    },
+    {
+      "token": "#9",
+      "number": 9,
+      "alter": 1,
+      "directedSemitones": 15,
+      "pitchClassOffset": 3,
+      "diatonicSteps": 8
+    },
+    {
+      "token": "b11",
+      "number": 11,
+      "alter": -1,
+      "directedSemitones": 16,
+      "pitchClassOffset": 4,
+      "diatonicSteps": 10
+    },
+    {
+      "token": "11",
+      "number": 11,
+      "alter": 0,
+      "directedSemitones": 17,
+      "pitchClassOffset": 5,
+      "diatonicSteps": 10
+    },
+    {
+      "token": "#11",
+      "number": 11,
+      "alter": 1,
+      "directedSemitones": 18,
+      "pitchClassOffset": 6,
+      "diatonicSteps": 10
+    },
+    {
+      "token": "b13",
+      "number": 13,
+      "alter": -1,
+      "directedSemitones": 20,
+      "pitchClassOffset": 8,
+      "diatonicSteps": 12
+    },
+    {
+      "token": "13",
+      "number": 13,
+      "alter": 0,
+      "directedSemitones": 21,
+      "pitchClassOffset": 9,
+      "diatonicSteps": 12
+    },
+    {
+      "token": "#13",
+      "number": 13,
+      "alter": 1,
+      "directedSemitones": 22,
+      "pitchClassOffset": 10,
+      "diatonicSteps": 12
+    }
+  ],
+  "t1ReferenceOwners": [
+    {
+      "id": "T1-CUSTOM-001",
+      "ownerFixture": "tests/fixtures/resolution/custom-cases.json",
+      "ownerCollection": "cases"
+    },
+    {
+      "id": "T1-FORMULA-012",
+      "ownerFixture": "tests/fixtures/resolution/formula-rules.json",
+      "ownerCollection": "rules"
+    },
+    {
+      "id": "T1-FORMULA-013",
+      "ownerFixture": "tests/fixtures/resolution/formula-rules.json",
+      "ownerCollection": "rules"
+    },
+    {
+      "id": "T1-FORMULA-014",
+      "ownerFixture": "tests/fixtures/resolution/formula-rules.json",
+      "ownerCollection": "rules"
+    },
+    {
+      "id": "T1-FORMULA-015",
+      "ownerFixture": "tests/fixtures/resolution/formula-rules.json",
+      "ownerCollection": "rules"
+    },
+    {
+      "id": "T1-FORMULA-016",
+      "ownerFixture": "tests/fixtures/resolution/formula-rules.json",
+      "ownerCollection": "rules"
+    },
+    {
+      "id": "T1-FORMULA-017",
+      "ownerFixture": "tests/fixtures/resolution/formula-rules.json",
+      "ownerCollection": "rules"
+    },
+    {
+      "id": "T1-FORMULA-024",
+      "ownerFixture": "tests/fixtures/resolution/formula-rules.json",
+      "ownerCollection": "rules"
+    },
+    {
+      "id": "T1-FORMULA-026",
+      "ownerFixture": "tests/fixtures/resolution/formula-rules.json",
+      "ownerCollection": "rules"
+    },
+    {
+      "id": "T1-FORMULA-032",
+      "ownerFixture": "tests/fixtures/resolution/formula-rules.json",
+      "ownerCollection": "rules"
+    },
+    {
+      "id": "T1-LIT-012",
+      "ownerFixture": "tests/fixtures/resolution/literal-cases.json",
+      "ownerCollection": "cases"
+    },
+    {
+      "id": "T1-LIT-013",
+      "ownerFixture": "tests/fixtures/resolution/literal-cases.json",
+      "ownerCollection": "cases"
+    },
+    {
+      "id": "T1-LIT-014",
+      "ownerFixture": "tests/fixtures/resolution/literal-cases.json",
+      "ownerCollection": "cases"
+    },
+    {
+      "id": "T1-LIT-015",
+      "ownerFixture": "tests/fixtures/resolution/literal-cases.json",
+      "ownerCollection": "cases"
+    },
+    {
+      "id": "T1-LIT-016",
+      "ownerFixture": "tests/fixtures/resolution/literal-cases.json",
+      "ownerCollection": "cases"
+    },
+    {
+      "id": "T1-LIT-017",
+      "ownerFixture": "tests/fixtures/resolution/literal-cases.json",
+      "ownerCollection": "cases"
+    },
+    {
+      "id": "T1-LIT-021",
+      "ownerFixture": "tests/fixtures/resolution/literal-cases.json",
+      "ownerCollection": "cases"
+    },
+    {
+      "id": "T1-LIT-024",
+      "ownerFixture": "tests/fixtures/resolution/literal-cases.json",
+      "ownerCollection": "cases"
+    },
+    {
+      "id": "T1-LIT-026",
+      "ownerFixture": "tests/fixtures/resolution/literal-cases.json",
+      "ownerCollection": "cases"
+    },
+    {
+      "id": "T1-LIT-032",
+      "ownerFixture": "tests/fixtures/resolution/literal-cases.json",
+      "ownerCollection": "cases"
+    },
+    {
+      "id": "T1-LIT-035",
+      "ownerFixture": "tests/fixtures/resolution/literal-cases.json",
+      "ownerCollection": "cases"
+    },
+    {
+      "id": "T1-LIT-036",
+      "ownerFixture": "tests/fixtures/resolution/literal-cases.json",
+      "ownerCollection": "cases"
+    },
+    {
+      "id": "T1-LIT-039",
+      "ownerFixture": "tests/fixtures/resolution/literal-cases.json",
+      "ownerCollection": "cases"
+    },
+    {
+      "id": "T1-LIT-040",
+      "ownerFixture": "tests/fixtures/resolution/literal-cases.json",
+      "ownerCollection": "cases"
+    },
+    {
+      "id": "T1-LIT-045",
+      "ownerFixture": "tests/fixtures/resolution/literal-cases.json",
+      "ownerCollection": "cases"
+    },
+    {
+      "id": "T1-LIT-047",
+      "ownerFixture": "tests/fixtures/resolution/literal-cases.json",
+      "ownerCollection": "cases"
+    },
+    {
+      "id": "T1-LIT-079",
+      "ownerFixture": "tests/fixtures/resolution/literal-cases.json",
+      "ownerCollection": "cases"
+    },
+    {
+      "id": "T1-ROOT-001",
+      "ownerFixture": "tests/fixtures/resolution/all-root-cases.json",
+      "ownerCollection": "roots"
+    },
+    {
+      "id": "T1-ROOT-002",
+      "ownerFixture": "tests/fixtures/resolution/all-root-cases.json",
+      "ownerCollection": "roots"
+    },
+    {
+      "id": "T1-ROOT-003",
+      "ownerFixture": "tests/fixtures/resolution/all-root-cases.json",
+      "ownerCollection": "roots"
+    },
+    {
+      "id": "T1-ROOT-004",
+      "ownerFixture": "tests/fixtures/resolution/all-root-cases.json",
+      "ownerCollection": "roots"
+    },
+    {
+      "id": "T1-ROOT-005",
+      "ownerFixture": "tests/fixtures/resolution/all-root-cases.json",
+      "ownerCollection": "roots"
+    },
+    {
+      "id": "T1-ROOT-006",
+      "ownerFixture": "tests/fixtures/resolution/all-root-cases.json",
+      "ownerCollection": "roots"
+    },
+    {
+      "id": "T1-ROOT-007",
+      "ownerFixture": "tests/fixtures/resolution/all-root-cases.json",
+      "ownerCollection": "roots"
+    },
+    {
+      "id": "T1-ROOT-008",
+      "ownerFixture": "tests/fixtures/resolution/all-root-cases.json",
+      "ownerCollection": "roots"
+    },
+    {
+      "id": "T1-ROOT-009",
+      "ownerFixture": "tests/fixtures/resolution/all-root-cases.json",
+      "ownerCollection": "roots"
+    },
+    {
+      "id": "T1-ROOT-010",
+      "ownerFixture": "tests/fixtures/resolution/all-root-cases.json",
+      "ownerCollection": "roots"
+    },
+    {
+      "id": "T1-ROOT-011",
+      "ownerFixture": "tests/fixtures/resolution/all-root-cases.json",
+      "ownerCollection": "roots"
+    },
+    {
+      "id": "T1-ROOT-012",
+      "ownerFixture": "tests/fixtures/resolution/all-root-cases.json",
+      "ownerCollection": "roots"
+    },
+    {
+      "id": "T1-SPELL-001",
+      "ownerFixture": "tests/fixtures/resolution/spelling-cases.json",
+      "ownerCollection": "cases"
+    },
+    {
+      "id": "T1-SPELL-002",
+      "ownerFixture": "tests/fixtures/resolution/spelling-cases.json",
+      "ownerCollection": "cases"
+    }
+  ],
+  "rootInventory": [
+    {
+      "id": "H0-ROOT-001",
+      "symbol": "C",
+      "spelling": {
+        "step": "C",
+        "alter": 0
+      },
+      "pitchClass": 0,
+      "t1RootRef": "T1-ROOT-001"
+    },
+    {
+      "id": "H0-ROOT-002",
+      "symbol": "Db",
+      "spelling": {
+        "step": "D",
+        "alter": -1
+      },
+      "pitchClass": 1,
+      "t1RootRef": "T1-ROOT-002"
+    },
+    {
+      "id": "H0-ROOT-003",
+      "symbol": "D",
+      "spelling": {
+        "step": "D",
+        "alter": 0
+      },
+      "pitchClass": 2,
+      "t1RootRef": "T1-ROOT-003"
+    },
+    {
+      "id": "H0-ROOT-004",
+      "symbol": "Eb",
+      "spelling": {
+        "step": "E",
+        "alter": -1
+      },
+      "pitchClass": 3,
+      "t1RootRef": "T1-ROOT-004"
+    },
+    {
+      "id": "H0-ROOT-005",
+      "symbol": "E",
+      "spelling": {
+        "step": "E",
+        "alter": 0
+      },
+      "pitchClass": 4,
+      "t1RootRef": "T1-ROOT-005"
+    },
+    {
+      "id": "H0-ROOT-006",
+      "symbol": "F",
+      "spelling": {
+        "step": "F",
+        "alter": 0
+      },
+      "pitchClass": 5,
+      "t1RootRef": "T1-ROOT-006"
+    },
+    {
+      "id": "H0-ROOT-007",
+      "symbol": "F#",
+      "spelling": {
+        "step": "F",
+        "alter": 1
+      },
+      "pitchClass": 6,
+      "t1RootRef": "T1-ROOT-007"
+    },
+    {
+      "id": "H0-ROOT-008",
+      "symbol": "G",
+      "spelling": {
+        "step": "G",
+        "alter": 0
+      },
+      "pitchClass": 7,
+      "t1RootRef": "T1-ROOT-008"
+    },
+    {
+      "id": "H0-ROOT-009",
+      "symbol": "Ab",
+      "spelling": {
+        "step": "A",
+        "alter": -1
+      },
+      "pitchClass": 8,
+      "t1RootRef": "T1-ROOT-009"
+    },
+    {
+      "id": "H0-ROOT-010",
+      "symbol": "A",
+      "spelling": {
+        "step": "A",
+        "alter": 0
+      },
+      "pitchClass": 9,
+      "t1RootRef": "T1-ROOT-010"
+    },
+    {
+      "id": "H0-ROOT-011",
+      "symbol": "Bb",
+      "spelling": {
+        "step": "B",
+        "alter": -1
+      },
+      "pitchClass": 10,
+      "t1RootRef": "T1-ROOT-011"
+    },
+    {
+      "id": "H0-ROOT-012",
+      "symbol": "B",
+      "spelling": {
+        "step": "B",
+        "alter": 0
+      },
+      "pitchClass": 11,
+      "t1RootRef": "T1-ROOT-012"
+    }
+  ],
+  "contexts": [
+    {
+      "id": "H0-CONTEXT-C-MAJOR",
+      "basis": "declared-key",
+      "tonic": "C",
+      "mode": "major",
+      "tonicSpelling": {
+        "step": "C",
+        "alter": 0
+      }
+    },
+    {
+      "id": "H0-CONTEXT-C-NATURAL-MINOR",
+      "basis": "declared-key",
+      "tonic": "C",
+      "mode": "natural-minor",
+      "tonicSpelling": {
+        "step": "C",
+        "alter": 0
+      }
+    },
+    {
+      "id": "H0-CONTEXT-C-HARMONIC-MINOR",
+      "basis": "declared-key",
+      "tonic": "C",
+      "mode": "harmonic-minor",
+      "tonicSpelling": {
+        "step": "C",
+        "alter": 0
+      }
+    },
+    {
+      "id": "H0-CONTEXT-C-MELODIC-MINOR",
+      "basis": "declared-key",
+      "tonic": "C",
+      "mode": "melodic-minor",
+      "tonicSpelling": {
+        "step": "C",
+        "alter": 0
+      }
+    },
+    {
+      "id": "H0-CONTEXT-F-MAJOR",
+      "basis": "declared-key",
+      "tonic": "F",
+      "mode": "major",
+      "tonicSpelling": {
+        "step": "F",
+        "alter": 0
+      }
+    },
+    {
+      "id": "H0-CONTEXT-G-MAJOR",
+      "basis": "declared-key",
+      "tonic": "G",
+      "mode": "major",
+      "tonicSpelling": {
+        "step": "G",
+        "alter": 0
+      }
+    },
+    {
+      "id": "H0-CONTEXT-NO-KEY",
+      "basis": "absent-key"
+    },
+    {
+      "id": "H0-CONTEXT-C-DORIAN",
+      "basis": "declared-modal",
+      "tonic": "C",
+      "mode": "dorian",
+      "evidenceId": "H0-CONTEXT-EVIDENCE-DORIAN-001",
+      "tonicSpelling": {
+        "step": "C",
+        "alter": 0
+      }
+    },
+    {
+      "id": "H0-CONTEXT-C-NONFUNCTIONAL",
+      "basis": "declared-nonfunctional",
+      "anchor": "C",
+      "evidenceId": "H0-CONTEXT-EVIDENCE-NONFUNCTIONAL-001",
+      "anchorSpelling": {
+        "step": "C",
+        "alter": 0
+      }
+    }
+  ],
+  "chords": [
+    {
+      "id": "H0-SRC-CMAJ7",
+      "symbol": "Cmaj7",
+      "root": "C",
+      "degrees": [
+        "1",
+        "3",
+        "5",
+        "7"
+      ],
+      "t1Refs": [
+        "T1-LIT-012",
+        "T1-FORMULA-012"
+      ],
+      "realizationId": "literal",
+      "formulaRuleId": "seventh-major",
+      "rootSpelling": {
+        "step": "C",
+        "alter": 0
+      },
+      "degreeSpellings": [
+        {
+          "step": "C",
+          "alter": 0
+        },
+        {
+          "step": "E",
+          "alter": 0
+        },
+        {
+          "step": "G",
+          "alter": 0
+        },
+        {
+          "step": "B",
+          "alter": 0
+        }
+      ]
+    },
+    {
+      "id": "H0-SRC-CM7",
+      "symbol": "Cm7",
+      "root": "C",
+      "degrees": [
+        "1",
+        "b3",
+        "5",
+        "b7"
+      ],
+      "t1Refs": [
+        "T1-LIT-014",
+        "T1-FORMULA-014"
+      ],
+      "realizationId": "literal",
+      "formulaRuleId": "seventh-minor",
+      "rootSpelling": {
+        "step": "C",
+        "alter": 0
+      },
+      "degreeSpellings": [
+        {
+          "step": "C",
+          "alter": 0
+        },
+        {
+          "step": "E",
+          "alter": -1
+        },
+        {
+          "step": "G",
+          "alter": 0
+        },
+        {
+          "step": "B",
+          "alter": -1
+        }
+      ]
+    },
+    {
+      "id": "H0-SRC-CMMAJ7",
+      "symbol": "Cm(maj7)",
+      "root": "C",
+      "degrees": [
+        "1",
+        "b3",
+        "5",
+        "7"
+      ],
+      "t1Refs": [
+        "T1-LIT-015",
+        "T1-FORMULA-015"
+      ],
+      "realizationId": "literal",
+      "formulaRuleId": "seventh-minor-major",
+      "rootSpelling": {
+        "step": "C",
+        "alter": 0
+      },
+      "degreeSpellings": [
+        {
+          "step": "C",
+          "alter": 0
+        },
+        {
+          "step": "E",
+          "alter": -1
+        },
+        {
+          "step": "G",
+          "alter": 0
+        },
+        {
+          "step": "B",
+          "alter": 0
+        }
+      ]
+    },
+    {
+      "id": "H0-SRC-C7",
+      "symbol": "C7",
+      "root": "C",
+      "degrees": [
+        "1",
+        "3",
+        "5",
+        "b7"
+      ],
+      "t1Refs": [
+        "T1-LIT-013",
+        "T1-FORMULA-013"
+      ],
+      "realizationId": "literal",
+      "formulaRuleId": "seventh-dominant",
+      "rootSpelling": {
+        "step": "C",
+        "alter": 0
+      },
+      "degreeSpellings": [
+        {
+          "step": "C",
+          "alter": 0
+        },
+        {
+          "step": "E",
+          "alter": 0
+        },
+        {
+          "step": "G",
+          "alter": 0
+        },
+        {
+          "step": "B",
+          "alter": -1
+        }
+      ]
+    },
+    {
+      "id": "H0-SRC-C7SHARP11",
+      "symbol": "C7#11",
+      "root": "C",
+      "degrees": [
+        "1",
+        "3",
+        "5",
+        "b7",
+        "#11"
+      ],
+      "t1Refs": [
+        "T1-LIT-039"
+      ],
+      "realizationId": "literal",
+      "formulaRuleId": "seventh-dominant",
+      "rootSpelling": {
+        "step": "C",
+        "alter": 0
+      },
+      "degreeSpellings": [
+        {
+          "step": "C",
+          "alter": 0
+        },
+        {
+          "step": "E",
+          "alter": 0
+        },
+        {
+          "step": "G",
+          "alter": 0
+        },
+        {
+          "step": "B",
+          "alter": -1
+        },
+        {
+          "step": "F",
+          "alter": 1
+        }
+      ]
+    },
+    {
+      "id": "H0-SRC-CMAJ7SHARP11",
+      "symbol": "Cmaj7#11",
+      "root": "C",
+      "degrees": [
+        "1",
+        "3",
+        "5",
+        "7",
+        "#11"
+      ],
+      "t1Refs": [
+        "T1-LIT-047"
+      ],
+      "realizationId": "literal",
+      "formulaRuleId": "seventh-major",
+      "rootSpelling": {
+        "step": "C",
+        "alter": 0
+      },
+      "degreeSpellings": [
+        {
+          "step": "C",
+          "alter": 0
+        },
+        {
+          "step": "E",
+          "alter": 0
+        },
+        {
+          "step": "G",
+          "alter": 0
+        },
+        {
+          "step": "B",
+          "alter": 0
+        },
+        {
+          "step": "F",
+          "alter": 1
+        }
+      ]
+    },
+    {
+      "id": "H0-SRC-C7SHARP5",
+      "symbol": "C7#5",
+      "root": "C",
+      "degrees": [
+        "1",
+        "3",
+        "#5",
+        "b7"
+      ],
+      "t1Refs": [
+        "T1-LIT-035"
+      ],
+      "realizationId": "literal",
+      "formulaRuleId": "seventh-dominant",
+      "rootSpelling": {
+        "step": "C",
+        "alter": 0
+      },
+      "degreeSpellings": [
+        {
+          "step": "C",
+          "alter": 0
+        },
+        {
+          "step": "E",
+          "alter": 0
+        },
+        {
+          "step": "G",
+          "alter": 1
+        },
+        {
+          "step": "B",
+          "alter": -1
+        }
+      ]
+    },
+    {
+      "id": "H0-SRC-C7B13",
+      "symbol": "C7b13",
+      "root": "C",
+      "degrees": [
+        "1",
+        "3",
+        "5",
+        "b7",
+        "b13"
+      ],
+      "t1Refs": [
+        "T1-LIT-040"
+      ],
+      "realizationId": "literal",
+      "formulaRuleId": "seventh-dominant",
+      "rootSpelling": {
+        "step": "C",
+        "alter": 0
+      },
+      "degreeSpellings": [
+        {
+          "step": "C",
+          "alter": 0
+        },
+        {
+          "step": "E",
+          "alter": 0
+        },
+        {
+          "step": "G",
+          "alter": 0
+        },
+        {
+          "step": "B",
+          "alter": -1
+        },
+        {
+          "step": "A",
+          "alter": -1
+        }
+      ]
+    },
+    {
+      "id": "H0-SRC-C7B9",
+      "symbol": "C7b9",
+      "root": "C",
+      "degrees": [
+        "1",
+        "3",
+        "5",
+        "b7",
+        "b9"
+      ],
+      "t1Refs": [
+        "T1-LIT-036"
+      ],
+      "realizationId": "literal",
+      "formulaRuleId": "seventh-dominant",
+      "rootSpelling": {
+        "step": "C",
+        "alter": 0
+      },
+      "degreeSpellings": [
+        {
+          "step": "C",
+          "alter": 0
+        },
+        {
+          "step": "E",
+          "alter": 0
+        },
+        {
+          "step": "G",
+          "alter": 0
+        },
+        {
+          "step": "B",
+          "alter": -1
+        },
+        {
+          "step": "D",
+          "alter": -1
+        }
+      ]
+    },
+    {
+      "id": "H0-SRC-C7SHARP5B9",
+      "symbol": "C7#5b9",
+      "root": "C",
+      "degrees": [
+        "1",
+        "3",
+        "#5",
+        "b7",
+        "b9"
+      ],
+      "t1Refs": [
+        "T1-LIT-035",
+        "T1-LIT-036"
+      ],
+      "realizationId": "literal",
+      "formulaRuleId": "seventh-dominant",
+      "rootSpelling": {
+        "step": "C",
+        "alter": 0
+      },
+      "degreeSpellings": [
+        {
+          "step": "C",
+          "alter": 0
+        },
+        {
+          "step": "E",
+          "alter": 0
+        },
+        {
+          "step": "G",
+          "alter": 1
+        },
+        {
+          "step": "B",
+          "alter": -1
+        },
+        {
+          "step": "D",
+          "alter": -1
+        }
+      ]
+    },
+    {
+      "id": "H0-SRC-C13",
+      "symbol": "C13",
+      "root": "C",
+      "degrees": [
+        "1",
+        "3",
+        "5",
+        "b7",
+        "9",
+        "13"
+      ],
+      "t1Refs": [
+        "T1-LIT-024",
+        "T1-FORMULA-024"
+      ],
+      "realizationId": "literal",
+      "formulaRuleId": "extension-dominant",
+      "rootSpelling": {
+        "step": "C",
+        "alter": 0
+      },
+      "degreeSpellings": [
+        {
+          "step": "C",
+          "alter": 0
+        },
+        {
+          "step": "E",
+          "alter": 0
+        },
+        {
+          "step": "G",
+          "alter": 0
+        },
+        {
+          "step": "B",
+          "alter": -1
+        },
+        {
+          "step": "D",
+          "alter": 0
+        },
+        {
+          "step": "A",
+          "alter": 0
+        }
+      ]
+    },
+    {
+      "id": "H0-SRC-C13SUS4",
+      "symbol": "C13sus4",
+      "root": "C",
+      "degrees": [
+        "1",
+        "4",
+        "5",
+        "b7",
+        "9",
+        "13"
+      ],
+      "t1Refs": [
+        "T1-LIT-032",
+        "T1-FORMULA-032"
+      ],
+      "realizationId": "literal",
+      "formulaRuleId": "extension-suspended-dominant",
+      "rootSpelling": {
+        "step": "C",
+        "alter": 0
+      },
+      "degreeSpellings": [
+        {
+          "step": "C",
+          "alter": 0
+        },
+        {
+          "step": "F",
+          "alter": 0
+        },
+        {
+          "step": "G",
+          "alter": 0
+        },
+        {
+          "step": "B",
+          "alter": -1
+        },
+        {
+          "step": "D",
+          "alter": 0
+        },
+        {
+          "step": "A",
+          "alter": 0
+        }
+      ]
+    },
+    {
+      "id": "H0-SRC-C13ADD11",
+      "symbol": "C13(add11)",
+      "root": "C",
+      "degrees": [
+        "1",
+        "3",
+        "5",
+        "b7",
+        "9",
+        "11",
+        "13"
+      ],
+      "t1Refs": [
+        "T1-LIT-079"
+      ],
+      "realizationId": "literal",
+      "formulaRuleId": "extension-dominant",
+      "rootSpelling": {
+        "step": "C",
+        "alter": 0
+      },
+      "degreeSpellings": [
+        {
+          "step": "C",
+          "alter": 0
+        },
+        {
+          "step": "E",
+          "alter": 0
+        },
+        {
+          "step": "G",
+          "alter": 0
+        },
+        {
+          "step": "B",
+          "alter": -1
+        },
+        {
+          "step": "D",
+          "alter": 0
+        },
+        {
+          "step": "F",
+          "alter": 0
+        },
+        {
+          "step": "A",
+          "alter": 0
+        }
+      ]
+    },
+    {
+      "id": "H0-SRC-CDIM7",
+      "symbol": "Cdim7",
+      "root": "C",
+      "degrees": [
+        "1",
+        "b3",
+        "b5",
+        "bb7"
+      ],
+      "t1Refs": [
+        "T1-LIT-017",
+        "T1-FORMULA-017"
+      ],
+      "realizationId": "literal",
+      "formulaRuleId": "seventh-diminished",
+      "rootSpelling": {
+        "step": "C",
+        "alter": 0
+      },
+      "degreeSpellings": [
+        {
+          "step": "C",
+          "alter": 0
+        },
+        {
+          "step": "E",
+          "alter": -1
+        },
+        {
+          "step": "G",
+          "alter": -1
+        },
+        {
+          "step": "B",
+          "alter": -2
+        }
+      ]
+    },
+    {
+      "id": "H0-SRC-CM7B5",
+      "symbol": "Cm7b5",
+      "root": "C",
+      "degrees": [
+        "1",
+        "b3",
+        "b5",
+        "b7"
+      ],
+      "t1Refs": [
+        "T1-LIT-016",
+        "T1-FORMULA-016"
+      ],
+      "realizationId": "literal",
+      "formulaRuleId": "seventh-half-diminished",
+      "rootSpelling": {
+        "step": "C",
+        "alter": 0
+      },
+      "degreeSpellings": [
+        {
+          "step": "C",
+          "alter": 0
+        },
+        {
+          "step": "E",
+          "alter": -1
+        },
+        {
+          "step": "G",
+          "alter": -1
+        },
+        {
+          "step": "B",
+          "alter": -1
+        }
+      ]
+    },
+    {
+      "id": "H0-SRC-CM13",
+      "symbol": "Cm13",
+      "root": "C",
+      "degrees": [
+        "1",
+        "b3",
+        "5",
+        "b7",
+        "9",
+        "11",
+        "13"
+      ],
+      "t1Refs": [
+        "T1-LIT-026",
+        "T1-FORMULA-026"
+      ],
+      "realizationId": "literal",
+      "formulaRuleId": "extension-minor",
+      "rootSpelling": {
+        "step": "C",
+        "alter": 0
+      },
+      "degreeSpellings": [
+        {
+          "step": "C",
+          "alter": 0
+        },
+        {
+          "step": "E",
+          "alter": -1
+        },
+        {
+          "step": "G",
+          "alter": 0
+        },
+        {
+          "step": "B",
+          "alter": -1
+        },
+        {
+          "step": "D",
+          "alter": 0
+        },
+        {
+          "step": "F",
+          "alter": 0
+        },
+        {
+          "step": "A",
+          "alter": 0
+        }
+      ]
+    },
+    {
+      "id": "H0-SRC-CM9B5",
+      "symbol": "Cm9b5",
+      "root": "C",
+      "degrees": [
+        "1",
+        "b3",
+        "b5",
+        "b7",
+        "9"
+      ],
+      "t1Refs": [
+        "T1-LIT-016",
+        "T1-LIT-021"
+      ],
+      "realizationId": "literal",
+      "formulaRuleId": "seventh-half-diminished",
+      "rootSpelling": {
+        "step": "C",
+        "alter": 0
+      },
+      "degreeSpellings": [
+        {
+          "step": "C",
+          "alter": 0
+        },
+        {
+          "step": "E",
+          "alter": -1
+        },
+        {
+          "step": "G",
+          "alter": -1
+        },
+        {
+          "step": "B",
+          "alter": -1
+        },
+        {
+          "step": "D",
+          "alter": 0
+        }
+      ]
+    },
+    {
+      "id": "H0-SRC-CALT-B9-B5",
+      "symbol": "C7alt",
+      "root": "C",
+      "degrees": [
+        "1",
+        "3",
+        "b5",
+        "b7",
+        "b9"
+      ],
+      "t1Refs": [
+        "T1-LIT-045"
+      ],
+      "realizationId": "alt-b9-b5",
+      "formulaRuleId": "altered-dominant",
+      "rootSpelling": {
+        "step": "C",
+        "alter": 0
+      },
+      "degreeSpellings": [
+        {
+          "step": "C",
+          "alter": 0
+        },
+        {
+          "step": "E",
+          "alter": 0
+        },
+        {
+          "step": "G",
+          "alter": -1
+        },
+        {
+          "step": "B",
+          "alter": -1
+        },
+        {
+          "step": "D",
+          "alter": -1
+        }
+      ]
+    },
+    {
+      "id": "H0-SRC-CALT-B9-SHARP5",
+      "symbol": "C7alt",
+      "root": "C",
+      "degrees": [
+        "1",
+        "3",
+        "#5",
+        "b7",
+        "b9"
+      ],
+      "t1Refs": [
+        "T1-LIT-045"
+      ],
+      "realizationId": "alt-b9-sharp5",
+      "formulaRuleId": "altered-dominant",
+      "rootSpelling": {
+        "step": "C",
+        "alter": 0
+      },
+      "degreeSpellings": [
+        {
+          "step": "C",
+          "alter": 0
+        },
+        {
+          "step": "E",
+          "alter": 0
+        },
+        {
+          "step": "G",
+          "alter": 1
+        },
+        {
+          "step": "B",
+          "alter": -1
+        },
+        {
+          "step": "D",
+          "alter": -1
+        }
+      ]
+    },
+    {
+      "id": "H0-SRC-CALT-SHARP9-B5",
+      "symbol": "C7alt",
+      "root": "C",
+      "degrees": [
+        "1",
+        "3",
+        "b5",
+        "b7",
+        "#9"
+      ],
+      "t1Refs": [
+        "T1-LIT-045"
+      ],
+      "realizationId": "alt-sharp9-b5",
+      "formulaRuleId": "altered-dominant",
+      "rootSpelling": {
+        "step": "C",
+        "alter": 0
+      },
+      "degreeSpellings": [
+        {
+          "step": "C",
+          "alter": 0
+        },
+        {
+          "step": "E",
+          "alter": 0
+        },
+        {
+          "step": "G",
+          "alter": -1
+        },
+        {
+          "step": "B",
+          "alter": -1
+        },
+        {
+          "step": "D",
+          "alter": 1
+        }
+      ]
+    },
+    {
+      "id": "H0-SRC-CALT-SHARP9-SHARP5",
+      "symbol": "C7alt",
+      "root": "C",
+      "degrees": [
+        "1",
+        "3",
+        "#5",
+        "b7",
+        "#9"
+      ],
+      "t1Refs": [
+        "T1-LIT-045"
+      ],
+      "realizationId": "alt-sharp9-sharp5",
+      "formulaRuleId": "altered-dominant",
+      "rootSpelling": {
+        "step": "C",
+        "alter": 0
+      },
+      "degreeSpellings": [
+        {
+          "step": "C",
+          "alter": 0
+        },
+        {
+          "step": "E",
+          "alter": 0
+        },
+        {
+          "step": "G",
+          "alter": 1
+        },
+        {
+          "step": "B",
+          "alter": -1
+        },
+        {
+          "step": "D",
+          "alter": 1
+        }
+      ]
+    },
+    {
+      "id": "H0-SRC-D7",
+      "symbol": "D7",
+      "root": "D",
+      "degrees": [
+        "1",
+        "3",
+        "5",
+        "b7"
+      ],
+      "t1Refs": [
+        "T1-LIT-013"
+      ],
+      "realizationId": "literal",
+      "formulaRuleId": "seventh-dominant",
+      "rootSpelling": {
+        "step": "D",
+        "alter": 0
+      },
+      "degreeSpellings": [
+        {
+          "step": "D",
+          "alter": 0
+        },
+        {
+          "step": "F",
+          "alter": 1
+        },
+        {
+          "step": "A",
+          "alter": 0
+        },
+        {
+          "step": "C",
+          "alter": 0
+        }
+      ]
+    },
+    {
+      "id": "H0-SRC-DM7",
+      "symbol": "Dm7",
+      "root": "D",
+      "degrees": [
+        "1",
+        "b3",
+        "5",
+        "b7"
+      ],
+      "t1Refs": [
+        "T1-LIT-014"
+      ],
+      "realizationId": "literal",
+      "formulaRuleId": "seventh-minor",
+      "rootSpelling": {
+        "step": "D",
+        "alter": 0
+      },
+      "degreeSpellings": [
+        {
+          "step": "D",
+          "alter": 0
+        },
+        {
+          "step": "F",
+          "alter": 0
+        },
+        {
+          "step": "A",
+          "alter": 0
+        },
+        {
+          "step": "C",
+          "alter": 0
+        }
+      ]
+    },
+    {
+      "id": "H0-SRC-DMAJ7",
+      "symbol": "Dmaj7",
+      "root": "D",
+      "degrees": [
+        "1",
+        "3",
+        "5",
+        "7"
+      ],
+      "t1Refs": [
+        "T1-LIT-012"
+      ],
+      "realizationId": "literal",
+      "formulaRuleId": "seventh-major",
+      "rootSpelling": {
+        "step": "D",
+        "alter": 0
+      },
+      "degreeSpellings": [
+        {
+          "step": "D",
+          "alter": 0
+        },
+        {
+          "step": "F",
+          "alter": 1
+        },
+        {
+          "step": "A",
+          "alter": 0
+        },
+        {
+          "step": "C",
+          "alter": 1
+        }
+      ]
+    },
+    {
+      "id": "H0-SRC-G7",
+      "symbol": "G7",
+      "root": "G",
+      "degrees": [
+        "1",
+        "3",
+        "5",
+        "b7"
+      ],
+      "t1Refs": [
+        "T1-LIT-013"
+      ],
+      "realizationId": "literal",
+      "formulaRuleId": "seventh-dominant",
+      "rootSpelling": {
+        "step": "G",
+        "alter": 0
+      },
+      "degreeSpellings": [
+        {
+          "step": "G",
+          "alter": 0
+        },
+        {
+          "step": "B",
+          "alter": 0
+        },
+        {
+          "step": "D",
+          "alter": 0
+        },
+        {
+          "step": "F",
+          "alter": 0
+        }
+      ]
+    },
+    {
+      "id": "H0-SRC-GMAJ7",
+      "symbol": "Gmaj7",
+      "root": "G",
+      "degrees": [
+        "1",
+        "3",
+        "5",
+        "7"
+      ],
+      "t1Refs": [
+        "T1-LIT-012"
+      ],
+      "realizationId": "literal",
+      "formulaRuleId": "seventh-major",
+      "rootSpelling": {
+        "step": "G",
+        "alter": 0
+      },
+      "degreeSpellings": [
+        {
+          "step": "G",
+          "alter": 0
+        },
+        {
+          "step": "B",
+          "alter": 0
+        },
+        {
+          "step": "D",
+          "alter": 0
+        },
+        {
+          "step": "F",
+          "alter": 1
+        }
+      ]
+    },
+    {
+      "id": "H0-SRC-A7",
+      "symbol": "A7",
+      "root": "A",
+      "degrees": [
+        "1",
+        "3",
+        "5",
+        "b7"
+      ],
+      "t1Refs": [
+        "T1-LIT-013"
+      ],
+      "realizationId": "literal",
+      "formulaRuleId": "seventh-dominant",
+      "rootSpelling": {
+        "step": "A",
+        "alter": 0
+      },
+      "degreeSpellings": [
+        {
+          "step": "A",
+          "alter": 0
+        },
+        {
+          "step": "C",
+          "alter": 1
+        },
+        {
+          "step": "E",
+          "alter": 0
+        },
+        {
+          "step": "G",
+          "alter": 0
+        }
+      ]
+    },
+    {
+      "id": "H0-SRC-FMAJ7",
+      "symbol": "Fmaj7",
+      "root": "F",
+      "degrees": [
+        "1",
+        "3",
+        "5",
+        "7"
+      ],
+      "t1Refs": [
+        "T1-LIT-012"
+      ],
+      "realizationId": "literal",
+      "formulaRuleId": "seventh-major",
+      "rootSpelling": {
+        "step": "F",
+        "alter": 0
+      },
+      "degreeSpellings": [
+        {
+          "step": "F",
+          "alter": 0
+        },
+        {
+          "step": "A",
+          "alter": 0
+        },
+        {
+          "step": "C",
+          "alter": 0
+        },
+        {
+          "step": "E",
+          "alter": 0
+        }
+      ]
+    },
+    {
+      "id": "H0-SRC-FM7",
+      "symbol": "Fm7",
+      "root": "F",
+      "degrees": [
+        "1",
+        "b3",
+        "5",
+        "b7"
+      ],
+      "t1Refs": [
+        "T1-LIT-014"
+      ],
+      "realizationId": "literal",
+      "formulaRuleId": "seventh-minor",
+      "rootSpelling": {
+        "step": "F",
+        "alter": 0
+      },
+      "degreeSpellings": [
+        {
+          "step": "F",
+          "alter": 0
+        },
+        {
+          "step": "A",
+          "alter": -1
+        },
+        {
+          "step": "C",
+          "alter": 0
+        },
+        {
+          "step": "E",
+          "alter": -1
+        }
+      ]
+    },
+    {
+      "id": "H0-SRC-DB7",
+      "symbol": "Db7",
+      "root": "Db",
+      "degrees": [
+        "1",
+        "3",
+        "5",
+        "b7"
+      ],
+      "degreeSpellings": [
+        {
+          "step": "D",
+          "alter": -1
+        },
+        {
+          "step": "F",
+          "alter": 0
+        },
+        {
+          "step": "A",
+          "alter": -1
+        },
+        {
+          "step": "C",
+          "alter": -1
+        }
+      ],
+      "t1Refs": [
+        "T1-LIT-013",
+        "T1-SPELL-001"
+      ],
+      "realizationId": "literal",
+      "formulaRuleId": "seventh-dominant",
+      "rootSpelling": {
+        "step": "D",
+        "alter": -1
+      }
+    },
+    {
+      "id": "H0-SRC-CSHARP7",
+      "symbol": "C#7",
+      "root": "C#",
+      "degrees": [
+        "1",
+        "3",
+        "5",
+        "b7"
+      ],
+      "degreeSpellings": [
+        {
+          "step": "C",
+          "alter": 1
+        },
+        {
+          "step": "E",
+          "alter": 1
+        },
+        {
+          "step": "G",
+          "alter": 1
+        },
+        {
+          "step": "B",
+          "alter": 0
+        }
+      ],
+      "t1Refs": [
+        "T1-LIT-013",
+        "T1-SPELL-002"
+      ],
+      "realizationId": "literal",
+      "formulaRuleId": "seventh-dominant",
+      "rootSpelling": {
+        "step": "C",
+        "alter": 1
+      }
+    },
+    {
+      "id": "H0-SRC-BB7",
+      "symbol": "Bb7",
+      "root": "Bb",
+      "degrees": [
+        "1",
+        "3",
+        "5",
+        "b7"
+      ],
+      "t1Refs": [
+        "T1-LIT-013"
+      ],
+      "realizationId": "literal",
+      "formulaRuleId": "seventh-dominant",
+      "rootSpelling": {
+        "step": "B",
+        "alter": -1
+      },
+      "degreeSpellings": [
+        {
+          "step": "B",
+          "alter": -1
+        },
+        {
+          "step": "D",
+          "alter": 0
+        },
+        {
+          "step": "F",
+          "alter": 0
+        },
+        {
+          "step": "A",
+          "alter": -1
+        }
+      ]
+    },
+    {
+      "id": "H0-SRC-BBMAJ7",
+      "symbol": "Bbmaj7",
+      "root": "Bb",
+      "degrees": [
+        "1",
+        "3",
+        "5",
+        "7"
+      ],
+      "t1Refs": [
+        "T1-LIT-012"
+      ],
+      "realizationId": "literal",
+      "formulaRuleId": "seventh-major",
+      "rootSpelling": {
+        "step": "B",
+        "alter": -1
+      },
+      "degreeSpellings": [
+        {
+          "step": "B",
+          "alter": -1
+        },
+        {
+          "step": "D",
+          "alter": 0
+        },
+        {
+          "step": "F",
+          "alter": 0
+        },
+        {
+          "step": "A",
+          "alter": 0
+        }
+      ]
+    },
+    {
+      "id": "H0-SRC-B7",
+      "symbol": "B7",
+      "root": "B",
+      "degrees": [
+        "1",
+        "3",
+        "5",
+        "b7"
+      ],
+      "t1Refs": [
+        "T1-LIT-013"
+      ],
+      "realizationId": "literal",
+      "formulaRuleId": "seventh-dominant",
+      "rootSpelling": {
+        "step": "B",
+        "alter": 0
+      },
+      "degreeSpellings": [
+        {
+          "step": "B",
+          "alter": 0
+        },
+        {
+          "step": "D",
+          "alter": 1
+        },
+        {
+          "step": "F",
+          "alter": 1
+        },
+        {
+          "step": "A",
+          "alter": 0
+        }
+      ]
+    },
+    {
+      "id": "H0-SRC-FSHARPDIM7",
+      "symbol": "F#dim7",
+      "root": "F#",
+      "degrees": [
+        "1",
+        "b3",
+        "b5",
+        "bb7"
+      ],
+      "t1Refs": [
+        "T1-LIT-017"
+      ],
+      "realizationId": "literal",
+      "formulaRuleId": "seventh-diminished",
+      "rootSpelling": {
+        "step": "F",
+        "alter": 1
+      },
+      "degreeSpellings": [
+        {
+          "step": "F",
+          "alter": 1
+        },
+        {
+          "step": "A",
+          "alter": 0
+        },
+        {
+          "step": "C",
+          "alter": 0
+        },
+        {
+          "step": "E",
+          "alter": -1
+        }
+      ]
+    },
+    {
+      "id": "H0-SRC-GBDIM7",
+      "symbol": "Gbdim7",
+      "root": "Gb",
+      "degrees": [
+        "1",
+        "b3",
+        "b5",
+        "bb7"
+      ],
+      "t1Refs": [
+        "T1-LIT-017"
+      ],
+      "realizationId": "literal",
+      "formulaRuleId": "seventh-diminished",
+      "rootSpelling": {
+        "step": "G",
+        "alter": -1
+      },
+      "degreeSpellings": [
+        {
+          "step": "G",
+          "alter": -1
+        },
+        {
+          "step": "B",
+          "alter": -2
+        },
+        {
+          "step": "D",
+          "alter": -2
+        },
+        {
+          "step": "F",
+          "alter": -2
+        }
+      ]
+    },
+    {
+      "id": "H0-SRC-CSHARPDIM7",
+      "symbol": "C#dim7",
+      "root": "C#",
+      "degrees": [
+        "1",
+        "b3",
+        "b5",
+        "bb7"
+      ],
+      "t1Refs": [
+        "T1-LIT-017"
+      ],
+      "realizationId": "literal",
+      "formulaRuleId": "seventh-diminished",
+      "rootSpelling": {
+        "step": "C",
+        "alter": 1
+      },
+      "degreeSpellings": [
+        {
+          "step": "C",
+          "alter": 1
+        },
+        {
+          "step": "E",
+          "alter": 0
+        },
+        {
+          "step": "G",
+          "alter": 0
+        },
+        {
+          "step": "B",
+          "alter": -1
+        }
+      ]
+    },
+    {
+      "id": "H0-SRC-DBDIM7",
+      "symbol": "Dbdim7",
+      "root": "Db",
+      "degrees": [
+        "1",
+        "b3",
+        "b5",
+        "bb7"
+      ],
+      "t1Refs": [
+        "T1-LIT-017"
+      ],
+      "realizationId": "literal",
+      "formulaRuleId": "seventh-diminished",
+      "rootSpelling": {
+        "step": "D",
+        "alter": -1
+      },
+      "degreeSpellings": [
+        {
+          "step": "D",
+          "alter": -1
+        },
+        {
+          "step": "F",
+          "alter": -1
+        },
+        {
+          "step": "A",
+          "alter": -2
+        },
+        {
+          "step": "C",
+          "alter": -2
+        }
+      ]
+    },
+    {
+      "id": "H0-SRC-ABMAJ7",
+      "symbol": "Abmaj7",
+      "root": "Ab",
+      "degrees": [
+        "1",
+        "3",
+        "5",
+        "7"
+      ],
+      "t1Refs": [
+        "T1-LIT-012"
+      ],
+      "realizationId": "literal",
+      "formulaRuleId": "seventh-major",
+      "rootSpelling": {
+        "step": "A",
+        "alter": -1
+      },
+      "degreeSpellings": [
+        {
+          "step": "A",
+          "alter": -1
+        },
+        {
+          "step": "C",
+          "alter": 0
+        },
+        {
+          "step": "E",
+          "alter": -1
+        },
+        {
+          "step": "G",
+          "alter": 0
+        }
+      ]
+    },
+    {
+      "id": "H0-SRC-AB7",
+      "symbol": "Ab7",
+      "root": "Ab",
+      "degrees": [
+        "1",
+        "3",
+        "5",
+        "b7"
+      ],
+      "t1Refs": [
+        "T1-LIT-013"
+      ],
+      "realizationId": "literal",
+      "formulaRuleId": "seventh-dominant",
+      "rootSpelling": {
+        "step": "A",
+        "alter": -1
+      },
+      "degreeSpellings": [
+        {
+          "step": "A",
+          "alter": -1
+        },
+        {
+          "step": "C",
+          "alter": 0
+        },
+        {
+          "step": "E",
+          "alter": -1
+        },
+        {
+          "step": "G",
+          "alter": -1
+        }
+      ]
+    },
+    {
+      "id": "H0-SRC-EBMAJ7",
+      "symbol": "Ebmaj7",
+      "root": "Eb",
+      "degrees": [
+        "1",
+        "3",
+        "5",
+        "7"
+      ],
+      "t1Refs": [
+        "T1-LIT-012"
+      ],
+      "realizationId": "literal",
+      "formulaRuleId": "seventh-major",
+      "rootSpelling": {
+        "step": "E",
+        "alter": -1
+      },
+      "degreeSpellings": [
+        {
+          "step": "E",
+          "alter": -1
+        },
+        {
+          "step": "G",
+          "alter": 0
+        },
+        {
+          "step": "B",
+          "alter": -1
+        },
+        {
+          "step": "D",
+          "alter": 0
+        }
+      ]
+    },
+    {
+      "id": "H0-SRC-DSHARPMAJ7",
+      "symbol": "D#maj7",
+      "root": "D#",
+      "degrees": [
+        "1",
+        "3",
+        "5",
+        "7"
+      ],
+      "t1Refs": [
+        "T1-LIT-012"
+      ],
+      "realizationId": "literal",
+      "formulaRuleId": "seventh-major",
+      "rootSpelling": {
+        "step": "D",
+        "alter": 1
+      },
+      "degreeSpellings": [
+        {
+          "step": "D",
+          "alter": 1
+        },
+        {
+          "step": "F",
+          "alter": 2
+        },
+        {
+          "step": "A",
+          "alter": 1
+        },
+        {
+          "step": "C",
+          "alter": 2
+        }
+      ]
+    },
+    {
+      "id": "H0-SRC-FSHARP7",
+      "symbol": "F#7",
+      "root": "F#",
+      "degrees": [
+        "1",
+        "3",
+        "5",
+        "b7"
+      ],
+      "t1Refs": [
+        "T1-LIT-013"
+      ],
+      "realizationId": "literal",
+      "formulaRuleId": "seventh-dominant",
+      "rootSpelling": {
+        "step": "F",
+        "alter": 1
+      },
+      "degreeSpellings": [
+        {
+          "step": "F",
+          "alter": 1
+        },
+        {
+          "step": "A",
+          "alter": 1
+        },
+        {
+          "step": "C",
+          "alter": 1
+        },
+        {
+          "step": "E",
+          "alter": 0
+        }
+      ]
+    },
+    {
+      "id": "H0-SRC-GB7",
+      "symbol": "Gb7",
+      "root": "Gb",
+      "degrees": [
+        "1",
+        "3",
+        "5",
+        "b7"
+      ],
+      "t1Refs": [
+        "T1-LIT-013"
+      ],
+      "realizationId": "literal",
+      "formulaRuleId": "seventh-dominant",
+      "rootSpelling": {
+        "step": "G",
+        "alter": -1
+      },
+      "degreeSpellings": [
+        {
+          "step": "G",
+          "alter": -1
+        },
+        {
+          "step": "B",
+          "alter": -1
+        },
+        {
+          "step": "D",
+          "alter": -1
+        },
+        {
+          "step": "F",
+          "alter": -1
+        }
+      ]
+    },
+    {
+      "id": "H0-SRC-CUSTOM",
+      "symbol": "cluster-X",
+      "root": null,
+      "degrees": null,
+      "t1Refs": [
+        "T1-CUSTOM-001"
+      ],
+      "realizationId": "custom",
+      "limitations": [
+        "custom.no_degree_analysis",
+        "custom.no_auto_voicing"
+      ],
+      "formulaRuleId": "custom",
+      "rootSpelling": null,
+      "degreeSpellings": null
+    }
+  ],
+  "independenceStatement": "Roots, degree spellings, contexts, and expected relationships were authored as reviewed data from the project contract and cited references. t1AuthoritySnapshot records frozen schema and policy identity metadata only; it is not imported resolver output and did not generate an expected value. No production resolver or H0 analyzer was executed to create this catalog."
+}

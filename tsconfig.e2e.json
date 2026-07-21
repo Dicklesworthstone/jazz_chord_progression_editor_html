@@ -1,6 +1,8 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact",
     "lib": [
       "ES2022",
       "DOM",
@@ -13,7 +15,11 @@
   },
   "include": [
     "playwright.config.ts",
+    "playwright.x0.config.ts",
+    "tests/integration/audio-offline-render.test.ts",
     "tests/e2e/**/*.ts",
-    "tests/visual/**/*.ts"
+    "tests/e2e/**/*.tsx",
+    "tests/visual/**/*.ts",
+    "tests/visual/**/*.tsx"
   ]
 }

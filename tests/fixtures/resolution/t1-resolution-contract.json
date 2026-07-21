@@ -1,0 +1,296 @@
+{
+  "schema": "changes.fixtures.t1-resolution-contract.v1",
+  "fixtureVersion": "1.0.0",
+  "status": "independently-authored-pre-production",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "publicContract": "src/theory/resolution-contract.ts",
+  "identity": {
+    "contractSchema": "changes.theory.resolution-contract.v1",
+    "resolvedChordSchema": "changes.theory.resolved-chord.v1",
+    "formulaTableId": "changes.chord-formulas",
+    "formulaTableVersion": 1,
+    "spellingPolicyId": "changes.degree-spelling",
+    "spellingPolicyVersion": 1,
+    "degreeRolePolicyId": "changes.balanced-degree-roles",
+    "degreeRolePolicyVersion": 1,
+    "semanticRealizationIds": [
+      "literal",
+      "alt-b9-b5",
+      "alt-b9-sharp5",
+      "alt-sharp9-b5",
+      "alt-sharp9-sharp5"
+    ],
+    "customRealizationId": "custom"
+  },
+  "operationIds": [
+    "spellChordDegree",
+    "resolveChord"
+  ],
+  "formulaPhases": [
+    "base",
+    "suspension",
+    "structural-alterations",
+    "color-alterations",
+    "additions",
+    "omissions",
+    "canonicalization",
+    "spelling"
+  ],
+  "refusalCodes": [
+    "theory.formula_family_unsupported",
+    "theory.sixth_invalid",
+    "theory.extension_invalid",
+    "theory.addition_invalid",
+    "theory.alteration_invalid",
+    "theory.omission_invalid",
+    "theory.modifier_conflict",
+    "theory.color_policy_invalid",
+    "theory.spelling_accidental_out_of_range",
+    "limit.theory_realization_degrees_exceeded"
+  ],
+  "warningCodes": [
+    "theory.omission_absent"
+  ],
+  "customLimitations": [
+    "custom.no_degree_analysis",
+    "custom.no_auto_voicing"
+  ],
+  "limits": {
+    "extensions": 1,
+    "additions": 7,
+    "alterations": 8,
+    "omissions": 2,
+    "realizationsPerChord": 4,
+    "degreesPerRealization": 16,
+    "semanticOutputRecords": 64,
+    "spellingAttempts": 64,
+    "warnings": 1,
+    "formulaPhases": 8,
+    "phaseTransitions": 32,
+    "candidateInsertions": 84,
+    "peakCandidateDegrees": 21,
+    "inputDegreeRecordsVisited": 23,
+    "trackedRecords": 149,
+    "customPitchNames": 16,
+    "minimumSupportedAlteration": -2,
+    "maximumSupportedAlteration": 2
+  },
+  "inputPolicy": {
+    "extensionNumbers": [9, 11, 13],
+    "additionNumbers": [2, 3, 4, 6, 9, 11, 13],
+    "alterationNumbers": [5, 9, 11, 13],
+    "omissionNumbers": [3, 5],
+    "modifierAlterations": [-1, 1],
+    "modifierConflictPrecedence": [
+      "sixth-with-seventh",
+      "sixth-with-extension",
+      "addition-omission",
+      "alteration-omission",
+      "structural-alteration-pair"
+    ],
+    "refusalReasonPrecedence": {
+      "theory.sixth_invalid": ["alteration", "family"],
+      "theory.extension_invalid": ["count", "number", "alteration", "family"],
+      "theory.addition_invalid": ["count", "number", "alteration"],
+      "theory.alteration_invalid": ["count", "number", "alteration"],
+      "theory.omission_invalid": ["count", "number"],
+      "theory.color_policy_invalid": ["requires-dominant-seventh", "explicit-five-or-nine-alteration"]
+    }
+  },
+  "degreeTokenVocabulary": [
+    {"token":"1","number":1,"alter":0,"directedSemitones":0,"pitchClassOffset":0,"diatonicSteps":0},
+    {"token":"b2","number":2,"alter":-1,"directedSemitones":1,"pitchClassOffset":1,"diatonicSteps":1},
+    {"token":"2","number":2,"alter":0,"directedSemitones":2,"pitchClassOffset":2,"diatonicSteps":1},
+    {"token":"b3","number":3,"alter":-1,"directedSemitones":3,"pitchClassOffset":3,"diatonicSteps":2},
+    {"token":"3","number":3,"alter":0,"directedSemitones":4,"pitchClassOffset":4,"diatonicSteps":2},
+    {"token":"4","number":4,"alter":0,"directedSemitones":5,"pitchClassOffset":5,"diatonicSteps":3},
+    {"token":"b5","number":5,"alter":-1,"directedSemitones":6,"pitchClassOffset":6,"diatonicSteps":4},
+    {"token":"5","number":5,"alter":0,"directedSemitones":7,"pitchClassOffset":7,"diatonicSteps":4},
+    {"token":"#5","number":5,"alter":1,"directedSemitones":8,"pitchClassOffset":8,"diatonicSteps":4},
+    {"token":"6","number":6,"alter":0,"directedSemitones":9,"pitchClassOffset":9,"diatonicSteps":5},
+    {"token":"bb7","number":7,"alter":-2,"directedSemitones":9,"pitchClassOffset":9,"diatonicSteps":6},
+    {"token":"b7","number":7,"alter":-1,"directedSemitones":10,"pitchClassOffset":10,"diatonicSteps":6},
+    {"token":"7","number":7,"alter":0,"directedSemitones":11,"pitchClassOffset":11,"diatonicSteps":6},
+    {"token":"b9","number":9,"alter":-1,"directedSemitones":13,"pitchClassOffset":1,"diatonicSteps":8},
+    {"token":"9","number":9,"alter":0,"directedSemitones":14,"pitchClassOffset":2,"diatonicSteps":8},
+    {"token":"#9","number":9,"alter":1,"directedSemitones":15,"pitchClassOffset":3,"diatonicSteps":8},
+    {"token":"b11","number":11,"alter":-1,"directedSemitones":16,"pitchClassOffset":4,"diatonicSteps":10},
+    {"token":"11","number":11,"alter":0,"directedSemitones":17,"pitchClassOffset":5,"diatonicSteps":10},
+    {"token":"#11","number":11,"alter":1,"directedSemitones":18,"pitchClassOffset":6,"diatonicSteps":10},
+    {"token":"b13","number":13,"alter":-1,"directedSemitones":20,"pitchClassOffset":8,"diatonicSteps":12},
+    {"token":"13","number":13,"alter":0,"directedSemitones":21,"pitchClassOffset":9,"diatonicSteps":12},
+    {"token":"#13","number":13,"alter":1,"directedSemitones":22,"pitchClassOffset":10,"diatonicSteps":12}
+  ],
+  "ordering": {
+    "degreeOrder": "ascending number, then ascending alter; stable realization-local exact duplicates are collapsed only in canonicalization",
+    "realizationOrder": [
+      "literal",
+      "alt-b9-b5",
+      "alt-b9-sharp5",
+      "alt-sharp9-b5",
+      "alt-sharp9-sharp5"
+    ],
+    "warningOrder": "at most one theory.omission_absent warning for absent degree 3; no5 is always present in v1",
+    "refusalPrecedence": [
+      "theory.sixth_invalid",
+      "theory.extension_invalid",
+      "theory.addition_invalid",
+      "theory.alteration_invalid",
+      "theory.omission_invalid",
+      "theory.formula_family_unsupported",
+      "theory.color_policy_invalid",
+      "theory.modifier_conflict",
+      "limit.theory_realization_degrees_exceeded",
+      "theory.spelling_accidental_out_of_range"
+    ],
+    "allOrNothing": "Any refusal returns no partial realization, pitch, warning, or chosen altered-dominant audition variant."
+  },
+  "rolePolicy": {
+    "root": "required",
+    "majorOrMinorThird": ["required", "guide"],
+    "ordinaryFifth": "optional",
+    "identityFifths": "required for power, diminished, augmented, half-diminished, diminished-seventh, and augmented-major-seventh families",
+    "seventh": ["required", "guide"],
+    "sixth": "required; the added 9 in 6/9 is optional",
+    "highestExtension": "required",
+    "intermediateExtensionClosure": "optional",
+    "explicitAdditionOrAlteration": "required",
+    "suspension": ["required", "guide"],
+    "genericAdd3": "required but not guide",
+    "omission": "remove every degree with the omitted number from every realization; warn when none was present",
+    "slashBass": "preserve separately; never add it to degree membership or roles"
+  },
+  "matrix": {
+    "rootCount": 12,
+    "familySeedCount": 33,
+    "expectedCellCount": 396,
+    "construction": "complete Cartesian product; exclusions are forbidden",
+    "roots": ["C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"],
+    "familyBuckets": {"triad":7,"sixth":4,"seventh":7,"extension":9,"dominant-suspension":6},
+    "supersedesInitialPlanningCount": "The initial 32-seed planning list omitted declared major-eleventh; the normative formula table requires all 33 families across all roots."
+  },
+  "knownPlanCorrections": [
+    {
+      "id": "T1-CORRECTION-ABDIM7",
+      "source": "docs/REBUILD_PLAN.md section 10.4 example row",
+      "incorrectExample": "Abdim7 diminished seventh -> Fb",
+      "correctExpectation": "Abdim7 bb7 -> Gbb",
+      "controlExpectation": "Gdim7 bb7 -> Fb",
+      "reason": "A seventh above an A-root must use letter G; Fb is a seventh above G, not Ab.",
+      "traceIds": ["T1-TRACE-LEGACY-L-THEORY-01", "T1-TRACE-SPELLING"],
+      "authorityIds": ["T1-AUTH-LEGACY", "T1-AUTH-SPELLING"]
+    }
+  ],
+  "independence": {
+    "fixtureOracle": "degree tokens, roots, spelling examples, and pitch classes are checked from fixture-owned definition data",
+    "forbiddenShortcuts": [
+      "importing production formula tables into a fixture validator",
+      "generating expected values with resolveChord or spellChordDegree",
+      "choosing one 7alt variant before an explicit downstream audition policy",
+      "normalizing enharmonic degrees by pitch class",
+      "repairing unsupported formulas into a nearby supported family",
+      "silently dropping a slash bass, duplicate custom pitch, or warning"
+    ]
+  },
+  "mutationControlReview": {
+    "ledgerFixtureVersion": "1.1.0",
+    "reviewState": "reviewed-executable-counterfactuals-with-corroborative-links",
+    "controls": 53,
+    "directKillerLinks": 124,
+    "corroborativeLinks": 16,
+    "reviewedCaseLinks": 140,
+    "reviewedCaseLinkOrderSha256": "fbf7124754ba69ec01ef246d4f42ba637b0f75effc95745d39a2cff55430b261",
+    "directKillerDefinition": "the named semantic counterfactual applies to the case and changes a value checked by its independently reviewed oracle",
+    "corroborativeDefinition": "the case proves an adjacent invariant but the named counterfactual is inapplicable or leaves that case unchanged; it is observed but never counted as a kill",
+    "sourceMutationClassification": "semantic counterfactual execution is distinct from production-source mutation; production-source mutant counts remain zero unless altered production code is actually executed",
+    "corroborativeReasonCodes": [
+      "predicate-does-not-constrain-ordinary-fifth-role",
+      "operator-scope-mismatch",
+      "single-identity-no-collection-collapse",
+      "near-miss-no-target",
+      "no-transposition-executed",
+      "no-extension-supplied-natural-closure",
+      "single-same-number-member",
+      "stable-sort-tie-no-reordering"
+    ]
+  },
+  "lawPredicateReview": {
+    "canonicalization": "SHA-256 of UTF-8 compact JSON after recursively sorting object keys by code-unit order; array order is preserved",
+    "predicateCount": 12,
+    "inventory": [
+      {
+        "lawCaseId": "T1-LAW-001",
+        "lawId": "L-THEORY-01",
+        "semanticPredicateDigest": "75e6ab7310c9b73c5c3c581dde9c4dd028db46c72ad2922bae96545fce6dfd8a"
+      },
+      {
+        "lawCaseId": "T1-LAW-002",
+        "lawId": "T1-LAW-DEGREE-IDENTITY",
+        "semanticPredicateDigest": "523e550141688d9a878d457bb487294deb854f23cbe58303fba395b5622936ce"
+      },
+      {
+        "lawCaseId": "T1-LAW-003",
+        "lawId": "T1-LAW-DIRECTED-SPELLING",
+        "semanticPredicateDigest": "03461509f2d458836a6e1979b92c8095fb8d48c6362da75f295203e88e49675b"
+      },
+      {
+        "lawCaseId": "T1-LAW-004",
+        "lawId": "T1-LAW-TRANSPOSE-INVERSE",
+        "semanticPredicateDigest": "065d11ef77007541a23ef12fec97bafffb3d842959bb6b7544924ec18ebbb513"
+      },
+      {
+        "lawCaseId": "T1-LAW-005",
+        "lawId": "T1-LAW-PROJECTION-COMMUTES",
+        "semanticPredicateDigest": "e4964f6554e8c0c46bd49c6e9becafb33024e74471679c3dc8f2eed6406d2f77"
+      },
+      {
+        "lawCaseId": "T1-LAW-006",
+        "lawId": "T1-LAW-ALT-AMBIGUITY",
+        "semanticPredicateDigest": "b7c802fe6d71ff708df193e7bf2c48d46faa7ae74db650f5515b9086f0626b31"
+      },
+      {
+        "lawCaseId": "T1-LAW-007",
+        "lawId": "T1-LAW-MODIFIER-PHASES",
+        "semanticPredicateDigest": "f386a17c5521d74561cdd6629514464ee2985be5eb1255bb187197a825af95e1"
+      },
+      {
+        "lawCaseId": "T1-LAW-008",
+        "lawId": "T1-LAW-ROLE-PARTITION",
+        "semanticPredicateDigest": "d40ff8d7a749cebc0d9d2cb3d94f853e6702e9fa45654cf41af6967058337630"
+      },
+      {
+        "lawCaseId": "T1-LAW-009",
+        "lawId": "T1-LAW-OMISSION",
+        "semanticPredicateDigest": "ece90333f7b4a5c411adfb2ca0117c064215b1a200433fbd16a6e65dd7a481a2"
+      },
+      {
+        "lawCaseId": "T1-LAW-010",
+        "lawId": "T1-LAW-SLASH-SEPARATION",
+        "semanticPredicateDigest": "aa7af72c80a3a907bd67bec77829f262581ac18d5299b649ace625eefe05585d"
+      },
+      {
+        "lawCaseId": "T1-LAW-011",
+        "lawId": "T1-LAW-CUSTOM-EXACTNESS",
+        "semanticPredicateDigest": "b582e1f73b48a5742933529d10a960fb6a53fa96729b2690cf2da195380710a5"
+      },
+      {
+        "lawCaseId": "T1-LAW-012",
+        "lawId": "T1-LAW-TRANSACTIONAL-REFUSAL",
+        "semanticPredicateDigest": "8ce0fc5c40aebd301b4f28492f8c8e82ae5b230c2eb6372bb8052d4470ca1540"
+      }
+    ]
+  },
+  "expectedInventoryMinimums": {
+    "formulaRules": 33,
+    "allRootCells": 396,
+    "literalPlanSymbols": 46,
+    "spellingCases": 12,
+    "customCases": 6,
+    "lawCases": 10,
+    "operationStateCases": 6,
+    "traceRows": 13,
+    "authorities": 6,
+    "reviewedMutationControls": 30
+  }
+}

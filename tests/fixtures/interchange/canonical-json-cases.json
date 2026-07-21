@@ -1,0 +1,410 @@
+{
+  "schema": "changes.fixtures.e0-canonical-json-cases.v1",
+  "reviewState": "proposed-pending-first-golden-human-acceptance",
+  "expectedValuesGenerated": false,
+  "productionOutputUsedAsOracle": false,
+  "cases": [
+    {
+      "id": "E0-JX-001",
+      "authorityIds": [
+        "E0-AUTH-PLAN",
+        "E0-AUTH-ECMA-JSON",
+        "E0-AUTH-F2",
+        "E0-AUTH-F3"
+      ],
+      "traceIds": ["E0-TRACE-JSON-LOSSLESS"],
+      "proofKinds": ["positive", "golden", "round-trip"],
+      "inputFixtureIds": ["goldens/minimal.changes.json"],
+      "resultCategory": "EXPORT_READY",
+      "failureStage": null,
+      "expectedIssueCodes": [],
+      "expectedGolden": {
+        "file": "goldens/minimal.changes.json",
+        "bytes": 352,
+        "sha256": "c73321857e0ad8cc6ac03961ec872d456090d190d2d5c1a659883259c7f20fe5"
+      },
+      "stateEffect": "NONE",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": {
+        "jsonParse": 1,
+        "shapeDecode": 1,
+        "semanticValidation": 1,
+        "semanticEquality": 1,
+        "hash": 1,
+        "delivery": 0
+      },
+      "terminationReason": "artifact-ready",
+      "expectedMutationKills": [
+        "E0-MUT-001",
+        "E0-MUT-002",
+        "E0-MUT-005",
+        "E0-MUT-006",
+        "E0-MUT-007"
+      ]
+    },
+    {
+      "id": "E0-JX-002",
+      "authorityIds": ["E0-AUTH-F2", "E0-AUTH-ECMA-JSON"],
+      "traceIds": ["E0-TRACE-JSON-LOSSLESS"],
+      "proofKinds": ["positive", "golden", "near-miss"],
+      "inputFixtureIds": ["goldens/negative-zero.changes.json"],
+      "resultCategory": "EXPORT_READY",
+      "failureStage": null,
+      "expectedIssueCodes": [],
+      "expectedGolden": {
+        "file": "goldens/negative-zero.changes.json",
+        "bytes": 409,
+        "sha256": "2a5515c11bc083b03fa36b6a802049355a7a5ff90fdc7505860ea788358f9aad"
+      },
+      "expectedSignedZeroPaths": [
+        "$.playback.masterVolume",
+        "$.playback.reverbAmount"
+      ],
+      "stateEffect": "NONE",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": {
+        "jsonParse": 1,
+        "shapeDecode": 1,
+        "semanticValidation": 1,
+        "semanticEquality": 1,
+        "hash": 1,
+        "delivery": 0
+      },
+      "terminationReason": "artifact-ready",
+      "expectedMutationKills": ["E0-MUT-003", "E0-MUT-067"]
+    },
+    {
+      "id": "E0-JX-003",
+      "authorityIds": ["E0-AUTH-PLAN"],
+      "traceIds": ["E0-TRACE-JSON-DETERMINISM"],
+      "proofKinds": ["positive", "metamorphic"],
+      "inputFixtureIds": ["E0-DOC-RICH-INSERTION-A", "E0-DOC-RICH-INSERTION-B"],
+      "resultCategory": "EXPORT_READY",
+      "failureStage": null,
+      "expectedIssueCodes": [],
+      "expectedRelation": "byte-identical",
+      "stateEffect": "NONE",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": { "exports": 2, "delivery": 0 },
+      "terminationReason": "both-artifacts-ready",
+      "expectedMutationKills": ["E0-MUT-001", "E0-MUT-064"]
+    },
+    {
+      "id": "E0-JX-004",
+      "authorityIds": ["E0-AUTH-ECMA-JSON", "E0-AUTH-F1"],
+      "traceIds": ["E0-TRACE-JSON-LOSSLESS"],
+      "proofKinds": ["positive", "near-miss"],
+      "inputFixtureIds": ["E0-DOC-UNICODE-001"],
+      "resultCategory": "EXPORT_READY",
+      "failureStage": null,
+      "expectedIssueCodes": [],
+      "expectedRelation": "quotes-controls-astral-and-canonical-equivalence-remain-code-point-exact-without-normalization",
+      "stateEffect": "NONE",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": { "jsonParse": 1, "semanticEquality": 1 },
+      "terminationReason": "artifact-ready",
+      "expectedMutationKills": ["E0-MUT-003", "E0-MUT-024"]
+    },
+    {
+      "id": "E0-JX-005",
+      "authorityIds": ["E0-AUTH-PLAN", "E0-AUTH-A0"],
+      "traceIds": ["E0-TRACE-JSON-LOSSLESS"],
+      "proofKinds": ["negative", "projection"],
+      "inputFixtureIds": ["E0-APP-ENVELOPE-RICH-001"],
+      "resultCategory": "EXPORT_READY",
+      "failureStage": null,
+      "expectedIssueCodes": [],
+      "forbiddenOutputKeys": [
+        "revision",
+        "exportRevision",
+        "recovery",
+        "history",
+        "bookmarks",
+        "panels",
+        "dialogs",
+        "quickEntry",
+        "importDraft",
+        "transport",
+        "pendingRequests",
+        "documentTransition",
+        "notices"
+      ],
+      "stateEffect": "NONE",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": { "applicationEnvelopeReads": 0, "delivery": 0 },
+      "terminationReason": "artifact-ready",
+      "expectedMutationKills": ["E0-MUT-005", "E0-MUT-059"]
+    },
+    {
+      "id": "E0-JX-006",
+      "authorityIds": ["E0-AUTH-PLAN", "E0-AUTH-F2", "E0-AUTH-F3"],
+      "traceIds": ["E0-TRACE-JSON-LOSSLESS"],
+      "proofKinds": ["positive", "round-trip"],
+      "inputFixtureIds": ["goldens/nested.changes.json"],
+      "resultCategory": "EXPORT_READY",
+      "failureStage": null,
+      "expectedIssueCodes": [],
+      "expectedRelation": "decoded-validated-document-semantically-equal-with-Object.is-number-semantics",
+      "stateEffect": "NONE",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": {
+        "jsonParse": 1,
+        "shapeDecode": 1,
+        "semanticValidation": 1,
+        "semanticEquality": 1,
+        "delivery": 0
+      },
+      "terminationReason": "artifact-ready",
+      "expectedMutationKills": ["E0-MUT-006", "E0-MUT-007"]
+    },
+    {
+      "id": "E0-JX-007",
+      "authorityIds": ["E0-AUTH-PLAN"],
+      "traceIds": ["E0-TRACE-JSON-FAILURE-ISOLATION"],
+      "proofKinds": ["negative", "mutation-link"],
+      "inputFixtureIds": ["E0-FAULT-SELF-PARSE"],
+      "resultCategory": "REFUSED_PARSE",
+      "failureStage": "json-parse-or-legacy-migration",
+      "expectedIssueCodes": ["export.canonical_parse_failed"],
+      "stateEffect": "NONE",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": {
+        "jsonParse": 1,
+        "shapeDecode": 0,
+        "semanticValidation": 0,
+        "hash": 0,
+        "delivery": 0
+      },
+      "terminationReason": "complete-refusal",
+      "expectedMutationKills": ["E0-MUT-006"]
+    },
+    {
+      "id": "E0-JX-008",
+      "authorityIds": ["E0-AUTH-F2"],
+      "traceIds": ["E0-TRACE-JSON-FAILURE-ISOLATION"],
+      "proofKinds": ["negative", "mutation-link"],
+      "inputFixtureIds": ["E0-FAULT-SELF-DECODE"],
+      "resultCategory": "REFUSED_STRUCTURAL",
+      "failureStage": "structural-decode",
+      "expectedIssueCodes": ["export.canonical_structural_round_trip_failed"],
+      "stateEffect": "NONE",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": {
+        "jsonParse": 1,
+        "shapeDecode": 1,
+        "semanticValidation": 0,
+        "hash": 0,
+        "delivery": 0
+      },
+      "terminationReason": "complete-refusal",
+      "expectedMutationKills": ["E0-MUT-006"]
+    },
+    {
+      "id": "E0-JX-009",
+      "authorityIds": ["E0-AUTH-F3"],
+      "traceIds": ["E0-TRACE-JSON-FAILURE-ISOLATION"],
+      "proofKinds": ["negative", "mutation-link"],
+      "inputFixtureIds": ["E0-FAULT-SELF-SEMANTIC"],
+      "resultCategory": "REFUSED_SEMANTIC",
+      "failureStage": "semantic-validation",
+      "expectedIssueCodes": ["export.canonical_semantic_round_trip_failed"],
+      "stateEffect": "NONE",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": {
+        "jsonParse": 1,
+        "shapeDecode": 1,
+        "semanticValidation": 1,
+        "semanticEquality": 0,
+        "hash": 0,
+        "delivery": 0
+      },
+      "terminationReason": "complete-refusal",
+      "expectedMutationKills": ["E0-MUT-007"]
+    },
+    {
+      "id": "E0-JX-010",
+      "authorityIds": ["E0-AUTH-F3"],
+      "traceIds": ["E0-TRACE-JSON-FAILURE-ISOLATION"],
+      "proofKinds": ["negative", "mutation-link"],
+      "inputFixtureIds": ["E0-FAULT-SEMANTIC-EQUALITY"],
+      "resultCategory": "REFUSED_SEMANTIC",
+      "failureStage": "semantic-validation",
+      "expectedIssueCodes": ["export.canonical_semantic_mismatch"],
+      "stateEffect": "NONE",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": { "semanticEquality": 1, "hash": 0, "delivery": 0 },
+      "terminationReason": "complete-refusal",
+      "expectedMutationKills": ["E0-MUT-007"]
+    },
+    {
+      "id": "E0-JX-011",
+      "authorityIds": ["E0-AUTH-WEB-CRYPTO"],
+      "traceIds": ["E0-TRACE-JSON-FAILURE-ISOLATION"],
+      "proofKinds": ["negative"],
+      "inputFixtureIds": ["E0-FAULT-HASH-UNAVAILABLE"],
+      "resultCategory": "REFUSED_SEMANTIC",
+      "failureStage": "semantic-validation",
+      "expectedIssueCodes": ["export.hash_unavailable"],
+      "stateEffect": "NONE",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": { "hash": 1, "delivery": 0 },
+      "terminationReason": "complete-refusal",
+      "expectedMutationKills": ["E0-MUT-055"]
+    },
+    {
+      "id": "E0-JX-012",
+      "authorityIds": ["E0-AUTH-PLAN"],
+      "traceIds": ["E0-TRACE-FILENAME"],
+      "proofKinds": ["positive", "golden"],
+      "inputFixtureIds": ["title:Late Set"],
+      "resultCategory": "EXPORT_READY",
+      "failureStage": null,
+      "expectedIssueCodes": [],
+      "expectedFilename": "Late Set.changes.json",
+      "stateEffect": "NONE",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": { "unicodeScalarsVisited": 8 },
+      "terminationReason": "filename-ready",
+      "expectedMutationKills": ["E0-MUT-008", "E0-MUT-010"]
+    },
+    {
+      "id": "E0-JX-013",
+      "authorityIds": ["E0-AUTH-FILENAME-POLICY"],
+      "traceIds": ["E0-TRACE-FILENAME", "E0-TRACE-HOSTILE-INERT"],
+      "proofKinds": ["negative", "near-miss"],
+      "inputFixtureIds": ["title:../CON<script>|nul. "],
+      "resultCategory": "EXPORT_READY",
+      "failureStage": null,
+      "expectedIssueCodes": [],
+      "expectedFilename": "..-CON-script-nul.changes.json",
+      "stateEffect": "NONE",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": { "htmlParses": 0, "urlNavigations": 0 },
+      "terminationReason": "filename-ready",
+      "expectedMutationKills": [
+        "E0-MUT-008",
+        "E0-MUT-024",
+        "E0-MUT-062",
+        "E0-MUT-066"
+      ]
+    },
+    {
+      "id": "E0-JX-014",
+      "authorityIds": ["E0-AUTH-PLAN"],
+      "traceIds": ["E0-TRACE-FILENAME"],
+      "proofKinds": ["near-miss", "golden"],
+      "inputFixtureIds": ["title:ECMAScript-trim-blank"],
+      "resultCategory": "EXPORT_READY",
+      "failureStage": null,
+      "expectedIssueCodes": [],
+      "expectedFilename": "untitled-changes.json",
+      "stateEffect": "NONE",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": { "fallbacks": 1 },
+      "terminationReason": "filename-ready",
+      "expectedMutationKills": ["E0-MUT-008"]
+    },
+    {
+      "id": "E0-JX-015",
+      "authorityIds": ["E0-AUTH-FILENAME-POLICY"],
+      "traceIds": ["E0-TRACE-FILENAME"],
+      "proofKinds": ["exact-boundary", "near-miss"],
+      "inputFixtureIds": [
+        "title:120-astral-scalars",
+        "title:121-astral-scalars",
+        "title:chart.changes.json"
+      ],
+      "resultCategory": "EXPORT_READY",
+      "failureStage": null,
+      "expectedIssueCodes": [],
+      "expectedRelations": [
+        "120-scalars-retained",
+        "121st-scalar-truncated",
+        "extension-owned-once"
+      ],
+      "stateEffect": "NONE",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": { "utf16LengthUsed": 0 },
+      "terminationReason": "filename-ready",
+      "expectedMutationKills": ["E0-MUT-009", "E0-MUT-010"]
+    },
+    {
+      "id": "E0-JX-016",
+      "authorityIds": ["E0-AUTH-F2", "E0-AUTH-PLAN"],
+      "traceIds": ["E0-TRACE-JSON-PORTABLE-BOUND"],
+      "proofKinds": ["exact-boundary", "positive"],
+      "inputFixtureIds": ["E0-LIM-JSON-2097152"],
+      "resultCategory": "EXPORT_READY",
+      "failureStage": null,
+      "expectedIssueCodes": [],
+      "stateEffect": "NONE",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": {
+        "utf8BytesEmitted": 2097152,
+        "hash": 1,
+        "delivery": 0
+      },
+      "terminationReason": "artifact-ready",
+      "expectedMutationKills": ["E0-MUT-012", "E0-MUT-013"]
+    },
+    {
+      "id": "E0-JX-017",
+      "authorityIds": ["E0-AUTH-F2", "E0-AUTH-PLAN"],
+      "traceIds": ["E0-TRACE-JSON-PORTABLE-BOUND"],
+      "proofKinds": ["exact-boundary", "negative"],
+      "inputFixtureIds": ["E0-LIM-JSON-2097153"],
+      "resultCategory": "REFUSED_PREFLIGHT",
+      "failureStage": "byte-preflight",
+      "expectedIssueCodes": ["export.canonical_bytes_exceeded"],
+      "stateEffect": "NONE",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": {
+        "utf8BytesEmitted": 2097153,
+        "hash": 0,
+        "delivery": 0
+      },
+      "terminationReason": "complete-refusal",
+      "expectedMutationKills": ["E0-MUT-012", "E0-MUT-013"]
+    },
+    {
+      "id": "E0-JX-018",
+      "authorityIds": ["E0-AUTH-PLAN"],
+      "traceIds": ["E0-TRACE-JSON-DETERMINISM"],
+      "proofKinds": ["positive", "metamorphic"],
+      "inputFixtureIds": ["goldens/nested.changes.json"],
+      "resultCategory": "EXPORT_READY",
+      "failureStage": null,
+      "expectedIssueCodes": [],
+      "expectedRelation": "100-repeated-exports-byte-identical-and-hash-identical",
+      "stateEffect": "NONE",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": { "exports": 100, "delivery": 0 },
+      "terminationReason": "all-artifacts-ready",
+      "expectedMutationKills": ["E0-MUT-001", "E0-MUT-064"]
+    },
+    {
+      "id": "E0-JX-019",
+      "authorityIds": ["E0-AUTH-WEB-CRYPTO", "E0-AUTH-VERIFICATION"],
+      "traceIds": ["E0-TRACE-JSON-FAILURE-ISOLATION"],
+      "proofKinds": ["negative", "adapter", "mutation-link"],
+      "inputFixtureIds": [
+        "E0-FAULT-HASH-REJECTED",
+        "E0-FAULT-HASH-THREW",
+        "E0-FAULT-HASH-MALFORMED"
+      ],
+      "resultCategory": "REFUSED_SEMANTIC",
+      "failureStage": "semantic-validation",
+      "expectedIssueCodes": ["export.hash_unavailable"],
+      "expectedRelation": "hash-promise-rejection-synchronous-throw-and-malformed-success-envelope-are-each-normalized-with-no-raw-value-or-partial-artifact",
+      "stateEffect": "NONE",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": {
+        "hashFaultRows": 3,
+        "hashCallsPerRow": 1,
+        "deliveryCallsPerRow": 0
+      },
+      "terminationReason": "complete-refusal",
+      "expectedMutationKills": ["E0-MUT-082"]
+    }
+  ]
+}

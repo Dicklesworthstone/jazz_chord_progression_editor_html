@@ -1,0 +1,95 @@
+{
+  "schema": "changes.fixtures.h0-provenance-ledger.v1",
+  "fixtureVersion": "1.0.0",
+  "expectedValuesGenerated": false,
+  "productionOutputUsed": false,
+  "authoringStatement": "H0 expected readings, tiers, degree spellings, containment outcomes, clashes, exceptions, limits, and mutation killers were authored as fixture data before H0 production implementation. No production analyzer, scale mapper, transposer, resolver, or generated artifact supplied expected values.",
+  "expertReviewClaimed": false,
+  "allowedAuthorityClasses": ["reviewed-project-contract","upstream-reviewed-contract","project-policy","published-reference"],
+  "authorities": [
+    {
+      "id": "H0-AUTH-PLAN",
+      "authorityClass": "reviewed-project-contract",
+      "title": "Changes rebuild plan, Harmony and progression intelligence",
+      "sourceRefs": ["docs/REBUILD_PLAN.md#111-boundary-between-facts-analysis-and-suggestions","docs/REBUILD_PLAN.md#113-roman-numeral-readings","docs/REBUILD_PLAN.md#114-chord-scales-and-tensions"],
+      "claims": ["literal-context-option separation","four evidence tiers","KeyContext modes","Roman and functional rule families","mechanical match weights","initial scale families and mapping predicates","plural scale options","clash and exception reporting"],
+      "reviewTier": "project-reviewed-contract"
+    },
+    {
+      "id": "H0-AUTH-IDEA-WIZARD",
+      "authorityClass": "reviewed-project-contract",
+      "title": "Theory Engine Idea Wizard, Harmonic Discovery System",
+      "sourceRefs": ["docs/THEORY_IDEA_WIZARD.md#6-multi-hypothesis-tonal-journey-map","docs/THEORY_IDEA_WIZARD.md#8-contextual-color-and-upper-structure-laboratory","docs/THEORY_IDEA_WIZARD.md#shared-acceptance-laws-for-all-fifteen"],
+      "claims": ["plural defensible readings","visible assumptions/counterevidence/limitations","nonfunctional and modal legitimacy","deterministic ordering","transposition and independent-golden requirements"],
+      "reviewTier": "project-reviewed-contract"
+    },
+    {
+      "id": "H0-AUTH-T1",
+      "authorityClass": "upstream-reviewed-contract",
+      "title": "T1 exact resolution, degree spelling, and realization authority",
+      "sourceRefs": ["docs/T1_RESOLUTION_CONTRACT.md","tests/fixtures/resolution/t1-resolution-contract.json","tests/fixtures/resolution/all-root-cases.json","tests/fixtures/resolution/literal-cases.json","tests/fixtures/resolution/spelling-cases.json"],
+      "claims": ["12 reviewed root spellings","exact ChordDegree vocabulary","degree-correct spelling before pitch-class projection","four distinct altered-dominant realization IDs","custom.no_degree_analysis limitation"],
+      "reviewTier": "upstream-reviewed-contract"
+    },
+    {
+      "id": "H0-AUTH-PROJECT-POLICY",
+      "authorityClass": "project-policy",
+      "title": "Repository working agreement",
+      "sourceRefs": ["AGENTS.md#product-boundary","AGENTS.md#architecture-invariants","AGENTS.md#verification-discipline"],
+      "claims": ["offline deterministic runtime","spelling-first domain","independently authored fixtures","positive near-miss transposition and mutation proof","no hidden repair or AI authority"],
+      "reviewTier": "repository-policy"
+    },
+    {
+      "id": "H0-AUTH-OMT-APPLIED",
+      "authorityClass": "published-reference",
+      "title": "Open Music Theory: Applied chords",
+      "url": "https://openmusictheory.github.io/appliedChords.html",
+      "accessed": "2026-07-17",
+      "claims": ["applied chords tonicize a following non-tonic chord","slash Roman notation identifies the applied function","leading-tone and dominant forms use target-relative scale-degree tendency"],
+      "limitations": ["The page describes common-practice tonal usage; H0 does not universalize it to all jazz harmony."],
+      "licenseUse": "linked-reference-only-no-verbatim-corpus-content",
+      "reviewTier": "published-reference"
+    },
+    {
+      "id": "H0-AUTH-OMT-MIXTURE",
+      "authorityClass": "published-reference",
+      "title": "Open Music Theory: Modal mixture",
+      "url": "https://openmusictheory.github.io/modalMixture.html",
+      "accessed": "2026-07-17",
+      "claims": ["modal mixture borrows complete chords from a parallel key","altered Roman roots retain flat or sharp spelling","borrowed use alone does not prove modulation"],
+      "limitations": ["The fixture table narrows this general account to explicitly named H0 parallel-mode rows."],
+      "licenseUse": "linked-reference-only-no-verbatim-corpus-content",
+      "reviewTier": "published-reference"
+    },
+    {
+      "id": "H0-AUTH-OMT-FUNCTION-CAVEAT",
+      "authorityClass": "published-reference",
+      "title": "Open Music Theory: Harmonic functions",
+      "url": "https://openmusictheory.github.io/harmonicFunctions.html",
+      "accessed": "2026-07-17",
+      "claims": ["harmonic function depends on context and style","common-practice function is not a universal account of all harmony"],
+      "limitations": ["Used only to support caution and explicit unclassified/modal/nonfunctional outcomes, not jazz chord-scale mappings."],
+      "licenseUse": "linked-reference-only-no-verbatim-corpus-content",
+      "reviewTier": "published-reference"
+    }
+  ],
+  "decisionLedger": [
+    {"id":"H0-DECISION-001","decision":"Only immediate previous and next events contribute adjacency evidence.","authorityIds":["H0-AUTH-PLAN","H0-AUTH-PROJECT-POLICY"]},
+    {"id":"H0-DECISION-002","decision":"Secondary targets are immediate non-tonic diatonic roots; tonic targets are ordinary dominant.","authorityIds":["H0-AUTH-PLAN","H0-AUTH-OMT-APPLIED"]},
+    {"id":"H0-DECISION-003","decision":"Melodic-minor harmony uses the fixed ascending collection 1 2 b3 4 5 6 7.","authorityIds":["H0-AUTH-PLAN"]},
+    {"id":"H0-DECISION-004","decision":"Containment equates 2/9, 4/11, and 6/13 only with identical alteration; pitch-class-only aliases fail.","authorityIds":["H0-AUTH-PLAN","H0-AUTH-T1"]},
+    {"id":"H0-DECISION-005","decision":"Exact tritone evidence requires guide-tone role spelling in addition to shared pitch classes.","authorityIds":["H0-AUTH-PLAN","H0-AUTH-T1"]},
+    {"id":"H0-DECISION-006","decision":"Passing diminished requires a fully diminished immediate stepwise spelled bridge.","authorityIds":["H0-AUTH-PLAN"]},
+    {"id":"H0-DECISION-007","decision":"Overlapping readings remain plural and use frozen deterministic ordering.","authorityIds":["H0-AUTH-PLAN","H0-AUTH-IDEA-WIZARD"]},
+    {"id":"H0-DECISION-008","decision":"Clashes remain explicit when a named exception permits a tension; sus4 degree four is instead a chord tone.","authorityIds":["H0-AUTH-PLAN"]},
+    {"id":"H0-DECISION-009","decision":"Custom, absent-key, modal, nonfunctional, ambiguous, and unresolved cases are successful outcomes unless a structural/version/limit contract fails.","authorityIds":["H0-AUTH-PLAN","H0-AUTH-IDEA-WIZARD","H0-AUTH-T1","H0-AUTH-OMT-FUNCTION-CAVEAT"]},
+    {"id":"H0-DECISION-010","decision":"Altered scale mapping requires one explicit selected T1 realization and never merges four alternatives.","authorityIds":["H0-AUTH-PLAN","H0-AUTH-T1"]}
+  ],
+  "independenceRules": [
+    "No H0 production import or execution may author expected values.",
+    "T1 fixture IDs are immutable reviewed inputs, not runtime oracles invoked by this corpus.",
+    "Mechanical all-root expansion must use the reviewed interval inventory and must inverse-check exact spelling.",
+    "A mutation is killed only by a semantically independent expected row.",
+    "Published references support bounded claims only; no expert review or universal musical-quality judgment is implied."
+  ]
+}

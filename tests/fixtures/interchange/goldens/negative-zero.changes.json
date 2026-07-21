@@ -1,0 +1,19 @@
+{
+  "schema": "changes.progression.v2",
+  "id": "document-e0-negative-zero",
+  "title": "Negative Zero",
+  "description": "Signed zero must survive canonical interchange.",
+  "meter": {
+    "beatsPerBar": 4,
+    "beatUnit": 4
+  },
+  "tempoBpm": 120,
+  "key": null,
+  "sections": [],
+  "playback": {
+    "instrumentId": "mellow-keys",
+    "masterVolume": -0,
+    "reverbAmount": -0,
+    "countInBars": 0
+  }
+}

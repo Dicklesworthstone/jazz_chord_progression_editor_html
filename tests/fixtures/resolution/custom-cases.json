@@ -1,0 +1,98 @@
+{
+  "schema": "changes.fixtures.t1-custom-cases.v1",
+  "fixtureVersion": "1.0.0",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "sharedExpected": {
+    "resolvedChordMetadata": {
+      "schema": "changes.theory.resolved-chord.v1",
+      "formulaTableId": "changes.chord-formulas",
+      "formulaTableVersion": 1,
+      "degreeSpellingPolicyId": "changes.degree-spelling",
+      "degreeSpellingPolicyVersion": 1,
+      "degreeRolePolicyId": "changes.balanced-degree-roles",
+      "degreeRolePolicyVersion": 1
+    },
+    "kind": "custom",
+    "id": "custom",
+    "formulaRuleId": "custom",
+    "degrees": null,
+    "requiredDegrees": null,
+    "optionalDegrees": null,
+    "guideToneDegrees": null,
+    "limitations": ["custom.no_degree_analysis", "custom.no_auto_voicing"],
+    "warnings": []
+  },
+  "cases": [
+    {
+      "id": "T1-CUSTOM-001",
+      "input": {"kind":"custom","sourceText":"C-Eb-G cluster","label":"minor triad as custom","pitchNames":[{"step":"C","alter":0},{"step":"E","alter":-1},{"step":"G","alter":0}],"bass":null},
+      "expected": {"spelledPitchNames":[{"step":"C","alter":0},{"step":"E","alter":-1},{"step":"G","alter":0}],"pitchClasses":[0,3,7],"bass":null},
+      "traceIds": ["T1-TRACE-CUSTOM"],
+      "authorityIds": ["T1-AUTH-DOMAIN", "T1-AUTH-FORMULA"]
+    },
+    {
+      "id": "T1-CUSTOM-002",
+      "input": {"kind":"custom","sourceText":"ordered duplicates","label":"order and duplicates","pitchNames":[{"step":"C","alter":0},{"step":"G","alter":0},{"step":"C","alter":0},{"step":"E","alter":-1},{"step":"G","alter":0}],"bass":null},
+      "expected": {"spelledPitchNames":[{"step":"C","alter":0},{"step":"G","alter":0},{"step":"C","alter":0},{"step":"E","alter":-1},{"step":"G","alter":0}],"pitchClasses":[0,7,0,3,7],"length":5,"duplicatesPreserved":true,"orderPreserved":true},
+      "traceIds": ["T1-TRACE-CUSTOM"],
+      "authorityIds": ["T1-AUTH-DOMAIN", "T1-AUTH-FORMULA"]
+    },
+    {
+      "id": "T1-CUSTOM-003",
+      "input": {"kind":"custom","sourceText":"C# and Db","label":"enharmonic spellings","pitchNames":[{"step":"C","alter":1},{"step":"D","alter":-1}],"bass":null},
+      "expected": {"spelledPitchNames":[{"step":"C","alter":1},{"step":"D","alter":-1}],"pitchClasses":[1,1],"enharmonicSpellingsRemainDistinct":true},
+      "traceIds": ["T1-TRACE-CUSTOM", "T1-TRACE-SPELLING"],
+      "authorityIds": ["T1-AUTH-DOMAIN", "T1-AUTH-SPELLING"]
+    },
+    {
+      "id": "T1-CUSTOM-004",
+      "input": {"kind":"custom","sourceText":"custom slash","label":"external bass label","pitchNames":[{"step":"C","alter":0},{"step":"E","alter":-1},{"step":"G","alter":0}],"bass":{"step":"B","alter":-1}},
+      "expected": {"spelledPitchNames":[{"step":"C","alter":0},{"step":"E","alter":-1},{"step":"G","alter":0}],"pitchClasses":[0,3,7],"bass":{"step":"B","alter":-1},"bassExcludedFromPitchNames":true},
+      "traceIds": ["T1-TRACE-CUSTOM", "T1-TRACE-SLASH-SEPARATION"],
+      "authorityIds": ["T1-AUTH-DOMAIN", "T1-AUTH-FORMULA"]
+    },
+    {
+      "id": "T1-CUSTOM-005",
+      "description": "inclusive sixteen-pitch boundary preserves every record",
+      "input": {"kind":"custom","sourceText":"sixteen exact pitch classes","label":"limit boundary","pitchNames":[{"step":"C","alter":0},{"step":"C","alter":1},{"step":"D","alter":0},{"step":"E","alter":-1},{"step":"E","alter":0},{"step":"F","alter":0},{"step":"F","alter":1},{"step":"G","alter":0},{"step":"A","alter":-1},{"step":"A","alter":0},{"step":"B","alter":-1},{"step":"B","alter":0},{"step":"C","alter":0},{"step":"E","alter":-1},{"step":"G","alter":0},{"step":"C","alter":0}],"bass":null},
+      "expected": {"pitchClasses":[0,1,2,3,4,5,6,7,8,9,10,11,0,3,7,0],"length":16,"limit":16,"duplicatesPreserved":true,"orderPreserved":true},
+      "traceIds": ["T1-TRACE-CUSTOM", "T1-TRACE-LIMITS"],
+      "authorityIds": ["T1-AUTH-DOMAIN", "T1-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "T1-CUSTOM-006",
+      "description": "seventeen pitch names are rejected by the domain constructor before T1 invocation",
+      "materializationRecipe": {"basePitchNamesRef":"T1-CUSTOM-005 input.pitchNames","append":{"step":"D","alter":0},"targetLength":17},
+      "expected": {"t1Invoked":false,"domainRefusal":{"code":"limit.voicing_notes_exceeded","path":["pitchNames"],"count":17,"maximum":16},"partialResolution":false},
+      "traceIds": ["T1-TRACE-CUSTOM", "T1-TRACE-LIMITS", "T1-TRACE-OPERATION-STATE"],
+      "authorityIds": ["T1-AUTH-DOMAIN", "T1-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "T1-CUSTOM-007",
+      "description": "custom resolution never invents degree facts from a familiar label",
+      "input": {"kind":"custom","sourceText":"Cmaj7","label":"Cmaj7","pitchNames":[{"step":"C","alter":0},{"step":"E","alter":0},{"step":"G","alter":0},{"step":"B","alter":0}],"bass":null},
+      "expected": {"pitchClasses":[0,4,7,11],"degrees":null,"requiredDegrees":null,"optionalDegrees":null,"guideToneDegrees":null,"formulaRuleId":"custom"},
+      "traceIds": ["T1-TRACE-CUSTOM", "T1-TRACE-STRICT-REFUSAL"],
+      "authorityIds": ["T1-AUTH-DOMAIN", "T1-AUTH-FORMULA"]
+    },
+    {
+      "id": "T1-CUSTOM-008",
+      "description": "custom pitch projection accepts domain-valid double accidentals without respelling",
+      "input": {"kind":"custom","sourceText":"double accidentals","label":"exact spellings","pitchNames":[{"step":"C","alter":2},{"step":"D","alter":-2},{"step":"F","alter":2},{"step":"B","alter":-2}],"bass":null},
+      "expected": {"spelledPitchNames":[{"step":"C","alter":2},{"step":"D","alter":-2},{"step":"F","alter":2},{"step":"B","alter":-2}],"pitchClasses":[2,0,7,9],"spellingServiceInvoked":false},
+      "traceIds": ["T1-TRACE-CUSTOM", "T1-TRACE-SPELLING"],
+      "authorityIds": ["T1-AUTH-DOMAIN", "T1-AUTH-SPELLING"]
+    },
+    {
+      "id": "T1-CUSTOM-009",
+      "description": "a major-second spelled transposition and its inverse preserve custom order, duplicate positions, bass, and tuple length",
+      "transpositionRecipe": {"interval":{"diatonicSteps":1,"semitones":2},"inverse":{"diatonicSteps":-1,"semitones":-2}},
+      "sourceInput": {"kind":"custom","sourceText":"custom transpose source","label":"ordered custom","pitchNames":[{"step":"C","alter":0},{"step":"G","alter":0},{"step":"C","alter":0},{"step":"E","alter":-1}],"bass":{"step":"B","alter":-1}},
+      "transposedInput": {"kind":"custom","sourceText":"custom transpose target","label":"ordered custom +M2","pitchNames":[{"step":"D","alter":0},{"step":"A","alter":0},{"step":"D","alter":0},{"step":"F","alter":0}],"bass":{"step":"C","alter":0}},
+      "expected": {"sourcePitchClasses":[0,7,0,3],"transposedPitchClasses":[2,9,2,5],"sourceBass":{"step":"B","alter":-1},"transposedBass":{"step":"C","alter":0},"duplicatesPreservedAtIndices":[0,2],"inverseRestoresSourcePitchNames":true,"inverseRestoresBass":true,"tupleLength":4},
+      "traceIds": ["T1-TRACE-CUSTOM", "T1-TRACE-LAWS", "T1-TRACE-SPELLING"],
+      "authorityIds": ["T1-AUTH-DOMAIN", "T1-AUTH-INDEPENDENCE", "T1-AUTH-SPELLING"]
+    }
+  ]
+}

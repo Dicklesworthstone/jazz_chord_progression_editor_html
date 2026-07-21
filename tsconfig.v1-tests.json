@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.tests.json",
+  "include": [],
+  "files": [
+    "tests/conformance/v1-mutation-controls.test.ts",
+    "tests/conformance/v1-production-conformance.test.ts",
+    "tests/property/v1-assignment-oracle.test.ts",
+    "tests/property/v1-transposition-laws.test.ts",
+    "tests/static/v1-contract.test.ts",
+    "tests/static/v1-evidence.test.ts",
+    "tests/static/v1-type-contract.test.ts",
+    "tests/unit/v1-accounting-probes.test.ts",
+    "tests/unit/v1-voice-assignment-validation.test.ts",
+    "tests/unit/v1-voice-assignment.test.ts"
+  ]
+}

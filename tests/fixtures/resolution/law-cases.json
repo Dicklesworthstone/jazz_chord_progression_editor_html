@@ -1,0 +1,195 @@
+{
+  "schema": "changes.fixtures.t1-law-cases.v1",
+  "fixtureVersion": "1.0.0",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "lawProofPolicy": "Every row names a positive witness, a negative or near-miss witness, a transposition or root-variation witness, and one or more reviewed mutation controls.",
+  "cases": [
+    {
+      "id": "T1-LAW-001",
+      "lawId": "L-THEORY-01",
+      "statement": "major seventh, major ninth, dominant ninth, dominant thirteenth, and diminished seventh formulas retain their exact thirds, sevenths, closure, and bb7 identity",
+      "positiveCaseIds": ["T1-LIT-012", "T1-LIT-017", "T1-LIT-019", "T1-LIT-020", "T1-LIT-024"],
+      "nearMissCaseIds": ["T1-LIT-060", "T1-LIT-061"],
+      "transpositionCaseId": "T1-ROOT-MATRIX-001",
+      "mutationControlIds": ["T1-MUT-001", "T1-MUT-004", "T1-MUT-005", "T1-MUT-006", "T1-MUT-009"],
+      "traceIds": ["T1-TRACE-LAWS", "T1-TRACE-LEGACY-L-THEORY-01"],
+      "authorityIds": ["T1-AUTH-FORMULA", "T1-AUTH-INDEPENDENCE", "T1-AUTH-LEGACY"]
+    },
+    {
+      "id": "T1-LAW-002",
+      "lawId": "T1-LAW-DEGREE-IDENTITY",
+      "statement": "degree number plus alteration is primary identity; pitch-class equality never merges #9 with b3 or bb7 with 6",
+      "positiveCaseIds": ["T1-SPELL-003", "T1-SPELL-004", "T1-SPELL-008"],
+      "nearMissCaseIds": ["T1-CUSTOM-003"],
+      "transpositionCaseId": "T1-SPELL-005",
+      "mutationControlIds": ["T1-MUT-013", "T1-MUT-014", "T1-MUT-015"],
+      "traceIds": ["T1-TRACE-LAWS", "T1-TRACE-SPELLING"],
+      "authorityIds": ["T1-AUTH-INDEPENDENCE", "T1-AUTH-SPELLING"]
+    },
+    {
+      "id": "T1-LAW-003",
+      "lawId": "T1-LAW-DIRECTED-SPELLING",
+      "statement": "spelling advances the diatonic letter in directed interval space before pitch-class projection and refuses required triple accidentals",
+      "positiveCaseIds": ["T1-SPELL-001", "T1-SPELL-002", "T1-SPELL-009", "T1-SPELL-010"],
+      "nearMissCaseIds": ["T1-SPELL-011", "T1-SPELL-012"],
+      "transpositionCaseId": "T1-SPELL-013",
+      "mutationControlIds": ["T1-MUT-016", "T1-MUT-017", "T1-MUT-018", "T1-MUT-019"],
+      "traceIds": ["T1-TRACE-LAWS", "T1-TRACE-SPELLING", "T1-TRACE-STRICT-REFUSAL"],
+      "authorityIds": ["T1-AUTH-INDEPENDENCE", "T1-AUTH-SPELLING"]
+    },
+    {
+      "id": "T1-LAW-004",
+      "lawId": "T1-LAW-TRANSPOSE-INVERSE",
+      "statement": "transposing a parsed chord by a fully specified spelled interval and then its exact inverse restores root, degree identities, bass spelling, formula, roles, and ordered realization IDs",
+      "positiveCaseIds": ["T1-LIT-047", "T1-LIT-048"],
+      "nearMissCaseIds": ["T1-SPELL-003", "T1-SPELL-004"],
+      "transpositionCaseId": "T1-ROOT-MATRIX-001",
+      "transpositionRecipe": {
+        "sourceCaseId": "T1-LIT-047",
+        "interval": {"diatonicSteps":1,"semitones":1},
+        "reviewedTargetSnapshot": {
+          "root": {"step":"D","alter":-1},
+          "formulaRuleId": "seventh-major",
+          "realizationIds": ["literal"],
+          "degrees": ["1","3","5","7","#11"],
+          "required": ["1","3","7","#11"],
+          "optional": ["5"],
+          "guide": ["3","7"],
+          "spelledPitchNames": [{"step":"D","alter":-1},{"step":"F","alter":0},{"step":"A","alter":-1},{"step":"C","alter":0},{"step":"G","alter":0}],
+          "pitchClasses": [1,5,8,0,7],
+          "bass": {"step":"A","alter":-1},
+          "bassExcludedFromMembership": true
+        },
+        "inverse": {"diatonicSteps":-1,"semitones":-1},
+        "expectedInverseSnapshot": {
+          "root": {"step":"C","alter":0},
+          "formulaRuleId": "seventh-major",
+          "realizationIds": ["literal"],
+          "degrees": ["1","3","5","7","#11"],
+          "required": ["1","3","7","#11"],
+          "optional": ["5"],
+          "guide": ["3","7"],
+          "spelledPitchNames": [{"step":"C","alter":0},{"step":"E","alter":0},{"step":"G","alter":0},{"step":"B","alter":0},{"step":"F","alter":1}],
+          "pitchClasses": [0,4,7,11,6],
+          "bass": {"step":"G","alter":0},
+          "bassExcludedFromMembership": true
+        },
+        "inverseInvariants": {
+          "root": true,
+          "degreeIdentities": true,
+          "bassSpelling": true,
+          "formulaRuleId": true,
+          "roles": true,
+          "orderedRealizationIds": true,
+          "spelledPitchNames": true,
+          "pitchClasses": true
+        },
+        "expectedRestoredExactly": true
+      },
+      "mutationControlIds": ["T1-MUT-020", "T1-MUT-021"],
+      "traceIds": ["T1-TRACE-LAWS", "T1-TRACE-SLASH-SEPARATION", "T1-TRACE-SPELLING"],
+      "authorityIds": ["T1-AUTH-FORMULA", "T1-AUTH-INDEPENDENCE", "T1-AUTH-SPELLING"]
+    },
+    {
+      "id": "T1-LAW-005",
+      "lawId": "T1-LAW-PROJECTION-COMMUTES",
+      "statement": "pitch-class projection after directed spelling commutes with spelled transposition modulo twelve while spelled identity remains richer",
+      "positiveCaseIds": ["T1-ROOT-MATRIX-001", "T1-SPELL-013"],
+      "nearMissCaseIds": ["T1-SPELL-011", "T1-SPELL-012"],
+      "transpositionCaseId": "T1-ROOT-MATRIX-001",
+      "transpositionRecipe": {
+        "roots": ["C","Db","F#","B"],
+        "degree": {"number":11,"alter":1},
+        "interval": {"diatonicSteps":4,"semitones":7},
+        "projectionModulo": 12,
+        "reviewedProjectionRows": [
+          {"sourceRoot":{"step":"C","alter":0},"targetRoot":{"step":"G","alter":0},"sourceSpelling":{"step":"F","alter":1},"sourcePitchClass":6,"targetSpelling":{"step":"C","alter":1},"targetPitchClass":1},
+          {"sourceRoot":{"step":"D","alter":-1},"targetRoot":{"step":"A","alter":-1},"sourceSpelling":{"step":"G","alter":0},"sourcePitchClass":7,"targetSpelling":{"step":"D","alter":0},"targetPitchClass":2},
+          {"sourceRoot":{"step":"F","alter":1},"targetRoot":{"step":"C","alter":1},"sourceSpelling":{"step":"B","alter":1},"sourcePitchClass":0,"targetSpelling":{"step":"F","alter":2},"targetPitchClass":7},
+          {"sourceRoot":{"step":"B","alter":0},"targetRoot":{"step":"F","alter":1},"sourceSpelling":{"step":"E","alter":1},"sourcePitchClass":5,"targetSpelling":{"step":"B","alter":1},"targetPitchClass":0}
+        ]
+      },
+      "mutationControlIds": ["T1-MUT-017", "T1-MUT-020"],
+      "traceIds": ["T1-TRACE-LAWS", "T1-TRACE-SPELLING"],
+      "authorityIds": ["T1-AUTH-INDEPENDENCE", "T1-AUTH-SPELLING"]
+    },
+    {
+      "id": "T1-LAW-006",
+      "lawId": "T1-LAW-ALT-AMBIGUITY",
+      "statement": "bare 7alt returns all four variants in stable order and later modifiers transform each variant without selecting, renaming, or merging IDs",
+      "positiveCaseIds": ["T1-LIT-045", "T1-LIT-056", "T1-LIT-057", "T1-LIT-058", "T1-LIT-087"],
+      "nearMissCaseIds": ["T1-LIT-066", "T1-LIT-067"],
+      "transpositionCaseId": "T1-LIT-081",
+      "mutationControlIds": ["T1-MUT-022", "T1-MUT-023", "T1-MUT-024", "T1-MUT-025"],
+      "traceIds": ["T1-TRACE-ALT-VARIANTS", "T1-TRACE-LAWS"],
+      "authorityIds": ["T1-AUTH-FORMULA", "T1-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "T1-LAW-007",
+      "lawId": "T1-LAW-MODIFIER-PHASES",
+      "statement": "suspension, structural alteration, color alteration, addition, omission, and canonicalization run in the frozen phase order",
+      "positiveCaseIds": ["T1-LIT-044", "T1-LIT-046", "T1-LIT-053", "T1-LIT-054", "T1-LIT-059", "T1-LIT-079", "T1-LIT-087"],
+      "nearMissCaseIds": ["T1-LIT-063", "T1-LIT-064", "T1-LIT-065", "T1-LIT-077", "T1-LIT-078"],
+      "transpositionCaseId": "T1-LIT-083",
+      "mutationControlIds": ["T1-MUT-026", "T1-MUT-027", "T1-MUT-028", "T1-MUT-029", "T1-MUT-030"],
+      "traceIds": ["T1-TRACE-LAWS", "T1-TRACE-MODIFIER-ORDER"],
+      "authorityIds": ["T1-AUTH-FORMULA", "T1-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "T1-LAW-008",
+      "lawId": "T1-LAW-ROLE-PARTITION",
+      "statement": "required and optional sets are disjoint, cover every retained degree, and every guide is retained and required; add3 is not promoted to guide",
+      "positiveCaseIds": ["T1-LIT-010", "T1-LIT-016", "T1-LIT-018", "T1-LIT-032", "T1-LIT-053"],
+      "nearMissCaseIds": ["T1-LIT-055", "T1-LIT-059"],
+      "transpositionCaseId": "T1-ROOT-MATRIX-001",
+      "mutationControlIds": ["T1-MUT-031", "T1-MUT-032", "T1-MUT-033"],
+      "traceIds": ["T1-TRACE-LAWS", "T1-TRACE-ROLE-POLICY"],
+      "authorityIds": ["T1-AUTH-INDEPENDENCE", "T1-AUTH-ROLES"]
+    },
+    {
+      "id": "T1-LAW-009",
+      "lawId": "T1-LAW-OMISSION",
+      "statement": "an omission removes every same-number degree across each realization and emits one source-path warning only when that number was absent",
+      "positiveCaseIds": ["T1-LIT-052", "T1-LIT-056", "T1-LIT-059"],
+      "nearMissCaseIds": ["T1-LIT-055", "T1-LIT-064"],
+      "transpositionCaseId": "T1-LIT-082",
+      "mutationControlIds": ["T1-MUT-029", "T1-MUT-034", "T1-MUT-035"],
+      "traceIds": ["T1-TRACE-LAWS", "T1-TRACE-MODIFIER-ORDER", "T1-TRACE-ROLE-POLICY"],
+      "authorityIds": ["T1-AUTH-FORMULA", "T1-AUTH-INDEPENDENCE", "T1-AUTH-ROLES"]
+    },
+    {
+      "id": "T1-LAW-010",
+      "lawId": "T1-LAW-SLASH-SEPARATION",
+      "statement": "slash bass is preserved exactly outside degree membership, spelling arrays, roles, formula selection, and alt variants",
+      "positiveCaseIds": ["T1-CUSTOM-004", "T1-LIT-047", "T1-LIT-048", "T1-LIT-049"],
+      "nearMissCaseIds": ["T1-CUSTOM-001"],
+      "transpositionCaseId": "T1-LAW-004",
+      "mutationControlIds": ["T1-MUT-036", "T1-MUT-037"],
+      "traceIds": ["T1-TRACE-LAWS", "T1-TRACE-SLASH-SEPARATION"],
+      "authorityIds": ["T1-AUTH-DOMAIN", "T1-AUTH-FORMULA", "T1-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "T1-LAW-011",
+      "lawId": "T1-LAW-CUSTOM-EXACTNESS",
+      "statement": "custom resolution preserves every spelled pitch, order, duplicate, projection, and bass while exposing null degree roles and exact limitations",
+      "positiveCaseIds": ["T1-CUSTOM-002", "T1-CUSTOM-003", "T1-CUSTOM-004", "T1-CUSTOM-005", "T1-CUSTOM-008"],
+      "nearMissCaseIds": ["T1-CUSTOM-006", "T1-CUSTOM-007"],
+      "transpositionCaseId": "T1-CUSTOM-009",
+      "mutationControlIds": ["T1-MUT-038", "T1-MUT-039", "T1-MUT-040"],
+      "traceIds": ["T1-TRACE-CUSTOM", "T1-TRACE-LAWS"],
+      "authorityIds": ["T1-AUTH-DOMAIN", "T1-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "T1-LAW-012",
+      "lawId": "T1-LAW-TRANSACTIONAL-REFUSAL",
+      "statement": "every refusal returns no partial realization, spelling, warning, chosen alt variant, or mutated source",
+      "positiveCaseIds": ["T1-LIT-060", "T1-LIT-061", "T1-LIT-062", "T1-LIT-063", "T1-LIT-064", "T1-LIT-065", "T1-LIT-066", "T1-LIT-067", "T1-LIT-068", "T1-LIT-069", "T1-LIT-070", "T1-LIT-071", "T1-LIT-072", "T1-LIT-073", "T1-LIT-074", "T1-LIT-075", "T1-LIT-076", "T1-LIT-077", "T1-LIT-078", "T1-LIT-080", "T1-SPELL-011", "T1-SPELL-012"],
+      "nearMissCaseIds": ["T1-LIT-015", "T1-LIT-045", "T1-SPELL-009", "T1-SPELL-010"],
+      "transpositionCaseId": "T1-SPELL-012",
+      "mutationControlIds": ["T1-MUT-018", "T1-MUT-025", "T1-MUT-041", "T1-MUT-042"],
+      "traceIds": ["T1-TRACE-LAWS", "T1-TRACE-OPERATION-STATE", "T1-TRACE-STRICT-REFUSAL"],
+      "authorityIds": ["T1-AUTH-FORMULA", "T1-AUTH-INDEPENDENCE", "T1-AUTH-SPELLING"]
+    }
+  ]
+}

@@ -1,0 +1,1623 @@
+{
+  "schema": "changes.fixtures.v0-operation-state-cases.v1",
+  "fixtureVersion": "1.0.0",
+  "caseSetId": "changes.voicing-operation-state-cases",
+  "caseSetVersion": 1,
+  "status": "independently-authored-pre-production",
+  "productionOutputUsed": false,
+  "productionGeneratedExpectedValues": false,
+  "expectedValuesGenerated": false,
+  "review": {
+    "humanReviewClaimed": false,
+    "domainExpertReviewClaimed": false,
+    "independentReviewComplete": false,
+    "state": "awaiting-human-and-domain-expert-review"
+  },
+  "provenance": {
+    "authoringMethod": "independent direct transcription plus a standalone contract-law enumerator for the two bounded constraint-observation traversal witnesses",
+    "mechanicalSerializationUsed": true,
+    "generatedByProductionAlgorithm": false,
+    "productionContractModuleImported": false,
+    "productionAlgorithmExecuted": false,
+    "copiedFromProductionOutput": false,
+    "independentObservationSearchOracle": {
+      "id": "changes.v0-constraint-observation-oracle",
+      "version": 1,
+      "implementation": "scripts/validate-v0-contract.ts",
+      "importsProductionModules": false,
+      "executesProductionOperation": false,
+      "derivation": "Enumerate literal Cmaj7 degree MIDI placements, slot-major DFS states, the three applicable rejected-assignment laws, full-payload insertion/deduplication, provisional distinct-17 overflow, and the first hard-valid Open assignment directly from frozen contract arithmetic."
+    },
+    "judgmentBearingInputs": [
+      "docs/V0_VOICING_CONTRACT.md sections 12 through 15",
+      "src/theory/voicing-candidates-contract.ts",
+      "tests/fixtures/voicing/v0-voicing-contract.json",
+      "tests/fixtures/voicing/candidate-cases.json",
+      "tests/fixtures/voicing/limit-cases.json"
+    ]
+  },
+  "identity": {
+    "operation": "realizeVoicing",
+    "contractSchema": "changes.theory.voicing-candidates-contract.v1",
+    "requestSchema": "changes.theory.voicing-request.v1",
+    "resultSchema": "changes.theory.voicing-result.v1",
+    "engineId": "changes.voicing-candidates",
+    "engineVersion": 1,
+    "templateTableId": "changes.voicing-family-templates",
+    "templateTableVersion": 1,
+    "quartalContextSchema": "changes.theory.quartal-context.v1",
+    "quartalContextPolicyId": "changes.quartal-context-gate",
+    "quartalContextPolicyVersion": 1
+  },
+  "statePolicy": {
+    "execution": "one pure synchronous function call",
+    "successKinds": [
+      "generated",
+      "stored-bypass"
+    ],
+    "failureKind": "typed refusal with evidence and no value",
+    "statesThatDoNotExist": [
+      "queued",
+      "running",
+      "canceled",
+      "resumed",
+      "stale",
+      "degraded",
+      "partially-committed"
+    ],
+    "retryCount": 0,
+    "retryScheduled": false,
+    "fallbackApplied": false,
+    "partialSuccessAllowed": false,
+    "partialFailureValueAllowed": false,
+    "wallTimeSemanticInput": false,
+    "firstIndependentlyDiscoverableRefusalWins": true,
+    "workLimitQualification": "A work-limit refusal wins when the operation cannot finish the work needed to establish a later musical outcome.",
+    "constraintObservationOverflowQualification": "Before any legal candidate, a prospective seventeenth distinct full-payload observation is provisional: diagnostic collection stops while musical search continues. The first legal candidate clears and disables it; only a completed zero-candidate search returns the typed work-limit refusal."
+  },
+  "forbiddenRequestAndAmbientInputs": [
+    "previous",
+    "next",
+    "eventId",
+    "documentRevision",
+    "voiceIds",
+    "wallTimeBudget",
+    "uiSelection",
+    "audioState",
+    "storageIdentity"
+  ],
+  "orders": {
+    "refusalCodes": [
+      "voicing.realization_unavailable",
+      "voicing.quartal_context_unexpected",
+      "voicing.quartal_context_required",
+      "voicing.quartal_context_invalid",
+      "voicing.family_unavailable",
+      "voicing.constraints_unsatisfied",
+      "limit.voicing_work_exceeded"
+    ],
+    "quartalContextInvalidReasons": [
+      "schema-mismatch",
+      "policy-id-mismatch",
+      "policy-version-mismatch",
+      "evidence-id-invalid",
+      "evidence-version-invalid",
+      "degree-count-mismatch",
+      "degree-absent-from-realization",
+      "adjacency-not-perfect-or-augmented-fourth"
+    ],
+    "constraintCodes": [
+      "voicing.constraint.realization_membership",
+      "voicing.constraint.template_degree_membership",
+      "voicing.constraint.voice_count",
+      "voicing.constraint.midi_range",
+      "voicing.constraint.required_degrees",
+      "voicing.constraint.guide_tones",
+      "voicing.constraint.identity_tones",
+      "voicing.constraint.bass_policy",
+      "voicing.constraint.slash_bass_lowest",
+      "voicing.constraint.external_bass_excluded",
+      "voicing.constraint.rootless_root_omitted",
+      "voicing.constraint.unique_midi",
+      "voicing.constraint.permitted_doubling",
+      "voicing.constraint.low_register_spacing",
+      "voicing.constraint.family_structure",
+      "voicing.constraint.quartal_context"
+    ],
+    "constraintObservationTieBreaks": [
+      "voiceOrdinals-lexicographic",
+      "exactDegrees-lexicographic",
+      "midiValues-lexicographic",
+      "reason-precedence"
+    ]
+  },
+  "terminationByOutcome": {
+    "generated-success": "complete-generated",
+    "stored-bypass-success": "complete-bypass",
+    "voicing.realization_unavailable": "realization-unavailable",
+    "voicing.quartal_context_unexpected": "quartal-context-unexpected",
+    "voicing.quartal_context_required": "quartal-context-required",
+    "voicing.quartal_context_invalid": "quartal-context-invalid",
+    "voicing.family_unavailable": "family-unavailable",
+    "voicing.constraints_unsatisfied": "constraints-unsatisfied",
+    "limit.voicing_work_exceeded": "work-limit-exceeded"
+  },
+  "zeroWorkEvidence": {
+    "realizationDegreeRecordsVisited": 0,
+    "templateRowsVisited": 0,
+    "templateDegreeSlotsVisited": 0,
+    "registerPlacementsVisited": 0,
+    "searchStatesExpanded": 0,
+    "structuralTransformsAttempted": 0,
+    "hardConstraintChecks": 0,
+    "rawCandidatesProduced": 0,
+    "candidateCanonicalizations": 0,
+    "duplicateCandidateComparisons": 0,
+    "localScoresComputed": 0,
+    "orderingComparisons": 0,
+    "retainedCandidatesProduced": 0,
+    "outputVoicesProduced": 0,
+    "constraintObservationComparisons": 0,
+    "constraintObservationsProduced": 0,
+    "peakRegisterPlacementRecords": 0,
+    "peakSearchStateRecords": 0,
+    "peakRawCandidateRecords": 0,
+    "peakRawVoiceRecords": 0,
+    "peakRetainedCandidateRecords": 0,
+    "peakOutputVoiceRecords": 0,
+    "peakTrackedRecords": 0,
+    "peakConstraintObservationRecords": 0,
+    "termination": "complete-bypass"
+  },
+  "counts": {
+    "successCases": 4,
+    "generatedSuccessCases": 2,
+    "storedBypassCases": 2,
+    "manualBypassCases": 1,
+    "frozenBypassCases": 1,
+    "refusalCases": 16,
+    "refusalCodes": 7,
+    "refusalCasesByCode": {
+      "voicing.realization_unavailable": 1,
+      "voicing.quartal_context_unexpected": 1,
+      "voicing.quartal_context_required": 1,
+      "voicing.quartal_context_invalid": 8,
+      "voicing.family_unavailable": 2,
+      "voicing.constraints_unsatisfied": 1,
+      "limit.voicing_work_exceeded": 2
+    },
+    "quartalContextInvalidReasonCases": 8,
+    "familyUnavailableCases": 2,
+    "multiConstraintCases": 1,
+    "workLimitNoPartialCases": 2,
+    "runtimeDefensiveUnsafeCallerCases": 5,
+    "typedSemanticRefusalCases": 11,
+    "precedenceCases": 7,
+    "notApplicableCases": 5,
+    "totalCaseRecords": 32
+  },
+  "checksums": {
+    "algorithm": "sha256",
+    "encoding": "utf8",
+    "recordProjectionFormat": "one compact JSON array per record in stored order, followed by LF",
+    "successProjection": "[id,route,expected,traceIds,authorityIds]",
+    "successSha256": "8daa4e89de436c06e1801f7857b67ca86ff06a88a4a80eecaece835da5f64e3d",
+    "refusalProjection": "[id,callSurface,trigger,expected,traceIds,authorityIds]",
+    "refusalSha256": "193375d8ac50a35b5d5540a9ec97ae3a80597f22be1d633249e9b02d6ed5178c",
+    "precedenceProjection": "[id,contenders,discoveryFacts,expected,traceIds,authorityIds]",
+    "precedenceSha256": "55189d8616c29e1857be559ead05af581b047691510af480db0db79874b8fc28",
+    "applicabilityProjection": "[id,concern,expected,traceIds,authorityIds]",
+    "applicabilitySha256": "c28b0fc341898fe907e558a25048d3dba2537e150ea7b821ada408ae3f17a035",
+    "fixturePayloadProjection": "one compact JSON object with recursively sorted keys and checksums removed, followed by LF",
+    "fixturePayloadSha256": "ee7b763caf841922dab55cc61bdc8c4baf1305db8d306cecf28fc0e36223d54d"
+  },
+  "successCases": [
+    {
+      "id": "V0-OP-SUCCESS-001",
+      "description": "A legal Auto request completes synchronously with a nonempty deterministic generated result.",
+      "route": "auto-generated",
+      "inputCaseId": "V0-CAND-001",
+      "requestProjection": {
+        "kind": "auto",
+        "sourceSymbol": "Cmaj7",
+        "realizationId": "literal",
+        "family": "balanced",
+        "voiceCount": 4,
+        "bassPolicy": "generated",
+        "quartalContext": null
+      },
+      "expected": {
+        "ok": true,
+        "valuePresent": true,
+        "valueKind": "generated",
+        "candidateGenerationPerformed": true,
+        "candidatesNonempty": true,
+        "refusalPresent": false,
+        "retryScheduled": false,
+        "fallbackApplied": false,
+        "partialResult": false,
+        "evidenceTermination": "complete-generated"
+      },
+      "traceIds": [
+        "V0-TRACE-DETERMINISM",
+        "V0-TRACE-BOUNDARY"
+      ],
+      "authorityIds": [
+        "V0-AUTH-CONTRACT",
+        "V0-AUTH-INDEPENDENCE"
+      ]
+    },
+    {
+      "id": "V0-OP-SUCCESS-002",
+      "description": "Manual returns the exact stored voicing by reference and performs no generation work.",
+      "route": "stored-manual-bypass",
+      "inputCaseId": "V0-CAND-031",
+      "requestProjection": {
+        "kind": "stored",
+        "voicing": {
+          "mode": "manual",
+          "bassPolicy": "included",
+          "pitches": [
+            {
+              "step": "D",
+              "alter": -1,
+              "octave": 4
+            },
+            {
+              "step": "F",
+              "alter": 0,
+              "octave": 4
+            },
+            {
+              "step": "D",
+              "alter": -1,
+              "octave": 4
+            }
+          ]
+        }
+      },
+      "expected": {
+        "ok": true,
+        "valuePresent": true,
+        "valueKind": "stored-bypass",
+        "voicingMode": "manual",
+        "sameVoicingObjectReference": true,
+        "duplicatePitchPreserved": true,
+        "candidateGenerationPerformed": false,
+        "rawCandidateCount": 0,
+        "retainedCandidateCount": 0,
+        "allNumericCountersZero": true,
+        "evidenceEqualsTopLevelZeroWorkEvidence": true,
+        "refusalPresent": false,
+        "retryScheduled": false,
+        "fallbackApplied": false,
+        "partialResult": false,
+        "evidenceTermination": "complete-bypass"
+      },
+      "traceIds": [
+        "V0-TRACE-BYPASS"
+      ],
+      "authorityIds": [
+        "V0-AUTH-F1",
+        "V0-AUTH-CONTRACT"
+      ]
+    },
+    {
+      "id": "V0-OP-SUCCESS-003",
+      "description": "Frozen returns the exact stored voicing and generation metadata by reference with zero work.",
+      "route": "stored-frozen-bypass",
+      "inputCaseId": "V0-CAND-032",
+      "requestProjection": {
+        "kind": "stored",
+        "voicing": {
+          "mode": "frozen",
+          "bassPolicy": "included",
+          "pitches": [
+            {
+              "step": "G",
+              "alter": -1,
+              "octave": 3
+            },
+            {
+              "step": "C",
+              "alter": 0,
+              "octave": 4
+            },
+            {
+              "step": "E",
+              "alter": 0,
+              "octave": 4
+            },
+            {
+              "step": "B",
+              "alter": 0,
+              "octave": 4
+            }
+          ],
+          "generatedBy": {
+            "engineVersion": "changes.voicing-candidates.v1",
+            "family": "drop2"
+          }
+        }
+      },
+      "expected": {
+        "ok": true,
+        "valuePresent": true,
+        "valueKind": "stored-bypass",
+        "voicingMode": "frozen",
+        "sameVoicingObjectReference": true,
+        "generatedByObjectReferencePreserved": true,
+        "candidateGenerationPerformed": false,
+        "rawCandidateCount": 0,
+        "retainedCandidateCount": 0,
+        "allNumericCountersZero": true,
+        "evidenceEqualsTopLevelZeroWorkEvidence": true,
+        "refusalPresent": false,
+        "retryScheduled": false,
+        "fallbackApplied": false,
+        "partialResult": false,
+        "evidenceTermination": "complete-bypass"
+      },
+      "traceIds": [
+        "V0-TRACE-BYPASS",
+        "V0-TRACE-IMMUTABILITY"
+      ],
+      "authorityIds": [
+        "V0-AUTH-F1",
+        "V0-AUTH-CONTRACT"
+      ]
+    },
+    {
+      "id": "V0-OP-SUCCESS-004",
+      "description": "A prospective seventeenth no-result observation cannot terminate search: the next assignment is legal and the provisional overflow is cleared.",
+      "route": "auto-generated",
+      "inputCaseId": "V0-CAND-003",
+      "requestProjection": {
+        "kind": "auto",
+        "sourceSymbol": "Cmaj7",
+        "realizationId": "literal",
+        "family": "open",
+        "voiceCount": 4,
+        "bassPolicy": "generated",
+        "range": {
+          "lowMidi": 29,
+          "highMidi": 59
+        },
+        "quartalContext": null
+      },
+      "expected": {
+        "ok": true,
+        "valuePresent": true,
+        "valueKind": "generated",
+        "candidateGenerationPerformed": true,
+        "candidatesNonempty": true,
+        "candidateCount": 1,
+        "candidateMidiValues": [[36, 43, 52, 59]],
+        "provisionalObservationOverflowOccurred": true,
+        "provisionalObservationOverflowCleared": true,
+        "refusalPresent": false,
+        "retryScheduled": false,
+        "fallbackApplied": false,
+        "partialResult": false,
+        "evidenceTermination": "complete-generated",
+        "evidence": {
+          "realizationDegreeRecordsVisited": 4,
+          "templateRowsVisited": 61,
+          "templateDegreeSlotsVisited": 4,
+          "registerPlacementsVisited": 10,
+          "searchStatesExpanded": 55,
+          "structuralTransformsAttempted": 36,
+          "hardConstraintChecks": 576,
+          "rawCandidatesProduced": 1,
+          "candidateCanonicalizations": 1,
+          "duplicateCandidateComparisons": 0,
+          "localScoresComputed": 1,
+          "orderingComparisons": 0,
+          "retainedCandidatesProduced": 1,
+          "outputVoicesProduced": 4,
+          "constraintObservationComparisons": 110,
+          "constraintObservationsProduced": 16,
+          "peakRegisterPlacementRecords": 10,
+          "peakSearchStateRecords": 5,
+          "peakRawCandidateRecords": 1,
+          "peakRawVoiceRecords": 4,
+          "peakRetainedCandidateRecords": 1,
+          "peakOutputVoiceRecords": 4,
+          "peakTrackedRecords": 147,
+          "peakConstraintObservationRecords": 16,
+          "termination": "complete-generated"
+        }
+      },
+      "traceIds": [
+        "V0-TRACE-DETERMINISM",
+        "V0-TRACE-LIMITS",
+        "V0-TRACE-REFUSAL"
+      ],
+      "authorityIds": [
+        "V0-AUTH-CONTRACT",
+        "V0-AUTH-LIMITS",
+        "V0-AUTH-INDEPENDENCE"
+      ]
+    }
+  ],
+  "refusalCases": [
+    {
+      "id": "V0-OP-REFUSAL-001",
+      "description": "An explicitly selected realization ID absent from the resolved chord refuses before template work.",
+      "callSurface": "typed-public-request",
+      "inputCaseId": "V0-CAND-030",
+      "trigger": {
+        "sourceSymbol": "Cmaj7",
+        "realizationId": "alt-b9-b5",
+        "availableRealizationIdsInT1Order": [
+          "literal"
+        ]
+      },
+      "expected": {
+        "ok": false,
+        "valuePresent": false,
+        "partialValuePresent": false,
+        "retryScheduled": false,
+        "fallbackApplied": false,
+        "evidence": {
+          "termination": "realization-unavailable"
+        },
+        "refusal": {
+          "code": "voicing.realization_unavailable",
+          "path": [
+            "realizationId"
+          ],
+          "received": "alt-b9-b5",
+          "available": [
+            "literal"
+          ]
+        }
+      },
+      "traceIds": [
+        "V0-TRACE-ALT-SELECTION",
+        "V0-TRACE-REFUSAL"
+      ],
+      "authorityIds": [
+        "V0-AUTH-T1",
+        "V0-AUTH-CONTRACT"
+      ]
+    },
+    {
+      "id": "V0-OP-REFUSAL-002",
+      "description": "Defensive runtime validation rejects Quartal context attached to a non-Quartal family even though the typed union excludes this request.",
+      "callSurface": "runtime-defensive-unsafe-caller",
+      "trigger": {
+        "requestMutation": "attach a nonnull well-shaped quartalContext to family balanced",
+        "family": "balanced"
+      },
+      "expected": {
+        "ok": false,
+        "valuePresent": false,
+        "partialValuePresent": false,
+        "retryScheduled": false,
+        "fallbackApplied": false,
+        "evidence": {
+          "termination": "quartal-context-unexpected"
+        },
+        "refusal": {
+          "code": "voicing.quartal_context_unexpected",
+          "path": [
+            "quartalContext"
+          ],
+          "family": "balanced"
+        }
+      },
+      "traceIds": [
+        "V0-TRACE-QUARTAL",
+        "V0-TRACE-REFUSAL"
+      ],
+      "authorityIds": [
+        "V0-AUTH-CONTRACT",
+        "V0-AUTH-TEMPLATES"
+      ]
+    },
+    {
+      "id": "V0-OP-REFUSAL-003",
+      "description": "Defensive runtime validation rejects a Quartal request with no context even though the typed union requires it.",
+      "callSurface": "runtime-defensive-unsafe-caller",
+      "inputCaseId": "V0-CAND-026",
+      "trigger": {
+        "family": "quartal",
+        "quartalContext": null
+      },
+      "expected": {
+        "ok": false,
+        "valuePresent": false,
+        "partialValuePresent": false,
+        "retryScheduled": false,
+        "fallbackApplied": false,
+        "evidence": {
+          "termination": "quartal-context-required"
+        },
+        "refusal": {
+          "code": "voicing.quartal_context_required",
+          "path": [
+            "quartalContext"
+          ],
+          "family": "quartal",
+          "policyId": "changes.quartal-context-gate",
+          "policyVersion": 1
+        }
+      },
+      "traceIds": [
+        "V0-TRACE-QUARTAL",
+        "V0-TRACE-REFUSAL"
+      ],
+      "authorityIds": [
+        "V0-AUTH-CONTRACT",
+        "V0-AUTH-TEMPLATES"
+      ]
+    },
+    {
+      "id": "V0-OP-REFUSAL-004",
+      "description": "Defensive runtime validation rejects a malformed Quartal context schema literal.",
+      "callSurface": "runtime-defensive-unsafe-caller",
+      "trigger": {
+        "family": "quartal",
+        "quartalContextField": "schema",
+        "received": "changes.theory.quartal-context.v0",
+        "required": "changes.theory.quartal-context.v1"
+      },
+      "expected": {
+        "ok": false,
+        "valuePresent": false,
+        "partialValuePresent": false,
+        "retryScheduled": false,
+        "fallbackApplied": false,
+        "evidence": {
+          "termination": "quartal-context-invalid"
+        },
+        "refusal": {
+          "code": "voicing.quartal_context_invalid",
+          "path": [
+            "quartalContext"
+          ],
+          "reason": "schema-mismatch"
+        }
+      },
+      "traceIds": [
+        "V0-TRACE-QUARTAL",
+        "V0-TRACE-REFUSAL"
+      ],
+      "authorityIds": [
+        "V0-AUTH-CONTRACT",
+        "V0-AUTH-TEMPLATES"
+      ]
+    },
+    {
+      "id": "V0-OP-REFUSAL-005",
+      "description": "Defensive runtime validation rejects a malformed Quartal policy ID literal.",
+      "callSurface": "runtime-defensive-unsafe-caller",
+      "trigger": {
+        "family": "quartal",
+        "quartalContextField": "policyId",
+        "received": "changes.quartal-context-gate.other",
+        "required": "changes.quartal-context-gate"
+      },
+      "expected": {
+        "ok": false,
+        "valuePresent": false,
+        "partialValuePresent": false,
+        "retryScheduled": false,
+        "fallbackApplied": false,
+        "evidence": {
+          "termination": "quartal-context-invalid"
+        },
+        "refusal": {
+          "code": "voicing.quartal_context_invalid",
+          "path": [
+            "quartalContext"
+          ],
+          "reason": "policy-id-mismatch"
+        }
+      },
+      "traceIds": [
+        "V0-TRACE-QUARTAL",
+        "V0-TRACE-REFUSAL"
+      ],
+      "authorityIds": [
+        "V0-AUTH-CONTRACT",
+        "V0-AUTH-TEMPLATES"
+      ]
+    },
+    {
+      "id": "V0-OP-REFUSAL-006",
+      "description": "Defensive runtime validation rejects a malformed Quartal policy version literal.",
+      "callSurface": "runtime-defensive-unsafe-caller",
+      "trigger": {
+        "family": "quartal",
+        "quartalContextField": "policyVersion",
+        "received": 2,
+        "required": 1
+      },
+      "expected": {
+        "ok": false,
+        "valuePresent": false,
+        "partialValuePresent": false,
+        "retryScheduled": false,
+        "fallbackApplied": false,
+        "evidence": {
+          "termination": "quartal-context-invalid"
+        },
+        "refusal": {
+          "code": "voicing.quartal_context_invalid",
+          "path": [
+            "quartalContext"
+          ],
+          "reason": "policy-version-mismatch"
+        }
+      },
+      "traceIds": [
+        "V0-TRACE-QUARTAL",
+        "V0-TRACE-REFUSAL"
+      ],
+      "authorityIds": [
+        "V0-AUTH-CONTRACT",
+        "V0-AUTH-TEMPLATES"
+      ]
+    },
+    {
+      "id": "V0-OP-REFUSAL-007",
+      "description": "A Quartal evidence ID outside the exact 1..256-code-point and 512-UTF-8-byte bounds is rejected.",
+      "callSurface": "typed-public-request-semantic-validation",
+      "trigger": {
+        "family": "quartal",
+        "quartalContextField": "evidenceId",
+        "received": "",
+        "required": "1..256 Unicode code points and at most 512 UTF-8 bytes"
+      },
+      "expected": {
+        "ok": false,
+        "valuePresent": false,
+        "partialValuePresent": false,
+        "retryScheduled": false,
+        "fallbackApplied": false,
+        "evidence": {
+          "termination": "quartal-context-invalid"
+        },
+        "refusal": {
+          "code": "voicing.quartal_context_invalid",
+          "path": [
+            "quartalContext"
+          ],
+          "reason": "evidence-id-invalid"
+        }
+      },
+      "traceIds": [
+        "V0-TRACE-QUARTAL",
+        "V0-TRACE-REFUSAL",
+        "V0-TRACE-LIMITS"
+      ],
+      "authorityIds": [
+        "V0-AUTH-CONTRACT",
+        "V0-AUTH-TEMPLATES",
+        "V0-AUTH-LIMITS"
+      ]
+    },
+    {
+      "id": "V0-OP-REFUSAL-008",
+      "description": "A typed number that violates the positive-integer Quartal evidence-version contract is rejected.",
+      "callSurface": "typed-public-request-semantic-validation",
+      "trigger": {
+        "family": "quartal",
+        "quartalContextField": "evidenceVersion",
+        "received": 0,
+        "required": "positive integer"
+      },
+      "expected": {
+        "ok": false,
+        "valuePresent": false,
+        "partialValuePresent": false,
+        "retryScheduled": false,
+        "fallbackApplied": false,
+        "evidence": {
+          "termination": "quartal-context-invalid"
+        },
+        "refusal": {
+          "code": "voicing.quartal_context_invalid",
+          "path": [
+            "quartalContext"
+          ],
+          "reason": "evidence-version-invalid"
+        }
+      },
+      "traceIds": [
+        "V0-TRACE-QUARTAL",
+        "V0-TRACE-REFUSAL"
+      ],
+      "authorityIds": [
+        "V0-AUTH-CONTRACT",
+        "V0-AUTH-TEMPLATES"
+      ]
+    },
+    {
+      "id": "V0-OP-REFUSAL-009",
+      "description": "A well-shaped Quartal sequence whose member count does not match the requested effective voice count is rejected.",
+      "callSurface": "typed-public-request-semantic-validation",
+      "trigger": {
+        "family": "quartal",
+        "voiceCount": 4,
+        "bassPolicy": "none",
+        "degreeSequence": [
+          "1",
+          "4",
+          "b7"
+        ],
+        "expectedDegreeCount": 4,
+        "receivedDegreeCount": 3
+      },
+      "expected": {
+        "ok": false,
+        "valuePresent": false,
+        "partialValuePresent": false,
+        "retryScheduled": false,
+        "fallbackApplied": false,
+        "evidence": {
+          "termination": "quartal-context-invalid"
+        },
+        "refusal": {
+          "code": "voicing.quartal_context_invalid",
+          "path": [
+            "quartalContext"
+          ],
+          "reason": "degree-count-mismatch"
+        }
+      },
+      "traceIds": [
+        "V0-TRACE-QUARTAL",
+        "V0-TRACE-REFUSAL"
+      ],
+      "authorityIds": [
+        "V0-AUTH-CONTRACT",
+        "V0-AUTH-TEMPLATES"
+      ]
+    },
+    {
+      "id": "V0-OP-REFUSAL-010",
+      "description": "A Quartal sequence member absent from the explicitly selected realization is rejected at its exact index.",
+      "callSurface": "typed-public-request-semantic-validation",
+      "inputCaseId": "V0-CAND-028",
+      "trigger": {
+        "sourceSymbol": "Cmaj7",
+        "realizationId": "literal",
+        "degreeSequence": [
+          "1",
+          "4",
+          "b7"
+        ],
+        "firstAbsentDegreeIndex": 1,
+        "firstAbsentDegree": "4"
+      },
+      "expected": {
+        "ok": false,
+        "valuePresent": false,
+        "partialValuePresent": false,
+        "retryScheduled": false,
+        "fallbackApplied": false,
+        "evidence": {
+          "termination": "quartal-context-invalid"
+        },
+        "refusal": {
+          "code": "voicing.quartal_context_invalid",
+          "path": [
+            "quartalContext",
+            "degreeSequence",
+            1
+          ],
+          "reason": "degree-absent-from-realization"
+        }
+      },
+      "traceIds": [
+        "V0-TRACE-QUARTAL",
+        "V0-TRACE-REFUSAL"
+      ],
+      "authorityIds": [
+        "V0-AUTH-T1",
+        "V0-AUTH-CONTRACT"
+      ]
+    },
+    {
+      "id": "V0-OP-REFUSAL-011",
+      "description": "The first Quartal adjacency that is neither five nor six semitones is rejected at the upper degree index.",
+      "callSurface": "typed-public-request-semantic-validation",
+      "inputCaseId": "V0-CAND-027",
+      "trigger": {
+        "sourceSymbol": "Cmaj13",
+        "realizationId": "literal",
+        "degreeSequence": [
+          "1",
+          "3",
+          "5",
+          "7"
+        ],
+        "firstInvalidAdjacencyUpperDegreeIndex": 1,
+        "firstInvalidAdjacencySemitones": 4
+      },
+      "expected": {
+        "ok": false,
+        "valuePresent": false,
+        "partialValuePresent": false,
+        "retryScheduled": false,
+        "fallbackApplied": false,
+        "evidence": {
+          "termination": "quartal-context-invalid"
+        },
+        "refusal": {
+          "code": "voicing.quartal_context_invalid",
+          "path": [
+            "quartalContext",
+            "degreeSequence",
+            1
+          ],
+          "reason": "adjacency-not-perfect-or-augmented-fourth"
+        }
+      },
+      "traceIds": [
+        "V0-TRACE-QUARTAL",
+        "V0-TRACE-REFUSAL"
+      ],
+      "authorityIds": [
+        "V0-AUTH-CONTRACT",
+        "V0-AUTH-TEMPLATES"
+      ]
+    },
+    {
+      "id": "V0-OP-REFUSAL-012",
+      "description": "An undeclared static Shell row refuses with its exact quality-family-unavailable payload and does not substitute another family.",
+      "callSurface": "typed-public-request-semantic-validation",
+      "matrixCaseId": "V0-AVAIL-T1-FORMULA-001-shell-vc3",
+      "trigger": {
+        "formulaRuleId": "base-major",
+        "qualityClass": "major-triad",
+        "family": "shell",
+        "voiceCount": 3
+      },
+      "expected": {
+        "ok": false,
+        "valuePresent": false,
+        "partialValuePresent": false,
+        "retryScheduled": false,
+        "fallbackApplied": false,
+        "evidence": {
+          "termination": "family-unavailable"
+        },
+        "refusal": {
+          "code": "voicing.family_unavailable",
+          "path": [
+            "policy",
+            "family"
+          ],
+          "family": "shell",
+          "qualityClass": "major-triad",
+          "formulaRuleId": "base-major",
+          "reason": "quality-family-unsupported"
+        }
+      },
+      "traceIds": [
+        "V0-TRACE-FAMILIES",
+        "V0-TRACE-REFUSAL"
+      ],
+      "authorityIds": [
+        "V0-AUTH-TEMPLATES",
+        "V0-AUTH-CONTRACT"
+      ]
+    },
+    {
+      "id": "V0-OP-REFUSAL-013",
+      "description": "An undeclared Quartal row refuses with quartal-row-undeclared after valid Quartal context and does not substitute a tertian family.",
+      "callSurface": "typed-public-request-semantic-validation",
+      "matrixCaseId": "V0-AVAIL-T1-FORMULA-001-quartal-vc3",
+      "trigger": {
+        "formulaRuleId": "base-major",
+        "qualityClass": "major-triad",
+        "family": "quartal",
+        "voiceCount": 3,
+        "quartalContextDisposition": "valid"
+      },
+      "expected": {
+        "ok": false,
+        "valuePresent": false,
+        "partialValuePresent": false,
+        "retryScheduled": false,
+        "fallbackApplied": false,
+        "evidence": {
+          "termination": "family-unavailable"
+        },
+        "refusal": {
+          "code": "voicing.family_unavailable",
+          "path": [
+            "policy",
+            "family"
+          ],
+          "family": "quartal",
+          "qualityClass": "major-triad",
+          "formulaRuleId": "base-major",
+          "reason": "quartal-row-undeclared"
+        }
+      },
+      "traceIds": [
+        "V0-TRACE-QUARTAL",
+        "V0-TRACE-FAMILIES",
+        "V0-TRACE-REFUSAL"
+      ],
+      "authorityIds": [
+        "V0-AUTH-TEMPLATES",
+        "V0-AUTH-CONTRACT"
+      ]
+    },
+    {
+      "id": "V0-OP-REFUSAL-014",
+      "description": "All independently established constraint failures are reported in code order with deterministic within-code ordering, including otherwise-identical payloads ordered only by reason precedence.",
+      "callSurface": "typed-public-request-semantic-validation",
+      "trigger": {
+        "kind": "synthetic-independent-observation-assembly",
+        "family": "balanced",
+        "observationCount": 10,
+        "distinctFullPayloadCount": 9,
+        "exactDuplicateCount": 1,
+        "sameCodeDistinctPayloadCount": 4,
+        "reasonOnlyDistinctPayloadCount": 2,
+        "submittedObservations": [
+          {
+            "satisfied": false,
+            "code": "voicing.constraint.low_register_spacing",
+            "reason": "low-register-spacing",
+            "voiceOrdinals": [1, 2],
+            "degrees": ["3", "b7"],
+            "midiValues": [40, 43]
+          },
+          {
+            "satisfied": false,
+            "code": "voicing.constraint.voice_count",
+            "reason": "voice-count-unsupported",
+            "voiceOrdinals": [],
+            "degrees": [],
+            "midiValues": []
+          },
+          {
+            "satisfied": false,
+            "code": "voicing.constraint.low_register_spacing",
+            "reason": "low-register-spacing",
+            "voiceOrdinals": [1, 2],
+            "degrees": ["3", "b7"],
+            "midiValues": [40, 43]
+          },
+          {
+            "satisfied": false,
+            "code": "voicing.constraint.template_degree_membership",
+            "reason": "template-degree-absent",
+            "voiceOrdinals": [],
+            "degrees": ["9"],
+            "midiValues": []
+          },
+          {
+            "satisfied": false,
+            "code": "voicing.constraint.midi_range",
+            "reason": "range-insufficient",
+            "voiceOrdinals": [],
+            "degrees": [],
+            "midiValues": [60, 62]
+          },
+          {
+            "satisfied": false,
+            "code": "voicing.constraint.guide_tones",
+            "reason": "guide-tone-omitted",
+            "voiceOrdinals": [],
+            "degrees": ["b7"],
+            "midiValues": []
+          },
+          {
+            "satisfied": false,
+            "code": "voicing.constraint.unique_midi",
+            "reason": "duplicate-midi",
+            "voiceOrdinals": [1, 2],
+            "degrees": ["3", "b7"],
+            "midiValues": [64, 64]
+          },
+          {
+            "satisfied": false,
+            "code": "voicing.constraint.low_register_spacing",
+            "reason": "low-register-spacing",
+            "voiceOrdinals": [0, 1],
+            "degrees": ["1", "3"],
+            "midiValues": [36, 40]
+          },
+          {
+            "satisfied": false,
+            "code": "voicing.constraint.family_structure",
+            "reason": "no-legal-register-placement",
+            "voiceOrdinals": [0],
+            "degrees": ["1"],
+            "midiValues": [36]
+          },
+          {
+            "satisfied": false,
+            "code": "voicing.constraint.family_structure",
+            "reason": "family-transform-invalid",
+            "voiceOrdinals": [0],
+            "degrees": ["1"],
+            "midiValues": [36]
+          }
+        ]
+      },
+      "expected": {
+        "ok": false,
+        "valuePresent": false,
+        "partialValuePresent": false,
+        "retryScheduled": false,
+        "fallbackApplied": false,
+        "exactDuplicateCollapsedBeforeCapacity": true,
+        "sameCodeDistinctPayloadsRetained": true,
+        "reasonOnlyDistinctPayloadsRetained": true,
+        "reasonPrecedenceApplied": true,
+        "primaryReasonByReportPrecedence": "template-degree-absent",
+        "evidence": {
+          "termination": "constraints-unsatisfied"
+        },
+        "refusal": {
+          "code": "voicing.constraints_unsatisfied",
+          "path": [
+            "policy"
+          ],
+          "constraints": [
+            {
+              "satisfied": false,
+              "code": "voicing.constraint.template_degree_membership",
+              "reason": "template-degree-absent",
+              "voiceOrdinals": [],
+              "degrees": [
+                "9"
+              ],
+              "midiValues": []
+            },
+            {
+              "satisfied": false,
+              "code": "voicing.constraint.voice_count",
+              "reason": "voice-count-unsupported",
+              "voiceOrdinals": [],
+              "degrees": [],
+              "midiValues": []
+            },
+            {
+              "satisfied": false,
+              "code": "voicing.constraint.midi_range",
+              "reason": "range-insufficient",
+              "voiceOrdinals": [],
+              "degrees": [],
+              "midiValues": [
+                60,
+                62
+              ]
+            },
+            {
+              "satisfied": false,
+              "code": "voicing.constraint.guide_tones",
+              "reason": "guide-tone-omitted",
+              "voiceOrdinals": [],
+              "degrees": [
+                "b7"
+              ],
+              "midiValues": []
+            },
+            {
+              "satisfied": false,
+              "code": "voicing.constraint.unique_midi",
+              "reason": "duplicate-midi",
+              "voiceOrdinals": [
+                1,
+                2
+              ],
+              "degrees": [
+                "3",
+                "b7"
+              ],
+              "midiValues": [
+                64,
+                64
+              ]
+            },
+            {
+              "satisfied": false,
+              "code": "voicing.constraint.low_register_spacing",
+              "reason": "low-register-spacing",
+              "voiceOrdinals": [
+                0,
+                1
+              ],
+              "degrees": [
+                "1",
+                "3"
+              ],
+              "midiValues": [
+                36,
+                40
+              ]
+            },
+            {
+              "satisfied": false,
+              "code": "voicing.constraint.low_register_spacing",
+              "reason": "low-register-spacing",
+              "voiceOrdinals": [
+                1,
+                2
+              ],
+              "degrees": [
+                "3",
+                "b7"
+              ],
+              "midiValues": [
+                40,
+                43
+              ]
+            },
+            {
+              "satisfied": false,
+              "code": "voicing.constraint.family_structure",
+              "reason": "family-transform-invalid",
+              "voiceOrdinals": [
+                0
+              ],
+              "degrees": [
+                "1"
+              ],
+              "midiValues": [
+                36
+              ]
+            },
+            {
+              "satisfied": false,
+              "code": "voicing.constraint.family_structure",
+              "reason": "no-legal-register-placement",
+              "voiceOrdinals": [
+                0
+              ],
+              "degrees": [
+                "1"
+              ],
+              "midiValues": [
+                36
+              ]
+            }
+          ]
+        }
+      },
+      "traceIds": [
+        "V0-TRACE-REFUSAL",
+        "V0-TRACE-DEGREES",
+        "V0-TRACE-ORDERING"
+      ],
+      "authorityIds": [
+        "V0-AUTH-CONTRACT",
+        "V0-AUTH-TEMPLATES"
+      ]
+    },
+    {
+      "id": "V0-OP-REFUSAL-015",
+      "description": "A true attempt to accept raw candidate 97 refuses before acceptance and discards every partial candidate value.",
+      "callSurface": "typed-public-request-semantic-validation",
+      "limitCaseId": "V0-LIMIT-WORK-008-PLUS-ONE",
+      "trigger": {
+        "counter": "rawCandidatesProduced",
+        "acceptedBeforeAttempt": 96,
+        "attempted": 97,
+        "maximum": 96
+      },
+      "expected": {
+        "ok": false,
+        "valuePresent": false,
+        "partialValuePresent": false,
+        "retryScheduled": false,
+        "fallbackApplied": false,
+        "acceptedCounterValueInEvidence": 96,
+        "evidence": {
+          "termination": "work-limit-exceeded"
+        },
+        "refusal": {
+          "code": "limit.voicing_work_exceeded",
+          "path": [],
+          "counter": "rawCandidatesProduced",
+          "received": 97,
+          "maximum": 96,
+          "partialResult": false
+        }
+      },
+      "traceIds": [
+        "V0-TRACE-LIMITS",
+        "V0-TRACE-REFUSAL"
+      ],
+      "authorityIds": [
+        "V0-AUTH-LIMITS",
+        "V0-AUTH-INDEPENDENCE"
+      ]
+    },
+    {
+      "id": "V0-OP-REFUSAL-016",
+      "description": "A completed zero-candidate Cmaj7/E search with more than sixteen distinct full-payload failures returns the provisional observation overflow as a typed all-or-nothing work limit.",
+      "callSurface": "typed-public-request-semantic-validation",
+      "limitCaseId": "V0-LIMIT-WORK-016-PLUS-ONE",
+      "trigger": {
+        "kind": "real-exhaustive-no-result-observation-overflow",
+        "sourceSymbol": "Cmaj7/E",
+        "realizationId": "literal",
+        "family": "balanced",
+        "voiceCount": 4,
+        "bassPolicy": "external",
+        "range": {
+          "lowMidi": 24,
+          "highMidi": 95
+        },
+        "quartalContext": null,
+        "prospectiveDistinctObservationCount": 17,
+        "retainedObservationCount": 16
+      },
+      "expected": {
+        "ok": false,
+        "valuePresent": false,
+        "partialValuePresent": false,
+        "retryScheduled": false,
+        "fallbackApplied": false,
+        "diagnosticCollectionStoppedAtProspectiveDistinctObservation": 17,
+        "musicalSearchContinuedToCompletion": true,
+        "legalCandidateCount": 0,
+        "evidence": {
+          "realizationDegreeRecordsVisited": 4,
+          "templateRowsVisited": 57,
+          "templateDegreeSlotsVisited": 4,
+          "registerPlacementsVisited": 24,
+          "searchStatesExpanded": 1555,
+          "structuralTransformsAttempted": 1296,
+          "hardConstraintChecks": 20736,
+          "rawCandidatesProduced": 0,
+          "candidateCanonicalizations": 0,
+          "duplicateCandidateComparisons": 0,
+          "localScoresComputed": 0,
+          "orderingComparisons": 0,
+          "retainedCandidatesProduced": 0,
+          "outputVoicesProduced": 0,
+          "constraintObservationComparisons": 163,
+          "constraintObservationsProduced": 16,
+          "peakRegisterPlacementRecords": 24,
+          "peakSearchStateRecords": 5,
+          "peakRawCandidateRecords": 0,
+          "peakRawVoiceRecords": 0,
+          "peakRetainedCandidateRecords": 0,
+          "peakOutputVoiceRecords": 0,
+          "peakTrackedRecords": 161,
+          "peakConstraintObservationRecords": 16,
+          "termination": "work-limit-exceeded"
+        },
+        "refusal": {
+          "code": "limit.voicing_work_exceeded",
+          "path": [],
+          "counter": "constraintObservationsProduced",
+          "received": 17,
+          "maximum": 16,
+          "partialResult": false
+        }
+      },
+      "traceIds": [
+        "V0-TRACE-BASS",
+        "V0-TRACE-REFUSAL",
+        "V0-TRACE-LIMITS"
+      ],
+      "authorityIds": [
+        "V0-AUTH-CONTRACT",
+        "V0-AUTH-LIMITS",
+        "V0-AUTH-INDEPENDENCE"
+      ]
+    }
+  ],
+  "precedenceCases": [
+    {
+      "id": "V0-OP-PRECEDENCE-001",
+      "description": "Unavailable realization wins before any Quartal, family, constraint, or limit outcome can be established.",
+      "contenders": [
+        "voicing.realization_unavailable",
+        "voicing.quartal_context_invalid",
+        "voicing.family_unavailable",
+        "voicing.constraints_unsatisfied",
+        "limit.voicing_work_exceeded"
+      ],
+      "discoveryFacts": {
+        "realizationIdAbsent": true,
+        "laterContendersEvaluated": false
+      },
+      "expected": {
+        "winningCode": "voicing.realization_unavailable",
+        "termination": "realization-unavailable",
+        "retryScheduled": false,
+        "fallbackApplied": false,
+        "partialValuePresent": false
+      },
+      "traceIds": [
+        "V0-TRACE-ALT-SELECTION",
+        "V0-TRACE-REFUSAL"
+      ],
+      "authorityIds": [
+        "V0-AUTH-T1",
+        "V0-AUTH-CONTRACT"
+      ]
+    },
+    {
+      "id": "V0-OP-PRECEDENCE-002",
+      "description": "Unexpected Quartal context on a non-Quartal request wins before family and constraint lookup.",
+      "contenders": [
+        "voicing.quartal_context_unexpected",
+        "voicing.family_unavailable",
+        "voicing.constraints_unsatisfied"
+      ],
+      "discoveryFacts": {
+        "realizationAvailable": true,
+        "familyIsQuartal": false,
+        "quartalContextPresent": true,
+        "laterContendersEvaluated": false
+      },
+      "expected": {
+        "winningCode": "voicing.quartal_context_unexpected",
+        "termination": "quartal-context-unexpected",
+        "retryScheduled": false,
+        "fallbackApplied": false,
+        "partialValuePresent": false
+      },
+      "traceIds": [
+        "V0-TRACE-QUARTAL",
+        "V0-TRACE-REFUSAL"
+      ],
+      "authorityIds": [
+        "V0-AUTH-CONTRACT",
+        "V0-AUTH-TEMPLATES"
+      ]
+    },
+    {
+      "id": "V0-OP-PRECEDENCE-003",
+      "description": "Missing required Quartal context wins before the absence of a Quartal family row is considered.",
+      "contenders": [
+        "voicing.quartal_context_required",
+        "voicing.family_unavailable"
+      ],
+      "discoveryFacts": {
+        "realizationAvailable": true,
+        "familyIsQuartal": true,
+        "quartalContextPresent": false,
+        "familyTableLookedUp": false
+      },
+      "expected": {
+        "winningCode": "voicing.quartal_context_required",
+        "termination": "quartal-context-required",
+        "retryScheduled": false,
+        "fallbackApplied": false,
+        "partialValuePresent": false
+      },
+      "traceIds": [
+        "V0-TRACE-QUARTAL",
+        "V0-TRACE-REFUSAL"
+      ],
+      "authorityIds": [
+        "V0-AUTH-CONTRACT",
+        "V0-AUTH-TEMPLATES"
+      ]
+    },
+    {
+      "id": "V0-OP-PRECEDENCE-004",
+      "description": "Invalid Quartal context wins before an unavailable Quartal row.",
+      "contenders": [
+        "voicing.quartal_context_invalid",
+        "voicing.family_unavailable"
+      ],
+      "discoveryFacts": {
+        "realizationAvailable": true,
+        "familyIsQuartal": true,
+        "quartalContextPresent": true,
+        "quartalContextValid": false,
+        "familyTableLookedUp": false
+      },
+      "expected": {
+        "winningCode": "voicing.quartal_context_invalid",
+        "termination": "quartal-context-invalid",
+        "retryScheduled": false,
+        "fallbackApplied": false,
+        "partialValuePresent": false
+      },
+      "traceIds": [
+        "V0-TRACE-QUARTAL",
+        "V0-TRACE-REFUSAL"
+      ],
+      "authorityIds": [
+        "V0-AUTH-CONTRACT",
+        "V0-AUTH-TEMPLATES"
+      ]
+    },
+    {
+      "id": "V0-OP-PRECEDENCE-005",
+      "description": "A static unavailable row wins before register search can accumulate constraint observations.",
+      "contenders": [
+        "voicing.family_unavailable",
+        "voicing.constraints_unsatisfied",
+        "limit.voicing_work_exceeded"
+      ],
+      "discoveryFacts": {
+        "earlierRequestValidationPassed": true,
+        "staticRowUnavailable": true,
+        "registerSearchStarted": false
+      },
+      "expected": {
+        "winningCode": "voicing.family_unavailable",
+        "termination": "family-unavailable",
+        "retryScheduled": false,
+        "fallbackApplied": false,
+        "partialValuePresent": false
+      },
+      "traceIds": [
+        "V0-TRACE-FAMILIES",
+        "V0-TRACE-REFUSAL"
+      ],
+      "authorityIds": [
+        "V0-AUTH-TEMPLATES",
+        "V0-AUTH-CONTRACT"
+      ]
+    },
+    {
+      "id": "V0-OP-PRECEDENCE-006",
+      "description": "Constraints win when complete bounded search independently establishes them without attempting work beyond a cap.",
+      "contenders": [
+        "voicing.constraints_unsatisfied",
+        "limit.voicing_work_exceeded"
+      ],
+      "discoveryFacts": {
+        "completeSearchFinishedWithinCaps": true,
+        "independentConstraintObservationsNonempty": true,
+        "attemptedMaximumPlusOne": false
+      },
+      "expected": {
+        "winningCode": "voicing.constraints_unsatisfied",
+        "termination": "constraints-unsatisfied",
+        "retryScheduled": false,
+        "fallbackApplied": false,
+        "partialValuePresent": false
+      },
+      "traceIds": [
+        "V0-TRACE-REFUSAL",
+        "V0-TRACE-LIMITS"
+      ],
+      "authorityIds": [
+        "V0-AUTH-CONTRACT",
+        "V0-AUTH-LIMITS"
+      ]
+    },
+    {
+      "id": "V0-OP-PRECEDENCE-007",
+      "description": "The work limit wins over a suspected later constraint outcome when the required search cannot finish within a cap.",
+      "contenders": [
+        "voicing.constraints_unsatisfied",
+        "limit.voicing_work_exceeded"
+      ],
+      "discoveryFacts": {
+        "completeSearchFinishedWithinCaps": false,
+        "attemptedMaximumPlusOne": true,
+        "laterMusicalOutcomeEstablished": false
+      },
+      "expected": {
+        "winningCode": "limit.voicing_work_exceeded",
+        "termination": "work-limit-exceeded",
+        "retryScheduled": false,
+        "fallbackApplied": false,
+        "partialValuePresent": false
+      },
+      "traceIds": [
+        "V0-TRACE-LIMITS",
+        "V0-TRACE-REFUSAL"
+      ],
+      "authorityIds": [
+        "V0-AUTH-LIMITS",
+        "V0-AUTH-INDEPENDENCE"
+      ]
+    }
+  ],
+  "notApplicableCases": [
+    {
+      "id": "V0-OP-NOT-APPLICABLE-001",
+      "description": "Cancellation belongs to resumable progression search or application orchestration, not the pure V0 call.",
+      "concern": "cancellation",
+      "expected": {
+        "applies": false,
+        "requestFieldPresent": false,
+        "ambientStateRead": false,
+        "v0StateCreated": false,
+        "terminationAdded": false,
+        "refusalAdded": false,
+        "owner": "progression-level resumable search/application runner"
+      },
+      "traceIds": [
+        "V0-TRACE-BOUNDARY"
+      ],
+      "authorityIds": [
+        "V0-AUTH-CONTRACT"
+      ]
+    },
+    {
+      "id": "V0-OP-NOT-APPLICABLE-002",
+      "description": "Stale revision rejection occurs before invocation or before application of the result.",
+      "concern": "staleRevision",
+      "expected": {
+        "applies": false,
+        "requestFieldPresent": false,
+        "ambientStateRead": false,
+        "v0StateCreated": false,
+        "terminationAdded": false,
+        "refusalAdded": false,
+        "owner": "application request/revision boundary"
+      },
+      "traceIds": [
+        "V0-TRACE-BOUNDARY"
+      ],
+      "authorityIds": [
+        "V0-AUTH-CONTRACT"
+      ]
+    },
+    {
+      "id": "V0-OP-NOT-APPLICABLE-003",
+      "description": "Browser lifecycle and compatibility state cannot influence a pure theory result.",
+      "concern": "browser",
+      "expected": {
+        "applies": false,
+        "requestFieldPresent": false,
+        "ambientStateRead": false,
+        "v0StateCreated": false,
+        "terminationAdded": false,
+        "refusalAdded": false,
+        "owner": "UI/E2E packages"
+      },
+      "traceIds": [
+        "V0-TRACE-BOUNDARY"
+      ],
+      "authorityIds": [
+        "V0-AUTH-CONTRACT"
+      ]
+    },
+    {
+      "id": "V0-OP-NOT-APPLICABLE-004",
+      "description": "Audio availability and transport state cannot influence a pure theory result.",
+      "concern": "audio",
+      "expected": {
+        "applies": false,
+        "requestFieldPresent": false,
+        "ambientStateRead": false,
+        "v0StateCreated": false,
+        "terminationAdded": false,
+        "refusalAdded": false,
+        "owner": "playback-plan and audio packages"
+      },
+      "traceIds": [
+        "V0-TRACE-BOUNDARY"
+      ],
+      "authorityIds": [
+        "V0-AUTH-CONTRACT"
+      ]
+    },
+    {
+      "id": "V0-OP-NOT-APPLICABLE-005",
+      "description": "Storage identity, capability, and failure state cannot influence a pure theory result.",
+      "concern": "storage",
+      "expected": {
+        "applies": false,
+        "requestFieldPresent": false,
+        "ambientStateRead": false,
+        "v0StateCreated": false,
+        "terminationAdded": false,
+        "refusalAdded": false,
+        "owner": "persistence package"
+      },
+      "traceIds": [
+        "V0-TRACE-BOUNDARY"
+      ],
+      "authorityIds": [
+        "V0-AUTH-CONTRACT"
+      ]
+    }
+  ]
+}

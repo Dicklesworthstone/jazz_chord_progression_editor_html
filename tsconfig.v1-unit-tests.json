@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.tests.json",
+  "include": [],
+  "files": [
+    "tests/property/v1-assignment-oracle.test.ts",
+    "tests/unit/v1-accounting-probes.test.ts",
+    "tests/unit/v1-voice-assignment-validation.test.ts",
+    "tests/unit/v1-voice-assignment.test.ts"
+  ]
+}

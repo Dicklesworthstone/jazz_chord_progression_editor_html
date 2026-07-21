@@ -1,0 +1,119 @@
+{
+  "schema": "changes.fixtures.a0-sequence-cases.v1",
+  "fixtureVersion": 1,
+  "expectedValuesGenerated": false,
+  "productionOutputUsed": false,
+  "referenceModel": {
+    "kind": "declarative-immutable-transition-model",
+    "productionImports": "forbidden",
+    "comparison": "document-projection-bookmarks-history-shape-revision-and-refusal",
+    "actionLog": "seed-index-action-index-action-payload-before-after-refusal-counters"
+  },
+  "namedSequences": [
+    {
+      "id": "A0-SEQ-001",
+      "summary": "Edit, move, undo twice, redo twice returns exact snapshots with monotonic revisions.",
+      "initial": "DOC-A@R0",
+      "actions": ["set-text:title", "move:E2-after-E3", "undo", "undo", "redo", "redo"],
+      "expect": { "document": "DOC-A-with-title-and-move", "revision": 6, "undoEntries": 2, "redoEntries": 0, "stableIds": "unchanged" },
+      "traceIds": ["TR-A0-HISTORY", "TR-A0-ID"],
+      "authorityIds": ["AUTH-PLAN-A0"]
+    },
+    {
+      "id": "A0-SEQ-002",
+      "summary": "Undo followed by a branch edit clears all redo without disturbing older undo.",
+      "initial": "DOC-A@R0",
+      "actions": ["set-duration:E1", "set-duration:E2", "undo", "set-text:annotation"],
+      "expect": { "revision": 4, "undoEntries": 2, "redoEntries": 0, "document": "first-duration-plus-annotation" },
+      "traceIds": ["TR-A0-HISTORY"],
+      "authorityIds": ["AUTH-PLAN-A0"]
+    },
+    {
+      "id": "A0-SEQ-003",
+      "summary": "Selection survives multiple reorders and duplicate inserts by stable identity.",
+      "initial": "E1,E2,E3 selected E2",
+      "actions": ["move:E2-after-E3", "duplicate:E1-as-E9", "move:E3-before-E1", "undo", "redo"],
+      "expect": { "selection": ["E2"], "focus": "E2", "originalIds": ["E1", "E2", "E3"], "copyId": "E9" },
+      "traceIds": ["TR-A0-ID", "TR-A0-BOOKMARKS", "TR-LEGACY-STATE"],
+      "authorityIds": ["AUTH-LEGACY", "AUTH-F1"]
+    },
+    {
+      "id": "A0-SEQ-004",
+      "summary": "Import, undo, and redo restore exact documents and exact bookmarks without a second decode.",
+      "initial": "DOC-A/BOOK-A@R7",
+      "actions": ["replace:canonical-import-DOC-B", "undo", "redo"],
+      "expect": { "document": "DOC-B-exact-reference", "bookmarks": "BOOK-B", "revision": 10, "decodeCallsAfterCommit": 0, "transportInHistory": false },
+      "traceIds": ["TR-A0-REPLACE", "TR-A0-HISTORY", "TR-A0-BOOKMARKS"],
+      "authorityIds": ["AUTH-PLAN-A0"]
+    },
+    {
+      "id": "A0-SEQ-005",
+      "summary": "Stale suggestion and stale transport results interleave with a current edit without publication.",
+      "initial": "DOC-A@R3 transport-ready-G4",
+      "actions": ["begin:suggestion#8@R3", "set-text:title", "settle:suggestion#8@R3", "notify:playing-G3", "apply:suggestion#8@R3"],
+      "expect": { "revision": 4, "document": "title-only", "ignoredStale": 2, "refusals": ["command.derived_patch_stale"], "transport": "ready-G4" },
+      "traceIds": ["TR-A0-STALE", "TR-A0-TRANSPORT", "TR-HD-APPLY"],
+      "authorityIds": ["AUTH-WIZARD", "AUTH-PLAN-A0"]
+    },
+    {
+      "id": "A0-SEQ-006",
+      "summary": "Failed replacement retirement and cancel paths preserve authority, then a successful retry commits once.",
+      "initial": "DOC-A@R11",
+      "actions": ["begin:transition#20", "retirement-fails", "settle:cancel#20", "begin:transition#21", "retirement-succeeds", "replace:DOC-B#21"],
+      "expect": { "document": "DOC-B", "revision": 12, "historyEntriesAdded": 1, "failedAttemptDocumentMutations": 0, "successfulRetirementReceipts": 1 },
+      "traceIds": ["TR-A0-REPLACE", "TR-A0-ATOMIC", "TR-A0-STALE"],
+      "authorityIds": ["AUTH-PLAN-A0", "AUTH-ARCH"]
+    }
+  ],
+  "randomizedProtocol": {
+    "id": "A0-PROP-1000",
+    "sequenceCount": 1000,
+    "actionsPerSequence": 100,
+    "seedAlgorithm": "splitmix64",
+    "rootSeedHex": "0x4348414e47455332",
+    "sequenceSeedDerivation": "splitmix64(rootSeed + unsigned-sequence-index)",
+    "sequenceIndexRange": [0, 999],
+    "actionVocabulary": [
+      "insert-event",
+      "delete-event",
+      "move-event",
+      "duplicate-event",
+      "set-duration-valid",
+      "set-text",
+      "set-section",
+      "set-voicing-valid",
+      "undo",
+      "redo"
+    ],
+    "weightsPer1024": {
+      "insert-event": 128,
+      "delete-event": 96,
+      "move-event": 96,
+      "duplicate-event": 64,
+      "set-duration-valid": 128,
+      "set-text": 160,
+      "set-section": 96,
+      "set-voicing-valid": 64,
+      "undo": 112,
+      "redo": 80
+    },
+    "maximumEventsInGeneratedDocument": 64,
+    "oracleChecksAfterEveryAction": [
+      "production-and-reference-outcome-kind",
+      "validated-document-projection",
+      "revision",
+      "undo-redo-label-and-length",
+      "retained-byte-sum",
+      "stable-bookmarks",
+      "no-duplicate-stable-id",
+      "f3-revalidation",
+      "input-graph-not-mutated",
+      "deterministic-replay"
+    ],
+    "failureLogRequired": true,
+    "shrinking": "delete-contiguous-action-ranges-then-minimize-payloads-in-index-order",
+    "wallTimeSemanticCutoff": false,
+    "traceIds": ["TR-A0-RANDOM", "TR-A0-ATOMIC", "TR-A0-HISTORY", "TR-A0-ID"],
+    "authorityIds": ["AUTH-PLAN-A0", "AUTH-DEFINITION"]
+  }
+}

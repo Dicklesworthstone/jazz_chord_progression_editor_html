@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.tests.json",
+  "include": [],
+  "files": [
+    "tests/conformance/v0-laws-mutation-controls.test.ts",
+    "tests/conformance/v0-production-conformance.test.ts",
+    "tests/integration/v0-availability-matrix.test.ts",
+    "tests/integration/v0-constraint-diagnostics.test.ts",
+    "tests/integration/v0-ledger-lifecycle.test.ts",
+    "tests/integration/v0-operation-state.test.ts",
+    "tests/integration/v0-voicing-candidates.test.ts",
+    "tests/static/dependency-boundaries.test.ts",
+    "tests/static/v0-contract.test.ts",
+    "tests/static/v0-evidence.test.ts",
+    "tests/static/v0-production-policy.test.ts",
+    "tests/static/v0-type-contract.test.ts",
+    "tests/unit/v0-voicing-primitives.test.ts"
+  ]
+}

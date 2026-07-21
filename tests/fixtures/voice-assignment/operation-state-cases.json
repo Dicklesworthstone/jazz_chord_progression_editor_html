@@ -1,0 +1,196 @@
+{
+  "schema": "changes.fixtures.v1-operation-state-cases.v1",
+  "fixtureVersion": "1.0.0",
+  "status": "independently-authored-pre-production",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "cases": [
+    {
+      "id": "V1-OP-001",
+      "kind": "initialize-success",
+      "setup": "three valid low-to-high automatic-candidate voices in request req-a",
+      "expected": {"ok": true, "termination": "complete-initialized", "voiceIds": ["voice-0000", "voice-0001", "voice-0002"], "nextVoiceSerial": 3, "operationPath": []},
+      "traceIds": ["V1-TRACE-VOICE-IDS"],
+      "authorityIds": ["V1-AUTH-CONTRACT"]
+    },
+    {
+      "id": "V1-OP-002",
+      "kind": "transition-success",
+      "setup": "valid source and target frames with no locks",
+      "expected": {"ok": true, "termination": "complete-assigned", "noncrossingByConstruction": true, "wallTimeAffectedSelection": false},
+      "traceIds": ["V1-TRACE-BOUNDARY", "V1-TRACE-DP-ORDER"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-ORDER-PRESERVING"]
+    },
+    {
+      "id": "V1-OP-003",
+      "kind": "schema-and-policy-refusals",
+      "variants": [
+        {"field": "schema", "received": "changes.theory.voice-assignment-request.v999", "code": "voice_assignment.schema_invalid", "reason": "request-schema-mismatch", "path": ["schema"]},
+        {"field": "from.schema", "received": "changes.theory.voice-assignment-frame.v999", "code": "voice_assignment.schema_invalid", "reason": "frame-schema-mismatch", "path": ["from", "schema"]},
+        {"field": "policyId", "received": "other", "code": "voice_assignment.policy_invalid", "reason": "policy-id-mismatch", "path": ["policyId"]},
+        {"field": "policyVersion", "received": 2, "code": "voice_assignment.policy_invalid", "reason": "policy-version-mismatch", "path": ["policyVersion"]}
+      ],
+      "expectedTermination": "request-invalid",
+      "traceIds": ["V1-TRACE-BOUNDARY", "V1-TRACE-REFUSALS"],
+      "authorityIds": ["V1-AUTH-CONTRACT"]
+    },
+    {
+      "id": "V1-OP-004",
+      "kind": "voice-count-refusals",
+      "variants": [
+        {"frame": "initial", "received": 2, "code": "voice_assignment.voice_count_invalid", "minimum": 3, "maximum": 7},
+        {"frame": "source", "received": 8, "code": "voice_assignment.voice_count_invalid", "minimum": 3, "maximum": 7},
+        {"frame": "target", "received": 8, "code": "voice_assignment.voice_count_invalid", "minimum": 3, "maximum": 7}
+      ],
+      "expectedTermination": "request-invalid",
+      "traceIds": ["V1-TRACE-LIMITS", "V1-TRACE-REFUSALS"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-LIMITS"]
+    },
+    {
+      "id": "V1-OP-005",
+      "kind": "order-and-nonmutation-refusals",
+      "variants": [
+        {"fault": "ordinal-2-stored-at-index-1", "code": "voice_assignment.voice_ordinal_invalid", "reason": "noncontiguous", "expected": 1, "received": 2},
+        {"fault": "source-pitch-mismatch-and-target-ordinal-invalid", "code": "voice_assignment.voice_ordinal_invalid", "frame": "target", "reason": "noncontiguous", "precedenceProof": "earlier target code beats later source code"},
+        {"fault": "source-and-target-both-descending", "code": "voice_assignment.voice_order_invalid", "frame": "source", "reason": "descending-midi", "precedenceProof": "same code checks source before target"},
+        {"fault": "two-source-descents-at-lower-ordinals-0-and-1", "code": "voice_assignment.voice_order_invalid", "frame": "source", "lowerOrdinal": 0, "reason": "descending-midi", "precedenceProof": "same frame checks low-to-high"},
+        {"fault": "descending-midi-64-then-60", "code": "voice_assignment.voice_order_invalid", "reason": "descending-midi"}
+      ],
+      "expected": {"termination": "request-invalid", "matrixCellsVisited": 0, "inputByteEquivalentAfterCall": true},
+      "traceIds": ["V1-TRACE-BOUNDARY", "V1-TRACE-IMMUTABILITY", "V1-TRACE-REFUSALS"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-INDEPENDENCE", "V1-AUTH-V0-DOMAIN"]
+    },
+    {
+      "id": "V1-OP-006",
+      "kind": "pitch-refusals",
+      "variants": [
+        {"fault": "duplicate-midi-64", "code": "voice_assignment.duplicate_midi", "firstOrdinal": 1, "secondOrdinal": 2, "midi": 64, "precededByOrderCheck": "equality-is-not-descending"},
+        {"fault": "C4-labeled-midi-61", "code": "voice_assignment.pitch_midi_mismatch", "expected": 60, "received": 61}
+      ],
+      "expectedTermination": "request-invalid",
+      "traceIds": ["V1-TRACE-IDENTITY", "V1-TRACE-REFUSALS"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-V0-DOMAIN"]
+    },
+    {
+      "id": "V1-OP-007",
+      "kind": "provenance-refusals",
+      "variants": [
+        {"provenance": "realization", "degree": null, "sourceDegreeIndex": 0, "reason": "realization-degree-missing"},
+        {"provenance": "doubling", "degree": {"number": 5, "alter": 0}, "sourceDegreeIndex": null, "reason": "doubling-source-index-missing"},
+        {"provenance": "slash-bass", "degree": {"number": 1, "alter": 0}, "sourceDegreeIndex": null, "reason": "slash-bass-degree-fabricated"}
+      ],
+      "expected": {"code": "voice_assignment.provenance_invalid", "termination": "request-invalid"},
+      "traceIds": ["V1-TRACE-GUIDE-TONES", "V1-TRACE-REFUSALS"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-V0-DOMAIN"]
+    },
+    {
+      "id": "V1-OP-008",
+      "kind": "role-context-refusals",
+      "variants": [
+        {"fault": "guide-degrees-out-of-order", "reason": "degree-order-invalid"},
+        {"fault": "duplicate-color-degree", "reason": "degree-duplicate"},
+        {"fault": "guide-flag-does-not-match-exact-degree", "reason": "guide-flag-mismatch"},
+        {"fault": "slash-bass-color-flag", "reason": "null-degree-role"},
+        {"fault": "unknown-role-policy", "reason": "role-policy-id-mismatch"},
+        {"fault": "role-source-id-513-utf8-bytes", "reason": "role-source-id-invalid"},
+        {"fault": "role-source-version-65536", "reason": "role-source-version-invalid"}
+      ],
+      "expected": {"code": "voice_assignment.role_context_invalid", "termination": "request-invalid"},
+      "traceIds": ["V1-TRACE-GUIDE-TONES", "V1-TRACE-REFUSALS"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-V0-DOMAIN"]
+    },
+    {
+      "id": "V1-OP-009",
+      "kind": "request-and-event-refusals",
+      "variants": [
+        {"fault": "source-frame-request-is-req-b", "code": "voice_assignment.source_request_mismatch", "expected": "req-a", "received": "req-b"},
+        {"fault": "source-and-target-event-both-E1", "code": "voice_assignment.event_identity_invalid", "reason": "source-and-target-event-equal"},
+        {"fault": "request-id-has-space", "code": "voice_assignment.request_id_invalid", "reason": "pattern-mismatch"}
+      ],
+      "expectedTermination": "request-invalid",
+      "traceIds": ["V1-TRACE-REFUSALS", "V1-TRACE-VOICE-IDS"],
+      "authorityIds": ["V1-AUTH-CONTRACT"]
+    },
+    {
+      "id": "V1-OP-010",
+      "kind": "source-identity-refusals",
+      "variants": [
+        {"fault": "voiceId-voice-0002-with-serial-1", "code": "voice_assignment.voice_id_invalid", "reason": "serial-digits-mismatch"},
+        {"fault": "duplicate-voice-0001", "code": "voice_assignment.voice_id_duplicate"},
+        {"fault": "voiceSerial-negative-one-with-voiceId-voice-0000", "code": "voice_assignment.voice_serial_invalid", "reason": "out-of-range", "serialDigitsCorrelationEvaluated": false},
+        {"fault": "voiceSerial-1.5-with-voiceId-voice-0001", "code": "voice_assignment.voice_serial_invalid", "reason": "non-integer", "serialDigitsCorrelationEvaluated": false}
+      ],
+      "expectedTermination": "request-invalid",
+      "traceIds": ["V1-TRACE-REFUSALS", "V1-TRACE-VOICE-IDS"],
+      "authorityIds": ["V1-AUTH-CONTRACT"]
+    },
+    {
+      "id": "V1-OP-011",
+      "kind": "next-serial-boundary",
+      "variants": [
+        {"nextVoiceSerial": 4096, "targetRequiresEnter": false, "outcome": "accepted-sentinel"},
+        {"nextVoiceSerial": 4097, "code": "voice_assignment.next_voice_serial_invalid", "reason": "out-of-range"},
+        {"nextVoiceSerial": 2, "highestAssignedSerial": 2, "code": "voice_assignment.next_voice_serial_invalid", "reason": "not-above-assigned-serial"}
+      ],
+      "traceIds": ["V1-TRACE-LIMITS", "V1-TRACE-REFUSALS", "V1-TRACE-VOICE-IDS"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-LIMITS"]
+    },
+    {
+      "id": "V1-OP-012",
+      "kind": "stale-request-lock",
+      "setup": {"activeRequestId": "req-a", "lockRequestId": "req-b"},
+      "expected": {"code": "voice_assignment.lock_invalid", "reason": "stale-request", "status": "stale-request", "termination": "request-invalid", "matrixCellsVisited": 0},
+      "traceIds": ["V1-TRACE-LOCKS", "V1-TRACE-REFUSALS"],
+      "authorityIds": ["V1-AUTH-CONTRACT"]
+    },
+    {
+      "id": "V1-OP-013",
+      "kind": "exact-lock-field-refusals",
+      "variants": [
+        {"changedField": "eventId", "reason": "stale-event"},
+        {"changedField": "voiceId", "reason": "source-voice-missing"},
+        {"changedField": "pitch", "reason": "target-pitch-missing"},
+        {"changedField": "degree.alter", "reason": "target-degree-mismatch"},
+        {"changedField": "duplicate-lock", "reason": "duplicate-lock"}
+      ],
+      "expected": {"code": "voice_assignment.lock_invalid", "termination": "request-invalid", "lockRelaxed": false},
+      "traceIds": ["V1-TRACE-LOCKS", "V1-TRACE-REFUSALS"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-V0-DOMAIN"]
+    },
+    {
+      "id": "V1-OP-014",
+      "kind": "eligible-lock-no-assignment",
+      "variants": [
+        {"setup": "two source locks resolve to one target", "reason": "lock-conflict", "conflictingLockOrdinals": [0, 1]},
+        {"setup": "source ordinal 0 locked to target 1 and source 1 to target 0", "reason": "locked-order-crossing", "conflictingLockOrdinals": [0, 1]}
+      ],
+      "expected": {"code": "voice_assignment.no_assignment", "termination": "no-assignment", "partialResult": false, "lockStatuses": ["eligible", "eligible"]},
+      "traceIds": ["V1-TRACE-DP-ORDER", "V1-TRACE-LOCKS", "V1-TRACE-REFUSALS"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-ORDER-PRESERVING"]
+    },
+    {
+      "id": "V1-OP-015",
+      "kind": "identity-space-exhausted",
+      "setup": {"nextVoiceSerial": 4096, "canonicalPathEnteringVoices": 1, "lowerRankedCapacityFeasiblePathExists": true},
+      "expected": {"code": "voice_assignment.no_assignment", "reason": "voice-id-space-exhausted", "conflictingLockOrdinals": [], "partialResult": false, "termination": "no-assignment", "allocationFeasibilityPhase": "post-selection", "canonicalPathReranked": false, "voiceIdsAllocated": 0, "matrixCellLimit": 64},
+      "traceIds": ["V1-TRACE-REFUSALS", "V1-TRACE-VOICE-IDS"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-LIMITS"]
+    },
+    {
+      "id": "V1-OP-016",
+      "kind": "test-seam-work-limit",
+      "setup": "inject the first prospective exact-plus-one value for each declared work or memory counter after public input validation",
+      "expected": {"code": "limit.voice_assignment_work_exceeded", "received": "maximum + 1", "partialResult": false, "termination": "work-limit-exceeded", "valueAbsent": true},
+      "traceIds": ["V1-TRACE-LIMITS", "V1-TRACE-REFUSALS"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-LIMITS"]
+    },
+    {
+      "id": "V1-OP-017",
+      "kind": "ambient-state-not-applicable",
+      "ambientInputs": ["application revision", "audio state", "browser state", "cancellation", "elapsed wall time", "network state", "storage state"],
+      "expected": {"acceptedAsRequestFields": false, "selectionAffected": false, "partialPublication": false, "inputByteEquivalentAfterCall": true, "staleRevisionOwner": "A0/U6", "cancellationOwner": "V2 application runner between V1 calls"},
+      "traceIds": ["V1-TRACE-BOUNDARY", "V1-TRACE-DETERMINISM"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-INDEPENDENCE"]
+    }
+  ]
+}

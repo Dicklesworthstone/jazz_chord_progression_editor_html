@@ -223,6 +223,7 @@ async function runBunBuild(root: string, stagingDir: string): Promise<string> {
       "--outdir",
       stagingDir,
       "--minify-whitespace",
+      "--minify-syntax",
       "--sourcemap=none",
       "--packages=bundle",
       "--reject-unresolved",

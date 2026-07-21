@@ -6,19 +6,23 @@
 
 html {
   min-width: 20rem;
-  background: var(--color-canvas);
+  min-height: 100%;
+  background: var(--background);
+  color-scheme: dark;
+  overflow-x: hidden;
 }
 
 body {
   min-height: 100vh;
   min-height: 100dvh;
   margin: 0;
-  color: var(--color-ink);
-  background: var(--color-canvas);
-  font-family: var(--font-sans);
-  font-size: 1rem;
-  line-height: 1.5;
-  text-rendering: optimizeLegibility;
+  color: var(--text-primary);
+  background: var(--surface-app);
+  font-family: var(--font-ui);
+  font-size: var(--text-md);
+  line-height: var(--line-normal);
+  text-rendering: optimizelegibility;
+  -webkit-font-smoothing: antialiased;
 }
 
 button,
@@ -29,17 +33,36 @@ textarea {
   font: inherit;
 }
 
+button,
+input,
+textarea {
+  border-radius: 0;
+}
+
+button {
+  touch-action: manipulation;
+}
+
 h1,
 h2,
+h3,
 p,
 dl,
 dd,
-ul {
+ul,
+ol,
+fieldset {
   margin: 0;
 }
 
-ul {
+ul,
+ol {
   padding: 0;
+}
+
+button,
+fieldset {
+  border: 0;
 }
 
 a {
@@ -47,11 +70,19 @@ a {
 }
 
 :focus-visible {
-  outline: 0.1875rem solid var(--color-focus);
-  outline-offset: 0.1875rem;
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
 }
 
 ::selection {
-  color: var(--color-canvas);
-  background: var(--color-accent-strong);
+  color: var(--text-inverse);
+  background: var(--action-primary);
+}
+
+[hidden] {
+  display: none !important;
+}
+
+[inert] {
+  user-select: none;
 }

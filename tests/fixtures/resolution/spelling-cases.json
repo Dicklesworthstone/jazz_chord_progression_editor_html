@@ -1,0 +1,58 @@
+{
+  "schema": "changes.fixtures.t1-spelling-cases.v1",
+  "fixtureVersion": "1.0.0",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "policyId": "changes.degree-spelling",
+  "policyVersion": 1,
+  "publicDegreeMatrix": {
+    "id": "T1-SPELL-PUBLIC-MATRIX-001",
+    "rootSteps": ["C", "D", "E", "F", "G", "A", "B"],
+    "rootAlterations": [-2, -1, 0, 1, 2],
+    "degreeNumbers": [1, 2, 3, 4, 5, 6, 7, 9, 11, 13],
+    "degreeAlterations": [-2, -1, 0, 1, 2],
+    "construction": "complete 35-root by 50-degree Cartesian product; no exclusions",
+    "expected": {
+      "totalCells": 1750,
+      "successCells": 1308,
+      "refusalCells": 442,
+      "minimumRequiredAlteration": -5,
+      "maximumRequiredAlteration": 5,
+      "byDegreeNumber": [
+        {"number":1,"successCells":133,"refusalCells":42},
+        {"number":2,"successCells":131,"refusalCells":44},
+        {"number":3,"successCells":129,"refusalCells":46},
+        {"number":4,"successCells":132,"refusalCells":43},
+        {"number":5,"successCells":132,"refusalCells":43},
+        {"number":6,"successCells":130,"refusalCells":45},
+        {"number":7,"successCells":128,"refusalCells":47},
+        {"number":9,"successCells":131,"refusalCells":44},
+        {"number":11,"successCells":132,"refusalCells":43},
+        {"number":13,"successCells":130,"refusalCells":45}
+      ],
+      "successRule": "return the exact directed letter, required alteration, and pitch-class projection when required alteration is within -2 through 2",
+      "refusalRule": "otherwise return theory.spelling_accidental_out_of_range at path degree with the exact required alteration and reviewed policy bounds",
+      "orderedCellSemanticSha256": "38109323bec6a2203711c82c5573bd74f9130caf91ffc4f0d1233ea22fe83e28"
+    },
+    "traceIds": ["T1-TRACE-LIMITS", "T1-TRACE-SPELLING", "T1-TRACE-STRICT-REFUSAL"],
+    "authorityIds": ["T1-AUTH-INDEPENDENCE", "T1-AUTH-SPELLING"]
+  },
+  "cases": [
+    {"id":"T1-SPELL-001","description":"Db dominant seventh keeps degree-seven spelling","root":{"step":"D","alter":-1},"degree":{"number":7,"alter":-1},"expected":{"ok":true,"spelled":{"step":"C","alter":-1},"pitchClass":11,"rejectedEnharmonic":{"step":"B","alter":0}},"traceIds":["T1-TRACE-SPELLING"],"authorityIds":["T1-AUTH-SPELLING"]},
+    {"id":"T1-SPELL-002","description":"F-sharp major seventh is E-sharp","root":{"step":"F","alter":1},"degree":{"number":7,"alter":0},"expected":{"ok":true,"spelled":{"step":"E","alter":1},"pitchClass":5,"rejectedEnharmonic":{"step":"F","alter":0}},"traceIds":["T1-TRACE-SPELLING","T1-TRACE-LEGACY-L-THEORY-01"],"authorityIds":["T1-AUTH-SPELLING","T1-AUTH-LEGACY"]},
+    {"id":"T1-SPELL-003","description":"C sharp ninth is D-sharp rather than E-flat","root":{"step":"C","alter":0},"degree":{"number":9,"alter":1},"expected":{"ok":true,"spelled":{"step":"D","alter":1},"pitchClass":3,"rejectedEnharmonic":{"step":"E","alter":-1}},"traceIds":["T1-TRACE-SPELLING","T1-TRACE-MODIFIER-ORDER"],"authorityIds":["T1-AUTH-SPELLING","T1-AUTH-FORMULA"]},
+    {"id":"T1-SPELL-004","description":"C flat third is E-flat rather than D-sharp","root":{"step":"C","alter":0},"degree":{"number":3,"alter":-1},"expected":{"ok":true,"spelled":{"step":"E","alter":-1},"pitchClass":3,"rejectedEnharmonic":{"step":"D","alter":1}},"traceIds":["T1-TRACE-SPELLING"],"authorityIds":["T1-AUTH-SPELLING"]},
+    {"id":"T1-SPELL-005","description":"Gb major third is Bb","root":{"step":"G","alter":-1},"degree":{"number":3,"alter":0},"expected":{"ok":true,"spelled":{"step":"B","alter":-1},"pitchClass":10,"rejectedEnharmonic":{"step":"A","alter":1}},"traceIds":["T1-TRACE-SPELLING"],"authorityIds":["T1-AUTH-SPELLING"]},
+    {"id":"T1-SPELL-006","description":"corrected Ab diminished seventh uses letter G","root":{"step":"A","alter":-1},"degree":{"number":7,"alter":-2},"expected":{"ok":true,"spelled":{"step":"G","alter":-2},"pitchClass":5,"rejectedPlanTypo":{"step":"F","alter":-1},"correctionId":"T1-CORRECTION-ABDIM7"},"traceIds":["T1-TRACE-SPELLING","T1-TRACE-LEGACY-L-THEORY-01"],"authorityIds":["T1-AUTH-SPELLING","T1-AUTH-LEGACY"]},
+    {"id":"T1-SPELL-007","description":"control proving Fb is the diminished seventh of G","root":{"step":"G","alter":0},"degree":{"number":7,"alter":-2},"expected":{"ok":true,"spelled":{"step":"F","alter":-1},"pitchClass":4,"correctionId":"T1-CORRECTION-ABDIM7"},"traceIds":["T1-TRACE-SPELLING","T1-TRACE-LEGACY-L-THEORY-01"],"authorityIds":["T1-AUTH-SPELLING","T1-AUTH-LEGACY"]},
+    {"id":"T1-SPELL-008","description":"C diminished seventh retains bb7 rather than degree six","root":{"step":"C","alter":0},"degree":{"number":7,"alter":-2},"expected":{"ok":true,"spelled":{"step":"B","alter":-2},"pitchClass":9,"rejectedDegreeAlias":{"number":6,"alter":0}},"traceIds":["T1-TRACE-SPELLING","T1-TRACE-LEGACY-L-THEORY-01"],"authorityIds":["T1-AUTH-SPELLING","T1-AUTH-LEGACY"]},
+    {"id":"T1-SPELL-009","description":"B-sharp major third reaches the supported double-sharp boundary","root":{"step":"B","alter":1},"degree":{"number":3,"alter":0},"expected":{"ok":true,"spelled":{"step":"D","alter":2},"pitchClass":4},"traceIds":["T1-TRACE-SPELLING","T1-TRACE-LIMITS"],"authorityIds":["T1-AUTH-SPELLING"]},
+    {"id":"T1-SPELL-010","description":"C-flat diminished fifth reaches the supported double-flat boundary","root":{"step":"C","alter":-1},"degree":{"number":5,"alter":-1},"expected":{"ok":true,"spelled":{"step":"G","alter":-2},"pitchClass":5},"traceIds":["T1-TRACE-SPELLING","T1-TRACE-LIMITS"],"authorityIds":["T1-AUTH-SPELLING"]},
+    {"id":"T1-SPELL-011","description":"C-double-sharp sharp ninth would require D triple-sharp","root":{"step":"C","alter":2},"degree":{"number":9,"alter":1},"expected":{"ok":false,"refusal":{"code":"theory.spelling_accidental_out_of_range","path":["degree"],"phase":"spelling","degreeSpellingPolicyId":"changes.degree-spelling","degreeSpellingPolicyVersion":1,"root":{"step":"C","alter":2},"degree":{"number":9,"alter":1},"requiredAlteration":3,"minimum":-2,"maximum":2}},"traceIds":["T1-TRACE-SPELLING","T1-TRACE-STRICT-REFUSAL","T1-TRACE-LIMITS"],"authorityIds":["T1-AUTH-SPELLING","T1-AUTH-INDEPENDENCE"]},
+    {"id":"T1-SPELL-012","description":"C-double-flat flat ninth would require D triple-flat","root":{"step":"C","alter":-2},"degree":{"number":9,"alter":-1},"expected":{"ok":false,"refusal":{"code":"theory.spelling_accidental_out_of_range","path":["degree"],"phase":"spelling","degreeSpellingPolicyId":"changes.degree-spelling","degreeSpellingPolicyVersion":1,"root":{"step":"C","alter":-2},"degree":{"number":9,"alter":-1},"requiredAlteration":-3,"minimum":-2,"maximum":2}},"traceIds":["T1-TRACE-SPELLING","T1-TRACE-STRICT-REFUSAL","T1-TRACE-LIMITS"],"authorityIds":["T1-AUTH-SPELLING","T1-AUTH-INDEPENDENCE"]},
+    {"id":"T1-SPELL-013","description":"Ab sharp eleventh may spell as natural D","root":{"step":"A","alter":-1},"degree":{"number":11,"alter":1},"expected":{"ok":true,"spelled":{"step":"D","alter":0},"pitchClass":2},"traceIds":["T1-TRACE-SPELLING","T1-TRACE-MODIFIER-ORDER"],"authorityIds":["T1-AUTH-SPELLING","T1-AUTH-FORMULA"]},
+    {"id":"T1-SPELL-014","description":"Db flat thirteenth reaches B-double-flat","root":{"step":"D","alter":-1},"degree":{"number":13,"alter":-1},"expected":{"ok":true,"spelled":{"step":"B","alter":-2},"pitchClass":9},"traceIds":["T1-TRACE-SPELLING","T1-TRACE-LIMITS"],"authorityIds":["T1-AUTH-SPELLING"]},
+    {"id":"T1-SPELL-015","description":"E sharp-thirteenth degree reaches C-double-sharp","root":{"step":"E","alter":0},"degree":{"number":13,"alter":1},"expected":{"ok":true,"spelled":{"step":"C","alter":2},"pitchClass":2},"traceIds":["T1-TRACE-SPELLING","T1-TRACE-LIMITS"],"authorityIds":["T1-AUTH-SPELLING"]},
+    {"id":"T1-SPELL-016","description":"F-sharp flat eleventh uses Bb and retains degree eleven identity","root":{"step":"F","alter":1},"degree":{"number":11,"alter":-1},"expected":{"ok":true,"spelled":{"step":"B","alter":-1},"pitchClass":10},"traceIds":["T1-TRACE-SPELLING","T1-TRACE-MODIFIER-ORDER"],"authorityIds":["T1-AUTH-SPELLING","T1-AUTH-FORMULA"]}
+  ]
+}

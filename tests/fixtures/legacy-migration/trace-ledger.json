@@ -1,0 +1,23 @@
+{
+  "schema": "changes.fixtures.c0-trace-ledger.v1",
+  "traces": [
+    {"id":"C0-TRACE-001","requirement":"Decode hostile unversioned JSON under inherited byte and depth ceilings.","authorityIds":["C0-AUTH-002","C0-AUTH-004"],"fixtureIds":["C0-LIMIT-001","C0-LIMIT-002","C0-LIMIT-003","C0-LIMIT-004","C0-SHAPE-001","C0-SHAPE-002"]},
+    {"id":"C0-TRACE-002","requirement":"Allocate globally fresh document, section, measure, and event IDs in structural preorder.","authorityIds":["C0-AUTH-002","C0-AUTH-004"],"fixtureIds":["C0-ID-001","C0-ID-002","C0-ID-003","C0-ID-004"]},
+    {"id":"C0-TRACE-003","requirement":"Create one complete 4/4 four-beat measure for each accepted legacy chord.","authorityIds":["C0-AUTH-002","C0-AUTH-004"],"fixtureIds":["C0-REPORT-004","C0-REPORT-006"]},
+    {"id":"C0-TRACE-004","requirement":"Apply name then root-type then notes precedence without undocumented judgment.","authorityIds":["C0-AUTH-002","C0-AUTH-005","C0-AUTH-006"],"fixtureIds":["C0-PRE-001","C0-PRE-002","C0-PRE-003","C0-PRE-004","C0-PRE-005","C0-PRE-006","C0-PRE-007","C0-PRE-008"]},
+    {"id":"C0-TRACE-005","requirement":"Match the exhaustive type map exactly and use flags only when name is absent.","authorityIds":["C0-AUTH-002"],"fixtureIds":["C0-PRE-009","C0-PRE-010","C0-PRE-011","C0-PRE-012"]},
+    {"id":"C0-TRACE-006","requirement":"Trust only 1 to 16 full scientific pitches in MIDI range with no duplicate MIDI.","authorityIds":["C0-AUTH-002","C0-AUTH-004"],"fixtureIds":["C0-NOTE-001","C0-NOTE-002","C0-NOTE-003","C0-NOTE-004","C0-NOTE-005","C0-NOTE-006","C0-NOTE-007","C0-NOTE-008","C0-NOTE-009","C0-NOTE-010","C0-NOTE-011","C0-NOTE-012"]},
+    {"id":"C0-TRACE-007","requirement":"Compare exact written pitch classes against one resolver realization and project slash bass explicitly.","authorityIds":["C0-AUTH-005","C0-AUTH-006"],"fixtureIds":["C0-PRE-001","C0-PRE-003","C0-PRE-013","C0-PRE-014","C0-PRE-015"]},
+    {"id":"C0-TRACE-008","requirement":"Preserve every trusted spelling, octave, order, and legal doubling as Manual.","authorityIds":["C0-AUTH-002","C0-AUTH-004"],"fixtureIds":["C0-NOTE-003","C0-NOTE-011","C0-PRE-016"]},
+    {"id":"C0-TRACE-009","requirement":"Convert conflicts to Custom plus Manual without plausible false theory.","authorityIds":["C0-AUTH-002","C0-AUTH-006"],"fixtureIds":["C0-PRE-003","C0-PRE-004","C0-PRE-006","C0-PRE-007","C0-PRE-014","C0-PRE-016"]},
+    {"id":"C0-TRACE-010","requirement":"Ignore UI and legacy voicing metadata as itemized evidence; never guess a voicing map.","authorityIds":["C0-AUTH-002","C0-AUTH-003"],"fixtureIds":["C0-REPORT-002","C0-REPORT-003","C0-SHAPE-008"]},
+    {"id":"C0-TRACE-011","requirement":"Emit stable complete Preserved, Canonicalized, Custom, Ignored, and Rejected groups.","authorityIds":["C0-AUTH-002"],"fixtureIds":["C0-REPORT-001","C0-REPORT-002","C0-REPORT-003","C0-REPORT-005"]},
+    {"id":"C0-TRACE-012","requirement":"Cover all 80 shipped preset chords with independently authored semantic expectations.","authorityIds":["C0-AUTH-001","C0-AUTH-003","C0-AUTH-005","C0-AUTH-006"],"fixtureIds":["preset-expectations:all-80"]},
+    {"id":"C0-TRACE-013","requirement":"Reject unknown or unusable nodes at exact paths without defaulting to C major.","authorityIds":["C0-AUTH-002"],"fixtureIds":["C0-PRE-008","C0-PRE-012","C0-SHAPE-003","C0-SHAPE-004","C0-SHAPE-005","C0-SHAPE-006","C0-SHAPE-007"]},
+    {"id":"C0-TRACE-014","requirement":"Same bytes and deterministic ID stream produce deeply equal candidates and reports.","authorityIds":["C0-AUTH-002","C0-AUTH-004"],"fixtureIds":["C0-ID-005","C0-ID-006"]},
+    {"id":"C0-TRACE-015","requirement":"Return an unvalidated candidate and never publish or mutate current application state.","authorityIds":["C0-AUTH-002","C0-AUTH-007"],"fixtureIds":["C0-REPORT-007","C0-APPLY-002","C0-APPLY-005"]},
+    {"id":"C0-TRACE-016","requirement":"Terminate by deterministic work and memory counts, never elapsed wall time.","authorityIds":["C0-AUTH-002","C0-AUTH-004"],"fixtureIds":["C0-LIMIT-005","C0-LIMIT-006","C0-LIMIT-007","C0-LIMIT-008","C0-LIMIT-009","C0-LIMIT-010","C0-LIMIT-011","C0-LIMIT-012","C0-LIMIT-013","C0-LIMIT-014","C0-APPLY-001","C0-APPLY-003","C0-APPLY-004"]},
+    {"id":"C0-TRACE-017","requirement":"Treat hostile keys and strings as inert data and retain no caller-owned container.","authorityIds":["C0-AUTH-002","C0-AUTH-004"],"fixtureIds":["C0-SHAPE-008","C0-SHAPE-009","C0-SHAPE-010"]},
+    {"id":"C0-TRACE-018","requirement":"Keep diagnostics code-and-path based so private musical text is not echoed.","authorityIds":["C0-AUTH-002","C0-AUTH-007"],"fixtureIds":["C0-REPORT-001","C0-REPORT-005"]}
+  ]
+}

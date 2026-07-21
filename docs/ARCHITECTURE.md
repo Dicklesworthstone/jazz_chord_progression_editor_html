@@ -21,6 +21,66 @@ what the release artifact is, and how those claims are proved.
 - `tests/fixtures/decoder/f2-decoder-contract.json` and its declared companions
   are the machine-readable F2 structural-decoder authority. Production decoder
   output may be compared with it but may never generate its expectations.
+- `docs/T0_SYNTAX_CONTRACT.md`,
+  `tests/fixtures/theory/t0-syntax-contract.json`, and their declared
+  companions are the independently authored T0 symbol/chart syntax authority.
+  Production parsers and formatters may be compared with them but may never
+  generate their expectations.
+- `docs/T1_RESOLUTION_CONTRACT.md`,
+  `tests/fixtures/resolution/t1-resolution-contract.json`, and their declared
+  companions are the independently authored T1 chord-resolution, degree-role,
+  and spelling authority. Production resolvers may be compared with them but
+  may never generate their expectations.
+- `docs/V0_VOICING_CONTRACT.md`,
+  `tests/fixtures/voicing/v0-voicing-contract.json`, and their declared
+  companions are the independently authored V0 family-template, candidate,
+  operation-state, limit, transposition, trace, provenance, and mutation
+  authority. Production voicing generation may be compared with them but may
+  never generate their expectations.
+- `docs/V1_VOICE_ASSIGNMENT_CONTRACT.md`,
+  `tests/fixtures/voice-assignment/v1-voice-assignment-contract.json`, and their
+  declared companions are the independently authored V1 noncrossing alignment,
+  voice-identity, motion, lock, cost, work-bound, provenance, trace, and mutation
+  authority. Production voice assignment may be compared with them but may
+  never generate their expectations.
+- `docs/F3_PUBLICATION_CONTRACT.md`,
+  `tests/fixtures/publication/f3-publication-contract.json`, and their declared
+  companions are the independently authored F3 semantic-publication,
+  transaction, diagnostic, work-bound, provenance, and mutation authority.
+  The production publication gate may be compared with them but may never
+  generate their expectations.
+- `docs/P0_PLAYBACK_PLAN_CONTRACT.md`,
+  `src/playback/playback-plan-contract.ts`,
+  `tests/fixtures/playback-plan/p0-playback-plan-contract.json`, and its declared
+  companions define the P0 public playback-plan interface and independently
+  authored timeline, realization, loop, gate, exact-limit, provenance, trace,
+  and mutation authority. Production compiler output may be compared with them
+  but may never generate their expectations.
+- `docs/A0_APPLICATION_CONTRACT.md`,
+  `tests/fixtures/application-state/a0-application-contract.json`, and their
+  declared companions are the independently authored A0 state, command,
+  history, bookmark, stale-result, transport-view, selector, limit,
+  provenance, and mutation authority. Production application behavior may be
+  compared with them but may never generate their expectations.
+- `docs/C0_LEGACY_MIGRATION_CONTRACT.md`,
+  `tests/fixtures/legacy-migration/c0-legacy-migration-contract.json`, and their
+  hash-bound companions are the independently authored C0 legacy-corpus,
+  precedence, report, hostile-input, work-bound, provenance, and mutation
+  authority. Production migration output may be compared with them but may
+  never generate their expectations.
+- `docs/E0_INTERCHANGE_CONTRACT.md`, `src/export/interchange-contract.ts`,
+  `src/application/e0-interchange-contract.ts`, and
+  `tests/fixtures/interchange/e0-interchange-contract.json` plus its hash-bound
+  companions define E0's deterministic JSON/text interchange and transactional
+  application boundary. The packet is independently authored and proposed
+  pending first-golden human acceptance; production output may never generate
+  or approve its expectations.
+- `docs/X0_AUDIO_ENGINE_CONTRACT.md`,
+  `tests/fixtures/audio-engine/x0-audio-engine-contract.json`, and their
+  hash-bound companions are the independently authored X0 persistent-graph,
+  instrument-recipe, impulse, voice-lifecycle, registry, render, listening,
+  provenance, trace, limit, and mutation authority. Production audio behavior
+  may be compared with them but may never generate their expectations.
 - The legacy HTML remains evidence until the replacement has passed the release
   gate. New production code must not import or evaluate it.
 
@@ -65,6 +125,18 @@ The manifest exposes these stable commands:
 | `bun run validate:f0-contract` | validate the machine-readable standalone-foundation contract |
 | `bun run validate:f1-contract` | validate the independent spelling, identity, exact-time, voicing, and boundary authority corpus |
 | `bun run validate:f2-contract` | validate the independent structural-decoder schema, adversarial cases, trace ledger, and mutation controls |
+| `bun run validate:t0-contract` | validate the independent symbol/chart grammar, canonical-formatting, trace, and mutation authority corpus |
+| `bun run validate:t1-contract` | validate the independent chord-resolution, degree-spelling, all-root, trace, provenance, and mutation authority corpus |
+| `bun run validate:h0-contract` | validate the independent context-reading, Roman-spelling, chord-scale, exact-limit, trace, provenance, and mutation authority corpus |
+| `bun run validate:v0-contract` | validate the independent voicing-family templates, applicability matrix, goldens, operation states, limits, transpositions, trace, provenance, and mutation authority corpus |
+| `bun run validate:v1-contract` | validate the independent noncrossing assignment, identity, motion, lock, cost, limit, trace, provenance, and mutation authority corpus |
+| `bun run validate:f3-contract` | validate the independent semantic-publication, transaction, diagnostics, work-bound, trace, provenance, and mutation authority corpus |
+| `bun run validate:p0-contract` | validate the independently authored P0 playback-plan timeline, realization, loop, law, exact-limit, trace, provenance, and mutation authority corpus |
+| `bun run validate:a0-contract` | validate the independent application-state, command, history, bookmark, stale-result, transport-view, selector, trace, provenance, and mutation authority corpus |
+| `bun run validate:u0-contract` | validate the source-owned UI inventory, exact limits, 714-cell state gallery authority, responsive/overlay matrices, topology and contrast cases, trace links, provenance, and release-gallery exclusion contract |
+| `bun run validate:c0-contract` | validate the independent legacy corpus, precedence, hostile-input, report, work-bound, trace, provenance, and mutation authority package |
+| `bun run validate:e0-contract` | validate the independent E0 JSON/text interchange, transactional import, exact limits, reciprocal traces, provenance, proposed byte goldens, and mutation authority package |
+| `bun run validate:x0-contract` | validate the independent persistent-audio graph, recipe, impulse, voice-lifecycle, registry, render, listening, trace, provenance, and mutation authority package |
 | `bun run typecheck` | strict `tsc --noEmit` |
 | `bun run lint` | ESLint plus source-integrity and dependency-boundary checks |
 | `bun test` | Bun unit, property, golden, conformance, integration, and static tests |
@@ -74,6 +146,16 @@ The manifest exposes these stable commands:
 | `bun run verify:reproducible` | build in two isolated absolute paths and compare bytes/manifests |
 | `bun run verify:licenses` | verify production dependency and embedded-asset provenance |
 | `bun run verify:f1-evidence` | run the exact F1 package suite and emit a hash-bound trace, seed, mutation, and resource ledger |
+| `bun run verify:f2-evidence` | run the exact F2 package suite and emit a hash-bound trace, replay, counter, hostile-input, and reviewed-control ledger |
+| `bun run verify:t0-evidence` | run the exact T0 syntax suite and emit a hash-bound fixture, law, trace, reviewed-control, termination, and resource ledger |
+| `bun run verify:t1-evidence` | run the exact T1 theory suite and emit a hash-bound fixture, all-root, law, trace, reviewed-control, termination, and resource ledger |
+| `bun run verify:v0-evidence` | run the exact V0 voicing suite and emit a hash-bound matrix, candidate, operation-state, all-root/inverse-transposition, trace, semantic-counterfactual, termination, and resource ledger |
+| `bun run verify:v1-evidence` | run the exact V1 voice-assignment suite and emit a hash-bound assignment, law/transposition, exhaustive-oracle, exact-plus-one accounting, trace, semantic-counterfactual, termination, and resource ledger |
+| `bun run verify:f3-evidence` | run the exact F3 publication suite and emit a hash-bound case, operation-state, sole-cast, trace, semantic-counterfactual, termination, and resource ledger |
+| `bun run verify:p0-evidence` | run the exact P0 playback-plan owner suite and emit a hash-bound timeline, realization, loop, transposition, shared-consumer, exact-limit, trace, semantic-counterfactual, termination, and resource ledger; first-golden acceptance remains explicitly human-reviewed |
+| `bun run verify:a0-evidence` | run the exact A0 application suite and emit a hash-bound state-case, stale-token, named-sequence, 1,000-sequence reference-model, mutation-link, trace, termination, and resource ledger |
+| `bun run verify:c0-evidence` | run the exact C0 compatibility suite and emit a hash-bound 70-case, 80-preset, hostile-input, boundary-counter, trace, semantic-counterfactual, termination, and resource ledger |
+| `bun run verify:x0-evidence` | run the exact X0 native-browser, contract, and trace-owner package proof; keep the result incomplete until the separate physical listening matrix is complete |
 | `bun run verify` | aggregate type, lint, tests, build, artifact, and E2E gates |
 
 ## Module ownership
@@ -129,6 +211,13 @@ Load-bearing boundary rules:
     application adapters, but it may not contain domain, theory, transport, or
     persistence logic.
 
+`src/ui/runtime.ts` is the narrow public UI entry for `main.tsx` and exports
+only `App`, `StudioStartupFailure`, and their types. The broader `src/ui/index.ts`
+surface remains available to tests and development tooling, but the production
+composition root must not import it solely to reach the application shell.
+This prevents unused barrel exports from widening the release graph; gallery
+modules, route vocabulary, fixture cells, and test controls remain test-only.
+
 The dependency checker resolves relative and aliased TypeScript imports with the
 TypeScript AST. String search is not sufficient because type-only imports,
 re-exports, and multiline declarations must be covered.
@@ -161,10 +250,12 @@ The release is one UTF-8 HTML file with all production JavaScript, CSS, icons,
 images, and compiled content inlined. Its initial uncompressed limit is
 1,572,864 bytes (1.5 MiB), including the final Harmonic Atlas.
 
-The F0 bootstrap shell has a temporary 262,144-byte ceiling. The final budget
-reserves at least 524,288 bytes for the compiled Atlas/content until D0 provides
-measured data. Later packages may redistribute the non-Atlas remainder, but
-cannot spend the reserved content allowance silently.
+The retired F0 bootstrap shell had a temporary 262,144-byte ceiling. The first
+U0 studio checkpoint is measured against a 786,432-byte ceiling after bundling
+its source-owned UI plus the F2/F3/A0 publication and application path. The
+1,572,864-byte final limit and its 524,288-byte Atlas/content reservation remain
+unchanged, leaving another 262,144 bytes outside both allocations. Later
+packages cannot spend the reserved content allowance silently.
 
 Both generated HTML files begin with the fixed timestamp-free banner
 `<!-- @generated; edit src/, then run bun run build -->`, followed by a

@@ -1,0 +1,147 @@
+{
+  "schema": "changes.fixtures.v1-law-cases.v1",
+  "fixtureVersion": "1.0.0",
+  "status": "independently-authored-pre-production",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "lawProofPolicy": {
+    "requiredWitnessClasses": ["positive", "near-miss", "transposition", "mutation"],
+    "productionMayGenerateExpectedValues": false,
+    "transpositionMustPreserve": ["legal-operation-path", "signed-motion-deltas", "identity-mode-truth-table", "ordering"],
+    "transpositionMayRefuseOnlyAt": ["MIDI-boundary", "declared-input-boundary"]
+  },
+  "cases": [
+    {
+      "id": "V1-LAW-001",
+      "law": "deterministic-replay",
+      "predicate": "Deeply equal requests under the same schemas and policies produce byte-equivalent semantic results, work evidence, paths, IDs, and terminations without ambient input.",
+      "positiveCaseIds": ["V1-ASN-001", "V1-ASN-002"],
+      "nearMissCaseIds": ["V1-OP-017"],
+      "transpositionCaseIds": ["V1-ASN-003", "V1-ASN-017"],
+      "mutationControlIds": ["V1-MUT-020", "V1-MUT-028", "V1-MUT-035"],
+      "traceIds": ["V1-TRACE-BOUNDARY", "V1-TRACE-DETERMINISM", "V1-TRACE-DP-ORDER", "V1-TRACE-TIES", "V1-TRACE-VOICE-IDS"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-INDEPENDENCE", "V1-AUTH-PROJECT-POLICY"]
+    },
+    {
+      "id": "V1-LAW-002",
+      "law": "noncrossing-by-construction",
+      "predicate": "Every successive match strictly advances both source and target ordinals; no finite crossing penalty or permutation is part of production.",
+      "positiveCaseIds": ["V1-ASN-002", "V1-ASN-006"],
+      "nearMissCaseIds": ["V1-ASN-014"],
+      "transpositionCaseIds": ["V1-ASN-008", "V1-ASN-014"],
+      "mutationControlIds": ["V1-MUT-001", "V1-MUT-002", "V1-MUT-031"],
+      "traceIds": ["V1-TRACE-DP-ORDER", "V1-TRACE-LOCKS"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-LIMITS", "V1-AUTH-ORDER-PRESERVING"]
+    },
+    {
+      "id": "V1-LAW-003",
+      "law": "explicit-gap-semantics",
+      "predicate": "Differing voice counts and register replacements use explicit enter/leave arcs whose semitone and identity fields are null and whose identities allocate or retire exactly once.",
+      "positiveCaseIds": ["V1-ASN-006", "V1-ASN-007", "V1-ASN-008"],
+      "nearMissCaseIds": ["V1-ASN-002"],
+      "transpositionCaseIds": ["V1-ASN-008"],
+      "mutationControlIds": ["V1-MUT-004", "V1-MUT-005", "V1-MUT-006", "V1-MUT-019"],
+      "traceIds": ["V1-TRACE-GAPS", "V1-TRACE-IDENTITY", "V1-TRACE-VOICE-IDS"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-ORDER-PRESERVING"]
+    },
+    {
+      "id": "V1-LAW-004",
+      "law": "identity-questions-remain-distinct",
+      "predicate": "Exact MIDI, pitch class, spelled pitch class, spelled pitch, degree, and request-local voice identity are evaluated independently without prefix matching.",
+      "positiveCaseIds": ["V1-ASN-003", "V1-ASN-004"],
+      "nearMissCaseIds": ["V1-ASN-005"],
+      "transpositionCaseIds": ["V1-ASN-003", "V1-ASN-004", "V1-ASN-005"],
+      "mutationControlIds": ["V1-MUT-009", "V1-MUT-010", "V1-MUT-011", "V1-MUT-012", "V1-MUT-013"],
+      "traceIds": ["V1-TRACE-IDENTITY", "V1-TRACE-LEGACY"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-V0-DOMAIN"]
+    },
+    {
+      "id": "V1-LAW-005",
+      "law": "request-local-voice-lifecycle",
+      "predicate": "Initialization allocates canonical serials, matches propagate, enters allocate only after selection, leaves retire, and request changes never inherit identities.",
+      "positiveCaseIds": ["V1-ASN-001", "V1-ASN-002", "V1-ASN-017"],
+      "nearMissCaseIds": ["V1-OP-009", "V1-OP-011"],
+      "transpositionCaseIds": ["V1-ASN-017"],
+      "mutationControlIds": ["V1-MUT-018", "V1-MUT-019", "V1-MUT-020", "V1-MUT-021"],
+      "traceIds": ["V1-TRACE-DETERMINISM", "V1-TRACE-TIES", "V1-TRACE-VOICE-IDS"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "V1-LAW-006",
+      "law": "locks-are-exact-hard-constraints",
+      "predicate": "A lock binds request, target event, source identity, target spelling and octave, and exact target degree; an eligible lock cannot be relaxed into leave or enter.",
+      "positiveCaseIds": ["V1-ASN-013"],
+      "nearMissCaseIds": ["V1-ASN-014", "V1-OP-012", "V1-OP-013"],
+      "transpositionCaseIds": ["V1-ASN-013", "V1-ASN-014"],
+      "mutationControlIds": ["V1-MUT-001", "V1-MUT-033", "V1-MUT-034"],
+      "traceIds": ["V1-TRACE-LOCKS", "V1-TRACE-REFUSALS"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-ORDER-PRESERVING", "V1-AUTH-V0-DOMAIN"]
+    },
+    {
+      "id": "V1-LAW-007",
+      "law": "plural-cost-formulas",
+      "predicate": "Every extension-stable selection axis and target-local reported cost is computed by its frozen exact formula and retained as a separate mechanical fact; maximumAbsoluteLeap is reported but cannot rank one-record DP prefixes.",
+      "positiveCaseIds": ["V1-ASN-011", "V1-ASN-012"],
+      "nearMissCaseIds": ["V1-ASN-008"],
+      "transpositionCaseIds": ["V1-ASN-011", "V1-ASN-012"],
+      "mutationControlIds": ["V1-MUT-007", "V1-MUT-008", "V1-MUT-015", "V1-MUT-025", "V1-MUT-026", "V1-MUT-027"],
+      "traceIds": ["V1-TRACE-COSTS", "V1-TRACE-GUIDE-TONES"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-PROJECT-POLICY", "V1-AUTH-V0-DOMAIN"]
+    },
+    {
+      "id": "V1-LAW-008",
+      "law": "motion-relation-partition",
+      "predicate": "Every matched-arc pair is classified exactly once as stationary-pair, oblique, contrary, parallel, or similar from signed motion.",
+      "positiveCaseIds": ["V1-ASN-012"],
+      "nearMissCaseIds": ["V1-ASN-005"],
+      "transpositionCaseIds": ["V1-ASN-012"],
+      "mutationControlIds": ["V1-MUT-014", "V1-MUT-016", "V1-MUT-017", "V1-MUT-037"],
+      "traceIds": ["V1-TRACE-MOTION"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-PROJECT-POLICY"]
+    },
+    {
+      "id": "V1-LAW-009",
+      "law": "exact-role-provenance",
+      "predicate": "Guide and color facts derive from the versioned V0 role source and exact degree alteration; null slash provenance never fabricates a role.",
+      "positiveCaseIds": ["V1-ASN-011"],
+      "nearMissCaseIds": ["V1-OP-008"],
+      "transpositionCaseIds": ["V1-ASN-011"],
+      "mutationControlIds": ["V1-MUT-022", "V1-MUT-023", "V1-MUT-024", "V1-MUT-026", "V1-MUT-027"],
+      "traceIds": ["V1-TRACE-GUIDE-TONES", "V1-TRACE-IDENTITY"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-PROJECT-POLICY", "V1-AUTH-V0-DOMAIN"]
+    },
+    {
+      "id": "V1-LAW-010",
+      "law": "all-or-nothing-immutability",
+      "predicate": "Successes and refusals do not mutate or alias input; no failure exposes a partial frame, path, or arc collection.",
+      "positiveCaseIds": ["V1-ASN-002"],
+      "nearMissCaseIds": ["V1-OP-005", "V1-OP-016"],
+      "transpositionCaseIds": ["V1-ASN-003", "V1-ASN-014"],
+      "mutationControlIds": ["V1-MUT-032", "V1-MUT-036"],
+      "traceIds": ["V1-TRACE-IMMUTABILITY", "V1-TRACE-REFUSALS"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-INDEPENDENCE", "V1-AUTH-LIMITS"]
+    },
+    {
+      "id": "V1-LAW-011",
+      "law": "inclusive-bounds-and-first-excess",
+      "predicate": "Every public maximum is inclusive and the first prospective test-seam exact-plus-one reports its exact counter with partialResult false.",
+      "positiveCaseIds": ["V1-ASN-018"],
+      "nearMissCaseIds": ["V1-OP-004", "V1-OP-016"],
+      "transpositionCaseIds": ["V1-ASN-018"],
+      "mutationControlIds": ["V1-MUT-029", "V1-MUT-030", "V1-MUT-031", "V1-MUT-032"],
+      "traceIds": ["V1-TRACE-LIMITS", "V1-TRACE-REFUSALS"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-LIMITS"]
+    },
+    {
+      "id": "V1-LAW-012",
+      "law": "independent-small-case-oracle",
+      "predicate": "For reviewed 3x3, 3x4, 4x3, and 4x4 inputs, production DP equals an exhaustive order-preserving oracle that imports no production selection code.",
+      "positiveCaseIds": ["V1-ASN-016", "V1-ASN-018"],
+      "nearMissCaseIds": ["V1-ASN-009"],
+      "transpositionCaseIds": ["V1-ASN-016"],
+      "mutationControlIds": ["V1-MUT-028", "V1-MUT-031"],
+      "traceIds": ["V1-TRACE-DP-ORDER", "V1-TRACE-LIMITS", "V1-TRACE-TIES"],
+      "authorityIds": ["V1-AUTH-INDEPENDENCE", "V1-AUTH-LIMITS", "V1-AUTH-ORDER-PRESERVING"]
+    }
+  ]
+}

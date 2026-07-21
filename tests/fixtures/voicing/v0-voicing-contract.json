@@ -1,0 +1,511 @@
+{
+  "schema": "changes.fixtures.v0-voicing-contract.v1",
+  "fixtureVersion": "1.0.0",
+  "status": "independently-authored-pre-production",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "identity": {
+    "package": "V0",
+    "module": "src/theory/voicing-candidates-contract.ts",
+    "contractSchema": "changes.theory.voicing-candidates-contract.v1",
+    "requestSchema": "changes.theory.voicing-request.v1",
+    "resultSchema": "changes.theory.voicing-result.v1",
+    "candidateSchema": "changes.theory.voicing-candidate.v1",
+    "templateSchema": "changes.theory.voicing-family-template.v1",
+    "quartalContextSchema": "changes.theory.quartal-context.v1",
+    "engine": {
+      "id": "changes.voicing-candidates",
+      "version": 1,
+      "versionTag": "changes.voicing-candidates.v1"
+    },
+    "templateTable": {
+      "id": "changes.voicing-family-templates",
+      "version": 1
+    },
+    "templateSelection": {
+      "modes": [
+        "realization-roles",
+        "fixed-degree-sequence",
+        "quartal-context-sequence"
+      ],
+      "realizationRolePolicyId": "changes.voicing-realization-role-selection",
+      "realizationRolePolicyVersion": 1,
+      "maximumDegreeSlots": 7,
+      "quartalMinimumDegreeSlots": 2,
+      "quartalMaximumDegreeSlots": 7
+    },
+    "familyRegisterPolicy": {
+      "schema": "changes.theory.voicing-family-register-policy.v1",
+      "version": 1,
+      "ids": [
+        "balanced-register-v1",
+        "fixed-template-register-v1",
+        "open-register-v1",
+        "drop2-register-v1",
+        "quartal-register-v1"
+      ],
+      "slotOrderPolicies": [
+        "selected-degree-register-weave-v1",
+        "template-low-to-high",
+        "closed-source-low-to-high",
+        "quartal-context-low-to-high"
+      ],
+      "structuralTransforms": ["drop2"],
+      "sourceVoiceSelections": ["second-from-top"],
+      "outputOrders": ["midi-ascending"]
+    },
+    "localScorePolicy": {
+      "id": "changes.voicing-local-score",
+      "version": 1
+    },
+    "lowRegisterPolicy": {
+      "id": "changes.voicing-low-register-spacing",
+      "version": 1
+    },
+    "quartalContextPolicy": {
+      "id": "changes.quartal-context-gate",
+      "version": 1
+    },
+    "operationIds": ["realizeVoicing"]
+  },
+  "ownership": {
+    "layer": "theory",
+    "allowedImports": ["../domain", "./resolution-contract"],
+    "forbiddenImports": ["application", "audio", "compatibility", "content", "persistence", "ui"],
+    "contentInjection": "Versioned data-only QuartalContext is supplied by the caller; V0 never imports a compiled Atlas.",
+    "runtimeNetwork": false,
+    "runtimeAi": false,
+    "purity": "synchronous deterministic operation with no clock, random, locale, mutable singleton, browser, audio, storage, or network input"
+  },
+  "requestPolicy": {
+    "auto": {
+      "resolvedInput": "ParsedResolvedChord",
+      "realizationSelection": "An explicit SemanticRealizationId must name exactly one realization present in resolved.realizations.",
+      "quartal": "family quartal requires a version-matching QuartalContext",
+      "nonQuartal": "quartalContext is exactly null"
+    },
+    "stored": {
+      "acceptedModes": ["manual", "frozen"],
+      "behavior": "Return the exact stored voicing and literal zero work evidence; do not select a realization, template, degree, register, transform, or score.",
+      "candidateGenerationPerformed": false
+    },
+    "forbiddenContextFields": ["previous", "next", "voiceIds", "voiceLeadingCost", "requestId", "eventId"],
+    "allOrNothing": "Every refusal returns evidence and no partial candidate value."
+  },
+  "families": ["balanced", "shell", "rootless-a", "rootless-b", "open", "drop2", "quartal"],
+  "voiceCounts": [3, 4, 5, 6, 7],
+  "bassPolicies": ["generated", "external", "none"],
+  "qualityClasses": [
+    "major-triad",
+    "minor-triad",
+    "diminished-triad",
+    "augmented-triad",
+    "suspended-triad",
+    "power-triad",
+    "major-sixth",
+    "minor-sixth",
+    "major-seventh",
+    "dominant-seventh",
+    "minor-seventh",
+    "minor-major-seventh",
+    "half-diminished-seventh",
+    "diminished-seventh",
+    "augmented-major-seventh",
+    "suspended-dominant"
+  ],
+  "qualityClassification": [
+    {"qualityClass":"major-triad","formulaRuleIds":["base-major"]},
+    {"qualityClass":"minor-triad","formulaRuleIds":["base-minor"]},
+    {"qualityClass":"diminished-triad","formulaRuleIds":["base-diminished"]},
+    {"qualityClass":"augmented-triad","formulaRuleIds":["base-augmented"]},
+    {"qualityClass":"suspended-triad","formulaRuleIds":["base-sus2","base-sus4"]},
+    {"qualityClass":"power-triad","formulaRuleIds":["base-power"]},
+    {"qualityClass":"major-sixth","formulaRuleIds":["sixth-major"]},
+    {"qualityClass":"minor-sixth","formulaRuleIds":["sixth-minor"]},
+    {"qualityClass":"major-seventh","formulaRuleIds":["seventh-major","extension-major"]},
+    {"qualityClass":"dominant-seventh","formulaRuleIds":["seventh-dominant","extension-dominant","altered-dominant"]},
+    {"qualityClass":"minor-seventh","formulaRuleIds":["seventh-minor","extension-minor"]},
+    {"qualityClass":"minor-major-seventh","formulaRuleIds":["seventh-minor-major"]},
+    {"qualityClass":"half-diminished-seventh","formulaRuleIds":["seventh-half-diminished"]},
+    {"qualityClass":"diminished-seventh","formulaRuleIds":["seventh-diminished"]},
+    {"qualityClass":"augmented-major-seventh","formulaRuleIds":["seventh-augmented-major"]},
+    {"qualityClass":"suspended-dominant","formulaRuleIds":["extension-suspended-dominant"]}
+  ],
+  "selectionPhases": [
+    "validate-explicit-realization",
+    "classify-quality",
+    "select-versioned-template-row",
+    "select-required-and-optional-members",
+    "enumerate-register-placements",
+    "apply-family-transform",
+    "check-hard-constraints",
+    "canonicalize-exact-candidate-identity",
+    "compute-local-score",
+    "stable-order",
+    "retain-first-24"
+  ],
+  "degreePolicy": {
+    "membership": "Every generated non-slash voice must carry the exact number-and-alter ChordDegree of a member of the explicitly selected realization.",
+    "slashBass": "A non-member explicit slash bass may be generated only as provenance slash-bass with degree and sourceDegreeIndex exactly null.",
+    "required": "Adaptive tertian families Balanced, Open, and Drop-2 require every selected-realization required degree. A checked-in fixed Shell/Rootless row or exact injected Quartal sequence may deliberately omit a T1-required extension, but only the checked-in row/context may do so and every omission is reported in the explanation; undeclared omission is constraints-unsatisfied.",
+    "guides": "Every selected-realization guide tone must sound; a template may not silently trade it for color.",
+    "identity": "The exact source-triad identity member or members must sound: major 3, minor b3, diminished b3/b5, augmented 3/#5, sus2 2, sus4 4, power 5. Root must be a candidate voice unless the named effective root bass is external; Rootless A/B are the explicit root-omission exception.",
+    "optional": "Only exact optional members from the selected realization may fill remaining slots.",
+    "fabricatedTemplateColors": false,
+    "automaticCustomChord": false,
+    "maximumAdditionalOctaveCopiesPerDegree": 1,
+    "permittedDoublingPriority": ["1", "5"],
+    "neverDouble": ["guide-tone", "altered-degree", "required-characteristic-color", "slash-bass"]
+  },
+  "bassPolicy": {
+    "generated": "voiceCount includes every sounded pitch. An explicit slash bass is a slash-bass voice and must be the unique lowest MIDI; without a slash chord the effective bass is the root.",
+    "external": "The named effective bass is excluded from candidate voices, count, playback-plan pitches, and MIDI export. For a non-slash chord the named effective bass is the root.",
+    "none": "No bass is named or reserved and the policy is invalid for slash chords.",
+    "rootless": "Rootless A/B omit degree 1, require external, and never synthesize the assumed bass.",
+    "slashSpelling": "Generated slash bass preserves the exact source spelling. External exclusion compares sounding pitch class while the explanation preserves the named source spelling."
+  },
+  "candidateIdentity": {
+    "deduplicationKey": [
+      "ordered voice MIDI",
+      "ordered voice spelling step/alter/octave",
+      "ordered voice exact degree or null",
+      "ordered voice provenance",
+      "ordered voice sourceDegreeIndex or null"
+    ],
+    "excludedFromKey": [
+      "realizationId",
+      "family",
+      "templateId",
+      "rawGenerationOrdinal",
+      "retainedOrdinal",
+      "localScore",
+      "evidence",
+      "explanation",
+      "candidateId"
+    ],
+    "midiOnlyDeduplicationForbidden": true,
+    "candidateIds": "candidate-000 through candidate-023 are assigned only after final retention order"
+  },
+  "identifierLimits": {
+    "surfaces": [
+      "quartalContext.evidenceId",
+      "candidateEvidence.sourceId"
+    ],
+    "minimumCodePoints": 1,
+    "maximumCodePoints": 256,
+    "maximumUtf8Bytes": 512,
+    "codePointMeasurement": "Array.from(value).length",
+    "utf8ByteMeasurement": "new TextEncoder().encode(value).byteLength",
+    "quartalContextInvalidReason": "evidence-id-invalid",
+    "candidateEvidenceMayEmitInvalidSourceId": false
+  },
+  "candidatePayloadLimits": {
+    "hardConstraintObservations": 16,
+    "hardConstraintCodeOrder": [
+      "voicing.constraint.realization_membership",
+      "voicing.constraint.template_degree_membership",
+      "voicing.constraint.voice_count",
+      "voicing.constraint.midi_range",
+      "voicing.constraint.required_degrees",
+      "voicing.constraint.guide_tones",
+      "voicing.constraint.identity_tones",
+      "voicing.constraint.bass_policy",
+      "voicing.constraint.slash_bass_lowest",
+      "voicing.constraint.external_bass_excluded",
+      "voicing.constraint.rootless_root_omitted",
+      "voicing.constraint.unique_midi",
+      "voicing.constraint.permitted_doubling",
+      "voicing.constraint.low_register_spacing",
+      "voicing.constraint.family_structure",
+      "voicing.constraint.quartal_context"
+    ],
+    "nonQuartalEvidenceRecords": 8,
+    "quartalEvidenceRecords": 9,
+    "evidenceCodeOrder": [
+      "voicing.evidence.quality_classified",
+      "voicing.evidence.template_selected",
+      "voicing.evidence.realization_bound",
+      "voicing.evidence.register_enumerated",
+      "voicing.evidence.family_transform",
+      "voicing.evidence.constraints_checked",
+      "voicing.evidence.local_score",
+      "voicing.evidence.stable_retention",
+      "voicing.evidence.quartal_context"
+    ],
+    "constraintObservationVoiceOrdinals": 7,
+    "constraintObservationDegrees": 7,
+    "constraintObservationMidiValues": 7,
+    "evidenceObservationVoiceOrdinals": 7,
+    "evidenceObservationDegrees": 7,
+    "explanationOrderedDegreesMinimum": 2,
+    "explanationOrderedDegreesMaximum": 7,
+    "explanationOmittedDegreesMaximum": 16,
+    "explanationDoubledDegreesMaximum": 2,
+    "explanationQuartalAdjacenciesMaximum": 4,
+    "drop2TransformVoicesMinimum": 4,
+    "drop2TransformVoicesMaximum": 7,
+    "drop2SourceAndTransformedLengthsEqual": true,
+    "resultCandidatesMinimum": 1,
+    "resultCandidatesMaximum": 24,
+    "availableRealizationIdsMinimum": 1,
+    "availableRealizationIdsMaximum": 4,
+    "refusalConstraintsMinimum": 1,
+    "refusalConstraintsMaximum": 16
+  },
+  "constraintObservationPolicy": {
+    "policyId": "changes.voicing-constraint-observation-collection",
+    "policyVersion": 1,
+    "equalityFields": [
+      "satisfied",
+      "code",
+      "reason",
+      "voiceOrdinals",
+      "exact-degree-number-and-alter",
+      "midiValues"
+    ],
+    "order": [
+      "constraint-code-rank",
+      "voice-ordinals-lexicographic",
+      "exact-degrees-lexicographic",
+      "midi-values-lexicographic",
+      "reason-precedence"
+    ],
+    "properPrefixesFirst": true,
+    "duplicateDisposition": "collapse-before-capacity",
+    "sameCodeDistinctPayloadDisposition": "retain-distinct",
+    "maximumDistinctRecords": 16,
+    "overflowCounter": "constraintObservationsProduced",
+    "overflowDisposition": "provisional-until-complete-zero-candidate-search",
+    "legalCandidateDisposition": "clear-and-disable-no-result-diagnostics",
+    "noResultOverflowDisposition": "work-limit-no-partial-result",
+    "parallelKeyCollectionAllowed": false
+  },
+  "localScore": {
+    "axisOrder": [
+      "optionalDegreesOmitted",
+      "nonPreferredDoublings",
+      "guideToneDoublings",
+      "templateOrderDisplacement",
+      "targetSpanDistance",
+      "rangeCenterDistanceTwice"
+    ],
+    "definitions": {
+      "optionalDegreesOmitted": "Count selected-realization optional degree tokens absent from the candidate.",
+      "nonPreferredDoublings": "Count octave copies not equal to the earliest still-applicable entry in the template doublingPriority.",
+      "guideToneDoublings": "Count doubling voices whose exact degree is a selected-realization guide tone; legal templates set this to zero.",
+      "templateOrderDisplacement": "Sum the absolute differences between each non-slash voice's low-to-high ordinal and its declared template-sequence ordinal after omitted slots are removed.",
+      "targetSpanDistance": "abs((highestMidi - lowestMidi) - template.targetSpanSemitones).",
+      "rangeCenterDistanceTwice": "abs((lowestMidi + highestMidi) - (requestedLowMidi + requestedHighMidi))."
+    },
+    "comparison": "lexicographic ascending; no scalar weighted sum"
+  },
+  "candidateOrder": [
+    "local-score-axis-order",
+    "midi-sequence-lexicographic",
+    "degree-number-then-alter-lexicographic",
+    "spelling-octave-then-domain-step-then-alter-lexicographic",
+    "template-id-utf16-lexicographic",
+    "raw-generation-ordinal"
+  ],
+  "stringAndStepOrder": {
+    "strings": "UTF-16 code-unit order; never localeCompare",
+    "domainSteps": ["C", "D", "E", "F", "G", "A", "B"]
+  },
+  "lowRegisterSpacing": [
+    {"maximumLowerMidi":35,"minimumSemitones":10},
+    {"maximumLowerMidi":47,"minimumSemitones":7},
+    {"maximumLowerMidi":59,"minimumSemitones":4},
+    {"maximumLowerMidi":127,"minimumSemitones":1}
+  ],
+  "familyLaws": {
+    "balanced": "Use T1 required members, then exact optional members by the declared priority, then declared root/fifth octave copies; traverse the selected-degree-register-weave-v1 policy and target 12 semitones.",
+    "shell": "Use only the checked-in low-to-high fixed row. Every listed degree must exist; a missing row is unavailable and a listed degree absent from this realization is constraints-unsatisfied.",
+    "rootless-a": "Use only its checked-in four-voice low-to-high fixed row, omit root, and require external bass.",
+    "rootless-b": "Use only its distinct checked-in four-voice low-to-high fixed row, omit root, and require external bass.",
+    "open": "Use Balanced degree selection and selected-degree-register-weave-v1 traversal, require span 12..36 semitones and at least one adjacent gap of at least 7 semitones, target 19.",
+    "drop2": "From a low-to-high closed source spanning at most 11 semitones, lower the second-highest MIDI voice exactly 12 semitones, sort low-to-high, and recheck every constraint. Three voices refuse.",
+    "quartal": "Require a declared quality row and injected degree sequence of voiceCount members, except that a generated explicit slash-bass voice occupies one total-count slot so the sequence has voiceCount-1 members. The bounded context sequence therefore permits 2..7 members. Every sequence degree must exist in the selected realization and every adjacent projected interval must be exactly 5 or 6 semitones. A label alone never authorizes the row."
+  },
+  "constraintCodes": [
+    "voicing.constraint.realization_membership",
+    "voicing.constraint.template_degree_membership",
+    "voicing.constraint.voice_count",
+    "voicing.constraint.midi_range",
+    "voicing.constraint.required_degrees",
+    "voicing.constraint.guide_tones",
+    "voicing.constraint.identity_tones",
+    "voicing.constraint.bass_policy",
+    "voicing.constraint.slash_bass_lowest",
+    "voicing.constraint.external_bass_excluded",
+    "voicing.constraint.rootless_root_omitted",
+    "voicing.constraint.unique_midi",
+    "voicing.constraint.permitted_doubling",
+    "voicing.constraint.low_register_spacing",
+    "voicing.constraint.family_structure",
+    "voicing.constraint.quartal_context"
+  ],
+  "constraintUnsatisfiedReasons": [
+    "selected-realization-mismatch",
+    "template-degree-absent",
+    "voice-count-below-template-minimum",
+    "voice-count-unsupported",
+    "bass-policy-unsupported",
+    "required-degree-omitted",
+    "guide-tone-omitted",
+    "identity-tone-omitted",
+    "slash-bass-unplaceable",
+    "external-bass-present",
+    "root-present-in-rootless",
+    "range-insufficient",
+    "duplicate-midi",
+    "doubling-not-permitted",
+    "low-register-spacing",
+    "family-transform-invalid",
+    "quartal-context-invalid",
+    "no-legal-register-placement"
+  ],
+  "refusalCodesInPrecedenceOrder": [
+    "voicing.realization_unavailable",
+    "voicing.quartal_context_unexpected",
+    "voicing.quartal_context_required",
+    "voicing.quartal_context_invalid",
+    "voicing.family_unavailable",
+    "voicing.constraints_unsatisfied",
+    "limit.voicing_work_exceeded"
+  ],
+  "quartalContextInvalidReasonsInPrecedenceOrder": [
+    "schema-mismatch",
+    "policy-id-mismatch",
+    "policy-version-mismatch",
+    "evidence-id-invalid",
+    "evidence-version-invalid",
+    "degree-count-mismatch",
+    "degree-absent-from-realization",
+    "adjacency-not-perfect-or-augmented-fourth"
+  ],
+  "terminations": [
+    "complete-generated",
+    "complete-bypass",
+    "realization-unavailable",
+    "quartal-context-unexpected",
+    "quartal-context-required",
+    "quartal-context-invalid",
+    "family-unavailable",
+    "constraints-unsatisfied",
+    "work-limit-exceeded"
+  ],
+  "terminationByRefusalCode": {
+    "voicing.realization_unavailable": "realization-unavailable",
+    "voicing.quartal_context_unexpected": "quartal-context-unexpected",
+    "voicing.quartal_context_required": "quartal-context-required",
+    "voicing.quartal_context_invalid": "quartal-context-invalid",
+    "voicing.family_unavailable": "family-unavailable",
+    "voicing.constraints_unsatisfied": "constraints-unsatisfied",
+    "limit.voicing_work_exceeded": "work-limit-exceeded"
+  },
+  "limits": {
+    "rawCandidates": 96,
+    "retainedCandidates": 24,
+    "registerPlacements": 176,
+    "searchStateExpansions": 8192,
+    "peakSearchStates": 512,
+    "hardConstraintChecks": 131072,
+    "pairwiseCandidateComparisons": 4560,
+    "rawVoiceRecords": 672,
+    "outputVoiceRecords": 168,
+    "templateRows": 112,
+    "constraintObservationComparisons": 2228224,
+    "constraintObservations": 16,
+    "trackedRecords": 1792,
+    "rawCapLaw": "Exactly 96 raw candidates may complete. Before accepting candidate 97, refuse with received 97, maximum 96, partialResult false, and no candidate value.",
+    "retentionLaw": "After exact deduplication and stable ordering, retain at most the first 24. The existence of a 25th ordered raw candidate is not itself a refusal."
+  },
+  "trackedRecordAccounting": {
+    "policyId": "changes.voicing-tracked-record-accounting",
+    "policyVersion": 2,
+    "populationOrder": [
+      "selected-realization-degree",
+      "template-row",
+      "register-placement",
+      "search-state",
+      "raw-candidate",
+      "raw-voice",
+      "retained-candidate",
+      "output-voice",
+      "constraint-observation"
+    ],
+    "populationLimits": {
+      "selected-realization-degree": 16,
+      "template-row": 112,
+      "register-placement": 176,
+      "search-state": 512,
+      "raw-candidate": 96,
+      "raw-voice": 672,
+      "retained-candidate": 24,
+      "output-voice": 168,
+      "constraint-observation": 16
+    },
+    "aggregateMaximum": 1792,
+    "sumOfPopulationLimits": 1792,
+    "diagnosticPayloadOwnedByCandidateRecord": true,
+    "constraintObservationAccumulatorPopulation": "constraint-observation",
+    "independentDiagnosticSideCollectionsAllowed": false,
+    "ownershipLaw": "Successful constraint, evidence, score, and explanation projections are payload of their owning candidate. A no-result search may retain only the one declared operation-local constraint-observation population, transfer it into the refusal, and retain no parallel diagnostic side collection."
+  },
+  "workLimits": {
+    "realizationDegreeRecordsVisited": 16,
+    "templateRowsVisited": 112,
+    "templateDegreeSlotsVisited": 784,
+    "registerPlacementsVisited": 176,
+    "searchStatesExpanded": 8192,
+    "structuralTransformsAttempted": 8192,
+    "hardConstraintChecks": 131072,
+    "rawCandidatesProduced": 96,
+    "candidateCanonicalizations": 96,
+    "duplicateCandidateComparisons": 4560,
+    "localScoresComputed": 96,
+    "orderingComparisons": 4560,
+    "retainedCandidatesProduced": 24,
+    "outputVoicesProduced": 168,
+    "constraintObservationComparisons": 2228224,
+    "constraintObservationsProduced": 16
+  },
+  "memoryLimits": {
+    "peakRegisterPlacementRecords": 176,
+    "peakSearchStateRecords": 512,
+    "peakRawCandidateRecords": 96,
+    "peakRawVoiceRecords": 672,
+    "peakRetainedCandidateRecords": 24,
+    "peakOutputVoiceRecords": 168,
+    "peakTrackedRecords": 1792,
+    "peakConstraintObservationRecords": 16
+  },
+  "applicability": {
+    "cancellation": {"applies":false,"owner":"progression-level resumable search/application runner"},
+    "staleRevision": {"applies":false,"owner":"application request/revision boundary"},
+    "browser": {"applies":false,"owner":"UI/E2E packages"},
+    "audio": {"applies":false,"owner":"playback-plan and audio packages"},
+    "storage": {"applies":false,"owner":"persistence package"},
+    "wallTime": {"applies":false,"reason":"wall time may be reported as performance evidence but never changes membership, order, refusal, or termination"}
+  },
+  "matrix": {
+    "t1LiteralFormulaSeeds": 33,
+    "alteredDominantRealizationSeeds": 4,
+    "totalRealizationSeeds": 37,
+    "families": 7,
+    "voiceCounts": 5,
+    "availabilityCells": 1295
+  },
+  "companionFiles": [
+    "family-templates.json",
+    "availability-matrix.json",
+    "candidate-cases.json",
+    "law-cases.json",
+    "operation-state-cases.json",
+    "limit-cases.json",
+    "transposition-seeds.json",
+    "mutation-controls.json",
+    "provenance-ledger.json",
+    "trace-ledger.json"
+  ]
+}

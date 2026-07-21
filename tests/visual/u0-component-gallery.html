@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>U0 Component Gallery</title>
+    <link rel="stylesheet" href="../../src/styles/tokens.css">
+    <link rel="stylesheet" href="../../src/styles/reset.css">
+    <link rel="stylesheet" href="../../src/styles/primitives.css">
+    <link rel="stylesheet" href="../../src/styles/ui-foundations.css">
+    <link rel="stylesheet" href="../../src/styles/ui-forms.css">
+    <link rel="stylesheet" href="../../src/styles/ui-navigation.css">
+    <link rel="stylesheet" href="../../src/styles/ui-overlays.css">
+    <link rel="stylesheet" href="../../src/styles/ui-structured.css">
+    <style>
+      body {
+        background: var(--surface-app);
+        color: var(--text-primary);
+      }
+
+      .u0-gallery {
+        display: grid;
+        gap: var(--space-6);
+        width: min(100% - var(--space-6), 76rem);
+        margin-inline: auto;
+        padding-block: var(--space-6) var(--space-12);
+      }
+
+      .u0-gallery__header,
+      .u0-gallery__controls,
+      .u0-gallery__active,
+      .u0-gallery__not-applicable {
+        padding: var(--space-5);
+        border: var(--border-width) solid var(--border-strong);
+        border-radius: var(--radius-md);
+        background: var(--surface-panel);
+      }
+
+      .u0-gallery__eyebrow,
+      .u0-gallery__active > header > p,
+      .u0-gallery__event-count {
+        color: var(--text-muted);
+      }
+
+      .u0-gallery__controls,
+      .u0-gallery__controls label,
+      .u0-gallery__specimen {
+        display: grid;
+        gap: var(--space-3);
+      }
+
+      .u0-gallery__controls select {
+        inline-size: min(100%, 32rem);
+        min-block-size: var(--touch-target);
+      }
+
+      .u0-gallery__specimen-stage {
+        min-block-size: 12rem;
+        padding: var(--space-5);
+        overflow: auto;
+        border: var(--border-width) solid var(--border-default);
+        border-radius: var(--radius-sm);
+        background: var(--surface-chart);
+      }
+
+      .u0-gallery__overlay-background {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-3);
+        padding: var(--space-3);
+      }
+
+      .u0-gallery__not-applicable li + li {
+        margin-block-start: var(--space-2);
+      }
+
+      @media (max-width: 40rem) {
+        .u0-gallery {
+          width: min(100% - var(--space-4), 76rem);
+          padding-block-start: var(--space-4);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="u0-component-gallery-root"></div>
+    <script type="module" src="./u0-component-gallery.tsx"></script>
+  </body>
+</html>

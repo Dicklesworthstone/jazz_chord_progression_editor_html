@@ -1,0 +1,13 @@
+{
+  "schema": "changes.release-evidence.x0-listening.v1",
+  "traceId": "TR-X0-LISTENING",
+  "rubricSchema": "changes.fixtures.x0-listening-rubric.v1",
+  "rubricSha256": "ccbe19943bba3c1534bfddd16cd17bdb09dffaab7d3aec4afb00b47c572addbd",
+  "attestation": {
+    "automatedListeningClaim": false,
+    "reviewerIsHuman": false,
+    "recordsCreatedAfterAudition": false,
+    "outputCategoriesPhysicallyVerified": false
+  },
+  "records": []
+}

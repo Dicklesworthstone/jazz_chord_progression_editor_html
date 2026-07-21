@@ -1,0 +1,1404 @@
+{
+  "schema": "changes.fixtures.c0-legacy-presets-source.v1",
+  "provenance": {
+    "sourceKind": "audited-git-object",
+    "commit": "c585871b638bea8b616a707e1a477b583c2cdf0d",
+    "path": "jazz_chord_progression_editor.html",
+    "artifactSha256": "04d105634cab0ee064d42888b74bca8ca51feea7c82263e470004fb0b51c07e8",
+    "artifactBytes": 419344,
+    "objectPath": [
+      "presets"
+    ],
+    "extraction": "TypeScript-AST literal-only; no legacy code executed"
+  },
+  "counts": {
+    "presets": 3,
+    "sections": 6,
+    "chords": 80
+  },
+  "presets": [
+    {
+      "legacyPresetId": "gemma3",
+      "name": "Sophisticated Jazz Progression (Gemma 3)",
+      "description": "A 16-bar progression featuring polychords, altered dominants, and non-functional harmony",
+      "sections": [
+        {
+          "name": "16-Bar Progression",
+          "chords": [
+            {
+              "name": "Cmaj9(#11)",
+              "root": "C",
+              "type": "maj9",
+              "bass": "",
+              "notes": [
+                "C3",
+                "E3",
+                "G3",
+                "B3",
+                "D4",
+                "F#4"
+              ],
+              "s11": true,
+              "annotation": "Lush, ambiguous start. The #11 adds a modern flavor."
+            },
+            {
+              "name": "F#m7b5(b9)",
+              "root": "F#",
+              "type": "m7b5",
+              "bass": "",
+              "notes": [
+                "F#3",
+                "A3",
+                "C4",
+                "E4",
+                "G4"
+              ],
+              "b9": true,
+              "annotation": "Altered dominant resolving deceptively. Creates tension."
+            },
+            {
+              "name": "B7alt",
+              "root": "B",
+              "type": "alt",
+              "bass": "",
+              "notes": [
+                "B2",
+                "D#3",
+                "F#3",
+                "A3",
+                "C4",
+                "E4",
+                "G4"
+              ],
+              "b9": true,
+              "s9": true,
+              "b5": true,
+              "s5": true,
+              "annotation": "Highly altered dominant. Expect a surprising resolution."
+            },
+            {
+              "name": "Em7/B",
+              "root": "E",
+              "type": "m7",
+              "bass": "B",
+              "notes": [
+                "B2",
+                "E3",
+                "G3",
+                "D4",
+                "F#4",
+                "A4",
+                "C5"
+              ],
+              "annotation": "E minor 7th over a B bass. Smooth voice leading from the B7alt."
+            },
+            {
+              "name": "Am7/C",
+              "root": "A",
+              "type": "m7",
+              "bass": "C",
+              "notes": [
+                "C3",
+                "E3",
+                "G3",
+                "B3",
+                "D4",
+                "F4",
+                "A4"
+              ],
+              "annotation": "A minor 7th over a C bass. Creates a modal feel."
+            },
+            {
+              "name": "D7(b9,#9,#11)",
+              "root": "D",
+              "type": "7",
+              "bass": "",
+              "notes": [
+                "D3",
+                "F#3",
+                "A3",
+                "C4",
+                "E#4",
+                "G#4",
+                "B#4"
+              ],
+              "b9": true,
+              "s9": true,
+              "s11": true,
+              "annotation": "Extremely altered dominant. Maximum tension."
+            },
+            {
+              "name": "Gm7/B",
+              "root": "G",
+              "type": "m7",
+              "bass": "B",
+              "notes": [
+                "B2",
+                "D3",
+                "F3",
+                "A3",
+                "C4",
+                "E4",
+                "G4"
+              ],
+              "annotation": "G minor 7th over a B bass. Unexpected harmonic shift."
+            },
+            {
+              "name": "Cmaj7(#11)",
+              "root": "C",
+              "type": "maj7",
+              "bass": "",
+              "notes": [
+                "C3",
+                "E3",
+                "G3",
+                "B3",
+                "D#4",
+                "F#4",
+                "A#4"
+              ],
+              "s11": true,
+              "annotation": "Return to the opening chord, but with a different feel after the journey."
+            },
+            {
+              "name": "F#m7b5(b9)/A",
+              "root": "F#",
+              "type": "m7b5",
+              "bass": "A",
+              "notes": [
+                "A2",
+                "C3",
+                "E3",
+                "G3",
+                "B3",
+                "D4",
+                "F4"
+              ],
+              "b9": true,
+              "annotation": "F#m7b5(b9) over an A bass. Adds a layer of complexity."
+            },
+            {
+              "name": "B7sus4(b9)",
+              "root": "B",
+              "type": "7sus4",
+              "bass": "",
+              "notes": [
+                "B2",
+                "E3",
+                "F#3",
+                "A3",
+                "C4",
+                "D4",
+                "G4"
+              ],
+              "b9": true,
+              "annotation": "Suspended dominant with alterations. Prolongs the tension."
+            },
+            {
+              "name": "Em7/B",
+              "root": "E",
+              "type": "m7",
+              "bass": "B",
+              "notes": [
+                "B2",
+                "E3",
+                "G3",
+                "D4",
+                "F#4",
+                "A4",
+                "C5"
+              ],
+              "annotation": "Return to the Em7/B, creating a cyclical feel."
+            },
+            {
+              "name": "Am7/C",
+              "root": "A",
+              "type": "m7",
+              "bass": "C",
+              "notes": [
+                "C3",
+                "E3",
+                "G3",
+                "B3",
+                "D4",
+                "F4",
+                "A4"
+              ],
+              "annotation": "Return to the Am7/C, reinforcing the modal quality."
+            },
+            {
+              "name": "D7(b9,#9,#11)",
+              "root": "D",
+              "type": "7",
+              "bass": "",
+              "notes": [
+                "D3",
+                "F#3",
+                "A3",
+                "C4",
+                "E#4",
+                "G#4",
+                "B#4"
+              ],
+              "b9": true,
+              "s9": true,
+              "s11": true,
+              "annotation": "Another highly altered dominant, building towards the climax."
+            },
+            {
+              "name": "Gm7/B",
+              "root": "G",
+              "type": "m7",
+              "bass": "B",
+              "notes": [
+                "B2",
+                "D3",
+                "F3",
+                "A3",
+                "C4",
+                "E4",
+                "G4"
+              ],
+              "annotation": "Gm7/B again, creating a sense of inevitability."
+            },
+            {
+              "name": "Cmaj9(#11)",
+              "root": "C",
+              "type": "maj9",
+              "bass": "",
+              "notes": [
+                "C3",
+                "E3",
+                "G3",
+                "B3",
+                "D4",
+                "F#4"
+              ],
+              "s11": true,
+              "annotation": "Return to the opening chord, but now with a sense of resolution."
+            },
+            {
+              "name": "Cmaj7",
+              "root": "C",
+              "type": "maj7",
+              "bass": "",
+              "notes": [
+                "C3",
+                "E3",
+                "G3",
+                "B3"
+              ],
+              "annotation": "Simple Cmaj7 to ground the progression."
+            }
+          ],
+          "collapsed": false,
+          "annotation": "This progression uses polychords, slash chords, altered dominants and modal interchange to create a sophisticated harmonic palette."
+        }
+      ]
+    },
+    {
+      "legacyPresetId": "chatgpt45",
+      "name": "Intricate Jazz Progression (ChatGPT 4.5)",
+      "description": "A 16-bar progression with modal interchange, bitonal chords, and altered dominants",
+      "sections": [
+        {
+          "name": "16-Bar Progression",
+          "chords": [
+            {
+              "name": "F#m9(maj7)/C#",
+              "root": "F#",
+              "type": "m9",
+              "bass": "C#",
+              "notes": [
+                "C#2",
+                "F#3",
+                "A3",
+                "E4",
+                "G#4",
+                "C#5"
+              ],
+              "annotation": "Dark, modal minor color (melodic minor), inverted for tension."
+            },
+            {
+              "name": "C13(b9)/E",
+              "root": "C",
+              "type": "13",
+              "bass": "E",
+              "notes": [
+                "E2",
+                "C3",
+                "E3",
+                "G3",
+                "Bb3",
+                "D4",
+                "A4",
+                "Db4"
+              ],
+              "b9": true,
+              "annotation": "Altered dominant (Phrygian dominant); first-inversion voicing."
+            },
+            {
+              "name": "Bbmaj13(#11)",
+              "root": "Bb",
+              "type": "maj13",
+              "bass": "",
+              "notes": [
+                "Bb2",
+                "D3",
+                "F3",
+                "A3",
+                "D4",
+                "E4",
+                "G4"
+              ],
+              "s11": true,
+              "annotation": "Lydian color creating brightness and openness."
+            },
+            {
+              "name": "A7alt",
+              "root": "A",
+              "type": "alt",
+              "bass": "",
+              "notes": [
+                "A2",
+                "C#3",
+                "Eb3",
+                "G3",
+                "Bb3",
+                "D#4"
+              ],
+              "b9": true,
+              "s9": true,
+              "b5": true,
+              "s5": true,
+              "annotation": "Fully altered dominant (super Locrian) for tense resolution."
+            },
+            {
+              "name": "Dm11/C",
+              "root": "D",
+              "type": "m11",
+              "bass": "C",
+              "notes": [
+                "C2",
+                "D3",
+                "F3",
+                "A3",
+                "C4",
+                "G4"
+              ],
+              "annotation": "Modal Dorian minor with pedal bass for suspense."
+            },
+            {
+              "name": "G13sus4(b9)",
+              "root": "G",
+              "type": "13sus4",
+              "bass": "",
+              "notes": [
+                "G2",
+                "C3",
+                "D3",
+                "F3",
+                "Ab3",
+                "E4"
+              ],
+              "b9": true,
+              "annotation": "Suspended altered dominant, hybrid phrygian/modal sound."
+            },
+            {
+              "name": "Abmaj7(#5)",
+              "root": "Ab",
+              "type": "maj7",
+              "bass": "",
+              "notes": [
+                "Ab2",
+                "C3",
+                "E3",
+                "G3"
+              ],
+              "s5": true,
+              "annotation": "Lydian Augmented sound creating dreamy, floating quality."
+            },
+            {
+              "name": "Gb13(#11)/B",
+              "root": "Gb",
+              "type": "13",
+              "bass": "B",
+              "notes": [
+                "B2",
+                "Gb3",
+                "Bb3",
+                "Db3",
+                "F3",
+                "Ab3",
+                "C4"
+              ],
+              "s11": true,
+              "annotation": "Tritone-related dominant, polytonal feel due to bass note."
+            },
+            {
+              "name": "Emaj9(#11)/F",
+              "root": "E",
+              "type": "maj9",
+              "bass": "F",
+              "notes": [
+                "F2",
+                "E3",
+                "G#3",
+                "B3",
+                "D#4",
+                "F#4",
+                "A#4"
+              ],
+              "s11": true,
+              "annotation": "Bitonal chord voicing; an E Lydian sound over unrelated bass."
+            },
+            {
+              "name": "Ebm9/Gb",
+              "root": "Eb",
+              "type": "m9",
+              "bass": "Gb",
+              "notes": [
+                "Gb2",
+                "Eb3",
+                "Gb3",
+                "Bb3",
+                "Db4",
+                "F4"
+              ],
+              "annotation": "Rich minor coloration (Aeolian), third inversion adds ambiguity."
+            },
+            {
+              "name": "Db13sus2/F",
+              "root": "Db",
+              "type": "13",
+              "bass": "F",
+              "notes": [
+                "F2",
+                "Db3",
+                "Eb3",
+                "Ab3",
+                "B3",
+                "F4",
+                "Bb4"
+              ],
+              "annotation": "Modern suspended chord with subtle cluster voicing."
+            },
+            {
+              "name": "Cmaj9/E",
+              "root": "C",
+              "type": "maj9",
+              "bass": "E",
+              "notes": [
+                "E2",
+                "C3",
+                "E3",
+                "G3",
+                "B3",
+                "D4"
+              ],
+              "annotation": "Smooth pivot, major chord in first inversion for clarity."
+            },
+            {
+              "name": "Bbm6/9",
+              "root": "Bb",
+              "type": "m6",
+              "bass": "",
+              "notes": [
+                "Bb2",
+                "Db3",
+                "F3",
+                "G3",
+                "C4"
+              ],
+              "annotation": "Darker minor voicing (Dorian minor), sophisticated flavor."
+            },
+            {
+              "name": "Eb7(#9#5)",
+              "root": "Eb",
+              "type": "7",
+              "bass": "",
+              "notes": [
+                "Eb3",
+                "G3",
+                "B3",
+                "Db4",
+                "F#4"
+              ],
+              "s9": true,
+              "s5": true,
+              "annotation": "Highly altered dominant chord, strongly dissonant tension."
+            },
+            {
+              "name": "Abmaj7sus2(#11)",
+              "root": "Ab",
+              "type": "maj7",
+              "bass": "",
+              "notes": [
+                "Ab2",
+                "Bb2",
+                "Eb3",
+                "G3",
+                "D4"
+              ],
+              "s11": true,
+              "annotation": "Dreamy modal voicing, expansive open harmony."
+            },
+            {
+              "name": "Gm11b5/C",
+              "root": "G",
+              "type": "m11",
+              "bass": "C",
+              "notes": [
+                "C2",
+                "G3",
+                "Db3",
+                "F3",
+                "Bb3",
+                "D4"
+              ],
+              "b5": true,
+              "annotation": "Ambiguous minor dominant suspended hybrid; floating suspension."
+            }
+          ],
+          "collapsed": false,
+          "annotation": "This progression uses strategic inversions, bitonality, modal borrowing, and altered tones for an unconventional yet highly musical narrative."
+        }
+      ]
+    },
+    {
+      "legacyPresetId": "claude37",
+      "name": "Sophisticated Jazz Progression (Claude 3.7 Sonnet)",
+      "description": "A multi-section progression with polytonal concepts and upper structure triads",
+      "sections": [
+        {
+          "name": "Section A - Ethereal Opening",
+          "chords": [
+            {
+              "name": "Ebmaj7(#11)/G",
+              "root": "Eb",
+              "type": "maj7",
+              "bass": "G",
+              "notes": [
+                "G2",
+                "Eb3",
+                "G3",
+                "Bb3",
+                "D4",
+                "A4"
+              ],
+              "s11": true,
+              "annotation": ""
+            },
+            {
+              "name": "G7(b9,#11)",
+              "root": "G",
+              "type": "7",
+              "bass": "",
+              "notes": [
+                "G2",
+                "F3",
+                "Ab3",
+                "B3",
+                "D4",
+                "Eb4"
+              ],
+              "b9": true,
+              "s11": true,
+              "annotation": ""
+            },
+            {
+              "name": "Cmaj7(b5)/Bb",
+              "root": "C",
+              "type": "maj7",
+              "bass": "Bb",
+              "notes": [
+                "Bb2",
+                "C3",
+                "E3",
+                "Gb3",
+                "B3",
+                "E4"
+              ],
+              "b5": true,
+              "annotation": ""
+            },
+            {
+              "name": "Abmaj9(#11)",
+              "root": "Ab",
+              "type": "maj9",
+              "bass": "",
+              "notes": [
+                "Ab2",
+                "C3",
+                "Eb3",
+                "G3",
+                "Bb3",
+                "D4"
+              ],
+              "s11": true,
+              "annotation": ""
+            },
+            {
+              "name": "F13(b9)",
+              "root": "F",
+              "type": "13",
+              "bass": "",
+              "notes": [
+                "F2",
+                "Eb3",
+                "A3",
+                "C4",
+                "D4",
+                "Gb4"
+              ],
+              "b9": true,
+              "annotation": ""
+            },
+            {
+              "name": "E7alt/Bb",
+              "root": "E",
+              "type": "alt",
+              "bass": "Bb",
+              "notes": [
+                "Bb2",
+                "E3",
+                "G#3",
+                "D4",
+                "F#4",
+                "Bb4"
+              ],
+              "b9": true,
+              "s9": true,
+              "b5": true,
+              "s5": true,
+              "annotation": ""
+            },
+            {
+              "name": "Amaj7(#9)/D",
+              "root": "A",
+              "type": "maj7",
+              "bass": "D",
+              "notes": [
+                "D2",
+                "A3",
+                "C#3",
+                "E3",
+                "G#3",
+                "B#3"
+              ],
+              "s9": true,
+              "annotation": ""
+            },
+            {
+              "name": "Dbmaj7(#5,#11)",
+              "root": "Db",
+              "type": "maj7",
+              "bass": "",
+              "notes": [
+                "Db3",
+                "F3",
+                "A3",
+                "C4",
+                "G4"
+              ],
+              "s5": true,
+              "s11": true,
+              "annotation": ""
+            },
+            {
+              "name": "Gmaj7(b13)/C",
+              "root": "G",
+              "type": "maj7",
+              "bass": "C",
+              "notes": [
+                "C2",
+                "G3",
+                "B3",
+                "D4",
+                "F#4",
+                "Eb4"
+              ],
+              "b13": true,
+              "annotation": ""
+            },
+            {
+              "name": "C7(#9,b13)",
+              "root": "C",
+              "type": "7",
+              "bass": "",
+              "notes": [
+                "C3",
+                "E3",
+                "Bb3",
+                "D#4",
+                "Ab4"
+              ],
+              "s9": true,
+              "b13": true,
+              "annotation": ""
+            },
+            {
+              "name": "F#m11(b5)",
+              "root": "F#",
+              "type": "m11",
+              "bass": "",
+              "notes": [
+                "F#2",
+                "A3",
+                "C#4",
+                "E4",
+                "B4"
+              ],
+              "b5": true,
+              "annotation": ""
+            },
+            {
+              "name": "B7alt(add maj7)",
+              "root": "B",
+              "type": "alt",
+              "bass": "",
+              "notes": [
+                "B2",
+                "A#3",
+                "D#4",
+                "F4",
+                "Ab4",
+                "C5"
+              ],
+              "b9": true,
+              "s9": true,
+              "b5": true,
+              "s5": true,
+              "annotation": ""
+            }
+          ],
+          "collapsed": false,
+          "annotation": "Section A creates tension through upper-structure triads over unexpected bass notes and unresolved dissonance. The progression uses quartal harmony and borrowed chords that defy traditional resolution."
+        },
+        {
+          "name": "Section B - Chromatic Metamorphosis",
+          "chords": [
+            {
+              "name": "Dmaj9(#11)",
+              "root": "D",
+              "type": "maj9",
+              "bass": "",
+              "notes": [
+                "D2",
+                "F#3",
+                "A3",
+                "C#4",
+                "E4",
+                "G#4"
+              ],
+              "s11": true,
+              "annotation": ""
+            },
+            {
+              "name": "D#dim7(add13)",
+              "root": "D#",
+              "type": "dim7",
+              "bass": "",
+              "notes": [
+                "D#2",
+                "F#3",
+                "A3",
+                "C4",
+                "B4"
+              ],
+              "annotation": ""
+            },
+            {
+              "name": "Ebmaj13/F",
+              "root": "Eb",
+              "type": "maj13",
+              "bass": "F",
+              "notes": [
+                "F2",
+                "Eb3",
+                "G3",
+                "Bb3",
+                "D4",
+                "C5"
+              ],
+              "annotation": ""
+            },
+            {
+              "name": "F#7sus4(b9)/A",
+              "root": "F#",
+              "type": "7sus4",
+              "bass": "A",
+              "notes": [
+                "A2",
+                "F#3",
+                "B3",
+                "E4",
+                "G4"
+              ],
+              "b9": true,
+              "annotation": ""
+            },
+            {
+              "name": "Bbmaj7(#5)/D",
+              "root": "Bb",
+              "type": "maj7",
+              "bass": "D",
+              "notes": [
+                "D2",
+                "Bb3",
+                "D3",
+                "F3",
+                "A3"
+              ],
+              "s5": true,
+              "annotation": ""
+            },
+            {
+              "name": "D7(#9,#11,b13)",
+              "root": "D",
+              "type": "7",
+              "bass": "",
+              "notes": [
+                "D2",
+                "F#3",
+                "C4",
+                "F4",
+                "Ab4",
+                "B4"
+              ],
+              "s9": true,
+              "s11": true,
+              "b13": true,
+              "annotation": ""
+            },
+            {
+              "name": "G-6/9(#11)",
+              "root": "G",
+              "type": "6",
+              "bass": "",
+              "notes": [
+                "G2",
+                "Bb3",
+                "D3",
+                "Eb3",
+                "A3",
+                "C#4"
+              ],
+              "s11": true,
+              "annotation": ""
+            },
+            {
+              "name": "C#7alt(add maj7)",
+              "root": "C#",
+              "type": "alt",
+              "bass": "",
+              "notes": [
+                "C#3",
+                "C3",
+                "E3",
+                "G3",
+                "Bb3",
+                "D#4"
+              ],
+              "b9": true,
+              "s9": true,
+              "b5": true,
+              "s5": true,
+              "annotation": ""
+            },
+            {
+              "name": "Fmaj7(#9,#11)/A",
+              "root": "F",
+              "type": "maj7",
+              "bass": "A",
+              "notes": [
+                "A2",
+                "F3",
+                "A3",
+                "C4",
+                "E4",
+                "G#4",
+                "B4"
+              ],
+              "s9": true,
+              "s11": true,
+              "annotation": ""
+            },
+            {
+              "name": "Ab13(#11,b9)",
+              "root": "Ab",
+              "type": "13",
+              "bass": "",
+              "notes": [
+                "Ab2",
+                "G3",
+                "C4",
+                "Eb4",
+                "Gb4",
+                "D4"
+              ],
+              "s11": true,
+              "b9": true,
+              "annotation": ""
+            },
+            {
+              "name": "Dbmaj9(add6)/F",
+              "root": "Db",
+              "type": "maj9",
+              "bass": "F",
+              "notes": [
+                "F2",
+                "Db3",
+                "F3",
+                "Ab3",
+                "C4",
+                "Eb4",
+                "Bb4"
+              ],
+              "annotation": ""
+            },
+            {
+              "name": "Bm11(b5)/F#",
+              "root": "B",
+              "type": "m11",
+              "bass": "F#",
+              "notes": [
+                "F#2",
+                "B3",
+                "D4",
+                "F4",
+                "A4",
+                "E5"
+              ],
+              "b5": true,
+              "annotation": ""
+            }
+          ],
+          "collapsed": false,
+          "annotation": "Section B explores chromatic movement with unconventional voice leading. The progression uses polychords and applies the concept of constant structure through chromatic shifts."
+        },
+        {
+          "name": "Section C - Polytonal Resolution",
+          "chords": [
+            {
+              "name": "E7sus4(b9,13)/A",
+              "root": "E",
+              "type": "7sus4",
+              "bass": "A",
+              "notes": [
+                "A2",
+                "E3",
+                "A3",
+                "B3",
+                "D4",
+                "F4",
+                "C5"
+              ],
+              "b9": true,
+              "annotation": ""
+            },
+            {
+              "name": "A7(#9,#5)/D",
+              "root": "A",
+              "type": "7",
+              "bass": "D",
+              "notes": [
+                "D2",
+                "A3",
+                "C#4",
+                "E4",
+                "G4",
+                "B#4"
+              ],
+              "s9": true,
+              "s5": true,
+              "annotation": ""
+            },
+            {
+              "name": "Dmaj9(b5)/G",
+              "root": "D",
+              "type": "maj9",
+              "bass": "G",
+              "notes": [
+                "G2",
+                "D3",
+                "F#3",
+                "Ab3",
+                "C#4",
+                "E4"
+              ],
+              "b5": true,
+              "annotation": ""
+            },
+            {
+              "name": "Gb13(#11)",
+              "root": "Gb",
+              "type": "13",
+              "bass": "",
+              "notes": [
+                "Gb2",
+                "Bb3",
+                "Db4",
+                "Fb4",
+                "B4",
+                "Eb5"
+              ],
+              "s11": true,
+              "annotation": ""
+            },
+            {
+              "name": "Cmaj7(#9,#11)/E",
+              "root": "C",
+              "type": "maj7",
+              "bass": "E",
+              "notes": [
+                "E2",
+                "C3",
+                "E3",
+                "G3",
+                "B3",
+                "D#4",
+                "F#4"
+              ],
+              "s9": true,
+              "s11": true,
+              "annotation": ""
+            },
+            {
+              "name": "E7alt(add4)",
+              "root": "E",
+              "type": "alt",
+              "bass": "",
+              "notes": [
+                "E2",
+                "G#3",
+                "D4",
+                "F4",
+                "Ab4",
+                "A4"
+              ],
+              "b9": true,
+              "s9": true,
+              "b5": true,
+              "s5": true,
+              "annotation": ""
+            },
+            {
+              "name": "Am11(maj7)/D",
+              "root": "A",
+              "type": "m11",
+              "bass": "D",
+              "notes": [
+                "D2",
+                "A3",
+                "C4",
+                "E4",
+                "G4",
+                "G#4"
+              ],
+              "annotation": ""
+            },
+            {
+              "name": "D13(b9,#11)",
+              "root": "D",
+              "type": "13",
+              "bass": "",
+              "notes": [
+                "D2",
+                "F#3",
+                "C4",
+                "Eb4",
+                "G#4",
+                "B4"
+              ],
+              "b9": true,
+              "s11": true,
+              "annotation": ""
+            },
+            {
+              "name": "Gmaj13(#11)/B",
+              "root": "G",
+              "type": "maj13",
+              "bass": "B",
+              "notes": [
+                "B2",
+                "G3",
+                "B3",
+                "D4",
+                "F#4",
+                "A4",
+                "C#5"
+              ],
+              "s11": true,
+              "annotation": ""
+            },
+            {
+              "name": "B7(b9,b5,add11)",
+              "root": "B",
+              "type": "7",
+              "bass": "",
+              "notes": [
+                "B2",
+                "D#3",
+                "A3",
+                "C3",
+                "E4",
+                "F4"
+              ],
+              "b9": true,
+              "b5": true,
+              "annotation": ""
+            },
+            {
+              "name": "Em9(maj7)",
+              "root": "E",
+              "type": "m9",
+              "bass": "",
+              "notes": [
+                "E3",
+                "G3",
+                "B3",
+                "D#4",
+                "F#4"
+              ],
+              "annotation": ""
+            },
+            {
+              "name": "Abmaj7(#9,#5)",
+              "root": "Ab",
+              "type": "maj7",
+              "bass": "",
+              "notes": [
+                "Ab2",
+                "C3",
+                "Eb3",
+                "G3",
+                "B3",
+                "C5"
+              ],
+              "s9": true,
+              "s5": true,
+              "annotation": ""
+            }
+          ],
+          "collapsed": false,
+          "annotation": "Section C employs polytonal concepts with upper structure triads against pedal points, creating harmonic ambiguity. The progression concludes with deceptive resolution."
+        },
+        {
+          "name": "Extended Turnaround",
+          "chords": [
+            {
+              "name": "Fmaj9(#5)/A",
+              "root": "F",
+              "type": "maj9",
+              "bass": "A",
+              "notes": [
+                "A2",
+                "F3",
+                "A3",
+                "C4",
+                "E4",
+                "G4",
+                "C#5"
+              ],
+              "s5": true,
+              "annotation": ""
+            },
+            {
+              "name": "F#7(b9,#11)/A#",
+              "root": "F#",
+              "type": "7",
+              "bass": "A#",
+              "notes": [
+                "A#2",
+                "F#3",
+                "A#3",
+                "C#4",
+                "E4",
+                "G4",
+                "C5"
+              ],
+              "b9": true,
+              "s11": true,
+              "annotation": ""
+            },
+            {
+              "name": "Bmaj13(b5)",
+              "root": "B",
+              "type": "maj13",
+              "bass": "",
+              "notes": [
+                "B2",
+                "D#3",
+                "F4",
+                "A#4",
+                "C#5",
+                "G#5"
+              ],
+              "b5": true,
+              "annotation": ""
+            },
+            {
+              "name": "E7alt(add maj7)",
+              "root": "E",
+              "type": "alt",
+              "bass": "",
+              "notes": [
+                "E2",
+                "D#3",
+                "G#3",
+                "Bb3",
+                "D4",
+                "G4"
+              ],
+              "b9": true,
+              "s9": true,
+              "b5": true,
+              "s5": true,
+              "annotation": ""
+            },
+            {
+              "name": "Amaj9(#11)/C#",
+              "root": "A",
+              "type": "maj9",
+              "bass": "C#",
+              "notes": [
+                "C#2",
+                "A3",
+                "C#4",
+                "E4",
+                "G#4",
+                "B4",
+                "D#5"
+              ],
+              "s11": true,
+              "annotation": ""
+            },
+            {
+              "name": "D13(b9,#11)/F#",
+              "root": "D",
+              "type": "13",
+              "bass": "F#",
+              "notes": [
+                "F#2",
+                "D3",
+                "F#3",
+                "A3",
+                "C4",
+                "Eb4",
+                "G#4"
+              ],
+              "b9": true,
+              "s11": true,
+              "annotation": ""
+            },
+            {
+              "name": "G7sus4(b13,9)",
+              "root": "G",
+              "type": "7sus4",
+              "bass": "",
+              "notes": [
+                "G2",
+                "D3",
+                "F3",
+                "A3",
+                "C4",
+                "Eb4"
+              ],
+              "b13": true,
+              "annotation": ""
+            },
+            {
+              "name": "C#7alt",
+              "root": "C#",
+              "type": "alt",
+              "bass": "",
+              "notes": [
+                "C#3",
+                "F3",
+                "G3",
+                "B3",
+                "E4"
+              ],
+              "b9": true,
+              "s9": true,
+              "b5": true,
+              "s5": true,
+              "annotation": ""
+            },
+            {
+              "name": "Fmaj7(#9,#11,13)",
+              "root": "F",
+              "type": "maj7",
+              "bass": "",
+              "notes": [
+                "F2",
+                "A3",
+                "C4",
+                "E4",
+                "G#4",
+                "B4",
+                "D5"
+              ],
+              "s9": true,
+              "s11": true,
+              "annotation": ""
+            },
+            {
+              "name": "Bb13(#9,b5)",
+              "root": "Bb",
+              "type": "13",
+              "bass": "",
+              "notes": [
+                "Bb2",
+                "D3",
+                "Ab3",
+                "C#4",
+                "F4",
+                "A4"
+              ],
+              "s9": true,
+              "b5": true,
+              "annotation": ""
+            },
+            {
+              "name": "Ebmaj7(#5,9)",
+              "root": "Eb",
+              "type": "maj7",
+              "bass": "",
+              "notes": [
+                "Eb2",
+                "G3",
+                "Bb3",
+                "D4",
+                "F#4",
+                "F4"
+              ],
+              "s5": true,
+              "annotation": ""
+            },
+            {
+              "name": "Am11(b5)/E",
+              "root": "A",
+              "type": "m11",
+              "bass": "E",
+              "notes": [
+                "E2",
+                "A3",
+                "C4",
+                "Eb4",
+                "G4",
+                "D5"
+              ],
+              "b5": true,
+              "annotation": ""
+            }
+          ],
+          "collapsed": false,
+          "annotation": "The extended turnaround incorporates distant key relationships with chromatic median movements and upper structure triads to create a sophisticated harmonic conclusion."
+        }
+      ]
+    }
+  ]
+}
+

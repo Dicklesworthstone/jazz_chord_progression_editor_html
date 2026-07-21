@@ -1,0 +1,712 @@
+{
+  "schema": "changes.ui.u0-contract.v1",
+  "package": "U0",
+  "contractVersion": 1,
+  "beadId": "jcpe-milestone-reliable-studio-l3a.9.1",
+  "description": "Independent authority for the source-owned Preact/CSS component library, responsive studio shell, focus/dismissal behavior, accessibility states, deterministic limits, and UI-to-application boundary.",
+  "companions": [
+    "primitive-state-matrix.json",
+    "provenance-ledger.json",
+    "shell-state-matrix.json",
+    "trace-ledger.json"
+  ],
+  "reviewedFileSha256": {
+    "primitive-state-matrix.json": "fec8a3d6b35d9e96d97715d66ae2237da0b596438126c1566359964277fa0ac3",
+    "provenance-ledger.json": "49e78607a8b6b9241f8c990b269eb5abb2a0df03fd142b853686b9b6de9d1535",
+    "shell-state-matrix.json": "e904601142d48d4f450b02ef3a3ea2489b9d909c0d83579f939b6c4e8ec9b3ec",
+    "trace-ledger.json": "08b6cf4caba9b21e5e28d80f6bcc5963ddc9c5143206bf3bf6926339d992872d"
+  },
+  "identities": {
+    "designSystem": {
+      "id": "changes.ui.design-system",
+      "version": 1
+    },
+    "interaction": {
+      "id": "changes.ui.interaction",
+      "version": 1
+    },
+    "overlay": {
+      "id": "changes.ui.overlay",
+      "version": 1
+    },
+    "responsiveShell": {
+      "id": "changes.ui.responsive-shell",
+      "version": 1
+    },
+    "galleryExclusion": {
+      "id": "changes.ui.gallery-exclusion",
+      "version": 1
+    }
+  },
+  "tokenDefinitions": {
+    "color": {
+      "--background": "#0b0d10",
+      "--surface-app": "#0b0d10",
+      "--surface-header": "#101318",
+      "--surface-rail": "#11151b",
+      "--surface-chart": "#151a21",
+      "--surface-panel": "#191f27",
+      "--surface-elevated": "#202832",
+      "--surface-sunken": "#080a0d",
+      "--surface-overlay": "rgb(3 5 8 / 0.72)",
+      "--text-primary": "#f4f6f8",
+      "--text-muted": "#aab3bf",
+      "--text-subtle": "#8793a2",
+      "--text-inverse": "#0b0d10",
+      "--border-default": "#303946",
+      "--border-strong": "#657487",
+      "--action-primary": "#d6b15f",
+      "--action-primary-hover": "#e3c477",
+      "--action-secondary": "#26313d",
+      "--state-info": "#75b7ff",
+      "--state-success": "#70d69b",
+      "--state-warning": "#f3c66c",
+      "--state-error": "#ff8c8c",
+      "--state-selected": "#375a72",
+      "--focus-ring": "#8bc7ff"
+    },
+    "typography": {
+      "--font-ui": "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      "--font-mono": "ui-monospace, 'SFMono-Regular', Consolas, 'Liberation Mono', monospace",
+      "--text-xs": "0.75rem",
+      "--text-sm": "0.875rem",
+      "--text-md": "1rem",
+      "--text-lg": "1.125rem",
+      "--text-xl": "1.5rem",
+      "--line-tight": "1.25",
+      "--line-normal": "1.5"
+    },
+    "space": {
+      "--space-0": "0",
+      "--space-1": "0.25rem",
+      "--space-2": "0.5rem",
+      "--space-3": "0.75rem",
+      "--space-4": "1rem",
+      "--space-5": "1.25rem",
+      "--space-6": "1.5rem",
+      "--space-8": "2rem",
+      "--space-10": "2.5rem",
+      "--space-12": "3rem"
+    },
+    "shape": {
+      "--radius-xs": "0.25rem",
+      "--radius-sm": "0.5rem",
+      "--radius-md": "0.625rem",
+      "--radius-lg": "0.9375rem",
+      "--border-width": "1px",
+      "--focus-width": "2px",
+      "--focus-offset": "2px"
+    },
+    "motion": {
+      "--motion-fast": "120ms",
+      "--motion-deliberate": "180ms",
+      "--motion-reduced": "0ms",
+      "--ease-standard": "cubic-bezier(0.2, 0, 0, 1)"
+    },
+    "layout": {
+      "--rail-library-inline": "17rem",
+      "--rail-harmony-inline": "20rem",
+      "--transport-min-block": "4.5rem",
+      "--sheet-context-reveal": "3rem",
+      "--control-min-block": "2.25rem",
+      "--touch-target": "2.75rem"
+    }
+  },
+  "publicSurface": {
+    "contractModule": "src/ui/ui-contract.ts",
+    "primitiveEntry": "src/ui/primitives/index.ts",
+    "shellEntry": "src/ui/shell/index.ts",
+    "compositionRoot": "src/main.tsx",
+    "galleryEntry": "tests/visual/u0-component-gallery.tsx",
+    "galleryReleaseDisposition": "test-only-excluded-from-release-artifact",
+    "renderInput": "application-selector-values",
+    "output": "typed-application-intents",
+    "directAdapterCalls": "forbidden"
+  },
+  "inventory": {
+    "total": 51,
+    "groups": [
+      {
+        "id": "foundations",
+        "count": 14,
+        "componentIds": [
+          "U0-CMP-001",
+          "U0-CMP-002",
+          "U0-CMP-003",
+          "U0-CMP-004",
+          "U0-CMP-005",
+          "U0-CMP-006",
+          "U0-CMP-007",
+          "U0-CMP-008",
+          "U0-CMP-009",
+          "U0-CMP-010",
+          "U0-CMP-011",
+          "U0-CMP-012",
+          "U0-CMP-013",
+          "U0-CMP-014"
+        ]
+      },
+      {
+        "id": "forms",
+        "count": 15,
+        "componentIds": [
+          "U0-CMP-015",
+          "U0-CMP-016",
+          "U0-CMP-017",
+          "U0-CMP-018",
+          "U0-CMP-019",
+          "U0-CMP-020",
+          "U0-CMP-021",
+          "U0-CMP-022",
+          "U0-CMP-023",
+          "U0-CMP-024",
+          "U0-CMP-025",
+          "U0-CMP-026",
+          "U0-CMP-027",
+          "U0-CMP-028",
+          "U0-CMP-029"
+        ]
+      },
+      {
+        "id": "navigation-and-commands",
+        "count": 10,
+        "componentIds": [
+          "U0-CMP-030",
+          "U0-CMP-031",
+          "U0-CMP-032",
+          "U0-CMP-033",
+          "U0-CMP-034",
+          "U0-CMP-035",
+          "U0-CMP-036",
+          "U0-CMP-037",
+          "U0-CMP-038",
+          "U0-CMP-039"
+        ]
+      },
+      {
+        "id": "overlays-and-feedback",
+        "count": 7,
+        "componentIds": [
+          "U0-CMP-040",
+          "U0-CMP-041",
+          "U0-CMP-042",
+          "U0-CMP-043",
+          "U0-CMP-044",
+          "U0-CMP-045",
+          "U0-CMP-046"
+        ]
+      },
+      {
+        "id": "structured-views",
+        "count": 5,
+        "componentIds": [
+          "U0-CMP-047",
+          "U0-CMP-048",
+          "U0-CMP-049",
+          "U0-CMP-050",
+          "U0-CMP-051"
+        ]
+      }
+    ]
+  },
+  "stateVocabulary": [
+    "default",
+    "hover",
+    "active",
+    "focus",
+    "disabled",
+    "loading",
+    "error",
+    "empty",
+    "dense",
+    "responsive",
+    "forced-colors",
+    "reduced-motion",
+    "200-percent-zoom",
+    "touch"
+  ],
+  "interactionStateVocabulary": [
+    "closed",
+    "open",
+    "selected",
+    "checked",
+    "indeterminate",
+    "expanded",
+    "collapsed",
+    "readonly",
+    "invalid",
+    "unavailable",
+    "stale"
+  ],
+  "focusPolicies": [
+    "browser-native",
+    "self",
+    "self-or-child",
+    "first-enabled-item",
+    "selected-item",
+    "explicit-initial-focus",
+    "roving-horizontal",
+    "roving-vertical",
+    "roving-both",
+    "normal-tab-sequence",
+    "restore-trigger-or-stable-fallback",
+    "programmatic-only",
+    "none"
+  ],
+  "dismissalPolicies": [
+    "not-dismissible",
+    "escape-and-visible-close",
+    "escape-visible-close-and-cancel",
+    "escape-and-outside-pointer",
+    "explicit-only",
+    "timeout-or-explicit",
+    "stale-trigger-stable-fallback"
+  ],
+  "limits": {
+    "maxSafeInteger": 9007199254740991,
+    "maxIdCodePoints": 128,
+    "maxRequestKindCodePoints": 64,
+    "maxLabelCodePoints": 160,
+    "maxTextValueCodePoints": 4096,
+    "maxKeywordCodePoints": 64,
+    "maxKbdKeyCodePoints": 32,
+    "maxFilenameCodePoints": 255,
+    "maxFragmentHrefCodePoints": 129,
+    "maxLocalHrefCodePoints": 2048,
+    "maxExactValueCodePoints": 128,
+    "maxModalScopes": 1,
+    "maxDismissAncestors": 8,
+    "maxNonmodalSurfaces": 4,
+    "maxFocusCandidates": 4096,
+    "maxReferenceIds": 64,
+    "maxDiagnostics": 64,
+    "maxDiagnosticPathSegments": 64,
+    "maxKbdKeys": 8,
+    "maxSkeletonLines": 20,
+    "maxTextareaRows": 40,
+    "maxRovingItems": 5000,
+    "maxSelectOptions": 200,
+    "maxComboboxOptions": 1000,
+    "maxMenuItems": 200,
+    "maxMenuDepth": 4,
+    "maxListboxOptions": 1000,
+    "maxRadioItems": 64,
+    "maxToggleItems": 64,
+    "maxCommandItems": 1000,
+    "maxCommandKeywords": 16,
+    "maxTabs": 64,
+    "maxBreadcrumbItems": 64,
+    "maxToolbarItems": 200,
+    "maxAccordionItems": 128,
+    "maxKeyValueItems": 1000,
+    "maxTreeItems": 5000,
+    "maxTreeDepth": 64,
+    "maxTableColumns": 64,
+    "maxTableRows": 5000,
+    "maxTableCells": 50000,
+    "maxResizablePanels": 8,
+    "maxTimelineItems": 5000,
+    "maxNoticeCenterItems": 32,
+    "maxVisibleNotices": 5,
+    "maxAccessibleNameCodePoints": 160,
+    "maxDescriptionCodePoints": 512,
+    "maxTooltipCodePoints": 256,
+    "maxTypeaheadCodePoints": 64,
+    "typeaheadResetMs": 700,
+    "tooltipPointerOpenDelayMs": 500,
+    "tooltipCloseDelayMs": 100,
+    "noticePresentationMs": 6000,
+    "pointerDragThresholdCssPx": 8,
+    "projectTouchTargetCssPx": 44,
+    "wcagTargetFloorCssPx": 24,
+    "focusRingCssPx": 2,
+    "focusRingOffsetCssPx": 2,
+    "compactBreakpointCssPx": 640,
+    "wideBreakpointCssPx": 1100,
+    "fastMotionMs": 120,
+    "deliberateMotionMs": 180,
+    "reducedMotionMs": 0
+  },
+  "workBounds": {
+    "focusCandidateVisits": "at-most-maxFocusCandidates-per-focus-transition",
+    "rovingFocusVisits": "at-most-one-complete-ordered-item-pass",
+    "typeaheadComparisons": "at-most-one-complete-ordered-item-pass-per-key",
+    "dismissalVisits": "at-most-maxDismissAncestors-in-one-owner-chain",
+    "noticeDeduplicationComparisons": "at-most-maxVisibleNotices-per-enqueue",
+    "wallTimeCutoff": "forbidden"
+  },
+  "breakpointPolicy": {
+    "compact": "css-inline-size-below-640",
+    "medium": "css-inline-size-at-least-640-and-below-1100",
+    "wide": "css-inline-size-at-least-1100",
+    "selectionMechanism": "css-media-or-container-query-only",
+    "javascriptDeviceGuessing": "forbidden"
+  },
+  "ordering": {
+    "documentTab": "skip-link-header-library-chart-harmony-lens-transport",
+    "componentInventory": "group-order-then-numeric-component-id",
+    "dismissal": "topmost-active-layer-first",
+    "modal": "exactly-one-active-modal-scope",
+    "roving": "current-visual-order-with-disabled-items-skipped",
+    "notices": "increasing-application-sequence-with-deduplication",
+    "focusRepair": "same-stable-id-next-previous-container-chart",
+    "diagnostics": "fixture-id-then-code"
+  },
+  "refusalCodes": [
+    "ui.id_invalid",
+    "ui.accessible_name_required",
+    "ui.description_invalid",
+    "ui.collection_limit",
+    "ui.duplicate_item_id",
+    "ui.selection_invalid",
+    "ui.value_malformed",
+    "ui.range_invalid",
+    "ui.step_invalid",
+    "ui.disabled",
+    "ui.busy",
+    "ui.cancelled",
+    "ui.stale_revision",
+    "ui.stale_owner",
+    "ui.overlay_conflict",
+    "ui.modal_scope_limit",
+    "ui.dismiss_depth_limit",
+    "ui.focus_target_missing",
+    "ui.focus_candidate_limit",
+    "ui.application_intent_required"
+  ],
+  "policies": {
+    "runtime": "native-preact-and-css-source-owned-no-compat-layer",
+    "assets": "system-fonts-and-inline-reviewed-svg-only",
+    "tokens": "semantic-css-custom-properties-no-state-hex-at-call-sites",
+    "stateCommunication": "text-icon-shape-or-position-plus-color",
+    "keyboard": "all-actions-pointer-independent-no-global-shortcut-inside-editing-controls",
+    "focus": "visible-two-css-pixel-solid-perimeter-with-two-css-pixel-offset",
+    "touch": "project-primary-and-standalone-targets-at-least-44-css-pixels",
+    "externalTargetCriterion": "wcag-2.2-sc-2.5.8-is-24-css-pixels-with-defined-exceptions",
+    "reflow": "actual-320-css-pixel-viewport-and-separate-200-percent-zoom-cases",
+    "externalReflowCriterion": "wcag-2.2-sc-1.4.10-320-css-pixel-equivalent-is-400-percent-at-1280-css-pixels",
+    "motion": "reduced-motion-removes-pulse-large-transform-and-smooth-scroll",
+    "tooltipTiming": "keyboard-focus-opens-immediately-pointer-hover-opens-after-500ms-and-Escape-closes-without-moving-trigger-focus",
+    "statusOwnership": "StatusPill-is-static-and-live-announcement-belongs-to-the-owning-application-state-region",
+    "checkboxMixedState": "change-event-retains-previousValue-mixed-and-requires-an-explicit-boolean-commit-with-no-hidden-prior-state-guess",
+    "dataTableSort": "sort-change-carries-both-columnId-and-ascending-or-descending-direction-or-null",
+    "overlays": "one-modal-scope-topmost-dismissible-surface-escape-visible-close-and-focus-return",
+    "responsive": "content-width-css-queries-never-user-agent-or-javascript-device-guess",
+    "gallery": "test-only-and-absent-from-standalone-artifact",
+    "accessibilityGate": "zero-unreviewed-serious-or-critical-violations"
+  },
+  "coverageSummary": {
+    "components": 51,
+    "primitiveCases": 94,
+    "galleryCells": 714,
+    "topologyCases": 13,
+    "menuTopologyCases": 7,
+    "contrastCases": 9,
+    "viewportCases": 5,
+    "environmentCases": 8,
+    "overlayCases": 12,
+    "systemStateCases": 20,
+    "shellRefusalCases": 10,
+    "traces": 20,
+    "authorities": 9
+  },
+  "independence": {
+    "author": "u0-specification-fixture-author",
+    "productionImplementationAvailableWhenAuthored": false,
+    "oracle": "reviewed-semantic-and-interaction-state-matrices",
+    "productionImportsForbidden": true,
+    "expectedValuesGenerated": false,
+    "productionOutputUsed": false
+  },
+  "handoff": {
+    "implementationMayConsultMarkdownPlan": false,
+    "mustUseReviewedFixtures": true,
+    "forbiddenShortcuts": [
+      "react-or-preact-compat",
+      "radix-tailwind-shadcn-package-or-css-runtime",
+      "cdn-font-icon-modal-or-drag-runtime",
+      "nested-modal-scope",
+      "javascript-device-detection",
+      "hue-only-or-hover-only-state",
+      "invalid-nested-interactive-control",
+      "zoom-blocking",
+      "direct-audio-storage-export-or-parser-call",
+      "production-generated-expectation",
+      "gallery-in-release-artifact"
+    ]
+  },
+  "expectedValuesGenerated": false,
+  "productionOutputUsed": false,
+  "allowedContrastPairs": [
+    {
+      "id": "primary-text-on-surfaces",
+      "foregrounds": [
+        "--text-primary"
+      ],
+      "backgrounds": [
+        "--background",
+        "--surface-app",
+        "--surface-header",
+        "--surface-rail",
+        "--surface-chart",
+        "--surface-panel",
+        "--surface-elevated",
+        "--surface-sunken"
+      ],
+      "minimumRatio": 4.5,
+      "purpose": "normal-text"
+    },
+    {
+      "id": "muted-text-on-surfaces",
+      "foregrounds": [
+        "--text-muted"
+      ],
+      "backgrounds": [
+        "--background",
+        "--surface-app",
+        "--surface-header",
+        "--surface-rail",
+        "--surface-chart",
+        "--surface-panel",
+        "--surface-elevated",
+        "--surface-sunken"
+      ],
+      "minimumRatio": 4.5,
+      "purpose": "normal-text"
+    },
+    {
+      "id": "subtle-text-on-surfaces",
+      "foregrounds": [
+        "--text-subtle"
+      ],
+      "backgrounds": [
+        "--background",
+        "--surface-app",
+        "--surface-header",
+        "--surface-rail",
+        "--surface-chart",
+        "--surface-panel",
+        "--surface-elevated",
+        "--surface-sunken"
+      ],
+      "minimumRatio": 4.5,
+      "purpose": "normal-text"
+    },
+    {
+      "id": "semantic-text-on-surfaces",
+      "foregrounds": [
+        "--state-info",
+        "--state-success",
+        "--state-warning",
+        "--state-error"
+      ],
+      "backgrounds": [
+        "--background",
+        "--surface-app",
+        "--surface-header",
+        "--surface-rail",
+        "--surface-chart",
+        "--surface-panel",
+        "--surface-elevated",
+        "--surface-sunken"
+      ],
+      "minimumRatio": 4.5,
+      "purpose": "normal-text-and-icons"
+    },
+    {
+      "id": "inverse-text-on-strong-fills",
+      "foregrounds": [
+        "--text-inverse"
+      ],
+      "backgrounds": [
+        "--action-primary",
+        "--action-primary-hover",
+        "--state-info",
+        "--state-success",
+        "--state-warning",
+        "--state-error"
+      ],
+      "minimumRatio": 4.5,
+      "purpose": "normal-text"
+    },
+    {
+      "id": "primary-text-on-secondary-action",
+      "foregrounds": [
+        "--text-primary"
+      ],
+      "backgrounds": [
+        "--action-secondary"
+      ],
+      "minimumRatio": 4.5,
+      "purpose": "normal-text"
+    },
+    {
+      "id": "primary-text-on-selection",
+      "foregrounds": [
+        "--text-primary"
+      ],
+      "backgrounds": [
+        "--state-selected"
+      ],
+      "minimumRatio": 4.5,
+      "purpose": "normal-text"
+    },
+    {
+      "id": "focus-on-surfaces",
+      "foregrounds": [
+        "--focus-ring"
+      ],
+      "backgrounds": [
+        "--background",
+        "--surface-app",
+        "--surface-header",
+        "--surface-rail",
+        "--surface-chart",
+        "--surface-panel",
+        "--surface-elevated",
+        "--surface-sunken"
+      ],
+      "minimumRatio": 3,
+      "purpose": "focus-indicator"
+    },
+    {
+      "id": "strong-border-on-surfaces",
+      "foregrounds": [
+        "--border-strong"
+      ],
+      "backgrounds": [
+        "--background",
+        "--surface-app",
+        "--surface-header",
+        "--surface-rail",
+        "--surface-chart",
+        "--surface-panel",
+        "--surface-elevated",
+        "--surface-sunken"
+      ],
+      "minimumRatio": 3,
+      "purpose": "component-boundary"
+    }
+  ],
+  "publicCollectionLimits": {
+    "commonDescribedBy": "maxReferenceIds",
+    "diagnosticPath": "maxDiagnosticPathSegments",
+    "diagnostics": "maxDiagnostics",
+    "kbdKeys": "maxKbdKeys",
+    "fieldDescriptionIds": "maxReferenceIds",
+    "fieldErrorIds": "maxReferenceIds",
+    "selectOptions": "maxSelectOptions",
+    "comboboxOptions": "maxComboboxOptions",
+    "listboxOptions": "maxListboxOptions",
+    "listboxSelectedIds": "maxListboxOptions",
+    "radioOptions": "maxRadioItems",
+    "toggleItems": "maxToggleItems",
+    "togglePressedIds": "maxToggleItems",
+    "tabs": "maxTabs",
+    "breadcrumbs": "maxBreadcrumbItems",
+    "toolbarItemIds": "maxToolbarItems",
+    "menuFlattenedItems": "maxMenuItems",
+    "commandItems": "maxCommandItems",
+    "commandKeywords": "maxCommandKeywords",
+    "accordionItems": "maxAccordionItems",
+    "accordionExpandedIds": "maxAccordionItems",
+    "rovingItemIds": "maxRovingItems",
+    "rovingDisabledIds": "maxRovingItems",
+    "overlayDescendants": "maxNonmodalSurfaces",
+    "overlayDismissAncestors": "maxDismissAncestors",
+    "visibleNotices": "maxVisibleNotices",
+    "keyValueItems": "maxKeyValueItems",
+    "tableColumns": "maxTableColumns",
+    "tableRows": "maxTableRows",
+    "tableCells": "maxTableCells",
+    "treeNodes": "maxTreeItems",
+    "treeRootIds": "maxTreeItems",
+    "treeChildIds": "maxTreeItems",
+    "resizablePanels": "maxResizablePanels",
+    "resizablePanelSizes": "maxResizablePanels",
+    "resizableCollapsedIds": "maxResizablePanels",
+    "timelineItems": "maxTimelineItems"
+  },
+  "publicTextLimits": {
+    "idsAndIdReferences": "maxIdCodePoints",
+    "requestKinds": "maxRequestKindCodePoints",
+    "accessibleNamesAndTitles": "maxAccessibleNameCodePoints",
+    "visibleLabelsAndRecoveryActions": "maxLabelCodePoints",
+    "descriptionsErrorsMessagesPlaceholdersAndValueText": "maxDescriptionCodePoints",
+    "rawTextValuesAndQueries": "maxTextValueCodePoints",
+    "tooltipText": "maxTooltipCodePoints",
+    "commandKeywords": "maxKeywordCodePoints",
+    "kbdKeys": "maxKbdKeyCodePoints",
+    "filenames": "maxFilenameCodePoints",
+    "fragmentHrefs": "maxFragmentHrefCodePoints",
+    "blobHrefs": "maxLocalHrefCodePoints",
+    "exactDisplayValues": "maxExactValueCodePoints",
+    "tableCellText": "maxDescriptionCodePoints"
+  },
+  "treeTopologyPolicy": {
+    "structure": "rooted-forest",
+    "rootParentId": null,
+    "uniqueNodeIds": true,
+    "uniqueRootIds": true,
+    "uniqueChildIdsPerParent": true,
+    "exactlyOneParentPerNonRoot": true,
+    "parentChildReferencesAreReciprocal": true,
+    "allNodesReachableFromRoots": true,
+    "cycles": "refuse-ui.value_malformed",
+    "missingReferences": "refuse-ui.value_malformed",
+    "maximumDepth": 64,
+    "traversalBound": 5000
+  },
+  "publicNumericPolicy": {
+    "identifiersRevisionsSequencesAndCounts": "integer-from-0-through-maxSafeInteger-unless-a-smaller-bound-applies",
+    "coordinatesAndScalarValues": "finite-numbers",
+    "textareaRows": "integer-from-1-through-maxTextareaRows",
+    "skeletonLines": "integer-from-1-through-maxSkeletonLines",
+    "percentages": "finite-from-0-through-100-inclusive",
+    "rangeOrder": "min-less-than-or-equal-to-value-less-than-or-equal-to-max",
+    "steps": "finite-and-greater-than-zero",
+    "hiddenNoticeCount": "integer-from-0-through-maxNoticeCenterItems-minus-maxVisibleNotices"
+  },
+  "opaqueValuePolicy": {
+    "genericContent": "caller-owned-and-not-traversed-by-u0",
+    "applicationIntentPayload": "a0-owned-and-not-traversed-by-u0",
+    "asyncReadyValue": "selector-owner-bounded-and-not-traversed-by-u0",
+    "dataTableRow": "caller-owned; u0-visits-only-rowId-and-renderText-results"
+  },
+  "menuTopologyPolicy": {
+    "flattenedItemLimit": 200,
+    "maximumSubmenuDepth": 4,
+    "countIncludesSeparatorsAndNestedItems": true,
+    "uniqueIdsAcrossFlattenedTree": true,
+    "cycles": "refuse-ui.value_malformed",
+    "repeatedObjectIdentity": "refuse-ui.value_malformed",
+    "traversal": "caller-depth-first-order-with-visited-set"
+  },
+  "overlayKindModes": {
+    "tooltip": [
+      "nonmodal"
+    ],
+    "menu": [
+      "nonmodal"
+    ],
+    "context-menu": [
+      "nonmodal"
+    ],
+    "popover": [
+      "nonmodal"
+    ],
+    "command-palette": [
+      "modal"
+    ],
+    "dialog": [
+      "modal"
+    ],
+    "alert-dialog": [
+      "modal"
+    ],
+    "sheet": [
+      "nonmodal",
+      "modal"
+    ]
+  }
+}

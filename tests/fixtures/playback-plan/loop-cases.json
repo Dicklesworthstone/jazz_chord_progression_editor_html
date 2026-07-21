@@ -1,0 +1,283 @@
+{
+  "schema": "changes.fixtures.p0-loop-cases.v1",
+  "fixtureVersion": "1.0.0",
+  "status": "independently-authored-pre-production",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "sourceCatalog": "source-catalog.json",
+  "baseDocumentRecipe": {
+    "documentId": "doc-p0-loop",
+    "tempoBpm": 120,
+    "meter": {"beatsPerBar": 4, "beatUnit": 4},
+    "sections": [
+      {
+        "sectionId": "section-p0-loop",
+        "voiceLeadingBoundary": "continue",
+        "measures": [
+          {
+            "measureId": "measure-p0-loop-1",
+            "completion": {"kind": "complete"},
+            "events": [
+              {"eventId": "event-p0-loop-a", "duration": {"numerator": 2, "denominator": 1}, "sourceRef": "P0-SOURCE-AUTO-CMAJ7"},
+              {"eventId": "event-p0-loop-b", "duration": {"numerator": 2, "denominator": 1}, "sourceRef": "P0-SOURCE-AUTO-DM7"}
+            ]
+          },
+          {
+            "measureId": "measure-p0-loop-silence",
+            "completion": {"kind": "empty"},
+            "events": []
+          },
+          {
+            "measureId": "measure-p0-loop-3",
+            "completion": {"kind": "complete"},
+            "events": [
+              {"eventId": "event-p0-loop-c", "duration": {"numerator": 4, "denominator": 1}, "sourceRef": "P0-SOURCE-AUTO-G7"}
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "sourceTimeline": [
+    {
+      "sourceOrdinal": 0,
+      "eventId": "event-p0-loop-a",
+      "sectionId": "section-p0-loop",
+      "measureId": "measure-p0-loop-1",
+      "sourceRef": "P0-SOURCE-AUTO-CMAJ7",
+      "sourceStartBeat": {"numerator": 0, "denominator": 1},
+      "sourceDurationBeats": {"numerator": 2, "denominator": 1},
+      "sourceStartTick": 0,
+      "sourceDurationTicks": 1920,
+      "pitches": [
+        {"step": "C", "alter": 0, "octave": 3},
+        {"step": "G", "alter": 0, "octave": 3},
+        {"step": "B", "alter": 0, "octave": 3},
+        {"step": "E", "alter": 0, "octave": 4}
+      ],
+      "midiPitches": [48, 55, 59, 64]
+    },
+    {
+      "sourceOrdinal": 1,
+      "eventId": "event-p0-loop-b",
+      "sectionId": "section-p0-loop",
+      "measureId": "measure-p0-loop-1",
+      "sourceRef": "P0-SOURCE-AUTO-DM7",
+      "sourceStartBeat": {"numerator": 2, "denominator": 1},
+      "sourceDurationBeats": {"numerator": 2, "denominator": 1},
+      "sourceStartTick": 1920,
+      "sourceDurationTicks": 1920,
+      "pitches": [
+        {"step": "D", "alter": 0, "octave": 3},
+        {"step": "F", "alter": 0, "octave": 4},
+        {"step": "C", "alter": 0, "octave": 5}
+      ],
+      "midiPitches": [50, 65, 72]
+    },
+    {
+      "sourceOrdinal": 2,
+      "eventId": "event-p0-loop-c",
+      "sectionId": "section-p0-loop",
+      "measureId": "measure-p0-loop-3",
+      "sourceRef": "P0-SOURCE-AUTO-G7",
+      "sourceStartBeat": {"numerator": 8, "denominator": 1},
+      "sourceDurationBeats": {"numerator": 4, "denominator": 1},
+      "sourceStartTick": 7680,
+      "sourceDurationTicks": 3840,
+      "pitches": [
+        {"step": "G", "alter": 0, "octave": 3},
+        {"step": "D", "alter": 0, "octave": 4},
+        {"step": "F", "alter": 0, "octave": 4},
+        {"step": "B", "alter": 0, "octave": 4}
+      ],
+      "midiPitches": [55, 62, 65, 71]
+    }
+  ],
+  "emissionExpansionPolicy": {
+    "sourceFields": "sourceOrdinal selects the exact sourceTimeline record; eventId, sectionId, measureId, source beats/ticks, pitches, and midiPitches are copied unchanged from that independent record.",
+    "outputOrdinal": "ordinal is zero-based within emitted events after exclusions.",
+    "gate": "gateDurationTicks = durationTicks - min(24, durationTicks - 1); gateDurationBeats is gateDurationTicks/960 reduced.",
+    "velocity": 96,
+    "schema": "changes.playback.event.v1",
+    "eventOrder": "sourceOrdinal ascending; loop clipping never reorders."
+  },
+  "commonExpectedPlan": {
+    "sourceDocumentId": "doc-p0-loop",
+    "midiPpq": 960,
+    "tempoBpm": 120,
+    "meter": {"beatsPerBar": 4, "beatUnit": 4},
+    "totalBeats": {"numerator": 12, "denominator": 1},
+    "totalTicks": 11520
+  },
+  "cases": [
+    {
+      "id": "P0-LOOP-001",
+      "description": "Null loop emits every source event ordinarily and preserves the four-beat silent measure in total time.",
+      "loop": null,
+      "expected": {
+        "ok": true,
+        "loop": null,
+        "loopTicks": null,
+        "emissions": [
+          {"ordinal": 0, "sourceOrdinal": 0, "sourceOffsetBeats": null, "sourceOffsetTicks": null, "startBeat": {"numerator": 0, "denominator": 1}, "durationBeats": {"numerator": 2, "denominator": 1}, "gateDurationBeats": {"numerator": 79, "denominator": 40}, "startTick": 0, "durationTicks": 1920, "gateDurationTicks": 1896, "articulation": "ordinary"},
+          {"ordinal": 1, "sourceOrdinal": 1, "sourceOffsetBeats": null, "sourceOffsetTicks": null, "startBeat": {"numerator": 2, "denominator": 1}, "durationBeats": {"numerator": 2, "denominator": 1}, "gateDurationBeats": {"numerator": 79, "denominator": 40}, "startTick": 1920, "durationTicks": 1920, "gateDurationTicks": 1896, "articulation": "ordinary"},
+          {"ordinal": 2, "sourceOrdinal": 2, "sourceOffsetBeats": null, "sourceOffsetTicks": null, "startBeat": {"numerator": 8, "denominator": 1}, "durationBeats": {"numerator": 4, "denominator": 1}, "gateDurationBeats": {"numerator": 159, "denominator": 40}, "startTick": 7680, "durationTicks": 3840, "gateDurationTicks": 3816, "articulation": "ordinary"}
+        ]
+      },
+      "traceIds": ["P0-TRACE-LOOP", "P0-TRACE-TIMELINE", "P0-TRACE-GATE"],
+      "authorityIds": ["P0-AUTH-CONTRACT", "P0-AUTH-POLICY"]
+    },
+    {
+      "id": "P0-LOOP-002",
+      "description": "A full-chart loop changes only loop metadata; source-boundary events remain ordinary.",
+      "loop": {"start": {"numerator": 0, "denominator": 1}, "end": {"numerator": 12, "denominator": 1}},
+      "expected": {
+        "ok": true,
+        "loop": {"start": {"numerator": 0, "denominator": 1}, "end": {"numerator": 12, "denominator": 1}},
+        "loopTicks": {"start": 0, "end": 11520},
+        "emissionRef": "P0-LOOP-001"
+      },
+      "traceIds": ["P0-TRACE-LOOP", "P0-TRACE-MIDI"],
+      "authorityIds": ["P0-AUTH-CONTRACT", "P0-AUTH-POLICY"]
+    },
+    {
+      "id": "P0-LOOP-003",
+      "description": "An event ending at loop start and an event starting at loop end are excluded.",
+      "loop": {"start": {"numerator": 2, "denominator": 1}, "end": {"numerator": 4, "denominator": 1}},
+      "expected": {
+        "ok": true,
+        "loopTicks": {"start": 1920, "end": 3840},
+        "emissions": [
+          {"ordinal": 0, "sourceOrdinal": 1, "sourceOffsetBeats": null, "sourceOffsetTicks": null, "startBeat": {"numerator": 2, "denominator": 1}, "durationBeats": {"numerator": 2, "denominator": 1}, "gateDurationBeats": {"numerator": 79, "denominator": 40}, "startTick": 1920, "durationTicks": 1920, "gateDurationTicks": 1896, "articulation": "ordinary"}
+        ]
+      },
+      "traceIds": ["P0-TRACE-LOOP", "P0-TRACE-SOURCE-IDS"],
+      "authorityIds": ["P0-AUTH-POLICY", "P0-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "P0-LOOP-004",
+      "description": "Start overlap restarts the first event and end overlap clips the second event.",
+      "loop": {"start": {"numerator": 1, "denominator": 1}, "end": {"numerator": 3, "denominator": 1}},
+      "expected": {
+        "ok": true,
+        "loopTicks": {"start": 960, "end": 2880},
+        "emissions": [
+          {"ordinal": 0, "sourceOrdinal": 0, "sourceOffsetBeats": {"numerator": 1, "denominator": 1}, "sourceOffsetTicks": 960, "startBeat": {"numerator": 1, "denominator": 1}, "durationBeats": {"numerator": 1, "denominator": 1}, "gateDurationBeats": {"numerator": 39, "denominator": 40}, "startTick": 960, "durationTicks": 960, "gateDurationTicks": 936, "articulation": "loop-restart"},
+          {"ordinal": 1, "sourceOrdinal": 1, "sourceOffsetBeats": null, "sourceOffsetTicks": null, "startBeat": {"numerator": 2, "denominator": 1}, "durationBeats": {"numerator": 1, "denominator": 1}, "gateDurationBeats": {"numerator": 39, "denominator": 40}, "startTick": 1920, "durationTicks": 960, "gateDurationTicks": 936, "articulation": "loop-end-clipped"}
+        ]
+      },
+      "traceIds": ["P0-TRACE-LOOP", "P0-TRACE-GATE", "P0-TRACE-SOURCE-IDS"],
+      "authorityIds": ["P0-AUTH-POLICY", "P0-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "P0-LOOP-005",
+      "description": "One source event spanning both loop boundaries is both restarted and end-clipped.",
+      "loop": {"start": {"numerator": 1, "denominator": 1}, "end": {"numerator": 3, "denominator": 2}},
+      "expected": {
+        "ok": true,
+        "loopTicks": {"start": 960, "end": 1440},
+        "emissions": [
+          {"ordinal": 0, "sourceOrdinal": 0, "sourceOffsetBeats": {"numerator": 1, "denominator": 1}, "sourceOffsetTicks": 960, "startBeat": {"numerator": 1, "denominator": 1}, "durationBeats": {"numerator": 1, "denominator": 2}, "gateDurationBeats": {"numerator": 19, "denominator": 40}, "startTick": 960, "durationTicks": 480, "gateDurationTicks": 456, "articulation": "loop-restart-end-clipped"}
+        ]
+      },
+      "traceIds": ["P0-TRACE-LOOP", "P0-TRACE-GATE"],
+      "authorityIds": ["P0-AUTH-POLICY"]
+    },
+    {
+      "id": "P0-LOOP-006",
+      "description": "A loop may span restarted sound, a full silent measure, and a clipped later event.",
+      "loop": {"start": {"numerator": 3, "denominator": 1}, "end": {"numerator": 9, "denominator": 1}},
+      "expected": {
+        "ok": true,
+        "loopTicks": {"start": 2880, "end": 8640},
+        "emissions": [
+          {"ordinal": 0, "sourceOrdinal": 1, "sourceOffsetBeats": {"numerator": 1, "denominator": 1}, "sourceOffsetTicks": 960, "startBeat": {"numerator": 3, "denominator": 1}, "durationBeats": {"numerator": 1, "denominator": 1}, "gateDurationBeats": {"numerator": 39, "denominator": 40}, "startTick": 2880, "durationTicks": 960, "gateDurationTicks": 936, "articulation": "loop-restart"},
+          {"ordinal": 1, "sourceOrdinal": 2, "sourceOffsetBeats": null, "sourceOffsetTicks": null, "startBeat": {"numerator": 8, "denominator": 1}, "durationBeats": {"numerator": 1, "denominator": 1}, "gateDurationBeats": {"numerator": 39, "denominator": 40}, "startTick": 7680, "durationTicks": 960, "gateDurationTicks": 936, "articulation": "loop-end-clipped"}
+        ]
+      },
+      "traceIds": ["P0-TRACE-LOOP", "P0-TRACE-EMPTY-PARTIAL", "P0-TRACE-GATE"],
+      "authorityIds": ["P0-AUTH-DOMAIN", "P0-AUTH-POLICY"]
+    },
+    {
+      "id": "P0-LOOP-007",
+      "description": "A valid loop wholly inside an empty measure emits no events and invents no rest event.",
+      "loop": {"start": {"numerator": 4, "denominator": 1}, "end": {"numerator": 8, "denominator": 1}},
+      "expected": {
+        "ok": true,
+        "loopTicks": {"start": 3840, "end": 7680},
+        "emissions": []
+      },
+      "traceIds": ["P0-TRACE-LOOP", "P0-TRACE-EMPTY-PARTIAL"],
+      "authorityIds": ["P0-AUTH-DOMAIN", "P0-AUTH-POLICY"]
+    },
+    {
+      "id": "P0-LOOP-008",
+      "description": "A loop ending at the silent-bar boundary does not include the later event.",
+      "loop": {"start": {"numerator": 0, "denominator": 1}, "end": {"numerator": 8, "denominator": 1}},
+      "expected": {
+        "ok": true,
+        "loopTicks": {"start": 0, "end": 7680},
+        "emissions": [
+          {"ordinal": 0, "sourceOrdinal": 0, "sourceOffsetBeats": null, "sourceOffsetTicks": null, "startBeat": {"numerator": 0, "denominator": 1}, "durationBeats": {"numerator": 2, "denominator": 1}, "gateDurationBeats": {"numerator": 79, "denominator": 40}, "startTick": 0, "durationTicks": 1920, "gateDurationTicks": 1896, "articulation": "ordinary"},
+          {"ordinal": 1, "sourceOrdinal": 1, "sourceOffsetBeats": null, "sourceOffsetTicks": null, "startBeat": {"numerator": 2, "denominator": 1}, "durationBeats": {"numerator": 2, "denominator": 1}, "gateDurationBeats": {"numerator": 79, "denominator": 40}, "startTick": 1920, "durationTicks": 1920, "gateDurationTicks": 1896, "articulation": "ordinary"}
+        ]
+      },
+      "traceIds": ["P0-TRACE-LOOP", "P0-TRACE-EMPTY-PARTIAL"],
+      "authorityIds": ["P0-AUTH-POLICY"]
+    },
+    {
+      "id": "P0-LOOP-009",
+      "description": "A one-tick clipped loop fragment receives the full one-tick gate.",
+      "loop": {"start": {"numerator": 1, "denominator": 1}, "end": {"numerator": 961, "denominator": 960}},
+      "expected": {
+        "ok": true,
+        "loopTicks": {"start": 960, "end": 961},
+        "emissions": [
+          {"ordinal": 0, "sourceOrdinal": 0, "sourceOffsetBeats": {"numerator": 1, "denominator": 1}, "sourceOffsetTicks": 960, "startBeat": {"numerator": 1, "denominator": 1}, "durationBeats": {"numerator": 1, "denominator": 960}, "gateDurationBeats": {"numerator": 1, "denominator": 960}, "startTick": 960, "durationTicks": 1, "gateDurationTicks": 1, "articulation": "loop-restart-end-clipped"}
+        ]
+      },
+      "traceIds": ["P0-TRACE-LOOP", "P0-TRACE-GATE", "P0-TRACE-MIDI"],
+      "authorityIds": ["P0-AUTH-POLICY", "P0-AUTH-DOMAIN"]
+    },
+    {
+      "id": "P0-LOOP-010",
+      "description": "Empty loop refuses.",
+      "loop": {"start": {"numerator": 4, "denominator": 1}, "end": {"numerator": 4, "denominator": 1}},
+      "expected": {"ok": false, "code": "playback.loop_invalid", "path": ["loop"], "reason": "empty", "termination": "loop-invalid", "partialResult": false},
+      "traceIds": ["P0-TRACE-LOOP", "P0-TRACE-REFUSALS"],
+      "authorityIds": ["P0-AUTH-DOMAIN", "P0-AUTH-CONTRACT"]
+    },
+    {
+      "id": "P0-LOOP-011",
+      "description": "Reversed loop refuses.",
+      "loop": {"start": {"numerator": 5, "denominator": 1}, "end": {"numerator": 4, "denominator": 1}},
+      "expected": {"ok": false, "code": "playback.loop_invalid", "path": ["loop"], "reason": "reversed", "termination": "loop-invalid", "partialResult": false},
+      "traceIds": ["P0-TRACE-LOOP", "P0-TRACE-REFUSALS"],
+      "authorityIds": ["P0-AUTH-DOMAIN", "P0-AUTH-CONTRACT"]
+    },
+    {
+      "id": "P0-LOOP-012",
+      "description": "A branded but unreduced loop range refuses instead of being normalized silently.",
+      "loop": {"start": {"numerator": 2, "denominator": 2}, "end": {"numerator": 4, "denominator": 2}, "brandClaim": "BeatRange", "upstreamConstructorBypassed": true},
+      "expected": {"ok": false, "code": "playback.loop_invalid", "path": ["loop"], "reason": "not-normalized", "termination": "loop-invalid", "partialResult": false},
+      "traceIds": ["P0-TRACE-LOOP", "P0-TRACE-REFUSALS"],
+      "authorityIds": ["P0-AUTH-DOMAIN", "P0-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "P0-LOOP-013",
+      "description": "Loop end beyond total source time refuses and is never clamped.",
+      "loop": {"start": {"numerator": 0, "denominator": 1}, "end": {"numerator": 13, "denominator": 1}},
+      "expected": {"ok": false, "code": "playback.loop_out_of_range", "path": ["loop"], "totalBeats": {"numerator": 12, "denominator": 1}, "termination": "loop-invalid", "partialResult": false},
+      "traceIds": ["P0-TRACE-LOOP", "P0-TRACE-REFUSALS"],
+      "authorityIds": ["P0-AUTH-CONTRACT", "P0-AUTH-POLICY"]
+    },
+    {
+      "id": "P0-LOOP-014",
+      "description": "A loop starting at total time is out of range even if its end is later.",
+      "loop": {"start": {"numerator": 12, "denominator": 1}, "end": {"numerator": 13, "denominator": 1}},
+      "expected": {"ok": false, "code": "playback.loop_out_of_range", "path": ["loop"], "totalBeats": {"numerator": 12, "denominator": 1}, "termination": "loop-invalid", "partialResult": false},
+      "traceIds": ["P0-TRACE-LOOP", "P0-TRACE-REFUSALS"],
+      "authorityIds": ["P0-AUTH-CONTRACT", "P0-AUTH-POLICY"]
+    }
+  ]
+}

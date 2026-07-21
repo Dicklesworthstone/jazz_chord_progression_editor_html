@@ -1,0 +1,65 @@
+{
+  "schema": "changes.fixtures.x0-listening-rubric.v1",
+  "rubricVersion": 1,
+  "automatedListeningClaim": false,
+  "releaseStatus": "unexecuted-until-release-checklist",
+  "requiredBrowsers": ["chromium", "firefox", "webkit-or-safari"],
+  "requiredOutputs": ["headphones", "laptop-speakers"],
+  "requiredRecordFields": ["date", "browserName", "browserVersion", "operatingSystem", "outputCategory", "reviewer", "caseId", "result", "notes", "knownLimitations"],
+  "resultVocabulary": ["pass", "fail", "not-supported-with-recorded-reason"],
+  "instrumentRows": [
+    {
+      "id": "X0-LISTEN-INST-001",
+      "instrumentId": "mellow-keys",
+      "label": "Mellow Keys",
+      "requiredPerception": ["immediate but click-free onset", "soft triangle-led body", "audible but restrained upper partials", "short musical decay"],
+      "rejectIf": ["sounds like a plain sine", "harsh high partials", "click at attack or release", "label implies an acoustic piano sample"]
+    },
+    {
+      "id": "X0-LISTEN-INST-002",
+      "instrumentId": "fm-electric-piano",
+      "label": "FM Electric Piano",
+      "requiredPerception": ["tine-like bright onset", "brightness responds audibly to velocity", "decay settles toward a softer sine body", "click-free release"],
+      "rejectIf": ["velocity changes loudness only", "metallic alias-like harshness", "stuck modulator tone", "label claims a sampled brand instrument"]
+    },
+    {
+      "id": "X0-LISTEN-INST-003",
+      "instrumentId": "vibraphone",
+      "label": "Vibraphone",
+      "requiredPerception": ["clear mallet-like onset", "mostly sine-like sustained body", "slow audible tremolo after its delay", "long clean release"],
+      "rejectIf": ["tremolo begins as a click", "transient dominates as a separate pitch", "release sticks", "label claims physical modeling"]
+    },
+    {
+      "id": "X0-LISTEN-INST-004",
+      "instrumentId": "warm-pad",
+      "label": "Warm Pad",
+      "requiredPerception": ["slow click-free bloom", "mild detune width without beating nausea", "dark filtered sustain", "long smooth release"],
+      "rejectIf": ["onset is percussive", "dense chord pumps distractingly", "release cuts abruptly", "low notes obscure all harmony"]
+    },
+    {
+      "id": "X0-LISTEN-INST-005",
+      "instrumentId": "analog-poly",
+      "label": "Analog Poly",
+      "requiredPerception": ["distinct saw and pulse color", "audible quiet sub foundation", "resonant filter motion without whistle", "compact synth release"],
+      "rejectIf": ["pulse is indistinguishable from saw", "resonance rings painfully", "sub dominates voicing", "label claims analog circuitry"]
+    }
+  ],
+  "scenarioRows": [
+    { "id": "X0-LISTEN-SCENE-001", "scenario": "dense-seven-note-passages", "pass": "chord remains intelligible with no obvious clipping, severe pumping, or painful resonance" },
+    { "id": "X0-LISTEN-SCENE-002", "scenario": "rapid-stop-then-replay", "pass": "no click, old attack, stuck note, doubled voice, or missing first replay attack" },
+    { "id": "X0-LISTEN-SCENE-003", "scenario": "tempo-change-boundary", "pass": "already sounding release stays smooth and no X0 voice artifact appears" },
+    { "id": "X0-LISTEN-SCENE-004", "scenario": "loop-boundary-rearticulation", "pass": "release precedes attack without click, flam, or swallowed onset" },
+    { "id": "X0-LISTEN-SCENE-005", "scenario": "long-warm-pad-release", "pass": "tail decays smoothly and is fully gone by the declared voice deadline" },
+    { "id": "X0-LISTEN-SCENE-006", "scenario": "browser-or-os-interruption", "pass": "no stale sound on interruption; gesture recovery does not replay retired voices" },
+    { "id": "X0-LISTEN-SCENE-007", "scenario": "section-play-versus-whole-progression", "pass": "same recipe and effects are perceptually identical for the same chord and settings" },
+    { "id": "X0-LISTEN-SCENE-008", "scenario": "preview-over-progression-and-preview-release", "pass": "both use the same effects; releasing preview does not interrupt progression" },
+    { "id": "X0-LISTEN-SCENE-009", "scenario": "rapid-instrument-selection", "pass": "old voices release in their original timbre; new attacks use the selected recipe; no graph dropout" }
+  ],
+  "prohibitions": [
+    "automation-marked-as-human-listening",
+    "missing-browser-row-silently-skipped",
+    "unrecorded-hardware-category",
+    "mastering-quality-or-brick-wall-limiter-claim",
+    "brand-or-sample-authenticity-claim"
+  ]
+}

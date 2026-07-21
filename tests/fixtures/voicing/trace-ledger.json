@@ -1,0 +1,632 @@
+{
+  "schema": "changes.fixtures.v0-trace-ledger.v1",
+  "fixtureVersion": "1.0.0",
+  "status": "independently-authored-pre-production",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "stableTraceIdsOnly": true,
+  "caseLinkPolicy": "Every trace has at least one positive or refusal witness, one mutation control, and one authority. Validators require reciprocal case/mutation trace links.",
+  "parentClaims": [
+    {
+      "id": "V0-PARENT-FAMILIES",
+      "source": "V0 bead required implementation",
+      "text": "Balanced, Shell, Rootless A/B, Open, real Drop-2, and context-gated Quartal candidates are explicit and never relabeled."
+    },
+    {
+      "id": "V0-PARENT-REALIZATION",
+      "source": "V0 bead required implementation",
+      "text": "Generation starts from one explicitly selected exact SemanticRealization with inspectable roles and spellings."
+    },
+    {
+      "id": "V0-PARENT-BASS",
+      "source": "V0 bead required implementation",
+      "text": "Generated/external/none, slash bass, total count, and rootless behavior obey F1."
+    },
+    {
+      "id": "V0-PARENT-NO-SHORTCUT",
+      "source": "V0 bead invariants",
+      "text": "No silent identity omission, custom-degree fabrication, duplicate MIDI, fake family label, or arbitrary fallback."
+    },
+    {
+      "id": "V0-PARENT-BOUNDS",
+      "source": "V0 bead invariants",
+      "text": "Same request/version is deterministic and bounded to 96 raw and 24 retained plus explicit work, memory, candidate-payload, and identifier caps."
+    },
+    {
+      "id": "V0-PARENT-SUCCESS-LEGAL",
+      "source": "V0 bead success criteria",
+      "text": "Every supported row produces only legal candidates and every missing or impossible row refuses visibly."
+    },
+    {
+      "id": "V0-PARENT-SUCCESS-INSPECTABLE",
+      "source": "V0 bead success criteria",
+      "text": "Exact notes, spelling, range, bass, roles, family transform, score, and explanation are inspectable."
+    },
+    {
+      "id": "V0-PARENT-BYPASS",
+      "source": "V0 bead required implementation",
+      "text": "Manual and Frozen bypass generation exactly."
+    },
+    {
+      "id": "V0-PARENT-INDEPENDENCE",
+      "source": "AGENTS.md verification discipline",
+      "text": "Independent fixtures, transposition, near misses, mutation controls, and machine-readable diagnostics prove every law."
+    },
+    {
+      "id": "V0-PARENT-LOCAL",
+      "source": "V0 non-goals and architecture",
+      "text": "V0 is a pure local candidate operation and contains no V1 pairwise context or runtime network/AI behavior."
+    }
+  ],
+  "traces": [
+    {
+      "id": "V0-TRACE-FAMILIES",
+      "parentClaimIds": [
+        "V0-PARENT-FAMILIES",
+        "V0-PARENT-SUCCESS-LEGAL"
+      ],
+      "caseIds": [
+        "V0-CAND-001",
+        "V0-CAND-002",
+        "V0-CAND-003",
+        "V0-CAND-004",
+        "V0-CAND-006",
+        "V0-CAND-007",
+        "V0-CAND-008",
+        "V0-CAND-011",
+        "V0-CAND-014",
+        "V0-CAND-015",
+        "V0-CAND-016",
+        "V0-CAND-017",
+        "V0-CAND-018",
+        "V0-LAW-005",
+        "V0-LAW-007",
+        "V0-LAW-011",
+        "V0-LAW-021",
+        "V0-TRANS-001",
+        "V0-TRANS-002",
+        "V0-TRANS-003",
+        "V0-TRANS-004",
+        "V0-TRANS-007",
+        "V0-TRANS-017",
+        "V0-OP-REFUSAL-012",
+        "V0-OP-REFUSAL-013",
+        "V0-OP-PRECEDENCE-005",
+        "V0-CAND-033",
+        "V0-CAND-034",
+        "V0-CAND-035",
+        "V0-CAND-036",
+        "V0-CAND-037",
+        "V0-CAND-038",
+        "V0-LAW-022",
+        "V0-TRANS-010"
+      ],
+      "matrixRef": "availability-matrix.json all 1,295 cells",
+      "mutationControlIds": [
+        "V0-MUT-016",
+        "V0-MUT-017",
+        "V0-MUT-020",
+        "V0-MUT-043",
+        "V0-MUT-044",
+        "V0-MUT-051"
+      ],
+      "authorityIds": [
+        "V0-AUTH-CONTRACT",
+        "V0-AUTH-TEMPLATES"
+      ]
+    },
+    {
+      "id": "V0-TRACE-DEGREES",
+      "parentClaimIds": [
+        "V0-PARENT-REALIZATION",
+        "V0-PARENT-NO-SHORTCUT",
+        "V0-PARENT-SUCCESS-INSPECTABLE"
+      ],
+      "caseIds": [
+        "V0-CAND-001",
+        "V0-CAND-002",
+        "V0-CAND-005",
+        "V0-CAND-006",
+        "V0-CAND-008",
+        "V0-CAND-009",
+        "V0-CAND-010",
+        "V0-CAND-012",
+        "V0-CAND-013",
+        "V0-CAND-015",
+        "V0-CAND-016",
+        "V0-CAND-017",
+        "V0-CAND-019",
+        "V0-CAND-020",
+        "V0-CAND-021",
+        "V0-CAND-022",
+        "V0-CAND-023",
+        "V0-CAND-024",
+        "V0-LAW-002",
+        "V0-LAW-003",
+        "V0-LAW-004",
+        "V0-LAW-009",
+        "V0-TRANS-005",
+        "V0-TRANS-006",
+        "V0-TRANS-012",
+        "V0-TRANS-013",
+        "V0-OP-REFUSAL-014",
+        "V0-CAND-033",
+        "V0-CAND-034",
+        "V0-CAND-035",
+        "V0-CAND-038",
+        "V0-LAW-022",
+        "V0-TRANS-010"
+      ],
+      "mutationControlIds": [
+        "V0-MUT-001",
+        "V0-MUT-002",
+        "V0-MUT-003",
+        "V0-MUT-004",
+        "V0-MUT-005",
+        "V0-MUT-006",
+        "V0-MUT-007",
+        "V0-MUT-008",
+        "V0-MUT-010",
+        "V0-MUT-036",
+        "V0-MUT-044"
+      ],
+      "authorityIds": [
+        "V0-AUTH-T1",
+        "V0-AUTH-TEMPLATES"
+      ]
+    },
+    {
+      "id": "V0-TRACE-BASS",
+      "parentClaimIds": [
+        "V0-PARENT-BASS",
+        "V0-PARENT-SUCCESS-INSPECTABLE"
+      ],
+      "caseIds": [
+        "V0-CAND-006",
+        "V0-CAND-007",
+        "V0-CAND-013",
+        "V0-CAND-014",
+        "V0-CAND-018",
+        "V0-CAND-038",
+        "V0-LAW-005",
+        "V0-LAW-006",
+        "V0-LAW-007",
+        "V0-OP-REFUSAL-016",
+        "V0-TRANS-009",
+        "V0-TRANS-018"
+      ],
+      "mutationControlIds": [
+        "V0-MUT-011",
+        "V0-MUT-012",
+        "V0-MUT-013",
+        "V0-MUT-014",
+        "V0-MUT-015",
+        "V0-MUT-016"
+      ],
+      "authorityIds": [
+        "V0-AUTH-F1",
+        "V0-AUTH-T1",
+        "V0-AUTH-CONTRACT",
+        "V0-AUTH-LIMITS",
+        "V0-AUTH-INDEPENDENCE"
+      ]
+    },
+    {
+      "id": "V0-TRACE-SPACING",
+      "parentClaimIds": [
+        "V0-PARENT-NO-SHORTCUT",
+        "V0-PARENT-SUCCESS-LEGAL",
+        "V0-PARENT-SUCCESS-INSPECTABLE"
+      ],
+      "caseIds": [
+        "V0-CAND-001",
+        "V0-CAND-003",
+        "V0-CAND-029",
+        "V0-LAW-008",
+        "V0-LAW-010"
+      ],
+      "mutationControlIds": [
+        "V0-MUT-021",
+        "V0-MUT-030",
+        "V0-MUT-031"
+      ],
+      "authorityIds": [
+        "V0-AUTH-SPACING"
+      ]
+    },
+    {
+      "id": "V0-TRACE-DROP2",
+      "parentClaimIds": [
+        "V0-PARENT-FAMILIES",
+        "V0-PARENT-NO-SHORTCUT",
+        "V0-PARENT-SUCCESS-INSPECTABLE"
+      ],
+      "caseIds": [
+        "V0-CAND-004",
+        "V0-CAND-005",
+        "V0-CAND-034",
+        "V0-CAND-035",
+        "V0-CAND-036",
+        "V0-CAND-037",
+        "V0-CAND-038",
+        "V0-CAND-025",
+        "V0-CAND-032",
+        "V0-LAW-011",
+        "V0-TRANS-008"
+      ],
+      "mutationControlIds": [
+        "V0-MUT-018",
+        "V0-MUT-019",
+        "V0-MUT-020",
+        "V0-MUT-021",
+        "V0-MUT-050",
+        "V0-MUT-051"
+      ],
+      "authorityIds": [
+        "V0-AUTH-DROP2",
+        "V0-AUTH-TEMPLATES"
+      ]
+    },
+    {
+      "id": "V0-TRACE-QUARTAL",
+      "parentClaimIds": [
+        "V0-PARENT-FAMILIES",
+        "V0-PARENT-NO-SHORTCUT",
+        "V0-PARENT-SUCCESS-LEGAL"
+      ],
+      "caseIds": [
+        "V0-CAND-009",
+        "V0-CAND-010",
+        "V0-CAND-011",
+        "V0-CAND-026",
+        "V0-CAND-027",
+        "V0-CAND-028",
+        "V0-LAW-012",
+        "V0-TRANS-014",
+        "V0-TRANS-015",
+        "V0-OP-REFUSAL-002",
+        "V0-OP-REFUSAL-003",
+        "V0-OP-REFUSAL-004",
+        "V0-OP-REFUSAL-005",
+        "V0-OP-REFUSAL-006",
+        "V0-OP-REFUSAL-007",
+        "V0-OP-REFUSAL-008",
+        "V0-OP-REFUSAL-009",
+        "V0-OP-REFUSAL-010",
+        "V0-OP-REFUSAL-011",
+        "V0-OP-REFUSAL-013",
+        "V0-OP-PRECEDENCE-002",
+        "V0-OP-PRECEDENCE-003",
+        "V0-OP-PRECEDENCE-004"
+      ],
+      "mutationControlIds": [
+        "V0-MUT-022",
+        "V0-MUT-023",
+        "V0-MUT-024"
+      ],
+      "authorityIds": [
+        "V0-AUTH-CONTRACT",
+        "V0-AUTH-TEMPLATES"
+      ]
+    },
+    {
+      "id": "V0-TRACE-ALT-SELECTION",
+      "parentClaimIds": [
+        "V0-PARENT-REALIZATION",
+        "V0-PARENT-NO-SHORTCUT"
+      ],
+      "caseIds": [
+        "V0-CAND-012",
+        "V0-CAND-030",
+        "V0-LAW-002",
+        "V0-LAW-013",
+        "V0-TRANS-010",
+        "V0-TRANS-011",
+        "V0-TRANS-012",
+        "V0-TRANS-013",
+        "V0-OP-REFUSAL-001",
+        "V0-OP-PRECEDENCE-001",
+        "V0-CAND-033"
+      ],
+      "mutationControlIds": [
+        "V0-MUT-025",
+        "V0-MUT-026"
+      ],
+      "authorityIds": [
+        "V0-AUTH-T1",
+        "V0-AUTH-INDEPENDENCE"
+      ]
+    },
+    {
+      "id": "V0-TRACE-BYPASS",
+      "parentClaimIds": [
+        "V0-PARENT-BYPASS",
+        "V0-PARENT-SUCCESS-INSPECTABLE"
+      ],
+      "caseIds": [
+        "V0-CAND-031",
+        "V0-CAND-032",
+        "V0-LAW-014",
+        "V0-TRANS-016",
+        "V0-OP-SUCCESS-002",
+        "V0-OP-SUCCESS-003"
+      ],
+      "mutationControlIds": [
+        "V0-MUT-027",
+        "V0-MUT-028"
+      ],
+      "authorityIds": [
+        "V0-AUTH-F1",
+        "V0-AUTH-CONTRACT"
+      ]
+    },
+    {
+      "id": "V0-TRACE-REFUSAL",
+      "parentClaimIds": [
+        "V0-PARENT-NO-SHORTCUT",
+        "V0-PARENT-SUCCESS-LEGAL"
+      ],
+      "caseIds": [
+        "V0-CAND-019",
+        "V0-CAND-020",
+        "V0-CAND-021",
+        "V0-CAND-022",
+        "V0-CAND-023",
+        "V0-CAND-024",
+        "V0-CAND-025",
+        "V0-CAND-026",
+        "V0-CAND-027",
+        "V0-CAND-028",
+        "V0-CAND-029",
+        "V0-CAND-030",
+        "V0-CAND-036",
+        "V0-CAND-037",
+        "V0-LAW-008",
+        "V0-LAW-009",
+        "V0-LAW-015",
+        "V0-OP-REFUSAL-001",
+        "V0-OP-REFUSAL-002",
+        "V0-OP-REFUSAL-003",
+        "V0-OP-REFUSAL-004",
+        "V0-OP-REFUSAL-005",
+        "V0-OP-REFUSAL-006",
+        "V0-OP-REFUSAL-007",
+        "V0-OP-REFUSAL-008",
+        "V0-OP-REFUSAL-009",
+        "V0-OP-REFUSAL-010",
+        "V0-OP-REFUSAL-011",
+        "V0-OP-REFUSAL-012",
+        "V0-OP-REFUSAL-013",
+        "V0-OP-REFUSAL-014",
+        "V0-OP-REFUSAL-015",
+        "V0-OP-REFUSAL-016",
+        "V0-OP-SUCCESS-004",
+        "V0-OP-PRECEDENCE-001",
+        "V0-OP-PRECEDENCE-002",
+        "V0-OP-PRECEDENCE-003",
+        "V0-OP-PRECEDENCE-004",
+        "V0-OP-PRECEDENCE-005",
+        "V0-OP-PRECEDENCE-006",
+        "V0-OP-PRECEDENCE-007",
+        "V0-CAND-033",
+        "V0-LAW-022",
+        "V0-LAW-023",
+        "V0-CONSTRAINT-OVERFLOW-NEAR-001",
+        "V0-TRANS-010",
+        "V0-TRANS-018"
+      ],
+      "mutationControlIds": [
+        "V0-MUT-005",
+        "V0-MUT-009",
+        "V0-MUT-015",
+        "V0-MUT-029",
+        "V0-MUT-044",
+        "V0-MUT-045",
+        "V0-MUT-046",
+        "V0-MUT-047",
+        "V0-MUT-048",
+        "V0-MUT-049"
+      ],
+      "authorityIds": [
+        "V0-AUTH-CONTRACT",
+        "V0-AUTH-LIMITS",
+        "V0-AUTH-INDEPENDENCE"
+      ]
+    },
+    {
+      "id": "V0-TRACE-ORDERING",
+      "parentClaimIds": [
+        "V0-PARENT-BOUNDS",
+        "V0-PARENT-SUCCESS-INSPECTABLE",
+        "V0-PARENT-INDEPENDENCE"
+      ],
+      "caseIds": [
+        "V0-LAW-001",
+        "V0-LAW-016",
+        "V0-LAW-021",
+        "V0-LAW-023",
+        "V0-TRANS-017",
+        "V0-TRANS-018",
+        "V0-OP-REFUSAL-014"
+      ],
+      "mutationControlIds": [
+        "V0-MUT-032",
+        "V0-MUT-035",
+        "V0-MUT-036",
+        "V0-MUT-043",
+        "V0-MUT-045",
+        "V0-MUT-046",
+        "V0-MUT-049"
+      ],
+      "authorityIds": [
+        "V0-AUTH-CONTRACT",
+        "V0-AUTH-TEMPLATES",
+        "V0-AUTH-LIMITS",
+        "V0-AUTH-INDEPENDENCE"
+      ]
+    },
+    {
+      "id": "V0-TRACE-DETERMINISM",
+      "parentClaimIds": [
+        "V0-PARENT-BOUNDS",
+        "V0-PARENT-INDEPENDENCE",
+        "V0-PARENT-LOCAL"
+      ],
+      "caseIds": [
+        "V0-LAW-001",
+        "V0-LAW-016",
+        "V0-LAW-020",
+        "V0-LAW-023",
+        "V0-CONSTRAINT-OVERFLOW-NEAR-001",
+        "V0-OP-SUCCESS-004",
+        "V0-OP-SUCCESS-001"
+      ],
+      "mutationControlIds": [
+        "V0-MUT-032",
+        "V0-MUT-042",
+        "V0-MUT-048"
+      ],
+      "authorityIds": [
+        "V0-AUTH-CONTRACT",
+        "V0-AUTH-LIMITS",
+        "V0-AUTH-INDEPENDENCE"
+      ]
+    },
+    {
+      "id": "V0-TRACE-TRANSPOSITION",
+      "parentClaimIds": [
+        "V0-PARENT-REALIZATION",
+        "V0-PARENT-INDEPENDENCE"
+      ],
+      "caseIds": [
+        "V0-LAW-004",
+        "V0-LAW-017",
+        "V0-LAW-023",
+        "V0-TRANS-001",
+        "V0-TRANS-002",
+        "V0-TRANS-003",
+        "V0-TRANS-004",
+        "V0-TRANS-005",
+        "V0-TRANS-006",
+        "V0-TRANS-007",
+        "V0-TRANS-008",
+        "V0-TRANS-009",
+        "V0-TRANS-010",
+        "V0-TRANS-011",
+        "V0-TRANS-012",
+        "V0-TRANS-013",
+        "V0-TRANS-014",
+        "V0-TRANS-015",
+        "V0-TRANS-016",
+        "V0-TRANS-017",
+        "V0-TRANS-018"
+      ],
+      "matrixRef": "transposition-seeds.json 18 seeds x 12 roots",
+      "mutationControlIds": [
+        "V0-MUT-007",
+        "V0-MUT-037",
+        "V0-MUT-038"
+      ],
+      "authorityIds": [
+        "V0-AUTH-F1",
+        "V0-AUTH-T1",
+        "V0-AUTH-CONTRACT",
+        "V0-AUTH-LIMITS",
+        "V0-AUTH-INDEPENDENCE"
+      ]
+    },
+    {
+      "id": "V0-TRACE-IMMUTABILITY",
+      "parentClaimIds": [
+        "V0-PARENT-INDEPENDENCE",
+        "V0-PARENT-LOCAL"
+      ],
+      "caseIds": [
+        "V0-CAND-031",
+        "V0-CAND-032",
+        "V0-LAW-018",
+        "V0-OP-SUCCESS-003"
+      ],
+      "mutationControlIds": [
+        "V0-MUT-039",
+        "V0-MUT-040"
+      ],
+      "authorityIds": [
+        "V0-AUTH-CONTRACT",
+        "V0-AUTH-INDEPENDENCE"
+      ]
+    },
+    {
+      "id": "V0-TRACE-LIMITS",
+      "parentClaimIds": [
+        "V0-PARENT-BOUNDS",
+        "V0-PARENT-SUCCESS-LEGAL"
+      ],
+      "caseIds": [
+        "V0-LAW-019",
+        "V0-LAW-023",
+        "V0-LIMIT-WORK-008-EXACT",
+        "V0-LIMIT-WORK-008-PLUS-ONE",
+        "V0-LIMIT-WORK-015-EXACT",
+        "V0-LIMIT-WORK-015-PLUS-ONE",
+        "V0-LIMIT-WORK-016-EXACT",
+        "V0-LIMIT-WORK-016-PLUS-ONE",
+        "V0-LIMIT-MEMORY-008-EXACT",
+        "V0-LIMIT-MEMORY-008-PLUS-ONE",
+        "V0-RETENTION-002-ELIGIBLE-25-TRUNCATED",
+        "V0-ID-001-EMPTY-BELOW-MINIMUM",
+        "V0-ID-002-ONE-ASCII-ACCEPTED",
+        "V0-ID-003-256-ASCII-ACCEPTED",
+        "V0-ID-004-257-ASCII-REFUSED",
+        "V0-ID-005-128-EMOJI-512-BYTES-ACCEPTED",
+        "V0-ID-006-513-BYTES-REFUSED",
+        "V0-OP-REFUSAL-007",
+        "V0-OP-REFUSAL-015",
+        "V0-OP-REFUSAL-016",
+        "V0-OP-SUCCESS-004",
+        "V0-OP-PRECEDENCE-006",
+        "V0-OP-PRECEDENCE-007",
+        "V0-CONSTRAINT-OVERFLOW-NEAR-001",
+        "V0-TRANS-018"
+      ],
+      "matrixRef": "limit-cases.json all 24 counters at exact and plus one",
+      "mutationControlIds": [
+        "V0-MUT-024",
+        "V0-MUT-033",
+        "V0-MUT-034",
+        "V0-MUT-046",
+        "V0-MUT-047",
+        "V0-MUT-048"
+      ],
+      "authorityIds": [
+        "V0-AUTH-CONTRACT",
+        "V0-AUTH-LIMITS",
+        "V0-AUTH-INDEPENDENCE"
+      ]
+    },
+    {
+      "id": "V0-TRACE-BOUNDARY",
+      "parentClaimIds": [
+        "V0-PARENT-LOCAL",
+        "V0-PARENT-INDEPENDENCE"
+      ],
+      "caseIds": [
+        "V0-LAW-020",
+        "V0-OP-SUCCESS-001",
+        "V0-OP-NOT-APPLICABLE-001",
+        "V0-OP-NOT-APPLICABLE-002",
+        "V0-OP-NOT-APPLICABLE-003",
+        "V0-OP-NOT-APPLICABLE-004",
+        "V0-OP-NOT-APPLICABLE-005"
+      ],
+      "mutationControlIds": [
+        "V0-MUT-041",
+        "V0-MUT-042"
+      ],
+      "authorityIds": [
+        "V0-AUTH-CONTRACT",
+        "V0-AUTH-INDEPENDENCE"
+      ]
+    }
+  ]
+}

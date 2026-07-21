@@ -1,0 +1,143 @@
+{
+  "schema": "changes.fixtures.f3-operation-state-cases.v1",
+  "fixtureVersion": "1.0.0",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "applicabilityVocabulary": [
+    "applicable",
+    "not-applicable:synchronous-bounded",
+    "not-applicable:revision-free-value-operation",
+    "not-applicable:non-resumable",
+    "forbidden:counts-only"
+  ],
+  "cases": [
+    {
+      "id": "F3-OPSTATE-001",
+      "operation": "validateDocumentSemantics",
+      "scenario": "successful publication",
+      "inputRef": "F3-DOC-003",
+      "expected": {
+        "resultOwnKeys": ["ok", "value", "warnings"],
+        "ok": true,
+        "warnings": [],
+        "valueBrand": "ValidatedDocument",
+        "termination": "complete-success",
+        "stateMutation": "none",
+        "adapterCalls": 0
+      },
+      "traceIds": ["F3-TRACE-BOUNDARY", "F3-TRACE-TRANSACTION"],
+      "authorityIds": ["F3-AUTH-ARCHITECTURE", "F3-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "F3-OPSTATE-002",
+      "operation": "validateDocumentSemantics",
+      "scenario": "transactional refusal",
+      "inputRef": "F3-DOC-036",
+      "expected": {
+        "resultOwnKeys": ["ok", "errors"],
+        "ok": false,
+        "partialValue": false,
+        "nonemptyErrors": true,
+        "termination": "complete-refusal",
+        "stateMutation": "none",
+        "adapterCalls": 0
+      },
+      "traceIds": ["F3-TRACE-DIAGNOSTICS", "F3-TRACE-TRANSACTION"],
+      "authorityIds": ["F3-AUTH-ARCHITECTURE", "F3-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "F3-OPSTATE-003",
+      "operation": "validateDocumentSemantics",
+      "scenario": "deterministic replay and immutable publication",
+      "inputRef": "F3-DOC-039",
+      "expected": {
+        "runs": 2,
+        "deeplyEqual": true,
+        "byteEqualDiagnostics": true,
+        "recursivelyFrozen": true,
+        "inputAliasCount": 0,
+        "inputMutationCount": 0,
+        "hiddenMutableState": false
+      },
+      "traceIds": ["F3-TRACE-DIAGNOSTICS", "F3-TRACE-TRANSACTION"],
+      "authorityIds": ["F3-AUTH-ARCHITECTURE", "F3-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "F3-OPSTATE-004",
+      "operation": "validateDocumentSemantics",
+      "scenario": "cancellation",
+      "inputRef": "F3-DOC-038",
+      "expected": {
+        "applicability": "not-applicable:synchronous-bounded",
+        "abortSignalParameter": false,
+        "cancelledResultBranch": false,
+        "reason": "F3 terminates by F2 collection counts and T1 per-call work counts."
+      },
+      "traceIds": ["F3-TRACE-BOUNDS"],
+      "authorityIds": ["F3-AUTH-ARCHITECTURE"]
+    },
+    {
+      "id": "F3-OPSTATE-005",
+      "operation": "validateDocumentSemantics",
+      "scenario": "stale revision",
+      "inputRef": "F3-DOC-003",
+      "expected": {
+        "applicability": "not-applicable:revision-free-value-operation",
+        "revisionParameter": false,
+        "staleResultBranch": false,
+        "reason": "A0 owns revision-aware command publication after F3."
+      },
+      "traceIds": ["F3-TRACE-BOUNDARY"],
+      "authorityIds": ["F3-AUTH-ARCHITECTURE"]
+    },
+    {
+      "id": "F3-OPSTATE-006",
+      "operation": "validateDocumentSemantics",
+      "scenario": "resume",
+      "inputRef": "F3-DOC-038",
+      "expected": {
+        "applicability": "not-applicable:non-resumable",
+        "checkpointParameter": false,
+        "yieldedResultBranch": false,
+        "reason": "The bounded Foundation gate completes synchronously."
+      },
+      "traceIds": ["F3-TRACE-BOUNDS"],
+      "authorityIds": ["F3-AUTH-ARCHITECTURE"]
+    },
+    {
+      "id": "F3-OPSTATE-007",
+      "operation": "validateDocumentSemantics",
+      "scenario": "wall time",
+      "inputRef": "F3-DOC-037",
+      "expected": {
+        "applicability": "forbidden:counts-only",
+        "clockReads": 0,
+        "timerReads": 0,
+        "timeoutResultBranch": false,
+        "reason": "Wall time is performance evidence and never a musical cutoff."
+      },
+      "traceIds": ["F3-TRACE-BOUNDS"],
+      "authorityIds": ["F3-AUTH-ARCHITECTURE", "F3-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "F3-OPSTATE-008",
+      "operation": "validateDocumentSemantics",
+      "scenario": "complete external-state isolation",
+      "inputRefs": ["F3-DOC-003", "F3-DOC-036"],
+      "expected": {
+        "currentDocument": "unchanged",
+        "selection": "unchanged",
+        "history": "unchanged",
+        "transport": "unchanged",
+        "recovery": "unchanged",
+        "audio": "unchanged",
+        "export": "unchanged",
+        "objectUrlsCreated": 0,
+        "listenersCreated": 0,
+        "adapterCalls": 0
+      },
+      "traceIds": ["F3-TRACE-BOUNDARY", "F3-TRACE-TRANSACTION"],
+      "authorityIds": ["F3-AUTH-ARCHITECTURE"]
+    }
+  ]
+}

@@ -1,0 +1,468 @@
+{
+  "schema": "changes.fixtures.p0-realization-cases.v1",
+  "fixtureVersion": "1.0.0",
+  "status": "independently-authored-pre-production",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "sourceCatalog": "source-catalog.json",
+  "baseRecipe": {
+    "documentId": "doc-p0-realization",
+    "tempoBpm": 120,
+    "meter": {"beatsPerBar": 4, "beatUnit": 4},
+    "singleEvent": {
+      "sectionId": "section-p0-realization",
+      "measureId": "measure-p0-realization",
+      "eventId": "event-p0-realization",
+      "duration": {"numerator": 4, "denominator": 1},
+      "sourceRef": "P0-SOURCE-AUTO-CMAJ7",
+      "completion": {"kind": "complete"}
+    },
+    "loop": null
+  },
+  "mutationProtocol": {
+    "base": "Materialize a fresh request from baseRecipe and the named source record.",
+    "operations": "Apply checked-in mutations in array order to fresh ordinary records and arrays. A delete removes the exact own key; replace deep-clones the literal value; replace-generated-candidate-from-v0-fixture substitutes the complete independently checked candidate named by candidateFixtureRef.",
+    "precedence": "The expected refusal is the first applicable code in p0-playback-plan-contract.json refusalPrecedence.",
+    "allOrNothing": "Every refusal has no plan or partial events and reports the correlated termination."
+  },
+  "cases": [
+    {
+      "id": "P0-REAL-001",
+      "description": "A valid generated binding copies the exact selected V0 candidate pitch array.",
+      "sourceRef": "P0-SOURCE-AUTO-CMAJ7",
+      "expected": {
+        "ok": true,
+        "pitches": [
+          {"step": "C", "alter": 0, "octave": 3},
+          {"step": "G", "alter": 0, "octave": 3},
+          {"step": "B", "alter": 0, "octave": 3},
+          {"step": "E", "alter": 0, "octave": 4}
+        ],
+        "midiPitches": [48, 55, 59, 64],
+        "pitchSource": "outcome.candidate.pitches",
+        "candidateVoicePitchEqualityRequired": true
+      },
+      "traceIds": ["P0-TRACE-REALIZATION"],
+      "authorityIds": ["P0-AUTH-V0", "P0-AUTH-CONTRACT"]
+    },
+    {
+      "id": "P0-REAL-002",
+      "description": "A valid Manual binding preserves exact order, spelling, octave, and duplicate pitches.",
+      "sourceRef": "P0-SOURCE-MANUAL-LEGACY",
+      "expected": {
+        "ok": true,
+        "pitches": [
+          {"step": "B", "alter": 0, "octave": 4},
+          {"step": "E", "alter": 0, "octave": 4},
+          {"step": "G", "alter": 0, "octave": 4},
+          {"step": "C", "alter": 0, "octave": 4},
+          {"step": "E", "alter": 0, "octave": 4}
+        ],
+        "midiPitches": [71, 64, 67, 60, 64],
+        "pitchSource": "result.voicing.pitches",
+        "sortForbidden": true,
+        "deduplicateForbidden": true,
+        "regenerationForbidden": true
+      },
+      "traceIds": ["P0-TRACE-STORED", "P0-TRACE-LEGACY"],
+      "authorityIds": ["P0-AUTH-DOMAIN", "P0-AUTH-LEGACY"]
+    },
+    {
+      "id": "P0-REAL-003",
+      "description": "A valid Frozen binding preserves exact flat spellings and does not rerun its recorded family.",
+      "sourceRef": "P0-SOURCE-FROZEN-DB7-CB",
+      "expected": {
+        "ok": true,
+        "pitches": [
+          {"step": "C", "alter": -1, "octave": 3},
+          {"step": "D", "alter": -1, "octave": 4},
+          {"step": "F", "alter": 0, "octave": 4},
+          {"step": "A", "alter": -1, "octave": 4},
+          {"step": "C", "alter": -1, "octave": 5}
+        ],
+        "midiPitches": [47, 61, 65, 68, 71],
+        "pitchSource": "result.voicing.pitches",
+        "generatedByAffectsPitches": false,
+        "regenerationForbidden": true
+      },
+      "traceIds": ["P0-TRACE-STORED", "P0-TRACE-MIDI"],
+      "authorityIds": ["P0-AUTH-DOMAIN", "P0-AUTH-F3"]
+    },
+    {
+      "id": "P0-REAL-004",
+      "description": "A Custom chord is playable only from its exact stored voicing.",
+      "sourceRef": "P0-SOURCE-CUSTOM-GLASS",
+      "expected": {
+        "ok": true,
+        "pitches": [
+          {"step": "G", "alter": 1, "octave": 4},
+          {"step": "C", "alter": 0, "octave": 4},
+          {"step": "E", "alter": 0, "octave": 4},
+          {"step": "C", "alter": 0, "octave": 5}
+        ],
+        "midiPitches": [68, 60, 64, 72],
+        "pitchSource": "result.voicing.pitches",
+        "automaticGenerationForbidden": true
+      },
+      "traceIds": ["P0-TRACE-CUSTOM", "P0-TRACE-STORED"],
+      "authorityIds": ["P0-AUTH-DOMAIN", "P0-AUTH-F3"]
+    },
+    {
+      "id": "P0-REAL-005",
+      "description": "Wrong request schema refuses before any realization inspection.",
+      "mutations": [
+        {"op": "replace", "path": ["schema"], "value": "changes.playback.plan-request.v999"}
+      ],
+      "expected": {
+        "ok": false,
+        "code": "playback.request_schema_invalid",
+        "path": ["schema"],
+        "termination": "request-invalid",
+        "partialResult": false
+      },
+      "traceIds": ["P0-TRACE-BOUNDARY", "P0-TRACE-REFUSALS"],
+      "authorityIds": ["P0-AUTH-CONTRACT"]
+    },
+    {
+      "id": "P0-REAL-006",
+      "description": "Wrong compiler identity refuses before policy and realization faults.",
+      "mutations": [
+        {"op": "replace", "path": ["compilerId"], "value": "changes.playback-plan-compiler.other"},
+        {"op": "replace", "path": ["articulationPolicyVersion"], "value": 999}
+      ],
+      "expected": {
+        "ok": false,
+        "code": "playback.compiler_identity_invalid",
+        "path": ["compilerId"],
+        "receivedId": "changes.playback-plan-compiler.other",
+        "receivedVersion": 1,
+        "termination": "request-invalid",
+        "partialResult": false
+      },
+      "traceIds": ["P0-TRACE-BOUNDARY", "P0-TRACE-REFUSALS"],
+      "authorityIds": ["P0-AUTH-CONTRACT"]
+    },
+    {
+      "id": "P0-REAL-007",
+      "description": "Policy identity is exact and versioned.",
+      "mutations": [
+        {"op": "replace", "path": ["loopPolicyVersion"], "value": 2}
+      ],
+      "expected": {
+        "ok": false,
+        "code": "playback.policy_identity_invalid",
+        "path": ["loopPolicyVersion"],
+        "policy": "loop",
+        "receivedId": "changes.playback-loop",
+        "receivedVersion": 2,
+        "termination": "request-invalid",
+        "partialResult": false
+      },
+      "traceIds": ["P0-TRACE-BOUNDARY", "P0-TRACE-REFUSALS"],
+      "authorityIds": ["P0-AUTH-CONTRACT"]
+    },
+    {
+      "id": "P0-REAL-008",
+      "description": "Every source event requires exactly one binding.",
+      "mutations": [
+        {"op": "delete-map-entry", "mapPath": ["realizedVoicings"], "key": "event-p0-realization"}
+      ],
+      "expected": {
+        "ok": false,
+        "code": "playback.realization_binding_missing",
+        "path": ["realizedVoicings", "event-p0-realization"],
+        "eventId": "event-p0-realization",
+        "termination": "realization-invalid",
+        "partialResult": false
+      },
+      "traceIds": ["P0-TRACE-REALIZATION", "P0-TRACE-REFUSALS"],
+      "authorityIds": ["P0-AUTH-CONTRACT"]
+    },
+    {
+      "id": "P0-REAL-009",
+      "description": "An extra map entry refuses rather than being ignored.",
+      "mutations": [
+        {"op": "insert-map-entry", "mapPath": ["realizedVoicings"], "key": "event-p0-extra", "bindingFromEvent": "event-p0-realization", "replaceBindingEventId": "event-p0-extra"}
+      ],
+      "expected": {
+        "ok": false,
+        "code": "playback.realization_binding_extra",
+        "path": ["realizedVoicings", "event-p0-extra"],
+        "eventId": "event-p0-extra",
+        "termination": "realization-invalid",
+        "partialResult": false
+      },
+      "traceIds": ["P0-TRACE-REALIZATION", "P0-TRACE-REFUSALS"],
+      "authorityIds": ["P0-AUTH-CONTRACT"]
+    },
+    {
+      "id": "P0-REAL-010",
+      "description": "Map key and binding event identity must agree exactly.",
+      "mutations": [
+        {"op": "replace", "path": ["realizedVoicings", "event-p0-realization", "eventId"], "value": "event-p0-other"}
+      ],
+      "expected": {
+        "ok": false,
+        "code": "playback.realization_binding_identity_mismatch",
+        "path": ["realizedVoicings", "event-p0-realization", "eventId"],
+        "mapEventId": "event-p0-realization",
+        "bindingEventId": "event-p0-other",
+        "termination": "realization-invalid",
+        "partialResult": false
+      },
+      "traceIds": ["P0-TRACE-REALIZATION", "P0-TRACE-REFUSALS"],
+      "authorityIds": ["P0-AUTH-CONTRACT"]
+    },
+    {
+      "id": "P0-REAL-011",
+      "description": "A changed chord makes a previously correlated realization stale.",
+      "mutations": [
+        {"op": "replace", "path": ["document", "sections", 0, "measures", 0, "events", 0, "chord", "root"], "value": {"step": "D", "alter": 0}}
+      ],
+      "expected": {
+        "ok": false,
+        "code": "playback.realization_source_chord_stale",
+        "path": ["realizedVoicings", "event-p0-realization", "request", "resolved", "source"],
+        "eventId": "event-p0-realization",
+        "termination": "realization-invalid",
+        "partialResult": false
+      },
+      "traceIds": ["P0-TRACE-REALIZATION", "P0-TRACE-STALE", "P0-TRACE-REFUSALS"],
+      "authorityIds": ["P0-AUTH-CONTRACT", "P0-AUTH-F3"]
+    },
+    {
+      "id": "P0-REAL-012",
+      "description": "A changed Auto policy makes a previously correlated realization stale.",
+      "mutations": [
+        {"op": "replace", "path": ["document", "sections", 0, "measures", 0, "events", 0, "voicing", "family"], "value": "open"}
+      ],
+      "expected": {
+        "ok": false,
+        "code": "playback.realization_source_voicing_stale",
+        "path": ["realizedVoicings", "event-p0-realization", "request", "policy"],
+        "eventId": "event-p0-realization",
+        "termination": "realization-invalid",
+        "partialResult": false
+      },
+      "traceIds": ["P0-TRACE-REALIZATION", "P0-TRACE-STALE", "P0-TRACE-REFUSALS"],
+      "authorityIds": ["P0-AUTH-CONTRACT", "P0-AUTH-F3"]
+    },
+    {
+      "id": "P0-REAL-013",
+      "description": "An explicitly unavailable V0 realization is data, not a missing entry or a fallback request.",
+      "mutations": [
+        {
+          "op": "replace-generated-outcome-with-voicing-failure",
+          "mapPath": ["realizedVoicings"],
+          "key": "event-p0-realization",
+          "sourceRef": "P0-SOURCE-AUTO-CMAJ7",
+          "voicingFailureFixtureRef": "tests/fixtures/voicing/operation-state-cases.json#V0-OP-REFUSAL-014",
+          "voicingFailureProjection": {
+            "refusalCode": "voicing.constraints_unsatisfied",
+            "termination": "constraints-unsatisfied"
+          }
+        }
+      ],
+      "expected": {
+        "ok": false,
+        "code": "playback.realization_unavailable",
+        "path": ["realizedVoicings", "event-p0-realization"],
+        "eventId": "event-p0-realization",
+        "voicingRefusalCode": "voicing.constraints_unsatisfied",
+        "voicingTermination": "constraints-unsatisfied",
+        "termination": "realization-invalid",
+        "partialResult": false,
+        "fallbackPitchesForbidden": true
+      },
+      "traceIds": ["P0-TRACE-REALIZATION", "P0-TRACE-REFUSALS"],
+      "authorityIds": ["P0-AUTH-V0", "P0-AUTH-CONTRACT"]
+    },
+    {
+      "id": "P0-REAL-014",
+      "description": "A malformed selected candidate refuses without attempting candidate generation.",
+      "mutations": [
+        {"op": "replace", "path": ["realizedVoicings", "event-p0-realization", "outcome", "candidate", "schema"], "value": "changes.theory.voicing-candidate.v999"}
+      ],
+      "expected": {
+        "ok": false,
+        "code": "playback.generated_candidate_invalid",
+        "path": ["realizedVoicings", "event-p0-realization", "outcome", "candidate"],
+        "eventId": "event-p0-realization",
+        "reason": "shape",
+        "termination": "realization-invalid",
+        "partialResult": false
+      },
+      "traceIds": ["P0-TRACE-REALIZATION", "P0-TRACE-REFUSALS"],
+      "authorityIds": ["P0-AUTH-V0", "P0-AUTH-CONTRACT"]
+    },
+    {
+      "id": "P0-REAL-015",
+      "description": "A complete valid candidate from another V0 family must not replace the selected source Auto family.",
+      "mutations": [
+        {"op": "replace-generated-candidate-from-v0-fixture", "mapPath": ["realizedVoicings"], "key": "event-p0-realization", "candidateFixtureRef": "tests/fixtures/voicing/candidate-cases.json#V0-CAND-003"}
+      ],
+      "expected": {
+        "ok": false,
+        "code": "playback.generated_candidate_policy_mismatch",
+        "path": ["realizedVoicings", "event-p0-realization", "outcome", "candidate", "family"],
+        "eventId": "event-p0-realization",
+        "expectedFamily": "balanced",
+        "receivedFamily": "open",
+        "termination": "realization-invalid",
+        "partialResult": false
+      },
+      "traceIds": ["P0-TRACE-REALIZATION", "P0-TRACE-REFUSALS"],
+      "authorityIds": ["P0-AUTH-V0", "P0-AUTH-CONTRACT"]
+    },
+    {
+      "id": "P0-REAL-016",
+      "description": "Selected candidate voice count must match the source Auto voice count.",
+      "mutations": [
+        {"op": "truncate", "path": ["realizedVoicings", "event-p0-realization", "outcome", "candidate", "voices"], "length": 3},
+        {"op": "truncate", "path": ["realizedVoicings", "event-p0-realization", "outcome", "candidate", "pitches"], "length": 3}
+      ],
+      "expected": {
+        "ok": false,
+        "code": "playback.generated_candidate_voice_count_mismatch",
+        "path": ["realizedVoicings", "event-p0-realization", "outcome", "candidate", "voices"],
+        "eventId": "event-p0-realization",
+        "expected": 4,
+        "received": 3,
+        "termination": "realization-invalid",
+        "partialResult": false
+      },
+      "traceIds": ["P0-TRACE-REALIZATION", "P0-TRACE-REFUSALS"],
+      "authorityIds": ["P0-AUTH-V0", "P0-AUTH-CONTRACT"]
+    },
+    {
+      "id": "P0-REAL-017",
+      "description": "candidate.pitches and candidate.voices pitches are correlated by ordinal.",
+      "mutations": [
+        {"op": "replace", "path": ["realizedVoicings", "event-p0-realization", "outcome", "candidate", "pitches", 2], "value": {"step": "C", "alter": -1, "octave": 4}}
+      ],
+      "expected": {
+        "ok": false,
+        "code": "playback.generated_candidate_pitch_mismatch",
+        "path": ["realizedVoicings", "event-p0-realization", "outcome", "candidate", "pitches", 2],
+        "eventId": "event-p0-realization",
+        "pitchOrdinal": 2,
+        "termination": "realization-invalid",
+        "partialResult": false
+      },
+      "traceIds": ["P0-TRACE-REALIZATION", "P0-TRACE-REFUSALS"],
+      "authorityIds": ["P0-AUTH-V0", "P0-AUTH-CONTRACT"]
+    },
+    {
+      "id": "P0-REAL-018",
+      "description": "Manual source snapshot mismatch refuses instead of copying stale stored pitches.",
+      "baseSourceRef": "P0-SOURCE-MANUAL-LEGACY",
+      "mutations": [
+        {"op": "replace", "path": ["document", "sections", 0, "measures", 0, "events", 0, "voicing", "pitches", 0, "octave"], "value": 5}
+      ],
+      "expected": {
+        "ok": false,
+        "code": "playback.realization_source_voicing_stale",
+        "path": ["realizedVoicings", "event-p0-realization", "result", "voicing"],
+        "eventId": "event-p0-realization",
+        "termination": "realization-invalid",
+        "partialResult": false
+      },
+      "traceIds": ["P0-TRACE-STORED", "P0-TRACE-STALE", "P0-TRACE-REFUSALS"],
+      "authorityIds": ["P0-AUTH-DOMAIN", "P0-AUTH-CONTRACT"]
+    },
+    {
+      "id": "P0-REAL-019",
+      "description": "A generated binding kind cannot stand in for a Manual event.",
+      "baseSourceRef": "P0-SOURCE-MANUAL-LEGACY",
+      "mutations": [
+        {"op": "replace-stored-binding-with-generated-seed", "mapPath": ["realizedVoicings"], "key": "event-p0-realization", "candidateSeedRef": "P0-CAND-AUTO-CMAJ7", "preserveManualSourceSnapshot": true}
+      ],
+      "expected": {
+        "ok": false,
+        "code": "playback.stored_voicing_binding_mismatch",
+        "path": ["realizedVoicings", "event-p0-realization", "kind"],
+        "eventId": "event-p0-realization",
+        "mode": "manual",
+        "termination": "realization-invalid",
+        "partialResult": false
+      },
+      "traceIds": ["P0-TRACE-REALIZATION", "P0-TRACE-REFUSALS"],
+      "authorityIds": ["P0-AUTH-CONTRACT"]
+    },
+    {
+      "id": "P0-REAL-020",
+      "description": "Custom input without a playable stored binding refuses and never invents a formula or pitch list.",
+      "baseSourceRef": "P0-SOURCE-CUSTOM-GLASS",
+      "mutations": [
+        {"op": "replace-map-entry-with-malformed-custom-unavailable", "mapPath": ["realizedVoicings"], "key": "event-p0-realization", "sourceRef": "P0-SOURCE-CUSTOM-GLASS", "note": "Defensive runtime near-miss; F3 cannot publish a Custom chord without stored pitches."}
+      ],
+      "expected": {
+        "ok": false,
+        "code": "playback.custom_voicing_missing",
+        "path": ["realizedVoicings", "event-p0-realization"],
+        "eventId": "event-p0-realization",
+        "termination": "realization-invalid",
+        "partialResult": false,
+        "fallbackPitchesForbidden": true
+      },
+      "traceIds": ["P0-TRACE-CUSTOM", "P0-TRACE-REFUSALS"],
+      "authorityIds": ["P0-AUTH-DOMAIN", "P0-AUTH-F3", "P0-AUTH-CONTRACT"]
+    },
+    {
+      "id": "P0-REAL-021",
+      "description": "A corrupted branded duration whose denominator does not divide PPQ refuses defensively; a genuine F3 ValidatedDocument cannot reach this state.",
+      "mutations": [
+        {"op": "replace-branded-runtime-value", "path": ["document", "sections", 0, "measures", 0, "events", 0, "duration"], "value": {"numerator": 1, "denominator": 7}, "brandClaim": "BeatDuration", "upstreamPublicationBypassed": true}
+      ],
+      "expected": {
+        "ok": false,
+        "code": "playback.gate_not_midi_integral",
+        "path": ["document", "sections", 0, "measures", 0, "events", 0, "duration"],
+        "eventId": "event-p0-realization",
+        "durationBeats": {"numerator": 1, "denominator": 7},
+        "ppq": 960,
+        "termination": "gate-invalid",
+        "partialResult": false
+      },
+      "traceIds": ["P0-TRACE-GATE", "P0-TRACE-MIDI", "P0-TRACE-REFUSALS"],
+      "authorityIds": ["P0-AUTH-DOMAIN", "P0-AUTH-POLICY"]
+    },
+    {
+      "id": "P0-REAL-022",
+      "description": "Missing beats extra in refusal precedence when both defects are independently present.",
+      "mutations": [
+        {"op": "delete-map-entry", "mapPath": ["realizedVoicings"], "key": "event-p0-realization"},
+        {"op": "insert-map-entry", "mapPath": ["realizedVoicings"], "key": "event-p0-extra", "bindingFromEvent": "event-p0-realization", "replaceBindingEventId": "event-p0-extra", "sourceBeforeDeletion": true}
+      ],
+      "expected": {
+        "ok": false,
+        "code": "playback.realization_binding_missing",
+        "path": ["realizedVoicings", "event-p0-realization"],
+        "eventId": "event-p0-realization",
+        "termination": "realization-invalid",
+        "partialResult": false
+      },
+      "traceIds": ["P0-TRACE-REFUSALS", "P0-TRACE-DETERMINISM"],
+      "authorityIds": ["P0-AUTH-CONTRACT", "P0-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "P0-REAL-023",
+      "description": "A valid candidate from a different named T1 realization cannot be substituted.",
+      "mutations": [
+        {"op": "replace-generated-candidate-from-v0-fixture", "mapPath": ["realizedVoicings"], "key": "event-p0-realization", "candidateFixtureRef": "tests/fixtures/voicing/candidate-cases.json#V0-CAND-012"}
+      ],
+      "expected": {
+        "ok": false,
+        "code": "playback.generated_candidate_realization_mismatch",
+        "path": ["realizedVoicings", "event-p0-realization", "outcome", "candidate", "realizationId"],
+        "eventId": "event-p0-realization",
+        "expected": "literal",
+        "received": "alt-b9-b5",
+        "termination": "realization-invalid",
+        "partialResult": false
+      },
+      "traceIds": ["P0-TRACE-REALIZATION", "P0-TRACE-REFUSALS"],
+      "authorityIds": ["P0-AUTH-T1", "P0-AUTH-V0", "P0-AUTH-CONTRACT"]
+    }
+  ]
+}

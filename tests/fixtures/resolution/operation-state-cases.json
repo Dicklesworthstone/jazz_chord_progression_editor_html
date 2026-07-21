@@ -1,0 +1,287 @@
+{
+  "schema": "changes.fixtures.t1-operation-state-cases.v1",
+  "fixtureVersion": "1.0.0",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "applicabilityVocabulary": ["not-applicable", "required"],
+  "pathPolicy": {
+    "sixth": ["sixth"],
+    "arrayInvalid": "[field, index], including the first excess item",
+    "colorPolicy": ["colorPolicy"],
+    "modifierConflict": "path equals leftPath; leftPath and rightPath are ordered by formula phase and then source index",
+    "wholeOutputBound": [],
+    "directSpelling": ["degree"],
+    "resolverSpelling": "the explicit modifier source path when that modifier makes the retained degree unspellable; otherwise root for every v1 base-family accidental overflow",
+    "noGeneratedOutputPaths": true
+  },
+  "cases": [
+    {
+      "id": "T1-OPSTATE-001",
+      "operation": "spellChordDegree",
+      "operationClass": "pure synchronous directed interval arithmetic",
+      "cancellation": {"applicability":"not-applicable","reason":"one bounded directed letter and semitone calculation has no cancellation observation point"},
+      "staleRevision": {"applicability":"not-applicable","reason":"root and degree are immutable values and carry no document revision"},
+      "evidenceRows": [
+        {"id":"T1-SPELL-EVIDENCE-SUCCESS","input":{"root":{"step":"D","alter":-1},"degree":{"number":7,"alter":-1}},"expectedResultRef":"T1-SPELL-001","expectedEvidence":{"inputDegreeRecordsVisited":0,"formulaPhaseTransitions":0,"candidateDegreesObserved":0,"duplicateDegreesCanonicalized":0,"realizationsProduced":0,"spellingAttempts":1,"degreesProduced":1,"warningsProduced":0,"peakCandidateDegreeRecords":0,"termination":"complete"}},
+        {"id":"T1-SPELL-EVIDENCE-REFUSAL","input":{"root":{"step":"C","alter":2},"degree":{"number":9,"alter":1}},"expectedResultRef":"T1-SPELL-011","expectedEvidence":{"inputDegreeRecordsVisited":0,"formulaPhaseTransitions":0,"candidateDegreesObserved":0,"duplicateDegreesCanonicalized":0,"realizationsProduced":0,"spellingAttempts":1,"degreesProduced":0,"warningsProduced":0,"peakCandidateDegreeRecords":0,"termination":"spelling-refusal"}}
+      ],
+      "expected": {"stateMutation":"none","deterministicWorkBound":"one spelling attempt","deterministicMemoryBound":"one result or one refusal","successPath":"value","refusalPath":["degree"]},
+      "traceIds": ["T1-TRACE-OPERATION-STATE", "T1-TRACE-SPELLING"],
+      "authorityIds": ["T1-AUTH-INDEPENDENCE", "T1-AUTH-SPELLING"]
+    },
+    {
+      "id": "T1-OPSTATE-002",
+      "operation": "resolveChord parsed literal",
+      "operationClass": "pure synchronous bounded formula pipeline",
+      "cancellation": {"applicability":"not-applicable","reason":"a domain-valid ChordSpec has frozen finite input maxima and the eight phases complete synchronously"},
+      "staleRevision": {"applicability":"not-applicable","reason":"T1 returns a value and never publishes to application state"},
+      "expected": {"stateMutation":"none","partialCommit":false,"maximumFormulaPhases":8,"maximumPhaseTransitions":32,"maximumInputDegreeRecordsVisited":23,"maximumCandidateInsertions":84,"maximumPeakCandidateDegreeRecords":21,"maximumTrackedRecords":149},
+      "traceIds": ["T1-TRACE-LIMITS", "T1-TRACE-OPERATION-STATE"],
+      "authorityIds": ["T1-AUTH-FORMULA", "T1-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "T1-OPSTATE-003",
+      "operation": "resolveChord altered dominant",
+      "operationClass": "pure synchronous bounded four-branch formula pipeline",
+      "cancellation": {"applicability":"not-applicable","reason":"all four variants are required output and bounded before invocation"},
+      "staleRevision": {"applicability":"not-applicable","reason":"the operation neither chooses an audition variant nor changes a document"},
+      "expected": {"realizations":4,"semanticOutputRecordsMaximum":64,"spellingAttemptsMaximum":64,"warningsMaximum":1,"chosenVariant":null,"variantOrder":["alt-b9-b5","alt-b9-sharp5","alt-sharp9-b5","alt-sharp9-sharp5"]},
+      "traceIds": ["T1-TRACE-ALT-VARIANTS", "T1-TRACE-LIMITS", "T1-TRACE-OPERATION-STATE"],
+      "authorityIds": ["T1-AUTH-FORMULA", "T1-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "T1-OPSTATE-004",
+      "operation": "resolveChord custom",
+      "operationClass": "pure synchronous exact projection over a domain-bounded tuple",
+      "cancellation": {"applicability":"not-applicable","reason":"custom pitchNames is nonempty and capped at sixteen before T1 is called"},
+      "staleRevision": {"applicability":"not-applicable","reason":"the operation does not publish or mutate the CustomChordSpec"},
+      "expected": {"maximumInputPitches":16,"maximumProjectionRecords":16,"realizations":1,"warnings":0,"stateMutation":"none"},
+      "traceIds": ["T1-TRACE-CUSTOM", "T1-TRACE-LIMITS", "T1-TRACE-OPERATION-STATE"],
+      "authorityIds": ["T1-AUTH-DOMAIN", "T1-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "T1-OPSTATE-005",
+      "operation": "resolveChord refusal",
+      "operationClass": "transactional pure validation and construction",
+      "cancellation": {"applicability":"not-applicable","reason":"the first frozen-precedence refusal ends synchronous work"},
+      "staleRevision": {"applicability":"not-applicable","reason":"no application state is read or written"},
+      "expected": {"stateMutation":"none","partialValue":false,"partialRealizations":false,"partialWarnings":false,"sourceUnchanged":true,"altSelection":false},
+      "traceIds": ["T1-TRACE-OPERATION-STATE", "T1-TRACE-STRICT-REFUSAL"],
+      "authorityIds": ["T1-AUTH-FORMULA", "T1-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "T1-OPSTATE-006",
+      "operation": "publish a resolved chord into a progression document",
+      "operationClass": "later application command outside T1",
+      "cancellation": {"applicability":"not-applicable","reason":"the eventual A0 publication command is synchronous and atomic"},
+      "staleRevision": {"applicability":"required","ownedBy":"A0","reason":"a later mutating command must compare base revision before committing; T1 itself accepts no revision parameter"},
+      "expected": {"t1ImplementationRequired":false,"t1ResultMayBeReusedAsAuthorityAfterSourceRevision":false,"partialCommit":false},
+      "traceIds": ["T1-TRACE-OPERATION-STATE"],
+      "authorityIds": ["T1-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "T1-OPSTATE-007",
+      "operation": "resolveChord collection preflight and exact source paths",
+      "operationClass": "first-excess bounded validation matrix",
+      "cancellation": {"applicability":"not-applicable","reason":"each finite collection stops at its first excess item"},
+      "staleRevision": {"applicability":"not-applicable","reason":"validation is over an immutable source value"},
+      "rows": [
+        {
+          "field":"extensions",
+          "inclusiveMaximum":1,
+          "firstExcessIndex":1,
+          "inputRecipe":{"base":"Cmaj7","extensions":[{"number":9,"alter":0},{"number":1,"alter":0}]},
+          "expectedRefusal":{"code":"theory.extension_invalid","path":["extensions",1],"phase":"base","ruleId":"extension-major","received":{"number":1,"alter":0},"reason":"count"}
+        },
+        {
+          "field":"additions",
+          "inclusiveMaximum":7,
+          "firstExcessIndex":7,
+          "inputRecipe":{"base":"C","additions":[{"number":2,"alter":0},{"number":3,"alter":0},{"number":4,"alter":0},{"number":6,"alter":0},{"number":9,"alter":0},{"number":11,"alter":0},{"number":13,"alter":0},{"number":1,"alter":0}]},
+          "expectedRefusal":{"code":"theory.addition_invalid","path":["additions",7],"phase":"additions","ruleId":"base-major","received":{"number":1,"alter":0},"reason":"count"}
+        },
+        {
+          "field":"alterations",
+          "inclusiveMaximum":8,
+          "firstExcessIndex":8,
+          "inputRecipe":{"base":"C7","alterations":[{"number":5,"alter":-1},{"number":5,"alter":1},{"number":9,"alter":-1},{"number":9,"alter":1},{"number":11,"alter":-1},{"number":11,"alter":1},{"number":13,"alter":-1},{"number":13,"alter":1},{"number":3,"alter":-1}]},
+          "expectedRefusal":{"code":"theory.alteration_invalid","path":["alterations",8],"phase":"structural-alterations","ruleId":"seventh-dominant","received":{"number":3,"alter":-1},"reason":"count"}
+        },
+        {
+          "field":"omissions",
+          "inclusiveMaximum":2,
+          "firstExcessIndex":2,
+          "inputRecipe":{"base":"C7","omissions":[3,5,7]},
+          "expectedRefusal":{"code":"theory.omission_invalid","path":["omissions",2],"phase":"omissions","ruleId":"seventh-dominant","received":7,"reason":"count"}
+        }
+      ],
+      "reasonPrecedenceRows": [
+        {"id":"T1-REASON-PRECEDENCE-001","contenders":["alteration","family"],"inputRecipe":{"base":"Cdim","sixth":{"number":6,"alter":-1}},"expectedRefusal":{"code":"theory.sixth_invalid","path":["sixth"],"phase":"base","ruleId":"base-diminished","received":{"number":6,"alter":-1},"reason":"alteration"}},
+        {"id":"T1-REASON-PRECEDENCE-002","contenders":["number","alteration"],"inputRecipe":{"base":"C","extensions":[{"number":1,"alter":-1}]},"expectedRefusal":{"code":"theory.extension_invalid","path":["extensions",0],"phase":"base","ruleId":"base-major","received":{"number":1,"alter":-1},"reason":"number"}},
+        {"id":"T1-REASON-PRECEDENCE-003","contenders":["alteration","family"],"inputRecipe":{"base":"Cm(maj7)","extensions":[{"number":9,"alter":1}]},"expectedRefusal":{"code":"theory.extension_invalid","path":["extensions",0],"phase":"base","ruleId":"seventh-minor-major","received":{"number":9,"alter":1},"reason":"alteration"}},
+        {"id":"T1-REASON-PRECEDENCE-004","contenders":["number","alteration"],"inputRecipe":{"base":"C","additions":[{"number":1,"alter":-1}]},"expectedRefusal":{"code":"theory.addition_invalid","path":["additions",0],"phase":"additions","ruleId":"base-major","received":{"number":1,"alter":-1},"reason":"number"}},
+        {"id":"T1-REASON-PRECEDENCE-005","contenders":["number","alteration"],"inputRecipe":{"base":"C7","alterations":[{"number":3,"alter":-2}]},"expectedRefusal":{"code":"theory.alteration_invalid","path":["alterations",0],"phase":"structural-alterations","ruleId":"seventh-dominant","received":{"number":3,"alter":-2},"reason":"number"}},
+        {"id":"T1-REASON-PRECEDENCE-006","contenders":["requires-dominant-seventh","explicit-five-or-nine-alteration"],"inputRecipe":{"base":"C","colorPolicy":"altered-dominant","alterations":[{"number":5,"alter":-1}]},"expectedRefusal":{"code":"theory.color_policy_invalid","path":["colorPolicy"],"phase":"color-alterations","ruleId":"altered-dominant","received":"altered-dominant","reason":"requires-dominant-seventh"}}
+      ],
+      "expected": {
+        "reasonPrecedence":{"sixth":["alteration","family"],"extension":["count","number","alteration","family"],"addition":["count","number","alteration"],"alteration":["count","number","alteration"],"omission":["count","number"],"colorPolicy":["requires-dominant-seventh","explicit-five-or-nine-alteration"]},
+        "adjacentReasonPrecedencePairs":10,
+        "sourceItemsAfterFirstExcessVisited":0,
+        "partialValue":false
+      },
+      "traceIds": ["T1-TRACE-LIMITS", "T1-TRACE-OPERATION-STATE", "T1-TRACE-STRICT-REFUSAL"],
+      "authorityIds": ["T1-AUTH-FORMULA", "T1-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "T1-OPSTATE-008",
+      "operation": "resolution refusal path provenance",
+      "operationClass": "source-owned path matrix",
+      "cancellation": {"applicability":"not-applicable","reason":"path selection is part of the synchronous refusal"},
+      "staleRevision": {"applicability":"not-applicable","reason":"no generated output is published"},
+      "rows": [
+        {"cause":"invalid sixth","expectedPath":["sixth"]},
+        {"cause":"invalid extension index i","expectedPathTemplate":["extensions","i"]},
+        {"cause":"invalid addition index i","expectedPathTemplate":["additions","i"]},
+        {"cause":"invalid alteration index i","expectedPathTemplate":["alterations","i"]},
+        {"cause":"invalid omission index i","expectedPathTemplate":["omissions","i"]},
+        {"cause":"color-policy incompatibility","expectedPath":["colorPolicy"]},
+        {"cause":"modifier conflict","expectedPathEquals":"leftPath","pathOrder":"phase then source index"},
+        {"cause":"whole output degree bound","expectedPath":[]},
+        {"cause":"direct spellChordDegree","expectedPath":["degree"]},
+        {"cause":"explicit addition creates unspellable degree","expectedPathTemplate":["additions","i"],"evidenceRowId":"T1-EVIDENCE-ADDITION-SPELLING-REFUSAL"},
+        {"cause":"explicit alteration creates unspellable degree","expectedPathTemplate":["alterations","i"],"evidenceRowId":"T1-EVIDENCE-MODIFIER-SPELLING-REFUSAL"},
+        {"cause":"E-double-sharp major family third requires G-triple-sharp only because of root spelling","expectedPath":["root"]}
+      ],
+      "expected": {"generatedRealizationPathAllowed":false,"partialOutput":false},
+      "traceIds": ["T1-TRACE-OPERATION-STATE", "T1-TRACE-SPELLING", "T1-TRACE-STRICT-REFUSAL"],
+      "authorityIds": ["T1-AUTH-FORMULA", "T1-AUTH-INDEPENDENCE", "T1-AUTH-SPELLING"]
+    },
+    {
+      "id": "T1-OPSTATE-009",
+      "operation": "resolveChord exact evidence termination matrix",
+      "operationClass": "independently counted bounded work for every terminal branch",
+      "cancellation": {"applicability":"not-applicable","reason":"pure bounded synchronous theory operation"},
+      "staleRevision": {"applicability":"not-applicable","reason":"T1 receives an immutable ChordSpec value and owns no document revision"},
+      "crossRealizationSchedule": {
+        "construction": "phase-major then stable-realization-order through canonicalization",
+        "spelling": "after every realization completes canonicalization, stable-realization-order then canonical-degree-order",
+        "refusal": "stop at the first decisive refusal and count its entered phase or spelling attempt"
+      },
+      "counterSemantics": {
+        "inputDegreeRecordsVisited": "non-null sixth plus each reached extensions, additions, alterations, and omissions source record during precedence preflight",
+        "formulaPhaseTransitions": "one when a realization enters a declared formula phase; preflight and family-selection refusal enters none",
+        "candidateDegreesObserved": "every candidate insertion, including an exact duplicate later canonicalized",
+        "duplicateDegreesCanonicalized": "candidate records removed as exact number-plus-alteration duplicates in phase 7",
+        "realizationsProduced": "immutable realization records present on the returned success branch; zero for every refusal",
+        "spellingAttempts": "degrees reached in realization then canonical-degree order, including the refusing attempt",
+        "degreesProduced": "semantic degree records present on the returned success branch; zero for every refusal",
+        "warningsProduced": "warnings present on the returned success branch; zero for every refusal",
+        "peakCandidateDegreeRecords": "largest simultaneous candidate-record count in one realization",
+        "termination": "the exact terminal branch after the counted work; no counter includes later work"
+      },
+      "rows": [
+        {
+          "id": "T1-EVIDENCE-COMPLETE",
+          "inputRecipe": {"base":"C"},
+          "expectedResultRef": "T1-LIT-001",
+          "expectedEvidence": {"inputDegreeRecordsVisited":0,"formulaPhaseTransitions":8,"candidateDegreesObserved":3,"duplicateDegreesCanonicalized":0,"realizationsProduced":1,"spellingAttempts":3,"degreesProduced":3,"warningsProduced":0,"peakCandidateDegreeRecords":3,"termination":"complete"}
+        },
+        {
+          "id": "T1-EVIDENCE-DUPLICATE-COMPLETE",
+          "inputRecipe": {"base":"C11","additions":[{"number":9,"alter":0}]},
+          "expectedResultRef": "T1-LIT-079",
+          "expectedEvidence": {"inputDegreeRecordsVisited":2,"formulaPhaseTransitions":8,"candidateDegreesObserved":7,"duplicateDegreesCanonicalized":1,"realizationsProduced":1,"spellingAttempts":6,"degreesProduced":6,"warningsProduced":0,"peakCandidateDegreeRecords":7,"termination":"complete"}
+        },
+        {
+          "id": "T1-EVIDENCE-WARNING-COMPLETE",
+          "inputRecipe": {"base":"Csus4","omissions":[3]},
+          "expectedResultRef": "T1-LIT-055",
+          "expectedEvidence": {"inputDegreeRecordsVisited":1,"formulaPhaseTransitions":8,"candidateDegreesObserved":4,"duplicateDegreesCanonicalized":0,"realizationsProduced":1,"spellingAttempts":3,"degreesProduced":3,"warningsProduced":1,"peakCandidateDegreeRecords":3,"termination":"complete"}
+        },
+        {
+          "id": "T1-EVIDENCE-CUSTOM-COMPLETE",
+          "inputRecipe": {"customCaseRef":"T1-CUSTOM-002.input"},
+          "expectedResultRef": "T1-CUSTOM-002",
+          "expectedEvidence": {"inputDegreeRecordsVisited":0,"formulaPhaseTransitions":0,"candidateDegreesObserved":0,"duplicateDegreesCanonicalized":0,"realizationsProduced":1,"spellingAttempts":0,"degreesProduced":0,"warningsProduced":0,"peakCandidateDegreeRecords":0,"termination":"complete"}
+        },
+        {
+          "id": "T1-EVIDENCE-ALTERED-COMPLETE",
+          "inputRecipe": {"base":"C7alt"},
+          "expectedResultRef": "T1-LIT-045",
+          "expectedEvidence": {"inputDegreeRecordsVisited":0,"formulaPhaseTransitions":32,"candidateDegreesObserved":20,"duplicateDegreesCanonicalized":0,"realizationsProduced":4,"spellingAttempts":20,"degreesProduced":20,"warningsProduced":0,"peakCandidateDegreeRecords":5,"termination":"complete"}
+        },
+        {
+          "id": "T1-EVIDENCE-ALTERED-NATURAL-NINE-COMPLETE",
+          "inputRecipe": {"base":"C7alt","additions":[{"number":9,"alter":0}]},
+          "expectedResultRef": "T1-LIT-087",
+          "expectedEvidence": {"inputDegreeRecordsVisited":1,"formulaPhaseTransitions":32,"candidateDegreesObserved":24,"duplicateDegreesCanonicalized":0,"realizationsProduced":4,"spellingAttempts":24,"degreesProduced":24,"warningsProduced":0,"peakCandidateDegreeRecords":6,"termination":"complete"}
+        },
+        {
+          "id": "T1-EVIDENCE-FORMULA-REFUSAL",
+          "inputRecipe": {"base":"Cdim","sixth":{"number":6,"alter":0}},
+          "expectedResultRef": "T1-LIT-070",
+          "expectedEvidence": {"inputDegreeRecordsVisited":1,"formulaPhaseTransitions":0,"candidateDegreesObserved":0,"duplicateDegreesCanonicalized":0,"realizationsProduced":0,"spellingAttempts":0,"degreesProduced":0,"warningsProduced":0,"peakCandidateDegreeRecords":0,"termination":"formula-refusal"}
+        },
+        {
+          "id": "T1-EVIDENCE-SPELLING-REFUSAL",
+          "inputRecipe": {"kind":"parsed","sourceText":"E##","root":{"step":"E","alter":2},"triad":"major","sixth":null,"seventh":null,"extensions":[],"additions":[],"alterations":[],"omissions":[],"bass":null,"colorPolicy":"none"},
+          "expectedRefusal": {"code":"theory.spelling_accidental_out_of_range","path":["root"],"phase":"spelling","degreeSpellingPolicyId":"changes.degree-spelling","degreeSpellingPolicyVersion":1,"root":{"step":"E","alter":2},"degree":{"number":3,"alter":0},"requiredAlteration":3,"minimum":-2,"maximum":2},
+          "expectedEvidence": {"inputDegreeRecordsVisited":0,"formulaPhaseTransitions":8,"candidateDegreesObserved":3,"duplicateDegreesCanonicalized":0,"realizationsProduced":0,"spellingAttempts":2,"degreesProduced":0,"warningsProduced":0,"peakCandidateDegreeRecords":3,"termination":"spelling-refusal"}
+        },
+        {
+          "id": "T1-EVIDENCE-ADDITION-SPELLING-REFUSAL",
+          "inputRecipe": {"kind":"parsed","sourceText":"D##m(add3)","root":{"step":"D","alter":2},"triad":"minor","sixth":null,"seventh":null,"extensions":[],"additions":[{"number":3,"alter":0}],"alterations":[],"omissions":[],"bass":null,"colorPolicy":"none"},
+          "expectedRefusal": {"code":"theory.spelling_accidental_out_of_range","path":["additions",0],"phase":"spelling","degreeSpellingPolicyId":"changes.degree-spelling","degreeSpellingPolicyVersion":1,"root":{"step":"D","alter":2},"degree":{"number":3,"alter":0},"requiredAlteration":3,"minimum":-2,"maximum":2},
+          "expectedEvidence": {"inputDegreeRecordsVisited":1,"formulaPhaseTransitions":8,"candidateDegreesObserved":4,"duplicateDegreesCanonicalized":0,"realizationsProduced":0,"spellingAttempts":3,"degreesProduced":0,"warningsProduced":0,"peakCandidateDegreeRecords":4,"termination":"spelling-refusal"}
+        },
+        {
+          "id": "T1-EVIDENCE-MODIFIER-SPELLING-REFUSAL",
+          "inputRecipe": {"kind":"parsed","sourceText":"C##7#9","root":{"step":"C","alter":2},"triad":"major","sixth":null,"seventh":"minor","extensions":[],"additions":[],"alterations":[{"number":9,"alter":1}],"omissions":[],"bass":null,"colorPolicy":"none"},
+          "expectedRefusal": {"code":"theory.spelling_accidental_out_of_range","path":["alterations",0],"phase":"spelling","degreeSpellingPolicyId":"changes.degree-spelling","degreeSpellingPolicyVersion":1,"root":{"step":"C","alter":2},"degree":{"number":9,"alter":1},"requiredAlteration":3,"minimum":-2,"maximum":2},
+          "expectedEvidence": {"inputDegreeRecordsVisited":1,"formulaPhaseTransitions":8,"candidateDegreesObserved":5,"duplicateDegreesCanonicalized":0,"realizationsProduced":0,"spellingAttempts":5,"degreesProduced":0,"warningsProduced":0,"peakCandidateDegreeRecords":5,"termination":"spelling-refusal"}
+        },
+        {
+          "id": "T1-EVIDENCE-ALTERED-SPELLING-REFUSAL",
+          "inputRecipe": {"kind":"parsed","sourceText":"E##7alt","root":{"step":"E","alter":2},"triad":"major","sixth":null,"seventh":"minor","extensions":[],"additions":[],"alterations":[],"omissions":[],"bass":null,"colorPolicy":"altered-dominant"},
+          "expectedRefusal": {"code":"theory.spelling_accidental_out_of_range","path":["root"],"phase":"spelling","degreeSpellingPolicyId":"changes.degree-spelling","degreeSpellingPolicyVersion":1,"root":{"step":"E","alter":2},"degree":{"number":3,"alter":0},"requiredAlteration":3,"minimum":-2,"maximum":2},
+          "expectedEvidence": {"inputDegreeRecordsVisited":0,"formulaPhaseTransitions":29,"candidateDegreesObserved":20,"duplicateDegreesCanonicalized":0,"realizationsProduced":0,"spellingAttempts":2,"degreesProduced":0,"warningsProduced":0,"peakCandidateDegreeRecords":5,"termination":"spelling-refusal"}
+        },
+        {
+          "id": "T1-EVIDENCE-OUTPUT-LIMIT-REFUSAL",
+          "inputRecipe": {"base":"Cdim","additions":[{"number":2,"alter":0},{"number":3,"alter":0},{"number":4,"alter":0},{"number":6,"alter":0},{"number":9,"alter":0},{"number":11,"alter":0},{"number":13,"alter":0}],"alterations":[{"number":5,"alter":1},{"number":9,"alter":-1},{"number":9,"alter":1},{"number":11,"alter":-1},{"number":11,"alter":1},{"number":13,"alter":-1},{"number":13,"alter":1}]},
+          "expectedRefusal": {"code":"limit.theory_realization_degrees_exceeded","path":[],"phase":"canonicalization","ruleId":"base-diminished","received":17,"maximum":16},
+          "expectedEvidence": {"inputDegreeRecordsVisited":14,"formulaPhaseTransitions":7,"candidateDegreesObserved":17,"duplicateDegreesCanonicalized":0,"realizationsProduced":0,"spellingAttempts":0,"degreesProduced":0,"warningsProduced":0,"peakCandidateDegreeRecords":17,"termination":"output-limit-refusal"}
+        }
+      ],
+      "expected": {"terminationInventory":["complete","formula-refusal","spelling-refusal","output-limit-refusal"],"callableBranchInventory":["spell-success","spell-refusal","parsed-literal-success","parsed-duplicate-success","parsed-warning-success","parsed-altered-success","parsed-altered-natural-nine-success","custom-success","formula-refusal","parsed-literal-spelling-refusal","parsed-explicit-addition-spelling-refusal","parsed-explicit-alteration-spelling-refusal","parsed-altered-spelling-refusal","output-limit-refusal"],"allCountersAreNonnegativeSafeIntegers":true,"workAfterTermination":0,"partialOutput":false},
+      "traceIds": ["T1-TRACE-LIMITS", "T1-TRACE-OPERATION-STATE", "T1-TRACE-SPELLING", "T1-TRACE-STRICT-REFUSAL"],
+      "authorityIds": ["T1-AUTH-FORMULA", "T1-AUTH-INDEPENDENCE", "T1-AUTH-SPELLING"]
+    },
+    {
+      "id": "T1-OPSTATE-010",
+      "operation": "resolveChord global refusal precedence tournament",
+      "operationClass": "pairwise multi-fault winner matrix with source-index and conflict-order ties",
+      "cancellation": {"applicability":"not-applicable","reason":"pure bounded synchronous theory operation"},
+      "staleRevision": {"applicability":"not-applicable","reason":"T1 receives an immutable ChordSpec value and owns no document revision"},
+      "rows": [
+        {"id":"T1-PRECEDENCE-001","earlierCode":"theory.sixth_invalid","laterCode":"theory.extension_invalid","inputRecipe":{"base":"C","sixth":{"number":6,"alter":-1},"extensions":[{"number":7,"alter":0}]},"expectedWinner":{"code":"theory.sixth_invalid","path":["sixth"],"phase":"base","ruleId":"base-major","received":{"number":6,"alter":-1},"reason":"alteration"}},
+        {"id":"T1-PRECEDENCE-002","earlierCode":"theory.extension_invalid","laterCode":"theory.addition_invalid","inputRecipe":{"base":"Cm(maj7)","extensions":[{"number":9,"alter":0}],"additions":[{"number":1,"alter":0}]},"expectedWinner":{"code":"theory.extension_invalid","path":["extensions",0],"phase":"base","ruleId":"seventh-minor-major","received":{"number":9,"alter":0},"reason":"family"}},
+        {"id":"T1-PRECEDENCE-003","earlierCode":"theory.addition_invalid","laterCode":"theory.alteration_invalid","inputRecipe":{"base":"C","additions":[{"number":1,"alter":0}],"alterations":[{"number":3,"alter":-1}]},"expectedWinner":{"code":"theory.addition_invalid","path":["additions",0],"phase":"additions","ruleId":"base-major","received":{"number":1,"alter":0},"reason":"number"}},
+        {"id":"T1-PRECEDENCE-004","earlierCode":"theory.alteration_invalid","laterCode":"theory.omission_invalid","inputRecipe":{"base":"C7","alterations":[{"number":3,"alter":-1}],"omissions":[7]},"expectedWinner":{"code":"theory.alteration_invalid","path":["alterations",0],"phase":"structural-alterations","ruleId":"seventh-dominant","received":{"number":3,"alter":-1},"reason":"number"}},
+        {"id":"T1-PRECEDENCE-005","earlierCode":"theory.omission_invalid","laterCode":"theory.formula_family_unsupported","inputRecipe":{"base":"C5","seventh":"minor","omissions":[7]},"expectedWinner":{"code":"theory.omission_invalid","path":["omissions",0],"phase":"omissions","ruleId":"base-power","received":7,"reason":"number"}},
+        {"id":"T1-PRECEDENCE-006","earlierCode":"theory.formula_family_unsupported","laterCode":"theory.color_policy_invalid","inputRecipe":{"base":"C5","seventh":"minor","colorPolicy":"altered-dominant"},"expectedWinner":{"code":"theory.formula_family_unsupported","path":["seventh"],"phase":"base","ruleId":"base-power","triad":"power","seventh":"minor","colorPolicy":"altered-dominant"}},
+        {"id":"T1-PRECEDENCE-007","earlierCode":"theory.color_policy_invalid","laterCode":"theory.modifier_conflict","inputRecipe":{"base":"C","colorPolicy":"altered-dominant","additions":[{"number":3,"alter":0}],"omissions":[3]},"expectedWinner":{"code":"theory.color_policy_invalid","path":["colorPolicy"],"phase":"color-alterations","ruleId":"altered-dominant","received":"altered-dominant","reason":"requires-dominant-seventh"}},
+        {"id":"T1-PRECEDENCE-008","earlierCode":"theory.modifier_conflict","laterCode":"limit.theory_realization_degrees_exceeded","inputRecipe":{"base":"Cdim","additions":[{"number":2,"alter":0},{"number":3,"alter":0},{"number":4,"alter":0},{"number":6,"alter":0},{"number":9,"alter":0},{"number":11,"alter":0},{"number":13,"alter":0}],"alterations":[{"number":5,"alter":-1},{"number":5,"alter":1},{"number":9,"alter":-1},{"number":9,"alter":1},{"number":11,"alter":-1},{"number":11,"alter":1},{"number":13,"alter":-1},{"number":13,"alter":1}]},"expectedWinner":{"code":"theory.modifier_conflict","path":["alterations",0],"phase":"structural-alterations","ruleId":"base-diminished","conflict":"structural-alteration-pair","leftPath":["alterations",0],"rightPath":["alterations",1]}},
+        {"id":"T1-PRECEDENCE-009","earlierCode":"limit.theory_realization_degrees_exceeded","laterCode":"theory.spelling_accidental_out_of_range","inputRecipe":{"base":"E##dim","additions":[{"number":2,"alter":0},{"number":3,"alter":0},{"number":4,"alter":0},{"number":6,"alter":0},{"number":9,"alter":0},{"number":11,"alter":0},{"number":13,"alter":0}],"alterations":[{"number":5,"alter":1},{"number":9,"alter":-1},{"number":9,"alter":1},{"number":11,"alter":-1},{"number":11,"alter":1},{"number":13,"alter":-1},{"number":13,"alter":1}]},"expectedWinner":{"code":"limit.theory_realization_degrees_exceeded","path":[],"phase":"canonicalization","ruleId":"base-diminished","received":17,"maximum":16}},
+        {"id":"T1-PRECEDENCE-010","tie":"source-array-index","inputRecipe":{"base":"C","additions":[{"number":1,"alter":0},{"number":5,"alter":0}]},"expectedWinner":{"code":"theory.addition_invalid","path":["additions",0],"phase":"additions","ruleId":"base-major","received":{"number":1,"alter":0},"reason":"number"}},
+        {"id":"T1-PRECEDENCE-011","tie":"conflict-vocabulary","inputRecipe":{"base":"C","sixth":{"number":6,"alter":0},"seventh":"minor","extensions":[{"number":9,"alter":0}]},"expectedWinner":{"code":"theory.modifier_conflict","path":["sixth"],"phase":"base","ruleId":"sixth-major","conflict":"sixth-with-seventh","leftPath":["sixth"],"rightPath":["seventh"]}},
+        {"id":"T1-PRECEDENCE-012","tie":"conflict-vocabulary","inputRecipe":{"base":"C","sixth":{"number":6,"alter":0},"extensions":[{"number":9,"alter":0}],"additions":[{"number":3,"alter":0}],"omissions":[3]},"expectedWinner":{"code":"theory.modifier_conflict","path":["sixth"],"phase":"base","ruleId":"sixth-major","conflict":"sixth-with-extension","leftPath":["sixth"],"rightPath":["extensions",0]}},
+        {"id":"T1-PRECEDENCE-013","tie":"conflict-vocabulary","inputRecipe":{"base":"C7","additions":[{"number":3,"alter":0}],"alterations":[{"number":5,"alter":-1}],"omissions":[3,5]},"expectedWinner":{"code":"theory.modifier_conflict","path":["additions",0],"phase":"additions","ruleId":"seventh-dominant","conflict":"addition-omission","leftPath":["additions",0],"rightPath":["omissions",0]}},
+        {"id":"T1-PRECEDENCE-014","tie":"conflict-vocabulary","inputRecipe":{"base":"C7","alterations":[{"number":5,"alter":-1},{"number":5,"alter":1}],"omissions":[5]},"expectedWinner":{"code":"theory.modifier_conflict","path":["alterations",0],"phase":"structural-alterations","ruleId":"seventh-dominant","conflict":"alteration-omission","leftPath":["alterations",0],"rightPath":["omissions",0]}}
+      ],
+      "expected": {"adjacentGlobalPrecedencePairs":9,"adjacentConflictPrecedencePairs":4,"sourceIndexTieBreak":"lowest source array index","conflictTieBreakOrder":["sixth-with-seventh","sixth-with-extension","addition-omission","alteration-omission","structural-alteration-pair"],"partialOutput":false},
+      "traceIds": ["T1-TRACE-LIMITS", "T1-TRACE-OPERATION-STATE", "T1-TRACE-SPELLING", "T1-TRACE-STRICT-REFUSAL"],
+      "authorityIds": ["T1-AUTH-FORMULA", "T1-AUTH-INDEPENDENCE", "T1-AUTH-SPELLING"]
+    }
+  ]
+}

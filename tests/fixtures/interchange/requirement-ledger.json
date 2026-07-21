@@ -1,0 +1,707 @@
+{
+  "schema": "changes.fixtures.e0-requirement-ledger.v1",
+  "package": "E0",
+  "beadId": "jcpe-milestone-reliable-studio-l3a.8.1",
+  "parentBeadId": "jcpe-milestone-reliable-studio-l3a.8",
+  "reviewState": "proposed-pending-first-golden-human-acceptance",
+  "requirements": [
+    {
+      "id": "E0-REQ-IMPL-001",
+      "kind": "required-implementation",
+      "statement": "Build canonical stable-order v2 JSON encoder with decode+semantic round trip.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Required implementation; docs/E0_INTERCHANGE_CONTRACT.md sections 3.1-3.4",
+      "requiredTraceIds": [
+        "E0-TRACE-JSON-LOSSLESS",
+        "E0-TRACE-JSON-DETERMINISM",
+        "E0-TRACE-JSON-FAILURE-ISOLATION",
+        "E0-TRACE-JSON-PORTABLE-BOUND"
+      ],
+      "requiredProofKinds": [
+        "positive",
+        "negative",
+        "round-trip",
+        "golden",
+        "metamorphic",
+        "exact-boundary"
+      ]
+    },
+    {
+      "id": "E0-REQ-IMPL-002",
+      "kind": "required-implementation",
+      "statement": "Build safe filename.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Required implementation; docs/E0_INTERCHANGE_CONTRACT.md section 4",
+      "requiredTraceIds": ["E0-TRACE-FILENAME", "E0-TRACE-HOSTILE-INERT"],
+      "requiredProofKinds": [
+        "positive",
+        "negative",
+        "near-miss",
+        "exact-boundary",
+        "hostile"
+      ]
+    },
+    {
+      "id": "E0-REQ-IMPL-003",
+      "kind": "required-implementation",
+      "statement": "Build Blob/download and optional File System Access enhancement with one private pre-encoded single-use preparation and a synchronous activation start before the first await or microtask.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Required implementation; docs/E0_INTERCHANGE_CONTRACT.md section 10",
+      "requiredTraceIds": [
+        "E0-TRACE-BLOB-DELIVERY",
+        "E0-TRACE-FSA-DELIVERY",
+        "E0-TRACE-USER-GESTURE",
+        "E0-TRACE-OFFLINE-INERT"
+      ],
+      "requiredProofKinds": [
+        "positive",
+        "negative",
+        "near-miss",
+        "cancellation",
+        "adapter"
+      ]
+    },
+    {
+      "id": "E0-REQ-IMPL-004",
+      "kind": "required-implementation",
+      "statement": "Build channel-correlated object-URL/FSA cleanup with exact known-failure ledgers and a distinct cleanup-unknown protocol-reconciliation outcome.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Required implementation; docs/E0_INTERCHANGE_CONTRACT.md sections 10 and 12",
+      "requiredTraceIds": ["E0-TRACE-BLOB-DELIVERY", "E0-TRACE-TERMINATION"],
+      "requiredProofKinds": [
+        "positive",
+        "negative",
+        "exact-boundary",
+        "resource-bound"
+      ]
+    },
+    {
+      "id": "E0-REQ-IMPL-005",
+      "kind": "required-implementation",
+      "statement": "Build artifact-bound export marker settlement from private prepared bytes and internally derived receipt/hash/timestamp, using atomic latest-state A0 CAS and exact future-A1 persistence without returning AppState or accepting caller marker authority.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Required implementation; docs/E0_INTERCHANGE_CONTRACT.md sections 3.4 and 11",
+      "requiredTraceIds": [
+        "E0-TRACE-JSON-LOSSLESS",
+        "E0-TRACE-JSON-FAILURE-ISOLATION",
+        "E0-TRACE-EXPORT-MARKER"
+      ],
+      "requiredProofKinds": [
+        "positive",
+        "negative",
+        "stale",
+        "transaction",
+        "adapter"
+      ]
+    },
+    {
+      "id": "E0-REQ-IMPL-006",
+      "kind": "required-implementation",
+      "statement": "Build a bounded file/paste import pipeline that validates and copies the untrusted readAtMost completion, normalizes throws/rejections/malformed or over-cap results without raw retention, then performs schema/legacy detection and bounded preview projections; complete C0 reports and T0 diagnostics/warnings remain transient adapter evidence.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Required implementation; docs/E0_INTERCHANGE_CONTRACT.md sections 6-8 and 12",
+      "requiredTraceIds": [
+        "E0-TRACE-NATIVE-IMPORT",
+        "E0-TRACE-LEGACY-IMPORT",
+        "E0-TRACE-RAW-BYTE-PRECEDENCE",
+        "E0-TRACE-DUPLICATE-KEYS",
+        "E0-TRACE-SCHEMA-ROUTING",
+        "E0-TRACE-PRIVACY-BOUNDS",
+        "E0-TRACE-TERMINATION"
+      ],
+      "requiredProofKinds": [
+        "positive",
+        "negative",
+        "near-miss",
+        "metamorphic",
+        "exact-boundary",
+        "transaction",
+        "resource-bound"
+      ]
+    },
+    {
+      "id": "E0-REQ-IMPL-007",
+      "kind": "required-implementation",
+      "statement": "Build temporary F2/C0/F3 validation.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Required implementation; docs/E0_INTERCHANGE_CONTRACT.md sections 3.3, 6, and 8",
+      "requiredTraceIds": [
+        "E0-TRACE-JSON-LOSSLESS",
+        "E0-TRACE-CHART-IMPORT",
+        "E0-TRACE-NATIVE-IMPORT",
+        "E0-TRACE-LEGACY-IMPORT",
+        "E0-TRACE-FAILURE-ISOLATION"
+      ],
+      "requiredProofKinds": [
+        "positive",
+        "negative",
+        "round-trip",
+        "transaction",
+        "state-isolation"
+      ]
+    },
+    {
+      "id": "E0-REQ-IMPL-008",
+      "kind": "required-implementation",
+      "statement": "Replace A0 AppState.importDraft with InterchangeImportDraft | null; validate every reading/invalid/ready/cancelled reducer branch; keep the candidate only inside the ready preview; and build bounded summary/issue/report projections plus replacement confirmation without retaining raw payloads, complete C0 reports, or T0 diagnostics/warnings in preview or application state.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Required implementation; docs/E0_INTERCHANGE_CONTRACT.md sections 8 and 9",
+      "requiredTraceIds": [
+        "E0-TRACE-PRIVACY-BOUNDS",
+        "E0-TRACE-CONFIRM-REPLACE",
+        "E0-TRACE-HISTORY-IMPACT"
+      ],
+      "requiredProofKinds": [
+        "positive",
+        "negative",
+        "near-miss",
+        "transaction",
+        "resource-bound"
+      ]
+    },
+    {
+      "id": "E0-REQ-IMPL-009",
+      "kind": "required-implementation",
+      "statement": "Build cancel.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Required implementation; docs/E0_INTERCHANGE_CONTRACT.md sections 6 and 9",
+      "requiredTraceIds": [
+        "E0-TRACE-L-IMPORT-01",
+        "E0-TRACE-FAILURE-ISOLATION",
+        "E0-TRACE-CANCEL-STALE"
+      ],
+      "requiredProofKinds": [
+        "negative",
+        "cancellation",
+        "stale",
+        "state-isolation"
+      ]
+    },
+    {
+      "id": "E0-REQ-IMPL-010",
+      "kind": "required-implementation",
+      "statement": "Build one private replacement command only after A0 prepares one live single-use capability and the composition-bound X1 adapter returns exact structural retirement evidence; plain receipts and per-call or unbound trusted adapters cannot substitute. Prove the request-keyed A0 invalidation primitive is synchronous, total, idempotent, nonthrowing, and leaves liveForRequest zero for every closed reason.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Required implementation; docs/E0_INTERCHANGE_CONTRACT.md section 9",
+      "requiredTraceIds": ["E0-TRACE-CONFIRM-REPLACE"],
+      "requiredProofKinds": ["positive", "negative", "transaction", "adapter"]
+    },
+    {
+      "id": "E0-REQ-IMPL-011",
+      "kind": "required-implementation",
+      "statement": "Implement canonical text export/import through T0 grammar with explicit durations/directives/JSON annotations and fixed document-mode ASCII parser style for import.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Required implementation; docs/E0_INTERCHANGE_CONTRACT.md sections 5 and 8.3",
+      "requiredTraceIds": [
+        "E0-TRACE-TEXT-SUPPORTED-ROUNDTRIP",
+        "E0-TRACE-TEXT-BLOCKERS",
+        "E0-TRACE-TEXT-FAILURE-ISOLATION",
+        "E0-TRACE-CHART-IMPORT"
+      ],
+      "requiredProofKinds": [
+        "positive",
+        "negative",
+        "near-miss",
+        "transposition",
+        "round-trip",
+        "golden"
+      ]
+    },
+    {
+      "id": "E0-REQ-IMPL-012",
+      "kind": "required-implementation",
+      "statement": "Implement loss report.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Required implementation; docs/E0_INTERCHANGE_CONTRACT.md section 5.2",
+      "requiredTraceIds": ["E0-TRACE-TEXT-LOSSES"],
+      "requiredProofKinds": ["positive", "loss-report", "determinism"]
+    },
+    {
+      "id": "E0-REQ-RISK-001",
+      "kind": "invariant-risk",
+      "statement": "Selecting a file never auto-applies.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Invariants and risks; docs/E0_INTERCHANGE_CONTRACT.md section 9",
+      "requiredTraceIds": ["E0-TRACE-L-IMPORT-01"],
+      "requiredProofKinds": ["positive", "transaction", "state-isolation"]
+    },
+    {
+      "id": "E0-REQ-RISK-002",
+      "kind": "invariant-risk",
+      "statement": "Failure changes only isolated draft/error UI; document/history/selection/transport/recovery stay exact.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Invariants and risks; docs/E0_INTERCHANGE_CONTRACT.md sections 3.3, 5, and 9",
+      "requiredTraceIds": [
+        "E0-TRACE-JSON-FAILURE-ISOLATION",
+        "E0-TRACE-TEXT-FAILURE-ISOLATION",
+        "E0-TRACE-L-IMPORT-01",
+        "E0-TRACE-FAILURE-ISOLATION"
+      ],
+      "requiredProofKinds": ["negative", "cancellation", "state-isolation"]
+    },
+    {
+      "id": "E0-REQ-RISK-003",
+      "kind": "invariant-risk",
+      "statement": "Never use FileSaver.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Invariants and risks; docs/E0_INTERCHANGE_CONTRACT.md section 10",
+      "requiredTraceIds": ["E0-TRACE-OFFLINE-INERT"],
+      "requiredProofKinds": ["negative", "adapter"]
+    },
+    {
+      "id": "E0-REQ-RISK-004",
+      "kind": "invariant-risk",
+      "statement": "Never use revivers.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Invariants and risks; docs/E0_INTERCHANGE_CONTRACT.md sections 3.3 and 6",
+      "requiredTraceIds": ["E0-TRACE-NATIVE-IMPORT"],
+      "requiredProofKinds": ["negative", "mutation-link"]
+    },
+    {
+      "id": "E0-REQ-RISK-005",
+      "kind": "invariant-risk",
+      "statement": "Never use imported HTML/URLs.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Invariants and risks; docs/E0_INTERCHANGE_CONTRACT.md sections 2, 4, and 10",
+      "requiredTraceIds": ["E0-TRACE-HOSTILE-INERT", "E0-TRACE-OFFLINE-INERT"],
+      "requiredProofKinds": ["negative", "hostile"]
+    },
+    {
+      "id": "E0-REQ-RISK-006",
+      "kind": "invariant-risk",
+      "statement": "Never use merge.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Invariants and risks; docs/E0_INTERCHANGE_CONTRACT.md section 9",
+      "requiredTraceIds": ["E0-TRACE-CONFIRM-REPLACE"],
+      "requiredProofKinds": ["negative", "transaction"]
+    },
+    {
+      "id": "E0-REQ-RISK-007",
+      "kind": "invariant-risk",
+      "statement": "Never claim text preserves voicings/settings/analysis.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Invariants and risks; docs/E0_INTERCHANGE_CONTRACT.md section 5.2",
+      "requiredTraceIds": ["E0-TRACE-TEXT-LOSSES"],
+      "requiredProofKinds": ["positive", "loss-report"]
+    },
+    {
+      "id": "E0-REQ-RISK-008",
+      "kind": "invariant-risk",
+      "statement": "E0 never fabricates X1 replacement-retirement evidence or accepts caller-supplied trusted authority adapters; it validates the exact structural result returned by the composition-bound serialized X1 port and invalidates every unused A0 capability by original request identity.",
+      "sourceRef": "docs/E0_INTERCHANGE_CONTRACT.md section 9",
+      "requiredTraceIds": [
+        "E0-TRACE-CONFIRM-REPLACE",
+        "E0-TRACE-FAILURE-ISOLATION"
+      ],
+      "requiredProofKinds": ["negative", "adapter", "state-isolation"]
+    },
+    {
+      "id": "E0-REQ-RISK-009",
+      "kind": "invariant-risk",
+      "statement": "Complete C0 reports and T0 diagnostics/warnings are transient evidence only and never enter preview, refusal, ImportDraft, AppState, history, recovery, or notices.",
+      "sourceRef": "docs/E0_INTERCHANGE_CONTRACT.md sections 8 and 15",
+      "requiredTraceIds": ["E0-TRACE-PRIVACY-BOUNDS"],
+      "requiredProofKinds": ["negative", "resource-bound"]
+    },
+    {
+      "id": "E0-REQ-RISK-010",
+      "kind": "invariant-risk",
+      "statement": "Canonical marker settlement cannot trust click-time state or caller marker evidence, mutate A0 exportRevision directly, return an installable historical AppState, redeliver for A1 retry, or claim reload durability before exact A1 persistence succeeds.",
+      "sourceRef": "docs/E0_INTERCHANGE_CONTRACT.md section 11",
+      "requiredTraceIds": ["E0-TRACE-EXPORT-MARKER"],
+      "requiredProofKinds": ["negative", "stale", "transaction", "adapter"]
+    },
+    {
+      "id": "E0-REQ-RISK-011",
+      "kind": "invariant-risk",
+      "statement": "Chart import always calls T0 in document mode with the public fixed ASCII accidental style; callers cannot choose the style.",
+      "sourceRef": "docs/E0_INTERCHANGE_CONTRACT.md section 8.3",
+      "requiredTraceIds": ["E0-TRACE-CHART-IMPORT"],
+      "requiredProofKinds": ["positive", "negative", "round-trip"]
+    },
+    {
+      "id": "E0-REQ-SUCCESS-001",
+      "kind": "success-criterion",
+      "statement": "Native JSON is lossless.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Success criteria; docs/E0_INTERCHANGE_CONTRACT.md sections 3.1 and 3.3",
+      "requiredTraceIds": ["E0-TRACE-JSON-LOSSLESS"],
+      "requiredProofKinds": ["positive", "round-trip", "golden"]
+    },
+    {
+      "id": "E0-REQ-SUCCESS-002",
+      "kind": "success-criterion",
+      "statement": "Native JSON is portable.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Success criteria; docs/E0_INTERCHANGE_CONTRACT.md section 3.2",
+      "requiredTraceIds": ["E0-TRACE-JSON-PORTABLE-BOUND"],
+      "requiredProofKinds": ["positive", "negative", "exact-boundary"]
+    },
+    {
+      "id": "E0-REQ-SUCCESS-003",
+      "kind": "success-criterion",
+      "statement": "Native JSON is deterministic.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Success criteria; docs/E0_INTERCHANGE_CONTRACT.md sections 3.1 and 3.4",
+      "requiredTraceIds": ["E0-TRACE-JSON-DETERMINISM"],
+      "requiredProofKinds": ["positive", "metamorphic"]
+    },
+    {
+      "id": "E0-REQ-SUCCESS-004",
+      "kind": "success-criterion",
+      "statement": "Supported chart text round-trips symbols/sections/time/annotations through the fixed document-mode ASCII import parser invocation.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Success criteria; docs/E0_INTERCHANGE_CONTRACT.md sections 5 and 8.3",
+      "requiredTraceIds": [
+        "E0-TRACE-TEXT-SUPPORTED-ROUNDTRIP",
+        "E0-TRACE-CHART-IMPORT"
+      ],
+      "requiredProofKinds": [
+        "positive",
+        "transposition",
+        "round-trip",
+        "golden"
+      ]
+    },
+    {
+      "id": "E0-REQ-SUCCESS-005",
+      "kind": "success-criterion",
+      "statement": "Import is bounded and retains only bounded issue/report projections, never complete C0 reports or T0 diagnostic/warning objects.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Success criteria; docs/E0_INTERCHANGE_CONTRACT.md sections 6 and 12",
+      "requiredTraceIds": [
+        "E0-TRACE-RAW-BYTE-PRECEDENCE",
+        "E0-TRACE-PRIVACY-BOUNDS",
+        "E0-TRACE-TERMINATION"
+      ],
+      "requiredProofKinds": ["negative", "exact-boundary", "resource-bound"]
+    },
+    {
+      "id": "E0-REQ-SUCCESS-006",
+      "kind": "success-criterion",
+      "statement": "Import is transactional and replacement is gated by one matching live A0 preparation plus exact request-bound X1 retirement evidence.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Success criteria; docs/E0_INTERCHANGE_CONTRACT.md section 9",
+      "requiredTraceIds": [
+        "E0-TRACE-L-IMPORT-01",
+        "E0-TRACE-FAILURE-ISOLATION",
+        "E0-TRACE-CANCEL-STALE",
+        "E0-TRACE-CONFIRM-REPLACE",
+        "E0-TRACE-HISTORY-IMPACT"
+      ],
+      "requiredProofKinds": [
+        "positive",
+        "negative",
+        "cancellation",
+        "stale",
+        "transaction",
+        "state-isolation"
+      ]
+    },
+    {
+      "id": "E0-REQ-SUCCESS-007",
+      "kind": "success-criterion",
+      "statement": "Export preparation/activation/success/cancel/stale/clock/cleanup outcomes update marker correctly through atomic checked A0 publication and future-A1 handoffs, with reload durability only after A1 success.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Success criteria; docs/E0_INTERCHANGE_CONTRACT.md sections 10 and 11",
+      "requiredTraceIds": [
+        "E0-TRACE-BLOB-DELIVERY",
+        "E0-TRACE-FSA-DELIVERY",
+        "E0-TRACE-EXPORT-MARKER"
+      ],
+      "requiredProofKinds": [
+        "positive",
+        "negative",
+        "cancellation",
+        "stale",
+        "transaction",
+        "adapter"
+      ]
+    },
+    {
+      "id": "E0-REQ-SUCCESS-008",
+      "kind": "success-criterion",
+      "statement": "Object URLs do not leak.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Success criteria; docs/E0_INTERCHANGE_CONTRACT.md sections 10 and 12",
+      "requiredTraceIds": ["E0-TRACE-BLOB-DELIVERY", "E0-TRACE-TERMINATION"],
+      "requiredProofKinds": ["positive", "negative", "resource-bound"]
+    },
+    {
+      "id": "E0-REQ-EVIDENCE-001",
+      "kind": "named-test-evidence-family",
+      "statement": "Provide integration tests for the named E0 scenarios.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Test plan and detailed logging; docs/E0_INTERCHANGE_CONTRACT.md sections 13-14",
+      "requiredTraceIds": [
+        "E0-TRACE-JSON-FAILURE-ISOLATION",
+        "E0-TRACE-TEXT-FAILURE-ISOLATION",
+        "E0-TRACE-L-IMPORT-01",
+        "E0-TRACE-FAILURE-ISOLATION",
+        "E0-TRACE-BLOB-DELIVERY",
+        "E0-TRACE-FSA-DELIVERY",
+        "E0-TRACE-CANCEL-STALE",
+        "E0-TRACE-CONFIRM-REPLACE",
+        "E0-TRACE-HISTORY-IMPACT",
+        "E0-TRACE-EXPORT-MARKER"
+      ],
+      "requiredProofKinds": [
+        "cancellation",
+        "stale",
+        "transaction",
+        "state-isolation",
+        "adapter"
+      ]
+    },
+    {
+      "id": "E0-REQ-EVIDENCE-002",
+      "kind": "named-test-evidence-family",
+      "statement": "Provide property tests for the named E0 scenarios.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Test plan and detailed logging; docs/E0_INTERCHANGE_CONTRACT.md sections 13-14",
+      "requiredTraceIds": [
+        "E0-TRACE-JSON-DETERMINISM",
+        "E0-TRACE-TEXT-SUPPORTED-ROUNDTRIP",
+        "E0-TRACE-RAW-BYTE-PRECEDENCE",
+        "E0-TRACE-PRIVACY-BOUNDS",
+        "E0-TRACE-TERMINATION"
+      ],
+      "requiredProofKinds": [
+        "metamorphic",
+        "transposition",
+        "exact-boundary",
+        "resource-bound"
+      ]
+    },
+    {
+      "id": "E0-REQ-EVIDENCE-003",
+      "kind": "named-test-evidence-family",
+      "statement": "Provide golden tests for the named E0 scenarios.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Test plan and detailed logging; docs/E0_INTERCHANGE_CONTRACT.md section 13",
+      "requiredTraceIds": [
+        "E0-TRACE-JSON-LOSSLESS",
+        "E0-TRACE-FILENAME",
+        "E0-TRACE-TEXT-SUPPORTED-ROUNDTRIP",
+        "E0-TRACE-TEXT-LOSSES"
+      ],
+      "requiredProofKinds": ["golden", "round-trip", "loss-report"]
+    },
+    {
+      "id": "E0-REQ-EVIDENCE-004",
+      "kind": "named-test-evidence-family",
+      "statement": "Test stable JSON bytes.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Test plan and detailed logging; docs/E0_INTERCHANGE_CONTRACT.md sections 3 and 13",
+      "requiredTraceIds": [
+        "E0-TRACE-JSON-LOSSLESS",
+        "E0-TRACE-JSON-DETERMINISM",
+        "E0-TRACE-JSON-PORTABLE-BOUND"
+      ],
+      "requiredProofKinds": ["golden", "metamorphic", "exact-boundary"]
+    },
+    {
+      "id": "E0-REQ-EVIDENCE-005",
+      "kind": "named-test-evidence-family",
+      "statement": "Test decode equality.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Test plan and detailed logging; docs/E0_INTERCHANGE_CONTRACT.md sections 3.3 and 13",
+      "requiredTraceIds": [
+        "E0-TRACE-JSON-LOSSLESS",
+        "E0-TRACE-JSON-FAILURE-ISOLATION"
+      ],
+      "requiredProofKinds": ["negative", "round-trip"]
+    },
+    {
+      "id": "E0-REQ-EVIDENCE-006",
+      "kind": "named-test-evidence-family",
+      "statement": "Test file size.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Test plan and detailed logging; docs/E0_INTERCHANGE_CONTRACT.md sections 3.2, 6, and 12",
+      "requiredTraceIds": [
+        "E0-TRACE-JSON-PORTABLE-BOUND",
+        "E0-TRACE-RAW-BYTE-PRECEDENCE",
+        "E0-TRACE-TERMINATION"
+      ],
+      "requiredProofKinds": ["negative", "exact-boundary"]
+    },
+    {
+      "id": "E0-REQ-EVIDENCE-007",
+      "kind": "named-test-evidence-family",
+      "statement": "Test file depth.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Test plan and detailed logging; docs/E0_INTERCHANGE_CONTRACT.md sections 6, 12, and 13",
+      "requiredTraceIds": ["E0-TRACE-TERMINATION"],
+      "requiredProofKinds": ["negative", "exact-boundary", "resource-bound"]
+    },
+    {
+      "id": "E0-REQ-EVIDENCE-008",
+      "kind": "named-test-evidence-family",
+      "statement": "Test future schema.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Test plan and detailed logging; docs/E0_INTERCHANGE_CONTRACT.md section 7",
+      "requiredTraceIds": ["E0-TRACE-SCHEMA-ROUTING"],
+      "requiredProofKinds": ["negative", "near-miss"]
+    },
+    {
+      "id": "E0-REQ-EVIDENCE-009",
+      "kind": "named-test-evidence-family",
+      "statement": "Test canonical preview/apply/cancel/failure during every transport state; every apply owns its literal request-bound X1 evidence row, every ordinary failure uses a no-effect X1 refusal, and every apply/failure uses a complete canonical retiring AppState plus allocated/consumed-or-request-invalidated zero-live capability accounting.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Test plan and detailed logging; docs/E0_INTERCHANGE_CONTRACT.md sections 8.1 and 9",
+      "coverageMode": "trace-and-cartesian-matrix",
+      "transportWorkflowMatrixId": "E0-WF-TRANSPORT-MATRIX",
+      "matrixSourceFormat": "canonical-json-v2",
+      "requiredMatrixCells": 28,
+      "requiredTraceIds": [
+        "E0-TRACE-NATIVE-IMPORT",
+        "E0-TRACE-L-IMPORT-01",
+        "E0-TRACE-FAILURE-ISOLATION",
+        "E0-TRACE-CANCEL-STALE",
+        "E0-TRACE-CONFIRM-REPLACE"
+      ],
+      "requiredProofKinds": [
+        "positive",
+        "negative",
+        "cancellation",
+        "transaction",
+        "state-isolation",
+        "adapter"
+      ]
+    },
+    {
+      "id": "E0-REQ-EVIDENCE-010",
+      "kind": "named-test-evidence-family",
+      "statement": "Test legacy preview/apply/cancel/failure during every transport state; every apply owns its literal request-bound X1 evidence row, every ordinary failure uses a no-effect X1 refusal, and every apply/failure uses a complete legacy retiring AppState plus allocated/consumed-or-request-invalidated zero-live capability accounting.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Test plan and detailed logging; docs/E0_INTERCHANGE_CONTRACT.md sections 8.2 and 9",
+      "coverageMode": "trace-and-cartesian-matrix",
+      "transportWorkflowMatrixId": "E0-WF-TRANSPORT-MATRIX",
+      "matrixSourceFormat": "unversioned-legacy-json",
+      "requiredMatrixCells": 28,
+      "requiredTraceIds": [
+        "E0-TRACE-LEGACY-IMPORT",
+        "E0-TRACE-L-IMPORT-01",
+        "E0-TRACE-FAILURE-ISOLATION",
+        "E0-TRACE-CANCEL-STALE",
+        "E0-TRACE-CONFIRM-REPLACE"
+      ],
+      "requiredProofKinds": [
+        "positive",
+        "negative",
+        "compatibility",
+        "cancellation",
+        "transaction",
+        "state-isolation",
+        "adapter"
+      ]
+    },
+    {
+      "id": "E0-REQ-EVIDENCE-011",
+      "kind": "named-test-evidence-family",
+      "statement": "Test malicious strings.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Test plan and detailed logging; docs/E0_INTERCHANGE_CONTRACT.md sections 2, 4, 10, and 13",
+      "requiredTraceIds": [
+        "E0-TRACE-HOSTILE-INERT",
+        "E0-TRACE-PRIVACY-BOUNDS",
+        "E0-TRACE-OFFLINE-INERT"
+      ],
+      "requiredProofKinds": ["negative", "hostile"]
+    },
+    {
+      "id": "E0-REQ-EVIDENCE-012",
+      "kind": "named-test-evidence-family",
+      "statement": "Test text headers.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Test plan and detailed logging; docs/E0_INTERCHANGE_CONTRACT.md sections 5 and 13",
+      "requiredTraceIds": ["E0-TRACE-TEXT-SUPPORTED-ROUNDTRIP"],
+      "requiredProofKinds": ["positive", "round-trip", "golden"]
+    },
+    {
+      "id": "E0-REQ-EVIDENCE-013",
+      "kind": "named-test-evidence-family",
+      "statement": "Test text escapes.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Test plan and detailed logging; docs/E0_INTERCHANGE_CONTRACT.md sections 5 and 13",
+      "requiredTraceIds": ["E0-TRACE-TEXT-SUPPORTED-ROUNDTRIP"],
+      "requiredProofKinds": ["positive", "round-trip", "golden"]
+    },
+    {
+      "id": "E0-REQ-EVIDENCE-014",
+      "kind": "named-test-evidence-family",
+      "statement": "Test text repeats.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Test plan and detailed logging; docs/E0_INTERCHANGE_CONTRACT.md sections 5.1 and 13",
+      "requiredTraceIds": ["E0-TRACE-TEXT-SUPPORTED-ROUNDTRIP"],
+      "requiredProofKinds": ["positive", "near-miss", "round-trip"]
+    },
+    {
+      "id": "E0-REQ-EVIDENCE-015",
+      "kind": "named-test-evidence-family",
+      "statement": "Test text rational timing.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Test plan and detailed logging; docs/E0_INTERCHANGE_CONTRACT.md sections 5, 8.3, and 12",
+      "requiredTraceIds": [
+        "E0-TRACE-TEXT-SUPPORTED-ROUNDTRIP",
+        "E0-TRACE-CHART-IMPORT",
+        "E0-TRACE-TERMINATION"
+      ],
+      "requiredProofKinds": ["positive", "exact-boundary", "round-trip"]
+    },
+    {
+      "id": "E0-REQ-EVIDENCE-016",
+      "kind": "named-test-evidence-family",
+      "statement": "Test text losses.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Test plan and detailed logging; docs/E0_INTERCHANGE_CONTRACT.md sections 5.2 and 13",
+      "requiredTraceIds": ["E0-TRACE-TEXT-LOSSES", "E0-TRACE-TEXT-BLOCKERS"],
+      "requiredProofKinds": ["negative", "loss-report", "determinism"]
+    },
+    {
+      "id": "E0-REQ-EVIDENCE-017",
+      "kind": "named-test-evidence-family",
+      "statement": "Test filename.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Test plan and detailed logging; docs/E0_INTERCHANGE_CONTRACT.md sections 4 and 13",
+      "requiredTraceIds": ["E0-TRACE-FILENAME"],
+      "requiredProofKinds": [
+        "positive",
+        "negative",
+        "near-miss",
+        "exact-boundary",
+        "golden"
+      ]
+    },
+    {
+      "id": "E0-REQ-EVIDENCE-018",
+      "kind": "named-test-evidence-family",
+      "statement": "Test object URL.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Test plan and detailed logging; docs/E0_INTERCHANGE_CONTRACT.md sections 10, 12, and 13",
+      "requiredTraceIds": ["E0-TRACE-BLOB-DELIVERY", "E0-TRACE-TERMINATION"],
+      "requiredProofKinds": ["positive", "negative", "resource-bound"]
+    },
+    {
+      "id": "E0-REQ-EVIDENCE-019",
+      "kind": "named-test-evidence-family",
+      "statement": "Provide browser download E2E with full logs proving latest-identity read, consume, activation probe, picker/anchor invocation, completion envelope, and only then first await; include false activation, edit-during-picker, and edit-during-A1 near misses.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Test plan and detailed logging; docs/E0_INTERCHANGE_CONTRACT.md sections 10, 13, and 16",
+      "requiredTraceIds": [
+        "E0-TRACE-BLOB-DELIVERY",
+        "E0-TRACE-FSA-DELIVERY",
+        "E0-TRACE-USER-GESTURE",
+        "E0-TRACE-OFFLINE-INERT",
+        "E0-TRACE-EXPORT-MARKER"
+      ],
+      "requiredProofKinds": [
+        "positive",
+        "negative",
+        "cancellation",
+        "transaction",
+        "adapter"
+      ]
+    },
+    {
+      "id": "E0-REQ-NONGOAL-001",
+      "kind": "non-goal",
+      "statement": "Do not substitute mocks where this package names real adapters/audio/browser behavior; in particular E0 may expose but cannot fake successful X1 retirement or A1 recovery persistence.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Non-goals; docs/E0_INTERCHANGE_CONTRACT.md sections 9-10 and 16",
+      "requiredTraceIds": [
+        "E0-TRACE-BLOB-DELIVERY",
+        "E0-TRACE-FSA-DELIVERY",
+        "E0-TRACE-USER-GESTURE",
+        "E0-TRACE-CONFIRM-REPLACE"
+      ],
+      "requiredProofKinds": ["cancellation", "transaction", "adapter"]
+    },
+    {
+      "id": "E0-REQ-NONGOAL-002",
+      "kind": "non-goal",
+      "statement": "Do not weaken exact musical/data semantics to make UI integration easier.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Non-goals; docs/E0_INTERCHANGE_CONTRACT.md sections 1, 3, 5, 8, and 9",
+      "requiredTraceIds": [
+        "E0-TRACE-JSON-LOSSLESS",
+        "E0-TRACE-TEXT-SUPPORTED-ROUNDTRIP",
+        "E0-TRACE-TEXT-LOSSES",
+        "E0-TRACE-CHART-IMPORT",
+        "E0-TRACE-CONFIRM-REPLACE"
+      ],
+      "requiredProofKinds": [
+        "transposition",
+        "round-trip",
+        "loss-report",
+        "transaction"
+      ]
+    },
+    {
+      "id": "E0-REQ-NONGOAL-003",
+      "kind": "non-goal",
+      "statement": "Preserve unrelated work.",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.1#Non-goals; AGENTS.md verification discipline",
+      "coverageMode": "process-obligation",
+      "requiredTraceIds": [],
+      "requiredProofKinds": [],
+      "requiredProcessEvidence": [
+        "pre-and-post shared-worktree inventory",
+        "path-scoped diff review",
+        "no staging commit deletion move or normalization of unrelated files"
+      ]
+    }
+  ]
+}

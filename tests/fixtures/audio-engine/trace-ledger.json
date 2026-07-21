@@ -1,0 +1,156 @@
+{
+  "schema": "changes.fixtures.x0-trace-ledger.v1",
+  "fixtureVersion": 1,
+  "expectedValuesGenerated": false,
+  "productionOutputUsed": false,
+  "tracePolicy": "Every parent requirement, invariant, success criterion, legacy regression, platform boundary, and release-proof class resolves to independently authored case and semantic mutation IDs.",
+  "traces": [
+    {
+      "id": "TR-X0-LAZY-CONTEXT",
+      "requirement": "Create one context lazily and synchronously in the first trusted Play or Preview gesture; coalesce concurrent initialization.",
+      "parentSource": "X0 required implementation and REBUILD_PLAN 13.1-13.2",
+      "caseIds": ["X0-LIFE-001", "X0-LIFE-002", "X0-LIFE-003", "X0-LIFE-004", "X0-LIFE-009", "X0-LIFE-045"],
+      "controlIds": ["X0-MUT-001", "X0-MUT-005"],
+      "evidenceOwner": "tests/integration/audio-engine-initialization.test.ts"
+    },
+    {
+      "id": "TR-X0-PERSISTENT",
+      "requirement": "Ordinary play, stop, seek, instrument change, progression end, import, and new document reuse one context and graph.",
+      "parentSource": "X0 invariants and REBUILD_PLAN 13.2",
+      "caseIds": ["X0-ROUTE-002", "X0-ROUTE-003", "X0-ROUTE-004", "X0-ROUTE-005", "X0-ROUTE-009", "X0-ROUTE-010"],
+      "controlIds": ["X0-MUT-005", "X0-MUT-006"],
+      "evidenceOwner": "tests/integration/audio-routing.test.ts"
+    },
+    {
+      "id": "TR-X0-TOPOLOGY",
+      "requirement": "Every voice reaches the exact fixed dry and reverb topology, dynamics, measured soft clip, safety gain, master, and destination once.",
+      "parentSource": "REBUILD_PLAN 13.2",
+      "caseIds": ["X0-ROUTE-001", "X0-ROUTE-011", "X0-ROUTE-012", "X0-LIFE-014", "X0-LIFE-015", "X0-LIFE-016"],
+      "controlIds": ["X0-MUT-006", "X0-MUT-007", "X0-MUT-008", "X0-MUT-009", "X0-MUT-010"],
+      "evidenceOwner": "tests/integration/audio-routing.test.ts"
+    },
+    {
+      "id": "TR-X0-RECIPES",
+      "requirement": "Five honest source-owned synth recipes have exact oscillator, envelope, filter, level, and polyphony data.",
+      "parentSource": "REBUILD_PLAN 13.3",
+      "caseIds": ["X0-RENDER-001", "X0-RENDER-004", "X0-RENDER-007", "X0-RENDER-010", "X0-RENDER-013"],
+      "controlIds": ["X0-MUT-011", "X0-MUT-012", "X0-MUT-013", "X0-MUT-014", "X0-MUT-015", "X0-MUT-016"],
+      "evidenceOwner": "tests/integration/instrument-recipes.test.ts"
+    },
+    {
+      "id": "TR-X0-NORMALIZATION",
+      "requirement": "Per-note gain and velocity response are deterministic, conservative, finite, and voice-count bounded.",
+      "parentSource": "REBUILD_PLAN 13.2-13.3",
+      "caseIds": ["X0-LIFE-018", "X0-LIFE-019", "X0-RENDER-002", "X0-RENDER-005", "X0-RENDER-008", "X0-RENDER-011", "X0-RENDER-014"],
+      "controlIds": ["X0-MUT-017", "X0-MUT-018", "X0-MUT-026"],
+      "evidenceOwner": "tests/integration/audio-normalization.test.ts"
+    },
+    {
+      "id": "TR-X0-IMPULSE",
+      "requirement": "Reverb uses one versioned fixed-seed project-authored impulse with exact integer checkpoints, hashes, ownership, and no sample asset.",
+      "parentSource": "REBUILD_PLAN 13.3",
+      "caseIds": ["X0-ROUTE-001", "X0-RENDER-003", "X0-RENDER-006", "X0-RENDER-009", "X0-RENDER-012", "X0-RENDER-015"],
+      "controlIds": ["X0-MUT-019", "X0-MUT-020", "X0-MUT-021"],
+      "evidenceOwner": "tests/golden/audio-impulse.test.ts"
+    },
+    {
+      "id": "TR-X0-VOICE-LIFECYCLE",
+      "requirement": "Every scheduled voice owns exact sources, envelope, times, callback, registry token, bounded stop, and one idempotent cleanup.",
+      "parentSource": "REBUILD_PLAN 13.4",
+      "caseIds": ["X0-LIFE-018", "X0-LIFE-019", "X0-LIFE-027", "X0-REG-020", "X0-REG-021"],
+      "controlIds": ["X0-MUT-022", "X0-MUT-024"],
+      "evidenceOwner": "tests/integration/synth-voice-lifecycle.test.ts"
+    },
+    {
+      "id": "TR-X0-RETRIGGER",
+      "requirement": "At an identical timestamp matching old note-off is scheduled before new note-on without retiring near-miss ownership.",
+      "parentSource": "REBUILD_PLAN 13.4",
+      "caseIds": ["X0-REG-005", "X0-REG-006", "X0-REG-007", "X0-REG-008", "X0-REG-009"],
+      "controlIds": ["X0-MUT-003", "X0-MUT-004"],
+      "evidenceOwner": "tests/integration/audio-retrigger-order.test.ts"
+    },
+    {
+      "id": "TR-X0-REGISTRY",
+      "requirement": "Active voices are discoverable through voice, generation, event, MIDI pitch, owner, and instrument indexes with exact selectors and debug counts.",
+      "parentSource": "REBUILD_PLAN 13.5",
+      "caseIds": ["X0-REG-001", "X0-REG-002", "X0-REG-003", "X0-REG-004", "X0-REG-010", "X0-REG-011", "X0-REG-012", "X0-REG-013", "X0-REG-014", "X0-REG-015", "X0-REG-016", "X0-REG-017", "X0-REG-018"],
+      "controlIds": ["X0-MUT-024"],
+      "evidenceOwner": "tests/integration/active-voice-registry.test.ts"
+    },
+    {
+      "id": "TR-X0-STALE-CLEANUP",
+      "requirement": "Duplicate or stale source and graph callbacks cannot disconnect, remove, or reconnect a newer voice or graph instance.",
+      "parentSource": "X0 invariants and success criteria",
+      "caseIds": ["X0-REG-019", "X0-REG-020", "X0-REG-021", "X0-REG-022", "X0-REG-023"],
+      "controlIds": ["X0-MUT-023", "X0-MUT-024"],
+      "evidenceOwner": "tests/integration/audio-stale-cleanup.test.ts"
+    },
+    {
+      "id": "TR-X0-POLYPHONY",
+      "requirement": "Owner, recipe, and global caps are enforced before creation with oldest/quietest deterministic stealing and no transient over-cap registry state.",
+      "parentSource": "REBUILD_PLAN 13.5 and X0 test plan",
+      "caseIds": ["X0-REG-025", "X0-REG-026", "X0-REG-027", "X0-REG-028", "X0-REG-029", "X0-REG-030", "X0-REG-031", "X0-REG-032"],
+      "controlIds": ["X0-MUT-002", "X0-MUT-003", "X0-MUT-015", "X0-MUT-025"],
+      "evidenceOwner": "tests/integration/audio-polyphony.test.ts"
+    },
+    {
+      "id": "TR-X0-OWNERSHIP",
+      "requirement": "Preview and progression share graph and voices but retain separable generations; preview release never mutates progression.",
+      "parentSource": "REBUILD_PLAN 13.5 and 13.11",
+      "caseIds": ["X0-ROUTE-006", "X0-ROUTE-007", "X0-ROUTE-008", "X0-REG-009", "X0-REG-014", "X0-REG-015", "X0-REG-016"],
+      "controlIds": ["X0-MUT-007", "X0-MUT-023"],
+      "evidenceOwner": "tests/integration/audio-preview-ownership.test.ts"
+    },
+    {
+      "id": "TR-X0-STOP-POSTCONDITION",
+      "requirement": "Retiring a future scheduled voice stops it at or before attack so the receipt guarantees no later audible attack.",
+      "parentSource": "X0 success criteria and X1 handoff",
+      "caseIds": ["X0-LIFE-029", "X0-LIFE-030", "X0-REG-017", "X0-REG-024"],
+      "controlIds": ["X0-MUT-023"],
+      "evidenceOwner": "tests/integration/audio-retirement-postcondition.test.ts"
+    },
+    {
+      "id": "TR-X0-FAULT-RESUME",
+      "requirement": "Suspension/interruption reuse the graph; a fatal unusable context retries only under a fresh trusted gesture and stale callbacks are inert.",
+      "parentSource": "REBUILD_PLAN 13.7 and X0 inherited context",
+      "caseIds": ["X0-LIFE-005", "X0-LIFE-006", "X0-LIFE-007", "X0-LIFE-008", "X0-LIFE-010", "X0-LIFE-011", "X0-LIFE-012", "X0-LIFE-013", "X0-LIFE-031", "X0-LIFE-032", "X0-LIFE-033", "X0-LIFE-034", "X0-ROUTE-013", "X0-ROUTE-014", "X0-REG-023"],
+      "controlIds": ["X0-MUT-005", "X0-MUT-006"],
+      "evidenceOwner": "tests/integration/audio-context-state.test.ts"
+    },
+    {
+      "id": "TR-X0-RENDER",
+      "requirement": "Fake and OfflineAudioContext proof shows finite non-silent onset, release/tail decay, bounded peak/RMS, dense-chord safety, and deterministic source counts.",
+      "parentSource": "X0 success criteria and REBUILD_PLAN 13.12",
+      "caseIds": ["X0-RENDER-001", "X0-RENDER-002", "X0-RENDER-003", "X0-RENDER-004", "X0-RENDER-005", "X0-RENDER-006", "X0-RENDER-007", "X0-RENDER-008", "X0-RENDER-009", "X0-RENDER-010", "X0-RENDER-011", "X0-RENDER-012", "X0-RENDER-013", "X0-RENDER-014", "X0-RENDER-015"],
+      "controlIds": ["X0-MUT-026", "X0-MUT-027"],
+      "evidenceOwner": "tests/integration/audio-offline-render.test.ts"
+    },
+    {
+      "id": "TR-X0-LISTENING",
+      "requirement": "Human release evidence honestly covers five timbres, clicks, stuck notes, dense passages, interruption, and routing on headphones and laptop speakers across supported browsers.",
+      "parentSource": "REBUILD_PLAN 13.3 and 13.12",
+      "caseIds": ["X0-LISTEN-INST-001", "X0-LISTEN-INST-002", "X0-LISTEN-INST-003", "X0-LISTEN-INST-004", "X0-LISTEN-INST-005", "X0-LISTEN-SCENE-001", "X0-LISTEN-SCENE-002", "X0-LISTEN-SCENE-006", "X0-LISTEN-SCENE-007", "X0-LISTEN-SCENE-008", "X0-LISTEN-SCENE-009"],
+      "deferredCaseIds": ["X0-LISTEN-SCENE-003", "X0-LISTEN-SCENE-004", "X0-LISTEN-SCENE-005"],
+      "deferredUntilPackage": "X1",
+      "deferredReason": "These transport continuity, seek, and natural-end scenes require the X1 scheduler; X0 still gates every instrument plus click, stuck-note, dense, interruption, and routing scenes.",
+      "controlIds": ["X0-MUT-028", "X0-MUT-029"],
+      "evidenceOwner": "release-evidence/audio/listening"
+    },
+    {
+      "id": "TR-LEGACY-AUDIO-02",
+      "requirement": "L-AUDIO-02 section playback cannot bypass the selected recipe, EQ, reverb, dynamics, soft clip, or master graph.",
+      "parentSource": "Legacy traceability L-AUDIO-02",
+      "caseIds": ["X0-ROUTE-005", "X0-ROUTE-006", "X0-ROUTE-011", "X0-ROUTE-012"],
+      "controlIds": ["X0-MUT-007", "X0-MUT-008"],
+      "evidenceOwner": "tests/integration/audio-routing.test.ts"
+    },
+    {
+      "id": "TR-X0-BOUNDS-OFFLINE",
+      "requirement": "All audio work, memory, logs, sources, indexes, impulse allocation, and cleanup are explicitly bounded; runtime uses no network, sample, telemetry, or wall-time cutoff.",
+      "parentSource": "X0 invariants, repository Product boundary, and spec exit criteria",
+      "caseIds": ["X0-LIFE-017", "X0-LIFE-019", "X0-LIFE-020", "X0-LIFE-021", "X0-LIFE-022", "X0-LIFE-023", "X0-LIFE-024", "X0-LIFE-025", "X0-LIFE-026", "X0-LIFE-027", "X0-LIFE-028", "X0-LIFE-034", "X0-LIFE-035", "X0-LIFE-036", "X0-LIFE-037", "X0-LIFE-038", "X0-LIFE-039", "X0-LIFE-040", "X0-LIFE-041", "X0-LIFE-042", "X0-LIFE-043", "X0-LIFE-044", "X0-REG-017", "X0-REG-024", "X0-REG-028", "X0-ROUTE-014"],
+      "controlIds": ["X0-MUT-002", "X0-MUT-010", "X0-MUT-019", "X0-MUT-020", "X0-MUT-029"],
+      "evidenceOwner": "tests/integration/audio-engine-boundaries.test.ts"
+    }
+  ]
+}

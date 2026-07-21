@@ -1,0 +1,71 @@
+{
+  "schema": "changes.fixtures.h0-literal-fact-cases.v1",
+  "fixtureVersion": "1.0.0",
+  "expectedValuesGenerated": false,
+  "productionOutputUsed": false,
+  "cases": [
+    {
+      "id": "H0-LITERAL-001",
+      "polarity": "positive",
+      "sourceId": "H0-SRC-CMAJ7",
+      "expected": {"disposition":"classified","ruleId":"h0.literal-facts","root":"C","degrees":["1","3","5","7"],"spellings":["C","E","G","B"],"matchedWeight":{"numerator":7,"denominator":7},"contextIndependent":true}
+    },
+    {
+      "id": "H0-LITERAL-002",
+      "polarity": "positive",
+      "sourceId": "H0-SRC-DB7",
+      "expected": {"disposition":"classified","ruleId":"h0.literal-facts","root":"Db","degrees":["1","3","5","b7"],"spellings":["Db","F","Ab","Cb"],"pitchClasses":[1,5,8,11],"matchedWeight":{"numerator":7,"denominator":7}}
+    },
+    {
+      "id": "H0-LITERAL-003",
+      "polarity": "near-miss",
+      "sourceId": "H0-SRC-CSHARP7",
+      "pairedCaseId": "H0-LITERAL-002",
+      "expected": {"disposition":"classified","ruleId":"h0.literal-facts","root":"C#","degrees":["1","3","5","b7"],"spellings":["C#","E#","G#","B"],"pitchClasses":[1,5,8,11],"samePitchClassesAsPaired":true,"semanticallyEqualToPaired":false}
+    },
+    {
+      "id": "H0-LITERAL-004",
+      "polarity": "positive",
+      "sourceId": "H0-SRC-CDIM7",
+      "expected": {"disposition":"classified","ruleId":"h0.literal-facts","degrees":["1","b3","b5","bb7"],"spellings":["C","Eb","Gb","Bbb"],"pitchClasses":[0,3,6,9],"forbiddenDegreeAlias":"6"}
+    },
+    {
+      "id": "H0-LITERAL-005",
+      "polarity": "positive",
+      "sourceId": "H0-SRC-CALT-B9-B5",
+      "expected": {"selectedRealizationId":"alt-b9-b5","degrees":["1","3","b5","b7","b9"],"otherAlteredRealizationsMerged":false}
+    },
+    {
+      "id": "H0-LITERAL-006",
+      "polarity": "positive",
+      "sourceId": "H0-SRC-CALT-B9-SHARP5",
+      "expected": {"selectedRealizationId":"alt-b9-sharp5","degrees":["1","3","#5","b7","b9"],"otherAlteredRealizationsMerged":false}
+    },
+    {
+      "id": "H0-LITERAL-007",
+      "polarity": "positive",
+      "sourceId": "H0-SRC-CALT-SHARP9-B5",
+      "expected": {"selectedRealizationId":"alt-sharp9-b5","degrees":["1","3","b5","b7","#9"],"forbiddenDegreeAlias":"b3","otherAlteredRealizationsMerged":false}
+    },
+    {
+      "id": "H0-LITERAL-008",
+      "polarity": "positive",
+      "sourceId": "H0-SRC-CALT-SHARP9-SHARP5",
+      "expected": {"selectedRealizationId":"alt-sharp9-sharp5","degrees":["1","3","#5","b7","#9"],"forbiddenDegreeAliases":["b13","b3"],"otherAlteredRealizationsMerged":false}
+    },
+    {
+      "id": "H0-LITERAL-009",
+      "polarity": "metamorphic",
+      "sourceId": "H0-SRC-C7",
+      "contexts": ["H0-CONTEXT-C-MAJOR","H0-CONTEXT-F-MAJOR","H0-CONTEXT-NO-KEY"],
+      "expected": {"literalFactDigestSameAcrossContexts":true,"contextReadingsMayDiffer":true,"sourceMutated":false,"keyPersisted":false}
+    },
+    {
+      "id": "H0-LITERAL-010",
+      "polarity": "not-applicable",
+      "sourceId": "H0-SRC-CUSTOM",
+      "expected": {"disposition":"not-applicable","readings":[],"scaleOptions":[],"limitations":["custom.no_degree_analysis","custom.no_auto_voicing"],"refusal":null}
+    }
+  ],
+  "traceIds": ["H0-TRACE-LITERAL", "H0-TRACE-SPELLING", "H0-TRACE-EVIDENCE", "H0-TRACE-ALTERED", "H0-TRACE-CUSTOM"]
+}

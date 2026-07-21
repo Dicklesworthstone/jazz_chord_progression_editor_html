@@ -1,0 +1,689 @@
+{
+  "schema": "changes.fixtures.f3-document-cases.v1",
+  "fixtureVersion": "1.0.0",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "materializationProtocol": {
+    "template": "Deep-clone the named template using fresh ordinary objects and arrays; no source container is reused.",
+    "operations": "Apply set, delete, insert, or replace operations in checked-in order at an exact string-or-index path. Literal values are independently deep-cloned. Expected data is never copied into input.",
+    "recipe": "A named boundary recipe has the exact counts and construction order declared by the case. It may reuse immutable literal scalar records but every input container is fresh.",
+    "result": "Expected issue code/path sequences are literal independent authority. No production parser, resolver, validator, comparator, or formatter generates them.",
+    "productionOracleForbidden": true
+  },
+  "templates": {
+    "representativeParsedAuto": {
+      "schema": "changes.progression.v2",
+      "id": "doc-f3-main",
+      "title": "Independent publication fixture",
+      "description": "",
+      "meter": {"beatsPerBar": 4, "beatUnit": 4},
+      "tempoBpm": 120,
+      "key": {"tonic": {"step": "C", "alter": 0}, "mode": "major"},
+      "sections": [{
+        "id": "section-f3-a",
+        "name": "A",
+        "annotation": "",
+        "keyOverride": null,
+        "voiceLeadingBoundary": "continue",
+        "measures": [{
+          "id": "measure-f3-1",
+          "events": [{
+            "id": "event-f3-1",
+            "duration": {"numerator": 4, "denominator": 1},
+            "annotation": "",
+            "chord": {
+              "kind": "parsed",
+              "sourceText": "Cmaj7",
+              "root": {"step": "C", "alter": 0},
+              "triad": "major",
+              "sixth": null,
+              "seventh": "major",
+              "extensions": [],
+              "additions": [],
+              "alterations": [],
+              "omissions": [],
+              "bass": null,
+              "colorPolicy": "none"
+            },
+            "voicing": {
+              "mode": "auto",
+              "family": "balanced",
+              "voiceCount": 4,
+              "range": {"lowMidi": 48, "highMidi": 84},
+              "bassPolicy": "none"
+            }
+          }],
+          "completion": {"kind": "complete"}
+        }]
+      }],
+      "playback": {
+        "instrumentId": "mellow-keys",
+        "masterVolume": 0.8,
+        "reverbAmount": 0.2,
+        "countInBars": 0
+      }
+    },
+    "representativeCustomManual": {
+      "schema": "changes.progression.v2",
+      "id": "doc-f3-custom",
+      "title": "Custom fixture",
+      "description": "",
+      "meter": {"beatsPerBar": 4, "beatUnit": 4},
+      "tempoBpm": 96,
+      "key": null,
+      "sections": [{
+        "id": "section-f3-custom",
+        "name": "Custom",
+        "annotation": "",
+        "keyOverride": null,
+        "voiceLeadingBoundary": "reset",
+        "measures": [{
+          "id": "measure-f3-custom",
+          "events": [{
+            "id": "event-f3-custom",
+            "duration": {"numerator": 4, "denominator": 1},
+            "annotation": "",
+            "chord": {
+              "kind": "custom",
+              "sourceText": "Glass",
+              "label": "Glass",
+              "pitchNames": [
+                {"step": "C", "alter": 0},
+                {"step": "E", "alter": 0},
+                {"step": "G", "alter": 0}
+              ],
+              "bass": null
+            },
+            "voicing": {
+              "mode": "manual",
+              "pitches": [
+                {"step": "C", "alter": 0, "octave": 4},
+                {"step": "E", "alter": 0, "octave": 4},
+                {"step": "G", "alter": 0, "octave": 4}
+              ],
+              "bassPolicy": "included"
+            }
+          }],
+          "completion": {"kind": "complete"}
+        }]
+      }],
+      "playback": {
+        "instrumentId": "vibraphone",
+        "masterVolume": 0.7,
+        "reverbAmount": 0.35,
+        "countInBars": 1
+      }
+    },
+    "representativeDbSlashManual": {
+      "schema": "changes.progression.v2",
+      "id": "doc-f3-db-slash",
+      "title": "Slash spelling fixture",
+      "description": "",
+      "meter": {"beatsPerBar": 4, "beatUnit": 4},
+      "tempoBpm": 120,
+      "key": null,
+      "sections": [{
+        "id": "section-f3-db",
+        "name": "Db",
+        "annotation": "",
+        "keyOverride": null,
+        "voiceLeadingBoundary": "continue",
+        "measures": [{
+          "id": "measure-f3-db",
+          "events": [{
+            "id": "event-f3-db",
+            "duration": {"numerator": 4, "denominator": 1},
+            "annotation": "",
+            "chord": {
+              "kind": "parsed",
+              "sourceText": "Db7/Cb",
+              "root": {"step": "D", "alter": -1},
+              "triad": "major",
+              "sixth": null,
+              "seventh": "minor",
+              "extensions": [],
+              "additions": [],
+              "alterations": [],
+              "omissions": [],
+              "bass": {"step": "C", "alter": -1},
+              "colorPolicy": "none"
+            },
+            "voicing": {
+              "mode": "manual",
+              "pitches": [
+                {"step": "C", "alter": -1, "octave": 3},
+                {"step": "D", "alter": -1, "octave": 4},
+                {"step": "F", "alter": 0, "octave": 4},
+                {"step": "A", "alter": -1, "octave": 4},
+                {"step": "C", "alter": -1, "octave": 5}
+              ],
+              "bassPolicy": "included"
+            }
+          }],
+          "completion": {"kind": "complete"}
+        }]
+      }],
+      "playback": {
+        "instrumentId": "fm-electric-piano",
+        "masterVolume": 0.75,
+        "reverbAmount": 0.25,
+        "countInBars": 0
+      }
+    },
+    "representativeAlteredAuto": {
+      "schema": "changes.progression.v2",
+      "id": "doc-f3-alt",
+      "title": "Altered fixture",
+      "description": "",
+      "meter": {"beatsPerBar": 4, "beatUnit": 4},
+      "tempoBpm": 132,
+      "key": null,
+      "sections": [{
+        "id": "section-f3-alt",
+        "name": "Alt",
+        "annotation": "",
+        "keyOverride": null,
+        "voiceLeadingBoundary": "continue",
+        "measures": [{
+          "id": "measure-f3-alt",
+          "events": [{
+            "id": "event-f3-alt",
+            "duration": {"numerator": 4, "denominator": 1},
+            "annotation": "",
+            "chord": {
+              "kind": "parsed",
+              "sourceText": "C7alt",
+              "root": {"step": "C", "alter": 0},
+              "triad": "major",
+              "sixth": null,
+              "seventh": "minor",
+              "extensions": [],
+              "additions": [],
+              "alterations": [],
+              "omissions": [],
+              "bass": null,
+              "colorPolicy": "altered-dominant"
+            },
+            "voicing": {
+              "mode": "auto",
+              "family": "balanced",
+              "voiceCount": 5,
+              "range": {"lowMidi": 48, "highMidi": 84},
+              "bassPolicy": "none"
+            }
+          }],
+          "completion": {"kind": "complete"}
+        }]
+      }],
+      "playback": {
+        "instrumentId": "analog-poly",
+        "masterVolume": 0.65,
+        "reverbAmount": 0.15,
+        "countInBars": 0
+      }
+    },
+    "representativePartial": {
+      "schema": "changes.progression.v2",
+      "id": "doc-f3-partial",
+      "title": "Partial measure fixture",
+      "description": "",
+      "meter": {"beatsPerBar": 4, "beatUnit": 4},
+      "tempoBpm": 88,
+      "key": null,
+      "sections": [{
+        "id": "section-f3-partial",
+        "name": "Pickup",
+        "annotation": "",
+        "keyOverride": null,
+        "voiceLeadingBoundary": "continue",
+        "measures": [{
+          "id": "measure-f3-partial",
+          "events": [{
+            "id": "event-f3-partial",
+            "duration": {"numerator": 1, "denominator": 1},
+            "annotation": "",
+            "chord": {
+              "kind": "parsed",
+              "sourceText": "C",
+              "root": {"step": "C", "alter": 0},
+              "triad": "major",
+              "sixth": null,
+              "seventh": null,
+              "extensions": [],
+              "additions": [],
+              "alterations": [],
+              "omissions": [],
+              "bass": null,
+              "colorPolicy": "none"
+            },
+            "voicing": {
+              "mode": "auto",
+              "family": "balanced",
+              "voiceCount": 3,
+              "range": {"lowMidi": 48, "highMidi": 72},
+              "bassPolicy": "none"
+            }
+          }],
+          "completion": {
+            "kind": "pickup",
+            "expectedDuration": {"numerator": 1, "denominator": 1},
+            "reason": "One-beat pickup"
+          }
+        }]
+      }],
+      "playback": {
+        "instrumentId": "warm-pad",
+        "masterVolume": 0.6,
+        "reverbAmount": 0.4,
+        "countInBars": 2
+      }
+    }
+  },
+  "cases": [
+    {
+      "id": "F3-DOC-001",
+      "category": "positive",
+      "description": "A blank document is valid publication data.",
+      "input": {"template": "representativeParsedAuto", "operations": [{"op": "set", "path": ["sections"], "value": []}]},
+      "expected": {"ok": true, "warnings": [], "publication": true, "termination": "complete-success"},
+      "traceIds": ["F3-TRACE-BOUNDARY", "F3-TRACE-MEASURE"],
+      "authorityIds": ["F3-AUTH-ARCHITECTURE", "F3-AUTH-DOMAIN"]
+    },
+    {
+      "id": "F3-DOC-002",
+      "category": "positive",
+      "description": "A section may contain no measures.",
+      "input": {"template": "representativeParsedAuto", "operations": [{"op": "set", "path": ["sections", 0, "measures"], "value": []}]},
+      "expected": {"ok": true, "warnings": [], "publication": true, "termination": "complete-success"},
+      "traceIds": ["F3-TRACE-BOUNDARY", "F3-TRACE-MEASURE"],
+      "authorityIds": ["F3-AUTH-DOMAIN", "F3-AUTH-MEASURE"]
+    },
+    {
+      "id": "F3-DOC-003",
+      "category": "positive",
+      "description": "Canonical Cmaj7 with feasible Balanced Auto publishes.",
+      "input": {"template": "representativeParsedAuto", "operations": []},
+      "expected": {"ok": true, "warnings": [], "publication": true, "termination": "complete-success", "resolutionIds": ["literal"]},
+      "traceIds": ["F3-TRACE-BOUNDARY", "F3-TRACE-SOURCE-AST", "F3-TRACE-RESOLUTION", "F3-TRACE-AUTO-RANGE"],
+      "authorityIds": ["F3-AUTH-SYNTAX", "F3-AUTH-RESOLUTION", "F3-AUTH-VOICING"]
+    },
+    {
+      "id": "F3-DOC-004",
+      "category": "positive-near-miss",
+      "description": "The supported CM7 alias reparses to the stored Cmaj7 AST without canonical rewrite.",
+      "input": {"template": "representativeParsedAuto", "operations": [{"op": "set", "path": ["sections", 0, "measures", 0, "events", 0, "chord", "sourceText"], "value": "CM7"}]},
+      "expected": {"ok": true, "warnings": [], "publication": true, "sourceTextPreserved": "CM7", "termination": "complete-success"},
+      "traceIds": ["F3-TRACE-SOURCE-AST", "F3-TRACE-TRANSACTION", "F3-TRACE-LEGACY"],
+      "authorityIds": ["F3-AUTH-SYNTAX", "F3-AUTH-LEGACY"]
+    },
+    {
+      "id": "F3-DOC-005",
+      "category": "positive-spelling",
+      "description": "Db7/Cb preserves the Cb seventh and strips only the included lowest slash bass before body comparison.",
+      "input": {"template": "representativeDbSlashManual", "operations": []},
+      "expected": {"ok": true, "warnings": [], "publication": true, "bodySpellings": ["Db", "F", "Ab", "Cb"], "slashBass": "Cb", "termination": "complete-success"},
+      "traceIds": ["F3-TRACE-SOURCE-AST", "F3-TRACE-STORED-PITCH"],
+      "authorityIds": ["F3-AUTH-RESOLUTION", "F3-AUTH-VOICING"]
+    },
+    {
+      "id": "F3-DOC-006",
+      "category": "positive-ambiguity",
+      "description": "C7alt publishes with all four T1 realizations and no persisted selection.",
+      "input": {"template": "representativeAlteredAuto", "operations": []},
+      "expected": {"ok": true, "warnings": [], "publication": true, "resolutionIds": ["alt-b9-b5", "alt-b9-sharp5", "alt-sharp9-b5", "alt-sharp9-sharp5"], "selectedRealization": null, "termination": "complete-success"},
+      "traceIds": ["F3-TRACE-ALT", "F3-TRACE-RESOLUTION", "F3-TRACE-AUTO-RANGE"],
+      "authorityIds": ["F3-AUTH-RESOLUTION", "F3-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "F3-DOC-007",
+      "category": "positive-ambiguity",
+      "description": "One exact C7alt b9/b5 Manual body is compatible with a single reviewed variant.",
+      "input": {"template": "representativeAlteredAuto", "operations": [{"op": "set", "path": ["sections", 0, "measures", 0, "events", 0, "voicing"], "value": {"mode": "manual", "pitches": [{"step": "C", "alter": 0, "octave": 4}, {"step": "E", "alter": 0, "octave": 4}, {"step": "G", "alter": -1, "octave": 4}, {"step": "B", "alter": -1, "octave": 4}, {"step": "D", "alter": -1, "octave": 5}], "bassPolicy": "included"}}]},
+      "expected": {"ok": true, "warnings": [], "publication": true, "compatibleRealizationIds": ["alt-b9-b5"], "selectedRealization": null, "termination": "complete-success"},
+      "traceIds": ["F3-TRACE-ALT", "F3-TRACE-STORED-PITCH"],
+      "authorityIds": ["F3-AUTH-RESOLUTION", "F3-AUTH-VOICING"]
+    },
+    {
+      "id": "F3-DOC-008",
+      "category": "positive-custom",
+      "description": "Custom correspondence is set-based and permits register changes, reorder, and octave doubling.",
+      "input": {"template": "representativeCustomManual", "operations": [{"op": "set", "path": ["sections", 0, "measures", 0, "events", 0, "voicing", "pitches"], "value": [{"step": "G", "alter": 0, "octave": 3}, {"step": "C", "alter": 0, "octave": 4}, {"step": "E", "alter": 0, "octave": 4}, {"step": "C", "alter": 0, "octave": 5}]}]},
+      "expected": {"ok": true, "warnings": [], "publication": true, "comparison": "exact-written-pitch-class-set", "termination": "complete-success"},
+      "traceIds": ["F3-TRACE-CUSTOM", "F3-TRACE-STORED-PITCH"],
+      "authorityIds": ["F3-AUTH-DOMAIN", "F3-AUTH-VOICING"]
+    },
+    {
+      "id": "F3-DOC-009",
+      "category": "positive-custom",
+      "description": "An included non-chord slash bass is removed before custom body comparison.",
+      "input": {"template": "representativeCustomManual", "operations": [{"op": "set", "path": ["sections", 0, "measures", 0, "events", 0, "chord", "bass"], "value": {"step": "D", "alter": -1}}, {"op": "insert", "path": ["sections", 0, "measures", 0, "events", 0, "voicing", "pitches", 0], "value": {"step": "D", "alter": -1, "octave": 3}}]},
+      "expected": {"ok": true, "warnings": [], "publication": true, "slashBassExcluded": true, "termination": "complete-success"},
+      "traceIds": ["F3-TRACE-CUSTOM", "F3-TRACE-STORED-PITCH"],
+      "authorityIds": ["F3-AUTH-DOMAIN", "F3-AUTH-VOICING"]
+    },
+    {
+      "id": "F3-DOC-010",
+      "category": "positive-measure",
+      "description": "A one-beat pickup publishes at any document position.",
+      "input": {"template": "representativePartial", "operations": []},
+      "expected": {"ok": true, "warnings": [], "publication": true, "positionConstraint": "none", "termination": "complete-success"},
+      "traceIds": ["F3-TRACE-MEASURE"],
+      "authorityIds": ["F3-AUTH-MEASURE"]
+    },
+    {
+      "id": "F3-DOC-011",
+      "category": "positive-measure",
+      "description": "An explicit incomplete measure uses the same exact partial law.",
+      "input": {"template": "representativePartial", "operations": [{"op": "set", "path": ["sections", 0, "measures", 0, "completion", "kind"], "value": "incomplete"}, {"op": "set", "path": ["sections", 0, "measures", 0, "completion", "reason"], "value": "Source ends early"}]},
+      "expected": {"ok": true, "warnings": [], "publication": true, "termination": "complete-success"},
+      "traceIds": ["F3-TRACE-MEASURE"],
+      "authorityIds": ["F3-AUTH-MEASURE"]
+    },
+    {
+      "id": "F3-DOC-012",
+      "category": "positive-measure",
+      "description": "Three eighth notes equal three-halves quarter-note beats, not three beats.",
+      "input": {"template": "representativeParsedAuto", "operations": [{"op": "set", "path": ["meter"], "value": {"beatsPerBar": 3, "beatUnit": 8}}, {"op": "set", "path": ["sections", 0, "measures", 0, "events", 0, "duration"], "value": {"numerator": 3, "denominator": 2}}]},
+      "expected": {"ok": true, "warnings": [], "publication": true, "capacity": {"numerator": 3, "denominator": 2}, "termination": "complete-success"},
+      "traceIds": ["F3-TRACE-MEASURE"],
+      "authorityIds": ["F3-AUTH-MEASURE", "F3-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "F3-DOC-013",
+      "category": "positive-frozen",
+      "description": "Frozen pitches and generation metadata bypass generation but remain semantically checked.",
+      "input": {"template": "representativeParsedAuto", "operations": [{"op": "set", "path": ["sections", 0, "measures", 0, "events", 0, "voicing"], "value": {"mode": "frozen", "pitches": [{"step": "C", "alter": 0, "octave": 4}, {"step": "E", "alter": 0, "octave": 4}, {"step": "G", "alter": 0, "octave": 4}, {"step": "B", "alter": 0, "octave": 4}], "bassPolicy": "included", "generatedBy": {"engineVersion": "changes-voicing-v1", "family": "balanced"}}}]},
+      "expected": {"ok": true, "warnings": [], "publication": true, "generationMetadataPreserved": true, "termination": "complete-success"},
+      "traceIds": ["F3-TRACE-STORED-PITCH", "F3-TRACE-TRANSACTION"],
+      "authorityIds": ["F3-AUTH-DOMAIN", "F3-AUTH-VOICING"]
+    },
+    {
+      "id": "F3-DOC-014",
+      "category": "positive-manual",
+      "description": "Manual voicing may omit the root and optional fifth without being forced to Balanced roles.",
+      "input": {"template": "representativeParsedAuto", "operations": [{"op": "set", "path": ["sections", 0, "measures", 0, "events", 0, "voicing"], "value": {"mode": "manual", "pitches": [{"step": "E", "alter": 0, "octave": 4}, {"step": "B", "alter": 0, "octave": 4}], "bassPolicy": "included"}}]},
+      "expected": {"ok": true, "warnings": [], "publication": true, "balancedRequiredDegreeCompletenessRequired": false, "termination": "complete-success"},
+      "traceIds": ["F3-TRACE-STORED-PITCH"],
+      "authorityIds": ["F3-AUTH-VOICING"]
+    },
+    {
+      "id": "F3-DOC-015",
+      "category": "source-refusal",
+      "description": "Unparseable source text cannot borrow the stored AST.",
+      "input": {"template": "representativeParsedAuto", "operations": [{"op": "set", "path": ["sections", 0, "measures", 0, "events", 0, "chord", "sourceText"], "value": "Cfoo"}]},
+      "expected": {"ok": false, "errors": [{"code": "chord.source_semantic_mismatch", "path": ["sections", 0, "measures", 0, "events", 0, "chord", "sourceText"]}], "partialValue": false, "termination": "complete-refusal"},
+      "traceIds": ["F3-TRACE-SOURCE-AST", "F3-TRACE-LEGACY"],
+      "authorityIds": ["F3-AUTH-SYNTAX", "F3-AUTH-LEGACY"]
+    },
+    {
+      "id": "F3-DOC-016",
+      "category": "source-refusal",
+      "description": "Parsable Cm7 text cannot label a stored Cmaj7 AST.",
+      "input": {"template": "representativeParsedAuto", "operations": [{"op": "set", "path": ["sections", 0, "measures", 0, "events", 0, "chord", "sourceText"], "value": "Cm7"}]},
+      "expected": {"ok": false, "errors": [{"code": "chord.source_semantic_mismatch", "path": ["sections", 0, "measures", 0, "events", 0, "chord", "sourceText"]}], "partialValue": false, "termination": "complete-refusal"},
+      "traceIds": ["F3-TRACE-SOURCE-AST"],
+      "authorityIds": ["F3-AUTH-SYNTAX", "F3-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "F3-DOC-017",
+      "category": "source-refusal",
+      "description": "Enharmonic pitch-class equality cannot hide written root drift.",
+      "input": {"template": "representativeParsedAuto", "operations": [{"op": "set", "path": ["sections", 0, "measures", 0, "events", 0, "chord", "sourceText"], "value": "B#maj7"}]},
+      "expected": {"ok": false, "errors": [{"code": "chord.source_semantic_mismatch", "path": ["sections", 0, "measures", 0, "events", 0, "chord", "sourceText"]}], "partialValue": false, "termination": "complete-refusal"},
+      "traceIds": ["F3-TRACE-SOURCE-AST"],
+      "authorityIds": ["F3-AUTH-SYNTAX", "F3-AUTH-RESOLUTION"]
+    },
+    {
+      "id": "F3-DOC-018",
+      "category": "resolution-refusal",
+      "description": "Source drift and a sixth-with-seventh formula conflict are independently reported.",
+      "input": {"template": "representativeParsedAuto", "operations": [{"op": "set", "path": ["sections", 0, "measures", 0, "events", 0, "chord", "sourceText"], "value": "C6"}, {"op": "set", "path": ["sections", 0, "measures", 0, "events", 0, "chord", "sixth"], "value": {"number": 6, "alter": 0}}, {"op": "set", "path": ["sections", 0, "measures", 0, "events", 0, "chord", "seventh"], "value": "minor"}]},
+      "expected": {"ok": false, "errors": [{"code": "chord.source_semantic_mismatch", "path": ["sections", 0, "measures", 0, "events", 0, "chord", "sixth"]}, {"code": "chord.source_semantic_mismatch", "path": ["sections", 0, "measures", 0, "events", 0, "chord", "sourceText"]}], "t1RefusalCode": "theory.modifier_conflict", "partialValue": false, "termination": "complete-refusal"},
+      "traceIds": ["F3-TRACE-SOURCE-AST", "F3-TRACE-RESOLUTION", "F3-TRACE-DIAGNOSTICS"],
+      "authorityIds": ["F3-AUTH-SYNTAX", "F3-AUTH-RESOLUTION", "F3-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "F3-DOC-019",
+      "category": "resolution-refusal",
+      "description": "A C-double-sharp sharp ninth that requires D triple-sharp refuses without respelling.",
+      "input": {"template": "representativeParsedAuto", "operations": [{"op": "set", "path": ["sections", 0, "measures", 0, "events", 0, "chord"], "value": {"kind": "parsed", "sourceText": "C##7#9", "root": {"step": "C", "alter": 2}, "triad": "major", "sixth": null, "seventh": "minor", "extensions": [], "additions": [], "alterations": [{"number": 9, "alter": 1}], "omissions": [], "bass": null, "colorPolicy": "none"}}]},
+      "expected": {"ok": false, "errors": [{"code": "chord.source_semantic_mismatch", "path": ["sections", 0, "measures", 0, "events", 0, "chord", "alterations", 0]}], "t1RefusalCode": "theory.spelling_accidental_out_of_range", "partialValue": false, "termination": "complete-refusal"},
+      "traceIds": ["F3-TRACE-RESOLUTION"],
+      "authorityIds": ["F3-AUTH-RESOLUTION"]
+    },
+    {
+      "id": "F3-DOC-020",
+      "category": "stored-pitch-refusal",
+      "description": "A parsed Manual voicing cannot add A-sharp to Cmaj7.",
+      "input": {"template": "representativeParsedAuto", "operations": [{"op": "set", "path": ["sections", 0, "measures", 0, "events", 0, "voicing"], "value": {"mode": "manual", "pitches": [{"step": "C", "alter": 0, "octave": 4}, {"step": "E", "alter": 0, "octave": 4}, {"step": "A", "alter": 1, "octave": 4}], "bassPolicy": "included"}}]},
+      "expected": {"ok": false, "errors": [{"code": "chord.source_semantic_mismatch", "path": ["sections", 0, "measures", 0, "events", 0, "voicing", "pitches"]}], "partialValue": false, "termination": "complete-refusal"},
+      "traceIds": ["F3-TRACE-STORED-PITCH"],
+      "authorityIds": ["F3-AUTH-VOICING"]
+    },
+    {
+      "id": "F3-DOC-021",
+      "category": "stored-pitch-refusal",
+      "description": "B-sharp may sound C but cannot replace written C in a parsed Cmaj7 voicing.",
+      "input": {"template": "representativeParsedAuto", "operations": [{"op": "set", "path": ["sections", 0, "measures", 0, "events", 0, "voicing"], "value": {"mode": "manual", "pitches": [{"step": "B", "alter": 1, "octave": 3}, {"step": "E", "alter": 0, "octave": 4}, {"step": "B", "alter": 0, "octave": 4}], "bassPolicy": "included"}}]},
+      "expected": {"ok": false, "errors": [{"code": "chord.source_semantic_mismatch", "path": ["sections", 0, "measures", 0, "events", 0, "voicing", "pitches"]}], "partialValue": false, "termination": "complete-refusal"},
+      "traceIds": ["F3-TRACE-STORED-PITCH"],
+      "authorityIds": ["F3-AUTH-RESOLUTION", "F3-AUTH-VOICING"]
+    },
+    {
+      "id": "F3-DOC-022",
+      "category": "stored-pitch-refusal",
+      "description": "C7alt b5 and sharp5 cannot be unioned across two variants to justify one Manual voicing.",
+      "input": {"template": "representativeAlteredAuto", "operations": [{"op": "set", "path": ["sections", 0, "measures", 0, "events", 0, "voicing"], "value": {"mode": "manual", "pitches": [{"step": "C", "alter": 0, "octave": 4}, {"step": "E", "alter": 0, "octave": 4}, {"step": "G", "alter": -1, "octave": 4}, {"step": "G", "alter": 1, "octave": 4}, {"step": "B", "alter": -1, "octave": 4}], "bassPolicy": "included"}}]},
+      "expected": {"ok": false, "errors": [{"code": "chord.source_semantic_mismatch", "path": ["sections", 0, "measures", 0, "events", 0, "voicing", "pitches"]}], "variantUnionForbidden": true, "partialValue": false, "termination": "complete-refusal"},
+      "traceIds": ["F3-TRACE-ALT", "F3-TRACE-STORED-PITCH"],
+      "authorityIds": ["F3-AUTH-RESOLUTION", "F3-AUTH-VOICING"]
+    },
+    {
+      "id": "F3-DOC-023",
+      "category": "custom-refusal",
+      "description": "Custom Manual pitches cannot omit a declared written class.",
+      "input": {"template": "representativeCustomManual", "operations": [{"op": "set", "path": ["sections", 0, "measures", 0, "events", 0, "voicing", "pitches"], "value": [{"step": "C", "alter": 0, "octave": 4}, {"step": "E", "alter": 0, "octave": 4}]}]},
+      "expected": {"ok": false, "errors": [{"code": "custom.pitch_voicing_mismatch", "path": ["sections", 0, "measures", 0, "events", 0, "voicing", "pitches"]}], "partialValue": false, "termination": "complete-refusal"},
+      "traceIds": ["F3-TRACE-CUSTOM"],
+      "authorityIds": ["F3-AUTH-DOMAIN", "F3-AUTH-VOICING"]
+    },
+    {
+      "id": "F3-DOC-024",
+      "category": "custom-refusal",
+      "description": "Custom Manual pitches cannot add an undeclared written class.",
+      "input": {"template": "representativeCustomManual", "operations": [{"op": "insert", "path": ["sections", 0, "measures", 0, "events", 0, "voicing", "pitches", 3], "value": {"step": "B", "alter": -1, "octave": 4}}]},
+      "expected": {"ok": false, "errors": [{"code": "custom.pitch_voicing_mismatch", "path": ["sections", 0, "measures", 0, "events", 0, "voicing", "pitches"]}], "partialValue": false, "termination": "complete-refusal"},
+      "traceIds": ["F3-TRACE-CUSTOM"],
+      "authorityIds": ["F3-AUTH-DOMAIN", "F3-AUTH-VOICING"]
+    },
+    {
+      "id": "F3-DOC-025",
+      "category": "custom-refusal",
+      "description": "Enharmonic pitch-class equality does not satisfy exact custom spelling.",
+      "input": {"template": "representativeCustomManual", "operations": [{"op": "set", "path": ["sections", 0, "measures", 0, "events", 0, "voicing", "pitches", 0], "value": {"step": "B", "alter": 1, "octave": 3}}]},
+      "expected": {"ok": false, "errors": [{"code": "custom.pitch_voicing_mismatch", "path": ["sections", 0, "measures", 0, "events", 0, "voicing", "pitches"]}], "partialValue": false, "termination": "complete-refusal"},
+      "traceIds": ["F3-TRACE-CUSTOM", "F3-TRACE-STORED-PITCH"],
+      "authorityIds": ["F3-AUTH-RESOLUTION", "F3-AUTH-VOICING"]
+    },
+    {
+      "id": "F3-DOC-026",
+      "category": "auto-refusal",
+      "description": "A one-slot inclusive MIDI range cannot realize four distinct Auto voices.",
+      "input": {"template": "representativeParsedAuto", "operations": [{"op": "set", "path": ["sections", 0, "measures", 0, "events", 0, "voicing", "range"], "value": {"lowMidi": 60, "highMidi": 60}}]},
+      "expected": {"ok": false, "errors": [{"code": "chord.source_semantic_mismatch", "path": ["sections", 0, "measures", 0, "events", 0, "voicing", "range"]}], "familyAvailabilityChecked": false, "partialValue": false, "termination": "complete-refusal"},
+      "traceIds": ["F3-TRACE-AUTO-RANGE"],
+      "authorityIds": ["F3-AUTH-VOICING"]
+    },
+    {
+      "id": "F3-DOC-027",
+      "category": "measure-refusal",
+      "description": "Empty completion with events reports the first event.",
+      "input": {"template": "representativeParsedAuto", "operations": [{"op": "set", "path": ["sections", 0, "measures", 0, "completion"], "value": {"kind": "empty"}}]},
+      "expected": {"ok": false, "errors": [{"code": "measure.empty_has_events", "path": ["sections", 0, "measures", 0, "events", 0]}], "partialValue": false, "termination": "complete-refusal"},
+      "traceIds": ["F3-TRACE-MEASURE"],
+      "authorityIds": ["F3-AUTH-MEASURE"]
+    },
+    {
+      "id": "F3-DOC-028",
+      "category": "measure-refusal",
+      "description": "Nonempty completion with no events reports the event array.",
+      "input": {"template": "representativeParsedAuto", "operations": [{"op": "set", "path": ["sections", 0, "measures", 0, "events"], "value": []}]},
+      "expected": {"ok": false, "errors": [{"code": "measure.complete_duration_mismatch", "path": ["sections", 0, "measures", 0, "completion"]}, {"code": "measure.nonempty_has_no_events", "path": ["sections", 0, "measures", 0, "events"]}], "partialValue": false, "termination": "complete-refusal"},
+      "traceIds": ["F3-TRACE-MEASURE", "F3-TRACE-DIAGNOSTICS"],
+      "authorityIds": ["F3-AUTH-MEASURE", "F3-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "F3-DOC-029",
+      "category": "measure-refusal",
+      "description": "A complete 4/4 measure cannot be underfilled.",
+      "input": {"template": "representativeParsedAuto", "operations": [{"op": "set", "path": ["sections", 0, "measures", 0, "events", 0, "duration"], "value": {"numerator": 3, "denominator": 1}}]},
+      "expected": {"ok": false, "errors": [{"code": "measure.complete_duration_mismatch", "path": ["sections", 0, "measures", 0, "completion"]}], "partialValue": false, "termination": "complete-refusal"},
+      "traceIds": ["F3-TRACE-MEASURE"],
+      "authorityIds": ["F3-AUTH-MEASURE"]
+    },
+    {
+      "id": "F3-DOC-030",
+      "category": "measure-refusal",
+      "description": "A complete overfill reports completion mismatch and the first capacity crossing in path order.",
+      "input": {"template": "representativeParsedAuto", "operations": [{"op": "set", "path": ["sections", 0, "measures", 0, "events", 0, "duration"], "value": {"numerator": 5, "denominator": 1}}]},
+      "expected": {"ok": false, "errors": [{"code": "measure.complete_duration_mismatch", "path": ["sections", 0, "measures", 0, "completion"]}, {"code": "measure.duration_over_capacity", "path": ["sections", 0, "measures", 0, "events", 0, "duration"]}], "partialValue": false, "termination": "complete-refusal"},
+      "traceIds": ["F3-TRACE-MEASURE", "F3-TRACE-DIAGNOSTICS"],
+      "authorityIds": ["F3-AUTH-MEASURE", "F3-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "F3-DOC-031",
+      "category": "measure-refusal",
+      "description": "Zero expected duration and no events remain two independent partial-measure contradictions.",
+      "input": {"template": "representativePartial", "operations": [{"op": "set", "path": ["sections", 0, "measures", 0, "events"], "value": []}, {"op": "set", "path": ["sections", 0, "measures", 0, "completion", "expectedDuration"], "value": {"numerator": 0, "denominator": 1}}]},
+      "expected": {"ok": false, "errors": [{"code": "measure.expected_duration_not_positive", "path": ["sections", 0, "measures", 0, "completion", "expectedDuration"]}, {"code": "measure.nonempty_has_no_events", "path": ["sections", 0, "measures", 0, "events"]}], "partialValue": false, "termination": "complete-refusal"},
+      "traceIds": ["F3-TRACE-MEASURE", "F3-TRACE-DIAGNOSTICS"],
+      "authorityIds": ["F3-AUTH-MEASURE", "F3-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "F3-DOC-032",
+      "category": "measure-refusal",
+      "description": "A partial expected duration must be strictly below ordinary capacity.",
+      "input": {"template": "representativePartial", "operations": [{"op": "set", "path": ["sections", 0, "measures", 0, "events", 0, "duration"], "value": {"numerator": 4, "denominator": 1}}, {"op": "set", "path": ["sections", 0, "measures", 0, "completion", "expectedDuration"], "value": {"numerator": 4, "denominator": 1}}]},
+      "expected": {"ok": false, "errors": [{"code": "measure.expected_duration_not_short", "path": ["sections", 0, "measures", 0, "completion", "expectedDuration"]}], "partialValue": false, "termination": "complete-refusal"},
+      "traceIds": ["F3-TRACE-MEASURE"],
+      "authorityIds": ["F3-AUTH-MEASURE"]
+    },
+    {
+      "id": "F3-DOC-033",
+      "category": "measure-refusal",
+      "description": "A partial expected duration must exactly equal the event sum.",
+      "input": {"template": "representativePartial", "operations": [{"op": "set", "path": ["sections", 0, "measures", 0, "completion", "expectedDuration"], "value": {"numerator": 2, "denominator": 1}}]},
+      "expected": {"ok": false, "errors": [{"code": "measure.expected_duration_mismatch", "path": ["sections", 0, "measures", 0, "completion", "expectedDuration"]}], "partialValue": false, "termination": "complete-refusal"},
+      "traceIds": ["F3-TRACE-MEASURE"],
+      "authorityIds": ["F3-AUTH-MEASURE"]
+    },
+    {
+      "id": "F3-DOC-034",
+      "category": "measure-refusal",
+      "description": "A partial reason is checked for blankness without trimming stored data.",
+      "input": {"template": "representativePartial", "operations": [{"op": "set", "path": ["sections", 0, "measures", 0, "completion", "reason"], "value": "   \t"}]},
+      "expected": {"ok": false, "errors": [{"code": "measure.reason_blank", "path": ["sections", 0, "measures", 0, "completion", "reason"]}], "partialValue": false, "termination": "complete-refusal"},
+      "traceIds": ["F3-TRACE-MEASURE", "F3-TRACE-TRANSACTION"],
+      "authorityIds": ["F3-AUTH-MEASURE"]
+    },
+    {
+      "id": "F3-DOC-035",
+      "category": "measure-refusal",
+      "description": "Treating 3/8 capacity as three quarter-note beats is rejected by exact capacity evidence.",
+      "input": {"template": "representativeParsedAuto", "operations": [{"op": "set", "path": ["meter"], "value": {"beatsPerBar": 3, "beatUnit": 8}}, {"op": "set", "path": ["sections", 0, "measures", 0, "events", 0, "duration"], "value": {"numerator": 3, "denominator": 1}}]},
+      "expected": {"ok": false, "errors": [{"code": "measure.complete_duration_mismatch", "path": ["sections", 0, "measures", 0, "completion"]}, {"code": "measure.duration_over_capacity", "path": ["sections", 0, "measures", 0, "events", 0, "duration"]}], "capacity": {"numerator": 3, "denominator": 2}, "partialValue": false, "termination": "complete-refusal"},
+      "traceIds": ["F3-TRACE-MEASURE"],
+      "authorityIds": ["F3-AUTH-MEASURE", "F3-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "F3-DOC-036",
+      "category": "multi-error",
+      "description": "Independent source, Auto, and measure errors are returned in global path order.",
+      "input": {"template": "representativeParsedAuto", "operations": [{"op": "set", "path": ["sections", 0, "measures", 0, "events", 0, "chord", "sourceText"], "value": "Cm7"}, {"op": "set", "path": ["sections", 0, "measures", 0, "events", 0, "voicing", "range"], "value": {"lowMidi": 60, "highMidi": 60}}, {"op": "set", "path": ["sections", 0, "measures", 0, "events", 0, "duration"], "value": {"numerator": 5, "denominator": 1}}]},
+      "expected": {"ok": false, "errors": [{"code": "measure.complete_duration_mismatch", "path": ["sections", 0, "measures", 0, "completion"]}, {"code": "chord.source_semantic_mismatch", "path": ["sections", 0, "measures", 0, "events", 0, "chord", "sourceText"]}, {"code": "measure.duration_over_capacity", "path": ["sections", 0, "measures", 0, "events", 0, "duration"]}, {"code": "chord.source_semantic_mismatch", "path": ["sections", 0, "measures", 0, "events", 0, "voicing", "range"]}], "partialValue": false, "termination": "complete-refusal"},
+      "traceIds": ["F3-TRACE-DIAGNOSTICS", "F3-TRACE-TRANSACTION"],
+      "authorityIds": ["F3-AUTH-INDEPENDENCE", "F3-AUTH-ARCHITECTURE"]
+    },
+    {
+      "id": "F3-DOC-037",
+      "category": "limit-positive",
+      "description": "The exact 64 by 1024 empty-measure boundary terminates by count.",
+      "input": {"recipe": "max-empty-measures", "sections": 64, "measuresPerSection": 1024, "events": 0, "completion": {"kind": "empty"}},
+      "expected": {"ok": true, "warnings": [], "publication": true, "counters": {"sectionsVisited": 64, "measuresVisited": 65536, "eventsVisited": 0, "symbolParseCalls": 0, "resolutionCalls": 0, "voicingChecks": 0}, "termination": "complete-success"},
+      "traceIds": ["F3-TRACE-BOUNDS", "F3-TRACE-MEASURE"],
+      "authorityIds": ["F3-AUTH-DOMAIN", "F3-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "F3-DOC-038",
+      "category": "limit-positive",
+      "description": "Exactly 8192 one-beat events distributed over complete 4/4 measures reaches every event counter without exceeding F2 limits.",
+      "input": {"recipe": "max-events-complete-measures", "sections": 2, "measuresPerSection": 1024, "eventsPerMeasure": 4, "eventDuration": {"numerator": 1, "denominator": 1}, "totalEvents": 8192},
+      "expected": {"ok": true, "warnings": [], "publication": true, "counters": {"sectionsVisited": 2, "measuresVisited": 2048, "eventsVisited": 8192, "symbolParseCalls": 8192, "resolutionCalls": 8192, "voicingChecks": 8192}, "termination": "complete-success"},
+      "traceIds": ["F3-TRACE-BOUNDS", "F3-TRACE-RESOLUTION"],
+      "authorityIds": ["F3-AUTH-DOMAIN", "F3-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "F3-DOC-039",
+      "category": "determinism",
+      "description": "Repeated validation is deeply equal, recursively immutable, and does not mutate or alias a mutable test-owned candidate.",
+      "input": {"template": "representativeParsedAuto", "operations": [], "repeat": 2, "mutableInputProbe": true},
+      "expected": {"ok": true, "warnings": [], "publication": true, "deeplyEqualRuns": true, "recursivelyFrozen": true, "mutableInputAliasCount": 0, "inputMutationCount": 0, "termination": "complete-success"},
+      "traceIds": ["F3-TRACE-TRANSACTION", "F3-TRACE-DIAGNOSTICS"],
+      "authorityIds": ["F3-AUTH-ARCHITECTURE", "F3-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "F3-DOC-040",
+      "category": "stage-boundary",
+      "description": "The document event ceiling is refused at F2's reviewed collection path and F3 is never invoked.",
+      "input": {"recipe": "f2-first-excess-events", "totalEvents": 8193},
+      "expected": {"stage": "F2", "f3Invoked": false, "code": "limit.events_per_document_exceeded", "path": ["sections"]},
+      "traceIds": ["F3-TRACE-BOUNDARY", "F3-TRACE-BOUNDS"],
+      "authorityIds": ["F3-AUTH-DOMAIN", "F3-AUTH-ARCHITECTURE"]
+    },
+    {
+      "id": "F3-DOC-041",
+      "category": "playback-refusal",
+      "description": "A parsed Manual spelling may be structurally valid outside MIDI but cannot publish for playback.",
+      "input": {"template": "representativeParsedAuto", "operations": [{"op": "set", "path": ["sections", 0, "measures", 0, "events", 0, "voicing"], "value": {"mode": "manual", "pitches": [{"step": "C", "alter": 0, "octave": -2}, {"step": "E", "alter": 0, "octave": 4}, {"step": "G", "alter": 0, "octave": 4}], "bassPolicy": "included"}}]},
+      "expected": {"ok": false, "errors": [{"code": "chord.source_semantic_mismatch", "path": ["sections", 0, "measures", 0, "events", 0, "voicing", "pitches"]}], "partialValue": false, "termination": "complete-refusal"},
+      "traceIds": ["F3-TRACE-STORED-PITCH", "F3-TRACE-AUTO-RANGE"],
+      "authorityIds": ["F3-AUTH-DOMAIN", "F3-AUTH-VOICING"]
+    },
+    {
+      "id": "F3-DOC-042",
+      "category": "playback-refusal",
+      "description": "A parsed Frozen spelling may be structurally valid outside MIDI but cannot publish for playback.",
+      "input": {"template": "representativeParsedAuto", "operations": [{"op": "set", "path": ["sections", 0, "measures", 0, "events", 0, "voicing"], "value": {"mode": "frozen", "pitches": [{"step": "C", "alter": 0, "octave": -2}, {"step": "E", "alter": 0, "octave": 4}, {"step": "G", "alter": 0, "octave": 4}], "bassPolicy": "included", "generatedBy": {"engineVersion": "fixture-v1", "family": "balanced"}}}]},
+      "expected": {"ok": false, "errors": [{"code": "chord.source_semantic_mismatch", "path": ["sections", 0, "measures", 0, "events", 0, "voicing", "pitches"]}], "partialValue": false, "termination": "complete-refusal"},
+      "traceIds": ["F3-TRACE-STORED-PITCH", "F3-TRACE-AUTO-RANGE"],
+      "authorityIds": ["F3-AUTH-DOMAIN", "F3-AUTH-VOICING"]
+    },
+    {
+      "id": "F3-DOC-043",
+      "category": "playback-refusal",
+      "description": "A matching Custom Manual set still refuses publication when one stored pitch cannot project to MIDI.",
+      "input": {"template": "representativeCustomManual", "operations": [{"op": "set", "path": ["sections", 0, "measures", 0, "events", 0, "voicing", "pitches", 0, "octave"], "value": -2}]},
+      "expected": {"ok": false, "errors": [{"code": "custom.pitch_voicing_mismatch", "path": ["sections", 0, "measures", 0, "events", 0, "voicing", "pitches"]}], "partialValue": false, "termination": "complete-refusal"},
+      "traceIds": ["F3-TRACE-STORED-PITCH", "F3-TRACE-CUSTOM", "F3-TRACE-AUTO-RANGE"],
+      "authorityIds": ["F3-AUTH-DOMAIN", "F3-AUTH-VOICING"]
+    },
+    {
+      "id": "F3-DOC-044",
+      "category": "stage-boundary",
+      "description": "Custom Auto voicing is refused by F2 and F3 is never invoked.",
+      "input": {"template": "representativeCustomManual", "operations": [{"op": "set", "path": ["sections", 0, "measures", 0, "events", 0, "voicing"], "value": {"mode": "auto", "family": "balanced", "voiceCount": 3, "range": {"lowMidi": 48, "highMidi": 72}, "bassPolicy": "none"}}]},
+      "expected": {"stage": "F2", "f3Invoked": false, "code": "custom.auto_voicing_forbidden", "path": ["sections", 0, "measures", 0, "events", 0, "voicing", "mode"]},
+      "traceIds": ["F3-TRACE-BOUNDARY"],
+      "authorityIds": ["F3-AUTH-DOMAIN", "F3-AUTH-ARCHITECTURE"]
+    },
+    {
+      "id": "F3-DOC-045",
+      "category": "stage-boundary",
+      "description": "A stored external bass policy without a slash bass is refused by F2 before publication.",
+      "input": {"template": "representativeParsedAuto", "operations": [{"op": "set", "path": ["sections", 0, "measures", 0, "events", 0, "voicing"], "value": {"mode": "manual", "pitches": [{"step": "C", "alter": 0, "octave": 4}, {"step": "E", "alter": 0, "octave": 4}, {"step": "G", "alter": 0, "octave": 4}], "bassPolicy": "external"}}]},
+      "expected": {"stage": "F2", "f3Invoked": false, "code": "voicing.external_without_slash_bass", "path": ["sections", 0, "measures", 0, "events", 0, "voicing", "bassPolicy"]},
+      "traceIds": ["F3-TRACE-BOUNDARY"],
+      "authorityIds": ["F3-AUTH-DOMAIN", "F3-AUTH-ARCHITECTURE"]
+    }
+  ]
+}

@@ -1,0 +1,208 @@
+{
+  "schema": "changes.fixtures.p0-trace-ledger.v1",
+  "fixtureVersion": "1.0.0",
+  "status": "independently-authored-pre-production",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "stableTraceIdsOnly": true,
+  "tracePolicy": {
+    "allParentClausesLinked": true,
+    "allCasesBacklinked": true,
+    "allMutationControlsBacklinked": true,
+    "allAuthoritiesBacklinked": true,
+    "buildProofOwner": "P0/build",
+    "independentProofOwner": "P0/verify"
+  },
+  "parentClaims": [
+    {"id":"P0-PARENT-COMPILE","source":"P0 bead required implementation","text":"Pure compilePlaybackPlan flattens a ValidatedDocument plus exact realization bindings and optional loop."},
+    {"id":"P0-PARENT-EXACT","source":"P0 bead success criteria","text":"Plans are byte-deterministic, exact, MIDI-integral, source-traceable, and shared unchanged by audio and MIDI."},
+    {"id":"P0-PARENT-STORED","source":"P0 bead invariants","text":"Manual, Frozen, and Custom stored pitches are never optimized, sorted, deduplicated, respelled, or regenerated."},
+    {"id":"P0-PARENT-LOOP","source":"P0 bead required implementation","text":"Loop validation, restart, clipping, exclusion, gate recomputation, and silent ranges are explicit and deterministic."},
+    {"id":"P0-PARENT-REFUSAL","source":"P0 bead invariants","text":"Missing, stale, mismatched, unavailable, malformed, nonintegral, out-of-range, and over-limit requests refuse without partial plan."},
+    {"id":"P0-PARENT-BOUNDS","source":"AGENTS.md verification discipline","text":"Every work, state, collection, timeline, and memory bound has deterministic exact and plus-one evidence; wall time is not a musical cutoff."},
+    {"id":"P0-PARENT-INDEPENDENCE","source":"AGENTS.md verification discipline","text":"Independent fixtures provide positive, near-miss, transposition, and mutation proof without production self-certification."},
+    {"id":"P0-PARENT-LEGACY","source":"docs/REBUILD_PLAN.md L-VOICE-01","text":"Manual notes cannot be reoptimized during playback or export."}
+  ],
+  "traces": [
+    {
+      "id": "P0-TRACE-BOUNDARY",
+      "invariant": "P0 is a pure synchronous playback-layer operation over validated exact values; it calls no audio, UI, browser, storage, export, network, model, clock, locale, or random capability.",
+      "parentClaimIds": ["P0-PARENT-COMPILE", "P0-PARENT-EXACT", "P0-PARENT-INDEPENDENCE"],
+      "caseIds": ["P0-TIME-008", "P0-REAL-005", "P0-REAL-006", "P0-REAL-007", "P0-LAW-001", "P0-LAW-011", "P0-LAW-013"],
+      "mutationControlIds": ["P0-MUT-037", "P0-MUT-038", "P0-MUT-039", "P0-MUT-040"],
+      "authorityIds": ["P0-AUTH-ARCHITECTURE", "P0-AUTH-CONTRACT", "P0-AUTH-F3", "P0-AUTH-INDEPENDENCE"],
+      "plannedEvidenceOwners": ["tests/conformance/playback-plan-conformance.test.ts", "tests/static/playback-boundary.test.ts"]
+    },
+    {
+      "id": "P0-TRACE-TIMELINE",
+      "invariant": "Absolute source time follows section, measure, and event preorder; complete and partial measures use exact event sums, empty measures add meter-capacity silence, empty sections add zero, and reset never rewinds time.",
+      "parentClaimIds": ["P0-PARENT-COMPILE", "P0-PARENT-EXACT", "P0-PARENT-BOUNDS"],
+      "caseIds": ["P0-TIME-001", "P0-TIME-009", "P0-TIME-010", "P0-LOOP-001", "P0-LAW-010", "P0-LAW-014", "P0-LIMIT-STRUCT-002", "P0-LIMIT-STRUCT-003", "P0-LIMIT-STRUCT-004"],
+      "mutationControlIds": ["P0-MUT-001", "P0-MUT-002", "P0-MUT-003", "P0-MUT-004", "P0-MUT-005", "P0-MUT-006"],
+      "authorityIds": ["P0-AUTH-CONTRACT", "P0-AUTH-DOMAIN", "P0-AUTH-LIMITS"],
+      "plannedEvidenceOwners": ["tests/unit/playback-plan-timeline.test.ts", "tests/integration/playback-plan-limits.test.ts"]
+    },
+    {
+      "id": "P0-TRACE-SOURCE-IDS",
+      "invariant": "Event, section, measure, sourceOrdinal, and emitted ordinal remain exact and distinguish source position from loop-filtered output position.",
+      "parentClaimIds": ["P0-PARENT-COMPILE", "P0-PARENT-EXACT"],
+      "caseIds": ["P0-TIME-001", "P0-TIME-009", "P0-LOOP-003", "P0-LOOP-004", "P0-LOOP-006", "P0-LAW-002", "P0-LAW-010"],
+      "mutationControlIds": ["P0-MUT-001", "P0-MUT-007", "P0-MUT-008", "P0-MUT-009", "P0-MUT-031"],
+      "authorityIds": ["P0-AUTH-CONTRACT", "P0-AUTH-INDEPENDENCE"],
+      "plannedEvidenceOwners": ["tests/unit/playback-plan-timeline.test.ts"]
+    },
+    {
+      "id": "P0-TRACE-METERS",
+      "invariant": "2/2, 3/4, 4/4, 5/8, and 6/8 retain exact quarter-note capacities; compound pulse labels never reinterpret stored time.",
+      "parentClaimIds": ["P0-PARENT-COMPILE", "P0-PARENT-EXACT"],
+      "caseIds": ["P0-TIME-001", "P0-TIME-002", "P0-TIME-003", "P0-TIME-004", "P0-TIME-005", "P0-TIME-006"],
+      "mutationControlIds": ["P0-MUT-005"],
+      "authorityIds": ["P0-AUTH-DOMAIN", "P0-AUTH-POLICY"],
+      "plannedEvidenceOwners": ["tests/unit/playback-plan-timeline.test.ts"]
+    },
+    {
+      "id": "P0-TRACE-EMPTY-PARTIAL",
+      "invariant": "Empty documents, empty sections, silent empty measures, pickups, and incomplete measures preserve their distinct exact timeline meanings without invented events or repairs.",
+      "parentClaimIds": ["P0-PARENT-COMPILE", "P0-PARENT-LOOP", "P0-PARENT-EXACT"],
+      "caseIds": ["P0-TIME-001", "P0-TIME-007", "P0-TIME-008", "P0-TIME-009", "P0-LOOP-006", "P0-LOOP-007", "P0-LOOP-008", "P0-LAW-014", "P0-LIMIT-STRUCT-002", "P0-LIMIT-STRUCT-003", "P0-LIMIT-STRUCT-004"],
+      "mutationControlIds": ["P0-MUT-002", "P0-MUT-003", "P0-MUT-004", "P0-MUT-032"],
+      "authorityIds": ["P0-AUTH-CONTRACT", "P0-AUTH-DOMAIN", "P0-AUTH-F3"],
+      "plannedEvidenceOwners": ["tests/unit/playback-plan-timeline.test.ts", "tests/unit/playback-plan-loop.test.ts"]
+    },
+    {
+      "id": "P0-TRACE-REALIZATION",
+      "invariant": "Every source event has exactly one identity-matched generated request/outcome or stored bypass; no binding is missing, extra, stale, substituted, or selected by P0.",
+      "parentClaimIds": ["P0-PARENT-COMPILE", "P0-PARENT-REFUSAL", "P0-PARENT-EXACT"],
+      "caseIds": ["P0-REAL-001", "P0-REAL-008", "P0-REAL-009", "P0-REAL-010", "P0-REAL-011", "P0-REAL-012", "P0-REAL-013", "P0-REAL-014", "P0-REAL-015", "P0-REAL-016", "P0-REAL-017", "P0-REAL-019", "P0-REAL-022", "P0-REAL-023", "P0-LAW-002", "P0-LAW-006", "P0-LIMIT-STRUCT-005", "P0-LIMIT-STRUCT-006"],
+      "mutationControlIds": ["P0-MUT-010", "P0-MUT-011", "P0-MUT-012", "P0-MUT-013", "P0-MUT-014", "P0-MUT-015", "P0-MUT-016", "P0-MUT-017", "P0-MUT-018", "P0-MUT-035"],
+      "authorityIds": ["P0-AUTH-CONTRACT", "P0-AUTH-F3", "P0-AUTH-T1", "P0-AUTH-V0"],
+      "plannedEvidenceOwners": ["tests/unit/playback-plan-realization.test.ts"]
+    },
+    {
+      "id": "P0-TRACE-STALE",
+      "invariant": "Generated requests stale on exact resolved-source or Auto-policy drift; stored bypasses stale only on exact voicing drift, not alias-only chord edits or unrelated metadata.",
+      "parentClaimIds": ["P0-PARENT-REFUSAL", "P0-PARENT-STORED"],
+      "caseIds": ["P0-REAL-011", "P0-REAL-012", "P0-REAL-018", "P0-LAW-006", "P0-LAW-007", "P0-LAW-008"],
+      "mutationControlIds": ["P0-MUT-014", "P0-MUT-015", "P0-MUT-022"],
+      "authorityIds": ["P0-AUTH-CONTRACT", "P0-AUTH-T0", "P0-AUTH-T1", "P0-AUTH-V0"],
+      "plannedEvidenceOwners": ["tests/unit/playback-plan-realization.test.ts"]
+    },
+    {
+      "id": "P0-TRACE-STORED",
+      "invariant": "Manual and Frozen StoredVoicingBypass pitches and aligned MIDI projections preserve order, spelling, octave, register, inversion, doubling, and duplicates exactly.",
+      "parentClaimIds": ["P0-PARENT-STORED", "P0-PARENT-EXACT", "P0-PARENT-LEGACY"],
+      "caseIds": ["P0-TIME-001", "P0-REAL-002", "P0-REAL-003", "P0-REAL-004", "P0-REAL-018", "P0-LAW-005", "P0-LAW-007", "P0-LAW-012", "P0-LIMIT-STRUCT-001"],
+      "mutationControlIds": ["P0-MUT-019", "P0-MUT-020", "P0-MUT-021", "P0-MUT-022", "P0-MUT-034"],
+      "authorityIds": ["P0-AUTH-DOMAIN", "P0-AUTH-LEGACY", "P0-AUTH-V0"],
+      "plannedEvidenceOwners": ["tests/unit/playback-plan-manual.test.ts", "tests/unit/playback-plan-realization.test.ts"]
+    },
+    {
+      "id": "P0-TRACE-CUSTOM",
+      "invariant": "Custom chords compile only from their exact Manual or Frozen stored bypass and never receive invented degree, formula, or fallback pitches.",
+      "parentClaimIds": ["P0-PARENT-STORED", "P0-PARENT-REFUSAL"],
+      "caseIds": ["P0-TIME-001", "P0-REAL-004", "P0-REAL-020"],
+      "mutationControlIds": ["P0-MUT-023"],
+      "authorityIds": ["P0-AUTH-DOMAIN", "P0-AUTH-F3", "P0-AUTH-CONTRACT"],
+      "plannedEvidenceOwners": ["tests/unit/playback-plan-realization.test.ts"]
+    },
+    {
+      "id": "P0-TRACE-GATE",
+      "invariant": "Gate duration is recomputed after clipping as max one tick and otherwise scheduled duration minus at most 24 ticks; malformed nonintegral runtime values refuse.",
+      "parentClaimIds": ["P0-PARENT-COMPILE", "P0-PARENT-LOOP", "P0-PARENT-REFUSAL"],
+      "caseIds": ["P0-TIME-001", "P0-TIME-002", "P0-TIME-003", "P0-TIME-004", "P0-TIME-005", "P0-TIME-006", "P0-TIME-007", "P0-REAL-021", "P0-LOOP-001", "P0-LOOP-004", "P0-LOOP-005", "P0-LOOP-006", "P0-LOOP-009", "P0-LAW-003"],
+      "mutationControlIds": ["P0-MUT-024", "P0-MUT-025", "P0-MUT-026", "P0-MUT-027"],
+      "authorityIds": ["P0-AUTH-DOMAIN", "P0-AUTH-POLICY", "P0-AUTH-INDEPENDENCE"],
+      "plannedEvidenceOwners": ["tests/unit/playback-plan-gate.test.ts"]
+    },
+    {
+      "id": "P0-TRACE-LOOP",
+      "invariant": "Half-open loops validate without repair, exclude touching non-overlaps, restart start-overlaps, clip end-overlaps, preserve source offsets, allow silence-only ranges, and never reorder.",
+      "parentClaimIds": ["P0-PARENT-LOOP", "P0-PARENT-REFUSAL", "P0-PARENT-EXACT"],
+      "caseIds": ["P0-LOOP-001", "P0-LOOP-002", "P0-LOOP-003", "P0-LOOP-004", "P0-LOOP-005", "P0-LOOP-006", "P0-LOOP-007", "P0-LOOP-008", "P0-LOOP-009", "P0-LOOP-010", "P0-LOOP-011", "P0-LOOP-012", "P0-LOOP-013", "P0-LOOP-014", "P0-LAW-009", "P0-LAW-014"],
+      "mutationControlIds": ["P0-MUT-008", "P0-MUT-025", "P0-MUT-028", "P0-MUT-029", "P0-MUT-030", "P0-MUT-031", "P0-MUT-032"],
+      "authorityIds": ["P0-AUTH-CONTRACT", "P0-AUTH-DOMAIN", "P0-AUTH-POLICY"],
+      "plannedEvidenceOwners": ["tests/unit/playback-plan-loop.test.ts"]
+    },
+    {
+      "id": "P0-TRACE-MIDI",
+      "invariant": "PPQ 960 beat/tick mirrors and index-aligned written/MIDI pitch arrays are exact, integer, and ready for unchanged MIDI consumption.",
+      "parentClaimIds": ["P0-PARENT-EXACT", "P0-PARENT-STORED"],
+      "caseIds": ["P0-TIME-002", "P0-TIME-003", "P0-TIME-004", "P0-TIME-005", "P0-TIME-006", "P0-TIME-007", "P0-TIME-010", "P0-REAL-003", "P0-REAL-017", "P0-REAL-021", "P0-LOOP-002", "P0-LOOP-009", "P0-LAW-003", "P0-LAW-004", "P0-LAW-005", "P0-LAW-012", "P0-LIMIT-STRUCT-001"],
+      "mutationControlIds": ["P0-MUT-018", "P0-MUT-024", "P0-MUT-026", "P0-MUT-027", "P0-MUT-033", "P0-MUT-034", "P0-MUT-036", "P0-MUT-041"],
+      "authorityIds": ["P0-AUTH-ARCHITECTURE", "P0-AUTH-CONTRACT", "P0-AUTH-DOMAIN", "P0-AUTH-POLICY"],
+      "plannedEvidenceOwners": ["tests/unit/playback-plan-midi-integral.test.ts", "tests/conformance/playback-plan-conformance.test.ts"]
+    },
+    {
+      "id": "P0-TRACE-DETERMINISM",
+      "invariant": "Deeply equal requests and version identities produce canonical byte-equivalent results and evidence independent of map insertion, clock, locale, random, or allocation order.",
+      "parentClaimIds": ["P0-PARENT-EXACT", "P0-PARENT-INDEPENDENCE", "P0-PARENT-BOUNDS"],
+      "caseIds": ["P0-TIME-010", "P0-REAL-022", "P0-LAW-001", "P0-LAW-002", "P0-LAW-004", "P0-LAW-008", "P0-LAW-009", "P0-LAW-013"],
+      "mutationControlIds": ["P0-MUT-007", "P0-MUT-035", "P0-MUT-036", "P0-MUT-040"],
+      "authorityIds": ["P0-AUTH-CONTRACT", "P0-AUTH-INDEPENDENCE"],
+      "plannedEvidenceOwners": ["tests/conformance/playback-plan-conformance.test.ts"]
+    },
+    {
+      "id": "P0-TRACE-TRANSPOSITION",
+      "invariant": "Reviewed diatonic transposition preserves timing, identity, order, gates, velocity, and articulation while shifting exact spellings and aligned MIDI pitches equivariantly and invertibly.",
+      "parentClaimIds": ["P0-PARENT-EXACT", "P0-PARENT-INDEPENDENCE"],
+      "caseIds": ["P0-LAW-004"],
+      "mutationControlIds": ["P0-MUT-036"],
+      "authorityIds": ["P0-AUTH-T0", "P0-AUTH-T1", "P0-AUTH-INDEPENDENCE"],
+      "plannedEvidenceOwners": ["tests/property/playback-plan-transposition.test.ts"]
+    },
+    {
+      "id": "P0-TRACE-IMMUTABILITY",
+      "invariant": "Requests remain byte-equivalent after compile; results are recursively frozen, newly allocated where required, and non-aliasing.",
+      "parentClaimIds": ["P0-PARENT-EXACT", "P0-PARENT-INDEPENDENCE"],
+      "caseIds": ["P0-LAW-011"],
+      "mutationControlIds": ["P0-MUT-037", "P0-MUT-038"],
+      "authorityIds": ["P0-AUTH-CONTRACT", "P0-AUTH-INDEPENDENCE"],
+      "plannedEvidenceOwners": ["tests/conformance/playback-plan-conformance.test.ts"]
+    },
+    {
+      "id": "P0-TRACE-CONSUMERS",
+      "invariant": "Audio and MIDI receive the exact same frozen PlaybackPlan object and may not rebuild, normalize, realize, sort, or mutate it.",
+      "parentClaimIds": ["P0-PARENT-EXACT", "P0-PARENT-STORED"],
+      "caseIds": ["P0-LAW-012"],
+      "mutationControlIds": ["P0-MUT-038", "P0-MUT-041"],
+      "authorityIds": ["P0-AUTH-ARCHITECTURE", "P0-AUTH-CONTRACT"],
+      "plannedEvidenceOwners": ["tests/integration/playback-plan-consumers.test.ts"]
+    },
+    {
+      "id": "P0-TRACE-LEGACY",
+      "invariant": "L-VOICE-01 cannot recur: the deliberately unsorted doubled Manual voicing reaches plan, audio, and MIDI unchanged.",
+      "parentClaimIds": ["P0-PARENT-STORED", "P0-PARENT-LEGACY"],
+      "caseIds": ["P0-REAL-002", "P0-LAW-005"],
+      "mutationControlIds": ["P0-MUT-019", "P0-MUT-020", "P0-MUT-021"],
+      "authorityIds": ["P0-AUTH-DOMAIN", "P0-AUTH-LEGACY"],
+      "plannedEvidenceOwners": ["tests/unit/playback-plan-manual.test.ts"]
+    },
+    {
+      "id": "P0-TRACE-LIMITS",
+      "invariant": "Timeline, collection, work, and memory maxima are inclusive, maximum-plus-one refuses without partial plan, and wall time never changes semantics.",
+      "parentClaimIds": ["P0-PARENT-BOUNDS", "P0-PARENT-REFUSAL", "P0-PARENT-INDEPENDENCE"],
+      "caseIds": ["P0-LIMIT-STRUCT-001", "P0-LIMIT-STRUCT-002", "P0-LIMIT-STRUCT-003", "P0-LIMIT-STRUCT-004", "P0-LIMIT-STRUCT-005", "P0-LIMIT-STRUCT-006", "P0-LIMIT-SEAM-001", "P0-LIMIT-SEAM-002", "P0-LIMIT-SEAM-003", "P0-LIMIT-SEAM-004", "P0-LIMIT-SEAM-005", "P0-LIMIT-SEAM-006", "P0-LIMIT-SEAM-007", "P0-LIMIT-SEAM-008", "P0-LIMIT-SEAM-009", "P0-LIMIT-SEAM-010", "P0-LIMIT-SEAM-011", "P0-LIMIT-SEAM-012", "P0-LIMIT-SEAM-013", "P0-LIMIT-SEAM-014", "P0-LIMIT-SEAM-015", "P0-LIMIT-SEAM-016"],
+      "mutationControlIds": ["P0-MUT-006", "P0-MUT-040", "P0-MUT-042"],
+      "authorityIds": ["P0-AUTH-CONTRACT", "P0-AUTH-INDEPENDENCE", "P0-AUTH-LIMITS"],
+      "plannedEvidenceOwners": ["tests/integration/playback-plan-limits.test.ts"]
+    },
+    {
+      "id": "P0-TRACE-REFUSALS",
+      "invariant": "Validation uses exact declared precedence and returns one typed path/detail/termination with no plan, fallback, repair, retry, or partial result.",
+      "parentClaimIds": ["P0-PARENT-REFUSAL", "P0-PARENT-BOUNDS"],
+      "caseIds": ["P0-REAL-005", "P0-REAL-006", "P0-REAL-007", "P0-REAL-008", "P0-REAL-009", "P0-REAL-010", "P0-REAL-011", "P0-REAL-012", "P0-REAL-013", "P0-REAL-014", "P0-REAL-015", "P0-REAL-016", "P0-REAL-017", "P0-REAL-018", "P0-REAL-019", "P0-REAL-020", "P0-REAL-021", "P0-REAL-022", "P0-REAL-023", "P0-LOOP-010", "P0-LOOP-011", "P0-LOOP-012", "P0-LOOP-013", "P0-LOOP-014", "P0-LAW-006", "P0-LIMIT-STRUCT-004", "P0-LIMIT-STRUCT-006", "P0-LIMIT-SEAM-001", "P0-LIMIT-SEAM-016"],
+      "mutationControlIds": ["P0-MUT-006", "P0-MUT-010", "P0-MUT-011", "P0-MUT-012", "P0-MUT-013", "P0-MUT-016", "P0-MUT-017", "P0-MUT-023", "P0-MUT-027", "P0-MUT-029", "P0-MUT-030", "P0-MUT-042"],
+      "authorityIds": ["P0-AUTH-CONTRACT", "P0-AUTH-INDEPENDENCE", "P0-AUTH-LIMITS"],
+      "plannedEvidenceOwners": ["tests/unit/playback-plan-refusals.test.ts", "tests/integration/playback-plan-limits.test.ts"]
+    },
+    {
+      "id": "P0-TRACE-T0",
+      "invariant": "Alias-only stored chord edits remain F3-valid without staling exact stored bypass pitches; generated bindings remain exact-source correlated.",
+      "parentClaimIds": ["P0-PARENT-STORED", "P0-PARENT-REFUSAL"],
+      "caseIds": ["P0-LAW-007"],
+      "mutationControlIds": ["P0-MUT-022"],
+      "authorityIds": ["P0-AUTH-T0", "P0-AUTH-T1", "P0-AUTH-V0"],
+      "plannedEvidenceOwners": ["tests/unit/playback-plan-realization.test.ts"]
+    }
+  ]
+}

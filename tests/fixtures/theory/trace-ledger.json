@@ -1,0 +1,900 @@
+{
+  "schema": "changes.fixtures.t0-trace-ledger.v1",
+  "ledgerVersion": "1.1.0",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "stableTraceIdsOnly": true,
+  "caseLinkPolicy": "caseIds are literal fixture IDs; every fixture also carries its exact reciprocal traceIds and authorityIds",
+  "traces": [
+    {
+      "id": "T0-TRACE-SYMBOL-GRAMMAR",
+      "requirement": "complete declared chord EBNF and AST mapping",
+      "sourceRefs": [
+        "docs/T0_SYNTAX_CONTRACT.md sections 2-3 and 11"
+      ],
+      "caseIds": [
+        "T0-SYM-001",
+        "T0-SYM-002",
+        "T0-SYM-003",
+        "T0-SYM-004",
+        "T0-SYM-005",
+        "T0-SYM-006",
+        "T0-SYM-008",
+        "T0-SYM-009",
+        "T0-SYM-013",
+        "T0-SYM-014",
+        "T0-SYM-ERR-027",
+        "T0-SYM-ERR-033",
+        "T0-SYM-FMT-ERR-007"
+      ],
+      "mutationControlIds": [
+        "T0-MUT-002",
+        "T0-MUT-003",
+        "T0-MUT-005",
+        "T0-MUT-007",
+        "T0-MUT-012",
+        "T0-MUT-031",
+        "T0-MUT-032"
+      ]
+    },
+    {
+      "id": "T0-TRACE-LONGEST-TOKEN",
+      "requirement": "longest-token behavior and no substring classification",
+      "sourceRefs": [
+        "docs/T0_SYNTAX_CONTRACT.md sections 2.4, 3.1, and 11"
+      ],
+      "caseIds": [
+        "T0-SYM-007",
+        "T0-SYM-010",
+        "T0-SYM-011",
+        "T0-SYM-012",
+        "T0-SYM-015",
+        "T0-SYM-016",
+        "T0-SYM-018",
+        "T0-SYM-037",
+        "T0-SYM-038",
+        "T0-SYM-039",
+        "T0-SYM-042",
+        "T0-SYM-048",
+        "T0-ALIAS-004",
+        "T0-ALIAS-006",
+        "T0-ALIAS-007",
+        "T0-ALIAS-008",
+        "T0-SYM-ERR-012",
+        "T0-SYM-ERR-018",
+        "T0-ALIAS-017",
+        "T0-ALIAS-018",
+        "T0-SYM-ERR-030"
+      ],
+      "mutationControlIds": [
+        "T0-MUT-001",
+        "T0-MUT-002",
+        "T0-MUT-007"
+      ]
+    },
+    {
+      "id": "T0-TRACE-ALIASES",
+      "requirement": "aliases preserve source and canonicalize deterministically",
+      "sourceRefs": [
+        "docs/T0_SYNTAX_CONTRACT.md sections 3.3 and 11"
+      ],
+      "caseIds": [
+        "T0-ALIAS-001",
+        "T0-ALIAS-002",
+        "T0-ALIAS-003",
+        "T0-ALIAS-004",
+        "T0-ALIAS-005",
+        "T0-ALIAS-006",
+        "T0-ALIAS-007",
+        "T0-ALIAS-008",
+        "T0-ALIAS-009",
+        "T0-ALIAS-015",
+        "T0-ALIAS-016",
+        "T0-ALIAS-017",
+        "T0-ALIAS-018",
+        "T0-META-002"
+      ],
+      "mutationControlIds": [
+        "T0-MUT-001",
+        "T0-MUT-006",
+        "T0-MUT-010",
+        "T0-MUT-030"
+      ]
+    },
+    {
+      "id": "T0-TRACE-UNICODE",
+      "requirement": "ASCII/Unicode spelling, scalar validity, UTF-16 width, and alteration bounds",
+      "sourceRefs": [
+        "docs/T0_SYNTAX_CONTRACT.md sections 2.1, 2.3, 4, 5.4, and 11"
+      ],
+      "caseIds": [
+        "T0-SYM-041",
+        "T0-ALIAS-010",
+        "T0-ALIAS-011",
+        "T0-ALIAS-012",
+        "T0-ALIAS-014",
+        "T0-ALIAS-016",
+        "T0-SYM-ERR-006",
+        "T0-SYM-ERR-020",
+        "T0-SYM-ERR-021",
+        "T0-SYM-ERR-022",
+        "T0-SYM-FMT-ERR-006",
+        "T0-SYM-LIMIT-004",
+        "T0-CHART-014",
+        "T0-CHART-018",
+        "T0-CHART-UNICODE-001",
+        "T0-CHART-ERR-024",
+        "T0-CHART-LIMIT-013",
+        "T0-CHART-LIMIT-014",
+        "T0-META-002",
+        "T0-META-016"
+      ],
+      "mutationControlIds": [
+        "T0-MUT-010",
+        "T0-MUT-011",
+        "T0-MUT-014",
+        "T0-MUT-046",
+        "T0-MUT-047",
+        "T0-MUT-055"
+      ]
+    },
+    {
+      "id": "T0-TRACE-HIGHEST-EXTENSION",
+      "requirement": "highest-explicit-extension AST storage and dominant seventh",
+      "sourceRefs": [
+        "docs/T0_SYNTAX_CONTRACT.md sections 3.4 and 11"
+      ],
+      "caseIds": [
+        "T0-SYM-020",
+        "T0-SYM-021",
+        "T0-SYM-022",
+        "T0-SYM-023",
+        "T0-SYM-024",
+        "T0-SYM-025",
+        "T0-SYM-026",
+        "T0-SYM-035",
+        "T0-SYM-038",
+        "T0-META-005"
+      ],
+      "mutationControlIds": [
+        "T0-MUT-003",
+        "T0-MUT-004"
+      ]
+    },
+    {
+      "id": "T0-TRACE-MODIFIERS",
+      "requirement": "combined forms and duplicate, legal-pair, conflict, and canonical-order matrix",
+      "sourceRefs": [
+        "docs/T0_SYNTAX_CONTRACT.md sections 2.4, 3.5, and 11"
+      ],
+      "caseIds": [
+        "T0-SYM-027",
+        "T0-SYM-028",
+        "T0-SYM-029",
+        "T0-SYM-030",
+        "T0-SYM-031",
+        "T0-SYM-032",
+        "T0-SYM-033",
+        "T0-SYM-034",
+        "T0-SYM-035",
+        "T0-SYM-036",
+        "T0-SYM-039",
+        "T0-SYM-040",
+        "T0-SYM-043",
+        "T0-SYM-044",
+        "T0-SYM-045",
+        "T0-SYM-046",
+        "T0-SYM-049",
+        "T0-ALIAS-013",
+        "T0-ALIAS-014",
+        "T0-ALIAS-015",
+        "T0-SYM-ERR-007",
+        "T0-SYM-ERR-008",
+        "T0-SYM-ERR-009",
+        "T0-SYM-ERR-010",
+        "T0-SYM-ERR-011",
+        "T0-SYM-ERR-015",
+        "T0-SYM-ERR-016",
+        "T0-SYM-ERR-017",
+        "T0-SYM-ERR-022",
+        "T0-SYM-ERR-023",
+        "T0-SYM-ERR-024",
+        "T0-SYM-ERR-025",
+        "T0-SYM-ERR-026",
+        "T0-SYM-ERR-028",
+        "T0-SYM-ERR-033",
+        "T0-SYM-FMT-ERR-007",
+        "T0-ALIAS-017",
+        "T0-ALIAS-018",
+        "T0-META-003",
+        "T0-META-004"
+      ],
+      "mutationControlIds": [
+        "T0-MUT-012",
+        "T0-MUT-013",
+        "T0-MUT-030",
+        "T0-MUT-031",
+        "T0-MUT-032",
+        "T0-MUT-035",
+        "T0-MUT-039"
+      ]
+    },
+    {
+      "id": "T0-TRACE-SLASH",
+      "requirement": "6/9, slash bass, second slash, and ambiguity",
+      "sourceRefs": [
+        "docs/T0_SYNTAX_CONTRACT.md sections 3.6 and 11"
+      ],
+      "caseIds": [
+        "T0-SYM-040",
+        "T0-SYM-041",
+        "T0-SYM-042",
+        "T0-SYM-047",
+        "T0-SYM-048",
+        "T0-ALIAS-010",
+        "T0-SYM-ERR-012",
+        "T0-SYM-ERR-013",
+        "T0-SYM-ERR-014",
+        "T0-ALIAS-017",
+        "T0-ALIAS-018",
+        "T0-SYM-ERR-031",
+        "T0-SYM-ERR-032"
+      ],
+      "mutationControlIds": [
+        "T0-MUT-001",
+        "T0-MUT-049"
+      ]
+    },
+    {
+      "id": "T0-TRACE-STRICT-WHITESPACE",
+      "requirement": "standalone whitespace refusal and modifier-list exception",
+      "sourceRefs": [
+        "docs/T0_SYNTAX_CONTRACT.md sections 3.2 and 11"
+      ],
+      "caseIds": [
+        "T0-ALIAS-013",
+        "T0-SYM-ERR-005"
+      ],
+      "mutationControlIds": [
+        "T0-MUT-009",
+        "T0-MUT-040"
+      ]
+    },
+    {
+      "id": "T0-TRACE-STRICT-REFUSAL",
+      "requirement": "failed or unknown source never defaults, repairs, or truncates",
+      "sourceRefs": [
+        "docs/T0_SYNTAX_CONTRACT.md sections 3.3, 4.1, 5.5, and 11"
+      ],
+      "caseIds": [
+        "T0-SYM-ERR-001",
+        "T0-SYM-ERR-002",
+        "T0-SYM-ERR-004",
+        "T0-SYM-ERR-018",
+        "T0-SYM-ERR-019",
+        "T0-SYM-ERR-026",
+        "T0-SYM-ERR-027",
+        "T0-SYM-ERR-029",
+        "T0-SYM-ERR-030",
+        "T0-SYM-ERR-031",
+        "T0-SYM-ERR-033",
+        "T0-CHART-ERR-027",
+        "T0-CHART-ERR-028",
+        "T0-CHART-ERR-029",
+        "T0-CHART-ERR-030",
+        "T0-CHART-ERR-021",
+        "T0-CHART-ERR-022",
+        "T0-META-014",
+        "T0-META-015",
+        "T0-META-017",
+        "T0-CHART-ERR-031"
+      ],
+      "mutationControlIds": [
+        "T0-MUT-008",
+        "T0-MUT-009",
+        "T0-MUT-012",
+        "T0-MUT-026",
+        "T0-MUT-049",
+        "T0-MUT-050",
+        "T0-MUT-052",
+        "T0-MUT-056",
+        "T0-MUT-058",
+        "T0-MUT-060"
+      ]
+    },
+    {
+      "id": "T0-TRACE-FORMATTER",
+      "requirement": "canonical field order and typed unformattable AST/draft refusal",
+      "sourceRefs": [
+        "docs/T0_SYNTAX_CONTRACT.md sections 3.7, 6, and 11"
+      ],
+      "caseIds": [
+        "T0-SYM-FMT-ERR-001",
+        "T0-SYM-FMT-ERR-002",
+        "T0-SYM-FMT-ERR-003",
+        "T0-SYM-FMT-ERR-004",
+        "T0-SYM-FMT-ERR-005",
+        "T0-SYM-FMT-ERR-006",
+        "T0-SYM-FMT-ERR-007",
+        "T0-CHART-006",
+        "T0-CHART-010",
+        "T0-CHART-012",
+        "T0-CHART-014",
+        "T0-CHART-015",
+        "T0-CHART-018",
+        "T0-CHART-021",
+        "T0-CHART-022",
+        "T0-CHART-023",
+        "T0-CHART-FMT-ERR-001",
+        "T0-CHART-FMT-ERR-002",
+        "T0-CHART-FMT-ERR-003",
+        "T0-META-001",
+        "T0-META-006",
+        "T0-CHART-LIMIT-019",
+        "T0-CHART-LIMIT-020",
+        "T0-META-016"
+      ],
+      "mutationControlIds": [
+        "T0-MUT-027",
+        "T0-MUT-028",
+        "T0-MUT-030",
+        "T0-MUT-032",
+        "T0-MUT-033",
+        "T0-MUT-037",
+        "T0-MUT-042",
+        "T0-MUT-044",
+        "T0-MUT-045",
+        "T0-MUT-053",
+        "T0-MUT-054",
+        "T0-MUT-055"
+      ]
+    },
+    {
+      "id": "T0-TRACE-RANGES",
+      "requirement": "half-open UTF-16 ranges and deterministic diagnostic order",
+      "sourceRefs": [
+        "docs/T0_SYNTAX_CONTRACT.md sections 2.1-2.1.1, 4.3, 5.4, 5.8, 6, 8, and 11"
+      ],
+      "caseIds": [
+        "T0-SYM-ERR-001",
+        "T0-SYM-ERR-002",
+        "T0-SYM-ERR-003",
+        "T0-SYM-ERR-004",
+        "T0-SYM-ERR-005",
+        "T0-SYM-ERR-006",
+        "T0-SYM-ERR-007",
+        "T0-SYM-ERR-008",
+        "T0-SYM-ERR-009",
+        "T0-SYM-ERR-010",
+        "T0-SYM-ERR-011",
+        "T0-SYM-ERR-012",
+        "T0-SYM-ERR-013",
+        "T0-SYM-ERR-014",
+        "T0-SYM-ERR-015",
+        "T0-SYM-ERR-016",
+        "T0-SYM-ERR-017",
+        "T0-SYM-ERR-020",
+        "T0-SYM-ERR-021",
+        "T0-SYM-ERR-022",
+        "T0-SYM-ERR-023",
+        "T0-SYM-ERR-024",
+        "T0-SYM-ERR-025",
+        "T0-SYM-ERR-026",
+        "T0-SYM-ERR-027",
+        "T0-SYM-ERR-028",
+        "T0-SYM-ERR-029",
+        "T0-SYM-LIMIT-001",
+        "T0-SYM-LIMIT-002",
+        "T0-SYM-LIMIT-003",
+        "T0-SYM-LIMIT-004",
+        "T0-CHART-005",
+        "T0-CHART-006",
+        "T0-CHART-007",
+        "T0-CHART-008",
+        "T0-CHART-009",
+        "T0-CHART-010",
+        "T0-CHART-015",
+        "T0-CHART-ERR-001",
+        "T0-CHART-ERR-004",
+        "T0-CHART-ERR-005",
+        "T0-CHART-ERR-008",
+        "T0-CHART-ERR-009",
+        "T0-CHART-ERR-011",
+        "T0-CHART-ERR-013",
+        "T0-CHART-ERR-014",
+        "T0-CHART-ERR-016",
+        "T0-CHART-ERR-023",
+        "T0-CHART-ERR-024",
+        "T0-CHART-ERR-025",
+        "T0-CHART-ERR-026",
+        "T0-CHART-022",
+        "T0-CHART-023",
+        "T0-CHART-LIMIT-001",
+        "T0-CHART-LIMIT-002",
+        "T0-CHART-LIMIT-003",
+        "T0-CHART-LIMIT-004",
+        "T0-CHART-LIMIT-005",
+        "T0-CHART-LIMIT-006",
+        "T0-CHART-LIMIT-007",
+        "T0-CHART-LIMIT-010",
+        "T0-CHART-LIMIT-011",
+        "T0-CHART-LIMIT-012",
+        "T0-CHART-LIMIT-013",
+        "T0-CHART-LIMIT-014",
+        "T0-CHART-LIMIT-015",
+        "T0-CHART-UNICODE-001",
+        "T0-CHART-ERR-010",
+        "T0-CHART-ERR-021",
+        "T0-CHART-ERR-022",
+        "T0-CHART-FMT-ERR-002",
+        "T0-CHART-FMT-ERR-003",
+        "T0-META-004",
+        "T0-META-011",
+        "T0-SYM-ERR-030",
+        "T0-SYM-ERR-031",
+        "T0-SYM-ERR-032",
+        "T0-SYM-ERR-033",
+        "T0-CHART-024",
+        "T0-CHART-025",
+        "T0-CHART-ERR-027",
+        "T0-CHART-ERR-028",
+        "T0-CHART-ERR-029",
+        "T0-CHART-LIMIT-016",
+        "T0-CHART-LIMIT-017",
+        "T0-CHART-LIMIT-018",
+        "T0-CHART-ERR-030",
+        "T0-CHART-LIMIT-019",
+        "T0-CHART-LIMIT-020",
+        "T0-CHART-LIMIT-021",
+        "T0-CHART-ERR-031",
+        "T0-CHART-ERR-032"
+      ],
+      "mutationControlIds": [
+        "T0-MUT-014",
+        "T0-MUT-030",
+        "T0-MUT-034",
+        "T0-MUT-035",
+        "T0-MUT-039",
+        "T0-MUT-040",
+        "T0-MUT-041",
+        "T0-MUT-042",
+        "T0-MUT-043",
+        "T0-MUT-044",
+        "T0-MUT-045",
+        "T0-MUT-046",
+        "T0-MUT-047",
+        "T0-MUT-048",
+        "T0-MUT-049",
+        "T0-MUT-050",
+        "T0-MUT-051",
+        "T0-MUT-052",
+        "T0-MUT-053",
+        "T0-MUT-054",
+        "T0-MUT-057",
+        "T0-MUT-058",
+        "T0-MUT-059",
+        "T0-MUT-060"
+      ]
+    },
+    {
+      "id": "T0-TRACE-DID-YOU-MEAN",
+      "requirement": "bounded, root-preserving, parseable, deterministic suggestions",
+      "sourceRefs": [
+        "docs/T0_SYNTAX_CONTRACT.md sections 4.2 and 11"
+      ],
+      "caseIds": [
+        "T0-SYM-ERR-003",
+        "T0-SYM-ERR-012",
+        "T0-SYM-ERR-019",
+        "T0-SYM-ERR-029",
+        "T0-META-012",
+        "T0-SYM-ERR-030",
+        "T0-SYM-ERR-031",
+        "T0-SYM-ERR-032",
+        "T0-META-015",
+        "T0-META-017"
+      ],
+      "mutationControlIds": [
+        "T0-MUT-015",
+        "T0-MUT-049",
+        "T0-MUT-056"
+      ]
+    },
+    {
+      "id": "T0-TRACE-CHART-MODES",
+      "requirement": "document/fragment separation, named/implicit sections, and context meter",
+      "sourceRefs": [
+        "docs/T0_SYNTAX_CONTRACT.md sections 5.1 and 11"
+      ],
+      "caseIds": [
+        "T0-CHART-001",
+        "T0-CHART-004",
+        "T0-CHART-005",
+        "T0-CHART-ERR-001",
+        "T0-CHART-ERR-002",
+        "T0-CHART-ERR-003",
+        "T0-CHART-ERR-007",
+        "T0-META-008"
+      ],
+      "mutationControlIds": [
+        "T0-MUT-016",
+        "T0-MUT-017"
+      ]
+    },
+    {
+      "id": "T0-TRACE-HEADERS",
+      "requirement": "header grammar, uniqueness, placement, values, and canonical order",
+      "sourceRefs": [
+        "docs/T0_SYNTAX_CONTRACT.md sections 5.3, 6, and 11"
+      ],
+      "caseIds": [
+        "T0-CHART-006",
+        "T0-CHART-014",
+        "T0-CHART-016",
+        "T0-CHART-017",
+        "T0-CHART-018",
+        "T0-CHART-019",
+        "T0-CHART-020",
+        "T0-CHART-021",
+        "T0-CHART-LIMIT-010",
+        "T0-CHART-LIMIT-015",
+        "T0-CHART-ERR-004",
+        "T0-CHART-ERR-005",
+        "T0-CHART-ERR-006",
+        "T0-CHART-ERR-007",
+        "T0-CHART-LIMIT-021"
+      ],
+      "mutationControlIds": [
+        "T0-MUT-017",
+        "T0-MUT-018",
+        "T0-MUT-036",
+        "T0-MUT-037",
+        "T0-MUT-038",
+        "T0-MUT-057"
+      ]
+    },
+    {
+      "id": "T0-TRACE-CHART-STRUCTURE",
+      "requirement": "named/implicit sections, barred/virtual measures, shared barlines, and slots",
+      "sourceRefs": [
+        "docs/T0_SYNTAX_CONTRACT.md sections 5.2 and 11"
+      ],
+      "caseIds": [
+        "T0-CHART-005",
+        "T0-CHART-006",
+        "T0-CHART-008",
+        "T0-CHART-009",
+        "T0-CHART-011",
+        "T0-CHART-012",
+        "T0-CHART-015",
+        "T0-CHART-LIMIT-011",
+        "T0-CHART-ERR-008",
+        "T0-CHART-ERR-009",
+        "T0-CHART-ERR-010",
+        "T0-CHART-ERR-013",
+        "T0-CHART-ERR-015",
+        "T0-CHART-024",
+        "T0-CHART-025",
+        "T0-CHART-ERR-027",
+        "T0-CHART-ERR-028",
+        "T0-CHART-LIMIT-016",
+        "T0-CHART-LIMIT-020",
+        "T0-CHART-ERR-031",
+        "T0-CHART-ERR-032"
+      ],
+      "mutationControlIds": [
+        "T0-MUT-016",
+        "T0-MUT-025",
+        "T0-MUT-050",
+        "T0-MUT-051",
+        "T0-MUT-054",
+        "T0-MUT-058",
+        "T0-MUT-059"
+      ]
+    },
+    {
+      "id": "T0-TRACE-ANNOTATIONS",
+      "requirement": "section/event JSON strings and section-name escapes",
+      "sourceRefs": [
+        "docs/T0_SYNTAX_CONTRACT.md sections 5.4 and 11"
+      ],
+      "caseIds": [
+        "T0-CHART-012",
+        "T0-CHART-022",
+        "T0-CHART-ERR-011",
+        "T0-CHART-ERR-012",
+        "T0-CHART-ERR-024",
+        "T0-CHART-024",
+        "T0-CHART-025",
+        "T0-CHART-ERR-028",
+        "T0-CHART-ERR-029",
+        "T0-CHART-LIMIT-017",
+        "T0-CHART-LIMIT-018",
+        "T0-CHART-ERR-030"
+      ],
+      "mutationControlIds": [
+        "T0-MUT-019",
+        "T0-MUT-024",
+        "T0-MUT-044",
+        "T0-MUT-050",
+        "T0-MUT-051",
+        "T0-MUT-052"
+      ]
+    },
+    {
+      "id": "T0-TRACE-COMMENTS",
+      "requirement": "one warning per comment and comments as the only canonical loss of nonempty source content",
+      "sourceRefs": [
+        "docs/T0_SYNTAX_CONTRACT.md sections 5.2, 6, and 11"
+      ],
+      "caseIds": [
+        "T0-CHART-010",
+        "T0-META-010",
+        "T0-CHART-ERR-032"
+      ],
+      "mutationControlIds": [
+        "T0-MUT-028",
+        "T0-MUT-059"
+      ]
+    },
+    {
+      "id": "T0-TRACE-DURATION",
+      "requirement": "PPQ-exact lexical, explicit, allocated, reduced, underfill, overfill, and refusal behavior",
+      "sourceRefs": [
+        "docs/T0_SYNTAX_CONTRACT.md sections 5.7 and 11"
+      ],
+      "caseIds": [
+        "T0-CHART-001",
+        "T0-CHART-002",
+        "T0-CHART-003",
+        "T0-CHART-004",
+        "T0-CHART-011",
+        "T0-CHART-013",
+        "T0-CHART-ERR-016",
+        "T0-CHART-ERR-017",
+        "T0-CHART-ERR-017B",
+        "T0-CHART-ERR-018",
+        "T0-CHART-ERR-019",
+        "T0-CHART-ERR-020",
+        "T0-CHART-LIMIT-012",
+        "T0-CHART-023",
+        "T0-CHART-LIMIT-009",
+        "T0-META-006",
+        "T0-META-007"
+      ],
+      "mutationControlIds": [
+        "T0-MUT-020",
+        "T0-MUT-021",
+        "T0-MUT-022",
+        "T0-MUT-023",
+        "T0-MUT-041",
+        "T0-MUT-045"
+      ]
+    },
+    {
+      "id": "T0-TRACE-REPEAT",
+      "requirement": "repeat scope, copy boundary, exact origin linkage, and coherent formatting",
+      "sourceRefs": [
+        "docs/T0_SYNTAX_CONTRACT.md sections 5.6, 6, and 11"
+      ],
+      "caseIds": [
+        "T0-CHART-006",
+        "T0-CHART-007",
+        "T0-CHART-008",
+        "T0-CHART-ERR-014",
+        "T0-CHART-ERR-015",
+        "T0-META-009",
+        "T0-CHART-ERR-027",
+        "T0-CHART-ERR-029",
+        "T0-CHART-ERR-030"
+      ],
+      "mutationControlIds": [
+        "T0-MUT-024",
+        "T0-MUT-025",
+        "T0-MUT-027",
+        "T0-MUT-050",
+        "T0-MUT-052"
+      ]
+    },
+    {
+      "id": "T0-TRACE-TRANSACTION",
+      "requirement": "whole-draft success or explicit context-losing one-chord recovery",
+      "sourceRefs": [
+        "docs/T0_SYNTAX_CONTRACT.md sections 5.8 and 11"
+      ],
+      "caseIds": [
+        "T0-CHART-005",
+        "T0-CHART-ERR-023",
+        "T0-CHART-ERR-025",
+        "T0-CHART-ERR-026",
+        "T0-CHART-ERR-027",
+        "T0-CHART-ERR-028",
+        "T0-CHART-LIMIT-018",
+        "T0-CHART-ERR-030",
+        "T0-CHART-ERR-031",
+        "T0-CHART-ERR-022"
+      ],
+      "mutationControlIds": [
+        "T0-MUT-026",
+        "T0-MUT-035",
+        "T0-MUT-043",
+        "T0-MUT-050",
+        "T0-MUT-051",
+        "T0-MUT-052",
+        "T0-MUT-058",
+        "T0-MUT-060"
+      ]
+    },
+    {
+      "id": "T0-TRACE-ROUNDTRIP",
+      "requirement": "symbol/chart semantic round trips and canonical idempotence",
+      "sourceRefs": [
+        "docs/T0_SYNTAX_CONTRACT.md sections 3.7, 6, 9, and 11"
+      ],
+      "caseIds": [
+        "T0-META-001",
+        "T0-META-002",
+        "T0-META-003",
+        "T0-META-004",
+        "T0-META-005",
+        "T0-META-006",
+        "T0-META-007",
+        "T0-META-008",
+        "T0-META-009",
+        "T0-META-010",
+        "T0-META-011",
+        "T0-META-012",
+        "T0-META-013",
+        "T0-META-014",
+        "T0-CHART-015",
+        "T0-CHART-022",
+        "T0-CHART-023",
+        "T0-CHART-024",
+        "T0-CHART-025",
+        "T0-META-015"
+      ],
+      "mutationControlIds": [
+        "T0-MUT-027",
+        "T0-MUT-028",
+        "T0-MUT-030",
+        "T0-MUT-044",
+        "T0-MUT-045",
+        "T0-MUT-049",
+        "T0-MUT-050"
+      ]
+    },
+    {
+      "id": "T0-TRACE-DETERMINISM",
+      "requirement": "seeded replay with byte-identical results, ordering, suggestions, ranges, and complete SyntaxWorkEvidence counter bytes",
+      "sourceRefs": [
+        "docs/T0_SYNTAX_CONTRACT.md sections 7.3, 8, 9, and 11"
+      ],
+      "caseIds": [
+        "T0-META-013",
+        "T0-SYM-ERR-028",
+        "T0-SYM-ERR-029",
+        "T0-CHART-ERR-025",
+        "T0-CHART-ERR-026",
+        "T0-CHART-LIMIT-015",
+        "T0-CHART-LIMIT-016",
+        "T0-CHART-LIMIT-017",
+        "T0-CHART-LIMIT-018",
+        "T0-META-015",
+        "T0-CHART-LIMIT-019",
+        "T0-CHART-LIMIT-020",
+        "T0-CHART-LIMIT-021",
+        "T0-META-016",
+        "T0-META-017"
+      ],
+      "mutationControlIds": [
+        "T0-MUT-015",
+        "T0-MUT-030",
+        "T0-MUT-035",
+        "T0-MUT-043",
+        "T0-MUT-049",
+        "T0-MUT-051",
+        "T0-MUT-053",
+        "T0-MUT-054",
+        "T0-MUT-055",
+        "T0-MUT-056",
+        "T0-MUT-057"
+      ]
+    },
+    {
+      "id": "T0-TRACE-LIMITS",
+      "requirement": "every scalar, byte, token, modifier, structure, field, and collection boundary",
+      "sourceRefs": [
+        "docs/T0_SYNTAX_CONTRACT.md sections 4.1, 7, and 11"
+      ],
+      "caseIds": [
+        "T0-SYM-LIMIT-001",
+        "T0-SYM-LIMIT-002",
+        "T0-SYM-LIMIT-003",
+        "T0-SYM-LIMIT-004",
+        "T0-CHART-LIMIT-001",
+        "T0-CHART-LIMIT-002",
+        "T0-CHART-LIMIT-003",
+        "T0-CHART-LIMIT-004",
+        "T0-CHART-LIMIT-005",
+        "T0-CHART-LIMIT-006",
+        "T0-CHART-LIMIT-007",
+        "T0-CHART-LIMIT-010",
+        "T0-CHART-LIMIT-011",
+        "T0-CHART-LIMIT-012",
+        "T0-CHART-LIMIT-013",
+        "T0-CHART-LIMIT-014",
+        "T0-CHART-LIMIT-015",
+        "T0-CHART-UNICODE-001",
+        "T0-CHART-LIMIT-009",
+        "T0-CHART-FMT-ERR-003",
+        "T0-CHART-016",
+        "T0-CHART-017",
+        "T0-CHART-ERR-004",
+        "T0-CHART-ERR-026",
+        "T0-CHART-LIMIT-016",
+        "T0-CHART-LIMIT-017",
+        "T0-CHART-LIMIT-018",
+        "T0-CHART-LIMIT-019",
+        "T0-CHART-LIMIT-020",
+        "T0-CHART-LIMIT-021",
+        "T0-META-016"
+      ],
+      "mutationControlIds": [
+        "T0-MUT-011",
+        "T0-MUT-029",
+        "T0-MUT-041",
+        "T0-MUT-043",
+        "T0-MUT-045",
+        "T0-MUT-046",
+        "T0-MUT-047",
+        "T0-MUT-048",
+        "T0-MUT-051",
+        "T0-MUT-053",
+        "T0-MUT-054",
+        "T0-MUT-055",
+        "T0-MUT-057"
+      ]
+    },
+    {
+      "id": "T0-TRACE-LEGACY-REFUSAL",
+      "requirement": "legacy substring, extension, diminished, and unsupported-major regressions",
+      "sourceRefs": [
+        "docs/LEGACY_AUDIT.md Music-theory failures",
+        "docs/T0_SYNTAX_CONTRACT.md section 11"
+      ],
+      "caseIds": [
+        "T0-SYM-012",
+        "T0-SYM-017",
+        "T0-SYM-019",
+        "T0-SYM-020",
+        "T0-SYM-024",
+        "T0-SYM-ERR-003",
+        "T0-CHART-ERR-023"
+      ],
+      "mutationControlIds": [
+        "T0-MUT-002",
+        "T0-MUT-003",
+        "T0-MUT-005",
+        "T0-MUT-008"
+      ]
+    },
+    {
+      "id": "L-THEORY-02",
+      "requirement": "unsupported quality becomes a diagnostic and never defaults to major",
+      "sourceRefs": [
+        "docs/REBUILD_PLAN.md section 19.2",
+        "docs/T0_SYNTAX_CONTRACT.md section 11"
+      ],
+      "caseIds": [
+        "T0-SYM-ERR-003",
+        "T0-SYM-ERR-017",
+        "T0-SYM-ERR-019",
+        "T0-CHART-ERR-023",
+        "T0-META-014"
+      ],
+      "mutationControlIds": [
+        "T0-MUT-008"
+      ]
+    }
+  ]
+}

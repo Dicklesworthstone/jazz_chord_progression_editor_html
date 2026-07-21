@@ -1,0 +1,142 @@
+{
+  "schema": "changes.fixtures.f3-publication-contract.v1",
+  "contractVersion": "1.0.0",
+  "package": "F3",
+  "beadId": "jcpe-milestone-foundation-vc2.6.1",
+  "description": "Independent code-facing authority for the sole semantic document publication gate.",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "companions": [
+    "document-cases.json",
+    "mutation-controls.json",
+    "operation-state-cases.json",
+    "provenance-ledger.json",
+    "trace-ledger.json"
+  ],
+  "reviewedFileSha256": {
+    "document-cases.json": "1b82c3fc3775ca87fd30f38a2a95d10226b0ff052b3095320f05e1e21f6b163f",
+    "mutation-controls.json": "fb79dbeac2b4b80da57e6d935363cee0eed4f3c7b9d472f131cf5ccfba0f6ee8",
+    "operation-state-cases.json": "c84e522503e808b8521f3684882962a70b7b33d6ea1eaa575792240e8b4ccc1d",
+    "provenance-ledger.json": "75e45e512491445ca3dee6f52aadfa2bd8d3134711db880af721c27edc5fa3de",
+    "trace-ledger.json": "4b1361684b3c061700e643d0d4c305fbc16e16a1035336b71ff7724ebdce408d"
+  },
+  "publicSurface": {
+    "module": "src/application/document-validation-contract.ts",
+    "implementationModule": "src/application/document-validation.ts",
+    "contractSchema": "changes.application.document-validation-contract.v1",
+    "operationOrder": ["validateDocumentSemantics"],
+    "signature": "(candidate:ProgressionDocumentShapeV2)=>DocumentSemanticValidationResult",
+    "successOwnKeys": ["ok", "value", "warnings"],
+    "failureOwnKeys": ["ok", "errors"],
+    "issueOwnKeys": ["code", "path", "message"],
+    "warnings": "exact-empty-tuple",
+    "soleCastFile": "src/application/document-validation.ts",
+    "evidenceReexportedFromApplicationIndex": false
+  },
+  "identities": {
+    "semanticPolicy": {"id": "changes.document-semantics", "version": 1},
+    "sourceAstPolicy": {"id": "changes.document-source-ast-equivalence", "version": 1},
+    "storedPitchPolicy": {"id": "changes.document-stored-pitch-correspondence", "version": 1},
+    "measurePolicy": {"id": "changes.document-measure-semantics", "version": 1}
+  },
+  "issueCodes": [
+    "chord.source_semantic_mismatch",
+    "custom.pitch_voicing_mismatch",
+    "measure.empty_has_events",
+    "measure.nonempty_has_no_events",
+    "measure.complete_duration_mismatch",
+    "measure.duration_over_capacity",
+    "measure.expected_duration_not_short",
+    "measure.expected_duration_not_positive",
+    "measure.expected_duration_mismatch",
+    "measure.reason_blank"
+  ],
+  "ordering": {
+    "eventCheckOrder": ["source-ast", "resolution", "stored-or-auto-voicing"],
+    "measureCheckOrder": ["event-cardinality", "completion", "capacity-crossing", "expected-duration", "reason"],
+    "finalDiagnosticOrder": ["path", "code"],
+    "duplicatePolicy": "collapse-exact-code-and-path-only",
+    "independentFindingsCollected": true
+  },
+  "policies": {
+    "sourceParseAccidentalStyle": "ascii",
+    "sourceAstFields": ["root", "triad", "sixth", "seventh", "extensions", "additions", "alterations", "omissions", "bass", "colorPolicy"],
+    "storedPitchComparison": "exact-written-pitch-class-set",
+    "slashBassProjection": "exclude-exact-spelled-lowest-included-bass-unisons",
+    "autoRange": "inclusive-midi-cardinality-at-least-voice-count",
+    "alteredDominant": "preserve-four-realizations-without-selection",
+    "custom": "never-parse-display-text-and-never-auto-voice",
+    "familyAvailabilityOwner": "V0",
+    "measureCapacity": "beatsPerBar * 4 / beatUnit in exact quarter-note beats",
+    "repair": "forbidden",
+    "diagnosticPrivacy": "no-chart-text-ids-labels-annotations-or-hostile-values"
+  },
+  "limits": {
+    "sectionsVisited": 64,
+    "measuresVisited": 65536,
+    "eventsVisited": 8192,
+    "symbolParseCalls": 8192,
+    "resolutionCalls": 8192,
+    "voicingChecks": 8192,
+    "exactBeatAdditions": 16384,
+    "publicationNodeVisits": 73793,
+    "issuesPerEvent": 3,
+    "issuesPerMeasure": 4,
+    "semanticIssues": 286720,
+    "trackedRecords": 368705
+  },
+  "workCounterOrder": [
+    "sectionsVisited",
+    "measuresVisited",
+    "eventsVisited",
+    "symbolParseCalls",
+    "resolutionCalls",
+    "voicingChecks",
+    "exactBeatAdditions",
+    "publicationNodeVisits",
+    "issuesEmitted"
+  ],
+  "terminations": ["complete-success", "complete-refusal"],
+  "applicability": {
+    "cancellation": "not-applicable:synchronous-bounded",
+    "staleRevision": "not-applicable:revision-free-value-operation",
+    "resume": "not-applicable:non-resumable",
+    "wallTimeCutoff": "forbidden:counts-only"
+  },
+  "coverageSummary": {
+    "documentCases": 45,
+    "operationStateCases": 8,
+    "mutationControls": 37,
+    "traces": 12,
+    "authorities": 8,
+    "issueCodesCovered": 10,
+    "positiveCases": 17,
+    "refusalOrStageBoundaryCases": 28
+  },
+  "independence": {
+    "fixturesPrecedeProductionImplementation": true,
+    "productionValidatorMayGenerateExpectedValues": false,
+    "productionParserOrResolverMayGenerateExpectedValues": false,
+    "productionOutputMayCertifyItself": false,
+    "expectedIssueSequencesAreLiteral": true,
+    "mutationExecutionOwner": "F3/verify"
+  },
+  "handoff": {
+    "specificationOwner": "F3/spec",
+    "productionOwner": "F3/build",
+    "independentProofOwner": "F3/verify",
+    "requiredDocument": "docs/F3_PUBLICATION_CONTRACT.md",
+    "forbiddenShortcuts": [
+      "cast before every check completes",
+      "treat F2 success as publication",
+      "parse Custom display text",
+      "compare spelling by pitch class",
+      "select or union altered realizations",
+      "duplicate V0 family availability",
+      "use floating point or wall time for measure truth",
+      "return only the first error",
+      "repair persisted data",
+      "mutate application state or call adapters"
+    ]
+  }
+}

@@ -1,0 +1,109 @@
+{
+  "schema": "changes.fixtures.f3-trace-ledger.v1",
+  "fixtureVersion": "1.0.0",
+  "tracePolicy": {
+    "allParentClausesLinked": true,
+    "allDocumentAndOperationCasesBacklinked": true,
+    "allMutationControlsBacklinked": true,
+    "buildProofOwner": "F3/build",
+    "independentProofOwner": "F3/verify"
+  },
+  "traces": [
+    {
+      "id": "F3-TRACE-BOUNDARY",
+      "parentClause": "F3 is the sole F2-to-ValidatedDocument publication gate; only application/document-validation.ts may cast, and downstream state cannot bypass it.",
+      "sourceRefs": ["docs/ARCHITECTURE.md Module ownership rule 6", "docs/REBUILD_PLAN.md section 9.8", "docs/F3_PUBLICATION_CONTRACT.md sections 1 and 2"],
+      "proofKinds": ["positive", "stage-boundary", "cast-policy", "no-bypass", "operation-state"],
+      "requiredCaseIds": ["F3-DOC-001", "F3-DOC-002", "F3-DOC-003", "F3-DOC-040", "F3-DOC-044", "F3-DOC-045", "F3-OPSTATE-001", "F3-OPSTATE-005", "F3-OPSTATE-008"],
+      "mutationControlIds": ["F3-MUT-019", "F3-MUT-031", "F3-MUT-033", "F3-MUT-034"]
+    },
+    {
+      "id": "F3-TRACE-SOURCE-AST",
+      "parentClause": "Parsed sourceText must reparse to the exact stored AST while supported aliases remain preserved and enharmonic spellings remain distinct.",
+      "sourceRefs": ["docs/REBUILD_PLAN.md section 9.1", "docs/F3_PUBLICATION_CONTRACT.md section 3", "tests/fixtures/theory/symbol-cases.json"],
+      "proofKinds": ["positive", "alias-near-miss", "parse-refusal", "AST-mismatch", "spelling-mismatch"],
+      "requiredCaseIds": ["F3-DOC-003", "F3-DOC-004", "F3-DOC-005", "F3-DOC-015", "F3-DOC-016", "F3-DOC-017", "F3-DOC-018"],
+      "mutationControlIds": ["F3-MUT-001", "F3-MUT-002", "F3-MUT-003", "F3-MUT-004"]
+    },
+    {
+      "id": "F3-TRACE-RESOLUTION",
+      "parentClause": "Every stored parsed AST is independently resolved; formula and spelling refusals block publication without repair or fallback.",
+      "sourceRefs": ["docs/REBUILD_PLAN.md sections 9.8 and 10", "docs/T1_RESOLUTION_CONTRACT.md", "docs/F3_PUBLICATION_CONTRACT.md section 3"],
+      "proofKinds": ["positive", "formula-refusal", "spelling-refusal", "complete-corpus-boundary"],
+      "requiredCaseIds": ["F3-DOC-003", "F3-DOC-006", "F3-DOC-018", "F3-DOC-019", "F3-DOC-038"],
+      "mutationControlIds": ["F3-MUT-005", "F3-MUT-006", "F3-MUT-007"]
+    },
+    {
+      "id": "F3-TRACE-ALT",
+      "parentClause": "Altered dominant remains a four-realization ambiguity and stored pitches must fit one realization rather than their union.",
+      "sourceRefs": ["docs/REBUILD_PLAN.md section 10.4", "docs/T1_RESOLUTION_CONTRACT.md section 7", "docs/F3_PUBLICATION_CONTRACT.md section 4"],
+      "proofKinds": ["all-four-positive", "single-variant-compatible", "cross-variant-near-miss", "no-selection"],
+      "requiredCaseIds": ["F3-DOC-006", "F3-DOC-007", "F3-DOC-022"],
+      "mutationControlIds": ["F3-MUT-008", "F3-MUT-009"]
+    },
+    {
+      "id": "F3-TRACE-STORED-PITCH",
+      "parentClause": "Manual and Frozen pitches stay exact, use written-spelling correspondence, preserve legal omissions/doublings, and keep slash bass separate.",
+      "sourceRefs": ["docs/REBUILD_PLAN.md sections 9.3 and 12.2", "docs/F1_DOMAIN_CONTRACT.md", "docs/F3_PUBLICATION_CONTRACT.md section 4"],
+      "proofKinds": ["positive", "frozen", "root-omission", "slash", "extra-tone", "enharmonic-near-miss", "altered-cross-variant"],
+      "requiredCaseIds": ["F3-DOC-005", "F3-DOC-007", "F3-DOC-008", "F3-DOC-009", "F3-DOC-013", "F3-DOC-014", "F3-DOC-020", "F3-DOC-021", "F3-DOC-022", "F3-DOC-025", "F3-DOC-041", "F3-DOC-042", "F3-DOC-043"],
+      "mutationControlIds": ["F3-MUT-009", "F3-MUT-010", "F3-MUT-011", "F3-MUT-012", "F3-MUT-013", "F3-MUT-017", "F3-MUT-037"]
+    },
+    {
+      "id": "F3-TRACE-CUSTOM",
+      "parentClause": "Custom chords remain literal Manual/Frozen sets; correspondence is exact-spelled, set-based, slash-aware, and never parsed or auto-generated.",
+      "sourceRefs": ["docs/REBUILD_PLAN.md sections 9.1 and 9.6", "docs/T1_RESOLUTION_CONTRACT.md section 2", "docs/F3_PUBLICATION_CONTRACT.md section 5"],
+      "proofKinds": ["reorder-and-doubling", "slash", "missing", "extra", "enharmonic-near-miss"],
+      "requiredCaseIds": ["F3-DOC-008", "F3-DOC-009", "F3-DOC-023", "F3-DOC-024", "F3-DOC-025", "F3-DOC-043"],
+      "mutationControlIds": ["F3-MUT-014", "F3-MUT-015", "F3-MUT-016", "F3-MUT-017"]
+    },
+    {
+      "id": "F3-TRACE-AUTO-RANGE",
+      "parentClause": "Foundation playback realizability requires MIDI-projectable stored pitches and enough inclusive MIDI slots for Auto voice count while V0 alone owns family-template availability.",
+      "sourceRefs": ["docs/REBUILD_PLAN.md sections 9.8 and 12", "docs/F3_PUBLICATION_CONTRACT.md section 6"],
+      "proofKinds": ["positive", "stored-pitch-projection-refusal", "exact-cardinality-refusal", "dependency-boundary"],
+      "requiredCaseIds": ["F3-DOC-003", "F3-DOC-006", "F3-DOC-026", "F3-DOC-041", "F3-DOC-042", "F3-DOC-043"],
+      "mutationControlIds": ["F3-MUT-018", "F3-MUT-019", "F3-MUT-037"]
+    },
+    {
+      "id": "F3-TRACE-MEASURE",
+      "parentClause": "Measure completion and capacity use exact rational arithmetic, collect independent contradictions, and never repair timing.",
+      "sourceRefs": ["docs/REBUILD_PLAN.md sections 9.5 and 9.6", "tests/fixtures/domain/meter-measure-cases.json", "docs/F3_PUBLICATION_CONTRACT.md section 7"],
+      "proofKinds": ["empty", "complete", "pickup", "incomplete", "compound-meter", "every-code", "first-crossing", "maximum-measures"],
+      "requiredCaseIds": ["F3-DOC-001", "F3-DOC-002", "F3-DOC-010", "F3-DOC-011", "F3-DOC-012", "F3-DOC-027", "F3-DOC-028", "F3-DOC-029", "F3-DOC-030", "F3-DOC-031", "F3-DOC-032", "F3-DOC-033", "F3-DOC-034", "F3-DOC-035", "F3-DOC-037"],
+      "mutationControlIds": ["F3-MUT-020", "F3-MUT-021", "F3-MUT-022", "F3-MUT-023", "F3-MUT-024", "F3-MUT-025", "F3-MUT-026", "F3-MUT-027", "F3-MUT-028"]
+    },
+    {
+      "id": "F3-TRACE-DIAGNOSTICS",
+      "parentClause": "F3 returns complete deduplicated code/path diagnostics in global path-then-code order without chart text or partial value.",
+      "sourceRefs": ["docs/F1_DOMAIN_CONTRACT.md Results diagnostics and ordering", "docs/F3_PUBLICATION_CONTRACT.md sections 2 and 8"],
+      "proofKinds": ["multi-error", "path-order", "deterministic-replay", "privacy", "no-first-error"],
+      "requiredCaseIds": ["F3-DOC-018", "F3-DOC-028", "F3-DOC-030", "F3-DOC-031", "F3-DOC-036", "F3-DOC-039", "F3-OPSTATE-002", "F3-OPSTATE-003"],
+      "mutationControlIds": ["F3-MUT-006", "F3-MUT-024", "F3-MUT-029", "F3-MUT-030", "F3-MUT-036"]
+    },
+    {
+      "id": "F3-TRACE-TRANSACTION",
+      "parentClause": "Success and refusal are pure, immutable, non-repairing, non-aliasing transactions with no application or adapter side effects.",
+      "sourceRefs": ["docs/ARCHITECTURE.md Module ownership", "docs/REBUILD_PLAN.md section 9.8", "docs/F3_PUBLICATION_CONTRACT.md section 8"],
+      "proofKinds": ["success-state", "refusal-state", "input-preservation", "recursive-freeze", "no-alias", "adapter-isolation"],
+      "requiredCaseIds": ["F3-DOC-004", "F3-DOC-013", "F3-DOC-034", "F3-DOC-036", "F3-DOC-039", "F3-OPSTATE-001", "F3-OPSTATE-002", "F3-OPSTATE-003", "F3-OPSTATE-008"],
+      "mutationControlIds": ["F3-MUT-004", "F3-MUT-028", "F3-MUT-031", "F3-MUT-032", "F3-MUT-035"]
+    },
+    {
+      "id": "F3-TRACE-BOUNDS",
+      "parentClause": "Every F3 search, fold, diagnostic list, and publication pass has a deterministic count/state/memory termination; wall time is never semantic.",
+      "sourceRefs": ["docs/ARCHITECTURE.md Verification discipline", "docs/REBUILD_PLAN.md sections 9.8 and 19.4", "docs/F3_PUBLICATION_CONTRACT.md section 9"],
+      "proofKinds": ["maximum-measures", "maximum-events", "event-ceiling-handoff", "cancellation-not-applicable", "resume-not-applicable", "wall-time-forbidden"],
+      "requiredCaseIds": ["F3-DOC-037", "F3-DOC-038", "F3-DOC-040", "F3-OPSTATE-004", "F3-OPSTATE-006", "F3-OPSTATE-007"],
+      "mutationControlIds": ["F3-MUT-033", "F3-MUT-034"]
+    },
+    {
+      "id": "F3-TRACE-LEGACY",
+      "parentClause": "Legacy source-order and fallback failures cannot recur: aliases may survive, unknown text refuses, and no old note list is silently relabeled.",
+      "sourceRefs": ["docs/LEGACY_AUDIT.md", "docs/REBUILD_PLAN.md sections 9.1 and 15.5", "docs/F3_PUBLICATION_CONTRACT.md sections 3 and 5"],
+      "proofKinds": ["alias-positive", "unknown-source-refusal", "no-fallback"],
+      "requiredCaseIds": ["F3-DOC-004", "F3-DOC-015"],
+      "mutationControlIds": ["F3-MUT-001"]
+    }
+  ]
+}

@@ -1,0 +1,152 @@
+{
+  "schema": "changes.fixtures.p0-provenance-ledger.v1",
+  "fixtureVersion": "1.0.0",
+  "status": "independently-authored-pre-production",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "authoringStatement": {
+    "humanReviewClaimed": false,
+    "domainExpertReviewClaimed": false,
+    "productionOracleUsed": false,
+    "statement": "Expected beat fractions, PPQ ticks, gate ticks, loop intersections, pitch projections, refusals, limit seams, and law relations were authored from checked-in contracts and hand calculation before a P0 production compiler exists. No compilePlaybackPlan output, audio render, MIDI encoder, generated artifact, or legacy runtime supplied an expected value."
+  },
+  "authorityClasses": [
+    "checked-in-project-contract",
+    "inherited-validated-contract",
+    "pre-production-project-policy",
+    "pre-production-resource-policy",
+    "independent-oracle-policy",
+    "legacy-regression-evidence"
+  ],
+  "authorities": [
+    {
+      "id": "P0-AUTH-ARCHITECTURE",
+      "authorityClass": "checked-in-project-contract",
+      "title": "Playback layer and shared-plan architecture",
+      "sourceRefs": ["AGENTS.md", "docs/ARCHITECTURE.md Module ownership and Architecture invariants", "docs/REBUILD_PLAN.md sections 8.1, 13.6, 13.7, and 16.3"],
+      "claims": [
+        {"id":"P0-CLAIM-LAYER","text":"Playback is pure, imports domain and theory types only, and makes no audio, UI, storage, export, browser, model, or network call."},
+        {"id":"P0-CLAIM-SHARED","text":"Audio and MIDI consume the same recursively immutable plan unchanged."},
+        {"id":"P0-CLAIM-BEAT-BOUNDARY","text":"Float seconds appear only at the audio scheduling boundary; P0 owns exact beats and ticks."}
+      ],
+      "traceIds": ["P0-TRACE-BOUNDARY", "P0-TRACE-CONSUMERS", "P0-TRACE-MIDI"],
+      "reviewState": "checked-in-project-policy"
+    },
+    {
+      "id": "P0-AUTH-CONTRACT",
+      "authorityClass": "checked-in-project-contract",
+      "title": "P0 public playback-plan contract",
+      "sourceRefs": ["src/playback/playback-plan-contract.ts", "docs/REBUILD_PLAN.md section 13.6", "bead jcpe-milestone-reliable-studio-l3a.4.1"],
+      "claims": [
+        {"id":"P0-CLAIM-IDENTITIES","text":"Compiler, request, binding, result, plan, event, policy, refusal, termination, and own-key identities are exact and versioned."},
+        {"id":"P0-CLAIM-SOURCE-TRACE","text":"Every emitted event preserves event, section, measure, and global source ordinal identity."},
+        {"id":"P0-CLAIM-ALL-OR-NOTHING","text":"Every failure returns one precedence-winning typed refusal and no partial plan."}
+      ],
+      "traceIds": ["P0-TRACE-BOUNDARY", "P0-TRACE-DETERMINISM", "P0-TRACE-REALIZATION", "P0-TRACE-REFUSALS", "P0-TRACE-SOURCE-IDS", "P0-TRACE-TIMELINE"]
+    },
+    {
+      "id": "P0-AUTH-DOMAIN",
+      "authorityClass": "inherited-validated-contract",
+      "title": "F1 exact time, pitch, ID, meter, document, and stored-voicing laws",
+      "sourceRefs": ["src/domain/duration.ts", "src/domain/pitch.ts", "src/domain/chord.ts", "src/domain/document.ts", "tests/fixtures/domain/f1-domain-contract.json"],
+      "claims": [
+        {"id":"P0-CLAIM-EXACT-TIME","text":"Stored time is exact quarter-note rational data whose reduced denominator divides PPQ 960."},
+        {"id":"P0-CLAIM-STORED-PITCH","text":"Manual and Frozen order, spelling, octave, and duplicate pitches round-trip exactly."},
+        {"id":"P0-CLAIM-MEASURE","text":"Meter capacity is beatsPerBar times four divided by beatUnit; partial and empty completion remain explicit."}
+      ],
+      "traceIds": ["P0-TRACE-EMPTY-PARTIAL", "P0-TRACE-GATE", "P0-TRACE-METERS", "P0-TRACE-MIDI", "P0-TRACE-STORED", "P0-TRACE-TIMELINE"]
+    },
+    {
+      "id": "P0-AUTH-F3",
+      "authorityClass": "inherited-validated-contract",
+      "title": "F3 sole semantic publication gate",
+      "sourceRefs": ["src/application/document-validation-contract.ts", "docs/F3_PUBLICATION_CONTRACT.md", "tests/fixtures/publication/f3-publication-contract.json"],
+      "claims": [
+        {"id":"P0-CLAIM-VALIDATED","text":"Ordinary P0 requests contain only F3 ValidatedDocument values; malformed branded cases are explicit defensive near misses."},
+        {"id":"P0-CLAIM-CUSTOM","text":"Custom chords are nonempty Manual or Frozen values and never automatic."},
+        {"id":"P0-CLAIM-PARTIAL","text":"Empty, complete, pickup, and incomplete measure semantics have already been validated without repair."}
+      ],
+      "traceIds": ["P0-TRACE-BOUNDARY", "P0-TRACE-CUSTOM", "P0-TRACE-EMPTY-PARTIAL", "P0-TRACE-REALIZATION"]
+    },
+    {
+      "id": "P0-AUTH-T0",
+      "authorityClass": "inherited-validated-contract",
+      "title": "T0 exact chord syntax and alias authority",
+      "sourceRefs": ["docs/T0_SYNTAX_CONTRACT.md", "tests/fixtures/theory/symbol-cases.json"],
+      "claims": [
+        {"id":"P0-CLAIM-ALIAS","text":"CM7 and CDelta7 parse to the same stored chord AST as Cmaj7 while source text remains exact input data."},
+        {"id":"P0-CLAIM-TRANSPOSE-SYNTAX","text":"Transposition witnesses use supported exact written chord symbols rather than display-only labels."}
+      ],
+      "traceIds": ["P0-TRACE-T0", "P0-TRACE-TRANSPOSITION"]
+    },
+    {
+      "id": "P0-AUTH-T1",
+      "authorityClass": "inherited-validated-contract",
+      "title": "T1 exact resolved source, realization ID, role, and spelling authority",
+      "sourceRefs": ["docs/T1_RESOLUTION_CONTRACT.md", "src/theory/resolution-contract.ts", "tests/fixtures/resolution/t1-resolution-contract.json", "tests/fixtures/resolution/literal-cases.json"],
+      "claims": [
+        {"id":"P0-CLAIM-RESOLUTION","text":"A generated binding names one exact resolved source and one exact realization ID."},
+        {"id":"P0-CLAIM-SPELLING","text":"Diatonic transposition preserves exact written spelling and cannot be certified by MIDI equality alone."}
+      ],
+      "traceIds": ["P0-TRACE-REALIZATION", "P0-TRACE-STALE", "P0-TRACE-TRANSPOSITION"]
+    },
+    {
+      "id": "P0-AUTH-V0",
+      "authorityClass": "inherited-validated-contract",
+      "title": "V0 generated outcome and stored-bypass authority",
+      "sourceRefs": ["docs/V0_VOICING_CONTRACT.md", "src/theory/voicing-candidates-contract.ts", "tests/fixtures/voicing/v0-voicing-contract.json", "tests/fixtures/voicing/candidate-cases.json", "tests/fixtures/voicing/operation-state-cases.json"],
+      "claims": [
+        {"id":"P0-CLAIM-GENERATED","text":"Generated binding holds one exact AutoVoicingRequest and an available candidate or typed V0 failure."},
+        {"id":"P0-CLAIM-BYPASS","text":"Manual and Frozen values arrive as an exact zero-generation StoredVoicingBypass."},
+        {"id":"P0-CLAIM-CANDIDATE","text":"Candidate family, realization, voice count, voice pitch records, and pitch array remain correlated."}
+      ],
+      "traceIds": ["P0-TRACE-REALIZATION", "P0-TRACE-STALE", "P0-TRACE-STORED"]
+    },
+    {
+      "id": "P0-AUTH-POLICY",
+      "authorityClass": "pre-production-project-policy",
+      "title": "Version-one loop, articulation, and velocity policy",
+      "sourceRefs": ["src/playback/playback-plan-contract.ts", "tests/fixtures/playback-plan/timeline-cases.json", "tests/fixtures/playback-plan/loop-cases.json"],
+      "claims": [
+        {"id":"P0-CLAIM-GATE","text":"After loop clipping, gate ticks equal duration ticks minus min of 24 and duration ticks minus one."},
+        {"id":"P0-CLAIM-LOOP","text":"Loop ranges are half-open, never clamped, restart start-overlaps, clip end-overlaps, and may contain only silence."},
+        {"id":"P0-CLAIM-VELOCITY","text":"Every version-one event uses fixed velocity 96."}
+      ],
+      "traceIds": ["P0-TRACE-GATE", "P0-TRACE-LOOP", "P0-TRACE-MIDI"]
+    },
+    {
+      "id": "P0-AUTH-LIMITS",
+      "authorityClass": "pre-production-resource-policy",
+      "title": "P0 deterministic timeline, work, memory, and collection limits",
+      "sourceRefs": ["src/playback/playback-plan-contract.ts", "tests/fixtures/playback-plan/limit-cases.json"],
+      "claims": [
+        {"id":"P0-CLAIM-LIMITS","text":"Every public work and memory counter has an inclusive exact maximum and a test-seam maximum-plus-one refusal."},
+        {"id":"P0-CLAIM-TOTAL","text":"Absolute source time may equal but never exceed one million quarter-note beats."},
+        {"id":"P0-CLAIM-NO-TIMEOUT","text":"Wall time cannot change plan membership, refusal, ordering, or termination."}
+      ],
+      "traceIds": ["P0-TRACE-LIMITS", "P0-TRACE-REFUSALS", "P0-TRACE-TIMELINE"]
+    },
+    {
+      "id": "P0-AUTH-INDEPENDENCE",
+      "authorityClass": "independent-oracle-policy",
+      "title": "Independent fixtures, laws, mutations, and anti-self-certification",
+      "sourceRefs": ["AGENTS.md Verification discipline", "tests/fixtures/playback-plan/law-cases.json", "tests/fixtures/playback-plan/mutation-controls.json", "tests/fixtures/playback-plan/trace-ledger.json"],
+      "claims": [
+        {"id":"P0-CLAIM-INDEPENDENCE","text":"Production output never generates or updates an expected fixture."},
+        {"id":"P0-CLAIM-LAWS","text":"Positive, near-miss, transposition, determinism, immutability, and mutation witnesses are reciprocal and stable."},
+        {"id":"P0-CLAIM-CANONICAL","text":"Canonical bytes use frozen public key orders and no locale-sensitive ordering."}
+      ],
+      "traceIds": ["P0-TRACE-BOUNDARY", "P0-TRACE-DETERMINISM", "P0-TRACE-IMMUTABILITY", "P0-TRACE-TRANSPOSITION"]
+    },
+    {
+      "id": "P0-AUTH-LEGACY",
+      "authorityClass": "legacy-regression-evidence",
+      "title": "L-VOICE-01 manual-note reoptimization regression",
+      "sourceRefs": ["docs/LEGACY_AUDIT.md Manual voicing is not authoritative", "docs/REBUILD_PLAN.md legacy traceability row L-VOICE-01"],
+      "claims": [
+        {"id":"P0-CLAIM-L-VOICE-01","text":"The rebuilt playback plan must preserve a user's exact Manual inversion, register, doubling, order, and spelling without optimizer rewrite."}
+      ],
+      "traceIds": ["P0-TRACE-LEGACY", "P0-TRACE-STORED"]
+    }
+  ]
+}

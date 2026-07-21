@@ -2,7 +2,12 @@
 
 An offline, deterministic jazz chord-progression studio designed to turn lead-sheet changes into an explainable, playable, portable chart—without accounts, telemetry, cloud services, or runtime AI.
 
-> **Development status:** the visible application is still the **F0 standalone foundation shell**, not yet a chord editor. The source tree now includes the headless F1 spelling-first domain runtime and the independently reviewed F2 decoder contract, but the production decoder and UI wiring are not built yet. Chart authoring, music-theory analysis, playback, persistence, import/export, presets, and the planned discovery tools are not shipped yet.
+> **Development status:** the visible application is now the first interactive
+> **U0 studio checkpoint**, not yet the complete chord editor. It opens a real
+> F2-decoded, F3-published document through A0 application state and supports
+> title commit/refusal, undo/redo, responsive rails, and accessible mobile
+> sheets. Chord authoring, contextual analysis, playback planning, persistence,
+> import/export, presets, and the planned discovery tools are not connected yet.
 
 ## Why Changes
 
@@ -23,11 +28,13 @@ That is the release direction, not a description of the current visible shell. S
 |---|---|
 | Standalone page | `jazz_chord_progression_editor.html` opens directly from disk |
 | Offline runtime | JavaScript and CSS are embedded; the shell has no remote runtime resource |
-| UI foundation | Strict TypeScript, Preact, local CSS tokens, responsive layout, skip link, reduced-motion and forced-colors handling |
+| Interactive studio checkpoint | A validated empty chart, undoable title editing, responsive Library/Harmony surfaces, and an honestly disabled transport |
+| UI foundation | Strict TypeScript, Preact, source-owned primitives and CSS tokens, skip link, focus-managed sheets, reduced-motion and forced-colors handling |
 | Reproducible build contract | Source-driven build, generated-file banner, byte-equality checks, size budget, CSP hashes, license inventory |
 | Verification scaffold | Static policy tests, type checking, linting, reproducibility checks, and Chromium/Firefox/WebKit E2E harnesses |
 | F1 domain runtime | Headless spelling-first identities, pitch projection, exact rational time, chord/voicing construction, immutable bounded copy/remap, and a 317-case reviewed authority corpus; decoder, semantic publication, and UI integration remain downstream |
 | F2 decoder contract | Exact public types plus a production-independent 65-case structural/adversarial corpus, 12 requirement traces, 8 deterministic seeds, and 244 named mutation controls; the production decoder remains the next package |
+| P0 exact playback-plan specification | Exact public request/result types plus a production-independent 83-case timeline, realization, loop, law, and limit corpus, 20 requirement traces, 11 authorities, and 42 mutation controls; the production compiler and transport wiring remain downstream |
 
 The visible page intentionally reports **Foundation ready** and names the next gate. There is no hidden legacy editor behind it.
 
@@ -79,7 +86,9 @@ One build produces:
 - `dist/standalone-manifest.json`, the deterministic hash, size, CSP, asset, and license record;
 - `dist/licenses.json`, the production dependency and embedded-asset inventory.
 
-The two HTML outputs must be byte-identical. The current F0 shell has a temporary 256 KiB ceiling; the completed artifact has a 1.5 MiB ceiling, including a reserved allowance for the future reviewed Harmonic Atlas.
+The two HTML outputs must be byte-identical. The measured U0 checkpoint has a
+768 KiB ceiling; the completed artifact retains its 1.5 MiB ceiling and a
+separate 512 KiB reservation for the future reviewed Harmonic Atlas/content.
 
 ## Source and generated-file ownership
 
@@ -115,6 +124,9 @@ If source and artifact disagree, regenerate the artifact; do not copy changes ba
 | `bun scripts/validate-f0-contract.ts` | Equivalent direct foundation-contract command documented for automation |
 | `bun run validate:f1-contract` | Validate the independently authored F1 domain authority corpus, trace ledger, limits, matrices, and mutation-sensitive contract |
 | `bun run validate:f2-contract` | Validate the independently authored F2 decoder schema, adversarial corpus, trace ledger, and mutation controls |
+| `bun run validate:v0-contract` | Validate the independently authored V0 voicing-family templates, applicability matrix, goldens, operation states, limits, transpositions, trace, provenance, and mutation authority |
+| `bun run validate:p0-contract` | Validate the independently authored P0 playback-plan timeline, realization, loop, law, exact-limit, trace, provenance, and mutation authority corpus |
+| `bun run validate:c0-contract` | Validate the independently authored C0 legacy corpus, precedence, hostile-input, report, trace, provenance, and mutation authority |
 | `bun run typecheck` | Run strict TypeScript checks across app, tools, tests, and E2E code |
 | `bun run lint` | Run ESLint, source-integrity checks, and dependency-boundary checks |
 | `bun test` | Run Bun unit/static tests |
@@ -124,6 +136,7 @@ If source and artifact disagree, regenerate the artifact; do not copy changes ba
 | `bun run verify:reproducible` | Rebuild in isolated paths with different mtimes and compare bytes/manifests |
 | `bun run verify:licenses` | Verify production package and embedded-asset provenance |
 | `bun run verify:f1-evidence` | Run the exact F1 suite and emit a hash-bound trace/seed/mutation ledger under `test-results/` |
+| `bun run verify:c0-evidence` | Run the exact C0 suite and emit a hash-bound adversarial-case, preset, trace, counter, and mutation ledger under `test-results/` |
 | `bun run verify` | Run the aggregate release-facing gate in dependency order |
 
 The aggregate gate does not silently skip, retry, quarantine, or relax a failed check.

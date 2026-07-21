@@ -1,0 +1,1032 @@
+{
+  "schema": "changes.fixtures.e0-limit-cases.v1",
+  "reviewState": "proposed-pending-first-golden-human-acceptance",
+  "expectedValuesGenerated": false,
+  "productionOutputUsedAsOracle": false,
+  "generatorPolicy": {
+    "implementation": "test-owned-no-production-imports",
+    "seedHex": "e0171e17",
+    "wallTimeCutoff": "forbidden",
+    "firstExcessObservationCounted": true
+  },
+  "cases": [
+    {
+      "id": "E0-LIM-001",
+      "authorityIds": ["E0-AUTH-F2", "E0-AUTH-WHATWG-ENCODING"],
+      "traceIds": ["E0-TRACE-RAW-BYTE-PRECEDENCE", "E0-TRACE-TERMINATION"],
+      "proofKinds": ["exact-boundary", "near-miss", "mutation-link"],
+      "resource": "utf8-import-bytes",
+      "maximum": 2097152,
+      "cells": [
+        {
+          "id": "E0-LIM-001-AT",
+          "input": "2097152-ascii-bytes",
+          "resultCategory": "PREVIEW_READY",
+          "failureStage": null,
+          "expectedIssueCodes": [],
+          "exactWorkCounters": { "bytesObserved": 2097152 }
+        },
+        {
+          "id": "E0-LIM-001-OVER",
+          "input": "2097153-ascii-bytes",
+          "resultCategory": "REFUSED_PREFLIGHT",
+          "failureStage": "byte-preflight",
+          "expectedIssueCodes": ["limit.import_bytes_exceeded"],
+          "exactWorkCounters": { "bytesObserved": 2097153, "utf8Decode": 0 }
+        },
+        {
+          "id": "E0-LIM-001-MULTIBYTE",
+          "input": "one-astral-scalar-crosses-byte-limit",
+          "resultCategory": "REFUSED_PREFLIGHT",
+          "failureStage": "byte-preflight",
+          "expectedIssueCodes": ["limit.import_bytes_exceeded"],
+          "exactWorkCounters": {
+            "bytesObserved": 2097153,
+            "utf16LengthUsed": 0
+          }
+        }
+      ],
+      "expectedMutationKills": [
+        "E0-MUT-012",
+        "E0-MUT-013",
+        "F2-MUT-002",
+        "F2-MUT-003"
+      ]
+    },
+    {
+      "id": "E0-LIM-002",
+      "authorityIds": ["E0-AUTH-F2"],
+      "traceIds": ["E0-TRACE-TERMINATION"],
+      "proofKinds": ["exact-boundary", "near-miss"],
+      "resource": "json-depth",
+      "maximum": 32,
+      "cells": [
+        {
+          "id": "E0-LIM-002-AT",
+          "input": "depth-32",
+          "resultCategory": "PREVIEW_READY",
+          "failureStage": null,
+          "expectedIssueCodes": [],
+          "exactWorkCounters": { "maximumDepthObserved": 32 }
+        },
+        {
+          "id": "E0-LIM-002-OVER",
+          "input": "depth-33",
+          "resultCategory": "REFUSED_STRUCTURAL",
+          "failureStage": "structural-decode",
+          "expectedIssueCodes": ["limit.json_depth_exceeded"],
+          "exactWorkCounters": { "maximumDepthObserved": 33 }
+        }
+      ],
+      "expectedMutationKills": ["E0-MUT-013"]
+    },
+    {
+      "id": "E0-LIM-003",
+      "authorityIds": ["E0-AUTH-F1", "E0-AUTH-F2"],
+      "traceIds": ["E0-TRACE-TERMINATION"],
+      "proofKinds": ["exact-boundary", "near-miss"],
+      "resource": "sections",
+      "maximum": 64,
+      "cells": [
+        {
+          "id": "E0-LIM-003-AT",
+          "input": "64-sections",
+          "resultCategory": "PREVIEW_READY",
+          "failureStage": null,
+          "expectedIssueCodes": [],
+          "exactWorkCounters": { "sectionsObserved": 64 }
+        },
+        {
+          "id": "E0-LIM-003-OVER",
+          "input": "65-sections",
+          "resultCategory": "REFUSED_STRUCTURAL",
+          "failureStage": "structural-decode",
+          "expectedIssueCodes": ["limit.sections_exceeded"],
+          "exactWorkCounters": { "sectionsObserved": 65 }
+        }
+      ],
+      "expectedMutationKills": ["E0-MUT-063"]
+    },
+    {
+      "id": "E0-LIM-004",
+      "authorityIds": ["E0-AUTH-F1", "E0-AUTH-F2"],
+      "traceIds": ["E0-TRACE-TERMINATION"],
+      "proofKinds": ["exact-boundary", "near-miss"],
+      "resource": "measures-per-section",
+      "maximum": 1024,
+      "cells": [
+        {
+          "id": "E0-LIM-004-AT",
+          "input": "1024-measures",
+          "resultCategory": "PREVIEW_READY",
+          "failureStage": null,
+          "expectedIssueCodes": [],
+          "exactWorkCounters": { "measuresObserved": 1024 }
+        },
+        {
+          "id": "E0-LIM-004-OVER",
+          "input": "1025-measures",
+          "resultCategory": "REFUSED_STRUCTURAL",
+          "failureStage": "structural-decode",
+          "expectedIssueCodes": ["limit.measures_per_section_exceeded"],
+          "exactWorkCounters": { "measuresObserved": 1025 }
+        }
+      ],
+      "expectedMutationKills": ["E0-MUT-063"]
+    },
+    {
+      "id": "E0-LIM-005",
+      "authorityIds": ["E0-AUTH-F1", "E0-AUTH-F2"],
+      "traceIds": ["E0-TRACE-TERMINATION"],
+      "proofKinds": ["exact-boundary", "near-miss"],
+      "resource": "events-per-document",
+      "maximum": 8192,
+      "cells": [
+        {
+          "id": "E0-LIM-005-AT",
+          "input": "8192-events",
+          "resultCategory": "PREVIEW_READY",
+          "failureStage": null,
+          "expectedIssueCodes": [],
+          "exactWorkCounters": { "eventsObserved": 8192 }
+        },
+        {
+          "id": "E0-LIM-005-OVER",
+          "input": "8193-events",
+          "resultCategory": "REFUSED_STRUCTURAL",
+          "failureStage": "structural-decode",
+          "expectedIssueCodes": ["limit.events_per_document_exceeded"],
+          "exactWorkCounters": { "eventsObserved": 8193 }
+        }
+      ],
+      "expectedMutationKills": ["E0-MUT-063"]
+    },
+    {
+      "id": "E0-LIM-006",
+      "authorityIds": ["E0-AUTH-F2"],
+      "traceIds": ["E0-TRACE-TERMINATION"],
+      "proofKinds": ["exact-boundary", "near-miss"],
+      "resource": "domain-copy-graph-nodes",
+      "maximum": 73793,
+      "cells": [
+        {
+          "id": "E0-LIM-006-AT",
+          "input": "73793-copy-nodes",
+          "resultCategory": "PREVIEW_READY",
+          "failureStage": null,
+          "expectedIssueCodes": [],
+          "exactWorkCounters": { "copyNodes": 73793 }
+        },
+        {
+          "id": "E0-LIM-006-OVER",
+          "input": "73794th-copy-node",
+          "resultCategory": "REFUSED_STRUCTURAL",
+          "failureStage": "structural-decode",
+          "expectedIssueCodes": ["upstream-first-excess-refusal"],
+          "exactWorkCounters": { "copyNodes": 73794 }
+        }
+      ],
+      "expectedMutationKills": ["E0-MUT-063"]
+    },
+    {
+      "id": "E0-LIM-007",
+      "authorityIds": ["E0-AUTH-F2"],
+      "traceIds": ["E0-TRACE-TERMINATION"],
+      "proofKinds": ["exact-boundary", "near-miss"],
+      "resource": "auxiliary-graph-work",
+      "maximum": 295172,
+      "cells": [
+        {
+          "id": "E0-LIM-007-AT",
+          "input": "295172-auxiliary-work",
+          "resultCategory": "PREVIEW_READY",
+          "failureStage": null,
+          "expectedIssueCodes": [],
+          "exactWorkCounters": { "auxiliaryWork": 295172 }
+        },
+        {
+          "id": "E0-LIM-007-OVER",
+          "input": "295173rd-auxiliary-work",
+          "resultCategory": "REFUSED_STRUCTURAL",
+          "failureStage": "structural-decode",
+          "expectedIssueCodes": ["upstream-first-excess-refusal"],
+          "exactWorkCounters": { "auxiliaryWork": 295173 }
+        }
+      ],
+      "expectedMutationKills": ["E0-MUT-063"]
+    },
+    {
+      "id": "E0-LIM-008",
+      "authorityIds": ["E0-AUTH-F1", "E0-AUTH-F2"],
+      "traceIds": ["E0-TRACE-JSON-LOSSLESS"],
+      "proofKinds": ["exact-boundary", "near-miss"],
+      "resource": "voicing-pitches",
+      "maximum": 16,
+      "cells": [
+        {
+          "id": "E0-LIM-008-AT",
+          "input": "16-spelled-pitches",
+          "resultCategory": "PREVIEW_READY",
+          "failureStage": null,
+          "expectedIssueCodes": [],
+          "exactWorkCounters": { "pitchesObserved": 16 }
+        },
+        {
+          "id": "E0-LIM-008-OVER",
+          "input": "17-spelled-pitches",
+          "resultCategory": "REFUSED_STRUCTURAL",
+          "failureStage": "structural-decode",
+          "expectedIssueCodes": ["limit.voicing_notes_exceeded"],
+          "exactWorkCounters": { "pitchesObserved": 17 }
+        }
+      ],
+      "expectedMutationKills": ["E0-MUT-031"]
+    },
+    {
+      "id": "E0-LIM-009",
+      "authorityIds": ["E0-AUTH-F1", "E0-AUTH-F2"],
+      "traceIds": ["E0-TRACE-PRIVACY-BOUNDS"],
+      "proofKinds": ["exact-boundary", "near-miss", "unicode"],
+      "resource": "short-text-code-points",
+      "maximum": 256,
+      "cells": [
+        {
+          "id": "E0-LIM-009-AT",
+          "input": "256-astral-scalars",
+          "resultCategory": "PREVIEW_READY",
+          "failureStage": null,
+          "expectedIssueCodes": [],
+          "exactWorkCounters": { "codePoints": 256 }
+        },
+        {
+          "id": "E0-LIM-009-OVER",
+          "input": "257-astral-scalars",
+          "resultCategory": "REFUSED_STRUCTURAL",
+          "failureStage": "structural-decode",
+          "expectedIssueCodes": ["limit.title_code_points_exceeded"],
+          "exactWorkCounters": { "codePoints": 257 }
+        }
+      ],
+      "expectedMutationKills": ["E0-MUT-009"]
+    },
+    {
+      "id": "E0-LIM-010",
+      "authorityIds": ["E0-AUTH-F1", "E0-AUTH-F2"],
+      "traceIds": ["E0-TRACE-PRIVACY-BOUNDS"],
+      "proofKinds": ["exact-boundary", "near-miss", "unicode"],
+      "resource": "long-text-code-points",
+      "maximum": 2000,
+      "cells": [
+        {
+          "id": "E0-LIM-010-AT",
+          "input": "2000-astral-scalars",
+          "resultCategory": "PREVIEW_READY",
+          "failureStage": null,
+          "expectedIssueCodes": [],
+          "exactWorkCounters": { "codePoints": 2000 }
+        },
+        {
+          "id": "E0-LIM-010-OVER",
+          "input": "2001-astral-scalars",
+          "resultCategory": "REFUSED_STRUCTURAL",
+          "failureStage": "structural-decode",
+          "expectedIssueCodes": ["limit.annotation_code_points_exceeded"],
+          "exactWorkCounters": { "codePoints": 2001 }
+        }
+      ],
+      "expectedMutationKills": ["E0-MUT-009"]
+    },
+    {
+      "id": "E0-LIM-011",
+      "authorityIds": ["E0-AUTH-F1", "E0-AUTH-F2"],
+      "traceIds": ["E0-TRACE-TERMINATION"],
+      "proofKinds": ["exact-boundary", "near-miss"],
+      "resource": "tempo-bpm",
+      "maximum": 400,
+      "minimum": 20,
+      "cells": [
+        {
+          "id": "E0-LIM-011-MIN",
+          "input": 20,
+          "resultCategory": "PREVIEW_READY",
+          "failureStage": null,
+          "expectedIssueCodes": [],
+          "exactWorkCounters": { "valuesObserved": 1 }
+        },
+        {
+          "id": "E0-LIM-011-MAX",
+          "input": 400,
+          "resultCategory": "PREVIEW_READY",
+          "failureStage": null,
+          "expectedIssueCodes": [],
+          "exactWorkCounters": { "valuesObserved": 1 }
+        },
+        {
+          "id": "E0-LIM-011-BELOW",
+          "input": 19,
+          "resultCategory": "REFUSED_STRUCTURAL",
+          "failureStage": "structural-decode",
+          "expectedIssueCodes": ["tempo.out_of_range"],
+          "exactWorkCounters": { "valuesObserved": 1 }
+        },
+        {
+          "id": "E0-LIM-011-OVER",
+          "input": 401,
+          "resultCategory": "REFUSED_STRUCTURAL",
+          "failureStage": "structural-decode",
+          "expectedIssueCodes": ["tempo.out_of_range"],
+          "exactWorkCounters": { "valuesObserved": 1 }
+        },
+        {
+          "id": "E0-LIM-011-FRACTION",
+          "input": 120.5,
+          "resultCategory": "REFUSED_STRUCTURAL",
+          "failureStage": "structural-decode",
+          "expectedIssueCodes": ["tempo.not_integer"],
+          "exactWorkCounters": { "valuesObserved": 1 }
+        }
+      ],
+      "expectedMutationKills": ["E0-MUT-064"]
+    },
+    {
+      "id": "E0-LIM-012",
+      "authorityIds": ["E0-AUTH-F1", "E0-AUTH-F2"],
+      "traceIds": ["E0-TRACE-TERMINATION"],
+      "proofKinds": ["exact-boundary", "near-miss"],
+      "resource": "meter-beats-per-bar",
+      "maximum": 32,
+      "minimum": 1,
+      "cells": [
+        {
+          "id": "E0-LIM-012-MIN",
+          "input": 1,
+          "resultCategory": "PREVIEW_READY",
+          "failureStage": null,
+          "expectedIssueCodes": [],
+          "exactWorkCounters": { "valuesObserved": 1 }
+        },
+        {
+          "id": "E0-LIM-012-MAX",
+          "input": 32,
+          "resultCategory": "PREVIEW_READY",
+          "failureStage": null,
+          "expectedIssueCodes": [],
+          "exactWorkCounters": { "valuesObserved": 1 }
+        },
+        {
+          "id": "E0-LIM-012-BELOW",
+          "input": 0,
+          "resultCategory": "REFUSED_STRUCTURAL",
+          "failureStage": "structural-decode",
+          "expectedIssueCodes": ["meter.beats_per_bar_out_of_range"],
+          "exactWorkCounters": { "valuesObserved": 1 }
+        },
+        {
+          "id": "E0-LIM-012-OVER",
+          "input": 33,
+          "resultCategory": "REFUSED_STRUCTURAL",
+          "failureStage": "structural-decode",
+          "expectedIssueCodes": ["meter.beats_per_bar_out_of_range"],
+          "exactWorkCounters": { "valuesObserved": 1 }
+        }
+      ],
+      "expectedMutationKills": ["E0-MUT-064"]
+    },
+    {
+      "id": "E0-LIM-013",
+      "authorityIds": ["E0-AUTH-F1", "E0-AUTH-F2"],
+      "traceIds": ["E0-TRACE-TERMINATION"],
+      "proofKinds": ["positive", "near-miss"],
+      "resource": "meter-beat-unit",
+      "allowed": [2, 4, 8],
+      "cells": [
+        {
+          "id": "E0-LIM-013-ALLOWED",
+          "input": [2, 4, 8],
+          "resultCategory": "PREVIEW_READY",
+          "failureStage": null,
+          "expectedIssueCodes": [],
+          "exactWorkCounters": { "valuesObserved": 3 }
+        },
+        {
+          "id": "E0-LIM-013-NEARMISS",
+          "input": [1, 16],
+          "resultCategory": "REFUSED_STRUCTURAL",
+          "failureStage": "structural-decode",
+          "expectedIssueCodes": ["meter.beat_unit_invalid"],
+          "exactWorkCounters": { "valuesObserved": 2 }
+        }
+      ],
+      "expectedMutationKills": ["E0-MUT-064"]
+    },
+    {
+      "id": "E0-LIM-014",
+      "authorityIds": ["E0-AUTH-F1", "E0-AUTH-F2"],
+      "traceIds": ["E0-TRACE-TERMINATION"],
+      "proofKinds": ["exact-boundary", "near-miss"],
+      "resource": "normalized-beat-numerator",
+      "maximum": 2147483647,
+      "cells": [
+        {
+          "id": "E0-LIM-014-AT",
+          "input": 2147483647,
+          "resultCategory": "PREVIEW_READY",
+          "failureStage": null,
+          "expectedIssueCodes": [],
+          "exactWorkCounters": { "numericComponents": 1 }
+        },
+        {
+          "id": "E0-LIM-014-OVER",
+          "input": 2147483648,
+          "resultCategory": "REFUSED_STRUCTURAL",
+          "failureStage": "structural-decode",
+          "expectedIssueCodes": ["beat.numerator_out_of_range"],
+          "exactWorkCounters": { "numericComponents": 1 }
+        }
+      ],
+      "expectedMutationKills": ["E0-MUT-004"]
+    },
+    {
+      "id": "E0-LIM-015",
+      "authorityIds": ["E0-AUTH-F1", "E0-AUTH-F2"],
+      "traceIds": ["E0-TRACE-TERMINATION"],
+      "proofKinds": ["positive", "near-miss"],
+      "resource": "beat-denominator",
+      "maximum": 960,
+      "cells": [
+        {
+          "id": "E0-LIM-015-ALLOWED",
+          "input": "positive-divisors-of-960",
+          "resultCategory": "PREVIEW_READY",
+          "failureStage": null,
+          "expectedIssueCodes": [],
+          "exactWorkCounters": { "denominators": 30 }
+        },
+        {
+          "id": "E0-LIM-015-SEVEN",
+          "input": 7,
+          "resultCategory": "REFUSED_STRUCTURAL",
+          "failureStage": "structural-decode",
+          "expectedIssueCodes": ["beat.denominator_not_ppq_divisor"],
+          "exactWorkCounters": { "denominators": 1 }
+        },
+        {
+          "id": "E0-LIM-015-ZERO",
+          "input": 0,
+          "resultCategory": "REFUSED_STRUCTURAL",
+          "failureStage": "structural-decode",
+          "expectedIssueCodes": ["beat.denominator_not_positive"],
+          "exactWorkCounters": { "denominators": 1 }
+        },
+        {
+          "id": "E0-LIM-015-NEGATIVE",
+          "input": -1,
+          "resultCategory": "REFUSED_STRUCTURAL",
+          "failureStage": "structural-decode",
+          "expectedIssueCodes": ["beat.denominator_not_positive"],
+          "exactWorkCounters": { "denominators": 1 }
+        }
+      ],
+      "expectedMutationKills": ["E0-MUT-004"]
+    },
+    {
+      "id": "E0-LIM-016",
+      "authorityIds": ["E0-AUTH-F1", "E0-AUTH-F3"],
+      "traceIds": ["E0-TRACE-TERMINATION"],
+      "proofKinds": ["exact-boundary", "near-miss"],
+      "resource": "timeline-quarter-note-beats",
+      "maximum": 1000000,
+      "cells": [
+        {
+          "id": "E0-LIM-016-AT",
+          "input": "decoder/shape-cases.json:multi-denominator-exact-limit",
+          "resultCategory": "PREVIEW_READY",
+          "failureStage": null,
+          "expectedIssueCodes": [],
+          "exactWorkCounters": {
+            "timelineAdditions": 2,
+            "timelineTicksObserved": 960000000
+          }
+        },
+        {
+          "id": "E0-LIM-016-OVER",
+          "input": "decoder/shape-cases.json:multi-denominator-one-tick-over",
+          "resultCategory": "REFUSED_STRUCTURAL",
+          "failureStage": "structural-decode",
+          "expectedIssueCodes": ["timeline.total_exceeded"],
+          "exactWorkCounters": {
+            "timelineAdditions": 2,
+            "timelineTicksObserved": 960000001
+          }
+        }
+      ],
+      "expectedMutationKills": ["E0-MUT-004", "E0-MUT-063"]
+    },
+    {
+      "id": "E0-LIM-017",
+      "authorityIds": ["E0-AUTH-F1", "E0-AUTH-F2"],
+      "traceIds": ["E0-TRACE-JSON-LOSSLESS"],
+      "proofKinds": ["exact-boundary", "near-miss"],
+      "resource": "midi",
+      "minimum": 0,
+      "maximum": 127,
+      "cells": [
+        {
+          "id": "E0-LIM-017-AT",
+          "input": [0, 127],
+          "resultCategory": "PREVIEW_READY",
+          "failureStage": null,
+          "expectedIssueCodes": [],
+          "exactWorkCounters": { "valuesObserved": 2 }
+        },
+        {
+          "id": "E0-LIM-017-OUTSIDE",
+          "input": [-1, 128],
+          "resultCategory": "REFUSED_STRUCTURAL",
+          "failureStage": "structural-decode",
+          "expectedIssueCodes": ["pitch.midi_out_of_range"],
+          "exactWorkCounters": { "valuesObserved": 2 }
+        }
+      ],
+      "expectedMutationKills": ["E0-MUT-031"]
+    },
+    {
+      "id": "E0-LIM-018",
+      "authorityIds": ["E0-AUTH-F1", "E0-AUTH-WHATWG-ENCODING"],
+      "traceIds": ["E0-TRACE-PRIVACY-BOUNDS"],
+      "proofKinds": ["positive", "negative", "unicode"],
+      "resource": "unicode-scalars",
+      "cells": [
+        {
+          "id": "E0-LIM-018-ASTRAL",
+          "input": "astral-scalars-count-as-one",
+          "resultCategory": "PREVIEW_READY",
+          "failureStage": null,
+          "expectedIssueCodes": [],
+          "exactWorkCounters": { "normalizations": 0 }
+        },
+        {
+          "id": "E0-LIM-018-LONE",
+          "input": "lone-high-and-low-surrogates",
+          "resultCategory": "REFUSED_PREFLIGHT",
+          "failureStage": "utf8-decode",
+          "expectedIssueCodes": ["string.invalid_unicode_scalar"],
+          "exactWorkCounters": { "normalizations": 0 }
+        },
+        {
+          "id": "E0-LIM-018-CANONICAL-EQUIVALENCE",
+          "input": "composed-and-decomposed-distinct",
+          "resultCategory": "PREVIEW_READY",
+          "failureStage": null,
+          "expectedIssueCodes": [],
+          "exactWorkCounters": { "normalizations": 0 }
+        }
+      ],
+      "expectedMutationKills": ["E0-MUT-003", "E0-MUT-009"]
+    },
+    {
+      "id": "E0-LIM-019",
+      "authorityIds": ["E0-AUTH-T0"],
+      "traceIds": ["E0-TRACE-TERMINATION"],
+      "proofKinds": ["exact-boundary", "near-miss"],
+      "resource": "chart-tokens",
+      "maximum": 65536,
+      "cells": [
+        {
+          "id": "E0-LIM-019-AT",
+          "input": "65536-chart-tokens",
+          "resultCategory": "PREVIEW_READY",
+          "failureStage": null,
+          "expectedIssueCodes": [],
+          "exactWorkCounters": { "tokensProduced": 65536 }
+        },
+        {
+          "id": "E0-LIM-019-OVER",
+          "input": "65537th-chart-token",
+          "resultCategory": "REFUSED_STRUCTURAL",
+          "failureStage": "chart-parse",
+          "expectedIssueCodes": ["limit.chart_tokens_exceeded"],
+          "exactWorkCounters": { "tokensProduced": 65537 }
+        }
+      ],
+      "expectedMutationKills": ["E0-MUT-063"]
+    },
+    {
+      "id": "E0-LIM-020",
+      "authorityIds": ["E0-AUTH-A0", "E0-AUTH-E0-DECISIONS"],
+      "traceIds": ["E0-TRACE-PRIVACY-BOUNDS"],
+      "proofKinds": ["exact-boundary", "near-miss"],
+      "resource": "preview-issues",
+      "maximum": 64,
+      "cells": [
+        {
+          "id": "E0-LIM-020-AT",
+          "input": "64-issues",
+          "resultCategory": "REFUSED_STRUCTURAL",
+          "failureStage": "preview-publication",
+          "expectedIssueCodes": ["row-specific-stable-codes"],
+          "exactWorkCounters": { "retained": 64, "omitted": 0 }
+        },
+        {
+          "id": "E0-LIM-020-OVER",
+          "input": "65-issues",
+          "resultCategory": "REFUSED_STRUCTURAL",
+          "failureStage": "preview-publication",
+          "expectedIssueCodes": ["import.preview_issue_limit"],
+          "exactWorkCounters": { "retained": 64, "omitted": 1 }
+        }
+      ],
+      "expectedMutationKills": ["E0-MUT-064", "E0-MUT-065"]
+    },
+    {
+      "id": "E0-LIM-021",
+      "authorityIds": ["E0-AUTH-C0", "E0-AUTH-E0-DECISIONS"],
+      "traceIds": ["E0-TRACE-PRIVACY-BOUNDS"],
+      "proofKinds": ["exact-boundary", "near-miss"],
+      "resource": "preview-report-rows",
+      "maximum": 256,
+      "cells": [
+        {
+          "id": "E0-LIM-021-AT",
+          "input": "256-report-rows",
+          "resultCategory": "PREVIEW_READY_WITH_WARNINGS",
+          "failureStage": null,
+          "expectedIssueCodes": [],
+          "exactWorkCounters": { "retained": 256, "omitted": 0 }
+        },
+        {
+          "id": "E0-LIM-021-OVER",
+          "input": "257-report-rows",
+          "resultCategory": "PREVIEW_READY_WITH_WARNINGS",
+          "failureStage": null,
+          "expectedIssueCodes": [],
+          "exactWorkCounters": { "retained": 256, "omitted": 1 }
+        }
+      ],
+      "expectedMutationKills": ["E0-MUT-064", "E0-MUT-065"]
+    },
+    {
+      "id": "E0-LIM-022",
+      "authorityIds": [
+        "E0-AUTH-PLAN",
+        "E0-AUTH-A0",
+        "E0-AUTH-C0",
+        "E0-AUTH-T0",
+        "E0-AUTH-VERIFICATION"
+      ],
+      "traceIds": ["E0-TRACE-TERMINATION", "E0-TRACE-PRIVACY-BOUNDS"],
+      "proofKinds": ["positive", "resource-bound"],
+      "resource": "retained-memory",
+      "retentionPolicy": "bounded-projections-only-complete-upstream-evidence-transient",
+      "cells": [
+        {
+          "id": "E0-LIM-022-READ",
+          "input": "2097153-byte-observation",
+          "resultCategory": "REFUSED_PREFLIGHT",
+          "failureStage": "byte-preflight",
+          "expectedIssueCodes": ["limit.import_bytes_exceeded"],
+          "exactWorkCounters": {
+            "retainedPayloadBytesMaximum": 2097153,
+            "rawPayloadCopiesInState": 0,
+            "completeLegacyReportsInState": 0,
+            "completeChartWarningsInState": 0,
+            "completeChartDiagnosticsInState": 0
+          }
+        },
+        {
+          "id": "E0-LIM-022-PREVIEW",
+          "input": "maximum-valid-preview",
+          "resultCategory": "PREVIEW_READY",
+          "failureStage": null,
+          "expectedIssueCodes": [],
+          "exactWorkCounters": {
+            "previewIssues": 64,
+            "previewReportRows": 256,
+            "rawPayloadCopiesInState": 0,
+            "completeLegacyReportsInState": 0,
+            "completeChartWarningsInState": 0,
+            "completeChartDiagnosticsInState": 0
+          }
+        }
+      ],
+      "expectedMutationKills": ["E0-MUT-052", "E0-MUT-065"]
+    },
+    {
+      "id": "E0-LIM-023",
+      "authorityIds": ["E0-AUTH-VERIFICATION"],
+      "traceIds": ["E0-TRACE-TERMINATION"],
+      "proofKinds": ["positive", "metamorphic"],
+      "resource": "wall-time-independence",
+      "cells": [
+        {
+          "id": "E0-LIM-023-FAST",
+          "input": "goldens/minimal.changes.json-with-zero-delay-dependencies",
+          "resultCategory": "PREVIEW_READY",
+          "failureStage": null,
+          "expectedIssueCodes": [],
+          "exactWorkCounters": {
+            "bytePreflight": 1,
+            "utf8Decode": 1,
+            "lexicalPreflight": 1,
+            "e0JsonParse": 1,
+            "shapeDecode": 1,
+            "semanticValidation": 1,
+            "sectionsSummarized": 0,
+            "measuresSummarized": 0,
+            "eventsSummarized": 0
+          }
+        },
+        {
+          "id": "E0-LIM-023-SLOW",
+          "input": "goldens/minimal.changes.json-with-10ms-delay-before-each-injected-dependency-return",
+          "resultCategory": "PREVIEW_READY",
+          "failureStage": null,
+          "expectedIssueCodes": [],
+          "exactWorkCounters": {
+            "bytePreflight": 1,
+            "utf8Decode": 1,
+            "lexicalPreflight": 1,
+            "e0JsonParse": 1,
+            "shapeDecode": 1,
+            "semanticValidation": 1,
+            "sectionsSummarized": 0,
+            "measuresSummarized": 0,
+            "eventsSummarized": 0
+          }
+        }
+      ],
+      "expectedMutationKills": ["E0-MUT-063"]
+    },
+    {
+      "id": "E0-LIM-024",
+      "authorityIds": ["E0-AUTH-E0-DECISIONS", "E0-AUTH-VERIFICATION"],
+      "traceIds": ["E0-TRACE-RAW-BYTE-PRECEDENCE", "E0-TRACE-TERMINATION"],
+      "proofKinds": ["negative", "precedence"],
+      "resource": "failure-stage-precedence",
+      "cells": [
+        {
+          "id": "E0-LIM-024-BYTES-UTF8-JSON",
+          "input": "oversized-invalid-utf8-malformed-json",
+          "resultCategory": "REFUSED_PREFLIGHT",
+          "failureStage": "byte-preflight",
+          "expectedIssueCodes": ["limit.import_bytes_exceeded"],
+          "exactWorkCounters": { "laterStageCalls": 0 }
+        },
+        {
+          "id": "E0-LIM-024-DUPLICATE-SEMANTIC",
+          "input": "duplicate-key-and-semantic-invalid",
+          "resultCategory": "REFUSED_PARSE",
+          "failureStage": "json-lexical-preflight",
+          "expectedIssueCodes": ["import.json_duplicate_key"],
+          "exactWorkCounters": { "laterStageCalls": 0 }
+        }
+      ],
+      "expectedMutationKills": ["E0-MUT-013", "E0-MUT-019", "E0-MUT-020"]
+    },
+    {
+      "id": "E0-LIM-025",
+      "authorityIds": ["E0-AUTH-VERIFICATION"],
+      "traceIds": ["E0-TRACE-TERMINATION", "E0-TRACE-FAILURE-ISOLATION"],
+      "proofKinds": ["negative", "mutation-link"],
+      "resource": "stage-short-circuit",
+      "cells": [
+        {
+          "id": "E0-LIM-025-EACH-STAGE",
+          "input": "one-injected-failure-at-each-stage",
+          "resultCategory": "REFUSED_STRUCTURAL",
+          "failureStage": "row-specific",
+          "expectedIssueCodes": ["row-specific-stable-code"],
+          "exactWorkCounters": {
+            "failedStageCalls": 1,
+            "laterStageCalls": 0,
+            "partialPublications": 0
+          }
+        }
+      ],
+      "expectedMutationKills": [
+        "E0-MUT-019",
+        "E0-MUT-020",
+        "E0-MUT-042",
+        "E0-MUT-048"
+      ]
+    },
+    {
+      "id": "E0-LIM-026",
+      "authorityIds": ["E0-AUTH-PLAN", "E0-AUTH-WHATWG-ENCODING"],
+      "traceIds": ["E0-TRACE-TEXT-SUPPORTED-ROUNDTRIP", "E0-TRACE-TERMINATION"],
+      "proofKinds": ["exact-boundary", "near-miss", "mutation-link"],
+      "resource": "lead-sheet-text-export-bytes",
+      "maximum": 2097152,
+      "cells": [
+        {
+          "id": "E0-LIM-026-AT",
+          "input": "test-owned-supported-text-document-materializing-to-exactly-2097152-utf8-bytes",
+          "resultCategory": "EXPORT_READY",
+          "failureStage": null,
+          "expectedIssueCodes": [],
+          "exactWorkCounters": {
+            "utf8BytesObserved": 2097152,
+            "artifactsCreated": 1
+          }
+        },
+        {
+          "id": "E0-LIM-026-OVER",
+          "input": "same-document-with-one-final-ascii-annotation-byte",
+          "resultCategory": "REFUSED_PREFLIGHT",
+          "failureStage": "text-export-bound",
+          "expectedIssueCodes": ["export.text_bytes_exceeded"],
+          "exactWorkCounters": {
+            "utf8BytesObserved": 2097153,
+            "artifactsCreated": 0,
+            "deliveryCalls": 0
+          }
+        }
+      ],
+      "expectedMutationKills": ["E0-MUT-075"]
+    },
+    {
+      "id": "E0-LIM-027",
+      "authorityIds": ["E0-AUTH-F1", "E0-AUTH-PLAN"],
+      "traceIds": ["E0-TRACE-TEXT-LOSSES", "E0-TRACE-TERMINATION"],
+      "proofKinds": ["exact-boundary", "near-miss", "mutation-link"],
+      "resource": "lead-sheet-text-loss-items",
+      "maximum": 16515,
+      "cells": [
+        {
+          "id": "E0-LIM-027-AT",
+          "input": "one-global-identity-plus-playback-plus-analysis-two-losses-per-64-sections-and-two-per-8192-events",
+          "resultCategory": "EXPORT_READY_WITH_WARNINGS",
+          "failureStage": null,
+          "expectedIssueCodes": [],
+          "exactWorkCounters": {
+            "lossCandidatesObserved": 16515,
+            "lossItemsRetained": 16515,
+            "artifactsCreated": 1
+          }
+        },
+        {
+          "id": "E0-LIM-027-OVER",
+          "input": "test-owned-loss-accumulator-at-maximum-plus-one",
+          "resultCategory": "REFUSED_PREFLIGHT",
+          "failureStage": "text-loss-enumeration",
+          "expectedIssueCodes": ["export.text_loss_items_exceeded"],
+          "exactWorkCounters": {
+            "lossCandidatesObserved": 16516,
+            "lossItemsRetained": 0,
+            "artifactsCreated": 0
+          }
+        }
+      ],
+      "expectedMutationKills": ["E0-MUT-076"]
+    },
+    {
+      "id": "E0-LIM-028",
+      "authorityIds": ["E0-AUTH-F1", "E0-AUTH-T0", "E0-AUTH-E0-DECISIONS"],
+      "traceIds": ["E0-TRACE-CHART-IMPORT", "E0-TRACE-TERMINATION"],
+      "proofKinds": ["exact-boundary", "near-miss", "mutation-link"],
+      "resource": "chart-import-id-requests",
+      "maximum": 73793,
+      "cells": [
+        {
+          "id": "E0-LIM-028-AT",
+          "input": "test-owned-coherent-draft-with-64-sections-65536-measures-8192-events",
+          "resultCategory": "PREVIEW_READY",
+          "failureStage": null,
+          "expectedIssueCodes": [],
+          "exactWorkCounters": { "idRequests": 73793, "idFactoryCalls": 73793 }
+        },
+        {
+          "id": "E0-LIM-028-OVER",
+          "input": "same-draft-plus-one-first-excess-event-slot",
+          "resultCategory": "REFUSED_PREFLIGHT",
+          "failureStage": "chart-candidate-construction",
+          "expectedIssueCodes": ["limit.chart_import_id_requests_exceeded"],
+          "exactWorkCounters": {
+            "idRequestsObserved": 73794,
+            "idFactoryCalls": 73793,
+            "partialCandidates": 0
+          }
+        }
+      ],
+      "expectedMutationKills": ["E0-MUT-077"]
+    },
+    {
+      "id": "E0-LIM-029",
+      "authorityIds": ["E0-AUTH-E0-DECISIONS", "E0-AUTH-WHATWG-ENCODING"],
+      "traceIds": ["E0-TRACE-EXPORT-MARKER", "E0-TRACE-TERMINATION"],
+      "proofKinds": [
+        "exact-boundary",
+        "near-miss",
+        "resource-bound",
+        "mutation-link"
+      ],
+      "resource": "prepared-canonical-export-private-bytes",
+      "maximum": 2097152,
+      "cells": [
+        {
+          "id": "E0-LIM-029-AT",
+          "input": "E0-LIM-JSON-2097152",
+          "resultCategory": "EXPORT_DELIVERY_PREPARED",
+          "failureStage": null,
+          "expectedIssueCodes": [],
+          "stateEffect": "EXPORT_PREPARATION_ONLY",
+          "exactWorkCounters": {
+            "privateBytesCreated": 2097152,
+            "readyEntries": 1,
+            "peakPrivateBytes": 2097152
+          }
+        },
+        {
+          "id": "E0-LIM-029-OVER",
+          "input": "E0-LIM-JSON-2097153",
+          "resultCategory": "EXPORT_DELIVERY_PREPARATION_REFUSED",
+          "failureStage": "canonical-export-bound",
+          "expectedIssueCodes": ["export.canonical_bytes_exceeded"],
+          "stateEffect": "NONE",
+          "exactWorkCounters": {
+            "privateBytesCreated": 0,
+            "readyEntries": 0,
+            "browserCalls": 0
+          }
+        }
+      ],
+      "expectedMutationKills": ["E0-MUT-083"]
+    },
+    {
+      "id": "E0-LIM-030",
+      "authorityIds": ["E0-AUTH-E0-DECISIONS", "E0-AUTH-VERIFICATION"],
+      "traceIds": ["E0-TRACE-EXPORT-MARKER", "E0-TRACE-TERMINATION"],
+      "proofKinds": [
+        "exact-boundary",
+        "near-miss",
+        "resource-bound",
+        "mutation-link"
+      ],
+      "resource": "prepared-canonical-export-entries",
+      "maximum": 1,
+      "cells": [
+        {
+          "id": "E0-LIM-030-AT",
+          "input": "prepared-registry:one-ready-entry",
+          "resultCategory": "EXPORT_DELIVERY_PREPARED",
+          "failureStage": null,
+          "expectedIssueCodes": [],
+          "stateEffect": "EXPORT_PREPARATION_ONLY",
+          "exactWorkCounters": { "readyEntries": 1, "peakEntries": 1 }
+        },
+        {
+          "id": "E0-LIM-030-REPLACE",
+          "input": "prepared-registry:replacement-peak-one",
+          "resultCategory": "EXPORT_DELIVERY_PREPARED",
+          "failureStage": null,
+          "expectedIssueCodes": [],
+          "stateEffect": "EXPORT_PREPARATION_ONLY",
+          "exactWorkCounters": {
+            "oldEntriesZeroed": 1,
+            "readyEntries": 1,
+            "peakEntries": 1
+          }
+        }
+      ],
+      "expectedMutationKills": ["E0-MUT-083"]
+    },
+    {
+      "id": "E0-LIM-031",
+      "authorityIds": ["E0-AUTH-E0-DECISIONS", "E0-AUTH-VERIFICATION"],
+      "traceIds": ["E0-TRACE-EXPORT-MARKER", "E0-TRACE-TERMINATION"],
+      "proofKinds": ["exact-boundary", "near-miss", "mutation-link"],
+      "resource": "canonical-export-preparation-id",
+      "maximum": 9007199254740991,
+      "cells": [
+        {
+          "id": "E0-LIM-031-AT",
+          "input": "prepared-registry:id-max",
+          "resultCategory": "EXPORT_DELIVERY_PREPARED",
+          "failureStage": null,
+          "expectedIssueCodes": [],
+          "stateEffect": "EXPORT_PREPARATION_ONLY",
+          "exactWorkCounters": {
+            "preparationId": 9007199254740991,
+            "generation": 9007199254740991,
+            "wraps": 0
+          }
+        },
+        {
+          "id": "E0-LIM-031-OVER",
+          "input": "prepared-registry:id-exhausted",
+          "resultCategory": "EXPORT_DELIVERY_PREPARATION_UNAVAILABLE",
+          "failureStage": "prepared-registry-begin",
+          "expectedIssueCodes": ["export.preparation_sequence_exhausted"],
+          "stateEffect": "NONE",
+          "exactWorkCounters": {
+            "newIds": 0,
+            "wraps": 0,
+            "reusedIds": 0,
+            "browserCalls": 0
+          }
+        }
+      ],
+      "expectedMutationKills": ["E0-MUT-083"]
+    }
+  ]
+}

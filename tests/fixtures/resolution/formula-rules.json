@@ -1,0 +1,228 @@
+{
+  "schema": "changes.fixtures.t1-formula-rules.v1",
+  "fixtureVersion": "1.0.0",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "formulaTableId": "changes.chord-formulas",
+  "formulaTableVersion": 1,
+  "degreeRolePolicyId": "changes.balanced-degree-roles",
+  "degreeRolePolicyVersion": 1,
+  "degreeEncoding": "tokens are defined exactly in t1-resolution-contract.json and retain number plus alteration identity",
+  "publicRuleAssignments": {
+    "major-triad": "base-major",
+    "minor-triad": "base-minor",
+    "diminished-triad": "base-diminished",
+    "augmented-triad": "base-augmented",
+    "sus2-triad": "base-sus2",
+    "sus4-triad": "base-sus4",
+    "power-triad": "base-power",
+    "major-sixth": "sixth-major",
+    "minor-sixth": "sixth-minor",
+    "major-six-nine": "sixth-major",
+    "minor-six-nine": "sixth-minor",
+    "major-seventh": "seventh-major",
+    "dominant-seventh": "seventh-dominant",
+    "minor-seventh": "seventh-minor",
+    "minor-major-seventh": "seventh-minor-major",
+    "half-diminished-seventh": "seventh-half-diminished",
+    "diminished-seventh": "seventh-diminished",
+    "augmented-major-seventh": "seventh-augmented-major",
+    "major-ninth": "extension-major",
+    "dominant-ninth": "extension-dominant",
+    "minor-ninth": "extension-minor",
+    "dominant-eleventh": "extension-dominant",
+    "minor-eleventh": "extension-minor",
+    "dominant-thirteenth": "extension-dominant",
+    "major-thirteenth": "extension-major",
+    "minor-thirteenth": "extension-minor",
+    "dominant-seven-sus2": "extension-suspended-dominant",
+    "dominant-nine-sus2": "extension-suspended-dominant",
+    "dominant-thirteen-sus2": "extension-suspended-dominant",
+    "dominant-seven-sus4": "extension-suspended-dominant",
+    "dominant-nine-sus4": "extension-suspended-dominant",
+    "dominant-thirteen-sus4": "extension-suspended-dominant",
+    "major-eleventh": "extension-major"
+  },
+  "matchSelectionPolicy": {
+    "sourceTextUsed": false,
+    "rootUsedForFamilySelection": false,
+    "bassUsedForFamilySelection": false,
+    "order": [
+      "validate collection counts and exact number/alteration vocabularies",
+      "select the attempted base rule from triad",
+      "apply compatible natural-sixth specificity while deferring sixth-with-seventh and sixth-with-extension to modifier conflict",
+      "apply seventh specificity",
+      "apply highest-extension specificity",
+      "apply altered-dominant color-policy specificity"
+    ],
+    "familyFailurePath": "first incompatible concrete field among triad, sixth, seventh, and extensions under the order above",
+    "sixNineMarker": {
+      "derivedFrom": "the unique addition exactly equal to {number:9,alter:0} when sixth is the natural 6; valid ChordSpec degree arrays are internally duplicate-free",
+      "otherAdditions": "ignored for family selection and processed later in source order",
+      "consumedByFamilySelection": true,
+      "candidateInsertion": "inserted exactly once as optional by the selected 6/9 basePhase and skipped by the additions phase",
+      "inputVisit": "the source addition record is visited exactly once during bounded preflight"
+    }
+  },
+  "familyStateMatrix": {
+    "id": "T1-FAMILY-STATE-MATRIX-001",
+    "axes": {
+      "triad": ["major", "minor", "diminished", "augmented", "sus2", "sus4", "power"],
+      "sixth": [null, {"number":6,"alter":0}],
+      "seventh": [null, "major", "minor", "diminished"],
+      "extension": [null, 9, 11, 13],
+      "naturalNineAddition": [false, true],
+      "colorPolicy": ["none", "altered-dominant"]
+    },
+    "expansionOrder": ["triad", "sixth", "seventh", "extension", "naturalNineAddition", "colorPolicy"],
+    "sourceDefaults": {"kind":"parsed","sourceText":"T1 family-state matrix sourceText is deliberately non-authoritative","root":{"step":"C","alter":0},"bass":null,"alterations":[],"omissions":[]},
+    "expected": {
+      "totalStates": 896,
+      "acceptedStates": 64,
+      "distinctAcceptedFormulaFamilies": 34,
+      "distinctAcceptedParsedRuleIds": 21,
+      "outcomeCounts": {
+        "accepted": 64,
+        "theory.sixth_invalid": 320,
+        "theory.formula_family_unsupported": 192,
+        "theory.extension_invalid": 140,
+        "theory.color_policy_invalid": 120,
+        "theory.modifier_conflict": 60
+      },
+      "reasonAndConflictCounts": {
+        "sixth-family": 320,
+        "unsupported-seventh": 192,
+        "extension-family": 140,
+        "requires-dominant-seventh": 120,
+        "sixth-with-seventh": 48,
+        "sixth-with-extension": 12
+      },
+      "acceptedRuleIdCounts": {
+        "base-major":2,"base-minor":2,"base-diminished":2,"base-augmented":2,"base-sus2":2,"base-sus4":2,"base-power":2,
+        "sixth-major":2,"sixth-minor":2,
+        "seventh-major":2,"seventh-dominant":2,"seventh-minor":2,"seventh-minor-major":2,"seventh-half-diminished":2,"seventh-diminished":2,"seventh-augmented-major":2,
+        "extension-major":6,"extension-dominant":6,"extension-minor":6,"extension-suspended-dominant":12,"altered-dominant":2
+      },
+      "refusalRuleIdCounts": {
+        "theory.sixth_invalid":{"base-diminished":64,"base-augmented":64,"base-sus2":64,"base-sus4":64,"base-power":64},
+        "theory.formula_family_unsupported":{"base-major":16,"base-minor":16,"base-diminished":16,"base-augmented":32,"base-sus2":32,"base-sus4":32,"base-power":48},
+        "theory.extension_invalid":{"base-major":12,"base-minor":12,"base-diminished":12,"base-augmented":12,"base-sus2":12,"base-sus4":12,"base-power":12,"seventh-minor-major":12,"seventh-half-diminished":12,"seventh-diminished":12,"seventh-augmented-major":12,"extension-suspended-dominant":8},
+        "theory.color_policy_invalid":{"altered-dominant":120},
+        "theory.modifier_conflict":{"sixth-major":30,"sixth-minor":30}
+      },
+      "orderedCellSemanticSha256": "a94eb900fb42a65e3735c6534f92e71044165d3c1bf81f5befb932428c696576",
+      "orderedPublicOutcomeSemanticSha256": "549fa65823eba3df69d06fd92106286d1f2b31fc1ce44168d4965ac9882f91f1"
+    },
+    "sentinels": [
+      {"id":"T1-FAMILY-STATE-SENTINEL-001","facts":{"triad":"power","sixth":null,"seventh":"minor","extension":9,"naturalNineAddition":false,"colorPolicy":"none"},"expected":{"outcome":"theory.formula_family_unsupported","path":["seventh"],"phase":"base","ruleId":"base-power"}},
+      {"id":"T1-FAMILY-STATE-SENTINEL-002","facts":{"triad":"major","sixth":{"number":6,"alter":0},"seventh":"diminished","extension":11,"naturalNineAddition":false,"colorPolicy":"none"},"expected":{"outcome":"theory.modifier_conflict","path":["sixth"],"phase":"base","ruleId":"sixth-major","conflict":"sixth-with-seventh"}},
+      {"id":"T1-FAMILY-STATE-SENTINEL-003","facts":{"triad":"major","sixth":{"number":6,"alter":0},"seventh":"minor","extension":null,"naturalNineAddition":false,"colorPolicy":"altered-dominant"},"expected":{"outcome":"theory.color_policy_invalid","path":["colorPolicy"],"phase":"color-alterations","ruleId":"altered-dominant","reason":"requires-dominant-seventh"}},
+      {"id":"T1-FAMILY-STATE-SENTINEL-004","facts":{"triad":"sus2","sixth":null,"seventh":"minor","extension":11,"naturalNineAddition":false,"colorPolicy":"none"},"expected":{"outcome":"theory.extension_invalid","path":["extensions",0],"phase":"base","ruleId":"extension-suspended-dominant","reason":"family"}},
+      {"id":"T1-FAMILY-STATE-SENTINEL-005","facts":{"triad":"major","sixth":null,"seventh":"minor","extension":null,"naturalNineAddition":true,"colorPolicy":"altered-dominant"},"expected":{"outcome":"accepted","ruleId":"altered-dominant","formulaFamily":"altered-dominant"}}
+    ],
+    "traceIds": ["T1-TRACE-FORMULA-MATRIX", "T1-TRACE-STRICT-REFUSAL"],
+    "authorityIds": ["T1-AUTH-FORMULA", "T1-AUTH-INDEPENDENCE"]
+  },
+  "matchAndBasePhaseByFormulaId": {
+    "T1-FORMULA-001": {"match":{"triad":"major","sixth":null,"seventh":null,"extensions":[],"naturalNineAdditionFamilyMarker":false,"colorPolicy":"none"},"basePhase":{"degrees":["1","3","5"],"required":["1","3"],"optional":["5"],"guide":["3"]}},
+    "T1-FORMULA-002": {"match":{"triad":"minor","sixth":null,"seventh":null,"extensions":[],"naturalNineAdditionFamilyMarker":false,"colorPolicy":"none"},"basePhase":{"degrees":["1","b3","5"],"required":["1","b3"],"optional":["5"],"guide":["b3"]}},
+    "T1-FORMULA-003": {"match":{"triad":"diminished","sixth":null,"seventh":null,"extensions":[],"naturalNineAdditionFamilyMarker":false,"colorPolicy":"none"},"basePhase":{"degrees":["1","b3","b5"],"required":["1","b3","b5"],"optional":[],"guide":["b3"]}},
+    "T1-FORMULA-004": {"match":{"triad":"augmented","sixth":null,"seventh":null,"extensions":[],"naturalNineAdditionFamilyMarker":false,"colorPolicy":"none"},"basePhase":{"degrees":["1","3","#5"],"required":["1","3","#5"],"optional":[],"guide":["3"]}},
+    "T1-FORMULA-005": {"match":{"triad":"sus2","sixth":null,"seventh":null,"extensions":[],"naturalNineAdditionFamilyMarker":false,"colorPolicy":"none"},"basePhase":{"degrees":["1","3","5"],"required":["1","3"],"optional":["5"],"guide":["3"]}},
+    "T1-FORMULA-006": {"match":{"triad":"sus4","sixth":null,"seventh":null,"extensions":[],"naturalNineAdditionFamilyMarker":false,"colorPolicy":"none"},"basePhase":{"degrees":["1","3","5"],"required":["1","3"],"optional":["5"],"guide":["3"]}},
+    "T1-FORMULA-007": {"match":{"triad":"power","sixth":null,"seventh":null,"extensions":[],"naturalNineAdditionFamilyMarker":false,"colorPolicy":"none"},"basePhase":{"degrees":["1","5"],"required":["1","5"],"optional":[],"guide":[]}},
+    "T1-FORMULA-008": {"match":{"triad":"major","sixth":{"number":6,"alter":0},"seventh":null,"extensions":[],"naturalNineAdditionFamilyMarker":false,"colorPolicy":"none"},"basePhase":{"degrees":["1","3","5","6"],"required":["1","3","6"],"optional":["5"],"guide":["3"]}},
+    "T1-FORMULA-009": {"match":{"triad":"minor","sixth":{"number":6,"alter":0},"seventh":null,"extensions":[],"naturalNineAdditionFamilyMarker":false,"colorPolicy":"none"},"basePhase":{"degrees":["1","b3","5","6"],"required":["1","b3","6"],"optional":["5"],"guide":["b3"]}},
+    "T1-FORMULA-010": {"match":{"triad":"major","sixth":{"number":6,"alter":0},"seventh":null,"extensions":[],"naturalNineAdditionFamilyMarker":true,"colorPolicy":"none"},"basePhase":{"degrees":["1","3","5","6","9"],"required":["1","3","6"],"optional":["5","9"],"guide":["3"]}},
+    "T1-FORMULA-011": {"match":{"triad":"minor","sixth":{"number":6,"alter":0},"seventh":null,"extensions":[],"naturalNineAdditionFamilyMarker":true,"colorPolicy":"none"},"basePhase":{"degrees":["1","b3","5","6","9"],"required":["1","b3","6"],"optional":["5","9"],"guide":["b3"]}},
+    "T1-FORMULA-012": {"match":{"triad":"major","sixth":null,"seventh":"major","extensions":[],"naturalNineAdditionFamilyMarker":false,"colorPolicy":"none"},"basePhase":{"degrees":["1","3","5","7"],"required":["1","3","7"],"optional":["5"],"guide":["3","7"]}},
+    "T1-FORMULA-013": {"match":{"triad":"major","sixth":null,"seventh":"minor","extensions":[],"naturalNineAdditionFamilyMarker":false,"colorPolicy":"none"},"basePhase":{"degrees":["1","3","5","b7"],"required":["1","3","b7"],"optional":["5"],"guide":["3","b7"]}},
+    "T1-FORMULA-014": {"match":{"triad":"minor","sixth":null,"seventh":"minor","extensions":[],"naturalNineAdditionFamilyMarker":false,"colorPolicy":"none"},"basePhase":{"degrees":["1","b3","5","b7"],"required":["1","b3","b7"],"optional":["5"],"guide":["b3","b7"]}},
+    "T1-FORMULA-015": {"match":{"triad":"minor","sixth":null,"seventh":"major","extensions":[],"naturalNineAdditionFamilyMarker":false,"colorPolicy":"none"},"basePhase":{"degrees":["1","b3","5","7"],"required":["1","b3","7"],"optional":["5"],"guide":["b3","7"]}},
+    "T1-FORMULA-016": {"match":{"triad":"diminished","sixth":null,"seventh":"minor","extensions":[],"naturalNineAdditionFamilyMarker":false,"colorPolicy":"none"},"basePhase":{"degrees":["1","b3","b5","b7"],"required":["1","b3","b5","b7"],"optional":[],"guide":["b3","b7"]}},
+    "T1-FORMULA-017": {"match":{"triad":"diminished","sixth":null,"seventh":"diminished","extensions":[],"naturalNineAdditionFamilyMarker":false,"colorPolicy":"none"},"basePhase":{"degrees":["1","b3","b5","bb7"],"required":["1","b3","b5","bb7"],"optional":[],"guide":["b3","bb7"]}},
+    "T1-FORMULA-018": {"match":{"triad":"augmented","sixth":null,"seventh":"major","extensions":[],"naturalNineAdditionFamilyMarker":false,"colorPolicy":"none"},"basePhase":{"degrees":["1","3","#5","7"],"required":["1","3","#5","7"],"optional":[],"guide":["3","7"]}},
+    "T1-FORMULA-019": {"match":{"triad":"major","sixth":null,"seventh":"major","extensions":[{"number":9,"alter":0}],"naturalNineAdditionFamilyMarker":false,"colorPolicy":"none"},"basePhase":{"degrees":["1","3","5","7","9"],"required":["1","3","7","9"],"optional":["5"],"guide":["3","7"]}},
+    "T1-FORMULA-020": {"match":{"triad":"major","sixth":null,"seventh":"minor","extensions":[{"number":9,"alter":0}],"naturalNineAdditionFamilyMarker":false,"colorPolicy":"none"},"basePhase":{"degrees":["1","3","5","b7","9"],"required":["1","3","b7","9"],"optional":["5"],"guide":["3","b7"]}},
+    "T1-FORMULA-021": {"match":{"triad":"minor","sixth":null,"seventh":"minor","extensions":[{"number":9,"alter":0}],"naturalNineAdditionFamilyMarker":false,"colorPolicy":"none"},"basePhase":{"degrees":["1","b3","5","b7","9"],"required":["1","b3","b7","9"],"optional":["5"],"guide":["b3","b7"]}},
+    "T1-FORMULA-022": {"match":{"triad":"major","sixth":null,"seventh":"minor","extensions":[{"number":11,"alter":0}],"naturalNineAdditionFamilyMarker":false,"colorPolicy":"none"},"basePhase":{"degrees":["1","3","5","b7","9","11"],"required":["1","3","b7","11"],"optional":["5","9"],"guide":["3","b7"]}},
+    "T1-FORMULA-023": {"match":{"triad":"minor","sixth":null,"seventh":"minor","extensions":[{"number":11,"alter":0}],"naturalNineAdditionFamilyMarker":false,"colorPolicy":"none"},"basePhase":{"degrees":["1","b3","5","b7","9","11"],"required":["1","b3","b7","11"],"optional":["5","9"],"guide":["b3","b7"]}},
+    "T1-FORMULA-024": {"match":{"triad":"major","sixth":null,"seventh":"minor","extensions":[{"number":13,"alter":0}],"naturalNineAdditionFamilyMarker":false,"colorPolicy":"none"},"basePhase":{"degrees":["1","3","5","b7","9","11","13"],"required":["1","3","b7","13"],"optional":["5","9","11"],"guide":["3","b7"]}},
+    "T1-FORMULA-025": {"match":{"triad":"major","sixth":null,"seventh":"major","extensions":[{"number":13,"alter":0}],"naturalNineAdditionFamilyMarker":false,"colorPolicy":"none"},"basePhase":{"degrees":["1","3","5","7","9","11","13"],"required":["1","3","7","13"],"optional":["5","9","11"],"guide":["3","7"]}},
+    "T1-FORMULA-026": {"match":{"triad":"minor","sixth":null,"seventh":"minor","extensions":[{"number":13,"alter":0}],"naturalNineAdditionFamilyMarker":false,"colorPolicy":"none"},"basePhase":{"degrees":["1","b3","5","b7","9","11","13"],"required":["1","b3","b7","13"],"optional":["5","9","11"],"guide":["b3","b7"]}},
+    "T1-FORMULA-027": {"match":{"triad":"sus2","sixth":null,"seventh":"minor","extensions":[],"naturalNineAdditionFamilyMarker":false,"colorPolicy":"none"},"basePhase":{"degrees":["1","3","5","b7"],"required":["1","3","b7"],"optional":["5"],"guide":["3","b7"]}},
+    "T1-FORMULA-028": {"match":{"triad":"sus2","sixth":null,"seventh":"minor","extensions":[{"number":9,"alter":0}],"naturalNineAdditionFamilyMarker":false,"colorPolicy":"none"},"basePhase":{"degrees":["1","3","5","b7","9"],"required":["1","3","b7","9"],"optional":["5"],"guide":["3","b7"]}},
+    "T1-FORMULA-029": {"match":{"triad":"sus2","sixth":null,"seventh":"minor","extensions":[{"number":13,"alter":0}],"naturalNineAdditionFamilyMarker":false,"colorPolicy":"none"},"basePhase":{"degrees":["1","3","5","b7","9","11","13"],"required":["1","3","b7","13"],"optional":["5","9","11"],"guide":["3","b7"]}},
+    "T1-FORMULA-030": {"match":{"triad":"sus4","sixth":null,"seventh":"minor","extensions":[],"naturalNineAdditionFamilyMarker":false,"colorPolicy":"none"},"basePhase":{"degrees":["1","3","5","b7"],"required":["1","3","b7"],"optional":["5"],"guide":["3","b7"]}},
+    "T1-FORMULA-031": {"match":{"triad":"sus4","sixth":null,"seventh":"minor","extensions":[{"number":9,"alter":0}],"naturalNineAdditionFamilyMarker":false,"colorPolicy":"none"},"basePhase":{"degrees":["1","3","5","b7","9"],"required":["1","3","b7","9"],"optional":["5"],"guide":["3","b7"]}},
+    "T1-FORMULA-032": {"match":{"triad":"sus4","sixth":null,"seventh":"minor","extensions":[{"number":13,"alter":0}],"naturalNineAdditionFamilyMarker":false,"colorPolicy":"none"},"basePhase":{"degrees":["1","3","5","b7","9","11","13"],"required":["1","3","b7","13"],"optional":["5","9","11"],"guide":["3","b7"]}},
+    "T1-FORMULA-033": {"match":{"triad":"major","sixth":null,"seventh":"major","extensions":[{"number":11,"alter":0}],"naturalNineAdditionFamilyMarker":false,"colorPolicy":"none"},"basePhase":{"degrees":["1","3","5","7","9","11"],"required":["1","3","7","11"],"optional":["5","9"],"guide":["3","7"]}}
+  },
+  "rules": [
+    {"id":"T1-FORMULA-001","matrixSeed":true,"bucket":"triad","familyId":"major-triad","symbolTemplate":"{root}","degrees":["1","3","5"],"required":["1","3"],"optional":["5"],"guide":["3"],"traceIds":["T1-TRACE-FORMULA-MATRIX","T1-TRACE-ROLE-POLICY"],"authorityIds":["T1-AUTH-FORMULA","T1-AUTH-ROLES"]},
+    {"id":"T1-FORMULA-002","matrixSeed":true,"bucket":"triad","familyId":"minor-triad","symbolTemplate":"{root}m","degrees":["1","b3","5"],"required":["1","b3"],"optional":["5"],"guide":["b3"],"traceIds":["T1-TRACE-FORMULA-MATRIX","T1-TRACE-ROLE-POLICY"],"authorityIds":["T1-AUTH-FORMULA","T1-AUTH-ROLES"]},
+    {"id":"T1-FORMULA-003","matrixSeed":true,"bucket":"triad","familyId":"diminished-triad","symbolTemplate":"{root}dim","degrees":["1","b3","b5"],"required":["1","b3","b5"],"optional":[],"guide":["b3"],"traceIds":["T1-TRACE-FORMULA-MATRIX","T1-TRACE-ROLE-POLICY"],"authorityIds":["T1-AUTH-FORMULA","T1-AUTH-ROLES"]},
+    {"id":"T1-FORMULA-004","matrixSeed":true,"bucket":"triad","familyId":"augmented-triad","symbolTemplate":"{root}aug","degrees":["1","3","#5"],"required":["1","3","#5"],"optional":[],"guide":["3"],"traceIds":["T1-TRACE-FORMULA-MATRIX","T1-TRACE-ROLE-POLICY"],"authorityIds":["T1-AUTH-FORMULA","T1-AUTH-ROLES"]},
+    {"id":"T1-FORMULA-005","matrixSeed":true,"bucket":"triad","familyId":"sus2-triad","symbolTemplate":"{root}sus2","degrees":["1","2","5"],"required":["1","2"],"optional":["5"],"guide":["2"],"traceIds":["T1-TRACE-FORMULA-MATRIX","T1-TRACE-ROLE-POLICY"],"authorityIds":["T1-AUTH-FORMULA","T1-AUTH-ROLES"]},
+    {"id":"T1-FORMULA-006","matrixSeed":true,"bucket":"triad","familyId":"sus4-triad","symbolTemplate":"{root}sus4","degrees":["1","4","5"],"required":["1","4"],"optional":["5"],"guide":["4"],"traceIds":["T1-TRACE-FORMULA-MATRIX","T1-TRACE-ROLE-POLICY"],"authorityIds":["T1-AUTH-FORMULA","T1-AUTH-ROLES"]},
+    {"id":"T1-FORMULA-007","matrixSeed":true,"bucket":"triad","familyId":"power-triad","symbolTemplate":"{root}5","degrees":["1","5"],"required":["1","5"],"optional":[],"guide":[],"traceIds":["T1-TRACE-FORMULA-MATRIX","T1-TRACE-ROLE-POLICY"],"authorityIds":["T1-AUTH-FORMULA","T1-AUTH-ROLES"]},
+
+    {"id":"T1-FORMULA-008","matrixSeed":true,"bucket":"sixth","familyId":"major-sixth","symbolTemplate":"{root}6","degrees":["1","3","5","6"],"required":["1","3","6"],"optional":["5"],"guide":["3"],"traceIds":["T1-TRACE-FORMULA-MATRIX","T1-TRACE-ROLE-POLICY"],"authorityIds":["T1-AUTH-FORMULA","T1-AUTH-ROLES"]},
+    {"id":"T1-FORMULA-009","matrixSeed":true,"bucket":"sixth","familyId":"minor-sixth","symbolTemplate":"{root}m6","degrees":["1","b3","5","6"],"required":["1","b3","6"],"optional":["5"],"guide":["b3"],"traceIds":["T1-TRACE-FORMULA-MATRIX","T1-TRACE-ROLE-POLICY"],"authorityIds":["T1-AUTH-FORMULA","T1-AUTH-ROLES"]},
+    {"id":"T1-FORMULA-010","matrixSeed":true,"bucket":"sixth","familyId":"major-six-nine","symbolTemplate":"{root}6/9","degrees":["1","3","5","6","9"],"required":["1","3","6"],"optional":["5","9"],"guide":["3"],"traceIds":["T1-TRACE-FORMULA-MATRIX","T1-TRACE-ROLE-POLICY"],"authorityIds":["T1-AUTH-FORMULA","T1-AUTH-ROLES"]},
+    {"id":"T1-FORMULA-011","matrixSeed":true,"bucket":"sixth","familyId":"minor-six-nine","symbolTemplate":"{root}m6/9","degrees":["1","b3","5","6","9"],"required":["1","b3","6"],"optional":["5","9"],"guide":["b3"],"traceIds":["T1-TRACE-FORMULA-MATRIX","T1-TRACE-ROLE-POLICY"],"authorityIds":["T1-AUTH-FORMULA","T1-AUTH-ROLES"]},
+
+    {"id":"T1-FORMULA-012","matrixSeed":true,"bucket":"seventh","familyId":"major-seventh","symbolTemplate":"{root}maj7","degrees":["1","3","5","7"],"required":["1","3","7"],"optional":["5"],"guide":["3","7"],"traceIds":["T1-TRACE-FORMULA-MATRIX","T1-TRACE-ROLE-POLICY","T1-TRACE-LEGACY-L-THEORY-01"],"authorityIds":["T1-AUTH-FORMULA","T1-AUTH-ROLES","T1-AUTH-LEGACY"]},
+    {"id":"T1-FORMULA-013","matrixSeed":true,"bucket":"seventh","familyId":"dominant-seventh","symbolTemplate":"{root}7","degrees":["1","3","5","b7"],"required":["1","3","b7"],"optional":["5"],"guide":["3","b7"],"traceIds":["T1-TRACE-FORMULA-MATRIX","T1-TRACE-ROLE-POLICY"],"authorityIds":["T1-AUTH-FORMULA","T1-AUTH-ROLES"]},
+    {"id":"T1-FORMULA-014","matrixSeed":true,"bucket":"seventh","familyId":"minor-seventh","symbolTemplate":"{root}m7","degrees":["1","b3","5","b7"],"required":["1","b3","b7"],"optional":["5"],"guide":["b3","b7"],"traceIds":["T1-TRACE-FORMULA-MATRIX","T1-TRACE-ROLE-POLICY"],"authorityIds":["T1-AUTH-FORMULA","T1-AUTH-ROLES"]},
+    {"id":"T1-FORMULA-015","matrixSeed":true,"bucket":"seventh","familyId":"minor-major-seventh","symbolTemplate":"{root}m(maj7)","degrees":["1","b3","5","7"],"required":["1","b3","7"],"optional":["5"],"guide":["b3","7"],"traceIds":["T1-TRACE-FORMULA-MATRIX","T1-TRACE-ROLE-POLICY","T1-TRACE-STRICT-REFUSAL"],"authorityIds":["T1-AUTH-FORMULA","T1-AUTH-ROLES"]},
+    {"id":"T1-FORMULA-016","matrixSeed":true,"bucket":"seventh","familyId":"half-diminished-seventh","symbolTemplate":"{root}m7b5","degrees":["1","b3","b5","b7"],"required":["1","b3","b5","b7"],"optional":[],"guide":["b3","b7"],"traceIds":["T1-TRACE-FORMULA-MATRIX","T1-TRACE-ROLE-POLICY"],"authorityIds":["T1-AUTH-FORMULA","T1-AUTH-ROLES"]},
+    {"id":"T1-FORMULA-017","matrixSeed":true,"bucket":"seventh","familyId":"diminished-seventh","symbolTemplate":"{root}dim7","degrees":["1","b3","b5","bb7"],"required":["1","b3","b5","bb7"],"optional":[],"guide":["b3","bb7"],"traceIds":["T1-TRACE-FORMULA-MATRIX","T1-TRACE-ROLE-POLICY","T1-TRACE-SPELLING","T1-TRACE-LEGACY-L-THEORY-01"],"authorityIds":["T1-AUTH-FORMULA","T1-AUTH-ROLES","T1-AUTH-SPELLING","T1-AUTH-LEGACY"]},
+    {"id":"T1-FORMULA-018","matrixSeed":true,"bucket":"seventh","familyId":"augmented-major-seventh","symbolTemplate":"{root}aug(maj7)","degrees":["1","3","#5","7"],"required":["1","3","#5","7"],"optional":[],"guide":["3","7"],"traceIds":["T1-TRACE-FORMULA-MATRIX","T1-TRACE-ROLE-POLICY"],"authorityIds":["T1-AUTH-FORMULA","T1-AUTH-ROLES"]},
+
+    {"id":"T1-FORMULA-019","matrixSeed":true,"bucket":"extension","familyId":"major-ninth","symbolTemplate":"{root}maj9","degrees":["1","3","5","7","9"],"required":["1","3","7","9"],"optional":["5"],"guide":["3","7"],"traceIds":["T1-TRACE-FORMULA-MATRIX","T1-TRACE-ROLE-POLICY","T1-TRACE-LEGACY-L-THEORY-01"],"authorityIds":["T1-AUTH-FORMULA","T1-AUTH-ROLES","T1-AUTH-LEGACY"]},
+    {"id":"T1-FORMULA-020","matrixSeed":true,"bucket":"extension","familyId":"dominant-ninth","symbolTemplate":"{root}9","degrees":["1","3","5","b7","9"],"required":["1","3","b7","9"],"optional":["5"],"guide":["3","b7"],"traceIds":["T1-TRACE-FORMULA-MATRIX","T1-TRACE-ROLE-POLICY","T1-TRACE-LEGACY-L-THEORY-01"],"authorityIds":["T1-AUTH-FORMULA","T1-AUTH-ROLES","T1-AUTH-LEGACY"]},
+    {"id":"T1-FORMULA-021","matrixSeed":true,"bucket":"extension","familyId":"minor-ninth","symbolTemplate":"{root}m9","degrees":["1","b3","5","b7","9"],"required":["1","b3","b7","9"],"optional":["5"],"guide":["b3","b7"],"traceIds":["T1-TRACE-FORMULA-MATRIX","T1-TRACE-ROLE-POLICY"],"authorityIds":["T1-AUTH-FORMULA","T1-AUTH-ROLES"]},
+    {"id":"T1-FORMULA-022","matrixSeed":true,"bucket":"extension","familyId":"dominant-eleventh","symbolTemplate":"{root}11","degrees":["1","3","5","b7","9","11"],"required":["1","3","b7","11"],"optional":["5","9"],"guide":["3","b7"],"traceIds":["T1-TRACE-FORMULA-MATRIX","T1-TRACE-ROLE-POLICY"],"authorityIds":["T1-AUTH-FORMULA","T1-AUTH-ROLES"]},
+    {"id":"T1-FORMULA-023","matrixSeed":true,"bucket":"extension","familyId":"minor-eleventh","symbolTemplate":"{root}m11","degrees":["1","b3","5","b7","9","11"],"required":["1","b3","b7","11"],"optional":["5","9"],"guide":["b3","b7"],"traceIds":["T1-TRACE-FORMULA-MATRIX","T1-TRACE-ROLE-POLICY"],"authorityIds":["T1-AUTH-FORMULA","T1-AUTH-ROLES"]},
+    {"id":"T1-FORMULA-024","matrixSeed":true,"bucket":"extension","familyId":"dominant-thirteenth","symbolTemplate":"{root}13","degrees":["1","3","5","b7","9","11","13"],"required":["1","3","b7","13"],"optional":["5","9","11"],"guide":["3","b7"],"traceIds":["T1-TRACE-FORMULA-MATRIX","T1-TRACE-ROLE-POLICY","T1-TRACE-LEGACY-L-THEORY-01"],"authorityIds":["T1-AUTH-FORMULA","T1-AUTH-ROLES","T1-AUTH-LEGACY"]},
+    {"id":"T1-FORMULA-025","matrixSeed":true,"bucket":"extension","familyId":"major-thirteenth","symbolTemplate":"{root}maj13","degrees":["1","3","5","7","9","11","13"],"required":["1","3","7","13"],"optional":["5","9","11"],"guide":["3","7"],"traceIds":["T1-TRACE-FORMULA-MATRIX","T1-TRACE-ROLE-POLICY"],"authorityIds":["T1-AUTH-FORMULA","T1-AUTH-ROLES"]},
+    {"id":"T1-FORMULA-026","matrixSeed":true,"bucket":"extension","familyId":"minor-thirteenth","symbolTemplate":"{root}m13","degrees":["1","b3","5","b7","9","11","13"],"required":["1","b3","b7","13"],"optional":["5","9","11"],"guide":["b3","b7"],"traceIds":["T1-TRACE-FORMULA-MATRIX","T1-TRACE-ROLE-POLICY"],"authorityIds":["T1-AUTH-FORMULA","T1-AUTH-ROLES"]},
+
+    {"id":"T1-FORMULA-027","matrixSeed":true,"bucket":"dominant-suspension","familyId":"dominant-seven-sus2","symbolTemplate":"{root}7sus2","degrees":["1","2","5","b7"],"required":["1","2","b7"],"optional":["5"],"guide":["2","b7"],"traceIds":["T1-TRACE-FORMULA-MATRIX","T1-TRACE-ROLE-POLICY","T1-TRACE-MODIFIER-ORDER"],"authorityIds":["T1-AUTH-FORMULA","T1-AUTH-ROLES"]},
+    {"id":"T1-FORMULA-028","matrixSeed":true,"bucket":"dominant-suspension","familyId":"dominant-nine-sus2","symbolTemplate":"{root}9sus2","degrees":["1","2","5","b7","9"],"required":["1","2","b7","9"],"optional":["5"],"guide":["2","b7"],"traceIds":["T1-TRACE-FORMULA-MATRIX","T1-TRACE-ROLE-POLICY","T1-TRACE-MODIFIER-ORDER"],"authorityIds":["T1-AUTH-FORMULA","T1-AUTH-ROLES"]},
+    {"id":"T1-FORMULA-029","matrixSeed":true,"bucket":"dominant-suspension","familyId":"dominant-thirteen-sus2","symbolTemplate":"{root}13sus2","degrees":["1","2","5","b7","9","11","13"],"required":["1","2","b7","13"],"optional":["5","9","11"],"guide":["2","b7"],"traceIds":["T1-TRACE-FORMULA-MATRIX","T1-TRACE-ROLE-POLICY","T1-TRACE-MODIFIER-ORDER"],"authorityIds":["T1-AUTH-FORMULA","T1-AUTH-ROLES"]},
+    {"id":"T1-FORMULA-030","matrixSeed":true,"bucket":"dominant-suspension","familyId":"dominant-seven-sus4","symbolTemplate":"{root}7sus4","degrees":["1","4","5","b7"],"required":["1","4","b7"],"optional":["5"],"guide":["4","b7"],"traceIds":["T1-TRACE-FORMULA-MATRIX","T1-TRACE-ROLE-POLICY","T1-TRACE-MODIFIER-ORDER"],"authorityIds":["T1-AUTH-FORMULA","T1-AUTH-ROLES"]},
+    {"id":"T1-FORMULA-031","matrixSeed":true,"bucket":"dominant-suspension","familyId":"dominant-nine-sus4","symbolTemplate":"{root}9sus4","degrees":["1","4","5","b7","9"],"required":["1","4","b7","9"],"optional":["5"],"guide":["4","b7"],"traceIds":["T1-TRACE-FORMULA-MATRIX","T1-TRACE-ROLE-POLICY","T1-TRACE-MODIFIER-ORDER"],"authorityIds":["T1-AUTH-FORMULA","T1-AUTH-ROLES"]},
+    {"id":"T1-FORMULA-032","matrixSeed":true,"bucket":"dominant-suspension","familyId":"dominant-thirteen-sus4","symbolTemplate":"{root}13sus4","degrees":["1","4","5","b7","9","11","13"],"required":["1","4","b7","13"],"optional":["5","9","11"],"guide":["4","b7"],"traceIds":["T1-TRACE-FORMULA-MATRIX","T1-TRACE-ROLE-POLICY","T1-TRACE-MODIFIER-ORDER"],"authorityIds":["T1-AUTH-FORMULA","T1-AUTH-ROLES"]},
+
+    {"id":"T1-FORMULA-033","matrixSeed":true,"bucket":"extension","familyId":"major-eleventh","symbolTemplate":"{root}maj11","degrees":["1","3","5","7","9","11"],"required":["1","3","7","11"],"optional":["5","9"],"guide":["3","7"],"traceIds":["T1-TRACE-FORMULA-MATRIX","T1-TRACE-ROLE-POLICY"],"authorityIds":["T1-AUTH-FORMULA","T1-AUTH-ROLES"]}
+  ],
+  "alteredDominantMatchAndBasePhase": {
+    "match": {"triad":"major","sixth":null,"seventh":"minor","extensions":[],"naturalNineAdditionFamilyMarker":false,"colorPolicy":"altered-dominant"},
+    "formulaRuleId": "altered-dominant",
+    "selection": "the exact color-policy family match creates all four base-phase seeds before later explicit modifier phases; sourceText, root, bass, and audition preference are ignored",
+    "basePhaseByRealizationId": {
+      "alt-b9-b5": {"degrees":["1","3","b5","b7","b9"],"required":["1","3","b5","b7","b9"],"optional":[],"guide":["3","b7"]},
+      "alt-b9-sharp5": {"degrees":["1","3","#5","b7","b9"],"required":["1","3","#5","b7","b9"],"optional":[],"guide":["3","b7"]},
+      "alt-sharp9-b5": {"degrees":["1","3","b5","b7","#9"],"required":["1","3","b5","b7","#9"],"optional":[],"guide":["3","b7"]},
+      "alt-sharp9-sharp5": {"degrees":["1","3","#5","b7","#9"],"required":["1","3","#5","b7","#9"],"optional":[],"guide":["3","b7"]}
+    }
+  },
+  "alteredDominantVariants": [
+    {"id":"alt-b9-b5","degrees":["1","3","b5","b7","b9"],"required":["1","3","b5","b7","b9"],"optional":[],"guide":["3","b7"],"traceIds":["T1-TRACE-ALT-VARIANTS","T1-TRACE-ROLE-POLICY"],"authorityIds":["T1-AUTH-FORMULA","T1-AUTH-ROLES"]},
+    {"id":"alt-b9-sharp5","degrees":["1","3","#5","b7","b9"],"required":["1","3","#5","b7","b9"],"optional":[],"guide":["3","b7"],"traceIds":["T1-TRACE-ALT-VARIANTS","T1-TRACE-ROLE-POLICY"],"authorityIds":["T1-AUTH-FORMULA","T1-AUTH-ROLES"]},
+    {"id":"alt-sharp9-b5","degrees":["1","3","b5","b7","#9"],"required":["1","3","b5","b7","#9"],"optional":[],"guide":["3","b7"],"traceIds":["T1-TRACE-ALT-VARIANTS","T1-TRACE-ROLE-POLICY"],"authorityIds":["T1-AUTH-FORMULA","T1-AUTH-ROLES"]},
+    {"id":"alt-sharp9-sharp5","degrees":["1","3","#5","b7","#9"],"required":["1","3","#5","b7","#9"],"optional":[],"guide":["3","b7"],"traceIds":["T1-TRACE-ALT-VARIANTS","T1-TRACE-ROLE-POLICY"],"authorityIds":["T1-AUTH-FORMULA","T1-AUTH-ROLES"]}
+  ],
+  "modifierRules": [
+    {"id":"T1-MODRULE-001","phase":"suspension","rule":"remove every degree numbered 3, then add the declared 2 or 4 as required and guide","traceIds":["T1-TRACE-MODIFIER-ORDER","T1-TRACE-ROLE-POLICY"],"authorityIds":["T1-AUTH-FORMULA","T1-AUTH-ROLES"]},
+    {"id":"T1-MODRULE-002","phase":"structural-alterations","rule":"b5 or #5 removes natural 5 and adds the explicit alteration as required; refuse only when source alterations explicitly request both b5 and #5. An altered fifth inherited from the base formula is not one half of that source-record conflict and may coexist with the opposite explicit alteration.","traceIds":["T1-TRACE-MODIFIER-ORDER","T1-TRACE-STRICT-REFUSAL"],"authorityIds":["T1-AUTH-FORMULA"]},
+    {"id":"T1-MODRULE-003","phase":"color-alterations","rule":"b9, #9, b11, #11, b13, or #13 removes natural same-number closure and adds each requested altered color as required; b9 plus #9 coexists","traceIds":["T1-TRACE-MODIFIER-ORDER"],"authorityIds":["T1-AUTH-FORMULA"]},
+    {"id":"T1-MODRULE-004","phase":"additions","rule":"addN adds only N, implies no closure, is required, and does not replace a differently altered degree; add3 may coexist with suspension but is not a guide. The exact natural-9 addition consumed as a 6/9 family marker is skipped here because basePhase already inserted it once as optional; all other additions, including siblings beside that marker, remain required.","traceIds":["T1-TRACE-MODIFIER-ORDER","T1-TRACE-ROLE-POLICY"],"authorityIds":["T1-AUTH-FORMULA","T1-AUTH-ROLES"]},
+    {"id":"T1-MODRULE-005","phase":"omissions","rule":"no3 or no5 removes every same-number degree from every realization and emits theory.omission_absent only when no such degree existed","traceIds":["T1-TRACE-MODIFIER-ORDER","T1-TRACE-ROLE-POLICY"],"authorityIds":["T1-AUTH-FORMULA","T1-AUTH-ROLES"]},
+    {"id":"T1-MODRULE-006","phase":"canonicalization","rule":"merge exact degree duplicates even when they came from different categories, preserve differently altered same-number degrees, and reject only conflicts declared by the earlier phase rules","traceIds":["T1-TRACE-MODIFIER-ORDER","T1-TRACE-STRICT-REFUSAL"],"authorityIds":["T1-AUTH-FORMULA"]},
+    {"id":"T1-MODRULE-007","phase":"spelling","rule":"spell each retained degree diatonically, refuse an alteration outside -2 through 2, and keep slash bass separate","traceIds":["T1-TRACE-SPELLING","T1-TRACE-SLASH-SEPARATION"],"authorityIds":["T1-AUTH-SPELLING","T1-AUTH-FORMULA"]},
+    {"id":"T1-MODRULE-008","phase":"color-alterations","rule":"bare altered dominant expands to four ordered stable IDs; accepted later addition, 11/13 color, and omission phases transform each variant without changing or merging IDs","traceIds":["T1-TRACE-ALT-VARIANTS","T1-TRACE-MODIFIER-ORDER"],"authorityIds":["T1-AUTH-FORMULA"]}
+  ]
+}

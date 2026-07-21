@@ -54,7 +54,7 @@
     "generatedBanner": "<!-- @generated; edit src/, then run bun run build -->",
     "compatMode": "CSS1Compat",
     "maxUncompressedBytes": 1572864,
-    "foundationShellMaxBytes": 262144,
+    "foundationShellMaxBytes": 786432,
     "reservedAtlasBytes": 524288,
     "requiredReports": [
       "dist/licenses.json",

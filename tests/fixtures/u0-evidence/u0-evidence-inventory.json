@@ -1,0 +1,1531 @@
+{
+  "schema": "changes.ui.u0-evidence-inventory.v1",
+  "fixtureVersion": 1,
+  "expectedValuesGenerated": true,
+  "runtimeReportUsedAsOracle": false,
+  "productionOutputUsed": false,
+  "authorship": {
+    "candidateEnumeration": "mechanical",
+    "independentlyReviewed": true,
+    "runtimeReportsConsultedAsDraftingAid": true,
+    "reviewBasis": [
+      "The 117 Bun identities were checked title by title against the eight focused test sources; the dynamic U0-LIM, U0-THRESH, U0-TOPO, and U0-MENU-TOPO rows were also checked against the independently reviewed primitive-state matrix IDs, limit keys, and subjects.",
+      "The 30 Playwright specifications were checked title by title against the fourteen reviewed owner sources, then expanded only across the exact chromium, firefox, and webkit project matrix pinned in playwright.config.ts.",
+      "The 28 cell templates, their producer titles, ordered case and trace bindings, and 48 screenshot basenames were checked against every writeU0EvidenceCell, u0Binding, and captureU0Screenshot call in the reviewed browser owner sources.",
+      "Historical JUnit and Playwright artifacts were consulted as drafting and discrepancy aids, but were not accepted as authority for pass status, product behavior, bindings, screenshots, or production output; the checked-in source and fixture hashes are the review boundary."
+    ]
+  },
+  "projects": [
+    "chromium",
+    "firefox",
+    "webkit"
+  ],
+  "expectedCounts": {
+    "browserCells": 84,
+    "browserCellTemplates": 28,
+    "bunCases": 117,
+    "playwrightSpecifications": 30,
+    "playwrightTests": 90,
+    "reviewedSources": 26,
+    "screenshots": 48
+  },
+  "reviewedSources": [
+    {
+      "path": "playwright.config.ts",
+      "sha256": "63e698cb3b386dbc29c517272008f9b5af43fba0b53299e5be39e75016272e96"
+    },
+    {
+      "path": "tests/e2e/u0-accessibility.spec.ts",
+      "sha256": "56b41e1a432df5db413f75bcfa765d344f8c0bee362a6c0b4fd352b121cd2b3a"
+    },
+    {
+      "path": "tests/e2e/u0-browser-test-kit.ts",
+      "sha256": "30ee633b03afb8afbc03a940330e9566485fda95412fef33912f2b0eaae4ea20"
+    },
+    {
+      "path": "tests/e2e/u0-focus-restoration.spec.ts",
+      "sha256": "82cf0557ae3f9148d2c07f6d051ef1836d6df93a56d032d709342fc9be28378e"
+    },
+    {
+      "path": "tests/e2e/u0-keyboard.spec.ts",
+      "sha256": "2aad728fd1e8ab6b96e30c376d1dc076ff5f29fd8ac06c028955eb94e319c31a"
+    },
+    {
+      "path": "tests/e2e/u0-landmarks.spec.ts",
+      "sha256": "144a0fc499c6715e7148552a8812e6fbc93147cba8445c7d921a62df158fc4e2"
+    },
+    {
+      "path": "tests/e2e/u0-mobile-shell.spec.ts",
+      "sha256": "0c2b77081fc091cf577ca4ca71e88f39981eb873a715762eed037e4abc4f5978"
+    },
+    {
+      "path": "tests/e2e/u0-nonhappy-states.spec.ts",
+      "sha256": "d4e892624fcf92d90f23711af4d19c9b74e2235fcf129fd6d54d84ca3e7b17e3"
+    },
+    {
+      "path": "tests/e2e/u0-overlays.spec.ts",
+      "sha256": "59b20334e97eb230c5007f3c8c469d994c9eba62f5149270106cad4af767153a"
+    },
+    {
+      "path": "tests/e2e/u0-reflow.spec.ts",
+      "sha256": "a47f1251019eb178e989ed0c43a27b69c3530549ab87c43ed7306f90080fc1c2"
+    },
+    {
+      "path": "tests/e2e/u0-system-status.spec.ts",
+      "sha256": "14b40605d3df30b22729915ae00e0b8638b4789bf449c00ab92594cb845f76ef"
+    },
+    {
+      "path": "tests/e2e/u0-touch-targets.spec.ts",
+      "sha256": "adbdf23595a4af987872e8882e2d3c4ba897288f6aeeed23634cebf16d3cac7a"
+    },
+    {
+      "path": "tests/fixtures/ui/primitive-state-matrix.json",
+      "sha256": "fec8a3d6b35d9e96d97715d66ae2237da0b596438126c1566359964277fa0ac3"
+    },
+    {
+      "path": "tests/fixtures/ui/trace-ledger.json",
+      "sha256": "08b6cf4caba9b21e5e28d80f6bcc5963ddc9c5143206bf3bf6926339d992872d"
+    },
+    {
+      "path": "tests/property/u0-limits.test.ts",
+      "sha256": "dc402394da157c356537cdc9ea2ad726179eff8b0db0205539410e5620c02787"
+    },
+    {
+      "path": "tests/static/u0-contract-conformance.test.ts",
+      "sha256": "34efedc8af0aab366891a80c08a561ebfc5c1d0aa6e16aba7aa7e84feac9c65f"
+    },
+    {
+      "path": "tests/static/u0-evidence-inventory.test.ts",
+      "sha256": "ac744b1ee51fa4b114ba048cbca870e9b3fa830529e95fda920b738a98927b5a"
+    },
+    {
+      "path": "tests/static/u0-evidence.test.ts",
+      "sha256": "fb00fda54f70151be2871738cf19d143fee692c788547d4b5f49581ee52b2d0c"
+    },
+    {
+      "path": "tests/static/u0-gallery-exclusion.test.ts",
+      "sha256": "ff96c51927a5f76537888a23cc75d59954e3f50c3d3bf05ecd60cba5ea67ddb9"
+    },
+    {
+      "path": "tests/static/u0-layer-boundary.test.ts",
+      "sha256": "17f09ff4c70f307a26ba2ea461d896b44c4b7d44f6c504c649f1775829f704a6"
+    },
+    {
+      "path": "tests/static/u0-source-policy.test.ts",
+      "sha256": "359082fdc1b7440012cbc192c067cc54ff9b26a2c5a69b5df6d0f61b7a3c6822"
+    },
+    {
+      "path": "tests/static/u0-token-usage.test.ts",
+      "sha256": "977acec0dee8cba4d2f8c6d8add95b08681a7cef1fc752e708349b3242d3862e"
+    },
+    {
+      "path": "tests/visual/u0-component-gallery.spec.ts",
+      "sha256": "be6e813b5201b8f4a08db63e053c55df39bb63b9b46b5f72d9ffc163d76acbc9"
+    },
+    {
+      "path": "tests/visual/u0-forced-colors.spec.ts",
+      "sha256": "a214158773c2dd52c07eac74d532b8d49772f6fcd7ff1dc5777737402d11a3f9"
+    },
+    {
+      "path": "tests/visual/u0-reduced-motion.spec.ts",
+      "sha256": "6bd2a04a682e1adafd801cec6b05bc054cb869babeb182ed56299a86b85064b2"
+    },
+    {
+      "path": "tests/visual/u0-responsive-shell.spec.ts",
+      "sha256": "5435f3dc474c2d3190b62c86ebadb5e6a98ac44c7e9a3ec005d15f5c26be3083"
+    }
+  ],
+  "bunSuites": [
+    {
+      "file": "tests/property/u0-limits.test.ts",
+      "titles": [
+        "U0-LIM-001 maxSafeInteger accepts N and refuses N+1 atomically",
+        "U0-LIM-002 maxIdCodePoints accepts N and refuses N+1 atomically",
+        "U0-LIM-003 maxRequestKindCodePoints accepts N and refuses N+1 atomically",
+        "U0-LIM-004 maxLabelCodePoints accepts N and refuses N+1 atomically",
+        "U0-LIM-005 maxTextValueCodePoints accepts N and refuses N+1 atomically",
+        "U0-LIM-006 maxKeywordCodePoints accepts N and refuses N+1 atomically",
+        "U0-LIM-007 maxKbdKeyCodePoints accepts N and refuses N+1 atomically",
+        "U0-LIM-008 maxFilenameCodePoints accepts N and refuses N+1 atomically",
+        "U0-LIM-009 maxFragmentHrefCodePoints accepts N and refuses N+1 atomically",
+        "U0-LIM-010 maxLocalHrefCodePoints accepts N and refuses N+1 atomically",
+        "U0-LIM-011 maxExactValueCodePoints accepts N and refuses N+1 atomically",
+        "U0-LIM-012 U0-OVR-007 maxModalScopes accepts N and refuses N+1 atomically",
+        "U0-LIM-013 U0-OVR-012 maxDismissAncestors accepts N and refuses N+1 atomically",
+        "U0-LIM-014 maxNonmodalSurfaces accepts N and refuses N+1 atomically",
+        "U0-LIM-015 maxFocusCandidates accepts N and refuses N+1 atomically",
+        "U0-LIM-016 maxReferenceIds accepts N and refuses N+1 atomically",
+        "U0-LIM-017 maxDiagnostics accepts N and refuses N+1 atomically",
+        "U0-LIM-018 maxDiagnosticPathSegments accepts N and refuses N+1 atomically",
+        "U0-LIM-019 maxKbdKeys accepts N and refuses N+1 atomically",
+        "U0-LIM-020 maxSkeletonLines accepts N and refuses N+1 atomically",
+        "U0-LIM-021 maxTextareaRows accepts N and refuses N+1 atomically",
+        "U0-LIM-022 maxRovingItems accepts N and refuses N+1 atomically",
+        "U0-LIM-023 maxSelectOptions accepts N and refuses N+1 atomically",
+        "U0-LIM-024 maxComboboxOptions accepts N and refuses N+1 atomically",
+        "U0-LIM-025 maxMenuItems accepts N and refuses N+1 atomically",
+        "U0-LIM-026 maxMenuDepth accepts N and refuses N+1 atomically",
+        "U0-LIM-027 maxListboxOptions accepts N and refuses N+1 atomically",
+        "U0-LIM-028 maxRadioItems accepts N and refuses N+1 atomically",
+        "U0-LIM-029 maxToggleItems accepts N and refuses N+1 atomically",
+        "U0-LIM-030 maxCommandItems accepts N and refuses N+1 atomically",
+        "U0-LIM-031 maxCommandKeywords accepts N and refuses N+1 atomically",
+        "U0-LIM-032 maxTabs accepts N and refuses N+1 atomically",
+        "U0-LIM-033 maxBreadcrumbItems accepts N and refuses N+1 atomically",
+        "U0-LIM-034 maxToolbarItems accepts N and refuses N+1 atomically",
+        "U0-LIM-035 maxAccordionItems accepts N and refuses N+1 atomically",
+        "U0-LIM-036 maxKeyValueItems accepts N and refuses N+1 atomically",
+        "U0-LIM-037 maxTreeItems accepts N and refuses N+1 atomically",
+        "U0-LIM-038 maxTreeDepth accepts N and refuses N+1 atomically",
+        "U0-LIM-039 maxTableColumns accepts N and refuses N+1 atomically",
+        "U0-LIM-040 maxTableRows accepts N and refuses N+1 atomically",
+        "U0-LIM-041 maxTableCells accepts N and refuses N+1 atomically",
+        "U0-LIM-042 maxResizablePanels accepts N and refuses N+1 atomically",
+        "U0-LIM-043 maxTimelineItems accepts N and refuses N+1 atomically",
+        "U0-LIM-044 maxNoticeCenterItems accepts N and refuses N+1 atomically",
+        "U0-LIM-045 maxVisibleNotices accepts N and refuses N+1 atomically",
+        "U0-LIM-046 maxAccessibleNameCodePoints accepts N and refuses N+1 atomically",
+        "U0-LIM-047 maxDescriptionCodePoints accepts N and refuses N+1 atomically",
+        "U0-LIM-048 maxTooltipCodePoints accepts N and refuses N+1 atomically",
+        "U0-LIM-049 maxTypeaheadCodePoints accepts N and refuses N+1 atomically",
+        "U0-MENU-TOPO-001 valid-flat-menu executes the production visited traversal",
+        "U0-MENU-TOPO-002 valid-depth-and-flattened-boundary executes the production visited traversal",
+        "U0-MENU-TOPO-003 submenu-depth-exact-plus-one executes the production visited traversal",
+        "U0-MENU-TOPO-004 flattened-item-exact-plus-one executes the production visited traversal",
+        "U0-MENU-TOPO-005 duplicate-id-across-flattened-tree executes the production visited traversal",
+        "U0-MENU-TOPO-006 menu-cycle executes the production visited traversal",
+        "U0-MENU-TOPO-007 repeated-object-identity executes the production visited traversal",
+        "U0-PRIM-016 rejects the external 24 CSS px floor below the 44 CSS px project target",
+        "U0-THRESH-001 typeaheadResetMs binds below, exact, and above observations",
+        "U0-THRESH-002 tooltipPointerOpenDelayMs binds below, exact, and above observations",
+        "U0-THRESH-003 tooltipCloseDelayMs binds below, exact, and above observations",
+        "U0-THRESH-004 noticePresentationMs binds below, exact, and above observations",
+        "U0-THRESH-005 pointerDragThresholdCssPx binds below, exact, and above observations",
+        "U0-THRESH-006 projectTouchTargetCssPx binds below, exact, and above observations",
+        "U0-THRESH-007 wcagTargetFloorCssPx binds below, exact, and above observations",
+        "U0-THRESH-008 focusRingCssPx binds below, exact, and above observations",
+        "U0-THRESH-009 focusRingOffsetCssPx binds below, exact, and above observations",
+        "U0-THRESH-010 compactBreakpointCssPx binds below, exact, and above observations",
+        "U0-THRESH-011 wideBreakpointCssPx binds below, exact, and above observations",
+        "U0-THRESH-012 fastMotionMs binds below, exact, and above observations",
+        "U0-THRESH-013 deliberateMotionMs binds below, exact, and above observations",
+        "U0-THRESH-014 reducedMotionMs binds below, exact, and above observations",
+        "U0-TOPO-001 empty-rooted-forest executes the production tree preflight",
+        "U0-TOPO-002 multiple-root-forest executes the production tree preflight",
+        "U0-TOPO-003 duplicate-node-id executes the production tree preflight",
+        "U0-TOPO-004 duplicate-root-id executes the production tree preflight",
+        "U0-TOPO-005 duplicate-child-id-per-parent executes the production tree preflight",
+        "U0-TOPO-006 multiple-parents-for-nonroot executes the production tree preflight",
+        "U0-TOPO-007 nonreciprocal-parent-child executes the production tree preflight",
+        "U0-TOPO-008 unreachable-node executes the production tree preflight",
+        "U0-TOPO-009 self-cycle executes the production tree preflight",
+        "U0-TOPO-010 multi-node-cycle executes the production tree preflight",
+        "U0-TOPO-011 missing-reference executes the production tree preflight",
+        "U0-TOPO-012 tree-depth-boundary executes the production tree preflight",
+        "U0-TOPO-013 tree-traversal-boundary executes the production tree preflight",
+        "fixture binds exactly 49 U0-LIM and 14 U0-THRESH cases"
+      ]
+    },
+    {
+      "file": "tests/static/u0-contract-conformance.test.ts",
+      "titles": [
+        "U0-PRIM-001 binds all 49 render components and two behavior helpers to actual public callables",
+        "U0-PRIM-001 semantic counterfactual detects a missing implementation even when the inventory fixture remains intact"
+      ]
+    },
+    {
+      "file": "tests/static/u0-evidence-inventory.test.ts",
+      "titles": [
+        "accepts exact Bun, Playwright, cell, binding, and screenshot identities",
+        "loads the exact current inventories and verifies every reviewed source hash",
+        "rejects cell identity, producer, binding, and screenshot inventory drift",
+        "rejects reduced, renamed, duplicate, and extra Bun testcase identities",
+        "rejects reduced, renamed, duplicate, and extra Playwright identities"
+      ]
+    },
+    {
+      "file": "tests/static/u0-evidence.test.ts",
+      "titles": [
+        "accepts a three-engine Playwright report and rejects retry or producer forgery",
+        "builds passing exact-owner trace rows only from observed JUnit case names",
+        "canonicalizes and hashes evidence independently of object key order",
+        "freezes the exact 20-owner split from the reviewed trace ledger",
+        "isolates only the pinned WebKit screenshot synchronization mutation",
+        "keeps automation pending and accepts only a separate artifact-bound human ledger",
+        "keeps the public U0 evidence alias and aggregate gate wired in package order",
+        "parses sanitized exact JUnit and rejects forged counts or duplicate identities",
+        "reconstructs raw artifacts instead of trusting a re-signed summary",
+        "rejects a byte-mismatched raw cell and a case claimed by the wrong planned owner",
+        "rejects skip, todo, only, expected failure, quarantine, slow, and retry controls",
+        "rejects unsigned, stale, owner-forged, and incomplete ledgers"
+      ]
+    },
+    {
+      "file": "tests/static/u0-gallery-exclusion.test.ts",
+      "titles": [
+        "U0-PRIM-002 has the exact reviewed route and complete applicable/not-applicable partition",
+        "U0-REF-008 fresh standalone build excludes every gallery marker, label, fixture ID, and test control",
+        "is owned only by the test source graph and the production policy rejects a leak"
+      ]
+    },
+    {
+      "file": "tests/static/u0-layer-boundary.test.ts",
+      "titles": [
+        "U0-REF-006 actual source graph allows UI to import only domain/application public boundaries",
+        "U0-REF-006 counterfactual runtime, type-only, and re-export edges all refuse",
+        "U0-STALE-002 U0-STALE-003 U0-STALE-005 UI may consume application selectors but cannot reach application private modules"
+      ]
+    },
+    {
+      "file": "tests/static/u0-source-policy.test.ts",
+      "titles": [
+        "U0-PRIM-001 proves the actual project has only Preact in production and a clean source-policy graph",
+        "U0-REF-007 CSS counterfactuals reject font, import, URL, and expression sidecars",
+        "U0-REF-007 counterfactuals reject React, compatibility, component, CSS, and icon packages"
+      ]
+    },
+    {
+      "file": "tests/static/u0-token-usage.test.ts",
+      "titles": [
+        "U0-CONTRAST-001 U0-CONTRAST-002 U0-CONTRAST-003 U0-CONTRAST-004 U0-CONTRAST-005 U0-CONTRAST-006 U0-CONTRAST-007 U0-CONTRAST-008 U0-CONTRAST-009 actual token values satisfy every declared contrast cross-product",
+        "U0-CONTRAST-001 semantic counterfactual detects a low-contrast production token",
+        "U0-PRIM-012 U0-PRIM-013 U0-VIEW-005 component CSS uses declared semantic tokens without copied color literals",
+        "U0-PRIM-013 mutation controls detect copied literals, undefined references, and duplicate declarations"
+      ]
+    }
+  ],
+  "playwrightSuites": [
+    {
+      "file": "tests/e2e/u0-accessibility.spec.ts",
+      "titles": [
+        "U0-ENV-001 U0-ENV-002 U0-ENV-003 U0-PRIM-003 U0-PRIM-004 U0-PRIM-005 U0-PRIM-006 provide axe, ariaSnapshot, focus, reflow, motion, and forced-colors smoke evidence"
+      ]
+    },
+    {
+      "file": "tests/e2e/u0-focus-restoration.spec.ts",
+      "titles": [
+        "U0-OVR-001 U0-OVR-002 U0-OVR-003 U0-OVR-004 U0-OVR-005 U0-OVR-006 U0-PRIM-006 enforce modal entry, topmost dismissal, exact return, and stale fallback focus"
+      ]
+    },
+    {
+      "file": "tests/e2e/u0-keyboard.spec.ts",
+      "titles": [
+        "U0-CANCEL-002 U0-CANCEL-005 U0-ENV-004 U0-PRIM-005 U0-PRIM-006 execute native, roving, typeahead, nontrap, and cancellation keyboard paths"
+      ]
+    },
+    {
+      "file": "tests/e2e/u0-landmarks.spec.ts",
+      "titles": [
+        "U0-PRIM-003 U0-PRIM-004 U0-PRIM-018 U0-REF-010 U0-VIEW-003 expose named landmarks, native semantics, and one valid skip target"
+      ]
+    },
+    {
+      "file": "tests/e2e/u0-mobile-shell.spec.ts",
+      "titles": [
+        "U0-ENV-004 coarse-pointer mobile keeps primary actions at 44 CSS px and exposes complete non-drag alternatives",
+        "U0-ENV-005 nonzero safe-area insets keep header sheet and transport controls reachable",
+        "U0-ENV-006 virtual-keyboard viewport contraction preserves draft authority and operability",
+        "U0-OVR-008 mobile sheet opened from an active dialog remains a named nonmodal descendant with one modal scope",
+        "U0-VIEW-001 U0-REF-009 sheets retain chart context and never obscure transport",
+        "U0-VIEW-002 U0-REF-009 sheets retain chart context and never obscure transport"
+      ]
+    },
+    {
+      "file": "tests/e2e/u0-nonhappy-states.spec.ts",
+      "titles": [
+        "U0-STATE-001 U0-STATE-002 U0-STATE-003 U0-STATE-004 U0-STATE-007 U0-STATE-008 U0-STATE-009 U0-STATE-015 U0-STATE-016 U0-STATE-017 U0-STATE-020 preserve user data and expose one safe recovery action"
+      ]
+    },
+    {
+      "file": "tests/e2e/u0-overlays.spec.ts",
+      "titles": [
+        "U0-OVR-001 U0-OVR-003 U0-OVR-004 U0-OVR-005 U0-CANCEL-004 keep one modal inert scope and preserve the document on Close or Cancel",
+        "U0-OVR-002 U0-OVR-009 U0-OVR-010 U0-CANCEL-003 dismiss only the top menu, popover, or tooltip without stealing valid focus",
+        "U0-OVR-006 U0-REF-003 U0-STALE-004 refuse a stale owner on open and use the declared fallback after trigger deletion",
+        "U0-OVR-007 U0-OVR-008 U0-OVR-012 U0-REF-001 arbitrate one modal, a nonmodal mobile descendant, and exact dismissal-depth bounds",
+        "U0-OVR-011 gives the alert dialog a named consequence and least-destructive initial focus",
+        "U0-REF-002 keeps visible Close and Cancel affordances on every rendered dismissible dialog"
+      ]
+    },
+    {
+      "file": "tests/e2e/u0-reflow.spec.ts",
+      "titles": [
+        "U0-ENV-001 separate 200-percent scale and effective CSS viewport evidence remains operable",
+        "U0-ENV-008 U0-VIEW-001 U0-REF-004 U0-REF-005 actual 320 CSS px reflows without device guesses or zoom blocking"
+      ]
+    },
+    {
+      "file": "tests/e2e/u0-system-status.spec.ts",
+      "titles": [
+        "U0-STALE-001 U0-STATE-004 U0-STATE-005 U0-STATE-006 U0-STATE-007 U0-STATE-008 U0-STATE-009 U0-STATE-010 U0-STATE-011 U0-STATE-012 U0-STATE-013 U0-STATE-014 U0-STATE-015 U0-STATE-016 U0-STATE-018 U0-STATE-019 U0-STATE-020 expose restrained live status, preservation, and a safe next action"
+      ]
+    },
+    {
+      "file": "tests/e2e/u0-touch-targets.spec.ts",
+      "titles": [
+        "U0-ENV-004 U0-PRIM-015 U0-PRIM-016 enforces 24 and 44 CSS px target policies with complete alternatives"
+      ]
+    },
+    {
+      "file": "tests/visual/u0-component-gallery.spec.ts",
+      "titles": [
+        "keeps the production shell hosts in flattened release DOM order",
+        "proves Field relationships, Tree pointer semantics, and the default resize hit box",
+        "serves the exact test route and renders the reviewed matrix in isolation"
+      ]
+    },
+    {
+      "file": "tests/visual/u0-forced-colors.spec.ts",
+      "titles": [
+        "U0-ENV-002 U0-PRIM-013 U0-PRIM-019 forced colors preserve focus selection error playhead and overlay boundaries",
+        "U0-ENV-007 prefers-contrast-more strengthens separation without changing semantic order"
+      ]
+    },
+    {
+      "file": "tests/visual/u0-reduced-motion.spec.ts",
+      "titles": [
+        "U0-ENV-003 U0-PRIM-014 reduced motion removes pulse shimmer transforms and smooth scrolling while interactions remain perceivable"
+      ]
+    },
+    {
+      "file": "tests/visual/u0-responsive-shell.spec.ts",
+      "titles": [
+        "U0-VIEW-003 U0-PRIM-012 real built shell matches its reviewed responsive mode",
+        "U0-VIEW-004 real built shell matches its reviewed responsive mode",
+        "U0-VIEW-005 real built shell matches its reviewed responsive mode"
+      ]
+    }
+  ],
+  "browserCells": [
+    {
+      "cellId": "u0-accessibility-axe-aria-manual-ledger",
+      "producer": {
+        "file": "tests/e2e/u0-accessibility.spec.ts",
+        "title": "U0-ENV-001 U0-ENV-002 U0-ENV-003 U0-PRIM-003 U0-PRIM-004 U0-PRIM-005 U0-PRIM-006 provide axe, ariaSnapshot, focus, reflow, motion, and forced-colors smoke evidence"
+      },
+      "bindings": [
+        {
+          "caseId": "U0-ENV-001",
+          "traceIds": [
+            "TR-U0-AXE"
+          ]
+        },
+        {
+          "caseId": "U0-ENV-002",
+          "traceIds": [
+            "TR-U0-AXE"
+          ]
+        },
+        {
+          "caseId": "U0-ENV-003",
+          "traceIds": [
+            "TR-U0-AXE"
+          ]
+        },
+        {
+          "caseId": "U0-PRIM-003",
+          "traceIds": [
+            "TR-U0-AXE"
+          ]
+        },
+        {
+          "caseId": "U0-PRIM-004",
+          "traceIds": [
+            "TR-U0-AXE"
+          ]
+        },
+        {
+          "caseId": "U0-PRIM-005",
+          "traceIds": [
+            "TR-U0-AXE"
+          ]
+        },
+        {
+          "caseId": "U0-PRIM-006",
+          "traceIds": [
+            "TR-U0-AXE"
+          ]
+        }
+      ],
+      "screenshots": {
+        "chromium": [],
+        "firefox": [],
+        "webkit": []
+      }
+    },
+    {
+      "cellId": "u0-focus-entry-exact-stale-fallback",
+      "producer": {
+        "file": "tests/e2e/u0-focus-restoration.spec.ts",
+        "title": "U0-OVR-001 U0-OVR-002 U0-OVR-003 U0-OVR-004 U0-OVR-005 U0-OVR-006 U0-PRIM-006 enforce modal entry, topmost dismissal, exact return, and stale fallback focus"
+      },
+      "bindings": [
+        {
+          "caseId": "U0-OVR-001",
+          "traceIds": [
+            "TR-U0-FOCUS"
+          ]
+        },
+        {
+          "caseId": "U0-OVR-002",
+          "traceIds": [
+            "TR-U0-FOCUS"
+          ]
+        },
+        {
+          "caseId": "U0-OVR-003",
+          "traceIds": [
+            "TR-U0-FOCUS"
+          ]
+        },
+        {
+          "caseId": "U0-OVR-004",
+          "traceIds": [
+            "TR-U0-FOCUS"
+          ]
+        },
+        {
+          "caseId": "U0-OVR-005",
+          "traceIds": [
+            "TR-U0-FOCUS"
+          ]
+        },
+        {
+          "caseId": "U0-OVR-006",
+          "traceIds": [
+            "TR-U0-FOCUS"
+          ]
+        },
+        {
+          "caseId": "U0-PRIM-006",
+          "traceIds": [
+            "TR-U0-FOCUS"
+          ]
+        }
+      ],
+      "screenshots": {
+        "chromium": [],
+        "firefox": [],
+        "webkit": []
+      }
+    },
+    {
+      "cellId": "u0-keyboard-roving-cancellation",
+      "producer": {
+        "file": "tests/e2e/u0-keyboard.spec.ts",
+        "title": "U0-CANCEL-002 U0-CANCEL-005 U0-ENV-004 U0-PRIM-005 U0-PRIM-006 execute native, roving, typeahead, nontrap, and cancellation keyboard paths"
+      },
+      "bindings": [
+        {
+          "caseId": "U0-CANCEL-002",
+          "traceIds": [
+            "TR-U0-KEYBOARD"
+          ]
+        },
+        {
+          "caseId": "U0-CANCEL-005",
+          "traceIds": [
+            "TR-U0-KEYBOARD"
+          ]
+        },
+        {
+          "caseId": "U0-ENV-004",
+          "traceIds": [
+            "TR-U0-KEYBOARD"
+          ]
+        },
+        {
+          "caseId": "U0-PRIM-005",
+          "traceIds": [
+            "TR-U0-KEYBOARD"
+          ]
+        },
+        {
+          "caseId": "U0-PRIM-006",
+          "traceIds": [
+            "TR-U0-KEYBOARD"
+          ]
+        }
+      ],
+      "screenshots": {
+        "chromium": [],
+        "firefox": [],
+        "webkit": []
+      }
+    },
+    {
+      "cellId": "u0-landmarks-balanced-native-semantics",
+      "producer": {
+        "file": "tests/e2e/u0-landmarks.spec.ts",
+        "title": "U0-PRIM-003 U0-PRIM-004 U0-PRIM-018 U0-REF-010 U0-VIEW-003 expose named landmarks, native semantics, and one valid skip target"
+      },
+      "bindings": [
+        {
+          "caseId": "U0-PRIM-003",
+          "traceIds": [
+            "TR-U0-LANDMARKS"
+          ]
+        },
+        {
+          "caseId": "U0-PRIM-004",
+          "traceIds": [
+            "TR-U0-LANDMARKS"
+          ]
+        },
+        {
+          "caseId": "U0-PRIM-018",
+          "traceIds": [
+            "TR-U0-LANDMARKS"
+          ]
+        },
+        {
+          "caseId": "U0-REF-010",
+          "traceIds": [
+            "TR-U0-LANDMARKS"
+          ]
+        },
+        {
+          "caseId": "U0-VIEW-003",
+          "traceIds": [
+            "TR-U0-LANDMARKS"
+          ]
+        }
+      ],
+      "screenshots": {
+        "chromium": [],
+        "firefox": [],
+        "webkit": []
+      }
+    },
+    {
+      "cellId": "U0-ENV-004-mobile-coarse-pointer",
+      "producer": {
+        "file": "tests/e2e/u0-mobile-shell.spec.ts",
+        "title": "U0-ENV-004 coarse-pointer mobile keeps primary actions at 44 CSS px and exposes complete non-drag alternatives"
+      },
+      "bindings": [
+        {
+          "caseId": "U0-ENV-004",
+          "traceIds": [
+            "TR-U0-MOBILE"
+          ]
+        }
+      ],
+      "screenshots": {
+        "chromium": [
+          "U0-ENV-004-mobile-chromium.png"
+        ],
+        "firefox": [
+          "U0-ENV-004-mobile-firefox.png"
+        ],
+        "webkit": [
+          "U0-ENV-004-mobile-webkit.png"
+        ]
+      }
+    },
+    {
+      "cellId": "U0-ENV-005-safe-area",
+      "producer": {
+        "file": "tests/e2e/u0-mobile-shell.spec.ts",
+        "title": "U0-ENV-005 nonzero safe-area insets keep header sheet and transport controls reachable"
+      },
+      "bindings": [
+        {
+          "caseId": "U0-ENV-005",
+          "traceIds": [
+            "TR-U0-MOBILE"
+          ]
+        }
+      ],
+      "screenshots": {
+        "chromium": [
+          "U0-ENV-005-chromium.png"
+        ],
+        "firefox": [
+          "U0-ENV-005-firefox.png"
+        ],
+        "webkit": [
+          "U0-ENV-005-webkit.png"
+        ]
+      }
+    },
+    {
+      "cellId": "U0-ENV-006-virtual-keyboard",
+      "producer": {
+        "file": "tests/e2e/u0-mobile-shell.spec.ts",
+        "title": "U0-ENV-006 virtual-keyboard viewport contraction preserves draft authority and operability"
+      },
+      "bindings": [
+        {
+          "caseId": "U0-ENV-006",
+          "traceIds": [
+            "TR-U0-MOBILE"
+          ]
+        }
+      ],
+      "screenshots": {
+        "chromium": [
+          "U0-ENV-006-chromium.png"
+        ],
+        "firefox": [
+          "U0-ENV-006-firefox.png"
+        ],
+        "webkit": [
+          "U0-ENV-006-webkit.png"
+        ]
+      }
+    },
+    {
+      "cellId": "U0-OVR-008-mobile-modal-arbitration",
+      "producer": {
+        "file": "tests/e2e/u0-mobile-shell.spec.ts",
+        "title": "U0-OVR-008 mobile sheet opened from an active dialog remains a named nonmodal descendant with one modal scope"
+      },
+      "bindings": [
+        {
+          "caseId": "U0-OVR-008",
+          "traceIds": [
+            "TR-U0-MOBILE"
+          ]
+        }
+      ],
+      "screenshots": {
+        "chromium": [],
+        "firefox": [],
+        "webkit": []
+      }
+    },
+    {
+      "cellId": "U0-VIEW-001-mobile-shell",
+      "producer": {
+        "file": "tests/e2e/u0-mobile-shell.spec.ts",
+        "title": "U0-VIEW-001 U0-REF-009 sheets retain chart context and never obscure transport"
+      },
+      "bindings": [
+        {
+          "caseId": "U0-VIEW-001",
+          "traceIds": [
+            "TR-U0-MOBILE"
+          ]
+        },
+        {
+          "caseId": "U0-REF-009",
+          "traceIds": [
+            "TR-U0-MOBILE"
+          ]
+        }
+      ],
+      "screenshots": {
+        "chromium": [
+          "U0-VIEW-001-chromium-closed.png"
+        ],
+        "firefox": [
+          "U0-VIEW-001-firefox-closed.png"
+        ],
+        "webkit": [
+          "U0-VIEW-001-webkit-closed.png"
+        ]
+      }
+    },
+    {
+      "cellId": "U0-VIEW-002-mobile-shell",
+      "producer": {
+        "file": "tests/e2e/u0-mobile-shell.spec.ts",
+        "title": "U0-VIEW-002 U0-REF-009 sheets retain chart context and never obscure transport"
+      },
+      "bindings": [
+        {
+          "caseId": "U0-VIEW-002",
+          "traceIds": [
+            "TR-U0-MOBILE"
+          ]
+        },
+        {
+          "caseId": "U0-REF-009",
+          "traceIds": [
+            "TR-U0-MOBILE"
+          ]
+        }
+      ],
+      "screenshots": {
+        "chromium": [
+          "U0-VIEW-002-chromium-closed.png"
+        ],
+        "firefox": [
+          "U0-VIEW-002-firefox-closed.png"
+        ],
+        "webkit": [
+          "U0-VIEW-002-webkit-closed.png"
+        ]
+      }
+    },
+    {
+      "cellId": "u0-nonhappy-preservation-safe-actions",
+      "producer": {
+        "file": "tests/e2e/u0-nonhappy-states.spec.ts",
+        "title": "U0-STATE-001 U0-STATE-002 U0-STATE-003 U0-STATE-004 U0-STATE-007 U0-STATE-008 U0-STATE-009 U0-STATE-015 U0-STATE-016 U0-STATE-017 U0-STATE-020 preserve user data and expose one safe recovery action"
+      },
+      "bindings": [
+        {
+          "caseId": "U0-STATE-001",
+          "traceIds": [
+            "TR-U0-EMPTY-ERROR"
+          ]
+        },
+        {
+          "caseId": "U0-STATE-002",
+          "traceIds": [
+            "TR-U0-EMPTY-ERROR"
+          ]
+        },
+        {
+          "caseId": "U0-STATE-003",
+          "traceIds": [
+            "TR-U0-EMPTY-ERROR"
+          ]
+        },
+        {
+          "caseId": "U0-STATE-004",
+          "traceIds": [
+            "TR-U0-EMPTY-ERROR"
+          ]
+        },
+        {
+          "caseId": "U0-STATE-007",
+          "traceIds": [
+            "TR-U0-EMPTY-ERROR"
+          ]
+        },
+        {
+          "caseId": "U0-STATE-008",
+          "traceIds": [
+            "TR-U0-EMPTY-ERROR"
+          ]
+        },
+        {
+          "caseId": "U0-STATE-009",
+          "traceIds": [
+            "TR-U0-EMPTY-ERROR"
+          ]
+        },
+        {
+          "caseId": "U0-STATE-015",
+          "traceIds": [
+            "TR-U0-EMPTY-ERROR"
+          ]
+        },
+        {
+          "caseId": "U0-STATE-016",
+          "traceIds": [
+            "TR-U0-EMPTY-ERROR"
+          ]
+        },
+        {
+          "caseId": "U0-STATE-017",
+          "traceIds": [
+            "TR-U0-EMPTY-ERROR"
+          ]
+        },
+        {
+          "caseId": "U0-STATE-020",
+          "traceIds": [
+            "TR-U0-EMPTY-ERROR"
+          ]
+        }
+      ],
+      "screenshots": {
+        "chromium": [],
+        "firefox": [],
+        "webkit": []
+      }
+    },
+    {
+      "cellId": "u0-overlay-modal-close-cancel",
+      "producer": {
+        "file": "tests/e2e/u0-overlays.spec.ts",
+        "title": "U0-OVR-001 U0-OVR-003 U0-OVR-004 U0-OVR-005 U0-CANCEL-004 keep one modal inert scope and preserve the document on Close or Cancel"
+      },
+      "bindings": [
+        {
+          "caseId": "U0-OVR-001",
+          "traceIds": [
+            "TR-U0-OVERLAY"
+          ]
+        },
+        {
+          "caseId": "U0-OVR-003",
+          "traceIds": [
+            "TR-U0-OVERLAY"
+          ]
+        },
+        {
+          "caseId": "U0-OVR-004",
+          "traceIds": [
+            "TR-U0-OVERLAY"
+          ]
+        },
+        {
+          "caseId": "U0-OVR-005",
+          "traceIds": [
+            "TR-U0-OVERLAY"
+          ]
+        },
+        {
+          "caseId": "U0-CANCEL-004",
+          "traceIds": [
+            "TR-U0-OVERLAY"
+          ]
+        }
+      ],
+      "screenshots": {
+        "chromium": [],
+        "firefox": [],
+        "webkit": []
+      }
+    },
+    {
+      "cellId": "u0-overlay-topmost-transients",
+      "producer": {
+        "file": "tests/e2e/u0-overlays.spec.ts",
+        "title": "U0-OVR-002 U0-OVR-009 U0-OVR-010 U0-CANCEL-003 dismiss only the top menu, popover, or tooltip without stealing valid focus"
+      },
+      "bindings": [
+        {
+          "caseId": "U0-OVR-002",
+          "traceIds": [
+            "TR-U0-OVERLAY"
+          ]
+        },
+        {
+          "caseId": "U0-OVR-009",
+          "traceIds": [
+            "TR-U0-OVERLAY"
+          ]
+        },
+        {
+          "caseId": "U0-OVR-010",
+          "traceIds": [
+            "TR-U0-OVERLAY"
+          ]
+        },
+        {
+          "caseId": "U0-CANCEL-003",
+          "traceIds": [
+            "TR-U0-OVERLAY"
+          ]
+        }
+      ],
+      "screenshots": {
+        "chromium": [],
+        "firefox": [],
+        "webkit": []
+      }
+    },
+    {
+      "cellId": "u0-overlay-stale-owner",
+      "producer": {
+        "file": "tests/e2e/u0-overlays.spec.ts",
+        "title": "U0-OVR-006 U0-REF-003 U0-STALE-004 refuse a stale owner on open and use the declared fallback after trigger deletion"
+      },
+      "bindings": [
+        {
+          "caseId": "U0-OVR-006",
+          "traceIds": [
+            "TR-U0-OVERLAY"
+          ]
+        },
+        {
+          "caseId": "U0-REF-003",
+          "traceIds": [
+            "TR-U0-OVERLAY"
+          ]
+        },
+        {
+          "caseId": "U0-STALE-004",
+          "traceIds": [
+            "TR-U0-OVERLAY"
+          ]
+        }
+      ],
+      "screenshots": {
+        "chromium": [],
+        "firefox": [],
+        "webkit": []
+      }
+    },
+    {
+      "cellId": "u0-overlay-limits-mobile-sheet",
+      "producer": {
+        "file": "tests/e2e/u0-overlays.spec.ts",
+        "title": "U0-OVR-007 U0-OVR-008 U0-OVR-012 U0-REF-001 arbitrate one modal, a nonmodal mobile descendant, and exact dismissal-depth bounds"
+      },
+      "bindings": [
+        {
+          "caseId": "U0-OVR-007",
+          "traceIds": [
+            "TR-U0-OVERLAY"
+          ]
+        },
+        {
+          "caseId": "U0-OVR-008",
+          "traceIds": [
+            "TR-U0-OVERLAY"
+          ]
+        },
+        {
+          "caseId": "U0-OVR-012",
+          "traceIds": [
+            "TR-U0-OVERLAY"
+          ]
+        },
+        {
+          "caseId": "U0-REF-001",
+          "traceIds": [
+            "TR-U0-OVERLAY"
+          ]
+        }
+      ],
+      "screenshots": {
+        "chromium": [],
+        "firefox": [],
+        "webkit": []
+      }
+    },
+    {
+      "cellId": "u0-overlay-alert-safe-default",
+      "producer": {
+        "file": "tests/e2e/u0-overlays.spec.ts",
+        "title": "U0-OVR-011 gives the alert dialog a named consequence and least-destructive initial focus"
+      },
+      "bindings": [
+        {
+          "caseId": "U0-OVR-011",
+          "traceIds": [
+            "TR-U0-OVERLAY"
+          ]
+        }
+      ],
+      "screenshots": {
+        "chromium": [],
+        "firefox": [],
+        "webkit": []
+      }
+    },
+    {
+      "cellId": "u0-overlay-visible-dismiss-affordances",
+      "producer": {
+        "file": "tests/e2e/u0-overlays.spec.ts",
+        "title": "U0-REF-002 keeps visible Close and Cancel affordances on every rendered dismissible dialog"
+      },
+      "bindings": [
+        {
+          "caseId": "U0-REF-002",
+          "traceIds": [
+            "TR-U0-OVERLAY"
+          ]
+        }
+      ],
+      "screenshots": {
+        "chromium": [],
+        "firefox": [],
+        "webkit": []
+      }
+    },
+    {
+      "cellId": "U0-ENV-001-200-percent-zoom",
+      "producer": {
+        "file": "tests/e2e/u0-reflow.spec.ts",
+        "title": "U0-ENV-001 separate 200-percent scale and effective CSS viewport evidence remains operable"
+      },
+      "bindings": [
+        {
+          "caseId": "U0-ENV-001",
+          "traceIds": [
+            "TR-U0-REFLOW"
+          ]
+        }
+      ],
+      "screenshots": {
+        "chromium": [
+          "U0-ENV-001-chromium.png"
+        ],
+        "firefox": [
+          "U0-ENV-001-firefox.png"
+        ],
+        "webkit": [
+          "U0-ENV-001-webkit.png"
+        ]
+      }
+    },
+    {
+      "cellId": "U0-ENV-008-actual-320-reflow",
+      "producer": {
+        "file": "tests/e2e/u0-reflow.spec.ts",
+        "title": "U0-ENV-008 U0-VIEW-001 U0-REF-004 U0-REF-005 actual 320 CSS px reflows without device guesses or zoom blocking"
+      },
+      "bindings": [
+        {
+          "caseId": "U0-ENV-008",
+          "traceIds": [
+            "TR-U0-REFLOW"
+          ]
+        },
+        {
+          "caseId": "U0-VIEW-001",
+          "traceIds": [
+            "TR-U0-REFLOW"
+          ]
+        },
+        {
+          "caseId": "U0-REF-004",
+          "traceIds": [
+            "TR-U0-REFLOW"
+          ]
+        },
+        {
+          "caseId": "U0-REF-005",
+          "traceIds": [
+            "TR-U0-REFLOW"
+          ]
+        }
+      ],
+      "screenshots": {
+        "chromium": [
+          "U0-ENV-008-chromium.png"
+        ],
+        "firefox": [
+          "U0-ENV-008-firefox.png"
+        ],
+        "webkit": [
+          "U0-ENV-008-webkit.png"
+        ]
+      }
+    },
+    {
+      "cellId": "u0-system-status-live-preservation-actions",
+      "producer": {
+        "file": "tests/e2e/u0-system-status.spec.ts",
+        "title": "U0-STALE-001 U0-STATE-004 U0-STATE-005 U0-STATE-006 U0-STATE-007 U0-STATE-008 U0-STATE-009 U0-STATE-010 U0-STATE-011 U0-STATE-012 U0-STATE-013 U0-STATE-014 U0-STATE-015 U0-STATE-016 U0-STATE-018 U0-STATE-019 U0-STATE-020 expose restrained live status, preservation, and a safe next action"
+      },
+      "bindings": [
+        {
+          "caseId": "U0-STALE-001",
+          "traceIds": [
+            "TR-U0-STATUS"
+          ]
+        },
+        {
+          "caseId": "U0-STATE-004",
+          "traceIds": [
+            "TR-U0-STATUS"
+          ]
+        },
+        {
+          "caseId": "U0-STATE-005",
+          "traceIds": [
+            "TR-U0-STATUS"
+          ]
+        },
+        {
+          "caseId": "U0-STATE-006",
+          "traceIds": [
+            "TR-U0-STATUS"
+          ]
+        },
+        {
+          "caseId": "U0-STATE-007",
+          "traceIds": [
+            "TR-U0-STATUS"
+          ]
+        },
+        {
+          "caseId": "U0-STATE-008",
+          "traceIds": [
+            "TR-U0-STATUS"
+          ]
+        },
+        {
+          "caseId": "U0-STATE-009",
+          "traceIds": [
+            "TR-U0-STATUS"
+          ]
+        },
+        {
+          "caseId": "U0-STATE-010",
+          "traceIds": [
+            "TR-U0-STATUS"
+          ]
+        },
+        {
+          "caseId": "U0-STATE-011",
+          "traceIds": [
+            "TR-U0-STATUS"
+          ]
+        },
+        {
+          "caseId": "U0-STATE-012",
+          "traceIds": [
+            "TR-U0-STATUS"
+          ]
+        },
+        {
+          "caseId": "U0-STATE-013",
+          "traceIds": [
+            "TR-U0-STATUS"
+          ]
+        },
+        {
+          "caseId": "U0-STATE-014",
+          "traceIds": [
+            "TR-U0-STATUS"
+          ]
+        },
+        {
+          "caseId": "U0-STATE-015",
+          "traceIds": [
+            "TR-U0-STATUS"
+          ]
+        },
+        {
+          "caseId": "U0-STATE-016",
+          "traceIds": [
+            "TR-U0-STATUS"
+          ]
+        },
+        {
+          "caseId": "U0-STATE-018",
+          "traceIds": [
+            "TR-U0-STATUS"
+          ]
+        },
+        {
+          "caseId": "U0-STATE-019",
+          "traceIds": [
+            "TR-U0-STATUS"
+          ]
+        },
+        {
+          "caseId": "U0-STATE-020",
+          "traceIds": [
+            "TR-U0-STATUS"
+          ]
+        }
+      ],
+      "screenshots": {
+        "chromium": [],
+        "firefox": [],
+        "webkit": []
+      }
+    },
+    {
+      "cellId": "U0-ENV-004-touch-targets",
+      "producer": {
+        "file": "tests/e2e/u0-touch-targets.spec.ts",
+        "title": "U0-ENV-004 U0-PRIM-015 U0-PRIM-016 enforces 24 and 44 CSS px target policies with complete alternatives"
+      },
+      "bindings": [
+        {
+          "caseId": "U0-ENV-004",
+          "traceIds": [
+            "TR-U0-TOUCH"
+          ]
+        },
+        {
+          "caseId": "U0-PRIM-015",
+          "traceIds": [
+            "TR-U0-TOUCH"
+          ]
+        },
+        {
+          "caseId": "U0-PRIM-016",
+          "traceIds": [
+            "TR-U0-TOUCH"
+          ]
+        }
+      ],
+      "screenshots": {
+        "chromium": [
+          "U0-ENV-004-chromium.png"
+        ],
+        "firefox": [
+          "U0-ENV-004-firefox.png"
+        ],
+        "webkit": [
+          "U0-ENV-004-webkit.png"
+        ]
+      }
+    },
+    {
+      "cellId": "TR-U0-STATES-component-gallery",
+      "producer": {
+        "file": "tests/visual/u0-component-gallery.spec.ts",
+        "title": "serves the exact test route and renders the reviewed matrix in isolation"
+      },
+      "bindings": [
+        {
+          "caseId": "U0-CANCEL-001",
+          "traceIds": [
+            "TR-U0-STATES"
+          ]
+        },
+        {
+          "caseId": "U0-ENV-001",
+          "traceIds": [
+            "TR-U0-STATES"
+          ]
+        },
+        {
+          "caseId": "U0-PRIM-002",
+          "traceIds": [
+            "TR-U0-STATES"
+          ]
+        },
+        {
+          "caseId": "U0-PRIM-007",
+          "traceIds": [
+            "TR-U0-STATES"
+          ]
+        },
+        {
+          "caseId": "U0-PRIM-008",
+          "traceIds": [
+            "TR-U0-STATES"
+          ]
+        },
+        {
+          "caseId": "U0-PRIM-009",
+          "traceIds": [
+            "TR-U0-STATES"
+          ]
+        },
+        {
+          "caseId": "U0-PRIM-010",
+          "traceIds": [
+            "TR-U0-STATES"
+          ]
+        },
+        {
+          "caseId": "U0-PRIM-011",
+          "traceIds": [
+            "TR-U0-STATES"
+          ]
+        },
+        {
+          "caseId": "U0-PRIM-012",
+          "traceIds": [
+            "TR-U0-STATES"
+          ]
+        },
+        {
+          "caseId": "U0-PRIM-017",
+          "traceIds": [
+            "TR-U0-STATES"
+          ]
+        },
+        {
+          "caseId": "U0-PRIM-020",
+          "traceIds": [
+            "TR-U0-STATES"
+          ]
+        },
+        {
+          "caseId": "U0-PRIM-021",
+          "traceIds": [
+            "TR-U0-STATES"
+          ]
+        }
+      ],
+      "screenshots": {
+        "chromium": [],
+        "firefox": [],
+        "webkit": []
+      }
+    },
+    {
+      "cellId": "U0-ENV-002-forced-colors",
+      "producer": {
+        "file": "tests/visual/u0-forced-colors.spec.ts",
+        "title": "U0-ENV-002 U0-PRIM-013 U0-PRIM-019 forced colors preserve focus selection error playhead and overlay boundaries"
+      },
+      "bindings": [
+        {
+          "caseId": "U0-ENV-002",
+          "traceIds": [
+            "TR-U0-FORCED"
+          ]
+        },
+        {
+          "caseId": "U0-PRIM-013",
+          "traceIds": [
+            "TR-U0-FORCED"
+          ]
+        },
+        {
+          "caseId": "U0-PRIM-019",
+          "traceIds": [
+            "TR-U0-FORCED"
+          ]
+        }
+      ],
+      "screenshots": {
+        "chromium": [
+          "U0-ENV-002-artifact-chromium.png",
+          "U0-ENV-002-gallery-chromium.png"
+        ],
+        "firefox": [
+          "U0-ENV-002-artifact-firefox.png",
+          "U0-ENV-002-gallery-firefox.png"
+        ],
+        "webkit": [
+          "U0-ENV-002-artifact-webkit.png",
+          "U0-ENV-002-gallery-webkit.png"
+        ]
+      }
+    },
+    {
+      "cellId": "U0-ENV-007-prefers-contrast",
+      "producer": {
+        "file": "tests/visual/u0-forced-colors.spec.ts",
+        "title": "U0-ENV-007 prefers-contrast-more strengthens separation without changing semantic order"
+      },
+      "bindings": [
+        {
+          "caseId": "U0-ENV-007",
+          "traceIds": [
+            "TR-U0-FORCED"
+          ]
+        }
+      ],
+      "screenshots": {
+        "chromium": [
+          "U0-ENV-007-chromium.png"
+        ],
+        "firefox": [
+          "U0-ENV-007-firefox.png"
+        ],
+        "webkit": [
+          "U0-ENV-007-webkit.png"
+        ]
+      }
+    },
+    {
+      "cellId": "U0-ENV-003-reduced-motion",
+      "producer": {
+        "file": "tests/visual/u0-reduced-motion.spec.ts",
+        "title": "U0-ENV-003 U0-PRIM-014 reduced motion removes pulse shimmer transforms and smooth scrolling while interactions remain perceivable"
+      },
+      "bindings": [
+        {
+          "caseId": "U0-ENV-003",
+          "traceIds": [
+            "TR-U0-MOTION"
+          ]
+        },
+        {
+          "caseId": "U0-PRIM-014",
+          "traceIds": [
+            "TR-U0-MOTION"
+          ]
+        }
+      ],
+      "screenshots": {
+        "chromium": [
+          "U0-ENV-003-artifact-chromium.png",
+          "U0-ENV-003-gallery-chromium.png"
+        ],
+        "firefox": [
+          "U0-ENV-003-artifact-firefox.png",
+          "U0-ENV-003-gallery-firefox.png"
+        ],
+        "webkit": [
+          "U0-ENV-003-artifact-webkit.png",
+          "U0-ENV-003-gallery-webkit.png"
+        ]
+      }
+    },
+    {
+      "cellId": "U0-VIEW-003-responsive-shell",
+      "producer": {
+        "file": "tests/visual/u0-responsive-shell.spec.ts",
+        "title": "U0-VIEW-003 U0-PRIM-012 real built shell matches its reviewed responsive mode"
+      },
+      "bindings": [
+        {
+          "caseId": "U0-VIEW-003",
+          "traceIds": [
+            "TR-U0-SHELL"
+          ]
+        },
+        {
+          "caseId": "U0-PRIM-012",
+          "traceIds": [
+            "TR-U0-SHELL"
+          ]
+        }
+      ],
+      "screenshots": {
+        "chromium": [
+          "U0-VIEW-003-chromium.png"
+        ],
+        "firefox": [
+          "U0-VIEW-003-firefox.png"
+        ],
+        "webkit": [
+          "U0-VIEW-003-webkit.png"
+        ]
+      }
+    },
+    {
+      "cellId": "U0-VIEW-004-responsive-shell",
+      "producer": {
+        "file": "tests/visual/u0-responsive-shell.spec.ts",
+        "title": "U0-VIEW-004 real built shell matches its reviewed responsive mode"
+      },
+      "bindings": [
+        {
+          "caseId": "U0-VIEW-004",
+          "traceIds": [
+            "TR-U0-SHELL"
+          ]
+        }
+      ],
+      "screenshots": {
+        "chromium": [
+          "U0-VIEW-004-chromium.png"
+        ],
+        "firefox": [
+          "U0-VIEW-004-firefox.png"
+        ],
+        "webkit": [
+          "U0-VIEW-004-webkit.png"
+        ]
+      }
+    },
+    {
+      "cellId": "U0-VIEW-005-responsive-shell",
+      "producer": {
+        "file": "tests/visual/u0-responsive-shell.spec.ts",
+        "title": "U0-VIEW-005 real built shell matches its reviewed responsive mode"
+      },
+      "bindings": [
+        {
+          "caseId": "U0-VIEW-005",
+          "traceIds": [
+            "TR-U0-SHELL"
+          ]
+        }
+      ],
+      "screenshots": {
+        "chromium": [
+          "U0-VIEW-005-chromium.png"
+        ],
+        "firefox": [
+          "U0-VIEW-005-firefox.png"
+        ],
+        "webkit": [
+          "U0-VIEW-005-webkit.png"
+        ]
+      }
+    }
+  ]
+}

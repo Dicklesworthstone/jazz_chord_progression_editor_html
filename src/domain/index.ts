@@ -110,6 +110,11 @@ export {
   DOCUMENT_IMPORT_BYTE_ISSUE_CODES,
   DOCUMENT_SHAPE_ISSUE_CODES,
 } from "./document-decoder-contract";
+export {
+  decodeDocumentShape,
+  documentDecodeOperations,
+  preflightDocumentImportBytes,
+} from "./document-decoder";
 export { domainOperations } from "./operations";
 
 export type {

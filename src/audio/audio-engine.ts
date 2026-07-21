@@ -1,0 +1,2251 @@
+import {
+  makeInstrumentId,
+  makeMidiPitch,
+  type InstrumentId,
+  type MidiPitch,
+} from "../domain";
+import {
+  ActiveVoiceRegistry,
+  compareSynthVoiceIdentity,
+} from "./active-voice-registry";
+import {
+  createPulsePeriodicWave,
+  createSoftClipCurve,
+  evaluateLinearAutomation,
+  holdAudioParamAtTime,
+  writeDeterministicImpulse,
+  type LinearAutomation,
+} from "./audio-dsp";
+import {
+  AUDIO_CONTEXT_CREATION_OPTIONS,
+  AUDIO_ENGINE_SNAPSHOT_SCHEMA,
+  AUDIO_ID_PATTERN_SOURCE,
+  AUDIO_MIX_POLICY,
+  MAX_AUDIO_DEBUG_EVENTS,
+  MAX_AUDIO_GATE_SECONDS,
+  MAX_AUDIO_GENERATION,
+  MAX_AUDIO_GESTURE_SEQUENCE,
+  MAX_AUDIO_ID_ASCII_LENGTH,
+  MAX_AUDIO_INTERNAL_SEQUENCE,
+  MAX_AUDIO_NONRELEASING_VOICES,
+  MAX_AUDIO_PREVIEW_VOICES,
+  MAX_AUDIO_PROGRESSION_VOICES,
+  MAX_AUDIO_RETAINED_VOICES,
+  MAX_AUDIO_SCHEDULE_LOOKAHEAD_SECONDS,
+  MAX_AUDIO_VOICES_PER_BATCH,
+  MIN_AUDIO_GATE_SECONDS,
+  type AudioAttackBatchRequest,
+  type AudioAttackReceipt,
+  type AudioDebugEvent,
+  type AudioDebugEventKind,
+  type AudioDisposeReceipt,
+  type AudioEngine,
+  type AudioEngineRefusalCode,
+  type AudioEngineResult,
+  type AudioEngineSnapshot,
+  type AudioEngineState,
+  type AudioEngineWorkCounters,
+  type AudioInitializationReceipt,
+  type AudioMix,
+  type AudioMixReceipt,
+  type AudioRetireRequest,
+  type AudioRetirementReceipt,
+  type AudioRetirementSelector,
+  type AudioUserGestureReceipt,
+  type AudioVoiceOwner,
+} from "./audio-engine-contract";
+import type {
+  AudioContextPort,
+  AudioContextStatePort,
+  AudioNodePort,
+  AudioPlatform,
+  BiquadFilterNodePort,
+  ConvolverNodePort,
+  DynamicsCompressorNodePort,
+  GainNodePort,
+  PeriodicWavePort,
+  WaveShaperNodePort,
+} from "./audio-platform-contract";
+import {
+  AUDIO_GRAPH_EDGE_ENTRIES,
+  AUDIO_IMPULSE_POLICY,
+  AUDIO_INSTRUMENT_RECIPES,
+  AUDIO_PERSISTENT_GRAPH_SETTINGS,
+  type AudioInstrumentRecipe,
+} from "./instrument-recipes-contract";
+import {
+  cleanupSynthVoice,
+  copyAudioOwner,
+  estimateSynthVoiceGain,
+  forceReleaseSynthVoice,
+  isSynthVoiceRetiringAt,
+  markSynthVoiceSourceEnded,
+  normalizationGainForVoiceCount,
+  prepareSynthVoice,
+  sameAudioOwner,
+  snapshotSynthVoice,
+  startSynthVoice,
+  velocityGainForVelocity,
+  type ForcedAudioRetirementReason,
+  type SynthVoice,
+} from "./synth-voice";
+
+type UnknownRecord = Record<string, unknown>;
+
+type MutableWorkCounters = {
+  -readonly [Name in keyof AudioEngineWorkCounters]: number;
+};
+
+type ValidationFailure = Readonly<{
+  code: AudioEngineRefusalCode;
+  path: readonly (string | number)[];
+}>;
+
+type ValidationResult<Value> =
+  | Readonly<{ ok: true; value: Value }>
+  | Readonly<{ ok: false; failure: ValidationFailure }>;
+
+type ValidatedVoiceSpec = Readonly<{
+  voiceId: string;
+  midiPitch: MidiPitch;
+  velocity: number;
+}>;
+
+type ValidatedAttack = Readonly<{
+  owner: AudioVoiceOwner;
+  eventId: string;
+  instrumentId: InstrumentId;
+  startTimeSeconds: number;
+  releaseTimeSeconds: number;
+  voices: readonly ValidatedVoiceSpec[];
+}>;
+
+type PersistentGraph = {
+  readonly instanceId: number;
+  readonly context: AudioContextPort;
+  readonly createdNodes: readonly AudioNodePort[];
+  readonly instrumentBus: GainNodePort;
+  readonly dcBlock: BiquadFilterNodePort;
+  readonly lowShelf: BiquadFilterNodePort;
+  readonly highShelf: BiquadFilterNodePort;
+  readonly dryGain: GainNodePort;
+  readonly reverbSend: GainNodePort;
+  readonly convolver: ConvolverNodePort;
+  readonly reverbReturn: GainNodePort;
+  readonly dynamics: DynamicsCompressorNodePort;
+  readonly softClip: WaveShaperNodePort;
+  readonly safetyGain: GainNodePort;
+  readonly masterGain: GainNodePort;
+  readonly pulseWave: PeriodicWavePort;
+  masterAutomation: LinearAutomation;
+  reverbSendAutomation: LinearAutomation;
+  disconnected: boolean;
+};
+
+type GraphBuildResult = Readonly<{
+  graph: PersistentGraph;
+  impulseSamplesWritten: number;
+}>;
+
+type SequenceKind = "graph" | "voice" | "debug";
+
+class InternalSequenceExhausted extends Error {}
+
+const AUDIO_ID_PATTERN = new RegExp(AUDIO_ID_PATTERN_SOURCE);
+
+const EMPTY_WORK_COUNTERS: MutableWorkCounters = {
+  operationsStarted: 0,
+  graphNodesCreated: 0,
+  graphEdgesConnected: 0,
+  impulseSamplesWritten: 0,
+  voiceBatchesValidated: 0,
+  voiceSpecsValidated: 0,
+  voicesExaminedForRetrigger: 0,
+  voicesExaminedForRetirement: 0,
+  voicesExaminedForStealing: 0,
+  voicesCreated: 0,
+  scheduledSourcesCreated: 0,
+  registryReads: 0,
+  registryWrites: 0,
+  parameterEventsScheduled: 0,
+  cleanupCallbacksHandled: 0,
+};
+
+function isRecord(value: unknown): value is UnknownRecord {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isUnknownArray(value: unknown): value is unknown[] {
+  return Array.isArray(value);
+}
+
+function isAudioId(value: unknown): value is string {
+  const match = typeof value === "string" ? AUDIO_ID_PATTERN.exec(value) : null;
+  return (
+    typeof value === "string" &&
+    value.length <= MAX_AUDIO_ID_ASCII_LENGTH &&
+    match?.[0] === value
+  );
+}
+
+function isPositiveSafeInteger(value: unknown, maximum: number): value is number {
+  return (
+    typeof value === "number" &&
+    Number.isSafeInteger(value) &&
+    value > 0 &&
+    value <= maximum
+  );
+}
+
+function valid<Value>(value: Value): ValidationResult<Value> {
+  return { ok: true, value };
+}
+
+function invalid<Value>(
+  code: AudioEngineRefusalCode,
+  path: readonly (string | number)[],
+): ValidationResult<Value> {
+  return { ok: false, failure: { code, path: Object.freeze([...path]) } };
+}
+
+function validateMix(value: unknown): ValidationResult<AudioMix> {
+  if (!isRecord(value)) return invalid("audio.mix_invalid", ["mix"]);
+  const masterVolume = value["masterVolume"];
+  const reverbAmount = value["reverbAmount"];
+  if (
+    typeof masterVolume !== "number" ||
+    !Number.isFinite(masterVolume) ||
+    masterVolume < AUDIO_MIX_POLICY.minimumMasterVolume ||
+    masterVolume > AUDIO_MIX_POLICY.maximumMasterVolume
+  ) {
+    return invalid("audio.mix_invalid", ["mix", "masterVolume"]);
+  }
+  if (
+    typeof reverbAmount !== "number" ||
+    !Number.isFinite(reverbAmount) ||
+    reverbAmount < AUDIO_MIX_POLICY.minimumReverbAmount ||
+    reverbAmount > AUDIO_MIX_POLICY.maximumReverbAmount
+  ) {
+    return invalid("audio.mix_invalid", ["mix", "reverbAmount"]);
+  }
+  return valid(Object.freeze({ masterVolume, reverbAmount }));
+}
+
+function validateGesture(
+  value: unknown,
+  lastAcceptedSequence: number,
+): ValidationResult<AudioUserGestureReceipt> {
+  if (
+    !isRecord(value) ||
+    value["trusted"] !== true ||
+    (value["kind"] !== "trusted-pointer" &&
+      value["kind"] !== "trusted-keyboard")
+  ) {
+    return invalid("audio.user_gesture_required", ["gesture"]);
+  }
+  const sequence = value["sequence"];
+  if (
+    !isPositiveSafeInteger(sequence, MAX_AUDIO_GESTURE_SEQUENCE) ||
+    sequence <= lastAcceptedSequence
+  ) {
+    return invalid("audio.gesture_sequence_invalid", ["gesture", "sequence"]);
+  }
+  return valid(
+    Object.freeze({
+      kind: value["kind"],
+      trusted: true,
+      sequence,
+    }),
+  );
+}
+
+function validateOwner(value: unknown): ValidationResult<AudioVoiceOwner> {
+  if (!isRecord(value)) return invalid("audio.owner_invalid", ["owner"]);
+  const kind = value["kind"];
+  const generation = value["generation"];
+  if (
+    (kind !== "progression" && kind !== "preview") ||
+    !isPositiveSafeInteger(generation, MAX_AUDIO_GENERATION)
+  ) {
+    return invalid("audio.owner_invalid", ["owner"]);
+  }
+  if (kind === "progression") {
+    return valid(Object.freeze({ kind, generation }));
+  }
+  const previewId = value["previewId"];
+  if (!isAudioId(previewId)) {
+    return invalid("audio.owner_invalid", ["owner", "previewId"]);
+  }
+  return valid(Object.freeze({ kind, generation, previewId }));
+}
+
+function validateAttack(
+  value: unknown,
+  currentTimeSeconds: number,
+  recordVoiceValidation: (count: number) => void,
+): ValidationResult<ValidatedAttack> {
+  if (!isRecord(value)) return invalid("audio.owner_invalid", ["owner"]);
+
+  const owner = validateOwner(value["owner"]);
+  if (!owner.ok) return owner;
+
+  const eventId = value["eventId"];
+  if (!isAudioId(eventId)) {
+    return invalid("audio.event_id_invalid", ["eventId"]);
+  }
+
+  const instrumentValue = value["instrumentId"];
+  if (typeof instrumentValue !== "string") {
+    return invalid("audio.instrument_id_invalid", ["instrumentId"]);
+  }
+  const instrument = makeInstrumentId(instrumentValue);
+  if (!instrument.ok) {
+    return invalid("audio.instrument_id_invalid", ["instrumentId"]);
+  }
+
+  const startTimeSeconds = value["startTimeSeconds"];
+  if (
+    typeof startTimeSeconds !== "number" ||
+    !Number.isFinite(startTimeSeconds) ||
+    startTimeSeconds < currentTimeSeconds ||
+    startTimeSeconds >
+      currentTimeSeconds + MAX_AUDIO_SCHEDULE_LOOKAHEAD_SECONDS
+  ) {
+    return invalid("audio.start_time_invalid", ["startTimeSeconds"]);
+  }
+
+  const releaseTimeSeconds = value["releaseTimeSeconds"];
+  if (
+    typeof releaseTimeSeconds !== "number" ||
+    !Number.isFinite(releaseTimeSeconds) ||
+    releaseTimeSeconds <= startTimeSeconds ||
+    releaseTimeSeconds - startTimeSeconds < MIN_AUDIO_GATE_SECONDS
+  ) {
+    return invalid("audio.release_time_invalid", ["releaseTimeSeconds"]);
+  }
+  if (releaseTimeSeconds - startTimeSeconds > MAX_AUDIO_GATE_SECONDS) {
+    return invalid("audio.gate_duration_limit", ["releaseTimeSeconds"]);
+  }
+
+  const voicesValue = value["voices"];
+  if (!isUnknownArray(voicesValue) || voicesValue.length === 0) {
+    return invalid("audio.voice_batch_empty", ["voices"]);
+  }
+  if (voicesValue.length > MAX_AUDIO_VOICES_PER_BATCH) {
+    return invalid("audio.voice_batch_limit", ["voices"]);
+  }
+
+  const records: UnknownRecord[] = [];
+  const voiceIds: string[] = [];
+  const seenVoiceIds = new Set<string>();
+  for (let index = 0; index < voicesValue.length; index += 1) {
+    const voiceValue = voicesValue[index];
+    recordVoiceValidation(1);
+    if (!isRecord(voiceValue)) {
+      return invalid("audio.voice_id_invalid", ["voices", index, "voiceId"]);
+    }
+    const voiceId = voiceValue["voiceId"];
+    if (!isAudioId(voiceId)) {
+      return invalid("audio.voice_id_invalid", ["voices", index, "voiceId"]);
+    }
+    if (seenVoiceIds.has(voiceId)) {
+      return invalid("audio.voice_id_duplicate", ["voices", index, "voiceId"]);
+    }
+    seenVoiceIds.add(voiceId);
+    voiceIds.push(voiceId);
+    records.push(voiceValue);
+  }
+
+  const midiPitches: MidiPitch[] = [];
+  for (let index = 0; index < records.length; index += 1) {
+    const midiValue = records[index]?.["midiPitch"];
+    if (typeof midiValue !== "number") {
+      return invalid("audio.midi_pitch_invalid", ["voices", index, "midiPitch"]);
+    }
+    const midiPitch = makeMidiPitch(midiValue);
+    if (!midiPitch.ok) {
+      return invalid("audio.midi_pitch_invalid", ["voices", index, "midiPitch"]);
+    }
+    midiPitches.push(midiPitch.value);
+  }
+
+  const velocities: number[] = [];
+  for (let index = 0; index < records.length; index += 1) {
+    const velocity = records[index]?.["velocity"];
+    if (
+      typeof velocity !== "number" ||
+      !Number.isInteger(velocity) ||
+      velocity < 1 ||
+      velocity > 127
+    ) {
+      return invalid("audio.velocity_invalid", ["voices", index, "velocity"]);
+    }
+    velocities.push(velocity);
+  }
+
+  const voices: ValidatedVoiceSpec[] = [];
+  for (let index = 0; index < records.length; index += 1) {
+    const voiceId = voiceIds[index];
+    const midiPitch = midiPitches[index];
+    const velocity = velocities[index];
+    if (voiceId === undefined || midiPitch === undefined || velocity === undefined) {
+      throw new Error("AUDIO_VALIDATION_PARALLEL_ARRAY_MISMATCH");
+    }
+    voices.push(Object.freeze({ voiceId, midiPitch, velocity }));
+  }
+
+  return valid(
+    Object.freeze({
+      owner: owner.value,
+      eventId,
+      instrumentId: instrument.value,
+      startTimeSeconds,
+      releaseTimeSeconds,
+      voices: Object.freeze(voices),
+    }),
+  );
+}
+
+function validateRetirementSelector(
+  value: unknown,
+): ValidationResult<AudioRetirementSelector> {
+  if (!isRecord(value)) {
+    return invalid("audio.retirement_selector_invalid", ["selector"]);
+  }
+  const kind = value["kind"];
+  if (kind === "all") return valid(Object.freeze({ kind }));
+  if (kind === "voice-ids") {
+    const voiceIdsValue = value["voiceIds"];
+    if (!isUnknownArray(voiceIdsValue) || voiceIdsValue.length === 0) {
+      return invalid("audio.retirement_selector_invalid", ["selector", "voiceIds"]);
+    }
+    const voiceIds: string[] = [];
+    const seen = new Set<string>();
+    for (let index = 0; index < voiceIdsValue.length; index += 1) {
+      const voiceId = voiceIdsValue[index];
+      if (!isAudioId(voiceId) || seen.has(voiceId)) {
+        return invalid("audio.retirement_selector_invalid", [
+          "selector",
+          "voiceIds",
+          index,
+        ]);
+      }
+      seen.add(voiceId);
+      voiceIds.push(voiceId);
+    }
+    const first = voiceIds[0];
+    if (first === undefined) {
+      return invalid("audio.retirement_selector_invalid", ["selector", "voiceIds"]);
+    }
+    const voiceIdTuple: [string, ...string[]] = [first, ...voiceIds.slice(1)];
+    return valid(
+      Object.freeze({
+        kind,
+        voiceIds: Object.freeze(voiceIdTuple),
+      }),
+    );
+  }
+  if (kind === "event" || kind === "pitch" || kind === "owner") {
+    const owner = validateOwner(value["owner"]);
+    if (!owner.ok) {
+      return invalid("audio.retirement_selector_invalid", ["selector", "owner"]);
+    }
+    if (kind === "owner") {
+      return valid(Object.freeze({ kind, owner: owner.value }));
+    }
+    if (kind === "event") {
+      const eventId = value["eventId"];
+      if (!isAudioId(eventId)) {
+        return invalid("audio.retirement_selector_invalid", [
+          "selector",
+          "eventId",
+        ]);
+      }
+      return valid(Object.freeze({ kind, owner: owner.value, eventId }));
+    }
+    const midiValue = value["midiPitch"];
+    if (typeof midiValue !== "number") {
+      return invalid("audio.retirement_selector_invalid", [
+        "selector",
+        "midiPitch",
+      ]);
+    }
+    const midiPitch = makeMidiPitch(midiValue);
+    if (!midiPitch.ok) {
+      return invalid("audio.retirement_selector_invalid", [
+        "selector",
+        "midiPitch",
+      ]);
+    }
+    return valid(
+      Object.freeze({ kind, owner: owner.value, midiPitch: midiPitch.value }),
+    );
+  }
+  if (kind === "generation") {
+    const ownerKind = value["ownerKind"];
+    const generation = value["generation"];
+    if (
+      (ownerKind !== "progression" && ownerKind !== "preview") ||
+      !isPositiveSafeInteger(generation, MAX_AUDIO_GENERATION)
+    ) {
+      return invalid("audio.retirement_selector_invalid", ["selector"]);
+    }
+    return valid(Object.freeze({ kind, ownerKind, generation }));
+  }
+  if (kind === "preview") {
+    const generation = value["generation"];
+    const previewId = value["previewId"];
+    if (
+      !isPositiveSafeInteger(generation, MAX_AUDIO_GENERATION) ||
+      !isAudioId(previewId)
+    ) {
+      return invalid("audio.retirement_selector_invalid", ["selector"]);
+    }
+    return valid(Object.freeze({ kind, generation, previewId }));
+  }
+  return invalid("audio.retirement_selector_invalid", ["selector", "kind"]);
+}
+
+function validateRetirement(
+  value: unknown,
+  currentTimeSeconds: number,
+): ValidationResult<{
+  selector: AudioRetirementSelector;
+  reason: AudioRetireRequest["reason"];
+  atTimeSeconds: number;
+}> {
+  if (!isRecord(value)) {
+    return invalid("audio.retirement_selector_invalid", ["selector"]);
+  }
+  const reason = value["reason"];
+  if (
+    reason !== "preview-release" &&
+    reason !== "generation-retire" &&
+    reason !== "all-notes-off" &&
+    reason !== "page-teardown"
+  ) {
+    return invalid("audio.retirement_selector_invalid", ["reason"]);
+  }
+  const selector = validateRetirementSelector(value["selector"]);
+  if (!selector.ok) return selector;
+  const atTimeSeconds = value["atTimeSeconds"];
+  if (
+    typeof atTimeSeconds !== "number" ||
+    !Number.isFinite(atTimeSeconds) ||
+    atTimeSeconds < currentTimeSeconds ||
+    atTimeSeconds >
+      currentTimeSeconds + MAX_AUDIO_SCHEDULE_LOOKAHEAD_SECONDS
+  ) {
+    return invalid("audio.retirement_time_invalid", ["atTimeSeconds"]);
+  }
+  return valid(
+    Object.freeze({ selector: selector.value, reason, atTimeSeconds }),
+  );
+}
+
+function recipeForInstrument(instrumentId: InstrumentId): AudioInstrumentRecipe {
+  switch (instrumentId) {
+    case "mellow-keys":
+      return AUDIO_INSTRUMENT_RECIPES[0];
+    case "fm-electric-piano":
+      return AUDIO_INSTRUMENT_RECIPES[1];
+    case "vibraphone":
+      return AUDIO_INSTRUMENT_RECIPES[2];
+    case "warm-pad":
+      return AUDIO_INSTRUMENT_RECIPES[3];
+    case "analog-poly":
+      return AUDIO_INSTRUMENT_RECIPES[4];
+  }
+}
+
+function contextStateForSnapshot(
+  state: AudioContextStatePort | "absent",
+): AudioEngineSnapshot["contextState"] {
+  return state;
+}
+
+function retryableForCode(code: AudioEngineRefusalCode): boolean {
+  return (
+    code !== "audio.engine_closed" &&
+    code !== "audio.internal_sequence_exhausted" &&
+    code !== "audio.dispose_reason_invalid"
+  );
+}
+
+function compareStealCandidates(
+  left: SynthVoice,
+  right: SynthVoice,
+  incomingOwner: AudioVoiceOwner,
+  atTimeSeconds: number,
+): number {
+  const leftSameOwner = sameAudioOwner(left.owner, incomingOwner);
+  const rightSameOwner = sameAudioOwner(right.owner, incomingOwner);
+  if (leftSameOwner !== rightSameOwner) return leftSameOwner ? -1 : 1;
+  const leftGain = estimateSynthVoiceGain(left, atTimeSeconds);
+  const rightGain = estimateSynthVoiceGain(right, atTimeSeconds);
+  if (!Number.isFinite(leftGain) || !Number.isFinite(rightGain)) {
+    throw new Error("AUDIO_ESTIMATED_ENVELOPE_NOT_FINITE");
+  }
+  if (leftGain !== rightGain) return leftGain - rightGain;
+  if (left.attackTimeSeconds !== right.attackTimeSeconds) {
+    return left.attackTimeSeconds - right.attackTimeSeconds;
+  }
+  const identity = compareSynthVoiceIdentity(left, right);
+  if (identity !== 0) return identity;
+  return left.instanceToken - right.instanceToken;
+}
+
+export type AudioEngineSequenceSeedForTest = Readonly<{
+  lastGraphSequence: number;
+  lastVoiceSequence: number;
+  lastDebugSequence: number;
+}>;
+
+const ZERO_AUDIO_ENGINE_SEQUENCE_SEED = Object.freeze({
+  lastGraphSequence: 0,
+  lastVoiceSequence: 0,
+  lastDebugSequence: 0,
+}) satisfies AudioEngineSequenceSeedForTest;
+
+function isValidInternalSequenceSeed(value: unknown): value is number {
+  return (
+    typeof value === "number" &&
+    Number.isSafeInteger(value) &&
+    value >= 0 &&
+    value <= MAX_AUDIO_INTERNAL_SEQUENCE
+  );
+}
+
+function createAudioEngineInternal(
+  platform: AudioPlatform,
+  sequenceSeed: AudioEngineSequenceSeedForTest,
+): AudioEngine {
+  let state: AudioEngineState = "uninitialized";
+  let currentContext: AudioContextPort | null = null;
+  let currentGraph: PersistentGraph | null = null;
+  let reportedContextState: AudioContextStatePort | "absent" = "absent";
+  let mix: AudioMix = Object.freeze({ masterVolume: 1, reverbAmount: 0 });
+  let lastAcceptedGestureSequence = 0;
+  let { lastGraphSequence, lastVoiceSequence, lastDebugSequence } = sequenceSeed;
+  let debugEventsDropped = 0;
+  let terminalSequenceExhausted = false;
+  const debugEvents: AudioDebugEvent[] = [];
+  const work: MutableWorkCounters = { ...EMPTY_WORK_COUNTERS };
+  let initializationPromise: Promise<
+    AudioEngineResult<AudioInitializationReceipt>
+  > | null = null;
+  let resumePromise: Promise<AudioEngineResult<AudioInitializationReceipt>> | null =
+    null;
+  let disposePromise: Promise<AudioEngineResult<AudioDisposeReceipt>> | null = null;
+
+  function incrementWork(
+    name: keyof MutableWorkCounters,
+    count = 1,
+  ): void {
+    const next = work[name] + count;
+    if (!Number.isSafeInteger(next) || next > MAX_AUDIO_INTERNAL_SEQUENCE) {
+      throw new InternalSequenceExhausted("AUDIO_WORK_COUNTER_EXHAUSTED");
+    }
+    work[name] = next;
+  }
+
+  const registry = new ActiveVoiceRegistry(
+    (count) => { incrementWork("registryReads", count); },
+    (count) => { incrementWork("registryWrites", count); },
+  );
+
+  function nextSequence(kind: SequenceKind): number {
+    const current =
+      kind === "graph"
+        ? lastGraphSequence
+        : kind === "voice"
+          ? lastVoiceSequence
+          : lastDebugSequence;
+    if (current >= MAX_AUDIO_INTERNAL_SEQUENCE) {
+      throw new InternalSequenceExhausted(`AUDIO_${kind.toUpperCase()}_SEQUENCE_EXHAUSTED`);
+    }
+    const next = current + 1;
+    if (kind === "graph") lastGraphSequence = next;
+    else if (kind === "voice") lastVoiceSequence = next;
+    else lastDebugSequence = next;
+    return next;
+  }
+
+  function recordDebug(
+    kind: AudioDebugEventKind,
+    detailCode: string,
+    options: Readonly<{
+      graphInstanceId?: number | null;
+      voice?: SynthVoice | null;
+      owner?: AudioVoiceOwner | null;
+      eventId?: string | null;
+      midiPitch?: MidiPitch | null;
+      scheduledTimeSeconds?: number | null;
+    }> = {},
+  ): void {
+    const voice = options.voice ?? null;
+    const owner = options.owner ?? voice?.owner ?? null;
+    const event: AudioDebugEvent = Object.freeze({
+      sequence: nextSequence("debug"),
+      kind,
+      graphInstanceId:
+        options.graphInstanceId ?? voice?.graphInstanceId ?? currentGraph?.instanceId ?? null,
+      voiceInstanceToken: voice?.instanceToken ?? null,
+      voiceId: voice?.voiceId ?? null,
+      owner: owner === null ? null : copyAudioOwner(owner),
+      eventId: options.eventId ?? voice?.eventId ?? null,
+      midiPitch: options.midiPitch ?? voice?.midiPitch ?? null,
+      scheduledTimeSeconds: options.scheduledTimeSeconds ?? null,
+      detailCode,
+    });
+    debugEvents.push(event);
+    if (debugEvents.length > MAX_AUDIO_DEBUG_EVENTS) {
+      debugEvents.shift();
+      debugEventsDropped += 1;
+    }
+  }
+
+  function failureResult<Value>(
+    code: AudioEngineRefusalCode,
+    path: readonly (string | number)[],
+    termination: "refused" | "platform-fault",
+  ): AudioEngineResult<Value> {
+    return Object.freeze({
+      ok: false,
+      refusal: Object.freeze({
+        code,
+        path: Object.freeze([...path]),
+        state,
+        retryable: state !== "closed" && retryableForCode(code),
+      }),
+      termination,
+    });
+  }
+
+  function refuse<Value>(failure: ValidationFailure): AudioEngineResult<Value> {
+    if (state === "closed") {
+      return failureResult("audio.engine_closed", ["state"], "refused");
+    }
+    if (failure.code === "audio.internal_sequence_exhausted") {
+      terminalSequenceExhausted = true;
+      teardownFatalResources();
+      return failureResult(failure.code, failure.path, "platform-fault");
+    }
+    try {
+      recordDebug("operation-refused", failure.code);
+    } catch (error) {
+      if (error instanceof InternalSequenceExhausted) {
+        terminalSequenceExhausted = true;
+        teardownFatalResources();
+        return failureResult(
+          "audio.internal_sequence_exhausted",
+          ["internalSequence"],
+          "platform-fault",
+        );
+      }
+      throw error;
+    }
+    return failureResult(failure.code, failure.path, "refused");
+  }
+
+  function success<Value>(value: Value): AudioEngineResult<Value> {
+    return Object.freeze({ ok: true, value, termination: "completed" });
+  }
+
+  function beginOperation(): ValidationFailure | null {
+    if (state === "closed") return null;
+    if (terminalSequenceExhausted) {
+      return {
+        code: "audio.internal_sequence_exhausted",
+        path: ["internalSequence"],
+      };
+    }
+    try {
+      incrementWork("operationsStarted", 1);
+      return null;
+    } catch (error) {
+      if (error instanceof InternalSequenceExhausted) {
+        return {
+          code: "audio.internal_sequence_exhausted",
+          path: ["internalSequence"],
+        };
+      }
+      throw error;
+    }
+  }
+
+  function copyWork(): AudioEngineWorkCounters {
+    return Object.freeze({ ...work });
+  }
+
+  function currentAudioTime(): number {
+    return currentContext?.currentTime ?? 0;
+  }
+
+  function snapshot(): AudioEngineSnapshot {
+    const atTimeSeconds = currentAudioTime();
+    const voices = terminalSequenceExhausted ? [] : registry.allVoices();
+    const activeVoices = Object.freeze(
+      voices.map((voice) => snapshotSynthVoice(voice, atTimeSeconds)),
+    );
+    let releasingVoiceCount = 0;
+    let progressionNonreleasingVoiceCount = 0;
+    let previewNonreleasingVoiceCount = 0;
+    for (const voice of voices) {
+      if (isSynthVoiceRetiringAt(voice, atTimeSeconds)) {
+        releasingVoiceCount += 1;
+      } else if (voice.owner.kind === "progression") {
+        progressionNonreleasingVoiceCount += 1;
+      } else {
+        previewNonreleasingVoiceCount += 1;
+      }
+    }
+    const contextState =
+      currentContext === null
+        ? contextStateForSnapshot(reportedContextState)
+        : contextStateForSnapshot(currentContext.state);
+    return Object.freeze({
+      schema: AUDIO_ENGINE_SNAPSHOT_SCHEMA,
+      state,
+      graphInstanceId: currentGraph?.instanceId ?? null,
+      contextState,
+      contextSampleRate: currentContext?.sampleRate ?? null,
+      mix: Object.freeze({ ...mix }),
+      retainedVoiceCount: voices.length,
+      nonreleasingVoiceCount: voices.length - releasingVoiceCount,
+      releasingVoiceCount,
+      progressionNonreleasingVoiceCount,
+      previewNonreleasingVoiceCount,
+      activeVoices,
+      registryIndexCounts: terminalSequenceExhausted
+        ? Object.freeze({
+            voice: 0,
+            generation: 0,
+            event: 0,
+            pitch: 0,
+            owner: 0,
+            instrument: 0,
+            totalReferences: 0,
+          })
+        : registry.indexCounts(),
+      persistentCreatedNodeCount:
+        currentGraph === null || currentGraph.disconnected
+          ? 0
+          : currentGraph.createdNodes.length,
+      persistentEdgeCount:
+        currentGraph === null || currentGraph.disconnected
+          ? 0
+          : AUDIO_GRAPH_EDGE_ENTRIES.length,
+      debugEvents: Object.freeze([...debugEvents]),
+      debugEventsDropped,
+      work: copyWork(),
+    });
+  }
+
+  function disconnectNodes(nodes: readonly AudioNodePort[]): boolean {
+    let clean = true;
+    for (let index = nodes.length - 1; index >= 0; index -= 1) {
+      const node = nodes[index];
+      if (node === undefined) continue;
+      try {
+        node.disconnect();
+      } catch {
+        clean = false;
+      }
+    }
+    return clean;
+  }
+
+  function disconnectPersistentGraph(graph: PersistentGraph): boolean {
+    if (graph.disconnected) return true;
+    graph.disconnected = true;
+    return disconnectNodes(graph.createdNodes);
+  }
+
+  function buildPersistentGraph(
+    context: AudioContextPort,
+    graphInstanceId: number,
+    initialMix: AudioMix,
+  ): GraphBuildResult {
+    const createdNodes: AudioNodePort[] = [];
+    const track = <Node extends AudioNodePort>(node: Node): Node => {
+      createdNodes.push(node);
+      incrementWork("graphNodesCreated", 1);
+      return node;
+    };
+    const connect = (
+      from: AudioNodePort,
+      to: AudioNodePort,
+      detailCode: string,
+    ): void => {
+      from.connect(to);
+      incrementWork("graphEdgesConnected", 1);
+      recordDebug("graph-connect", detailCode, { graphInstanceId });
+    };
+
+    try {
+      const instrumentBus = track(context.createGain());
+      const dcBlock = track(context.createBiquadFilter());
+      const lowShelf = track(context.createBiquadFilter());
+      const highShelf = track(context.createBiquadFilter());
+      const dryGain = track(context.createGain());
+      const reverbSend = track(context.createGain());
+      const convolver = track(context.createConvolver());
+      const reverbReturn = track(context.createGain());
+      const dynamics = track(context.createDynamicsCompressor());
+      const softClip = track(context.createWaveShaper());
+      const safetyGain = track(context.createGain());
+      const masterGain = track(context.createGain());
+
+      instrumentBus.gain.value = 1;
+      dcBlock.type = AUDIO_PERSISTENT_GRAPH_SETTINGS.dcBlock.type;
+      dcBlock.frequency.value =
+        AUDIO_PERSISTENT_GRAPH_SETTINGS.dcBlock.frequencyHz;
+      dcBlock.q.value = AUDIO_PERSISTENT_GRAPH_SETTINGS.dcBlock.q;
+      lowShelf.type = AUDIO_PERSISTENT_GRAPH_SETTINGS.lowShelf.type;
+      lowShelf.frequency.value =
+        AUDIO_PERSISTENT_GRAPH_SETTINGS.lowShelf.frequencyHz;
+      lowShelf.gain.value = AUDIO_PERSISTENT_GRAPH_SETTINGS.lowShelf.gainDb;
+      highShelf.type = AUDIO_PERSISTENT_GRAPH_SETTINGS.highShelf.type;
+      highShelf.frequency.value =
+        AUDIO_PERSISTENT_GRAPH_SETTINGS.highShelf.frequencyHz;
+      highShelf.gain.value = AUDIO_PERSISTENT_GRAPH_SETTINGS.highShelf.gainDb;
+      dryGain.gain.value = AUDIO_PERSISTENT_GRAPH_SETTINGS.dryGain;
+      reverbSend.gain.value =
+        initialMix.reverbAmount *
+        AUDIO_PERSISTENT_GRAPH_SETTINGS.maximumReverbSendGain;
+      reverbReturn.gain.value =
+        AUDIO_PERSISTENT_GRAPH_SETTINGS.reverbReturnGain;
+      dynamics.threshold.value =
+        AUDIO_PERSISTENT_GRAPH_SETTINGS.dynamics.thresholdDb;
+      dynamics.knee.value = AUDIO_PERSISTENT_GRAPH_SETTINGS.dynamics.kneeDb;
+      dynamics.ratio.value = AUDIO_PERSISTENT_GRAPH_SETTINGS.dynamics.ratio;
+      dynamics.attack.value =
+        AUDIO_PERSISTENT_GRAPH_SETTINGS.dynamics.attackSeconds;
+      dynamics.release.value =
+        AUDIO_PERSISTENT_GRAPH_SETTINGS.dynamics.releaseSeconds;
+      softClip.curve = createSoftClipCurve();
+      softClip.oversample = AUDIO_PERSISTENT_GRAPH_SETTINGS.softClip.oversample;
+      safetyGain.gain.value = AUDIO_PERSISTENT_GRAPH_SETTINGS.safetyGain;
+      masterGain.gain.value = initialMix.masterVolume;
+
+      const impulseLength =
+        context.sampleRate * AUDIO_IMPULSE_POLICY.durationSeconds;
+      const impulse = context.createBuffer(
+        AUDIO_IMPULSE_POLICY.channels,
+        impulseLength,
+        context.sampleRate,
+      );
+      const impulseObservation = writeDeterministicImpulse(impulse);
+      incrementWork(
+        "impulseSamplesWritten",
+        impulseObservation.samplesWritten,
+      );
+      convolver.buffer = impulse;
+      convolver.normalize = AUDIO_IMPULSE_POLICY.convolverNormalize;
+      const pulseWave = createPulsePeriodicWave(context);
+
+      connect(instrumentBus, dcBlock, "audio.graph.instrument-bus.dc-block");
+      connect(dcBlock, lowShelf, "audio.graph.dc-block.low-shelf");
+      connect(lowShelf, highShelf, "audio.graph.low-shelf.high-shelf");
+      connect(highShelf, dryGain, "audio.graph.high-shelf.dry-gain");
+      connect(dryGain, dynamics, "audio.graph.dry-gain.dynamics");
+      connect(highShelf, reverbSend, "audio.graph.high-shelf.reverb-send");
+      connect(reverbSend, convolver, "audio.graph.reverb-send.convolver");
+      connect(convolver, reverbReturn, "audio.graph.convolver.reverb-return");
+      connect(reverbReturn, dynamics, "audio.graph.reverb-return.dynamics");
+      connect(dynamics, softClip, "audio.graph.dynamics.soft-clip");
+      connect(softClip, safetyGain, "audio.graph.soft-clip.safety-gain");
+      connect(safetyGain, masterGain, "audio.graph.safety-gain.master-gain");
+      connect(masterGain, context.destination, "audio.graph.master-gain.destination");
+
+      const now = context.currentTime;
+      const graph: PersistentGraph = {
+        instanceId: graphInstanceId,
+        context,
+        createdNodes: Object.freeze(createdNodes),
+        instrumentBus,
+        dcBlock,
+        lowShelf,
+        highShelf,
+        dryGain,
+        reverbSend,
+        convolver,
+        reverbReturn,
+        dynamics,
+        softClip,
+        safetyGain,
+        masterGain,
+        pulseWave,
+        masterAutomation: {
+          startTimeSeconds: now,
+          startValue: initialMix.masterVolume,
+          endTimeSeconds: now,
+          endValue: initialMix.masterVolume,
+        },
+        reverbSendAutomation: {
+          startTimeSeconds: now,
+          startValue: reverbSend.gain.value,
+          endTimeSeconds: now,
+          endValue: reverbSend.gain.value,
+        },
+        disconnected: false,
+      };
+      recordDebug("graph-create", "audio.graph.created", { graphInstanceId });
+      return {
+        graph,
+        impulseSamplesWritten: impulseObservation.samplesWritten,
+      };
+    } catch (error) {
+      disconnectNodes(createdNodes);
+      throw error;
+    }
+  }
+
+  function releaseAndRemoveAllVoices(
+    reason: ForcedAudioRetirementReason,
+    atTimeSeconds: number,
+  ): number {
+    const voices = registry.allVoices();
+    for (const voice of voices) {
+      try {
+        forceReleaseSynthVoice(
+          voice,
+          reason,
+          atTimeSeconds,
+          (count) => { incrementWork("parameterEventsScheduled", count); },
+        );
+      } catch (error) {
+        if (error instanceof InternalSequenceExhausted) throw error;
+        // Cleanup below still removes every owned resource.
+      }
+    }
+    for (const voice of voices) {
+      try {
+        registry.remove(voice.instanceToken);
+      } finally {
+        cleanupSynthVoice(voice);
+      }
+    }
+    return voices.length;
+  }
+
+  function closeContextWithoutWaiting(context: AudioContextPort): void {
+    try {
+      void context.close().catch(() => undefined);
+    } catch {
+      // Fatal cleanup is already in progress and cannot restore this context.
+    }
+  }
+
+  function detachContextHandlerWithoutThrowing(context: AudioContextPort): void {
+    try {
+      context.onstatechange = null;
+    } catch {
+      // A broken platform setter cannot prevent the remaining terminal cleanup.
+    }
+  }
+
+  function contextStateWithoutThrowing(
+    context: AudioContextPort,
+  ): AudioContextStatePort | null {
+    try {
+      return context.state;
+    } catch {
+      return null;
+    }
+  }
+
+  function contextTimeWithoutThrowing(context: AudioContextPort | null): number {
+    if (context === null) return 0;
+    try {
+      return context.currentTime;
+    } catch {
+      return 0;
+    }
+  }
+
+  function drainVoicesForTerminalCleanup(
+    reason: ForcedAudioRetirementReason,
+    atTimeSeconds: number,
+  ): void {
+    const voices = registry.drainForTerminalCleanup();
+    for (const voice of voices) {
+      try {
+        forceReleaseSynthVoice(voice, reason, atTimeSeconds, () => undefined);
+      } catch {
+        // Disconnect still owns the final cleanup guarantee.
+      }
+      cleanupSynthVoice(voice);
+    }
+  }
+
+  function teardownFatalResources(): void {
+    const graph = currentGraph;
+    const context = currentContext;
+    const observedState =
+      context === null ? null : contextStateWithoutThrowing(context);
+    const atTimeSeconds = contextTimeWithoutThrowing(context);
+    if (context !== null) detachContextHandlerWithoutThrowing(context);
+    drainVoicesForTerminalCleanup("all-notes-off", atTimeSeconds);
+    if (graph !== null) disconnectPersistentGraph(graph);
+    if (context !== null && observedState !== "closed") {
+      closeContextWithoutWaiting(context);
+    }
+    currentGraph = null;
+    currentContext = null;
+    reportedContextState = observedState ?? "absent";
+    state = "fault";
+  }
+
+  function failInitializationAdoption(
+    context: AudioContextPort,
+    graph: PersistentGraph | null,
+    detailCode: string,
+    code: AudioEngineRefusalCode,
+    observedState: AudioContextStatePort | null,
+  ): AudioEngineResult<never> {
+    if (code === "audio.internal_sequence_exhausted") {
+      terminalSequenceExhausted = true;
+    }
+    detachContextHandlerWithoutThrowing(context);
+    if (graph !== null) disconnectPersistentGraph(graph);
+    closeContextWithoutWaiting(context);
+    if (currentContext === context) currentContext = null;
+    if (currentGraph === graph) currentGraph = null;
+    reportedContextState = observedState ?? "absent";
+    state = "fault";
+    if (!terminalSequenceExhausted) {
+      try {
+        recordDebug("platform-fault", detailCode, {
+          graphInstanceId: graph?.instanceId ?? null,
+        });
+      } catch (error) {
+        if (error instanceof InternalSequenceExhausted) {
+          terminalSequenceExhausted = true;
+          code = "audio.internal_sequence_exhausted";
+        }
+      }
+    }
+    return failureResult(code, ["platform"], "platform-fault");
+  }
+
+  function enterFatalFault(
+    detailCode: string,
+    code: AudioEngineRefusalCode = "audio.context_unusable",
+  ): AudioEngineResult<never> {
+    if (code === "audio.internal_sequence_exhausted") {
+      terminalSequenceExhausted = true;
+    }
+    const graphInstanceId = currentGraph?.instanceId ?? null;
+    if (!terminalSequenceExhausted) {
+      try {
+        recordDebug("platform-fault", detailCode, { graphInstanceId });
+      } catch {
+        // Sequence exhaustion is itself represented by the returned refusal.
+        code = "audio.internal_sequence_exhausted";
+        terminalSequenceExhausted = true;
+      }
+    }
+    teardownFatalResources();
+    return failureResult(code, ["platform"], "platform-fault");
+  }
+
+  function enterFaultForError(
+    error: unknown,
+    detailCode: string,
+    code: AudioEngineRefusalCode = "audio.context_unusable",
+  ): AudioEngineResult<never> {
+    return error instanceof InternalSequenceExhausted
+      ? enterFatalFault(
+          "audio.internal_sequence_exhausted",
+          "audio.internal_sequence_exhausted",
+        )
+      : enterFatalFault(detailCode, code);
+  }
+
+  function handleSourceEnded(
+    graphInstanceId: number,
+    voiceId: string,
+    instanceToken: number,
+    sourceOrdinal: number,
+  ): void {
+    if (state === "closed") return;
+    try {
+      incrementWork("cleanupCallbacksHandled", 1);
+      const voice = registry.get(instanceToken);
+      if (
+        currentGraph?.instanceId !== graphInstanceId ||
+        voice === undefined ||
+        voice.voiceId !== voiceId ||
+        voice.graphInstanceId !== graphInstanceId
+      ) {
+        recordDebug("voice-cleanup-stale", "audio.voice.cleanup.stale", {
+          graphInstanceId,
+        });
+        return;
+      }
+      const status = markSynthVoiceSourceEnded(voice, sourceOrdinal);
+      if (status === "pending") return;
+      if (status === "duplicate" || status === "stale") {
+        recordDebug("voice-cleanup-stale", "audio.voice.cleanup.duplicate", {
+          voice,
+        });
+        return;
+      }
+      registry.remove(instanceToken);
+      const clean = cleanupSynthVoice(voice);
+      recordDebug("voice-cleanup", "audio.voice.cleanup.completed", { voice });
+      if (!clean) enterFatalFault("audio.voice.cleanup.disconnect_failed");
+    } catch (error) {
+      if (error instanceof InternalSequenceExhausted) {
+        enterFatalFault(
+          "audio.internal_sequence_exhausted",
+          "audio.internal_sequence_exhausted",
+        );
+        return;
+      }
+      enterFatalFault("audio.voice.cleanup.platform_failed");
+    }
+  }
+
+  function retireAllForInterruption(atTimeSeconds: number): void {
+    const voices = registry.allVoices();
+    for (const voice of voices) {
+      if (
+        forceReleaseSynthVoice(
+          voice,
+          "all-notes-off",
+          atTimeSeconds,
+          (count) => { incrementWork("parameterEventsScheduled", count); },
+        )
+      ) {
+        recordDebug("voice-release", "audio.voice.release.interruption", {
+          voice,
+          scheduledTimeSeconds: atTimeSeconds,
+        });
+      }
+    }
+  }
+
+  function handleContextState(
+    graphInstanceId: number,
+    context: AudioContextPort,
+  ): void {
+    if (state === "closed") return;
+    if (
+      currentGraph?.instanceId !== graphInstanceId ||
+      currentContext !== context
+    ) {
+      try {
+        recordDebug("context-state", "audio.context_state.stale", {
+          graphInstanceId,
+        });
+      } catch (error) {
+        enterFaultForError(error, "audio.context_state.stale_callback_failed");
+      }
+      return;
+    }
+    try {
+      const contextState = context.state;
+      reportedContextState = contextState;
+      recordDebug("context-state", `audio.context_state.${contextState}`, {
+        graphInstanceId,
+      });
+      if (
+        (state === "initializing" || state === "resuming") &&
+        contextState !== "closed"
+      ) {
+        return;
+      }
+      if (contextState === "running") {
+        state = "ready";
+        return;
+      }
+      if (contextState === "suspended" || contextState === "interrupted") {
+        retireAllForInterruption(context.currentTime);
+        state = "suspended";
+        return;
+      }
+      enterFatalFault("audio.context_state.closed");
+    } catch (error) {
+      if (error instanceof InternalSequenceExhausted) {
+        enterFatalFault(
+          "audio.internal_sequence_exhausted",
+          "audio.internal_sequence_exhausted",
+        );
+        return;
+      }
+      enterFatalFault("audio.context_state.callback_failed");
+    }
+  }
+
+  function initializationReceipt(
+    reusedExistingGraph: boolean,
+  ): AudioInitializationReceipt {
+    const graph = currentGraph;
+    if (graph === null || (state !== "ready" && state !== "suspended")) {
+      throw new Error("AUDIO_INITIALIZATION_RECEIPT_STATE_INVALID");
+    }
+    return Object.freeze({
+      graphInstanceId: graph.instanceId,
+      reusedExistingGraph,
+      state,
+      snapshot: snapshot(),
+    });
+  }
+
+  async function finishInitialization(
+    context: AudioContextPort,
+    graph: PersistentGraph,
+    resumeAttempt: Promise<void>,
+  ): Promise<AudioEngineResult<AudioInitializationReceipt>> {
+    try {
+      await resumeAttempt;
+    } catch (error) {
+      initializationPromise = null;
+      return enterFaultForError(
+        error,
+        "audio.initialization.resume_failed",
+        "audio.context_resume_failed",
+      );
+    }
+    try {
+      if (currentGraph !== graph || currentContext !== context) {
+        return enterFatalFault("audio.initialization.graph_lost");
+      }
+      const contextState = context.state;
+      reportedContextState = contextState;
+      if (contextState === "running") state = "ready";
+      else if (
+        contextState === "suspended" ||
+        contextState === "interrupted"
+      ) {
+        state = "suspended";
+      } else {
+        return enterFatalFault("audio.initialization.context_unusable");
+      }
+      return success(initializationReceipt(false));
+    } catch (error) {
+      return enterFaultForError(
+        error,
+        "audio.initialization.platform_failed",
+      );
+    } finally {
+      initializationPromise = null;
+    }
+  }
+
+  function initializeAudioEngine(
+    request: Parameters<AudioEngine["initializeAudioEngine"]>[0],
+  ): Promise<AudioEngineResult<AudioInitializationReceipt>> {
+    const started = beginOperation();
+    if (started !== null) return Promise.resolve(refuse(started));
+    if (state === "closed") {
+      return Promise.resolve(
+        refuse({ code: "audio.engine_closed", path: ["state"] }),
+      );
+    }
+    const requestValue: unknown = request;
+    if (!isRecord(requestValue)) {
+      return Promise.resolve(
+        refuse({ code: "audio.user_gesture_required", path: ["gesture"] }),
+      );
+    }
+    const gesture = validateGesture(
+      requestValue["gesture"],
+      lastAcceptedGestureSequence,
+    );
+    if (!gesture.ok) return Promise.resolve(refuse(gesture.failure));
+    const validatedMix = validateMix(requestValue["initialMix"]);
+    if (!validatedMix.ok) return Promise.resolve(refuse(validatedMix.failure));
+    lastAcceptedGestureSequence = gesture.value.sequence;
+
+    if (initializationPromise !== null) return initializationPromise;
+    if (resumePromise !== null) return resumePromise;
+    if (currentGraph !== null && (state === "ready" || state === "suspended")) {
+      try {
+        return Promise.resolve(success(initializationReceipt(true)));
+      } catch (error) {
+        return Promise.resolve(
+          enterFaultForError(error, "audio.initialization.receipt_failed"),
+        );
+      }
+    }
+
+    let context: AudioContextPort;
+    try {
+      context = platform.createContext(AUDIO_CONTEXT_CREATION_OPTIONS);
+    } catch {
+      state = "fault";
+      try {
+        recordDebug("platform-fault", "audio.context.create_failed");
+      } catch (error) {
+        if (error instanceof InternalSequenceExhausted) {
+          terminalSequenceExhausted = true;
+        }
+        return Promise.resolve(
+          failureResult(
+            "audio.internal_sequence_exhausted",
+            ["internalSequence"],
+            "platform-fault",
+          ),
+        );
+      }
+      return Promise.resolve(
+        failureResult(
+          "audio.context_create_failed",
+          ["platform", "createContext"],
+          "platform-fault",
+        ),
+      );
+    }
+
+    let observedState: AudioContextStatePort;
+    let sampleRate: number;
+    try {
+      observedState = context.state;
+      sampleRate = context.sampleRate;
+      reportedContextState = observedState;
+      recordDebug("context-create", "audio.context.created", {
+        graphInstanceId: null,
+      });
+    } catch (error) {
+      const sequenceFailure = error instanceof InternalSequenceExhausted;
+      return Promise.resolve(
+        failInitializationAdoption(
+          context,
+          null,
+          sequenceFailure
+            ? "audio.internal_sequence_exhausted"
+            : "audio.context.inspect_failed",
+          sequenceFailure
+            ? "audio.internal_sequence_exhausted"
+            : "audio.context_unusable",
+          null,
+        ),
+      );
+    }
+
+    if (
+      !Number.isInteger(sampleRate) ||
+      sampleRate < AUDIO_IMPULSE_POLICY.minimumSampleRate ||
+      sampleRate > AUDIO_IMPULSE_POLICY.maximumSampleRate
+    ) {
+      return Promise.resolve(
+        failInitializationAdoption(
+          context,
+          null,
+          "audio.context.sample_rate_unsupported",
+          "audio.context_sample_rate_unsupported",
+          observedState,
+        ),
+      );
+    }
+
+    state = "initializing";
+    const graphInstanceId = (() => {
+      try {
+        return nextSequence("graph");
+      } catch {
+        return null;
+      }
+    })();
+    if (graphInstanceId === null) {
+      return Promise.resolve(
+        failInitializationAdoption(
+          context,
+          null,
+          "audio.internal_sequence_exhausted",
+          "audio.internal_sequence_exhausted",
+          observedState,
+        ),
+      );
+    }
+
+    let graph: PersistentGraph;
+    try {
+      graph = buildPersistentGraph(
+        context,
+        graphInstanceId,
+        validatedMix.value,
+      ).graph;
+    } catch (error) {
+      const sequenceFailure = error instanceof InternalSequenceExhausted;
+      return Promise.resolve(
+        failInitializationAdoption(
+          context,
+          null,
+          sequenceFailure
+            ? "audio.internal_sequence_exhausted"
+            : "audio.graph_create_failed",
+          sequenceFailure
+            ? "audio.internal_sequence_exhausted"
+            : "audio.graph_create_failed",
+          observedState,
+        ),
+      );
+    }
+
+    try {
+      context.onstatechange = () => {
+        handleContextState(graph.instanceId, context);
+      };
+    } catch {
+      return Promise.resolve(
+        failInitializationAdoption(
+          context,
+          graph,
+          "audio.context.state_handler_registration_failed",
+          "audio.context_unusable",
+          observedState,
+        ),
+      );
+    }
+    currentContext = context;
+    currentGraph = graph;
+    mix = validatedMix.value;
+    let resumeAttempt: Promise<void>;
+    let stateBeforeResume: AudioContextStatePort;
+    try {
+      stateBeforeResume = context.state;
+      reportedContextState = stateBeforeResume;
+    } catch {
+      return Promise.resolve(
+        failInitializationAdoption(
+          context,
+          graph,
+          "audio.context.state_read_failed",
+          "audio.context_unusable",
+          observedState,
+        ),
+      );
+    }
+    try {
+      resumeAttempt =
+        stateBeforeResume === "running" ? Promise.resolve() : context.resume();
+    } catch {
+      return Promise.resolve(
+        failInitializationAdoption(
+          context,
+          graph,
+          "audio.initialization.resume_failed",
+          "audio.context_resume_failed",
+          stateBeforeResume,
+        ),
+      );
+    }
+    const pending = finishInitialization(context, graph, resumeAttempt);
+    initializationPromise = pending;
+    return pending;
+  }
+
+  async function finishResume(
+    context: AudioContextPort,
+    graph: PersistentGraph,
+  ): Promise<AudioEngineResult<AudioInitializationReceipt>> {
+    try {
+      await context.resume();
+    } catch (error) {
+      resumePromise = null;
+      return enterFaultForError(
+        error,
+        "audio.context.resume_failed",
+        "audio.context_resume_failed",
+      );
+    }
+    try {
+      if (currentContext !== context || currentGraph !== graph) {
+        return enterFatalFault("audio.resume.graph_lost");
+      }
+      const contextState = context.state;
+      reportedContextState = contextState;
+      if (contextState === "running") state = "ready";
+      else if (
+        contextState === "suspended" ||
+        contextState === "interrupted"
+      ) {
+        state = "suspended";
+      } else {
+        return enterFatalFault("audio.resume.context_unusable");
+      }
+      return success(initializationReceipt(true));
+    } catch (error) {
+      return enterFaultForError(error, "audio.resume.platform_failed");
+    } finally {
+      resumePromise = null;
+    }
+  }
+
+  function resumeAudioEngine(
+    request: Parameters<AudioEngine["resumeAudioEngine"]>[0],
+  ): Promise<AudioEngineResult<AudioInitializationReceipt>> {
+    const started = beginOperation();
+    if (started !== null) return Promise.resolve(refuse(started));
+    if (state === "closed") {
+      return Promise.resolve(
+        refuse({ code: "audio.engine_closed", path: ["state"] }),
+      );
+    }
+    const graph = currentGraph;
+    const context = currentContext;
+    if (
+      graph === null ||
+      context === null ||
+      state === "uninitialized" ||
+      state === "initializing" ||
+      state === "fault"
+    ) {
+      return Promise.resolve(
+        refuse({ code: "audio.engine_not_ready", path: ["state"] }),
+      );
+    }
+    const requestValue: unknown = request;
+    const gestureValue = isRecord(requestValue)
+      ? requestValue["gesture"]
+      : undefined;
+    const gesture = validateGesture(
+      gestureValue,
+      lastAcceptedGestureSequence,
+    );
+    if (!gesture.ok) return Promise.resolve(refuse(gesture.failure));
+    lastAcceptedGestureSequence = gesture.value.sequence;
+    if (resumePromise !== null) return resumePromise;
+    if (state === "ready") {
+      try {
+        return Promise.resolve(success(initializationReceipt(true)));
+      } catch (error) {
+        return Promise.resolve(
+          enterFaultForError(error, "audio.resume.receipt_failed"),
+        );
+      }
+    }
+    state = "resuming";
+    const pending = finishResume(context, graph);
+    resumePromise = pending;
+    return pending;
+  }
+
+  function setAudioMix(
+    requestedMix: AudioMix,
+  ): AudioEngineResult<AudioMixReceipt> {
+    const started = beginOperation();
+    if (started !== null) return refuse(started);
+    if (state === "closed") {
+      return refuse({ code: "audio.engine_closed", path: ["state"] });
+    }
+    const graph = currentGraph;
+    const context = currentContext;
+    if (state !== "ready" || graph === null || context === null) {
+      return refuse({ code: "audio.engine_not_ready", path: ["state"] });
+    }
+    try {
+      const atTimeSeconds = context.currentTime;
+      const validated = validateMix(requestedMix);
+      if (!validated.ok) return refuse(validated.failure);
+      const previous = Object.freeze({ ...mix });
+      const rampEnd =
+        atTimeSeconds + AUDIO_PERSISTENT_GRAPH_SETTINGS.mixRampSeconds;
+      const masterHeld = evaluateLinearAutomation(
+        graph.masterAutomation,
+        atTimeSeconds,
+      );
+      const reverbHeld = evaluateLinearAutomation(
+        graph.reverbSendAutomation,
+        atTimeSeconds,
+      );
+      const reverbTarget =
+        validated.value.reverbAmount *
+        AUDIO_PERSISTENT_GRAPH_SETTINGS.maximumReverbSendGain;
+      holdAudioParamAtTime(
+        graph.masterGain.gain,
+        atTimeSeconds,
+        masterHeld,
+        (count) => { incrementWork("parameterEventsScheduled", count); },
+      );
+      graph.masterGain.gain.linearRampToValueAtTime(
+        validated.value.masterVolume,
+        rampEnd,
+      );
+      incrementWork("parameterEventsScheduled", 1);
+      holdAudioParamAtTime(
+        graph.reverbSend.gain,
+        atTimeSeconds,
+        reverbHeld,
+        (count) => { incrementWork("parameterEventsScheduled", count); },
+      );
+      graph.reverbSend.gain.linearRampToValueAtTime(reverbTarget, rampEnd);
+      incrementWork("parameterEventsScheduled", 1);
+      graph.masterAutomation = {
+        startTimeSeconds: atTimeSeconds,
+        startValue: masterHeld,
+        endTimeSeconds: rampEnd,
+        endValue: validated.value.masterVolume,
+      };
+      graph.reverbSendAutomation = {
+        startTimeSeconds: atTimeSeconds,
+        startValue: reverbHeld,
+        endTimeSeconds: rampEnd,
+        endValue: reverbTarget,
+      };
+      mix = validated.value;
+      recordDebug("mix-ramp", "audio.mix.ramp", {
+        graphInstanceId: graph.instanceId,
+        scheduledTimeSeconds: atTimeSeconds,
+      });
+      return success(
+        Object.freeze({
+          previous,
+          current: Object.freeze({ ...mix }),
+          rampStartTimeSeconds: atTimeSeconds,
+          rampEndTimeSeconds: rampEnd,
+        }),
+      );
+    } catch (error) {
+      return enterFatalFault(
+        error instanceof InternalSequenceExhausted
+          ? "audio.internal_sequence_exhausted"
+          : "audio.mix.platform_failed",
+        error instanceof InternalSequenceExhausted
+          ? "audio.internal_sequence_exhausted"
+          : "audio.context_unusable",
+      );
+    }
+  }
+
+  function selectVictims(
+    allVoices: readonly SynthVoice[],
+    alreadySelected: Set<number>,
+    retriggerTokens: ReadonlySet<number>,
+    incomingOwner: AudioVoiceOwner,
+    atTimeSeconds: number,
+    incomingCount: number,
+    limit: number,
+    predicate: (voice: SynthVoice) => boolean,
+  ): SynthVoice[] {
+    let retainedNonreleasing = 0;
+    for (const voice of allVoices) {
+      if (
+        predicate(voice) &&
+        !retriggerTokens.has(voice.instanceToken) &&
+        !alreadySelected.has(voice.instanceToken) &&
+        !isSynthVoiceRetiringAt(voice, atTimeSeconds)
+      ) {
+        retainedNonreleasing += 1;
+      }
+    }
+    const deficit = retainedNonreleasing + incomingCount - limit;
+    if (deficit <= 0) return [];
+    const candidates = allVoices.filter(
+      (voice) =>
+        predicate(voice) &&
+        !retriggerTokens.has(voice.instanceToken) &&
+        !alreadySelected.has(voice.instanceToken) &&
+        !isSynthVoiceRetiringAt(voice, atTimeSeconds),
+    );
+    incrementWork("voicesExaminedForStealing", candidates.length);
+    candidates.sort((left, right) =>
+      compareStealCandidates(left, right, incomingOwner, atTimeSeconds),
+    );
+    if (candidates.length < deficit) {
+      throw new Error("AUDIO_POLYPHONY_VICTIM_SET_INSUFFICIENT");
+    }
+    const selected = candidates.slice(0, deficit);
+    for (const voice of selected) alreadySelected.add(voice.instanceToken);
+    return selected;
+  }
+
+  function planAttack(
+    request: ValidatedAttack,
+    recipe: AudioInstrumentRecipe,
+    atTimeSeconds: number,
+  ):
+    | Readonly<{
+        ok: true;
+        retriggers: readonly SynthVoice[];
+        steals: readonly SynthVoice[];
+      }>
+    | Readonly<{ ok: false; failure: ValidationFailure }> {
+    const retriggerByToken = new Map<number, SynthVoice>();
+    for (let index = 0; index < request.voices.length; index += 1) {
+      const incoming = request.voices[index];
+      if (incoming === undefined) continue;
+      const collisions = registry.voicesForVoiceId(incoming.voiceId);
+      incrementWork("voicesExaminedForRetrigger", collisions.length);
+      for (const collision of collisions) {
+        if (
+          !sameAudioOwner(collision.owner, request.owner) ||
+          collision.eventId !== request.eventId ||
+          collision.midiPitch !== incoming.midiPitch
+        ) {
+          return {
+            ok: false,
+            failure: {
+              code: "audio.voice_id_duplicate",
+              path: ["voices", index, "voiceId"],
+            },
+          };
+        }
+      }
+      const matches = registry.retriggerMatches(
+        request.owner,
+        request.eventId,
+        incoming.midiPitch,
+      );
+      incrementWork("voicesExaminedForRetrigger", matches.length);
+      for (const match of matches) {
+        retriggerByToken.set(match.instanceToken, match);
+      }
+    }
+
+    const allVoices = registry.allVoices();
+    const retriggers = [...retriggerByToken.values()].sort(
+      compareSynthVoiceIdentity,
+    );
+    const retriggerTokens = new Set(retriggerByToken.keys());
+    const selectedTokens = new Set<number>();
+    const steals: SynthVoice[] = [];
+    const addStage = (selected: readonly SynthVoice[]): void => {
+      for (const voice of selected) steals.push(voice);
+    };
+
+    addStage(
+      selectVictims(
+        allVoices,
+        selectedTokens,
+        retriggerTokens,
+        request.owner,
+        atTimeSeconds,
+        request.voices.length,
+        request.owner.kind === "progression"
+          ? MAX_AUDIO_PROGRESSION_VOICES
+          : MAX_AUDIO_PREVIEW_VOICES,
+        (voice) => voice.owner.kind === request.owner.kind,
+      ),
+    );
+    addStage(
+      selectVictims(
+        allVoices,
+        selectedTokens,
+        retriggerTokens,
+        request.owner,
+        atTimeSeconds,
+        request.voices.length,
+        recipe.polyphonyLimit,
+        (voice) => voice.instrumentId === request.instrumentId,
+      ),
+    );
+    addStage(
+      selectVictims(
+        allVoices,
+        selectedTokens,
+        retriggerTokens,
+        request.owner,
+        atTimeSeconds,
+        request.voices.length,
+        MAX_AUDIO_NONRELEASING_VOICES,
+        () => true,
+      ),
+    );
+
+    if (registry.size + request.voices.length > MAX_AUDIO_RETAINED_VOICES) {
+      return {
+        ok: false,
+        failure: {
+          code: "audio.retiring_voice_capacity",
+          path: ["voices"],
+        },
+      };
+    }
+    return {
+      ok: true,
+      retriggers: Object.freeze(retriggers),
+      steals: Object.freeze(steals),
+    };
+  }
+
+  function releaseVoice(
+    voice: SynthVoice,
+    reason: ForcedAudioRetirementReason,
+    atTimeSeconds: number,
+  ): boolean {
+    const released = forceReleaseSynthVoice(
+      voice,
+      reason,
+      atTimeSeconds,
+      (count) => { incrementWork("parameterEventsScheduled", count); },
+    );
+    if (!released) return false;
+    const kind: AudioDebugEventKind =
+      reason === "note-retrigger"
+        ? "voice-retrigger-retire"
+        : reason === "voice-steal"
+          ? "voice-steal"
+          : "voice-release";
+    recordDebug(kind, `audio.voice.release.${reason}`, {
+      voice,
+      scheduledTimeSeconds: atTimeSeconds,
+    });
+    return true;
+  }
+
+  function attackAudioVoices(
+    request: AudioAttackBatchRequest,
+  ): AudioEngineResult<AudioAttackReceipt> {
+    const started = beginOperation();
+    if (started !== null) return refuse(started);
+    if (state === "closed") {
+      return refuse({ code: "audio.engine_closed", path: ["state"] });
+    }
+    const graph = currentGraph;
+    const context = currentContext;
+    if (state !== "ready" || graph === null || context === null) {
+      return refuse({ code: "audio.engine_not_ready", path: ["state"] });
+    }
+    let preparedForRollback: SynthVoice[] = [];
+    try {
+      const atTimeSeconds = context.currentTime;
+      incrementWork("voiceBatchesValidated", 1);
+      const validated = validateAttack(
+        request,
+        atTimeSeconds,
+        (count) => { incrementWork("voiceSpecsValidated", count); },
+      );
+      if (!validated.ok) return refuse(validated.failure);
+      const recipe = recipeForInstrument(validated.value.instrumentId);
+      const plan = planAttack(validated.value, recipe, atTimeSeconds);
+      if (!plan.ok) return refuse(plan.failure);
+      const normalizationGain = normalizationGainForVoiceCount(
+        recipe.outputLevel,
+        validated.value.voices.length,
+      );
+      const velocityGains = validated.value.voices.map((voiceSpec) =>
+        velocityGainForVelocity(voiceSpec.velocity),
+      );
+      const instanceTokens = validated.value.voices.map(() =>
+        nextSequence("voice"),
+      );
+      const attackedVoiceIds = Object.freeze(
+        validated.value.voices.map((voiceSpec) => voiceSpec.voiceId),
+      );
+      const retriggeredVoiceIds = Object.freeze(
+        plan.retriggers.map((voice) => voice.voiceId),
+      );
+      const stolenVoiceIds = Object.freeze(
+        plan.steals.map((voice) => voice.voiceId),
+      );
+      const prepared: SynthVoice[] = [];
+      preparedForRollback = prepared;
+      try {
+        for (let index = 0; index < validated.value.voices.length; index += 1) {
+          const voiceSpec = validated.value.voices[index];
+          const velocityGain = velocityGains[index];
+          const instanceToken = instanceTokens[index];
+          if (
+            voiceSpec === undefined ||
+            velocityGain === undefined ||
+            instanceToken === undefined
+          ) {
+            throw new Error("AUDIO_PREPARED_VOICE_PLAN_MISMATCH");
+          }
+          const voice = prepareSynthVoice({
+            context,
+            instrumentBus: graph.instrumentBus,
+            pulseWave: graph.pulseWave,
+            graphInstanceId: graph.instanceId,
+            instanceToken,
+            voiceId: voiceSpec.voiceId,
+            owner: validated.value.owner,
+            eventId: validated.value.eventId,
+            instrumentId: validated.value.instrumentId,
+            midiPitch: voiceSpec.midiPitch,
+            velocity: voiceSpec.velocity,
+            originalBatchVoiceCount: validated.value.voices.length,
+            normalizationGain,
+            velocityGain,
+            recipe,
+            startTimeSeconds: validated.value.startTimeSeconds,
+            releaseTimeSeconds: validated.value.releaseTimeSeconds,
+            onSourceEnded: handleSourceEnded,
+            recordParameterEvents: (count) =>
+              { incrementWork("parameterEventsScheduled", count); },
+          });
+          prepared.push(voice);
+          incrementWork("voicesCreated", 1);
+          incrementWork("scheduledSourcesCreated", voice.sources.length);
+        }
+      } catch (error) {
+        for (const voice of prepared) cleanupSynthVoice(voice);
+        throw error;
+      }
+
+      for (const voice of plan.retriggers) {
+        releaseVoice(
+          voice,
+          "note-retrigger",
+          validated.value.startTimeSeconds,
+        );
+      }
+      for (const voice of plan.steals) {
+        releaseVoice(voice, "voice-steal", atTimeSeconds);
+      }
+      for (const voice of prepared) registry.add(voice);
+      for (const voice of prepared) {
+        startSynthVoice(voice);
+        recordDebug("voice-attack", "audio.voice.attack", {
+          voice,
+          scheduledTimeSeconds: voice.attackTimeSeconds,
+        });
+      }
+
+      return success(
+        Object.freeze({
+          owner: copyAudioOwner(validated.value.owner),
+          eventId: validated.value.eventId,
+          instrumentId: validated.value.instrumentId,
+          attackedVoiceIds,
+          retriggeredVoiceIds,
+          stolenVoiceIds,
+          normalizationGain,
+          velocityGains: Object.freeze(velocityGains),
+          snapshot: snapshot(),
+        }),
+      );
+    } catch (error) {
+      for (const voice of preparedForRollback) cleanupSynthVoice(voice);
+      return enterFatalFault(
+        error instanceof InternalSequenceExhausted
+          ? "audio.internal_sequence_exhausted"
+          : "audio.voice.platform_failed",
+        error instanceof InternalSequenceExhausted
+          ? "audio.internal_sequence_exhausted"
+          : "audio.context_unusable",
+      );
+    }
+  }
+
+  function retireAudioVoices(
+    request: AudioRetireRequest,
+  ): AudioEngineResult<AudioRetirementReceipt> {
+    const started = beginOperation();
+    if (started !== null) return refuse(started);
+    if (state === "closed") {
+      return refuse({ code: "audio.engine_closed", path: ["state"] });
+    }
+    const context = currentContext;
+    if (state !== "ready" || currentGraph === null || context === null) {
+      return refuse({ code: "audio.engine_not_ready", path: ["state"] });
+    }
+    try {
+      const currentTimeSeconds = context.currentTime;
+      const validated = validateRetirement(
+        request,
+        currentTimeSeconds,
+      );
+      if (!validated.ok) return refuse(validated.failure);
+      const voices = registry.voicesForSelector(validated.value.selector);
+      incrementWork("voicesExaminedForRetirement", voices.length);
+      const matchedVoiceIds = voices.map((voice) => voice.voiceId);
+      const newlyRetiredVoiceIds: string[] = [];
+      const alreadyRetiringVoiceIds: string[] = [];
+      for (const voice of voices) {
+        if (
+          releaseVoice(
+            voice,
+            validated.value.reason,
+            validated.value.atTimeSeconds,
+          )
+        ) {
+          newlyRetiredVoiceIds.push(voice.voiceId);
+        } else {
+          alreadyRetiringVoiceIds.push(voice.voiceId);
+        }
+      }
+      return success(
+        Object.freeze({
+          reason: validated.value.reason,
+          matchedVoiceIds: Object.freeze(matchedVoiceIds),
+          newlyRetiredVoiceIds: Object.freeze(newlyRetiredVoiceIds),
+          alreadyRetiringVoiceIds: Object.freeze(alreadyRetiringVoiceIds),
+          noFutureAttackPostcondition: true,
+          snapshot: snapshot(),
+        }),
+      );
+    } catch (error) {
+      return enterFatalFault(
+        error instanceof InternalSequenceExhausted
+          ? "audio.internal_sequence_exhausted"
+          : "audio.retirement.platform_failed",
+        error instanceof InternalSequenceExhausted
+          ? "audio.internal_sequence_exhausted"
+          : "audio.context_unusable",
+      );
+    }
+  }
+
+  function inspectAudioEngine(): AudioEngineSnapshot {
+    const started = beginOperation();
+    if (started !== null) {
+      terminalSequenceExhausted = true;
+      teardownFatalResources();
+    }
+    try {
+      return snapshot();
+    } catch (error) {
+      enterFaultForError(error, "audio.inspect.platform_failed");
+      return snapshot();
+    }
+  }
+
+  async function performDispose(): Promise<AudioEngineResult<AudioDisposeReceipt>> {
+    let graph: PersistentGraph | null = null;
+    let context: AudioContextPort | null = null;
+    let graphInstanceId: number | null;
+    let retiredVoiceCount: number;
+    let closeAttempted = false;
+    try {
+      if (initializationPromise !== null) await initializationPromise;
+      if (resumePromise !== null) await resumePromise;
+      graph = currentGraph;
+      context = currentContext;
+      graphInstanceId = graph?.instanceId ?? null;
+      retiredVoiceCount = releaseAndRemoveAllVoices(
+        "page-teardown",
+        context?.currentTime ?? 0,
+      );
+      if (context !== null) context.onstatechange = null;
+      if (graph !== null) disconnectPersistentGraph(graph);
+      currentGraph = null;
+      currentContext = null;
+      state = "closed";
+      reportedContextState = context === null ? "absent" : "closed";
+      let contextClosed = context === null;
+      if (context !== null) {
+        if (context.state !== "closed") {
+          closeAttempted = true;
+          await context.close();
+        }
+        contextClosed = true;
+      }
+      recordDebug("engine-dispose", "audio.engine.page_teardown", {
+        graphInstanceId,
+      });
+      return success(
+        Object.freeze({
+          graphInstanceId,
+          retiredVoiceCount,
+          contextClosed,
+          snapshot: snapshot(),
+        }),
+      );
+    } catch (error) {
+      const sequenceFailure = error instanceof InternalSequenceExhausted;
+      if (sequenceFailure) terminalSequenceExhausted = true;
+      graph ??= currentGraph;
+      context ??= currentContext;
+      if (context !== null) detachContextHandlerWithoutThrowing(context);
+      drainVoicesForTerminalCleanup(
+        "page-teardown",
+        contextTimeWithoutThrowing(context),
+      );
+      if (graph !== null) disconnectPersistentGraph(graph);
+      if (currentGraph === graph) currentGraph = null;
+      if (currentContext === context) currentContext = null;
+      const observedState =
+        context === null ? null : contextStateWithoutThrowing(context);
+      state = "closed";
+      if (
+        context !== null &&
+        observedState !== "closed" &&
+        !closeAttempted
+      ) {
+        try {
+          await context.close();
+        } catch {
+          // The typed platform fault below remains authoritative.
+        }
+      }
+      reportedContextState =
+        context === null
+          ? "absent"
+          : contextStateWithoutThrowing(context) ?? "absent";
+      return failureResult(
+        sequenceFailure
+          ? "audio.internal_sequence_exhausted"
+          : "audio.context_unusable",
+        sequenceFailure ? ["internalSequence"] : ["platform", "dispose"],
+        "platform-fault",
+      );
+    } finally {
+      disposePromise = null;
+    }
+  }
+
+  function disposeAudioEngine(
+    request: Parameters<AudioEngine["disposeAudioEngine"]>[0],
+  ): Promise<AudioEngineResult<AudioDisposeReceipt>> {
+    const started = beginOperation();
+    if (started !== null) return Promise.resolve(refuse(started));
+    const requestValue: unknown = request;
+    if (!isRecord(requestValue) || requestValue["reason"] !== "page-teardown") {
+      return Promise.resolve(
+        refuse({ code: "audio.dispose_reason_invalid", path: ["reason"] }),
+      );
+    }
+    if (state === "closed") {
+      return Promise.resolve(
+        refuse({ code: "audio.engine_closed", path: ["state"] }),
+      );
+    }
+    if (disposePromise !== null) return disposePromise;
+    const pending = performDispose();
+    disposePromise = pending;
+    return pending;
+  }
+
+  return Object.freeze({
+    initializeAudioEngine,
+    resumeAudioEngine,
+    setAudioMix,
+    attackAudioVoices,
+    retireAudioVoices,
+    inspectAudioEngine,
+    disposeAudioEngine,
+  });
+}
+
+export function createAudioEngine(platform: AudioPlatform): AudioEngine {
+  return createAudioEngineInternal(platform, ZERO_AUDIO_ENGINE_SEQUENCE_SEED);
+}
+
+/**
+ * Deep-module-only exhaustion seam. It is intentionally absent from the audio
+ * barrel so production composition cannot seed internal identities.
+ */
+export function createAudioEngineWithSequenceSeedForTest(
+  platform: AudioPlatform,
+  sequenceSeed: AudioEngineSequenceSeedForTest,
+): AudioEngine {
+  const candidate: unknown = sequenceSeed;
+  if (!isRecord(candidate)) {
+    throw new Error("AUDIO_TEST_SEQUENCE_SEED_INVALID");
+  }
+  const lastGraphSequence = candidate["lastGraphSequence"];
+  const lastVoiceSequence = candidate["lastVoiceSequence"];
+  const lastDebugSequence = candidate["lastDebugSequence"];
+  if (
+    !isValidInternalSequenceSeed(lastGraphSequence) ||
+    !isValidInternalSequenceSeed(lastVoiceSequence) ||
+    !isValidInternalSequenceSeed(lastDebugSequence)
+  ) {
+    throw new Error("AUDIO_TEST_SEQUENCE_SEED_INVALID");
+  }
+  return createAudioEngineInternal(
+    platform,
+    Object.freeze({
+      lastGraphSequence,
+      lastVoiceSequence,
+      lastDebugSequence,
+    }),
+  );
+}

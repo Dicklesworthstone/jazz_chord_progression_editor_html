@@ -2,9 +2,10 @@
 export type DomainPath = readonly (string | number)[];
 
 /** Every public fallible F1 value operation returns a stable code and path. */
-export type PathRefusal<Shape extends Readonly<{ code: string }>> = Readonly<
-  Shape & { path: DomainPath }
->;
+export type PathRefusal<Shape extends Readonly<{ code: string }>> =
+  Shape extends unknown
+    ? Readonly<Shape & { path: DomainPath }>
+    : never;
 
 export type DomainResult<Value, Refusal> =
   | Readonly<{ ok: true; value: Value }>

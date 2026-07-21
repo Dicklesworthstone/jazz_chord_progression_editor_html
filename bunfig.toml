@@ -7,5 +7,6 @@ retry = 0
 pathIgnorePatterns = [
   "tests/e2e/**",
   "tests/fixtures/**",
+  "tests/integration/audio-offline-render.test.ts",
   "tests/visual/**",
 ]

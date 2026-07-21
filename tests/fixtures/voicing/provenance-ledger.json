@@ -1,0 +1,144 @@
+{
+  "schema": "changes.fixtures.v0-provenance-ledger.v1",
+  "fixtureVersion": "1.0.0",
+  "status": "independently-authored-pre-production",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "authoringStatement": {
+    "humanReviewClaimed": false,
+    "domainExpertReviewClaimed": false,
+    "productionOracleUsed": false,
+    "statement": "This ledger distinguishes checked-in project policy, inherited green contracts, external descriptive sources, and pre-production numerical choices. It does not upgrade any item to expert-reviewed authority."
+  },
+  "authorityClasses": [
+    "checked-in-project-contract",
+    "inherited-validated-contract",
+    "external-descriptive-source",
+    "pre-production-project-policy",
+    "independent-oracle-policy"
+  ],
+  "authorities": [
+    {
+      "id": "V0-AUTH-CONTRACT",
+      "authorityClass": "checked-in-project-contract",
+      "title": "V0 package and architecture contract",
+      "sources": [
+        {"kind":"local","ref":"AGENTS.md"},
+        {"kind":"local","ref":"docs/ARCHITECTURE.md"},
+        {"kind":"local","ref":"docs/REBUILD_PLAN.md#123-candidate-generation"},
+        {"kind":"local","ref":"docs/V0_VOICING_CONTRACT.md"}
+      ],
+      "claimIds": ["V0-CLAIM-BOUNDARY","V0-CLAIM-RESULTS","V0-CLAIM-NO-FALLBACK","V0-CLAIM-DETERMINISM"],
+      "covers": "layer boundary, pure operation, version identities, result/refusal shapes, no fallback, local-only scope",
+      "traceIds": ["V0-TRACE-BOUNDARY","V0-TRACE-REFUSAL","V0-TRACE-DETERMINISM"],
+      "reviewState": "checked-in-project-policy-not-domain-expert-review"
+    },
+    {
+      "id": "V0-AUTH-F1",
+      "authorityClass": "inherited-validated-contract",
+      "title": "F1 domain voicing and bass-policy laws",
+      "sources": [
+        {"kind":"local","ref":"src/domain/chord.ts"},
+        {"kind":"local","ref":"tests/fixtures/domain/f1-domain-contract.json"},
+        {"kind":"local","ref":"tests/fixtures/domain/voicing-custom-cases.json"}
+      ],
+      "claimIds": ["V0-CLAIM-VOICE-COUNT","V0-CLAIM-BASS","V0-CLAIM-BYPASS"],
+      "covers": "families, counts, range, generated/external/none, slash constraints, rootless external, Manual/Frozen exactness",
+      "traceIds": ["V0-TRACE-BASS","V0-TRACE-BYPASS"],
+      "reviewState": "inherited-validated-contract"
+    },
+    {
+      "id": "V0-AUTH-T1",
+      "authorityClass": "inherited-validated-contract",
+      "title": "T1 exact realization, degree-role, spelling, and altered-ID laws",
+      "sources": [
+        {"kind":"local","ref":"src/theory/resolution-contract.ts"},
+        {"kind":"local","ref":"tests/fixtures/resolution/formula-rules.json"},
+        {"kind":"local","ref":"tests/fixtures/resolution/t1-resolution-contract.json"}
+      ],
+      "claimIds": ["V0-CLAIM-MEMBERSHIP","V0-CLAIM-SPELLING","V0-CLAIM-ALT-SELECTION"],
+      "covers": "37 seeds, exact degree tokens, required/optional/guide roles, spellings, four distinct altered realizations, slash separation",
+      "traceIds": ["V0-TRACE-DEGREES","V0-TRACE-ALT-SELECTION","V0-TRACE-TRANSPOSITION"],
+      "reviewState": "inherited-validated-contract"
+    },
+    {
+      "id": "V0-AUTH-DROP2",
+      "authorityClass": "external-descriptive-source",
+      "title": "Drop-2 structural definition",
+      "sources": [
+        {
+          "kind":"external",
+          "title":"A Practice Method for Drop 2 Voicing",
+          "url":"https://so06.tci-thaijo.org/index.php/rmj/article/view/278341",
+          "doi":"10.59796/rmj.V20N2.2025.A0101",
+          "accessed":"2026-07-14",
+          "claim":"Drop-2 relocates the second-highest member of a close-position voicing down one octave."
+        }
+      ],
+      "claimIds": ["V0-CLAIM-DROP2"],
+      "covers": "second-highest source ordinal and exact one-octave transform; project-specific counts/range/caps remain local policy",
+      "traceIds": ["V0-TRACE-DROP2"],
+      "reviewState": "source-recorded-not-domain-expert-review"
+    },
+    {
+      "id": "V0-AUTH-TEMPLATES",
+      "authorityClass": "pre-production-project-policy",
+      "title": "Versioned voicing-family templates and register policies",
+      "sources": [
+        {"kind":"local","ref":"docs/REBUILD_PLAN.md#123-candidate-generation"},
+        {"kind":"local","ref":"tests/fixtures/voicing/family-templates.json"},
+        {
+          "kind":"external",
+          "title":"Jazz Voicings",
+          "url":"https://viva.pressbooks.pub/openmusictheory/chapter/jazz-voicings/",
+          "accessed":"2026-07-14",
+          "claim":"Jazz voicings commonly center guide tones, may omit the fifth, place extensions above, and use wider lower spacing."
+        }
+      ],
+      "claimIds": ["V0-CLAIM-FAMILIES","V0-CLAIM-FIXED-ROWS","V0-CLAIM-QUARTAL"],
+      "covers": "compact adaptive/fixed/context selection authority, exact selected-degree register weave, exact fixed sequences, family spans, context-gated rows, omissions and doublings",
+      "traceIds": ["V0-TRACE-FAMILIES","V0-TRACE-QUARTAL","V0-TRACE-ORDERING"],
+      "reviewState": "pre-production-policy-awaiting-human-and-domain-expert-review"
+    },
+    {
+      "id": "V0-AUTH-SPACING",
+      "authorityClass": "pre-production-project-policy",
+      "title": "Low-register spacing and register numeric policy",
+      "sources": [
+        {"kind":"local","ref":"tests/fixtures/voicing/family-templates.json#lowRegisterSpacing"},
+        {"kind":"external","title":"Jazz Voicings","url":"https://viva.pressbooks.pub/openmusictheory/chapter/jazz-voicings/","accessed":"2026-07-14","claim":"Lower-register voicings require wider spacing to avoid muddiness; the source does not prescribe this project's numeric bands."}
+      ],
+      "claimIds": ["V0-CLAIM-SPACING","V0-CLAIM-RANGE"],
+      "covers": "inclusive MIDI bands 0..35/36..47/48..59/60..127 and exact 10/7/4/1 minimum gaps",
+      "traceIds": ["V0-TRACE-SPACING"],
+      "reviewState": "project-numeric-policy-awaiting-domain-expert-review"
+    },
+    {
+      "id": "V0-AUTH-LIMITS",
+      "authorityClass": "pre-production-project-policy",
+      "title": "Deterministic V0 work, memory, payload, and identifier limits",
+      "sources": [
+        {"kind":"local","ref":"src/theory/voicing-candidates-contract.ts"},
+        {"kind":"local","ref":"tests/fixtures/voicing/limit-cases.json"}
+      ],
+      "claimIds": ["V0-CLAIM-LIMITS","V0-CLAIM-ALL-OR-NOTHING"],
+      "covers": "24 counters, exact/+1 outcomes, raw 96/97, retention 24/25, nine tracked-record populations, candidate-owned bounded diagnostics plus one operation-local constraint-observation accumulator, 1..256-code-point and 512-byte identifier bounds, no wall-time cutoff",
+      "traceIds": ["V0-TRACE-LIMITS"],
+      "reviewState": "checked-in-pre-production-resource-policy"
+    },
+    {
+      "id": "V0-AUTH-INDEPENDENCE",
+      "authorityClass": "independent-oracle-policy",
+      "title": "Independent-fixture and mutation discipline",
+      "sources": [
+        {"kind":"local","ref":"AGENTS.md#verification-discipline"},
+        {"kind":"local","ref":"tests/fixtures/voicing/mutation-controls.json"},
+        {"kind":"local","ref":"tests/fixtures/voicing/trace-ledger.json"}
+      ],
+      "claimIds": ["V0-CLAIM-INDEPENDENCE","V0-CLAIM-IMMUTABILITY","V0-CLAIM-TRANSPOSITION"],
+      "covers": "no production oracle, reciprocal trace links, positive/near-miss/transposition/mutation proofs, frozen output and no clocks",
+      "traceIds": ["V0-TRACE-DETERMINISM","V0-TRACE-ORDERING","V0-TRACE-TRANSPOSITION","V0-TRACE-IMMUTABILITY"],
+      "reviewState": "independent-pre-production-authority"
+    }
+  ]
+}

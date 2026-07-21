@@ -1,0 +1,19 @@
+{
+  "schema": "changes.progression.v2",
+  "id": "document-e0-minimal",
+  "title": "Changes",
+  "description": "",
+  "meter": {
+    "beatsPerBar": 4,
+    "beatUnit": 4
+  },
+  "tempoBpm": 120,
+  "key": null,
+  "sections": [],
+  "playback": {
+    "instrumentId": "mellow-keys",
+    "masterVolume": 0.8,
+    "reverbAmount": 0.2,
+    "countInBars": 0
+  }
+}

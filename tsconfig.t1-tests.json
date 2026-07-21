@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.tests.json",
+  "include": [],
+  "files": [
+    "tests/conformance/t1-laws-mutation-controls.test.ts",
+    "tests/conformance/t1-production-conformance.test.ts",
+    "tests/integration/t1-formula-matrix.test.ts",
+    "tests/integration/t1-resolution-evidence.test.ts",
+    "tests/integration/t1-theory-package.test.ts",
+    "tests/static/dependency-boundaries.test.ts",
+    "tests/static/t1-contract.test.ts",
+    "tests/static/t1-evidence.test.ts",
+    "tests/static/t1-type-contract.test.ts",
+    "tests/static/validated-document-cast-policy.test.ts",
+    "tests/unit/t1-chord-resolution.test.ts",
+    "tests/unit/t1-degree-spelling.test.ts"
+  ]
+}

@@ -1,0 +1,911 @@
+{
+  "schema": "changes.fixtures.v0-family-templates.v1",
+  "fixtureVersion": "1.0.0",
+  "status": "independently-authored-pre-production",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "checksums": {
+    "registerPoliciesSha256": "c7b7c2f548d042cbc5f63840c1cee7116316869db711584f0ce006ccb443193b"
+  },
+  "templateTableId": "changes.voicing-family-templates",
+  "templateTableVersion": 1,
+  "degreePolicy": {
+    "membership": "Every non-slash generated degree must be an exact number-and-alter member of the explicitly selected T1 SemanticRealization.",
+    "missingTemplateDegree": "voicing.constraints_unsatisfied",
+    "templateColorsAdded": false,
+    "canonicalDegreeOrder": [
+      "1",
+      "2",
+      "b3",
+      "3",
+      "4",
+      "b5",
+      "5",
+      "#5",
+      "6",
+      "bb7",
+      "b7",
+      "7",
+      "b9",
+      "9",
+      "#9",
+      "11",
+      "#11",
+      "b13",
+      "13"
+    ],
+    "optionalFillOrder": [
+      "altered-characteristic-in-realization",
+      "13",
+      "b13",
+      "#11",
+      "11",
+      "#9",
+      "b9",
+      "9",
+      "6",
+      "natural-5-last"
+    ],
+    "doublingOrder": [
+      "1",
+      "5"
+    ],
+    "doublingMaximumPerDegree": 1,
+    "neverDouble": [
+      "guide-tone",
+      "altered-degree",
+      "characteristic-required-color",
+      "slash-bass"
+    ]
+  },
+  "realizationClasses": [
+    {
+      "id": "major-triad",
+      "formulaRuleIds": ["base-major"]
+    },
+    {
+      "id": "minor-triad",
+      "formulaRuleIds": ["base-minor"]
+    },
+    {
+      "id": "diminished-triad",
+      "formulaRuleIds": ["base-diminished"]
+    },
+    {
+      "id": "augmented-triad",
+      "formulaRuleIds": ["base-augmented"]
+    },
+    {
+      "id": "suspended-triad",
+      "formulaRuleIds": ["base-sus2", "base-sus4"]
+    },
+    {
+      "id": "power-triad",
+      "formulaRuleIds": ["base-power"]
+    },
+    {
+      "id": "major-sixth",
+      "formulaRuleIds": ["sixth-major"]
+    },
+    {
+      "id": "minor-sixth",
+      "formulaRuleIds": ["sixth-minor"]
+    },
+    {
+      "id": "major-seventh",
+      "formulaRuleIds": ["seventh-major", "extension-major"]
+    },
+    {
+      "id": "dominant-seventh",
+      "formulaRuleIds": ["seventh-dominant", "extension-dominant", "altered-dominant"]
+    },
+    {
+      "id": "minor-seventh",
+      "formulaRuleIds": ["seventh-minor", "extension-minor"]
+    },
+    {
+      "id": "minor-major-seventh",
+      "formulaRuleIds": ["seventh-minor-major"]
+    },
+    {
+      "id": "half-diminished-seventh",
+      "formulaRuleIds": ["seventh-half-diminished"]
+    },
+    {
+      "id": "diminished-seventh",
+      "formulaRuleIds": ["seventh-diminished"]
+    },
+    {
+      "id": "augmented-major-seventh",
+      "formulaRuleIds": ["seventh-augmented-major"]
+    },
+    {
+      "id": "suspended-dominant",
+      "formulaRuleIds": ["extension-suspended-dominant"]
+    }
+  ],
+  "registerPolicies": [
+    {
+      "schema": "changes.theory.voicing-family-register-policy.v1",
+      "id": "balanced-register-v1",
+      "version": 1,
+      "families": ["balanced"],
+      "slotOrderPolicy": "selected-degree-register-weave-v1",
+      "minimumSpanSemitones": 0,
+      "maximumSpanSemitones": 36,
+      "targetSpanSemitones": 12,
+      "minimumWideGapSemitones": null,
+      "minimumWideGapVoiceCounts": null,
+      "closedSourceMaximumSpanSemitones": null,
+      "structuralTransform": null
+    },
+    {
+      "schema": "changes.theory.voicing-family-register-policy.v1",
+      "id": "fixed-template-register-v1",
+      "version": 1,
+      "families": ["shell", "rootless-a", "rootless-b"],
+      "slotOrderPolicy": "template-low-to-high",
+      "minimumSpanSemitones": 0,
+      "maximumSpanSemitones": 24,
+      "targetSpanSemitones": 12,
+      "minimumWideGapSemitones": null,
+      "minimumWideGapVoiceCounts": null,
+      "closedSourceMaximumSpanSemitones": null,
+      "structuralTransform": null
+    },
+    {
+      "schema": "changes.theory.voicing-family-register-policy.v1",
+      "id": "open-register-v1",
+      "version": 1,
+      "families": ["open"],
+      "slotOrderPolicy": "selected-degree-register-weave-v1",
+      "minimumSpanSemitones": 12,
+      "maximumSpanSemitones": 36,
+      "targetSpanSemitones": 19,
+      "minimumWideGapSemitones": 7,
+      "minimumWideGapVoiceCounts": [3, 4, 5, 6, 7],
+      "closedSourceMaximumSpanSemitones": null,
+      "structuralTransform": null
+    },
+    {
+      "schema": "changes.theory.voicing-family-register-policy.v1",
+      "id": "drop2-register-v1",
+      "version": 1,
+      "families": ["drop2"],
+      "slotOrderPolicy": "closed-source-low-to-high",
+      "minimumSpanSemitones": 12,
+      "maximumSpanSemitones": 36,
+      "targetSpanSemitones": 19,
+      "minimumWideGapSemitones": 7,
+      "minimumWideGapVoiceCounts": [4, 5],
+      "closedSourceMaximumSpanSemitones": 11,
+      "structuralTransform": {
+        "kind": "drop2",
+        "sourceVoiceSelection": "second-from-top",
+        "lowerBySemitones": 12,
+        "outputOrder": "midi-ascending"
+      }
+    },
+    {
+      "schema": "changes.theory.voicing-family-register-policy.v1",
+      "id": "quartal-register-v1",
+      "version": 1,
+      "families": ["quartal"],
+      "slotOrderPolicy": "quartal-context-low-to-high",
+      "minimumSpanSemitones": 10,
+      "maximumSpanSemitones": 24,
+      "targetSpanSemitones": 15,
+      "minimumWideGapSemitones": null,
+      "minimumWideGapVoiceCounts": null,
+      "closedSourceMaximumSpanSemitones": null,
+      "structuralTransform": null
+    }
+  ],
+  "lowRegisterSpacing": {
+    "policyId": "changes.voicing-low-register-spacing",
+    "policyVersion": 1,
+    "comparison": "For each adjacent low-to-high MIDI pair, choose the band from the lower pitch and require intervalSemitones >= minimumAdjacentSemitones.",
+    "bands": [
+      {
+        "minimumLowerMidi": 0,
+        "maximumLowerMidi": 35,
+        "minimumAdjacentSemitones": 10
+      },
+      {
+        "minimumLowerMidi": 36,
+        "maximumLowerMidi": 47,
+        "minimumAdjacentSemitones": 7
+      },
+      {
+        "minimumLowerMidi": 48,
+        "maximumLowerMidi": 59,
+        "minimumAdjacentSemitones": 4
+      },
+      {
+        "minimumLowerMidi": 60,
+        "maximumLowerMidi": 127,
+        "minimumAdjacentSemitones": 1
+      }
+    ]
+  },
+  "adaptiveFamilies": [
+    {
+      "id": "balanced-adaptive-v1",
+      "family": "balanced",
+      "selectionMode": "realization-roles",
+      "availability": "available",
+      "quartalContextPolicyId": null,
+      "quartalContextPolicyVersion": null,
+      "requiredDegreeSource": "selected-realization-required",
+      "optionalDegreeSource": "selected-realization-optional",
+      "guideToneSource": "selected-realization-guide-tone",
+      "selectionPolicyId": "changes.voicing-realization-role-selection",
+      "selectionPolicyVersion": 1,
+      "maximumSelectedDegreeSlots": 7,
+      "realizationClasses": [
+        "major-triad",
+        "minor-triad",
+        "diminished-triad",
+        "augmented-triad",
+        "suspended-triad",
+        "power-triad",
+        "major-sixth",
+        "minor-sixth",
+        "major-seventh",
+        "dominant-seventh",
+        "minor-seventh",
+        "minor-major-seventh",
+        "half-diminished-seventh",
+        "diminished-seventh",
+        "augmented-major-seventh",
+        "suspended-dominant"
+      ],
+      "minimumVoiceCount": 3,
+      "permittedVoiceCounts": [3, 4, 5, 6, 7],
+      "minimumVoiceCountRule": "declared minimum is 3 total voices; insufficient degree-bearing slots are realization-fit omissions and never raise the template minimum",
+      "fillRule": "required and guide degrees, then exact optional realization members by optionalFillOrder, then declared one-octave root and natural-fifth doublings",
+      "permittedBassPolicies": ["generated", "external", "none"],
+      "registerPolicyId": "balanced-register-v1",
+      "registerPolicyVersion": 1,
+      "targetSpanSemitones": 12
+    },
+    {
+      "id": "open-adaptive-v1",
+      "family": "open",
+      "selectionMode": "realization-roles",
+      "availability": "available",
+      "quartalContextPolicyId": null,
+      "quartalContextPolicyVersion": null,
+      "requiredDegreeSource": "selected-realization-required",
+      "optionalDegreeSource": "selected-realization-optional",
+      "guideToneSource": "selected-realization-guide-tone",
+      "selectionPolicyId": "changes.voicing-realization-role-selection",
+      "selectionPolicyVersion": 1,
+      "maximumSelectedDegreeSlots": 7,
+      "realizationClasses": [
+        "major-triad",
+        "minor-triad",
+        "diminished-triad",
+        "augmented-triad",
+        "suspended-triad",
+        "power-triad",
+        "major-sixth",
+        "minor-sixth",
+        "major-seventh",
+        "dominant-seventh",
+        "minor-seventh",
+        "minor-major-seventh",
+        "half-diminished-seventh",
+        "diminished-seventh",
+        "augmented-major-seventh",
+        "suspended-dominant"
+      ],
+      "minimumVoiceCount": 3,
+      "permittedVoiceCounts": [3, 4, 5, 6, 7],
+      "minimumVoiceCountRule": "declared minimum is 3 total voices; insufficient degree-bearing slots are realization-fit omissions and never raise the template minimum",
+      "fillRule": "the Balanced degree selection followed by the exact open-register structural constraints",
+      "permittedBassPolicies": ["generated", "external", "none"],
+      "registerPolicyId": "open-register-v1",
+      "registerPolicyVersion": 1,
+      "targetSpanSemitones": 19
+    },
+    {
+      "id": "drop2-adaptive-v1",
+      "family": "drop2",
+      "selectionMode": "realization-roles",
+      "availability": "available",
+      "quartalContextPolicyId": null,
+      "quartalContextPolicyVersion": null,
+      "requiredDegreeSource": "selected-realization-required",
+      "optionalDegreeSource": "selected-realization-optional",
+      "guideToneSource": "selected-realization-guide-tone",
+      "selectionPolicyId": "changes.voicing-realization-role-selection",
+      "selectionPolicyVersion": 1,
+      "maximumSelectedDegreeSlots": 7,
+      "realizationClasses": [
+        "major-triad",
+        "minor-triad",
+        "diminished-triad",
+        "augmented-triad",
+        "suspended-triad",
+        "power-triad",
+        "major-sixth",
+        "minor-sixth",
+        "major-seventh",
+        "dominant-seventh",
+        "minor-seventh",
+        "minor-major-seventh",
+        "half-diminished-seventh",
+        "diminished-seventh",
+        "augmented-major-seventh",
+        "suspended-dominant"
+      ],
+      "minimumVoiceCount": 4,
+      "permittedVoiceCounts": [4, 5, 6, 7],
+      "minimumVoiceCountRule": "declared minimum is 4 total voices; insufficient degree-bearing slots are realization-fit omissions and never raise the template minimum",
+      "fillRule": "use steps 1 through 3 of Balanced selection with distinct realization degrees only, then form the closed source; refuse rather than adding an octave copy, and never label a generic spread Drop-2",
+      "permittedBassPolicies": ["generated", "external", "none"],
+      "registerPolicyId": "drop2-register-v1",
+      "registerPolicyVersion": 1,
+      "targetSpanSemitones": 19
+    }
+  ],
+  "fixedTemplates": [
+    {
+      "id": "shell-major-v1",
+      "family": "shell",
+      "realizationClasses": ["major-seventh"],
+      "selectionMode": "fixed-degree-sequence",
+      "availability": "available",
+      "quartalContextPolicyId": null,
+      "quartalContextPolicyVersion": null,
+      "degreeTokens": ["1", "3", "7"],
+      "degreeSequence": [
+        {"degree":{"number":1,"alter":0},"role":"identity","required":true,"guideTone":false,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":3,"alter":0},"role":"identity","required":true,"guideTone":true,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":7,"alter":0},"role":"guide","required":true,"guideTone":true,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false}
+      ],
+      "minimumVoiceCount": 3,
+      "permittedVoiceCounts": [3],
+      "permittedBassPolicies": ["generated", "external", "none"],
+      "omitsRoot": false,
+      "registerPolicyId": "fixed-template-register-v1",
+      "registerPolicyVersion": 1,
+      "targetSpanSemitones": 12
+    },
+    {
+      "id": "shell-dominant-v1",
+      "family": "shell",
+      "realizationClasses": ["dominant-seventh"],
+      "selectionMode": "fixed-degree-sequence",
+      "availability": "available",
+      "quartalContextPolicyId": null,
+      "quartalContextPolicyVersion": null,
+      "degreeTokens": ["1", "3", "b7"],
+      "degreeSequence": [
+        {"degree":{"number":1,"alter":0},"role":"identity","required":true,"guideTone":false,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":3,"alter":0},"role":"identity","required":true,"guideTone":true,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":7,"alter":-1},"role":"guide","required":true,"guideTone":true,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false}
+      ],
+      "minimumVoiceCount": 3,
+      "permittedVoiceCounts": [3],
+      "permittedBassPolicies": ["generated", "external", "none"],
+      "omitsRoot": false,
+      "registerPolicyId": "fixed-template-register-v1",
+      "registerPolicyVersion": 1,
+      "targetSpanSemitones": 12
+    },
+    {
+      "id": "shell-minor-v1",
+      "family": "shell",
+      "realizationClasses": ["minor-seventh"],
+      "selectionMode": "fixed-degree-sequence",
+      "availability": "available",
+      "quartalContextPolicyId": null,
+      "quartalContextPolicyVersion": null,
+      "degreeTokens": ["1", "b3", "b7"],
+      "degreeSequence": [
+        {"degree":{"number":1,"alter":0},"role":"identity","required":true,"guideTone":false,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":3,"alter":-1},"role":"identity","required":true,"guideTone":true,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":7,"alter":-1},"role":"guide","required":true,"guideTone":true,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false}
+      ],
+      "minimumVoiceCount": 3,
+      "permittedVoiceCounts": [3],
+      "permittedBassPolicies": ["generated", "external", "none"],
+      "omitsRoot": false,
+      "registerPolicyId": "fixed-template-register-v1",
+      "registerPolicyVersion": 1,
+      "targetSpanSemitones": 12
+    },
+    {
+      "id": "shell-minor-major-v1",
+      "family": "shell",
+      "realizationClasses": ["minor-major-seventh"],
+      "selectionMode": "fixed-degree-sequence",
+      "availability": "available",
+      "quartalContextPolicyId": null,
+      "quartalContextPolicyVersion": null,
+      "degreeTokens": ["1", "b3", "7"],
+      "degreeSequence": [
+        {"degree":{"number":1,"alter":0},"role":"identity","required":true,"guideTone":false,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":3,"alter":-1},"role":"identity","required":true,"guideTone":true,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":7,"alter":0},"role":"guide","required":true,"guideTone":true,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false}
+      ],
+      "minimumVoiceCount": 3,
+      "permittedVoiceCounts": [3],
+      "permittedBassPolicies": ["generated", "external", "none"],
+      "omitsRoot": false,
+      "registerPolicyId": "fixed-template-register-v1",
+      "registerPolicyVersion": 1,
+      "targetSpanSemitones": 12
+    },
+    {
+      "id": "shell-half-diminished-v1",
+      "family": "shell",
+      "realizationClasses": ["half-diminished-seventh"],
+      "selectionMode": "fixed-degree-sequence",
+      "availability": "available",
+      "quartalContextPolicyId": null,
+      "quartalContextPolicyVersion": null,
+      "degreeTokens": ["1", "b3", "b5", "b7"],
+      "degreeSequence": [
+        {"degree":{"number":1,"alter":0},"role":"identity","required":true,"guideTone":false,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":3,"alter":-1},"role":"identity","required":true,"guideTone":true,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":5,"alter":-1},"role":"identity","required":true,"guideTone":false,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":7,"alter":-1},"role":"guide","required":true,"guideTone":true,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false}
+      ],
+      "minimumVoiceCount": 4,
+      "permittedVoiceCounts": [4],
+      "permittedBassPolicies": ["generated", "external", "none"],
+      "omitsRoot": false,
+      "registerPolicyId": "fixed-template-register-v1",
+      "registerPolicyVersion": 1,
+      "targetSpanSemitones": 12
+    },
+    {
+      "id": "shell-diminished-v1",
+      "family": "shell",
+      "realizationClasses": ["diminished-seventh"],
+      "selectionMode": "fixed-degree-sequence",
+      "availability": "available",
+      "quartalContextPolicyId": null,
+      "quartalContextPolicyVersion": null,
+      "degreeTokens": ["1", "b3", "b5", "bb7"],
+      "degreeSequence": [
+        {"degree":{"number":1,"alter":0},"role":"identity","required":true,"guideTone":false,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":3,"alter":-1},"role":"identity","required":true,"guideTone":true,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":5,"alter":-1},"role":"identity","required":true,"guideTone":false,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":7,"alter":-2},"role":"guide","required":true,"guideTone":true,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false}
+      ],
+      "minimumVoiceCount": 4,
+      "permittedVoiceCounts": [4],
+      "permittedBassPolicies": ["generated", "external", "none"],
+      "omitsRoot": false,
+      "registerPolicyId": "fixed-template-register-v1",
+      "registerPolicyVersion": 1,
+      "targetSpanSemitones": 12
+    },
+    {
+      "id": "shell-suspended-dominant-v1",
+      "family": "shell",
+      "realizationClasses": ["suspended-dominant"],
+      "selectionMode": "fixed-degree-sequence",
+      "availability": "available",
+      "quartalContextPolicyId": null,
+      "quartalContextPolicyVersion": null,
+      "degreeTokens": ["1", "4", "b7"],
+      "degreeSequence": [
+        {"degree":{"number":1,"alter":0},"role":"identity","required":true,"guideTone":false,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":4,"alter":0},"role":"identity","required":true,"guideTone":true,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":7,"alter":-1},"role":"guide","required":true,"guideTone":true,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false}
+      ],
+      "minimumVoiceCount": 3,
+      "permittedVoiceCounts": [3],
+      "permittedBassPolicies": ["generated", "external", "none"],
+      "omitsRoot": false,
+      "registerPolicyId": "fixed-template-register-v1",
+      "registerPolicyVersion": 1,
+      "targetSpanSemitones": 12
+    },
+    {
+      "id": "rootless-a-major-v1",
+      "family": "rootless-a",
+      "realizationClasses": ["major-seventh"],
+      "selectionMode": "fixed-degree-sequence",
+      "availability": "available",
+      "quartalContextPolicyId": null,
+      "quartalContextPolicyVersion": null,
+      "degreeTokens": ["3", "7", "9", "5"],
+      "degreeSequence": [
+        {"degree":{"number":3,"alter":0},"role":"identity","required":true,"guideTone":true,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":7,"alter":0},"role":"guide","required":true,"guideTone":true,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":9,"alter":0},"role":"color","required":true,"guideTone":false,"minimumOctaveLiftFromPrevious":1,"preferredOctaveLiftFromPrevious":1,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":5,"alter":0},"role":"support","required":true,"guideTone":false,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false}
+      ],
+      "minimumVoiceCount": 4,
+      "permittedVoiceCounts": [4],
+      "permittedBassPolicies": ["external"],
+      "omitsRoot": true,
+      "registerPolicyId": "fixed-template-register-v1",
+      "registerPolicyVersion": 1,
+      "targetSpanSemitones": 12
+    },
+    {
+      "id": "rootless-b-major-v1",
+      "family": "rootless-b",
+      "realizationClasses": ["major-seventh"],
+      "selectionMode": "fixed-degree-sequence",
+      "availability": "available",
+      "quartalContextPolicyId": null,
+      "quartalContextPolicyVersion": null,
+      "degreeTokens": ["7", "9", "3", "13"],
+      "degreeSequence": [
+        {"degree":{"number":7,"alter":0},"role":"guide","required":true,"guideTone":true,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":9,"alter":0},"role":"color","required":true,"guideTone":false,"minimumOctaveLiftFromPrevious":1,"preferredOctaveLiftFromPrevious":1,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":3,"alter":0},"role":"identity","required":true,"guideTone":true,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":13,"alter":0},"role":"color","required":true,"guideTone":false,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false}
+      ],
+      "minimumVoiceCount": 4,
+      "permittedVoiceCounts": [4],
+      "permittedBassPolicies": ["external"],
+      "omitsRoot": true,
+      "registerPolicyId": "fixed-template-register-v1",
+      "registerPolicyVersion": 1,
+      "targetSpanSemitones": 12
+    },
+    {
+      "id": "rootless-a-dominant-v1",
+      "family": "rootless-a",
+      "realizationClasses": ["dominant-seventh"],
+      "selectionMode": "fixed-degree-sequence",
+      "availability": "available",
+      "quartalContextPolicyId": null,
+      "quartalContextPolicyVersion": null,
+      "degreeTokens": ["3", "b7", "9", "13"],
+      "degreeSequence": [
+        {"degree":{"number":3,"alter":0},"role":"identity","required":true,"guideTone":true,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":7,"alter":-1},"role":"guide","required":true,"guideTone":true,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":9,"alter":0},"role":"color","required":true,"guideTone":false,"minimumOctaveLiftFromPrevious":1,"preferredOctaveLiftFromPrevious":1,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":13,"alter":0},"role":"color","required":true,"guideTone":false,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false}
+      ],
+      "minimumVoiceCount": 4,
+      "permittedVoiceCounts": [4],
+      "permittedBassPolicies": ["external"],
+      "omitsRoot": true,
+      "registerPolicyId": "fixed-template-register-v1",
+      "registerPolicyVersion": 1,
+      "targetSpanSemitones": 12
+    },
+    {
+      "id": "rootless-b-dominant-v1",
+      "family": "rootless-b",
+      "realizationClasses": ["dominant-seventh"],
+      "selectionMode": "fixed-degree-sequence",
+      "availability": "available",
+      "quartalContextPolicyId": null,
+      "quartalContextPolicyVersion": null,
+      "degreeTokens": ["b7", "9", "3", "13"],
+      "degreeSequence": [
+        {"degree":{"number":7,"alter":-1},"role":"guide","required":true,"guideTone":true,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":9,"alter":0},"role":"color","required":true,"guideTone":false,"minimumOctaveLiftFromPrevious":1,"preferredOctaveLiftFromPrevious":1,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":3,"alter":0},"role":"identity","required":true,"guideTone":true,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":13,"alter":0},"role":"color","required":true,"guideTone":false,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false}
+      ],
+      "minimumVoiceCount": 4,
+      "permittedVoiceCounts": [4],
+      "permittedBassPolicies": ["external"],
+      "omitsRoot": true,
+      "registerPolicyId": "fixed-template-register-v1",
+      "registerPolicyVersion": 1,
+      "targetSpanSemitones": 12
+    },
+    {
+      "id": "rootless-a-minor-v1",
+      "family": "rootless-a",
+      "realizationClasses": ["minor-seventh"],
+      "selectionMode": "fixed-degree-sequence",
+      "availability": "available",
+      "quartalContextPolicyId": null,
+      "quartalContextPolicyVersion": null,
+      "degreeTokens": ["b3", "b7", "9", "5"],
+      "degreeSequence": [
+        {"degree":{"number":3,"alter":-1},"role":"identity","required":true,"guideTone":true,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":7,"alter":-1},"role":"guide","required":true,"guideTone":true,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":9,"alter":0},"role":"color","required":true,"guideTone":false,"minimumOctaveLiftFromPrevious":1,"preferredOctaveLiftFromPrevious":1,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":5,"alter":0},"role":"support","required":true,"guideTone":false,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false}
+      ],
+      "minimumVoiceCount": 4,
+      "permittedVoiceCounts": [4],
+      "permittedBassPolicies": ["external"],
+      "omitsRoot": true,
+      "registerPolicyId": "fixed-template-register-v1",
+      "registerPolicyVersion": 1,
+      "targetSpanSemitones": 12
+    },
+    {
+      "id": "rootless-b-minor-v1",
+      "family": "rootless-b",
+      "realizationClasses": ["minor-seventh"],
+      "selectionMode": "fixed-degree-sequence",
+      "availability": "available",
+      "quartalContextPolicyId": null,
+      "quartalContextPolicyVersion": null,
+      "degreeTokens": ["b7", "9", "b3", "11"],
+      "degreeSequence": [
+        {"degree":{"number":7,"alter":-1},"role":"guide","required":true,"guideTone":true,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":9,"alter":0},"role":"color","required":true,"guideTone":false,"minimumOctaveLiftFromPrevious":1,"preferredOctaveLiftFromPrevious":1,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":3,"alter":-1},"role":"identity","required":true,"guideTone":true,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":11,"alter":0},"role":"color","required":true,"guideTone":false,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false}
+      ],
+      "minimumVoiceCount": 4,
+      "permittedVoiceCounts": [4],
+      "permittedBassPolicies": ["external"],
+      "omitsRoot": true,
+      "registerPolicyId": "fixed-template-register-v1",
+      "registerPolicyVersion": 1,
+      "targetSpanSemitones": 12
+    },
+    {
+      "id": "rootless-a-minor-major-v1",
+      "family": "rootless-a",
+      "realizationClasses": ["minor-major-seventh"],
+      "selectionMode": "fixed-degree-sequence",
+      "availability": "available",
+      "quartalContextPolicyId": null,
+      "quartalContextPolicyVersion": null,
+      "degreeTokens": ["b3", "7", "9", "5"],
+      "degreeSequence": [
+        {"degree":{"number":3,"alter":-1},"role":"identity","required":true,"guideTone":true,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":7,"alter":0},"role":"guide","required":true,"guideTone":true,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":9,"alter":0},"role":"color","required":true,"guideTone":false,"minimumOctaveLiftFromPrevious":1,"preferredOctaveLiftFromPrevious":1,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":5,"alter":0},"role":"support","required":true,"guideTone":false,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false}
+      ],
+      "minimumVoiceCount": 4,
+      "permittedVoiceCounts": [4],
+      "permittedBassPolicies": ["external"],
+      "omitsRoot": true,
+      "registerPolicyId": "fixed-template-register-v1",
+      "registerPolicyVersion": 1,
+      "targetSpanSemitones": 12
+    },
+    {
+      "id": "rootless-b-minor-major-v1",
+      "family": "rootless-b",
+      "realizationClasses": ["minor-major-seventh"],
+      "selectionMode": "fixed-degree-sequence",
+      "availability": "available",
+      "quartalContextPolicyId": null,
+      "quartalContextPolicyVersion": null,
+      "degreeTokens": ["7", "9", "b3", "6"],
+      "degreeSequence": [
+        {"degree":{"number":7,"alter":0},"role":"guide","required":true,"guideTone":true,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":9,"alter":0},"role":"color","required":true,"guideTone":false,"minimumOctaveLiftFromPrevious":1,"preferredOctaveLiftFromPrevious":1,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":3,"alter":-1},"role":"identity","required":true,"guideTone":true,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":6,"alter":0},"role":"color","required":true,"guideTone":false,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false}
+      ],
+      "minimumVoiceCount": 4,
+      "permittedVoiceCounts": [4],
+      "permittedBassPolicies": ["external"],
+      "omitsRoot": true,
+      "registerPolicyId": "fixed-template-register-v1",
+      "registerPolicyVersion": 1,
+      "targetSpanSemitones": 12
+    },
+    {
+      "id": "rootless-a-half-diminished-v1",
+      "family": "rootless-a",
+      "realizationClasses": ["half-diminished-seventh"],
+      "selectionMode": "fixed-degree-sequence",
+      "availability": "available",
+      "quartalContextPolicyId": null,
+      "quartalContextPolicyVersion": null,
+      "degreeTokens": ["b3", "b5", "b7", "11"],
+      "degreeSequence": [
+        {"degree":{"number":3,"alter":-1},"role":"identity","required":true,"guideTone":true,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":5,"alter":-1},"role":"identity","required":true,"guideTone":false,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":7,"alter":-1},"role":"guide","required":true,"guideTone":true,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":11,"alter":0},"role":"color","required":true,"guideTone":false,"minimumOctaveLiftFromPrevious":1,"preferredOctaveLiftFromPrevious":1,"mayOmit":false,"mayDouble":false}
+      ],
+      "minimumVoiceCount": 4,
+      "permittedVoiceCounts": [4],
+      "permittedBassPolicies": ["external"],
+      "omitsRoot": true,
+      "registerPolicyId": "fixed-template-register-v1",
+      "registerPolicyVersion": 1,
+      "targetSpanSemitones": 12
+    },
+    {
+      "id": "rootless-b-half-diminished-v1",
+      "family": "rootless-b",
+      "realizationClasses": ["half-diminished-seventh"],
+      "selectionMode": "fixed-degree-sequence",
+      "availability": "available",
+      "quartalContextPolicyId": null,
+      "quartalContextPolicyVersion": null,
+      "degreeTokens": ["b7", "11", "b3", "b5"],
+      "degreeSequence": [
+        {"degree":{"number":7,"alter":-1},"role":"guide","required":true,"guideTone":true,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":11,"alter":0},"role":"color","required":true,"guideTone":false,"minimumOctaveLiftFromPrevious":1,"preferredOctaveLiftFromPrevious":1,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":3,"alter":-1},"role":"identity","required":true,"guideTone":true,"minimumOctaveLiftFromPrevious":1,"preferredOctaveLiftFromPrevious":1,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":5,"alter":-1},"role":"identity","required":true,"guideTone":false,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false}
+      ],
+      "minimumVoiceCount": 4,
+      "permittedVoiceCounts": [4],
+      "permittedBassPolicies": ["external"],
+      "omitsRoot": true,
+      "registerPolicyId": "fixed-template-register-v1",
+      "registerPolicyVersion": 1,
+      "targetSpanSemitones": 12
+    },
+    {
+      "id": "rootless-a-suspended-v1",
+      "family": "rootless-a",
+      "realizationClasses": ["suspended-dominant"],
+      "selectionMode": "fixed-degree-sequence",
+      "availability": "available",
+      "quartalContextPolicyId": null,
+      "quartalContextPolicyVersion": null,
+      "degreeTokens": ["4", "b7", "9", "13"],
+      "degreeSequence": [
+        {"degree":{"number":4,"alter":0},"role":"identity","required":true,"guideTone":true,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":7,"alter":-1},"role":"guide","required":true,"guideTone":true,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":9,"alter":0},"role":"color","required":true,"guideTone":false,"minimumOctaveLiftFromPrevious":1,"preferredOctaveLiftFromPrevious":1,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":13,"alter":0},"role":"color","required":true,"guideTone":false,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false}
+      ],
+      "minimumVoiceCount": 4,
+      "permittedVoiceCounts": [4],
+      "permittedBassPolicies": ["external"],
+      "omitsRoot": true,
+      "registerPolicyId": "fixed-template-register-v1",
+      "registerPolicyVersion": 1,
+      "targetSpanSemitones": 12
+    },
+    {
+      "id": "rootless-b-suspended-v1",
+      "family": "rootless-b",
+      "realizationClasses": ["suspended-dominant"],
+      "selectionMode": "fixed-degree-sequence",
+      "availability": "available",
+      "quartalContextPolicyId": null,
+      "quartalContextPolicyVersion": null,
+      "degreeTokens": ["b7", "9", "4", "13"],
+      "degreeSequence": [
+        {"degree":{"number":7,"alter":-1},"role":"guide","required":true,"guideTone":true,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":9,"alter":0},"role":"color","required":true,"guideTone":false,"minimumOctaveLiftFromPrevious":1,"preferredOctaveLiftFromPrevious":1,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":4,"alter":0},"role":"identity","required":true,"guideTone":true,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false},
+        {"degree":{"number":13,"alter":0},"role":"color","required":true,"guideTone":false,"minimumOctaveLiftFromPrevious":0,"preferredOctaveLiftFromPrevious":0,"mayOmit":false,"mayDouble":false}
+      ],
+      "minimumVoiceCount": 4,
+      "permittedVoiceCounts": [4],
+      "permittedBassPolicies": ["external"],
+      "omitsRoot": true,
+      "registerPolicyId": "fixed-template-register-v1",
+      "registerPolicyVersion": 1,
+      "targetSpanSemitones": 12
+    }
+  ],
+  "quartalTemplates": [
+    {
+      "id": "quartal-major-lydian-v1",
+      "family": "quartal",
+      "selectionMode": "quartal-context-sequence",
+      "degreeSequenceSource": "quartal-context",
+      "minimumSelectedDegreeSlots": 2,
+      "maximumSelectedDegreeSlots": 7,
+      "availability": "context-gated",
+      "quartalContextPolicyId": "changes.quartal-context-gate",
+      "quartalContextPolicyVersion": 1,
+      "realizationClasses": ["major-seventh"],
+      "compatibilityClasses": ["lydian"],
+      "minimumVoiceCount": 3,
+      "permittedVoiceCounts": [3, 4, 5],
+      "requiredEvidence": true,
+      "degreesMustBelongToSelectedRealization": true,
+      "permittedBassPolicies": ["generated", "external", "none"],
+      "registerPolicyId": "quartal-register-v1",
+      "registerPolicyVersion": 1,
+      "targetSpanSemitones": 15
+    },
+    {
+      "id": "quartal-minor-dorian-v1",
+      "family": "quartal",
+      "selectionMode": "quartal-context-sequence",
+      "degreeSequenceSource": "quartal-context",
+      "minimumSelectedDegreeSlots": 2,
+      "maximumSelectedDegreeSlots": 7,
+      "availability": "context-gated",
+      "quartalContextPolicyId": "changes.quartal-context-gate",
+      "quartalContextPolicyVersion": 1,
+      "realizationClasses": ["minor-seventh"],
+      "compatibilityClasses": ["dorian"],
+      "minimumVoiceCount": 3,
+      "permittedVoiceCounts": [3, 4, 5],
+      "requiredEvidence": true,
+      "degreesMustBelongToSelectedRealization": true,
+      "permittedBassPolicies": ["generated", "external", "none"],
+      "registerPolicyId": "quartal-register-v1",
+      "registerPolicyVersion": 1,
+      "targetSpanSemitones": 15
+    },
+    {
+      "id": "quartal-suspended-modal-v1",
+      "family": "quartal",
+      "selectionMode": "quartal-context-sequence",
+      "degreeSequenceSource": "quartal-context",
+      "minimumSelectedDegreeSlots": 2,
+      "maximumSelectedDegreeSlots": 7,
+      "availability": "context-gated",
+      "quartalContextPolicyId": "changes.quartal-context-gate",
+      "quartalContextPolicyVersion": 1,
+      "realizationClasses": ["suspended-dominant"],
+      "compatibilityClasses": ["mixolydian", "suspended-modal"],
+      "minimumVoiceCount": 3,
+      "permittedVoiceCounts": [3, 4, 5],
+      "requiredEvidence": true,
+      "degreesMustBelongToSelectedRealization": true,
+      "permittedBassPolicies": ["generated", "external", "none"],
+      "registerPolicyId": "quartal-register-v1",
+      "registerPolicyVersion": 1,
+      "targetSpanSemitones": 15
+    },
+    {
+      "id": "quartal-half-diminished-locrian-v1",
+      "family": "quartal",
+      "selectionMode": "quartal-context-sequence",
+      "degreeSequenceSource": "quartal-context",
+      "minimumSelectedDegreeSlots": 2,
+      "maximumSelectedDegreeSlots": 7,
+      "availability": "context-gated",
+      "quartalContextPolicyId": "changes.quartal-context-gate",
+      "quartalContextPolicyVersion": 1,
+      "realizationClasses": ["half-diminished-seventh"],
+      "compatibilityClasses": ["locrian"],
+      "minimumVoiceCount": 3,
+      "permittedVoiceCounts": [3, 4, 5],
+      "requiredEvidence": true,
+      "degreesMustBelongToSelectedRealization": true,
+      "permittedBassPolicies": ["generated", "external", "none"],
+      "registerPolicyId": "quartal-register-v1",
+      "registerPolicyVersion": 1,
+      "targetSpanSemitones": 15
+    },
+    {
+      "id": "quartal-diminished-symmetric-v1",
+      "family": "quartal",
+      "selectionMode": "quartal-context-sequence",
+      "degreeSequenceSource": "quartal-context",
+      "minimumSelectedDegreeSlots": 2,
+      "maximumSelectedDegreeSlots": 7,
+      "availability": "context-gated",
+      "quartalContextPolicyId": "changes.quartal-context-gate",
+      "quartalContextPolicyVersion": 1,
+      "realizationClasses": ["diminished-seventh"],
+      "compatibilityClasses": ["symmetric-diminished"],
+      "minimumVoiceCount": 3,
+      "permittedVoiceCounts": [3, 4],
+      "requiredEvidence": true,
+      "degreesMustBelongToSelectedRealization": true,
+      "permittedBassPolicies": ["generated", "external", "none"],
+      "registerPolicyId": "quartal-register-v1",
+      "registerPolicyVersion": 1,
+      "targetSpanSemitones": 15
+    }
+  ],
+  "unavailablePolicies": [
+    {
+      "id": "shell-no-row-v1",
+      "family": "shell",
+      "reason": "quality-family-unsupported"
+    },
+    {
+      "id": "rootless-no-row-v1",
+      "family": "rootless-a-or-b",
+      "reason": "quality-family-unsupported"
+    },
+    {
+      "id": "quartal-no-row-v1",
+      "family": "quartal",
+      "reason": "quartal-row-undeclared"
+    }
+  ]
+}

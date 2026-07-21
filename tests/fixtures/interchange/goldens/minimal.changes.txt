@@ -1,0 +1,6 @@
+@title "X"
+@description ""
+@meter 1/2
+@tempo 20
+[A]
+| C:2 |

@@ -265,7 +265,8 @@ function isPublicLayerEntrypoint(targetPath: string, targetLayer: string): boole
   const extensionless = withoutSourceExtension(targetPath).replace(/\/$/, "");
   return (
     extensionless === `src/${targetLayer}` ||
-    extensionless === `src/${targetLayer}/index`
+    extensionless === `src/${targetLayer}/index` ||
+    (targetLayer === "ui" && extensionless === "src/ui/runtime")
   );
 }
 
@@ -899,6 +900,16 @@ function checkModuleSpecifier(
   if (!resolved) {
     const root = packageRoot(specifier);
     if (root === "preact") {
+      if (specifier === "preact/compat" || specifier.startsWith("preact/compat/")) {
+        return [
+          finding(
+            parsed,
+            moduleSpecifier,
+            SOURCE_POLICY_CODES.boundaryPackageNotAllowed,
+            "The React compatibility layer is outside the source-owned Preact UI contract.",
+          ),
+        ];
+      }
       const preactOwner =
         importerLayer === "ui" || normalizePath(parsed.path) === "src/main.tsx";
       return preactOwner

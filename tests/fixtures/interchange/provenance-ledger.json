@@ -1,0 +1,186 @@
+{
+  "schema": "changes.fixtures.e0-provenance-ledger.v1",
+  "reviewState": "proposed-pending-first-golden-human-acceptance",
+  "expertReviewClaim": false,
+  "authorities": [
+    {
+      "id": "E0-AUTH-PLAN",
+      "authorityClass": "definition",
+      "sourceKind": "reviewed-project-policy",
+      "sourceRef": "docs/REBUILD_PLAN.md sections 14.4, 15.1, 15.4, 15.5, 16.1, and 16.2",
+      "scope": "transactional import, canonical JSON, text interchange, delivery, marker, and non-network product boundary",
+      "reviewState": "reviewed",
+      "judgmentBearing": false
+    },
+    {
+      "id": "E0-AUTH-E0-DECISIONS",
+      "authorityClass": "definition",
+      "sourceKind": "proposed-project-policy",
+      "sourceRef": "docs/E0_INTERCHANGE_CONTRACT.md",
+      "scope": "decisions needed to compose reviewed upstream contracts: routing, size refusal, fixed ASCII chart import, transient upstream evidence, history impact, composition-bound structural X1 evidence, single-use A0 import preparation, private pre-encoded export preparation, synchronous activation start, atomic latest-state A0 CAS, and typed state-free A0/A1 marker handoffs",
+      "reviewState": "proposed",
+      "judgmentBearing": true
+    },
+    {
+      "id": "E0-AUTH-F1",
+      "authorityClass": "definition",
+      "sourceKind": "reviewed-project-policy",
+      "sourceRef": "src/domain public contract and tests/fixtures/domain",
+      "scope": "spelling-first document, exact rational time, stable identity, voicing, Unicode, and collection limits",
+      "reviewState": "reviewed",
+      "judgmentBearing": false
+    },
+    {
+      "id": "E0-AUTH-F2",
+      "authorityClass": "definition",
+      "sourceKind": "reviewed-project-policy",
+      "sourceRef": "docs/F2_DECODER_CONTRACT.md and tests/fixtures/decoder",
+      "scope": "raw-byte preflight, structural decode, duplicate/parse ownership handoff, limits, and deterministic diagnostics",
+      "reviewState": "reviewed",
+      "judgmentBearing": false
+    },
+    {
+      "id": "E0-AUTH-F3",
+      "authorityClass": "definition",
+      "sourceKind": "reviewed-project-policy",
+      "sourceRef": "docs/F3_PUBLICATION_CONTRACT.md and tests/fixtures/publication",
+      "scope": "sole semantic publication brand, semantic equality inputs, completion, chord, voicing, and timeline validation",
+      "reviewState": "reviewed",
+      "judgmentBearing": false
+    },
+    {
+      "id": "E0-AUTH-T0",
+      "authorityClass": "definition",
+      "sourceKind": "reviewed-project-policy",
+      "sourceRef": "docs/T0_SYNTAX_CONTRACT.md and tests/fixtures/theory",
+      "scope": "chart grammar, canonical chord symbols, exact duration text, annotations, comments, repeats, limits, and parser diagnostics",
+      "reviewState": "reviewed",
+      "judgmentBearing": false
+    },
+    {
+      "id": "E0-AUTH-C0",
+      "authorityClass": "compatibility",
+      "sourceKind": "reviewed-compatibility-regression",
+      "sourceRef": "docs/C0_LEGACY_MIGRATION_CONTRACT.md and tests/fixtures/legacy-migration",
+      "scope": "unversioned legacy recognition, one-parse migration, candidate/report/refusal, cancel isolation, and hostile data",
+      "reviewState": "reviewed-with-e0-preview-validation-clarification",
+      "judgmentBearing": false
+    },
+    {
+      "id": "E0-AUTH-A0",
+      "authorityClass": "definition",
+      "sourceKind": "reviewed-project-policy",
+      "sourceRef": "docs/A0_APPLICATION_CONTRACT.md and tests/fixtures/application-state",
+      "scope": "request identity, stale settlement, import drafts, replacement transition, embedded retirement receipt, history impact, undo/redo, effects, synchronous latest-document identity reads, and atomic controller-owned in-session export-revision compare-and-set",
+      "reviewState": "reviewed-with-e0-draft-and-impact-amendment-required",
+      "judgmentBearing": false
+    },
+    {
+      "id": "E0-AUTH-A1",
+      "authorityClass": "definition",
+      "sourceKind": "planned-project-boundary",
+      "sourceRef": "docs/REBUILD_PLAN.md section 20.1 package A1 and docs/E0_INTERCHANGE_CONTRACT.md section 11 consumer port",
+      "scope": "future recovery-persistence ownership, exact canonical-marker handoff queue/completion, unavailable/failed status, and reload-durability publication",
+      "reviewState": "planned-unimplemented-integration-obligation",
+      "judgmentBearing": false
+    },
+    {
+      "id": "E0-AUTH-X1",
+      "authorityClass": "definition",
+      "sourceKind": "planned-project-boundary",
+      "sourceRef": "docs/REBUILD_PLAN.md section 20.1 package X1 and docs/E0_INTERCHANGE_CONTRACT.md section 9 consumer port",
+      "scope": "future serialized transport scheduler authority, progression-and-preview retirement, cancellation of future attacks, and exact structural evidence returned only by the composition-bound retirement call",
+      "reviewState": "planned-unimplemented-integration-obligation",
+      "judgmentBearing": false
+    },
+    {
+      "id": "E0-AUTH-ECMA-JSON",
+      "authorityClass": "published-reference",
+      "sourceKind": "external-definition",
+      "sourceRef": "ECMA-262 JSON.parse and JSON.stringify algorithms",
+      "scope": "one-argument parse, string escaping, number tokens, signed zero behavior, and property serialization baseline",
+      "reviewState": "reference-verified",
+      "judgmentBearing": false
+    },
+    {
+      "id": "E0-AUTH-WHATWG-ENCODING",
+      "authorityClass": "published-reference",
+      "sourceKind": "external-definition",
+      "sourceRef": "https://encoding.spec.whatwg.org/ sections 4.1, 6, and 8.1.1",
+      "scope": "UTF-8 encode and UTF-8 decode without BOM or fail using fatal error mode",
+      "reviewState": "reference-verified-2026-07-18",
+      "judgmentBearing": false
+    },
+    {
+      "id": "E0-AUTH-WHATWG-DOWNLOAD",
+      "authorityClass": "published-reference",
+      "sourceKind": "external-definition",
+      "sourceRef": "https://html.spec.whatwg.org/multipage/links.html download attribute plus URL object-URL lifecycle",
+      "scope": "anchor download handoff and the boundary between observable activation and unobservable final disk persistence",
+      "reviewState": "reference-verified-2026-07-18",
+      "judgmentBearing": false
+    },
+    {
+      "id": "E0-AUTH-FSA",
+      "authorityClass": "published-reference",
+      "sourceKind": "external-incubation-definition",
+      "sourceRef": "https://wicg.github.io/file-system-access/ sections 3.1 and 3.4",
+      "scope": "transient activation, showSaveFilePicker, suggestedName, writable handle, completion, cancellation, and progressive enhancement",
+      "reviewState": "draft-reference-verified-2026-07-18",
+      "judgmentBearing": false
+    },
+    {
+      "id": "E0-AUTH-WEB-CRYPTO",
+      "authorityClass": "published-reference",
+      "sourceKind": "external-definition",
+      "sourceRef": "https://www.w3.org/TR/WebCryptoAPI/ section 32.3.1 SHA-256 digest",
+      "scope": "SHA-256 digest over an exact byte sequence",
+      "reviewState": "reference-verified-2026-07-18",
+      "judgmentBearing": false
+    },
+    {
+      "id": "E0-AUTH-FILENAME-POLICY",
+      "authorityClass": "definition",
+      "sourceKind": "proposed-project-policy",
+      "sourceRef": "docs/E0_INTERCHANGE_CONTRACT.md section 4",
+      "scope": "total filename projection, scalar truncation, forbidden ranges, extension ownership, DOS device names, and fallback",
+      "reviewState": "proposed",
+      "judgmentBearing": true
+    },
+    {
+      "id": "E0-AUTH-VERIFICATION",
+      "authorityClass": "verification-policy",
+      "sourceKind": "reviewed-project-policy",
+      "sourceRef": "AGENTS.md verification discipline and docs/REBUILD_PLAN.md verification laws",
+      "scope": "independent fixtures, positive/negative/transposition/mutation proof, deterministic counters, hostile inert data, and no skipped gates",
+      "reviewState": "reviewed",
+      "judgmentBearing": false
+    }
+  ],
+  "independence": {
+    "productionImportsForbidden": true,
+    "productionOutputUsedAsOracle": false,
+    "expectedValuesGenerated": false,
+    "goldenBytesHandAuthored": true,
+    "boundaryGeneratorsMayConstructInputsOnly": true,
+    "completeUpstreamReportsMayBeTransientEvidenceOnly": true,
+    "x1EvidenceAcceptedOnlyFromCompositionBoundCall": true,
+    "callerMaySupplyTrustedInterchangeAdapters": false,
+    "untrustedImportSourceRawReturnValidatedAndCopied": true,
+    "unusedPreparedA0CapabilitiesInvalidatedByRequest": true,
+    "fallibleAdapterRawReturnsValidatedBeforeNormalization": true,
+    "preparedRegistryInvalidationIsTrustedTotalA0Primitive": true,
+    "preparedExportRegistryOwnedAndAllocatedByE0": true,
+    "preparedExportStartRequestContainsText": false,
+    "preparedExportBrowserInvocationBeforeFirstAwait": true,
+    "callerMarkerEvidenceAccepted": false,
+    "markerA0PublicationUsesLatestStateAtomicCas": true,
+    "publicMarkerResultsContainAppState": false,
+    "protocolInvalidRawResultsRetained": false,
+    "unimplementedAdapterSuccessMayNotBeClaimed": true,
+    "dynamicScrubbingForbidden": true,
+    "goldenUpdateRequiresVisibleDiff": true,
+    "firstGoldenRequiresHumanAcceptance": true,
+    "currentHumanAcceptanceClaim": false
+  }
+}

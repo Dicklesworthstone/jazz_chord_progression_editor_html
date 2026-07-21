@@ -1,0 +1,59 @@
+{
+  "schema": "changes.fixtures.x0-provenance-ledger.v1",
+  "ledgerVersion": 1,
+  "authoringStatement": "X0 expectations were authored before production audio-engine behavior. Mechanical values come from declared integer formulas and reviewed topology; timbral judgments remain explicit human release work.",
+  "reviewState": "reviewed-for-x0-spec",
+  "expectedValuesGenerated": false,
+  "productionOutputUsed": false,
+  "classificationPolicy": {
+    "primary-standard": "A current normative or editor-draft Web platform standard.",
+    "reviewed-contract": "A normative repository architecture or package decision.",
+    "legacy-observation": "A reproduced legacy failure the replacement must not preserve.",
+    "mechanical-derivation": "A direct result of a declared formula, integer algorithm, or cap.",
+    "human-review": "A judgment that automation cannot honestly certify."
+  },
+  "authorities": [
+    {
+      "id": "AUTH-WEB-AUDIO",
+      "class": "primary-standard",
+      "source": "Web Audio API 1.1 Editor's Draft, https://webaudio.github.io/web-audio-api/",
+      "supports": ["AudioContext currentTime scheduling", "one expensive context guidance", "source start and stop", "AudioParam automation", "dynamics compressor semantics", "wave shaper curve", "convolver normalization", "OfflineAudioContext"]
+    },
+    {
+      "id": "AUTH-PLAN-X0",
+      "class": "reviewed-contract",
+      "source": "docs/REBUILD_PLAN.md section 13.1-13.5 and 13.11-13.12 plus package X0",
+      "supports": ["persistent graph", "five recipes", "fixed-seed impulse", "voice lifecycle", "registry ownership", "preview routing", "fake and offline proof"]
+    },
+    {
+      "id": "AUTH-ARCH",
+      "class": "reviewed-contract",
+      "source": "docs/ARCHITECTURE.md",
+      "supports": ["audio layer ownership", "immutable plan handoff", "UI isolation", "offline deterministic runtime", "Preact-only production package"]
+    },
+    {
+      "id": "AUTH-LEGACY",
+      "class": "legacy-observation",
+      "source": "docs/LEGACY_AUDIT.md audio and transport failures plus L-AUDIO-02",
+      "supports": ["no graph mutation as ordinary flow", "no effects bypass", "no unowned callbacks", "one selected recipe meaning"]
+    },
+    {
+      "id": "AUTH-F1-INSTRUMENTS",
+      "class": "reviewed-contract",
+      "source": "src/domain/instrument-id.ts",
+      "supports": ["exact five instrument IDs", "stable instrument vocabulary"]
+    },
+    {
+      "id": "AUTH-X0-DEFINITION",
+      "class": "mechanical-derivation",
+      "source": "docs/X0_AUDIO_ENGINE_CONTRACT.md and reviewed X0 fixture definitions",
+      "supports": ["graph constants", "normalization arithmetic", "impulse Q15 checkpoints and checksums", "release ramps", "polyphony ordering", "memory and work bounds"]
+    },
+    {
+      "id": "AUTH-HUMAN-LISTENING",
+      "class": "human-review",
+      "source": "tests/fixtures/audio-engine/listening-rubric.json",
+      "supports": ["honest instrument labels", "click and stuck-note perception", "timbre differentiation", "headphone and laptop-speaker release evidence", "known limitations"]
+    }
+  ]
+}

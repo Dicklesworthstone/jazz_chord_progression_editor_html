@@ -1,0 +1,131 @@
+{
+  "schema": "changes.fixtures.v1-trace-ledger.v1",
+  "fixtureVersion": "1.0.0",
+  "status": "independently-authored-pre-production",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "stableTraceIdsOnly": true,
+  "caseLinkPolicy": "Case, mutation-control, and authority IDs are sorted and unique. Planned owners declare future evidence responsibility and do not claim execution.",
+  "traces": [
+    {
+      "id": "V1-TRACE-BOUNDARY",
+      "invariant": "The operation is pure, synchronous, theory-local, and consumes only exact automatic-candidate frames; ambient browser, audio, storage, network, cancellation, and application state are non-semantic.",
+      "caseIds": ["V1-LAW-001", "V1-OP-005", "V1-OP-017"],
+      "mutationControlIds": ["V1-MUT-003", "V1-MUT-035"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-INDEPENDENCE", "V1-AUTH-V0-DOMAIN"],
+      "plannedEvidenceOwners": ["tests/unit/v1-voice-assignment.test.ts"]
+    },
+    {
+      "id": "V1-TRACE-COSTS",
+      "invariant": "All selection and target-local cost axes use their exact formulas and remain plural, inspectable facts.",
+      "caseIds": ["V1-ASN-008", "V1-ASN-011", "V1-ASN-012"],
+      "mutationControlIds": ["V1-MUT-007", "V1-MUT-008", "V1-MUT-015", "V1-MUT-025", "V1-MUT-026", "V1-MUT-027"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-PROJECT-POLICY", "V1-AUTH-V0-DOMAIN"],
+      "plannedEvidenceOwners": ["tests/unit/v1-voice-assignment.test.ts"]
+    },
+    {
+      "id": "V1-TRACE-DETERMINISM",
+      "invariant": "Deeply equal requests and version identities produce byte-equivalent semantic results, counters, paths, and terminations without ambient influence.",
+      "caseIds": ["V1-ASN-001", "V1-ASN-009", "V1-ASN-017", "V1-LAW-001", "V1-OP-017"],
+      "mutationControlIds": ["V1-MUT-020", "V1-MUT-021", "V1-MUT-028", "V1-MUT-035"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-INDEPENDENCE", "V1-AUTH-PROJECT-POLICY"],
+      "plannedEvidenceOwners": ["tests/conformance/voice-assignment-conformance.test.ts"]
+    },
+    {
+      "id": "V1-TRACE-DP-ORDER",
+      "invariant": "A bounded prefix dynamic program selects a complete order-preserving path of correlated match, leave, and enter records; production never enumerates permutations or every path.",
+      "caseIds": ["V1-ASN-006", "V1-ASN-007", "V1-ASN-008", "V1-ASN-009", "V1-ASN-014", "V1-ASN-018", "V1-LAW-001", "V1-LAW-012"],
+      "mutationControlIds": ["V1-MUT-001", "V1-MUT-002", "V1-MUT-004", "V1-MUT-005", "V1-MUT-013", "V1-MUT-028", "V1-MUT-030", "V1-MUT-031"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-INDEPENDENCE", "V1-AUTH-LIMITS", "V1-AUTH-ORDER-PRESERVING", "V1-AUTH-PROJECT-POLICY"],
+      "plannedEvidenceOwners": ["tests/property/v1-assignment-oracle.test.ts", "tests/unit/v1-voice-assignment.test.ts"]
+    },
+    {
+      "id": "V1-TRACE-GAPS",
+      "invariant": "Entering and leaving arcs are explicit, cost exactly 12, have null motion and identity fields, and never reuse retired identity.",
+      "caseIds": ["V1-ASN-006", "V1-ASN-007", "V1-ASN-008", "V1-ASN-017", "V1-ASN-018"],
+      "mutationControlIds": ["V1-MUT-004", "V1-MUT-005", "V1-MUT-006", "V1-MUT-007", "V1-MUT-008", "V1-MUT-019", "V1-MUT-030"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-LIMITS", "V1-AUTH-ORDER-PRESERVING", "V1-AUTH-PROJECT-POLICY"],
+      "plannedEvidenceOwners": ["tests/unit/v1-voice-assignment.test.ts"]
+    },
+    {
+      "id": "V1-TRACE-GUIDE-TONES",
+      "invariant": "Guide continuity, guide doubling, and omitted colors use exact role-source degree number and alteration, never pitch inference or null-degree fabrication.",
+      "caseIds": ["V1-ASN-011", "V1-OP-008"],
+      "mutationControlIds": ["V1-MUT-022", "V1-MUT-023", "V1-MUT-024", "V1-MUT-026", "V1-MUT-027"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-PROJECT-POLICY", "V1-AUTH-V0-DOMAIN"],
+      "plannedEvidenceOwners": ["tests/unit/v1-voice-assignment.test.ts"]
+    },
+    {
+      "id": "V1-TRACE-IDENTITY",
+      "invariant": "Exact MIDI, pitch class, spelled pitch class, spelled pitch, degree, and request-local voice identity are distinct correlated facts.",
+      "caseIds": ["V1-ASN-003", "V1-ASN-004", "V1-ASN-005", "V1-ASN-006", "V1-ASN-007", "V1-ASN-008", "V1-ASN-011"],
+      "mutationControlIds": ["V1-MUT-006", "V1-MUT-009", "V1-MUT-010", "V1-MUT-011", "V1-MUT-012", "V1-MUT-013", "V1-MUT-023", "V1-MUT-027"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-ORDER-PRESERVING", "V1-AUTH-PROJECT-POLICY", "V1-AUTH-V0-DOMAIN"],
+      "plannedEvidenceOwners": ["tests/unit/v1-voice-assignment.test.ts"]
+    },
+    {
+      "id": "V1-TRACE-IMMUTABILITY",
+      "invariant": "Requests remain byte-equivalent after evaluation and returned arrays and records are recursively immutable and non-aliasing.",
+      "caseIds": ["V1-LAW-010", "V1-OP-005"],
+      "mutationControlIds": ["V1-MUT-036"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-INDEPENDENCE"],
+      "plannedEvidenceOwners": ["tests/conformance/voice-assignment-conformance.test.ts"]
+    },
+    {
+      "id": "V1-TRACE-LEGACY",
+      "invariant": "The replacement preserves only the two reviewed legacy regressions: actual runtime assignment is exercised and C versus C-sharp identity is exact.",
+      "caseIds": ["V1-ASN-003", "V1-ASN-005"],
+      "mutationControlIds": ["V1-MUT-009", "V1-MUT-010"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-V0-DOMAIN"],
+      "plannedEvidenceOwners": ["L-RUNTIME-03 -> tests/unit/v1-voice-assignment.test.ts", "L-VOICE-02 -> tests/unit/v1-voice-assignment.test.ts"]
+    },
+    {
+      "id": "V1-TRACE-LIMITS",
+      "invariant": "Every public work, memory, role, numeric, voice, lock, path, endpoint, and payload bound has an exact maximum and test-seam-only exact-plus-one refusal witness.",
+      "caseIds": ["V1-ASN-006", "V1-ASN-007", "V1-ASN-018", "V1-LAW-012", "V1-OP-004", "V1-OP-016"],
+      "mutationControlIds": ["V1-MUT-029", "V1-MUT-030", "V1-MUT-031", "V1-MUT-032"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-LIMITS", "V1-AUTH-ORDER-PRESERVING"],
+      "plannedEvidenceOwners": ["tests/integration/voice-assignment-limits.test.ts"]
+    },
+    {
+      "id": "V1-TRACE-LOCKS",
+      "invariant": "Locks bind exact request, event, source identity, target pitch, and target degree; eligible locks constrain paths, satisfied locks prove the selected path, and no lock is relaxed.",
+      "caseIds": ["V1-ASN-013", "V1-ASN-014", "V1-OP-012", "V1-OP-013"],
+      "mutationControlIds": ["V1-MUT-001", "V1-MUT-002", "V1-MUT-033", "V1-MUT-034"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-ORDER-PRESERVING", "V1-AUTH-V0-DOMAIN"],
+      "plannedEvidenceOwners": ["tests/unit/v1-voice-assignment.test.ts"]
+    },
+    {
+      "id": "V1-TRACE-MOTION",
+      "invariant": "Signed motion, absolute magnitude, direction, and stationary-pair, oblique, contrary, parallel, and similar pair relations are exact and separate.",
+      "caseIds": ["V1-ASN-012"],
+      "mutationControlIds": ["V1-MUT-014", "V1-MUT-015", "V1-MUT-016", "V1-MUT-017", "V1-MUT-037"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-PROJECT-POLICY"],
+      "plannedEvidenceOwners": ["tests/unit/v1-voice-assignment.test.ts"]
+    },
+    {
+      "id": "V1-TRACE-REFUSALS",
+      "invariant": "Validation follows the declared precedence and returns one exact typed reason, path, correlated termination, and no partial result.",
+      "caseIds": ["V1-ASN-011", "V1-ASN-013", "V1-ASN-018", "V1-LAW-010", "V1-OP-004", "V1-OP-005", "V1-OP-008", "V1-OP-012", "V1-OP-013", "V1-OP-016"],
+      "mutationControlIds": ["V1-MUT-003", "V1-MUT-022", "V1-MUT-024", "V1-MUT-029", "V1-MUT-032", "V1-MUT-033", "V1-MUT-034", "V1-MUT-036"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-INDEPENDENCE", "V1-AUTH-LIMITS", "V1-AUTH-V0-DOMAIN"],
+      "plannedEvidenceOwners": ["tests/unit/v1-voice-assignment.test.ts"]
+    },
+    {
+      "id": "V1-TRACE-TIES",
+      "invariant": "When every numeric axis is equal, the entire bounded correlated operation path is compared by declared operation rank and consumed ordinals; V1 does not promise distinct tied alternatives.",
+      "caseIds": ["V1-ASN-009", "V1-ASN-017", "V1-LAW-001"],
+      "mutationControlIds": ["V1-MUT-021", "V1-MUT-028"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-INDEPENDENCE", "V1-AUTH-PROJECT-POLICY"],
+      "plannedEvidenceOwners": ["tests/property/v1-assignment-oracle.test.ts"]
+    },
+    {
+      "id": "V1-TRACE-VOICE-IDS",
+      "invariant": "Initialization, matching, entering, leaving, chaining, sentinel handling, and request changes preserve the exact request-local identity lifecycle.",
+      "caseIds": ["V1-ASN-001", "V1-ASN-002", "V1-ASN-008", "V1-ASN-009", "V1-ASN-017", "V1-LAW-001"],
+      "mutationControlIds": ["V1-MUT-018", "V1-MUT-019", "V1-MUT-020", "V1-MUT-021"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-INDEPENDENCE"],
+      "plannedEvidenceOwners": ["tests/unit/v1-voice-assignment.test.ts"]
+    }
+  ]
+}

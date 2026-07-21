@@ -1,0 +1,49 @@
+{
+  "schema": "changes.fixtures.c0-provenance-ledger.v1",
+  "authorities": [
+    {
+      "id": "C0-AUTH-001",
+      "kind": "audited-legacy-artifact",
+      "source": "git:c585871b638bea8b616a707e1a477b583c2cdf0d:jazz_chord_progression_editor.html",
+      "digest": "sha256:04d105634cab0ee064d42888b74bca8ca51feea7c82263e470004fb0b51c07e8",
+      "scope": ["the exact three shipped presets", "six section arrays", "all 80 legacy chord objects"],
+      "method": "TypeScript AST literal-only extraction; legacy JavaScript was never executed"
+    },
+    {
+      "id": "C0-AUTH-002",
+      "kind": "reviewed-contract",
+      "source": "docs/REBUILD_PLAN.md#15.5",
+      "scope": ["precedence table", "type allow-list", "note trust", "report groups", "candidate-only publication"]
+    },
+    {
+      "id": "C0-AUTH-003",
+      "kind": "legacy-audit",
+      "source": "docs/LEGACY_AUDIT.md",
+      "scope": ["legacy field inventory", "artifact baseline", "documented self-disagreement lower bound"]
+    },
+    {
+      "id": "C0-AUTH-004",
+      "kind": "domain-contract",
+      "source": "src/domain",
+      "scope": ["v2 candidate shape", "fresh stable IDs", "exact rational duration", "Manual pitch preservation", "collection ceilings"]
+    },
+    {
+      "id": "C0-AUTH-005",
+      "kind": "syntax-contract",
+      "source": "docs/T0_SYNTAX_CONTRACT.md",
+      "scope": ["full chord-symbol parse", "canonical parsed structure", "stable parse diagnostics"]
+    },
+    {
+      "id": "C0-AUTH-006",
+      "kind": "resolution-contract",
+      "source": "docs/T1_RESOLUTION_CONTRACT.md",
+      "scope": ["finite realization set", "spelling-first pitch classes", "one-realization subset comparison"]
+    },
+    {
+      "id": "C0-AUTH-007",
+      "kind": "publication-contract",
+      "source": "docs/F3_PUBLICATION_CONTRACT.md",
+      "scope": ["candidate is unbranded", "F3 is the sole semantic publication gate", "atomic explicit application transaction"]
+    }
+  ]
+}

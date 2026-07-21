@@ -205,6 +205,38 @@ describe("foundation dependency boundaries", () => {
     expect(findings.filter((item) => item.path === "scripts/compiler.ts")).toEqual([]);
   });
 
+  test("the composition root may use the narrow public UI runtime entry only", () => {
+    const findings = analyzeSourcePolicy([
+      {
+        path: "src/main.tsx",
+        source: "import { App } from './ui/runtime'; void App;",
+      },
+      {
+        path: "src/application/private-ui.ts",
+        source: "import { App } from '../ui/runtime'; void App;",
+      },
+      {
+        path: "src/main.ts",
+        source: "import { App } from './ui/App'; void App;",
+      },
+    ]);
+    expect(findings.filter((item) => item.path === "src/main.tsx")).toEqual([]);
+    expect(
+      findings.some(
+        (item) =>
+          item.path === "src/application/private-ui.ts" &&
+          item.code === SOURCE_POLICY_CODES.boundaryLayerDirection,
+      ),
+    ).toBe(true);
+    expect(
+      findings.some(
+        (item) =>
+          item.path === "src/main.ts" &&
+          item.code === SOURCE_POLICY_CODES.boundaryPrivateImport,
+      ),
+    ).toBe(true);
+  });
+
   test("unknown source layers cannot become implicit dependencies", () => {
     const findings = analyzeSourcePolicy([
       {

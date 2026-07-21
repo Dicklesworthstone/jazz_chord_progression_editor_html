@@ -1,0 +1,321 @@
+{
+  "schema": "changes.fixtures.p0-law-cases.v1",
+  "fixtureVersion": "1.0.0",
+  "status": "independently-authored-pre-production",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "lawPolicy": {
+    "byteEquivalent": "Canonical JSON uses the public own-key orders, UTF-8, LF, no insignificant whitespace, and no locale-sensitive sorting.",
+    "transposition": "The test-only transposer uses checked-in T0/T1 spelling expectations and shares no playback compiler code.",
+    "mutation": "Mutation controls are named in mutation-controls.json and must be killed without updating an expected fixture from production output.",
+    "consumerProof": "Audio and MIDI test consumers receive the same frozen PlaybackPlan object; neither may normalize, realize, or repair it."
+  },
+  "cases": [
+    {
+      "id": "P0-LAW-001",
+      "law": "deterministic-replay",
+      "description": "Two deeply equal requests compile to byte-equivalent result, plan, refusal, and work evidence records.",
+      "inputRef": "timeline-cases.json#P0-TIME-001",
+      "repetitions": 3,
+      "expectedRelation": {
+        "canonicalBytesEqual": true,
+        "ownKeyOrderExact": true,
+        "ambientInputsThatMayNotChangeOutput": ["clock", "date", "locale", "timezone", "random", "map-insertion-order", "object-allocation-order"]
+      },
+      "nearMiss": {
+        "change": "tempoBpm 120 to 121",
+        "expectedDifferentPaths": [["plan", "tempoBpm"]],
+        "allBeatTickPitchPathsEqual": true
+      },
+      "traceIds": ["P0-TRACE-DETERMINISM", "P0-TRACE-BOUNDARY"],
+      "authorityIds": ["P0-AUTH-CONTRACT", "P0-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "P0-LAW-002",
+      "law": "binding-map-order-invariance",
+      "description": "Reversing realization-map insertion order does not change semantic output or evidence.",
+      "inputRef": "timeline-cases.json#P0-TIME-001",
+      "variants": [
+        {"bindingInsertionOrder": ["event-p0-a1-1", "event-p0-a1-2", "event-p0-a1-3", "event-p0-a1-4", "event-p0-a3-1", "event-p0-b1-1"]},
+        {"bindingInsertionOrder": ["event-p0-b1-1", "event-p0-a3-1", "event-p0-a1-4", "event-p0-a1-3", "event-p0-a1-2", "event-p0-a1-1"]}
+      ],
+      "expectedRelation": {
+        "canonicalBytesEqual": true,
+        "bindingValidationOrder": "event-id-utf16-code-unit",
+        "eventOutputOrder": "source-structural-preorder"
+      },
+      "nearMiss": {
+        "change": "swap two source events in the document while leaving map order fixed",
+        "expected": "event order, sourceOrdinal, startBeat, and startTick change structurally"
+      },
+      "traceIds": ["P0-TRACE-DETERMINISM", "P0-TRACE-SOURCE-IDS", "P0-TRACE-REALIZATION"],
+      "authorityIds": ["P0-AUTH-CONTRACT", "P0-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "P0-LAW-003",
+      "law": "exact-midi-mirror",
+      "description": "Every beat position and duration has an exact integer PPQ-960 mirror; no rounding is allowed.",
+      "inputRefs": ["timeline-cases.json#P0-TIME-001", "loop-cases.json#P0-LOOP-009"],
+      "expectedRelation": {
+        "midiPpq": 960,
+        "forEveryEvent": [
+          "sourceStartTick = sourceStartBeat * 960",
+          "sourceDurationTicks = sourceDurationBeats * 960",
+          "sourceOffsetTicks is null iff sourceOffsetBeats is null",
+          "startTick = startBeat * 960",
+          "durationTicks = durationBeats * 960",
+          "gateDurationTicks = gateDurationBeats * 960",
+          "pitches.length = midiPitches.length",
+          "midiPitches[i] is the exact equal-temperament projection of pitches[i]"
+        ],
+        "totalTicks": "totalBeats * 960",
+        "loopTicks": "null iff loop is null; otherwise exact endpoint projection"
+      },
+      "nearMissRef": "realization-cases.json#P0-REAL-021",
+      "traceIds": ["P0-TRACE-MIDI", "P0-TRACE-GATE"],
+      "authorityIds": ["P0-AUTH-DOMAIN", "P0-AUTH-CONTRACT"]
+    },
+    {
+      "id": "P0-LAW-004",
+      "law": "diatonic-transposition-equivariance",
+      "description": "A reviewed whole-step transposition shifts exact written pitches and MIDI by two while preserving timing, IDs, gates, articulation, velocity, and array order.",
+      "base": {
+        "documentId": "doc-p0-transpose",
+        "sourceSymbol": "Cmaj7",
+        "sourceRef": "P0-SOURCE-AUTO-CMAJ7",
+        "eventId": "event-p0-transpose",
+        "pitches": [
+          {"step": "C", "alter": 0, "octave": 3},
+          {"step": "G", "alter": 0, "octave": 3},
+          {"step": "B", "alter": 0, "octave": 3},
+          {"step": "E", "alter": 0, "octave": 4}
+        ],
+        "midiPitches": [48, 55, 59, 64]
+      },
+      "transposed": {
+        "documentId": "doc-p0-transpose",
+        "sourceSymbol": "Dmaj7",
+        "sourceRef": "independent-inline:P0-SOURCE-AUTO-DMAJ7",
+        "eventId": "event-p0-transpose",
+        "pitches": [
+          {"step": "D", "alter": 0, "octave": 3},
+          {"step": "A", "alter": 0, "octave": 3},
+          {"step": "C", "alter": 1, "octave": 4},
+          {"step": "F", "alter": 1, "octave": 4}
+        ],
+        "midiPitches": [50, 57, 61, 66]
+      },
+      "expectedRelation": {
+        "midiDelta": 2,
+        "equalFields": ["sourceDocumentId", "midiPpq", "tempoBpm", "meter", "totalBeats", "totalTicks", "loop", "loopTicks", "ordinal", "sourceOrdinal", "eventId", "sectionId", "measureId", "sourceStartBeat", "sourceDurationBeats", "sourceStartTick", "sourceDurationTicks", "sourceOffsetBeats", "sourceOffsetTicks", "startBeat", "durationBeats", "gateDurationBeats", "startTick", "durationTicks", "gateDurationTicks", "velocity", "articulation"],
+        "inverseRoundTripReturnsBase": true
+      },
+      "nearMiss": {
+        "wrongTransposedPitch": {"step": "D", "alter": -1, "octave": 4},
+        "sameMidiAsExpectedPitch": true,
+        "expected": "fails exact spelling even if sounding MIDI matches"
+      },
+      "traceIds": ["P0-TRACE-TRANSPOSITION", "P0-TRACE-MIDI", "P0-TRACE-DETERMINISM"],
+      "authorityIds": ["P0-AUTH-T0", "P0-AUTH-T1", "P0-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "P0-LAW-005",
+      "law": "manual-frozen-authority",
+      "legacyId": "L-VOICE-01",
+      "description": "Manual and Frozen order, spelling, register, inversion, doubling, and duplicates are copied exactly and never optimized.",
+      "inputRefs": ["realization-cases.json#P0-REAL-002", "realization-cases.json#P0-REAL-003"],
+      "expectedRelation": {
+        "outputPitchesEqualStoredPitchesByIndex": true,
+        "outputMidiPitchesEqualExactProjectionByIndex": true,
+        "forbiddenTransforms": ["sort", "deduplicate", "close-position", "drop2", "range-fit", "voice-leading-optimize", "enharmonic-respell", "regenerate-frozen"]
+      },
+      "nearMiss": {
+        "wrongOutputMidiPitches": [60, 64, 67, 71],
+        "expected": "fails because it silently revoices P0-SOURCE-MANUAL-LEGACY"
+      },
+      "traceIds": ["P0-TRACE-STORED", "P0-TRACE-LEGACY"],
+      "authorityIds": ["P0-AUTH-DOMAIN", "P0-AUTH-LEGACY"]
+    },
+    {
+      "id": "P0-LAW-006",
+      "law": "generated-request-correlation",
+      "description": "Generated output is bound to one exact T1 resolved source, realization ID, V0 policy, and candidate.",
+      "positiveRef": "realization-cases.json#P0-REAL-001",
+      "nearMissRefs": ["realization-cases.json#P0-REAL-011", "realization-cases.json#P0-REAL-012", "realization-cases.json#P0-REAL-015", "realization-cases.json#P0-REAL-016", "realization-cases.json#P0-REAL-017", "realization-cases.json#P0-REAL-023"],
+      "expectedRelation": {
+        "fallbackForbidden": true,
+        "candidateRegenerationForbidden": true,
+        "candidateSelectionForbidden": true
+      },
+      "traceIds": ["P0-TRACE-REALIZATION", "P0-TRACE-STALE", "P0-TRACE-REFUSALS"],
+      "authorityIds": ["P0-AUTH-T1", "P0-AUTH-V0", "P0-AUTH-CONTRACT"]
+    },
+    {
+      "id": "P0-LAW-007",
+      "law": "stored-alias-edit-does-not-stale",
+      "description": "An F3-valid alias-only ChordSpec sourceText change does not stale a Manual stored-bypass result because its exact voicing is independently authoritative.",
+      "baseSourceRef": "P0-SOURCE-MANUAL-LEGACY",
+      "variant": {
+        "sourceText": "CM7",
+        "syntaxFixtureRef": "tests/fixtures/theory/symbol-cases.json#T0-ALIAS-007",
+        "storedAstFieldsOtherwiseEqual": true,
+        "storedBypassResultUnchanged": true
+      },
+      "expectedRelation": {
+        "bothCompileSuccessfully": true,
+        "canonicalPlanBytesEqual": true,
+        "storedPitchesEqualByIndex": true
+      },
+      "nearMiss": {
+        "sameAliasEditAppliedToGeneratedSource": true,
+        "expectedCode": "playback.realization_source_chord_stale",
+        "reason": "generated AutoVoicingRequest binds its exact resolved source"
+      },
+      "traceIds": ["P0-TRACE-STORED", "P0-TRACE-STALE", "P0-TRACE-T0"],
+      "authorityIds": ["P0-AUTH-T0", "P0-AUTH-V0", "P0-AUTH-CONTRACT"]
+    },
+    {
+      "id": "P0-LAW-008",
+      "law": "metadata-nonstaleness",
+      "description": "Title, description, annotations, section name, key context, and playback settings outside tempo do not invalidate bindings or change a plan.",
+      "inputRef": "timeline-cases.json#P0-TIME-001",
+      "mutations": [
+        {"path": ["document", "title"], "value": "Different reviewed title"},
+        {"path": ["document", "description"], "value": "Different description"},
+        {"path": ["document", "sections", 0, "name"], "value": "Renamed"},
+        {"path": ["document", "sections", 0, "annotation"], "value": "Section note"},
+        {"path": ["document", "sections", 0, "measures", 0, "events", 0, "annotation"], "value": "Event note"},
+        {"path": ["document", "playback", "masterVolume"], "value": 0.25},
+        {"path": ["document", "playback", "reverbAmount"], "value": 0.75}
+      ],
+      "expectedRelation": {
+        "canonicalPlanBytesEqual": true,
+        "canonicalEvidenceBytesEqual": true
+      },
+      "nearMiss": {
+        "change": "tempoBpm",
+        "expected": "plan tempoBpm changes but beat/tick event data remains equal"
+      },
+      "traceIds": ["P0-TRACE-STALE", "P0-TRACE-DETERMINISM"],
+      "authorityIds": ["P0-AUTH-CONTRACT", "P0-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "P0-LAW-009",
+      "law": "loop-null-identity",
+      "description": "Null-loop compilation is the ordinary source plan and cannot add source offsets or loop articulations.",
+      "inputRef": "loop-cases.json#P0-LOOP-001",
+      "expectedRelation": {
+        "loop": null,
+        "loopTicks": null,
+        "everySourceOffsetNull": true,
+        "everyArticulation": "ordinary",
+        "allSourceEventsEmitted": true
+      },
+      "nearMissRef": "loop-cases.json#P0-LOOP-002",
+      "nearMissDifference": "Full-chart loop has equal events but non-null loop and loopTicks metadata.",
+      "traceIds": ["P0-TRACE-LOOP", "P0-TRACE-DETERMINISM"],
+      "authorityIds": ["P0-AUTH-CONTRACT", "P0-AUTH-POLICY"]
+    },
+    {
+      "id": "P0-LAW-010",
+      "law": "section-reset-is-not-time-reset",
+      "description": "voiceLeadingBoundary reset changes no timeline cursor and inserts no event.",
+      "inputRef": "timeline-cases.json#P0-TIME-001",
+      "expectedRelation": {
+        "eventAfterReset": "event-p0-b1-1",
+        "expectedStartBeat": {"numerator": 9, "denominator": 1},
+        "expectedStartTick": 8640,
+        "eventAtBeatZeroCount": 1
+      },
+      "nearMiss": {
+        "wrongStartBeat": {"numerator": 0, "denominator": 1},
+        "expected": "fails source-timeline monotonicity and total duration"
+      },
+      "traceIds": ["P0-TRACE-TIMELINE", "P0-TRACE-SOURCE-IDS"],
+      "authorityIds": ["P0-AUTH-CONTRACT", "P0-AUTH-DOMAIN"]
+    },
+    {
+      "id": "P0-LAW-011",
+      "law": "transactional-immutability",
+      "description": "Compilation mutates no request-owned structure and returns a recursively frozen, non-aliased result graph.",
+      "inputRef": "timeline-cases.json#P0-TIME-001",
+      "expectedRelation": {
+        "requestCanonicalBytesBeforeAfterEqual": true,
+        "resultRecursivelyFrozen": true,
+        "planDoesNotAliasDocument": true,
+        "pitchesDoNotAliasBinding": true,
+        "midiPitchesFreshAndFrozen": true,
+        "failedMutationAttemptsLeaveBytesEqual": true
+      },
+      "nearMiss": {
+        "probe": "mutate returned pitches[0].octave then re-read request binding",
+        "expected": "mutation is rejected or inert and request remains unchanged"
+      },
+      "traceIds": ["P0-TRACE-IMMUTABILITY", "P0-TRACE-BOUNDARY"],
+      "authorityIds": ["P0-AUTH-CONTRACT", "P0-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "P0-LAW-012",
+      "law": "shared-plan-consumers",
+      "description": "Audio and MIDI consume the same immutable plan unchanged; neither receives a rebuilt or normalized variant.",
+      "inputRef": "timeline-cases.json#P0-TIME-001",
+      "expectedRelation": {
+        "audioPlanObjectIdentityEqualsCompilerPlan": true,
+        "midiPlanObjectIdentityEqualsCompilerPlan": true,
+        "audioAndMidiPlanObjectIdentityEqual": true,
+        "canonicalBytesBeforeAfterConsumersEqual": true,
+        "manualPitchOrderEqualInBothConsumers": true,
+        "tickFieldsEqualInBothConsumers": true
+      },
+      "nearMiss": {
+        "wrongBehavior": "MIDI sorts manual midiPitches ascending",
+        "expected": "consumer conformance failure even if notes are enharmonically or temporally equivalent"
+      },
+      "traceIds": ["P0-TRACE-CONSUMERS", "P0-TRACE-STORED", "P0-TRACE-MIDI"],
+      "authorityIds": ["P0-AUTH-ARCHITECTURE", "P0-AUTH-CONTRACT"]
+    },
+    {
+      "id": "P0-LAW-013",
+      "law": "pure-offline-boundary",
+      "description": "Compilation is synchronous and may not call audio, browser, storage, network, model, clock, locale, or random capabilities.",
+      "inputRef": "timeline-cases.json#P0-TIME-001",
+      "capabilityTrapCounters": {
+        "audioCalls": 0,
+        "fetchCalls": 0,
+        "xhrCalls": 0,
+        "webSocketCalls": 0,
+        "storageCalls": 0,
+        "dateCalls": 0,
+        "performanceNowCalls": 0,
+        "randomCalls": 0,
+        "localeCompareCalls": 0,
+        "modelClientCalls": 0
+      },
+      "nearMiss": {
+        "wrongBehavior": "use elapsed milliseconds as a compile cutoff",
+        "expected": "boundary and determinism failure"
+      },
+      "traceIds": ["P0-TRACE-BOUNDARY", "P0-TRACE-DETERMINISM"],
+      "authorityIds": ["P0-AUTH-ARCHITECTURE", "P0-AUTH-CONTRACT"]
+    },
+    {
+      "id": "P0-LAW-014",
+      "law": "silent-time-is-not-an-event",
+      "description": "Empty measures advance absolute source time but emit no synthetic rest, fallback chord, or binding lookup.",
+      "positiveRefs": ["timeline-cases.json#P0-TIME-009", "loop-cases.json#P0-LOOP-007"],
+      "expectedRelation": {
+        "emptyMeasureAddsMeterCapacity": true,
+        "emptyMeasureAddsEvent": false,
+        "emptyMeasureRequiresBinding": false,
+        "emptySectionAddsTime": false,
+        "loopInsideSilenceMaySucceedWithZeroEvents": true
+      },
+      "nearMiss": {
+        "wrongBehavior": "insert four-beat C major rest-placeholder event",
+        "expected": "event count, IDs, realization coverage, and source trace all fail"
+      },
+      "traceIds": ["P0-TRACE-EMPTY-PARTIAL", "P0-TRACE-TIMELINE", "P0-TRACE-LOOP"],
+      "authorityIds": ["P0-AUTH-DOMAIN", "P0-AUTH-CONTRACT"]
+    }
+  ]
+}

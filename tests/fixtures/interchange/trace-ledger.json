@@ -1,0 +1,1072 @@
+{
+  "schema": "changes.fixtures.e0-trace-ledger.v1",
+  "reviewState": "proposed-pending-first-golden-human-acceptance",
+  "traces": [
+    {
+      "id": "E0-TRACE-JSON-LOSSLESS",
+      "requirement": "Canonical v2 JSON contains only every validated persisted field, preserves spelling/time/identity/voicing/signed zero, and survives F2/F3 semantic round trip before hashing.",
+      "requirementIds": [
+        "E0-REQ-IMPL-001",
+        "E0-REQ-IMPL-005",
+        "E0-REQ-IMPL-007",
+        "E0-REQ-SUCCESS-001",
+        "E0-REQ-EVIDENCE-003",
+        "E0-REQ-EVIDENCE-004",
+        "E0-REQ-EVIDENCE-005",
+        "E0-REQ-NONGOAL-002"
+      ],
+      "authorityIds": [
+        "E0-AUTH-PLAN",
+        "E0-AUTH-F1",
+        "E0-AUTH-F2",
+        "E0-AUTH-F3",
+        "E0-AUTH-T0",
+        "E0-AUTH-A0",
+        "E0-AUTH-ECMA-JSON"
+      ],
+      "caseIds": [
+        "E0-JX-001",
+        "E0-JX-002",
+        "E0-JX-004",
+        "E0-JX-005",
+        "E0-JX-006",
+        "E0-AD-014",
+        "E0-LIM-008",
+        "E0-LIM-017"
+      ],
+      "controlIds": [
+        "E0-MUT-002",
+        "E0-MUT-003",
+        "E0-MUT-005",
+        "E0-MUT-006",
+        "E0-MUT-007",
+        "E0-MUT-031",
+        "E0-MUT-067",
+        "E0-MUT-081"
+      ],
+      "proofKinds": [
+        "positive",
+        "negative",
+        "near-miss",
+        "round-trip",
+        "golden",
+        "mutation-link"
+      ]
+    },
+    {
+      "id": "E0-TRACE-JSON-DETERMINISM",
+      "requirement": "Canonical JSON bytes and hash do not depend on insertion order, unordered iteration, or repetition count.",
+      "requirementIds": [
+        "E0-REQ-IMPL-001",
+        "E0-REQ-SUCCESS-003",
+        "E0-REQ-EVIDENCE-002",
+        "E0-REQ-EVIDENCE-004"
+      ],
+      "authorityIds": ["E0-AUTH-PLAN", "E0-AUTH-VERIFICATION"],
+      "caseIds": ["E0-JX-003", "E0-JX-018"],
+      "controlIds": ["E0-MUT-001", "E0-MUT-064"],
+      "proofKinds": ["positive", "metamorphic", "mutation-link"]
+    },
+    {
+      "id": "E0-TRACE-JSON-FAILURE-ISOLATION",
+      "requirement": "Canonical parse, F2, F3, equality, or hash failure yields no artifact, delivery, marker, or state change.",
+      "requirementIds": [
+        "E0-REQ-IMPL-001",
+        "E0-REQ-IMPL-005",
+        "E0-REQ-RISK-002",
+        "E0-REQ-EVIDENCE-001",
+        "E0-REQ-EVIDENCE-005"
+      ],
+      "authorityIds": [
+        "E0-AUTH-PLAN",
+        "E0-AUTH-F2",
+        "E0-AUTH-F3",
+        "E0-AUTH-WEB-CRYPTO"
+      ],
+      "caseIds": [
+        "E0-JX-007",
+        "E0-JX-008",
+        "E0-JX-009",
+        "E0-JX-010",
+        "E0-JX-011",
+        "E0-JX-019"
+      ],
+      "controlIds": ["E0-MUT-006", "E0-MUT-007", "E0-MUT-055", "E0-MUT-082"],
+      "proofKinds": ["negative", "mutation-link", "state-isolation"]
+    },
+    {
+      "id": "E0-TRACE-JSON-PORTABLE-BOUND",
+      "requirement": "Every successful canonical artifact fits the same 2 MiB byte ceiling as import; first excess refuses before hash/delivery.",
+      "requirementIds": [
+        "E0-REQ-IMPL-001",
+        "E0-REQ-SUCCESS-002",
+        "E0-REQ-EVIDENCE-004",
+        "E0-REQ-EVIDENCE-006"
+      ],
+      "authorityIds": ["E0-AUTH-PLAN", "E0-AUTH-F2", "E0-AUTH-WHATWG-ENCODING"],
+      "caseIds": ["E0-JX-016", "E0-JX-017"],
+      "controlIds": ["E0-MUT-012", "E0-MUT-013"],
+      "proofKinds": ["positive", "negative", "exact-boundary", "mutation-link"]
+    },
+    {
+      "id": "E0-TRACE-FILENAME",
+      "requirement": "Filename projection is total, scalar-bounded, reserved-name-aware, inert, and owns exactly one extension.",
+      "requirementIds": [
+        "E0-REQ-IMPL-002",
+        "E0-REQ-EVIDENCE-003",
+        "E0-REQ-EVIDENCE-017"
+      ],
+      "authorityIds": [
+        "E0-AUTH-PLAN",
+        "E0-AUTH-F1",
+        "E0-AUTH-WHATWG-DOWNLOAD",
+        "E0-AUTH-FILENAME-POLICY",
+        "E0-AUTH-VERIFICATION"
+      ],
+      "caseIds": ["E0-JX-012", "E0-JX-013", "E0-JX-014", "E0-JX-015"],
+      "controlIds": ["E0-MUT-008", "E0-MUT-009", "E0-MUT-010", "E0-MUT-062"],
+      "proofKinds": [
+        "positive",
+        "negative",
+        "near-miss",
+        "exact-boundary",
+        "golden",
+        "mutation-link"
+      ]
+    },
+    {
+      "id": "E0-TRACE-HOSTILE-INERT",
+      "requirement": "Hostile imported and filename strings remain inert data and cannot mutate prototypes, evaluate, navigate, or execute.",
+      "requirementIds": [
+        "E0-REQ-IMPL-002",
+        "E0-REQ-RISK-005",
+        "E0-REQ-EVIDENCE-011"
+      ],
+      "authorityIds": [
+        "E0-AUTH-PLAN",
+        "E0-AUTH-ECMA-JSON",
+        "E0-AUTH-WHATWG-DOWNLOAD",
+        "E0-AUTH-FILENAME-POLICY",
+        "E0-AUTH-VERIFICATION"
+      ],
+      "caseIds": ["E0-JI-023", "E0-JX-013"],
+      "controlIds": ["E0-MUT-024", "E0-MUT-054", "E0-MUT-062", "E0-MUT-066"],
+      "proofKinds": ["negative", "hostile", "mutation-link"]
+    },
+    {
+      "id": "E0-TRACE-TEXT-SUPPORTED-ROUNDTRIP",
+      "requirement": "Lead-sheet text preserves the supported title/header/section/chord/exact-time/annotation projection through T0 reparse and equality.",
+      "requirementIds": [
+        "E0-REQ-IMPL-011",
+        "E0-REQ-SUCCESS-004",
+        "E0-REQ-EVIDENCE-002",
+        "E0-REQ-EVIDENCE-003",
+        "E0-REQ-EVIDENCE-012",
+        "E0-REQ-EVIDENCE-013",
+        "E0-REQ-EVIDENCE-014",
+        "E0-REQ-EVIDENCE-015",
+        "E0-REQ-NONGOAL-002"
+      ],
+      "authorityIds": [
+        "E0-AUTH-PLAN",
+        "E0-AUTH-E0-DECISIONS",
+        "E0-AUTH-F1",
+        "E0-AUTH-T0",
+        "E0-AUTH-WHATWG-ENCODING"
+      ],
+      "caseIds": [
+        "E0-TX-001",
+        "E0-TX-002",
+        "E0-TX-003",
+        "E0-TX-004",
+        "E0-TX-005",
+        "E0-TX-006",
+        "E0-AD-014",
+        "E0-LIM-026"
+      ],
+      "controlIds": [
+        "E0-MUT-002",
+        "E0-MUT-004",
+        "E0-MUT-026",
+        "E0-MUT-027",
+        "E0-MUT-028",
+        "E0-MUT-029",
+        "E0-MUT-030",
+        "E0-MUT-034",
+        "E0-MUT-075",
+        "E0-MUT-081"
+      ],
+      "proofKinds": [
+        "positive",
+        "near-miss",
+        "transposition",
+        "round-trip",
+        "golden",
+        "mutation-link"
+      ]
+    },
+    {
+      "id": "E0-TRACE-TEXT-LOSSES",
+      "requirement": "Every unsupported identity, playback, supplied analysis, section policy, source alias, and voicing projection is explicitly and deterministically itemized.",
+      "requirementIds": [
+        "E0-REQ-IMPL-012",
+        "E0-REQ-RISK-007",
+        "E0-REQ-EVIDENCE-003",
+        "E0-REQ-EVIDENCE-016",
+        "E0-REQ-NONGOAL-002"
+      ],
+      "authorityIds": [
+        "E0-AUTH-PLAN",
+        "E0-AUTH-E0-DECISIONS",
+        "E0-AUTH-F1",
+        "E0-AUTH-T0",
+        "E0-AUTH-VERIFICATION"
+      ],
+      "caseIds": [
+        "E0-TX-007",
+        "E0-TX-008",
+        "E0-TX-009",
+        "E0-TX-010",
+        "E0-LIM-027"
+      ],
+      "controlIds": [
+        "E0-MUT-031",
+        "E0-MUT-032",
+        "E0-MUT-033",
+        "E0-MUT-038",
+        "E0-MUT-057",
+        "E0-MUT-064",
+        "E0-MUT-076"
+      ],
+      "proofKinds": ["positive", "loss-report", "determinism", "mutation-link"]
+    },
+    {
+      "id": "E0-TRACE-TEXT-BLOCKERS",
+      "requirement": "Empty document/section, Custom harmony, and pickup/incomplete measures refuse instead of being dropped or repaired.",
+      "requirementIds": ["E0-REQ-IMPL-011", "E0-REQ-EVIDENCE-016"],
+      "authorityIds": [
+        "E0-AUTH-PLAN",
+        "E0-AUTH-E0-DECISIONS",
+        "E0-AUTH-F1",
+        "E0-AUTH-F3",
+        "E0-AUTH-T0"
+      ],
+      "caseIds": ["E0-TX-011", "E0-TX-012", "E0-TX-013", "E0-TX-014"],
+      "controlIds": ["E0-MUT-068", "E0-MUT-069", "E0-MUT-070"],
+      "proofKinds": ["negative", "near-miss", "mutation-link"]
+    },
+    {
+      "id": "E0-TRACE-TEXT-FAILURE-ISOLATION",
+      "requirement": "Chord formatting, T0 reparse, or supported-projection mismatch prevents all delivery and marker effects.",
+      "requirementIds": [
+        "E0-REQ-IMPL-011",
+        "E0-REQ-RISK-002",
+        "E0-REQ-EVIDENCE-001"
+      ],
+      "authorityIds": [
+        "E0-AUTH-PLAN",
+        "E0-AUTH-F3",
+        "E0-AUTH-T0",
+        "E0-AUTH-A0"
+      ],
+      "caseIds": ["E0-TX-015", "E0-TX-016", "E0-TX-017"],
+      "controlIds": ["E0-MUT-034", "E0-MUT-042", "E0-MUT-048"],
+      "proofKinds": ["negative", "state-isolation", "mutation-link"]
+    },
+    {
+      "id": "E0-TRACE-CHART-IMPORT",
+      "requirement": "T0 is invoked exactly in document mode with the fixed ASCII accidental style; the draft materializes disclosed defaults and deterministic IDs, passes F2/F3, and never publishes a fragment or partial prefix.",
+      "requirementIds": [
+        "E0-REQ-IMPL-007",
+        "E0-REQ-IMPL-011",
+        "E0-REQ-RISK-011",
+        "E0-REQ-SUCCESS-004",
+        "E0-REQ-EVIDENCE-015",
+        "E0-REQ-NONGOAL-002"
+      ],
+      "authorityIds": [
+        "E0-AUTH-PLAN",
+        "E0-AUTH-E0-DECISIONS",
+        "E0-AUTH-F1",
+        "E0-AUTH-F2",
+        "E0-AUTH-F3",
+        "E0-AUTH-T0",
+        "E0-AUTH-A0"
+      ],
+      "caseIds": [
+        "E0-TI-001",
+        "E0-TI-002",
+        "E0-TI-003",
+        "E0-TI-004",
+        "E0-JI-029",
+        "E0-WF-027",
+        "E0-WF-028",
+        "E0-LIM-028"
+      ],
+      "controlIds": [
+        "E0-MUT-023",
+        "E0-MUT-035",
+        "E0-MUT-036",
+        "E0-MUT-037",
+        "E0-MUT-038",
+        "E0-MUT-042",
+        "E0-MUT-077"
+      ],
+      "proofKinds": [
+        "positive",
+        "negative",
+        "near-miss",
+        "round-trip",
+        "transaction",
+        "mutation-link"
+      ]
+    },
+    {
+      "id": "E0-TRACE-NATIVE-IMPORT",
+      "requirement": "Current v2 JSON is parsed once without reviver, decoded by F2, validated by F3, and yields preview only.",
+      "requirementIds": [
+        "E0-REQ-IMPL-006",
+        "E0-REQ-IMPL-007",
+        "E0-REQ-RISK-004",
+        "E0-REQ-EVIDENCE-009"
+      ],
+      "authorityIds": [
+        "E0-AUTH-PLAN",
+        "E0-AUTH-F2",
+        "E0-AUTH-F3",
+        "E0-AUTH-A0",
+        "E0-AUTH-ECMA-JSON",
+        "E0-AUTH-VERIFICATION"
+      ],
+      "caseIds": [
+        "E0-JI-001",
+        "E0-JI-002",
+        "E0-JI-007",
+        "E0-JI-011",
+        "E0-JI-012",
+        "E0-WF-009"
+      ],
+      "controlIds": [
+        "E0-MUT-014",
+        "E0-MUT-019",
+        "E0-MUT-020",
+        "E0-MUT-023",
+        "E0-MUT-025",
+        "E0-MUT-042"
+      ],
+      "proofKinds": [
+        "positive",
+        "negative",
+        "metamorphic",
+        "transaction",
+        "mutation-link"
+      ]
+    },
+    {
+      "id": "E0-TRACE-LEGACY-IMPORT",
+      "requirement": "Recognized unversioned legacy bytes invoke C0 exactly once with its own sole parse, project report order into bounded preview rows, keep the complete report transient, and validate before preview without mutating state.",
+      "requirementIds": [
+        "E0-REQ-IMPL-006",
+        "E0-REQ-IMPL-007",
+        "E0-REQ-EVIDENCE-010"
+      ],
+      "authorityIds": [
+        "E0-AUTH-F2",
+        "E0-AUTH-F3",
+        "E0-AUTH-C0",
+        "E0-AUTH-A0",
+        "E0-AUTH-VERIFICATION"
+      ],
+      "caseIds": ["E0-JI-016", "E0-JI-017", "E0-JI-018", "E0-WF-010"],
+      "controlIds": ["E0-MUT-020", "E0-MUT-021", "E0-MUT-042", "E0-MUT-064"],
+      "proofKinds": [
+        "positive",
+        "negative",
+        "compatibility",
+        "near-miss",
+        "transaction",
+        "mutation-link"
+      ]
+    },
+    {
+      "id": "E0-TRACE-RAW-BYTE-PRECEDENCE",
+      "requirement": "The untrusted readAtMost boundary is cap-checked, length-bound, copied, exception-normalized, and settled once without raw retention; accepted byte observation and F2 preflight then precede fatal UTF-8, lexical classification, parsing, migration, decode, and publication with exact first-excess counters.",
+      "requirementIds": [
+        "E0-REQ-IMPL-006",
+        "E0-REQ-SUCCESS-005",
+        "E0-REQ-EVIDENCE-002",
+        "E0-REQ-EVIDENCE-006"
+      ],
+      "authorityIds": [
+        "E0-AUTH-PLAN",
+        "E0-AUTH-E0-DECISIONS",
+        "E0-AUTH-F2",
+        "E0-AUTH-ECMA-JSON",
+        "E0-AUTH-WHATWG-ENCODING",
+        "E0-AUTH-VERIFICATION"
+      ],
+      "caseIds": [
+        "E0-AD-011",
+        "E0-JI-003",
+        "E0-JI-004",
+        "E0-JI-013",
+        "E0-JI-014",
+        "E0-JI-015",
+        "E0-LIM-001",
+        "E0-LIM-024",
+        "E0-WF-031"
+      ],
+      "controlIds": [
+        "E0-MUT-011",
+        "E0-MUT-012",
+        "E0-MUT-013",
+        "E0-MUT-018",
+        "E0-MUT-079",
+        "F2-MUT-002",
+        "F2-MUT-003"
+      ],
+      "proofKinds": [
+        "positive",
+        "negative",
+        "near-miss",
+        "malformed",
+        "exact-boundary",
+        "precedence",
+        "mutation-link"
+      ]
+    },
+    {
+      "id": "E0-TRACE-DUPLICATE-KEYS",
+      "requirement": "Literal and escape-equivalent decoded duplicate keys refuse before any host parse or migration.",
+      "requirementIds": ["E0-REQ-IMPL-006"],
+      "authorityIds": ["E0-AUTH-F2", "E0-AUTH-ECMA-JSON"],
+      "caseIds": ["E0-JI-005", "E0-JI-006"],
+      "controlIds": ["E0-MUT-015", "E0-MUT-016"],
+      "proofKinds": ["negative", "malformed", "mutation-link"]
+    },
+    {
+      "id": "E0-TRACE-SCHEMA-ROUTING",
+      "requirement": "Lexical root evidence and explicit action route current, future, unknown, unversioned, malformed, and advisory-metadata inputs without fallback guessing.",
+      "requirementIds": ["E0-REQ-IMPL-006", "E0-REQ-EVIDENCE-008"],
+      "authorityIds": [
+        "E0-AUTH-PLAN",
+        "E0-AUTH-E0-DECISIONS",
+        "E0-AUTH-F2",
+        "E0-AUTH-T0",
+        "E0-AUTH-C0",
+        "E0-AUTH-WHATWG-DOWNLOAD",
+        "E0-AUTH-VERIFICATION"
+      ],
+      "caseIds": [
+        "E0-JI-008",
+        "E0-JI-009",
+        "E0-JI-010",
+        "E0-JI-019",
+        "E0-JI-020",
+        "E0-JI-025",
+        "E0-JI-026",
+        "E0-JI-027",
+        "E0-JI-028",
+        "E0-JI-029"
+      ],
+      "controlIds": [
+        "E0-MUT-017",
+        "E0-MUT-018",
+        "E0-MUT-022",
+        "E0-MUT-062",
+        "E0-MUT-073"
+      ],
+      "proofKinds": [
+        "positive",
+        "negative",
+        "near-miss",
+        "malformed",
+        "metamorphic",
+        "mutation-link"
+      ]
+    },
+    {
+      "id": "E0-TRACE-L-IMPORT-01",
+      "requirement": "Selecting, reading, decoding, validating, previewing, or cancelling an import never auto-applies or changes protected musical/application state.",
+      "requirementIds": [
+        "E0-REQ-IMPL-009",
+        "E0-REQ-RISK-001",
+        "E0-REQ-RISK-002",
+        "E0-REQ-SUCCESS-006",
+        "E0-REQ-EVIDENCE-001",
+        "E0-REQ-EVIDENCE-009",
+        "E0-REQ-EVIDENCE-010"
+      ],
+      "authorityIds": [
+        "E0-AUTH-PLAN",
+        "E0-AUTH-F2",
+        "E0-AUTH-F3",
+        "E0-AUTH-T0",
+        "E0-AUTH-C0",
+        "E0-AUTH-A0"
+      ],
+      "caseIds": [
+        "E0-JI-001",
+        "E0-JI-016",
+        "E0-JI-021",
+        "E0-JI-024",
+        "E0-TI-003",
+        "E0-WF-001",
+        "E0-WF-002",
+        "E0-WF-005",
+        "E0-WF-009",
+        "E0-WF-010",
+        "E0-WF-027",
+        "E0-WF-028"
+      ],
+      "controlIds": [
+        "E0-MUT-021",
+        "E0-MUT-023",
+        "E0-MUT-035",
+        "E0-MUT-042",
+        "E0-MUT-044",
+        "E0-MUT-048"
+      ],
+      "proofKinds": [
+        "positive",
+        "negative",
+        "transaction",
+        "cancellation",
+        "state-isolation",
+        "mutation-link"
+      ]
+    },
+    {
+      "id": "E0-TRACE-FAILURE-ISOLATION",
+      "requirement": "Every normalized preflight or certified no-effect refusal changes only bounded presentation, creates no command, and returns with zero live prepared capabilities; malformed preparation, X1, and publication returns are separately normalized to bounded protocol outcomes with request-identity cleanup and the required reconciliation scope.",
+      "requirementIds": [
+        "E0-REQ-IMPL-007",
+        "E0-REQ-IMPL-009",
+        "E0-REQ-RISK-002",
+        "E0-REQ-RISK-008",
+        "E0-REQ-SUCCESS-006",
+        "E0-REQ-EVIDENCE-001",
+        "E0-REQ-EVIDENCE-009",
+        "E0-REQ-EVIDENCE-010"
+      ],
+      "authorityIds": [
+        "E0-AUTH-PLAN",
+        "E0-AUTH-F2",
+        "E0-AUTH-F3",
+        "E0-AUTH-A0",
+        "E0-AUTH-X1",
+        "E0-AUTH-VERIFICATION"
+      ],
+      "caseIds": [
+        "E0-JI-011",
+        "E0-JI-012",
+        "E0-JI-021",
+        "E0-LIM-025",
+        "E0-WF-003",
+        "E0-WF-009",
+        "E0-WF-010",
+        "E0-WF-018",
+        "E0-WF-019",
+        "E0-WF-020",
+        "E0-WF-021",
+        "E0-WF-022",
+        "E0-WF-023",
+        "E0-WF-024",
+        "E0-WF-025",
+        "E0-WF-026",
+        "E0-WF-028",
+        "E0-WF-029",
+        "E0-WF-030",
+        "E0-WF-031",
+        "E0-AD-013",
+        "E0-MK-015",
+        "E0-MK-018",
+        "E0-MK-019",
+        "E0-MK-021",
+        "E0-MK-022",
+        "E0-MK-023",
+        "E0-MK-026"
+      ],
+      "controlIds": [
+        "E0-MUT-019",
+        "E0-MUT-020",
+        "E0-MUT-040",
+        "E0-MUT-042",
+        "E0-MUT-045",
+        "E0-MUT-048",
+        "E0-MUT-074",
+        "E0-MUT-078",
+        "E0-MUT-079",
+        "E0-MUT-080",
+        "E0-MUT-082",
+        "E0-MUT-083"
+      ],
+      "proofKinds": [
+        "negative",
+        "state-isolation",
+        "cancellation",
+        "adapter",
+        "mutation-link"
+      ]
+    },
+    {
+      "id": "E0-TRACE-PRIVACY-BOUNDS",
+      "requirement": "AppState.importDraft is InterchangeImportDraft | null; every branch is reducer-validated, only ready.preview may carry a candidate, and preview/application state retain only bounded deterministic issue/report projections while omitting raw payloads and complete C0/T0 report/diagnostic/warning objects and counting Unicode scalars correctly.",
+      "requirementIds": [
+        "E0-REQ-IMPL-006",
+        "E0-REQ-IMPL-008",
+        "E0-REQ-RISK-009",
+        "E0-REQ-SUCCESS-005",
+        "E0-REQ-EVIDENCE-002",
+        "E0-REQ-EVIDENCE-011"
+      ],
+      "authorityIds": [
+        "E0-AUTH-PLAN",
+        "E0-AUTH-E0-DECISIONS",
+        "E0-AUTH-F1",
+        "E0-AUTH-F2",
+        "E0-AUTH-C0",
+        "E0-AUTH-A0",
+        "E0-AUTH-WHATWG-ENCODING",
+        "E0-AUTH-WHATWG-DOWNLOAD",
+        "E0-AUTH-FILENAME-POLICY",
+        "E0-AUTH-VERIFICATION"
+      ],
+      "caseIds": [
+        "E0-JI-022",
+        "E0-JI-024",
+        "E0-LIM-009",
+        "E0-LIM-010",
+        "E0-LIM-018",
+        "E0-LIM-020",
+        "E0-LIM-021",
+        "E0-LIM-022"
+      ],
+      "controlIds": [
+        "E0-MUT-009",
+        "E0-MUT-023",
+        "E0-MUT-052",
+        "E0-MUT-064",
+        "E0-MUT-065"
+      ],
+      "proofKinds": [
+        "positive",
+        "negative",
+        "unicode",
+        "exact-boundary",
+        "resource-bound",
+        "mutation-link"
+      ]
+    },
+    {
+      "id": "E0-TRACE-BLOB-DELIVERY",
+      "requirement": "Universal Blob delivery performs one observable handoff, orders activation before cleanup, and leaves zero live resources on success/failure/repetition.",
+      "requirementIds": [
+        "E0-REQ-IMPL-003",
+        "E0-REQ-IMPL-004",
+        "E0-REQ-SUCCESS-007",
+        "E0-REQ-SUCCESS-008",
+        "E0-REQ-EVIDENCE-001",
+        "E0-REQ-EVIDENCE-018",
+        "E0-REQ-EVIDENCE-019",
+        "E0-REQ-NONGOAL-001"
+      ],
+      "authorityIds": [
+        "E0-AUTH-PLAN",
+        "E0-AUTH-WHATWG-DOWNLOAD",
+        "E0-AUTH-FSA",
+        "E0-AUTH-VERIFICATION"
+      ],
+      "caseIds": [
+        "E0-AD-001",
+        "E0-AD-002",
+        "E0-AD-003",
+        "E0-AD-008",
+        "E0-AD-009",
+        "E0-AD-013"
+      ],
+      "controlIds": [
+        "E0-MUT-050",
+        "E0-MUT-052",
+        "E0-MUT-053",
+        "E0-MUT-056",
+        "E0-MUT-062",
+        "E0-MUT-063",
+        "E0-MUT-080"
+      ],
+      "proofKinds": [
+        "positive",
+        "negative",
+        "near-miss",
+        "adapter",
+        "resource-bound",
+        "mutation-link"
+      ]
+    },
+    {
+      "id": "E0-TRACE-FSA-DELIVERY",
+      "requirement": "File System Access is gesture-gated progressive enhancement that distinguishes completion, cancellation, operational failure, and capability absence without unsafe fallback.",
+      "requirementIds": [
+        "E0-REQ-IMPL-003",
+        "E0-REQ-SUCCESS-007",
+        "E0-REQ-EVIDENCE-001",
+        "E0-REQ-EVIDENCE-019",
+        "E0-REQ-NONGOAL-001"
+      ],
+      "authorityIds": [
+        "E0-AUTH-PLAN",
+        "E0-AUTH-WHATWG-DOWNLOAD",
+        "E0-AUTH-FSA"
+      ],
+      "caseIds": [
+        "E0-AD-005",
+        "E0-AD-006",
+        "E0-AD-007",
+        "E0-AD-008",
+        "E0-AD-012",
+        "E0-AD-013",
+        "E0-AD-014"
+      ],
+      "controlIds": [
+        "E0-MUT-050",
+        "E0-MUT-051",
+        "E0-MUT-056",
+        "E0-MUT-080",
+        "E0-MUT-081"
+      ],
+      "proofKinds": [
+        "positive",
+        "negative",
+        "cancellation",
+        "near-miss",
+        "adapter",
+        "mutation-link"
+      ]
+    },
+    {
+      "id": "E0-TRACE-USER-GESTURE",
+      "requirement": "No picker, writer, Blob, anchor, URL, or marker action occurs without runtime-proved user activation, and picker/anchor invocation occurs synchronously before the first await or queued microtask.",
+      "requirementIds": [
+        "E0-REQ-IMPL-003",
+        "E0-REQ-EVIDENCE-019",
+        "E0-REQ-NONGOAL-001"
+      ],
+      "authorityIds": ["E0-AUTH-WHATWG-DOWNLOAD", "E0-AUTH-FSA"],
+      "caseIds": ["E0-AD-004", "E0-MK-001", "E0-MK-002"],
+      "controlIds": ["E0-MUT-049"],
+      "proofKinds": [
+        "positive",
+        "negative",
+        "adapter",
+        "transaction",
+        "mutation-link"
+      ]
+    },
+    {
+      "id": "E0-TRACE-OFFLINE-INERT",
+      "requirement": "All interchange paths remain local and create zero runtime network, FileSaver, navigation, popup, or HTML-evaluation activity.",
+      "requirementIds": [
+        "E0-REQ-IMPL-003",
+        "E0-REQ-RISK-003",
+        "E0-REQ-RISK-005",
+        "E0-REQ-EVIDENCE-011",
+        "E0-REQ-EVIDENCE-019"
+      ],
+      "authorityIds": [
+        "E0-AUTH-PLAN",
+        "E0-AUTH-WHATWG-DOWNLOAD",
+        "E0-AUTH-VERIFICATION"
+      ],
+      "caseIds": ["E0-AD-010"],
+      "controlIds": ["E0-MUT-054", "E0-MUT-062", "E0-MUT-066"],
+      "proofKinds": ["negative", "hostile", "adapter", "mutation-link"]
+    },
+    {
+      "id": "E0-TRACE-CANCEL-STALE",
+      "requirement": "Reading/ready cancellation and every stale/wrong callback settle once and cannot publish a candidate or mutate protected state.",
+      "requirementIds": [
+        "E0-REQ-IMPL-009",
+        "E0-REQ-SUCCESS-006",
+        "E0-REQ-EVIDENCE-001",
+        "E0-REQ-EVIDENCE-009",
+        "E0-REQ-EVIDENCE-010"
+      ],
+      "authorityIds": ["E0-AUTH-PLAN", "E0-AUTH-C0", "E0-AUTH-A0"],
+      "caseIds": [
+        "E0-WF-004",
+        "E0-WF-005",
+        "E0-WF-006",
+        "E0-WF-007",
+        "E0-WF-009",
+        "E0-WF-010",
+        "E0-WF-022",
+        "E0-MK-017"
+      ],
+      "controlIds": [
+        "E0-MUT-039",
+        "E0-MUT-044",
+        "E0-MUT-045",
+        "E0-MUT-048",
+        "E0-MUT-058"
+      ],
+      "proofKinds": [
+        "negative",
+        "cancellation",
+        "stale",
+        "transaction",
+        "mutation-link"
+      ]
+    },
+    {
+      "id": "E0-TRACE-CONFIRM-REPLACE",
+      "requirement": "Fresh explicit confirmation plus a complete retiring AppState, one live prepared A0 capability, and exact structural evidence from the composition-bound X1 call produces one private committing transition, one ReplaceDocumentCommand, and one history/revision change; plain receipts, caller-supplied trusted adapters, fabricated capabilities, and replays cannot substitute, and every nonpublication path proves total request-keyed invalidation with zero live entries.",
+      "requirementIds": [
+        "E0-REQ-IMPL-008",
+        "E0-REQ-IMPL-010",
+        "E0-REQ-RISK-006",
+        "E0-REQ-RISK-008",
+        "E0-REQ-SUCCESS-006",
+        "E0-REQ-EVIDENCE-001",
+        "E0-REQ-EVIDENCE-009",
+        "E0-REQ-EVIDENCE-010",
+        "E0-REQ-NONGOAL-001",
+        "E0-REQ-NONGOAL-002"
+      ],
+      "authorityIds": [
+        "E0-AUTH-PLAN",
+        "E0-AUTH-C0",
+        "E0-AUTH-A0",
+        "E0-AUTH-X1"
+      ],
+      "caseIds": [
+        "E0-WF-008",
+        "E0-WF-009",
+        "E0-WF-010",
+        "E0-WF-011",
+        "E0-WF-013",
+        "E0-WF-014",
+        "E0-WF-015",
+        "E0-WF-016",
+        "E0-WF-017",
+        "E0-WF-018",
+        "E0-WF-019",
+        "E0-WF-020",
+        "E0-WF-021",
+        "E0-WF-022",
+        "E0-WF-023",
+        "E0-WF-024",
+        "E0-WF-025",
+        "E0-WF-026",
+        "E0-WF-027",
+        "E0-WF-029",
+        "E0-WF-030"
+      ],
+      "controlIds": [
+        "E0-MUT-039",
+        "E0-MUT-040",
+        "E0-MUT-041",
+        "E0-MUT-043",
+        "E0-MUT-045",
+        "E0-MUT-046",
+        "E0-MUT-047",
+        "E0-MUT-071",
+        "E0-MUT-074",
+        "E0-MUT-078"
+      ],
+      "proofKinds": [
+        "positive",
+        "negative",
+        "near-miss",
+        "stale",
+        "cancellation",
+        "transaction",
+        "adapter",
+        "mutation-link"
+      ]
+    },
+    {
+      "id": "E0-TRACE-HISTORY-IMPACT",
+      "requirement": "Preview and commit share the production A0 retained-byte estimator, undo-cap, eviction, redo-clear, nonundoable-confirmation, and export-recommendation policy; the oversized positive is a fully materialized F2/F3 AppState whose exact entry estimate is 16,777,217 bytes.",
+      "requirementIds": [
+        "E0-REQ-IMPL-008",
+        "E0-REQ-SUCCESS-006",
+        "E0-REQ-EVIDENCE-001"
+      ],
+      "authorityIds": ["E0-AUTH-A0", "E0-AUTH-VERIFICATION"],
+      "caseIds": [
+        "E0-WF-012",
+        "E0-WF-013",
+        "E0-WF-015",
+        "E0-WF-016",
+        "E0-WF-017",
+        "E0-WF-018",
+        "E0-WF-023"
+      ],
+      "controlIds": ["E0-MUT-064", "E0-MUT-071", "E0-MUT-074"],
+      "proofKinds": [
+        "positive",
+        "negative",
+        "near-miss",
+        "transaction",
+        "mutation-link"
+      ]
+    },
+    {
+      "id": "E0-TRACE-EXPORT-MARKER",
+      "requirement": "A single-flight text-free prepared generation is consumed once and starts browser capability work synchronously under real activation; only its exact canonical receipt and strict application timestamp may form a marker candidate, atomic latest-state A0 CAS is the sole in-memory publication authority, public asynchronous results contain no AppState, malformed boundaries are explicit protocol outcomes, and reload durability is claimed only after exact A1 persistence succeeds.",
+      "requirementIds": [
+        "E0-REQ-IMPL-005",
+        "E0-REQ-RISK-010",
+        "E0-REQ-SUCCESS-007",
+        "E0-REQ-EVIDENCE-001",
+        "E0-REQ-EVIDENCE-019"
+      ],
+      "authorityIds": [
+        "E0-AUTH-PLAN",
+        "E0-AUTH-E0-DECISIONS",
+        "E0-AUTH-A0",
+        "E0-AUTH-A1",
+        "E0-AUTH-WHATWG-DOWNLOAD",
+        "E0-AUTH-FSA"
+      ],
+      "caseIds": [
+        "E0-AD-014",
+        "E0-MK-001",
+        "E0-MK-002",
+        "E0-MK-003",
+        "E0-MK-004",
+        "E0-MK-005",
+        "E0-MK-006",
+        "E0-MK-007",
+        "E0-MK-008",
+        "E0-MK-009",
+        "E0-MK-010",
+        "E0-MK-011",
+        "E0-MK-012",
+        "E0-MK-013",
+        "E0-MK-014",
+        "E0-MK-015",
+        "E0-MK-016",
+        "E0-MK-017",
+        "E0-MK-018",
+        "E0-MK-019",
+        "E0-MK-020",
+        "E0-MK-021",
+        "E0-MK-022",
+        "E0-MK-023",
+        "E0-MK-024",
+        "E0-MK-025",
+        "E0-MK-026",
+        "E0-LIM-029",
+        "E0-LIM-030",
+        "E0-LIM-031"
+      ],
+      "controlIds": [
+        "E0-MUT-055",
+        "E0-MUT-056",
+        "E0-MUT-057",
+        "E0-MUT-058",
+        "E0-MUT-059",
+        "E0-MUT-060",
+        "E0-MUT-061",
+        "E0-MUT-072",
+        "E0-MUT-078",
+        "E0-MUT-080",
+        "E0-MUT-081",
+        "E0-MUT-082",
+        "E0-MUT-083"
+      ],
+      "proofKinds": [
+        "positive",
+        "negative",
+        "near-miss",
+        "cancellation",
+        "stale",
+        "transaction",
+        "adapter",
+        "mutation-link"
+      ]
+    },
+    {
+      "id": "E0-TRACE-TERMINATION",
+      "requirement": "Every bounded operation terminates with deterministic work/state/memory evidence including first excess and never uses wall time as semantic input.",
+      "requirementIds": [
+        "E0-REQ-IMPL-004",
+        "E0-REQ-IMPL-006",
+        "E0-REQ-SUCCESS-005",
+        "E0-REQ-SUCCESS-008",
+        "E0-REQ-EVIDENCE-002",
+        "E0-REQ-EVIDENCE-006",
+        "E0-REQ-EVIDENCE-007",
+        "E0-REQ-EVIDENCE-015",
+        "E0-REQ-EVIDENCE-018"
+      ],
+      "authorityIds": [
+        "E0-AUTH-PLAN",
+        "E0-AUTH-E0-DECISIONS",
+        "E0-AUTH-F1",
+        "E0-AUTH-F2",
+        "E0-AUTH-F3",
+        "E0-AUTH-T0",
+        "E0-AUTH-A0",
+        "E0-AUTH-WHATWG-ENCODING",
+        "E0-AUTH-WHATWG-DOWNLOAD",
+        "E0-AUTH-VERIFICATION"
+      ],
+      "caseIds": [
+        "E0-LIM-001",
+        "E0-LIM-002",
+        "E0-LIM-003",
+        "E0-LIM-004",
+        "E0-LIM-005",
+        "E0-LIM-006",
+        "E0-LIM-007",
+        "E0-LIM-011",
+        "E0-LIM-012",
+        "E0-LIM-013",
+        "E0-LIM-014",
+        "E0-LIM-015",
+        "E0-LIM-016",
+        "E0-LIM-019",
+        "E0-LIM-022",
+        "E0-LIM-023",
+        "E0-LIM-024",
+        "E0-LIM-025",
+        "E0-LIM-026",
+        "E0-LIM-027",
+        "E0-LIM-028",
+        "E0-LIM-029",
+        "E0-LIM-030",
+        "E0-LIM-031"
+      ],
+      "controlIds": [
+        "E0-MUT-004",
+        "E0-MUT-012",
+        "E0-MUT-013",
+        "E0-MUT-019",
+        "E0-MUT-020",
+        "E0-MUT-042",
+        "E0-MUT-048",
+        "E0-MUT-052",
+        "E0-MUT-063",
+        "E0-MUT-064",
+        "E0-MUT-075",
+        "E0-MUT-076",
+        "E0-MUT-077",
+        "E0-MUT-083",
+        "F2-MUT-002",
+        "F2-MUT-003"
+      ],
+      "proofKinds": [
+        "positive",
+        "negative",
+        "near-miss",
+        "exact-boundary",
+        "precedence",
+        "metamorphic",
+        "resource-bound",
+        "mutation-link"
+      ]
+    }
+  ]
+}

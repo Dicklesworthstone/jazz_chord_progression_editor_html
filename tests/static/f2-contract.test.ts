@@ -905,6 +905,40 @@ describe("F2 independently authored decoder contract", () => {
     });
   });
 
+  test("rejects a broken Custom-bass accepted-axis companion", async () => {
+    await withFixtureCopy(async (root) => {
+      await mutateJson(root, "shape-cases.json", (fixture) => {
+        const cases = requireArray(fixture["cases"], "shape cases");
+        const values = requireObject(
+          cases.find(
+            (raw) => isObject(raw) && raw["id"] === "F2-VALUE-002",
+          ),
+          "value case",
+        );
+        const targets = requireArray(
+          values["invalidPitchClassConsumerTargets"],
+          "pitch-class targets",
+        );
+        const customBass = requireObject(
+          targets.find(
+            (raw) => isObject(raw) && raw["id"] === "custom-bass",
+          ),
+          "custom-bass target",
+        );
+        requireObject(
+          customBass["acceptedAxisCompanion"],
+          "accepted-axis companion",
+        )["path"] = ["sections", 0, "missingPitches"];
+      });
+      await expectRejected(
+        root,
+        "F2_TARGET_INVENTORY",
+        "F2_CRITICAL_CELL_INVENTORY",
+        "F2_SEMANTIC_SNAPSHOT",
+      );
+    });
+  });
+
   test("rejects mutation-control ownership summary drift", async () => {
     await withFixtureCopy(async (root) => {
       await mutateJson(root, "adversarial-cases.json", (fixture) => {

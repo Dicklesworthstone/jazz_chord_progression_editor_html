@@ -1,0 +1,58 @@
+{
+  "schema": "changes.fixtures.a0-provenance-ledger.v1",
+  "ledgerVersion": 1,
+  "authoringStatement": "Application expectations were authored before A0 production behavior and do not cite production output. Musical values are used only to exercise already-reviewed F1/F3 facts.",
+  "classificationPolicy": {
+    "reviewed-contract": "A normative repository contract or reviewed plan decision.",
+    "legacy-observation": "A reproduced failure that the replacement must not preserve.",
+    "mechanical-derivation": "A direct consequence of declared limits, stable identity, or exact state transitions.",
+    "future-engine-handoff": "A selected deterministic Idea Wizard capability whose Apply boundary A0 must support."
+  },
+  "reviewState": "reviewed-for-a0-spec",
+  "expectedValuesGenerated": false,
+  "productionOutputUsed": false,
+  "authorities": [
+    {
+      "id": "AUTH-PLAN-A0",
+      "class": "reviewed-contract",
+      "source": "docs/REBUILD_PLAN.md section 14 and package A0",
+      "supports": ["state ownership", "commands", "history", "replacement transaction", "selectors", "limits", "stale requests"]
+    },
+    {
+      "id": "AUTH-ARCH",
+      "class": "reviewed-contract",
+      "source": "docs/ARCHITECTURE.md",
+      "supports": ["layer ownership", "sole ValidatedDocument cast", "UI intent boundary", "offline deterministic restrictions"]
+    },
+    {
+      "id": "AUTH-F1",
+      "class": "reviewed-contract",
+      "source": "F1 domain and identity contract",
+      "supports": ["stable IDs", "exact rational time", "atomic copy/remap", "exact Manual/Frozen pitches"]
+    },
+    {
+      "id": "AUTH-F3",
+      "class": "reviewed-contract",
+      "source": "docs/F3_PUBLICATION_CONTRACT.md",
+      "supports": ["sole semantic publication gate", "complete measure/chord/voicing validation", "no repair"]
+    },
+    {
+      "id": "AUTH-LEGACY",
+      "class": "legacy-observation",
+      "source": "docs/LEGACY_AUDIT.md",
+      "supports": ["L-DATA-01 root relabeling failure", "L-STATE-01 index identity failure", "missing undo/recovery", "stale listener risk"]
+    },
+    {
+      "id": "AUTH-WIZARD",
+      "class": "future-engine-handoff",
+      "source": "docs/THEORY_IDEA_WIZARD.md shared acceptance laws",
+      "supports": ["source revision and IDs", "stale Apply refusal", "one undoable patch", "nonmutating preview/search/branch"]
+    },
+    {
+      "id": "AUTH-DEFINITION",
+      "class": "mechanical-derivation",
+      "source": "A0 reviewed definitions in docs/A0_APPLICATION_CONTRACT.md",
+      "supports": ["exclusive coalescing boundary", "cap arithmetic", "deterministic ordering", "request token equality", "transport generation ordering"]
+    }
+  ]
+}

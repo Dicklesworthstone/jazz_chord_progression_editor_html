@@ -187,6 +187,7 @@ async function runAccessibilityCell(
   );
 
   try {
+    await page.setViewportSize({ width: 320, height: 568 });
     const response = await page.goto(target, { waitUntil: "load" });
     if (mode === "http") expect(response?.status()).toBe(200);
     await expect(page.locator('[data-app-ready="true"]')).toBeVisible();
@@ -196,7 +197,7 @@ async function runAccessibilityCell(
       banner: await page.getByRole("banner").count(),
       main: await page.getByRole("main").count(),
       namedComplementary: await page
-        .getByRole("complementary", { name: "Studio foundation" })
+        .getByRole("complementary", { name: "Harmony Lens" })
         .count(),
       contentinfo: await page.getByRole("contentinfo").count(),
     };
@@ -204,9 +205,13 @@ async function runAccessibilityCell(
       h1: 1,
       banner: 1,
       main: 1,
-      namedComplementary: 1,
-      contentinfo: 1,
+      namedComplementary: 0,
+      contentinfo: 0,
     });
+    await expect(page.getByRole("button", { name: "Library" })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Harmony Lens" }),
+    ).toBeVisible();
 
     const axeResults = await new AxeBuilder({ page })
       .withTags([...axeTags])
@@ -237,7 +242,9 @@ async function runAccessibilityCell(
     );
     expect(unreviewedHighImpact).toEqual([]);
 
-    const skipLink = page.getByRole("link", { name: "Skip to workspace" });
+    const skipLink = page.getByRole("link", {
+      name: "Skip to studio workspace",
+    });
     const main = page.getByRole("main");
     await page.keyboard.press("Tab");
     evidence.skipLink.receivedKeyboardFocus = await skipLink.evaluate(
@@ -251,7 +258,6 @@ async function runAccessibilityCell(
     );
     await expect(main).toBeFocused();
 
-    await page.setViewportSize({ width: 320, height: 568 });
     evidence.responsive = await page.evaluate(() => ({
       clientWidth: document.documentElement.clientWidth,
       scrollWidth: document.documentElement.scrollWidth,
@@ -266,7 +272,9 @@ async function runAccessibilityCell(
       forcedColors: "active",
       reducedMotion: "reduce",
     });
-    await page.reload({ waitUntil: "load" });
+    // Revisit the clean URL so the skip-link fragment activated above does not
+    // alter the document's initial keyboard-navigation position.
+    await page.goto(target, { waitUntil: "load" });
     await expect(page.locator('[data-app-ready="true"]')).toBeVisible();
     await page.keyboard.press("Tab");
     await expect(skipLink).toBeFocused();

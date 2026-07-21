@@ -183,7 +183,10 @@ decoded successfully.
 F1 constructors provide value laws, not F2's aggregation policy. F2 validates
 independent sibling fields/arrays separately and may isolate a leaf law with a
 reviewed valid counterpart rather than letting a constructor's first refusal
-hide later siblings. A single correctly typed scalar emits every independently
+hide later siblings. In `F2-VALUE-002` accepted-axis Custom-bass cells, that
+counterpart is exact: after changing the bass step/alter, the fixture replaces
+Manual `pitches[0]` with the same spelling at octave 3 so every accepted bass
+spelling remains the lowest included pitch. A single correctly typed scalar emits every independently
 applicable local issue only where this contract explicitly names co-diagnostics:
 free text may emit Unicode, length, and blankness;
 event Beat wire `0/2` or `-0/1` emits `beat.not_normalized` at the Beat path and

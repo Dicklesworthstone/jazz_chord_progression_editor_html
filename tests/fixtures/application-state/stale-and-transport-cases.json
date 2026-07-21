@@ -1,0 +1,228 @@
+{
+  "schema": "changes.fixtures.a0-stale-and-transport-cases.v1",
+  "fixtureVersion": 1,
+  "expectedValuesGenerated": false,
+  "productionOutputUsed": false,
+  "cases": [
+    {
+      "id": "A0-STALE-001",
+      "category": "positive",
+      "operation": "beginApplicationRequest",
+      "summary": "Begin one current suggestion request.",
+      "given": { "pending": [], "documentId": "D1", "revision": 5 },
+      "action": { "kind": "suggestion-search", "id": 10, "documentId": "D1", "baseRevision": 5 },
+      "expect": { "outcome": "request-started", "pendingKinds": ["suggestion-search"], "revisionDelta": 0 },
+      "traceIds": ["TR-A0-STALE"],
+      "authorityIds": ["AUTH-PLAN-A0", "AUTH-WIZARD"]
+    },
+    {
+      "id": "A0-STALE-002",
+      "category": "refusal",
+      "operation": "beginApplicationRequest",
+      "summary": "A busy request slot refuses replacement.",
+      "given": { "pending": ["suggestion-search#10"] },
+      "action": { "kind": "suggestion-search", "id": 11 },
+      "expect": { "refusal": "request.slot_busy", "pending": ["suggestion-search#10"] },
+      "traceIds": ["TR-A0-STALE"],
+      "authorityIds": ["AUTH-DEFINITION"]
+    },
+    {
+      "id": "A0-STALE-003",
+      "category": "limit",
+      "operation": "beginApplicationRequest",
+      "summary": "A ninth distinct pending request refuses.",
+      "given": { "pendingCount": 8 },
+      "action": { "kind": "analysis", "id": 99 },
+      "expect": { "refusal": "request.limit", "pendingCount": 8 },
+      "traceIds": ["TR-A0-STALE", "TR-A0-LIMITS"],
+      "authorityIds": ["AUTH-DEFINITION"]
+    },
+    {
+      "id": "A0-STALE-004",
+      "category": "positive",
+      "operation": "settleApplicationRequest",
+      "summary": "Exact token settlement is accepted and clears its slot.",
+      "given": { "slot": "analysis#7:D1:R5" },
+      "action": { "kind": "analysis", "id": 7, "documentId": "D1", "baseRevision": 5, "disposition": "complete" },
+      "expect": { "outcome": "request-settled", "slot": null, "payloadPermit": "current" },
+      "traceIds": ["TR-A0-STALE"],
+      "authorityIds": ["AUTH-PLAN-A0"]
+    },
+    {
+      "id": "A0-STALE-005",
+      "category": "stale",
+      "operation": "settleApplicationRequest",
+      "summary": "Old request ID is ignored with exact state identity.",
+      "given": { "slot": "analysis#8:D1:R5" },
+      "action": { "kind": "analysis", "id": 7, "documentId": "D1", "baseRevision": 5 },
+      "expect": { "outcome": "ignored-stale", "stateReference": "identical", "noticeDelta": 0, "effectDelta": 0 },
+      "traceIds": ["TR-A0-STALE"],
+      "authorityIds": ["AUTH-PLAN-A0"]
+    },
+    {
+      "id": "A0-STALE-006",
+      "category": "stale",
+      "operation": "settleApplicationRequest",
+      "summary": "Old base revision is ignored even when request ID matches.",
+      "given": { "slot": "voicing-search#8:D1:R6" },
+      "action": { "kind": "voicing-search", "id": 8, "documentId": "D1", "baseRevision": 5 },
+      "expect": { "outcome": "ignored-stale", "stateReference": "identical" },
+      "traceIds": ["TR-A0-STALE"],
+      "authorityIds": ["AUTH-PLAN-A0"]
+    },
+    {
+      "id": "A0-STALE-007",
+      "category": "stale",
+      "operation": "settleApplicationRequest",
+      "summary": "Old document ID is ignored even when ID and revision match.",
+      "given": { "slot": "import-read#8:D2:R6" },
+      "action": { "kind": "import-read", "id": 8, "documentId": "D1", "baseRevision": 6 },
+      "expect": { "outcome": "ignored-stale", "stateReference": "identical" },
+      "traceIds": ["TR-A0-STALE", "TR-A0-REPLACE"],
+      "authorityIds": ["AUTH-PLAN-A0"]
+    },
+    {
+      "id": "A0-STALE-008",
+      "category": "cancellation",
+      "operation": "settleApplicationRequest",
+      "summary": "Current cancellation clears exactly one slot and publishes no payload.",
+      "given": { "slots": ["analysis#1", "suggestion-search#2"] },
+      "action": { "kind": "analysis", "id": 1, "disposition": "cancel" },
+      "expect": { "outcome": "request-cancelled", "slots": ["suggestion-search#2"], "payloadPermit": "none" },
+      "traceIds": ["TR-A0-STALE"],
+      "authorityIds": ["AUTH-PLAN-A0"]
+    },
+    {
+      "id": "A0-STALE-009",
+      "category": "stale",
+      "operation": "settleApplicationRequest",
+      "summary": "Cancellation for an old request cannot cancel the current slot.",
+      "given": { "slot": "suggestion-search#3:D1:R8" },
+      "action": { "kind": "suggestion-search", "id": 2, "documentId": "D1", "baseRevision": 8, "disposition": "cancel" },
+      "expect": { "outcome": "ignored-stale", "slot": "suggestion-search#3:D1:R8" },
+      "traceIds": ["TR-A0-STALE"],
+      "authorityIds": ["AUTH-WIZARD"]
+    },
+    {
+      "id": "A0-STALE-010",
+      "category": "stale",
+      "operation": "runDocumentCommand",
+      "summary": "A settled suggestion still fails the independent command revision gate after an intervening edit.",
+      "given": { "suggestion": "accepted-at-R8", "currentRevision": 9 },
+      "action": { "kind": "apply-suggestion", "baseRevision": 8 },
+      "expect": { "refusal": "command.derived_patch_stale", "document": "unchanged" },
+      "traceIds": ["TR-A0-STALE", "TR-HD-APPLY"],
+      "authorityIds": ["AUTH-WIZARD", "AUTH-PLAN-A0"]
+    },
+    {
+      "id": "A0-TRANSPORT-001",
+      "category": "positive",
+      "operation": "acceptTransportNotification",
+      "summary": "A current first ready notification is accepted.",
+      "given": { "view": "unavailable G0 Q0 D1 R5" },
+      "action": { "status": "ready", "generation": 1, "commandRequestId": 4, "notificationSequence": 1, "documentId": "D1", "planRevision": 5 },
+      "expect": { "outcome": "transport-accepted", "status": "ready", "revisionDelta": 0 },
+      "traceIds": ["TR-A0-TRANSPORT", "TR-A0-NONHISTORY"],
+      "authorityIds": ["AUTH-PLAN-A0", "AUTH-ARCH"]
+    },
+    {
+      "id": "A0-TRANSPORT-002",
+      "category": "positive",
+      "operation": "acceptTransportNotification",
+      "summary": "A higher generation is accepted with a reset notification sequence.",
+      "given": { "view": "G4 sequence 99 request 8 D1 R5" },
+      "action": { "generation": 5, "notificationSequence": 1, "commandRequestId": 8, "documentId": "D1", "planRevision": 5 },
+      "expect": { "outcome": "transport-accepted", "generation": 5, "notificationSequence": 1 },
+      "traceIds": ["TR-A0-TRANSPORT"],
+      "authorityIds": ["AUTH-PLAN-A0"]
+    },
+    {
+      "id": "A0-TRANSPORT-003",
+      "category": "positive",
+      "operation": "acceptTransportNotification",
+      "summary": "Same generation with a strictly higher sequence is accepted.",
+      "given": { "view": "G5 sequence 4 request 8 D1 R5" },
+      "action": { "generation": 5, "notificationSequence": 5, "commandRequestId": 8, "documentId": "D1", "planRevision": 5 },
+      "expect": { "outcome": "transport-accepted", "notificationSequence": 5 },
+      "traceIds": ["TR-A0-TRANSPORT"],
+      "authorityIds": ["AUTH-PLAN-A0"]
+    },
+    {
+      "id": "A0-TRANSPORT-004",
+      "category": "stale",
+      "operation": "acceptTransportNotification",
+      "summary": "Same generation and sequence is ignored.",
+      "given": { "view": "G5 sequence 5 request 8 D1 R5" },
+      "action": { "generation": 5, "notificationSequence": 5, "commandRequestId": 8, "documentId": "D1", "planRevision": 5 },
+      "expect": { "outcome": "ignored-stale", "stateReference": "identical" },
+      "traceIds": ["TR-A0-TRANSPORT"],
+      "authorityIds": ["AUTH-PLAN-A0"]
+    },
+    {
+      "id": "A0-TRANSPORT-005",
+      "category": "stale",
+      "operation": "acceptTransportNotification",
+      "summary": "Lower generation is ignored regardless of a larger sequence.",
+      "given": { "view": "G5 sequence 5 request 8 D1 R5" },
+      "action": { "generation": 4, "notificationSequence": 999, "commandRequestId": 8, "documentId": "D1", "planRevision": 5 },
+      "expect": { "outcome": "ignored-stale", "stateReference": "identical" },
+      "traceIds": ["TR-A0-TRANSPORT"],
+      "authorityIds": ["AUTH-PLAN-A0"]
+    },
+    {
+      "id": "A0-TRANSPORT-006",
+      "category": "stale",
+      "operation": "acceptTransportNotification",
+      "summary": "Old command request cannot repaint after Stop or replay.",
+      "given": { "view": "G6 request 10 stopped" },
+      "action": { "generation": 6, "commandRequestId": 9, "notificationSequence": 50, "status": "playing" },
+      "expect": { "outcome": "ignored-stale", "status": "ready", "playhead": "startBeat" },
+      "traceIds": ["TR-A0-TRANSPORT", "TR-A0-STALE"],
+      "authorityIds": ["AUTH-PLAN-A0"]
+    },
+    {
+      "id": "A0-TRANSPORT-007",
+      "category": "stale",
+      "operation": "acceptTransportNotification",
+      "summary": "Old document notification is ignored after replacement.",
+      "given": { "view": "D2 R20 G8 request 12" },
+      "action": { "documentId": "D1", "planRevision": 19, "generation": 9, "commandRequestId": 12 },
+      "expect": { "outcome": "ignored-stale", "stateReference": "identical" },
+      "traceIds": ["TR-A0-TRANSPORT", "TR-A0-REPLACE"],
+      "authorityIds": ["AUTH-PLAN-A0"]
+    },
+    {
+      "id": "A0-TRANSPORT-008",
+      "category": "stale",
+      "operation": "acceptTransportNotification",
+      "summary": "Old plan revision is ignored for the same document.",
+      "given": { "view": "D1 R20 G8 request 12" },
+      "action": { "documentId": "D1", "planRevision": 19, "generation": 9, "commandRequestId": 12 },
+      "expect": { "outcome": "ignored-stale", "stateReference": "identical" },
+      "traceIds": ["TR-A0-TRANSPORT", "TR-A0-STALE"],
+      "authorityIds": ["AUTH-PLAN-A0"]
+    },
+    {
+      "id": "A0-TRANSPORT-009",
+      "category": "malformed",
+      "operation": "acceptTransportNotification",
+      "summary": "Unsafe notification sequence refuses as malformed input.",
+      "given": { "view": "D1 R20 G8 request 12" },
+      "action": { "notificationSequence": 9007199254740992 },
+      "expect": { "refusal": "transport.notification_invalid", "transport": "unchanged" },
+      "traceIds": ["TR-A0-TRANSPORT", "TR-A0-LIMITS"],
+      "authorityIds": ["AUTH-DEFINITION"]
+    },
+    {
+      "id": "A0-TRANSPORT-010",
+      "category": "legacy-regression",
+      "operation": "acceptTransportNotification",
+      "summary": "A delayed playing playhead cannot repaint after accepted Stop-ready state.",
+      "given": { "view": "ready G11 request 21 sequence 7 playhead 0/1" },
+      "action": { "status": "playing", "generation": 10, "commandRequestId": 20, "notificationSequence": 999, "playhead": "24/1" },
+      "expect": { "outcome": "ignored-stale", "status": "ready", "playhead": "0/1", "revisionDelta": 0 },
+      "traceIds": ["TR-A0-TRANSPORT", "TR-A0-STALE", "TR-A0-NONHISTORY"],
+      "authorityIds": ["AUTH-LEGACY", "AUTH-PLAN-A0"]
+    }
+  ]
+}

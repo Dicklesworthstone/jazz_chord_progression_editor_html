@@ -1,0 +1,1728 @@
+{
+  "schema": "changes.fixtures.v0-limit-cases.v1",
+  "fixtureVersion": "1.0.0",
+  "caseSetId": "changes.voicing-limit-cases",
+  "caseSetVersion": 1,
+  "status": "independently-authored-pre-production",
+  "productionOutputUsed": false,
+  "productionGeneratedExpectedValues": false,
+  "expectedValuesGenerated": false,
+  "review": {
+    "humanReviewClaimed": false,
+    "domainExpertReviewClaimed": false,
+    "independentReviewComplete": false,
+    "state": "awaiting-human-and-domain-expert-review"
+  },
+  "provenance": {
+    "authoringMethod": "independent direct transcription of frozen counter and identifier maxima plus explicit exact and attempted-plus-one boundary pairing",
+    "mechanicalSerializationUsed": true,
+    "generatedByProductionAlgorithm": false,
+    "productionContractModuleImported": false,
+    "productionAlgorithmExecuted": false,
+    "copiedFromProductionOutput": false,
+    "judgmentBearingInputs": [
+      "src/theory/voicing-candidates-contract.ts",
+      "tests/fixtures/voicing/v0-voicing-contract.json",
+      "src/domain/pitch.ts",
+      "docs/V0_VOICING_CONTRACT.md section 12"
+    ]
+  },
+  "identity": {
+    "voicingContractSchema": "changes.theory.voicing-candidates-contract.v1",
+    "voicingEngineId": "changes.voicing-candidates",
+    "voicingEngineVersion": 1,
+    "refusalCode": "limit.voicing_work_exceeded",
+    "refusalPath": [],
+    "refusalTermination": "work-limit-exceeded"
+  },
+  "counterOrder": {
+    "work": [
+      "realizationDegreeRecordsVisited",
+      "templateRowsVisited",
+      "templateDegreeSlotsVisited",
+      "registerPlacementsVisited",
+      "searchStatesExpanded",
+      "structuralTransformsAttempted",
+      "hardConstraintChecks",
+      "rawCandidatesProduced",
+      "candidateCanonicalizations",
+      "duplicateCandidateComparisons",
+      "localScoresComputed",
+      "orderingComparisons",
+      "retainedCandidatesProduced",
+      "outputVoicesProduced",
+      "constraintObservationComparisons",
+      "constraintObservationsProduced"
+    ],
+    "memory": [
+      "peakRegisterPlacementRecords",
+      "peakSearchStateRecords",
+      "peakRawCandidateRecords",
+      "peakRawVoiceRecords",
+      "peakRetainedCandidateRecords",
+      "peakOutputVoiceRecords",
+      "peakTrackedRecords",
+      "peakConstraintObservationRecords"
+    ]
+  },
+  "limits": {
+    "work": {
+      "realizationDegreeRecordsVisited": 16,
+      "templateRowsVisited": 112,
+      "templateDegreeSlotsVisited": 784,
+      "registerPlacementsVisited": 176,
+      "searchStatesExpanded": 8192,
+      "structuralTransformsAttempted": 8192,
+      "hardConstraintChecks": 131072,
+      "rawCandidatesProduced": 96,
+      "candidateCanonicalizations": 96,
+      "duplicateCandidateComparisons": 4560,
+      "localScoresComputed": 96,
+      "orderingComparisons": 4560,
+      "retainedCandidatesProduced": 24,
+      "outputVoicesProduced": 168,
+      "constraintObservationComparisons": 2228224,
+      "constraintObservationsProduced": 16
+    },
+    "memory": {
+      "peakRegisterPlacementRecords": 176,
+      "peakSearchStateRecords": 512,
+      "peakRawCandidateRecords": 96,
+      "peakRawVoiceRecords": 672,
+      "peakRetainedCandidateRecords": 24,
+      "peakOutputVoiceRecords": 168,
+      "peakTrackedRecords": 1792,
+      "peakConstraintObservationRecords": 16
+    }
+  },
+  "limitPolicy": {
+    "maximaAreInclusive": true,
+    "trueAttemptedPlusOne": "A plus-one case represents an actual attempt to accept the next work unit or allocate the next tracked record after the counter is already at its inclusive maximum.",
+    "refusal": "Every true attempted maximum-plus-one returns limit.voicing_work_exceeded with path [], the exact counter, received maximum plus one, maximum, partialResult false, termination work-limit-exceeded, and no partial value.",
+    "exactLimit": "Reaching the exact maximum is allowed by that limit. The exact-limit case fixes the evidence value but does not by itself fix the operation's later musical outcome.",
+    "retentionException": "The first 24 eligible candidates after stable ordering are retained. A 25th eligible ordered raw candidate is truncated without attempting a 25th retained allocation, so it does not trigger the retained counter plus-one refusal.",
+    "rawCandidateRule": "Exactly 96 raw candidates may be accepted. A true attempt to accept raw candidate 97 is a limit refusal and returns no partial candidate value.",
+    "constraintObservationQualification": "Exact semantic duplicates collapse before capacity. Only a prospective seventeenth distinct full-payload observation attempts constraintObservationsProduced value 17.",
+    "constraintObservationOverflow": "Observation overflow is provisional while no legal candidate has been found: diagnostic collection stops but musical search continues. The first legal candidate clears and disables the provisional overflow. Only a completed zero-candidate search returns the typed all-or-nothing work-limit refusal."
+  },
+  "inheritedDomainBoundaryPolicy": {
+    "authority": "src/domain/pitch.ts makeMidiPitch",
+    "appliesBeforeV0Search": true,
+    "minimumMidiInclusive": 0,
+    "maximumMidiInclusive": 127,
+    "rejectedNearMisses": [
+      -1,
+      128
+    ],
+    "countsAsV0Work": false
+  },
+  "identifierPolicy": {
+    "surfaces": [
+      "quartalContext.evidenceId",
+      "candidateEvidence.sourceId"
+    ],
+    "minimumCodePointsInclusive": 1,
+    "maximumCodePointsInclusive": 256,
+    "maximumUtf8BytesInclusive": 512,
+    "codePointMeasurement": "Array.from(value).length",
+    "utf8ByteMeasurement": "new TextEncoder().encode(value).byteLength",
+    "violationOrder": [
+      "minimum-code-points",
+      "maximum-code-points",
+      "maximum-utf8-bytes"
+    ],
+    "quartalContextInvalidReason": "evidence-id-invalid",
+    "candidateEvidenceLaw": "An invalid sourceId may never be emitted in candidate evidence.",
+    "fixtureRecipesStoreMetricsInsteadOfExpandedStrings": true
+  },
+  "wallTimePolicy": {
+    "appliesAsInput": false,
+    "cutoffMilliseconds": null,
+    "changesMembershipOrOrder": false,
+    "changesRefusalOrTermination": false,
+    "performanceEvidenceOnly": true
+  },
+  "counts": {
+    "workCounters": 16,
+    "memoryCounters": 8,
+    "counters": 24,
+    "workCounterBoundaryCases": 32,
+    "memoryCounterBoundaryCases": 16,
+    "counterBoundaryCases": 48,
+    "byBoundary": {
+      "exact-limit": 24,
+      "attempted-limit-plus-one": 24
+    },
+    "retentionCases": 4,
+    "identifierBoundaryCases": 6,
+    "midiBoundaryCases": 4,
+    "wallTimeCases": 1,
+    "totalCases": 63
+  },
+  "checksums": {
+    "algorithm": "sha256",
+    "encoding": "utf8",
+    "recordProjectionFormat": "one compact JSON array per record in stored order, followed by LF",
+    "counterBoundaryProjection": "[id,counterKind,counter,boundary,maximum,inputEvidence,expected]",
+    "counterBoundarySha256": "22aea44f936366b21ef1e960f28c5d02c96f6e84e9042c2eb66e9b31cf912d7d",
+    "retentionProjection": "[id,kind,inputEvidence,expected]",
+    "retentionSha256": "de5c23adb3b8dbc29bb21be1ccb18fd66ab3c0c09fa6c710ceba6ed923944feb",
+    "identifierBoundaryProjection": "[id,kind,appliesTo,recipe,expected,traceIds,authorityIds]",
+    "identifierBoundarySha256": "7cbb624104920b5ccdf45ba412555572fd6e0b970e62c881934faad5364ca660",
+    "midiBoundaryProjection": "[id,kind,received,expected]",
+    "midiBoundarySha256": "6af2ef86f21b1a6d86d9ee591ab990eca48de1b90bde72600d6886fc79908d4d",
+    "wallTimeProjection": "[id,kind,inputEvidence,expected]",
+    "wallTimeSha256": "b58ff50d2a707fee7a4df9e5e5767099e16936e6bd64d27acdf417dd98cb9b66",
+    "fixturePayloadProjection": "one compact JSON object with recursively sorted keys and checksums removed, followed by LF",
+    "fixturePayloadSha256": "5095ba839057e78f9e5490ed7e45b4f8043649a989df8c2d4b208528a1e510b8"
+  },
+  "counterBoundaryCases": [
+    {
+      "id": "V0-LIMIT-WORK-001-EXACT",
+      "counterKind": "work",
+      "counter": "realizationDegreeRecordsVisited",
+      "boundary": "exact-limit",
+      "maximum": 16,
+      "inputEvidence": {
+        "acceptedCounterValue": 16,
+        "attemptedNextUnit": false
+      },
+      "expected": {
+        "limitDisposition": "accepted-at-inclusive-maximum",
+        "evidenceProjection": {
+          "counter": "realizationDegreeRecordsVisited",
+          "acceptedValue": 16
+        },
+        "limitRefusal": null,
+        "overallOperationOutcomeFixedByThisCase": false
+      }
+    },
+    {
+      "id": "V0-LIMIT-WORK-001-PLUS-ONE",
+      "counterKind": "work",
+      "counter": "realizationDegreeRecordsVisited",
+      "boundary": "attempted-limit-plus-one",
+      "maximum": 16,
+      "inputEvidence": {
+        "acceptedCounterValueBeforeAttempt": 16,
+        "attemptedValue": 17,
+        "attemptedNextUnit": true
+      },
+      "expected": {
+        "limitDisposition": "refuse-before-accepting-attempted-unit",
+        "ok": false,
+        "valuePresent": false,
+        "evidenceProjection": {
+          "counter": "realizationDegreeRecordsVisited",
+          "acceptedValue": 16,
+          "termination": "work-limit-exceeded"
+        },
+        "refusal": {
+          "code": "limit.voicing_work_exceeded",
+          "path": [],
+          "counter": "realizationDegreeRecordsVisited",
+          "received": 17,
+          "maximum": 16,
+          "partialResult": false
+        }
+      }
+    },
+    {
+      "id": "V0-LIMIT-WORK-002-EXACT",
+      "counterKind": "work",
+      "counter": "templateRowsVisited",
+      "boundary": "exact-limit",
+      "maximum": 112,
+      "inputEvidence": {
+        "acceptedCounterValue": 112,
+        "attemptedNextUnit": false
+      },
+      "expected": {
+        "limitDisposition": "accepted-at-inclusive-maximum",
+        "evidenceProjection": {
+          "counter": "templateRowsVisited",
+          "acceptedValue": 112
+        },
+        "limitRefusal": null,
+        "overallOperationOutcomeFixedByThisCase": false
+      }
+    },
+    {
+      "id": "V0-LIMIT-WORK-002-PLUS-ONE",
+      "counterKind": "work",
+      "counter": "templateRowsVisited",
+      "boundary": "attempted-limit-plus-one",
+      "maximum": 112,
+      "inputEvidence": {
+        "acceptedCounterValueBeforeAttempt": 112,
+        "attemptedValue": 113,
+        "attemptedNextUnit": true
+      },
+      "expected": {
+        "limitDisposition": "refuse-before-accepting-attempted-unit",
+        "ok": false,
+        "valuePresent": false,
+        "evidenceProjection": {
+          "counter": "templateRowsVisited",
+          "acceptedValue": 112,
+          "termination": "work-limit-exceeded"
+        },
+        "refusal": {
+          "code": "limit.voicing_work_exceeded",
+          "path": [],
+          "counter": "templateRowsVisited",
+          "received": 113,
+          "maximum": 112,
+          "partialResult": false
+        }
+      }
+    },
+    {
+      "id": "V0-LIMIT-WORK-003-EXACT",
+      "counterKind": "work",
+      "counter": "templateDegreeSlotsVisited",
+      "boundary": "exact-limit",
+      "maximum": 784,
+      "inputEvidence": {
+        "acceptedCounterValue": 784,
+        "attemptedNextUnit": false
+      },
+      "expected": {
+        "limitDisposition": "accepted-at-inclusive-maximum",
+        "evidenceProjection": {
+          "counter": "templateDegreeSlotsVisited",
+          "acceptedValue": 784
+        },
+        "limitRefusal": null,
+        "overallOperationOutcomeFixedByThisCase": false
+      }
+    },
+    {
+      "id": "V0-LIMIT-WORK-003-PLUS-ONE",
+      "counterKind": "work",
+      "counter": "templateDegreeSlotsVisited",
+      "boundary": "attempted-limit-plus-one",
+      "maximum": 784,
+      "inputEvidence": {
+        "acceptedCounterValueBeforeAttempt": 784,
+        "attemptedValue": 785,
+        "attemptedNextUnit": true
+      },
+      "expected": {
+        "limitDisposition": "refuse-before-accepting-attempted-unit",
+        "ok": false,
+        "valuePresent": false,
+        "evidenceProjection": {
+          "counter": "templateDegreeSlotsVisited",
+          "acceptedValue": 784,
+          "termination": "work-limit-exceeded"
+        },
+        "refusal": {
+          "code": "limit.voicing_work_exceeded",
+          "path": [],
+          "counter": "templateDegreeSlotsVisited",
+          "received": 785,
+          "maximum": 784,
+          "partialResult": false
+        }
+      }
+    },
+    {
+      "id": "V0-LIMIT-WORK-004-EXACT",
+      "counterKind": "work",
+      "counter": "registerPlacementsVisited",
+      "boundary": "exact-limit",
+      "maximum": 176,
+      "inputEvidence": {
+        "acceptedCounterValue": 176,
+        "attemptedNextUnit": false
+      },
+      "expected": {
+        "limitDisposition": "accepted-at-inclusive-maximum",
+        "evidenceProjection": {
+          "counter": "registerPlacementsVisited",
+          "acceptedValue": 176
+        },
+        "limitRefusal": null,
+        "overallOperationOutcomeFixedByThisCase": false
+      }
+    },
+    {
+      "id": "V0-LIMIT-WORK-004-PLUS-ONE",
+      "counterKind": "work",
+      "counter": "registerPlacementsVisited",
+      "boundary": "attempted-limit-plus-one",
+      "maximum": 176,
+      "inputEvidence": {
+        "acceptedCounterValueBeforeAttempt": 176,
+        "attemptedValue": 177,
+        "attemptedNextUnit": true
+      },
+      "expected": {
+        "limitDisposition": "refuse-before-accepting-attempted-unit",
+        "ok": false,
+        "valuePresent": false,
+        "evidenceProjection": {
+          "counter": "registerPlacementsVisited",
+          "acceptedValue": 176,
+          "termination": "work-limit-exceeded"
+        },
+        "refusal": {
+          "code": "limit.voicing_work_exceeded",
+          "path": [],
+          "counter": "registerPlacementsVisited",
+          "received": 177,
+          "maximum": 176,
+          "partialResult": false
+        }
+      }
+    },
+    {
+      "id": "V0-LIMIT-WORK-005-EXACT",
+      "counterKind": "work",
+      "counter": "searchStatesExpanded",
+      "boundary": "exact-limit",
+      "maximum": 8192,
+      "inputEvidence": {
+        "acceptedCounterValue": 8192,
+        "attemptedNextUnit": false
+      },
+      "expected": {
+        "limitDisposition": "accepted-at-inclusive-maximum",
+        "evidenceProjection": {
+          "counter": "searchStatesExpanded",
+          "acceptedValue": 8192
+        },
+        "limitRefusal": null,
+        "overallOperationOutcomeFixedByThisCase": false
+      }
+    },
+    {
+      "id": "V0-LIMIT-WORK-005-PLUS-ONE",
+      "counterKind": "work",
+      "counter": "searchStatesExpanded",
+      "boundary": "attempted-limit-plus-one",
+      "maximum": 8192,
+      "inputEvidence": {
+        "acceptedCounterValueBeforeAttempt": 8192,
+        "attemptedValue": 8193,
+        "attemptedNextUnit": true
+      },
+      "expected": {
+        "limitDisposition": "refuse-before-accepting-attempted-unit",
+        "ok": false,
+        "valuePresent": false,
+        "evidenceProjection": {
+          "counter": "searchStatesExpanded",
+          "acceptedValue": 8192,
+          "termination": "work-limit-exceeded"
+        },
+        "refusal": {
+          "code": "limit.voicing_work_exceeded",
+          "path": [],
+          "counter": "searchStatesExpanded",
+          "received": 8193,
+          "maximum": 8192,
+          "partialResult": false
+        }
+      }
+    },
+    {
+      "id": "V0-LIMIT-WORK-006-EXACT",
+      "counterKind": "work",
+      "counter": "structuralTransformsAttempted",
+      "boundary": "exact-limit",
+      "maximum": 8192,
+      "inputEvidence": {
+        "acceptedCounterValue": 8192,
+        "attemptedNextUnit": false
+      },
+      "expected": {
+        "limitDisposition": "accepted-at-inclusive-maximum",
+        "evidenceProjection": {
+          "counter": "structuralTransformsAttempted",
+          "acceptedValue": 8192
+        },
+        "limitRefusal": null,
+        "overallOperationOutcomeFixedByThisCase": false
+      }
+    },
+    {
+      "id": "V0-LIMIT-WORK-006-PLUS-ONE",
+      "counterKind": "work",
+      "counter": "structuralTransformsAttempted",
+      "boundary": "attempted-limit-plus-one",
+      "maximum": 8192,
+      "inputEvidence": {
+        "acceptedCounterValueBeforeAttempt": 8192,
+        "attemptedValue": 8193,
+        "attemptedNextUnit": true
+      },
+      "expected": {
+        "limitDisposition": "refuse-before-accepting-attempted-unit",
+        "ok": false,
+        "valuePresent": false,
+        "evidenceProjection": {
+          "counter": "structuralTransformsAttempted",
+          "acceptedValue": 8192,
+          "termination": "work-limit-exceeded"
+        },
+        "refusal": {
+          "code": "limit.voicing_work_exceeded",
+          "path": [],
+          "counter": "structuralTransformsAttempted",
+          "received": 8193,
+          "maximum": 8192,
+          "partialResult": false
+        }
+      }
+    },
+    {
+      "id": "V0-LIMIT-WORK-007-EXACT",
+      "counterKind": "work",
+      "counter": "hardConstraintChecks",
+      "boundary": "exact-limit",
+      "maximum": 131072,
+      "inputEvidence": {
+        "acceptedCounterValue": 131072,
+        "attemptedNextUnit": false
+      },
+      "expected": {
+        "limitDisposition": "accepted-at-inclusive-maximum",
+        "evidenceProjection": {
+          "counter": "hardConstraintChecks",
+          "acceptedValue": 131072
+        },
+        "limitRefusal": null,
+        "overallOperationOutcomeFixedByThisCase": false
+      }
+    },
+    {
+      "id": "V0-LIMIT-WORK-007-PLUS-ONE",
+      "counterKind": "work",
+      "counter": "hardConstraintChecks",
+      "boundary": "attempted-limit-plus-one",
+      "maximum": 131072,
+      "inputEvidence": {
+        "acceptedCounterValueBeforeAttempt": 131072,
+        "attemptedValue": 131073,
+        "attemptedNextUnit": true
+      },
+      "expected": {
+        "limitDisposition": "refuse-before-accepting-attempted-unit",
+        "ok": false,
+        "valuePresent": false,
+        "evidenceProjection": {
+          "counter": "hardConstraintChecks",
+          "acceptedValue": 131072,
+          "termination": "work-limit-exceeded"
+        },
+        "refusal": {
+          "code": "limit.voicing_work_exceeded",
+          "path": [],
+          "counter": "hardConstraintChecks",
+          "received": 131073,
+          "maximum": 131072,
+          "partialResult": false
+        }
+      }
+    },
+    {
+      "id": "V0-LIMIT-WORK-008-EXACT",
+      "traceIds": ["V0-TRACE-LIMITS"],
+      "authorityIds": ["V0-AUTH-LIMITS", "V0-AUTH-INDEPENDENCE"],
+      "counterKind": "work",
+      "counter": "rawCandidatesProduced",
+      "boundary": "exact-limit",
+      "maximum": 96,
+      "inputEvidence": {
+        "acceptedCounterValue": 96,
+        "attemptedNextUnit": false
+      },
+      "expected": {
+        "limitDisposition": "accepted-at-inclusive-maximum",
+        "evidenceProjection": {
+          "counter": "rawCandidatesProduced",
+          "acceptedValue": 96
+        },
+        "limitRefusal": null,
+        "overallOperationOutcomeFixedByThisCase": false
+      }
+    },
+    {
+      "id": "V0-LIMIT-WORK-008-PLUS-ONE",
+      "traceIds": ["V0-TRACE-LIMITS"],
+      "authorityIds": ["V0-AUTH-LIMITS", "V0-AUTH-INDEPENDENCE"],
+      "counterKind": "work",
+      "counter": "rawCandidatesProduced",
+      "boundary": "attempted-limit-plus-one",
+      "maximum": 96,
+      "inputEvidence": {
+        "acceptedCounterValueBeforeAttempt": 96,
+        "attemptedValue": 97,
+        "attemptedNextUnit": true
+      },
+      "expected": {
+        "limitDisposition": "refuse-before-accepting-attempted-unit",
+        "ok": false,
+        "valuePresent": false,
+        "evidenceProjection": {
+          "counter": "rawCandidatesProduced",
+          "acceptedValue": 96,
+          "termination": "work-limit-exceeded"
+        },
+        "refusal": {
+          "code": "limit.voicing_work_exceeded",
+          "path": [],
+          "counter": "rawCandidatesProduced",
+          "received": 97,
+          "maximum": 96,
+          "partialResult": false
+        }
+      }
+    },
+    {
+      "id": "V0-LIMIT-WORK-009-EXACT",
+      "counterKind": "work",
+      "counter": "candidateCanonicalizations",
+      "boundary": "exact-limit",
+      "maximum": 96,
+      "inputEvidence": {
+        "acceptedCounterValue": 96,
+        "attemptedNextUnit": false
+      },
+      "expected": {
+        "limitDisposition": "accepted-at-inclusive-maximum",
+        "evidenceProjection": {
+          "counter": "candidateCanonicalizations",
+          "acceptedValue": 96
+        },
+        "limitRefusal": null,
+        "overallOperationOutcomeFixedByThisCase": false
+      }
+    },
+    {
+      "id": "V0-LIMIT-WORK-009-PLUS-ONE",
+      "counterKind": "work",
+      "counter": "candidateCanonicalizations",
+      "boundary": "attempted-limit-plus-one",
+      "maximum": 96,
+      "inputEvidence": {
+        "acceptedCounterValueBeforeAttempt": 96,
+        "attemptedValue": 97,
+        "attemptedNextUnit": true
+      },
+      "expected": {
+        "limitDisposition": "refuse-before-accepting-attempted-unit",
+        "ok": false,
+        "valuePresent": false,
+        "evidenceProjection": {
+          "counter": "candidateCanonicalizations",
+          "acceptedValue": 96,
+          "termination": "work-limit-exceeded"
+        },
+        "refusal": {
+          "code": "limit.voicing_work_exceeded",
+          "path": [],
+          "counter": "candidateCanonicalizations",
+          "received": 97,
+          "maximum": 96,
+          "partialResult": false
+        }
+      }
+    },
+    {
+      "id": "V0-LIMIT-WORK-010-EXACT",
+      "counterKind": "work",
+      "counter": "duplicateCandidateComparisons",
+      "boundary": "exact-limit",
+      "maximum": 4560,
+      "inputEvidence": {
+        "acceptedCounterValue": 4560,
+        "attemptedNextUnit": false
+      },
+      "expected": {
+        "limitDisposition": "accepted-at-inclusive-maximum",
+        "evidenceProjection": {
+          "counter": "duplicateCandidateComparisons",
+          "acceptedValue": 4560
+        },
+        "limitRefusal": null,
+        "overallOperationOutcomeFixedByThisCase": false
+      }
+    },
+    {
+      "id": "V0-LIMIT-WORK-010-PLUS-ONE",
+      "counterKind": "work",
+      "counter": "duplicateCandidateComparisons",
+      "boundary": "attempted-limit-plus-one",
+      "maximum": 4560,
+      "inputEvidence": {
+        "acceptedCounterValueBeforeAttempt": 4560,
+        "attemptedValue": 4561,
+        "attemptedNextUnit": true
+      },
+      "expected": {
+        "limitDisposition": "refuse-before-accepting-attempted-unit",
+        "ok": false,
+        "valuePresent": false,
+        "evidenceProjection": {
+          "counter": "duplicateCandidateComparisons",
+          "acceptedValue": 4560,
+          "termination": "work-limit-exceeded"
+        },
+        "refusal": {
+          "code": "limit.voicing_work_exceeded",
+          "path": [],
+          "counter": "duplicateCandidateComparisons",
+          "received": 4561,
+          "maximum": 4560,
+          "partialResult": false
+        }
+      }
+    },
+    {
+      "id": "V0-LIMIT-WORK-011-EXACT",
+      "counterKind": "work",
+      "counter": "localScoresComputed",
+      "boundary": "exact-limit",
+      "maximum": 96,
+      "inputEvidence": {
+        "acceptedCounterValue": 96,
+        "attemptedNextUnit": false
+      },
+      "expected": {
+        "limitDisposition": "accepted-at-inclusive-maximum",
+        "evidenceProjection": {
+          "counter": "localScoresComputed",
+          "acceptedValue": 96
+        },
+        "limitRefusal": null,
+        "overallOperationOutcomeFixedByThisCase": false
+      }
+    },
+    {
+      "id": "V0-LIMIT-WORK-011-PLUS-ONE",
+      "counterKind": "work",
+      "counter": "localScoresComputed",
+      "boundary": "attempted-limit-plus-one",
+      "maximum": 96,
+      "inputEvidence": {
+        "acceptedCounterValueBeforeAttempt": 96,
+        "attemptedValue": 97,
+        "attemptedNextUnit": true
+      },
+      "expected": {
+        "limitDisposition": "refuse-before-accepting-attempted-unit",
+        "ok": false,
+        "valuePresent": false,
+        "evidenceProjection": {
+          "counter": "localScoresComputed",
+          "acceptedValue": 96,
+          "termination": "work-limit-exceeded"
+        },
+        "refusal": {
+          "code": "limit.voicing_work_exceeded",
+          "path": [],
+          "counter": "localScoresComputed",
+          "received": 97,
+          "maximum": 96,
+          "partialResult": false
+        }
+      }
+    },
+    {
+      "id": "V0-LIMIT-WORK-012-EXACT",
+      "counterKind": "work",
+      "counter": "orderingComparisons",
+      "boundary": "exact-limit",
+      "maximum": 4560,
+      "inputEvidence": {
+        "acceptedCounterValue": 4560,
+        "attemptedNextUnit": false
+      },
+      "expected": {
+        "limitDisposition": "accepted-at-inclusive-maximum",
+        "evidenceProjection": {
+          "counter": "orderingComparisons",
+          "acceptedValue": 4560
+        },
+        "limitRefusal": null,
+        "overallOperationOutcomeFixedByThisCase": false
+      }
+    },
+    {
+      "id": "V0-LIMIT-WORK-012-PLUS-ONE",
+      "counterKind": "work",
+      "counter": "orderingComparisons",
+      "boundary": "attempted-limit-plus-one",
+      "maximum": 4560,
+      "inputEvidence": {
+        "acceptedCounterValueBeforeAttempt": 4560,
+        "attemptedValue": 4561,
+        "attemptedNextUnit": true
+      },
+      "expected": {
+        "limitDisposition": "refuse-before-accepting-attempted-unit",
+        "ok": false,
+        "valuePresent": false,
+        "evidenceProjection": {
+          "counter": "orderingComparisons",
+          "acceptedValue": 4560,
+          "termination": "work-limit-exceeded"
+        },
+        "refusal": {
+          "code": "limit.voicing_work_exceeded",
+          "path": [],
+          "counter": "orderingComparisons",
+          "received": 4561,
+          "maximum": 4560,
+          "partialResult": false
+        }
+      }
+    },
+    {
+      "id": "V0-LIMIT-WORK-013-EXACT",
+      "counterKind": "work",
+      "counter": "retainedCandidatesProduced",
+      "boundary": "exact-limit",
+      "maximum": 24,
+      "inputEvidence": {
+        "acceptedCounterValue": 24,
+        "attemptedNextUnit": false
+      },
+      "expected": {
+        "limitDisposition": "accepted-at-inclusive-maximum",
+        "evidenceProjection": {
+          "counter": "retainedCandidatesProduced",
+          "acceptedValue": 24
+        },
+        "limitRefusal": null,
+        "overallOperationOutcomeFixedByThisCase": false
+      }
+    },
+    {
+      "id": "V0-LIMIT-WORK-013-PLUS-ONE",
+      "counterKind": "work",
+      "counter": "retainedCandidatesProduced",
+      "boundary": "attempted-limit-plus-one",
+      "maximum": 24,
+      "inputEvidence": {
+        "acceptedCounterValueBeforeAttempt": 24,
+        "attemptedValue": 25,
+        "attemptedNextUnit": true
+      },
+      "expected": {
+        "limitDisposition": "refuse-before-accepting-attempted-unit",
+        "ok": false,
+        "valuePresent": false,
+        "evidenceProjection": {
+          "counter": "retainedCandidatesProduced",
+          "acceptedValue": 24,
+          "termination": "work-limit-exceeded"
+        },
+        "refusal": {
+          "code": "limit.voicing_work_exceeded",
+          "path": [],
+          "counter": "retainedCandidatesProduced",
+          "received": 25,
+          "maximum": 24,
+          "partialResult": false
+        }
+      }
+    },
+    {
+      "id": "V0-LIMIT-WORK-014-EXACT",
+      "counterKind": "work",
+      "counter": "outputVoicesProduced",
+      "boundary": "exact-limit",
+      "maximum": 168,
+      "inputEvidence": {
+        "acceptedCounterValue": 168,
+        "attemptedNextUnit": false
+      },
+      "expected": {
+        "limitDisposition": "accepted-at-inclusive-maximum",
+        "evidenceProjection": {
+          "counter": "outputVoicesProduced",
+          "acceptedValue": 168
+        },
+        "limitRefusal": null,
+        "overallOperationOutcomeFixedByThisCase": false
+      }
+    },
+    {
+      "id": "V0-LIMIT-WORK-014-PLUS-ONE",
+      "counterKind": "work",
+      "counter": "outputVoicesProduced",
+      "boundary": "attempted-limit-plus-one",
+      "maximum": 168,
+      "inputEvidence": {
+        "acceptedCounterValueBeforeAttempt": 168,
+        "attemptedValue": 169,
+        "attemptedNextUnit": true
+      },
+      "expected": {
+        "limitDisposition": "refuse-before-accepting-attempted-unit",
+        "ok": false,
+        "valuePresent": false,
+        "evidenceProjection": {
+          "counter": "outputVoicesProduced",
+          "acceptedValue": 168,
+          "termination": "work-limit-exceeded"
+        },
+        "refusal": {
+          "code": "limit.voicing_work_exceeded",
+          "path": [],
+          "counter": "outputVoicesProduced",
+          "received": 169,
+          "maximum": 168,
+          "partialResult": false
+        }
+      }
+    },
+    {
+      "id": "V0-LIMIT-WORK-015-EXACT",
+      "counterKind": "work",
+      "counter": "constraintObservationComparisons",
+      "boundary": "exact-limit",
+      "maximum": 2228224,
+      "inputEvidence": {
+        "acceptedCounterValue": 2228224,
+        "attemptedNextUnit": false
+      },
+      "expected": {
+        "limitDisposition": "accepted-at-inclusive-maximum",
+        "evidenceProjection": {
+          "counter": "constraintObservationComparisons",
+          "acceptedValue": 2228224
+        },
+        "limitRefusal": null,
+        "overallOperationOutcomeFixedByThisCase": false
+      }
+    },
+    {
+      "id": "V0-LIMIT-WORK-015-PLUS-ONE",
+      "counterKind": "work",
+      "counter": "constraintObservationComparisons",
+      "boundary": "attempted-limit-plus-one",
+      "maximum": 2228224,
+      "inputEvidence": {
+        "acceptedCounterValueBeforeAttempt": 2228224,
+        "attemptedValue": 2228225,
+        "attemptedNextUnit": true
+      },
+      "expected": {
+        "limitDisposition": "refuse-before-accepting-attempted-unit",
+        "ok": false,
+        "valuePresent": false,
+        "evidenceProjection": {
+          "counter": "constraintObservationComparisons",
+          "acceptedValue": 2228224,
+          "termination": "work-limit-exceeded"
+        },
+        "refusal": {
+          "code": "limit.voicing_work_exceeded",
+          "path": [],
+          "counter": "constraintObservationComparisons",
+          "received": 2228225,
+          "maximum": 2228224,
+          "partialResult": false
+        }
+      }
+    },
+    {
+      "id": "V0-LIMIT-WORK-016-EXACT",
+      "counterKind": "work",
+      "counter": "constraintObservationsProduced",
+      "boundary": "exact-limit",
+      "maximum": 16,
+      "inputEvidence": {
+        "acceptedCounterValue": 16,
+        "attemptedNextUnit": false
+      },
+      "expected": {
+        "limitDisposition": "accepted-at-inclusive-maximum",
+        "evidenceProjection": {
+          "counter": "constraintObservationsProduced",
+          "acceptedValue": 16
+        },
+        "limitRefusal": null,
+        "overallOperationOutcomeFixedByThisCase": false
+      }
+    },
+    {
+      "id": "V0-LIMIT-WORK-016-PLUS-ONE",
+      "counterKind": "work",
+      "counter": "constraintObservationsProduced",
+      "boundary": "attempted-limit-plus-one",
+      "maximum": 16,
+      "inputEvidence": {
+        "acceptedCounterValueBeforeAttempt": 16,
+        "attemptedValue": 17,
+        "attemptedNextUnit": true
+      },
+      "expected": {
+        "limitDisposition": "save-provisional-refusal-before-accepting-attempted-unit",
+        "collectorAttemptOk": false,
+        "evidenceProjection": {
+          "counter": "constraintObservationsProduced",
+          "acceptedValue": 16
+        },
+        "refusal": {
+          "code": "limit.voicing_work_exceeded",
+          "path": [],
+          "counter": "constraintObservationsProduced",
+          "received": 17,
+          "maximum": 16,
+          "partialResult": false
+        },
+        "diagnosticCollectionDisposition": "stop-at-prospective-distinct-observation",
+        "operationDisposition": "continue-musical-search",
+        "overallOperationOutcomeFixedByThisCase": false
+      }
+    },
+    {
+      "id": "V0-LIMIT-MEMORY-001-EXACT",
+      "counterKind": "memory",
+      "counter": "peakRegisterPlacementRecords",
+      "boundary": "exact-limit",
+      "maximum": 176,
+      "inputEvidence": {
+        "acceptedCounterValue": 176,
+        "attemptedNextUnit": false
+      },
+      "expected": {
+        "limitDisposition": "accepted-at-inclusive-maximum",
+        "evidenceProjection": {
+          "counter": "peakRegisterPlacementRecords",
+          "acceptedValue": 176
+        },
+        "limitRefusal": null,
+        "overallOperationOutcomeFixedByThisCase": false
+      }
+    },
+    {
+      "id": "V0-LIMIT-MEMORY-001-PLUS-ONE",
+      "counterKind": "memory",
+      "counter": "peakRegisterPlacementRecords",
+      "boundary": "attempted-limit-plus-one",
+      "maximum": 176,
+      "inputEvidence": {
+        "acceptedCounterValueBeforeAttempt": 176,
+        "attemptedValue": 177,
+        "attemptedNextUnit": true
+      },
+      "expected": {
+        "limitDisposition": "refuse-before-accepting-attempted-unit",
+        "ok": false,
+        "valuePresent": false,
+        "evidenceProjection": {
+          "counter": "peakRegisterPlacementRecords",
+          "acceptedValue": 176,
+          "termination": "work-limit-exceeded"
+        },
+        "refusal": {
+          "code": "limit.voicing_work_exceeded",
+          "path": [],
+          "counter": "peakRegisterPlacementRecords",
+          "received": 177,
+          "maximum": 176,
+          "partialResult": false
+        }
+      }
+    },
+    {
+      "id": "V0-LIMIT-MEMORY-002-EXACT",
+      "counterKind": "memory",
+      "counter": "peakSearchStateRecords",
+      "boundary": "exact-limit",
+      "maximum": 512,
+      "inputEvidence": {
+        "acceptedCounterValue": 512,
+        "attemptedNextUnit": false
+      },
+      "expected": {
+        "limitDisposition": "accepted-at-inclusive-maximum",
+        "evidenceProjection": {
+          "counter": "peakSearchStateRecords",
+          "acceptedValue": 512
+        },
+        "limitRefusal": null,
+        "overallOperationOutcomeFixedByThisCase": false
+      }
+    },
+    {
+      "id": "V0-LIMIT-MEMORY-002-PLUS-ONE",
+      "counterKind": "memory",
+      "counter": "peakSearchStateRecords",
+      "boundary": "attempted-limit-plus-one",
+      "maximum": 512,
+      "inputEvidence": {
+        "acceptedCounterValueBeforeAttempt": 512,
+        "attemptedValue": 513,
+        "attemptedNextUnit": true
+      },
+      "expected": {
+        "limitDisposition": "refuse-before-accepting-attempted-unit",
+        "ok": false,
+        "valuePresent": false,
+        "evidenceProjection": {
+          "counter": "peakSearchStateRecords",
+          "acceptedValue": 512,
+          "termination": "work-limit-exceeded"
+        },
+        "refusal": {
+          "code": "limit.voicing_work_exceeded",
+          "path": [],
+          "counter": "peakSearchStateRecords",
+          "received": 513,
+          "maximum": 512,
+          "partialResult": false
+        }
+      }
+    },
+    {
+      "id": "V0-LIMIT-MEMORY-003-EXACT",
+      "counterKind": "memory",
+      "counter": "peakRawCandidateRecords",
+      "boundary": "exact-limit",
+      "maximum": 96,
+      "inputEvidence": {
+        "acceptedCounterValue": 96,
+        "attemptedNextUnit": false
+      },
+      "expected": {
+        "limitDisposition": "accepted-at-inclusive-maximum",
+        "evidenceProjection": {
+          "counter": "peakRawCandidateRecords",
+          "acceptedValue": 96
+        },
+        "limitRefusal": null,
+        "overallOperationOutcomeFixedByThisCase": false
+      }
+    },
+    {
+      "id": "V0-LIMIT-MEMORY-003-PLUS-ONE",
+      "counterKind": "memory",
+      "counter": "peakRawCandidateRecords",
+      "boundary": "attempted-limit-plus-one",
+      "maximum": 96,
+      "inputEvidence": {
+        "acceptedCounterValueBeforeAttempt": 96,
+        "attemptedValue": 97,
+        "attemptedNextUnit": true
+      },
+      "expected": {
+        "limitDisposition": "refuse-before-accepting-attempted-unit",
+        "ok": false,
+        "valuePresent": false,
+        "evidenceProjection": {
+          "counter": "peakRawCandidateRecords",
+          "acceptedValue": 96,
+          "termination": "work-limit-exceeded"
+        },
+        "refusal": {
+          "code": "limit.voicing_work_exceeded",
+          "path": [],
+          "counter": "peakRawCandidateRecords",
+          "received": 97,
+          "maximum": 96,
+          "partialResult": false
+        }
+      }
+    },
+    {
+      "id": "V0-LIMIT-MEMORY-004-EXACT",
+      "counterKind": "memory",
+      "counter": "peakRawVoiceRecords",
+      "boundary": "exact-limit",
+      "maximum": 672,
+      "inputEvidence": {
+        "acceptedCounterValue": 672,
+        "attemptedNextUnit": false
+      },
+      "expected": {
+        "limitDisposition": "accepted-at-inclusive-maximum",
+        "evidenceProjection": {
+          "counter": "peakRawVoiceRecords",
+          "acceptedValue": 672
+        },
+        "limitRefusal": null,
+        "overallOperationOutcomeFixedByThisCase": false
+      }
+    },
+    {
+      "id": "V0-LIMIT-MEMORY-004-PLUS-ONE",
+      "counterKind": "memory",
+      "counter": "peakRawVoiceRecords",
+      "boundary": "attempted-limit-plus-one",
+      "maximum": 672,
+      "inputEvidence": {
+        "acceptedCounterValueBeforeAttempt": 672,
+        "attemptedValue": 673,
+        "attemptedNextUnit": true
+      },
+      "expected": {
+        "limitDisposition": "refuse-before-accepting-attempted-unit",
+        "ok": false,
+        "valuePresent": false,
+        "evidenceProjection": {
+          "counter": "peakRawVoiceRecords",
+          "acceptedValue": 672,
+          "termination": "work-limit-exceeded"
+        },
+        "refusal": {
+          "code": "limit.voicing_work_exceeded",
+          "path": [],
+          "counter": "peakRawVoiceRecords",
+          "received": 673,
+          "maximum": 672,
+          "partialResult": false
+        }
+      }
+    },
+    {
+      "id": "V0-LIMIT-MEMORY-005-EXACT",
+      "counterKind": "memory",
+      "counter": "peakRetainedCandidateRecords",
+      "boundary": "exact-limit",
+      "maximum": 24,
+      "inputEvidence": {
+        "acceptedCounterValue": 24,
+        "attemptedNextUnit": false
+      },
+      "expected": {
+        "limitDisposition": "accepted-at-inclusive-maximum",
+        "evidenceProjection": {
+          "counter": "peakRetainedCandidateRecords",
+          "acceptedValue": 24
+        },
+        "limitRefusal": null,
+        "overallOperationOutcomeFixedByThisCase": false
+      }
+    },
+    {
+      "id": "V0-LIMIT-MEMORY-005-PLUS-ONE",
+      "counterKind": "memory",
+      "counter": "peakRetainedCandidateRecords",
+      "boundary": "attempted-limit-plus-one",
+      "maximum": 24,
+      "inputEvidence": {
+        "acceptedCounterValueBeforeAttempt": 24,
+        "attemptedValue": 25,
+        "attemptedNextUnit": true
+      },
+      "expected": {
+        "limitDisposition": "refuse-before-accepting-attempted-unit",
+        "ok": false,
+        "valuePresent": false,
+        "evidenceProjection": {
+          "counter": "peakRetainedCandidateRecords",
+          "acceptedValue": 24,
+          "termination": "work-limit-exceeded"
+        },
+        "refusal": {
+          "code": "limit.voicing_work_exceeded",
+          "path": [],
+          "counter": "peakRetainedCandidateRecords",
+          "received": 25,
+          "maximum": 24,
+          "partialResult": false
+        }
+      }
+    },
+    {
+      "id": "V0-LIMIT-MEMORY-006-EXACT",
+      "counterKind": "memory",
+      "counter": "peakOutputVoiceRecords",
+      "boundary": "exact-limit",
+      "maximum": 168,
+      "inputEvidence": {
+        "acceptedCounterValue": 168,
+        "attemptedNextUnit": false
+      },
+      "expected": {
+        "limitDisposition": "accepted-at-inclusive-maximum",
+        "evidenceProjection": {
+          "counter": "peakOutputVoiceRecords",
+          "acceptedValue": 168
+        },
+        "limitRefusal": null,
+        "overallOperationOutcomeFixedByThisCase": false
+      }
+    },
+    {
+      "id": "V0-LIMIT-MEMORY-006-PLUS-ONE",
+      "counterKind": "memory",
+      "counter": "peakOutputVoiceRecords",
+      "boundary": "attempted-limit-plus-one",
+      "maximum": 168,
+      "inputEvidence": {
+        "acceptedCounterValueBeforeAttempt": 168,
+        "attemptedValue": 169,
+        "attemptedNextUnit": true
+      },
+      "expected": {
+        "limitDisposition": "refuse-before-accepting-attempted-unit",
+        "ok": false,
+        "valuePresent": false,
+        "evidenceProjection": {
+          "counter": "peakOutputVoiceRecords",
+          "acceptedValue": 168,
+          "termination": "work-limit-exceeded"
+        },
+        "refusal": {
+          "code": "limit.voicing_work_exceeded",
+          "path": [],
+          "counter": "peakOutputVoiceRecords",
+          "received": 169,
+          "maximum": 168,
+          "partialResult": false
+        }
+      }
+    },
+    {
+      "id": "V0-LIMIT-MEMORY-007-EXACT",
+      "counterKind": "memory",
+      "counter": "peakTrackedRecords",
+      "boundary": "exact-limit",
+      "maximum": 1792,
+      "inputEvidence": {
+        "acceptedCounterValue": 1792,
+        "attemptedNextUnit": false
+      },
+      "expected": {
+        "limitDisposition": "accepted-at-inclusive-maximum",
+        "evidenceProjection": {
+          "counter": "peakTrackedRecords",
+          "acceptedValue": 1792
+        },
+        "limitRefusal": null,
+        "overallOperationOutcomeFixedByThisCase": false
+      }
+    },
+    {
+      "id": "V0-LIMIT-MEMORY-007-PLUS-ONE",
+      "counterKind": "memory",
+      "counter": "peakTrackedRecords",
+      "boundary": "attempted-limit-plus-one",
+      "maximum": 1792,
+      "inputEvidence": {
+        "acceptedCounterValueBeforeAttempt": 1792,
+        "attemptedValue": 1793,
+        "attemptedNextUnit": true
+      },
+      "expected": {
+        "limitDisposition": "refuse-before-accepting-attempted-unit",
+        "ok": false,
+        "valuePresent": false,
+        "evidenceProjection": {
+          "counter": "peakTrackedRecords",
+          "acceptedValue": 1792,
+          "termination": "work-limit-exceeded"
+        },
+        "refusal": {
+          "code": "limit.voicing_work_exceeded",
+          "path": [],
+          "counter": "peakTrackedRecords",
+          "received": 1793,
+          "maximum": 1792,
+          "partialResult": false
+        }
+      }
+    },
+    {
+      "id": "V0-LIMIT-MEMORY-008-EXACT",
+      "counterKind": "memory",
+      "counter": "peakConstraintObservationRecords",
+      "boundary": "exact-limit",
+      "maximum": 16,
+      "inputEvidence": {
+        "acceptedCounterValue": 16,
+        "attemptedNextUnit": false
+      },
+      "expected": {
+        "limitDisposition": "accepted-at-inclusive-maximum",
+        "evidenceProjection": {
+          "counter": "peakConstraintObservationRecords",
+          "acceptedValue": 16
+        },
+        "limitRefusal": null,
+        "overallOperationOutcomeFixedByThisCase": false
+      }
+    },
+    {
+      "id": "V0-LIMIT-MEMORY-008-PLUS-ONE",
+      "counterKind": "memory",
+      "counter": "peakConstraintObservationRecords",
+      "boundary": "attempted-limit-plus-one",
+      "maximum": 16,
+      "inputEvidence": {
+        "acceptedCounterValueBeforeAttempt": 16,
+        "attemptedValue": 17,
+        "attemptedNextUnit": true
+      },
+      "expected": {
+        "limitDisposition": "refuse-before-accepting-attempted-unit",
+        "ok": false,
+        "valuePresent": false,
+        "evidenceProjection": {
+          "counter": "peakConstraintObservationRecords",
+          "acceptedValue": 16,
+          "termination": "work-limit-exceeded"
+        },
+        "refusal": {
+          "code": "limit.voicing_work_exceeded",
+          "path": [],
+          "counter": "peakConstraintObservationRecords",
+          "received": 17,
+          "maximum": 16,
+          "partialResult": false
+        }
+      }
+    }
+  ],
+  "retentionCases": [
+    {
+      "id": "V0-RETENTION-001-EXACT-24",
+      "kind": "retained-cap-exact",
+      "linkedCounterCaseId": "V0-LIMIT-WORK-013-EXACT",
+      "inputEvidence": {
+        "eligibleOrderedRawCandidates": 24
+      },
+      "expected": {
+        "retentionDisposition": "retain-all-eligible",
+        "retainedCandidateCount": 24,
+        "retainedCandidatesProduced": 24,
+        "retainedOrderedIndexFirst": 0,
+        "retainedOrderedIndexLast": 23,
+        "attemptedRetainedCounterValue": null,
+        "workLimitRefusal": null
+      }
+    },
+    {
+      "id": "V0-RETENTION-002-ELIGIBLE-25-TRUNCATED",
+      "traceIds": ["V0-TRACE-LIMITS"],
+      "authorityIds": ["V0-AUTH-LIMITS", "V0-AUTH-INDEPENDENCE"],
+      "kind": "eligible-candidate-after-retained-cap",
+      "linkedTrueAttemptedPlusOneCaseId": "V0-LIMIT-WORK-013-PLUS-ONE",
+      "inputEvidence": {
+        "eligibleOrderedRawCandidates": 25,
+        "candidateAtOrderedIndex": 24
+      },
+      "expected": {
+        "retentionDisposition": "truncate-after-first-24",
+        "retainedCandidateCount": 24,
+        "retainedCandidatesProduced": 24,
+        "truncatedOrderedIndexes": [
+          24
+        ],
+        "attemptedRetainedCounterValue": false,
+        "workLimitRefusal": null,
+        "explanation": "The 25th eligible ordered raw candidate is not an attempted 25th retained allocation and therefore is not itself a limit refusal."
+      }
+    },
+    {
+      "id": "V0-RETENTION-003-RAW-EXACT-96",
+      "kind": "raw-cap-exact",
+      "linkedCounterCaseId": "V0-LIMIT-WORK-008-EXACT",
+      "inputEvidence": {
+        "rawCandidatesProduced": 96,
+        "attemptedNextRawCandidate": false
+      },
+      "expected": {
+        "rawLimitDisposition": "accepted-at-inclusive-maximum",
+        "rawCandidatesProduced": 96,
+        "retainedCandidateCountMaximum": 24,
+        "workLimitRefusal": null
+      }
+    },
+    {
+      "id": "V0-RETENTION-004-RAW-ATTEMPT-97",
+      "kind": "raw-cap-attempted-plus-one",
+      "linkedCounterCaseId": "V0-LIMIT-WORK-008-PLUS-ONE",
+      "inputEvidence": {
+        "rawCandidatesProducedBeforeAttempt": 96,
+        "attemptedRawCandidateNumber": 97
+      },
+      "expected": {
+        "ok": false,
+        "valuePresent": false,
+        "evidenceProjection": {
+          "counter": "rawCandidatesProduced",
+          "acceptedValue": 96,
+          "retainedCandidatesProducedMaximum": 24,
+          "termination": "work-limit-exceeded"
+        },
+        "refusal": {
+          "code": "limit.voicing_work_exceeded",
+          "path": [],
+          "counter": "rawCandidatesProduced",
+          "received": 97,
+          "maximum": 96,
+          "partialResult": false
+        }
+      }
+    }
+  ],
+  "identifierBoundaryCases": [
+    {
+      "id": "V0-ID-001-EMPTY-BELOW-MINIMUM",
+      "kind": "identifier-code-point-and-utf8-boundary",
+      "appliesTo": [
+        "quartalContext.evidenceId",
+        "candidateEvidence.sourceId"
+      ],
+      "recipe": {
+        "segments": []
+      },
+      "expected": {
+        "valid": false,
+        "measuredCodePoints": 0,
+        "measuredUtf8Bytes": 0,
+        "firstViolation": "minimum-code-points",
+        "quartalContextDisposition": "evidence-id-invalid",
+        "candidateEvidenceMayBeEmitted": false
+      },
+      "traceIds": [
+        "V0-TRACE-LIMITS"
+      ],
+      "authorityIds": [
+        "V0-AUTH-LIMITS",
+        "V0-AUTH-INDEPENDENCE"
+      ]
+    },
+    {
+      "id": "V0-ID-002-ONE-ASCII-ACCEPTED",
+      "kind": "identifier-code-point-and-utf8-boundary",
+      "appliesTo": [
+        "quartalContext.evidenceId",
+        "candidateEvidence.sourceId"
+      ],
+      "recipe": {
+        "segments": [
+          {
+            "text": "a",
+            "repeat": 1
+          }
+        ]
+      },
+      "expected": {
+        "valid": true,
+        "measuredCodePoints": 1,
+        "measuredUtf8Bytes": 1,
+        "firstViolation": null,
+        "quartalContextDisposition": "accept-id-shape",
+        "candidateEvidenceMayBeEmitted": true
+      },
+      "traceIds": [
+        "V0-TRACE-LIMITS"
+      ],
+      "authorityIds": [
+        "V0-AUTH-LIMITS",
+        "V0-AUTH-INDEPENDENCE"
+      ]
+    },
+    {
+      "id": "V0-ID-003-256-ASCII-ACCEPTED",
+      "kind": "identifier-code-point-and-utf8-boundary",
+      "appliesTo": [
+        "quartalContext.evidenceId",
+        "candidateEvidence.sourceId"
+      ],
+      "recipe": {
+        "segments": [
+          {
+            "text": "a",
+            "repeat": 256
+          }
+        ]
+      },
+      "expected": {
+        "valid": true,
+        "measuredCodePoints": 256,
+        "measuredUtf8Bytes": 256,
+        "firstViolation": null,
+        "quartalContextDisposition": "accept-id-shape",
+        "candidateEvidenceMayBeEmitted": true
+      },
+      "traceIds": [
+        "V0-TRACE-LIMITS"
+      ],
+      "authorityIds": [
+        "V0-AUTH-LIMITS",
+        "V0-AUTH-INDEPENDENCE"
+      ]
+    },
+    {
+      "id": "V0-ID-004-257-ASCII-REFUSED",
+      "kind": "identifier-code-point-and-utf8-boundary",
+      "appliesTo": [
+        "quartalContext.evidenceId",
+        "candidateEvidence.sourceId"
+      ],
+      "recipe": {
+        "segments": [
+          {
+            "text": "a",
+            "repeat": 257
+          }
+        ]
+      },
+      "expected": {
+        "valid": false,
+        "measuredCodePoints": 257,
+        "measuredUtf8Bytes": 257,
+        "firstViolation": "maximum-code-points",
+        "quartalContextDisposition": "evidence-id-invalid",
+        "candidateEvidenceMayBeEmitted": false
+      },
+      "traceIds": [
+        "V0-TRACE-LIMITS"
+      ],
+      "authorityIds": [
+        "V0-AUTH-LIMITS",
+        "V0-AUTH-INDEPENDENCE"
+      ]
+    },
+    {
+      "id": "V0-ID-005-128-EMOJI-512-BYTES-ACCEPTED",
+      "kind": "identifier-code-point-and-utf8-boundary",
+      "appliesTo": [
+        "quartalContext.evidenceId",
+        "candidateEvidence.sourceId"
+      ],
+      "recipe": {
+        "segments": [
+          {
+            "text": "😀",
+            "repeat": 128
+          }
+        ]
+      },
+      "expected": {
+        "valid": true,
+        "measuredCodePoints": 128,
+        "measuredUtf8Bytes": 512,
+        "firstViolation": null,
+        "quartalContextDisposition": "accept-id-shape",
+        "candidateEvidenceMayBeEmitted": true
+      },
+      "traceIds": [
+        "V0-TRACE-LIMITS"
+      ],
+      "authorityIds": [
+        "V0-AUTH-LIMITS",
+        "V0-AUTH-INDEPENDENCE"
+      ]
+    },
+    {
+      "id": "V0-ID-006-513-BYTES-REFUSED",
+      "kind": "identifier-code-point-and-utf8-boundary",
+      "appliesTo": [
+        "quartalContext.evidenceId",
+        "candidateEvidence.sourceId"
+      ],
+      "recipe": {
+        "segments": [
+          {
+            "text": "😀",
+            "repeat": 127
+          },
+          {
+            "text": "a",
+            "repeat": 5
+          }
+        ]
+      },
+      "expected": {
+        "valid": false,
+        "measuredCodePoints": 132,
+        "measuredUtf8Bytes": 513,
+        "firstViolation": "maximum-utf8-bytes",
+        "quartalContextDisposition": "evidence-id-invalid",
+        "candidateEvidenceMayBeEmitted": false
+      },
+      "traceIds": [
+        "V0-TRACE-LIMITS"
+      ],
+      "authorityIds": [
+        "V0-AUTH-LIMITS",
+        "V0-AUTH-INDEPENDENCE"
+      ]
+    }
+  ],
+  "midiBoundaryCases": [
+    {
+      "id": "V0-MIDI-BOUNDARY-001-INCLUSIVE-MINIMUM",
+      "kind": "inherited-domain-boundary-fact",
+      "received": 0,
+      "expected": {
+        "ok": true,
+        "value": 0
+      }
+    },
+    {
+      "id": "V0-MIDI-BOUNDARY-002-INCLUSIVE-MAXIMUM",
+      "kind": "inherited-domain-boundary-fact",
+      "received": 127,
+      "expected": {
+        "ok": true,
+        "value": 127
+      }
+    },
+    {
+      "id": "V0-MIDI-BOUNDARY-003-BELOW-MINIMUM",
+      "kind": "inherited-domain-boundary-fact",
+      "received": -1,
+      "expected": {
+        "ok": false,
+        "refusal": {
+          "code": "pitch.midi_out_of_range",
+          "path": [
+            "midi"
+          ],
+          "received": -1,
+          "minimum": 0,
+          "maximum": 127
+        }
+      }
+    },
+    {
+      "id": "V0-MIDI-BOUNDARY-004-ABOVE-MAXIMUM",
+      "kind": "inherited-domain-boundary-fact",
+      "received": 128,
+      "expected": {
+        "ok": false,
+        "refusal": {
+          "code": "pitch.midi_out_of_range",
+          "path": [
+            "midi"
+          ],
+          "received": 128,
+          "minimum": 0,
+          "maximum": 127
+        }
+      }
+    }
+  ],
+  "wallTimeCases": [
+    {
+      "id": "V0-WALL-TIME-001-NO-CUTOFF",
+      "kind": "not-an-input-or-limit",
+      "inputEvidence": {
+        "wallTimeFieldPresentInRequest": false,
+        "wallTimeCounterPresent": false,
+        "cutoffMilliseconds": null
+      },
+      "expected": {
+        "wallTimeMayChangeCandidateMembership": false,
+        "wallTimeMayChangeCandidateOrder": false,
+        "wallTimeMayChangeRefusal": false,
+        "wallTimeMayChangeTermination": false,
+        "performanceMeasurementMayBeReportedExternally": true
+      }
+    }
+  ]
+}

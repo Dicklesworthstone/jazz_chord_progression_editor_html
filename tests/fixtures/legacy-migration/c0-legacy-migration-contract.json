@@ -1,0 +1,126 @@
+{
+  "schema": "changes.fixtures.c0-legacy-migration-contract.v1",
+  "package": "C0",
+  "operation": "migrateLegacyJson",
+  "publicSchemas": {
+    "contract": "changes.compatibility.legacy-migration-contract.v1",
+    "candidate": "changes.compatibility.legacy-migration-candidate.v1",
+    "report": "changes.compatibility.legacy-migration-report.v1"
+  },
+  "policy": {"id":"changes.legacy-migration","version":1},
+  "sourceKind": "unversioned-legacy-json",
+  "limits": {
+    "utf8Bytes": 2097152,
+    "jsonDepth": 32,
+    "sections": 64,
+    "chordsPerSection": 1024,
+    "chordsTotal": 8192,
+    "trustedNotesMinimum": 1,
+    "trustedNotesMaximum": 16,
+    "sourceProperties": 262144,
+    "reportItems": 65536,
+    "shortTextCodePoints": 256,
+    "longTextCodePoints": 2000
+  },
+  "patterns": {
+    "pitchClass": "^[A-G](?:bb|##|b|#)?$",
+    "scientificPitch": "^[A-G](?:bb|##|b|#)?(?:0|-?[1-9][0-9]*)$"
+  },
+  "defaults": {
+    "document": {
+      "title": "Imported legacy progression",
+      "description": "",
+      "meter": {"beatsPerBar":4,"beatUnit":4},
+      "tempoBpm": 120,
+      "key": null,
+      "playback": {"instrumentId":"mellow-keys","masterVolume":0.8,"reverbAmount":0.2,"countInBars":0},
+      "sectionNamePrefix": "Section ",
+      "sectionAnnotation": "",
+      "sectionKeyOverride": null,
+      "sectionVoiceLeadingBoundary": "reset",
+      "eventDuration": {"numerator":4,"denominator":1},
+      "measureCompletion": "complete",
+      "eventAnnotation": ""
+    },
+    "autoVoicing": {"mode":"auto","family":"balanced","voiceCount":4,"range":{"lowMidi":48,"highMidi":84},"bassPolicy":"generated"}
+  },
+  "typeSuffixEntries": [
+    ["major", ""], ["minor", "m"], ["dim", "dim"], ["aug", "aug"],
+    ["sus2", "sus2"], ["sus4", "sus4"], ["6", "6"], ["m6", "m6"],
+    ["maj7", "maj7"], ["7", "7"], ["m7", "m7"], ["mMaj7", "mMaj7"],
+    ["m7b5", "m7b5"], ["dim7", "dim7"], ["aug7", "7#5"], ["augMaj7", "aug(maj7)"],
+    ["maj9", "maj9"], ["9", "9"], ["m9", "m9"], ["11", "11"],
+    ["m11", "m11"], ["13", "13"], ["maj13", "maj13"], ["m13", "m13"],
+    ["7b9", "7b9"], ["7#9", "7#9"], ["7#11", "7#11"], ["7b13", "7b13"],
+    ["7b5", "7b5"], ["7#5", "7#5"], ["alt", "7alt"], ["maj7#11", "maj7#11"],
+    ["m9b5", "m9b5"], ["9sus4", "9sus4"], ["13sus4", "13sus4"], ["7b9sus4", "7b9sus4"],
+    ["m6/9", "m6/9"], ["6/9", "6/9"], ["9b5", "9b5"]
+  ],
+  "alterationFlagEntries": [["b5","b5"],["s5","#5"],["b9","b9"],["s9","#9"],["s11","#11"],["b13","b13"]],
+  "knownFields": {
+    "document": ["name","description","sections"],
+    "section": ["name","annotation","chords","collapsed","isEditingName","editNameValue"],
+    "chord": ["name","root","type","bass","notes","b5","s5","b9","s9","s11","b13","tensions","annotation","voicingStyle","baseOctave","octaveSpan","density"],
+    "uiOnly": ["collapsed","isEditingName","editNameValue"],
+    "voicingMetadata": ["voicingStyle","baseOctave","octaveSpan","density"]
+  },
+  "precedence": [
+    "parse-present-name-without-rewrite",
+    "when-name-fails-or-is-absent-construct-from-valid-root-and-exact-allow-listed-type",
+    "apply-supported-true-alteration-flags-only-when-name-is-absent",
+    "trust-notes-only-by-the-full-array-predicate",
+    "parsed-plus-exact-written-one-realization-subset-becomes-parsed-manual",
+    "parsed-plus-absent-or-untrusted-notes-becomes-parsed-auto",
+    "parsed-plus-trusted-conflicting-notes-becomes-custom-manual",
+    "no-parsed-symbol-plus-trusted-notes-becomes-custom-manual",
+    "no-parsed-symbol-and-no-trusted-notes-rejects-the-event"
+  ],
+  "report": {
+    "groupOrder": ["preserved","canonicalized","custom","ignored","rejected"],
+    "codes": {
+      "preserved": ["legacy.preserved.document_name","legacy.preserved.document_description","legacy.preserved.section_name","legacy.preserved.annotation","legacy.preserved.symbol","legacy.preserved.manual_notes"],
+      "canonicalized": ["legacy.canonicalized.document_title_default","legacy.canonicalized.document_description_default","legacy.canonicalized.section_name_default","legacy.canonicalized.section_annotation_default","legacy.canonicalized.event_annotation_default","legacy.canonicalized.symbol_from_root_type","legacy.canonicalized.auto_voicing_default","legacy.canonicalized.meter_duration_default","legacy.canonicalized.playback_default","legacy.canonicalized.section_policy_default"],
+      "custom": ["legacy.custom.name_notes_spelling_conflict","legacy.custom.name_notes_sounding_conflict","legacy.custom.constructed_notes_conflict","legacy.custom.notes_without_symbol"],
+      "ignored": ["legacy.ignored.ui_field","legacy.ignored.voicing_metadata","legacy.ignored.tensions","legacy.ignored.alteration_evidence","legacy.ignored.invalid_notes","legacy.ignored.invalid_bass","legacy.ignored.invalid_field_type","legacy.ignored.unknown_field","legacy.ignored.name_parse_failure","legacy.ignored.unknown_type","legacy.ignored.invalid_root"],
+      "rejected": ["legacy.rejected.section_not_object","legacy.rejected.section_chords_missing","legacy.rejected.section_chords_not_array","legacy.rejected.event_not_object","legacy.rejected.no_usable_symbol_or_notes","legacy.rejected.text_limit","legacy.rejected.invalid_unicode_scalar"]
+    },
+    "itemOrder": ["sourcePath lexicographic by typed path segment","code declaration order","targetPath lexicographic with null first"],
+    "sourceTextInDiagnostics": "forbidden"
+  },
+  "refusalCodes": [
+    "limit.legacy_utf8_bytes_exceeded","legacy.utf8_invalid","legacy.json_syntax_invalid","limit.legacy_json_depth_exceeded","legacy.root_invalid","legacy.sections_invalid","limit.legacy_sections_exceeded","limit.legacy_chords_per_section_exceeded","limit.legacy_events_exceeded","limit.legacy_source_properties_exceeded","limit.legacy_report_items_exceeded","legacy.id_factory_failed","legacy.id_collision"
+  ],
+  "identity": {
+    "requestOrder": ["document","section","measure","event"],
+    "withinDocument": "structural preorder; each accepted chord allocates measure then event",
+    "collisionPolicy": "single total refusal without retry or partial candidate",
+    "legacyIndicesAsIds": false
+  },
+  "publication": {
+    "returnType": "ProgressionDocumentShapeV2 candidate plus report",
+    "validatedBrand": false,
+    "currentDocumentMutation": false,
+    "requiredGate": "F3 after explicit application confirmation"
+  },
+  "applicability": {
+    "cancellation": "not-applicable:synchronous-bounded",
+    "staleRevision": "not-applicable:value-operation-without-publication",
+    "resume": "not-applicable:non-resumable",
+    "wallTimeCutoff": "forbidden:counts-only",
+    "publication": "candidate-only:application-f3-gate-required"
+  },
+  "work": {
+    "counterNames": ["bytesVisited","jsonCodeUnitsVisited","maximumJsonDepth","sourcePropertiesVisited","sectionsVisited","chordSlotsVisited","notesVisited","symbolParseCalls","resolutionCalls","idRequests","reportItemsEmitted"],
+    "maximums": {"bytesVisited":2097153,"sectionsVisited":64,"chordSlotsVisited":8192,"notesVisited":131072,"symbolParseCalls":16384,"resolutionCalls":16384,"idRequests":16449,"identityMappings":16449,"trackedRecords":352321},
+    "terminations": ["complete-candidate","complete-refusal"]
+  },
+  "reviewedCounts": {"companions":6,"adversarialCases":70,"presetChords":80,"presetExpectationRows":80,"mutationControls":30,"traces":18,"authorities":7,"types":39,"flags":6,"reportCodes":38,"refusalCodes":13},
+  "reviewedCompanionDigests": {
+    "adversarial-cases.json": "413b7303d55febf188c0fcda7049c04f9a82a3106f52c02915783fe601f2fcbb",
+    "legacy-presets-source.json": "2e65ffd697ed9fb7604c01a021bfc0c079aa0d21cffe20e675780161db32198c",
+    "mutation-controls.json": "202eb95ddffd1e3eebb0e1fbfaa9a5a9a6d8471a083bc4da79baddf7f49ce574",
+    "preset-expectations.json": "20789f27f7445e4e03525ebe475f8d22a6487370a852743d5343133d0c8d7734",
+    "provenance-ledger.json": "4f1cd7a29838928771dea5057f9716beb7476f3ff2c5472d70cbc0ca7124551a",
+    "trace-ledger.json": "6c39491791aaebdb49720288caf12d4b90e1a86004bcdb692fcb7caf52beb050"
+  }
+}

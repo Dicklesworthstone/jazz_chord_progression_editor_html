@@ -1,0 +1,70 @@
+{
+  "schema": "changes.fixtures.t0-provenance-ledger.v1",
+  "ledgerVersion": "1.0.0",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "authoringStatement": "All symbols, AST fields, canonical strings, durations, ranges, diagnostics, draft structures, and mutation expectations were manually transcribed or derived from the reviewed grammar, public F1 domain shapes, exact PPQ-960 arithmetic, and UTF-16 indexing before T0 production parsing existed.",
+  "independenceRules": [
+    "Fixture validation may decode JSON shape but may not import a production parser, formatter, tokenizer, suggestion engine, chart allocator, or resolver.",
+    "T0 fixtures assert syntax AST only. T1 owns extension closure, chord-tone spelling, formula realization, and musical analysis.",
+    "Boundary recipes are declarative source materialization instructions and never call production code."
+  ],
+  "authorities": [
+    {
+      "id": "T0-AUTH-GRAMMAR",
+      "authorityClass": "definition",
+      "sourceKind": "reviewed-project-policy",
+      "reviewState": "reviewed-project-contract",
+      "sourceRefs": ["docs/REBUILD_PLAN.md sections 10.1-10.2", "active bead jcpe-milestone-foundation-vc2.4.1", "src/theory/syntax-contract.ts"],
+      "covers": "declared symbol/chart grammar, aliases, modes, diagnostics, canonicalization, and refusal policy"
+    },
+    {
+      "id": "T0-AUTH-DOMAIN",
+      "authorityClass": "definition",
+      "sourceKind": "reviewed-project-policy",
+      "reviewState": "reviewed-project-contract",
+      "sourceRefs": ["docs/REBUILD_PLAN.md sections 9.2-9.4", "src/domain/chord.ts", "src/domain/pitch.ts"],
+      "covers": "spelling-first pitch identity and the public ChordSpec field representation"
+    },
+    {
+      "id": "T0-AUTH-TIME",
+      "authorityClass": "definition",
+      "sourceKind": "reviewed-project-policy",
+      "reviewState": "reviewed-project-contract",
+      "sourceRefs": ["docs/REBUILD_PLAN.md sections 9.6 and 10.2", "src/domain/duration.ts"],
+      "covers": "quarter-note beat units, meter capacity, PPQ-960 denominators, exact allocation, and reduction"
+    },
+    {
+      "id": "T0-AUTH-JSON",
+      "authorityClass": "published-reference",
+      "sourceKind": "external-definition",
+      "reviewState": "reference-checked",
+      "sourceRefs": ["RFC 8259, December 2017, sections 7-8, https://www.rfc-editor.org/rfc/rfc8259", "docs/REBUILD_PLAN.md section 10.2"],
+      "covers": "JSON-string annotations and escaping"
+    },
+    {
+      "id": "T0-AUTH-UTF16",
+      "authorityClass": "published-reference",
+      "sourceKind": "external-definition",
+      "reviewState": "reference-checked",
+      "sourceRefs": ["ECMA-262 2025 edition, sections 6.1.4 and 22.1 String Objects, https://tc39.es/ecma262/multipage/text-processing.html#sec-string-objects", "src/theory/syntax-contract.ts SourceRange"],
+      "covers": "zero-based half-open ECMAScript UTF-16 source ranges and Unicode scalar rejection"
+    },
+    {
+      "id": "T0-AUTH-LEGACY",
+      "authorityClass": "compatibility",
+      "sourceKind": "compatibility-regression",
+      "reviewState": "reviewed-compatibility-decision",
+      "sourceRefs": ["docs/LEGACY_AUDIT.md Music-theory failures", "docs/REBUILD_PLAN.md section 19.2"],
+      "covers": "maj7/minor substring corruption, C9/C13 missing sevenths, unsupported-quality default, and prefix drift"
+    },
+    {
+      "id": "T0-AUTH-INDEPENDENCE",
+      "authorityClass": "definition",
+      "sourceKind": "verification-policy",
+      "reviewState": "reviewed-project-contract",
+      "sourceRefs": ["AGENTS.md Verification discipline", "docs/REBUILD_PLAN.md sections 10.7 and 19.1"],
+      "covers": "independent fixture authorship, seeded metamorphic laws, mutation proof, and production-oracle prohibition"
+    }
+  ]
+}

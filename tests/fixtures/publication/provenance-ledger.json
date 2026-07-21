@@ -1,0 +1,64 @@
+{
+  "schema": "changes.fixtures.f3-provenance-ledger.v1",
+  "ledgerVersion": "1.0.0",
+  "reviewState": "reviewed-contract-authority",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "authoringStatement": "F3 expectations were authored from reviewed F1/F2/T0/T1 contracts and project policy before document-validation production code exists. No production validator, parser output, resolver output, formatter output, or generated artifact supplied an expected value.",
+  "classificationPolicy": {
+    "reviewed-project-policy": "Architecture, staging, transactionality, privacy, and dependency decisions settled by the reviewed rebuild plan.",
+    "reviewed-domain-law": "Exact time, spelling-first identity, persisted shape, and local invariant decisions already frozen by F1/F2.",
+    "reviewed-theory-law": "Syntax, formula, role, spelling, and altered-realization decisions already frozen by T0/T1.",
+    "independent-adversarial-design": "Near misses, combined faults, work boundaries, and mutants authored to distinguish plausible wrong implementations."
+  },
+  "authorities": [
+    {
+      "id": "F3-AUTH-ARCHITECTURE",
+      "authorityClass": "reviewed-project-policy",
+      "sourceRefs": ["docs/ARCHITECTURE.md", "docs/REBUILD_PLAN.md sections 8.1 and 9.8", "AGENTS.md"],
+      "covers": "sole brand cast, layer direction, combined F2/F3 publication, purity, transactionality, privacy, and count-based termination"
+    },
+    {
+      "id": "F3-AUTH-DOMAIN",
+      "authorityClass": "reviewed-domain-law",
+      "sourceRefs": ["docs/F1_DOMAIN_CONTRACT.md", "docs/F2_DECODER_CONTRACT.md", "tests/fixtures/domain/f1-domain-contract.json", "tests/fixtures/decoder/f2-decoder-contract.json"],
+      "covers": "typed document shapes, stage ownership, exact bounds, custom/manual structural rules, diagnostic vocabulary, and F2 handoff"
+    },
+    {
+      "id": "F3-AUTH-SYNTAX",
+      "authorityClass": "reviewed-theory-law",
+      "sourceRefs": ["docs/T0_SYNTAX_CONTRACT.md", "tests/fixtures/theory/symbol-cases.json"],
+      "covers": "parsed source agreement, supported aliases, exact written AST identity, strict refusal, and no suggestion application"
+    },
+    {
+      "id": "F3-AUTH-RESOLUTION",
+      "authorityClass": "reviewed-theory-law",
+      "sourceRefs": ["docs/T1_RESOLUTION_CONTRACT.md", "tests/fixtures/resolution/t1-resolution-contract.json", "tests/fixtures/resolution/literal-cases.json", "tests/fixtures/resolution/spelling-cases.json"],
+      "covers": "formula/refusal/spelling outcomes, exact realization spellings, Custom limitations, and four altered-dominant variants"
+    },
+    {
+      "id": "F3-AUTH-MEASURE",
+      "authorityClass": "reviewed-domain-law",
+      "sourceRefs": ["docs/F1_DOMAIN_CONTRACT.md", "tests/fixtures/domain/meter-measure-cases.json", "docs/REBUILD_PLAN.md sections 9.5 and 9.6"],
+      "covers": "quarter-note capacity, completion states, first capacity crossing, partial expected duration/reason, and position policy"
+    },
+    {
+      "id": "F3-AUTH-VOICING",
+      "authorityClass": "reviewed-project-policy",
+      "sourceRefs": ["docs/REBUILD_PLAN.md sections 9.3 and 12", "docs/F1_DOMAIN_CONTRACT.md", "docs/F3_PUBLICATION_CONTRACT.md sections 4 through 6"],
+      "covers": "exact stored pitch correspondence, slash-bass projection, Manual/Frozen bypass, Custom set semantics, Auto range cardinality, and V0 boundary"
+    },
+    {
+      "id": "F3-AUTH-INDEPENDENCE",
+      "authorityClass": "independent-adversarial-design",
+      "sourceRefs": ["tests/fixtures/publication/document-cases.json", "tests/fixtures/publication/operation-state-cases.json", "tests/fixtures/publication/mutation-controls.json"],
+      "covers": "near misses, combined independent faults, deterministic ordering, exact limits, negative controls, and anti-self-certification"
+    },
+    {
+      "id": "F3-AUTH-LEGACY",
+      "authorityClass": "reviewed-project-policy",
+      "sourceRefs": ["docs/LEGACY_AUDIT.md", "docs/REBUILD_PLAN.md section 15.5"],
+      "covers": "unknown-source refusal, supported alias preservation, conflict reporting, and prohibition on silent fallback or relabeling"
+    }
+  ]
+}

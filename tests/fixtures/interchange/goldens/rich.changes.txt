@@ -1,0 +1,9 @@
+@title "Late Set"
+@description ""
+@meter 4/4
+@tempo 120
+@key C major
+[A] "opening"
+| Cmaj7:2 "hold" Dm7:2 | G7:4 |
+[B]
+| Fmaj7:1 /:1 /:1 Fm6:1 | C/G:4 |

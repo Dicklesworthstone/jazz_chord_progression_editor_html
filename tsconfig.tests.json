@@ -22,6 +22,7 @@
   "exclude": [
     "tests/e2e/**",
     "tests/fixtures/**",
+    "tests/integration/audio-offline-render.test.ts",
     "tests/visual/**"
   ]
 }

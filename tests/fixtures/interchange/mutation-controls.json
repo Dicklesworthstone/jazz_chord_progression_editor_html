@@ -1,0 +1,917 @@
+{
+  "schema": "changes.fixtures.e0-mutation-controls.v1",
+  "reviewState": "proposed-pending-first-golden-human-acceptance",
+  "productionMutantsExecutedAtSpecTime": false,
+  "claim": "links-are-frozen-build-and-verify-must-execute-the-production-mutants",
+  "controls": [
+    {
+      "id": "E0-MUT-001",
+      "category": "canonical-json",
+      "mutation": "Use runtime property enumeration instead of the declared schema projection order.",
+      "expectedMismatch": "Exact bytes or insertion-order metamorphic relation changes.",
+      "linkedCaseIds": ["E0-JX-001", "E0-JX-003", "E0-JX-018"],
+      "authorityIds": ["E0-AUTH-PLAN"]
+    },
+    {
+      "id": "E0-MUT-002",
+      "category": "exact-bytes",
+      "mutation": "Omit the one final LF.",
+      "expectedMismatch": "Golden byte count and SHA-256 differ.",
+      "linkedCaseIds": ["E0-JX-001", "E0-TX-001"],
+      "authorityIds": ["E0-AUTH-PLAN", "E0-AUTH-T0"]
+    },
+    {
+      "id": "E0-MUT-003",
+      "category": "unicode",
+      "mutation": "Normalize strings to NFC.",
+      "expectedMismatch": "Canonical-equivalent but distinct source scalars collapse.",
+      "linkedCaseIds": [
+        "E0-JX-002",
+        "E0-JX-004",
+        "E0-LIM-018-CANONICAL-EQUIVALENCE"
+      ],
+      "authorityIds": ["E0-AUTH-F1", "E0-AUTH-ECMA-JSON"]
+    },
+    {
+      "id": "E0-MUT-004",
+      "category": "exact-time",
+      "mutation": "Format rational time through floating point.",
+      "expectedMismatch": "Reduced duration text or exact boundary changes.",
+      "linkedCaseIds": [
+        "E0-TX-003",
+        "E0-TX-004",
+        "E0-LIM-014-AT",
+        "E0-LIM-015-ALLOWED",
+        "E0-LIM-016-OVER"
+      ],
+      "authorityIds": ["E0-AUTH-F1", "E0-AUTH-T0"]
+    },
+    {
+      "id": "E0-MUT-005",
+      "category": "projection",
+      "mutation": "Include UI, history, recovery, or application-envelope fields in canonical bytes.",
+      "expectedMismatch": "Forbidden output key appears or hash changes.",
+      "linkedCaseIds": ["E0-JX-001", "E0-JX-005"],
+      "authorityIds": ["E0-AUTH-PLAN", "E0-AUTH-A0"]
+    },
+    {
+      "id": "E0-MUT-006",
+      "category": "round-trip",
+      "mutation": "Skip canonical self-parse or F2 decode.",
+      "expectedMismatch": "Injected parse/decode fault incorrectly reaches artifact-ready.",
+      "linkedCaseIds": ["E0-JX-001", "E0-JX-006", "E0-JX-007", "E0-JX-008"],
+      "authorityIds": ["E0-AUTH-F2"]
+    },
+    {
+      "id": "E0-MUT-007",
+      "category": "round-trip",
+      "mutation": "Skip F3 or semantic equality.",
+      "expectedMismatch": "Injected semantic fault or mismatch is offered.",
+      "linkedCaseIds": ["E0-JX-001", "E0-JX-006", "E0-JX-009", "E0-JX-010"],
+      "authorityIds": ["E0-AUTH-F3"]
+    },
+    {
+      "id": "E0-MUT-008",
+      "category": "filename",
+      "mutation": "Use raw title as filename.",
+      "expectedMismatch": "Forbidden characters, fallback, or traversal-like text survives.",
+      "linkedCaseIds": ["E0-JX-012", "E0-JX-013", "E0-JX-014"],
+      "authorityIds": ["E0-AUTH-FILENAME-POLICY"]
+    },
+    {
+      "id": "E0-MUT-009",
+      "category": "unicode",
+      "mutation": "Count UTF-16 code units instead of Unicode scalar values.",
+      "expectedMismatch": "Astral boundary truncates early.",
+      "linkedCaseIds": [
+        "E0-JX-015",
+        "E0-LIM-009-AT",
+        "E0-LIM-010-AT",
+        "E0-LIM-018-ASTRAL"
+      ],
+      "authorityIds": ["E0-AUTH-F1", "E0-AUTH-FILENAME-POLICY"]
+    },
+    {
+      "id": "E0-MUT-010",
+      "category": "filename",
+      "mutation": "Append an owned extension without first removing an existing terminal extension.",
+      "expectedMismatch": "Filename contains a repeated extension.",
+      "linkedCaseIds": ["E0-JX-012", "E0-JX-015"],
+      "authorityIds": ["E0-AUTH-FILENAME-POLICY"]
+    },
+    {
+      "id": "E0-MUT-011",
+      "category": "utf8",
+      "mutation": "Use File.text replacement decoding.",
+      "expectedMismatch": "Invalid UTF-8 reaches parsing instead of fatal refusal.",
+      "linkedCaseIds": ["E0-JI-003", "E0-AD-011"],
+      "authorityIds": ["E0-AUTH-WHATWG-ENCODING"]
+    },
+    {
+      "id": "E0-MUT-012",
+      "category": "byte-bound",
+      "mutation": "Count source characters or UTF-16 units as bytes.",
+      "expectedMismatch": "Multibyte at/over behavior changes.",
+      "linkedCaseIds": [
+        "E0-JX-016",
+        "E0-JX-017",
+        "E0-JI-013",
+        "E0-JI-014",
+        "E0-LIM-001-MULTIBYTE"
+      ],
+      "authorityIds": ["E0-AUTH-F2", "E0-AUTH-WHATWG-ENCODING"]
+    },
+    {
+      "id": "E0-MUT-013",
+      "category": "precedence",
+      "mutation": "Parse or decode before byte preflight.",
+      "expectedMismatch": "A later diagnosis replaces the byte-limit refusal.",
+      "linkedCaseIds": [
+        "E0-JX-016",
+        "E0-JX-017",
+        "E0-JI-003",
+        "E0-JI-014",
+        "E0-JI-015",
+        "E0-LIM-001-OVER",
+        "E0-LIM-002-OVER",
+        "E0-LIM-024-BYTES-UTF8-JSON"
+      ],
+      "authorityIds": ["E0-AUTH-F2"]
+    },
+    {
+      "id": "E0-MUT-014",
+      "category": "json",
+      "mutation": "Pass a reviver or a second argument to JSON.parse.",
+      "expectedMismatch": "Instrumented parse records more than one argument.",
+      "linkedCaseIds": ["E0-JI-007"],
+      "authorityIds": ["E0-AUTH-ECMA-JSON"]
+    },
+    {
+      "id": "E0-MUT-015",
+      "category": "json",
+      "mutation": "Implement decoded duplicate-key rejection incompletely or with the wrong object scope.",
+      "expectedMismatch": "A root or nested duplicate reaches host parse, or valid repetition across distinct objects is refused.",
+      "linkedCaseIds": ["E0-JI-005", "E0-JI-006", "E0-JI-007"],
+      "variants": [
+        {
+          "id": "allow-literal-last-value-wins",
+          "mutation": "Allow a literal duplicate object key with last-value-wins behavior.",
+          "expectedMismatch": "The root literal duplicate reaches host parse.",
+          "linkedCaseIds": ["E0-JI-005"]
+        },
+        {
+          "id": "scan-root-object-only",
+          "mutation": "Track decoded keys only for the root object.",
+          "expectedMismatch": "A nested literal or escape-equivalent duplicate reaches host parse.",
+          "linkedCaseIds": ["E0-JI-005", "E0-JI-006"]
+        },
+        {
+          "id": "use-one-global-key-set",
+          "mutation": "Track one decoded-key set across all objects instead of one set per object.",
+          "expectedMismatch": "The valid nested canonical document is refused because ordinary keys repeat in distinct objects.",
+          "linkedCaseIds": ["E0-JI-007"]
+        }
+      ],
+      "authorityIds": ["E0-AUTH-ECMA-JSON"]
+    },
+    {
+      "id": "E0-MUT-016",
+      "category": "json",
+      "mutation": "Compare raw key spelling and miss an escape-equivalent duplicate.",
+      "expectedMismatch": "Decoded duplicate reaches host parse.",
+      "linkedCaseIds": ["E0-JI-006"],
+      "authorityIds": ["E0-AUTH-ECMA-JSON"]
+    },
+    {
+      "id": "E0-MUT-017",
+      "category": "routing",
+      "mutation": "Treat a future or unknown schema as current.",
+      "expectedMismatch": "Unsupported schema reaches F2 or preview.",
+      "linkedCaseIds": ["E0-JI-009", "E0-JI-010", "E0-JI-025", "E0-JI-028"],
+      "authorityIds": ["E0-AUTH-PLAN"]
+    },
+    {
+      "id": "E0-MUT-018",
+      "category": "routing",
+      "mutation": "Fall back from malformed JSON to chart text or use MIME/extension as authority.",
+      "expectedMismatch": "A JSON-family input reaches chart parsing.",
+      "linkedCaseIds": ["E0-JI-004", "E0-JI-019", "E0-JI-020"],
+      "authorityIds": ["E0-AUTH-E0-DECISIONS"]
+    },
+    {
+      "id": "E0-MUT-019",
+      "category": "short-circuit",
+      "mutation": "Continue after structural refusal.",
+      "expectedMismatch": "Semantic or publication stage call count becomes nonzero.",
+      "linkedCaseIds": [
+        "E0-JI-011",
+        "E0-JI-021",
+        "E0-LIM-024-DUPLICATE-SEMANTIC",
+        "E0-LIM-025-EACH-STAGE"
+      ],
+      "authorityIds": ["E0-AUTH-F2", "E0-AUTH-VERIFICATION"]
+    },
+    {
+      "id": "E0-MUT-020",
+      "category": "publication",
+      "mutation": "Publish a semantic refusal or an all-rejected legacy candidate.",
+      "expectedMismatch": "Candidate or replacement becomes reachable.",
+      "linkedCaseIds": [
+        "E0-JI-012",
+        "E0-JI-017",
+        "E0-JI-021",
+        "E0-LIM-024-DUPLICATE-SEMANTIC",
+        "E0-LIM-025-EACH-STAGE"
+      ],
+      "authorityIds": ["E0-AUTH-F3"]
+    },
+    {
+      "id": "E0-MUT-021",
+      "category": "legacy",
+      "mutation": "Let C0 mutate state or rerun during confirmation.",
+      "expectedMismatch": "Protected state or invocation count changes.",
+      "linkedCaseIds": ["E0-JI-016", "E0-JI-017", "E0-JI-018"],
+      "authorityIds": ["E0-AUTH-C0"]
+    },
+    {
+      "id": "E0-MUT-022",
+      "category": "routing",
+      "mutation": "Route a future schema or arbitrary unversioned object through C0.",
+      "expectedMismatch": "C0 invocation count becomes nonzero.",
+      "linkedCaseIds": ["E0-JI-008", "E0-JI-009", "E0-JI-010", "E0-JI-025"],
+      "authorityIds": ["E0-AUTH-C0", "E0-AUTH-E0-DECISIONS"]
+    },
+    {
+      "id": "E0-MUT-023",
+      "category": "transaction",
+      "mutation": "Apply immediately after file selection, parse, or preview.",
+      "expectedMismatch": "Replacement/history/audio count becomes nonzero.",
+      "linkedCaseIds": [
+        "E0-JI-001",
+        "E0-JI-016",
+        "E0-JI-024",
+        "E0-TI-001",
+        "E0-TI-003",
+        "E0-WF-001",
+        "E0-WF-002"
+      ],
+      "authorityIds": ["E0-AUTH-A0", "E0-AUTH-PLAN"]
+    },
+    {
+      "id": "E0-MUT-024",
+      "category": "hostile-text",
+      "mutation": "Render imported strings through HTML insertion.",
+      "expectedMismatch": "HTML parse, script, or handler observation becomes nonzero.",
+      "linkedCaseIds": ["E0-JX-004", "E0-JX-013", "E0-JI-023"],
+      "authorityIds": ["E0-AUTH-VERIFICATION"]
+    },
+    {
+      "id": "E0-MUT-025",
+      "category": "transport-equivalence",
+      "mutation": "Give file and paste separate semantic pipelines.",
+      "expectedMismatch": "Candidate, diagnostics, summary, or impact diverges.",
+      "linkedCaseIds": ["E0-JI-002"],
+      "authorityIds": ["E0-AUTH-PLAN"]
+    },
+    {
+      "id": "E0-MUT-026",
+      "category": "text",
+      "mutation": "Round or emit floating-point duration text.",
+      "expectedMismatch": "Golden or exact projection differs.",
+      "linkedCaseIds": ["E0-TX-001", "E0-TX-003", "E0-TX-004"],
+      "authorityIds": ["E0-AUTH-T0"]
+    },
+    {
+      "id": "E0-MUT-027",
+      "category": "repeat",
+      "mutation": "Permit repeat eligibility to cross a section boundary.",
+      "expectedMismatch": "Second section begins with a repeat or resolves to earlier section.",
+      "linkedCaseIds": ["E0-TX-002", "E0-TX-005"],
+      "authorityIds": ["E0-AUTH-T0", "E0-AUTH-E0-DECISIONS"]
+    },
+    {
+      "id": "E0-MUT-028",
+      "category": "repeat",
+      "mutation": "Copy prior duration or annotation instead of emitting current explicit values.",
+      "expectedMismatch": "Reparsed supported projection differs.",
+      "linkedCaseIds": ["E0-TX-002", "E0-TX-005"],
+      "authorityIds": ["E0-AUTH-T0"]
+    },
+    {
+      "id": "E0-MUT-029",
+      "category": "text",
+      "mutation": "Emit source comments in canonical text.",
+      "expectedMismatch": "Golden contains comment text.",
+      "linkedCaseIds": ["E0-TX-002", "E0-TX-006"],
+      "authorityIds": ["E0-AUTH-T0"]
+    },
+    {
+      "id": "E0-MUT-030",
+      "category": "text",
+      "mutation": "Emit empty event annotations.",
+      "expectedMismatch": "Golden contains an empty JSON string token.",
+      "linkedCaseIds": ["E0-TX-002", "E0-TX-006"],
+      "authorityIds": ["E0-AUTH-T0"]
+    },
+    {
+      "id": "E0-MUT-031",
+      "category": "text-loss",
+      "mutation": "Omit Manual/Frozen loss or optimize its pitches.",
+      "expectedMismatch": "Loss row missing or stored pitch sequence changes.",
+      "linkedCaseIds": [
+        "E0-TX-007",
+        "E0-TX-010",
+        "E0-LIM-008-OVER",
+        "E0-LIM-017-AT"
+      ],
+      "authorityIds": ["E0-AUTH-F1", "E0-AUTH-PLAN"]
+    },
+    {
+      "id": "E0-MUT-032",
+      "category": "text-loss",
+      "mutation": "Omit playback/effect loss.",
+      "expectedMismatch": "Playback loss row missing.",
+      "linkedCaseIds": ["E0-TX-008", "E0-TX-010"],
+      "authorityIds": ["E0-AUTH-PLAN"]
+    },
+    {
+      "id": "E0-MUT-033",
+      "category": "text-loss",
+      "mutation": "Omit a supplied contextual-analysis presence loss.",
+      "expectedMismatch": "Derived-analysis loss row missing.",
+      "linkedCaseIds": ["E0-TX-009", "E0-TX-010"],
+      "authorityIds": ["E0-AUTH-PLAN"]
+    },
+    {
+      "id": "E0-MUT-034",
+      "category": "text-round-trip",
+      "mutation": "Offer text without T0 reparse and supported-projection equality.",
+      "expectedMismatch": "Injected parser/projection fault reaches delivery.",
+      "linkedCaseIds": ["E0-TX-001", "E0-TX-015", "E0-TX-016", "E0-TX-017"],
+      "authorityIds": ["E0-AUTH-T0"]
+    },
+    {
+      "id": "E0-MUT-035",
+      "category": "chart-import",
+      "mutation": "Promote fragment text to a replacement document.",
+      "expectedMismatch": "Fragment yields a ready preview.",
+      "linkedCaseIds": ["E0-TI-002", "E0-TI-003"],
+      "authorityIds": ["E0-AUTH-T0", "E0-AUTH-A0"]
+    },
+    {
+      "id": "E0-MUT-036",
+      "category": "chart-import",
+      "mutation": "Publish a valid prefix after a later chart syntax error.",
+      "expectedMismatch": "Partial candidate becomes reachable.",
+      "linkedCaseIds": ["E0-TI-002"],
+      "authorityIds": ["E0-AUTH-T0"]
+    },
+    {
+      "id": "E0-MUT-037",
+      "category": "identity",
+      "mutation": "Use random/production IDs or retry a collision.",
+      "expectedMismatch": "Allocation order/count or total refusal changes.",
+      "linkedCaseIds": ["E0-TI-001", "E0-TI-004"],
+      "authorityIds": ["E0-AUTH-F1", "E0-AUTH-E0-DECISIONS"]
+    },
+    {
+      "id": "E0-MUT-038",
+      "category": "defaults",
+      "mutation": "Invent unsupported voicing, playback, section policy, or analysis without disclosure, or pass an ambient/caller-selected accidental style to T0 chart import.",
+      "expectedMismatch": "Candidate/default, parser-call arguments, or loss report changes.",
+      "linkedCaseIds": ["E0-TX-007", "E0-TI-001", "E0-JI-029"],
+      "authorityIds": ["E0-AUTH-E0-DECISIONS"]
+    },
+    {
+      "id": "E0-MUT-039",
+      "category": "stale",
+      "mutation": "Apply a preview whose base revision is stale.",
+      "expectedMismatch": "Replacement/history count becomes nonzero.",
+      "linkedCaseIds": ["E0-WF-006", "E0-WF-008"],
+      "authorityIds": ["E0-AUTH-A0"]
+    },
+    {
+      "id": "E0-MUT-040",
+      "category": "transport",
+      "mutation": "Bypass the composition-bound X1 adapter, fabricate structural evidence, accept a plain A0 receipt, replay a consumed/request-invalidated prepared capability, or omit the zero-future-attack postcondition.",
+      "expectedMismatch": "Replacement occurs without one exact bound X1 result and one live prepared A0 capability, or a terminal path leaves capability authority live.",
+      "linkedCaseIds": [
+        "E0-WF-009",
+        "E0-WF-010",
+        "E0-WF-016",
+        "E0-WF-026",
+        "E0-WF-027",
+        "E0-WF-028",
+        "E0-WF-019",
+        "E0-WF-020",
+        "E0-WF-021"
+      ],
+      "authorityIds": ["E0-AUTH-A0", "E0-AUTH-X1"]
+    },
+    {
+      "id": "E0-MUT-041",
+      "category": "transaction",
+      "mutation": "Create two replacement commands/history entries.",
+      "expectedMismatch": "Commit/revision/history delta exceeds one.",
+      "linkedCaseIds": ["E0-WF-009", "E0-WF-011"],
+      "authorityIds": ["E0-AUTH-A0"]
+    },
+    {
+      "id": "E0-MUT-042",
+      "category": "transaction",
+      "mutation": "Mutate document before decode/validation/confirmation completes.",
+      "expectedMismatch": "Protected-state snapshot changes on preview/refusal.",
+      "linkedCaseIds": [
+        "E0-JI-001",
+        "E0-JI-011",
+        "E0-JI-012",
+        "E0-JI-016",
+        "E0-JI-021",
+        "E0-TI-001",
+        "E0-TI-004",
+        "E0-WF-001",
+        "E0-WF-009",
+        "E0-LIM-025-EACH-STAGE"
+      ],
+      "authorityIds": ["E0-AUTH-A0", "E0-AUTH-F3"]
+    },
+    {
+      "id": "E0-MUT-043",
+      "category": "transaction",
+      "mutation": "Merge imported sections instead of replacing the document.",
+      "expectedMismatch": "Result contains source/current mixed identity or more than one command.",
+      "linkedCaseIds": ["E0-WF-011"],
+      "authorityIds": ["E0-AUTH-PLAN"]
+    },
+    {
+      "id": "E0-MUT-044",
+      "category": "cancellation",
+      "mutation": "Leave a cancelled candidate capable of later effect.",
+      "expectedMismatch": "Late callback or confirm creates a handoff.",
+      "linkedCaseIds": ["E0-WF-004", "E0-WF-005"],
+      "authorityIds": ["E0-AUTH-A0"]
+    },
+    {
+      "id": "E0-MUT-045",
+      "category": "stale",
+      "mutation": "Settle or confirm the current request with the wrong request/document identity.",
+      "expectedMismatch": "Wrong callback or wrong-current-document confirmation publishes or clears current state.",
+      "linkedCaseIds": ["E0-WF-004", "E0-WF-006", "E0-WF-007", "E0-WF-022"],
+      "authorityIds": ["E0-AUTH-A0"]
+    },
+    {
+      "id": "E0-MUT-046",
+      "category": "idempotence",
+      "mutation": "Allow double confirmation to commit twice.",
+      "expectedMismatch": "Command/revision/history count exceeds one.",
+      "linkedCaseIds": ["E0-WF-011", "E0-WF-014"],
+      "authorityIds": ["E0-AUTH-A0"]
+    },
+    {
+      "id": "E0-MUT-047",
+      "category": "history",
+      "mutation": "Re-read, reparse, remigrate, or revalidate on undo/redo.",
+      "expectedMismatch": "Dependency call count during history is nonzero.",
+      "linkedCaseIds": ["E0-WF-014"],
+      "authorityIds": ["E0-AUTH-A0"]
+    },
+    {
+      "id": "E0-MUT-048",
+      "category": "isolation",
+      "mutation": "Let failure/cancel alter protected state, or let apply/failure pair a detached retiring transition or prepared capability with an AppState that has no matching pending request.",
+      "expectedMismatch": "Protected-state projection differs or a Cartesian handoff is not bound to one complete A0 retiring transaction and zero-live terminal capability state.",
+      "linkedCaseIds": [
+        "E0-JI-021",
+        "E0-WF-003",
+        "E0-WF-005",
+        "E0-WF-009",
+        "E0-WF-010",
+        "E0-WF-026",
+        "E0-WF-027",
+        "E0-WF-028",
+        "E0-LIM-025-EACH-STAGE",
+        "E0-WF-020"
+      ],
+      "authorityIds": ["E0-AUTH-A0", "E0-AUTH-PLAN"]
+    },
+    {
+      "id": "E0-MUT-049",
+      "category": "gesture",
+      "mutation": "Open picker or activate anchor without a proved browser gesture, or introduce an await/queued microtask between the synchronous activation probe and picker/anchor invocation.",
+      "expectedMismatch": "A capability call occurs without activation or the frozen trace reaches an async boundary before capability invocation.",
+      "linkedCaseIds": ["E0-AD-004", "E0-MK-001", "E0-MK-002"],
+      "authorityIds": ["E0-AUTH-FSA", "E0-AUTH-WHATWG-DOWNLOAD"]
+    },
+    {
+      "id": "E0-MUT-050",
+      "category": "delivery",
+      "mutation": "Fall back after picker cancellation or operational failure.",
+      "expectedMismatch": "Object URL/anchor count becomes nonzero.",
+      "linkedCaseIds": ["E0-AD-006", "E0-AD-008", "E0-AD-012"],
+      "authorityIds": ["E0-AUTH-FSA"]
+    },
+    {
+      "id": "E0-MUT-051",
+      "category": "resource",
+      "mutation": "Fail to close or abort a writer/handle.",
+      "expectedMismatch": "Live-resource count is nonzero.",
+      "linkedCaseIds": ["E0-AD-005", "E0-AD-007"],
+      "authorityIds": ["E0-AUTH-FSA"]
+    },
+    {
+      "id": "E0-MUT-052",
+      "category": "resource",
+      "mutation": "Leak an object URL, anchor, listener, payload, writer, or handle.",
+      "expectedMismatch": "Created/revoked or created/removed counts diverge.",
+      "linkedCaseIds": [
+        "E0-AD-001",
+        "E0-AD-002",
+        "E0-AD-003",
+        "E0-AD-009",
+        "E0-LIM-022-READ"
+      ],
+      "authorityIds": ["E0-AUTH-WHATWG-DOWNLOAD", "E0-AUTH-VERIFICATION"]
+    },
+    {
+      "id": "E0-MUT-053",
+      "category": "delivery",
+      "mutation": "Revoke an object URL before anchor activation.",
+      "expectedMismatch": "Event order differs from the frozen trace.",
+      "linkedCaseIds": ["E0-AD-001"],
+      "authorityIds": ["E0-AUTH-WHATWG-DOWNLOAD"]
+    },
+    {
+      "id": "E0-MUT-054",
+      "category": "offline",
+      "mutation": "Introduce FileSaver, runtime request, CDN, or other network behavior.",
+      "expectedMismatch": "Forbidden call/request count becomes nonzero.",
+      "linkedCaseIds": ["E0-AD-010", "E0-JI-023"],
+      "authorityIds": ["E0-AUTH-PLAN", "E0-AUTH-VERIFICATION"]
+    },
+    {
+      "id": "E0-MUT-055",
+      "category": "marker",
+      "mutation": "Advance marker before a successful delivery receipt.",
+      "expectedMismatch": "Failure/hash-unavailable path changes marker.",
+      "linkedCaseIds": ["E0-JX-011", "E0-MK-001", "E0-MK-002"],
+      "authorityIds": ["E0-AUTH-PLAN"]
+    },
+    {
+      "id": "E0-MUT-056",
+      "category": "marker",
+      "mutation": "Advance marker on cancellation or failure.",
+      "expectedMismatch": "Marker projection differs from prior state.",
+      "linkedCaseIds": [
+        "E0-AD-002",
+        "E0-AD-003",
+        "E0-AD-006",
+        "E0-AD-007",
+        "E0-AD-012",
+        "E0-MK-003",
+        "E0-MK-010",
+        "E0-MK-020"
+      ],
+      "authorityIds": ["E0-AUTH-PLAN"]
+    },
+    {
+      "id": "E0-MUT-057",
+      "category": "marker",
+      "mutation": "Advance canonical marker for text export.",
+      "expectedMismatch": "Text receipt creates marker-only state change.",
+      "linkedCaseIds": ["E0-TX-008", "E0-MK-004"],
+      "authorityIds": ["E0-AUTH-PLAN"]
+    },
+    {
+      "id": "E0-MUT-058",
+      "category": "marker",
+      "mutation": "Let an old completion mark a newer revision, write exportRevision directly, present a marker without successful checked A0 publication, expose historical AppState in a public marker result, or reinstall that historical state after A1 settles across a newer edit.",
+      "expectedMismatch": "A stale or A0-refused publication advances or presents the marker, or a late asynchronous result can overwrite controller-owned current state.",
+      "linkedCaseIds": [
+        "E0-MK-001",
+        "E0-MK-002",
+        "E0-MK-005",
+        "E0-MK-007",
+        "E0-MK-011",
+        "E0-MK-012",
+        "E0-MK-017",
+        "E0-MK-020",
+        "E0-MK-025"
+      ],
+      "authorityIds": ["E0-AUTH-A0"]
+    },
+    {
+      "id": "E0-MUT-059",
+      "category": "hash",
+      "mutation": "Hash application envelope or pair document B with document A's hash.",
+      "expectedMismatch": "Binding mismatch is not refused.",
+      "linkedCaseIds": ["E0-JX-005", "E0-MK-004"],
+      "authorityIds": ["E0-AUTH-PLAN"]
+    },
+    {
+      "id": "E0-MUT-060",
+      "category": "marker",
+      "mutation": "Omit the A1 persistence handoff or persist a revision/hash/filename/length different from the delivered canonical artifact.",
+      "expectedMismatch": "Binding mismatch advances, the A1 handoff is skipped, or the persisted marker differs.",
+      "linkedCaseIds": [
+        "E0-MK-001",
+        "E0-MK-002",
+        "E0-MK-004",
+        "E0-MK-006",
+        "E0-MK-008",
+        "E0-MK-009",
+        "E0-MK-013",
+        "E0-MK-025",
+        "E0-MK-026"
+      ],
+      "authorityIds": ["E0-AUTH-PLAN", "E0-AUTH-E0-DECISIONS"]
+    },
+    {
+      "id": "E0-MUT-061",
+      "category": "marker",
+      "mutation": "Claim reload durability after A1 persistence is unavailable/failed, or withhold it after exact A1 success.",
+      "expectedMismatch": "Durable reload claim disagrees with the typed A1 completion.",
+      "linkedCaseIds": [
+        "E0-MK-006",
+        "E0-MK-008",
+        "E0-MK-009",
+        "E0-MK-013",
+        "E0-MK-026"
+      ],
+      "authorityIds": ["E0-AUTH-PLAN", "E0-AUTH-A1"]
+    },
+    {
+      "id": "E0-MUT-062",
+      "category": "hostile-text",
+      "mutation": "Use HTML parsing, navigation, or a URL channel for filename/content.",
+      "expectedMismatch": "HTML/navigation observation becomes nonzero.",
+      "linkedCaseIds": [
+        "E0-JX-013",
+        "E0-JI-019",
+        "E0-JI-023",
+        "E0-AD-001",
+        "E0-AD-010"
+      ],
+      "authorityIds": ["E0-AUTH-WHATWG-DOWNLOAD", "E0-AUTH-VERIFICATION"]
+    },
+    {
+      "id": "E0-MUT-063",
+      "category": "termination",
+      "mutation": "Use wall time as a semantic cutoff or omit first-excess accounting.",
+      "expectedMismatch": "Slow and reference results differ or work count misses plus one.",
+      "linkedCaseIds": [
+        "E0-AD-009",
+        "E0-LIM-003-OVER",
+        "E0-LIM-004-OVER",
+        "E0-LIM-005-OVER",
+        "E0-LIM-006-OVER",
+        "E0-LIM-007-OVER",
+        "E0-LIM-016-OVER",
+        "E0-LIM-019-OVER",
+        "E0-LIM-023-SLOW"
+      ],
+      "authorityIds": ["E0-AUTH-VERIFICATION"]
+    },
+    {
+      "id": "E0-MUT-064",
+      "category": "determinism",
+      "mutation": "Use unordered iteration for diagnostics, losses, preview rows, or history impact.",
+      "expectedMismatch": "Repeated order or exact counts change.",
+      "linkedCaseIds": [
+        "E0-JX-003",
+        "E0-JX-018",
+        "E0-TX-010",
+        "E0-JI-018",
+        "E0-JI-022",
+        "E0-WF-012",
+        "E0-LIM-011-MIN",
+        "E0-LIM-012-MIN",
+        "E0-LIM-013-ALLOWED",
+        "E0-LIM-020-OVER",
+        "E0-LIM-021-OVER"
+      ],
+      "authorityIds": ["E0-AUTH-VERIFICATION"]
+    },
+    {
+      "id": "E0-MUT-065",
+      "category": "privacy",
+      "mutation": "Echo raw private source values, retain an unbounded payload/row set, or store a complete C0 report or T0 diagnostic/warning object in preview/refusal/application state.",
+      "expectedMismatch": "Raw-value scan, retained bound, or forbidden retained-field check fails.",
+      "linkedCaseIds": [
+        "E0-JI-022",
+        "E0-JI-023",
+        "E0-LIM-020-OVER",
+        "E0-LIM-021-OVER",
+        "E0-LIM-022-PREVIEW"
+      ],
+      "authorityIds": ["E0-AUTH-PLAN", "E0-AUTH-VERIFICATION"]
+    },
+    {
+      "id": "E0-MUT-066",
+      "category": "inert-data",
+      "mutation": "Let an imported string reach innerHTML, script evaluation, or handler execution.",
+      "expectedMismatch": "Evaluation/HTML observation becomes nonzero.",
+      "linkedCaseIds": [
+        "E0-JX-013",
+        "E0-JI-019",
+        "E0-JI-023",
+        "E0-TX-006",
+        "E0-AD-010"
+      ],
+      "authorityIds": ["E0-AUTH-VERIFICATION"]
+    },
+    {
+      "id": "E0-MUT-067",
+      "category": "number",
+      "mutation": "Serialize negative zero as positive zero or compare it with ===.",
+      "expectedMismatch": "Golden token or Object.is semantic equality fails.",
+      "linkedCaseIds": ["E0-JX-002"],
+      "authorityIds": ["E0-AUTH-F2", "E0-AUTH-ECMA-JSON"]
+    },
+    {
+      "id": "E0-MUT-068",
+      "category": "text-blocker",
+      "mutation": "Drop an empty document/section or emit grammar-invalid text.",
+      "expectedMismatch": "Unsupported structure produces an artifact.",
+      "linkedCaseIds": ["E0-TX-011", "E0-TX-012"],
+      "authorityIds": ["E0-AUTH-T0", "E0-AUTH-E0-DECISIONS"]
+    },
+    {
+      "id": "E0-MUT-069",
+      "category": "text-blocker",
+      "mutation": "Silently omit or approximate a Custom chord.",
+      "expectedMismatch": "Unsupported event produces an artifact.",
+      "linkedCaseIds": ["E0-TX-013"],
+      "authorityIds": ["E0-AUTH-F1", "E0-AUTH-T0"]
+    },
+    {
+      "id": "E0-MUT-070",
+      "category": "text-blocker",
+      "mutation": "Drop pickup/incomplete completion metadata or emit an underfilled complete measure.",
+      "expectedMismatch": "Unsupported completion produces an artifact.",
+      "linkedCaseIds": ["E0-TX-014"],
+      "authorityIds": ["E0-AUTH-F3", "E0-AUTH-T0"]
+    },
+    {
+      "id": "E0-MUT-071",
+      "category": "history-impact",
+      "mutation": "Approximate or fabricate replacement history impact, omit the preview-owned confirmation requirement, use a different estimator at commit, or accept any nonempty acknowledgement token.",
+      "expectedMismatch": "The materialized oversized entry is not exactly 16,777,217 bytes under the production A0 estimator, preview and commit dispositions/counts diverge, or a wrong scoped confirmation identity creates a command.",
+      "linkedCaseIds": [
+        "E0-WF-012",
+        "E0-WF-013",
+        "E0-WF-015",
+        "E0-WF-017",
+        "E0-WF-018"
+      ],
+      "authorityIds": ["E0-AUTH-A0"]
+    },
+    {
+      "id": "E0-MUT-072",
+      "category": "marker-binding",
+      "mutation": "Pair a successful receipt with an unrelated artifact candidate.",
+      "expectedMismatch": "Kind/document/hash/length/filename mismatch advances marker.",
+      "linkedCaseIds": ["E0-MK-004"],
+      "authorityIds": ["E0-AUTH-E0-DECISIONS"]
+    },
+    {
+      "id": "E0-MUT-073",
+      "category": "routing",
+      "mutation": "Treat an explicit format hint as parser authority and bypass scalar/schema classification.",
+      "expectedMismatch": "Mismatched or future-schema input reaches the hinted parser instead of the frozen refusal.",
+      "linkedCaseIds": ["E0-JI-025", "E0-JI-026", "E0-JI-027", "E0-JI-028"],
+      "authorityIds": ["E0-AUTH-PLAN", "E0-AUTH-E0-DECISIONS"]
+    },
+    {
+      "id": "E0-MUT-074",
+      "category": "history-impact",
+      "mutation": "Accept fresh command metadata or skip confirmation-time impact reassessment against the fully materialized current AppState.",
+      "expectedMismatch": "Command seed differs from preview or a changed exact history impact still creates a replacement handoff.",
+      "linkedCaseIds": ["E0-WF-015", "E0-WF-016", "E0-WF-017", "E0-WF-023"],
+      "authorityIds": ["E0-AUTH-A0"]
+    },
+    {
+      "id": "E0-MUT-075",
+      "category": "text-byte-bound",
+      "mutation": "Use greater-than-or-equal or character count for the lead-sheet UTF-8 byte ceiling.",
+      "expectedMismatch": "Exact 2 MiB success or first-byte-over refusal/counter changes.",
+      "linkedCaseIds": ["E0-LIM-026-AT", "E0-LIM-026-OVER"],
+      "authorityIds": ["E0-AUTH-PLAN", "E0-AUTH-WHATWG-ENCODING"]
+    },
+    {
+      "id": "E0-MUT-076",
+      "category": "text-loss-bound",
+      "mutation": "Retain or silently truncate a 16,516th lead-sheet loss item.",
+      "expectedMismatch": "The maximum-plus-one input produces an artifact or a partial loss list.",
+      "linkedCaseIds": ["E0-LIM-027-AT", "E0-LIM-027-OVER"],
+      "authorityIds": ["E0-AUTH-F1", "E0-AUTH-PLAN"]
+    },
+    {
+      "id": "E0-MUT-077",
+      "category": "chart-id-bound",
+      "mutation": "Call the stable-ID factory for a 73,794th chart candidate node.",
+      "expectedMismatch": "Factory call count exceeds 73,793 or a partial candidate escapes.",
+      "linkedCaseIds": ["E0-LIM-028-AT", "E0-LIM-028-OVER"],
+      "authorityIds": ["E0-AUTH-F1", "E0-AUTH-E0-DECISIONS"]
+    },
+    {
+      "id": "E0-MUT-078",
+      "category": "adapter-protocol",
+      "mutation": "Treat a raw A0-preparation, X1-retirement, latest-state identity read, prepared-delivery start/completion, application clock, A0-publication, or marker A1 adapter result as already typed; let a synchronous throw or promise rejection escape; retain a raw returned/thrown value publicly; or trust a malformed returned binding for cleanup.",
+      "expectedMismatch": "Malformed or exceptional cross-module output publishes authority, starts the browser from an invalid identity, leaves a prepared capability live, fabricates cleanup knowledge or time, exposes an unbounded raw value, escapes the public operation, or avoids the required bounded protocol/reconciliation result.",
+      "linkedCaseIds": [
+        "E0-WF-020",
+        "E0-WF-024",
+        "E0-WF-025",
+        "E0-WF-026",
+        "E0-WF-029",
+        "E0-WF-030",
+        "E0-MK-012",
+        "E0-MK-013",
+        "E0-MK-018",
+        "E0-MK-019",
+        "E0-MK-021",
+        "E0-MK-023",
+        "E0-MK-026"
+      ],
+      "authorityIds": [
+        "E0-AUTH-E0-DECISIONS",
+        "E0-AUTH-A0",
+        "E0-AUTH-X1",
+        "E0-AUTH-A1"
+      ]
+    },
+    {
+      "id": "E0-MUT-079",
+      "category": "adapter-protocol",
+      "mutation": "Trust the untrusted ImportSourceHandle return, let readAtMost throw or reject, accept bytes beyond the requested cap, trust an invalid observedByteLength, alias returned bytes, or settle more than once.",
+      "expectedMismatch": "An invalid or exceptional source completion escapes, retains or aliases raw bytes, exceeds the plus-one cap, reports a false length, or produces more than one terminal settlement instead of bounded import.read_failed.",
+      "linkedCaseIds": ["E0-WF-031"],
+      "authorityIds": ["E0-AUTH-E0-DECISIONS", "E0-AUTH-VERIFICATION"]
+    },
+    {
+      "id": "E0-MUT-080",
+      "category": "delivery-cleanup",
+      "mutation": "Throw or reject a cleanup primitive, mix FSA and Blob cleanup kinds, count failed calls as distinct resources, or return a clean receipt with an outstanding owned resource.",
+      "expectedMismatch": "Cleanup failure escapes, claims the wrong channel ledger, reports more than two distinct live resources, advances a marker, or avoids delivery-resource reconciliation.",
+      "linkedCaseIds": ["E0-AD-013", "E0-MK-021", "E0-MK-022"],
+      "authorityIds": [
+        "E0-AUTH-FSA",
+        "E0-AUTH-WHATWG-DOWNLOAD",
+        "E0-AUTH-VERIFICATION"
+      ]
+    },
+    {
+      "id": "E0-MUT-081",
+      "category": "delivery-payload-ownership",
+      "mutation": "Expose or reuse mutable artifact bytes, pass artifact text to the activation-safe start adapter, or let caller/concurrent mutation alter delivered bytes.",
+      "expectedMismatch": "The delivered private byte sequence changes, an alias remains live, text becomes a second click-path payload authority, or marker binding differs from the prepared hash and length.",
+      "linkedCaseIds": ["E0-AD-014"],
+      "authorityIds": ["E0-AUTH-WHATWG-ENCODING", "E0-AUTH-VERIFICATION"]
+    },
+    {
+      "id": "E0-MUT-082",
+      "category": "hash-adapter-protocol",
+      "mutation": "Let a canonical hash promise rejection or synchronous throw escape, trust a malformed hash envelope/digest, or retain a raw exceptional value.",
+      "expectedMismatch": "A hash boundary fault escapes, a malformed digest becomes authority, a partial artifact/delivery survives, or the result differs from export.hash_unavailable with no raw retention.",
+      "linkedCaseIds": ["E0-JX-019", "E0-MK-015"],
+      "authorityIds": ["E0-AUTH-WEB-CRYPTO", "E0-AUTH-VERIFICATION"]
+    },
+    {
+      "id": "E0-MUT-083",
+      "category": "prepared-delivery-registry",
+      "mutation": "Allow overlapping preparation work; retain more than one entry or byte owner; reuse, wrap, forge, or replay a preparation ID; let a stale keyed abandon/finish mutate a newer generation; use unkeyed asynchronous invalidation; or restore consumed bytes after a delivery attempt.",
+      "expectedMismatch": "Single-flight work, one-entry/2 MiB ownership, safe-integer sequencing, exact generation guards, terminal zeroing, or single-use delivery differs from the frozen registry lifecycle and limit matrices.",
+      "linkedCaseIds": [
+        "E0-MK-014",
+        "E0-MK-016",
+        "E0-MK-019",
+        "E0-MK-020",
+        "E0-MK-024",
+        "E0-LIM-029-AT",
+        "E0-LIM-029-OVER",
+        "E0-LIM-030-AT",
+        "E0-LIM-030-REPLACE",
+        "E0-LIM-031-AT",
+        "E0-LIM-031-OVER"
+      ],
+      "authorityIds": ["E0-AUTH-E0-DECISIONS", "E0-AUTH-VERIFICATION"]
+    }
+  ],
+  "inheritedControls": [
+    {
+      "id": "F2-MUT-002",
+      "owner": "E0",
+      "e0LinkedCaseIds": ["E0-JI-013", "E0-JI-014", "E0-LIM-001-MULTIBYTE"]
+    },
+    {
+      "id": "F2-MUT-003",
+      "owner": "E0",
+      "e0LinkedCaseIds": [
+        "E0-JI-014",
+        "E0-JI-015",
+        "E0-LIM-001-OVER",
+        "E0-LIM-024-BYTES-UTF8-JSON"
+      ]
+    }
+  ]
+}

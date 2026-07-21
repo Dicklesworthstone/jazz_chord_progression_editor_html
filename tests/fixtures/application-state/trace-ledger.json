@@ -1,0 +1,153 @@
+{
+  "schema": "changes.fixtures.a0-trace-ledger.v1",
+  "fixtureVersion": 1,
+  "expectedValuesGenerated": false,
+  "productionOutputUsed": false,
+  "tracePolicy": "Every parent requirement, invariant, success criterion, legacy regression, and selected Idea Wizard Apply law has positive/refusal or boundary evidence and a reviewed semantic counterfactual where applicable.",
+  "traces": [
+    {
+      "id": "TR-A0-STATE",
+      "requirement": "Explicit serializable AppState over ValidatedDocument with monotonic revision/export/recovery/UI projections.",
+      "parentSource": "A0 required implementation and REBUILD_PLAN 14.1",
+      "caseIds": ["A0-INIT-001", "A0-INIT-002", "A0-UI-001", "A0-UI-008"],
+      "controlIds": ["A0-MUT-010", "A0-MUT-027"],
+      "evidenceOwner": "tests/integration/application-state.test.ts"
+    },
+    {
+      "id": "TR-A0-COMMANDS",
+      "requirement": "Typed insert/delete/move/duplicate/duration/section/chord/voicing/settings commands are pure and complete.",
+      "parentSource": "A0 required implementation and REBUILD_PLAN 14.2",
+      "caseIds": ["A0-CMD-001", "A0-CMD-003", "A0-CMD-007", "A0-CMD-009", "A0-CMD-017", "A0-CMD-020", "A0-CMD-022", "A0-CMD-023", "A0-CMD-024", "A0-CMD-038", "A0-CMD-039", "A0-CMD-040", "A0-CMD-041", "A0-CMD-042"],
+      "controlIds": ["A0-MUT-002", "A0-MUT-003", "A0-MUT-004"],
+      "evidenceOwner": "tests/integration/document-commands.test.ts"
+    },
+    {
+      "id": "TR-A0-ATOMIC",
+      "requirement": "Every mutation validates an isolated result before one atomic publish; deterministic failure has no partial authority change.",
+      "parentSource": "A0 invariants and success criteria",
+      "caseIds": ["A0-CMD-018", "A0-CMD-027", "A0-ATOMIC-001", "A0-ATOMIC-002", "A0-SEQ-006"],
+      "controlIds": ["A0-MUT-002", "A0-MUT-003", "A0-MUT-029"],
+      "evidenceOwner": "tests/integration/command-atomicity.test.ts"
+    },
+    {
+      "id": "TR-A0-HISTORY",
+      "requirement": "History stores complete before/after validated references and bookmarks with exact undo/redo and redo clearing.",
+      "parentSource": "A0 required implementation and REBUILD_PLAN 14.3",
+      "caseIds": ["A0-HIST-001", "A0-HIST-002", "A0-HIST-003", "A0-SEQ-001", "A0-SEQ-002", "A0-SEQ-004"],
+      "controlIds": ["A0-MUT-017", "A0-MUT-018", "A0-MUT-019"],
+      "evidenceOwner": "tests/integration/history.test.ts"
+    },
+    {
+      "id": "TR-A0-LIMITS",
+      "requirement": "All collection/work/memory limits are explicit, deterministic, and never silently relaxed.",
+      "parentSource": "A0 spec exit criteria",
+      "caseIds": ["A0-CMD-033", "A0-CMD-034", "A0-HIST-004", "A0-HIST-005", "A0-HIST-006", "A0-ATOMIC-002", "A0-UI-001", "A0-UI-003", "A0-UI-004", "A0-STALE-003", "A0-TRANSPORT-009"],
+      "controlIds": ["A0-MUT-012", "A0-MUT-013", "A0-MUT-014", "A0-MUT-015"],
+      "evidenceOwner": "tests/property/application-limits.test.ts"
+    },
+    {
+      "id": "TR-A0-BOOKMARKS",
+      "requirement": "Selection, insertion, and range use stable IDs and restore/repair deterministically.",
+      "parentSource": "A0 required implementation and success criteria",
+      "caseIds": ["A0-CMD-003", "A0-CMD-004", "A0-CMD-005", "A0-CMD-007", "A0-HIST-001", "A0-UI-002", "A0-UI-005", "A0-UI-006", "A0-SEQ-003", "A0-SEQ-004"],
+      "controlIds": ["A0-MUT-001", "A0-MUT-017", "A0-MUT-028"],
+      "evidenceOwner": "tests/property/stable-bookmarks.test.ts"
+    },
+    {
+      "id": "TR-A0-FOCUS",
+      "requirement": "Focus repair is stable-ID based and deterministic after deletion, move, replacement, undo, and redo.",
+      "parentSource": "A0 required implementation",
+      "caseIds": ["A0-CMD-003", "A0-CMD-004", "A0-CMD-005", "A0-CMD-007", "A0-CMD-031"],
+      "controlIds": ["A0-MUT-001", "A0-MUT-028"],
+      "evidenceOwner": "tests/integration/focus-repair.test.ts"
+    },
+    {
+      "id": "TR-A0-ID",
+      "requirement": "Stable identity survives reorder, duplicate, undo, and redo; copy collisions are all-or-nothing.",
+      "parentSource": "A0 success criteria",
+      "caseIds": ["A0-CMD-002", "A0-CMD-007", "A0-CMD-009", "A0-CMD-010", "A0-SEQ-001", "A0-SEQ-003"],
+      "controlIds": ["A0-MUT-001", "A0-MUT-004"],
+      "evidenceOwner": "tests/property/stable-id-reorder.test.ts"
+    },
+    {
+      "id": "TR-A0-COALESCE",
+      "requirement": "Only same-field same-focus text edits inside the exclusive one-second window coalesce.",
+      "parentSource": "REBUILD_PLAN 14.2",
+      "caseIds": ["A0-CMD-011", "A0-CMD-012", "A0-CMD-013", "A0-CMD-014", "A0-CMD-015", "A0-CMD-016"],
+      "controlIds": ["A0-MUT-006", "A0-MUT-007", "A0-MUT-008", "A0-MUT-009", "A0-MUT-010"],
+      "evidenceOwner": "tests/integration/history-coalescing.test.ts"
+    },
+    {
+      "id": "TR-A0-REPLACE",
+      "requirement": "New, lesson, and import share a cancellation-safe retired-audio transaction with exact undo disclosure.",
+      "parentSource": "REBUILD_PLAN 14.3-14.4",
+      "caseIds": ["A0-CMD-031", "A0-CMD-032", "A0-CMD-033", "A0-CMD-034", "A0-CMD-035", "A0-CMD-036", "A0-CMD-037", "A0-HIST-002", "A0-STALE-007", "A0-TRANSPORT-007", "A0-SEQ-004", "A0-SEQ-006"],
+      "controlIds": ["A0-MUT-015", "A0-MUT-018", "A0-MUT-022"],
+      "evidenceOwner": "tests/integration/document-replacement.test.ts"
+    },
+    {
+      "id": "TR-A0-STALE",
+      "requirement": "Late async results require exact request/document/revision identity and otherwise cannot publish.",
+      "parentSource": "A0 invariants and REBUILD_PLAN 14.4",
+      "caseIds": ["A0-CMD-026", "A0-CMD-029", "A0-STALE-004", "A0-STALE-005", "A0-STALE-006", "A0-STALE-007", "A0-STALE-008", "A0-STALE-009", "A0-STALE-010", "A0-SEQ-005"],
+      "controlIds": ["A0-MUT-020", "A0-MUT-021", "A0-MUT-022", "A0-MUT-025"],
+      "evidenceOwner": "tests/integration/stale-results.test.ts"
+    },
+    {
+      "id": "TR-A0-TRANSPORT",
+      "requirement": "Transport view is a generation/request/sequence/document/revision-tagged projection and old notifications are ignored.",
+      "parentSource": "A0 invariants and REBUILD_PLAN 14.1",
+      "caseIds": ["A0-UI-011", "A0-TRANSPORT-001", "A0-TRANSPORT-002", "A0-TRANSPORT-003", "A0-TRANSPORT-004", "A0-TRANSPORT-005", "A0-TRANSPORT-006", "A0-TRANSPORT-007", "A0-TRANSPORT-008", "A0-TRANSPORT-010"],
+      "controlIds": ["A0-MUT-023", "A0-MUT-024", "A0-MUT-025"],
+      "evidenceOwner": "tests/integration/transport-view.test.ts"
+    },
+    {
+      "id": "TR-A0-SELECTORS",
+      "requirement": "Selectors resolve current stable positions and exact time without caching into document data.",
+      "parentSource": "REBUILD_PLAN 14.5",
+      "caseIds": ["A0-UI-005", "A0-UI-006", "A0-UI-007", "A0-UI-008", "A0-UI-009"],
+      "controlIds": ["A0-MUT-027", "A0-MUT-028"],
+      "evidenceOwner": "tests/unit/application-selectors.test.ts"
+    },
+    {
+      "id": "TR-A0-NONHISTORY",
+      "requirement": "Transport/playhead and all derived/ephemeral state are absent from musical history and document JSON.",
+      "parentSource": "A0 invariants",
+      "caseIds": ["A0-HIST-008", "A0-UI-008", "A0-UI-009", "A0-TRANSPORT-001", "A0-SEQ-004"],
+      "controlIds": ["A0-MUT-016", "A0-MUT-027"],
+      "evidenceOwner": "tests/static/application-state-boundary.test.ts"
+    },
+    {
+      "id": "TR-LEGACY-DATA",
+      "requirement": "L-DATA-01 root edit cannot relabel stale notes.",
+      "parentSource": "Legacy traceability L-DATA-01",
+      "caseIds": ["A0-CMD-021", "A0-CMD-022", "A0-CMD-023"],
+      "controlIds": ["A0-MUT-005"],
+      "evidenceOwner": "tests/integration/chord-command.test.ts"
+    },
+    {
+      "id": "TR-LEGACY-STATE",
+      "requirement": "L-STATE-01 reorder cannot change identity through stale indexes.",
+      "parentSource": "Legacy traceability L-STATE-01",
+      "caseIds": ["A0-CMD-003", "A0-CMD-007", "A0-UI-002", "A0-UI-007", "A0-SEQ-003"],
+      "controlIds": ["A0-MUT-001", "A0-MUT-028"],
+      "evidenceOwner": "tests/property/stable-id-reorder.test.ts"
+    },
+    {
+      "id": "TR-HD-APPLY",
+      "requirement": "Idea Wizard results carry source revision/IDs and Apply as one current revalidated undoable command.",
+      "parentSource": "THEORY_IDEA_WIZARD shared acceptance laws",
+      "caseIds": ["A0-CMD-025", "A0-CMD-026", "A0-CMD-027", "A0-CMD-028", "A0-CMD-029", "A0-CMD-030", "A0-STALE-010", "A0-SEQ-005"],
+      "controlIds": ["A0-MUT-020", "A0-MUT-021", "A0-MUT-026"],
+      "evidenceOwner": "tests/integration/derived-patch-command.test.ts"
+    },
+    {
+      "id": "TR-A0-RANDOM",
+      "requirement": "One thousand seeded randomized edit/undo sequences agree with an independent model and replay deterministically.",
+      "parentSource": "A0 test plan",
+      "caseIds": ["A0-PROP-1000", "A0-SEQ-001", "A0-SEQ-002", "A0-SEQ-003"],
+      "controlIds": ["A0-MUT-030"],
+      "evidenceOwner": "tests/property/randomized-edit-history.test.ts"
+    }
+  ]
+}

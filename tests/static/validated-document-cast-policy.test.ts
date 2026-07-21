@@ -8,9 +8,6 @@ import ts from "typescript";
 setDefaultTimeout(60_000);
 
 const sourceRoot = fileURLToPath(new URL("../../src", import.meta.url));
-const policySupportFile = fileURLToPath(
-  new URL("../fixtures/typescript/cast-policy-minimal-lib.d.ts", import.meta.url),
-);
 const canonicalTypeFile = "domain/validated-document.ts";
 const allowedCastFile = "application/document-validation.ts";
 
@@ -39,18 +36,19 @@ type PolicyReport = Readonly<{
 
 async function analyzeCastPolicy(root: string): Promise<PolicyReport> {
   const files = await typescriptFiles(root);
-  const program = ts.createProgram([...files, policySupportFile], {
-    target: ts.ScriptTarget.ESNext,
+  const program = ts.createProgram(files, {
+    target: ts.ScriptTarget.ES2022,
     module: ts.ModuleKind.ESNext,
     moduleResolution: ts.ModuleResolutionKind.Bundler,
     jsx: ts.JsxEmit.Preserve,
-    noLib: true,
+    lib: ["lib.es2022.d.ts", "lib.dom.d.ts", "lib.dom.iterable.d.ts"],
     strict: true,
     skipLibCheck: true,
     types: [],
   });
   const checker = program.getTypeChecker();
   const sourceFiles = program.getSourceFiles().filter((file) => files.includes(file.fileName));
+  const sourceFileNames = new Set(sourceFiles.map((file) => file.fileName));
   const canonicalSource = sourceFiles.find((file) =>
     relative(root, file.fileName).replaceAll("\\", "/") === canonicalTypeFile
   );
@@ -75,7 +73,7 @@ async function analyzeCastPolicy(root: string): Promise<PolicyReport> {
   if (validatedBrandProperty === undefined) {
     throw new Error("F1_VALIDATED_DOCUMENT_BRAND_PROPERTY_MISSING");
   }
-  const containsValidatedType = (type: ts.Type): boolean => {
+  const isValidatedType = (type: ts.Type): boolean => {
     if (
       (type.flags &
         (ts.TypeFlags.Any | ts.TypeFlags.Unknown | ts.TypeFlags.Never)) !== 0
@@ -86,7 +84,146 @@ async function analyzeCastPolicy(root: string): Promise<PolicyReport> {
     if (hasValidatedBrand && checker.isTypeAssignableTo(type, validatedType)) {
       return true;
     }
-    return type.isUnionOrIntersection() && type.types.some(containsValidatedType);
+    return type.isUnionOrIntersection() && type.types.some(isValidatedType);
+  };
+  const typeGraphContains = (
+    rootType: ts.Type,
+    predicate: (type: ts.Type) => boolean,
+  ): boolean => {
+    const pending: ts.Type[] = [rootType];
+    const visited = new Set<ts.Type>();
+    while (pending.length > 0) {
+      const type = pending.pop();
+      if (type === undefined || visited.has(type)) continue;
+      visited.add(type);
+      if (
+        (type.flags &
+          (ts.TypeFlags.Any | ts.TypeFlags.Unknown | ts.TypeFlags.Never)) !== 0
+      ) continue;
+      if (predicate(type)) return true;
+      if (type.isUnionOrIntersection()) pending.push(...type.types);
+      pending.push(...(type.aliasTypeArguments ?? []));
+      if (
+        (type.flags & ts.TypeFlags.Object) !== 0 &&
+        ((type as ts.ObjectType).objectFlags & ts.ObjectFlags.Reference) !== 0
+      ) {
+        pending.push(...checker.getTypeArguments(type as ts.TypeReference));
+      }
+      const constraint = type.getConstraint();
+      if (constraint !== undefined) pending.push(constraint);
+      const stringIndex = type.getStringIndexType();
+      if (stringIndex !== undefined) pending.push(stringIndex);
+      const numberIndex = type.getNumberIndexType();
+      if (numberIndex !== undefined) pending.push(numberIndex);
+      for (const signature of [
+        ...type.getCallSignatures(),
+        ...type.getConstructSignatures(),
+      ]) {
+        if (
+          signature.declaration !== undefined &&
+          sourceFileNames.has(signature.declaration.getSourceFile().fileName)
+        ) {
+          pending.push(checker.getReturnTypeOfSignature(signature));
+        }
+      }
+      for (const property of type.getProperties()) {
+        const declaration = property.declarations?.find((candidate) =>
+          sourceFileNames.has(candidate.getSourceFile().fileName)
+        );
+        if (declaration !== undefined) {
+          pending.push(checker.getTypeOfSymbolAtLocation(property, declaration));
+        }
+      }
+    }
+    return false;
+  };
+  const containsValidatedType = (type: ts.Type): boolean =>
+    typeGraphContains(type, isValidatedType);
+  const isBrandCompatibleTypeParameter = (candidate: ts.Type): boolean => {
+    if ((candidate.flags & ts.TypeFlags.TypeParameter) === 0) return false;
+    const constraint = candidate.getConstraint();
+    return constraint === undefined ||
+      (constraint.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) !== 0 ||
+      checker.isTypeAssignableTo(validatedType, constraint);
+  };
+  const containsBrandCompatibleTypeParameter = (type: ts.Type): boolean =>
+    typeGraphContains(type, isBrandCompatibleTypeParameter);
+  const typeAdmitsValidatedDocument = (candidate: ts.Type): boolean => {
+    if (
+      (candidate.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) !== 0
+    ) return true;
+    if (checker.isTypeAssignableTo(validatedType, candidate)) return true;
+    return candidate.isUnion() && candidate.types.some(typeAdmitsValidatedDocument);
+  };
+  const indexedAccessCanProjectValidatedDocument = (
+    node: ts.IndexedAccessTypeNode,
+  ): boolean => {
+    const objectType = checker.getTypeFromTypeNode(node.objectType);
+    if ((objectType.flags & ts.TypeFlags.TypeParameter) === 0) return false;
+    const constraint = objectType.getConstraint();
+    if (constraint === undefined) return true;
+    const indexType = checker.getTypeFromTypeNode(node.indexType);
+    const indexMembers = indexType.isUnion() ? indexType.types : [indexType];
+    const projectedTypes: ts.Type[] = [];
+    let hasBroadIndex = false;
+    for (const indexMember of indexMembers) {
+      if (
+        (indexMember.flags &
+          (ts.TypeFlags.StringLiteral | ts.TypeFlags.NumberLiteral)) !== 0
+      ) {
+        const propertyName = String(
+          (indexMember as ts.StringLiteralType | ts.NumberLiteralType).value,
+        );
+        const property = constraint.getProperty(propertyName);
+        const declaration = property?.valueDeclaration ?? property?.declarations?.[0];
+        if (property !== undefined && declaration !== undefined) {
+          projectedTypes.push(
+            checker.getTypeOfSymbolAtLocation(property, declaration),
+          );
+        }
+      }
+      else hasBroadIndex = true;
+    }
+    if (hasBroadIndex) {
+      for (const property of constraint.getProperties()) {
+        const declaration = property.valueDeclaration ?? property.declarations?.[0];
+        if (declaration !== undefined) {
+          projectedTypes.push(
+            checker.getTypeOfSymbolAtLocation(property, declaration),
+          );
+        }
+      }
+      const stringIndex = constraint.getStringIndexType();
+      if (stringIndex !== undefined) projectedTypes.push(stringIndex);
+      const numberIndex = constraint.getNumberIndexType();
+      if (numberIndex !== undefined) projectedTypes.push(numberIndex);
+    }
+    return projectedTypes.some(typeAdmitsValidatedDocument);
+  };
+  const typeNodeContainsBrandCompatibleTypeParameter = (
+    rootNode: ts.TypeNode,
+  ): boolean => {
+    let found = false;
+    const visitTypeNode = (node: ts.Node): void => {
+      if (found) return;
+      if (
+        ts.isIndexedAccessTypeNode(node) &&
+        indexedAccessCanProjectValidatedDocument(node)
+      ) {
+        found = true;
+        return;
+      }
+      if (
+        ts.isTypeNode(node) &&
+        isBrandCompatibleTypeParameter(checker.getTypeFromTypeNode(node))
+      ) {
+        found = true;
+        return;
+      }
+      ts.forEachChild(node, visitTypeNode);
+    };
+    visitTypeNode(rootNode);
+    return found;
   };
 
   const findings: string[] = [];
@@ -121,13 +258,24 @@ async function analyzeCastPolicy(root: string): Promise<PolicyReport> {
             "unchecked escape assertion",
           );
         }
+        if (
+          containsBrandCompatibleTypeParameter(assertedType) ||
+          typeNodeContainsBrandCompatibleTypeParameter(node.type)
+        ) {
+          reportUse(
+            sourceFile,
+            localPath,
+            node,
+            "unchecked generic escape assertion",
+          );
+        }
         if (containsValidatedType(assertedType)) {
           reportUse(
             sourceFile,
             localPath,
             node,
             "unauthorized assertion",
-            true,
+            isValidatedType(assertedType),
           );
         }
       }
@@ -146,11 +294,11 @@ async function analyzeCastPolicy(root: string): Promise<PolicyReport> {
           ) reportUse(sourceFile, localPath, node, "exported brand");
           const exportedType = checker.getTypeAtLocation(declaration.name);
           const returnsValidated = exportedType.getCallSignatures().some((signature) =>
-            containsValidatedType(checker.getReturnTypeOfSignature(signature))
+            isValidatedType(checker.getReturnTypeOfSignature(signature))
           );
           if (
             localPath !== allowedCastFile &&
-            (containsValidatedType(exportedType) || returnsValidated)
+            (isValidatedType(exportedType) || returnsValidated)
           ) reportUse(sourceFile, localPath, node, "unauthorized value export");
         }
       }
@@ -159,7 +307,7 @@ async function analyzeCastPolicy(root: string): Promise<PolicyReport> {
         if (
           localPath !== allowedCastFile &&
           signature !== undefined &&
-          containsValidatedType(checker.getReturnTypeOfSignature(signature))
+          isValidatedType(checker.getReturnTypeOfSignature(signature))
         ) reportUse(sourceFile, localPath, node, "unauthorized function export");
       }
       ts.forEachChild(node, visit);
@@ -183,7 +331,7 @@ test("allows the opaque ValidatedDocument cast only at the F3 publication gate",
   expect(report.allowedCastCount).toBe(report.hasPublicationFile ? 1 : 0);
 });
 
-test("catches multiline, alias, qualified, union, generic, and angle assertions", async () => {
+test("catches direct, wrapped, generic, and multiline assertions", async () => {
   const root = await mkdtemp(join(tmpdir(), "jcpe-validated-cast-policy-"));
   try {
     await mkdir(join(root, "domain"), { recursive: true });
@@ -198,8 +346,14 @@ test("catches multiline, alias, qualified, union, generic, and angle assertions"
       [
         'import type { ValidatedDocument as VD } from "./domain/validated-document";',
         'import type * as Domain from "./domain/validated-document";',
+        "type Box<T> = { value: T };",
         "declare const raw: unknown;",
+        "declare const existingValidatedDocument: VD;",
         "declare function unsafeCast<T>(value: unknown): T;",
+        "function inferredCast<T>(value: unknown): T { return value as T; }",
+        "function inferredCastWithWitness<T>(value: unknown, _witness: T): T { return value as T; }",
+        "function conditionalCastWithWitness<T>(value: unknown, _witness: T): T extends string ? string : T { return value as (T extends string ? string : T); }",
+        'function indexedCastWithWitness<T extends { x: unknown }>(value: unknown, _witness: T): T["x"] { return value as T["x"]; }',
         "const alias = raw as\nVD;",
         "const qualified = raw as Domain.ValidatedDocument | null;",
         "const angle = <Domain.ValidatedDocument>raw;",
@@ -207,8 +361,19 @@ test("catches multiline, alias, qualified, union, generic, and angle assertions"
         "const excluded = raw as Exclude<VD, null>;",
         "const extracted = raw as Extract<VD | null, object>;",
         "const omitted = raw as Omit<VD, never>;",
+        "const wrapped = raw as { doc: VD };",
+        "const boxed = raw as Box<VD>;",
+        "const factory = raw as () => VD;",
+        "const nestedGeneric = unsafeCast<Box<VD>>(raw);",
+        "const inferredGeneric: VD = inferredCast(raw);",
+        "const inferredGenericWithWitness: VD = inferredCastWithWitness(raw, existingValidatedDocument);",
+        "const conditionalGenericWithWitness: VD = conditionalCastWithWitness(raw, existingValidatedDocument);",
+        "const indexedGenericWithWitness: VD = indexedCastWithWitness(raw, { x: existingValidatedDocument });",
         "const forged: VD = raw as never;",
-        "void [alias, qualified, angle, generic, excluded, extracted, omitted, forged];",
+        "const safeMembers = Object.freeze(['alpha', 'beta'] as const);",
+        "const safeMember = raw as (typeof safeMembers)[number];",
+        "const safeRecord = raw as Readonly<Record<string, unknown>>;",
+        "void [alias, qualified, angle, generic, excluded, extracted, omitted, wrapped, boxed, factory, nestedGeneric, inferredGeneric, inferredGenericWithWitness, conditionalGenericWithWitness, indexedGenericWithWitness, forged, safeMember, safeRecord];",
       ].join("\n"),
       "utf8",
     );
@@ -227,15 +392,19 @@ test("catches multiline, alias, qualified, union, generic, and angle assertions"
     const policyFindings = report.findings.filter((finding) =>
       finding.includes("unauthorized assertion") ||
       finding.includes("unauthorized generic cast") ||
+      finding.includes("unchecked generic escape assertion") ||
       finding.includes("unchecked escape assertion")
     );
-    expect(policyFindings).toHaveLength(9);
+    expect(policyFindings).toHaveLength(17);
     expect(policyFindings.filter((finding) =>
       finding.includes("unauthorized assertion")
-    )).toHaveLength(7);
+    )).toHaveLength(10);
     expect(policyFindings.filter((finding) =>
       finding.includes("unauthorized generic cast")
-    )).toHaveLength(1);
+    )).toHaveLength(2);
+    expect(policyFindings.filter((finding) =>
+      finding.includes("unchecked generic escape assertion")
+    )).toHaveLength(4);
     expect(policyFindings.filter((finding) =>
       finding.includes("unchecked escape assertion")
     )).toHaveLength(1);

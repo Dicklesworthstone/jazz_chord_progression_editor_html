@@ -1,0 +1,668 @@
+{
+  "schema": "changes.fixtures.e0-import-cases.v1",
+  "reviewState": "proposed-pending-first-golden-human-acceptance",
+  "expectedValuesGenerated": false,
+  "productionOutputUsedAsOracle": false,
+  "cases": [
+    {
+      "id": "E0-JI-001",
+      "authorityIds": ["E0-AUTH-F2", "E0-AUTH-F3", "E0-AUTH-A0"],
+      "traceIds": ["E0-TRACE-NATIVE-IMPORT", "E0-TRACE-L-IMPORT-01"],
+      "proofKinds": ["positive", "transaction"],
+      "inputFixtureIds": ["goldens/minimal.changes.json", "channel:file"],
+      "resultCategory": "PREVIEW_READY",
+      "failureStage": null,
+      "expectedIssueCodes": [],
+      "stateEffect": "DRAFT_ONLY",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": {
+        "bytePreflight": 1,
+        "utf8Decode": 1,
+        "lexicalPreflight": 1,
+        "e0JsonParse": 1,
+        "c0JsonParse": 0,
+        "shapeDecode": 1,
+        "semanticValidation": 1,
+        "replacement": 0
+      },
+      "terminationReason": "preview-ready",
+      "expectedMutationKills": ["E0-MUT-023", "E0-MUT-042"]
+    },
+    {
+      "id": "E0-JI-002",
+      "authorityIds": ["E0-AUTH-F2", "E0-AUTH-A0"],
+      "traceIds": ["E0-TRACE-NATIVE-IMPORT"],
+      "proofKinds": ["positive", "metamorphic"],
+      "inputFixtureIds": [
+        "goldens/minimal.changes.json",
+        "channel:file",
+        "channel:paste"
+      ],
+      "resultCategory": "PREVIEW_READY",
+      "failureStage": null,
+      "expectedIssueCodes": [],
+      "expectedRelation": "file-and-paste-candidate-diagnostics-summary-and-impact-identical-after-byte-acquisition",
+      "stateEffect": "DRAFT_ONLY",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": { "semanticPipelines": 1, "replacement": 0 },
+      "terminationReason": "preview-ready",
+      "expectedMutationKills": ["E0-MUT-025"]
+    },
+    {
+      "id": "E0-JI-003",
+      "authorityIds": ["E0-AUTH-F2", "E0-AUTH-WHATWG-ENCODING"],
+      "traceIds": ["E0-TRACE-RAW-BYTE-PRECEDENCE"],
+      "proofKinds": ["negative", "near-miss", "mutation-link"],
+      "inputFixtureIds": ["F2-IMPORT-INVALID-UTF8"],
+      "resultCategory": "REFUSED_PREFLIGHT",
+      "failureStage": "utf8-decode",
+      "expectedIssueCodes": ["import.utf8_invalid"],
+      "stateEffect": "DRAFT_ONLY",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": {
+        "bytePreflight": 1,
+        "utf8Decode": 1,
+        "lexicalPreflight": 0,
+        "e0JsonParse": 0,
+        "shapeDecode": 0,
+        "semanticValidation": 0,
+        "replacement": 0
+      },
+      "terminationReason": "complete-refusal",
+      "expectedMutationKills": ["E0-MUT-011", "E0-MUT-013"]
+    },
+    {
+      "id": "E0-JI-004",
+      "authorityIds": ["E0-AUTH-F2", "E0-AUTH-ECMA-JSON"],
+      "traceIds": ["E0-TRACE-RAW-BYTE-PRECEDENCE"],
+      "proofKinds": ["negative", "malformed"],
+      "inputFixtureIds": ["F2-IMPORT-MALFORMED-JSON"],
+      "resultCategory": "REFUSED_PARSE",
+      "failureStage": "json-parse-or-legacy-migration",
+      "expectedIssueCodes": ["import.json_syntax_invalid"],
+      "stateEffect": "DRAFT_ONLY",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": {
+        "bytePreflight": 1,
+        "utf8Decode": 1,
+        "lexicalPreflight": 1,
+        "e0JsonParse": 1,
+        "chartParse": 0,
+        "shapeDecode": 0,
+        "semanticValidation": 0,
+        "replacement": 0
+      },
+      "terminationReason": "complete-refusal",
+      "expectedMutationKills": ["E0-MUT-018"]
+    },
+    {
+      "id": "E0-JI-005",
+      "authorityIds": ["E0-AUTH-F2", "E0-AUTH-ECMA-JSON"],
+      "traceIds": ["E0-TRACE-DUPLICATE-KEYS"],
+      "proofKinds": ["negative", "malformed", "mutation-link"],
+      "inputFixtureIds": [
+        "F2-IMPORT-DUPLICATE-LITERAL-KEY",
+        "E0-IMPORT-DUPLICATE-NESTED-LITERAL"
+      ],
+      "resultCategory": "REFUSED_PARSE",
+      "failureStage": "json-lexical-preflight",
+      "expectedIssueCodes": ["import.json_duplicate_key"],
+      "stateEffect": "DRAFT_ONLY",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": {
+        "lexicalPreflight": 1,
+        "duplicateKeysObserved": 1,
+        "e0JsonParse": 0,
+        "c0Migration": 0,
+        "shapeDecode": 0,
+        "replacement": 0
+      },
+      "terminationReason": "complete-refusal",
+      "expectedMutationKills": ["E0-MUT-015"]
+    },
+    {
+      "id": "E0-JI-006",
+      "authorityIds": ["E0-AUTH-F2", "E0-AUTH-ECMA-JSON"],
+      "traceIds": ["E0-TRACE-DUPLICATE-KEYS"],
+      "proofKinds": ["negative", "malformed", "mutation-link"],
+      "inputFixtureIds": [
+        "F2-IMPORT-DUPLICATE-ESCAPED-KEY",
+        "E0-IMPORT-DUPLICATE-NESTED-ESCAPED"
+      ],
+      "resultCategory": "REFUSED_PARSE",
+      "failureStage": "json-lexical-preflight",
+      "expectedIssueCodes": ["import.json_duplicate_key"],
+      "stateEffect": "DRAFT_ONLY",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": {
+        "lexicalPreflight": 1,
+        "duplicateKeysObserved": 1,
+        "e0JsonParse": 0,
+        "c0Migration": 0,
+        "shapeDecode": 0,
+        "replacement": 0
+      },
+      "terminationReason": "complete-refusal",
+      "expectedMutationKills": ["E0-MUT-015", "E0-MUT-016"]
+    },
+    {
+      "id": "E0-JI-007",
+      "authorityIds": ["E0-AUTH-ECMA-JSON"],
+      "traceIds": ["E0-TRACE-NATIVE-IMPORT"],
+      "proofKinds": ["positive", "mutation-link"],
+      "inputFixtureIds": [
+        "goldens/minimal.changes.json",
+        "goldens/nested.changes.json",
+        "instrumented:JSON.parse"
+      ],
+      "resultCategory": "PREVIEW_READY",
+      "failureStage": null,
+      "expectedIssueCodes": [],
+      "stateEffect": "DRAFT_ONLY",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": {
+        "e0JsonParse": 1,
+        "jsonParseArguments": 1,
+        "revivers": 0,
+        "replacement": 0
+      },
+      "terminationReason": "preview-ready",
+      "expectedMutationKills": ["E0-MUT-014", "E0-MUT-015"]
+    },
+    {
+      "id": "E0-JI-008",
+      "authorityIds": ["E0-AUTH-E0-DECISIONS"],
+      "traceIds": ["E0-TRACE-SCHEMA-ROUTING"],
+      "proofKinds": ["negative", "near-miss"],
+      "inputFixtureIds": ["json:{title,notSections}"],
+      "resultCategory": "REFUSED_STRUCTURAL",
+      "failureStage": "schema-route",
+      "expectedIssueCodes": ["import.json_shape_unrecognized"],
+      "stateEffect": "DRAFT_ONLY",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": {
+        "e0JsonParse": 0,
+        "c0Migration": 0,
+        "shapeDecode": 0,
+        "replacement": 0
+      },
+      "terminationReason": "complete-refusal",
+      "expectedMutationKills": ["E0-MUT-022"]
+    },
+    {
+      "id": "E0-JI-009",
+      "authorityIds": ["E0-AUTH-PLAN", "E0-AUTH-F2"],
+      "traceIds": ["E0-TRACE-SCHEMA-ROUTING"],
+      "proofKinds": ["negative", "near-miss"],
+      "inputFixtureIds": ["json:schema-changes.progression.v3"],
+      "resultCategory": "REFUSED_STRUCTURAL",
+      "failureStage": "schema-route",
+      "expectedIssueCodes": ["import.future_schema_unsupported"],
+      "stateEffect": "DRAFT_ONLY",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": {
+        "e0JsonParse": 0,
+        "c0Migration": 0,
+        "shapeDecode": 0,
+        "replacement": 0
+      },
+      "terminationReason": "complete-refusal",
+      "expectedMutationKills": ["E0-MUT-017", "E0-MUT-022"]
+    },
+    {
+      "id": "E0-JI-010",
+      "authorityIds": ["E0-AUTH-PLAN"],
+      "traceIds": ["E0-TRACE-SCHEMA-ROUTING"],
+      "proofKinds": ["negative", "near-miss"],
+      "inputFixtureIds": [
+        "json:schema-changes.progression.v1",
+        "json:schema-third-party.v1"
+      ],
+      "resultCategory": "REFUSED_STRUCTURAL",
+      "failureStage": "schema-route",
+      "expectedIssueCodes": ["import.schema_unsupported"],
+      "stateEffect": "DRAFT_ONLY",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": {
+        "e0JsonParse": 0,
+        "c0Migration": 0,
+        "shapeDecode": 0,
+        "replacement": 0
+      },
+      "terminationReason": "complete-refusal",
+      "expectedMutationKills": ["E0-MUT-017", "E0-MUT-022"]
+    },
+    {
+      "id": "E0-JI-011",
+      "authorityIds": ["E0-AUTH-F2"],
+      "traceIds": ["E0-TRACE-NATIVE-IMPORT", "E0-TRACE-FAILURE-ISOLATION"],
+      "proofKinds": ["negative", "structural"],
+      "inputFixtureIds": ["F2-CANONICAL-STRUCTURAL-INVALID"],
+      "resultCategory": "REFUSED_STRUCTURAL",
+      "failureStage": "structural-decode",
+      "expectedIssueCodes": ["import.canonical_structural_invalid"],
+      "stateEffect": "DRAFT_ONLY",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": {
+        "shapeDecode": 1,
+        "semanticValidation": 0,
+        "replacement": 0
+      },
+      "terminationReason": "complete-refusal",
+      "expectedMutationKills": ["E0-MUT-019", "E0-MUT-042"]
+    },
+    {
+      "id": "E0-JI-012",
+      "authorityIds": ["E0-AUTH-F3"],
+      "traceIds": ["E0-TRACE-NATIVE-IMPORT", "E0-TRACE-FAILURE-ISOLATION"],
+      "proofKinds": ["negative", "semantic"],
+      "inputFixtureIds": ["F3-DOCUMENT-SEMANTIC-INVALID"],
+      "resultCategory": "REFUSED_SEMANTIC",
+      "failureStage": "semantic-validation",
+      "expectedIssueCodes": ["import.canonical_semantic_invalid"],
+      "stateEffect": "DRAFT_ONLY",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": {
+        "shapeDecode": 1,
+        "semanticValidation": 1,
+        "replacement": 0
+      },
+      "terminationReason": "complete-refusal",
+      "expectedMutationKills": ["E0-MUT-020", "E0-MUT-042"]
+    },
+    {
+      "id": "E0-JI-013",
+      "authorityIds": ["E0-AUTH-F2", "E0-AUTH-WHATWG-ENCODING"],
+      "traceIds": ["E0-TRACE-RAW-BYTE-PRECEDENCE"],
+      "proofKinds": ["exact-boundary", "positive", "mutation-link"],
+      "inputFixtureIds": ["E0-IMPORT-CANONICAL-2097152"],
+      "resultCategory": "PREVIEW_READY",
+      "failureStage": null,
+      "expectedIssueCodes": [],
+      "stateEffect": "DRAFT_ONLY",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": {
+        "bytesObserved": 2097152,
+        "bytePreflight": 1,
+        "utf16ByteCountReads": 0,
+        "replacement": 0
+      },
+      "terminationReason": "preview-ready",
+      "expectedMutationKills": ["E0-MUT-012", "F2-MUT-002"]
+    },
+    {
+      "id": "E0-JI-014",
+      "authorityIds": ["E0-AUTH-F2", "E0-AUTH-WHATWG-ENCODING"],
+      "traceIds": ["E0-TRACE-RAW-BYTE-PRECEDENCE"],
+      "proofKinds": ["exact-boundary", "negative", "mutation-link"],
+      "inputFixtureIds": ["F2-IMPORT-MULTIBYTE-2097153"],
+      "resultCategory": "REFUSED_PREFLIGHT",
+      "failureStage": "byte-preflight",
+      "expectedIssueCodes": ["limit.import_bytes_exceeded"],
+      "stateEffect": "DRAFT_ONLY",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": {
+        "bytesObserved": 2097153,
+        "bytePreflight": 1,
+        "utf8Decode": 0,
+        "e0JsonParse": 0,
+        "replacement": 0
+      },
+      "terminationReason": "complete-refusal",
+      "expectedMutationKills": [
+        "E0-MUT-012",
+        "E0-MUT-013",
+        "F2-MUT-002",
+        "F2-MUT-003"
+      ]
+    },
+    {
+      "id": "E0-JI-015",
+      "authorityIds": ["E0-AUTH-F2"],
+      "traceIds": ["E0-TRACE-RAW-BYTE-PRECEDENCE"],
+      "proofKinds": ["negative", "malformed", "mutation-link"],
+      "inputFixtureIds": ["F2-IMPORT-OVERSIZED-MALFORMED"],
+      "resultCategory": "REFUSED_PREFLIGHT",
+      "failureStage": "byte-preflight",
+      "expectedIssueCodes": ["limit.import_bytes_exceeded"],
+      "stateEffect": "DRAFT_ONLY",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": {
+        "bytePreflight": 1,
+        "utf8Decode": 0,
+        "lexicalPreflight": 0,
+        "e0JsonParse": 0,
+        "replacement": 0
+      },
+      "terminationReason": "complete-refusal",
+      "expectedMutationKills": ["E0-MUT-013", "F2-MUT-003"]
+    },
+    {
+      "id": "E0-JI-016",
+      "authorityIds": ["E0-AUTH-C0", "E0-AUTH-F2", "E0-AUTH-F3"],
+      "traceIds": ["E0-TRACE-LEGACY-IMPORT", "E0-TRACE-L-IMPORT-01"],
+      "proofKinds": ["positive", "compatibility", "transaction"],
+      "inputFixtureIds": ["C0-PRESET-MIXED-001"],
+      "resultCategory": "PREVIEW_READY_WITH_WARNINGS",
+      "failureStage": null,
+      "expectedIssueCodes": [],
+      "stateEffect": "DRAFT_ONLY",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": {
+        "lexicalPreflight": 1,
+        "e0JsonParse": 0,
+        "c0Migration": 1,
+        "c0JsonParse": 1,
+        "shapeDecode": 1,
+        "semanticValidation": 1,
+        "replacement": 0
+      },
+      "terminationReason": "preview-ready",
+      "expectedMutationKills": ["E0-MUT-021", "E0-MUT-023", "E0-MUT-042"]
+    },
+    {
+      "id": "E0-JI-017",
+      "authorityIds": ["E0-AUTH-C0", "E0-AUTH-F3"],
+      "traceIds": ["E0-TRACE-LEGACY-IMPORT"],
+      "proofKinds": ["negative", "compatibility"],
+      "inputFixtureIds": ["C0-ALL-CHORDS-REJECTED"],
+      "resultCategory": "REFUSED_SEMANTIC",
+      "failureStage": "semantic-validation",
+      "expectedIssueCodes": ["import.legacy_no_events"],
+      "stateEffect": "DRAFT_ONLY",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": { "c0Migration": 1, "replacement": 0 },
+      "terminationReason": "complete-refusal",
+      "expectedMutationKills": ["E0-MUT-020", "E0-MUT-021"]
+    },
+    {
+      "id": "E0-JI-018",
+      "authorityIds": ["E0-AUTH-C0"],
+      "traceIds": ["E0-TRACE-LEGACY-IMPORT"],
+      "proofKinds": ["positive", "compatibility", "near-miss"],
+      "inputFixtureIds": ["C0-PARTIAL-MIGRATION"],
+      "resultCategory": "PREVIEW_READY_WITH_WARNINGS",
+      "failureStage": null,
+      "expectedIssueCodes": [],
+      "expectedRelation": "accepted-rejected-defaulted-counts-and-first-256-ordered-report-rows-visible",
+      "stateEffect": "DRAFT_ONLY",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": { "c0Migration": 1, "replacement": 0 },
+      "terminationReason": "preview-ready",
+      "expectedMutationKills": ["E0-MUT-021", "E0-MUT-064"]
+    },
+    {
+      "id": "E0-JI-019",
+      "authorityIds": ["E0-AUTH-E0-DECISIONS"],
+      "traceIds": ["E0-TRACE-SCHEMA-ROUTING"],
+      "proofKinds": ["negative", "metamorphic"],
+      "inputFixtureIds": [
+        "goldens/minimal.changes.json",
+        "filename:misleading.changes.txt",
+        "mime:text/html"
+      ],
+      "resultCategory": "PREVIEW_READY",
+      "failureStage": null,
+      "expectedIssueCodes": [],
+      "expectedRelation": "content-and-explicit-action-select-route-metadata-does-not",
+      "stateEffect": "DRAFT_ONLY",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": {
+        "htmlParses": 0,
+        "navigations": 0,
+        "replacement": 0
+      },
+      "terminationReason": "preview-ready",
+      "expectedMutationKills": ["E0-MUT-018", "E0-MUT-062", "E0-MUT-066"]
+    },
+    {
+      "id": "E0-JI-020",
+      "authorityIds": ["E0-AUTH-E0-DECISIONS"],
+      "traceIds": ["E0-TRACE-SCHEMA-ROUTING"],
+      "proofKinds": ["negative", "malformed"],
+      "inputFixtureIds": ["polyglot:malformed-json-valid-chart-tail"],
+      "resultCategory": "REFUSED_PARSE",
+      "failureStage": "json-parse-or-legacy-migration",
+      "expectedIssueCodes": ["import.json_syntax_invalid"],
+      "stateEffect": "DRAFT_ONLY",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": {
+        "e0JsonParse": 1,
+        "chartParse": 0,
+        "replacement": 0
+      },
+      "terminationReason": "complete-refusal",
+      "expectedMutationKills": ["E0-MUT-018"]
+    },
+    {
+      "id": "E0-JI-021",
+      "authorityIds": ["E0-AUTH-A0", "E0-AUTH-PLAN"],
+      "traceIds": ["E0-TRACE-FAILURE-ISOLATION", "E0-TRACE-L-IMPORT-01"],
+      "proofKinds": ["negative", "state-isolation"],
+      "inputFixtureIds": [
+        "E0-IMPORT-FAILURE-EVERY-STAGE",
+        "E0-PROTECTED-STATE-SNAPSHOT"
+      ],
+      "resultCategory": "REFUSED_STRUCTURAL",
+      "failureStage": "varies-by-row",
+      "expectedIssueCodes": ["row-specific-stable-code"],
+      "expectedProtectedStateRelation": "document-revision-history-bookmarks-selection-insertion-range-transport-recovery-marker-playback-byte-identical",
+      "stateEffect": "DRAFT_ONLY",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": {
+        "partialPublications": 0,
+        "replacement": 0,
+        "historyEntries": 0
+      },
+      "terminationReason": "complete-refusal",
+      "expectedMutationKills": [
+        "E0-MUT-019",
+        "E0-MUT-020",
+        "E0-MUT-042",
+        "E0-MUT-048"
+      ]
+    },
+    {
+      "id": "E0-JI-022",
+      "authorityIds": ["E0-AUTH-PLAN", "E0-AUTH-VERIFICATION"],
+      "traceIds": ["E0-TRACE-PRIVACY-BOUNDS"],
+      "proofKinds": ["negative", "exact-boundary"],
+      "inputFixtureIds": [
+        "E0-IMPORT-65-ISSUES",
+        "E0-IMPORT-257-REPORT-ROWS",
+        "E0-HOSTILE-PRIVATE-TEXT",
+        "E0-HOSTILE-UNKNOWN-PATH-PROJECTION"
+      ],
+      "resultCategory": "REFUSED_STRUCTURAL",
+      "failureStage": "preview-publication",
+      "expectedIssueCodes": ["import.preview_issue_limit"],
+      "expectedRelation": "64-issues-and-256-report-rows-retained-with-exact-omitted-count-and-canonical-plus-legacy-unknown-keys-redacted-from-public-paths",
+      "stateEffect": "DRAFT_ONLY",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": {
+        "previewIssuesRetained": 64,
+        "previewReportItemsRetained": 256,
+        "rawPayloadCopies": 0,
+        "replacement": 0
+      },
+      "terminationReason": "complete-refusal",
+      "expectedMutationKills": ["E0-MUT-064", "E0-MUT-065"]
+    },
+    {
+      "id": "E0-JI-023",
+      "authorityIds": ["E0-AUTH-ECMA-JSON", "E0-AUTH-VERIFICATION"],
+      "traceIds": ["E0-TRACE-HOSTILE-INERT"],
+      "proofKinds": ["negative", "hostile"],
+      "inputFixtureIds": [
+        "json:__proto__-constructor-prototype",
+        "text:script-img-javascript-data-bidi"
+      ],
+      "resultCategory": "REFUSED_STRUCTURAL",
+      "failureStage": "structural-decode",
+      "expectedIssueCodes": ["import.canonical_structural_invalid"],
+      "expectedRelation": "global-and-object-prototypes-unchanged-zero-html-evaluation-navigation-popup-or-network",
+      "stateEffect": "DRAFT_ONLY",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": {
+        "prototypeWrites": 0,
+        "htmlParses": 0,
+        "evaluations": 0,
+        "navigations": 0,
+        "networkRequests": 0,
+        "replacement": 0
+      },
+      "terminationReason": "complete-refusal",
+      "expectedMutationKills": [
+        "E0-MUT-024",
+        "E0-MUT-054",
+        "E0-MUT-062",
+        "E0-MUT-065",
+        "E0-MUT-066"
+      ]
+    },
+    {
+      "id": "E0-JI-024",
+      "authorityIds": ["E0-AUTH-A0"],
+      "traceIds": ["E0-TRACE-PRIVACY-BOUNDS", "E0-TRACE-L-IMPORT-01"],
+      "proofKinds": ["negative", "transaction"],
+      "inputFixtureIds": [
+        "goldens/minimal.changes.json",
+        "user-action:file-selected-only"
+      ],
+      "resultCategory": "PREVIEW_READY",
+      "failureStage": null,
+      "expectedIssueCodes": [],
+      "expectedRelation": "selection-read-and-preview-authorize-zero-retirement-audio-history-recovery-marker-or-replacement-actions",
+      "stateEffect": "DRAFT_ONLY",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": {
+        "retireTransport": 0,
+        "audioCommands": 0,
+        "historyEntries": 0,
+        "recoveryWrites": 0,
+        "replacement": 0
+      },
+      "terminationReason": "preview-ready",
+      "expectedMutationKills": ["E0-MUT-023"]
+    },
+    {
+      "id": "E0-JI-025",
+      "authorityIds": ["E0-AUTH-PLAN", "E0-AUTH-E0-DECISIONS"],
+      "traceIds": ["E0-TRACE-SCHEMA-ROUTING"],
+      "proofKinds": ["negative", "near-miss", "mutation-link"],
+      "inputFixtureIds": ["json:schema-changes.progression.v3"],
+      "formatHint": "legacy-json",
+      "resultCategory": "REFUSED_STRUCTURAL",
+      "failureStage": "schema-route",
+      "expectedIssueCodes": ["import.future_schema_unsupported"],
+      "expectedRelation": "future-schema-evidence-vetoes-explicit-legacy-hint",
+      "stateEffect": "DRAFT_ONLY",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": {
+        "lexicalPreflight": 1,
+        "e0JsonParse": 0,
+        "c0Migration": 0,
+        "chartParse": 0,
+        "replacement": 0
+      },
+      "terminationReason": "complete-refusal",
+      "expectedMutationKills": ["E0-MUT-017", "E0-MUT-022", "E0-MUT-073"]
+    },
+    {
+      "id": "E0-JI-026",
+      "authorityIds": ["E0-AUTH-F2", "E0-AUTH-E0-DECISIONS"],
+      "traceIds": ["E0-TRACE-SCHEMA-ROUTING"],
+      "proofKinds": ["negative", "near-miss", "mutation-link"],
+      "inputFixtureIds": ["goldens/minimal.changes.json"],
+      "formatHint": "legacy-json",
+      "resultCategory": "REFUSED_STRUCTURAL",
+      "failureStage": "schema-route",
+      "expectedIssueCodes": ["import.format_mismatch"],
+      "expectedRelation": "canonical-schema-evidence-vetoes-explicit-legacy-hint",
+      "stateEffect": "DRAFT_ONLY",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": {
+        "lexicalPreflight": 1,
+        "e0JsonParse": 0,
+        "c0Migration": 0,
+        "replacement": 0
+      },
+      "terminationReason": "complete-refusal",
+      "expectedMutationKills": ["E0-MUT-073"]
+    },
+    {
+      "id": "E0-JI-027",
+      "authorityIds": ["E0-AUTH-T0", "E0-AUTH-E0-DECISIONS"],
+      "traceIds": ["E0-TRACE-SCHEMA-ROUTING"],
+      "proofKinds": ["negative", "near-miss", "mutation-link"],
+      "inputFixtureIds": ["T0-CHART-006"],
+      "formatHint": "canonical-json",
+      "resultCategory": "REFUSED_STRUCTURAL",
+      "failureStage": "format-classification",
+      "expectedIssueCodes": ["import.format_mismatch"],
+      "expectedRelation": "non-json-evidence-vetoes-explicit-canonical-hint",
+      "stateEffect": "DRAFT_ONLY",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": {
+        "lexicalPreflight": 0,
+        "e0JsonParse": 0,
+        "chartParse": 0,
+        "replacement": 0
+      },
+      "terminationReason": "complete-refusal",
+      "expectedMutationKills": ["E0-MUT-073"]
+    },
+    {
+      "id": "E0-JI-028",
+      "authorityIds": ["E0-AUTH-PLAN", "E0-AUTH-E0-DECISIONS"],
+      "traceIds": ["E0-TRACE-SCHEMA-ROUTING"],
+      "proofKinds": ["negative", "near-miss", "mutation-link"],
+      "inputFixtureIds": ["json:schema-changes.progression.v3"],
+      "formatHint": "chart-text",
+      "resultCategory": "REFUSED_STRUCTURAL",
+      "failureStage": "schema-route",
+      "expectedIssueCodes": ["import.future_schema_unsupported"],
+      "expectedRelation": "json-future-schema-evidence-vetoes-explicit-chart-hint",
+      "stateEffect": "DRAFT_ONLY",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": {
+        "lexicalPreflight": 1,
+        "e0JsonParse": 0,
+        "c0Migration": 0,
+        "chartParse": 0,
+        "replacement": 0
+      },
+      "terminationReason": "complete-refusal",
+      "expectedMutationKills": ["E0-MUT-017", "E0-MUT-073"]
+    },
+    {
+      "id": "E0-JI-029",
+      "authorityIds": ["E0-AUTH-T0", "E0-AUTH-E0-DECISIONS"],
+      "traceIds": ["E0-TRACE-CHART-IMPORT", "E0-TRACE-SCHEMA-ROUTING"],
+      "proofKinds": ["positive", "near-miss", "mutation-link"],
+      "inputFixtureIds": [
+        "T0-CHART-014",
+        "E0-CHART-IMPORT-ASCII-ACCIDENTAL-CALL"
+      ],
+      "formatHint": "chart-text",
+      "resultCategory": "PREVIEW_READY",
+      "failureStage": null,
+      "expectedIssueCodes": [],
+      "expectedRelation": "document-mode-T0-call-uses-fixed-ascii-style-and-flat-key-canonical-text-differs-from-unicode-near-miss",
+      "stateEffect": "DRAFT_ONLY",
+      "markerEffect": "UNCHANGED",
+      "exactStageCounts": {
+        "lexicalPreflight": 0,
+        "e0JsonParse": 0,
+        "chartParse": 1,
+        "asciiStyleArguments": 1,
+        "callerSelectedStyleArguments": 0,
+        "shapeDecode": 1,
+        "semanticValidation": 1,
+        "replacement": 0
+      },
+      "terminationReason": "preview-ready",
+      "expectedMutationKills": ["E0-MUT-038"]
+    }
+  ]
+}

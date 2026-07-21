@@ -1,0 +1,41 @@
+{
+  "schema": "changes.fixtures.c0-mutation-controls.v1",
+  "policy": {
+    "independentlyReviewed": true,
+    "productionOutputMayNotRewriteControls": true,
+    "testMutation": "append an unexpected top-level mutationProbe property to the named reviewed companion",
+    "requiredFinding": "companion.digest_mismatch"
+  },
+  "controls": [
+    {"id":"C0-MUT-001","targetFile":"adversarial-cases.json","linkedCaseId":"C0-PRE-001","fault":"invert parsed plus exact Manual precedence"},
+    {"id":"C0-MUT-002","targetFile":"adversarial-cases.json","linkedCaseId":"C0-PRE-003","fault":"accept enharmonic spelling as exact written agreement"},
+    {"id":"C0-MUT-003","targetFile":"adversarial-cases.json","linkedCaseId":"C0-PRE-008","fault":"invent a fallback chord for unusable input"},
+    {"id":"C0-MUT-004","targetFile":"adversarial-cases.json","linkedCaseId":"C0-PRE-010","fault":"allow a flag to rewrite a parsed name"},
+    {"id":"C0-MUT-005","targetFile":"adversarial-cases.json","linkedCaseId":"C0-PRE-012","fault":"substring-match an unknown legacy type"},
+    {"id":"C0-MUT-006","targetFile":"adversarial-cases.json","linkedCaseId":"C0-PRE-015","fault":"merge multiple altered realizations"},
+    {"id":"C0-MUT-007","targetFile":"adversarial-cases.json","linkedCaseId":"C0-NOTE-002","fault":"permit duplicate projected MIDI"},
+    {"id":"C0-MUT-008","targetFile":"adversarial-cases.json","linkedCaseId":"C0-NOTE-005","fault":"accept a partial scientific-pitch parse"},
+    {"id":"C0-MUT-009","targetFile":"adversarial-cases.json","linkedCaseId":"C0-NOTE-012","fault":"repair an untrusted note array"},
+    {"id":"C0-MUT-010","targetFile":"adversarial-cases.json","linkedCaseId":"C0-LIMIT-002","fault":"relax the byte ceiling by one"},
+    {"id":"C0-MUT-011","targetFile":"adversarial-cases.json","linkedCaseId":"C0-LIMIT-004","fault":"relax the depth ceiling by one"},
+    {"id":"C0-MUT-012","targetFile":"adversarial-cases.json","linkedCaseId":"C0-LIMIT-014","fault":"emit one report item beyond the bound"},
+    {"id":"C0-MUT-013","targetFile":"adversarial-cases.json","linkedCaseId":"C0-SHAPE-001","fault":"decode malformed UTF-8 with replacement"},
+    {"id":"C0-MUT-014","targetFile":"adversarial-cases.json","linkedCaseId":"C0-SHAPE-008","fault":"interpret hostile property names as behavior"},
+    {"id":"C0-MUT-015","targetFile":"adversarial-cases.json","linkedCaseId":"C0-ID-003","fault":"retry after a cross-kind ID collision"},
+    {"id":"C0-MUT-016","targetFile":"adversarial-cases.json","linkedCaseId":"C0-REPORT-001","fault":"sort report items by discovery order"},
+    {"id":"C0-MUT-017","targetFile":"adversarial-cases.json","linkedCaseId":"C0-REPORT-005","fault":"echo private chart text into diagnostics"},
+    {"id":"C0-MUT-018","targetFile":"adversarial-cases.json","linkedCaseId":"C0-REPORT-007","fault":"brand or publish a migration candidate"},
+    {"id":"C0-MUT-019","targetFile":"preset-expectations.json","linkedCaseId":"gemma3:0:0","fault":"change an independently reviewed parsed event"},
+    {"id":"C0-MUT-020","targetFile":"preset-expectations.json","linkedCaseId":"chatgpt45:0:0","fault":"remove the reviewed root-type fallback"},
+    {"id":"C0-MUT-021","targetFile":"preset-expectations.json","linkedCaseId":"gemma3:0:5","fault":"erase a spelling-only conflict"},
+    {"id":"C0-MUT-022","targetFile":"preset-expectations.json","linkedCaseId":"gemma3:0:2","fault":"erase a sounding-content conflict"},
+    {"id":"C0-MUT-023","targetFile":"preset-expectations.json","linkedCaseId":"gemma3:0:1","fault":"erase a constructed-symbol conflict"},
+    {"id":"C0-MUT-024","targetFile":"preset-expectations.json","linkedCaseId":"claude37:2:0","fault":"pretend the non-allow-listed 7sus4 type is parseable"},
+    {"id":"C0-MUT-025","targetFile":"legacy-presets-source.json","linkedCaseId":"gemma3:0:0","fault":"rewrite an audited legacy note spelling"},
+    {"id":"C0-MUT-026","targetFile":"legacy-presets-source.json","linkedCaseId":"chatgpt45:0:0","fault":"rewrite an audited legacy chord name"},
+    {"id":"C0-MUT-027","targetFile":"legacy-presets-source.json","linkedCaseId":"claude37:3:11","fault":"drop the final audited preset chord"},
+    {"id":"C0-MUT-028","targetFile":"provenance-ledger.json","linkedCaseId":"C0-AUTH-005","fault":"remove the T0 grammar authority"},
+    {"id":"C0-MUT-029","targetFile":"provenance-ledger.json","linkedCaseId":"C0-AUTH-007","fault":"remove the F3 publication authority"},
+    {"id":"C0-MUT-030","targetFile":"trace-ledger.json","linkedCaseId":"C0-TRACE-015","fault":"break the no-publication trace"}
+  ]
+}

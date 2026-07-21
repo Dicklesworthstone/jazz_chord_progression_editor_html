@@ -1,0 +1,342 @@
+{
+  "schema": "changes.fixtures.v1-mutation-controls.v1",
+  "fixtureVersion": "1.0.0",
+  "status": "independently-authored-pre-production",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "controls": [
+    {
+      "id": "V1-MUT-001",
+      "faultFamily": "noncrossing-alignment",
+      "operator": "allow-crossing-permutation",
+      "mutatedFault": "source-to-target correspondence may reverse low-to-high order",
+      "killedByCaseIds": ["V1-ASN-014"],
+      "traceIds": ["V1-TRACE-DP-ORDER", "V1-TRACE-LOCKS"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-ORDER-PRESERVING"]
+    },
+    {
+      "id": "V1-MUT-002",
+      "faultFamily": "noncrossing-alignment",
+      "operator": "use-finite-separable-crossing-penalty",
+      "mutatedFault": "a crossing-capable assignment is accepted when its finite penalty is outweighed",
+      "killedByCaseIds": ["V1-ASN-014"],
+      "traceIds": ["V1-TRACE-DP-ORDER", "V1-TRACE-LOCKS"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-ORDER-PRESERVING"]
+    },
+    {
+      "id": "V1-MUT-003",
+      "faultFamily": "frame-order",
+      "operator": "order-voices-by-pitch-string",
+      "mutatedFault": "lexical note spelling replaces strict ascending MIDI order",
+      "killedByCaseIds": ["V1-OP-005"],
+      "traceIds": ["V1-TRACE-BOUNDARY", "V1-TRACE-REFUSALS"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-V0-DOMAIN"]
+    },
+    {
+      "id": "V1-MUT-004",
+      "faultFamily": "gap-alignment",
+      "operator": "omit-enter-operation",
+      "mutatedFault": "a target-only voice cannot be represented",
+      "killedByCaseIds": ["V1-ASN-006", "V1-ASN-008"],
+      "traceIds": ["V1-TRACE-DP-ORDER", "V1-TRACE-GAPS"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-ORDER-PRESERVING"]
+    },
+    {
+      "id": "V1-MUT-005",
+      "faultFamily": "gap-alignment",
+      "operator": "omit-leave-operation",
+      "mutatedFault": "a source-only voice cannot be represented",
+      "killedByCaseIds": ["V1-ASN-007", "V1-ASN-008"],
+      "traceIds": ["V1-TRACE-DP-ORDER", "V1-TRACE-GAPS"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-ORDER-PRESERVING"]
+    },
+    {
+      "id": "V1-MUT-006",
+      "faultFamily": "gap-semantics",
+      "operator": "encode-gap-semitones-as-zero",
+      "mutatedFault": "entering or leaving arcs masquerade as exact sustains",
+      "killedByCaseIds": ["V1-ASN-006", "V1-ASN-007"],
+      "traceIds": ["V1-TRACE-GAPS", "V1-TRACE-IDENTITY"],
+      "authorityIds": ["V1-AUTH-CONTRACT"]
+    },
+    {
+      "id": "V1-MUT-007",
+      "faultFamily": "cost-policy",
+      "operator": "set-gap-cost-to-eleven",
+      "mutatedFault": "enter and leave each contribute 11 instead of the reviewed cost 12",
+      "killedByCaseIds": ["V1-ASN-008"],
+      "traceIds": ["V1-TRACE-COSTS", "V1-TRACE-GAPS"],
+      "authorityIds": ["V1-AUTH-PROJECT-POLICY"]
+    },
+    {
+      "id": "V1-MUT-008",
+      "faultFamily": "cost-policy",
+      "operator": "set-gap-cost-to-thirteen",
+      "mutatedFault": "enter and leave each contribute 13 instead of the reviewed cost 12",
+      "killedByCaseIds": ["V1-ASN-008"],
+      "traceIds": ["V1-TRACE-COSTS", "V1-TRACE-GAPS"],
+      "authorityIds": ["V1-AUTH-PROJECT-POLICY"]
+    },
+    {
+      "id": "V1-MUT-009",
+      "faultFamily": "identity-separation",
+      "operator": "compare-pitch-names-by-prefix",
+      "mutatedFault": "C is reported identical to C-sharp because one spelling prefixes the other",
+      "killedByCaseIds": ["V1-ASN-005"],
+      "traceIds": ["V1-TRACE-IDENTITY", "V1-TRACE-LEGACY"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-V0-DOMAIN"]
+    },
+    {
+      "id": "V1-MUT-010",
+      "faultFamily": "identity-separation",
+      "operator": "require-exact-midi-for-common-tone",
+      "mutatedFault": "octave-displaced pitch-class continuity is reported lost",
+      "killedByCaseIds": ["V1-ASN-003"],
+      "traceIds": ["V1-TRACE-IDENTITY", "V1-TRACE-LEGACY"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-V0-DOMAIN"]
+    },
+    {
+      "id": "V1-MUT-011",
+      "faultFamily": "identity-separation",
+      "operator": "derive-spelled-identity-from-pitch-class",
+      "mutatedFault": "enharmonic pitch-class equality is mislabeled as spelling equality",
+      "killedByCaseIds": ["V1-ASN-004"],
+      "traceIds": ["V1-TRACE-IDENTITY"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-V0-DOMAIN"]
+    },
+    {
+      "id": "V1-MUT-012",
+      "faultFamily": "identity-separation",
+      "operator": "derive-midi-identity-from-spelling",
+      "mutatedFault": "octave-displaced equal spellings are mislabeled as exact MIDI sustains",
+      "killedByCaseIds": ["V1-ASN-003"],
+      "traceIds": ["V1-TRACE-IDENTITY"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-V0-DOMAIN"]
+    },
+    {
+      "id": "V1-MUT-013",
+      "faultFamily": "identity-cardinality",
+      "operator": "count-repeated-pitch-classes-as-a-set",
+      "mutatedFault": "multiple ordered occurrences of one pitch class collapse into one record",
+      "killedByCaseIds": ["V1-ASN-008"],
+      "traceIds": ["V1-TRACE-DP-ORDER", "V1-TRACE-IDENTITY"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-ORDER-PRESERVING"]
+    },
+    {
+      "id": "V1-MUT-014",
+      "faultFamily": "motion-facts",
+      "operator": "discard-signed-semitones",
+      "mutatedFault": "ascending and descending motions with equal magnitude become indistinguishable",
+      "killedByCaseIds": ["V1-ASN-012"],
+      "traceIds": ["V1-TRACE-MOTION"],
+      "authorityIds": ["V1-AUTH-CONTRACT"]
+    },
+    {
+      "id": "V1-MUT-015",
+      "faultFamily": "cost-policy",
+      "operator": "compute-maximum-leap-from-signed-minimum",
+      "mutatedFault": "maximumAbsoluteLeap is derived from direction or a minimum instead of absolute magnitude",
+      "killedByCaseIds": ["V1-ASN-012"],
+      "traceIds": ["V1-TRACE-COSTS", "V1-TRACE-MOTION"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-PROJECT-POLICY"]
+    },
+    {
+      "id": "V1-MUT-016",
+      "faultFamily": "motion-relations",
+      "operator": "omit-oblique-relation",
+      "mutatedFault": "a stationary and moving matched pair has no oblique relation",
+      "killedByCaseIds": ["V1-ASN-012"],
+      "traceIds": ["V1-TRACE-MOTION"],
+      "authorityIds": ["V1-AUTH-CONTRACT"]
+    },
+    {
+      "id": "V1-MUT-017",
+      "faultFamily": "motion-relations",
+      "operator": "classify-contrary-as-similar",
+      "mutatedFault": "opposite signed directions are labeled similar",
+      "killedByCaseIds": ["V1-ASN-012"],
+      "traceIds": ["V1-TRACE-MOTION"],
+      "authorityIds": ["V1-AUTH-CONTRACT"]
+    },
+    {
+      "id": "V1-MUT-018",
+      "faultFamily": "voice-identity",
+      "operator": "allocate-new-identity-on-match",
+      "mutatedFault": "a matched target voice fails to inherit its exact source identity",
+      "killedByCaseIds": ["V1-ASN-002", "V1-ASN-017"],
+      "traceIds": ["V1-TRACE-VOICE-IDS"],
+      "authorityIds": ["V1-AUTH-CONTRACT"]
+    },
+    {
+      "id": "V1-MUT-019",
+      "faultFamily": "voice-identity",
+      "operator": "reuse-leaving-identity-for-enter",
+      "mutatedFault": "an entering target voice receives a retired leaving source serial",
+      "killedByCaseIds": ["V1-ASN-008", "V1-ASN-017"],
+      "traceIds": ["V1-TRACE-GAPS", "V1-TRACE-VOICE-IDS"],
+      "authorityIds": ["V1-AUTH-CONTRACT"]
+    },
+    {
+      "id": "V1-MUT-020",
+      "faultFamily": "voice-identity",
+      "operator": "use-global-or-nondeterministic-id-counter",
+      "mutatedFault": "voice IDs depend on prior requests, process state, or nondeterministic allocation",
+      "killedByCaseIds": ["V1-ASN-001", "V1-LAW-001"],
+      "traceIds": ["V1-TRACE-DETERMINISM", "V1-TRACE-VOICE-IDS"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "V1-MUT-021",
+      "faultFamily": "voice-identity",
+      "operator": "allocate-entering-identities-before-path-selection",
+      "mutatedFault": "discarded candidate paths consume serials or change entering low-to-high allocation",
+      "killedByCaseIds": ["V1-ASN-009", "V1-ASN-017"],
+      "traceIds": ["V1-TRACE-DETERMINISM", "V1-TRACE-TIES", "V1-TRACE-VOICE-IDS"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "V1-MUT-022",
+      "faultFamily": "role-provenance",
+      "operator": "drop-degree-provenance",
+      "mutatedFault": "role and color facts are inferred from pitch instead of exact selected-realization degrees",
+      "killedByCaseIds": ["V1-ASN-011", "V1-OP-008"],
+      "traceIds": ["V1-TRACE-GUIDE-TONES", "V1-TRACE-REFUSALS"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-V0-DOMAIN"]
+    },
+    {
+      "id": "V1-MUT-023",
+      "faultFamily": "role-provenance",
+      "operator": "compare-guide-degrees-by-number-only",
+      "mutatedFault": "altered and unaltered guide degrees are treated as identical",
+      "killedByCaseIds": ["V1-ASN-011"],
+      "traceIds": ["V1-TRACE-GUIDE-TONES", "V1-TRACE-IDENTITY"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-V0-DOMAIN"]
+    },
+    {
+      "id": "V1-MUT-024",
+      "faultFamily": "role-provenance",
+      "operator": "treat-null-degree-as-root",
+      "mutatedFault": "a slash-bass endpoint is fabricated into root, guide, or color provenance",
+      "killedByCaseIds": ["V1-ASN-011", "V1-OP-008"],
+      "traceIds": ["V1-TRACE-GUIDE-TONES", "V1-TRACE-REFUSALS"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-V0-DOMAIN"]
+    },
+    {
+      "id": "V1-MUT-025",
+      "faultFamily": "reported-costs",
+      "operator": "use-wrong-low-register-spacing-threshold",
+      "mutatedFault": "crowdedLowIntervals does not use the exact inherited V0 spacing bands",
+      "killedByCaseIds": ["V1-ASN-011"],
+      "traceIds": ["V1-TRACE-COSTS"],
+      "authorityIds": ["V1-AUTH-PROJECT-POLICY", "V1-AUTH-V0-DOMAIN"]
+    },
+    {
+      "id": "V1-MUT-026",
+      "faultFamily": "reported-costs",
+      "operator": "count-guide-doubling-by-pitch-class",
+      "mutatedFault": "doubledGuideTones ignores exact degree number and alteration provenance",
+      "killedByCaseIds": ["V1-ASN-011"],
+      "traceIds": ["V1-TRACE-COSTS", "V1-TRACE-GUIDE-TONES"],
+      "authorityIds": ["V1-AUTH-PROJECT-POLICY", "V1-AUTH-V0-DOMAIN"]
+    },
+    {
+      "id": "V1-MUT-027",
+      "faultFamily": "reported-costs",
+      "operator": "satisfy-color-by-sounding-pitch-class",
+      "mutatedFault": "omittedColors treats an enharmonic pitch without exact color-degree provenance as present",
+      "killedByCaseIds": ["V1-ASN-011"],
+      "traceIds": ["V1-TRACE-COSTS", "V1-TRACE-GUIDE-TONES", "V1-TRACE-IDENTITY"],
+      "authorityIds": ["V1-AUTH-PROJECT-POLICY", "V1-AUTH-V0-DOMAIN"]
+    },
+    {
+      "id": "V1-MUT-028",
+      "faultFamily": "deterministic-order",
+      "operator": "reverse-or-randomize-operation-rank",
+      "mutatedFault": "complete path ordering depends on predecessor iteration or randomness",
+      "killedByCaseIds": ["V1-ASN-009", "V1-LAW-001"],
+      "traceIds": ["V1-TRACE-DETERMINISM", "V1-TRACE-DP-ORDER", "V1-TRACE-TIES"],
+      "authorityIds": ["V1-AUTH-INDEPENDENCE", "V1-AUTH-PROJECT-POLICY"]
+    },
+    {
+      "id": "V1-MUT-029",
+      "faultFamily": "voice-count-boundary",
+      "operator": "accept-eight-or-reject-seven-voices",
+      "mutatedFault": "the inclusive maximum voice count is shifted by one",
+      "killedByCaseIds": ["V1-ASN-018", "V1-OP-004"],
+      "traceIds": ["V1-TRACE-LIMITS", "V1-TRACE-REFUSALS"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-LIMITS"]
+    },
+    {
+      "id": "V1-MUT-030",
+      "faultFamily": "bounded-dp",
+      "operator": "skip-final-dp-row-or-column",
+      "mutatedFault": "the final source or target voice is omitted from a completed path",
+      "killedByCaseIds": ["V1-ASN-006", "V1-ASN-007", "V1-ASN-018"],
+      "traceIds": ["V1-TRACE-DP-ORDER", "V1-TRACE-GAPS", "V1-TRACE-LIMITS"],
+      "authorityIds": ["V1-AUTH-LIMITS", "V1-AUTH-ORDER-PRESERVING"]
+    },
+    {
+      "id": "V1-MUT-031",
+      "faultFamily": "bounded-dp",
+      "operator": "enumerate-permutations-or-all-paths-in-production",
+      "mutatedFault": "production work is factorial or Delannoy-sized instead of bounded by the declared DP counters",
+      "killedByCaseIds": ["V1-ASN-018", "V1-LAW-012"],
+      "traceIds": ["V1-TRACE-DP-ORDER", "V1-TRACE-LIMITS"],
+      "authorityIds": ["V1-AUTH-LIMITS", "V1-AUTH-ORDER-PRESERVING"]
+    },
+    {
+      "id": "V1-MUT-032",
+      "faultFamily": "limit-failure",
+      "operator": "return-partial-result-on-limit",
+      "mutatedFault": "a work-limit refusal exposes a partial frame, arc list, or assignment",
+      "killedByCaseIds": ["V1-OP-016"],
+      "traceIds": ["V1-TRACE-LIMITS", "V1-TRACE-REFUSALS"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-LIMITS"]
+    },
+    {
+      "id": "V1-MUT-033",
+      "faultFamily": "lock-validation",
+      "operator": "accept-stale-request-lock",
+      "mutatedFault": "a lock from another request namespace constrains the active transition",
+      "killedByCaseIds": ["V1-OP-012"],
+      "traceIds": ["V1-TRACE-LOCKS", "V1-TRACE-REFUSALS"],
+      "authorityIds": ["V1-AUTH-CONTRACT"]
+    },
+    {
+      "id": "V1-MUT-034",
+      "faultFamily": "lock-validation",
+      "operator": "validate-lock-by-voice-id-only",
+      "mutatedFault": "request, event, target pitch, or exact target degree is ignored",
+      "killedByCaseIds": ["V1-ASN-013", "V1-OP-013"],
+      "traceIds": ["V1-TRACE-LOCKS", "V1-TRACE-REFUSALS"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-V0-DOMAIN"]
+    },
+    {
+      "id": "V1-MUT-035",
+      "faultFamily": "ambient-state",
+      "operator": "make-wall-time-or-cancellation-change-result",
+      "mutatedFault": "elapsed time or cancellation truncates the bounded synchronous operation",
+      "killedByCaseIds": ["V1-LAW-001", "V1-OP-017"],
+      "traceIds": ["V1-TRACE-BOUNDARY", "V1-TRACE-DETERMINISM"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "V1-MUT-036",
+      "faultFamily": "immutability-boundary",
+      "operator": "mutate-or-sort-caller-input",
+      "mutatedFault": "validation or assignment changes caller-owned frames, roles, locks, or voices",
+      "killedByCaseIds": ["V1-LAW-010", "V1-OP-005"],
+      "traceIds": ["V1-TRACE-IMMUTABILITY", "V1-TRACE-REFUSALS"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "V1-MUT-037",
+      "faultFamily": "motion-relations",
+      "operator": "collapse-parallel-into-similar",
+      "mutatedFault": "equal nonzero signed intervals are reported as similar instead of parallel",
+      "killedByCaseIds": ["V1-ASN-012"],
+      "traceIds": ["V1-TRACE-MOTION"],
+      "authorityIds": ["V1-AUTH-CONTRACT"]
+    }
+  ]
+}

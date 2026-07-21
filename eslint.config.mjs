@@ -135,6 +135,7 @@ export default tseslint.config(
   {
     files: [
       "src/test-support/**/*.{ts,tsx}",
+      "tests/support/**/*.{ts,tsx}",
       "tests/**/*.test.{ts,tsx}",
     ],
     languageOptions: project("./tsconfig.tests.json"),
@@ -142,8 +143,10 @@ export default tseslint.config(
   {
     files: [
       "playwright.config.ts",
-      "tests/e2e/**/*.ts",
-      "tests/visual/**/*.ts",
+      "playwright.x0.config.ts",
+      "tests/integration/audio-offline-render.test.ts",
+      "tests/e2e/**/*.{ts,tsx}",
+      "tests/visual/**/*.{ts,tsx}",
     ],
     languageOptions: project("./tsconfig.e2e.json"),
   },

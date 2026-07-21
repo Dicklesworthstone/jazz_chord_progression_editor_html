@@ -1,0 +1,182 @@
+{
+  "schema": "changes.fixtures.v1-limit-cases.v1",
+  "fixtureVersion": "1.0.0",
+  "status": "independently-authored-pre-production",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "publicBoundaries": [
+    {
+      "id": "V1-LIM-001",
+      "surface": "voice-count-minimum",
+      "exact": 3,
+      "nearMiss": 2,
+      "exactOutcome": "accepted",
+      "nearMissOutcome": {"code": "voice_assignment.voice_count_invalid", "received": 2, "minimum": 3, "maximum": 7},
+      "traceIds": ["V1-TRACE-LIMITS", "V1-TRACE-REFUSALS"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-LIMITS"]
+    },
+    {
+      "id": "V1-LIM-002",
+      "surface": "voice-count-maximum",
+      "exact": 7,
+      "nearMiss": 8,
+      "exactOutcome": "accepted",
+      "nearMissOutcome": {"code": "voice_assignment.voice_count_invalid", "received": 8, "minimum": 3, "maximum": 7},
+      "traceIds": ["V1-TRACE-LIMITS", "V1-TRACE-REFUSALS"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-LIMITS"]
+    },
+    {
+      "id": "V1-LIM-003",
+      "surface": "request-id-ascii-length",
+      "exact": 128,
+      "nearMiss": 129,
+      "exactOutcome": "accepted",
+      "nearMissOutcome": {"code": "voice_assignment.request_id_invalid", "reason": "length-out-of-range"},
+      "traceIds": ["V1-TRACE-LIMITS", "V1-TRACE-REFUSALS"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-LIMITS"]
+    },
+    {
+      "id": "V1-LIM-004",
+      "surface": "assigned-voice-serial",
+      "exact": 4095,
+      "nearMiss": 4096,
+      "exactOutcome": "accepted-as-assigned-serial",
+      "nearMissOutcome": {"code": "voice_assignment.voice_serial_invalid", "reason": "out-of-range"},
+      "traceIds": ["V1-TRACE-LIMITS", "V1-TRACE-VOICE-IDS"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-LIMITS"]
+    },
+    {
+      "id": "V1-LIM-005",
+      "surface": "next-voice-serial-sentinel",
+      "exact": 4096,
+      "nearMiss": 4097,
+      "exactOutcome": "accepted-as-exhausted-sentinel",
+      "nearMissOutcome": {"code": "voice_assignment.next_voice_serial_invalid", "reason": "out-of-range"},
+      "traceIds": ["V1-TRACE-LIMITS", "V1-TRACE-VOICE-IDS"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-LIMITS"]
+    },
+    {
+      "id": "V1-LIM-006",
+      "surface": "locks",
+      "exact": 7,
+      "nearMiss": 8,
+      "exactOutcome": "accepted",
+      "nearMissOutcome": {"code": "voice_assignment.lock_limit_exceeded", "received": 8, "maximum": 7},
+      "traceIds": ["V1-TRACE-LIMITS", "V1-TRACE-LOCKS", "V1-TRACE-REFUSALS"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-LIMITS"]
+    },
+    {
+      "id": "V1-LIM-007",
+      "surface": "role-degrees-per-list",
+      "exact": 16,
+      "nearMiss": 17,
+      "exactOutcome": "accepted",
+      "nearMissOutcome": {"code": "voice_assignment.role_context_invalid", "reason": "degree-count-exceeded"},
+      "traceIds": ["V1-TRACE-GUIDE-TONES", "V1-TRACE-LIMITS", "V1-TRACE-REFUSALS"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-LIMITS", "V1-AUTH-V0-DOMAIN"]
+    },
+    {
+      "id": "V1-LIM-008",
+      "surface": "role-source-version",
+      "exact": 65535,
+      "nearMiss": 65536,
+      "exactOutcome": "accepted",
+      "nearMissOutcome": {"code": "voice_assignment.role_context_invalid", "reason": "role-source-version-invalid"},
+      "traceIds": ["V1-TRACE-GUIDE-TONES", "V1-TRACE-LIMITS", "V1-TRACE-REFUSALS"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-LIMITS", "V1-AUTH-V0-DOMAIN"]
+    },
+    {
+      "id": "V1-LIM-009",
+      "surface": "transition-operation-path",
+      "exactMinimum": 3,
+      "minimumNearMiss": 2,
+      "exactMaximum": 14,
+      "maximumNearMiss": 15,
+      "exactOutcome": "accepted",
+      "nearMissOutcome": "type-contract-or-test-seam-refusal",
+      "traceIds": ["V1-TRACE-DP-ORDER", "V1-TRACE-LIMITS"],
+      "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-LIMITS", "V1-AUTH-ORDER-PRESERVING"]
+    }
+  ],
+  "matrixGoldens": [
+    {"id": "V1-LIM-MATRIX-3X3", "sourceVoices": 3, "targetVoices": 3, "matrixCells": 16, "transitionCandidates": 33, "scoreComparisons": 18, "delannoyPathsTestOnly": 63},
+    {"id": "V1-LIM-MATRIX-3X7", "sourceVoices": 3, "targetVoices": 7, "matrixCells": 32, "transitionCandidates": 73, "scoreComparisons": 42, "delannoyPathsTestOnly": 575},
+    {"id": "V1-LIM-MATRIX-7X3", "sourceVoices": 7, "targetVoices": 3, "matrixCells": 32, "transitionCandidates": 73, "scoreComparisons": 42, "delannoyPathsTestOnly": 575},
+    {"id": "V1-LIM-MATRIX-7X7", "sourceVoices": 7, "targetVoices": 7, "matrixCells": 64, "transitionCandidates": 161, "scoreComparisons": 98, "delannoyPathsTestOnly": 48639}
+  ],
+  "derivedAccountingProbes": [
+    {"id": "V1-LIM-PROBE-001", "counter": "matrixCellsVisited", "maximum": 64, "received": 65},
+    {"id": "V1-LIM-PROBE-002", "counter": "transitionCandidatesEvaluated", "maximum": 161, "received": 162},
+    {"id": "V1-LIM-PROBE-003", "counter": "scoreComparisons", "maximum": 98, "received": 99},
+    {"id": "V1-LIM-PROBE-004", "counter": "backtraceSteps", "maximum": 14, "received": 15},
+    {"id": "V1-LIM-PROBE-005", "counter": "identityComparisons", "maximum": 49, "received": 50},
+    {"id": "V1-LIM-PROBE-006", "counter": "roleDegreesVisited", "maximum": 64, "received": 65},
+    {"id": "V1-LIM-PROBE-007", "counter": "roleMembershipComparisons", "maximum": 448, "received": 449},
+    {"id": "V1-LIM-PROBE-008", "counter": "roleOrderComparisons", "maximum": 60, "received": 61},
+    {"id": "V1-LIM-PROBE-009", "counter": "relationClassifications", "maximum": 21, "received": 22},
+    {"id": "V1-LIM-PROBE-010", "counter": "lockChecks", "maximum": 7, "received": 8},
+    {"id": "V1-LIM-PROBE-011", "counter": "voiceIdsAllocated", "maximum": 7, "received": 8},
+    {"id": "V1-LIM-PROBE-012", "counter": "arcsProduced", "maximum": 14, "received": 15},
+    {"id": "V1-LIM-PROBE-013", "counter": "peakTrackedRecords", "maximum": 399, "received": 400},
+    {"id": "V1-LIM-PROBE-014", "counter": "sourceVoicesVisited", "maximum": 7, "received": 8},
+    {"id": "V1-LIM-PROBE-015", "counter": "targetVoicesVisited", "maximum": 7, "received": 8},
+    {"id": "V1-LIM-PROBE-016", "counter": "peakInputVoiceRecords", "maximum": 14, "received": 15},
+    {"id": "V1-LIM-PROBE-017", "counter": "peakInputRoleDegreeRecords", "maximum": 64, "received": 65},
+    {"id": "V1-LIM-PROBE-018", "counter": "peakMatrixCellRecords", "maximum": 64, "received": 65},
+    {"id": "V1-LIM-PROBE-019", "counter": "peakPredecessorRecords", "maximum": 63, "received": 64},
+    {"id": "V1-LIM-PROBE-020", "counter": "peakScoreRecords", "maximum": 64, "received": 65},
+    {"id": "V1-LIM-PROBE-021", "counter": "peakPathStepRecords", "maximum": 14, "received": 15},
+    {"id": "V1-LIM-PROBE-022", "counter": "peakArcRecords", "maximum": 14, "received": 15},
+    {"id": "V1-LIM-PROBE-023", "counter": "peakArcEndpointRecords", "maximum": 14, "received": 15},
+    {"id": "V1-LIM-PROBE-024", "counter": "peakArcIdentityRecords", "maximum": 14, "received": 15},
+    {"id": "V1-LIM-PROBE-025", "counter": "peakOutputVoiceRecords", "maximum": 7, "received": 8},
+    {"id": "V1-LIM-PROBE-026", "counter": "peakOutputRoleDegreeRecords", "maximum": 32, "received": 33},
+    {"id": "V1-LIM-PROBE-027", "counter": "peakRelationRecords", "maximum": 21, "received": 22},
+    {"id": "V1-LIM-PROBE-028", "counter": "peakLockRecords", "maximum": 7, "received": 8},
+    {"id": "V1-LIM-PROBE-029", "counter": "peakLockEvidenceRecords", "maximum": 7, "received": 8}
+  ],
+  "derivedProbePolicy": {
+    "publiclyReachable": false,
+    "testSeamOnly": true,
+    "expectedRefusal": {
+      "code": "limit.voice_assignment_work_exceeded",
+      "partialResult": false,
+      "termination": "work-limit-exceeded"
+    },
+    "firstProspectiveExcessWins": true,
+    "wallTimeIsNotACounter": true
+  },
+  "memoryPopulationLimits": {
+    "peakInputVoiceRecords": 14,
+    "peakInputRoleDegreeRecords": 64,
+    "peakMatrixCellRecords": 64,
+    "peakPredecessorRecords": 63,
+    "peakScoreRecords": 64,
+    "peakPathStepRecords": 14,
+    "peakArcRecords": 14,
+    "peakArcEndpointRecords": 14,
+    "peakArcIdentityRecords": 14,
+    "peakOutputVoiceRecords": 7,
+    "peakOutputRoleDegreeRecords": 32,
+    "peakRelationRecords": 21,
+    "peakLockRecords": 7,
+    "peakLockEvidenceRecords": 7,
+    "peakTrackedRecords": 399
+  },
+  "valueLimits": {
+    "signedSemitones": {"minimum": -127, "maximum": 127},
+    "absoluteSemitones": {"minimum": 0, "maximum": 127},
+    "alignmentCost": {"minimum": 0, "maximum": 889},
+    "totalAbsoluteMotion": {"minimum": 0, "maximum": 889},
+    "maximumAbsoluteLeap": {"minimum": 0, "maximum": 127},
+    "gapOrArcCount": {"minimum": 0, "maximum": 14},
+    "voiceFactCount": {"minimum": 0, "maximum": 7},
+    "crowdedLowIntervals": {"minimum": 0, "maximum": 6},
+    "doubledGuideTones": {"minimum": 0, "maximum": 6},
+    "omittedColors": {"minimum": 0, "maximum": 16},
+    "totalSpan": {"minimum": 0, "maximum": 127},
+    "negativeCount": {"minimum": -7, "maximum": 0}
+  },
+  "traceIds": ["V1-TRACE-GUIDE-TONES", "V1-TRACE-LIMITS", "V1-TRACE-LOCKS", "V1-TRACE-REFUSALS", "V1-TRACE-VOICE-IDS"],
+  "authorityIds": ["V1-AUTH-CONTRACT", "V1-AUTH-LIMITS", "V1-AUTH-ORDER-PRESERVING", "V1-AUTH-V0-DOMAIN"]
+}

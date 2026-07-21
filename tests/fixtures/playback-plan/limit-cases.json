@@ -1,0 +1,247 @@
+{
+  "schema": "changes.fixtures.p0-limit-cases.v1",
+  "fixtureVersion": "1.0.0",
+  "status": "independently-authored-pre-production",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "limitPolicy": {
+    "inclusiveMaximum": "A counter equal to its maximum may continue.",
+    "plusOne": "Before accepting maximum+1, refuse with limit.playback_plan_work_exceeded, the exact counter/received/maximum, partialResult false, and no plan.",
+    "wallTime": "Elapsed time is performance evidence only and cannot cause termination.",
+    "testSeam": "Counter seams are injected by P0/verify after all public inputs are materialized. They do not widen the production API or authorize malformed persisted documents.",
+    "timeline": "Absolute source time includes implicit empty-measure capacity and refuses above 1,000,000 quarter-note beats before realization validation."
+  },
+  "limits": {
+    "maximumQuarterNoteBeats": 1000000,
+    "maximumRealizationBindings": 8192,
+    "maximumEvents": 8192,
+    "maximumPitchesPerEvent": 16,
+    "maximumOutputPitches": 131072,
+    "maximumSections": 64,
+    "maximumMeasuresVisited": 65536,
+    "work": {
+      "sectionsVisited": 64,
+      "measuresVisited": 65536,
+      "eventsVisited": 8192,
+      "bindingsVisited": 8192,
+      "bindingLookups": 8192,
+      "exactBeatOperations": 90112,
+      "tickProjections": 8195,
+      "loopIntersectionChecks": 8192,
+      "gateCalculations": 8192,
+      "pitchRecordsCopied": 131072,
+      "eventsProduced": 8192
+    },
+    "memory": {
+      "peakSourceEventIdentityRecords": 8192,
+      "peakBindingRecords": 8192,
+      "peakOutputEventRecords": 8192,
+      "peakOutputPitchRecords": 131072,
+      "peakTrackedRecords": 155648
+    }
+  },
+  "structuralCases": [
+    {
+      "id": "P0-LIMIT-STRUCT-001",
+      "description": "Exact maximum events, bindings, per-event pitches, output pitches, gates, and output records may compile.",
+      "recipe": {
+        "documentId": "doc-p0-max-events",
+        "meter": {"beatsPerBar": 4, "beatUnit": 4},
+        "tempoBpm": 120,
+        "sectionCount": 1,
+        "measuresPerSection": 1024,
+        "eventsPerMeasure": 8,
+        "eventDuration": {"numerator": 1, "denominator": 2},
+        "eventCount": 8192,
+        "eventIdPattern": "event-p0-max-{zero-padded-4}",
+        "source": {
+          "kind": "stored-manual",
+          "chordRef": "P0-SOURCE-MANUAL-LEGACY.chord",
+          "pitchCount": 16,
+          "pitches": [
+            {"step": "C", "alter": 0, "octave": 4},
+            {"step": "E", "alter": 0, "octave": 4},
+            {"step": "G", "alter": 0, "octave": 4},
+            {"step": "B", "alter": 0, "octave": 4},
+            {"step": "C", "alter": 0, "octave": 5},
+            {"step": "E", "alter": 0, "octave": 5},
+            {"step": "G", "alter": 0, "octave": 5},
+            {"step": "B", "alter": 0, "octave": 5},
+            {"step": "C", "alter": 0, "octave": 4},
+            {"step": "E", "alter": 0, "octave": 4},
+            {"step": "G", "alter": 0, "octave": 4},
+            {"step": "B", "alter": 0, "octave": 4},
+            {"step": "C", "alter": 0, "octave": 5},
+            {"step": "E", "alter": 0, "octave": 5},
+            {"step": "G", "alter": 0, "octave": 5},
+            {"step": "B", "alter": 0, "octave": 5}
+          ]
+        },
+        "bindingCount": 8192,
+        "loop": null
+      },
+      "expected": {
+        "ok": true,
+        "eventCount": 8192,
+        "outputPitchCount": 131072,
+        "totalBeats": {"numerator": 4096, "denominator": 1},
+        "totalTicks": 3932160,
+        "selectedEvidence": {
+          "eventsVisited": 8192,
+          "bindingsVisited": 8192,
+          "bindingLookups": 8192,
+          "tickProjections": 8193,
+          "gateCalculations": 8192,
+          "pitchRecordsCopied": 131072,
+          "eventsProduced": 8192,
+          "peakSourceEventIdentityRecords": 8192,
+          "peakBindingRecords": 8192,
+          "peakOutputEventRecords": 8192,
+          "peakOutputPitchRecords": 131072,
+          "peakTrackedRecords": 155648,
+          "termination": "complete"
+        }
+      },
+      "traceIds": ["P0-TRACE-LIMITS", "P0-TRACE-MIDI", "P0-TRACE-STORED"],
+      "authorityIds": ["P0-AUTH-LIMITS", "P0-AUTH-DOMAIN"]
+    },
+    {
+      "id": "P0-LIMIT-STRUCT-002",
+      "description": "Exactly 64 by 1,024 measures are visited and empty measures contribute exact silent capacity.",
+      "recipe": {
+        "documentId": "doc-p0-max-measures",
+        "meter": {"beatsPerBar": 4, "beatUnit": 4},
+        "tempoBpm": 120,
+        "sectionCount": 64,
+        "measuresPerSection": 1024,
+        "allMeasures": {"completion": {"kind": "empty"}, "events": []},
+        "loop": null
+      },
+      "expected": {
+        "ok": true,
+        "events": [],
+        "totalBeats": {"numerator": 262144, "denominator": 1},
+        "totalTicks": 251658240,
+        "selectedEvidence": {
+          "sectionsVisited": 64,
+          "measuresVisited": 65536,
+          "eventsVisited": 0,
+          "bindingsVisited": 0,
+          "bindingLookups": 0,
+          "exactBeatOperations": 65536,
+          "tickProjections": 1,
+          "loopIntersectionChecks": 0,
+          "gateCalculations": 0,
+          "pitchRecordsCopied": 0,
+          "eventsProduced": 0,
+          "termination": "complete"
+        }
+      },
+      "traceIds": ["P0-TRACE-LIMITS", "P0-TRACE-EMPTY-PARTIAL", "P0-TRACE-TIMELINE"],
+      "authorityIds": ["P0-AUTH-LIMITS", "P0-AUTH-DOMAIN"]
+    },
+    {
+      "id": "P0-LIMIT-STRUCT-003",
+      "description": "Implicit empty-bar time may equal exactly one million quarter-note beats.",
+      "recipe": {
+        "documentId": "doc-p0-max-time",
+        "meter": {"beatsPerBar": 32, "beatUnit": 2},
+        "tempoBpm": 120,
+        "emptyMeasureCount": 15625,
+        "distribution": {"fullSections": 15, "measuresPerFullSection": 1024, "finalSectionMeasures": 265},
+        "loop": null
+      },
+      "expected": {
+        "ok": true,
+        "events": [],
+        "totalBeats": {"numerator": 1000000, "denominator": 1},
+        "totalTicks": 960000000,
+        "termination": "complete"
+      },
+      "traceIds": ["P0-TRACE-LIMITS", "P0-TRACE-EMPTY-PARTIAL", "P0-TRACE-TIMELINE"],
+      "authorityIds": ["P0-AUTH-LIMITS", "P0-AUTH-DOMAIN"]
+    },
+    {
+      "id": "P0-LIMIT-STRUCT-004",
+      "description": "One beat beyond the absolute source-time maximum refuses before a deliberately missing realization can win.",
+      "recipe": {
+        "baseRef": "P0-LIMIT-STRUCT-003",
+        "appendMeasure": {
+          "sectionIndex": 15,
+          "measureIndex": 265,
+          "measureId": "measure-p0-time-plus-one",
+          "completion": {"kind": "pickup", "expectedDuration": {"numerator": 1, "denominator": 1}, "reason": "Timeline plus one"},
+          "events": [{"eventId": "event-p0-time-plus-one", "duration": {"numerator": 1, "denominator": 1}, "sourceRef": "P0-SOURCE-AUTO-CMAJ7"}]
+        },
+        "realizedVoicings": "deliberately-empty-to-prove-precedence"
+      },
+      "expected": {
+        "ok": false,
+        "code": "playback.timeline_total_exceeded",
+        "path": ["document", "sections", 15, "measures", 265],
+        "measureId": "measure-p0-time-plus-one",
+        "maximumQuarterNoteBeats": 1000000,
+        "termination": "timeline-invalid",
+        "partialResult": false,
+        "missingBindingDidNotWin": true
+      },
+      "traceIds": ["P0-TRACE-LIMITS", "P0-TRACE-REFUSALS", "P0-TRACE-TIMELINE"],
+      "authorityIds": ["P0-AUTH-LIMITS", "P0-AUTH-CONTRACT"]
+    },
+    {
+      "id": "P0-LIMIT-STRUCT-005",
+      "description": "An exact 8,192-entry realization map is accepted at preflight.",
+      "recipeRef": "P0-LIMIT-STRUCT-001",
+      "expected": {"bindingCount": 8192, "bindingPreflightAccepted": true},
+      "traceIds": ["P0-TRACE-LIMITS", "P0-TRACE-REALIZATION"],
+      "authorityIds": ["P0-AUTH-LIMITS"]
+    },
+    {
+      "id": "P0-LIMIT-STRUCT-006",
+      "description": "An 8,193-entry realization map refuses before extra-entry classification.",
+      "recipe": {
+        "baseRef": "P0-LIMIT-STRUCT-001",
+        "appendBinding": {"eventId": "event-p0-binding-8192", "bindingRef": "event-p0-max-0000"}
+      },
+      "expected": {
+        "ok": false,
+        "code": "playback.realization_binding_limit",
+        "path": ["realizedVoicings"],
+        "received": 8193,
+        "maximum": 8192,
+        "termination": "realization-invalid",
+        "partialResult": false
+      },
+      "traceIds": ["P0-TRACE-LIMITS", "P0-TRACE-REFUSALS", "P0-TRACE-REALIZATION"],
+      "authorityIds": ["P0-AUTH-LIMITS", "P0-AUTH-CONTRACT"]
+    }
+  ],
+  "counterBoundaries": [
+    {"id":"P0-LIMIT-SEAM-001","counter":"sectionsVisited","maximum":64,"exact":{"received":64,"continues":true},"plusOne":{"received":65,"code":"limit.playback_plan_work_exceeded","termination":"work-limit-exceeded"}},
+    {"id":"P0-LIMIT-SEAM-002","counter":"measuresVisited","maximum":65536,"exact":{"received":65536,"continues":true},"plusOne":{"received":65537,"code":"limit.playback_plan_work_exceeded","termination":"work-limit-exceeded"}},
+    {"id":"P0-LIMIT-SEAM-003","counter":"eventsVisited","maximum":8192,"exact":{"received":8192,"continues":true},"plusOne":{"received":8193,"code":"limit.playback_plan_work_exceeded","termination":"work-limit-exceeded"}},
+    {"id":"P0-LIMIT-SEAM-004","counter":"bindingsVisited","maximum":8192,"exact":{"received":8192,"continues":true},"plusOne":{"received":8193,"code":"limit.playback_plan_work_exceeded","termination":"work-limit-exceeded"}},
+    {"id":"P0-LIMIT-SEAM-005","counter":"bindingLookups","maximum":8192,"exact":{"received":8192,"continues":true},"plusOne":{"received":8193,"code":"limit.playback_plan_work_exceeded","termination":"work-limit-exceeded"}},
+    {"id":"P0-LIMIT-SEAM-006","counter":"exactBeatOperations","maximum":90112,"exact":{"received":90112,"continues":true},"plusOne":{"received":90113,"code":"limit.playback_plan_work_exceeded","termination":"work-limit-exceeded"}},
+    {"id":"P0-LIMIT-SEAM-007","counter":"tickProjections","maximum":8195,"exact":{"received":8195,"continues":true},"plusOne":{"received":8196,"code":"limit.playback_plan_work_exceeded","termination":"work-limit-exceeded"}},
+    {"id":"P0-LIMIT-SEAM-008","counter":"loopIntersectionChecks","maximum":8192,"exact":{"received":8192,"continues":true},"plusOne":{"received":8193,"code":"limit.playback_plan_work_exceeded","termination":"work-limit-exceeded"}},
+    {"id":"P0-LIMIT-SEAM-009","counter":"gateCalculations","maximum":8192,"exact":{"received":8192,"continues":true},"plusOne":{"received":8193,"code":"limit.playback_plan_work_exceeded","termination":"work-limit-exceeded"}},
+    {"id":"P0-LIMIT-SEAM-010","counter":"pitchRecordsCopied","maximum":131072,"exact":{"received":131072,"continues":true},"plusOne":{"received":131073,"code":"limit.playback_plan_work_exceeded","termination":"work-limit-exceeded"}},
+    {"id":"P0-LIMIT-SEAM-011","counter":"eventsProduced","maximum":8192,"exact":{"received":8192,"continues":true},"plusOne":{"received":8193,"code":"limit.playback_plan_work_exceeded","termination":"work-limit-exceeded"}},
+    {"id":"P0-LIMIT-SEAM-012","counter":"peakSourceEventIdentityRecords","maximum":8192,"exact":{"received":8192,"continues":true},"plusOne":{"received":8193,"code":"limit.playback_plan_work_exceeded","termination":"work-limit-exceeded"}},
+    {"id":"P0-LIMIT-SEAM-013","counter":"peakBindingRecords","maximum":8192,"exact":{"received":8192,"continues":true},"plusOne":{"received":8193,"code":"limit.playback_plan_work_exceeded","termination":"work-limit-exceeded"}},
+    {"id":"P0-LIMIT-SEAM-014","counter":"peakOutputEventRecords","maximum":8192,"exact":{"received":8192,"continues":true},"plusOne":{"received":8193,"code":"limit.playback_plan_work_exceeded","termination":"work-limit-exceeded"}},
+    {"id":"P0-LIMIT-SEAM-015","counter":"peakOutputPitchRecords","maximum":131072,"exact":{"received":131072,"continues":true},"plusOne":{"received":131073,"code":"limit.playback_plan_work_exceeded","termination":"work-limit-exceeded"}},
+    {"id":"P0-LIMIT-SEAM-016","counter":"peakTrackedRecords","maximum":155648,"exact":{"received":155648,"continues":true},"plusOne":{"received":155649,"code":"limit.playback_plan_work_exceeded","termination":"work-limit-exceeded"}}
+  ],
+  "counterPlusOneCommonExpectation": {
+    "path": ["work", "<counter>"],
+    "partialResult": false,
+    "planPresent": false,
+    "received": "maximum + 1",
+    "maximum": "declared exact maximum",
+    "wallTimeIgnored": true
+  },
+  "traceIds": ["P0-TRACE-LIMITS", "P0-TRACE-REFUSALS"],
+  "authorityIds": ["P0-AUTH-LIMITS", "P0-AUTH-CONTRACT", "P0-AUTH-INDEPENDENCE"]
+}

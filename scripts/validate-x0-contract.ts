@@ -1,0 +1,1534 @@
+import { createHash } from "node:crypto";
+import { readdir, readFile } from "node:fs/promises";
+import { join, resolve } from "node:path";
+
+type JsonObjectProperty =
+  | "algorithmId"
+  | "alterationFlagEntries"
+  | "applicability"
+  | "authorities"
+  | "authorityIds"
+  | "automatedListeningClaim"
+  | "beadId"
+  | "caseIds"
+  | "cases"
+  | "channels"
+  | "checkpoints"
+  | "chords"
+  | "codes"
+  | "companions"
+  | "contractVersion"
+  | "controlIds"
+  | "controls"
+  | "convolverNormalize"
+  | "counts"
+  | "coverageSummary"
+  | "createdNodeCount"
+  | "currentDocumentMutation"
+  | "deferredCaseIds"
+  | "deferredReason"
+  | "deferredUntilPackage"
+  | "dimension"
+  | "durationSeconds"
+  | "edgeCount"
+  | "edges"
+  | "evidenceOwner"
+  | "existingDestinationCount"
+  | "expected"
+  | "expectedCounts"
+  | "expectedFindingCode"
+  | "expectedValuesGenerated"
+  | "fault"
+  | "file"
+  | "firstEightLeftQ15"
+  | "firstEightRightQ15"
+  | "fixtureIds"
+  | "groupOrder"
+  | "id"
+  | "identities"
+  | "independence"
+  | "instrumentId"
+  | "instrumentRows"
+  | "legacyPresetId"
+  | "license"
+  | "limits"
+  | "linkedCaseId"
+  | "maximums"
+  | "nearMissOf"
+  | "nodes"
+  | "normalization"
+  | "numericPolicy"
+  | "operation"
+  | "operationOrder"
+  | "ordering"
+  | "outputLevel"
+  | "ownership"
+  | "package"
+  | "pointer"
+  | "policies"
+  | "polyphonyLimit"
+  | "presets"
+  | "productionImplementationAvailableWhenAuthored"
+  | "productionImportsForbidden"
+  | "productionOutputUsed"
+  | "publicSurface"
+  | "publication"
+  | "pulseWave"
+  | "recipeSetId"
+  | "recipeSetVersion"
+  | "recipes"
+  | "referenceBytes"
+  | "referenceChannelInt16LeSha256"
+  | "referenceCountPerVoice"
+  | "referenceFinalStateHex"
+  | "referenceFinalStateUint32"
+  | "referenceFrames"
+  | "referenceInterleavedInt16LeSha256"
+  | "referencePeakQ15"
+  | "referenceSampleRate"
+  | "referenceScalarSamples"
+  | "refusal"
+  | "refusalCodes"
+  | "releaseSeconds"
+  | "releaseStatus"
+  | "report"
+  | "reportCodes"
+  | "requirement"
+  | "reviewState"
+  | "reviewedCompanionDigests"
+  | "reviewedCounts"
+  | "reviewedFileSha256"
+  | "routingCases"
+  | "runtimeNetworkRequired"
+  | "sampleRateRange"
+  | "scenarioRows"
+  | "scheduledSourceCount"
+  | "schema"
+  | "sections"
+  | "seedHex"
+  | "seedUint32"
+  | "settings"
+  | "states"
+  | "targetFile"
+  | "terminations"
+  | "traces"
+  | "typeSuffixEntries"
+  | "validatedBrand"
+  | "value"
+  | "wallTimeCutoff"
+  | "work"
+  | "workCounterOrder"
+;
+
+type JsonObject = Record<string, unknown> &
+  Partial<Record<JsonObjectProperty, unknown>>;
+
+export type X0ContractFinding = Readonly<{
+  code: string;
+  path: string;
+  message: string;
+}>;
+
+export type X0ContractValidationReport = Readonly<{
+  schema: "changes.validation.x0-contract.v1";
+  package: "X0";
+  outcome: "pass" | "fail";
+  counts: Readonly<{
+    companions: number;
+    routingCases: number;
+    recipes: number;
+    impulseCheckpoints: number;
+    lifecycleCases: number;
+    registryCases: number;
+    renderCases: number;
+    listeningInstrumentRows: number;
+    listeningScenarioRows: number;
+    mutationControls: number;
+    traces: number;
+    authorities: number;
+  }>;
+  findings: readonly X0ContractFinding[];
+}>;
+
+const CONTRACT_FILENAME = "x0-audio-engine-contract.json";
+
+export const X0_REVIEWED_COMPANIONS = [
+  "graph-topology.json",
+  "impulse-golden.json",
+  "instrument-recipes.json",
+  "lifecycle-cases.json",
+  "listening-rubric.json",
+  "mutation-controls.json",
+  "provenance-ledger.json",
+  "registry-cases.json",
+  "render-matrix.json",
+  "trace-ledger.json",
+] as const;
+
+type CompanionFilename = (typeof X0_REVIEWED_COMPANIONS)[number];
+
+const EXPECTED_FILES = [CONTRACT_FILENAME, ...X0_REVIEWED_COMPANIONS] as const;
+type ExpectedFilename = (typeof EXPECTED_FILES)[number];
+
+const EXPECTED_SCHEMAS: Readonly<Record<ExpectedFilename, string>> = {
+  "x0-audio-engine-contract.json":
+    "changes.fixtures.x0-audio-engine-contract.v1",
+  "graph-topology.json": "changes.fixtures.x0-graph-topology.v1",
+  "impulse-golden.json": "changes.fixtures.x0-impulse-golden.v1",
+  "instrument-recipes.json": "changes.fixtures.x0-instrument-recipes.v1",
+  "lifecycle-cases.json": "changes.fixtures.x0-lifecycle-cases.v1",
+  "listening-rubric.json": "changes.fixtures.x0-listening-rubric.v1",
+  "mutation-controls.json": "changes.fixtures.x0-mutation-controls.v1",
+  "provenance-ledger.json": "changes.fixtures.x0-provenance-ledger.v1",
+  "registry-cases.json": "changes.fixtures.x0-registry-cases.v1",
+  "render-matrix.json": "changes.fixtures.x0-render-matrix.v1",
+  "trace-ledger.json": "changes.fixtures.x0-trace-ledger.v1",
+};
+
+export const X0_REVIEWED_CONTRACT_BYTE_DIGEST =
+  "c3ae11c64ead87503a90ccf234fa3edb319c9f0f597b25d094ec2fa4086faf5c";
+
+export const X0_REVIEWED_BYTE_DIGESTS: Readonly<
+  Record<CompanionFilename, string>
+> = {
+  "graph-topology.json":
+    "72a4c6aa8951186fcabd66d75cb9d4aec7404950a7c9dee7917c9be686e89290",
+  "impulse-golden.json":
+    "43cc1f30289f60e0d15d57653b644db76684957a2d7e1e68e0e0304cba42699f",
+  "instrument-recipes.json":
+    "4462c57b3c1dc77c152b28a9622d68c6dc37da40732f6674682cece7660c231e",
+  "lifecycle-cases.json":
+    "82e19dc0452efe6a9c773c76d6d85d02fbe4fe02d153b4bd4502a27ca9fb4e2c",
+  "listening-rubric.json":
+    "ccbe19943bba3c1534bfddd16cd17bdb09dffaab7d3aec4afb00b47c572addbd",
+  "mutation-controls.json":
+    "d5c63589eab35983769e7fc8c7c2b2a63429b38acfbb446fd2223dbad435df78",
+  "provenance-ledger.json":
+    "cf8b2de1e09c6ba9126aa2ddc0191d0b2f1b9a9cf7308a8e2aa28409872e14ef",
+  "registry-cases.json":
+    "2f373b5d3fb35e99dc9c7dddf6b324a33cf76f94d62bfb210453c74788e391c8",
+  "render-matrix.json":
+    "ef0aa260cf78a6c397ebf47bcca92103d36c053fd82bf08202e36a209214d96d",
+  "trace-ledger.json":
+    "4fdf8175c3db442cb2b41ec0a6869d7d9fb578f0f3c7bb1806adaf0d16d0443a",
+};
+
+export const X0_REVIEWED_OPERATION_ORDER = [
+  "initializeAudioEngine",
+  "resumeAudioEngine",
+  "setAudioMix",
+  "attackAudioVoices",
+  "retireAudioVoices",
+  "inspectAudioEngine",
+  "disposeAudioEngine",
+] as const;
+
+export const X0_REVIEWED_STATES = [
+  "uninitialized",
+  "initializing",
+  "ready",
+  "suspended",
+  "resuming",
+  "fault",
+  "closed",
+] as const;
+
+export const X0_REVIEWED_TERMINATIONS = [
+  "completed",
+  "refused",
+  "platform-fault",
+] as const;
+
+export const X0_REVIEWED_REFUSAL_CODES = [
+  "audio.user_gesture_required",
+  "audio.gesture_sequence_invalid",
+  "audio.engine_closed",
+  "audio.engine_not_ready",
+  "audio.context_create_failed",
+  "audio.context_resume_failed",
+  "audio.context_unusable",
+  "audio.context_sample_rate_unsupported",
+  "audio.graph_create_failed",
+  "audio.internal_sequence_exhausted",
+  "audio.mix_invalid",
+  "audio.owner_invalid",
+  "audio.event_id_invalid",
+  "audio.instrument_id_invalid",
+  "audio.voice_batch_empty",
+  "audio.voice_batch_limit",
+  "audio.voice_id_invalid",
+  "audio.voice_id_duplicate",
+  "audio.midi_pitch_invalid",
+  "audio.velocity_invalid",
+  "audio.start_time_invalid",
+  "audio.release_time_invalid",
+  "audio.gate_duration_limit",
+  "audio.retiring_voice_capacity",
+  "audio.retirement_selector_invalid",
+  "audio.retirement_time_invalid",
+  "audio.dispose_reason_invalid",
+] as const;
+
+export const X0_REVIEWED_LIMITS = {
+  idAsciiLength: 128,
+  maximumGeneration: 9_007_199_254_740_991,
+  maximumGestureSequence: 9_007_199_254_740_991,
+  maximumInternalSequence: 9_007_199_254_740_991,
+  nonreleasingVoices: 64,
+  retainedVoices: 128,
+  progressionVoices: 48,
+  previewVoices: 16,
+  voicesPerBatch: 16,
+  scheduleLookaheadSeconds: 0.25,
+  minimumGateSeconds: 0.005,
+  maximumGateSeconds: 600,
+  maximumRecipeReleaseSeconds: 1.8,
+  sourceStopPaddingSeconds: 0.02,
+  naturalCleanupSecondsAfterRelease: 8,
+  scheduledSourcesPerVoice: 7,
+  scheduledSourceNodes: 896,
+  registryIndexReferences: 768,
+  persistentCreatedNodes: 12,
+  persistentEdges: 13,
+  impulseScalarSamples: 768_000,
+  impulseBytes: 3_072_000,
+  softClipCurveLength: 4_097,
+  debugEvents: 4_096,
+} as const;
+
+export const X0_REVIEWED_WORK_COUNTER_ORDER = [
+  "operationsStarted",
+  "graphNodesCreated",
+  "graphEdgesConnected",
+  "impulseSamplesWritten",
+  "voiceBatchesValidated",
+  "voiceSpecsValidated",
+  "voicesExaminedForRetrigger",
+  "voicesExaminedForRetirement",
+  "voicesExaminedForStealing",
+  "voicesCreated",
+  "scheduledSourcesCreated",
+  "registryReads",
+  "registryWrites",
+  "parameterEventsScheduled",
+  "cleanupCallbacksHandled",
+] as const;
+
+export const X0_REVIEWED_GRAPH_NODE_IDS = [
+  "instrument-bus",
+  "dc-block",
+  "low-shelf",
+  "high-shelf",
+  "dry-gain",
+  "reverb-send",
+  "convolver",
+  "reverb-return",
+  "dynamics",
+  "soft-clip",
+  "safety-gain",
+  "master-gain",
+  "destination",
+] as const;
+
+export const X0_REVIEWED_GRAPH_EDGES = [
+  ["instrument-bus", "dc-block"],
+  ["dc-block", "low-shelf"],
+  ["low-shelf", "high-shelf"],
+  ["high-shelf", "dry-gain"],
+  ["dry-gain", "dynamics"],
+  ["high-shelf", "reverb-send"],
+  ["reverb-send", "convolver"],
+  ["convolver", "reverb-return"],
+  ["reverb-return", "dynamics"],
+  ["dynamics", "soft-clip"],
+  ["soft-clip", "safety-gain"],
+  ["safety-gain", "master-gain"],
+  ["master-gain", "destination"],
+] as const;
+
+export const X0_REVIEWED_GRAPH_SETTINGS = {
+  dcBlock: { type: "highpass", frequencyHz: 24, q: 0.707 },
+  lowShelf: { type: "lowshelf", frequencyHz: 180, gainDb: 1.5 },
+  highShelf: { type: "highshelf", frequencyHz: 6_000, gainDb: -1 },
+  dryGain: 1,
+  maximumReverbSendGain: 0.28,
+  reverbReturnGain: 1,
+  dynamics: {
+    thresholdDb: -18,
+    kneeDb: 18,
+    ratio: 4,
+    attackSeconds: 0.006,
+    releaseSeconds: 0.18,
+  },
+  softClip: {
+    curveLength: 4_097,
+    drive: 1.5,
+    formula: "tanh(drive*x)/tanh(drive)",
+    oversample: "2x",
+  },
+  safetyGain: 0.9,
+  mixRampSeconds: 0.015,
+} as const;
+
+export const X0_REVIEWED_RECIPE_IDS = [
+  "mellow-keys",
+  "fm-electric-piano",
+  "vibraphone",
+  "warm-pad",
+  "analog-poly",
+] as const;
+
+export const X0_REVIEWED_RECIPE_LEVELS = [0.62, 0.48, 0.5, 0.3, 0.34] as const;
+export const X0_REVIEWED_RECIPE_POLYPHONY = [64, 48, 48, 32, 48] as const;
+export const X0_REVIEWED_RECIPE_SOURCE_COUNTS = [3, 2, 4, 3, 3] as const;
+
+export const X0_REVIEWED_IMPULSE = {
+  algorithmId: "changes.audio.impulse.xorshift32-q15.v1",
+  seedUint32: 0x58403031,
+  channels: 2,
+  durationSeconds: 2,
+  minimumSampleRate: 8_000,
+  maximumSampleRate: 192_000,
+  referenceSampleRate: 48_000,
+  referenceFrames: 96_000,
+  q15Divisor: 32_768,
+  envelopeQ15Maximum: 32_767,
+  convolverNormalize: true,
+  referenceInterleavedInt16LeSha256:
+    "8329fc9abc8b16eeac673bd4a1e0f1e8c9a4900939e6fc00191b429066867f89",
+  referenceChannelInt16LeSha256: [
+    "fca2e65890c77fdb0ad08d6cada5b0ed398ce9f97c46e279b306a5c8a870fe53",
+    "060054f6c4797b6ba6a11798e261455596a7ab4f17042aa7d2882b7569fd5bec",
+  ],
+  referencePeakQ15: 32_595,
+  referenceFinalStateUint32: 0xa07e6c9f,
+} as const;
+
+export const X0_REVIEWED_RENDER_POLICY = {
+  analysisPolicyVersion: 1,
+  channelCount: 2,
+  masterVolume: 0.8,
+  frameCountRule: "ceil(sampleRate*renderDuration)",
+  scalarAggregation: "all channels per frame in ascending channel order",
+  absolutePeakMaximumExclusive: 0.99,
+  nonSilentAbsolutePeakMinimum: 0.0005,
+  activeRmsMinimum: 0.00005,
+  activeRmsMaximumExclusive: 0.5,
+  onsetThreshold: 0.0000001,
+  onsetComparison:
+    "first frame where any channel absolute sample is strictly greater than onsetThreshold",
+  onsetToleranceSeconds: 0.02,
+  activeRmsWindow: "[start,release)",
+  tailRmsWindowSeconds: 0.5,
+  earlyTailRmsWindow:
+    "[release,min(release+tailRmsWindowSeconds,renderDuration))",
+  finalTailRmsWindow:
+    "[max(release,renderDuration-tailRmsWindowSeconds),renderDuration)",
+  tailPresentRmsMinimum: 0.00005,
+  tailFinalRmsMaximum: 0.01,
+  tailDecayMinimumRatio: 2,
+  tailDecayComparison:
+    "earlyTailRms>=tailDecayMinimumRatio*finalTailRms",
+  nanSamples: 0,
+  infiniteSamples: 0,
+  clippedSamplesAtUnity: 0,
+  impulseIdentity:
+    "interleaved signed-int16 little-endian Q15 SHA-256 equals the reviewed 48000 Hz reference and an independent algorithm replay at other sample rates",
+  crossBrowserPcmHashEqualityRequired: false,
+} as const;
+
+export const X0_REVIEWED_RELEASE_SECONDS = {
+  "preview-release": 0.04,
+  "voice-steal": 0.02,
+  "generation-retire": 0.012,
+  "all-notes-off": 0.012,
+  "note-retrigger": 0.012,
+  "page-teardown": 0,
+} as const;
+
+export const X0_REVIEWED_COUNTS = {
+  companions: 10,
+  routingCases: 14,
+  recipes: 5,
+  impulseCheckpoints: 8,
+  lifecycleCases: 45,
+  registryCases: 32,
+  renderCases: 15,
+  listeningInstrumentRows: 5,
+  listeningScenarioRows: 9,
+  mutationControls: 30,
+  traces: 18,
+  authorities: 7,
+} as const;
+
+const REVIEWED_CANONICAL_DIGESTS = {
+  graphNodes: "63e4ef534f244a1e2ab328ccf99da7a27056d418e02d5b771eb8e44c9ff34409",
+  graphEdges: "86f0e0d8307ab85e40d9ed1f1f1d7547f34018bf117a754521d3814ca4c526b0",
+  graphSettings: "ed4816e5e4ea9fbcb1a941cddb2479db072453f54a44272f35717a6ebf9c53a5",
+  routingCases: "cb78dae03ce88d9bc853f8c8a6339f6de64f53ad8d38d566d7b311191834b2cc",
+  recipes: "d49124cb527c33e992eb88e3d903ac15bed5992fc31a05ce8a5ebdd64a20c3bd",
+  normalization: "3a8f10911fc1f7e39c4decd287f377882c227141c46706653571628065bd7c03",
+  pulse: "e5bad32f09dbfe03ef87124d811125144145168bc8f07a48ef78b530b1c1e839",
+  impulseCheckpoints: "f3a26aed6b7239dfb6ac4aec73710626254df8efdc78e58ba7afa412e8b7f4a6",
+  lifecycleCases: "e1b8436a7416e52e7749a02ddb4dbcfee0a896314d1316ba9c779dfe9730b85b",
+  registryCases: "97191f50abef6e929f508244f2c5e260d4c9a3616380cb87477a841f02d598f1",
+  renderPolicy: "2f48761e269d258d5768c5a708b744c663897140871f9eeadef083ab594cd5db",
+  renderCases: "cf4b4a953cb3d37ae9c9f7e8fd9185d77ac792a173598f2818b7502113f0cefe",
+  listeningInstruments:
+    "f49499de30ca267564b89b4505ddf5adf66dbc0f951b2a726e5ffc265286ea0b",
+  listeningScenarios:
+    "ac4e15093fb990ec23eadb7c9470002442cafc732dbf3b7ac8457e3787424e31",
+  authorities: "0d05bf5b8a4a3a6ad0656ad48b953b83e5609998b18e6a21e6551f08a7b389b1",
+  controls: "12daaa242b90715ae7aef16b09448460b3bd010d6b870de5ba4b1ad4cc514216",
+  traces: "a1758edccec8e27d504bc3a3d8a1974f0d65266601bdc69f6f2df2b7b839f7af",
+} as const;
+
+type ParsedFixture = Readonly<{
+  source: Uint8Array;
+  value: JsonObject;
+}>;
+
+function isObject(value: unknown): value is JsonObject {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function rows(value: unknown): JsonObject[] {
+  return Array.isArray(value) ? value.filter(isObject) : [];
+}
+
+function strings(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((entry): entry is string => typeof entry === "string")
+    : [];
+}
+
+function sha256(value: Uint8Array | string): string {
+  return createHash("sha256").update(value).digest("hex");
+}
+
+function canonicalDigest(value: unknown): string {
+  return sha256(JSON.stringify(value));
+}
+
+function same(left: unknown, right: unknown): boolean {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function addFinding(
+  findings: X0ContractFinding[],
+  code: string,
+  path: string,
+  message: string,
+): void {
+  findings.push({ code, path, message });
+}
+
+function expectEqual(
+  findings: X0ContractFinding[],
+  code: string,
+  path: string,
+  actual: unknown,
+  expected: unknown,
+): void {
+  if (!same(actual, expected)) {
+    addFinding(findings, code, path, "value differs from reviewed authority");
+  }
+}
+
+function expectCanonicalDigest(
+  findings: X0ContractFinding[],
+  code: string,
+  path: string,
+  actual: unknown,
+  expectedDigest: string,
+): void {
+  if (canonicalDigest(actual) !== expectedDigest) {
+    addFinding(findings, code, path, "reviewed semantic records changed");
+  }
+}
+
+async function parseFixtures(
+  fixtureRoot: string,
+  findings: X0ContractFinding[],
+): Promise<Map<ExpectedFilename, ParsedFixture>> {
+  const parsed = new Map<ExpectedFilename, ParsedFixture>();
+  let filenames: string[];
+  try {
+    filenames = (await readdir(fixtureRoot)).sort();
+  } catch {
+    addFinding(findings, "X0_FILES", fixtureRoot, "fixture directory is unreadable");
+    return parsed;
+  }
+
+  const expectedSet = new Set<string>(EXPECTED_FILES);
+  for (const filename of filenames) {
+    if (!expectedSet.has(filename)) {
+      addFinding(findings, "X0_FILES", filename, "unexpected fixture file");
+    }
+  }
+
+  for (const filename of EXPECTED_FILES) {
+    if (!filenames.includes(filename)) {
+      addFinding(findings, "X0_FILES", filename, "required fixture file is missing");
+      continue;
+    }
+    try {
+      const source = await readFile(join(fixtureRoot, filename));
+      const value: unknown = JSON.parse(source.toString("utf8"));
+      if (!isObject(value)) {
+        addFinding(findings, "X0_JSON", filename, "fixture root must be an object");
+        continue;
+      }
+      parsed.set(filename, { source, value });
+      if (value.schema !== EXPECTED_SCHEMAS[filename]) {
+        addFinding(findings, "X0_SCHEMA", `${filename}.schema`, "schema mismatch");
+      }
+    } catch {
+      addFinding(findings, "X0_JSON", filename, "fixture is not valid JSON");
+    }
+  }
+  return parsed;
+}
+
+function validateUniqueIds(
+  findings: X0ContractFinding[],
+  code: string,
+  path: string,
+  values: unknown,
+  expectedCount: number,
+  prefix: string,
+): Set<string> {
+  const entries = rows(values);
+  const ids = new Set<string>();
+  if (entries.length !== expectedCount) {
+    addFinding(findings, code, path, `expected ${String(expectedCount)} rows`);
+  }
+  for (const [index, entry] of entries.entries()) {
+    if (typeof entry.id !== "string" || !entry.id.startsWith(prefix)) {
+      addFinding(
+        findings,
+        code,
+        `${path}.${String(index)}.id`,
+        "ID prefix is invalid",
+      );
+      continue;
+    }
+    if (ids.has(entry.id)) {
+      addFinding(findings, code, `${path}.${String(index)}.id`, "duplicate ID");
+    }
+    ids.add(entry.id);
+  }
+  return ids;
+}
+
+function validateMain(
+  value: JsonObject | undefined,
+  findings: X0ContractFinding[],
+): void {
+  if (value === undefined) return;
+  expectEqual(findings, "X0_MAIN", "contract.package", value.package, "X0");
+  expectEqual(findings, "X0_MAIN", "contract.contractVersion", value.contractVersion, 1);
+  expectEqual(
+    findings,
+    "X0_MAIN",
+    "contract.beadId",
+    value.beadId,
+    "jcpe-milestone-reliable-studio-l3a.6.1",
+  );
+  expectEqual(
+    findings,
+    "X0_MAIN",
+    "contract.companions",
+    value.companions,
+    X0_REVIEWED_COMPANIONS,
+  );
+  expectEqual(
+    findings,
+    "X0_MAIN",
+    "contract.reviewedFileSha256",
+    value.reviewedFileSha256,
+    X0_REVIEWED_BYTE_DIGESTS,
+  );
+  expectEqual(
+    findings,
+    "X0_MAIN",
+    "contract.identities",
+    value.identities,
+    {
+      enginePolicy: { id: "changes.audio-engine", version: 1 },
+      registryPolicy: {
+        id: "changes.audio-active-voice-registry",
+        version: 1,
+      },
+      recipeSet: { id: "changes.audio.instrument-recipes", version: 1 },
+      impulseAlgorithm: "changes.audio.impulse.xorshift32-q15.v1",
+      normalizationPolicy: "changes.audio.voice-normalization.v1",
+    },
+  );
+  const publicSurface = isObject(value.publicSurface) ? value.publicSurface : {};
+  expectEqual(
+    findings,
+    "X0_OPERATIONS",
+    "contract.publicSurface.operationOrder",
+    publicSurface.operationOrder,
+    X0_REVIEWED_OPERATION_ORDER,
+  );
+  expectEqual(findings, "X0_STATES", "contract.states", value.states, X0_REVIEWED_STATES);
+  expectEqual(
+    findings,
+    "X0_STATES",
+    "contract.terminations",
+    value.terminations,
+    X0_REVIEWED_TERMINATIONS,
+  );
+  expectEqual(
+    findings,
+    "X0_REFUSALS",
+    "contract.refusalCodes",
+    value.refusalCodes,
+    X0_REVIEWED_REFUSAL_CODES,
+  );
+  expectEqual(findings, "X0_LIMITS", "contract.limits", value.limits, X0_REVIEWED_LIMITS);
+  expectEqual(
+    findings,
+    "X0_WORK_COUNTERS",
+    "contract.workCounterOrder",
+    value.workCounterOrder,
+    X0_REVIEWED_WORK_COUNTER_ORDER,
+  );
+  expectEqual(
+    findings,
+    "X0_ORDERING",
+    "contract.ordering",
+    value.ordering,
+    {
+      sameTimestamp: "old-note-release-before-new-note-start",
+      polyphony: [
+        "retrigger-retirement",
+        "owner-kind-limit",
+        "instrument-recipe-limit",
+        "global-limit",
+        "retained-tail-capacity",
+        "new-voice-creation",
+      ],
+      stealing: [
+        "same-incoming-owner-before-other-owner",
+        "lower-estimated-envelope-before-higher",
+        "earlier-attack-before-later-attack",
+        "voice-id-ascending-utf16",
+      ],
+      snapshots: "voice-id-ascending-utf16-then-instance-token-ascending",
+      debugEvents: "increasing-sequence-oldest-retained-first",
+    },
+  );
+  expectEqual(
+    findings,
+    "X0_RELEASE_POLICY",
+    "contract.releaseSeconds",
+    value.releaseSeconds,
+    X0_REVIEWED_RELEASE_SECONDS,
+  );
+  expectEqual(
+    findings,
+    "X0_POLICIES",
+    "contract.policies",
+    value.policies,
+    {
+      context: "lazy-first-trusted-play-or-preview-gesture-one-usable-context",
+      initialization:
+        "create-context-synchronously-before-first-await-and-coalesce-concurrent-calls",
+      ordinaryLifecycle: "never-close-or-recreate-context-or-persistent-graph",
+      faultRetry: "explicit-trusted-gesture-only-after-no-usable-context",
+      graph: "all-progression-section-and-preview-voices-use-identical-persistent-routes",
+      instrumentChange: "future-voice-factory-only-never-graph-mutation",
+      attackAtomicity:
+        "validate-and-plan-complete-batch-before-node-or-registry-mutation",
+      retrigger:
+        "exact-owner-event-midi-old-instance-retires-before-new-source-start",
+      parameterScheduling:
+        "reviewed-analytic-amplitude-filter-fm-transient-tremolo-and-release-automation",
+      stealEnvelope:
+        "changes.audio.estimated-envelope.v1-at-selection-current-time",
+      stealEligibility:
+        "nonreleasing-only-because-victim-must-reduce-admission-deficit",
+      cleanup: "instance-token-checked-idempotent-and-disconnect-exactly-once",
+      scheduledRetirement:
+        "stop-at-or-before-attack-produces-no-future-audible-attack",
+      mix: "cancel-and-hold-when-supported-then-15ms-linear-ramp",
+      compressorClaim: "conservative-dynamics-stage-never-limiter",
+      wallTime: "performance-evidence-only-never-musical-cutoff",
+      platformObjects:
+        "remain-inside-audio-adapter-and-never-enter-snapshot-application-or-ui",
+    },
+  );
+  expectEqual(
+    findings,
+    "X0_COUNTS",
+    "contract.coverageSummary",
+    value.coverageSummary,
+    X0_REVIEWED_COUNTS,
+  );
+  const independence = isObject(value.independence) ? value.independence : {};
+  if (
+    independence.productionImplementationAvailableWhenAuthored !== false ||
+    independence.productionImportsForbidden !== true ||
+    independence.automatedListeningClaim !== false
+  ) {
+    addFinding(
+      findings,
+      "X0_INDEPENDENCE",
+      "contract.independence",
+      "fixture independence statement changed",
+    );
+  }
+  if (JSON.stringify(value).includes("PENDING")) {
+    addFinding(findings, "X0_MAIN", "contract", "pending review marker remains");
+  }
+}
+
+function validateGraph(value: JsonObject | undefined, findings: X0ContractFinding[]): Set<string> {
+  if (value === undefined) return new Set();
+  if (
+    value.createdNodeCount !== 12 ||
+    value.existingDestinationCount !== 1 ||
+    value.edgeCount !== 13
+  ) {
+    addFinding(findings, "X0_GRAPH_COUNTS", "graph", "graph counts changed");
+  }
+  expectCanonicalDigest(
+    findings,
+    "X0_GRAPH_NODES",
+    "graph.nodes",
+    value.nodes,
+    REVIEWED_CANONICAL_DIGESTS.graphNodes,
+  );
+  expectCanonicalDigest(
+    findings,
+    "X0_GRAPH_EDGES",
+    "graph.edges",
+    value.edges,
+    REVIEWED_CANONICAL_DIGESTS.graphEdges,
+  );
+  expectCanonicalDigest(
+    findings,
+    "X0_GRAPH_SETTINGS",
+    "graph.settings",
+    value.settings,
+    REVIEWED_CANONICAL_DIGESTS.graphSettings,
+  );
+  expectEqual(
+    findings,
+    "X0_GRAPH_SETTINGS",
+    "graph.settings",
+    value.settings,
+    X0_REVIEWED_GRAPH_SETTINGS,
+  );
+  expectCanonicalDigest(
+    findings,
+    "X0_ROUTING_CASES",
+    "graph.routingCases",
+    value.routingCases,
+    REVIEWED_CANONICAL_DIGESTS.routingCases,
+  );
+  return validateUniqueIds(
+    findings,
+    "X0_ROUTING_CASES",
+    "graph.routingCases",
+    value.routingCases,
+    14,
+    "X0-ROUTE-",
+  );
+}
+
+function validateRecipes(value: JsonObject | undefined, findings: X0ContractFinding[]): void {
+  if (value === undefined) return;
+  if (
+    value.recipeSetId !== "changes.audio.instrument-recipes" ||
+    value.recipeSetVersion !== 1 ||
+    value.expectedValuesGenerated !== false
+  ) {
+    addFinding(findings, "X0_RECIPE_IDENTITY", "recipes", "recipe identity changed");
+  }
+  expectCanonicalDigest(
+    findings,
+    "X0_RECIPES",
+    "recipes.recipes",
+    value.recipes,
+    REVIEWED_CANONICAL_DIGESTS.recipes,
+  );
+  const recipeRows = rows(value.recipes);
+  expectEqual(
+    findings,
+    "X0_RECIPES",
+    "recipes.ids",
+    recipeRows.map((recipe) => recipe.id),
+    X0_REVIEWED_RECIPE_IDS,
+  );
+  expectEqual(
+    findings,
+    "X0_RECIPES",
+    "recipes.levels",
+    recipeRows.map((recipe) => recipe.outputLevel),
+    X0_REVIEWED_RECIPE_LEVELS,
+  );
+  expectEqual(
+    findings,
+    "X0_RECIPES",
+    "recipes.polyphony",
+    recipeRows.map((recipe) => recipe.polyphonyLimit),
+    X0_REVIEWED_RECIPE_POLYPHONY,
+  );
+  expectEqual(
+    findings,
+    "X0_RECIPES",
+    "recipes.sourceCounts",
+    recipeRows.map((recipe) => recipe.scheduledSourceCount),
+    X0_REVIEWED_RECIPE_SOURCE_COUNTS,
+  );
+  expectCanonicalDigest(
+    findings,
+    "X0_NORMALIZATION",
+    "recipes.normalization",
+    value.normalization,
+    REVIEWED_CANONICAL_DIGESTS.normalization,
+  );
+  expectCanonicalDigest(
+    findings,
+    "X0_PULSE",
+    "recipes.pulseWave",
+    value.pulseWave,
+    REVIEWED_CANONICAL_DIGESTS.pulse,
+  );
+}
+
+type ImpulseReference = Readonly<{
+  interleavedHash: string;
+  channelHashes: readonly [string, string];
+  peakQ15: number;
+  finalState: number;
+  checkpoints: readonly JsonObject[];
+  firstEightLeft: readonly number[];
+  firstEightRight: readonly number[];
+}>;
+
+function generateIndependentImpulseReference(): ImpulseReference {
+  const length = X0_REVIEWED_IMPULSE.referenceFrames;
+  const interleaved = Buffer.alloc(length * 4);
+  const left = Buffer.alloc(length * 2);
+  const right = Buffer.alloc(length * 2);
+  const checkpointFrames = new Set([0, 1, 2, 23_999, 47_999, 71_999, 95_998, 95_999]);
+  const checkpoints: JsonObject[] = [];
+  const firstEightLeft: number[] = [];
+  const firstEightRight: number[] = [];
+  let state = X0_REVIEWED_IMPULSE.seedUint32 >>> 0;
+  let peakQ15 = 0;
+
+  for (let frame = 0; frame < length; frame += 1) {
+    const remaining = length - frame;
+    const envelopeQ15 = Math.floor(
+      (remaining * remaining * X0_REVIEWED_IMPULSE.envelopeQ15Maximum) /
+        (length * length),
+    );
+    const samples: [number, number] = [0, 0];
+    for (let channel = 0; channel < 2; channel += 1) {
+      state ^= state << 13;
+      state ^= state >>> 17;
+      state ^= state << 5;
+      state >>>= 0;
+      const noise = (state >>> 16) - 32_768;
+      const sample = Math.trunc((noise * envelopeQ15) / 32_768);
+      samples[channel] = sample;
+      peakQ15 = Math.max(peakQ15, Math.abs(sample));
+      interleaved.writeInt16LE(sample, frame * 4 + channel * 2);
+      (channel === 0 ? left : right).writeInt16LE(sample, frame * 2);
+    }
+    if (frame < 8) {
+      firstEightLeft.push(samples[0]);
+      firstEightRight.push(samples[1]);
+    }
+    if (checkpointFrames.has(frame)) {
+      checkpoints.push({
+        frame,
+        leftQ15: samples[0],
+        rightQ15: samples[1],
+      });
+    }
+  }
+
+  return {
+    interleavedHash: sha256(interleaved),
+    channelHashes: [sha256(left), sha256(right)],
+    peakQ15,
+    finalState: state,
+    checkpoints,
+    firstEightLeft,
+    firstEightRight,
+  };
+}
+
+function validateImpulse(value: JsonObject | undefined, findings: X0ContractFinding[]): void {
+  if (value === undefined) return;
+  const policyActual = {
+    algorithmId: value.algorithmId,
+    ownership: value.ownership,
+    license: value.license,
+    runtimeNetworkRequired: value.runtimeNetworkRequired,
+    seedUint32: value.seedUint32,
+    seedHex: value.seedHex,
+    channels: value.channels,
+    durationSeconds: value.durationSeconds,
+    sampleRateRange: value.sampleRateRange,
+    referenceSampleRate: value.referenceSampleRate,
+    referenceFrames: value.referenceFrames,
+    referenceScalarSamples: value.referenceScalarSamples,
+    referenceBytes: value.referenceBytes,
+    convolverNormalize: value.convolverNormalize,
+  };
+  expectEqual(findings, "X0_IMPULSE_POLICY", "impulse.policy", policyActual, {
+    algorithmId: X0_REVIEWED_IMPULSE.algorithmId,
+    ownership: "project-authored-code-no-external-asset",
+    license: "same-as-project",
+    runtimeNetworkRequired: false,
+    seedUint32: X0_REVIEWED_IMPULSE.seedUint32,
+    seedHex: "0x58403031",
+    channels: 2,
+    durationSeconds: 2,
+    sampleRateRange: [8_000, 192_000],
+    referenceSampleRate: 48_000,
+    referenceFrames: 96_000,
+    referenceScalarSamples: 192_000,
+    referenceBytes: 384_000,
+    convolverNormalize: true,
+  });
+
+  const reference = generateIndependentImpulseReference();
+  expectEqual(
+    findings,
+    "X0_IMPULSE_HASH",
+    "impulse.referenceInterleavedInt16LeSha256",
+    value.referenceInterleavedInt16LeSha256,
+    reference.interleavedHash,
+  );
+  expectEqual(
+    findings,
+    "X0_IMPULSE_HASH",
+    "impulse.referenceChannelInt16LeSha256",
+    value.referenceChannelInt16LeSha256,
+    reference.channelHashes,
+  );
+  if (
+    value.referencePeakQ15 !== reference.peakQ15 ||
+    value.referenceFinalStateUint32 !== reference.finalState ||
+    value.referenceFinalStateHex !== "0xa07e6c9f"
+  ) {
+    addFinding(findings, "X0_IMPULSE_HASH", "impulse.summary", "impulse summary changed");
+  }
+  expectCanonicalDigest(
+    findings,
+    "X0_IMPULSE_CHECKPOINTS",
+    "impulse.checkpoints",
+    value.checkpoints,
+    REVIEWED_CANONICAL_DIGESTS.impulseCheckpoints,
+  );
+  expectEqual(
+    findings,
+    "X0_IMPULSE_CHECKPOINTS",
+    "impulse.checkpoints",
+    value.checkpoints,
+    reference.checkpoints,
+  );
+  expectEqual(
+    findings,
+    "X0_IMPULSE_CHECKPOINTS",
+    "impulse.firstEightLeftQ15",
+    value.firstEightLeftQ15,
+    reference.firstEightLeft,
+  );
+  expectEqual(
+    findings,
+    "X0_IMPULSE_CHECKPOINTS",
+    "impulse.firstEightRightQ15",
+    value.firstEightRightQ15,
+    reference.firstEightRight,
+  );
+}
+
+function validateCaseCorpus(
+  value: JsonObject | undefined,
+  findings: X0ContractFinding[],
+  options: Readonly<{
+    key: string;
+    count: number;
+    prefix: string;
+    code: string;
+    digest: string;
+  }>,
+): Set<string> {
+  if (value === undefined) return new Set();
+  expectCanonicalDigest(
+    findings,
+    options.code,
+    `${options.key}.cases`,
+    value.cases,
+    options.digest,
+  );
+  return validateUniqueIds(
+    findings,
+    options.code,
+    `${options.key}.cases`,
+    value.cases,
+    options.count,
+    options.prefix,
+  );
+}
+
+function validateRender(value: JsonObject | undefined, findings: X0ContractFinding[]): Set<string> {
+  if (value === undefined) return new Set();
+  expectEqual(
+    findings,
+    "X0_RENDER_POLICY",
+    "render.numericPolicy",
+    value.numericPolicy,
+    X0_REVIEWED_RENDER_POLICY,
+  );
+  expectCanonicalDigest(
+    findings,
+    "X0_RENDER_POLICY",
+    "render.numericPolicy",
+    value.numericPolicy,
+    REVIEWED_CANONICAL_DIGESTS.renderPolicy,
+  );
+  expectCanonicalDigest(
+    findings,
+    "X0_RENDER_CASES",
+    "render.cases",
+    value.cases,
+    REVIEWED_CANONICAL_DIGESTS.renderCases,
+  );
+  const ids = validateUniqueIds(
+    findings,
+    "X0_RENDER_CASES",
+    "render.cases",
+    value.cases,
+    15,
+    "X0-RENDER-",
+  );
+  const recipeCounts = new Map<string, number>();
+  for (const entry of rows(value.cases)) {
+    if (typeof entry.instrumentId === "string") {
+      recipeCounts.set(entry.instrumentId, (recipeCounts.get(entry.instrumentId) ?? 0) + 1);
+    }
+  }
+  for (const recipeId of X0_REVIEWED_RECIPE_IDS) {
+    if (recipeCounts.get(recipeId) !== 3) {
+      addFinding(
+        findings,
+        "X0_RENDER_CASES",
+        `render.${recipeId}`,
+        "each recipe requires three render rows",
+      );
+    }
+  }
+  return ids;
+}
+
+function validateListening(
+  value: JsonObject | undefined,
+  findings: X0ContractFinding[],
+): Set<string> {
+  if (value === undefined) return new Set();
+  if (
+    value.automatedListeningClaim !== false ||
+    value.releaseStatus !== "unexecuted-until-release-checklist"
+  ) {
+    addFinding(
+      findings,
+      "X0_LISTENING_POLICY",
+      "listening",
+      "automation cannot claim listening completion",
+    );
+  }
+  expectCanonicalDigest(
+    findings,
+    "X0_LISTENING_ROWS",
+    "listening.instrumentRows",
+    value.instrumentRows,
+    REVIEWED_CANONICAL_DIGESTS.listeningInstruments,
+  );
+  expectCanonicalDigest(
+    findings,
+    "X0_LISTENING_ROWS",
+    "listening.scenarioRows",
+    value.scenarioRows,
+    REVIEWED_CANONICAL_DIGESTS.listeningScenarios,
+  );
+  const instrumentIds = validateUniqueIds(
+    findings,
+    "X0_LISTENING_ROWS",
+    "listening.instrumentRows",
+    value.instrumentRows,
+    5,
+    "X0-LISTEN-INST-",
+  );
+  const scenarioIds = validateUniqueIds(
+    findings,
+    "X0_LISTENING_ROWS",
+    "listening.scenarioRows",
+    value.scenarioRows,
+    9,
+    "X0-LISTEN-SCENE-",
+  );
+  return new Set([...instrumentIds, ...scenarioIds]);
+}
+
+function resolvePointer(root: unknown, pointer: string): unknown {
+  if (pointer === "") return root;
+  if (!pointer.startsWith("/")) return undefined;
+  let current: unknown = root;
+  for (const rawSegment of pointer.slice(1).split("/")) {
+    const segment = rawSegment.replaceAll("~1", "/").replaceAll("~0", "~");
+    if (Array.isArray(current)) {
+      if (!/^(0|[1-9][0-9]*)$/.test(segment)) return undefined;
+      current = current[Number(segment)];
+    } else if (isObject(current)) {
+      current = current[segment];
+    } else {
+      return undefined;
+    }
+  }
+  return current;
+}
+
+function validateMutations(
+  value: JsonObject | undefined,
+  allFixtures: ReadonlyMap<ExpectedFilename, ParsedFixture>,
+  findings: X0ContractFinding[],
+): Set<string> {
+  if (value === undefined) return new Set();
+  expectCanonicalDigest(
+    findings,
+    "X0_MUTATIONS",
+    "mutations.controls",
+    value.controls,
+    REVIEWED_CANONICAL_DIGESTS.controls,
+  );
+  const ids = validateUniqueIds(
+    findings,
+    "X0_MUTATIONS",
+    "mutations.controls",
+    value.controls,
+    30,
+    "X0-MUT-",
+  );
+  const allowedFiles = new Set<string>(EXPECTED_FILES);
+  for (const [index, control] of rows(value.controls).entries()) {
+    if (
+      typeof control.file !== "string" ||
+      !allowedFiles.has(control.file) ||
+      control.operation !== "replace" ||
+      typeof control.pointer !== "string" ||
+      typeof control.expectedFindingCode !== "string" ||
+      control.expectedFindingCode.length === 0
+    ) {
+      addFinding(
+        findings,
+        "X0_MUTATIONS",
+        `mutations.controls.${String(index)}`,
+        "mutation shape is invalid",
+      );
+      continue;
+    }
+    const fixture = allFixtures.get(control.file as ExpectedFilename);
+    const current = resolvePointer(fixture?.value, control.pointer);
+    if (current === undefined || same(current, control.value)) {
+      addFinding(
+        findings,
+        "X0_MUTATIONS",
+        `mutations.controls.${String(index)}.pointer`,
+        "mutation pointer must resolve and change its value",
+      );
+    }
+  }
+  return ids;
+}
+
+function validateProvenance(
+  value: JsonObject | undefined,
+  findings: X0ContractFinding[],
+): void {
+  if (value === undefined) return;
+  if (
+    value.expectedValuesGenerated !== false ||
+    value.productionOutputUsed !== false ||
+    value.reviewState !== "reviewed-for-x0-spec"
+  ) {
+    addFinding(findings, "X0_PROVENANCE", "provenance", "provenance state changed");
+  }
+  expectCanonicalDigest(
+    findings,
+    "X0_PROVENANCE",
+    "provenance.authorities",
+    value.authorities,
+    REVIEWED_CANONICAL_DIGESTS.authorities,
+  );
+  validateUniqueIds(
+    findings,
+    "X0_PROVENANCE",
+    "provenance.authorities",
+    value.authorities,
+    7,
+    "AUTH-",
+  );
+}
+
+function validateTraces(
+  value: JsonObject | undefined,
+  caseIds: ReadonlySet<string>,
+  controlIds: ReadonlySet<string>,
+  findings: X0ContractFinding[],
+): void {
+  const linkedCaseIds = new Set<string>();
+  const deferredCaseIds = new Set<string>();
+  if (value === undefined) return;
+  expectCanonicalDigest(
+    findings,
+    "X0_TRACES",
+    "traces.traces",
+    value.traces,
+    REVIEWED_CANONICAL_DIGESTS.traces,
+  );
+  validateUniqueIds(
+    findings,
+    "X0_TRACES",
+    "traces.traces",
+    value.traces,
+    18,
+    "TR-",
+  );
+  for (const [index, trace] of rows(value.traces).entries()) {
+    for (const caseId of strings(trace.caseIds)) {
+      linkedCaseIds.add(caseId);
+      if (!caseIds.has(caseId)) {
+        addFinding(
+          findings,
+          "X0_TRACE_LINK",
+          `traces.traces.${String(index)}.caseIds`,
+          `unknown case ${caseId}`,
+        );
+      }
+    }
+    for (const caseId of strings(trace.deferredCaseIds)) {
+      deferredCaseIds.add(caseId);
+      if (!caseIds.has(caseId)) {
+        addFinding(
+          findings,
+          "X0_TRACE_LINK",
+          `traces.traces.${String(index)}.deferredCaseIds`,
+          `unknown deferred case ${caseId}`,
+        );
+      }
+      if (strings(trace.caseIds).includes(caseId)) {
+        addFinding(
+          findings,
+          "X0_TRACE_LINK",
+          `traces.traces.${String(index)}.deferredCaseIds`,
+          `case ${caseId} cannot be both required and deferred`,
+        );
+      }
+    }
+    if (
+      strings(trace.deferredCaseIds).length > 0 &&
+      (
+        trace.deferredUntilPackage !== "X1" ||
+        typeof trace.deferredReason !== "string" ||
+        trace.deferredReason.length === 0
+      )
+    ) {
+      addFinding(
+        findings,
+        "X0_TRACE_LINK",
+        `traces.traces.${String(index)}.deferredCaseIds`,
+        "deferred cases require the reviewed X1 package and a nonempty reason",
+      );
+    }
+    for (const controlId of strings(trace.controlIds)) {
+      if (!controlIds.has(controlId)) {
+        addFinding(
+          findings,
+          "X0_TRACE_LINK",
+          `traces.traces.${String(index)}.controlIds`,
+          `unknown control ${controlId}`,
+        );
+      }
+    }
+    if (
+      strings(trace.caseIds).length === 0 ||
+      strings(trace.controlIds).length === 0 ||
+      typeof trace.evidenceOwner !== "string" ||
+      trace.evidenceOwner.length === 0
+    ) {
+      addFinding(
+        findings,
+        "X0_TRACE_LINK",
+        `traces.traces.${String(index)}`,
+        "trace requires cases, controls, and evidence owner",
+      );
+    }
+  }
+  for (const caseId of caseIds) {
+    if (!linkedCaseIds.has(caseId) && !deferredCaseIds.has(caseId)) {
+      addFinding(
+        findings,
+        "X0_TRACE_LINK",
+        `traces.caseIds.${caseId}`,
+        "reviewed case has no required or explicitly deferred trace link",
+      );
+    }
+  }
+}
+
+export async function validateX0Contract(
+  fixtureRoot = resolve("tests/fixtures/audio-engine"),
+): Promise<X0ContractValidationReport> {
+  const findings: X0ContractFinding[] = [];
+  const parsed = await parseFixtures(fixtureRoot, findings);
+
+  for (const filename of X0_REVIEWED_COMPANIONS) {
+    const fixture = parsed.get(filename);
+    if (
+      fixture !== undefined &&
+      sha256(fixture.source) !== X0_REVIEWED_BYTE_DIGESTS[filename]
+    ) {
+      addFinding(
+        findings,
+        "X0_BYTE_DIGEST",
+        filename,
+        "reviewed companion bytes changed",
+      );
+    }
+  }
+  const contractFixture = parsed.get(CONTRACT_FILENAME);
+  if (
+    contractFixture !== undefined &&
+    sha256(contractFixture.source) !== X0_REVIEWED_CONTRACT_BYTE_DIGEST
+  ) {
+    addFinding(
+      findings,
+      "X0_CONTRACT_DIGEST",
+      CONTRACT_FILENAME,
+      "reviewed machine contract bytes changed",
+    );
+  }
+
+  const contract = contractFixture?.value;
+  const graph = parsed.get("graph-topology.json")?.value;
+  const impulse = parsed.get("impulse-golden.json")?.value;
+  const recipes = parsed.get("instrument-recipes.json")?.value;
+  const lifecycle = parsed.get("lifecycle-cases.json")?.value;
+  const listening = parsed.get("listening-rubric.json")?.value;
+  const mutations = parsed.get("mutation-controls.json")?.value;
+  const provenance = parsed.get("provenance-ledger.json")?.value;
+  const registry = parsed.get("registry-cases.json")?.value;
+  const render = parsed.get("render-matrix.json")?.value;
+  const traces = parsed.get("trace-ledger.json")?.value;
+
+  validateMain(contract, findings);
+  const routingIds = validateGraph(graph, findings);
+  validateRecipes(recipes, findings);
+  validateImpulse(impulse, findings);
+  const lifecycleIds = validateCaseCorpus(lifecycle, findings, {
+    key: "lifecycle",
+    count: 45,
+    prefix: "X0-LIFE-",
+    code: "X0_LIFECYCLE_CASES",
+    digest: REVIEWED_CANONICAL_DIGESTS.lifecycleCases,
+  });
+  const rejectedResume = rows(lifecycle?.cases).find(
+    (entry) => entry["id"] === "X0-LIFE-033",
+  );
+  if (
+    rejectedResume?.["expectedOutcome"] !== "platform-fault" ||
+    rejectedResume["expectedState"] !== "fault" ||
+    rejectedResume["expectedCode"] !== "audio.context_resume_failed" ||
+    typeof rejectedResume["expectedDetail"] !== "string" ||
+    !rejectedResume["expectedDetail"].includes("context closes") ||
+    !rejectedResume["expectedDetail"].includes("replacement")
+  ) {
+    addFinding(
+      findings,
+      "X0_LIFECYCLE_CASES",
+      "lifecycle.cases.X0-LIFE-033",
+      "a rejected platform resume must fault, close the unusable context, and require replacement",
+    );
+  }
+  if (registry?.referenceCountPerVoice !== 6) {
+    addFinding(
+      findings,
+      "X0_REGISTRY_CASES",
+      "registry.referenceCountPerVoice",
+      "each retained voice requires six index references",
+    );
+  }
+  const registryIds = validateCaseCorpus(registry, findings, {
+    key: "registry",
+    count: 32,
+    prefix: "X0-REG-",
+    code: "X0_REGISTRY_CASES",
+    digest: REVIEWED_CANONICAL_DIGESTS.registryCases,
+  });
+  const refusalEvidence = JSON.stringify([
+    lifecycle?.cases,
+    registry?.cases,
+  ]);
+  for (const refusalCode of X0_REVIEWED_REFUSAL_CODES) {
+    if (!refusalEvidence.includes(refusalCode)) {
+      addFinding(
+        findings,
+        "X0_REFUSAL_COVERAGE",
+        `refusal.${refusalCode}`,
+        "reviewed lifecycle or registry evidence is missing",
+      );
+    }
+  }
+  const renderIds = validateRender(render, findings);
+  const listeningIds = validateListening(listening, findings);
+  validateProvenance(provenance, findings);
+  const controlIds = validateMutations(mutations, parsed, findings);
+  const allCaseIds = new Set([
+    ...routingIds,
+    ...lifecycleIds,
+    ...registryIds,
+    ...renderIds,
+    ...listeningIds,
+  ]);
+  validateTraces(traces, allCaseIds, controlIds, findings);
+
+  const counts = {
+    companions: X0_REVIEWED_COMPANIONS.filter((filename) => parsed.has(filename)).length,
+    routingCases: rows(graph?.routingCases).length,
+    recipes: rows(recipes?.recipes).length,
+    impulseCheckpoints: rows(impulse?.checkpoints).length,
+    lifecycleCases: rows(lifecycle?.cases).length,
+    registryCases: rows(registry?.cases).length,
+    renderCases: rows(render?.cases).length,
+    listeningInstrumentRows: rows(listening?.instrumentRows).length,
+    listeningScenarioRows: rows(listening?.scenarioRows).length,
+    mutationControls: rows(mutations?.controls).length,
+    traces: rows(traces?.traces).length,
+    authorities: rows(provenance?.authorities).length,
+  };
+
+  return {
+    schema: "changes.validation.x0-contract.v1",
+    package: "X0",
+    outcome: findings.length === 0 ? "pass" : "fail",
+    counts,
+    findings,
+  };
+}
+
+if (import.meta.main) {
+  const report = await validateX0Contract();
+  console.log(JSON.stringify(report, null, 2));
+  if (report.outcome === "fail") process.exitCode = 1;
+}

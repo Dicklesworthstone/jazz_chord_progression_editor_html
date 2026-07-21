@@ -1,0 +1,214 @@
+{
+  "schema": "changes.progression.v2",
+  "id": "document-e0-nested",
+  "title": "Nested Canonical Order",
+  "description": "Independent E0 nested-shape byte authority.",
+  "meter": {
+    "beatsPerBar": 4,
+    "beatUnit": 4
+  },
+  "tempoBpm": 132,
+  "key": {
+    "tonic": {
+      "step": "C",
+      "alter": 0
+    },
+    "mode": "major"
+  },
+  "sections": [
+    {
+      "id": "section-e0-a",
+      "name": "A",
+      "annotation": "Nested order witness",
+      "keyOverride": {
+        "tonic": {
+          "step": "D",
+          "alter": 0
+        },
+        "mode": "natural-minor"
+      },
+      "voiceLeadingBoundary": "continue",
+      "measures": [
+        {
+          "id": "measure-e0-auto",
+          "events": [
+            {
+              "id": "event-e0-auto",
+              "duration": {
+                "numerator": 4,
+                "denominator": 1
+              },
+              "annotation": "altered dominant",
+              "chord": {
+                "kind": "parsed",
+                "sourceText": "C7#9",
+                "root": {
+                  "step": "C",
+                  "alter": 0
+                },
+                "triad": "major",
+                "sixth": null,
+                "seventh": "minor",
+                "extensions": [],
+                "additions": [],
+                "alterations": [
+                  {
+                    "number": 9,
+                    "alter": 1
+                  }
+                ],
+                "omissions": [],
+                "bass": null,
+                "colorPolicy": "none"
+              },
+              "voicing": {
+                "mode": "auto",
+                "family": "balanced",
+                "voiceCount": 4,
+                "range": {
+                  "lowMidi": 48,
+                  "highMidi": 72
+                },
+                "bassPolicy": "generated"
+              }
+            }
+          ],
+          "completion": {
+            "kind": "complete"
+          }
+        },
+        {
+          "id": "measure-e0-manual",
+          "events": [
+            {
+              "id": "event-e0-manual",
+              "duration": {
+                "numerator": 4,
+                "denominator": 1
+              },
+              "annotation": "custom manual witness",
+              "chord": {
+                "kind": "custom",
+                "sourceText": "C-Eb-G cluster",
+                "label": "Minor triad as custom",
+                "pitchNames": [
+                  {
+                    "step": "C",
+                    "alter": 0
+                  },
+                  {
+                    "step": "E",
+                    "alter": -1
+                  },
+                  {
+                    "step": "G",
+                    "alter": 0
+                  }
+                ],
+                "bass": null
+              },
+              "voicing": {
+                "mode": "manual",
+                "pitches": [
+                  {
+                    "step": "C",
+                    "alter": 0,
+                    "octave": 4
+                  },
+                  {
+                    "step": "E",
+                    "alter": -1,
+                    "octave": 4
+                  },
+                  {
+                    "step": "G",
+                    "alter": 0,
+                    "octave": 4
+                  }
+                ],
+                "bassPolicy": "included"
+              }
+            }
+          ],
+          "completion": {
+            "kind": "complete"
+          }
+        },
+        {
+          "id": "measure-e0-frozen-partial",
+          "events": [
+            {
+              "id": "event-e0-frozen",
+              "duration": {
+                "numerator": 2,
+                "denominator": 1
+              },
+              "annotation": "frozen partial witness",
+              "chord": {
+                "kind": "parsed",
+                "sourceText": "Cmaj7",
+                "root": {
+                  "step": "C",
+                  "alter": 0
+                },
+                "triad": "major",
+                "sixth": null,
+                "seventh": "major",
+                "extensions": [],
+                "additions": [],
+                "alterations": [],
+                "omissions": [],
+                "bass": null,
+                "colorPolicy": "none"
+              },
+              "voicing": {
+                "mode": "frozen",
+                "pitches": [
+                  {
+                    "step": "C",
+                    "alter": 0,
+                    "octave": 4
+                  },
+                  {
+                    "step": "E",
+                    "alter": 0,
+                    "octave": 4
+                  },
+                  {
+                    "step": "G",
+                    "alter": 0,
+                    "octave": 4
+                  },
+                  {
+                    "step": "B",
+                    "alter": 0,
+                    "octave": 4
+                  }
+                ],
+                "bassPolicy": "included",
+                "generatedBy": {
+                  "engineVersion": "fixture-engine-1",
+                  "family": "balanced"
+                }
+              }
+            }
+          ],
+          "completion": {
+            "kind": "incomplete",
+            "expectedDuration": {
+              "numerator": 2,
+              "denominator": 1
+            },
+            "reason": "Open ending"
+          }
+        }
+      ]
+    }
+  ],
+  "playback": {
+    "instrumentId": "mellow-keys",
+    "masterVolume": 0.8,
+    "reverbAmount": 0.2,
+    "countInBars": 1
+  }
+}

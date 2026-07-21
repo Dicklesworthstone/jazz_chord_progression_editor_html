@@ -204,14 +204,14 @@ const EXPECTED_TERMINATION = {
 
 const EXPECTED_REVIEWED_DIGESTS = {
   contractDocumentSha256:
-    "55aae7c1406642741047a403c68c0b976a89812e8a84e10fdf5c54799f8401cc",
+    "0e421cf7dc4fe7b0efe107fbb6dcccadd7a92522b7fc305cd64adc957380bbec",
   companionsSha256: {
     "adversarial-cases.json":
       "a6a8573e53b11e044e22a267d82ddf57f930913f966d157ed4e4e0d96ded5243",
     "provenance-ledger.json":
       "e9a24fdb862292cc774e5866c704160d33110f270aa43fe058cc55d390daef99",
     "shape-cases.json":
-      "a489060fb2c17c4429e62c7d496a00b919e6378703c096a0e6079ea9c1f6d06a",
+      "da96366002d40fe30bfb564b262a696723e217ea9a6271919b0db72da309d1b2",
     "trace-ledger.json":
       "664427ba257c0a6efcad69d926b472def777d20326c24cf22f62dd79c90ad6cd",
   },
@@ -233,12 +233,12 @@ const EXPECTED_SEMANTIC_SNAPSHOT_DIGESTS = {
     "provenance-ledger.json":
       "45eabc724d9d0a4e9ca2fab5bc1189c1eb042b0b1272fcdf6f3b37d88a9ffef1",
     "shape-cases.json":
-      "22e88ab313dc5ca6354fa17d5af60e99ca2ebe0174ff8eca4f9996d73f156bf9",
+      "240735ad36763dd9a9c7e55e7398e3a7c2af773627bac0083ad7f0c8719207ae",
     "trace-ledger.json":
       "bf61e11d067bbcf466fa8e9a376dbf23007f1eb7f28705010679ac0760100199",
   },
   contractDocumentNormalizedSha256:
-    "55aae7c1406642741047a403c68c0b976a89812e8a84e10fdf5c54799f8401cc",
+    "0e421cf7dc4fe7b0efe107fbb6dcccadd7a92522b7fc305cd64adc957380bbec",
 } as const;
 
 const EXPECTED_MATERIALIZATION_PROTOCOL_SHA256 =
@@ -252,11 +252,43 @@ const EXPECTED_TRACE_PROOF_CLASSIFICATION_SHA256 =
 const EXPECTED_MUTATION_LEDGER_SHA256 =
   "a564e4a7f7225b0959b770b41fdd622aa2b3c39698b42673aee089e1e2fdbae7";
 const EXPECTED_TARGET_REGISTRIES_SHA256 =
-  "3312b9bd8a4464b637428c009fa1c4aac3ec7730083d349c7ad9212f0a6ac192";
+  "9ff7fcc1179879a068eeec9a069b65c79c1ef6fe972077fd380adaaf3db64afd";
 const EXPECTED_CRITICAL_CELL_INVENTORIES_SHA256 =
-  "e3028c5e0232ec5e742104f66f575a3f1ab8a849fd71fa7285a24db1cb97cd97";
+  "ef414a546e00921182d60174aa9cb3ba309d8f9002afa865a93d6a176a09121f";
 const EXPECTED_WORK_EVIDENCE_CONTRACT_SHA256 =
   "ef4ca43432eaca00231d4cc53e63fff727e933361c8cf910e9fc2ac331c915c9";
+
+const EXPECTED_CUSTOM_BASS_AXIS_TARGET = {
+  id: "custom-bass",
+  activation: "customSlashBass",
+  path: [
+    "sections",
+    0,
+    "measures",
+    0,
+    "events",
+    0,
+    "chord",
+    "bass",
+  ],
+  acceptedAxisCompanion: {
+    appliesTo:
+      "invalidPitchClassConsumerTargets x acceptedPitchAxes values only",
+    path: [
+      "sections",
+      0,
+      "measures",
+      0,
+      "events",
+      0,
+      "voicing",
+      "pitches",
+      0,
+    ],
+    valueRule:
+      "after setting the Custom bass axis, replace Manual pitches[0] with the exact resulting {step,alter,octave:3}; octave 3 keeps every accepted spelling at the minimum while isolating the bass leaf law",
+  },
+} as const;
 
 const EXPECTED_INVENTORIES = {
   documentSchema: ["changes.progression.v2"],
@@ -2056,6 +2088,8 @@ function validateReviewedSemanticInventories(
     additionalNegativeZeroPreservationCells:
       values?.["additionalNegativeZeroPreservationCells"],
     valueCaseExpected: values?.["expected"],
+    valuePitchClassTargets:
+      values?.["invalidPitchClassConsumerTargets"],
     hostileCaseRecords: allCases
       .filter((fixtureCase) => fixtureCase.id.startsWith("F2-HOST-"))
       .map((fixtureCase) => fixtureCase.record),
@@ -2325,6 +2359,58 @@ function validateTargetRegistries(
       branchFragments,
       findings,
     );
+    const pitchTargets = values["invalidPitchClassConsumerTargets"];
+    const companionTargets = Array.isArray(pitchTargets)
+      ? pitchTargets.filter(
+          (target: unknown) =>
+            isObject(target) &&
+            Object.prototype.hasOwnProperty.call(
+              target,
+              "acceptedAxisCompanion",
+            ),
+        )
+      : [];
+    const customBassTarget: unknown = Array.isArray(pitchTargets)
+      ? pitchTargets.find(
+          (target: unknown) =>
+            isObject(target) && target["id"] === "custom-bass",
+        )
+      : undefined;
+    const customBassDocument = isObject(customBassTarget)
+      ? activatedRepresentative(
+          representative,
+          activationNamesFromRecord(customBassTarget),
+          activationProtocol,
+          branchFragments,
+        )
+      : undefined;
+    const companionPitch = customBassDocument === undefined
+      ? { exists: false }
+      : ownValueAtPath(
+          customBassDocument,
+          EXPECTED_CUSTOM_BASS_AXIS_TARGET.acceptedAxisCompanion.path,
+        );
+    if (
+      companionTargets.length !== 1 ||
+      !jsonEqual(customBassTarget, EXPECTED_CUSTOM_BASS_AXIS_TARGET) ||
+      !companionPitch.exists ||
+      !isObject(companionPitch.value) ||
+      !jsonEqual(Object.keys(companionPitch.value), [
+        "step",
+        "alter",
+        "octave",
+      ]) ||
+      typeof companionPitch.value["step"] !== "string" ||
+      typeof companionPitch.value["alter"] !== "number" ||
+      typeof companionPitch.value["octave"] !== "number"
+    ) {
+      finding(
+        findings,
+        "F2_TARGET_INVENTORY",
+        "shape-cases.json:F2-VALUE-002.invalidPitchClassConsumerTargets.custom-bass",
+        "The Custom-bass accepted axis must uniquely co-vary the activated Manual pitches[0] spelling at octave 3.",
+      );
+    }
     validateTargetRecordList(
       values["storedPitchConsumerTargets"],
       "shape-cases.json:F2-VALUE-002.storedPitchConsumerTargets",

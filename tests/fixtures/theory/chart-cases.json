@@ -1,0 +1,5983 @@
+{
+  "schema": "changes.fixtures.t0-chart-cases.v1",
+  "fixtureVersion": "1.1.1",
+  "productionOutputUsed": false,
+  "defaultAccidentalStyle": "ascii",
+  "expectedValueEncoding": "Success projections inherit draftDefaults and eventDefaults. A case may name a chord by symbol-cases.json case ID instead of duplicating its handwritten AST. SourceText always equals case input. Repeat, annotation, and explicit-duration cases override every affected event default. Boundary expectedEvidence objects and delegatedEvidenceProjections are exact named-field projections; omitted evidence counters remain governed by the independent invariants in t0-syntax-contract.json. Every one-path formatter mutation row, including a first-excess boundary ownership fault, carries a stable id and one exact mutationProjection object with path, before, and after values. Explicit empty annotations decode to the same semantic empty value as absence; event annotationRange retains written syntax until canonical formatting intentionally omits it.",
+  "draftDefaults": {
+    "schema": "changes.theory.chart-text-draft.v1",
+    "grammarId": "changes.chart-text",
+    "grammarVersion": 1,
+    "sourceText": "$case.input",
+    "headers": "document uses parsed values; fragment copies request.meter and leaves every other header null"
+  },
+  "eventDefaults": {
+    "repeatedFromOrdinal": null,
+    "annotation": "",
+    "durationRange": null,
+    "annotationRange": null
+  },
+  "defaultHeaders": {
+    "title": null,
+    "description": null,
+    "meter": null,
+    "tempoBpm": null,
+    "key": null
+  },
+  "rangePolicy": "All written ranges are manually counted zero-based half-open UTF-16 offsets. Boundary recipes declare exact counts instead of embedding enormous sources.",
+  "successCases": [
+    {
+      "id": "T0-CHART-001",
+      "traceIds": [
+        "T0-TRACE-CHART-MODES",
+        "T0-TRACE-DURATION"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-TIME",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "style": "ascii",
+      "input": "Cmaj7 Dm7 G7 Cmaj7",
+      "expected": {
+        "ok": true,
+        "canonicalText": "Cmaj7:1 Dm7:1 G7:1 Cmaj7:1\n",
+        "warnings": [],
+        "draft": {
+          "mode": "fragment",
+          "headers": {
+            "title": null,
+            "description": null,
+            "meter": {
+              "beatsPerBar": 4,
+              "beatUnit": 4
+            },
+            "tempoBpm": null,
+            "key": null
+          },
+          "sections": [
+            {
+              "ordinal": 0,
+              "kind": "implicit",
+              "name": null,
+              "annotation": "",
+              "range": {
+                "start": 0,
+                "end": 18
+              },
+              "measures": [
+                {
+                  "ordinal": 0,
+                  "kind": "virtual",
+                  "range": {
+                    "start": 0,
+                    "end": 18
+                  },
+                  "events": [
+                    {
+                      "ordinal": 0,
+                      "origin": "literal",
+                      "chordCaseId": "T0-SYM-012",
+                      "duration": {
+                        "numerator": 1,
+                        "denominator": 1
+                      },
+                      "range": {
+                        "start": 0,
+                        "end": 5
+                      },
+                      "symbolRange": {
+                        "start": 0,
+                        "end": 5
+                      }
+                    },
+                    {
+                      "ordinal": 1,
+                      "origin": "literal",
+                      "symbol": "Dm7",
+                      "duration": {
+                        "numerator": 1,
+                        "denominator": 1
+                      },
+                      "range": {
+                        "start": 6,
+                        "end": 9
+                      },
+                      "symbolRange": {
+                        "start": 6,
+                        "end": 9
+                      }
+                    },
+                    {
+                      "ordinal": 2,
+                      "origin": "literal",
+                      "symbol": "G7",
+                      "duration": {
+                        "numerator": 1,
+                        "denominator": 1
+                      },
+                      "range": {
+                        "start": 10,
+                        "end": 12
+                      },
+                      "symbolRange": {
+                        "start": 10,
+                        "end": 12
+                      }
+                    },
+                    {
+                      "ordinal": 3,
+                      "origin": "literal",
+                      "chordCaseId": "T0-SYM-012",
+                      "duration": {
+                        "numerator": 1,
+                        "denominator": 1
+                      },
+                      "range": {
+                        "start": 13,
+                        "end": 18
+                      },
+                      "symbolRange": {
+                        "start": 13,
+                        "end": 18
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "T0-CHART-002",
+      "traceIds": [
+        "T0-TRACE-DURATION"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-TIME",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "style": "ascii",
+      "input": "C Dm G7",
+      "expected": {
+        "ok": true,
+        "eventDurations": [
+          {
+            "numerator": 4,
+            "denominator": 3
+          },
+          {
+            "numerator": 4,
+            "denominator": 3
+          },
+          {
+            "numerator": 4,
+            "denominator": 3
+          }
+        ],
+        "measureTotal": {
+          "numerator": 4,
+          "denominator": 1
+        },
+        "ranges": [
+          {
+            "start": 0,
+            "end": 1
+          },
+          {
+            "start": 2,
+            "end": 4
+          },
+          {
+            "start": 5,
+            "end": 7
+          }
+        ],
+        "canonicalText": "C:4/3 Dm:4/3 G7:4/3\n"
+      }
+    },
+    {
+      "id": "T0-CHART-003",
+      "traceIds": [
+        "T0-TRACE-DURATION"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-TIME",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "style": "ascii",
+      "input": "Dm7:1 G7 Cmaj7",
+      "expected": {
+        "ok": true,
+        "eventDurations": [
+          {
+            "numerator": 1,
+            "denominator": 1
+          },
+          {
+            "numerator": 3,
+            "denominator": 2
+          },
+          {
+            "numerator": 3,
+            "denominator": 2
+          }
+        ],
+        "durationSources": [
+          "explicit",
+          "allocated",
+          "allocated"
+        ],
+        "ranges": [
+          {
+            "event": {
+              "start": 0,
+              "end": 5
+            },
+            "symbol": {
+              "start": 0,
+              "end": 3
+            },
+            "duration": {
+              "start": 3,
+              "end": 5
+            }
+          },
+          {
+            "event": {
+              "start": 6,
+              "end": 8
+            },
+            "symbol": {
+              "start": 6,
+              "end": 8
+            },
+            "duration": null
+          },
+          {
+            "event": {
+              "start": 9,
+              "end": 14
+            },
+            "symbol": {
+              "start": 9,
+              "end": 14
+            },
+            "duration": null
+          }
+        ],
+        "measureTotal": {
+          "numerator": 4,
+          "denominator": 1
+        },
+        "canonicalText": "Dm7:1 G7:3/2 Cmaj7:3/2\n"
+      }
+    },
+    {
+      "id": "T0-CHART-004",
+      "traceIds": [
+        "T0-TRACE-DURATION",
+        "T0-TRACE-CHART-MODES"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-TIME"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 6,
+          "beatUnit": 8
+        }
+      },
+      "style": "ascii",
+      "input": "C Dm Em F G Am",
+      "expected": {
+        "ok": true,
+        "measureCapacity": {
+          "numerator": 3,
+          "denominator": 1
+        },
+        "eventDurations": [
+          {
+            "numerator": 1,
+            "denominator": 2
+          },
+          {
+            "numerator": 1,
+            "denominator": 2
+          },
+          {
+            "numerator": 1,
+            "denominator": 2
+          },
+          {
+            "numerator": 1,
+            "denominator": 2
+          },
+          {
+            "numerator": 1,
+            "denominator": 2
+          },
+          {
+            "numerator": 1,
+            "denominator": 2
+          }
+        ],
+        "canonicalText": "C:1/2 Dm:1/2 Em:1/2 F:1/2 G:1/2 Am:1/2\n"
+      }
+    },
+    {
+      "id": "T0-CHART-005",
+      "traceIds": [
+        "T0-TRACE-CHART-MODES",
+        "T0-TRACE-CHART-STRUCTURE",
+        "T0-TRACE-RANGES",
+        "T0-TRACE-TRANSACTION"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-TIME",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "document"
+      },
+      "style": "ascii",
+      "input": "@meter 4/4\n[A]\n| C:4 |",
+      "expected": {
+        "ok": true,
+        "canonicalText": "@meter 4/4\n[A]\n| C:4 |\n",
+        "headers": {
+          "title": null,
+          "description": null,
+          "meter": {
+            "beatsPerBar": 4,
+            "beatUnit": 4
+          },
+          "tempoBpm": null,
+          "key": null
+        },
+        "section": {
+          "ordinal": 0,
+          "kind": "named",
+          "name": "A",
+          "annotation": "",
+          "range": {
+            "start": 11,
+            "end": 22
+          }
+        },
+        "measure": {
+          "ordinal": 0,
+          "kind": "barred",
+          "range": {
+            "start": 15,
+            "end": 22
+          }
+        },
+        "event": {
+          "ordinal": 0,
+          "origin": "literal",
+          "repeatedFromOrdinal": null,
+          "chordCaseId": "T0-SYM-001",
+          "duration": {
+            "numerator": 4,
+            "denominator": 1
+          },
+          "annotation": "",
+          "range": {
+            "start": 17,
+            "end": 20
+          },
+          "symbolRange": {
+            "start": 17,
+            "end": 18
+          },
+          "durationRange": {
+            "start": 18,
+            "end": 20
+          },
+          "annotationRange": null
+        }
+      }
+    },
+    {
+      "id": "T0-CHART-006",
+      "traceIds": [
+        "T0-TRACE-CHART-STRUCTURE",
+        "T0-TRACE-FORMATTER",
+        "T0-TRACE-REPEAT",
+        "T0-TRACE-HEADERS",
+        "T0-TRACE-RANGES"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-TIME",
+        "T0-AUTH-JSON",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "document"
+      },
+      "style": "ascii",
+      "input": "@title \"Late Set\"\n@meter 4/4\n@tempo 120\n@key C major\n[A] \"opening\"\n| Cmaj7:2 \"hold\" Dm7:2 | G7:4 |\n[B]\n| Fmaj7:1 /:1 /:1 Fm6:1 | C/G:4 |",
+      "expected": {
+        "ok": true,
+        "headers": {
+          "title": "Late Set",
+          "description": null,
+          "meter": {
+            "beatsPerBar": 4,
+            "beatUnit": 4
+          },
+          "tempoBpm": 120,
+          "key": {
+            "tonic": {
+              "step": "C",
+              "alter": 0
+            },
+            "mode": "major"
+          }
+        },
+        "sectionSummaries": [
+          {
+            "name": "A",
+            "annotation": "opening",
+            "measureEventCounts": [
+              2,
+              1
+            ]
+          },
+          {
+            "name": "B",
+            "annotation": "",
+            "measureEventCounts": [
+              4,
+              1
+            ]
+          }
+        ],
+        "rangeProjection": {
+          "sections": [
+            {
+              "ordinal": 0,
+              "range": {
+                "start": 53,
+                "end": 98
+              }
+            },
+            {
+              "ordinal": 1,
+              "range": {
+                "start": 99,
+                "end": 136
+              }
+            }
+          ],
+          "measures": [
+            {
+              "sectionOrdinal": 0,
+              "measureOrdinal": 0,
+              "range": {
+                "start": 67,
+                "end": 91
+              }
+            },
+            {
+              "sectionOrdinal": 0,
+              "measureOrdinal": 1,
+              "range": {
+                "start": 90,
+                "end": 98
+              }
+            },
+            {
+              "sectionOrdinal": 1,
+              "measureOrdinal": 0,
+              "range": {
+                "start": 103,
+                "end": 128
+              }
+            },
+            {
+              "sectionOrdinal": 1,
+              "measureOrdinal": 1,
+              "range": {
+                "start": 127,
+                "end": 136
+              }
+            }
+          ],
+          "events": [
+            {
+              "ordinal": 0,
+              "range": {
+                "start": 69,
+                "end": 83
+              },
+              "symbolRange": {
+                "start": 69,
+                "end": 74
+              },
+              "durationRange": {
+                "start": 74,
+                "end": 76
+              },
+              "annotationRange": {
+                "start": 77,
+                "end": 83
+              }
+            },
+            {
+              "ordinal": 1,
+              "range": {
+                "start": 84,
+                "end": 89
+              },
+              "symbolRange": {
+                "start": 84,
+                "end": 87
+              },
+              "durationRange": {
+                "start": 87,
+                "end": 89
+              },
+              "annotationRange": null
+            },
+            {
+              "ordinal": 2,
+              "range": {
+                "start": 92,
+                "end": 96
+              },
+              "symbolRange": {
+                "start": 92,
+                "end": 94
+              },
+              "durationRange": {
+                "start": 94,
+                "end": 96
+              },
+              "annotationRange": null
+            },
+            {
+              "ordinal": 3,
+              "range": {
+                "start": 105,
+                "end": 112
+              },
+              "symbolRange": {
+                "start": 105,
+                "end": 110
+              },
+              "durationRange": {
+                "start": 110,
+                "end": 112
+              },
+              "annotationRange": null
+            },
+            {
+              "ordinal": 4,
+              "range": {
+                "start": 113,
+                "end": 116
+              },
+              "symbolRange": {
+                "start": 113,
+                "end": 114
+              },
+              "durationRange": {
+                "start": 114,
+                "end": 116
+              },
+              "annotationRange": null
+            },
+            {
+              "ordinal": 5,
+              "range": {
+                "start": 117,
+                "end": 120
+              },
+              "symbolRange": {
+                "start": 117,
+                "end": 118
+              },
+              "durationRange": {
+                "start": 118,
+                "end": 120
+              },
+              "annotationRange": null
+            },
+            {
+              "ordinal": 6,
+              "range": {
+                "start": 121,
+                "end": 126
+              },
+              "symbolRange": {
+                "start": 121,
+                "end": 124
+              },
+              "durationRange": {
+                "start": 124,
+                "end": 126
+              },
+              "annotationRange": null
+            },
+            {
+              "ordinal": 7,
+              "range": {
+                "start": 129,
+                "end": 134
+              },
+              "symbolRange": {
+                "start": 129,
+                "end": 132
+              },
+              "durationRange": {
+                "start": 132,
+                "end": 134
+              },
+              "annotationRange": null
+            }
+          ]
+        },
+        "eventSummaries": [
+          {
+            "symbol": "Cmaj7",
+            "duration": "2/1",
+            "annotation": "hold",
+            "origin": "literal"
+          },
+          {
+            "symbol": "Dm7",
+            "duration": "2/1",
+            "annotation": "",
+            "origin": "literal"
+          },
+          {
+            "symbol": "G7",
+            "duration": "4/1",
+            "annotation": "",
+            "origin": "literal"
+          },
+          {
+            "symbol": "Fmaj7",
+            "duration": "1/1",
+            "annotation": "",
+            "origin": "literal"
+          },
+          {
+            "symbol": "Fmaj7",
+            "duration": "1/1",
+            "annotation": "",
+            "origin": "repeat",
+            "repeatedFromOrdinal": 3
+          },
+          {
+            "symbol": "Fmaj7",
+            "duration": "1/1",
+            "annotation": "",
+            "origin": "repeat",
+            "repeatedFromOrdinal": 4
+          },
+          {
+            "symbol": "Fm6",
+            "duration": "1/1",
+            "annotation": "",
+            "origin": "literal"
+          },
+          {
+            "symbol": "C/G",
+            "duration": "4/1",
+            "annotation": "",
+            "origin": "literal"
+          }
+        ],
+        "canonicalText": "@title \"Late Set\"\n@meter 4/4\n@tempo 120\n@key C major\n[A] \"opening\"\n| Cmaj7:2 \"hold\" Dm7:2 | G7:4 |\n[B]\n| Fmaj7:1 /:1 /:1 Fm6:1 | C/G:4 |\n"
+      }
+    },
+    {
+      "id": "T0-CHART-007",
+      "traceIds": [
+        "T0-TRACE-REPEAT",
+        "T0-TRACE-RANGES"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-TIME",
+        "T0-AUTH-JSON",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "style": "ascii",
+      "input": "Cmaj7:1 \"hold\" /:3",
+      "expected": {
+        "ok": true,
+        "events": [
+          {
+            "ordinal": 0,
+            "origin": "literal",
+            "repeatedFromOrdinal": null,
+            "chordCaseId": "T0-SYM-012",
+            "duration": {
+              "numerator": 1,
+              "denominator": 1
+            },
+            "annotation": "hold",
+            "range": {
+              "start": 0,
+              "end": 14
+            },
+            "symbolRange": {
+              "start": 0,
+              "end": 5
+            },
+            "durationRange": {
+              "start": 5,
+              "end": 7
+            },
+            "annotationRange": {
+              "start": 8,
+              "end": 14
+            }
+          },
+          {
+            "ordinal": 1,
+            "origin": "repeat",
+            "repeatedFromOrdinal": 0,
+            "chordCaseId": "T0-SYM-012",
+            "duration": {
+              "numerator": 3,
+              "denominator": 1
+            },
+            "annotation": "",
+            "range": {
+              "start": 15,
+              "end": 18
+            },
+            "symbolRange": {
+              "start": 15,
+              "end": 16
+            },
+            "durationRange": {
+              "start": 16,
+              "end": 18
+            },
+            "annotationRange": null
+          }
+        ],
+        "canonicalText": "Cmaj7:1 \"hold\" /:3\n"
+      }
+    },
+    {
+      "id": "T0-CHART-008",
+      "traceIds": [
+        "T0-TRACE-REPEAT",
+        "T0-TRACE-CHART-STRUCTURE",
+        "T0-TRACE-RANGES"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-TIME",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "style": "ascii",
+      "input": "[A]\n| C:4 | | /:4 |",
+      "expected": {
+        "ok": true,
+        "measureEventCounts": [
+          1,
+          0,
+          1
+        ],
+        "sectionRange": {
+          "start": 0,
+          "end": 19
+        },
+        "measureRanges": [
+          {
+            "start": 4,
+            "end": 11
+          },
+          {
+            "start": 10,
+            "end": 13
+          },
+          {
+            "start": 12,
+            "end": 19
+          }
+        ],
+        "events": [
+          {
+            "ordinal": 0,
+            "origin": "literal",
+            "repeatedFromOrdinal": null,
+            "symbol": "C",
+            "duration": "4/1",
+            "range": {
+              "start": 6,
+              "end": 9
+            },
+            "symbolRange": {
+              "start": 6,
+              "end": 7
+            },
+            "durationRange": {
+              "start": 7,
+              "end": 9
+            }
+          },
+          {
+            "ordinal": 1,
+            "origin": "repeat",
+            "repeatedFromOrdinal": 0,
+            "symbol": "C",
+            "duration": "4/1",
+            "range": {
+              "start": 14,
+              "end": 17
+            },
+            "symbolRange": {
+              "start": 14,
+              "end": 15
+            },
+            "durationRange": {
+              "start": 15,
+              "end": 17
+            }
+          }
+        ],
+        "canonicalText": "[A]\n| C:4 | | /:4 |\n"
+      }
+    },
+    {
+      "id": "T0-CHART-009",
+      "traceIds": [
+        "T0-TRACE-CHART-STRUCTURE",
+        "T0-TRACE-RANGES"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "style": "ascii",
+      "input": "[A\\]B\\\\C]\n| C:4 |",
+      "expected": {
+        "ok": true,
+        "sectionName": "A]B\\C",
+        "sectionKind": "named",
+        "canonicalText": "[A\\]B\\\\C]\n| C:4 |\n"
+      }
+    },
+    {
+      "id": "T0-CHART-010",
+      "traceIds": [
+        "T0-TRACE-COMMENTS",
+        "T0-TRACE-FORMATTER",
+        "T0-TRACE-RANGES"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-JSON",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "document"
+      },
+      "style": "ascii",
+      "input": "@title \"Semi;colon\"\n@meter 4/4\n[A]\n| C:4 | ; ignored",
+      "expected": {
+        "ok": true,
+        "title": "Semi;colon",
+        "sectionRange": {
+          "start": 31,
+          "end": 42
+        },
+        "measureRange": {
+          "start": 35,
+          "end": 42
+        },
+        "eventRange": {
+          "start": 37,
+          "end": 40
+        },
+        "symbolRange": {
+          "start": 37,
+          "end": 38
+        },
+        "durationRange": {
+          "start": 38,
+          "end": 40
+        },
+        "warnings": [
+          {
+            "code": "chart.comments_not_round_tripped",
+            "range": {
+              "start": 43,
+              "end": 52
+            }
+          }
+        ],
+        "trailingSpaceAndCommentExcludedFromStructuredRanges": true,
+        "canonicalText": "@title \"Semi;colon\"\n@meter 4/4\n[A]\n| C:4 |\n"
+      }
+    },
+    {
+      "id": "T0-CHART-011",
+      "traceIds": [
+        "T0-TRACE-CHART-STRUCTURE",
+        "T0-TRACE-DURATION"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-TIME"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "style": "ascii",
+      "input": "[A]\n| |",
+      "expected": {
+        "ok": true,
+        "sections": 1,
+        "measures": 1,
+        "events": 0,
+        "measureKind": "barred",
+        "canonicalText": "[A]\n| |\n"
+      }
+    },
+    {
+      "id": "T0-CHART-012",
+      "traceIds": [
+        "T0-TRACE-CHART-STRUCTURE",
+        "T0-TRACE-FORMATTER",
+        "T0-TRACE-ANNOTATIONS"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-JSON",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "document"
+      },
+      "style": "unicode",
+      "input": "@description \"line\\n雪\"\n@meter 4/4\n[A] \"opening\\t雪\"\n| D♭7:4 \"say \\\"blue\\\"\" |",
+      "expected": {
+        "ok": true,
+        "description": "line\n雪",
+        "sectionAnnotation": "opening\t雪",
+        "eventAnnotation": "say \"blue\"",
+        "eventRoot": {
+          "step": "D",
+          "alter": -1
+        },
+        "canonicalText": "@description \"line\\n雪\"\n@meter 4/4\n[A] \"opening\\t雪\"\n| D♭7:4 \"say \\\"blue\\\"\" |\n"
+      }
+    },
+    {
+      "id": "T0-CHART-013",
+      "traceIds": [
+        "T0-TRACE-DURATION"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-TIME"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "style": "ascii",
+      "input": "| C:2/6 Dm:11/3 |",
+      "expected": {
+        "ok": true,
+        "eventDurations": [
+          {
+            "numerator": 1,
+            "denominator": 3
+          },
+          {
+            "numerator": 11,
+            "denominator": 3
+          }
+        ],
+        "measureTotal": {
+          "numerator": 4,
+          "denominator": 1
+        },
+        "canonicalText": "| C:1/3 Dm:11/3 |\n"
+      }
+    },
+    {
+      "id": "T0-CHART-014",
+      "traceIds": [
+        "T0-TRACE-HEADERS",
+        "T0-TRACE-FORMATTER",
+        "T0-TRACE-UNICODE"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-DOMAIN",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "document"
+      },
+      "input": "@meter 4/4\n@key D♭ major\n[A]\n| C:4 |",
+      "styles": {
+        "ascii": "@meter 4/4\n@key Db major\n[A]\n| C:4 |\n",
+        "unicode": "@meter 4/4\n@key D♭ major\n[A]\n| C:4 |\n"
+      },
+      "expected": {
+        "ok": true,
+        "key": {
+          "tonic": {
+            "step": "D",
+            "alter": -1
+          },
+          "mode": "major"
+        }
+      }
+    },
+    {
+      "id": "T0-CHART-015",
+      "traceIds": [
+        "T0-TRACE-CHART-STRUCTURE",
+        "T0-TRACE-FORMATTER",
+        "T0-TRACE-ROUNDTRIP",
+        "T0-TRACE-RANGES"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-INDEPENDENCE",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "style": "ascii",
+      "input": "[A]\n| C:4 |\n| Dm:4 |",
+      "expected": {
+        "ok": true,
+        "sectionRange": {
+          "start": 0,
+          "end": 20
+        },
+        "measureEventCounts": [
+          1,
+          1
+        ],
+        "measureRanges": [
+          {
+            "start": 4,
+            "end": 11
+          },
+          {
+            "start": 12,
+            "end": 20
+          }
+        ],
+        "eventRanges": [
+          {
+            "range": {
+              "start": 6,
+              "end": 9
+            },
+            "symbolRange": {
+              "start": 6,
+              "end": 7
+            },
+            "durationRange": {
+              "start": 7,
+              "end": 9
+            }
+          },
+          {
+            "range": {
+              "start": 14,
+              "end": 18
+            },
+            "symbolRange": {
+              "start": 14,
+              "end": 16
+            },
+            "durationRange": {
+              "start": 16,
+              "end": 18
+            }
+          }
+        ],
+        "separatorRange": {
+          "start": 11,
+          "end": 12
+        },
+        "separatorOwnedByMeasure": false,
+        "newlineStartsNewBarredSequenceWithoutEmptyMeasure": true,
+        "canonicalText": "[A]\n| C:4 | Dm:4 |\n"
+      }
+    },
+    {
+      "id": "T0-CHART-016",
+      "traceIds": [
+        "T0-TRACE-HEADERS",
+        "T0-TRACE-LIMITS"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-TIME",
+        "T0-AUTH-INDEPENDENCE"
+      ],
+      "request": {
+        "mode": "document"
+      },
+      "style": "ascii",
+      "input": "@meter 1/2\n@tempo 20\n[A]\n| C:2 |",
+      "expected": {
+        "ok": true,
+        "headers": {
+          "meter": {
+            "beatsPerBar": 1,
+            "beatUnit": 2
+          },
+          "tempoBpm": 20
+        },
+        "canonicalText": "@meter 1/2\n@tempo 20\n[A]\n| C:2 |\n",
+        "boundaryRoles": [
+          "minimum-meter-numerator",
+          "minimum-tempo",
+          "beat-unit-2"
+        ]
+      }
+    },
+    {
+      "id": "T0-CHART-017",
+      "traceIds": [
+        "T0-TRACE-HEADERS",
+        "T0-TRACE-LIMITS"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-TIME",
+        "T0-AUTH-INDEPENDENCE"
+      ],
+      "request": {
+        "mode": "document"
+      },
+      "style": "ascii",
+      "input": "@meter 32/8\n@tempo 400\n[A]\n| C:16 |",
+      "expected": {
+        "ok": true,
+        "headers": {
+          "meter": {
+            "beatsPerBar": 32,
+            "beatUnit": 8
+          },
+          "tempoBpm": 400
+        },
+        "canonicalText": "@meter 32/8\n@tempo 400\n[A]\n| C:16 |\n",
+        "boundaryRoles": [
+          "maximum-meter-numerator",
+          "maximum-tempo",
+          "beat-unit-8"
+        ]
+      }
+    },
+    {
+      "id": "T0-CHART-018",
+      "traceIds": [
+        "T0-TRACE-HEADERS",
+        "T0-TRACE-FORMATTER",
+        "T0-TRACE-UNICODE"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-DOMAIN",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "document"
+      },
+      "input": "@meter 4/4\n@key F♯ major\n[A]\n| C:4 |",
+      "styles": {
+        "ascii": "@meter 4/4\n@key F# major\n[A]\n| C:4 |\n",
+        "unicode": "@meter 4/4\n@key F♯ major\n[A]\n| C:4 |\n"
+      },
+      "expected": {
+        "ok": true,
+        "key": {
+          "tonic": {
+            "step": "F",
+            "alter": 1
+          },
+          "mode": "major"
+        }
+      }
+    },
+    {
+      "id": "T0-CHART-019",
+      "traceIds": [
+        "T0-TRACE-HEADERS"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-DOMAIN"
+      ],
+      "request": {
+        "mode": "document"
+      },
+      "style": "ascii",
+      "input": "@meter 4/4\n@key A natural-minor\n[A]\n| C:4 |",
+      "expected": {
+        "ok": true,
+        "key": {
+          "tonic": {
+            "step": "A",
+            "alter": 0
+          },
+          "mode": "natural-minor"
+        },
+        "canonicalText": "@meter 4/4\n@key A natural-minor\n[A]\n| C:4 |\n"
+      }
+    },
+    {
+      "id": "T0-CHART-020",
+      "traceIds": [
+        "T0-TRACE-HEADERS"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-DOMAIN"
+      ],
+      "request": {
+        "mode": "document"
+      },
+      "style": "ascii",
+      "input": "@meter 4/4\n@key C harmonic-minor\n[A]\n| C:4 |",
+      "expected": {
+        "ok": true,
+        "key": {
+          "tonic": {
+            "step": "C",
+            "alter": 0
+          },
+          "mode": "harmonic-minor"
+        },
+        "canonicalText": "@meter 4/4\n@key C harmonic-minor\n[A]\n| C:4 |\n"
+      }
+    },
+    {
+      "id": "T0-CHART-021",
+      "traceIds": [
+        "T0-TRACE-HEADERS",
+        "T0-TRACE-FORMATTER"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-DOMAIN",
+        "T0-AUTH-TIME",
+        "T0-AUTH-JSON"
+      ],
+      "request": {
+        "mode": "document"
+      },
+      "style": "ascii",
+      "input": "@tempo 90\n@key D melodic-minor\n@description \"Reordered\"\n@title \"Header Matrix\"\n@meter 3/4\n[A]\n| C:3 |",
+      "expected": {
+        "ok": true,
+        "headers": {
+          "title": "Header Matrix",
+          "description": "Reordered",
+          "meter": {
+            "beatsPerBar": 3,
+            "beatUnit": 4
+          },
+          "tempoBpm": 90,
+          "key": {
+            "tonic": {
+              "step": "D",
+              "alter": 0
+            },
+            "mode": "melodic-minor"
+          }
+        },
+        "inputHeaderOrder": [
+          "tempo",
+          "key",
+          "description",
+          "title",
+          "meter"
+        ],
+        "canonicalHeaderOrder": [
+          "title",
+          "description",
+          "meter",
+          "tempo",
+          "key"
+        ],
+        "canonicalText": "@title \"Header Matrix\"\n@description \"Reordered\"\n@meter 3/4\n@tempo 90\n@key D melodic-minor\n[A]\n| C:3 |\n"
+      }
+    },
+    {
+      "id": "T0-CHART-022",
+      "traceIds": [
+        "T0-TRACE-ANNOTATIONS",
+        "T0-TRACE-FORMATTER",
+        "T0-TRACE-RANGES",
+        "T0-TRACE-ROUNDTRIP"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-JSON",
+        "T0-AUTH-INDEPENDENCE",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "style": "ascii",
+      "input": "[A] \"\"\n| C:4 \"\" |",
+      "expected": {
+        "ok": true,
+        "section": {
+          "name": "A",
+          "annotation": "",
+          "range": {
+            "start": 0,
+            "end": 17
+          },
+          "explicitEmptyAnnotationPresentOnlyInSourceText": true
+        },
+        "measure": {
+          "range": {
+            "start": 7,
+            "end": 17
+          }
+        },
+        "event": {
+          "annotation": "",
+          "range": {
+            "start": 9,
+            "end": 15
+          },
+          "symbolRange": {
+            "start": 9,
+            "end": 10
+          },
+          "durationRange": {
+            "start": 10,
+            "end": 12
+          },
+          "annotationRange": {
+            "start": 13,
+            "end": 15
+          }
+        },
+        "canonicalText": "[A]\n| C:4 |\n",
+        "canonicalOmitsExplicitEmptySectionAnnotation": true,
+        "canonicalOmitsExplicitEmptyEventAnnotation": true,
+        "canonicalReparseAnnotationValues": {
+          "section": "",
+          "event": ""
+        },
+        "intentionalNormalization": "empty annotation syntax is nonsemantic; sourceText and pre-format event annotationRange are not canonical semantic equality fields"
+      }
+    },
+    {
+      "id": "T0-CHART-023",
+      "traceIds": [
+        "T0-TRACE-DURATION",
+        "T0-TRACE-FORMATTER",
+        "T0-TRACE-RANGES",
+        "T0-TRACE-ROUNDTRIP"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-TIME",
+        "T0-AUTH-INDEPENDENCE",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "style": "ascii",
+      "kind": "leading-zero-duration-normalization",
+      "rows": [
+        {
+          "source": "| C:00000000004 |",
+          "durationRange": {
+            "start": 3,
+            "end": 15
+          },
+          "expectedDuration": {
+            "numerator": 4,
+            "denominator": 1
+          },
+          "significantNumerator": "4",
+          "canonicalText": "| C:4 |\n",
+          "expectedEvidence": {
+            "numericComponentsCompared": 1,
+            "maxSourceBigIntDigits": 1,
+            "termination": "complete"
+          }
+        },
+        {
+          "source": "| C:00000000002/00000000002 Dm:3 |",
+          "durationRange": {
+            "start": 3,
+            "end": 27
+          },
+          "expectedDurations": [
+            {
+              "numerator": 1,
+              "denominator": 1
+            },
+            {
+              "numerator": 3,
+              "denominator": 1
+            }
+          ],
+          "significantNumerator": "2",
+          "significantDenominator": "2",
+          "canonicalText": "| C:1 Dm:3 |\n",
+          "expectedEvidence": {
+            "numericComponentsCompared": 3,
+            "maxSourceBigIntDigits": 1,
+            "termination": "complete"
+          }
+        }
+      ],
+      "expected": {
+        "ok": true,
+        "leadingZeroesRemovedBeforeBoundComparison": true,
+        "rawSourcePreserved": true,
+        "bigIntReceivesOnlyBoundedSignificantSlices": true
+      }
+    },
+    {
+      "id": "T0-CHART-024",
+      "traceIds": [
+        "T0-TRACE-CHART-STRUCTURE",
+        "T0-TRACE-ANNOTATIONS",
+        "T0-TRACE-RANGES",
+        "T0-TRACE-ROUNDTRIP"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-JSON",
+        "T0-AUTH-INDEPENDENCE",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "style": "ascii",
+      "input": "[A] \"x\" | C:4 |",
+      "expected": {
+        "ok": true,
+        "canonicalText": "[A] \"x\"\n| C:4 |\n",
+        "section": {
+          "kind": "named",
+          "name": "A",
+          "annotation": "x",
+          "range": {
+            "start": 0,
+            "end": 15
+          }
+        },
+        "measureRange": {
+          "start": 8,
+          "end": 15
+        },
+        "eventRange": {
+          "start": 10,
+          "end": 13
+        },
+        "sectionGapBeginsAfterAnnotation": true,
+        "horizontalGapIsAccepted": true
+      }
+    },
+    {
+      "id": "T0-CHART-025",
+      "traceIds": [
+        "T0-TRACE-CHART-STRUCTURE",
+        "T0-TRACE-ANNOTATIONS",
+        "T0-TRACE-RANGES",
+        "T0-TRACE-ROUNDTRIP"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-JSON",
+        "T0-AUTH-INDEPENDENCE",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "style": "ascii",
+      "input": "C:2 \"a\" G:2",
+      "expected": {
+        "ok": true,
+        "canonicalText": "C:2 \"a\" G:2\n",
+        "sectionKind": "implicit",
+        "measureKind": "virtual",
+        "measureRange": {
+          "start": 0,
+          "end": 11
+        },
+        "events": [
+          {
+            "range": {
+              "start": 0,
+              "end": 7
+            },
+            "symbolRange": {
+              "start": 0,
+              "end": 1
+            },
+            "durationRange": {
+              "start": 1,
+              "end": 3
+            },
+            "annotationRange": {
+              "start": 4,
+              "end": 7
+            },
+            "annotation": "a"
+          },
+          {
+            "range": {
+              "start": 8,
+              "end": 11
+            },
+            "symbolRange": {
+              "start": 8,
+              "end": 9
+            },
+            "durationRange": {
+              "start": 9,
+              "end": 11
+            },
+            "annotationRange": null,
+            "annotation": ""
+          }
+        ],
+        "slotSeparatorBeginsAfterCompleteAnnotation": true
+      }
+    }
+  ],
+  "failureCases": [
+    {
+      "id": "T0-CHART-ERR-001",
+      "traceIds": [
+        "T0-TRACE-CHART-MODES",
+        "T0-TRACE-RANGES"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "input": "",
+      "expected": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "chart.empty",
+            "range": {
+              "start": 0,
+              "end": 0
+            }
+          }
+        ],
+        "insertableChords": []
+      }
+    },
+    {
+      "id": "T0-CHART-ERR-002",
+      "traceIds": [
+        "T0-TRACE-CHART-MODES"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR"
+      ],
+      "request": {
+        "mode": "document"
+      },
+      "input": "@meter 4/4\nC:4",
+      "expected": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "chart.document_section_required",
+            "range": {
+              "start": 11,
+              "end": 14
+            }
+          }
+        ],
+        "insertableCount": 1,
+        "wholeDraftApply": false
+      }
+    },
+    {
+      "id": "T0-CHART-ERR-003",
+      "traceIds": [
+        "T0-TRACE-CHART-MODES"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR"
+      ],
+      "request": {
+        "mode": "document"
+      },
+      "input": "[A]\n| C:4 |",
+      "expected": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "chart.meter_required",
+            "range": {
+              "start": 0,
+              "end": 0
+            }
+          }
+        ],
+        "insertableCount": 1,
+        "wholeDraftApply": false
+      }
+    },
+    {
+      "id": "T0-CHART-ERR-004",
+      "traceIds": [
+        "T0-TRACE-HEADERS",
+        "T0-TRACE-RANGES",
+        "T0-TRACE-LIMITS"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-INDEPENDENCE",
+        "T0-AUTH-JSON",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "document"
+      },
+      "rows": [
+        {
+          "source": "@tempo 19\n@meter 4/4\n[A]\n| C:4 |",
+          "range": {
+            "start": 0,
+            "end": 9
+          }
+        },
+        {
+          "source": "@tempo 401\n@meter 4/4\n[A]\n| C:4 |",
+          "range": {
+            "start": 0,
+            "end": 10
+          }
+        },
+        {
+          "source": "@meter 0/4\n[A]\n| C:4 |",
+          "range": {
+            "start": 0,
+            "end": 10
+          }
+        },
+        {
+          "source": "@meter 33/4\n[A]\n| C:4 |",
+          "range": {
+            "start": 0,
+            "end": 11
+          }
+        },
+        {
+          "source": "@meter 4/3\n[A]\n| C:4 |",
+          "range": {
+            "start": 0,
+            "end": 10
+          }
+        },
+        {
+          "source": "@title \"\"\n@meter 4/4\n[A]\n| C:4 |",
+          "range": {
+            "start": 7,
+            "end": 9
+          },
+          "reason": "decoded title is empty"
+        },
+        {
+          "source": "@title \"   \"\n@meter 4/4\n[A]\n| C:4 |",
+          "range": {
+            "start": 7,
+            "end": 12
+          },
+          "reason": "decoded title is whitespace-only under ECMAScript trim"
+        },
+        {
+          "source": "@key C dorian\n@meter 4/4\n[A]\n| C:4 |",
+          "range": {
+            "start": 0,
+            "end": 13
+          }
+        },
+        {
+          "source": "@unknown 1\n@meter 4/4\n[A]\n| C:4 |",
+          "range": {
+            "start": 0,
+            "end": 10
+          }
+        }
+      ],
+      "expected": {
+        "ok": false,
+        "code": "chart.header_invalid"
+      }
+    },
+    {
+      "id": "T0-CHART-ERR-005",
+      "traceIds": [
+        "T0-TRACE-HEADERS",
+        "T0-TRACE-RANGES"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR"
+      ],
+      "request": {
+        "mode": "document"
+      },
+      "input": "@meter 4/4\n@meter 3/4\n[A]\n| C:3 |",
+      "expected": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "chart.header_duplicate",
+            "range": {
+              "start": 11,
+              "end": 21
+            }
+          }
+        ],
+        "insertableCount": 1
+      }
+    },
+    {
+      "id": "T0-CHART-ERR-006",
+      "traceIds": [
+        "T0-TRACE-HEADERS"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR"
+      ],
+      "request": {
+        "mode": "document"
+      },
+      "input": "@meter 4/4\n[A]\n| C:4 |\n@tempo 120",
+      "expected": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "chart.header_after_content",
+            "range": {
+              "start": 23,
+              "end": 33
+            }
+          }
+        ],
+        "insertableCount": 1
+      }
+    },
+    {
+      "id": "T0-CHART-ERR-007",
+      "traceIds": [
+        "T0-TRACE-CHART-MODES",
+        "T0-TRACE-HEADERS"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "input": "@meter 4/4\nC",
+      "expected": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "chart.header_forbidden_in_fragment",
+            "range": {
+              "start": 0,
+              "end": 10
+            }
+          }
+        ],
+        "insertableCount": 1
+      }
+    },
+    {
+      "id": "T0-CHART-ERR-008",
+      "traceIds": [
+        "T0-TRACE-CHART-STRUCTURE",
+        "T0-TRACE-RANGES"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "input": "[A\n| C:4 |",
+      "expected": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "chart.section_name_unclosed",
+            "range": {
+              "start": 0,
+              "end": 2
+            }
+          }
+        ],
+        "insertableCount": 1
+      }
+    },
+    {
+      "id": "T0-CHART-ERR-009",
+      "traceIds": [
+        "T0-TRACE-CHART-STRUCTURE",
+        "T0-TRACE-RANGES"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "input": "[A\\n]\n| C:4 |",
+      "expected": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "chart.section_name_escape_invalid",
+            "range": {
+              "start": 2,
+              "end": 4
+            }
+          }
+        ],
+        "insertableCount": 1
+      }
+    },
+    {
+      "id": "T0-CHART-ERR-010",
+      "traceIds": [
+        "T0-TRACE-CHART-STRUCTURE",
+        "T0-TRACE-RANGES"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "rows": [
+        {
+          "source": "[]\n| C:4 |",
+          "range": {
+            "start": 1,
+            "end": 1
+          }
+        },
+        {
+          "source": "[﻿]\n| C:4 |",
+          "range": {
+            "start": 1,
+            "end": 2
+          }
+        }
+      ],
+      "expected": {
+        "ok": false,
+        "code": "chart.section_name_blank",
+        "insertableCount": 1
+      }
+    },
+    {
+      "id": "T0-CHART-ERR-011",
+      "traceIds": [
+        "T0-TRACE-ANNOTATIONS",
+        "T0-TRACE-RANGES"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-JSON"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "input": "| C:4 \"hold |",
+      "expected": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "chart.annotation_unclosed",
+            "range": {
+              "start": 6,
+              "end": 13
+            }
+          }
+        ],
+        "insertableCount": 1
+      }
+    },
+    {
+      "id": "T0-CHART-ERR-012",
+      "traceIds": [
+        "T0-TRACE-ANNOTATIONS"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-JSON"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "input": "| C:4 \"bad\\q\" |",
+      "expected": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "chart.annotation_invalid_json",
+            "range": {
+              "start": 6,
+              "end": 13
+            }
+          }
+        ],
+        "insertableCount": 1
+      }
+    },
+    {
+      "id": "T0-CHART-ERR-013",
+      "traceIds": [
+        "T0-TRACE-CHART-STRUCTURE",
+        "T0-TRACE-RANGES"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "input": "| C:4",
+      "expected": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "chart.measure_unclosed",
+            "range": {
+              "start": 0,
+              "end": 5
+            }
+          }
+        ],
+        "insertableCount": 1
+      }
+    },
+    {
+      "id": "T0-CHART-ERR-014",
+      "traceIds": [
+        "T0-TRACE-REPEAT",
+        "T0-TRACE-RANGES"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "input": "| /:4 |",
+      "expected": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "chart.repeat_without_previous",
+            "range": {
+              "start": 2,
+              "end": 5
+            }
+          }
+        ],
+        "insertableChords": []
+      }
+    },
+    {
+      "id": "T0-CHART-ERR-015",
+      "traceIds": [
+        "T0-TRACE-REPEAT",
+        "T0-TRACE-CHART-STRUCTURE"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "input": "[A]\n| C:4 |\n[B]\n| /:4 |",
+      "expected": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "chart.repeat_without_previous",
+            "range": {
+              "start": 18,
+              "end": 21
+            }
+          }
+        ],
+        "insertableCount": 1,
+        "repeatStateResetAtSection": true
+      }
+    },
+    {
+      "id": "T0-CHART-ERR-016",
+      "traceIds": [
+        "T0-TRACE-DURATION",
+        "T0-TRACE-RANGES"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-TIME"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "rows": [
+        {
+          "source": "| C:0 |",
+          "range": {
+            "start": 3,
+            "end": 5
+          }
+        },
+        {
+          "source": "| C:-1 |",
+          "range": {
+            "start": 3,
+            "end": 6
+          }
+        },
+        {
+          "source": "| C:1/0 |",
+          "range": {
+            "start": 3,
+            "end": 7
+          }
+        },
+        {
+          "source": "| C: |",
+          "range": {
+            "start": 3,
+            "end": 4
+          }
+        }
+      ],
+      "expected": {
+        "ok": false,
+        "code": "chart.duration_invalid"
+      }
+    },
+    {
+      "id": "T0-CHART-ERR-017",
+      "traceIds": [
+        "T0-TRACE-DURATION"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-TIME"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "rows": [
+        {
+          "source": "| C:1/7 |",
+          "range": {
+            "start": 3,
+            "end": 7
+          }
+        },
+        {
+          "source": "| C:7/7 |",
+          "range": {
+            "start": 3,
+            "end": 7
+          }
+        },
+        {
+          "source": "| C:1/961 |",
+          "range": {
+            "start": 3,
+            "end": 9
+          }
+        }
+      ],
+      "expected": {
+        "ok": false,
+        "code": "chart.duration_not_representable",
+        "denominatorMustLexicallyDivide960": true
+      }
+    },
+    {
+      "id": "T0-CHART-ERR-017B",
+      "traceIds": [
+        "T0-TRACE-DURATION"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-TIME"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "input": "| C:2147483648 |",
+      "expected": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "chart.duration_not_representable",
+            "range": {
+              "start": 3,
+              "end": 14
+            }
+          }
+        ],
+        "reason": "normalized numerator exceeds 2147483647 before bar-fill analysis"
+      }
+    },
+    {
+      "id": "T0-CHART-ERR-018",
+      "traceIds": [
+        "T0-TRACE-DURATION"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-TIME"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "input": "| C:1 Dm:1 |",
+      "expected": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "chart.bar_underfilled",
+            "range": {
+              "start": 0,
+              "end": 12
+            }
+          }
+        ],
+        "sum": "2/1",
+        "capacity": "4/1",
+        "insertableDurations": [
+          "explicit:1/1",
+          "explicit:1/1"
+        ]
+      }
+    },
+    {
+      "id": "T0-CHART-ERR-019",
+      "traceIds": [
+        "T0-TRACE-DURATION"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-TIME"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "input": "| C:3 Dm:2 |",
+      "expected": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "chart.bar_overfilled",
+            "range": {
+              "start": 0,
+              "end": 12
+            }
+          }
+        ],
+        "sum": "5/1",
+        "capacity": "4/1",
+        "insertableDurations": [
+          "explicit:3/1",
+          "explicit:2/1"
+        ]
+      }
+    },
+    {
+      "id": "T0-CHART-ERR-020",
+      "traceIds": [
+        "T0-TRACE-DURATION"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-TIME"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "input": "| C Dm Em F G Am Bdim |",
+      "expected": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "chart.bar_division_not_representable",
+            "range": {
+              "start": 0,
+              "end": 23
+            }
+          }
+        ],
+        "attemptedEach": "4/7",
+        "insertableDuration": "requires-caller:chart.layout_invalid"
+      }
+    },
+    {
+      "id": "T0-CHART-ERR-021",
+      "traceIds": [
+        "T0-TRACE-STRICT-REFUSAL",
+        "T0-TRACE-RANGES"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "rows": [
+        {
+          "source": "|: C :|",
+          "range": {
+            "start": 0,
+            "end": 2
+          }
+        },
+        {
+          "source": "| C |1.",
+          "range": {
+            "start": 5,
+            "end": 7
+          }
+        },
+        {
+          "source": "| C ||: Dm :||",
+          "range": {
+            "start": 5,
+            "end": 7
+          }
+        }
+      ],
+      "expected": {
+        "ok": false,
+        "code": "chart.unsupported_notation",
+        "noGuess": true
+      }
+    },
+    {
+      "id": "T0-CHART-ERR-022",
+      "traceIds": [
+        "T0-TRACE-STRICT-REFUSAL",
+        "T0-TRACE-RANGES",
+        "T0-TRACE-TRANSACTION"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-TIME",
+        "T0-AUTH-INDEPENDENCE",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "style": "ascii",
+      "kind": "attached-section-material-line-boundary-recovery-matrix",
+      "rows": [
+        {
+          "id": "lf-recovery-boundary",
+          "lineBoundary": "LF",
+          "source": "[A]]\n| C:4 |",
+          "diagnostics": [
+            {
+              "code": "chart.unexpected_token",
+              "range": {
+                "start": 3,
+                "end": 4
+              }
+            }
+          ],
+          "insertableChords": [
+            {
+              "ordinal": 0,
+              "chordCaseId": "T0-SYM-001",
+              "annotation": "",
+              "range": {
+                "start": 7,
+                "end": 10
+              },
+              "symbolRange": {
+                "start": 7,
+                "end": 8
+              },
+              "duration": {
+                "kind": "resolved",
+                "source": "explicit",
+                "value": {
+                  "numerator": 4,
+                  "denominator": 1
+                }
+              },
+              "layoutContextPreserved": false
+            }
+          ],
+          "delegatedSymbolRanges": [
+            {
+              "start": 7,
+              "end": 8
+            }
+          ],
+          "insertableSymbolRanges": [
+            {
+              "start": 7,
+              "end": 8
+            }
+          ],
+          "outerEvidenceProjection": {
+            "sourceUtf16CodeUnits": 12,
+            "sourceCodePoints": 12,
+            "sourceUtf8Bytes": 12,
+            "maxDecodedTextCodePointsObserved": 1,
+            "lexerCodePointsVisited": 12,
+            "tokensProduced": 8,
+            "parserTransitions": 8,
+            "modifierItemsObserved": 0,
+            "headersObserved": 0,
+            "sectionsObserved": 1,
+            "measuresObserved": 1,
+            "slotsObserved": 1,
+            "chordDelegations": 1,
+            "allocationDivisions": 0,
+            "numericComponentsCompared": 1,
+            "maxSourceBigIntDigits": 1,
+            "suggestionsCompared": 0,
+            "diagnosticsProduced": 1,
+            "insertableCandidatesProduced": 1,
+            "peakTokenRecords": 9,
+            "peakDraftNodes": 3,
+            "peakSuggestionRecords": 0,
+            "termination": "complete"
+          },
+          "delegatedEvidenceProjections": [
+            {
+              "delegationOrdinal": 0,
+              "symbolRange": {
+                "start": 7,
+                "end": 8
+              },
+              "evidence": {
+                "sourceUtf16CodeUnits": 1,
+                "sourceCodePoints": 1,
+                "sourceUtf8Bytes": 1,
+                "maxDecodedTextCodePointsObserved": 0,
+                "lexerCodePointsVisited": 1,
+                "tokensProduced": 1,
+                "parserTransitions": 1,
+                "modifierItemsObserved": 0,
+                "headersObserved": 0,
+                "sectionsObserved": 0,
+                "measuresObserved": 0,
+                "slotsObserved": 0,
+                "chordDelegations": 0,
+                "allocationDivisions": 0,
+                "numericComponentsCompared": 0,
+                "maxSourceBigIntDigits": 0,
+                "suggestionsCompared": 0,
+                "diagnosticsProduced": 0,
+                "insertableCandidatesProduced": 0,
+                "peakTokenRecords": 1,
+                "peakDraftNodes": 0,
+                "peakSuggestionRecords": 0,
+                "termination": "complete"
+              }
+            }
+          ]
+        },
+        {
+          "id": "crlf-recovery-boundary",
+          "lineBoundary": "CRLF",
+          "source": "[A]]\r\n| C:4 |",
+          "diagnostics": [
+            {
+              "code": "chart.unexpected_token",
+              "range": {
+                "start": 3,
+                "end": 4
+              }
+            }
+          ],
+          "insertableChords": [
+            {
+              "ordinal": 0,
+              "chordCaseId": "T0-SYM-001",
+              "annotation": "",
+              "range": {
+                "start": 8,
+                "end": 11
+              },
+              "symbolRange": {
+                "start": 8,
+                "end": 9
+              },
+              "duration": {
+                "kind": "resolved",
+                "source": "explicit",
+                "value": {
+                  "numerator": 4,
+                  "denominator": 1
+                }
+              },
+              "layoutContextPreserved": false
+            }
+          ],
+          "delegatedSymbolRanges": [
+            {
+              "start": 8,
+              "end": 9
+            }
+          ],
+          "insertableSymbolRanges": [
+            {
+              "start": 8,
+              "end": 9
+            }
+          ],
+          "outerEvidenceProjection": {
+            "sourceUtf16CodeUnits": 13,
+            "sourceCodePoints": 13,
+            "sourceUtf8Bytes": 13,
+            "maxDecodedTextCodePointsObserved": 1,
+            "lexerCodePointsVisited": 13,
+            "tokensProduced": 8,
+            "parserTransitions": 8,
+            "modifierItemsObserved": 0,
+            "headersObserved": 0,
+            "sectionsObserved": 1,
+            "measuresObserved": 1,
+            "slotsObserved": 1,
+            "chordDelegations": 1,
+            "allocationDivisions": 0,
+            "numericComponentsCompared": 1,
+            "maxSourceBigIntDigits": 1,
+            "suggestionsCompared": 0,
+            "diagnosticsProduced": 1,
+            "insertableCandidatesProduced": 1,
+            "peakTokenRecords": 9,
+            "peakDraftNodes": 3,
+            "peakSuggestionRecords": 0,
+            "termination": "complete"
+          },
+          "delegatedEvidenceProjections": [
+            {
+              "delegationOrdinal": 0,
+              "symbolRange": {
+                "start": 8,
+                "end": 9
+              },
+              "evidence": {
+                "sourceUtf16CodeUnits": 1,
+                "sourceCodePoints": 1,
+                "sourceUtf8Bytes": 1,
+                "maxDecodedTextCodePointsObserved": 0,
+                "lexerCodePointsVisited": 1,
+                "tokensProduced": 1,
+                "parserTransitions": 1,
+                "modifierItemsObserved": 0,
+                "headersObserved": 0,
+                "sectionsObserved": 0,
+                "measuresObserved": 0,
+                "slotsObserved": 0,
+                "chordDelegations": 0,
+                "allocationDivisions": 0,
+                "numericComponentsCompared": 0,
+                "maxSourceBigIntDigits": 0,
+                "suggestionsCompared": 0,
+                "diagnosticsProduced": 0,
+                "insertableCandidatesProduced": 0,
+                "peakTokenRecords": 1,
+                "peakDraftNodes": 0,
+                "peakSuggestionRecords": 0,
+                "termination": "complete"
+              }
+            }
+          ]
+        },
+        {
+          "id": "bare-cr-non-boundary",
+          "lineBoundary": "bare-CR-is-not-a-line-boundary",
+          "source": "[A]]\r| C:4 |",
+          "diagnostics": [
+            {
+              "code": "chart.unexpected_token",
+              "range": {
+                "start": 3,
+                "end": 5
+              }
+            }
+          ],
+          "insertableChords": [],
+          "delegatedSymbolRanges": [],
+          "insertableSymbolRanges": [],
+          "outerEvidenceProjection": {
+            "sourceUtf16CodeUnits": 12,
+            "sourceCodePoints": 12,
+            "sourceUtf8Bytes": 12,
+            "maxDecodedTextCodePointsObserved": 1,
+            "lexerCodePointsVisited": 12,
+            "tokensProduced": 8,
+            "parserTransitions": 8,
+            "modifierItemsObserved": 0,
+            "headersObserved": 0,
+            "sectionsObserved": 1,
+            "measuresObserved": 0,
+            "slotsObserved": 0,
+            "chordDelegations": 0,
+            "allocationDivisions": 0,
+            "numericComponentsCompared": 0,
+            "maxSourceBigIntDigits": 0,
+            "suggestionsCompared": 0,
+            "diagnosticsProduced": 1,
+            "insertableCandidatesProduced": 0,
+            "peakTokenRecords": 8,
+            "peakDraftNodes": 1,
+            "peakSuggestionRecords": 0,
+            "termination": "complete"
+          },
+          "delegatedEvidenceProjections": []
+        }
+      ],
+      "expected": {
+        "ok": false,
+        "wholeDraftApply": false,
+        "lfAndCrlfResumeAtTheLaterExplicitLineBoundary": true,
+        "bareCrNeverReopensRejectedAttachedSectionMaterial": true,
+        "everyRecoveredChordHasExactSourceRangesAndExplicitDuration": true,
+        "everyRecoveredChordLosesLayoutContext": true
+      }
+    },
+    {
+      "id": "T0-CHART-ERR-023",
+      "traceIds": [
+        "T0-TRACE-TRANSACTION",
+        "T0-TRACE-LEGACY-REFUSAL",
+        "T0-TRACE-RANGES",
+        "L-THEORY-02"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-LEGACY",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "input": "| Cmaj7:2 Cwat:2 |",
+      "expected": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "symbol.quality_unknown",
+            "range": {
+              "start": 11,
+              "end": 14
+            }
+          }
+        ],
+        "wholeDraftApply": false,
+        "silentOmissions": 0,
+        "insertableChords": [
+          {
+            "ordinal": 0,
+            "chordCaseId": "T0-SYM-012",
+            "annotation": "",
+            "range": {
+              "start": 2,
+              "end": 9
+            },
+            "symbolRange": {
+              "start": 2,
+              "end": 7
+            },
+            "duration": {
+              "kind": "resolved",
+              "source": "explicit",
+              "value": {
+                "numerator": 2,
+                "denominator": 1
+              }
+            },
+            "layoutContextPreserved": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "T0-CHART-ERR-024",
+      "traceIds": [
+        "T0-TRACE-ANNOTATIONS",
+        "T0-TRACE-UNICODE",
+        "T0-TRACE-RANGES"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-JSON",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "input": "| C:4 \"\\uD800\" |",
+      "expected": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "chart.invalid_unicode_scalar",
+            "range": {
+              "start": 7,
+              "end": 13
+            }
+          }
+        ],
+        "rangeCoversRawEscape": true,
+        "insertableCount": 1
+      }
+    },
+    {
+      "id": "T0-CHART-ERR-025",
+      "traceIds": [
+        "T0-TRACE-TRANSACTION",
+        "T0-TRACE-RANGES",
+        "T0-TRACE-DETERMINISM"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-INDEPENDENCE"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "input": "| Cfoo:2 Dwat:2 |",
+      "expected": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "symbol.quality_unknown",
+            "range": {
+              "start": 3,
+              "end": 6
+            }
+          },
+          {
+            "code": "symbol.quality_unknown",
+            "range": {
+              "start": 10,
+              "end": 13
+            }
+          }
+        ],
+        "insertableChords": [],
+        "wholeDraftApply": false,
+        "collectsIndependentRecoverableDiagnostics": true,
+        "outerEvidenceProjection": {
+          "chordDelegations": 2,
+          "modifierItemsObserved": 0,
+          "numericComponentsCompared": 2,
+          "maxSourceBigIntDigits": 1,
+          "suggestionsCompared": 0,
+          "diagnosticsProduced": 2,
+          "insertableCandidatesProduced": 0,
+          "termination": "complete"
+        },
+        "delegatedEvidenceProjections": [
+          {
+            "delegationOrdinal": 0,
+            "symbolRange": {
+              "start": 2,
+              "end": 6
+            },
+            "evidence": {
+              "suggestionsCompared": 1,
+              "termination": "complete"
+            }
+          },
+          {
+            "delegationOrdinal": 1,
+            "symbolRange": {
+              "start": 9,
+              "end": 13
+            },
+            "evidence": {
+              "suggestionsCompared": 0,
+              "termination": "complete"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "T0-CHART-ERR-026",
+      "traceIds": [
+        "T0-TRACE-LIMITS",
+        "T0-TRACE-TRANSACTION",
+        "T0-TRACE-DETERMINISM",
+        "T0-TRACE-RANGES"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-INDEPENDENCE",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "input": "| C7(add2 add3 add4 add6 add9 add11 add13 no3 no5 b5 b9 #9 #11 b13 add2 add3 add4 add6 add9 add11 add13 no3 no5 b5 b9 #9 #11 b13 add2 add3 add4 add6 add9) Dm:4 |",
+      "expected": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "limit.symbol_modifiers_exceeded",
+            "range": {
+              "start": 149,
+              "end": 153
+            }
+          }
+        ],
+        "limitObservation": {
+          "received": 33,
+          "limit": 32
+        },
+        "insertableChords": [
+          {
+            "ordinal": 1,
+            "symbol": "Dm",
+            "annotation": "",
+            "range": {
+              "start": 155,
+              "end": 159
+            },
+            "symbolRange": {
+              "start": 155,
+              "end": 157
+            },
+            "duration": {
+              "kind": "resolved",
+              "source": "explicit",
+              "value": {
+                "numerator": 4,
+                "denominator": 1
+              }
+            },
+            "layoutContextPreserved": false
+          }
+        ],
+        "outerEvidenceProjection": {
+          "chordDelegations": 2,
+          "modifierItemsObserved": 0,
+          "numericComponentsCompared": 1,
+          "maxSourceBigIntDigits": 1,
+          "suggestionsCompared": 0,
+          "diagnosticsProduced": 1,
+          "insertableCandidatesProduced": 1,
+          "termination": "complete"
+        },
+        "delegatedEvidenceProjections": [
+          {
+            "delegationOrdinal": 0,
+            "symbolRange": {
+              "start": 2,
+              "end": 154
+            },
+            "evidence": {
+              "modifierItemsObserved": 33,
+              "suggestionsCompared": 0,
+              "termination": "symbol-modifiers"
+            }
+          },
+          {
+            "delegationOrdinal": 1,
+            "symbolRange": {
+              "start": 155,
+              "end": 157
+            },
+            "evidence": {
+              "modifierItemsObserved": 0,
+              "suggestionsCompared": 0,
+              "termination": "complete"
+            }
+          }
+        ],
+        "recoveryProof": "the complete first chart chord span bounds the stopped symbol parser; outer chart parsing delegates and recovers the later Dm span"
+      }
+    },
+    {
+      "id": "T0-CHART-ERR-027",
+      "traceIds": [
+        "T0-TRACE-CHART-STRUCTURE",
+        "T0-TRACE-REPEAT",
+        "T0-TRACE-TRANSACTION",
+        "T0-TRACE-RANGES",
+        "T0-TRACE-STRICT-REFUSAL"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-INDEPENDENCE",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "style": "ascii",
+      "kind": "slot-separator-required-after-complete-event",
+      "rows": [
+        {
+          "source": "| C:2 /G:2 |",
+          "diagnostics": [
+            {
+              "code": "chart.unexpected_token",
+              "range": {
+                "start": 7,
+                "end": 8
+              }
+            }
+          ],
+          "delegatedSymbolRanges": [
+            {
+              "start": 2,
+              "end": 3
+            }
+          ],
+          "insertableSymbolRanges": [
+            {
+              "start": 2,
+              "end": 3
+            },
+            {
+              "start": 6,
+              "end": 7
+            }
+          ],
+          "attachedRootIsNotDelegatedOrInsertable": true
+        },
+        {
+          "source": "C \"x\"D",
+          "diagnostics": [
+            {
+              "code": "chart.unexpected_token",
+              "range": {
+                "start": 5,
+                "end": 6
+              }
+            }
+          ],
+          "delegatedSymbolRanges": [
+            {
+              "start": 0,
+              "end": 1
+            }
+          ],
+          "insertableSymbolRanges": [
+            {
+              "start": 0,
+              "end": 1
+            }
+          ],
+          "attachedChordIsNotDelegatedOrInsertable": true
+        }
+      ],
+      "expected": {
+        "ok": false,
+        "wholeDraftApply": false,
+        "missingSeparatorNeverCreatesAnotherSlot": true,
+        "diagnosticTargetsFirstAttachedToken": true
+      }
+    },
+    {
+      "id": "T0-CHART-ERR-028",
+      "traceIds": [
+        "T0-TRACE-CHART-STRUCTURE",
+        "T0-TRACE-ANNOTATIONS",
+        "T0-TRACE-TRANSACTION",
+        "T0-TRACE-RANGES",
+        "T0-TRACE-STRICT-REFUSAL"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-JSON",
+        "T0-AUTH-INDEPENDENCE",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "style": "ascii",
+      "kind": "section-gap-begins-after-complete-annotation",
+      "rows": [
+        {
+          "source": "[A] \"x\"C:4",
+          "diagnostics": [
+            {
+              "code": "chart.unexpected_token",
+              "range": {
+                "start": 7,
+                "end": 8
+              }
+            }
+          ],
+          "delegatedSymbolRanges": [],
+          "insertableSymbolRanges": []
+        },
+        {
+          "source": "[A] \"x\"| C:4 |",
+          "diagnostics": [
+            {
+              "code": "chart.unexpected_token",
+              "range": {
+                "start": 7,
+                "end": 8
+              }
+            }
+          ],
+          "delegatedSymbolRanges": [],
+          "insertableSymbolRanges": []
+        }
+      ],
+      "nearMissCaseId": "T0-CHART-024",
+      "expected": {
+        "ok": false,
+        "wholeDraftApply": false,
+        "annotationIntroducingSpaceDoesNotAlsoSatisfyFollowingSectionGap": true,
+        "missingPostAnnotationGapPreventsBodyDelegation": true
+      }
+    },
+    {
+      "id": "T0-CHART-ERR-029",
+      "traceIds": [
+        "T0-TRACE-ANNOTATIONS",
+        "T0-TRACE-REPEAT",
+        "T0-TRACE-RANGES",
+        "T0-TRACE-STRICT-REFUSAL"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-JSON",
+        "T0-AUTH-INDEPENDENCE",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "style": "ascii",
+      "kind": "repeat-annotation-json-lexical-precedence",
+      "rows": [
+        {
+          "source": "C / \"unterminated",
+          "diagnostics": [
+            {
+              "code": "chart.annotation_unclosed",
+              "range": {
+                "start": 4,
+                "end": 17
+              }
+            }
+          ]
+        },
+        {
+          "source": "/ \"unterminated",
+          "diagnostics": [
+            {
+              "code": "chart.annotation_unclosed",
+              "range": {
+                "start": 2,
+                "end": 15
+              }
+            }
+          ],
+          "suppressedDerivedCode": "chart.repeat_without_previous"
+        },
+        {
+          "source": "C / \"bad\\x\"",
+          "diagnostics": [
+            {
+              "code": "chart.annotation_invalid_json",
+              "range": {
+                "start": 4,
+                "end": 11
+              }
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "ok": false,
+        "lexicalJsonFaultIsSoleDiagnostic": true,
+        "repeatSemanticDiagnosticsAreNotManufacturedAfterDestroyedBoundary": true
+      }
+    },
+    {
+      "id": "T0-CHART-ERR-030",
+      "traceIds": [
+        "T0-TRACE-ANNOTATIONS",
+        "T0-TRACE-REPEAT",
+        "T0-TRACE-TRANSACTION",
+        "T0-TRACE-RANGES",
+        "T0-TRACE-STRICT-REFUSAL"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-JSON",
+        "T0-AUTH-INDEPENDENCE",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "style": "ascii",
+      "kind": "valid-json-annotation-forbidden-on-repeat",
+      "rows": [
+        {
+          "source": "/ \"x\"",
+          "diagnostics": [
+            {
+              "code": "chart.unsupported_notation",
+              "range": {
+                "start": 2,
+                "end": 5
+              }
+            }
+          ],
+          "delegatedSymbolRanges": [],
+          "insertableSymbolRanges": [],
+          "suppressedDerivedCode": "chart.repeat_without_previous"
+        },
+        {
+          "source": "C / \"x\"",
+          "diagnostics": [
+            {
+              "code": "chart.unsupported_notation",
+              "range": {
+                "start": 4,
+                "end": 7
+              }
+            }
+          ],
+          "delegatedSymbolRanges": [
+            {
+              "start": 0,
+              "end": 1
+            }
+          ],
+          "insertableSymbolRanges": [
+            {
+              "start": 0,
+              "end": 1
+            }
+          ],
+          "rejectedRepeatSymbolRange": {
+            "start": 2,
+            "end": 3
+          }
+        }
+      ],
+      "expected": {
+        "ok": false,
+        "wholeDraftApply": false,
+        "validJsonDoesNotMakeRepeatAnnotationLegal": true,
+        "unsupportedNotationIsTheSoleDiagnostic": true,
+        "invalidAnnotatedRepeatIsNeverInsertable": true
+      }
+    },
+    {
+      "id": "T0-CHART-ERR-031",
+      "traceIds": [
+        "T0-TRACE-CHART-STRUCTURE",
+        "T0-TRACE-TRANSACTION",
+        "T0-TRACE-RANGES",
+        "T0-TRACE-STRICT-REFUSAL"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-TIME",
+        "T0-AUTH-INDEPENDENCE",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "style": "ascii",
+      "kind": "mixed-virtual-then-barred-recovery-keeps-valid-literal-candidates",
+      "rows": [
+        {
+          "id": "implicit-section",
+          "source": "C | D:4 |",
+          "diagnostics": [
+            {
+              "code": "chart.unsupported_notation",
+              "range": {"start": 2, "end": 3}
+            }
+          ],
+          "delegatedSymbolRanges": [
+            {"start": 0, "end": 1},
+            {"start": 4, "end": 5}
+          ],
+          "insertableChords": [
+            {
+              "ordinal": 0,
+              "symbol": "C",
+              "annotation": "",
+              "range": {"start": 0, "end": 1},
+              "symbolRange": {"start": 0, "end": 1},
+              "duration": {
+                "kind": "requires-caller",
+                "reason": "chart.layout_invalid"
+              },
+              "layoutContextPreserved": false
+            },
+            {
+              "ordinal": 1,
+              "symbol": "D",
+              "annotation": "",
+              "range": {"start": 4, "end": 7},
+              "symbolRange": {"start": 4, "end": 5},
+              "duration": {
+                "kind": "resolved",
+                "source": "explicit",
+                "value": {"numerator": 4, "denominator": 1}
+              },
+              "layoutContextPreserved": false
+            }
+          ],
+          "outerEvidenceProjection": {
+            "chordDelegations": 2,
+            "diagnosticsProduced": 1,
+            "insertableCandidatesProduced": 2,
+            "termination": "complete"
+          }
+        },
+        {
+          "id": "named-section",
+          "source": "[A]\nC | D:4 |",
+          "diagnostics": [
+            {
+              "code": "chart.unsupported_notation",
+              "range": {"start": 6, "end": 7}
+            }
+          ],
+          "delegatedSymbolRanges": [
+            {"start": 4, "end": 5},
+            {"start": 8, "end": 9}
+          ],
+          "insertableChords": [
+            {
+              "ordinal": 0,
+              "symbol": "C",
+              "annotation": "",
+              "range": {"start": 4, "end": 5},
+              "symbolRange": {"start": 4, "end": 5},
+              "duration": {
+                "kind": "requires-caller",
+                "reason": "chart.layout_invalid"
+              },
+              "layoutContextPreserved": false
+            },
+            {
+              "ordinal": 1,
+              "symbol": "D",
+              "annotation": "",
+              "range": {"start": 8, "end": 11},
+              "symbolRange": {"start": 8, "end": 9},
+              "duration": {
+                "kind": "resolved",
+                "source": "explicit",
+                "value": {"numerator": 4, "denominator": 1}
+              },
+              "layoutContextPreserved": false
+            }
+          ],
+          "outerEvidenceProjection": {
+            "chordDelegations": 2,
+            "diagnosticsProduced": 1,
+            "insertableCandidatesProduced": 2,
+            "termination": "complete"
+          }
+        },
+        {
+          "id": "malformed-first-symbol-near-miss",
+          "source": "Cwat | D:4 |",
+          "diagnostics": [
+            {
+              "code": "symbol.quality_unknown",
+              "range": {"start": 1, "end": 4}
+            },
+            {
+              "code": "chart.unsupported_notation",
+              "range": {"start": 5, "end": 6}
+            }
+          ],
+          "delegatedSymbolRanges": [
+            {"start": 0, "end": 4},
+            {"start": 7, "end": 8}
+          ],
+          "insertableChords": [
+            {
+              "ordinal": 1,
+              "symbol": "D",
+              "annotation": "",
+              "range": {"start": 7, "end": 10},
+              "symbolRange": {"start": 7, "end": 8},
+              "duration": {
+                "kind": "resolved",
+                "source": "explicit",
+                "value": {"numerator": 4, "denominator": 1}
+              },
+              "layoutContextPreserved": false
+            }
+          ],
+          "malformedSymbolRangeNotInsertable": {"start": 0, "end": 4},
+          "outerEvidenceProjection": {
+            "chordDelegations": 2,
+            "diagnosticsProduced": 2,
+            "insertableCandidatesProduced": 1,
+            "termination": "complete"
+          }
+        },
+        {
+          "id": "implicit-barred-then-virtual",
+          "source": "| C:4 |\nD",
+          "diagnostics": [
+            {
+              "code": "chart.unsupported_notation",
+              "range": {"start": 8, "end": 9}
+            }
+          ],
+          "delegatedSymbolRanges": [
+            {"start": 2, "end": 3},
+            {"start": 8, "end": 9}
+          ],
+          "insertableChords": [
+            {
+              "ordinal": 0,
+              "symbol": "C",
+              "annotation": "",
+              "range": {"start": 2, "end": 5},
+              "symbolRange": {"start": 2, "end": 3},
+              "duration": {
+                "kind": "resolved",
+                "source": "explicit",
+                "value": {"numerator": 4, "denominator": 1}
+              },
+              "layoutContextPreserved": false
+            },
+            {
+              "ordinal": 1,
+              "symbol": "D",
+              "annotation": "",
+              "range": {"start": 8, "end": 9},
+              "symbolRange": {"start": 8, "end": 9},
+              "duration": {
+                "kind": "requires-caller",
+                "reason": "chart.layout_invalid"
+              },
+              "layoutContextPreserved": false
+            }
+          ],
+          "outerEvidenceProjection": {
+            "chordDelegations": 2,
+            "diagnosticsProduced": 1,
+            "insertableCandidatesProduced": 2,
+            "termination": "complete"
+          }
+        },
+        {
+          "id": "named-barred-then-virtual",
+          "source": "[A]\n| C:4 |\nD",
+          "diagnostics": [
+            {
+              "code": "chart.unsupported_notation",
+              "range": {"start": 12, "end": 13}
+            }
+          ],
+          "delegatedSymbolRanges": [
+            {"start": 6, "end": 7},
+            {"start": 12, "end": 13}
+          ],
+          "insertableChords": [
+            {
+              "ordinal": 0,
+              "symbol": "C",
+              "annotation": "",
+              "range": {"start": 6, "end": 9},
+              "symbolRange": {"start": 6, "end": 7},
+              "duration": {
+                "kind": "resolved",
+                "source": "explicit",
+                "value": {"numerator": 4, "denominator": 1}
+              },
+              "layoutContextPreserved": false
+            },
+            {
+              "ordinal": 1,
+              "symbol": "D",
+              "annotation": "",
+              "range": {"start": 12, "end": 13},
+              "symbolRange": {"start": 12, "end": 13},
+              "duration": {
+                "kind": "requires-caller",
+                "reason": "chart.layout_invalid"
+              },
+              "layoutContextPreserved": false
+            }
+          ],
+          "outerEvidenceProjection": {
+            "chordDelegations": 2,
+            "diagnosticsProduced": 1,
+            "insertableCandidatesProduced": 2,
+            "termination": "complete"
+          }
+        },
+        {
+          "id": "malformed-trailing-symbol-near-miss",
+          "source": "| C:4 |\nDwat",
+          "diagnostics": [
+            {
+              "code": "chart.unsupported_notation",
+              "range": {"start": 8, "end": 12}
+            },
+            {
+              "code": "symbol.quality_unknown",
+              "range": {"start": 9, "end": 12}
+            }
+          ],
+          "delegatedSymbolRanges": [
+            {"start": 2, "end": 3},
+            {"start": 8, "end": 12}
+          ],
+          "insertableChords": [
+            {
+              "ordinal": 0,
+              "symbol": "C",
+              "annotation": "",
+              "range": {"start": 2, "end": 5},
+              "symbolRange": {"start": 2, "end": 3},
+              "duration": {
+                "kind": "resolved",
+                "source": "explicit",
+                "value": {"numerator": 4, "denominator": 1}
+              },
+              "layoutContextPreserved": false
+            }
+          ],
+          "malformedSymbolRangeNotInsertable": {"start": 8, "end": 12},
+          "outerEvidenceProjection": {
+            "chordDelegations": 2,
+            "diagnosticsProduced": 2,
+            "insertableCandidatesProduced": 1,
+            "termination": "complete"
+          }
+        }
+      ],
+      "expected": {
+        "ok": false,
+        "wholeDraftApply": false,
+        "mixedLayoutIsNeverSilentlyRepaired": true,
+        "bothMixedLayoutOrdersCovered": true,
+        "everyIndividuallyValidLiteralDelegatedExactlyOnce": true,
+        "everyIndividuallyValidLiteralExposedExactlyOnce": true,
+        "everyInsertableLosesLayoutContext": true,
+        "malformedSymbolNeverInsertable": true
+      }
+    },
+    {
+      "id": "T0-CHART-ERR-032",
+      "traceIds": [
+        "T0-TRACE-CHART-STRUCTURE",
+        "T0-TRACE-RANGES",
+        "T0-TRACE-COMMENTS"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-TIME",
+        "T0-AUTH-INDEPENDENCE",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "style": "ascii",
+      "kind": "unclosed-measure-range-retains-ownable-trailing-trivia",
+      "rows": [
+        {
+          "id": "trailing-horizontal-space",
+          "source": "| C:4   ",
+          "sourceUtf16Length": 8,
+          "diagnostics": [
+            {
+              "code": "chart.measure_unclosed",
+              "range": {"start": 0, "end": 8}
+            }
+          ],
+          "eventRange": {"start": 2, "end": 5},
+          "trailingTriviaRangeRetainedByDiagnostic": {"start": 5, "end": 8},
+          "insertableCount": 1
+        },
+        {
+          "id": "trailing-comment-to-eof",
+          "source": "| C:4 ;note",
+          "sourceUtf16Length": 11,
+          "diagnostics": [
+            {
+              "code": "chart.measure_unclosed",
+              "range": {"start": 0, "end": 11}
+            }
+          ],
+          "eventRange": {"start": 2, "end": 5},
+          "commentRangeRetainedByDiagnostic": {"start": 6, "end": 11},
+          "insertableCount": 1
+        },
+        {
+          "id": "slotless-unclosed-near-miss",
+          "source": "|   ",
+          "sourceUtf16Length": 4,
+          "diagnostics": [
+            {
+              "code": "chart.measure_unclosed",
+              "range": {"start": 0, "end": 4}
+            }
+          ],
+          "eventsObserved": 0,
+          "insertableCount": 0
+        },
+        {
+          "id": "same-space-prefix-closed-control",
+          "source": "| C:4   |",
+          "sourceUtf16Length": 9,
+          "expected": {
+            "ok": true,
+            "measureRange": {"start": 0, "end": 9},
+            "eventRange": {"start": 2, "end": 5},
+            "canonicalText": "| C:4 |\n"
+          }
+        },
+        {
+          "id": "slotless-closed-control",
+          "source": "| |",
+          "sourceUtf16Length": 3,
+          "expected": {
+            "ok": true,
+            "measureRange": {"start": 0, "end": 3},
+            "eventsObserved": 0,
+            "canonicalText": "| |\n"
+          }
+        },
+        {
+          "id": "post-closure-trivia-excluded-control",
+          "source": "| C:4 |   ;note",
+          "sourceUtf16Length": 15,
+          "expected": {
+            "ok": true,
+            "measureRange": {"start": 0, "end": 7},
+            "eventRange": {"start": 2, "end": 5},
+            "warnings": [
+              {
+                "code": "chart.comments_not_round_tripped",
+                "range": {"start": 10, "end": 15}
+              }
+            ],
+            "canonicalText": "| C:4 |\n"
+          }
+        }
+      ],
+      "expected": {
+        "unclosedRangeStartsAtOpeningBarline": true,
+        "unclosedRangeEndsAtSourceEndAfterOwnableTrivia": true,
+        "slotlessUnclosedMeasureStillRetainsTrailingSpace": true,
+        "closingBarlineConvertsTheSamePrefixToACompleteMeasure": true,
+        "triviaAfterACompleteClosingBarlineNeverExpandsMeasureRange": true
+      }
+    },
+    {
+      "id": "T0-CHART-FMT-ERR-001",
+      "traceIds": [
+        "T0-TRACE-FORMATTER"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR"
+      ],
+      "operation": "format",
+      "inputDraftRecipe": {
+        "id": "event-0-duration-zero",
+        "kind": "single-field-mutation",
+        "baseDraft": "T0-CHART-001",
+        "fault": "event 0 duration numerator changed from 1 to 0 while every source range and other field remains unchanged",
+        "mutationProjection": {
+          "path": "sections[0].measures[0].events[0].duration.numerator",
+          "before": 1,
+          "after": 0
+        }
+      },
+      "expected": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "chart.draft_unformattable",
+            "range": {
+              "start": 0,
+              "end": 5
+            },
+            "rangeOwner": "event 0 range"
+          }
+        ]
+      }
+    },
+    {
+      "id": "T0-CHART-FMT-ERR-002",
+      "traceIds": [
+        "T0-TRACE-FORMATTER",
+        "T0-TRACE-RANGES"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-INDEPENDENCE"
+      ],
+      "operation": "format",
+      "rows": [
+        {
+          "id": "draft-schema-version-mismatch",
+          "baseDraft": "T0-CHART-005",
+          "fault": "draft schema changed to changes.theory.chart-text-draft.v999",
+          "mutationProjection": {
+            "path": "schema",
+            "before": "changes.theory.chart-text-draft.v1",
+            "after": "changes.theory.chart-text-draft.v999"
+          },
+          "expected": {
+            "code": "chart.draft_unformattable",
+            "range": {
+              "start": 0,
+              "end": 0
+            }
+          }
+        },
+        {
+          "id": "grammar-version-mismatch",
+          "baseDraft": "T0-CHART-005",
+          "fault": "grammarVersion changed to 2",
+          "mutationProjection": {
+            "path": "grammarVersion",
+            "before": 1,
+            "after": 2
+          },
+          "expected": {
+            "code": "chart.draft_unformattable",
+            "range": {
+              "start": 0,
+              "end": 0
+            }
+          }
+        },
+        {
+          "id": "fragment-title-present",
+          "baseDraft": "T0-CHART-001",
+          "fault": "fragment title changed from null to nonempty",
+          "mutationProjection": {
+            "path": "headers.title",
+            "before": null,
+            "after": "not allowed"
+          },
+          "expected": {
+            "code": "chart.draft_unformattable",
+            "range": {
+              "start": 0,
+              "end": 0
+            }
+          }
+        },
+        {
+          "id": "event-ordinal-gap",
+          "baseDraft": "T0-CHART-001",
+          "fault": "event ordinal 2 changed to 4",
+          "mutationProjection": {
+            "path": "sections[0].measures[0].events[2].ordinal",
+            "before": 2,
+            "after": 4
+          },
+          "expected": {
+            "code": "chart.draft_unformattable",
+            "range": {
+              "start": 10,
+              "end": 12
+            }
+          }
+        },
+        {
+          "id": "symbol-range-beyond-source",
+          "baseDraft": "T0-CHART-001",
+          "fault": "first symbolRange end changed beyond sourceText length",
+          "mutationProjection": {
+            "path": "sections[0].measures[0].events[0].symbolRange.end",
+            "before": 5,
+            "after": 19
+          },
+          "expected": {
+            "code": "chart.draft_unformattable",
+            "range": {
+              "start": 0,
+              "end": 0
+            }
+          }
+        },
+        {
+          "id": "repeat-link-self-reference",
+          "baseDraft": "T0-CHART-007",
+          "fault": "repeat repeatedFromOrdinal changed from 0 to 1",
+          "mutationProjection": {
+            "path": "sections[0].measures[0].events[1].repeatedFromOrdinal",
+            "before": 0,
+            "after": 1
+          },
+          "expected": {
+            "code": "chart.draft_unformattable",
+            "range": {
+              "start": 15,
+              "end": 18
+            }
+          }
+        },
+        {
+          "id": "literal-unformattable-extension",
+          "baseDraft": "T0-CHART-005",
+          "fault": "literal event ordinal 0 chord gains a ninth extension without a dominant seventh; chord.sourceText remains C",
+          "mutationProjection": {
+            "path": "sections[0].measures[0].events[0].chord.extensions",
+            "before": [],
+            "after": [
+              {
+                "number": 9,
+                "alter": 0
+              }
+            ]
+          },
+          "nestedSymbolFormatterDiagnostic": {
+            "localRange": {
+              "start": 0,
+              "end": 1
+            }
+          },
+          "expected": {
+            "code": "symbol.ast_unformattable",
+            "range": {
+              "start": 17,
+              "end": 18
+            },
+            "rangeOwner": "literal event.symbolRange",
+            "mustNotUseChordLocalSourceOffsets": true
+          }
+        },
+        {
+          "id": "repeat-copy-mismatch-unformattable",
+          "baseDraft": "T0-CHART-007",
+          "fault": "repeat event ordinal 1 alone gains a natural sixth while retaining its major seventh; the preceding linked literal chord remains unchanged",
+          "mutationProjection": {
+            "path": "sections[0].measures[0].events[1].chord.sixth",
+            "before": null,
+            "after": {
+              "number": 6,
+              "alter": 0
+            }
+          },
+          "expected": {
+            "code": "chart.draft_unformattable",
+            "range": {
+              "start": 15,
+              "end": 18
+            },
+            "rangeOwner": "repeat event.range",
+            "mustRejectBeforeNestedSymbolFormatting": true
+          }
+        }
+      ],
+      "expected": {
+        "ok": false,
+        "noPartialText": true,
+        "nestedSymbolRangesAlwaysChartCoordinates": true
+      }
+    },
+    {
+      "id": "T0-CHART-FMT-ERR-003",
+      "traceIds": [
+        "T0-TRACE-FORMATTER",
+        "T0-TRACE-LIMITS",
+        "T0-TRACE-RANGES"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-INDEPENDENCE",
+        "T0-AUTH-UTF16"
+      ],
+      "operation": "format",
+      "rows": [
+        {
+          "id": "section-limit-first-excess",
+          "baseDraftRecipe": {
+            "kind": "source-backed-draft",
+            "sourceMaterialization": {
+              "prefix": "@meter 4/4\n",
+              "sectionCount": 65,
+              "sectionName": "S plus zero-padded three-digit source ordinal 000 through 064",
+              "sectionTemplate": "[Snnn]\n| |\n",
+              "sourceUtf16Length": 726
+            },
+            "draftMaterialization": {
+              "mode": "document",
+              "headers": {
+                "meter": {
+                  "beatsPerBar": 4,
+                  "beatUnit": 4
+                }
+              },
+              "sectionOrdinals": "0 through 64",
+              "eachSection": {
+                "kind": "named",
+                "oneEmptyBarredMeasure": true
+              },
+              "ranges": "derive literally from source using contract section 2.1.1; do not invoke production parsing"
+            }
+          },
+          "firstExcess": {
+            "kind": "section",
+            "sectionOrdinal": 64,
+            "range": {
+              "start": 715,
+              "end": 725
+            }
+          },
+          "expected": {
+            "code": "limit.chart_sections_exceeded",
+            "range": {
+              "start": 715,
+              "end": 725
+            },
+            "precedence": "after the excess section own range/local shape is coherent and before its descendants or later nodes"
+          }
+        },
+        {
+          "id": "event-limit-first-excess",
+          "baseDraftRecipe": {
+            "kind": "source-backed-draft",
+            "sourceMaterialization": {
+              "prefix": "@meter 4/4\n",
+              "fullSectionCount": 8,
+              "fullSectionName": "S plus zero-padded three-digit source ordinal 000 through 007",
+              "fullSectionTemplate": "[Snnn]\n followed by 1024 copies of | C:4 | plus LF",
+              "excessSection": "[S008]\n| C:4 |\n",
+              "sourceUtf16Length": 65618
+            },
+            "draftMaterialization": {
+              "mode": "document",
+              "headers": {
+                "meter": {
+                  "beatsPerBar": 4,
+                  "beatUnit": 4
+                }
+              },
+              "fullSections": {
+                "count": 8,
+                "measuresPerSection": 1024,
+                "eventsPerMeasure": 1
+              },
+              "excessSection": {
+                "sectionOrdinal": 8,
+                "measureOrdinal": 0,
+                "eventOrdinal": 8192
+              },
+              "events": {
+                "origin": "literal",
+                "chordCaseId": "T0-SYM-001",
+                "duration": {
+                  "numerator": 4,
+                  "denominator": 1
+                }
+              },
+              "ranges": "derive literally from source using contract section 2.1.1; do not invoke production parsing"
+            }
+          },
+          "firstExcess": {
+            "kind": "event",
+            "sectionOrdinal": 8,
+            "measureOrdinal": 0,
+            "eventOrdinal": 8192,
+            "range": {
+              "start": 65612,
+              "end": 65615
+            },
+            "symbolRange": {
+              "start": 65612,
+              "end": 65613
+            },
+            "durationRange": {
+              "start": 65613,
+              "end": 65615
+            },
+            "containingMeasureRange": {
+              "start": 65610,
+              "end": 65617
+            },
+            "containingSectionRange": {
+              "start": 65603,
+              "end": 65617
+            }
+          },
+          "expected": {
+            "code": "limit.chart_events_exceeded",
+            "range": {
+              "start": 65612,
+              "end": 65615
+            },
+            "precedence": "after the excess event own ranges/local shape are coherent and before later nodes"
+          }
+        }
+      ],
+      "expected": {
+        "ok": false,
+        "noPartialText": true,
+        "topLevelOrEarlierRangeIncoherenceWinsAs": "chart.draft_unformattable"
+      }
+    }
+  ],
+  "boundaryCases": [
+    {
+      "id": "T0-CHART-LIMIT-001",
+      "traceIds": [
+        "T0-TRACE-LIMITS",
+        "T0-TRACE-RANGES"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-INDEPENDENCE",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "document"
+      },
+      "materializationRecipe": {
+        "kind": "utf8-byte-boundary",
+        "expression": "\"@meter 4/4\\n[A]\\n| |\\n;\" + \"x\".repeat(2097133)",
+        "asciiPrefix": "@meter 4/4\n[A]\n| |\n;",
+        "prefixUtf16Length": 20,
+        "appendScalar": "x",
+        "appendCount": 2097133,
+        "sourceUtf16Length": 2097153,
+        "sourceCodePoints": 2097153,
+        "sourceUtf8Bytes": 2097153,
+        "firstExcess": {
+          "kind": "scalar-crossing-utf8-budget",
+          "zeroBasedOrdinal": 2097152,
+          "range": {
+            "start": 2097152,
+            "end": 2097153
+          }
+        }
+      },
+      "expected": {
+        "ok": false,
+        "code": "limit.chart_utf8_bytes_exceeded",
+        "range": {
+          "start": 2097152,
+          "end": 2097153
+        },
+        "received": 2097153,
+        "limit": 2097152,
+        "expectedEvidence": {
+          "sourceUtf16CodeUnits": 2097153,
+          "sourceCodePoints": 2097153,
+          "sourceUtf8Bytes": 2097153,
+          "termination": "chart-bytes"
+        }
+      },
+      "nearBoundary": {
+        "expression": "\"@meter 4/4\\n[A]\\n| |\\n;\" + \"x\".repeat(2097132)",
+        "appendCount": 2097132,
+        "sourceUtf16Length": 2097152,
+        "sourceUtf8Bytes": 2097152,
+        "ok": true,
+        "warnings": [
+          "chart.comments_not_round_tripped"
+        ]
+      }
+    },
+    {
+      "id": "T0-CHART-LIMIT-002",
+      "traceIds": [
+        "T0-TRACE-LIMITS",
+        "T0-TRACE-RANGES"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-INDEPENDENCE",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "materializationRecipe": {
+        "kind": "chart-token-count",
+        "expression": "\";\\n\".repeat(65534) + \"| C |\"",
+        "commentCount": 65534,
+        "validFragmentSuffix": "| C |",
+        "sourceUtf16Length": 131073,
+        "tokenAccounting": {
+          "comments": 65534,
+          "barlines": 2,
+          "chordSpans": 1,
+          "total": 65537
+        },
+        "firstExcess": {
+          "kind": "chart-token",
+          "token": "closing-barline",
+          "zeroBasedOrdinal": 65536,
+          "range": {
+            "start": 131072,
+            "end": 131073
+          }
+        }
+      },
+      "expected": {
+        "ok": false,
+        "code": "limit.chart_tokens_exceeded",
+        "range": {
+          "start": 131072,
+          "end": 131073
+        },
+        "received": 65537,
+        "limit": 65536,
+        "expectedEvidence": {
+          "sourceUtf16CodeUnits": 131073,
+          "tokensProduced": 65537,
+          "termination": "chart-tokens"
+        }
+      },
+      "nearBoundary": {
+        "expression": "\";\\n\".repeat(65533) + \"| C |\"",
+        "commentCount": 65533,
+        "sourceUtf16Length": 131071,
+        "tokens": 65536,
+        "ok": true,
+        "warningsCode": "chart.comments_not_round_tripped"
+      }
+    },
+    {
+      "id": "T0-CHART-LIMIT-003",
+      "traceIds": [
+        "T0-TRACE-LIMITS",
+        "T0-TRACE-RANGES"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-INDEPENDENCE",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "document"
+      },
+      "materializationRecipe": {
+        "kind": "named-sections",
+        "expression": "\"@meter 4/4\\n\" + Array.from({length:65}, (_, index) => `[S${String(index).padStart(2, \"0\")}]\\n| |\\n`).join(\"\")",
+        "documentPrefix": "@meter 4/4\n",
+        "sectionNames": "S00 through S64",
+        "sectionTemplate": "[Snn]\n| |\n",
+        "sectionTemplateUtf16Length": 10,
+        "sourceUtf16Length": 661,
+        "firstExcess": {
+          "kind": "section",
+          "zeroBasedOrdinal": 64,
+          "range": {
+            "start": 651,
+            "end": 660
+          }
+        }
+      },
+      "expected": {
+        "ok": false,
+        "code": "limit.chart_sections_exceeded",
+        "range": {
+          "start": 651,
+          "end": 660
+        },
+        "received": 65,
+        "limit": 64,
+        "expectedEvidence": {
+          "sourceUtf16CodeUnits": 661,
+          "sectionsObserved": 65,
+          "termination": "chart-sections"
+        }
+      },
+      "nearBoundary": {
+        "sections": 64,
+        "sourceUtf16Length": 651,
+        "ok": true
+      }
+    },
+    {
+      "id": "T0-CHART-LIMIT-004",
+      "traceIds": [
+        "T0-TRACE-LIMITS",
+        "T0-TRACE-RANGES"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-INDEPENDENCE",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "materializationRecipe": {
+        "kind": "measures-in-one-section",
+        "expression": "\"[A]\\n\" + \"| |\\n\".repeat(1025)",
+        "sectionPrefix": "[A]\n",
+        "measureTemplate": "| |\n",
+        "sourceUtf16Length": 4104,
+        "firstExcess": {
+          "kind": "measure",
+          "zeroBasedOrdinal": 1024,
+          "range": {
+            "start": 4100,
+            "end": 4103
+          }
+        }
+      },
+      "expected": {
+        "ok": false,
+        "code": "limit.chart_measures_per_section_exceeded",
+        "range": {
+          "start": 4100,
+          "end": 4103
+        },
+        "received": 1025,
+        "limit": 1024,
+        "expectedEvidence": {
+          "sourceUtf16CodeUnits": 4104,
+          "measuresObserved": 1025,
+          "termination": "chart-measures"
+        }
+      },
+      "nearBoundary": {
+        "measures": 1024,
+        "sourceUtf16Length": 4100,
+        "ok": true
+      }
+    },
+    {
+      "id": "T0-CHART-LIMIT-005",
+      "traceIds": [
+        "T0-TRACE-LIMITS",
+        "T0-TRACE-RANGES"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-INDEPENDENCE",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "document"
+      },
+      "materializationRecipe": {
+        "kind": "explicit-events",
+        "expression": "\"@meter 4/4\\n\" + eight sections S000 through S007, each `[Snnn]\\n` plus 1024 copies of `| C:4 |\\n`, then `[S008]\\n| C:4 |\\n`",
+        "documentPrefix": "@meter 4/4\n",
+        "fullSectionCount": 8,
+        "fullSectionName": "S plus zero-padded three-digit ordinal 000 through 007",
+        "fullSectionTemplate": "[Snnn]\n followed by 1024 copies of | C:4 | plus LF",
+        "fullSectionUtf16Length": 8199,
+        "excessSection": "[S008]\n| C:4 |\n",
+        "sourceUtf16Length": 65618,
+        "events": 8193,
+        "firstExcess": {
+          "kind": "event",
+          "sectionOrdinal": 8,
+          "measureOrdinal": 0,
+          "eventOrdinal": 8192,
+          "range": {
+            "start": 65612,
+            "end": 65615
+          },
+          "symbolRange": {
+            "start": 65612,
+            "end": 65613
+          },
+          "durationRange": {
+            "start": 65613,
+            "end": 65615
+          },
+          "containingMeasureRange": {
+            "start": 65610,
+            "end": 65617
+          },
+          "containingSectionRange": {
+            "start": 65603,
+            "end": 65617
+          }
+        }
+      },
+      "expected": {
+        "ok": false,
+        "code": "limit.chart_events_exceeded",
+        "range": {
+          "start": 65612,
+          "end": 65615
+        },
+        "received": 8193,
+        "limit": 8192,
+        "expectedEvidence": {
+          "sourceUtf16CodeUnits": 65618,
+          "slotsObserved": 8193,
+          "termination": "chart-events"
+        }
+      },
+      "nearBoundary": {
+        "expression": "the same document without [S008] and its measure",
+        "sections": 8,
+        "measuresPerSection": 1024,
+        "events": 8192,
+        "sourceUtf16Length": 65603,
+        "ok": true
+      }
+    },
+    {
+      "id": "T0-CHART-LIMIT-006",
+      "traceIds": [
+        "T0-TRACE-LIMITS",
+        "T0-TRACE-RANGES"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-INDEPENDENCE",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "document"
+      },
+      "materializationRecipe": {
+        "kind": "text-field-code-points",
+        "field": "title",
+        "expression": "\"@title \" + JSON.stringify(\"x\".repeat(257)) + \"\\n@meter 4/4\\n[A]\\n| C:4 |\"",
+        "codePoints": 257,
+        "scalar": "x",
+        "encodedFieldRange": {
+          "start": 7,
+          "end": 266
+        },
+        "sourceUtf16Length": 289
+      },
+      "expected": {
+        "ok": false,
+        "code": "limit.chart_text_code_points_exceeded",
+        "range": {
+          "start": 7,
+          "end": 266
+        },
+        "received": 257,
+        "limit": 256,
+        "expectedEvidence": {
+          "sourceUtf16CodeUnits": 289,
+          "maxDecodedTextCodePointsObserved": 257,
+          "termination": "chart-text-code-points"
+        }
+      },
+      "nearBoundary": {
+        "codePoints": 256,
+        "sourceUtf16Length": 288,
+        "ok": true
+      }
+    },
+    {
+      "id": "T0-CHART-LIMIT-007",
+      "traceIds": [
+        "T0-TRACE-LIMITS",
+        "T0-TRACE-RANGES"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-INDEPENDENCE",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "materializationRecipe": {
+        "kind": "text-field-code-points",
+        "field": "annotation",
+        "expression": "\"| C:4 \" + JSON.stringify(\"雪\".repeat(2001)) + \" |\"",
+        "codePoints": 2001,
+        "scalar": "雪",
+        "encodedFieldRange": {
+          "start": 6,
+          "end": 2009
+        },
+        "sourceUtf16Length": 2011,
+        "sourceUtf8Bytes": 6013
+      },
+      "expected": {
+        "ok": false,
+        "code": "limit.chart_text_code_points_exceeded",
+        "range": {
+          "start": 6,
+          "end": 2009
+        },
+        "received": 2001,
+        "limit": 2000,
+        "expectedEvidence": {
+          "sourceUtf16CodeUnits": 2011,
+          "maxDecodedTextCodePointsObserved": 2001,
+          "termination": "chart-text-code-points"
+        }
+      },
+      "nearBoundary": {
+        "codePoints": 2000,
+        "sourceUtf16Length": 2010,
+        "sourceUtf8Bytes": 6010,
+        "ok": true
+      }
+    },
+    {
+      "id": "T0-CHART-LIMIT-010",
+      "traceIds": [
+        "T0-TRACE-LIMITS",
+        "T0-TRACE-HEADERS",
+        "T0-TRACE-RANGES"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-INDEPENDENCE",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "document"
+      },
+      "materializationRecipe": {
+        "kind": "text-field-code-points",
+        "field": "description",
+        "expression": "\"@description \" + JSON.stringify(\"x\".repeat(2001)) + \"\\n@meter 4/4\\n[A]\\n| C:4 |\"",
+        "codePoints": 2001,
+        "scalar": "x",
+        "encodedFieldRange": {
+          "start": 13,
+          "end": 2016
+        },
+        "sourceUtf16Length": 2039
+      },
+      "expected": {
+        "ok": false,
+        "code": "limit.chart_text_code_points_exceeded",
+        "range": {
+          "start": 13,
+          "end": 2016
+        },
+        "received": 2001,
+        "limit": 2000,
+        "expectedEvidence": {
+          "sourceUtf16CodeUnits": 2039,
+          "maxDecodedTextCodePointsObserved": 2001,
+          "termination": "chart-text-code-points"
+        }
+      },
+      "nearBoundary": {
+        "codePoints": 2000,
+        "sourceUtf16Length": 2038,
+        "ok": true
+      }
+    },
+    {
+      "id": "T0-CHART-LIMIT-011",
+      "traceIds": [
+        "T0-TRACE-LIMITS",
+        "T0-TRACE-CHART-STRUCTURE",
+        "T0-TRACE-RANGES"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-INDEPENDENCE",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "materializationRecipe": {
+        "kind": "text-field-code-points",
+        "field": "section-name",
+        "expression": "\"[\" + \"x\".repeat(257) + \"]\\n| C:4 |\"",
+        "codePoints": 257,
+        "scalar": "x",
+        "decodedSectionNameRange": {
+          "start": 1,
+          "end": 258
+        },
+        "sourceUtf16Length": 267
+      },
+      "expected": {
+        "ok": false,
+        "code": "limit.chart_text_code_points_exceeded",
+        "range": {
+          "start": 1,
+          "end": 258
+        },
+        "received": 257,
+        "limit": 256,
+        "expectedEvidence": {
+          "sourceUtf16CodeUnits": 267,
+          "maxDecodedTextCodePointsObserved": 257,
+          "termination": "chart-text-code-points"
+        }
+      },
+      "nearBoundary": {
+        "codePoints": 256,
+        "sourceUtf16Length": 266,
+        "ok": true
+      }
+    },
+    {
+      "id": "T0-CHART-LIMIT-012",
+      "traceIds": [
+        "T0-TRACE-DURATION",
+        "T0-TRACE-LIMITS",
+        "T0-TRACE-RANGES"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-TIME",
+        "T0-AUTH-INDEPENDENCE",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "kind": "hostile-duration-decimal-precedence",
+      "rows": [
+        {
+          "name": "ten-digit-integer-maximum",
+          "source": "| C:2147483647 |",
+          "sourceUtf16Length": 16,
+          "durationRange": {
+            "start": 3,
+            "end": 14
+          },
+          "expected": {
+            "ok": false,
+            "code": "chart.bar_overfilled",
+            "range": {
+              "start": 0,
+              "end": 16
+            },
+            "normalizedDuration": {
+              "numerator": 2147483647,
+              "denominator": 1
+            },
+            "numericConstructionPermitted": true,
+            "reason": "inclusive integer maximum is representable; ordinary bar validation fails later",
+            "expectedEvidence": {
+              "numericComponentsCompared": 1,
+              "maxSourceBigIntDigits": 10,
+              "termination": "complete"
+            }
+          }
+        },
+        {
+          "name": "ten-digit-integer-maximum-plus-one",
+          "source": "| C:2147483648 |",
+          "sourceUtf16Length": 16,
+          "durationRange": {
+            "start": 3,
+            "end": 14
+          },
+          "expected": {
+            "ok": false,
+            "code": "chart.duration_not_representable",
+            "range": {
+              "start": 3,
+              "end": 14
+            },
+            "rejection": "significant integer numerator lexically greater than 2147483647",
+            "bigIntConstructionPermitted": false,
+            "expectedEvidence": {
+              "numericComponentsCompared": 1,
+              "maxSourceBigIntDigits": 0,
+              "termination": "complete"
+            }
+          }
+        },
+        {
+          "name": "all-zero-integer-after-leading-zero-trim",
+          "source": "| C:00000000000 |",
+          "sourceUtf16Length": 17,
+          "durationRange": {
+            "start": 3,
+            "end": 15
+          },
+          "expected": {
+            "ok": false,
+            "code": "chart.duration_invalid",
+            "range": {
+              "start": 3,
+              "end": 15
+            },
+            "rejection": "all-zero significant numerator is zero",
+            "bigIntConstructionPermitted": false,
+            "expectedEvidence": {
+              "numericComponentsCompared": 1,
+              "maxSourceBigIntDigits": 0,
+              "termination": "complete"
+            }
+          }
+        },
+        {
+          "name": "all-zero-denominator-after-leading-zero-trim",
+          "source": "| C:1/00000000000 |",
+          "sourceUtf16Length": 19,
+          "durationRange": {
+            "start": 3,
+            "end": 17
+          },
+          "expected": {
+            "ok": false,
+            "code": "chart.duration_invalid",
+            "range": {
+              "start": 3,
+              "end": 17
+            },
+            "rejection": "all-zero significant denominator is zero",
+            "bigIntConstructionPermitted": false,
+            "expectedEvidence": {
+              "numericComponentsCompared": 2,
+              "maxSourceBigIntDigits": 0,
+              "termination": "complete"
+            }
+          }
+        },
+        {
+          "name": "thirteen-digit-rational-maximum",
+          "source": "| C:2061584301120/960 |",
+          "sourceUtf16Length": 23,
+          "durationRange": {
+            "start": 3,
+            "end": 21
+          },
+          "expected": {
+            "ok": false,
+            "code": "chart.bar_overfilled",
+            "range": {
+              "start": 0,
+              "end": 23
+            },
+            "normalizedDuration": {
+              "numerator": 2147483647,
+              "denominator": 1
+            },
+            "numericConstructionPermitted": true,
+            "reason": "bounded rational value is representable; ordinary bar validation fails later",
+            "expectedEvidence": {
+              "numericComponentsCompared": 2,
+              "maxSourceBigIntDigits": 13,
+              "termination": "complete"
+            }
+          }
+        },
+        {
+          "name": "thirteen-digit-rational-maximum-plus-one",
+          "source": "| C:2061584301121/960 |",
+          "sourceUtf16Length": 23,
+          "durationRange": {
+            "start": 3,
+            "end": 21
+          },
+          "expected": {
+            "ok": false,
+            "code": "chart.duration_not_representable",
+            "range": {
+              "start": 3,
+              "end": 21
+            },
+            "rejection": "significant numerator lexically greater than 2147483647 multiplied by bounded denominator 960",
+            "bigIntConstructionPermitted": false,
+            "expectedEvidence": {
+              "numericComponentsCompared": 2,
+              "maxSourceBigIntDigits": 0,
+              "termination": "complete"
+            }
+          }
+        },
+        {
+          "name": "near-two-mebibyte-integer-numerator-within-byte-budget",
+          "materializationRecipe": {
+            "expression": "\"| C:\" + \"9\".repeat(2097146) + \" |\"",
+            "digit": "9",
+            "digitCount": 2097146,
+            "sourceUtf16Length": 2097152,
+            "sourceUtf8Bytes": 2097152,
+            "durationRange": {
+              "start": 3,
+              "end": 2097150
+            }
+          },
+          "expected": {
+            "ok": false,
+            "code": "chart.duration_not_representable",
+            "range": {
+              "start": 3,
+              "end": 2097150
+            },
+            "rejection": "significant integer numerator digit count greater than 10",
+            "bigIntConstructionPermitted": false,
+            "expectedEvidence": {
+              "sourceUtf16CodeUnits": 2097152,
+              "sourceUtf8Bytes": 2097152,
+              "numericComponentsCompared": 1,
+              "maxSourceBigIntDigits": 0,
+              "termination": "complete"
+            }
+          }
+        },
+        {
+          "name": "near-two-mebibyte-rational-numerator-within-byte-budget",
+          "materializationRecipe": {
+            "expression": "\"| C:\" + \"9\".repeat(2097144) + \"/1 |\"",
+            "digit": "9",
+            "digitCount": 2097144,
+            "sourceUtf16Length": 2097152,
+            "sourceUtf8Bytes": 2097152,
+            "durationRange": {
+              "start": 3,
+              "end": 2097150
+            }
+          },
+          "expected": {
+            "ok": false,
+            "code": "chart.duration_not_representable",
+            "range": {
+              "start": 3,
+              "end": 2097150
+            },
+            "rejection": "significant rational numerator digit count greater than the 10-digit bound for denominator 1",
+            "bigIntConstructionPermitted": false,
+            "expectedEvidence": {
+              "numericComponentsCompared": 2,
+              "maxSourceBigIntDigits": 0,
+              "termination": "complete"
+            }
+          }
+        },
+        {
+          "name": "near-two-mebibyte-rational-denominator-within-byte-budget",
+          "materializationRecipe": {
+            "expression": "\"| C:1/\" + \"9\".repeat(2097144) + \" |\"",
+            "digit": "9",
+            "digitCount": 2097144,
+            "sourceUtf16Length": 2097152,
+            "sourceUtf8Bytes": 2097152,
+            "durationRange": {
+              "start": 3,
+              "end": 2097150
+            }
+          },
+          "expected": {
+            "ok": false,
+            "code": "chart.duration_not_representable",
+            "range": {
+              "start": 3,
+              "end": 2097150
+            },
+            "rejection": "significant denominator digit count greater than 3 before divisor testing",
+            "bigIntConstructionPermitted": false,
+            "expectedEvidence": {
+              "numericComponentsCompared": 2,
+              "maxSourceBigIntDigits": 0,
+              "termination": "complete"
+            }
+          }
+        },
+        {
+          "name": "near-two-mebibyte-integer-one-byte-over-budget",
+          "materializationRecipe": {
+            "expression": "\"| C:\" + \"9\".repeat(2097147) + \" |\"",
+            "digit": "9",
+            "digitCount": 2097147,
+            "sourceUtf16Length": 2097153,
+            "sourceUtf8Bytes": 2097153,
+            "wouldBeDurationRange": {
+              "start": 3,
+              "end": 2097151
+            },
+            "firstExcess": {
+              "kind": "scalar-crossing-utf8-budget",
+              "scalar": "|",
+              "zeroBasedOrdinal": 2097152,
+              "range": {
+                "start": 2097152,
+                "end": 2097153
+              }
+            }
+          },
+          "expected": {
+            "ok": false,
+            "code": "limit.chart_utf8_bytes_exceeded",
+            "range": {
+              "start": 2097152,
+              "end": 2097153
+            },
+            "precedence": "UTF-8 byte preflight before duration lexing, significant-digit comparison, or BigInt construction",
+            "durationLexingPermitted": false,
+            "bigIntConstructionPermitted": false,
+            "expectedEvidence": {
+              "sourceUtf16CodeUnits": 2097153,
+              "sourceUtf8Bytes": 2097153,
+              "numericComponentsCompared": 0,
+              "maxSourceBigIntDigits": 0,
+              "termination": "chart-bytes"
+            }
+          }
+        }
+      ],
+      "expected": {
+        "leadingZeroPolicy": "discard leading ASCII zeroes for comparison and BigInt input only; preserve raw source/range; all-zero component is invalid",
+        "integerBound": "significant numerator at most 2147483647",
+        "fractionBound": "significant denominator at most 960 and divides 960; significant numerator at most 2147483647 multiplied by that denominator before F1 reduction",
+        "noProportionalNumericAllocation": true,
+        "byteLimitWinsBeforeDurationAnalysis": true
+      }
+    },
+    {
+      "id": "T0-CHART-LIMIT-013",
+      "traceIds": [
+        "T0-TRACE-LIMITS",
+        "T0-TRACE-RANGES",
+        "T0-TRACE-UNICODE"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-INDEPENDENCE",
+        "T0-AUTH-UTF16"
+      ],
+      "kind": "astral-decoded-text-code-point-boundaries",
+      "rows": [
+        {
+          "field": "title",
+          "request": {
+            "mode": "document"
+          },
+          "materializationRecipe": {
+            "expression": "\"@title \" + JSON.stringify(\"𝄪\".repeat(257)) + \"\\n@meter 4/4\\n[A]\\n| C:4 |\"",
+            "scalar": "𝄪",
+            "codePoints": 257,
+            "sourceUtf16Length": 546,
+            "encodedFieldRange": {
+              "start": 7,
+              "end": 523
+            }
+          },
+          "expected": {
+            "ok": false,
+            "code": "limit.chart_text_code_points_exceeded",
+            "range": {
+              "start": 7,
+              "end": 523
+            },
+            "received": 257,
+            "limit": 256,
+            "expectedEvidence": {
+              "sourceUtf16CodeUnits": 546,
+              "maxDecodedTextCodePointsObserved": 257,
+              "termination": "chart-text-code-points"
+            }
+          },
+          "nearBoundary": {
+            "codePoints": 256,
+            "sourceUtf16Length": 544,
+            "ok": true
+          }
+        },
+        {
+          "field": "annotation",
+          "request": {
+            "mode": "fragment",
+            "meter": {
+              "beatsPerBar": 4,
+              "beatUnit": 4
+            }
+          },
+          "materializationRecipe": {
+            "expression": "\"| C:4 \" + JSON.stringify(\"𝄪\".repeat(2001)) + \" |\"",
+            "scalar": "𝄪",
+            "codePoints": 2001,
+            "sourceUtf16Length": 4012,
+            "sourceUtf8Bytes": 8014,
+            "encodedFieldRange": {
+              "start": 6,
+              "end": 4010
+            }
+          },
+          "expected": {
+            "ok": false,
+            "code": "limit.chart_text_code_points_exceeded",
+            "range": {
+              "start": 6,
+              "end": 4010
+            },
+            "received": 2001,
+            "limit": 2000,
+            "expectedEvidence": {
+              "sourceUtf16CodeUnits": 4012,
+              "maxDecodedTextCodePointsObserved": 2001,
+              "termination": "chart-text-code-points"
+            }
+          },
+          "nearBoundary": {
+            "codePoints": 2000,
+            "sourceUtf16Length": 4010,
+            "sourceUtf8Bytes": 8010,
+            "ok": true
+          }
+        }
+      ],
+      "expected": {
+        "limitsCountUnicodeScalarsNotUtf16CodeUnits": true,
+        "diagnosticRangeCoversCompleteEncodedField": true
+      }
+    },
+    {
+      "id": "T0-CHART-LIMIT-014",
+      "traceIds": [
+        "T0-TRACE-LIMITS",
+        "T0-TRACE-RANGES",
+        "T0-TRACE-UNICODE"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-INDEPENDENCE",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "document"
+      },
+      "materializationRecipe": {
+        "kind": "astral-utf8-byte-crossing",
+        "expression": "\"@meter 4/4\\n[A]\\n| |\\n;\" + \"x\".repeat(2097131) + \"𝄪\"",
+        "asciiPrefix": "@meter 4/4\n[A]\n| |\n;",
+        "prefixUtf8Bytes": 20,
+        "asciiPaddingCount": 2097131,
+        "crossingScalar": "𝄪",
+        "sourceUtf16Length": 2097153,
+        "sourceCodePoints": 2097152,
+        "sourceUtf8Bytes": 2097155,
+        "firstExcess": {
+          "kind": "astral-scalar-crossing-utf8-budget",
+          "zeroBasedCodePointOrdinal": 2097151,
+          "range": {
+            "start": 2097151,
+            "end": 2097153
+          }
+        }
+      },
+      "expected": {
+        "ok": false,
+        "code": "limit.chart_utf8_bytes_exceeded",
+        "range": {
+          "start": 2097151,
+          "end": 2097153
+        },
+        "received": 2097155,
+        "limit": 2097152,
+        "atomicScalarCrossing": true,
+        "rangeIsUtf16NotByteOffset": true,
+        "rangeCoversWholeCrossingScalar": true,
+        "expectedEvidence": {
+          "sourceUtf16CodeUnits": 2097153,
+          "sourceCodePoints": 2097152,
+          "sourceUtf8Bytes": 2097155,
+          "termination": "chart-bytes"
+        }
+      },
+      "nearBoundary": {
+        "expression": "\"@meter 4/4\\n[A]\\n| |\\n;\" + \"x\".repeat(2097128) + \"𝄪\"",
+        "sourceUtf16Length": 2097150,
+        "sourceCodePoints": 2097149,
+        "sourceUtf8Bytes": 2097152,
+        "ok": true,
+        "warnings": [
+          "chart.comments_not_round_tripped"
+        ]
+      }
+    },
+    {
+      "id": "T0-CHART-LIMIT-015",
+      "traceIds": [
+        "T0-TRACE-LIMITS",
+        "T0-TRACE-RANGES",
+        "T0-TRACE-HEADERS",
+        "T0-TRACE-DETERMINISM"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-INDEPENDENCE",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "document"
+      },
+      "kind": "outer-limit-suppresses-earlier-ordinary-diagnostic",
+      "materializationRecipe": {
+        "expression": "\"@tempo 19\\n@meter 4/4\\n\" + Array.from({length:65}, (_, index) => `[S${String(index).padStart(2, \"0\")}]\\n| |\\n`).join(\"\")",
+        "documentPrefix": "@tempo 19\n@meter 4/4\n",
+        "sourceUtf16Length": 671,
+        "sourceUtf8Bytes": 671,
+        "sectionNames": "S00 through S64",
+        "sectionTemplate": "[Snn]\n| |\n",
+        "firstExcess": {
+          "kind": "section",
+          "zeroBasedOrdinal": 64,
+          "range": {
+            "start": 661,
+            "end": 670
+          }
+        }
+      },
+      "expected": {
+        "ok": false,
+        "code": "limit.chart_sections_exceeded",
+        "range": {
+          "start": 661,
+          "end": 670
+        },
+        "received": 65,
+        "limit": 64,
+        "returnedDiagnostics": [
+          {
+            "code": "limit.chart_sections_exceeded",
+            "range": {
+              "start": 661,
+              "end": 670
+            }
+          }
+        ],
+        "suppressedEarlierDiagnostics": [
+          {
+            "code": "chart.header_invalid",
+            "range": {
+              "start": 0,
+              "end": 9
+            },
+            "reason": "tempo 19 is below the inclusive minimum 20"
+          }
+        ],
+        "outerLimitIsSoleDiagnostic": true,
+        "expectedEvidence": {
+          "sourceUtf16CodeUnits": 671,
+          "sourceUtf8Bytes": 671,
+          "sectionsObserved": 65,
+          "diagnosticsProduced": 1,
+          "termination": "chart-sections"
+        }
+      },
+      "nearBoundary": {
+        "sections": 64,
+        "sourceUtf16Length": 661,
+        "sourceUtf8Bytes": 661,
+        "limitTriggered": false,
+        "ok": false,
+        "ordinaryDiagnostics": [
+          {
+            "code": "chart.header_invalid",
+            "range": {
+              "start": 0,
+              "end": 9
+            }
+          }
+        ],
+        "scope": "limit-precedence-only"
+      }
+    },
+    {
+      "id": "T0-CHART-UNICODE-001",
+      "traceIds": [
+        "T0-TRACE-LIMITS",
+        "T0-TRACE-UNICODE",
+        "T0-TRACE-RANGES"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-INDEPENDENCE",
+        "T0-AUTH-UTF16"
+      ],
+      "materializationRecipe": {
+        "kind": "utf16-code-units",
+        "units": [
+          91,
+          56320,
+          93,
+          10,
+          124,
+          32,
+          67,
+          58,
+          52,
+          32,
+          124
+        ],
+        "display": "[ then one lone low surrogate then ] newline | C:4 |"
+      },
+      "expected": {
+        "ok": false,
+        "code": "chart.invalid_unicode_scalar",
+        "range": {
+          "start": 1,
+          "end": 2
+        },
+        "reason": "invalid Unicode scalar",
+        "noTruncation": true,
+        "expectedEvidence": {
+          "sourceUtf16CodeUnits": 11,
+          "sourceCodePoints": 1,
+          "sourceUtf8Bytes": 1,
+          "maxDecodedTextCodePointsObserved": 0,
+          "lexerCodePointsVisited": 0,
+          "tokensProduced": 0,
+          "parserTransitions": 0,
+          "modifierItemsObserved": 0,
+          "headersObserved": 0,
+          "sectionsObserved": 0,
+          "measuresObserved": 0,
+          "slotsObserved": 0,
+          "chordDelegations": 0,
+          "allocationDivisions": 0,
+          "numericComponentsCompared": 0,
+          "maxSourceBigIntDigits": 0,
+          "suggestionsCompared": 0,
+          "diagnosticsProduced": 1,
+          "insertableCandidatesProduced": 0,
+          "peakTokenRecords": 0,
+          "peakDraftNodes": 0,
+          "peakSuggestionRecords": 0,
+          "termination": "complete"
+        }
+      }
+    },
+    {
+      "id": "T0-CHART-LIMIT-009",
+      "traceIds": [
+        "T0-TRACE-DURATION",
+        "T0-TRACE-LIMITS"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-TIME",
+        "T0-AUTH-INDEPENDENCE"
+      ],
+      "kind": "dominated-limit-proof",
+      "inputs": {
+        "maximumEvents": 8192,
+        "maximumBeatsPerBar": 32,
+        "smallestBeatUnit": 2,
+        "maximumQuarterNoteCapacityPerEventMeasure": 64,
+        "totalDraftLimit": 1000000
+      },
+      "handCalculation": "8192 * (32 * 4 / 2) = 8192 * 64 = 524288 < 1000000",
+      "expected": {
+        "unreachableBeforeEventLimit": true,
+        "maximumReachableQuarterNoteBeats": 524288,
+        "noFabricatedCrossingCase": true
+      }
+    },
+    {
+      "id": "T0-CHART-LIMIT-016",
+      "traceIds": [
+        "T0-TRACE-LIMITS",
+        "T0-TRACE-CHART-STRUCTURE",
+        "T0-TRACE-RANGES",
+        "T0-TRACE-DETERMINISM"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-INDEPENDENCE",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "document"
+      },
+      "kind": "malformed-current-section-precedes-first-excess-limit",
+      "materializationRecipe": {
+        "prefixExpression": "\"@meter 4/4\\n\" + Array.from({length:64}, (_, index) => `[S${index}]\\n| |\\n`).join(\"\")",
+        "prefixUtf16Length": 641,
+        "prefixSections": 64,
+        "rows": [
+          {
+            "suffix": "[BROKEN\n| |\n",
+            "sourceUtf16Length": 653,
+            "diagnostic": {
+              "code": "chart.section_name_unclosed",
+              "range": {
+                "start": 641,
+                "end": 648
+              }
+            }
+          },
+          {
+            "suffix": "[B\\x]\n| |\n",
+            "sourceUtf16Length": 651,
+            "diagnostic": {
+              "code": "chart.section_name_escape_invalid",
+              "range": {
+                "start": 643,
+                "end": 645
+              }
+            }
+          }
+        ]
+      },
+      "expected": {
+        "ok": false,
+        "returnedDiagnosticsExactlyOnePerRow": true,
+        "localCurrentItemFaultPrecedesLimitCheck": true,
+        "limitCodeNotReturned": "limit.chart_sections_exceeded",
+        "expectedEvidence": {
+          "sectionsObserved": 64,
+          "diagnosticsProduced": 1,
+          "termination": "complete"
+        }
+      },
+      "nearBoundary": {
+        "coherentFirstExcessCaseId": "T0-CHART-LIMIT-003",
+        "coherentFirstExcessReturnsLimit": true
+      }
+    },
+    {
+      "id": "T0-CHART-LIMIT-017",
+      "traceIds": [
+        "T0-TRACE-LIMITS",
+        "T0-TRACE-ANNOTATIONS",
+        "T0-TRACE-RANGES",
+        "T0-TRACE-DETERMINISM"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-JSON",
+        "T0-AUTH-INDEPENDENCE",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "kind": "malformed-current-token-precedes-first-excess-limit",
+      "materializationRecipe": {
+        "prefixExpression": "\";\\n\".repeat(65534) + \"| C \"",
+        "prefixUtf16Length": 131072,
+        "prefixTokens": 65536,
+        "rows": [
+          {
+            "suffix": "\"unterminated",
+            "sourceUtf16Length": 131085,
+            "diagnostic": {
+              "code": "chart.annotation_unclosed",
+              "range": {
+                "start": 131072,
+                "end": 131085
+              }
+            }
+          },
+          {
+            "suffix": "\"bad\\x\"",
+            "sourceUtf16Length": 131079,
+            "diagnostic": {
+              "code": "chart.annotation_invalid_json",
+              "range": {
+                "start": 131072,
+                "end": 131079
+              }
+            }
+          }
+        ]
+      },
+      "expected": {
+        "ok": false,
+        "returnedDiagnosticsExactlyOnePerRow": true,
+        "localCurrentItemFaultPrecedesLimitCheck": true,
+        "limitCodeNotReturned": "limit.chart_tokens_exceeded",
+        "expectedEvidence": {
+          "tokensProduced": 65537,
+          "parserTransitions": 65537,
+          "slotsObserved": 0,
+          "diagnosticsProduced": 1,
+          "termination": "complete"
+        }
+      },
+      "nearBoundary": {
+        "coherentFirstExcessCaseId": "T0-CHART-LIMIT-002",
+        "coherentFirstExcessReturnsLimit": true
+      }
+    },
+    {
+      "id": "T0-CHART-LIMIT-018",
+      "traceIds": [
+        "T0-TRACE-LIMITS",
+        "T0-TRACE-ANNOTATIONS",
+        "T0-TRACE-RANGES",
+        "T0-TRACE-DETERMINISM",
+        "T0-TRACE-TRANSACTION"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-JSON",
+        "T0-AUTH-INDEPENDENCE",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "fragment",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        }
+      },
+      "kind": "malformed-current-event-precedes-first-excess-limit",
+      "materializationRecipe": {
+        "prefixExpression": "\"C \" + \"/ \".repeat(8191)",
+        "prefixUtf16Length": 16384,
+        "prefixEvents": 8192,
+        "rows": [
+          {
+            "suffix": "C \"unterminated",
+            "sourceUtf16Length": 16399,
+            "tokensProduced": 8194,
+            "diagnostic": {
+              "code": "chart.annotation_unclosed",
+              "range": {
+                "start": 16386,
+                "end": 16399
+              }
+            }
+          },
+          {
+            "suffix": "C(foo",
+            "sourceUtf16Length": 16389,
+            "tokensProduced": 8193,
+            "diagnostic": {
+              "code": "symbol.modifier_unclosed",
+              "range": {
+                "start": 16385,
+                "end": 16389
+              }
+            }
+          }
+        ]
+      },
+      "expected": {
+        "ok": false,
+        "returnedDiagnosticsExactlyOnePerRow": true,
+        "localCurrentItemFaultPrecedesLimitCheck": true,
+        "limitCodeNotReturned": "limit.chart_events_exceeded",
+        "expectedEvidence": {
+          "slotsObserved": 8192,
+          "chordDelegations": 1,
+          "delegatedSymbolCount": 1,
+          "diagnosticsProduced": 1,
+          "termination": "complete"
+        }
+      },
+      "nearBoundary": {
+        "coherentFirstExcessCaseId": "T0-CHART-LIMIT-005",
+        "coherentFirstExcessReturnsLimit": true
+      }
+    },
+    {
+      "id": "T0-CHART-LIMIT-019",
+      "traceIds": [
+        "T0-TRACE-FORMATTER",
+        "T0-TRACE-LIMITS",
+        "T0-TRACE-RANGES",
+        "T0-TRACE-DETERMINISM"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-INDEPENDENCE",
+        "T0-AUTH-UTF16"
+      ],
+      "operation": "format",
+      "style": "ascii",
+      "kind": "formatter-validates-first-excess-literal-event-ownership-before-counting",
+      "materializationRecipe": {
+        "sourceExpression": "\"@meter 4/4\\n\" + eight sections S000 through S007, each `[Snnn]\\n` plus 1024 copies of `| C:4 |\\n`, then `[S008]\\n| C:4 |\\n`",
+        "sourceUtf16Length": 65618,
+        "sourceCodePoints": 65618,
+        "sourceUtf8Bytes": 65618,
+        "prefixThroughPermittedEvents": {
+          "sections": 8,
+          "measures": 8192,
+          "events": 8192,
+          "sourceUtf16Length": 65603
+        },
+        "draftMaterialization": {
+          "schema": "changes.theory.chart-text-draft.v1",
+          "grammarId": "changes.chart-text",
+          "grammarVersion": 1,
+          "mode": "document",
+          "headers": {
+            "meter": {
+              "beatsPerBar": 4,
+              "beatUnit": 4
+            }
+          },
+          "fullSections": {
+            "count": 8,
+            "measuresPerSection": 1024,
+            "eventsPerMeasure": 1
+          },
+          "events": {
+            "origin": "literal",
+            "chordCaseId": "T0-SYM-001",
+            "chordSourceText": "C",
+            "duration": {
+              "numerator": 4,
+              "denominator": 1
+            }
+          },
+          "ranges": "all unchanged records use the literal section 2.1.1 ranges; do not invoke production parsing"
+        },
+        "firstExcess": {
+          "sectionOrdinal": 8,
+          "measureOrdinal": 0,
+          "eventOrdinal": 8192,
+          "sectionRange": {
+            "start": 65603,
+            "end": 65617
+          },
+          "measureRange": {
+            "start": 65610,
+            "end": 65617
+          },
+          "eventRange": {
+            "start": 65612,
+            "end": 65615
+          },
+          "symbolRange": {
+            "start": 65612,
+            "end": 65613
+          },
+          "durationRange": {
+            "start": 65613,
+            "end": 65615
+          }
+        },
+        "rows": [
+          {
+            "id": "literal-source-owner-mismatch",
+            "singleFault": "change only the first-excess literal chord.sourceText from C to D while preserving its C-major AST and every chart range",
+            "mutationProjection": {
+              "path": "sections[8].measures[0].events[0].chord.sourceText",
+              "before": "C",
+              "after": "D"
+            },
+            "expected": {
+              "ok": false,
+              "code": "chart.draft_unformattable",
+              "range": {
+                "start": 65612,
+                "end": 65615
+              },
+              "rangeOwner": "first-excess event.range",
+              "noPartialText": true,
+              "expectedEvidence": {
+                "sourceUtf16CodeUnits": 65618,
+                "sourceCodePoints": 65618,
+                "sourceUtf8Bytes": 65618,
+                "headersObserved": 1,
+                "sectionsObserved": 9,
+                "measuresObserved": 8193,
+                "slotsObserved": 8192,
+                "chordDelegations": 8192,
+                "diagnosticsProduced": 1,
+                "termination": "complete"
+              }
+            }
+          },
+          {
+            "id": "literal-symbol-range-owner-mismatch",
+            "singleFault": "change only the first-excess literal symbolRange from [65612,65613) to [65613,65614), which points at the duration colon and no longer starts the event or owns chord.sourceText C",
+            "mutationProjection": {
+              "path": "sections[8].measures[0].events[0].symbolRange",
+              "before": {
+                "start": 65612,
+                "end": 65613
+              },
+              "after": {
+                "start": 65613,
+                "end": 65614
+              }
+            },
+            "expected": {
+              "ok": false,
+              "code": "chart.draft_unformattable",
+              "range": {
+                "start": 65612,
+                "end": 65615
+              },
+              "rangeOwner": "first-excess event.range",
+              "noPartialText": true,
+              "expectedEvidence": {
+                "sourceUtf16CodeUnits": 65618,
+                "sourceCodePoints": 65618,
+                "sourceUtf8Bytes": 65618,
+                "headersObserved": 1,
+                "sectionsObserved": 9,
+                "measuresObserved": 8193,
+                "slotsObserved": 8192,
+                "chordDelegations": 8192,
+                "diagnosticsProduced": 1,
+                "termination": "complete"
+              }
+            }
+          },
+          {
+            "id": "coherent-first-excess-control",
+            "singleFault": null,
+            "expected": {
+              "ok": false,
+              "code": "limit.chart_events_exceeded",
+              "range": {
+                "start": 65612,
+                "end": 65615
+              },
+              "received": 8193,
+              "limit": 8192,
+              "noPartialText": true,
+              "firstExcessChordDelegated": false,
+              "expectedEvidence": {
+                "sourceUtf16CodeUnits": 65618,
+                "sourceCodePoints": 65618,
+                "sourceUtf8Bytes": 65618,
+                "headersObserved": 1,
+                "sectionsObserved": 9,
+                "measuresObserved": 8193,
+                "slotsObserved": 8193,
+                "chordDelegations": 8192,
+                "diagnosticsProduced": 1,
+                "termination": "chart-events"
+              }
+            }
+          }
+        ]
+      },
+      "expected": {
+        "malformedFirstExcessEventIsNotCounted": true,
+        "literalSourceTextMustEqualItsOwnSymbolRangeSlice": true,
+        "literalSymbolRangeMustOwnTheExactChordSpan": true,
+        "coherentFirstExcessEventIsCountedExactlyOnce": true,
+        "firstExcessChordFormatterIsNotReached": true,
+        "allOmittedFormatterCountersFollowTheZeroAndProjectionRulesInT0SyntaxContract": true
+      }
+    },
+    {
+      "id": "T0-CHART-LIMIT-020",
+      "traceIds": [
+        "T0-TRACE-FORMATTER",
+        "T0-TRACE-LIMITS",
+        "T0-TRACE-CHART-STRUCTURE",
+        "T0-TRACE-RANGES",
+        "T0-TRACE-DETERMINISM"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-JSON",
+        "T0-AUTH-INDEPENDENCE",
+        "T0-AUTH-UTF16"
+      ],
+      "operation": "format",
+      "style": "ascii",
+      "kind": "formatter-validates-first-excess-section-local-shape-before-counting",
+      "materializationRecipe": {
+        "commonPrefixExpression": "\"@meter 4/4\\n\" + Array.from({length:64}, (_, index) => `[S${String(index).padStart(3, \"0\")}]\\n| |\\n`).join(\"\")",
+        "commonPrefixUtf16Length": 715,
+        "commonPrefixSections": 64,
+        "commonPrefixMeasures": 64,
+        "commonPrefixEvents": 0,
+        "draftMaterialization": {
+          "schema": "changes.theory.chart-text-draft.v1",
+          "grammarId": "changes.chart-text",
+          "grammarVersion": 1,
+          "mode": "document",
+          "headers": {
+            "meter": {
+              "beatsPerBar": 4,
+              "beatUnit": 4
+            }
+          },
+          "sectionOrdinals": "0 through 64",
+          "eachSection": {
+            "kind": "named",
+            "oneEmptyBarredMeasure": true
+          },
+          "ranges": "derive literally from each row using contract section 2.1.1; do not invoke production parsing"
+        },
+        "rows": [
+          {
+            "id": "named-marker-owner-mismatch",
+            "suffix": "S064]\n| |\n",
+            "sourceUtf16Length": 725,
+            "draftFirstExcess": {
+              "name": "S064",
+              "annotation": "",
+              "range": {
+                "start": 715,
+                "end": 724
+              },
+              "measureRange": {
+                "start": 721,
+                "end": 724
+              }
+            },
+            "singleFault": "the named section range starts at S instead of an owned opening [ marker",
+            "expected": {
+              "ok": false,
+              "code": "chart.draft_unformattable",
+              "range": {
+                "start": 715,
+                "end": 724
+              },
+              "noPartialText": true,
+              "descendantsVisited": false,
+              "expectedEvidence": {
+                "sourceUtf16CodeUnits": 725,
+                "sourceCodePoints": 725,
+                "sourceUtf8Bytes": 725,
+                "headersObserved": 1,
+                "sectionsObserved": 64,
+                "measuresObserved": 64,
+                "slotsObserved": 0,
+                "chordDelegations": 0,
+                "diagnosticsProduced": 1,
+                "termination": "complete"
+              }
+            }
+          },
+          {
+            "id": "post-annotation-gap-missing",
+            "suffix": "[S064] \"x\"| |\n",
+            "sourceUtf16Length": 729,
+            "draftFirstExcess": {
+              "name": "S064",
+              "annotation": "x",
+              "range": {
+                "start": 715,
+                "end": 728
+              },
+              "measureRange": {
+                "start": 725,
+                "end": 728
+              }
+            },
+            "singleFault": "the space introducing the section annotation is incorrectly reused as section-gap; no line end or horizontal space follows the complete JSON string before the body barline",
+            "expected": {
+              "ok": false,
+              "code": "chart.draft_unformattable",
+              "range": {
+                "start": 715,
+                "end": 728
+              },
+              "noPartialText": true,
+              "descendantsVisited": false,
+              "expectedEvidence": {
+                "sourceUtf16CodeUnits": 729,
+                "sourceCodePoints": 729,
+                "sourceUtf8Bytes": 729,
+                "headersObserved": 1,
+                "sectionsObserved": 64,
+                "measuresObserved": 64,
+                "slotsObserved": 0,
+                "chordDelegations": 0,
+                "diagnosticsProduced": 1,
+                "termination": "complete"
+              }
+            }
+          },
+          {
+            "id": "section-hull-ends-before-last-measure",
+            "suffix": "[S064] \"x\" | |\n",
+            "sourceUtf16Length": 730,
+            "draftFirstExcess": {
+              "name": "S064",
+              "annotation": "x",
+              "range": {
+                "start": 715,
+                "end": 728
+              },
+              "firstMeasureRange": {
+                "start": 726,
+                "end": 729
+              },
+              "lastMeasureRange": {
+                "start": 726,
+                "end": 729
+              }
+            },
+            "singleFault": "the coherent first-excess section.range ends one code unit before its last measure even though the source marker, annotation, post-annotation gap, and shallow measure ranges are unchanged",
+            "expected": {
+              "ok": false,
+              "code": "chart.draft_unformattable",
+              "range": {
+                "start": 715,
+                "end": 728
+              },
+              "noPartialText": true,
+              "shallowBoundaryRangeReads": [
+                "first measure.range",
+                "last measure.range"
+              ],
+              "descendantsTraversed": false,
+              "expectedEvidence": {
+                "sourceUtf16CodeUnits": 730,
+                "sourceCodePoints": 730,
+                "sourceUtf8Bytes": 730,
+                "headersObserved": 1,
+                "sectionsObserved": 64,
+                "measuresObserved": 64,
+                "slotsObserved": 0,
+                "chordDelegations": 0,
+                "diagnosticsProduced": 1,
+                "termination": "complete"
+              }
+            }
+          },
+          {
+            "id": "coherent-annotated-first-excess-control",
+            "suffix": "[S064] \"x\" | |\n",
+            "sourceUtf16Length": 730,
+            "draftFirstExcess": {
+              "name": "S064",
+              "annotation": "x",
+              "range": {
+                "start": 715,
+                "end": 729
+              },
+              "measureRange": {
+                "start": 726,
+                "end": 729
+              }
+            },
+            "singleFault": null,
+            "expected": {
+              "ok": false,
+              "code": "limit.chart_sections_exceeded",
+              "range": {
+                "start": 715,
+                "end": 729
+              },
+              "received": 65,
+              "limit": 64,
+              "noPartialText": true,
+              "descendantsVisited": false,
+              "expectedEvidence": {
+                "sourceUtf16CodeUnits": 730,
+                "sourceCodePoints": 730,
+                "sourceUtf8Bytes": 730,
+                "headersObserved": 1,
+                "sectionsObserved": 65,
+                "measuresObserved": 64,
+                "slotsObserved": 0,
+                "chordDelegations": 0,
+                "diagnosticsProduced": 1,
+                "termination": "chart-sections"
+              }
+            }
+          }
+        ]
+      },
+      "expected": {
+        "malformedFirstExcessSectionIsNotCounted": true,
+        "namedSectionMustOwnItsOpeningMarker": true,
+        "sectionGapBeginsAfterCompleteAnnotation": true,
+        "sectionRangeMustOwnItsLastMeasureHull": true,
+        "coherentFirstExcessSectionIsCountedExactlyOnce": true,
+        "firstExcessSectionDescendantsAreNeverTraversed": true,
+        "allOmittedFormatterCountersFollowTheZeroAndProjectionRulesInT0SyntaxContract": true
+      }
+    },
+    {
+      "id": "T0-CHART-LIMIT-021",
+      "traceIds": [
+        "T0-TRACE-LIMITS",
+        "T0-TRACE-HEADERS",
+        "T0-TRACE-RANGES",
+        "T0-TRACE-DETERMINISM"
+      ],
+      "authorityIds": [
+        "T0-AUTH-GRAMMAR",
+        "T0-AUTH-JSON",
+        "T0-AUTH-INDEPENDENCE",
+        "T0-AUTH-UTF16"
+      ],
+      "request": {
+        "mode": "document"
+      },
+      "kind": "malformed-header-json-precedes-first-excess-token",
+      "materializationRecipe": {
+        "prefixExpression": "\";\\n\".repeat(65535)",
+        "prefixCommentTokens": 65535,
+        "prefixUtf16Length": 131070,
+        "headerDirectiveToken": {
+          "source": "@title",
+          "zeroBasedTokenOrdinal": 65535,
+          "range": {
+            "start": 131070,
+            "end": 131076
+          }
+        },
+        "rows": [
+          {
+            "id": "unclosed-json-operand",
+            "suffix": "@title \"unterminated",
+            "sourceUtf16Length": 131090,
+            "wouldBeOperandTokenOrdinal": 65536,
+            "operandRange": {
+              "start": 131077,
+              "end": 131090
+            },
+            "expected": {
+              "ok": false,
+              "code": "chart.header_invalid",
+              "range": {
+                "start": 131077,
+                "end": 131090
+              },
+              "limitCodeNotReturned": "limit.chart_tokens_exceeded",
+              "reason": "the unclosed JSON operand has no safe later boundary and never becomes a complete chart token",
+              "expectedEvidence": {
+                "sourceUtf16CodeUnits": 131090,
+                "sourceCodePoints": 131090,
+                "sourceUtf8Bytes": 131090,
+                "lexerCodePointsVisited": 131090,
+                "tokensProduced": 65537,
+                "parserTransitions": 65537,
+                "headersObserved": 0,
+                "sectionsObserved": 0,
+                "measuresObserved": 0,
+                "slotsObserved": 0,
+                "chordDelegations": 0,
+                "diagnosticsProduced": 1,
+                "termination": "complete"
+              }
+            }
+          },
+          {
+            "id": "closed-invalid-json-operand",
+            "suffix": "@title \"bad\\x\"",
+            "sourceUtf16Length": 131084,
+            "wouldBeOperandTokenOrdinal": 65536,
+            "operandRange": {
+              "start": 131077,
+              "end": 131084
+            },
+            "expected": {
+              "ok": false,
+              "code": "chart.header_invalid",
+              "range": {
+                "start": 131077,
+                "end": 131084
+              },
+              "limitCodeNotReturned": "limit.chart_tokens_exceeded",
+              "reason": "the lexically closed operand is still a malformed JSON token because \\x is not a JSON escape",
+              "expectedEvidence": {
+                "sourceUtf16CodeUnits": 131084,
+                "sourceCodePoints": 131084,
+                "sourceUtf8Bytes": 131084,
+                "lexerCodePointsVisited": 131084,
+                "tokensProduced": 65537,
+                "parserTransitions": 65537,
+                "headersObserved": 0,
+                "sectionsObserved": 0,
+                "measuresObserved": 0,
+                "slotsObserved": 0,
+                "chordDelegations": 0,
+                "diagnosticsProduced": 1,
+                "termination": "complete"
+              }
+            }
+          },
+          {
+            "id": "well-formed-first-excess-control",
+            "suffix": "@title \"x\"",
+            "sourceUtf16Length": 131080,
+            "firstExcessToken": {
+              "zeroBasedOrdinal": 65536,
+              "range": {
+                "start": 131077,
+                "end": 131080
+              }
+            },
+            "expected": {
+              "ok": false,
+              "code": "limit.chart_tokens_exceeded",
+              "range": {
+                "start": 131077,
+                "end": 131080
+              },
+              "received": 65537,
+              "limit": 65536,
+              "expectedEvidence": {
+                "sourceUtf16CodeUnits": 131080,
+                "sourceCodePoints": 131080,
+                "sourceUtf8Bytes": 131080,
+                "lexerCodePointsVisited": 131080,
+                "tokensProduced": 65537,
+                "headersObserved": 0,
+                "sectionsObserved": 0,
+                "measuresObserved": 0,
+                "slotsObserved": 0,
+                "chordDelegations": 0,
+                "diagnosticsProduced": 1,
+                "termination": "chart-tokens"
+              }
+            }
+          }
+        ]
+      },
+      "expected": {
+        "unclosedDelimiterPrecedesResourceLimit": true,
+        "closedInvalidJsonAlsoPrecedesResourceLimit": true,
+        "malformedCurrentOperandIsObservedButNotAcceptedAsACompleteHeader": true,
+        "wellFormedFirstExcessOperandTriggersSoleResourceLimit": true,
+        "exactDifferenceBetweenRows": "only a lexically and semantically well-formed JSON operand reaches the chart-token limit branch"
+      }
+    }
+  ]
+}

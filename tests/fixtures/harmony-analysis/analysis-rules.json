@@ -1,0 +1,144 @@
+{
+  "schema": "changes.fixtures.h0-analysis-rules.v1",
+  "fixtureVersion": "1.0.0",
+  "expectedValuesGenerated": false,
+  "productionOutputUsed": false,
+  "tableId": "changes.harmony-analysis-rules",
+  "tableVersion": 1,
+  "rules": [
+    {
+      "id": "h0.literal-facts",
+      "classification": null,
+      "predicate": "Copy exact selected T1 root, degrees, roles, spellings, pitch-class projections, and match components without key or neighbor interpretation.",
+      "exactRequires": ["supported-T1-contract-version", "explicit-selected-realization-when-plural"],
+      "forbids": ["key-inference", "source-mutation", "enharmonic-normalization", "probability"]
+    },
+    {
+      "id": "h0.roman.diatonic-major",
+      "classification": "diatonic",
+      "mode": "major",
+      "seventhDegreeRows": ["Imaj7", "ii7", "iii7", "IVmaj7", "V7", "vi7", "vii-half-diminished-7"],
+      "exactRequires": ["declared-major-key", "exact-root-degree-spelling", "complete-quality-match"]
+    },
+    {
+      "id": "h0.roman.diatonic-natural-minor",
+      "classification": "diatonic",
+      "mode": "natural-minor",
+      "seventhDegreeRows": ["i7", "ii-half-diminished-7", "IIImaj7", "iv7", "v7", "VImaj7", "VII7"],
+      "exactRequires": ["declared-natural-minor-key", "exact-root-degree-spelling", "complete-quality-match"]
+    },
+    {
+      "id": "h0.roman.diatonic-harmonic-minor",
+      "classification": "diatonic",
+      "mode": "harmonic-minor",
+      "seventhDegreeRows": ["i-maj7", "ii-half-diminished-7", "III-aug-maj7", "iv7", "V7", "VImaj7", "vii-dim7"],
+      "exactRequires": ["declared-harmonic-minor-key", "exact-root-degree-spelling", "complete-quality-match"]
+    },
+    {
+      "id": "h0.roman.diatonic-melodic-minor",
+      "classification": "diatonic",
+      "mode": "melodic-minor",
+      "collection": ["1", "2", "b3", "4", "5", "6", "7"],
+      "seventhDegreeRows": ["i-maj7", "ii7", "III-aug-maj7", "IV7", "V7", "vi-half-diminished-7", "vii-half-diminished-7"],
+      "exactRequires": ["declared-melodic-minor-key", "fixed-ascending-collection", "exact-root-degree-spelling", "complete-quality-match"]
+    },
+    {
+      "id": "h0.roman.chromatic",
+      "classification": "chromatic-roman",
+      "predicate": "Derive a spelled accidental plus scale-degree root before quality; pitch-class-only aliases remain distinct.",
+      "exactRequires": ["declared-key", "exact-diatonic-step-and-alteration", "complete-quality-match"],
+      "counterevidence": ["enharmonic-only-root-match", "unsupported-accidental"]
+    },
+    {
+      "id": "h0.function.ordinary-dominant",
+      "classification": "ordinary-dominant",
+      "predicate": "A dominant-quality chord whose immediate next root is the declared tonic is ordinary dominant function.",
+      "exactRequires": ["declared-key", "dominant-quality", "immediate-next-root-is-tonic", "complete-literal-match"],
+      "precedenceOver": ["h0.function.secondary-dominant"]
+    },
+    {
+      "id": "h0.function.secondary-dominant",
+      "classification": "secondary-dominant",
+      "predicate": "A dominant-quality chord descends by spelled fifth to the immediate next non-tonic diatonic root.",
+      "exactRequires": ["declared-key", "dominant-quality", "immediate-next-event", "non-tonic-diatonic-target-root", "target-quality-diatonic-in-declared-key", "spelled-fifth-motion"],
+      "strongAllows": ["exact-target-root-with-nondiatonic-target-quality"],
+      "plausibleAllows": ["missing-target-event"],
+      "forbids": ["tonic-target", "nonadjacent-target", "inverted-fifth-motion"]
+    },
+    {
+      "id": "h0.function.secondary-leading-tone",
+      "classification": "secondary-leading-tone",
+      "predicate": "A fully diminished seventh rooted on the spelled leading tone of the immediate next non-tonic diatonic target.",
+      "exactRequires": ["declared-key", "fully-diminished-seventh", "target-relative-leading-tone-spelling", "immediate-next-nontonic-diatonic-target"],
+      "counterevidence": ["enharmonic-leading-tone-only", "half-diminished-quality", "tonic-target"]
+    },
+    {
+      "id": "h0.function.tritone-substitute",
+      "classification": "tritone-substitute",
+      "predicate": "A dominant seventh has a root a tritone from the ordinary dominant of the immediate target and preserves the target-relative third/seventh role spellings while sharing their pitch classes.",
+      "exactRequires": ["dominant-seventh", "immediate-target", "tritone-root-relation", "shared-guide-tone-pitch-classes", "exact-guide-tone-role-spelling"],
+      "speculativeAllows": ["pitch-class-guide-tone-match-with-spelling-counterevidence"]
+    },
+    {
+      "id": "h0.function.backdoor-dominant",
+      "classification": "backdoor-dominant",
+      "predicate": "A dominant seventh on spelled lowered degree seven resolves immediately to the declared tonic root.",
+      "exactRequires": ["declared-key", "bVII-root-spelling", "dominant-seventh", "immediate-tonic-target"],
+      "counterevidence": ["major-seventh-quality", "natural-seven-root", "target-quality-disagrees-with-declared-key"]
+    },
+    {
+      "id": "h0.function.parallel-mixture",
+      "classification": "modal-mixture",
+      "predicate": "The complete chord root and quality match a named row of the parallel major or natural-minor collection.",
+      "exactRequires": ["declared-major-or-minor-key", "named-parallel-source-mode", "exact-root-spelling", "complete-quality-match"],
+      "counterevidence": ["root-only-match", "quality-mismatch", "unrelated-mode"]
+    },
+    {
+      "id": "h0.function.passing-diminished",
+      "classification": "passing-diminished",
+      "predicate": "A fully diminished seventh bridges the immediate previous and next roots by two same-direction spelled semitone steps.",
+      "exactRequires": ["immediate-three-event-window", "fully-diminished-seventh", "same-direction-stepwise-outer-roots", "target-relative-root-spelling"],
+      "counterevidence": ["missing-neighbor", "enharmonic-root-only", "half-diminished-quality", "nonstepwise-outer-root"]
+    },
+    {
+      "id": "h0.outcome.modal",
+      "classification": "modal",
+      "predicate": "An explicit modal basis or exact modal evidence is returned without coercion into the four KeyContext modes.",
+      "exactRequires": ["declared-modal-basis-or-versioned-modal-evidence"],
+      "forbids": ["persist-modal-as-inferred-key", "manufacture-functional-causality"]
+    },
+    {
+      "id": "h0.outcome.nonfunctional",
+      "classification": "nonfunctional",
+      "predicate": "An explicit nonfunctional basis or exact constant-structure/common-tone evidence is reported descriptively.",
+      "exactRequires": ["declared-nonfunctional-basis-or-versioned-mechanical-evidence"],
+      "forbids": ["invented-Roman-causality", "universal-quality-judgment"]
+    },
+    {
+      "id": "h0.outcome.unresolved",
+      "classification": "unresolved",
+      "predicate": "A literal chord lacks the key, neighbor, or target evidence required by stronger rules and remains a legitimate successful reading.",
+      "plausibleRequires": ["literal-facts-available", "one-or-more-named-missing-evidence-records"],
+      "forbids": ["refusal-because-harmony-is-unclassified", "silent-key-inference"]
+    }
+  ],
+  "proofOwnership": [
+    {"ruleId":"h0.literal-facts","positiveCaseIds":["H0-LITERAL-001"],"nearMissCaseIds":["H0-LITERAL-002","H0-LITERAL-003"],"transpositionCaseIds":["H0-TRANS-012"],"mutationControlIds":["H0-MUT-010","H0-MUT-011"],"traceIds":["H0-TRACE-LITERAL"]},
+    {"ruleId":"h0.roman.diatonic-major","positiveCaseIds":["H0-ROM-MAJ-01"],"nearMissCaseIds":["H0-ROM-STRESS-001"],"transpositionCaseIds":["H0-TRANS-001"],"mutationControlIds":["H0-MUT-006"],"traceIds":["H0-TRACE-ROMAN"]},
+    {"ruleId":"h0.roman.diatonic-natural-minor","positiveCaseIds":["H0-ROM-NMIN-01"],"nearMissCaseIds":["H0-ROM-STRESS-001"],"transpositionCaseIds":["H0-TRANS-002"],"mutationControlIds":["H0-MUT-006"],"traceIds":["H0-TRACE-MODES"]},
+    {"ruleId":"h0.roman.diatonic-harmonic-minor","positiveCaseIds":["H0-ROM-HMIN-01"],"nearMissCaseIds":["H0-ROM-STRESS-006"],"transpositionCaseIds":["H0-TRANS-002"],"mutationControlIds":["H0-MUT-006","H0-MUT-017"],"traceIds":["H0-TRACE-MODES"]},
+    {"ruleId":"h0.roman.diatonic-melodic-minor","positiveCaseIds":["H0-ROM-MMIN-01"],"nearMissCaseIds":["H0-SCALE-MM-NEAR-001"],"transpositionCaseIds":["H0-TRANS-002"],"mutationControlIds":["H0-MUT-023"],"traceIds":["H0-TRACE-MODES"]},
+    {"ruleId":"h0.roman.chromatic","positiveCaseIds":["H0-CONTEXT-028"],"nearMissCaseIds":["H0-CONTEXT-029"],"transpositionCaseIds":["H0-TRANS-STRESS-005"],"mutationControlIds":["H0-MUT-005"],"traceIds":["H0-TRACE-SPELLING","H0-TRACE-ROMAN"]},
+    {"ruleId":"h0.function.ordinary-dominant","positiveCaseIds":["H0-CONTEXT-001"],"nearMissCaseIds":["H0-CONTEXT-002"],"transpositionCaseIds":["H0-TRANS-003"],"mutationControlIds":["H0-MUT-001"],"traceIds":["H0-TRACE-DOMINANT"]},
+    {"ruleId":"h0.function.secondary-dominant","positiveCaseIds":["H0-CONTEXT-002"],"nearMissCaseIds":["H0-CONTEXT-005","H0-CONTEXT-008"],"transpositionCaseIds":["H0-TRANS-003"],"mutationControlIds":["H0-MUT-002","H0-MUT-003","H0-MUT-024"],"traceIds":["H0-TRACE-DOMINANT"]},
+    {"ruleId":"h0.function.secondary-leading-tone","positiveCaseIds":["H0-CONTEXT-010"],"nearMissCaseIds":["H0-CONTEXT-012"],"transpositionCaseIds":["H0-TRANS-004"],"mutationControlIds":["H0-MUT-004"],"traceIds":["H0-TRACE-LEADING"]},
+    {"ruleId":"h0.function.tritone-substitute","positiveCaseIds":["H0-CONTEXT-013"],"nearMissCaseIds":["H0-CONTEXT-014"],"transpositionCaseIds":["H0-TRANS-005"],"mutationControlIds":["H0-MUT-004"],"traceIds":["H0-TRACE-TRITONE"]},
+    {"ruleId":"h0.function.backdoor-dominant","positiveCaseIds":["H0-CONTEXT-015"],"nearMissCaseIds":["H0-CONTEXT-016","H0-CONTEXT-017"],"transpositionCaseIds":["H0-TRANS-006"],"mutationControlIds":["H0-MUT-025"],"traceIds":["H0-TRACE-BACKDOOR"]},
+    {"ruleId":"h0.function.parallel-mixture","positiveCaseIds":["H0-CONTEXT-018","H0-CONTEXT-019"],"nearMissCaseIds":["H0-CONTEXT-020"],"transpositionCaseIds":["H0-TRANS-007"],"mutationControlIds":["H0-MUT-006"],"traceIds":["H0-TRACE-MIXTURE"]},
+    {"ruleId":"h0.function.passing-diminished","positiveCaseIds":["H0-CONTEXT-021"],"nearMissCaseIds":["H0-CONTEXT-022","H0-CONTEXT-023"],"transpositionCaseIds":["H0-TRANS-008"],"mutationControlIds":["H0-MUT-002","H0-MUT-024"],"traceIds":["H0-TRACE-PASSING"]},
+    {"ruleId":"h0.outcome.modal","positiveCaseIds":["H0-CONTEXT-024"],"nearMissCaseIds":["H0-CONTEXT-026"],"transpositionCaseIds":["H0-TRANS-014"],"mutationControlIds":["H0-MUT-008"],"traceIds":["H0-TRACE-OUTCOMES"]},
+    {"ruleId":"h0.outcome.nonfunctional","positiveCaseIds":["H0-CONTEXT-025"],"nearMissCaseIds":["H0-CONTEXT-026"],"transpositionCaseIds":["H0-TRANS-015"],"mutationControlIds":["H0-MUT-008"],"traceIds":["H0-TRACE-OUTCOMES"]},
+    {"ruleId":"h0.outcome.unresolved","positiveCaseIds":["H0-CONTEXT-027"],"nearMissCaseIds":["H0-CONTEXT-001"],"transpositionCaseIds":["H0-TRANS-016"],"mutationControlIds":["H0-MUT-008","H0-MUT-009"],"traceIds":["H0-TRACE-OUTCOMES"]}
+  ],
+  "authorityIds": ["H0-AUTH-PLAN", "H0-AUTH-OMT-APPLIED", "H0-AUTH-OMT-MIXTURE", "H0-AUTH-PROJECT-POLICY"]
+}
