@@ -1,6 +1,6 @@
 {
   "schema": "changes.fixtures.e0-trace-ledger.v1",
-  "reviewState": "proposed-pending-first-golden-human-acceptance",
+  "reviewState": "accepted-first-golden-by-project-owner",
   "traces": [
     {
       "id": "E0-TRACE-JSON-LOSSLESS",

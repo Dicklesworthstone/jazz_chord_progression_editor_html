@@ -14,7 +14,7 @@ export type E0ContractValidationReport = Readonly<{
   schema: "changes.validation.e0-contract.v1";
   package: "E0";
   outcome: "pass" | "fail";
-  reviewState: "proposed-pending-first-golden-human-acceptance";
+  reviewState: "accepted-first-golden-by-project-owner";
   counts: Readonly<{
     companions: number;
     goldens: number;
@@ -42,7 +42,7 @@ export type E0ContractValidationOptions = Readonly<{
 
 const CONTRACT_FILENAME = "e0-interchange-contract.json";
 
-export const E0_PROPOSED_COMPANIONS = Object.freeze([
+export const E0_ACCEPTED_COMPANIONS = Object.freeze([
   "canonical-json-cases.json",
   "chart-text-cases.json",
   "import-cases.json",
@@ -55,7 +55,7 @@ export const E0_PROPOSED_COMPANIONS = Object.freeze([
   "trace-ledger.json",
 ] as const);
 
-export const E0_PROPOSED_GOLDENS = Object.freeze([
+export const E0_ACCEPTED_GOLDENS = Object.freeze([
   "goldens/minimal.changes.json",
   "goldens/negative-zero.changes.json",
   "goldens/nested.changes.json",
@@ -65,37 +65,37 @@ export const E0_PROPOSED_GOLDENS = Object.freeze([
 
 const EXPECTED_JSON_FILES = Object.freeze([
   CONTRACT_FILENAME,
-  ...E0_PROPOSED_COMPANIONS,
+  ...E0_ACCEPTED_COMPANIONS,
 ] as const);
 
 const EXPECTED_FILES = Object.freeze([
   ...EXPECTED_JSON_FILES,
-  ...E0_PROPOSED_GOLDENS,
+  ...E0_ACCEPTED_GOLDENS,
 ] as const);
 
-export const E0_PROPOSED_BYTE_DIGESTS: Readonly<Record<string, string>> = {
+export const E0_ACCEPTED_BYTE_DIGESTS: Readonly<Record<string, string>> = {
   "canonical-json-cases.json":
-    "e1c842d3738a076040eedbdc95a5255334a635c1453a26a58554aa0bdcbe10a5",
+    "8eac2bdee9a90f6e6828295f103d1ab66fe0157992ac5639e977c6cff59e79d5",
   "chart-text-cases.json":
-    "b64b42c33b9df36541c4d023404ca6818f33915e39409e5e7902c9a7fa95bc06",
+    "79875e4060148663e8c8af717cd22abf3afbe6c1999f1c811f530b5b05253bad",
   "e0-interchange-contract.json":
-    "7482b8b8666a2477358daa32e1898d70add5e35e91c8abbb1964adcc97780f0d",
+    "d81a831bc9e67d15b595001513c854870fd1ebac3d89687d4f6d5a7a756fbcb2",
   "import-cases.json":
-    "9e287a812555c2838c54407027ea15cab7a99bcc8f3dceaa176bc65ea4043a74",
+    "22ab4a62d9f62d93eae169f60d51de9780218bbcc160b4cdfe3e7f0101c38688",
   "input-fixture-ledger.json":
-    "2a926133a15509d4397e4d7f7a4d0d1ddb57fda2edc7c933b03815bacaddb238",
+    "693d3e39db3e82e5c24980d363566943360687bdf2dcd523185f56a028b0f714",
   "limit-cases.json":
-    "a287b6edd6336eecfd87b81cdeb73dfe52d96838ca71ff42893046689170b249",
+    "4eb50078380a302779691e7004b4ffc6805c3b75ed76addfd8b78f7daee2c237",
   "mutation-controls.json":
-    "b1c7e49d15f65ab6e741da80353a476684286229db6af1bf0c703b6e6de5a2be",
+    "46533839348e1bc293f3eb5ad002dc3e84b3d02b3ff86eeb30385f0e6d6245a8",
   "provenance-ledger.json":
-    "fcac8445a0d5c5e8ce1edc6feedc5d33752026d84638132f05824470059b9ae0",
+    "e4b38ff3bd7289c738976161688cda6c6d0534517500375cb1e6c5cf77a05b57",
   "requirement-ledger.json":
-    "a7af9cc505be71c036911ad6a5a0923141a817b2ff3924b071e37ca0ef3b50a2",
+    "89b0a250e98a4daf3c1e6470937fd564c1112c4a3a84b1cd81adbb8d8c0182d2",
   "trace-ledger.json":
-    "14c6be7b1131ed58d034339ef00e67146266c1750174a84fbe17cc50c4a756c1",
+    "ccb7186dc7e25a4d0edbb65a3a4b2fbefe52674756faa630509a83ad1fae18c9",
   "workflow-adapter-cases.json":
-    "8e3ce651670976349db3036f054ea326e4d3345eb24e0a398f4313e58bf43c9d",
+    "722cf3574eb1005cb49b3222488c585f346fe57d7a1cc7b83b1277383a7a9d73",
   "goldens/minimal.changes.json":
     "c73321857e0ad8cc6ac03961ec872d456090d190d2d5c1a659883259c7f20fe5",
   "goldens/minimal.changes.txt":
@@ -108,8 +108,8 @@ export const E0_PROPOSED_BYTE_DIGESTS: Readonly<Record<string, string>> = {
     "e138e8b20e526f6fef3a4d81105d92a747422e166d678cc87594ba39ed516504",
 };
 
-export const E0_PROPOSED_SEMANTIC_DIGEST =
-  "b21130041d6d3cff7d888f08e2bea0dfb301034eface4f6cdbdbecc92c4d1a70";
+export const E0_ACCEPTED_SEMANTIC_DIGEST =
+  "0455fe8afa398e9f5cbafa3209d563ad72365435b4cd4f896477271a06027ccc";
 
 const EXPECTED_SCHEMAS: Readonly<Record<string, string>> = {
   "canonical-json-cases.json": "changes.fixtures.e0-canonical-json-cases.v1",
@@ -126,7 +126,7 @@ const EXPECTED_SCHEMAS: Readonly<Record<string, string>> = {
     "changes.fixtures.e0-workflow-adapter-cases.v1",
 };
 
-export const E0_PROPOSED_COUNTS = Object.freeze({
+export const E0_ACCEPTED_COUNTS = Object.freeze({
   companions: 10,
   goldens: 5,
   canonicalCases: 19,
@@ -144,7 +144,7 @@ export const E0_PROPOSED_COUNTS = Object.freeze({
   requirements: 53,
 });
 
-export const E0_PROPOSED_LIMITS = Object.freeze({
+export const E0_ACCEPTED_LIMITS = Object.freeze({
   acceptedImportUtf8Bytes: 2_097_152,
   observedImportBytes: 2_097_153,
   canonicalJsonExportBytes: 2_097_152,
@@ -164,7 +164,7 @@ export const E0_PROPOSED_LIMITS = Object.freeze({
   replacementHandoffsPerConfirmation: 1,
 });
 
-const E0_PROPOSED_LIMIT_RESOURCES = Object.freeze([
+const E0_ACCEPTED_LIMIT_RESOURCES = Object.freeze([
   "utf8-import-bytes",
   "json-depth",
   "sections",
@@ -198,14 +198,14 @@ const E0_PROPOSED_LIMIT_RESOURCES = Object.freeze([
   "canonical-export-preparation-id",
 ] as const);
 
-export const E0_PROPOSED_EXPORT_OPERATIONS = Object.freeze([
+export const E0_ACCEPTED_EXPORT_OPERATIONS = Object.freeze([
   "prepareCanonicalJsonExport",
   "prepareLeadSheetTextExport",
   "sanitizeExportFilename",
   "deliverExportArtifact",
 ] as const);
 
-export const E0_PROPOSED_APPLICATION_OPERATIONS = Object.freeze([
+export const E0_ACCEPTED_APPLICATION_OPERATIONS = Object.freeze([
   "readImportSource",
   "prepareImportPreview",
   "commitImportReplacement",
@@ -213,7 +213,7 @@ export const E0_PROPOSED_APPLICATION_OPERATIONS = Object.freeze([
   "completeCanonicalExportMarkerSettlement",
 ] as const);
 
-export const E0_PROPOSED_IMPORT_STAGE_ORDER = Object.freeze([
+export const E0_ACCEPTED_IMPORT_STAGE_ORDER = Object.freeze([
   "byte-observation",
   "byte-preflight",
   "utf8-decode",
@@ -228,7 +228,7 @@ export const E0_PROPOSED_IMPORT_STAGE_ORDER = Object.freeze([
   "preview-publication",
 ] as const);
 
-const REVIEW_STATE = "proposed-pending-first-golden-human-acceptance";
+const REVIEW_STATE = "accepted-first-golden-by-project-owner";
 
 const REPOSITORY_ROOT = new URL("../", import.meta.url).pathname;
 
@@ -1458,12 +1458,12 @@ export async function validateE0Contract(
     expectedRootNames,
     "E0_FILE_INVENTORY",
     fixtureRoot,
-    "Fixture root must contain exactly the proposed contract, companions, and goldens directory.",
+    "Fixture root must contain exactly the accepted contract, companions, and goldens directory.",
     findings,
   );
   requireExact(
     await readDirectoryNames(resolve(fixtureRoot, "goldens")),
-    E0_PROPOSED_GOLDENS.map((name) => name.slice("goldens/".length)).sort(
+    E0_ACCEPTED_GOLDENS.map((name) => name.slice("goldens/".length)).sort(
       codeUnitCompare,
     ),
     "E0_GOLDEN_INVENTORY",
@@ -1473,7 +1473,7 @@ export async function validateE0Contract(
   );
 
   const expectedByteDigests =
-    options.expectedByteDigests ?? E0_PROPOSED_BYTE_DIGESTS;
+    options.expectedByteDigests ?? E0_ACCEPTED_BYTE_DIGESTS;
   for (const filename of EXPECTED_FILES) {
     const path = resolve(fixtureRoot, filename);
     let bytes: Uint8Array;
@@ -1495,7 +1495,7 @@ export async function validateE0Contract(
         findings,
         "E0_DIGEST_MISMATCH",
         filename,
-        "Fixture bytes differ from the proposed packet pin.",
+        "Fixture bytes differ from the accepted packet pin.",
       );
     }
     let source: string;
@@ -1576,7 +1576,7 @@ export async function validateE0Contract(
         findings,
         "E0_REVIEW_STATE",
         `${filename}.reviewState`,
-        "The first E0 golden packet remains proposed until human acceptance.",
+        "Every E0 companion must carry the accepted first-golden review state.",
       );
     }
   }
@@ -1591,7 +1591,7 @@ export async function validateE0Contract(
   const semanticDigest = sha256(
     new TextEncoder().encode(stableJson(semanticPacket)),
   );
-  if (semanticDigest !== E0_PROPOSED_SEMANTIC_DIGEST) {
+  if (semanticDigest !== E0_ACCEPTED_SEMANTIC_DIGEST) {
     addFinding(
       findings,
       "E0_SEMANTIC_DIGEST",
@@ -1601,7 +1601,7 @@ export async function validateE0Contract(
   }
   requireExact(
     objectAt(contract["publicSurface"])?.["exportOperations"],
-    E0_PROPOSED_EXPORT_OPERATIONS,
+    E0_ACCEPTED_EXPORT_OPERATIONS,
     "E0_EXPORT_OPERATIONS",
     `${CONTRACT_FILENAME}.publicSurface.exportOperations`,
     "Export operations must match the public handoff.",
@@ -1609,7 +1609,7 @@ export async function validateE0Contract(
   );
   requireExact(
     objectAt(contract["publicSurface"])?.["applicationOperations"],
-    E0_PROPOSED_APPLICATION_OPERATIONS,
+    E0_ACCEPTED_APPLICATION_OPERATIONS,
     "E0_APPLICATION_OPERATIONS",
     `${CONTRACT_FILENAME}.publicSurface.applicationOperations`,
     "Application operations must match the public handoff.",
@@ -1620,8 +1620,8 @@ export async function validateE0Contract(
     {
       exportModule: "src/export/interchange-contract.ts",
       applicationModule: "src/application/e0-interchange-contract.ts",
-      exportOperations: E0_PROPOSED_EXPORT_OPERATIONS,
-      applicationOperations: E0_PROPOSED_APPLICATION_OPERATIONS,
+      exportOperations: E0_ACCEPTED_EXPORT_OPERATIONS,
+      applicationOperations: E0_ACCEPTED_APPLICATION_OPERATIONS,
       exportCompositionFactory: "createE0ExportOperations",
       compositionFactory: "createE0InterchangeOperations",
       dependencyBinding: "application-composition-root-once",
@@ -2290,7 +2290,7 @@ export async function validateE0Contract(
   );
   requireExact(
     contract["importStageOrder"],
-    E0_PROPOSED_IMPORT_STAGE_ORDER,
+    E0_ACCEPTED_IMPORT_STAGE_ORDER,
     "E0_STAGE_ORDER",
     `${CONTRACT_FILENAME}.importStageOrder`,
     "Import failure precedence is closed and ordered.",
@@ -2298,37 +2298,37 @@ export async function validateE0Contract(
   );
   requireExact(
     contract["limits"],
-    E0_PROPOSED_LIMITS,
+    E0_ACCEPTED_LIMITS,
     "E0_LIMITS",
     `${CONTRACT_FILENAME}.limits`,
-    "Public E0 limits must match the proposed semantic locks.",
+    "Public E0 limits must match the accepted semantic locks.",
     findings,
   );
   requireExact(
     contract["companions"],
-    E0_PROPOSED_COMPANIONS,
+    E0_ACCEPTED_COMPANIONS,
     "E0_COMPANIONS",
     `${CONTRACT_FILENAME}.companions`,
-    "Companion inventory must match the proposed packet.",
+    "Companion inventory must match the accepted packet.",
     findings,
   );
   requireExact(
     contract["goldens"],
-    E0_PROPOSED_GOLDENS,
+    E0_ACCEPTED_GOLDENS,
     "E0_GOLDENS",
     `${CONTRACT_FILENAME}.goldens`,
-    "Golden inventory must match the proposed packet.",
+    "Golden inventory must match the accepted packet.",
     findings,
   );
   if (
     contract["reviewState"] !== REVIEW_STATE ||
-    contract["humanAcceptanceClaim"] !== false
+    contract["humanAcceptanceClaim"] !== true
   ) {
     addFinding(
       findings,
       "E0_HUMAN_ACCEPTANCE_CLAIM",
       CONTRACT_FILENAME,
-      "Validator locks bytes but cannot claim first-golden human acceptance.",
+      "The packet must preserve the project owner's first-golden acceptance record.",
     );
   }
   for (const field of [
@@ -2342,7 +2342,7 @@ export async function validateE0Contract(
         findings,
         "E0_INDEPENDENCE",
         `${CONTRACT_FILENAME}.${field}`,
-        "The proposed authority must remain independent and offline.",
+        "The accepted authority must remain independent and offline.",
       );
     }
   }
@@ -2637,7 +2637,7 @@ export async function validateE0Contract(
       const goldenPath = fixture["path"];
       if (
         typeof goldenPath !== "string" ||
-        !(E0_PROPOSED_GOLDENS as readonly string[]).includes(goldenPath)
+        !(E0_ACCEPTED_GOLDENS as readonly string[]).includes(goldenPath)
       ) {
         addFinding(
           findings,
@@ -3017,7 +3017,7 @@ export async function validateE0Contract(
     );
     const parsed: unknown = JSON.parse(materialized.sourceText);
     if (
-      materialized.utf8Bytes !== E0_PROPOSED_LIMITS.acceptedImportUtf8Bytes ||
+      materialized.utf8Bytes !== E0_ACCEPTED_LIMITS.acceptedImportUtf8Bytes ||
       materialized.utf16CodeUnits >= materialized.utf8Bytes ||
       duplicateJsonKeys(materialized.sourceText).length !== 0 ||
       !isObject(parsed) ||
@@ -3216,7 +3216,7 @@ export async function validateE0Contract(
     },
     "E0_REQUIREMENT_LEDGER_METADATA",
     "requirement-ledger.json",
-    "Requirement ledger must remain attached to the active E0 specification leaf and proposed review state.",
+    "Requirement ledger must remain attached to the active E0 specification leaf and accepted review state.",
     findings,
   );
   for (const requirement of requirements) {
@@ -12463,7 +12463,7 @@ export async function validateE0Contract(
 
   requireExact(
     limitFamilies.map((family) => family["resource"]),
-    E0_PROPOSED_LIMIT_RESOURCES,
+    E0_ACCEPTED_LIMIT_RESOURCES,
     "E0_LIMIT_RESOURCE_INVENTORY",
     "limit-cases.json.cases",
     "Every public inherited and E0-owned bound needs one ordered fixture family.",
@@ -12845,7 +12845,7 @@ export async function validateE0Contract(
     dynamicScrubbingForbidden: true,
     goldenUpdateRequiresVisibleDiff: true,
     firstGoldenRequiresHumanAcceptance: true,
-    currentHumanAcceptanceClaim: false,
+    currentHumanAcceptanceClaim: true,
   })) {
     if (independence[field] !== expected) {
       addFinding(
@@ -12861,7 +12861,7 @@ export async function validateE0Contract(
       findings,
       "E0_EXPERT_REVIEW_CLAIM",
       "provenance-ledger.json.expertReviewClaim",
-      "The proposed E0 packet has no expert-review claim.",
+      "Project-owner acceptance does not imply an expert-review claim.",
     );
   }
   const authorityClasses = new Set([
@@ -12969,8 +12969,8 @@ export async function validateE0Contract(
   );
 
   const counts = Object.freeze({
-    companions: E0_PROPOSED_COMPANIONS.length,
-    goldens: E0_PROPOSED_GOLDENS.length,
+    companions: E0_ACCEPTED_COMPANIONS.length,
+    goldens: E0_ACCEPTED_GOLDENS.length,
     canonicalCases: canonicalCases.length,
     chartTextCases: chartTextCases.length,
     importCases: importCases.length,
@@ -12987,10 +12987,10 @@ export async function validateE0Contract(
   });
   requireExact(
     counts,
-    E0_PROPOSED_COUNTS,
+    E0_ACCEPTED_COUNTS,
     "E0_COUNTS",
     fixtureRoot,
-    "Packet counts must match the proposed semantic lock.",
+    "Packet counts must match the accepted semantic lock.",
     findings,
   );
 

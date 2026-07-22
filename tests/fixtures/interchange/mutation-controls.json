@@ -1,6 +1,6 @@
 {
   "schema": "changes.fixtures.e0-mutation-controls.v1",
-  "reviewState": "proposed-pending-first-golden-human-acceptance",
+  "reviewState": "accepted-first-golden-by-project-owner",
   "productionMutantsExecutedAtSpecTime": false,
   "claim": "links-are-frozen-build-and-verify-must-execute-the-production-mutants",
   "controls": [

@@ -1,6 +1,6 @@
 {
   "schema": "changes.fixtures.e0-input-fixture-ledger.v1",
-  "reviewState": "proposed-pending-first-golden-human-acceptance",
+  "reviewState": "accepted-first-golden-by-project-owner",
   "expectedValuesGenerated": false,
   "productionOutputUsedAsOracle": false,
   "authorship": "independently-authored-from-reviewed-contracts-and-upstream-fixture-data",

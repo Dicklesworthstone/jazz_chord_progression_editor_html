@@ -171,15 +171,15 @@ import type {
 import { decodeDocumentShape } from "../../src/domain";
 import { formatChartText, parseChartText } from "../../src/theory";
 import {
-  E0_PROPOSED_APPLICATION_OPERATIONS,
-  E0_PROPOSED_BYTE_DIGESTS,
-  E0_PROPOSED_COMPANIONS,
-  E0_PROPOSED_COUNTS,
-  E0_PROPOSED_EXPORT_OPERATIONS,
-  E0_PROPOSED_GOLDENS,
-  E0_PROPOSED_IMPORT_STAGE_ORDER,
-  E0_PROPOSED_LIMITS,
-  E0_PROPOSED_SEMANTIC_DIGEST,
+  E0_ACCEPTED_APPLICATION_OPERATIONS,
+  E0_ACCEPTED_BYTE_DIGESTS,
+  E0_ACCEPTED_COMPANIONS,
+  E0_ACCEPTED_COUNTS,
+  E0_ACCEPTED_EXPORT_OPERATIONS,
+  E0_ACCEPTED_GOLDENS,
+  E0_ACCEPTED_IMPORT_STAGE_ORDER,
+  E0_ACCEPTED_LIMITS,
+  E0_ACCEPTED_SEMANTIC_DIGEST,
   materializeE0ExactByteCanonicalImport,
   validateE0Contract,
   type E0ContractValidationReport,
@@ -1144,7 +1144,7 @@ async function withFixtureCopy(
   run: (root: string) => Promise<void>,
 ): Promise<void> {
   const parent = await mkdtemp(join(tmpdir(), "jcpe e0 contract Ω path-"));
-  const root = join(parent, "proposed interchange fixtures");
+  const root = join(parent, "accepted interchange fixtures");
   try {
     await cp(fixtureRoot, root, { recursive: true });
     await run(root);
@@ -1264,7 +1264,7 @@ async function expectRejected(
   for (const code of codes) expect(actual).toContain(code);
 }
 
-describe("E0 proposed transactional interchange contract", () => {
+describe("E0 accepted transactional interchange contract", () => {
   test("public types and constants match the independently authored authority", async () => {
     expect(typeAssertions).toHaveLength(130);
     const contract = await readJsonObject(
@@ -1313,16 +1313,16 @@ describe("E0 proposed transactional interchange contract", () => {
       "changes.export.lead-sheet-text-loss-report.v1",
     );
     expect(INTERCHANGE_EXPORT_OPERATION_NAMES).toEqual(
-      E0_PROPOSED_EXPORT_OPERATIONS,
+      E0_ACCEPTED_EXPORT_OPERATIONS,
     );
     expect(E0_INTERCHANGE_OPERATION_NAMES).toEqual(
-      E0_PROPOSED_APPLICATION_OPERATIONS,
+      E0_ACCEPTED_APPLICATION_OPERATIONS,
     );
     expect(publicSurface["exportOperations"]).toEqual(
-      E0_PROPOSED_EXPORT_OPERATIONS,
+      E0_ACCEPTED_EXPORT_OPERATIONS,
     );
     expect(publicSurface["applicationOperations"]).toEqual(
-      E0_PROPOSED_APPLICATION_OPERATIONS,
+      E0_ACCEPTED_APPLICATION_OPERATIONS,
     );
     expect(publicSurface).toMatchObject({
       compositionFactory: "createE0InterchangeOperations",
@@ -1368,9 +1368,9 @@ describe("E0 proposed transactional interchange contract", () => {
         "CanonicalExportMarkerSettlementAdapters.queueCanonicalExportMarkerPersistence",
       ],
     });
-    expect(IMPORT_STAGE_ORDER).toEqual(E0_PROPOSED_IMPORT_STAGE_ORDER);
+    expect(IMPORT_STAGE_ORDER).toEqual(E0_ACCEPTED_IMPORT_STAGE_ORDER);
     expect(contract["importStageOrder"]).toEqual(
-      E0_PROPOSED_IMPORT_STAGE_ORDER,
+      E0_ACCEPTED_IMPORT_STAGE_ORDER,
     );
     expect(CANONICAL_JSON_FORMAT).toEqual({
       encoding: "utf-8",
@@ -1409,8 +1409,8 @@ describe("E0 proposed transactional interchange contract", () => {
       preparedCanonicalExportPrivateBytes: MAX_CANONICAL_JSON_EXPORT_BYTES,
       canonicalExportPreparationId: MAX_CANONICAL_EXPORT_PREPARATION_ID,
       replacementHandoffsPerConfirmation: 1,
-    }).toEqual(E0_PROPOSED_LIMITS);
-    expect(contract["limits"]).toEqual(E0_PROPOSED_LIMITS);
+    }).toEqual(E0_ACCEPTED_LIMITS);
+    expect(contract["limits"]).toEqual(E0_ACCEPTED_LIMITS);
 
     expect(MAX_EXPORT_FILENAME_BASENAME_CODE_POINTS).toBe(120);
     expect(MIN_CANONICAL_EXPORT_PREPARATION_ID).toBe(1);
@@ -1562,19 +1562,19 @@ describe("E0 proposed transactional interchange contract", () => {
     expect(EXPORT_DELIVERY_TERMINATIONS as unknown).toEqual(
       contract["deliveryOutcomes"],
     );
-    expect(contract["companions"]).toEqual(E0_PROPOSED_COMPANIONS);
-    expect(contract["goldens"]).toEqual(E0_PROPOSED_GOLDENS);
-    expect(Object.keys(E0_PROPOSED_BYTE_DIGESTS)).toHaveLength(16);
+    expect(contract["companions"]).toEqual(E0_ACCEPTED_COMPANIONS);
+    expect(contract["goldens"]).toEqual(E0_ACCEPTED_GOLDENS);
+    expect(Object.keys(E0_ACCEPTED_BYTE_DIGESTS)).toHaveLength(16);
   });
 
-  test("validator accepts the untouched proposed packet without claiming approval", async () => {
+  test("validator accepts the untouched project-owner-approved packet", async () => {
     const report = await validateE0Contract(fixtureRoot);
     expect(report).toEqual({
       schema: "changes.validation.e0-contract.v1",
       package: "E0",
       outcome: "pass",
-      reviewState: "proposed-pending-first-golden-human-acceptance",
-      counts: E0_PROPOSED_COUNTS,
+      reviewState: "accepted-first-golden-by-project-owner",
+      counts: E0_ACCEPTED_COUNTS,
       findings: [],
     });
   });
@@ -2027,7 +2027,7 @@ describe("E0 proposed transactional interchange contract", () => {
       });
       const path = join(root, "canonical-json-cases.json");
       const refreshedDigests = {
-        ...E0_PROPOSED_BYTE_DIGESTS,
+        ...E0_ACCEPTED_BYTE_DIGESTS,
         "canonical-json-cases.json": sha256(await readFile(path)),
       };
       const report = await validateE0Contract(root, {
@@ -2035,7 +2035,7 @@ describe("E0 proposed transactional interchange contract", () => {
       });
       expect(findingCodes(report)).toContain("E0_SEMANTIC_DIGEST");
       expect(findingCodes(report)).not.toContain("E0_DIGEST_MISMATCH");
-      expect(E0_PROPOSED_SEMANTIC_DIGEST).toMatch(/^[0-9a-f]{64}$/u);
+      expect(E0_ACCEPTED_SEMANTIC_DIGEST).toMatch(/^[0-9a-f]{64}$/u);
     });
   });
 
@@ -2349,7 +2349,9 @@ describe("E0 proposed transactional interchange contract", () => {
     expect(
       verifySource.match(/["']scripts\/validate-e0-contract\.ts["']/gu),
     ).toHaveLength(1);
-    expect(contractDoc).toContain("Exact byte goldens remain proposed");
+    expect(contractDoc).toContain(
+      "First-golden project-owner acceptance is recorded",
+    );
     expect(contractDoc).toContain("fully formed A0 `ReplaceDocumentCommand`");
     expect(contractDoc).toContain("export.marker_artifact_mismatch");
     expect(c0ContractDoc).toContain(

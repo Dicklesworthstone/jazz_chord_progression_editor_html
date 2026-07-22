@@ -1,6 +1,7 @@
 # E0 transactional interchange contract
 
-Status: code-facing specification and proposed golden packet for `E0/spec`
+Status: code-facing specification and first golden packet accepted by the
+project owner on 2026-07-21 for `E0/spec`
 Public modules: `src/export` and `src/application`
 Operations: `prepareCanonicalJsonExport`, `prepareLeadSheetTextExport`,
 `sanitizeExportFilename`, `deliverExportArtifact`, `readImportSource`,
@@ -15,9 +16,10 @@ fixtures under `tests/fixtures/interchange/` without consulting
 `REBUILD_PLAN.md`.
 
 The fixture package is definition-derived and was authored without an E0
-production implementation. Exact byte goldens remain proposed until a human
-reviews and accepts the first packet. A validator may lock a proposed packet;
-it may not describe that lock as musical or human approval.
+production implementation. First-golden project-owner acceptance is recorded
+in `docs/evidence/E0_GOLDEN_PACKET_REVIEW.md`. A validator may verify the
+accepted packet and its recorded state; it cannot manufacture, broaden, or
+renew human approval.
 
 ## 1. Ownership and boundary
 
@@ -890,9 +892,10 @@ freeze independently authored cases for:
 Expected bytes/text/state traces are literal fixture values. E0 production may
 be compared with them but may never generate, update, scrub, or approve them.
 Dynamic request IDs/timestamps use explicit test-owned values; there is no broad
-scrubber that could hide a stale-result defect. Golden updates require a visible
-diff, independent review, and human acceptance before the packet is called
-approved.
+scrubber that could hide a stale-result defect. The first packet was accepted
+by the project owner on 2026-07-21. Every future golden update still requires a
+visible diff, independent review, and renewed human acceptance before the
+changed packet is called approved.
 
 The packet carries forward F2's two E0-owned mutations:
 
@@ -980,7 +983,7 @@ Implementers and verifiers must not:
 
 ## 16. Spec verification commands
 
-- `bun run validate:e0-contract` validates the proposed authority package,
+- `bun run validate:e0-contract` validates the accepted authority package,
   semantic locks, companion digests, backlinks, limits, golden bytes, and
   mutation inventory.
 - `bun test tests/static/e0-contract.test.ts` compares public constants/types to

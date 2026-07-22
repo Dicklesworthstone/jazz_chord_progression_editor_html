@@ -72,9 +72,10 @@ what the release artifact is, and how those claims are proved.
   `src/application/e0-interchange-contract.ts`, and
   `tests/fixtures/interchange/e0-interchange-contract.json` plus its hash-bound
   companions define E0's deterministic JSON/text interchange and transactional
-  application boundary. The packet is independently authored and proposed
-  pending first-golden human acceptance; production output may never generate
-  or approve its expectations.
+  application boundary. The packet is independently authored; its first golden
+  set was accepted by the project owner on 2026-07-21 and is recorded in
+  `docs/evidence/E0_GOLDEN_PACKET_REVIEW.md`. Production output may never
+  generate or approve its expectations.
 - `docs/X0_AUDIO_ENGINE_CONTRACT.md`,
   `tests/fixtures/audio-engine/x0-audio-engine-contract.json`, and their
   hash-bound companions are the independently authored X0 persistent-graph,
@@ -135,7 +136,7 @@ The manifest exposes these stable commands:
 | `bun run validate:a0-contract` | validate the independent application-state, command, history, bookmark, stale-result, transport-view, selector, trace, provenance, and mutation authority corpus |
 | `bun run validate:u0-contract` | validate the source-owned UI inventory, exact limits, 714-cell state gallery authority, responsive/overlay matrices, topology and contrast cases, trace links, provenance, and release-gallery exclusion contract |
 | `bun run validate:c0-contract` | validate the independent legacy corpus, precedence, hostile-input, report, work-bound, trace, provenance, and mutation authority package |
-| `bun run validate:e0-contract` | validate the independent E0 JSON/text interchange, transactional import, exact limits, reciprocal traces, provenance, proposed byte goldens, and mutation authority package |
+| `bun run validate:e0-contract` | validate the independent E0 JSON/text interchange, transactional import, exact limits, reciprocal traces, provenance, accepted byte goldens, and mutation authority package |
 | `bun run validate:x0-contract` | validate the independent persistent-audio graph, recipe, impulse, voice-lifecycle, registry, render, listening, trace, provenance, and mutation authority package |
 | `bun run typecheck` | strict `tsc --noEmit` |
 | `bun run lint` | ESLint plus source-integrity and dependency-boundary checks |

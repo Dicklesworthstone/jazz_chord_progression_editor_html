@@ -1,6 +1,6 @@
 {
   "schema": "changes.fixtures.e0-provenance-ledger.v1",
-  "reviewState": "proposed-pending-first-golden-human-acceptance",
+  "reviewState": "accepted-first-golden-by-project-owner",
   "expertReviewClaim": false,
   "authorities": [
     {
@@ -15,10 +15,10 @@
     {
       "id": "E0-AUTH-E0-DECISIONS",
       "authorityClass": "definition",
-      "sourceKind": "proposed-project-policy",
+      "sourceKind": "reviewed-project-policy",
       "sourceRef": "docs/E0_INTERCHANGE_CONTRACT.md",
       "scope": "decisions needed to compose reviewed upstream contracts: routing, size refusal, fixed ASCII chart import, transient upstream evidence, history impact, composition-bound structural X1 evidence, single-use A0 import preparation, private pre-encoded export preparation, synchronous activation start, atomic latest-state A0 CAS, and typed state-free A0/A1 marker handoffs",
-      "reviewState": "proposed",
+      "reviewState": "reviewed",
       "judgmentBearing": true
     },
     {
@@ -141,10 +141,10 @@
     {
       "id": "E0-AUTH-FILENAME-POLICY",
       "authorityClass": "definition",
-      "sourceKind": "proposed-project-policy",
+      "sourceKind": "reviewed-project-policy",
       "sourceRef": "docs/E0_INTERCHANGE_CONTRACT.md section 4",
       "scope": "total filename projection, scalar truncation, forbidden ranges, extension ownership, DOS device names, and fallback",
-      "reviewState": "proposed",
+      "reviewState": "reviewed",
       "judgmentBearing": true
     },
     {
@@ -181,6 +181,6 @@
     "dynamicScrubbingForbidden": true,
     "goldenUpdateRequiresVisibleDiff": true,
     "firstGoldenRequiresHumanAcceptance": true,
-    "currentHumanAcceptanceClaim": false
+    "currentHumanAcceptanceClaim": true
   }
 }

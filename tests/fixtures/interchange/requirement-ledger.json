@@ -3,7 +3,7 @@
   "package": "E0",
   "beadId": "jcpe-milestone-reliable-studio-l3a.8.1",
   "parentBeadId": "jcpe-milestone-reliable-studio-l3a.8",
-  "reviewState": "proposed-pending-first-golden-human-acceptance",
+  "reviewState": "accepted-first-golden-by-project-owner",
   "requirements": [
     {
       "id": "E0-REQ-IMPL-001",
