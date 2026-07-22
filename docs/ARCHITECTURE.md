@@ -76,6 +76,17 @@ what the release artifact is, and how those claims are proved.
   set was accepted by the project owner on 2026-07-21 and is recorded in
   `docs/evidence/E0_GOLDEN_PACKET_REVIEW.md`. Production output may never
   generate or approve its expectations.
+- `docs/A0_E0_OWNER_PORTS_CONTRACT.md`,
+  `src/application/application-interchange-owner-contract.ts`, and the five
+  companions under `tests/fixtures/a0-e0-bridge/` define the proposed A0-owned
+  authority bridge proposed for a future E0 v2 binding. Accepted E0 v1 neither
+  imports nor consumes this surface. The bridge packet freezes five
+  composition-private ports, a capacity-one replacement registry, synchronous
+  latest-identity semantics, atomic state-free marker CAS, reciprocal traces,
+  provenance, and literal mutation controls. It makes no production/controller,
+  E0-v2, compatibility, or human-acceptance claim and independently pins the
+  accepted E0 v1 packet and source evidence. The versioned consumer amendment
+  is tracked by `jcpe-milestone-reliable-studio-l3a.8.4`.
 - `docs/X0_AUDIO_ENGINE_CONTRACT.md`,
   `tests/fixtures/audio-engine/x0-audio-engine-contract.json`, and their
   hash-bound companions are the independently authored X0 persistent-graph,
@@ -137,6 +148,7 @@ The manifest exposes these stable commands:
 | `bun run validate:u0-contract` | validate the source-owned UI inventory, exact limits, 714-cell state gallery authority, responsive/overlay matrices, topology and contrast cases, trace links, provenance, and release-gallery exclusion contract |
 | `bun run validate:c0-contract` | validate the independent legacy corpus, precedence, hostile-input, report, work-bound, trace, provenance, and mutation authority package |
 | `bun run validate:e0-contract` | validate the independent E0 JSON/text interchange, transactional import, exact limits, reciprocal traces, provenance, accepted byte goldens, and mutation authority package |
+| `bun run validate:a0-e0-bridge-contract` | validate the independent A0 owner-port registry, identity, marker-CAS, literal applicability/provenance/trace/mutation packet, and immutable accepted-E0-v1 pins without claiming consumer compatibility |
 | `bun run validate:x0-contract` | validate the independent persistent-audio graph, recipe, impulse, voice-lifecycle, registry, render, listening, trace, provenance, and mutation authority package |
 | `bun run typecheck` | strict `tsc --noEmit` |
 | `bun run lint` | ESLint plus source-integrity and dependency-boundary checks |

@@ -1,0 +1,362 @@
+{
+  "schema": "changes.fixtures.a0-e0-bridge-contract.v2",
+  "package": "A0 interchange owner ports",
+  "reviewState": "proposed-independent-spec",
+  "owner": "A0",
+  "activeLeafScope": "A0-owner-only",
+  "ownerLeaf": "jcpe-94yu.1",
+  "prospectiveConsumer": "E0-v2",
+  "semanticBindingLeaf": "jcpe-milestone-reliable-studio-l3a.8.4",
+  "semanticBindingStatus": "unbound-pending-explicit-project-owner-acceptance",
+  "contractModule": "src/application/application-interchange-owner-contract.ts",
+  "productionImplementationAvailableWhenAuthored": false,
+  "browserProofClaim": false,
+  "humanAcceptanceClaim": false,
+  "productionOutputUsedAsOracle": false,
+  "expectedValuesGenerated": false,
+  "operationNames": [
+    "prepareImportReplacementPublication",
+    "discardImportReplacementPublication",
+    "publishImportReplacement",
+    "readCurrentApplicationDocumentIdentity",
+    "publishCanonicalExportRevision"
+  ],
+  "ports": {
+    "prepareImportReplacementPublication": {
+      "synchronous": true,
+      "typedProducerRefusal": true,
+      "consumerRawResultRequiresValidation": true,
+      "consumerReturn": "unknown",
+      "producerReturn": "PrepareImportReplacementPublicationResult",
+      "authority": "controller-closure-current-AppState"
+    },
+    "discardImportReplacementPublication": {
+      "synchronous": true,
+      "typedProducerRefusal": false,
+      "consumerRawResultRequiresValidation": false,
+      "consumerReturn": "DiscardImportReplacementPublicationResult",
+      "producerReturn": "DiscardImportReplacementPublicationResult",
+      "authority": "controller-closure-private-replacement-registry"
+    },
+    "publishImportReplacement": {
+      "synchronous": true,
+      "typedProducerRefusal": true,
+      "consumerRawResultRequiresValidation": true,
+      "consumerReturn": "unknown",
+      "producerReturn": "PublishImportReplacementResult",
+      "authority": "controller-closure-private-replacement-registry"
+    },
+    "readCurrentApplicationDocumentIdentity": {
+      "synchronous": true,
+      "typedProducerRefusal": false,
+      "consumerRawResultRequiresValidation": true,
+      "consumerReturn": "unknown",
+      "producerReturn": "ApplicationDocumentIdentity",
+      "authority": "controller-closure-current-AppState"
+    },
+    "publishCanonicalExportRevision": {
+      "synchronous": true,
+      "typedProducerRefusal": true,
+      "consumerRawResultRequiresValidation": true,
+      "consumerReturn": "unknown",
+      "producerReturn": "PublishCanonicalExportRevisionResult",
+      "authority": "controller-closure-atomic-current-AppState-CAS"
+    }
+  },
+  "replacementRegistry": {
+    "keyFields": ["requestId", "documentId", "baseRevision"],
+    "maximumLiveEntries": 1,
+    "states": ["empty", "prepared"],
+    "allocateOnlyAfterAllFallibleChecks": true,
+    "discardUsesOriginalRequestIdentity": true,
+    "discardIsTotalSynchronousIdempotentNonthrowing": true,
+    "publishConsumesBeforeReturning": true,
+    "replayAndStructuralLookalikeRefused": true,
+    "terminalLiveForRequest": 0
+  },
+  "latestIdentity": {
+    "fields": ["documentId", "revision"],
+    "source": "controller-closure-current-AppState-at-call-time",
+    "promiseAllowed": false,
+    "callerSnapshotAllowed": false,
+    "selectorCacheAllowed": false
+  },
+  "markerCas": {
+    "orderedSteps": [
+      "validate-publication-envelope",
+      "read-controller-current-state",
+      "compare-document-id-and-revision",
+      "replace-exportRevision-only",
+      "install-current-state",
+      "notify-after-install"
+    ],
+    "awaitBetweenCompareAndWriteAllowed": false,
+    "historicalStateSpreadAllowed": false,
+    "successAndRefusalAreStateFree": true,
+    "preservedFields": [
+      "document",
+      "revision",
+      "recovery",
+      "history",
+      "bookmarks",
+      "panels",
+      "dialogs",
+      "quickEntry",
+      "importDraft",
+      "transport",
+      "pendingRequests",
+      "documentTransition",
+      "focusRequest",
+      "notices",
+      "nextSequence"
+    ]
+  },
+  "ownerStateIsolationAndVersionBoundary": {
+    "AppStateAllowedInOwnerRequest": false,
+    "AppStateAllowedInOwnerResult": false,
+    "stateFieldAllowedInOwnerResult": false,
+    "observedBeforeFieldAllowedAcrossOwnerPort": false,
+    "publicAsyncE0ResultPolicySpecifiedByThisLeaf": false,
+    "acceptedE0V1PublicAsyncResultsContainAppState": true,
+    "acceptedE0V1PublicationProtocolFailureContainsLastKnownState": true
+  },
+  "coverageFamilies": [
+    "positive",
+    "negative-near-miss",
+    "stale-concurrent",
+    "malformed-throw",
+    "replay",
+    "transposition-applicability",
+    "mutation"
+  ],
+  "counts": {
+    "replacementCases": 30,
+    "identityCases": 6,
+    "markerCases": 12,
+    "applicabilityRows": 5,
+    "mutationControls": 24,
+    "traces": 5,
+    "authorities": 5
+  },
+  "acceptedE0V1VersionBoundary": {
+    "acceptedVersion": "E0-v1",
+    "acceptedCommit": "a91b5bc5e70c2bf40dff97211d3c0f4ba63f58fd",
+    "acceptanceRecord": "docs/evidence/E0_GOLDEN_PACKET_REVIEW.md",
+    "archivalAuthorityStatus": "immutable-accepted-by-project-owner",
+    "immutableAuthorityClasses": [
+      "documentation",
+      "source",
+      "validator",
+      "tests",
+      "support",
+      "fixtures",
+      "review"
+    ],
+    "bridgeMayReinterpret": false,
+    "bridgeMaySupersede": false,
+    "bridgeMayAmend": false,
+    "semanticCompatibilityClaim": false,
+    "semanticBindingLeaf": "jcpe-milestone-reliable-studio-l3a.8.4",
+    "semanticBindingRequiresExplicitProjectOwnerAcceptance": true,
+    "immutableArtifactPins": [
+      {
+        "role": "documentation",
+        "path": "docs/E0_INTERCHANGE_CONTRACT.md",
+        "sha256": "b46824f731fe2a632f994e09aa8bb19e510c83f572a73a23b7c2c09f455d1ca3"
+      },
+      {
+        "role": "export-source",
+        "path": "src/export/interchange-contract.ts",
+        "sha256": "5c7a0a962ece42ea140a602c53a9c7c3853b38ded99bea77b0001c56d08524de"
+      },
+      {
+        "role": "application-source",
+        "path": "src/application/e0-interchange-contract.ts",
+        "sha256": "32a51ef9eac0948a069fc3498348562f70e7703b430f9e1ad9c9961fe53cf10a"
+      },
+      {
+        "role": "validator",
+        "path": "scripts/validate-e0-contract.ts",
+        "sha256": "d0e7c80b0a7cea1e1ce11443b148eadcdfd7c02a0855f06ab5761580c7a12e4b"
+      },
+      {
+        "role": "static-test",
+        "path": "tests/static/e0-contract.test.ts",
+        "sha256": "13422e127091fa6c9118439c52fe0725e6ff74ab94b89be347aedafae0b80063"
+      },
+      {
+        "role": "test-support",
+        "path": "tests/support/e0-interchange-fixture.ts",
+        "sha256": "cda73a5421b2635d1feb845ad39e1681920eddbf9d09f51b0ed624b19e06d522"
+      },
+      {
+        "role": "acceptance-review",
+        "path": "docs/evidence/E0_GOLDEN_PACKET_REVIEW.md",
+        "sha256": "a11d79fe73811364d3d631f2a5b2d9d1fcce0f79fdc3ed64472d5980a2397693"
+      }
+    ]
+  },
+  "acceptedE0V1ConflictInventory": [
+    {
+      "id": "E0V1-CONFLICT-IMPORT-REQUEST-CURRENT-STATE",
+      "acceptedV1Type": "CommitImportReplacementRequest",
+      "acceptedV1Fields": ["currentState"],
+      "acceptedV1FieldTypes": ["AppState"],
+      "proposedOwnerType": "PrepareImportReplacementPublicationRequest",
+      "proposedOwnerFields": [],
+      "status": "unresolved-versioned-semantic-delta"
+    },
+    {
+      "id": "E0V1-CONFLICT-IMPORT-PREVIEW-PROJECTION",
+      "acceptedV1Type": "CommitImportReplacementRequest",
+      "acceptedV1Field": "preview",
+      "acceptedV1FieldTypes": [
+        "RetainedImportPreview",
+        "ExplicitlyUnavailableImportPreview"
+      ],
+      "proposedOwnerType": "PrepareImportReplacementPublicationRequest",
+      "proposedOwnerProjectedFields": [
+        "identity",
+        "sourceFormat",
+        "replacementOrigin",
+        "candidate",
+        "replacementCommandSeed",
+        "disclosedImpact",
+        "currentTransition",
+        "nonUndoableConfirmation"
+      ],
+      "status": "unresolved-versioned-semantic-delta"
+    },
+    {
+      "id": "E0V1-CONFLICT-IMPORT-SUCCESS-PUBLICATION-STATE",
+      "acceptedV1OuterType": "CommitImportReplacementResult",
+      "acceptedV1NestedType": "PublishImportReplacementResult",
+      "acceptedV1Path": ["publication", "state"],
+      "acceptedV1FieldType": "AppState",
+      "proposedOwnerType": "PublishImportReplacementResult",
+      "proposedOwnerFields": [
+        "identity",
+        "documentId",
+        "revision",
+        "effects",
+        "counters",
+        "liveForRequest"
+      ],
+      "status": "unresolved-versioned-semantic-delta"
+    },
+    {
+      "id": "E0V1-CONFLICT-IMPORT-REFUSAL-STATE",
+      "acceptedV1Type": "CommitImportReplacementResult",
+      "acceptedV1AffectedVariants": 4,
+      "acceptedV1Variants": [
+        "pre-retirement-refusal",
+        "import.replacement_preparation_result_invalid",
+        "retirement-refusal",
+        "transport.replacement_retirement_evidence_invalid"
+      ],
+      "acceptedV1Fields": ["state"],
+      "acceptedV1FieldTypes": ["AppState"],
+      "proposedOwnerType": "PublishImportReplacementResult",
+      "proposedOwnerFields": ["observedDocumentId", "observedRevision"],
+      "status": "unresolved-versioned-semantic-delta"
+    },
+    {
+      "id": "E0V1-CONFLICT-PUBLICATION-PROTOCOL-LAST-KNOWN-STATE",
+      "acceptedV1Type": "CommitImportReplacementResult",
+      "acceptedV1Variant": "import.replacement_publication_result_invalid",
+      "acceptedV1Fields": ["lastKnownState"],
+      "acceptedV1FieldTypes": ["AppState"],
+      "proposedOwnerType": "PublishImportReplacementResult",
+      "proposedOwnerFields": ["observedDocumentId", "observedRevision"],
+      "status": "unresolved-versioned-semantic-delta"
+    },
+    {
+      "id": "E0V1-CONFLICT-RAW-MARKER-STATES",
+      "acceptedV1Type": "A0CanonicalExportRevisionPublicationAdapterResult",
+      "acceptedV1SuccessFields": ["ok", "outcome", "observedBefore", "state"],
+      "acceptedV1RefusalFields": ["ok", "outcome", "code", "state"],
+      "proposedOwnerType": "PublishCanonicalExportRevisionResult",
+      "proposedOwnerResultIsStateFree": true,
+      "status": "unresolved-versioned-semantic-delta"
+    },
+    {
+      "id": "E0V1-CONFLICT-WIDENED-PREPARATION-REFUSALS",
+      "acceptedV1Type": "PrepareImportReplacementPublicationResult",
+      "acceptedV1RefusalCodes": [
+        "import.confirmation_stale",
+        "import.confirmation_wrong_document",
+        "import.replacement_impact_unavailable",
+        "import.confirmation_impact_mismatch",
+        "import.confirmation_identity_mismatch",
+        "history.nonundoable_confirmation_required"
+      ],
+      "proposedOwnerAddedRefusalCodes": [
+        "import.replacement_request_invalid",
+        "import.replacement_request_stale",
+        "import.replacement_wrong_document",
+        "import.replacement_transition_mismatch",
+        "import.replacement_command_id_invalid",
+        "import.replacement_command_label_invalid",
+        "import.replacement_logical_time_invalid",
+        "application.revision_exhausted",
+        "application.sequence_exhausted",
+        "import.candidate_structural_invalid",
+        "import.candidate_semantic_invalid",
+        "import.replacement_history_estimate_failed",
+        "import.replacement_impact_mismatch",
+        "import.replacement_preparation_busy"
+      ],
+      "acceptedV1RefusalCount": 6,
+      "proposedOwnerRefusalCount": 20,
+      "status": "unresolved-versioned-semantic-delta"
+    },
+    {
+      "id": "E0V1-CONFLICT-REPLACEMENT-PUBLICATION-REFUSALS",
+      "acceptedV1Type": "PublishImportReplacementResult",
+      "acceptedV1NormalRefusalCodes": [],
+      "proposedOwnerRefusalCodes": [
+        "import.replacement_preparation_missing",
+        "import.replacement_preparation_stale",
+        "import.replacement_retirement_mismatch"
+      ],
+      "status": "unresolved-versioned-semantic-delta"
+    },
+    {
+      "id": "E0V1-CONFLICT-PUBLIC-MARKER-REQUEST-STATE",
+      "acceptedV1PreparationType": "PrepareCanonicalExportDeliveryRequest",
+      "acceptedV1PreparationFields": ["state"],
+      "acceptedV1CompletionType": "CompleteCanonicalExportMarkerSettlementRequest",
+      "acceptedV1CompletionFields": [
+        "state",
+        "preparationId",
+        "deliveryPreference"
+      ],
+      "proposedOwnerPortRequestType": "PublishCanonicalExportRevisionRequest",
+      "proposedOwnerPortRequestFields": ["publication"],
+      "futurePublicE0ShapeSpecifiedByThisLeaf": false,
+      "status": "unresolved-versioned-semantic-delta"
+    }
+  ],
+  "proofRequirements": {
+    "literalBeforeRequestResultAfter": true,
+    "fullStateReferencesMustResolveToValidatedLiterals": true,
+    "computedBeforeAfterDiffMustEqualDeclaredExactDelta": true,
+    "exactRegistryTransitionSequenceRequired": true,
+    "preparedRegistryMustContainCompletePrecomputedPublicationMaterial": true,
+    "literalEventOrderRequired": true,
+    "completeExactWorkCountersRequired": true,
+    "baseTransposedAndInverseHashesRequired": true,
+    "manualAndFrozenPitchBytesRequired": true,
+    "literalMutationBaselineAndChangedObservationsRequired": true,
+    "mutationTargetAndDerivedObservationMustBeDistinct": true,
+    "forwardE0V2RowsExcludedFromA0OwnerProof": true,
+    "proseOrBareIdsAreProof": false
+  },
+  "acceptedE0Pins": {
+    "version": "E0-v1",
+    "fileCount": 16,
+    "byteManifestDigest": "8c48f2ab156c702e877f3bec7f3acd51763dc1448cc696232a4761160ba7a9e9",
+    "semanticDigest": "0455fe8afa398e9f5cbafa3209d563ad72365435b4cd4f896477271a06027ccc",
+    "fixtureBytesMayChangeForThisOwnerSpec": false
+  }
+}

@@ -1,0 +1,85 @@
+{
+  "schema": "changes.fixtures.a0-e0-bridge-provenance-ledger.v2",
+  "reviewState": "proposed-independent-spec",
+  "expertReviewClaim": false,
+  "humanAcceptanceClaim": false,
+  "versionBoundary": {
+    "activeLeafScope": "A0-owner-only",
+    "acceptedE0V1Status": "immutable-archival-accepted-authority",
+    "semanticCompatibilityClaim": false,
+    "semanticBindingClaim": false,
+    "semanticBindingLeaf": "jcpe-milestone-reliable-studio-l3a.8.4",
+    "semanticBindingRequiresExplicitProjectOwnerAcceptance": true,
+    "productionClaim": false,
+    "browserClaim": false
+  },
+  "authorities": [
+    {
+      "id": "BRIDGE-AUTH-PLAN",
+      "authorityClass": "architecture",
+      "sourceKind": "repository-contract",
+      "sourceRef": "docs/REBUILD_PLAN.md#14.4",
+      "scope": "A0 owner authority, state-free CAS, and dependency phase order",
+      "judgmentBearing": true,
+      "reviewState": "repository-authority"
+    },
+    {
+      "id": "BRIDGE-AUTH-A0",
+      "authorityClass": "package-contract",
+      "sourceKind": "repository-contract",
+      "sourceRef": "docs/A0_APPLICATION_CONTRACT.md",
+      "scope": "current AppState ownership, command publication, history, bookmark, and marker invariants",
+      "judgmentBearing": true,
+      "reviewState": "reviewed-specification-authority"
+    },
+    {
+      "id": "BRIDGE-AUTH-E0",
+      "authorityClass": "archival-consumer-contract",
+      "sourceKind": "accepted-repository-contract",
+      "sourceRef": "docs/E0_INTERCHANGE_CONTRACT.md",
+      "scope": "immutable E0 v1 shapes and conflict inventory only; grants no compatibility, reinterpretation, supersession, or semantic binding authority to this A0 owner proposal",
+      "judgmentBearing": false,
+      "reviewState": "accepted-first-golden-by-project-owner"
+    },
+    {
+      "id": "BRIDGE-AUTH-BEAD",
+      "authorityClass": "work-package",
+      "sourceKind": "tracker-contract",
+      "sourceRef": "jcpe-94yu.1",
+      "scope": "exact owner-port scope and acceptance criteria",
+      "judgmentBearing": true,
+      "reviewState": "active-P0-leaf"
+    },
+    {
+      "id": "BRIDGE-AUTH-INDEPENDENT",
+      "authorityClass": "independent-fixture",
+      "sourceKind": "hand-authored-declarative-oracle",
+      "sourceRef": "tests/fixtures/a0-e0-bridge/owner-port-cases.json",
+      "scope": "positive, near-miss, stale, malformed, replay, transposition, applicability, and mutation evidence",
+      "judgmentBearing": false,
+      "reviewState": "proposed-independent-spec"
+    }
+  ],
+  "independence": {
+    "productionImportsForbidden": true,
+    "productionOutputUsedAsOracle": false,
+    "expectedValuesGenerated": false,
+    "fixturesHandAuthored": true,
+    "acceptedE0FixturesRewritten": false,
+    "acceptedE0BytePinsRecomputedToPermitDrift": false,
+    "acceptedE0V1DocsSourceValidatorTestsSupportOrReviewRewritten": false,
+    "acceptedE0V1SemanticsReinterpreted": false,
+    "semanticCompatibilityClaim": false,
+    "semanticE0BindingClaimed": false,
+    "semanticBindingDeferredTo": "jcpe-milestone-reliable-studio-l3a.8.4",
+    "semanticBindingRequiresExplicitProjectOwnerAcceptance": true,
+    "bridgeProductionImplementationAvailableWhenAuthored": false,
+    "controllerImplementationClaimed": false,
+    "browserOrRealAdapterProofClaimed": false,
+    "unknownFallibleReturnNormalizationClaimed": false,
+    "cleanupExactTotalOperation": true,
+    "proposedOwnerResultsContainAppState": false,
+    "wallTimeAffectsOutcome": false,
+    "musicalContentInspectedByIdentityOrMarkerPorts": false
+  }
+}

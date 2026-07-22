@@ -2752,9 +2752,12 @@ The CAS validates the publication and compares document/revision against the
 latest state inside one operation, preserves unrelated current fields, and
 returns only a state-free receipt or refusal. Public asynchronous E0 results
 never return `AppState`, so a late A1 completion cannot reinstall historical
-state over a newer edit. The phase DAG is E0/spec -> A0/E0 bridge spec/build ->
-E0/build -> A0/E0 bridge verify -> E0/verify; the bridge verification exercises
-the real controller and E0 composition boundary.
+state over a newer edit. The accepted E0 v1 packet predates this exact owner
+surface and remains immutable archival authority; it is not silently
+reinterpreted as compatible. The phase DAG is accepted E0 v1 -> A0 owner bridge
+spec -> explicitly accepted E0 v2 binding -> A0 bridge build -> E0/build -> A0/E0
+bridge verify -> E0/verify. The bridge verification exercises the real
+controller and E0 composition boundary.
 
 ### 14.5 Derived state
 

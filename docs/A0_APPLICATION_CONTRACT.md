@@ -29,6 +29,17 @@ The public type surface is
 `src/application/application-state-contract.ts`. Production implementation will
 live in application modules and be re-exported through `src/application/index.ts`.
 
+The proposed E0 authority addendum is
+`docs/A0_E0_OWNER_PORTS_CONTRACT.md`, with its cycle-free type surface in
+`src/application/application-interchange-owner-contract.ts`. It specifies the
+five composition-private controller capabilities for import replacement,
+latest identity, and atomic export-marker publication. The addendum contains no
+production implementation and does not widen `StudioController` or permit
+`AppState` to cross an asynchronous consumer result. Accepted E0 v1 is not
+bound to these ports; the separately versioned E0 v2 amendment tracked by
+`jcpe-milestone-reliable-studio-l3a.8.4` owns that future semantic migration
+and requires explicit project-owner acceptance.
+
 ## 2. Authoritative and derived state
 
 `AppState.document` is the only musical source of truth. `revision` is a

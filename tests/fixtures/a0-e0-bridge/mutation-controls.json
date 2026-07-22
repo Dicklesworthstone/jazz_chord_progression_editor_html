@@ -1,0 +1,752 @@
+{
+  "schema": "changes.fixtures.a0-e0-bridge-mutation-controls.v2",
+  "reviewState": "proposed-independent-literal-spec",
+  "controls": [
+    {
+      "id": "BRIDGE-MUT-001",
+      "category": "registry-key",
+      "target": {
+        "caseId": "BRIDGE-REP-005",
+        "runId": "exact-refusal",
+        "materialization": "exactTypedResult"
+      },
+      "patch": {
+        "operator": "replace",
+        "jsonPointer": "/ok",
+        "from": false,
+        "to": true,
+        "exactChangedFieldCount": 1
+      },
+      "baselineObservation": { "jsonPointer": "/ok", "value": false },
+      "mutantObservation": { "jsonPointer": "/ok", "value": true },
+      "exactExpectedDifference": {
+        "jsonPointer": "/ok",
+        "from": false,
+        "to": true
+      },
+      "linkedCaseIds": ["BRIDGE-REP-004", "BRIDGE-REP-005", "BRIDGE-REP-028"],
+      "authorityIds": ["BRIDGE-AUTH-PLAN", "BRIDGE-AUTH-BEAD"]
+    },
+    {
+      "id": "BRIDGE-MUT-002",
+      "category": "registry-bound",
+      "target": {
+        "caseId": "BRIDGE-REP-024",
+        "runId": "capacity-one-busy",
+        "materialization": "exactTypedResult"
+      },
+      "patch": {
+        "operator": "replace",
+        "jsonPointer": "/ok",
+        "from": false,
+        "to": true,
+        "exactChangedFieldCount": 1
+      },
+      "baselineObservation": { "jsonPointer": "/ok", "value": false },
+      "mutantObservation": { "jsonPointer": "/ok", "value": true },
+      "exactExpectedDifference": {
+        "jsonPointer": "/ok",
+        "from": false,
+        "to": true
+      },
+      "linkedCaseIds": ["BRIDGE-REP-001", "BRIDGE-REP-024"],
+      "authorityIds": ["BRIDGE-AUTH-PLAN", "BRIDGE-AUTH-BEAD"]
+    },
+    {
+      "id": "BRIDGE-MUT-003",
+      "category": "cleanup-isolation",
+      "target": {
+        "caseId": "BRIDGE-REP-028",
+        "runId": "wrong-request-isolation",
+        "materialization": "registryAfter"
+      },
+      "patch": {
+        "operator": "replace",
+        "jsonPointer": "/entries/0/status",
+        "from": "prepared",
+        "to": "invalidated",
+        "exactChangedFieldCount": 1
+      },
+      "baselineObservation": {
+        "jsonPointer": "/entries/0/status",
+        "value": "prepared"
+      },
+      "mutantObservation": {
+        "jsonPointer": "/entries/0/status",
+        "value": "invalidated"
+      },
+      "exactExpectedDifference": {
+        "jsonPointer": "/entries/0/status",
+        "from": "prepared",
+        "to": "invalidated"
+      },
+      "linkedCaseIds": ["BRIDGE-REP-028"],
+      "authorityIds": ["BRIDGE-AUTH-BEAD", "BRIDGE-AUTH-INDEPENDENT"]
+    },
+    {
+      "id": "BRIDGE-MUT-004",
+      "category": "cleanup-totality",
+      "target": {
+        "caseId": "BRIDGE-REP-027",
+        "runId": "preparation-protocol-invalid-repeat",
+        "materialization": "exactTypedResult"
+      },
+      "patch": {
+        "operator": "replace",
+        "jsonPointer": "/liveForRequest",
+        "from": 0,
+        "to": 1,
+        "exactChangedFieldCount": 1
+      },
+      "baselineObservation": {
+        "jsonPointer": "/liveForRequest",
+        "value": 0
+      },
+      "mutantObservation": {
+        "jsonPointer": "/liveForRequest",
+        "value": 1
+      },
+      "exactExpectedDifference": {
+        "jsonPointer": "/liveForRequest",
+        "from": 0,
+        "to": 1
+      },
+      "linkedCaseIds": ["BRIDGE-REP-025", "BRIDGE-REP-026", "BRIDGE-REP-027"],
+      "authorityIds": ["BRIDGE-AUTH-PLAN", "BRIDGE-AUTH-E0"]
+    },
+    {
+      "id": "BRIDGE-MUT-005",
+      "category": "publication-authority",
+      "target": {
+        "caseId": "BRIDGE-REP-030",
+        "runId": "structural-lookalike",
+        "materialization": "exactTypedResult"
+      },
+      "patch": {
+        "operator": "replace",
+        "jsonPointer": "/ok",
+        "from": false,
+        "to": true,
+        "exactChangedFieldCount": 1
+      },
+      "baselineObservation": { "jsonPointer": "/ok", "value": false },
+      "mutantObservation": { "jsonPointer": "/ok", "value": true },
+      "exactExpectedDifference": {
+        "jsonPointer": "/ok",
+        "from": false,
+        "to": true
+      },
+      "linkedCaseIds": ["BRIDGE-REP-029", "BRIDGE-REP-030"],
+      "authorityIds": ["BRIDGE-AUTH-PLAN", "BRIDGE-AUTH-E0"]
+    },
+    {
+      "id": "BRIDGE-MUT-006",
+      "category": "replay",
+      "target": {
+        "caseId": "BRIDGE-REP-030",
+        "runId": "consumed-replay",
+        "materialization": "exactTypedResult"
+      },
+      "patch": {
+        "operator": "replace",
+        "jsonPointer": "/ok",
+        "from": false,
+        "to": true,
+        "exactChangedFieldCount": 1
+      },
+      "baselineObservation": { "jsonPointer": "/ok", "value": false },
+      "mutantObservation": { "jsonPointer": "/ok", "value": true },
+      "exactExpectedDifference": {
+        "jsonPointer": "/ok",
+        "from": false,
+        "to": true
+      },
+      "linkedCaseIds": ["BRIDGE-REP-030"],
+      "authorityIds": ["BRIDGE-AUTH-PLAN", "BRIDGE-AUTH-BEAD"]
+    },
+    {
+      "id": "BRIDGE-MUT-007",
+      "category": "candidate-validation",
+      "target": {
+        "caseId": "BRIDGE-REP-018",
+        "runId": "exact-refusal",
+        "materialization": "exactCounters"
+      },
+      "patch": {
+        "operator": "replace",
+        "jsonPointer": "/f2DecodeDocumentShape",
+        "from": 1,
+        "to": 0,
+        "exactChangedFieldCount": 1
+      },
+      "baselineObservation": {
+        "jsonPointer": "/f2DecodeDocumentShape",
+        "value": 1
+      },
+      "mutantObservation": {
+        "jsonPointer": "/f2DecodeDocumentShape",
+        "value": 0
+      },
+      "exactExpectedDifference": {
+        "jsonPointer": "/f2DecodeDocumentShape",
+        "from": 1,
+        "to": 0
+      },
+      "linkedCaseIds": [
+        "BRIDGE-REP-001",
+        "BRIDGE-REP-016",
+        "BRIDGE-REP-018",
+        "BRIDGE-REP-029"
+      ],
+      "authorityIds": ["BRIDGE-AUTH-A0", "BRIDGE-AUTH-BEAD"]
+    },
+    {
+      "id": "BRIDGE-MUT-008",
+      "category": "candidate-validation",
+      "target": {
+        "caseId": "BRIDGE-REP-019",
+        "runId": "exact-refusal",
+        "materialization": "exactCounters"
+      },
+      "patch": {
+        "operator": "replace",
+        "jsonPointer": "/f3ValidateDocumentSemantics",
+        "from": 1,
+        "to": 0,
+        "exactChangedFieldCount": 1
+      },
+      "baselineObservation": {
+        "jsonPointer": "/f3ValidateDocumentSemantics",
+        "value": 1
+      },
+      "mutantObservation": {
+        "jsonPointer": "/f3ValidateDocumentSemantics",
+        "value": 0
+      },
+      "exactExpectedDifference": {
+        "jsonPointer": "/f3ValidateDocumentSemantics",
+        "from": 1,
+        "to": 0
+      },
+      "linkedCaseIds": ["BRIDGE-REP-001", "BRIDGE-REP-019", "BRIDGE-REP-029"],
+      "authorityIds": ["BRIDGE-AUTH-A0", "BRIDGE-AUTH-BEAD"]
+    },
+    {
+      "id": "BRIDGE-MUT-009",
+      "category": "history-impact",
+      "target": {
+        "caseId": "BRIDGE-REP-020",
+        "runId": "exact-refusal",
+        "materialization": "exactCounters"
+      },
+      "patch": {
+        "operator": "replace",
+        "jsonPointer": "/historyEstimator",
+        "from": 1,
+        "to": 0,
+        "exactChangedFieldCount": 1
+      },
+      "baselineObservation": {
+        "jsonPointer": "/historyEstimator",
+        "value": 1
+      },
+      "mutantObservation": {
+        "jsonPointer": "/historyEstimator",
+        "value": 0
+      },
+      "exactExpectedDifference": {
+        "jsonPointer": "/historyEstimator",
+        "from": 1,
+        "to": 0
+      },
+      "linkedCaseIds": [
+        "BRIDGE-REP-001",
+        "BRIDGE-REP-017",
+        "BRIDGE-REP-020",
+        "BRIDGE-REP-021",
+        "BRIDGE-REP-029"
+      ],
+      "authorityIds": ["BRIDGE-AUTH-A0", "BRIDGE-AUTH-E0"]
+    },
+    {
+      "id": "BRIDGE-MUT-010",
+      "category": "state-authority",
+      "target": {
+        "caseId": "BRIDGE-REP-006",
+        "runId": "exact-refusal",
+        "materialization": "exactTypedResult"
+      },
+      "patch": {
+        "operator": "replace",
+        "jsonPointer": "/code",
+        "from": "import.replacement_request_stale",
+        "to": "import.replacement_request_current",
+        "exactChangedFieldCount": 1
+      },
+      "baselineObservation": {
+        "jsonPointer": "/code",
+        "value": "import.replacement_request_stale"
+      },
+      "mutantObservation": {
+        "jsonPointer": "/code",
+        "value": "import.replacement_request_current"
+      },
+      "exactExpectedDifference": {
+        "jsonPointer": "/code",
+        "from": "import.replacement_request_stale",
+        "to": "import.replacement_request_current"
+      },
+      "linkedCaseIds": ["BRIDGE-REP-006", "BRIDGE-REP-021"],
+      "authorityIds": ["BRIDGE-AUTH-PLAN", "BRIDGE-AUTH-BEAD"]
+    },
+    {
+      "id": "BRIDGE-MUT-011",
+      "category": "transition-binding",
+      "target": {
+        "caseId": "BRIDGE-REP-009",
+        "runId": "exact-refusal",
+        "materialization": "exactTypedResult"
+      },
+      "patch": {
+        "operator": "replace",
+        "jsonPointer": "/code",
+        "from": "import.replacement_transition_mismatch",
+        "to": "import.replacement_request_stale",
+        "exactChangedFieldCount": 1
+      },
+      "baselineObservation": {
+        "jsonPointer": "/code",
+        "value": "import.replacement_transition_mismatch"
+      },
+      "mutantObservation": {
+        "jsonPointer": "/code",
+        "value": "import.replacement_request_stale"
+      },
+      "exactExpectedDifference": {
+        "jsonPointer": "/code",
+        "from": "import.replacement_transition_mismatch",
+        "to": "import.replacement_request_stale"
+      },
+      "linkedCaseIds": [
+        "BRIDGE-REP-009",
+        "BRIDGE-REP-010",
+        "BRIDGE-REP-011",
+        "BRIDGE-REP-030"
+      ],
+      "authorityIds": ["BRIDGE-AUTH-PLAN", "BRIDGE-AUTH-E0"]
+    },
+    {
+      "id": "BRIDGE-MUT-012",
+      "category": "confirmation",
+      "target": {
+        "caseId": "BRIDGE-REP-022",
+        "runId": "exact-refusal",
+        "materialization": "exactTypedResult"
+      },
+      "patch": {
+        "operator": "replace",
+        "jsonPointer": "/code",
+        "from": "history.nonundoable_confirmation_required",
+        "to": "import.replacement_impact_mismatch",
+        "exactChangedFieldCount": 1
+      },
+      "baselineObservation": {
+        "jsonPointer": "/code",
+        "value": "history.nonundoable_confirmation_required"
+      },
+      "mutantObservation": {
+        "jsonPointer": "/code",
+        "value": "import.replacement_impact_mismatch"
+      },
+      "exactExpectedDifference": {
+        "jsonPointer": "/code",
+        "from": "history.nonundoable_confirmation_required",
+        "to": "import.replacement_impact_mismatch"
+      },
+      "linkedCaseIds": [
+        "BRIDGE-REP-002",
+        "BRIDGE-REP-012",
+        "BRIDGE-REP-022",
+        "BRIDGE-REP-023"
+      ],
+      "authorityIds": ["BRIDGE-AUTH-A0", "BRIDGE-AUTH-E0"]
+    },
+    {
+      "id": "BRIDGE-MUT-013",
+      "category": "latest-identity",
+      "target": {
+        "caseId": "BRIDGE-ID-003",
+        "runId": "identity-3",
+        "materialization": "exactTypedResult"
+      },
+      "patch": {
+        "operator": "replace",
+        "jsonPointer": "/revision",
+        "from": 8,
+        "to": 7,
+        "exactChangedFieldCount": 1
+      },
+      "baselineObservation": { "jsonPointer": "/revision", "value": 8 },
+      "mutantObservation": { "jsonPointer": "/revision", "value": 7 },
+      "exactExpectedDifference": {
+        "jsonPointer": "/revision",
+        "from": 8,
+        "to": 7
+      },
+      "linkedCaseIds": [
+        "BRIDGE-ID-001",
+        "BRIDGE-ID-002",
+        "BRIDGE-ID-003",
+        "BRIDGE-ID-004"
+      ],
+      "authorityIds": ["BRIDGE-AUTH-PLAN", "BRIDGE-AUTH-BEAD"]
+    },
+    {
+      "id": "BRIDGE-MUT-014",
+      "category": "latest-identity",
+      "target": {
+        "caseId": "BRIDGE-ID-001",
+        "runId": "baseline",
+        "materialization": "rawCall"
+      },
+      "patch": {
+        "operator": "replace",
+        "jsonPointer": "/invocation",
+        "from": "synchronous",
+        "to": "asynchronous",
+        "exactChangedFieldCount": 1
+      },
+      "baselineObservation": {
+        "jsonPointer": "/invocation",
+        "value": "synchronous"
+      },
+      "mutantObservation": {
+        "jsonPointer": "/invocation",
+        "value": "asynchronous"
+      },
+      "exactExpectedDifference": {
+        "jsonPointer": "/invocation",
+        "from": "synchronous",
+        "to": "asynchronous"
+      },
+      "linkedCaseIds": ["BRIDGE-ID-001", "BRIDGE-ID-006"],
+      "authorityIds": ["BRIDGE-AUTH-PLAN", "BRIDGE-AUTH-E0"]
+    },
+    {
+      "id": "BRIDGE-MUT-015",
+      "category": "marker-cas",
+      "target": {
+        "caseId": "BRIDGE-MARK-004",
+        "runId": "marker-4",
+        "materialization": "exactTypedResult"
+      },
+      "patch": {
+        "operator": "replace",
+        "jsonPointer": "/ok",
+        "from": false,
+        "to": true,
+        "exactChangedFieldCount": 1
+      },
+      "baselineObservation": { "jsonPointer": "/ok", "value": false },
+      "mutantObservation": { "jsonPointer": "/ok", "value": true },
+      "exactExpectedDifference": {
+        "jsonPointer": "/ok",
+        "from": false,
+        "to": true
+      },
+      "linkedCaseIds": ["BRIDGE-MARK-001", "BRIDGE-MARK-004"],
+      "authorityIds": ["BRIDGE-AUTH-PLAN", "BRIDGE-AUTH-BEAD"]
+    },
+    {
+      "id": "BRIDGE-MUT-016",
+      "category": "marker-cas",
+      "target": {
+        "caseId": "BRIDGE-MARK-003",
+        "runId": "marker-3",
+        "materialization": "exactTypedResult"
+      },
+      "patch": {
+        "operator": "replace",
+        "jsonPointer": "/ok",
+        "from": false,
+        "to": true,
+        "exactChangedFieldCount": 1
+      },
+      "baselineObservation": { "jsonPointer": "/ok", "value": false },
+      "mutantObservation": { "jsonPointer": "/ok", "value": true },
+      "exactExpectedDifference": {
+        "jsonPointer": "/ok",
+        "from": false,
+        "to": true
+      },
+      "linkedCaseIds": ["BRIDGE-MARK-001", "BRIDGE-MARK-003"],
+      "authorityIds": ["BRIDGE-AUTH-PLAN", "BRIDGE-AUTH-BEAD"]
+    },
+    {
+      "id": "BRIDGE-MUT-017",
+      "category": "marker-atomicity",
+      "target": {
+        "caseId": "BRIDGE-MARK-009",
+        "runId": "marker-9",
+        "materialization": "workBound"
+      },
+      "patch": {
+        "operator": "replace",
+        "jsonPointer": "/awaitOrMicrotaskBoundariesInsideOperation",
+        "from": 0,
+        "to": 1,
+        "exactChangedFieldCount": 1
+      },
+      "baselineObservation": {
+        "jsonPointer": "/awaitOrMicrotaskBoundariesInsideOperation",
+        "value": 0
+      },
+      "mutantObservation": {
+        "jsonPointer": "/awaitOrMicrotaskBoundariesInsideOperation",
+        "value": 1
+      },
+      "exactExpectedDifference": {
+        "jsonPointer": "/awaitOrMicrotaskBoundariesInsideOperation",
+        "from": 0,
+        "to": 1
+      },
+      "linkedCaseIds": ["BRIDGE-MARK-009"],
+      "authorityIds": ["BRIDGE-AUTH-PLAN", "BRIDGE-AUTH-INDEPENDENT"]
+    },
+    {
+      "id": "BRIDGE-MUT-018",
+      "category": "historical-state",
+      "target": {
+        "caseId": "BRIDGE-MARK-002",
+        "runId": "marker-2",
+        "materialization": "controllerStateAfter"
+      },
+      "patch": {
+        "operator": "replace",
+        "jsonPointer": "/panels/active",
+        "from": "inspector",
+        "to": "chart",
+        "exactChangedFieldCount": 1
+      },
+      "baselineObservation": {
+        "jsonPointer": "/panels/active",
+        "value": "inspector"
+      },
+      "mutantObservation": {
+        "jsonPointer": "/panels/active",
+        "value": "chart"
+      },
+      "exactExpectedDifference": {
+        "jsonPointer": "/panels/active",
+        "from": "inspector",
+        "to": "chart"
+      },
+      "linkedCaseIds": [
+        "BRIDGE-MARK-002",
+        "BRIDGE-MARK-010",
+        "BRIDGE-MARK-011"
+      ],
+      "authorityIds": ["BRIDGE-AUTH-PLAN", "BRIDGE-AUTH-E0"]
+    },
+    {
+      "id": "BRIDGE-MUT-019",
+      "category": "state-isolation",
+      "target": {
+        "caseId": "BRIDGE-MARK-010",
+        "runId": "marker-10",
+        "materialization": "controllerStateAfter"
+      },
+      "patch": {
+        "operator": "replace",
+        "jsonPointer": "/revision",
+        "from": 8,
+        "to": 7,
+        "exactChangedFieldCount": 1
+      },
+      "baselineObservation": { "jsonPointer": "/revision", "value": 8 },
+      "mutantObservation": { "jsonPointer": "/revision", "value": 7 },
+      "exactExpectedDifference": {
+        "jsonPointer": "/revision",
+        "from": 8,
+        "to": 7
+      },
+      "linkedCaseIds": [
+        "BRIDGE-MARK-006",
+        "BRIDGE-MARK-007",
+        "BRIDGE-MARK-010"
+      ],
+      "authorityIds": ["BRIDGE-AUTH-PLAN", "BRIDGE-AUTH-BEAD"]
+    },
+    {
+      "id": "BRIDGE-MUT-020",
+      "category": "field-preservation",
+      "target": {
+        "caseId": "BRIDGE-MARK-001",
+        "runId": "exact",
+        "materialization": "controllerStateAfter"
+      },
+      "patch": {
+        "operator": "replace",
+        "jsonPointer": "/document/title",
+        "from": "Changes",
+        "to": "Changes overwritten by marker",
+        "exactChangedFieldCount": 1
+      },
+      "baselineObservation": {
+        "jsonPointer": "/document/title",
+        "value": "Changes"
+      },
+      "mutantObservation": {
+        "jsonPointer": "/document/title",
+        "value": "Changes overwritten by marker"
+      },
+      "exactExpectedDifference": {
+        "jsonPointer": "/document/title",
+        "from": "Changes",
+        "to": "Changes overwritten by marker"
+      },
+      "linkedCaseIds": [
+        "BRIDGE-MARK-001",
+        "BRIDGE-MARK-002",
+        "BRIDGE-MARK-008",
+        "BRIDGE-MARK-011"
+      ],
+      "authorityIds": ["BRIDGE-AUTH-A0", "BRIDGE-AUTH-BEAD"]
+    },
+    {
+      "id": "BRIDGE-MUT-021",
+      "category": "authority-escape",
+      "target": {
+        "caseId": "BRIDGE-MARK-001",
+        "runId": "exact",
+        "materialization": "rawCall"
+      },
+      "patch": {
+        "operator": "replace",
+        "jsonPointer": "/target",
+        "from": "A0E0InterchangeOwnerOperations",
+        "to": "ApplicationController.dispatch(mark-exported)",
+        "exactChangedFieldCount": 1
+      },
+      "baselineObservation": {
+        "jsonPointer": "/target",
+        "value": "A0E0InterchangeOwnerOperations"
+      },
+      "mutantObservation": {
+        "jsonPointer": "/target",
+        "value": "ApplicationController.dispatch(mark-exported)"
+      },
+      "exactExpectedDifference": {
+        "jsonPointer": "/target",
+        "from": "A0E0InterchangeOwnerOperations",
+        "to": "ApplicationController.dispatch(mark-exported)"
+      },
+      "linkedCaseIds": ["BRIDGE-MARK-001"],
+      "authorityIds": ["BRIDGE-AUTH-A0", "BRIDGE-AUTH-E0"]
+    },
+    {
+      "id": "BRIDGE-MUT-022",
+      "category": "normalization",
+      "target": {
+        "caseId": "BRIDGE-REP-013",
+        "runId": "exact-refusal",
+        "materialization": "exactTypedResult"
+      },
+      "patch": {
+        "operator": "replace",
+        "jsonPointer": "/ok",
+        "from": false,
+        "to": true,
+        "exactChangedFieldCount": 1
+      },
+      "baselineObservation": { "jsonPointer": "/ok", "value": false },
+      "mutantObservation": { "jsonPointer": "/ok", "value": true },
+      "exactExpectedDifference": {
+        "jsonPointer": "/ok",
+        "from": false,
+        "to": true
+      },
+      "linkedCaseIds": [
+        "BRIDGE-REP-007",
+        "BRIDGE-REP-008",
+        "BRIDGE-REP-013",
+        "BRIDGE-REP-014",
+        "BRIDGE-REP-015",
+        "BRIDGE-REP-025",
+        "BRIDGE-ID-005",
+        "BRIDGE-ID-006",
+        "BRIDGE-MARK-005",
+        "BRIDGE-MARK-006",
+        "BRIDGE-MARK-007"
+      ],
+      "authorityIds": ["BRIDGE-AUTH-E0", "BRIDGE-AUTH-BEAD"]
+    },
+    {
+      "id": "BRIDGE-MUT-023",
+      "category": "termination",
+      "target": {
+        "caseId": "BRIDGE-MARK-012",
+        "runId": "marker-12",
+        "materialization": "workBound"
+      },
+      "patch": {
+        "operator": "replace",
+        "jsonPointer": "/wallTimeObservedOrUsed",
+        "from": false,
+        "to": true,
+        "exactChangedFieldCount": 1
+      },
+      "baselineObservation": {
+        "jsonPointer": "/wallTimeObservedOrUsed",
+        "value": false
+      },
+      "mutantObservation": {
+        "jsonPointer": "/wallTimeObservedOrUsed",
+        "value": true
+      },
+      "exactExpectedDifference": {
+        "jsonPointer": "/wallTimeObservedOrUsed",
+        "from": false,
+        "to": true
+      },
+      "linkedCaseIds": ["BRIDGE-MARK-012"],
+      "authorityIds": ["BRIDGE-AUTH-PLAN", "BRIDGE-AUTH-INDEPENDENT"]
+    },
+    {
+      "id": "BRIDGE-MUT-024",
+      "category": "musical-invariance",
+      "target": {
+        "caseId": "BRIDGE-REP-003",
+        "runId": "source-c",
+        "materialization": "rawCall"
+      },
+      "patch": {
+        "operator": "replace",
+        "jsonPointer": "/arguments/0/candidate/sections/0/measures/1/events/0/voicing/pitches/1/alter",
+        "from": -1,
+        "to": 0,
+        "exactChangedFieldCount": 1
+      },
+      "baselineObservation": {
+        "jsonPointer": "/arguments/0/candidate/sections/0/measures/1/events/0/voicing/pitches/1/alter",
+        "value": -1
+      },
+      "mutantObservation": {
+        "jsonPointer": "/arguments/0/candidate/sections/0/measures/1/events/0/voicing/pitches/1/alter",
+        "value": 0
+      },
+      "exactExpectedDifference": {
+        "jsonPointer": "/arguments/0/candidate/sections/0/measures/1/events/0/voicing/pitches/1/alter",
+        "from": -1,
+        "to": 0
+      },
+      "linkedCaseIds": [
+        "BRIDGE-REP-003",
+        "BRIDGE-REP-029",
+        "BRIDGE-ID-004",
+        "BRIDGE-MARK-012"
+      ],
+      "authorityIds": ["BRIDGE-AUTH-A0", "BRIDGE-AUTH-INDEPENDENT"]
+    }
+  ]
+}

@@ -1,0 +1,247 @@
+{
+  "schema": "changes.fixtures.a0-e0-bridge-trace-ledger.v2",
+  "reviewState": "proposed-independent-literal-spec",
+  "traces": [
+    {
+      "id": "BRIDGE-TRACE-PREPARE",
+      "requirement": "Preparation reads controller-owned current state, exhausts every fallible binding, F2, F3, history, bookmark, impact, confirmation, revision, and sequence check before allocating the sole private entry, and returns no AppState.",
+      "operation": "prepareImportReplacementPublication",
+      "caseIds": [
+        "BRIDGE-REP-001",
+        "BRIDGE-REP-002",
+        "BRIDGE-REP-003",
+        "BRIDGE-REP-004",
+        "BRIDGE-REP-005",
+        "BRIDGE-REP-006",
+        "BRIDGE-REP-007",
+        "BRIDGE-REP-008",
+        "BRIDGE-REP-009",
+        "BRIDGE-REP-010",
+        "BRIDGE-REP-011",
+        "BRIDGE-REP-012",
+        "BRIDGE-REP-013",
+        "BRIDGE-REP-014",
+        "BRIDGE-REP-015",
+        "BRIDGE-REP-016",
+        "BRIDGE-REP-017",
+        "BRIDGE-REP-018",
+        "BRIDGE-REP-019",
+        "BRIDGE-REP-020",
+        "BRIDGE-REP-021",
+        "BRIDGE-REP-022",
+        "BRIDGE-REP-023",
+        "BRIDGE-REP-024"
+      ],
+      "forwardE0V2CaseIds": ["BRIDGE-REP-025", "BRIDGE-REP-026"],
+      "controlIds": [
+        "BRIDGE-MUT-001",
+        "BRIDGE-MUT-002",
+        "BRIDGE-MUT-004",
+        "BRIDGE-MUT-007",
+        "BRIDGE-MUT-008",
+        "BRIDGE-MUT-009",
+        "BRIDGE-MUT-010",
+        "BRIDGE-MUT-011",
+        "BRIDGE-MUT-012",
+        "BRIDGE-MUT-022",
+        "BRIDGE-MUT-024"
+      ],
+      "authorityIds": [
+        "BRIDGE-AUTH-PLAN",
+        "BRIDGE-AUTH-A0",
+        "BRIDGE-AUTH-E0",
+        "BRIDGE-AUTH-BEAD",
+        "BRIDGE-AUTH-INDEPENDENT"
+      ],
+      "proofKinds": [
+        "positive",
+        "near-miss",
+        "stale",
+        "malformed-input",
+        "transposition",
+        "mutation"
+      ],
+      "forwardE0V2ProofKinds": ["malformed-return", "throw"],
+      "forwardE0V2Exclusion": {
+        "ownerLeaf": "jcpe-94yu.1",
+        "futureOwnerLeaf": "jcpe-milestone-reliable-studio-l3a.8.4",
+        "excludedFrom": [
+          "A0-owner-case-count",
+          "A0-owner-run-count",
+          "A0-owner-mutation-proof",
+          "typed-producer-conformance"
+        ],
+        "rationale": "Malformed unknown-return normalization and thrown consumer ports belong only to the future E0 v2 semantic binding."
+      },
+      "ownerProofScope": "A0-typed-producer",
+      "forwardE0V2RowsExcludedFromOwnerProof": true
+    },
+    {
+      "id": "BRIDGE-TRACE-DISCARD",
+      "requirement": "Discard is an exact-result synchronous total nonthrowing idempotent operation keyed by the original complete identity; it never clears an unrelated live entry.",
+      "operation": "discardImportReplacementPublication",
+      "caseIds": ["BRIDGE-REP-027", "BRIDGE-REP-028"],
+      "forwardE0V2CaseIds": [],
+      "controlIds": ["BRIDGE-MUT-001", "BRIDGE-MUT-003", "BRIDGE-MUT-004"],
+      "authorityIds": [
+        "BRIDGE-AUTH-PLAN",
+        "BRIDGE-AUTH-E0",
+        "BRIDGE-AUTH-BEAD",
+        "BRIDGE-AUTH-INDEPENDENT"
+      ],
+      "proofKinds": [
+        "positive",
+        "near-miss",
+        "idempotence",
+        "isolation",
+        "mutation"
+      ],
+      "forwardE0V2ProofKinds": [],
+      "forwardE0V2Exclusion": null,
+      "ownerProofScope": "A0-typed-producer",
+      "forwardE0V2RowsExcludedFromOwnerProof": true
+    },
+    {
+      "id": "BRIDGE-TRACE-PUBLISH",
+      "requirement": "Publication requires the exact live private preparation and exact X1 retirement receipt, consumes before returning, publishes once, preserves candidate bytes, and returns only a state-free receipt or refusal.",
+      "operation": "publishImportReplacement",
+      "caseIds": ["BRIDGE-REP-029", "BRIDGE-REP-030"],
+      "forwardE0V2CaseIds": [],
+      "controlIds": [
+        "BRIDGE-MUT-005",
+        "BRIDGE-MUT-006",
+        "BRIDGE-MUT-007",
+        "BRIDGE-MUT-008",
+        "BRIDGE-MUT-009",
+        "BRIDGE-MUT-011",
+        "BRIDGE-MUT-024"
+      ],
+      "authorityIds": [
+        "BRIDGE-AUTH-PLAN",
+        "BRIDGE-AUTH-A0",
+        "BRIDGE-AUTH-E0",
+        "BRIDGE-AUTH-BEAD",
+        "BRIDGE-AUTH-INDEPENDENT"
+      ],
+      "proofKinds": [
+        "positive",
+        "replay",
+        "lookalike",
+        "retirement-near-miss",
+        "transposition",
+        "mutation"
+      ],
+      "forwardE0V2ProofKinds": [],
+      "forwardE0V2Exclusion": null,
+      "ownerProofScope": "A0-typed-producer",
+      "forwardE0V2RowsExcludedFromOwnerProof": true
+    },
+    {
+      "id": "BRIDGE-TRACE-IDENTITY",
+      "requirement": "Latest identity is a synchronous call-time read of documentId and revision from the controller closure, with no snapshot, cache, Promise, pitch inspection, or raw malformed result retention.",
+      "operation": "readCurrentApplicationDocumentIdentity",
+      "caseIds": [
+        "BRIDGE-ID-001",
+        "BRIDGE-ID-002",
+        "BRIDGE-ID-003",
+        "BRIDGE-ID-004"
+      ],
+      "forwardE0V2CaseIds": ["BRIDGE-ID-005", "BRIDGE-ID-006"],
+      "controlIds": [
+        "BRIDGE-MUT-013",
+        "BRIDGE-MUT-014",
+        "BRIDGE-MUT-022",
+        "BRIDGE-MUT-024"
+      ],
+      "authorityIds": [
+        "BRIDGE-AUTH-PLAN",
+        "BRIDGE-AUTH-BEAD",
+        "BRIDGE-AUTH-INDEPENDENT"
+      ],
+      "proofKinds": [
+        "positive",
+        "ephemeral-change",
+        "concurrent-edit",
+        "document-switch",
+        "applicability",
+        "mutation"
+      ],
+      "forwardE0V2ProofKinds": ["malformed-return", "throw"],
+      "forwardE0V2Exclusion": {
+        "ownerLeaf": "jcpe-94yu.1",
+        "futureOwnerLeaf": "jcpe-milestone-reliable-studio-l3a.8.4",
+        "excludedFrom": [
+          "A0-owner-case-count",
+          "A0-owner-run-count",
+          "A0-owner-mutation-proof",
+          "typed-producer-conformance"
+        ],
+        "rationale": "Malformed unknown-return normalization and thrown consumer ports belong only to the future E0 v2 semantic binding."
+      },
+      "ownerProofScope": "A0-typed-producer",
+      "forwardE0V2RowsExcludedFromOwnerProof": true
+    },
+    {
+      "id": "BRIDGE-TRACE-MARKER",
+      "requirement": "Marker publication validates, reads latest state, compares both identity fields, writes only exportRevision, installs and then notifies in one synchronous critical section, and crosses the boundary only as a state-free receipt or refusal.",
+      "operation": "publishCanonicalExportRevision",
+      "caseIds": [
+        "BRIDGE-MARK-001",
+        "BRIDGE-MARK-002",
+        "BRIDGE-MARK-003",
+        "BRIDGE-MARK-004",
+        "BRIDGE-MARK-005",
+        "BRIDGE-MARK-008",
+        "BRIDGE-MARK-009",
+        "BRIDGE-MARK-010",
+        "BRIDGE-MARK-011",
+        "BRIDGE-MARK-012"
+      ],
+      "forwardE0V2CaseIds": ["BRIDGE-MARK-006", "BRIDGE-MARK-007"],
+      "controlIds": [
+        "BRIDGE-MUT-015",
+        "BRIDGE-MUT-016",
+        "BRIDGE-MUT-017",
+        "BRIDGE-MUT-018",
+        "BRIDGE-MUT-019",
+        "BRIDGE-MUT-020",
+        "BRIDGE-MUT-021",
+        "BRIDGE-MUT-022",
+        "BRIDGE-MUT-023",
+        "BRIDGE-MUT-024"
+      ],
+      "authorityIds": [
+        "BRIDGE-AUTH-PLAN",
+        "BRIDGE-AUTH-A0",
+        "BRIDGE-AUTH-E0",
+        "BRIDGE-AUTH-BEAD",
+        "BRIDGE-AUTH-INDEPENDENT"
+      ],
+      "proofKinds": [
+        "positive",
+        "near-miss",
+        "stale",
+        "malformed-input",
+        "replay",
+        "concurrency",
+        "state-isolation",
+        "applicability",
+        "mutation"
+      ],
+      "forwardE0V2ProofKinds": ["malformed-return", "throw"],
+      "forwardE0V2Exclusion": {
+        "ownerLeaf": "jcpe-94yu.1",
+        "futureOwnerLeaf": "jcpe-milestone-reliable-studio-l3a.8.4",
+        "excludedFrom": [
+          "A0-owner-case-count",
+          "A0-owner-run-count",
+          "A0-owner-mutation-proof",
+          "typed-producer-conformance"
+        ],
+        "rationale": "Malformed unknown-return normalization and thrown consumer ports belong only to the future E0 v2 semantic binding."
+      },
+      "ownerProofScope": "A0-typed-producer",
+      "forwardE0V2RowsExcludedFromOwnerProof": true
+    }
+  ]
+}

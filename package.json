@@ -27,6 +27,7 @@
     "validate:u0-contract": "bun scripts/validate-u0-contract.ts",
     "validate:c0-contract": "bun scripts/validate-c0-contract.ts",
     "validate:e0-contract": "bun scripts/validate-e0-contract.ts",
+    "validate:a0-e0-bridge-contract": "bun scripts/validate-a0-e0-bridge-contract.ts",
     "validate:x0-contract": "bun scripts/validate-x0-contract.ts",
     "typecheck": "bun scripts/typecheck.ts",
     "lint": "bun scripts/lint.ts",
