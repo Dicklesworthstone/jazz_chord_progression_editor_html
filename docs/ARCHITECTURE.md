@@ -231,6 +231,15 @@ composition root must not import it solely to reach the application shell.
 This prevents unused barrel exports from widening the release graph; gallery
 modules, route vocabulary, fixture cells, and test controls remain test-only.
 
+`src/application/runtime.ts` is the analogous narrow public application entry
+for the composition root and shell. It exports only the studio controller
+factory and its view/controller types. The broad `src/application/index.ts`
+barrel remains available to tests, validators, and tooling, but production
+composition must not import it: the barrel re-exports large contract-authority
+modules (for example the E0 interchange contract) whose constants would
+otherwise be bundled into the standalone artifact without any production
+reader.
+
 The dependency checker resolves relative and aliased TypeScript imports with the
 TypeScript AST. String search is not sufficient because type-only imports,
 re-exports, and multiline declarations must be covered.

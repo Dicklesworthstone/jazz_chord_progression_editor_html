@@ -26,9 +26,6 @@ export function HarmonyLensContent({
             <p class="studio-kicker">Literal first</p>
             <h2 id={headingId}>Harmony Lens</h2>
           </div>
-          <span class="studio-panel-heading__index" aria-hidden="true">
-            03
-          </span>
         </header>
       ) : (
         <p class="studio-kicker">Literal first</p>

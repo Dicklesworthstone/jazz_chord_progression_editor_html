@@ -227,20 +227,35 @@ describe("A0/E0 owner bridge specification", () => {
     }
   });
 
-  test("semantic lock still fails after a changed fixture receives a refreshed byte pin", async () => {
+  test("semantic lock rejects a literal owner-result tamper after its byte pin is refreshed", async () => {
     const temporaryRoot = await mkdtemp(join(tmpdir(), "jcpe-a0-e0-bridge-"));
     try {
       await cp(fixtureRoot, temporaryRoot, { recursive: true });
-      const contractPath = join(temporaryRoot, "a0-e0-bridge-contract.json");
-      const contract = JSON.parse(await readFile(contractPath, "utf8")) as {
-        replacementRegistry: { maximumLiveEntries: number };
+      const casesPath = join(temporaryRoot, "owner-port-cases.json");
+      const cases = JSON.parse(await readFile(casesPath, "utf8")) as {
+        replacementCases: Array<{
+          id: string;
+          runs: Array<{
+            id: string;
+            exactTypedResult: { value: { liveForRequest: number } };
+          }>;
+        }>;
       };
-      contract.replacementRegistry.maximumLiveEntries = 2;
-      const changedSource = `${JSON.stringify(contract, null, 2)}\n`;
-      await writeFile(contractPath, changedSource, "utf8");
+      const publishCase = cases.replacementCases.find(
+        (candidate) => candidate.id === "BRIDGE-REP-029",
+      );
+      const retainedRun = publishCase?.runs.find(
+        (candidate) => candidate.id === "retained",
+      );
+      if (retainedRun === undefined) {
+        throw new Error("BRIDGE_TEST_RETAINED_RUN_MISSING");
+      }
+      retainedRun.exactTypedResult.value.liveForRequest = 1;
+      const changedSource = `${JSON.stringify(cases, null, 2)}\n`;
+      await writeFile(casesPath, changedSource, "utf8");
       const refreshedPins = {
         ...A0_E0_BRIDGE_SPEC_BYTE_DIGESTS,
-        "a0-e0-bridge-contract.json": sha256(changedSource),
+        "owner-port-cases.json": sha256(changedSource),
       };
       const report = await validateA0E0BridgeContract(temporaryRoot, {
         expectedByteDigests: refreshedPins,
@@ -250,7 +265,7 @@ describe("A0/E0 owner bridge specification", () => {
         "BRIDGE_SEMANTIC_DIGEST",
       );
       expect(report.findings.map((finding) => finding.code)).toContain(
-        "BRIDGE_REGISTRY",
+        "BRIDGE_LITERAL_RUN",
       );
       expect(report.findings.map((finding) => finding.code)).not.toContain(
         "BRIDGE_BYTE_DIGEST",

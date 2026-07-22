@@ -338,8 +338,7 @@ export type PublishCanonicalExportRevisionResult =
       ok: false;
       outcome: "refused";
       code:
-        | "export.marker_publication_stale"
-        | "export.marker_publication_failed";
+        "export.marker_publication_stale" | "export.marker_publication_failed";
       observedDocumentId: DocumentId;
       observedRevision: AppRevision;
     }>;

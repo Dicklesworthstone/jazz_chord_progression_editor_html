@@ -39,9 +39,6 @@ export function LibraryPanelContent({
             <p class="studio-kicker">Write and discover</p>
             <h2 id={headingId}>Library</h2>
           </div>
-          <span class="studio-panel-heading__index" aria-hidden="true">
-            01
-          </span>
         </header>
       ) : (
         <p class="studio-kicker">Write and discover</p>

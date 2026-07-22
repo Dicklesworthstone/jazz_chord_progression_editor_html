@@ -4,7 +4,7 @@ import { useEffect, useState } from "preact/hooks";
 import {
   createStudioController,
   type StudioController,
-} from "./application";
+} from "./application/runtime";
 import { App, StudioStartupFailure } from "./ui/runtime";
 
 const mountPoint = document.querySelector<HTMLElement>("#app");

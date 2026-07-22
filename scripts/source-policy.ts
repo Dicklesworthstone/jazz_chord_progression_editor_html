@@ -266,7 +266,9 @@ function isPublicLayerEntrypoint(targetPath: string, targetLayer: string): boole
   return (
     extensionless === `src/${targetLayer}` ||
     extensionless === `src/${targetLayer}/index` ||
-    (targetLayer === "ui" && extensionless === "src/ui/runtime")
+    (targetLayer === "ui" && extensionless === "src/ui/runtime") ||
+    (targetLayer === "application" &&
+      extensionless === "src/application/runtime")
   );
 }
 

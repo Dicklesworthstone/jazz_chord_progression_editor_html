@@ -3,6 +3,9 @@ import { readdir, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import * as ts from "typescript";
 
+import { validateDocumentSemantics } from "../src/application";
+import { decodeDocumentShape } from "../src/domain";
+
 import {
   E0_ACCEPTED_BYTE_DIGESTS,
   E0_ACCEPTED_SEMANTIC_DIGEST,
@@ -279,6 +282,28 @@ function isObject(value: unknown): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function jsonDeepEqual(left: unknown, right: unknown): boolean {
+  if (Object.is(left, right)) return true;
+  if (Array.isArray(left) || Array.isArray(right)) {
+    return (
+      Array.isArray(left) &&
+      Array.isArray(right) &&
+      left.length === right.length &&
+      left.every((item, index) => jsonDeepEqual(item, right[index]))
+    );
+  }
+  if (!isObject(left) || !isObject(right)) return false;
+  const leftKeys = Object.keys(left);
+  const rightKeys = Object.keys(right);
+  return (
+    leftKeys.length === rightKeys.length &&
+    leftKeys.every(
+      (key) =>
+        Object.hasOwn(right, key) && jsonDeepEqual(left[key], right[key]),
+    )
+  );
+}
+
 function recordsAt(value: unknown): JsonObject[] {
   return Array.isArray(value) ? value.filter(isObject) : [];
 }
@@ -476,7 +501,7 @@ function jsonDiffPointers(
   right: unknown,
   path: readonly (string | number)[] = [],
 ): string[] {
-  if (stableJson(left) === stableJson(right)) return [];
+  if (Object.is(left, right)) return [];
   if (Array.isArray(left) && Array.isArray(right)) {
     if (left.length !== right.length) return [pointerForPath(path)];
     return left.flatMap((item, index) =>
@@ -495,6 +520,42 @@ function jsonDiffPointers(
   });
 }
 
+function shallowCloneContainer(value: unknown): unknown[] | JsonObject {
+  if (Array.isArray(value)) return [...value];
+  if (isObject(value)) return { ...value };
+  throw new Error("BRIDGE_PATCH_PARENT");
+}
+
+function childAtContainer(container: unknown, token: string): unknown {
+  if (Array.isArray(container)) {
+    if (!/^(?:0|[1-9][0-9]*)$/u.test(token)) {
+      throw new Error("BRIDGE_PATCH_ARRAY_INDEX");
+    }
+    return container[Number(token)];
+  }
+  if (isObject(container)) return container[token];
+  throw new Error("BRIDGE_PATCH_PARENT");
+}
+
+function setContainerChild(
+  container: unknown,
+  token: string,
+  value: unknown,
+): void {
+  if (Array.isArray(container)) {
+    const index = Number(token);
+    if (!Number.isSafeInteger(index) || index < 0 || index >= container.length) {
+      throw new Error("BRIDGE_PATCH_REPLACE_INDEX");
+    }
+    container[index] = value;
+    return;
+  }
+  if (!isObject(container) || !Object.hasOwn(container, token)) {
+    throw new Error("BRIDGE_PATCH_REPLACE_TARGET");
+  }
+  container[token] = value;
+}
+
 function applyPointerMutation(
   root: unknown,
   operator: string,
@@ -506,68 +567,53 @@ function applyPointerMutation(
   if (tokens === null || tokens.length === 0) {
     throw new Error("BRIDGE_PATCH_POINTER");
   }
-  const copy = structuredClone(root);
-  let parent: unknown = copy;
+  const rootCopy = shallowCloneContainer(root);
+  let sourceParent: unknown = root;
+  let targetParent: unknown = rootCopy;
   for (const token of tokens.slice(0, -1)) {
-    if (Array.isArray(parent)) {
-      if (!/^(?:0|[1-9][0-9]*)$/u.test(token)) {
-        throw new Error("BRIDGE_PATCH_ARRAY_INDEX");
-      }
-      parent = parent[Number(token)];
-    } else if (isObject(parent)) {
-      parent = parent[token];
-    } else {
-      throw new Error("BRIDGE_PATCH_PARENT");
-    }
+    const sourceChild = childAtContainer(sourceParent, token);
+    const targetChild = shallowCloneContainer(sourceChild);
+    setContainerChild(targetParent, token, targetChild);
+    sourceParent = sourceChild;
+    targetParent = targetChild;
   }
   const token = tokens.at(-1) as string;
-  const current = Array.isArray(parent)
-    ? parent[Number(token)]
-    : isObject(parent)
-      ? parent[token]
-      : undefined;
+  const current = childAtContainer(sourceParent, token);
   if (operator === "assert") {
-    if (stableJson(current) !== stableJson(expectedBefore)) {
+    if (!jsonDeepEqual(current, expectedBefore)) {
       throw new Error("BRIDGE_PATCH_ASSERT");
     }
-    return copy;
+    return root;
   }
-  if (stableJson(current) !== stableJson(expectedBefore)) {
-    throw new Error("BRIDGE_PATCH_FROM");
+  if (!jsonDeepEqual(current, expectedBefore)) {
+    throw new Error(`BRIDGE_PATCH_FROM:${pointer}`);
   }
   if (operator === "replace") {
-    if (Array.isArray(parent)) {
-      const index = Number(token);
-      if (!Number.isSafeInteger(index) || index < 0 || index >= parent.length) {
-        throw new Error("BRIDGE_PATCH_REPLACE_INDEX");
-      }
-      parent[index] = structuredClone(value);
-    } else if (isObject(parent) && Object.hasOwn(parent, token)) {
-      parent[token] = structuredClone(value);
-    } else {
-      throw new Error("BRIDGE_PATCH_REPLACE_TARGET");
-    }
-    return copy;
+    setContainerChild(targetParent, token, value);
+    return rootCopy;
   }
   if (operator === "append") {
-    const target = valueAtJsonPointer(copy, pointer);
-    if (!Array.isArray(target)) throw new Error("BRIDGE_PATCH_APPEND_TARGET");
-    target.push(structuredClone(value));
-    return copy;
+    if (!Array.isArray(current)) throw new Error("BRIDGE_PATCH_APPEND_TARGET");
+    setContainerChild(targetParent, token, [...current, value]);
+    return rootCopy;
   }
   if (operator === "remove") {
-    if (Array.isArray(parent)) {
+    if (Array.isArray(targetParent)) {
       const index = Number(token);
-      if (!Number.isSafeInteger(index) || index < 0 || index >= parent.length) {
+      if (
+        !Number.isSafeInteger(index) ||
+        index < 0 ||
+        index >= targetParent.length
+      ) {
         throw new Error("BRIDGE_PATCH_REMOVE_INDEX");
       }
-      parent.splice(index, 1);
-    } else if (isObject(parent) && Object.hasOwn(parent, token)) {
-      delete parent[token];
+      targetParent.splice(index, 1);
+    } else if (isObject(targetParent) && Object.hasOwn(targetParent, token)) {
+      delete targetParent[token];
     } else {
       throw new Error("BRIDGE_PATCH_REMOVE_TARGET");
     }
-    return copy;
+    return rootCopy;
   }
   throw new Error("BRIDGE_PATCH_OPERATOR");
 }
@@ -575,6 +621,9 @@ function applyPointerMutation(
 function containsForbiddenStateKey(value: unknown): boolean {
   if (Array.isArray(value)) return value.some(containsForbiddenStateKey);
   if (!isObject(value)) return false;
+  const expectedF3ValidationCalls = [...documentValidationCache.values()].filter(
+    (entry) => entry.stage !== "f2-refused" && entry.stage !== "f2-repaired",
+  ).length;
   if (
     ["currentState", "lastKnownState", "observedBefore", "state"].some(
       (key) => Object.hasOwn(value, key),
@@ -771,7 +820,7 @@ function applyAcceptedE0Mutations(
   mutations: readonly JsonObject[],
   context: AcceptedE0MaterializationContext,
 ): unknown {
-  let current = structuredClone(base);
+  let current = base;
   for (const mutation of mutations) {
     const operation = mutation["operation"];
     const path = mutation["path"];
@@ -790,8 +839,10 @@ function applyAcceptedE0Mutations(
     const before = valueAtJsonPointer(current, pointer);
     if (
       Object.hasOwn(mutation, "from") &&
-      stableJson(before) !==
-        stableJson(materializeAcceptedE0Value(mutation["from"], context))
+      !jsonDeepEqual(
+        before,
+        materializeAcceptedE0Value(mutation["from"], context),
+      )
     ) {
       throw new Error("BRIDGE_E0_MUTATION_FROM");
     }
@@ -1017,22 +1068,26 @@ function applyBridgePatches(
   context: BridgeLiteralContext,
   stateContext: unknown,
 ): unknown {
-  let current = structuredClone(base);
-  for (const patch of recordsAt(patches)) {
+  const patchRecords = recordsAt(patches);
+  if (patchRecords.length === 0) return base;
+  let current = base;
+  for (const patch of patchRecords) {
     const operator = patch["op"];
     const pointer = patch["jsonPointer"];
     if (typeof operator !== "string" || typeof pointer !== "string") {
       throw new Error("BRIDGE_PATCH_SHAPE");
     }
     const actualBefore = valueAtJsonPointer(current, pointer);
-    if (actualBefore === undefined) throw new Error("BRIDGE_PATCH_TARGET");
+    if (actualBefore === undefined) {
+      throw new Error(`BRIDGE_PATCH_TARGET:${pointer}`);
+    }
     if (operator === "assert") {
       const expected = materializePatchValue(
         patch["value"],
         context,
         stateContext,
       );
-      if (stableJson(actualBefore) !== stableJson(expected)) {
+      if (!jsonDeepEqual(actualBefore, expected)) {
         throw new Error("BRIDGE_PATCH_ASSERT");
       }
       continue;
@@ -1066,7 +1121,7 @@ function applyBridgePatches(
         context,
         stateContext,
       );
-      if (stableJson(to) !== stableJson(value)) {
+      if (!jsonDeepEqual(to, value)) {
         throw new Error("BRIDGE_PATCH_TO_VALUE");
       }
       current = applyPointerMutation(
@@ -1123,7 +1178,7 @@ function reverseReplacementPatches(
   patches: unknown,
   context: BridgeLiteralContext,
 ): unknown {
-  let current = structuredClone(value);
+  let current = value;
   const records = recordsAt(patches);
   for (const patch of [...records].reverse()) {
     if (patch["op"] !== "replace" || typeof patch["jsonPointer"] !== "string") {
@@ -1135,7 +1190,7 @@ function reverseReplacementPatches(
       current,
     );
     const forwardTo = materializePatchValue(patch["to"], context, current);
-    if (stableJson(forwardValue) !== stableJson(forwardTo)) {
+    if (!jsonDeepEqual(forwardValue, forwardTo)) {
       throw new Error("BRIDGE_INVERSE_PATCH_TO");
     }
     current = applyPointerMutation(
@@ -1167,6 +1222,10 @@ type MaterializedRunProjection = Readonly<{
   workBound: unknown;
   exactControllerStateDelta: readonly JsonObject[];
   mutationProbe: JsonObject | null;
+  historyEstimatorLawInput: unknown;
+  ownerLawFlags: JsonObject;
+  ownerLawOracle: JsonObject;
+  scenarioFinalState: unknown;
   comparisonInput: JsonObject;
 }>;
 
@@ -1185,6 +1244,15 @@ function projectionForMutationTarget(
       return run.controllerStateAfter;
     case "registryBefore":
       return run.registryBefore;
+    case "registryLawInput": {
+      const registry = isObject(run.registryBefore) ? run.registryBefore : {};
+      const entries = recordsAt(registry["entries"]);
+      return {
+        capacity: registry["capacity"],
+        liveEntries: entries.filter((entry) => entry["status"] === "prepared")
+          .length,
+      };
+    }
     case "registryAfter":
       return run.registryAfter;
     case "exactTypedResult":
@@ -1195,6 +1263,14 @@ function projectionForMutationTarget(
       return run.synchronousEventOrder;
     case "workBound":
       return run.workBound;
+    case "historyEstimatorLawInput":
+      return run.historyEstimatorLawInput;
+    case "ownerLawFlags":
+      return run.ownerLawFlags;
+    case "ownerLawOracle":
+      return run.ownerLawOracle;
+    case "scenarioFinalState":
+      return run.scenarioFinalState;
     default:
       return undefined;
   }
@@ -1647,6 +1723,8 @@ export async function validateA0E0BridgeContract(
       manualAndFrozenPitchBytesRequired: true,
       literalMutationBaselineAndChangedObservationsRequired: true,
       mutationTargetAndDerivedObservationMustBeDistinct: true,
+      mutationObservationMustBeIndependentlyRecomputed: true,
+      mutationKillerFixtureMayServeAsItsOwnOracle: false,
       forwardE0V2RowsExcludedFromA0OwnerProof: true,
       proseOrBareIdsAreProof: false,
     },
@@ -1683,6 +1761,122 @@ export async function validateA0E0BridgeContract(
     acceptedE0: acceptedE0Materialization,
     cache: materializedCatalog,
   };
+  type DocumentValidationObservation = Readonly<{
+    stage: "accepted" | "f2-refused" | "f2-repaired" | "f3-refused" | "f3-repaired";
+    code: string | null;
+  }>;
+  const documentValidationCache = new Map<
+    string,
+    DocumentValidationObservation
+  >();
+  const acceptedE0DocumentObjects = new WeakSet<object>();
+  const realValidatedDocumentObjects = new WeakSet<object>();
+  let f2DocumentValidationCalls = 0;
+  let f3DocumentValidationCalls = 0;
+  let expectedAcceptedDocumentOccurrences = 0;
+  let acceptedE0AuthorityDocumentOccurrences = 0;
+  const observeDocumentValidation = (
+    document: unknown,
+  ): DocumentValidationObservation => {
+    expectedAcceptedDocumentOccurrences += 1;
+    if (isObject(document) && acceptedE0DocumentObjects.has(document)) {
+      acceptedE0AuthorityDocumentOccurrences += 1;
+      return { stage: "accepted", code: null };
+    }
+    if (isObject(document) && realValidatedDocumentObjects.has(document)) {
+      return { stage: "accepted", code: null };
+    }
+    const canonical = stableJson(document);
+    const cached = documentValidationCache.get(canonical);
+    if (cached !== undefined) {
+      if (cached.stage === "accepted" && isObject(document)) {
+        realValidatedDocumentObjects.add(document);
+      }
+      return cached;
+    }
+    f2DocumentValidationCalls += 1;
+    const decoded = decodeDocumentShape(document);
+    if (!decoded.ok) {
+      const observation: DocumentValidationObservation = {
+        stage: "f2-refused",
+        code: decoded.errors[0]?.code ?? "unknown",
+      };
+      documentValidationCache.set(canonical, observation);
+      return observation;
+    }
+    if (!jsonDeepEqual(decoded.value, document)) {
+      const observation: DocumentValidationObservation = {
+        stage: "f2-repaired",
+        code: null,
+      };
+      documentValidationCache.set(canonical, observation);
+      return observation;
+    }
+    f3DocumentValidationCalls += 1;
+    const validated = validateDocumentSemantics(decoded.value);
+    if (!validated.ok) {
+      const observation: DocumentValidationObservation = {
+        stage: "f3-refused",
+        code: validated.errors[0]?.code ?? "unknown",
+      };
+      documentValidationCache.set(canonical, observation);
+      return observation;
+    }
+    if (!jsonDeepEqual(validated.value, document)) {
+      const observation: DocumentValidationObservation = {
+        stage: "f3-repaired",
+        code: null,
+      };
+      documentValidationCache.set(canonical, observation);
+      return observation;
+    }
+    const observation: DocumentValidationObservation = {
+      stage: "accepted",
+      code: null,
+    };
+    documentValidationCache.set(canonical, observation);
+    if (isObject(document)) realValidatedDocumentObjects.add(document);
+    return observation;
+  };
+  const assertAcceptedDocument = (document: unknown, path: string): void => {
+    const observation = observeDocumentValidation(document);
+    if (observation.stage !== "accepted") {
+      throw new Error(
+        `BRIDGE_DOCUMENT_${observation.stage.toUpperCase()}:${observation.code ?? "none"}:${path}`,
+      );
+    }
+  };
+  const assertNestedAcceptedDocuments = (
+    value: unknown,
+    path: string,
+  ): void => {
+    if (Array.isArray(value)) {
+      value.forEach((item, index) =>
+        assertNestedAcceptedDocuments(item, `${path}/${String(index)}`),
+      );
+      return;
+    }
+    if (!isObject(value)) return;
+    if (value["schema"] === "changes.progression.v2") {
+      assertAcceptedDocument(value, path);
+      return;
+    }
+    for (const [key, child] of Object.entries(value)) {
+      assertNestedAcceptedDocuments(child, `${path}/${key}`);
+    }
+  };
+  const markAcceptedE0Documents = (value: unknown): void => {
+    if (Array.isArray(value)) {
+      value.forEach(markAcceptedE0Documents);
+      return;
+    }
+    if (!isObject(value)) return;
+    if (value["schema"] === "changes.progression.v2") {
+      acceptedE0DocumentObjects.add(value);
+      return;
+    }
+    Object.values(value).forEach(markAcceptedE0Documents);
+  };
   for (const [literalId, entryValue] of Object.entries(literalCatalog)) {
     if (!isObject(entryValue)) {
       addFinding(
@@ -1708,6 +1902,18 @@ export async function validateA0E0BridgeContract(
         !isCompleteDocumentLiteral(materialized)
       ) {
         throw new Error("BRIDGE_LITERAL_DOCUMENT");
+      }
+      if (
+        entryValue["kind"] === "accepted-e0-v1-reference" &&
+        recordsAt(entryValue["materializationPatches"]).length === 0
+      ) {
+        markAcceptedE0Documents(materialized);
+      }
+      if (materializeAs === "AppState" || materializeAs === "ValidatedDocument") {
+        assertNestedAcceptedDocuments(
+          materialized,
+          `literalCatalog/${literalId}`,
+        );
       }
       if (materializeAs === "PrivateImportReplacementRegistry") {
         const registryLiteral = isObject(materialized) ? materialized : {};
@@ -2043,8 +2249,10 @@ export async function validateA0E0BridgeContract(
           ),
         };
         if (
-          rawCall["invocation"] !== "synchronous" ||
+          (runRole === "conformance" &&
+            rawCall["invocation"] !== "synchronous") ||
           (!expectedE0V2Owned &&
+            runRole === "conformance" &&
             (rawCall["target"] !== "A0E0InterchangeOwnerOperations" ||
               rawCall["operation"] !== record["operation"]))
         ) {
@@ -2055,13 +2263,18 @@ export async function validateA0E0BridgeContract(
           literalContext,
           after,
         );
-        if (!expectedE0V2Owned && containsForbiddenStateKey(exactTypedResult)) {
+        if (
+          !expectedE0V2Owned &&
+          runRole === "conformance" &&
+          containsForbiddenStateKey(exactTypedResult)
+        ) {
           throw new Error("BRIDGE_RUN_OWNER_RESULT_STATE");
         }
         const resultRecord = isObject(exactTypedResult)
           ? exactTypedResult
           : {};
         if (
+          runRole === "conformance" &&
           Object.hasOwn(resultRecord, "liveForRequest") &&
           resultRecord["liveForRequest"] !== 0
         ) {
@@ -2076,12 +2289,41 @@ export async function validateA0E0BridgeContract(
           )
             ? rawProbe["downstreamObservation"]
             : null;
+          const expectedOwnerLaw = isObject(rawProbe["expectedOwnerLaw"])
+            ? rawProbe["expectedOwnerLaw"]
+            : null;
           if (
+            stableJson(Object.keys(rawProbe).sort(codeUnitCompare)) !==
+              stableJson([
+                "baselineLaw",
+                "baselineRunId",
+                "downstreamObservation",
+                "expectedOwnerLaw",
+                "mutatedLaw",
+                "sourceMaterialization",
+              ]) ||
             typeof rawProbe["baselineRunId"] !== "string" ||
             typeof rawProbe["sourceMaterialization"] !== "string" ||
             downstreamObservation === null ||
+            stableJson(
+              Object.keys(downstreamObservation).sort(codeUnitCompare),
+            ) !==
+              stableJson([
+                "baselineValue",
+                "jsonPointer",
+                "killerValue",
+                "materialization",
+              ]) ||
             typeof downstreamObservation["materialization"] !== "string" ||
-            typeof downstreamObservation["jsonPointer"] !== "string"
+            typeof downstreamObservation["jsonPointer"] !== "string" ||
+            expectedOwnerLaw === null ||
+            (expectedOwnerLaw["outcome"] !== "pass" &&
+              expectedOwnerLaw["outcome"] !== "killed") ||
+            (expectedOwnerLaw["outcome"] === "pass"
+              ? stableJson(expectedOwnerLaw) !== stableJson({ outcome: "pass" })
+              : typeof expectedOwnerLaw["code"] !== "string" ||
+                stableJson(Object.keys(expectedOwnerLaw).sort(codeUnitCompare)) !==
+                  stableJson(["code", "outcome"]))
           ) {
             throw new Error("BRIDGE_RUN_MUTATION_PROBE_SHAPE");
           }
@@ -2106,9 +2348,27 @@ export async function validateA0E0BridgeContract(
               before,
               new Set(),
             ),
+            expectedOwnerLaw: materializeBridgeTemplate(
+              expectedOwnerLaw,
+              literalContext,
+              before,
+              new Set(),
+            ),
           };
         } else if (run["mutationProbe"] !== undefined && run["mutationProbe"] !== null) {
           throw new Error("BRIDGE_RUN_CONFORMANCE_MUTATION_PROBE");
+        }
+        for (const [projectionName, projectionValue] of [
+          ["controllerStateBefore", before],
+          ["controllerStateAfter", after],
+          ["registryBefore", registryBefore],
+          ["registryAfter", registryAfter],
+          ["exactTypedResult", exactTypedResult],
+        ] as const) {
+          assertNestedAcceptedDocuments(
+            projectionValue,
+            `${fullRunId}/${projectionName}`,
+          );
         }
         const exactCounters = run["exactCounters"];
         if (
@@ -2124,14 +2384,16 @@ export async function validateA0E0BridgeContract(
         const operation = record["operation"];
         if (
           typeof operation !== "string" ||
-          exactCounters[operation] !== (expectedE0V2Owned ? 0 : 1)
+          (runRole === "conformance" &&
+            exactCounters[operation] !== (expectedE0V2Owned ? 0 : 1))
         ) {
           throw new Error("BRIDGE_RUN_OPERATION_COUNTER");
         }
         if (
-          expectedE0V2Owned
+          runRole === "conformance" &&
+          (expectedE0V2Owned
             ? exactCounters["e0V2ConsumerNormalizer"] !== 1
-            : exactCounters["e0V2ConsumerNormalizer"] !== 0
+            : exactCounters["e0V2ConsumerNormalizer"] !== 0)
         ) {
           throw new Error("BRIDGE_RUN_E0_V2_COUNTER");
         }
@@ -2150,8 +2412,10 @@ export async function validateA0E0BridgeContract(
         if (
           !isObject(workBound) ||
           typeof workBound["termination"] !== "string" ||
-          workBound["wallTimeObservedOrUsed"] !== false ||
-          workBound["awaitOrMicrotaskBoundariesInsideOperation"] !== 0 ||
+          (runRole === "conformance" &&
+            workBound["wallTimeObservedOrUsed"] !== false) ||
+          (runRole === "conformance" &&
+            workBound["awaitOrMicrotaskBoundariesInsideOperation"] !== 0) ||
           Object.entries(workBound).some(
             ([key, value]) =>
               key.startsWith("maximum") &&
@@ -2160,8 +2424,61 @@ export async function validateA0E0BridgeContract(
         ) {
           throw new Error("BRIDGE_RUN_WORK_BOUND");
         }
+        const historyEstimatorLawInput =
+          run["historyEstimatorLawInput"] === undefined
+            ? null
+            : materializeBridgeTemplate(
+                run["historyEstimatorLawInput"],
+                literalContext,
+                before,
+                new Set(),
+              );
+        const ownerLawFlagsValue =
+          run["ownerLawFlags"] === undefined
+            ? { historicalStateReinstall: false }
+            : materializeBridgeTemplate(
+                run["ownerLawFlags"],
+                literalContext,
+                before,
+                new Set(),
+              );
+        if (
+          !isObject(ownerLawFlagsValue) ||
+          stableJson(Object.keys(ownerLawFlagsValue).sort(codeUnitCompare)) !==
+            stableJson(["historicalStateReinstall"]) ||
+          typeof ownerLawFlagsValue["historicalStateReinstall"] !== "boolean"
+        ) {
+          throw new Error("BRIDGE_RUN_OWNER_LAW_FLAGS");
+        }
+        const ownerLawOracle =
+          rawCall["target"] !== "A0E0InterchangeOwnerOperations"
+            ? {
+                outcome: "killed",
+                code: "BRIDGE_OWNER_LAW_RAW_DISPATCH_FORBIDDEN",
+              }
+            : rawCall["invocation"] !== "synchronous"
+              ? {
+                  outcome: "killed",
+                  code: "BRIDGE_OWNER_LAW_IDENTITY_SYNC_REQUIRED",
+                }
+              : ownerLawFlagsValue["historicalStateReinstall"] === true
+                ? {
+                    outcome: "killed",
+                    code: "BRIDGE_OWNER_LAW_HISTORICAL_REINSTALL_FORBIDDEN",
+                  }
+                : workBound["awaitOrMicrotaskBoundariesInsideOperation"] !== 0
+                  ? {
+                      outcome: "killed",
+                      code: "BRIDGE_OWNER_LAW_MARKER_AWAIT_FORBIDDEN",
+                    }
+                  : workBound["wallTimeObservedOrUsed"] !== false
+                    ? {
+                        outcome: "killed",
+                        code: "BRIDGE_OWNER_LAW_WALL_TIME_FORBIDDEN",
+                      }
+                    : { outcome: "pass", code: null };
 
-        let deltaApplied = structuredClone(before);
+        let deltaApplied = before;
         const deltas = recordsAt(run["exactControllerStateDelta"]);
         const materializedDeltas: JsonObject[] = [];
         if (
@@ -2221,8 +2538,197 @@ export async function validateA0E0BridgeContract(
             materializedTo,
           );
         }
-        if (stableJson(deltaApplied) !== stableJson(after)) {
+        if (!jsonDeepEqual(deltaApplied, after)) {
           throw new Error("BRIDGE_RUN_STATE_DELTA_RESULT");
+        }
+
+        const phaseFieldNames = [
+          "postReturnExternalEdit",
+          "lateA1Settlement",
+          "scenarioTotals",
+        ] as const;
+        let scenarioFinalState: unknown = null;
+        if (fullRunId === "BRIDGE-MARK-010/marker-10") {
+          const externalEdit = isObject(run["postReturnExternalEdit"])
+            ? run["postReturnExternalEdit"]
+            : null;
+          const lateSettlement = isObject(run["lateA1Settlement"])
+            ? run["lateA1Settlement"]
+            : null;
+          const scenarioTotals = isObject(run["scenarioTotals"])
+            ? run["scenarioTotals"]
+            : null;
+          if (
+            externalEdit === null ||
+            lateSettlement === null ||
+            scenarioTotals === null ||
+            stableJson(Object.keys(externalEdit).sort(codeUnitCompare)) !==
+              stableJson([
+                "actor",
+                "controllerStateAfter",
+                "controllerStateBefore",
+                "exactControllerStateDelta",
+                "exactCounters",
+              ]) ||
+            stableJson(Object.keys(lateSettlement).sort(codeUnitCompare)) !==
+              stableJson([
+                "controllerStateInstalls",
+                "historicalStateReinstall",
+                "inputControllerStateLiteralId",
+                "listenerCallbacks",
+                "resultShape",
+              ]) ||
+            stableJson(Object.keys(scenarioTotals).sort(codeUnitCompare)) !==
+              stableJson(["controllerStateInstalls", "listenerCallbacks"])
+          ) {
+            throw new Error("BRIDGE_LATE_A1_PHASE_SHAPE");
+          }
+          const externalBeforeDescriptor = externalEdit[
+            "controllerStateBefore"
+          ];
+          const externalAfterDescriptor = externalEdit[
+            "controllerStateAfter"
+          ];
+          const externalBefore = materializeDescriptor(
+            externalBeforeDescriptor,
+            literalContext,
+          );
+          const externalAfter = materializeDescriptor(
+            externalAfterDescriptor,
+            literalContext,
+          );
+          assertNestedAcceptedDocuments(
+            externalBefore,
+            `${fullRunId}/postReturnExternalEdit/controllerStateBefore`,
+          );
+          assertNestedAcceptedDocuments(
+            externalAfter,
+            `${fullRunId}/postReturnExternalEdit/controllerStateAfter`,
+          );
+          if (
+            !isFullAppStateLiteral(externalBefore) ||
+            !isFullAppStateLiteral(externalAfter) ||
+            !jsonDeepEqual(externalBefore, after) ||
+            externalEdit["actor"] !==
+              "A0-document-command-outside-owner-operation"
+          ) {
+            throw new Error("BRIDGE_LATE_A1_EXTERNAL_LINK");
+          }
+          let externalDeltaApplied = externalBefore;
+          const externalDeltas = recordsAt(
+            externalEdit["exactControllerStateDelta"],
+          );
+          if (
+            externalDeltas.length === 0 ||
+            externalDeltas.length !==
+              (Array.isArray(externalEdit["exactControllerStateDelta"])
+                ? externalEdit["exactControllerStateDelta"].length
+                : 0)
+          ) {
+            throw new Error("BRIDGE_LATE_A1_EXTERNAL_DELTA_ARRAY");
+          }
+          const externalPointers = new Set<string>();
+          for (const delta of externalDeltas) {
+            if (
+              stableJson(Object.keys(delta).sort(codeUnitCompare)) !==
+                stableJson(["from", "jsonPointer", "op", "to", "value"]) ||
+              delta["op"] !== "replace" ||
+              typeof delta["jsonPointer"] !== "string" ||
+              externalPointers.has(delta["jsonPointer"])
+            ) {
+              throw new Error("BRIDGE_LATE_A1_EXTERNAL_DELTA_SHAPE");
+            }
+            externalPointers.add(delta["jsonPointer"]);
+            const materializedFrom = materializePatchValue(
+              delta["from"],
+              literalContext,
+              externalDeltaApplied,
+            );
+            const materializedTo = materializePatchValue(
+              delta["to"],
+              literalContext,
+              externalDeltaApplied,
+            );
+            const materializedValue = materializePatchValue(
+              delta["value"],
+              literalContext,
+              externalDeltaApplied,
+            );
+            if (
+              stableJson(materializedFrom) === stableJson(materializedTo) ||
+              stableJson(materializedTo) !== stableJson(materializedValue)
+            ) {
+              throw new Error("BRIDGE_LATE_A1_EXTERNAL_DELTA_VALUE");
+            }
+            externalDeltaApplied = applyPointerMutation(
+              externalDeltaApplied,
+              "replace",
+              delta["jsonPointer"],
+              materializedFrom,
+              materializedTo,
+            );
+          }
+          if (!jsonDeepEqual(externalDeltaApplied, externalAfter)) {
+            throw new Error("BRIDGE_LATE_A1_EXTERNAL_DELTA_RESULT");
+          }
+          scenarioFinalState = externalAfter;
+          const externalCounters = isObject(externalEdit["exactCounters"])
+            ? externalEdit["exactCounters"]
+            : {};
+          if (
+            stableJson(externalCounters) !==
+            stableJson({ controllerStateInstalls: 1, listenerCallbacks: 1 })
+          ) {
+            throw new Error("BRIDGE_LATE_A1_EXTERNAL_COUNTERS");
+          }
+          const lateInputLiteralId =
+            lateSettlement["inputControllerStateLiteralId"];
+          const lateInput =
+            typeof lateInputLiteralId === "string"
+              ? materializedCatalog.get(lateInputLiteralId)
+              : undefined;
+          if (
+            !isObject(externalAfterDescriptor) ||
+            externalAfterDescriptor["literalId"] !== lateInputLiteralId ||
+            !jsonDeepEqual(lateInput, externalAfter) ||
+            lateSettlement["resultShape"] !== "state-free" ||
+            lateSettlement["controllerStateInstalls"] !== 0 ||
+            lateSettlement["listenerCallbacks"] !== 0 ||
+            lateSettlement["historicalStateReinstall"] !== false
+          ) {
+            throw new Error("BRIDGE_LATE_A1_SETTLEMENT");
+          }
+          if (
+            scenarioTotals["controllerStateInstalls"] !==
+              Number(exactCounters["controllerStateInstalls"]) +
+                Number(externalCounters["controllerStateInstalls"]) +
+                Number(lateSettlement["controllerStateInstalls"]) ||
+            scenarioTotals["listenerCallbacks"] !==
+              Number(exactCounters["listenerCallbacks"]) +
+                Number(externalCounters["listenerCallbacks"]) +
+                Number(lateSettlement["listenerCallbacks"])
+          ) {
+            throw new Error("BRIDGE_LATE_A1_SCENARIO_TOTALS");
+          }
+        } else if (
+          phaseFieldNames.some(
+            (field) => run[field] !== undefined && run[field] !== null,
+          )
+        ) {
+          throw new Error("BRIDGE_LATE_A1_PHASE_UNEXPECTED");
+        }
+        if (run["scenarioFinalState"] !== undefined) {
+          scenarioFinalState = materializeDescriptor(
+            run["scenarioFinalState"],
+            literalContext,
+          );
+          if (!isFullAppStateLiteral(scenarioFinalState)) {
+            throw new Error("BRIDGE_SCENARIO_FINAL_STATE");
+          }
+          assertNestedAcceptedDocuments(
+            scenarioFinalState,
+            `${fullRunId}/scenarioFinalState`,
+          );
         }
 
         const projection: MaterializedRunProjection = {
@@ -2243,6 +2749,10 @@ export async function validateA0E0BridgeContract(
           workBound,
           exactControllerStateDelta: materializedDeltas,
           mutationProbe,
+          historyEstimatorLawInput,
+          ownerLawFlags: ownerLawFlagsValue,
+          ownerLawOracle,
+          scenarioFinalState,
           comparisonInput: {
             arguments: rawCall["arguments"],
             controllerState: before,
@@ -2613,6 +3123,7 @@ export async function validateA0E0BridgeContract(
       ? run.registryBefore
       : {};
     const registryAfter = isObject(run.registryAfter) ? run.registryAfter : {};
+    const runCounters = isObject(run.exactCounters) ? run.exactCounters : {};
     const beforeEntries = recordsAt(registryBefore["entries"]);
     const afterEntries = recordsAt(registryAfter["entries"]);
     try {
@@ -2657,13 +3168,12 @@ export async function validateA0E0BridgeContract(
             stableJson(argument["prepared"]["identity"]) ||
           result["liveForRequest"] !== 0 ||
           afterEntries.length !== 0 ||
-          (isObject(run.exactCounters) &&
-            [
-              "f2DecodeDocumentShape",
-              "f3ValidateDocumentSemantics",
-              "historyEstimator",
-              "bookmarkRepair",
-            ].some((key) => run.exactCounters[key] !== 0))
+          [
+            "f2DecodeDocumentShape",
+            "f3ValidateDocumentSemantics",
+            "historyEstimator",
+            "bookmarkRepair",
+          ].some((key) => runCounters[key] !== 0)
         ) {
           throw new Error("BRIDGE_PUBLISH_BINDING");
         }
@@ -2884,6 +3394,9 @@ export async function validateA0E0BridgeContract(
     const expectedDifference = isObject(control["exactExpectedDifference"])
       ? control["exactExpectedDifference"]
       : {};
+    const oracleExpectation = isObject(control["oracleExpectation"])
+      ? control["oracleExpectation"]
+      : {};
     const mutationMaterialization = mutation["materialization"];
     const observationMaterialization = observation["materialization"];
     const allowedMutationMaterializations = new Set([
@@ -2891,17 +3404,35 @@ export async function validateA0E0BridgeContract(
       "rawCall",
       "controllerStateBefore",
       "registryBefore",
+      "registryLawInput",
       "synchronousEventOrder",
       "workBound",
+      "historyEstimatorLawInput",
+      "ownerLawFlags",
     ]);
     const allowedObservationMaterializations = new Set([
       "exactTypedResult",
       "exactCounters",
       "registryAfter",
       "controllerStateAfter",
+      "ownerLawOracle",
+      "scenarioFinalState",
     ]);
     try {
       if (
+        stableJson(Object.keys(control).sort(codeUnitCompare)) !==
+          stableJson([
+            "authorityIds",
+            "baselineRunId",
+            "category",
+            "exactExpectedDifference",
+            "id",
+            "killerRunId",
+            "linkedCaseIds",
+            "mutation",
+            "observation",
+            "oracleExpectation",
+          ]) ||
         typeof control["category"] !== "string" ||
         typeof baselineRunId !== "string" ||
         typeof killerRunId !== "string" ||
@@ -2911,10 +3442,33 @@ export async function validateA0E0BridgeContract(
         baseline === killer ||
         baseline.runRole !== "conformance" ||
         killer.runRole !== "mutation-killer" ||
+        baseline.operation !== killer.operation ||
         !baseline.ownerProof ||
         !killer.ownerProof ||
         baseline.e0V2Owned ||
         killer.e0V2Owned ||
+        stableJson(Object.keys(mutation).sort(codeUnitCompare)) !==
+          stableJson([
+            "exactChangedFieldCount",
+            "from",
+            "jsonPointer",
+            "materialization",
+            "operator",
+            "to",
+          ]) ||
+        stableJson(Object.keys(observation).sort(codeUnitCompare)) !==
+          stableJson([
+            "baselineValue",
+            "jsonPointer",
+            "killerValue",
+            "materialization",
+          ]) ||
+        (oracleExpectation["outcome"] === "pass"
+          ? stableJson(oracleExpectation) !== stableJson({ outcome: "pass" })
+          : oracleExpectation["outcome"] !== "killed" ||
+            typeof oracleExpectation["code"] !== "string" ||
+            stableJson(Object.keys(oracleExpectation).sort(codeUnitCompare)) !==
+              stableJson(["code", "outcome"])) ||
         !allowedMutationMaterializations.has(String(mutationMaterialization)) ||
         !allowedObservationMaterializations.has(
           String(observationMaterialization),
@@ -2960,6 +3514,34 @@ export async function validateA0E0BridgeContract(
       if (stableJson(mutated) !== stableJson(killerMutationTarget)) {
         throw new Error("BRIDGE_CONTROL_KILLER_NOT_MUTATED_BASELINE");
       }
+      const invariantMaterializations = [
+        "rawCall",
+        "controllerStateBefore",
+        "registryBefore",
+      ].filter((materialization) => {
+        if (mutationMaterialization === "comparisonInput") {
+          return ![
+            "rawCall",
+            "controllerStateBefore",
+            "registryBefore",
+          ].includes(materialization);
+        }
+        if (mutationMaterialization === "registryLawInput") {
+          return materialization !== "registryBefore";
+        }
+        return materialization !== mutationMaterialization;
+      });
+      if (
+        invariantMaterializations.some(
+          (materialization) =>
+            stableJson(
+              projectionForMutationTarget(baseline, materialization),
+            ) !==
+            stableJson(projectionForMutationTarget(killer, materialization)),
+        )
+      ) {
+        throw new Error("BRIDGE_CONTROL_UNDECLARED_INPUT_LAW_DRIFT");
+      }
       const probe = killer.mutationProbe;
       const probeObservation =
         probe !== null && isObject(probe["downstreamObservation"])
@@ -2976,9 +3558,41 @@ export async function validateA0E0BridgeContract(
         stableJson(probeObservation["baselineValue"]) !==
           stableJson(observation["baselineValue"]) ||
         stableJson(probeObservation["killerValue"]) !==
-          stableJson(observation["killerValue"])
+          stableJson(observation["killerValue"]) ||
+        stableJson(probe["expectedOwnerLaw"]) !==
+          stableJson(oracleExpectation)
       ) {
         throw new Error("BRIDGE_CONTROL_MUTATION_PROBE_BINDING");
+      }
+      const recomputedBoundaryExpectation =
+        killer.ownerLawOracle["outcome"] === "pass"
+          ? { outcome: "pass" }
+          : killer.ownerLawOracle;
+      if (
+        stableJson(recomputedBoundaryExpectation) !==
+        stableJson(oracleExpectation)
+      ) {
+        throw new Error("BRIDGE_CONTROL_OWNER_LAW_ORACLE");
+      }
+      if (oracleExpectation["outcome"] === "killed") {
+        if (
+          stableJson(baseline.exactTypedResult) !==
+            stableJson(killer.exactTypedResult) ||
+          !jsonDeepEqual(
+            baseline.controllerStateAfter,
+            killer.controllerStateAfter,
+          ) ||
+          stableJson(baseline.registryAfter) !==
+            stableJson(killer.registryAfter) ||
+          stableJson(baseline.exactCounters) !==
+            stableJson(killer.exactCounters) ||
+          stableJson(baseline.synchronousEventOrder) !==
+            stableJson(killer.synchronousEventOrder) ||
+          stableJson(baseline.exactControllerStateDelta) !==
+            stableJson(killer.exactControllerStateDelta)
+        ) {
+          throw new Error("BRIDGE_CONTROL_KILLED_RUNTIME_NOT_INVARIANT");
+        }
       }
       const baselineObservationTarget = projectionForMutationTarget(
         baseline,
@@ -3196,7 +3810,9 @@ export async function validateA0E0BridgeContract(
   }
 
   const cleanupCase = caseById.get("BRIDGE-REP-027") ?? {};
-  const cleanupRuns = recordsAt(cleanupCase["runs"]);
+  const cleanupRuns = recordsAt(cleanupCase["runs"]).filter(
+    (run) => run["runRole"] !== "mutation-killer",
+  );
   for (const reason of DISCARD_REASONS) {
     const first = runById.get(`BRIDGE-REP-027/${reason}-first`);
     const repeat = runById.get(`BRIDGE-REP-027/${reason}-repeat`);
@@ -3535,6 +4151,22 @@ export async function validateA0E0BridgeContract(
       "BRIDGE_ACCEPTED_E0_DRIFT",
       "tests/fixtures/interchange",
       "The accepted E0 v1 validator, 16 fixtures, seven non-fixture artifacts, byte manifest, and semantic digest must remain unchanged and valid.",
+    );
+  }
+
+  if (
+    expectedAcceptedDocumentOccurrences === 0 ||
+    acceptedE0AuthorityDocumentOccurrences === 0 ||
+    documentValidationCache.size === 0 ||
+    f2DocumentValidationCalls !== documentValidationCache.size ||
+    f3DocumentValidationCalls !== expectedF3ValidationCalls ||
+    expectedAcceptedDocumentOccurrences < documentValidationCache.size
+  ) {
+    addFinding(
+      findings,
+      "BRIDGE_DOCUMENT_VALIDATION_CALLS",
+      "owner-port-cases.json.literalCatalog",
+      `Every materialized document occurrence must have an independent expected F2/F3 outcome; accepted E0 refs reuse its rerun gate, while each unique new/patched canonical document receives one real F2 and applicable F3 call (occurrences=${String(expectedAcceptedDocumentOccurrences)}, acceptedE0AuthorityOccurrences=${String(acceptedE0AuthorityDocumentOccurrences)}, uniqueNewOrPatched=${String(documentValidationCache.size)}, F2=${String(f2DocumentValidationCalls)}, F3=${String(f3DocumentValidationCalls)}).`,
     );
   }
 

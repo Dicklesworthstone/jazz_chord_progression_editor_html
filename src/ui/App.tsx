@@ -4,7 +4,7 @@ import type {
   StudioControllerActionResult,
   StudioRailSide,
   StudioViewModel,
-} from "../application";
+} from "../application/runtime";
 import { MAX_SHORT_TEXT_CODE_POINTS } from "../domain";
 import {
   StudioShell,

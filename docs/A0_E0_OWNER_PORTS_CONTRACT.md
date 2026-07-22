@@ -232,7 +232,7 @@ refusal after X1 retirement requires reconciliation; it cannot pretend that
 the old transport remains usable.
 
 Manual/Frozen pitches, source spellings, stable IDs, exact durations, and every
-candidate byte are preserved. The owner bridge performs no music-theory
+candidate value are preserved. The owner bridge performs no music-theory
 analysis, transposition, respelling, optimization, or silent repair.
 
 ## 7. Latest identity read
@@ -330,10 +330,12 @@ Transposition cases must pin base candidate bytes, transposed candidate bytes,
 base and transposed SHA-256 values, expected invariant decisions, exact
 Manual/Frozen pitch bytes, and inverse-transposition equality. Every mutation
 control must materialize its baseline observation, the one changed input or
-law, and a distinct derived changed observation that kills the mutant. Patching
-an expected output and then observing that same patched field is tautological,
-not mutation proof. Merely naming a mutation, expected relation, event, counter,
-or hash is insufficient.
+law, and a distinct derived changed observation that kills the mutant. The
+validator must independently recompute the owner-law result or deterministically
+reject the mutated law with its exact finding code; a hand-authored killer run
+cannot serve as its own oracle. Patching an expected output and then observing
+that same patched field is tautological, not mutation proof. Merely naming a
+mutation, expected relation, event, counter, or hash is insufficient.
 
 Rows reserved for malformed-return normalization in the future E0 v2 amendment
 must be explicitly marked and excluded from all A0 owner case, run, trace, and

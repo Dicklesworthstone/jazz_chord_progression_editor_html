@@ -349,6 +349,8 @@
     "manualAndFrozenPitchBytesRequired": true,
     "literalMutationBaselineAndChangedObservationsRequired": true,
     "mutationTargetAndDerivedObservationMustBeDistinct": true,
+    "mutationObservationMustBeIndependentlyRecomputed": true,
+    "mutationKillerFixtureMayServeAsItsOwnOracle": false,
     "forwardE0V2RowsExcludedFromA0OwnerProof": true,
     "proseOrBareIdsAreProof": false
   },
