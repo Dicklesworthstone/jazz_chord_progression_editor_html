@@ -15,6 +15,13 @@ project-owner golden acceptance. This leaf does not claim that the controller
 implements the owner ports; implementation belongs to `jcpe-94yu.2`, and real
 controller/concurrency proof belongs to `jcpe-94yu.3`.
 
+Repository-history correction (2026-07-22): commit `72b951e` accurately added
+a narrower application runtime entry and UI changes, but its message also said
+the UI mounted through these owner ports. No production module in that commit
+references or binds the owner aggregate; `main.tsx` still creates the ordinary
+studio controller with no bridge dependency. That wording is not production
+integration evidence, and the checked status remains `specified-unimplemented`.
+
 The authoritative type surface is
 `src/application/application-interchange-owner-contract.ts`. The independent
 fixture packet is under `tests/fixtures/a0-e0-bridge/` and is validated by
@@ -53,7 +60,8 @@ test may imply that the controller integration already exists.
 
 ## 2. Exact five-port surface
 
-`A0E0InterchangeOwnerPorts` has exactly these proposed members in this order:
+`A0E0InterchangeOwnerOperations` and `A0E0InterchangeOwnerPorts` have exactly
+these proposed members in this order:
 
 | Port                                     | Exact producer result                       | Prospective consumer result | Timing                 |
 | ---------------------------------------- | ------------------------------------------- | --------------------------- | ---------------------- |
@@ -63,13 +71,20 @@ test may imply that the controller integration already exists.
 | `readCurrentApplicationDocumentIdentity` | `ApplicationDocumentIdentity`               | `unknown`                   | synchronous            |
 | `publishCanonicalExportRevision`         | `PublishCanonicalExportRevisionResult`      | `unknown`                   | synchronous atomic CAS |
 
-Every fallible producer has a paired exact `...Operation` type and a prospective
-consumer `...Port` type returning `unknown`. A future versioned consumer must
-validate the complete raw envelope and define how malformed values or
+`A0E0InterchangeOwnerOperations` is the exact producer aggregate: each member
+uses its named `...Operation` type and returns the typed producer result shown
+above. `A0E0InterchangeOwnerPorts` is the narrowed, untrusted consumer view:
+each member uses its named `...Port` type. The producer aggregate is
+structurally assignable to the consumer aggregate, in that direction only. A
+future composition root receives the exact producer operations and passes only
+the narrowed ports to the separately versioned consumer.
+
+Every fallible consumer port returns `unknown`. A future versioned consumer
+must validate the complete raw envelope and define how malformed values or
 synchronous throws are normalized. This leaf does not assign that behavior to
-accepted E0 v1. Cleanup is the deliberate exact-result exception: the later
-build and verification phases must prove it total, synchronous, nonthrowing,
-and idempotent.
+accepted E0 v1. Cleanup is the deliberate exact-result exception: its operation
+and port are the same type, and the later build and verification phases must
+prove it total, synchronous, nonthrowing, and idempotent.
 
 The interface is composition-private. It is not added to `StudioController`,
 passed through public E0 calls, exposed to Preact, or accepted from callers.
@@ -130,17 +145,19 @@ manifest digest
 
 These are versioned semantic deltas, not compatibility interpretations:
 
-| Conflict                              | Accepted E0 v1 authority                                                                                                                                                    | Proposed A0 owner surface                                                                                                                 | Disposition                     |
-| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
-| import request `currentState`         | `CommitImportReplacementRequest` requires `currentState: AppState`                                                                                                          | `PrepareImportReplacementPublicationRequest` forbids caller state                                                                         | unresolved until accepted E0 v2 |
-| import preview projection             | `CommitImportReplacementRequest` carries a complete retained or explicitly-unavailable `preview`                                                                            | the owner request flattens only the state-free identity, candidate, command, impact, transition, and confirmation evidence it rechecks    | unresolved until accepted E0 v2 |
-| import success `publication.state`    | successful `CommitImportReplacementResult` nests `PublishImportReplacementResult.state: AppState`                                                                           | owner publication success is state-free                                                                                                   | unresolved until accepted E0 v2 |
-| import refusal `state`                | four public `CommitImportReplacementResult` refusal families return `state: AppState`                                                                                       | owner results are state-free                                                                                                              | unresolved until accepted E0 v2 |
-| publication protocol `lastKnownState` | the public replacement-publication protocol failure returns `lastKnownState: AppState`                                                                                      | owner publication refusal returns only observed identity                                                                                  | unresolved until accepted E0 v2 |
-| raw marker states                     | `A0CanonicalExportRevisionPublicationAdapterResult` success returns `observedBefore` and `state`; refusal returns `state`; the accepted fixture pins the raw success fields | owner marker CAS returns a state-free receipt/refusal                                                                                     | unresolved until accepted E0 v2 |
-| preparation refusals                  | E0 v1 has six preparation refusal codes                                                                                                                                     | the owner proposal has twenty codes, adding fourteen request, transition, metadata, exhaustion, F2/F3, history, impact, and busy refusals | unresolved until accepted E0 v2 |
-| replacement publication refusals      | E0 v1 publication is success-only with no normal refusal                                                                                                                    | the owner proposal adds missing, stale, and retirement-mismatch refusals                                                                  | unresolved until accepted E0 v2 |
-| public marker request                 | E0 v1 public preparation requires `state`, and public completion requires `state`, `preparationId`, and `deliveryPreference`                                                | the owner CAS request accepts only `publication`; the future public E0 shape is not specified here                                        | unresolved until accepted E0 v2 |
+| Conflict                              | Accepted E0 v1 authority                                                                                                                                                          | Proposed A0 owner surface                                                                                                                                     | Disposition                     |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| import request `currentState`         | `CommitImportReplacementRequest` requires `currentState: AppState`                                                                                                                | `PrepareImportReplacementPublicationRequest` forbids caller state                                                                                             | unresolved until accepted E0 v2 |
+| preview impact-context state          | `PrepareImportPreviewRequest.replacementImpactContext.state` carries `AppState` into the public E0 preview call, and `AssessImportReplacementImpact` consumes that context        | owner preparation recomputes exact impact from controller-closure current state and accepts no caller state                                                   | unresolved until accepted E0 v2 |
+| import preview projection             | `CommitImportReplacementRequest` carries a complete retained or explicitly-unavailable `preview`                                                                                  | the owner request flattens only state-free identity, candidate, command, impact, transition, and confirmation evidence                                        | unresolved until accepted E0 v2 |
+| preview authority and consent         | E0 v1 carries the preview and acknowledgement through its public orchestration, but no A0 registry binds the originally displayed candidate, command, or confirmation requirement | the owner validates candidate semantics and request self-consistency but cannot prove exact user-confirmed bytes, command seed, or acknowledgement provenance | unresolved until accepted E0 v2 |
+| import success `publication.state`    | successful `CommitImportReplacementResult` nests `PublishImportReplacementResult.state: AppState`                                                                                 | owner publication success is state-free                                                                                                                       | unresolved until accepted E0 v2 |
+| import refusal `state`                | four public `CommitImportReplacementResult` refusal families return `state: AppState`                                                                                             | owner results are state-free                                                                                                                                  | unresolved until accepted E0 v2 |
+| publication protocol `lastKnownState` | the public replacement-publication protocol failure returns `lastKnownState: AppState`                                                                                            | owner publication refusal returns only observed identity                                                                                                      | unresolved until accepted E0 v2 |
+| raw marker states                     | `A0CanonicalExportRevisionPublicationAdapterResult` success returns `observedBefore` and `state`; refusal returns `state`; the accepted fixture pins the raw success fields       | owner marker CAS returns a state-free receipt/refusal                                                                                                         | unresolved until accepted E0 v2 |
+| preparation refusals                  | E0 v1 has six preparation refusal codes                                                                                                                                           | the owner proposal has twenty codes, adding fourteen request, transition, metadata, exhaustion, F2/F3, history, impact, and busy refusals                     | unresolved until accepted E0 v2 |
+| replacement publication refusals      | E0 v1 publication is success-only with no normal refusal                                                                                                                          | the owner proposal adds missing, stale, and retirement-mismatch refusals                                                                                      | unresolved until accepted E0 v2 |
+| public marker request                 | E0 v1 public preparation requires `state`, and public completion requires `state`, `preparationId`, and `deliveryPreference`                                                      | the owner CAS request accepts only `publication`; the future public E0 shape is not specified here                                                            | unresolved until accepted E0 v2 |
 
 Only `jcpe-milestone-reliable-studio-l3a.8.4` may specify the versioned E0
 resolution, new schemas, normalization, public projections, and literal E0 v2
@@ -154,7 +171,7 @@ into `PrepareImportReplacementPublicationRequest`. The proposed owner request
 contains only:
 
 - complete `{ requestId, documentId, baseRevision }` identity;
-- source format and canonical/legacy replacement origin;
+- source format paired with its sole canonical/legacy replacement origin;
 - the validated candidate;
 - immutable command ID, label, and logical time;
 - disclosed retained or explicitly-unavailable impact;
@@ -165,26 +182,63 @@ It contains no complete preview report, raw source, caller `AppState`, history,
 bookmarks, focus, notices, recovery state, panels, transport object, adapters,
 or authority handle.
 
+The exact source/origin law is frozen independently in A0 by
+`IMPORT_REPLACEMENT_ORIGIN_BY_SOURCE_FORMAT`, and
+`ImportReplacementSourceIdentity` is a discriminated union over this table:
+
+| Source format             | Required replacement origin |
+| ------------------------- | --------------------------- |
+| `canonical-json-v2`       | `canonical-import`          |
+| `unversioned-legacy-json` | `legacy-import`             |
+| `chart-text-v1`           | `canonical-import`          |
+
+Typed producers cannot construct any other pair. Defensive validation still
+refuses a malformed raw pair as `import.replacement_request_invalid`; in
+particular, chart text with `canonical-import` is valid, not a negative case.
+
+The request is evidence, not a preview-authority token. A0 can compare current
+document/revision/request/transition fields, require the candidate document ID
+to match the current transition, run F2/F3 over the supplied candidate,
+validate command metadata, recompute impact from controller-owned current
+state, and check confirmation fields for internal consistency. Current
+`AppState` stores neither the full candidate/command snapshot nor a pre-prepare
+confirmation seed. Therefore this owner cannot prove that candidate bytes and
+command metadata are exactly what the user saw, or that the acknowledgement
+came from the originally displayed requirement. Exact preview-to-request
+projection and acknowledgement provenance are mandatory E0 v2 binding work;
+this owner packet neither claims nor simulates them.
+
 Preparation reads the controller's current state and performs this order before
 allocating anything:
 
-1. validate the complete request envelope and source/origin pairing;
-2. compare request, document, revision, candidate, and transition bindings;
-3. validate bounded command ID, label, and nonnegative finite logical time;
+1. validate recursively exact keys at every owner-defined request boundary and
+   the source/origin pairing;
+2. compare current request, document, revision, and transition fields, including
+   the candidate document ID but not unrecorded preview bytes;
+3. validate the command ID at no more than 128 Unicode code points and label at
+   no more than 160 under A0's bounded-token law, and require logical time to
+   be a nonnegative safe integer no earlier than the latest undo entry's
+   `lastLogicalTimeMs`, without claiming that A0 can prove preview provenance;
 4. prove revision and application-sequence increments are available;
 5. run a complete F2 structural decode of the candidate;
 6. run complete F3 semantic publication without repairing musical data;
 7. calculate bookmark/focus repair and exact post-command material;
 8. run the real A0 retained-history byte estimator and cap/eviction policy;
 9. recompute the current replacement impact;
-10. validate retained/nonundoable disposition and exact acknowledgement;
+10. validate retained/nonundoable disposition and acknowledgement field
+    consistency, including a present confirmation ID with nonempty trim, valid
+    Unicode scalar encoding, and at most 128 Unicode code points, without
+    claiming independent consent provenance;
 11. prove the private registry is empty;
 12. allocate exactly one complete private preparation and return its echo.
 
 The closed refusal vocabulary covers malformed or stale requests, wrong
 document/transition bindings, command metadata, revision/sequence exhaustion,
-F2/F3 refusal, history estimation, impact drift, confirmation near misses, and
-registry busy. Every refusal allocates nothing and starts no X1 retirement.
+F2/F3 refusal, history estimation, impact drift, confirmation structural near
+misses, and registry busy. A present malformed confirmation ID maps to
+`import.confirmation_identity_mismatch`; a missing required acknowledgement
+maps to `history.nonundoable_confirmation_required`. Every refusal allocates
+nothing and starts no X1 retirement.
 
 The returned `PreparedImportReplacementPublication` is a structural echo only.
 A caller-created lookalike is never authority. Private command, history,
@@ -224,6 +278,44 @@ After exact X1 no-future-attack evidence, A0 constructs the private
 It does not accept a raw replacement command from E0 or the UI, rerun parsing or
 migration, or infer missing evidence.
 
+Publication re-reads the controller's latest state and rechecks the complete
+document/revision/request/transition identity, the preparation-time bookmark
+input, available sequence headroom, and that the X1 receipt's retired
+generation covers the latest transport generation. A0's immutable reducer law
+means history cannot change without revision, so the exact revision check also
+guards the precomputed history without storing a second prepare-time
+`HistoryState`. It must
+not install a whole `AppState` captured at preparation time. Same-revision
+ephemeral edits may occur during X1 retirement, so publication applies the
+precomputed command material to that latest state using this complete field
+partition:
+
+| Publication treatment                        | Exact top-level fields                                                                                                          |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| preserve latest value                        | `exportRevision`                                                                                                                |
+| preserve latest reference                    | `recovery`, `panels`, `dialogs`, `transport`                                                                                    |
+| replacement-owned projection                 | `document`, `revision`, `history`, `bookmarks`, `quickEntry`, `importDraft`, `pendingRequests`, `documentTransition`, `notices` |
+| allocate from latest sequence at publication | `focusRequest`, `nextSequence`                                                                                                  |
+
+The replacement-owned fields intentionally implement A0's existing
+`replace-document` reset/publication semantics. The sequence-dependent focus
+request and optional warning notice are completed from the latest
+`nextSequence`; no prepare-time sequence can overwrite a later allocation.
+The latest value must remain below `MAX_APPLICATION_SEQUENCE`. At the exact
+`MAX_APPLICATION_SEQUENCE - 1` boundary, a nonundoable replacement allocates
+that value to focus, allocates the maximum to its warning, and leaves
+`nextSequence` saturated at the maximum, matching A0's notice law.
+
+A same-revision bookmark edit would change the retained history entry and its
+byte estimate, so it is not mergeable. Bookmark drift or exhausted latest
+sequence consumes the live entry and refuses
+`import.replacement_preparation_stale`; a transport generation newer than the
+retirement receipt consumes and refuses
+`import.replacement_retirement_mismatch`. These are concurrency rechecks, not
+permission to reinstall prepared state or rerun fallible preparation work.
+After they pass, the final merge is synchronous and nonfallible. It does not
+rerun F2, F3, bookmark repair, history estimation, or impact calculation.
+
 The state-free success receipt contains request identity, published document
 ID/revision, deterministic A0 effects and counters, and `liveForRequest: 0`.
 Replay, missing/stale preparation, or retirement mismatch returns a state-free
@@ -258,10 +350,13 @@ section, with no await or microtask boundary, it:
 2. reads controller-owned current state;
 3. compares both document ID and revision;
 4. refuses stale publication without changing state;
-5. creates the next state by replacing only `exportRevision`;
-6. installs that state;
-7. notifies listeners only after installation;
-8. returns a state-free receipt or refusal.
+5. if current `exportRevision` already equals the publication revision,
+   returns a state-free success receipt without creating or installing state
+   and without notifying listeners;
+6. otherwise creates the next state by replacing only `exportRevision`;
+7. installs that state;
+8. notifies listeners only after installation;
+9. returns a state-free receipt or refusal.
 
 Document-only and revision-only comparisons are invalid. A delivered revision
 7 artifact cannot mark revision 8, and a different document at revision 7
@@ -272,12 +367,19 @@ On success, all of these current fields and references are preserved:
 `document`, `revision`, `recovery`, `history`, `bookmarks`, `panels`, `dialogs`,
 `quickEntry`, `importDraft`, `transport`, `pendingRequests`,
 `documentTransition`, `focusRequest`, `notices`, and `nextSequence`.
+For every installing success, the fixture contract requires
+`after[field] === before[field]` for each named field; equal JSON values are not
+a substitute for reference identity. The exact replay branch additionally
+requires `after === before`. These are frozen implementation expectations for
+the later real-controller build and verification phases; this spec-only leaf
+does not claim it has executed that production code.
 
 The operation cannot spread a historical object over current state, return
-before installation, notify before installation, route through an unchecked
-public `mark-exported` intent, or expose before/after states to E0. Repeating an
-exact successful publication is idempotent only while document/revision still
-match; a later document edit makes the old publication stale.
+before a required installation, notify before installation, route through an
+unchecked public `mark-exported` intent, or expose before/after states to E0.
+Repeating an exact successful publication while document/revision still match
+takes the explicit no-install/no-listener success branch; a later document edit
+makes the old publication stale.
 
 ## 9. Applicability and termination
 
@@ -290,9 +392,11 @@ byte-preserved. Discard, identity read, and marker CAS are harmony-independent:
 their applicability rows say transposition is not applicable and include
 content-invariance cases proving that they inspect no pitch or chord content.
 
-Cancellation is applicable only as an E0 reason for post-prepare cleanup.
-Cancellation cannot interrupt the synchronous owner operations or occur after
-exact X1 success and before publication.
+User cancellation is resolved by the import preview before preparation and
+never begins the replacement transaction: it makes no owner call and allocates
+no live registry entry. Once preparation begins, user cancellation cannot
+interleave. Any post-prepare cleanup is caused only by one of the four closed
+protocol, retirement, or publication failure reasons accepted by `discard`.
 
 ## 10. Independent packet and gates
 
@@ -302,7 +406,7 @@ To close this owner-only leaf, the five-file packet must contain:
 - 6 latest-identity cases;
 - 12 marker-CAS cases;
 - 5 complete applicability rows;
-- 24 mutation controls;
+- 32 mutation controls;
 - 5 reciprocal operation traces;
 - 5 provenance authorities.
 
@@ -319,10 +423,15 @@ record literal event order, including compare, install, notify, and return, and
 must include the complete exact work-counter object rather than a claimed
 bound.
 
+Production modules may be executed only as conformance subjects or independent
+cross-checks after the literal expectations exist. They may not author,
+generate, or certify their own expected results.
+
 A prepared registry entry must freeze every private value needed for
 publication: the validated candidate, replacement command, repaired bookmarks,
-history entry and resulting history, focus/quick-entry projection, effects,
-counters, and exact after-state projection. Publication may consume that
+history entry and resulting history, replacement-owned field projection,
+late-bound sequence templates, effects, and counters. It must not contain an
+installable prepare-time whole-state authority. Publication may consume that
 material but may not silently rerun F2, F3, bookmark repair, history estimation,
 or impact calculation.
 
@@ -336,6 +445,10 @@ reject the mutated law with its exact finding code; a hand-authored killer run
 cannot serve as its own oracle. Patching an expected output and then observing
 that same patched field is tautological, not mutation proof. Merely naming a
 mutation, expected relation, event, counter, or hash is insufficient.
+The controls include explicit killers for early preparation allocation,
+publish-before-consume, frozen prepare-time state installation, state-bearing
+boundary results, marker notification or return before installation, and
+deep-cloned preserved marker references.
 
 Rows reserved for malformed-return normalization in the future E0 v2 amendment
 must be explicitly marked and excluded from all A0 owner case, run, trace, and
@@ -366,6 +479,8 @@ acceptance.
 
 - Adding `AppState` or a state-bearing nested result to any owner/public result.
 - Treating preview-time or click-time state as current authority.
+- Claiming that A0 proves exact preview candidate/command equality or consent
+  provenance without controller-owned binding material.
 - Keying the private registry by request ID alone.
 - Allocating before F2, F3, history, bookmark, impact, and confirmation checks.
 - Letting cleanup throw, await, clear unrelated work, or depend on whether an

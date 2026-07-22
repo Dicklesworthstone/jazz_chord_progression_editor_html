@@ -61,7 +61,8 @@
     }
   ],
   "independence": {
-    "productionImportsForbidden": true,
+    "fixtureAuthoringProductionImportsForbidden": true,
+    "productionModulesUsedOnlyAsConformanceSubjects": true,
     "productionOutputUsedAsOracle": false,
     "expectedValuesGenerated": false,
     "fixturesHandAuthored": true,

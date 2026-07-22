@@ -209,11 +209,7 @@
       "oracleExpectation": {
         "outcome": "pass"
       },
-      "linkedCaseIds": [
-        "BRIDGE-REP-001",
-        "BRIDGE-REP-018",
-        "BRIDGE-REP-029"
-      ],
+      "linkedCaseIds": ["BRIDGE-REP-001", "BRIDGE-REP-018", "BRIDGE-REP-029"],
       "authorityIds": ["BRIDGE-AUTH-A0", "BRIDGE-AUTH-BEAD"]
     },
     {
@@ -602,11 +598,11 @@
       "baselineRunId": "BRIDGE-MARK-010/marker-10",
       "killerRunId": "BRIDGE-MARK-010/mutation-019-historical-reinstall",
       "mutation": {
-        "materialization": "ownerLawFlags",
+        "materialization": "scenarioFinalState",
         "operator": "replace",
-        "jsonPointer": "/historicalStateReinstall",
-        "from": false,
-        "to": true,
+        "jsonPointer": "/literalId",
+        "from": "state-marker-published-then-edited-8",
+        "to": "state-marker-published-7",
         "exactChangedFieldCount": 1
       },
       "observation": {
@@ -757,20 +753,20 @@
       "mutation": {
         "materialization": "comparisonInput",
         "operator": "replace",
-        "jsonPointer": "/arguments/0/candidate/sections/0/measures/1/events/0/voicing/pitches/1/alter",
-        "from": -1,
-        "to": 0,
+        "jsonPointer": "/arguments/0/candidate/sections/0/measures/1/events/0/voicing/pitches/1/octave",
+        "from": 4,
+        "to": 5,
         "exactChangedFieldCount": 1
       },
       "observation": {
         "materialization": "registryAfter",
-        "jsonPointer": "/entries/0/privateMaterial/command/candidate/sections/0/measures/1/events/0/voicing/pitches/1/alter",
-        "baselineValue": -1,
-        "killerValue": 0
+        "jsonPointer": "/entries/0/privateMaterial/command/candidate/sections/0/measures/1/events/0/voicing/pitches/1/octave",
+        "baselineValue": 4,
+        "killerValue": 5
       },
       "exactExpectedDifference": {
-        "baselineValue": -1,
-        "killerValue": 0
+        "baselineValue": 4,
+        "killerValue": 5
       },
       "oracleExpectation": {
         "outcome": "pass"
@@ -782,6 +778,260 @@
         "BRIDGE-MARK-012"
       ],
       "authorityIds": ["BRIDGE-AUTH-A0", "BRIDGE-AUTH-INDEPENDENT"]
+    },
+    {
+      "id": "BRIDGE-MUT-025",
+      "category": "preparation-allocation-order",
+      "baselineRunId": "BRIDGE-REP-001/retained",
+      "killerRunId": "BRIDGE-REP-001/mutation-025-early-allocation",
+      "mutation": {
+        "materialization": "synchronousEventOrder",
+        "operator": "move",
+        "jsonPointer": "/14",
+        "from": "allocate.registry-entry",
+        "to": "/7",
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "ownerLawOracle",
+        "jsonPointer": "/code",
+        "baselineValue": null,
+        "killerValue": "BRIDGE_OWNER_LAW_EARLY_ALLOCATION_FORBIDDEN"
+      },
+      "exactExpectedDifference": {
+        "baselineValue": null,
+        "killerValue": "BRIDGE_OWNER_LAW_EARLY_ALLOCATION_FORBIDDEN"
+      },
+      "oracleExpectation": {
+        "outcome": "killed",
+        "code": "BRIDGE_OWNER_LAW_EARLY_ALLOCATION_FORBIDDEN"
+      },
+      "linkedCaseIds": ["BRIDGE-REP-001"],
+      "authorityIds": ["BRIDGE-AUTH-A0", "BRIDGE-AUTH-BEAD"]
+    },
+    {
+      "id": "BRIDGE-MUT-026",
+      "category": "publication-consumption-order",
+      "baselineRunId": "BRIDGE-REP-029/retained",
+      "killerRunId": "BRIDGE-REP-029/mutation-026-publish-before-consume",
+      "mutation": {
+        "materialization": "synchronousEventOrder",
+        "operator": "move",
+        "jsonPointer": "/4",
+        "from": "consume.entry-before-publish",
+        "to": "/7",
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "ownerLawOracle",
+        "jsonPointer": "/code",
+        "baselineValue": null,
+        "killerValue": "BRIDGE_OWNER_LAW_PUBLISH_BEFORE_CONSUME_FORBIDDEN"
+      },
+      "exactExpectedDifference": {
+        "baselineValue": null,
+        "killerValue": "BRIDGE_OWNER_LAW_PUBLISH_BEFORE_CONSUME_FORBIDDEN"
+      },
+      "oracleExpectation": {
+        "outcome": "killed",
+        "code": "BRIDGE_OWNER_LAW_PUBLISH_BEFORE_CONSUME_FORBIDDEN"
+      },
+      "linkedCaseIds": ["BRIDGE-REP-029"],
+      "authorityIds": ["BRIDGE-AUTH-PLAN", "BRIDGE-AUTH-BEAD"]
+    },
+    {
+      "id": "BRIDGE-MUT-027",
+      "category": "state-free-boundary",
+      "baselineRunId": "BRIDGE-MARK-001/exact",
+      "killerRunId": "BRIDGE-MARK-001/mutation-027-state-bearing-result",
+      "mutation": {
+        "materialization": "exactTypedResult",
+        "operator": "add",
+        "jsonPointer": "/state",
+        "from": {
+          "$absent": true
+        },
+        "to": {
+          "$literalRef": "state-marker-published-7"
+        },
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "ownerLawOracle",
+        "jsonPointer": "/code",
+        "baselineValue": null,
+        "killerValue": "BRIDGE_OWNER_LAW_STATE_BEARING_RESULT_FORBIDDEN"
+      },
+      "exactExpectedDifference": {
+        "baselineValue": null,
+        "killerValue": "BRIDGE_OWNER_LAW_STATE_BEARING_RESULT_FORBIDDEN"
+      },
+      "oracleExpectation": {
+        "outcome": "killed",
+        "code": "BRIDGE_OWNER_LAW_STATE_BEARING_RESULT_FORBIDDEN"
+      },
+      "linkedCaseIds": ["BRIDGE-MARK-001"],
+      "authorityIds": ["BRIDGE-AUTH-PLAN", "BRIDGE-AUTH-BEAD"]
+    },
+    {
+      "id": "BRIDGE-MUT-028",
+      "category": "marker-install-notify-order",
+      "baselineRunId": "BRIDGE-MARK-001/exact",
+      "killerRunId": "BRIDGE-MARK-001/mutation-028-notify-before-install",
+      "mutation": {
+        "materialization": "synchronousEventOrder",
+        "operator": "swap",
+        "jsonPointer": "/6",
+        "from": "install.state",
+        "to": "/7",
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "ownerLawOracle",
+        "jsonPointer": "/code",
+        "baselineValue": null,
+        "killerValue": "BRIDGE_OWNER_LAW_NOTIFY_BEFORE_INSTALL_FORBIDDEN"
+      },
+      "exactExpectedDifference": {
+        "baselineValue": null,
+        "killerValue": "BRIDGE_OWNER_LAW_NOTIFY_BEFORE_INSTALL_FORBIDDEN"
+      },
+      "oracleExpectation": {
+        "outcome": "killed",
+        "code": "BRIDGE_OWNER_LAW_NOTIFY_BEFORE_INSTALL_FORBIDDEN"
+      },
+      "linkedCaseIds": ["BRIDGE-MARK-001"],
+      "authorityIds": ["BRIDGE-AUTH-PLAN", "BRIDGE-AUTH-BEAD"]
+    },
+    {
+      "id": "BRIDGE-MUT-029",
+      "category": "marker-install-return-order",
+      "baselineRunId": "BRIDGE-MARK-001/exact",
+      "killerRunId": "BRIDGE-MARK-001/mutation-029-return-before-install",
+      "mutation": {
+        "materialization": "synchronousEventOrder",
+        "operator": "truncate-and-return",
+        "jsonPointer": "/6",
+        "from": [
+          "install.state",
+          "notify.listeners-after-install",
+          "return.state-free"
+        ],
+        "to": ["return.state-free"],
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "ownerLawOracle",
+        "jsonPointer": "/code",
+        "baselineValue": null,
+        "killerValue": "BRIDGE_OWNER_LAW_RETURN_BEFORE_INSTALL_FORBIDDEN"
+      },
+      "exactExpectedDifference": {
+        "baselineValue": null,
+        "killerValue": "BRIDGE_OWNER_LAW_RETURN_BEFORE_INSTALL_FORBIDDEN"
+      },
+      "oracleExpectation": {
+        "outcome": "killed",
+        "code": "BRIDGE_OWNER_LAW_RETURN_BEFORE_INSTALL_FORBIDDEN"
+      },
+      "linkedCaseIds": ["BRIDGE-MARK-001"],
+      "authorityIds": ["BRIDGE-AUTH-PLAN", "BRIDGE-AUTH-BEAD"]
+    },
+    {
+      "id": "BRIDGE-MUT-030",
+      "category": "marker-reference-identity",
+      "baselineRunId": "BRIDGE-MARK-001/exact",
+      "killerRunId": "BRIDGE-MARK-001/mutation-030-cloned-preserved-references",
+      "mutation": {
+        "materialization": "referenceIdentityExpectations",
+        "operator": "replace",
+        "jsonPointer": "/preservedFields/document",
+        "from": "same-reference-as-controller-state-before",
+        "to": "different-reference-from-controller-state-before",
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "ownerLawOracle",
+        "jsonPointer": "/code",
+        "baselineValue": null,
+        "killerValue": "BRIDGE_OWNER_LAW_PRESERVED_REFERENCE_CLONE_FORBIDDEN"
+      },
+      "exactExpectedDifference": {
+        "baselineValue": null,
+        "killerValue": "BRIDGE_OWNER_LAW_PRESERVED_REFERENCE_CLONE_FORBIDDEN"
+      },
+      "oracleExpectation": {
+        "outcome": "killed",
+        "code": "BRIDGE_OWNER_LAW_PRESERVED_REFERENCE_CLONE_FORBIDDEN"
+      },
+      "linkedCaseIds": ["BRIDGE-MARK-001"],
+      "authorityIds": ["BRIDGE-AUTH-A0", "BRIDGE-AUTH-BEAD"]
+    },
+    {
+      "id": "BRIDGE-MUT-031",
+      "category": "latest-state-publication",
+      "baselineRunId": "BRIDGE-REP-029/same-revision-ephemeral-edit",
+      "killerRunId": "BRIDGE-REP-029/mutation-031-frozen-prepare-state-install",
+      "mutation": {
+        "materialization": "publicationMergeObservation",
+        "operator": "replace",
+        "jsonPointer": "/usesLatestControllerState",
+        "from": true,
+        "to": false,
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "ownerLawOracle",
+        "jsonPointer": "/code",
+        "baselineValue": null,
+        "killerValue": "BRIDGE_OWNER_LAW_FROZEN_PREPARE_STATE_INSTALL_FORBIDDEN"
+      },
+      "exactExpectedDifference": {
+        "baselineValue": null,
+        "killerValue": "BRIDGE_OWNER_LAW_FROZEN_PREPARE_STATE_INSTALL_FORBIDDEN"
+      },
+      "oracleExpectation": {
+        "outcome": "killed",
+        "code": "BRIDGE_OWNER_LAW_FROZEN_PREPARE_STATE_INSTALL_FORBIDDEN"
+      },
+      "linkedCaseIds": ["BRIDGE-REP-029"],
+      "authorityIds": ["BRIDGE-AUTH-A0", "BRIDGE-AUTH-BEAD"]
+    },
+    {
+      "id": "BRIDGE-MUT-032",
+      "category": "recursive-state-free-boundary",
+      "baselineRunId": "BRIDGE-MARK-001/exact",
+      "killerRunId": "BRIDGE-MARK-001/mutation-032-nested-state-smuggling",
+      "mutation": {
+        "materialization": "exactTypedResult",
+        "operator": "add",
+        "jsonPointer": "/diagnostics",
+        "from": {
+          "$absent": true
+        },
+        "to": {
+          "state": {
+            "$literalRef": "state-marker-published-7"
+          }
+        },
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "ownerLawOracle",
+        "jsonPointer": "/code",
+        "baselineValue": null,
+        "killerValue": "BRIDGE_OWNER_LAW_STATE_BEARING_RESULT_FORBIDDEN"
+      },
+      "exactExpectedDifference": {
+        "baselineValue": null,
+        "killerValue": "BRIDGE_OWNER_LAW_STATE_BEARING_RESULT_FORBIDDEN"
+      },
+      "oracleExpectation": {
+        "outcome": "killed",
+        "code": "BRIDGE_OWNER_LAW_STATE_BEARING_RESULT_FORBIDDEN"
+      },
+      "linkedCaseIds": ["BRIDGE-MARK-001"],
+      "authorityIds": ["BRIDGE-AUTH-PLAN", "BRIDGE-AUTH-BEAD"]
     }
   ]
 }

@@ -1,4 +1,9 @@
 import type { DocumentId, ValidatedDocument } from "../domain";
+import {
+  MAX_APPLICATION_SEQUENCE,
+  MAX_COMMAND_ID_CODE_POINTS,
+  MAX_COMMAND_LABEL_CODE_POINTS,
+} from "./application-state-contract";
 import type {
   AppRevision,
   ApplicationEffect,
@@ -42,6 +47,30 @@ export const IMPORT_SOURCE_FORMATS = Object.freeze([
 ] as const);
 
 export type ImportSourceFormat = (typeof IMPORT_SOURCE_FORMATS)[number];
+
+/**
+ * The accepted interchange formats have one exact replacement origin each.
+ * This A0-owned table deliberately repeats the accepted mapping without
+ * importing E0, preserving the one-way application-layer dependency edge.
+ */
+export const IMPORT_REPLACEMENT_ORIGIN_BY_SOURCE_FORMAT = Object.freeze({
+  "canonical-json-v2": "canonical-import",
+  "unversioned-legacy-json": "legacy-import",
+  "chart-text-v1": "canonical-import",
+} as const satisfies Readonly<
+  Record<
+    ImportSourceFormat,
+    Extract<ApplicationReplacementOrigin, "canonical-import" | "legacy-import">
+  >
+>);
+
+/** A source format paired with its sole permitted replacement origin. */
+export type ImportReplacementSourceIdentity = {
+  [SourceFormat in ImportSourceFormat]: Readonly<{
+    sourceFormat: SourceFormat;
+    replacementOrigin: (typeof IMPORT_REPLACEMENT_ORIGIN_BY_SOURCE_FORMAT)[SourceFormat];
+  }>;
+}[ImportSourceFormat];
 
 export type ImportRequestIdentity = Readonly<{
   requestId: ApplicationRequestId;
@@ -91,10 +120,23 @@ export type ImportReplacementCommandSeed = Readonly<{
 export const IMPORT_NONUNDOABLE_CONFIRMATION_SCHEMA =
   "changes.import-nonundoable-confirmation.v1";
 
-/** Allocated by application before preview; confirmation cannot mint a token. */
-export type ImportNonUndoableConfirmationSeed = Readonly<{
-  confirmationId: string;
-}>;
+/**
+ * Preparation applies the same token and command-envelope laws as A0's real
+ * document runner. Exact recursive keys are a defensive runtime requirement,
+ * including for values that arrive through a statically typed producer.
+ */
+export const IMPORT_REPLACEMENT_PREPARATION_VALIDATION_POLICY = Object.freeze({
+  recursivelyExactOwnerEnvelopeKeys: true,
+  commandIdMaximumCodePoints: MAX_COMMAND_ID_CODE_POINTS,
+  commandLabelMaximumCodePoints: MAX_COMMAND_LABEL_CODE_POINTS,
+  confirmationIdMaximumCodePoints: MAX_COMMAND_ID_CODE_POINTS,
+  boundedTokensRequireNonemptyTrim: true,
+  boundedTokensRequireUnicodeScalars: true,
+  logicalTimeRequiresNonnegativeSafeInteger: true,
+  logicalTimeMustNotPrecedeLatestUndoEntry: true,
+  malformedPresentConfirmationCode: "import.confirmation_identity_mismatch",
+  missingConfirmationCode: "history.nonundoable_confirmation_required",
+} as const);
 
 export type ImportNonUndoableConfirmationRequirement = Readonly<{
   schema: typeof IMPORT_NONUNDOABLE_CONFIRMATION_SCHEMA;
@@ -107,9 +149,31 @@ export type ImportNonUndoableConfirmationRequirement = Readonly<{
 
 export type ImportNonUndoableConfirmationAcknowledgement = Readonly<{
   kind: "acknowledged";
-  /** Must be field-identical to the immutable requirement stored in preview. */
+  /**
+   * E0 v2 must bind this to its displayed requirement. A0 can check only its
+   * internal agreement with the current request and controller-owned state.
+   */
   requirement: ImportNonUndoableConfirmationRequirement;
 }>;
+
+/**
+ * Exact authority boundary for the flattened preparation request. A0 owns
+ * current-state checks and validation, but has no stored preview snapshot with
+ * which to prove what a user previously saw or acknowledged.
+ */
+export const A0_E0_INTERCHANGE_OWNER_REQUEST_AUTHORITY_BOUNDARY = Object.freeze(
+  {
+    currentStateComesFromControllerClosure: true,
+    candidateDocumentIdComparedWithCurrentTransition: true,
+    candidateStructurallyAndSemanticallyValidated: true,
+    disclosedImpactRecomputedFromCurrentState: true,
+    confirmationFieldsCheckedForInternalConsistency: true,
+    exactPreviewProjectionProvedByOwner: false,
+    candidateBytesUserConfirmedProvedByOwner: false,
+    commandSeedUserConfirmedProvedByOwner: false,
+    confirmationAcknowledgementProvenanceProvedByOwner: false,
+  } as const,
+);
 
 type ActiveDocumentTransition = Extract<
   DocumentTransitionState,
@@ -148,18 +212,15 @@ export type ImportReplacementHandoff = Readonly<{
 
 type PrepareImportReplacementPublicationRequestBase = Readonly<{
   identity: ImportRequestIdentity;
-  sourceFormat: ImportSourceFormat;
-  replacementOrigin: Extract<
-    ApplicationReplacementOrigin,
-    "canonical-import" | "legacy-import"
-  >;
   candidate: ValidatedDocument;
   replacementCommandSeed: ImportReplacementCommandSeed;
-}>;
+}> &
+  ImportReplacementSourceIdentity;
 
 /**
  * State-free evidence submitted to the owner. The controller closure supplies
- * the only current AppState authority and rechecks every fallible condition.
+ * the only current AppState authority. Candidate/command/acknowledgement
+ * preview provenance remains a separately versioned E0 v2 responsibility.
  */
 export type PrepareImportReplacementPublicationRequest =
   | (PrepareImportReplacementPublicationRequestBase &
@@ -354,7 +415,20 @@ export type PublishCanonicalExportRevisionPort = (
 /** Consumer-facing alias for the untrusted composition port. */
 export type PublishCanonicalExportRevision = PublishCanonicalExportRevisionPort;
 
-/** The complete composition-private A0 authority available for future binding. */
+/**
+ * Exact controller-owned producers. A future composition root may narrow this
+ * aggregate to the consumer-facing ports, whose fallible results are unknown
+ * until the separately versioned consumer validates them.
+ */
+export interface A0E0InterchangeOwnerOperations {
+  readonly prepareImportReplacementPublication: PrepareImportReplacementPublicationOperation;
+  readonly discardImportReplacementPublication: DiscardImportReplacementPublicationOperation;
+  readonly publishImportReplacement: PublishImportReplacementOperation;
+  readonly readCurrentApplicationDocumentIdentity: ReadCurrentApplicationDocumentIdentityOperation;
+  readonly publishCanonicalExportRevision: PublishCanonicalExportRevisionOperation;
+}
+
+/** The complete composition-private untrusted A0 consumer view. */
 export interface A0E0InterchangeOwnerPorts {
   readonly prepareImportReplacementPublication: PrepareImportReplacementPublicationPort;
   readonly discardImportReplacementPublication: DiscardImportReplacementPublicationPort;
@@ -367,9 +441,58 @@ export interface A0E0InterchangeOwnerPorts {
 export const MAX_A0_E0_LIVE_IMPORT_REPLACEMENT_PREPARATIONS = 1;
 
 /**
+ * Publication applies precomputed command material to the latest matching
+ * controller state. It never installs a whole AppState captured at prepare
+ * time; same-revision ephemeral updates follow this exact ownership split.
+ */
+export const IMPORT_REPLACEMENT_PUBLICATION_LATEST_STATE_MERGE = Object.freeze({
+  latestStateRecheckedAtPublication: true,
+  frozenPrepareTimeWholeStateInstallAllowed: false,
+  preparedCommandInputsRechecked: Object.freeze([
+    "documentIdentity",
+    "revision",
+    "bookmarks",
+  ] as const),
+  historyStabilityDerivedFromRevisionAndImmutableReducerLaw: true,
+  sameRevisionBookmarkDriftOutcome:
+    "consume-and-refuse-import.replacement_preparation_stale",
+  latestTransportGenerationMustNotExceedRetiredGeneration: true,
+  uncoveredLatestTransportOutcome:
+    "consume-and-refuse-import.replacement_retirement_mismatch",
+  latestSequenceMustBeLessThan: MAX_APPLICATION_SEQUENCE,
+  exhaustedLatestSequenceOutcome:
+    "consume-and-refuse-import.replacement_preparation_stale",
+  preservedFromLatestStateByValue: Object.freeze(["exportRevision"] as const),
+  preservedFromLatestStateByReference: Object.freeze([
+    "recovery",
+    "panels",
+    "dialogs",
+    "transport",
+  ] as const),
+  replacementOwnedFields: Object.freeze([
+    "document",
+    "revision",
+    "history",
+    "bookmarks",
+    "quickEntry",
+    "importDraft",
+    "pendingRequests",
+    "documentTransition",
+    "notices",
+  ] as const),
+  allocatedFromLatestSequenceAtPublication: Object.freeze([
+    "focusRequest",
+    "nextSequence",
+  ] as const),
+  optionalWarningNoticeUsesNextSequenceAndSaturatesAtMaximum: true,
+  rerunsPreparationWork: false,
+} as const);
+
+/**
  * Laws for the future A0 implementation. Current state comes only from the
- * controller closure; bounded work never uses wall time or inspects musical
- * content; publication therefore preserves Manual/Frozen pitches exactly.
+ * controller closure and bounded work never uses wall time. Preparation may
+ * validate musical content, but no owner operation silently repairs or
+ * optimizes it; publication therefore preserves Manual/Frozen pitches exactly.
  */
 export const A0_E0_INTERCHANGE_OWNER_LAW_IDS = Object.freeze([
   "BRIDGE-OWNER-01-controller-current-state-only",
@@ -382,13 +505,13 @@ export const A0_E0_INTERCHANGE_OWNER_LAW_IDS = Object.freeze([
   "BRIDGE-OWNER-08-document-and-revision-marker-cas",
   "BRIDGE-OWNER-09-marker-preserves-unrelated-current-state",
   "BRIDGE-OWNER-10-state-free-boundary-results",
-  "BRIDGE-OWNER-11-no-wall-time-or-pitch-inspection",
+  "BRIDGE-OWNER-11-no-wall-time-or-pitch-repair",
 ] as const);
 
 export const A0_E0_INTERCHANGE_OWNER_APPLICABILITY = Object.freeze({
   prepareImportReplacementPublication: Object.freeze({
     synchronization: "synchronous-controller-transaction",
-    cancellation: "not-applicable-pre-retirement",
+    cancellation: "resolved-before-prepare-no-owner-call",
     staleState: "exact-document-revision-request-and-transition",
     replay: "live-complete-identity-required",
     transposition: "applicable-candidate-preserved-byte-for-byte",
@@ -396,7 +519,7 @@ export const A0_E0_INTERCHANGE_OWNER_APPLICABILITY = Object.freeze({
   }),
   discardImportReplacementPublication: Object.freeze({
     synchronization: "synchronous-total-cleanup",
-    cancellation: "applicable-to-every-post-prepare-nonpublication-path",
+    cancellation: "not-applicable-four-closed-failure-reasons-only",
     staleState: "request-keyed-cleanup-remains-total",
     replay: "idempotent-live-for-request-zero",
     transposition: "not-applicable-content-invariant-cleanup",
@@ -404,7 +527,7 @@ export const A0_E0_INTERCHANGE_OWNER_APPLICABILITY = Object.freeze({
   }),
   publishImportReplacement: Object.freeze({
     synchronization: "synchronous-consume-and-publish",
-    cancellation: "forbidden-after-valid-retirement-evidence",
+    cancellation: "not-applicable-once-prepare-begins",
     staleState: "exact-live-preparation-and-retirement-required",
     replay: "consumed-and-invalidated-echoes-refused",
     transposition: "applicable-manual-and-frozen-pitches-preserved",
@@ -419,7 +542,7 @@ export const A0_E0_INTERCHANGE_OWNER_APPLICABILITY = Object.freeze({
     wallTimeCutoff: "forbidden-constant-field-read",
   }),
   publishCanonicalExportRevision: Object.freeze({
-    synchronization: "synchronous-validate-compare-write-notify",
+    synchronization: "synchronous-validate-compare-conditional-write-notify",
     cancellation: "not-applicable-after-successful-delivery",
     staleState: "exact-document-and-revision-cas",
     replay: "same-marker-idempotent-only-at-exact-current-identity",

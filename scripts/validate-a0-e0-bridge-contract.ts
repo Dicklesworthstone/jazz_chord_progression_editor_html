@@ -3,8 +3,20 @@ import { readdir, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import * as ts from "typescript";
 
-import { validateDocumentSemantics } from "../src/application";
-import { decodeDocumentShape } from "../src/domain";
+import {
+  applicationHistoryRetainedByteEstimator,
+  MAX_APPLICATION_REVISION,
+  MAX_APPLICATION_SEQUENCE,
+  MAX_COMMAND_ID_CODE_POINTS,
+  MAX_COMMAND_LABEL_CODE_POINTS,
+  runDocumentCommand,
+  validateDocumentSemantics,
+} from "../src/application";
+import {
+  copyDomain,
+  createProductionStableIdFactory,
+  decodeDocumentShape,
+} from "../src/domain";
 
 import {
   E0_ACCEPTED_BYTE_DIGESTS,
@@ -113,7 +125,7 @@ const EXPECTED_COUNTS = Object.freeze({
   identityCases: 6,
   markerCases: 12,
   applicabilityRows: 5,
-  mutationControls: 24,
+  mutationControls: 32,
   traces: 5,
   authorities: 5,
 });
@@ -180,7 +192,9 @@ const ACCEPTED_E0_V1_ARTIFACT_PINS = Object.freeze([
 
 const ACCEPTED_E0_V1_CONFLICT_IDS = Object.freeze([
   "E0V1-CONFLICT-IMPORT-REQUEST-CURRENT-STATE",
+  "E0V1-CONFLICT-PREVIEW-IMPACT-CONTEXT-STATE",
   "E0V1-CONFLICT-IMPORT-PREVIEW-PROJECTION",
+  "E0V1-CONFLICT-PREVIEW-AUTHORITY-AND-CONSENT",
   "E0V1-CONFLICT-IMPORT-SUCCESS-PUBLICATION-STATE",
   "E0V1-CONFLICT-IMPORT-REFUSAL-STATE",
   "E0V1-CONFLICT-PUBLICATION-PROTOCOL-LAST-KNOWN-STATE",
@@ -190,24 +204,55 @@ const ACCEPTED_E0_V1_CONFLICT_IDS = Object.freeze([
   "E0V1-CONFLICT-PUBLIC-MARKER-REQUEST-STATE",
 ] as const);
 const ACCEPTED_E0_V1_CONFLICT_INVENTORY_DIGEST =
-  "e22fd076556902ddc68402b410ea5de5ea1f3396d5f4bdae08e08e489246e5e9";
+  "b49f0760def8181aef1188150c5eff181adf3533abef813f12174c74a9411ae4";
 const OWNER_PORT_RECORDS_DIGEST =
   "e060d06ed1700333e767673707a27ec9f333c6dda7a8224eb3c2af8bbf021181";
 
-const OWNER_IMPORT_TOPOLOGY = Object.freeze({
-  "../domain": ["DocumentId", "ValidatedDocument"],
-  "./application-state-contract": [
-    "AppRevision",
-    "ApplicationEffect",
-    "ApplicationReplacementOrigin",
-    "ApplicationRequestId",
-    "ApplicationWorkCounters",
-    "CommandId",
-    "DocumentTransitionState",
-    "ReplacementRetirementReceipt",
-    "TransportGeneration",
-  ],
-} as const);
+const OWNER_LAW_IDS = Object.freeze([
+  "BRIDGE-OWNER-01-controller-current-state-only",
+  "BRIDGE-OWNER-02-prepare-after-all-fallible-checks",
+  "BRIDGE-OWNER-03-complete-identity-single-live-entry",
+  "BRIDGE-OWNER-04-total-idempotent-request-cleanup",
+  "BRIDGE-OWNER-05-publish-consumes-before-return",
+  "BRIDGE-OWNER-06-replay-and-lookalike-refused",
+  "BRIDGE-OWNER-07-synchronous-latest-identity",
+  "BRIDGE-OWNER-08-document-and-revision-marker-cas",
+  "BRIDGE-OWNER-09-marker-preserves-unrelated-current-state",
+  "BRIDGE-OWNER-10-state-free-boundary-results",
+  "BRIDGE-OWNER-11-no-wall-time-or-pitch-repair",
+] as const);
+
+const OWNER_IMPORT_TOPOLOGY = Object.freeze([
+  {
+    modulePath: "../domain",
+    isTypeOnly: true,
+    names: ["DocumentId", "ValidatedDocument"],
+  },
+  {
+    modulePath: "./application-state-contract",
+    isTypeOnly: false,
+    names: [
+      "MAX_APPLICATION_SEQUENCE",
+      "MAX_COMMAND_ID_CODE_POINTS",
+      "MAX_COMMAND_LABEL_CODE_POINTS",
+    ],
+  },
+  {
+    modulePath: "./application-state-contract",
+    isTypeOnly: true,
+    names: [
+      "AppRevision",
+      "ApplicationEffect",
+      "ApplicationReplacementOrigin",
+      "ApplicationRequestId",
+      "ApplicationWorkCounters",
+      "CommandId",
+      "DocumentTransitionState",
+      "ReplacementRetirementReceipt",
+      "TransportGeneration",
+    ],
+  },
+] as const);
 
 const EXPECTED_OWNER_RESULT_COUNTER_KEYS = Object.freeze([
   "prepareImportReplacementPublication",
@@ -228,6 +273,201 @@ const EXPECTED_OWNER_RESULT_COUNTER_KEYS = Object.freeze([
   "registryInvalidations",
   "registryConsumptions",
 ] as const);
+
+const EXPECTED_OWNER_LAW_FLAG_KEYS = Object.freeze([
+  "historicalStateReinstall",
+] as const);
+
+const DEFAULT_OWNER_LAW_FLAGS: JsonObject = Object.freeze(
+  Object.fromEntries(EXPECTED_OWNER_LAW_FLAG_KEYS.map((key) => [key, false])),
+);
+
+const MARKER_PRESERVED_FIELDS = Object.freeze([
+  "document",
+  "revision",
+  "recovery",
+  "history",
+  "bookmarks",
+  "panels",
+  "dialogs",
+  "quickEntry",
+  "importDraft",
+  "transport",
+  "pendingRequests",
+  "documentTransition",
+  "focusRequest",
+  "notices",
+  "nextSequence",
+] as const);
+
+const REPLACEMENT_PUBLICATION_FIELD_POLICY = Object.freeze({
+  preserveLatestByValue: ["exportRevision"],
+  preserveLatestByReference: ["recovery", "panels", "dialogs", "transport"],
+  replacementOwned: [
+    "document",
+    "revision",
+    "history",
+    "bookmarks",
+    "quickEntry",
+    "importDraft",
+    "pendingRequests",
+    "documentTransition",
+    "notices",
+  ],
+  allocateFromLatestSequence: ["focusRequest", "nextSequence"],
+} as const);
+
+const EXPECTED_A0_CONFORMANCE_RUN_IDS = Object.freeze([
+  "BRIDGE-REP-001/retained",
+  "BRIDGE-REP-002/unavailable",
+  "BRIDGE-REP-003/source-c",
+  "BRIDGE-REP-003/target-d",
+  "BRIDGE-REP-004/exact-refusal",
+  "BRIDGE-REP-005/exact-refusal",
+  "BRIDGE-REP-006/exact-refusal",
+  "BRIDGE-REP-007/chart-text-canonical",
+  "BRIDGE-REP-007/legacy-json-legacy",
+  "BRIDGE-REP-008/exact-refusal",
+  "BRIDGE-REP-008/nested-identity-extra-key",
+  "BRIDGE-REP-009/exact-refusal",
+  "BRIDGE-REP-010/exact-refusal",
+  "BRIDGE-REP-011/exact-refusal",
+  "BRIDGE-REP-012/exact-refusal",
+  "BRIDGE-REP-013/exact-refusal",
+  "BRIDGE-REP-014/label-160-boundary",
+  "BRIDGE-REP-014/label-161-killer",
+  "BRIDGE-REP-015/logical-time-latest-boundary",
+  "BRIDGE-REP-015/logical-time-nan-killer",
+  "BRIDGE-REP-015/logical-time-before-latest-history",
+  "BRIDGE-REP-016/exact-refusal",
+  "BRIDGE-REP-017/exact-refusal",
+  "BRIDGE-REP-018/exact-refusal",
+  "BRIDGE-REP-019/semantic-valid-cmaj7",
+  "BRIDGE-REP-019/semantic-cfoo-killer",
+  "BRIDGE-REP-020/exact-refusal",
+  "BRIDGE-REP-020/impact-unavailable",
+  "BRIDGE-REP-021/exact-refusal",
+  "BRIDGE-REP-022/exact-refusal",
+  "BRIDGE-REP-023/exact-refusal",
+  "BRIDGE-REP-023/confirmation-stale",
+  "BRIDGE-REP-023/confirmation-wrong-document",
+  "BRIDGE-REP-023/confirmation-impact-mismatch",
+  "BRIDGE-REP-023/confirmation-id-129-code-points",
+  "BRIDGE-REP-023/confirmation-id-whitespace-only",
+  "BRIDGE-REP-023/confirmation-id-lone-surrogate",
+  "BRIDGE-REP-023/confirmation-extra-key",
+  "BRIDGE-REP-023/confirmation-requirement-extra-key",
+  "BRIDGE-REP-023/confirmation-requirement-identity-extra-key",
+  "BRIDGE-REP-023/confirmation-requirement-disclosed-impact-extra-key",
+  "BRIDGE-REP-024/capacity-one-busy",
+  "BRIDGE-REP-027/preparation-protocol-invalid-first",
+  "BRIDGE-REP-027/preparation-protocol-invalid-repeat",
+  "BRIDGE-REP-027/retirement-refused-first",
+  "BRIDGE-REP-027/retirement-refused-repeat",
+  "BRIDGE-REP-027/retirement-protocol-invalid-first",
+  "BRIDGE-REP-027/retirement-protocol-invalid-repeat",
+  "BRIDGE-REP-027/publication-protocol-invalid-first",
+  "BRIDGE-REP-027/publication-protocol-invalid-repeat",
+  "BRIDGE-REP-028/wrong-request-isolation",
+  "BRIDGE-REP-028/manual-source-c",
+  "BRIDGE-REP-028/manual-target-d",
+  "BRIDGE-REP-029/retained",
+  "BRIDGE-REP-029/same-revision-ephemeral-edit",
+  "BRIDGE-REP-029/manual-source-c",
+  "BRIDGE-REP-029/manual-target-d",
+  "BRIDGE-REP-029/explicitly-unavailable",
+  "BRIDGE-REP-029/explicitly-unavailable-sequence-saturation-boundary",
+  "BRIDGE-REP-030/consumed-replay",
+  "BRIDGE-REP-030/invalidated-replay",
+  "BRIDGE-REP-030/structural-lookalike",
+  "BRIDGE-REP-030/stale-live-entry",
+  "BRIDGE-REP-030/retirement-mismatch",
+  "BRIDGE-REP-030/transport-advanced-after-prepare",
+  "BRIDGE-REP-030/bookmarks-changed-after-prepare",
+  "BRIDGE-REP-030/sequence-exhausted-after-prepare",
+  "BRIDGE-ID-001/baseline",
+  "BRIDGE-ID-002/identity-2",
+  "BRIDGE-ID-003/identity-3",
+  "BRIDGE-ID-004/source-c",
+  "BRIDGE-ID-004/target-d",
+  "BRIDGE-MARK-001/exact",
+  "BRIDGE-MARK-002/marker-2",
+  "BRIDGE-MARK-003/marker-3",
+  "BRIDGE-MARK-004/marker-4",
+  "BRIDGE-MARK-005/marker-5",
+  "BRIDGE-MARK-008/marker-8",
+  "BRIDGE-MARK-009/marker-9",
+  "BRIDGE-MARK-010/marker-10",
+  "BRIDGE-MARK-011/marker-11",
+  "BRIDGE-MARK-012/source-c",
+  "BRIDGE-MARK-012/target-d",
+] as const);
+
+const PREPARE_SUCCESS_RUN_IDS = new Set([
+  "BRIDGE-REP-001/retained",
+  "BRIDGE-REP-002/unavailable",
+  "BRIDGE-REP-003/source-c",
+  "BRIDGE-REP-003/target-d",
+  "BRIDGE-REP-007/chart-text-canonical",
+  "BRIDGE-REP-007/legacy-json-legacy",
+  "BRIDGE-REP-014/label-160-boundary",
+  "BRIDGE-REP-015/logical-time-latest-boundary",
+  "BRIDGE-REP-019/semantic-valid-cmaj7",
+]);
+
+const PREPARE_REFUSAL_BY_CONFORMANCE_RUN_ID = Object.freeze({
+  "BRIDGE-REP-004/exact-refusal": "import.replacement_request_stale",
+  "BRIDGE-REP-005/exact-refusal": "import.replacement_wrong_document",
+  "BRIDGE-REP-006/exact-refusal": "import.replacement_request_stale",
+  "BRIDGE-REP-008/exact-refusal": "import.replacement_request_invalid",
+  "BRIDGE-REP-008/nested-identity-extra-key":
+    "import.replacement_request_invalid",
+  "BRIDGE-REP-009/exact-refusal": "import.replacement_transition_mismatch",
+  "BRIDGE-REP-010/exact-refusal": "import.replacement_transition_mismatch",
+  "BRIDGE-REP-011/exact-refusal": "import.replacement_transition_mismatch",
+  "BRIDGE-REP-012/exact-refusal": "import.replacement_impact_mismatch",
+  "BRIDGE-REP-013/exact-refusal": "import.replacement_command_id_invalid",
+  "BRIDGE-REP-014/label-161-killer":
+    "import.replacement_command_label_invalid",
+  "BRIDGE-REP-015/logical-time-nan-killer":
+    "import.replacement_logical_time_invalid",
+  "BRIDGE-REP-015/logical-time-before-latest-history":
+    "import.replacement_logical_time_invalid",
+  "BRIDGE-REP-016/exact-refusal": "application.revision_exhausted",
+  "BRIDGE-REP-017/exact-refusal": "application.sequence_exhausted",
+  "BRIDGE-REP-018/exact-refusal": "import.candidate_structural_invalid",
+  "BRIDGE-REP-019/semantic-cfoo-killer":
+    "import.candidate_semantic_invalid",
+  "BRIDGE-REP-020/exact-refusal":
+    "import.replacement_history_estimate_failed",
+  "BRIDGE-REP-020/impact-unavailable":
+    "import.replacement_impact_unavailable",
+  "BRIDGE-REP-021/exact-refusal": "import.replacement_impact_mismatch",
+  "BRIDGE-REP-022/exact-refusal":
+    "history.nonundoable_confirmation_required",
+  "BRIDGE-REP-023/exact-refusal": "import.confirmation_identity_mismatch",
+  "BRIDGE-REP-023/confirmation-stale": "import.confirmation_stale",
+  "BRIDGE-REP-023/confirmation-wrong-document":
+    "import.confirmation_wrong_document",
+  "BRIDGE-REP-023/confirmation-impact-mismatch":
+    "import.confirmation_impact_mismatch",
+  "BRIDGE-REP-023/confirmation-id-129-code-points":
+    "import.confirmation_identity_mismatch",
+  "BRIDGE-REP-023/confirmation-id-whitespace-only":
+    "import.confirmation_identity_mismatch",
+  "BRIDGE-REP-023/confirmation-id-lone-surrogate":
+    "import.confirmation_identity_mismatch",
+  "BRIDGE-REP-023/confirmation-extra-key":
+    "import.confirmation_identity_mismatch",
+  "BRIDGE-REP-023/confirmation-requirement-extra-key":
+    "import.confirmation_identity_mismatch",
+  "BRIDGE-REP-023/confirmation-requirement-identity-extra-key":
+    "import.confirmation_identity_mismatch",
+  "BRIDGE-REP-023/confirmation-requirement-disclosed-impact-extra-key":
+    "import.confirmation_identity_mismatch",
+  "BRIDGE-REP-024/capacity-one-busy":
+    "import.replacement_preparation_busy",
+} as const);
 
 const E0_V2_OWNED_CASE_IDS = new Set([
   "BRIDGE-REP-025",
@@ -250,6 +490,104 @@ const FORWARD_E0_V2_TRACE_EXCLUSION = Object.freeze({
   rationale:
     "Malformed unknown-return normalization and thrown consumer ports belong only to the future E0 v2 semantic binding.",
 });
+
+const PREPARE_SUCCESS_EVENTS = Object.freeze([
+  "call.prepare",
+  "read.controller-state",
+  "validate.request-envelope",
+  "compare.complete-identity",
+  "compare.transition-binding",
+  "validate.command-metadata",
+  "check.revision-and-sequence-capacity",
+  "call.f2",
+  "call.f3",
+  "repair.bookmarks-and-focus",
+  "estimate.history",
+  "recompute.impact",
+  "compare.confirmation",
+  "inspect.registry-capacity-one",
+  "allocate.registry-entry",
+  "return.prepared",
+] as const);
+
+const PREPARE_BUSY_EVENTS = Object.freeze([
+  ...PREPARE_SUCCESS_EVENTS.slice(0, -2),
+  "observe.registry-busy",
+  "return.refused",
+] as const);
+
+function completeOwnerCounters(
+  operation: string,
+  overrides: Readonly<Record<string, number>> = {},
+): JsonObject {
+  const counters: JsonObject = Object.fromEntries(
+    EXPECTED_OWNER_RESULT_COUNTER_KEYS.map((key) => [key, 0]),
+  );
+  counters[operation] = 1;
+  for (const [key, value] of Object.entries(overrides)) counters[key] = value;
+  return counters;
+}
+
+function fixedOwnerWorkBound(
+  operation: string,
+  retainedRegistryEntriesAtReturn: number,
+): JsonObject {
+  const common = {
+    wallTimeObservedOrUsed: false,
+    maximumControllerStateReads: 1,
+    maximumF2DocumentTraversals: 0,
+    maximumF3DocumentTraversals: 0,
+    maximumHistoryEntriesVisited: 0,
+    maximumHistoryRetainedBytes: 0,
+    awaitOrMicrotaskBoundariesInsideOperation: 0,
+    retainedRegistryEntriesAtReturn,
+  };
+  if (operation === "readCurrentApplicationDocumentIdentity") {
+    return {
+      termination: "constant-controller-field-read",
+      ...common,
+      maximumControllerStateInstalls: 0,
+      maximumListenerCallbacks: 0,
+      maximumRegistryEntriesInspected: 0,
+      maximumLiveRegistryEntries: 0,
+    };
+  }
+  if (operation === "publishCanonicalExportRevision") {
+    return {
+      termination:
+        "single-synchronous-validate-read-compare-write-install-notify",
+      ...common,
+      maximumControllerStateInstalls: 1,
+      maximumListenerCallbacks: 1,
+      maximumRegistryEntriesInspected: 0,
+      maximumLiveRegistryEntries: 0,
+    };
+  }
+  return {
+    termination: "fixed-state-count-and-capacity-bound",
+    ...common,
+    maximumControllerStateInstalls:
+      operation === "publishImportReplacement" ? 1 : 0,
+    maximumListenerCallbacks:
+      operation === "publishImportReplacement" ? 1 : 0,
+    maximumRegistryEntriesInspected: 1,
+    maximumLiveRegistryEntries: 1,
+    maximumF2DocumentTraversals:
+      operation === "prepareImportReplacementPublication" ? 1 : 0,
+    maximumF3DocumentTraversals:
+      operation === "prepareImportReplacementPublication" ? 1 : 0,
+    maximumHistoryEntriesVisited:
+      operation === "prepareImportReplacementPublication" ||
+      operation === "publishImportReplacement"
+        ? 200
+        : 0,
+    maximumHistoryRetainedBytes:
+      operation === "prepareImportReplacementPublication" ||
+      operation === "publishImportReplacement"
+        ? 16_777_216
+        : 0,
+  };
+}
 
 function sha256(bytes: Uint8Array): string {
   return createHash("sha256").update(bytes).digest("hex");
@@ -280,6 +618,30 @@ function stableJson(value: unknown): string {
 
 function isObject(value: unknown): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isBoundedUnicodeScalarToken(
+  value: unknown,
+  maximumCodePoints: number,
+): value is string {
+  if (
+    typeof value !== "string" ||
+    value.trim().length === 0 ||
+    Array.from(value).length > maximumCodePoints
+  ) {
+    return false;
+  }
+  for (let index = 0; index < value.length; index += 1) {
+    const unit = value.charCodeAt(index);
+    if (unit >= 0xd800 && unit <= 0xdbff) {
+      const next = value.charCodeAt(index + 1);
+      if (!(next >= 0xdc00 && next <= 0xdfff)) return false;
+      index += 1;
+    } else if (unit >= 0xdc00 && unit <= 0xdfff) {
+      return false;
+    }
+  }
+  return true;
 }
 
 function jsonDeepEqual(left: unknown, right: unknown): boolean {
@@ -579,6 +941,19 @@ function applyPointerMutation(
   }
   const token = tokens.at(-1) as string;
   const current = childAtContainer(sourceParent, token);
+  if (operator === "add") {
+    if (
+      current !== undefined ||
+      !isObject(expectedBefore) ||
+      expectedBefore["$absent"] !== true ||
+      !isObject(targetParent) ||
+      Object.hasOwn(targetParent, token)
+    ) {
+      throw new Error(`BRIDGE_PATCH_ADD_TARGET:${pointer}`);
+    }
+    targetParent[token] = value;
+    return rootCopy;
+  }
   if (operator === "assert") {
     if (!jsonDeepEqual(current, expectedBefore)) {
       throw new Error("BRIDGE_PATCH_ASSERT");
@@ -621,9 +996,7 @@ function applyPointerMutation(
 function containsForbiddenStateKey(value: unknown): boolean {
   if (Array.isArray(value)) return value.some(containsForbiddenStateKey);
   if (!isObject(value)) return false;
-  const expectedF3ValidationCalls = [...documentValidationCache.values()].filter(
-    (entry) => entry.stage !== "f2-refused" && entry.stage !== "f2-repaired",
-  ).length;
+  if (isFullAppStateLiteral(value)) return true;
   if (
     ["currentState", "lastKnownState", "observedBefore", "state"].some(
       (key) => Object.hasOwn(value, key),
@@ -660,6 +1033,85 @@ function isFullAppStateLiteral(value: unknown): boolean {
     Number.isSafeInteger(value["revision"]) &&
     Number(value["revision"]) >= 0
   );
+}
+
+function incrementApplicationSequence(sequence: number): number {
+  return sequence >= MAX_APPLICATION_SEQUENCE
+    ? MAX_APPLICATION_SEQUENCE
+    : sequence + 1;
+}
+
+function constructLatestReplacementPublicationState(
+  latest: JsonObject,
+  privateMaterial: JsonObject,
+): JsonObject | null {
+  const publication = isObject(privateMaterial["publication"])
+    ? privateMaterial["publication"]
+    : null;
+  const owned =
+    publication !== null &&
+    isObject(publication["replacementOwnedProjection"])
+      ? publication["replacementOwnedProjection"]
+      : null;
+  const focusTemplate =
+    publication !== null && isObject(publication["focusRequestTemplate"])
+      ? publication["focusRequestTemplate"]
+      : null;
+  const noticeTemplates =
+    owned !== null && Array.isArray(owned["noticeTemplates"])
+      ? recordsAt(owned["noticeTemplates"])
+      : null;
+  const quickEntryTemplate =
+    owned !== null && isObject(owned["quickEntryTemplate"])
+      ? owned["quickEntryTemplate"]
+      : null;
+  if (
+    publication === null ||
+    owned === null ||
+    focusTemplate === null ||
+    noticeTemplates === null ||
+    quickEntryTemplate === null ||
+    publication["revisionIncrement"] !== 1 ||
+    !Number.isSafeInteger(latest["revision"]) ||
+    !Number.isSafeInteger(latest["nextSequence"]) ||
+    Number(latest["nextSequence"]) >= MAX_APPLICATION_SEQUENCE
+  ) {
+    return null;
+  }
+  const revision = Number(latest["revision"]) + 1;
+  let nextSequence = Number(latest["nextSequence"]);
+  const focusRequest = {
+    ...focusTemplate,
+    sequence: nextSequence,
+  };
+  nextSequence = incrementApplicationSequence(nextSequence);
+  const notices = noticeTemplates.map((template) => {
+    const notice = {
+      ...template,
+      sequence: nextSequence,
+      createdAtRevision: revision,
+    };
+    nextSequence = incrementApplicationSequence(nextSequence);
+    return notice;
+  });
+  return {
+    document: owned["document"],
+    revision,
+    exportRevision: latest["exportRevision"],
+    recovery: latest["recovery"],
+    history: owned["history"],
+    bookmarks: owned["bookmarks"],
+    panels: latest["panels"],
+    dialogs: latest["dialogs"],
+    quickEntry: { ...quickEntryTemplate, baseRevision: revision },
+    importDraft: owned["importDraft"],
+    transport: latest["transport"],
+    pendingRequests: owned["pendingRequests"],
+    documentTransition: owned["documentTransition"],
+    focusRequest,
+    notices,
+    nextSequence,
+  };
 }
 
 function isCompleteDocumentLiteral(value: unknown): boolean {
@@ -976,6 +1428,23 @@ function materializeBridgeTemplate(
     if (value["$specialNumber"] === "-Infinity") return Number.NEGATIVE_INFINITY;
     throw new Error("BRIDGE_SPECIAL_NUMBER");
   }
+  if (Object.hasOwn(value, "$utf16CodeUnits")) {
+    const units = value["$utf16CodeUnits"];
+    if (
+      Object.keys(value).length !== 1 ||
+      !Array.isArray(units) ||
+      units.length === 0 ||
+      units.some(
+        (unit) =>
+          !Number.isInteger(unit) ||
+          Number(unit) < 0 ||
+          Number(unit) > 0xffff,
+      )
+    ) {
+      throw new Error("BRIDGE_UTF16_CODE_UNITS");
+    }
+    return String.fromCharCode(...units.map(Number));
+  }
   return Object.fromEntries(
     Object.entries(value).map(([key, child]) => [
       key,
@@ -1078,7 +1547,7 @@ function applyBridgePatches(
       throw new Error("BRIDGE_PATCH_SHAPE");
     }
     const actualBefore = valueAtJsonPointer(current, pointer);
-    if (actualBefore === undefined) {
+    if (actualBefore === undefined && operator !== "add") {
       throw new Error(`BRIDGE_PATCH_TARGET:${pointer}`);
     }
     if (operator === "assert") {
@@ -1114,6 +1583,29 @@ function applyBridgePatches(
       context,
       stateContext,
     );
+    if (operator === "add") {
+      const to = materializePatchValue(patch["to"], context, stateContext);
+      const value = materializePatchValue(
+        patch["value"],
+        context,
+        stateContext,
+      );
+      if (
+        !isObject(expectedBefore) ||
+        expectedBefore["$absent"] !== true ||
+        !jsonDeepEqual(to, value)
+      ) {
+        throw new Error("BRIDGE_PATCH_ADD_VALUE");
+      }
+      current = applyPointerMutation(
+        current,
+        "add",
+        pointer,
+        expectedBefore,
+        value,
+      );
+      continue;
+    }
     if (operator === "replace") {
       const to = materializePatchValue(patch["to"], context, stateContext);
       const value = materializePatchValue(
@@ -1226,6 +1718,15 @@ type MaterializedRunProjection = Readonly<{
   ownerLawFlags: JsonObject;
   ownerLawOracle: JsonObject;
   scenarioFinalState: unknown;
+  scenarioFinalStateResolved: unknown;
+  scenarioCurrentAfterExternalEdit: unknown;
+  referenceIdentityExpectations: unknown;
+  publicationMergeFieldPolicy: unknown;
+  publicationMergeReferenceExpectations: unknown;
+  publicationMergeSequenceWitness: unknown;
+  sameRevisionInterleave: unknown;
+  publicationMergeObservation: unknown;
+  contentInvarianceWitness: unknown;
   comparisonInput: JsonObject;
 }>;
 
@@ -1271,6 +1772,10 @@ function projectionForMutationTarget(
       return run.ownerLawOracle;
     case "scenarioFinalState":
       return run.scenarioFinalState;
+    case "referenceIdentityExpectations":
+      return run.referenceIdentityExpectations;
+    case "publicationMergeObservation":
+      return run.publicationMergeObservation;
     default:
       return undefined;
   }
@@ -1537,6 +2042,180 @@ export async function validateA0E0BridgeContract(
     );
   }
 
+  requireExact(
+    contract["sourceOriginMapping"],
+    {
+      "canonical-json-v2": "canonical-import",
+      "unversioned-legacy-json": "legacy-import",
+      "chart-text-v1": "canonical-import",
+    },
+    "BRIDGE_SOURCE_ORIGIN_MAPPING",
+    "a0-e0-bridge-contract.json.sourceOriginMapping",
+    "Every accepted import source format has one exact owner replacement origin.",
+    findings,
+  );
+  requireExact(
+    contract["aggregateInterfaces"],
+    {
+      producer: {
+        name: "A0E0InterchangeOwnerOperations",
+        memberTypeSuffix: "Operation",
+        returnsExactTypedResults: true,
+      },
+      consumer: {
+        name: "A0E0InterchangeOwnerPorts",
+        memberTypeSuffix: "Port",
+        fallibleResultsAreUnknown: true,
+        cleanupUsesExactProducerResult: true,
+      },
+      bindingDirection:
+        "producer-operations-structurally-assignable-to-consumer-ports",
+      consumerReceivesOnlyNarrowedUntrustedPorts: true,
+    },
+    "BRIDGE_AGGREGATE_INTERFACES",
+    "a0-e0-bridge-contract.json.aggregateInterfaces",
+    "Exact typed producer operations must narrow one-way to untrusted consumer ports.",
+    findings,
+  );
+  requireExact(
+    contract["requestAuthorityBoundary"],
+    {
+      currentStateComesFromControllerClosure: true,
+      candidateDocumentIdComparedWithCurrentTransition: true,
+      candidateStructurallyAndSemanticallyValidated: true,
+      disclosedImpactRecomputedFromCurrentState: true,
+      confirmationFieldsCheckedForInternalConsistency: true,
+      exactPreviewProjectionProvedByOwner: false,
+      candidateBytesUserConfirmedProvedByOwner: false,
+      commandSeedUserConfirmedProvedByOwner: false,
+      confirmationAcknowledgementProvenanceProvedByOwner: false,
+      deferredBindingLeaf: "jcpe-milestone-reliable-studio-l3a.8.4",
+    },
+    "BRIDGE_REQUEST_AUTHORITY_BOUNDARY",
+    "a0-e0-bridge-contract.json.requestAuthorityBoundary",
+    "The owner may prove current-state self-consistency but must defer preview and consent provenance to the versioned consumer binding.",
+    findings,
+  );
+  requireExact(
+    contract["replacementPreparationValidation"],
+    {
+      recursivelyExactOwnerEnvelopeKeys: true,
+      commandIdMaximumCodePoints: 128,
+      commandLabelMaximumCodePoints: 160,
+      confirmationIdMaximumCodePoints: 128,
+      boundedTokensRequireNonemptyTrim: true,
+      boundedTokensRequireUnicodeScalars: true,
+      logicalTimeRequiresNonnegativeSafeInteger: true,
+      logicalTimeMustNotPrecedeLatestUndoEntry: true,
+      malformedPresentConfirmationCode:
+        "import.confirmation_identity_mismatch",
+      missingConfirmationCode: "history.nonundoable_confirmation_required",
+    },
+    "BRIDGE_PREPARATION_VALIDATION_POLICY",
+    "a0-e0-bridge-contract.json.replacementPreparationValidation",
+    "Preparation envelope, token, confirmation, and monotonic logical-time validation must remain exact.",
+    findings,
+  );
+
+  const publicationMerge = isObject(contract["replacementPublicationMerge"])
+    ? contract["replacementPublicationMerge"]
+    : {};
+  requireExact(
+    publicationMerge,
+    {
+      latestStateRecheckedAtPublication: true,
+      frozenPrepareTimeWholeStateInstallAllowed: false,
+      preparedCommandInputsRechecked: [
+        "documentIdentity",
+        "revision",
+        "bookmarks",
+      ],
+      historyStabilityDerivedFromRevisionAndImmutableReducerLaw: true,
+      sameRevisionBookmarkDriftOutcome:
+        "consume-and-refuse-import.replacement_preparation_stale",
+      latestTransportGenerationMustNotExceedRetiredGeneration: true,
+      uncoveredLatestTransportOutcome:
+        "consume-and-refuse-import.replacement_retirement_mismatch",
+      latestSequenceMustBeLessThan: Number.MAX_SAFE_INTEGER,
+      exhaustedLatestSequenceOutcome:
+        "consume-and-refuse-import.replacement_preparation_stale",
+      preservedFromLatestStateByValue: ["exportRevision"],
+      preservedFromLatestStateByReference: [
+        "recovery",
+        "panels",
+        "dialogs",
+        "transport",
+      ],
+      replacementOwnedFields: [
+        "document",
+        "revision",
+        "history",
+        "bookmarks",
+        "quickEntry",
+        "importDraft",
+        "pendingRequests",
+        "documentTransition",
+        "notices",
+      ],
+      allocatedFromLatestSequenceAtPublication: [
+        "focusRequest",
+        "nextSequence",
+      ],
+      allAppStateFieldsPartitionedExactlyOnce: true,
+      optionalWarningNoticeUsesNextSequenceAndSaturatesAtMaximum: true,
+      rerunsPreparationWork: false,
+    },
+    "BRIDGE_PUBLICATION_MERGE_POLICY",
+    "a0-e0-bridge-contract.json.replacementPublicationMerge",
+    "Replacement publication must merge onto latest same-revision state under the exact complete field partition.",
+    findings,
+  );
+  const partitionedAppStateFields = [
+    ...stringsAt(publicationMerge["preservedFromLatestStateByValue"]),
+    ...stringsAt(publicationMerge["preservedFromLatestStateByReference"]),
+    ...stringsAt(publicationMerge["replacementOwnedFields"]),
+    ...stringsAt(publicationMerge["allocatedFromLatestSequenceAtPublication"]),
+  ];
+  if (
+    new Set(partitionedAppStateFields).size !== 16 ||
+    stableJson([...partitionedAppStateFields].sort(codeUnitCompare)) !==
+      stableJson(
+        [
+          "document",
+          "revision",
+          "exportRevision",
+          "recovery",
+          "history",
+          "bookmarks",
+          "panels",
+          "dialogs",
+          "quickEntry",
+          "importDraft",
+          "transport",
+          "pendingRequests",
+          "documentTransition",
+          "focusRequest",
+          "notices",
+          "nextSequence",
+        ].sort(codeUnitCompare),
+      )
+  ) {
+    addFinding(
+      findings,
+      "BRIDGE_PUBLICATION_MERGE_PARTITION",
+      "a0-e0-bridge-contract.json.replacementPublicationMerge",
+      "The four publication ownership sets must partition all sixteen AppState fields exactly once.",
+    );
+  }
+  requireExact(
+    contract["lawIds"],
+    OWNER_LAW_IDS,
+    "BRIDGE_OWNER_LAW_IDS",
+    "a0-e0-bridge-contract.json.lawIds",
+    "The root packet must expose the exact source owner-law inventory in order.",
+    findings,
+  );
+
   const registry = isObject(contract["replacementRegistry"])
     ? contract["replacementRegistry"]
     : {};
@@ -1549,6 +2228,13 @@ export async function validateA0E0BridgeContract(
       allocateOnlyAfterAllFallibleChecks: true,
       discardUsesOriginalRequestIdentity: true,
       discardIsTotalSynchronousIdempotentNonthrowing: true,
+      previewCancellation: {
+        occursBeforePrepare: true,
+        ownerCallCount: 0,
+        liveRegistryEntriesCreated: 0,
+        mayInterleaveAfterPrepare: false,
+      },
+      postPrepareCleanupReasons: [...DISCARD_REASONS],
       publishConsumesBeforeReturning: true,
       replayAndStructuralLookalikeRefused: true,
       terminalLiveForRequest: 0,
@@ -1568,9 +2254,10 @@ export async function validateA0E0BridgeContract(
       "validate-publication-envelope",
       "read-controller-current-state",
       "compare-document-id-and-revision",
-      "replace-exportRevision-only",
-      "install-current-state",
-      "notify-after-install",
+      "if-exportRevision-already-equals-publication-revision-return-state-free-success-without-install-or-notify",
+      "otherwise-replace-exportRevision-only",
+      "otherwise-install-current-state",
+      "otherwise-notify-after-install",
     ],
     "BRIDGE_MARKER_ORDER",
     "a0-e0-bridge-contract.json.markerCas.orderedSteps",
@@ -1581,7 +2268,15 @@ export async function validateA0E0BridgeContract(
     markerCas["awaitBetweenCompareAndWriteAllowed"] !== false ||
     markerCas["historicalStateSpreadAllowed"] !== false ||
     markerCas["successAndRefusalAreStateFree"] !== true ||
-    stringsAt(markerCas["preservedFields"]).length !== 15
+    markerCas["preservedFieldsUseReferenceIdentity"] !== true ||
+    !jsonDeepEqual(markerCas["preservedFields"], MARKER_PRESERVED_FIELDS) ||
+    !jsonDeepEqual(markerCas["exactReplay"], {
+      result: "state-free-success",
+      stateInstallCount: 0,
+      listenerNotificationCount: 0,
+      requiredEvent: "observe.marker-already-equal",
+      wholeStateReferencePreserved: true,
+    })
   ) {
     addFinding(
       findings,
@@ -1684,7 +2379,7 @@ export async function validateA0E0BridgeContract(
     ACCEPTED_E0_V1_CONFLICT_IDS,
     "BRIDGE_E0_V1_CONFLICT_INVENTORY",
     "a0-e0-bridge-contract.json.acceptedE0V1ConflictInventory",
-    "The complete nine-item unresolved E0 v1 semantic conflict inventory is mandatory.",
+    "The complete eleven-item unresolved E0 v1 semantic conflict inventory is mandatory.",
     findings,
   );
   for (const conflict of conflicts) {
@@ -1705,13 +2400,23 @@ export async function validateA0E0BridgeContract(
       findings,
       "BRIDGE_E0_V1_CONFLICT_DETAIL",
       "a0-e0-bridge-contract.json.acceptedE0V1ConflictInventory",
-      "Every accepted-v1 and proposed-owner field, type, refusal, count, and unresolved disposition in the nine-item inventory is pinned.",
+      "Every accepted-v1 and proposed-owner field, type, refusal, count, and unresolved disposition in the eleven-item inventory is pinned.",
     );
   }
 
   requireExact(
     contract["proofRequirements"],
     {
+      exactSourceOriginMappingRequired: true,
+      typedProducerAndConsumerAggregatesRequired: true,
+      producerOperationsMustBeAssignableToConsumerPorts: true,
+      exactMarkerReplayNoOpBranchRequired: true,
+      ownerMustNotClaimExactPreviewOrConsentProvenance: true,
+      markerPreservedFieldReferenceIdentityRequired: true,
+      latestStateReplacementPublicationMergeRequired: true,
+      frozenPrepareTimeWholeStateInstallForbidden: true,
+      recursiveExactOwnerEnvelopeKeysRequired: true,
+      latestBookmarkSequenceAndTransportPublicationRechecksRequired: true,
       literalBeforeRequestResultAfter: true,
       fullStateReferencesMustResolveToValidatedLiterals: true,
       computedBeforeAfterDiffMustEqualDeclaredExactDelta: true,
@@ -1735,6 +2440,53 @@ export async function validateA0E0BridgeContract(
   );
 
   const cases = loaded.get("owner-port-cases.json") ?? {};
+  requireExact(
+    cases["materializationPolicy"],
+    {
+      version: 1,
+      referenceResolutionOrder: [
+        "verify source path sha256 before parse",
+        "resolve RFC-6901 jsonPointer",
+        "resolve accepted E0 sharedBase and fixtureId recursively",
+        "apply accepted orderedMutations with exact from assertions",
+        "resolve $literalRef recursively before patch assertion or application",
+        "materialize $specialNumber only in the named typed in-memory harness",
+        "materialize $utf16CodeUnits only in the named typed in-memory harness and require integer code units from 0 through 65535",
+        "apply materializationPatches and run patches in listed order",
+        "validate the complete materialized value against materializeAs",
+      ],
+      patchObject: {
+        required: ["op", "jsonPointer"],
+        replace: ["op", "jsonPointer", "from", "to", "value"],
+        append: ["op", "jsonPointer", "value"],
+        assert: ["op", "jsonPointer", "value"],
+        remove: ["op", "jsonPointer", "from"],
+        fromAndToAreProofAssertions: true,
+        valueIsAppliedReplacement: true,
+        fromCountAssertsArrayLength: true,
+        add: ["op", "jsonPointer", "from", "to", "value"],
+        addRequiresAbsentSentinel: true,
+      },
+      patchOperators: ["assert", "add", "replace", "append", "remove"],
+      canonicalHashProjection:
+        "recursively sort object keys, JSON.stringify, then UTF-8",
+      duplicateKeys: "refused",
+      unresolvedReference: "fixture-failure",
+      patchAssertionMismatch: "fixture-failure",
+      nearMissChangeCountMismatch: "fixture-failure",
+      inverseProof: {
+        patchOrder: "listed inverseMaterializationPatches order",
+        canonicalProjection:
+          "recursively sort object keys, JSON.stringify, then UTF-8",
+        equality:
+          "hash, byte length, and deep value must equal the named source literal canonical projection",
+      },
+    },
+    "BRIDGE_MATERIALIZATION_POLICY",
+    "owner-port-cases.json.materializationPolicy",
+    "Literal, strict-number, UTF-16-code-unit, patch, and inverse materialization rules must remain exact.",
+    findings,
+  );
   const replacementCases = recordsAt(cases["replacementCases"]);
   const identityCases = recordsAt(cases["identityCases"]);
   const markerCases = recordsAt(cases["markerCases"]);
@@ -2435,7 +3187,7 @@ export async function validateA0E0BridgeContract(
               );
         const ownerLawFlagsValue =
           run["ownerLawFlags"] === undefined
-            ? { historicalStateReinstall: false }
+            ? DEFAULT_OWNER_LAW_FLAGS
             : materializeBridgeTemplate(
                 run["ownerLawFlags"],
                 literalContext,
@@ -2445,12 +3197,139 @@ export async function validateA0E0BridgeContract(
         if (
           !isObject(ownerLawFlagsValue) ||
           stableJson(Object.keys(ownerLawFlagsValue).sort(codeUnitCompare)) !==
-            stableJson(["historicalStateReinstall"]) ||
-          typeof ownerLawFlagsValue["historicalStateReinstall"] !== "boolean"
+            stableJson(EXPECTED_OWNER_LAW_FLAG_KEYS) ||
+          ownerLawFlagsValue["historicalStateReinstall"] !== false
         ) {
           throw new Error("BRIDGE_RUN_OWNER_LAW_FLAGS");
         }
-        const ownerLawOracle =
+        const referenceIdentityExpectations =
+          run["referenceIdentityExpectations"] === undefined
+            ? null
+            : materializeBridgeTemplate(
+                run["referenceIdentityExpectations"],
+                literalContext,
+                before,
+                new Set(),
+              );
+        let clonedPreservedReferenceDetected = false;
+        if (
+          !expectedE0V2Owned &&
+          record["operation"] === "publishCanonicalExportRevision"
+        ) {
+          const expectations = isObject(referenceIdentityExpectations)
+            ? referenceIdentityExpectations
+            : {};
+          const preservedFields = isObject(expectations["preservedFields"])
+            ? expectations["preservedFields"]
+            : {};
+          const expectedWholeStateRelation =
+            exactCounters["controllerStateInstalls"] === 0
+              ? "same-reference-as-controller-state-before"
+              : "new-state-object";
+          if (
+            stableJson(Object.keys(expectations).sort(codeUnitCompare)) !==
+              stableJson(["preservedFields", "wholeControllerState"]) ||
+            stableJson(Object.keys(preservedFields)) !==
+              stableJson(MARKER_PRESERVED_FIELDS) ||
+            expectations["wholeControllerState"] !== expectedWholeStateRelation
+          ) {
+            throw new Error("BRIDGE_MARKER_REFERENCE_EXPECTATION_SHAPE");
+          }
+          for (const field of MARKER_PRESERVED_FIELDS) {
+            const relation = preservedFields[field];
+            if (
+              relation !== "same-reference-as-controller-state-before" &&
+              relation !== "different-reference-from-controller-state-before"
+            ) {
+              throw new Error("BRIDGE_MARKER_REFERENCE_EXPECTATION_VALUE");
+            }
+            if (relation === "different-reference-from-controller-state-before") {
+              clonedPreservedReferenceDetected = true;
+            }
+          }
+        } else if (referenceIdentityExpectations !== null) {
+          throw new Error("BRIDGE_MARKER_REFERENCE_EXPECTATION_UNEXPECTED");
+        }
+        const materializeOptionalRunProjection = (name: string): unknown =>
+          run[name] === undefined
+            ? null
+            : materializeBridgeTemplate(
+                run[name],
+                literalContext,
+                before,
+                new Set(),
+              );
+        const publicationMergeFieldPolicy = materializeOptionalRunProjection(
+          "publicationMergeFieldPolicy",
+        );
+        const publicationMergeReferenceExpectations =
+          materializeOptionalRunProjection(
+            "publicationMergeReferenceExpectations",
+          );
+        const publicationMergeSequenceWitness =
+          materializeOptionalRunProjection("publicationMergeSequenceWitness");
+        const sameRevisionInterleave = materializeOptionalRunProjection(
+          "sameRevisionInterleave",
+        );
+        const publicationMergeObservation = materializeOptionalRunProjection(
+          "publicationMergeObservation",
+        );
+        const contentInvarianceWitness = materializeOptionalRunProjection(
+          "contentInvarianceWitness",
+        );
+        const preparedEntryForMerge = recordsAt(
+          isObject(registryBefore) ? registryBefore["entries"] : undefined,
+        )[0];
+        const preparedPrivateMaterialForMerge =
+          preparedEntryForMerge !== undefined &&
+          isObject(preparedEntryForMerge["privateMaterial"])
+            ? preparedEntryForMerge["privateMaterial"]
+            : null;
+        const independentlyMergedState =
+          record["operation"] === "publishImportReplacement" &&
+          preparedPrivateMaterialForMerge !== null
+            ? constructLatestReplacementPublicationState(
+                before,
+                preparedPrivateMaterialForMerge,
+              )
+            : null;
+        const usesLatestControllerState =
+          independentlyMergedState !== null &&
+          jsonDeepEqual(after, independentlyMergedState);
+        if (
+          publicationMergeObservation !== null &&
+          (!isObject(publicationMergeObservation) ||
+            stableJson(publicationMergeObservation) !==
+              stableJson({ usesLatestControllerState }))
+        ) {
+          throw new Error("BRIDGE_PUBLICATION_MERGE_OBSERVATION");
+        }
+        const frozenPrepareStateInstallDetected =
+          record["operation"] === "publishImportReplacement" &&
+          publicationMergeObservation !== null &&
+          !usesLatestControllerState &&
+          exactCounters["controllerStateInstalls"] === 1;
+        const eventIndex = (event: string): number => eventOrder.indexOf(event);
+        const earlyAllocation =
+          eventIndex("allocate.registry-entry") >= 0 &&
+          eventIndex("call.f2") >= 0 &&
+          eventIndex("allocate.registry-entry") < eventIndex("call.f2");
+        const publishBeforeConsumption =
+          eventIndex("install.next-state") >= 0 &&
+          eventIndex("consume.entry-before-publish") >= 0 &&
+          eventIndex("install.next-state") <
+            eventIndex("consume.entry-before-publish");
+        const notifyBeforeInstall =
+          eventIndex("notify.listeners-after-install") >= 0 &&
+          eventIndex("install.state") >= 0 &&
+          eventIndex("notify.listeners-after-install") <
+            eventIndex("install.state");
+        const markerReturnIndex = eventIndex("return.state-free");
+        const returnBeforeInstall =
+          markerReturnIndex >= 0 &&
+          (eventIndex("install.state") < 0 ||
+            markerReturnIndex < eventIndex("install.state"));
+        let ownerLawOracle =
           rawCall["target"] !== "A0E0InterchangeOwnerOperations"
             ? {
                 outcome: "killed",
@@ -2461,22 +3340,59 @@ export async function validateA0E0BridgeContract(
                   outcome: "killed",
                   code: "BRIDGE_OWNER_LAW_IDENTITY_SYNC_REQUIRED",
                 }
-              : ownerLawFlagsValue["historicalStateReinstall"] === true
+              : earlyAllocation
                 ? {
                     outcome: "killed",
-                    code: "BRIDGE_OWNER_LAW_HISTORICAL_REINSTALL_FORBIDDEN",
+                    code: "BRIDGE_OWNER_LAW_EARLY_ALLOCATION_FORBIDDEN",
                   }
-                : workBound["awaitOrMicrotaskBoundariesInsideOperation"] !== 0
+                : publishBeforeConsumption
                   ? {
                       outcome: "killed",
-                      code: "BRIDGE_OWNER_LAW_MARKER_AWAIT_FORBIDDEN",
+                      code:
+                        "BRIDGE_OWNER_LAW_PUBLISH_BEFORE_CONSUME_FORBIDDEN",
                     }
-                  : workBound["wallTimeObservedOrUsed"] !== false
+                  : containsForbiddenStateKey(exactTypedResult)
                     ? {
                         outcome: "killed",
-                        code: "BRIDGE_OWNER_LAW_WALL_TIME_FORBIDDEN",
+                        code: "BRIDGE_OWNER_LAW_STATE_BEARING_RESULT_FORBIDDEN",
                       }
-                    : { outcome: "pass", code: null };
+                    : notifyBeforeInstall
+                      ? {
+                          outcome: "killed",
+                          code:
+                            "BRIDGE_OWNER_LAW_NOTIFY_BEFORE_INSTALL_FORBIDDEN",
+                        }
+                      : returnBeforeInstall
+                        ? {
+                            outcome: "killed",
+                            code:
+                              "BRIDGE_OWNER_LAW_RETURN_BEFORE_INSTALL_FORBIDDEN",
+                          }
+                        : clonedPreservedReferenceDetected
+                          ? {
+                              outcome: "killed",
+                              code:
+                                "BRIDGE_OWNER_LAW_PRESERVED_REFERENCE_CLONE_FORBIDDEN",
+                            }
+                          : frozenPrepareStateInstallDetected
+                            ? {
+                                outcome: "killed",
+                                code:
+                                  "BRIDGE_OWNER_LAW_FROZEN_PREPARE_STATE_INSTALL_FORBIDDEN",
+                              }
+                          : workBound[
+                                "awaitOrMicrotaskBoundariesInsideOperation"
+                              ] !== 0
+                            ? {
+                                outcome: "killed",
+                                code: "BRIDGE_OWNER_LAW_MARKER_AWAIT_FORBIDDEN",
+                              }
+                            : workBound["wallTimeObservedOrUsed"] !== false
+                              ? {
+                                  outcome: "killed",
+                                  code: "BRIDGE_OWNER_LAW_WALL_TIME_FORBIDDEN",
+                                }
+                              : { outcome: "pass", code: null };
 
         let deltaApplied = before;
         const deltas = recordsAt(run["exactControllerStateDelta"]);
@@ -2548,7 +3464,13 @@ export async function validateA0E0BridgeContract(
           "scenarioTotals",
         ] as const;
         let scenarioFinalState: unknown = null;
-        if (fullRunId === "BRIDGE-MARK-010/marker-10") {
+        let scenarioFinalStateResolved: unknown = null;
+        let scenarioCurrentAfterExternalEdit: unknown = null;
+        let defaultScenarioFinalLiteralId: string | null = null;
+        if (
+          fullRunId === "BRIDGE-MARK-010/marker-10" ||
+          fullRunId === "BRIDGE-MARK-010/mutation-019-historical-reinstall"
+        ) {
           const externalEdit = isObject(run["postReturnExternalEdit"])
             ? run["postReturnExternalEdit"]
             : null;
@@ -2671,7 +3593,13 @@ export async function validateA0E0BridgeContract(
           if (!jsonDeepEqual(externalDeltaApplied, externalAfter)) {
             throw new Error("BRIDGE_LATE_A1_EXTERNAL_DELTA_RESULT");
           }
-          scenarioFinalState = externalAfter;
+          scenarioCurrentAfterExternalEdit = externalAfter;
+          scenarioFinalStateResolved = externalAfter;
+          defaultScenarioFinalLiteralId =
+            isObject(externalAfterDescriptor) &&
+            typeof externalAfterDescriptor["literalId"] === "string"
+              ? externalAfterDescriptor["literalId"]
+              : null;
           const externalCounters = isObject(externalEdit["exactCounters"])
             ? externalEdit["exactCounters"]
             : {};
@@ -2718,17 +3646,43 @@ export async function validateA0E0BridgeContract(
           throw new Error("BRIDGE_LATE_A1_PHASE_UNEXPECTED");
         }
         if (run["scenarioFinalState"] !== undefined) {
-          scenarioFinalState = materializeDescriptor(
-            run["scenarioFinalState"],
+          const scenarioFinalDescriptor = run["scenarioFinalState"];
+          scenarioFinalStateResolved = materializeDescriptor(
+            scenarioFinalDescriptor,
             literalContext,
           );
-          if (!isFullAppStateLiteral(scenarioFinalState)) {
+          if (!isFullAppStateLiteral(scenarioFinalStateResolved)) {
             throw new Error("BRIDGE_SCENARIO_FINAL_STATE");
           }
           assertNestedAcceptedDocuments(
-            scenarioFinalState,
+            scenarioFinalStateResolved,
             `${fullRunId}/scenarioFinalState`,
           );
+          defaultScenarioFinalLiteralId =
+            isObject(scenarioFinalDescriptor) &&
+            typeof scenarioFinalDescriptor["literalId"] === "string"
+              ? scenarioFinalDescriptor["literalId"]
+              : null;
+        }
+        if (defaultScenarioFinalLiteralId !== null) {
+          scenarioFinalState = { literalId: defaultScenarioFinalLiteralId };
+        }
+        if (
+          ownerLawOracle["outcome"] === "pass" &&
+          scenarioCurrentAfterExternalEdit !== null &&
+          scenarioFinalStateResolved !== null &&
+          !jsonDeepEqual(
+            scenarioFinalStateResolved,
+            scenarioCurrentAfterExternalEdit,
+          )
+        ) {
+          if (!jsonDeepEqual(scenarioFinalStateResolved, after)) {
+            throw new Error("BRIDGE_HISTORICAL_REINSTALL_NOT_OWNER_STATE");
+          }
+          ownerLawOracle = {
+            outcome: "killed",
+            code: "BRIDGE_OWNER_LAW_HISTORICAL_REINSTALL_FORBIDDEN",
+          };
         }
 
         const projection: MaterializedRunProjection = {
@@ -2753,6 +3707,15 @@ export async function validateA0E0BridgeContract(
           ownerLawFlags: ownerLawFlagsValue,
           ownerLawOracle,
           scenarioFinalState,
+          scenarioFinalStateResolved,
+          scenarioCurrentAfterExternalEdit,
+          referenceIdentityExpectations,
+          publicationMergeFieldPolicy,
+          publicationMergeReferenceExpectations,
+          publicationMergeSequenceWitness,
+          sameRevisionInterleave,
+          publicationMergeObservation,
+          contentInvarianceWitness,
           comparisonInput: {
             arguments: rawCall["arguments"],
             controllerState: before,
@@ -2769,6 +3732,337 @@ export async function validateA0E0BridgeContract(
           `Run must materialize exact before/request/result/after, registry, counters, events, and work bounds (${error instanceof Error ? error.message : "unknown"}).`,
         );
       }
+    }
+  }
+
+  for (const [fullRunId, run] of runById) {
+    const hasMergeWitness = [
+      run.publicationMergeFieldPolicy,
+      run.publicationMergeReferenceExpectations,
+      run.publicationMergeSequenceWitness,
+      run.sameRevisionInterleave,
+      run.publicationMergeObservation,
+    ].some((value) => value !== null);
+    if (hasMergeWitness) {
+      try {
+        if (
+          run.operation !== "publishImportReplacement" ||
+          [
+            run.publicationMergeFieldPolicy,
+            run.publicationMergeReferenceExpectations,
+            run.publicationMergeSequenceWitness,
+            run.sameRevisionInterleave,
+            run.publicationMergeObservation,
+          ].some((value) => value === null)
+        ) {
+          throw new Error("BRIDGE_PUBLICATION_MERGE_WITNESS_COMPLETENESS");
+        }
+        const before = isObject(run.controllerStateBefore)
+          ? run.controllerStateBefore
+          : {};
+        const after = isObject(run.controllerStateAfter)
+          ? run.controllerStateAfter
+          : {};
+        const entry = recordsAt(
+          isObject(run.registryBefore)
+            ? run.registryBefore["entries"]
+            : undefined,
+        )[0];
+        const privateMaterial =
+          entry !== undefined && isObject(entry["privateMaterial"])
+            ? entry["privateMaterial"]
+            : null;
+        if (privateMaterial === null) {
+          throw new Error("BRIDGE_PUBLICATION_MERGE_WITNESS_PRIVATE");
+        }
+        const expectedAfter = constructLatestReplacementPublicationState(
+          before,
+          privateMaterial,
+        );
+        const usesLatest =
+          expectedAfter !== null && jsonDeepEqual(expectedAfter, after);
+        if (
+          !jsonDeepEqual(
+            run.publicationMergeFieldPolicy,
+            REPLACEMENT_PUBLICATION_FIELD_POLICY,
+          ) ||
+          !jsonDeepEqual(run.publicationMergeObservation, {
+            usesLatestControllerState: usesLatest,
+          })
+        ) {
+          throw new Error("BRIDGE_PUBLICATION_MERGE_WITNESS_POLICY");
+        }
+        const referenceExpectations = isObject(
+          run.publicationMergeReferenceExpectations,
+        )
+          ? run.publicationMergeReferenceExpectations
+          : {};
+        const expectedReferenceExpectations = Object.fromEntries(
+          REPLACEMENT_PUBLICATION_FIELD_POLICY.preserveLatestByReference.map(
+            (field) => [
+              field,
+              usesLatest
+                ? "same-reference-as-controller-state-before"
+                : "different-reference-from-controller-state-before",
+            ],
+          ),
+        );
+        if (
+          !jsonDeepEqual(
+            referenceExpectations,
+            expectedReferenceExpectations,
+          ) ||
+          (usesLatest &&
+            REPLACEMENT_PUBLICATION_FIELD_POLICY.preserveLatestByReference.some(
+              (field) => !jsonDeepEqual(before[field], after[field]),
+            ))
+        ) {
+          throw new Error("BRIDGE_PUBLICATION_MERGE_WITNESS_REFERENCE");
+        }
+        const focusRequest = isObject(after["focusRequest"])
+          ? after["focusRequest"]
+          : {};
+        const warningNotice = recordsAt(after["notices"])[0];
+        const expectedSequenceWitness: JsonObject = {
+          latestNextSequenceBeforePublication: before["nextSequence"],
+          focusRequestSequenceAfterPublication: focusRequest["sequence"],
+          ...(warningNotice === undefined
+            ? {}
+            : {
+                warningNoticeSequenceAfterPublication:
+                  warningNotice["sequence"],
+              }),
+          nextSequenceAfterPublication: after["nextSequence"],
+        };
+        if (
+          !jsonDeepEqual(
+            run.publicationMergeSequenceWitness,
+            expectedSequenceWitness,
+          )
+        ) {
+          throw new Error("BRIDGE_PUBLICATION_MERGE_WITNESS_SEQUENCE");
+        }
+        const interleave = isObject(run.sameRevisionInterleave)
+          ? run.sameRevisionInterleave
+          : {};
+        const preparationLiteralId =
+          interleave["preparationControllerStateLiteralId"];
+        const preparationState =
+          typeof preparationLiteralId === "string"
+            ? materializedCatalog.get(preparationLiteralId)
+            : undefined;
+        const editedFields =
+          isObject(preparationState) && isObject(before)
+            ? Object.keys(before).filter(
+                (field) =>
+                  !jsonDeepEqual(preparationState[field], before[field]),
+              )
+            : [];
+        if (
+          !isFullAppStateLiteral(preparationState) ||
+          !jsonDeepEqual(interleave, {
+            preparationControllerStateLiteralId: preparationLiteralId,
+            ephemeralEditCount: editedFields.length,
+            editedFields,
+            revisionBeforePreparation: preparationState["revision"],
+            revisionBeforePublication: before["revision"],
+          }) ||
+          preparationState["revision"] !== before["revision"]
+        ) {
+          throw new Error("BRIDGE_PUBLICATION_MERGE_WITNESS_INTERLEAVE");
+        }
+      } catch (error) {
+        addFinding(
+          findings,
+          "BRIDGE_PUBLICATION_MERGE_WITNESS",
+          `owner-port-cases.json.${fullRunId}`,
+          `Latest-state field ownership, reference, sequence, saturation, and interleave evidence must be independently exact (${error instanceof Error ? error.message : "unknown"}).`,
+        );
+      }
+    }
+
+    if (run.contentInvarianceWitness !== null) {
+      try {
+        const beforeEntries = recordsAt(
+          isObject(run.registryBefore)
+            ? run.registryBefore["entries"]
+            : undefined,
+        );
+        const argument = Array.isArray(run.rawCall["arguments"])
+          ? run.rawCall["arguments"][0]
+          : undefined;
+        const argumentIdentity =
+          isObject(argument) && isObject(argument["identity"])
+            ? argument["identity"]
+            : {};
+        const liveIdentity =
+          beforeEntries[0] !== undefined &&
+          isObject(beforeEntries[0]["key"])
+            ? beforeEntries[0]["key"]
+            : {};
+        const counters = isObject(run.exactCounters)
+          ? run.exactCounters
+          : {};
+        if (
+          run.operation !== "discardImportReplacementPublication" ||
+          !jsonDeepEqual(run.contentInvarianceWitness, {
+            liveRegistryRequestId: liveIdentity["requestId"],
+            unmatchedRequestId: argumentIdentity["requestId"],
+            documentInspections: 0,
+            pitchInspections: 0,
+            registryRelation:
+              "same-reference-preserved-unrelated-entry",
+          }) ||
+          !jsonDeepEqual(run.controllerStateBefore, run.controllerStateAfter) ||
+          !jsonDeepEqual(run.registryBefore, run.registryAfter) ||
+          counters["f2DecodeDocumentShape"] !== 0 ||
+          counters["f3ValidateDocumentSemantics"] !== 0 ||
+          counters["historyEstimator"] !== 0 ||
+          counters["bookmarkRepair"] !== 0 ||
+          counters["registryInvalidations"] !== 0 ||
+          counters["registryConsumptions"] !== 0
+        ) {
+          throw new Error("BRIDGE_CONTENT_INVARIANCE_DERIVATION");
+        }
+      } catch (error) {
+        addFinding(
+          findings,
+          "BRIDGE_CONTENT_INVARIANCE_WITNESS",
+          `owner-port-cases.json.${fullRunId}`,
+          `Identity-only wrong-request cleanup must preserve the unrelated live entry without inspecting document or pitch content (${error instanceof Error ? error.message : "unknown"}).`,
+        );
+      }
+    }
+  }
+
+  const lawCoverageRows = recordsAt(traceRoot["lawCoverage"]);
+  requireExact(
+    lawCoverageRows.map((row) => row["lawId"]),
+    OWNER_LAW_IDS,
+    "BRIDGE_OWNER_LAW_COVERAGE_INVENTORY",
+    "trace-ledger.json.lawCoverage",
+    "Every source owner law must appear exactly once in the machine-checkable coverage ledger.",
+    findings,
+  );
+  for (const lawId of OWNER_LAW_IDS) {
+    const row = lawCoverageRows.find((candidate) => candidate["lawId"] === lawId);
+    try {
+      if (row === undefined) throw new Error("BRIDGE_LAW_COVERAGE_MISSING");
+      const expectedKeys = [
+        "lawId",
+        "mutationControlIds",
+        "negativeOrNearMissRunIds",
+        "positiveRunIds",
+        "traceIds",
+        "transpositionOrApplicability",
+        ...(lawId === "BRIDGE-OWNER-10-state-free-boundary-results"
+          ? ["additionalProofRequirements"]
+          : []),
+      ].sort(codeUnitCompare);
+      if (
+        stableJson(Object.keys(row).sort(codeUnitCompare)) !==
+          stableJson(expectedKeys)
+      ) {
+        throw new Error("BRIDGE_LAW_COVERAGE_SHAPE");
+      }
+      const traceIds = stringsAt(row["traceIds"]);
+      const positiveRunIds = stringsAt(row["positiveRunIds"]);
+      const negativeRunIds = stringsAt(row["negativeOrNearMissRunIds"]);
+      const mutationControlIds = stringsAt(row["mutationControlIds"]);
+      const applicability = isObject(row["transpositionOrApplicability"])
+        ? row["transpositionOrApplicability"]
+        : {};
+      const applicabilityRunIds = stringsAt(applicability["runIds"]);
+      if (
+        traceIds.length === 0 ||
+        positiveRunIds.length === 0 ||
+        negativeRunIds.length === 0 ||
+        mutationControlIds.length === 0 ||
+        applicabilityRunIds.length === 0 ||
+        stableJson(Object.keys(applicability).sort(codeUnitCompare)) !==
+          stableJson(["rationale", "runIds", "status"]) ||
+        typeof applicability["status"] !== "string" ||
+        typeof applicability["rationale"] !== "string" ||
+        applicability["rationale"].length === 0
+      ) {
+        throw new Error("BRIDGE_LAW_COVERAGE_FAMILIES");
+      }
+      for (const traceId of traceIds) {
+        const trace = traceById.get(traceId);
+        if (trace === undefined || !stringsAt(trace["lawIds"]).includes(lawId)) {
+          throw new Error("BRIDGE_LAW_COVERAGE_TRACE_LINK");
+        }
+      }
+      const allCoverageRunIds = [
+        ...positiveRunIds,
+        ...negativeRunIds,
+        ...applicabilityRunIds,
+      ];
+      for (const runId of allCoverageRunIds) {
+        const run = runById.get(runId);
+        if (run === undefined || !run.ownerProof || run.e0V2Owned) {
+          throw new Error("BRIDGE_LAW_COVERAGE_RUN");
+        }
+        const caseRecord = caseById.get(run.caseId);
+        if (
+          caseRecord === undefined ||
+          !stringsAt(caseRecord["traceIds"]).some((traceId) =>
+            traceIds.includes(traceId),
+          )
+        ) {
+          throw new Error("BRIDGE_LAW_COVERAGE_RUN_TRACE");
+        }
+      }
+      const referencedCaseIds = new Set(
+        allCoverageRunIds
+          .map((runId) => runById.get(runId)?.caseId)
+          .filter((caseId): caseId is string => caseId !== undefined),
+      );
+      for (const controlId of mutationControlIds) {
+        const control = controlById.get(controlId);
+        if (
+          control === undefined ||
+          !stringsAt(control["linkedCaseIds"]).some((caseId) =>
+            referencedCaseIds.has(caseId),
+          )
+        ) {
+          throw new Error("BRIDGE_LAW_COVERAGE_CONTROL_LINK");
+        }
+      }
+      if (
+        lawId === "BRIDGE-OWNER-10-state-free-boundary-results" &&
+        !jsonDeepEqual(row["additionalProofRequirements"], [
+          "recursive-static-state-free-type-matrix-for-every-owner-request-result-handoff-and-identity",
+        ])
+      ) {
+        throw new Error("BRIDGE_LAW_COVERAGE_STATIC_ADDENDUM");
+      }
+    } catch (error) {
+      addFinding(
+        findings,
+        "BRIDGE_OWNER_LAW_COVERAGE",
+        `trace-ledger.json.lawCoverage.${lawId}`,
+        `Every law needs reciprocal positive, negative, applicability, mutation, case, and trace proof (${error instanceof Error ? error.message : "unknown"}).`,
+      );
+    }
+  }
+  for (const trace of traces) {
+    const traceId = String(trace["id"]);
+    const declaredLawIds = stringsAt(trace["lawIds"]);
+    const reciprocalLawIds = OWNER_LAW_IDS.filter((lawId) => {
+      const row = lawCoverageRows.find((candidate) => candidate["lawId"] === lawId);
+      return row !== undefined && stringsAt(row["traceIds"]).includes(traceId);
+    });
+    if (
+      new Set(declaredLawIds).size !== declaredLawIds.length ||
+      !jsonDeepEqual(declaredLawIds, reciprocalLawIds)
+    ) {
+      addFinding(
+        findings,
+        "BRIDGE_TRACE_LAW_LINK",
+        `trace-ledger.json.traces.${traceId}.lawIds`,
+        "Trace law IDs must be unique and reciprocal with the exact law-coverage ledger.",
+      );
     }
   }
 
@@ -2810,6 +4104,1374 @@ export async function validateA0E0BridgeContract(
     "BRIDGE_OWNER_PROOF_SUMMARY",
     "owner-port-cases.json.ownerProofSummary",
     "The packet must count 42 A0 owner cases and visibly exclude exactly six future E0 v2 consumer cases.",
+    findings,
+  );
+
+  const replacementOracleDependencies = Object.freeze({
+    decodeDocumentShape,
+    validateDocumentSemantics,
+    copyDomain,
+    stableIdFactory: createProductionStableIdFactory(),
+    estimateHistoryRetainedBytes: applicationHistoryRetainedByteEstimator,
+  });
+
+  const replacementCommandForOracle = (
+    before: JsonObject,
+    argument: JsonObject,
+  ): JsonObject => {
+    const identity = isObject(argument["identity"])
+      ? argument["identity"]
+      : {};
+    const seed = isObject(argument["replacementCommandSeed"])
+      ? argument["replacementCommandSeed"]
+      : {};
+    const impact = isObject(argument["disclosedImpact"])
+      ? argument["disclosedImpact"]
+      : {};
+    const acknowledgement = isObject(argument["nonUndoableConfirmation"])
+      ? argument["nonUndoableConfirmation"]
+      : {};
+    const requirement = isObject(acknowledgement["requirement"])
+      ? acknowledgement["requirement"]
+      : {};
+    const transport = isObject(before["transport"]) ? before["transport"] : {};
+    return {
+      id: seed["id"],
+      label: seed["label"],
+      expectedDocumentId: identity["documentId"],
+      expectedRevision: identity["baseRevision"],
+      logicalTimeMs: seed["logicalTimeMs"],
+      coalescing: null,
+      kind: "replace-document",
+      origin: argument["replacementOrigin"],
+      candidate: argument["candidate"],
+      requestId: identity["requestId"],
+      retirement: {
+        requestId: identity["requestId"],
+        retiredTransportGeneration: transport["generation"],
+        progressionRetired: true,
+        previewRetired: true,
+        noFutureAttack: true,
+      },
+      undoDisposition:
+        impact["undoDisposition"] === "explicitly-unavailable"
+          ? {
+              kind: "explicitly-unavailable",
+              confirmationId:
+                isBoundedUnicodeScalarToken(
+                  requirement["confirmationId"],
+                  MAX_COMMAND_ID_CODE_POINTS,
+                )
+                  ? requirement["confirmationId"]
+                  : "bridge-oracle-valid-confirmation-placeholder",
+              exportRecommended: true,
+            }
+          : { kind: "retain" },
+    };
+  };
+
+  const runReplacementOracle = (
+    before: JsonObject,
+    argument: JsonObject,
+    historyEstimatorLawInput: unknown,
+  ): Readonly<{ command: JsonObject; result: JsonObject }> => {
+    const transition = isObject(argument["currentTransition"])
+      ? argument["currentTransition"]
+      : {};
+    const command = replacementCommandForOracle(before, argument);
+    const estimatorOverride =
+      isObject(historyEstimatorLawInput) &&
+      typeof historyEstimatorLawInput["estimatedRetainedBytes"] === "number"
+        ? historyEstimatorLawInput["estimatedRetainedBytes"]
+        : null;
+    const dependencies =
+      estimatorOverride === null
+        ? replacementOracleDependencies
+        : {
+            ...replacementOracleDependencies,
+            estimateHistoryRetainedBytes: () => estimatorOverride,
+          };
+    const simulationState = {
+      ...before,
+      documentTransition: { ...transition, kind: "committing" },
+    };
+    const result = Reflect.apply(runDocumentCommand, undefined, [
+      { state: simulationState, command, dependencies },
+    ]);
+    if (!isObject(result)) throw new Error("BRIDGE_OWNER_ORACLE_REDUCER_RESULT");
+    return { command, result };
+  };
+
+  const impactFromReplacementOracle = (
+    before: JsonObject,
+    result: JsonObject,
+    disposition: unknown,
+  ): JsonObject | null => {
+    const counters = isObject(result["counters"]) ? result["counters"] : {};
+    const historyEntryRetainedBytes = counters["historyBytesEstimated"];
+    if (
+      typeof historyEntryRetainedBytes !== "number" ||
+      !Number.isSafeInteger(historyEntryRetainedBytes) ||
+      historyEntryRetainedBytes < 0
+    ) {
+      return null;
+    }
+    const beforeHistory = isObject(before["history"]) ? before["history"] : {};
+    const beforeUndo = Array.isArray(beforeHistory["undo"])
+      ? beforeHistory["undo"]
+      : [];
+    const beforeRedo = Array.isArray(beforeHistory["redo"])
+      ? beforeHistory["redo"]
+      : [];
+    if (disposition === "explicitly-unavailable") {
+      return {
+        historyEntryRetainedBytes,
+        evictedUndoEntries: 0,
+        redoEntriesCleared: beforeRedo.length,
+        confirmationRequired: true,
+        undoDisposition: "explicitly-unavailable",
+        undoEntriesAfterCommit: 0,
+        undoRetainedBytesAfterCommit: 0,
+        exportRecommended: true,
+      };
+    }
+    if (result["ok"] !== true || !isObject(result["state"])) return null;
+    const afterHistory = isObject(result["state"]["history"])
+      ? result["state"]["history"]
+      : {};
+    const afterUndo = Array.isArray(afterHistory["undo"])
+      ? afterHistory["undo"]
+      : [];
+    return {
+      historyEntryRetainedBytes,
+      evictedUndoEntries: Math.max(
+        0,
+        beforeUndo.length + 1 - afterUndo.length,
+      ),
+      redoEntriesCleared: beforeRedo.length,
+      confirmationRequired: true,
+      undoDisposition: "retained",
+      undoEntriesAfterCommit: afterUndo.length,
+      undoRetainedBytesAfterCommit: afterHistory["retainedBytesEstimate"],
+      exportRecommended: false,
+    };
+  };
+
+  type PrepareOracleDecision = Readonly<{
+    code: string | null;
+    stage:
+      | "early"
+      | "structural"
+      | "semantic"
+      | "history"
+      | "post-history"
+      | "registry"
+      | "success";
+    prepared: JsonObject | null;
+    simulation: Readonly<{ command: JsonObject; result: JsonObject }> | null;
+  }>;
+
+  const derivePrepareOracle = (
+    before: JsonObject,
+    registryBefore: JsonObject,
+    argument: JsonObject,
+    historyEstimatorLawInput: unknown,
+  ): PrepareOracleDecision => {
+    const refuse = (
+      code: string,
+      stage: PrepareOracleDecision["stage"],
+      simulation: PrepareOracleDecision["simulation"] = null,
+    ): PrepareOracleDecision => ({ code, stage, prepared: null, simulation });
+    const identity = isObject(argument["identity"])
+      ? argument["identity"]
+      : {};
+    const seed = isObject(argument["replacementCommandSeed"])
+      ? argument["replacementCommandSeed"]
+      : {};
+    const impact = isObject(argument["disclosedImpact"])
+      ? argument["disclosedImpact"]
+      : {};
+    const transition = isObject(argument["currentTransition"])
+      ? argument["currentTransition"]
+      : {};
+    const candidate = isObject(argument["candidate"])
+      ? argument["candidate"]
+      : {};
+    const sourceOrigin: Readonly<Record<string, string>> = {
+      "canonical-json-v2": "canonical-import",
+      "unversioned-legacy-json": "legacy-import",
+      "chart-text-v1": "canonical-import",
+    };
+    const hasExactKeys = (
+      value: unknown,
+      keys: readonly string[],
+    ): boolean =>
+      isObject(value) &&
+      stableJson(Object.keys(value).sort(codeUnitCompare)) ===
+        stableJson([...keys].sort(codeUnitCompare));
+    const impactKeys = [
+      "confirmationRequired",
+      "evictedUndoEntries",
+      "exportRecommended",
+      "historyEntryRetainedBytes",
+      "redoEntriesCleared",
+      "undoDisposition",
+      "undoEntriesAfterCommit",
+      "undoRetainedBytesAfterCommit",
+    ] as const;
+    if (
+      stableJson(Object.keys(argument).sort(codeUnitCompare)) !==
+        stableJson([
+          "candidate",
+          "currentTransition",
+          "disclosedImpact",
+          "identity",
+          "nonUndoableConfirmation",
+          "replacementCommandSeed",
+          "replacementOrigin",
+          "sourceFormat",
+        ]) ||
+      !hasExactKeys(identity, ["baseRevision", "documentId", "requestId"]) ||
+      !hasExactKeys(seed, ["id", "label", "logicalTimeMs"]) ||
+      !hasExactKeys(impact, impactKeys) ||
+      !hasExactKeys(transition, [
+        "baseRevision",
+        "candidateDocumentId",
+        "kind",
+        "origin",
+        "requestId",
+        "undoDisposition",
+      ]) ||
+      !Number.isSafeInteger(identity["requestId"]) ||
+      Number(identity["requestId"]) < 0 ||
+      typeof identity["documentId"] !== "string" ||
+      identity["documentId"].length === 0 ||
+      !Number.isSafeInteger(identity["baseRevision"]) ||
+      Number(identity["baseRevision"]) < 0 ||
+      sourceOrigin[String(argument["sourceFormat"])] !==
+        argument["replacementOrigin"]
+    ) {
+      return refuse("import.replacement_request_invalid", "early");
+    }
+    const confirmation = argument["nonUndoableConfirmation"];
+    const acknowledgement = isObject(confirmation) ? confirmation : {};
+    const requirement = isObject(acknowledgement["requirement"])
+      ? acknowledgement["requirement"]
+      : {};
+    const requirementIdentity = isObject(requirement["identity"])
+      ? requirement["identity"]
+      : {};
+    if (
+      confirmation !== null &&
+      (!hasExactKeys(acknowledgement, ["kind", "requirement"]) ||
+        !hasExactKeys(requirement, [
+          "candidateDocumentId",
+          "commandId",
+          "confirmationId",
+          "disclosedImpact",
+          "identity",
+          "schema",
+        ]) ||
+        !hasExactKeys(requirementIdentity, [
+          "baseRevision",
+          "documentId",
+          "requestId",
+        ]) ||
+        !hasExactKeys(requirement["disclosedImpact"], impactKeys))
+    ) {
+      return refuse("import.confirmation_identity_mismatch", "early");
+    }
+    const beforeDocument = isObject(before["document"])
+      ? before["document"]
+      : {};
+    if (identity["documentId"] !== beforeDocument["id"]) {
+      return refuse("import.replacement_wrong_document", "early");
+    }
+    const currentRequest = recordsAt(before["pendingRequests"]).find(
+      (request) =>
+        request["kind"] === "document-transition" &&
+        request["id"] === identity["requestId"] &&
+        request["documentId"] === identity["documentId"] &&
+        request["baseRevision"] === identity["baseRevision"] &&
+        request["status"] === "running",
+    );
+    if (
+      currentRequest === undefined ||
+      before["revision"] !== identity["baseRevision"]
+    ) {
+      return refuse("import.replacement_request_stale", "early");
+    }
+    const controllerTransition = isObject(before["documentTransition"])
+      ? before["documentTransition"]
+      : {};
+    const transitionFieldsExceptDisposition = [
+      "kind",
+      "requestId",
+      "origin",
+      "baseRevision",
+      "candidateDocumentId",
+    ] as const;
+    if (
+      transition["kind"] !== "retiring-transport" ||
+      transitionFieldsExceptDisposition.some(
+        (field) => transition[field] !== controllerTransition[field],
+      ) ||
+      transition["requestId"] !== identity["requestId"] ||
+      transition["origin"] !== argument["replacementOrigin"] ||
+      transition["baseRevision"] !== identity["baseRevision"] ||
+      transition["candidateDocumentId"] !== candidate["id"]
+    ) {
+      return refuse("import.replacement_transition_mismatch", "early");
+    }
+    if (
+      (impact["undoDisposition"] !== "retained" &&
+        impact["undoDisposition"] !== "explicitly-unavailable") ||
+      transition["undoDisposition"] !== impact["undoDisposition"] ||
+      controllerTransition["undoDisposition"] !== impact["undoDisposition"]
+    ) {
+      return refuse("import.replacement_impact_mismatch", "early");
+    }
+    if (
+      !isBoundedUnicodeScalarToken(
+        seed["id"],
+        MAX_COMMAND_ID_CODE_POINTS,
+      )
+    ) {
+      return refuse("import.replacement_command_id_invalid", "early");
+    }
+    if (
+      !isBoundedUnicodeScalarToken(
+        seed["label"],
+        MAX_COMMAND_LABEL_CODE_POINTS,
+      )
+    ) {
+      return refuse("import.replacement_command_label_invalid", "early");
+    }
+    if (
+      !Number.isSafeInteger(seed["logicalTimeMs"]) ||
+      Number(seed["logicalTimeMs"]) < 0
+    ) {
+      return refuse("import.replacement_logical_time_invalid", "early");
+    }
+    const beforeHistory = isObject(before["history"]) ? before["history"] : {};
+    const undoEntries = recordsAt(beforeHistory["undo"]);
+    const latestUndo = undoEntries.at(-1);
+    if (
+      latestUndo !== undefined &&
+      typeof latestUndo["lastLogicalTimeMs"] === "number" &&
+      Number(seed["logicalTimeMs"]) < latestUndo["lastLogicalTimeMs"]
+    ) {
+      return refuse("import.replacement_logical_time_invalid", "early");
+    }
+    if (before["revision"] === MAX_APPLICATION_REVISION) {
+      return refuse("application.revision_exhausted", "early");
+    }
+    if (before["nextSequence"] === MAX_APPLICATION_SEQUENCE) {
+      return refuse("application.sequence_exhausted", "early");
+    }
+    const candidateObservation = observeDocumentValidation(candidate);
+    if (
+      candidateObservation.stage === "f2-refused" ||
+      candidateObservation.stage === "f2-repaired"
+    ) {
+      return refuse("import.candidate_structural_invalid", "structural");
+    }
+    if (
+      candidateObservation.stage === "f3-refused" ||
+      candidateObservation.stage === "f3-repaired"
+    ) {
+      return refuse("import.candidate_semantic_invalid", "semantic");
+    }
+    const simulation = runReplacementOracle(
+      before,
+      argument,
+      historyEstimatorLawInput,
+    );
+    if (simulation.result["ok"] !== true) {
+      const refusal = isObject(simulation.result["refusal"])
+        ? simulation.result["refusal"]
+        : {};
+      if (refusal["code"] === "history.entry_too_large") {
+        return refuse(
+          "import.replacement_impact_unavailable",
+          "history",
+          simulation,
+        );
+      }
+      if (refusal["code"] === "history.byte_estimate_invalid") {
+        return refuse(
+          "import.replacement_history_estimate_failed",
+          "history",
+          simulation,
+        );
+      }
+      throw new Error(
+        `BRIDGE_PREPARE_REDUCER_REFUSAL:${String(refusal["code"])}`,
+      );
+    }
+    const recomputedImpact = impactFromReplacementOracle(
+      before,
+      simulation.result,
+      impact["undoDisposition"],
+    );
+    if (recomputedImpact === null) {
+      return refuse(
+        "import.replacement_history_estimate_failed",
+        "history",
+        simulation,
+      );
+    }
+    if (!jsonDeepEqual(recomputedImpact, impact)) {
+      return refuse("import.replacement_impact_mismatch", "post-history", simulation);
+    }
+    if (impact["undoDisposition"] === "explicitly-unavailable") {
+      if (confirmation === null) {
+        return refuse(
+          "history.nonundoable_confirmation_required",
+          "post-history",
+          simulation,
+        );
+      }
+      if (
+        requirementIdentity["requestId"] !== identity["requestId"] ||
+        requirementIdentity["baseRevision"] !== identity["baseRevision"]
+      ) {
+        return refuse("import.confirmation_stale", "post-history", simulation);
+      }
+      if (requirementIdentity["documentId"] !== identity["documentId"]) {
+        return refuse(
+          "import.confirmation_wrong_document",
+          "post-history",
+          simulation,
+        );
+      }
+      if (!jsonDeepEqual(requirement["disclosedImpact"], recomputedImpact)) {
+        return refuse(
+          "import.confirmation_impact_mismatch",
+          "post-history",
+          simulation,
+        );
+      }
+      if (
+        acknowledgement["kind"] !== "acknowledged" ||
+        requirement["schema"] !==
+          "changes.import-nonundoable-confirmation.v1" ||
+        !isBoundedUnicodeScalarToken(
+          requirement["confirmationId"],
+          MAX_COMMAND_ID_CODE_POINTS,
+        ) ||
+        requirement["candidateDocumentId"] !== candidate["id"] ||
+        requirement["commandId"] !== seed["id"]
+      ) {
+        return refuse(
+          "import.confirmation_identity_mismatch",
+          "post-history",
+          simulation,
+        );
+      }
+    } else if (confirmation !== null) {
+      return refuse("import.replacement_impact_mismatch", "post-history", simulation);
+    }
+    const entries = recordsAt(registryBefore["entries"]);
+    if (entries.length !== 0) {
+      return refuse(
+        "import.replacement_preparation_busy",
+        "registry",
+        simulation,
+      );
+    }
+    const transport = isObject(before["transport"]) ? before["transport"] : {};
+    const prepared = {
+      schema: "changes.prepared-import-replacement-publication.v1",
+      identity,
+      sourceFormat: argument["sourceFormat"],
+      candidateDocumentId: candidate["id"],
+      expectedTransportGeneration: transport["generation"],
+      committingTransition: { ...transition, kind: "committing" },
+    };
+    return {
+      code: null,
+      stage: "success",
+      prepared,
+      simulation,
+    };
+  };
+
+  const assertPrivateMaterialMatchesSimulation = (
+    privateMaterial: JsonObject,
+    before: JsonObject,
+    argument: JsonObject,
+    decision: PrepareOracleDecision,
+  ): void => {
+    const visitPrivateMaterial = (value: unknown): void => {
+      if (Array.isArray(value)) {
+        value.forEach(visitPrivateMaterial);
+        return;
+      }
+      if (!isObject(value)) return;
+      if (isFullAppStateLiteral(value)) {
+        throw new Error("BRIDGE_PRIVATE_MATERIAL_WHOLE_APP_STATE");
+      }
+      for (const [key, child] of Object.entries(value)) {
+        if (
+          key.endsWith("StateLiteralId") ||
+          [
+            "beforeStateLiteralId",
+            "afterStateLiteralId",
+            "exactControllerStateDelta",
+            "focusRequestAfter",
+            "quickEntryAfter",
+            "preservedTopLevelFields",
+          ].includes(key)
+        ) {
+          throw new Error("BRIDGE_PRIVATE_MATERIAL_STATE_CAPTURE");
+        }
+        visitPrivateMaterial(child);
+      }
+    };
+    visitPrivateMaterial(privateMaterial);
+    const exactKeys = (value: unknown, keys: readonly string[]): boolean =>
+      isObject(value) &&
+      stableJson(Object.keys(value).sort(codeUnitCompare)) ===
+        stableJson([...keys].sort(codeUnitCompare));
+    if (
+      decision.code !== null ||
+      decision.prepared === null ||
+      decision.simulation === null ||
+      decision.simulation.result["ok"] !== true ||
+      !isObject(decision.simulation.result["state"])
+    ) {
+      throw new Error("BRIDGE_OWNER_ORACLE_PRIVATE_SIMULATION");
+    }
+    const command = isObject(privateMaterial["command"])
+      ? privateMaterial["command"]
+      : {};
+    const publication = isObject(privateMaterial["publication"])
+      ? privateMaterial["publication"]
+      : {};
+    const bookmarks = isObject(privateMaterial["bookmarksAndFocus"])
+      ? privateMaterial["bookmarksAndFocus"]
+      : {};
+    const history = isObject(privateMaterial["history"])
+      ? privateMaterial["history"]
+      : {};
+    const candidateMetadata = isObject(privateMaterial["candidate"])
+      ? privateMaterial["candidate"]
+      : {};
+    const candidateLiteralId = candidateMetadata["literalId"];
+    const candidateLiteral =
+      typeof candidateLiteralId === "string"
+        ? materializedCatalog.get(candidateLiteralId)
+        : undefined;
+    const candidateCatalogEntry =
+      typeof candidateLiteralId === "string" &&
+      isObject(literalCatalog[candidateLiteralId])
+        ? literalCatalog[candidateLiteralId]
+        : {};
+    const candidateBytes = new TextEncoder().encode(
+      stableJson(candidateLiteral),
+    );
+    const validation = isObject(privateMaterial["validation"])
+      ? privateMaterial["validation"]
+      : {};
+    const result = decision.simulation.result;
+    const after = isObject(result["state"]) ? result["state"] : {};
+    const afterFocus = isObject(after["focusRequest"])
+      ? after["focusRequest"]
+      : {};
+    const afterQuickEntry = isObject(after["quickEntry"])
+      ? after["quickEntry"]
+      : {};
+    const afterNotices = recordsAt(after["notices"]);
+    const focusRequestTemplate = {
+      target: afterFocus["target"],
+      reason: afterFocus["reason"],
+    };
+    const quickEntryTemplate = {
+      text: afterQuickEntry["text"],
+      target: afterQuickEntry["target"],
+      status: afterQuickEntry["status"],
+      issueCodes: afterQuickEntry["issueCodes"],
+    };
+    const noticeTemplates = afterNotices.map((notice) => ({
+      level: notice["level"],
+      code: notice["code"],
+      message: notice["message"],
+      dismissible: notice["dismissible"],
+    }));
+    const replacementOwnedProjection = {
+      document: after["document"],
+      history: after["history"],
+      bookmarks: after["bookmarks"],
+      quickEntryTemplate,
+      importDraft: after["importDraft"],
+      pendingRequests: after["pendingRequests"],
+      documentTransition: after["documentTransition"],
+      noticeTemplates,
+    };
+    if (
+      !exactKeys(privateMaterial, [
+        "bookmarksAndFocus",
+        "candidate",
+        "command",
+        "disclosedImpact",
+        "expectedRetirement",
+        "history",
+        "publication",
+        "validation",
+      ]) ||
+      !exactKeys(bookmarks, [
+        "after",
+        "before",
+        "focusTarget",
+        "quickEntryTemplate",
+        "repairCallsDuringPreparation",
+        "repairCallsDuringPublication",
+      ]) ||
+      !exactKeys(history, [
+        "after",
+        "entry",
+        "entryRetainedBytesEstimate",
+        "estimatorCallsDuringPreparation",
+        "estimatorCallsDuringPublication",
+        "retentionDecision",
+        "totalRetainedBytesAfterPublication",
+      ]) ||
+      !exactKeys(publication, [
+        "counters",
+        "effects",
+        "focusRequestTemplate",
+        "installCount",
+        "listenerNotificationCount",
+        "optionalWarningNoticeTemplate",
+        "replacementOwnedProjection",
+        "revisionIncrement",
+      ]) ||
+      !exactKeys(publication["replacementOwnedProjection"], [
+        "bookmarks",
+        "document",
+        "documentTransition",
+        "history",
+        "importDraft",
+        "noticeTemplates",
+        "pendingRequests",
+        "quickEntryTemplate",
+      ]) ||
+      !exactKeys(candidateMetadata, [
+        "acceptedPrettyFileSha256",
+        "canonicalMaterializedByteLength",
+        "canonicalMaterializedSha256",
+        "documentId",
+        "literalId",
+        "preservationPolicy",
+      ]) ||
+      !isCompleteDocumentLiteral(candidateLiteral) ||
+      !jsonDeepEqual(candidateLiteral, argument["candidate"]) ||
+      candidateMetadata["documentId"] !== candidateLiteral["id"] ||
+      candidateMetadata["canonicalMaterializedSha256"] !==
+        sha256(candidateBytes) ||
+      candidateMetadata["canonicalMaterializedByteLength"] !==
+        candidateBytes.byteLength ||
+      candidateMetadata["acceptedPrettyFileSha256"] !==
+        candidateCatalogEntry["sha256"] ||
+      candidateMetadata["preservationPolicy"] !==
+        "validated-bytes-and-manual-frozen-spellings-preserved-without-repair" ||
+      !exactKeys(validation, [
+        "candidateCanonicalMaterializedByteLength",
+        "candidateCanonicalMaterializedSha256",
+        "semanticValidation",
+        "structuralDecode",
+      ]) ||
+      validation["candidateCanonicalMaterializedSha256"] !==
+        sha256(candidateBytes) ||
+      validation["candidateCanonicalMaterializedByteLength"] !==
+        candidateBytes.byteLength ||
+      !jsonDeepEqual(validation["structuralDecode"], {
+        outcome: "accepted",
+        callsDuringPreparation: 1,
+        callsDuringPublication: 0,
+        repairs: 0,
+      }) ||
+      !jsonDeepEqual(validation["semanticValidation"], {
+        outcome: "accepted",
+        callsDuringPreparation: 1,
+        callsDuringPublication: 0,
+        repairs: 0,
+      }) ||
+      !jsonDeepEqual(command, decision.simulation.command) ||
+      !jsonDeepEqual(privateMaterial["disclosedImpact"], argument["disclosedImpact"]) ||
+      !jsonDeepEqual(privateMaterial["expectedRetirement"], command["retirement"]) ||
+      !jsonDeepEqual(bookmarks["before"], before["bookmarks"]) ||
+      !jsonDeepEqual(bookmarks["after"], after["bookmarks"]) ||
+      !jsonDeepEqual(bookmarks["focusTarget"], afterFocus["target"]) ||
+      !jsonDeepEqual(bookmarks["quickEntryTemplate"], quickEntryTemplate) ||
+      bookmarks["repairCallsDuringPreparation"] !== 1 ||
+      bookmarks["repairCallsDuringPublication"] !== 0 ||
+      !jsonDeepEqual(history["after"], after["history"]) ||
+      history["estimatorCallsDuringPreparation"] !== 1 ||
+      history["estimatorCallsDuringPublication"] !== 0 ||
+      history["entryRetainedBytesEstimate"] !==
+        (isObject(history["entry"])
+          ? history["entry"]["retainedBytesEstimate"]
+          : undefined) ||
+      history["totalRetainedBytesAfterPublication"] !==
+        (isObject(after["history"])
+          ? after["history"]["retainedBytesEstimate"]
+          : undefined) ||
+      publication["revisionIncrement"] !==
+        Number(after["revision"]) - Number(before["revision"]) ||
+      !jsonDeepEqual(
+        publication["replacementOwnedProjection"],
+        replacementOwnedProjection,
+      ) ||
+      !jsonDeepEqual(
+        publication["focusRequestTemplate"],
+        focusRequestTemplate,
+      ) ||
+      !jsonDeepEqual(
+        publication["optionalWarningNoticeTemplate"],
+        noticeTemplates[0] ?? null,
+      ) ||
+      !jsonDeepEqual(publication["effects"], result["effects"]) ||
+      !jsonDeepEqual(publication["counters"], result["counters"]) ||
+      publication["installCount"] !== 1 ||
+      publication["listenerNotificationCount"] !== 1
+    ) {
+      throw new Error("BRIDGE_OWNER_ORACLE_PRIVATE_MATERIAL");
+    }
+  };
+
+  const conformanceOwnerRunIds = [...runById.entries()]
+    .filter(
+      ([, run]) =>
+        run.ownerProof &&
+        !run.e0V2Owned &&
+        run.runRole === "conformance",
+    )
+    .map(([runId]) => runId);
+  requireExact(
+    conformanceOwnerRunIds,
+    EXPECTED_A0_CONFORMANCE_RUN_IDS,
+    "BRIDGE_OWNER_CONFORMANCE_INVENTORY",
+    "owner-port-cases.json",
+    "The independent owner oracle must cover the exact closed A0 conformance-run inventory in declaration order.",
+    findings,
+  );
+
+  const prepareRefusalCodesWitnessed = new Set<string>();
+  const missingPublishEventByRunId: Readonly<Record<string, string>> = {
+    "BRIDGE-REP-030/consumed-replay": "lookup.consumed-entry-empty",
+    "BRIDGE-REP-030/invalidated-replay": "lookup.invalidated-entry-empty",
+    "BRIDGE-REP-030/structural-lookalike":
+      "reject.lookalike-without-private-entry",
+    "BRIDGE-REP-030/mutation-006-consumed": "lookup.consumed-entry-empty",
+  };
+
+  const assertExactOwnerOracleProjection = (
+    run: MaterializedRunProjection,
+    expected: Readonly<{
+      result: unknown;
+      after: unknown;
+      registryAfter: unknown;
+      counters: unknown;
+      events: unknown;
+      workBound: unknown;
+    }>,
+  ): void => {
+    if (
+      !jsonDeepEqual(run.exactTypedResult, expected.result) ||
+      !jsonDeepEqual(run.controllerStateAfter, expected.after) ||
+      !jsonDeepEqual(run.registryAfter, expected.registryAfter) ||
+      !jsonDeepEqual(run.exactCounters, expected.counters) ||
+      !jsonDeepEqual(run.synchronousEventOrder, expected.events) ||
+      !jsonDeepEqual(run.workBound, expected.workBound)
+    ) {
+      throw new Error("BRIDGE_OWNER_ORACLE_EXACT_PROJECTION");
+    }
+  };
+
+  for (const [fullRunId, run] of runById) {
+    if (!run.ownerProof || run.e0V2Owned) continue;
+    if (run.ownerLawOracle["outcome"] !== "pass") continue;
+    const argumentsValue = Array.isArray(run.rawCall["arguments"])
+      ? run.rawCall["arguments"]
+      : [];
+    const argument = isObject(argumentsValue[0]) ? argumentsValue[0] : {};
+    const before = isObject(run.controllerStateBefore)
+      ? run.controllerStateBefore
+      : {};
+    const registryBefore = isObject(run.registryBefore)
+      ? run.registryBefore
+      : {};
+    const beforeEntries = recordsAt(registryBefore["entries"]);
+    try {
+      if (
+        run.rawCall["target"] !== "A0E0InterchangeOwnerOperations" ||
+        run.rawCall["operation"] !== run.operation ||
+        run.rawCall["invocation"] !== "synchronous"
+      ) {
+        throw new Error("BRIDGE_OWNER_ORACLE_CALL_BOUNDARY");
+      }
+      if (run.operation === "prepareImportReplacementPublication") {
+        const decision = derivePrepareOracle(
+          before,
+          registryBefore,
+          argument,
+          run.historyEstimatorLawInput,
+        );
+        if (run.runRole === "conformance") {
+          const tableCode =
+            PREPARE_REFUSAL_BY_CONFORMANCE_RUN_ID[
+              fullRunId as keyof typeof PREPARE_REFUSAL_BY_CONFORMANCE_RUN_ID
+            ];
+          if (
+            (PREPARE_SUCCESS_RUN_IDS.has(fullRunId) && decision.code !== null) ||
+            (!PREPARE_SUCCESS_RUN_IDS.has(fullRunId) &&
+              tableCode !== decision.code)
+          ) {
+            throw new Error("BRIDGE_OWNER_ORACLE_PREPARE_CLOSED_TABLE");
+          }
+        }
+        const success = decision.code === null;
+        if (!success) prepareRefusalCodesWitnessed.add(String(decision.code));
+        const expectedResult = success
+          ? { ok: true, value: decision.prepared }
+          : { ok: false, code: decision.code };
+        const expectedCounters = completeOwnerCounters(run.operation, {
+          controllerStateReads: 1,
+          f2DecodeDocumentShape:
+            decision.stage === "structural" ||
+            decision.stage === "semantic" ||
+            decision.stage === "history" ||
+            decision.stage === "post-history" ||
+            decision.stage === "registry" ||
+            decision.stage === "success"
+              ? 1
+              : 0,
+          f3ValidateDocumentSemantics:
+            decision.stage === "semantic" ||
+            decision.stage === "history" ||
+            decision.stage === "post-history" ||
+            decision.stage === "registry" ||
+            decision.stage === "success"
+              ? 1
+              : 0,
+          bookmarkRepair:
+            decision.stage === "history" ||
+            decision.stage === "post-history" ||
+            decision.stage === "registry" ||
+            decision.stage === "success"
+              ? 1
+              : 0,
+          historyEstimator:
+            decision.stage === "history" ||
+            decision.stage === "post-history" ||
+            decision.stage === "registry" ||
+            decision.stage === "success"
+              ? 1
+              : 0,
+          registryLookups:
+            decision.stage === "registry" || decision.stage === "success"
+              ? 1
+              : 0,
+          registryAllocations: decision.stage === "success" ? 1 : 0,
+        });
+        const expectedEvents =
+          decision.stage === "success"
+            ? PREPARE_SUCCESS_EVENTS
+            : decision.stage === "registry"
+              ? PREPARE_BUSY_EVENTS
+              : [
+                  "call.prepare",
+                  "read.controller-state",
+                  `refuse.${String(decision.code)}`,
+                  "return.refused-no-allocation",
+                ];
+        let expectedRegistryAfter: unknown = registryBefore;
+        if (success) {
+          const afterEntries = recordsAt(
+            isObject(run.registryAfter) ? run.registryAfter["entries"] : undefined,
+          );
+          const entry = afterEntries[0];
+          if (
+            beforeEntries.length !== 0 ||
+            afterEntries.length !== 1 ||
+            entry === undefined ||
+            entry["status"] !== "prepared" ||
+            !jsonDeepEqual(entry["key"], decision.prepared?.["identity"]) ||
+            !jsonDeepEqual(entry["preparedEcho"], decision.prepared) ||
+            !isObject(entry["privateMaterial"])
+          ) {
+            throw new Error("BRIDGE_OWNER_ORACLE_PREPARE_REGISTRY");
+          }
+          assertPrivateMaterialMatchesSimulation(
+            entry["privateMaterial"],
+            before,
+            argument,
+            decision,
+          );
+          expectedRegistryAfter = {
+            capacity: 1,
+            entries: [entry],
+          };
+        }
+        assertExactOwnerOracleProjection(run, {
+          result: expectedResult,
+          after: before,
+          registryAfter: expectedRegistryAfter,
+          counters: expectedCounters,
+          events: expectedEvents,
+          workBound: fixedOwnerWorkBound(
+            run.operation,
+            recordsAt(
+              isObject(expectedRegistryAfter)
+                ? expectedRegistryAfter["entries"]
+                : undefined,
+            ).length,
+          ),
+        });
+      } else if (run.operation === "discardImportReplacementPublication") {
+        const identity = isObject(argument["identity"])
+          ? argument["identity"]
+          : {};
+        if (
+          stableJson(Object.keys(argument).sort(codeUnitCompare)) !==
+            stableJson(["identity", "reason"]) ||
+          !DISCARD_REASONS.includes(
+            argument["reason"] as (typeof DISCARD_REASONS)[number],
+          )
+        ) {
+          throw new Error("BRIDGE_OWNER_ORACLE_DISCARD_REQUEST");
+        }
+        const matchingEntry = beforeEntries.find((entry) =>
+          jsonDeepEqual(entry["key"], identity),
+        );
+        const remainingEntries = beforeEntries.filter(
+          (entry) => entry !== matchingEntry,
+        );
+        const expectedRegistryAfter = {
+          capacity: 1,
+          entries: remainingEntries,
+        };
+        const expectedEvents =
+          matchingEntry !== undefined
+            ? [
+                "call.discard",
+                "validate.reason",
+                "lookup.match",
+                "remove.entry",
+                "return.live-zero",
+              ]
+            : beforeEntries.length === 0
+              ? [
+                  "call.discard",
+                  "validate.reason",
+                  "lookup.empty",
+                  "return.live-zero",
+                ]
+              : [
+                  "call.discard",
+                  "validate.reason",
+                  "lookup.no-match",
+                  "preserve.unrelated-entry",
+                  "return.live-zero-for-request",
+                ];
+        assertExactOwnerOracleProjection(run, {
+          result: {
+            outcome: "invalidated-by-request",
+            identity,
+            liveForRequest: 0,
+          },
+          after: before,
+          registryAfter: expectedRegistryAfter,
+          counters: completeOwnerCounters(run.operation, {
+            registryLookups: 1,
+            registryInvalidations: matchingEntry === undefined ? 0 : 1,
+          }),
+          events: expectedEvents,
+          workBound: fixedOwnerWorkBound(
+            run.operation,
+            remainingEntries.length,
+          ),
+        });
+      } else if (run.operation === "publishImportReplacement") {
+        const prepared = isObject(argument["prepared"])
+          ? argument["prepared"]
+          : {};
+        const identity = isObject(prepared["identity"])
+          ? prepared["identity"]
+          : {};
+        const matchingEntry = beforeEntries.find((entry) =>
+          jsonDeepEqual(entry["key"], identity),
+        );
+        const beforeDocument = isObject(before["document"])
+          ? before["document"]
+          : {};
+        let expectedResult: unknown;
+        let expectedAfter: unknown = before;
+        let expectedRegistryAfter: unknown = registryBefore;
+        let expectedEvents: readonly string[];
+        let registryConsumptions = 0;
+        let installs = 0;
+        let listeners = 0;
+        if (matchingEntry === undefined) {
+          const missingEvent = missingPublishEventByRunId[fullRunId];
+          if (missingEvent === undefined) {
+            throw new Error("BRIDGE_OWNER_ORACLE_MISSING_HISTORY_EVENT");
+          }
+          expectedResult = {
+            ok: false,
+            outcome: "refused",
+            code: "import.replacement_preparation_missing",
+            identity,
+            observedDocumentId: beforeDocument["id"],
+            observedRevision: before["revision"],
+            liveForRequest: 0,
+          };
+          expectedEvents = [
+            "call.publish",
+            "read.controller-state",
+            missingEvent,
+            "return.refused-live-zero",
+          ];
+        } else {
+          registryConsumptions = 1;
+          expectedRegistryAfter = { capacity: 1, entries: [] };
+          const privateMaterial = isObject(matchingEntry["privateMaterial"])
+            ? matchingEntry["privateMaterial"]
+            : {};
+          const echoMismatch = !jsonDeepEqual(
+            matchingEntry["preparedEcho"],
+            prepared,
+          );
+          const bookmarksAndFocus = isObject(
+            privateMaterial["bookmarksAndFocus"],
+          )
+            ? privateMaterial["bookmarksAndFocus"]
+            : {};
+          const currentRequest = recordsAt(before["pendingRequests"]).find(
+            (request) =>
+              request["kind"] === "document-transition" &&
+              request["id"] === identity["requestId"] &&
+              request["documentId"] === identity["documentId"] &&
+              request["baseRevision"] === identity["baseRevision"] &&
+              request["status"] === "running",
+          );
+          const currentTransition = isObject(before["documentTransition"])
+            ? before["documentTransition"]
+            : {};
+          const committingTransition = isObject(
+            prepared["committingTransition"],
+          )
+            ? prepared["committingTransition"]
+            : {};
+          const expectedRetiringTransition = {
+            ...committingTransition,
+            kind: "retiring-transport",
+          };
+          const stale =
+            identity["documentId"] !== beforeDocument["id"] ||
+            identity["baseRevision"] !== before["revision"] ||
+            currentRequest === undefined ||
+            !jsonDeepEqual(currentTransition, expectedRetiringTransition) ||
+            !jsonDeepEqual(
+              before["bookmarks"],
+              bookmarksAndFocus["before"],
+            ) ||
+            before["nextSequence"] === MAX_APPLICATION_SEQUENCE;
+          const retirement = isObject(argument["retirement"])
+            ? argument["retirement"]
+            : {};
+          const latestTransport = isObject(before["transport"])
+            ? before["transport"]
+            : {};
+          const retirementMismatch =
+            !jsonDeepEqual(
+              privateMaterial["expectedRetirement"],
+              retirement,
+            ) ||
+            !Number.isSafeInteger(retirement["retiredTransportGeneration"]) ||
+            !Number.isSafeInteger(latestTransport["generation"]) ||
+            Number(retirement["retiredTransportGeneration"]) <
+              Number(latestTransport["generation"]);
+          if (echoMismatch) {
+            expectedResult = {
+              ok: false,
+              outcome: "refused",
+              code: "import.replacement_preparation_missing",
+              identity,
+              observedDocumentId: beforeDocument["id"],
+              observedRevision: before["revision"],
+              liveForRequest: 0,
+            };
+            expectedEvents = [
+              "call.publish",
+              "read.controller-state",
+              "lookup.match",
+              "compare.prepared-echo-mismatch",
+              "consume.entry-before-return",
+              "return.refused-live-zero",
+            ];
+          } else if (stale) {
+            expectedResult = {
+              ok: false,
+              outcome: "refused",
+              code: "import.replacement_preparation_stale",
+              identity,
+              observedDocumentId: beforeDocument["id"],
+              observedRevision: before["revision"],
+              liveForRequest: 0,
+            };
+            expectedEvents = [
+              "call.publish",
+              "read.controller-state",
+              "compare.preparation-stale",
+              "consume.entry-before-return",
+              "return.refused-live-zero",
+            ];
+          } else if (retirementMismatch) {
+            expectedResult = {
+              ok: false,
+              outcome: "refused",
+              code: "import.replacement_retirement_mismatch",
+              identity,
+              observedDocumentId: beforeDocument["id"],
+              observedRevision: before["revision"],
+              liveForRequest: 0,
+            };
+            expectedEvents = [
+              "call.publish",
+              "read.controller-state",
+              "compare.retirement-mismatch",
+              "consume.entry-before-return",
+              "return.refused-live-zero",
+            ];
+          } else {
+            const publication = isObject(privateMaterial["publication"])
+              ? privateMaterial["publication"]
+              : {};
+            expectedAfter = constructLatestReplacementPublicationState(
+              before,
+              privateMaterial,
+            );
+            if (!isObject(expectedAfter)) {
+              throw new Error("BRIDGE_OWNER_ORACLE_PUBLICATION_MERGE");
+            }
+            const afterDocument =
+              isObject(expectedAfter) && isObject(expectedAfter["document"])
+                ? expectedAfter["document"]
+                : {};
+            expectedResult = {
+              ok: true,
+              outcome: "committed",
+              identity,
+              documentId: afterDocument["id"],
+              revision: isObject(expectedAfter)
+                ? expectedAfter["revision"]
+                : undefined,
+              effects: publication["effects"],
+              counters: publication["counters"],
+              liveForRequest: 0,
+            };
+            installs = 1;
+            listeners = 1;
+            expectedEvents = [
+              "call.publish",
+              "read.controller-state",
+              "lookup.exact-live-entry",
+              "compare.exact-retirement",
+              "consume.entry-before-publish",
+              "construct.private-command",
+              "install.next-state",
+              "notify.after-install",
+              "return.committed-state-free-live-zero",
+            ];
+          }
+        }
+        assertExactOwnerOracleProjection(run, {
+          result: expectedResult,
+          after: expectedAfter,
+          registryAfter: expectedRegistryAfter,
+          counters: completeOwnerCounters(run.operation, {
+            controllerStateReads: 1,
+            controllerStateInstalls: installs,
+            listenerCallbacks: listeners,
+            registryLookups: 1,
+            registryConsumptions,
+          }),
+          events: expectedEvents,
+          workBound: fixedOwnerWorkBound(run.operation, 0),
+        });
+      } else if (run.operation === "readCurrentApplicationDocumentIdentity") {
+        const document = isObject(before["document"]) ? before["document"] : {};
+        assertExactOwnerOracleProjection(run, {
+          result: { documentId: document["id"], revision: before["revision"] },
+          after: before,
+          registryAfter: registryBefore,
+          counters: completeOwnerCounters(run.operation, {
+            controllerStateReads: 1,
+          }),
+          events: [
+            "call.read-identity",
+            "read.controller-closure",
+            "project.document-id-and-revision",
+            "return.synchronously",
+          ],
+          workBound: fixedOwnerWorkBound(run.operation, 0),
+        });
+      } else if (run.operation === "publishCanonicalExportRevision") {
+        const publication = isObject(argument["publication"])
+          ? argument["publication"]
+          : {};
+        const document = isObject(before["document"]) ? before["document"] : {};
+        const validEnvelope =
+          stableJson(Object.keys(argument).sort(codeUnitCompare)) ===
+            stableJson(["publication"]) &&
+          stableJson(Object.keys(publication).sort(codeUnitCompare)) ===
+            stableJson(["documentId", "revision", "schema"]) &&
+          publication["schema"] ===
+            "changes.canonical-export-revision-publication.v1" &&
+          typeof publication["documentId"] === "string" &&
+          publication["documentId"].length > 0 &&
+          Number.isSafeInteger(publication["revision"]) &&
+          Number(publication["revision"]) >= 0;
+        const exactIdentity =
+          publication["documentId"] === document["id"] &&
+          publication["revision"] === before["revision"];
+        const replay = exactIdentity && before["exportRevision"] === publication["revision"];
+        let expectedResult: unknown;
+        let expectedAfter: unknown = before;
+        let expectedEvents: readonly string[];
+        let installs = 0;
+        let listeners = 0;
+        if (!validEnvelope) {
+          expectedResult = {
+            ok: false,
+            outcome: "refused",
+            code: "export.marker_publication_failed",
+            observedDocumentId: document["id"],
+            observedRevision: before["revision"],
+          };
+          expectedEvents = [
+            "call.publish-marker",
+            "validate.schema-refuse",
+            "read.controller-state-for-refusal",
+            "return.no-install-no-listener",
+          ];
+        } else if (!exactIdentity) {
+          expectedResult = {
+            ok: false,
+            outcome: "refused",
+            code: "export.marker_publication_stale",
+            observedDocumentId: document["id"],
+            observedRevision: before["revision"],
+          };
+          expectedEvents = [
+            "call.publish-marker",
+            "validate.envelope",
+            "read.controller-state",
+            publication["documentId"] !== document["id"]
+              ? "compare.document-stale"
+              : "compare.revision-stale",
+            "return.no-install-no-listener",
+          ];
+        } else if (replay) {
+          expectedResult = {
+            ok: true,
+            outcome: "published",
+            documentId: document["id"],
+            revision: before["revision"],
+          };
+          expectedEvents = [
+            "call.publish-marker",
+            "validate.envelope",
+            "read.controller-state",
+            "compare.document-id",
+            "compare.revision",
+            "observe.marker-already-equal",
+            "return.no-install-no-listener",
+          ];
+        } else {
+          expectedResult = {
+            ok: true,
+            outcome: "published",
+            documentId: document["id"],
+            revision: before["revision"],
+          };
+          expectedAfter = { ...before, exportRevision: publication["revision"] };
+          installs = 1;
+          listeners = 1;
+          expectedEvents = [
+            "call.publish-marker",
+            "validate.envelope",
+            "read.controller-state",
+            "compare.document-id",
+            "compare.revision",
+            "create.exportRevision-only-state",
+            "install.state",
+            "notify.listeners-after-install",
+            "return.state-free",
+          ];
+          if (fullRunId === "BRIDGE-MARK-009/marker-9") {
+            expectedEvents = [
+              ...expectedEvents,
+              "owner-return-complete",
+              "queued-edit-installs-only-after-return",
+            ];
+          }
+        }
+        assertExactOwnerOracleProjection(run, {
+          result: expectedResult,
+          after: expectedAfter,
+          registryAfter: registryBefore,
+          counters: completeOwnerCounters(run.operation, {
+            controllerStateReads: 1,
+            controllerStateInstalls: installs,
+            listenerCallbacks: listeners,
+          }),
+          events: expectedEvents,
+          workBound: fixedOwnerWorkBound(run.operation, 0),
+        });
+      } else {
+        throw new Error("BRIDGE_OWNER_ORACLE_OPERATION");
+      }
+    } catch (error) {
+      addFinding(
+        findings,
+        "BRIDGE_OWNER_EXHAUSTIVE_ORACLE",
+        `owner-port-cases.json.${fullRunId}`,
+        `Every A0 conformance/pass-killer run must satisfy the independently derived exact result, state, registry, counters, event order, and work law (${error instanceof Error ? error.message : "unknown"}).`,
+      );
+    }
+  }
+
+  requireExact(
+    [...prepareRefusalCodesWitnessed].sort(codeUnitCompare),
+    [
+      "application.revision_exhausted",
+      "application.sequence_exhausted",
+      "history.nonundoable_confirmation_required",
+      "import.candidate_semantic_invalid",
+      "import.candidate_structural_invalid",
+      "import.confirmation_identity_mismatch",
+      "import.confirmation_impact_mismatch",
+      "import.confirmation_stale",
+      "import.confirmation_wrong_document",
+      "import.replacement_command_id_invalid",
+      "import.replacement_command_label_invalid",
+      "import.replacement_history_estimate_failed",
+      "import.replacement_impact_mismatch",
+      "import.replacement_impact_unavailable",
+      "import.replacement_logical_time_invalid",
+      "import.replacement_preparation_busy",
+      "import.replacement_request_invalid",
+      "import.replacement_request_stale",
+      "import.replacement_transition_mismatch",
+      "import.replacement_wrong_document",
+    ],
+    "BRIDGE_OWNER_PREPARE_REFUSAL_COVERAGE",
+    "owner-port-cases.json.replacementCases",
+    "All twenty closed owner preparation refusals require at least one independently derived A0 run.",
     findings,
   );
 
@@ -2866,6 +5528,8 @@ export async function validateA0E0BridgeContract(
         candidate.runRole === "conformance" &&
         candidate.ownerProof &&
         candidate.operation === "prepareImportReplacementPublication" &&
+        isObject(candidate.exactTypedResult) &&
+        candidate.exactTypedResult["ok"] === true &&
         stableJson(candidate.registryAfter) === stableJson(run.registryBefore),
     );
     if (matchingPreparations.length !== 1) {
@@ -2996,15 +5660,31 @@ export async function validateA0E0BridgeContract(
     const bookmarksAndFocus = isObject(privateMaterial["bookmarksAndFocus"])
       ? privateMaterial["bookmarksAndFocus"]
       : {};
+    const afterFocus = isObject(after["focusRequest"])
+      ? after["focusRequest"]
+      : {};
+    const afterQuickEntry = isObject(after["quickEntry"])
+      ? after["quickEntry"]
+      : {};
+    const expectedQuickEntryTemplate = {
+      text: afterQuickEntry["text"],
+      target: afterQuickEntry["target"],
+      status: afterQuickEntry["status"],
+      issueCodes: afterQuickEntry["issueCodes"],
+    };
     if (
       stableJson(bookmarksAndFocus["before"]) !==
-        stableJson(before["bookmarks"]) ||
+        stableJson(
+          isObject(preparation.controllerStateBefore)
+            ? preparation.controllerStateBefore["bookmarks"]
+            : undefined,
+        ) ||
       stableJson(bookmarksAndFocus["after"]) !==
         stableJson(after["bookmarks"]) ||
-      stableJson(bookmarksAndFocus["focusRequestAfter"]) !==
-        stableJson(after["focusRequest"]) ||
-      stableJson(bookmarksAndFocus["quickEntryAfter"]) !==
-        stableJson(after["quickEntry"]) ||
+      stableJson(bookmarksAndFocus["focusTarget"]) !==
+        stableJson(afterFocus["target"]) ||
+      stableJson(bookmarksAndFocus["quickEntryTemplate"]) !==
+        stableJson(expectedQuickEntryTemplate) ||
       bookmarksAndFocus["repairCallsDuringPreparation"] !==
         preparationCounters["bookmarkRepair"] ||
       bookmarksAndFocus["repairCallsDuringPublication"] !==
@@ -3055,21 +5735,74 @@ export async function validateA0E0BridgeContract(
     const publication = isObject(privateMaterial["publication"])
       ? privateMaterial["publication"]
       : {};
-    const beforeLiteralId = publication["beforeStateLiteralId"];
-    const afterLiteralId = publication["afterStateLiteralId"];
-    const beforeLiteral =
-      typeof beforeLiteralId === "string"
-        ? materializedCatalog.get(beforeLiteralId)
-        : undefined;
-    const afterLiteral =
-      typeof afterLiteralId === "string"
-        ? materializedCatalog.get(afterLiteralId)
-        : undefined;
+    const replacementOwned = isObject(
+      publication["replacementOwnedProjection"],
+    )
+      ? publication["replacementOwnedProjection"]
+      : {};
+    const noticeTemplates = recordsAt(replacementOwned["noticeTemplates"]);
+    const expectedNoticeTemplates = recordsAt(after["notices"]).map(
+      (notice) => ({
+        level: notice["level"],
+        code: notice["code"],
+        message: notice["message"],
+        dismissible: notice["dismissible"],
+      }),
+    );
+    const expectedMergedAfter = constructLatestReplacementPublicationState(
+      before,
+      privateMaterial,
+    );
     if (
-      stableJson(beforeLiteral) !== stableJson(before) ||
-      stableJson(afterLiteral) !== stableJson(after) ||
-      stableJson(publication["exactControllerStateDelta"]) !==
-        stableJson(run.exactControllerStateDelta) ||
+      stableJson(Object.keys(publication).sort(codeUnitCompare)) !==
+        stableJson([
+          "counters",
+          "effects",
+          "focusRequestTemplate",
+          "installCount",
+          "listenerNotificationCount",
+          "optionalWarningNoticeTemplate",
+          "replacementOwnedProjection",
+          "revisionIncrement",
+        ]) ||
+      stableJson(Object.keys(replacementOwned).sort(codeUnitCompare)) !==
+        stableJson([
+          "bookmarks",
+          "document",
+          "documentTransition",
+          "history",
+          "importDraft",
+          "noticeTemplates",
+          "pendingRequests",
+          "quickEntryTemplate",
+        ]) ||
+      publication["revisionIncrement"] !== 1 ||
+      !jsonDeepEqual(expectedMergedAfter, after) ||
+      !jsonDeepEqual(replacementOwned["document"], after["document"]) ||
+      !jsonDeepEqual(replacementOwned["history"], after["history"]) ||
+      !jsonDeepEqual(replacementOwned["bookmarks"], after["bookmarks"]) ||
+      !jsonDeepEqual(
+        replacementOwned["quickEntryTemplate"],
+        expectedQuickEntryTemplate,
+      ) ||
+      !jsonDeepEqual(replacementOwned["importDraft"], after["importDraft"]) ||
+      !jsonDeepEqual(
+        replacementOwned["pendingRequests"],
+        after["pendingRequests"],
+      ) ||
+      !jsonDeepEqual(
+        replacementOwned["documentTransition"],
+        after["documentTransition"],
+      ) ||
+      !jsonDeepEqual(noticeTemplates, expectedNoticeTemplates) ||
+      !jsonDeepEqual(publication["focusRequestTemplate"], {
+        target: afterFocus["target"],
+        reason: afterFocus["reason"],
+      }) ||
+      !jsonDeepEqual(
+        publication["optionalWarningNoticeTemplate"],
+        expectedNoticeTemplates[0] ?? null,
+      ) ||
       stableJson(publication["effects"]) !== stableJson(result["effects"]) ||
       stableJson(publication["counters"]) !== stableJson(result["counters"]) ||
       publication["installCount"] !==
@@ -3082,23 +5815,6 @@ export async function validateA0E0BridgeContract(
           : undefined)
     ) {
       throw new Error("BRIDGE_PRIVATE_MATERIAL_PUBLICATION");
-    }
-    const preservedPaths = stringsAt(publication["preservedTopLevelFields"]);
-    if (
-      !Array.isArray(publication["preservedTopLevelFields"]) ||
-      preservedPaths.length !== publication["preservedTopLevelFields"].length ||
-      preservedPaths.some((path) => {
-        const pointer = pointerForPath(path.split("."));
-        const beforeValue = valueAtJsonPointer(before, pointer);
-        const afterValue = valueAtJsonPointer(after, pointer);
-        return (
-          beforeValue === undefined ||
-          afterValue === undefined ||
-          stableJson(beforeValue) !== stableJson(afterValue)
-        );
-      })
-    ) {
-      throw new Error("BRIDGE_PRIVATE_MATERIAL_PRESERVED_FIELDS");
     }
   };
 
@@ -3258,7 +5974,7 @@ export async function validateA0E0BridgeContract(
           findings,
           "BRIDGE_NEAR_MISS_SHAPE",
           `owner-port-cases.json.${caseId}/${String(run["id"])}`,
-          "Near-miss evidence must be null or one exact replace mutation.",
+          "Near-miss evidence must be null or one exact replace/add mutation.",
         );
         continue;
       }
@@ -3267,24 +5983,40 @@ export async function validateA0E0BridgeContract(
       const baseline =
         typeof baselineId === "string" ? runById.get(baselineId) : undefined;
       try {
+        const operator = nearMiss["operator"];
+        const pointer = nearMiss["jsonPointer"];
+        const materializedFrom = materializeBridgeTemplate(
+          nearMiss["from"],
+          literalContext,
+          baseline?.controllerStateBefore,
+          new Set(),
+        );
+        const materializedTo = materializeBridgeTemplate(
+          nearMiss["to"],
+          literalContext,
+          baseline?.controllerStateBefore,
+          new Set(),
+        );
+        const baselineValue =
+          typeof pointer === "string"
+            ? valueAtJsonPointer(baseline?.comparisonInput, pointer)
+            : undefined;
+        const currentValue =
+          typeof pointer === "string"
+            ? valueAtJsonPointer(current?.comparisonInput, pointer)
+            : undefined;
         if (
           current === undefined ||
           baseline === undefined ||
-          nearMiss["operator"] !== "replace" ||
-          typeof nearMiss["jsonPointer"] !== "string" ||
+          (operator !== "replace" && operator !== "add") ||
+          typeof pointer !== "string" ||
           nearMiss["exactChangedFieldCount"] !== 1 ||
-          stableJson(
-            valueAtJsonPointer(
-              baseline.comparisonInput,
-              nearMiss["jsonPointer"],
-            ),
-          ) !== stableJson(nearMiss["from"]) ||
-          stableJson(
-            valueAtJsonPointer(
-              current.comparisonInput,
-              nearMiss["jsonPointer"],
-            ),
-          ) !== stableJson(nearMiss["to"])
+          (operator === "add"
+            ? baselineValue !== undefined ||
+              !isObject(materializedFrom) ||
+              materializedFrom["$absent"] !== true
+            : !jsonDeepEqual(baselineValue, materializedFrom)) ||
+          !jsonDeepEqual(currentValue, materializedTo)
         ) {
           throw new Error("BRIDGE_NEAR_MISS_POINTER");
         }
@@ -3294,7 +6026,7 @@ export async function validateA0E0BridgeContract(
         );
         if (
           changed.length !== 1 ||
-          changed[0] !== nearMiss["jsonPointer"]
+          changed[0] !== pointer
         ) {
           throw new Error("BRIDGE_NEAR_MISS_CHANGE_COUNT");
         }
@@ -3405,10 +6137,13 @@ export async function validateA0E0BridgeContract(
       "controllerStateBefore",
       "registryBefore",
       "registryLawInput",
+      "exactTypedResult",
       "synchronousEventOrder",
       "workBound",
       "historyEstimatorLawInput",
-      "ownerLawFlags",
+      "scenarioFinalState",
+      "referenceIdentityExpectations",
+      "publicationMergeObservation",
     ]);
     const allowedObservationMaterializations = new Set([
       "exactTypedResult",
@@ -3473,7 +6208,13 @@ export async function validateA0E0BridgeContract(
         !allowedObservationMaterializations.has(
           String(observationMaterialization),
         ) ||
-        mutation["operator"] !== "replace" ||
+        ![
+          "replace",
+          "add",
+          "move",
+          "swap",
+          "truncate-and-return",
+        ].includes(String(mutation["operator"])) ||
         typeof mutation["jsonPointer"] !== "string" ||
         mutation["exactChangedFieldCount"] !== 1 ||
         typeof observation["jsonPointer"] !== "string" ||
@@ -3482,29 +6223,107 @@ export async function validateA0E0BridgeContract(
       ) {
         throw new Error("BRIDGE_CONTROL_SHAPE");
       }
+      const materializedMutationFrom = materializeBridgeTemplate(
+        mutation["from"],
+        literalContext,
+        baseline?.controllerStateBefore,
+        new Set(),
+      );
+      const materializedMutationTo = materializeBridgeTemplate(
+        mutation["to"],
+        literalContext,
+        baseline?.controllerStateBefore,
+        new Set(),
+      );
       const mutationTarget = projectionForMutationTarget(
         baseline,
         String(mutationMaterialization),
       );
-      if (
-        stableJson(valueAtJsonPointer(mutationTarget, mutation["jsonPointer"])) !==
-          stableJson(mutation["from"]) ||
-        stableJson(mutation["from"]) === stableJson(mutation["to"])
-      ) {
-        throw new Error("BRIDGE_CONTROL_MUTATION_FROM_TO");
+      const mutationOperator = String(mutation["operator"]);
+      let mutated: unknown;
+      if (mutationOperator === "move" || mutationOperator === "swap") {
+        if (
+          !Array.isArray(mutationTarget) ||
+          typeof materializedMutationTo !== "string" ||
+          stableJson(
+            valueAtJsonPointer(mutationTarget, mutation["jsonPointer"]),
+          ) !== stableJson(materializedMutationFrom)
+        ) {
+          throw new Error("BRIDGE_CONTROL_MUTATION_FROM_TO");
+        }
+        const sourceTokens = decodeJsonPointer(mutation["jsonPointer"]);
+        const targetTokens = decodeJsonPointer(materializedMutationTo);
+        if (
+          sourceTokens?.length !== 1 ||
+          targetTokens?.length !== 1 ||
+          !/^\d+$/u.test(sourceTokens[0] ?? "") ||
+          !/^\d+$/u.test(targetTokens[0] ?? "")
+        ) {
+          throw new Error("BRIDGE_CONTROL_MUTATION_ARRAY_POINTER");
+        }
+        const sourceIndex = Number(sourceTokens[0]);
+        const targetIndex = Number(targetTokens[0]);
+        const next = [...mutationTarget];
+        if (mutationOperator === "swap") {
+          if (
+            sourceIndex >= next.length ||
+            targetIndex >= next.length ||
+            sourceIndex === targetIndex
+          ) {
+            throw new Error("BRIDGE_CONTROL_MUTATION_SWAP_INDEX");
+          }
+          [next[sourceIndex], next[targetIndex]] = [
+            next[targetIndex],
+            next[sourceIndex],
+          ];
+        } else {
+          const [moved] = next.splice(sourceIndex, 1);
+          const adjustedTarget = sourceIndex < targetIndex
+            ? targetIndex - 1
+            : targetIndex;
+          next.splice(adjustedTarget, 0, moved);
+        }
+        mutated = next;
+      } else if (mutationOperator === "truncate-and-return") {
+        if (!Array.isArray(mutationTarget)) {
+          throw new Error("BRIDGE_CONTROL_MUTATION_TRUNCATE_TARGET");
+        }
+        const tokens = decodeJsonPointer(mutation["jsonPointer"]);
+        if (tokens?.length !== 1 || !/^\d+$/u.test(tokens[0] ?? "")) {
+          throw new Error("BRIDGE_CONTROL_MUTATION_ARRAY_POINTER");
+        }
+        const index = Number(tokens[0]);
+        if (
+          !jsonDeepEqual(mutationTarget.slice(index), materializedMutationFrom) ||
+          !Array.isArray(materializedMutationTo)
+        ) {
+          throw new Error("BRIDGE_CONTROL_MUTATION_FROM_TO");
+        }
+        mutated = [...mutationTarget.slice(0, index), ...materializedMutationTo];
+      } else {
+        const observedBefore = valueAtJsonPointer(
+          mutationTarget,
+          mutation["jsonPointer"],
+        );
+        if (
+          (mutationOperator === "add"
+            ? observedBefore !== undefined ||
+              !isObject(materializedMutationFrom) ||
+              materializedMutationFrom["$absent"] !== true
+            : !jsonDeepEqual(observedBefore, materializedMutationFrom)) ||
+          jsonDeepEqual(materializedMutationFrom, materializedMutationTo)
+        ) {
+          throw new Error("BRIDGE_CONTROL_MUTATION_FROM_TO");
+        }
+        mutated = applyPointerMutation(
+          mutationTarget,
+          mutationOperator,
+          mutation["jsonPointer"],
+          materializedMutationFrom,
+          materializedMutationTo,
+        );
       }
-      const mutated = applyPointerMutation(
-        mutationTarget,
-        "replace",
-        mutation["jsonPointer"],
-        mutation["from"],
-        mutation["to"],
-      );
-      const mutationDiff = jsonDiffPointers(mutationTarget, mutated);
-      if (
-        mutationDiff.length !== 1 ||
-        mutationDiff[0] !== mutation["jsonPointer"]
-      ) {
+      if (jsonDeepEqual(mutationTarget, mutated)) {
         throw new Error("BRIDGE_CONTROL_MUTATION_COUNT");
       }
       const killerMutationTarget = projectionForMutationTarget(
@@ -3575,21 +6394,68 @@ export async function validateA0E0BridgeContract(
         throw new Error("BRIDGE_CONTROL_OWNER_LAW_ORACLE");
       }
       if (oracleExpectation["outcome"] === "killed") {
-        if (
-          stableJson(baseline.exactTypedResult) !==
-            stableJson(killer.exactTypedResult) ||
-          !jsonDeepEqual(
+        const allowedChangedRuntimeProjections = new Set<string>([
+          String(mutationMaterialization),
+        ]);
+        if (id === "BRIDGE-MUT-029") {
+          allowedChangedRuntimeProjections.add("controllerStateAfter");
+          allowedChangedRuntimeProjections.add("exactCounters");
+          allowedChangedRuntimeProjections.add("exactControllerStateDelta");
+          allowedChangedRuntimeProjections.add(
+            "referenceIdentityExpectations",
+          );
+        }
+        if (id === "BRIDGE-MUT-031") {
+          allowedChangedRuntimeProjections.add("controllerStateAfter");
+          allowedChangedRuntimeProjections.add("exactControllerStateDelta");
+          allowedChangedRuntimeProjections.add(
+            "referenceIdentityExpectations",
+          );
+          allowedChangedRuntimeProjections.add(
+            "publicationMergeObservation",
+          );
+        }
+        const runtimeProjectionPairs = [
+          ["exactTypedResult", baseline.exactTypedResult, killer.exactTypedResult],
+          [
+            "controllerStateAfter",
             baseline.controllerStateAfter,
             killer.controllerStateAfter,
-          ) ||
-          stableJson(baseline.registryAfter) !==
-            stableJson(killer.registryAfter) ||
-          stableJson(baseline.exactCounters) !==
-            stableJson(killer.exactCounters) ||
-          stableJson(baseline.synchronousEventOrder) !==
-            stableJson(killer.synchronousEventOrder) ||
-          stableJson(baseline.exactControllerStateDelta) !==
-            stableJson(killer.exactControllerStateDelta)
+          ],
+          ["registryAfter", baseline.registryAfter, killer.registryAfter],
+          ["exactCounters", baseline.exactCounters, killer.exactCounters],
+          [
+            "synchronousEventOrder",
+            baseline.synchronousEventOrder,
+            killer.synchronousEventOrder,
+          ],
+          [
+            "exactControllerStateDelta",
+            baseline.exactControllerStateDelta,
+            killer.exactControllerStateDelta,
+          ],
+          [
+            "scenarioFinalState",
+            baseline.scenarioFinalState,
+            killer.scenarioFinalState,
+          ],
+          [
+            "referenceIdentityExpectations",
+            baseline.referenceIdentityExpectations,
+            killer.referenceIdentityExpectations,
+          ],
+          [
+            "publicationMergeObservation",
+            baseline.publicationMergeObservation,
+            killer.publicationMergeObservation,
+          ],
+        ] as const;
+        if (
+          runtimeProjectionPairs.some(
+            ([name, baselineValue, killerValue]) =>
+              !allowedChangedRuntimeProjections.has(name) &&
+              !jsonDeepEqual(baselineValue, killerValue),
+          )
         ) {
           throw new Error("BRIDGE_CONTROL_KILLED_RUNTIME_NOT_INVARIANT");
         }
@@ -3791,23 +6657,61 @@ export async function validateA0E0BridgeContract(
     "Applicability must cover all five ports in contract order.",
     findings,
   );
-  for (const row of applicabilityRows) {
-    if (
-      row["wallTime"] !== "forbidden" ||
-      typeof row["synchronization"] !== "string" ||
-      typeof row["cancellation"] !== "string" ||
-      typeof row["staleState"] !== "string" ||
-      typeof row["replay"] !== "string" ||
-      typeof row["transposition"] !== "string"
-    ) {
-      addFinding(
-        findings,
-        "BRIDGE_APPLICABILITY_ROW",
-        String(row["operation"]),
-        "Each applicability row closes synchronization, cancellation, staleness, replay, transposition, and wall-time semantics.",
-      );
-    }
-  }
+  requireExact(
+    applicabilityRows,
+    [
+      {
+        operation: "prepareImportReplacementPublication",
+        synchronization: "synchronous-controller-transaction",
+        cancellation: "resolved-before-prepare-no-owner-call",
+        staleState: "exact-document-revision-request-and-transition",
+        replay: "live-complete-identity-required",
+        transposition: "applicable-candidate-preserved-byte-for-byte",
+        wallTimeCutoff: "forbidden-count-and-state-bounds-only",
+      },
+      {
+        operation: "discardImportReplacementPublication",
+        synchronization: "synchronous-total-cleanup",
+        cancellation: "not-applicable-four-closed-failure-reasons-only",
+        staleState: "request-keyed-cleanup-remains-total",
+        replay: "idempotent-live-for-request-zero",
+        transposition: "not-applicable-content-invariant-cleanup",
+        wallTimeCutoff: "forbidden-constant-registry-bound",
+      },
+      {
+        operation: "publishImportReplacement",
+        synchronization: "synchronous-consume-and-publish",
+        cancellation: "not-applicable-once-prepare-begins",
+        staleState: "exact-live-preparation-and-retirement-required",
+        replay: "consumed-and-invalidated-echoes-refused",
+        transposition: "applicable-manual-and-frozen-pitches-preserved",
+        wallTimeCutoff: "forbidden-count-and-state-bounds-only",
+      },
+      {
+        operation: "readCurrentApplicationDocumentIdentity",
+        synchronization: "synchronous-controller-closure-read",
+        cancellation: "not-applicable-pure-identity-read",
+        staleState: "always-reads-latest-at-call-time",
+        replay: "not-applicable-no-capability-created",
+        transposition: "not-applicable-content-invariant-identity",
+        wallTimeCutoff: "forbidden-constant-field-read",
+      },
+      {
+        operation: "publishCanonicalExportRevision",
+        synchronization:
+          "synchronous-validate-compare-conditional-write-notify",
+        cancellation: "not-applicable-after-successful-delivery",
+        staleState: "exact-document-and-revision-cas",
+        replay: "same-marker-idempotent-only-at-exact-current-identity",
+        transposition: "not-applicable-content-invariant-marker",
+        wallTimeCutoff: "forbidden-constant-field-compare-and-write",
+      },
+    ],
+    "BRIDGE_APPLICABILITY_ROW",
+    "owner-port-cases.json.applicabilityMatrix",
+    "The fixture applicability rows must be an exact literal projection of the source owner applicability table.",
+    findings,
+  );
 
   const cleanupCase = caseById.get("BRIDGE-REP-027") ?? {};
   const cleanupRuns = recordsAt(cleanupCase["runs"]).filter(
@@ -3870,7 +6774,8 @@ export async function validateA0E0BridgeContract(
     ? provenance["independence"]
     : {};
   const expectedIndependence = {
-    productionImportsForbidden: true,
+    fixtureAuthoringProductionImportsForbidden: true,
+    productionModulesUsedOnlyAsConformanceSubjects: true,
     productionOutputUsedAsOracle: false,
     expectedValuesGenerated: false,
     fixturesHandAuthored: true,
@@ -3962,6 +6867,7 @@ export async function validateA0E0BridgeContract(
       readFile(e0SourcePath, "utf8"),
     ]);
     for (const token of [
+      "export interface A0E0InterchangeOwnerOperations",
       "export interface A0E0InterchangeOwnerPorts",
       '"specified-unimplemented"',
       "PrepareImportReplacementPublicationOperation",
@@ -3992,8 +6898,7 @@ export async function validateA0E0BridgeContract(
       ts.ScriptKind.TS,
     );
     const imports = ownerSourceFile.statements.filter(ts.isImportDeclaration);
-    const actualTopology = Object.fromEntries(
-      imports.map((node) => {
+    const actualTopology = imports.map((node) => {
         const modulePath = ts.isStringLiteral(node.moduleSpecifier)
           ? node.moduleSpecifier.text
           : "";
@@ -4002,23 +6907,18 @@ export async function validateA0E0BridgeContract(
           bindings !== undefined && ts.isNamedImports(bindings)
             ? bindings.elements.map((element) => element.name.text)
             : [];
-        if (node.importClause?.isTypeOnly !== true) {
-          addFinding(
-            findings,
-            "BRIDGE_OWNER_IMPORT_NOT_TYPE_ONLY",
-            `${sourcePath}:${modulePath}`,
-            "Every owner-contract import must be declaration-wide type-only.",
-          );
-        }
-        return [modulePath, names];
-      }),
-    );
+        return {
+          modulePath,
+          isTypeOnly: node.importClause?.isTypeOnly === true,
+          names,
+        };
+      });
     requireExact(
       actualTopology,
       OWNER_IMPORT_TOPOLOGY,
       "BRIDGE_OWNER_IMPORT_TOPOLOGY",
       sourcePath,
-      "The owner contract may import exactly the pinned domain and A0 type names.",
+      "The owner contract may import exactly the pinned ordered domain types, A0 runtime bounds, and A0 state types.",
       findings,
     );
     const hasRuntimeImplementation = ownerSourceFile.statements.some(
@@ -4043,25 +6943,62 @@ export async function validateA0E0BridgeContract(
       );
     }
 
-    const ownerInterface = ownerSourceFile.statements.find(
-      (node): node is ts.InterfaceDeclaration =>
-        ts.isInterfaceDeclaration(node) &&
-        node.name.text === "A0E0InterchangeOwnerPorts",
-    );
-    const interfaceMembers =
-      ownerInterface?.members.map((member) => {
+    const exactInterfaceMembers = (interfaceName: string) => {
+      const ownerInterface = ownerSourceFile.statements.find(
+        (node): node is ts.InterfaceDeclaration =>
+          ts.isInterfaceDeclaration(node) && node.name.text === interfaceName,
+      );
+      return ownerInterface?.members.map((member) => {
         const name = member.name;
-        return name !== undefined &&
+        const memberName = name !== undefined &&
           (ts.isIdentifier(name) || ts.isStringLiteral(name))
           ? name.text
           : null;
+        const typeName =
+          ts.isPropertySignature(member) &&
+          member.type !== undefined &&
+          ts.isTypeReferenceNode(member.type) &&
+          ts.isIdentifier(member.type.typeName)
+            ? member.type.typeName.text
+            : null;
+        return {
+          name: memberName,
+          readonly:
+            member.modifiers?.some(
+              (modifier) => modifier.kind === ts.SyntaxKind.ReadonlyKeyword,
+            ) === true,
+          typeName,
+        };
       }) ?? [];
+    };
+    const expectedOperationsMembers = A0_E0_BRIDGE_OWNER_OPERATION_NAMES.map(
+      (name) => ({
+        name,
+        readonly: true,
+        typeName: `${name[0]?.toUpperCase() ?? ""}${name.slice(1)}Operation`,
+      }),
+    );
+    const expectedPortsMembers = A0_E0_BRIDGE_OWNER_OPERATION_NAMES.map(
+      (name) => ({
+        name,
+        readonly: true,
+        typeName: `${name[0]?.toUpperCase() ?? ""}${name.slice(1)}Port`,
+      }),
+    );
     requireExact(
-      interfaceMembers,
-      A0_E0_BRIDGE_OWNER_OPERATION_NAMES,
-      "BRIDGE_OWNER_INTERFACE",
+      exactInterfaceMembers("A0E0InterchangeOwnerOperations"),
+      expectedOperationsMembers,
+      "BRIDGE_OWNER_OPERATIONS_INTERFACE",
       sourcePath,
-      "A0E0InterchangeOwnerPorts must expose exactly five members in contract order.",
+      "A0E0InterchangeOwnerOperations must expose exactly five readonly exact-result operation members in contract order.",
+      findings,
+    );
+    requireExact(
+      exactInterfaceMembers("A0E0InterchangeOwnerPorts"),
+      expectedPortsMembers,
+      "BRIDGE_OWNER_PORTS_INTERFACE",
+      sourcePath,
+      "A0E0InterchangeOwnerPorts must expose exactly five readonly untrusted consumer-port members in contract order.",
       findings,
     );
 
@@ -4154,6 +7091,11 @@ export async function validateA0E0BridgeContract(
     );
   }
 
+  const expectedF3ValidationCalls = [...documentValidationCache.values()].filter(
+    (observation) =>
+      observation.stage !== "f2-refused" &&
+      observation.stage !== "f2-repaired",
+  ).length;
   if (
     expectedAcceptedDocumentOccurrences === 0 ||
     acceptedE0AuthorityDocumentOccurrences === 0 ||

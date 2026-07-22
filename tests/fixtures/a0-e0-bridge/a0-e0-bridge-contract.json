@@ -21,6 +21,63 @@
     "readCurrentApplicationDocumentIdentity",
     "publishCanonicalExportRevision"
   ],
+  "lawIds": [
+    "BRIDGE-OWNER-01-controller-current-state-only",
+    "BRIDGE-OWNER-02-prepare-after-all-fallible-checks",
+    "BRIDGE-OWNER-03-complete-identity-single-live-entry",
+    "BRIDGE-OWNER-04-total-idempotent-request-cleanup",
+    "BRIDGE-OWNER-05-publish-consumes-before-return",
+    "BRIDGE-OWNER-06-replay-and-lookalike-refused",
+    "BRIDGE-OWNER-07-synchronous-latest-identity",
+    "BRIDGE-OWNER-08-document-and-revision-marker-cas",
+    "BRIDGE-OWNER-09-marker-preserves-unrelated-current-state",
+    "BRIDGE-OWNER-10-state-free-boundary-results",
+    "BRIDGE-OWNER-11-no-wall-time-or-pitch-repair"
+  ],
+  "aggregateInterfaces": {
+    "producer": {
+      "name": "A0E0InterchangeOwnerOperations",
+      "memberTypeSuffix": "Operation",
+      "returnsExactTypedResults": true
+    },
+    "consumer": {
+      "name": "A0E0InterchangeOwnerPorts",
+      "memberTypeSuffix": "Port",
+      "fallibleResultsAreUnknown": true,
+      "cleanupUsesExactProducerResult": true
+    },
+    "bindingDirection": "producer-operations-structurally-assignable-to-consumer-ports",
+    "consumerReceivesOnlyNarrowedUntrustedPorts": true
+  },
+  "sourceOriginMapping": {
+    "canonical-json-v2": "canonical-import",
+    "unversioned-legacy-json": "legacy-import",
+    "chart-text-v1": "canonical-import"
+  },
+  "requestAuthorityBoundary": {
+    "currentStateComesFromControllerClosure": true,
+    "candidateDocumentIdComparedWithCurrentTransition": true,
+    "candidateStructurallyAndSemanticallyValidated": true,
+    "disclosedImpactRecomputedFromCurrentState": true,
+    "confirmationFieldsCheckedForInternalConsistency": true,
+    "exactPreviewProjectionProvedByOwner": false,
+    "candidateBytesUserConfirmedProvedByOwner": false,
+    "commandSeedUserConfirmedProvedByOwner": false,
+    "confirmationAcknowledgementProvenanceProvedByOwner": false,
+    "deferredBindingLeaf": "jcpe-milestone-reliable-studio-l3a.8.4"
+  },
+  "replacementPreparationValidation": {
+    "recursivelyExactOwnerEnvelopeKeys": true,
+    "commandIdMaximumCodePoints": 128,
+    "commandLabelMaximumCodePoints": 160,
+    "confirmationIdMaximumCodePoints": 128,
+    "boundedTokensRequireNonemptyTrim": true,
+    "boundedTokensRequireUnicodeScalars": true,
+    "logicalTimeRequiresNonnegativeSafeInteger": true,
+    "logicalTimeMustNotPrecedeLatestUndoEntry": true,
+    "malformedPresentConfirmationCode": "import.confirmation_identity_mismatch",
+    "missingConfirmationCode": "history.nonundoable_confirmation_required"
+  },
   "ports": {
     "prepareImportReplacementPublication": {
       "synchronous": true,
@@ -70,9 +127,61 @@
     "allocateOnlyAfterAllFallibleChecks": true,
     "discardUsesOriginalRequestIdentity": true,
     "discardIsTotalSynchronousIdempotentNonthrowing": true,
+    "previewCancellation": {
+      "occursBeforePrepare": true,
+      "ownerCallCount": 0,
+      "liveRegistryEntriesCreated": 0,
+      "mayInterleaveAfterPrepare": false
+    },
+    "postPrepareCleanupReasons": [
+      "preparation-protocol-invalid",
+      "retirement-refused",
+      "retirement-protocol-invalid",
+      "publication-protocol-invalid"
+    ],
     "publishConsumesBeforeReturning": true,
     "replayAndStructuralLookalikeRefused": true,
     "terminalLiveForRequest": 0
+  },
+  "replacementPublicationMerge": {
+    "latestStateRecheckedAtPublication": true,
+    "frozenPrepareTimeWholeStateInstallAllowed": false,
+    "preparedCommandInputsRechecked": [
+      "documentIdentity",
+      "revision",
+      "bookmarks"
+    ],
+    "historyStabilityDerivedFromRevisionAndImmutableReducerLaw": true,
+    "sameRevisionBookmarkDriftOutcome": "consume-and-refuse-import.replacement_preparation_stale",
+    "latestTransportGenerationMustNotExceedRetiredGeneration": true,
+    "uncoveredLatestTransportOutcome": "consume-and-refuse-import.replacement_retirement_mismatch",
+    "latestSequenceMustBeLessThan": 9007199254740991,
+    "exhaustedLatestSequenceOutcome": "consume-and-refuse-import.replacement_preparation_stale",
+    "preservedFromLatestStateByValue": ["exportRevision"],
+    "preservedFromLatestStateByReference": [
+      "recovery",
+      "panels",
+      "dialogs",
+      "transport"
+    ],
+    "replacementOwnedFields": [
+      "document",
+      "revision",
+      "history",
+      "bookmarks",
+      "quickEntry",
+      "importDraft",
+      "pendingRequests",
+      "documentTransition",
+      "notices"
+    ],
+    "allocatedFromLatestSequenceAtPublication": [
+      "focusRequest",
+      "nextSequence"
+    ],
+    "allAppStateFieldsPartitionedExactlyOnce": true,
+    "optionalWarningNoticeUsesNextSequenceAndSaturatesAtMaximum": true,
+    "rerunsPreparationWork": false
   },
   "latestIdentity": {
     "fields": ["documentId", "revision"],
@@ -86,10 +195,18 @@
       "validate-publication-envelope",
       "read-controller-current-state",
       "compare-document-id-and-revision",
-      "replace-exportRevision-only",
-      "install-current-state",
-      "notify-after-install"
+      "if-exportRevision-already-equals-publication-revision-return-state-free-success-without-install-or-notify",
+      "otherwise-replace-exportRevision-only",
+      "otherwise-install-current-state",
+      "otherwise-notify-after-install"
     ],
+    "exactReplay": {
+      "result": "state-free-success",
+      "stateInstallCount": 0,
+      "listenerNotificationCount": 0,
+      "requiredEvent": "observe.marker-already-equal",
+      "wholeStateReferencePreserved": true
+    },
     "awaitBetweenCompareAndWriteAllowed": false,
     "historicalStateSpreadAllowed": false,
     "successAndRefusalAreStateFree": true,
@@ -109,7 +226,8 @@
       "focusRequest",
       "notices",
       "nextSequence"
-    ]
+    ],
+    "preservedFieldsUseReferenceIdentity": true
   },
   "ownerStateIsolationAndVersionBoundary": {
     "AppStateAllowedInOwnerRequest": false,
@@ -134,7 +252,7 @@
     "identityCases": 6,
     "markerCases": 12,
     "applicabilityRows": 5,
-    "mutationControls": 24,
+    "mutationControls": 32,
     "traces": 5,
     "authorities": 5
   },
@@ -207,6 +325,17 @@
       "status": "unresolved-versioned-semantic-delta"
     },
     {
+      "id": "E0V1-CONFLICT-PREVIEW-IMPACT-CONTEXT-STATE",
+      "acceptedV1Type": "PrepareImportPreviewRequest",
+      "acceptedV1Path": ["replacementImpactContext", "state"],
+      "acceptedV1FieldType": "AppState",
+      "acceptedV1OwnerDependency": "AssessImportReplacementImpact",
+      "proposedOwnerType": "PrepareImportReplacementPublicationRequest",
+      "proposedOwnerAuthority": "controller-closure-current-AppState",
+      "proposedOwnerAcceptsCallerState": false,
+      "status": "unresolved-versioned-semantic-delta"
+    },
+    {
       "id": "E0V1-CONFLICT-IMPORT-PREVIEW-PROJECTION",
       "acceptedV1Type": "CommitImportReplacementRequest",
       "acceptedV1Field": "preview",
@@ -225,6 +354,18 @@
         "currentTransition",
         "nonUndoableConfirmation"
       ],
+      "status": "unresolved-versioned-semantic-delta"
+    },
+    {
+      "id": "E0V1-CONFLICT-PREVIEW-AUTHORITY-AND-CONSENT",
+      "acceptedV1RequestType": "CommitImportReplacementRequest",
+      "acceptedV1Fields": ["preview", "nonUndoableConfirmation"],
+      "proposedOwnerType": "PrepareImportReplacementPublicationRequest",
+      "controllerOwnedPreviewBindingAvailable": false,
+      "exactCandidateBytesUserConfirmedProvedByOwner": false,
+      "exactCommandSeedUserConfirmedProvedByOwner": false,
+      "acknowledgementProvenanceProvedByOwner": false,
+      "requiredResolution": "accepted-E0-v2-exact-preview-projection-and-consent-binding",
       "status": "unresolved-versioned-semantic-delta"
     },
     {
@@ -338,6 +479,16 @@
     }
   ],
   "proofRequirements": {
+    "exactSourceOriginMappingRequired": true,
+    "typedProducerAndConsumerAggregatesRequired": true,
+    "producerOperationsMustBeAssignableToConsumerPorts": true,
+    "exactMarkerReplayNoOpBranchRequired": true,
+    "ownerMustNotClaimExactPreviewOrConsentProvenance": true,
+    "markerPreservedFieldReferenceIdentityRequired": true,
+    "latestStateReplacementPublicationMergeRequired": true,
+    "frozenPrepareTimeWholeStateInstallForbidden": true,
+    "recursiveExactOwnerEnvelopeKeysRequired": true,
+    "latestBookmarkSequenceAndTransportPublicationRechecksRequired": true,
     "literalBeforeRequestResultAfter": true,
     "fullStateReferencesMustResolveToValidatedLiterals": true,
     "computedBeforeAfterDiffMustEqualDeclaredExactDelta": true,

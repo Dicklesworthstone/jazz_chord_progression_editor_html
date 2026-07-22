@@ -4,8 +4,15 @@
   "traces": [
     {
       "id": "BRIDGE-TRACE-PREPARE",
-      "requirement": "Preparation reads controller-owned current state, exhausts every fallible binding, F2, F3, history, bookmark, impact, confirmation, revision, and sequence check before allocating the sole private entry, and returns no AppState.",
+      "requirement": "Preparation reads controller-owned current state; exhausts its current identity, transition, F2, F3, history, bookmark, impact, confirmation-consistency, revision, and sequence checks before allocating the sole private entry; returns no AppState; and makes no claim to independently prove preview candidate/command equality or consent provenance.",
       "operation": "prepareImportReplacementPublication",
+      "lawIds": [
+        "BRIDGE-OWNER-01-controller-current-state-only",
+        "BRIDGE-OWNER-02-prepare-after-all-fallible-checks",
+        "BRIDGE-OWNER-03-complete-identity-single-live-entry",
+        "BRIDGE-OWNER-10-state-free-boundary-results",
+        "BRIDGE-OWNER-11-no-wall-time-or-pitch-repair"
+      ],
       "caseIds": [
         "BRIDGE-REP-001",
         "BRIDGE-REP-002",
@@ -44,7 +51,8 @@
         "BRIDGE-MUT-011",
         "BRIDGE-MUT-012",
         "BRIDGE-MUT-022",
-        "BRIDGE-MUT-024"
+        "BRIDGE-MUT-024",
+        "BRIDGE-MUT-025"
       ],
       "authorityIds": [
         "BRIDGE-AUTH-PLAN",
@@ -80,6 +88,12 @@
       "id": "BRIDGE-TRACE-DISCARD",
       "requirement": "Discard is an exact-result synchronous total nonthrowing idempotent operation keyed by the original complete identity; it never clears an unrelated live entry.",
       "operation": "discardImportReplacementPublication",
+      "lawIds": [
+        "BRIDGE-OWNER-03-complete-identity-single-live-entry",
+        "BRIDGE-OWNER-04-total-idempotent-request-cleanup",
+        "BRIDGE-OWNER-10-state-free-boundary-results",
+        "BRIDGE-OWNER-11-no-wall-time-or-pitch-repair"
+      ],
       "caseIds": ["BRIDGE-REP-027", "BRIDGE-REP-028"],
       "forwardE0V2CaseIds": [],
       "controlIds": ["BRIDGE-MUT-001", "BRIDGE-MUT-003", "BRIDGE-MUT-004"],
@@ -103,8 +117,16 @@
     },
     {
       "id": "BRIDGE-TRACE-PUBLISH",
-      "requirement": "Publication requires the exact live private preparation and exact X1 retirement receipt, consumes before returning, publishes once, preserves candidate bytes, and returns only a state-free receipt or refusal.",
+      "requirement": "Publication requires the exact live private preparation and exact X1 retirement receipt, consumes before returning, merges precomputed command material into the latest matching controller state without installing a frozen prepare-time AppState, publishes once, preserves candidate bytes, and returns only a state-free receipt or refusal.",
       "operation": "publishImportReplacement",
+      "lawIds": [
+        "BRIDGE-OWNER-01-controller-current-state-only",
+        "BRIDGE-OWNER-03-complete-identity-single-live-entry",
+        "BRIDGE-OWNER-05-publish-consumes-before-return",
+        "BRIDGE-OWNER-06-replay-and-lookalike-refused",
+        "BRIDGE-OWNER-10-state-free-boundary-results",
+        "BRIDGE-OWNER-11-no-wall-time-or-pitch-repair"
+      ],
       "caseIds": ["BRIDGE-REP-029", "BRIDGE-REP-030"],
       "forwardE0V2CaseIds": [],
       "controlIds": [
@@ -114,7 +136,9 @@
         "BRIDGE-MUT-008",
         "BRIDGE-MUT-009",
         "BRIDGE-MUT-011",
-        "BRIDGE-MUT-024"
+        "BRIDGE-MUT-024",
+        "BRIDGE-MUT-026",
+        "BRIDGE-MUT-031"
       ],
       "authorityIds": [
         "BRIDGE-AUTH-PLAN",
@@ -138,8 +162,14 @@
     },
     {
       "id": "BRIDGE-TRACE-IDENTITY",
-      "requirement": "Latest identity is a synchronous call-time read of documentId and revision from the controller closure, with no snapshot, cache, Promise, pitch inspection, or raw malformed result retention.",
+      "requirement": "Latest identity is a synchronous call-time read of documentId and revision from the controller closure, with no snapshot, cache, Promise, or pitch inspection.",
       "operation": "readCurrentApplicationDocumentIdentity",
+      "lawIds": [
+        "BRIDGE-OWNER-01-controller-current-state-only",
+        "BRIDGE-OWNER-07-synchronous-latest-identity",
+        "BRIDGE-OWNER-10-state-free-boundary-results",
+        "BRIDGE-OWNER-11-no-wall-time-or-pitch-repair"
+      ],
       "caseIds": [
         "BRIDGE-ID-001",
         "BRIDGE-ID-002",
@@ -183,8 +213,15 @@
     },
     {
       "id": "BRIDGE-TRACE-MARKER",
-      "requirement": "Marker publication validates, reads latest state, compares both identity fields, writes only exportRevision, installs and then notifies in one synchronous critical section, and crosses the boundary only as a state-free receipt or refusal.",
+      "requirement": "Marker publication validates, reads latest state, and compares both identity fields in one synchronous critical section. An exact exportRevision replay returns state-free success without install or notification; otherwise it writes only exportRevision, installs, then notifies. Every boundary result is state-free.",
       "operation": "publishCanonicalExportRevision",
+      "lawIds": [
+        "BRIDGE-OWNER-01-controller-current-state-only",
+        "BRIDGE-OWNER-08-document-and-revision-marker-cas",
+        "BRIDGE-OWNER-09-marker-preserves-unrelated-current-state",
+        "BRIDGE-OWNER-10-state-free-boundary-results",
+        "BRIDGE-OWNER-11-no-wall-time-or-pitch-repair"
+      ],
       "caseIds": [
         "BRIDGE-MARK-001",
         "BRIDGE-MARK-002",
@@ -208,7 +245,12 @@
         "BRIDGE-MUT-021",
         "BRIDGE-MUT-022",
         "BRIDGE-MUT-023",
-        "BRIDGE-MUT-024"
+        "BRIDGE-MUT-024",
+        "BRIDGE-MUT-027",
+        "BRIDGE-MUT-028",
+        "BRIDGE-MUT-029",
+        "BRIDGE-MUT-030",
+        "BRIDGE-MUT-032"
       ],
       "authorityIds": [
         "BRIDGE-AUTH-PLAN",
@@ -242,6 +284,345 @@
       },
       "ownerProofScope": "A0-typed-producer",
       "forwardE0V2RowsExcludedFromOwnerProof": true
+    }
+  ],
+  "lawCoverage": [
+    {
+      "lawId": "BRIDGE-OWNER-01-controller-current-state-only",
+      "traceIds": [
+        "BRIDGE-TRACE-PREPARE",
+        "BRIDGE-TRACE-PUBLISH",
+        "BRIDGE-TRACE-IDENTITY",
+        "BRIDGE-TRACE-MARKER"
+      ],
+      "positiveRunIds": [
+        "BRIDGE-REP-001/retained",
+        "BRIDGE-ID-001/baseline",
+        "BRIDGE-MARK-002/marker-2",
+        "BRIDGE-MARK-010/marker-10",
+        "BRIDGE-REP-029/same-revision-ephemeral-edit",
+        "BRIDGE-REP-029/explicitly-unavailable-sequence-saturation-boundary"
+      ],
+      "negativeOrNearMissRunIds": [
+        "BRIDGE-REP-006/exact-refusal",
+        "BRIDGE-ID-003/identity-3",
+        "BRIDGE-MARK-003/marker-3",
+        "BRIDGE-MARK-004/marker-4",
+        "BRIDGE-MARK-010/mutation-019-historical-reinstall",
+        "BRIDGE-REP-029/mutation-031-frozen-prepare-state-install",
+        "BRIDGE-REP-030/transport-advanced-after-prepare",
+        "BRIDGE-REP-030/bookmarks-changed-after-prepare",
+        "BRIDGE-REP-030/sequence-exhausted-after-prepare"
+      ],
+      "transpositionOrApplicability": {
+        "status": "literal-covered",
+        "runIds": [
+          "BRIDGE-REP-003/source-c",
+          "BRIDGE-REP-003/target-d",
+          "BRIDGE-ID-004/source-c",
+          "BRIDGE-ID-004/target-d",
+          "BRIDGE-MARK-012/source-c",
+          "BRIDGE-MARK-012/target-d"
+        ],
+        "rationale": "Current-state authority is invariant across transposed candidate and content-independent owner operations."
+      },
+      "mutationControlIds": ["BRIDGE-MUT-019", "BRIDGE-MUT-031"]
+    },
+    {
+      "lawId": "BRIDGE-OWNER-02-prepare-after-all-fallible-checks",
+      "traceIds": ["BRIDGE-TRACE-PREPARE"],
+      "positiveRunIds": [
+        "BRIDGE-REP-001/retained",
+        "BRIDGE-REP-002/unavailable",
+        "BRIDGE-REP-007/chart-text-canonical",
+        "BRIDGE-REP-007/legacy-json-legacy",
+        "BRIDGE-REP-015/logical-time-latest-boundary"
+      ],
+      "negativeOrNearMissRunIds": [
+        "BRIDGE-REP-008/exact-refusal",
+        "BRIDGE-REP-008/nested-identity-extra-key",
+        "BRIDGE-REP-004/exact-refusal",
+        "BRIDGE-REP-005/exact-refusal",
+        "BRIDGE-REP-009/exact-refusal",
+        "BRIDGE-REP-013/exact-refusal",
+        "BRIDGE-REP-014/label-161-killer",
+        "BRIDGE-REP-015/logical-time-nan-killer",
+        "BRIDGE-REP-015/logical-time-before-latest-history",
+        "BRIDGE-REP-016/exact-refusal",
+        "BRIDGE-REP-017/exact-refusal",
+        "BRIDGE-REP-018/exact-refusal",
+        "BRIDGE-REP-019/semantic-cfoo-killer",
+        "BRIDGE-REP-020/exact-refusal",
+        "BRIDGE-REP-020/impact-unavailable",
+        "BRIDGE-REP-021/exact-refusal",
+        "BRIDGE-REP-023/confirmation-stale",
+        "BRIDGE-REP-023/confirmation-wrong-document",
+        "BRIDGE-REP-023/confirmation-impact-mismatch",
+        "BRIDGE-REP-023/confirmation-id-129-code-points",
+        "BRIDGE-REP-023/confirmation-id-whitespace-only",
+        "BRIDGE-REP-023/confirmation-id-lone-surrogate",
+        "BRIDGE-REP-023/exact-refusal",
+        "BRIDGE-REP-022/exact-refusal",
+        "BRIDGE-REP-024/capacity-one-busy",
+        "BRIDGE-REP-001/mutation-025-early-allocation"
+      ],
+      "transpositionOrApplicability": {
+        "status": "literal-covered",
+        "runIds": ["BRIDGE-REP-003/source-c", "BRIDGE-REP-003/target-d"],
+        "rationale": "Both independently materialized transposed candidates complete every check before the sole allocation."
+      },
+      "mutationControlIds": ["BRIDGE-MUT-025"]
+    },
+    {
+      "lawId": "BRIDGE-OWNER-03-complete-identity-single-live-entry",
+      "traceIds": [
+        "BRIDGE-TRACE-PREPARE",
+        "BRIDGE-TRACE-DISCARD",
+        "BRIDGE-TRACE-PUBLISH"
+      ],
+      "positiveRunIds": [
+        "BRIDGE-REP-001/retained",
+        "BRIDGE-REP-024/capacity-one-busy"
+      ],
+      "negativeOrNearMissRunIds": [
+        "BRIDGE-REP-004/exact-refusal",
+        "BRIDGE-REP-005/exact-refusal",
+        "BRIDGE-REP-006/exact-refusal",
+        "BRIDGE-REP-028/wrong-request-isolation",
+        "BRIDGE-REP-030/stale-live-entry",
+        "BRIDGE-REP-005/mutation-001-wrong-document",
+        "BRIDGE-REP-024/mutation-002-occupied-registry"
+      ],
+      "transpositionOrApplicability": {
+        "status": "literal-covered",
+        "runIds": ["BRIDGE-REP-003/source-c", "BRIDGE-REP-003/target-d"],
+        "rationale": "Each transposed candidate creates exactly one entry under the same complete identity law."
+      },
+      "mutationControlIds": ["BRIDGE-MUT-001", "BRIDGE-MUT-002"]
+    },
+    {
+      "lawId": "BRIDGE-OWNER-04-total-idempotent-request-cleanup",
+      "traceIds": ["BRIDGE-TRACE-DISCARD"],
+      "positiveRunIds": [
+        "BRIDGE-REP-027/preparation-protocol-invalid-first",
+        "BRIDGE-REP-027/preparation-protocol-invalid-repeat",
+        "BRIDGE-REP-027/retirement-refused-first",
+        "BRIDGE-REP-027/retirement-refused-repeat",
+        "BRIDGE-REP-027/retirement-protocol-invalid-first",
+        "BRIDGE-REP-027/retirement-protocol-invalid-repeat",
+        "BRIDGE-REP-027/publication-protocol-invalid-first",
+        "BRIDGE-REP-027/publication-protocol-invalid-repeat"
+      ],
+      "negativeOrNearMissRunIds": [
+        "BRIDGE-REP-028/wrong-request-isolation",
+        "BRIDGE-REP-028/mutation-003-wrong-identity"
+      ],
+      "transpositionOrApplicability": {
+        "status": "content-invariance-covered",
+        "runIds": [
+          "BRIDGE-REP-028/manual-source-c",
+          "BRIDGE-REP-028/manual-target-d"
+        ],
+        "rationale": "Cleanup is harmony-independent; distinct literal registry content produces the same request-keyed cleanup decision with zero document traversal."
+      },
+      "mutationControlIds": ["BRIDGE-MUT-003"]
+    },
+    {
+      "lawId": "BRIDGE-OWNER-05-publish-consumes-before-return",
+      "traceIds": ["BRIDGE-TRACE-PUBLISH"],
+      "positiveRunIds": [
+        "BRIDGE-REP-029/retained",
+        "BRIDGE-REP-029/manual-source-c",
+        "BRIDGE-REP-029/manual-target-d",
+        "BRIDGE-REP-029/explicitly-unavailable",
+        "BRIDGE-REP-029/explicitly-unavailable-sequence-saturation-boundary"
+      ],
+      "negativeOrNearMissRunIds": [
+        "BRIDGE-REP-030/consumed-replay",
+        "BRIDGE-REP-030/stale-live-entry",
+        "BRIDGE-REP-030/retirement-mismatch",
+        "BRIDGE-REP-030/transport-advanced-after-prepare",
+        "BRIDGE-REP-030/bookmarks-changed-after-prepare",
+        "BRIDGE-REP-030/sequence-exhausted-after-prepare",
+        "BRIDGE-REP-029/mutation-026-publish-before-consume"
+      ],
+      "transpositionOrApplicability": {
+        "status": "literal-covered",
+        "runIds": [
+          "BRIDGE-REP-029/manual-source-c",
+          "BRIDGE-REP-029/manual-target-d"
+        ],
+        "rationale": "Both transposed publications consume the matching entry before returning."
+      },
+      "mutationControlIds": ["BRIDGE-MUT-026"]
+    },
+    {
+      "lawId": "BRIDGE-OWNER-06-replay-and-lookalike-refused",
+      "traceIds": ["BRIDGE-TRACE-PUBLISH"],
+      "positiveRunIds": ["BRIDGE-REP-029/retained"],
+      "negativeOrNearMissRunIds": [
+        "BRIDGE-REP-030/consumed-replay",
+        "BRIDGE-REP-030/invalidated-replay",
+        "BRIDGE-REP-030/structural-lookalike",
+        "BRIDGE-REP-030/stale-live-entry",
+        "BRIDGE-REP-030/retirement-mismatch",
+        "BRIDGE-REP-030/transport-advanced-after-prepare",
+        "BRIDGE-REP-030/bookmarks-changed-after-prepare",
+        "BRIDGE-REP-030/sequence-exhausted-after-prepare",
+        "BRIDGE-REP-030/mutation-005-lookalike",
+        "BRIDGE-REP-030/mutation-006-consumed"
+      ],
+      "transpositionOrApplicability": {
+        "status": "literal-covered",
+        "runIds": [
+          "BRIDGE-REP-029/manual-source-c",
+          "BRIDGE-REP-029/manual-target-d"
+        ],
+        "rationale": "Exact private authority succeeds independently of harmonic transposition; structural echoes never become authority."
+      },
+      "mutationControlIds": ["BRIDGE-MUT-005", "BRIDGE-MUT-006"]
+    },
+    {
+      "lawId": "BRIDGE-OWNER-07-synchronous-latest-identity",
+      "traceIds": ["BRIDGE-TRACE-IDENTITY"],
+      "positiveRunIds": [
+        "BRIDGE-ID-001/baseline",
+        "BRIDGE-ID-002/identity-2",
+        "BRIDGE-ID-003/identity-3"
+      ],
+      "negativeOrNearMissRunIds": [
+        "BRIDGE-ID-001/mutation-014-asynchronous",
+        "BRIDGE-ID-003/mutation-013-revision-eight"
+      ],
+      "transpositionOrApplicability": {
+        "status": "content-invariance-covered",
+        "runIds": ["BRIDGE-ID-004/source-c", "BRIDGE-ID-004/target-d"],
+        "rationale": "Identity reads the latest controller fields and traverses no document content."
+      },
+      "mutationControlIds": ["BRIDGE-MUT-014"]
+    },
+    {
+      "lawId": "BRIDGE-OWNER-08-document-and-revision-marker-cas",
+      "traceIds": ["BRIDGE-TRACE-MARKER"],
+      "positiveRunIds": ["BRIDGE-MARK-001/exact", "BRIDGE-MARK-008/marker-8"],
+      "negativeOrNearMissRunIds": [
+        "BRIDGE-MARK-003/marker-3",
+        "BRIDGE-MARK-004/marker-4",
+        "BRIDGE-MARK-005/marker-5",
+        "BRIDGE-MARK-009/mutation-017-await-boundary",
+        "BRIDGE-MARK-001/mutation-028-notify-before-install",
+        "BRIDGE-MARK-001/mutation-029-return-before-install"
+      ],
+      "transpositionOrApplicability": {
+        "status": "content-invariance-covered",
+        "runIds": ["BRIDGE-MARK-012/source-c", "BRIDGE-MARK-012/target-d"],
+        "rationale": "Marker CAS compares identity only and traverses no musical content."
+      },
+      "mutationControlIds": [
+        "BRIDGE-MUT-017",
+        "BRIDGE-MUT-028",
+        "BRIDGE-MUT-029"
+      ]
+    },
+    {
+      "lawId": "BRIDGE-OWNER-09-marker-preserves-unrelated-current-state",
+      "traceIds": ["BRIDGE-TRACE-MARKER"],
+      "positiveRunIds": [
+        "BRIDGE-MARK-001/exact",
+        "BRIDGE-MARK-002/marker-2",
+        "BRIDGE-MARK-010/marker-10",
+        "BRIDGE-MARK-011/marker-11"
+      ],
+      "negativeOrNearMissRunIds": [
+        "BRIDGE-MARK-002/mutation-018-inspector-panel",
+        "BRIDGE-MARK-010/mutation-019-historical-reinstall",
+        "BRIDGE-MARK-001/mutation-030-cloned-preserved-references"
+      ],
+      "transpositionOrApplicability": {
+        "status": "content-invariance-covered",
+        "runIds": ["BRIDGE-MARK-012/source-c", "BRIDGE-MARK-012/target-d"],
+        "rationale": "Both content-distinct cases change only exportRevision and preserve all named references."
+      },
+      "mutationControlIds": ["BRIDGE-MUT-019", "BRIDGE-MUT-030"]
+    },
+    {
+      "lawId": "BRIDGE-OWNER-10-state-free-boundary-results",
+      "traceIds": [
+        "BRIDGE-TRACE-PREPARE",
+        "BRIDGE-TRACE-DISCARD",
+        "BRIDGE-TRACE-PUBLISH",
+        "BRIDGE-TRACE-IDENTITY",
+        "BRIDGE-TRACE-MARKER"
+      ],
+      "positiveRunIds": [
+        "BRIDGE-REP-001/retained",
+        "BRIDGE-REP-027/retirement-refused-first",
+        "BRIDGE-REP-029/retained",
+        "BRIDGE-ID-001/baseline",
+        "BRIDGE-MARK-001/exact"
+      ],
+      "negativeOrNearMissRunIds": [
+        "BRIDGE-MARK-001/mutation-027-state-bearing-result",
+        "BRIDGE-MARK-001/mutation-032-nested-state-smuggling"
+      ],
+      "transpositionOrApplicability": {
+        "status": "literal-covered-across-all-operations",
+        "runIds": [
+          "BRIDGE-REP-003/source-c",
+          "BRIDGE-REP-003/target-d",
+          "BRIDGE-REP-028/manual-source-c",
+          "BRIDGE-REP-028/manual-target-d",
+          "BRIDGE-REP-029/manual-source-c",
+          "BRIDGE-REP-029/manual-target-d",
+          "BRIDGE-ID-004/source-c",
+          "BRIDGE-ID-004/target-d",
+          "BRIDGE-MARK-012/source-c",
+          "BRIDGE-MARK-012/target-d"
+        ],
+        "rationale": "Every operation has a state-free result across its transposed or content-invariant applicability witness."
+      },
+      "mutationControlIds": ["BRIDGE-MUT-027", "BRIDGE-MUT-032"],
+      "additionalProofRequirements": [
+        "recursive-static-state-free-type-matrix-for-every-owner-request-result-handoff-and-identity"
+      ]
+    },
+    {
+      "lawId": "BRIDGE-OWNER-11-no-wall-time-or-pitch-repair",
+      "traceIds": [
+        "BRIDGE-TRACE-PREPARE",
+        "BRIDGE-TRACE-DISCARD",
+        "BRIDGE-TRACE-PUBLISH",
+        "BRIDGE-TRACE-IDENTITY",
+        "BRIDGE-TRACE-MARKER"
+      ],
+      "positiveRunIds": [
+        "BRIDGE-REP-001/retained",
+        "BRIDGE-REP-027/retirement-refused-first",
+        "BRIDGE-REP-029/retained",
+        "BRIDGE-ID-001/baseline",
+        "BRIDGE-MARK-001/exact"
+      ],
+      "negativeOrNearMissRunIds": [
+        "BRIDGE-MARK-012/mutation-023-wall-time",
+        "BRIDGE-REP-003/mutation-024-manual-pitch"
+      ],
+      "transpositionOrApplicability": {
+        "status": "literal-covered-across-all-operations",
+        "runIds": [
+          "BRIDGE-REP-003/source-c",
+          "BRIDGE-REP-003/target-d",
+          "BRIDGE-REP-028/manual-source-c",
+          "BRIDGE-REP-028/manual-target-d",
+          "BRIDGE-REP-029/manual-source-c",
+          "BRIDGE-REP-029/manual-target-d",
+          "BRIDGE-ID-004/source-c",
+          "BRIDGE-ID-004/target-d",
+          "BRIDGE-MARK-012/source-c",
+          "BRIDGE-MARK-012/target-d"
+        ],
+        "rationale": "Musical operations preserve Manual/Frozen bytes under transposition; harmony-independent operations traverse no document content."
+      },
+      "mutationControlIds": ["BRIDGE-MUT-023", "BRIDGE-MUT-024"]
     }
   ]
 }
