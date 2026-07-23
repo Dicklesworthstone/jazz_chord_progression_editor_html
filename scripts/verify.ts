@@ -50,6 +50,13 @@ const gates: Gate[] = [
     command: [process.execPath, "scripts/validate-a0-contract.ts"],
   },
   {
+    id: "a0-u1-atomic-edit-plan-contract",
+    command: [
+      process.execPath,
+      "scripts/validate-a0-u1-edit-plan-contract.ts",
+    ],
+  },
+  {
     id: "u0-ui-contract",
     command: [process.execPath, "scripts/validate-u0-contract.ts"],
   },
@@ -68,6 +75,10 @@ const gates: Gate[] = [
   {
     id: "x0-audio-engine-contract",
     command: [process.execPath, "scripts/validate-x0-contract.ts"],
+  },
+  {
+    id: "x1-transport-contract",
+    command: [process.execPath, "scripts/validate-x1-contract.ts"],
   },
   { id: "typecheck", command: [process.execPath, "scripts/typecheck.ts"] },
   { id: "lint", command: [process.execPath, "scripts/lint.ts"] },
@@ -140,10 +151,6 @@ const gates: Gate[] = [
   {
     id: "f0-evidence",
     command: [process.execPath, "scripts/verify-f0-evidence.ts"],
-  },
-  {
-    id: "x0-audio-evidence",
-    command: [process.execPath, "scripts/verify-x0-evidence.ts"],
   },
 ];
 

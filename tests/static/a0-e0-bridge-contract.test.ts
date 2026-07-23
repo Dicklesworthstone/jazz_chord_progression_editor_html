@@ -55,6 +55,23 @@ type Equal<Left, Right> = [Left] extends [Right]
     : false
   : false;
 type IsPromise<Value> = Value extends Promise<unknown> ? true : false;
+type ForbiddenStateKey =
+  "currentState" | "lastKnownState" | "observedBefore" | "state";
+type ContainsForbiddenStateKey<Value> = Value extends (
+  ...args: never[]
+) => unknown
+  ? false
+  : Value extends readonly (infer Item)[]
+    ? ContainsForbiddenStateKey<Item>
+    : Value extends object
+      ? Extract<keyof Value, ForbiddenStateKey> extends never
+        ? true extends {
+            [Key in keyof Value]-?: ContainsForbiddenStateKey<Value[Key]>;
+          }[keyof Value]
+          ? true
+          : false
+        : true
+      : false;
 type ContainsAppState<Value> = Value extends AppState
   ? true
   : Value extends (...args: never[]) => unknown
@@ -234,6 +251,36 @@ type EveryOwnerRequestResultHandoffAndIdentityIsStateFree = Assert<
     ]
   >
 >;
+type EveryOwnerRequestResultHandoffAndIdentityOmitsStateKeys = Assert<
+  Equal<
+    [
+      ContainsForbiddenStateKey<ImportReplacementSourceIdentity>,
+      ContainsForbiddenStateKey<ImportRequestIdentity>,
+      ContainsForbiddenStateKey<ApplicationDocumentIdentity>,
+      ContainsForbiddenStateKey<PrepareImportReplacementPublicationRequest>,
+      ContainsForbiddenStateKey<PrepareImportReplacementPublicationResult>,
+      ContainsForbiddenStateKey<DiscardImportReplacementPublicationRequest>,
+      ContainsForbiddenStateKey<DiscardImportReplacementPublicationResult>,
+      ContainsForbiddenStateKey<ImportReplacementHandoff>,
+      ContainsForbiddenStateKey<PublishImportReplacementResult>,
+      ContainsForbiddenStateKey<PublishCanonicalExportRevisionRequest>,
+      ContainsForbiddenStateKey<PublishCanonicalExportRevisionResult>,
+    ],
+    [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+    ]
+  >
+>;
 type EveryOperationParameterAndResultIsStateFree = Assert<
   Equal<
     [
@@ -290,6 +337,7 @@ const typeAssertions: readonly true[] = [
   true satisfies MarkerConsumerIsUnknown,
   true satisfies EveryProducerOperationIsSynchronous,
   true satisfies EveryOwnerRequestResultHandoffAndIdentityIsStateFree,
+  true satisfies EveryOwnerRequestResultHandoffAndIdentityOmitsStateKeys,
   true satisfies EveryOperationParameterAndResultIsStateFree,
   true satisfies RecursiveStateDetectorCatchesStateUnderArbitraryNames,
 ];
@@ -318,16 +366,181 @@ function propertyName(node: ts.PropertyName): string | null {
 }
 
 type OwnerRunClassification = Readonly<{
+  id: string;
   ownerProof: boolean;
   e0V2Owned: boolean;
+  rawCall: Readonly<{ target: string; operation: string }>;
+}>;
+
+type OwnerCaseClassification = Readonly<{
+  id: string;
+  operation: string;
+  ownerProof: boolean;
+  e0V2Owned: boolean;
+  runs: readonly OwnerRunClassification[];
 }>;
 
 type JsonObject = Record<string, unknown>;
+
+type ModuleEdgeKind =
+  | "import-declaration"
+  | "export-declaration"
+  | "import-equals"
+  | "import-type"
+  | "dynamic-import"
+  | "require-call";
+
+type ModuleEdge = Readonly<{
+  kind: ModuleEdgeKind;
+  specifier: string;
+}>;
+
+type ImportDescriptor = Readonly<{
+  modulePath: string;
+  isTypeOnly: boolean;
+  defaultImport: string | null;
+  namedBindingKind: "none" | "named-imports" | "namespace-import";
+  elements: readonly Readonly<{
+    importedName: string;
+    localName: string;
+    isTypeOnly: boolean;
+  }>[];
+  hasImportAttributes: boolean;
+}>;
+
+type ModuleDirectiveDescriptor = Readonly<{
+  referencedFiles: readonly string[];
+  typeReferenceDirectives: readonly string[];
+  libReferenceDirectives: readonly string[];
+  amdDependencies: readonly Readonly<{
+    name: string | undefined;
+    path: string;
+  }>[];
+}>;
 
 function namedImportNames(node: ts.ImportDeclaration): string[] {
   const bindings = node.importClause?.namedBindings;
   if (bindings === undefined || !ts.isNamedImports(bindings)) return [];
   return bindings.elements.map((element) => element.name.text);
+}
+
+function describeImport(
+  node: ts.ImportDeclaration,
+  sourceFile: ts.SourceFile,
+): ImportDescriptor {
+  const bindings = node.importClause?.namedBindings;
+  return {
+    modulePath: moduleSpecifierText(node.moduleSpecifier, sourceFile),
+    isTypeOnly: node.importClause?.phaseModifier === ts.SyntaxKind.TypeKeyword,
+    defaultImport: node.importClause?.name?.text ?? null,
+    namedBindingKind:
+      bindings === undefined
+        ? "none"
+        : ts.isNamedImports(bindings)
+          ? "named-imports"
+          : "namespace-import",
+    elements:
+      bindings !== undefined && ts.isNamedImports(bindings)
+        ? bindings.elements.map((element) => ({
+            importedName: (element.propertyName ?? element.name).text,
+            localName: element.name.text,
+            isTypeOnly: element.isTypeOnly,
+          }))
+        : [],
+    hasImportAttributes: node.attributes !== undefined,
+  };
+}
+
+function describeModuleDirectives(
+  source: string,
+  sourceFile: ts.SourceFile,
+): ModuleDirectiveDescriptor {
+  const preprocessed = ts.preProcessFile(source, true, true);
+  return {
+    referencedFiles: preprocessed.referencedFiles.map(
+      (entry) => entry.fileName,
+    ),
+    typeReferenceDirectives: preprocessed.typeReferenceDirectives.map(
+      (entry) => entry.fileName,
+    ),
+    libReferenceDirectives: preprocessed.libReferenceDirectives.map(
+      (entry) => entry.fileName,
+    ),
+    // TypeScript 6 no longer exposes AMD dependencies from preProcessFile;
+    // createSourceFile records the same leading directive in this exact list.
+    amdDependencies: sourceFile.amdDependencies.map((entry) => ({
+      name: entry.name,
+      path: entry.path,
+    })),
+  };
+}
+
+function moduleSpecifierText(
+  node: ts.Node | undefined,
+  sourceFile: ts.SourceFile,
+): string {
+  if (node === undefined) return "<missing>";
+  if (ts.isStringLiteralLike(node)) return node.text;
+  if (ts.isLiteralTypeNode(node)) {
+    return moduleSpecifierText(node.literal, sourceFile);
+  }
+  return node.getText(sourceFile);
+}
+
+function collectModuleEdges(sourceFile: ts.SourceFile): ModuleEdge[] {
+  const edges: ModuleEdge[] = [];
+
+  function visit(node: ts.Node): void {
+    if (ts.isImportDeclaration(node)) {
+      edges.push({
+        kind: "import-declaration",
+        specifier: moduleSpecifierText(node.moduleSpecifier, sourceFile),
+      });
+    } else if (
+      ts.isExportDeclaration(node) &&
+      node.moduleSpecifier !== undefined
+    ) {
+      edges.push({
+        kind: "export-declaration",
+        specifier: moduleSpecifierText(node.moduleSpecifier, sourceFile),
+      });
+    } else if (ts.isImportEqualsDeclaration(node)) {
+      const moduleReference = node.moduleReference;
+      edges.push({
+        kind: "import-equals",
+        specifier: ts.isExternalModuleReference(moduleReference)
+          ? moduleSpecifierText(moduleReference.expression, sourceFile)
+          : moduleSpecifierText(moduleReference, sourceFile),
+      });
+    } else if (ts.isImportTypeNode(node)) {
+      edges.push({
+        kind: "import-type",
+        specifier: moduleSpecifierText(node.argument, sourceFile),
+      });
+    } else if (
+      ts.isCallExpression(node) &&
+      node.expression.kind === ts.SyntaxKind.ImportKeyword
+    ) {
+      edges.push({
+        kind: "dynamic-import",
+        specifier: moduleSpecifierText(node.arguments[0], sourceFile),
+      });
+    } else if (
+      ts.isCallExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      node.expression.text === "require"
+    ) {
+      edges.push({
+        kind: "require-call",
+        specifier: moduleSpecifierText(node.arguments[0], sourceFile),
+      });
+    }
+
+    ts.forEachChild(node, visit);
+  }
+
+  visit(sourceFile);
+  return edges;
 }
 
 function jsonObject(value: unknown, label: string): JsonObject {
@@ -349,9 +562,9 @@ describe("A0/E0 owner bridge specification", () => {
         reviewState: "proposed-independent-spec",
         counts: {
           files: 5,
-          replacementCases: 30,
-          identityCases: 6,
-          markerCases: 12,
+          replacementCases: 28,
+          identityCases: 4,
+          markerCases: 10,
           applicabilityRows: 5,
           mutationControls: 32,
           traces: 5,
@@ -367,28 +580,75 @@ describe("A0/E0 owner bridge specification", () => {
     { timeout: 300_000, retry: 0 },
   );
 
-  test("literal run inventory separates owner proof from forward E0-v2 rows", async () => {
+  test("literal packet contains only A0 owner proof", async () => {
     const cases = JSON.parse(
       await readFile(join(fixtureRoot, "owner-port-cases.json"), "utf8"),
     ) as {
-      replacementCases: Array<{ runs: OwnerRunClassification[] }>;
-      identityCases: Array<{ runs: OwnerRunClassification[] }>;
-      markerCases: Array<{ runs: OwnerRunClassification[] }>;
+      replacementCases: OwnerCaseClassification[];
+      identityCases: OwnerCaseClassification[];
+      markerCases: OwnerCaseClassification[];
     };
+    expect({
+      replacementCases: cases.replacementCases.length,
+      identityCases: cases.identityCases.length,
+      markerCases: cases.markerCases.length,
+    }).toEqual({ replacementCases: 28, identityCases: 4, markerCases: 10 });
+    const packetCases = [
+      ...cases.replacementCases,
+      ...cases.identityCases,
+      ...cases.markerCases,
+    ];
     const runs = [
       ...cases.replacementCases.flatMap((entry) => entry.runs),
       ...cases.identityCases.flatMap((entry) => entry.runs),
       ...cases.markerCases.flatMap((entry) => entry.runs),
     ];
-    const ownerRuns = runs.filter((run) => run.ownerProof && !run.e0V2Owned);
-    const forwardRuns = runs.filter((run) => !run.ownerProof && run.e0V2Owned);
+    const removedCaseIds = new Set([
+      "BRIDGE-REP-025",
+      "BRIDGE-REP-026",
+      "BRIDGE-ID-005",
+      "BRIDGE-ID-006",
+      "BRIDGE-MARK-006",
+      "BRIDGE-MARK-007",
+    ]);
 
     expect({
       total: runs.length,
-      owner: ownerRuns.length,
-      forwardE0V2: forwardRuns.length,
-      misclassified: runs.length - ownerRuns.length - forwardRuns.length,
-    }).toEqual({ total: 121, owner: 115, forwardE0V2: 6, misclassified: 0 });
+      nonOwnerCases: packetCases
+        .filter((entry) => !entry.ownerProof)
+        .map((entry) => entry.id),
+      e0V2OwnedCases: packetCases
+        .filter((entry) => entry.e0V2Owned)
+        .map((entry) => entry.id),
+      nonOwnerRunCount: runs.filter((run) => !run.ownerProof).length,
+      e0V2OwnedRunCount: runs.filter((run) => run.e0V2Owned).length,
+      e0V2NormalizerTargetCount: runs.filter(
+        (run) => run.rawCall.target === "E0V2ConsumerNormalizer",
+      ).length,
+      removedCaseIdsPresent: packetCases
+        .map((entry) => entry.id)
+        .filter((id) => removedCaseIds.has(id)),
+    }).toEqual({
+      total: 118,
+      nonOwnerCases: [],
+      e0V2OwnedCases: [],
+      nonOwnerRunCount: 0,
+      e0V2OwnedRunCount: 0,
+      e0V2NormalizerTargetCount: 0,
+      removedCaseIdsPresent: [],
+    });
+
+    const unrelatedRequestDrift = cases.replacementCases
+      .find((entry) => entry.id === "BRIDGE-REP-030")
+      ?.runs.find((run) => run.id === "same-revision-unrelated-request-added");
+    expect(unrelatedRequestDrift).toMatchObject({
+      ownerProof: true,
+      e0V2Owned: false,
+      rawCall: {
+        target: "A0E0InterchangeOwnerOperations",
+        operation: "publishImportReplacement",
+      },
+    });
   });
 
   test("all five bridge fixture bytes match the independent pins", async () => {
@@ -403,7 +663,7 @@ describe("A0/E0 owner bridge specification", () => {
   });
 
   test(
-    "semantic lock rejects a literal owner-result tamper after its byte pin is refreshed",
+    "semantic lock rejects owner-result and invalid-AppState tampers after its byte pin is refreshed",
     async () => {
       const temporaryRoot = await mkdtemp(join(tmpdir(), "jcpe-a0-e0-bridge-"));
       try {
@@ -415,6 +675,9 @@ describe("A0/E0 owner bridge specification", () => {
             runs: Array<{
               id: string;
               exactTypedResult: { value: { liveForRequest: number } };
+              controllerStateBefore: {
+                patches: Array<Record<string, unknown>>;
+              };
             }>;
           }>;
         };
@@ -428,6 +691,19 @@ describe("A0/E0 owner bridge specification", () => {
           throw new Error("BRIDGE_TEST_RETAINED_RUN_MISSING");
         }
         retainedRun.exactTypedResult.value.liveForRequest = 1;
+        const manualSourceRun = publishCase?.runs.find(
+          (candidate) => candidate.id === "manual-source-c",
+        );
+        if (manualSourceRun === undefined) {
+          throw new Error("BRIDGE_TEST_MANUAL_SOURCE_RUN_MISSING");
+        }
+        manualSourceRun.controllerStateBefore.patches.push({
+          op: "replace",
+          jsonPointer: "/pendingRequests/0/status",
+          from: "running",
+          to: "completed",
+          value: "completed",
+        });
         const changedSource = `${JSON.stringify(cases, null, 2)}\n`;
         await writeFile(casesPath, changedSource, "utf8");
         const refreshedPins = {
@@ -444,6 +720,16 @@ describe("A0/E0 owner bridge specification", () => {
         expect(report.findings.map((finding) => finding.code)).toContain(
           "BRIDGE_LITERAL_RUN",
         );
+        const invalidStateFinding = report.findings.find(
+          (finding) =>
+            finding.code === "BRIDGE_LITERAL_RUN" &&
+            finding.path ===
+              "owner-port-cases.json.BRIDGE-REP-029/manual-source-c",
+        );
+        if (invalidStateFinding === undefined) {
+          throw new Error("BRIDGE_TEST_INVALID_STATE_FINDING_MISSING");
+        }
+        expect(invalidStateFinding.message).toContain("BRIDGE_RUN_APP_STATE");
         expect(report.findings.map((finding) => finding.code)).not.toContain(
           "BRIDGE_BYTE_DIGEST",
         );
@@ -472,6 +758,23 @@ describe("A0/E0 owner bridge specification", () => {
     expect(contract["sourceOriginMapping"]).toEqual(
       IMPORT_REPLACEMENT_ORIGIN_BY_SOURCE_FORMAT,
     );
+    expect(contract["coverageFamilies"]).toEqual([
+      "positive",
+      "negative-near-miss",
+      "stale-concurrent",
+      "malformed-owner-input",
+      "replay",
+      "transposition-applicability",
+      "mutation",
+    ]);
+    const proofRequirements = jsonObject(
+      contract["proofRequirements"],
+      "proofRequirements",
+    );
+    expect(proofRequirements["forwardE0V2BehaviorRowsPresent"]).toBe(false);
+    expect(proofRequirements["futureE0V2BehaviorDeferredTo"]).toBe(
+      "jcpe-milestone-reliable-studio-l3a.8.4",
+    );
 
     const requestAuthority = jsonObject(
       contract["requestAuthorityBoundary"],
@@ -499,14 +802,108 @@ describe("A0/E0 owner bridge specification", () => {
       contract["replacementPublicationMerge"],
       "replacementPublicationMerge",
     );
-    const {
-      allAppStateFieldsPartitionedExactlyOnce,
-      ...rootPublicationMergePolicy
-    } = publicationMerge;
-    expect(allAppStateFieldsPartitionedExactlyOnce).toBe(true);
-    expect(rootPublicationMergePolicy).toEqual(
+    expect(publicationMerge["allAppStateFieldsPartitionedExactlyOnce"]).toBe(
+      true,
+    );
+    expect(publicationMerge).toEqual(
       IMPORT_REPLACEMENT_PUBLICATION_LATEST_STATE_MERGE,
     );
+  });
+
+  test("module-edge detector covers every forbidden TypeScript module syntax recursively", () => {
+    const syntheticSource = ts.createSourceFile(
+      "synthetic-module-edges.ts",
+      `
+        import type { Ordinary } from "./ordinary";
+        export { named } from "./named-reexport";
+        export * from "./star-reexport";
+        import legacy = require("./import-equals");
+        function nestedEdges(): unknown {
+          type Deferred = import("./import-type").Deferred;
+          void import("./dynamic-import");
+          return require("./require-call") as Deferred;
+        }
+        void legacy;
+        void nestedEdges;
+      `,
+      ts.ScriptTarget.Latest,
+      true,
+      ts.ScriptKind.TS,
+    );
+
+    expect(collectModuleEdges(syntheticSource)).toEqual([
+      { kind: "import-declaration", specifier: "./ordinary" },
+      { kind: "export-declaration", specifier: "./named-reexport" },
+      { kind: "export-declaration", specifier: "./star-reexport" },
+      { kind: "import-equals", specifier: "./import-equals" },
+      { kind: "import-type", specifier: "./import-type" },
+      { kind: "dynamic-import", specifier: "./dynamic-import" },
+      { kind: "require-call", specifier: "./require-call" },
+    ]);
+  });
+
+  test("import descriptor exposes default, alias, element type, and attribute bypasses", () => {
+    const syntheticSource = ts.createSourceFile(
+      "synthetic-import-bindings.ts",
+      `
+        import DefaultBinding, {
+          Evil as AllowedLocal,
+          type TypeEvil as TypeAllowed,
+        } from "./dependency" with { type: "json" };
+      `,
+      ts.ScriptTarget.Latest,
+      true,
+      ts.ScriptKind.TS,
+    );
+    const imports = syntheticSource.statements.filter(ts.isImportDeclaration);
+
+    expect(imports).toHaveLength(1);
+    const [importDeclaration] = imports;
+    if (importDeclaration === undefined) {
+      throw new Error("BRIDGE_TEST_IMPORT_DECLARATION_MISSING");
+    }
+    expect(describeImport(importDeclaration, syntheticSource)).toEqual({
+      modulePath: "./dependency",
+      isTypeOnly: false,
+      defaultImport: "DefaultBinding",
+      namedBindingKind: "named-imports",
+      elements: [
+        {
+          importedName: "Evil",
+          localName: "AllowedLocal",
+          isTypeOnly: false,
+        },
+        {
+          importedName: "TypeEvil",
+          localName: "TypeAllowed",
+          isTypeOnly: true,
+        },
+      ],
+      hasImportAttributes: true,
+    });
+  });
+
+  test("module directive descriptor exposes path, types, lib, and AMD dependencies", () => {
+    const source = `
+/// <reference path="./reference-path.ts" />
+/// <reference types="synthetic-types" />
+/// <reference lib="es2024" />
+/// <amd-dependency path="./amd-dependency" name="synthetic-amd" />
+`;
+    const syntheticSource = ts.createSourceFile(
+      "synthetic-module-directives.ts",
+      source,
+      ts.ScriptTarget.Latest,
+      true,
+      ts.ScriptKind.TS,
+    );
+
+    expect(describeModuleDirectives(source, syntheticSource)).toEqual({
+      referencedFiles: ["./reference-path.ts"],
+      typeReferenceDirectives: ["synthetic-types"],
+      libReferenceDirectives: ["es2024"],
+      amdDependencies: [{ name: "synthetic-amd", path: "./amd-dependency" }],
+    });
   });
 
   test("owner module has a cycle-free import topology and exact producer/consumer aggregates", async () => {
@@ -518,35 +915,59 @@ describe("A0/E0 owner bridge specification", () => {
       true,
       ts.ScriptKind.TS,
     );
+    expect(describeModuleDirectives(source, sourceFile)).toEqual({
+      referencedFiles: [],
+      typeReferenceDirectives: [],
+      libReferenceDirectives: [],
+      amdDependencies: [],
+    });
     const imports = sourceFile.statements.filter(ts.isImportDeclaration);
-    expect(
-      imports.map((node) => ({
-        module: (node.moduleSpecifier as ts.StringLiteral).text,
-        kind:
-          node.importClause?.phaseModifier === ts.SyntaxKind.TypeKeyword
-            ? "type"
-            : "runtime",
-        names: namedImportNames(node),
-      })),
-    ).toEqual([
+    expect(collectModuleEdges(sourceFile)).toEqual([
+      { kind: "import-declaration", specifier: "../domain" },
       {
-        module: "../domain",
-        kind: "type",
-        names: ["DocumentId", "ValidatedDocument"],
+        kind: "import-declaration",
+        specifier: "./application-state-contract",
       },
       {
-        module: "./application-state-contract",
-        kind: "runtime",
-        names: [
+        kind: "import-declaration",
+        specifier: "./application-state-contract",
+      },
+    ]);
+    expect(imports.map((node) => describeImport(node, sourceFile))).toEqual([
+      {
+        modulePath: "../domain",
+        isTypeOnly: true,
+        defaultImport: null,
+        namedBindingKind: "named-imports",
+        elements: ["DocumentId", "ValidatedDocument"].map((name) => ({
+          importedName: name,
+          localName: name,
+          isTypeOnly: false,
+        })),
+        hasImportAttributes: false,
+      },
+      {
+        modulePath: "./application-state-contract",
+        isTypeOnly: false,
+        defaultImport: null,
+        namedBindingKind: "named-imports",
+        elements: [
           "MAX_APPLICATION_SEQUENCE",
           "MAX_COMMAND_ID_CODE_POINTS",
           "MAX_COMMAND_LABEL_CODE_POINTS",
-        ],
+        ].map((name) => ({
+          importedName: name,
+          localName: name,
+          isTypeOnly: false,
+        })),
+        hasImportAttributes: false,
       },
       {
-        module: "./application-state-contract",
-        kind: "type",
-        names: [
+        modulePath: "./application-state-contract",
+        isTypeOnly: true,
+        defaultImport: null,
+        namedBindingKind: "named-imports",
+        elements: [
           "AppRevision",
           "ApplicationEffect",
           "ApplicationReplacementOrigin",
@@ -556,7 +977,12 @@ describe("A0/E0 owner bridge specification", () => {
           "DocumentTransitionState",
           "ReplacementRetirementReceipt",
           "TransportGeneration",
-        ],
+        ].map((name) => ({
+          importedName: name,
+          localName: name,
+          isTypeOnly: false,
+        })),
+        hasImportAttributes: false,
       },
     ]);
     expect(imports.flatMap(namedImportNames)).not.toContain("AppState");
@@ -604,10 +1030,18 @@ describe("A0/E0 owner bridge specification", () => {
     }
     const producerTypes = aggregateInterfaces
       .get("A0E0InterchangeOwnerOperations")
-      ?.members.map((member) => member.type?.getText(sourceFile));
+      ?.members.map((member) =>
+        ts.isPropertySignature(member)
+          ? (member.type?.getText(sourceFile) ?? null)
+          : null,
+      );
     const consumerTypes = aggregateInterfaces
       .get("A0E0InterchangeOwnerPorts")
-      ?.members.map((member) => member.type?.getText(sourceFile));
+      ?.members.map((member) =>
+        ts.isPropertySignature(member)
+          ? (member.type?.getText(sourceFile) ?? null)
+          : null,
+      );
     expect(producerTypes).toEqual([
       "PrepareImportReplacementPublicationOperation",
       "DiscardImportReplacementPublicationOperation",

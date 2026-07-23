@@ -1,0 +1,537 @@
+{
+  "schema": "changes.fixtures.a0-u1-edit-plan-contract.v1",
+  "reviewState": "proposed-independent-spec",
+  "pinState": "reviewed-byte-and-semantic-pinned",
+  "package": "A0/U1 atomic edit plan",
+  "owner": "A0 application controller",
+  "prospectiveConsumer": "U1 chart editor",
+  "activeLeaf": "jcpe-milestone-reliable-studio-l3a.10.4.1",
+  "contractModule": "src/application/application-edit-plan-contract.ts",
+  "applicationContractSchema": "changes.application.atomic-edit-plan-contract.v1",
+  "receiptSchema": "changes.application.atomic-edit-plan-receipt.v1",
+  "implementationStatus": "specified-unimplemented",
+  "productionImplementationClaim": false,
+  "u1UiCompletionClaim": false,
+  "humanAcceptanceClaim": false,
+  "expertReviewClaim": false,
+  "productionOutputUsedAsOracle": false,
+  "expectedValuesGenerated": false,
+  "commandKinds": [
+    "apply-edit-plan"
+  ],
+  "planKinds": [
+    "insert-fragment",
+    "split-event-duration",
+    "join-event-durations",
+    "split-section",
+    "join-sections"
+  ],
+  "commandEnvelope": {
+    "fieldsInOrder": [
+      "id",
+      "label",
+      "expectedDocumentId",
+      "expectedRevision",
+      "logicalTimeMs",
+      "coalescing",
+      "kind",
+      "plan"
+    ],
+    "kind": "apply-edit-plan",
+    "coalescing": null,
+    "singleCommand": true,
+    "nestedCommandsAllowed": false,
+    "candidateDocumentAllowed": false
+  },
+  "decisions": {
+    "insertFragment": {
+      "input": "raw-source-text",
+      "parserOwner": "A0-bound-public-T0-fragment-operation",
+      "accidentalStyle": "ascii",
+      "reparseAtApply": "exact-bound-sourceText-once-after-snapshot-and-bounds-before-allocation",
+      "validTokenSubsetApplyAllowed": false,
+      "warningAcknowledgements": "exact-ordered-t0-code-and-utf16-range-array",
+      "lanes": {
+        "complete-draft": {
+          "parseOutcome": "success",
+          "measurePolicy": "every-materialized-measure-complete",
+          "partialTokenApplyAllowed": false,
+          "placementKinds": [
+            "into-measure",
+            "into-section",
+            "into-document"
+          ]
+        },
+        "recovered-chord": {
+          "parseOutcome": "failure-with-bounded-recoverable-chords",
+          "selection": "exact-one-selected-global-ordinal",
+          "layoutLossAcknowledgement": "source-bar-and-section-layout-will-be-lost@1",
+          "selectedReceiptCarriesT0Range": true,
+          "duration": "t0-resolved-null-caller-or-exact-required-caller-duration",
+          "destination": "into-measure-only",
+          "insertedChordCount": 1,
+          "siblingPartialApplyAllowed": false
+        }
+      },
+      "voicingPolicy": "a0-u1-balanced-4-48-84-generated@1",
+      "defaultVoicing": {
+        "mode": "auto",
+        "family": "balanced",
+        "voiceCount": 4,
+        "range": {
+          "lowMidi": 48,
+          "highMidi": 84
+        },
+        "bassPolicy": "generated"
+      },
+      "liveQuickEntrySnapshot": {
+        "exactKeysInOrder": [
+          "sourceText",
+          "baseRevision",
+          "target",
+          "issueCodes",
+          "expectedStatus",
+          "expectedLane"
+        ],
+        "bindingPhase": "before-id-allocation",
+        "canonicalTargetPolicy": {
+          "intoMeasureBeforeEvent": "before-event-id-equals-beforeEventId",
+          "intoMeasureAppend": "measure-end-id-equals-measureId",
+          "intoSectionBeforeMeasure": "before-measure-id-equals-beforeMeasureId",
+          "intoSectionAppend": "section-end-id-equals-sectionId",
+          "intoDocumentBeforeSection": "before-section-id-equals-beforeSectionId",
+          "intoDocumentAppend": "document-end"
+        },
+        "completeDraftStatus": "ready",
+        "completeDraftLane": "complete-draft",
+        "recoveredChordStatus": "invalid",
+        "recoveredChordLane": "recovered-chord",
+        "mismatchOutcome": "atomic-refusal-before-allocation"
+      }
+    },
+    "splitEventDuration": {
+      "survivor": "leading-event",
+      "annotation": "leading-retains-exact-trailing-clears",
+      "chordAndVoicing": "copied-exactly",
+      "durationLaw": "positive-normalized-parts-sum-exactly-to-source",
+      "identityPolicy": "retain-source-first-allocate-second",
+      "contentPolicy": "copy-exact-chord-and-voicing",
+      "annotationPolicy": "retain-source-first-clear-second"
+    },
+    "joinEventDurations": {
+      "survivor": "left-event",
+      "adjacency": "same-measure-immediate-neighbor",
+      "chordAndVoicing": "exact-structural-equality-required",
+      "rightAnnotation": "must-be-empty",
+      "durationLaw": "exact-normalized-sum",
+      "identityPolicy": "retain-left-remove-right",
+      "contentPolicy": "require-exact-chord-and-voicing",
+      "annotationPolicy": "require-right-empty-retain-left"
+    },
+    "splitSection": {
+      "survivor": "leading-original-section",
+      "newSection": "trailing-fresh-id",
+      "measureIdentity": "preserved",
+      "resultMetadata": "explicit-complete-new-section-metadata",
+      "identityPolicy": "retain-source-prefix-allocate-suffix",
+      "measurePolicy": "move-suffix-preserve-identities"
+    },
+    "joinSections": {
+      "survivor": "left-section",
+      "adjacency": "immediate-right-section",
+      "requestSnapshots": "exact-left-and-right-section-metadata",
+      "resultMetadata": "explicit-complete-left-survivor-metadata",
+      "measureIdentity": "preserved-left-then-right",
+      "identityPolicy": "retain-left-remove-right",
+      "measurePolicy": "left-then-right-preserve-identities",
+      "metadataPolicy": "compare-both-then-apply-explicit-result",
+      "internalBoundaryPolicy": "remove-right-entry-boundary-confirmed"
+    }
+  },
+  "refusalCodes": [
+    "edit-plan.command-shape-invalid",
+    "edit-plan.plan-shape-invalid",
+    "edit-plan.quick-entry-snapshot-mismatch",
+    "edit-plan.source-code-points-exceeded",
+    "edit-plan.source-unicode-invalid",
+    "edit-plan.source-utf8-bytes-exceeded",
+    "edit-plan.target-missing",
+    "edit-plan.destination-invalid",
+    "edit-plan.event-order-invalid",
+    "edit-plan.section-split-boundary-invalid",
+    "edit-plan.section-order-invalid",
+    "edit-plan.recovered-chord-placement-invalid",
+    "edit-plan.syntax-refused",
+    "edit-plan.recovered-chord-requires-parse-failure",
+    "edit-plan.recovered-chord-ordinal-missing",
+    "edit-plan.warning-acknowledgements-mismatch",
+    "edit-plan.fragment-placement-mismatch",
+    "edit-plan.completion-declarations-mismatch",
+    "edit-plan.section-metadata-mismatch",
+    "edit-plan.recovered-chord-layout-loss-unacknowledged",
+    "edit-plan.recovered-chord-duration-mismatch",
+    "edit-plan.duration-invalid",
+    "edit-plan.duration-sum-mismatch",
+    "edit-plan.event-content-mismatch",
+    "edit-plan.right-annotation-not-empty",
+    "edit-plan.collection-limit-exceeded",
+    "edit-plan.timeline-limit-exceeded",
+    "edit-plan.id-factory-failed",
+    "edit-plan.id-collision",
+    "edit-plan.structural-publication-refused",
+    "edit-plan.semantic-publication-refused",
+    "edit-plan.history-refused"
+  ],
+  "outerRefusalCodes": [
+    "command.payload_invalid",
+    "command.target_missing",
+    "command.destination_invalid",
+    "command.id_allocation_failed",
+    "command.structural_validation_failed",
+    "command.semantic_validation_failed",
+    "history.entry_too_large",
+    "history.byte_estimate_invalid"
+  ],
+  "preplanOuterRefusalCodes": [
+    "command.id_invalid",
+    "command.label_invalid",
+    "command.logical_time_invalid",
+    "command.wrong_document",
+    "command.stale_revision",
+    "application.revision_exhausted",
+    "application.sequence_exhausted",
+    "command.coalescing_invalid",
+    "history.locked"
+  ],
+  "allowedOuterCodesByRefusalCode": {
+    "edit-plan.command-shape-invalid": [
+      "command.payload_invalid"
+    ],
+    "edit-plan.plan-shape-invalid": [
+      "command.payload_invalid"
+    ],
+    "edit-plan.quick-entry-snapshot-mismatch": [
+      "command.payload_invalid"
+    ],
+    "edit-plan.source-code-points-exceeded": [
+      "command.payload_invalid"
+    ],
+    "edit-plan.source-unicode-invalid": [
+      "command.payload_invalid"
+    ],
+    "edit-plan.source-utf8-bytes-exceeded": [
+      "command.payload_invalid"
+    ],
+    "edit-plan.target-missing": [
+      "command.target_missing"
+    ],
+    "edit-plan.destination-invalid": [
+      "command.destination_invalid"
+    ],
+    "edit-plan.event-order-invalid": [
+      "command.destination_invalid"
+    ],
+    "edit-plan.section-split-boundary-invalid": [
+      "command.destination_invalid"
+    ],
+    "edit-plan.section-order-invalid": [
+      "command.destination_invalid"
+    ],
+    "edit-plan.recovered-chord-placement-invalid": [
+      "command.payload_invalid"
+    ],
+    "edit-plan.syntax-refused": [
+      "command.payload_invalid"
+    ],
+    "edit-plan.recovered-chord-requires-parse-failure": [
+      "command.payload_invalid"
+    ],
+    "edit-plan.recovered-chord-ordinal-missing": [
+      "command.payload_invalid"
+    ],
+    "edit-plan.warning-acknowledgements-mismatch": [
+      "command.payload_invalid"
+    ],
+    "edit-plan.fragment-placement-mismatch": [
+      "command.payload_invalid"
+    ],
+    "edit-plan.completion-declarations-mismatch": [
+      "command.payload_invalid"
+    ],
+    "edit-plan.section-metadata-mismatch": [
+      "command.payload_invalid"
+    ],
+    "edit-plan.recovered-chord-layout-loss-unacknowledged": [
+      "command.payload_invalid"
+    ],
+    "edit-plan.recovered-chord-duration-mismatch": [
+      "command.payload_invalid"
+    ],
+    "edit-plan.duration-invalid": [
+      "command.payload_invalid"
+    ],
+    "edit-plan.duration-sum-mismatch": [
+      "command.payload_invalid"
+    ],
+    "edit-plan.event-content-mismatch": [
+      "command.payload_invalid"
+    ],
+    "edit-plan.right-annotation-not-empty": [
+      "command.payload_invalid"
+    ],
+    "edit-plan.collection-limit-exceeded": [
+      "command.payload_invalid"
+    ],
+    "edit-plan.timeline-limit-exceeded": [
+      "command.payload_invalid"
+    ],
+    "edit-plan.id-factory-failed": [
+      "command.id_allocation_failed"
+    ],
+    "edit-plan.id-collision": [
+      "command.id_allocation_failed"
+    ],
+    "edit-plan.structural-publication-refused": [
+      "command.structural_validation_failed"
+    ],
+    "edit-plan.semantic-publication-refused": [
+      "command.semantic_validation_failed"
+    ],
+    "edit-plan.history-refused": [
+      "history.entry_too_large",
+      "history.byte_estimate_invalid"
+    ]
+  },
+  "refusalPrecedence": [
+    "edit-plan.command-shape-invalid",
+    "edit-plan.plan-shape-invalid",
+    "edit-plan.quick-entry-snapshot-mismatch",
+    "edit-plan.source-code-points-exceeded",
+    "edit-plan.source-unicode-invalid",
+    "edit-plan.source-utf8-bytes-exceeded",
+    "edit-plan.target-missing",
+    "edit-plan.destination-invalid",
+    "edit-plan.event-order-invalid",
+    "edit-plan.section-split-boundary-invalid",
+    "edit-plan.section-order-invalid",
+    "edit-plan.recovered-chord-placement-invalid",
+    "edit-plan.syntax-refused",
+    "edit-plan.recovered-chord-requires-parse-failure",
+    "edit-plan.recovered-chord-ordinal-missing",
+    "edit-plan.warning-acknowledgements-mismatch",
+    "edit-plan.fragment-placement-mismatch",
+    "edit-plan.completion-declarations-mismatch",
+    "edit-plan.section-metadata-mismatch",
+    "edit-plan.recovered-chord-layout-loss-unacknowledged",
+    "edit-plan.recovered-chord-duration-mismatch",
+    "edit-plan.duration-invalid",
+    "edit-plan.duration-sum-mismatch",
+    "edit-plan.event-content-mismatch",
+    "edit-plan.right-annotation-not-empty",
+    "edit-plan.collection-limit-exceeded",
+    "edit-plan.timeline-limit-exceeded",
+    "edit-plan.id-factory-failed",
+    "edit-plan.id-collision",
+    "edit-plan.structural-publication-refused",
+    "edit-plan.semantic-publication-refused",
+    "edit-plan.history-refused"
+  ],
+  "outerWorkCounterNames": [
+    "sectionsVisited",
+    "measuresVisited",
+    "eventsVisited",
+    "stableIdsIndexed",
+    "historyEntriesVisited",
+    "historyBytesEstimated",
+    "bookmarksRepaired",
+    "requestsCompared",
+    "transportNotificationsCompared",
+    "validationCalls"
+  ],
+  "workCounterNames": [
+    "planNodesVisited",
+    "sourceCodePointsObserved",
+    "sourceUtf8BytesObserved",
+    "quickEntrySnapshotFieldsCompared",
+    "quickEntryIssueCodesCompared",
+    "syntaxParseCalls",
+    "warningAcknowledgementsCompared",
+    "insertableChordsExamined",
+    "recoveryFieldsCompared",
+    "draftSectionsVisited",
+    "draftMeasuresVisited",
+    "draftEventsVisited",
+    "completionDeclarationsVisited",
+    "metadataFieldsCompared",
+    "exactBeatAdditions",
+    "exactBeatComparisons",
+    "idAllocationAttempts",
+    "idCollisionChecks",
+    "bookmarkRecordsExamined",
+    "bookmarkRecordsRewritten",
+    "peakPlanNodeRecords",
+    "peakAllocatedIdRecords",
+    "peakDiagnosticRecords"
+  ],
+  "limits": {
+    "fragmentSourceCodePoints": 4096,
+    "fragmentSourceUtf8Bytes": 16384,
+    "fragmentSections": 64,
+    "fragmentMeasuresPerSection": 1024,
+    "fragmentMeasures": 65536,
+    "fragmentEvents": 8192,
+    "finalTimelineQuarterNoteBeats": 1000000,
+    "completionDeclarations": 1,
+    "sectionDeclarations": 64,
+    "retainedDiagnostics": 64,
+    "retainedWarningAcknowledgements": 64,
+    "quickEntryIssueCodes": 64,
+    "quickEntrySnapshotFieldsCompared": 6,
+    "insertableChordsExamined": 8192,
+    "recoveryFieldsCompared": 4,
+    "idAllocationAttempts": 73792,
+    "occupiedIdRecords": 73793,
+    "planNodeRecords": 73793,
+    "bookmarkRecordsExamined": 8196,
+    "exactBeatAdditions": 8192,
+    "exactBeatComparisons": 8192,
+    "metadataFieldsCompared": 12
+  },
+  "ordering": {
+    "runnerStages": [
+      "a0-envelope",
+      "exact-runtime-shape",
+      "quick-entry-snapshot",
+      "bounded-source-preflight",
+      "target-and-destination",
+      "t0-fragment-parse",
+      "warning-acknowledgements",
+      "completion-and-metadata-declarations",
+      "operation-laws",
+      "final-collection-and-timeline-limits",
+      "stable-id-allocation",
+      "candidate-construction",
+      "f2-once",
+      "f3-once",
+      "bookmarks-history-and-atomic-publication"
+    ],
+    "idAllocation": [
+      "preflight-all-non-id-laws",
+      "index-document-section-measure-event-ids-globally",
+      "fragment-section-before-descendants",
+      "fragment-measure-before-events",
+      "fragment-events-in-source-order",
+      "recovered-chord-selected-only",
+      "split-event-second-only",
+      "split-section-suffix-only",
+      "reserve-each-returned-id-locally",
+      "stop-without-retry-on-first-failure-or-collision"
+    ],
+    "diagnostics": [
+      "path-ecmascript-code-unit-lexical",
+      "null-source-range-before-ranged",
+      "source-range-start-ascending",
+      "source-range-end-ascending",
+      "code-ecmascript-code-unit-lexical"
+    ],
+    "effects": [
+      "queue-recovery",
+      "compile-playback-plan",
+      "restore-focus",
+      "announce"
+    ],
+    "bookmarks": {
+      "insertFragment": "preserve-selection-and-range-move-insertion-after-last-inserted",
+      "splitEventDuration": "preserve-original-selection-rewrite-original-span-end-to-second",
+      "joinEventDurations": "replace-removed-right-selection-with-left-clear-unrepresentable-range",
+      "splitSection": "preserve-node-identities-rewrite-source-section-end-to-suffix",
+      "joinSections": "preserve-measure-event-identities-map-internal-edge-to-measure-boundary"
+    },
+    "quickEntryTargetMatch": {
+      "intoMeasureBeforeEvent": "before-event-id-equals-beforeEventId",
+      "intoMeasureAppend": "measure-end-id-equals-measureId",
+      "intoSectionBeforeMeasure": "before-measure-id-equals-beforeMeasureId",
+      "intoSectionAppend": "section-end-id-equals-sectionId",
+      "intoDocumentBeforeSection": "before-section-id-equals-beforeSectionId",
+      "intoDocumentAppend": "document-end"
+    }
+  },
+  "coverageFamilies": [
+    "positive",
+    "negative-near-miss",
+    "stale-wrong-document",
+    "malformed-exact-shape",
+    "exact-boundary",
+    "plus-one",
+    "undo-redo",
+    "collision-allocation",
+    "transposition-applicability",
+    "mutation"
+  ],
+  "lawIds": [
+    "A0-U1-ATOM-001-command-and-five-closed-variants",
+    "A0-U1-ATOM-002-quick-entry-snapshot-and-target-exact",
+    "A0-U1-ATOM-003-raw-source-reparsed-once-by-t0",
+    "A0-U1-ATOM-004-complete-draft-success-and-warnings-exact",
+    "A0-U1-ATOM-005-recovered-failure-selects-one-chord",
+    "A0-U1-ATOM-006-recovered-loss-duration-placement-exact",
+    "A0-U1-ATOM-007-complete-draft-placement-shape-exact",
+    "A0-U1-ATOM-008-new-event-policy-fixed",
+    "A0-U1-ATOM-009-completion-declarations-exact",
+    "A0-U1-ATOM-010-split-event-lossless-exact",
+    "A0-U1-ATOM-011-join-events-left-inverse-exact",
+    "A0-U1-ATOM-012-split-section-leading-survivor-exact",
+    "A0-U1-ATOM-013-join-sections-left-metadata-exact",
+    "A0-U1-ATOM-014-timeline-and-bounds-preserved",
+    "A0-U1-ATOM-015-ids-preflight-preorder-honest-entropy",
+    "A0-U1-ATOM-016-bookmarks-publication-history-atomic",
+    "A0-U1-ATOM-017-transposition-and-existing-a0-unchanged"
+  ],
+  "counts": {
+    "files": 5,
+    "commandKinds": 1,
+    "planKinds": 5,
+    "lawRows": 17,
+    "caseGroups": 50,
+    "literalTransitions": 70,
+    "applicabilityRows": 5,
+    "transpositionWitnesses": 5,
+    "mutationControls": 30,
+    "traces": 6,
+    "authorities": 6
+  },
+  "proofRequirements": {
+    "literalBeforeCommandResultAfter": true,
+    "computedRecursiveDeltaEqualsDeclaredDelta": true,
+    "completeExactCounters": true,
+    "literalBookmarksFocusHistoryAndEffects": true,
+    "positiveNegativeNearMissAndMalformed": true,
+    "staleAndWrongDocument": true,
+    "exactAndPlusOne": true,
+    "undoAndRedoEveryPlanKind": true,
+    "collisionAndPartialAllocation": true,
+    "baseTransposedAndInverseHashes": true,
+    "manualAndFrozenPitchBytes": true,
+    "oneFieldMutation": true,
+    "mutationObservationDistinctFromTarget": true,
+    "mutationObservationIndependentlyRecomputed": true,
+    "reciprocalLawCaseTransitionControlTraceAuthorityLinks": true,
+    "productionOutputMayAuthorExpectedValues": false,
+    "wallTimeMayAffectOutcome": false
+  },
+  "acceptedUpstreamBoundary": {
+    "a0Schema": "changes.application.state-contract.v1",
+    "a0ExistingCommandKindsAtSpecTime": 15,
+    "a0Pipeline": "envelope-index-isolated-mutation-f2-f3-bookmarks-history-limits-revision-publish",
+    "t0DraftSchema": "changes.theory.chart-text-draft.v1",
+    "t0GrammarId": "changes.chart-text",
+    "domainSchema": "changes.progression.v2",
+    "existingAcceptedBehaviorChangedBySpecLeaf": false
+  },
+  "companionSha256": {
+    "edit-plan-cases.json": "04aebe01fd33716b355907c64cde431cac1efa68730334afe2ae7c532ffc6754",
+    "mutation-controls.json": "34bae67af32efece64804aaa63e258329d47651630fc3f3672197e50d886f051",
+    "provenance-ledger.json": "f432b32c8eabd18afdbed298ab96dc6676f98451d69517c2d5502f413cf3b136",
+    "trace-ledger.json": "1f2b0d08ea642e0f384ad7adac055473bff7b372f3ee0af3d2edf99b0408f02c"
+  }
+}

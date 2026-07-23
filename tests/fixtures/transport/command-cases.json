@@ -1,0 +1,263 @@
+{
+  "schema": "changes.fixtures.x1-command.v1",
+  "fixtureVersion": 1,
+  "authorship": "Hand-authored command envelope witnesses over docs/X1_TRANSPORT_CONTRACT.md sections 3-4 and 8. No production transport code exists or was consulted.",
+  "cases": [
+    {
+      "caseId": "X1-CMD-001",
+      "title": "Monotonic command request IDs",
+      "kind": "play",
+      "scenario": "commandRequestId 7 follows an admitted commandRequestId 7.",
+      "expected": {
+        "outcome": "refusal",
+        "refusalCode": "transport.command_request_id_invalid",
+        "law": "A request ID must be a positive safe integer strictly greater than every previously submitted ID, including refused ones."
+      }
+    },
+    {
+      "caseId": "X1-CMD-002",
+      "title": "Zero and negative request IDs refuse",
+      "kind": "pause",
+      "commandRequestIds": [0, -1, 0.5, 9007199254740992],
+      "expected": {
+        "outcome": "refusal",
+        "refusalCode": "transport.command_request_id_invalid",
+        "law": "Nonpositive, fractional, and unsafe-integer IDs refuse before any state read."
+      }
+    },
+    {
+      "caseId": "X1-CMD-003",
+      "title": "Queue overflow refuses the 33rd command",
+      "queuedCommands": 32,
+      "expected": {
+        "outcome": "refusal",
+        "refusalCode": "transport.queue_overflow",
+        "queueAfter": 32,
+        "law": "The 33rd concurrent submission refuses without perturbing the queued 32 or the running transition."
+      }
+    },
+    {
+      "caseId": "X1-CMD-004",
+      "title": "Initialization timing bounds",
+      "kind": "initialize-transport",
+      "invalidTimings": [
+        { "tickIntervalMs": 9, "lookaheadSeconds": 0.1 },
+        { "tickIntervalMs": 101, "lookaheadSeconds": 0.1 },
+        { "tickIntervalMs": 25, "lookaheadSeconds": 0.049 },
+        { "tickIntervalMs": 25, "lookaheadSeconds": 0.201 },
+        { "tickIntervalMs": 100, "lookaheadSeconds": 0.1 }
+      ],
+      "expected": {
+        "outcome": "refusal",
+        "refusalCode": "transport.timing_policy_invalid",
+        "law": "Tick interval must be 10-100 ms, lookahead 0.05-0.2 s, and lookahead strictly greater than one tick interval; the final row fails only the strict inequality."
+      }
+    },
+    {
+      "caseId": "X1-CMD-005",
+      "title": "Initialization requires a valid trusted gesture",
+      "kind": "initialize-transport",
+      "scenario": "The gesture sequence equals the last accepted gesture sequence.",
+      "expected": {
+        "outcome": "refusal",
+        "refusalCode": "transport.gesture_invalid",
+        "law": "Gesture sequences are strictly increasing positive safe integers; replayed receipts refuse."
+      }
+    },
+    {
+      "caseId": "X1-CMD-006",
+      "title": "Play start beat bounds",
+      "kind": "play",
+      "planTotalBeats": { "numerator": 8, "denominator": 1 },
+      "validStartBeats": [
+        { "numerator": 0, "denominator": 1 },
+        { "numerator": 8, "denominator": 1 }
+      ],
+      "invalidStartBeats": [{ "numerator": 33, "denominator": 4 }],
+      "expected": {
+        "refusalCode": "transport.start_beat_out_of_range",
+        "law": "startBeat is inclusive at both ends of [0, totalBeats]; one exact tick past the end refuses. Playing from exactly totalBeats publishes an immediate natural end."
+      }
+    },
+    {
+      "caseId": "X1-CMD-007",
+      "title": "Seek bounds and status preservation",
+      "kind": "seek",
+      "planTotalBeats": { "numerator": 8, "denominator": 1 },
+      "expected": {
+        "pausedSeekStaysPaused": true,
+        "playingSeekResumesAtTarget": true,
+        "outOfRangeRefusal": "transport.seek_out_of_range",
+        "law": "Seek retires the epoch, sets the exact target beat, and republishes the prior status; out-of-range targets refuse without retiring anything."
+      }
+    },
+    {
+      "caseId": "X1-CMD-008",
+      "title": "Tempo binding requires a strictly newer plan revision",
+      "kind": "set-tempo",
+      "scenario": "Binding carries the same documentId and an equal planRevision.",
+      "expected": {
+        "outcome": "refusal",
+        "refusalCode": "transport.plan_mismatch",
+        "law": "A tempo change is a document edit: same documentId, strictly greater planRevision. Equal or older revisions refuse."
+      }
+    },
+    {
+      "caseId": "X1-CMD-009",
+      "title": "Tempo bounds come from the plan",
+      "kind": "set-tempo",
+      "invalidTempi": [19, 401],
+      "expected": {
+        "outcome": "refusal",
+        "refusalCode": "transport.tempo_out_of_range",
+        "law": "The bound plan's tempoBpm must lie in the domain 20-400 range; the transport revalidates rather than trusting the compiler."
+      }
+    },
+    {
+      "caseId": "X1-CMD-010",
+      "title": "Loop binding keeps the plan revision",
+      "kind": "set-loop",
+      "scenario": "Binding carries a strictly greater planRevision.",
+      "expected": {
+        "outcome": "refusal",
+        "refusalCode": "transport.plan_mismatch",
+        "law": "Loop is ephemeral transport state, not document data: same documentId, same planRevision. A revision change must travel through set-tempo or replace-plan."
+      }
+    },
+    {
+      "caseId": "X1-CMD-011",
+      "title": "Loop range validity",
+      "kind": "set-loop",
+      "invalidLoops": [
+        {
+          "startBeat": { "numerator": 2, "denominator": 1 },
+          "endBeat": { "numerator": 2, "denominator": 1 }
+        },
+        {
+          "startBeat": { "numerator": 3, "denominator": 1 },
+          "endBeat": { "numerator": 2, "denominator": 1 }
+        },
+        {
+          "startBeat": { "numerator": 0, "denominator": 1 },
+          "endBeat": { "numerator": 9, "denominator": 1 }
+        }
+      ],
+      "planTotalBeats": { "numerator": 8, "denominator": 1 },
+      "expected": {
+        "outcome": "refusal",
+        "refusalCode": "transport.loop_invalid",
+        "law": "Empty, reversed, and out-of-range loops refuse; the embedded plan loop must equal the declared range exactly."
+      }
+    },
+    {
+      "caseId": "X1-CMD-012",
+      "title": "Unknown instrument refuses",
+      "kind": "set-instrument",
+      "invalidInstrumentIds": ["sampled-grand-piano", "Vibraphone", ""],
+      "expected": {
+        "outcome": "refusal",
+        "refusalCode": "transport.instrument_unknown",
+        "law": "Only the five exact domain instrument IDs are accepted; case variants and legacy sample names refuse."
+      }
+    },
+    {
+      "caseId": "X1-CMD-013",
+      "title": "Preview envelope validity",
+      "kind": "start-preview",
+      "invalidPreviews": [
+        { "previewId": "preview-1", "reason": "missing reserved prefix" },
+        { "previewId": "x1:preview:", "reason": "empty suffix" },
+        { "previewId": "x1:preview:a", "midiPitches": [], "reason": "empty pitches" },
+        { "previewId": "x1:preview:a", "midiPitchCount": 17, "reason": "over the 16-pitch cap" },
+        { "previewId": "x1:preview:a", "midiPitches": [128], "reason": "pitch out of range" },
+        { "previewId": "x1:preview:a", "gateSeconds": 0.004, "reason": "below the X0 gate floor" },
+        { "previewId": "x1:preview:a", "gateSeconds": 601, "reason": "above the X0 gate ceiling" }
+      ],
+      "expected": {
+        "outcome": "refusal",
+        "refusalCode": "transport.preview_invalid",
+        "law": "Preview IDs use the reserved x1:preview: prefix with a nonempty X0-legal suffix; pitches are 1-16 integers 0-127; the gate is X0-legal."
+      }
+    },
+    {
+      "caseId": "X1-CMD-014",
+      "title": "New preview releases the previous preview first",
+      "kind": "start-preview",
+      "scenario": "Preview B starts while preview A sounds.",
+      "expected": {
+        "previewAReleasedBeforeBAttack": true,
+        "previewReleaseSeconds": 0.04,
+        "progressionTouched": false,
+        "law": "Exactly one preview owner may be nonreleasing; the X0 preview-release ramp retires A before B's first attack; the progression epoch is untouched."
+      }
+    },
+    {
+      "caseId": "X1-CMD-015",
+      "title": "Release of an unknown preview refuses",
+      "kind": "release-preview",
+      "scenario": "release-preview names x1:preview:missing while no such preview is owned.",
+      "expected": {
+        "outcome": "refusal",
+        "refusalCode": "transport.preview_invalid",
+        "law": "Releasing a preview the transport does not own refuses; it never falls through to a broader X0 selector."
+      }
+    },
+    {
+      "caseId": "X1-CMD-016",
+      "title": "Engine refusal is carried, not swallowed",
+      "scenario": "X0 refuses an attack batch with audio.retiring_voice_capacity during a play epoch.",
+      "expected": {
+        "outcome": "refusal",
+        "refusalCode": "transport.engine_refusal",
+        "engineRefusalCode": "audio.retiring_voice_capacity",
+        "law": "The transport surfaces the exact X0 code in engineRefusalCode; it never retries silently, drops the event, or reclassifies the cause."
+      }
+    },
+    {
+      "caseId": "X1-CMD-017",
+      "title": "Count-in and metronome payload validity",
+      "kinds": ["set-count-in", "set-metronome"],
+      "invalidPayloads": [
+        { "kind": "set-count-in", "enabled": "yes" },
+        { "kind": "set-metronome", "enabled": 1 }
+      ],
+      "expected": {
+        "refusalCodes": ["transport.count_in_invalid", "transport.metronome_invalid"],
+        "law": "Enabled flags are runtime-validated booleans even where TypeScript narrows them."
+      }
+    },
+    {
+      "caseId": "X1-CMD-018",
+      "title": "Replace-plan binding validity",
+      "kind": "replace-plan",
+      "scenario": "The binding's plan carries sourceDocumentId d1 while the binding declares documentId d2.",
+      "expected": {
+        "outcome": "refusal",
+        "refusalCode": "transport.plan_mismatch",
+        "law": "The binding documentId must equal the plan's sourceDocumentId; replacement cannot smuggle a plan compiled from a different document."
+      }
+    },
+    {
+      "caseId": "X1-CMD-019",
+      "title": "Structural plan validation precedes binding checks",
+      "kind": "play",
+      "scenario": "The plan reports totalBeats smaller than its final event end.",
+      "expected": {
+        "outcome": "refusal",
+        "refusalCode": "transport.plan_invalid",
+        "law": "Schema, compiler version, event ordering, and exact-total consistency refuse as plan_invalid before plan_mismatch or range checks run, matching the frozen precedence."
+      }
+    },
+    {
+      "caseId": "X1-CMD-020",
+      "title": "Command serialization under interleaving",
+      "scenario": "play, pause, and stop are submitted in one synchronous burst.",
+      "expected": {
+        "executionOrder": ["play", "pause", "stop"],
+        "overlappingTransitions": 0,
+        "finalState": "ready",
+        "law": "Strict FIFO admission: each transition, including awaited X0 receipts, completes before the next begins. This is the L-AUDIO-04 race regression witness."
+      }
+    }
+  ]
+}

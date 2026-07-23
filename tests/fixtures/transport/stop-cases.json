@@ -1,0 +1,152 @@
+{
+  "schema": "changes.fixtures.x1-stop.v1",
+  "fixtureVersion": 1,
+  "authorship": "Hand-authored Stop, natural-end, replay, and interruption witnesses over docs/X1_TRANSPORT_CONTRACT.md sections 6-7. No production transport code exists or was consulted.",
+  "stopOrder": [
+    "serialize-transition",
+    "increment-generation",
+    "clear-scheduler-handles",
+    "retire-progression-and-previews",
+    "await-no-future-attack-receipts",
+    "clear-cursor-and-anchors",
+    "playhead-to-start-beat",
+    "publish-ready"
+  ],
+  "cases": [
+    {
+      "caseId": "X1-STOP-001",
+      "title": "Stop postcondition after ordinary playback",
+      "expected": {
+        "noFutureAttackPostcondition": true,
+        "playheadAfter": "startBeat",
+        "notificationStatus": "ready",
+        "law": "The stop receipt resolves only after every X0 retirement receipt reported noFutureAttackPostcondition; the fake audio log contains zero attacks with start times after the stop retirement time."
+      }
+    },
+    {
+      "caseId": "X1-STOP-002",
+      "title": "One hundred rapid play/stop cycles on one graph",
+      "cycles": 100,
+      "expected": {
+        "graphRecreated": false,
+        "finalRegistryVoiceCount": 0,
+        "postStopAttacks": 0,
+        "duplicateRetirements": 0,
+        "law": "Each cycle crosses two generation boundaries; after the final stop the registry is empty, no attack follows any stop, and no voice is retired twice. This is the L-AUDIO-01 legacy regression witness."
+      }
+    },
+    {
+      "caseId": "X1-STOP-003",
+      "title": "Stop while previewing retires both owner kinds",
+      "scenario": "A progression is playing and a preview is sounding when stop is admitted.",
+      "expected": {
+        "progressionRetired": true,
+        "previewRetired": true,
+        "stopReleaseSeconds": 0.012,
+        "law": "Global Stop retires the progression generation and every preview through their X0 selectors before publishing ready."
+      }
+    },
+    {
+      "caseId": "X1-STOP-004",
+      "title": "Preview release during playback leaves the progression untouched",
+      "scenario": "release-preview is admitted while the progression plays.",
+      "expected": {
+        "progressionRetired": false,
+        "playheadChanged": false,
+        "notificationPublished": false,
+        "law": "Preview release is preview-scoped: no progression voice, plan binding, playhead, or published status may change."
+      }
+    },
+    {
+      "caseId": "X1-STOP-005",
+      "title": "Natural end publishes ready at the run start beat",
+      "expected": {
+        "forcedRampApplied": false,
+        "notificationStatus": "ready",
+        "playheadAfter": "startBeat",
+        "tailDeadlineSeconds": 8,
+        "registryEmptyByDeadline": true,
+        "law": "Scheduling stops, tails decay naturally, and every voice is absent from the registry by eight seconds after the final note-off while the persistent graph remains ready."
+      }
+    },
+    {
+      "caseId": "X1-STOP-006",
+      "title": "Replay during a residual tail",
+      "scenario": "play is admitted 0.5 s after a natural end while release/reverb tails are still audible.",
+      "expected": {
+        "oldGenerationRetiredFirst": true,
+        "graphRecreated": false,
+        "law": "The old voice generation is retired before the new run's first attack; the new epoch begins on the same graph. This is the end-then-immediate-replay witness."
+      }
+    },
+    {
+      "caseId": "X1-STOP-007",
+      "title": "Browser interruption freezes musical time",
+      "scenario": "The platform reports interrupted while playing at exact beat 5/4.",
+      "expected": {
+        "stateAfter": "interrupted",
+        "storedBeat": { "numerator": 5, "denominator": 4 },
+        "notificationStatus": "paused",
+        "failureCode": "transport.interrupted",
+        "playheadAdvancedDuringSuspension": false,
+        "law": "The playhead freezes at the last computed beat; suspended wall time never advances musical time; the sounding epoch is retired so no pre-interruption callback can act."
+      }
+    },
+    {
+      "caseId": "X1-STOP-008",
+      "title": "Interruption recovery resumes from the stored beat",
+      "scenario": "A trusted resume gesture arrives after X1-STOP-007.",
+      "expected": {
+        "stateAfter": "playing",
+        "resumeBeat": { "numerator": 5, "denominator": 4 },
+        "staleCallbackAttacks": 0,
+        "law": "Recovery re-anchors a new epoch at the stored exact beat rather than replaying stale callbacks; pre-interruption callbacks are generation-dead."
+      }
+    },
+    {
+      "caseId": "X1-STOP-009",
+      "title": "Import while playing retires before publishing",
+      "scenario": "replace-plan with a new binding is admitted while playing with an active preview.",
+      "expected": {
+        "retireBeforePublish": true,
+        "stateAfter": "ready",
+        "playheadAfter": "new-plan-start",
+        "noFutureAttackPostcondition": true,
+        "law": "Replacement retires progression and preview voices and awaits their receipts before the replacement binding becomes visible; a stale attack from the old plan after replacement is impossible."
+      }
+    },
+    {
+      "caseId": "X1-STOP-010",
+      "title": "New-document replacement to an empty transport",
+      "scenario": "replace-plan with a null binding is admitted while paused.",
+      "expected": {
+        "stateAfter": "ready",
+        "documentIdAfter": null,
+        "playCommandAfterRefusal": "transport.plan_mismatch",
+        "law": "A null binding empties the transport; a subsequent play without a fresh binding refuses as a mismatch instead of replaying the retired plan."
+      }
+    },
+    {
+      "caseId": "X1-STOP-011",
+      "title": "Dispose is terminal and idempotent-refusing",
+      "expected": {
+        "stateAfter": "disposed",
+        "secondDisposeRefusal": "transport.disposed",
+        "timerCleared": true,
+        "law": "Dispose clears the control timer, retires everything through the X0 page-teardown path, publishes nothing, and every later command refuses with transport.disposed."
+      }
+    },
+    {
+      "caseId": "X1-STOP-012",
+      "title": "Engine fault during a command settles as fault",
+      "scenario": "X0 faults while a play command awaits its first attack receipt.",
+      "expected": {
+        "stateAfter": "fault",
+        "notificationStatus": "failed",
+        "failureCodeStable": true,
+        "recovery": "initialize-transport with a trusted gesture",
+        "law": "The command settles with fault termination, the state machine enters fault, exactly one failed notification is published with a stable code, and only a trusted reinitialization recovers."
+      }
+    }
+  ]
+}

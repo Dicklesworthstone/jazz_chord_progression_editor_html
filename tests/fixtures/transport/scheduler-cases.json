@@ -1,0 +1,175 @@
+{
+  "schema": "changes.fixtures.x1-scheduler.v1",
+  "fixtureVersion": 1,
+  "authorship": "Hand-authored scheduler witnesses over docs/X1_TRANSPORT_CONTRACT.md section 5. Expected observations describe the injected fake engine/clock logs; no production scheduler exists or was consulted.",
+  "timingDefaults": { "tickIntervalMs": 25, "lookaheadSeconds": 0.1 },
+  "cases": [
+    {
+      "caseId": "X1-SCHED-001",
+      "title": "One schedule per event across overlapping ticks",
+      "tempoBpm": 120,
+      "planEventStartBeats": [
+        { "numerator": 0, "denominator": 1 },
+        { "numerator": 1, "denominator": 1 },
+        { "numerator": 2, "denominator": 1 }
+      ],
+      "clockSecondsAtTicks": [0, 0.025, 0.05, 0.075, 0.1],
+      "expected": {
+        "attackBatchesIssued": 1,
+        "law": "Beat 0 enters the first horizon [0, 0.1]; beats 1 and 2 map to 0.5 s and 1.0 s and stay outside every listed horizon. Repeated ticks over an unchanged horizon must not reissue the beat-0 batch; the cursor advances exactly once."
+      }
+    },
+    {
+      "caseId": "X1-SCHED-002",
+      "title": "Ascending startTick order within one horizon",
+      "tempoBpm": 240,
+      "planEventStartBeats": [
+        { "numerator": 0, "denominator": 1 },
+        { "numerator": 1, "denominator": 4 },
+        { "numerator": 1, "denominator": 2 }
+      ],
+      "clockSecondsAtTicks": [0],
+      "expected": {
+        "attackBatchesIssued": 3,
+        "batchOrderByStartSeconds": [0, 0.0625, 0.125],
+        "law": "At 240 BPM all three events fall inside one 0.1 s horizon and must be issued in ascending exact startTick order in one tick."
+      }
+    },
+    {
+      "caseId": "X1-SCHED-003",
+      "title": "Stale tick after generation boundary schedules nothing",
+      "tempoBpm": 120,
+      "scenario": "A tick captured generation G, then Stop crossed to G+1 before the tick body ran.",
+      "expected": {
+        "attackBatchesIssued": 0,
+        "staleCallbacksIgnoredDelta": 1,
+        "law": "A callback whose captured generation is no longer current increments staleCallbacksIgnored and performs no engine call, cursor move, or notification."
+      }
+    },
+    {
+      "caseId": "X1-SCHED-004",
+      "title": "Loop wrap crosses one loop-wrap generation boundary and re-anchors",
+      "tempoBpm": 120,
+      "loop": {
+        "startBeat": { "numerator": 0, "denominator": 1 },
+        "endBeat": { "numerator": 2, "denominator": 1 }
+      },
+      "expected": {
+        "loopWrapsDelta": 1,
+        "generationDelta": 1,
+        "graphRecreated": false,
+        "law": "Reaching the loop end retires the outgoing generation, increments it once, re-anchors the epoch at the loop start's exact beat, and never touches the persistent graph."
+      }
+    },
+    {
+      "caseId": "X1-SCHED-005",
+      "title": "Attack lead never exceeds the X0 admission window",
+      "tempoBpm": 20,
+      "timing": { "tickIntervalMs": 100, "lookaheadSeconds": 0.2 },
+      "expected": {
+        "maxAttackLeadSeconds": 0.2,
+        "x0WindowSeconds": 0.25,
+        "law": "With the maximum legal lookahead, every issued startTimeSeconds is at most currentTime + 0.2, leaving the frozen 0.05 s margin under X0's 0.25 s admission ceiling; transport.engine_refusal for lateness is unreachable by construction."
+      }
+    },
+    {
+      "caseId": "X1-SCHED-006",
+      "title": "Instrument change rewinds and reschedules only the unattacked horizon",
+      "tempoBpm": 120,
+      "scenario": "Events A (sounding), B and C (scheduled, start in the future) exist when set-instrument is admitted.",
+      "expected": {
+        "horizonReschedulesDelta": 1,
+        "rescheduledEventCount": 2,
+        "soundingVoicesRetired": 0,
+        "law": "B and C are retired with sources stopped at or before their starts, the cursor rewinds over exactly B and C, and both are reissued with the new recipe at their original exact times. A keeps its recipe."
+      }
+    },
+    {
+      "caseId": "X1-SCHED-007",
+      "title": "Count-in prepends exactly one bar of clicks",
+      "tempoBpm": 120,
+      "meter": { "beatsPerBar": 4, "beatUnit": 4 },
+      "countIn": true,
+      "expected": {
+        "clickEventsGeneratedDelta": 4,
+        "clickEventIds": ["x1:click:1:0", "x1:click:1:1", "x1:click:1:2", "x1:click:1:3"],
+        "clickMidiPitches": [88, 81, 81, 81],
+        "clickVelocities": [112, 84, 84, 84],
+        "firstPlanEventOffsetBeats": { "numerator": 4, "denominator": 1 },
+        "law": "Four clicks at beats -4..-1 precede beat zero; the downbeat click is accented; plan events shift by exactly one bar of transport time while plan beats stay untouched."
+      }
+    },
+    {
+      "caseId": "X1-SCHED-008",
+      "title": "Metronome clicks on integer beats while playing",
+      "tempoBpm": 60,
+      "meter": { "beatsPerBar": 3, "beatUnit": 4 },
+      "metronome": true,
+      "playSpanBeats": 3,
+      "expected": {
+        "clickEventsGeneratedDelta": 3,
+        "clickMidiPitches": [88, 81, 81],
+        "clickVelocities": [112, 84, 84],
+        "law": "One click per integer beat, accent on each bar's downbeat, generated inside the same lookahead horizon discipline as plan events and counted separately from eventsScheduled."
+      }
+    },
+    {
+      "caseId": "X1-SCHED-009",
+      "title": "Click IDs cannot collide with document events",
+      "expected": {
+        "reservedPrefix": "x1:click:",
+        "law": "Every generated click event ID starts with the reserved prefix. The prefix contains a colon, which the document event grammar never produces, so a click can never retire or retrigger a document event's voices."
+      }
+    },
+    {
+      "caseId": "X1-SCHED-010",
+      "title": "Scheduler stops ticking when exhausted without a loop",
+      "tempoBpm": 120,
+      "expected": {
+        "timerClearedAfterFinalGate": true,
+        "law": "With the cursor exhausted and no loop, the control timer is cleared; natural-end handling owns the remaining tail deadline. An idle transport performs zero engine calls."
+      }
+    },
+    {
+      "caseId": "X1-SCHED-011",
+      "title": "Empty plan publishes an immediate natural end",
+      "tempoBpm": 120,
+      "planEventStartBeats": [],
+      "expected": {
+        "attackBatchesIssued": 0,
+        "naturalEndsPublishedDelta": 1,
+        "law": "A zero-event plan (empty chart) plays as silence of the plan's exact total beats; a zero-beat plan ends immediately at ready with the playhead at startBeat. Whole-chart silence caused by scheduling defects is the L-RUNTIME-01 regression; silence here must come only from an exactly empty timeline."
+      }
+    },
+    {
+      "caseId": "X1-SCHED-012",
+      "title": "Tempo change maps the exact beat across epochs",
+      "scenario": "Playing at 120 BPM, playhead at exact beat 3/2; set-tempo binding at 60 BPM is admitted.",
+      "expected": {
+        "anchorBeat": { "numerator": 3, "denominator": 2 },
+        "oldSecondsPerBeat": 0.5,
+        "newSecondsPerBeat": 1,
+        "soundingVoicesRetired": 0,
+        "unattackedHorizonRetired": true,
+        "law": "The exact rational playhead beat carries into the new epoch anchor unchanged; only seconds-per-beat changes. Sounding voices decay naturally; not-yet-attacked horizon voices are retired and rescheduled at new-tempo seconds."
+      }
+    },
+    {
+      "caseId": "X1-SCHED-013",
+      "title": "requestAnimationFrame is display-only",
+      "expected": {
+        "law": "No animation-frame callback appears in the platform port; the injected timer port is the only control-thread ticker, and disabling every animation frame changes no scheduling observation."
+      }
+    },
+    {
+      "caseId": "X1-SCHED-014",
+      "title": "Suspended clock freezes musical time",
+      "scenario": "The audio clock reports the same currentTimeSeconds across three ticks during a platform suspension.",
+      "expected": {
+        "playheadAdvanceBeats": { "numerator": 0, "denominator": 1 },
+        "attackBatchesIssued": 0,
+        "law": "A non-advancing audio clock advances no beats and schedules nothing new; wall time is irrelevant. Musical time resumes only when the audio clock resumes."
+      }
+    }
+  ]
+}

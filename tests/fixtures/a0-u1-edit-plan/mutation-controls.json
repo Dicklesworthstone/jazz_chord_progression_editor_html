@@ -1,0 +1,1561 @@
+{
+  "schema": "changes.fixtures.a0-u1-edit-plan-mutation-controls.v1",
+  "reviewState": "proposed-independent-literal-spec",
+  "pinState": "reviewed-byte-and-semantic-pinned",
+  "controls": [
+    {
+      "id": "A0U1-MUT-001",
+      "category": "envelope-document",
+      "operation": "pipeline",
+      "lawIds": [
+        "A0-U1-ATOM-001-command-and-five-closed-variants",
+        "A0-U1-ATOM-016-bookmarks-publication-history-atomic",
+        "A0-U1-ATOM-017-transposition-and-existing-a0-unchanged"
+      ],
+      "baselineTransitionId": "A0U1-INS-001-APPLY",
+      "killerTransitionId": "A0U1-PIPE-001-REFUSED",
+      "mutation": {
+        "materialization": "command",
+        "operator": "replace",
+        "jsonPointer": "/expectedDocumentId",
+        "from": "document-e0-nested",
+        "to": "document-other",
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "expected.result",
+        "jsonPointer": "/ok",
+        "baselineValue": true,
+        "killerValue": false
+      },
+      "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
+      "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
+      "linkedCaseIds": [
+        "A0U1-INS-001",
+        "A0U1-PIPE-001"
+      ],
+      "traceIds": [
+        "A0U1-TRACE-PIPELINE"
+      ],
+      "authorityIds": [
+        "A0U1-AUTH-A0",
+        "A0U1-AUTH-VERIFICATION"
+      ]
+    },
+    {
+      "id": "A0U1-MUT-002",
+      "category": "envelope-revision",
+      "operation": "pipeline",
+      "lawIds": [
+        "A0-U1-ATOM-001-command-and-five-closed-variants",
+        "A0-U1-ATOM-016-bookmarks-publication-history-atomic"
+      ],
+      "baselineTransitionId": "A0U1-INS-001-APPLY",
+      "killerTransitionId": "A0U1-PIPE-002-REFUSED",
+      "mutation": {
+        "materialization": "command",
+        "operator": "replace",
+        "jsonPointer": "/expectedRevision",
+        "from": 7,
+        "to": 6,
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "expected.result",
+        "jsonPointer": "/ok",
+        "baselineValue": true,
+        "killerValue": false
+      },
+      "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
+      "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
+      "linkedCaseIds": [
+        "A0U1-INS-001",
+        "A0U1-PIPE-001"
+      ],
+      "traceIds": [
+        "A0U1-TRACE-PIPELINE"
+      ],
+      "authorityIds": [
+        "A0U1-AUTH-A0",
+        "A0U1-AUTH-VERIFICATION"
+      ]
+    },
+    {
+      "id": "A0U1-MUT-003",
+      "category": "envelope-extra-key",
+      "operation": "pipeline",
+      "lawIds": [
+        "A0-U1-ATOM-001-command-and-five-closed-variants"
+      ],
+      "baselineTransitionId": "A0U1-INS-001-APPLY",
+      "killerTransitionId": "A0U1-PIPE-003-REFUSED",
+      "mutation": {
+        "materialization": "command",
+        "operator": "add",
+        "jsonPointer": "/extra",
+        "from": {
+          "$absent": true
+        },
+        "to": true,
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "expected.result",
+        "jsonPointer": "/ok",
+        "baselineValue": true,
+        "killerValue": false
+      },
+      "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
+      "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
+      "linkedCaseIds": [
+        "A0U1-INS-001",
+        "A0U1-PIPE-003"
+      ],
+      "traceIds": [
+        "A0U1-TRACE-PIPELINE"
+      ],
+      "authorityIds": [
+        "A0U1-AUTH-A0",
+        "A0U1-AUTH-VERIFICATION"
+      ]
+    },
+    {
+      "id": "A0U1-MUT-004",
+      "category": "plan-extra-key",
+      "operation": "pipeline",
+      "lawIds": [
+        "A0-U1-ATOM-001-command-and-five-closed-variants"
+      ],
+      "baselineTransitionId": "A0U1-INS-001-APPLY",
+      "killerTransitionId": "A0U1-PIPE-004-REFUSED",
+      "mutation": {
+        "materialization": "command",
+        "operator": "add",
+        "jsonPointer": "/plan/extra",
+        "from": {
+          "$absent": true
+        },
+        "to": true,
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "expected.result",
+        "jsonPointer": "/ok",
+        "baselineValue": true,
+        "killerValue": false
+      },
+      "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
+      "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
+      "linkedCaseIds": [
+        "A0U1-INS-001",
+        "A0U1-PIPE-003"
+      ],
+      "traceIds": [
+        "A0U1-TRACE-PIPELINE"
+      ],
+      "authorityIds": [
+        "A0U1-AUTH-A0",
+        "A0U1-AUTH-VERIFICATION"
+      ]
+    },
+    {
+      "id": "A0U1-MUT-005",
+      "category": "command-id",
+      "operation": "pipeline",
+      "lawIds": [
+        "A0-U1-ATOM-001-command-and-five-closed-variants",
+        "A0-U1-ATOM-015-ids-preflight-preorder-honest-entropy"
+      ],
+      "baselineTransitionId": "A0U1-INS-001-APPLY",
+      "killerTransitionId": "A0U1-PIPE-005-REFUSED",
+      "mutation": {
+        "materialization": "command",
+        "operator": "replace",
+        "jsonPointer": "/id",
+        "from": "command-u1-insert",
+        "to": "",
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "expected.result",
+        "jsonPointer": "/ok",
+        "baselineValue": true,
+        "killerValue": false
+      },
+      "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
+      "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
+      "linkedCaseIds": [
+        "A0U1-INS-001",
+        "A0U1-PIPE-006"
+      ],
+      "traceIds": [
+        "A0U1-TRACE-PIPELINE"
+      ],
+      "authorityIds": [
+        "A0U1-AUTH-A0",
+        "A0U1-AUTH-VERIFICATION"
+      ]
+    },
+    {
+      "id": "A0U1-MUT-006",
+      "category": "logical-time",
+      "operation": "pipeline",
+      "lawIds": [
+        "A0-U1-ATOM-001-command-and-five-closed-variants"
+      ],
+      "baselineTransitionId": "A0U1-INS-001-APPLY",
+      "killerTransitionId": "A0U1-PIPE-006-REFUSED",
+      "mutation": {
+        "materialization": "command",
+        "operator": "replace",
+        "jsonPointer": "/logicalTimeMs",
+        "from": 1000,
+        "to": -1,
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "expected.result",
+        "jsonPointer": "/ok",
+        "baselineValue": true,
+        "killerValue": false
+      },
+      "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
+      "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
+      "linkedCaseIds": [
+        "A0U1-INS-001",
+        "A0U1-PIPE-006"
+      ],
+      "traceIds": [
+        "A0U1-TRACE-PIPELINE"
+      ],
+      "authorityIds": [
+        "A0U1-AUTH-A0",
+        "A0U1-AUTH-VERIFICATION"
+      ]
+    },
+    {
+      "id": "A0U1-MUT-007",
+      "category": "coalescing-closed",
+      "operation": "pipeline",
+      "lawIds": [
+        "A0-U1-ATOM-001-command-and-five-closed-variants"
+      ],
+      "baselineTransitionId": "A0U1-INS-001-APPLY",
+      "killerTransitionId": "A0U1-PIPE-007-REFUSED",
+      "mutation": {
+        "materialization": "command",
+        "operator": "replace",
+        "jsonPointer": "/coalescing",
+        "from": null,
+        "to": {
+          "kind": "text-field",
+          "key": "quickEntry",
+          "focusSessionId": "f1"
+        },
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "expected.result",
+        "jsonPointer": "/ok",
+        "baselineValue": true,
+        "killerValue": false
+      },
+      "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
+      "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
+      "linkedCaseIds": [
+        "A0U1-INS-001",
+        "A0U1-PIPE-007"
+      ],
+      "traceIds": [
+        "A0U1-TRACE-PIPELINE"
+      ],
+      "authorityIds": [
+        "A0U1-AUTH-A0",
+        "A0U1-AUTH-VERIFICATION"
+      ]
+    },
+    {
+      "id": "A0U1-MUT-008",
+      "category": "candidate-backdoor",
+      "operation": "pipeline",
+      "lawIds": [
+        "A0-U1-ATOM-001-command-and-five-closed-variants"
+      ],
+      "baselineTransitionId": "A0U1-INS-001-APPLY",
+      "killerTransitionId": "A0U1-PIPE-008-REFUSED",
+      "mutation": {
+        "materialization": "command",
+        "operator": "add",
+        "jsonPointer": "/plan/candidate",
+        "from": {
+          "$absent": true
+        },
+        "to": {
+          "schema": "changes.progression.v2",
+          "id": "document-e0-nested",
+          "title": "Nested Canonical Order",
+          "description": "Independent E0 nested-shape byte authority.",
+          "meter": {
+            "beatsPerBar": 4,
+            "beatUnit": 4
+          },
+          "tempoBpm": 132,
+          "key": {
+            "tonic": {
+              "step": "C",
+              "alter": 0
+            },
+            "mode": "major"
+          },
+          "sections": [
+            {
+              "id": "section-e0-a",
+              "name": "A",
+              "annotation": "Nested order witness",
+              "keyOverride": {
+                "tonic": {
+                  "step": "D",
+                  "alter": 0
+                },
+                "mode": "natural-minor"
+              },
+              "voiceLeadingBoundary": "continue",
+              "measures": [
+                {
+                  "id": "measure-e0-auto",
+                  "events": [
+                    {
+                      "id": "event-e0-auto",
+                      "duration": {
+                        "numerator": 4,
+                        "denominator": 1
+                      },
+                      "annotation": "altered dominant",
+                      "chord": {
+                        "kind": "parsed",
+                        "sourceText": "C7#9",
+                        "root": {
+                          "step": "C",
+                          "alter": 0
+                        },
+                        "triad": "major",
+                        "sixth": null,
+                        "seventh": "minor",
+                        "extensions": [],
+                        "additions": [],
+                        "alterations": [
+                          {
+                            "number": 9,
+                            "alter": 1
+                          }
+                        ],
+                        "omissions": [],
+                        "bass": null,
+                        "colorPolicy": "none"
+                      },
+                      "voicing": {
+                        "mode": "auto",
+                        "family": "balanced",
+                        "voiceCount": 4,
+                        "range": {
+                          "lowMidi": 48,
+                          "highMidi": 72
+                        },
+                        "bassPolicy": "generated"
+                      }
+                    }
+                  ],
+                  "completion": {
+                    "kind": "complete"
+                  }
+                },
+                {
+                  "id": "measure-e0-manual",
+                  "events": [
+                    {
+                      "id": "event-e0-manual",
+                      "duration": {
+                        "numerator": 4,
+                        "denominator": 1
+                      },
+                      "annotation": "custom manual witness",
+                      "chord": {
+                        "kind": "custom",
+                        "sourceText": "C-Eb-G cluster",
+                        "label": "Minor triad as custom",
+                        "pitchNames": [
+                          {
+                            "step": "C",
+                            "alter": 0
+                          },
+                          {
+                            "step": "E",
+                            "alter": -1
+                          },
+                          {
+                            "step": "G",
+                            "alter": 0
+                          }
+                        ],
+                        "bass": null
+                      },
+                      "voicing": {
+                        "mode": "manual",
+                        "pitches": [
+                          {
+                            "step": "C",
+                            "alter": 0,
+                            "octave": 4
+                          },
+                          {
+                            "step": "E",
+                            "alter": -1,
+                            "octave": 4
+                          },
+                          {
+                            "step": "G",
+                            "alter": 0,
+                            "octave": 4
+                          }
+                        ],
+                        "bassPolicy": "included"
+                      }
+                    }
+                  ],
+                  "completion": {
+                    "kind": "complete"
+                  }
+                },
+                {
+                  "id": "measure-e0-frozen-partial",
+                  "events": [
+                    {
+                      "id": "event-e0-frozen",
+                      "duration": {
+                        "numerator": 2,
+                        "denominator": 1
+                      },
+                      "annotation": "frozen partial witness",
+                      "chord": {
+                        "kind": "parsed",
+                        "sourceText": "Cmaj7",
+                        "root": {
+                          "step": "C",
+                          "alter": 0
+                        },
+                        "triad": "major",
+                        "sixth": null,
+                        "seventh": "major",
+                        "extensions": [],
+                        "additions": [],
+                        "alterations": [],
+                        "omissions": [],
+                        "bass": null,
+                        "colorPolicy": "none"
+                      },
+                      "voicing": {
+                        "mode": "frozen",
+                        "pitches": [
+                          {
+                            "step": "C",
+                            "alter": 0,
+                            "octave": 4
+                          },
+                          {
+                            "step": "E",
+                            "alter": 0,
+                            "octave": 4
+                          },
+                          {
+                            "step": "G",
+                            "alter": 0,
+                            "octave": 4
+                          },
+                          {
+                            "step": "B",
+                            "alter": 0,
+                            "octave": 4
+                          }
+                        ],
+                        "bassPolicy": "included",
+                        "generatedBy": {
+                          "engineVersion": "fixture-engine-1",
+                          "family": "balanced"
+                        }
+                      }
+                    }
+                  ],
+                  "completion": {
+                    "kind": "incomplete",
+                    "expectedDuration": {
+                      "numerator": 2,
+                      "denominator": 1
+                    },
+                    "reason": "Open ending"
+                  }
+                }
+              ]
+            }
+          ],
+          "playback": {
+            "instrumentId": "mellow-keys",
+            "masterVolume": 0.8,
+            "reverbAmount": 0.2,
+            "countInBars": 1
+          }
+        },
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "expected.result",
+        "jsonPointer": "/ok",
+        "baselineValue": true,
+        "killerValue": false
+      },
+      "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
+      "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
+      "linkedCaseIds": [
+        "A0U1-INS-001",
+        "A0U1-PIPE-008"
+      ],
+      "traceIds": [
+        "A0U1-TRACE-PIPELINE"
+      ],
+      "authorityIds": [
+        "A0U1-AUTH-A0",
+        "A0U1-AUTH-VERIFICATION"
+      ]
+    },
+    {
+      "id": "A0U1-MUT-009",
+      "category": "nested-plans-backdoor",
+      "operation": "pipeline",
+      "lawIds": [
+        "A0-U1-ATOM-001-command-and-five-closed-variants"
+      ],
+      "baselineTransitionId": "A0U1-INS-001-APPLY",
+      "killerTransitionId": "A0U1-PIPE-009-REFUSED",
+      "mutation": {
+        "materialization": "command",
+        "operator": "add",
+        "jsonPointer": "/plan/plans",
+        "from": {
+          "$absent": true
+        },
+        "to": [],
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "expected.result",
+        "jsonPointer": "/ok",
+        "baselineValue": true,
+        "killerValue": false
+      },
+      "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
+      "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
+      "linkedCaseIds": [
+        "A0U1-INS-001",
+        "A0U1-PIPE-010"
+      ],
+      "traceIds": [
+        "A0U1-TRACE-PIPELINE"
+      ],
+      "authorityIds": [
+        "A0U1-AUTH-A0",
+        "A0U1-AUTH-VERIFICATION"
+      ]
+    },
+    {
+      "id": "A0U1-MUT-010",
+      "category": "work-counter-warning",
+      "operation": "pipeline",
+      "lawIds": [
+        "A0-U1-ATOM-003-raw-source-reparsed-once-by-t0",
+        "A0-U1-ATOM-004-complete-draft-success-and-warnings-exact"
+      ],
+      "baselineTransitionId": "A0U1-INS-001-APPLY",
+      "killerTransitionId": "A0U1-PIPE-010-REFUSED",
+      "mutation": {
+        "materialization": "command",
+        "operator": "replace",
+        "jsonPointer": "/plan/source/warningAcknowledgements",
+        "from": [],
+        "to": [
+          {
+            "code": "chart.comments_not_round_tripped",
+            "range": {
+              "start": 0,
+              "end": 1
+            }
+          }
+        ],
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "expected.counters",
+        "jsonPointer": "/editPlan/warningAcknowledgementsCompared",
+        "baselineValue": 0,
+        "killerValue": 1
+      },
+      "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
+      "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
+      "linkedCaseIds": [
+        "A0U1-INS-001",
+        "A0U1-PIPE-010"
+      ],
+      "traceIds": [
+        "A0U1-TRACE-PIPELINE"
+      ],
+      "authorityIds": [
+        "A0U1-AUTH-A0",
+        "A0U1-AUTH-VERIFICATION"
+      ]
+    },
+    {
+      "id": "A0U1-MUT-011",
+      "category": "recovery-ordinal",
+      "operation": "insert-fragment",
+      "lawIds": [
+        "A0-U1-ATOM-005-recovered-failure-selects-one-chord",
+        "A0-U1-ATOM-006-recovered-loss-duration-placement-exact"
+      ],
+      "baselineTransitionId": "A0U1-INS-002-APPLY",
+      "killerTransitionId": "A0U1-INS-003-REFUSED",
+      "mutation": {
+        "materialization": "command",
+        "operator": "replace",
+        "jsonPointer": "/plan/source/selectedGlobalOrdinal",
+        "from": 0,
+        "to": 9,
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "expected.result",
+        "jsonPointer": "/ok",
+        "baselineValue": true,
+        "killerValue": false
+      },
+      "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
+      "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
+      "linkedCaseIds": [
+        "A0U1-INS-002",
+        "A0U1-INS-003"
+      ],
+      "traceIds": [
+        "A0U1-TRACE-INSERT-FRAGMENT"
+      ],
+      "authorityIds": [
+        "A0U1-AUTH-A0",
+        "A0U1-AUTH-T0",
+        "A0U1-AUTH-DOMAIN",
+        "A0U1-AUTH-F2-F3",
+        "A0U1-AUTH-U1",
+        "A0U1-AUTH-VERIFICATION"
+      ]
+    },
+    {
+      "id": "A0U1-MUT-012",
+      "category": "recovery-layout-token",
+      "operation": "insert-fragment",
+      "lawIds": [
+        "A0-U1-ATOM-006-recovered-loss-duration-placement-exact"
+      ],
+      "baselineTransitionId": "A0U1-INS-002-APPLY",
+      "killerTransitionId": "A0U1-INS-004-REFUSED",
+      "mutation": {
+        "materialization": "command",
+        "operator": "replace",
+        "jsonPointer": "/plan/source/layoutLossAcknowledgement",
+        "from": "source-bar-and-section-layout-will-be-lost@1",
+        "to": "missing",
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "expected.result",
+        "jsonPointer": "/ok",
+        "baselineValue": true,
+        "killerValue": false
+      },
+      "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
+      "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
+      "linkedCaseIds": [
+        "A0U1-INS-002",
+        "A0U1-INS-004"
+      ],
+      "traceIds": [
+        "A0U1-TRACE-INSERT-FRAGMENT"
+      ],
+      "authorityIds": [
+        "A0U1-AUTH-A0",
+        "A0U1-AUTH-T0",
+        "A0U1-AUTH-DOMAIN",
+        "A0U1-AUTH-F2-F3",
+        "A0U1-AUTH-U1",
+        "A0U1-AUTH-VERIFICATION"
+      ]
+    },
+    {
+      "id": "A0U1-MUT-013",
+      "category": "recovery-caller-duration",
+      "operation": "insert-fragment",
+      "lawIds": [
+        "A0-U1-ATOM-006-recovered-loss-duration-placement-exact"
+      ],
+      "baselineTransitionId": "A0U1-INS-005-CALLER-APPLY",
+      "killerTransitionId": "A0U1-INS-005-CALLER-REFUSED",
+      "mutation": {
+        "materialization": "command",
+        "operator": "replace",
+        "jsonPointer": "/plan/source/callerDuration",
+        "from": {
+          "numerator": 2,
+          "denominator": 1
+        },
+        "to": null,
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "expected.result",
+        "jsonPointer": "/ok",
+        "baselineValue": true,
+        "killerValue": false
+      },
+      "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
+      "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
+      "linkedCaseIds": [
+        "A0U1-INS-005"
+      ],
+      "traceIds": [
+        "A0U1-TRACE-INSERT-FRAGMENT"
+      ],
+      "authorityIds": [
+        "A0U1-AUTH-A0",
+        "A0U1-AUTH-T0",
+        "A0U1-AUTH-DOMAIN",
+        "A0U1-AUTH-F2-F3",
+        "A0U1-AUTH-U1",
+        "A0U1-AUTH-VERIFICATION"
+      ]
+    },
+    {
+      "id": "A0U1-MUT-014",
+      "category": "recovery-sibling-backdoor",
+      "operation": "insert-fragment",
+      "lawIds": [
+        "A0-U1-ATOM-001-command-and-five-closed-variants",
+        "A0-U1-ATOM-005-recovered-failure-selects-one-chord",
+        "A0-U1-ATOM-007-complete-draft-placement-shape-exact",
+        "A0-U1-ATOM-008-new-event-policy-fixed"
+      ],
+      "baselineTransitionId": "A0U1-INS-002-APPLY",
+      "killerTransitionId": "A0U1-INS-006-REFUSED",
+      "mutation": {
+        "materialization": "command",
+        "operator": "add",
+        "jsonPointer": "/plan/source/selectedSiblingOrdinals",
+        "from": {
+          "$absent": true
+        },
+        "to": [
+          1
+        ],
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "expected.result",
+        "jsonPointer": "/ok",
+        "baselineValue": true,
+        "killerValue": false
+      },
+      "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
+      "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
+      "linkedCaseIds": [
+        "A0U1-INS-002",
+        "A0U1-INS-006"
+      ],
+      "traceIds": [
+        "A0U1-TRACE-INSERT-FRAGMENT"
+      ],
+      "authorityIds": [
+        "A0U1-AUTH-A0",
+        "A0U1-AUTH-T0",
+        "A0U1-AUTH-DOMAIN",
+        "A0U1-AUTH-F2-F3",
+        "A0U1-AUTH-U1",
+        "A0U1-AUTH-VERIFICATION"
+      ]
+    },
+    {
+      "id": "A0U1-MUT-015",
+      "category": "quick-entry-text",
+      "operation": "insert-fragment",
+      "lawIds": [
+        "A0-U1-ATOM-002-quick-entry-snapshot-and-target-exact"
+      ],
+      "baselineTransitionId": "A0U1-INS-001-APPLY",
+      "killerTransitionId": "A0U1-INS-010-STALE-TEXT",
+      "mutation": {
+        "materialization": "beforeState",
+        "operator": "replace",
+        "jsonPointer": "/quickEntry/text",
+        "from": "| G7b9#5:4 |",
+        "to": "| F7:4 |",
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "expected.result",
+        "jsonPointer": "/ok",
+        "baselineValue": true,
+        "killerValue": false
+      },
+      "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
+      "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
+      "linkedCaseIds": [
+        "A0U1-INS-001",
+        "A0U1-INS-010"
+      ],
+      "traceIds": [
+        "A0U1-TRACE-INSERT-FRAGMENT"
+      ],
+      "authorityIds": [
+        "A0U1-AUTH-A0",
+        "A0U1-AUTH-T0",
+        "A0U1-AUTH-DOMAIN",
+        "A0U1-AUTH-F2-F3",
+        "A0U1-AUTH-U1",
+        "A0U1-AUTH-VERIFICATION"
+      ]
+    },
+    {
+      "id": "A0U1-MUT-016",
+      "category": "quick-entry-target",
+      "operation": "insert-fragment",
+      "lawIds": [
+        "A0-U1-ATOM-002-quick-entry-snapshot-and-target-exact"
+      ],
+      "baselineTransitionId": "A0U1-INS-001-APPLY",
+      "killerTransitionId": "A0U1-INS-010-STALE-TARGET",
+      "mutation": {
+        "materialization": "beforeState",
+        "operator": "replace",
+        "jsonPointer": "/quickEntry/target/measureId",
+        "from": "measure-e0-manual",
+        "to": "measure-e0-frozen-partial",
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "expected.result",
+        "jsonPointer": "/ok",
+        "baselineValue": true,
+        "killerValue": false
+      },
+      "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
+      "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
+      "linkedCaseIds": [
+        "A0U1-INS-001",
+        "A0U1-INS-010"
+      ],
+      "traceIds": [
+        "A0U1-TRACE-INSERT-FRAGMENT"
+      ],
+      "authorityIds": [
+        "A0U1-AUTH-A0",
+        "A0U1-AUTH-T0",
+        "A0U1-AUTH-DOMAIN",
+        "A0U1-AUTH-F2-F3",
+        "A0U1-AUTH-U1",
+        "A0U1-AUTH-VERIFICATION"
+      ]
+    },
+    {
+      "id": "A0U1-MUT-017",
+      "category": "split-annotation",
+      "operation": "split-event-duration",
+      "lawIds": [
+        "A0-U1-ATOM-010-split-event-lossless-exact"
+      ],
+      "baselineTransitionId": "A0U1-SPLITD-008-BASE",
+      "killerTransitionId": "A0U1-SPLITD-008-KILLER",
+      "mutation": {
+        "materialization": "command",
+        "operator": "replace",
+        "jsonPointer": "/plan/annotationPolicy",
+        "from": "retain-source-first-clear-second",
+        "to": "retain-source-first-retain-second",
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "expected.afterState",
+        "jsonPointer": "/document/sections/0/measures/0/events",
+        "baselineValue": [
+          {
+            "id": "event-e0-auto",
+            "duration": {
+              "numerator": 2,
+              "denominator": 1
+            },
+            "annotation": "altered dominant",
+            "chord": {
+              "kind": "parsed",
+              "sourceText": "C7#9",
+              "root": {
+                "step": "C",
+                "alter": 0
+              },
+              "triad": "major",
+              "sixth": null,
+              "seventh": "minor",
+              "extensions": [],
+              "additions": [],
+              "alterations": [
+                {
+                  "number": 9,
+                  "alter": 1
+                }
+              ],
+              "omissions": [],
+              "bass": null,
+              "colorPolicy": "none"
+            },
+            "voicing": {
+              "mode": "auto",
+              "family": "balanced",
+              "voiceCount": 4,
+              "range": {
+                "lowMidi": 48,
+                "highMidi": 72
+              },
+              "bassPolicy": "generated"
+            }
+          },
+          {
+            "id": "event-u1-split-1",
+            "duration": {
+              "numerator": 2,
+              "denominator": 1
+            },
+            "annotation": "",
+            "chord": {
+              "kind": "parsed",
+              "sourceText": "C7#9",
+              "root": {
+                "step": "C",
+                "alter": 0
+              },
+              "triad": "major",
+              "sixth": null,
+              "seventh": "minor",
+              "extensions": [],
+              "additions": [],
+              "alterations": [
+                {
+                  "number": 9,
+                  "alter": 1
+                }
+              ],
+              "omissions": [],
+              "bass": null,
+              "colorPolicy": "none"
+            },
+            "voicing": {
+              "mode": "auto",
+              "family": "balanced",
+              "voiceCount": 4,
+              "range": {
+                "lowMidi": 48,
+                "highMidi": 72
+              },
+              "bassPolicy": "generated"
+            }
+          }
+        ],
+        "killerValue": [
+          {
+            "id": "event-e0-auto",
+            "duration": {
+              "numerator": 4,
+              "denominator": 1
+            },
+            "annotation": "altered dominant",
+            "chord": {
+              "kind": "parsed",
+              "sourceText": "C7#9",
+              "root": {
+                "step": "C",
+                "alter": 0
+              },
+              "triad": "major",
+              "sixth": null,
+              "seventh": "minor",
+              "extensions": [],
+              "additions": [],
+              "alterations": [
+                {
+                  "number": 9,
+                  "alter": 1
+                }
+              ],
+              "omissions": [],
+              "bass": null,
+              "colorPolicy": "none"
+            },
+            "voicing": {
+              "mode": "auto",
+              "family": "balanced",
+              "voiceCount": 4,
+              "range": {
+                "lowMidi": 48,
+                "highMidi": 72
+              },
+              "bassPolicy": "generated"
+            }
+          }
+        ]
+      },
+      "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
+      "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
+      "linkedCaseIds": [
+        "A0U1-SPLITD-008"
+      ],
+      "traceIds": [
+        "A0U1-TRACE-SPLIT-EVENT-DURATION"
+      ],
+      "authorityIds": [
+        "A0U1-AUTH-A0",
+        "A0U1-AUTH-DOMAIN",
+        "A0U1-AUTH-F2-F3",
+        "A0U1-AUTH-U1",
+        "A0U1-AUTH-VERIFICATION"
+      ]
+    },
+    {
+      "id": "A0U1-MUT-018",
+      "category": "split-positive-duration",
+      "operation": "split-event-duration",
+      "lawIds": [
+        "A0-U1-ATOM-010-split-event-lossless-exact"
+      ],
+      "baselineTransitionId": "A0U1-SPLITD-001-APPLY",
+      "killerTransitionId": "A0U1-SPLITD-002-REFUSED",
+      "mutation": {
+        "materialization": "command",
+        "operator": "replace",
+        "jsonPointer": "/plan/firstDuration/numerator",
+        "from": 2,
+        "to": 0,
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "expected.result",
+        "jsonPointer": "/ok",
+        "baselineValue": true,
+        "killerValue": false
+      },
+      "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
+      "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
+      "linkedCaseIds": [
+        "A0U1-SPLITD-001",
+        "A0U1-SPLITD-002"
+      ],
+      "traceIds": [
+        "A0U1-TRACE-SPLIT-EVENT-DURATION"
+      ],
+      "authorityIds": [
+        "A0U1-AUTH-A0",
+        "A0U1-AUTH-DOMAIN",
+        "A0U1-AUTH-F2-F3",
+        "A0U1-AUTH-U1",
+        "A0U1-AUTH-VERIFICATION"
+      ]
+    },
+    {
+      "id": "A0U1-MUT-019",
+      "category": "split-exact-sum",
+      "operation": "split-event-duration",
+      "lawIds": [
+        "A0-U1-ATOM-010-split-event-lossless-exact"
+      ],
+      "baselineTransitionId": "A0U1-SPLITD-001-APPLY",
+      "killerTransitionId": "A0U1-SPLITD-003-REFUSED",
+      "mutation": {
+        "materialization": "command",
+        "operator": "replace",
+        "jsonPointer": "/plan/secondDuration/numerator",
+        "from": 2,
+        "to": 1,
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "expected.result",
+        "jsonPointer": "/ok",
+        "baselineValue": true,
+        "killerValue": false
+      },
+      "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
+      "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
+      "linkedCaseIds": [
+        "A0U1-SPLITD-001",
+        "A0U1-SPLITD-003"
+      ],
+      "traceIds": [
+        "A0U1-TRACE-SPLIT-EVENT-DURATION"
+      ],
+      "authorityIds": [
+        "A0U1-AUTH-A0",
+        "A0U1-AUTH-DOMAIN",
+        "A0U1-AUTH-F2-F3",
+        "A0U1-AUTH-U1",
+        "A0U1-AUTH-VERIFICATION"
+      ]
+    },
+    {
+      "id": "A0U1-MUT-020",
+      "category": "split-completion",
+      "operation": "split-event-duration",
+      "lawIds": [
+        "A0-U1-ATOM-009-completion-declarations-exact"
+      ],
+      "baselineTransitionId": "A0U1-SPLITD-001-APPLY",
+      "killerTransitionId": "A0U1-SPLITD-004-REFUSED",
+      "mutation": {
+        "materialization": "command",
+        "operator": "replace",
+        "jsonPointer": "/plan/completionDeclarations/0/measureId",
+        "from": "measure-e0-auto",
+        "to": "measure-e0-manual",
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "expected.result",
+        "jsonPointer": "/ok",
+        "baselineValue": true,
+        "killerValue": false
+      },
+      "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
+      "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
+      "linkedCaseIds": [
+        "A0U1-SPLITD-001",
+        "A0U1-SPLITD-004"
+      ],
+      "traceIds": [
+        "A0U1-TRACE-SPLIT-EVENT-DURATION"
+      ],
+      "authorityIds": [
+        "A0U1-AUTH-A0",
+        "A0U1-AUTH-DOMAIN",
+        "A0U1-AUTH-F2-F3",
+        "A0U1-AUTH-U1",
+        "A0U1-AUTH-VERIFICATION"
+      ]
+    },
+    {
+      "id": "A0U1-MUT-021",
+      "category": "join-annotation-policy",
+      "operation": "join-event-durations",
+      "lawIds": [
+        "A0-U1-ATOM-011-join-events-left-inverse-exact"
+      ],
+      "baselineTransitionId": "A0U1-JOIND-008-BASE",
+      "killerTransitionId": "A0U1-JOIND-008-KILLER",
+      "mutation": {
+        "materialization": "command",
+        "operator": "replace",
+        "jsonPointer": "/plan/annotationPolicy",
+        "from": "require-right-empty-retain-left",
+        "to": "merge-annotations",
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "expected.result",
+        "jsonPointer": "/ok",
+        "baselineValue": true,
+        "killerValue": false
+      },
+      "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
+      "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
+      "linkedCaseIds": [
+        "A0U1-JOIND-008"
+      ],
+      "traceIds": [
+        "A0U1-TRACE-JOIN-EVENT-DURATIONS"
+      ],
+      "authorityIds": [
+        "A0U1-AUTH-A0",
+        "A0U1-AUTH-DOMAIN",
+        "A0U1-AUTH-F2-F3",
+        "A0U1-AUTH-U1",
+        "A0U1-AUTH-VERIFICATION"
+      ]
+    },
+    {
+      "id": "A0U1-MUT-022",
+      "category": "join-content",
+      "operation": "join-event-durations",
+      "lawIds": [
+        "A0-U1-ATOM-011-join-events-left-inverse-exact"
+      ],
+      "baselineTransitionId": "A0U1-JOIND-001-APPLY",
+      "killerTransitionId": "A0U1-JOIND-003-REFUSED",
+      "mutation": {
+        "materialization": "beforeState",
+        "operator": "replace",
+        "jsonPointer": "/document/sections/0/measures/0/events/1/voicing/range/highMidi",
+        "from": 72,
+        "to": 73,
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "expected.result",
+        "jsonPointer": "/ok",
+        "baselineValue": true,
+        "killerValue": false
+      },
+      "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
+      "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
+      "linkedCaseIds": [
+        "A0U1-JOIND-001",
+        "A0U1-JOIND-003"
+      ],
+      "traceIds": [
+        "A0U1-TRACE-JOIN-EVENT-DURATIONS"
+      ],
+      "authorityIds": [
+        "A0U1-AUTH-A0",
+        "A0U1-AUTH-DOMAIN",
+        "A0U1-AUTH-F2-F3",
+        "A0U1-AUTH-U1",
+        "A0U1-AUTH-VERIFICATION"
+      ]
+    },
+    {
+      "id": "A0U1-MUT-023",
+      "category": "join-right-annotation",
+      "operation": "join-event-durations",
+      "lawIds": [
+        "A0-U1-ATOM-011-join-events-left-inverse-exact",
+        "A0-U1-ATOM-016-bookmarks-publication-history-atomic"
+      ],
+      "baselineTransitionId": "A0U1-JOIND-001-APPLY",
+      "killerTransitionId": "A0U1-JOIND-004-REFUSED",
+      "mutation": {
+        "materialization": "beforeState",
+        "operator": "replace",
+        "jsonPointer": "/document/sections/0/measures/0/events/1/annotation",
+        "from": "",
+        "to": "must be empty",
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "expected.bookmarks",
+        "jsonPointer": "/range",
+        "baselineValue": null,
+        "killerValue": {
+          "anchor": {
+            "kind": "before-event",
+            "eventId": "event-e0-auto"
+          },
+          "focus": {
+            "kind": "after-event",
+            "eventId": "event-u1-split-1"
+          }
+        }
+      },
+      "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
+      "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
+      "linkedCaseIds": [
+        "A0U1-JOIND-001",
+        "A0U1-JOIND-004"
+      ],
+      "traceIds": [
+        "A0U1-TRACE-JOIN-EVENT-DURATIONS"
+      ],
+      "authorityIds": [
+        "A0U1-AUTH-A0",
+        "A0U1-AUTH-DOMAIN",
+        "A0U1-AUTH-F2-F3",
+        "A0U1-AUTH-U1",
+        "A0U1-AUTH-VERIFICATION"
+      ]
+    },
+    {
+      "id": "A0U1-MUT-024",
+      "category": "join-exact-sum",
+      "operation": "join-event-durations",
+      "lawIds": [
+        "A0-U1-ATOM-011-join-events-left-inverse-exact",
+        "A0-U1-ATOM-014-timeline-and-bounds-preserved"
+      ],
+      "baselineTransitionId": "A0U1-JOIND-001-APPLY",
+      "killerTransitionId": "A0U1-JOIND-005-REFUSED",
+      "mutation": {
+        "materialization": "command",
+        "operator": "replace",
+        "jsonPointer": "/plan/joinedDuration/numerator",
+        "from": 4,
+        "to": 3,
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "expected.result",
+        "jsonPointer": "/ok",
+        "baselineValue": true,
+        "killerValue": false
+      },
+      "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
+      "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
+      "linkedCaseIds": [
+        "A0U1-JOIND-001",
+        "A0U1-JOIND-005"
+      ],
+      "traceIds": [
+        "A0U1-TRACE-JOIN-EVENT-DURATIONS"
+      ],
+      "authorityIds": [
+        "A0U1-AUTH-A0",
+        "A0U1-AUTH-DOMAIN",
+        "A0U1-AUTH-F2-F3",
+        "A0U1-AUTH-U1",
+        "A0U1-AUTH-VERIFICATION"
+      ]
+    },
+    {
+      "id": "A0U1-MUT-025",
+      "category": "split-section-boundary",
+      "operation": "split-section",
+      "lawIds": [
+        "A0-U1-ATOM-012-split-section-leading-survivor-exact"
+      ],
+      "baselineTransitionId": "A0U1-SPLITS-001-APPLY",
+      "killerTransitionId": "A0U1-SPLITS-002-REFUSED",
+      "mutation": {
+        "materialization": "command",
+        "operator": "replace",
+        "jsonPointer": "/plan/beforeMeasureId",
+        "from": "measure-e0-manual",
+        "to": "measure-missing",
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "expected.result",
+        "jsonPointer": "/ok",
+        "baselineValue": true,
+        "killerValue": false
+      },
+      "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
+      "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
+      "linkedCaseIds": [
+        "A0U1-SPLITS-001",
+        "A0U1-SPLITS-002"
+      ],
+      "traceIds": [
+        "A0U1-TRACE-SPLIT-SECTION"
+      ],
+      "authorityIds": [
+        "A0U1-AUTH-A0",
+        "A0U1-AUTH-DOMAIN",
+        "A0U1-AUTH-F2-F3",
+        "A0U1-AUTH-U1",
+        "A0U1-AUTH-VERIFICATION"
+      ]
+    },
+    {
+      "id": "A0U1-MUT-026",
+      "category": "split-section-metadata",
+      "operation": "split-section",
+      "lawIds": [
+        "A0-U1-ATOM-012-split-section-leading-survivor-exact"
+      ],
+      "baselineTransitionId": "A0U1-SPLITS-001-APPLY",
+      "killerTransitionId": "A0U1-SPLITS-003-REFUSED",
+      "mutation": {
+        "materialization": "command",
+        "operator": "replace",
+        "jsonPointer": "/plan/newSectionMetadata/name",
+        "from": "B",
+        "to": "",
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "expected.result",
+        "jsonPointer": "/ok",
+        "baselineValue": true,
+        "killerValue": false
+      },
+      "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
+      "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
+      "linkedCaseIds": [
+        "A0U1-SPLITS-001",
+        "A0U1-SPLITS-003"
+      ],
+      "traceIds": [
+        "A0U1-TRACE-SPLIT-SECTION"
+      ],
+      "authorityIds": [
+        "A0U1-AUTH-A0",
+        "A0U1-AUTH-DOMAIN",
+        "A0U1-AUTH-F2-F3",
+        "A0U1-AUTH-U1",
+        "A0U1-AUTH-VERIFICATION"
+      ]
+    },
+    {
+      "id": "A0U1-MUT-027",
+      "category": "split-section-measure-policy",
+      "operation": "split-section",
+      "lawIds": [
+        "A0-U1-ATOM-012-split-section-leading-survivor-exact"
+      ],
+      "baselineTransitionId": "A0U1-SPLITS-006-BASE",
+      "killerTransitionId": "A0U1-SPLITS-006-KILLER",
+      "mutation": {
+        "materialization": "command",
+        "operator": "replace",
+        "jsonPointer": "/plan/measurePolicy",
+        "from": "move-suffix-preserve-identities",
+        "to": "copy-suffix",
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "expected.result",
+        "jsonPointer": "/ok",
+        "baselineValue": true,
+        "killerValue": false
+      },
+      "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
+      "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
+      "linkedCaseIds": [
+        "A0U1-SPLITS-006"
+      ],
+      "traceIds": [
+        "A0U1-TRACE-SPLIT-SECTION"
+      ],
+      "authorityIds": [
+        "A0U1-AUTH-A0",
+        "A0U1-AUTH-DOMAIN",
+        "A0U1-AUTH-F2-F3",
+        "A0U1-AUTH-U1",
+        "A0U1-AUTH-VERIFICATION"
+      ]
+    },
+    {
+      "id": "A0U1-MUT-028",
+      "category": "join-section-metadata-policy",
+      "operation": "join-sections",
+      "lawIds": [
+        "A0-U1-ATOM-013-join-sections-left-metadata-exact"
+      ],
+      "baselineTransitionId": "A0U1-JOINS-006-BASE",
+      "killerTransitionId": "A0U1-JOINS-006-KILLER",
+      "mutation": {
+        "materialization": "command",
+        "operator": "replace",
+        "jsonPointer": "/plan/metadataPolicy",
+        "from": "compare-both-then-apply-explicit-result",
+        "to": "merge-implicitly",
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "expected.result",
+        "jsonPointer": "/ok",
+        "baselineValue": true,
+        "killerValue": false
+      },
+      "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
+      "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
+      "linkedCaseIds": [
+        "A0U1-JOINS-006",
+        "A0U1-INS-012"
+      ],
+      "traceIds": [
+        "A0U1-TRACE-JOIN-SECTIONS"
+      ],
+      "authorityIds": [
+        "A0U1-AUTH-A0",
+        "A0U1-AUTH-DOMAIN",
+        "A0U1-AUTH-F2-F3",
+        "A0U1-AUTH-U1",
+        "A0U1-AUTH-VERIFICATION"
+      ]
+    },
+    {
+      "id": "A0U1-MUT-029",
+      "category": "join-section-snapshot",
+      "operation": "join-sections",
+      "lawIds": [
+        "A0-U1-ATOM-013-join-sections-left-metadata-exact"
+      ],
+      "baselineTransitionId": "A0U1-JOINS-001-APPLY",
+      "killerTransitionId": "A0U1-JOINS-003-REFUSED",
+      "mutation": {
+        "materialization": "command",
+        "operator": "replace",
+        "jsonPointer": "/plan/expectedRightMetadata/name",
+        "from": "B",
+        "to": "C",
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "expected.afterState",
+        "jsonPointer": "/document/sections/0/name",
+        "baselineValue": "A + B",
+        "killerValue": "A"
+      },
+      "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
+      "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
+      "linkedCaseIds": [
+        "A0U1-JOINS-001",
+        "A0U1-JOINS-003"
+      ],
+      "traceIds": [
+        "A0U1-TRACE-JOIN-SECTIONS"
+      ],
+      "authorityIds": [
+        "A0U1-AUTH-A0",
+        "A0U1-AUTH-DOMAIN",
+        "A0U1-AUTH-F2-F3",
+        "A0U1-AUTH-U1",
+        "A0U1-AUTH-VERIFICATION"
+      ]
+    },
+    {
+      "id": "A0U1-MUT-030",
+      "category": "join-section-result-metadata",
+      "operation": "join-sections",
+      "lawIds": [
+        "A0-U1-ATOM-013-join-sections-left-metadata-exact"
+      ],
+      "baselineTransitionId": "A0U1-JOINS-001-APPLY",
+      "killerTransitionId": "A0U1-JOINS-004-REFUSED",
+      "mutation": {
+        "materialization": "command",
+        "operator": "replace",
+        "jsonPointer": "/plan/resultMetadata/name",
+        "from": "A + B",
+        "to": "",
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "expected.afterState",
+        "jsonPointer": "/document/sections/0/name",
+        "baselineValue": "A + B",
+        "killerValue": "A"
+      },
+      "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
+      "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
+      "linkedCaseIds": [
+        "A0U1-JOINS-001",
+        "A0U1-JOINS-004"
+      ],
+      "traceIds": [
+        "A0U1-TRACE-JOIN-SECTIONS"
+      ],
+      "authorityIds": [
+        "A0U1-AUTH-A0",
+        "A0U1-AUTH-DOMAIN",
+        "A0U1-AUTH-F2-F3",
+        "A0U1-AUTH-U1",
+        "A0U1-AUTH-VERIFICATION"
+      ]
+    }
+  ]
+}

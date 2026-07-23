@@ -1,0 +1,89 @@
+{
+  "schema": "changes.fixtures.x1-notification.v1",
+  "fixtureVersion": 1,
+  "authorship": "Hand-authored notification and projection witnesses over docs/X1_TRANSPORT_CONTRACT.md section 9 and the A0 acceptance law (generation newer, or equal generation with strictly greater sequence; matching request/document/revision identities). No production transport code exists or was consulted.",
+  "stateStatusProjection": {
+    "ready": "ready",
+    "playing": "playing",
+    "paused": "paused",
+    "interrupted": "paused",
+    "fault": "failed"
+  },
+  "silentStates": ["locked", "disposed"],
+  "interruptedFailureCode": "transport.interrupted",
+  "cases": [
+    {
+      "caseId": "X1-VIEW-001",
+      "title": "Exactly one notification per settled status change",
+      "scenario": "initialize, play, pause, resume, stop",
+      "expected": {
+        "statusSequence": ["ready", "playing", "paused", "playing", "ready"],
+        "notificationCount": 5,
+        "law": "Each admitted status-changing command publishes exactly one notification after it settles; refusals and no-op receipts publish none."
+      }
+    },
+    {
+      "caseId": "X1-VIEW-002",
+      "title": "Sequence strictly increases across the lifetime",
+      "expected": {
+        "law": "notificationSequence is a positive safe integer strictly greater than every previously published sequence regardless of generation; a (generation, sequence) pair is never reused or decreased."
+      }
+    },
+    {
+      "caseId": "X1-VIEW-003",
+      "title": "Stop-then-stale-playhead rejection at the boundary",
+      "scenario": "A playing-status notification carrying generation G is delivered to the application after Stop already published ready at generation G+1.",
+      "expected": {
+        "applicationOutcome": "ignored-stale",
+        "law": "The service publishes in admission order, so the stale delivery can only exist through transport-layer reordering; the A0 acceptance law rejects it and an old playhead cannot repaint after Stop. This is the stale transport-view regression witness."
+      }
+    },
+    {
+      "caseId": "X1-VIEW-004",
+      "title": "Interruption publishes paused with the stable code",
+      "expected": {
+        "status": "paused",
+        "failureCode": "transport.interrupted",
+        "law": "The interrupted state projects to paused plus the frozen failure code so the application can render an actionable recovery affordance without a new status."
+      }
+    },
+    {
+      "caseId": "X1-VIEW-005",
+      "title": "Fault publishes failed exactly once",
+      "expected": {
+        "status": "failed",
+        "notificationCount": 1,
+        "law": "One failed notification carries a stable transport or engine code; repeated faults inside one fault state publish nothing further."
+      }
+    },
+    {
+      "caseId": "X1-VIEW-006",
+      "title": "Replacement rebinds identity fields",
+      "scenario": "replace-plan installs documentId d2 planRevision 9 after playing d1 revision 4.",
+      "expected": {
+        "documentId": "d2",
+        "planRevision": 9,
+        "status": "ready",
+        "law": "The replacement notification carries the new identities; the application's matching rule makes any late d1 notification stale by identity, not just by sequence."
+      }
+    },
+    {
+      "caseId": "X1-VIEW-007",
+      "title": "Playhead field is the exact settled beat",
+      "scenario": "pause at exact beat 7/3",
+      "expected": {
+        "playhead": { "numerator": 7, "denominator": 3 },
+        "law": "Notifications carry exact rational beats computed from the epoch anchor, never interpolated display positions."
+      }
+    },
+    {
+      "caseId": "X1-VIEW-008",
+      "title": "Sequence exhaustion is terminal, not wrapping",
+      "scenario": "The next sequence would exceed the maximum safe integer.",
+      "expected": {
+        "refusalOrFaultCode": "transport.internal_sequence_exhausted",
+        "law": "Sequences never wrap; exhaustion refuses the command or faults the service with the stable code."
+      }
+    }
+  ]
+}

@@ -149,9 +149,13 @@
     "preparedCommandInputsRechecked": [
       "documentIdentity",
       "revision",
+      "pendingRequestsBefore",
+      "transitionIdentity",
       "bookmarks"
     ],
     "historyStabilityDerivedFromRevisionAndImmutableReducerLaw": true,
+    "sameRevisionPendingRequestsDriftOutcome": "consume-and-refuse-import.replacement_preparation_stale",
+    "sameRevisionTransitionDriftOutcome": "consume-and-refuse-import.replacement_preparation_stale",
     "sameRevisionBookmarkDriftOutcome": "consume-and-refuse-import.replacement_preparation_stale",
     "latestTransportGenerationMustNotExceedRetiredGeneration": true,
     "uncoveredLatestTransportOutcome": "consume-and-refuse-import.replacement_retirement_mismatch",
@@ -242,15 +246,15 @@
     "positive",
     "negative-near-miss",
     "stale-concurrent",
-    "malformed-throw",
+    "malformed-owner-input",
     "replay",
     "transposition-applicability",
     "mutation"
   ],
   "counts": {
-    "replacementCases": 30,
-    "identityCases": 6,
-    "markerCases": 12,
+    "replacementCases": 28,
+    "identityCases": 4,
+    "markerCases": 10,
     "applicabilityRows": 5,
     "mutationControls": 32,
     "traces": 5,
@@ -488,7 +492,7 @@
     "latestStateReplacementPublicationMergeRequired": true,
     "frozenPrepareTimeWholeStateInstallForbidden": true,
     "recursiveExactOwnerEnvelopeKeysRequired": true,
-    "latestBookmarkSequenceAndTransportPublicationRechecksRequired": true,
+    "exactPendingRequestsTransitionBookmarkSequenceAndTransportPublicationRechecksRequired": true,
     "literalBeforeRequestResultAfter": true,
     "fullStateReferencesMustResolveToValidatedLiterals": true,
     "computedBeforeAfterDiffMustEqualDeclaredExactDelta": true,
@@ -502,7 +506,8 @@
     "mutationTargetAndDerivedObservationMustBeDistinct": true,
     "mutationObservationMustBeIndependentlyRecomputed": true,
     "mutationKillerFixtureMayServeAsItsOwnOracle": false,
-    "forwardE0V2RowsExcludedFromA0OwnerProof": true,
+    "forwardE0V2BehaviorRowsPresent": false,
+    "futureE0V2BehaviorDeferredTo": "jcpe-milestone-reliable-studio-l3a.8.4",
     "proseOrBareIdsAreProof": false
   },
   "acceptedE0Pins": {

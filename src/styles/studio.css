@@ -294,10 +294,10 @@
 .studio-history-actions .ui-button:first-child {
   border-start-end-radius: 0;
   border-end-end-radius: 0;
+  border-inline-end-width: 0;
 }
 
 .studio-history-actions .ui-button:last-child {
-  margin-inline-start: calc(-1 * var(--border-width));
   border-start-start-radius: 0;
   border-end-start-radius: 0;
 }

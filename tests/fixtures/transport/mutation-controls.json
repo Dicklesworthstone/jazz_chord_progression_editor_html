@@ -1,0 +1,247 @@
+{
+  "schema": "changes.fixtures.x1-mutation-controls.v1",
+  "fixtureVersion": 1,
+  "productionImportsForbidden": true,
+  "controls": [
+    {
+      "id": "X1-MUT-001",
+      "file": "x1-transport-contract.json",
+      "operation": "replace",
+      "pointer": "/schema",
+      "value": "changes.fixtures.x1-transport-contract.v0",
+      "expectedFindingCode": "X1_SCHEMA"
+    },
+    {
+      "id": "X1-MUT-002",
+      "file": "x1-transport-contract.json",
+      "operation": "replace",
+      "pointer": "/limits/maxQueuedCommands",
+      "value": 33,
+      "expectedFindingCode": "X1_LIMITS"
+    },
+    {
+      "id": "X1-MUT-003",
+      "file": "x1-transport-contract.json",
+      "operation": "replace",
+      "pointer": "/limits/lookaheadSecondsMax",
+      "value": 0.26,
+      "expectedFindingCode": "X1_LIMITS"
+    },
+    {
+      "id": "X1-MUT-004",
+      "file": "x1-transport-contract.json",
+      "operation": "replace",
+      "pointer": "/clickPolicy/accentVelocity",
+      "value": 128,
+      "expectedFindingCode": "X1_LIMITS"
+    },
+    {
+      "id": "X1-MUT-005",
+      "file": "x1-transport-contract.json",
+      "operation": "replace",
+      "pointer": "/companions/0/sha256",
+      "value": "0000000000000000000000000000000000000000000000000000000000000000",
+      "expectedFindingCode": "X1_MANIFEST_COMPANION"
+    },
+    {
+      "id": "X1-MUT-006",
+      "file": "notification-cases.json",
+      "operation": "replace",
+      "pointer": "/stateStatusProjection/interrupted",
+      "value": "failed",
+      "expectedFindingCode": "X1_NOTIFICATION_CASES"
+    },
+    {
+      "id": "X1-MUT-007",
+      "file": "notification-cases.json",
+      "operation": "replace",
+      "pointer": "/silentStates/1",
+      "value": "fault",
+      "expectedFindingCode": "X1_NOTIFICATION_CASES"
+    },
+    {
+      "id": "X1-MUT-008",
+      "file": "trace-ledger.json",
+      "operation": "replace",
+      "pointer": "/traces/17/evidenceOwner",
+      "value": "tests/unit/fake-listening.test.ts",
+      "expectedFindingCode": "X1_TRACE"
+    },
+    {
+      "id": "X1-MUT-009",
+      "file": "state-machine-cases.json",
+      "operation": "replace",
+      "pointer": "/cases/0/outcome",
+      "value": "refusal",
+      "expectedFindingCode": "X1_STATE_MATRIX"
+    },
+    {
+      "id": "X1-MUT-010",
+      "file": "state-machine-cases.json",
+      "operation": "replace",
+      "pointer": "/cases/1/refusalCode",
+      "value": "transport.locked",
+      "expectedFindingCode": "X1_STATE_MATRIX"
+    },
+    {
+      "id": "X1-MUT-011",
+      "file": "state-machine-cases.json",
+      "operation": "replace",
+      "pointer": "/caseCount",
+      "value": 104,
+      "expectedFindingCode": "X1_STATE_MATRIX"
+    },
+    {
+      "id": "X1-MUT-012",
+      "file": "golden-timing.json",
+      "operation": "replace",
+      "pointer": "/cases/0/gateTicks",
+      "value": 455,
+      "expectedFindingCode": "X1_TIMING_GOLDEN"
+    },
+    {
+      "id": "X1-MUT-013",
+      "file": "golden-timing.json",
+      "operation": "replace",
+      "pointer": "/cases/4/durationSeconds",
+      "value": 0.26,
+      "expectedFindingCode": "X1_TIMING_GOLDEN"
+    },
+    {
+      "id": "X1-MUT-014",
+      "file": "golden-timing.json",
+      "operation": "replace",
+      "pointer": "/cases/13/effectiveAudioGateSeconds",
+      "value": 0.004,
+      "expectedFindingCode": "X1_TIMING_GOLDEN"
+    },
+    {
+      "id": "X1-MUT-015",
+      "file": "golden-timing.json",
+      "operation": "replace",
+      "pointer": "/releaseGapTicks",
+      "value": 23,
+      "expectedFindingCode": "X1_TIMING_GOLDEN"
+    },
+    {
+      "id": "X1-MUT-016",
+      "file": "scheduler-cases.json",
+      "operation": "replace",
+      "pointer": "/cases/4/expected/maxAttackLeadSeconds",
+      "value": 0.21,
+      "expectedFindingCode": "X1_SCHEDULER_CASES"
+    },
+    {
+      "id": "X1-MUT-017",
+      "file": "scheduler-cases.json",
+      "operation": "replace",
+      "pointer": "/cases/10/expected/naturalEndsPublishedDelta",
+      "value": 0,
+      "expectedFindingCode": "X1_SCHEDULER_CASES"
+    },
+    {
+      "id": "X1-MUT-018",
+      "file": "scheduler-cases.json",
+      "operation": "replace",
+      "pointer": "/cases/11/expected/soundingVoicesRetired",
+      "value": 1,
+      "expectedFindingCode": "X1_SCHEDULER_CASES"
+    },
+    {
+      "id": "X1-MUT-019",
+      "file": "stop-cases.json",
+      "operation": "replace",
+      "pointer": "/stopOrder/1",
+      "value": "clear-scheduler-handles",
+      "expectedFindingCode": "X1_STOP_CASES"
+    },
+    {
+      "id": "X1-MUT-020",
+      "file": "stop-cases.json",
+      "operation": "replace",
+      "pointer": "/cases/4/expected/tailDeadlineSeconds",
+      "value": 9,
+      "expectedFindingCode": "X1_STOP_CASES"
+    },
+    {
+      "id": "X1-MUT-021",
+      "file": "scheduler-cases.json",
+      "operation": "replace",
+      "pointer": "/cases/6/expected/clickVelocities/0",
+      "value": 84,
+      "expectedFindingCode": "X1_SCHEDULER_CASES"
+    },
+    {
+      "id": "X1-MUT-022",
+      "file": "scheduler-cases.json",
+      "operation": "replace",
+      "pointer": "/cases/8/expected/reservedPrefix",
+      "value": "click:",
+      "expectedFindingCode": "X1_SCHEDULER_CASES"
+    },
+    {
+      "id": "X1-MUT-023",
+      "file": "command-cases.json",
+      "operation": "replace",
+      "pointer": "/cases/0/expected/refusalCode",
+      "value": "transport.state_invalid",
+      "expectedFindingCode": "X1_COMMAND_CASES"
+    },
+    {
+      "id": "X1-MUT-024",
+      "file": "command-cases.json",
+      "operation": "replace",
+      "pointer": "/cases/9/expected/refusalCode",
+      "value": "transport.loop_invalid",
+      "expectedFindingCode": "X1_COMMAND_CASES"
+    },
+    {
+      "id": "X1-MUT-025",
+      "file": "command-cases.json",
+      "operation": "replace",
+      "pointer": "/cases/11/expected/refusalCode",
+      "value": "transport.preview_invalid",
+      "expectedFindingCode": "X1_COMMAND_CASES"
+    },
+    {
+      "id": "X1-MUT-026",
+      "file": "command-cases.json",
+      "operation": "replace",
+      "pointer": "/cases/13/expected/previewReleaseSeconds",
+      "value": 0.05,
+      "expectedFindingCode": "X1_COMMAND_CASES"
+    },
+    {
+      "id": "X1-MUT-027",
+      "file": "stop-cases.json",
+      "operation": "replace",
+      "pointer": "/cases/6/expected/failureCode",
+      "value": "transport.paused",
+      "expectedFindingCode": "X1_STOP_CASES"
+    },
+    {
+      "id": "X1-MUT-028",
+      "file": "stop-cases.json",
+      "operation": "replace",
+      "pointer": "/cases/8/expected/retireBeforePublish",
+      "value": false,
+      "expectedFindingCode": "X1_STOP_CASES"
+    },
+    {
+      "id": "X1-MUT-029",
+      "file": "notification-cases.json",
+      "operation": "replace",
+      "pointer": "/cases/2/expected/applicationOutcome",
+      "value": "accepted",
+      "expectedFindingCode": "X1_NOTIFICATION_CASES"
+    },
+    {
+      "id": "X1-MUT-030",
+      "file": "command-cases.json",
+      "operation": "replace",
+      "pointer": "/cases/2/expected/queueAfter",
+      "value": 33,
+      "expectedFindingCode": "X1_COMMAND_CASES"
+    }
+  ]
+}

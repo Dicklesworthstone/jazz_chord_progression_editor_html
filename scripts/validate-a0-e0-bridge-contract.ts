@@ -4,11 +4,27 @@ import { resolve } from "node:path";
 import * as ts from "typescript";
 
 import {
+  APPLICATION_COMMAND_KINDS,
+  APPLICATION_DIALOG_KINDS,
+  APPLICATION_PANEL_IDS,
+  APPLICATION_REPLACEMENT_ORIGINS,
+  APPLICATION_REQUEST_KINDS,
+  APPLICATION_TRANSPORT_STATUSES,
   applicationHistoryRetainedByteEstimator,
   MAX_APPLICATION_REVISION,
   MAX_APPLICATION_SEQUENCE,
   MAX_COMMAND_ID_CODE_POINTS,
   MAX_COMMAND_LABEL_CODE_POINTS,
+  MAX_DIALOG_STACK_DEPTH,
+  MAX_DRAFT_ISSUES,
+  MAX_FOCUS_SESSION_ID_CODE_POINTS,
+  MAX_HISTORY_ENTRIES,
+  MAX_HISTORY_RETAINED_BYTES,
+  MAX_NOTICES,
+  MAX_NOTICE_MESSAGE_CODE_POINTS,
+  MAX_PENDING_REQUESTS,
+  MAX_QUICK_ENTRY_CODE_POINTS,
+  MAX_SELECTED_EVENT_IDS,
   runDocumentCommand,
   validateDocumentSemantics,
 } from "../src/application";
@@ -16,6 +32,7 @@ import {
   copyDomain,
   createProductionStableIdFactory,
   decodeDocumentShape,
+  MAX_NORMALIZED_BEAT_NUMERATOR,
 } from "../src/domain";
 
 import {
@@ -94,19 +111,19 @@ const EXPECTED_REVIEW_STATES: Readonly<Record<string, string>> = Object.freeze({
 export const A0_E0_BRIDGE_SPEC_BYTE_DIGESTS: Readonly<Record<string, string>> =
   Object.freeze({
     "a0-e0-bridge-contract.json":
-      "74945e0b324aa878cc9a4f7ab019fbb986f4a78ae4fd6675064cd9302383876a",
-  "mutation-controls.json":
-    "6c545eb277bd6888f62824a745cf317b0408cbb1eebae16532ab2da0bee9c15b",
-  "owner-port-cases.json":
-    "b00b4d9feabc9b4d1120380b92cc8070f7cf2223f327303a9ab6af9148e2a705",
+      "494b74eeb35b672d070b4a58b059dad5f70b7720b82d115383dbeef6de3d192d",
+    "mutation-controls.json":
+      "40a21b19b8a738ff6930f5a4667cad191b735b22851335a78d11920023a77cbc",
+    "owner-port-cases.json":
+      "3015b9b1a20273103ab63506261c23d398bb3d117dd97188838d753323c48a84",
     "provenance-ledger.json":
-      "b8a1de9b67e940ab1a9bf6d8404129a3ae34aad8b7b9beedbdf8d7f374c93ca0",
-  "trace-ledger.json":
-    "fcf586dcec97100145423a419fb26848b8a2202b19805a22ffb8e50c76304827",
+      "47ccded1e2c1a16ca97aa742927c6972ef2a10ec97c1d1ff67f37b1e90d34737",
+    "trace-ledger.json":
+      "846391f8ee5ddcc5d5c395f9ecb7d09ade3fb80d052735eef1f99134c1eea0b0",
   });
 
 export const A0_E0_BRIDGE_SPEC_SEMANTIC_DIGEST =
-  "88218ae3ea827fe399dbe2722b0e31796261d59175546463ef4582601d54cb9f";
+  "3cd161f6accb3aec3f62d4d2ed824a546444d8d768faece616841a7443f43e3b";
 
 export const A0_E0_BRIDGE_ACCEPTED_E0_BYTE_MANIFEST_DIGEST =
   "8c48f2ab156c702e877f3bec7f3acd51763dc1448cc696232a4761160ba7a9e9";
@@ -121,9 +138,9 @@ export const A0_E0_BRIDGE_OWNER_OPERATION_NAMES = Object.freeze([
 
 const EXPECTED_COUNTS = Object.freeze({
   files: 5,
-  replacementCases: 30,
-  identityCases: 6,
-  markerCases: 12,
+  replacementCases: 28,
+  identityCases: 4,
+  markerCases: 10,
   applicabilityRows: 5,
   mutationControls: 32,
   traces: 5,
@@ -134,7 +151,7 @@ const COVERAGE_FAMILIES = Object.freeze([
   "positive",
   "negative-near-miss",
   "stale-concurrent",
-  "malformed-throw",
+  "malformed-owner-input",
   "replay",
   "transposition-applicability",
   "mutation",
@@ -207,6 +224,8 @@ const ACCEPTED_E0_V1_CONFLICT_INVENTORY_DIGEST =
   "b49f0760def8181aef1188150c5eff181adf3533abef813f12174c74a9411ae4";
 const OWNER_PORT_RECORDS_DIGEST =
   "e060d06ed1700333e767673707a27ec9f333c6dda7a8224eb3c2af8bbf021181";
+const REPRESENTATIVE_F3_PRETTY_SOURCE_SHA256 =
+  "1b82c3fc3775ca87fd30f38a2a95d10226b0ff052b3095320f05e1e21f6b163f";
 
 const OWNER_LAW_IDS = Object.freeze([
   "BRIDGE-OWNER-01-controller-current-state-only",
@@ -226,21 +245,37 @@ const OWNER_IMPORT_TOPOLOGY = Object.freeze([
   {
     modulePath: "../domain",
     isTypeOnly: true,
-    names: ["DocumentId", "ValidatedDocument"],
+    defaultImport: null,
+    namedBindingKind: "named-imports",
+    elements: ["DocumentId", "ValidatedDocument"].map((name) => ({
+      importedName: name,
+      localName: name,
+      isTypeOnly: false,
+    })),
+    hasImportAttributes: false,
   },
   {
     modulePath: "./application-state-contract",
     isTypeOnly: false,
-    names: [
+    defaultImport: null,
+    namedBindingKind: "named-imports",
+    elements: [
       "MAX_APPLICATION_SEQUENCE",
       "MAX_COMMAND_ID_CODE_POINTS",
       "MAX_COMMAND_LABEL_CODE_POINTS",
-    ],
+    ].map((name) => ({
+      importedName: name,
+      localName: name,
+      isTypeOnly: false,
+    })),
+    hasImportAttributes: false,
   },
   {
     modulePath: "./application-state-contract",
     isTypeOnly: true,
-    names: [
+    defaultImport: null,
+    namedBindingKind: "named-imports",
+    elements: [
       "AppRevision",
       "ApplicationEffect",
       "ApplicationReplacementOrigin",
@@ -250,7 +285,12 @@ const OWNER_IMPORT_TOPOLOGY = Object.freeze([
       "DocumentTransitionState",
       "ReplacementRetirementReceipt",
       "TransportGeneration",
-    ],
+    ].map((name) => ({
+      importedName: name,
+      localName: name,
+      isTypeOnly: false,
+    })),
+    hasImportAttributes: false,
   },
 ] as const);
 
@@ -316,6 +356,26 @@ const REPLACEMENT_PUBLICATION_FIELD_POLICY = Object.freeze({
   ],
   allocateFromLatestSequence: ["focusRequest", "nextSequence"],
 } as const);
+
+const PRIVATE_IMPORT_REPLACEMENT_MATERIAL_KEYS = Object.freeze([
+  "bookmarksAndFocus",
+  "candidate",
+  "command",
+  "disclosedImpact",
+  "expectedRetirement",
+  "history",
+  "pendingRequestsBefore",
+  "publication",
+  "validation",
+] as const);
+
+function expectedPrivateCandidatePreservationPolicy(
+  literalId: unknown,
+): string {
+  return literalId === "representative-f3-valid"
+    ? "validated-bytes-and-source-spelling-preserved-without-repair"
+    : "validated-bytes-and-manual-frozen-spellings-preserved-without-repair";
+}
 
 const EXPECTED_A0_CONFORMANCE_RUN_IDS = Object.freeze([
   "BRIDGE-REP-001/retained",
@@ -385,6 +445,9 @@ const EXPECTED_A0_CONFORMANCE_RUN_IDS = Object.freeze([
   "BRIDGE-REP-030/transport-advanced-after-prepare",
   "BRIDGE-REP-030/bookmarks-changed-after-prepare",
   "BRIDGE-REP-030/sequence-exhausted-after-prepare",
+  "BRIDGE-REP-030/same-revision-pending-request-drift",
+  "BRIDGE-REP-030/same-revision-transition-drift",
+  "BRIDGE-REP-030/same-revision-unrelated-request-added",
   "BRIDGE-ID-001/baseline",
   "BRIDGE-ID-002/identity-2",
   "BRIDGE-ID-003/identity-3",
@@ -427,8 +490,7 @@ const PREPARE_REFUSAL_BY_CONFORMANCE_RUN_ID = Object.freeze({
   "BRIDGE-REP-011/exact-refusal": "import.replacement_transition_mismatch",
   "BRIDGE-REP-012/exact-refusal": "import.replacement_impact_mismatch",
   "BRIDGE-REP-013/exact-refusal": "import.replacement_command_id_invalid",
-  "BRIDGE-REP-014/label-161-killer":
-    "import.replacement_command_label_invalid",
+  "BRIDGE-REP-014/label-161-killer": "import.replacement_command_label_invalid",
   "BRIDGE-REP-015/logical-time-nan-killer":
     "import.replacement_logical_time_invalid",
   "BRIDGE-REP-015/logical-time-before-latest-history":
@@ -436,15 +498,11 @@ const PREPARE_REFUSAL_BY_CONFORMANCE_RUN_ID = Object.freeze({
   "BRIDGE-REP-016/exact-refusal": "application.revision_exhausted",
   "BRIDGE-REP-017/exact-refusal": "application.sequence_exhausted",
   "BRIDGE-REP-018/exact-refusal": "import.candidate_structural_invalid",
-  "BRIDGE-REP-019/semantic-cfoo-killer":
-    "import.candidate_semantic_invalid",
-  "BRIDGE-REP-020/exact-refusal":
-    "import.replacement_history_estimate_failed",
-  "BRIDGE-REP-020/impact-unavailable":
-    "import.replacement_impact_unavailable",
+  "BRIDGE-REP-019/semantic-cfoo-killer": "import.candidate_semantic_invalid",
+  "BRIDGE-REP-020/exact-refusal": "import.replacement_history_estimate_failed",
+  "BRIDGE-REP-020/impact-unavailable": "import.replacement_impact_unavailable",
   "BRIDGE-REP-021/exact-refusal": "import.replacement_impact_mismatch",
-  "BRIDGE-REP-022/exact-refusal":
-    "history.nonundoable_confirmation_required",
+  "BRIDGE-REP-022/exact-refusal": "history.nonundoable_confirmation_required",
   "BRIDGE-REP-023/exact-refusal": "import.confirmation_identity_mismatch",
   "BRIDGE-REP-023/confirmation-stale": "import.confirmation_stale",
   "BRIDGE-REP-023/confirmation-wrong-document":
@@ -465,31 +523,10 @@ const PREPARE_REFUSAL_BY_CONFORMANCE_RUN_ID = Object.freeze({
     "import.confirmation_identity_mismatch",
   "BRIDGE-REP-023/confirmation-requirement-disclosed-impact-extra-key":
     "import.confirmation_identity_mismatch",
-  "BRIDGE-REP-024/capacity-one-busy":
-    "import.replacement_preparation_busy",
+  "BRIDGE-REP-024/capacity-one-busy": "import.replacement_preparation_busy",
 } as const);
 
-const E0_V2_OWNED_CASE_IDS = new Set([
-  "BRIDGE-REP-025",
-  "BRIDGE-REP-026",
-  "BRIDGE-ID-005",
-  "BRIDGE-ID-006",
-  "BRIDGE-MARK-006",
-  "BRIDGE-MARK-007",
-]);
-
-const FORWARD_E0_V2_TRACE_EXCLUSION = Object.freeze({
-  ownerLeaf: "jcpe-94yu.1",
-  futureOwnerLeaf: "jcpe-milestone-reliable-studio-l3a.8.4",
-  excludedFrom: [
-    "A0-owner-case-count",
-    "A0-owner-run-count",
-    "A0-owner-mutation-proof",
-    "typed-producer-conformance",
-  ],
-  rationale:
-    "Malformed unknown-return normalization and thrown consumer ports belong only to the future E0 v2 semantic binding.",
-});
+const E0_V2_OWNED_CASE_IDS = new Set<string>();
 
 const PREPARE_SUCCESS_EVENTS = Object.freeze([
   "call.prepare",
@@ -568,8 +605,7 @@ function fixedOwnerWorkBound(
     ...common,
     maximumControllerStateInstalls:
       operation === "publishImportReplacement" ? 1 : 0,
-    maximumListenerCallbacks:
-      operation === "publishImportReplacement" ? 1 : 0,
+    maximumListenerCallbacks: operation === "publishImportReplacement" ? 1 : 0,
     maximumRegistryEntriesInspected: 1,
     maximumLiveRegistryEntries: 1,
     maximumF2DocumentTraversals:
@@ -620,6 +656,10 @@ function isObject(value: unknown): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function isUnknownArray(value: unknown): value is unknown[] {
+  return Array.isArray(value);
+}
+
 function isBoundedUnicodeScalarToken(
   value: unknown,
   maximumCodePoints: number,
@@ -662,6 +702,20 @@ function jsonDeepEqual(left: unknown, right: unknown): boolean {
     leftKeys.every(
       (key) =>
         Object.hasOwn(right, key) && jsonDeepEqual(left[key], right[key]),
+    )
+  );
+}
+
+function privatePendingRequestsSnapshotMatches(
+  privateMaterial: JsonObject,
+  state: JsonObject,
+): boolean {
+  return (
+    Array.isArray(privateMaterial["pendingRequestsBefore"]) &&
+    Array.isArray(state["pendingRequests"]) &&
+    jsonDeepEqual(
+      privateMaterial["pendingRequestsBefore"],
+      state["pendingRequests"],
     )
   );
 }
@@ -883,7 +937,7 @@ function jsonDiffPointers(
 }
 
 function shallowCloneContainer(value: unknown): unknown[] | JsonObject {
-  if (Array.isArray(value)) return [...value];
+  if (isUnknownArray(value)) return [...value];
   if (isObject(value)) return { ...value };
   throw new Error("BRIDGE_PATCH_PARENT");
 }
@@ -906,7 +960,11 @@ function setContainerChild(
 ): void {
   if (Array.isArray(container)) {
     const index = Number(token);
-    if (!Number.isSafeInteger(index) || index < 0 || index >= container.length) {
+    if (
+      !Number.isSafeInteger(index) ||
+      index < 0 ||
+      index >= container.length
+    ) {
       throw new Error("BRIDGE_PATCH_REPLACE_INDEX");
     }
     container[index] = value;
@@ -968,7 +1026,7 @@ function applyPointerMutation(
     return rootCopy;
   }
   if (operator === "append") {
-    if (!Array.isArray(current)) throw new Error("BRIDGE_PATCH_APPEND_TARGET");
+    if (!isUnknownArray(current)) throw new Error("BRIDGE_PATCH_APPEND_TARGET");
     setContainerChild(targetParent, token, [...current, value]);
     return rootCopy;
   }
@@ -984,7 +1042,7 @@ function applyPointerMutation(
       }
       targetParent.splice(index, 1);
     } else if (isObject(targetParent) && Object.hasOwn(targetParent, token)) {
-      delete targetParent[token];
+      Reflect.deleteProperty(targetParent, token);
     } else {
       throw new Error("BRIDGE_PATCH_REMOVE_TARGET");
     }
@@ -996,10 +1054,10 @@ function applyPointerMutation(
 function containsForbiddenStateKey(value: unknown): boolean {
   if (Array.isArray(value)) return value.some(containsForbiddenStateKey);
   if (!isObject(value)) return false;
-  if (isFullAppStateLiteral(value)) return true;
+  if (hasAppStateTopLevelShape(value)) return true;
   if (
-    ["currentState", "lastKnownState", "observedBefore", "state"].some(
-      (key) => Object.hasOwn(value, key),
+    ["currentState", "lastKnownState", "observedBefore", "state"].some((key) =>
+      Object.hasOwn(value, key),
     )
   ) {
     return true;
@@ -1007,32 +1065,767 @@ function containsForbiddenStateKey(value: unknown): boolean {
   return Object.values(value).some(containsForbiddenStateKey);
 }
 
-function isFullAppStateLiteral(value: unknown): boolean {
-  if (!isObject(value) || !isObject(value["document"])) return false;
-  const requiredKeys = [
-    "document",
-    "revision",
-    "exportRevision",
-    "recovery",
-    "history",
-    "bookmarks",
-    "panels",
-    "dialogs",
-    "quickEntry",
-    "importDraft",
-    "transport",
-    "pendingRequests",
-    "documentTransition",
-    "focusRequest",
-    "notices",
-    "nextSequence",
-  ];
+const APP_STATE_KEYS = Object.freeze([
+  "document",
+  "revision",
+  "exportRevision",
+  "recovery",
+  "history",
+  "bookmarks",
+  "panels",
+  "dialogs",
+  "quickEntry",
+  "importDraft",
+  "transport",
+  "pendingRequests",
+  "documentTransition",
+  "focusRequest",
+  "notices",
+  "nextSequence",
+] as const);
+
+const APP_STATE_COMMAND_KIND_SET = new Set<string>(APPLICATION_COMMAND_KINDS);
+const APP_STATE_REPLACEMENT_ORIGIN_SET = new Set<string>(
+  APPLICATION_REPLACEMENT_ORIGINS,
+);
+const APP_STATE_REQUEST_KIND_SET = new Set<string>(APPLICATION_REQUEST_KINDS);
+const APP_STATE_TRANSPORT_STATUS_SET = new Set<string>(
+  APPLICATION_TRANSPORT_STATUSES,
+);
+const APP_STATE_PANEL_ID_SET = new Set<string>(APPLICATION_PANEL_IDS);
+const APP_STATE_DIALOG_KIND_SET = new Set<string>(APPLICATION_DIALOG_KINDS);
+
+function hasExactObjectKeys(
+  value: unknown,
+  keys: readonly string[],
+): value is JsonObject {
+  if (!isObject(value)) return false;
+  const actual = Object.keys(value);
   return (
-    requiredKeys.every((key) => Object.hasOwn(value, key)) &&
-    typeof value["document"]["id"] === "string" &&
-    Number.isSafeInteger(value["revision"]) &&
-    Number(value["revision"]) >= 0
+    actual.length === keys.length &&
+    keys.every((key) => Object.hasOwn(value, key))
   );
+}
+
+function isNonNegativeSafeInteger(
+  value: unknown,
+  maximum = Number.MAX_SAFE_INTEGER,
+): value is number {
+  return (
+    Number.isSafeInteger(value) &&
+    Number(value) >= 0 &&
+    Number(value) <= maximum
+  );
+}
+
+function isPositiveSafeInteger(value: unknown): value is number {
+  return Number.isSafeInteger(value) && Number(value) > 0;
+}
+
+function isUnicodeScalarString(
+  value: unknown,
+  maximumCodePoints: number,
+  allowEmpty: boolean,
+): value is string {
+  if (
+    typeof value !== "string" ||
+    (!allowEmpty && value.length === 0) ||
+    Array.from(value).length > maximumCodePoints
+  ) {
+    return false;
+  }
+  for (let index = 0; index < value.length; index += 1) {
+    const unit = value.charCodeAt(index);
+    if (unit >= 0xd800 && unit <= 0xdbff) {
+      const next = value.charCodeAt(index + 1);
+      if (!(next >= 0xdc00 && next <= 0xdfff)) return false;
+      index += 1;
+    } else if (unit >= 0xdc00 && unit <= 0xdfff) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function isStateIdentifier(value: unknown): value is string {
+  return typeof value === "string";
+}
+
+function isStringArray(
+  value: unknown,
+  maximumLength: number,
+): value is string[] {
+  return (
+    Array.isArray(value) &&
+    value.length <= maximumLength &&
+    value.every((item) => typeof item === "string")
+  );
+}
+
+function isCanonicalBeatPosition(value: unknown): boolean {
+  if (
+    !hasExactObjectKeys(value, ["numerator", "denominator"]) ||
+    !isNonNegativeSafeInteger(
+      value["numerator"],
+      MAX_NORMALIZED_BEAT_NUMERATOR,
+    ) ||
+    !Number.isSafeInteger(value["denominator"]) ||
+    Number(value["denominator"]) <= 0 ||
+    960 % Number(value["denominator"]) !== 0
+  ) {
+    return false;
+  }
+  let left = value["numerator"];
+  let right = Number(value["denominator"]);
+  while (right !== 0) {
+    const remainder = left % right;
+    left = right;
+    right = remainder;
+  }
+  return left === 1;
+}
+
+type DocumentBookmarkIndex = Readonly<{
+  sectionIds: ReadonlySet<string>;
+  measureIds: ReadonlySet<string>;
+  eventOrder: ReadonlyMap<string, number>;
+}>;
+
+function documentBookmarkIndex(
+  document: unknown,
+): DocumentBookmarkIndex | null {
+  if (!isCompleteDocumentLiteral(document)) return null;
+  const rawSections = document["sections"];
+  const sections = recordsAt(rawSections);
+  if (!Array.isArray(rawSections) || sections.length !== rawSections.length) {
+    return null;
+  }
+  const sectionIds = new Set<string>();
+  const measureIds = new Set<string>();
+  const eventOrder = new Map<string, number>();
+  for (const section of sections) {
+    if (typeof section["id"] !== "string" || sectionIds.has(section["id"])) {
+      return null;
+    }
+    sectionIds.add(section["id"]);
+    const rawMeasures = section["measures"];
+    const measures = recordsAt(rawMeasures);
+    if (!Array.isArray(rawMeasures) || measures.length !== rawMeasures.length) {
+      return null;
+    }
+    for (const measure of measures) {
+      if (typeof measure["id"] !== "string" || measureIds.has(measure["id"])) {
+        return null;
+      }
+      measureIds.add(measure["id"]);
+      const rawEvents = measure["events"];
+      const events = recordsAt(rawEvents);
+      if (!Array.isArray(rawEvents) || events.length !== rawEvents.length) {
+        return null;
+      }
+      for (const event of events) {
+        if (typeof event["id"] !== "string" || eventOrder.has(event["id"])) {
+          return null;
+        }
+        eventOrder.set(event["id"], eventOrder.size);
+      }
+    }
+  }
+  return { sectionIds, measureIds, eventOrder };
+}
+
+function isStableBoundary(
+  value: unknown,
+  index: DocumentBookmarkIndex,
+): boolean {
+  if (!isObject(value) || typeof value["kind"] !== "string") return false;
+  if (value["kind"] === "document-start" || value["kind"] === "document-end") {
+    return hasExactObjectKeys(value, ["kind"]);
+  }
+  if (
+    [
+      "before-section",
+      "after-section",
+      "section-start",
+      "section-end",
+    ].includes(value["kind"])
+  ) {
+    return (
+      hasExactObjectKeys(value, ["kind", "sectionId"]) &&
+      typeof value["sectionId"] === "string" &&
+      index.sectionIds.has(value["sectionId"])
+    );
+  }
+  if (
+    [
+      "before-measure",
+      "after-measure",
+      "measure-start",
+      "measure-end",
+    ].includes(value["kind"])
+  ) {
+    return (
+      hasExactObjectKeys(value, ["kind", "measureId"]) &&
+      typeof value["measureId"] === "string" &&
+      index.measureIds.has(value["measureId"])
+    );
+  }
+  if (value["kind"] === "before-event" || value["kind"] === "after-event") {
+    return (
+      hasExactObjectKeys(value, ["kind", "eventId"]) &&
+      typeof value["eventId"] === "string" &&
+      index.eventOrder.has(value["eventId"])
+    );
+  }
+  return false;
+}
+
+function isStableUiBookmarks(value: unknown, document: unknown): boolean {
+  if (!hasExactObjectKeys(value, ["selection", "insertion", "range"])) {
+    return false;
+  }
+  const index = documentBookmarkIndex(document);
+  if (index === null) return false;
+  const selection = value["selection"];
+  const validSelection =
+    (hasExactObjectKeys(selection, ["kind"]) && selection["kind"] === "none") ||
+    (hasExactObjectKeys(selection, [
+      "kind",
+      "eventIds",
+      "anchorEventId",
+      "focusEventId",
+    ]) &&
+      selection["kind"] === "events" &&
+      Array.isArray(selection["eventIds"]) &&
+      selection["eventIds"].length > 0 &&
+      selection["eventIds"].length <= MAX_SELECTED_EVENT_IDS &&
+      selection["eventIds"].every(
+        (eventId) =>
+          typeof eventId === "string" && index.eventOrder.has(eventId),
+      ) &&
+      new Set(selection["eventIds"]).size === selection["eventIds"].length &&
+      selection["eventIds"].every((eventId, eventIndex, eventIds) => {
+        if (eventIndex === 0) return true;
+        return (
+          Number(index.eventOrder.get(eventIds[eventIndex - 1] as string)) <
+          Number(index.eventOrder.get(eventId as string))
+        );
+      }) &&
+      typeof selection["anchorEventId"] === "string" &&
+      typeof selection["focusEventId"] === "string" &&
+      selection["eventIds"].includes(selection["anchorEventId"]) &&
+      selection["eventIds"].includes(selection["focusEventId"]));
+  const range = value["range"];
+  return (
+    validSelection &&
+    (value["insertion"] === null ||
+      isStableBoundary(value["insertion"], index)) &&
+    (range === null ||
+      (hasExactObjectKeys(range, ["anchor", "focus"]) &&
+        isStableBoundary(range["anchor"], index) &&
+        isStableBoundary(range["focus"], index)))
+  );
+}
+
+function isRecoveryStatus(value: unknown): boolean {
+  if (!isObject(value)) return false;
+  switch (value["kind"]) {
+    case "unavailable":
+      return (
+        hasExactObjectKeys(value, ["kind", "reasonCode"]) &&
+        (value["reasonCode"] === null || isStateIdentifier(value["reasonCode"]))
+      );
+    case "clean":
+      return (
+        hasExactObjectKeys(value, ["kind", "persistedRevision"]) &&
+        isNonNegativeSafeInteger(
+          value["persistedRevision"],
+          MAX_APPLICATION_REVISION,
+        )
+      );
+    case "pending":
+      return (
+        hasExactObjectKeys(value, ["kind", "targetRevision", "requestId"]) &&
+        isNonNegativeSafeInteger(
+          value["targetRevision"],
+          MAX_APPLICATION_REVISION,
+        ) &&
+        isPositiveSafeInteger(value["requestId"])
+      );
+    case "failed":
+      return (
+        hasExactObjectKeys(value, [
+          "kind",
+          "attemptedRevision",
+          "requestId",
+          "reasonCode",
+        ]) &&
+        isNonNegativeSafeInteger(
+          value["attemptedRevision"],
+          MAX_APPLICATION_REVISION,
+        ) &&
+        isPositiveSafeInteger(value["requestId"]) &&
+        isStateIdentifier(value["reasonCode"])
+      );
+    default:
+      return false;
+  }
+}
+
+function isHistoryEntry(value: unknown): value is JsonObject {
+  if (
+    !hasExactObjectKeys(value, [
+      "commandId",
+      "commandKind",
+      "label",
+      "before",
+      "after",
+      "beforeBookmarks",
+      "afterBookmarks",
+      "retainedBytesEstimate",
+      "coalescing",
+      "firstLogicalTimeMs",
+      "lastLogicalTimeMs",
+    ]) ||
+    !isBoundedUnicodeScalarToken(
+      value["commandId"],
+      MAX_COMMAND_ID_CODE_POINTS,
+    ) ||
+    !APP_STATE_COMMAND_KIND_SET.has(String(value["commandKind"])) ||
+    !isBoundedUnicodeScalarToken(
+      value["label"],
+      MAX_COMMAND_LABEL_CODE_POINTS,
+    ) ||
+    !isCompleteDocumentLiteral(value["before"]) ||
+    !isCompleteDocumentLiteral(value["after"]) ||
+    !isStableUiBookmarks(value["beforeBookmarks"], value["before"]) ||
+    !isStableUiBookmarks(value["afterBookmarks"], value["after"]) ||
+    !isNonNegativeSafeInteger(
+      value["retainedBytesEstimate"],
+      MAX_HISTORY_RETAINED_BYTES,
+    ) ||
+    !isNonNegativeSafeInteger(value["firstLogicalTimeMs"]) ||
+    !isNonNegativeSafeInteger(value["lastLogicalTimeMs"]) ||
+    value["firstLogicalTimeMs"] > value["lastLogicalTimeMs"]
+  ) {
+    return false;
+  }
+  const coalescing = value["coalescing"];
+  if (value["commandKind"] !== "set-text") return coalescing === null;
+  return (
+    hasExactObjectKeys(coalescing, ["kind", "key", "focusSessionId"]) &&
+    coalescing["kind"] === "text-field" &&
+    typeof coalescing["key"] === "string" &&
+    isBoundedUnicodeScalarToken(
+      coalescing["focusSessionId"],
+      MAX_FOCUS_SESSION_ID_CODE_POINTS,
+    )
+  );
+}
+
+function isHistoryState(value: unknown): boolean {
+  if (
+    !hasExactObjectKeys(value, ["undo", "redo", "retainedBytesEstimate"]) ||
+    !isUnknownArray(value["undo"]) ||
+    !isUnknownArray(value["redo"]) ||
+    value["undo"].length + value["redo"].length > MAX_HISTORY_ENTRIES ||
+    !value["undo"].every(isHistoryEntry) ||
+    !value["redo"].every(isHistoryEntry) ||
+    !isNonNegativeSafeInteger(
+      value["retainedBytesEstimate"],
+      MAX_HISTORY_RETAINED_BYTES,
+    )
+  ) {
+    return false;
+  }
+  const total = [...value["undo"], ...value["redo"]].reduce(
+    (sum, entry) => sum + Number(entry["retainedBytesEstimate"]),
+    0,
+  );
+  return total === value["retainedBytesEstimate"];
+}
+
+function isPanelState(value: unknown): boolean {
+  return (
+    hasExactObjectKeys(value, [
+      "open",
+      "active",
+      "leftRailCollapsed",
+      "rightRailCollapsed",
+    ]) &&
+    Array.isArray(value["open"]) &&
+    value["open"].length > 0 &&
+    value["open"].every((panel) => APP_STATE_PANEL_ID_SET.has(String(panel))) &&
+    new Set(value["open"]).size === value["open"].length &&
+    APP_STATE_PANEL_ID_SET.has(String(value["active"])) &&
+    value["open"].includes(value["active"]) &&
+    typeof value["leftRailCollapsed"] === "boolean" &&
+    typeof value["rightRailCollapsed"] === "boolean"
+  );
+}
+
+function isDialogStack(value: unknown): boolean {
+  return (
+    isUnknownArray(value) &&
+    value.length <= MAX_DIALOG_STACK_DEPTH &&
+    new Set(
+      value.map((dialog) => (isObject(dialog) ? dialog["id"] : undefined)),
+    ).size === value.length &&
+    value.every(
+      (dialog) =>
+        hasExactObjectKeys(dialog, [
+          "id",
+          "kind",
+          "phase",
+          "blocksHistory",
+          "requestId",
+        ]) &&
+        isBoundedUnicodeScalarToken(dialog["id"], MAX_COMMAND_ID_CODE_POINTS) &&
+        APP_STATE_DIALOG_KIND_SET.has(String(dialog["kind"])) &&
+        ["open", "committing", "failed"].includes(String(dialog["phase"])) &&
+        typeof dialog["blocksHistory"] === "boolean" &&
+        (dialog["requestId"] === null ||
+          isPositiveSafeInteger(dialog["requestId"])),
+    )
+  );
+}
+
+function isQuickEntryDraft(
+  value: unknown,
+  currentRevision: number,
+  currentDocument: unknown,
+): boolean {
+  return (
+    hasExactObjectKeys(value, [
+      "text",
+      "target",
+      "baseRevision",
+      "status",
+      "issueCodes",
+    ]) &&
+    (value["text"] === "" ||
+      isBoundedUnicodeScalarToken(
+        value["text"],
+        MAX_QUICK_ENTRY_CODE_POINTS,
+      )) &&
+    (value["target"] === null ||
+      (documentBookmarkIndex(currentDocument) !== null &&
+        isStableBoundary(
+          value["target"],
+          documentBookmarkIndex(currentDocument) as DocumentBookmarkIndex,
+        ))) &&
+    value["baseRevision"] === currentRevision &&
+    ["idle", "invalid", "ready"].includes(String(value["status"])) &&
+    isStringArray(value["issueCodes"], MAX_DRAFT_ISSUES)
+  );
+}
+
+function isImportDraft(value: unknown, currentRevision: number): boolean {
+  return (
+    value === null ||
+    (hasExactObjectKeys(value, [
+      "id",
+      "origin",
+      "baseRevision",
+      "readRequestId",
+      "status",
+      "candidate",
+      "issueCodes",
+    ]) &&
+      isStateIdentifier(value["id"]) &&
+      (value["origin"] === "canonical-import" ||
+        value["origin"] === "legacy-import") &&
+      value["baseRevision"] === currentRevision &&
+      isPositiveSafeInteger(value["readRequestId"]) &&
+      ["reading", "invalid", "ready", "cancelled"].includes(
+        String(value["status"]),
+      ) &&
+      (value["candidate"] === null ||
+        isCompleteDocumentLiteral(value["candidate"])) &&
+      isStringArray(value["issueCodes"], MAX_DRAFT_ISSUES))
+  );
+}
+
+function isTransportViewState(value: unknown): boolean {
+  return (
+    hasExactObjectKeys(value, [
+      "status",
+      "generation",
+      "commandRequestId",
+      "notificationSequence",
+      "documentId",
+      "planRevision",
+      "startBeat",
+      "playhead",
+      "failureCode",
+    ]) &&
+    APP_STATE_TRANSPORT_STATUS_SET.has(String(value["status"])) &&
+    isNonNegativeSafeInteger(value["generation"]) &&
+    isNonNegativeSafeInteger(value["commandRequestId"]) &&
+    isNonNegativeSafeInteger(
+      value["notificationSequence"],
+      MAX_APPLICATION_SEQUENCE,
+    ) &&
+    isStateIdentifier(value["documentId"]) &&
+    isNonNegativeSafeInteger(value["planRevision"], MAX_APPLICATION_REVISION) &&
+    isCanonicalBeatPosition(value["startBeat"]) &&
+    isCanonicalBeatPosition(value["playhead"]) &&
+    (value["status"] === "failed"
+      ? isBoundedUnicodeScalarToken(
+          value["failureCode"],
+          MAX_COMMAND_ID_CODE_POINTS,
+        )
+      : value["failureCode"] === null)
+  );
+}
+
+function isPendingApplicationRequest(
+  value: unknown,
+  currentDocumentId: unknown,
+  currentRevision: number,
+): boolean {
+  return (
+    hasExactObjectKeys(value, [
+      "kind",
+      "id",
+      "documentId",
+      "baseRevision",
+      "status",
+    ]) &&
+    APP_STATE_REQUEST_KIND_SET.has(String(value["kind"])) &&
+    isPositiveSafeInteger(value["id"]) &&
+    value["documentId"] === currentDocumentId &&
+    value["baseRevision"] === currentRevision &&
+    (value["status"] === "running" || value["status"] === "cancelling")
+  );
+}
+
+function isPendingApplicationRequests(
+  value: unknown,
+  currentDocumentId: unknown,
+  currentRevision: number,
+): boolean {
+  return (
+    Array.isArray(value) &&
+    value.length <= MAX_PENDING_REQUESTS &&
+    value.every((request) =>
+      isPendingApplicationRequest(request, currentDocumentId, currentRevision),
+    ) &&
+    new Set(value.map((request) => (request as JsonObject)["kind"])).size ===
+      value.length &&
+    value.every((request, index) => {
+      if (index === 0) return true;
+      const previous = value[index - 1] as JsonObject;
+      return (
+        APPLICATION_REQUEST_KINDS.indexOf(
+          previous["kind"] as (typeof APPLICATION_REQUEST_KINDS)[number],
+        ) <
+        APPLICATION_REQUEST_KINDS.indexOf(
+          (request as JsonObject)[
+            "kind"
+          ] as (typeof APPLICATION_REQUEST_KINDS)[number],
+        )
+      );
+    })
+  );
+}
+
+function isDocumentTransitionState(
+  value: unknown,
+  currentRevision: number,
+  pendingRequests: unknown,
+): boolean {
+  if (!isObject(value)) return false;
+  if (value["kind"] === "idle") return hasExactObjectKeys(value, ["kind"]);
+  const shapeValid =
+    hasExactObjectKeys(value, [
+      "kind",
+      "requestId",
+      "origin",
+      "baseRevision",
+      "candidateDocumentId",
+      "undoDisposition",
+    ]) &&
+    ["awaiting-confirmation", "retiring-transport", "committing"].includes(
+      String(value["kind"]),
+    ) &&
+    isPositiveSafeInteger(value["requestId"]) &&
+    APP_STATE_REPLACEMENT_ORIGIN_SET.has(String(value["origin"])) &&
+    value["baseRevision"] === currentRevision &&
+    isStateIdentifier(value["candidateDocumentId"]) &&
+    (value["undoDisposition"] === "retained" ||
+      value["undoDisposition"] === "explicitly-unavailable");
+  return (
+    shapeValid &&
+    Array.isArray(pendingRequests) &&
+    pendingRequests.some(
+      (request) =>
+        isObject(request) &&
+        request["kind"] === "document-transition" &&
+        request["id"] === value["requestId"] &&
+        request["baseRevision"] === currentRevision,
+    )
+  );
+}
+
+function isUiFocusTarget(
+  value: unknown,
+  currentDocument: unknown,
+  dialogs: unknown,
+): boolean {
+  if (!isObject(value)) return false;
+  if (value["kind"] === "chart") return hasExactObjectKeys(value, ["kind"]);
+  const documentIndex = documentBookmarkIndex(currentDocument);
+  if (documentIndex === null) return false;
+  const keyByKind: Readonly<Record<string, string>> = {
+    section: "sectionId",
+    measure: "measureId",
+    event: "eventId",
+    dialog: "dialogId",
+  };
+  const identityKey = keyByKind[String(value["kind"])];
+  if (
+    identityKey === undefined ||
+    !hasExactObjectKeys(value, ["kind", identityKey])
+  ) {
+    return false;
+  }
+  const identity = value[identityKey];
+  if (identityKey === "dialogId") {
+    return (
+      isBoundedUnicodeScalarToken(identity, MAX_COMMAND_ID_CODE_POINTS) &&
+      recordsAt(dialogs).some((dialog) => dialog["id"] === identity)
+    );
+  }
+  if (typeof identity !== "string") return false;
+  return identityKey === "sectionId"
+    ? documentIndex.sectionIds.has(identity)
+    : identityKey === "measureId"
+      ? documentIndex.measureIds.has(identity)
+      : documentIndex.eventOrder.has(identity);
+}
+
+function isFocusRequest(
+  value: unknown,
+  currentDocument: unknown,
+  dialogs: unknown,
+): boolean {
+  return (
+    value === null ||
+    (hasExactObjectKeys(value, ["sequence", "target", "reason"]) &&
+      isNonNegativeSafeInteger(value["sequence"], MAX_APPLICATION_SEQUENCE) &&
+      isUiFocusTarget(value["target"], currentDocument, dialogs) &&
+      [
+        "command",
+        "delete-repair",
+        "replacement",
+        "undo",
+        "redo",
+        "dialog-close",
+      ].includes(String(value["reason"])))
+  );
+}
+
+function isNotices(
+  value: unknown,
+  currentRevision: number,
+  nextSequence: number,
+): boolean {
+  return (
+    Array.isArray(value) &&
+    value.length <= MAX_NOTICES &&
+    new Set(
+      value.map((notice) =>
+        isObject(notice) ? notice["sequence"] : undefined,
+      ),
+    ).size === value.length &&
+    value.every(
+      (notice, index) =>
+        hasExactObjectKeys(notice, [
+          "sequence",
+          "level",
+          "code",
+          "message",
+          "createdAtRevision",
+          "dismissible",
+        ]) &&
+        isNonNegativeSafeInteger(
+          notice["sequence"],
+          MAX_APPLICATION_SEQUENCE,
+        ) &&
+        ["info", "success", "warning", "error"].includes(
+          String(notice["level"]),
+        ) &&
+        typeof notice["code"] === "string" &&
+        isUnicodeScalarString(
+          notice["message"],
+          MAX_NOTICE_MESSAGE_CODE_POINTS,
+          true,
+        ) &&
+        isNonNegativeSafeInteger(
+          notice["createdAtRevision"],
+          currentRevision,
+        ) &&
+        typeof notice["dismissible"] === "boolean" &&
+        (notice["sequence"] < nextSequence ||
+          (notice["sequence"] === MAX_APPLICATION_SEQUENCE &&
+            nextSequence === MAX_APPLICATION_SEQUENCE)) &&
+        (index === 0 ||
+          Number((value[index - 1] as JsonObject)["sequence"]) <
+            notice["sequence"]),
+    )
+  );
+}
+
+function hasAppStateTopLevelShape(value: unknown): value is JsonObject {
+  return hasExactObjectKeys(value, APP_STATE_KEYS);
+}
+
+function isFullAppStateLiteral(value: unknown): value is JsonObject {
+  if (!hasAppStateTopLevelShape(value)) return false;
+  const revision = value["revision"];
+  const exportRevision = value["exportRevision"];
+  const nextSequence = value["nextSequence"];
+  if (
+    !isNonNegativeSafeInteger(revision, MAX_APPLICATION_REVISION) ||
+    !isNonNegativeSafeInteger(nextSequence, MAX_APPLICATION_SEQUENCE)
+  ) {
+    return false;
+  }
+  const document = value["document"];
+  if (!isCompleteDocumentLiteral(document)) return false;
+  const pendingRequests = value["pendingRequests"];
+  const structurallyValid =
+    isCompleteDocumentLiteral(value["document"]) &&
+    (exportRevision === null ||
+      (isNonNegativeSafeInteger(exportRevision, MAX_APPLICATION_REVISION) &&
+        exportRevision <= revision)) &&
+    isRecoveryStatus(value["recovery"]) &&
+    isHistoryState(value["history"]) &&
+    isStableUiBookmarks(value["bookmarks"], document) &&
+    isPanelState(value["panels"]) &&
+    isDialogStack(value["dialogs"]) &&
+    isQuickEntryDraft(value["quickEntry"], revision, document) &&
+    isImportDraft(value["importDraft"], revision) &&
+    isTransportViewState(value["transport"]) &&
+    isPendingApplicationRequests(pendingRequests, document["id"], revision) &&
+    isDocumentTransitionState(
+      value["documentTransition"],
+      revision,
+      pendingRequests,
+    ) &&
+    isFocusRequest(value["focusRequest"], document, value["dialogs"]) &&
+    isNotices(value["notices"], revision, nextSequence) &&
+    (value["focusRequest"] === null ||
+      Number((value["focusRequest"] as JsonObject)["sequence"]) < nextSequence);
+  if (!structurallyValid) return false;
+  const allocatedSequences = [
+    ...(value["focusRequest"] === null
+      ? []
+      : [(value["focusRequest"] as JsonObject)["sequence"]]),
+    ...(value["notices"] as JsonObject[]).map((notice) => notice["sequence"]),
+  ];
+  return new Set(allocatedSequences).size === allocatedSequences.length;
 }
 
 function incrementApplicationSequence(sequence: number): number {
@@ -1049,8 +1842,7 @@ function constructLatestReplacementPublicationState(
     ? privateMaterial["publication"]
     : null;
   const owned =
-    publication !== null &&
-    isObject(publication["replacementOwnedProjection"])
+    publication !== null && isObject(publication["replacementOwnedProjection"])
       ? publication["replacementOwnedProjection"]
       : null;
   const focusTemplate =
@@ -1071,6 +1863,7 @@ function constructLatestReplacementPublicationState(
     focusTemplate === null ||
     noticeTemplates === null ||
     quickEntryTemplate === null ||
+    !privatePendingRequestsSnapshotMatches(privateMaterial, latest) ||
     publication["revisionIncrement"] !== 1 ||
     !Number.isSafeInteger(latest["revision"]) ||
     !Number.isSafeInteger(latest["nextSequence"]) ||
@@ -1114,7 +1907,7 @@ function constructLatestReplacementPublicationState(
   };
 }
 
-function isCompleteDocumentLiteral(value: unknown): boolean {
+function isCompleteDocumentLiteral(value: unknown): value is JsonObject {
   if (!isObject(value)) return false;
   return (
     value["schema"] === "changes.progression.v2" &&
@@ -1147,9 +1940,7 @@ function materializeAcceptedRepetitionRecipe(value: JsonObject): unknown {
   const description = isObject(recipe["description"])
     ? recipe["description"]
     : {};
-  const sectionTemplate = isObject(recipe["section"])
-    ? recipe["section"]
-    : {};
+  const sectionTemplate = isObject(recipe["section"]) ? recipe["section"] : {};
   const eventTemplate = isObject(recipe["completeMeasureEvent"])
     ? recipe["completeMeasureEvent"]
     : {};
@@ -1164,30 +1955,33 @@ function materializeAcceptedRepetitionRecipe(value: JsonObject): unknown {
   ) {
     throw new Error("BRIDGE_E0_REPETITION_RECIPE");
   }
-  const sections = Array.from({ length: Number(sectionCount) }, (_, sectionIndex) => ({
-    id: `s${String(sectionIndex)}`,
-    ...structuredClone(sectionTemplate),
-    measures: Array.from(
-      { length: Number(measuresPerSection) },
-      (_, measureIndex) => {
-        const globalMeasure =
-          sectionIndex * Number(measuresPerSection) + measureIndex;
-        const containsEvent = globalMeasure < Number(completeMeasureCount);
-        return {
-          id: `m${String(globalMeasure)}`,
-          events: containsEvent
-            ? [
-                {
-                  id: `e${String(globalMeasure)}`,
-                  ...structuredClone(eventTemplate),
-                },
-              ]
-            : [],
-          completion: { kind: containsEvent ? "complete" : "empty" },
-        };
-      },
-    ),
-  }));
+  const sections = Array.from(
+    { length: Number(sectionCount) },
+    (_, sectionIndex) => ({
+      id: `s${String(sectionIndex)}`,
+      ...structuredClone(sectionTemplate),
+      measures: Array.from(
+        { length: Number(measuresPerSection) },
+        (_, measureIndex) => {
+          const globalMeasure =
+            sectionIndex * Number(measuresPerSection) + measureIndex;
+          const containsEvent = globalMeasure < Number(completeMeasureCount);
+          return {
+            id: `m${String(globalMeasure)}`,
+            events: containsEvent
+              ? [
+                  {
+                    id: `e${String(globalMeasure)}`,
+                    ...structuredClone(eventTemplate),
+                  },
+                ]
+              : [],
+            completion: { kind: containsEvent ? "complete" : "empty" },
+          };
+        },
+      ),
+    }),
+  );
   return {
     schema: recipe["schema"],
     id: recipe["documentId"],
@@ -1256,7 +2050,10 @@ function materializeAcceptedE0Value(
     }
     if (loaded !== undefined) return structuredClone(loaded);
   }
-  if (Object.hasOwn(value, "value") && typeof value["materializeAs"] === "string") {
+  if (
+    Object.hasOwn(value, "value") &&
+    typeof value["materializeAs"] === "string"
+  ) {
     return materializeAcceptedE0Value(value["value"], context, visiting);
   }
   return Object.fromEntries(
@@ -1400,7 +2197,10 @@ function materializeBridgeTemplate(
     );
   }
   if (!isObject(value)) return structuredClone(value);
-  if (Object.keys(value).length === 1 && Object.hasOwn(value, "$literalValue")) {
+  if (
+    Object.keys(value).length === 1 &&
+    Object.hasOwn(value, "$literalValue")
+  ) {
     return materializeBridgeTemplate(
       value["$literalValue"],
       context,
@@ -1409,7 +2209,10 @@ function materializeBridgeTemplate(
     );
   }
   const referencedLiteral = value["$literalRef"];
-  if (Object.keys(value).length === 1 && typeof referencedLiteral === "string") {
+  if (
+    Object.keys(value).length === 1 &&
+    typeof referencedLiteral === "string"
+  ) {
     return materializeBridgeLiteral(
       referencedLiteral,
       context,
@@ -1417,15 +2220,22 @@ function materializeBridgeTemplate(
       visiting,
     );
   }
-  if (Object.keys(value).length === 1 && typeof value["$statePointer"] === "string") {
+  if (
+    Object.keys(value).length === 1 &&
+    typeof value["$statePointer"] === "string"
+  ) {
     const selected = valueAtJsonPointer(stateContext, value["$statePointer"]);
     if (selected === undefined) throw new Error("BRIDGE_STATE_POINTER");
     return structuredClone(selected);
   }
-  if (Object.keys(value).length === 1 && typeof value["$specialNumber"] === "string") {
+  if (
+    Object.keys(value).length === 1 &&
+    typeof value["$specialNumber"] === "string"
+  ) {
     if (value["$specialNumber"] === "NaN") return Number.NaN;
     if (value["$specialNumber"] === "Infinity") return Number.POSITIVE_INFINITY;
-    if (value["$specialNumber"] === "-Infinity") return Number.NEGATIVE_INFINITY;
+    if (value["$specialNumber"] === "-Infinity")
+      return Number.NEGATIVE_INFINITY;
     throw new Error("BRIDGE_SPECIAL_NUMBER");
   }
   if (Object.hasOwn(value, "$utf16CodeUnits")) {
@@ -1436,9 +2246,7 @@ function materializeBridgeTemplate(
       units.length === 0 ||
       units.some(
         (unit) =>
-          !Number.isInteger(unit) ||
-          Number(unit) < 0 ||
-          Number(unit) > 0xffff,
+          !Number.isInteger(unit) || Number(unit) < 0 || Number(unit) > 0xffff,
       )
     ) {
       throw new Error("BRIDGE_UTF16_CODE_UNITS");
@@ -1456,7 +2264,7 @@ function materializeBridgeTemplate(
 function materializeBridgeLiteral(
   literalId: string,
   context: BridgeLiteralContext,
-  stateContext: unknown = undefined,
+  stateContext?: unknown,
   visiting: ReadonlySet<string> = new Set(),
 ): unknown {
   if (context.cache?.has(literalId) === true) {
@@ -1496,7 +2304,8 @@ function materializeBridgeLiteral(
         ? context.acceptedE0.ledger
         : context.acceptedE0.loadedFiles.get(relativePath);
     const referenced = valueAtJsonPointer(authority, entry["jsonPointer"]);
-    if (referenced === undefined) throw new Error("BRIDGE_LITERAL_JSON_POINTER");
+    if (referenced === undefined)
+      throw new Error("BRIDGE_LITERAL_JSON_POINTER");
     let materialized: unknown;
     if (isObject(referenced) && typeof referenced["id"] === "string") {
       const fixture = context.acceptedE0.fixturesById.get(referenced["id"]);
@@ -1507,10 +2316,7 @@ function materializeBridgeLiteral(
         );
       }
     }
-    materialized ??= materializeAcceptedE0Value(
-      referenced,
-      context.acceptedE0,
-    );
+    materialized ??= materializeAcceptedE0Value(referenced, context.acceptedE0);
     const resolved = applyBridgePatches(
       materialized,
       entry["materializationPatches"],
@@ -1640,7 +2446,7 @@ function applyBridgePatches(
 function materializeDescriptor(
   descriptor: unknown,
   context: BridgeLiteralContext,
-  stateContext: unknown = undefined,
+  stateContext?: unknown,
 ): unknown {
   if (!isObject(descriptor)) throw new Error("BRIDGE_DESCRIPTOR_SHAPE");
   const literalId = descriptor["literalId"];
@@ -1928,7 +2734,9 @@ export async function validateA0E0BridgeContract(
     if (sha256(ledgerBytes) !== ACCEPTED_E0_INPUT_LEDGER_SHA256) {
       throw new Error("BRIDGE_ACCEPTED_LEDGER_DIGEST");
     }
-    const ledgerValue: unknown = JSON.parse(new TextDecoder().decode(ledgerBytes));
+    const ledgerValue: unknown = JSON.parse(
+      new TextDecoder().decode(ledgerBytes),
+    );
     if (!isObject(ledgerValue)) throw new Error("BRIDGE_ACCEPTED_LEDGER_ROOT");
     const loadedFiles = new Map<string, unknown>();
     for (const relativePath of Object.keys(E0_ACCEPTED_BYTE_DIGESTS)) {
@@ -1975,6 +2783,11 @@ export async function validateA0E0BridgeContract(
     contract["package"] !== "A0 interchange owner ports" ||
     contract["owner"] !== "A0" ||
     contract["ownerLeaf"] !== "jcpe-94yu.1" ||
+    contract["activeLeafScope"] !== "A0-owner-only" ||
+    contract["contractModule"] !==
+      "src/application/application-interchange-owner-contract.ts" ||
+    contract["browserProofClaim"] !== false ||
+    contract["humanAcceptanceClaim"] !== false ||
     contract["prospectiveConsumer"] !== "E0-v2" ||
     contract["semanticBindingLeaf"] !==
       "jcpe-milestone-reliable-studio-l3a.8.4" ||
@@ -2107,8 +2920,7 @@ export async function validateA0E0BridgeContract(
       boundedTokensRequireUnicodeScalars: true,
       logicalTimeRequiresNonnegativeSafeInteger: true,
       logicalTimeMustNotPrecedeLatestUndoEntry: true,
-      malformedPresentConfirmationCode:
-        "import.confirmation_identity_mismatch",
+      malformedPresentConfirmationCode: "import.confirmation_identity_mismatch",
       missingConfirmationCode: "history.nonundoable_confirmation_required",
     },
     "BRIDGE_PREPARATION_VALIDATION_POLICY",
@@ -2128,9 +2940,15 @@ export async function validateA0E0BridgeContract(
       preparedCommandInputsRechecked: [
         "documentIdentity",
         "revision",
+        "pendingRequestsBefore",
+        "transitionIdentity",
         "bookmarks",
       ],
       historyStabilityDerivedFromRevisionAndImmutableReducerLaw: true,
+      sameRevisionPendingRequestsDriftOutcome:
+        "consume-and-refuse-import.replacement_preparation_stale",
+      sameRevisionTransitionDriftOutcome:
+        "consume-and-refuse-import.replacement_preparation_stale",
       sameRevisionBookmarkDriftOutcome:
         "consume-and-refuse-import.replacement_preparation_stale",
       latestTransportGenerationMustNotExceedRetiredGeneration: true,
@@ -2358,7 +3176,15 @@ export async function validateA0E0BridgeContract(
   }
   requireExact(
     versionBoundary["immutableAuthorityClasses"],
-    ["documentation", "source", "validator", "tests", "support", "fixtures", "review"],
+    [
+      "documentation",
+      "source",
+      "validator",
+      "tests",
+      "support",
+      "fixtures",
+      "review",
+    ],
     "BRIDGE_E0_V1_AUTHORITY_CLASSES",
     "a0-e0-bridge-contract.json.acceptedE0V1VersionBoundary.immutableAuthorityClasses",
     "All seven accepted E0 v1 authority classes must remain explicit.",
@@ -2416,7 +3242,7 @@ export async function validateA0E0BridgeContract(
       latestStateReplacementPublicationMergeRequired: true,
       frozenPrepareTimeWholeStateInstallForbidden: true,
       recursiveExactOwnerEnvelopeKeysRequired: true,
-      latestBookmarkSequenceAndTransportPublicationRechecksRequired: true,
+      exactPendingRequestsTransitionBookmarkSequenceAndTransportPublicationRechecksRequired: true,
       literalBeforeRequestResultAfter: true,
       fullStateReferencesMustResolveToValidatedLiterals: true,
       computedBeforeAfterDiffMustEqualDeclaredExactDelta: true,
@@ -2430,7 +3256,8 @@ export async function validateA0E0BridgeContract(
       mutationTargetAndDerivedObservationMustBeDistinct: true,
       mutationObservationMustBeIndependentlyRecomputed: true,
       mutationKillerFixtureMayServeAsItsOwnOracle: false,
-      forwardE0V2RowsExcludedFromA0OwnerProof: true,
+      forwardE0V2BehaviorRowsPresent: false,
+      futureE0V2BehaviorDeferredTo: "jcpe-milestone-reliable-studio-l3a.8.4",
       proseOrBareIdsAreProof: false,
     },
     "BRIDGE_PROOF_REQUIREMENTS",
@@ -2513,16 +3340,56 @@ export async function validateA0E0BridgeContract(
     acceptedE0: acceptedE0Materialization,
     cache: materializedCatalog,
   };
+  const inspectUtf16Sentinels = (
+    value: unknown,
+    filename: string,
+    path: string,
+  ): void => {
+    if (Array.isArray(value)) {
+      value.forEach((child, index) => {
+        inspectUtf16Sentinels(child, filename, `${path}/${String(index)}`);
+      });
+      return;
+    }
+    if (!isObject(value)) return;
+    if (Object.hasOwn(value, "$utf16CodeUnits")) {
+      const allowedOwnerPath =
+        filename === "owner-port-cases.json" &&
+        (/\/rawCall\/arguments\/\d+\/patches\/\d+\/(?:from|to|value)$/u.test(
+          path,
+        ) ||
+          /\/oneFieldNearMiss\/(?:from|to)$/u.test(path) ||
+          path.startsWith("/literalCatalog/"));
+      const allowedControlPath =
+        filename === "mutation-controls.json" &&
+        /\/controls\/\d+\/mutation\/(?:from|to)$/u.test(path);
+      if (!allowedOwnerPath && !allowedControlPath) {
+        addFinding(
+          findings,
+          "BRIDGE_UTF16_SENTINEL_SCOPE",
+          `${filename}${path}`,
+          "The strict-JSON UTF-16 code-unit sentinel is allowed only in fields explicitly materialized by the typed in-memory fixture harness.",
+        );
+      }
+    }
+    for (const [key, child] of Object.entries(value)) {
+      inspectUtf16Sentinels(child, filename, `${path}/${key}`);
+    }
+  };
+  for (const filename of A0_E0_BRIDGE_SPEC_FILES) {
+    inspectUtf16Sentinels(loaded.get(filename), filename, "");
+  }
   type DocumentValidationObservation = Readonly<{
-    stage: "accepted" | "f2-refused" | "f2-repaired" | "f3-refused" | "f3-repaired";
+    stage:
+      "accepted" | "f2-refused" | "f2-repaired" | "f3-refused" | "f3-repaired";
     code: string | null;
   }>;
   const documentValidationCache = new Map<
     string,
     DocumentValidationObservation
   >();
-  const acceptedE0DocumentObjects = new WeakSet<object>();
-  const realValidatedDocumentObjects = new WeakSet<object>();
+  const acceptedE0DocumentObjects = new WeakSet();
+  const realValidatedDocumentObjects = new WeakSet();
   let f2DocumentValidationCalls = 0;
   let f3DocumentValidationCalls = 0;
   let expectedAcceptedDocumentOccurrences = 0;
@@ -2551,7 +3418,7 @@ export async function validateA0E0BridgeContract(
     if (!decoded.ok) {
       const observation: DocumentValidationObservation = {
         stage: "f2-refused",
-        code: decoded.errors[0]?.code ?? "unknown",
+        code: decoded.errors[0].code,
       };
       documentValidationCache.set(canonical, observation);
       return observation;
@@ -2569,7 +3436,7 @@ export async function validateA0E0BridgeContract(
     if (!validated.ok) {
       const observation: DocumentValidationObservation = {
         stage: "f3-refused",
-        code: validated.errors[0]?.code ?? "unknown",
+        code: validated.errors[0].code,
       };
       documentValidationCache.set(canonical, observation);
       return observation;
@@ -2603,9 +3470,9 @@ export async function validateA0E0BridgeContract(
     path: string,
   ): void => {
     if (Array.isArray(value)) {
-      value.forEach((item, index) =>
-        assertNestedAcceptedDocuments(item, `${path}/${String(index)}`),
-      );
+      value.forEach((item, index) => {
+        assertNestedAcceptedDocuments(item, `${path}/${String(index)}`);
+      });
       return;
     }
     if (!isObject(value)) return;
@@ -2646,7 +3513,10 @@ export async function validateA0E0BridgeContract(
       if (typeof materializeAs !== "string" || materializeAs.length === 0) {
         throw new Error("BRIDGE_LITERAL_MATERIALIZE_AS");
       }
-      if (materializeAs === "AppState" && !isFullAppStateLiteral(materialized)) {
+      if (
+        materializeAs === "AppState" &&
+        !isFullAppStateLiteral(materialized)
+      ) {
         throw new Error("BRIDGE_LITERAL_APP_STATE");
       }
       if (
@@ -2661,7 +3531,10 @@ export async function validateA0E0BridgeContract(
       ) {
         markAcceptedE0Documents(materialized);
       }
-      if (materializeAs === "AppState" || materializeAs === "ValidatedDocument") {
+      if (
+        materializeAs === "AppState" ||
+        materializeAs === "ValidatedDocument"
+      ) {
         assertNestedAcceptedDocuments(
           materialized,
           `literalCatalog/${literalId}`,
@@ -2711,6 +3584,50 @@ export async function validateA0E0BridgeContract(
     }
   }
 
+  try {
+    const validDriftBase = materializedCatalog.get("state-retiring-retained");
+    if (!isFullAppStateLiteral(validDriftBase)) {
+      throw new Error("BRIDGE_APP_STATE_TAMPER_BASE");
+    }
+    const invalidDriftProbes = [
+      {
+        pointer: "/pendingRequests/0/status",
+        from: "running",
+        to: "completed",
+      },
+      {
+        pointer: "/documentTransition/kind",
+        from: "retiring-transport",
+        to: "retired",
+      },
+    ] as const;
+    for (const probe of invalidDriftProbes) {
+      const tampered = applyPointerMutation(
+        validDriftBase,
+        "replace",
+        probe.pointer,
+        probe.from,
+        probe.to,
+      );
+      if (
+        !hasAppStateTopLevelShape(tampered) ||
+        !jsonDeepEqual(jsonDiffPointers(validDriftBase, tampered), [
+          probe.pointer,
+        ]) ||
+        isFullAppStateLiteral(tampered)
+      ) {
+        throw new Error(`BRIDGE_APP_STATE_TAMPER_ACCEPTED:${probe.pointer}`);
+      }
+    }
+  } catch (error) {
+    addFinding(
+      findings,
+      "BRIDGE_APP_STATE_VALIDATOR_TAMPER",
+      "owner-port-cases.json.literalCatalog.state-retiring-retained",
+      `The independent complete AppState validator must reject one-field invalid same-revision request-status and transition-kind drift while preserving the full state shape (${error instanceof Error ? error.message : "unknown"}).`,
+    );
+  }
+
   const transpositionWitness = isObject(cases["transpositionWitness"])
     ? cases["transpositionWitness"]
     : {};
@@ -2733,14 +3650,25 @@ export async function validateA0E0BridgeContract(
       return null;
     }
     const accidental =
-      alter === -2 ? "bb" : alter === -1 ? "b" : alter === 0 ? "" : alter === 1 ? "#" : alter === 2 ? "##" : null;
+      alter === -2
+        ? "bb"
+        : alter === -1
+          ? "b"
+          : alter === 0
+            ? ""
+            : alter === 1
+              ? "#"
+              : alter === 2
+                ? "##"
+                : null;
     return accidental === null ? null : `${step}${accidental}${String(octave)}`;
   };
   const collectVoicingWitness = (document: unknown) => {
     const sourceTexts: string[] = [];
     const manualPitches: string[] = [];
     const frozenPitches: string[] = [];
-    if (!isObject(document)) return { sourceTexts, manualPitches, frozenPitches };
+    if (!isObject(document))
+      return { sourceTexts, manualPitches, frozenPitches };
     for (const section of recordsAt(document["sections"])) {
       for (const measure of recordsAt(section["measures"])) {
         for (const event of recordsAt(measure["events"])) {
@@ -2752,7 +3680,8 @@ export async function validateA0E0BridgeContract(
           if (typeof chord["sourceText"] === "string") {
             sourceTexts.push(chord["sourceText"]);
           }
-          const target = voicing["mode"] === "manual" ? manualPitches : frozenPitches;
+          const target =
+            voicing["mode"] === "manual" ? manualPitches : frozenPitches;
           for (const pitch of recordsAt(voicing["pitches"])) {
             const rendered = pitchText(pitch);
             if (rendered !== null) target.push(rendered);
@@ -2873,7 +3802,8 @@ export async function validateA0E0BridgeContract(
       stableJson(computedInverse) !== stableJson(sourceDocument) ||
       stableJson(declaredInverse) !== stableJson(sourceDocument) ||
       targetEntry["expectedInverseEqualsLiteralId"] !== sourceId ||
-      targetEntry["expectedInverseMaterializedSha256"] !== sha256(inverseBytes) ||
+      targetEntry["expectedInverseMaterializedSha256"] !==
+        sha256(inverseBytes) ||
       targetEntry["expectedInverseMaterializedByteLength"] !==
         inverseBytes.byteLength ||
       inverseWitness["targetLiteralId"] !== targetId ||
@@ -2927,7 +3857,7 @@ export async function validateA0E0BridgeContract(
         findings,
         "BRIDGE_CASE_PROOF_OWNER",
         `owner-port-cases.json.${caseId}`,
-        "Exactly six future-consumer normalization cases are excluded; every other case is A0 owner proof.",
+        "Every case and run must be A0 owner proof; no normative forward E0-v2 behavior row is present in this packet.",
       );
     }
     if (expectedE0V2Owned) excludedForwardE0V2CaseCount += 1;
@@ -2989,7 +3919,7 @@ export async function validateA0E0BridgeContract(
         }
         const rawCallValue = run["rawCall"];
         if (!isObject(rawCallValue)) throw new Error("BRIDGE_RUN_RAW_CALL");
-        const argumentDescriptors = Array.isArray(rawCallValue["arguments"])
+        const argumentDescriptors = isUnknownArray(rawCallValue["arguments"])
           ? rawCallValue["arguments"]
           : [];
         const rawCall: JsonObject = {
@@ -3000,6 +3930,44 @@ export async function validateA0E0BridgeContract(
             materializeDescriptor(argument, literalContext, before),
           ),
         };
+        if (
+          !expectedE0V2Owned &&
+          runRole === "conformance" &&
+          record["operation"] === "prepareImportReplacementPublication"
+        ) {
+          const descriptor = argumentDescriptors[0];
+          if (!isObject(descriptor)) {
+            throw new Error("BRIDGE_PREPARE_DESCRIPTOR");
+          }
+          const untrusted =
+            descriptor["materializeAs"] ===
+            "UntrustedPrepareImportReplacementPublicationRequestEnvelope";
+          const payloadKey = Object.hasOwn(descriptor, "literalId")
+            ? "literalId"
+            : Object.hasOwn(descriptor, "value")
+              ? "value"
+              : null;
+          const expectedDescriptorKeys = [
+            payloadKey,
+            "materializeAs",
+            "patches",
+            ...(untrusted ? ["argumentDomain"] : []),
+          ].filter((key): key is string => key !== null);
+          if (
+            payloadKey === null ||
+            (Object.hasOwn(descriptor, "literalId") &&
+              Object.hasOwn(descriptor, "value")) ||
+            stableJson(Object.keys(descriptor).sort(codeUnitCompare)) !==
+              stableJson(expectedDescriptorKeys.sort(codeUnitCompare)) ||
+            (untrusted
+              ? descriptor["argumentDomain"] !== "defensive-untrusted-runtime"
+              : descriptor["materializeAs"] !==
+                  "PrepareImportReplacementPublicationRequest" ||
+                Object.hasOwn(descriptor, "argumentDomain"))
+          ) {
+            throw new Error("BRIDGE_PREPARE_DESCRIPTOR_DOMAIN");
+          }
+        }
         if (
           (runRole === "conformance" &&
             rawCall["invocation"] !== "synchronous") ||
@@ -3022,9 +3990,7 @@ export async function validateA0E0BridgeContract(
         ) {
           throw new Error("BRIDGE_RUN_OWNER_RESULT_STATE");
         }
-        const resultRecord = isObject(exactTypedResult)
-          ? exactTypedResult
-          : {};
+        const resultRecord = isObject(exactTypedResult) ? exactTypedResult : {};
         if (
           runRole === "conformance" &&
           Object.hasOwn(resultRecord, "liveForRequest") &&
@@ -3074,8 +4040,9 @@ export async function validateA0E0BridgeContract(
             (expectedOwnerLaw["outcome"] === "pass"
               ? stableJson(expectedOwnerLaw) !== stableJson({ outcome: "pass" })
               : typeof expectedOwnerLaw["code"] !== "string" ||
-                stableJson(Object.keys(expectedOwnerLaw).sort(codeUnitCompare)) !==
-                  stableJson(["code", "outcome"]))
+                stableJson(
+                  Object.keys(expectedOwnerLaw).sort(codeUnitCompare),
+                ) !== stableJson(["code", "outcome"]))
           ) {
             throw new Error("BRIDGE_RUN_MUTATION_PROBE_SHAPE");
           }
@@ -3107,7 +4074,10 @@ export async function validateA0E0BridgeContract(
               new Set(),
             ),
           };
-        } else if (run["mutationProbe"] !== undefined && run["mutationProbe"] !== null) {
+        } else if (
+          run["mutationProbe"] !== undefined &&
+          run["mutationProbe"] !== null
+        ) {
           throw new Error("BRIDGE_RUN_CONFORMANCE_MUTATION_PROBE");
         }
         for (const [projectionName, projectionValue] of [
@@ -3243,7 +4213,9 @@ export async function validateA0E0BridgeContract(
             ) {
               throw new Error("BRIDGE_MARKER_REFERENCE_EXPECTATION_VALUE");
             }
-            if (relation === "different-reference-from-controller-state-before") {
+            if (
+              relation === "different-reference-from-controller-state-before"
+            ) {
               clonedPreservedReferenceDetected = true;
             }
           }
@@ -3277,6 +4249,12 @@ export async function validateA0E0BridgeContract(
         const contentInvarianceWitness = materializeOptionalRunProjection(
           "contentInvarianceWitness",
         );
+        if (
+          contentInvarianceWitness !== null &&
+          !jsonDeepEqual(run["registryBefore"], run["registryAfter"])
+        ) {
+          throw new Error("BRIDGE_CONTENT_INVARIANCE_REGISTRY_REFERENCE");
+        }
         const preparedEntryForMerge = recordsAt(
           isObject(registryBefore) ? registryBefore["entries"] : undefined,
         )[0];
@@ -3296,6 +4274,25 @@ export async function validateA0E0BridgeContract(
         const usesLatestControllerState =
           independentlyMergedState !== null &&
           jsonDeepEqual(after, independentlyMergedState);
+        const interleaveForFrozenState = isObject(sameRevisionInterleave)
+          ? sameRevisionInterleave
+          : {};
+        const preparationStateForFrozenMerge =
+          typeof interleaveForFrozenState[
+            "preparationControllerStateLiteralId"
+          ] === "string"
+            ? materializedCatalog.get(
+                interleaveForFrozenState["preparationControllerStateLiteralId"],
+              )
+            : undefined;
+        const frozenPreparationMerge =
+          isObject(preparationStateForFrozenMerge) &&
+          preparedPrivateMaterialForMerge !== null
+            ? constructLatestReplacementPublicationState(
+                preparationStateForFrozenMerge,
+                preparedPrivateMaterialForMerge,
+              )
+            : null;
         if (
           publicationMergeObservation !== null &&
           (!isObject(publicationMergeObservation) ||
@@ -3308,6 +4305,8 @@ export async function validateA0E0BridgeContract(
           record["operation"] === "publishImportReplacement" &&
           publicationMergeObservation !== null &&
           !usesLatestControllerState &&
+          frozenPreparationMerge !== null &&
+          jsonDeepEqual(after, frozenPreparationMerge) &&
           exactCounters["controllerStateInstalls"] === 1;
         const eventIndex = (event: string): number => eventOrder.indexOf(event);
         const earlyAllocation =
@@ -3348,8 +4347,7 @@ export async function validateA0E0BridgeContract(
                 : publishBeforeConsumption
                   ? {
                       outcome: "killed",
-                      code:
-                        "BRIDGE_OWNER_LAW_PUBLISH_BEFORE_CONSUME_FORBIDDEN",
+                      code: "BRIDGE_OWNER_LAW_PUBLISH_BEFORE_CONSUME_FORBIDDEN",
                     }
                   : containsForbiddenStateKey(exactTypedResult)
                     ? {
@@ -3359,42 +4357,38 @@ export async function validateA0E0BridgeContract(
                     : notifyBeforeInstall
                       ? {
                           outcome: "killed",
-                          code:
-                            "BRIDGE_OWNER_LAW_NOTIFY_BEFORE_INSTALL_FORBIDDEN",
+                          code: "BRIDGE_OWNER_LAW_NOTIFY_BEFORE_INSTALL_FORBIDDEN",
                         }
                       : returnBeforeInstall
                         ? {
                             outcome: "killed",
-                            code:
-                              "BRIDGE_OWNER_LAW_RETURN_BEFORE_INSTALL_FORBIDDEN",
+                            code: "BRIDGE_OWNER_LAW_RETURN_BEFORE_INSTALL_FORBIDDEN",
                           }
                         : clonedPreservedReferenceDetected
                           ? {
                               outcome: "killed",
-                              code:
-                                "BRIDGE_OWNER_LAW_PRESERVED_REFERENCE_CLONE_FORBIDDEN",
+                              code: "BRIDGE_OWNER_LAW_PRESERVED_REFERENCE_CLONE_FORBIDDEN",
                             }
                           : frozenPrepareStateInstallDetected
                             ? {
                                 outcome: "killed",
-                                code:
-                                  "BRIDGE_OWNER_LAW_FROZEN_PREPARE_STATE_INSTALL_FORBIDDEN",
+                                code: "BRIDGE_OWNER_LAW_FROZEN_PREPARE_STATE_INSTALL_FORBIDDEN",
                               }
-                          : workBound[
-                                "awaitOrMicrotaskBoundariesInsideOperation"
-                              ] !== 0
-                            ? {
-                                outcome: "killed",
-                                code: "BRIDGE_OWNER_LAW_MARKER_AWAIT_FORBIDDEN",
-                              }
-                            : workBound["wallTimeObservedOrUsed"] !== false
+                            : workBound[
+                                  "awaitOrMicrotaskBoundariesInsideOperation"
+                                ] !== 0
                               ? {
                                   outcome: "killed",
-                                  code: "BRIDGE_OWNER_LAW_WALL_TIME_FORBIDDEN",
+                                  code: "BRIDGE_OWNER_LAW_MARKER_AWAIT_FORBIDDEN",
                                 }
-                              : { outcome: "pass", code: null };
+                              : workBound["wallTimeObservedOrUsed"] !== false
+                                ? {
+                                    outcome: "killed",
+                                    code: "BRIDGE_OWNER_LAW_WALL_TIME_FORBIDDEN",
+                                  }
+                                : { outcome: "pass", code: null };
 
-        let deltaApplied = before;
+        let deltaApplied: unknown = before;
         const deltas = recordsAt(run["exactControllerStateDelta"]);
         const materializedDeltas: JsonObject[] = [];
         if (
@@ -3505,12 +4499,9 @@ export async function validateA0E0BridgeContract(
           ) {
             throw new Error("BRIDGE_LATE_A1_PHASE_SHAPE");
           }
-          const externalBeforeDescriptor = externalEdit[
-            "controllerStateBefore"
-          ];
-          const externalAfterDescriptor = externalEdit[
-            "controllerStateAfter"
-          ];
+          const externalBeforeDescriptor =
+            externalEdit["controllerStateBefore"];
+          const externalAfterDescriptor = externalEdit["controllerStateAfter"];
           const externalBefore = materializeDescriptor(
             externalBeforeDescriptor,
             literalContext,
@@ -3536,7 +4527,7 @@ export async function validateA0E0BridgeContract(
           ) {
             throw new Error("BRIDGE_LATE_A1_EXTERNAL_LINK");
           }
-          let externalDeltaApplied = externalBefore;
+          let externalDeltaApplied: unknown = externalBefore;
           const externalDeltas = recordsAt(
             externalEdit["exactControllerStateDelta"],
           );
@@ -3630,11 +4621,11 @@ export async function validateA0E0BridgeContract(
             scenarioTotals["controllerStateInstalls"] !==
               Number(exactCounters["controllerStateInstalls"]) +
                 Number(externalCounters["controllerStateInstalls"]) +
-                Number(lateSettlement["controllerStateInstalls"]) ||
+                lateSettlement["controllerStateInstalls"] ||
             scenarioTotals["listenerCallbacks"] !==
               Number(exactCounters["listenerCallbacks"]) +
                 Number(externalCounters["listenerCallbacks"]) +
-                Number(lateSettlement["listenerCallbacks"])
+                lateSettlement["listenerCallbacks"]
           ) {
             throw new Error("BRIDGE_LATE_A1_SCENARIO_TOTALS");
           }
@@ -3858,6 +4849,12 @@ export async function validateA0E0BridgeContract(
                   !jsonDeepEqual(preparationState[field], before[field]),
               )
             : [];
+        const expectedFrozenPreparationMerge = isObject(preparationState)
+          ? constructLatestReplacementPublicationState(
+              preparationState,
+              privateMaterial,
+            )
+          : null;
         if (
           !isFullAppStateLiteral(preparationState) ||
           !jsonDeepEqual(interleave, {
@@ -3867,7 +4864,10 @@ export async function validateA0E0BridgeContract(
             revisionBeforePreparation: preparationState["revision"],
             revisionBeforePublication: before["revision"],
           }) ||
-          preparationState["revision"] !== before["revision"]
+          preparationState["revision"] !== before["revision"] ||
+          (!usesLatest &&
+            (expectedFrozenPreparationMerge === null ||
+              !jsonDeepEqual(after, expectedFrozenPreparationMerge)))
         ) {
           throw new Error("BRIDGE_PUBLICATION_MERGE_WITNESS_INTERLEAVE");
         }
@@ -3888,7 +4888,7 @@ export async function validateA0E0BridgeContract(
             ? run.registryBefore["entries"]
             : undefined,
         );
-        const argument = Array.isArray(run.rawCall["arguments"])
+        const argument = isUnknownArray(run.rawCall["arguments"])
           ? run.rawCall["arguments"][0]
           : undefined;
         const argumentIdentity =
@@ -3896,13 +4896,10 @@ export async function validateA0E0BridgeContract(
             ? argument["identity"]
             : {};
         const liveIdentity =
-          beforeEntries[0] !== undefined &&
-          isObject(beforeEntries[0]["key"])
+          beforeEntries[0] !== undefined && isObject(beforeEntries[0]["key"])
             ? beforeEntries[0]["key"]
             : {};
-        const counters = isObject(run.exactCounters)
-          ? run.exactCounters
-          : {};
+        const counters = isObject(run.exactCounters) ? run.exactCounters : {};
         if (
           run.operation !== "discardImportReplacementPublication" ||
           !jsonDeepEqual(run.contentInvarianceWitness, {
@@ -3910,8 +4907,7 @@ export async function validateA0E0BridgeContract(
             unmatchedRequestId: argumentIdentity["requestId"],
             documentInspections: 0,
             pitchInspections: 0,
-            registryRelation:
-              "same-reference-preserved-unrelated-entry",
+            registryRelation: "same-reference-preserved-unrelated-entry",
           }) ||
           !jsonDeepEqual(run.controllerStateBefore, run.controllerStateAfter) ||
           !jsonDeepEqual(run.registryBefore, run.registryAfter) ||
@@ -3945,7 +4941,9 @@ export async function validateA0E0BridgeContract(
     findings,
   );
   for (const lawId of OWNER_LAW_IDS) {
-    const row = lawCoverageRows.find((candidate) => candidate["lawId"] === lawId);
+    const row = lawCoverageRows.find(
+      (candidate) => candidate["lawId"] === lawId,
+    );
     try {
       if (row === undefined) throw new Error("BRIDGE_LAW_COVERAGE_MISSING");
       const expectedKeys = [
@@ -3961,7 +4959,7 @@ export async function validateA0E0BridgeContract(
       ].sort(codeUnitCompare);
       if (
         stableJson(Object.keys(row).sort(codeUnitCompare)) !==
-          stableJson(expectedKeys)
+        stableJson(expectedKeys)
       ) {
         throw new Error("BRIDGE_LAW_COVERAGE_SHAPE");
       }
@@ -3989,7 +4987,10 @@ export async function validateA0E0BridgeContract(
       }
       for (const traceId of traceIds) {
         const trace = traceById.get(traceId);
-        if (trace === undefined || !stringsAt(trace["lawIds"]).includes(lawId)) {
+        if (
+          trace === undefined ||
+          !stringsAt(trace["lawIds"]).includes(lawId)
+        ) {
           throw new Error("BRIDGE_LAW_COVERAGE_TRACE_LINK");
         }
       }
@@ -4013,20 +5014,85 @@ export async function validateA0E0BridgeContract(
           throw new Error("BRIDGE_LAW_COVERAGE_RUN_TRACE");
         }
       }
-      const referencedCaseIds = new Set(
-        allCoverageRunIds
-          .map((runId) => runById.get(runId)?.caseId)
-          .filter((caseId): caseId is string => caseId !== undefined),
-      );
+      for (const runId of positiveRunIds) {
+        const run = runById.get(runId);
+        if (
+          run === undefined ||
+          run.runRole !== "conformance" ||
+          run.ownerLawOracle["outcome"] !== "pass"
+        ) {
+          throw new Error("BRIDGE_LAW_COVERAGE_POSITIVE_OUTCOME");
+        }
+      }
+      for (const runId of applicabilityRunIds) {
+        const run = runById.get(runId);
+        if (
+          run === undefined ||
+          run.runRole !== "conformance" ||
+          run.ownerLawOracle["outcome"] !== "pass"
+        ) {
+          throw new Error("BRIDGE_LAW_COVERAGE_APPLICABILITY_OUTCOME");
+        }
+      }
       for (const controlId of mutationControlIds) {
         const control = controlById.get(controlId);
+        const killerRunId = control?.["killerRunId"];
+        const killerRun =
+          typeof killerRunId === "string"
+            ? runById.get(killerRunId)
+            : undefined;
+        const killerCase =
+          killerRun === undefined ? undefined : caseById.get(killerRun.caseId);
+        const oracleExpectation =
+          control !== undefined && isObject(control["oracleExpectation"])
+            ? control["oracleExpectation"]
+            : {};
         if (
           control === undefined ||
-          !stringsAt(control["linkedCaseIds"]).some((caseId) =>
-            referencedCaseIds.has(caseId),
-          )
+          typeof killerRunId !== "string" ||
+          killerRun === undefined ||
+          killerRun.runRole !== "mutation-killer" ||
+          !negativeRunIds.includes(killerRunId) ||
+          killerCase === undefined ||
+          !stringsAt(killerCase["expectedMutationKills"]).includes(controlId) ||
+          !stringsAt(control["linkedCaseIds"]).includes(killerRun.caseId) ||
+          !traceIds.some((traceId) => {
+            const trace = traceById.get(traceId);
+            return (
+              trace !== undefined &&
+              stringsAt(trace["controlIds"]).includes(controlId)
+            );
+          }) ||
+          (oracleExpectation["outcome"] === "killed"
+            ? killerRun.ownerLawOracle["outcome"] !== "killed" ||
+              killerRun.ownerLawOracle["code"] !== oracleExpectation["code"]
+            : oracleExpectation["outcome"] !== "pass" ||
+              killerRun.ownerLawOracle["outcome"] !== "pass")
         ) {
           throw new Error("BRIDGE_LAW_COVERAGE_CONTROL_LINK");
+        }
+      }
+      for (const runId of negativeRunIds) {
+        const run = runById.get(runId);
+        if (run === undefined) {
+          throw new Error("BRIDGE_LAW_COVERAGE_NEGATIVE_MISSING");
+        }
+        if (
+          run.runRole === "conformance" &&
+          run.ownerLawOracle["outcome"] !== "pass"
+        ) {
+          throw new Error("BRIDGE_LAW_COVERAGE_NEAR_MISS_OUTCOME");
+        }
+        if (run.runRole === "mutation-killer") {
+          const controlsForKiller = mutationControlIds
+            .map((controlId) => controlById.get(controlId))
+            .filter(
+              (control): control is JsonObject =>
+                control !== undefined && control["killerRunId"] === runId,
+            );
+          if (controlsForKiller.length === 0) {
+            throw new Error("BRIDGE_LAW_COVERAGE_NEGATIVE_CONTROL");
+          }
         }
       }
       if (
@@ -4050,7 +5116,9 @@ export async function validateA0E0BridgeContract(
     const traceId = String(trace["id"]);
     const declaredLawIds = stringsAt(trace["lawIds"]);
     const reciprocalLawIds = OWNER_LAW_IDS.filter((lawId) => {
-      const row = lawCoverageRows.find((candidate) => candidate["lawId"] === lawId);
+      const row = lawCoverageRows.find(
+        (candidate) => candidate["lawId"] === lawId,
+      );
       return row !== undefined && stringsAt(row["traceIds"]).includes(traceId);
     });
     if (
@@ -4072,40 +5140,37 @@ export async function validateA0E0BridgeContract(
       beadId: "jcpe-94yu.1",
       productionImplementationAvailableWhenAuthored: false,
       acceptedE0V1BytesModified: false,
-      replacementCaseCount: 30,
-      identityCaseCount: 6,
-      markerCaseCount: 12,
-      a0OwnerProofCaseCount: a0OwnerProofCaseCount,
-      excludedForwardE0V2CaseCount: excludedForwardE0V2CaseCount,
-      excludedForwardE0V2CaseIds: [...E0_V2_OWNED_CASE_IDS],
-      excludedForwardE0V2Rationale:
-        "These rows exercise malformed unknown returns or thrown consumer ports. They are preserved only as forward references for jcpe-milestone-reliable-studio-l3a.8.4 and are excluded from every A0 typed-producer proof count and claim.",
-      totalRunCount: allCases.reduce(
-        (sum, record) => sum + recordsAt(record["runs"]).length,
-        0,
-      ),
-      a0OwnerProofRunCount: allCases.reduce(
-        (sum, record) =>
-          sum +
-          (E0_V2_OWNED_CASE_IDS.has(String(record["id"]))
-            ? 0
-            : recordsAt(record["runs"]).length),
-        0,
-      ),
-      excludedForwardE0V2RunCount: allCases.reduce(
-        (sum, record) =>
-          sum +
-          (E0_V2_OWNED_CASE_IDS.has(String(record["id"]))
-            ? recordsAt(record["runs"]).length
-            : 0),
-        0,
-      ),
+      replacementCaseCount: 28,
+      identityCaseCount: 4,
+      markerCaseCount: 10,
+      a0OwnerProofCaseCount: 42,
+      forwardE0V2BehaviorRowsPresent: false,
+      deferredE0V2BindingLeaf: "jcpe-milestone-reliable-studio-l3a.8.4",
+      totalRunCount: 118,
+      a0OwnerProofRunCount: 118,
     },
     "BRIDGE_OWNER_PROOF_SUMMARY",
     "owner-port-cases.json.ownerProofSummary",
-    "The packet must count 42 A0 owner cases and visibly exclude exactly six future E0 v2 consumer cases.",
+    "The packet must contain exactly 42 A0 owner cases and no normative future E0 v2 behavior rows.",
     findings,
   );
+  if (
+    a0OwnerProofCaseCount !== 42 ||
+    excludedForwardE0V2CaseCount !== 0 ||
+    allCases.reduce(
+      (sum, record) => sum + recordsAt(record["runs"]).length,
+      0,
+    ) !== 118 ||
+    [...runById.values()].filter((run) => run.ownerProof).length !== 118 ||
+    [...runById.values()].some((run) => run.e0V2Owned)
+  ) {
+    addFinding(
+      findings,
+      "BRIDGE_OWNER_PROOF_COMPUTED_COUNTS",
+      "owner-port-cases.json",
+      "The materialized packet must independently compute to 42 A0 cases and 118 A0 runs with zero future E0 v2 behavior rows.",
+    );
+  }
 
   const replacementOracleDependencies = Object.freeze({
     decodeDocumentShape,
@@ -4119,9 +5184,7 @@ export async function validateA0E0BridgeContract(
     before: JsonObject,
     argument: JsonObject,
   ): JsonObject => {
-    const identity = isObject(argument["identity"])
-      ? argument["identity"]
-      : {};
+    const identity = isObject(argument["identity"]) ? argument["identity"] : {};
     const seed = isObject(argument["replacementCommandSeed"])
       ? argument["replacementCommandSeed"]
       : {};
@@ -4157,13 +5220,12 @@ export async function validateA0E0BridgeContract(
         impact["undoDisposition"] === "explicitly-unavailable"
           ? {
               kind: "explicitly-unavailable",
-              confirmationId:
-                isBoundedUnicodeScalarToken(
-                  requirement["confirmationId"],
-                  MAX_COMMAND_ID_CODE_POINTS,
-                )
-                  ? requirement["confirmationId"]
-                  : "bridge-oracle-valid-confirmation-placeholder",
+              confirmationId: isBoundedUnicodeScalarToken(
+                requirement["confirmationId"],
+                MAX_COMMAND_ID_CODE_POINTS,
+              )
+                ? requirement["confirmationId"]
+                : "bridge-oracle-valid-confirmation-placeholder",
               exportRecommended: true,
             }
           : { kind: "retain" },
@@ -4195,10 +5257,11 @@ export async function validateA0E0BridgeContract(
       ...before,
       documentTransition: { ...transition, kind: "committing" },
     };
-    const result = Reflect.apply(runDocumentCommand, undefined, [
+    const result: unknown = Reflect.apply(runDocumentCommand, undefined, [
       { state: simulationState, command, dependencies },
     ]);
-    if (!isObject(result)) throw new Error("BRIDGE_OWNER_ORACLE_REDUCER_RESULT");
+    if (!isObject(result))
+      throw new Error("BRIDGE_OWNER_ORACLE_REDUCER_RESULT");
     return { command, result };
   };
 
@@ -4244,10 +5307,7 @@ export async function validateA0E0BridgeContract(
       : [];
     return {
       historyEntryRetainedBytes,
-      evictedUndoEntries: Math.max(
-        0,
-        beforeUndo.length + 1 - afterUndo.length,
-      ),
+      evictedUndoEntries: Math.max(0, beforeUndo.length + 1 - afterUndo.length),
       redoEntriesCleared: beforeRedo.length,
       confirmationRequired: true,
       undoDisposition: "retained",
@@ -4259,14 +5319,7 @@ export async function validateA0E0BridgeContract(
 
   type PrepareOracleDecision = Readonly<{
     code: string | null;
-    stage:
-      | "early"
-      | "structural"
-      | "semantic"
-      | "history"
-      | "post-history"
-      | "registry"
-      | "success";
+    reachedThrough: (typeof PREPARE_SUCCESS_EVENTS)[number];
     prepared: JsonObject | null;
     simulation: Readonly<{ command: JsonObject; result: JsonObject }> | null;
   }>;
@@ -4279,12 +5332,15 @@ export async function validateA0E0BridgeContract(
   ): PrepareOracleDecision => {
     const refuse = (
       code: string,
-      stage: PrepareOracleDecision["stage"],
+      reachedThrough: PrepareOracleDecision["reachedThrough"],
       simulation: PrepareOracleDecision["simulation"] = null,
-    ): PrepareOracleDecision => ({ code, stage, prepared: null, simulation });
-    const identity = isObject(argument["identity"])
-      ? argument["identity"]
-      : {};
+    ): PrepareOracleDecision => ({
+      code,
+      reachedThrough,
+      prepared: null,
+      simulation,
+    });
+    const identity = isObject(argument["identity"]) ? argument["identity"] : {};
     const seed = isObject(argument["replacementCommandSeed"])
       ? argument["replacementCommandSeed"]
       : {};
@@ -4302,10 +5358,7 @@ export async function validateA0E0BridgeContract(
       "unversioned-legacy-json": "legacy-import",
       "chart-text-v1": "canonical-import",
     };
-    const hasExactKeys = (
-      value: unknown,
-      keys: readonly string[],
-    ): boolean =>
+    const hasExactKeys = (value: unknown, keys: readonly string[]): boolean =>
       isObject(value) &&
       stableJson(Object.keys(value).sort(codeUnitCompare)) ===
         stableJson([...keys].sort(codeUnitCompare));
@@ -4351,7 +5404,10 @@ export async function validateA0E0BridgeContract(
       sourceOrigin[String(argument["sourceFormat"])] !==
         argument["replacementOrigin"]
     ) {
-      return refuse("import.replacement_request_invalid", "early");
+      return refuse(
+        "import.replacement_request_invalid",
+        "validate.request-envelope",
+      );
     }
     const confirmation = argument["nonUndoableConfirmation"];
     const acknowledgement = isObject(confirmation) ? confirmation : {};
@@ -4379,13 +5435,19 @@ export async function validateA0E0BridgeContract(
         ]) ||
         !hasExactKeys(requirement["disclosedImpact"], impactKeys))
     ) {
-      return refuse("import.confirmation_identity_mismatch", "early");
+      return refuse(
+        "import.confirmation_identity_mismatch",
+        "validate.request-envelope",
+      );
     }
     const beforeDocument = isObject(before["document"])
       ? before["document"]
       : {};
     if (identity["documentId"] !== beforeDocument["id"]) {
-      return refuse("import.replacement_wrong_document", "early");
+      return refuse(
+        "import.replacement_wrong_document",
+        "compare.complete-identity",
+      );
     }
     const currentRequest = recordsAt(before["pendingRequests"]).find(
       (request) =>
@@ -4399,7 +5461,10 @@ export async function validateA0E0BridgeContract(
       currentRequest === undefined ||
       before["revision"] !== identity["baseRevision"]
     ) {
-      return refuse("import.replacement_request_stale", "early");
+      return refuse(
+        "import.replacement_request_stale",
+        "compare.complete-identity",
+      );
     }
     const controllerTransition = isObject(before["documentTransition"])
       ? before["documentTransition"]
@@ -4421,7 +5486,10 @@ export async function validateA0E0BridgeContract(
       transition["baseRevision"] !== identity["baseRevision"] ||
       transition["candidateDocumentId"] !== candidate["id"]
     ) {
-      return refuse("import.replacement_transition_mismatch", "early");
+      return refuse(
+        "import.replacement_transition_mismatch",
+        "compare.transition-binding",
+      );
     }
     if (
       (impact["undoDisposition"] !== "retained" &&
@@ -4429,29 +5497,33 @@ export async function validateA0E0BridgeContract(
       transition["undoDisposition"] !== impact["undoDisposition"] ||
       controllerTransition["undoDisposition"] !== impact["undoDisposition"]
     ) {
-      return refuse("import.replacement_impact_mismatch", "early");
+      return refuse(
+        "import.replacement_impact_mismatch",
+        "compare.transition-binding",
+      );
+    }
+    if (!isBoundedUnicodeScalarToken(seed["id"], MAX_COMMAND_ID_CODE_POINTS)) {
+      return refuse(
+        "import.replacement_command_id_invalid",
+        "validate.command-metadata",
+      );
     }
     if (
-      !isBoundedUnicodeScalarToken(
-        seed["id"],
-        MAX_COMMAND_ID_CODE_POINTS,
-      )
+      !isBoundedUnicodeScalarToken(seed["label"], MAX_COMMAND_LABEL_CODE_POINTS)
     ) {
-      return refuse("import.replacement_command_id_invalid", "early");
-    }
-    if (
-      !isBoundedUnicodeScalarToken(
-        seed["label"],
-        MAX_COMMAND_LABEL_CODE_POINTS,
-      )
-    ) {
-      return refuse("import.replacement_command_label_invalid", "early");
+      return refuse(
+        "import.replacement_command_label_invalid",
+        "validate.command-metadata",
+      );
     }
     if (
       !Number.isSafeInteger(seed["logicalTimeMs"]) ||
       Number(seed["logicalTimeMs"]) < 0
     ) {
-      return refuse("import.replacement_logical_time_invalid", "early");
+      return refuse(
+        "import.replacement_logical_time_invalid",
+        "validate.command-metadata",
+      );
     }
     const beforeHistory = isObject(before["history"]) ? before["history"] : {};
     const undoEntries = recordsAt(beforeHistory["undo"]);
@@ -4461,26 +5533,35 @@ export async function validateA0E0BridgeContract(
       typeof latestUndo["lastLogicalTimeMs"] === "number" &&
       Number(seed["logicalTimeMs"]) < latestUndo["lastLogicalTimeMs"]
     ) {
-      return refuse("import.replacement_logical_time_invalid", "early");
+      return refuse(
+        "import.replacement_logical_time_invalid",
+        "validate.command-metadata",
+      );
     }
     if (before["revision"] === MAX_APPLICATION_REVISION) {
-      return refuse("application.revision_exhausted", "early");
+      return refuse(
+        "application.revision_exhausted",
+        "check.revision-and-sequence-capacity",
+      );
     }
     if (before["nextSequence"] === MAX_APPLICATION_SEQUENCE) {
-      return refuse("application.sequence_exhausted", "early");
+      return refuse(
+        "application.sequence_exhausted",
+        "check.revision-and-sequence-capacity",
+      );
     }
     const candidateObservation = observeDocumentValidation(candidate);
     if (
       candidateObservation.stage === "f2-refused" ||
       candidateObservation.stage === "f2-repaired"
     ) {
-      return refuse("import.candidate_structural_invalid", "structural");
+      return refuse("import.candidate_structural_invalid", "call.f2");
     }
     if (
       candidateObservation.stage === "f3-refused" ||
       candidateObservation.stage === "f3-repaired"
     ) {
-      return refuse("import.candidate_semantic_invalid", "semantic");
+      return refuse("import.candidate_semantic_invalid", "call.f3");
     }
     const simulation = runReplacementOracle(
       before,
@@ -4494,14 +5575,14 @@ export async function validateA0E0BridgeContract(
       if (refusal["code"] === "history.entry_too_large") {
         return refuse(
           "import.replacement_impact_unavailable",
-          "history",
+          "estimate.history",
           simulation,
         );
       }
       if (refusal["code"] === "history.byte_estimate_invalid") {
         return refuse(
           "import.replacement_history_estimate_failed",
-          "history",
+          "estimate.history",
           simulation,
         );
       }
@@ -4517,18 +5598,22 @@ export async function validateA0E0BridgeContract(
     if (recomputedImpact === null) {
       return refuse(
         "import.replacement_history_estimate_failed",
-        "history",
+        "estimate.history",
         simulation,
       );
     }
     if (!jsonDeepEqual(recomputedImpact, impact)) {
-      return refuse("import.replacement_impact_mismatch", "post-history", simulation);
+      return refuse(
+        "import.replacement_impact_mismatch",
+        "recompute.impact",
+        simulation,
+      );
     }
     if (impact["undoDisposition"] === "explicitly-unavailable") {
       if (confirmation === null) {
         return refuse(
           "history.nonundoable_confirmation_required",
-          "post-history",
+          "compare.confirmation",
           simulation,
         );
       }
@@ -4536,19 +5621,23 @@ export async function validateA0E0BridgeContract(
         requirementIdentity["requestId"] !== identity["requestId"] ||
         requirementIdentity["baseRevision"] !== identity["baseRevision"]
       ) {
-        return refuse("import.confirmation_stale", "post-history", simulation);
+        return refuse(
+          "import.confirmation_stale",
+          "compare.confirmation",
+          simulation,
+        );
       }
       if (requirementIdentity["documentId"] !== identity["documentId"]) {
         return refuse(
           "import.confirmation_wrong_document",
-          "post-history",
+          "compare.confirmation",
           simulation,
         );
       }
       if (!jsonDeepEqual(requirement["disclosedImpact"], recomputedImpact)) {
         return refuse(
           "import.confirmation_impact_mismatch",
-          "post-history",
+          "compare.confirmation",
           simulation,
         );
       }
@@ -4565,18 +5654,22 @@ export async function validateA0E0BridgeContract(
       ) {
         return refuse(
           "import.confirmation_identity_mismatch",
-          "post-history",
+          "compare.confirmation",
           simulation,
         );
       }
     } else if (confirmation !== null) {
-      return refuse("import.replacement_impact_mismatch", "post-history", simulation);
+      return refuse(
+        "import.replacement_impact_mismatch",
+        "compare.confirmation",
+        simulation,
+      );
     }
     const entries = recordsAt(registryBefore["entries"]);
     if (entries.length !== 0) {
       return refuse(
         "import.replacement_preparation_busy",
-        "registry",
+        "inspect.registry-capacity-one",
         simulation,
       );
     }
@@ -4591,7 +5684,7 @@ export async function validateA0E0BridgeContract(
     };
     return {
       code: null,
-      stage: "success",
+      reachedThrough: "return.prepared",
       prepared,
       simulation,
     };
@@ -4609,7 +5702,7 @@ export async function validateA0E0BridgeContract(
         return;
       }
       if (!isObject(value)) return;
-      if (isFullAppStateLiteral(value)) {
+      if (hasAppStateTopLevelShape(value)) {
         throw new Error("BRIDGE_PRIVATE_MATERIAL_WHOLE_APP_STATE");
       }
       for (const [key, child] of Object.entries(value)) {
@@ -4710,16 +5803,7 @@ export async function validateA0E0BridgeContract(
       noticeTemplates,
     };
     if (
-      !exactKeys(privateMaterial, [
-        "bookmarksAndFocus",
-        "candidate",
-        "command",
-        "disclosedImpact",
-        "expectedRetirement",
-        "history",
-        "publication",
-        "validation",
-      ]) ||
+      !exactKeys(privateMaterial, PRIVATE_IMPORT_REPLACEMENT_MATERIAL_KEYS) ||
       !exactKeys(bookmarks, [
         "after",
         "before",
@@ -4772,10 +5856,14 @@ export async function validateA0E0BridgeContract(
         sha256(candidateBytes) ||
       candidateMetadata["canonicalMaterializedByteLength"] !==
         candidateBytes.byteLength ||
-      candidateMetadata["acceptedPrettyFileSha256"] !==
-        candidateCatalogEntry["sha256"] ||
+      (candidateCatalogEntry["kind"] === "accepted-e0-v1-reference"
+        ? candidateMetadata["acceptedPrettyFileSha256"] !==
+          candidateCatalogEntry["sha256"]
+        : candidateLiteralId !== "representative-f3-valid" ||
+          candidateMetadata["acceptedPrettyFileSha256"] !==
+            REPRESENTATIVE_F3_PRETTY_SOURCE_SHA256) ||
       candidateMetadata["preservationPolicy"] !==
-        "validated-bytes-and-manual-frozen-spellings-preserved-without-repair" ||
+        expectedPrivateCandidatePreservationPolicy(candidateLiteralId) ||
       !exactKeys(validation, [
         "candidateCanonicalMaterializedByteLength",
         "candidateCanonicalMaterializedSha256",
@@ -4799,8 +5887,15 @@ export async function validateA0E0BridgeContract(
         repairs: 0,
       }) ||
       !jsonDeepEqual(command, decision.simulation.command) ||
-      !jsonDeepEqual(privateMaterial["disclosedImpact"], argument["disclosedImpact"]) ||
-      !jsonDeepEqual(privateMaterial["expectedRetirement"], command["retirement"]) ||
+      !jsonDeepEqual(
+        privateMaterial["disclosedImpact"],
+        argument["disclosedImpact"],
+      ) ||
+      !jsonDeepEqual(
+        privateMaterial["expectedRetirement"],
+        command["retirement"],
+      ) ||
+      !privatePendingRequestsSnapshotMatches(privateMaterial, before) ||
       !jsonDeepEqual(bookmarks["before"], before["bookmarks"]) ||
       !jsonDeepEqual(bookmarks["after"], after["bookmarks"]) ||
       !jsonDeepEqual(bookmarks["focusTarget"], afterFocus["target"]) ||
@@ -4844,9 +5939,7 @@ export async function validateA0E0BridgeContract(
   const conformanceOwnerRunIds = [...runById.entries()]
     .filter(
       ([, run]) =>
-        run.ownerProof &&
-        !run.e0V2Owned &&
-        run.runRole === "conformance",
+        run.ownerProof && !run.e0V2Owned && run.runRole === "conformance",
     )
     .map(([runId]) => runId);
   requireExact(
@@ -4859,12 +5952,16 @@ export async function validateA0E0BridgeContract(
   );
 
   const prepareRefusalCodesWitnessed = new Set<string>();
-  const missingPublishEventByRunId: Readonly<Record<string, string>> = {
-    "BRIDGE-REP-030/consumed-replay": "lookup.consumed-entry-empty",
-    "BRIDGE-REP-030/invalidated-replay": "lookup.invalidated-entry-empty",
-    "BRIDGE-REP-030/structural-lookalike":
+  const missingPublishEventsByRunId: Readonly<
+    Record<string, readonly string[]>
+  > = {
+    "BRIDGE-REP-030/consumed-replay": ["lookup.consumed-entry-empty"],
+    "BRIDGE-REP-030/invalidated-replay": ["lookup.invalidated-entry-empty"],
+    "BRIDGE-REP-030/structural-lookalike": [
+      "lookup.no-authoritative-entry",
       "reject.lookalike-without-private-entry",
-    "BRIDGE-REP-030/mutation-006-consumed": "lookup.consumed-entry-empty",
+    ],
+    "BRIDGE-REP-030/mutation-006-consumed": ["lookup.consumed-entry-empty"],
   };
 
   const assertExactOwnerOracleProjection = (
@@ -4925,7 +6022,8 @@ export async function validateA0E0BridgeContract(
               fullRunId as keyof typeof PREPARE_REFUSAL_BY_CONFORMANCE_RUN_ID
             ];
           if (
-            (PREPARE_SUCCESS_RUN_IDS.has(fullRunId) && decision.code !== null) ||
+            (PREPARE_SUCCESS_RUN_IDS.has(fullRunId) &&
+              decision.code !== null) ||
             (!PREPARE_SUCCESS_RUN_IDS.has(fullRunId) &&
               tableCode !== decision.code)
           ) {
@@ -4933,64 +6031,48 @@ export async function validateA0E0BridgeContract(
           }
         }
         const success = decision.code === null;
-        if (!success) prepareRefusalCodesWitnessed.add(String(decision.code));
+        if (!success) prepareRefusalCodesWitnessed.add(decision.code);
         const expectedResult = success
           ? { ok: true, value: decision.prepared }
           : { ok: false, code: decision.code };
+        const reachedThroughIndex = PREPARE_SUCCESS_EVENTS.indexOf(
+          decision.reachedThrough,
+        );
+        if (reachedThroughIndex < 0) {
+          throw new Error("BRIDGE_PREPARE_EVENT_CHECKPOINT");
+        }
+        const reached = (
+          event: (typeof PREPARE_SUCCESS_EVENTS)[number],
+        ): boolean =>
+          PREPARE_SUCCESS_EVENTS.indexOf(event) <= reachedThroughIndex;
         const expectedCounters = completeOwnerCounters(run.operation, {
           controllerStateReads: 1,
-          f2DecodeDocumentShape:
-            decision.stage === "structural" ||
-            decision.stage === "semantic" ||
-            decision.stage === "history" ||
-            decision.stage === "post-history" ||
-            decision.stage === "registry" ||
-            decision.stage === "success"
-              ? 1
-              : 0,
-          f3ValidateDocumentSemantics:
-            decision.stage === "semantic" ||
-            decision.stage === "history" ||
-            decision.stage === "post-history" ||
-            decision.stage === "registry" ||
-            decision.stage === "success"
-              ? 1
-              : 0,
-          bookmarkRepair:
-            decision.stage === "history" ||
-            decision.stage === "post-history" ||
-            decision.stage === "registry" ||
-            decision.stage === "success"
-              ? 1
-              : 0,
-          historyEstimator:
-            decision.stage === "history" ||
-            decision.stage === "post-history" ||
-            decision.stage === "registry" ||
-            decision.stage === "success"
-              ? 1
-              : 0,
-          registryLookups:
-            decision.stage === "registry" || decision.stage === "success"
-              ? 1
-              : 0,
-          registryAllocations: decision.stage === "success" ? 1 : 0,
+          f2DecodeDocumentShape: reached("call.f2") ? 1 : 0,
+          f3ValidateDocumentSemantics: reached("call.f3") ? 1 : 0,
+          bookmarkRepair: reached("repair.bookmarks-and-focus") ? 1 : 0,
+          historyEstimator: reached("estimate.history") ? 1 : 0,
+          registryLookups: reached("inspect.registry-capacity-one") ? 1 : 0,
+          registryAllocations: success ? 1 : 0,
         });
-        const expectedEvents =
-          decision.stage === "success"
-            ? PREPARE_SUCCESS_EVENTS
-            : decision.stage === "registry"
-              ? PREPARE_BUSY_EVENTS
-              : [
-                  "call.prepare",
-                  "read.controller-state",
-                  `refuse.${String(decision.code)}`,
-                  "return.refused-no-allocation",
-                ];
+        const refusalPrefix = PREPARE_SUCCESS_EVENTS.slice(
+          0,
+          reachedThroughIndex + 1,
+        );
+        const expectedEvents = success
+          ? PREPARE_SUCCESS_EVENTS
+          : decision.code === "import.replacement_preparation_busy"
+            ? PREPARE_BUSY_EVENTS
+            : [
+                ...refusalPrefix,
+                `refuse.${decision.code}`,
+                "return.refused-no-allocation",
+              ];
         let expectedRegistryAfter: unknown = registryBefore;
         if (success) {
           const afterEntries = recordsAt(
-            isObject(run.registryAfter) ? run.registryAfter["entries"] : undefined,
+            isObject(run.registryAfter)
+              ? run.registryAfter["entries"]
+              : undefined,
           );
           const entry = afterEntries[0];
           if (
@@ -5115,8 +6197,8 @@ export async function validateA0E0BridgeContract(
         let installs = 0;
         let listeners = 0;
         if (matchingEntry === undefined) {
-          const missingEvent = missingPublishEventByRunId[fullRunId];
-          if (missingEvent === undefined) {
+          const missingEvents = missingPublishEventsByRunId[fullRunId];
+          if (missingEvents === undefined) {
             throw new Error("BRIDGE_OWNER_ORACLE_MISSING_HISTORY_EVENT");
           }
           expectedResult = {
@@ -5131,7 +6213,7 @@ export async function validateA0E0BridgeContract(
           expectedEvents = [
             "call.publish",
             "read.controller-state",
-            missingEvent,
+            ...missingEvents,
             "return.refused-live-zero",
           ];
         } else {
@@ -5172,12 +6254,10 @@ export async function validateA0E0BridgeContract(
           const stale =
             identity["documentId"] !== beforeDocument["id"] ||
             identity["baseRevision"] !== before["revision"] ||
+            !privatePendingRequestsSnapshotMatches(privateMaterial, before) ||
             currentRequest === undefined ||
             !jsonDeepEqual(currentTransition, expectedRetiringTransition) ||
-            !jsonDeepEqual(
-              before["bookmarks"],
-              bookmarksAndFocus["before"],
-            ) ||
+            !jsonDeepEqual(before["bookmarks"], bookmarksAndFocus["before"]) ||
             before["nextSequence"] === MAX_APPLICATION_SEQUENCE;
           const retirement = isObject(argument["retirement"])
             ? argument["retirement"]
@@ -5186,10 +6266,7 @@ export async function validateA0E0BridgeContract(
             ? before["transport"]
             : {};
           const retirementMismatch =
-            !jsonDeepEqual(
-              privateMaterial["expectedRetirement"],
-              retirement,
-            ) ||
+            !jsonDeepEqual(privateMaterial["expectedRetirement"], retirement) ||
             !Number.isSafeInteger(retirement["retiredTransportGeneration"]) ||
             !Number.isSafeInteger(latestTransport["generation"]) ||
             Number(retirement["retiredTransportGeneration"]) <
@@ -5225,6 +6302,7 @@ export async function validateA0E0BridgeContract(
             expectedEvents = [
               "call.publish",
               "read.controller-state",
+              "lookup.exact-live-entry",
               "compare.preparation-stale",
               "consume.entry-before-return",
               "return.refused-live-zero",
@@ -5242,6 +6320,7 @@ export async function validateA0E0BridgeContract(
             expectedEvents = [
               "call.publish",
               "read.controller-state",
+              "lookup.exact-live-entry",
               "compare.retirement-mismatch",
               "consume.entry-before-return",
               "return.refused-live-zero",
@@ -5338,7 +6417,8 @@ export async function validateA0E0BridgeContract(
         const exactIdentity =
           publication["documentId"] === document["id"] &&
           publication["revision"] === before["revision"];
-        const replay = exactIdentity && before["exportRevision"] === publication["revision"];
+        const replay =
+          exactIdentity && before["exportRevision"] === publication["revision"];
         let expectedResult: unknown;
         let expectedAfter: unknown = before;
         let expectedEvents: readonly string[];
@@ -5398,7 +6478,10 @@ export async function validateA0E0BridgeContract(
             documentId: document["id"],
             revision: before["revision"],
           };
-          expectedAfter = { ...before, exportRevision: publication["revision"] };
+          expectedAfter = {
+            ...before,
+            exportRevision: publication["revision"],
+          };
           installs = 1;
           listeners = 1;
           expectedEvents = [
@@ -5505,16 +6588,7 @@ export async function validateA0E0BridgeContract(
       prepared === null ||
       retirement === null ||
       stableJson(Object.keys(privateMaterial).sort(codeUnitCompare)) !==
-        stableJson([
-          "bookmarksAndFocus",
-          "candidate",
-          "command",
-          "disclosedImpact",
-          "expectedRetirement",
-          "history",
-          "publication",
-          "validation",
-        ]) ||
+        stableJson(PRIVATE_IMPORT_REPLACEMENT_MATERIAL_KEYS) ||
       stableJson(entry["key"]) !== stableJson(prepared["identity"]) ||
       stableJson(entry["preparedEcho"]) !== stableJson(prepared) ||
       stableJson(privateMaterial["expectedRetirement"]) !==
@@ -5549,7 +6623,13 @@ export async function validateA0E0BridgeContract(
       preparationResult["ok"] !== true ||
       stableJson(preparationResult["value"]) !== stableJson(prepared) ||
       stableJson(privateMaterial["disclosedImpact"]) !==
-        stableJson(preparationArgument["disclosedImpact"])
+        stableJson(preparationArgument["disclosedImpact"]) ||
+      !isObject(preparation.controllerStateBefore) ||
+      !privatePendingRequestsSnapshotMatches(
+        privateMaterial,
+        preparation.controllerStateBefore,
+      ) ||
+      !privatePendingRequestsSnapshotMatches(privateMaterial, before)
     ) {
       throw new Error("BRIDGE_PRIVATE_MATERIAL_PREPARATION_BINDING");
     }
@@ -5579,9 +6659,13 @@ export async function validateA0E0BridgeContract(
       candidate["canonicalMaterializedSha256"] !== sha256(candidateBytes) ||
       candidate["canonicalMaterializedByteLength"] !==
         candidateBytes.byteLength ||
-      candidate["acceptedPrettyFileSha256"] !== candidateEntry["sha256"] ||
+      (candidateEntry["kind"] === "accepted-e0-v1-reference"
+        ? candidate["acceptedPrettyFileSha256"] !== candidateEntry["sha256"]
+        : candidateLiteralId !== "representative-f3-valid" ||
+          candidate["acceptedPrettyFileSha256"] !==
+            REPRESENTATIVE_F3_PRETTY_SOURCE_SHA256) ||
       candidate["preservationPolicy"] !==
-        "validated-bytes-and-manual-frozen-spellings-preserved-without-repair"
+        expectedPrivateCandidatePreservationPolicy(candidateLiteralId)
     ) {
       throw new Error("BRIDGE_PRIVATE_MATERIAL_CANDIDATE");
     }
@@ -5726,8 +6810,7 @@ export async function validateA0E0BridgeContract(
         throw new Error("BRIDGE_PRIVATE_MATERIAL_HISTORY_ENTRY");
       }
     } else if (
-      history["retentionDecision"] !==
-      "explicitly-unavailable-entry-omitted"
+      history["retentionDecision"] !== "explicitly-unavailable-entry-omitted"
     ) {
       throw new Error("BRIDGE_PRIVATE_MATERIAL_HISTORY_DECISION");
     }
@@ -5735,9 +6818,7 @@ export async function validateA0E0BridgeContract(
     const publication = isObject(privateMaterial["publication"])
       ? privateMaterial["publication"]
       : {};
-    const replacementOwned = isObject(
-      publication["replacementOwnedProjection"],
-    )
+    const replacementOwned = isObject(publication["replacementOwnedProjection"])
       ? publication["replacementOwnedProjection"]
       : {};
     const noticeTemplates = recordsAt(replacementOwned["noticeTemplates"]);
@@ -5822,13 +6903,11 @@ export async function validateA0E0BridgeContract(
     if (!run.ownerProof || run.runRole === "mutation-killer") continue;
     const caseRecord = caseById.get(run.caseId) ?? {};
     const operation = caseRecord["operation"];
-    const argumentsValue = Array.isArray(run.rawCall["arguments"])
+    const argumentsValue = isUnknownArray(run.rawCall["arguments"])
       ? run.rawCall["arguments"]
       : [];
     const argument = argumentsValue[0];
-    const result = isObject(run.exactTypedResult)
-      ? run.exactTypedResult
-      : {};
+    const result = isObject(run.exactTypedResult) ? run.exactTypedResult : {};
     const before = isObject(run.controllerStateBefore)
       ? run.controllerStateBefore
       : {};
@@ -5910,7 +6989,9 @@ export async function validateA0E0BridgeContract(
         } else if (
           result["ok"] !== false ||
           result["observedDocumentId"] !==
-            (isObject(before["document"]) ? before["document"]["id"] : undefined) ||
+            (isObject(before["document"])
+              ? before["document"]["id"]
+              : undefined) ||
           result["observedRevision"] !== before["revision"] ||
           stableJson(before) !== stableJson(after)
         ) {
@@ -5919,7 +7000,9 @@ export async function validateA0E0BridgeContract(
       } else if (operation === "readCurrentApplicationDocumentIdentity") {
         if (
           result["documentId"] !==
-            (isObject(before["document"]) ? before["document"]["id"] : undefined) ||
+            (isObject(before["document"])
+              ? before["document"]["id"]
+              : undefined) ||
           result["revision"] !== before["revision"] ||
           stableJson(before) !== stableJson(after) ||
           stableJson(registryBefore) !== stableJson(registryAfter)
@@ -5968,74 +7051,175 @@ export async function validateA0E0BridgeContract(
     const caseId = String(record["id"]);
     for (const run of recordsAt(record["runs"])) {
       const nearMiss = run["oneFieldNearMiss"];
-      if (nearMiss === null) continue;
-      if (!isObject(nearMiss)) {
-        addFinding(
-          findings,
-          "BRIDGE_NEAR_MISS_SHAPE",
-          `owner-port-cases.json.${caseId}/${String(run["id"])}`,
-          "Near-miss evidence must be null or one exact replace/add mutation.",
-        );
+      const correlatedNearMiss = run["correlatedStateNearMiss"];
+      if (nearMiss !== null) {
+        if (!isObject(nearMiss)) {
+          addFinding(
+            findings,
+            "BRIDGE_NEAR_MISS_SHAPE",
+            `owner-port-cases.json.${caseId}/${String(run["id"])}`,
+            "Near-miss evidence must be null or one exact replace/add mutation.",
+          );
+        } else {
+          const current = runById.get(`${caseId}/${String(run["id"])}`);
+          const baselineId = nearMiss["baselineRunId"];
+          const baseline =
+            typeof baselineId === "string"
+              ? runById.get(baselineId)
+              : undefined;
+          try {
+            const operator = nearMiss["operator"];
+            const pointer = nearMiss["jsonPointer"];
+            const materializedFrom = materializeBridgeTemplate(
+              nearMiss["from"],
+              literalContext,
+              baseline?.controllerStateBefore,
+              new Set(),
+            );
+            const materializedTo = materializeBridgeTemplate(
+              nearMiss["to"],
+              literalContext,
+              baseline?.controllerStateBefore,
+              new Set(),
+            );
+            const baselineValue =
+              typeof pointer === "string"
+                ? valueAtJsonPointer(baseline?.comparisonInput, pointer)
+                : undefined;
+            const currentValue =
+              typeof pointer === "string"
+                ? valueAtJsonPointer(current?.comparisonInput, pointer)
+                : undefined;
+            if (
+              current === undefined ||
+              baseline === undefined ||
+              (operator !== "replace" && operator !== "add") ||
+              typeof pointer !== "string" ||
+              nearMiss["exactChangedFieldCount"] !== 1 ||
+              (operator === "add"
+                ? baselineValue !== undefined ||
+                  !isObject(materializedFrom) ||
+                  materializedFrom["$absent"] !== true
+                : !jsonDeepEqual(baselineValue, materializedFrom)) ||
+              !jsonDeepEqual(currentValue, materializedTo)
+            ) {
+              throw new Error("BRIDGE_NEAR_MISS_POINTER");
+            }
+            const changed = jsonDiffPointers(
+              baseline.comparisonInput,
+              current.comparisonInput,
+            );
+            if (changed.length !== 1 || changed[0] !== pointer) {
+              throw new Error("BRIDGE_NEAR_MISS_CHANGE_COUNT");
+            }
+          } catch (error) {
+            addFinding(
+              findings,
+              "BRIDGE_NEAR_MISS_LITERAL",
+              `owner-port-cases.json.${caseId}/${String(run["id"])}.oneFieldNearMiss`,
+              `Near miss must change exactly the declared materialized field from the baseline (${error instanceof Error ? error.message : "unknown"}).`,
+            );
+          }
+        }
+      }
+      if (correlatedNearMiss === undefined || correlatedNearMiss === null) {
         continue;
       }
-      const current = runById.get(`${caseId}/${String(run["id"])}`);
-      const baselineId = nearMiss["baselineRunId"];
-      const baseline =
-        typeof baselineId === "string" ? runById.get(baselineId) : undefined;
       try {
-        const operator = nearMiss["operator"];
-        const pointer = nearMiss["jsonPointer"];
-        const materializedFrom = materializeBridgeTemplate(
-          nearMiss["from"],
-          literalContext,
-          baseline?.controllerStateBefore,
-          new Set(),
+        if (nearMiss !== null || !isObject(correlatedNearMiss)) {
+          throw new Error("BRIDGE_CORRELATED_NEAR_MISS_EXCLUSIVE_SHAPE");
+        }
+        const expectedKeys = [
+          "baselineRunId",
+          "exactChangedFieldCount",
+          "from",
+          "jsonPointers",
+          "operator",
+          "to",
+        ];
+        const pointers = stringsAt(correlatedNearMiss["jsonPointers"]);
+        const fromValues = correlatedNearMiss["from"];
+        const toValues = correlatedNearMiss["to"];
+        const baselineId = correlatedNearMiss["baselineRunId"];
+        const baseline =
+          typeof baselineId === "string" ? runById.get(baselineId) : undefined;
+        const current = runById.get(`${caseId}/${String(run["id"])}`);
+        const descriptor = isObject(run["controllerStateBefore"])
+          ? run["controllerStateBefore"]
+          : {};
+        const descriptorPatches = recordsAt(descriptor["patches"]);
+        const descriptorPointers = descriptorPatches.map((patch) =>
+          typeof patch["jsonPointer"] === "string"
+            ? `/controllerState${patch["jsonPointer"]}`
+            : "",
         );
-        const materializedTo = materializeBridgeTemplate(
-          nearMiss["to"],
-          literalContext,
-          baseline?.controllerStateBefore,
-          new Set(),
-        );
-        const baselineValue =
-          typeof pointer === "string"
-            ? valueAtJsonPointer(baseline?.comparisonInput, pointer)
-            : undefined;
-        const currentValue =
-          typeof pointer === "string"
-            ? valueAtJsonPointer(current?.comparisonInput, pointer)
-            : undefined;
         if (
-          current === undefined ||
+          stableJson(Object.keys(correlatedNearMiss).sort(codeUnitCompare)) !==
+            stableJson(expectedKeys) ||
+          correlatedNearMiss["operator"] !== "replace" ||
           baseline === undefined ||
-          (operator !== "replace" && operator !== "add") ||
-          typeof pointer !== "string" ||
-          nearMiss["exactChangedFieldCount"] !== 1 ||
-          (operator === "add"
-            ? baselineValue !== undefined ||
-              !isObject(materializedFrom) ||
-              materializedFrom["$absent"] !== true
-            : !jsonDeepEqual(baselineValue, materializedFrom)) ||
-          !jsonDeepEqual(currentValue, materializedTo)
+          current === undefined ||
+          pointers.length < 2 ||
+          !Array.isArray(correlatedNearMiss["jsonPointers"]) ||
+          pointers.length !== correlatedNearMiss["jsonPointers"].length ||
+          new Set(pointers).size !== pointers.length ||
+          !Array.isArray(fromValues) ||
+          !Array.isArray(toValues) ||
+          fromValues.length !== pointers.length ||
+          toValues.length !== pointers.length ||
+          correlatedNearMiss["exactChangedFieldCount"] !== pointers.length ||
+          descriptorPatches.length !== pointers.length ||
+          descriptorPatches.some((patch) => patch["op"] !== "replace") ||
+          !jsonDeepEqual(descriptorPointers, pointers)
         ) {
-          throw new Error("BRIDGE_NEAR_MISS_POINTER");
+          throw new Error("BRIDGE_CORRELATED_NEAR_MISS_SHAPE");
+        }
+        for (const [index, pointer] of pointers.entries()) {
+          const materializedFrom = materializeBridgeTemplate(
+            fromValues[index],
+            literalContext,
+            baseline.controllerStateBefore,
+            new Set(),
+          );
+          const materializedTo = materializeBridgeTemplate(
+            toValues[index],
+            literalContext,
+            baseline.controllerStateBefore,
+            new Set(),
+          );
+          if (
+            !jsonDeepEqual(
+              valueAtJsonPointer(baseline.comparisonInput, pointer),
+              materializedFrom,
+            ) ||
+            !jsonDeepEqual(
+              valueAtJsonPointer(current.comparisonInput, pointer),
+              materializedTo,
+            ) ||
+            jsonDeepEqual(materializedFrom, materializedTo)
+          ) {
+            throw new Error("BRIDGE_CORRELATED_NEAR_MISS_POINTER");
+          }
         }
         const changed = jsonDiffPointers(
           baseline.comparisonInput,
           current.comparisonInput,
         );
         if (
-          changed.length !== 1 ||
-          changed[0] !== pointer
+          changed.length !== pointers.length ||
+          !jsonDeepEqual(
+            [...changed].sort(codeUnitCompare),
+            [...pointers].sort(codeUnitCompare),
+          )
         ) {
-          throw new Error("BRIDGE_NEAR_MISS_CHANGE_COUNT");
+          throw new Error("BRIDGE_CORRELATED_NEAR_MISS_CHANGE_SET");
         }
       } catch (error) {
         addFinding(
           findings,
-          "BRIDGE_NEAR_MISS_LITERAL",
-          `owner-port-cases.json.${caseId}/${String(run["id"])}.oneFieldNearMiss`,
-          `Near miss must change exactly the declared materialized field from the baseline (${error instanceof Error ? error.message : "unknown"}).`,
+          "BRIDGE_CORRELATED_NEAR_MISS_LITERAL",
+          `owner-port-cases.json.${caseId}/${String(run["id"])}.correlatedStateNearMiss`,
+          `A correlated valid-state near miss must declare every ordered descriptor patch and independently equal the complete baseline/current comparison-input diff (${error instanceof Error ? error.message : "unknown"}).`,
         );
       }
     }
@@ -6045,15 +7229,13 @@ export async function validateA0E0BridgeContract(
     "positive",
     "negative-near-miss",
     "stale-concurrent",
-    "malformed-throw",
+    "malformed-owner-input",
     "replay",
     "transposition-applicability",
     "negative-mutation-control",
-    "e0-v2-owned-consumer-normalization",
   ]);
   for (const record of allCases) {
     const id = String(record["id"]);
-    const isForwardE0V2 = E0_V2_OWNED_CASE_IDS.has(id);
     const expectedMutationKills = stringsAt(record["expectedMutationKills"]);
     if (
       !A0_E0_BRIDGE_OWNER_OPERATION_NAMES.includes(
@@ -6063,35 +7245,23 @@ export async function validateA0E0BridgeContract(
       ) ||
       !allowedCategories.has(String(record["category"])) ||
       stringsAt(record["traceIds"]).length === 0 ||
-      (isForwardE0V2
-        ? expectedMutationKills.length !== 0
-        : expectedMutationKills.length === 0)
+      expectedMutationKills.length === 0
     ) {
       addFinding(
         findings,
         "BRIDGE_CASE_INCOMPLETE",
         id,
-        "Each case needs a closed operation/category, literal run, and reciprocal trace; A0 owner cases need mutation kills while forward E0 v2 rows must have none.",
+        "Each A0 owner case needs a closed operation/category, literal run, mutation kills, and reciprocal trace.",
       );
     }
     for (const traceId of stringsAt(record["traceIds"])) {
       const trace = traceById.get(traceId);
-      const expectedTraceField = isForwardE0V2
-        ? "forwardE0V2CaseIds"
-        : "caseIds";
-      const forbiddenTraceField = isForwardE0V2
-        ? "caseIds"
-        : "forwardE0V2CaseIds";
-      if (
-        trace === undefined ||
-        !stringsAt(trace[expectedTraceField]).includes(id) ||
-        stringsAt(trace[forbiddenTraceField]).includes(id)
-      ) {
+      if (trace === undefined || !stringsAt(trace["caseIds"]).includes(id)) {
         addFinding(
           findings,
           "BRIDGE_CASE_TRACE_LINK",
           `${id}.traceIds.${traceId}`,
-          "Case and trace links must be reciprocal in exactly the A0-owner or forward-E0-v2 collection.",
+          "A0 case and trace links must be reciprocal.",
         );
       }
     }
@@ -6116,7 +7286,9 @@ export async function validateA0E0BridgeContract(
     const baselineRunId = control["baselineRunId"];
     const killerRunId = control["killerRunId"];
     const baseline =
-      typeof baselineRunId === "string" ? runById.get(baselineRunId) : undefined;
+      typeof baselineRunId === "string"
+        ? runById.get(baselineRunId)
+        : undefined;
     const killer =
       typeof killerRunId === "string" ? runById.get(killerRunId) : undefined;
     const mutation = isObject(control["mutation"]) ? control["mutation"] : {};
@@ -6208,13 +7380,9 @@ export async function validateA0E0BridgeContract(
         !allowedObservationMaterializations.has(
           String(observationMaterialization),
         ) ||
-        ![
-          "replace",
-          "add",
-          "move",
-          "swap",
-          "truncate-and-return",
-        ].includes(String(mutation["operator"])) ||
+        !["replace", "add", "move", "swap", "truncate-and-return"].includes(
+          String(mutation["operator"]),
+        ) ||
         typeof mutation["jsonPointer"] !== "string" ||
         mutation["exactChangedFieldCount"] !== 1 ||
         typeof observation["jsonPointer"] !== "string" ||
@@ -6226,13 +7394,13 @@ export async function validateA0E0BridgeContract(
       const materializedMutationFrom = materializeBridgeTemplate(
         mutation["from"],
         literalContext,
-        baseline?.controllerStateBefore,
+        baseline.controllerStateBefore,
         new Set(),
       );
       const materializedMutationTo = materializeBridgeTemplate(
         mutation["to"],
         literalContext,
-        baseline?.controllerStateBefore,
+        baseline.controllerStateBefore,
         new Set(),
       );
       const mutationTarget = projectionForMutationTarget(
@@ -6243,7 +7411,7 @@ export async function validateA0E0BridgeContract(
       let mutated: unknown;
       if (mutationOperator === "move" || mutationOperator === "swap") {
         if (
-          !Array.isArray(mutationTarget) ||
+          !isUnknownArray(mutationTarget) ||
           typeof materializedMutationTo !== "string" ||
           stableJson(
             valueAtJsonPointer(mutationTarget, mutation["jsonPointer"]),
@@ -6278,14 +7446,13 @@ export async function validateA0E0BridgeContract(
           ];
         } else {
           const [moved] = next.splice(sourceIndex, 1);
-          const adjustedTarget = sourceIndex < targetIndex
-            ? targetIndex - 1
-            : targetIndex;
+          const adjustedTarget =
+            sourceIndex < targetIndex ? targetIndex - 1 : targetIndex;
           next.splice(adjustedTarget, 0, moved);
         }
         mutated = next;
       } else if (mutationOperator === "truncate-and-return") {
-        if (!Array.isArray(mutationTarget)) {
+        if (!isUnknownArray(mutationTarget)) {
           throw new Error("BRIDGE_CONTROL_MUTATION_TRUNCATE_TARGET");
         }
         const tokens = decodeJsonPointer(mutation["jsonPointer"]);
@@ -6294,12 +7461,18 @@ export async function validateA0E0BridgeContract(
         }
         const index = Number(tokens[0]);
         if (
-          !jsonDeepEqual(mutationTarget.slice(index), materializedMutationFrom) ||
-          !Array.isArray(materializedMutationTo)
+          !jsonDeepEqual(
+            mutationTarget.slice(index),
+            materializedMutationFrom,
+          ) ||
+          !isUnknownArray(materializedMutationTo)
         ) {
           throw new Error("BRIDGE_CONTROL_MUTATION_FROM_TO");
         }
-        mutated = [...mutationTarget.slice(0, index), ...materializedMutationTo];
+        mutated = [
+          ...mutationTarget.slice(0, index),
+          ...materializedMutationTo,
+        ];
       } else {
         const observedBefore = valueAtJsonPointer(
           mutationTarget,
@@ -6378,8 +7551,7 @@ export async function validateA0E0BridgeContract(
           stableJson(observation["baselineValue"]) ||
         stableJson(probeObservation["killerValue"]) !==
           stableJson(observation["killerValue"]) ||
-        stableJson(probe["expectedOwnerLaw"]) !==
-          stableJson(oracleExpectation)
+        stableJson(probe["expectedOwnerLaw"]) !== stableJson(oracleExpectation)
       ) {
         throw new Error("BRIDGE_CONTROL_MUTATION_PROBE_BINDING");
       }
@@ -6401,22 +7573,20 @@ export async function validateA0E0BridgeContract(
           allowedChangedRuntimeProjections.add("controllerStateAfter");
           allowedChangedRuntimeProjections.add("exactCounters");
           allowedChangedRuntimeProjections.add("exactControllerStateDelta");
-          allowedChangedRuntimeProjections.add(
-            "referenceIdentityExpectations",
-          );
+          allowedChangedRuntimeProjections.add("referenceIdentityExpectations");
         }
         if (id === "BRIDGE-MUT-031") {
           allowedChangedRuntimeProjections.add("controllerStateAfter");
           allowedChangedRuntimeProjections.add("exactControllerStateDelta");
-          allowedChangedRuntimeProjections.add(
-            "referenceIdentityExpectations",
-          );
-          allowedChangedRuntimeProjections.add(
-            "publicationMergeObservation",
-          );
+          allowedChangedRuntimeProjections.add("referenceIdentityExpectations");
+          allowedChangedRuntimeProjections.add("publicationMergeObservation");
         }
         const runtimeProjectionPairs = [
-          ["exactTypedResult", baseline.exactTypedResult, killer.exactTypedResult],
+          [
+            "exactTypedResult",
+            baseline.exactTypedResult,
+            killer.exactTypedResult,
+          ],
           [
             "controllerStateAfter",
             baseline.controllerStateAfter,
@@ -6479,7 +7649,8 @@ export async function validateA0E0BridgeContract(
       if (
         baselineObserved === undefined ||
         killerObserved === undefined ||
-        stableJson(baselineObserved) !== stableJson(observation["baselineValue"]) ||
+        stableJson(baselineObserved) !==
+          stableJson(observation["baselineValue"]) ||
         stableJson(killerObserved) !== stableJson(observation["killerValue"]) ||
         stableJson(baselineObserved) === stableJson(killerObserved)
       ) {
@@ -6541,10 +7712,8 @@ export async function validateA0E0BridgeContract(
   for (const trace of traces) {
     const id = String(trace["id"]);
     const ownerCaseIds = stringsAt(trace["caseIds"]);
-    const forwardE0V2CaseIds = stringsAt(trace["forwardE0V2CaseIds"]);
+    const declaredControlIds = stringsAt(trace["controlIds"]);
     const proofKinds = stringsAt(trace["proofKinds"]);
-    const forwardE0V2ProofKinds = stringsAt(trace["forwardE0V2ProofKinds"]);
-    const hasForwardE0V2Cases = forwardE0V2CaseIds.length > 0;
     if (
       typeof trace["requirement"] !== "string" ||
       !A0_E0_BRIDGE_OWNER_OPERATION_NAMES.includes(
@@ -6553,72 +7722,60 @@ export async function validateA0E0BridgeContract(
         ] as (typeof A0_E0_BRIDGE_OWNER_OPERATION_NAMES)[number],
       ) ||
       ownerCaseIds.length === 0 ||
-      stringsAt(trace["controlIds"]).length === 0 ||
+      declaredControlIds.length === 0 ||
       stringsAt(trace["authorityIds"]).length === 0 ||
       proofKinds.length === 0 ||
-      !Array.isArray(trace["forwardE0V2CaseIds"]) ||
-      !Array.isArray(trace["forwardE0V2ProofKinds"]) ||
-      (hasForwardE0V2Cases
-        ? forwardE0V2ProofKinds.length === 0
-        : forwardE0V2ProofKinds.length !== 0)
+      trace["forwardE0V2BehaviorRowsPresent"] !== false ||
+      trace["deferredE0V2BindingLeaf"] !==
+        "jcpe-milestone-reliable-studio-l3a.8.4" ||
+      [
+        "forwardE0V2CaseIds",
+        "forwardE0V2ProofKinds",
+        "forwardE0V2Exclusion",
+        "forwardE0V2RowsExcludedFromOwnerProof",
+      ].some((key) => Object.hasOwn(trace, key))
     ) {
       addFinding(
         findings,
         "BRIDGE_TRACE_INCOMPLETE",
         id,
-        "Each operation trace needs A0 cases, controls, authorities, proof kinds, and explicit forward-E0-v2 collections.",
-      );
-    }
-    requireExact(
-      trace["forwardE0V2Exclusion"],
-      hasForwardE0V2Cases ? FORWARD_E0_V2_TRACE_EXCLUSION : null,
-      "BRIDGE_TRACE_FORWARD_E0_V2_EXCLUSION",
-      `trace-ledger.json.${id}.forwardE0V2Exclusion`,
-      "Forward E0 v2 rows require the exact exclusion scope; traces without such rows require null.",
-      findings,
-    );
-    const overlap = ownerCaseIds.filter((caseId) =>
-      forwardE0V2CaseIds.includes(caseId),
-    );
-    if (overlap.length !== 0) {
-      addFinding(
-        findings,
-        "BRIDGE_TRACE_CASE_SCOPE_OVERLAP",
-        `trace-ledger.json.${id}`,
-        "A case cannot be both A0 owner proof and a forward E0 v2 row.",
+        "Each operation trace needs A0 cases, controls, authorities, proof kinds, and an exact non-normative future-E0-v2 boundary declaration.",
       );
     }
     for (const caseId of ownerCaseIds) {
       const record = caseById.get(caseId);
       if (
         record === undefined ||
-        E0_V2_OWNED_CASE_IDS.has(caseId) ||
+        record["operation"] !== trace["operation"] ||
         !stringsAt(record["traceIds"]).includes(id)
       ) {
         addFinding(
           findings,
           "BRIDGE_TRACE_CASE_LINK",
           `${id}.caseIds.${caseId}`,
-          "Trace and case links must be reciprocal.",
+          "Trace and same-operation case links must be reciprocal.",
         );
       }
     }
-    for (const caseId of forwardE0V2CaseIds) {
-      const record = caseById.get(caseId);
-      if (
-        record === undefined ||
-        !E0_V2_OWNED_CASE_IDS.has(caseId) ||
-        !stringsAt(record["traceIds"]).includes(id)
-      ) {
-        addFinding(
-          findings,
-          "BRIDGE_TRACE_FORWARD_E0_V2_CASE_LINK",
-          `${id}.forwardE0V2CaseIds.${caseId}`,
-          "Forward E0 v2 trace rows must be exactly classified and reciprocal.",
-        );
-      }
+    const reciprocalControlIds = controls
+      .filter((control) =>
+        stringsAt(control["linkedCaseIds"]).some((caseId) =>
+          ownerCaseIds.includes(caseId),
+        ),
+      )
+      .map((control) => String(control["id"]));
+    if (
+      new Set(declaredControlIds).size !== declaredControlIds.length ||
+      !jsonDeepEqual(declaredControlIds, reciprocalControlIds)
+    ) {
+      addFinding(
+        findings,
+        "BRIDGE_TRACE_CONTROL_LINK",
+        `${id}.controlIds`,
+        "Trace control IDs must be unique and exactly reciprocal with controls linked to at least one same-operation trace case.",
+      );
     }
-    for (const controlId of stringsAt(trace["controlIds"])) {
+    for (const controlId of declaredControlIds) {
       if (!controlById.has(controlId)) {
         addFinding(
           findings,
@@ -6639,15 +7796,6 @@ export async function validateA0E0BridgeContract(
       }
     }
   }
-
-  requireExact(
-    traces.flatMap((trace) => stringsAt(trace["forwardE0V2CaseIds"])),
-    [...E0_V2_OWNED_CASE_IDS],
-    "BRIDGE_TRACE_FORWARD_E0_V2_INVENTORY",
-    "trace-ledger.json.traces.forwardE0V2CaseIds",
-    "The trace ledger must exclude exactly the six forward E0 v2 rows from A0 owner proof in canonical order.",
-    findings,
-  );
 
   requireExact(
     applicabilityRows.map((row) => row["operation"]),
@@ -6720,10 +7868,10 @@ export async function validateA0E0BridgeContract(
   for (const reason of DISCARD_REASONS) {
     const first = runById.get(`BRIDGE-REP-027/${reason}-first`);
     const repeat = runById.get(`BRIDGE-REP-027/${reason}-repeat`);
-    const firstArgument = Array.isArray(first?.rawCall["arguments"])
+    const firstArgument = isUnknownArray(first?.rawCall["arguments"])
       ? first.rawCall["arguments"][0]
       : undefined;
-    const repeatArgument = Array.isArray(repeat?.rawCall["arguments"])
+    const repeatArgument = isUnknownArray(repeat?.rawCall["arguments"])
       ? repeat.rawCall["arguments"][0]
       : undefined;
     if (
@@ -6804,6 +7952,31 @@ export async function validateA0E0BridgeContract(
     "Fixture independence, implementation status, or state-isolation claims changed.",
     findings,
   );
+  const provenanceVersionBoundary = isObject(provenance["versionBoundary"])
+    ? provenance["versionBoundary"]
+    : {};
+  if (
+    contract["activeLeafScope"] !==
+      provenanceVersionBoundary["activeLeafScope"] ||
+    contract["browserProofClaim"] !==
+      provenanceVersionBoundary["browserClaim"] ||
+    contract["browserProofClaim"] !==
+      independence["browserOrRealAdapterProofClaimed"] ||
+    contract["humanAcceptanceClaim"] !== provenance["humanAcceptanceClaim"] ||
+    contract["productionOutputUsedAsOracle"] !==
+      independence["productionOutputUsedAsOracle"] ||
+    contract["expectedValuesGenerated"] !==
+      independence["expectedValuesGenerated"] ||
+    contract["productionImplementationAvailableWhenAuthored"] !==
+      independence["bridgeProductionImplementationAvailableWhenAuthored"]
+  ) {
+    addFinding(
+      findings,
+      "BRIDGE_ROOT_PROVENANCE_AGREEMENT",
+      "a0-e0-bridge-contract.json",
+      "Root scope, browser, human-acceptance, production, and expected-value claims must agree exactly with the provenance ledger.",
+    );
+  }
   requireExact(
     provenance["versionBoundary"],
     {
@@ -6823,10 +7996,8 @@ export async function validateA0E0BridgeContract(
   );
   const archivalE0Authority = authorityById.get("BRIDGE-AUTH-E0") ?? {};
   if (
-    archivalE0Authority["authorityClass"] !==
-      "archival-consumer-contract" ||
-    archivalE0Authority["sourceKind"] !==
-      "accepted-repository-contract" ||
+    archivalE0Authority["authorityClass"] !== "archival-consumer-contract" ||
+    archivalE0Authority["sourceKind"] !== "accepted-repository-contract" ||
     archivalE0Authority["sourceRef"] !== "docs/E0_INTERCHANGE_CONTRACT.md" ||
     archivalE0Authority["judgmentBearing"] !== false ||
     archivalE0Authority["reviewState"] !==
@@ -6879,6 +8050,9 @@ export async function validateA0E0BridgeContract(
       "ReadCurrentApplicationDocumentIdentityPort",
       "PublishCanonicalExportRevisionOperation",
       "PublishCanonicalExportRevisionPort",
+      "IMPORT_REPLACEMENT_PUBLICATION_LATEST_STATE_MERGE",
+      "sameRevisionPendingRequestsDriftOutcome",
+      "sameRevisionTransitionDriftOutcome",
     ]) {
       if (!ownerSource.includes(token)) {
         addFinding(
@@ -6897,22 +8071,204 @@ export async function validateA0E0BridgeContract(
       true,
       ts.ScriptKind.TS,
     );
+    const unwrapOwnerExpression = (input: ts.Expression): ts.Expression => {
+      let expression = input;
+      for (;;) {
+        if (
+          ts.isParenthesizedExpression(expression) ||
+          ts.isAsExpression(expression) ||
+          ts.isSatisfiesExpression(expression) ||
+          ts.isTypeAssertionExpression(expression) ||
+          ts.isNonNullExpression(expression)
+        ) {
+          expression = expression.expression;
+          continue;
+        }
+        if (
+          ts.isCallExpression(expression) &&
+          ts.isPropertyAccessExpression(expression.expression) &&
+          ts.isIdentifier(expression.expression.expression) &&
+          expression.expression.expression.text === "Object" &&
+          expression.expression.name.text === "freeze" &&
+          expression.arguments.length === 1
+        ) {
+          expression = expression.arguments[0] as ts.Expression;
+          continue;
+        }
+        return expression;
+      }
+    };
+    const ownerVariableInitializer = (name: string): ts.Expression | null => {
+      for (const statement of ownerSourceFile.statements) {
+        if (!ts.isVariableStatement(statement)) continue;
+        for (const declaration of statement.declarationList.declarations) {
+          if (
+            ts.isIdentifier(declaration.name) &&
+            declaration.name.text === name &&
+            declaration.initializer !== undefined
+          ) {
+            return unwrapOwnerExpression(declaration.initializer);
+          }
+        }
+      }
+      return null;
+    };
+    const objectPropertyExpression = (
+      object: ts.ObjectLiteralExpression,
+      name: string,
+    ): ts.Expression | null => {
+      const property = object.properties.find(
+        (candidate): candidate is ts.PropertyAssignment =>
+          ts.isPropertyAssignment(candidate) &&
+          (ts.isIdentifier(candidate.name) ||
+            ts.isStringLiteral(candidate.name)) &&
+          candidate.name.text === name,
+      );
+      return property === undefined
+        ? null
+        : unwrapOwnerExpression(property.initializer);
+    };
+    const literalOwnerValue = (expression: ts.Expression | null): unknown => {
+      if (expression === null) return undefined;
+      if (ts.isStringLiteral(expression)) return expression.text;
+      if (expression.kind === ts.SyntaxKind.TrueKeyword) return true;
+      if (expression.kind === ts.SyntaxKind.FalseKeyword) return false;
+      if (ts.isNumericLiteral(expression)) return Number(expression.text);
+      if (ts.isIdentifier(expression)) return { identifier: expression.text };
+      if (ts.isArrayLiteralExpression(expression)) {
+        return expression.elements.map((element) =>
+          literalOwnerValue(unwrapOwnerExpression(element)),
+        );
+      }
+      return undefined;
+    };
+    const mergeInitializer = ownerVariableInitializer(
+      "IMPORT_REPLACEMENT_PUBLICATION_LATEST_STATE_MERGE",
+    );
+    if (
+      mergeInitializer === null ||
+      !ts.isObjectLiteralExpression(mergeInitializer)
+    ) {
+      addFinding(
+        findings,
+        "BRIDGE_OWNER_SOURCE_MERGE_POLICY",
+        sourcePath,
+        "The latest-state replacement merge must be a statically inspectable frozen object literal.",
+      );
+    } else {
+      const mergeProjection = Object.fromEntries(
+        [
+          "latestStateRecheckedAtPublication",
+          "frozenPrepareTimeWholeStateInstallAllowed",
+          "preparedCommandInputsRechecked",
+          "historyStabilityDerivedFromRevisionAndImmutableReducerLaw",
+          "sameRevisionPendingRequestsDriftOutcome",
+          "sameRevisionTransitionDriftOutcome",
+          "sameRevisionBookmarkDriftOutcome",
+          "latestTransportGenerationMustNotExceedRetiredGeneration",
+          "uncoveredLatestTransportOutcome",
+          "latestSequenceMustBeLessThan",
+          "exhaustedLatestSequenceOutcome",
+          "preservedFromLatestStateByValue",
+          "preservedFromLatestStateByReference",
+          "replacementOwnedFields",
+          "allocatedFromLatestSequenceAtPublication",
+          "allAppStateFieldsPartitionedExactlyOnce",
+          "optionalWarningNoticeUsesNextSequenceAndSaturatesAtMaximum",
+          "rerunsPreparationWork",
+        ].map((name) => [
+          name,
+          literalOwnerValue(objectPropertyExpression(mergeInitializer, name)),
+        ]),
+      );
+      requireExact(
+        mergeProjection,
+        {
+          latestStateRecheckedAtPublication: true,
+          frozenPrepareTimeWholeStateInstallAllowed: false,
+          preparedCommandInputsRechecked: [
+            "documentIdentity",
+            "revision",
+            "pendingRequestsBefore",
+            "transitionIdentity",
+            "bookmarks",
+          ],
+          historyStabilityDerivedFromRevisionAndImmutableReducerLaw: true,
+          sameRevisionPendingRequestsDriftOutcome:
+            "consume-and-refuse-import.replacement_preparation_stale",
+          sameRevisionTransitionDriftOutcome:
+            "consume-and-refuse-import.replacement_preparation_stale",
+          sameRevisionBookmarkDriftOutcome:
+            "consume-and-refuse-import.replacement_preparation_stale",
+          latestTransportGenerationMustNotExceedRetiredGeneration: true,
+          uncoveredLatestTransportOutcome:
+            "consume-and-refuse-import.replacement_retirement_mismatch",
+          latestSequenceMustBeLessThan: {
+            identifier: "MAX_APPLICATION_SEQUENCE",
+          },
+          exhaustedLatestSequenceOutcome:
+            "consume-and-refuse-import.replacement_preparation_stale",
+          preservedFromLatestStateByValue: ["exportRevision"],
+          preservedFromLatestStateByReference: [
+            "recovery",
+            "panels",
+            "dialogs",
+            "transport",
+          ],
+          replacementOwnedFields: [
+            "document",
+            "revision",
+            "history",
+            "bookmarks",
+            "quickEntry",
+            "importDraft",
+            "pendingRequests",
+            "documentTransition",
+            "notices",
+          ],
+          allocatedFromLatestSequenceAtPublication: [
+            "focusRequest",
+            "nextSequence",
+          ],
+          allAppStateFieldsPartitionedExactlyOnce: true,
+          optionalWarningNoticeUsesNextSequenceAndSaturatesAtMaximum: true,
+          rerunsPreparationWork: false,
+        },
+        "BRIDGE_OWNER_SOURCE_MERGE_POLICY",
+        sourcePath,
+        "The source latest-state merge policy must exactly match the root packet, including request and transition drift refusal.",
+        findings,
+      );
+    }
     const imports = ownerSourceFile.statements.filter(ts.isImportDeclaration);
     const actualTopology = imports.map((node) => {
-        const modulePath = ts.isStringLiteral(node.moduleSpecifier)
-          ? node.moduleSpecifier.text
-          : "";
-        const bindings = node.importClause?.namedBindings;
-        const names =
-          bindings !== undefined && ts.isNamedImports(bindings)
-            ? bindings.elements.map((element) => element.name.text)
-            : [];
-        return {
-          modulePath,
-          isTypeOnly: node.importClause?.isTypeOnly === true,
-          names,
-        };
-      });
+      const modulePath = ts.isStringLiteral(node.moduleSpecifier)
+        ? node.moduleSpecifier.text
+        : "";
+      const bindings = node.importClause?.namedBindings;
+      const elements =
+        bindings !== undefined && ts.isNamedImports(bindings)
+          ? bindings.elements.map((element) => ({
+              importedName: (element.propertyName ?? element.name).text,
+              localName: element.name.text,
+              isTypeOnly: element.isTypeOnly,
+            }))
+          : [];
+      return {
+        modulePath,
+        isTypeOnly:
+          node.importClause?.phaseModifier === ts.SyntaxKind.TypeKeyword,
+        defaultImport: node.importClause?.name?.text ?? null,
+        namedBindingKind:
+          bindings === undefined
+            ? "none"
+            : ts.isNamedImports(bindings)
+              ? "named-imports"
+              : "namespace-import",
+        elements,
+        hasImportAttributes: node.attributes !== undefined,
+      };
+    });
     requireExact(
       actualTopology,
       OWNER_IMPORT_TOPOLOGY,
@@ -6921,6 +8277,49 @@ export async function validateA0E0BridgeContract(
       "The owner contract may import exactly the pinned ordered domain types, A0 runtime bounds, and A0 state types.",
       findings,
     );
+    const preprocessedOwnerSource = ts.preProcessFile(ownerSource, true, true);
+    if (
+      preprocessedOwnerSource.referencedFiles.length !== 0 ||
+      preprocessedOwnerSource.typeReferenceDirectives.length !== 0 ||
+      preprocessedOwnerSource.libReferenceDirectives.length !== 0 ||
+      ownerSourceFile.amdDependencies.length !== 0
+    ) {
+      addFinding(
+        findings,
+        "BRIDGE_OWNER_TRIPLE_SLASH_OR_AMD_EDGE",
+        sourcePath,
+        "The owner contract may not introduce triple-slash path, type, lib, or AMD module dependencies.",
+      );
+    }
+    const forbiddenModuleEdges: string[] = [];
+    const inspectModuleEdges = (node: ts.Node): void => {
+      if (ts.isExportDeclaration(node) && node.moduleSpecifier !== undefined) {
+        forbiddenModuleEdges.push("module-bearing-export-declaration");
+      } else if (ts.isImportEqualsDeclaration(node)) {
+        forbiddenModuleEdges.push("import-equals-declaration");
+      } else if (ts.isImportTypeNode(node)) {
+        forbiddenModuleEdges.push("import-type-node");
+      } else if (ts.isCallExpression(node)) {
+        if (node.expression.kind === ts.SyntaxKind.ImportKeyword) {
+          forbiddenModuleEdges.push("dynamic-import-call");
+        } else if (
+          ts.isIdentifier(node.expression) &&
+          node.expression.text === "require"
+        ) {
+          forbiddenModuleEdges.push("require-call");
+        }
+      }
+      ts.forEachChild(node, inspectModuleEdges);
+    };
+    inspectModuleEdges(ownerSourceFile);
+    if (forbiddenModuleEdges.length !== 0) {
+      addFinding(
+        findings,
+        "BRIDGE_OWNER_FORBIDDEN_MODULE_EDGE",
+        sourcePath,
+        `The owner contract may use only the exact pinned static imports; re-exports, import-equals, import types, dynamic import, and require are forbidden (${[...new Set(forbiddenModuleEdges)].join(",")}).`,
+      );
+    }
     const hasRuntimeImplementation = ownerSourceFile.statements.some(
       (node) =>
         ts.isClassDeclaration(node) ||
@@ -6934,7 +8333,10 @@ export async function validateA0E0BridgeContract(
                 ts.isClassExpression(declaration.initializer)),
           )),
     );
-    if (hasRuntimeImplementation || ownerSource.includes("e0-interchange-contract")) {
+    if (
+      hasRuntimeImplementation ||
+      ownerSource.includes("e0-interchange-contract")
+    ) {
       addFinding(
         findings,
         "BRIDGE_OWNER_SOURCE_IMPLEMENTATION",
@@ -6948,28 +8350,31 @@ export async function validateA0E0BridgeContract(
         (node): node is ts.InterfaceDeclaration =>
           ts.isInterfaceDeclaration(node) && node.name.text === interfaceName,
       );
-      return ownerInterface?.members.map((member) => {
-        const name = member.name;
-        const memberName = name !== undefined &&
-          (ts.isIdentifier(name) || ts.isStringLiteral(name))
-          ? name.text
-          : null;
-        const typeName =
-          ts.isPropertySignature(member) &&
-          member.type !== undefined &&
-          ts.isTypeReferenceNode(member.type) &&
-          ts.isIdentifier(member.type.typeName)
-            ? member.type.typeName.text
-            : null;
-        return {
-          name: memberName,
-          readonly:
-            member.modifiers?.some(
-              (modifier) => modifier.kind === ts.SyntaxKind.ReadonlyKeyword,
-            ) === true,
-          typeName,
-        };
-      }) ?? [];
+      return (
+        ownerInterface?.members.map((member) => {
+          const propertyMember = ts.isPropertySignature(member) ? member : null;
+          const name = propertyMember?.name;
+          const memberName =
+            name !== undefined &&
+            (ts.isIdentifier(name) || ts.isStringLiteral(name))
+              ? name.text
+              : null;
+          const typeName =
+            propertyMember?.type !== undefined &&
+            ts.isTypeReferenceNode(propertyMember.type) &&
+            ts.isIdentifier(propertyMember.type.typeName)
+              ? propertyMember.type.typeName.text
+              : null;
+          return {
+            name: memberName,
+            readonly:
+              propertyMember?.modifiers?.some(
+                (modifier) => modifier.kind === ts.SyntaxKind.ReadonlyKeyword,
+              ) === true,
+            typeName,
+          };
+        }) ?? []
+      );
     };
     const expectedOperationsMembers = A0_E0_BRIDGE_OWNER_OPERATION_NAMES.map(
       (name) => ({
@@ -7063,7 +8468,9 @@ export async function validateA0E0BridgeContract(
         ACCEPTED_E0_V1_ARTIFACT_PINS.map(
           async (pin) =>
             sha256(
-              new Uint8Array(await readFile(resolve(REPOSITORY_ROOT, pin.path))),
+              new Uint8Array(
+                await readFile(resolve(REPOSITORY_ROOT, pin.path)),
+              ),
             ) === pin.sha256,
         ),
       )
@@ -7091,10 +8498,11 @@ export async function validateA0E0BridgeContract(
     );
   }
 
-  const expectedF3ValidationCalls = [...documentValidationCache.values()].filter(
+  const expectedF3ValidationCalls = [
+    ...documentValidationCache.values(),
+  ].filter(
     (observation) =>
-      observation.stage !== "f2-refused" &&
-      observation.stage !== "f2-repaired",
+      observation.stage !== "f2-refused" && observation.stage !== "f2-repaired",
   ).length;
   if (
     expectedAcceptedDocumentOccurrences === 0 ||

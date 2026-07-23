@@ -1,0 +1,789 @@
+{
+  "schema": "changes.fixtures.x1-state-machine.v1",
+  "fixtureVersion": 1,
+  "authorship": "Hand-authored outcome table over the docs/X1_TRANSPORT_CONTRACT.md state machine; no production transport code exists or was consulted.",
+  "priorStableSentinel": "prior-stable resolves to the stable state recorded when the interruption was observed: ready, playing, or paused.",
+  "stateCount": 7,
+  "commandCount": 15,
+  "caseCount": 105,
+  "cases": [
+    {
+      "caseId": "X1-SM-001",
+      "state": "locked",
+      "command": "initialize-transport",
+      "outcome": "receipt",
+      "stateAfter": "ready",
+      "generationBoundary": false
+    },
+    {
+      "caseId": "X1-SM-002",
+      "state": "ready",
+      "command": "initialize-transport",
+      "outcome": "refusal",
+      "refusalCode": "transport.state_invalid"
+    },
+    {
+      "caseId": "X1-SM-003",
+      "state": "playing",
+      "command": "initialize-transport",
+      "outcome": "refusal",
+      "refusalCode": "transport.state_invalid"
+    },
+    {
+      "caseId": "X1-SM-004",
+      "state": "paused",
+      "command": "initialize-transport",
+      "outcome": "refusal",
+      "refusalCode": "transport.state_invalid"
+    },
+    {
+      "caseId": "X1-SM-005",
+      "state": "interrupted",
+      "command": "initialize-transport",
+      "outcome": "refusal",
+      "refusalCode": "transport.state_invalid"
+    },
+    {
+      "caseId": "X1-SM-006",
+      "state": "fault",
+      "command": "initialize-transport",
+      "outcome": "receipt",
+      "stateAfter": "ready",
+      "generationBoundary": false
+    },
+    {
+      "caseId": "X1-SM-007",
+      "state": "disposed",
+      "command": "initialize-transport",
+      "outcome": "refusal",
+      "refusalCode": "transport.disposed"
+    },
+    {
+      "caseId": "X1-SM-008",
+      "state": "locked",
+      "command": "play",
+      "outcome": "refusal",
+      "refusalCode": "transport.locked"
+    },
+    {
+      "caseId": "X1-SM-009",
+      "state": "ready",
+      "command": "play",
+      "outcome": "receipt",
+      "stateAfter": "playing",
+      "generationBoundary": true
+    },
+    {
+      "caseId": "X1-SM-010",
+      "state": "playing",
+      "command": "play",
+      "outcome": "refusal",
+      "refusalCode": "transport.state_invalid"
+    },
+    {
+      "caseId": "X1-SM-011",
+      "state": "paused",
+      "command": "play",
+      "outcome": "refusal",
+      "refusalCode": "transport.state_invalid"
+    },
+    {
+      "caseId": "X1-SM-012",
+      "state": "interrupted",
+      "command": "play",
+      "outcome": "refusal",
+      "refusalCode": "transport.state_invalid"
+    },
+    {
+      "caseId": "X1-SM-013",
+      "state": "fault",
+      "command": "play",
+      "outcome": "refusal",
+      "refusalCode": "transport.fault_requires_initialize"
+    },
+    {
+      "caseId": "X1-SM-014",
+      "state": "disposed",
+      "command": "play",
+      "outcome": "refusal",
+      "refusalCode": "transport.disposed"
+    },
+    {
+      "caseId": "X1-SM-015",
+      "state": "locked",
+      "command": "pause",
+      "outcome": "refusal",
+      "refusalCode": "transport.locked"
+    },
+    {
+      "caseId": "X1-SM-016",
+      "state": "ready",
+      "command": "pause",
+      "outcome": "refusal",
+      "refusalCode": "transport.state_invalid"
+    },
+    {
+      "caseId": "X1-SM-017",
+      "state": "playing",
+      "command": "pause",
+      "outcome": "receipt",
+      "stateAfter": "paused",
+      "generationBoundary": true
+    },
+    {
+      "caseId": "X1-SM-018",
+      "state": "paused",
+      "command": "pause",
+      "outcome": "refusal",
+      "refusalCode": "transport.state_invalid"
+    },
+    {
+      "caseId": "X1-SM-019",
+      "state": "interrupted",
+      "command": "pause",
+      "outcome": "refusal",
+      "refusalCode": "transport.state_invalid"
+    },
+    {
+      "caseId": "X1-SM-020",
+      "state": "fault",
+      "command": "pause",
+      "outcome": "refusal",
+      "refusalCode": "transport.fault_requires_initialize"
+    },
+    {
+      "caseId": "X1-SM-021",
+      "state": "disposed",
+      "command": "pause",
+      "outcome": "refusal",
+      "refusalCode": "transport.disposed"
+    },
+    {
+      "caseId": "X1-SM-022",
+      "state": "locked",
+      "command": "resume",
+      "outcome": "refusal",
+      "refusalCode": "transport.locked"
+    },
+    {
+      "caseId": "X1-SM-023",
+      "state": "ready",
+      "command": "resume",
+      "outcome": "refusal",
+      "refusalCode": "transport.state_invalid"
+    },
+    {
+      "caseId": "X1-SM-024",
+      "state": "playing",
+      "command": "resume",
+      "outcome": "refusal",
+      "refusalCode": "transport.state_invalid"
+    },
+    {
+      "caseId": "X1-SM-025",
+      "state": "paused",
+      "command": "resume",
+      "outcome": "receipt",
+      "stateAfter": "playing",
+      "generationBoundary": true
+    },
+    {
+      "caseId": "X1-SM-026",
+      "state": "interrupted",
+      "command": "resume",
+      "outcome": "receipt",
+      "stateAfter": "prior-stable",
+      "generationBoundary": true
+    },
+    {
+      "caseId": "X1-SM-027",
+      "state": "fault",
+      "command": "resume",
+      "outcome": "refusal",
+      "refusalCode": "transport.fault_requires_initialize"
+    },
+    {
+      "caseId": "X1-SM-028",
+      "state": "disposed",
+      "command": "resume",
+      "outcome": "refusal",
+      "refusalCode": "transport.disposed"
+    },
+    {
+      "caseId": "X1-SM-029",
+      "state": "locked",
+      "command": "seek",
+      "outcome": "refusal",
+      "refusalCode": "transport.locked"
+    },
+    {
+      "caseId": "X1-SM-030",
+      "state": "ready",
+      "command": "seek",
+      "outcome": "refusal",
+      "refusalCode": "transport.state_invalid"
+    },
+    {
+      "caseId": "X1-SM-031",
+      "state": "playing",
+      "command": "seek",
+      "outcome": "receipt",
+      "stateAfter": "playing",
+      "generationBoundary": true
+    },
+    {
+      "caseId": "X1-SM-032",
+      "state": "paused",
+      "command": "seek",
+      "outcome": "receipt",
+      "stateAfter": "paused",
+      "generationBoundary": true
+    },
+    {
+      "caseId": "X1-SM-033",
+      "state": "interrupted",
+      "command": "seek",
+      "outcome": "refusal",
+      "refusalCode": "transport.state_invalid"
+    },
+    {
+      "caseId": "X1-SM-034",
+      "state": "fault",
+      "command": "seek",
+      "outcome": "refusal",
+      "refusalCode": "transport.fault_requires_initialize"
+    },
+    {
+      "caseId": "X1-SM-035",
+      "state": "disposed",
+      "command": "seek",
+      "outcome": "refusal",
+      "refusalCode": "transport.disposed"
+    },
+    {
+      "caseId": "X1-SM-036",
+      "state": "locked",
+      "command": "stop",
+      "outcome": "refusal",
+      "refusalCode": "transport.locked"
+    },
+    {
+      "caseId": "X1-SM-037",
+      "state": "ready",
+      "command": "stop",
+      "outcome": "receipt",
+      "stateAfter": "ready",
+      "generationBoundary": false
+    },
+    {
+      "caseId": "X1-SM-038",
+      "state": "playing",
+      "command": "stop",
+      "outcome": "receipt",
+      "stateAfter": "ready",
+      "generationBoundary": true
+    },
+    {
+      "caseId": "X1-SM-039",
+      "state": "paused",
+      "command": "stop",
+      "outcome": "receipt",
+      "stateAfter": "ready",
+      "generationBoundary": true
+    },
+    {
+      "caseId": "X1-SM-040",
+      "state": "interrupted",
+      "command": "stop",
+      "outcome": "receipt",
+      "stateAfter": "ready",
+      "generationBoundary": true
+    },
+    {
+      "caseId": "X1-SM-041",
+      "state": "fault",
+      "command": "stop",
+      "outcome": "refusal",
+      "refusalCode": "transport.fault_requires_initialize"
+    },
+    {
+      "caseId": "X1-SM-042",
+      "state": "disposed",
+      "command": "stop",
+      "outcome": "refusal",
+      "refusalCode": "transport.disposed"
+    },
+    {
+      "caseId": "X1-SM-043",
+      "state": "locked",
+      "command": "set-tempo",
+      "outcome": "refusal",
+      "refusalCode": "transport.locked"
+    },
+    {
+      "caseId": "X1-SM-044",
+      "state": "ready",
+      "command": "set-tempo",
+      "outcome": "receipt",
+      "stateAfter": "ready",
+      "generationBoundary": false
+    },
+    {
+      "caseId": "X1-SM-045",
+      "state": "playing",
+      "command": "set-tempo",
+      "outcome": "receipt",
+      "stateAfter": "playing",
+      "generationBoundary": true
+    },
+    {
+      "caseId": "X1-SM-046",
+      "state": "paused",
+      "command": "set-tempo",
+      "outcome": "receipt",
+      "stateAfter": "paused",
+      "generationBoundary": true
+    },
+    {
+      "caseId": "X1-SM-047",
+      "state": "interrupted",
+      "command": "set-tempo",
+      "outcome": "refusal",
+      "refusalCode": "transport.state_invalid"
+    },
+    {
+      "caseId": "X1-SM-048",
+      "state": "fault",
+      "command": "set-tempo",
+      "outcome": "refusal",
+      "refusalCode": "transport.fault_requires_initialize"
+    },
+    {
+      "caseId": "X1-SM-049",
+      "state": "disposed",
+      "command": "set-tempo",
+      "outcome": "refusal",
+      "refusalCode": "transport.disposed"
+    },
+    {
+      "caseId": "X1-SM-050",
+      "state": "locked",
+      "command": "set-loop",
+      "outcome": "refusal",
+      "refusalCode": "transport.locked"
+    },
+    {
+      "caseId": "X1-SM-051",
+      "state": "ready",
+      "command": "set-loop",
+      "outcome": "receipt",
+      "stateAfter": "ready",
+      "generationBoundary": false
+    },
+    {
+      "caseId": "X1-SM-052",
+      "state": "playing",
+      "command": "set-loop",
+      "outcome": "receipt",
+      "stateAfter": "playing",
+      "generationBoundary": true
+    },
+    {
+      "caseId": "X1-SM-053",
+      "state": "paused",
+      "command": "set-loop",
+      "outcome": "receipt",
+      "stateAfter": "paused",
+      "generationBoundary": true
+    },
+    {
+      "caseId": "X1-SM-054",
+      "state": "interrupted",
+      "command": "set-loop",
+      "outcome": "refusal",
+      "refusalCode": "transport.state_invalid"
+    },
+    {
+      "caseId": "X1-SM-055",
+      "state": "fault",
+      "command": "set-loop",
+      "outcome": "refusal",
+      "refusalCode": "transport.fault_requires_initialize"
+    },
+    {
+      "caseId": "X1-SM-056",
+      "state": "disposed",
+      "command": "set-loop",
+      "outcome": "refusal",
+      "refusalCode": "transport.disposed"
+    },
+    {
+      "caseId": "X1-SM-057",
+      "state": "locked",
+      "command": "set-instrument",
+      "outcome": "refusal",
+      "refusalCode": "transport.locked"
+    },
+    {
+      "caseId": "X1-SM-058",
+      "state": "ready",
+      "command": "set-instrument",
+      "outcome": "receipt",
+      "stateAfter": "ready",
+      "generationBoundary": false
+    },
+    {
+      "caseId": "X1-SM-059",
+      "state": "playing",
+      "command": "set-instrument",
+      "outcome": "receipt",
+      "stateAfter": "playing",
+      "generationBoundary": false
+    },
+    {
+      "caseId": "X1-SM-060",
+      "state": "paused",
+      "command": "set-instrument",
+      "outcome": "receipt",
+      "stateAfter": "paused",
+      "generationBoundary": false
+    },
+    {
+      "caseId": "X1-SM-061",
+      "state": "interrupted",
+      "command": "set-instrument",
+      "outcome": "refusal",
+      "refusalCode": "transport.state_invalid"
+    },
+    {
+      "caseId": "X1-SM-062",
+      "state": "fault",
+      "command": "set-instrument",
+      "outcome": "refusal",
+      "refusalCode": "transport.fault_requires_initialize"
+    },
+    {
+      "caseId": "X1-SM-063",
+      "state": "disposed",
+      "command": "set-instrument",
+      "outcome": "refusal",
+      "refusalCode": "transport.disposed"
+    },
+    {
+      "caseId": "X1-SM-064",
+      "state": "locked",
+      "command": "set-count-in",
+      "outcome": "refusal",
+      "refusalCode": "transport.locked"
+    },
+    {
+      "caseId": "X1-SM-065",
+      "state": "ready",
+      "command": "set-count-in",
+      "outcome": "receipt",
+      "stateAfter": "ready",
+      "generationBoundary": false
+    },
+    {
+      "caseId": "X1-SM-066",
+      "state": "playing",
+      "command": "set-count-in",
+      "outcome": "receipt",
+      "stateAfter": "playing",
+      "generationBoundary": false
+    },
+    {
+      "caseId": "X1-SM-067",
+      "state": "paused",
+      "command": "set-count-in",
+      "outcome": "receipt",
+      "stateAfter": "paused",
+      "generationBoundary": false
+    },
+    {
+      "caseId": "X1-SM-068",
+      "state": "interrupted",
+      "command": "set-count-in",
+      "outcome": "refusal",
+      "refusalCode": "transport.state_invalid"
+    },
+    {
+      "caseId": "X1-SM-069",
+      "state": "fault",
+      "command": "set-count-in",
+      "outcome": "refusal",
+      "refusalCode": "transport.fault_requires_initialize"
+    },
+    {
+      "caseId": "X1-SM-070",
+      "state": "disposed",
+      "command": "set-count-in",
+      "outcome": "refusal",
+      "refusalCode": "transport.disposed"
+    },
+    {
+      "caseId": "X1-SM-071",
+      "state": "locked",
+      "command": "set-metronome",
+      "outcome": "refusal",
+      "refusalCode": "transport.locked"
+    },
+    {
+      "caseId": "X1-SM-072",
+      "state": "ready",
+      "command": "set-metronome",
+      "outcome": "receipt",
+      "stateAfter": "ready",
+      "generationBoundary": false
+    },
+    {
+      "caseId": "X1-SM-073",
+      "state": "playing",
+      "command": "set-metronome",
+      "outcome": "receipt",
+      "stateAfter": "playing",
+      "generationBoundary": false
+    },
+    {
+      "caseId": "X1-SM-074",
+      "state": "paused",
+      "command": "set-metronome",
+      "outcome": "receipt",
+      "stateAfter": "paused",
+      "generationBoundary": false
+    },
+    {
+      "caseId": "X1-SM-075",
+      "state": "interrupted",
+      "command": "set-metronome",
+      "outcome": "refusal",
+      "refusalCode": "transport.state_invalid"
+    },
+    {
+      "caseId": "X1-SM-076",
+      "state": "fault",
+      "command": "set-metronome",
+      "outcome": "refusal",
+      "refusalCode": "transport.fault_requires_initialize"
+    },
+    {
+      "caseId": "X1-SM-077",
+      "state": "disposed",
+      "command": "set-metronome",
+      "outcome": "refusal",
+      "refusalCode": "transport.disposed"
+    },
+    {
+      "caseId": "X1-SM-078",
+      "state": "locked",
+      "command": "start-preview",
+      "outcome": "refusal",
+      "refusalCode": "transport.locked"
+    },
+    {
+      "caseId": "X1-SM-079",
+      "state": "ready",
+      "command": "start-preview",
+      "outcome": "receipt",
+      "stateAfter": "ready",
+      "generationBoundary": false
+    },
+    {
+      "caseId": "X1-SM-080",
+      "state": "playing",
+      "command": "start-preview",
+      "outcome": "receipt",
+      "stateAfter": "playing",
+      "generationBoundary": false
+    },
+    {
+      "caseId": "X1-SM-081",
+      "state": "paused",
+      "command": "start-preview",
+      "outcome": "receipt",
+      "stateAfter": "paused",
+      "generationBoundary": false
+    },
+    {
+      "caseId": "X1-SM-082",
+      "state": "interrupted",
+      "command": "start-preview",
+      "outcome": "refusal",
+      "refusalCode": "transport.state_invalid"
+    },
+    {
+      "caseId": "X1-SM-083",
+      "state": "fault",
+      "command": "start-preview",
+      "outcome": "refusal",
+      "refusalCode": "transport.fault_requires_initialize"
+    },
+    {
+      "caseId": "X1-SM-084",
+      "state": "disposed",
+      "command": "start-preview",
+      "outcome": "refusal",
+      "refusalCode": "transport.disposed"
+    },
+    {
+      "caseId": "X1-SM-085",
+      "state": "locked",
+      "command": "release-preview",
+      "outcome": "refusal",
+      "refusalCode": "transport.locked"
+    },
+    {
+      "caseId": "X1-SM-086",
+      "state": "ready",
+      "command": "release-preview",
+      "outcome": "receipt",
+      "stateAfter": "ready",
+      "generationBoundary": false
+    },
+    {
+      "caseId": "X1-SM-087",
+      "state": "playing",
+      "command": "release-preview",
+      "outcome": "receipt",
+      "stateAfter": "playing",
+      "generationBoundary": false
+    },
+    {
+      "caseId": "X1-SM-088",
+      "state": "paused",
+      "command": "release-preview",
+      "outcome": "receipt",
+      "stateAfter": "paused",
+      "generationBoundary": false
+    },
+    {
+      "caseId": "X1-SM-089",
+      "state": "interrupted",
+      "command": "release-preview",
+      "outcome": "refusal",
+      "refusalCode": "transport.state_invalid"
+    },
+    {
+      "caseId": "X1-SM-090",
+      "state": "fault",
+      "command": "release-preview",
+      "outcome": "refusal",
+      "refusalCode": "transport.fault_requires_initialize"
+    },
+    {
+      "caseId": "X1-SM-091",
+      "state": "disposed",
+      "command": "release-preview",
+      "outcome": "refusal",
+      "refusalCode": "transport.disposed"
+    },
+    {
+      "caseId": "X1-SM-092",
+      "state": "locked",
+      "command": "replace-plan",
+      "outcome": "refusal",
+      "refusalCode": "transport.locked"
+    },
+    {
+      "caseId": "X1-SM-093",
+      "state": "ready",
+      "command": "replace-plan",
+      "outcome": "receipt",
+      "stateAfter": "ready",
+      "generationBoundary": true
+    },
+    {
+      "caseId": "X1-SM-094",
+      "state": "playing",
+      "command": "replace-plan",
+      "outcome": "receipt",
+      "stateAfter": "ready",
+      "generationBoundary": true
+    },
+    {
+      "caseId": "X1-SM-095",
+      "state": "paused",
+      "command": "replace-plan",
+      "outcome": "receipt",
+      "stateAfter": "ready",
+      "generationBoundary": true
+    },
+    {
+      "caseId": "X1-SM-096",
+      "state": "interrupted",
+      "command": "replace-plan",
+      "outcome": "receipt",
+      "stateAfter": "ready",
+      "generationBoundary": true
+    },
+    {
+      "caseId": "X1-SM-097",
+      "state": "fault",
+      "command": "replace-plan",
+      "outcome": "refusal",
+      "refusalCode": "transport.fault_requires_initialize"
+    },
+    {
+      "caseId": "X1-SM-098",
+      "state": "disposed",
+      "command": "replace-plan",
+      "outcome": "refusal",
+      "refusalCode": "transport.disposed"
+    },
+    {
+      "caseId": "X1-SM-099",
+      "state": "locked",
+      "command": "dispose-transport",
+      "outcome": "receipt",
+      "stateAfter": "disposed",
+      "generationBoundary": false
+    },
+    {
+      "caseId": "X1-SM-100",
+      "state": "ready",
+      "command": "dispose-transport",
+      "outcome": "receipt",
+      "stateAfter": "disposed",
+      "generationBoundary": true
+    },
+    {
+      "caseId": "X1-SM-101",
+      "state": "playing",
+      "command": "dispose-transport",
+      "outcome": "receipt",
+      "stateAfter": "disposed",
+      "generationBoundary": true
+    },
+    {
+      "caseId": "X1-SM-102",
+      "state": "paused",
+      "command": "dispose-transport",
+      "outcome": "receipt",
+      "stateAfter": "disposed",
+      "generationBoundary": true
+    },
+    {
+      "caseId": "X1-SM-103",
+      "state": "interrupted",
+      "command": "dispose-transport",
+      "outcome": "receipt",
+      "stateAfter": "disposed",
+      "generationBoundary": true
+    },
+    {
+      "caseId": "X1-SM-104",
+      "state": "fault",
+      "command": "dispose-transport",
+      "outcome": "receipt",
+      "stateAfter": "disposed",
+      "generationBoundary": false
+    },
+    {
+      "caseId": "X1-SM-105",
+      "state": "disposed",
+      "command": "dispose-transport",
+      "outcome": "refusal",
+      "refusalCode": "transport.disposed"
+    }
+  ]
+}

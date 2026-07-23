@@ -5,23 +5,14 @@
     "beadId": "jcpe-94yu.1",
     "productionImplementationAvailableWhenAuthored": false,
     "acceptedE0V1BytesModified": false,
-    "replacementCaseCount": 30,
-    "identityCaseCount": 6,
-    "markerCaseCount": 12,
+    "replacementCaseCount": 28,
+    "identityCaseCount": 4,
+    "markerCaseCount": 10,
     "a0OwnerProofCaseCount": 42,
-    "excludedForwardE0V2CaseCount": 6,
-    "excludedForwardE0V2CaseIds": [
-      "BRIDGE-REP-025",
-      "BRIDGE-REP-026",
-      "BRIDGE-ID-005",
-      "BRIDGE-ID-006",
-      "BRIDGE-MARK-006",
-      "BRIDGE-MARK-007"
-    ],
-    "excludedForwardE0V2Rationale": "These rows exercise malformed unknown returns or thrown consumer ports. They are preserved only as forward references for jcpe-milestone-reliable-studio-l3a.8.4 and are excluded from every A0 typed-producer proof count and claim.",
-    "totalRunCount": 121,
-    "a0OwnerProofRunCount": 115,
-    "excludedForwardE0V2RunCount": 6
+    "forwardE0V2BehaviorRowsPresent": false,
+    "deferredE0V2BindingLeaf": "jcpe-milestone-reliable-studio-l3a.8.4",
+    "totalRunCount": 118,
+    "a0OwnerProofRunCount": 118
   },
   "materializationPolicy": {
     "version": 1,
@@ -1307,7 +1298,16 @@
           "progressionRetired": true,
           "previewRetired": true,
           "noFutureAttack": true
-        }
+        },
+        "pendingRequestsBefore": [
+          {
+            "kind": "document-transition",
+            "id": 101,
+            "documentId": "document-e0-nested",
+            "baseRevision": 7,
+            "status": "running"
+          }
+        ]
       }
     },
     "state-published-retained-minimal": {
@@ -1773,15 +1773,6 @@
           "to": 13,
           "value": 13
         }
-      ],
-      "preservedTopLevelFields": [
-        "exportRevision",
-        "recovery",
-        "panels",
-        "dialogs",
-        "importDraft",
-        "transport",
-        "notices"
       ]
     },
     "private-material-manual-source-c": {
@@ -2232,7 +2223,16 @@
           "progressionRetired": true,
           "previewRetired": true,
           "noFutureAttack": true
-        }
+        },
+        "pendingRequestsBefore": [
+          {
+            "kind": "document-transition",
+            "id": 401,
+            "documentId": "document-e0-nested",
+            "baseRevision": 7,
+            "status": "running"
+          }
+        ]
       }
     },
     "state-published-manual-source-c": {
@@ -2712,15 +2712,6 @@
           "to": 13,
           "value": 13
         }
-      ],
-      "preservedTopLevelFields": [
-        "exportRevision",
-        "recovery",
-        "panels",
-        "dialogs",
-        "importDraft",
-        "transport",
-        "notices"
       ]
     },
     "registry-prepared-manual-source-c": {
@@ -3210,7 +3201,16 @@
           "progressionRetired": true,
           "previewRetired": true,
           "noFutureAttack": true
-        }
+        },
+        "pendingRequestsBefore": [
+          {
+            "kind": "document-transition",
+            "id": 1401,
+            "documentId": "document-e0-nested",
+            "baseRevision": 7,
+            "status": "running"
+          }
+        ]
       }
     },
     "state-published-manual-target-d": {
@@ -3703,15 +3703,6 @@
           "to": 13,
           "value": 13
         }
-      ],
-      "preservedTopLevelFields": [
-        "exportRevision",
-        "recovery",
-        "panels",
-        "dialogs",
-        "importDraft",
-        "transport",
-        "notices"
       ]
     },
     "registry-prepared-manual-target-d": {
@@ -4002,7 +3993,16 @@
           "progressionRetired": true,
           "previewRetired": true,
           "noFutureAttack": true
-        }
+        },
+        "pendingRequestsBefore": [
+          {
+            "kind": "document-transition",
+            "id": 101,
+            "documentId": "oversized",
+            "baseRevision": 7,
+            "status": "running"
+          }
+        ]
       }
     },
     "state-published-unavailable": {
@@ -4123,20 +4123,6 @@
           "to": 14,
           "value": 14
         }
-      ],
-      "preservedTopLevelFields": [
-        "exportRevision",
-        "recovery",
-        "history",
-        "bookmarks",
-        "panels",
-        "dialogs",
-        "quickEntry.text",
-        "quickEntry.target",
-        "quickEntry.status",
-        "quickEntry.issueCodes",
-        "importDraft",
-        "transport"
       ]
     },
     "registry-prepared-unavailable": {
@@ -4619,7 +4605,16 @@
           "progressionRetired": true,
           "previewRetired": true,
           "noFutureAttack": true
-        }
+        },
+        "pendingRequestsBefore": [
+          {
+            "kind": "document-transition",
+            "id": 101,
+            "documentId": "document-e0-nested",
+            "baseRevision": 7,
+            "status": "running"
+          }
+        ]
       }
     },
     "state-published-label-160": {
@@ -5712,7 +5707,16 @@
           "progressionRetired": true,
           "previewRetired": true,
           "noFutureAttack": true
-        }
+        },
+        "pendingRequestsBefore": [
+          {
+            "kind": "document-transition",
+            "id": 101,
+            "documentId": "document-e0-nested",
+            "baseRevision": 7,
+            "status": "running"
+          }
+        ]
       }
     },
     "state-published-representative-f3": {
@@ -6610,38 +6614,6 @@
         "nonUndoableConfirmation": null
       }
     },
-    "mutation-state-retiring-revision-8": {
-      "kind": "accepted-e0-v1-reference",
-      "path": "tests/fixtures/interchange/input-fixture-ledger.json",
-      "sha256": "693d3e39db3e82e5c24980d363566943360687bdf2dcd523185f56a028b0f714",
-      "jsonPointer": "/fixtures/118",
-      "materializeAs": "AppState",
-      "materializationPatches": [
-        {
-          "op": "replace",
-          "jsonPointer": "/revision",
-          "from": 7,
-          "to": 8,
-          "value": 8
-        }
-      ]
-    },
-    "mutation-state-marker-revision-8": {
-      "kind": "accepted-e0-v1-reference",
-      "path": "tests/fixtures/interchange/input-fixture-ledger.json",
-      "sha256": "693d3e39db3e82e5c24980d363566943360687bdf2dcd523185f56a028b0f714",
-      "jsonPointer": "/fixtures/205",
-      "materializeAs": "AppState",
-      "materializationPatches": [
-        {
-          "op": "replace",
-          "jsonPointer": "/revision",
-          "from": 7,
-          "to": 8,
-          "value": 8
-        }
-      ]
-    },
     "mutation-state-marker-other-document": {
       "kind": "accepted-e0-v1-reference",
       "path": "tests/fixtures/interchange/input-fixture-ledger.json",
@@ -6719,6 +6691,505 @@
           "value": "document-e0-nested"
         }
       ]
+    },
+    "private-material-mutation-024-manual-pitch": {
+      "kind": "inline",
+      "materializeAs": "PrivateImportReplacementMaterial",
+      "value": {
+        "candidate": {
+          "literalId": "mutation-024-manual-pitch-candidate",
+          "documentId": "document-e0-nested",
+          "canonicalMaterializedSha256": "53c1dce9ae324a51d1be6e84214a192169a69acb847e97a13ae4b9110d2c9529",
+          "canonicalMaterializedByteLength": 2368,
+          "acceptedPrettyFileSha256": "6e00aecaddd5a522ee1a608f7d3a6c2c35bab408b6b831bbce88b0c7271cc499",
+          "preservationPolicy": "validated-bytes-and-manual-frozen-spellings-preserved-without-repair"
+        },
+        "command": {
+          "id": "command-source-c",
+          "label": "Import source-c",
+          "expectedDocumentId": "document-e0-nested",
+          "expectedRevision": 7,
+          "logicalTimeMs": 9401,
+          "coalescing": null,
+          "kind": "replace-document",
+          "origin": "canonical-import",
+          "candidate": {
+            "$literalRef": "mutation-024-manual-pitch-candidate"
+          },
+          "requestId": 401,
+          "retirement": {
+            "requestId": 401,
+            "retiredTransportGeneration": 11,
+            "progressionRetired": true,
+            "previewRetired": true,
+            "noFutureAttack": true
+          },
+          "undoDisposition": {
+            "kind": "retain"
+          }
+        },
+        "validation": {
+          "structuralDecode": {
+            "outcome": "accepted",
+            "callsDuringPreparation": 1,
+            "callsDuringPublication": 0,
+            "repairs": 0
+          },
+          "semanticValidation": {
+            "outcome": "accepted",
+            "callsDuringPreparation": 1,
+            "callsDuringPublication": 0,
+            "repairs": 0
+          },
+          "candidateCanonicalMaterializedSha256": "53c1dce9ae324a51d1be6e84214a192169a69acb847e97a13ae4b9110d2c9529",
+          "candidateCanonicalMaterializedByteLength": 2368
+        },
+        "bookmarksAndFocus": {
+          "before": {
+            "selection": {
+              "kind": "events",
+              "eventIds": ["event-e0-auto"],
+              "anchorEventId": "event-e0-auto",
+              "focusEventId": "event-e0-auto"
+            },
+            "insertion": {
+              "kind": "after-event",
+              "eventId": "event-e0-auto"
+            },
+            "range": {
+              "anchor": {
+                "kind": "before-event",
+                "eventId": "event-e0-auto"
+              },
+              "focus": {
+                "kind": "after-event",
+                "eventId": "event-e0-auto"
+              }
+            }
+          },
+          "after": {
+            "selection": {
+              "kind": "none"
+            },
+            "insertion": {
+              "kind": "before-event",
+              "eventId": "event-e0-auto"
+            },
+            "range": null
+          },
+          "focusTarget": {
+            "kind": "chart"
+          },
+          "quickEntryTemplate": {
+            "text": "",
+            "target": {
+              "kind": "before-event",
+              "eventId": "event-e0-auto"
+            },
+            "status": "idle",
+            "issueCodes": []
+          },
+          "repairCallsDuringPreparation": 1,
+          "repairCallsDuringPublication": 0
+        },
+        "history": {
+          "entry": {
+            "commandId": "command-source-c",
+            "commandKind": "replace-document",
+            "label": "Import source-c",
+            "before": {
+              "$literalRef": "manual-frozen-source-c"
+            },
+            "after": {
+              "$literalRef": "mutation-024-manual-pitch-candidate"
+            },
+            "beforeBookmarks": {
+              "selection": {
+                "kind": "events",
+                "eventIds": ["event-e0-auto"],
+                "anchorEventId": "event-e0-auto",
+                "focusEventId": "event-e0-auto"
+              },
+              "insertion": {
+                "kind": "after-event",
+                "eventId": "event-e0-auto"
+              },
+              "range": {
+                "anchor": {
+                  "kind": "before-event",
+                  "eventId": "event-e0-auto"
+                },
+                "focus": {
+                  "kind": "after-event",
+                  "eventId": "event-e0-auto"
+                }
+              }
+            },
+            "afterBookmarks": {
+              "selection": {
+                "kind": "none"
+              },
+              "insertion": {
+                "kind": "before-event",
+                "eventId": "event-e0-auto"
+              },
+              "range": null
+            },
+            "retainedBytesEstimate": 15564,
+            "coalescing": null,
+            "firstLogicalTimeMs": 9401,
+            "lastLogicalTimeMs": 9401
+          },
+          "after": {
+            "undo": [
+              {
+                "commandId": "history-e0-retained",
+                "commandKind": "replace-document",
+                "label": "Import nested chart",
+                "before": {
+                  "$literalRef": "e0-document-minimal"
+                },
+                "after": {
+                  "$literalRef": "manual-frozen-source-c"
+                },
+                "beforeBookmarks": {
+                  "selection": {
+                    "kind": "none"
+                  },
+                  "insertion": {
+                    "kind": "document-start"
+                  },
+                  "range": null
+                },
+                "afterBookmarks": {
+                  "selection": {
+                    "kind": "events",
+                    "eventIds": ["event-e0-auto"],
+                    "anchorEventId": "event-e0-auto",
+                    "focusEventId": "event-e0-auto"
+                  },
+                  "insertion": {
+                    "kind": "after-event",
+                    "eventId": "event-e0-auto"
+                  },
+                  "range": {
+                    "anchor": {
+                      "kind": "before-event",
+                      "eventId": "event-e0-auto"
+                    },
+                    "focus": {
+                      "kind": "after-event",
+                      "eventId": "event-e0-auto"
+                    }
+                  }
+                },
+                "retainedBytesEstimate": 9199,
+                "coalescing": null,
+                "firstLogicalTimeMs": 7000,
+                "lastLogicalTimeMs": 7000
+              },
+              {
+                "commandId": "command-source-c",
+                "commandKind": "replace-document",
+                "label": "Import source-c",
+                "before": {
+                  "$literalRef": "manual-frozen-source-c"
+                },
+                "after": {
+                  "$literalRef": "mutation-024-manual-pitch-candidate"
+                },
+                "beforeBookmarks": {
+                  "selection": {
+                    "kind": "events",
+                    "eventIds": ["event-e0-auto"],
+                    "anchorEventId": "event-e0-auto",
+                    "focusEventId": "event-e0-auto"
+                  },
+                  "insertion": {
+                    "kind": "after-event",
+                    "eventId": "event-e0-auto"
+                  },
+                  "range": {
+                    "anchor": {
+                      "kind": "before-event",
+                      "eventId": "event-e0-auto"
+                    },
+                    "focus": {
+                      "kind": "after-event",
+                      "eventId": "event-e0-auto"
+                    }
+                  }
+                },
+                "afterBookmarks": {
+                  "selection": {
+                    "kind": "none"
+                  },
+                  "insertion": {
+                    "kind": "before-event",
+                    "eventId": "event-e0-auto"
+                  },
+                  "range": null
+                },
+                "retainedBytesEstimate": 15564,
+                "coalescing": null,
+                "firstLogicalTimeMs": 9401,
+                "lastLogicalTimeMs": 9401
+              }
+            ],
+            "redo": [],
+            "retainedBytesEstimate": 24763
+          },
+          "retentionDecision": "retained",
+          "entryRetainedBytesEstimate": 15564,
+          "totalRetainedBytesAfterPublication": 24763,
+          "estimatorCallsDuringPreparation": 1,
+          "estimatorCallsDuringPublication": 0
+        },
+        "publication": {
+          "revisionIncrement": 1,
+          "replacementOwnedProjection": {
+            "document": {
+              "$literalRef": "mutation-024-manual-pitch-candidate"
+            },
+            "history": {
+              "undo": [
+                {
+                  "commandId": "history-e0-retained",
+                  "commandKind": "replace-document",
+                  "label": "Import nested chart",
+                  "before": {
+                    "$literalRef": "e0-document-minimal"
+                  },
+                  "after": {
+                    "$literalRef": "manual-frozen-source-c"
+                  },
+                  "beforeBookmarks": {
+                    "selection": {
+                      "kind": "none"
+                    },
+                    "insertion": {
+                      "kind": "document-start"
+                    },
+                    "range": null
+                  },
+                  "afterBookmarks": {
+                    "selection": {
+                      "kind": "events",
+                      "eventIds": ["event-e0-auto"],
+                      "anchorEventId": "event-e0-auto",
+                      "focusEventId": "event-e0-auto"
+                    },
+                    "insertion": {
+                      "kind": "after-event",
+                      "eventId": "event-e0-auto"
+                    },
+                    "range": {
+                      "anchor": {
+                        "kind": "before-event",
+                        "eventId": "event-e0-auto"
+                      },
+                      "focus": {
+                        "kind": "after-event",
+                        "eventId": "event-e0-auto"
+                      }
+                    }
+                  },
+                  "retainedBytesEstimate": 9199,
+                  "coalescing": null,
+                  "firstLogicalTimeMs": 7000,
+                  "lastLogicalTimeMs": 7000
+                },
+                {
+                  "commandId": "command-source-c",
+                  "commandKind": "replace-document",
+                  "label": "Import source-c",
+                  "before": {
+                    "$literalRef": "manual-frozen-source-c"
+                  },
+                  "after": {
+                    "$literalRef": "mutation-024-manual-pitch-candidate"
+                  },
+                  "beforeBookmarks": {
+                    "selection": {
+                      "kind": "events",
+                      "eventIds": ["event-e0-auto"],
+                      "anchorEventId": "event-e0-auto",
+                      "focusEventId": "event-e0-auto"
+                    },
+                    "insertion": {
+                      "kind": "after-event",
+                      "eventId": "event-e0-auto"
+                    },
+                    "range": {
+                      "anchor": {
+                        "kind": "before-event",
+                        "eventId": "event-e0-auto"
+                      },
+                      "focus": {
+                        "kind": "after-event",
+                        "eventId": "event-e0-auto"
+                      }
+                    }
+                  },
+                  "afterBookmarks": {
+                    "selection": {
+                      "kind": "none"
+                    },
+                    "insertion": {
+                      "kind": "before-event",
+                      "eventId": "event-e0-auto"
+                    },
+                    "range": null
+                  },
+                  "retainedBytesEstimate": 15564,
+                  "coalescing": null,
+                  "firstLogicalTimeMs": 9401,
+                  "lastLogicalTimeMs": 9401
+                }
+              ],
+              "redo": [],
+              "retainedBytesEstimate": 24763
+            },
+            "bookmarks": {
+              "selection": {
+                "kind": "none"
+              },
+              "insertion": {
+                "kind": "before-event",
+                "eventId": "event-e0-auto"
+              },
+              "range": null
+            },
+            "quickEntryTemplate": {
+              "text": "",
+              "target": {
+                "kind": "before-event",
+                "eventId": "event-e0-auto"
+              },
+              "status": "idle",
+              "issueCodes": []
+            },
+            "importDraft": null,
+            "pendingRequests": [],
+            "documentTransition": {
+              "kind": "idle"
+            },
+            "noticeTemplates": []
+          },
+          "focusRequestTemplate": {
+            "target": {
+              "kind": "chart"
+            },
+            "reason": "replacement"
+          },
+          "optionalWarningNoticeTemplate": null,
+          "effects": [
+            {
+              "kind": "queue-recovery",
+              "revision": 8,
+              "requestId": null,
+              "reasonCode": "command:replace-document"
+            },
+            {
+              "kind": "compile-playback-plan",
+              "revision": 8,
+              "requestId": null,
+              "reasonCode": "command:replace-document"
+            },
+            {
+              "kind": "restore-focus",
+              "revision": 8,
+              "requestId": null,
+              "reasonCode": "command:replace-document"
+            },
+            {
+              "kind": "announce",
+              "revision": 8,
+              "requestId": null,
+              "reasonCode": "command:replace-document"
+            }
+          ],
+          "counters": {
+            "sectionsVisited": 2,
+            "measuresVisited": 6,
+            "eventsVisited": 6,
+            "stableIdsIndexed": 14,
+            "historyEntriesVisited": 0,
+            "historyBytesEstimated": 15564,
+            "bookmarksRepaired": 0,
+            "requestsCompared": 0,
+            "transportNotificationsCompared": 0,
+            "validationCalls": 1
+          },
+          "installCount": 1,
+          "listenerNotificationCount": 1
+        },
+        "disclosedImpact": {
+          "historyEntryRetainedBytes": 15564,
+          "evictedUndoEntries": 0,
+          "redoEntriesCleared": 1,
+          "confirmationRequired": true,
+          "undoDisposition": "retained",
+          "undoEntriesAfterCommit": 2,
+          "undoRetainedBytesAfterCommit": 24763,
+          "exportRecommended": false
+        },
+        "expectedRetirement": {
+          "requestId": 401,
+          "retiredTransportGeneration": 11,
+          "progressionRetired": true,
+          "previewRetired": true,
+          "noFutureAttack": true
+        },
+        "pendingRequestsBefore": [
+          {
+            "kind": "document-transition",
+            "id": 401,
+            "documentId": "document-e0-nested",
+            "baseRevision": 7,
+            "status": "running"
+          }
+        ]
+      }
+    },
+    "registry-prepared-mutation-024-manual-pitch": {
+      "kind": "inline",
+      "materializeAs": "PrivateImportReplacementRegistry",
+      "value": {
+        "capacity": 1,
+        "entries": [
+          {
+            "key": {
+              "requestId": 401,
+              "documentId": "document-e0-nested",
+              "baseRevision": 7
+            },
+            "status": "prepared",
+            "preparedEcho": {
+              "schema": "changes.prepared-import-replacement-publication.v1",
+              "identity": {
+                "requestId": 401,
+                "documentId": "document-e0-nested",
+                "baseRevision": 7
+              },
+              "sourceFormat": "canonical-json-v2",
+              "candidateDocumentId": "document-e0-nested",
+              "expectedTransportGeneration": 11,
+              "committingTransition": {
+                "kind": "committing",
+                "requestId": 401,
+                "origin": "canonical-import",
+                "baseRevision": 7,
+                "candidateDocumentId": "document-e0-nested",
+                "undoDisposition": "retained"
+              }
+            },
+            "privateMaterial": {
+              "$literalRef": "private-material-mutation-024-manual-pitch"
+            }
+          }
+        ]
+      }
     },
     "mutation-024-manual-pitch-candidate": {
       "kind": "accepted-e0-v1-reference",
@@ -7298,7 +7769,16 @@
           "progressionRetired": true,
           "previewRetired": true,
           "noFutureAttack": true
-        }
+        },
+        "pendingRequestsBefore": [
+          {
+            "kind": "document-transition",
+            "id": 101,
+            "documentId": "document-e0-nested",
+            "baseRevision": 7,
+            "status": "running"
+          }
+        ]
       }
     },
     "registry-prepared-chart-text-canonical": {
@@ -7890,7 +8370,16 @@
           "progressionRetired": true,
           "previewRetired": true,
           "noFutureAttack": true
-        }
+        },
+        "pendingRequestsBefore": [
+          {
+            "kind": "document-transition",
+            "id": 101,
+            "documentId": "document-e0-nested",
+            "baseRevision": 7,
+            "status": "running"
+          }
+        ]
       }
     },
     "registry-prepared-logical-time-latest-boundary": {
@@ -8396,6 +8885,62 @@
           "value": 13
         }
       ]
+    },
+    "mutation-010-request-revision-eight": {
+      "kind": "inline",
+      "materializeAs": "PrepareImportReplacementPublicationRequest",
+      "value": {
+        "identity": {
+          "requestId": 101,
+          "documentId": "document-e0-nested",
+          "baseRevision": 8
+        },
+        "sourceFormat": "canonical-json-v2",
+        "replacementOrigin": "canonical-import",
+        "candidate": {
+          "$literalRef": "e0-document-minimal"
+        },
+        "replacementCommandSeed": {
+          "id": "command-e0-replace-1",
+          "label": "Import Changes",
+          "logicalTimeMs": 9000
+        },
+        "disclosedImpact": {
+          "historyEntryRetainedBytes": 9195,
+          "evictedUndoEntries": 0,
+          "redoEntriesCleared": 1,
+          "confirmationRequired": true,
+          "undoDisposition": "retained",
+          "undoEntriesAfterCommit": 2,
+          "undoRetainedBytesAfterCommit": 18394,
+          "exportRecommended": false
+        },
+        "currentTransition": {
+          "kind": "retiring-transport",
+          "requestId": 101,
+          "origin": "canonical-import",
+          "baseRevision": 7,
+          "candidateDocumentId": "document-e0-minimal",
+          "undoDisposition": "retained"
+        },
+        "nonUndoableConfirmation": null
+      }
+    },
+    "mutation-state-marker-document-other": {
+      "kind": "accepted-e0-v1-reference",
+      "path": "tests/fixtures/interchange/input-fixture-ledger.json",
+      "sha256": "693d3e39db3e82e5c24980d363566943360687bdf2dcd523185f56a028b0f714",
+      "jsonPointer": "/fixtures/205",
+      "materializeAs": "AppState",
+      "materializationPatches": [
+        {
+          "op": "replace",
+          "jsonPointer": "/document/id",
+          "from": "document-e0-minimal",
+          "to": "document-e0-other",
+          "value": "document-e0-other"
+        }
+      ]
     }
   },
   "transpositionWitness": {
@@ -8845,7 +9390,7 @@
             "retainedRegistryEntriesAtReturn": 1
           },
           "historyEstimatorLawInput": {
-            "estimatedRetainedBytes": 9199
+            "estimatedRetainedBytes": 9195
           },
           "ownerLawFlags": {
             "historicalStateReinstall": false
@@ -8969,7 +9514,7 @@
             "retainedRegistryEntriesAtReturn": 1
           },
           "historyEstimatorLawInput": {
-            "estimatedRetainedBytes": 9199
+            "estimatedRetainedBytes": 9195
           },
           "ownerLawFlags": {
             "historicalStateReinstall": false
@@ -10540,17 +11085,9 @@
             "patches": []
           },
           "registryAfter": {
-            "literalId": "registry-prepared-manual-source-c",
+            "literalId": "registry-prepared-mutation-024-manual-pitch",
             "materializeAs": "PrivateImportReplacementRegistry",
-            "patches": [
-              {
-                "op": "replace",
-                "jsonPointer": "/entries/0/privateMaterial/command/candidate/sections/0/measures/1/events/0/voicing/pitches/1/octave",
-                "from": 4,
-                "to": 5,
-                "value": 5
-              }
-            ]
+            "patches": []
           },
           "exactTypedResult": {
             "materializeAs": "PrepareImportReplacementPublicationResult",
@@ -11105,6 +11642,8 @@
           "synchronousEventOrder": [
             "call.prepare",
             "read.controller-state",
+            "validate.request-envelope",
+            "compare.complete-identity",
             "refuse.import.replacement_request_stale",
             "return.refused-no-allocation"
           ],
@@ -11222,6 +11761,8 @@
           "synchronousEventOrder": [
             "call.prepare",
             "read.controller-state",
+            "validate.request-envelope",
+            "compare.complete-identity",
             "refuse.import.replacement_wrong_document",
             "return.refused-no-allocation"
           ],
@@ -11320,6 +11861,8 @@
           "synchronousEventOrder": [
             "call.prepare",
             "read.controller-state",
+            "validate.request-envelope",
+            "compare.complete-identity",
             "refuse.import.replacement_wrong_document",
             "return.refused-no-allocation"
           ],
@@ -11407,36 +11950,28 @@
               {
                 "materializeAs": "PrepareImportReplacementPublicationRequest",
                 "literalId": "prepare-request-retained",
-                "patches": []
+                "patches": [
+                  {
+                    "op": "replace",
+                    "jsonPointer": "/identity/baseRevision",
+                    "from": 7,
+                    "to": 8,
+                    "value": 8
+                  }
+                ]
               }
             ]
           },
           "controllerStateBefore": {
             "literalId": "state-retiring-retained",
             "materializeAs": "AppState",
-            "patches": [
-              {
-                "op": "replace",
-                "jsonPointer": "/revision",
-                "from": 7,
-                "to": 8,
-                "value": 8
-              }
-            ],
+            "patches": [],
             "relation": "materialized-exact"
           },
           "controllerStateAfter": {
             "literalId": "state-retiring-retained",
             "materializeAs": "AppState",
-            "patches": [
-              {
-                "op": "replace",
-                "jsonPointer": "/revision",
-                "from": 7,
-                "to": 8,
-                "value": 8
-              }
-            ],
+            "patches": [],
             "relation": "same-reference-no-install"
           },
           "registryBefore": {
@@ -11478,6 +12013,8 @@
           "synchronousEventOrder": [
             "call.prepare",
             "read.controller-state",
+            "validate.request-envelope",
+            "compare.complete-identity",
             "refuse.import.replacement_request_stale",
             "return.refused-no-allocation"
           ],
@@ -11485,7 +12022,7 @@
           "oneFieldNearMiss": {
             "baselineRunId": "BRIDGE-REP-001/retained",
             "operator": "replace",
-            "jsonPointer": "/controllerState/revision",
+            "jsonPointer": "/arguments/0/identity/baseRevision",
             "from": 7,
             "to": 8,
             "exactChangedFieldCount": 1
@@ -11520,19 +12057,19 @@
             "arguments": [
               {
                 "materializeAs": "PrepareImportReplacementPublicationRequest",
-                "literalId": "prepare-request-retained",
+                "literalId": "mutation-010-request-revision-eight",
                 "patches": []
               }
             ]
           },
           "controllerStateBefore": {
-            "literalId": "mutation-state-retiring-revision-8",
+            "literalId": "state-retiring-retained",
             "materializeAs": "AppState",
             "patches": [],
             "relation": "materialized-exact-one-field-derived"
           },
           "controllerStateAfter": {
-            "literalId": "mutation-state-retiring-revision-8",
+            "literalId": "state-retiring-retained",
             "materializeAs": "AppState",
             "patches": [],
             "relation": "same-reference-no-install"
@@ -11576,6 +12113,8 @@
           "synchronousEventOrder": [
             "call.prepare",
             "read.controller-state",
+            "validate.request-envelope",
+            "compare.complete-identity",
             "refuse.import.replacement_request_stale",
             "return.refused-no-allocation"
           ],
@@ -11616,11 +12155,11 @@
             "mutatedLaw": {
               "arguments": [
                 {
-                  "$literalRef": "prepare-request-retained"
+                  "$literalRef": "mutation-010-request-revision-eight"
                 }
               ],
               "controllerState": {
-                "$literalRef": "mutation-state-retiring-revision-8"
+                "$literalRef": "state-retiring-retained"
               },
               "registry": {
                 "$literalRef": "registry-empty"
@@ -11791,13 +12330,29 @@
           "controllerStateBefore": {
             "literalId": "state-retiring-retained",
             "materializeAs": "AppState",
-            "patches": [],
+            "patches": [
+              {
+                "op": "replace",
+                "jsonPointer": "/documentTransition/origin",
+                "from": "canonical-import",
+                "to": "legacy-import",
+                "value": "legacy-import"
+              }
+            ],
             "relation": "materialized-exact"
           },
           "controllerStateAfter": {
             "literalId": "state-retiring-retained",
             "materializeAs": "AppState",
-            "patches": [],
+            "patches": [
+              {
+                "op": "replace",
+                "jsonPointer": "/documentTransition/origin",
+                "from": "canonical-import",
+                "to": "legacy-import",
+                "value": "legacy-import"
+              }
+            ],
             "relation": "same-reference-no-install"
           },
           "registryBefore": {
@@ -11932,13 +12487,29 @@
           "controllerStateBefore": {
             "literalId": "state-retiring-retained",
             "materializeAs": "AppState",
-            "patches": [],
+            "patches": [
+              {
+                "op": "replace",
+                "jsonPointer": "/documentTransition/origin",
+                "from": "canonical-import",
+                "to": "legacy-import",
+                "value": "legacy-import"
+              }
+            ],
             "relation": "materialized-exact"
           },
           "controllerStateAfter": {
             "literalId": "state-retiring-retained",
             "materializeAs": "AppState",
-            "patches": [],
+            "patches": [
+              {
+                "op": "replace",
+                "jsonPointer": "/documentTransition/origin",
+                "from": "canonical-import",
+                "to": "legacy-import",
+                "value": "legacy-import"
+              }
+            ],
             "relation": "same-reference-no-install"
           },
           "registryBefore": {
@@ -11980,6 +12551,7 @@
           "synchronousEventOrder": [
             "call.prepare",
             "read.controller-state",
+            "validate.request-envelope",
             "refuse.import.replacement_request_invalid",
             "return.refused-no-allocation"
           ],
@@ -12089,6 +12661,7 @@
           "synchronousEventOrder": [
             "call.prepare",
             "read.controller-state",
+            "validate.request-envelope",
             "refuse.import.replacement_request_invalid",
             "return.refused-no-allocation"
           ],
@@ -12208,6 +12781,9 @@
           "synchronousEventOrder": [
             "call.prepare",
             "read.controller-state",
+            "validate.request-envelope",
+            "compare.complete-identity",
+            "compare.transition-binding",
             "refuse.import.replacement_transition_mismatch",
             "return.refused-no-allocation"
           ],
@@ -12306,6 +12882,9 @@
           "synchronousEventOrder": [
             "call.prepare",
             "read.controller-state",
+            "validate.request-envelope",
+            "compare.complete-identity",
+            "compare.transition-binding",
             "refuse.import.replacement_transition_mismatch",
             "return.refused-no-allocation"
           ],
@@ -12456,6 +13035,9 @@
           "synchronousEventOrder": [
             "call.prepare",
             "read.controller-state",
+            "validate.request-envelope",
+            "compare.complete-identity",
+            "compare.transition-binding",
             "refuse.import.replacement_transition_mismatch",
             "return.refused-no-allocation"
           ],
@@ -12573,6 +13155,9 @@
           "synchronousEventOrder": [
             "call.prepare",
             "read.controller-state",
+            "validate.request-envelope",
+            "compare.complete-identity",
+            "compare.transition-binding",
             "refuse.import.replacement_transition_mismatch",
             "return.refused-no-allocation"
           ],
@@ -12690,6 +13275,9 @@
           "synchronousEventOrder": [
             "call.prepare",
             "read.controller-state",
+            "validate.request-envelope",
+            "compare.complete-identity",
+            "compare.transition-binding",
             "refuse.import.replacement_impact_mismatch",
             "return.refused-no-allocation"
           ],
@@ -12807,6 +13395,10 @@
           "synchronousEventOrder": [
             "call.prepare",
             "read.controller-state",
+            "validate.request-envelope",
+            "compare.complete-identity",
+            "compare.transition-binding",
+            "validate.command-metadata",
             "refuse.import.replacement_command_id_invalid",
             "return.refused-no-allocation"
           ],
@@ -13046,6 +13638,10 @@
           "synchronousEventOrder": [
             "call.prepare",
             "read.controller-state",
+            "validate.request-envelope",
+            "compare.complete-identity",
+            "compare.transition-binding",
+            "validate.command-metadata",
             "refuse.import.replacement_command_label_invalid",
             "return.refused-no-allocation"
           ],
@@ -13144,6 +13740,10 @@
           "synchronousEventOrder": [
             "call.prepare",
             "read.controller-state",
+            "validate.request-envelope",
+            "compare.complete-identity",
+            "compare.transition-binding",
+            "validate.command-metadata",
             "refuse.import.replacement_command_label_invalid",
             "return.refused-no-allocation"
           ],
@@ -13420,6 +14020,10 @@
           "synchronousEventOrder": [
             "call.prepare",
             "read.controller-state",
+            "validate.request-envelope",
+            "compare.complete-identity",
+            "compare.transition-binding",
+            "validate.command-metadata",
             "refuse.import.replacement_logical_time_invalid",
             "return.refused-no-allocation"
           ],
@@ -13528,6 +14132,10 @@
           "synchronousEventOrder": [
             "call.prepare",
             "read.controller-state",
+            "validate.request-envelope",
+            "compare.complete-identity",
+            "compare.transition-binding",
+            "validate.command-metadata",
             "refuse.import.replacement_logical_time_invalid",
             "return.refused-no-allocation"
           ],
@@ -13710,6 +14318,11 @@
           "synchronousEventOrder": [
             "call.prepare",
             "read.controller-state",
+            "validate.request-envelope",
+            "compare.complete-identity",
+            "compare.transition-binding",
+            "validate.command-metadata",
+            "check.revision-and-sequence-capacity",
             "refuse.application.revision_exhausted",
             "return.refused-no-allocation"
           ],
@@ -13828,6 +14441,11 @@
           "synchronousEventOrder": [
             "call.prepare",
             "read.controller-state",
+            "validate.request-envelope",
+            "compare.complete-identity",
+            "compare.transition-binding",
+            "validate.command-metadata",
+            "check.revision-and-sequence-capacity",
             "refuse.application.sequence_exhausted",
             "return.refused-no-allocation"
           ],
@@ -13945,6 +14563,12 @@
           "synchronousEventOrder": [
             "call.prepare",
             "read.controller-state",
+            "validate.request-envelope",
+            "compare.complete-identity",
+            "compare.transition-binding",
+            "validate.command-metadata",
+            "check.revision-and-sequence-capacity",
+            "call.f2",
             "refuse.import.candidate_structural_invalid",
             "return.refused-no-allocation"
           ],
@@ -14043,6 +14667,12 @@
           "synchronousEventOrder": [
             "call.prepare",
             "read.controller-state",
+            "validate.request-envelope",
+            "compare.complete-identity",
+            "compare.transition-binding",
+            "validate.command-metadata",
+            "check.revision-and-sequence-capacity",
+            "call.f2",
             "refuse.import.candidate_structural_invalid",
             "return.refused-no-allocation"
           ],
@@ -14315,6 +14945,13 @@
           "synchronousEventOrder": [
             "call.prepare",
             "read.controller-state",
+            "validate.request-envelope",
+            "compare.complete-identity",
+            "compare.transition-binding",
+            "validate.command-metadata",
+            "check.revision-and-sequence-capacity",
+            "call.f2",
+            "call.f3",
             "refuse.import.candidate_semantic_invalid",
             "return.refused-no-allocation"
           ],
@@ -14413,6 +15050,13 @@
           "synchronousEventOrder": [
             "call.prepare",
             "read.controller-state",
+            "validate.request-envelope",
+            "compare.complete-identity",
+            "compare.transition-binding",
+            "validate.command-metadata",
+            "check.revision-and-sequence-capacity",
+            "call.f2",
+            "call.f3",
             "refuse.import.candidate_semantic_invalid",
             "return.refused-no-allocation"
           ],
@@ -14507,37 +15151,13 @@
           "controllerStateBefore": {
             "literalId": "state-retiring-retained",
             "materializeAs": "AppState",
-            "patches": [
-              {
-                "op": "replace",
-                "jsonPointer": "/history/undo/0/retainedBytesEstimate",
-                "from": 9199,
-                "to": {
-                  "$specialNumber": "NaN"
-                },
-                "value": {
-                  "$specialNumber": "NaN"
-                }
-              }
-            ],
+            "patches": [],
             "relation": "materialized-exact"
           },
           "controllerStateAfter": {
             "literalId": "state-retiring-retained",
             "materializeAs": "AppState",
-            "patches": [
-              {
-                "op": "replace",
-                "jsonPointer": "/history/undo/0/retainedBytesEstimate",
-                "from": 9199,
-                "to": {
-                  "$specialNumber": "NaN"
-                },
-                "value": {
-                  "$specialNumber": "NaN"
-                }
-              }
-            ],
+            "patches": [],
             "relation": "same-reference-no-install"
           },
           "registryBefore": {
@@ -14579,20 +15199,20 @@
           "synchronousEventOrder": [
             "call.prepare",
             "read.controller-state",
+            "validate.request-envelope",
+            "compare.complete-identity",
+            "compare.transition-binding",
+            "validate.command-metadata",
+            "check.revision-and-sequence-capacity",
+            "call.f2",
+            "call.f3",
+            "repair.bookmarks-and-focus",
+            "estimate.history",
             "refuse.import.replacement_history_estimate_failed",
             "return.refused-no-allocation"
           ],
           "exactControllerStateDelta": [],
-          "oneFieldNearMiss": {
-            "baselineRunId": "BRIDGE-REP-001/retained",
-            "operator": "replace",
-            "jsonPointer": "/controllerState/history/undo/0/retainedBytesEstimate",
-            "from": 9199,
-            "to": {
-              "$specialNumber": "NaN"
-            },
-            "exactChangedFieldCount": 1
-          },
+          "oneFieldNearMiss": null,
           "workBound": {
             "termination": "fixed-state-count-and-capacity-bound",
             "wallTimeObservedOrUsed": false,
@@ -14610,6 +15230,9 @@
           },
           "ownerLawFlags": {
             "historicalStateReinstall": false
+          },
+          "historyEstimatorLawInput": {
+            "estimatedRetainedBytes": -1
           }
         },
         {
@@ -14679,6 +15302,15 @@
           "synchronousEventOrder": [
             "call.prepare",
             "read.controller-state",
+            "validate.request-envelope",
+            "compare.complete-identity",
+            "compare.transition-binding",
+            "validate.command-metadata",
+            "check.revision-and-sequence-capacity",
+            "call.f2",
+            "call.f3",
+            "repair.bookmarks-and-focus",
+            "estimate.history",
             "refuse.import.replacement_history_estimate_failed",
             "return.refused-no-allocation"
           ],
@@ -14707,7 +15339,7 @@
             "baselineRunId": "BRIDGE-REP-001/retained",
             "sourceMaterialization": "historyEstimatorLawInput",
             "baselineLaw": {
-              "estimatedRetainedBytes": 9199
+              "estimatedRetainedBytes": 9195
             },
             "mutatedLaw": {
               "estimatedRetainedBytes": -1
@@ -14785,7 +15417,7 @@
             "controllerStateReads": 1,
             "controllerStateInstalls": 0,
             "listenerCallbacks": 0,
-            "registryLookups": 1,
+            "registryLookups": 0,
             "registryAllocations": 0,
             "registryInvalidations": 0,
             "registryConsumptions": 0
@@ -14793,6 +15425,15 @@
           "synchronousEventOrder": [
             "call.prepare",
             "read.controller-state",
+            "validate.request-envelope",
+            "compare.complete-identity",
+            "compare.transition-binding",
+            "validate.command-metadata",
+            "check.revision-and-sequence-capacity",
+            "call.f2",
+            "call.f3",
+            "repair.bookmarks-and-focus",
+            "estimate.history",
             "refuse.import.replacement_impact_unavailable",
             "return.refused-no-allocation"
           ],
@@ -14914,6 +15555,16 @@
           "synchronousEventOrder": [
             "call.prepare",
             "read.controller-state",
+            "validate.request-envelope",
+            "compare.complete-identity",
+            "compare.transition-binding",
+            "validate.command-metadata",
+            "check.revision-and-sequence-capacity",
+            "call.f2",
+            "call.f3",
+            "repair.bookmarks-and-focus",
+            "estimate.history",
+            "recompute.impact",
             "refuse.import.replacement_impact_mismatch",
             "return.refused-no-allocation"
           ],
@@ -15054,6 +15705,17 @@
           "synchronousEventOrder": [
             "call.prepare",
             "read.controller-state",
+            "validate.request-envelope",
+            "compare.complete-identity",
+            "compare.transition-binding",
+            "validate.command-metadata",
+            "check.revision-and-sequence-capacity",
+            "call.f2",
+            "call.f3",
+            "repair.bookmarks-and-focus",
+            "estimate.history",
+            "recompute.impact",
+            "compare.confirmation",
             "refuse.history.nonundoable_confirmation_required",
             "return.refused-no-allocation"
           ],
@@ -15175,6 +15837,17 @@
           "synchronousEventOrder": [
             "call.prepare",
             "read.controller-state",
+            "validate.request-envelope",
+            "compare.complete-identity",
+            "compare.transition-binding",
+            "validate.command-metadata",
+            "check.revision-and-sequence-capacity",
+            "call.f2",
+            "call.f3",
+            "repair.bookmarks-and-focus",
+            "estimate.history",
+            "recompute.impact",
+            "compare.confirmation",
             "refuse.history.nonundoable_confirmation_required",
             "return.refused-no-allocation"
           ],
@@ -15325,6 +15998,17 @@
           "synchronousEventOrder": [
             "call.prepare",
             "read.controller-state",
+            "validate.request-envelope",
+            "compare.complete-identity",
+            "compare.transition-binding",
+            "validate.command-metadata",
+            "check.revision-and-sequence-capacity",
+            "call.f2",
+            "call.f3",
+            "repair.bookmarks-and-focus",
+            "estimate.history",
+            "recompute.impact",
+            "compare.confirmation",
             "refuse.import.confirmation_identity_mismatch",
             "return.refused-no-allocation"
           ],
@@ -15423,7 +16107,7 @@
             "controllerStateReads": 1,
             "controllerStateInstalls": 0,
             "listenerCallbacks": 0,
-            "registryLookups": 1,
+            "registryLookups": 0,
             "registryAllocations": 0,
             "registryInvalidations": 0,
             "registryConsumptions": 0
@@ -15431,6 +16115,17 @@
           "synchronousEventOrder": [
             "call.prepare",
             "read.controller-state",
+            "validate.request-envelope",
+            "compare.complete-identity",
+            "compare.transition-binding",
+            "validate.command-metadata",
+            "check.revision-and-sequence-capacity",
+            "call.f2",
+            "call.f3",
+            "repair.bookmarks-and-focus",
+            "estimate.history",
+            "recompute.impact",
+            "compare.confirmation",
             "refuse.import.confirmation_stale",
             "return.refused-no-allocation"
           ],
@@ -15529,7 +16224,7 @@
             "controllerStateReads": 1,
             "controllerStateInstalls": 0,
             "listenerCallbacks": 0,
-            "registryLookups": 1,
+            "registryLookups": 0,
             "registryAllocations": 0,
             "registryInvalidations": 0,
             "registryConsumptions": 0
@@ -15537,6 +16232,17 @@
           "synchronousEventOrder": [
             "call.prepare",
             "read.controller-state",
+            "validate.request-envelope",
+            "compare.complete-identity",
+            "compare.transition-binding",
+            "validate.command-metadata",
+            "check.revision-and-sequence-capacity",
+            "call.f2",
+            "call.f3",
+            "repair.bookmarks-and-focus",
+            "estimate.history",
+            "recompute.impact",
+            "compare.confirmation",
             "refuse.import.confirmation_wrong_document",
             "return.refused-no-allocation"
           ],
@@ -15635,7 +16341,7 @@
             "controllerStateReads": 1,
             "controllerStateInstalls": 0,
             "listenerCallbacks": 0,
-            "registryLookups": 1,
+            "registryLookups": 0,
             "registryAllocations": 0,
             "registryInvalidations": 0,
             "registryConsumptions": 0
@@ -15643,6 +16349,17 @@
           "synchronousEventOrder": [
             "call.prepare",
             "read.controller-state",
+            "validate.request-envelope",
+            "compare.complete-identity",
+            "compare.transition-binding",
+            "validate.command-metadata",
+            "check.revision-and-sequence-capacity",
+            "call.f2",
+            "call.f3",
+            "repair.bookmarks-and-focus",
+            "estimate.history",
+            "recompute.impact",
+            "compare.confirmation",
             "refuse.import.confirmation_impact_mismatch",
             "return.refused-no-allocation"
           ],
@@ -15749,6 +16466,17 @@
           "synchronousEventOrder": [
             "call.prepare",
             "read.controller-state",
+            "validate.request-envelope",
+            "compare.complete-identity",
+            "compare.transition-binding",
+            "validate.command-metadata",
+            "check.revision-and-sequence-capacity",
+            "call.f2",
+            "call.f3",
+            "repair.bookmarks-and-focus",
+            "estimate.history",
+            "recompute.impact",
+            "compare.confirmation",
             "refuse.import.confirmation_identity_mismatch",
             "return.refused-no-allocation"
           ],
@@ -15855,6 +16583,17 @@
           "synchronousEventOrder": [
             "call.prepare",
             "read.controller-state",
+            "validate.request-envelope",
+            "compare.complete-identity",
+            "compare.transition-binding",
+            "validate.command-metadata",
+            "check.revision-and-sequence-capacity",
+            "call.f2",
+            "call.f3",
+            "repair.bookmarks-and-focus",
+            "estimate.history",
+            "recompute.impact",
+            "compare.confirmation",
             "refuse.import.confirmation_identity_mismatch",
             "return.refused-no-allocation"
           ],
@@ -15965,6 +16704,17 @@
           "synchronousEventOrder": [
             "call.prepare",
             "read.controller-state",
+            "validate.request-envelope",
+            "compare.complete-identity",
+            "compare.transition-binding",
+            "validate.command-metadata",
+            "check.revision-and-sequence-capacity",
+            "call.f2",
+            "call.f3",
+            "repair.bookmarks-and-focus",
+            "estimate.history",
+            "recompute.impact",
+            "compare.confirmation",
             "refuse.import.confirmation_identity_mismatch",
             "return.refused-no-allocation"
           ],
@@ -15977,6 +16727,454 @@
             "to": {
               "$utf16CodeUnits": [55296]
             },
+            "exactChangedFieldCount": 1
+          },
+          "workBound": {
+            "termination": "fixed-state-count-and-capacity-bound",
+            "wallTimeObservedOrUsed": false,
+            "maximumControllerStateReads": 1,
+            "maximumControllerStateInstalls": 0,
+            "maximumListenerCallbacks": 0,
+            "maximumRegistryEntriesInspected": 1,
+            "maximumLiveRegistryEntries": 1,
+            "maximumF2DocumentTraversals": 1,
+            "maximumF3DocumentTraversals": 1,
+            "maximumHistoryEntriesVisited": 200,
+            "maximumHistoryRetainedBytes": 16777216,
+            "awaitOrMicrotaskBoundariesInsideOperation": 0,
+            "retainedRegistryEntriesAtReturn": 0
+          },
+          "ownerLawFlags": {
+            "historicalStateReinstall": false
+          }
+        },
+        {
+          "id": "confirmation-extra-key",
+          "ownerProof": true,
+          "e0V2Owned": false,
+          "rawCall": {
+            "target": "A0E0InterchangeOwnerOperations",
+            "operation": "prepareImportReplacementPublication",
+            "invocation": "synchronous",
+            "arguments": [
+              {
+                "materializeAs": "UntrustedPrepareImportReplacementPublicationRequestEnvelope",
+                "literalId": "prepare-request-unavailable",
+                "patches": [
+                  {
+                    "op": "add",
+                    "jsonPointer": "/nonUndoableConfirmation/extra",
+                    "from": {
+                      "$absent": true
+                    },
+                    "to": "smuggled",
+                    "value": "smuggled"
+                  }
+                ],
+                "argumentDomain": "defensive-untrusted-runtime"
+              }
+            ]
+          },
+          "controllerStateBefore": {
+            "literalId": "state-retiring-unavailable",
+            "materializeAs": "AppState",
+            "patches": [],
+            "relation": "materialized-exact"
+          },
+          "controllerStateAfter": {
+            "literalId": "state-retiring-unavailable",
+            "materializeAs": "AppState",
+            "patches": [],
+            "relation": "same-reference-no-install"
+          },
+          "registryBefore": {
+            "literalId": "registry-empty",
+            "materializeAs": "PrivateImportReplacementRegistry",
+            "patches": []
+          },
+          "registryAfter": {
+            "literalId": "registry-empty",
+            "materializeAs": "PrivateImportReplacementRegistry",
+            "patches": []
+          },
+          "exactTypedResult": {
+            "materializeAs": "PrepareImportReplacementPublicationResult",
+            "value": {
+              "ok": false,
+              "code": "import.confirmation_identity_mismatch"
+            }
+          },
+          "exactCounters": {
+            "prepareImportReplacementPublication": 1,
+            "discardImportReplacementPublication": 0,
+            "publishImportReplacement": 0,
+            "readCurrentApplicationDocumentIdentity": 0,
+            "publishCanonicalExportRevision": 0,
+            "e0V2ConsumerNormalizer": 0,
+            "f2DecodeDocumentShape": 0,
+            "f3ValidateDocumentSemantics": 0,
+            "historyEstimator": 0,
+            "bookmarkRepair": 0,
+            "controllerStateReads": 1,
+            "controllerStateInstalls": 0,
+            "listenerCallbacks": 0,
+            "registryLookups": 0,
+            "registryAllocations": 0,
+            "registryInvalidations": 0,
+            "registryConsumptions": 0
+          },
+          "synchronousEventOrder": [
+            "call.prepare",
+            "read.controller-state",
+            "validate.request-envelope",
+            "refuse.import.confirmation_identity_mismatch",
+            "return.refused-no-allocation"
+          ],
+          "exactControllerStateDelta": [],
+          "oneFieldNearMiss": {
+            "baselineRunId": "BRIDGE-REP-002/unavailable",
+            "operator": "add",
+            "jsonPointer": "/arguments/0/nonUndoableConfirmation/extra",
+            "from": {
+              "$absent": true
+            },
+            "to": "smuggled",
+            "exactChangedFieldCount": 1
+          },
+          "workBound": {
+            "termination": "fixed-state-count-and-capacity-bound",
+            "wallTimeObservedOrUsed": false,
+            "maximumControllerStateReads": 1,
+            "maximumControllerStateInstalls": 0,
+            "maximumListenerCallbacks": 0,
+            "maximumRegistryEntriesInspected": 1,
+            "maximumLiveRegistryEntries": 1,
+            "maximumF2DocumentTraversals": 1,
+            "maximumF3DocumentTraversals": 1,
+            "maximumHistoryEntriesVisited": 200,
+            "maximumHistoryRetainedBytes": 16777216,
+            "awaitOrMicrotaskBoundariesInsideOperation": 0,
+            "retainedRegistryEntriesAtReturn": 0
+          },
+          "ownerLawFlags": {
+            "historicalStateReinstall": false
+          }
+        },
+        {
+          "id": "confirmation-requirement-extra-key",
+          "ownerProof": true,
+          "e0V2Owned": false,
+          "rawCall": {
+            "target": "A0E0InterchangeOwnerOperations",
+            "operation": "prepareImportReplacementPublication",
+            "invocation": "synchronous",
+            "arguments": [
+              {
+                "materializeAs": "UntrustedPrepareImportReplacementPublicationRequestEnvelope",
+                "literalId": "prepare-request-unavailable",
+                "patches": [
+                  {
+                    "op": "add",
+                    "jsonPointer": "/nonUndoableConfirmation/requirement/extra",
+                    "from": {
+                      "$absent": true
+                    },
+                    "to": "smuggled",
+                    "value": "smuggled"
+                  }
+                ],
+                "argumentDomain": "defensive-untrusted-runtime"
+              }
+            ]
+          },
+          "controllerStateBefore": {
+            "literalId": "state-retiring-unavailable",
+            "materializeAs": "AppState",
+            "patches": [],
+            "relation": "materialized-exact"
+          },
+          "controllerStateAfter": {
+            "literalId": "state-retiring-unavailable",
+            "materializeAs": "AppState",
+            "patches": [],
+            "relation": "same-reference-no-install"
+          },
+          "registryBefore": {
+            "literalId": "registry-empty",
+            "materializeAs": "PrivateImportReplacementRegistry",
+            "patches": []
+          },
+          "registryAfter": {
+            "literalId": "registry-empty",
+            "materializeAs": "PrivateImportReplacementRegistry",
+            "patches": []
+          },
+          "exactTypedResult": {
+            "materializeAs": "PrepareImportReplacementPublicationResult",
+            "value": {
+              "ok": false,
+              "code": "import.confirmation_identity_mismatch"
+            }
+          },
+          "exactCounters": {
+            "prepareImportReplacementPublication": 1,
+            "discardImportReplacementPublication": 0,
+            "publishImportReplacement": 0,
+            "readCurrentApplicationDocumentIdentity": 0,
+            "publishCanonicalExportRevision": 0,
+            "e0V2ConsumerNormalizer": 0,
+            "f2DecodeDocumentShape": 0,
+            "f3ValidateDocumentSemantics": 0,
+            "historyEstimator": 0,
+            "bookmarkRepair": 0,
+            "controllerStateReads": 1,
+            "controllerStateInstalls": 0,
+            "listenerCallbacks": 0,
+            "registryLookups": 0,
+            "registryAllocations": 0,
+            "registryInvalidations": 0,
+            "registryConsumptions": 0
+          },
+          "synchronousEventOrder": [
+            "call.prepare",
+            "read.controller-state",
+            "validate.request-envelope",
+            "refuse.import.confirmation_identity_mismatch",
+            "return.refused-no-allocation"
+          ],
+          "exactControllerStateDelta": [],
+          "oneFieldNearMiss": {
+            "baselineRunId": "BRIDGE-REP-002/unavailable",
+            "operator": "add",
+            "jsonPointer": "/arguments/0/nonUndoableConfirmation/requirement/extra",
+            "from": {
+              "$absent": true
+            },
+            "to": "smuggled",
+            "exactChangedFieldCount": 1
+          },
+          "workBound": {
+            "termination": "fixed-state-count-and-capacity-bound",
+            "wallTimeObservedOrUsed": false,
+            "maximumControllerStateReads": 1,
+            "maximumControllerStateInstalls": 0,
+            "maximumListenerCallbacks": 0,
+            "maximumRegistryEntriesInspected": 1,
+            "maximumLiveRegistryEntries": 1,
+            "maximumF2DocumentTraversals": 1,
+            "maximumF3DocumentTraversals": 1,
+            "maximumHistoryEntriesVisited": 200,
+            "maximumHistoryRetainedBytes": 16777216,
+            "awaitOrMicrotaskBoundariesInsideOperation": 0,
+            "retainedRegistryEntriesAtReturn": 0
+          },
+          "ownerLawFlags": {
+            "historicalStateReinstall": false
+          }
+        },
+        {
+          "id": "confirmation-requirement-identity-extra-key",
+          "ownerProof": true,
+          "e0V2Owned": false,
+          "rawCall": {
+            "target": "A0E0InterchangeOwnerOperations",
+            "operation": "prepareImportReplacementPublication",
+            "invocation": "synchronous",
+            "arguments": [
+              {
+                "materializeAs": "UntrustedPrepareImportReplacementPublicationRequestEnvelope",
+                "literalId": "prepare-request-unavailable",
+                "patches": [
+                  {
+                    "op": "add",
+                    "jsonPointer": "/nonUndoableConfirmation/requirement/identity/extra",
+                    "from": {
+                      "$absent": true
+                    },
+                    "to": "smuggled",
+                    "value": "smuggled"
+                  }
+                ],
+                "argumentDomain": "defensive-untrusted-runtime"
+              }
+            ]
+          },
+          "controllerStateBefore": {
+            "literalId": "state-retiring-unavailable",
+            "materializeAs": "AppState",
+            "patches": [],
+            "relation": "materialized-exact"
+          },
+          "controllerStateAfter": {
+            "literalId": "state-retiring-unavailable",
+            "materializeAs": "AppState",
+            "patches": [],
+            "relation": "same-reference-no-install"
+          },
+          "registryBefore": {
+            "literalId": "registry-empty",
+            "materializeAs": "PrivateImportReplacementRegistry",
+            "patches": []
+          },
+          "registryAfter": {
+            "literalId": "registry-empty",
+            "materializeAs": "PrivateImportReplacementRegistry",
+            "patches": []
+          },
+          "exactTypedResult": {
+            "materializeAs": "PrepareImportReplacementPublicationResult",
+            "value": {
+              "ok": false,
+              "code": "import.confirmation_identity_mismatch"
+            }
+          },
+          "exactCounters": {
+            "prepareImportReplacementPublication": 1,
+            "discardImportReplacementPublication": 0,
+            "publishImportReplacement": 0,
+            "readCurrentApplicationDocumentIdentity": 0,
+            "publishCanonicalExportRevision": 0,
+            "e0V2ConsumerNormalizer": 0,
+            "f2DecodeDocumentShape": 0,
+            "f3ValidateDocumentSemantics": 0,
+            "historyEstimator": 0,
+            "bookmarkRepair": 0,
+            "controllerStateReads": 1,
+            "controllerStateInstalls": 0,
+            "listenerCallbacks": 0,
+            "registryLookups": 0,
+            "registryAllocations": 0,
+            "registryInvalidations": 0,
+            "registryConsumptions": 0
+          },
+          "synchronousEventOrder": [
+            "call.prepare",
+            "read.controller-state",
+            "validate.request-envelope",
+            "refuse.import.confirmation_identity_mismatch",
+            "return.refused-no-allocation"
+          ],
+          "exactControllerStateDelta": [],
+          "oneFieldNearMiss": {
+            "baselineRunId": "BRIDGE-REP-002/unavailable",
+            "operator": "add",
+            "jsonPointer": "/arguments/0/nonUndoableConfirmation/requirement/identity/extra",
+            "from": {
+              "$absent": true
+            },
+            "to": "smuggled",
+            "exactChangedFieldCount": 1
+          },
+          "workBound": {
+            "termination": "fixed-state-count-and-capacity-bound",
+            "wallTimeObservedOrUsed": false,
+            "maximumControllerStateReads": 1,
+            "maximumControllerStateInstalls": 0,
+            "maximumListenerCallbacks": 0,
+            "maximumRegistryEntriesInspected": 1,
+            "maximumLiveRegistryEntries": 1,
+            "maximumF2DocumentTraversals": 1,
+            "maximumF3DocumentTraversals": 1,
+            "maximumHistoryEntriesVisited": 200,
+            "maximumHistoryRetainedBytes": 16777216,
+            "awaitOrMicrotaskBoundariesInsideOperation": 0,
+            "retainedRegistryEntriesAtReturn": 0
+          },
+          "ownerLawFlags": {
+            "historicalStateReinstall": false
+          }
+        },
+        {
+          "id": "confirmation-requirement-disclosed-impact-extra-key",
+          "ownerProof": true,
+          "e0V2Owned": false,
+          "rawCall": {
+            "target": "A0E0InterchangeOwnerOperations",
+            "operation": "prepareImportReplacementPublication",
+            "invocation": "synchronous",
+            "arguments": [
+              {
+                "materializeAs": "UntrustedPrepareImportReplacementPublicationRequestEnvelope",
+                "literalId": "prepare-request-unavailable",
+                "patches": [
+                  {
+                    "op": "add",
+                    "jsonPointer": "/nonUndoableConfirmation/requirement/disclosedImpact/extra",
+                    "from": {
+                      "$absent": true
+                    },
+                    "to": "smuggled",
+                    "value": "smuggled"
+                  }
+                ],
+                "argumentDomain": "defensive-untrusted-runtime"
+              }
+            ]
+          },
+          "controllerStateBefore": {
+            "literalId": "state-retiring-unavailable",
+            "materializeAs": "AppState",
+            "patches": [],
+            "relation": "materialized-exact"
+          },
+          "controllerStateAfter": {
+            "literalId": "state-retiring-unavailable",
+            "materializeAs": "AppState",
+            "patches": [],
+            "relation": "same-reference-no-install"
+          },
+          "registryBefore": {
+            "literalId": "registry-empty",
+            "materializeAs": "PrivateImportReplacementRegistry",
+            "patches": []
+          },
+          "registryAfter": {
+            "literalId": "registry-empty",
+            "materializeAs": "PrivateImportReplacementRegistry",
+            "patches": []
+          },
+          "exactTypedResult": {
+            "materializeAs": "PrepareImportReplacementPublicationResult",
+            "value": {
+              "ok": false,
+              "code": "import.confirmation_identity_mismatch"
+            }
+          },
+          "exactCounters": {
+            "prepareImportReplacementPublication": 1,
+            "discardImportReplacementPublication": 0,
+            "publishImportReplacement": 0,
+            "readCurrentApplicationDocumentIdentity": 0,
+            "publishCanonicalExportRevision": 0,
+            "e0V2ConsumerNormalizer": 0,
+            "f2DecodeDocumentShape": 0,
+            "f3ValidateDocumentSemantics": 0,
+            "historyEstimator": 0,
+            "bookmarkRepair": 0,
+            "controllerStateReads": 1,
+            "controllerStateInstalls": 0,
+            "listenerCallbacks": 0,
+            "registryLookups": 0,
+            "registryAllocations": 0,
+            "registryInvalidations": 0,
+            "registryConsumptions": 0
+          },
+          "synchronousEventOrder": [
+            "call.prepare",
+            "read.controller-state",
+            "validate.request-envelope",
+            "refuse.import.confirmation_identity_mismatch",
+            "return.refused-no-allocation"
+          ],
+          "exactControllerStateDelta": [],
+          "oneFieldNearMiss": {
+            "baselineRunId": "BRIDGE-REP-002/unavailable",
+            "operator": "add",
+            "jsonPointer": "/arguments/0/nonUndoableConfirmation/requirement/disclosedImpact/extra",
+            "from": {
+              "$absent": true
+            },
+            "to": "smuggled",
             "exactChangedFieldCount": 1
           },
           "workBound": {
@@ -16238,233 +17436,6 @@
           }
         }
       ]
-    },
-    {
-      "id": "BRIDGE-REP-025",
-      "operation": "prepareImportReplacementPublication",
-      "category": "e0-v2-owned-consumer-normalization",
-      "ownerProof": false,
-      "e0V2Owned": true,
-      "traceIds": ["BRIDGE-TRACE-PREPARE"],
-      "expectedMutationKills": [],
-      "runs": [
-        {
-          "id": "forward-e0-v2-only",
-          "ownerProof": false,
-          "e0V2Owned": true,
-          "rawCall": {
-            "target": "E0V2ConsumerNormalizer",
-            "operation": "normalizePrepareImportReplacementPublication",
-            "invocation": "synchronous",
-            "arguments": [
-              {
-                "materializeAs": "unknown",
-                "value": {
-                  "ok": true
-                },
-                "patches": []
-              }
-            ]
-          },
-          "controllerStateBefore": {
-            "literalId": "state-retiring-retained",
-            "materializeAs": "AppState",
-            "patches": [],
-            "relation": "materialized-exact"
-          },
-          "controllerStateAfter": {
-            "literalId": "state-retiring-retained",
-            "materializeAs": "AppState",
-            "patches": [],
-            "relation": "same-reference-no-install"
-          },
-          "registryBefore": {
-            "literalId": "registry-empty",
-            "materializeAs": "PrivateImportReplacementRegistry",
-            "patches": []
-          },
-          "registryAfter": {
-            "literalId": "registry-empty",
-            "materializeAs": "PrivateImportReplacementRegistry",
-            "patches": []
-          },
-          "exactTypedResult": {
-            "materializeAs": "E0V2NormalizedPreparationRefusal",
-            "value": {
-              "ok": false,
-              "code": "import.replacement_preparation_result_invalid",
-              "cleanupRequiredForOriginalRequest": true
-            }
-          },
-          "exactCounters": {
-            "prepareImportReplacementPublication": 0,
-            "discardImportReplacementPublication": 0,
-            "publishImportReplacement": 0,
-            "readCurrentApplicationDocumentIdentity": 0,
-            "publishCanonicalExportRevision": 0,
-            "e0V2ConsumerNormalizer": 1,
-            "f2DecodeDocumentShape": 0,
-            "f3ValidateDocumentSemantics": 0,
-            "historyEstimator": 0,
-            "bookmarkRepair": 0,
-            "controllerStateReads": 0,
-            "controllerStateInstalls": 0,
-            "listenerCallbacks": 0,
-            "registryLookups": 0,
-            "registryAllocations": 0,
-            "registryInvalidations": 0,
-            "registryConsumptions": 0
-          },
-          "synchronousEventOrder": [
-            "call.e0-v2-normalizer",
-            "reject-or-catch-raw-value",
-            "retain-no-raw-value",
-            "return.normalized-refusal"
-          ],
-          "exactControllerStateDelta": [],
-          "oneFieldNearMiss": null,
-          "workBound": {
-            "termination": "fixed-state-count-and-capacity-bound",
-            "wallTimeObservedOrUsed": false,
-            "maximumControllerStateReads": 1,
-            "maximumControllerStateInstalls": 0,
-            "maximumListenerCallbacks": 0,
-            "maximumRegistryEntriesInspected": 1,
-            "maximumLiveRegistryEntries": 1,
-            "maximumF2DocumentTraversals": 1,
-            "maximumF3DocumentTraversals": 1,
-            "maximumHistoryEntriesVisited": 200,
-            "maximumHistoryRetainedBytes": 16777216,
-            "awaitOrMicrotaskBoundariesInsideOperation": 0,
-            "retainedRegistryEntriesAtReturn": 0
-          }
-        }
-      ],
-      "exclusion": {
-        "rationale": "Malformed returned unknown values and thrown consumer ports belong to the separately reviewed E0-v2 normalization amendment, not the typed A0 producer proof.",
-        "excludedFrom": [
-          "a0OwnerProofCaseCount",
-          "a0OwnerProofRunCount",
-          "typed-producer-conformance"
-        ],
-        "futureOwnerBead": "jcpe-milestone-reliable-studio-l3a.8.4"
-      },
-      "futureE0V2ControlIds": ["BRIDGE-MUT-004", "BRIDGE-MUT-022"]
-    },
-    {
-      "id": "BRIDGE-REP-026",
-      "operation": "prepareImportReplacementPublication",
-      "category": "e0-v2-owned-consumer-normalization",
-      "ownerProof": false,
-      "e0V2Owned": true,
-      "traceIds": ["BRIDGE-TRACE-PREPARE"],
-      "expectedMutationKills": [],
-      "runs": [
-        {
-          "id": "forward-e0-v2-only",
-          "ownerProof": false,
-          "e0V2Owned": true,
-          "rawCall": {
-            "target": "E0V2ConsumerNormalizer",
-            "operation": "normalizePrepareImportReplacementPublication",
-            "invocation": "synchronous",
-            "arguments": [
-              {
-                "materializeAs": "unknown",
-                "value": {
-                  "$throw": {
-                    "type": "Error",
-                    "message": "e0-v2-preparation-throw"
-                  }
-                },
-                "patches": []
-              }
-            ]
-          },
-          "controllerStateBefore": {
-            "literalId": "state-retiring-retained",
-            "materializeAs": "AppState",
-            "patches": [],
-            "relation": "materialized-exact"
-          },
-          "controllerStateAfter": {
-            "literalId": "state-retiring-retained",
-            "materializeAs": "AppState",
-            "patches": [],
-            "relation": "same-reference-no-install"
-          },
-          "registryBefore": {
-            "literalId": "registry-empty",
-            "materializeAs": "PrivateImportReplacementRegistry",
-            "patches": []
-          },
-          "registryAfter": {
-            "literalId": "registry-empty",
-            "materializeAs": "PrivateImportReplacementRegistry",
-            "patches": []
-          },
-          "exactTypedResult": {
-            "materializeAs": "E0V2NormalizedPreparationRefusal",
-            "value": {
-              "ok": false,
-              "code": "import.replacement_preparation_result_invalid",
-              "cleanupRequiredForOriginalRequest": true
-            }
-          },
-          "exactCounters": {
-            "prepareImportReplacementPublication": 0,
-            "discardImportReplacementPublication": 0,
-            "publishImportReplacement": 0,
-            "readCurrentApplicationDocumentIdentity": 0,
-            "publishCanonicalExportRevision": 0,
-            "e0V2ConsumerNormalizer": 1,
-            "f2DecodeDocumentShape": 0,
-            "f3ValidateDocumentSemantics": 0,
-            "historyEstimator": 0,
-            "bookmarkRepair": 0,
-            "controllerStateReads": 0,
-            "controllerStateInstalls": 0,
-            "listenerCallbacks": 0,
-            "registryLookups": 0,
-            "registryAllocations": 0,
-            "registryInvalidations": 0,
-            "registryConsumptions": 0
-          },
-          "synchronousEventOrder": [
-            "call.e0-v2-normalizer",
-            "reject-or-catch-raw-value",
-            "retain-no-raw-value",
-            "return.normalized-refusal"
-          ],
-          "exactControllerStateDelta": [],
-          "oneFieldNearMiss": null,
-          "workBound": {
-            "termination": "fixed-state-count-and-capacity-bound",
-            "wallTimeObservedOrUsed": false,
-            "maximumControllerStateReads": 1,
-            "maximumControllerStateInstalls": 0,
-            "maximumListenerCallbacks": 0,
-            "maximumRegistryEntriesInspected": 1,
-            "maximumLiveRegistryEntries": 1,
-            "maximumF2DocumentTraversals": 1,
-            "maximumF3DocumentTraversals": 1,
-            "maximumHistoryEntriesVisited": 200,
-            "maximumHistoryRetainedBytes": 16777216,
-            "awaitOrMicrotaskBoundariesInsideOperation": 0,
-            "retainedRegistryEntriesAtReturn": 0
-          }
-        }
-      ],
-      "exclusion": {
-        "rationale": "Malformed returned unknown values and thrown consumer ports belong to the separately reviewed E0-v2 normalization amendment, not the typed A0 producer proof.",
-        "excludedFrom": [
-          "a0OwnerProofCaseCount",
-          "a0OwnerProofRunCount",
-          "typed-producer-conformance"
-        ],
-        "futureOwnerBead": "jcpe-milestone-reliable-studio-l3a.8.4"
-      },
-      "futureE0V2ControlIds": ["BRIDGE-MUT-004"]
     },
     {
       "id": "BRIDGE-REP-027",
@@ -23904,6 +24875,7 @@
           "synchronousEventOrder": [
             "call.publish",
             "read.controller-state",
+            "lookup.no-authoritative-entry",
             "reject.lookalike-without-private-entry",
             "return.refused-live-zero"
           ],
@@ -23981,9 +24953,30 @@
                 "from": 7,
                 "to": 8,
                 "value": 8
+              },
+              {
+                "op": "replace",
+                "jsonPointer": "/pendingRequests/0/baseRevision",
+                "from": 7,
+                "to": 8,
+                "value": 8
+              },
+              {
+                "op": "replace",
+                "jsonPointer": "/documentTransition/baseRevision",
+                "from": 7,
+                "to": 8,
+                "value": 8
+              },
+              {
+                "op": "replace",
+                "jsonPointer": "/quickEntry/baseRevision",
+                "from": 7,
+                "to": 8,
+                "value": 8
               }
             ],
-            "relation": "materialized-exact"
+            "relation": "materialized-exact-correlated-revision"
           },
           "controllerStateAfter": {
             "literalId": "state-retiring-retained",
@@ -23992,6 +24985,27 @@
               {
                 "op": "replace",
                 "jsonPointer": "/revision",
+                "from": 7,
+                "to": 8,
+                "value": 8
+              },
+              {
+                "op": "replace",
+                "jsonPointer": "/pendingRequests/0/baseRevision",
+                "from": 7,
+                "to": 8,
+                "value": 8
+              },
+              {
+                "op": "replace",
+                "jsonPointer": "/documentTransition/baseRevision",
+                "from": 7,
+                "to": 8,
+                "value": 8
+              },
+              {
+                "op": "replace",
+                "jsonPointer": "/quickEntry/baseRevision",
                 "from": 7,
                 "to": 8,
                 "value": 8
@@ -24047,19 +25061,13 @@
           "synchronousEventOrder": [
             "call.publish",
             "read.controller-state",
+            "lookup.exact-live-entry",
             "compare.preparation-stale",
             "consume.entry-before-return",
             "return.refused-live-zero"
           ],
           "exactControllerStateDelta": [],
-          "oneFieldNearMiss": {
-            "baselineRunId": "BRIDGE-REP-029/retained",
-            "operator": "replace",
-            "jsonPointer": "/controllerState/revision",
-            "from": 7,
-            "to": 8,
-            "exactChangedFieldCount": 1
-          },
+          "oneFieldNearMiss": null,
           "workBound": {
             "termination": "fixed-state-count-and-capacity-bound",
             "wallTimeObservedOrUsed": false,
@@ -24077,6 +25085,19 @@
           },
           "ownerLawFlags": {
             "historicalStateReinstall": false
+          },
+          "correlatedStateNearMiss": {
+            "baselineRunId": "BRIDGE-REP-029/retained",
+            "operator": "replace",
+            "jsonPointers": [
+              "/controllerState/revision",
+              "/controllerState/pendingRequests/0/baseRevision",
+              "/controllerState/documentTransition/baseRevision",
+              "/controllerState/quickEntry/baseRevision"
+            ],
+            "from": [7, 7, 7, 7],
+            "to": [8, 8, 8, 8],
+            "exactChangedFieldCount": 4
           }
         },
         {
@@ -24182,6 +25203,7 @@
           "synchronousEventOrder": [
             "call.publish",
             "read.controller-state",
+            "lookup.exact-live-entry",
             "compare.retirement-mismatch",
             "consume.entry-before-return",
             "return.refused-live-zero"
@@ -24333,6 +25355,7 @@
           "synchronousEventOrder": [
             "call.publish",
             "read.controller-state",
+            "lookup.exact-live-entry",
             "compare.retirement-mismatch",
             "consume.entry-before-return",
             "return.refused-live-zero"
@@ -24856,6 +25879,7 @@
           "synchronousEventOrder": [
             "call.publish",
             "read.controller-state",
+            "lookup.exact-live-entry",
             "compare.preparation-stale",
             "consume.entry-before-return",
             "return.refused-live-zero"
@@ -25007,6 +26031,7 @@
           "synchronousEventOrder": [
             "call.publish",
             "read.controller-state",
+            "lookup.exact-live-entry",
             "compare.preparation-stale",
             "consume.entry-before-return",
             "return.refused-live-zero"
@@ -25018,6 +26043,561 @@
             "jsonPointer": "/controllerState/nextSequence",
             "from": 12,
             "to": 9007199254740991,
+            "exactChangedFieldCount": 1
+          },
+          "workBound": {
+            "termination": "fixed-state-count-and-capacity-bound",
+            "wallTimeObservedOrUsed": false,
+            "maximumControllerStateReads": 1,
+            "maximumControllerStateInstalls": 1,
+            "maximumListenerCallbacks": 1,
+            "maximumRegistryEntriesInspected": 1,
+            "maximumLiveRegistryEntries": 1,
+            "maximumF2DocumentTraversals": 0,
+            "maximumF3DocumentTraversals": 0,
+            "maximumHistoryEntriesVisited": 200,
+            "maximumHistoryRetainedBytes": 16777216,
+            "awaitOrMicrotaskBoundariesInsideOperation": 0,
+            "retainedRegistryEntriesAtReturn": 0
+          },
+          "ownerLawFlags": {
+            "historicalStateReinstall": false
+          }
+        },
+        {
+          "id": "same-revision-pending-request-drift",
+          "ownerProof": true,
+          "e0V2Owned": false,
+          "rawCall": {
+            "target": "A0E0InterchangeOwnerOperations",
+            "operation": "publishImportReplacement",
+            "invocation": "synchronous",
+            "arguments": [
+              {
+                "materializeAs": "ImportReplacementHandoff",
+                "value": {
+                  "prepared": {
+                    "schema": "changes.prepared-import-replacement-publication.v1",
+                    "identity": {
+                      "requestId": 101,
+                      "documentId": "document-e0-nested",
+                      "baseRevision": 7
+                    },
+                    "sourceFormat": "canonical-json-v2",
+                    "candidateDocumentId": "document-e0-minimal",
+                    "expectedTransportGeneration": 11,
+                    "committingTransition": {
+                      "kind": "committing",
+                      "requestId": 101,
+                      "origin": "canonical-import",
+                      "baseRevision": 7,
+                      "candidateDocumentId": "document-e0-minimal",
+                      "undoDisposition": "retained"
+                    }
+                  },
+                  "retirement": {
+                    "requestId": 101,
+                    "retiredTransportGeneration": 11,
+                    "progressionRetired": true,
+                    "previewRetired": true,
+                    "noFutureAttack": true
+                  }
+                },
+                "patches": []
+              }
+            ]
+          },
+          "controllerStateBefore": {
+            "literalId": "state-retiring-retained",
+            "materializeAs": "AppState",
+            "patches": [
+              {
+                "op": "replace",
+                "jsonPointer": "/pendingRequests/0/status",
+                "from": "running",
+                "to": "cancelling",
+                "value": "cancelling"
+              }
+            ],
+            "relation": "latest-same-revision-state-after-pending-request-drift"
+          },
+          "controllerStateAfter": {
+            "literalId": "state-retiring-retained",
+            "materializeAs": "AppState",
+            "patches": [
+              {
+                "op": "replace",
+                "jsonPointer": "/pendingRequests/0/status",
+                "from": "running",
+                "to": "cancelling",
+                "value": "cancelling"
+              }
+            ],
+            "relation": "same-reference-no-install"
+          },
+          "registryBefore": {
+            "literalId": "registry-prepared",
+            "materializeAs": "PrivateImportReplacementRegistry",
+            "patches": []
+          },
+          "registryAfter": {
+            "literalId": "registry-empty",
+            "materializeAs": "PrivateImportReplacementRegistry",
+            "patches": []
+          },
+          "exactTypedResult": {
+            "materializeAs": "PublishImportReplacementResult",
+            "value": {
+              "ok": false,
+              "outcome": "refused",
+              "code": "import.replacement_preparation_stale",
+              "identity": {
+                "requestId": 101,
+                "documentId": "document-e0-nested",
+                "baseRevision": 7
+              },
+              "observedDocumentId": "document-e0-nested",
+              "observedRevision": 7,
+              "liveForRequest": 0
+            }
+          },
+          "exactCounters": {
+            "prepareImportReplacementPublication": 0,
+            "discardImportReplacementPublication": 0,
+            "publishImportReplacement": 1,
+            "readCurrentApplicationDocumentIdentity": 0,
+            "publishCanonicalExportRevision": 0,
+            "e0V2ConsumerNormalizer": 0,
+            "f2DecodeDocumentShape": 0,
+            "f3ValidateDocumentSemantics": 0,
+            "historyEstimator": 0,
+            "bookmarkRepair": 0,
+            "controllerStateReads": 1,
+            "controllerStateInstalls": 0,
+            "listenerCallbacks": 0,
+            "registryLookups": 1,
+            "registryAllocations": 0,
+            "registryInvalidations": 0,
+            "registryConsumptions": 1
+          },
+          "synchronousEventOrder": [
+            "call.publish",
+            "read.controller-state",
+            "lookup.exact-live-entry",
+            "compare.preparation-stale",
+            "consume.entry-before-return",
+            "return.refused-live-zero"
+          ],
+          "exactControllerStateDelta": [],
+          "oneFieldNearMiss": {
+            "baselineRunId": "BRIDGE-REP-029/retained",
+            "operator": "replace",
+            "jsonPointer": "/controllerState/pendingRequests/0/status",
+            "from": "running",
+            "to": "cancelling",
+            "exactChangedFieldCount": 1
+          },
+          "workBound": {
+            "termination": "fixed-state-count-and-capacity-bound",
+            "wallTimeObservedOrUsed": false,
+            "maximumControllerStateReads": 1,
+            "maximumControllerStateInstalls": 1,
+            "maximumListenerCallbacks": 1,
+            "maximumRegistryEntriesInspected": 1,
+            "maximumLiveRegistryEntries": 1,
+            "maximumF2DocumentTraversals": 0,
+            "maximumF3DocumentTraversals": 0,
+            "maximumHistoryEntriesVisited": 200,
+            "maximumHistoryRetainedBytes": 16777216,
+            "awaitOrMicrotaskBoundariesInsideOperation": 0,
+            "retainedRegistryEntriesAtReturn": 0
+          },
+          "ownerLawFlags": {
+            "historicalStateReinstall": false
+          }
+        },
+        {
+          "id": "same-revision-transition-drift",
+          "ownerProof": true,
+          "e0V2Owned": false,
+          "rawCall": {
+            "target": "A0E0InterchangeOwnerOperations",
+            "operation": "publishImportReplacement",
+            "invocation": "synchronous",
+            "arguments": [
+              {
+                "materializeAs": "ImportReplacementHandoff",
+                "value": {
+                  "prepared": {
+                    "schema": "changes.prepared-import-replacement-publication.v1",
+                    "identity": {
+                      "requestId": 101,
+                      "documentId": "document-e0-nested",
+                      "baseRevision": 7
+                    },
+                    "sourceFormat": "canonical-json-v2",
+                    "candidateDocumentId": "document-e0-minimal",
+                    "expectedTransportGeneration": 11,
+                    "committingTransition": {
+                      "kind": "committing",
+                      "requestId": 101,
+                      "origin": "canonical-import",
+                      "baseRevision": 7,
+                      "candidateDocumentId": "document-e0-minimal",
+                      "undoDisposition": "retained"
+                    }
+                  },
+                  "retirement": {
+                    "requestId": 101,
+                    "retiredTransportGeneration": 11,
+                    "progressionRetired": true,
+                    "previewRetired": true,
+                    "noFutureAttack": true
+                  }
+                },
+                "patches": []
+              }
+            ]
+          },
+          "controllerStateBefore": {
+            "literalId": "state-retiring-retained",
+            "materializeAs": "AppState",
+            "patches": [
+              {
+                "op": "replace",
+                "jsonPointer": "/documentTransition/kind",
+                "from": "retiring-transport",
+                "to": "committing",
+                "value": "committing"
+              }
+            ],
+            "relation": "latest-same-revision-state-after-transition-drift"
+          },
+          "controllerStateAfter": {
+            "literalId": "state-retiring-retained",
+            "materializeAs": "AppState",
+            "patches": [
+              {
+                "op": "replace",
+                "jsonPointer": "/documentTransition/kind",
+                "from": "retiring-transport",
+                "to": "committing",
+                "value": "committing"
+              }
+            ],
+            "relation": "same-reference-no-install"
+          },
+          "registryBefore": {
+            "literalId": "registry-prepared",
+            "materializeAs": "PrivateImportReplacementRegistry",
+            "patches": []
+          },
+          "registryAfter": {
+            "literalId": "registry-empty",
+            "materializeAs": "PrivateImportReplacementRegistry",
+            "patches": []
+          },
+          "exactTypedResult": {
+            "materializeAs": "PublishImportReplacementResult",
+            "value": {
+              "ok": false,
+              "outcome": "refused",
+              "code": "import.replacement_preparation_stale",
+              "identity": {
+                "requestId": 101,
+                "documentId": "document-e0-nested",
+                "baseRevision": 7
+              },
+              "observedDocumentId": "document-e0-nested",
+              "observedRevision": 7,
+              "liveForRequest": 0
+            }
+          },
+          "exactCounters": {
+            "prepareImportReplacementPublication": 0,
+            "discardImportReplacementPublication": 0,
+            "publishImportReplacement": 1,
+            "readCurrentApplicationDocumentIdentity": 0,
+            "publishCanonicalExportRevision": 0,
+            "e0V2ConsumerNormalizer": 0,
+            "f2DecodeDocumentShape": 0,
+            "f3ValidateDocumentSemantics": 0,
+            "historyEstimator": 0,
+            "bookmarkRepair": 0,
+            "controllerStateReads": 1,
+            "controllerStateInstalls": 0,
+            "listenerCallbacks": 0,
+            "registryLookups": 1,
+            "registryAllocations": 0,
+            "registryInvalidations": 0,
+            "registryConsumptions": 1
+          },
+          "synchronousEventOrder": [
+            "call.publish",
+            "read.controller-state",
+            "lookup.exact-live-entry",
+            "compare.preparation-stale",
+            "consume.entry-before-return",
+            "return.refused-live-zero"
+          ],
+          "exactControllerStateDelta": [],
+          "oneFieldNearMiss": {
+            "baselineRunId": "BRIDGE-REP-029/retained",
+            "operator": "replace",
+            "jsonPointer": "/controllerState/documentTransition/kind",
+            "from": "retiring-transport",
+            "to": "committing",
+            "exactChangedFieldCount": 1
+          },
+          "workBound": {
+            "termination": "fixed-state-count-and-capacity-bound",
+            "wallTimeObservedOrUsed": false,
+            "maximumControllerStateReads": 1,
+            "maximumControllerStateInstalls": 1,
+            "maximumListenerCallbacks": 1,
+            "maximumRegistryEntriesInspected": 1,
+            "maximumLiveRegistryEntries": 1,
+            "maximumF2DocumentTraversals": 0,
+            "maximumF3DocumentTraversals": 0,
+            "maximumHistoryEntriesVisited": 200,
+            "maximumHistoryRetainedBytes": 16777216,
+            "awaitOrMicrotaskBoundariesInsideOperation": 0,
+            "retainedRegistryEntriesAtReturn": 0
+          },
+          "ownerLawFlags": {
+            "historicalStateReinstall": false
+          }
+        },
+        {
+          "id": "same-revision-unrelated-request-added",
+          "ownerProof": true,
+          "e0V2Owned": false,
+          "rawCall": {
+            "target": "A0E0InterchangeOwnerOperations",
+            "operation": "publishImportReplacement",
+            "invocation": "synchronous",
+            "arguments": [
+              {
+                "materializeAs": "ImportReplacementHandoff",
+                "value": {
+                  "prepared": {
+                    "schema": "changes.prepared-import-replacement-publication.v1",
+                    "identity": {
+                      "requestId": 101,
+                      "documentId": "document-e0-nested",
+                      "baseRevision": 7
+                    },
+                    "sourceFormat": "canonical-json-v2",
+                    "candidateDocumentId": "document-e0-minimal",
+                    "expectedTransportGeneration": 11,
+                    "committingTransition": {
+                      "kind": "committing",
+                      "requestId": 101,
+                      "origin": "canonical-import",
+                      "baseRevision": 7,
+                      "candidateDocumentId": "document-e0-minimal",
+                      "undoDisposition": "retained"
+                    }
+                  },
+                  "retirement": {
+                    "requestId": 101,
+                    "retiredTransportGeneration": 11,
+                    "progressionRetired": true,
+                    "previewRetired": true,
+                    "noFutureAttack": true
+                  }
+                },
+                "patches": []
+              }
+            ]
+          },
+          "controllerStateBefore": {
+            "literalId": "state-retiring-retained",
+            "materializeAs": "AppState",
+            "patches": [
+              {
+                "op": "replace",
+                "jsonPointer": "/pendingRequests",
+                "from": [
+                  {
+                    "kind": "document-transition",
+                    "id": 101,
+                    "documentId": "document-e0-nested",
+                    "baseRevision": 7,
+                    "status": "running"
+                  }
+                ],
+                "to": [
+                  {
+                    "kind": "analysis",
+                    "id": 202,
+                    "documentId": "document-e0-nested",
+                    "baseRevision": 7,
+                    "status": "running"
+                  },
+                  {
+                    "kind": "document-transition",
+                    "id": 101,
+                    "documentId": "document-e0-nested",
+                    "baseRevision": 7,
+                    "status": "running"
+                  }
+                ],
+                "value": [
+                  {
+                    "kind": "analysis",
+                    "id": 202,
+                    "documentId": "document-e0-nested",
+                    "baseRevision": 7,
+                    "status": "running"
+                  },
+                  {
+                    "kind": "document-transition",
+                    "id": 101,
+                    "documentId": "document-e0-nested",
+                    "baseRevision": 7,
+                    "status": "running"
+                  }
+                ]
+              }
+            ],
+            "relation": "latest-same-revision-state-after-unrelated-request-added"
+          },
+          "controllerStateAfter": {
+            "literalId": "state-retiring-retained",
+            "materializeAs": "AppState",
+            "patches": [
+              {
+                "op": "replace",
+                "jsonPointer": "/pendingRequests",
+                "from": [
+                  {
+                    "kind": "document-transition",
+                    "id": 101,
+                    "documentId": "document-e0-nested",
+                    "baseRevision": 7,
+                    "status": "running"
+                  }
+                ],
+                "to": [
+                  {
+                    "kind": "analysis",
+                    "id": 202,
+                    "documentId": "document-e0-nested",
+                    "baseRevision": 7,
+                    "status": "running"
+                  },
+                  {
+                    "kind": "document-transition",
+                    "id": 101,
+                    "documentId": "document-e0-nested",
+                    "baseRevision": 7,
+                    "status": "running"
+                  }
+                ],
+                "value": [
+                  {
+                    "kind": "analysis",
+                    "id": 202,
+                    "documentId": "document-e0-nested",
+                    "baseRevision": 7,
+                    "status": "running"
+                  },
+                  {
+                    "kind": "document-transition",
+                    "id": 101,
+                    "documentId": "document-e0-nested",
+                    "baseRevision": 7,
+                    "status": "running"
+                  }
+                ]
+              }
+            ],
+            "relation": "same-reference-no-install"
+          },
+          "registryBefore": {
+            "literalId": "registry-prepared",
+            "materializeAs": "PrivateImportReplacementRegistry",
+            "patches": []
+          },
+          "registryAfter": {
+            "literalId": "registry-empty",
+            "materializeAs": "PrivateImportReplacementRegistry",
+            "patches": []
+          },
+          "exactTypedResult": {
+            "materializeAs": "PublishImportReplacementResult",
+            "value": {
+              "ok": false,
+              "outcome": "refused",
+              "code": "import.replacement_preparation_stale",
+              "identity": {
+                "requestId": 101,
+                "documentId": "document-e0-nested",
+                "baseRevision": 7
+              },
+              "observedDocumentId": "document-e0-nested",
+              "observedRevision": 7,
+              "liveForRequest": 0
+            }
+          },
+          "exactCounters": {
+            "prepareImportReplacementPublication": 0,
+            "discardImportReplacementPublication": 0,
+            "publishImportReplacement": 1,
+            "readCurrentApplicationDocumentIdentity": 0,
+            "publishCanonicalExportRevision": 0,
+            "e0V2ConsumerNormalizer": 0,
+            "f2DecodeDocumentShape": 0,
+            "f3ValidateDocumentSemantics": 0,
+            "historyEstimator": 0,
+            "bookmarkRepair": 0,
+            "controllerStateReads": 1,
+            "controllerStateInstalls": 0,
+            "listenerCallbacks": 0,
+            "registryLookups": 1,
+            "registryAllocations": 0,
+            "registryInvalidations": 0,
+            "registryConsumptions": 1
+          },
+          "synchronousEventOrder": [
+            "call.publish",
+            "read.controller-state",
+            "lookup.exact-live-entry",
+            "compare.preparation-stale",
+            "consume.entry-before-return",
+            "return.refused-live-zero"
+          ],
+          "exactControllerStateDelta": [],
+          "oneFieldNearMiss": {
+            "baselineRunId": "BRIDGE-REP-029/retained",
+            "operator": "replace",
+            "jsonPointer": "/controllerState/pendingRequests",
+            "from": [
+              {
+                "kind": "document-transition",
+                "id": 101,
+                "documentId": "document-e0-nested",
+                "baseRevision": 7,
+                "status": "running"
+              }
+            ],
+            "to": [
+              {
+                "kind": "analysis",
+                "id": 202,
+                "documentId": "document-e0-nested",
+                "baseRevision": 7,
+                "status": "running"
+              },
+              {
+                "kind": "document-transition",
+                "id": 101,
+                "documentId": "document-e0-nested",
+                "baseRevision": 7,
+                "status": "running"
+              }
+            ],
             "exactChangedFieldCount": 1
           },
           "workBound": {
@@ -25379,10 +26959,10 @@
             "patches": [
               {
                 "op": "replace",
-                "jsonPointer": "/revision",
-                "from": 7,
-                "to": 8,
-                "value": 8
+                "jsonPointer": "/document/id",
+                "from": "document-e0-minimal",
+                "to": "document-e0-other",
+                "value": "document-e0-other"
               }
             ],
             "relation": "materialized-exact-one-field-derived"
@@ -25393,10 +26973,10 @@
             "patches": [
               {
                 "op": "replace",
-                "jsonPointer": "/revision",
-                "from": 7,
-                "to": 8,
-                "value": 8
+                "jsonPointer": "/document/id",
+                "from": "document-e0-minimal",
+                "to": "document-e0-other",
+                "value": "document-e0-other"
               }
             ],
             "relation": "same-reference-no-install"
@@ -25414,8 +26994,8 @@
           "exactTypedResult": {
             "materializeAs": "ApplicationDocumentIdentity",
             "value": {
-              "documentId": "document-e0-minimal",
-              "revision": 8
+              "documentId": "document-e0-other",
+              "revision": 7
             }
           },
           "exactCounters": {
@@ -25447,9 +27027,9 @@
           "oneFieldNearMiss": {
             "baselineRunId": "BRIDGE-ID-001/baseline",
             "operator": "replace",
-            "jsonPointer": "/controllerState/revision",
-            "from": 7,
-            "to": 8,
+            "jsonPointer": "/controllerState/document/id",
+            "from": "document-e0-minimal",
+            "to": "document-e0-other",
             "exactChangedFieldCount": 1
           },
           "workBound": {
@@ -25472,7 +27052,7 @@
           }
         },
         {
-          "id": "mutation-013-revision-eight",
+          "id": "mutation-013-document-id",
           "ownerProof": true,
           "e0V2Owned": false,
           "rawCall": {
@@ -25482,13 +27062,13 @@
             "arguments": []
           },
           "controllerStateBefore": {
-            "literalId": "mutation-state-marker-revision-8",
+            "literalId": "mutation-state-marker-document-other",
             "materializeAs": "AppState",
             "patches": [],
             "relation": "materialized-exact-one-field-derived"
           },
           "controllerStateAfter": {
-            "literalId": "mutation-state-marker-revision-8",
+            "literalId": "mutation-state-marker-document-other",
             "materializeAs": "AppState",
             "patches": [],
             "relation": "same-reference-no-install"
@@ -25506,8 +27086,8 @@
           "exactTypedResult": {
             "materializeAs": "ApplicationDocumentIdentity",
             "value": {
-              "documentId": "document-e0-minimal",
-              "revision": 8
+              "documentId": "document-e0-other",
+              "revision": 7
             }
           },
           "exactCounters": {
@@ -25568,7 +27148,7 @@
             "mutatedLaw": {
               "arguments": [],
               "controllerState": {
-                "$literalRef": "mutation-state-marker-revision-8"
+                "$literalRef": "mutation-state-marker-document-other"
               },
               "registry": {
                 "$literalRef": "registry-empty"
@@ -25576,9 +27156,9 @@
             },
             "downstreamObservation": {
               "materialization": "exactTypedResult",
-              "jsonPointer": "/revision",
-              "baselineValue": 7,
-              "killerValue": 8
+              "jsonPointer": "/documentId",
+              "baselineValue": "document-e0-minimal",
+              "killerValue": "document-e0-other"
             },
             "expectedOwnerLaw": {
               "outcome": "pass"
@@ -25619,6 +27199,13 @@
                 "from": 7,
                 "to": 19,
                 "value": 19
+              },
+              {
+                "op": "replace",
+                "jsonPointer": "/quickEntry/baseRevision",
+                "from": 7,
+                "to": 19,
+                "value": 19
               }
             ],
             "relation": "materialized-exact"
@@ -25630,6 +27217,13 @@
               {
                 "op": "replace",
                 "jsonPointer": "/revision",
+                "from": 7,
+                "to": 19,
+                "value": 19
+              },
+              {
+                "op": "replace",
+                "jsonPointer": "/quickEntry/baseRevision",
                 "from": 7,
                 "to": 19,
                 "value": 19
@@ -26044,6 +27638,13 @@
                 "from": 7,
                 "to": 19,
                 "value": 19
+              },
+              {
+                "op": "replace",
+                "jsonPointer": "/quickEntry/baseRevision",
+                "from": 7,
+                "to": 19,
+                "value": 19
               }
             ],
             "relation": "materialized-exact"
@@ -26068,6 +27669,13 @@
               {
                 "op": "replace",
                 "jsonPointer": "/revision",
+                "from": 7,
+                "to": 19,
+                "value": 19
+              },
+              {
+                "op": "replace",
+                "jsonPointer": "/quickEntry/baseRevision",
                 "from": 7,
                 "to": 19,
                 "value": 19
@@ -26450,231 +28058,6 @@
           }
         }
       ]
-    },
-    {
-      "id": "BRIDGE-ID-005",
-      "operation": "readCurrentApplicationDocumentIdentity",
-      "category": "e0-v2-owned-consumer-normalization",
-      "ownerProof": false,
-      "e0V2Owned": true,
-      "traceIds": ["BRIDGE-TRACE-IDENTITY"],
-      "expectedMutationKills": [],
-      "runs": [
-        {
-          "id": "forward-e0-v2-only",
-          "ownerProof": false,
-          "e0V2Owned": true,
-          "rawCall": {
-            "target": "E0V2ConsumerNormalizer",
-            "operation": "normalizeApplicationDocumentIdentity",
-            "invocation": "synchronous",
-            "arguments": [
-              {
-                "materializeAs": "unknown",
-                "value": {
-                  "documentId": "document-e0-minimal"
-                },
-                "patches": []
-              }
-            ]
-          },
-          "controllerStateBefore": {
-            "literalId": "state-marker-current-7",
-            "materializeAs": "AppState",
-            "patches": [],
-            "relation": "materialized-exact"
-          },
-          "controllerStateAfter": {
-            "literalId": "state-marker-current-7",
-            "materializeAs": "AppState",
-            "patches": [],
-            "relation": "same-reference-no-install"
-          },
-          "registryBefore": {
-            "literalId": "registry-empty",
-            "materializeAs": "PrivateImportReplacementRegistry",
-            "patches": []
-          },
-          "registryAfter": {
-            "literalId": "registry-empty",
-            "materializeAs": "PrivateImportReplacementRegistry",
-            "patches": []
-          },
-          "exactTypedResult": {
-            "materializeAs": "E0V2NormalizedIdentityRefusal",
-            "value": {
-              "ok": false,
-              "code": "export.application_state_identity_invalid"
-            }
-          },
-          "exactCounters": {
-            "prepareImportReplacementPublication": 0,
-            "discardImportReplacementPublication": 0,
-            "publishImportReplacement": 0,
-            "readCurrentApplicationDocumentIdentity": 0,
-            "publishCanonicalExportRevision": 0,
-            "e0V2ConsumerNormalizer": 1,
-            "f2DecodeDocumentShape": 0,
-            "f3ValidateDocumentSemantics": 0,
-            "historyEstimator": 0,
-            "bookmarkRepair": 0,
-            "controllerStateReads": 0,
-            "controllerStateInstalls": 0,
-            "listenerCallbacks": 0,
-            "registryLookups": 0,
-            "registryAllocations": 0,
-            "registryInvalidations": 0,
-            "registryConsumptions": 0
-          },
-          "synchronousEventOrder": [
-            "call.e0-v2-normalizer",
-            "reject-or-catch-raw-value",
-            "retain-no-raw-value",
-            "return.normalized-refusal"
-          ],
-          "exactControllerStateDelta": [],
-          "oneFieldNearMiss": null,
-          "workBound": {
-            "termination": "constant-controller-field-read",
-            "wallTimeObservedOrUsed": false,
-            "maximumControllerStateReads": 1,
-            "maximumControllerStateInstalls": 0,
-            "maximumListenerCallbacks": 0,
-            "maximumRegistryEntriesInspected": 0,
-            "maximumLiveRegistryEntries": 0,
-            "maximumF2DocumentTraversals": 0,
-            "maximumF3DocumentTraversals": 0,
-            "maximumHistoryEntriesVisited": 0,
-            "maximumHistoryRetainedBytes": 0,
-            "awaitOrMicrotaskBoundariesInsideOperation": 0,
-            "retainedRegistryEntriesAtReturn": 0
-          }
-        }
-      ],
-      "exclusion": {
-        "rationale": "Malformed returned unknown values and thrown consumer ports belong to E0-v2 normalization, not the exact synchronous A0 producer.",
-        "excludedFrom": [
-          "a0OwnerProofCaseCount",
-          "a0OwnerProofRunCount",
-          "typed-producer-conformance"
-        ],
-        "futureOwnerBead": "jcpe-milestone-reliable-studio-l3a.8.4"
-      },
-      "futureE0V2ControlIds": ["BRIDGE-MUT-022"]
-    },
-    {
-      "id": "BRIDGE-ID-006",
-      "operation": "readCurrentApplicationDocumentIdentity",
-      "category": "e0-v2-owned-consumer-normalization",
-      "ownerProof": false,
-      "e0V2Owned": true,
-      "traceIds": ["BRIDGE-TRACE-IDENTITY"],
-      "expectedMutationKills": [],
-      "runs": [
-        {
-          "id": "forward-e0-v2-only",
-          "ownerProof": false,
-          "e0V2Owned": true,
-          "rawCall": {
-            "target": "E0V2ConsumerNormalizer",
-            "operation": "normalizeApplicationDocumentIdentity",
-            "invocation": "synchronous",
-            "arguments": [
-              {
-                "materializeAs": "unknown",
-                "value": {
-                  "$throw": {
-                    "type": "Error",
-                    "message": "e0-v2-identity-throw"
-                  }
-                },
-                "patches": []
-              }
-            ]
-          },
-          "controllerStateBefore": {
-            "literalId": "state-marker-current-7",
-            "materializeAs": "AppState",
-            "patches": [],
-            "relation": "materialized-exact"
-          },
-          "controllerStateAfter": {
-            "literalId": "state-marker-current-7",
-            "materializeAs": "AppState",
-            "patches": [],
-            "relation": "same-reference-no-install"
-          },
-          "registryBefore": {
-            "literalId": "registry-empty",
-            "materializeAs": "PrivateImportReplacementRegistry",
-            "patches": []
-          },
-          "registryAfter": {
-            "literalId": "registry-empty",
-            "materializeAs": "PrivateImportReplacementRegistry",
-            "patches": []
-          },
-          "exactTypedResult": {
-            "materializeAs": "E0V2NormalizedIdentityRefusal",
-            "value": {
-              "ok": false,
-              "code": "export.application_state_identity_invalid"
-            }
-          },
-          "exactCounters": {
-            "prepareImportReplacementPublication": 0,
-            "discardImportReplacementPublication": 0,
-            "publishImportReplacement": 0,
-            "readCurrentApplicationDocumentIdentity": 0,
-            "publishCanonicalExportRevision": 0,
-            "e0V2ConsumerNormalizer": 1,
-            "f2DecodeDocumentShape": 0,
-            "f3ValidateDocumentSemantics": 0,
-            "historyEstimator": 0,
-            "bookmarkRepair": 0,
-            "controllerStateReads": 0,
-            "controllerStateInstalls": 0,
-            "listenerCallbacks": 0,
-            "registryLookups": 0,
-            "registryAllocations": 0,
-            "registryInvalidations": 0,
-            "registryConsumptions": 0
-          },
-          "synchronousEventOrder": [
-            "call.e0-v2-normalizer",
-            "reject-or-catch-raw-value",
-            "retain-no-raw-value",
-            "return.normalized-refusal"
-          ],
-          "exactControllerStateDelta": [],
-          "oneFieldNearMiss": null,
-          "workBound": {
-            "termination": "constant-controller-field-read",
-            "wallTimeObservedOrUsed": false,
-            "maximumControllerStateReads": 1,
-            "maximumControllerStateInstalls": 0,
-            "maximumListenerCallbacks": 0,
-            "maximumRegistryEntriesInspected": 0,
-            "maximumLiveRegistryEntries": 0,
-            "maximumF2DocumentTraversals": 0,
-            "maximumF3DocumentTraversals": 0,
-            "maximumHistoryEntriesVisited": 0,
-            "maximumHistoryRetainedBytes": 0,
-            "awaitOrMicrotaskBoundariesInsideOperation": 0,
-            "retainedRegistryEntriesAtReturn": 0
-          }
-        }
-      ],
-      "exclusion": {
-        "rationale": "Malformed returned unknown values and thrown consumer ports belong to E0-v2 normalization, not the exact synchronous A0 producer.",
-        "excludedFrom": [
-          "a0OwnerProofCaseCount",
-          "a0OwnerProofRunCount",
-          "typed-producer-conformance"
-        ],
-        "futureOwnerBead": "jcpe-milestone-reliable-studio-l3a.8.4"
-      },
-      "futureE0V2ControlIds": ["BRIDGE-MUT-014", "BRIDGE-MUT-022"]
     }
   ],
   "markerCases": [
@@ -28400,36 +29783,28 @@
                     "revision": 7
                   }
                 },
-                "patches": []
+                "patches": [
+                  {
+                    "op": "replace",
+                    "jsonPointer": "/publication/revision",
+                    "from": 7,
+                    "to": 8,
+                    "value": 8
+                  }
+                ]
               }
             ]
           },
           "controllerStateBefore": {
             "literalId": "state-marker-current-7",
             "materializeAs": "AppState",
-            "patches": [
-              {
-                "op": "replace",
-                "jsonPointer": "/revision",
-                "from": 7,
-                "to": 8,
-                "value": 8
-              }
-            ],
-            "relation": "materialized-exact-one-field-derived"
+            "patches": [],
+            "relation": "materialized-exact"
           },
           "controllerStateAfter": {
             "literalId": "state-marker-current-7",
             "materializeAs": "AppState",
-            "patches": [
-              {
-                "op": "replace",
-                "jsonPointer": "/revision",
-                "from": 7,
-                "to": 8,
-                "value": 8
-              }
-            ],
+            "patches": [],
             "relation": "same-reference-no-install"
           },
           "registryBefore": {
@@ -28449,7 +29824,7 @@
               "outcome": "refused",
               "code": "export.marker_publication_stale",
               "observedDocumentId": "document-e0-minimal",
-              "observedRevision": 8
+              "observedRevision": 7
             }
           },
           "exactCounters": {
@@ -28482,7 +29857,7 @@
           "oneFieldNearMiss": {
             "baselineRunId": "BRIDGE-MARK-001/exact",
             "operator": "replace",
-            "jsonPointer": "/controllerState/revision",
+            "jsonPointer": "/arguments/0/publication/revision",
             "from": 7,
             "to": 8,
             "exactChangedFieldCount": 1
@@ -28544,18 +29919,26 @@
                     "revision": 7
                   }
                 },
-                "patches": []
+                "patches": [
+                  {
+                    "op": "replace",
+                    "jsonPointer": "/publication/revision",
+                    "from": 7,
+                    "to": 8,
+                    "value": 8
+                  }
+                ]
               }
             ]
           },
           "controllerStateBefore": {
-            "literalId": "mutation-state-marker-revision-8",
+            "literalId": "state-marker-current-7",
             "materializeAs": "AppState",
             "patches": [],
-            "relation": "materialized-exact-one-field-derived"
+            "relation": "materialized-exact"
           },
           "controllerStateAfter": {
-            "literalId": "mutation-state-marker-revision-8",
+            "literalId": "state-marker-current-7",
             "materializeAs": "AppState",
             "patches": [],
             "relation": "same-reference-no-install"
@@ -28577,7 +29960,7 @@
               "outcome": "refused",
               "code": "export.marker_publication_stale",
               "observedDocumentId": "document-e0-minimal",
-              "observedRevision": 8
+              "observedRevision": 7
             }
           },
           "exactCounters": {
@@ -28650,12 +30033,12 @@
                   "publication": {
                     "schema": "changes.canonical-export-revision-publication.v1",
                     "documentId": "document-e0-minimal",
-                    "revision": 7
+                    "revision": 8
                   }
                 }
               ],
               "controllerState": {
-                "$literalRef": "mutation-state-marker-revision-8"
+                "$literalRef": "state-marker-current-7"
               },
               "registry": {
                 "$literalRef": "registry-empty"
@@ -29158,233 +30541,6 @@
           }
         }
       ]
-    },
-    {
-      "id": "BRIDGE-MARK-006",
-      "operation": "publishCanonicalExportRevision",
-      "category": "e0-v2-owned-consumer-normalization",
-      "ownerProof": false,
-      "e0V2Owned": true,
-      "traceIds": ["BRIDGE-TRACE-MARKER"],
-      "expectedMutationKills": [],
-      "runs": [
-        {
-          "id": "forward-e0-v2-only",
-          "ownerProof": false,
-          "e0V2Owned": true,
-          "rawCall": {
-            "target": "E0V2ConsumerNormalizer",
-            "operation": "normalizePublishCanonicalExportRevision",
-            "invocation": "synchronous",
-            "arguments": [
-              {
-                "materializeAs": "unknown",
-                "value": {
-                  "ok": true,
-                  "outcome": "published",
-                  "revision": 7
-                },
-                "patches": []
-              }
-            ]
-          },
-          "controllerStateBefore": {
-            "literalId": "state-marker-current-7",
-            "materializeAs": "AppState",
-            "patches": [],
-            "relation": "materialized-exact"
-          },
-          "controllerStateAfter": {
-            "literalId": "state-marker-current-7",
-            "materializeAs": "AppState",
-            "patches": [],
-            "relation": "same-reference-no-install"
-          },
-          "registryBefore": {
-            "literalId": "registry-empty",
-            "materializeAs": "PrivateImportReplacementRegistry",
-            "patches": []
-          },
-          "registryAfter": {
-            "literalId": "registry-empty",
-            "materializeAs": "PrivateImportReplacementRegistry",
-            "patches": []
-          },
-          "exactTypedResult": {
-            "materializeAs": "E0V2NormalizedMarkerRefusal",
-            "value": {
-              "ok": false,
-              "code": "export.marker_publication_result_invalid"
-            }
-          },
-          "exactCounters": {
-            "prepareImportReplacementPublication": 0,
-            "discardImportReplacementPublication": 0,
-            "publishImportReplacement": 0,
-            "readCurrentApplicationDocumentIdentity": 0,
-            "publishCanonicalExportRevision": 0,
-            "e0V2ConsumerNormalizer": 1,
-            "f2DecodeDocumentShape": 0,
-            "f3ValidateDocumentSemantics": 0,
-            "historyEstimator": 0,
-            "bookmarkRepair": 0,
-            "controllerStateReads": 0,
-            "controllerStateInstalls": 0,
-            "listenerCallbacks": 0,
-            "registryLookups": 0,
-            "registryAllocations": 0,
-            "registryInvalidations": 0,
-            "registryConsumptions": 0
-          },
-          "synchronousEventOrder": [
-            "call.e0-v2-normalizer",
-            "reject-or-catch-raw-value",
-            "retain-no-raw-value",
-            "return.normalized-refusal"
-          ],
-          "exactControllerStateDelta": [],
-          "oneFieldNearMiss": null,
-          "workBound": {
-            "termination": "single-synchronous-validate-read-compare-write-install-notify",
-            "wallTimeObservedOrUsed": false,
-            "maximumControllerStateReads": 1,
-            "maximumControllerStateInstalls": 1,
-            "maximumListenerCallbacks": 1,
-            "maximumRegistryEntriesInspected": 0,
-            "maximumLiveRegistryEntries": 0,
-            "maximumF2DocumentTraversals": 0,
-            "maximumF3DocumentTraversals": 0,
-            "maximumHistoryEntriesVisited": 0,
-            "maximumHistoryRetainedBytes": 0,
-            "awaitOrMicrotaskBoundariesInsideOperation": 0,
-            "retainedRegistryEntriesAtReturn": 0
-          }
-        }
-      ],
-      "exclusion": {
-        "rationale": "Malformed returned unknown values and thrown consumer ports belong to E0-v2 normalization, not the exact A0 marker producer.",
-        "excludedFrom": [
-          "a0OwnerProofCaseCount",
-          "a0OwnerProofRunCount",
-          "typed-producer-conformance"
-        ],
-        "futureOwnerBead": "jcpe-milestone-reliable-studio-l3a.8.4"
-      },
-      "futureE0V2ControlIds": ["BRIDGE-MUT-019", "BRIDGE-MUT-022"]
-    },
-    {
-      "id": "BRIDGE-MARK-007",
-      "operation": "publishCanonicalExportRevision",
-      "category": "e0-v2-owned-consumer-normalization",
-      "ownerProof": false,
-      "e0V2Owned": true,
-      "traceIds": ["BRIDGE-TRACE-MARKER"],
-      "expectedMutationKills": [],
-      "runs": [
-        {
-          "id": "forward-e0-v2-only",
-          "ownerProof": false,
-          "e0V2Owned": true,
-          "rawCall": {
-            "target": "E0V2ConsumerNormalizer",
-            "operation": "normalizePublishCanonicalExportRevision",
-            "invocation": "synchronous",
-            "arguments": [
-              {
-                "materializeAs": "unknown",
-                "value": {
-                  "$throw": {
-                    "type": "Error",
-                    "message": "e0-v2-marker-throw"
-                  }
-                },
-                "patches": []
-              }
-            ]
-          },
-          "controllerStateBefore": {
-            "literalId": "state-marker-current-7",
-            "materializeAs": "AppState",
-            "patches": [],
-            "relation": "materialized-exact"
-          },
-          "controllerStateAfter": {
-            "literalId": "state-marker-current-7",
-            "materializeAs": "AppState",
-            "patches": [],
-            "relation": "same-reference-no-install"
-          },
-          "registryBefore": {
-            "literalId": "registry-empty",
-            "materializeAs": "PrivateImportReplacementRegistry",
-            "patches": []
-          },
-          "registryAfter": {
-            "literalId": "registry-empty",
-            "materializeAs": "PrivateImportReplacementRegistry",
-            "patches": []
-          },
-          "exactTypedResult": {
-            "materializeAs": "E0V2NormalizedMarkerRefusal",
-            "value": {
-              "ok": false,
-              "code": "export.marker_publication_result_invalid"
-            }
-          },
-          "exactCounters": {
-            "prepareImportReplacementPublication": 0,
-            "discardImportReplacementPublication": 0,
-            "publishImportReplacement": 0,
-            "readCurrentApplicationDocumentIdentity": 0,
-            "publishCanonicalExportRevision": 0,
-            "e0V2ConsumerNormalizer": 1,
-            "f2DecodeDocumentShape": 0,
-            "f3ValidateDocumentSemantics": 0,
-            "historyEstimator": 0,
-            "bookmarkRepair": 0,
-            "controllerStateReads": 0,
-            "controllerStateInstalls": 0,
-            "listenerCallbacks": 0,
-            "registryLookups": 0,
-            "registryAllocations": 0,
-            "registryInvalidations": 0,
-            "registryConsumptions": 0
-          },
-          "synchronousEventOrder": [
-            "call.e0-v2-normalizer",
-            "reject-or-catch-raw-value",
-            "retain-no-raw-value",
-            "return.normalized-refusal"
-          ],
-          "exactControllerStateDelta": [],
-          "oneFieldNearMiss": null,
-          "workBound": {
-            "termination": "single-synchronous-validate-read-compare-write-install-notify",
-            "wallTimeObservedOrUsed": false,
-            "maximumControllerStateReads": 1,
-            "maximumControllerStateInstalls": 1,
-            "maximumListenerCallbacks": 1,
-            "maximumRegistryEntriesInspected": 0,
-            "maximumLiveRegistryEntries": 0,
-            "maximumF2DocumentTraversals": 0,
-            "maximumF3DocumentTraversals": 0,
-            "maximumHistoryEntriesVisited": 0,
-            "maximumHistoryRetainedBytes": 0,
-            "awaitOrMicrotaskBoundariesInsideOperation": 0,
-            "retainedRegistryEntriesAtReturn": 0
-          }
-        }
-      ],
-      "exclusion": {
-        "rationale": "Malformed returned unknown values and thrown consumer ports belong to E0-v2 normalization, not the exact A0 marker producer.",
-        "excludedFrom": [
-          "a0OwnerProofCaseCount",
-          "a0OwnerProofRunCount",
-          "typed-producer-conformance"
-        ],
-        "futureOwnerBead": "jcpe-milestone-reliable-studio-l3a.8.4"
-      },
-      "futureE0V2ControlIds": ["BRIDGE-MUT-019", "BRIDGE-MUT-022"]
     },
     {
       "id": "BRIDGE-MARK-008",

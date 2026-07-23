@@ -1,0 +1,206 @@
+{
+  "schema": "changes.fixtures.x1-transport-contract.v1",
+  "fixtureVersion": 1,
+  "transportPolicyId": "changes.audio-transport",
+  "transportPolicyVersion": 1,
+  "schedulerPolicyId": "changes.audio-transport-scheduler",
+  "schedulerPolicyVersion": 1,
+  "clickPolicyId": "changes.audio-transport-click",
+  "clickPolicyVersion": 1,
+  "contractSchema": "changes.audio.transport-contract.v1",
+  "snapshotSchema": "changes.audio.transport-snapshot.v1",
+  "notificationSchema": "changes.audio.transport-notification.v1",
+  "states": [
+    "locked",
+    "ready",
+    "playing",
+    "paused",
+    "interrupted",
+    "fault",
+    "disposed"
+  ],
+  "commandKinds": [
+    "initialize-transport",
+    "play",
+    "pause",
+    "resume",
+    "seek",
+    "stop",
+    "set-tempo",
+    "set-loop",
+    "set-instrument",
+    "set-count-in",
+    "set-metronome",
+    "start-preview",
+    "release-preview",
+    "replace-plan",
+    "dispose-transport"
+  ],
+  "notificationStatuses": [
+    "ready",
+    "playing",
+    "paused",
+    "failed"
+  ],
+  "stateStatusProjection": {
+    "ready": "ready",
+    "playing": "playing",
+    "paused": "paused",
+    "interrupted": "paused",
+    "fault": "failed"
+  },
+  "interruptedFailureCode": "transport.interrupted",
+  "refusalCodes": [
+    "transport.locked",
+    "transport.disposed",
+    "transport.fault_requires_initialize",
+    "transport.state_invalid",
+    "transport.gesture_invalid",
+    "transport.command_request_id_invalid",
+    "transport.queue_overflow",
+    "transport.timing_policy_invalid",
+    "transport.plan_invalid",
+    "transport.plan_mismatch",
+    "transport.start_beat_out_of_range",
+    "transport.seek_out_of_range",
+    "transport.tempo_out_of_range",
+    "transport.loop_invalid",
+    "transport.instrument_unknown",
+    "transport.preview_invalid",
+    "transport.count_in_invalid",
+    "transport.metronome_invalid",
+    "transport.engine_refusal",
+    "transport.internal_sequence_exhausted"
+  ],
+  "refusalPrecedence": [
+    "transport.disposed",
+    "transport.locked",
+    "transport.command_request_id_invalid",
+    "transport.queue_overflow",
+    "transport.fault_requires_initialize",
+    "transport.state_invalid",
+    "transport.gesture_invalid",
+    "transport.timing_policy_invalid",
+    "transport.plan_invalid",
+    "transport.plan_mismatch",
+    "transport.start_beat_out_of_range",
+    "transport.seek_out_of_range",
+    "transport.tempo_out_of_range",
+    "transport.loop_invalid",
+    "transport.instrument_unknown",
+    "transport.preview_invalid",
+    "transport.count_in_invalid",
+    "transport.metronome_invalid",
+    "transport.engine_refusal",
+    "transport.internal_sequence_exhausted"
+  ],
+  "workCounterNames": [
+    "commandsAdmitted",
+    "commandsRefused",
+    "schedulerTicks",
+    "eventsScheduled",
+    "attackBatchesIssued",
+    "clickEventsGenerated",
+    "horizonReschedules",
+    "loopWraps",
+    "generationsRetired",
+    "previewsStarted",
+    "previewsReleased",
+    "naturalEndsPublished",
+    "notificationsPublished",
+    "staleCallbacksIgnored",
+    "interruptionsObserved"
+  ],
+  "generationBoundaries": [
+    "play",
+    "pause",
+    "resume",
+    "seek",
+    "stop",
+    "set-tempo",
+    "set-loop",
+    "loop-wrap",
+    "replace-plan",
+    "interruption",
+    "interruption-recovery",
+    "natural-end",
+    "fault"
+  ],
+  "limits": {
+    "tickIntervalMsDefault": 25,
+    "tickIntervalMsMin": 10,
+    "tickIntervalMsMax": 100,
+    "lookaheadSecondsDefault": 0.1,
+    "lookaheadSecondsMin": 0.05,
+    "lookaheadSecondsMax": 0.2,
+    "x0AttackWindowSeconds": 0.25,
+    "x0WindowMarginSeconds": 0.05,
+    "maxQueuedCommands": 32,
+    "naturalEndTailDeadlineSeconds": 8,
+    "stopReleaseSeconds": 0.012,
+    "previewReleaseSeconds": 0.04,
+    "minAudioGateSeconds": 0.005,
+    "maxPreviewPitches": 16,
+    "countInBars": 1,
+    "tempoBpmMin": 20,
+    "tempoBpmMax": 400,
+    "maxSafeSequence": 9007199254740991
+  },
+  "clickPolicy": {
+    "instrumentId": "vibraphone",
+    "accentMidiPitch": 88,
+    "beatMidiPitch": 81,
+    "accentVelocity": 112,
+    "beatVelocity": 84,
+    "gateSeconds": 0.06,
+    "eventIdPrefix": "x1:click:"
+  },
+  "previewIdPrefix": "x1:preview:",
+  "companions": [
+    {
+      "path": "state-machine-cases.json",
+      "bytes": 19461,
+      "sha256": "f695a504cfd9ca85934fc56aea21c006aa441b3f700b802c48df35283327088f"
+    },
+    {
+      "path": "golden-timing.json",
+      "bytes": 6843,
+      "sha256": "91d68e3191f84068f6ead9c59322ef20db4e76eddc81456e40317105100f60d1"
+    },
+    {
+      "path": "scheduler-cases.json",
+      "bytes": 8185,
+      "sha256": "9a96574f024ec63b9e6585667c5515e970e1131247932bc17a4d7ff75c7a865a"
+    },
+    {
+      "path": "stop-cases.json",
+      "bytes": 6741,
+      "sha256": "f73e7813e0adf03fee2d5856b9c6fa38e9bdf1e72e48c772ee6dd08c598026e1"
+    },
+    {
+      "path": "command-cases.json",
+      "bytes": 11002,
+      "sha256": "8f5a62633ac3e92e13009d049c4aac69bb0ed1066031550d998c760042a20d0b"
+    },
+    {
+      "path": "notification-cases.json",
+      "bytes": 4052,
+      "sha256": "71acabd9419c23cda0ab54bb5b5a3c94fd8124b276ca9051475c30bdb8352fa1"
+    },
+    {
+      "path": "mutation-controls.json",
+      "bytes": 7102,
+      "sha256": "26d0bc17a80f8ae937e416ce331ea37aa72dc450eb939462675340d048eca431"
+    },
+    {
+      "path": "trace-ledger.json",
+      "bytes": 14729,
+      "sha256": "50b303f295bc35166ea7d8a707e0b59c52d3fbd4e73b4dd07b8cb8430e694561"
+    },
+    {
+      "path": "provenance-ledger.json",
+      "bytes": 5106,
+      "sha256": "d5e104df937156403f55bcaf1816a88cbee0424a6000b5f559c3f75d55b37367"
+    }
+  ]
+}

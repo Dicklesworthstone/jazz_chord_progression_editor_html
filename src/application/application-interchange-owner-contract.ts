@@ -4,6 +4,7 @@ import {
   MAX_COMMAND_ID_CODE_POINTS,
   MAX_COMMAND_LABEL_CODE_POINTS,
 } from "./application-state-contract";
+// eslint-disable-next-line no-duplicate-imports -- Keep the runtime and type-only dependency edges explicit for the audited bridge topology.
 import type {
   AppRevision,
   ApplicationEffect,
@@ -443,7 +444,9 @@ export const MAX_A0_E0_LIVE_IMPORT_REPLACEMENT_PREPARATIONS = 1;
 /**
  * Publication applies precomputed command material to the latest matching
  * controller state. It never installs a whole AppState captured at prepare
- * time; same-revision ephemeral updates follow this exact ownership split.
+ * time. The complete ordered prepare-time `pendingRequestsBefore` snapshot is
+ * rechecked by deep equality, including unrelated requests and statuses;
+ * same-revision ephemeral updates otherwise follow this exact ownership split.
  */
 export const IMPORT_REPLACEMENT_PUBLICATION_LATEST_STATE_MERGE = Object.freeze({
   latestStateRecheckedAtPublication: true,
@@ -451,9 +454,15 @@ export const IMPORT_REPLACEMENT_PUBLICATION_LATEST_STATE_MERGE = Object.freeze({
   preparedCommandInputsRechecked: Object.freeze([
     "documentIdentity",
     "revision",
+    "pendingRequestsBefore",
+    "transitionIdentity",
     "bookmarks",
   ] as const),
   historyStabilityDerivedFromRevisionAndImmutableReducerLaw: true,
+  sameRevisionPendingRequestsDriftOutcome:
+    "consume-and-refuse-import.replacement_preparation_stale",
+  sameRevisionTransitionDriftOutcome:
+    "consume-and-refuse-import.replacement_preparation_stale",
   sameRevisionBookmarkDriftOutcome:
     "consume-and-refuse-import.replacement_preparation_stale",
   latestTransportGenerationMustNotExceedRetiredGeneration: true,
@@ -484,6 +493,7 @@ export const IMPORT_REPLACEMENT_PUBLICATION_LATEST_STATE_MERGE = Object.freeze({
     "focusRequest",
     "nextSequence",
   ] as const),
+  allAppStateFieldsPartitionedExactlyOnce: true,
   optionalWarningNoticeUsesNextSequenceAndSaturatesAtMaximum: true,
   rerunsPreparationWork: false,
 } as const);

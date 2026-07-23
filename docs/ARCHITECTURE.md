@@ -62,6 +62,13 @@ what the release artifact is, and how those claims are proved.
   history, bookmark, stale-result, transport-view, selector, limit,
   provenance, and mutation authority. Production application behavior may be
   compared with them but may never generate their expectations.
+- `docs/A0_U1_ATOMIC_EDIT_PLAN_CONTRACT.md`,
+  `src/application/application-edit-plan-contract.ts`, and the five companions
+  under `tests/fixtures/a0-u1-edit-plan/` define the proposed additive A0/U1
+  atomic-edit command, its five closed operation variants, exact Quick Entry
+  guard, deterministic identity/time/bookmark/history laws, literal cases,
+  traces, provenance, and mutations. The live A0 command union and U1 UI do not
+  consume this specification until their dependent implementation leaves.
 - `docs/C0_LEGACY_MIGRATION_CONTRACT.md`,
   `tests/fixtures/legacy-migration/c0-legacy-migration-contract.json`, and their
   hash-bound companions are the independently authored C0 legacy-corpus,
@@ -145,6 +152,7 @@ The manifest exposes these stable commands:
 | `bun run validate:f3-contract` | validate the independent semantic-publication, transaction, diagnostics, work-bound, trace, provenance, and mutation authority corpus |
 | `bun run validate:p0-contract` | validate the independently authored P0 playback-plan timeline, realization, loop, law, exact-limit, trace, provenance, and mutation authority corpus |
 | `bun run validate:a0-contract` | validate the independent application-state, command, history, bookmark, stale-result, transport-view, selector, trace, provenance, and mutation authority corpus |
+| `bun run validate:a0-u1-edit-plan-contract` | validate the proposed additive A0/U1 five-variant atomic-edit contract, independently materialized state transitions, exact-time/identity laws, traces, provenance, and mutations without claiming production implementation or UI completion |
 | `bun run validate:u0-contract` | validate the source-owned UI inventory, exact limits, 714-cell state gallery authority, responsive/overlay matrices, topology and contrast cases, trace links, provenance, and release-gallery exclusion contract |
 | `bun run validate:c0-contract` | validate the independent legacy corpus, precedence, hostile-input, report, work-bound, trace, provenance, and mutation authority package |
 | `bun run validate:e0-contract` | validate the independent E0 JSON/text interchange, transactional import, exact limits, reciprocal traces, provenance, accepted byte goldens, and mutation authority package |

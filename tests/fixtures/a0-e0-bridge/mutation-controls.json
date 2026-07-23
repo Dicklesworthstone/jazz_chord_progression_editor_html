@@ -250,7 +250,7 @@
         "materialization": "historyEstimatorLawInput",
         "operator": "replace",
         "jsonPointer": "/estimatedRetainedBytes",
-        "from": 9199,
+        "from": 9195,
         "to": -1,
         "exactChangedFieldCount": 1
       },
@@ -283,7 +283,7 @@
       "mutation": {
         "materialization": "comparisonInput",
         "operator": "replace",
-        "jsonPointer": "/controllerState/revision",
+        "jsonPointer": "/arguments/0/identity/baseRevision",
         "from": 7,
         "to": 8,
         "exactChangedFieldCount": 1
@@ -406,24 +406,24 @@
       "id": "BRIDGE-MUT-013",
       "category": "latest-identity",
       "baselineRunId": "BRIDGE-ID-001/baseline",
-      "killerRunId": "BRIDGE-ID-003/mutation-013-revision-eight",
+      "killerRunId": "BRIDGE-ID-003/mutation-013-document-id",
       "mutation": {
         "materialization": "comparisonInput",
         "operator": "replace",
-        "jsonPointer": "/controllerState/revision",
-        "from": 7,
-        "to": 8,
+        "jsonPointer": "/controllerState/document/id",
+        "from": "document-e0-minimal",
+        "to": "document-e0-other",
         "exactChangedFieldCount": 1
       },
       "observation": {
         "materialization": "exactTypedResult",
-        "jsonPointer": "/revision",
-        "baselineValue": 7,
-        "killerValue": 8
+        "jsonPointer": "/documentId",
+        "baselineValue": "document-e0-minimal",
+        "killerValue": "document-e0-other"
       },
       "exactExpectedDifference": {
-        "baselineValue": 7,
-        "killerValue": 8
+        "baselineValue": "document-e0-minimal",
+        "killerValue": "document-e0-other"
       },
       "oracleExpectation": {
         "outcome": "pass"
@@ -507,7 +507,7 @@
       "mutation": {
         "materialization": "comparisonInput",
         "operator": "replace",
-        "jsonPointer": "/controllerState/revision",
+        "jsonPointer": "/arguments/0/publication/revision",
         "from": 7,
         "to": 8,
         "exactChangedFieldCount": 1

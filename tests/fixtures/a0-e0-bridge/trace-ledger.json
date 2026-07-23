@@ -39,11 +39,9 @@
         "BRIDGE-REP-023",
         "BRIDGE-REP-024"
       ],
-      "forwardE0V2CaseIds": ["BRIDGE-REP-025", "BRIDGE-REP-026"],
       "controlIds": [
         "BRIDGE-MUT-001",
         "BRIDGE-MUT-002",
-        "BRIDGE-MUT-004",
         "BRIDGE-MUT-007",
         "BRIDGE-MUT-008",
         "BRIDGE-MUT-009",
@@ -69,20 +67,9 @@
         "transposition",
         "mutation"
       ],
-      "forwardE0V2ProofKinds": ["malformed-return", "throw"],
-      "forwardE0V2Exclusion": {
-        "ownerLeaf": "jcpe-94yu.1",
-        "futureOwnerLeaf": "jcpe-milestone-reliable-studio-l3a.8.4",
-        "excludedFrom": [
-          "A0-owner-case-count",
-          "A0-owner-run-count",
-          "A0-owner-mutation-proof",
-          "typed-producer-conformance"
-        ],
-        "rationale": "Malformed unknown-return normalization and thrown consumer ports belong only to the future E0 v2 semantic binding."
-      },
       "ownerProofScope": "A0-typed-producer",
-      "forwardE0V2RowsExcludedFromOwnerProof": true
+      "forwardE0V2BehaviorRowsPresent": false,
+      "deferredE0V2BindingLeaf": "jcpe-milestone-reliable-studio-l3a.8.4"
     },
     {
       "id": "BRIDGE-TRACE-DISCARD",
@@ -95,7 +82,6 @@
         "BRIDGE-OWNER-11-no-wall-time-or-pitch-repair"
       ],
       "caseIds": ["BRIDGE-REP-027", "BRIDGE-REP-028"],
-      "forwardE0V2CaseIds": [],
       "controlIds": ["BRIDGE-MUT-001", "BRIDGE-MUT-003", "BRIDGE-MUT-004"],
       "authorityIds": [
         "BRIDGE-AUTH-PLAN",
@@ -110,10 +96,9 @@
         "isolation",
         "mutation"
       ],
-      "forwardE0V2ProofKinds": [],
-      "forwardE0V2Exclusion": null,
       "ownerProofScope": "A0-typed-producer",
-      "forwardE0V2RowsExcludedFromOwnerProof": true
+      "forwardE0V2BehaviorRowsPresent": false,
+      "deferredE0V2BindingLeaf": "jcpe-milestone-reliable-studio-l3a.8.4"
     },
     {
       "id": "BRIDGE-TRACE-PUBLISH",
@@ -128,7 +113,6 @@
         "BRIDGE-OWNER-11-no-wall-time-or-pitch-repair"
       ],
       "caseIds": ["BRIDGE-REP-029", "BRIDGE-REP-030"],
-      "forwardE0V2CaseIds": [],
       "controlIds": [
         "BRIDGE-MUT-005",
         "BRIDGE-MUT-006",
@@ -153,12 +137,12 @@
         "lookalike",
         "retirement-near-miss",
         "transposition",
-        "mutation"
+        "mutation",
+        "same-revision-state-drift"
       ],
-      "forwardE0V2ProofKinds": [],
-      "forwardE0V2Exclusion": null,
       "ownerProofScope": "A0-typed-producer",
-      "forwardE0V2RowsExcludedFromOwnerProof": true
+      "forwardE0V2BehaviorRowsPresent": false,
+      "deferredE0V2BindingLeaf": "jcpe-milestone-reliable-studio-l3a.8.4"
     },
     {
       "id": "BRIDGE-TRACE-IDENTITY",
@@ -176,13 +160,7 @@
         "BRIDGE-ID-003",
         "BRIDGE-ID-004"
       ],
-      "forwardE0V2CaseIds": ["BRIDGE-ID-005", "BRIDGE-ID-006"],
-      "controlIds": [
-        "BRIDGE-MUT-013",
-        "BRIDGE-MUT-014",
-        "BRIDGE-MUT-022",
-        "BRIDGE-MUT-024"
-      ],
+      "controlIds": ["BRIDGE-MUT-013", "BRIDGE-MUT-014", "BRIDGE-MUT-024"],
       "authorityIds": [
         "BRIDGE-AUTH-PLAN",
         "BRIDGE-AUTH-BEAD",
@@ -196,20 +174,9 @@
         "applicability",
         "mutation"
       ],
-      "forwardE0V2ProofKinds": ["malformed-return", "throw"],
-      "forwardE0V2Exclusion": {
-        "ownerLeaf": "jcpe-94yu.1",
-        "futureOwnerLeaf": "jcpe-milestone-reliable-studio-l3a.8.4",
-        "excludedFrom": [
-          "A0-owner-case-count",
-          "A0-owner-run-count",
-          "A0-owner-mutation-proof",
-          "typed-producer-conformance"
-        ],
-        "rationale": "Malformed unknown-return normalization and thrown consumer ports belong only to the future E0 v2 semantic binding."
-      },
       "ownerProofScope": "A0-typed-producer",
-      "forwardE0V2RowsExcludedFromOwnerProof": true
+      "forwardE0V2BehaviorRowsPresent": false,
+      "deferredE0V2BindingLeaf": "jcpe-milestone-reliable-studio-l3a.8.4"
     },
     {
       "id": "BRIDGE-TRACE-MARKER",
@@ -234,7 +201,6 @@
         "BRIDGE-MARK-011",
         "BRIDGE-MARK-012"
       ],
-      "forwardE0V2CaseIds": ["BRIDGE-MARK-006", "BRIDGE-MARK-007"],
       "controlIds": [
         "BRIDGE-MUT-015",
         "BRIDGE-MUT-016",
@@ -243,7 +209,6 @@
         "BRIDGE-MUT-019",
         "BRIDGE-MUT-020",
         "BRIDGE-MUT-021",
-        "BRIDGE-MUT-022",
         "BRIDGE-MUT-023",
         "BRIDGE-MUT-024",
         "BRIDGE-MUT-027",
@@ -270,20 +235,9 @@
         "applicability",
         "mutation"
       ],
-      "forwardE0V2ProofKinds": ["malformed-return", "throw"],
-      "forwardE0V2Exclusion": {
-        "ownerLeaf": "jcpe-94yu.1",
-        "futureOwnerLeaf": "jcpe-milestone-reliable-studio-l3a.8.4",
-        "excludedFrom": [
-          "A0-owner-case-count",
-          "A0-owner-run-count",
-          "A0-owner-mutation-proof",
-          "typed-producer-conformance"
-        ],
-        "rationale": "Malformed unknown-return normalization and thrown consumer ports belong only to the future E0 v2 semantic binding."
-      },
       "ownerProofScope": "A0-typed-producer",
-      "forwardE0V2RowsExcludedFromOwnerProof": true
+      "forwardE0V2BehaviorRowsPresent": false,
+      "deferredE0V2BindingLeaf": "jcpe-milestone-reliable-studio-l3a.8.4"
     }
   ],
   "lawCoverage": [
@@ -312,7 +266,10 @@
         "BRIDGE-REP-029/mutation-031-frozen-prepare-state-install",
         "BRIDGE-REP-030/transport-advanced-after-prepare",
         "BRIDGE-REP-030/bookmarks-changed-after-prepare",
-        "BRIDGE-REP-030/sequence-exhausted-after-prepare"
+        "BRIDGE-REP-030/sequence-exhausted-after-prepare",
+        "BRIDGE-REP-030/same-revision-pending-request-drift",
+        "BRIDGE-REP-030/same-revision-transition-drift",
+        "BRIDGE-REP-030/same-revision-unrelated-request-added"
       ],
       "transpositionOrApplicability": {
         "status": "literal-covered",
@@ -391,7 +348,10 @@
         "BRIDGE-REP-028/wrong-request-isolation",
         "BRIDGE-REP-030/stale-live-entry",
         "BRIDGE-REP-005/mutation-001-wrong-document",
-        "BRIDGE-REP-024/mutation-002-occupied-registry"
+        "BRIDGE-REP-024/mutation-002-occupied-registry",
+        "BRIDGE-REP-030/same-revision-pending-request-drift",
+        "BRIDGE-REP-030/same-revision-transition-drift",
+        "BRIDGE-REP-030/same-revision-unrelated-request-added"
       ],
       "transpositionOrApplicability": {
         "status": "literal-covered",
@@ -444,7 +404,10 @@
         "BRIDGE-REP-030/transport-advanced-after-prepare",
         "BRIDGE-REP-030/bookmarks-changed-after-prepare",
         "BRIDGE-REP-030/sequence-exhausted-after-prepare",
-        "BRIDGE-REP-029/mutation-026-publish-before-consume"
+        "BRIDGE-REP-029/mutation-026-publish-before-consume",
+        "BRIDGE-REP-030/same-revision-pending-request-drift",
+        "BRIDGE-REP-030/same-revision-transition-drift",
+        "BRIDGE-REP-030/same-revision-unrelated-request-added"
       ],
       "transpositionOrApplicability": {
         "status": "literal-covered",
@@ -470,7 +433,10 @@
         "BRIDGE-REP-030/bookmarks-changed-after-prepare",
         "BRIDGE-REP-030/sequence-exhausted-after-prepare",
         "BRIDGE-REP-030/mutation-005-lookalike",
-        "BRIDGE-REP-030/mutation-006-consumed"
+        "BRIDGE-REP-030/mutation-006-consumed",
+        "BRIDGE-REP-030/same-revision-pending-request-drift",
+        "BRIDGE-REP-030/same-revision-transition-drift",
+        "BRIDGE-REP-030/same-revision-unrelated-request-added"
       ],
       "transpositionOrApplicability": {
         "status": "literal-covered",
@@ -492,14 +458,14 @@
       ],
       "negativeOrNearMissRunIds": [
         "BRIDGE-ID-001/mutation-014-asynchronous",
-        "BRIDGE-ID-003/mutation-013-revision-eight"
+        "BRIDGE-ID-003/mutation-013-document-id"
       ],
       "transpositionOrApplicability": {
         "status": "content-invariance-covered",
         "runIds": ["BRIDGE-ID-004/source-c", "BRIDGE-ID-004/target-d"],
         "rationale": "Identity reads the latest controller fields and traverses no document content."
       },
-      "mutationControlIds": ["BRIDGE-MUT-014"]
+      "mutationControlIds": ["BRIDGE-MUT-013", "BRIDGE-MUT-014"]
     },
     {
       "lawId": "BRIDGE-OWNER-08-document-and-revision-marker-cas",
@@ -543,7 +509,11 @@
         "runIds": ["BRIDGE-MARK-012/source-c", "BRIDGE-MARK-012/target-d"],
         "rationale": "Both content-distinct cases change only exportRevision and preserve all named references."
       },
-      "mutationControlIds": ["BRIDGE-MUT-019", "BRIDGE-MUT-030"]
+      "mutationControlIds": [
+        "BRIDGE-MUT-018",
+        "BRIDGE-MUT-019",
+        "BRIDGE-MUT-030"
+      ]
     },
     {
       "lawId": "BRIDGE-OWNER-10-state-free-boundary-results",

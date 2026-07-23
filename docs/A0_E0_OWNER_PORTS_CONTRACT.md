@@ -279,12 +279,13 @@ It does not accept a raw replacement command from E0 or the UI, rerun parsing or
 migration, or infer missing evidence.
 
 Publication re-reads the controller's latest state and rechecks the complete
-document/revision/request/transition identity, the preparation-time bookmark
-input, available sequence headroom, and that the X1 receipt's retired
-generation covers the latest transport generation. A0's immutable reducer law
-means history cannot change without revision, so the exact revision check also
-guards the precomputed history without storing a second prepare-time
-`HistoryState`. It must
+document/revision/transition identity, the exact ordered
+`pendingRequestsBefore` snapshot captured at preparation (including every
+unrelated request and each request status), the preparation-time bookmark input,
+available sequence headroom, and that the X1 receipt's retired generation
+covers the latest transport generation. A0's immutable reducer law means
+history cannot change without revision, so the exact revision check also guards
+the precomputed history without storing a second prepare-time `HistoryState`. It must
 not install a whole `AppState` captured at preparation time. Same-revision
 ephemeral edits may occur during X1 retirement, so publication applies the
 precomputed command material to that latest state using this complete field
@@ -306,9 +307,13 @@ The latest value must remain below `MAX_APPLICATION_SEQUENCE`. At the exact
 that value to focus, allocates the maximum to its warning, and leaves
 `nextSequence` saturated at the maximum, matching A0's notice law.
 
-A same-revision bookmark edit would change the retained history entry and its
-byte estimate, so it is not mergeable. Bookmark drift or exhausted latest
-sequence consumes the live entry and refuses
+A same-revision change anywhere in the ordered pending-request snapshot or the
+transition invalidates the prepared command binding. This includes adding an
+otherwise unrelated request, removing one, reordering requests, or changing a
+request status. A same-revision bookmark edit would change the retained history
+entry and its byte estimate, so it is not mergeable. Pending-request,
+transition, or bookmark drift, or exhausted latest sequence, consumes the live
+entry and refuses
 `import.replacement_preparation_stale`; a transport generation newer than the
 retirement receipt consumes and refuses
 `import.replacement_retirement_mismatch`. These are concurrency rechecks, not
@@ -402,9 +407,10 @@ protocol, retirement, or publication failure reasons accepted by `discard`.
 
 To close this owner-only leaf, the five-file packet must contain:
 
-- 30 replacement/registry cases;
-- 6 latest-identity cases;
-- 12 marker-CAS cases;
+- 28 replacement/registry cases;
+- 4 latest-identity cases;
+- 10 marker-CAS cases;
+- 118 literal A0-owner runs, with no E0-v2 behavior rows;
 - 5 complete applicability rows;
 - 32 mutation controls;
 - 5 reciprocal operation traces;
@@ -428,12 +434,14 @@ cross-checks after the literal expectations exist. They may not author,
 generate, or certify their own expected results.
 
 A prepared registry entry must freeze every private value needed for
-publication: the validated candidate, replacement command, repaired bookmarks,
-history entry and resulting history, replacement-owned field projection,
-late-bound sequence templates, effects, and counters. It must not contain an
-installable prepare-time whole-state authority. Publication may consume that
-material but may not silently rerun F2, F3, bookmark repair, history estimation,
-or impact calculation.
+publication: the validated candidate, replacement command, the complete ordered
+prepare-time `pendingRequestsBefore` sequence, repaired bookmarks, history entry
+and resulting history, replacement-owned field projection, late-bound sequence
+templates, effects, and counters. The request snapshot is exact data for a
+later deep-equality guard, not a digest or target-request-only projection. The
+entry must not contain an installable prepare-time whole-state authority.
+Publication may consume that material but may not silently rerun F2, F3,
+bookmark repair, history estimation, or impact calculation.
 
 Transposition cases must pin base candidate bytes, transposed candidate bytes,
 base and transposed SHA-256 values, expected invariant decisions, exact
@@ -450,12 +458,21 @@ publish-before-consume, frozen prepare-time state installation, state-bearing
 boundary results, marker notification or return before installation, and
 deep-cloned preserved marker references.
 
-Rows reserved for malformed-return normalization in the future E0 v2 amendment
-must be explicitly marked and excluded from all A0 owner case, run, trace, and
-mutation-proof counts.
+Malformed-return normalization, thrown or rejected consumer ports, and every
+other E0-v2 request/result/event behavior are absent from this A0-owner packet.
+They remain wholly deferred to the separately accepted E0-v2 amendment leaf.
 
 The packet must include positive, one-field near-miss, stale/concurrent,
-malformed/throw, replay, transposition/applicability, and mutation evidence.
+malformed owner-input, replay, transposition/applicability, and mutation
+evidence.
+An `AppState` revision advance is not a one-field near miss: every
+revision-correlated pending request, document transition, quick-entry draft,
+and other present revision-bound field must advance with it. A correlated
+state witness must list every changed comparison-input pointer, aligned
+prepare-time and live values, and the independently recomputed exact change
+count. One-field stale-request and stale-marker witnesses instead change the
+respective request or publication input while keeping the controller state
+valid.
 Cleanup must be called twice for each of the four reasons. Wrong-request
 isolation, consume replay, invalidation replay, structural lookalike, wrong X1
 receipt, picker-time edit, late A1 edit, and compare/write interleaving must be
