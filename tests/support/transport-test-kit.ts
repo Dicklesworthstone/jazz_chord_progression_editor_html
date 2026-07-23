@@ -230,6 +230,9 @@ export function customPlan(options: CustomPlanOptions): PlaybackPlan {
     sourceRef: "P0-SOURCE-AUTO-CMAJ7",
   }));
   const eventSum = rationalSum(options.durations);
+  const capacityBeats = meter.beatsPerBar * (4 / meter.beatUnit);
+  const sumsToCapacity =
+    eventSum.numerator === capacityBeats * eventSum.denominator;
   const materialized = materializeP0DocumentRecipe({
     documentId: options.documentId,
     tempoBpm: options.tempoBpm,
@@ -241,11 +244,13 @@ export function customPlan(options: CustomPlanOptions): PlaybackPlan {
         measures: [
           {
             measureId: "measure-x1-a1",
-            completion: {
-              kind: "incomplete",
-              expectedDuration: eventSum,
-              reason: "transport timing fixture",
-            },
+            completion: sumsToCapacity
+              ? { kind: "complete" as const }
+              : {
+                  kind: "incomplete" as const,
+                  expectedDuration: eventSum,
+                  reason: "transport timing fixture",
+                },
             events,
           },
         ],

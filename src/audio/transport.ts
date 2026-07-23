@@ -239,12 +239,7 @@ function planStructurallyValid(plan: UnknownPlan): boolean {
   if (plan.compilerId !== PLAYBACK_COMPILER_ID_PIN) return false;
   if (plan.compilerVersion !== PLAYBACK_COMPILER_VERSION_PIN) return false;
   const tempo = plan.tempoBpm;
-  if (
-    typeof tempo !== "number" ||
-    !Number.isFinite(tempo) ||
-    tempo < MIN_TEMPO_BPM ||
-    tempo > MAX_TEMPO_BPM
-  ) {
+  if (typeof tempo !== "number" || !Number.isFinite(tempo)) {
     return false;
   }
   const events = plan.events;
@@ -273,6 +268,15 @@ function planStructurallyValid(plan: UnknownPlan): boolean {
     if (startTick + durationTicks > totalTicks) return false;
   }
   return true;
+}
+
+function planTempoInRange(plan: Readonly<{ tempoBpm?: unknown }>): boolean {
+  const tempo = plan.tempoBpm;
+  return (
+    typeof tempo === "number" &&
+    tempo >= MIN_TEMPO_BPM &&
+    tempo <= MAX_TEMPO_BPM
+  );
 }
 
 function nonEmptyVoiceSpecs(
@@ -312,7 +316,11 @@ export function createTransportService(
 ): TransportService {
   let state: TransportState = "locked";
   let priorStable: StableState = "ready";
-  let generation: TransportGeneration = 0;
+  /**
+   * Generations are positive safe integers: X0 refuses owner generation
+   * zero, and a preview may start before the first play epoch.
+   */
+  let generation: TransportGeneration = 1;
   let lastSubmittedRequestId = 0;
   let lastAdmittedRequestId: TransportCommandRequestId = 0;
   let notificationSequence = 0;
@@ -334,6 +342,10 @@ export function createTransportService(
   let cursor = 0;
   let nextClickTick = 0;
   let clickIndex = 0;
+  let pendingCountInClicks: readonly Readonly<{
+    seconds: number;
+    accent: boolean;
+  }>[] = [];
   let scheduled: ScheduledEventRecord[] = [];
   let activePreviewId: string | null = null;
   let activePreviewGeneration = 0;
@@ -548,6 +560,7 @@ export function createTransportService(
     work.naturalEndsPublished += 1;
     cursor = 0;
     scheduled = [];
+    pendingCountInClicks = [];
     pausedBeat = runStartBeat;
     state = "ready";
     priorStable = "ready";
@@ -593,6 +606,17 @@ export function createTransportService(
     if (plan === null) return;
     const now = platform.currentTimeSeconds();
     const horizonEnd = now + timing.lookaheadSeconds;
+
+    while (pendingCountInClicks.length > 0) {
+      const next = pendingCountInClicks[0];
+      if (next === undefined || next.seconds > horizonEnd) break;
+      if (!issueClick(next.accent, next.seconds)) {
+        enterFault("transport.engine_refusal");
+        return;
+      }
+      pendingCountInClicks = pendingCountInClicks.slice(1);
+    }
+    if (pendingCountInClicks.length > 0) return;
 
     if (metronomeEnabled) {
       const { intervalTicks, perBar } = clickSpacing();
@@ -735,6 +759,7 @@ export function createTransportService(
     anchorBeat = startBeat;
     cursor = firstEventIndexAtOrAfter(plan, startBeat);
     scheduled = [];
+    pendingCountInClicks = [];
     nextClickTick = alignClickTick(beatTicks(startBeat));
     state = "playing";
     priorStable = "playing";
@@ -846,6 +871,9 @@ export function createTransportService(
         ) {
           return refuse(commandRequestId, kind, "transport.plan_mismatch");
         }
+        if (!planTempoInRange(payload.binding.plan)) {
+          return refuse(commandRequestId, kind, "transport.tempo_out_of_range");
+        }
         const plan = payload.binding.plan;
         if (compareBeatValues(payload.startBeat, plan.totalBeats) > 0) {
           return refuse(
@@ -867,26 +895,28 @@ export function createTransportService(
         if (payload.countIn) {
           const { intervalTicks, perBar } = clickSpacingFor(plan);
           const now = platform.currentTimeSeconds();
-          for (let index = 0; index < perBar; index += 1) {
-            const seconds =
-              now + ticksToSeconds(intervalTicks * index, plan.tempoBpm);
-            if (!issueClick(index === 0, seconds)) {
-              enterFault("transport.engine_refusal");
-              return refuse(
-                commandRequestId,
-                kind,
-                "transport.engine_refusal",
-              );
-            }
-          }
           anchorTimeSeconds =
             now + ticksToSeconds(intervalTicks * perBar, plan.tempoBpm);
           anchorBeat = payload.startBeat;
           cursor = firstEventIndexAtOrAfter(plan, payload.startBeat);
           scheduled = [];
           nextClickTick = alignClickTick(beatTicks(payload.startBeat));
+          pendingCountInClicks = Array.from(
+            { length: perBar },
+            (_, index) =>
+              Object.freeze({
+                seconds:
+                  now + ticksToSeconds(intervalTicks * index, plan.tempoBpm),
+                accent: index === 0,
+              }),
+          );
           state = "playing";
           priorStable = "playing";
+          scheduleHorizon(generation);
+          const after = stateNow();
+          if (after !== "playing") {
+            return refuse(commandRequestId, kind, "transport.engine_refusal");
+          }
           startTimer();
           publish("playing", commandRequestId, payload.startBeat, null);
           return receipt(commandRequestId, kind, stateBefore, true);
@@ -1114,6 +1144,9 @@ export function createTransportService(
           !planStructurallyValid(payload.binding.plan)
         ) {
           return refuse(commandRequestId, kind, "transport.plan_invalid");
+        }
+        if (!planTempoInRange(payload.binding.plan)) {
+          return refuse(commandRequestId, kind, "transport.tempo_out_of_range");
         }
         if (
           binding === null ||
@@ -1359,6 +1392,13 @@ export function createTransportService(
             payload.binding.plan.sourceDocumentId
           ) {
             return refuse(commandRequestId, kind, "transport.plan_mismatch");
+          }
+          if (!planTempoInRange(payload.binding.plan)) {
+            return refuse(
+              commandRequestId,
+              kind,
+              "transport.tempo_out_of_range",
+            );
           }
         }
         generation += 1;

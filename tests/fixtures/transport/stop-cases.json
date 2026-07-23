@@ -85,7 +85,10 @@
       "scenario": "The platform reports interrupted while playing at exact beat 5/4.",
       "expected": {
         "stateAfter": "interrupted",
-        "storedBeat": { "numerator": 5, "denominator": 4 },
+        "storedBeat": {
+          "numerator": 5,
+          "denominator": 4
+        },
         "notificationStatus": "paused",
         "failureCode": "transport.interrupted",
         "playheadAdvancedDuringSuspension": false,
@@ -98,7 +101,10 @@
       "scenario": "A trusted resume gesture arrives after X1-STOP-007.",
       "expected": {
         "stateAfter": "playing",
-        "resumeBeat": { "numerator": 5, "denominator": 4 },
+        "resumeBeat": {
+          "numerator": 5,
+          "denominator": 4
+        },
         "staleCallbackAttacks": 0,
         "law": "Recovery re-anchors a new epoch at the stored exact beat rather than replaying stale callbacks; pre-interruption callbacks are generation-dead."
       }
@@ -122,8 +128,8 @@
       "expected": {
         "stateAfter": "ready",
         "documentIdAfter": null,
-        "playCommandAfterRefusal": "transport.plan_mismatch",
-        "law": "A null binding empties the transport; a subsequent play without a fresh binding refuses as a mismatch instead of replaying the retired plan."
+        "law": "A null binding empties the transport; a continuation command that requires the current binding (set-tempo) refuses as a mismatch instead of resurrecting the retired plan, and play requires a fresh explicit binding by construction.",
+        "continuationWithoutBindingRefusal": "transport.plan_mismatch"
       }
     },
     {

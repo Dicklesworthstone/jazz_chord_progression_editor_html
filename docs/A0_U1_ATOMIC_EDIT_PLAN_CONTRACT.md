@@ -74,12 +74,18 @@ applicable row exactly; TypeScript's erased structural types are not runtime
 proof.
 
 The source-only `RunAtomicEditPlan` signature closes the implementation handoff.
-Its request contains `AppState`, one `ApplyEditPlanCommand`, and the existing A0
-dependencies intersected with the synchronous T0 parser port. Its result is
-assignable to the existing `ApplicationTransitionResult` while adding exactly
-one `editPlanReceipt` on committed success or one nullable
-`editPlanRefusal` on failure. This proposed signature does not change or export
-the live A0 runner.
+Its request contains `AtomicEditPlanAppState`, one `ApplyEditPlanCommand`, and
+the existing A0 dependency ports plus the synchronous T0 parser port. The
+history retained-byte estimator is the same operation with its input widened
+to the proposed history-row union so it can measure the new command kind.
+The proposed state differs from live `AppState` only by widening history rows
+to admit `commandKind: "apply-edit-plan"`; every current `AppState` remains a
+valid input. Its result preserves the existing transition fields while adding
+one `editPlanReceipt` on committed success or one nullable `editPlanRefusal` on
+failure. It intentionally does not claim assignability back to today's
+`ApplicationTransitionResult`, whose live history kind is still closed to the
+original fifteen commands. The implementation leaf must merge the command and
+history kinds before exporting the live runner.
 
 ## 3. Common command preflight
 
@@ -198,6 +204,10 @@ No match refuses with `edit-plan.recovered-chord-ordinal-missing`. Only that
 item's chord, annotation, range, and duration branch may be used. Diagnostic
 siblings and every other insertable chord remain unapplied. There is no
 "apply valid parts" operation.
+`insertableChordsExamined` counts returned insertable rows through the matched
+row (or all returned rows on no match); it is not `selectedGlobalOrdinal + 1`,
+because T0 global ordinals also account for non-insertable event slots and may
+therefore contain gaps.
 
 The layout acknowledgement must equal the literal
 `source-bar-and-section-layout-will-be-lost@1`. A boolean, localized copy,
@@ -389,6 +399,11 @@ Allocation order is deterministic structural preorder:
 5. a split event's second event only; or
 6. a split section's suffix section only.
 
+Join-event and join-section plans allocate nothing. Their
+allocation/collision proof uses a hostile factory that would collide if called
+and proves zero calls and zero allocation attempts; an unrelated refusal may
+not be relabeled as collision evidence.
+
 Every returned ID is checked against the global occupied set and immediately
 reserved in the local set. The first factory failure or collision refuses.
 There is no retry, repair, fallback ID, or partial remap publication.
@@ -466,6 +481,10 @@ Undo restores the exact before document and bookmarks in one revision. Redo
 restores the exact after document, allocated IDs, metadata, annotations,
 completion declarations, and bookmarks without calling T0 or allocating new
 IDs. Undo and redo retain A0's existing QuickEntry-clear behavior.
+Literal transition fixtures use the apply command only for the `apply` phase.
+Their `command` field is `null` for `undo` and `redo`, because those phases
+invoke A0's state-only `undoDocumentCommand` and `redoDocumentCommand` ports;
+the retained history entry, not a replayed caller command, is their authority.
 
 A normal refusal follows existing A0 failure semantics: document, bookmarks,
 history, QuickEntry, and effects are unchanged; only the already-permitted
@@ -541,16 +560,27 @@ Final collection checks apply to the whole candidate, not just inserted
 material. Every collection scan stops after either exhaustion or the
 maximum-plus-one first-excess witness. Exact duration arithmetic uses bounded
 domain rational operations, never floating point and never wall time.
+If an earlier invariant makes a later refusal or first-excess state
+unreachable, the obligation ledger records an algebraic dominance proof rather
+than a fabricated runtime transition. In particular, 4,096 valid Unicode
+scalars occupy at most 16,384 UTF-8 bytes; a larger scalar sequence reaches the
+code-point refusal first, and a lone surrogate reaches Unicode refusal first.
 
-Every outcome returns all counters named by
-`A0_U1_ATOMIC_EDIT_WORK_COUNTER_NAMES`, including zeros for unreached work,
-plus exactly one termination label:
+Every apply outcome that reaches edit-plan validation returns all counters
+named by `A0_U1_ATOMIC_EDIT_WORK_COUNTER_NAMES`, including zeros for unreached
+work, plus exactly one termination label:
 
 - `complete`;
 - `input-refusal`;
 - `allocation-refusal`;
 - `publication-refusal`; or
 - `history-refusal`.
+
+An inherited A0 envelope refusal occurs before this nested work record exists:
+the runtime result has `editPlanRefusal: null`, while the independent fixture
+envelope records `editPlan: null`. Undo and redo likewise record `editPlan:
+null` because they replay the retained history entry without parsing,
+revalidating the plan, or allocating IDs.
 
 Peak plan, allocated-ID, and diagnostic record counts are explicit. Temporary
 memory is bounded by the exported record caps plus the one private candidate
@@ -603,6 +633,13 @@ Proof for each applicable law must include:
 - deterministic work and peak-memory evidence; and
 - exact refusal code, path, diagnostics, and first-excess counts where refused.
 
+Each insert transition also carries independently authored `parserEvidence`:
+the exact raw source/meter/mode/style, parser outcome, ordered global event
+slots, and ordered insertable rows with source ordinals, content, duration
+branch, and range. It is never generated from the production parser. The
+validator uses it to prove inserted content and recovery scan position; global
+ordinals alone are not array indexes.
+
 The aggregate packet must additionally prove malformed exact shapes, unknown
 keys, stale envelope revision, each stale QuickEntry field, T0 success/failure
 lane swaps, warning order/range mutations, recovered sibling suppression,
@@ -610,6 +647,15 @@ resolved/caller duration swaps, each placement mismatch, every maximum and
 maximum-plus-one witness, ID failure/collision at every allocation position,
 F2/F3 refusal, history refusal, undo/redo identity stability, and existing A0
 regression compatibility.
+
+The 5-plan × 10-category case matrix is representative evidence, not a naming
+exercise: every linked apply transition must execute the row's plan kind and
+the validator must independently prove the stated category. The companion
+`obligationRows` ledger enumerates the complete refusal, snapshot-field,
+placement, limit, allocation-site, publication, bookmark, history, and
+transposition obligations above. Root booleans, reciprocal links, summaries,
+or category labels cannot satisfy an obligation without a semantically checked
+literal witness.
 
 ## 20. Implementation handoff
 

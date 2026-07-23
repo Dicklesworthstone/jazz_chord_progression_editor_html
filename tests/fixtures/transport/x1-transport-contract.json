@@ -169,13 +169,13 @@
     },
     {
       "path": "scheduler-cases.json",
-      "bytes": 8185,
-      "sha256": "9a96574f024ec63b9e6585667c5515e970e1131247932bc17a4d7ff75c7a865a"
+      "bytes": 9000,
+      "sha256": "eb1d428a0f4080f2191dfd96704b2bdf048478a0aa77495bfcee861f468fb8aa"
     },
     {
       "path": "stop-cases.json",
-      "bytes": 6741,
-      "sha256": "f73e7813e0adf03fee2d5856b9c6fa38e9bdf1e72e48c772ee6dd08c598026e1"
+      "bytes": 6897,
+      "sha256": "883f5d686ddddd2c9e8c4833d07c1f9748185931c05a4eefed0c5ec700285c24"
     },
     {
       "path": "command-cases.json",

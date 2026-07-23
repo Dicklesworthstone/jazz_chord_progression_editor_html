@@ -765,7 +765,7 @@ function validateScheduler(scheduler: JsonRecord, findings: Findings): number {
   const one = expected(requireCase(cases, "X1-SCHED-001", findings, code));
   findings.equal(one["attackBatchesIssued"], 1, code, "X1-SCHED-001/attackBatchesIssued");
   const two = expected(requireCase(cases, "X1-SCHED-002", findings, code));
-  findings.equal(two["batchOrderByStartSeconds"], [0, 0.0625, 0.125], code, "X1-SCHED-002/batchOrderByStartSeconds");
+  findings.equal(two["batchOrderByStartSeconds"], [0, 0.0625, 0.09375], code, "X1-SCHED-002/batchOrderByStartSeconds");
   const stale = expected(requireCase(cases, "X1-SCHED-003", findings, code));
   findings.equal(stale["attackBatchesIssued"], 0, code, "X1-SCHED-003/attackBatchesIssued");
   findings.equal(stale["staleCallbacksIgnoredDelta"], 1, code, "X1-SCHED-003/staleCallbacksIgnoredDelta");
@@ -869,7 +869,7 @@ function validateStop(stop: JsonRecord, findings: Findings): number {
   const emptied = expected(requireCase(cases, "X1-STOP-010", findings, code));
   findings.equal(emptied["stateAfter"], "ready", code, "X1-STOP-010/stateAfter");
   findings.equal(emptied["documentIdAfter"], null, code, "X1-STOP-010/documentIdAfter");
-  findings.equal(emptied["playCommandAfterRefusal"], "transport.plan_mismatch", code, "X1-STOP-010/playCommandAfterRefusal");
+  findings.equal(emptied["continuationWithoutBindingRefusal"], "transport.plan_mismatch", code, "X1-STOP-010/continuationWithoutBindingRefusal");
   const dispose = expected(requireCase(cases, "X1-STOP-011", findings, code));
   findings.equal(dispose["stateAfter"], "disposed", code, "X1-STOP-011/stateAfter");
   findings.equal(dispose["secondDisposeRefusal"], "transport.disposed", code, "X1-STOP-011/secondDisposeRefusal");

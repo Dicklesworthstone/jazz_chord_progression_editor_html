@@ -96,9 +96,18 @@ describe("TR-X1-EXACT-TIME / TR-LEGACY-AUDIO-03 exact transport timing", () => {
         if (attack === undefined) continue;
         expect(attack.accepted).toBe(true);
         expect(attack.startTimeSeconds).toBe(row.startSeconds);
-        expect(attack.releaseTimeSeconds - attack.startTimeSeconds).toBe(
-          row.gateSeconds,
+        const gateBeats = row.gateTicks / 960;
+        const expectedGate = Math.max((gateBeats * 60) / tempo, 0.005);
+        expect(attack.releaseTimeSeconds).toBe(
+          row.startSeconds + expectedGate,
         );
+        expect(
+          Math.abs(
+            attack.releaseTimeSeconds -
+              attack.startTimeSeconds -
+              row.gateSeconds,
+          ),
+        ).toBeLessThan(1e-12);
       }
     }
   });

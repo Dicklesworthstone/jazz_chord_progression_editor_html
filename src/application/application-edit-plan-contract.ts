@@ -27,6 +27,8 @@ import {
   type ApplicationCommandDependencies,
   type ApplicationTransitionResult,
   type DocumentCommand,
+  type HistoryEntry,
+  type HistoryState,
 } from "./application-state-contract";
 
 /** Proposed A0/U1 specification surface; no production runner consumes it yet. */
@@ -370,6 +372,30 @@ export type ApplyEditPlanCommand = Readonly<{
 
 /** Additive type proposal only; the live DocumentCommand union is unchanged. */
 export type ProposedDocumentCommand = DocumentCommand | ApplyEditPlanCommand;
+
+/** Proposed history row; live A0 cannot name this command kind yet. */
+export type AtomicEditPlanHistoryEntry = Readonly<
+  Omit<HistoryEntry, "commandKind"> & {
+    commandKind: "apply-edit-plan";
+  }
+>;
+
+export type ProposedAtomicEditPlanHistoryEntry =
+  HistoryEntry | AtomicEditPlanHistoryEntry;
+
+export type AtomicEditPlanHistoryState = Readonly<
+  Omit<HistoryState, "undo" | "redo"> & {
+    undo: readonly ProposedAtomicEditPlanHistoryEntry[];
+    redo: readonly ProposedAtomicEditPlanHistoryEntry[];
+  }
+>;
+
+/** Future merged state shape; existing AppState values remain assignable to it. */
+export type AtomicEditPlanAppState = Readonly<
+  Omit<AppState, "history"> & {
+    history: AtomicEditPlanHistoryState;
+  }
+>;
 
 /** Production composition must bind the real public T0 parser to this shape. */
 export type ParseAtomicEditPlanFragment = (
@@ -767,6 +793,7 @@ export type AtomicEditPlanWorkEvidence = Readonly<{
   quickEntryIssueCodesCompared: number;
   syntaxParseCalls: number;
   warningAcknowledgementsCompared: number;
+  /** Returned T0 insertable rows examined, not sparse global ordinal + 1. */
   insertableChordsExamined: number;
   recoveryFieldsCompared: number;
   draftSectionsVisited: number;
@@ -967,20 +994,34 @@ export type AtomicEditPlanReceipt = Readonly<{
   work: AtomicEditPlanWorkEvidence;
 }>;
 
-/** Future composition adds the synchronous T0 port without changing live A0 dependencies. */
+/** Future composition adds T0 and widens only the history estimator's input kind. */
+export type AtomicEditPlanHistoryRetainedByteEstimator = (
+  entry: Omit<ProposedAtomicEditPlanHistoryEntry, "retainedBytesEstimate">,
+) => number;
+
 export type AtomicEditPlanDependencies = Readonly<
-  ApplicationCommandDependencies & AtomicEditPlanParserDependency
+  Omit<ApplicationCommandDependencies, "estimateHistoryRetainedBytes"> &
+    AtomicEditPlanParserDependency & {
+      estimateHistoryRetainedBytes: AtomicEditPlanHistoryRetainedByteEstimator;
+    }
 >;
 
 export type RunAtomicEditPlanRequest = Readonly<{
-  state: AppState;
+  state: AtomicEditPlanAppState;
   command: ApplyEditPlanCommand;
   dependencies: AtomicEditPlanDependencies;
 }>;
 
-type AtomicEditPlanBaseFailure = Extract<
-  ApplicationTransitionResult,
-  { ok: false }
+type AtomicEditPlanBaseSuccess = Readonly<
+  Omit<Extract<ApplicationTransitionResult, { ok: true }>, "state"> & {
+    state: AtomicEditPlanAppState;
+  }
+>;
+
+type AtomicEditPlanBaseFailure = Readonly<
+  Omit<Extract<ApplicationTransitionResult, { ok: false }>, "state"> & {
+    state: AtomicEditPlanAppState;
+  }
 >;
 
 /** Failures rejected before the edit-plan stage cannot carry nested detail. */
@@ -1022,7 +1063,7 @@ export type AtomicEditPlanPostplanFailure = {
  */
 export type AtomicEditPlanTransitionResult =
   | Readonly<
-      Extract<ApplicationTransitionResult, { ok: true }> & {
+      AtomicEditPlanBaseSuccess & {
         outcome: "committed";
         editPlanReceipt: AtomicEditPlanReceipt;
       }

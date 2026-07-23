@@ -1,0 +1,152 @@
+import { describe, expect, setDefaultTimeout, test } from "bun:test";
+
+import { makeBeatPosition, type BeatPosition } from "../../src/domain";
+import {
+  createTransportHarness,
+  customPlan,
+  initializePayload,
+  planBinding,
+  requireReceipt,
+  requireRefusal,
+} from "../support/transport-test-kit";
+
+setDefaultTimeout(240_000);
+
+const zeroBeat: BeatPosition = (() => {
+  const made = makeBeatPosition({ numerator: 0, denominator: 1 });
+  if (!made.ok) throw new Error("zero beat");
+  return made.value;
+})();
+
+describe("TR-X1-INSTRUMENT / TR-LEGACY-AUDIO-04 serialized instrument changes", () => {
+  test("X1-CMD-012 only the five exact domain instrument IDs are accepted", async () => {
+    const harness = createTransportHarness();
+    const plan = customPlan({
+      documentId: "doc-x1-instr-012",
+      tempoBpm: 120,
+      durations: [{ numerator: 4, denominator: 1 }],
+    });
+    requireReceipt(await harness.submit(initializePayload(plan)));
+    for (const hostile of ["sampled-grand-piano", "Vibraphone", ""]) {
+      const outcome = requireRefusal(
+        await harness.service.submitTransportCommand({
+          commandRequestId: harness.nextRequestId(),
+          payload: {
+            kind: "set-instrument",
+            instrumentId: hostile as never,
+          },
+        }),
+      );
+      expect(outcome.code).toBe("transport.instrument_unknown");
+    }
+    const accepted = requireReceipt(
+      await harness.submit({
+        kind: "set-instrument",
+        instrumentId: "analog-poly",
+      }),
+    );
+    expect(accepted.stateAfter).toBe("ready");
+    expect(harness.service.inspectTransport().instrumentId).toBe(
+      "analog-poly",
+    );
+  });
+
+  test("X1-SCHED-006 a playing instrument change reschedules only the unattacked horizon at original exact times", async () => {
+    const harness = createTransportHarness();
+    const plan = customPlan({
+      documentId: "doc-x1-instr-006",
+      tempoBpm: 240,
+      durations: [
+        { numerator: 1, denominator: 8 },
+        { numerator: 1, denominator: 8 },
+        { numerator: 1, denominator: 8 },
+      ],
+    });
+    requireReceipt(await harness.submit(initializePayload(plan)));
+    requireReceipt(
+      await harness.submit({
+        kind: "play",
+        binding: planBinding(plan, 1),
+        startBeat: zeroBeat,
+        countIn: false,
+      }),
+    );
+    const initialAttacks = harness.attacks.filter(
+      (attack) => attack.ownerKind === "progression" && attack.accepted,
+    );
+    expect(initialAttacks).toHaveLength(3);
+    expect(initialAttacks.every((a) => a.instrumentId === "mellow-keys")).toBe(
+      true,
+    );
+
+    harness.setClock(0.01);
+    const reschedulesBefore =
+      harness.service.inspectTransport().work.horizonReschedules;
+    requireReceipt(
+      await harness.submit({
+        kind: "set-instrument",
+        instrumentId: "warm-pad",
+      }),
+    );
+    const snapshot = harness.service.inspectTransport();
+    expect(snapshot.work.horizonReschedules).toBe(reschedulesBefore + 1);
+
+    const reissued = harness.attacks
+      .filter(
+        (attack) =>
+          attack.ownerKind === "progression" &&
+          attack.accepted &&
+          attack.instrumentId === "warm-pad",
+      )
+      .map((attack) => attack.startTimeSeconds);
+    expect(reissued).toEqual([0.03125, 0.0625]);
+
+    const eventRetirements = harness.retirements.filter(
+      (retirement) => retirement.selectorKind === "event",
+    );
+    expect(eventRetirements).toHaveLength(2);
+    for (const retirement of eventRetirements) {
+      expect(retirement.reason).toBe("generation-retire");
+    }
+    expect(snapshot.state).toBe("playing");
+  });
+
+  test("a paused instrument change applies to the next resume without touching the engine", async () => {
+    const harness = createTransportHarness();
+    const plan = customPlan({
+      documentId: "doc-x1-instr-paused",
+      tempoBpm: 120,
+      durations: [
+        { numerator: 4, denominator: 1 },
+        { numerator: 4, denominator: 1 },
+      ],
+    });
+    requireReceipt(await harness.submit(initializePayload(plan)));
+    requireReceipt(
+      await harness.submit({
+        kind: "play",
+        binding: planBinding(plan, 1),
+        startBeat: zeroBeat,
+        countIn: false,
+      }),
+    );
+    requireReceipt(await harness.submit({ kind: "pause" }));
+    const attacksBefore = harness.attacks.length;
+    const retirementsBefore = harness.retirements.length;
+    requireReceipt(
+      await harness.submit({
+        kind: "set-instrument",
+        instrumentId: "fm-electric-piano",
+      }),
+    );
+    expect(harness.attacks.length).toBe(attacksBefore);
+    expect(harness.retirements.length).toBe(retirementsBefore);
+
+    harness.setClock(10);
+    requireReceipt(await harness.submit({ kind: "resume", gesture: null }));
+    const resumed = harness.attacks
+      .filter((attack) => attack.ownerKind === "progression")
+      .at(-1);
+    expect(resumed?.instrumentId).toBe("fm-electric-piano");
+  });
+});

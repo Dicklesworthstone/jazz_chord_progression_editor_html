@@ -7,11 +7,14 @@ import { fileURLToPath } from "node:url";
 
 import type {
   ApplyEditPlanCommand,
+  AtomicEditPlanAppState,
   AtomicEditPlanDependencies,
   AtomicEditPlanFailureForOuterCode,
   AtomicEditPlan,
   AtomicEditPlanBoundary,
   AtomicEditPlanKind,
+  AtomicEditPlanHistoryEntry,
+  AtomicEditPlanHistoryRetainedByteEstimator,
   AtomicEditPlanQuickEntrySnapshot,
   AtomicEditPlanReceipt,
   AtomicEditPlanRefusal,
@@ -140,7 +143,12 @@ type ApplyCommandCarriesOneClosedPlan = Assert<
 type AtomicDependenciesAreExactlyAdditive = Assert<
   Equal<
     AtomicEditPlanDependencies,
-    Readonly<ApplicationCommandDependencies & AtomicEditPlanParserDependency>
+    Readonly<
+      Omit<ApplicationCommandDependencies, "estimateHistoryRetainedBytes"> &
+        AtomicEditPlanParserDependency & {
+          estimateHistoryRetainedBytes: AtomicEditPlanHistoryRetainedByteEstimator;
+        }
+    >
   >
 >;
 type AtomicRunnerRequestIsExact = Assert<
@@ -155,16 +163,22 @@ type AtomicRunnerIsSynchronous = Assert<
 type AtomicRunnerRequestFieldsAreExact = Assert<
   Equal<keyof RunAtomicEditPlanRequest, "state" | "command" | "dependencies">
 >;
-type AtomicRunnerRequestCarriesLiveState = Assert<
-  Equal<RunAtomicEditPlanRequest["state"], AppState>
+type AtomicRunnerRequestCarriesProposedState = Assert<
+  Equal<RunAtomicEditPlanRequest["state"], AtomicEditPlanAppState>
+>;
+type LiveStateCanEnterAtomicRunner = Assert<
+  AppState extends AtomicEditPlanAppState ? true : false
+>;
+type AtomicHistoryKindIsExact = Assert<
+  Equal<AtomicEditPlanHistoryEntry["commandKind"], "apply-edit-plan">
 >;
 type AtomicRunnerRequestCarriesOnlyNewCommand = Assert<
   Equal<RunAtomicEditPlanRequest["command"], ApplyEditPlanCommand>
 >;
-type AtomicResultNarrowsToLiveResult = Assert<
+type AtomicResultRequiresMergedLiveHistoryKind = Assert<
   AtomicEditPlanTransitionResult extends ApplicationTransitionResult
-    ? true
-    : false
+    ? false
+    : true
 >;
 type LiveResultCannotStandInForAtomicResult = Assert<
   ApplicationTransitionResult extends AtomicEditPlanTransitionResult
@@ -402,10 +416,15 @@ type AllocationRefusalFamilyIsExact = Assert<
     "edit-plan.id-factory-failed" | "edit-plan.id-collision"
   >
 >;
-type BothHistoryOutersMapToHistoryRefusal = Assert<
+type HistoryEntryTooLargeMapsToHistoryRefusal = Assert<
   Equal<
-    | AtomicEditPlanRefusalCodeForOuter<"history.entry_too_large">
-    | AtomicEditPlanRefusalCodeForOuter<"history.byte_estimate_invalid">,
+    AtomicEditPlanRefusalCodeForOuter<"history.entry_too_large">,
+    "edit-plan.history-refused"
+  >
+>;
+type HistoryByteEstimateMapsToHistoryRefusal = Assert<
+  Equal<
+    AtomicEditPlanRefusalCodeForOuter<"history.byte_estimate_invalid">,
     "edit-plan.history-refused"
   >
 >;
@@ -475,9 +494,11 @@ const typeAssertions: readonly true[] = [
   true satisfies AtomicRunnerResultIsExact,
   true satisfies AtomicRunnerIsSynchronous,
   true satisfies AtomicRunnerRequestFieldsAreExact,
-  true satisfies AtomicRunnerRequestCarriesLiveState,
+  true satisfies AtomicRunnerRequestCarriesProposedState,
+  true satisfies LiveStateCanEnterAtomicRunner,
+  true satisfies AtomicHistoryKindIsExact,
   true satisfies AtomicRunnerRequestCarriesOnlyNewCommand,
-  true satisfies AtomicResultNarrowsToLiveResult,
+  true satisfies AtomicResultRequiresMergedLiveHistoryKind,
   true satisfies LiveResultCannotStandInForAtomicResult,
   true satisfies AtomicSuccessOutcomeIsCommitted,
   true satisfies AtomicSuccessReceiptIsExposed,
@@ -516,7 +537,8 @@ const typeAssertions: readonly true[] = [
   true satisfies PayloadRefusalExcludesIdCollision,
   true satisfies AllocationRefusalIncludesIdCollision,
   true satisfies AllocationRefusalFamilyIsExact,
-  true satisfies BothHistoryOutersMapToHistoryRefusal,
+  true satisfies HistoryEntryTooLargeMapsToHistoryRefusal,
+  true satisfies HistoryByteEstimateMapsToHistoryRefusal,
   true satisfies PreplanOuterRefusalCodesAreExhaustive,
   true satisfies RunnerStagesAreExhaustive,
   true satisfies ReceiptEffectsAreExact,

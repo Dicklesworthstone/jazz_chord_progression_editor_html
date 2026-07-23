@@ -2,18 +2,36 @@
   "schema": "changes.fixtures.x1-scheduler.v1",
   "fixtureVersion": 1,
   "authorship": "Hand-authored scheduler witnesses over docs/X1_TRANSPORT_CONTRACT.md section 5. Expected observations describe the injected fake engine/clock logs; no production scheduler exists or was consulted.",
-  "timingDefaults": { "tickIntervalMs": 25, "lookaheadSeconds": 0.1 },
+  "timingDefaults": {
+    "tickIntervalMs": 25,
+    "lookaheadSeconds": 0.1
+  },
   "cases": [
     {
       "caseId": "X1-SCHED-001",
       "title": "One schedule per event across overlapping ticks",
       "tempoBpm": 120,
       "planEventStartBeats": [
-        { "numerator": 0, "denominator": 1 },
-        { "numerator": 1, "denominator": 1 },
-        { "numerator": 2, "denominator": 1 }
+        {
+          "numerator": 0,
+          "denominator": 1
+        },
+        {
+          "numerator": 1,
+          "denominator": 1
+        },
+        {
+          "numerator": 2,
+          "denominator": 1
+        }
       ],
-      "clockSecondsAtTicks": [0, 0.025, 0.05, 0.075, 0.1],
+      "clockSecondsAtTicks": [
+        0,
+        0.025,
+        0.05,
+        0.075,
+        0.1
+      ],
       "expected": {
         "attackBatchesIssued": 1,
         "law": "Beat 0 enters the first horizon [0, 0.1]; beats 1 and 2 map to 0.5 s and 1.0 s and stay outside every listed horizon. Repeated ticks over an unchanged horizon must not reissue the beat-0 batch; the cursor advances exactly once."
@@ -24,15 +42,30 @@
       "title": "Ascending startTick order within one horizon",
       "tempoBpm": 240,
       "planEventStartBeats": [
-        { "numerator": 0, "denominator": 1 },
-        { "numerator": 1, "denominator": 4 },
-        { "numerator": 1, "denominator": 2 }
+        {
+          "numerator": 0,
+          "denominator": 1
+        },
+        {
+          "numerator": 1,
+          "denominator": 4
+        },
+        {
+          "numerator": 3,
+          "denominator": 8
+        }
       ],
-      "clockSecondsAtTicks": [0],
+      "clockSecondsAtTicks": [
+        0
+      ],
       "expected": {
         "attackBatchesIssued": 3,
-        "batchOrderByStartSeconds": [0, 0.0625, 0.125],
-        "law": "At 240 BPM all three events fall inside one 0.1 s horizon and must be issued in ascending exact startTick order in one tick."
+        "batchOrderByStartSeconds": [
+          0,
+          0.0625,
+          0.09375
+        ],
+        "law": "At 240 BPM beats 0, 1/4, and 3/8 map to 0, 0.0625, and 0.09375 seconds, all inside one 0.1 s horizon, and must be issued in ascending exact startTick order in one tick. Beat 1/2 (0.125 s) would fall outside the horizon."
       }
     },
     {
@@ -51,8 +84,14 @@
       "title": "Loop wrap crosses one loop-wrap generation boundary and re-anchors",
       "tempoBpm": 120,
       "loop": {
-        "startBeat": { "numerator": 0, "denominator": 1 },
-        "endBeat": { "numerator": 2, "denominator": 1 }
+        "startBeat": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "endBeat": {
+          "numerator": 2,
+          "denominator": 1
+        }
       },
       "expected": {
         "loopWrapsDelta": 1,
@@ -65,7 +104,10 @@
       "caseId": "X1-SCHED-005",
       "title": "Attack lead never exceeds the X0 admission window",
       "tempoBpm": 20,
-      "timing": { "tickIntervalMs": 100, "lookaheadSeconds": 0.2 },
+      "timing": {
+        "tickIntervalMs": 100,
+        "lookaheadSeconds": 0.2
+      },
       "expected": {
         "maxAttackLeadSeconds": 0.2,
         "x0WindowSeconds": 0.25,
@@ -88,14 +130,35 @@
       "caseId": "X1-SCHED-007",
       "title": "Count-in prepends exactly one bar of clicks",
       "tempoBpm": 120,
-      "meter": { "beatsPerBar": 4, "beatUnit": 4 },
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
       "countIn": true,
       "expected": {
         "clickEventsGeneratedDelta": 4,
-        "clickEventIds": ["x1:click:1:0", "x1:click:1:1", "x1:click:1:2", "x1:click:1:3"],
-        "clickMidiPitches": [88, 81, 81, 81],
-        "clickVelocities": [112, 84, 84, 84],
-        "firstPlanEventOffsetBeats": { "numerator": 4, "denominator": 1 },
+        "clickEventIds": [
+          "x1:click:1:0",
+          "x1:click:1:1",
+          "x1:click:1:2",
+          "x1:click:1:3"
+        ],
+        "clickMidiPitches": [
+          88,
+          81,
+          81,
+          81
+        ],
+        "clickVelocities": [
+          112,
+          84,
+          84,
+          84
+        ],
+        "firstPlanEventOffsetBeats": {
+          "numerator": 4,
+          "denominator": 1
+        },
         "law": "Four clicks at beats -4..-1 precede beat zero; the downbeat click is accented; plan events shift by exactly one bar of transport time while plan beats stay untouched."
       }
     },
@@ -103,13 +166,24 @@
       "caseId": "X1-SCHED-008",
       "title": "Metronome clicks on integer beats while playing",
       "tempoBpm": 60,
-      "meter": { "beatsPerBar": 3, "beatUnit": 4 },
+      "meter": {
+        "beatsPerBar": 3,
+        "beatUnit": 4
+      },
       "metronome": true,
       "playSpanBeats": 3,
       "expected": {
         "clickEventsGeneratedDelta": 3,
-        "clickMidiPitches": [88, 81, 81],
-        "clickVelocities": [112, 84, 84],
+        "clickMidiPitches": [
+          88,
+          81,
+          81
+        ],
+        "clickVelocities": [
+          112,
+          84,
+          84
+        ],
         "law": "One click per integer beat, accent on each bar's downbeat, generated inside the same lookahead horizon discipline as plan events and counted separately from eventsScheduled."
       }
     },
@@ -146,7 +220,10 @@
       "title": "Tempo change maps the exact beat across epochs",
       "scenario": "Playing at 120 BPM, playhead at exact beat 3/2; set-tempo binding at 60 BPM is admitted.",
       "expected": {
-        "anchorBeat": { "numerator": 3, "denominator": 2 },
+        "anchorBeat": {
+          "numerator": 3,
+          "denominator": 2
+        },
         "oldSecondsPerBeat": 0.5,
         "newSecondsPerBeat": 1,
         "soundingVoicesRetired": 0,
@@ -166,7 +243,10 @@
       "title": "Suspended clock freezes musical time",
       "scenario": "The audio clock reports the same currentTimeSeconds across three ticks during a platform suspension.",
       "expected": {
-        "playheadAdvanceBeats": { "numerator": 0, "denominator": 1 },
+        "playheadAdvanceBeats": {
+          "numerator": 0,
+          "denominator": 1
+        },
         "attackBatchesIssued": 0,
         "law": "A non-advancing audio clock advances no beats and schedules nothing new; wall time is irrelevant. Musical time resumes only when the audio clock resumes."
       }
