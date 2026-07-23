@@ -1,0 +1,85 @@
+{
+  "schema": "changes.fixtures.a1-provenance-ledger.v1",
+  "ledgerVersion": 1,
+  "authoringStatement": "A1 expectations were authored before production persistence behavior existed. Mechanical values come from declared formulas and the reviewed plan; checksum goldens were computed by an independent tool, never by the code under test.",
+  "reviewState": "reviewed-for-a1-spec",
+  "expectedValuesGenerated": false,
+  "productionOutputUsed": false,
+  "classificationPolicy": {
+    "primary-standard": "A current normative Web platform standard.",
+    "reviewed-contract": "A normative repository architecture or package decision.",
+    "legacy-observation": "A reproduced legacy failure the replacement must not preserve.",
+    "mechanical-derivation": "A direct result of a declared formula, integer algorithm, or cap.",
+    "human-review": "A judgment that automation cannot honestly certify."
+  },
+  "authorities": [
+    {
+      "id": "AUTH-PLAN-A1",
+      "class": "reviewed-contract",
+      "source": "docs/REBUILD_PLAN.md sections 15.1-15.3 plus package A1",
+      "supports": [
+        "Recovery-not-Save naming",
+        "the changes.recovery.v1 envelope shape",
+        "400 ms idle and two-second maximum write scheduling",
+        "current/previous rotation",
+        "startup Keep/Discard flow",
+        "export marker discipline",
+        "the five status strings"
+      ]
+    },
+    {
+      "id": "AUTH-A0-CONTRACT",
+      "class": "reviewed-contract",
+      "source": "docs/A0_APPLICATION_CONTRACT.md and src/application/application-state-contract.ts",
+      "supports": [
+        "RecoveryStatus projection consumed by the application",
+        "revision identity",
+        "atomic latest-state export compare-and-set upstream of A1"
+      ]
+    },
+    {
+      "id": "AUTH-F2-F3-GATES",
+      "class": "reviewed-contract",
+      "source": "docs/F2_DECODER_CONTRACT.md and docs/F3_PUBLICATION_CONTRACT.md",
+      "supports": [
+        "envelopes persist the plain decoder-input candidate",
+        "every startup candidate re-decodes through the real gates",
+        "no persisted ValidatedDocument brand"
+      ]
+    },
+    {
+      "id": "AUTH-WEB-STORAGE",
+      "class": "primary-standard",
+      "source": "Indexed Database API 3.0 and HTML Storage standards",
+      "supports": [
+        "IndexedDB versioned object store as primary",
+        "localStorage synchronous bounded fallback",
+        "quota and denial as ordinary runtime outcomes"
+      ]
+    },
+    {
+      "id": "AUTH-LEGACY-AUDIT",
+      "class": "legacy-observation",
+      "source": "docs/LEGACY_AUDIT.md — no local recovery, autosave, or dirty indicator; ordinary edits can be lost without recovery",
+      "supports": ["the data-loss regression witness"]
+    },
+    {
+      "id": "AUTH-A1-DECISIONS",
+      "class": "reviewed-contract",
+      "source": "docs/A1_RECOVERY_CONTRACT.md reviewed spec decisions",
+      "supports": [
+        "checksum algorithm sha256-of-sorted-key-json-without-checksum-v1 because it is deterministic, dependency-free, and independently recomputable",
+        "envelope byte bounds of 8,000,000 (IndexedDB) and 1,000,000 (localStorage) because the fallback store is shared and synchronous while the primary holds the full candidate comfortably",
+        "storage keys changes.recovery.v1:<documentId>:<slot> because keys must embed schema and stable identity and never user text",
+        "at most one in-flight write with queued-snapshot replacement because unbounded write queues cannot improve the newest-revision outcome",
+        "editing-before-probe downgrades automatic opening to Keep/Discard because silent overwrite of user edits is the worst recoverable failure"
+      ]
+    },
+    {
+      "id": "AUTH-CHECKSUM-GOLDENS",
+      "class": "mechanical-derivation",
+      "source": "Independent sha256 over canonical sorted-key JSON computed at authoring time",
+      "supports": ["A1-ENV-001 and A1-ENV-002 checksum values"]
+    }
+  ]
+}

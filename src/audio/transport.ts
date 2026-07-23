@@ -22,6 +22,7 @@ import type {
   AudioVoiceSpec,
 } from "./audio-engine-contract";
 import {
+  MAX_TRANSPORT_IMMEDIATE_START_MARGIN_SECONDS,
   MAX_TRANSPORT_LOOKAHEAD_SECONDS,
   MAX_TRANSPORT_PREVIEW_PITCHES,
   MAX_TRANSPORT_QUEUED_COMMANDS,
@@ -170,11 +171,22 @@ function quantizedBeatAt(
 type UnknownTiming = Readonly<{
   tickIntervalMs?: unknown;
   lookaheadSeconds?: unknown;
+  immediateStartMarginSeconds?: unknown;
 }>;
 
 function timingPolicyValid(timing: UnknownTiming): boolean {
   const tick = timing.tickIntervalMs;
   const lookahead = timing.lookaheadSeconds;
+  const margin = timing.immediateStartMarginSeconds;
+  if (
+    margin !== undefined &&
+    (typeof margin !== "number" ||
+      !Number.isFinite(margin) ||
+      margin < 0 ||
+      margin > MAX_TRANSPORT_IMMEDIATE_START_MARGIN_SECONDS)
+  ) {
+    return false;
+  }
   return (
     typeof tick === "number" &&
     Number.isFinite(tick) &&
@@ -338,6 +350,7 @@ export function createTransportService(
     tickIntervalMs: 25,
     lookaheadSeconds: 0.1,
   });
+  let startMarginSeconds = 0;
   let timerHandle: TransportTimerHandle | null = null;
   let cursor = 0;
   let nextClickTick = 0;
@@ -484,7 +497,7 @@ export function createTransportService(
       })),
     );
     if (voices === null) return false;
-    const startTime = Math.max(startSeconds, now);
+    const startTime = Math.max(startSeconds, now + startMarginSeconds);
     const result = platform.engine.attackAudioVoices({
       owner,
       eventId: event.eventId,
@@ -506,7 +519,7 @@ export function createTransportService(
     const now = platform.currentTimeSeconds();
     const eventId = `${TRANSPORT_CLICK_EVENT_ID_PREFIX}${String(generation)}:${String(clickIndex)}`;
     clickIndex += 1;
-    const startTime = Math.max(startSeconds, now);
+    const startTime = Math.max(startSeconds, now + startMarginSeconds);
     const result = platform.engine.attackAudioVoices({
       owner: { kind: "progression", generation },
       eventId,
@@ -845,7 +858,10 @@ export function createTransportService(
         timing = Object.freeze({
           tickIntervalMs: payload.timing.tickIntervalMs,
           lookaheadSeconds: payload.timing.lookaheadSeconds,
+          immediateStartMarginSeconds:
+            payload.timing.immediateStartMarginSeconds ?? 0,
         });
+        startMarginSeconds = payload.timing.immediateStartMarginSeconds ?? 0;
         viewDocumentId = payload.documentId;
         viewPlanRevision = payload.planRevision;
         state = "ready";
@@ -1331,8 +1347,8 @@ export function createTransportService(
           },
           eventId: payload.previewId,
           instrumentId: payload.instrumentId,
-          startTimeSeconds: now,
-          releaseTimeSeconds: now + payload.gateSeconds,
+          startTimeSeconds: now + startMarginSeconds,
+          releaseTimeSeconds: now + startMarginSeconds + payload.gateSeconds,
           voices,
         });
         if (!attacked.ok) {

@@ -1,9 +1,10 @@
 import {
   MAX_DOCUMENT_CHORD_EVENTS,
   MAX_DOCUMENT_SECTIONS,
+  MAX_LONG_TEXT_CODE_POINTS,
   MAX_SECTION_MEASURES,
+  MAX_SHORT_TEXT_CODE_POINTS,
   MAX_TIMELINE_QUARTER_NOTE_BEATS,
-  type AnyStableId,
   type BeatDuration,
   type ChordEventId,
   type DocumentId,
@@ -22,6 +23,7 @@ import type {
   SourceRange,
 } from "../theory";
 import {
+  MAX_HISTORY_RETAINED_BYTES,
   MAX_SELECTED_EVENT_IDS,
   type AppState,
   type ApplicationCommandDependencies,
@@ -29,6 +31,7 @@ import {
   type DocumentCommand,
   type HistoryEntry,
   type HistoryState,
+  type UiFocusTarget,
 } from "./application-state-contract";
 
 /** Proposed A0/U1 specification surface; no production runner consumes it yet. */
@@ -131,6 +134,13 @@ export const A0_U1_FRAGMENT_PARSE_ACCIDENTAL_STYLE = "ascii";
 export const A0_U1_RECOVERED_CHORD_LAYOUT_LOSS_ACKNOWLEDGEMENT =
   "source-bar-and-section-layout-will-be-lost@1";
 
+/**
+ * These parser-safety ceilings remain part of the proposed runner contract,
+ * but accepted A0 QuickEntry state already proves the same code-point limit,
+ * valid Unicode, and the implied UTF-8 ceiling. The three source refusals are
+ * therefore static-dominated for valid AppState inputs; these values must not
+ * be read as a claim that they are reachable.
+ */
 export const MAX_A0_U1_FRAGMENT_SOURCE_CODE_POINTS = 4_096;
 export const MAX_A0_U1_FRAGMENT_SOURCE_UTF8_BYTES =
   4 * MAX_A0_U1_FRAGMENT_SOURCE_CODE_POINTS;
@@ -147,6 +157,32 @@ export const MAX_A0_U1_QUICK_ENTRY_ISSUE_CODES = 64;
 export const MAX_A0_U1_QUICK_ENTRY_SNAPSHOT_FIELDS_COMPARED = 6;
 export const MAX_A0_U1_INSERTABLE_CHORDS_EXAMINED = MAX_DOCUMENT_CHORD_EVENTS;
 export const MAX_A0_U1_RECOVERY_FIELDS_COMPARED = 4;
+export const A0_U1_RECOVERY_FIELD_COMPARISON_ORDER: readonly [
+  "placement",
+  "selected-global-ordinal",
+  "layout-loss-acknowledgement",
+  "duration-branch-and-value",
+] = Object.freeze([
+  "placement",
+  "selected-global-ordinal",
+  "layout-loss-acknowledgement",
+  "duration-branch-and-value",
+]);
+export const A0_U1_FINAL_COLLECTION_LIMIT_COMPARISON_ORDER: readonly [
+  "final-document-sections",
+  "final-section-measures-in-section-order",
+  "final-total-measures",
+  "final-document-events",
+  "occupied-id-records",
+  "plan-node-records",
+] = Object.freeze([
+  "final-document-sections",
+  "final-section-measures-in-section-order",
+  "final-total-measures",
+  "final-document-events",
+  "occupied-id-records",
+  "plan-node-records",
+]);
 export const MAX_A0_U1_ID_ALLOCATION_ATTEMPTS =
   MAX_DOCUMENT_SECTIONS +
   MAX_DOCUMENT_SECTIONS * MAX_SECTION_MEASURES +
@@ -155,11 +191,40 @@ export const MAX_A0_U1_OCCUPIED_ID_RECORDS =
   1 + MAX_A0_U1_ID_ALLOCATION_ATTEMPTS;
 export const MAX_A0_U1_PLAN_NODE_RECORDS = 1 + MAX_A0_U1_ID_ALLOCATION_ATTEMPTS;
 export const MAX_A0_U1_BOOKMARK_RECORDS_EXAMINED = MAX_SELECTED_EVENT_IDS + 4;
-export const MAX_A0_U1_EXACT_BEAT_ADDITIONS = MAX_DOCUMENT_CHORD_EVENTS;
-export const MAX_A0_U1_EXACT_BEAT_COMPARISONS = MAX_DOCUMENT_CHORD_EVENTS;
+export const MAX_A0_U1_BOOKMARK_RECORDS_REWRITTEN = 4;
+/**
+ * One operation-local exact sum may precede the final at-limit timeline scan.
+ * First-excess witnesses stop at this explicit maximum rather than performing
+ * an unbounded scan.
+ */
+export const MAX_A0_U1_EXACT_BEAT_ADDITIONS = MAX_DOCUMENT_CHORD_EVENTS + 1;
+export const MAX_A0_U1_EXACT_BEAT_COMPARISONS = MAX_DOCUMENT_CHORD_EVENTS + 1;
 export const MAX_A0_U1_METADATA_FIELDS_COMPARED = 12;
+export const MAX_A0_U1_SECTION_NAME_CODE_POINTS = MAX_SHORT_TEXT_CODE_POINTS;
+export const MAX_A0_U1_SECTION_ANNOTATION_CODE_POINTS =
+  MAX_LONG_TEXT_CODE_POINTS;
+export const MAX_A0_U1_COMPLETION_REASON_CODE_POINTS =
+  MAX_LONG_TEXT_CODE_POINTS;
+export const MAX_A0_U1_SECTION_METADATA_CODE_POINTS =
+  MAX_A0_U1_SECTION_NAME_CODE_POINTS + MAX_A0_U1_SECTION_ANNOTATION_CODE_POINTS;
+/** Join validates expected-left, expected-right, then result metadata. */
+export const MAX_A0_U1_PLAN_METADATA_CODE_POINTS =
+  3 * MAX_A0_U1_SECTION_METADATA_CODE_POINTS;
+export const MAX_A0_U1_METADATA_CODE_POINTS_OBSERVED =
+  MAX_A0_U1_PLAN_METADATA_CODE_POINTS + 1;
+
+export const A0_U1_FRAGMENT_SOURCE_REFUSAL_REACHABILITY = Object.freeze({
+  "edit-plan.source-code-points-exceeded":
+    "static-dominated-by-accepted-quick-entry-invariants",
+  "edit-plan.source-unicode-invalid":
+    "static-dominated-by-accepted-quick-entry-invariants",
+  "edit-plan.source-utf8-bytes-exceeded":
+    "static-dominated-by-accepted-quick-entry-invariants",
+});
 
 export const A0_U1_ATOMIC_EDIT_LIMITS = Object.freeze({
+  structuralDecodeCalls: 1,
+  semanticValidationCalls: 1,
   fragmentSourceCodePoints: MAX_A0_U1_FRAGMENT_SOURCE_CODE_POINTS,
   fragmentSourceUtf8Bytes: MAX_A0_U1_FRAGMENT_SOURCE_UTF8_BYTES,
   fragmentSections: MAX_A0_U1_FRAGMENT_SECTIONS,
@@ -183,6 +248,10 @@ export const A0_U1_ATOMIC_EDIT_LIMITS = Object.freeze({
   exactBeatAdditions: MAX_A0_U1_EXACT_BEAT_ADDITIONS,
   exactBeatComparisons: MAX_A0_U1_EXACT_BEAT_COMPARISONS,
   metadataFieldsCompared: MAX_A0_U1_METADATA_FIELDS_COMPARED,
+  sectionNameCodePoints: MAX_A0_U1_SECTION_NAME_CODE_POINTS,
+  sectionAnnotationCodePoints: MAX_A0_U1_SECTION_ANNOTATION_CODE_POINTS,
+  completionReasonCodePoints: MAX_A0_U1_COMPLETION_REASON_CODE_POINTS,
+  planMetadataCodePoints: MAX_A0_U1_PLAN_METADATA_CODE_POINTS,
 });
 
 export type AtomicEditPlanSectionMetadata = Readonly<{
@@ -197,6 +266,52 @@ export type AtomicEditPlanCompletionDeclaration = Readonly<{
   completion: MeasureCompletion;
 }>;
 
+export type CompleteDraftIntoEmptyMeasureCompletionDeclaration = Readonly<{
+  measureId: MeasureId;
+  completion: Readonly<{ kind: "complete" }>;
+}>;
+
+/**
+ * Caller-owned text is a runtime-shape concern, not a stale-snapshot concern.
+ * Each field must be a valid Unicode scalar string within its domain bound
+ * before allocation; the first failure is plan-shape-invalid at that field.
+ */
+export const A0_U1_ATOMIC_EDIT_PLAN_TEXT_SHAPE_POLICY = Object.freeze({
+  stage: "exact-runtime-shape",
+  refusalCode: "edit-plan.plan-shape-invalid",
+  unicodePolicy: "valid-unicode-scalar-string",
+  counter: "metadataCodePointsObserved",
+  splitSectionMetadataOrder: Object.freeze(["newSectionMetadata"] as const),
+  joinSectionsMetadataOrder: Object.freeze([
+    "expectedLeftMetadata",
+    "expectedRightMetadata",
+    "resultMetadata",
+  ] as const),
+  sectionMetadataFieldOrder: Object.freeze(["name", "annotation"] as const),
+  sectionNameCodePoints: MAX_A0_U1_SECTION_NAME_CODE_POINTS,
+  sectionAnnotationCodePoints: MAX_A0_U1_SECTION_ANNOTATION_CODE_POINTS,
+  sectionNameBlankness:
+    "ecmascript-String.prototype.trim-result-must-be-nonempty",
+  sectionAnnotationBlankness: "empty-or-blank-permitted",
+  completionDeclarationOrder: "source-order",
+  completionReasonCodePoints: MAX_A0_U1_COMPLETION_REASON_CODE_POINTS,
+  pickupOrIncompleteReasonBlankness:
+    "ecmascript-String.prototype.trim-result-must-be-nonempty",
+  normalizationOrRepairPermitted: false,
+  pathAuthority: Object.freeze([
+    "/plan/newSectionMetadata/name",
+    "/plan/newSectionMetadata/annotation",
+    "/plan/expectedLeftMetadata/name",
+    "/plan/expectedLeftMetadata/annotation",
+    "/plan/expectedRightMetadata/name",
+    "/plan/expectedRightMetadata/annotation",
+    "/plan/resultMetadata/name",
+    "/plan/resultMetadata/annotation",
+    "/plan/completionDeclarations/{index}/completion/reason",
+    "/plan/placement/completionDeclarations/{index}/completion/reason",
+  ] as const),
+});
+
 /** Only warning code and source range are stable acknowledgement authority. */
 export type AtomicEditPlanWarningAcknowledgement = Readonly<
   Pick<ChartWarning, "code" | "range">
@@ -209,7 +324,8 @@ export type AtomicEditPlanSectionDeclaration = Readonly<{
 
 /**
  * Exact optimistic guard over every QuickEntry field plus the intended lane.
- * The stable target must also equal the placement's canonical target.
+ * The stable target must also canonicalize to the placement destination under
+ * A0_U1_QUICK_ENTRY_TARGET_MATCH_POLICY.
  */
 export type AtomicEditPlanQuickEntrySnapshot<
   Status extends "ready" | "invalid",
@@ -226,9 +342,15 @@ export type AtomicEditPlanQuickEntrySnapshot<
 export type CompleteDraftIntoMeasurePlacement = Readonly<{
   kind: "into-measure";
   measureId: MeasureId;
-  beforeEventId: ChordEventId | null;
+  /**
+   * Complete drafts may target only an existing empty measure. Its stable
+   * measure-start and measure-end boundaries both canonicalize to this append.
+   */
+  beforeEventId: null;
   layoutDisposition: "flatten-one-implicit-measure";
-  completionDeclarations: readonly [AtomicEditPlanCompletionDeclaration];
+  completionDeclarations: readonly [
+    CompleteDraftIntoEmptyMeasureCompletionDeclaration,
+  ];
 }>;
 
 export type InsertFragmentIntoSectionPlacement = Readonly<{
@@ -409,8 +531,8 @@ export type AtomicEditPlanParserDependency = Readonly<{
 }>;
 
 export const A0_U1_ATOMIC_EDIT_PLAN_RUNNER_STAGE_ORDER: readonly [
-  "a0-envelope",
   "exact-runtime-shape",
+  "a0-envelope",
   "quick-entry-snapshot",
   "bounded-source-preflight",
   "target-and-destination",
@@ -425,8 +547,8 @@ export const A0_U1_ATOMIC_EDIT_PLAN_RUNNER_STAGE_ORDER: readonly [
   "f3-once",
   "bookmarks-history-and-atomic-publication",
 ] = Object.freeze([
-  "a0-envelope",
   "exact-runtime-shape",
+  "a0-envelope",
   "quick-entry-snapshot",
   "bounded-source-preflight",
   "target-and-destination",
@@ -446,7 +568,7 @@ export type AtomicEditPlanRunnerStage =
   (typeof A0_U1_ATOMIC_EDIT_PLAN_RUNNER_STAGE_ORDER)[number];
 
 export const A0_U1_ATOMIC_EDIT_PLAN_ID_ALLOCATION_ORDER: readonly [
-  "preflight-all-non-id-laws",
+  "preflight-operation-local-shape-snapshot-parser-declarations-laws-and-bounds",
   "index-document-section-measure-event-ids-globally",
   "fragment-section-before-descendants",
   "fragment-measure-before-events",
@@ -457,7 +579,7 @@ export const A0_U1_ATOMIC_EDIT_PLAN_ID_ALLOCATION_ORDER: readonly [
   "reserve-each-returned-id-locally",
   "stop-without-retry-on-first-failure-or-collision",
 ] = Object.freeze([
-  "preflight-all-non-id-laws",
+  "preflight-operation-local-shape-snapshot-parser-declarations-laws-and-bounds",
   "index-document-section-measure-event-ids-globally",
   "fragment-section-before-descendants",
   "fragment-measure-before-events",
@@ -469,14 +591,35 @@ export const A0_U1_ATOMIC_EDIT_PLAN_ID_ALLOCATION_ORDER: readonly [
   "stop-without-retry-on-first-failure-or-collision",
 ]);
 
+/**
+ * Exact runtime shape is deliberately first. Its implementation must inspect
+ * own property descriptors without invoking accessors, then reject accessors,
+ * inherited properties, symbols, missing keys, and extra keys. Only after that
+ * descriptor-safe pass may the inherited A0 envelope stage read field values.
+ */
+export const A0_U1_ATOMIC_EDIT_PLAN_EXACT_SHAPE_PRECEDENCE =
+  "descriptor-safe-own-data-properties-before-any-envelope-property-read";
+
+export const A0_U1_ATOMIC_EDIT_DIAGNOSTIC_PATH_ORDER: readonly [
+  "numeric-numeric-by-number",
+  "string-string-by-ecmascript-code-unit",
+  "mixed-numeric-before-string",
+  "shared-prefix-shorter-first",
+] = Object.freeze([
+  "numeric-numeric-by-number",
+  "string-string-by-ecmascript-code-unit",
+  "mixed-numeric-before-string",
+  "shared-prefix-shorter-first",
+]);
+
 export const A0_U1_ATOMIC_EDIT_PLAN_DIAGNOSTIC_ORDER: readonly [
-  "path-ecmascript-code-unit-lexical",
+  "path-domain-segment-order",
   "null-source-range-before-ranged",
   "source-range-start-ascending",
   "source-range-end-ascending",
   "code-ecmascript-code-unit-lexical",
 ] = Object.freeze([
-  "path-ecmascript-code-unit-lexical",
+  "path-domain-segment-order",
   "null-source-range-before-ranged",
   "source-range-start-ascending",
   "source-range-end-ascending",
@@ -553,6 +696,496 @@ export const A0_U1_ATOMIC_EDIT_REFUSAL_CODES: readonly [
 
 export type AtomicEditPlanRefusalCode =
   (typeof A0_U1_ATOMIC_EDIT_REFUSAL_CODES)[number];
+
+export const A0_U1_ATOMIC_EDIT_PATH_TEMPLATE_GRAMMAR = Object.freeze({
+  format: "rfc6901-json-pointer-template",
+  root: "",
+  separator: "/",
+  escaping: Object.freeze({ tilde: "~0", slash: "~1" }),
+  dynamicIndex: Object.freeze({
+    token: "{index}",
+    meaning: "canonical-nonnegative-base10-source-order-array-index",
+  }),
+  dynamicMetadataField: Object.freeze({
+    token: "{metadataField}",
+    values: Object.freeze([
+      "name",
+      "annotation",
+      "keyOverride",
+      "voiceLeadingBoundary",
+    ] as const),
+  }),
+  otherBraceTokensPermitted: false,
+  unknownExtraOrSymbolKeyPath: "owning-container-template",
+});
+
+export type AtomicEditPlanPathTemplate = "" | `/${string}`;
+
+const COMMAND_SHAPE_PATH_AUTHORITY: readonly [
+  "",
+  "/id",
+  "/label",
+  "/expectedDocumentId",
+  "/expectedRevision",
+  "/logicalTimeMs",
+  "/coalescing",
+  "/kind",
+  "/plan",
+] = Object.freeze([
+  "",
+  "/id",
+  "/label",
+  "/expectedDocumentId",
+  "/expectedRevision",
+  "/logicalTimeMs",
+  "/coalescing",
+  "/kind",
+  "/plan",
+]);
+
+const PLAN_SHAPE_PATH_AUTHORITY: readonly [
+  AtomicEditPlanPathTemplate,
+  ...AtomicEditPlanPathTemplate[],
+] = Object.freeze([
+  "/plan",
+  "/plan/kind",
+  "/plan/voicingPolicy",
+  "/plan/source",
+  "/plan/source/kind",
+  "/plan/source/quickEntrySnapshot",
+  "/plan/source/quickEntrySnapshot/sourceText",
+  "/plan/source/quickEntrySnapshot/baseRevision",
+  "/plan/source/quickEntrySnapshot/target",
+  "/plan/source/quickEntrySnapshot/target/kind",
+  "/plan/source/quickEntrySnapshot/target/sectionId",
+  "/plan/source/quickEntrySnapshot/target/measureId",
+  "/plan/source/quickEntrySnapshot/target/eventId",
+  "/plan/source/quickEntrySnapshot/issueCodes",
+  "/plan/source/quickEntrySnapshot/issueCodes/{index}",
+  "/plan/source/quickEntrySnapshot/expectedStatus",
+  "/plan/source/quickEntrySnapshot/expectedLane",
+  "/plan/source/warningAcknowledgements",
+  "/plan/source/warningAcknowledgements/{index}",
+  "/plan/source/warningAcknowledgements/{index}/code",
+  "/plan/source/warningAcknowledgements/{index}/range",
+  "/plan/source/warningAcknowledgements/{index}/range/start",
+  "/plan/source/warningAcknowledgements/{index}/range/end",
+  "/plan/source/selectedGlobalOrdinal",
+  "/plan/source/layoutLossAcknowledgement",
+  "/plan/source/callerDuration",
+  "/plan/source/callerDuration/numerator",
+  "/plan/source/callerDuration/denominator",
+  "/plan/placement",
+  "/plan/placement/kind",
+  "/plan/placement/measureId",
+  "/plan/placement/beforeEventId",
+  "/plan/placement/sectionId",
+  "/plan/placement/beforeMeasureId",
+  "/plan/placement/beforeSectionId",
+  "/plan/placement/layoutDisposition",
+  "/plan/placement/completionDeclarations",
+  "/plan/placement/completionDeclarations/{index}",
+  "/plan/placement/completionDeclarations/{index}/measureId",
+  "/plan/placement/completionDeclarations/{index}/completion",
+  "/plan/placement/completionDeclarations/{index}/completion/kind",
+  "/plan/placement/completionDeclarations/{index}/completion/expectedDuration",
+  "/plan/placement/completionDeclarations/{index}/completion/expectedDuration/numerator",
+  "/plan/placement/completionDeclarations/{index}/completion/expectedDuration/denominator",
+  "/plan/placement/completionDeclarations/{index}/completion/reason",
+  "/plan/placement/sectionDeclarations",
+  "/plan/placement/sectionDeclarations/{index}",
+  "/plan/placement/sectionDeclarations/{index}/sourceSectionOrdinal",
+  "/plan/placement/sectionDeclarations/{index}/voiceLeadingBoundary",
+  "/plan/eventId",
+  "/plan/leftEventId",
+  "/plan/rightEventId",
+  "/plan/firstDuration",
+  "/plan/firstDuration/numerator",
+  "/plan/firstDuration/denominator",
+  "/plan/secondDuration",
+  "/plan/secondDuration/numerator",
+  "/plan/secondDuration/denominator",
+  "/plan/joinedDuration",
+  "/plan/joinedDuration/numerator",
+  "/plan/joinedDuration/denominator",
+  "/plan/sectionId",
+  "/plan/beforeMeasureId",
+  "/plan/leftSectionId",
+  "/plan/rightSectionId",
+  "/plan/newSectionMetadata",
+  "/plan/newSectionMetadata/{metadataField}",
+  "/plan/expectedLeftMetadata",
+  "/plan/expectedLeftMetadata/{metadataField}",
+  "/plan/expectedRightMetadata",
+  "/plan/expectedRightMetadata/{metadataField}",
+  "/plan/resultMetadata",
+  "/plan/resultMetadata/{metadataField}",
+  "/plan/newSectionMetadata/keyOverride/tonic",
+  "/plan/newSectionMetadata/keyOverride/tonic/step",
+  "/plan/newSectionMetadata/keyOverride/tonic/alter",
+  "/plan/newSectionMetadata/keyOverride/mode",
+  "/plan/expectedLeftMetadata/keyOverride/tonic",
+  "/plan/expectedLeftMetadata/keyOverride/tonic/step",
+  "/plan/expectedLeftMetadata/keyOverride/tonic/alter",
+  "/plan/expectedLeftMetadata/keyOverride/mode",
+  "/plan/expectedRightMetadata/keyOverride/tonic",
+  "/plan/expectedRightMetadata/keyOverride/tonic/step",
+  "/plan/expectedRightMetadata/keyOverride/tonic/alter",
+  "/plan/expectedRightMetadata/keyOverride/mode",
+  "/plan/resultMetadata/keyOverride/tonic",
+  "/plan/resultMetadata/keyOverride/tonic/step",
+  "/plan/resultMetadata/keyOverride/tonic/alter",
+  "/plan/resultMetadata/keyOverride/mode",
+  "/plan/completionDeclarations",
+  "/plan/completionDeclarations/{index}",
+  "/plan/completionDeclarations/{index}/measureId",
+  "/plan/completionDeclarations/{index}/completion",
+  "/plan/completionDeclarations/{index}/completion/kind",
+  "/plan/completionDeclarations/{index}/completion/expectedDuration",
+  "/plan/completionDeclarations/{index}/completion/expectedDuration/numerator",
+  "/plan/completionDeclarations/{index}/completion/expectedDuration/denominator",
+  "/plan/completionDeclarations/{index}/completion/reason",
+  "/plan/identityPolicy",
+  "/plan/contentPolicy",
+  "/plan/annotationPolicy",
+  "/plan/measurePolicy",
+  "/plan/metadataPolicy",
+  "/plan/internalBoundaryPolicy",
+]);
+
+export type AtomicEditPlanRefusalAuthorityRow = Readonly<{
+  code: AtomicEditPlanRefusalCode;
+  precedence: number;
+  stage: AtomicEditPlanRunnerStage;
+  condition: string;
+  /** Templates obey A0_U1_ATOMIC_EDIT_PATH_TEMPLATE_GRAMMAR exactly. */
+  pathAuthority: readonly [
+    AtomicEditPlanPathTemplate,
+    ...AtomicEditPlanPathTemplate[],
+  ];
+}>;
+
+/**
+ * One source-level authority for condition, stage, path, and precedence. The
+ * array order and explicit precedence must equal ATOMIC_EDIT_REFUSAL_CODES.
+ */
+export const A0_U1_ATOMIC_EDIT_REFUSAL_AUTHORITY: readonly AtomicEditPlanRefusalAuthorityRow[] =
+  Object.freeze([
+    {
+      code: "edit-plan.command-shape-invalid",
+      precedence: 0,
+      stage: "exact-runtime-shape",
+      condition:
+        "command is not a passive exact-key own-data-property apply-edit-plan record",
+      pathAuthority: COMMAND_SHAPE_PATH_AUTHORITY,
+    },
+    {
+      code: "edit-plan.plan-shape-invalid",
+      precedence: 1,
+      stage: "exact-runtime-shape",
+      condition:
+        "plan or nested value is not the exact closed runtime shape, including invalid Unicode, an out-of-bound text field, or a trim-blank section name or pickup/incomplete completion reason; normalization and repair are forbidden",
+      pathAuthority: PLAN_SHAPE_PATH_AUTHORITY,
+    },
+    {
+      code: "edit-plan.quick-entry-snapshot-mismatch",
+      precedence: 2,
+      stage: "quick-entry-snapshot",
+      condition:
+        "snapshot differs from accepted current QuickEntry state or lane",
+      pathAuthority: [
+        "/plan/source/quickEntrySnapshot/sourceText",
+        "/plan/source/quickEntrySnapshot/baseRevision",
+        "/plan/source/quickEntrySnapshot/target",
+        "/plan/source/quickEntrySnapshot/target/kind",
+        "/plan/source/quickEntrySnapshot/target/sectionId",
+        "/plan/source/quickEntrySnapshot/target/measureId",
+        "/plan/source/quickEntrySnapshot/target/eventId",
+        "/plan/source/quickEntrySnapshot/issueCodes",
+        "/plan/source/quickEntrySnapshot/issueCodes/{index}",
+        "/plan/source/quickEntrySnapshot/expectedStatus",
+        "/plan/source/quickEntrySnapshot/expectedLane",
+      ],
+    },
+    {
+      code: "edit-plan.source-code-points-exceeded",
+      precedence: 3,
+      stage: "bounded-source-preflight",
+      condition:
+        "first code-point excess witness; static-dominated for accepted QuickEntry state",
+      pathAuthority: ["/plan/source/quickEntrySnapshot/sourceText"],
+    },
+    {
+      code: "edit-plan.source-unicode-invalid",
+      precedence: 4,
+      stage: "bounded-source-preflight",
+      condition:
+        "first invalid Unicode scalar witness; static-dominated for accepted QuickEntry state",
+      pathAuthority: ["/plan/source/quickEntrySnapshot/sourceText"],
+    },
+    {
+      code: "edit-plan.source-utf8-bytes-exceeded",
+      precedence: 5,
+      stage: "bounded-source-preflight",
+      condition:
+        "first UTF-8 byte excess witness; static-dominated for accepted QuickEntry state",
+      pathAuthority: ["/plan/source/quickEntrySnapshot/sourceText"],
+    },
+    {
+      code: "edit-plan.target-missing",
+      precedence: 6,
+      stage: "target-and-destination",
+      condition:
+        "declared target stable ID is absent from the current document",
+      pathAuthority: [
+        "/plan/placement/measureId",
+        "/plan/placement/beforeEventId",
+        "/plan/placement/sectionId",
+        "/plan/placement/beforeMeasureId",
+        "/plan/placement/beforeSectionId",
+        "/plan/source/quickEntrySnapshot/target/sectionId",
+        "/plan/source/quickEntrySnapshot/target/measureId",
+        "/plan/source/quickEntrySnapshot/target/eventId",
+        "/plan/eventId",
+        "/plan/leftEventId",
+        "/plan/rightEventId",
+        "/plan/sectionId",
+        "/plan/beforeMeasureId",
+        "/plan/leftSectionId",
+        "/plan/rightSectionId",
+      ],
+    },
+    {
+      code: "edit-plan.destination-invalid",
+      precedence: 7,
+      stage: "target-and-destination",
+      condition:
+        "canonicalized stable boundary and declared placement do not resolve to the same parent and sibling slot, or complete-draft into-measure targets a nonempty measure",
+      pathAuthority: [
+        "/plan/placement",
+        "/plan/placement/measureId",
+        "/plan/placement/beforeEventId",
+        "/plan/placement/sectionId",
+        "/plan/placement/beforeMeasureId",
+        "/plan/placement/beforeSectionId",
+        "/plan/source/quickEntrySnapshot/target",
+        "/plan/source/quickEntrySnapshot/target/kind",
+        "/plan/source/quickEntrySnapshot/target/sectionId",
+        "/plan/source/quickEntrySnapshot/target/measureId",
+        "/plan/source/quickEntrySnapshot/target/eventId",
+      ],
+    },
+    {
+      code: "edit-plan.event-order-invalid",
+      precedence: 8,
+      stage: "target-and-destination",
+      condition:
+        "join event IDs are not immediate ordered siblings in one measure",
+      pathAuthority: ["/plan/rightEventId"],
+    },
+    {
+      code: "edit-plan.section-split-boundary-invalid",
+      precedence: 9,
+      stage: "target-and-destination",
+      condition: "split boundary is not strict interior to the target section",
+      pathAuthority: ["/plan/beforeMeasureId"],
+    },
+    {
+      code: "edit-plan.section-order-invalid",
+      precedence: 10,
+      stage: "target-and-destination",
+      condition: "join section IDs are not immediate ordered siblings",
+      pathAuthority: ["/plan/rightSectionId"],
+    },
+    {
+      code: "edit-plan.recovered-chord-placement-invalid",
+      precedence: 11,
+      stage: "target-and-destination",
+      condition:
+        "recovered-chord lane does not use its exact into-measure placement",
+      pathAuthority: ["/plan/placement"],
+    },
+    {
+      code: "edit-plan.syntax-refused",
+      precedence: 12,
+      stage: "t0-fragment-parse",
+      condition: "complete-draft lane receives a T0 parse refusal",
+      pathAuthority: ["/plan/source/quickEntrySnapshot/sourceText"],
+    },
+    {
+      code: "edit-plan.recovered-chord-requires-parse-failure",
+      precedence: 13,
+      stage: "t0-fragment-parse",
+      condition: "recovered-chord lane receives a T0 parse success",
+      pathAuthority: ["/plan/source/kind"],
+    },
+    {
+      code: "edit-plan.recovered-chord-ordinal-missing",
+      precedence: 14,
+      stage: "t0-fragment-parse",
+      condition:
+        "no returned T0 insertable chord has the selected global ordinal",
+      pathAuthority: ["/plan/source/selectedGlobalOrdinal"],
+    },
+    {
+      code: "edit-plan.warning-acknowledgements-mismatch",
+      precedence: 15,
+      stage: "warning-acknowledgements",
+      condition:
+        "ordered warning code/range acknowledgement sequence differs from T0",
+      pathAuthority: [
+        "/plan/source/warningAcknowledgements/{index}",
+        "/plan/source/warningAcknowledgements/{index}/code",
+        "/plan/source/warningAcknowledgements/{index}/range",
+        "/plan/source/warningAcknowledgements/{index}/range/start",
+        "/plan/source/warningAcknowledgements/{index}/range/end",
+      ],
+    },
+    {
+      code: "edit-plan.fragment-placement-mismatch",
+      precedence: 16,
+      stage: "completion-and-metadata-declarations",
+      condition:
+        "T0 fragment structure does not match the declared complete-draft placement",
+      pathAuthority: ["/plan/placement"],
+    },
+    {
+      code: "edit-plan.completion-declarations-mismatch",
+      precedence: 17,
+      stage: "completion-and-metadata-declarations",
+      condition:
+        "completion declaration tuple is missing, extra, unrelated, duplicated, or unequal",
+      pathAuthority: [
+        "/plan/completionDeclarations/{index}",
+        "/plan/completionDeclarations/{index}/measureId",
+        "/plan/completionDeclarations/{index}/completion",
+        "/plan/completionDeclarations/{index}/completion/kind",
+        "/plan/completionDeclarations/{index}/completion/expectedDuration",
+        "/plan/completionDeclarations/{index}/completion/reason",
+        "/plan/placement/completionDeclarations/{index}",
+        "/plan/placement/completionDeclarations/{index}/measureId",
+        "/plan/placement/completionDeclarations/{index}/completion",
+        "/plan/placement/completionDeclarations/{index}/completion/kind",
+        "/plan/placement/completionDeclarations/{index}/completion/expectedDuration",
+        "/plan/placement/completionDeclarations/{index}/completion/reason",
+      ],
+    },
+    {
+      code: "edit-plan.section-metadata-mismatch",
+      precedence: 18,
+      stage: "completion-and-metadata-declarations",
+      condition:
+        "section declaration or well-shaped expected section metadata is missing, reordered, duplicated, or unequal",
+      pathAuthority: [
+        "/plan/placement/sectionDeclarations/{index}",
+        "/plan/placement/sectionDeclarations/{index}/sourceSectionOrdinal",
+        "/plan/placement/sectionDeclarations/{index}/voiceLeadingBoundary",
+        "/plan/expectedLeftMetadata/{metadataField}",
+        "/plan/expectedRightMetadata/{metadataField}",
+      ],
+    },
+    {
+      code: "edit-plan.recovered-chord-layout-loss-unacknowledged",
+      precedence: 19,
+      stage: "operation-laws",
+      condition: "recovery layout-loss acknowledgement literal is not exact",
+      pathAuthority: ["/plan/source/layoutLossAcknowledgement"],
+    },
+    {
+      code: "edit-plan.recovered-chord-duration-mismatch",
+      precedence: 20,
+      stage: "operation-laws",
+      condition:
+        "caller duration nullability/value does not match the selected T0 duration branch",
+      pathAuthority: ["/plan/source/callerDuration"],
+    },
+    {
+      code: "edit-plan.duration-invalid",
+      precedence: 21,
+      stage: "operation-laws",
+      condition: "duration is not a positive canonical reduced PPQ duration",
+      pathAuthority: [
+        "/plan/firstDuration",
+        "/plan/secondDuration",
+        "/plan/joinedDuration",
+        "/plan/source/callerDuration",
+      ],
+    },
+    {
+      code: "edit-plan.duration-sum-mismatch",
+      precedence: 22,
+      stage: "operation-laws",
+      condition:
+        "declared exact split or join sum differs from source span sum",
+      pathAuthority: ["/plan/secondDuration", "/plan/joinedDuration"],
+    },
+    {
+      code: "edit-plan.event-content-mismatch",
+      precedence: 23,
+      stage: "operation-laws",
+      condition:
+        "join siblings differ in literal spelling-first chord or voicing content",
+      pathAuthority: ["/plan/rightEventId"],
+    },
+    {
+      code: "edit-plan.right-annotation-not-empty",
+      precedence: 24,
+      stage: "operation-laws",
+      condition: "right join sibling annotation is not the empty string",
+      pathAuthority: ["/plan/rightEventId"],
+    },
+    {
+      code: "edit-plan.collection-limit-exceeded",
+      precedence: 25,
+      stage: "final-collection-and-timeline-limits",
+      condition:
+        "first final section, measure, event, or tracked-record excess",
+      pathAuthority: ["/plan"],
+    },
+    {
+      code: "edit-plan.timeline-limit-exceeded",
+      precedence: 26,
+      stage: "final-collection-and-timeline-limits",
+      condition: "first exact final timeline sum beyond the domain maximum",
+      pathAuthority: ["/plan"],
+    },
+    {
+      code: "edit-plan.id-factory-failed",
+      precedence: 27,
+      stage: "stable-id-allocation",
+      condition: "first required StableIdFactory.next call returns failure",
+      pathAuthority: ["/plan"],
+    },
+    {
+      code: "edit-plan.id-collision",
+      precedence: 28,
+      stage: "stable-id-allocation",
+      condition: "first returned ID collides in the global reserved set",
+      pathAuthority: ["/plan"],
+    },
+    {
+      code: "edit-plan.structural-publication-refused",
+      precedence: 29,
+      stage: "f2-once",
+      condition: "the single structural decode rejects the private candidate",
+      pathAuthority: ["/candidate"],
+    },
+    {
+      code: "edit-plan.semantic-publication-refused",
+      precedence: 30,
+      stage: "f3-once",
+      condition: "the single semantic validation rejects the decoded candidate",
+      pathAuthority: ["/candidate"],
+    },
+    {
+      code: "edit-plan.history-refused",
+      precedence: 31,
+      stage: "bookmarks-history-and-atomic-publication",
+      condition:
+        "history retained-byte estimate is invalid or the entry cannot be retained",
+      pathAuthority: ["/history"],
+    },
+  ]);
 
 /** Existing A0 outer codes remain sufficient; the nested detail is additive. */
 export const A0_U1_ATOMIC_EDIT_OUTER_REFUSAL_CODES: readonly [
@@ -635,6 +1268,23 @@ const HISTORY_REFUSAL_OUTER_CODES: readonly [
   "history.byte_estimate_invalid",
 ] = Object.freeze(["history.entry_too_large", "history.byte_estimate_invalid"]);
 
+/** Exact inherited A0 history dependency outcome; the two outer codes do not commute. */
+export const A0_U1_ATOMIC_EDIT_HISTORY_REFUSAL_POLICY = Object.freeze({
+  invalidEstimate: Object.freeze({
+    predicate: "not-a-nonnegative-safe-integer",
+    outerCode: "history.byte_estimate_invalid",
+    nestedCode: "edit-plan.history-refused",
+    path: Object.freeze(["history"] as const),
+  }),
+  oversizedEstimate: Object.freeze({
+    predicate: "valid-estimate-greater-than-retained-byte-maximum",
+    maximum: MAX_HISTORY_RETAINED_BYTES,
+    outerCode: "history.entry_too_large",
+    nestedCode: "edit-plan.history-refused",
+    path: Object.freeze(["history"] as const),
+  }),
+});
+
 export const A0_U1_ATOMIC_EDIT_ALLOWED_OUTER_CODES_BY_REFUSAL_CODE: Readonly<
   Record<
     AtomicEditPlanRefusalCode,
@@ -682,7 +1332,10 @@ export const A0_U1_ATOMIC_EDIT_ALLOWED_OUTER_CODES_BY_REFUSAL_CODE: Readonly<
   "edit-plan.history-refused": HISTORY_REFUSAL_OUTER_CODES,
 });
 
-/** Exact inherited A0 envelope refusals that precede all edit-plan work/detail. */
+/**
+ * Exact inherited A0 envelope refusals. Descriptor-safe exact-shape validation
+ * precedes them; they still precede snapshot, parser, law, and allocation work.
+ */
 export const A0_U1_ATOMIC_EDIT_PREPLAN_OUTER_REFUSAL_CODES: readonly [
   "command.id_invalid",
   "command.label_invalid",
@@ -708,6 +1361,45 @@ export const A0_U1_ATOMIC_EDIT_PREPLAN_OUTER_REFUSAL_CODES: readonly [
 export type AtomicEditPlanPreplanOuterRefusalCode =
   (typeof A0_U1_ATOMIC_EDIT_PREPLAN_OUTER_REFUSAL_CODES)[number];
 
+/**
+ * The additive runner preserves the accepted meanings of every outer A0 work
+ * counter. Index passes are complete and reusable; constructing a history row
+ * is not history traversal, and bookmark repair counts calls rather than
+ * rewritten records.
+ */
+export const A0_U1_ATOMIC_EDIT_OUTER_WORK_POLICY = Object.freeze({
+  indexPassesByOutcome: Object.freeze({
+    applyRefusalBeforeTargetResolution: Object.freeze([] as const),
+    applyRefusalFromTargetThroughF3: Object.freeze(["before"] as const),
+    applySuccessOrHistoryRefusal: Object.freeze(["before", "after"] as const),
+    undoOrRedo: Object.freeze(["restored"] as const),
+  }),
+  indexVisitOrder: "section-then-measure-then-event-source-order",
+  stableIdsIndexed: "one-per-indexed-section-measure-or-event-not-document",
+  historyEntriesVisited: Object.freeze({
+    apply: 0,
+    undoOrRedoAfterEntryResolution: 1,
+  }),
+  historyBytesEstimated: Object.freeze({
+    beforeValidEstimatorReturn: 0,
+    afterValidEstimatorReturn: "exact-returned-nonnegative-safe-integer",
+    validOversizeStillCounted: true,
+  }),
+  bookmarksRepaired: Object.freeze({
+    beforeSuccessfulF3: 0,
+    applySuccessOrHistoryRefusal: 1,
+    undoOrRedo: 0,
+    unit: "repair-operation-not-rewritten-record",
+  }),
+  requestsCompared: 0,
+  transportNotificationsCompared: 0,
+  validationCalls: Object.freeze({
+    throughF2Refusal: 0,
+    f3RefusalSuccessOrHistoryRefusal: 1,
+    undoOrRedo: 0,
+  }),
+});
+
 export type AtomicEditPlanDiagnostic = Readonly<{
   code: AtomicEditPlanRefusalCode;
   owner: "A0/U1" | "T0";
@@ -719,6 +1411,8 @@ export type AtomicEditPlanDiagnostic = Readonly<{
 }>;
 
 export const A0_U1_ATOMIC_EDIT_WORK_COUNTER_NAMES: readonly [
+  "structuralDecodeCalls",
+  "semanticValidationCalls",
   "planNodesVisited",
   "sourceCodePointsObserved",
   "sourceUtf8BytesObserved",
@@ -733,6 +1427,7 @@ export const A0_U1_ATOMIC_EDIT_WORK_COUNTER_NAMES: readonly [
   "draftEventsVisited",
   "completionDeclarationsVisited",
   "metadataFieldsCompared",
+  "metadataCodePointsObserved",
   "exactBeatAdditions",
   "exactBeatComparisons",
   "idAllocationAttempts",
@@ -743,6 +1438,8 @@ export const A0_U1_ATOMIC_EDIT_WORK_COUNTER_NAMES: readonly [
   "peakAllocatedIdRecords",
   "peakDiagnosticRecords",
 ] = Object.freeze([
+  "structuralDecodeCalls",
+  "semanticValidationCalls",
   "planNodesVisited",
   "sourceCodePointsObserved",
   "sourceUtf8BytesObserved",
@@ -757,6 +1454,7 @@ export const A0_U1_ATOMIC_EDIT_WORK_COUNTER_NAMES: readonly [
   "draftEventsVisited",
   "completionDeclarationsVisited",
   "metadataFieldsCompared",
+  "metadataCodePointsObserved",
   "exactBeatAdditions",
   "exactBeatComparisons",
   "idAllocationAttempts",
@@ -767,6 +1465,60 @@ export const A0_U1_ATOMIC_EDIT_WORK_COUNTER_NAMES: readonly [
   "peakAllocatedIdRecords",
   "peakDiagnosticRecords",
 ]);
+
+export type AtomicEditPlanWorkCounterName =
+  (typeof A0_U1_ATOMIC_EDIT_WORK_COUNTER_NAMES)[number];
+
+/**
+ * Input/domain limits above describe accepted values. These are counter
+ * ceilings, so fields that enter a first-excess witness may be one larger.
+ */
+export const A0_U1_ATOMIC_EDIT_WORK_COUNTER_MAXIMA: Readonly<
+  Record<AtomicEditPlanWorkCounterName, number>
+> = Object.freeze({
+  structuralDecodeCalls: 1,
+  semanticValidationCalls: 1,
+  planNodesVisited: MAX_A0_U1_PLAN_NODE_RECORDS + 1,
+  sourceCodePointsObserved: MAX_A0_U1_FRAGMENT_SOURCE_CODE_POINTS + 1,
+  sourceUtf8BytesObserved: MAX_A0_U1_FRAGMENT_SOURCE_UTF8_BYTES + 1,
+  quickEntrySnapshotFieldsCompared:
+    MAX_A0_U1_QUICK_ENTRY_SNAPSHOT_FIELDS_COMPARED,
+  quickEntryIssueCodesCompared: MAX_A0_U1_QUICK_ENTRY_ISSUE_CODES + 1,
+  syntaxParseCalls: 1,
+  warningAcknowledgementsCompared:
+    MAX_A0_U1_RETAINED_WARNING_ACKNOWLEDGEMENTS + 1,
+  insertableChordsExamined: MAX_A0_U1_INSERTABLE_CHORDS_EXAMINED,
+  recoveryFieldsCompared: MAX_A0_U1_RECOVERY_FIELDS_COMPARED,
+  draftSectionsVisited: MAX_A0_U1_FRAGMENT_SECTIONS + 1,
+  draftMeasuresVisited: MAX_A0_U1_FRAGMENT_MEASURES + 1,
+  draftEventsVisited: MAX_A0_U1_FRAGMENT_EVENTS + 1,
+  completionDeclarationsVisited: MAX_A0_U1_COMPLETION_DECLARATIONS + 1,
+  metadataFieldsCompared: MAX_A0_U1_METADATA_FIELDS_COMPARED,
+  metadataCodePointsObserved: MAX_A0_U1_METADATA_CODE_POINTS_OBSERVED,
+  exactBeatAdditions: MAX_A0_U1_EXACT_BEAT_ADDITIONS,
+  exactBeatComparisons: MAX_A0_U1_EXACT_BEAT_COMPARISONS,
+  idAllocationAttempts: MAX_A0_U1_ID_ALLOCATION_ATTEMPTS,
+  idCollisionChecks: MAX_A0_U1_ID_ALLOCATION_ATTEMPTS,
+  bookmarkRecordsExamined: MAX_A0_U1_BOOKMARK_RECORDS_EXAMINED,
+  bookmarkRecordsRewritten: MAX_A0_U1_BOOKMARK_RECORDS_REWRITTEN,
+  peakPlanNodeRecords: MAX_A0_U1_PLAN_NODE_RECORDS + 1,
+  peakAllocatedIdRecords: MAX_A0_U1_ID_ALLOCATION_ATTEMPTS,
+  peakDiagnosticRecords: MAX_A0_U1_RETAINED_DIAGNOSTICS,
+});
+
+export const A0_U1_ATOMIC_EDIT_FIRST_EXCESS_WORK_COUNTERS: readonly AtomicEditPlanWorkCounterName[] =
+  Object.freeze([
+    "planNodesVisited",
+    "sourceCodePointsObserved",
+    "sourceUtf8BytesObserved",
+    "quickEntryIssueCodesCompared",
+    "warningAcknowledgementsCompared",
+    "draftSectionsVisited",
+    "draftMeasuresVisited",
+    "draftEventsVisited",
+    "completionDeclarationsVisited",
+    "metadataCodePointsObserved",
+  ]);
 
 export const A0_U1_ATOMIC_EDIT_PLAN_TERMINATIONS: readonly [
   "complete",
@@ -786,6 +1538,8 @@ export type AtomicEditPlanTermination =
   (typeof A0_U1_ATOMIC_EDIT_PLAN_TERMINATIONS)[number];
 
 export type AtomicEditPlanWorkEvidence = Readonly<{
+  structuralDecodeCalls: number;
+  semanticValidationCalls: number;
   planNodesVisited: number;
   sourceCodePointsObserved: number;
   sourceUtf8BytesObserved: number;
@@ -801,6 +1555,8 @@ export type AtomicEditPlanWorkEvidence = Readonly<{
   draftEventsVisited: number;
   completionDeclarationsVisited: number;
   metadataFieldsCompared: number;
+  /** Ordered caller-owned metadata/reason code points, including first excess. */
+  metadataCodePointsObserved: number;
   exactBeatAdditions: number;
   exactBeatComparisons: number;
   idAllocationAttempts: number;
@@ -812,6 +1568,17 @@ export type AtomicEditPlanWorkEvidence = Readonly<{
   peakDiagnosticRecords: number;
   termination: AtomicEditPlanTermination;
 }>;
+
+export type AtomicEditPlanSuccessWorkEvidence = Readonly<
+  Omit<
+    AtomicEditPlanWorkEvidence,
+    "structuralDecodeCalls" | "semanticValidationCalls" | "termination"
+  > & {
+    structuralDecodeCalls: 1;
+    semanticValidationCalls: 1;
+    termination: "complete";
+  }
+>;
 
 export type AtomicEditPlanRefusal<
   OuterCode extends AtomicEditPlanOuterRefusalCode =
@@ -841,13 +1608,46 @@ export type AtomicEditPlanBoundary =
       eventId: ChordEventId;
     }>;
 
+/**
+ * A QuickEntry snapshot still has to equal the state's stable target exactly.
+ * Placement matching then resolves that accepted stable boundary against the
+ * current sibling order. Equivalent boundary spellings are not compared by
+ * structural identity. Every event/measure boundary must resolve within the
+ * placement's declared parent.
+ */
 export const A0_U1_QUICK_ENTRY_TARGET_MATCH_POLICY = Object.freeze({
-  intoMeasureBeforeEvent: "before-event-id-equals-beforeEventId",
-  intoMeasureAppend: "measure-end-id-equals-measureId",
-  intoSectionBeforeMeasure: "before-measure-id-equals-beforeMeasureId",
-  intoSectionAppend: "section-end-id-equals-sectionId",
-  intoDocumentBeforeSection: "before-section-id-equals-beforeSectionId",
-  intoDocumentAppend: "document-end",
+  parentOwnership: "same-declared-parent-required",
+  measure: Object.freeze({
+    "measure-start": "before-first-event-or-append-when-empty",
+    "before-event": "before-that-event",
+    "after-event": "before-next-event-or-append",
+    "measure-end": "append",
+  }),
+  section: Object.freeze({
+    "section-start": "before-first-measure-or-append-when-empty",
+    "before-measure": "before-that-measure",
+    "after-measure": "before-next-measure-or-append",
+    "section-end": "append",
+  }),
+  document: Object.freeze({
+    "document-start": "before-first-section-or-append-when-empty",
+    "before-section": "before-that-section",
+    "after-section": "before-next-section-or-append",
+    "document-end": "append",
+  }),
+  placementSlots: Object.freeze({
+    intoMeasure:
+      "resolved-before-event-sibling-id-equals-beforeEventId-or-append-equals-null",
+    intoSection:
+      "resolved-before-measure-sibling-id-equals-beforeMeasureId-or-append-equals-null",
+    intoDocument:
+      "resolved-before-section-sibling-id-equals-beforeSectionId-or-append-equals-null",
+  }),
+  completeDraftIntoEmptyMeasure: Object.freeze({
+    acceptedTargets: Object.freeze(["measure-start", "measure-end"] as const),
+    canonicalDestination: "append",
+    beforeEventId: null,
+  }),
 });
 
 export type AtomicEditPlanBoundaryRewrite = Readonly<{
@@ -860,26 +1660,271 @@ export type AtomicEditPlanSelectionReplacement = Readonly<{
   toEventId: ChordEventId;
 }>;
 
-export type AtomicEditPlanBookmarkReceipt = Readonly<{
-  selectionPolicy:
-    "preserve-existing" | "replace-removed-right-with-left-and-deduplicate";
-  selectionReplacements: readonly AtomicEditPlanSelectionReplacement[];
-  insertionPolicy:
-    | "preserve-or-repair"
-    | "move-after-last-inserted"
-    | "rewrite-exact-span-end";
-  insertionRewrite: AtomicEditPlanBoundaryRewrite | null;
-  rangePolicy:
-    | "preserve-or-repair"
-    | "rewrite-representable-boundaries"
-    | "clear-unrepresentable-internal-event-boundary";
-  rangeBoundaryRewrites: readonly AtomicEditPlanBoundaryRewrite[];
-  rangeCleared: boolean;
-  focusPolicy:
-    | "preserve-stable-target"
-    | "focus-inserted-material-when-no-stable-target"
-    | "replace-removed-right-with-left";
+export const A0_U1_ATOMIC_EDIT_PLAN_FOCUS_DERIVATION_ORDER: readonly [
+  "selection-focus-event",
+  "non-chart-insertion-target",
+  "first-inserted-structural-ref",
+  "chart",
+] = Object.freeze([
+  "selection-focus-event",
+  "non-chart-insertion-target",
+  "first-inserted-structural-ref",
+  "chart",
+]);
+
+type AtomicEditPlanSelectionFocusReceipt = Readonly<{
+  focusPolicy: "selection-focus-event";
+  focusTarget: Extract<UiFocusTarget, { kind: "event" }>;
 }>;
+
+type AtomicEditPlanInsertionFocusReceipt = Readonly<{
+  focusPolicy: "non-chart-insertion-target";
+  focusTarget: Extract<
+    UiFocusTarget,
+    { kind: "section" | "measure" | "event" }
+  >;
+}>;
+
+type AtomicEditPlanEventInsertionFocusReceipt = Readonly<{
+  focusPolicy: "non-chart-insertion-target";
+  focusTarget: Extract<UiFocusTarget, { kind: "event" }>;
+}>;
+
+type AtomicEditPlanMeasureInsertionFocusReceipt = Readonly<{
+  focusPolicy: "non-chart-insertion-target";
+  focusTarget: Extract<UiFocusTarget, { kind: "measure" }>;
+}>;
+
+type AtomicEditPlanSectionInsertionFocusReceipt = Readonly<{
+  focusPolicy: "non-chart-insertion-target";
+  focusTarget: Extract<UiFocusTarget, { kind: "section" }>;
+}>;
+
+type AtomicEditPlanFirstInsertedEventFocusReceipt = Readonly<{
+  focusPolicy: "first-inserted-structural-ref";
+  focusTarget: Extract<UiFocusTarget, { kind: "event" }>;
+}>;
+
+type AtomicEditPlanFirstInsertedSectionFocusReceipt = Readonly<{
+  focusPolicy: "first-inserted-structural-ref";
+  focusTarget: Extract<UiFocusTarget, { kind: "section" }>;
+}>;
+
+type AtomicEditPlanChartFocusReceipt = Readonly<{
+  focusPolicy: "chart";
+  focusTarget: Extract<UiFocusTarget, { kind: "chart" }>;
+}>;
+
+export type InsertFragmentIntoMeasureFocusReceipt =
+  | AtomicEditPlanSelectionFocusReceipt
+  | AtomicEditPlanEventInsertionFocusReceipt;
+
+export type InsertFragmentIntoSectionFocusReceipt =
+  | AtomicEditPlanSelectionFocusReceipt
+  | AtomicEditPlanMeasureInsertionFocusReceipt;
+
+export type InsertFragmentIntoDocumentFocusReceipt =
+  | AtomicEditPlanSelectionFocusReceipt
+  | AtomicEditPlanSectionInsertionFocusReceipt;
+
+export type InsertFragmentFocusReceipt =
+  | InsertFragmentIntoMeasureFocusReceipt
+  | InsertFragmentIntoSectionFocusReceipt
+  | InsertFragmentIntoDocumentFocusReceipt;
+
+export type SplitEventDurationFocusReceipt =
+  | AtomicEditPlanSelectionFocusReceipt
+  | AtomicEditPlanInsertionFocusReceipt
+  | AtomicEditPlanFirstInsertedEventFocusReceipt;
+
+export type SplitSectionFocusReceipt =
+  | AtomicEditPlanSelectionFocusReceipt
+  | AtomicEditPlanInsertionFocusReceipt
+  | AtomicEditPlanFirstInsertedSectionFocusReceipt;
+
+export type JoinEditPlanFocusReceipt =
+  | AtomicEditPlanSelectionFocusReceipt
+  | AtomicEditPlanInsertionFocusReceipt
+  | AtomicEditPlanChartFocusReceipt;
+
+export type AtomicEditPlanFocusReceipt =
+  | InsertFragmentFocusReceipt
+  | SplitEventDurationFocusReceipt
+  | SplitSectionFocusReceipt
+  | JoinEditPlanFocusReceipt;
+
+type AtomicEditPlanRangeBoundaryRewrites =
+  | readonly []
+  | readonly [AtomicEditPlanBoundaryRewrite]
+  | readonly [AtomicEditPlanBoundaryRewrite, AtomicEditPlanBoundaryRewrite];
+
+type AtomicEditPlanPreservedSelectionReceipt = Readonly<{
+  selectionPolicy: "preserve-existing";
+  selectionReplacements: readonly [];
+}>;
+
+type AtomicEditPlanJoinSelectionReceipt =
+  | AtomicEditPlanPreservedSelectionReceipt
+  | Readonly<{
+      selectionPolicy: "replace-removed-right-with-left-and-deduplicate";
+      selectionReplacements: readonly [AtomicEditPlanSelectionReplacement];
+    }>;
+
+type AtomicEditPlanPreservedInsertionReceipt = Readonly<{
+  insertionPolicy: "preserve-existing";
+  insertionRewrite: null;
+  insertionCleared: false;
+}>;
+
+type AtomicEditPlanMovedInsertionReceipt = Readonly<{
+  insertionPolicy: "move-after-last-inserted";
+  insertionRewrite: AtomicEditPlanBoundaryRewrite;
+  insertionCleared: false;
+}>;
+
+type AtomicEditPlanSpanEndInsertionReceipt = Readonly<{
+  insertionPolicy: "rewrite-exact-span-end";
+  insertionRewrite: AtomicEditPlanBoundaryRewrite;
+  insertionCleared: false;
+}>;
+
+type AtomicEditPlanRepresentableInsertionReceipt = Readonly<{
+  insertionPolicy: "rewrite-representable-boundaries";
+  insertionRewrite: AtomicEditPlanBoundaryRewrite;
+  insertionCleared: false;
+}>;
+
+type AtomicEditPlanClearedInsertionReceipt = Readonly<{
+  insertionPolicy: "clear-unrepresentable-internal-event-boundary";
+  insertionRewrite: null;
+  insertionCleared: true;
+}>;
+
+type AtomicEditPlanPreservedRangeReceipt = Readonly<{
+  rangePolicy: "preserve-existing";
+  rangeBoundaryRewrites: readonly [];
+  rangeCleared: false;
+}>;
+
+type AtomicEditPlanRewrittenRangeReceipt = Readonly<{
+  rangePolicy: "rewrite-representable-boundaries";
+  rangeBoundaryRewrites: Exclude<
+    AtomicEditPlanRangeBoundaryRewrites,
+    readonly []
+  >;
+  rangeCleared: false;
+}>;
+
+type AtomicEditPlanClearedRangeReceipt = Readonly<{
+  rangePolicy: "clear-unrepresentable-internal-event-boundary";
+  rangeBoundaryRewrites: readonly [];
+  rangeCleared: true;
+}>;
+
+type InsertFragmentBookmarkReceiptForFocus<
+  FocusReceipt extends InsertFragmentFocusReceipt,
+> = Readonly<
+  AtomicEditPlanPreservedSelectionReceipt &
+    AtomicEditPlanMovedInsertionReceipt &
+    AtomicEditPlanPreservedRangeReceipt & {
+      operationPolicy: "preserve-selection-and-range-move-insertion-after-last-inserted";
+    } & FocusReceipt
+>;
+
+export type InsertFragmentIntoMeasureBookmarkReceipt =
+  InsertFragmentBookmarkReceiptForFocus<InsertFragmentIntoMeasureFocusReceipt>;
+
+export type InsertFragmentIntoSectionBookmarkReceipt =
+  InsertFragmentBookmarkReceiptForFocus<InsertFragmentIntoSectionFocusReceipt>;
+
+export type InsertFragmentIntoDocumentBookmarkReceipt =
+  InsertFragmentBookmarkReceiptForFocus<InsertFragmentIntoDocumentFocusReceipt>;
+
+export type InsertFragmentBookmarkReceipt =
+  | InsertFragmentIntoMeasureBookmarkReceipt
+  | InsertFragmentIntoSectionBookmarkReceipt
+  | InsertFragmentIntoDocumentBookmarkReceipt;
+
+export type SplitEventDurationBookmarkReceipt = Readonly<
+  AtomicEditPlanPreservedSelectionReceipt &
+    (
+      | AtomicEditPlanPreservedInsertionReceipt
+      | AtomicEditPlanSpanEndInsertionReceipt
+    ) &
+    (
+      AtomicEditPlanPreservedRangeReceipt | AtomicEditPlanRewrittenRangeReceipt
+    ) & {
+      operationPolicy: "preserve-original-selection-rewrite-original-span-end-to-second";
+    } & SplitEventDurationFocusReceipt
+>;
+
+export type JoinEventDurationsBookmarkReceipt = Readonly<
+  AtomicEditPlanJoinSelectionReceipt &
+    (
+      | AtomicEditPlanPreservedInsertionReceipt
+      | AtomicEditPlanSpanEndInsertionReceipt
+      | AtomicEditPlanClearedInsertionReceipt
+    ) &
+    (
+      | AtomicEditPlanPreservedRangeReceipt
+      | AtomicEditPlanRewrittenRangeReceipt
+      | AtomicEditPlanClearedRangeReceipt
+    ) & {
+      operationPolicy: "replace-removed-right-selection-with-left-clear-unrepresentable-range";
+    } & JoinEditPlanFocusReceipt
+>;
+
+export type SplitSectionBookmarkReceipt = Readonly<
+  AtomicEditPlanPreservedSelectionReceipt &
+    (
+      | AtomicEditPlanPreservedInsertionReceipt
+      | AtomicEditPlanRepresentableInsertionReceipt
+    ) &
+    (
+      AtomicEditPlanPreservedRangeReceipt | AtomicEditPlanRewrittenRangeReceipt
+    ) & {
+      operationPolicy: "preserve-node-identities-rewrite-source-section-end-to-suffix";
+    } & SplitSectionFocusReceipt
+>;
+
+export type JoinSectionsRightStartReceipt =
+  | Readonly<{
+      rightSectionWasEmpty: false;
+      rightSectionFirstMeasureId: MeasureId;
+      rightSectionStartRewrite: Readonly<{
+        from: Readonly<{ kind: "section-start"; sectionId: SectionId }>;
+        to: Readonly<{ kind: "before-measure"; measureId: MeasureId }>;
+      }>;
+    }>
+  | Readonly<{
+      rightSectionWasEmpty: true;
+      rightSectionFirstMeasureId: null;
+      rightSectionStartRewrite: Readonly<{
+        from: Readonly<{ kind: "section-start"; sectionId: SectionId }>;
+        to: Readonly<{ kind: "section-end"; sectionId: SectionId }>;
+      }>;
+    }>;
+
+export type JoinSectionsBookmarkReceipt = Readonly<
+  AtomicEditPlanPreservedSelectionReceipt &
+    (
+      | AtomicEditPlanPreservedInsertionReceipt
+      | AtomicEditPlanRepresentableInsertionReceipt
+    ) &
+    (
+      AtomicEditPlanPreservedRangeReceipt | AtomicEditPlanRewrittenRangeReceipt
+    ) & {
+      operationPolicy: "preserve-measure-event-identities-map-internal-edge-to-first-measure-or-surviving-end";
+    } & JoinEditPlanFocusReceipt &
+    JoinSectionsRightStartReceipt
+>;
+
+export type AtomicEditPlanBookmarkReceipt =
+  | InsertFragmentBookmarkReceipt
+  | SplitEventDurationBookmarkReceipt
+  | JoinEventDurationsBookmarkReceipt
+  | SplitSectionBookmarkReceipt
+  | JoinSectionsBookmarkReceipt;
 
 export const A0_U1_ATOMIC_EDIT_PLAN_BOOKMARK_POLICIES = Object.freeze({
   insertFragment:
@@ -890,60 +1935,84 @@ export const A0_U1_ATOMIC_EDIT_PLAN_BOOKMARK_POLICIES = Object.freeze({
     "replace-removed-right-selection-with-left-clear-unrepresentable-range",
   splitSection: "preserve-node-identities-rewrite-source-section-end-to-suffix",
   joinSections:
-    "preserve-measure-event-identities-map-internal-edge-to-measure-boundary",
+    "preserve-measure-event-identities-map-internal-edge-to-first-measure-or-surviving-end",
 });
 
+export type AtomicEditPlanFragmentSectionIdentity = Readonly<{
+  kind: "section";
+  id: SectionId;
+  source: Readonly<{
+    kind: "fragment-section";
+    sourceSectionOrdinal: number;
+  }>;
+}>;
+
+export type AtomicEditPlanSplitSectionIdentity = Readonly<{
+  kind: "section";
+  id: SectionId;
+  source: Readonly<{
+    kind: "split-section-suffix";
+    sourceSectionId: SectionId;
+  }>;
+}>;
+
+export type AtomicEditPlanFragmentMeasureIdentity = Readonly<{
+  kind: "measure";
+  id: MeasureId;
+  source: Readonly<{
+    kind: "fragment-measure";
+    sourceSectionOrdinal: number;
+    sourceMeasureOrdinal: number;
+  }>;
+}>;
+
+export type AtomicEditPlanFragmentEventIdentity = Readonly<{
+  kind: "event";
+  id: ChordEventId;
+  source: Readonly<{
+    kind: "fragment-event";
+    sourceEventOrdinal: number;
+  }>;
+}>;
+
+export type AtomicEditPlanRecoveredChordIdentity = Readonly<{
+  kind: "event";
+  id: ChordEventId;
+  source: Readonly<{
+    kind: "recovered-chord";
+    selectedGlobalOrdinal: number;
+  }>;
+}>;
+
+export type AtomicEditPlanSplitEventSecondIdentity = Readonly<{
+  kind: "event";
+  id: ChordEventId;
+  source: Readonly<{
+    kind: "split-event-second";
+    sourceEventId: ChordEventId;
+  }>;
+}>;
+
 export type AtomicEditPlanAllocatedIdentity =
-  | Readonly<{
-      kind: "section";
-      id: SectionId;
-      source:
-        | Readonly<{
-            kind: "fragment-section";
-            sourceSectionOrdinal: number;
-          }>
-        | Readonly<{
-            kind: "split-section-suffix";
-            sourceSectionId: SectionId;
-          }>;
-    }>
-  | Readonly<{
-      kind: "measure";
-      id: MeasureId;
-      source: Readonly<{
-        kind: "fragment-measure";
-        sourceSectionOrdinal: number;
-        sourceMeasureOrdinal: number;
-      }>;
-    }>
-  | Readonly<{
-      kind: "event";
-      id: ChordEventId;
-      source:
-        | Readonly<{
-            kind: "fragment-event";
-            sourceEventOrdinal: number;
-          }>
-        | Readonly<{
-            kind: "recovered-chord";
-            selectedGlobalOrdinal: number;
-          }>
-        | Readonly<{
-            kind: "split-event-second";
-            sourceEventId: ChordEventId;
-          }>;
-    }>;
+  | AtomicEditPlanFragmentSectionIdentity
+  | AtomicEditPlanSplitSectionIdentity
+  | AtomicEditPlanFragmentMeasureIdentity
+  | AtomicEditPlanFragmentEventIdentity
+  | AtomicEditPlanRecoveredChordIdentity
+  | AtomicEditPlanSplitEventSecondIdentity;
+
+export type AtomicEditPlanRemovedSectionIdentity = Readonly<{
+  kind: "section";
+  id: SectionId;
+}>;
+
+export type AtomicEditPlanRemovedEventIdentity = Readonly<{
+  kind: "event";
+  id: ChordEventId;
+}>;
 
 export type AtomicEditPlanRemovedIdentity =
-  | Readonly<{ kind: "section"; id: SectionId }>
-  | Readonly<{ kind: "event"; id: ChordEventId }>;
-
-export type AtomicEditPlanTimelineDisposition =
-  | "splice-source-order-at-declared-boundary"
-  | "insert-one-recovered-chord-at-declared-boundary"
-  | "replace-one-span-with-two-exact-sum-spans"
-  | "replace-two-equal-content-spans-with-one-exact-sum-span"
-  | "preserve-flattened-event-order-and-durations";
+  AtomicEditPlanRemovedSectionIdentity | AtomicEditPlanRemovedEventIdentity;
 
 export type AtomicEditPlanInsertSourceReceipt =
   | Readonly<{
@@ -965,34 +2034,196 @@ export type AtomicEditPlanInsertSourceReceipt =
       layoutLossAcknowledged: true;
     }>;
 
-/** Proposed additive success detail; only the source-only runner below exposes it. */
-export type AtomicEditPlanReceipt = Readonly<{
+type AtomicEditPlanReceiptBase = Readonly<{
   schema: typeof A0_U1_ATOMIC_EDIT_PLAN_RECEIPT_SCHEMA;
   commandKind: "apply-edit-plan";
   commandId: string;
-  planKind: AtomicEditPlanKind;
   documentId: DocumentId;
   baseRevision: number;
   committedRevision: number;
-  allocatedIdentities: readonly AtomicEditPlanAllocatedIdentity[];
-  removedIdentities: readonly AtomicEditPlanRemovedIdentity[];
-  survivorId: AnyStableId | null;
-  insertSource: AtomicEditPlanInsertSourceReceipt | null;
-  completionMeasureIds: readonly MeasureId[];
-  timelineDisposition: AtomicEditPlanTimelineDisposition;
-  bookmarks: AtomicEditPlanBookmarkReceipt;
   quickEntryDisposition: "clear-to-idle-at-committed-revision";
   historyEntriesAppended: 1;
-  structuralDecodeCalls: 1;
-  semanticValidationCalls: 1;
   effects: readonly [
     "queue-recovery",
     "compile-playback-plan",
     "restore-focus",
     "announce",
   ];
-  work: AtomicEditPlanWorkEvidence;
+  work: AtomicEditPlanSuccessWorkEvidence;
 }>;
+
+type AtomicEditPlanCompleteDraftIntoMeasureAllocations = readonly [
+  AtomicEditPlanFragmentEventIdentity,
+  ...AtomicEditPlanFragmentEventIdentity[],
+];
+
+/**
+ * The first row is a measure and all later rows follow exact T0 structural
+ * preorder. The type narrows the identity family; the grouped measure/event
+ * preorder remains a runtime law.
+ */
+type AtomicEditPlanCompleteDraftIntoSectionAllocations = readonly [
+  AtomicEditPlanFragmentMeasureIdentity,
+  ...(
+    AtomicEditPlanFragmentMeasureIdentity | AtomicEditPlanFragmentEventIdentity
+  )[],
+];
+
+/**
+ * The first row is a section and all later rows follow exact T0 structural
+ * preorder. Section/measure/event grouping remains a runtime law.
+ */
+type AtomicEditPlanCompleteDraftIntoDocumentAllocations = readonly [
+  AtomicEditPlanFragmentSectionIdentity,
+  ...(
+    | AtomicEditPlanFragmentSectionIdentity
+    | AtomicEditPlanFragmentMeasureIdentity
+    | AtomicEditPlanFragmentEventIdentity
+  )[],
+];
+
+export type CompleteDraftIntoMeasureEditPlanReceipt = Readonly<
+  AtomicEditPlanReceiptBase & {
+    planKind: "insert-fragment";
+    insertLane: "complete-draft";
+    placementKind: "into-measure";
+    allocatedIdentities: AtomicEditPlanCompleteDraftIntoMeasureAllocations;
+    removedIdentities: readonly [];
+    survivorId: null;
+    insertSource: Extract<
+      AtomicEditPlanInsertSourceReceipt,
+      { kind: "complete-draft" }
+    >;
+    completionMeasureIds: readonly [MeasureId];
+    timelineDisposition: "splice-source-order-at-declared-boundary";
+    bookmarks: InsertFragmentIntoMeasureBookmarkReceipt;
+  }
+>;
+
+export type CompleteDraftIntoSectionEditPlanReceipt = Readonly<
+  AtomicEditPlanReceiptBase & {
+    planKind: "insert-fragment";
+    insertLane: "complete-draft";
+    placementKind: "into-section";
+    allocatedIdentities: AtomicEditPlanCompleteDraftIntoSectionAllocations;
+    removedIdentities: readonly [];
+    survivorId: null;
+    insertSource: Extract<
+      AtomicEditPlanInsertSourceReceipt,
+      { kind: "complete-draft" }
+    >;
+    completionMeasureIds: readonly [];
+    timelineDisposition: "splice-source-order-at-declared-boundary";
+    bookmarks: InsertFragmentIntoSectionBookmarkReceipt;
+  }
+>;
+
+export type CompleteDraftIntoDocumentEditPlanReceipt = Readonly<
+  AtomicEditPlanReceiptBase & {
+    planKind: "insert-fragment";
+    insertLane: "complete-draft";
+    placementKind: "into-document";
+    allocatedIdentities: AtomicEditPlanCompleteDraftIntoDocumentAllocations;
+    removedIdentities: readonly [];
+    survivorId: null;
+    insertSource: Extract<
+      AtomicEditPlanInsertSourceReceipt,
+      { kind: "complete-draft" }
+    >;
+    completionMeasureIds: readonly [];
+    timelineDisposition: "splice-source-order-at-declared-boundary";
+    bookmarks: InsertFragmentIntoDocumentBookmarkReceipt;
+  }
+>;
+
+export type RecoveredChordIntoMeasureEditPlanReceipt = Readonly<
+  AtomicEditPlanReceiptBase & {
+    planKind: "insert-fragment";
+    insertLane: "recovered-chord";
+    placementKind: "into-measure";
+    allocatedIdentities: readonly [AtomicEditPlanRecoveredChordIdentity];
+    removedIdentities: readonly [];
+    survivorId: null;
+    insertSource: Extract<
+      AtomicEditPlanInsertSourceReceipt,
+      { kind: "recovered-chord" }
+    >;
+    completionMeasureIds: readonly [MeasureId];
+    timelineDisposition: "insert-one-recovered-chord-at-declared-boundary";
+    bookmarks: InsertFragmentIntoMeasureBookmarkReceipt;
+  }
+>;
+
+export type SplitEventDurationEditPlanReceipt = Readonly<
+  AtomicEditPlanReceiptBase & {
+    planKind: "split-event-duration";
+    insertLane: null;
+    placementKind: null;
+    allocatedIdentities: readonly [AtomicEditPlanSplitEventSecondIdentity];
+    removedIdentities: readonly [];
+    survivorId: ChordEventId;
+    insertSource: null;
+    completionMeasureIds: readonly [MeasureId];
+    timelineDisposition: "replace-one-span-with-two-exact-sum-spans";
+    bookmarks: SplitEventDurationBookmarkReceipt;
+  }
+>;
+
+export type JoinEventDurationsEditPlanReceipt = Readonly<
+  AtomicEditPlanReceiptBase & {
+    planKind: "join-event-durations";
+    insertLane: null;
+    placementKind: null;
+    allocatedIdentities: readonly [];
+    removedIdentities: readonly [AtomicEditPlanRemovedEventIdentity];
+    survivorId: ChordEventId;
+    insertSource: null;
+    completionMeasureIds: readonly [MeasureId];
+    timelineDisposition: "replace-two-equal-content-spans-with-one-exact-sum-span";
+    bookmarks: JoinEventDurationsBookmarkReceipt;
+  }
+>;
+
+export type SplitSectionEditPlanReceipt = Readonly<
+  AtomicEditPlanReceiptBase & {
+    planKind: "split-section";
+    insertLane: null;
+    placementKind: null;
+    allocatedIdentities: readonly [AtomicEditPlanSplitSectionIdentity];
+    removedIdentities: readonly [];
+    survivorId: SectionId;
+    insertSource: null;
+    completionMeasureIds: readonly [];
+    timelineDisposition: "preserve-flattened-event-order-and-durations";
+    bookmarks: SplitSectionBookmarkReceipt;
+  }
+>;
+
+export type JoinSectionsEditPlanReceipt = Readonly<
+  AtomicEditPlanReceiptBase & {
+    planKind: "join-sections";
+    insertLane: null;
+    placementKind: null;
+    allocatedIdentities: readonly [];
+    removedIdentities: readonly [AtomicEditPlanRemovedSectionIdentity];
+    survivorId: SectionId;
+    insertSource: null;
+    completionMeasureIds: readonly [];
+    timelineDisposition: "preserve-flattened-event-order-and-durations";
+    bookmarks: JoinSectionsBookmarkReceipt;
+  }
+>;
+
+/** Proposed additive success detail; only the source-only runner below exposes it. */
+export type AtomicEditPlanReceipt =
+  | CompleteDraftIntoMeasureEditPlanReceipt
+  | CompleteDraftIntoSectionEditPlanReceipt
+  | CompleteDraftIntoDocumentEditPlanReceipt
+  | RecoveredChordIntoMeasureEditPlanReceipt
+  | SplitEventDurationEditPlanReceipt
+  | JoinEventDurationsEditPlanReceipt
+  | SplitSectionEditPlanReceipt
+  | JoinSectionsEditPlanReceipt;
 
 /** Future composition adds T0 and widens only the history estimator's input kind. */
 export type AtomicEditPlanHistoryRetainedByteEstimator = (
@@ -1076,6 +2307,36 @@ export type RunAtomicEditPlan = (
   request: RunAtomicEditPlanRequest,
 ) => AtomicEditPlanTransitionResult;
 
+/** Proposed state-only history ports over the widened history-entry union. */
+export type AtomicEditPlanHistoryCommandRequest = Readonly<{
+  state: AtomicEditPlanAppState;
+}>;
+
+type AtomicEditPlanHistorySuccess<Outcome extends "undone" | "redone"> =
+  Readonly<
+    Omit<AtomicEditPlanBaseSuccess, "outcome"> & {
+      outcome: Outcome;
+    }
+  >;
+
+export type AtomicEditPlanHistoryTransitionResult<
+  Outcome extends "undone" | "redone",
+> = AtomicEditPlanHistorySuccess<Outcome> | AtomicEditPlanBaseFailure;
+
+export type UndoAtomicEditPlanHistoryResult =
+  AtomicEditPlanHistoryTransitionResult<"undone">;
+
+export type RedoAtomicEditPlanHistoryResult =
+  AtomicEditPlanHistoryTransitionResult<"redone">;
+
+export type UndoAtomicEditPlanHistory = (
+  request: AtomicEditPlanHistoryCommandRequest,
+) => UndoAtomicEditPlanHistoryResult;
+
+export type RedoAtomicEditPlanHistory = (
+  request: AtomicEditPlanHistoryCommandRequest,
+) => RedoAtomicEditPlanHistoryResult;
+
 export const A0_U1_ATOMIC_EDIT_LAW_IDS: readonly [
   "A0-U1-ATOM-001-command-and-five-closed-variants",
   "A0-U1-ATOM-002-quick-entry-snapshot-and-target-exact",
@@ -1126,8 +2387,20 @@ export const A0_U1_ATOMIC_EDIT_PLAN_TRANSPOSITION_POLICY = Object.freeze({
     "commutes-with-spelling-preserving-transposition-of-affected-event-ids",
 });
 
+export const A0_U1_T0_NEW_MEASURE_COMPLETION_POLICY = Object.freeze({
+  zeroEvents: "empty",
+  nonemptySuccessfulClosedMeasure: "complete",
+});
+
 export const A0_U1_ATOMIC_EDIT_PLAN_ID_ENTROPY_POLICY = Object.freeze({
-  factoryCallsOccurOnlyAfterAllNonIdPreflight: true,
+  factoryCallsOccurOnlyAfterOperationLocalPreflight: true,
+  operationLocalPreflight:
+    "shape-snapshot-parser-declarations-operation-laws-and-final-bounds",
+  postAllocationRefusalsMayConsumeEntropy: Object.freeze([
+    "f2",
+    "f3",
+    "history",
+  ] as const),
   allocationOrder: "source-structural-preorder",
   collisionScope: "all-stable-id-kinds-plus-document",
   retryOnFailureOrCollision: false,
@@ -1135,7 +2408,7 @@ export const A0_U1_ATOMIC_EDIT_PLAN_ID_ENTROPY_POLICY = Object.freeze({
   partialRemapPublication: false,
   entropyConsumptionRollbackClaimed: false,
   reason:
-    "StableIdFactory.next has no reservation or rollback operation; refused calls may consume entropy while application state remains unchanged.",
+    "F2, F3, history, factory failure, and collision can refuse after one or more StableIdFactory.next calls; the interface has no reservation or rollback operation, so application state remains unchanged while factory entropy may advance.",
 });
 
 /** Runtime exact-object validators consume this declarative key authority. */
@@ -1216,6 +2489,16 @@ export const A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS = Object.freeze({
   ]),
   warningAcknowledgement: Object.freeze(["code", "range"]),
   sourceRange: Object.freeze(["start", "end"]),
+  beatDuration: Object.freeze(["numerator", "denominator"]),
+  measureCompletionEmpty: Object.freeze(["kind"]),
+  measureCompletionComplete: Object.freeze(["kind"]),
+  measureCompletionPickupOrIncomplete: Object.freeze([
+    "kind",
+    "expectedDuration",
+    "reason",
+  ]),
+  keyContext: Object.freeze(["tonic", "mode"]),
+  spelledPitchClass: Object.freeze(["step", "alter"]),
   completionDeclaration: Object.freeze(["measureId", "completion"]),
   sectionDeclaration: Object.freeze([
     "sourceSectionOrdinal",
@@ -1277,6 +2560,128 @@ export const A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS = Object.freeze({
     "bassPolicy",
   ]),
   newEventAutoVoicingRange: Object.freeze(["lowMidi", "highMidi"]),
+  receiptBase: Object.freeze([
+    "schema",
+    "commandKind",
+    "commandId",
+    "documentId",
+    "baseRevision",
+    "committedRevision",
+    "quickEntryDisposition",
+    "historyEntriesAppended",
+    "effects",
+    "work",
+  ]),
+  receiptOperation: Object.freeze([
+    "planKind",
+    "insertLane",
+    "placementKind",
+    "allocatedIdentities",
+    "removedIdentities",
+    "survivorId",
+    "insertSource",
+    "completionMeasureIds",
+    "timelineDisposition",
+    "bookmarks",
+  ]),
+  completeDraftInsertSourceReceipt: Object.freeze([
+    "kind",
+    "parserOutcome",
+    "quickEntrySnapshotMatched",
+    "canonicalTargetMatched",
+    "acknowledgedWarningCount",
+  ]),
+  recoveredChordInsertSourceReceipt: Object.freeze([
+    "kind",
+    "parserOutcome",
+    "quickEntrySnapshotMatched",
+    "canonicalTargetMatched",
+    "selectedGlobalOrdinal",
+    "selectedRange",
+    "durationSource",
+    "siblingsApplied",
+    "layoutLossAcknowledged",
+  ]),
+  bookmarkReceiptCore: Object.freeze([
+    "operationPolicy",
+    "selectionPolicy",
+    "selectionReplacements",
+    "insertionPolicy",
+    "insertionRewrite",
+    "insertionCleared",
+    "rangePolicy",
+    "rangeBoundaryRewrites",
+    "rangeCleared",
+    "focusPolicy",
+    "focusTarget",
+  ]),
+  joinSectionsBookmarkReceiptExtension: Object.freeze([
+    "rightSectionWasEmpty",
+    "rightSectionFirstMeasureId",
+    "rightSectionStartRewrite",
+  ]),
+  boundaryRewrite: Object.freeze(["from", "to"]),
+  selectionReplacement: Object.freeze(["fromEventId", "toEventId"]),
+  focusTargetChart: Object.freeze(["kind"]),
+  focusTargetSection: Object.freeze(["kind", "sectionId"]),
+  focusTargetMeasure: Object.freeze(["kind", "measureId"]),
+  focusTargetEvent: Object.freeze(["kind", "eventId"]),
+  allocatedIdentity: Object.freeze(["kind", "id", "source"]),
+  fragmentSectionIdentitySource: Object.freeze([
+    "kind",
+    "sourceSectionOrdinal",
+  ]),
+  splitSectionIdentitySource: Object.freeze(["kind", "sourceSectionId"]),
+  fragmentMeasureIdentitySource: Object.freeze([
+    "kind",
+    "sourceSectionOrdinal",
+    "sourceMeasureOrdinal",
+  ]),
+  fragmentEventIdentitySource: Object.freeze(["kind", "sourceEventOrdinal"]),
+  recoveredChordIdentitySource: Object.freeze([
+    "kind",
+    "selectedGlobalOrdinal",
+  ]),
+  splitEventSecondIdentitySource: Object.freeze(["kind", "sourceEventId"]),
+  removedIdentity: Object.freeze(["kind", "id"]),
+  diagnostic: Object.freeze([
+    "code",
+    "owner",
+    "path",
+    "sourceRange",
+    "syntaxCode",
+    "observed",
+    "maximum",
+  ]),
+  workEvidence: Object.freeze([
+    "structuralDecodeCalls",
+    "semanticValidationCalls",
+    "planNodesVisited",
+    "sourceCodePointsObserved",
+    "sourceUtf8BytesObserved",
+    "quickEntrySnapshotFieldsCompared",
+    "quickEntryIssueCodesCompared",
+    "syntaxParseCalls",
+    "warningAcknowledgementsCompared",
+    "insertableChordsExamined",
+    "recoveryFieldsCompared",
+    "draftSectionsVisited",
+    "draftMeasuresVisited",
+    "draftEventsVisited",
+    "completionDeclarationsVisited",
+    "metadataFieldsCompared",
+    "metadataCodePointsObserved",
+    "exactBeatAdditions",
+    "exactBeatComparisons",
+    "idAllocationAttempts",
+    "idCollisionChecks",
+    "bookmarkRecordsExamined",
+    "bookmarkRecordsRewritten",
+    "peakPlanNodeRecords",
+    "peakAllocatedIdRecords",
+    "peakDiagnosticRecords",
+    "termination",
+  ]),
 });
 
 export const A0_U1_ATOMIC_EDIT_PLAN_FORBIDDEN_PAYLOAD_KEYS: readonly [

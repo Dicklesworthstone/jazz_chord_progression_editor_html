@@ -61,10 +61,14 @@ import {
   A0_U1_ATOMIC_EDIT_PLAN_RUNNER_STAGE_ORDER,
   A0_U1_ATOMIC_EDIT_PLAN_TERMINATIONS,
   A0_U1_ATOMIC_EDIT_PLAN_TRANSPOSITION_POLICY,
+  A0_U1_ATOMIC_EDIT_HISTORY_REFUSAL_POLICY,
+  A0_U1_ATOMIC_EDIT_OUTER_WORK_POLICY,
   A0_U1_ATOMIC_EDIT_OUTER_REFUSAL_CODES,
   A0_U1_ATOMIC_EDIT_PREPLAN_OUTER_REFUSAL_CODES,
   A0_U1_ATOMIC_EDIT_REFUSAL_CODES,
+  A0_U1_ATOMIC_EDIT_WORK_COUNTER_MAXIMA,
   A0_U1_ATOMIC_EDIT_WORK_COUNTER_NAMES,
+  A0_U1_FINAL_COLLECTION_LIMIT_COMPARISON_ORDER,
   A0_U1_INSERT_FRAGMENT_PLACEMENT_KINDS,
   A0_U1_FRAGMENT_PARSE_ACCIDENTAL_STYLE,
   A0_U1_NEW_EVENT_AUTO_VOICING,
@@ -72,6 +76,7 @@ import {
   A0_U1_PROPOSED_APPLICATION_COMMAND_KINDS,
   A0_U1_QUICK_ENTRY_TARGET_MATCH_POLICY,
   A0_U1_RECOVERED_CHORD_LAYOUT_LOSS_ACKNOWLEDGEMENT,
+  A0_U1_RECOVERY_FIELD_COMPARISON_ORDER,
 } from "../../src/application/application-edit-plan-contract";
 import type {
   AppState,
@@ -85,6 +90,7 @@ import {
   A0_U1_EDIT_PLAN_SPEC_FILES,
   A0_U1_EDIT_PLAN_SPEC_SEMANTIC_DIGEST,
   type A0U1EditPlanContractValidationReport,
+  probeA0U1RuntimeShapeRefusal,
   validateA0U1EditPlanContract,
 } from "../../scripts/validate-a0-u1-edit-plan-contract";
 
@@ -565,6 +571,96 @@ function jsonObject(value: unknown, label: string): JsonObject {
   return value as JsonObject;
 }
 
+function validRuntimeShapeProbeCommand() {
+  return {
+    id: "command-shape-probe",
+    label: "Descriptor-safe runtime-shape probe",
+    expectedDocumentId: "document-shape-probe",
+    expectedRevision: 0,
+    logicalTimeMs: 0,
+    coalescing: null,
+    kind: "apply-edit-plan",
+    plan: {
+      kind: "insert-fragment",
+      source: {
+        kind: "complete-draft",
+        quickEntrySnapshot: {
+          sourceText: "| C7 |",
+          baseRevision: 0,
+          target: {
+            kind: "section-end",
+            sectionId: "section-shape-probe",
+          },
+          issueCodes: [],
+          expectedStatus: "ready",
+          expectedLane: "complete-draft",
+        },
+        warningAcknowledgements: [],
+      },
+      placement: {
+        kind: "into-section",
+        sectionId: "section-shape-probe",
+        beforeMeasureId: null,
+        layoutDisposition: "preserve-implicit-measures",
+        completionDeclarations: [],
+      },
+      voicingPolicy: A0_U1_NEW_EVENT_POLICY_ID,
+    },
+  };
+}
+
+function validRuntimeShapeProbeSplitCommand() {
+  return {
+    id: "command-shape-split-probe",
+    label: "Descriptor-safe split runtime-shape probe",
+    expectedDocumentId: "document-shape-probe",
+    expectedRevision: 0,
+    logicalTimeMs: 0,
+    coalescing: null,
+    kind: "apply-edit-plan",
+    plan: {
+      kind: "split-event-duration",
+      eventId: "event-shape-probe",
+      firstDuration: { numerator: 1, denominator: 2 },
+      secondDuration: { numerator: 1, denominator: 2 },
+      completionDeclarations: [
+        {
+          measureId: "measure-shape-probe",
+          completion: { kind: "complete" },
+        },
+      ],
+      identityPolicy: "retain-source-first-allocate-second",
+      contentPolicy: "copy-exact-chord-and-voicing",
+      annotationPolicy: "retain-source-first-clear-second",
+    },
+  };
+}
+
+function literalReferenceKey(
+  value: unknown,
+  collection: string,
+  label: string,
+): string {
+  const reference = jsonObject(value, label);
+  if (
+    Object.keys(reference).join(",") !== "$literalRef,patches" ||
+    !Array.isArray(reference["patches"]) ||
+    reference["patches"].length !== 0
+  ) {
+    throw new Error(`A0_U1_TEST_EXPECTED_UNPATCHED_LITERAL_REF:${label}`);
+  }
+  const literalReference = reference["$literalRef"];
+  const prefix = `literalCatalog/${collection}/`;
+  if (
+    typeof literalReference !== "string" ||
+    !literalReference.startsWith(prefix) ||
+    literalReference.includes("#")
+  ) {
+    throw new Error(`A0_U1_TEST_WRONG_LITERAL_REF:${label}`);
+  }
+  return literalReference.slice(prefix.length);
+}
+
 async function withPacketCopy(
   run: (temporaryRoot: string) => Promise<void>,
 ): Promise<void> {
@@ -930,9 +1026,10 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
           planKinds: 5,
           lawRows: 17,
           caseGroups: 50,
-          literalTransitions: 70,
+          literalTransitions: 137,
           applicabilityRows: 5,
           transpositionWitnesses: 5,
+          obligationRows: 24,
           mutationControls: 30,
           traces: 6,
           authorities: 6,
@@ -965,6 +1062,150 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
       expect(expectedDigest).toMatch(/^[0-9a-f]{64}$/);
       expect(expectedDigest).not.toBe("0".repeat(64));
       expect(sha256(bytes)).toBe(expectedDigest);
+    }
+  });
+
+  test("every transition freezes history-estimator evidence and inherited validation-call semantics", async () => {
+    const cases = jsonObject(
+      JSON.parse(
+        await readFile(join(fixtureRoot, "edit-plan-cases.json"), "utf8"),
+      ),
+      "edit-plan-cases.json",
+    );
+    const catalog = jsonObject(
+      cases["literalCatalog"],
+      "edit-plan-cases.json.literalCatalog",
+    );
+    const transitions = jsonObject(
+      catalog["transitions"],
+      "edit-plan-cases.json.literalCatalog.transitions",
+    );
+    const results = jsonObject(
+      catalog["results"],
+      "edit-plan-cases.json.literalCatalog.results",
+    );
+    const counters = jsonObject(
+      catalog["counters"],
+      "edit-plan-cases.json.literalCatalog.counters",
+    );
+    const historyEstimatorEvidence = jsonObject(
+      catalog["historyEstimatorEvidence"],
+      "edit-plan-cases.json.literalCatalog.historyEstimatorEvidence",
+    );
+
+    for (const [transitionId, rawTransition] of Object.entries(transitions)) {
+      const transition = jsonObject(
+        rawTransition,
+        `edit-plan-cases.json.literalCatalog.transitions.${transitionId}`,
+      );
+      const expected = jsonObject(
+        transition["expected"],
+        `edit-plan-cases.json.literalCatalog.transitions.${transitionId}.expected`,
+      );
+      const resultKey = literalReferenceKey(
+        expected["result"],
+        "results",
+        `${transitionId}.expected.result`,
+      );
+      const counterKey = literalReferenceKey(
+        expected["counters"],
+        "counters",
+        `${transitionId}.expected.counters`,
+      );
+      const result = jsonObject(results[resultKey], `${resultKey}.result`);
+      const counterEvidence = jsonObject(
+        counters[counterKey],
+        `${counterKey}.counters`,
+      );
+      const outerCounters = jsonObject(
+        counterEvidence["outer"],
+        `${counterKey}.counters.outer`,
+      );
+      const resultCounters = jsonObject(
+        result["counters"],
+        `${resultKey}.result.counters`,
+      );
+      const nestedRefusal =
+        result["editPlanRefusal"] === null
+          ? null
+          : jsonObject(
+              result["editPlanRefusal"],
+              `${resultKey}.result.editPlanRefusal`,
+            );
+      const nestedCode = nestedRefusal?.["code"] ?? null;
+      const isApply = transition["phase"] === "apply";
+      const expectedValidationCalls =
+        isApply &&
+        (result["ok"] === true ||
+          nestedCode === "edit-plan.semantic-publication-refused" ||
+          nestedCode === "edit-plan.history-refused")
+          ? 1
+          : 0;
+
+      expect(outerCounters["validationCalls"]).toBe(expectedValidationCalls);
+      expect(resultCounters["validationCalls"]).toBe(expectedValidationCalls);
+
+      if (!isApply) {
+        expect(expected["historyEstimatorEvidence"]).toBeNull();
+        continue;
+      }
+
+      const evidenceKey = literalReferenceKey(
+        expected["historyEstimatorEvidence"],
+        "historyEstimatorEvidence",
+        `${transitionId}.expected.historyEstimatorEvidence`,
+      );
+      expect(evidenceKey).toBe(transitionId);
+      const evidence = jsonObject(
+        historyEstimatorEvidence[evidenceKey],
+        `${transitionId}.historyEstimatorEvidence`,
+      );
+      expect(Object.keys(evidence)).toEqual([
+        "configuration",
+        "callsObserved",
+        "returned",
+        "independentlyRecomputed",
+      ]);
+      const configuration = evidence["configuration"];
+      if (typeof configuration !== "string") {
+        throw new Error(
+          `A0_U1_TEST_HISTORY_ESTIMATOR_CONFIGURATION_NOT_STRING:${transitionId}`,
+        );
+      }
+      expect([
+        "not-reached",
+        "independent-policy",
+        "hostile-over-cap",
+        "hostile-invalid-negative",
+      ]).toContain(configuration);
+
+      if (result["ok"] === true) {
+        expect(evidence).toEqual({
+          configuration: "independent-policy",
+          callsObserved: 1,
+          returned: evidence["independentlyRecomputed"],
+          independentlyRecomputed: evidence["independentlyRecomputed"],
+        });
+        expect(Number.isSafeInteger(evidence["returned"])).toBe(true);
+        expect(Number(evidence["returned"])).toBeGreaterThan(0);
+      } else if (nestedCode === "edit-plan.history-refused") {
+        expect(["hostile-over-cap", "hostile-invalid-negative"]).toContain(
+          configuration,
+        );
+        expect(evidence["callsObserved"]).toBe(1);
+        expect(Number.isSafeInteger(evidence["returned"])).toBe(true);
+        expect(Number.isSafeInteger(evidence["independentlyRecomputed"])).toBe(
+          true,
+        );
+        expect(Number(evidence["independentlyRecomputed"])).toBeGreaterThan(0);
+      } else {
+        expect(evidence).toEqual({
+          configuration: "not-reached",
+          callsObserved: 0,
+          returned: null,
+          independentlyRecomputed: null,
+        });
+      }
     }
   });
 
@@ -1092,6 +1333,56 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
     );
   }
 
+  test(
+    "history-estimator returned-byte tamper defeats a refreshed byte pin",
+    async () => {
+      await withPacketCopy(async (temporaryRoot) => {
+        const filename = "edit-plan-cases.json";
+        const changedDigest = await mutateCanonicalJsonField(
+          temporaryRoot,
+          filename,
+          [
+            "literalCatalog",
+            "historyEstimatorEvidence",
+            "A0U1-INS-001-APPLY",
+            "returned",
+          ],
+          (current) => {
+            if (!Number.isSafeInteger(current) || Number(current) <= 0) {
+              throw new Error(
+                "A0_U1_TEST_HISTORY_ESTIMATOR_BASELINE_NOT_POSITIVE_SAFE_INTEGER",
+              );
+            }
+            return Number(current) + 1;
+          },
+        );
+        const report = await validateA0U1EditPlanContract(temporaryRoot, {
+          expectedByteDigests: {
+            ...A0_U1_EDIT_PLAN_SPEC_BYTE_DIGESTS,
+            [filename]: changedDigest,
+          },
+        });
+
+        expect(report.outcome).toBe("fail");
+        expect(findingCodes(report)).toContain(
+          "EDIT_PLAN_HISTORY_ESTIMATOR_RETURNED",
+        );
+        expect(
+          findingsFor(report, "EDIT_PLAN_HISTORY_ESTIMATOR_RETURNED").some(
+            (finding) => finding.path.includes("A0U1-INS-001-APPLY"),
+          ),
+        ).toBe(true);
+        expect(findingCodes(report)).toContain("EDIT_PLAN_SEMANTIC_DIGEST");
+        expect(
+          findingsFor(report, "EDIT_PLAN_BYTE_DIGEST").some(
+            (finding) => finding.path === filename,
+          ),
+        ).toBe(false);
+      });
+    },
+    { timeout: 300_000, retry: 0 },
+  );
+
   test("live A0 command tuple remains 15 and the proposal appends only apply-edit-plan", () => {
     const acceptedA0Kinds = [
       "insert",
@@ -1140,8 +1431,8 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
       "into-document",
     ]);
     expect(A0_U1_ATOMIC_EDIT_PLAN_RUNNER_STAGE_ORDER).toEqual([
-      "a0-envelope",
       "exact-runtime-shape",
+      "a0-envelope",
       "quick-entry-snapshot",
       "bounded-source-preflight",
       "target-and-destination",
@@ -1157,7 +1448,7 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
       "bookmarks-history-and-atomic-publication",
     ]);
     expect(A0_U1_ATOMIC_EDIT_PLAN_ID_ALLOCATION_ORDER).toEqual([
-      "preflight-all-non-id-laws",
+      "preflight-operation-local-shape-snapshot-parser-declarations-laws-and-bounds",
       "index-document-section-measure-event-ids-globally",
       "fragment-section-before-descendants",
       "fragment-measure-before-events",
@@ -1169,11 +1460,25 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
       "stop-without-retry-on-first-failure-or-collision",
     ]);
     expect(A0_U1_ATOMIC_EDIT_PLAN_DIAGNOSTIC_ORDER).toEqual([
-      "path-ecmascript-code-unit-lexical",
+      "path-domain-segment-order",
       "null-source-range-before-ranged",
       "source-range-start-ascending",
       "source-range-end-ascending",
       "code-ecmascript-code-unit-lexical",
+    ]);
+    expect(A0_U1_RECOVERY_FIELD_COMPARISON_ORDER).toEqual([
+      "placement",
+      "selected-global-ordinal",
+      "layout-loss-acknowledgement",
+      "duration-branch-and-value",
+    ]);
+    expect(A0_U1_FINAL_COLLECTION_LIMIT_COMPARISON_ORDER).toEqual([
+      "final-document-sections",
+      "final-section-measures-in-section-order",
+      "final-total-measures",
+      "final-document-events",
+      "occupied-id-records",
+      "plan-node-records",
     ]);
     expect(A0_U1_ATOMIC_EDIT_PLAN_TERMINATIONS).toEqual([
       "complete",
@@ -1203,6 +1508,32 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
       "history.entry_too_large",
       "history.byte_estimate_invalid",
     ]);
+    expect(A0_U1_ATOMIC_EDIT_HISTORY_REFUSAL_POLICY).toEqual({
+      invalidEstimate: {
+        predicate: "not-a-nonnegative-safe-integer",
+        outerCode: "history.byte_estimate_invalid",
+        nestedCode: "edit-plan.history-refused",
+        path: ["history"],
+      },
+      oversizedEstimate: {
+        predicate: "valid-estimate-greater-than-retained-byte-maximum",
+        maximum: 16_777_216,
+        outerCode: "history.entry_too_large",
+        nestedCode: "edit-plan.history-refused",
+        path: ["history"],
+      },
+    });
+    expect(Object.isFrozen(A0_U1_ATOMIC_EDIT_HISTORY_REFUSAL_POLICY)).toBe(
+      true,
+    );
+    expect(
+      [
+        A0_U1_ATOMIC_EDIT_HISTORY_REFUSAL_POLICY.invalidEstimate,
+        A0_U1_ATOMIC_EDIT_HISTORY_REFUSAL_POLICY.invalidEstimate.path,
+        A0_U1_ATOMIC_EDIT_HISTORY_REFUSAL_POLICY.oversizedEstimate,
+        A0_U1_ATOMIC_EDIT_HISTORY_REFUSAL_POLICY.oversizedEstimate.path,
+      ].every(Object.isFrozen),
+    ).toBe(true);
     expect(A0_U1_ATOMIC_EDIT_PREPLAN_OUTER_REFUSAL_CODES).toEqual([
       "command.id_invalid",
       "command.label_invalid",
@@ -1249,6 +1580,8 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
       "edit-plan.history-refused",
     ]);
     expect(A0_U1_ATOMIC_EDIT_WORK_COUNTER_NAMES).toEqual([
+      "structuralDecodeCalls",
+      "semanticValidationCalls",
       "planNodesVisited",
       "sourceCodePointsObserved",
       "sourceUtf8BytesObserved",
@@ -1263,6 +1596,7 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
       "draftEventsVisited",
       "completionDeclarationsVisited",
       "metadataFieldsCompared",
+      "metadataCodePointsObserved",
       "exactBeatAdditions",
       "exactBeatComparisons",
       "idAllocationAttempts",
@@ -1418,6 +1752,16 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
       ],
       warningAcknowledgement: ["code", "range"],
       sourceRange: ["start", "end"],
+      beatDuration: ["numerator", "denominator"],
+      measureCompletionEmpty: ["kind"],
+      measureCompletionComplete: ["kind"],
+      measureCompletionPickupOrIncomplete: [
+        "kind",
+        "expectedDuration",
+        "reason",
+      ],
+      keyContext: ["tonic", "mode"],
+      spelledPitchClass: ["step", "alter"],
       completionDeclaration: ["measureId", "completion"],
       sectionDeclaration: ["sourceSectionOrdinal", "voiceLeadingBoundary"],
       sectionMetadata: [
@@ -1476,11 +1820,323 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
         "bassPolicy",
       ],
       newEventAutoVoicingRange: ["lowMidi", "highMidi"],
+      receiptBase: [
+        "schema",
+        "commandKind",
+        "commandId",
+        "documentId",
+        "baseRevision",
+        "committedRevision",
+        "quickEntryDisposition",
+        "historyEntriesAppended",
+        "effects",
+        "work",
+      ],
+      receiptOperation: [
+        "planKind",
+        "insertLane",
+        "placementKind",
+        "allocatedIdentities",
+        "removedIdentities",
+        "survivorId",
+        "insertSource",
+        "completionMeasureIds",
+        "timelineDisposition",
+        "bookmarks",
+      ],
+      completeDraftInsertSourceReceipt: [
+        "kind",
+        "parserOutcome",
+        "quickEntrySnapshotMatched",
+        "canonicalTargetMatched",
+        "acknowledgedWarningCount",
+      ],
+      recoveredChordInsertSourceReceipt: [
+        "kind",
+        "parserOutcome",
+        "quickEntrySnapshotMatched",
+        "canonicalTargetMatched",
+        "selectedGlobalOrdinal",
+        "selectedRange",
+        "durationSource",
+        "siblingsApplied",
+        "layoutLossAcknowledged",
+      ],
+      bookmarkReceiptCore: [
+        "operationPolicy",
+        "selectionPolicy",
+        "selectionReplacements",
+        "insertionPolicy",
+        "insertionRewrite",
+        "insertionCleared",
+        "rangePolicy",
+        "rangeBoundaryRewrites",
+        "rangeCleared",
+        "focusPolicy",
+        "focusTarget",
+      ],
+      joinSectionsBookmarkReceiptExtension: [
+        "rightSectionWasEmpty",
+        "rightSectionFirstMeasureId",
+        "rightSectionStartRewrite",
+      ],
+      boundaryRewrite: ["from", "to"],
+      selectionReplacement: ["fromEventId", "toEventId"],
+      focusTargetChart: ["kind"],
+      focusTargetSection: ["kind", "sectionId"],
+      focusTargetMeasure: ["kind", "measureId"],
+      focusTargetEvent: ["kind", "eventId"],
+      allocatedIdentity: ["kind", "id", "source"],
+      fragmentSectionIdentitySource: ["kind", "sourceSectionOrdinal"],
+      splitSectionIdentitySource: ["kind", "sourceSectionId"],
+      fragmentMeasureIdentitySource: [
+        "kind",
+        "sourceSectionOrdinal",
+        "sourceMeasureOrdinal",
+      ],
+      fragmentEventIdentitySource: ["kind", "sourceEventOrdinal"],
+      recoveredChordIdentitySource: ["kind", "selectedGlobalOrdinal"],
+      splitEventSecondIdentitySource: ["kind", "sourceEventId"],
+      removedIdentity: ["kind", "id"],
+      diagnostic: [
+        "code",
+        "owner",
+        "path",
+        "sourceRange",
+        "syntaxCode",
+        "observed",
+        "maximum",
+      ],
+      workEvidence: [
+        "structuralDecodeCalls",
+        "semanticValidationCalls",
+        "planNodesVisited",
+        "sourceCodePointsObserved",
+        "sourceUtf8BytesObserved",
+        "quickEntrySnapshotFieldsCompared",
+        "quickEntryIssueCodesCompared",
+        "syntaxParseCalls",
+        "warningAcknowledgementsCompared",
+        "insertableChordsExamined",
+        "recoveryFieldsCompared",
+        "draftSectionsVisited",
+        "draftMeasuresVisited",
+        "draftEventsVisited",
+        "completionDeclarationsVisited",
+        "metadataFieldsCompared",
+        "metadataCodePointsObserved",
+        "exactBeatAdditions",
+        "exactBeatComparisons",
+        "idAllocationAttempts",
+        "idCollisionChecks",
+        "bookmarkRecordsExamined",
+        "bookmarkRecordsRewritten",
+        "peakPlanNodeRecords",
+        "peakAllocatedIdRecords",
+        "peakDiagnosticRecords",
+        "termination",
+      ],
     });
     expect(Object.isFrozen(A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS)).toBe(true);
     expect(
       Object.values(A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS).every(Object.isFrozen),
     ).toBe(true);
+  });
+
+  test("runtime shape probing passively handles proxies, accessors, and inherited required fields", () => {
+    const cases = [
+      {
+        label: "own root accessor",
+        prepare(
+          command: ReturnType<typeof validRuntimeShapeProbeCommand>,
+          countGetterCall: () => void,
+        ) {
+          Object.defineProperty(command, "kind", {
+            configurable: true,
+            enumerable: true,
+            get() {
+              countGetterCall();
+              return "apply-edit-plan";
+            },
+          });
+        },
+        expected: {
+          code: "edit-plan.command-shape-invalid",
+          path: ["kind"],
+        },
+      },
+      {
+        label: "own nested accessor",
+        prepare(
+          command: ReturnType<typeof validRuntimeShapeProbeCommand>,
+          countGetterCall: () => void,
+        ) {
+          Object.defineProperty(
+            command.plan.source.quickEntrySnapshot,
+            "sourceText",
+            {
+              configurable: true,
+              enumerable: true,
+              get() {
+                countGetterCall();
+                return "| C7 |";
+              },
+            },
+          );
+        },
+        expected: {
+          code: "edit-plan.plan-shape-invalid",
+          path: ["plan", "source", "quickEntrySnapshot", "sourceText"],
+        },
+      },
+      {
+        label: "inherited root data property",
+        prepare(
+          command: ReturnType<typeof validRuntimeShapeProbeCommand>,
+          countGetterCall: () => void,
+        ) {
+          void countGetterCall;
+          Reflect.deleteProperty(command, "kind");
+          const prototype = Object.create(null) as object;
+          Object.defineProperty(prototype, "kind", {
+            configurable: true,
+            enumerable: true,
+            value: "apply-edit-plan",
+          });
+          Object.setPrototypeOf(command, prototype);
+        },
+        expected: {
+          code: "edit-plan.command-shape-invalid",
+          path: ["kind"],
+        },
+      },
+      {
+        label: "inherited root getter",
+        prepare(
+          command: ReturnType<typeof validRuntimeShapeProbeCommand>,
+          countGetterCall: () => void,
+        ) {
+          Reflect.deleteProperty(command, "kind");
+          const prototype = Object.create(null) as object;
+          Object.defineProperty(prototype, "kind", {
+            configurable: true,
+            enumerable: true,
+            get() {
+              countGetterCall();
+              return "apply-edit-plan";
+            },
+          });
+          Object.setPrototypeOf(command, prototype);
+        },
+        expected: {
+          code: "edit-plan.command-shape-invalid",
+          path: ["kind"],
+        },
+      },
+      {
+        label: "inherited nested data property",
+        prepare(
+          command: ReturnType<typeof validRuntimeShapeProbeCommand>,
+          countGetterCall: () => void,
+        ) {
+          void countGetterCall;
+          const snapshot = command.plan.source.quickEntrySnapshot;
+          Reflect.deleteProperty(snapshot, "sourceText");
+          const prototype = Object.create(null) as object;
+          Object.defineProperty(prototype, "sourceText", {
+            configurable: true,
+            enumerable: true,
+            value: "| C7 |",
+          });
+          Object.setPrototypeOf(snapshot, prototype);
+        },
+        expected: {
+          code: "edit-plan.plan-shape-invalid",
+          path: ["plan", "source", "quickEntrySnapshot", "sourceText"],
+        },
+      },
+      {
+        label: "inherited nested getter",
+        prepare(
+          command: ReturnType<typeof validRuntimeShapeProbeCommand>,
+          countGetterCall: () => void,
+        ) {
+          const snapshot = command.plan.source.quickEntrySnapshot;
+          Reflect.deleteProperty(snapshot, "sourceText");
+          const prototype = Object.create(null) as object;
+          Object.defineProperty(prototype, "sourceText", {
+            configurable: true,
+            enumerable: true,
+            get() {
+              countGetterCall();
+              return "| C7 |";
+            },
+          });
+          Object.setPrototypeOf(snapshot, prototype);
+        },
+        expected: {
+          code: "edit-plan.plan-shape-invalid",
+          path: ["plan", "source", "quickEntrySnapshot", "sourceText"],
+        },
+      },
+    ] as const;
+
+    expect(
+      probeA0U1RuntimeShapeRefusal(validRuntimeShapeProbeCommand()),
+    ).toBeNull();
+
+    const proxyTarget = validRuntimeShapeProbeCommand();
+    let proxyGetCalls = 0;
+    const forwardingProxy = new Proxy(proxyTarget, {
+      get(target, property, receiver) {
+        proxyGetCalls += 1;
+        return Reflect.get(target, property, receiver);
+      },
+      getOwnPropertyDescriptor(target, property) {
+        return Reflect.getOwnPropertyDescriptor(target, property);
+      },
+      ownKeys(target) {
+        return Reflect.ownKeys(target);
+      },
+    });
+    expect(
+      probeA0U1RuntimeShapeRefusal(forwardingProxy),
+      "forwarding root Proxy",
+    ).toBeNull();
+    expect(proxyGetCalls, "forwarding root Proxy").toBe(0);
+
+    const splitCommand = validRuntimeShapeProbeSplitCommand();
+    const completionDeclaration = splitCommand.plan.completionDeclarations[0];
+    let arrayIndexGetterCalls = 0;
+    Object.defineProperty(splitCommand.plan.completionDeclarations, 0, {
+      configurable: true,
+      enumerable: true,
+      get() {
+        arrayIndexGetterCalls += 1;
+        return completionDeclaration;
+      },
+    });
+    expect(
+      probeA0U1RuntimeShapeRefusal(splitCommand),
+      "array index accessor",
+    ).toEqual({
+      code: "edit-plan.plan-shape-invalid",
+      path: ["plan", "completionDeclarations", 0],
+    });
+    expect(arrayIndexGetterCalls, "array index accessor").toBe(0);
+
+    for (const hostileCase of cases) {
+      const command = validRuntimeShapeProbeCommand();
+      let getterCalls = 0;
+      hostileCase.prepare(command, () => {
+        getterCalls += 1;
+      });
+
+      expect(probeA0U1RuntimeShapeRefusal(command), hostileCase.label).toEqual(
+        hostileCase.expected,
+      );
+      expect(getterCalls, hostileCase.label).toBe(0);
+    }
   });
 
   test("scalar, bound, bookmark, transposition, and entropy authorities are exact", () => {
@@ -1513,6 +2169,8 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
       bassPolicy: "generated",
     });
     expect(A0_U1_ATOMIC_EDIT_LIMITS).toEqual({
+      structuralDecodeCalls: 1,
+      semanticValidationCalls: 1,
       fragmentSourceCodePoints: 4_096,
       fragmentSourceUtf8Bytes: 16_384,
       fragmentSections: 64,
@@ -1532,17 +2190,75 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
       occupiedIdRecords: 73_793,
       planNodeRecords: 73_793,
       bookmarkRecordsExamined: 8_196,
-      exactBeatAdditions: 8_192,
-      exactBeatComparisons: 8_192,
+      exactBeatAdditions: 8_193,
+      exactBeatComparisons: 8_193,
       metadataFieldsCompared: 12,
+      sectionNameCodePoints: 256,
+      sectionAnnotationCodePoints: 2_000,
+      completionReasonCodePoints: 2_000,
+      planMetadataCodePoints: 6_768,
+    });
+    expect(A0_U1_ATOMIC_EDIT_WORK_COUNTER_MAXIMA).toEqual({
+      structuralDecodeCalls: 1,
+      semanticValidationCalls: 1,
+      planNodesVisited: 73_794,
+      sourceCodePointsObserved: 4_097,
+      sourceUtf8BytesObserved: 16_385,
+      quickEntrySnapshotFieldsCompared: 6,
+      quickEntryIssueCodesCompared: 65,
+      syntaxParseCalls: 1,
+      warningAcknowledgementsCompared: 65,
+      insertableChordsExamined: 8_192,
+      recoveryFieldsCompared: 4,
+      draftSectionsVisited: 65,
+      draftMeasuresVisited: 65_537,
+      draftEventsVisited: 8_193,
+      completionDeclarationsVisited: 2,
+      metadataFieldsCompared: 12,
+      metadataCodePointsObserved: 6_769,
+      exactBeatAdditions: 8_193,
+      exactBeatComparisons: 8_193,
+      idAllocationAttempts: 73_792,
+      idCollisionChecks: 73_792,
+      bookmarkRecordsExamined: 8_196,
+      bookmarkRecordsRewritten: 4,
+      peakPlanNodeRecords: 73_794,
+      peakAllocatedIdRecords: 73_792,
+      peakDiagnosticRecords: 64,
     });
     expect(A0_U1_QUICK_ENTRY_TARGET_MATCH_POLICY).toEqual({
-      intoMeasureBeforeEvent: "before-event-id-equals-beforeEventId",
-      intoMeasureAppend: "measure-end-id-equals-measureId",
-      intoSectionBeforeMeasure: "before-measure-id-equals-beforeMeasureId",
-      intoSectionAppend: "section-end-id-equals-sectionId",
-      intoDocumentBeforeSection: "before-section-id-equals-beforeSectionId",
-      intoDocumentAppend: "document-end",
+      parentOwnership: "same-declared-parent-required",
+      measure: {
+        "measure-start": "before-first-event-or-append-when-empty",
+        "before-event": "before-that-event",
+        "after-event": "before-next-event-or-append",
+        "measure-end": "append",
+      },
+      section: {
+        "section-start": "before-first-measure-or-append-when-empty",
+        "before-measure": "before-that-measure",
+        "after-measure": "before-next-measure-or-append",
+        "section-end": "append",
+      },
+      document: {
+        "document-start": "before-first-section-or-append-when-empty",
+        "before-section": "before-that-section",
+        "after-section": "before-next-section-or-append",
+        "document-end": "append",
+      },
+      placementSlots: {
+        intoMeasure:
+          "resolved-before-event-sibling-id-equals-beforeEventId-or-append-equals-null",
+        intoSection:
+          "resolved-before-measure-sibling-id-equals-beforeMeasureId-or-append-equals-null",
+        intoDocument:
+          "resolved-before-section-sibling-id-equals-beforeSectionId-or-append-equals-null",
+      },
+      completeDraftIntoEmptyMeasure: {
+        acceptedTargets: ["measure-start", "measure-end"],
+        canonicalDestination: "append",
+        beforeEventId: null,
+      },
     });
     expect(A0_U1_ATOMIC_EDIT_PLAN_BOOKMARK_POLICIES).toEqual({
       insertFragment:
@@ -1554,8 +2270,55 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
       splitSection:
         "preserve-node-identities-rewrite-source-section-end-to-suffix",
       joinSections:
-        "preserve-measure-event-identities-map-internal-edge-to-measure-boundary",
+        "preserve-measure-event-identities-map-internal-edge-to-first-measure-or-surviving-end",
     });
+    expect(A0_U1_ATOMIC_EDIT_OUTER_WORK_POLICY).toEqual({
+      indexPassesByOutcome: {
+        applyRefusalBeforeTargetResolution: [],
+        applyRefusalFromTargetThroughF3: ["before"],
+        applySuccessOrHistoryRefusal: ["before", "after"],
+        undoOrRedo: ["restored"],
+      },
+      indexVisitOrder: "section-then-measure-then-event-source-order",
+      stableIdsIndexed: "one-per-indexed-section-measure-or-event-not-document",
+      historyEntriesVisited: {
+        apply: 0,
+        undoOrRedoAfterEntryResolution: 1,
+      },
+      historyBytesEstimated: {
+        beforeValidEstimatorReturn: 0,
+        afterValidEstimatorReturn: "exact-returned-nonnegative-safe-integer",
+        validOversizeStillCounted: true,
+      },
+      bookmarksRepaired: {
+        beforeSuccessfulF3: 0,
+        applySuccessOrHistoryRefusal: 1,
+        undoOrRedo: 0,
+        unit: "repair-operation-not-rewritten-record",
+      },
+      requestsCompared: 0,
+      transportNotificationsCompared: 0,
+      validationCalls: {
+        throughF2Refusal: 0,
+        f3RefusalSuccessOrHistoryRefusal: 1,
+        undoOrRedo: 0,
+      },
+    });
+    expect(Object.isFrozen(A0_U1_ATOMIC_EDIT_OUTER_WORK_POLICY)).toBe(true);
+    expect(
+      Object.values(
+        A0_U1_ATOMIC_EDIT_OUTER_WORK_POLICY.indexPassesByOutcome,
+      ).every(Object.isFrozen),
+    ).toBe(true);
+    expect(
+      [
+        A0_U1_ATOMIC_EDIT_OUTER_WORK_POLICY.indexPassesByOutcome,
+        A0_U1_ATOMIC_EDIT_OUTER_WORK_POLICY.historyEntriesVisited,
+        A0_U1_ATOMIC_EDIT_OUTER_WORK_POLICY.historyBytesEstimated,
+        A0_U1_ATOMIC_EDIT_OUTER_WORK_POLICY.bookmarksRepaired,
+        A0_U1_ATOMIC_EDIT_OUTER_WORK_POLICY.validationCalls,
+      ].every(Object.isFrozen),
+    ).toBe(true);
     expect(A0_U1_ATOMIC_EDIT_PLAN_TRANSPOSITION_POLICY).toEqual({
       operationPerformsTransposition: false,
       insertFragment: "preserve-t0-source-spelling-exactly",
@@ -1568,7 +2331,10 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
         "commutes-with-spelling-preserving-transposition-of-affected-event-ids",
     });
     expect(A0_U1_ATOMIC_EDIT_PLAN_ID_ENTROPY_POLICY).toEqual({
-      factoryCallsOccurOnlyAfterAllNonIdPreflight: true,
+      factoryCallsOccurOnlyAfterOperationLocalPreflight: true,
+      operationLocalPreflight:
+        "shape-snapshot-parser-declarations-operation-laws-and-final-bounds",
+      postAllocationRefusalsMayConsumeEntropy: ["f2", "f3", "history"],
       allocationOrder: "source-structural-preorder",
       collisionScope: "all-stable-id-kinds-plus-document",
       retryOnFailureOrCollision: false,
@@ -1576,7 +2342,7 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
       partialRemapPublication: false,
       entropyConsumptionRollbackClaimed: false,
       reason:
-        "StableIdFactory.next has no reservation or rollback operation; refused calls may consume entropy while application state remains unchanged.",
+        "F2, F3, history, factory failure, and collision can refuse after one or more StableIdFactory.next calls; the interface has no reservation or rollback operation, so application state remains unchanged while factory entropy may advance.",
     });
   });
 });

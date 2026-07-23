@@ -1,0 +1,148 @@
+{
+  "schema": "changes.fixtures.a1-envelope.v1",
+  "fixtureVersion": 1,
+  "authorship": "Hand-authored envelope and checksum witnesses over docs/A1_RECOVERY_CONTRACT.md section 2. Checksums were computed with an independent sha256 over canonical sorted-key JSON without the checksum field; no production persistence code exists or was consulted.",
+  "checksumAlgorithm": "sha256-of-sorted-key-json-without-checksum-v1",
+  "canonicalJsonLaw": "Object keys sorted lexicographic ascending at every depth, arrays in order, no insignificant whitespace, UTF-8 bytes.",
+  "cases": [
+    {
+      "caseId": "A1-ENV-001",
+      "title": "Minimal valid envelope round-trips with the reviewed checksum",
+      "envelope": {
+        "schema": "changes.recovery.v1",
+        "savedAt": "2026-07-23T12:00:00.000Z",
+        "revision": 7,
+        "document": { "documentVersion": 2, "title": "Recovery Golden A" },
+        "checksum": "535a0a064a00d16d6bfb50b0bf7411b52ecf309e213593aa453a6fcf5b57df2e"
+      },
+      "expected": { "outcome": "valid" }
+    },
+    {
+      "caseId": "A1-ENV-002",
+      "title": "Envelope with the lastExport display subset validates",
+      "envelope": {
+        "schema": "changes.recovery.v1",
+        "savedAt": "2026-07-23T12:05:30.500Z",
+        "revision": 12,
+        "lastExport": {
+          "revision": 9,
+          "exportedAt": "2026-07-23T11:50:00.000Z",
+          "semanticDocumentHash": "abababababababababababababababababababababababababababababababab"
+        },
+        "document": {
+          "documentVersion": 2,
+          "title": "Recovery Golden B",
+          "sections": []
+        },
+        "checksum": "1847fe6f7c1ba5be2a676004b67e57936882ad933741aba5099dad1d2472864f"
+      },
+      "expected": { "outcome": "valid" }
+    },
+    {
+      "caseId": "A1-ENV-003",
+      "title": "A one-hex-digit checksum change is corrupt, never repaired",
+      "envelope": {
+        "schema": "changes.recovery.v1",
+        "savedAt": "2026-07-23T12:00:00.000Z",
+        "revision": 7,
+        "document": { "documentVersion": 2, "title": "Recovery Golden A" },
+        "checksum": "535a0a064a00d16d6bfb50b0bf7411b52ecf309e213593aa453a6fcf5b57df2f"
+      },
+      "expected": {
+        "outcome": "corrupt",
+        "reasonCode": "recovery.checksum_mismatch"
+      }
+    },
+    {
+      "caseId": "A1-ENV-004",
+      "title": "A truncated document body fails the checksum",
+      "envelope": {
+        "schema": "changes.recovery.v1",
+        "savedAt": "2026-07-23T12:00:00.000Z",
+        "revision": 7,
+        "document": { "documentVersion": 2 },
+        "checksum": "535a0a064a00d16d6bfb50b0bf7411b52ecf309e213593aa453a6fcf5b57df2e"
+      },
+      "expected": {
+        "outcome": "corrupt",
+        "reasonCode": "recovery.checksum_mismatch"
+      }
+    },
+    {
+      "caseId": "A1-ENV-005",
+      "title": "An unknown schema refuses before checksum work",
+      "envelope": {
+        "schema": "changes.recovery.v2",
+        "savedAt": "2026-07-23T12:00:00.000Z",
+        "revision": 7,
+        "document": { "documentVersion": 2 },
+        "checksum": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "expected": {
+        "outcome": "corrupt",
+        "reasonCode": "recovery.schema_unknown"
+      }
+    },
+    {
+      "caseId": "A1-ENV-006",
+      "title": "Negative, fractional, and unsafe revisions refuse",
+      "invalidRevisions": [-1, 3.5, 9007199254740992],
+      "expected": {
+        "outcome": "corrupt",
+        "reasonCode": "recovery.revision_invalid"
+      }
+    },
+    {
+      "caseId": "A1-ENV-007",
+      "title": "A lastExport subset missing its semantic hash is corrupt",
+      "envelope": {
+        "schema": "changes.recovery.v1",
+        "savedAt": "2026-07-23T12:05:30.500Z",
+        "revision": 12,
+        "lastExport": {
+          "revision": 9,
+          "exportedAt": "2026-07-23T11:50:00.000Z"
+        },
+        "document": { "documentVersion": 2 },
+        "checksum": "recompute-over-this-shape"
+      },
+      "expected": {
+        "outcome": "corrupt",
+        "reasonCode": "recovery.corrupt_envelope"
+      }
+    },
+    {
+      "caseId": "A1-ENV-008",
+      "title": "Unparseable stored text is a corrupt candidate with a stable code",
+      "storedText": "{\"schema\":\"changes.recovery.v1\",\"savedAt\":",
+      "expected": {
+        "outcome": "corrupt",
+        "reasonCode": "recovery.corrupt_envelope"
+      }
+    },
+    {
+      "caseId": "A1-ENV-009",
+      "title": "Envelope bytes above the adapter bound refuse without truncation",
+      "adapterBounds": {
+        "indexeddb": 8000000,
+        "localstorage": 1000000
+      },
+      "expected": {
+        "reasonCode": "recovery.envelope_too_large",
+        "law": "A payload one byte over the active adapter's bound refuses; the previous slots stay byte-for-byte unchanged and editing continues."
+      }
+    },
+    {
+      "caseId": "A1-ENV-010",
+      "title": "Storage keys embed schema and document ID and never user text",
+      "documentId": "doc-a1-key",
+      "expectedKeys": {
+        "current": "changes.recovery.v1:doc-a1-key:current",
+        "previous": "changes.recovery.v1:doc-a1-key:previous"
+      },
+      "expected": {
+        "law": "recoveryStorageKey is the only key constructor; the document title or any user text never appears in a key."
+      }
+    }
+  ]
+}

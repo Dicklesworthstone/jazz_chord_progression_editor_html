@@ -1,0 +1,96 @@
+{
+  "schema": "changes.fixtures.a1-export-marker.v1",
+  "fixtureVersion": 1,
+  "authorship": "Hand-authored export binding and marker-durability witnesses over docs/A1_RECOVERY_CONTRACT.md section 6. No production persistence code exists or was consulted.",
+  "cases": [
+    {
+      "caseId": "A1-EXPORT-001",
+      "title": "Exact export success stores the complete binding",
+      "binding": {
+        "schema": "changes.recovery-export-binding.v1",
+        "documentId": "doc-a1-export",
+        "exportRevision": 9,
+        "exportedAt": "2026-07-23T11:50:00.000Z",
+        "semanticDocumentHash": "abababababababababababababababababababababababababababababababab",
+        "artifactByteLength": 20480,
+        "artifactSha256": "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd"
+      },
+      "expected": {
+        "outcome": "recorded",
+        "law": "Only bound delivery plus A0 publication reaches A1; the record persists the document ID, revision, timestamp, semantic hash, and artifact byte length and digest."
+      }
+    },
+    {
+      "caseId": "A1-EXPORT-002",
+      "title": "lastExport is only the derived display subset",
+      "expected": {
+        "subsetFields": ["revision", "exportedAt", "semanticDocumentHash"],
+        "law": "A later envelope may carry the subset only after exact A1 binding success; the subset never substitutes for the stored binding."
+      }
+    },
+    {
+      "caseId": "A1-EXPORT-003",
+      "title": "Download cancellation never advances the marker",
+      "expected": {
+        "outcome": "not-recorded",
+        "markerChanged": false,
+        "law": "Cancellation or delivery failure leaves the in-session marker exactly where it was."
+      }
+    },
+    {
+      "caseId": "A1-EXPORT-004",
+      "title": "A stale marker for a superseded revision refuses",
+      "scenario": "The document advanced to revision 14 while an export bound to revision 9 was pending.",
+      "expected": {
+        "outcome": "refused",
+        "reasonCode": "recovery.export_marker_stale",
+        "newerStateTouched": false,
+        "law": "A0 preserves the newer state and A1 refuses the stale marker without any write."
+      }
+    },
+    {
+      "caseId": "A1-EXPORT-005",
+      "title": "Failed binding persistence stays visibly pending",
+      "expected": {
+        "outcome": "refused",
+        "reasonCode": "recovery.write_denied",
+        "statusVocabulary": "Changed since export",
+        "law": "Unavailable, failed, or malformed persistence remains visibly pending without a cross-reload claim."
+      }
+    },
+    {
+      "caseId": "A1-EXPORT-006",
+      "title": "A malformed binding refuses with a stable code",
+      "invalidBindings": [
+        { "missing": "semanticDocumentHash" },
+        { "field": "exportRevision", "value": -2 },
+        { "field": "artifactSha256", "value": "not-hex" },
+        { "field": "schema", "value": "changes.recovery-export-binding.v2" }
+      ],
+      "expected": {
+        "outcome": "refused",
+        "reasonCode": "recovery.export_binding_invalid"
+      }
+    },
+    {
+      "caseId": "A1-EXPORT-007",
+      "title": "A binding for a different document refuses",
+      "expected": {
+        "outcome": "refused",
+        "reasonCode": "recovery.document_id_mismatch",
+        "law": "The binding's document ID must equal the service's bound document."
+      }
+    },
+    {
+      "caseId": "A1-EXPORT-008",
+      "title": "Exported and changed-since-export statuses use the frozen vocabulary",
+      "expected": {
+        "exactStatuses": [
+          "Exported at revision {revision}",
+          "Changed since export"
+        ],
+        "law": "Only the {revision} substitution exists; no string may call recovery a save."
+      }
+    }
+  ]
+}

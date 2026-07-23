@@ -1,0 +1,120 @@
+{
+  "schema": "changes.fixtures.a1-scheduler.v1",
+  "fixtureVersion": 1,
+  "authorship": "Hand-authored write-scheduling and revision-safety witnesses over docs/A1_RECOVERY_CONTRACT.md section 4. Expected observations describe injected fake adapter/clock logs; no production persistence code exists or was consulted.",
+  "timing": { "idleDelayMs": 400, "maxDelayMs": 2000 },
+  "cases": [
+    {
+      "caseId": "A1-SCHED-001",
+      "title": "A mutation marks recovery pending immediately",
+      "expected": {
+        "pendingBeforeAnyTimer": true,
+        "writesScheduledDelta": 1,
+        "law": "The pending mark is synchronous with the mutation; the write itself waits for the idle window."
+      }
+    },
+    {
+      "caseId": "A1-SCHED-002",
+      "title": "One idle window produces exactly one write at 400 ms",
+      "clockScript": [
+        { "atMs": 0, "action": "mutate", "revision": 3 },
+        { "atMs": 400, "action": "idle-timer-fires" }
+      ],
+      "expected": {
+        "writesCompletedDelta": 1,
+        "writtenRevision": 3,
+        "law": "The snapshot is serialized for the triggering revision at queue time."
+      }
+    },
+    {
+      "caseId": "A1-SCHED-003",
+      "title": "Continuous editing flushes by the two-second maximum",
+      "clockScript": [
+        { "atMs": 0, "action": "mutate", "revision": 1 },
+        { "atMs": 300, "action": "mutate", "revision": 2 },
+        { "atMs": 600, "action": "mutate", "revision": 3 },
+        { "atMs": 900, "action": "mutate", "revision": 4 },
+        { "atMs": 1200, "action": "mutate", "revision": 5 },
+        { "atMs": 1500, "action": "mutate", "revision": 6 },
+        { "atMs": 1800, "action": "mutate", "revision": 7 },
+        { "atMs": 2000, "action": "max-delay-fires" }
+      ],
+      "expected": {
+        "writesCompletedDelta": 1,
+        "writtenRevision": 7,
+        "maxObservedDelayMs": 2000,
+        "law": "Repeated 300 ms mutations keep resetting the idle window; the two-second ceiling forces one write of the newest revision."
+      }
+    },
+    {
+      "caseId": "A1-SCHED-004",
+      "title": "A newer trigger replaces a queued-but-unstarted snapshot",
+      "expected": {
+        "maxInFlightWrites": 1,
+        "writesSupersededDelta": 0,
+        "law": "At most one write is in flight; a queued snapshot that has not started is replaced by the newer revision rather than queued behind it."
+      }
+    },
+    {
+      "caseId": "A1-SCHED-005",
+      "title": "An older completion cannot mark or overwrite newer state",
+      "scenario": "The write for revision 4 completes after revision 6 already exists.",
+      "expected": {
+        "completionOutcome": "superseded",
+        "reasonCode": "recovery.stale_completion",
+        "cleanRevisionAfter": null,
+        "law": "Completion may mark recovery clean only while its revision is still current."
+      }
+    },
+    {
+      "caseId": "A1-SCHED-006",
+      "title": "A visibility change requests one final best-effort write",
+      "expected": {
+        "trigger": "visibility-change",
+        "unloadGuarantee": "best-effort-only",
+        "law": "Correctness never depends on asynchronous work completing during unload."
+      }
+    },
+    {
+      "caseId": "A1-SCHED-007",
+      "title": "Quota exhaustion keeps editing and reports an actionable status",
+      "expected": {
+        "writeOutcome": "refused",
+        "reasonCode": "recovery.quota_exceeded",
+        "editingBlocked": false,
+        "statusVocabulary": "Recovery unavailable — export recommended",
+        "law": "Storage denial is an ordinary actionable state; the in-memory document is untouched."
+      }
+    },
+    {
+      "caseId": "A1-SCHED-008",
+      "title": "A denied write leaves both slots byte-for-byte unchanged",
+      "expected": {
+        "writeOutcome": "refused",
+        "reasonCode": "recovery.write_denied",
+        "slotsChanged": false,
+        "law": "A failed or refused adapter write can never leave the slots partially rotated."
+      }
+    },
+    {
+      "caseId": "A1-SCHED-009",
+      "title": "A successful current write atomically demotes the prior current",
+      "scenario": "Revision 3 is current; the write for revision 8 succeeds.",
+      "expected": {
+        "currentRevisionAfter": 8,
+        "previousRevisionAfter": 3,
+        "rotationAtomic": true,
+        "law": "Rotation happens inside the adapter write; readers can never observe two currents or zero candidates mid-write."
+      }
+    },
+    {
+      "caseId": "A1-SCHED-010",
+      "title": "A clean completion updates the clean revision exactly once",
+      "expected": {
+        "completionOutcome": "written",
+        "statusVocabulary": "Recovered locally at {time}",
+        "law": "The clean revision equals the written revision, and the status renders the frozen vocabulary with only the {time} substitution."
+      }
+    }
+  ]
+}

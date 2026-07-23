@@ -83,6 +83,13 @@ publishes one `failed` notification with a stable code.
 `initialize-transport` and a `resume` that recovers from `interrupted`
 require an `AudioUserGestureReceipt` with a strictly increasing sequence;
 an ordinary `resume` from `paused` may carry `null`.
+The timing policy may carry an optional measured-browser
+`immediateStartMarginSeconds` (0–0.02 s, default 0): the live audio clock
+can advance between the scheduler's read and the X0 admission read, so an
+attack whose exact start is at or behind the moving clock is issued at
+`now + margin` instead of being refused as already past. Zero preserves
+exact fake-clock behavior; the margin can only delay an already-due
+attack, never silence or reorder one.
 `initialize-transport` additionally carries the complete initial
 `AudioMix`, forwarded to the X0 engine initialization unchanged, and a
 view-identity echo (`documentId`, `planRevision`) matching the

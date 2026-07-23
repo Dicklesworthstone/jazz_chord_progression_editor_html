@@ -210,6 +210,17 @@ export const MAX_TRANSPORT_TICK_INTERVAL_MS = 100;
 export const TRANSPORT_LOOKAHEAD_SECONDS_DEFAULT = 0.1;
 export const MIN_TRANSPORT_LOOKAHEAD_SECONDS = 0.05;
 export const MAX_TRANSPORT_LOOKAHEAD_SECONDS = 0.2;
+/**
+ * Optional measured-browser start margin. The live audio clock can advance
+ * between the scheduler's read and the X0 admission read, so an attack
+ * whose exact start is at or behind the moving clock is issued at
+ * now + margin instead of being refused as already past. Zero (the
+ * default) preserves exact fake-clock behavior; real-browser composition
+ * roots set a small measured value. Never a musical cutoff: it can only
+ * delay an already-due attack by the margin.
+ */
+export const TRANSPORT_IMMEDIATE_START_MARGIN_SECONDS_DEFAULT = 0;
+export const MAX_TRANSPORT_IMMEDIATE_START_MARGIN_SECONDS = 0.02;
 export const TRANSPORT_X0_ATTACK_WINDOW_MARGIN_SECONDS = 0.05;
 
 export const MAX_TRANSPORT_QUEUED_COMMANDS = 32;
@@ -281,6 +292,8 @@ export type TransportGenerationBoundary =
 export type TransportTimingPolicy = Readonly<{
   tickIntervalMs: number;
   lookaheadSeconds: number;
+  /** Measured-browser immediate-start margin; omitted means zero. */
+  immediateStartMarginSeconds?: number;
 }>;
 
 /** Positive safe integer identifying one submitted command. */

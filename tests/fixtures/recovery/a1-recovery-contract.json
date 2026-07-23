@@ -1,0 +1,123 @@
+{
+  "schema": "changes.fixtures.a1-recovery-contract.v1",
+  "fixtureVersion": 1,
+  "recoveryPolicyId": "changes.recovery-persistence",
+  "recoveryPolicyVersion": 1,
+  "contractSchema": "changes.persistence.recovery-contract.v1",
+  "envelopeSchema": "changes.recovery.v1",
+  "exportBindingSchema": "changes.recovery-export-binding.v1",
+  "checksumAlgorithm": "sha256-of-sorted-key-json-without-checksum-v1",
+  "keyPrefix": "changes.recovery.v1:",
+  "adapterKinds": [
+    "indexeddb",
+    "localstorage",
+    "none"
+  ],
+  "slots": [
+    "current",
+    "previous"
+  ],
+  "operationNames": [
+    "probeRecoveryCapability",
+    "readRecoveryCandidates",
+    "scheduleRecoveryWrite",
+    "flushRecoveryWrites",
+    "recordExportBinding",
+    "discardRecovery",
+    "inspectRecovery"
+  ],
+  "refusalCodes": [
+    "recovery.unavailable",
+    "recovery.probe_failed",
+    "recovery.quota_exceeded",
+    "recovery.write_denied",
+    "recovery.envelope_too_large",
+    "recovery.corrupt_envelope",
+    "recovery.checksum_mismatch",
+    "recovery.schema_unknown",
+    "recovery.revision_invalid",
+    "recovery.stale_completion",
+    "recovery.export_marker_stale",
+    "recovery.export_binding_invalid",
+    "recovery.document_id_mismatch",
+    "recovery.disposed"
+  ],
+  "startupDispositions": [
+    "open-current-automatically",
+    "offer-keep-discard",
+    "offer-previous",
+    "report-unrecoverable",
+    "none-available"
+  ],
+  "statusVocabulary": {
+    "recoveredLocally": "Recovered locally at {time}",
+    "changesPending": "Changes pending recovery",
+    "unavailable": "Recovery unavailable — export recommended",
+    "exportedAtRevision": "Exported at revision {revision}",
+    "changedSinceExport": "Changed since export"
+  },
+  "workCounterNames": [
+    "probesRun",
+    "writesScheduled",
+    "writesCompleted",
+    "writesSuperseded",
+    "writesRefused",
+    "envelopesDecoded",
+    "envelopesRejected",
+    "exportBindingsRecorded",
+    "exportBindingsRefused",
+    "startupReportsProduced"
+  ],
+  "limits": {
+    "idleDelayMs": 400,
+    "maxDelayMs": 2000,
+    "envelopeBytesIndexeddb": 8000000,
+    "envelopeBytesLocalstorage": 1000000,
+    "maxKeyLength": 256,
+    "maxReasonCodeLength": 64,
+    "maxPendingWrites": 1,
+    "retainedSlots": 2
+  },
+  "companions": [
+    {
+      "path": "envelope-cases.json",
+      "bytes": 5352,
+      "sha256": "12bf392110853253a4fd522718d3d82ee621ad3f5133b6ff7829c38ab9de10ca"
+    },
+    {
+      "path": "scheduler-cases.json",
+      "bytes": 4867,
+      "sha256": "c44d135e4295a5cdaffb4ff616239d7257c17098bc4219c014cf1bf0a899f863"
+    },
+    {
+      "path": "adapter-cases.json",
+      "bytes": 3236,
+      "sha256": "a00dc048c8b99648c24783680419ae280e4e62efde3ea1b5b60aebd5d79277ae"
+    },
+    {
+      "path": "startup-cases.json",
+      "bytes": 4689,
+      "sha256": "46aa231c16f256dfd6902ac435e1e837a95a7eff70c7a85d76c8902da54ddc9e"
+    },
+    {
+      "path": "export-marker-cases.json",
+      "bytes": 3749,
+      "sha256": "b9388967f785a45612dbfd9baefac14c607124df5d9c2cbd539ca692434e035b"
+    },
+    {
+      "path": "mutation-controls.json",
+      "bytes": 5228,
+      "sha256": "8a914ae80adc64c75422718774de9c2f7ea3f4c675914f47b6c32140774284ee"
+    },
+    {
+      "path": "trace-ledger.json",
+      "bytes": 6126,
+      "sha256": "a76f74ab16bb2b170365ce64841bb1229d8997fee3e113c531dd42a36fe66fef"
+    },
+    {
+      "path": "provenance-ledger.json",
+      "bytes": 3967,
+      "sha256": "2239c19f9e9152d1626938a6195242462923e9f88dfe6bf0f8ceb19f92dae88d"
+    }
+  ]
+}

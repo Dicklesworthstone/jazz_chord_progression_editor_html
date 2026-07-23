@@ -1,0 +1,137 @@
+{
+  "schema": "changes.fixtures.a1-startup.v1",
+  "fixtureVersion": 1,
+  "authorship": "Hand-authored startup matrix over docs/A1_RECOVERY_CONTRACT.md section 5. No production persistence code exists or was consulted.",
+  "laws": {
+    "blankFirst": "Startup renders the blank workspace immediately; the probe never blocks first paint.",
+    "noAudio": "No startup disposition may initialize audio.",
+    "noSilentOverwrite": "Recovery never silently overwrites an already edited in-memory document."
+  },
+  "cases": [
+    {
+      "caseId": "A1-START-001",
+      "current": "valid-fresh",
+      "previous": "valid",
+      "sessionEdited": false,
+      "exportMarkerAgrees": true,
+      "expected": {
+        "disposition": "open-current-automatically",
+        "law": "A valid current envelope with no conflicting session state and no export disagreement opens automatically with a visible explanation and Discard/New actions."
+      }
+    },
+    {
+      "caseId": "A1-START-002",
+      "current": "valid-fresh",
+      "previous": "absent",
+      "sessionEdited": false,
+      "exportMarkerAgrees": true,
+      "expected": { "disposition": "open-current-automatically" }
+    },
+    {
+      "caseId": "A1-START-003",
+      "current": "valid-stale-vs-marker",
+      "previous": "valid",
+      "sessionEdited": false,
+      "exportMarkerAgrees": false,
+      "expected": {
+        "disposition": "offer-keep-discard",
+        "law": "A current envelope that is stale against or disagrees with the stored export binding is offered, never auto-opened."
+      }
+    },
+    {
+      "caseId": "A1-START-004",
+      "current": "valid-fresh",
+      "previous": "valid",
+      "sessionEdited": true,
+      "exportMarkerAgrees": true,
+      "expected": {
+        "disposition": "offer-keep-discard",
+        "law": "Editing that began before the probe settled downgrades automatic opening to Keep/Discard; the edited in-memory document is never overwritten."
+      }
+    },
+    {
+      "caseId": "A1-START-005",
+      "current": "corrupt",
+      "previous": "valid",
+      "sessionEdited": false,
+      "exportMarkerAgrees": true,
+      "expected": {
+        "disposition": "offer-previous",
+        "law": "A corrupt current envelope with a valid previous envelope offers the previous copy."
+      }
+    },
+    {
+      "caseId": "A1-START-006",
+      "current": "corrupt",
+      "previous": "corrupt",
+      "sessionEdited": false,
+      "exportMarkerAgrees": true,
+      "expected": {
+        "disposition": "report-unrecoverable",
+        "law": "Neither copy decoding reports one nonblocking diagnostic; the blank workspace stands and editing is unaffected."
+      }
+    },
+    {
+      "caseId": "A1-START-007",
+      "current": "absent",
+      "previous": "absent",
+      "sessionEdited": false,
+      "exportMarkerAgrees": true,
+      "expected": { "disposition": "none-available" }
+    },
+    {
+      "caseId": "A1-START-008",
+      "current": "corrupt",
+      "previous": "absent",
+      "sessionEdited": false,
+      "exportMarkerAgrees": true,
+      "expected": {
+        "disposition": "report-unrecoverable",
+        "law": "A corrupt current with no previous is a nonblocking diagnostic, not an offer."
+      }
+    },
+    {
+      "caseId": "A1-START-009",
+      "current": "absent",
+      "previous": "valid",
+      "sessionEdited": false,
+      "exportMarkerAgrees": true,
+      "expected": {
+        "disposition": "offer-previous",
+        "law": "A missing current slot with a valid previous envelope is offered as the previous copy, never auto-opened."
+      }
+    },
+    {
+      "caseId": "A1-START-010",
+      "current": "valid-stale-vs-marker",
+      "previous": "corrupt",
+      "sessionEdited": true,
+      "exportMarkerAgrees": false,
+      "expected": {
+        "disposition": "offer-keep-discard",
+        "law": "Session edits and marker disagreement combine to the same Keep/Discard offer; corruption of previous changes nothing here."
+      }
+    },
+    {
+      "caseId": "A1-START-011",
+      "current": "valid-fresh",
+      "previous": "valid",
+      "sessionEdited": false,
+      "exportMarkerAgrees": true,
+      "adapter": "none",
+      "expected": {
+        "disposition": "none-available",
+        "statusVocabulary": "Recovery unavailable — export recommended",
+        "law": "With no usable adapter there are no candidates regardless of stored bytes elsewhere."
+      }
+    },
+    {
+      "caseId": "A1-START-012",
+      "title": "No disposition initializes audio",
+      "expected": {
+        "audioInitialized": false,
+        "law": "Every startup path leaves the audio engine untouched; only a later trusted gesture may initialize it."
+      }
+    }
+  ]
+}

@@ -1,0 +1,175 @@
+{
+  "schema": "changes.fixtures.a1-mutation-controls.v1",
+  "fixtureVersion": 1,
+  "productionImportsForbidden": true,
+  "controls": [
+    {
+      "id": "A1-MUT-001",
+      "file": "a1-recovery-contract.json",
+      "operation": "replace",
+      "pointer": "/statusVocabulary/unavailable",
+      "value": "Save unavailable — export recommended",
+      "expectedFindingCode": "A1_VOCABULARY"
+    },
+    {
+      "id": "A1-MUT-002",
+      "file": "a1-recovery-contract.json",
+      "operation": "replace",
+      "pointer": "/limits/idleDelayMs",
+      "value": 500,
+      "expectedFindingCode": "A1_LIMITS"
+    },
+    {
+      "id": "A1-MUT-003",
+      "file": "a1-recovery-contract.json",
+      "operation": "replace",
+      "pointer": "/limits/envelopeBytesLocalstorage",
+      "value": 2000000,
+      "expectedFindingCode": "A1_LIMITS"
+    },
+    {
+      "id": "A1-MUT-004",
+      "file": "a1-recovery-contract.json",
+      "operation": "replace",
+      "pointer": "/startupDispositions/0",
+      "value": "open-previous-automatically",
+      "expectedFindingCode": "A1_STATES"
+    },
+    {
+      "id": "A1-MUT-005",
+      "file": "a1-recovery-contract.json",
+      "operation": "replace",
+      "pointer": "/companions/0/sha256",
+      "value": "0000000000000000000000000000000000000000000000000000000000000000",
+      "expectedFindingCode": "A1_MANIFEST_COMPANION"
+    },
+    {
+      "id": "A1-MUT-006",
+      "file": "envelope-cases.json",
+      "operation": "replace",
+      "pointer": "/cases/4/expected/reasonCode",
+      "value": "recovery.corrupt_envelope",
+      "expectedFindingCode": "A1_ENVELOPE_CASES"
+    },
+    {
+      "id": "A1-MUT-007",
+      "file": "envelope-cases.json",
+      "operation": "replace",
+      "pointer": "/cases/8/expected/reasonCode",
+      "value": "recovery.quota_exceeded",
+      "expectedFindingCode": "A1_ENVELOPE_CASES"
+    },
+    {
+      "id": "A1-MUT-008",
+      "file": "envelope-cases.json",
+      "operation": "replace",
+      "pointer": "/cases/9/expectedKeys/current",
+      "value": "changes.recovery.v1:doc-a1-key:latest",
+      "expectedFindingCode": "A1_ENVELOPE_CASES"
+    },
+    {
+      "id": "A1-MUT-009",
+      "file": "envelope-cases.json",
+      "operation": "replace",
+      "pointer": "/cases/0/envelope/checksum",
+      "value": "535a0a064a00d16d6bfb50b0bf7411b52ecf309e213593aa453a6fcf5b57df00",
+      "expectedFindingCode": "A1_CHECKSUM_GOLDEN"
+    },
+    {
+      "id": "A1-MUT-010",
+      "file": "scheduler-cases.json",
+      "operation": "replace",
+      "pointer": "/timing/idleDelayMs",
+      "value": 300,
+      "expectedFindingCode": "A1_SCHEDULER_CASES"
+    },
+    {
+      "id": "A1-MUT-011",
+      "file": "scheduler-cases.json",
+      "operation": "replace",
+      "pointer": "/cases/2/expected/writtenRevision",
+      "value": 1,
+      "expectedFindingCode": "A1_SCHEDULER_CASES"
+    },
+    {
+      "id": "A1-MUT-012",
+      "file": "scheduler-cases.json",
+      "operation": "replace",
+      "pointer": "/cases/4/expected/completionOutcome",
+      "value": "written",
+      "expectedFindingCode": "A1_SCHEDULER_CASES"
+    },
+    {
+      "id": "A1-MUT-013",
+      "file": "scheduler-cases.json",
+      "operation": "replace",
+      "pointer": "/cases/8/expected/previousRevisionAfter",
+      "value": 8,
+      "expectedFindingCode": "A1_SCHEDULER_CASES"
+    },
+    {
+      "id": "A1-MUT-014",
+      "file": "adapter-cases.json",
+      "operation": "replace",
+      "pointer": "/cases/1/expected/selectedAdapter",
+      "value": "indexeddb",
+      "expectedFindingCode": "A1_ADAPTER_CASES"
+    },
+    {
+      "id": "A1-MUT-015",
+      "file": "adapter-cases.json",
+      "operation": "replace",
+      "pointer": "/cases/3/expected/onePastBound",
+      "value": "written",
+      "expectedFindingCode": "A1_ADAPTER_CASES"
+    },
+    {
+      "id": "A1-MUT-016",
+      "file": "adapter-cases.json",
+      "operation": "replace",
+      "pointer": "/cases/2/expected/editingBlocked",
+      "value": true,
+      "expectedFindingCode": "A1_ADAPTER_CASES"
+    },
+    {
+      "id": "A1-MUT-017",
+      "file": "startup-cases.json",
+      "operation": "replace",
+      "pointer": "/cases/3/expected/disposition",
+      "value": "open-current-automatically",
+      "expectedFindingCode": "A1_STARTUP_CASES"
+    },
+    {
+      "id": "A1-MUT-018",
+      "file": "startup-cases.json",
+      "operation": "replace",
+      "pointer": "/cases/11/expected/audioInitialized",
+      "value": true,
+      "expectedFindingCode": "A1_STARTUP_CASES"
+    },
+    {
+      "id": "A1-MUT-019",
+      "file": "export-marker-cases.json",
+      "operation": "replace",
+      "pointer": "/cases/2/expected/markerChanged",
+      "value": true,
+      "expectedFindingCode": "A1_EXPORT_CASES"
+    },
+    {
+      "id": "A1-MUT-020",
+      "file": "export-marker-cases.json",
+      "operation": "replace",
+      "pointer": "/cases/7/expected/exactStatuses/1",
+      "value": "Changed since save",
+      "expectedFindingCode": "A1_EXPORT_CASES"
+    },
+    {
+      "id": "A1-MUT-021",
+      "file": "trace-ledger.json",
+      "operation": "replace",
+      "pointer": "/traces/9/evidenceOwner",
+      "value": "tests/unit/fake-reload.test.ts",
+      "expectedFindingCode": "A1_TRACE"
+    }
+  ]
+}

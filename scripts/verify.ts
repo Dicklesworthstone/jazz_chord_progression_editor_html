@@ -50,6 +50,10 @@ const gates: Gate[] = [
     command: [process.execPath, "scripts/validate-a0-contract.ts"],
   },
   {
+    id: "a1-recovery-contract",
+    command: [process.execPath, "scripts/validate-a1-contract.ts"],
+  },
+  {
     id: "a0-u1-atomic-edit-plan-contract",
     command: [
       process.execPath,

@@ -144,7 +144,9 @@ export default tseslint.config(
     files: [
       "playwright.config.ts",
       "playwright.x0.config.ts",
+      "playwright.x1.config.ts",
       "tests/integration/audio-offline-render.test.ts",
+      "tests/integration/transport-browser-evidence.test.ts",
       "tests/e2e/**/*.{ts,tsx}",
       "tests/visual/**/*.{ts,tsx}",
     ],

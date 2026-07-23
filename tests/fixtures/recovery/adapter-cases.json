@@ -1,0 +1,96 @@
+{
+  "schema": "changes.fixtures.a1-adapter.v1",
+  "fixtureVersion": 1,
+  "authorship": "Hand-authored adapter selection and bound witnesses over docs/A1_RECOVERY_CONTRACT.md section 3. No production persistence code exists or was consulted.",
+  "cases": [
+    {
+      "caseId": "A1-ADAPT-001",
+      "title": "A usable IndexedDB probe selects the primary adapter",
+      "probes": [
+        { "adapter": "indexeddb", "usable": true, "reasonCode": null }
+      ],
+      "expected": { "selectedAdapter": "indexeddb" }
+    },
+    {
+      "caseId": "A1-ADAPT-002",
+      "title": "A failed IndexedDB probe falls back to bounded localStorage",
+      "probes": [
+        {
+          "adapter": "indexeddb",
+          "usable": false,
+          "reasonCode": "recovery.probe_failed"
+        },
+        { "adapter": "localstorage", "usable": true, "reasonCode": null }
+      ],
+      "expected": {
+        "selectedAdapter": "localstorage",
+        "law": "The fallback engages only after the primary capability probe fails, never by preference."
+      }
+    },
+    {
+      "caseId": "A1-ADAPT-003",
+      "title": "Both probes failing selects none and points to Export",
+      "probes": [
+        {
+          "adapter": "indexeddb",
+          "usable": false,
+          "reasonCode": "recovery.probe_failed"
+        },
+        {
+          "adapter": "localstorage",
+          "usable": false,
+          "reasonCode": "recovery.write_denied"
+        }
+      ],
+      "expected": {
+        "selectedAdapter": "none",
+        "statusVocabulary": "Recovery unavailable — export recommended",
+        "editingBlocked": false
+      }
+    },
+    {
+      "caseId": "A1-ADAPT-004",
+      "title": "The localStorage envelope bound is exactly one million bytes",
+      "boundBytes": 1000000,
+      "expected": {
+        "atBound": "written",
+        "onePastBound": "recovery.envelope_too_large",
+        "law": "The bound is inclusive; one byte over refuses without truncation."
+      }
+    },
+    {
+      "caseId": "A1-ADAPT-005",
+      "title": "The IndexedDB envelope bound is exactly eight million bytes",
+      "boundBytes": 8000000,
+      "expected": {
+        "atBound": "written",
+        "onePastBound": "recovery.envelope_too_large"
+      }
+    },
+    {
+      "caseId": "A1-ADAPT-006",
+      "title": "Adapters never decide recovery semantics",
+      "expected": {
+        "law": "An adapter exposes probe/read/writeCurrentWithRotation/remove only; scheduling, checksums, rotation policy, and status belong to the service. A port with extra behavior is a contract violation."
+      }
+    },
+    {
+      "caseId": "A1-ADAPT-007",
+      "title": "Adapter transitions are logged without chart text",
+      "expected": {
+        "loggedFields": ["revisions", "hashes", "reasonCodes", "adapterKinds"],
+        "forbiddenInLogs": "chart text or any user-authored string",
+        "law": "Logs carry identity and integrity data only."
+      }
+    },
+    {
+      "caseId": "A1-ADAPT-008",
+      "title": "Keys are bounded and schema-prefixed",
+      "expected": {
+        "maxKeyLength": 256,
+        "prefix": "changes.recovery.v1:",
+        "law": "Every key begins with the envelope schema prefix and stays within the bound."
+      }
+    }
+  ]
+}

@@ -1,0 +1,96 @@
+{
+  "schema": "changes.fixtures.a1-trace-ledger.v1",
+  "fixtureVersion": 1,
+  "authorship": "Hand-authored requirement traces over docs/A1_RECOVERY_CONTRACT.md. No production persistence code exists or was consulted.",
+  "reciprocityLaw": "Every trace names at least one existing case; every case and mutation control belongs to at least one trace; every evidence owner is a named future test file.",
+  "traces": [
+    {
+      "id": "TR-A1-ENVELOPE",
+      "requirement": "The frozen changes.recovery.v1 envelope shape, bounded payloads, schema/revision validation, and stable corruption codes.",
+      "parentSource": "A1 required implementation and REBUILD_PLAN 15.2",
+      "caseIds": ["A1-ENV-001", "A1-ENV-002", "A1-ENV-005", "A1-ENV-006", "A1-ENV-007", "A1-ENV-008", "A1-ENV-009", "A1-ENV-010"],
+      "controlIds": ["A1-MUT-006", "A1-MUT-007", "A1-MUT-008"],
+      "evidenceOwner": "tests/integration/recovery-envelope.test.ts"
+    },
+    {
+      "id": "TR-A1-CHECKSUM",
+      "requirement": "The frozen sha256-of-sorted-key-json-without-checksum-v1 algorithm detects truncation and corruption and is independently recomputable.",
+      "parentSource": "REBUILD_PLAN 15.2 checksum discipline",
+      "caseIds": ["A1-ENV-001", "A1-ENV-002", "A1-ENV-003", "A1-ENV-004"],
+      "controlIds": ["A1-MUT-009"],
+      "evidenceOwner": "tests/unit/recovery-checksum.test.ts"
+    },
+    {
+      "id": "TR-A1-SCHEDULER",
+      "requirement": "Immediate pending mark, 400 ms idle write, two-second maximum under continuous editing, one in-flight write, visibility-change best-effort flush.",
+      "parentSource": "A1 required implementation and REBUILD_PLAN 15.2",
+      "caseIds": ["A1-SCHED-001", "A1-SCHED-002", "A1-SCHED-003", "A1-SCHED-004", "A1-SCHED-006", "A1-SCHED-010"],
+      "controlIds": ["A1-MUT-002", "A1-MUT-010", "A1-MUT-011"],
+      "evidenceOwner": "tests/integration/recovery-scheduler.test.ts"
+    },
+    {
+      "id": "TR-A1-REVISION-SAFETY",
+      "requirement": "Snapshots bind their triggering revision; older completions can never mark or overwrite newer state; rotation is atomic.",
+      "parentSource": "A1 invariants and REBUILD_PLAN 15.2",
+      "caseIds": ["A1-SCHED-002", "A1-SCHED-005", "A1-SCHED-009"],
+      "controlIds": ["A1-MUT-012", "A1-MUT-013"],
+      "evidenceOwner": "tests/integration/recovery-revision-safety.test.ts"
+    },
+    {
+      "id": "TR-A1-ADAPTERS",
+      "requirement": "IndexedDB primary, probe-gated bounded localStorage fallback, dumb bounded byte-store ports, schema-prefixed keys without user text.",
+      "parentSource": "A1 required implementation and REBUILD_PLAN 15.1",
+      "caseIds": ["A1-ADAPT-001", "A1-ADAPT-002", "A1-ADAPT-004", "A1-ADAPT-005", "A1-ADAPT-006", "A1-ADAPT-008", "A1-ENV-010"],
+      "controlIds": ["A1-MUT-003", "A1-MUT-014", "A1-MUT-015"],
+      "evidenceOwner": "tests/integration/recovery-adapters.test.ts"
+    },
+    {
+      "id": "TR-A1-DEGRADED",
+      "requirement": "Editing continues under denied storage, quota, and double probe failure with the exact unavailable vocabulary; failed writes leave slots unchanged.",
+      "parentSource": "A1 invariants: editing must continue when storage is denied/quota/corruption occurs",
+      "caseIds": ["A1-SCHED-007", "A1-SCHED-008", "A1-ADAPT-003", "A1-ADAPT-007"],
+      "controlIds": ["A1-MUT-016"],
+      "evidenceOwner": "tests/integration/recovery-degraded.test.ts"
+    },
+    {
+      "id": "TR-A1-STARTUP",
+      "requirement": "The exact startup matrix: automatic open, Keep/Discard, previous offer, unrecoverable diagnostic, none-available; blank-first, no audio, no silent overwrite.",
+      "parentSource": "A1 required implementation and REBUILD_PLAN 15.3",
+      "caseIds": ["A1-START-001", "A1-START-002", "A1-START-003", "A1-START-004", "A1-START-005", "A1-START-006", "A1-START-007", "A1-START-008", "A1-START-009", "A1-START-010", "A1-START-011", "A1-START-012"],
+      "controlIds": ["A1-MUT-004", "A1-MUT-017", "A1-MUT-018"],
+      "evidenceOwner": "tests/integration/recovery-startup.test.ts"
+    },
+    {
+      "id": "TR-A1-EXPORT-BINDING",
+      "requirement": "Exact-success export binding storage, derived lastExport subset, stale-marker refusal, cancellation/failure never advancing the marker.",
+      "parentSource": "A1 required implementation and REBUILD_PLAN 15.2 export discipline",
+      "caseIds": ["A1-EXPORT-001", "A1-EXPORT-002", "A1-EXPORT-003", "A1-EXPORT-004", "A1-EXPORT-005", "A1-EXPORT-006", "A1-EXPORT-007"],
+      "controlIds": ["A1-MUT-005", "A1-MUT-019"],
+      "evidenceOwner": "tests/integration/recovery-export-binding.test.ts"
+    },
+    {
+      "id": "TR-A1-VOCABULARY",
+      "requirement": "The five frozen user-facing status strings with only {time}/{revision} substitutions; recovery is never called Save.",
+      "parentSource": "REBUILD_PLAN 15.1 status vocabulary",
+      "caseIds": ["A1-SCHED-010", "A1-EXPORT-008"],
+      "controlIds": ["A1-MUT-001", "A1-MUT-020"],
+      "evidenceOwner": "tests/unit/recovery-vocabulary.test.ts"
+    },
+    {
+      "id": "TR-A1-BROWSER-RELOAD",
+      "requirement": "Real-browser reload E2E under IndexedDB, forced failure with localStorage fallback, quota, corrupt current with valid previous, and visibility-change flush, logging revisions/hashes/adapter transitions without chart text.",
+      "parentSource": "A1 test plan",
+      "caseIds": ["A1-START-001", "A1-START-005", "A1-SCHED-006"],
+      "controlIds": ["A1-MUT-021"],
+      "evidenceOwner": "tests/e2e/recovery-reload.spec.ts"
+    },
+    {
+      "id": "TR-LEGACY-DATA-LOSS",
+      "requirement": "The legacy no-recovery class cannot recur: ordinary edits are never lost without recovery — a mutation is pending immediately, written within bounded delay, and recoverable after reload.",
+      "parentSource": "docs/LEGACY_AUDIT.md — no local recovery, autosave, or dirty indicator; ordinary edits can be lost without recovery",
+      "caseIds": ["A1-SCHED-001", "A1-SCHED-002", "A1-SCHED-003", "A1-START-001"],
+      "controlIds": ["A1-MUT-002"],
+      "evidenceOwner": "tests/integration/recovery-scheduler.test.ts"
+    }
+  ]
+}

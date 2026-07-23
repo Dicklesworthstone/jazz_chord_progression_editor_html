@@ -130,6 +130,7 @@ If source and artifact disagree, regenerate the artifact; do not copy changes ba
 | `bun run validate:e0-contract` | Validate the accepted E0 JSON/text interchange, transactional application boundary, exact limits, goldens, trace, provenance, and mutation authority |
 | `bun run validate:a0-e0-bridge-contract` | Validate the proposed A0-owned replacement-registry, latest-identity, atomic marker-CAS, state-isolation, literal fixtures, traces, provenance, and mutations while pinning immutable accepted E0 v1 without claiming semantic compatibility |
 | `bun run validate:a0-u1-edit-plan-contract` | Validate the proposed additive A0/U1 atomic-edit command, five closed plan variants, literal state transitions, exact identity/time/bookmark/history laws, traces, provenance, and mutations without claiming production or UI completion |
+| `bun run validate:a1-contract` | Validate the proposed A1 recovery envelope/checksum, scheduler, adapter, startup-matrix, export-binding, trace, provenance, and mutation authority |
 | `bun run validate:x1-contract` | Validate the proposed X1 serialized-transport state matrix, timing goldens, scheduler/stop/command/notification witnesses, trace, provenance, and mutation authority |
 | `bun run typecheck` | Run strict TypeScript checks across app, tools, tests, and E2E code |
 | `bun run lint` | Run ESLint, source-integrity checks, and dependency-boundary checks |

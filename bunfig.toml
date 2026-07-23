@@ -8,5 +8,6 @@ pathIgnorePatterns = [
   "tests/e2e/**",
   "tests/fixtures/**",
   "tests/integration/audio-offline-render.test.ts",
+  "tests/integration/transport-browser-evidence.test.ts",
   "tests/visual/**",
 ]

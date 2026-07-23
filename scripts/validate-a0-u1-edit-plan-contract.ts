@@ -10,42 +10,74 @@ import {
   MAX_APPLICATION_SEQUENCE,
   MAX_COMMAND_ID_CODE_POINTS,
   MAX_COMMAND_LABEL_CODE_POINTS,
+  MAX_DRAFT_ISSUES,
+  MAX_HISTORY_RETAINED_BYTES,
+  MAX_QUICK_ENTRY_CODE_POINTS,
+  MAX_SELECTED_EVENT_IDS,
 } from "../src/application/application-state-contract";
 import {
   A0_U1_ATOMIC_EDIT_IMPLEMENTATION_STATUS,
   A0_U1_ATOMIC_EDIT_ALLOWED_OUTER_CODES_BY_REFUSAL_CODE,
+  A0_U1_ATOMIC_EDIT_DIAGNOSTIC_PATH_ORDER,
+  A0_U1_ATOMIC_EDIT_HISTORY_REFUSAL_POLICY,
+  A0_U1_ATOMIC_EDIT_OUTER_WORK_POLICY,
+  A0_U1_ATOMIC_EDIT_PLAN_EXACT_SHAPE_PRECEDENCE,
   A0_U1_ATOMIC_EDIT_PLAN_BOOKMARK_POLICIES,
   A0_U1_ATOMIC_EDIT_PLAN_DIAGNOSTIC_ORDER,
   A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS,
+  A0_U1_ATOMIC_EDIT_FIRST_EXCESS_WORK_COUNTERS,
+  A0_U1_FINAL_COLLECTION_LIMIT_COMPARISON_ORDER,
+  A0_U1_ATOMIC_EDIT_PLAN_FOCUS_DERIVATION_ORDER,
   A0_U1_ATOMIC_EDIT_PLAN_FORBIDDEN_PAYLOAD_KEYS,
+  A0_U1_ATOMIC_EDIT_PLAN_ID_ENTROPY_POLICY,
   A0_U1_ATOMIC_EDIT_PLAN_ID_ALLOCATION_ORDER,
   A0_U1_ATOMIC_EDIT_LAW_IDS,
   A0_U1_ATOMIC_EDIT_LIMITS,
   A0_U1_ATOMIC_EDIT_PLAN_CONTRACT_SCHEMA,
   A0_U1_ATOMIC_EDIT_PLAN_KINDS,
   A0_U1_ATOMIC_EDIT_OUTER_REFUSAL_CODES,
+  A0_U1_ATOMIC_EDIT_PATH_TEMPLATE_GRAMMAR,
   A0_U1_ATOMIC_EDIT_PREPLAN_OUTER_REFUSAL_CODES,
   A0_U1_ATOMIC_EDIT_PLAN_RUNNER_STAGE_ORDER,
   A0_U1_ATOMIC_EDIT_PLAN_RECEIPT_SCHEMA,
+  A0_U1_ATOMIC_EDIT_PLAN_TRANSPOSITION_POLICY,
+  A0_U1_ATOMIC_EDIT_PLAN_TEXT_SHAPE_POLICY,
+  A0_U1_ATOMIC_EDIT_REFUSAL_AUTHORITY,
   A0_U1_ATOMIC_EDIT_REFUSAL_CODES,
+  A0_U1_ATOMIC_EDIT_WORK_COUNTER_MAXIMA,
   A0_U1_ATOMIC_EDIT_WORK_COUNTER_NAMES,
+  A0_U1_FRAGMENT_SOURCE_REFUSAL_REACHABILITY,
   A0_U1_NEW_EVENT_AUTO_VOICING,
   A0_U1_NEW_EVENT_POLICY_ID,
   A0_U1_PROPOSED_APPLICATION_COMMAND_KINDS,
   A0_U1_QUICK_ENTRY_TARGET_MATCH_POLICY,
+  A0_U1_RECOVERY_FIELD_COMPARISON_ORDER,
   A0_U1_RECOVERED_CHORD_LAYOUT_LOSS_ACKNOWLEDGEMENT,
+  A0_U1_T0_NEW_MEASURE_COMPLETION_POLICY,
 } from "../src/application/application-edit-plan-contract";
 import {
   ALLOWED_BEAT_DENOMINATORS,
   KEY_MODES,
+  MAX_DOCUMENT_CHORD_EVENTS,
+  MAX_DOCUMENT_SECTIONS,
   MAX_LONG_TEXT_CODE_POINTS,
   MAX_NORMALIZED_BEAT_NUMERATOR,
+  MAX_SECTION_MEASURES,
   MAX_SHORT_TEXT_CODE_POINTS,
+  MAX_TIMELINE_QUARTER_NOTE_BEATS,
+  decodeDocumentShape,
+  makeMeter,
   SECTION_VOICE_LEADING_BOUNDARIES,
   STABLE_ID_MAX_ASCII_LENGTH,
   STABLE_ID_PATTERN_SOURCE,
 } from "../src/domain";
-import { CHART_ERROR_CODES, CHART_WARNING_CODES } from "../src/theory";
+import {
+  CHART_ERROR_CODES,
+  CHART_WARNING_CODES,
+  SYMBOL_ERROR_CODES,
+  parseChartText,
+} from "../src/theory";
+import { validateDocumentSemantics } from "../src/application";
 
 type JsonObject = Record<string, unknown>;
 
@@ -153,7 +185,7 @@ const EXPECTED_COUNTS = Object.freeze({
   planKinds: 5,
   lawRows: 17,
   caseGroups: 50,
-  literalTransitions: 70,
+  literalTransitions: 137,
   applicabilityRows: 5,
   transpositionWitnesses: 5,
   obligationRows: 24,
@@ -161,6 +193,41 @@ const EXPECTED_COUNTS = Object.freeze({
   traces: 6,
   authorities: 6,
 });
+
+const EXPECTED_NESTED_REFUSAL_PRECEDENCE = Object.freeze([
+  "edit-plan.command-shape-invalid",
+  "edit-plan.plan-shape-invalid",
+  "edit-plan.quick-entry-snapshot-mismatch",
+  "edit-plan.source-code-points-exceeded",
+  "edit-plan.source-unicode-invalid",
+  "edit-plan.source-utf8-bytes-exceeded",
+  "edit-plan.target-missing",
+  "edit-plan.destination-invalid",
+  "edit-plan.event-order-invalid",
+  "edit-plan.section-split-boundary-invalid",
+  "edit-plan.section-order-invalid",
+  "edit-plan.recovered-chord-placement-invalid",
+  "edit-plan.syntax-refused",
+  "edit-plan.recovered-chord-requires-parse-failure",
+  "edit-plan.recovered-chord-ordinal-missing",
+  "edit-plan.warning-acknowledgements-mismatch",
+  "edit-plan.fragment-placement-mismatch",
+  "edit-plan.completion-declarations-mismatch",
+  "edit-plan.section-metadata-mismatch",
+  "edit-plan.recovered-chord-layout-loss-unacknowledged",
+  "edit-plan.recovered-chord-duration-mismatch",
+  "edit-plan.duration-invalid",
+  "edit-plan.duration-sum-mismatch",
+  "edit-plan.event-content-mismatch",
+  "edit-plan.right-annotation-not-empty",
+  "edit-plan.collection-limit-exceeded",
+  "edit-plan.timeline-limit-exceeded",
+  "edit-plan.id-factory-failed",
+  "edit-plan.id-collision",
+  "edit-plan.structural-publication-refused",
+  "edit-plan.semantic-publication-refused",
+  "edit-plan.history-refused",
+] as const);
 
 const EXPECTED_COVERAGE_FAMILIES = Object.freeze([
   "positive",
@@ -193,7 +260,7 @@ const EXPECTED_OBLIGATION_ROWS = Object.freeze([
     category: "refusal-coverage",
     operation: "pipeline",
     semanticPredicate:
-      "all-reachable-refusal-codes-observed-unreachable-codes-have-static-dominance-proof",
+      "reachable-refusal-codes-have-runtime-witnesses-and-unreachable-refusal-codes-have-static-dominance-proofs",
   }),
   Object.freeze({
     id: "A0U1-OBL-002-COMPLETE-PLACEMENTS",
@@ -297,13 +364,15 @@ const EXPECTED_OBLIGATION_ROWS = Object.freeze([
     id: "A0U1-OBL-018-DIAGNOSTICS",
     category: "diagnostics",
     operation: "pipeline",
-    semanticPredicate: "diagnostics-typed-sanitized-ordered-and-stage-correlated",
+    semanticPredicate:
+      "diagnostics-typed-sanitized-ordered-and-stage-correlated",
   }),
   Object.freeze({
     id: "A0U1-OBL-019-CANDIDATE-TRANSFORMS",
     category: "candidate",
     operation: "pipeline",
-    semanticPredicate: "all-five-candidates-equal-independent-whole-document-transform",
+    semanticPredicate:
+      "all-five-candidates-equal-independent-whole-document-transform",
   }),
   Object.freeze({
     id: "A0U1-OBL-020-TRANSPOSITION",
@@ -333,7 +402,8 @@ const EXPECTED_OBLIGATION_ROWS = Object.freeze([
     id: "A0U1-OBL-024-RECOVERY-BRANCHES",
     category: "recovery",
     operation: "insert-fragment",
-    semanticPredicate: "recovery-resolved-and-caller-duration-branches-are-exact",
+    semanticPredicate:
+      "recovery-resolved-and-caller-duration-branches-are-exact",
   }),
 ] as const);
 
@@ -472,6 +542,7 @@ const EXPECTED_LITERAL_CATALOG_KEYS = Object.freeze([
   "bookmarks",
   "focusRequests",
   "histories",
+  "historyEstimatorEvidence",
   "effects",
   "allocationTraces",
   "idFactoryEvidence",
@@ -539,6 +610,7 @@ const EXPECTED_TRANSITION_RESULT_KEYS = Object.freeze([
   "bookmarks",
   "focusRequest",
   "history",
+  "historyEstimatorEvidence",
   "effects",
   "allocationTrace",
   "idFactoryEvidence",
@@ -602,6 +674,39 @@ const EXPECTED_PARSER_INSERTABLE_ROW_KEYS = Object.freeze([
   "range",
 ] as const);
 
+const EXPECTED_PARSER_FAILURE_INSERTABLE_ROW_KEYS = Object.freeze([
+  "globalOrdinal",
+  "chord",
+  "annotation",
+  "duration",
+  "range",
+] as const);
+
+const EXPECTED_ID_FACTORY_EVIDENCE_KEYS = Object.freeze([
+  "configuration",
+  "callsObserved",
+] as const);
+
+const EXPECTED_HISTORY_ESTIMATOR_EVIDENCE_KEYS = Object.freeze([
+  "configuration",
+  "callsObserved",
+  "returned",
+  "independentlyRecomputed",
+] as const);
+
+const EXPECTED_HISTORY_ESTIMATOR_CONFIGURATIONS = Object.freeze([
+  "not-reached",
+  "independent-policy",
+  "hostile-over-cap",
+  "hostile-invalid-negative",
+] as const);
+
+const EXPECTED_ID_FACTORY_CONFIGURATIONS = Object.freeze([
+  "not-provided",
+  "scripted-reviewed-sequence",
+  "hostile-refuse-on-any-call",
+] as const);
+
 const EXPECTED_SUCCESS_RESULT_KEYS = Object.freeze([
   "ok",
   "state",
@@ -626,6 +731,8 @@ const EXPECTED_RECEIPT_KEYS = Object.freeze([
   "commandKind",
   "commandId",
   "planKind",
+  "insertLane",
+  "placementKind",
   "documentId",
   "baseRevision",
   "committedRevision",
@@ -638,10 +745,28 @@ const EXPECTED_RECEIPT_KEYS = Object.freeze([
   "bookmarks",
   "quickEntryDisposition",
   "historyEntriesAppended",
-  "structuralDecodeCalls",
-  "semanticValidationCalls",
   "effects",
   "work",
+] as const);
+
+const EXPECTED_BOOKMARK_RECEIPT_CORE_KEYS = Object.freeze([
+  "operationPolicy",
+  "selectionPolicy",
+  "selectionReplacements",
+  "insertionPolicy",
+  "insertionRewrite",
+  "insertionCleared",
+  "rangePolicy",
+  "rangeBoundaryRewrites",
+  "rangeCleared",
+  "focusPolicy",
+  "focusTarget",
+] as const);
+
+const EXPECTED_JOIN_SECTIONS_BOOKMARK_RECEIPT_EXTENSION_KEYS = Object.freeze([
+  "rightSectionWasEmpty",
+  "rightSectionFirstMeasureId",
+  "rightSectionStartRewrite",
 ] as const);
 
 const EXPECTED_CASE_KEYS = Object.freeze([
@@ -722,6 +847,330 @@ const EXPECTED_CONTROL_KEYS = Object.freeze([
   "authorityIds",
 ] as const);
 
+const EXPECTED_MUTATION_CATEGORIES = Object.freeze([
+  "envelope-document",
+  "envelope-revision",
+  "envelope-extra-key",
+  "plan-extra-key",
+  "command-id",
+  "logical-time",
+  "coalescing-closed",
+  "candidate-backdoor",
+  "nested-plans-backdoor",
+  "work-counter-warning",
+  "recovery-ordinal",
+  "recovery-layout-token",
+  "recovery-caller-duration",
+  "recovery-sibling-backdoor",
+  "quick-entry-text",
+  "quick-entry-target",
+  "split-annotation",
+  "split-positive-duration",
+  "split-exact-sum",
+  "split-completion",
+  "join-annotation-policy",
+  "join-content",
+  "join-right-annotation",
+  "join-exact-sum",
+  "split-section-boundary",
+  "split-section-metadata",
+  "split-section-measure-policy",
+  "join-section-metadata-policy",
+  "join-section-snapshot",
+  "join-section-result-metadata",
+] as const);
+
+const EXPECTED_MUTATION_REFUSALS: Readonly<
+  Record<
+    (typeof EXPECTED_MUTATION_CATEGORIES)[number],
+    Readonly<{ outer: string; nested: string | null }>
+  >
+> = Object.freeze({
+  "envelope-document": Object.freeze({
+    outer: "command.wrong_document",
+    nested: null,
+  }),
+  "envelope-revision": Object.freeze({
+    outer: "command.stale_revision",
+    nested: null,
+  }),
+  "envelope-extra-key": Object.freeze({
+    outer: "command.payload_invalid",
+    nested: "edit-plan.command-shape-invalid",
+  }),
+  "plan-extra-key": Object.freeze({
+    outer: "command.payload_invalid",
+    nested: "edit-plan.plan-shape-invalid",
+  }),
+  "command-id": Object.freeze({
+    outer: "command.id_invalid",
+    nested: null,
+  }),
+  "logical-time": Object.freeze({
+    outer: "command.logical_time_invalid",
+    nested: null,
+  }),
+  "coalescing-closed": Object.freeze({
+    outer: "command.payload_invalid",
+    nested: "edit-plan.command-shape-invalid",
+  }),
+  "candidate-backdoor": Object.freeze({
+    outer: "command.payload_invalid",
+    nested: "edit-plan.plan-shape-invalid",
+  }),
+  "nested-plans-backdoor": Object.freeze({
+    outer: "command.payload_invalid",
+    nested: "edit-plan.plan-shape-invalid",
+  }),
+  "work-counter-warning": Object.freeze({
+    outer: "command.payload_invalid",
+    nested: "edit-plan.warning-acknowledgements-mismatch",
+  }),
+  "recovery-ordinal": Object.freeze({
+    outer: "command.payload_invalid",
+    nested: "edit-plan.recovered-chord-ordinal-missing",
+  }),
+  "recovery-layout-token": Object.freeze({
+    outer: "command.payload_invalid",
+    nested: "edit-plan.recovered-chord-layout-loss-unacknowledged",
+  }),
+  "recovery-caller-duration": Object.freeze({
+    outer: "command.payload_invalid",
+    nested: "edit-plan.recovered-chord-duration-mismatch",
+  }),
+  "recovery-sibling-backdoor": Object.freeze({
+    outer: "command.payload_invalid",
+    nested: "edit-plan.plan-shape-invalid",
+  }),
+  "quick-entry-text": Object.freeze({
+    outer: "command.payload_invalid",
+    nested: "edit-plan.quick-entry-snapshot-mismatch",
+  }),
+  "quick-entry-target": Object.freeze({
+    outer: "command.payload_invalid",
+    nested: "edit-plan.quick-entry-snapshot-mismatch",
+  }),
+  "split-annotation": Object.freeze({
+    outer: "command.payload_invalid",
+    nested: "edit-plan.plan-shape-invalid",
+  }),
+  "split-positive-duration": Object.freeze({
+    outer: "command.payload_invalid",
+    nested: "edit-plan.duration-invalid",
+  }),
+  "split-exact-sum": Object.freeze({
+    outer: "command.payload_invalid",
+    nested: "edit-plan.duration-sum-mismatch",
+  }),
+  "split-completion": Object.freeze({
+    outer: "command.payload_invalid",
+    nested: "edit-plan.completion-declarations-mismatch",
+  }),
+  "join-annotation-policy": Object.freeze({
+    outer: "command.payload_invalid",
+    nested: "edit-plan.plan-shape-invalid",
+  }),
+  "join-content": Object.freeze({
+    outer: "command.payload_invalid",
+    nested: "edit-plan.event-content-mismatch",
+  }),
+  "join-right-annotation": Object.freeze({
+    outer: "command.payload_invalid",
+    nested: "edit-plan.right-annotation-not-empty",
+  }),
+  "join-exact-sum": Object.freeze({
+    outer: "command.payload_invalid",
+    nested: "edit-plan.duration-sum-mismatch",
+  }),
+  "split-section-boundary": Object.freeze({
+    outer: "command.destination_invalid",
+    nested: "edit-plan.section-split-boundary-invalid",
+  }),
+  "split-section-metadata": Object.freeze({
+    outer: "command.payload_invalid",
+    nested: "edit-plan.plan-shape-invalid",
+  }),
+  "split-section-measure-policy": Object.freeze({
+    outer: "command.payload_invalid",
+    nested: "edit-plan.plan-shape-invalid",
+  }),
+  "join-section-metadata-policy": Object.freeze({
+    outer: "command.payload_invalid",
+    nested: "edit-plan.plan-shape-invalid",
+  }),
+  "join-section-snapshot": Object.freeze({
+    outer: "command.payload_invalid",
+    nested: "edit-plan.section-metadata-mismatch",
+  }),
+  "join-section-result-metadata": Object.freeze({
+    outer: "command.payload_invalid",
+    nested: "edit-plan.plan-shape-invalid",
+  }),
+});
+
+const EXPECTED_MUTATION_TARGETS: Readonly<
+  Record<
+    (typeof EXPECTED_MUTATION_CATEGORIES)[number],
+    Readonly<{
+      operation: "pipeline" | (typeof A0_U1_ATOMIC_EDIT_PLAN_KINDS)[number];
+      materialization: "command" | "beforeState";
+      jsonPointer: string;
+    }>
+  >
+> = Object.freeze({
+  "envelope-document": {
+    operation: "pipeline",
+    materialization: "command",
+    jsonPointer: "/expectedDocumentId",
+  },
+  "envelope-revision": {
+    operation: "pipeline",
+    materialization: "command",
+    jsonPointer: "/expectedRevision",
+  },
+  "envelope-extra-key": {
+    operation: "pipeline",
+    materialization: "command",
+    jsonPointer: "/extra",
+  },
+  "plan-extra-key": {
+    operation: "pipeline",
+    materialization: "command",
+    jsonPointer: "/plan/extra",
+  },
+  "command-id": {
+    operation: "pipeline",
+    materialization: "command",
+    jsonPointer: "/id",
+  },
+  "logical-time": {
+    operation: "pipeline",
+    materialization: "command",
+    jsonPointer: "/logicalTimeMs",
+  },
+  "coalescing-closed": {
+    operation: "pipeline",
+    materialization: "command",
+    jsonPointer: "/coalescing",
+  },
+  "candidate-backdoor": {
+    operation: "pipeline",
+    materialization: "command",
+    jsonPointer: "/plan/candidate",
+  },
+  "nested-plans-backdoor": {
+    operation: "pipeline",
+    materialization: "command",
+    jsonPointer: "/plan/plans",
+  },
+  "work-counter-warning": {
+    operation: "pipeline",
+    materialization: "command",
+    jsonPointer: "/plan/source/warningAcknowledgements",
+  },
+  "recovery-ordinal": {
+    operation: "insert-fragment",
+    materialization: "command",
+    jsonPointer: "/plan/source/selectedGlobalOrdinal",
+  },
+  "recovery-layout-token": {
+    operation: "insert-fragment",
+    materialization: "command",
+    jsonPointer: "/plan/source/layoutLossAcknowledgement",
+  },
+  "recovery-caller-duration": {
+    operation: "insert-fragment",
+    materialization: "command",
+    jsonPointer: "/plan/source/callerDuration",
+  },
+  "recovery-sibling-backdoor": {
+    operation: "insert-fragment",
+    materialization: "command",
+    jsonPointer: "/plan/source/selectedSiblingOrdinals",
+  },
+  "quick-entry-text": {
+    operation: "insert-fragment",
+    materialization: "beforeState",
+    jsonPointer: "/quickEntry/text",
+  },
+  "quick-entry-target": {
+    operation: "insert-fragment",
+    materialization: "beforeState",
+    jsonPointer: "/quickEntry/target/measureId",
+  },
+  "split-annotation": {
+    operation: "split-event-duration",
+    materialization: "command",
+    jsonPointer: "/plan/annotationPolicy",
+  },
+  "split-positive-duration": {
+    operation: "split-event-duration",
+    materialization: "command",
+    jsonPointer: "/plan/firstDuration/numerator",
+  },
+  "split-exact-sum": {
+    operation: "split-event-duration",
+    materialization: "command",
+    jsonPointer: "/plan/secondDuration/numerator",
+  },
+  "split-completion": {
+    operation: "split-event-duration",
+    materialization: "command",
+    jsonPointer: "/plan/completionDeclarations/0/measureId",
+  },
+  "join-annotation-policy": {
+    operation: "join-event-durations",
+    materialization: "command",
+    jsonPointer: "/plan/annotationPolicy",
+  },
+  "join-content": {
+    operation: "join-event-durations",
+    materialization: "beforeState",
+    jsonPointer:
+      "/document/sections/0/measures/0/events/1/voicing/range/highMidi",
+  },
+  "join-right-annotation": {
+    operation: "join-event-durations",
+    materialization: "beforeState",
+    jsonPointer: "/document/sections/0/measures/0/events/1/annotation",
+  },
+  "join-exact-sum": {
+    operation: "join-event-durations",
+    materialization: "command",
+    jsonPointer: "/plan/joinedDuration/numerator",
+  },
+  "split-section-boundary": {
+    operation: "split-section",
+    materialization: "command",
+    jsonPointer: "/plan/beforeMeasureId",
+  },
+  "split-section-metadata": {
+    operation: "split-section",
+    materialization: "command",
+    jsonPointer: "/plan/newSectionMetadata/name",
+  },
+  "split-section-measure-policy": {
+    operation: "split-section",
+    materialization: "command",
+    jsonPointer: "/plan/measurePolicy",
+  },
+  "join-section-metadata-policy": {
+    operation: "join-sections",
+    materialization: "command",
+    jsonPointer: "/plan/metadataPolicy",
+  },
+  "join-section-snapshot": {
+    operation: "join-sections",
+    materialization: "command",
+    jsonPointer: "/plan/expectedRightMetadata/name",
+  },
+  "join-section-result-metadata": {
+    operation: "join-sections",
+    materialization: "command",
+    jsonPointer: "/plan/resultMetadata/name",
+  },
+});
+
 const EXPECTED_TRACE_KEYS = Object.freeze([
   "id",
   "scope",
@@ -782,6 +1231,10 @@ const INDEPENDENT_HISTORY_ESTIMATE_POLICY = Object.freeze({
 
 function isObject(value: unknown): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isUnknownArray(value: unknown): value is unknown[] {
+  return Array.isArray(value);
 }
 
 function recordsAt(value: unknown): JsonObject[] {
@@ -1206,6 +1659,7 @@ function independentHistoryValueBytes(
     }
     return bytes;
   }
+  if (!isObject(value)) return Number.NaN;
   let bytes = INDEPENDENT_HISTORY_ESTIMATE_POLICY.objectBytes;
   for (const key of Object.keys(value).sort(codeUnitCompare)) {
     const keyBytes =
@@ -1224,7 +1678,7 @@ function independentHistoryEntryBytes(entry: JsonObject): number {
     entry,
     new Set(["retainedBytesEstimate"]),
   );
-  return independentHistoryValueBytes(withoutEstimate, new WeakSet<object>());
+  return independentHistoryValueBytes(withoutEstimate, new WeakSet());
 }
 
 function isAbsentMarker(value: unknown): boolean {
@@ -1258,30 +1712,26 @@ function setAtPointer(
   const next = cloneJson(root);
   let cursor: unknown = next;
   for (const token of tokens.slice(0, -1)) {
-    if (Array.isArray(cursor)) {
+    if (isUnknownArray(cursor)) {
       const index = canonicalArrayIndex(token, cursor.length, false);
       if (index === null) throw new Error("patch array parent is noncanonical");
       cursor = cursor[index];
-    }
-    else if (isObject(cursor)) cursor = cursor[token];
+    } else if (isObject(cursor)) cursor = cursor[token];
     else throw new Error("patch parent missing");
   }
   const finalToken = tokens[tokens.length - 1] as string;
-  const arrayIndex = Array.isArray(cursor)
-    ? canonicalArrayIndex(
-        finalToken,
-        cursor.length,
-        operation === "add",
-      )
+  const arrayIndex = isUnknownArray(cursor)
+    ? canonicalArrayIndex(finalToken, cursor.length, operation === "add")
     : null;
-  if (Array.isArray(cursor) && arrayIndex === null) {
+  if (isUnknownArray(cursor) && arrayIndex === null) {
     throw new Error("patch array index is noncanonical or out of range");
   }
-  const current = Array.isArray(cursor)
-    ? cursor[arrayIndex as number]
-    : isObject(cursor)
-      ? cursor[finalToken]
-      : undefined;
+  const current =
+    isUnknownArray(cursor) && arrayIndex !== null
+      ? cursor[arrayIndex]
+      : isObject(cursor)
+        ? cursor[finalToken]
+        : undefined;
   if (
     isAbsentMarker(from) ? current !== undefined : !jsonDeepEqual(current, from)
   ) {
@@ -1293,8 +1743,8 @@ function setAtPointer(
     }
     return next;
   }
-  if (Array.isArray(cursor)) {
-    const itemIndex = arrayIndex as number;
+  if (isUnknownArray(cursor) && arrayIndex !== null) {
+    const itemIndex = arrayIndex;
     if (operation === "remove") cursor.splice(itemIndex, 1);
     else if (operation === "add") cursor.splice(itemIndex, 0, cloneJson(to));
     else cursor[itemIndex] = cloneJson(to);
@@ -1412,11 +1862,11 @@ function checkReferenceIds(
     addFinding(findings, code, path, "Reference IDs must be duplicate-free.");
   }
   for (const id of ids) {
-    if (!target.has(id as string)) {
+    if (!target.has(id)) {
       addFinding(
         findings,
         code,
-        `${path}.${String(id)}`,
+        `${path}.${id}`,
         "Referenced ID is missing from its authority ledger.",
       );
     }
@@ -1819,7 +2269,7 @@ function buildCandidateOracle(
       row["ordinal"] !== allocationIndex ||
       row["kind"] !== kind ||
       row["outcome"] !== "accepted" ||
-      !isStableId(row["allocatedId"])
+      typeof row["allocatedId"] !== "string"
     ) {
       return null;
     }
@@ -1837,6 +2287,12 @@ function buildCandidateOracle(
     const source = isObject(plan["source"]) ? plan["source"] : null;
     const placement = isObject(plan["placement"]) ? plan["placement"] : null;
     if (source === null || placement === null) return null;
+    if (
+      !canonicalPlacementTargetMatches(beforeDocument, plan) ||
+      !completeDraftIntoMeasureContractHolds(beforeDocument, plan)
+    ) {
+      return null;
+    }
     const buildEvent = (row: JsonObject): JsonObject | null => {
       const eventId = allocate("event", {
         kind:
@@ -1860,7 +2316,11 @@ function buildCandidateOracle(
       }
       const event = buildEvent(selected);
       const target = mutableMeasure(document, placement["measureId"]);
-      if (event === null || target === null || !Array.isArray(target["events"])) {
+      if (
+        event === null ||
+        target === null ||
+        !Array.isArray(target["events"])
+      ) {
         return null;
       }
       const beforeId = placement["beforeEventId"];
@@ -1873,7 +2333,9 @@ function buildCandidateOracle(
       if (insertionIndex < 0) return null;
       target["events"].splice(insertionIndex, 0, event);
     } else if (source["kind"] === "complete-draft") {
-      if (parserEvidence.outcome !== "success") return null;
+      if (!completeDraftStructureMatchesPlacement(parserEvidence, placement)) {
+        return null;
+      }
       const rowsForMeasure = (
         sectionOrdinal: unknown,
         measureOrdinal: unknown,
@@ -1907,8 +2369,9 @@ function buildCandidateOracle(
       };
       if (placement["kind"] === "into-measure") {
         if (
-          parserEvidence.sectionRows.length !== 1 ||
-          parserEvidence.measureRows.length !== 1
+          !jsonDeepEqual(parserEvidence.measureRows[0]?.["completion"], {
+            kind: "complete",
+          })
         ) {
           return null;
         }
@@ -1936,9 +2399,8 @@ function buildCandidateOracle(
           placement["sectionId"],
         );
         if (targetLocation === null) return null;
-        const targetMeasures = mutableSections(document)[
-          targetLocation.index
-        ]?.["measures"];
+        const targetMeasures =
+          mutableSections(document)[targetLocation.index]?.["measures"];
         if (!Array.isArray(targetMeasures)) return null;
         const newMeasures: JsonObject[] = [];
         for (const row of parserEvidence.measureRows) {
@@ -2090,22 +2552,18 @@ function buildCandidateOracle(
   } else if (plan["kind"] === "join-sections") {
     const left = findSectionLocation(document, plan["leftSectionId"]);
     const right = findSectionLocation(document, plan["rightSectionId"]);
-    if (
-      left === null ||
-      right === null ||
-      right.index !== left.index + 1
-    ) {
+    if (left === null || right === null || right.index !== left.index + 1) {
       return null;
     }
     const sections = mutableSections(document);
     const leftSection = sections[left.index];
     const rightSection = sections[right.index];
-    if (
-      leftSection === undefined ||
-      rightSection === undefined ||
-      !Array.isArray(leftSection["measures"]) ||
-      !Array.isArray(rightSection["measures"])
-    ) {
+    if (leftSection === undefined || rightSection === undefined) {
+      return null;
+    }
+    const leftMeasures = leftSection["measures"];
+    const rightMeasures = rightSection["measures"];
+    if (!isUnknownArray(leftMeasures) || !isUnknownArray(rightMeasures)) {
       return null;
     }
     for (const [key, value] of Object.entries(
@@ -2113,7 +2571,7 @@ function buildCandidateOracle(
     )) {
       leftSection[key] = cloneJson(value);
     }
-    leftSection["measures"].push(...rightSection["measures"]);
+    leftMeasures.push(...rightMeasures);
     sections.splice(right.index, 1);
     removedIdentities.push({ kind: "section", id: plan["rightSectionId"] });
   } else {
@@ -2202,19 +2660,13 @@ function boundaryToFocusTarget(boundary: unknown): JsonObject | null {
   }
 }
 
-function rewriteBoundaryExact(
-  boundary: unknown,
-  from: JsonObject,
-  to: JsonObject,
-): unknown {
-  return jsonDeepEqual(boundary, from) ? cloneJson(to) : cloneJson(boundary);
-}
-
 function deduplicateInDocumentOrder(
   ids: readonly unknown[],
   document: unknown,
 ): string[] {
-  const requested = new Set(ids.filter((id): id is string => typeof id === "string"));
+  const requested = new Set(
+    ids.filter((id): id is string => typeof id === "string"),
+  );
   return documentEventOrder(document).filter((id) => requested.has(id));
 }
 
@@ -2240,59 +2692,38 @@ function validateBookmarkOracle(
     : {};
   const selectionReplacements: JsonObject[] = [];
   let insertionRewrite: JsonObject | null = null;
+  let insertionCleared = false;
   const rangeBoundaryRewrites: JsonObject[] = [];
   let rangeCleared = false;
   let selectionPolicy:
-    | "preserve-existing"
-    | "replace-removed-right-with-left-and-deduplicate" = "preserve-existing";
+    "preserve-existing" | "replace-removed-right-with-left-and-deduplicate" =
+    "preserve-existing";
   let insertionPolicy:
-    | "preserve-or-repair"
+    | "preserve-existing"
     | "move-after-last-inserted"
-    | "rewrite-exact-span-end" = "preserve-or-repair";
-  let rangePolicy:
-    | "preserve-or-repair"
+    | "rewrite-exact-span-end"
     | "rewrite-representable-boundaries"
-    | "clear-unrepresentable-internal-event-boundary" =
-    "preserve-or-repair";
+    | "clear-unrepresentable-internal-event-boundary" = "preserve-existing";
+  let rangePolicy:
+    | "preserve-existing"
+    | "rewrite-representable-boundaries"
+    | "clear-unrepresentable-internal-event-boundary" = "preserve-existing";
   let focusPolicy:
-    | "preserve-stable-target"
-    | "focus-inserted-material-when-no-stable-target"
-    | "replace-removed-right-with-left" = "preserve-stable-target";
-  let focusTarget: JsonObject | null = null;
-  let focusReason: "command" | "delete-repair" = "command";
-
-  const rewriteInsertion = (from: JsonObject, to: JsonObject): void => {
-    if (jsonDeepEqual(expectedBookmarks["insertion"], from)) {
-      expectedBookmarks["insertion"] = cloneJson(to);
-      insertionRewrite = { from: cloneJson(from), to: cloneJson(to) };
-    }
-  };
-  const rewriteRange = (from: JsonObject, to: JsonObject): void => {
-    if (!isObject(expectedBookmarks["range"])) return;
-    for (const endpoint of ["anchor", "focus"] as const) {
-      if (jsonDeepEqual(expectedBookmarks["range"][endpoint], from)) {
-        expectedBookmarks["range"][endpoint] = cloneJson(to);
-        if (
-          !rangeBoundaryRewrites.some(
-            (row) =>
-              jsonDeepEqual(row["from"], from) &&
-              jsonDeepEqual(row["to"], to),
-          )
-        ) {
-          rangeBoundaryRewrites.push({
-            from: cloneJson(from),
-            to: cloneJson(to),
-          });
-        }
-      }
-    }
-  };
+    | "selection-focus-event"
+    | "non-chart-insertion-target"
+    | "first-inserted-structural-ref"
+    | "chart" = "chart";
+  let focusTarget: JsonObject = { kind: "chart" };
+  let operationPolicy = "";
+  let joinSectionsExtension: JsonObject | null = null;
+  let mapBoundary = (boundary: JsonObject): JsonObject | null =>
+    cloneJson(boundary);
 
   if (plan["kind"] === "insert-fragment") {
+    operationPolicy = A0_U1_ATOMIC_EDIT_PLAN_BOOKMARK_POLICIES.insertFragment;
     insertionPolicy = "move-after-last-inserted";
-    const last = candidate.allocatedIdentities.at(-1);
     let target: JsonObject | null = null;
-    if (isObject(plan["placement"]) && last !== undefined) {
+    if (isObject(plan["placement"])) {
       if (plan["placement"]["kind"] === "into-measure") {
         const event = [...candidate.allocatedIdentities]
           .reverse()
@@ -2317,56 +2748,60 @@ function validateBookmarkOracle(
       }
     }
     if (target !== null) {
-      if (isObject(beforeBookmarks["insertion"])) {
+      if (
+        isObject(beforeBookmarks["insertion"]) &&
+        !jsonDeepEqual(beforeBookmarks["insertion"], target)
+      ) {
         insertionRewrite = {
           from: cloneJson(beforeBookmarks["insertion"]),
           to: cloneJson(target),
         };
+      } else if (!isObject(beforeBookmarks["insertion"])) {
+        addFinding(
+          findings,
+          "EDIT_PLAN_INSERTION_BOOKMARK_SOURCE",
+          `${path}.beforeState.bookmarks.insertion`,
+          "A committed fragment insertion must rewrite its accepted non-null QuickEntry insertion boundary.",
+        );
       }
       expectedBookmarks["insertion"] = cloneJson(target);
-    }
-    const source = isObject(plan["source"]) ? plan["source"] : {};
-    const snapshot = isObject(source["quickEntrySnapshot"])
-      ? source["quickEntrySnapshot"]
-      : {};
-    focusTarget = boundaryToFocusTarget(snapshot["target"]);
-    focusPolicy =
-      focusTarget === null
-        ? "focus-inserted-material-when-no-stable-target"
-        : "preserve-stable-target";
-    if (focusTarget === null && last !== undefined) {
-      focusTarget =
-        last["kind"] === "event"
-          ? { kind: "event", eventId: last["id"] }
-          : last["kind"] === "measure"
-            ? { kind: "measure", measureId: last["id"] }
-            : { kind: "section", sectionId: last["id"] };
+    } else {
+      addFinding(
+        findings,
+        "EDIT_PLAN_INSERTION_BOOKMARK_TARGET",
+        `${path}.result.editPlanReceipt.bookmarks.insertionRewrite`,
+        "Fragment insertion must expose the last inserted event, measure, or section as its insertion boundary.",
+      );
     }
   } else if (plan["kind"] === "split-event-duration") {
+    operationPolicy =
+      A0_U1_ATOMIC_EDIT_PLAN_BOOKMARK_POLICIES.splitEventDuration;
     const fresh = candidate.allocatedIdentities.find(
       (row) => row["kind"] === "event",
     );
     if (fresh !== undefined) {
       const from = { kind: "after-event", eventId: plan["eventId"] };
       const to = { kind: "after-event", eventId: fresh["id"] };
-      rewriteInsertion(from, to);
-      rewriteRange(from, to);
+      mapBoundary = (boundary): JsonObject =>
+        jsonDeepEqual(boundary, from) ? cloneJson(to) : cloneJson(boundary);
     }
-    focusTarget = { kind: "event", eventId: plan["eventId"] };
   } else if (plan["kind"] === "join-event-durations") {
-    selectionPolicy = "replace-removed-right-with-left-and-deduplicate";
-    insertionPolicy = "rewrite-exact-span-end";
-    rangePolicy = "rewrite-representable-boundaries";
-    focusPolicy = "replace-removed-right-with-left";
-    focusReason = "delete-repair";
-    selectionReplacements.push({
-      fromEventId: plan["rightEventId"],
-      toEventId: plan["leftEventId"],
-    });
+    operationPolicy =
+      A0_U1_ATOMIC_EDIT_PLAN_BOOKMARK_POLICIES.joinEventDurations;
     const selection = isObject(expectedBookmarks["selection"])
       ? expectedBookmarks["selection"]
       : {};
-    if (selection["kind"] === "events" && Array.isArray(selection["eventIds"])) {
+    if (
+      selection["kind"] === "events" &&
+      Array.isArray(selection["eventIds"])
+    ) {
+      if (selection["eventIds"].includes(plan["rightEventId"])) {
+        selectionPolicy = "replace-removed-right-with-left-and-deduplicate";
+        selectionReplacements.push({
+          fromEventId: plan["rightEventId"],
+          toEventId: plan["leftEventId"],
+        });
+      }
       const replace = (id: unknown): unknown =>
         id === plan["rightEventId"] ? plan["leftEventId"] : id;
       const eventIds = deduplicateInDocumentOrder(
@@ -2379,8 +2814,9 @@ function validateBookmarkOracle(
           ? {}
           : {
               eventIds,
-              anchorEventId: replace(selection["anchorEventId"]),
-              focusEventId: replace(selection["focusEventId"]),
+              anchorEventId: replace(selection["anchorEventId"]) ?? eventIds[0],
+              focusEventId:
+                replace(selection["focusEventId"]) ?? eventIds.at(-1),
             }),
       };
     }
@@ -2392,7 +2828,6 @@ function validateBookmarkOracle(
       kind: "after-event",
       eventId: plan["leftEventId"],
     };
-    rewriteInsertion(rightEnd, joinedEnd);
     const internalBeforeRight = {
       kind: "before-event",
       eventId: plan["rightEventId"],
@@ -2401,93 +2836,265 @@ function validateBookmarkOracle(
       kind: "after-event",
       eventId: plan["leftEventId"],
     };
-    const range = isObject(expectedBookmarks["range"])
-      ? expectedBookmarks["range"]
-      : null;
-    if (
-      range !== null &&
-      [range["anchor"], range["focus"]].some(
-        (boundary) =>
-          jsonDeepEqual(boundary, internalBeforeRight) ||
-          jsonDeepEqual(boundary, internalAfterLeft),
-      )
-    ) {
-      expectedBookmarks["range"] = null;
-      rangeCleared = true;
-      rangePolicy = "clear-unrepresentable-internal-event-boundary";
-    } else {
-      rewriteRange(rightEnd, joinedEnd);
-    }
-    focusTarget = { kind: "event", eventId: plan["leftEventId"] };
+    mapBoundary = (boundary): JsonObject | null => {
+      if (
+        jsonDeepEqual(boundary, internalBeforeRight) ||
+        jsonDeepEqual(boundary, internalAfterLeft)
+      ) {
+        return null;
+      }
+      return jsonDeepEqual(boundary, rightEnd)
+        ? cloneJson(joinedEnd)
+        : cloneJson(boundary);
+    };
   } else if (plan["kind"] === "split-section") {
+    operationPolicy = A0_U1_ATOMIC_EDIT_PLAN_BOOKMARK_POLICIES.splitSection;
     const suffix = candidate.allocatedIdentities.find(
       (row) => row["kind"] === "section",
     );
     if (suffix !== undefined) {
-      const from = { kind: "section-end", sectionId: plan["sectionId"] };
-      const to = { kind: "section-end", sectionId: suffix["id"] };
-      rewriteInsertion(from, to);
-      rewriteRange(from, to);
+      mapBoundary = (boundary): JsonObject => {
+        if (
+          jsonDeepEqual(boundary, {
+            kind: "after-section",
+            sectionId: plan["sectionId"],
+          })
+        ) {
+          return { kind: "after-section", sectionId: suffix["id"] };
+        }
+        if (
+          jsonDeepEqual(boundary, {
+            kind: "section-end",
+            sectionId: plan["sectionId"],
+          })
+        ) {
+          return { kind: "section-end", sectionId: suffix["id"] };
+        }
+        return cloneJson(boundary);
+      };
     }
-    focusTarget = { kind: "section", sectionId: plan["sectionId"] };
   } else if (plan["kind"] === "join-sections") {
-    insertionPolicy = "rewrite-exact-span-end";
-    rangePolicy = "rewrite-representable-boundaries";
-    focusPolicy = "replace-removed-right-with-left";
-    focusReason = "delete-repair";
-    const beforeLeft = findSectionLocation(
-      before["document"],
-      plan["leftSectionId"],
-    );
+    operationPolicy = A0_U1_ATOMIC_EDIT_PLAN_BOOKMARK_POLICIES.joinSections;
     const beforeRight = findSectionLocation(
       before["document"],
       plan["rightSectionId"],
     );
-    const lastLeftMeasure =
-      beforeLeft === null
-        ? null
-        : sectionMeasures(beforeLeft.section).at(-1) ?? null;
     const firstRightMeasure =
       beforeRight === null
         ? null
-        : sectionMeasures(beforeRight.section)[0] ?? null;
-    if (firstRightMeasure !== null) {
-      const from = {
-        kind: "section-start",
-        sectionId: plan["rightSectionId"],
-      };
-      const to = {
-        kind: "before-measure",
-        measureId: firstRightMeasure["id"],
-      };
-      rewriteInsertion(from, to);
-      rewriteRange(from, to);
-    }
-    if (lastLeftMeasure !== null) {
-      const from = {
-        kind: "section-end",
-        sectionId: plan["leftSectionId"],
-      };
-      const to = {
-        kind: "after-measure",
-        measureId: lastLeftMeasure["id"],
-      };
-      rewriteInsertion(from, to);
-      rewriteRange(from, to);
-    }
-    const rightEnd = {
-      kind: "section-end",
+        : (sectionMeasures(beforeRight.section)[0] ?? null);
+    const rightStart = {
+      kind: "section-start",
       sectionId: plan["rightSectionId"],
     };
-    const joinedEnd = {
-      kind: "section-end",
-      sectionId: plan["leftSectionId"],
+    const mappedRightStart =
+      firstRightMeasure === null
+        ? { kind: "section-end", sectionId: plan["leftSectionId"] }
+        : { kind: "before-measure", measureId: firstRightMeasure["id"] };
+    joinSectionsExtension = {
+      rightSectionWasEmpty: firstRightMeasure === null,
+      rightSectionFirstMeasureId:
+        firstRightMeasure === null ? null : firstRightMeasure["id"],
+      rightSectionStartRewrite: {
+        from: cloneJson(rightStart),
+        to: cloneJson(mappedRightStart),
+      },
     };
-    rewriteInsertion(rightEnd, joinedEnd);
-    rewriteRange(rightEnd, joinedEnd);
-    focusTarget = { kind: "section", sectionId: plan["leftSectionId"] };
+    mapBoundary = (boundary): JsonObject => {
+      const kind = boundary["kind"];
+      const sectionId = boundary["sectionId"];
+      if (
+        sectionId === plan["leftSectionId"] &&
+        (kind === "after-section" || kind === "section-end")
+      ) {
+        return firstRightMeasure === null
+          ? cloneJson(boundary)
+          : {
+              kind: "before-measure",
+              measureId: firstRightMeasure["id"],
+            };
+      }
+      if (
+        sectionId === plan["rightSectionId"] &&
+        (kind === "before-section" || kind === "section-start")
+      ) {
+        return cloneJson(mappedRightStart);
+      }
+      if (sectionId === plan["rightSectionId"] && kind === "after-section") {
+        return {
+          kind: "after-section",
+          sectionId: plan["leftSectionId"],
+        };
+      }
+      if (sectionId === plan["rightSectionId"] && kind === "section-end") {
+        return {
+          kind: "section-end",
+          sectionId: plan["leftSectionId"],
+        };
+      }
+      return cloneJson(boundary);
+    };
+  } else {
+    addFinding(
+      findings,
+      "EDIT_PLAN_BOOKMARK_OPERATION",
+      `${path}.command.plan.kind`,
+      "Bookmark oracle requires one of the five closed edit-plan operations.",
+    );
   }
 
+  if (plan["kind"] !== "insert-fragment") {
+    const beforeInsertion = beforeBookmarks["insertion"];
+    if (isObject(beforeInsertion)) {
+      const mappedInsertion = mapBoundary(beforeInsertion);
+      if (mappedInsertion === null) {
+        expectedBookmarks["insertion"] = null;
+        insertionCleared = true;
+        insertionPolicy = "clear-unrepresentable-internal-event-boundary";
+      } else if (!jsonDeepEqual(beforeInsertion, mappedInsertion)) {
+        expectedBookmarks["insertion"] = cloneJson(mappedInsertion);
+        insertionRewrite = {
+          from: cloneJson(beforeInsertion),
+          to: cloneJson(mappedInsertion),
+        };
+        insertionPolicy =
+          plan["kind"] === "split-event-duration"
+            ? "rewrite-exact-span-end"
+            : "rewrite-representable-boundaries";
+        if (
+          plan["kind"] === "join-event-durations" &&
+          beforeInsertion["kind"] === "after-event" &&
+          beforeInsertion["eventId"] === plan["rightEventId"]
+        ) {
+          insertionPolicy = "rewrite-exact-span-end";
+        }
+      }
+    }
+    const beforeRange = beforeBookmarks["range"];
+    if (isObject(beforeRange)) {
+      const anchor = isObject(beforeRange["anchor"])
+        ? mapBoundary(beforeRange["anchor"])
+        : null;
+      const focus = isObject(beforeRange["focus"])
+        ? mapBoundary(beforeRange["focus"])
+        : null;
+      if (anchor === null || focus === null) {
+        expectedBookmarks["range"] = null;
+        rangeCleared = true;
+        rangePolicy = "clear-unrepresentable-internal-event-boundary";
+      } else {
+        for (const [endpoint, mapped] of [
+          ["anchor", anchor],
+          ["focus", focus],
+        ] as const) {
+          const from = beforeRange[endpoint];
+          if (isObject(from) && !jsonDeepEqual(from, mapped)) {
+            rangeBoundaryRewrites.push({
+              from: cloneJson(from),
+              to: cloneJson(mapped),
+            });
+          }
+        }
+        expectedBookmarks["range"] = {
+          anchor: cloneJson(anchor),
+          focus: cloneJson(focus),
+        };
+        if (rangeBoundaryRewrites.length > 0) {
+          rangePolicy = "rewrite-representable-boundaries";
+        }
+      }
+    }
+  }
+
+  const afterSelection = isObject(expectedBookmarks["selection"])
+    ? expectedBookmarks["selection"]
+    : {};
+  if (
+    afterSelection["kind"] === "events" &&
+    typeof afterSelection["focusEventId"] === "string" &&
+    findEventLocation(after["document"], afterSelection["focusEventId"]) !==
+      null
+  ) {
+    focusPolicy = "selection-focus-event";
+    focusTarget = {
+      kind: "event",
+      eventId: afterSelection["focusEventId"],
+    };
+  } else {
+    const insertionFocus = boundaryToFocusTarget(
+      expectedBookmarks["insertion"],
+    );
+    if (insertionFocus !== null && insertionFocus["kind"] !== "chart") {
+      focusPolicy = "non-chart-insertion-target";
+      focusTarget = insertionFocus;
+    } else {
+      const firstInserted = candidate.allocatedIdentities[0];
+      if (firstInserted !== undefined) {
+        focusPolicy = "first-inserted-structural-ref";
+        focusTarget =
+          firstInserted["kind"] === "event"
+            ? { kind: "event", eventId: firstInserted["id"] }
+            : firstInserted["kind"] === "measure"
+              ? { kind: "measure", measureId: firstInserted["id"] }
+              : { kind: "section", sectionId: firstInserted["id"] };
+      }
+    }
+  }
+
+  const focusBranchesByOperation: Readonly<Record<string, readonly string[]>> =
+    {
+      "insert-fragment": [
+        "selection-focus-event",
+        "non-chart-insertion-target",
+      ],
+      "split-event-duration": [
+        "selection-focus-event",
+        "non-chart-insertion-target",
+        "first-inserted-structural-ref",
+      ],
+      "join-event-durations": [
+        "selection-focus-event",
+        "non-chart-insertion-target",
+        "chart",
+      ],
+      "split-section": [
+        "selection-focus-event",
+        "non-chart-insertion-target",
+        "first-inserted-structural-ref",
+      ],
+      "join-sections": [
+        "selection-focus-event",
+        "non-chart-insertion-target",
+        "chart",
+      ],
+    };
+  if (
+    !(focusBranchesByOperation[String(plan["kind"])] ?? []).includes(
+      focusPolicy,
+    )
+  ) {
+    addFinding(
+      findings,
+      "EDIT_PLAN_FOCUS_OPERATION_BRANCH",
+      `${path}.result.editPlanReceipt.bookmarks.focusPolicy`,
+      "The derived focus branch is impossible for this operation's allocation and bookmark behavior.",
+    );
+  }
+
+  const expectedBookmarkReceipt: JsonObject = {
+    operationPolicy,
+    selectionPolicy,
+    selectionReplacements,
+    insertionPolicy,
+    insertionRewrite,
+    insertionCleared,
+    rangePolicy,
+    rangeBoundaryRewrites,
+    rangeCleared,
+    focusPolicy,
+    focusTarget,
+    ...(joinSectionsExtension ?? {}),
+  };
   requireExact(
     after["bookmarks"],
     expectedBookmarks,
@@ -2498,42 +3105,58 @@ function validateBookmarkOracle(
   );
   requireExact(
     actualBookmarkReceipt,
-    {
-      selectionPolicy,
-      selectionReplacements,
-      insertionPolicy,
-      insertionRewrite,
-      rangePolicy,
-      rangeBoundaryRewrites,
-      rangeCleared,
-      focusPolicy,
-    },
+    expectedBookmarkReceipt,
     "EDIT_PLAN_BOOKMARK_RECEIPT_ORACLE",
     `${path}.result.editPlanReceipt.bookmarks`,
     "Bookmark receipt must contain every and only the independently computed selection/boundary rewrite.",
     findings,
   );
-  if (focusTarget === null) {
-    addFinding(
-      findings,
-      "EDIT_PLAN_FOCUS_ORACLE_UNAVAILABLE",
-      `${path}.afterState.focusRequest`,
-      "A committed plan must have a deterministic stable focus target.",
-    );
-  } else {
-    requireExact(
-      after["focusRequest"],
-      {
-        sequence: before["nextSequence"],
-        target: focusTarget,
-        reason: focusReason,
-      },
-      "EDIT_PLAN_FOCUS_ORACLE",
-      `${path}.afterState.focusRequest`,
-      "Focus publication must preserve the surviving stable target, using inserted material only when no stable target exists.",
-      findings,
-    );
-  }
+  requireExact(
+    after["focusRequest"],
+    {
+      sequence: before["nextSequence"],
+      target: focusTarget,
+      reason: "command",
+    },
+    "EDIT_PLAN_FOCUS_ORACLE",
+    `${path}.afterState.focusRequest`,
+    "Focus publication must equal the deterministic after-bookmark priority and the receipt's exact target.",
+    findings,
+  );
+  const receiptWork = isObject(receipt["work"]) ? receipt["work"] : {};
+  const selectionReplacementCount =
+    plan["kind"] === "join-event-durations" ? selectionReplacements.length : 0;
+  const expectedRewrittenCount =
+    selectionReplacementCount +
+    (insertionRewrite !== null || insertionCleared ? 1 : 0) +
+    (rangeCleared ? 1 : rangeBoundaryRewrites.length);
+  requireExact(
+    receiptWork["bookmarkRecordsRewritten"],
+    expectedRewrittenCount,
+    "EDIT_PLAN_BOOKMARK_REWRITE_WORK",
+    `${path}.result.editPlanReceipt.work.bookmarkRecordsRewritten`,
+    "Bookmark rewrite work must count replacements, insertion change/clear, endpoint rewrites, or one whole-range clear exactly.",
+    findings,
+  );
+  const beforeSelection = isObject(beforeBookmarks["selection"])
+    ? beforeBookmarks["selection"]
+    : {};
+  const expectedExaminedCount =
+    1 +
+    (beforeSelection["kind"] === "events" &&
+    Array.isArray(beforeSelection["eventIds"])
+      ? beforeSelection["eventIds"].length
+      : 0) +
+    (beforeBookmarks["insertion"] === null ? 0 : 1) +
+    (beforeBookmarks["range"] === null ? 0 : 2);
+  requireExact(
+    receiptWork["bookmarkRecordsExamined"],
+    expectedExaminedCount,
+    "EDIT_PLAN_BOOKMARK_EXAMINED_WORK",
+    `${path}.result.editPlanReceipt.work.bookmarkRecordsExamined`,
+    "Bookmark examination work must count the selection record, selected IDs, non-null insertion, and non-null range endpoints exactly.",
+    findings,
+  );
 }
 
 function validateCommittedOperationLaw(
@@ -2548,19 +3171,41 @@ function validateCommittedOperationLaw(
   const afterDocument = after["document"];
   const plan = isObject(command["plan"]) ? command["plan"] : {};
   if (operation === "insert-fragment") {
-    const beforeIds = new Set(documentEventOrder(beforeDocument));
+    const beforeIdentity = identityRecords(beforeDocument);
+    const beforeSectionIds = new Set(beforeIdentity.sections);
+    const beforeMeasureIds = new Set(beforeIdentity.measures);
+    const beforeEventIds = new Set(beforeIdentity.events);
+    const newSections = documentSections(afterDocument).filter(
+      (section) => !beforeSectionIds.has(String(section["id"])),
+    );
+    const newMeasures = documentSections(afterDocument).flatMap((section) =>
+      sectionMeasures(section).filter(
+        (measure) => !beforeMeasureIds.has(String(measure["id"])),
+      ),
+    );
     const newEvents = documentSections(afterDocument).flatMap((section) =>
       sectionMeasures(section).flatMap((measure) =>
         measureEvents(measure).filter(
-          (event) => !beforeIds.has(String(event["id"])),
+          (event) => !beforeEventIds.has(String(event["id"])),
         ),
       ),
     );
+    const placement = isObject(plan["placement"]) ? plan["placement"] : {};
+    const structuralDeltaHolds =
+      placement["kind"] === "into-measure"
+        ? newSections.length === 0 &&
+          newMeasures.length === 0 &&
+          newEvents.length > 0
+        : placement["kind"] === "into-section"
+          ? newSections.length === 0 && newMeasures.length > 0
+          : placement["kind"] === "into-document"
+            ? newSections.length > 0 && newMeasures.length > 0
+            : false;
     requireOperationLaw(
-      newEvents.length > 0,
-      "EDIT_PLAN_INSERTED_EVENT_MISSING",
+      structuralDeltaHolds,
+      "EDIT_PLAN_INSERTED_STRUCTURE_MISSING",
       path,
-      "A committed fragment insertion must add at least one event.",
+      "A committed fragment insertion must add structure required by its placement; section/document insertion may lawfully add empty closed measures with zero events.",
       findings,
     );
     for (const event of newEvents) {
@@ -2959,12 +3604,8 @@ function validatePublicationEvidence(
   if (phase === "apply") {
     const beforeHistory = isObject(before["history"]) ? before["history"] : {};
     const afterHistory = isObject(after["history"]) ? after["history"] : {};
-    const beforeUndo = Array.isArray(beforeHistory["undo"])
-      ? beforeHistory["undo"]
-      : [];
-    const afterUndo = Array.isArray(afterHistory["undo"])
-      ? afterHistory["undo"]
-      : [];
+    const beforeUndo = recordsAt(beforeHistory["undo"]);
+    const afterUndo = recordsAt(afterHistory["undo"]);
     requireOperationLaw(
       afterUndo.length === beforeUndo.length + 1 &&
         jsonDeepEqual(afterUndo.slice(0, -1), beforeUndo) &&
@@ -3115,10 +3756,7 @@ function validatePublicationEvidence(
         findings,
       );
     }
-    const allAfterEntries = [
-      ...afterUndo,
-      ...recordsAt(afterHistory["redo"]),
-    ];
+    const allAfterEntries = [...afterUndo, ...recordsAt(afterHistory["redo"])];
     for (const [index, historyEntry] of allAfterEntries.entries()) {
       requireExact(
         historyEntry["retainedBytesEstimate"],
@@ -3287,29 +3925,40 @@ function expectedTerminationForNestedCode(code: unknown): string | null {
 }
 
 function compareDomainPaths(left: unknown, right: unknown): number {
-  const leftPath = Array.isArray(left)
-    ? left.map(String).join("\u0000")
-    : stableJson(left);
-  const rightPath = Array.isArray(right)
-    ? right.map(String).join("\u0000")
-    : stableJson(right);
-  return codeUnitCompare(leftPath, rightPath);
+  if (!Array.isArray(left) || !Array.isArray(right)) {
+    return codeUnitCompare(stableJson(left), stableJson(right));
+  }
+  const sharedLength = Math.min(left.length, right.length);
+  for (let index = 0; index < sharedLength; index += 1) {
+    const leftSegment: unknown = left[index];
+    const rightSegment: unknown = right[index];
+    if (leftSegment === rightSegment) continue;
+    if (typeof leftSegment === "number") {
+      if (typeof rightSegment === "number") {
+        return leftSegment < rightSegment ? -1 : 1;
+      }
+      return -1;
+    }
+    if (typeof rightSegment === "number") return 1;
+    if (typeof leftSegment === "string" && typeof rightSegment === "string") {
+      return codeUnitCompare(leftSegment, rightSegment);
+    }
+    return codeUnitCompare(stableJson(leftSegment), stableJson(rightSegment));
+  }
+  return left.length < right.length ? -1 : left.length > right.length ? 1 : 0;
 }
 
 function compareDiagnostics(left: JsonObject, right: JsonObject): number {
   const pathOrder = compareDomainPaths(left["path"], right["path"]);
   if (pathOrder !== 0) return pathOrder;
-  const leftRange = isObject(left["sourceRange"])
-    ? left["sourceRange"]
-    : null;
+  const leftRange = isObject(left["sourceRange"]) ? left["sourceRange"] : null;
   const rightRange = isObject(right["sourceRange"])
     ? right["sourceRange"]
     : null;
   if (leftRange === null && rightRange !== null) return -1;
   if (leftRange !== null && rightRange === null) return 1;
   if (leftRange !== null && rightRange !== null) {
-    const startOrder =
-      Number(leftRange["start"]) - Number(rightRange["start"]);
+    const startOrder = Number(leftRange["start"]) - Number(rightRange["start"]);
     if (startOrder !== 0) return startOrder;
     const endOrder = Number(leftRange["end"]) - Number(rightRange["end"]);
     if (endOrder !== 0) return endOrder;
@@ -3339,12 +3988,9 @@ function independentDiatonicSteps(intervalSemitones: number): number | null {
   const magnitude = Math.abs(intervalSemitones);
   const octaves = Math.floor(magnitude / 12);
   const remainder = magnitude % 12;
-  const diatonicWithinOctave =
-    DIATONIC_STEPS_BY_ASCENDING_SEMITONES[remainder];
-  return (
-    direction *
-    (octaves * PITCH_STEPS.length + diatonicWithinOctave)
-  );
+  const diatonicWithinOctave = DIATONIC_STEPS_BY_ASCENDING_SEMITONES[remainder];
+  if (diatonicWithinOctave === undefined) return null;
+  return direction * (octaves * PITCH_STEPS.length + diatonicWithinOctave);
 }
 
 function transposeSpelledPitchObject(
@@ -3354,11 +4000,7 @@ function transposeSpelledPitchObject(
   const stepIndex = PITCH_STEPS.indexOf(String(pitch["step"]));
   const alter = pitch["alter"];
   const diatonicSteps = independentDiatonicSteps(intervalSemitones);
-  if (
-    stepIndex < 0 ||
-    !Number.isSafeInteger(alter) ||
-    diatonicSteps === null
-  ) {
+  if (stepIndex < 0 || !Number.isSafeInteger(alter) || diatonicSteps === null) {
     return null;
   }
   const absoluteStep = stepIndex + diatonicSteps;
@@ -3380,10 +4022,7 @@ function transposeSpelledPitchObject(
       octave: targetOctave,
     };
   }
-  const desiredPitchClass = modulo(
-    sourcePitchClass + intervalSemitones,
-    12,
-  );
+  const desiredPitchClass = modulo(sourcePitchClass + intervalSemitones, 12);
   let targetAlter =
     desiredPitchClass - (NATURAL_PITCH_CLASSES[targetStepIndex] as number);
   if (targetAlter > 6) targetAlter -= 12;
@@ -3404,37 +4043,38 @@ function transposeChordSourceText(
   sourceText: string,
   intervalSemitones: number,
 ): string | null {
-  let failed = false;
-  const transformed = sourceText.replace(
-    /(?<![A-Za-z])([A-G])(bb|##|b|#)?/gu,
-    (_match: string, step: string, accidental: string | undefined) => {
-      const alter =
-        accidental === "#"
-          ? 1
-          : accidental === "##"
-            ? 2
-            : accidental === "b"
-              ? -1
-              : accidental === "bb"
-                ? -2
-                : 0;
-      const pitch = transposeSpelledPitchObject(
-        { step, alter },
-        intervalSemitones,
-      );
-      if (pitch === null) {
-        failed = true;
-        return _match;
-      }
-      const renderedAccidental = accidentalText(Number(pitch["alter"]));
-      if (renderedAccidental === null) {
-        failed = true;
-        return _match;
-      }
-      return `${String(pitch["step"])}${renderedAccidental}`;
-    },
-  );
-  return failed ? null : transformed;
+  const pattern = /(?<![A-Za-z])([A-G])(bb|##|b|#)?/gu;
+  let transformed = "";
+  let sourceOffset = 0;
+  for (const match of sourceText.matchAll(pattern)) {
+    const matchOffset = match.index;
+    const step = match[1];
+    const accidental = match[2];
+    if (step === undefined) return null;
+    const alter =
+      accidental === "#"
+        ? 1
+        : accidental === "##"
+          ? 2
+          : accidental === "b"
+            ? -1
+            : accidental === "bb"
+              ? -2
+              : 0;
+    const pitch = transposeSpelledPitchObject(
+      { step, alter },
+      intervalSemitones,
+    );
+    if (pitch === null || typeof pitch["step"] !== "string") return null;
+    const renderedAccidental = accidentalText(Number(pitch["alter"]));
+    if (renderedAccidental === null) return null;
+    transformed +=
+      sourceText.slice(sourceOffset, matchOffset) +
+      pitch["step"] +
+      renderedAccidental;
+    sourceOffset = matchOffset + match[0].length;
+  }
+  return transformed + sourceText.slice(sourceOffset);
 }
 
 function independentlyTransposePitchData(
@@ -3463,18 +4103,11 @@ function independentlyTransposePitchData(
         (parentKey === "chord" || parentKey === "quickEntrySnapshot") &&
         typeof child === "string"
       ) {
-        return [
-          key,
-          transposeChordSourceText(child, intervalSemitones),
-        ];
+        return [key, transposeChordSourceText(child, intervalSemitones)];
       }
       return [
         key,
-        independentlyTransposePitchData(
-          child,
-          intervalSemitones,
-          key,
-        ),
+        independentlyTransposePitchData(child, intervalSemitones, key),
       ];
     }),
   );
@@ -3495,6 +4128,3313 @@ function remapExactStrings(
       remapExactStrings(child, replacements),
     ]),
   );
+}
+
+type RefusalOracle = Readonly<{
+  code: (typeof EXPECTED_NESTED_REFUSAL_PRECEDENCE)[number];
+  path: readonly (string | number)[];
+}>;
+
+const PASSIVE_CAPTURE_REJECTION = Symbol("passive-capture-rejection");
+const PASSIVE_ARRAY_INVALID_OWN_SHAPE = Symbol(
+  "passive-array-invalid-own-shape",
+);
+const MAX_PASSIVE_CAPTURE_ARRAY_LENGTH = 100_000;
+
+type PassiveCaptureResult =
+  | Readonly<{ ok: true; value: unknown }>
+  | Readonly<{
+      ok: false;
+      path: readonly (string | number)[];
+    }>;
+
+function arrayIndexFromOwnKey(key: PropertyKey): number | null {
+  if (typeof key !== "string" || key.length === 0) return null;
+  const index = Number(key);
+  return Number.isInteger(index) &&
+    index >= 0 &&
+    index < 4_294_967_295 &&
+    String(index) === key
+    ? index
+    : null;
+}
+
+function capturePassiveData(
+  value: unknown,
+  path: readonly (string | number)[],
+  active: WeakSet<object> = new WeakSet(),
+): PassiveCaptureResult {
+  if (
+    (typeof value !== "object" && typeof value !== "function") ||
+    value === null
+  ) {
+    return { ok: true, value };
+  }
+  const source = value;
+  if (active.has(source)) {
+    return { ok: true, value: PASSIVE_CAPTURE_REJECTION };
+  }
+  let descriptors: PropertyDescriptorMap;
+  try {
+    descriptors = Object.getOwnPropertyDescriptors(source);
+  } catch {
+    return { ok: false, path };
+  }
+  active.add(source);
+  try {
+    if (Array.isArray(source)) {
+      const lengthDescriptor = Reflect.get(descriptors, "length") as
+        PropertyDescriptor | undefined;
+      const length =
+        lengthDescriptor !== undefined &&
+        Object.hasOwn(lengthDescriptor, "value") &&
+        Number.isSafeInteger(lengthDescriptor.value) &&
+        Number(lengthDescriptor.value) >= 0 &&
+        Number(lengthDescriptor.value) <= MAX_PASSIVE_CAPTURE_ARRAY_LENGTH
+          ? Number(lengthDescriptor.value)
+          : null;
+      if (length === null) {
+        return { ok: true, value: PASSIVE_CAPTURE_REJECTION };
+      }
+      const captured = new Array<unknown>(length);
+      let invalidOwnShape = false;
+      for (const key of Reflect.ownKeys(descriptors)) {
+        if (key === "length") continue;
+        const index = arrayIndexFromOwnKey(key);
+        if (index === null || index >= length) invalidOwnShape = true;
+      }
+      for (let index = 0; index < length; index += 1) {
+        const descriptor = Reflect.get(descriptors, String(index)) as
+          PropertyDescriptor | undefined;
+        let child: unknown = PASSIVE_CAPTURE_REJECTION;
+        if (
+          descriptor !== undefined &&
+          Object.hasOwn(descriptor, "value") &&
+          descriptor.enumerable === true
+        ) {
+          const capturedChild = capturePassiveData(
+            descriptor.value,
+            [...path, index],
+            active,
+          );
+          if (!capturedChild.ok) return capturedChild;
+          child = capturedChild.value;
+        }
+        Object.defineProperty(captured, String(index), {
+          value: child,
+          enumerable: true,
+          writable: true,
+          configurable: true,
+        });
+      }
+      if (invalidOwnShape) {
+        Object.defineProperty(captured, PASSIVE_ARRAY_INVALID_OWN_SHAPE, {
+          value: true,
+        });
+      }
+      return { ok: true, value: captured };
+    }
+    const captured = Object.create(null) as Record<PropertyKey, unknown>;
+    for (const key of Reflect.ownKeys(descriptors)) {
+      const descriptor = Reflect.get(descriptors, key) as
+        PropertyDescriptor | undefined;
+      if (descriptor === undefined) {
+        return { ok: false, path };
+      }
+      let child: unknown = PASSIVE_CAPTURE_REJECTION;
+      if (Object.hasOwn(descriptor, "value")) {
+        const capturedChild = capturePassiveData(
+          descriptor.value,
+          typeof key === "string" ? [...path, key] : path,
+          active,
+        );
+        if (!capturedChild.ok) return capturedChild;
+        child = capturedChild.value;
+      }
+      Object.defineProperty(captured, key, {
+        value: child,
+        enumerable: descriptor.enumerable === true,
+        writable: true,
+        configurable: true,
+      });
+    }
+    return { ok: true, value: captured };
+  } finally {
+    active.delete(source);
+  }
+}
+
+function capturedArrayHasInvalidOwnShape(value: unknown): boolean {
+  return (
+    Array.isArray(value) &&
+    Object.getOwnPropertyDescriptor(value, PASSIVE_ARRAY_INVALID_OWN_SHAPE)
+      ?.value === true
+  );
+}
+
+function firstExactKeyFailure(
+  value: unknown,
+  keys: readonly string[],
+  path: readonly (string | number)[],
+): readonly (string | number)[] | null {
+  if (!isObject(value)) return path;
+  let descriptors: PropertyDescriptorMap;
+  try {
+    descriptors = Object.getOwnPropertyDescriptors(value);
+  } catch {
+    return path;
+  }
+  const missing = keys.find((key) => !Object.hasOwn(descriptors, key));
+  if (missing !== undefined) return [...path, missing];
+  const unexpected = Reflect.ownKeys(descriptors).find(
+    (key) => typeof key !== "string" || !keys.includes(key),
+  );
+  if (unexpected !== undefined) return path;
+  const invalidDescriptor = keys.find((key) => {
+    const descriptor = descriptors[key];
+    return (
+      descriptor === undefined ||
+      !Object.hasOwn(descriptor, "value") ||
+      descriptor.enumerable !== true ||
+      descriptor.value === PASSIVE_CAPTURE_REJECTION
+    );
+  });
+  return invalidDescriptor === undefined ? null : [...path, invalidDescriptor];
+}
+
+function ownEnumerableDataProperty(
+  value: unknown,
+  key: string,
+): Readonly<{ value: unknown }> | null {
+  if (!isObject(value)) return null;
+  try {
+    const descriptor = Object.getOwnPropertyDescriptor(value, key);
+    return descriptor !== undefined &&
+      Object.hasOwn(descriptor, "value") &&
+      descriptor.enumerable === true
+      ? { value: descriptor.value }
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function firstDurationShapeFailure(
+  value: unknown,
+  path: readonly (string | number)[],
+): readonly (string | number)[] | null {
+  const keyFailure = firstExactKeyFailure(
+    value,
+    ["numerator", "denominator"],
+    path,
+  );
+  if (keyFailure !== null) return keyFailure;
+  if (!isObject(value)) return path;
+  if (!Number.isSafeInteger(value["numerator"])) {
+    return [...path, "numerator"];
+  }
+  if (!Number.isSafeInteger(value["denominator"])) {
+    return [...path, "denominator"];
+  }
+  return null;
+}
+
+function firstBoundaryShapeFailure(
+  value: unknown,
+  path: readonly (string | number)[],
+): readonly (string | number)[] | null {
+  if (!isObject(value)) return path;
+  const kindProperty = ownEnumerableDataProperty(value, "kind");
+  if (typeof kindProperty?.value !== "string") return [...path, "kind"];
+  const kind = kindProperty.value;
+  const idField = [
+    "before-section",
+    "after-section",
+    "section-start",
+    "section-end",
+  ].includes(kind)
+    ? "sectionId"
+    : [
+          "before-measure",
+          "after-measure",
+          "measure-start",
+          "measure-end",
+        ].includes(kind)
+      ? "measureId"
+      : ["before-event", "after-event"].includes(kind)
+        ? "eventId"
+        : null;
+  const keys =
+    kind === "document-start" || kind === "document-end"
+      ? ["kind"]
+      : idField === null
+        ? null
+        : ["kind", idField];
+  if (keys === null) return [...path, "kind"];
+  const keyFailure = firstExactKeyFailure(value, keys, path);
+  if (keyFailure !== null) return keyFailure;
+  return idField !== null && !isStableId(value[idField])
+    ? [...path, idField]
+    : null;
+}
+
+function firstCompletionShapeFailure(
+  declarations: unknown,
+  path: readonly (string | number)[],
+): readonly (string | number)[] | null {
+  if (
+    !Array.isArray(declarations) ||
+    capturedArrayHasInvalidOwnShape(declarations)
+  ) {
+    return path;
+  }
+  for (const [index, declaration] of declarations.entries()) {
+    const rowPath = [...path, index] as const;
+    const keyFailure = firstExactKeyFailure(
+      declaration,
+      ["measureId", "completion"],
+      rowPath,
+    );
+    if (keyFailure !== null) return keyFailure;
+    if (!isObject(declaration) || !isStableId(declaration["measureId"])) {
+      return [...rowPath, "measureId"];
+    }
+    const completion = declaration["completion"];
+    if (!isObject(completion)) return [...rowPath, "completion"];
+    const kindProperty = ownEnumerableDataProperty(completion, "kind");
+    if (typeof kindProperty?.value !== "string") {
+      return [...rowPath, "completion", "kind"];
+    }
+    const kind = kindProperty.value;
+    const completionKeys =
+      kind === "empty" || kind === "complete"
+        ? ["kind"]
+        : kind === "pickup" || kind === "incomplete"
+          ? ["kind", "expectedDuration", "reason"]
+          : null;
+    if (completionKeys === null) return [...rowPath, "completion", "kind"];
+    const completionPath = [...rowPath, "completion"];
+    const completionKeyFailure = firstExactKeyFailure(
+      completion,
+      completionKeys,
+      completionPath,
+    );
+    if (completionKeyFailure !== null) return completionKeyFailure;
+    if (kind === "pickup" || kind === "incomplete") {
+      const durationFailure = firstDurationShapeFailure(
+        completion["expectedDuration"],
+        [...completionPath, "expectedDuration"],
+      );
+      if (durationFailure !== null) return durationFailure;
+      const reason = completion["reason"];
+      if (
+        typeof reason !== "string" ||
+        !isUnicodeScalarString(reason) ||
+        codePointLength(reason) > MAX_LONG_TEXT_CODE_POINTS ||
+        reason.trim().length === 0
+      ) {
+        return [...completionPath, "reason"];
+      }
+    }
+  }
+  return null;
+}
+
+function firstMetadataShapeFailure(
+  value: unknown,
+  path: readonly (string | number)[],
+): readonly (string | number)[] | null {
+  const keyFailure = firstExactKeyFailure(
+    value,
+    ["name", "annotation", "keyOverride", "voiceLeadingBoundary"],
+    path,
+  );
+  if (keyFailure !== null) return keyFailure;
+  if (!isObject(value)) return path;
+  if (!isBoundedToken(value["name"], MAX_SHORT_TEXT_CODE_POINTS)) {
+    return [...path, "name"];
+  }
+  if (
+    typeof value["annotation"] !== "string" ||
+    !isUnicodeScalarString(value["annotation"]) ||
+    codePointLength(value["annotation"]) > MAX_LONG_TEXT_CODE_POINTS
+  ) {
+    return [...path, "annotation"];
+  }
+  const keyOverride = value["keyOverride"];
+  if (keyOverride !== null) {
+    const keyContextFailure = firstExactKeyFailure(
+      keyOverride,
+      ["tonic", "mode"],
+      [...path, "keyOverride"],
+    );
+    if (keyContextFailure !== null) return keyContextFailure;
+    if (!isObject(keyOverride)) return [...path, "keyOverride"];
+    const tonicFailure = firstExactKeyFailure(
+      keyOverride["tonic"],
+      ["step", "alter"],
+      [...path, "keyOverride", "tonic"],
+    );
+    if (tonicFailure !== null) return tonicFailure;
+    const tonic = isObject(keyOverride["tonic"]) ? keyOverride["tonic"] : {};
+    if (!["A", "B", "C", "D", "E", "F", "G"].includes(String(tonic["step"]))) {
+      return [...path, "keyOverride", "tonic", "step"];
+    }
+    if (
+      !Number.isInteger(tonic["alter"]) ||
+      Number(tonic["alter"]) < -2 ||
+      Number(tonic["alter"]) > 2
+    ) {
+      return [...path, "keyOverride", "tonic", "alter"];
+    }
+    if (!KEY_MODES.includes(keyOverride["mode"] as never)) {
+      return [...path, "keyOverride", "mode"];
+    }
+  }
+  return SECTION_VOICE_LEADING_BOUNDARIES.includes(
+    value["voiceLeadingBoundary"] as never,
+  )
+    ? null
+    : [...path, "voiceLeadingBoundary"];
+}
+
+function firstPlacementShapeFailure(
+  value: unknown,
+  sourceKind: unknown,
+  path: readonly (string | number)[],
+): readonly (string | number)[] | null {
+  if (!isObject(value)) return path;
+  const kindProperty = ownEnumerableDataProperty(value, "kind");
+  if (typeof kindProperty?.value !== "string") return [...path, "kind"];
+  const kind = kindProperty.value;
+  const keys =
+    kind === "into-measure"
+      ? [
+          "kind",
+          "measureId",
+          "beforeEventId",
+          "layoutDisposition",
+          "completionDeclarations",
+        ]
+      : kind === "into-section"
+        ? [
+            "kind",
+            "sectionId",
+            "beforeMeasureId",
+            "layoutDisposition",
+            "completionDeclarations",
+          ]
+        : kind === "into-document"
+          ? [
+              "kind",
+              "beforeSectionId",
+              "layoutDisposition",
+              "sectionDeclarations",
+              "completionDeclarations",
+            ]
+          : null;
+  if (keys === null) return [...path, "kind"];
+  const keyFailure = firstExactKeyFailure(value, keys, path);
+  if (keyFailure !== null) return keyFailure;
+  const idFields =
+    kind === "into-measure"
+      ? ["measureId", "beforeEventId"]
+      : kind === "into-section"
+        ? ["sectionId", "beforeMeasureId"]
+        : ["beforeSectionId"];
+  for (const idField of idFields) {
+    const required = idField === "measureId" || idField === "sectionId";
+    if (
+      (required && !isStableId(value[idField])) ||
+      (!required && value[idField] !== null && !isStableId(value[idField]))
+    ) {
+      return [...path, idField];
+    }
+  }
+  const expectedLayout =
+    kind === "into-measure"
+      ? sourceKind === "recovered-chord"
+        ? "insert-one-recovered-chord"
+        : "flatten-one-implicit-measure"
+      : kind === "into-section"
+        ? "preserve-implicit-measures"
+        : "preserve-named-sections";
+  if (value["layoutDisposition"] !== expectedLayout) {
+    return [...path, "layoutDisposition"];
+  }
+  const completionFailure = firstCompletionShapeFailure(
+    value["completionDeclarations"],
+    [...path, "completionDeclarations"],
+  );
+  if (completionFailure !== null) return completionFailure;
+  if (kind === "into-document") {
+    if (
+      !Array.isArray(value["sectionDeclarations"]) ||
+      capturedArrayHasInvalidOwnShape(value["sectionDeclarations"])
+    ) {
+      return [...path, "sectionDeclarations"];
+    }
+    for (const [index, declaration] of value["sectionDeclarations"].entries()) {
+      const rowPath = [...path, "sectionDeclarations", index];
+      const declarationFailure = firstExactKeyFailure(
+        declaration,
+        ["sourceSectionOrdinal", "voiceLeadingBoundary"],
+        rowPath,
+      );
+      if (declarationFailure !== null) return declarationFailure;
+      if (
+        !isObject(declaration) ||
+        !isNonnegativeSafeInteger(declaration["sourceSectionOrdinal"])
+      ) {
+        return [...rowPath, "sourceSectionOrdinal"];
+      }
+      if (
+        !SECTION_VOICE_LEADING_BOUNDARIES.includes(
+          declaration["voiceLeadingBoundary"] as never,
+        )
+      ) {
+        return [...rowPath, "voiceLeadingBoundary"];
+      }
+    }
+  }
+  return null;
+}
+
+function firstPlanShapeFailure(
+  planValue: unknown,
+): readonly (string | number)[] | null {
+  if (!isObject(planValue)) return ["plan"];
+  const plan = planValue;
+  const kindProperty = ownEnumerableDataProperty(plan, "kind");
+  if (typeof kindProperty?.value !== "string") return ["plan", "kind"];
+  switch (kindProperty.value) {
+    case "insert-fragment": {
+      const keyFailure = firstExactKeyFailure(
+        plan,
+        ["kind", "source", "placement", "voicingPolicy"],
+        ["plan"],
+      );
+      if (keyFailure !== null) return keyFailure;
+      const source = isObject(plan["source"]) ? plan["source"] : null;
+      if (source === null) return ["plan", "source"];
+      const sourceKindProperty = ownEnumerableDataProperty(source, "kind");
+      const complete = sourceKindProperty?.value === "complete-draft";
+      const recovered = sourceKindProperty?.value === "recovered-chord";
+      if (!complete && !recovered) return ["plan", "source", "kind"];
+      const sourceFailure = firstExactKeyFailure(
+        source,
+        complete
+          ? ["kind", "quickEntrySnapshot", "warningAcknowledgements"]
+          : [
+              "kind",
+              "quickEntrySnapshot",
+              "selectedGlobalOrdinal",
+              "layoutLossAcknowledgement",
+              "callerDuration",
+            ],
+        ["plan", "source"],
+      );
+      if (sourceFailure !== null) return sourceFailure;
+      const snapshot = isObject(source["quickEntrySnapshot"])
+        ? source["quickEntrySnapshot"]
+        : null;
+      const snapshotFailure = firstExactKeyFailure(
+        snapshot,
+        [
+          "sourceText",
+          "baseRevision",
+          "target",
+          "issueCodes",
+          "expectedStatus",
+          "expectedLane",
+        ],
+        ["plan", "source", "quickEntrySnapshot"],
+      );
+      if (snapshotFailure !== null) return snapshotFailure;
+      if (snapshot === null) return ["plan", "source", "quickEntrySnapshot"];
+      if (typeof snapshot["sourceText"] !== "string") {
+        return ["plan", "source", "quickEntrySnapshot", "sourceText"];
+      }
+      if (!isNonnegativeSafeInteger(snapshot["baseRevision"])) {
+        return ["plan", "source", "quickEntrySnapshot", "baseRevision"];
+      }
+      const boundaryFailure = firstBoundaryShapeFailure(snapshot["target"], [
+        "plan",
+        "source",
+        "quickEntrySnapshot",
+        "target",
+      ]);
+      if (boundaryFailure !== null) return boundaryFailure;
+      if (
+        !Array.isArray(snapshot["issueCodes"]) ||
+        capturedArrayHasInvalidOwnShape(snapshot["issueCodes"]) ||
+        snapshot["issueCodes"].some(
+          (code) => !isBoundedToken(code, MAX_COMMAND_ID_CODE_POINTS),
+        ) ||
+        new Set(snapshot["issueCodes"]).size !== snapshot["issueCodes"].length
+      ) {
+        return ["plan", "source", "quickEntrySnapshot", "issueCodes"];
+      }
+      if (
+        !["idle", "invalid", "ready"].includes(
+          String(snapshot["expectedStatus"]),
+        )
+      ) {
+        return ["plan", "source", "quickEntrySnapshot", "expectedStatus"];
+      }
+      if (
+        !["complete-draft", "recovered-chord"].includes(
+          String(snapshot["expectedLane"]),
+        )
+      ) {
+        return ["plan", "source", "quickEntrySnapshot", "expectedLane"];
+      }
+      if (complete) {
+        if (
+          !Array.isArray(source["warningAcknowledgements"]) ||
+          capturedArrayHasInvalidOwnShape(source["warningAcknowledgements"])
+        ) {
+          return ["plan", "source", "warningAcknowledgements"];
+        }
+        for (const [index, row] of source[
+          "warningAcknowledgements"
+        ].entries()) {
+          const rowPath = ["plan", "source", "warningAcknowledgements", index];
+          const rowFailure = firstExactKeyFailure(
+            row,
+            ["code", "range"],
+            rowPath,
+          );
+          if (rowFailure !== null) return rowFailure;
+          if (
+            !isObject(row) ||
+            !isBoundedToken(row["code"], MAX_COMMAND_ID_CODE_POINTS)
+          ) {
+            return [...rowPath, "code"];
+          }
+          if (
+            !isValidSourceRange(row["range"], snapshot["sourceText"].length)
+          ) {
+            return [...rowPath, "range"];
+          }
+        }
+      } else {
+        if (!isNonnegativeSafeInteger(source["selectedGlobalOrdinal"])) {
+          return ["plan", "source", "selectedGlobalOrdinal"];
+        }
+        if (
+          typeof source["layoutLossAcknowledgement"] !== "string" ||
+          !isUnicodeScalarString(source["layoutLossAcknowledgement"])
+        ) {
+          return ["plan", "source", "layoutLossAcknowledgement"];
+        }
+        if (source["callerDuration"] !== null) {
+          const callerFailure = firstDurationShapeFailure(
+            source["callerDuration"],
+            ["plan", "source", "callerDuration"],
+          );
+          if (callerFailure !== null) return callerFailure;
+        }
+      }
+      const placementFailure = firstPlacementShapeFailure(
+        plan["placement"],
+        source["kind"],
+        ["plan", "placement"],
+      );
+      if (placementFailure !== null) return placementFailure;
+      return plan["voicingPolicy"] === A0_U1_NEW_EVENT_POLICY_ID
+        ? null
+        : ["plan", "voicingPolicy"];
+    }
+    case "split-event-duration": {
+      const keyFailure = firstExactKeyFailure(
+        plan,
+        [
+          "kind",
+          "eventId",
+          "firstDuration",
+          "secondDuration",
+          "completionDeclarations",
+          "identityPolicy",
+          "contentPolicy",
+          "annotationPolicy",
+        ],
+        ["plan"],
+      );
+      if (keyFailure !== null) return keyFailure;
+      if (!isStableId(plan["eventId"])) return ["plan", "eventId"];
+      for (const field of ["firstDuration", "secondDuration"]) {
+        const failure = firstDurationShapeFailure(plan[field], ["plan", field]);
+        if (failure !== null) return failure;
+      }
+      const completionFailure = firstCompletionShapeFailure(
+        plan["completionDeclarations"],
+        ["plan", "completionDeclarations"],
+      );
+      if (completionFailure !== null) return completionFailure;
+      if (plan["identityPolicy"] !== "retain-source-first-allocate-second") {
+        return ["plan", "identityPolicy"];
+      }
+      if (plan["contentPolicy"] !== "copy-exact-chord-and-voicing") {
+        return ["plan", "contentPolicy"];
+      }
+      return plan["annotationPolicy"] === "retain-source-first-clear-second"
+        ? null
+        : ["plan", "annotationPolicy"];
+    }
+    case "join-event-durations": {
+      const keyFailure = firstExactKeyFailure(
+        plan,
+        [
+          "kind",
+          "leftEventId",
+          "rightEventId",
+          "joinedDuration",
+          "completionDeclarations",
+          "identityPolicy",
+          "contentPolicy",
+          "annotationPolicy",
+        ],
+        ["plan"],
+      );
+      if (keyFailure !== null) return keyFailure;
+      if (!isStableId(plan["leftEventId"])) return ["plan", "leftEventId"];
+      if (!isStableId(plan["rightEventId"])) {
+        return ["plan", "rightEventId"];
+      }
+      const durationFailure = firstDurationShapeFailure(
+        plan["joinedDuration"],
+        ["plan", "joinedDuration"],
+      );
+      if (durationFailure !== null) return durationFailure;
+      const completionFailure = firstCompletionShapeFailure(
+        plan["completionDeclarations"],
+        ["plan", "completionDeclarations"],
+      );
+      if (completionFailure !== null) return completionFailure;
+      if (plan["identityPolicy"] !== "retain-left-remove-right") {
+        return ["plan", "identityPolicy"];
+      }
+      if (plan["contentPolicy"] !== "require-exact-chord-and-voicing") {
+        return ["plan", "contentPolicy"];
+      }
+      return plan["annotationPolicy"] === "require-right-empty-retain-left"
+        ? null
+        : ["plan", "annotationPolicy"];
+    }
+    case "split-section": {
+      const keyFailure = firstExactKeyFailure(
+        plan,
+        [
+          "kind",
+          "sectionId",
+          "beforeMeasureId",
+          "newSectionMetadata",
+          "completionDeclarations",
+          "identityPolicy",
+          "measurePolicy",
+        ],
+        ["plan"],
+      );
+      if (keyFailure !== null) return keyFailure;
+      if (!isStableId(plan["sectionId"])) return ["plan", "sectionId"];
+      if (!isStableId(plan["beforeMeasureId"])) {
+        return ["plan", "beforeMeasureId"];
+      }
+      const metadataFailure = firstMetadataShapeFailure(
+        plan["newSectionMetadata"],
+        ["plan", "newSectionMetadata"],
+      );
+      if (metadataFailure !== null) return metadataFailure;
+      const completionFailure = firstCompletionShapeFailure(
+        plan["completionDeclarations"],
+        ["plan", "completionDeclarations"],
+      );
+      if (completionFailure !== null) return completionFailure;
+      if (plan["identityPolicy"] !== "retain-source-prefix-allocate-suffix") {
+        return ["plan", "identityPolicy"];
+      }
+      return plan["measurePolicy"] === "move-suffix-preserve-identities"
+        ? null
+        : ["plan", "measurePolicy"];
+    }
+    case "join-sections": {
+      const keyFailure = firstExactKeyFailure(
+        plan,
+        [
+          "kind",
+          "leftSectionId",
+          "rightSectionId",
+          "expectedLeftMetadata",
+          "expectedRightMetadata",
+          "resultMetadata",
+          "completionDeclarations",
+          "identityPolicy",
+          "measurePolicy",
+          "metadataPolicy",
+          "internalBoundaryPolicy",
+        ],
+        ["plan"],
+      );
+      if (keyFailure !== null) return keyFailure;
+      if (!isStableId(plan["leftSectionId"])) {
+        return ["plan", "leftSectionId"];
+      }
+      if (!isStableId(plan["rightSectionId"])) {
+        return ["plan", "rightSectionId"];
+      }
+      for (const field of [
+        "expectedLeftMetadata",
+        "expectedRightMetadata",
+        "resultMetadata",
+      ]) {
+        const metadataFailure = firstMetadataShapeFailure(plan[field], [
+          "plan",
+          field,
+        ]);
+        if (metadataFailure !== null) return metadataFailure;
+      }
+      const completionFailure = firstCompletionShapeFailure(
+        plan["completionDeclarations"],
+        ["plan", "completionDeclarations"],
+      );
+      if (completionFailure !== null) return completionFailure;
+      if (plan["identityPolicy"] !== "retain-left-remove-right") {
+        return ["plan", "identityPolicy"];
+      }
+      if (plan["measurePolicy"] !== "left-then-right-preserve-identities") {
+        return ["plan", "measurePolicy"];
+      }
+      if (
+        plan["metadataPolicy"] !== "compare-both-then-apply-explicit-result"
+      ) {
+        return ["plan", "metadataPolicy"];
+      }
+      return plan["internalBoundaryPolicy"] ===
+        "remove-right-entry-boundary-confirmed"
+        ? null
+        : ["plan", "internalBoundaryPolicy"];
+    }
+    default:
+      return ["plan", "kind"];
+  }
+}
+
+function firstRuntimeShapeRefusal(command: unknown): RefusalOracle | null {
+  const captured = capturePassiveData(command, []);
+  if (!captured.ok) {
+    return {
+      code:
+        captured.path[0] === "plan"
+          ? "edit-plan.plan-shape-invalid"
+          : "edit-plan.command-shape-invalid",
+      path: captured.path,
+    };
+  }
+  command = captured.value;
+  const envelopeKeys = [
+    "id",
+    "label",
+    "expectedDocumentId",
+    "expectedRevision",
+    "logicalTimeMs",
+    "coalescing",
+    "kind",
+    "plan",
+  ];
+  const envelopeFailure = firstExactKeyFailure(command, envelopeKeys, []);
+  if (envelopeFailure !== null) {
+    return {
+      code: "edit-plan.command-shape-invalid",
+      path: envelopeFailure,
+    };
+  }
+  if (!isObject(command)) {
+    return { code: "edit-plan.command-shape-invalid", path: [] };
+  }
+  if (command["coalescing"] !== null) {
+    return { code: "edit-plan.command-shape-invalid", path: ["coalescing"] };
+  }
+  if (command["kind"] !== "apply-edit-plan") {
+    return { code: "edit-plan.command-shape-invalid", path: ["kind"] };
+  }
+  const planFailure = firstPlanShapeFailure(command["plan"]);
+  return planFailure === null
+    ? null
+    : { code: "edit-plan.plan-shape-invalid", path: planFailure };
+}
+
+/**
+ * Descriptor-safe executable seam for hostile-object proofs. The probe never
+ * reads a command field until the complete expected own-key set has been
+ * captured and every expected field is an enumerable data property.
+ */
+export function probeA0U1RuntimeShapeRefusal(
+  command: unknown,
+): RefusalOracle | null {
+  const refusal = firstRuntimeShapeRefusal(command);
+  return refusal === null
+    ? null
+    : Object.freeze({
+        code: refusal.code,
+        path: Object.freeze([...refusal.path]),
+      });
+}
+
+function firstSequenceMismatchIndex(
+  left: readonly unknown[],
+  right: readonly unknown[],
+): number | null {
+  const shared = Math.min(left.length, right.length);
+  for (let index = 0; index < shared; index += 1) {
+    if (!jsonDeepEqual(left[index], right[index])) return index;
+  }
+  return left.length === right.length ? null : shared;
+}
+
+function firstSnapshotMismatch(
+  command: JsonObject,
+  before: JsonObject,
+): Readonly<{
+  path: readonly (string | number)[];
+  fieldsCompared: number;
+  issueCodesCompared: number;
+}> | null {
+  const plan = isObject(command["plan"]) ? command["plan"] : null;
+  if (plan?.["kind"] !== "insert-fragment") return null;
+  const source = isObject(plan["source"]) ? plan["source"] : {};
+  const snapshot = isObject(source["quickEntrySnapshot"])
+    ? source["quickEntrySnapshot"]
+    : {};
+  const quickEntry = isObject(before["quickEntry"]) ? before["quickEntry"] : {};
+  const ordered: readonly Readonly<{
+    name: string;
+    observed: unknown;
+    expected: unknown;
+  }>[] = [
+    {
+      name: "sourceText",
+      observed: snapshot["sourceText"],
+      expected: quickEntry["text"],
+    },
+    {
+      name: "baseRevision",
+      observed: snapshot["baseRevision"],
+      expected:
+        quickEntry["baseRevision"] === before["revision"]
+          ? quickEntry["baseRevision"]
+          : Symbol("invalid-current-base-revision"),
+    },
+    {
+      name: "target",
+      observed: snapshot["target"],
+      expected: quickEntry["target"],
+    },
+  ];
+  for (const [index, field] of ordered.entries()) {
+    if (!jsonDeepEqual(field.observed, field.expected)) {
+      return {
+        path: ["plan", "source", "quickEntrySnapshot", field.name],
+        fieldsCompared: index + 1,
+        issueCodesCompared: 0,
+      };
+    }
+  }
+  const observedIssues = Array.isArray(snapshot["issueCodes"])
+    ? snapshot["issueCodes"]
+    : [];
+  const expectedIssues = Array.isArray(quickEntry["issueCodes"])
+    ? quickEntry["issueCodes"]
+    : [];
+  const issueMismatch = firstSequenceMismatchIndex(
+    observedIssues,
+    expectedIssues,
+  );
+  if (issueMismatch !== null) {
+    return {
+      path: [
+        "plan",
+        "source",
+        "quickEntrySnapshot",
+        "issueCodes",
+        issueMismatch,
+      ],
+      fieldsCompared: 4,
+      issueCodesCompared: issueMismatch + 1,
+    };
+  }
+  if (snapshot["expectedStatus"] !== quickEntry["status"]) {
+    return {
+      path: ["plan", "source", "quickEntrySnapshot", "expectedStatus"],
+      fieldsCompared: 5,
+      issueCodesCompared: observedIssues.length,
+    };
+  }
+  if (snapshot["expectedLane"] !== source["kind"]) {
+    return {
+      path: ["plan", "source", "quickEntrySnapshot", "expectedLane"],
+      fieldsCompared: 6,
+      issueCodesCompared: observedIssues.length,
+    };
+  }
+  return null;
+}
+
+function boundaryIdField(boundary: unknown): string | null {
+  if (!isObject(boundary)) return null;
+  const kind = boundary["kind"];
+  if (
+    [
+      "before-section",
+      "after-section",
+      "section-start",
+      "section-end",
+    ].includes(String(kind))
+  ) {
+    return "sectionId";
+  }
+  if (
+    [
+      "before-measure",
+      "after-measure",
+      "measure-start",
+      "measure-end",
+    ].includes(String(kind))
+  ) {
+    return "measureId";
+  }
+  return kind === "before-event" || kind === "after-event" ? "eventId" : null;
+}
+
+function idExistsForField(
+  document: unknown,
+  field: string,
+  id: unknown,
+): boolean {
+  if (field === "sectionId") return findSectionLocation(document, id) !== null;
+  if (field === "measureId") return findMeasureLocation(document, id) !== null;
+  return field === "eventId" && findEventLocation(document, id) !== null;
+}
+
+function firstMissingTarget(
+  document: unknown,
+  plan: JsonObject,
+): readonly (string | number)[] | null {
+  if (plan["kind"] === "insert-fragment") {
+    const placement = isObject(plan["placement"]) ? plan["placement"] : {};
+    const placementFields =
+      placement["kind"] === "into-measure"
+        ? ["measureId", "beforeEventId"]
+        : placement["kind"] === "into-section"
+          ? ["sectionId", "beforeMeasureId"]
+          : ["beforeSectionId"];
+    for (const field of placementFields) {
+      const id = placement[field];
+      if (
+        id !== null &&
+        !idExistsForField(
+          document,
+          field === "beforeEventId"
+            ? "eventId"
+            : field === "beforeMeasureId"
+              ? "measureId"
+              : field === "beforeSectionId"
+                ? "sectionId"
+                : field,
+          id,
+        )
+      ) {
+        return ["plan", "placement", field];
+      }
+    }
+    const source = isObject(plan["source"]) ? plan["source"] : {};
+    const snapshot = isObject(source["quickEntrySnapshot"])
+      ? source["quickEntrySnapshot"]
+      : {};
+    const target = snapshot["target"];
+    const targetField = boundaryIdField(target);
+    if (
+      targetField !== null &&
+      isObject(target) &&
+      !idExistsForField(document, targetField, target[targetField])
+    ) {
+      return ["plan", "source", "quickEntrySnapshot", "target", targetField];
+    }
+    return null;
+  }
+  const fields =
+    plan["kind"] === "split-event-duration"
+      ? ["eventId"]
+      : plan["kind"] === "join-event-durations"
+        ? ["leftEventId", "rightEventId"]
+        : plan["kind"] === "split-section"
+          ? ["sectionId", "beforeMeasureId"]
+          : plan["kind"] === "join-sections"
+            ? ["leftSectionId", "rightSectionId"]
+            : [];
+  for (const field of fields) {
+    const idField = ["eventId", "leftEventId", "rightEventId"].includes(field)
+      ? "eventId"
+      : field === "beforeMeasureId"
+        ? "measureId"
+        : "sectionId";
+    if (!idExistsForField(document, idField, plan[field])) {
+      return ["plan", field];
+    }
+  }
+  return null;
+}
+
+function expectedCompletionDeclarations(
+  document: unknown,
+  plan: JsonObject,
+): readonly JsonObject[] | null {
+  if (plan["kind"] === "insert-fragment") {
+    const source = isObject(plan["source"]) ? plan["source"] : {};
+    const placement = isObject(plan["placement"]) ? plan["placement"] : {};
+    if (placement["kind"] !== "into-measure") return [];
+    if (source["kind"] === "complete-draft") {
+      return [
+        {
+          measureId: placement["measureId"],
+          completion: { kind: "complete" },
+        },
+      ];
+    }
+    const observed = recordsAt(placement["completionDeclarations"]);
+    return [
+      {
+        measureId: placement["measureId"],
+        completion: observed[0]?.["completion"],
+      },
+    ];
+  }
+  if (
+    plan["kind"] === "split-event-duration" ||
+    plan["kind"] === "join-event-durations"
+  ) {
+    const eventId =
+      plan["kind"] === "split-event-duration"
+        ? plan["eventId"]
+        : plan["leftEventId"];
+    const location = findEventLocation(document, eventId);
+    return location === null
+      ? null
+      : [
+          {
+            measureId: location.measure["id"],
+            completion: location.measure["completion"],
+          },
+        ];
+  }
+  return [];
+}
+
+function planCompletionDeclarations(plan: JsonObject): readonly JsonObject[] {
+  if (plan["kind"] === "insert-fragment" && isObject(plan["placement"])) {
+    return recordsAt(plan["placement"]["completionDeclarations"]);
+  }
+  return recordsAt(plan["completionDeclarations"]);
+}
+
+function firstCompletionMismatch(
+  document: unknown,
+  plan: JsonObject,
+): readonly (string | number)[] | null {
+  const expected = expectedCompletionDeclarations(document, plan);
+  if (expected === null) return ["plan", "completionDeclarations", 0];
+  const observed = planCompletionDeclarations(plan);
+  const mismatch = firstSequenceMismatchIndex(observed, expected);
+  if (mismatch === null) return null;
+  return plan["kind"] === "insert-fragment"
+    ? ["plan", "placement", "completionDeclarations", mismatch]
+    : ["plan", "completionDeclarations", mismatch];
+}
+
+function firstSectionMetadataMismatch(
+  document: unknown,
+  plan: JsonObject,
+  parserEvidence: ParserEvidenceView | null,
+): readonly (string | number)[] | null {
+  if (
+    plan["kind"] === "insert-fragment" &&
+    isObject(plan["placement"]) &&
+    plan["placement"]["kind"] === "into-document"
+  ) {
+    const observed = recordsAt(plan["placement"]["sectionDeclarations"]);
+    const expected =
+      parserEvidence?.sectionRows.map((row) => ({
+        sourceSectionOrdinal: row["sourceSectionOrdinal"],
+        voiceLeadingBoundary: observed.find(
+          (declaration) =>
+            declaration["sourceSectionOrdinal"] === row["sourceSectionOrdinal"],
+        )?.["voiceLeadingBoundary"],
+      })) ?? [];
+    const mismatch = firstSequenceMismatchIndex(observed, expected);
+    return mismatch === null
+      ? null
+      : ["plan", "placement", "sectionDeclarations", mismatch];
+  }
+  if (plan["kind"] !== "join-sections") return null;
+  const left = findSectionLocation(document, plan["leftSectionId"]);
+  const right = findSectionLocation(document, plan["rightSectionId"]);
+  if (left === null || right === null) return ["plan", "expectedLeftMetadata"];
+  for (const [field, section] of [
+    ["expectedLeftMetadata", left.section],
+    ["expectedRightMetadata", right.section],
+  ] as const) {
+    const observed = isObject(plan[field]) ? plan[field] : {};
+    const actual = sectionMetadataProjection(section);
+    for (const metadataField of [
+      "name",
+      "annotation",
+      "keyOverride",
+      "voiceLeadingBoundary",
+    ]) {
+      if (!jsonDeepEqual(observed[metadataField], actual[metadataField])) {
+        return ["plan", field, metadataField];
+      }
+    }
+  }
+  return null;
+}
+
+function firstWarningMismatch(
+  plan: JsonObject,
+  parserEvidence: ParserEvidenceView | null,
+  rawEvidence: unknown,
+): readonly (string | number)[] | null {
+  if (
+    !isObject(plan["source"]) ||
+    plan["source"]["kind"] !== "complete-draft"
+  ) {
+    return null;
+  }
+  const observed = Array.isArray(plan["source"]["warningAcknowledgements"])
+    ? plan["source"]["warningAcknowledgements"]
+    : [];
+  const expected = isObject(rawEvidence)
+    ? recordsAt(rawEvidence["warningRows"])
+    : parserEvidence?.outcome === "success"
+      ? []
+      : [];
+  const mismatch = firstSequenceMismatchIndex(observed, expected);
+  return mismatch === null
+    ? null
+    : ["plan", "source", "warningAcknowledgements", mismatch];
+}
+
+function operationDurationRefusal(
+  document: unknown,
+  plan: JsonObject,
+  parserEvidence: ParserEvidenceView | null,
+): RefusalOracle | null {
+  if (
+    plan["kind"] === "insert-fragment" &&
+    isObject(plan["source"]) &&
+    plan["source"]["kind"] === "recovered-chord"
+  ) {
+    const source = plan["source"];
+    const selected = parserEvidence?.insertableRows.find(
+      (row) => row["globalOrdinal"] === source["selectedGlobalOrdinal"],
+    );
+    const duration = isObject(selected?.["duration"])
+      ? selected["duration"]
+      : {};
+    const caller = source["callerDuration"];
+    const branchMatches =
+      (duration["kind"] === "resolved" && caller === null) ||
+      (duration["kind"] === "requires-caller" && caller !== null);
+    if (!branchMatches) {
+      return {
+        code: "edit-plan.recovered-chord-duration-mismatch",
+        path: ["plan", "source", "callerDuration"],
+      };
+    }
+    if (caller !== null && !isCanonicalPositiveDuration(caller)) {
+      return {
+        code: "edit-plan.duration-invalid",
+        path: ["plan", "source", "callerDuration"],
+      };
+    }
+    return null;
+  }
+  if (plan["kind"] === "split-event-duration") {
+    for (const field of ["firstDuration", "secondDuration"]) {
+      if (!isCanonicalPositiveDuration(plan[field])) {
+        return { code: "edit-plan.duration-invalid", path: ["plan", field] };
+      }
+    }
+    const source = findEventLocation(document, plan["eventId"]);
+    const first = durationRational(plan["firstDuration"]);
+    const second = durationRational(plan["secondDuration"]);
+    const original = durationRational(source?.event["duration"]);
+    if (
+      first === null ||
+      second === null ||
+      original === null ||
+      !jsonDeepEqual(addRationals(first, second), original)
+    ) {
+      return {
+        code: "edit-plan.duration-sum-mismatch",
+        path: ["plan", "secondDuration"],
+      };
+    }
+  }
+  if (plan["kind"] === "join-event-durations") {
+    if (!isCanonicalPositiveDuration(plan["joinedDuration"])) {
+      return {
+        code: "edit-plan.duration-invalid",
+        path: ["plan", "joinedDuration"],
+      };
+    }
+    const left = findEventLocation(document, plan["leftEventId"]);
+    const right = findEventLocation(document, plan["rightEventId"]);
+    const leftDuration = durationRational(left?.event["duration"]);
+    const rightDuration = durationRational(right?.event["duration"]);
+    const joined = durationRational(plan["joinedDuration"]);
+    if (
+      leftDuration === null ||
+      rightDuration === null ||
+      joined === null ||
+      !jsonDeepEqual(addRationals(leftDuration, rightDuration), joined)
+    ) {
+      return {
+        code: "edit-plan.duration-sum-mismatch",
+        path: ["plan", "joinedDuration"],
+      };
+    }
+    if (
+      !jsonDeepEqual(
+        objectProjection(
+          left?.event ?? {},
+          new Set(["id", "duration", "annotation"]),
+        ),
+        objectProjection(
+          right?.event ?? {},
+          new Set(["id", "duration", "annotation"]),
+        ),
+      )
+    ) {
+      return {
+        code: "edit-plan.event-content-mismatch",
+        path: ["plan", "rightEventId"],
+      };
+    }
+    if (right?.event["annotation"] !== "") {
+      return {
+        code: "edit-plan.right-annotation-not-empty",
+        path: ["plan", "rightEventId"],
+      };
+    }
+  }
+  return null;
+}
+
+function projectedCollectionRefusal(
+  document: unknown,
+  plan: JsonObject,
+  parserEvidence: ParserEvidenceView | null,
+): RefusalOracle | null {
+  const sections = documentSections(document);
+  const measures = sections.flatMap(sectionMeasures);
+  const events = measures.flatMap(measureEvents);
+  let finalSections = sections.length;
+  let finalMeasures = measures.length;
+  let finalEvents = events.length;
+  const finalPerSection = sections.map(
+    (section) => sectionMeasures(section).length,
+  );
+  if (plan["kind"] === "insert-fragment" && isObject(plan["placement"])) {
+    const insertedMeasures = parserEvidence?.measureRows.length ?? 0;
+    const source = isObject(plan["source"]) ? plan["source"] : {};
+    const insertedEvents =
+      source["kind"] === "recovered-chord"
+        ? parserEvidence?.insertableRows.some(
+            (row) => row["globalOrdinal"] === source["selectedGlobalOrdinal"],
+          )
+          ? 1
+          : 0
+        : (parserEvidence?.insertableRows.length ?? 0);
+    finalEvents += insertedEvents;
+    if (plan["placement"]["kind"] === "into-section") {
+      finalMeasures += insertedMeasures;
+      const target = findSectionLocation(
+        document,
+        plan["placement"]["sectionId"],
+      );
+      if (target !== null) {
+        const current = finalPerSection[target.index];
+        if (current !== undefined) {
+          finalPerSection[target.index] = current + insertedMeasures;
+        }
+      }
+    } else if (plan["placement"]["kind"] === "into-document") {
+      finalSections += parserEvidence?.sectionRows.length ?? 0;
+      finalMeasures += insertedMeasures;
+      for (const sectionRow of parserEvidence?.sectionRows ?? []) {
+        finalPerSection.push(
+          parserEvidence?.measureRows.filter(
+            (measure) =>
+              measure["sourceSectionOrdinal"] ===
+              sectionRow["sourceSectionOrdinal"],
+          ).length ?? 0,
+        );
+      }
+    }
+  } else if (plan["kind"] === "split-event-duration") {
+    finalEvents += 1;
+  } else if (plan["kind"] === "join-event-durations") {
+    finalEvents -= 1;
+  } else if (plan["kind"] === "split-section") {
+    finalSections += 1;
+  } else if (plan["kind"] === "join-sections") {
+    finalSections -= 1;
+    const left = findSectionLocation(document, plan["leftSectionId"]);
+    const right = findSectionLocation(document, plan["rightSectionId"]);
+    if (left !== null && right !== null) {
+      finalPerSection[left.index] =
+        sectionMeasures(left.section).length +
+        sectionMeasures(right.section).length;
+      finalPerSection.splice(right.index, 1);
+    }
+  }
+  const occupied = 1 + finalSections + finalMeasures + finalEvents;
+  const planNodes =
+    1 +
+    (plan["kind"] === "insert-fragment"
+      ? parserEvidence?.outcome === "success"
+        ? parserEvidence.sectionRows.length +
+          parserEvidence.measureRows.length +
+          parserEvidence.insertableRows.length
+        : (parserEvidence?.insertableRows.length ?? 0)
+      : 0);
+  if (finalSections > EXPECTED_ATOMIC_EDIT_LIMITS.fragmentSections) {
+    return { code: "edit-plan.collection-limit-exceeded", path: ["plan"] };
+  }
+  if (
+    finalPerSection.some(
+      (count) => count > EXPECTED_ATOMIC_EDIT_LIMITS.fragmentMeasuresPerSection,
+    )
+  ) {
+    return { code: "edit-plan.collection-limit-exceeded", path: ["plan"] };
+  }
+  if (finalMeasures > EXPECTED_ATOMIC_EDIT_LIMITS.fragmentMeasures) {
+    return { code: "edit-plan.collection-limit-exceeded", path: ["plan"] };
+  }
+  if (finalEvents > EXPECTED_ATOMIC_EDIT_LIMITS.fragmentEvents) {
+    return { code: "edit-plan.collection-limit-exceeded", path: ["plan"] };
+  }
+  if (occupied > EXPECTED_ATOMIC_EDIT_LIMITS.occupiedIdRecords) {
+    return { code: "edit-plan.collection-limit-exceeded", path: ["plan"] };
+  }
+  return planNodes > EXPECTED_ATOMIC_EDIT_LIMITS.planNodeRecords
+    ? { code: "edit-plan.collection-limit-exceeded", path: ["plan"] }
+    : null;
+}
+
+function insertedDurationTotal(
+  plan: JsonObject,
+  parserEvidence: ParserEvidenceView | null,
+): ExactRational | null {
+  if (plan["kind"] !== "insert-fragment") {
+    return Object.freeze({ numerator: 0n, denominator: 1n });
+  }
+  const source = isObject(plan["source"]) ? plan["source"] : {};
+  const rows =
+    source["kind"] === "recovered-chord"
+      ? (parserEvidence?.insertableRows.filter(
+          (row) => row["globalOrdinal"] === source["selectedGlobalOrdinal"],
+        ) ?? [])
+      : (parserEvidence?.insertableRows ?? []);
+  let total: ExactRational = Object.freeze({ numerator: 0n, denominator: 1n });
+  for (const row of rows) {
+    const duration = isObject(row["duration"]) ? row["duration"] : {};
+    const value =
+      duration["kind"] === "resolved"
+        ? duration["value"]
+        : source["callerDuration"];
+    const rational = durationRational(value);
+    if (rational === null) return null;
+    total = addRationals(total, rational);
+  }
+  return total;
+}
+
+function timelineLimitRefusal(
+  document: unknown,
+  plan: JsonObject,
+  parserEvidence: ParserEvidenceView | null,
+): RefusalOracle | null {
+  const before = documentTotalDuration(document);
+  const inserted = insertedDurationTotal(plan, parserEvidence);
+  if (before === null || inserted === null) return null;
+  const final = addRationals(before, inserted);
+  return final.numerator >
+    BigInt(EXPECTED_ATOMIC_EDIT_LIMITS.finalTimelineQuarterNoteBeats) *
+      final.denominator
+    ? { code: "edit-plan.timeline-limit-exceeded", path: ["plan"] }
+    : null;
+}
+
+type CausalOracleResult = Readonly<{
+  refusal: RefusalOracle | null;
+  candidate: CandidateOracleResult | null;
+  f2Ok: boolean;
+  f3Ok: boolean;
+}>;
+
+function deriveCausalRefusal(
+  before: JsonObject,
+  command: unknown,
+  parserEvidence: ParserEvidenceView | null,
+  rawParserEvidence: unknown,
+  allocationTrace: unknown,
+  historyEstimatorEvidence: unknown,
+): CausalOracleResult {
+  const shape = firstRuntimeShapeRefusal(command);
+  if (shape !== null || !isObject(command)) {
+    return { refusal: shape, candidate: null, f2Ok: false, f3Ok: false };
+  }
+  const envelope = expectedA0EnvelopeFailure(before, command);
+  if (envelope !== null) {
+    return { refusal: null, candidate: null, f2Ok: false, f3Ok: false };
+  }
+  const plan = isObject(command["plan"]) ? command["plan"] : {};
+  const snapshot = firstSnapshotMismatch(command, before);
+  if (snapshot !== null) {
+    return {
+      refusal: {
+        code: "edit-plan.quick-entry-snapshot-mismatch",
+        path: snapshot.path,
+      },
+      candidate: null,
+      f2Ok: false,
+      f3Ok: false,
+    };
+  }
+  if (plan["kind"] === "insert-fragment" && isObject(plan["source"])) {
+    const snapshotRecord = isObject(plan["source"]["quickEntrySnapshot"])
+      ? plan["source"]["quickEntrySnapshot"]
+      : {};
+    const sourceText = String(snapshotRecord["sourceText"]);
+    if (
+      codePointLength(sourceText) >
+      EXPECTED_ATOMIC_EDIT_LIMITS.fragmentSourceCodePoints
+    ) {
+      return {
+        refusal: {
+          code: "edit-plan.source-code-points-exceeded",
+          path: ["plan", "source", "quickEntrySnapshot", "sourceText"],
+        },
+        candidate: null,
+        f2Ok: false,
+        f3Ok: false,
+      };
+    }
+    if (!isUnicodeScalarString(sourceText)) {
+      return {
+        refusal: {
+          code: "edit-plan.source-unicode-invalid",
+          path: ["plan", "source", "quickEntrySnapshot", "sourceText"],
+        },
+        candidate: null,
+        f2Ok: false,
+        f3Ok: false,
+      };
+    }
+    if (
+      new TextEncoder().encode(sourceText).length >
+      EXPECTED_ATOMIC_EDIT_LIMITS.fragmentSourceUtf8Bytes
+    ) {
+      return {
+        refusal: {
+          code: "edit-plan.source-utf8-bytes-exceeded",
+          path: ["plan", "source", "quickEntrySnapshot", "sourceText"],
+        },
+        candidate: null,
+        f2Ok: false,
+        f3Ok: false,
+      };
+    }
+  }
+  const missing = firstMissingTarget(before["document"], plan);
+  if (missing !== null) {
+    return {
+      refusal: { code: "edit-plan.target-missing", path: missing },
+      candidate: null,
+      f2Ok: false,
+      f3Ok: false,
+    };
+  }
+  if (plan["kind"] === "insert-fragment") {
+    const source = isObject(plan["source"]) ? plan["source"] : {};
+    const placement = isObject(plan["placement"]) ? plan["placement"] : {};
+    if (
+      !canonicalPlacementTargetHasCorrectParent(
+        before["document"],
+        placement,
+      ) ||
+      !canonicalPlacementTargetMatches(before["document"], plan) ||
+      (source["kind"] === "complete-draft" &&
+        !completeDraftIntoMeasureContractHolds(before["document"], plan))
+    ) {
+      return {
+        refusal: {
+          code: "edit-plan.destination-invalid",
+          path: ["plan", "placement"],
+        },
+        candidate: null,
+        f2Ok: false,
+        f3Ok: false,
+      };
+    }
+  }
+  if (plan["kind"] === "join-event-durations") {
+    const left = findEventLocation(before["document"], plan["leftEventId"]);
+    const right = findEventLocation(before["document"], plan["rightEventId"]);
+    if (
+      left === null ||
+      right === null ||
+      left.measure !== right.measure ||
+      right.eventIndex !== left.eventIndex + 1
+    ) {
+      return {
+        refusal: {
+          code: "edit-plan.event-order-invalid",
+          path: ["plan", "rightEventId"],
+        },
+        candidate: null,
+        f2Ok: false,
+        f3Ok: false,
+      };
+    }
+  }
+  if (plan["kind"] === "split-section") {
+    const section = findSectionLocation(before["document"], plan["sectionId"]);
+    const boundaryIndex =
+      section?.section === undefined
+        ? -1
+        : sectionMeasures(section.section).findIndex(
+            (measure) => measure["id"] === plan["beforeMeasureId"],
+          );
+    if (
+      section === null ||
+      boundaryIndex <= 0 ||
+      boundaryIndex >= sectionMeasures(section.section).length
+    ) {
+      return {
+        refusal: {
+          code: "edit-plan.section-split-boundary-invalid",
+          path: ["plan", "beforeMeasureId"],
+        },
+        candidate: null,
+        f2Ok: false,
+        f3Ok: false,
+      };
+    }
+  }
+  if (plan["kind"] === "join-sections") {
+    const left = findSectionLocation(before["document"], plan["leftSectionId"]);
+    const right = findSectionLocation(
+      before["document"],
+      plan["rightSectionId"],
+    );
+    if (left === null || right === null || right.index !== left.index + 1) {
+      return {
+        refusal: {
+          code: "edit-plan.section-order-invalid",
+          path: ["plan", "rightSectionId"],
+        },
+        candidate: null,
+        f2Ok: false,
+        f3Ok: false,
+      };
+    }
+  }
+  if (
+    plan["kind"] === "insert-fragment" &&
+    isObject(plan["source"]) &&
+    plan["source"]["kind"] === "recovered-chord" &&
+    (!isObject(plan["placement"]) ||
+      plan["placement"]["kind"] !== "into-measure")
+  ) {
+    return {
+      refusal: {
+        code: "edit-plan.recovered-chord-placement-invalid",
+        path: ["plan", "placement"],
+      },
+      candidate: null,
+      f2Ok: false,
+      f3Ok: false,
+    };
+  }
+  if (plan["kind"] === "insert-fragment" && isObject(plan["source"])) {
+    const source = plan["source"];
+    if (
+      source["kind"] === "complete-draft" &&
+      parserEvidence?.outcome === "failure"
+    ) {
+      return {
+        refusal: {
+          code: "edit-plan.syntax-refused",
+          path: ["plan", "source", "quickEntrySnapshot", "sourceText"],
+        },
+        candidate: null,
+        f2Ok: false,
+        f3Ok: false,
+      };
+    }
+    if (
+      source["kind"] === "recovered-chord" &&
+      parserEvidence?.outcome === "success"
+    ) {
+      return {
+        refusal: {
+          code: "edit-plan.recovered-chord-requires-parse-failure",
+          path: ["plan", "source", "kind"],
+        },
+        candidate: null,
+        f2Ok: false,
+        f3Ok: false,
+      };
+    }
+    if (
+      source["kind"] === "recovered-chord" &&
+      !parserEvidence?.insertableRows.some(
+        (row) => row["globalOrdinal"] === source["selectedGlobalOrdinal"],
+      )
+    ) {
+      return {
+        refusal: {
+          code: "edit-plan.recovered-chord-ordinal-missing",
+          path: ["plan", "source", "selectedGlobalOrdinal"],
+        },
+        candidate: null,
+        f2Ok: false,
+        f3Ok: false,
+      };
+    }
+  }
+  const warningMismatch = firstWarningMismatch(
+    plan,
+    parserEvidence,
+    rawParserEvidence,
+  );
+  if (warningMismatch !== null) {
+    return {
+      refusal: {
+        code: "edit-plan.warning-acknowledgements-mismatch",
+        path: warningMismatch,
+      },
+      candidate: null,
+      f2Ok: false,
+      f3Ok: false,
+    };
+  }
+  if (
+    plan["kind"] === "insert-fragment" &&
+    isObject(plan["source"]) &&
+    plan["source"]["kind"] === "complete-draft" &&
+    !completeDraftStructureMatchesPlacement(parserEvidence, plan["placement"])
+  ) {
+    return {
+      refusal: {
+        code: "edit-plan.fragment-placement-mismatch",
+        path: ["plan", "placement"],
+      },
+      candidate: null,
+      f2Ok: false,
+      f3Ok: false,
+    };
+  }
+  const completionMismatch = firstCompletionMismatch(before["document"], plan);
+  if (completionMismatch !== null) {
+    return {
+      refusal: {
+        code: "edit-plan.completion-declarations-mismatch",
+        path: completionMismatch,
+      },
+      candidate: null,
+      f2Ok: false,
+      f3Ok: false,
+    };
+  }
+  const metadataMismatch = firstSectionMetadataMismatch(
+    before["document"],
+    plan,
+    parserEvidence,
+  );
+  if (metadataMismatch !== null) {
+    return {
+      refusal: {
+        code: "edit-plan.section-metadata-mismatch",
+        path: metadataMismatch,
+      },
+      candidate: null,
+      f2Ok: false,
+      f3Ok: false,
+    };
+  }
+  if (
+    plan["kind"] === "insert-fragment" &&
+    isObject(plan["source"]) &&
+    plan["source"]["kind"] === "recovered-chord" &&
+    plan["source"]["layoutLossAcknowledgement"] !==
+      A0_U1_RECOVERED_CHORD_LAYOUT_LOSS_ACKNOWLEDGEMENT
+  ) {
+    return {
+      refusal: {
+        code: "edit-plan.recovered-chord-layout-loss-unacknowledged",
+        path: ["plan", "source", "layoutLossAcknowledgement"],
+      },
+      candidate: null,
+      f2Ok: false,
+      f3Ok: false,
+    };
+  }
+  const durationRefusal = operationDurationRefusal(
+    before["document"],
+    plan,
+    parserEvidence,
+  );
+  if (durationRefusal !== null) {
+    return {
+      refusal: durationRefusal,
+      candidate: null,
+      f2Ok: false,
+      f3Ok: false,
+    };
+  }
+  const collectionRefusal = projectedCollectionRefusal(
+    before["document"],
+    plan,
+    parserEvidence,
+  );
+  if (collectionRefusal !== null) {
+    return {
+      refusal: collectionRefusal,
+      candidate: null,
+      f2Ok: false,
+      f3Ok: false,
+    };
+  }
+  const timelineRefusal = timelineLimitRefusal(
+    before["document"],
+    plan,
+    parserEvidence,
+  );
+  if (timelineRefusal !== null) {
+    return {
+      refusal: timelineRefusal,
+      candidate: null,
+      f2Ok: false,
+      f3Ok: false,
+    };
+  }
+  const trace = recordsAt(allocationTrace);
+  const occupied = new Set([
+    isObject(before["document"]) ? String(before["document"]["id"]) : "",
+    ...identityRecords(before["document"]).sections,
+    ...identityRecords(before["document"]).measures,
+    ...identityRecords(before["document"]).events,
+  ]);
+  const locallyAccepted = new Set<string>();
+  for (const row of trace) {
+    if (row["outcome"] === "factory-refusal") {
+      return {
+        refusal: { code: "edit-plan.id-factory-failed", path: ["plan"] },
+        candidate: null,
+        f2Ok: false,
+        f3Ok: false,
+      };
+    }
+    const id = String(row["allocatedId"]);
+    if (
+      row["outcome"] === "collision-refusal" ||
+      occupied.has(id) ||
+      locallyAccepted.has(id)
+    ) {
+      return {
+        refusal: { code: "edit-plan.id-collision", path: ["plan"] },
+        candidate: null,
+        f2Ok: false,
+        f3Ok: false,
+      };
+    }
+    locallyAccepted.add(id);
+  }
+  const expectedKinds = expectedAllocationKinds(command, parserEvidence);
+  if (expectedKinds === null || trace.length !== expectedKinds.length) {
+    return { refusal: null, candidate: null, f2Ok: false, f3Ok: false };
+  }
+  const candidate = buildCandidateOracle(
+    before["document"],
+    command,
+    parserEvidence,
+    allocationTrace,
+  );
+  if (candidate === null) {
+    return { refusal: null, candidate: null, f2Ok: false, f3Ok: false };
+  }
+  const decoded = decodeDocumentShape(candidate.document);
+  if (!decoded.ok) {
+    return {
+      refusal: {
+        code: "edit-plan.structural-publication-refused",
+        path: ["candidate"],
+      },
+      candidate,
+      f2Ok: false,
+      f3Ok: false,
+    };
+  }
+  const semantic = validateDocumentSemantics(decoded.value);
+  if (!semantic.ok) {
+    return {
+      refusal: {
+        code: "edit-plan.semantic-publication-refused",
+        path: ["candidate"],
+      },
+      candidate,
+      f2Ok: true,
+      f3Ok: false,
+    };
+  }
+  if (
+    isObject(historyEstimatorEvidence) &&
+    historyEstimatorEvidence["configuration"] !== "not-reached"
+  ) {
+    const returned = historyEstimatorEvidence["returned"];
+    if (
+      !Number.isSafeInteger(returned) ||
+      Number(returned) < 0 ||
+      Number(returned) > MAX_HISTORY_RETAINED_BYTES
+    ) {
+      return {
+        refusal: { code: "edit-plan.history-refused", path: ["history"] },
+        candidate,
+        f2Ok: true,
+        f3Ok: true,
+      };
+    }
+  }
+  return { refusal: null, candidate, f2Ok: true, f3Ok: true };
+}
+
+function validateCausalRefusalOracle(
+  before: JsonObject,
+  command: unknown,
+  expected: JsonObject,
+  result: JsonObject,
+  parserEvidence: ParserEvidenceView | null,
+  allocationTrace: unknown,
+  path: string,
+  findings: A0U1EditPlanContractFinding[],
+): CausalOracleResult {
+  const oracle = deriveCausalRefusal(
+    before,
+    command,
+    parserEvidence,
+    expected["parserEvidence"],
+    allocationTrace,
+    expected["historyEstimatorEvidence"],
+  );
+  if (
+    isObject(command) &&
+    expectedA0EnvelopeFailure(before, command) !== null
+  ) {
+    return oracle;
+  }
+  if (oracle.refusal === null) {
+    if (
+      result["ok"] === false &&
+      isObject(result["editPlanRefusal"]) &&
+      EXPECTED_NESTED_REFUSAL_PRECEDENCE.includes(
+        result["editPlanRefusal"]["code"] as never,
+      )
+    ) {
+      addFinding(
+        findings,
+        "EDIT_PLAN_CAUSAL_REFUSAL_SPURIOUS",
+        path,
+        oracle.candidate === null
+          ? "The literal evidence does not provide a complete independently executable path to the claimed post-envelope refusal."
+          : "Every independently recomputed earlier predicate and both real publication gates pass, so the claimed nested refusal is spurious.",
+      );
+    }
+    validateExactNestedWorkOracle(
+      before,
+      command,
+      expected,
+      result,
+      parserEvidence,
+      allocationTrace,
+      oracle,
+      path,
+      findings,
+    );
+    return oracle;
+  }
+  if (result["ok"] !== false || !isObject(result["editPlanRefusal"])) {
+    addFinding(
+      findings,
+      "EDIT_PLAN_CAUSAL_REFUSAL_ACCEPTED",
+      path,
+      `The independently recomputed first reachable nested refusal is ${oracle.refusal.code}.`,
+    );
+    validateExactNestedWorkOracle(
+      before,
+      command,
+      expected,
+      result,
+      parserEvidence,
+      allocationTrace,
+      oracle,
+      path,
+      findings,
+    );
+    return oracle;
+  }
+  requireExact(
+    result["editPlanRefusal"]["code"],
+    oracle.refusal.code,
+    "EDIT_PLAN_CAUSAL_REFUSAL_CODE",
+    `${path}.editPlanRefusal.code`,
+    "Nested refusal code must equal the first true predicate in the independent frozen 32-code stage machine.",
+    findings,
+  );
+  requireExact(
+    result["editPlanRefusal"]["path"],
+    oracle.refusal.path,
+    "EDIT_PLAN_CAUSAL_REFUSAL_PATH",
+    `${path}.editPlanRefusal.path`,
+    "Nested refusal path must be independently derived from the first failing field, target, gate, or dependency.",
+    findings,
+  );
+  validateExactNestedWorkOracle(
+    before,
+    command,
+    expected,
+    result,
+    parserEvidence,
+    allocationTrace,
+    oracle,
+    path,
+    findings,
+  );
+  return oracle;
+}
+
+function finalTimelineDurations(
+  document: unknown,
+  plan: JsonObject,
+  parserEvidence: ParserEvidenceView | null,
+): readonly ExactRational[] | null {
+  const sections = documentSections(document).map((section) => ({
+    id: section["id"],
+    measures: sectionMeasures(section).map((measure) => ({
+      id: measure["id"],
+      events: measureEvents(measure).map((event) => ({
+        id: event["id"],
+        duration: durationRational(event["duration"]),
+      })),
+    })),
+  }));
+  const parserDuration = (row: JsonObject): ExactRational | null => {
+    const duration = isObject(row["duration"]) ? row["duration"] : {};
+    const source = isObject(plan["source"]) ? plan["source"] : {};
+    return durationRational(
+      duration["kind"] === "resolved"
+        ? duration["value"]
+        : source["callerDuration"],
+    );
+  };
+  if (plan["kind"] === "insert-fragment" && isObject(plan["placement"])) {
+    const placement = plan["placement"];
+    const source = isObject(plan["source"]) ? plan["source"] : {};
+    const rows =
+      source["kind"] === "recovered-chord"
+        ? (parserEvidence?.insertableRows.filter(
+            (row) => row["globalOrdinal"] === source["selectedGlobalOrdinal"],
+          ) ?? [])
+        : (parserEvidence?.insertableRows ?? []);
+    if (placement["kind"] === "into-measure") {
+      const measure = sections
+        .flatMap((section) => section.measures)
+        .find((candidate) => candidate.id === placement["measureId"]);
+      if (measure === undefined) return null;
+      const index =
+        placement["beforeEventId"] === null
+          ? measure.events.length
+          : measure.events.findIndex(
+              (event) => event.id === placement["beforeEventId"],
+            );
+      if (index < 0) return null;
+      measure.events.splice(
+        index,
+        0,
+        ...rows.map((row) => ({
+          id: null,
+          duration: parserDuration(row),
+        })),
+      );
+    } else if (placement["kind"] === "into-section") {
+      const section = sections.find(
+        (candidate) => candidate.id === placement["sectionId"],
+      );
+      if (section === undefined) return null;
+      const index =
+        placement["beforeMeasureId"] === null
+          ? section.measures.length
+          : section.measures.findIndex(
+              (measure) => measure.id === placement["beforeMeasureId"],
+            );
+      if (index < 0) return null;
+      const parserMeasures = (parserEvidence?.measureRows ?? []).map(
+        (measure) => ({
+          id: null,
+          events: rows
+            .filter(
+              (row) =>
+                row["sourceSectionOrdinal"] ===
+                  measure["sourceSectionOrdinal"] &&
+                row["sourceMeasureOrdinal"] === measure["sourceMeasureOrdinal"],
+            )
+            .map((row) => ({ id: null, duration: parserDuration(row) })),
+        }),
+      );
+      section.measures.splice(index, 0, ...parserMeasures);
+    } else if (placement["kind"] === "into-document") {
+      const index =
+        placement["beforeSectionId"] === null
+          ? sections.length
+          : sections.findIndex(
+              (section) => section.id === placement["beforeSectionId"],
+            );
+      if (index < 0) return null;
+      const parserSections = (parserEvidence?.sectionRows ?? []).map(
+        (section) => ({
+          id: null,
+          measures: (parserEvidence?.measureRows ?? [])
+            .filter(
+              (measure) =>
+                measure["sourceSectionOrdinal"] ===
+                section["sourceSectionOrdinal"],
+            )
+            .map((measure) => ({
+              id: null,
+              events: rows
+                .filter(
+                  (row) =>
+                    row["sourceSectionOrdinal"] ===
+                      measure["sourceSectionOrdinal"] &&
+                    row["sourceMeasureOrdinal"] ===
+                      measure["sourceMeasureOrdinal"],
+                )
+                .map((row) => ({
+                  id: null,
+                  duration: parserDuration(row),
+                })),
+            })),
+        }),
+      );
+      sections.splice(index, 0, ...parserSections);
+    }
+  } else if (plan["kind"] === "split-event-duration") {
+    for (const section of sections) {
+      for (const measure of section.measures) {
+        const index = measure.events.findIndex(
+          (event) => event.id === plan["eventId"],
+        );
+        if (index >= 0) {
+          measure.events.splice(
+            index,
+            1,
+            {
+              id: plan["eventId"],
+              duration: durationRational(plan["firstDuration"]),
+            },
+            { id: null, duration: durationRational(plan["secondDuration"]) },
+          );
+        }
+      }
+    }
+  } else if (plan["kind"] === "join-event-durations") {
+    for (const section of sections) {
+      for (const measure of section.measures) {
+        const index = measure.events.findIndex(
+          (event) => event.id === plan["leftEventId"],
+        );
+        if (index >= 0) {
+          measure.events.splice(index, 2, {
+            id: plan["leftEventId"],
+            duration: durationRational(plan["joinedDuration"]),
+          });
+        }
+      }
+    }
+  }
+  const durations = sections.flatMap((section) =>
+    section.measures.flatMap((measure) =>
+      measure.events.map((event) => event.duration),
+    ),
+  );
+  return durations.some((duration) => duration === null)
+    ? null
+    : (durations as ExactRational[]);
+}
+
+function boundaryMapperForWork(
+  before: JsonObject,
+  plan: JsonObject,
+  candidate: CandidateOracleResult,
+): (boundary: JsonObject) => JsonObject | null {
+  if (plan["kind"] === "split-event-duration") {
+    const fresh = candidate.allocatedIdentities.find(
+      (row) => row["kind"] === "event",
+    );
+    return (boundary) =>
+      fresh !== undefined &&
+      jsonDeepEqual(boundary, {
+        kind: "after-event",
+        eventId: plan["eventId"],
+      })
+        ? { kind: "after-event", eventId: fresh["id"] }
+        : cloneJson(boundary);
+  }
+  if (plan["kind"] === "join-event-durations") {
+    return (boundary) => {
+      if (
+        jsonDeepEqual(boundary, {
+          kind: "before-event",
+          eventId: plan["rightEventId"],
+        }) ||
+        jsonDeepEqual(boundary, {
+          kind: "after-event",
+          eventId: plan["leftEventId"],
+        })
+      ) {
+        return null;
+      }
+      return jsonDeepEqual(boundary, {
+        kind: "after-event",
+        eventId: plan["rightEventId"],
+      })
+        ? { kind: "after-event", eventId: plan["leftEventId"] }
+        : cloneJson(boundary);
+    };
+  }
+  if (plan["kind"] === "split-section") {
+    const fresh = candidate.allocatedIdentities.find(
+      (row) => row["kind"] === "section",
+    );
+    return (boundary) => {
+      if (
+        fresh !== undefined &&
+        boundary["sectionId"] === plan["sectionId"] &&
+        (boundary["kind"] === "after-section" ||
+          boundary["kind"] === "section-end")
+      ) {
+        return { kind: boundary["kind"], sectionId: fresh["id"] };
+      }
+      return cloneJson(boundary);
+    };
+  }
+  if (plan["kind"] === "join-sections") {
+    const right = findSectionLocation(
+      before["document"],
+      plan["rightSectionId"],
+    );
+    const firstMeasure =
+      right === null ? null : (sectionMeasures(right.section)[0] ?? null);
+    return (boundary) => {
+      const kind = boundary["kind"];
+      const sectionId = boundary["sectionId"];
+      if (
+        sectionId === plan["leftSectionId"] &&
+        (kind === "after-section" || kind === "section-end")
+      ) {
+        return firstMeasure === null
+          ? cloneJson(boundary)
+          : { kind: "before-measure", measureId: firstMeasure["id"] };
+      }
+      if (
+        sectionId === plan["rightSectionId"] &&
+        (kind === "before-section" || kind === "section-start")
+      ) {
+        return firstMeasure === null
+          ? { kind: "section-end", sectionId: plan["leftSectionId"] }
+          : { kind: "before-measure", measureId: firstMeasure["id"] };
+      }
+      if (
+        sectionId === plan["rightSectionId"] &&
+        (kind === "after-section" || kind === "section-end")
+      ) {
+        return { kind, sectionId: plan["leftSectionId"] };
+      }
+      return cloneJson(boundary);
+    };
+  }
+  return (boundary) => cloneJson(boundary);
+}
+
+function independentBookmarksAfterPlan(
+  before: JsonObject,
+  plan: JsonObject,
+  candidate: CandidateOracleResult,
+): Readonly<{
+  bookmarks: JsonObject;
+  examined: number;
+  rewritten: number;
+}> {
+  const bookmarks = isObject(before["bookmarks"]) ? before["bookmarks"] : {};
+  const afterBookmarks = cloneJson(bookmarks);
+  const selection = isObject(bookmarks["selection"])
+    ? bookmarks["selection"]
+    : {};
+  const examined =
+    1 +
+    (selection["kind"] === "events" && Array.isArray(selection["eventIds"])
+      ? selection["eventIds"].length
+      : 0) +
+    (bookmarks["insertion"] === null ? 0 : 1) +
+    (bookmarks["range"] === null ? 0 : 2);
+  let rewritten =
+    plan["kind"] === "join-event-durations" &&
+    Array.isArray(selection["eventIds"]) &&
+    selection["eventIds"].includes(plan["rightEventId"])
+      ? 1
+      : 0;
+  if (
+    plan["kind"] === "join-event-durations" &&
+    selection["kind"] === "events" &&
+    Array.isArray(selection["eventIds"])
+  ) {
+    const replace = (id: unknown): unknown =>
+      id === plan["rightEventId"] ? plan["leftEventId"] : id;
+    const eventIds = deduplicateInDocumentOrder(
+      selection["eventIds"].map(replace),
+      candidate.document,
+    );
+    afterBookmarks["selection"] =
+      eventIds.length === 0
+        ? { kind: "none" }
+        : {
+            kind: "events",
+            eventIds,
+            anchorEventId: replace(selection["anchorEventId"]) ?? eventIds[0],
+            focusEventId: replace(selection["focusEventId"]) ?? eventIds.at(-1),
+          };
+  }
+  if (plan["kind"] === "insert-fragment") {
+    const placement = isObject(plan["placement"]) ? plan["placement"] : {};
+    const kind =
+      placement["kind"] === "into-measure"
+        ? "event"
+        : placement["kind"] === "into-section"
+          ? "measure"
+          : "section";
+    const last = [...candidate.allocatedIdentities]
+      .reverse()
+      .find((row) => row["kind"] === kind);
+    const target =
+      last === undefined
+        ? null
+        : kind === "event"
+          ? { kind: "after-event", eventId: last["id"] }
+          : kind === "measure"
+            ? { kind: "after-measure", measureId: last["id"] }
+            : { kind: "after-section", sectionId: last["id"] };
+    if (!jsonDeepEqual(bookmarks["insertion"], target)) rewritten += 1;
+    afterBookmarks["insertion"] = target;
+    return { bookmarks: afterBookmarks, examined, rewritten };
+  }
+  const mapBoundary = boundaryMapperForWork(before, plan, candidate);
+  if (isObject(bookmarks["insertion"])) {
+    const mapped = mapBoundary(bookmarks["insertion"]);
+    if (mapped === null || !jsonDeepEqual(mapped, bookmarks["insertion"])) {
+      rewritten += 1;
+    }
+    afterBookmarks["insertion"] = mapped;
+  }
+  if (isObject(bookmarks["range"])) {
+    const anchor = isObject(bookmarks["range"]["anchor"])
+      ? mapBoundary(bookmarks["range"]["anchor"])
+      : null;
+    const focus = isObject(bookmarks["range"]["focus"])
+      ? mapBoundary(bookmarks["range"]["focus"])
+      : null;
+    if (anchor === null || focus === null) {
+      rewritten += 1;
+      afterBookmarks["range"] = null;
+    } else {
+      if (!jsonDeepEqual(anchor, bookmarks["range"]["anchor"])) rewritten += 1;
+      if (!jsonDeepEqual(focus, bookmarks["range"]["focus"])) rewritten += 1;
+      afterBookmarks["range"] = { anchor, focus };
+    }
+  }
+  return { bookmarks: afterBookmarks, examined, rewritten };
+}
+
+function independentlyProposedHistoryEntry(
+  before: JsonObject,
+  command: JsonObject,
+  candidate: CandidateOracleResult,
+): JsonObject | null {
+  const plan = isObject(command["plan"]) ? command["plan"] : null;
+  if (plan === null) return null;
+  const afterBookmarks = independentBookmarksAfterPlan(
+    before,
+    plan,
+    candidate,
+  ).bookmarks;
+  return {
+    commandId: command["id"],
+    commandKind: "apply-edit-plan",
+    label: command["label"],
+    before: before["document"],
+    after: candidate.document,
+    beforeBookmarks: before["bookmarks"],
+    afterBookmarks,
+    retainedBytesEstimate: 0,
+    coalescing: null,
+    firstLogicalTimeMs: command["logicalTimeMs"],
+    lastLogicalTimeMs: command["logicalTimeMs"],
+  };
+}
+
+function validateHistoryEstimatorEvidence(
+  before: JsonObject,
+  command: unknown,
+  expected: JsonObject,
+  phase: unknown,
+  oracle: CausalOracleResult | null,
+  path: string,
+  findings: A0U1EditPlanContractFinding[],
+): void {
+  const evidence = expected["historyEstimatorEvidence"];
+  if (phase === "undo" || phase === "redo") {
+    requireExact(
+      evidence,
+      null,
+      "EDIT_PLAN_HISTORY_ESTIMATOR_REPLAY_SCOPE",
+      path,
+      "Undo and redo move an existing retained row and carry no estimator dependency evidence.",
+      findings,
+    );
+    return;
+  }
+  if (!isObject(evidence)) {
+    addFinding(
+      findings,
+      "EDIT_PLAN_HISTORY_ESTIMATOR_EVIDENCE",
+      path,
+      "Every apply transition requires exact history-estimator dependency evidence.",
+    );
+    return;
+  }
+  checkExactKeys(
+    evidence,
+    EXPECTED_HISTORY_ESTIMATOR_EVIDENCE_KEYS,
+    "EDIT_PLAN_HISTORY_ESTIMATOR_KEYS",
+    path,
+    findings,
+  );
+  if (
+    !EXPECTED_HISTORY_ESTIMATOR_CONFIGURATIONS.includes(
+      evidence["configuration"] as never,
+    )
+  ) {
+    addFinding(
+      findings,
+      "EDIT_PLAN_HISTORY_ESTIMATOR_CONFIGURATION",
+      `${path}.configuration`,
+      "History-estimator evidence uses an unknown dependency configuration.",
+    );
+  }
+  const reachedHistory =
+    oracle !== null && oracle.candidate !== null && oracle.f2Ok && oracle.f3Ok;
+  if (!reachedHistory) {
+    requireExact(
+      evidence,
+      {
+        configuration: "not-reached",
+        callsObserved: 0,
+        returned: null,
+        independentlyRecomputed: null,
+      },
+      "EDIT_PLAN_HISTORY_ESTIMATOR_NOT_REACHED",
+      path,
+      "Any refusal before successful F2 and F3 must make no history-estimator call.",
+      findings,
+    );
+    return;
+  }
+  if (!isObject(command)) return;
+  if (
+    ![
+      "independent-policy",
+      "hostile-over-cap",
+      "hostile-invalid-negative",
+    ].includes(String(evidence["configuration"]))
+  ) {
+    addFinding(
+      findings,
+      "EDIT_PLAN_HISTORY_ESTIMATOR_REACHED_CONFIGURATION",
+      `${path}.configuration`,
+      "A reached history stage must use the independent policy or one explicit hostile dependency configuration.",
+    );
+  }
+  const proposed = independentlyProposedHistoryEntry(
+    before,
+    command,
+    oracle.candidate,
+  );
+  if (proposed === null) return;
+  const independentlyRecomputed = independentHistoryEntryBytes(proposed);
+  requireExact(
+    evidence["callsObserved"],
+    1,
+    "EDIT_PLAN_HISTORY_ESTIMATOR_CALLS",
+    `${path}.callsObserved`,
+    "A transition reaching history invokes the retained-byte estimator exactly once.",
+    findings,
+  );
+  requireExact(
+    evidence["independentlyRecomputed"],
+    independentlyRecomputed,
+    "EDIT_PLAN_HISTORY_ESTIMATOR_INDEPENDENT_RECOMPUTATION",
+    `${path}.independentlyRecomputed`,
+    "The normal-policy comparison must equal an independent traversal of the exact proposed history entry.",
+    findings,
+  );
+  const configuration = evidence["configuration"];
+  const expectedReturned =
+    configuration === "independent-policy"
+      ? independentlyRecomputed
+      : configuration === "hostile-over-cap"
+        ? MAX_HISTORY_RETAINED_BYTES + 1
+        : configuration === "hostile-invalid-negative"
+          ? -1
+          : null;
+  requireExact(
+    evidence["returned"],
+    expectedReturned,
+    "EDIT_PLAN_HISTORY_ESTIMATOR_RETURNED",
+    `${path}.returned`,
+    "Estimator return must equal the independent policy result or the exact reviewed hostile dependency witness.",
+    findings,
+  );
+}
+
+function metadataWorkThroughPath(
+  plan: JsonObject,
+  stopPath: readonly (string | number)[] | null,
+): Readonly<{
+  fieldsCompared: number;
+  codePointsObserved: number;
+}> {
+  if (
+    stopPath !== null &&
+    stopPath[0] === "plan" &&
+    (stopPath.length === 1 ||
+      (stopPath.length === 2 &&
+        typeof stopPath[1] === "string" &&
+        !Object.hasOwn(plan, stopPath[1])))
+  ) {
+    return { fieldsCompared: 0, codePointsObserved: 0 };
+  }
+  const metadataRoots =
+    plan["kind"] === "split-section"
+      ? ["newSectionMetadata"]
+      : plan["kind"] === "join-sections"
+        ? ["expectedLeftMetadata", "expectedRightMetadata", "resultMetadata"]
+        : [];
+  const topLevelOrder: readonly string[] =
+    plan["kind"] === "insert-fragment"
+      ? ["kind", "source", "placement", "voicingPolicy"]
+      : plan["kind"] === "split-event-duration"
+        ? [
+            "kind",
+            "eventId",
+            "firstDuration",
+            "secondDuration",
+            "completionDeclarations",
+            "identityPolicy",
+            "contentPolicy",
+            "annotationPolicy",
+          ]
+        : plan["kind"] === "join-event-durations"
+          ? [
+              "kind",
+              "leftEventId",
+              "rightEventId",
+              "joinedDuration",
+              "completionDeclarations",
+              "identityPolicy",
+              "contentPolicy",
+              "annotationPolicy",
+            ]
+          : plan["kind"] === "split-section"
+            ? [
+                "kind",
+                "sectionId",
+                "beforeMeasureId",
+                "newSectionMetadata",
+                "completionDeclarations",
+                "identityPolicy",
+                "measurePolicy",
+              ]
+            : [
+                "kind",
+                "leftSectionId",
+                "rightSectionId",
+                "expectedLeftMetadata",
+                "expectedRightMetadata",
+                "resultMetadata",
+                "completionDeclarations",
+                "identityPolicy",
+                "measurePolicy",
+                "metadataPolicy",
+                "internalBoundaryPolicy",
+              ];
+  const stopTop = typeof stopPath?.[1] === "string" ? stopPath[1] : null;
+  const stopTopIndex =
+    stopTop === null
+      ? Number.POSITIVE_INFINITY
+      : topLevelOrder.indexOf(stopTop);
+  let fieldsCompared = 0;
+  let codePointsObserved = 0;
+  for (const root of metadataRoots) {
+    const rootIndex = topLevelOrder.indexOf(root);
+    if (stopTopIndex < rootIndex) break;
+    const value = plan[root];
+    if (stopTop === root && stopPath?.length === 2) break;
+    if (!isObject(value)) break;
+    const fieldOrder = [
+      "name",
+      "annotation",
+      "keyOverride",
+      "voiceLeadingBoundary",
+    ] as const;
+    const stopField =
+      stopTop === root && typeof stopPath?.[2] === "string"
+        ? stopPath[2]
+        : null;
+    for (const field of fieldOrder) {
+      if (
+        stopField !== null &&
+        fieldOrder.indexOf(field) > fieldOrder.indexOf(stopField as never)
+      ) {
+        break;
+      }
+      fieldsCompared += 1;
+      if (field === "name" || field === "annotation") {
+        const maximum =
+          field === "name"
+            ? MAX_SHORT_TEXT_CODE_POINTS
+            : MAX_LONG_TEXT_CODE_POINTS;
+        if (typeof value[field] !== "string") {
+          return { fieldsCompared, codePointsObserved };
+        }
+        const observed = Math.min(codePointLength(value[field]), maximum + 1);
+        codePointsObserved += observed;
+        if (
+          !isUnicodeScalarString(value[field]) ||
+          codePointLength(value[field]) > maximum ||
+          (field === "name" && value[field].trim().length === 0)
+        ) {
+          return { fieldsCompared, codePointsObserved };
+        }
+      }
+      if (stopField === field) {
+        return { fieldsCompared, codePointsObserved };
+      }
+    }
+  }
+  const completionTopIndex =
+    plan["kind"] === "insert-fragment"
+      ? topLevelOrder.indexOf("placement")
+      : topLevelOrder.indexOf("completionDeclarations");
+  const stopIsInsideCompletion =
+    stopTop === "completionDeclarations" ||
+    (stopTop === "placement" && stopPath?.includes("completionDeclarations"));
+  const completionReached =
+    stopPath === null ||
+    stopTopIndex > completionTopIndex ||
+    stopIsInsideCompletion;
+  if (!completionReached) return { fieldsCompared, codePointsObserved };
+  const declarations = planCompletionDeclarations(plan);
+  for (const [index, declaration] of declarations.entries()) {
+    const completion = isObject(declaration["completion"])
+      ? declaration["completion"]
+      : null;
+    if (
+      completion?.["kind"] !== "pickup" &&
+      completion?.["kind"] !== "incomplete"
+    ) {
+      continue;
+    }
+    if (
+      stopIsInsideCompletion &&
+      stopPath !== null &&
+      !stopPath.includes("reason")
+    ) {
+      return { fieldsCompared, codePointsObserved };
+    }
+    const reason = completion["reason"];
+    if (typeof reason !== "string")
+      return { fieldsCompared, codePointsObserved };
+    codePointsObserved += Math.min(
+      codePointLength(reason),
+      MAX_LONG_TEXT_CODE_POINTS + 1,
+    );
+    if (
+      !isUnicodeScalarString(reason) ||
+      codePointLength(reason) > MAX_LONG_TEXT_CODE_POINTS ||
+      reason.trim().length === 0
+    ) {
+      return { fieldsCompared, codePointsObserved };
+    }
+    const stopIndex = stopPath?.find(
+      (segment): segment is number => typeof segment === "number",
+    );
+    if (stopIsInsideCompletion && stopIndex === index) {
+      return { fieldsCompared, codePointsObserved };
+    }
+  }
+  return { fieldsCompared, codePointsObserved };
+}
+
+function deriveExactNestedWork(
+  before: JsonObject,
+  command: JsonObject,
+  expected: JsonObject,
+  parserEvidence: ParserEvidenceView | null,
+  allocationTrace: unknown,
+  oracle: CausalOracleResult,
+): JsonObject {
+  const counters: JsonObject = Object.fromEntries(
+    A0_U1_ATOMIC_EDIT_WORK_COUNTER_NAMES.map((name) => [name, 0]),
+  );
+  const code = oracle.refusal?.code ?? null;
+  const codeIndex =
+    code === null
+      ? EXPECTED_NESTED_REFUSAL_PRECEDENCE.length
+      : EXPECTED_NESTED_REFUSAL_PRECEDENCE.indexOf(code);
+  const retainDiagnostics = (count: number): void => {
+    counters["peakDiagnosticRecords"] = Math.max(
+      Number(counters["peakDiagnosticRecords"]),
+      Math.min(count, EXPECTED_ATOMIC_EDIT_LIMITS.retainedDiagnostics),
+    );
+  };
+  if (code === "edit-plan.command-shape-invalid") {
+    counters["planNodesVisited"] = 1;
+    counters["peakPlanNodeRecords"] = 1;
+    retainDiagnostics(1);
+    return { ...counters, termination: "input-refusal" };
+  }
+  counters["planNodesVisited"] = 1;
+  counters["peakPlanNodeRecords"] = 1;
+  const plan = isObject(command["plan"]) ? command["plan"] : {};
+  const metadataStop =
+    code === "edit-plan.plan-shape-invalid"
+      ? (oracle.refusal?.path ?? null)
+      : null;
+  const metadata = metadataWorkThroughPath(plan, metadataStop);
+  counters["metadataFieldsCompared"] = metadata.fieldsCompared;
+  counters["metadataCodePointsObserved"] = metadata.codePointsObserved;
+  if (code === "edit-plan.plan-shape-invalid") {
+    retainDiagnostics(1);
+    return { ...counters, termination: "input-refusal" };
+  }
+  if (plan["kind"] === "insert-fragment") {
+    const mismatch = firstSnapshotMismatch(command, before);
+    const source = isObject(plan["source"]) ? plan["source"] : {};
+    const snapshot = isObject(source["quickEntrySnapshot"])
+      ? source["quickEntrySnapshot"]
+      : {};
+    const issueCount = Array.isArray(snapshot["issueCodes"])
+      ? snapshot["issueCodes"].length
+      : 0;
+    counters["quickEntrySnapshotFieldsCompared"] =
+      mismatch?.fieldsCompared ?? 6;
+    counters["quickEntryIssueCodesCompared"] =
+      mismatch?.issueCodesCompared ?? issueCount;
+    if (code === "edit-plan.quick-entry-snapshot-mismatch") {
+      retainDiagnostics(1);
+      return { ...counters, termination: "input-refusal" };
+    }
+    const text = String(snapshot["sourceText"]);
+    counters["sourceCodePointsObserved"] = Math.min(
+      codePointLength(text),
+      EXPECTED_ATOMIC_EDIT_LIMITS.fragmentSourceCodePoints + 1,
+    );
+    if (code === "edit-plan.source-code-points-exceeded") {
+      retainDiagnostics(1);
+      return { ...counters, termination: "input-refusal" };
+    }
+    if (code === "edit-plan.source-unicode-invalid") {
+      retainDiagnostics(1);
+      return { ...counters, termination: "input-refusal" };
+    }
+    counters["sourceUtf8BytesObserved"] = Math.min(
+      new TextEncoder().encode(text).length,
+      EXPECTED_ATOMIC_EDIT_LIMITS.fragmentSourceUtf8Bytes + 1,
+    );
+    if (code === "edit-plan.source-utf8-bytes-exceeded") {
+      retainDiagnostics(1);
+      return { ...counters, termination: "input-refusal" };
+    }
+  }
+  if (codeIndex >= 6 && codeIndex <= 10) {
+    retainDiagnostics(1);
+    return { ...counters, termination: "input-refusal" };
+  }
+  if (
+    plan["kind"] === "insert-fragment" &&
+    isObject(plan["source"]) &&
+    plan["source"]["kind"] === "recovered-chord"
+  ) {
+    counters["recoveryFieldsCompared"] = 1;
+    if (code === "edit-plan.recovered-chord-placement-invalid") {
+      retainDiagnostics(1);
+      return { ...counters, termination: "input-refusal" };
+    }
+  }
+  if (plan["kind"] === "insert-fragment") {
+    counters["syntaxParseCalls"] = 1;
+    const source = isObject(plan["source"]) ? plan["source"] : {};
+    const retainedParserRecords =
+      parserEvidence?.outcome === "success"
+        ? parserEvidence.sectionRows.length +
+          parserEvidence.measureRows.length +
+          parserEvidence.allEventSlots.length
+        : source["kind"] === "recovered-chord"
+          ? (parserEvidence?.insertableRows.length ?? 0)
+          : 0;
+    counters["peakPlanNodeRecords"] = Math.max(
+      Number(counters["peakPlanNodeRecords"]),
+      1 + retainedParserRecords,
+    );
+    const parserDiagnosticCount = recordsAt(
+      isObject(expected["parserEvidence"])
+        ? expected["parserEvidence"]["diagnosticRows"]
+        : undefined,
+    ).length;
+    if (parserEvidence?.outcome === "failure") {
+      retainDiagnostics(parserDiagnosticCount);
+    }
+    if (source["kind"] === "recovered-chord") {
+      if (code === "edit-plan.recovered-chord-requires-parse-failure") {
+        retainDiagnostics(1);
+        return { ...counters, termination: "input-refusal" };
+      }
+      const selectedIndex =
+        parserEvidence?.insertableRows.findIndex(
+          (row) => row["globalOrdinal"] === source["selectedGlobalOrdinal"],
+        ) ?? -1;
+      const examined =
+        selectedIndex < 0
+          ? (parserEvidence?.insertableRows.length ?? 0)
+          : selectedIndex + 1;
+      counters["insertableChordsExamined"] = examined;
+      counters["planNodesVisited"] =
+        Number(counters["planNodesVisited"]) + examined;
+      counters["recoveryFieldsCompared"] = 2;
+      if (code === "edit-plan.recovered-chord-ordinal-missing") {
+        retainDiagnostics(1);
+        return { ...counters, termination: "input-refusal" };
+      }
+    } else if (code === "edit-plan.syntax-refused") {
+      retainDiagnostics(parserDiagnosticCount);
+      return { ...counters, termination: "input-refusal" };
+    }
+  }
+  if (plan["kind"] === "insert-fragment" && isObject(plan["source"])) {
+    if (plan["source"]["kind"] === "complete-draft") {
+      const acknowledgements = recordsAt(
+        plan["source"]["warningAcknowledgements"],
+      );
+      const warnings = recordsAt(
+        isObject(expected["parserEvidence"])
+          ? expected["parserEvidence"]["warningRows"]
+          : undefined,
+      );
+      const mismatch = firstSequenceMismatchIndex(acknowledgements, warnings);
+      counters["warningAcknowledgementsCompared"] =
+        mismatch === null ? acknowledgements.length : mismatch + 1;
+      if (code === "edit-plan.warning-acknowledgements-mismatch") {
+        retainDiagnostics(1);
+        return { ...counters, termination: "input-refusal" };
+      }
+      const sections = parserEvidence?.sectionRows.length ?? 0;
+      const measures = parserEvidence?.measureRows.length ?? 0;
+      const events = parserEvidence?.allEventSlots.length ?? 0;
+      counters["draftSectionsVisited"] = sections;
+      counters["draftMeasuresVisited"] = measures;
+      counters["draftEventsVisited"] = events;
+      counters["planNodesVisited"] =
+        Number(counters["planNodesVisited"]) + sections + measures + events;
+      counters["peakPlanNodeRecords"] = counters["planNodesVisited"];
+      if (code === "edit-plan.fragment-placement-mismatch") {
+        retainDiagnostics(1);
+        return { ...counters, termination: "input-refusal" };
+      }
+    }
+  }
+  const declarations = planCompletionDeclarations(plan);
+  const expectedDeclarations = expectedCompletionDeclarations(
+    before["document"],
+    plan,
+  );
+  const declarationMismatch =
+    expectedDeclarations === null
+      ? 0
+      : firstSequenceMismatchIndex(declarations, expectedDeclarations);
+  counters["completionDeclarationsVisited"] =
+    declarationMismatch === null
+      ? declarations.length
+      : Math.min(declarations.length, declarationMismatch + 1);
+  if (
+    code === "edit-plan.completion-declarations-mismatch" ||
+    code === "edit-plan.section-metadata-mismatch"
+  ) {
+    retainDiagnostics(1);
+    return { ...counters, termination: "input-refusal" };
+  }
+  if (
+    plan["kind"] === "insert-fragment" &&
+    isObject(plan["source"]) &&
+    plan["source"]["kind"] === "recovered-chord"
+  ) {
+    counters["recoveryFieldsCompared"] =
+      code === "edit-plan.recovered-chord-layout-loss-unacknowledged" ? 3 : 4;
+    if (
+      code === "edit-plan.recovered-chord-layout-loss-unacknowledged" ||
+      code === "edit-plan.recovered-chord-duration-mismatch"
+    ) {
+      retainDiagnostics(1);
+      return { ...counters, termination: "input-refusal" };
+    }
+  }
+  if (
+    plan["kind"] === "split-event-duration" ||
+    plan["kind"] === "join-event-durations"
+  ) {
+    if (code !== "edit-plan.duration-invalid") {
+      counters["exactBeatAdditions"] = 1;
+      counters["exactBeatComparisons"] = 1;
+    }
+  }
+  if (codeIndex >= 21 && codeIndex <= 24) {
+    retainDiagnostics(1);
+    return { ...counters, termination: "input-refusal" };
+  }
+  if (code === "edit-plan.collection-limit-exceeded") {
+    retainDiagnostics(2);
+    return { ...counters, termination: "input-refusal" };
+  }
+  const durations = finalTimelineDurations(
+    before["document"],
+    plan,
+    parserEvidence,
+  );
+  if (durations !== null) {
+    let total: ExactRational = Object.freeze({
+      numerator: 0n,
+      denominator: 1n,
+    });
+    for (const duration of durations) {
+      total = addRationals(total, duration);
+      counters["exactBeatAdditions"] =
+        Number(counters["exactBeatAdditions"]) + 1;
+      counters["exactBeatComparisons"] =
+        Number(counters["exactBeatComparisons"]) + 1;
+      if (
+        total.numerator >
+        BigInt(EXPECTED_ATOMIC_EDIT_LIMITS.finalTimelineQuarterNoteBeats) *
+          total.denominator
+      ) {
+        break;
+      }
+    }
+  }
+  if (code === "edit-plan.timeline-limit-exceeded") {
+    retainDiagnostics(1);
+    return { ...counters, termination: "input-refusal" };
+  }
+  const trace = recordsAt(allocationTrace);
+  counters["idAllocationAttempts"] = trace.length;
+  counters["idCollisionChecks"] = trace.filter(
+    (row) => row["outcome"] !== "factory-refusal",
+  ).length;
+  counters["peakAllocatedIdRecords"] = trace.filter(
+    (row) => row["outcome"] === "accepted",
+  ).length;
+  if (
+    code === "edit-plan.id-factory-failed" ||
+    code === "edit-plan.id-collision"
+  ) {
+    retainDiagnostics(1);
+    return { ...counters, termination: "allocation-refusal" };
+  }
+  counters["structuralDecodeCalls"] = 1;
+  if (code === "edit-plan.structural-publication-refused") {
+    const decoded =
+      oracle.candidate === null
+        ? null
+        : decodeDocumentShape(oracle.candidate.document);
+    retainDiagnostics(
+      decoded !== null && !decoded.ok ? decoded.errors.length : 1,
+    );
+    return { ...counters, termination: "publication-refusal" };
+  }
+  counters["semanticValidationCalls"] = 1;
+  if (code === "edit-plan.semantic-publication-refused") {
+    const decoded =
+      oracle.candidate === null
+        ? null
+        : decodeDocumentShape(oracle.candidate.document);
+    const semantic =
+      decoded !== null && decoded.ok
+        ? validateDocumentSemantics(decoded.value)
+        : null;
+    retainDiagnostics(
+      semantic !== null && !semantic.ok ? semantic.errors.length : 1,
+    );
+    return { ...counters, termination: "publication-refusal" };
+  }
+  if (oracle.candidate !== null) {
+    const bookmark = independentBookmarksAfterPlan(
+      before,
+      plan,
+      oracle.candidate,
+    );
+    counters["bookmarkRecordsExamined"] = bookmark.examined;
+    counters["bookmarkRecordsRewritten"] = bookmark.rewritten;
+  }
+  if (code === "edit-plan.history-refused") {
+    retainDiagnostics(1);
+    return { ...counters, termination: "history-refusal" };
+  }
+  return { ...counters, termination: "complete" };
+}
+
+function validateExactNestedWorkOracle(
+  before: JsonObject,
+  command: unknown,
+  expected: JsonObject,
+  result: JsonObject,
+  parserEvidence: ParserEvidenceView | null,
+  allocationTrace: unknown,
+  oracle: CausalOracleResult,
+  path: string,
+  findings: A0U1EditPlanContractFinding[],
+): void {
+  if (!isObject(command)) return;
+  const expectedWork = deriveExactNestedWork(
+    before,
+    command,
+    expected,
+    parserEvidence,
+    allocationTrace,
+    oracle,
+  );
+  const observedWork =
+    result["ok"] === true
+      ? isObject(result["editPlanReceipt"])
+        ? result["editPlanReceipt"]["work"]
+        : null
+      : isObject(result["editPlanRefusal"])
+        ? result["editPlanRefusal"]["work"]
+        : null;
+  requireExact(
+    observedWork,
+    expectedWork,
+    "EDIT_PLAN_EXACT_STAGE_WORK_ORACLE",
+    `${path}.${result["ok"] === true ? "editPlanReceipt.work" : "editPlanRefusal.work"}`,
+    "The complete nested work record must equal one independently derived mutable trace through the first reached refusal or successful publication.",
+    findings,
+  );
+  const expectedOuterValidationCalls =
+    oracle.refusal?.code === "edit-plan.semantic-publication-refused" ||
+    oracle.refusal?.code === "edit-plan.history-refused" ||
+    (oracle.refusal === null && oracle.f3Ok)
+      ? 1
+      : 0;
+  const outer = isObject(expected["counters"])
+    ? expected["counters"]["outer"]
+    : null;
+  requireExact(
+    isObject(outer) ? outer["validationCalls"] : undefined,
+    expectedOuterValidationCalls,
+    "EDIT_PLAN_OUTER_VALIDATION_CALL_ORACLE",
+    `${path}.counters.outer.validationCalls`,
+    "The inherited A0 validation counter increments once only after F2 succeeds and F3 is invoked.",
+    findings,
+  );
+}
+
+type OuterIndexCounts = Readonly<{
+  sectionsVisited: number;
+  measuresVisited: number;
+  eventsVisited: number;
+  stableIdsIndexed: number;
+}>;
+
+function outerIndexCounts(document: unknown): OuterIndexCounts {
+  const sections = documentSections(document);
+  const measures = sections.flatMap(sectionMeasures);
+  const events = measures.flatMap(measureEvents);
+  return Object.freeze({
+    sectionsVisited: sections.length,
+    measuresVisited: measures.length,
+    eventsVisited: events.length,
+    stableIdsIndexed: sections.length + measures.length + events.length,
+  });
+}
+
+function addOuterIndexCounts(
+  left: OuterIndexCounts,
+  right: OuterIndexCounts,
+): OuterIndexCounts {
+  return Object.freeze({
+    sectionsVisited: left.sectionsVisited + right.sectionsVisited,
+    measuresVisited: left.measuresVisited + right.measuresVisited,
+    eventsVisited: left.eventsVisited + right.eventsVisited,
+    stableIdsIndexed: left.stableIdsIndexed + right.stableIdsIndexed,
+  });
+}
+
+const ZERO_OUTER_INDEX_COUNTS: OuterIndexCounts = Object.freeze({
+  sectionsVisited: 0,
+  measuresVisited: 0,
+  eventsVisited: 0,
+  stableIdsIndexed: 0,
+});
+
+function expectedHistoryOuterCode(returned: unknown): string | null {
+  if (!Number.isSafeInteger(returned) || Number(returned) < 0) {
+    return A0_U1_ATOMIC_EDIT_HISTORY_REFUSAL_POLICY.invalidEstimate.outerCode;
+  }
+  return Number(returned) >
+    A0_U1_ATOMIC_EDIT_HISTORY_REFUSAL_POLICY.oversizedEstimate.maximum
+    ? A0_U1_ATOMIC_EDIT_HISTORY_REFUSAL_POLICY.oversizedEstimate.outerCode
+    : null;
+}
+
+function validateExactOuterWorkOracle(
+  before: JsonObject,
+  after: JsonObject,
+  command: unknown,
+  expected: JsonObject,
+  result: JsonObject,
+  phase: unknown,
+  oracle: CausalOracleResult | null,
+  path: string,
+  findings: A0U1EditPlanContractFinding[],
+): void {
+  const outer = isObject(expected["counters"])
+    ? expected["counters"]["outer"]
+    : null;
+  let indexCounts = ZERO_OUTER_INDEX_COUNTS;
+  let historyEntriesVisited = 0;
+  let historyBytesEstimated = 0;
+  let bookmarksRepaired = 0;
+  let validationCalls = 0;
+
+  if (phase === "undo" || phase === "redo") {
+    indexCounts = outerIndexCounts(after["document"]);
+    historyEntriesVisited = 1;
+  } else if (phase === "apply" && isObject(command) && oracle !== null) {
+    const envelopeRefusal = expectedA0EnvelopeFailure(before, command);
+    const refusalIndex =
+      oracle.refusal === null
+        ? -1
+        : EXPECTED_NESTED_REFUSAL_PRECEDENCE.indexOf(oracle.refusal.code);
+    const reachedTargetResolution =
+      envelopeRefusal === null &&
+      (oracle.refusal === null || refusalIndex >= 6);
+    if (reachedTargetResolution) {
+      indexCounts = outerIndexCounts(before["document"]);
+    }
+    validationCalls = oracle.f2Ok ? 1 : 0;
+    const reachedHistory =
+      oracle.candidate !== null && oracle.f2Ok && oracle.f3Ok;
+    if (reachedHistory) {
+      indexCounts = addOuterIndexCounts(
+        indexCounts,
+        outerIndexCounts(oracle.candidate.document),
+      );
+      bookmarksRepaired = 1;
+      const estimator = expected["historyEstimatorEvidence"];
+      const returned = isObject(estimator) ? estimator["returned"] : null;
+      const estimatorWasReached =
+        isObject(estimator) && estimator["configuration"] !== "not-reached";
+      if (
+        estimatorWasReached &&
+        Number.isSafeInteger(returned) &&
+        Number(returned) >= 0
+      ) {
+        historyBytesEstimated = Number(returned);
+      }
+      const exactOuterCode = estimatorWasReached
+        ? expectedHistoryOuterCode(returned)
+        : null;
+      if (exactOuterCode !== null) {
+        const outerRefusal = isObject(result["refusal"])
+          ? result["refusal"]
+          : {};
+        const nestedRefusal = isObject(result["editPlanRefusal"])
+          ? result["editPlanRefusal"]
+          : {};
+        requireExact(
+          outerRefusal["code"],
+          exactOuterCode,
+          "EDIT_PLAN_HISTORY_EXACT_OUTER_CODE",
+          `${path}.result.refusal.code`,
+          "The inherited A0 history result must distinguish an invalid estimate from a valid estimate above the retained-byte cap.",
+          findings,
+        );
+        requireExact(
+          nestedRefusal["outerCode"],
+          exactOuterCode,
+          "EDIT_PLAN_HISTORY_EXACT_NESTED_OUTER_CODE",
+          `${path}.result.editPlanRefusal.outerCode`,
+          "Nested history detail must mirror the exact dependency-specific A0 outer code.",
+          findings,
+        );
+      }
+    }
+  }
+
+  const exactOuter = Object.freeze({
+    ...indexCounts,
+    historyEntriesVisited,
+    historyBytesEstimated,
+    bookmarksRepaired,
+    requestsCompared: 0,
+    transportNotificationsCompared: 0,
+    validationCalls,
+  });
+  requireExact(
+    outer,
+    exactOuter,
+    "EDIT_PLAN_EXACT_OUTER_WORK_ORACLE",
+    `${path}.counters.outer`,
+    "The complete inherited A0 work record must equal the independently derived index, history, bookmark, request, transport, and validation trace.",
+    findings,
+  );
+}
+
+/**
+ * Diagnostic-only oracle seam for packet-author reconciliation. Inputs must
+ * already be materialized literals; this function neither mutates fixtures nor
+ * relaxes any validator predicate.
+ */
+export function probeA0U1TransitionOracle(
+  beforeValue: unknown,
+  command: unknown,
+  expectedValue: unknown,
+): JsonObject | null {
+  if (!isObject(beforeValue) || !isObject(expectedValue)) return null;
+  const rawParserEvidence = expectedValue["parserEvidence"];
+  const parserEvidence =
+    isObject(rawParserEvidence) &&
+    (rawParserEvidence["outcome"] === "success" ||
+      rawParserEvidence["outcome"] === "failure")
+      ? Object.freeze({
+          outcome: rawParserEvidence["outcome"],
+          sectionRows: recordsAt(rawParserEvidence["sectionRows"]),
+          measureRows: recordsAt(rawParserEvidence["measureRows"]),
+          allEventSlots: recordsAt(rawParserEvidence["allEventSlots"]),
+          insertableRows: recordsAt(rawParserEvidence["insertableRows"]),
+        })
+      : null;
+  const oracle = deriveCausalRefusal(
+    beforeValue,
+    command,
+    parserEvidence,
+    rawParserEvidence,
+    expectedValue["allocationTrace"],
+    expectedValue["historyEstimatorEvidence"],
+  );
+  return {
+    refusal:
+      oracle.refusal === null
+        ? null
+        : {
+            code: oracle.refusal.code,
+            path: [...oracle.refusal.path],
+          },
+    candidateConstructed: oracle.candidate !== null,
+    f2Ok: oracle.f2Ok,
+    f3Ok: oracle.f3Ok,
+    exactWork: isObject(command)
+      ? deriveExactNestedWork(
+          beforeValue,
+          command,
+          expectedValue,
+          parserEvidence,
+          expectedValue["allocationTrace"],
+          oracle,
+        )
+      : null,
+  };
+}
+
+function successfulPlanMetadataWork(plan: JsonObject): Readonly<{
+  fieldsCompared: number;
+  codePointsObserved: number;
+}> {
+  const metadataObjects: JsonObject[] = [];
+  if (
+    plan["kind"] === "split-section" &&
+    isObject(plan["newSectionMetadata"])
+  ) {
+    metadataObjects.push(plan["newSectionMetadata"]);
+  } else if (plan["kind"] === "join-sections") {
+    for (const key of [
+      "expectedLeftMetadata",
+      "expectedRightMetadata",
+      "resultMetadata",
+    ]) {
+      if (isObject(plan[key])) metadataObjects.push(plan[key]);
+    }
+  }
+  let codePointsObserved = metadataObjects.reduce(
+    (total, metadata) =>
+      total +
+      (typeof metadata["name"] === "string"
+        ? codePointLength(metadata["name"])
+        : 0) +
+      (typeof metadata["annotation"] === "string"
+        ? codePointLength(metadata["annotation"])
+        : 0),
+    0,
+  );
+  const placement = isObject(plan["placement"]) ? plan["placement"] : null;
+  const declarations = recordsAt(
+    placement?.["completionDeclarations"] ?? plan["completionDeclarations"],
+  );
+  for (const declaration of declarations) {
+    const completion = isObject(declaration["completion"])
+      ? declaration["completion"]
+      : null;
+    if (
+      (completion?.["kind"] === "pickup" ||
+        completion?.["kind"] === "incomplete") &&
+      typeof completion["reason"] === "string"
+    ) {
+      codePointsObserved += codePointLength(completion["reason"]);
+    }
+  }
+  return {
+    fieldsCompared: metadataObjects.length * 4,
+    codePointsObserved,
+  };
 }
 
 function validateAtomicEditResultDetail(
@@ -3599,6 +7539,26 @@ function validateAtomicEditResultDetail(
       "Receipt plan kind must equal the closed plan discriminant.",
       findings,
     );
+    const insertPlanSource = isObject(plan["source"]) ? plan["source"] : null;
+    const insertPlanPlacement = isObject(plan["placement"])
+      ? plan["placement"]
+      : null;
+    requireExact(
+      receipt["insertLane"],
+      plan["kind"] === "insert-fragment" ? insertPlanSource?.["kind"] : null,
+      "EDIT_PLAN_RECEIPT_INSERT_LANE",
+      `${path}.editPlanReceipt.insertLane`,
+      "Receipt insert-lane discriminant must be exact and null outside fragment insertion.",
+      findings,
+    );
+    requireExact(
+      receipt["placementKind"],
+      plan["kind"] === "insert-fragment" ? insertPlanPlacement?.["kind"] : null,
+      "EDIT_PLAN_RECEIPT_PLACEMENT_KIND",
+      `${path}.editPlanReceipt.placementKind`,
+      "Receipt placement discriminant must be exact and null outside fragment insertion.",
+      findings,
+    );
     requireExact(
       receipt["documentId"],
       isObject(after["document"]) ? after["document"]["id"] : undefined,
@@ -3674,16 +7634,12 @@ function validateAtomicEditResultDetail(
     );
     checkExactKeys(
       receipt["bookmarks"],
-      [
-        "selectionPolicy",
-        "selectionReplacements",
-        "insertionPolicy",
-        "insertionRewrite",
-        "rangePolicy",
-        "rangeBoundaryRewrites",
-        "rangeCleared",
-        "focusPolicy",
-      ],
+      plan["kind"] === "join-sections"
+        ? [
+            ...EXPECTED_BOOKMARK_RECEIPT_CORE_KEYS,
+            ...EXPECTED_JOIN_SECTIONS_BOOKMARK_RECEIPT_EXTENSION_KEYS,
+          ]
+        : EXPECTED_BOOKMARK_RECEIPT_CORE_KEYS,
       "EDIT_PLAN_RECEIPT_BOOKMARK_KEYS",
       `${path}.editPlanReceipt.bookmarks`,
       findings,
@@ -3702,22 +7658,6 @@ function validateAtomicEditResultDetail(
       "EDIT_PLAN_RECEIPT_HISTORY_COUNT",
       `${path}.editPlanReceipt.historyEntriesAppended`,
       "Receipt must record exactly one history entry.",
-      findings,
-    );
-    requireExact(
-      receipt["structuralDecodeCalls"],
-      1,
-      "EDIT_PLAN_RECEIPT_F2_COUNT",
-      `${path}.editPlanReceipt.structuralDecodeCalls`,
-      "Receipt must record exactly one F2 call.",
-      findings,
-    );
-    requireExact(
-      receipt["semanticValidationCalls"],
-      1,
-      "EDIT_PLAN_RECEIPT_F3_COUNT",
-      `${path}.editPlanReceipt.semanticValidationCalls`,
-      "Receipt must record exactly one F3 call.",
       findings,
     );
     requireExact(
@@ -3748,11 +7688,44 @@ function validateAtomicEditResultDetail(
       findings,
     );
     requireExact(
+      receiptWork["structuralDecodeCalls"],
+      1,
+      "EDIT_PLAN_RECEIPT_F2_COUNT",
+      `${path}.editPlanReceipt.work.structuralDecodeCalls`,
+      "Committed receipt work must record exactly one structural decode call.",
+      findings,
+    );
+    requireExact(
+      receiptWork["semanticValidationCalls"],
+      1,
+      "EDIT_PLAN_RECEIPT_F3_COUNT",
+      `${path}.editPlanReceipt.work.semanticValidationCalls`,
+      "Committed receipt work must record exactly one semantic validation call.",
+      findings,
+    );
+    const metadataWork = successfulPlanMetadataWork(plan);
+    requireExact(
+      receiptWork["metadataFieldsCompared"],
+      metadataWork.fieldsCompared,
+      "EDIT_PLAN_SUCCESS_METADATA_FIELD_WORK",
+      `${path}.editPlanReceipt.work.metadataFieldsCompared`,
+      "Committed metadata-field work must equal the exact split/join section preflight shape.",
+      findings,
+    );
+    requireExact(
+      receiptWork["metadataCodePointsObserved"],
+      metadataWork.codePointsObserved,
+      "EDIT_PLAN_SUCCESS_METADATA_CODE_POINT_WORK",
+      `${path}.editPlanReceipt.work.metadataCodePointsObserved`,
+      "Committed metadata code-point work must equal ordered names, annotations, and partial-completion reasons exactly.",
+      findings,
+    );
+    requireExact(
       isObject(outerCounters) ? outerCounters["validationCalls"] : undefined,
-      2,
+      1,
       "EDIT_PLAN_SUCCESS_VALIDATION_CALLS",
       `${path}.counters.validationCalls`,
-      "A committed edit plan must call F2 and F3 exactly once each.",
+      "The accepted A0 counter increments once only after F2 succeeds and before F3; nested counters separately record both calls.",
       findings,
     );
     const allocatedCount = recordsAt(receipt["allocatedIdentities"]).length;
@@ -4141,7 +8114,7 @@ function validateAtomicEditResultDetail(
           findings,
         );
         const selectedDuration = isObject(selectedRow?.["duration"])
-          ? selectedRow?.["duration"]
+          ? selectedRow["duration"]
           : {};
         requireExact(
           insertReceipt["durationSource"],
@@ -4191,6 +8164,16 @@ function validateAtomicEditResultDetail(
       "EDIT_PLAN_PREPLAN_REFUSAL_DETAIL",
       `${path}.editPlanRefusal`,
       "A0 envelope refusal occurs before nested edit-plan work.",
+      findings,
+    );
+    requireExact(
+      isObject(expected["counters"])
+        ? expected["counters"]["editPlan"]
+        : undefined,
+      null,
+      "EDIT_PLAN_PREPLAN_COUNTER_SCOPE",
+      `${path}.counters.editPlan`,
+      "A0 envelope refusal must carry no nested edit-plan counter record.",
       findings,
     );
   } else if (!isObject(nested)) {
@@ -4265,7 +8248,6 @@ function validateAtomicEditResultDetail(
       const diagnosticPath = diagnostic["path"];
       if (
         !Array.isArray(diagnosticPath) ||
-        diagnosticPath.length === 0 ||
         !diagnosticPath.every(
           (segment) =>
             (typeof segment === "string" &&
@@ -4278,7 +8260,23 @@ function validateAtomicEditResultDetail(
           findings,
           "EDIT_PLAN_NESTED_DIAGNOSTIC_PATH_TYPE",
           `${path}.editPlanRefusal.diagnostics[${String(index)}].path`,
-          "Diagnostic paths must be nonempty arrays of bounded scalar strings or nonnegative safe integers.",
+          "Diagnostic paths must be arrays of bounded scalar strings or nonnegative safe integers; the empty path is the command root.",
+        );
+      }
+      const diagnosticAuthority = A0_U1_ATOMIC_EDIT_REFUSAL_AUTHORITY.find(
+        (row) => row.code === diagnostic["code"],
+      );
+      if (
+        diagnosticAuthority !== undefined &&
+        !diagnosticAuthority.pathAuthority.some((template) =>
+          authorityTemplateMatchesPath(template, diagnosticPath),
+        )
+      ) {
+        addFinding(
+          findings,
+          "EDIT_PLAN_NESTED_DIAGNOSTIC_PATH_AUTHORITY",
+          `${path}.editPlanRefusal.diagnostics[${String(index)}].path`,
+          "Diagnostic path must match one canonical template owned by its refusal code.",
         );
       }
       if (
@@ -4295,7 +8293,8 @@ function validateAtomicEditResultDetail(
       }
       if (
         diagnostic["syntaxCode"] !== null &&
-        !CHART_ERROR_CODES.includes(diagnostic["syntaxCode"] as never)
+        (typeof diagnostic["syntaxCode"] !== "string" ||
+          !ACCEPTED_T0_DIAGNOSTIC_CODES.includes(diagnostic["syntaxCode"]))
       ) {
         addFinding(
           findings,
@@ -4335,6 +8334,58 @@ function validateAtomicEditResultDetail(
       findings,
     );
     const nestedCode = String(nested["code"]);
+    const refusalPlan = isObject(command["plan"]) ? command["plan"] : null;
+    if (
+      nestedCode === "edit-plan.destination-invalid" &&
+      (refusalPlan === null ||
+        refusalPlan["kind"] !== "insert-fragment" ||
+        (canonicalPlacementTargetMatches(before["document"], refusalPlan) &&
+          completeDraftIntoMeasureContractHolds(
+            before["document"],
+            refusalPlan,
+          )))
+    ) {
+      addFinding(
+        findings,
+        "EDIT_PLAN_DESTINATION_REFUSAL_ORACLE",
+        `${path}.editPlanRefusal.code`,
+        "Destination-invalid requires a failed canonical slot/parent match or a complete draft aimed at a nonempty measure.",
+      );
+    }
+    if (
+      nestedCode === "edit-plan.fragment-placement-mismatch" &&
+      (refusalPlan === null ||
+        refusalPlan["kind"] !== "insert-fragment" ||
+        !isObject(refusalPlan["source"]) ||
+        refusalPlan["source"]["kind"] !== "complete-draft" ||
+        completeDraftStructureMatchesPlacement(
+          parserEvidence,
+          refusalPlan["placement"],
+        ))
+    ) {
+      addFinding(
+        findings,
+        "EDIT_PLAN_FRAGMENT_PLACEMENT_REFUSAL_ORACLE",
+        `${path}.editPlanRefusal.code`,
+        "Fragment-placement-mismatch is reserved for a complete T0 draft whose section/measure structure does not fit the selected lane.",
+      );
+    }
+    const nestedAuthority = A0_U1_ATOMIC_EDIT_REFUSAL_AUTHORITY.find(
+      (row) => row.code === nested["code"],
+    );
+    if (
+      nestedAuthority !== undefined &&
+      !nestedAuthority.pathAuthority.some((template) =>
+        authorityTemplateMatchesPath(template, nested["path"]),
+      )
+    ) {
+      addFinding(
+        findings,
+        "EDIT_PLAN_NESTED_REFUSAL_PATH_AUTHORITY",
+        `${path}.editPlanRefusal.path`,
+        "Primary refusal path must match one canonical template owned by its refusal code.",
+      );
+    }
     const allowedOuterCodes = expectedAllowedOuterCodesForRefusal(nestedCode);
     if (!allowedOuterCodes.includes(String(outerRefusal["code"]))) {
       addFinding(
@@ -4388,12 +8439,37 @@ function validateAtomicEditResultDetail(
       findings,
     );
     const expectedValidationCalls =
-      nested["code"] === "edit-plan.structural-publication-refused"
+      nested["code"] === "edit-plan.semantic-publication-refused" ||
+      nested["code"] === "edit-plan.history-refused"
         ? 1
-        : nested["code"] === "edit-plan.semantic-publication-refused" ||
-            nested["code"] === "edit-plan.history-refused"
-          ? 2
-          : 0;
+        : 0;
+    const expectedStructuralDecodeCalls =
+      nested["code"] === "edit-plan.structural-publication-refused" ||
+      nested["code"] === "edit-plan.semantic-publication-refused" ||
+      nested["code"] === "edit-plan.history-refused"
+        ? 1
+        : 0;
+    const expectedSemanticValidationCalls =
+      nested["code"] === "edit-plan.semantic-publication-refused" ||
+      nested["code"] === "edit-plan.history-refused"
+        ? 1
+        : 0;
+    requireExact(
+      nestedWork["structuralDecodeCalls"],
+      expectedStructuralDecodeCalls,
+      "EDIT_PLAN_REFUSAL_STRUCTURAL_DECODE_STAGE",
+      `${path}.editPlanRefusal.work.structuralDecodeCalls`,
+      "Nested work must record structural decode exactly when the refusal reaches F2 or a later stage.",
+      findings,
+    );
+    requireExact(
+      nestedWork["semanticValidationCalls"],
+      expectedSemanticValidationCalls,
+      "EDIT_PLAN_REFUSAL_SEMANTIC_VALIDATION_STAGE",
+      `${path}.editPlanRefusal.work.semanticValidationCalls`,
+      "Nested work must record semantic validation exactly when the refusal reaches F3 or a later stage.",
+      findings,
+    );
     requireExact(
       isObject(expected["counters"])
         ? isObject(expected["counters"]["outer"])
@@ -4403,7 +8479,7 @@ function validateAtomicEditResultDetail(
       expectedValidationCalls,
       "EDIT_PLAN_REFUSAL_VALIDATION_STAGE",
       `${path}.counters.validationCalls`,
-      "Outer validation-call work must exactly identify whether refusal occurred before F2, in F2, in F3, or after both.",
+      "The accepted A0 validation counter stays zero through F2 refusal and increments once only after F2 succeeds; nested counters distinguish F2 from F3.",
       findings,
     );
     if (
@@ -4640,6 +8716,97 @@ function validateNonnegativeIntegerRecord(
   }
 }
 
+/**
+ * Independent reconstruction from accepted domain and A0 state bounds. Do not
+ * derive these values from the A0/U1 source object: coordinated source/packet
+ * drift must fail this validator.
+ */
+const EXPECTED_ATOMIC_EDIT_LIMITS = Object.freeze({
+  structuralDecodeCalls: 1,
+  semanticValidationCalls: 1,
+  fragmentSourceCodePoints: MAX_QUICK_ENTRY_CODE_POINTS,
+  fragmentSourceUtf8Bytes: 4 * MAX_QUICK_ENTRY_CODE_POINTS,
+  fragmentSections: MAX_DOCUMENT_SECTIONS,
+  fragmentMeasuresPerSection: MAX_SECTION_MEASURES,
+  fragmentMeasures: MAX_DOCUMENT_SECTIONS * MAX_SECTION_MEASURES,
+  fragmentEvents: MAX_DOCUMENT_CHORD_EVENTS,
+  finalTimelineQuarterNoteBeats: MAX_TIMELINE_QUARTER_NOTE_BEATS,
+  completionDeclarations: 1,
+  sectionDeclarations: MAX_DOCUMENT_SECTIONS,
+  retainedDiagnostics: 64,
+  retainedWarningAcknowledgements: 64,
+  quickEntryIssueCodes: MAX_DRAFT_ISSUES,
+  quickEntrySnapshotFieldsCompared: 6,
+  insertableChordsExamined: MAX_DOCUMENT_CHORD_EVENTS,
+  recoveryFieldsCompared: 4,
+  idAllocationAttempts:
+    MAX_DOCUMENT_SECTIONS +
+    MAX_DOCUMENT_SECTIONS * MAX_SECTION_MEASURES +
+    MAX_DOCUMENT_CHORD_EVENTS,
+  occupiedIdRecords:
+    1 +
+    MAX_DOCUMENT_SECTIONS +
+    MAX_DOCUMENT_SECTIONS * MAX_SECTION_MEASURES +
+    MAX_DOCUMENT_CHORD_EVENTS,
+  planNodeRecords:
+    1 +
+    MAX_DOCUMENT_SECTIONS +
+    MAX_DOCUMENT_SECTIONS * MAX_SECTION_MEASURES +
+    MAX_DOCUMENT_CHORD_EVENTS,
+  bookmarkRecordsExamined: MAX_SELECTED_EVENT_IDS + 4,
+  exactBeatAdditions: MAX_DOCUMENT_CHORD_EVENTS + 1,
+  exactBeatComparisons: MAX_DOCUMENT_CHORD_EVENTS + 1,
+  metadataFieldsCompared: 12,
+  sectionNameCodePoints: MAX_SHORT_TEXT_CODE_POINTS,
+  sectionAnnotationCodePoints: MAX_LONG_TEXT_CODE_POINTS,
+  completionReasonCodePoints: MAX_LONG_TEXT_CODE_POINTS,
+  planMetadataCodePoints:
+    3 * (MAX_SHORT_TEXT_CODE_POINTS + MAX_LONG_TEXT_CODE_POINTS),
+});
+
+function expectedAtomicEditWorkCounterMaxima(): Readonly<
+  Record<string, number>
+> {
+  return {
+    structuralDecodeCalls: EXPECTED_ATOMIC_EDIT_LIMITS.structuralDecodeCalls,
+    semanticValidationCalls:
+      EXPECTED_ATOMIC_EDIT_LIMITS.semanticValidationCalls,
+    planNodesVisited: EXPECTED_ATOMIC_EDIT_LIMITS.planNodeRecords + 1,
+    sourceCodePointsObserved:
+      EXPECTED_ATOMIC_EDIT_LIMITS.fragmentSourceCodePoints + 1,
+    sourceUtf8BytesObserved:
+      EXPECTED_ATOMIC_EDIT_LIMITS.fragmentSourceUtf8Bytes + 1,
+    quickEntrySnapshotFieldsCompared:
+      EXPECTED_ATOMIC_EDIT_LIMITS.quickEntrySnapshotFieldsCompared,
+    quickEntryIssueCodesCompared:
+      EXPECTED_ATOMIC_EDIT_LIMITS.quickEntryIssueCodes + 1,
+    syntaxParseCalls: 1,
+    warningAcknowledgementsCompared:
+      EXPECTED_ATOMIC_EDIT_LIMITS.retainedWarningAcknowledgements + 1,
+    insertableChordsExamined:
+      EXPECTED_ATOMIC_EDIT_LIMITS.insertableChordsExamined,
+    recoveryFieldsCompared: EXPECTED_ATOMIC_EDIT_LIMITS.recoveryFieldsCompared,
+    draftSectionsVisited: EXPECTED_ATOMIC_EDIT_LIMITS.fragmentSections + 1,
+    draftMeasuresVisited: EXPECTED_ATOMIC_EDIT_LIMITS.fragmentMeasures + 1,
+    draftEventsVisited: EXPECTED_ATOMIC_EDIT_LIMITS.fragmentEvents + 1,
+    completionDeclarationsVisited:
+      EXPECTED_ATOMIC_EDIT_LIMITS.completionDeclarations + 1,
+    metadataFieldsCompared: EXPECTED_ATOMIC_EDIT_LIMITS.metadataFieldsCompared,
+    metadataCodePointsObserved:
+      EXPECTED_ATOMIC_EDIT_LIMITS.planMetadataCodePoints + 1,
+    exactBeatAdditions: EXPECTED_ATOMIC_EDIT_LIMITS.exactBeatAdditions,
+    exactBeatComparisons: EXPECTED_ATOMIC_EDIT_LIMITS.exactBeatComparisons,
+    idAllocationAttempts: EXPECTED_ATOMIC_EDIT_LIMITS.idAllocationAttempts,
+    idCollisionChecks: EXPECTED_ATOMIC_EDIT_LIMITS.idAllocationAttempts,
+    bookmarkRecordsExamined:
+      EXPECTED_ATOMIC_EDIT_LIMITS.bookmarkRecordsExamined,
+    bookmarkRecordsRewritten: 4,
+    peakPlanNodeRecords: EXPECTED_ATOMIC_EDIT_LIMITS.planNodeRecords + 1,
+    peakAllocatedIdRecords: EXPECTED_ATOMIC_EDIT_LIMITS.idAllocationAttempts,
+    peakDiagnosticRecords: EXPECTED_ATOMIC_EDIT_LIMITS.retainedDiagnostics,
+  };
+}
+
 function validateTransitionWorkCounters(
   value: unknown,
   phase: unknown,
@@ -4674,14 +8841,8 @@ function validateTransitionWorkCounters(
     return;
   }
   if (editPlan === null) {
-    if (phase === "apply") {
-      addFinding(
-        findings,
-        "EDIT_PLAN_COMMIT_COUNTER_SCOPE",
-        `${path}.editPlan`,
-        "Committed edit plans require complete nested work evidence.",
-      );
-    }
+    // A0 envelope refusals occur before the nested runner exists. Result
+    // validation below distinguishes those from every post-envelope outcome.
     return;
   }
   if (!isObject(editPlan)) {
@@ -4717,39 +8878,7 @@ function validateTransitionWorkCounters(
       "Nested work evidence must end in one closed deterministic termination.",
     );
   }
-  const counterMaxima: Readonly<Record<string, number>> = {
-    planNodesVisited: A0_U1_ATOMIC_EDIT_LIMITS.planNodeRecords + 1,
-    sourceCodePointsObserved:
-      A0_U1_ATOMIC_EDIT_LIMITS.fragmentSourceCodePoints + 1,
-    sourceUtf8BytesObserved:
-      A0_U1_ATOMIC_EDIT_LIMITS.fragmentSourceUtf8Bytes + 1,
-    quickEntrySnapshotFieldsCompared:
-      A0_U1_ATOMIC_EDIT_LIMITS.quickEntrySnapshotFieldsCompared,
-    quickEntryIssueCodesCompared:
-      A0_U1_ATOMIC_EDIT_LIMITS.quickEntryIssueCodes + 1,
-    syntaxParseCalls: 1,
-    warningAcknowledgementsCompared:
-      A0_U1_ATOMIC_EDIT_LIMITS.retainedWarningAcknowledgements + 1,
-    insertableChordsExamined:
-      A0_U1_ATOMIC_EDIT_LIMITS.insertableChordsExamined + 1,
-    recoveryFieldsCompared: A0_U1_ATOMIC_EDIT_LIMITS.recoveryFieldsCompared,
-    draftSectionsVisited: A0_U1_ATOMIC_EDIT_LIMITS.fragmentSections + 1,
-    draftMeasuresVisited: A0_U1_ATOMIC_EDIT_LIMITS.fragmentMeasures + 1,
-    draftEventsVisited: A0_U1_ATOMIC_EDIT_LIMITS.fragmentEvents + 1,
-    completionDeclarationsVisited:
-      A0_U1_ATOMIC_EDIT_LIMITS.completionDeclarations + 1,
-    metadataFieldsCompared: A0_U1_ATOMIC_EDIT_LIMITS.metadataFieldsCompared + 1,
-    exactBeatAdditions: A0_U1_ATOMIC_EDIT_LIMITS.exactBeatAdditions + 1,
-    exactBeatComparisons: A0_U1_ATOMIC_EDIT_LIMITS.exactBeatComparisons + 1,
-    idAllocationAttempts: A0_U1_ATOMIC_EDIT_LIMITS.idAllocationAttempts,
-    idCollisionChecks: A0_U1_ATOMIC_EDIT_LIMITS.idAllocationAttempts,
-    bookmarkRecordsExamined:
-      A0_U1_ATOMIC_EDIT_LIMITS.bookmarkRecordsExamined + 1,
-    bookmarkRecordsRewritten: A0_U1_ATOMIC_EDIT_LIMITS.bookmarkRecordsExamined,
-    peakPlanNodeRecords: A0_U1_ATOMIC_EDIT_LIMITS.planNodeRecords,
-    peakAllocatedIdRecords: A0_U1_ATOMIC_EDIT_LIMITS.idAllocationAttempts,
-    peakDiagnosticRecords: A0_U1_ATOMIC_EDIT_LIMITS.retainedDiagnostics,
-  };
+  const counterMaxima = expectedAtomicEditWorkCounterMaxima();
   for (const [counterName, maximum] of Object.entries(counterMaxima)) {
     const observed = numericCounters[counterName];
     if (typeof observed === "number" && observed > maximum) {
@@ -4839,7 +8968,7 @@ function validateAllocationTrace(
   path: string,
   findings: A0U1EditPlanContractFinding[],
 ): void {
-  if (!Array.isArray(allocationTrace)) {
+  if (!isUnknownArray(allocationTrace)) {
     addFinding(
       findings,
       "EDIT_PLAN_ALLOCATION_TRACE_LITERAL",
@@ -4914,18 +9043,21 @@ function validateAllocationTrace(
       }
       continue;
     }
-    if (!isStableId(row["allocatedId"])) {
+    if (typeof row["allocatedId"] !== "string") {
       addFinding(
         findings,
         "EDIT_PLAN_ALLOCATION_TRACE_ID",
         `${path}[${String(index)}].allocatedId`,
-        "Every returned allocation ID must satisfy the stable-ID wire grammar.",
+        "Every returned factory value retained by the trace must be a string; F2 independently owns stable-ID wire validation.",
       );
       continue;
     }
     collisionChecks += 1;
     if (outcome === "accepted") {
-      if (occupied.has(row["allocatedId"]) || accepted.has(row["allocatedId"])) {
+      if (
+        occupied.has(row["allocatedId"]) ||
+        accepted.has(row["allocatedId"])
+      ) {
         addFinding(
           findings,
           "EDIT_PLAN_ACCEPTED_ID_COLLISION",
@@ -4993,10 +9125,9 @@ function validateAllocationTrace(
         ? "collision-refusal"
         : null;
   if (expectedFinalOutcome !== null) {
+    const finalAllocationRow = allocationTrace.at(-1);
     requireExact(
-      isObject(allocationTrace[allocationTrace.length - 1])
-        ? allocationTrace[allocationTrace.length - 1]["outcome"]
-        : undefined,
+      isObject(finalAllocationRow) ? finalAllocationRow["outcome"] : undefined,
       expectedFinalOutcome,
       "EDIT_PLAN_ALLOCATION_REFUSAL_TRACE",
       path,
@@ -5028,6 +9159,135 @@ function validateAllocationTrace(
       "A committed transition must consume exactly every independently derived allocation position.",
     );
   }
+}
+
+function validateIdFactoryEvidence(
+  command: unknown,
+  result: JsonObject | null,
+  counters: unknown,
+  allocationTrace: unknown,
+  evidence: unknown,
+  phase: unknown,
+  operation: unknown,
+  caseCategory: unknown,
+  path: string,
+  findings: A0U1EditPlanContractFinding[],
+): JsonObject | null {
+  if (!isObject(evidence)) {
+    addFinding(
+      findings,
+      "EDIT_PLAN_ID_FACTORY_EVIDENCE_LITERAL",
+      path,
+      "Every transition must retain one literal ID-factory configuration and observed-call count.",
+    );
+    return null;
+  }
+  checkExactKeys(
+    evidence,
+    EXPECTED_ID_FACTORY_EVIDENCE_KEYS,
+    "EDIT_PLAN_ID_FACTORY_EVIDENCE_KEYS",
+    path,
+    findings,
+  );
+  const configuration = evidence["configuration"];
+  const callsObserved = evidence["callsObserved"];
+  if (
+    !EXPECTED_ID_FACTORY_CONFIGURATIONS.includes(
+      configuration as (typeof EXPECTED_ID_FACTORY_CONFIGURATIONS)[number],
+    )
+  ) {
+    addFinding(
+      findings,
+      "EDIT_PLAN_ID_FACTORY_CONFIGURATION",
+      `${path}.configuration`,
+      "ID-factory evidence must use the closed configuration vocabulary.",
+    );
+  }
+  if (!isNonnegativeSafeInteger(callsObserved)) {
+    addFinding(
+      findings,
+      "EDIT_PLAN_ID_FACTORY_CALLS",
+      `${path}.callsObserved`,
+      "Observed ID-factory calls must be a nonnegative safe integer.",
+    );
+  }
+  requireExact(
+    callsObserved,
+    Array.isArray(allocationTrace) ? allocationTrace.length : undefined,
+    "EDIT_PLAN_ID_FACTORY_TRACE_CARDINALITY",
+    `${path}.callsObserved`,
+    "Observed factory calls must equal the complete allocation-attempt trace cardinality.",
+    findings,
+  );
+
+  const nestedCounters = isObject(counters) ? counters["editPlan"] : null;
+  const isHistory = phase === "undo" || phase === "redo";
+  if (isHistory || !isObject(nestedCounters)) {
+    requireExact(
+      evidence,
+      { configuration: "not-provided", callsObserved: 0 },
+      "EDIT_PLAN_ID_FACTORY_NOT_PROVIDED",
+      path,
+      "History replay and every refusal before edit-plan work begins must not provide an ID factory.",
+      findings,
+    );
+    return evidence;
+  }
+  if (configuration === "not-provided") {
+    addFinding(
+      findings,
+      "EDIT_PLAN_ID_FACTORY_POST_PLAN_MISSING",
+      `${path}.configuration`,
+      "Once edit-plan work begins, the fixture must expose the reviewed factory configuration even when no call is needed.",
+    );
+  }
+
+  const expectedKinds = expectedAllocationKinds(command, null);
+  if (configuration === "hostile-refuse-on-any-call") {
+    const hostileJoinWitness =
+      phase === "apply" &&
+      result?.["ok"] === true &&
+      caseCategory === "collision-allocation" &&
+      (operation === "join-event-durations" || operation === "join-sections");
+    if (!hostileJoinWitness) {
+      addFinding(
+        findings,
+        "EDIT_PLAN_ID_FACTORY_HOSTILE_SCOPE",
+        path,
+        "The hostile factory is reserved for the two successful join collision-allocation witnesses.",
+      );
+    }
+    requireExact(
+      callsObserved,
+      0,
+      "EDIT_PLAN_ID_FACTORY_HOSTILE_UNUSED",
+      `${path}.callsObserved`,
+      "A successful join must ignore the hostile factory completely.",
+      findings,
+    );
+    requireExact(
+      allocationTrace,
+      [],
+      "EDIT_PLAN_ID_FACTORY_HOSTILE_TRACE",
+      path,
+      "A hostile join witness must have no allocation attempt.",
+      findings,
+    );
+  }
+  if (
+    configuration === "hostile-refuse-on-any-call" &&
+    result?.["ok"] === true &&
+    Array.isArray(expectedKinds) &&
+    expectedKinds.length > 0
+  ) {
+    addFinding(
+      findings,
+      "EDIT_PLAN_ID_FACTORY_HOSTILE_ALLOCATION_SUCCESS",
+      path,
+      "No successful allocating operation may claim a hostile refuse-on-call factory.",
+    );
+  }
+  return evidence;
 }
 
 function reciprocalIncludes(
@@ -5229,23 +9489,12 @@ function validateCompletionDeclarations(
         `${path}[${String(index)}].completion.kind`,
         "Completion kind is outside the closed domain vocabulary.",
       );
-    } else if (
-      completionKind === "pickup" ||
-      completionKind === "incomplete"
-    ) {
+    } else if (completionKind === "pickup" || completionKind === "incomplete") {
       validateBeatDurationShape(
         completion["expectedDuration"],
         `${path}[${String(index)}].completion.expectedDuration`,
         findings,
       );
-      if (!isStableId(plan["eventId"])) {
-        addFinding(
-          findings,
-          "EDIT_PLAN_SPLIT_EVENT_ID",
-          `${planPath}.eventId`,
-          "Split-event target must be a canonical stable ID.",
-        );
-      }
       if (
         typeof completion["reason"] !== "string" ||
         !isUnicodeScalarString(completion["reason"]) ||
@@ -5355,23 +9604,208 @@ function validateSectionMetadata(
   }
 }
 
-function canonicalTargetForPlacement(placement: JsonObject): unknown {
+type ResolvedInsertionSlot = Readonly<{
+  scope: "measure" | "section" | "document";
+  parentId: unknown;
+  beforeSiblingId: unknown;
+}>;
+
+function resolvePlacementSlot(
+  document: unknown,
+  placement: JsonObject,
+): ResolvedInsertionSlot | null {
   if (placement["kind"] === "into-measure") {
-    return placement["beforeEventId"] === null
-      ? { kind: "measure-end", measureId: placement["measureId"] }
-      : { kind: "before-event", eventId: placement["beforeEventId"] };
+    const location = findMeasureLocation(document, placement["measureId"]);
+    if (location === null) return null;
+    const beforeEventId = placement["beforeEventId"];
+    if (beforeEventId !== null) {
+      const event = findEventLocation(document, beforeEventId);
+      if (event === null || event.measure["id"] !== location.measure["id"]) {
+        return null;
+      }
+    }
+    return {
+      scope: "measure",
+      parentId: location.measure["id"],
+      beforeSiblingId: beforeEventId,
+    };
   }
   if (placement["kind"] === "into-section") {
-    return placement["beforeMeasureId"] === null
-      ? { kind: "section-end", sectionId: placement["sectionId"] }
-      : { kind: "before-measure", measureId: placement["beforeMeasureId"] };
+    const location = findSectionLocation(document, placement["sectionId"]);
+    if (location === null) return null;
+    const beforeMeasureId = placement["beforeMeasureId"];
+    if (beforeMeasureId !== null) {
+      const measure = findMeasureLocation(document, beforeMeasureId);
+      if (
+        measure === null ||
+        measure.section["id"] !== location.section["id"]
+      ) {
+        return null;
+      }
+    }
+    return {
+      scope: "section",
+      parentId: location.section["id"],
+      beforeSiblingId: beforeMeasureId,
+    };
   }
   if (placement["kind"] === "into-document") {
-    return placement["beforeSectionId"] === null
-      ? { kind: "document-end" }
-      : { kind: "before-section", sectionId: placement["beforeSectionId"] };
+    const beforeSectionId = placement["beforeSectionId"];
+    if (
+      beforeSectionId !== null &&
+      findSectionLocation(document, beforeSectionId) === null
+    ) {
+      return null;
+    }
+    return {
+      scope: "document",
+      parentId: isObject(document) ? document["id"] : undefined,
+      beforeSiblingId: beforeSectionId,
+    };
   }
-  return undefined;
+  return null;
+}
+
+function resolveBoundarySlot(
+  document: unknown,
+  target: JsonObject,
+): ResolvedInsertionSlot | null {
+  if (target["kind"] === "measure-start" || target["kind"] === "measure-end") {
+    const location = findMeasureLocation(document, target["measureId"]);
+    if (location === null) return null;
+    const events = measureEvents(location.measure);
+    return {
+      scope: "measure",
+      parentId: location.measure["id"],
+      beforeSiblingId:
+        target["kind"] === "measure-start" ? (events[0]?.["id"] ?? null) : null,
+    };
+  }
+  if (target["kind"] === "before-event" || target["kind"] === "after-event") {
+    const location = findEventLocation(document, target["eventId"]);
+    if (location === null) return null;
+    const events = measureEvents(location.measure);
+    return {
+      scope: "measure",
+      parentId: location.measure["id"],
+      beforeSiblingId:
+        target["kind"] === "before-event"
+          ? location.event["id"]
+          : (events[location.eventIndex + 1]?.["id"] ?? null),
+    };
+  }
+  if (target["kind"] === "section-start" || target["kind"] === "section-end") {
+    const location = findSectionLocation(document, target["sectionId"]);
+    if (location === null) return null;
+    const measures = sectionMeasures(location.section);
+    return {
+      scope: "section",
+      parentId: location.section["id"],
+      beforeSiblingId:
+        target["kind"] === "section-start"
+          ? (measures[0]?.["id"] ?? null)
+          : null,
+    };
+  }
+  if (
+    target["kind"] === "before-measure" ||
+    target["kind"] === "after-measure"
+  ) {
+    const location = findMeasureLocation(document, target["measureId"]);
+    if (location === null) return null;
+    const measures = sectionMeasures(location.section);
+    return {
+      scope: "section",
+      parentId: location.section["id"],
+      beforeSiblingId:
+        target["kind"] === "before-measure"
+          ? location.measure["id"]
+          : (measures[location.measureIndex + 1]?.["id"] ?? null),
+    };
+  }
+  if (
+    target["kind"] === "document-start" ||
+    target["kind"] === "document-end"
+  ) {
+    const sections = documentSections(document);
+    return {
+      scope: "document",
+      parentId: isObject(document) ? document["id"] : undefined,
+      beforeSiblingId:
+        target["kind"] === "document-start"
+          ? (sections[0]?.["id"] ?? null)
+          : null,
+    };
+  }
+  if (
+    target["kind"] === "before-section" ||
+    target["kind"] === "after-section"
+  ) {
+    const location = findSectionLocation(document, target["sectionId"]);
+    if (location === null) return null;
+    const sections = documentSections(document);
+    return {
+      scope: "document",
+      parentId: isObject(document) ? document["id"] : undefined,
+      beforeSiblingId:
+        target["kind"] === "before-section"
+          ? location.section["id"]
+          : (sections[location.index + 1]?.["id"] ?? null),
+    };
+  }
+  return null;
+}
+
+function insertPlanTarget(plan: JsonObject): JsonObject | null {
+  const source = isObject(plan["source"]) ? plan["source"] : null;
+  const snapshot = isObject(source?.["quickEntrySnapshot"])
+    ? source["quickEntrySnapshot"]
+    : null;
+  return isObject(snapshot?.["target"]) ? snapshot["target"] : null;
+}
+
+function canonicalPlacementTargetMatches(
+  document: unknown,
+  plan: JsonObject,
+): boolean {
+  const placement = isObject(plan["placement"]) ? plan["placement"] : null;
+  const target = insertPlanTarget(plan);
+  if (placement === null || target === null) return false;
+  const placementSlot = resolvePlacementSlot(document, placement);
+  const targetSlot = resolveBoundarySlot(document, target);
+  return (
+    placementSlot !== null &&
+    targetSlot !== null &&
+    jsonDeepEqual(placementSlot, targetSlot)
+  );
+}
+
+function completeDraftIntoMeasureContractHolds(
+  document: unknown,
+  plan: JsonObject,
+): boolean {
+  const source = isObject(plan["source"]) ? plan["source"] : null;
+  const placement = isObject(plan["placement"]) ? plan["placement"] : null;
+  if (
+    source?.["kind"] !== "complete-draft" ||
+    placement?.["kind"] !== "into-measure"
+  ) {
+    return true;
+  }
+  const location = findMeasureLocation(document, placement["measureId"]);
+  const target = insertPlanTarget(plan);
+  if (location === null || target === null) return false;
+  const declarations = recordsAt(placement["completionDeclarations"]);
+  return (
+    placement["beforeEventId"] === null &&
+    measureEvents(location.measure).length === 0 &&
+    jsonDeepEqual(location.measure["completion"], { kind: "empty" }) &&
+    (target["kind"] === "measure-start" || target["kind"] === "measure-end") &&
+    target["measureId"] === placement["measureId"] &&
+    declarations.length === 1 &&
+    declarations[0]?.["measureId"] === placement["measureId"] &&
+    jsonDeepEqual(declarations[0]?.["completion"], { kind: "complete" })
+  );
 }
 
 type ParserEvidenceView = Readonly<{
@@ -5381,6 +9815,196 @@ type ParserEvidenceView = Readonly<{
   allEventSlots: readonly JsonObject[];
   insertableRows: readonly JsonObject[];
 }>;
+
+function completeDraftStructureMatchesPlacement(
+  parserEvidence: ParserEvidenceView | null,
+  placement: unknown,
+): boolean {
+  if (
+    parserEvidence === null ||
+    parserEvidence.outcome !== "success" ||
+    !isObject(placement)
+  ) {
+    return false;
+  }
+  if (placement["kind"] === "into-measure") {
+    return (
+      parserEvidence.sectionRows.length === 1 &&
+      parserEvidence.sectionRows[0]?.["kind"] === "implicit" &&
+      parserEvidence.measureRows.length === 1 &&
+      parserEvidence.insertableRows.length > 0
+    );
+  }
+  if (placement["kind"] === "into-section") {
+    return (
+      parserEvidence.sectionRows.length === 1 &&
+      parserEvidence.sectionRows[0]?.["kind"] === "implicit" &&
+      parserEvidence.measureRows.length > 0
+    );
+  }
+  if (placement["kind"] === "into-document") {
+    return (
+      parserEvidence.sectionRows.length > 0 &&
+      parserEvidence.sectionRows.every(
+        (row) => row["kind"] === "named" && typeof row["name"] === "string",
+      )
+    );
+  }
+  return false;
+}
+
+const ACCEPTED_T0_DIAGNOSTIC_CODES: readonly string[] = Object.freeze([
+  ...CHART_ERROR_CODES,
+  ...SYMBOL_ERROR_CODES,
+]);
+
+/**
+ * Project the accepted public T0 result onto only fields the A0/U1 packet is
+ * allowed to freeze. Failure results intentionally expose no section,
+ * measure, or invalid-slot topology; inventing that topology in the packet
+ * would turn independently authored prose into a fake parser oracle.
+ */
+function acceptedT0ParserProjection(
+  sourceText: string,
+  meterValue: unknown,
+): JsonObject | null {
+  if (!isObject(meterValue)) return null;
+  const beatsPerBar = meterValue["beatsPerBar"];
+  const beatUnit = meterValue["beatUnit"];
+  if (typeof beatsPerBar !== "number" || typeof beatUnit !== "number") {
+    return null;
+  }
+  const meterResult = makeMeter({ beatsPerBar, beatUnit });
+  if (!meterResult.ok) return null;
+  const parsed = parseChartText(
+    sourceText,
+    { mode: "fragment", meter: meterResult.value },
+    "ascii",
+  );
+  if (!parsed.ok) {
+    return {
+      outcome: "failure",
+      warningRows: [],
+      diagnosticRows: parsed.diagnostics.map(({ code, range }) => ({
+        code,
+        range,
+      })),
+      sectionRows: [],
+      measureRows: [],
+      allEventSlots: [],
+      insertableRows: parsed.insertableChords.map((row) => ({
+        globalOrdinal: row.ordinal,
+        chord: row.chord,
+        annotation: row.annotation,
+        duration: row.duration,
+        range: row.range,
+      })),
+    };
+  }
+
+  const sectionRows: JsonObject[] = [];
+  const measureRows: JsonObject[] = [];
+  const allEventSlots: JsonObject[] = [];
+  const insertableRows: JsonObject[] = [];
+  for (const section of parsed.draft.sections) {
+    sectionRows.push({
+      sourceSectionOrdinal: section.ordinal,
+      kind: section.kind,
+      name: section.name,
+      annotation: section.annotation,
+    });
+    for (const measure of section.measures) {
+      measureRows.push({
+        sourceSectionOrdinal: section.ordinal,
+        sourceMeasureOrdinal: measure.ordinal,
+        kind: measure.kind,
+        completion:
+          measure.events.length === 0
+            ? { kind: "empty" }
+            : { kind: "complete" },
+      });
+      for (const [sourceEventOrdinal, event] of measure.events.entries()) {
+        const coordinates = {
+          globalOrdinal: event.ordinal,
+          sourceSectionOrdinal: section.ordinal,
+          sourceMeasureOrdinal: measure.ordinal,
+          sourceEventOrdinal,
+        };
+        allEventSlots.push({ ...coordinates, valid: true });
+        insertableRows.push({
+          ...coordinates,
+          chord: event.chord,
+          annotation: event.annotation,
+          duration: {
+            kind: "resolved",
+            source: event.durationRange === null ? "allocated" : "explicit",
+            value: event.duration,
+          },
+          range: event.range,
+        });
+      }
+    }
+  }
+  return {
+    outcome: "success",
+    warningRows: parsed.warnings.map(({ code, range }) => ({ code, range })),
+    diagnosticRows: [],
+    sectionRows,
+    measureRows,
+    allEventSlots,
+    insertableRows,
+  };
+}
+
+function validateAcceptedT0ParserProjection(
+  evidence: JsonObject,
+  sourceText: string,
+  meterValue: unknown,
+  outcome: "success" | "failure",
+  path: string,
+  findings: A0U1EditPlanContractFinding[],
+): void {
+  const accepted = acceptedT0ParserProjection(sourceText, meterValue);
+  if (accepted === null) {
+    addFinding(
+      findings,
+      "EDIT_PLAN_T0_COMPARISON_INPUT",
+      path,
+      "The transition does not expose a valid current-document meter for the accepted public T0 comparison.",
+    );
+    return;
+  }
+  const failureTopologyIsEmpty =
+    outcome !== "failure" ||
+    (jsonDeepEqual(evidence["sectionRows"], []) &&
+      jsonDeepEqual(evidence["measureRows"], []) &&
+      jsonDeepEqual(evidence["allEventSlots"], []));
+  if (!failureTopologyIsEmpty) {
+    addFinding(
+      findings,
+      "EDIT_PLAN_T0_FAILURE_TOPOLOGY",
+      path,
+      "A failed public T0 result exposes no section, measure, or invalid-slot topology; those rows must remain empty.",
+    );
+  }
+  const projectedEvidence = {
+    outcome,
+    warningRows: evidence["warningRows"],
+    diagnosticRows: evidence["diagnosticRows"],
+    sectionRows: evidence["sectionRows"],
+    measureRows: evidence["measureRows"],
+    allEventSlots: evidence["allEventSlots"],
+    insertableRows: evidence["insertableRows"],
+  };
+  requireExact(
+    projectedEvidence,
+    accepted,
+    "EDIT_PLAN_T0_ACCEPTED_OUTPUT_MISMATCH",
+    path,
+    "Independently authored parser evidence must exactly project the accepted public T0 result for this raw source, meter, fragment mode, and ASCII style.",
+    findings,
+  );
+}
 
 function validateParserEvidence(
   before: JsonObject,
@@ -5392,9 +10016,7 @@ function validateParserEvidence(
   findings: A0U1EditPlanContractFinding[],
 ): ParserEvidenceView | null {
   const commandRecord = isObject(command) ? command : null;
-  const plan = isObject(commandRecord?.["plan"])
-    ? commandRecord["plan"]
-    : null;
+  const plan = isObject(commandRecord?.["plan"]) ? commandRecord["plan"] : null;
   const source = isObject(plan?.["source"]) ? plan["source"] : null;
   const snapshot = isObject(source?.["quickEntrySnapshot"])
     ? source["quickEntrySnapshot"]
@@ -5538,7 +10160,7 @@ function validateParserEvidence(
       `${path}.diagnosticRows[${String(index)}]`,
       findings,
     );
-    if (!CHART_ERROR_CODES.includes(row["code"] as never)) {
+    if (!ACCEPTED_T0_DIAGNOSTIC_CODES.includes(String(row["code"]))) {
       addFinding(
         findings,
         "EDIT_PLAN_PARSER_DIAGNOSTIC_CODE",
@@ -5570,6 +10192,19 @@ function validateParserEvidence(
   const measureRows = recordsAt(evidence["measureRows"]);
   const allEventSlots = recordsAt(evidence["allEventSlots"]);
   const insertableRows = recordsAt(evidence["insertableRows"]);
+  if (
+    outcome === "failure" &&
+    (sectionRows.length !== 0 ||
+      measureRows.length !== 0 ||
+      allEventSlots.length !== 0)
+  ) {
+    addFinding(
+      findings,
+      "EDIT_PLAN_PARSER_FAILURE_TOPOLOGY",
+      path,
+      "Failed public T0 results expose diagnostics and insertable chords only; private draft topology must not be asserted.",
+    );
+  }
   for (const [index, row] of sectionRows.entries()) {
     checkExactKeys(
       row,
@@ -5666,10 +10301,13 @@ function validateParserEvidence(
     nextEventOrdinal.set(coordinate, expectedEventOrdinal + 1);
   }
   let previousSlotIndex = -1;
+  let previousFailureOrdinal = -1;
   for (const [index, row] of insertableRows.entries()) {
     checkExactKeys(
       row,
-      EXPECTED_PARSER_INSERTABLE_ROW_KEYS,
+      outcome === "success"
+        ? EXPECTED_PARSER_INSERTABLE_ROW_KEYS
+        : EXPECTED_PARSER_FAILURE_INSERTABLE_ROW_KEYS,
       "EDIT_PLAN_PARSER_INSERTABLE_KEYS",
       `${path}.insertableRows[${String(index)}]`,
       findings,
@@ -5681,19 +10319,29 @@ function validateParserEvidence(
         slot["sourceMeasureOrdinal"] === row["sourceMeasureOrdinal"] &&
         slot["sourceEventOrdinal"] === row["sourceEventOrdinal"],
     );
-    if (
-      slotIndex < 0 ||
-      slotIndex <= previousSlotIndex ||
-      allEventSlots[slotIndex]?.["valid"] !== true
-    ) {
+    const invalidSuccessCoordinate =
+      outcome === "success" &&
+      (slotIndex < 0 ||
+        slotIndex <= previousSlotIndex ||
+        allEventSlots[slotIndex]?.["valid"] !== true);
+    const invalidFailureCoordinate =
+      outcome === "failure" &&
+      (!isNonnegativeSafeInteger(row["globalOrdinal"]) ||
+        row["globalOrdinal"] <= previousFailureOrdinal);
+    if (invalidSuccessCoordinate || invalidFailureCoordinate) {
       addFinding(
         findings,
         "EDIT_PLAN_PARSER_INSERTABLE_ORDER",
         `${path}.insertableRows[${String(index)}]`,
-        "Insertable rows must be the valid all-event slots in exact source order.",
+        outcome === "success"
+          ? "Successful insertable rows must be the valid all-event slots in exact source order."
+          : "Failed insertable rows retain only increasing public global ordinals and no private draft coordinates.",
       );
     }
     previousSlotIndex = slotIndex;
+    if (isNonnegativeSafeInteger(row["globalOrdinal"])) {
+      previousFailureOrdinal = row["globalOrdinal"];
+    }
     if (!isObject(row["chord"])) {
       addFinding(
         findings,
@@ -5788,12 +10436,49 @@ function validateParserEvidence(
       row["sourceEventOrdinal"],
     ]),
   );
-  requireExact(
-    insertableCoordinates,
-    validCoordinates,
-    "EDIT_PLAN_PARSER_VALID_INSERTABLE_BIJECTION",
-    `${path}.insertableRows`,
-    "Every and only valid parser event slot must appear once in insertable source order.",
+  if (outcome === "success") {
+    requireExact(
+      insertableCoordinates,
+      validCoordinates,
+      "EDIT_PLAN_PARSER_VALID_INSERTABLE_BIJECTION",
+      `${path}.insertableRows`,
+      "Every and only valid parser event slot must appear once in insertable source order.",
+      findings,
+    );
+  }
+  for (const [index, measure] of measureRows.entries()) {
+    if (outcome !== "success") continue;
+    const insertedEventCount = insertableRows.filter(
+      (row) =>
+        row["sourceSectionOrdinal"] === measure["sourceSectionOrdinal"] &&
+        row["sourceMeasureOrdinal"] === measure["sourceMeasureOrdinal"],
+    ).length;
+    const expectedCompletion =
+      insertedEventCount === 0 ? { kind: "empty" } : { kind: "complete" };
+    checkExactKeys(
+      measure["completion"],
+      insertedEventCount === 0
+        ? A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS.measureCompletionEmpty
+        : A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS.measureCompletionComplete,
+      "EDIT_PLAN_PARSER_MEASURE_COMPLETION_KEYS",
+      `${path}.measureRows[${String(index)}].completion`,
+      findings,
+    );
+    requireExact(
+      measure["completion"],
+      expectedCompletion,
+      "EDIT_PLAN_PARSER_MEASURE_COMPLETION",
+      `${path}.measureRows[${String(index)}].completion`,
+      "A successful T0 draft freezes empty completion for a zero-event measure and complete completion for every nonempty closed measure.",
+      findings,
+    );
+  }
+  validateAcceptedT0ParserProjection(
+    evidence,
+    sourceText,
+    beforeDocument["meter"],
+    outcome,
+    path,
     findings,
   );
   return { outcome, sectionRows, measureRows, allEventSlots, insertableRows };
@@ -5918,14 +10603,6 @@ function validateInsertFragmentPlan(
     findings,
   );
   requireExact(
-    snapshot["target"],
-    canonicalTargetForPlacement(placement),
-    "EDIT_PLAN_QUICK_ENTRY_TARGET",
-    `${path}.source.quickEntrySnapshot.target`,
-    "The captured stable target must equal the placement's canonical target.",
-    findings,
-  );
-  requireExact(
     plan["voicingPolicy"],
     A0_U1_NEW_EVENT_POLICY_ID,
     "EDIT_PLAN_VOICING_POLICY",
@@ -5971,9 +10648,7 @@ function validateInsertFragmentPlan(
           );
         }
         validateSourceRange(
-          isObject(acknowledgement)
-            ? acknowledgement["range"]
-            : undefined,
+          isObject(acknowledgement) ? acknowledgement["range"] : undefined,
           typeof sourceText === "string" ? sourceText.length : 0,
           `${path}.source.warningAcknowledgements[${String(index)}].range`,
           findings,
@@ -5981,11 +10656,7 @@ function validateInsertFragmentPlan(
       }
     }
   } else {
-    if (
-      typeof source["selectedGlobalOrdinal"] !== "number" ||
-      !Number.isSafeInteger(source["selectedGlobalOrdinal"]) ||
-      (source["selectedGlobalOrdinal"] as number) < 0
-    ) {
+    if (!isNonnegativeSafeInteger(source["selectedGlobalOrdinal"])) {
       addFinding(
         findings,
         "EDIT_PLAN_RECOVERY_ORDINAL",
@@ -6047,6 +10718,43 @@ function validateInsertFragmentPlan(
       `${path}.placement.completionDeclarations`,
       findings,
     );
+    if (complete) {
+      requireExact(
+        placement["beforeEventId"],
+        null,
+        "EDIT_PLAN_COMPLETE_MEASURE_APPEND",
+        `${path}.placement.beforeEventId`,
+        "Complete-draft into-measure placement is the one empty-target append branch.",
+        findings,
+      );
+      if (
+        !isObject(snapshot["target"]) ||
+        !["measure-start", "measure-end"].includes(
+          String(snapshot["target"]["kind"]),
+        ) ||
+        snapshot["target"]["measureId"] !== placement["measureId"]
+      ) {
+        addFinding(
+          findings,
+          "EDIT_PLAN_COMPLETE_MEASURE_TARGET",
+          `${path}.source.quickEntrySnapshot.target`,
+          "Complete-draft into-measure accepts only the target empty measure's start or end boundary.",
+        );
+      }
+      requireExact(
+        recordsAt(placement["completionDeclarations"]),
+        [
+          {
+            measureId: placement["measureId"],
+            completion: { kind: "complete" },
+          },
+        ],
+        "EDIT_PLAN_COMPLETE_MEASURE_DECLARATION",
+        `${path}.placement.completionDeclarations`,
+        "Complete-draft into an empty measure must declare exactly that target measure complete.",
+        findings,
+      );
+    }
   } else if (complete && placement["kind"] === "into-section") {
     checkExactKeys(
       placement,
@@ -6169,7 +10877,7 @@ function quickEntrySnapshotMatchesState(
   if (plan?.["kind"] !== "insert-fragment") return null;
   const source = isObject(plan["source"]) ? plan["source"] : null;
   const snapshot = isObject(source?.["quickEntrySnapshot"])
-    ? source?.["quickEntrySnapshot"]
+    ? source["quickEntrySnapshot"]
     : null;
   const quickEntry = isObject(state["quickEntry"]) ? state["quickEntry"] : null;
   if (snapshot === null || quickEntry === null) return false;
@@ -6266,6 +10974,10 @@ function validateA0EnvelopeOutcome(
   path: string,
   findings: A0U1EditPlanContractFinding[],
 ): void {
+  // Passive exact runtime shape is deliberately earlier than the inherited A0
+  // envelope reads. A malformed plan envelope is owned by the nested runner,
+  // even when one malformed value would also fail a later A0 scalar check.
+  if (firstRuntimeShapeRefusal(command) !== null) return;
   const expectedFailure = expectedA0EnvelopeFailure(before, command);
   const refusal = isObject(result["refusal"]) ? result["refusal"] : {};
   if (expectedFailure === null) {
@@ -6342,27 +11054,7 @@ function canonicalPlacementTargetHasCorrectParent(
   document: unknown,
   placement: JsonObject,
 ): boolean {
-  if (placement["kind"] === "into-measure") {
-    const measure = findMeasureLocation(document, placement["measureId"]);
-    if (measure === null) return false;
-    if (placement["beforeEventId"] === null) return true;
-    const event = findEventLocation(document, placement["beforeEventId"]);
-    return event !== null && event.measure["id"] === placement["measureId"];
-  }
-  if (placement["kind"] === "into-section") {
-    const section = findSectionLocation(document, placement["sectionId"]);
-    if (section === null) return false;
-    if (placement["beforeMeasureId"] === null) return true;
-    const measure = findMeasureLocation(document, placement["beforeMeasureId"]);
-    return measure !== null && measure.section["id"] === placement["sectionId"];
-  }
-  if (placement["kind"] === "into-document") {
-    return (
-      placement["beforeSectionId"] === null ||
-      findSectionLocation(document, placement["beforeSectionId"]) !== null
-    );
-  }
-  return false;
+  return resolvePlacementSlot(document, placement) !== null;
 }
 
 function validateApplyEditPlanShape(
@@ -6409,6 +11101,14 @@ function validateApplyEditPlanShape(
         `${planPath}.secondDuration`,
         findings,
       );
+      if (!isStableId(plan["eventId"])) {
+        addFinding(
+          findings,
+          "EDIT_PLAN_SPLIT_EVENT_ID",
+          `${planPath}.eventId`,
+          "Split-event target must be a canonical stable ID.",
+        );
+      }
       validateCompletionDeclarations(
         plan["completionDeclarations"],
         1,
@@ -6627,10 +11327,526 @@ function validateApplyEditPlanShape(
   }
 }
 
-function validateRootContract(
-  contract: JsonObject,
+function parseAuthorityPointerTemplate(value: unknown): string[] | null {
+  if (value === "") return [];
+  if (typeof value !== "string" || !value.startsWith("/")) return null;
+  const result: string[] = [];
+  for (const encoded of value.slice(1).split("/")) {
+    if (/~(?![01])/u.test(encoded)) return null;
+    const decoded = encoded.replaceAll("~1", "/").replaceAll("~0", "~");
+    if (
+      (decoded.includes("{") || decoded.includes("}")) &&
+      decoded !== "{index}" &&
+      decoded !== "{metadataField}"
+    ) {
+      return null;
+    }
+    result.push(decoded);
+  }
+  return result;
+}
+
+function authorityTemplateMatchesPath(
+  template: unknown,
+  path: unknown,
+): boolean {
+  const expected = parseAuthorityPointerTemplate(template);
+  if (
+    expected === null ||
+    !Array.isArray(path) ||
+    !path.every(
+      (segment) =>
+        typeof segment === "string" || isNonnegativeSafeInteger(segment),
+    ) ||
+    expected.length !== path.length
+  ) {
+    return false;
+  }
+  return expected.every((segment, index) => {
+    const observed = path[index];
+    if (segment === "{index}") return isNonnegativeSafeInteger(observed);
+    if (segment === "{metadataField}") {
+      return (
+        typeof observed === "string" &&
+        ["name", "annotation", "keyOverride", "voiceLeadingBoundary"].includes(
+          observed,
+        )
+      );
+    }
+    return segment === String(observed);
+  });
+}
+
+function validateSourceContractAuthorities(
   findings: A0U1EditPlanContractFinding[],
 ): void {
+  requireExact(
+    A0_U1_ATOMIC_EDIT_REFUSAL_CODES,
+    EXPECTED_NESTED_REFUSAL_PRECEDENCE,
+    "EDIT_PLAN_SOURCE_REFUSAL_PRECEDENCE",
+    "src/application/application-edit-plan-contract.ts.A0_U1_ATOMIC_EDIT_REFUSAL_CODES",
+    "The source refusal vocabulary and precedence must equal the independent frozen 32-code stage machine.",
+    findings,
+  );
+  requireExact(
+    A0_U1_RECOVERY_FIELD_COMPARISON_ORDER,
+    [
+      "placement",
+      "selected-global-ordinal",
+      "layout-loss-acknowledgement",
+      "duration-branch-and-value",
+    ],
+    "EDIT_PLAN_SOURCE_RECOVERY_FIELD_ORDER",
+    "src/application/application-edit-plan-contract.ts.A0_U1_RECOVERY_FIELD_COMPARISON_ORDER",
+    "Recovery work must follow refusal precedence: placement, selected ordinal, layout acknowledgement, then duration.",
+    findings,
+  );
+  requireExact(
+    A0_U1_FINAL_COLLECTION_LIMIT_COMPARISON_ORDER,
+    [
+      "final-document-sections",
+      "final-section-measures-in-section-order",
+      "final-total-measures",
+      "final-document-events",
+      "occupied-id-records",
+      "plan-node-records",
+    ],
+    "EDIT_PLAN_SOURCE_COLLECTION_LIMIT_ORDER",
+    "src/application/application-edit-plan-contract.ts.A0_U1_FINAL_COLLECTION_LIMIT_COMPARISON_ORDER",
+    "Final collection limits must stop at the first excess in the independent frozen comparison order.",
+    findings,
+  );
+  requireExact(
+    A0_U1_ATOMIC_EDIT_PLAN_EXACT_SHAPE_PRECEDENCE,
+    "descriptor-safe-own-data-properties-before-any-envelope-property-read",
+    "EDIT_PLAN_SOURCE_EXACT_SHAPE_PRECEDENCE",
+    "src/application/application-edit-plan-contract.ts.A0_U1_ATOMIC_EDIT_PLAN_EXACT_SHAPE_PRECEDENCE",
+    "Descriptor-safe passive exact-shape validation must precede every envelope property read.",
+    findings,
+  );
+  requireExact(
+    A0_U1_ATOMIC_EDIT_OUTER_WORK_POLICY,
+    {
+      indexPassesByOutcome: {
+        applyRefusalBeforeTargetResolution: [],
+        applyRefusalFromTargetThroughF3: ["before"],
+        applySuccessOrHistoryRefusal: ["before", "after"],
+        undoOrRedo: ["restored"],
+      },
+      indexVisitOrder: "section-then-measure-then-event-source-order",
+      stableIdsIndexed: "one-per-indexed-section-measure-or-event-not-document",
+      historyEntriesVisited: {
+        apply: 0,
+        undoOrRedoAfterEntryResolution: 1,
+      },
+      historyBytesEstimated: {
+        beforeValidEstimatorReturn: 0,
+        afterValidEstimatorReturn: "exact-returned-nonnegative-safe-integer",
+        validOversizeStillCounted: true,
+      },
+      bookmarksRepaired: {
+        beforeSuccessfulF3: 0,
+        applySuccessOrHistoryRefusal: 1,
+        undoOrRedo: 0,
+        unit: "repair-operation-not-rewritten-record",
+      },
+      requestsCompared: 0,
+      transportNotificationsCompared: 0,
+      validationCalls: {
+        throughF2Refusal: 0,
+        f3RefusalSuccessOrHistoryRefusal: 1,
+        undoOrRedo: 0,
+      },
+    },
+    "EDIT_PLAN_SOURCE_OUTER_WORK_POLICY",
+    "src/application/application-edit-plan-contract.ts.A0_U1_ATOMIC_EDIT_OUTER_WORK_POLICY",
+    "The additive runner must retain the exact inherited A0 index, history, bookmark, request, transport, and validation counter meanings.",
+    findings,
+  );
+  requireExact(
+    A0_U1_ATOMIC_EDIT_HISTORY_REFUSAL_POLICY,
+    {
+      invalidEstimate: {
+        predicate: "not-a-nonnegative-safe-integer",
+        outerCode: "history.byte_estimate_invalid",
+        nestedCode: "edit-plan.history-refused",
+        path: ["history"],
+      },
+      oversizedEstimate: {
+        predicate: "valid-estimate-greater-than-retained-byte-maximum",
+        maximum: MAX_HISTORY_RETAINED_BYTES,
+        outerCode: "history.entry_too_large",
+        nestedCode: "edit-plan.history-refused",
+        path: ["history"],
+      },
+    },
+    "EDIT_PLAN_SOURCE_HISTORY_REFUSAL_POLICY",
+    "src/application/application-edit-plan-contract.ts.A0_U1_ATOMIC_EDIT_HISTORY_REFUSAL_POLICY",
+    "Invalid and oversized history estimates must map to distinct exact inherited A0 outer codes.",
+    findings,
+  );
+  requireExact(
+    A0_U1_ATOMIC_EDIT_DIAGNOSTIC_PATH_ORDER,
+    [
+      "numeric-numeric-by-number",
+      "string-string-by-ecmascript-code-unit",
+      "mixed-numeric-before-string",
+      "shared-prefix-shorter-first",
+    ],
+    "EDIT_PLAN_SOURCE_DIAGNOSTIC_PATH_ORDER",
+    "src/application/application-edit-plan-contract.ts.A0_U1_ATOMIC_EDIT_DIAGNOSTIC_PATH_ORDER",
+    "Mixed DomainPath ordering must remain a complete deterministic total order.",
+    findings,
+  );
+  requireExact(
+    A0_U1_ATOMIC_EDIT_PLAN_FOCUS_DERIVATION_ORDER,
+    [
+      "selection-focus-event",
+      "non-chart-insertion-target",
+      "first-inserted-structural-ref",
+      "chart",
+    ],
+    "EDIT_PLAN_SOURCE_FOCUS_DERIVATION",
+    "src/application/application-edit-plan-contract.ts.A0_U1_ATOMIC_EDIT_PLAN_FOCUS_DERIVATION_ORDER",
+    "Focus must be derived solely from after bookmarks, then allocation order, then chart.",
+    findings,
+  );
+  requireExact(
+    A0_U1_T0_NEW_MEASURE_COMPLETION_POLICY,
+    {
+      zeroEvents: "empty",
+      nonemptySuccessfulClosedMeasure: "complete",
+    },
+    "EDIT_PLAN_SOURCE_T0_COMPLETION",
+    "src/application/application-edit-plan-contract.ts.A0_U1_T0_NEW_MEASURE_COMPLETION_POLICY",
+    "T0 completion conversion must distinguish empty from nonempty successful closed measures.",
+    findings,
+  );
+  requireExact(
+    A0_U1_ATOMIC_EDIT_PLAN_TRANSPOSITION_POLICY,
+    {
+      operationPerformsTransposition: false,
+      insertFragment: "preserve-t0-source-spelling-exactly",
+      splitEventDuration: "copy-current-chord-and-voicing-exactly",
+      joinEventDurations:
+        "require-literal-chord-and-voicing-equality-not-enharmonic-equivalence",
+      splitSection:
+        "commutes-with-spelling-preserving-transposition-of-affected-event-ids",
+      joinSections:
+        "commutes-with-spelling-preserving-transposition-of-affected-event-ids",
+    },
+    "EDIT_PLAN_SOURCE_TRANSPOSITION_POLICY",
+    "src/application/application-edit-plan-contract.ts.A0_U1_ATOMIC_EDIT_PLAN_TRANSPOSITION_POLICY",
+    "The five spelling-first transposition laws must remain explicit and non-transposing.",
+    findings,
+  );
+  requireExact(
+    A0_U1_ATOMIC_EDIT_PLAN_ID_ENTROPY_POLICY,
+    {
+      factoryCallsOccurOnlyAfterOperationLocalPreflight: true,
+      operationLocalPreflight:
+        "shape-snapshot-parser-declarations-operation-laws-and-final-bounds",
+      postAllocationRefusalsMayConsumeEntropy: ["f2", "f3", "history"],
+      allocationOrder: "source-structural-preorder",
+      collisionScope: "all-stable-id-kinds-plus-document",
+      retryOnFailureOrCollision: false,
+      partialCandidatePublication: false,
+      partialRemapPublication: false,
+      entropyConsumptionRollbackClaimed: false,
+      reason:
+        "F2, F3, history, factory failure, and collision can refuse after one or more StableIdFactory.next calls; the interface has no reservation or rollback operation, so application state remains unchanged while factory entropy may advance.",
+    },
+    "EDIT_PLAN_SOURCE_ID_ENTROPY_POLICY",
+    "src/application/application-edit-plan-contract.ts.A0_U1_ATOMIC_EDIT_PLAN_ID_ENTROPY_POLICY",
+    "ID entropy policy must make operation-local preflight and irreversible factory consumption explicit.",
+    findings,
+  );
+  requireExact(
+    A0_U1_ATOMIC_EDIT_PATH_TEMPLATE_GRAMMAR,
+    {
+      format: "rfc6901-json-pointer-template",
+      root: "",
+      separator: "/",
+      escaping: { tilde: "~0", slash: "~1" },
+      dynamicIndex: {
+        token: "{index}",
+        meaning: "canonical-nonnegative-base10-source-order-array-index",
+      },
+      dynamicMetadataField: {
+        token: "{metadataField}",
+        values: ["name", "annotation", "keyOverride", "voiceLeadingBoundary"],
+      },
+      otherBraceTokensPermitted: false,
+      unknownExtraOrSymbolKeyPath: "owning-container-template",
+    },
+    "EDIT_PLAN_SOURCE_PATH_TEMPLATE_GRAMMAR",
+    "src/application/application-edit-plan-contract.ts.A0_U1_ATOMIC_EDIT_PATH_TEMPLATE_GRAMMAR",
+    "Refusal paths must use one closed RFC 6901 template grammar with only index and metadata-field variables.",
+    findings,
+  );
+  requireExact(
+    A0_U1_ATOMIC_EDIT_PLAN_TEXT_SHAPE_POLICY,
+    {
+      stage: "exact-runtime-shape",
+      refusalCode: "edit-plan.plan-shape-invalid",
+      unicodePolicy: "valid-unicode-scalar-string",
+      counter: "metadataCodePointsObserved",
+      splitSectionMetadataOrder: ["newSectionMetadata"],
+      joinSectionsMetadataOrder: [
+        "expectedLeftMetadata",
+        "expectedRightMetadata",
+        "resultMetadata",
+      ],
+      sectionMetadataFieldOrder: ["name", "annotation"],
+      sectionNameCodePoints: MAX_SHORT_TEXT_CODE_POINTS,
+      sectionAnnotationCodePoints: MAX_LONG_TEXT_CODE_POINTS,
+      sectionNameBlankness:
+        "ecmascript-String.prototype.trim-result-must-be-nonempty",
+      sectionAnnotationBlankness: "empty-or-blank-permitted",
+      completionDeclarationOrder: "source-order",
+      completionReasonCodePoints: MAX_LONG_TEXT_CODE_POINTS,
+      pickupOrIncompleteReasonBlankness:
+        "ecmascript-String.prototype.trim-result-must-be-nonempty",
+      normalizationOrRepairPermitted: false,
+      pathAuthority: [
+        "/plan/newSectionMetadata/name",
+        "/plan/newSectionMetadata/annotation",
+        "/plan/expectedLeftMetadata/name",
+        "/plan/expectedLeftMetadata/annotation",
+        "/plan/expectedRightMetadata/name",
+        "/plan/expectedRightMetadata/annotation",
+        "/plan/resultMetadata/name",
+        "/plan/resultMetadata/annotation",
+        "/plan/completionDeclarations/{index}/completion/reason",
+        "/plan/placement/completionDeclarations/{index}/completion/reason",
+      ],
+    },
+    "EDIT_PLAN_SOURCE_TEXT_SHAPE_POLICY",
+    "src/application/application-edit-plan-contract.ts.A0_U1_ATOMIC_EDIT_PLAN_TEXT_SHAPE_POLICY",
+    "Caller-owned metadata and completion reasons must be Unicode- and code-point-bounded before allocation in one exact order.",
+    findings,
+  );
+  requireExact(
+    A0_U1_ATOMIC_EDIT_WORK_COUNTER_MAXIMA,
+    expectedAtomicEditWorkCounterMaxima(),
+    "EDIT_PLAN_SOURCE_COUNTER_MAXIMA",
+    "src/application/application-edit-plan-contract.ts.A0_U1_ATOMIC_EDIT_WORK_COUNTER_MAXIMA",
+    "The source must export the complete independently reconstructed ceiling for every nested counter.",
+    findings,
+  );
+  requireExact(
+    Object.keys(A0_U1_ATOMIC_EDIT_WORK_COUNTER_MAXIMA),
+    A0_U1_ATOMIC_EDIT_WORK_COUNTER_NAMES,
+    "EDIT_PLAN_SOURCE_COUNTER_MAXIMA_KEYS",
+    "src/application/application-edit-plan-contract.ts.A0_U1_ATOMIC_EDIT_WORK_COUNTER_MAXIMA",
+    "Every and only published nested work counter must have one exact source maximum in counter order.",
+    findings,
+  );
+  requireExact(
+    A0_U1_ATOMIC_EDIT_FIRST_EXCESS_WORK_COUNTERS,
+    [
+      "planNodesVisited",
+      "sourceCodePointsObserved",
+      "sourceUtf8BytesObserved",
+      "quickEntryIssueCodesCompared",
+      "warningAcknowledgementsCompared",
+      "draftSectionsVisited",
+      "draftMeasuresVisited",
+      "draftEventsVisited",
+      "completionDeclarationsVisited",
+      "metadataCodePointsObserved",
+    ],
+    "EDIT_PLAN_SOURCE_FIRST_EXCESS_COUNTERS",
+    "src/application/application-edit-plan-contract.ts.A0_U1_ATOMIC_EDIT_FIRST_EXCESS_WORK_COUNTERS",
+    "Only counters whose scans enter a first-excess witness may use their frozen excess ceiling.",
+    findings,
+  );
+  requireExact(
+    A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS.receiptBase,
+    [
+      "schema",
+      "commandKind",
+      "commandId",
+      "documentId",
+      "baseRevision",
+      "committedRevision",
+      "quickEntryDisposition",
+      "historyEntriesAppended",
+      "effects",
+      "work",
+    ],
+    "EDIT_PLAN_SOURCE_RECEIPT_BASE_KEYS",
+    "src/application/application-edit-plan-contract.ts.A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS.receiptBase",
+    "Receipt base keys must exclude branch data and duplicate work counters.",
+    findings,
+  );
+  requireExact(
+    A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS.receiptOperation,
+    [
+      "planKind",
+      "insertLane",
+      "placementKind",
+      "allocatedIdentities",
+      "removedIdentities",
+      "survivorId",
+      "insertSource",
+      "completionMeasureIds",
+      "timelineDisposition",
+      "bookmarks",
+    ],
+    "EDIT_PLAN_SOURCE_RECEIPT_OPERATION_KEYS",
+    "src/application/application-edit-plan-contract.ts.A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS.receiptOperation",
+    "Receipt operation keys must carry all discriminants and branch-correlated evidence.",
+    findings,
+  );
+  requireExact(
+    A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS.bookmarkReceiptCore,
+    EXPECTED_BOOKMARK_RECEIPT_CORE_KEYS,
+    "EDIT_PLAN_SOURCE_BOOKMARK_RECEIPT_KEYS",
+    "src/application/application-edit-plan-contract.ts.A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS.bookmarkReceiptCore",
+    "Bookmark receipt core must include operation, clear bits, and exact focus evidence.",
+    findings,
+  );
+  requireExact(
+    A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS.joinSectionsBookmarkReceiptExtension,
+    EXPECTED_JOIN_SECTIONS_BOOKMARK_RECEIPT_EXTENSION_KEYS,
+    "EDIT_PLAN_SOURCE_JOIN_SECTION_BOOKMARK_KEYS",
+    "src/application/application-edit-plan-contract.ts.A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS.joinSectionsBookmarkReceiptExtension",
+    "Join-section receipts must distinguish empty from nonempty right-section entry mapping.",
+    findings,
+  );
+  requireExact(
+    A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS.workEvidence,
+    [...A0_U1_ATOMIC_EDIT_WORK_COUNTER_NAMES, "termination"],
+    "EDIT_PLAN_SOURCE_WORK_EVIDENCE_KEYS",
+    "src/application/application-edit-plan-contract.ts.A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS.workEvidence",
+    "Work-evidence exact keys must equal the complete counter tuple followed by termination.",
+    findings,
+  );
+
+  requireExact(
+    A0_U1_ATOMIC_EDIT_REFUSAL_AUTHORITY.map((row) => row.code),
+    A0_U1_ATOMIC_EDIT_REFUSAL_CODES,
+    "EDIT_PLAN_SOURCE_REFUSAL_AUTHORITY_ORDER",
+    "src/application/application-edit-plan-contract.ts.A0_U1_ATOMIC_EDIT_REFUSAL_AUTHORITY",
+    "Refusal authority rows must be total and preserve the refusal precedence tuple.",
+    findings,
+  );
+  const refusalAuthorityByCode = new Map(
+    A0_U1_ATOMIC_EDIT_REFUSAL_AUTHORITY.map((row) => [row.code, row]),
+  );
+  requireExact(
+    refusalAuthorityByCode.get("edit-plan.command-shape-invalid")
+      ?.pathAuthority,
+    [
+      "",
+      "/id",
+      "/label",
+      "/expectedDocumentId",
+      "/expectedRevision",
+      "/logicalTimeMs",
+      "/coalescing",
+      "/kind",
+      "/plan",
+    ],
+    "EDIT_PLAN_SOURCE_COMMAND_PATH_AUTHORITY",
+    "src/application/application-edit-plan-contract.ts.A0_U1_ATOMIC_EDIT_REFUSAL_AUTHORITY.command-shape",
+    "Command-shape path authority must be total over the root and every envelope field.",
+    findings,
+  );
+  requireExact(
+    refusalAuthorityByCode.get("edit-plan.target-missing")?.pathAuthority,
+    [
+      "/plan/placement/measureId",
+      "/plan/placement/beforeEventId",
+      "/plan/placement/sectionId",
+      "/plan/placement/beforeMeasureId",
+      "/plan/placement/beforeSectionId",
+      "/plan/source/quickEntrySnapshot/target/sectionId",
+      "/plan/source/quickEntrySnapshot/target/measureId",
+      "/plan/source/quickEntrySnapshot/target/eventId",
+      "/plan/eventId",
+      "/plan/leftEventId",
+      "/plan/rightEventId",
+      "/plan/sectionId",
+      "/plan/beforeMeasureId",
+      "/plan/leftSectionId",
+      "/plan/rightSectionId",
+    ],
+    "EDIT_PLAN_SOURCE_TARGET_PATH_AUTHORITY",
+    "src/application/application-edit-plan-contract.ts.A0_U1_ATOMIC_EDIT_REFUSAL_AUTHORITY.target-missing",
+    "Target-missing authority must include every placement, QuickEntry boundary, event, measure, and section ID target.",
+    findings,
+  );
+  const planShapePaths: readonly string[] =
+    refusalAuthorityByCode.get("edit-plan.plan-shape-invalid")?.pathAuthority ??
+    [];
+  if (
+    !A0_U1_ATOMIC_EDIT_PLAN_TEXT_SHAPE_POLICY.pathAuthority.every(
+      (template) =>
+        planShapePaths.includes(template) ||
+        planShapePaths.includes(
+          template.replace(/\/(?:name|annotation)$/u, "/{metadataField}"),
+        ),
+    )
+  ) {
+    addFinding(
+      findings,
+      "EDIT_PLAN_SOURCE_TEXT_PATH_AUTHORITY",
+      "src/application/application-edit-plan-contract.ts.A0_U1_ATOMIC_EDIT_REFUSAL_AUTHORITY.plan-shape",
+      "Every bounded metadata and completion-reason path must belong to plan-shape refusal authority.",
+    );
+  }
+  requireExact(
+    refusalAuthorityByCode.get("edit-plan.section-metadata-mismatch")
+      ?.pathAuthority,
+    [
+      "/plan/placement/sectionDeclarations/{index}",
+      "/plan/placement/sectionDeclarations/{index}/sourceSectionOrdinal",
+      "/plan/placement/sectionDeclarations/{index}/voiceLeadingBoundary",
+      "/plan/expectedLeftMetadata/{metadataField}",
+      "/plan/expectedRightMetadata/{metadataField}",
+    ],
+    "EDIT_PLAN_SOURCE_SECTION_METADATA_PATH_AUTHORITY",
+    "src/application/application-edit-plan-contract.ts.A0_U1_ATOMIC_EDIT_REFUSAL_AUTHORITY.section-metadata",
+    "Section-metadata mismatch paths must retain complete plan and placement prefixes plus index/field templates.",
+    findings,
+  );
+  for (const [index, row] of A0_U1_ATOMIC_EDIT_REFUSAL_AUTHORITY.entries()) {
+    checkExactKeys(
+      row,
+      ["code", "precedence", "stage", "condition", "pathAuthority"],
+      "EDIT_PLAN_SOURCE_REFUSAL_AUTHORITY_KEYS",
+      `src/application/application-edit-plan-contract.ts.A0_U1_ATOMIC_EDIT_REFUSAL_AUTHORITY[${String(index)}]`,
+      findings,
+    );
+    if (
+      row.precedence !== index ||
+      !A0_U1_ATOMIC_EDIT_PLAN_RUNNER_STAGE_ORDER.includes(row.stage) ||
+      !isBoundedToken(row.condition, MAX_LONG_TEXT_CODE_POINTS) ||
+      !Array.isArray(row.pathAuthority) ||
+      row.pathAuthority.length === 0 ||
+      new Set(row.pathAuthority).size !== row.pathAuthority.length ||
+      !row.pathAuthority.every(
+        (template) => parseAuthorityPointerTemplate(template) !== null,
+      )
+    ) {
+      addFinding(
+        findings,
+        "EDIT_PLAN_SOURCE_REFUSAL_AUTHORITY_VALUE",
+        `src/application/application-edit-plan-contract.ts.A0_U1_ATOMIC_EDIT_REFUSAL_AUTHORITY[${String(index)}]`,
+        "Every refusal authority needs exact precedence, a real runner stage, bounded condition text, and unique canonical pointer templates.",
+      );
+    }
+  }
+}
+
+function validateRootContract(
+  contract: JsonObject,
+  allowPendingFreeze: boolean,
+  findings: A0U1EditPlanContractFinding[],
+): void {
+  validateSourceContractAuthorities(findings);
   checkExactKeys(
     contract,
     EXPECTED_ROOT_KEYS,
@@ -6733,11 +11949,19 @@ function validateRootContract(
     findings,
   );
   requireExact(
-    contract["limits"],
     A0_U1_ATOMIC_EDIT_LIMITS,
-    "EDIT_PLAN_LIMITS",
+    EXPECTED_ATOMIC_EDIT_LIMITS,
+    "EDIT_PLAN_SOURCE_LIMITS",
+    "src/application/application-edit-plan-contract.ts.A0_U1_ATOMIC_EDIT_LIMITS",
+    "Source edit-plan limits must match the independent domain/A0 reconstruction.",
+    findings,
+  );
+  requireExact(
+    contract["limits"],
+    EXPECTED_ATOMIC_EDIT_LIMITS,
+    "EDIT_PLAN_PACKET_LIMITS",
     "a0-u1-edit-plan-contract.json.limits",
-    "All exact edit-plan limits must match the source contract.",
+    "Packet edit-plan limits must match the independent domain/A0 reconstruction.",
     findings,
   );
   requireExact(
@@ -6756,14 +11980,16 @@ function validateRootContract(
     "All required evidence families must remain explicit and ordered.",
     findings,
   );
-  requireExact(
-    contract["counts"],
-    EXPECTED_COUNTS,
-    "EDIT_PLAN_DECLARED_COUNTS",
-    "a0-u1-edit-plan-contract.json.counts",
-    "Declared packet counts must match the independently reviewed inventory.",
-    findings,
-  );
+  if (!allowPendingFreeze) {
+    requireExact(
+      contract["counts"],
+      EXPECTED_COUNTS,
+      "EDIT_PLAN_DECLARED_COUNTS",
+      "a0-u1-edit-plan-contract.json.counts",
+      "Declared packet counts must match the independently reviewed frozen inventory.",
+      findings,
+    );
+  }
   const expectedEnvelope = [
     "id",
     "label",
@@ -6836,17 +12062,6 @@ function validateRootContract(
       "EDIT_PLAN_SCOPE_CLAIM",
       "a0-u1-edit-plan-contract.json",
       "The packet must remain a proposed, independent, unimplemented A0 contract with no UI, human, expert, or production-oracle claim.",
-    );
-  }
-  if (
-    A0_U1_ATOMIC_EDIT_PLAN_CONTRACT_SCHEMA !==
-    "changes.application.atomic-edit-plan-contract.v1"
-  ) {
-    addFinding(
-      findings,
-      "EDIT_PLAN_SOURCE_SCHEMA",
-      "src/application/application-edit-plan-contract.ts",
-      "The declarative source schema changed unexpectedly.",
     );
   }
   requireExact(
@@ -7048,6 +12263,7 @@ type MaterializedTransition = Readonly<{
   after: JsonObject;
   result: JsonObject;
   parserEvidence: ParserEvidenceView | null;
+  idFactoryEvidence: JsonObject | null;
 }>;
 
 function validateCases(
@@ -7238,7 +12454,9 @@ function validateCases(
         throw new Error("undefined materialization");
       }
       if (!isObject(before) || !isObject(expected)) {
-        throw new Error("state and expected transition must materialize objects");
+        throw new Error(
+          "state and expected transition must materialize objects",
+        );
       }
       if (row["phase"] === "apply" && !isObject(command)) {
         throw new Error("apply transition command must materialize an object");
@@ -7307,6 +12525,19 @@ function validateCases(
         findings,
       );
       const result = expected["result"];
+      const resultObject = isObject(result) ? result : null;
+      const idFactoryEvidence = validateIdFactoryEvidence(
+        command,
+        resultObject,
+        expected["counters"],
+        expected["allocationTrace"],
+        expected["idFactoryEvidence"],
+        row["phase"],
+        row["operation"],
+        parentCase?.["category"],
+        `edit-plan-cases.json.literalCatalog.transitions.${transitionId}.expected.idFactoryEvidence`,
+        findings,
+      );
       if (!isObject(result)) {
         addFinding(
           findings,
@@ -7315,10 +12546,43 @@ function validateCases(
           "Expected result must be one complete literal transition-result object.",
         );
       } else {
-        validateAtomicEditResultDetail(
+        let causalOracle: CausalOracleResult | null = null;
+        if (row["phase"] === "apply") {
+          causalOracle = validateCausalRefusalOracle(
+            before,
+            command,
+            expected,
+            result,
+            parserEvidence,
+            expected["allocationTrace"],
+            `edit-plan-cases.json.literalCatalog.transitions.${transitionId}.expected.result`,
+            findings,
+          );
+        }
+        validateHistoryEstimatorEvidence(
+          before,
+          command,
+          expected,
+          row["phase"],
+          causalOracle,
+          `edit-plan-cases.json.literalCatalog.transitions.${transitionId}.expected.historyEstimatorEvidence`,
+          findings,
+        );
+        validateExactOuterWorkOracle(
           before,
           afterState,
           command,
+          expected,
+          result,
+          row["phase"],
+          causalOracle,
+          `edit-plan-cases.json.literalCatalog.transitions.${transitionId}.expected`,
+          findings,
+        );
+        validateAtomicEditResultDetail(
+          before,
+          afterState,
+          isObject(command) ? command : {},
           expected,
           result,
           row["phase"],
@@ -7344,6 +12608,7 @@ function validateCases(
           after: afterState,
           result,
           parserEvidence,
+          idFactoryEvidence,
         });
       }
       validateTransitionMusicalEvidence(
@@ -7351,14 +12616,14 @@ function validateCases(
         afterState,
         expected,
         row["operation"],
-        isObject(result) ? result : null,
+        resultObject,
         `edit-plan-cases.json.literalCatalog.transitions.${transitionId}.expected`,
         findings,
       );
       validateAllocationTrace(
         before,
         command,
-        isObject(result) ? result : null,
+        resultObject,
         expected["counters"],
         expected["allocationTrace"],
         parserEvidence,
@@ -7372,7 +12637,7 @@ function validateCases(
         expected,
         row["phase"],
         command,
-        isObject(result) ? result : null,
+        resultObject,
         `edit-plan-cases.json.literalCatalog.transitions.${transitionId}.expected`,
         findings,
       );
@@ -7422,16 +12687,28 @@ function validateCases(
           if (
             plan["kind"] === "insert-fragment" &&
             isObject(plan["placement"]) &&
-            !canonicalPlacementTargetHasCorrectParent(
+            (!canonicalPlacementTargetHasCorrectParent(
               before["document"],
               plan["placement"],
-            )
+            ) ||
+              !canonicalPlacementTargetMatches(before["document"], plan))
           ) {
             addFinding(
               findings,
               "EDIT_PLAN_TARGET_PARENT_COMMITTED",
               `edit-plan-cases.json.literalCatalog.transitions.${transitionId}.command.plan.placement`,
-              "A committed insertion target and destination must name the same extant parent.",
+              "A committed insertion target and destination must resolve to the same extant parent and sibling slot.",
+            );
+          }
+          if (
+            plan["kind"] === "insert-fragment" &&
+            !completeDraftIntoMeasureContractHolds(before["document"], plan)
+          ) {
+            addFinding(
+              findings,
+              "EDIT_PLAN_COMPLETE_DRAFT_NONEMPTY_MEASURE_COMMITTED",
+              `edit-plan-cases.json.literalCatalog.transitions.${transitionId}.command.plan.placement`,
+              "Complete-draft into-measure success requires an empty target, append placement, measure-start/end target, and one empty-to-complete declaration.",
             );
           }
           validateCommittedOperationLaw(
@@ -7546,6 +12823,76 @@ function validateCases(
     findings,
   );
 
+  const expectedObligationsById = new Map<
+    string,
+    (typeof EXPECTED_OBLIGATION_ROWS)[number]
+  >(EXPECTED_OBLIGATION_ROWS.map((row) => [row.id, row]));
+  requireExact(
+    [...obligations.keys()],
+    EXPECTED_OBLIGATION_ROWS.map((row) => row.id),
+    "EDIT_PLAN_OBLIGATION_INVENTORY",
+    "edit-plan-cases.json.obligationRows",
+    "The obligation ledger must retain the exact reviewed 24-row order and inventory.",
+    findings,
+  );
+  for (const [obligationId, row] of obligations) {
+    const obligationPath = `edit-plan-cases.json.obligationRows.${obligationId}`;
+    checkExactKeys(
+      row,
+      EXPECTED_OBLIGATION_KEYS,
+      "EDIT_PLAN_OBLIGATION_KEYS",
+      obligationPath,
+      findings,
+    );
+    const expectedObligation = expectedObligationsById.get(obligationId);
+    if (expectedObligation !== undefined) {
+      requireExact(
+        {
+          id: row["id"],
+          category: row["category"],
+          operation: row["operation"],
+          semanticPredicate: row["semanticPredicate"],
+        },
+        expectedObligation,
+        "EDIT_PLAN_OBLIGATION_IDENTITY",
+        obligationPath,
+        "Obligation ID, category, operation, and semantic predicate are a closed reviewed vocabulary.",
+        findings,
+      );
+    }
+    if (
+      typeof row["requirement"] !== "string" ||
+      codePointLength(row["requirement"]) === 0 ||
+      codePointLength(row["requirement"]) > MAX_LONG_TEXT_CODE_POINTS
+    ) {
+      addFinding(
+        findings,
+        "EDIT_PLAN_OBLIGATION_REQUIREMENT",
+        `${obligationPath}.requirement`,
+        "Every obligation needs one nonempty bounded human-readable requirement.",
+      );
+    }
+    checkReferenceIds(
+      row["transitionIds"],
+      transitions,
+      "EDIT_PLAN_OBLIGATION_TRANSITION_REF",
+      `${obligationPath}.transitionIds`,
+      findings,
+    );
+    if (row["operation"] !== "pipeline") {
+      for (const transitionId of stringsAt(row["transitionIds"])) {
+        if (transitions.get(transitionId)?.["operation"] !== row["operation"]) {
+          addFinding(
+            findings,
+            "EDIT_PLAN_OBLIGATION_OPERATION_SCOPE",
+            `${obligationPath}.transitionIds.${transitionId}`,
+            "An operation-owned obligation may cite only transitions for that operation.",
+          );
+        }
+      }
+    }
+  }
+
   for (const [witnessId, row] of transposition) {
     checkExactKeys(
       row,
@@ -7646,7 +12993,11 @@ function validateCases(
         findings,
       );
       const interval = row["intervalSemitones"];
-      if (!Number.isSafeInteger(interval) || interval === 0) {
+      if (
+        typeof interval !== "number" ||
+        !Number.isSafeInteger(interval) ||
+        interval === 0
+      ) {
         addFinding(
           findings,
           "EDIT_PLAN_TRANSPOSITION_INTERVAL",
@@ -7707,9 +13058,7 @@ function validateCases(
             "Transposed transition before document must equal the witness target.",
             findings,
           );
-          const baseReceipt = isObject(
-            baseTransition.result["editPlanReceipt"],
-          )
+          const baseReceipt = isObject(baseTransition.result["editPlanReceipt"])
             ? baseTransition.result["editPlanReceipt"]
             : {};
           const transposedReceipt = isObject(
@@ -7717,9 +13066,7 @@ function validateCases(
           )
             ? transposedTransition.result["editPlanReceipt"]
             : {};
-          const baseAllocations = recordsAt(
-            baseReceipt["allocatedIdentities"],
-          );
+          const baseAllocations = recordsAt(baseReceipt["allocatedIdentities"]);
           const transposedAllocations = recordsAt(
             transposedReceipt["allocatedIdentities"],
           );
@@ -7782,10 +13129,7 @@ function validateCases(
           } else {
             requireExact(
               transposedTransition.command,
-              independentlyTransposePitchData(
-                baseTransition.command,
-                interval,
-              ),
+              independentlyTransposePitchData(baseTransition.command, interval),
               "EDIT_PLAN_TRANSPOSITION_COMMAND_COMMUTATION",
               `edit-plan-cases.json.transpositionWitnesses.${witnessId}.transposedTransitionId.command`,
               "The transposed command must preserve all nonpitch fields and transform every pitch-bearing/source-text field independently.",
@@ -8001,13 +13345,11 @@ function validateApplyUndoRedoTrios(
     );
     const undoRows = operationRows.filter(
       (transition) =>
-        transition.row["phase"] === "undo" &&
-        transition.result["ok"] === true,
+        transition.row["phase"] === "undo" && transition.result["ok"] === true,
     );
     const redoRows = operationRows.filter(
       (transition) =>
-        transition.row["phase"] === "redo" &&
-        transition.result["ok"] === true,
+        transition.row["phase"] === "redo" && transition.result["ok"] === true,
     );
     if (undoRows.length !== 1 || redoRows.length !== 1) {
       addFinding(
@@ -8176,6 +13518,707 @@ function validateApplyUndoRedoTrios(
   }
 }
 
+function nestedRefusalCode(transition: MaterializedTransition): string | null {
+  const refusal = isObject(transition.result["editPlanRefusal"])
+    ? transition.result["editPlanRefusal"]
+    : null;
+  return typeof refusal?.["code"] === "string" ? refusal["code"] : null;
+}
+
+function editPlanWork(transition: MaterializedTransition): JsonObject | null {
+  const detail =
+    transition.result["ok"] === true
+      ? transition.result["editPlanReceipt"]
+      : transition.result["editPlanRefusal"];
+  return isObject(detail) && isObject(detail["work"]) ? detail["work"] : null;
+}
+
+function transitionPlan(transition: MaterializedTransition): JsonObject | null {
+  return isObject(transition.command) && isObject(transition.command["plan"])
+    ? transition.command["plan"]
+    : null;
+}
+
+function transitionCaseCategory(
+  transition: MaterializedTransition,
+  cases: ReadonlyMap<string, JsonObject>,
+): unknown {
+  const caseId = transition.row["caseId"];
+  return typeof caseId === "string" ? cases.get(caseId)?.["category"] : null;
+}
+
+function forbiddenKeysPresent(
+  value: unknown,
+  forbidden: ReadonlySet<string>,
+  output = new Set<string>(),
+): ReadonlySet<string> {
+  if (Array.isArray(value)) {
+    for (const child of value) forbiddenKeysPresent(child, forbidden, output);
+    return output;
+  }
+  if (!isObject(value)) return output;
+  for (const [key, child] of Object.entries(value)) {
+    if (forbidden.has(key)) output.add(key);
+    forbiddenKeysPresent(child, forbidden, output);
+  }
+  return output;
+}
+
+function quickEntryMismatchFields(
+  transition: MaterializedTransition,
+): readonly string[] {
+  const plan = transitionPlan(transition);
+  const source = isObject(plan?.["source"]) ? plan["source"] : null;
+  const snapshot = isObject(source?.["quickEntrySnapshot"])
+    ? source["quickEntrySnapshot"]
+    : null;
+  const quickEntry = isObject(transition.before["quickEntry"])
+    ? transition.before["quickEntry"]
+    : null;
+  if (snapshot === null || quickEntry === null || source === null) return [];
+  const mismatches: string[] = [];
+  if (snapshot["sourceText"] !== quickEntry["text"]) {
+    mismatches.push("sourceText");
+  }
+  if (
+    snapshot["baseRevision"] !== quickEntry["baseRevision"] ||
+    snapshot["baseRevision"] !== transition.before["revision"]
+  ) {
+    mismatches.push("baseRevision");
+  }
+  if (!jsonDeepEqual(snapshot["target"], quickEntry["target"])) {
+    mismatches.push("target");
+  }
+  if (!jsonDeepEqual(snapshot["issueCodes"], quickEntry["issueCodes"])) {
+    mismatches.push("issueCodes");
+  }
+  if (snapshot["expectedStatus"] !== quickEntry["status"]) {
+    mismatches.push("expectedStatus");
+  }
+  if (snapshot["expectedLane"] !== source["kind"]) {
+    mismatches.push("expectedLane");
+  }
+  return mismatches;
+}
+
+function requireObligation(
+  condition: boolean,
+  obligationId: string,
+  message: string,
+  findings: A0U1EditPlanContractFinding[],
+): void {
+  if (!condition) {
+    addFinding(
+      findings,
+      "EDIT_PLAN_OBLIGATION_SEMANTIC",
+      `edit-plan-cases.json.obligationRows.${obligationId}`,
+      message,
+    );
+  }
+}
+
+function validateObligationSemantics(
+  obligations: ReadonlyMap<string, JsonObject>,
+  materialized: ReadonlyMap<string, MaterializedTransition>,
+  cases: ReadonlyMap<string, JsonObject>,
+  transposition: ReadonlyMap<string, JsonObject>,
+  controls: ReadonlyMap<string, JsonObject>,
+  findings: A0U1EditPlanContractFinding[],
+): void {
+  const allTransitions = [...materialized.values()];
+  const rowsFor = (obligationId: string): readonly MaterializedTransition[] =>
+    stringsAt(obligations.get(obligationId)?.["transitionIds"])
+      .map((transitionId) => materialized.get(transitionId))
+      .filter(
+        (transition): transition is MaterializedTransition =>
+          transition !== undefined,
+      );
+  const successApply = (
+    rows: readonly MaterializedTransition[],
+  ): readonly MaterializedTransition[] =>
+    rows.filter(
+      (transition) =>
+        transition.row["phase"] === "apply" && transition.result["ok"] === true,
+    );
+  const refusedApply = (
+    rows: readonly MaterializedTransition[],
+  ): readonly MaterializedTransition[] =>
+    rows.filter(
+      (transition) =>
+        transition.row["phase"] === "apply" &&
+        transition.result["ok"] === false &&
+        nestedRefusalCode(transition) !== null,
+    );
+  const exactOperationSet = (
+    rows: readonly MaterializedTransition[],
+  ): boolean =>
+    jsonDeepEqual(
+      [...new Set(rows.map((transition) => transition.row["operation"]))],
+      A0_U1_ATOMIC_EDIT_PLAN_KINDS,
+    );
+
+  {
+    const id = "A0U1-OBL-001-REFUSAL-VOCABULARY";
+    const runtimeCodes = new Set(
+      refusedApply(rowsFor(id))
+        .map(nestedRefusalCode)
+        .filter((code): code is string => code !== null),
+    );
+    const unreachableCodes = Object.keys(
+      A0_U1_FRAGMENT_SOURCE_REFUSAL_REACHABILITY,
+    );
+    const reachableCodes = A0_U1_ATOMIC_EDIT_REFUSAL_CODES.filter(
+      (code) => !unreachableCodes.includes(code),
+    );
+    const staticDominance =
+      jsonDeepEqual(A0_U1_FRAGMENT_SOURCE_REFUSAL_REACHABILITY, {
+        "edit-plan.source-code-points-exceeded":
+          "static-dominated-by-accepted-quick-entry-invariants",
+        "edit-plan.source-unicode-invalid":
+          "static-dominated-by-accepted-quick-entry-invariants",
+        "edit-plan.source-utf8-bytes-exceeded":
+          "static-dominated-by-accepted-quick-entry-invariants",
+      }) &&
+      jsonDeepEqual(
+        A0_U1_ATOMIC_EDIT_LIMITS.fragmentSourceCodePoints,
+        MAX_QUICK_ENTRY_CODE_POINTS,
+      ) &&
+      A0_U1_ATOMIC_EDIT_LIMITS.fragmentSourceUtf8Bytes ===
+        4 * A0_U1_ATOMIC_EDIT_LIMITS.fragmentSourceCodePoints &&
+      jsonDeepEqual(
+        A0_U1_ATOMIC_EDIT_LIMITS.quickEntryIssueCodes,
+        MAX_DRAFT_ISSUES,
+      );
+    requireObligation(
+      jsonDeepEqual([...runtimeCodes], reachableCodes) &&
+        !allTransitions.some((transition) =>
+          unreachableCodes.includes(String(nestedRefusalCode(transition))),
+        ) &&
+        staticDominance,
+      id,
+      "The ledger must cite runtime witnesses for every reachable nested refusal in contract order, must not fabricate the three source-preflight branches, and must retain the accepted-QuickEntry source/issue dominance proof.",
+      findings,
+    );
+  }
+
+  {
+    const id = "A0U1-OBL-002-COMPLETE-PLACEMENTS";
+    const completeSuccesses = successApply(rowsFor(id)).filter((transition) => {
+      const source = transitionPlan(transition)?.["source"];
+      return isObject(source) && source["kind"] === "complete-draft";
+    });
+    const placements = completeSuccesses.map((transition) => {
+      const placement = transitionPlan(transition)?.["placement"];
+      return isObject(placement) ? placement["kind"] : null;
+    });
+    const exactEmptyMeasureWitness = completeSuccesses
+      .filter((transition) => {
+        const placement = transitionPlan(transition)?.["placement"];
+        return isObject(placement) && placement["kind"] === "into-measure";
+      })
+      .every((transition) => {
+        const plan = transitionPlan(transition);
+        return (
+          plan !== null &&
+          completeDraftIntoMeasureContractHolds(
+            transition.before["document"],
+            plan,
+          ) &&
+          transition.parserEvidence?.outcome === "success" &&
+          transition.parserEvidence.sectionRows.length === 1 &&
+          transition.parserEvidence.measureRows.length === 1 &&
+          transition.parserEvidence.insertableRows.length > 0 &&
+          jsonDeepEqual(
+            transition.parserEvidence.measureRows[0]?.["completion"],
+            { kind: "complete" },
+          )
+        );
+      });
+    requireObligation(
+      jsonDeepEqual(
+        [...new Set(placements)],
+        ["into-measure", "into-section", "into-document"],
+      ) && exactEmptyMeasureWitness,
+      id,
+      "Complete-draft successes must cover all placements, and into-measure must prove a nonempty one-measure T0 draft replacing an empty target's completion.",
+      findings,
+    );
+  }
+
+  {
+    const id = "A0U1-OBL-003-QUICK-ENTRY-SIX-FIELDS";
+    const rows = refusedApply(rowsFor(id)).filter(
+      (transition) =>
+        nestedRefusalCode(transition) ===
+        "edit-plan.quick-entry-snapshot-mismatch",
+    );
+    const singletonFields = rows.flatMap((transition) => {
+      const mismatches = quickEntryMismatchFields(transition);
+      return mismatches.length === 1 ? mismatches : [];
+    });
+    requireObligation(
+      rows.every(
+        (transition) => quickEntryMismatchFields(transition).length === 1,
+      ) &&
+        jsonDeepEqual(
+          [...new Set(singletonFields)],
+          [
+            "sourceText",
+            "baseRevision",
+            "target",
+            "issueCodes",
+            "expectedStatus",
+            "expectedLane",
+          ],
+        ),
+      id,
+      "Six distinct refusal witnesses must stale exactly one QuickEntry snapshot field apiece.",
+      findings,
+    );
+  }
+
+  {
+    const id = "A0U1-OBL-004-TARGET-PARENT";
+    const rows = rowsFor(id);
+    const valid = successApply(rows).some((transition) => {
+      const plan = transitionPlan(transition);
+      const placement = plan?.["placement"];
+      return (
+        plan !== null &&
+        isObject(placement) &&
+        canonicalPlacementTargetHasCorrectParent(
+          transition.before["document"],
+          placement,
+        ) &&
+        canonicalPlacementTargetMatches(transition.before["document"], plan)
+      );
+    });
+    const crossParentRefusal = refusedApply(rows).some((transition) => {
+      const plan = transitionPlan(transition);
+      const placement = plan?.["placement"];
+      return (
+        nestedRefusalCode(transition) === "edit-plan.destination-invalid" &&
+        plan !== null &&
+        isObject(placement) &&
+        (!canonicalPlacementTargetHasCorrectParent(
+          transition.before["document"],
+          placement,
+        ) ||
+          !canonicalPlacementTargetMatches(transition.before["document"], plan))
+      );
+    });
+    requireObligation(
+      valid && crossParentRefusal,
+      id,
+      "Target-parent proof needs both a canonical successful placement and an actually cross-parent destination refusal.",
+      findings,
+    );
+  }
+
+  {
+    const id = "A0U1-OBL-005-DURATION-CANONICAL";
+    const rows = rowsFor(id);
+    const codes = new Set(refusedApply(rows).map(nestedRefusalCode));
+    requireObligation(
+      successApply(rows).length > 0 &&
+        codes.has("edit-plan.duration-invalid") &&
+        codes.has("edit-plan.duration-sum-mismatch"),
+      id,
+      "Canonical-duration proof needs a successful exact-rational operation plus distinct invalid-shape/value and exact-sum refusals.",
+      findings,
+    );
+  }
+
+  {
+    const id = "A0U1-OBL-006-SCALAR-RANGE-METADATA";
+    const refusals = refusedApply(rowsFor(id));
+    const codes = new Set(refusals.map(nestedRefusalCode));
+    const boundedTextWitness = (
+      field: "name" | "annotation" | "reason",
+      maximum: number,
+    ): boolean =>
+      refusals.some((transition) => {
+        const refusal = transition.result["editPlanRefusal"];
+        if (!isObject(refusal)) return false;
+        const diagnostic = recordsAt(refusal["diagnostics"]).find(
+          (row) =>
+            Array.isArray(row["path"]) &&
+            row["path"].at(-1) === field &&
+            row["maximum"] === maximum &&
+            row["observed"] === maximum + 1,
+        );
+        const work = editPlanWork(transition);
+        return (
+          diagnostic !== undefined &&
+          work?.["idAllocationAttempts"] === 0 &&
+          typeof work["metadataCodePointsObserved"] === "number" &&
+          work["metadataCodePointsObserved"] >= maximum + 1
+        );
+      });
+    requireObligation(
+      [
+        "edit-plan.command-shape-invalid",
+        "edit-plan.plan-shape-invalid",
+        "edit-plan.syntax-refused",
+        "edit-plan.section-metadata-mismatch",
+      ].every((code) => codes.has(code)) &&
+        boundedTextWitness("name", MAX_SHORT_TEXT_CODE_POINTS) &&
+        boundedTextWitness("annotation", MAX_LONG_TEXT_CODE_POINTS) &&
+        boundedTextWitness("reason", MAX_LONG_TEXT_CODE_POINTS),
+      id,
+      "Scalar/range/ID proof must include pre-allocation first-excess witnesses for the 256-code-point name and 2,000-code-point annotation/completion-reason bounds.",
+      findings,
+    );
+  }
+
+  for (const [id, category, shouldSucceed] of [
+    ["A0U1-OBL-007-LIMIT-EXACT", "exact-boundary", true],
+    ["A0U1-OBL-008-LIMIT-PLUS-ONE", "plus-one", false],
+  ] as const) {
+    const rows = rowsFor(id).filter(
+      (transition) =>
+        transition.row["phase"] === "apply" &&
+        transitionCaseCategory(transition, cases) === category,
+    );
+    const outcomesMatch = rows.every(
+      (transition) => transition.result["ok"] === shouldSucceed,
+    );
+    const staticDominance =
+      A0_U1_ATOMIC_EDIT_LIMITS.fragmentMeasures ===
+        A0_U1_ATOMIC_EDIT_LIMITS.fragmentSections *
+          A0_U1_ATOMIC_EDIT_LIMITS.fragmentMeasuresPerSection &&
+      A0_U1_ATOMIC_EDIT_LIMITS.planNodeRecords ===
+        A0_U1_ATOMIC_EDIT_LIMITS.occupiedIdRecords &&
+      A0_U1_ATOMIC_EDIT_LIMITS.occupiedIdRecords ===
+        A0_U1_ATOMIC_EDIT_LIMITS.idAllocationAttempts + 1;
+    requireObligation(
+      rows.length >= A0_U1_ATOMIC_EDIT_PLAN_KINDS.length &&
+        exactOperationSet(rows) &&
+        outcomesMatch &&
+        staticDominance,
+      id,
+      shouldSucceed
+        ? "Exact reachable caps need successful witnesses across all five operations, while composite unreachable caps remain proved by source-constant identities."
+        : "First-excess reachable caps need refusals across all five operations, while composite unreachable caps remain proved by source-constant identities.",
+      findings,
+    );
+  }
+
+  {
+    const id = "A0U1-OBL-009-ALLOCATION-PREORDER";
+    const rows = successApply(rowsFor(id));
+    const hasTraceKinds = (kinds: readonly string[]): boolean =>
+      rows.some((transition) =>
+        jsonDeepEqual(
+          recordsAt(transition.expected["allocationTrace"]).map(
+            (row) => row["kind"],
+          ),
+          kinds,
+        ),
+      );
+    requireObligation(
+      rows.some((transition) => {
+        const kinds = recordsAt(transition.expected["allocationTrace"]).map(
+          (row) => row["kind"],
+        );
+        return (
+          kinds.includes("section") &&
+          kinds.includes("measure") &&
+          kinds.includes("event")
+        );
+      }) &&
+        hasTraceKinds(["event"]) &&
+        hasTraceKinds(["section"]),
+      id,
+      "Allocation proof needs complete structural preorder plus recovered/split event-only and split-section section-only success traces.",
+      findings,
+    );
+  }
+
+  for (const [id, finalOutcome] of [
+    ["A0U1-OBL-010-ALLOCATION-FACTORY-POSITIONS", "factory-refusal"],
+    ["A0U1-OBL-011-ALLOCATION-COLLISION-POSITIONS", "collision-refusal"],
+  ] as const) {
+    const refusingTraces = refusedApply(rowsFor(id))
+      .map((transition) => recordsAt(transition.expected["allocationTrace"]))
+      .filter(
+        (trace) =>
+          trace.length > 0 && trace.at(-1)?.["outcome"] === finalOutcome,
+      );
+    const finalKinds = new Set(
+      refusingTraces.map((trace) => trace.at(-1)?.["kind"]),
+    );
+    requireObligation(
+      ["section", "measure", "event"].every((kind) => finalKinds.has(kind)) &&
+        refusingTraces.some((trace) => trace.length > 1),
+      id,
+      "Allocation refusal proof must fail at section, measure, and event positions and include a stopped accepted-prefix witness.",
+      findings,
+    );
+  }
+
+  {
+    const id = "A0U1-OBL-012-JOIN-FACTORY-UNUSED";
+    const hostile = successApply(rowsFor(id)).filter(
+      (transition) =>
+        transition.idFactoryEvidence?.["configuration"] ===
+        "hostile-refuse-on-any-call",
+    );
+    requireObligation(
+      hostile.length === 2 &&
+        jsonDeepEqual(
+          hostile.map((transition) => transition.row["operation"]),
+          ["join-event-durations", "join-sections"],
+        ) &&
+        hostile.every(
+          (transition) =>
+            transition.idFactoryEvidence?.["callsObserved"] === 0 &&
+            jsonDeepEqual(transition.expected["allocationTrace"], []),
+        ),
+      id,
+      "Exactly the two join variants must succeed while a hostile factory observes zero calls.",
+      findings,
+    );
+  }
+
+  for (const [id, code, structuralDecodeCalls, semanticValidationCalls] of [
+    [
+      "A0U1-OBL-013-F2-REFUSAL",
+      "edit-plan.structural-publication-refused",
+      1,
+      0,
+    ],
+    ["A0U1-OBL-014-F3-REFUSAL", "edit-plan.semantic-publication-refused", 1, 1],
+    ["A0U1-OBL-015-HISTORY-REFUSAL", "edit-plan.history-refused", 1, 1],
+  ] as const) {
+    const rows = refusedApply(rowsFor(id)).filter(
+      (transition) => nestedRefusalCode(transition) === code,
+    );
+    requireObligation(
+      rows.length > 0 &&
+        rows.every(
+          (transition) =>
+            editPlanWork(transition)?.["structuralDecodeCalls"] ===
+              structuralDecodeCalls &&
+            editPlanWork(transition)?.["semanticValidationCalls"] ===
+              semanticValidationCalls &&
+            jsonDeepEqual(
+              objectProjection(
+                transition.after,
+                new Set(["notices", "nextSequence"]),
+              ),
+              objectProjection(
+                transition.before,
+                new Set(["notices", "nextSequence"]),
+              ),
+            ) &&
+            jsonDeepEqual(transition.result["state"], transition.after),
+        ),
+      id,
+      `The ${code} witness must stop atomically after exactly ${String(structuralDecodeCalls)} F2 and ${String(semanticValidationCalls)} F3 call(s).`,
+      findings,
+    );
+  }
+
+  {
+    const id = "A0U1-OBL-016-UNDO-REDO";
+    const rows = rowsFor(id);
+    requireObligation(
+      exactOperationSet(rows) &&
+        A0_U1_ATOMIC_EDIT_PLAN_KINDS.every((operation) =>
+          ["apply", "undo", "redo"].every((phase) =>
+            rows.some(
+              (transition) =>
+                transition.row["operation"] === operation &&
+                transition.row["phase"] === phase &&
+                transition.result["ok"] === true,
+            ),
+          ),
+        ),
+      id,
+      "The obligation ledger must explicitly cite every successful apply/undo/redo inverse trio.",
+      findings,
+    );
+  }
+
+  {
+    const id = "A0U1-OBL-017-RECOVERY-SCAN";
+    const rows = successApply(rowsFor(id)).filter((transition) => {
+      const source = transitionPlan(transition)?.["source"];
+      return isObject(source) && source["kind"] === "recovered-chord";
+    });
+    requireObligation(
+      rows.some((transition) => {
+        const source = transitionPlan(transition)?.["source"];
+        if (!isObject(source) || transition.parserEvidence === null) {
+          return false;
+        }
+        const selected = source["selectedGlobalOrdinal"];
+        const position = transition.parserEvidence.insertableRows.findIndex(
+          (row) => row["globalOrdinal"] === selected,
+        );
+        return (
+          isNonnegativeSafeInteger(selected) &&
+          position >= 0 &&
+          selected + 1 !== position + 1 &&
+          editPlanWork(transition)?.["insertableChordsExamined"] ===
+            position + 1
+        );
+      }),
+      id,
+      "Recovery scan proof must use an insertable-array position that is observably different from globalOrdinal + 1.",
+      findings,
+    );
+  }
+
+  {
+    const id = "A0U1-OBL-018-DIAGNOSTICS";
+    const refusals = refusedApply(rowsFor(id));
+    const diagnostics = refusals.flatMap((transition) => {
+      const refusal = transition.result["editPlanRefusal"];
+      return isObject(refusal) ? recordsAt(refusal["diagnostics"]) : [];
+    });
+    const terminations = new Set(
+      refusals.map((transition) => editPlanWork(transition)?.["termination"]),
+    );
+    requireObligation(
+      refusals.some((transition) => {
+        const refusal = transition.result["editPlanRefusal"];
+        return (
+          isObject(refusal) && recordsAt(refusal["diagnostics"]).length >= 2
+        );
+      }) &&
+        diagnostics.some((diagnostic) => diagnostic["sourceRange"] === null) &&
+        diagnostics.some((diagnostic) => isObject(diagnostic["sourceRange"])) &&
+        [
+          "input-refusal",
+          "allocation-refusal",
+          "publication-refusal",
+          "history-refusal",
+        ].every((termination) => terminations.has(termination)),
+      id,
+      "Diagnostic closure needs an order-sensitive multi-row refusal, both ranged and unranged sanitized rows, and every closed refusal termination family.",
+      findings,
+    );
+  }
+
+  {
+    const id = "A0U1-OBL-019-CANDIDATE-TRANSFORMS";
+    const rows = successApply(rowsFor(id));
+    requireObligation(
+      exactOperationSet(rows),
+      id,
+      "The candidate-transform ledger must cite a committed independently reconstructed transition for all five operations.",
+      findings,
+    );
+  }
+
+  {
+    const id = "A0U1-OBL-020-TRANSPOSITION";
+    requireObligation(
+      jsonDeepEqual(
+        [...transposition.values()].map((row) => row["operation"]),
+        A0_U1_ATOMIC_EDIT_PLAN_KINDS,
+      ) && transposition.size === A0_U1_ATOMIC_EDIT_PLAN_KINDS.length,
+      id,
+      "Metamorphic closure requires one independently checked transform/inverse/transition commutation per operation.",
+      findings,
+    );
+  }
+
+  {
+    const id = "A0U1-OBL-021-MUTATIONS";
+    requireObligation(
+      controls.size === 30 &&
+        stringsAt(obligations.get(id)?.["transitionIds"]).every(
+          (transitionId) => materialized.has(transitionId),
+        ),
+      id,
+      "Mutation closure requires all 30 controls and only materializable baseline/killer transition references.",
+      findings,
+    );
+  }
+
+  {
+    const id = "A0U1-OBL-022-FORBIDDEN-PAYLOADS";
+    const forbidden = new Set(A0_U1_ATOMIC_EDIT_PLAN_FORBIDDEN_PAYLOAD_KEYS);
+    const rows = refusedApply(rowsFor(id));
+    const observed = new Set<string>();
+    for (const transition of rows) {
+      for (const key of forbiddenKeysPresent(transition.command, forbidden)) {
+        observed.add(key);
+      }
+    }
+    requireObligation(
+      jsonDeepEqual(
+        [...observed],
+        A0_U1_ATOMIC_EDIT_PLAN_FORBIDDEN_PAYLOAD_KEYS,
+      ) &&
+        rows.every((transition) =>
+          [
+            "edit-plan.command-shape-invalid",
+            "edit-plan.plan-shape-invalid",
+          ].includes(String(nestedRefusalCode(transition))),
+        ),
+      id,
+      "Every source-authoritative forbidden payload key must appear in a refused exact-shape witness.",
+      findings,
+    );
+  }
+
+  {
+    const id = "A0U1-OBL-023-COMPLETE-WARNINGS";
+    const rows = rowsFor(id);
+    const acknowledgedSuccess = successApply(rows).some((transition) => {
+      const source = transitionPlan(transition)?.["source"];
+      return (
+        isObject(source) &&
+        source["kind"] === "complete-draft" &&
+        transition.parserEvidence !== null &&
+        recordsAt(source["warningAcknowledgements"]).length > 0
+      );
+    });
+    requireObligation(
+      acknowledgedSuccess &&
+        refusedApply(rows).some(
+          (transition) =>
+            nestedRefusalCode(transition) ===
+            "edit-plan.warning-acknowledgements-mismatch",
+        ),
+      id,
+      "Warning proof needs an exact nonempty code/range/order acknowledgement success and a mismatch refusal.",
+      findings,
+    );
+  }
+
+  {
+    const id = "A0U1-OBL-024-RECOVERY-BRANCHES";
+    const rows = rowsFor(id);
+    const recoveredSuccessSources = successApply(rows)
+      .map((transition) => transitionPlan(transition)?.["source"])
+      .filter(
+        (source): source is JsonObject =>
+          isObject(source) && source["kind"] === "recovered-chord",
+      );
+    requireObligation(
+      recoveredSuccessSources.some(
+        (source) => source["callerDuration"] === null,
+      ) &&
+        recoveredSuccessSources.some((source) =>
+          isObject(source["callerDuration"]),
+        ) &&
+        refusedApply(rows).some(
+          (transition) =>
+            nestedRefusalCode(transition) ===
+            "edit-plan.recovered-chord-duration-mismatch",
+        ),
+      id,
+      "Recovery closure needs successful resolved-duration and caller-duration branches plus the exact mismatch refusal.",
+      findings,
+    );
+  }
+}
+
 function validateControlsTracesAndAuthorities(
   mutationRoot: JsonObject,
   traceRoot: JsonObject,
@@ -8229,6 +14272,14 @@ function validateControlsTracesAndAuthorities(
     findings,
   );
 
+  requireExact(
+    [...controls.values()].map((control) => control["category"]),
+    EXPECTED_MUTATION_CATEGORIES,
+    "EDIT_PLAN_MUTATION_CATEGORY_INVENTORY",
+    "mutation-controls.json.controls",
+    "The mutation ledger must retain exactly one control for each reviewed category in contract order.",
+    findings,
+  );
   for (const [controlId, control] of controls) {
     checkExactKeys(
       control,
@@ -8243,6 +14294,14 @@ function validateControlsTracesAndAuthorities(
         "EDIT_PLAN_CONTROL_OPERATION",
         `mutation-controls.json.controls.${controlId}.operation`,
         "Mutation control operation is outside the closed vocabulary.",
+      );
+    }
+    if (!EXPECTED_MUTATION_CATEGORIES.includes(control["category"] as never)) {
+      addFinding(
+        findings,
+        "EDIT_PLAN_CONTROL_CATEGORY",
+        `mutation-controls.json.controls.${controlId}.category`,
+        "Mutation category is outside the closed 30-category vocabulary.",
       );
     }
     const baselineId = control["baselineTransitionId"];
@@ -8279,6 +14338,28 @@ function validateControlsTracesAndAuthorities(
       `mutation-controls.json.controls.${controlId}.mutation`,
       findings,
     );
+    const category = control["category"];
+    const expectedTarget =
+      typeof category === "string" &&
+      EXPECTED_MUTATION_CATEGORIES.includes(category as never)
+        ? EXPECTED_MUTATION_TARGETS[
+            category as (typeof EXPECTED_MUTATION_CATEGORIES)[number]
+          ]
+        : null;
+    if (expectedTarget !== null) {
+      requireExact(
+        {
+          operation: control["operation"],
+          materialization: mutation["materialization"],
+          jsonPointer: mutation["jsonPointer"],
+        },
+        expectedTarget,
+        "EDIT_PLAN_MUTATION_CATEGORY_TARGET",
+        `mutation-controls.json.controls.${controlId}`,
+        "Each mutation category has one independently frozen operation, materialization, and JSON Pointer target.",
+        findings,
+      );
+    }
     checkExactKeys(
       observation,
       ["materialization", "jsonPointer", "baselineValue", "killerValue"],
@@ -8690,6 +14771,273 @@ function pointerValueOrAbsent(value: unknown, pointer: unknown): unknown {
   return observed === undefined ? { $absent: true } : observed;
 }
 
+function isAbsentSentinel(value: unknown): boolean {
+  return isObject(value) && value["$absent"] === true;
+}
+
+function mutationCategoryPredicate(
+  category: (typeof EXPECTED_MUTATION_CATEGORIES)[number],
+  baseline: JsonObject,
+  killer: JsonObject,
+  catalog: JsonObject,
+): boolean {
+  const baselineCommand = materializeLiteral(baseline["command"], catalog);
+  const killerCommand = materializeLiteral(killer["command"], catalog);
+  const baselineBefore = materializeLiteral(baseline["beforeState"], catalog);
+  const killerBefore = materializeLiteral(killer["beforeState"], catalog);
+  if (
+    !isObject(baselineCommand) ||
+    !isObject(killerCommand) ||
+    !isObject(baselineBefore) ||
+    !isObject(killerBefore)
+  ) {
+    return false;
+  }
+  const baselinePlan = isObject(baselineCommand["plan"])
+    ? baselineCommand["plan"]
+    : {};
+  const killerPlan = isObject(killerCommand["plan"])
+    ? killerCommand["plan"]
+    : {};
+  const target = EXPECTED_MUTATION_TARGETS[category];
+  const baselineInput =
+    target.materialization === "command" ? baselineCommand : baselineBefore;
+  const killerInput =
+    target.materialization === "command" ? killerCommand : killerBefore;
+  const from = pointerValueOrAbsent(baselineInput, target.jsonPointer);
+  const to = pointerValueOrAbsent(killerInput, target.jsonPointer);
+  const baselineDocument = baselineBefore["document"];
+  const killerDocument = killerBefore["document"];
+
+  switch (category) {
+    case "envelope-document":
+      return (
+        baselineCommand["expectedDocumentId"] ===
+          (isObject(baselineDocument) ? baselineDocument["id"] : undefined) &&
+        killerCommand["expectedDocumentId"] !==
+          (isObject(killerDocument) ? killerDocument["id"] : undefined)
+      );
+    case "envelope-revision":
+      return (
+        baselineCommand["expectedRevision"] === baselineBefore["revision"] &&
+        killerCommand["expectedRevision"] !== killerBefore["revision"]
+      );
+    case "envelope-extra-key":
+    case "plan-extra-key":
+    case "candidate-backdoor":
+    case "nested-plans-backdoor":
+    case "recovery-sibling-backdoor":
+      return isAbsentSentinel(from) && !isAbsentSentinel(to);
+    case "command-id":
+      return (
+        isBoundedToken(from, MAX_COMMAND_ID_CODE_POINTS) &&
+        !isBoundedToken(to, MAX_COMMAND_ID_CODE_POINTS)
+      );
+    case "logical-time":
+      return isNonnegativeSafeInteger(from) && !isNonnegativeSafeInteger(to);
+    case "coalescing-closed":
+      return from === null && to !== null;
+    case "work-counter-warning":
+      return (
+        Array.isArray(from) && Array.isArray(to) && !jsonDeepEqual(from, to)
+      );
+    case "recovery-ordinal":
+      return (
+        isNonnegativeSafeInteger(from) &&
+        isNonnegativeSafeInteger(to) &&
+        from !== to
+      );
+    case "recovery-layout-token":
+      return (
+        from === A0_U1_RECOVERED_CHORD_LAYOUT_LOSS_ACKNOWLEDGEMENT &&
+        to !== from
+      );
+    case "recovery-caller-duration":
+      return !jsonDeepEqual(from, to);
+    case "quick-entry-text":
+    case "quick-entry-target":
+      return (
+        quickEntrySnapshotMatchesState(baselineCommand, baselineBefore) ===
+          true &&
+        quickEntrySnapshotMatchesState(killerCommand, killerBefore) === false
+      );
+    case "split-annotation":
+      return (
+        from === "retain-source-first-clear-second" &&
+        to !== "retain-source-first-clear-second"
+      );
+    case "split-positive-duration":
+      return (
+        isCanonicalPositiveDuration(baselinePlan["firstDuration"]) &&
+        !isCanonicalPositiveDuration(killerPlan["firstDuration"])
+      );
+    case "split-exact-sum": {
+      const baselineEvent = findEventLocation(
+        baselineDocument,
+        baselinePlan["eventId"],
+      );
+      const killerEvent = findEventLocation(
+        killerDocument,
+        killerPlan["eventId"],
+      );
+      const splitSums = (
+        plan: JsonObject,
+        event: ReturnType<typeof findEventLocation>,
+      ): boolean => {
+        const first = durationRational(plan["firstDuration"]);
+        const second = durationRational(plan["secondDuration"]);
+        const original = durationRational(event?.event["duration"]);
+        return (
+          first !== null &&
+          second !== null &&
+          original !== null &&
+          jsonDeepEqual(addRationals(first, second), original)
+        );
+      };
+      return (
+        splitSums(baselinePlan, baselineEvent) &&
+        !splitSums(killerPlan, killerEvent)
+      );
+    }
+    case "split-completion": {
+      const baselineEvent = findEventLocation(
+        baselineDocument,
+        baselinePlan["eventId"],
+      );
+      const killerEvent = findEventLocation(
+        killerDocument,
+        killerPlan["eventId"],
+      );
+      const baselineDeclaration = recordsAt(
+        baselinePlan["completionDeclarations"],
+      )[0];
+      const killerDeclaration = recordsAt(
+        killerPlan["completionDeclarations"],
+      )[0];
+      return (
+        baselineDeclaration?.["measureId"] === baselineEvent?.measure["id"] &&
+        killerDeclaration?.["measureId"] !== killerEvent?.measure["id"]
+      );
+    }
+    case "join-annotation-policy":
+      return (
+        from === "require-right-empty-retain-left" &&
+        to !== "require-right-empty-retain-left"
+      );
+    case "join-content": {
+      const contentMatches = (document: unknown, plan: JsonObject): boolean => {
+        const left = findEventLocation(document, plan["leftEventId"]);
+        const right = findEventLocation(document, plan["rightEventId"]);
+        return (
+          left !== null &&
+          right !== null &&
+          jsonDeepEqual(
+            objectProjection(
+              left.event,
+              new Set(["id", "duration", "annotation"]),
+            ),
+            objectProjection(
+              right.event,
+              new Set(["id", "duration", "annotation"]),
+            ),
+          )
+        );
+      };
+      return (
+        contentMatches(baselineDocument, baselinePlan) &&
+        !contentMatches(killerDocument, killerPlan)
+      );
+    }
+    case "join-right-annotation": {
+      const baselineRight = findEventLocation(
+        baselineDocument,
+        baselinePlan["rightEventId"],
+      );
+      const killerRight = findEventLocation(
+        killerDocument,
+        killerPlan["rightEventId"],
+      );
+      return (
+        baselineRight?.event["annotation"] === "" &&
+        killerRight?.event["annotation"] !== ""
+      );
+    }
+    case "join-exact-sum": {
+      const joinSums = (document: unknown, plan: JsonObject): boolean => {
+        const left = findEventLocation(document, plan["leftEventId"]);
+        const right = findEventLocation(document, plan["rightEventId"]);
+        const leftDuration = durationRational(left?.event["duration"]);
+        const rightDuration = durationRational(right?.event["duration"]);
+        const joined = durationRational(plan["joinedDuration"]);
+        return (
+          leftDuration !== null &&
+          rightDuration !== null &&
+          joined !== null &&
+          jsonDeepEqual(addRationals(leftDuration, rightDuration), joined)
+        );
+      };
+      return (
+        joinSums(baselineDocument, baselinePlan) &&
+        !joinSums(killerDocument, killerPlan)
+      );
+    }
+    case "split-section-boundary": {
+      const isValidBoundary = (
+        document: unknown,
+        plan: JsonObject,
+      ): boolean => {
+        const section = findSectionLocation(document, plan["sectionId"]);
+        if (section === null) return false;
+        const measureIndex = sectionMeasures(section.section).findIndex(
+          (measure) => measure["id"] === plan["beforeMeasureId"],
+        );
+        return (
+          measureIndex > 0 &&
+          measureIndex < sectionMeasures(section.section).length
+        );
+      };
+      return (
+        isValidBoundary(baselineDocument, baselinePlan) &&
+        !isValidBoundary(killerDocument, killerPlan)
+      );
+    }
+    case "split-section-metadata":
+    case "join-section-result-metadata":
+      return (
+        isBoundedToken(from, MAX_SHORT_TEXT_CODE_POINTS) &&
+        typeof to === "string" &&
+        isUnicodeScalarString(to) &&
+        codePointLength(to) === MAX_SHORT_TEXT_CODE_POINTS + 1
+      );
+    case "split-section-measure-policy":
+      return from === "move-suffix-preserve-identities" && to !== from;
+    case "join-section-metadata-policy":
+      return from === "compare-both-then-apply-explicit-result" && to !== from;
+    case "join-section-snapshot": {
+      const baselineRight = findSectionLocation(
+        baselineDocument,
+        baselinePlan["rightSectionId"],
+      );
+      const killerRight = findSectionLocation(
+        killerDocument,
+        killerPlan["rightSectionId"],
+      );
+      return (
+        baselineRight !== null &&
+        killerRight !== null &&
+        jsonDeepEqual(
+          baselinePlan["expectedRightMetadata"],
+          sectionMetadataProjection(baselineRight.section),
+        ) &&
+        !jsonDeepEqual(
+          killerPlan["expectedRightMetadata"],
+          sectionMetadataProjection(killerRight.section),
+        )
+      );
+    }
+  }
+}
+
 function validateMutationMaterializations(
   controls: ReadonlyMap<string, JsonObject>,
   transitions: ReadonlyMap<string, JsonObject>,
@@ -8754,6 +15102,103 @@ function validateMutationMaterializations(
           `${path}.mutation`,
           "Baseline and killer input materializations must differ at exactly the declared one field.",
         );
+      }
+
+      const category = control["category"];
+      if (
+        typeof category === "string" &&
+        EXPECTED_MUTATION_CATEGORIES.includes(category as never)
+      ) {
+        const typedCategory =
+          category as (typeof EXPECTED_MUTATION_CATEGORIES)[number];
+        const baselineResult = transitionMaterialization(
+          baseline,
+          "expected.result",
+          catalog,
+        );
+        const killerResult = transitionMaterialization(
+          killer,
+          "expected.result",
+          catalog,
+        );
+        const killerBefore = transitionMaterialization(
+          killer,
+          "beforeState",
+          catalog,
+        );
+        const killerAfter = transitionMaterialization(
+          killer,
+          "expected.afterState",
+          catalog,
+        );
+        const expectedRefusal = EXPECTED_MUTATION_REFUSALS[typedCategory];
+        const outerRefusal =
+          isObject(killerResult) && isObject(killerResult["refusal"])
+            ? killerResult["refusal"]
+            : {};
+        const nestedRefusal =
+          isObject(killerResult) && isObject(killerResult["editPlanRefusal"])
+            ? killerResult["editPlanRefusal"]
+            : null;
+        if (
+          !isObject(baselineResult) ||
+          baselineResult["ok"] !== true ||
+          !isObject(killerResult) ||
+          killerResult["ok"] !== false
+        ) {
+          addFinding(
+            findings,
+            "EDIT_PLAN_MUTATION_ORACLE_OUTCOME",
+            path,
+            "Every mutation baseline must commit and every one-field killer must refuse.",
+          );
+        }
+        requireExact(
+          outerRefusal["code"],
+          expectedRefusal.outer,
+          "EDIT_PLAN_MUTATION_OUTER_REFUSAL",
+          `${path}.killerTransitionId`,
+          "Killer outer refusal must match its independently assigned mutation category.",
+          findings,
+        );
+        requireExact(
+          nestedRefusal?.["code"] ?? null,
+          expectedRefusal.nested,
+          "EDIT_PLAN_MUTATION_NESTED_REFUSAL",
+          `${path}.killerTransitionId`,
+          "Killer nested refusal must match its independently assigned mutation category.",
+          findings,
+        );
+        if (
+          !isObject(killerResult) ||
+          !isObject(killerBefore) ||
+          !isObject(killerAfter) ||
+          !jsonDeepEqual(killerResult["state"], killerAfter) ||
+          !jsonDeepEqual(
+            objectProjection(killerAfter, new Set(["notices", "nextSequence"])),
+            objectProjection(
+              killerBefore,
+              new Set(["notices", "nextSequence"]),
+            ),
+          )
+        ) {
+          addFinding(
+            findings,
+            "EDIT_PLAN_MUTATION_KILLER_ATOMIC",
+            `${path}.killerTransitionId`,
+            "A mutation killer may publish only bounded refusal notice/sequence bookkeeping and must return that exact after-state.",
+          );
+        }
+        if (
+          !mutationCategoryPredicate(typedCategory, baseline, killer, catalog)
+        ) {
+          addFinding(
+            findings,
+            "EDIT_PLAN_MUTATION_CATEGORY_PREDICATE",
+            path,
+            "The declared one-field delta does not satisfy its category-specific independent semantic predicate.",
+          );
+        }
       }
 
       const baselineObservation = transitionMaterialization(
@@ -8866,6 +15311,7 @@ function validateAuxiliaryLinks(
 
 function validateFixtureShells(
   loaded: ReadonlyMap<SpecFilename, LoadedFixture>,
+  allowPendingFreeze: boolean,
   findings: A0U1EditPlanContractFinding[],
 ): void {
   for (const filename of A0_U1_EDIT_PLAN_SPEC_FILES) {
@@ -8887,16 +15333,24 @@ function validateFixtureShells(
         "Fixture review state must describe an independent proposed specification.",
       );
     }
-    if (root?.["pinState"] !== "reviewed-byte-and-semantic-pinned") {
+    const pinState = root?.["pinState"];
+    if (
+      pinState !== "reviewed-byte-and-semantic-pinned" &&
+      !(allowPendingFreeze && pinState === "pending-validator-freeze")
+    ) {
       addFinding(
         findings,
         "EDIT_PLAN_PIN_STATE",
         `${filename}.pinState`,
-        "Every reviewed fixture must declare the final byte-and-semantic pin state.",
+        allowPendingFreeze
+          ? "Authoring validation accepts only pending-validator-freeze or the final reviewed byte-and-semantic pin state."
+          : "Every reviewed fixture must declare the final byte-and-semantic pin state.",
       );
     }
     if (filename === "a0-u1-edit-plan-contract.json") {
-      if (root !== undefined) validateRootContract(root, findings);
+      if (root !== undefined) {
+        validateRootContract(root, allowPendingFreeze, findings);
+      }
       continue;
     }
     checkExactKeys(
@@ -9055,6 +15509,151 @@ function validateLawReciprocity(
   }
 }
 
+function validateLawSemanticCoverage(
+  lawCoverage: ReadonlyMap<string, JsonObject>,
+  materialized: ReadonlyMap<string, MaterializedTransition>,
+  applicability: ReadonlyMap<string, JsonObject>,
+  transposition: ReadonlyMap<string, JsonObject>,
+  controls: ReadonlyMap<string, JsonObject>,
+  findings: A0U1EditPlanContractFinding[],
+): void {
+  for (const [lawId, law] of lawCoverage) {
+    const path = `trace-ledger.json.lawCoverage.${lawId}`;
+    const positiveIds = stringsAt(law["positiveTransitionIds"]);
+    const negativeIds = stringsAt(law["negativeOrNearMissTransitionIds"]);
+    const boundaryIds = stringsAt(law["boundaryTransitionIds"]);
+    const positive = positiveIds
+      .map((id) => materialized.get(id))
+      .filter((row): row is MaterializedTransition => row !== undefined);
+    const negative = negativeIds
+      .map((id) => materialized.get(id))
+      .filter((row): row is MaterializedTransition => row !== undefined);
+    const boundary = boundaryIds
+      .map((id) => materialized.get(id))
+      .filter((row): row is MaterializedTransition => row !== undefined);
+    if (
+      positive.length === 0 ||
+      positive.some(
+        (row) => row.row["phase"] !== "apply" || row.result["ok"] !== true,
+      )
+    ) {
+      addFinding(
+        findings,
+        "EDIT_PLAN_LAW_POSITIVE_SEMANTICS",
+        `${path}.positiveTransitionIds`,
+        "Every law needs at least one materialized successful apply witness; history replay cannot stand in for a positive law proof.",
+      );
+    }
+    if (
+      negative.length === 0 ||
+      negative.some(
+        (row) => row.row["phase"] !== "apply" || row.result["ok"] !== false,
+      )
+    ) {
+      addFinding(
+        findings,
+        "EDIT_PLAN_LAW_NEGATIVE_SEMANTICS",
+        `${path}.negativeOrNearMissTransitionIds`,
+        "Every law needs at least one materialized refused apply witness.",
+      );
+    }
+    if (
+      boundary.length === 0 ||
+      boundary.some(
+        (row) =>
+          row.row["phase"] !== "apply" ||
+          (!positiveIds.includes(row.id) && !negativeIds.includes(row.id)),
+      )
+    ) {
+      addFinding(
+        findings,
+        "EDIT_PLAN_LAW_BOUNDARY_SEMANTICS",
+        `${path}.boundaryTransitionIds`,
+        "Boundary witnesses must be materialized apply rows classified honestly as a positive exact edge or negative first-near-miss.",
+      );
+    }
+
+    const applicabilityRows = stringsAt(law["applicabilityRowIds"])
+      .map((id) => applicability.get(id))
+      .filter((row): row is JsonObject => row !== undefined);
+    const citedTransitionIds = new Set([
+      ...positiveIds,
+      ...negativeIds,
+      ...boundaryIds,
+    ]);
+    if (
+      applicabilityRows.length === 0 ||
+      applicabilityRows.some((row) => {
+        const operation = row["operation"];
+        return (
+          !A0_U1_ATOMIC_EDIT_PLAN_KINDS.includes(operation as never) ||
+          !stringsAt(row["transitionIds"]).some((id) =>
+            citedTransitionIds.has(id),
+          ) ||
+          ![...citedTransitionIds].some(
+            (id) => materialized.get(id)?.row["operation"] === operation,
+          )
+        );
+      })
+    ) {
+      addFinding(
+        findings,
+        "EDIT_PLAN_LAW_APPLICABILITY_SEMANTICS",
+        `${path}.applicabilityRowIds`,
+        "Each law applicability row must share a real cited transition and operation with that law.",
+      );
+    }
+    const applicableOperations = new Set(
+      applicabilityRows.map((row) => row["operation"]),
+    );
+    const transpositionLinked = [...transposition.values()].some((witness) => {
+      if (!applicableOperations.has(witness["operation"])) return false;
+      const baseId = witness["baseTransitionId"];
+      const transposedId = witness["transposedTransitionId"];
+      return (
+        (typeof baseId === "string" &&
+          stringsAt(materialized.get(baseId)?.row["lawIds"]).includes(lawId)) ||
+        (typeof transposedId === "string" &&
+          stringsAt(materialized.get(transposedId)?.row["lawIds"]).includes(
+            lawId,
+          ))
+      );
+    });
+    if (!transpositionLinked) {
+      addFinding(
+        findings,
+        "EDIT_PLAN_LAW_TRANSPOSITION_SEMANTICS",
+        `${path}.applicabilityRowIds`,
+        "Every law must be linked through an applicable operation to a real base/transposed commutation witness.",
+      );
+    }
+
+    const mutationRows = stringsAt(law["mutationControlIds"])
+      .map((id) => controls.get(id))
+      .filter((row): row is JsonObject => row !== undefined);
+    if (
+      mutationRows.length === 0 ||
+      mutationRows.some((control) => {
+        const baselineId = control["baselineTransitionId"];
+        const killerId = control["killerTransitionId"];
+        return (
+          typeof baselineId !== "string" ||
+          typeof killerId !== "string" ||
+          materialized.get(baselineId)?.result["ok"] !== true ||
+          materialized.get(killerId)?.result["ok"] !== false
+        );
+      })
+    ) {
+      addFinding(
+        findings,
+        "EDIT_PLAN_LAW_MUTATION_SEMANTICS",
+        `${path}.mutationControlIds`,
+        "Every law must cite a materialized successful baseline and refused category-specific mutation killer.",
+      );
+    }
+  }
+}
+
 function validateCompanionDigests(
   contract: JsonObject,
   loaded: ReadonlyMap<SpecFilename, LoadedFixture>,
@@ -9091,6 +15690,7 @@ export async function validateA0U1EditPlanContract(
   options: A0U1EditPlanContractValidationOptions = {},
 ): Promise<A0U1EditPlanContractValidationReport> {
   const findings: A0U1EditPlanContractFinding[] = [];
+  const allowPendingFreeze = options.allowPendingFreeze === true;
   const loaded = new Map<SpecFilename, LoadedFixture>();
   let actualFiles: string[] = [];
   try {
@@ -9162,7 +15762,10 @@ export async function validateA0U1EditPlanContract(
       } else {
         loaded.set(filename, { filename, bytes, source, root: parsed });
       }
-      if (sha256(bytes) !== expectedByteDigests[filename]) {
+      if (
+        !allowPendingFreeze &&
+        sha256(bytes) !== expectedByteDigests[filename]
+      ) {
         addFinding(
           findings,
           "EDIT_PLAN_BYTE_DIGEST",
@@ -9180,7 +15783,7 @@ export async function validateA0U1EditPlanContract(
     }
   }
 
-  validateFixtureShells(loaded, findings);
+  validateFixtureShells(loaded, allowPendingFreeze, findings);
   const semanticPacket = Object.fromEntries(
     A0_U1_EDIT_PLAN_SPEC_FILES.map((filename) => [
       filename,
@@ -9188,6 +15791,7 @@ export async function validateA0U1EditPlanContract(
     ]),
   );
   if (
+    !allowPendingFreeze &&
     sha256(stableJson(semanticPacket)) !== A0_U1_EDIT_PLAN_SPEC_SEMANTIC_DIGEST
   ) {
     addFinding(
@@ -9218,12 +15822,28 @@ export async function validateA0U1EditPlanContract(
     findings,
   );
   validateCoverageCrossProduct(caseIndexes.cases, findings);
+  validateObligationSemantics(
+    caseIndexes.obligations,
+    caseIndexes.materialized,
+    caseIndexes.cases,
+    caseIndexes.transposition,
+    linkedIndexes.controls,
+    findings,
+  );
   validateLawReciprocity(
     caseIndexes.transitions,
     linkedIndexes.controls,
     linkedIndexes.traces,
     linkedIndexes.lawCoverage,
     linkedIndexes.authorities,
+    findings,
+  );
+  validateLawSemanticCoverage(
+    linkedIndexes.lawCoverage,
+    caseIndexes.materialized,
+    caseIndexes.applicability,
+    caseIndexes.transposition,
+    linkedIndexes.controls,
     findings,
   );
   validateMutationMaterializations(
@@ -9239,7 +15859,9 @@ export async function validateA0U1EditPlanContract(
     linkedIndexes.authorities,
     findings,
   );
-  validateCompanionDigests(contract, loaded, findings);
+  if (!allowPendingFreeze) {
+    validateCompanionDigests(contract, loaded, findings);
+  }
 
   const counts = Object.freeze({
     files: actualFiles.length,
@@ -9254,18 +15876,29 @@ export async function validateA0U1EditPlanContract(
     literalTransitions: caseIndexes.transitions.size,
     applicabilityRows: caseIndexes.applicability.size,
     transpositionWitnesses: caseIndexes.transposition.size,
+    obligationRows: caseIndexes.obligations.size,
     mutationControls: linkedIndexes.controls.size,
     traces: linkedIndexes.traces.size,
     authorities: linkedIndexes.authorities.size,
   });
   requireExact(
+    contract["counts"],
     counts,
-    EXPECTED_COUNTS,
-    "EDIT_PLAN_COUNTS",
-    fixtureRoot,
-    "Actual packet inventory differs from the frozen 5/1/5/17/50/70/5/5/30/6/6 closure.",
+    "EDIT_PLAN_DECLARED_ACTUAL_COUNTS",
+    "a0-u1-edit-plan-contract.json.counts",
+    "Declared packet counts must equal the independently indexed packet inventory even during pending freeze.",
     findings,
   );
+  if (!allowPendingFreeze) {
+    requireExact(
+      counts,
+      EXPECTED_COUNTS,
+      "EDIT_PLAN_COUNTS",
+      fixtureRoot,
+      "Actual packet inventory differs from the frozen 5/1/5/17/50/137/5/5/24/30/6/6 closure.",
+      findings,
+    );
+  }
   requireExact(
     APPLICATION_WORK_COUNTER_NAMES,
     [
@@ -9311,7 +15944,12 @@ export async function validateA0U1EditPlanContract(
 }
 
 if (import.meta.main) {
-  const report = await validateA0U1EditPlanContract(process.argv[2]);
+  const args = process.argv.slice(2);
+  const allowPendingFreeze = args.includes("--allow-pending-freeze");
+  const fixtureRoot = args.find((argument) => !argument.startsWith("--"));
+  const report = await validateA0U1EditPlanContract(fixtureRoot, {
+    allowPendingFreeze,
+  });
   console.log(JSON.stringify(report, null, 2));
   if (report.outcome === "fail") process.exitCode = 1;
 }
