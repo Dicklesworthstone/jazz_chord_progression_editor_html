@@ -38,6 +38,10 @@ const gates: Gate[] = [
     command: [process.execPath, "scripts/validate-v1-contract.ts"],
   },
   {
+    id: "v2-progression-optimizer-contract",
+    command: [process.execPath, "scripts/validate-v2-contract.ts"],
+  },
+  {
     id: "f3-publication-contract",
     command: [process.execPath, "scripts/validate-f3-contract.ts"],
   },
@@ -65,12 +69,20 @@ const gates: Gate[] = [
     command: [process.execPath, "scripts/validate-u0-contract.ts"],
   },
   {
+    id: "u1-chart-editing-contract",
+    command: [process.execPath, "scripts/validate-u1-contract.ts"],
+  },
+  {
     id: "c0-legacy-migration-contract",
     command: [process.execPath, "scripts/validate-c0-contract.ts"],
   },
   {
     id: "e0-interchange-contract",
     command: [process.execPath, "scripts/validate-e0-contract.ts"],
+  },
+  {
+    id: "e1-midi-export-contract",
+    command: [process.execPath, "scripts/validate-e1-contract.ts"],
   },
   {
     id: "a0-e0-owner-bridge-contract",
@@ -111,6 +123,10 @@ const gates: Gate[] = [
   {
     id: "v1-evidence",
     command: [process.execPath, "scripts/verify-v1-evidence.ts"],
+  },
+  {
+    id: "v2-evidence",
+    command: [process.execPath, "scripts/verify-v2-evidence.ts"],
   },
   {
     id: "f3-evidence",

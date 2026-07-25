@@ -69,6 +69,17 @@ what the release artifact is, and how those claims are proved.
   guard, deterministic identity/time/bookmark/history laws, literal cases,
   traces, provenance, and mutations. The live A0 command union and U1 UI do not
   consume this specification until their dependent implementation leaves.
+- `docs/U1_EDITING_CONTRACT.md`,
+  `src/ui/studio/u1-editing-contract.ts`, and the six companions under
+  `tests/fixtures/editing/` are the proposed independent U1 quick-entry,
+  chart-editing, insertion-plan, bookmark, focus, pointer, listener, refusal,
+  trace, provenance, and mutation authority. U1 adds no mutation channel: the
+  packet freezes the subset of the live sixteen A0 command kinds, the two
+  ephemeral intents, and the five atomic plan kinds a U1 surface may dispatch,
+  and the static contract test proves the authorized and unauthorized lists
+  partition the live tuple exactly. No U1 production component exists yet, and
+  the packet makes no implementation, UI-completion, human-acceptance, or
+  expert-review claim.
 - `docs/C0_LEGACY_MIGRATION_CONTRACT.md`,
   `tests/fixtures/legacy-migration/c0-legacy-migration-contract.json`, and their
   hash-bound companions are the independently authored C0 legacy-corpus,
@@ -154,6 +165,7 @@ The manifest exposes these stable commands:
 | `bun run validate:a0-contract` | validate the independent application-state, command, history, bookmark, stale-result, transport-view, selector, trace, provenance, and mutation authority corpus |
 | `bun run validate:a0-u1-edit-plan-contract` | validate the proposed additive A0/U1 five-variant atomic-edit contract, independently materialized state transitions, exact-time/identity laws, traces, provenance, and mutations without claiming production implementation or UI completion |
 | `bun run validate:u0-contract` | validate the source-owned UI inventory, exact limits, 714-cell state gallery authority, responsive/overlay matrices, topology and contrast cases, trace links, provenance, and release-gallery exclusion contract |
+| `bun run validate:u1-contract` | validate the proposed independent U1 quick-entry classification, operation-to-channel binding, interaction states, bounds, traces, provenance, and replayed mutation controls without claiming any U1 implementation |
 | `bun run validate:c0-contract` | validate the independent legacy corpus, precedence, hostile-input, report, work-bound, trace, provenance, and mutation authority package |
 | `bun run validate:e0-contract` | validate the independent E0 JSON/text interchange, transactional import, exact limits, reciprocal traces, provenance, accepted byte goldens, and mutation authority package |
 | `bun run validate:a0-e0-bridge-contract` | validate the independent A0 owner-port registry, identity, marker-CAS, literal applicability/provenance/trace/mutation packet, and immutable accepted-E0-v1 pins without claiming consumer compatibility |
@@ -280,12 +292,28 @@ The release is one UTF-8 HTML file with all production JavaScript, CSS, icons,
 images, and compiled content inlined. Its initial uncompressed limit is
 1,572,864 bytes (1.5 MiB), including the final Harmonic Atlas.
 
-The retired F0 bootstrap shell had a temporary 262,144-byte ceiling. The first
-U0 studio checkpoint is measured against a 786,432-byte ceiling after bundling
-its source-owned UI plus the F2/F3/A0 publication and application path. The
-1,572,864-byte final limit and its 524,288-byte Atlas/content reservation remain
-unchanged, leaving another 262,144 bytes outside both allocations. Later
-packages cannot spend the reserved content allowance silently.
+The retired F0 bootstrap shell had a temporary 262,144-byte ceiling, and the
+first U0 studio checkpoint was measured against a 786,432-byte ceiling, then
+851,968 bytes after the A0-E0 owner-ports bridge and X1 serialized-transport
+scheduling entered the live path. After the accepted A0/U1 `apply-edit-plan`
+cutover bound the atomic runner and the real T0 parser into the live
+application graph, that ceiling became 983,040 bytes (960 KiB). The U1 chart
+editor then bound the chord-level view-model projection, the U1 command surface,
+and the first quick-entry and chord-card components into the live graph, and the
+measured artifact rose to 975,349 bytes — 7,691 bytes below the previous
+ceiling. Because the remaining U1 surfaces (card menus, inline symbol and
+duration editors, pointer drag, touch range mode, and the teaching view) cannot
+fit in that margin, the checkpoint ceiling is raised once to 1,048,576 bytes
+(1 MiB) rather than nudged repeatedly. The identifier-preserving inspectable
+bundle policy is deliberate and unchanged.
+
+The 1,572,864-byte final limit and its 524,288-byte Atlas/content reservation
+remain unchanged. The new checkpoint ceiling is exactly the non-Atlas
+allocation, so the 65,536 bytes formerly held outside both allocations are now
+inside the shell allocation and the slack outside both is zero. That reserve was
+spendable only by an explicit contract change, and this is it. Later packages
+still cannot spend the reserved content allowance silently, and a further shell
+increase requires the same measured justification recorded here.
 
 Both generated HTML files begin with the fixed timestamp-free banner
 `<!-- @generated; edit src/, then run bun run build -->`, followed by a

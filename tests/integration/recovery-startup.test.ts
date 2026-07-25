@@ -57,12 +57,12 @@ async function seedSlot(
           exportedAt: "2026-07-23T09:00:00.000Z",
           semanticDocumentHash: EXPORT_HASH,
         };
+  const revision = slot === "current" ? 12 : 5;
   store.set(
     key,
-    await seededEnvelopeText({
-      revision: slot === "current" ? 12 : 5,
-      lastExport,
-    }),
+    await seededEnvelopeText(
+      lastExport === undefined ? { revision } : { revision, lastExport },
+    ),
   );
 }
 

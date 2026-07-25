@@ -94,6 +94,28 @@ describe("studio application checkpoint", () => {
       durationBeatLabel: "0/1",
       endBeatLabel: "0/1",
       capacityBeatLabel: "4/1",
+      fill: "empty",
+      events: [],
+    });
+    expect(view.chordCount).toBe(0);
+    expect(view.bookmarks).toEqual({
+      selectedEventIds: [],
+      selectionFocusEventId: null,
+      selectionAnchorEventId: null,
+      insertionLabel: "At measure start",
+      insertionTargetId: STUDIO_BLANK_DOCUMENT_IDS.measure,
+      rangeStartBeatLabel: null,
+      rangeEndBeatLabel: null,
+      rangeActive: false,
+    });
+    expect(view.quickEntry).toEqual({
+      text: "",
+      status: "idle",
+      baseRevision: 0,
+      baseRevisionCurrent: true,
+      targetLabel: "At measure start",
+      issueCodes: [],
+      codePointCount: 0,
     });
     expect(Object.isFrozen(view)).toBe(true);
     expect(Object.isFrozen(view.sections)).toBe(true);
