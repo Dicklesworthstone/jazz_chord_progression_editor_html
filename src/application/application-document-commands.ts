@@ -1021,9 +1021,11 @@ function applySetDocumentSettings(
   return accepted(completed, playbackRelevant);
 }
 
+/** The sixteenth `apply-edit-plan` kind is dispatched to its own runner
+ * before this stage and never reaches the fifteen historical paths. */
 export function applyDocumentCommand(
   state: AppState,
-  command: DocumentCommand,
+  command: Exclude<DocumentCommand, { kind: "apply-edit-plan" }>,
   index: DocumentIndex,
   counters: MutableApplicationWorkCounters,
   dependencies: ApplicationCommandDependencies,

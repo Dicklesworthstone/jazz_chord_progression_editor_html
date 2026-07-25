@@ -15,6 +15,27 @@ export {
 } from "./application-state";
 
 export {
+  redoAtomicEditPlanHistory,
+  undoAtomicEditPlanHistory,
+} from "./application-history-transition";
+
+export { runAtomicEditPlan } from "./application-edit-plan";
+
+export type {
+  ApplyEditPlanCommand,
+  AtomicEditPlan,
+  AtomicEditPlanAppState,
+  AtomicEditPlanDependencies,
+  AtomicEditPlanReceipt,
+  AtomicEditPlanTransitionResult,
+  AtomicEditPlanWorkEvidence,
+  RedoAtomicEditPlanHistory,
+  RunAtomicEditPlan,
+  RunAtomicEditPlanRequest,
+  UndoAtomicEditPlanHistory,
+} from "./application-edit-plan-contract";
+
+export {
   selectBeatRange,
   selectDirtyState,
   selectEventById,
@@ -74,6 +95,8 @@ export {
   documentValidationOperations,
   validateDocumentSemantics,
 } from "./document-validation";
+
+export { createStudioAtomicEditPlanDependencies } from "./studio-edit-plan-dependencies";
 
 export {
   createStudioApplicationDependencies,

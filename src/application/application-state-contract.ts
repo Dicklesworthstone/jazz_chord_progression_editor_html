@@ -27,6 +27,10 @@ import type {
   DocumentSemanticIssue,
   ValidateDocumentSemantics,
 } from "./document-validation-contract";
+import type {
+  ApplyEditPlanCommand,
+  ParseAtomicEditPlanFragment,
+} from "./application-edit-plan-contract";
 
 /** Versioned, code-facing A0 state/command contract. */
 export const APPLICATION_STATE_CONTRACT_SCHEMA =
@@ -76,6 +80,11 @@ export const HISTORY_RETAINED_BYTE_ESTIMATE_POLICY = Object.freeze({
   jsonSerialization: "forbidden",
 } as const);
 
+/**
+ * The first fifteen kinds are the accepted historical A0 tuple and must never
+ * be reordered or renamed; `apply-edit-plan` is the sole authorized A0/U1
+ * amendment suffix (R1, accepted 2026-07-24).
+ */
 export const APPLICATION_COMMAND_KINDS = Object.freeze([
   "insert",
   "delete",
@@ -92,6 +101,7 @@ export const APPLICATION_COMMAND_KINDS = Object.freeze([
   "apply-suggestion",
   "apply-reharmonization",
   "replace-document",
+  "apply-edit-plan",
 ] as const);
 
 export type ApplicationCommandKind =
@@ -699,7 +709,8 @@ export type DocumentCommand =
   | TransposeCommand
   | ApplySuggestionCommand
   | ApplyReharmonizationCommand
-  | ReplaceDocumentCommand;
+  | ReplaceDocumentCommand
+  | ApplyEditPlanCommand;
 
 export type ApplicationRefusal = Readonly<{
   code: ApplicationRefusalCode;
@@ -768,6 +779,12 @@ export type ApplicationCommandDependencies = Readonly<{
   copyDomain: DomainCopyOperation;
   stableIdFactory: StableIdFactory;
   estimateHistoryRetainedBytes: HistoryRetainedByteEstimator;
+  /**
+   * Synchronous public T0 fragment parser bound by the composition root; the
+   * `apply-edit-plan` path calls it exactly once (A0/U1 amendment, R1
+   * accepted 2026-07-24).
+   */
+  parseChartText: ParseAtomicEditPlanFragment;
 }>;
 
 export type CreateInitialAppStateRequest = Readonly<{

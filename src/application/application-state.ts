@@ -54,8 +54,9 @@ import {
   enforceHistoryCaps,
   estimateHistoryRetainedBytes,
   isValidHistoryEstimate,
-  withRecomputedHistoryBytes,
 } from "./application-history";
+import { runAtomicEditPlan } from "./application-edit-plan";
+import { replayRetainedHistory } from "./application-history-transition";
 import {
   appendApplicationNotice,
   buildDocumentIndex,
@@ -476,6 +477,15 @@ export const createInitialAppState: CreateInitialAppState = (request) => {
 
 export const runDocumentCommand: RunDocumentCommand = (request) => {
   const { state, command, dependencies } = request;
+  if (command.kind === "apply-edit-plan") {
+    /*
+     * The accepted A0/U1 amendment: the atomic runner re-captures the raw
+     * command through its descriptor-safe shape gate before the inherited A0
+     * envelope stage, so it owns the complete sixteenth command path. The
+     * fifteen historical paths below remain byte-for-byte unchanged.
+     */
+    return runAtomicEditPlan({ state, command, dependencies });
+  }
   const counters = createWorkCounters();
   const envelope = envelopeFailure(state, command);
   if (envelope !== null) {
@@ -601,100 +611,11 @@ export const runDocumentCommand: RunDocumentCommand = (request) => {
   return successResult(nextState, counters, history.outcome, effects);
 };
 
-function historyCommand(
-  state: AppState,
-  direction: "undo" | "redo",
-): ApplicationTransitionResult {
-  const counters = createWorkCounters();
-  if (isHistoryLocked(state)) {
-    return failureResult(state, counters, "history.locked", ["history"]);
-  }
-  if (state.revision >= MAX_APPLICATION_REVISION) {
-    return failureResult(
-      state,
-      counters,
-      "application.revision_exhausted",
-      ["revision"],
-    );
-  }
-  if (state.nextSequence >= MAX_APPLICATION_SEQUENCE) {
-    return failureResult(
-      state,
-      counters,
-      "application.sequence_exhausted",
-      ["nextSequence"],
-    );
-  }
-  const source = direction === "undo" ? state.history.undo : state.history.redo;
-  const entry = source[source.length - 1];
-  if (entry === undefined) {
-    return failureResult(
-      state,
-      counters,
-      direction === "undo" ? "history.undo_empty" : "history.redo_empty",
-      ["history", direction],
-    );
-  }
-  counters.historyEntriesVisited += 1;
-  const document = direction === "undo" ? entry.before : entry.after;
-  const bookmarks =
-    direction === "undo" ? entry.beforeBookmarks : entry.afterBookmarks;
-  const undo =
-    direction === "undo"
-      ? state.history.undo.slice(0, -1)
-      : [...state.history.undo, entry];
-  const redo =
-    direction === "undo"
-      ? [...state.history.redo, entry]
-      : state.history.redo.slice(0, -1);
-  const history = withRecomputedHistoryBytes(undo, redo);
-  if (history === null) {
-    return failureResult(
-      state,
-      counters,
-      "history.byte_estimate_invalid",
-      ["history"],
-    );
-  }
-  const target = focusAfterCommand(document, bookmarks, [], counters);
-  let nextState: AppState = Object.freeze({
-    ...state,
-    document,
-    revision: state.revision + 1,
-    history,
-    bookmarks,
-    pendingRequests: Object.freeze([]),
-    importDraft: null,
-    documentTransition: Object.freeze({ kind: "idle" }),
-    focusRequest: null,
-    quickEntry: Object.freeze({
-      text: "",
-      target: bookmarks.insertion,
-      baseRevision: state.revision + 1,
-      status: "idle",
-      issueCodes: Object.freeze([]),
-    }),
-  });
-  nextState = nextFocusState(nextState, target, direction);
-  const effects = [
-    effect("queue-recovery", nextState.revision, direction),
-    effect("compile-playback-plan", nextState.revision, direction),
-    effect("restore-focus", nextState.revision, direction),
-    effect("announce", nextState.revision, direction),
-  ];
-  return successResult(
-    nextState,
-    counters,
-    direction === "undo" ? "undone" : "redone",
-    effects,
-  );
-}
-
 export const undoDocumentCommand: UndoDocumentCommand = ({ state }) =>
-  historyCommand(state, "undo");
+  replayRetainedHistory(state, "undo");
 
 export const redoDocumentCommand: RedoDocumentCommand = ({ state }) =>
-  historyCommand(state, "redo");
+  replayRetainedHistory(state, "redo");
 
 function validPanelState(intent: Extract<EphemeralIntent, { kind: "set-panels" }>): boolean {
   const open = intent.panels.open;
@@ -790,7 +711,10 @@ export const reduceEphemeralIntent: ReduceEphemeralIntent = ({ state, intent }) 
       if (
         intent.draft.baseRevision !== state.revision ||
         !isBoundedToken(intent.draft.text || " ", MAX_QUICK_ENTRY_CODE_POINTS) ||
-        intent.draft.issueCodes.length > MAX_DRAFT_ISSUES
+        intent.draft.issueCodes.length > MAX_DRAFT_ISSUES ||
+        intent.draft.issueCodes.some(
+          (code) => !isBoundedToken(code, MAX_COMMAND_ID_CODE_POINTS),
+        )
       ) {
         return failureResult(state, counters, "ephemeral.intent_invalid", ["quickEntry"]);
       }
@@ -1042,5 +966,6 @@ export const applicationStateOperations: ApplicationStateOperations =
     selectHistoryAvailability,
   });
 
-export const applicationHistoryRetainedByteEstimator =
-  estimateHistoryRetainedBytes;
+export const applicationHistoryRetainedByteEstimator = (
+  entry: unknown,
+): number => estimateHistoryRetainedBytes(entry);

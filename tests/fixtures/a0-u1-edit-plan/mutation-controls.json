@@ -13,13 +13,13 @@
         "A0-U1-ATOM-017-transposition-and-existing-a0-unchanged"
       ],
       "baselineTransitionId": "A0U1-INS-001-APPLY",
-      "killerTransitionId": "A0U1-PIPE-001-REFUSED",
+      "killerTransitionId": "A0U1-INS-003-WRONG-DOCUMENT",
       "mutation": {
         "materialization": "command",
         "operator": "replace",
         "jsonPointer": "/expectedDocumentId",
         "from": "document-e0-nested",
-        "to": "document-other",
+        "to": "document-wrong-owner",
         "exactChangedFieldCount": 1
       },
       "observation": {
@@ -32,7 +32,7 @@
       "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
       "linkedCaseIds": [
         "A0U1-INS-001",
-        "A0U1-PIPE-001"
+        "A0U1-INS-003"
       ],
       "traceIds": [
         "A0U1-TRACE-PIPELINE"
@@ -51,7 +51,7 @@
         "A0-U1-ATOM-016-bookmarks-publication-history-atomic"
       ],
       "baselineTransitionId": "A0U1-INS-001-APPLY",
-      "killerTransitionId": "A0U1-PIPE-002-REFUSED",
+      "killerTransitionId": "A0U1-INS-003-STALE-REVISION",
       "mutation": {
         "materialization": "command",
         "operator": "replace",
@@ -70,7 +70,7 @@
       "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
       "linkedCaseIds": [
         "A0U1-INS-001",
-        "A0U1-PIPE-001"
+        "A0U1-INS-003"
       ],
       "traceIds": [
         "A0U1-TRACE-PIPELINE"
@@ -88,7 +88,7 @@
         "A0-U1-ATOM-001-command-and-five-closed-variants"
       ],
       "baselineTransitionId": "A0U1-INS-001-APPLY",
-      "killerTransitionId": "A0U1-PIPE-003-REFUSED",
+      "killerTransitionId": "A0U1-INS-004-EXTRA-COMMAND-KEY",
       "mutation": {
         "materialization": "command",
         "operator": "add",
@@ -109,7 +109,7 @@
       "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
       "linkedCaseIds": [
         "A0U1-INS-001",
-        "A0U1-PIPE-003"
+        "A0U1-INS-004"
       ],
       "traceIds": [
         "A0U1-TRACE-PIPELINE"
@@ -127,7 +127,7 @@
         "A0-U1-ATOM-001-command-and-five-closed-variants"
       ],
       "baselineTransitionId": "A0U1-INS-001-APPLY",
-      "killerTransitionId": "A0U1-PIPE-004-REFUSED",
+      "killerTransitionId": "A0U1-INS-004-EXTRA-PLAN-KEY",
       "mutation": {
         "materialization": "command",
         "operator": "add",
@@ -148,7 +148,7 @@
       "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
       "linkedCaseIds": [
         "A0U1-INS-001",
-        "A0U1-PIPE-003"
+        "A0U1-INS-004"
       ],
       "traceIds": [
         "A0U1-TRACE-PIPELINE"
@@ -166,13 +166,13 @@
         "A0-U1-ATOM-001-command-and-five-closed-variants",
         "A0-U1-ATOM-015-ids-preflight-preorder-honest-entropy"
       ],
-      "baselineTransitionId": "A0U1-INS-001-APPLY",
-      "killerTransitionId": "A0U1-PIPE-005-REFUSED",
+      "baselineTransitionId": "A0U1-SPLITD-001-APPLY",
+      "killerTransitionId": "A0U1-SPLITD-003-WRONG-DOCUMENT",
       "mutation": {
         "materialization": "command",
         "operator": "replace",
         "jsonPointer": "/id",
-        "from": "command-u1-insert",
+        "from": "command-u1-split-duration",
         "to": "",
         "exactChangedFieldCount": 1
       },
@@ -185,8 +185,8 @@
       "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
       "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
       "linkedCaseIds": [
-        "A0U1-INS-001",
-        "A0U1-PIPE-006"
+        "A0U1-SPLITD-001",
+        "A0U1-SPLITD-004"
       ],
       "traceIds": [
         "A0U1-TRACE-PIPELINE"
@@ -203,13 +203,13 @@
       "lawIds": [
         "A0-U1-ATOM-001-command-and-five-closed-variants"
       ],
-      "baselineTransitionId": "A0U1-INS-001-APPLY",
-      "killerTransitionId": "A0U1-PIPE-006-REFUSED",
+      "baselineTransitionId": "A0U1-JOIND-001-APPLY",
+      "killerTransitionId": "A0U1-JOIND-003-WRONG-DOCUMENT",
       "mutation": {
         "materialization": "command",
         "operator": "replace",
         "jsonPointer": "/logicalTimeMs",
-        "from": 1000,
+        "from": 1200,
         "to": -1,
         "exactChangedFieldCount": 1
       },
@@ -222,8 +222,8 @@
       "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
       "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
       "linkedCaseIds": [
-        "A0U1-INS-001",
-        "A0U1-PIPE-006"
+        "A0U1-JOIND-001",
+        "A0U1-JOIND-004"
       ],
       "traceIds": [
         "A0U1-TRACE-PIPELINE"
@@ -240,8 +240,8 @@
       "lawIds": [
         "A0-U1-ATOM-001-command-and-five-closed-variants"
       ],
-      "baselineTransitionId": "A0U1-INS-001-APPLY",
-      "killerTransitionId": "A0U1-PIPE-007-REFUSED",
+      "baselineTransitionId": "A0U1-SPLITS-001-APPLY",
+      "killerTransitionId": "A0U1-SPLITS-003-WRONG-DOCUMENT",
       "mutation": {
         "materialization": "command",
         "operator": "replace",
@@ -263,8 +263,8 @@
       "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
       "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
       "linkedCaseIds": [
-        "A0U1-INS-001",
-        "A0U1-PIPE-007"
+        "A0U1-SPLITS-001",
+        "A0U1-SPLITS-004"
       ],
       "traceIds": [
         "A0U1-TRACE-PIPELINE"
@@ -282,7 +282,7 @@
         "A0-U1-ATOM-001-command-and-five-closed-variants"
       ],
       "baselineTransitionId": "A0U1-INS-001-APPLY",
-      "killerTransitionId": "A0U1-PIPE-008-REFUSED",
+      "killerTransitionId": "A0U1-INS-004-FORBIDDEN-CANDIDATE",
       "mutation": {
         "materialization": "command",
         "operator": "add",
@@ -290,220 +290,7 @@
         "from": {
           "$absent": true
         },
-        "to": {
-          "schema": "changes.progression.v2",
-          "id": "document-e0-nested",
-          "title": "Nested Canonical Order",
-          "description": "Independent E0 nested-shape byte authority.",
-          "meter": {
-            "beatsPerBar": 4,
-            "beatUnit": 4
-          },
-          "tempoBpm": 132,
-          "key": {
-            "tonic": {
-              "step": "C",
-              "alter": 0
-            },
-            "mode": "major"
-          },
-          "sections": [
-            {
-              "id": "section-e0-a",
-              "name": "A",
-              "annotation": "Nested order witness",
-              "keyOverride": {
-                "tonic": {
-                  "step": "D",
-                  "alter": 0
-                },
-                "mode": "natural-minor"
-              },
-              "voiceLeadingBoundary": "continue",
-              "measures": [
-                {
-                  "id": "measure-e0-auto",
-                  "events": [
-                    {
-                      "id": "event-e0-auto",
-                      "duration": {
-                        "numerator": 4,
-                        "denominator": 1
-                      },
-                      "annotation": "altered dominant",
-                      "chord": {
-                        "kind": "parsed",
-                        "sourceText": "C7#9",
-                        "root": {
-                          "step": "C",
-                          "alter": 0
-                        },
-                        "triad": "major",
-                        "sixth": null,
-                        "seventh": "minor",
-                        "extensions": [],
-                        "additions": [],
-                        "alterations": [
-                          {
-                            "number": 9,
-                            "alter": 1
-                          }
-                        ],
-                        "omissions": [],
-                        "bass": null,
-                        "colorPolicy": "none"
-                      },
-                      "voicing": {
-                        "mode": "auto",
-                        "family": "balanced",
-                        "voiceCount": 4,
-                        "range": {
-                          "lowMidi": 48,
-                          "highMidi": 72
-                        },
-                        "bassPolicy": "generated"
-                      }
-                    }
-                  ],
-                  "completion": {
-                    "kind": "complete"
-                  }
-                },
-                {
-                  "id": "measure-e0-manual",
-                  "events": [
-                    {
-                      "id": "event-e0-manual",
-                      "duration": {
-                        "numerator": 4,
-                        "denominator": 1
-                      },
-                      "annotation": "custom manual witness",
-                      "chord": {
-                        "kind": "custom",
-                        "sourceText": "C-Eb-G cluster",
-                        "label": "Minor triad as custom",
-                        "pitchNames": [
-                          {
-                            "step": "C",
-                            "alter": 0
-                          },
-                          {
-                            "step": "E",
-                            "alter": -1
-                          },
-                          {
-                            "step": "G",
-                            "alter": 0
-                          }
-                        ],
-                        "bass": null
-                      },
-                      "voicing": {
-                        "mode": "manual",
-                        "pitches": [
-                          {
-                            "step": "C",
-                            "alter": 0,
-                            "octave": 4
-                          },
-                          {
-                            "step": "E",
-                            "alter": -1,
-                            "octave": 4
-                          },
-                          {
-                            "step": "G",
-                            "alter": 0,
-                            "octave": 4
-                          }
-                        ],
-                        "bassPolicy": "included"
-                      }
-                    }
-                  ],
-                  "completion": {
-                    "kind": "complete"
-                  }
-                },
-                {
-                  "id": "measure-e0-frozen-partial",
-                  "events": [
-                    {
-                      "id": "event-e0-frozen",
-                      "duration": {
-                        "numerator": 2,
-                        "denominator": 1
-                      },
-                      "annotation": "frozen partial witness",
-                      "chord": {
-                        "kind": "parsed",
-                        "sourceText": "Cmaj7",
-                        "root": {
-                          "step": "C",
-                          "alter": 0
-                        },
-                        "triad": "major",
-                        "sixth": null,
-                        "seventh": "major",
-                        "extensions": [],
-                        "additions": [],
-                        "alterations": [],
-                        "omissions": [],
-                        "bass": null,
-                        "colorPolicy": "none"
-                      },
-                      "voicing": {
-                        "mode": "frozen",
-                        "pitches": [
-                          {
-                            "step": "C",
-                            "alter": 0,
-                            "octave": 4
-                          },
-                          {
-                            "step": "E",
-                            "alter": 0,
-                            "octave": 4
-                          },
-                          {
-                            "step": "G",
-                            "alter": 0,
-                            "octave": 4
-                          },
-                          {
-                            "step": "B",
-                            "alter": 0,
-                            "octave": 4
-                          }
-                        ],
-                        "bassPolicy": "included",
-                        "generatedBy": {
-                          "engineVersion": "fixture-engine-1",
-                          "family": "balanced"
-                        }
-                      }
-                    }
-                  ],
-                  "completion": {
-                    "kind": "incomplete",
-                    "expectedDuration": {
-                      "numerator": 2,
-                      "denominator": 1
-                    },
-                    "reason": "Open ending"
-                  }
-                }
-              ]
-            }
-          ],
-          "playback": {
-            "instrumentId": "mellow-keys",
-            "masterVolume": 0.8,
-            "reverbAmount": 0.2,
-            "countInBars": 1
-          }
-        },
+        "to": null,
         "exactChangedFieldCount": 1
       },
       "observation": {
@@ -516,7 +303,7 @@
       "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
       "linkedCaseIds": [
         "A0U1-INS-001",
-        "A0U1-PIPE-008"
+        "A0U1-INS-004"
       ],
       "traceIds": [
         "A0U1-TRACE-PIPELINE"
@@ -533,8 +320,8 @@
       "lawIds": [
         "A0-U1-ATOM-001-command-and-five-closed-variants"
       ],
-      "baselineTransitionId": "A0U1-INS-001-APPLY",
-      "killerTransitionId": "A0U1-PIPE-009-REFUSED",
+      "baselineTransitionId": "A0U1-SPLITS-001-APPLY",
+      "killerTransitionId": "A0U1-SPLITS-004-FORBIDDEN-PLANS",
       "mutation": {
         "materialization": "command",
         "operator": "add",
@@ -542,7 +329,7 @@
         "from": {
           "$absent": true
         },
-        "to": [],
+        "to": null,
         "exactChangedFieldCount": 1
       },
       "observation": {
@@ -554,8 +341,8 @@
       "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
       "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
       "linkedCaseIds": [
-        "A0U1-INS-001",
-        "A0U1-PIPE-010"
+        "A0U1-SPLITS-001",
+        "A0U1-SPLITS-004"
       ],
       "traceIds": [
         "A0U1-TRACE-PIPELINE"
@@ -573,19 +360,34 @@
         "A0-U1-ATOM-003-raw-source-reparsed-once-by-t0",
         "A0-U1-ATOM-004-complete-draft-success-and-warnings-exact"
       ],
-      "baselineTransitionId": "A0U1-INS-001-APPLY",
-      "killerTransitionId": "A0U1-PIPE-010-REFUSED",
+      "baselineTransitionId": "A0U1-INS-001-WARNING-ACKNOWLEDGED",
+      "killerTransitionId": "A0U1-INS-002-WARNING-MISMATCH",
       "mutation": {
         "materialization": "command",
         "operator": "replace",
         "jsonPointer": "/plan/source/warningAcknowledgements",
-        "from": [],
+        "from": [
+          {
+            "code": "chart.comments_not_round_tripped",
+            "range": {
+              "start": 13,
+              "end": 19
+            }
+          }
+        ],
         "to": [
           {
             "code": "chart.comments_not_round_tripped",
             "range": {
-              "start": 0,
-              "end": 1
+              "start": 13,
+              "end": 19
+            }
+          },
+          {
+            "code": "chart.comments_not_round_tripped",
+            "range": {
+              "start": 13,
+              "end": 19
             }
           }
         ],
@@ -594,14 +396,14 @@
       "observation": {
         "materialization": "expected.counters",
         "jsonPointer": "/editPlan/warningAcknowledgementsCompared",
-        "baselineValue": 0,
-        "killerValue": 1
+        "baselineValue": 1,
+        "killerValue": 2
       },
       "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
       "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
       "linkedCaseIds": [
         "A0U1-INS-001",
-        "A0U1-PIPE-010"
+        "A0U1-INS-002"
       ],
       "traceIds": [
         "A0U1-TRACE-PIPELINE"
@@ -625,7 +427,7 @@
         "materialization": "command",
         "operator": "replace",
         "jsonPointer": "/plan/source/selectedGlobalOrdinal",
-        "from": 0,
+        "from": 1,
         "to": 9,
         "exactChangedFieldCount": 1
       },
@@ -638,8 +440,8 @@
       "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
       "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
       "linkedCaseIds": [
-        "A0U1-INS-002",
-        "A0U1-INS-003"
+        "A0U1-INS-010",
+        "A0U1-INS-002"
       ],
       "traceIds": [
         "A0U1-TRACE-INSERT-FRAGMENT"
@@ -679,8 +481,8 @@
       "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
       "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
       "linkedCaseIds": [
-        "A0U1-INS-002",
-        "A0U1-INS-004"
+        "A0U1-INS-010",
+        "A0U1-INS-002"
       ],
       "traceIds": [
         "A0U1-TRACE-INSERT-FRAGMENT"
@@ -723,7 +525,8 @@
       "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
       "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
       "linkedCaseIds": [
-        "A0U1-INS-005"
+        "A0U1-INS-001",
+        "A0U1-INS-002"
       ],
       "traceIds": [
         "A0U1-TRACE-INSERT-FRAGMENT"
@@ -770,8 +573,8 @@
       "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
       "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
       "linkedCaseIds": [
-        "A0U1-INS-002",
-        "A0U1-INS-006"
+        "A0U1-INS-010",
+        "A0U1-INS-004"
       ],
       "traceIds": [
         "A0U1-TRACE-INSERT-FRAGMENT"
@@ -812,7 +615,7 @@
       "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
       "linkedCaseIds": [
         "A0U1-INS-001",
-        "A0U1-INS-010"
+        "A0U1-INS-003"
       ],
       "traceIds": [
         "A0U1-TRACE-INSERT-FRAGMENT"
@@ -853,7 +656,7 @@
       "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
       "linkedCaseIds": [
         "A0U1-INS-001",
-        "A0U1-INS-010"
+        "A0U1-INS-003"
       ],
       "traceIds": [
         "A0U1-TRACE-INSERT-FRAGMENT"
@@ -1015,7 +818,7 @@
       "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
       "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
       "linkedCaseIds": [
-        "A0U1-SPLITD-008"
+        "A0U1-SPLITD-010"
       ],
       "traceIds": [
         "A0U1-TRACE-SPLIT-EVENT-DURATION"
@@ -1095,7 +898,7 @@
       "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
       "linkedCaseIds": [
         "A0U1-SPLITD-001",
-        "A0U1-SPLITD-003"
+        "A0U1-SPLITD-002"
       ],
       "traceIds": [
         "A0U1-TRACE-SPLIT-EVENT-DURATION"
@@ -1135,7 +938,7 @@
       "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
       "linkedCaseIds": [
         "A0U1-SPLITD-001",
-        "A0U1-SPLITD-004"
+        "A0U1-SPLITD-006"
       ],
       "traceIds": [
         "A0U1-TRACE-SPLIT-EVENT-DURATION"
@@ -1174,7 +977,7 @@
       "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
       "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
       "linkedCaseIds": [
-        "A0U1-JOIND-008"
+        "A0U1-JOIND-010"
       ],
       "traceIds": [
         "A0U1-TRACE-JOIN-EVENT-DURATIONS"
@@ -1214,7 +1017,7 @@
       "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
       "linkedCaseIds": [
         "A0U1-JOIND-001",
-        "A0U1-JOIND-003"
+        "A0U1-JOIND-002"
       ],
       "traceIds": [
         "A0U1-TRACE-JOIN-EVENT-DURATIONS"
@@ -1248,7 +1051,16 @@
       "observation": {
         "materialization": "expected.bookmarks",
         "jsonPointer": "/range",
-        "baselineValue": null,
+        "baselineValue": {
+          "anchor": {
+            "kind": "before-event",
+            "eventId": "event-e0-auto"
+          },
+          "focus": {
+            "kind": "after-event",
+            "eventId": "event-e0-auto"
+          }
+        },
         "killerValue": {
           "anchor": {
             "kind": "before-event",
@@ -1264,7 +1076,7 @@
       "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
       "linkedCaseIds": [
         "A0U1-JOIND-001",
-        "A0U1-JOIND-004"
+        "A0U1-JOIND-002"
       ],
       "traceIds": [
         "A0U1-TRACE-JOIN-EVENT-DURATIONS"
@@ -1305,7 +1117,7 @@
       "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
       "linkedCaseIds": [
         "A0U1-JOIND-001",
-        "A0U1-JOIND-005"
+        "A0U1-JOIND-002"
       ],
       "traceIds": [
         "A0U1-TRACE-JOIN-EVENT-DURATIONS"
@@ -1332,7 +1144,7 @@
         "operator": "replace",
         "jsonPointer": "/plan/beforeMeasureId",
         "from": "measure-e0-manual",
-        "to": "measure-missing",
+        "to": "measure-e0-auto",
         "exactChangedFieldCount": 1
       },
       "observation": {
@@ -1366,13 +1178,13 @@
         "A0-U1-ATOM-012-split-section-leading-survivor-exact"
       ],
       "baselineTransitionId": "A0U1-SPLITS-001-APPLY",
-      "killerTransitionId": "A0U1-SPLITS-003-REFUSED",
+      "killerTransitionId": "A0U1-SPLITS-006-NAME-FIRST-EXCESS",
       "mutation": {
         "materialization": "command",
         "operator": "replace",
         "jsonPointer": "/plan/newSectionMetadata/name",
         "from": "B",
-        "to": "",
+        "to": "NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN",
         "exactChangedFieldCount": 1
       },
       "observation": {
@@ -1385,7 +1197,7 @@
       "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
       "linkedCaseIds": [
         "A0U1-SPLITS-001",
-        "A0U1-SPLITS-003"
+        "A0U1-SPLITS-006"
       ],
       "traceIds": [
         "A0U1-TRACE-SPLIT-SECTION"
@@ -1424,7 +1236,7 @@
       "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
       "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
       "linkedCaseIds": [
-        "A0U1-SPLITS-006"
+        "A0U1-SPLITS-010"
       ],
       "traceIds": [
         "A0U1-TRACE-SPLIT-SECTION"
@@ -1463,8 +1275,7 @@
       "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
       "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
       "linkedCaseIds": [
-        "A0U1-JOINS-006",
-        "A0U1-INS-012"
+        "A0U1-JOINS-010"
       ],
       "traceIds": [
         "A0U1-TRACE-JOIN-SECTIONS"
@@ -1504,7 +1315,7 @@
       "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
       "linkedCaseIds": [
         "A0U1-JOINS-001",
-        "A0U1-JOINS-003"
+        "A0U1-JOINS-002"
       ],
       "traceIds": [
         "A0U1-TRACE-JOIN-SECTIONS"
@@ -1531,7 +1342,7 @@
         "operator": "replace",
         "jsonPointer": "/plan/resultMetadata/name",
         "from": "A + B",
-        "to": "",
+        "to": "NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN",
         "exactChangedFieldCount": 1
       },
       "observation": {
@@ -1544,7 +1355,7 @@
       "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
       "linkedCaseIds": [
         "A0U1-JOINS-001",
-        "A0U1-JOINS-004"
+        "A0U1-JOINS-002"
       ],
       "traceIds": [
         "A0U1-TRACE-JOIN-SECTIONS"

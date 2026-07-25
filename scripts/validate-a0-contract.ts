@@ -92,6 +92,12 @@ export const A0_REVIEWED_OPERATION_ORDER = [
   "selectHistoryAvailability",
 ] as const;
 
+/**
+ * The accepted historical A0 command tuple. This reviewed record is frozen
+ * evidence and must never be rewritten as though the sixteenth kind had
+ * always existed; the sole authorized live suffix is the R1-accepted A0/U1
+ * `apply-edit-plan` amendment (see A0_U1_AUTHORIZED_LIVE_COMMAND_KINDS).
+ */
 export const A0_REVIEWED_COMMAND_KINDS = [
   "insert",
   "delete",
@@ -108,6 +114,12 @@ export const A0_REVIEWED_COMMAND_KINDS = [
   "apply-suggestion",
   "apply-reharmonization",
   "replace-document",
+] as const;
+
+/** The merged live tuple: the historical fifteen plus the accepted A0/U1 suffix. */
+export const A0_U1_AUTHORIZED_LIVE_COMMAND_KINDS = [
+  ...A0_REVIEWED_COMMAND_KINDS,
+  "apply-edit-plan",
 ] as const;
 
 export const A0_REVIEWED_REPLACEMENT_ORIGINS = [

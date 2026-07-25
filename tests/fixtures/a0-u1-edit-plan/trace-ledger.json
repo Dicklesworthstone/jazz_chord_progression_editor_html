@@ -10,29 +10,224 @@
       "lawIds": [
         "A0-U1-ATOM-001-command-and-five-closed-variants",
         "A0-U1-ATOM-002-quick-entry-snapshot-and-target-exact",
+        "A0-U1-ATOM-003-raw-source-reparsed-once-by-t0",
+        "A0-U1-ATOM-004-complete-draft-success-and-warnings-exact",
+        "A0-U1-ATOM-007-complete-draft-placement-shape-exact",
+        "A0-U1-ATOM-008-new-event-policy-fixed",
+        "A0-U1-ATOM-009-completion-declarations-exact",
+        "A0-U1-ATOM-014-timeline-and-bounds-preserved",
         "A0-U1-ATOM-015-ids-preflight-preorder-honest-entropy",
         "A0-U1-ATOM-016-bookmarks-publication-history-atomic",
-        "A0-U1-ATOM-017-transposition-and-existing-a0-unchanged"
+        "A0-U1-ATOM-017-transposition-and-existing-a0-unchanged",
+        "A0-U1-ATOM-005-recovered-failure-selects-one-chord",
+        "A0-U1-ATOM-006-recovered-loss-duration-placement-exact",
+        "A0-U1-ATOM-010-split-event-lossless-exact",
+        "A0-U1-ATOM-011-join-events-left-inverse-exact",
+        "A0-U1-ATOM-012-split-section-leading-survivor-exact",
+        "A0-U1-ATOM-013-join-sections-left-metadata-exact"
       ],
       "caseIds": [
-        "A0U1-PIPE-001",
-        "A0U1-PIPE-003",
-        "A0U1-PIPE-006",
-        "A0U1-PIPE-007",
-        "A0U1-PIPE-008",
-        "A0U1-PIPE-010"
+        "A0U1-INS-001",
+        "A0U1-INS-002",
+        "A0U1-INS-003",
+        "A0U1-INS-004",
+        "A0U1-INS-005",
+        "A0U1-INS-006",
+        "A0U1-INS-007",
+        "A0U1-INS-008",
+        "A0U1-INS-009",
+        "A0U1-INS-010",
+        "A0U1-SPLITD-001",
+        "A0U1-SPLITD-002",
+        "A0U1-SPLITD-003",
+        "A0U1-SPLITD-004",
+        "A0U1-SPLITD-005",
+        "A0U1-SPLITD-006",
+        "A0U1-SPLITD-007",
+        "A0U1-SPLITD-008",
+        "A0U1-SPLITD-009",
+        "A0U1-SPLITD-010",
+        "A0U1-JOIND-001",
+        "A0U1-JOIND-002",
+        "A0U1-JOIND-003",
+        "A0U1-JOIND-004",
+        "A0U1-JOIND-005",
+        "A0U1-JOIND-006",
+        "A0U1-JOIND-007",
+        "A0U1-JOIND-008",
+        "A0U1-JOIND-009",
+        "A0U1-JOIND-010",
+        "A0U1-SPLITS-001",
+        "A0U1-SPLITS-002",
+        "A0U1-SPLITS-003",
+        "A0U1-SPLITS-004",
+        "A0U1-SPLITS-005",
+        "A0U1-SPLITS-006",
+        "A0U1-SPLITS-007",
+        "A0U1-SPLITS-008",
+        "A0U1-SPLITS-009",
+        "A0U1-SPLITS-010",
+        "A0U1-JOINS-001",
+        "A0U1-JOINS-002",
+        "A0U1-JOINS-003",
+        "A0U1-JOINS-004",
+        "A0U1-JOINS-005",
+        "A0U1-JOINS-006",
+        "A0U1-JOINS-007",
+        "A0U1-JOINS-008",
+        "A0U1-JOINS-009",
+        "A0U1-JOINS-010"
       ],
       "transitionIds": [
-        "A0U1-PIPE-001-REFUSED",
-        "A0U1-PIPE-002-REFUSED",
-        "A0U1-PIPE-003-REFUSED",
-        "A0U1-PIPE-004-REFUSED",
-        "A0U1-PIPE-005-REFUSED",
-        "A0U1-PIPE-006-REFUSED",
-        "A0U1-PIPE-007-REFUSED",
-        "A0U1-PIPE-008-REFUSED",
-        "A0U1-PIPE-009-REFUSED",
-        "A0U1-PIPE-010-REFUSED"
+        "A0U1-INS-001-APPLY",
+        "A0U1-INS-001-UNDO",
+        "A0U1-INS-001-REDO",
+        "A0U1-INS-002-APPLY",
+        "A0U1-INS-003-REFUSED",
+        "A0U1-INS-004-REFUSED",
+        "A0U1-INS-005-CALLER-APPLY",
+        "A0U1-INS-005-CALLER-REFUSED",
+        "A0U1-INS-007-BOUNDARY",
+        "A0U1-INS-008-PLUS-ONE",
+        "A0U1-INS-009-COLLISION",
+        "A0U1-INS-010-STALE-TEXT",
+        "A0U1-INS-010-STALE-TARGET",
+        "A0U1-INS-011-TRANSPOSED",
+        "A0U1-INS-012-COMPLETION",
+        "A0U1-SPLITD-001-APPLY",
+        "A0U1-SPLITD-001-UNDO",
+        "A0U1-SPLITD-001-REDO",
+        "A0U1-SPLITD-002-REFUSED",
+        "A0U1-SPLITD-003-REFUSED",
+        "A0U1-SPLITD-004-REFUSED",
+        "A0U1-SPLITD-005-REFUSED",
+        "A0U1-SPLITD-006-REFUSED",
+        "A0U1-SPLITD-007-BASE",
+        "A0U1-SPLITD-007-TRANSPOSED",
+        "A0U1-SPLITD-008-BASE",
+        "A0U1-SPLITD-008-KILLER",
+        "A0U1-JOIND-001-APPLY",
+        "A0U1-JOIND-001-UNDO",
+        "A0U1-JOIND-001-REDO",
+        "A0U1-JOIND-002-REFUSED",
+        "A0U1-JOIND-003-REFUSED",
+        "A0U1-JOIND-004-REFUSED",
+        "A0U1-JOIND-005-REFUSED",
+        "A0U1-JOIND-006-REFUSED",
+        "A0U1-JOIND-007-BASE",
+        "A0U1-JOIND-007-TRANSPOSED",
+        "A0U1-JOIND-008-BASE",
+        "A0U1-JOIND-008-KILLER",
+        "A0U1-SPLITS-001-APPLY",
+        "A0U1-SPLITS-001-UNDO",
+        "A0U1-SPLITS-001-REDO",
+        "A0U1-SPLITS-002-REFUSED",
+        "A0U1-SPLITS-003-REFUSED",
+        "A0U1-SPLITS-004-REFUSED",
+        "A0U1-SPLITS-005-BASE",
+        "A0U1-SPLITS-005-TRANSPOSED",
+        "A0U1-SPLITS-006-BASE",
+        "A0U1-SPLITS-006-KILLER",
+        "A0U1-JOINS-001-APPLY",
+        "A0U1-JOINS-001-UNDO",
+        "A0U1-JOINS-001-REDO",
+        "A0U1-JOINS-002-REFUSED",
+        "A0U1-JOINS-003-REFUSED",
+        "A0U1-JOINS-004-REFUSED",
+        "A0U1-JOINS-005-BASE",
+        "A0U1-JOINS-005-TRANSPOSED",
+        "A0U1-JOINS-006-BASE",
+        "A0U1-JOINS-006-KILLER",
+        "A0U1-INS-007-APPLY",
+        "A0U1-SPLITD-007-APPLY",
+        "A0U1-JOIND-007-APPLY",
+        "A0U1-SPLITS-007-APPLY",
+        "A0U1-JOINS-007-APPLY",
+        "A0U1-SPLITD-005-EXACT",
+        "A0U1-JOIND-005-EXACT",
+        "A0U1-SPLITS-005-EXACT",
+        "A0U1-JOINS-005-EXACT",
+        "A0U1-JOIND-008-HOSTILE-FACTORY-UNUSED",
+        "A0U1-JOINS-008-HOSTILE-FACTORY-UNUSED",
+        "A0U1-INS-009-BASE",
+        "A0U1-INS-003-WRONG-DOCUMENT",
+        "A0U1-INS-003-STALE-REVISION",
+        "A0U1-INS-004-EXTRA-PLAN-KEY",
+        "A0U1-SPLITD-003-WRONG-DOCUMENT",
+        "A0U1-SPLITD-003-STALE-REVISION",
+        "A0U1-JOIND-003-WRONG-DOCUMENT",
+        "A0U1-JOIND-003-STALE-REVISION",
+        "A0U1-JOIND-004-EXTRA-PLAN-KEY",
+        "A0U1-SPLITS-003-WRONG-DOCUMENT",
+        "A0U1-SPLITS-003-STALE-REVISION",
+        "A0U1-SPLITS-004-EXTRA-PLAN-KEY",
+        "A0U1-JOINS-003-WRONG-DOCUMENT",
+        "A0U1-JOINS-003-STALE-REVISION",
+        "A0U1-JOINS-004-EXTRA-PLAN-KEY",
+        "A0U1-INS-006-REFUSED",
+        "A0U1-JOIND-006-COMPLETION-PLUS-ONE",
+        "A0U1-SPLITS-006-COMPLETION-PLUS-ONE",
+        "A0U1-JOINS-006-COMPLETION-PLUS-ONE",
+        "A0U1-INS-001-INTO-MEASURE",
+        "A0U1-INS-001-WARNING-ACKNOWLEDGED",
+        "A0U1-INS-003-STALE-BASE-REVISION",
+        "A0U1-INS-003-STALE-ISSUE-CODES",
+        "A0U1-INS-003-STALE-STATUS",
+        "A0U1-INS-003-STALE-LANE",
+        "A0U1-INS-004-EXTRA-COMMAND-KEY",
+        "A0U1-INS-006-UNICODE-SCALAR-REFUSED",
+        "A0U1-SPLITS-006-NAME-FIRST-EXCESS",
+        "A0U1-INS-002-WRONG-PARENT",
+        "A0U1-INS-002-RECOVERED-PLACEMENT-REFUSED",
+        "A0U1-INS-002-COMPLETE-SYNTAX-REFUSED",
+        "A0U1-INS-002-RECOVERY-REQUIRES-FAILURE",
+        "A0U1-INS-002-WARNING-MISMATCH",
+        "A0U1-INS-002-FRAGMENT-PLACEMENT-MISMATCH",
+        "A0U1-INS-001-INTO-DOCUMENT",
+        "A0U1-INS-005-COLLECTION-EXACT",
+        "A0U1-INS-006-COLLECTION-PLUS-ONE",
+        "A0U1-INS-005-TIMELINE-EXACT",
+        "A0U1-INS-006-TIMELINE-PLUS-ONE",
+        "A0U1-INS-008-DOCUMENT-FACTORY-0",
+        "A0U1-INS-008-DOCUMENT-FACTORY-1",
+        "A0U1-INS-008-DOCUMENT-FACTORY-2",
+        "A0U1-INS-008-DOCUMENT-FACTORY-3",
+        "A0U1-INS-008-DOCUMENT-FACTORY-4",
+        "A0U1-INS-008-DOCUMENT-FACTORY-5",
+        "A0U1-INS-008-DOCUMENT-COLLISION-0",
+        "A0U1-INS-008-DOCUMENT-COLLISION-1",
+        "A0U1-INS-008-DOCUMENT-COLLISION-2",
+        "A0U1-INS-008-DOCUMENT-COLLISION-3",
+        "A0U1-INS-008-DOCUMENT-COLLISION-4",
+        "A0U1-INS-008-DOCUMENT-COLLISION-5",
+        "A0U1-SPLITD-008-FACTORY-0",
+        "A0U1-SPLITS-008-FACTORY-0",
+        "A0U1-INS-002-F2-REFUSED",
+        "A0U1-INS-002-F3-REFUSED",
+        "A0U1-INS-002-HISTORY-REFUSED",
+        "A0U1-INS-004-FORBIDDEN-CANDIDATE",
+        "A0U1-SPLITD-004-FORBIDDEN-DOCUMENT",
+        "A0U1-JOIND-004-FORBIDDEN-COMMANDS",
+        "A0U1-SPLITS-004-FORBIDDEN-PLANS",
+        "A0U1-JOINS-004-FORBIDDEN-NESTEDPLAN",
+        "A0U1-INS-004-FORBIDDEN-PATCH",
+        "A0U1-SPLITD-004-FORBIDDEN-DERIVEDPATCH",
+        "A0U1-JOIND-004-FORBIDDEN-REPLACEMENT",
+        "A0U1-SPLITS-004-FORBIDDEN-IMPORTDRAFT",
+        "A0U1-JOINS-010-METADATA-POLICY-KILLER",
+        "A0U1-INS-002-MULTI-DIAGNOSTIC-SYNTAX",
+        "A0U1-INS-011-NULL-APPLY",
+        "A0U1-INS-011-NULL-UNDO",
+        "A0U1-INS-011-NULL-REDO",
+        "A0U1-INS-013-DUP-SYNTAX",
+        "A0U1-INS-013-DUP-COUNT",
+        "A0U1-INS-013-DUP-ORDER",
+        "A0U1-INS-013-CODE-FIRST-EXCESS",
+        "A0U1-JOINS-011-EXACT-8768",
+        "A0U1-JOINS-011-FIRST-EXCESS-8769",
+        "A0U1-JOINS-011-GROSS-CARDINALITY",
+        "A0U1-JOINS-011-INVALID-SURROGATE-LAST",
+        "A0U1-JOINS-011-MALFORMED-FIRST-EXTRA"
       ],
       "controlIds": [
         "A0U1-MUT-001",
@@ -48,13 +243,23 @@
       ],
       "authorityIds": [
         "A0U1-AUTH-A0",
+        "A0U1-AUTH-T0",
+        "A0U1-AUTH-DOMAIN",
+        "A0U1-AUTH-F2-F3",
+        "A0U1-AUTH-U1",
         "A0U1-AUTH-VERIFICATION"
       ],
       "proofKinds": [
-        "stale-wrong-document",
+        "positive",
         "negative-near-miss",
-        "mutation",
-        "malformed-exact-shape"
+        "stale-wrong-document",
+        "malformed-exact-shape",
+        "exact-boundary",
+        "plus-one",
+        "undo-redo",
+        "collision-allocation",
+        "transposition-applicability",
+        "mutation"
       ],
       "implementationOwner": "A0 application controller"
     },
@@ -98,14 +303,61 @@
         "A0U1-INS-004-REFUSED",
         "A0U1-INS-005-CALLER-APPLY",
         "A0U1-INS-005-CALLER-REFUSED",
-        "A0U1-INS-006-REFUSED",
         "A0U1-INS-007-BOUNDARY",
-        "A0U1-INS-008-PLUS-ONE",
         "A0U1-INS-009-COLLISION",
         "A0U1-INS-010-STALE-TEXT",
         "A0U1-INS-010-STALE-TARGET",
         "A0U1-INS-011-TRANSPOSED",
-        "A0U1-INS-012-COMPLETION"
+        "A0U1-INS-012-COMPLETION",
+        "A0U1-INS-007-APPLY",
+        "A0U1-INS-009-BASE",
+        "A0U1-INS-003-WRONG-DOCUMENT",
+        "A0U1-INS-003-STALE-REVISION",
+        "A0U1-INS-004-EXTRA-PLAN-KEY",
+        "A0U1-INS-006-REFUSED",
+        "A0U1-INS-001-INTO-MEASURE",
+        "A0U1-INS-001-WARNING-ACKNOWLEDGED",
+        "A0U1-INS-003-STALE-BASE-REVISION",
+        "A0U1-INS-003-STALE-ISSUE-CODES",
+        "A0U1-INS-003-STALE-STATUS",
+        "A0U1-INS-003-STALE-LANE",
+        "A0U1-INS-004-EXTRA-COMMAND-KEY",
+        "A0U1-INS-002-WRONG-PARENT",
+        "A0U1-INS-002-RECOVERED-PLACEMENT-REFUSED",
+        "A0U1-INS-002-COMPLETE-SYNTAX-REFUSED",
+        "A0U1-INS-002-RECOVERY-REQUIRES-FAILURE",
+        "A0U1-INS-002-WARNING-MISMATCH",
+        "A0U1-INS-002-FRAGMENT-PLACEMENT-MISMATCH",
+        "A0U1-INS-001-INTO-DOCUMENT",
+        "A0U1-INS-005-COLLECTION-EXACT",
+        "A0U1-INS-006-COLLECTION-PLUS-ONE",
+        "A0U1-INS-005-TIMELINE-EXACT",
+        "A0U1-INS-006-TIMELINE-PLUS-ONE",
+        "A0U1-INS-008-DOCUMENT-FACTORY-0",
+        "A0U1-INS-008-DOCUMENT-FACTORY-1",
+        "A0U1-INS-008-DOCUMENT-FACTORY-2",
+        "A0U1-INS-008-DOCUMENT-FACTORY-3",
+        "A0U1-INS-008-DOCUMENT-FACTORY-4",
+        "A0U1-INS-008-DOCUMENT-FACTORY-5",
+        "A0U1-INS-008-DOCUMENT-COLLISION-0",
+        "A0U1-INS-008-DOCUMENT-COLLISION-1",
+        "A0U1-INS-008-DOCUMENT-COLLISION-2",
+        "A0U1-INS-008-DOCUMENT-COLLISION-3",
+        "A0U1-INS-008-DOCUMENT-COLLISION-4",
+        "A0U1-INS-008-DOCUMENT-COLLISION-5",
+        "A0U1-INS-002-F2-REFUSED",
+        "A0U1-INS-002-F3-REFUSED",
+        "A0U1-INS-002-HISTORY-REFUSED",
+        "A0U1-INS-004-FORBIDDEN-CANDIDATE",
+        "A0U1-INS-004-FORBIDDEN-PATCH",
+        "A0U1-INS-002-MULTI-DIAGNOSTIC-SYNTAX",
+        "A0U1-INS-011-NULL-APPLY",
+        "A0U1-INS-011-NULL-UNDO",
+        "A0U1-INS-011-NULL-REDO",
+        "A0U1-INS-013-DUP-SYNTAX",
+        "A0U1-INS-013-DUP-COUNT",
+        "A0U1-INS-013-DUP-ORDER",
+        "A0U1-INS-013-CODE-FIRST-EXCESS"
       ],
       "controlIds": [
         "A0U1-MUT-011",
@@ -125,17 +377,15 @@
       ],
       "proofKinds": [
         "positive",
-        "undo-redo",
-        "mutation-baseline",
         "negative-near-miss",
-        "recovery",
-        "mutation",
+        "stale-wrong-document",
         "malformed-exact-shape",
         "exact-boundary",
         "plus-one",
+        "undo-redo",
         "collision-allocation",
-        "stale-wrong-document",
-        "transposition-applicability"
+        "transposition-applicability",
+        "mutation"
       ],
       "implementationOwner": "A0 application controller with injected T0 parser"
     },
@@ -144,6 +394,7 @@
       "scope": "split-event-duration",
       "requirement": "lossless duration split, identity, annotation, completion, transposition, and history",
       "lawIds": [
+        "A0-U1-ATOM-001-command-and-five-closed-variants",
         "A0-U1-ATOM-009-completion-declarations-exact",
         "A0-U1-ATOM-010-split-event-lossless-exact",
         "A0-U1-ATOM-014-timeline-and-bounds-preserved",
@@ -152,8 +403,6 @@
         "A0-U1-ATOM-017-transposition-and-existing-a0-unchanged"
       ],
       "caseIds": [
-        "A0U1-PIPE-001",
-        "A0U1-PIPE-002",
         "A0U1-SPLITD-001",
         "A0U1-SPLITD-002",
         "A0U1-SPLITD-003",
@@ -161,11 +410,12 @@
         "A0U1-SPLITD-005",
         "A0U1-SPLITD-006",
         "A0U1-SPLITD-007",
-        "A0U1-SPLITD-008"
+        "A0U1-SPLITD-008",
+        "A0U1-SPLITD-009",
+        "A0U1-SPLITD-010"
       ],
       "transitionIds": [
-        "A0U1-PIPE-001-REFUSED",
-        "A0U1-PIPE-002-REFUSED",
+        "A0U1-INS-008-PLUS-ONE",
         "A0U1-SPLITD-001-APPLY",
         "A0U1-SPLITD-001-UNDO",
         "A0U1-SPLITD-001-REDO",
@@ -177,7 +427,14 @@
         "A0U1-SPLITD-007-BASE",
         "A0U1-SPLITD-007-TRANSPOSED",
         "A0U1-SPLITD-008-BASE",
-        "A0U1-SPLITD-008-KILLER"
+        "A0U1-SPLITD-008-KILLER",
+        "A0U1-SPLITD-007-APPLY",
+        "A0U1-SPLITD-005-EXACT",
+        "A0U1-SPLITD-003-WRONG-DOCUMENT",
+        "A0U1-SPLITD-003-STALE-REVISION",
+        "A0U1-SPLITD-008-FACTORY-0",
+        "A0U1-SPLITD-004-FORBIDDEN-DOCUMENT",
+        "A0U1-SPLITD-004-FORBIDDEN-DERIVEDPATCH"
       ],
       "controlIds": [
         "A0U1-MUT-017",
@@ -187,6 +444,7 @@
       ],
       "authorityIds": [
         "A0U1-AUTH-A0",
+        "A0U1-AUTH-T0",
         "A0U1-AUTH-DOMAIN",
         "A0U1-AUTH-F2-F3",
         "A0U1-AUTH-U1",
@@ -194,13 +452,15 @@
       ],
       "proofKinds": [
         "positive",
-        "undo-redo",
-        "mutation-baseline",
         "negative-near-miss",
-        "mutation",
+        "stale-wrong-document",
+        "malformed-exact-shape",
+        "exact-boundary",
+        "plus-one",
+        "undo-redo",
         "collision-allocation",
         "transposition-applicability",
-        "malformed-exact-shape"
+        "mutation"
       ],
       "implementationOwner": "A0 application controller"
     },
@@ -214,11 +474,10 @@
         "A0-U1-ATOM-014-timeline-and-bounds-preserved",
         "A0-U1-ATOM-015-ids-preflight-preorder-honest-entropy",
         "A0-U1-ATOM-016-bookmarks-publication-history-atomic",
-        "A0-U1-ATOM-017-transposition-and-existing-a0-unchanged"
+        "A0-U1-ATOM-017-transposition-and-existing-a0-unchanged",
+        "A0-U1-ATOM-001-command-and-five-closed-variants"
       ],
       "caseIds": [
-        "A0U1-PIPE-003",
-        "A0U1-PIPE-004",
         "A0U1-JOIND-001",
         "A0U1-JOIND-002",
         "A0U1-JOIND-003",
@@ -226,11 +485,11 @@
         "A0U1-JOIND-005",
         "A0U1-JOIND-006",
         "A0U1-JOIND-007",
-        "A0U1-JOIND-008"
+        "A0U1-JOIND-008",
+        "A0U1-JOIND-009",
+        "A0U1-JOIND-010"
       ],
       "transitionIds": [
-        "A0U1-PIPE-003-REFUSED",
-        "A0U1-PIPE-004-REFUSED",
         "A0U1-JOIND-001-APPLY",
         "A0U1-JOIND-001-UNDO",
         "A0U1-JOIND-001-REDO",
@@ -242,7 +501,16 @@
         "A0U1-JOIND-007-BASE",
         "A0U1-JOIND-007-TRANSPOSED",
         "A0U1-JOIND-008-BASE",
-        "A0U1-JOIND-008-KILLER"
+        "A0U1-JOIND-008-KILLER",
+        "A0U1-JOIND-007-APPLY",
+        "A0U1-JOIND-005-EXACT",
+        "A0U1-JOIND-008-HOSTILE-FACTORY-UNUSED",
+        "A0U1-JOIND-003-WRONG-DOCUMENT",
+        "A0U1-JOIND-003-STALE-REVISION",
+        "A0U1-JOIND-004-EXTRA-PLAN-KEY",
+        "A0U1-JOIND-006-COMPLETION-PLUS-ONE",
+        "A0U1-JOIND-004-FORBIDDEN-COMMANDS",
+        "A0U1-JOIND-004-FORBIDDEN-REPLACEMENT"
       ],
       "controlIds": [
         "A0U1-MUT-021",
@@ -252,6 +520,7 @@
       ],
       "authorityIds": [
         "A0U1-AUTH-A0",
+        "A0U1-AUTH-T0",
         "A0U1-AUTH-DOMAIN",
         "A0U1-AUTH-F2-F3",
         "A0U1-AUTH-U1",
@@ -259,12 +528,15 @@
       ],
       "proofKinds": [
         "positive",
-        "undo-redo",
-        "mutation-baseline",
         "negative-near-miss",
-        "mutation",
+        "stale-wrong-document",
+        "malformed-exact-shape",
+        "exact-boundary",
+        "plus-one",
+        "undo-redo",
+        "collision-allocation",
         "transposition-applicability",
-        "malformed-exact-shape"
+        "mutation"
       ],
       "implementationOwner": "A0 application controller"
     },
@@ -277,25 +549,23 @@
         "A0-U1-ATOM-014-timeline-and-bounds-preserved",
         "A0-U1-ATOM-015-ids-preflight-preorder-honest-entropy",
         "A0-U1-ATOM-016-bookmarks-publication-history-atomic",
-        "A0-U1-ATOM-017-transposition-and-existing-a0-unchanged"
+        "A0-U1-ATOM-017-transposition-and-existing-a0-unchanged",
+        "A0-U1-ATOM-001-command-and-five-closed-variants",
+        "A0-U1-ATOM-009-completion-declarations-exact"
       ],
       "caseIds": [
-        "A0U1-PIPE-005",
-        "A0U1-PIPE-006",
-        "A0U1-PIPE-007",
-        "A0U1-PIPE-008",
         "A0U1-SPLITS-001",
         "A0U1-SPLITS-002",
         "A0U1-SPLITS-003",
         "A0U1-SPLITS-004",
         "A0U1-SPLITS-005",
-        "A0U1-SPLITS-006"
+        "A0U1-SPLITS-006",
+        "A0U1-SPLITS-007",
+        "A0U1-SPLITS-008",
+        "A0U1-SPLITS-009",
+        "A0U1-SPLITS-010"
       ],
       "transitionIds": [
-        "A0U1-PIPE-005-REFUSED",
-        "A0U1-PIPE-006-REFUSED",
-        "A0U1-PIPE-007-REFUSED",
-        "A0U1-PIPE-008-REFUSED",
         "A0U1-SPLITS-001-APPLY",
         "A0U1-SPLITS-001-UNDO",
         "A0U1-SPLITS-001-REDO",
@@ -305,7 +575,18 @@
         "A0U1-SPLITS-005-BASE",
         "A0U1-SPLITS-005-TRANSPOSED",
         "A0U1-SPLITS-006-BASE",
-        "A0U1-SPLITS-006-KILLER"
+        "A0U1-SPLITS-006-KILLER",
+        "A0U1-SPLITS-007-APPLY",
+        "A0U1-SPLITS-005-EXACT",
+        "A0U1-SPLITS-003-WRONG-DOCUMENT",
+        "A0U1-SPLITS-003-STALE-REVISION",
+        "A0U1-SPLITS-004-EXTRA-PLAN-KEY",
+        "A0U1-SPLITS-006-COMPLETION-PLUS-ONE",
+        "A0U1-INS-006-UNICODE-SCALAR-REFUSED",
+        "A0U1-SPLITS-006-NAME-FIRST-EXCESS",
+        "A0U1-SPLITS-008-FACTORY-0",
+        "A0U1-SPLITS-004-FORBIDDEN-PLANS",
+        "A0U1-SPLITS-004-FORBIDDEN-IMPORTDRAFT"
       ],
       "controlIds": [
         "A0U1-MUT-025",
@@ -314,6 +595,7 @@
       ],
       "authorityIds": [
         "A0U1-AUTH-A0",
+        "A0U1-AUTH-T0",
         "A0U1-AUTH-DOMAIN",
         "A0U1-AUTH-F2-F3",
         "A0U1-AUTH-U1",
@@ -321,13 +603,15 @@
       ],
       "proofKinds": [
         "positive",
-        "undo-redo",
-        "mutation-baseline",
         "negative-near-miss",
-        "mutation",
+        "stale-wrong-document",
+        "malformed-exact-shape",
+        "exact-boundary",
+        "plus-one",
+        "undo-redo",
         "collision-allocation",
         "transposition-applicability",
-        "malformed-exact-shape"
+        "mutation"
       ],
       "implementationOwner": "A0 application controller"
     },
@@ -340,23 +624,23 @@
         "A0-U1-ATOM-014-timeline-and-bounds-preserved",
         "A0-U1-ATOM-015-ids-preflight-preorder-honest-entropy",
         "A0-U1-ATOM-016-bookmarks-publication-history-atomic",
-        "A0-U1-ATOM-017-transposition-and-existing-a0-unchanged"
+        "A0-U1-ATOM-017-transposition-and-existing-a0-unchanged",
+        "A0-U1-ATOM-001-command-and-five-closed-variants",
+        "A0-U1-ATOM-009-completion-declarations-exact"
       ],
       "caseIds": [
-        "A0U1-INS-011",
-        "A0U1-INS-012",
-        "A0U1-PIPE-009",
-        "A0U1-PIPE-010",
         "A0U1-JOINS-001",
         "A0U1-JOINS-002",
         "A0U1-JOINS-003",
         "A0U1-JOINS-004",
         "A0U1-JOINS-005",
-        "A0U1-JOINS-006"
+        "A0U1-JOINS-006",
+        "A0U1-JOINS-007",
+        "A0U1-JOINS-008",
+        "A0U1-JOINS-009",
+        "A0U1-JOINS-010"
       ],
       "transitionIds": [
-        "A0U1-PIPE-009-REFUSED",
-        "A0U1-PIPE-010-REFUSED",
         "A0U1-JOINS-001-APPLY",
         "A0U1-JOINS-001-UNDO",
         "A0U1-JOINS-001-REDO",
@@ -366,7 +650,21 @@
         "A0U1-JOINS-005-BASE",
         "A0U1-JOINS-005-TRANSPOSED",
         "A0U1-JOINS-006-BASE",
-        "A0U1-JOINS-006-KILLER"
+        "A0U1-JOINS-006-KILLER",
+        "A0U1-JOINS-007-APPLY",
+        "A0U1-JOINS-005-EXACT",
+        "A0U1-JOINS-008-HOSTILE-FACTORY-UNUSED",
+        "A0U1-JOINS-003-WRONG-DOCUMENT",
+        "A0U1-JOINS-003-STALE-REVISION",
+        "A0U1-JOINS-004-EXTRA-PLAN-KEY",
+        "A0U1-JOINS-006-COMPLETION-PLUS-ONE",
+        "A0U1-JOINS-004-FORBIDDEN-NESTEDPLAN",
+        "A0U1-JOINS-010-METADATA-POLICY-KILLER",
+        "A0U1-JOINS-011-EXACT-8768",
+        "A0U1-JOINS-011-FIRST-EXCESS-8769",
+        "A0U1-JOINS-011-GROSS-CARDINALITY",
+        "A0U1-JOINS-011-INVALID-SURROGATE-LAST",
+        "A0U1-JOINS-011-MALFORMED-FIRST-EXTRA"
       ],
       "controlIds": [
         "A0U1-MUT-028",
@@ -375,6 +673,7 @@
       ],
       "authorityIds": [
         "A0U1-AUTH-A0",
+        "A0U1-AUTH-T0",
         "A0U1-AUTH-DOMAIN",
         "A0U1-AUTH-F2-F3",
         "A0U1-AUTH-U1",
@@ -382,12 +681,15 @@
       ],
       "proofKinds": [
         "positive",
-        "undo-redo",
-        "mutation-baseline",
         "negative-near-miss",
-        "mutation",
+        "stale-wrong-document",
+        "malformed-exact-shape",
+        "exact-boundary",
+        "plus-one",
+        "undo-redo",
+        "collision-allocation",
         "transposition-applicability",
-        "malformed-exact-shape"
+        "mutation"
       ],
       "implementationOwner": "A0 application controller"
     }
@@ -397,27 +699,107 @@
       "lawId": "A0-U1-ATOM-001-command-and-five-closed-variants",
       "requirement": "One inherited envelope carries exactly one member of the closed five-plan union and forbids candidate, patch, batch, or nested-plan backdoors.",
       "positiveTransitionIds": [
-        "A0U1-INS-001-APPLY"
+        "A0U1-INS-001-APPLY",
+        "A0U1-INS-009-BASE",
+        "A0U1-INS-001-INTO-MEASURE",
+        "A0U1-INS-001-WARNING-ACKNOWLEDGED",
+        "A0U1-INS-001-INTO-DOCUMENT",
+        "A0U1-INS-005-COLLECTION-EXACT",
+        "A0U1-INS-011-NULL-APPLY"
       ],
       "negativeOrNearMissTransitionIds": [
+        "A0U1-INS-008-PLUS-ONE",
+        "A0U1-INS-009-COLLISION",
+        "A0U1-INS-012-COMPLETION",
+        "A0U1-INS-003-WRONG-DOCUMENT",
+        "A0U1-INS-003-STALE-REVISION",
+        "A0U1-INS-004-EXTRA-PLAN-KEY",
+        "A0U1-SPLITD-003-WRONG-DOCUMENT",
+        "A0U1-SPLITD-003-STALE-REVISION",
+        "A0U1-JOIND-003-WRONG-DOCUMENT",
+        "A0U1-JOIND-003-STALE-REVISION",
+        "A0U1-JOIND-004-EXTRA-PLAN-KEY",
+        "A0U1-SPLITS-003-WRONG-DOCUMENT",
+        "A0U1-SPLITS-003-STALE-REVISION",
+        "A0U1-SPLITS-004-EXTRA-PLAN-KEY",
+        "A0U1-JOINS-003-WRONG-DOCUMENT",
+        "A0U1-JOINS-003-STALE-REVISION",
+        "A0U1-JOINS-004-EXTRA-PLAN-KEY",
         "A0U1-INS-006-REFUSED",
-        "A0U1-PIPE-001-REFUSED",
-        "A0U1-PIPE-002-REFUSED",
-        "A0U1-PIPE-003-REFUSED",
-        "A0U1-PIPE-004-REFUSED",
-        "A0U1-PIPE-005-REFUSED",
-        "A0U1-PIPE-006-REFUSED",
-        "A0U1-PIPE-007-REFUSED",
-        "A0U1-PIPE-008-REFUSED",
-        "A0U1-PIPE-009-REFUSED",
-        "A0U1-PIPE-010-REFUSED"
+        "A0U1-JOIND-006-COMPLETION-PLUS-ONE",
+        "A0U1-SPLITS-006-COMPLETION-PLUS-ONE",
+        "A0U1-JOINS-006-COMPLETION-PLUS-ONE",
+        "A0U1-INS-003-STALE-BASE-REVISION",
+        "A0U1-INS-003-STALE-ISSUE-CODES",
+        "A0U1-INS-003-STALE-STATUS",
+        "A0U1-INS-003-STALE-LANE",
+        "A0U1-INS-004-EXTRA-COMMAND-KEY",
+        "A0U1-INS-006-UNICODE-SCALAR-REFUSED",
+        "A0U1-SPLITS-006-NAME-FIRST-EXCESS",
+        "A0U1-INS-002-WRONG-PARENT",
+        "A0U1-INS-002-RECOVERED-PLACEMENT-REFUSED",
+        "A0U1-INS-002-COMPLETE-SYNTAX-REFUSED",
+        "A0U1-INS-002-RECOVERY-REQUIRES-FAILURE",
+        "A0U1-INS-002-WARNING-MISMATCH",
+        "A0U1-INS-002-FRAGMENT-PLACEMENT-MISMATCH",
+        "A0U1-INS-006-COLLECTION-PLUS-ONE",
+        "A0U1-INS-005-TIMELINE-EXACT",
+        "A0U1-INS-006-TIMELINE-PLUS-ONE",
+        "A0U1-INS-008-DOCUMENT-FACTORY-0",
+        "A0U1-INS-008-DOCUMENT-FACTORY-1",
+        "A0U1-INS-008-DOCUMENT-FACTORY-2",
+        "A0U1-INS-008-DOCUMENT-FACTORY-3",
+        "A0U1-INS-008-DOCUMENT-FACTORY-4",
+        "A0U1-INS-008-DOCUMENT-FACTORY-5",
+        "A0U1-INS-008-DOCUMENT-COLLISION-0",
+        "A0U1-INS-008-DOCUMENT-COLLISION-1",
+        "A0U1-INS-008-DOCUMENT-COLLISION-2",
+        "A0U1-INS-008-DOCUMENT-COLLISION-3",
+        "A0U1-INS-008-DOCUMENT-COLLISION-4",
+        "A0U1-INS-008-DOCUMENT-COLLISION-5",
+        "A0U1-SPLITD-008-FACTORY-0",
+        "A0U1-SPLITS-008-FACTORY-0",
+        "A0U1-INS-002-F2-REFUSED",
+        "A0U1-INS-002-F3-REFUSED",
+        "A0U1-INS-002-HISTORY-REFUSED",
+        "A0U1-INS-004-FORBIDDEN-CANDIDATE",
+        "A0U1-SPLITD-004-FORBIDDEN-DOCUMENT",
+        "A0U1-JOIND-004-FORBIDDEN-COMMANDS",
+        "A0U1-SPLITS-004-FORBIDDEN-PLANS",
+        "A0U1-JOINS-004-FORBIDDEN-NESTEDPLAN",
+        "A0U1-INS-004-FORBIDDEN-PATCH",
+        "A0U1-SPLITD-004-FORBIDDEN-DERIVEDPATCH",
+        "A0U1-JOIND-004-FORBIDDEN-REPLACEMENT",
+        "A0U1-SPLITS-004-FORBIDDEN-IMPORTDRAFT",
+        "A0U1-JOINS-010-METADATA-POLICY-KILLER",
+        "A0U1-INS-002-MULTI-DIAGNOSTIC-SYNTAX",
+        "A0U1-INS-013-DUP-SYNTAX",
+        "A0U1-INS-013-DUP-COUNT",
+        "A0U1-INS-013-DUP-ORDER",
+        "A0U1-INS-013-CODE-FIRST-EXCESS",
+        "A0U1-JOINS-011-GROSS-CARDINALITY",
+        "A0U1-JOINS-011-INVALID-SURROGATE-LAST",
+        "A0U1-JOINS-011-MALFORMED-FIRST-EXTRA",
+        "A0U1-JOINS-011-EXACT-8768",
+        "A0U1-JOINS-011-FIRST-EXCESS-8769"
       ],
       "boundaryTransitionIds": [
-        "A0U1-PIPE-001-REFUSED",
-        "A0U1-PIPE-002-REFUSED"
+        "A0U1-INS-008-PLUS-ONE",
+        "A0U1-INS-012-COMPLETION",
+        "A0U1-JOIND-006-COMPLETION-PLUS-ONE",
+        "A0U1-SPLITS-006-COMPLETION-PLUS-ONE",
+        "A0U1-JOINS-006-COMPLETION-PLUS-ONE",
+        "A0U1-INS-006-UNICODE-SCALAR-REFUSED",
+        "A0U1-SPLITS-006-NAME-FIRST-EXCESS",
+        "A0U1-INS-005-COLLECTION-EXACT",
+        "A0U1-INS-006-COLLECTION-PLUS-ONE"
       ],
       "applicabilityRowIds": [
-        "A0U1-APP-INSERT"
+        "A0U1-APP-INSERT",
+        "A0U1-APP-SPLITD",
+        "A0U1-APP-JOIND",
+        "A0U1-APP-SPLITS",
+        "A0U1-APP-JOINS"
       ],
       "mutationControlIds": [
         "A0U1-MUT-001",
@@ -433,15 +815,19 @@
       ],
       "traceIds": [
         "A0U1-TRACE-PIPELINE",
-        "A0U1-TRACE-INSERT-FRAGMENT"
+        "A0U1-TRACE-INSERT-FRAGMENT",
+        "A0U1-TRACE-SPLIT-EVENT-DURATION",
+        "A0U1-TRACE-JOIN-EVENT-DURATIONS",
+        "A0U1-TRACE-SPLIT-SECTION",
+        "A0U1-TRACE-JOIN-SECTIONS"
       ],
       "authorityIds": [
         "A0U1-AUTH-A0",
-        "A0U1-AUTH-VERIFICATION",
         "A0U1-AUTH-T0",
         "A0U1-AUTH-DOMAIN",
         "A0U1-AUTH-F2-F3",
-        "A0U1-AUTH-U1"
+        "A0U1-AUTH-U1",
+        "A0U1-AUTH-VERIFICATION"
       ]
     },
     {
@@ -449,27 +835,33 @@
       "requirement": "Every insert binds all six live QuickEntry snapshot fields and the canonical stable target before parsing or allocation.",
       "positiveTransitionIds": [
         "A0U1-INS-001-APPLY",
-        "A0U1-INS-002-APPLY"
+        "A0U1-INS-002-APPLY",
+        "A0U1-INS-009-BASE",
+        "A0U1-INS-001-INTO-MEASURE",
+        "A0U1-INS-001-WARNING-ACKNOWLEDGED",
+        "A0U1-INS-001-INTO-DOCUMENT",
+        "A0U1-INS-011-NULL-APPLY"
       ],
       "negativeOrNearMissTransitionIds": [
         "A0U1-INS-010-STALE-TEXT",
         "A0U1-INS-010-STALE-TARGET",
-        "A0U1-PIPE-001-REFUSED",
-        "A0U1-PIPE-002-REFUSED",
-        "A0U1-PIPE-003-REFUSED",
-        "A0U1-PIPE-004-REFUSED",
-        "A0U1-PIPE-005-REFUSED",
-        "A0U1-PIPE-006-REFUSED",
-        "A0U1-PIPE-007-REFUSED",
-        "A0U1-PIPE-008-REFUSED",
-        "A0U1-PIPE-009-REFUSED",
-        "A0U1-PIPE-010-REFUSED"
+        "A0U1-INS-003-STALE-BASE-REVISION",
+        "A0U1-INS-003-STALE-ISSUE-CODES",
+        "A0U1-INS-003-STALE-STATUS",
+        "A0U1-INS-003-STALE-LANE",
+        "A0U1-INS-002-WRONG-PARENT",
+        "A0U1-INS-002-RECOVERED-PLACEMENT-REFUSED",
+        "A0U1-INS-002-COMPLETE-SYNTAX-REFUSED",
+        "A0U1-INS-002-RECOVERY-REQUIRES-FAILURE",
+        "A0U1-INS-002-WARNING-MISMATCH",
+        "A0U1-INS-002-FRAGMENT-PLACEMENT-MISMATCH",
+        "A0U1-INS-013-DUP-SYNTAX",
+        "A0U1-INS-013-DUP-COUNT",
+        "A0U1-INS-013-DUP-ORDER"
       ],
       "boundaryTransitionIds": [
-        "A0U1-INS-010-STALE-TEXT",
-        "A0U1-INS-010-STALE-TARGET",
-        "A0U1-PIPE-001-REFUSED",
-        "A0U1-PIPE-002-REFUSED"
+        "A0U1-INS-001-APPLY",
+        "A0U1-INS-010-STALE-TEXT"
       ],
       "applicabilityRowIds": [
         "A0U1-APP-INSERT"
@@ -484,11 +876,11 @@
       ],
       "authorityIds": [
         "A0U1-AUTH-A0",
-        "A0U1-AUTH-VERIFICATION",
         "A0U1-AUTH-T0",
         "A0U1-AUTH-DOMAIN",
         "A0U1-AUTH-F2-F3",
-        "A0U1-AUTH-U1"
+        "A0U1-AUTH-U1",
+        "A0U1-AUTH-VERIFICATION"
       ]
     },
     {
@@ -498,14 +890,24 @@
         "A0U1-INS-001-APPLY",
         "A0U1-INS-002-APPLY",
         "A0U1-INS-005-CALLER-APPLY",
-        "A0U1-INS-007-BOUNDARY"
+        "A0U1-INS-007-BOUNDARY",
+        "A0U1-INS-009-BASE",
+        "A0U1-INS-001-INTO-MEASURE",
+        "A0U1-INS-001-WARNING-ACKNOWLEDGED",
+        "A0U1-INS-001-INTO-DOCUMENT",
+        "A0U1-INS-011-NULL-APPLY"
       ],
       "negativeOrNearMissTransitionIds": [
-        "A0U1-INS-008-PLUS-ONE"
+        "A0U1-INS-002-RECOVERED-PLACEMENT-REFUSED",
+        "A0U1-INS-002-COMPLETE-SYNTAX-REFUSED",
+        "A0U1-INS-002-RECOVERY-REQUIRES-FAILURE",
+        "A0U1-INS-002-WARNING-MISMATCH",
+        "A0U1-INS-002-FRAGMENT-PLACEMENT-MISMATCH",
+        "A0U1-INS-002-MULTI-DIAGNOSTIC-SYNTAX",
+        "A0U1-INS-013-DUP-SYNTAX"
       ],
       "boundaryTransitionIds": [
-        "A0U1-INS-007-BOUNDARY",
-        "A0U1-INS-008-PLUS-ONE"
+        "A0U1-INS-007-BOUNDARY"
       ],
       "applicabilityRowIds": [
         "A0U1-APP-INSERT"
@@ -514,6 +916,7 @@
         "A0U1-MUT-010"
       ],
       "traceIds": [
+        "A0U1-TRACE-PIPELINE",
         "A0U1-TRACE-INSERT-FRAGMENT"
       ],
       "authorityIds": [
@@ -531,13 +934,24 @@
       "positiveTransitionIds": [
         "A0U1-INS-001-APPLY",
         "A0U1-INS-007-BOUNDARY",
-        "A0U1-INS-011-TRANSPOSED"
+        "A0U1-INS-011-TRANSPOSED",
+        "A0U1-INS-009-BASE",
+        "A0U1-INS-001-INTO-MEASURE",
+        "A0U1-INS-001-WARNING-ACKNOWLEDGED",
+        "A0U1-INS-001-INTO-DOCUMENT",
+        "A0U1-INS-011-NULL-APPLY"
       ],
       "negativeOrNearMissTransitionIds": [
-        "A0U1-INS-012-COMPLETION"
+        "A0U1-INS-012-COMPLETION",
+        "A0U1-INS-002-COMPLETE-SYNTAX-REFUSED",
+        "A0U1-INS-002-WARNING-MISMATCH",
+        "A0U1-INS-002-FRAGMENT-PLACEMENT-MISMATCH",
+        "A0U1-INS-002-MULTI-DIAGNOSTIC-SYNTAX",
+        "A0U1-INS-013-DUP-SYNTAX"
       ],
       "boundaryTransitionIds": [
-        "A0U1-INS-007-BOUNDARY"
+        "A0U1-INS-007-BOUNDARY",
+        "A0U1-INS-012-COMPLETION"
       ],
       "applicabilityRowIds": [
         "A0U1-APP-INSERT"
@@ -546,6 +960,7 @@
         "A0U1-MUT-010"
       ],
       "traceIds": [
+        "A0U1-TRACE-PIPELINE",
         "A0U1-TRACE-INSERT-FRAGMENT"
       ],
       "authorityIds": [
@@ -562,14 +977,19 @@
       "requirement": "Recovered insertion requires T0 failure and applies exactly the one selected global ordinal with siblingsApplied zero.",
       "positiveTransitionIds": [
         "A0U1-INS-002-APPLY",
-        "A0U1-INS-005-CALLER-APPLY"
+        "A0U1-INS-005-CALLER-APPLY",
+        "A0U1-INS-009-BASE",
+        "A0U1-INS-011-TRANSPOSED"
       ],
       "negativeOrNearMissTransitionIds": [
         "A0U1-INS-003-REFUSED",
         "A0U1-INS-004-REFUSED",
-        "A0U1-INS-006-REFUSED"
+        "A0U1-INS-006-REFUSED",
+        "A0U1-INS-002-RECOVERED-PLACEMENT-REFUSED",
+        "A0U1-INS-002-RECOVERY-REQUIRES-FAILURE"
       ],
       "boundaryTransitionIds": [
+        "A0U1-INS-002-APPLY",
         "A0U1-INS-003-REFUSED"
       ],
       "applicabilityRowIds": [
@@ -580,6 +1000,7 @@
         "A0U1-MUT-014"
       ],
       "traceIds": [
+        "A0U1-TRACE-PIPELINE",
         "A0U1-TRACE-INSERT-FRAGMENT"
       ],
       "authorityIds": [
@@ -596,15 +1017,17 @@
       "requirement": "Recovered insertion requires the fixed layout-loss token, resolved-or-caller duration agreement, and into-measure placement.",
       "positiveTransitionIds": [
         "A0U1-INS-002-APPLY",
-        "A0U1-INS-005-CALLER-APPLY"
+        "A0U1-INS-005-CALLER-APPLY",
+        "A0U1-INS-009-BASE",
+        "A0U1-INS-011-TRANSPOSED"
       ],
       "negativeOrNearMissTransitionIds": [
         "A0U1-INS-003-REFUSED",
         "A0U1-INS-004-REFUSED",
-        "A0U1-INS-005-CALLER-REFUSED",
-        "A0U1-INS-006-REFUSED"
+        "A0U1-INS-005-CALLER-REFUSED"
       ],
       "boundaryTransitionIds": [
+        "A0U1-INS-005-CALLER-APPLY",
         "A0U1-INS-005-CALLER-REFUSED"
       ],
       "applicabilityRowIds": [
@@ -616,6 +1039,7 @@
         "A0U1-MUT-013"
       ],
       "traceIds": [
+        "A0U1-TRACE-PIPELINE",
         "A0U1-TRACE-INSERT-FRAGMENT"
       ],
       "authorityIds": [
@@ -632,13 +1056,29 @@
       "requirement": "Complete drafts use one exact correlated placement shape for measure, section, or document boundaries.",
       "positiveTransitionIds": [
         "A0U1-INS-001-APPLY",
-        "A0U1-INS-011-TRANSPOSED"
+        "A0U1-INS-011-TRANSPOSED",
+        "A0U1-INS-009-BASE",
+        "A0U1-INS-001-INTO-MEASURE",
+        "A0U1-INS-001-WARNING-ACKNOWLEDGED",
+        "A0U1-INS-001-INTO-DOCUMENT",
+        "A0U1-INS-005-COLLECTION-EXACT",
+        "A0U1-INS-011-NULL-APPLY"
       ],
       "negativeOrNearMissTransitionIds": [
-        "A0U1-INS-006-REFUSED"
+        "A0U1-INS-003-WRONG-DOCUMENT",
+        "A0U1-INS-003-STALE-REVISION",
+        "A0U1-INS-004-EXTRA-PLAN-KEY",
+        "A0U1-INS-002-WRONG-PARENT",
+        "A0U1-INS-002-RECOVERED-PLACEMENT-REFUSED",
+        "A0U1-INS-002-FRAGMENT-PLACEMENT-MISMATCH",
+        "A0U1-INS-006-COLLECTION-PLUS-ONE",
+        "A0U1-INS-004-FORBIDDEN-CANDIDATE",
+        "A0U1-INS-004-FORBIDDEN-PATCH",
+        "A0U1-INS-013-CODE-FIRST-EXCESS"
       ],
       "boundaryTransitionIds": [
-        "A0U1-INS-012-COMPLETION"
+        "A0U1-INS-005-COLLECTION-EXACT",
+        "A0U1-INS-006-COLLECTION-PLUS-ONE"
       ],
       "applicabilityRowIds": [
         "A0U1-APP-INSERT"
@@ -647,6 +1087,7 @@
         "A0U1-MUT-014"
       ],
       "traceIds": [
+        "A0U1-TRACE-PIPELINE",
         "A0U1-TRACE-INSERT-FRAGMENT"
       ],
       "authorityIds": [
@@ -664,13 +1105,20 @@
       "positiveTransitionIds": [
         "A0U1-INS-001-APPLY",
         "A0U1-INS-002-APPLY",
-        "A0U1-INS-011-TRANSPOSED"
+        "A0U1-INS-011-TRANSPOSED",
+        "A0U1-INS-009-BASE",
+        "A0U1-INS-001-INTO-MEASURE",
+        "A0U1-INS-001-INTO-DOCUMENT",
+        "A0U1-INS-005-COLLECTION-EXACT",
+        "A0U1-INS-011-NULL-APPLY"
       ],
       "negativeOrNearMissTransitionIds": [
-        "A0U1-INS-006-REFUSED"
+        "A0U1-INS-003-REFUSED",
+        "A0U1-INS-006-COLLECTION-PLUS-ONE"
       ],
       "boundaryTransitionIds": [
-        "A0U1-INS-012-COMPLETION"
+        "A0U1-INS-005-COLLECTION-EXACT",
+        "A0U1-INS-006-COLLECTION-PLUS-ONE"
       ],
       "applicabilityRowIds": [
         "A0U1-APP-INSERT"
@@ -679,6 +1127,7 @@
         "A0U1-MUT-014"
       ],
       "traceIds": [
+        "A0U1-TRACE-PIPELINE",
         "A0U1-TRACE-INSERT-FRAGMENT"
       ],
       "authorityIds": [
@@ -698,26 +1147,52 @@
         "A0U1-INS-002-APPLY",
         "A0U1-INS-005-CALLER-APPLY",
         "A0U1-SPLITD-001-APPLY",
-        "A0U1-JOIND-001-APPLY"
+        "A0U1-JOIND-001-APPLY",
+        "A0U1-SPLITD-005-EXACT",
+        "A0U1-JOIND-005-EXACT",
+        "A0U1-JOIND-008-HOSTILE-FACTORY-UNUSED",
+        "A0U1-INS-009-BASE",
+        "A0U1-INS-001-INTO-MEASURE",
+        "A0U1-INS-011-NULL-APPLY"
       ],
       "negativeOrNearMissTransitionIds": [
-        "A0U1-INS-012-COMPLETION"
+        "A0U1-INS-008-PLUS-ONE",
+        "A0U1-INS-012-COMPLETION",
+        "A0U1-JOIND-006-COMPLETION-PLUS-ONE",
+        "A0U1-SPLITS-006-COMPLETION-PLUS-ONE",
+        "A0U1-JOINS-006-COMPLETION-PLUS-ONE",
+        "A0U1-JOINS-011-GROSS-CARDINALITY",
+        "A0U1-JOINS-011-INVALID-SURROGATE-LAST",
+        "A0U1-JOINS-011-MALFORMED-FIRST-EXTRA",
+        "A0U1-JOINS-011-EXACT-8768",
+        "A0U1-JOINS-011-FIRST-EXCESS-8769"
       ],
       "boundaryTransitionIds": [
-        "A0U1-INS-012-COMPLETION"
+        "A0U1-INS-008-PLUS-ONE",
+        "A0U1-INS-012-COMPLETION",
+        "A0U1-SPLITD-005-EXACT",
+        "A0U1-JOIND-005-EXACT",
+        "A0U1-JOIND-006-COMPLETION-PLUS-ONE",
+        "A0U1-SPLITS-006-COMPLETION-PLUS-ONE",
+        "A0U1-JOINS-006-COMPLETION-PLUS-ONE"
       ],
       "applicabilityRowIds": [
         "A0U1-APP-INSERT",
         "A0U1-APP-SPLITD",
-        "A0U1-APP-JOIND"
+        "A0U1-APP-JOIND",
+        "A0U1-APP-SPLITS",
+        "A0U1-APP-JOINS"
       ],
       "mutationControlIds": [
         "A0U1-MUT-020"
       ],
       "traceIds": [
+        "A0U1-TRACE-PIPELINE",
         "A0U1-TRACE-INSERT-FRAGMENT",
         "A0U1-TRACE-SPLIT-EVENT-DURATION",
-        "A0U1-TRACE-JOIN-EVENT-DURATIONS"
+        "A0U1-TRACE-JOIN-EVENT-DURATIONS",
+        "A0U1-TRACE-SPLIT-SECTION",
+        "A0U1-TRACE-JOIN-SECTIONS"
       ],
       "authorityIds": [
         "A0U1-AUTH-A0",
@@ -735,18 +1210,26 @@
         "A0U1-SPLITD-001-APPLY",
         "A0U1-SPLITD-007-BASE",
         "A0U1-SPLITD-007-TRANSPOSED",
-        "A0U1-SPLITD-008-BASE"
+        "A0U1-SPLITD-008-BASE",
+        "A0U1-SPLITD-005-EXACT"
       ],
       "negativeOrNearMissTransitionIds": [
+        "A0U1-INS-008-PLUS-ONE",
         "A0U1-SPLITD-002-REFUSED",
         "A0U1-SPLITD-003-REFUSED",
         "A0U1-SPLITD-004-REFUSED",
         "A0U1-SPLITD-005-REFUSED",
         "A0U1-SPLITD-006-REFUSED",
-        "A0U1-SPLITD-008-KILLER"
+        "A0U1-SPLITD-008-KILLER",
+        "A0U1-SPLITD-003-STALE-REVISION",
+        "A0U1-SPLITD-008-FACTORY-0",
+        "A0U1-SPLITD-004-FORBIDDEN-DOCUMENT",
+        "A0U1-SPLITD-004-FORBIDDEN-DERIVEDPATCH"
       ],
       "boundaryTransitionIds": [
-        "A0U1-SPLITD-005-REFUSED"
+        "A0U1-INS-008-PLUS-ONE",
+        "A0U1-SPLITD-004-REFUSED",
+        "A0U1-SPLITD-005-EXACT"
       ],
       "applicabilityRowIds": [
         "A0U1-APP-SPLITD"
@@ -757,6 +1240,7 @@
         "A0U1-MUT-019"
       ],
       "traceIds": [
+        "A0U1-TRACE-PIPELINE",
         "A0U1-TRACE-SPLIT-EVENT-DURATION"
       ],
       "authorityIds": [
@@ -774,7 +1258,9 @@
         "A0U1-JOIND-001-APPLY",
         "A0U1-JOIND-007-BASE",
         "A0U1-JOIND-007-TRANSPOSED",
-        "A0U1-JOIND-008-BASE"
+        "A0U1-JOIND-008-BASE",
+        "A0U1-JOIND-005-EXACT",
+        "A0U1-JOIND-008-HOSTILE-FACTORY-UNUSED"
       ],
       "negativeOrNearMissTransitionIds": [
         "A0U1-JOIND-002-REFUSED",
@@ -782,10 +1268,16 @@
         "A0U1-JOIND-004-REFUSED",
         "A0U1-JOIND-005-REFUSED",
         "A0U1-JOIND-006-REFUSED",
-        "A0U1-JOIND-008-KILLER"
+        "A0U1-JOIND-008-KILLER",
+        "A0U1-JOIND-003-STALE-REVISION",
+        "A0U1-JOIND-004-EXTRA-PLAN-KEY",
+        "A0U1-JOIND-006-COMPLETION-PLUS-ONE",
+        "A0U1-JOIND-004-FORBIDDEN-COMMANDS",
+        "A0U1-JOIND-004-FORBIDDEN-REPLACEMENT"
       ],
       "boundaryTransitionIds": [
-        "A0U1-JOIND-002-REFUSED"
+        "A0U1-JOIND-005-EXACT",
+        "A0U1-JOIND-006-COMPLETION-PLUS-ONE"
       ],
       "applicabilityRowIds": [
         "A0U1-APP-JOIND"
@@ -797,6 +1289,7 @@
         "A0U1-MUT-024"
       ],
       "traceIds": [
+        "A0U1-TRACE-PIPELINE",
         "A0U1-TRACE-JOIN-EVENT-DURATIONS"
       ],
       "authorityIds": [
@@ -814,16 +1307,28 @@
         "A0U1-SPLITS-001-APPLY",
         "A0U1-SPLITS-005-BASE",
         "A0U1-SPLITS-005-TRANSPOSED",
-        "A0U1-SPLITS-006-BASE"
+        "A0U1-SPLITS-006-BASE",
+        "A0U1-SPLITS-005-EXACT"
       ],
       "negativeOrNearMissTransitionIds": [
         "A0U1-SPLITS-002-REFUSED",
         "A0U1-SPLITS-003-REFUSED",
         "A0U1-SPLITS-004-REFUSED",
-        "A0U1-SPLITS-006-KILLER"
+        "A0U1-SPLITS-006-KILLER",
+        "A0U1-SPLITS-003-STALE-REVISION",
+        "A0U1-SPLITS-004-EXTRA-PLAN-KEY",
+        "A0U1-SPLITS-006-COMPLETION-PLUS-ONE",
+        "A0U1-INS-006-UNICODE-SCALAR-REFUSED",
+        "A0U1-SPLITS-006-NAME-FIRST-EXCESS",
+        "A0U1-SPLITS-008-FACTORY-0",
+        "A0U1-SPLITS-004-FORBIDDEN-PLANS",
+        "A0U1-SPLITS-004-FORBIDDEN-IMPORTDRAFT"
       ],
       "boundaryTransitionIds": [
-        "A0U1-SPLITS-004-REFUSED"
+        "A0U1-SPLITS-005-EXACT",
+        "A0U1-SPLITS-006-COMPLETION-PLUS-ONE",
+        "A0U1-INS-006-UNICODE-SCALAR-REFUSED",
+        "A0U1-SPLITS-006-NAME-FIRST-EXCESS"
       ],
       "applicabilityRowIds": [
         "A0U1-APP-SPLITS"
@@ -834,6 +1339,7 @@
         "A0U1-MUT-027"
       ],
       "traceIds": [
+        "A0U1-TRACE-PIPELINE",
         "A0U1-TRACE-SPLIT-SECTION"
       ],
       "authorityIds": [
@@ -851,16 +1357,30 @@
         "A0U1-JOINS-001-APPLY",
         "A0U1-JOINS-005-BASE",
         "A0U1-JOINS-005-TRANSPOSED",
-        "A0U1-JOINS-006-BASE"
+        "A0U1-JOINS-006-BASE",
+        "A0U1-JOINS-005-EXACT",
+        "A0U1-JOINS-008-HOSTILE-FACTORY-UNUSED"
       ],
       "negativeOrNearMissTransitionIds": [
         "A0U1-JOINS-002-REFUSED",
         "A0U1-JOINS-003-REFUSED",
         "A0U1-JOINS-004-REFUSED",
-        "A0U1-JOINS-006-KILLER"
+        "A0U1-JOINS-006-KILLER",
+        "A0U1-JOINS-003-WRONG-DOCUMENT",
+        "A0U1-JOINS-003-STALE-REVISION",
+        "A0U1-JOINS-004-EXTRA-PLAN-KEY",
+        "A0U1-JOINS-006-COMPLETION-PLUS-ONE",
+        "A0U1-JOINS-004-FORBIDDEN-NESTEDPLAN",
+        "A0U1-JOINS-010-METADATA-POLICY-KILLER",
+        "A0U1-JOINS-011-GROSS-CARDINALITY",
+        "A0U1-JOINS-011-INVALID-SURROGATE-LAST",
+        "A0U1-JOINS-011-MALFORMED-FIRST-EXTRA",
+        "A0U1-JOINS-011-EXACT-8768",
+        "A0U1-JOINS-011-FIRST-EXCESS-8769"
       ],
       "boundaryTransitionIds": [
-        "A0U1-JOINS-002-REFUSED"
+        "A0U1-JOINS-005-EXACT",
+        "A0U1-JOINS-006-COMPLETION-PLUS-ONE"
       ],
       "applicabilityRowIds": [
         "A0U1-APP-JOINS"
@@ -871,6 +1391,7 @@
         "A0U1-MUT-030"
       ],
       "traceIds": [
+        "A0U1-TRACE-PIPELINE",
         "A0U1-TRACE-JOIN-SECTIONS"
       ],
       "authorityIds": [
@@ -886,27 +1407,24 @@
       "requirement": "Every operation preserves normalized exact timeline laws under deterministic collection bounds without wall-time cutoffs.",
       "positiveTransitionIds": [
         "A0U1-INS-001-APPLY",
-        "A0U1-INS-001-UNDO",
-        "A0U1-INS-001-REDO",
         "A0U1-INS-002-APPLY",
         "A0U1-INS-007-BOUNDARY",
         "A0U1-SPLITD-001-APPLY",
-        "A0U1-SPLITD-001-UNDO",
-        "A0U1-SPLITD-001-REDO",
         "A0U1-JOIND-001-APPLY",
-        "A0U1-JOIND-001-UNDO",
-        "A0U1-JOIND-001-REDO",
         "A0U1-SPLITS-001-APPLY",
-        "A0U1-SPLITS-001-UNDO",
-        "A0U1-SPLITS-001-REDO",
         "A0U1-JOINS-001-APPLY",
-        "A0U1-JOINS-001-UNDO",
-        "A0U1-JOINS-001-REDO"
+        "A0U1-SPLITD-005-EXACT",
+        "A0U1-JOIND-005-EXACT",
+        "A0U1-SPLITS-005-EXACT",
+        "A0U1-JOINS-005-EXACT",
+        "A0U1-JOIND-008-HOSTILE-FACTORY-UNUSED",
+        "A0U1-JOINS-008-HOSTILE-FACTORY-UNUSED",
+        "A0U1-INS-009-BASE",
+        "A0U1-INS-005-COLLECTION-EXACT",
+        "A0U1-INS-011-NULL-APPLY"
       ],
       "negativeOrNearMissTransitionIds": [
         "A0U1-INS-005-CALLER-REFUSED",
-        "A0U1-INS-008-PLUS-ONE",
-        "A0U1-INS-012-COMPLETION",
         "A0U1-SPLITD-002-REFUSED",
         "A0U1-SPLITD-003-REFUSED",
         "A0U1-SPLITD-004-REFUSED",
@@ -916,12 +1434,20 @@
         "A0U1-JOIND-003-REFUSED",
         "A0U1-JOIND-004-REFUSED",
         "A0U1-JOIND-005-REFUSED",
-        "A0U1-JOIND-006-REFUSED"
+        "A0U1-JOIND-006-REFUSED",
+        "A0U1-INS-006-COLLECTION-PLUS-ONE",
+        "A0U1-INS-005-TIMELINE-EXACT",
+        "A0U1-INS-006-TIMELINE-PLUS-ONE"
       ],
       "boundaryTransitionIds": [
         "A0U1-INS-007-BOUNDARY",
-        "A0U1-INS-008-PLUS-ONE",
-        "A0U1-SPLITD-005-REFUSED"
+        "A0U1-SPLITD-004-REFUSED",
+        "A0U1-SPLITD-005-EXACT",
+        "A0U1-JOIND-005-EXACT",
+        "A0U1-SPLITS-005-EXACT",
+        "A0U1-JOINS-005-EXACT",
+        "A0U1-INS-005-COLLECTION-EXACT",
+        "A0U1-INS-006-COLLECTION-PLUS-ONE"
       ],
       "applicabilityRowIds": [
         "A0U1-APP-INSERT",
@@ -934,6 +1460,7 @@
         "A0U1-MUT-024"
       ],
       "traceIds": [
+        "A0U1-TRACE-PIPELINE",
         "A0U1-TRACE-INSERT-FRAGMENT",
         "A0U1-TRACE-SPLIT-EVENT-DURATION",
         "A0U1-TRACE-JOIN-EVENT-DURATIONS",
@@ -959,35 +1486,48 @@
         "A0U1-SPLITD-001-APPLY",
         "A0U1-JOIND-001-APPLY",
         "A0U1-SPLITS-001-APPLY",
-        "A0U1-JOINS-001-APPLY"
+        "A0U1-JOINS-001-APPLY",
+        "A0U1-SPLITD-005-EXACT",
+        "A0U1-JOIND-005-EXACT",
+        "A0U1-SPLITS-005-EXACT",
+        "A0U1-JOINS-005-EXACT",
+        "A0U1-JOIND-008-HOSTILE-FACTORY-UNUSED",
+        "A0U1-JOINS-008-HOSTILE-FACTORY-UNUSED",
+        "A0U1-INS-009-BASE",
+        "A0U1-INS-001-INTO-MEASURE",
+        "A0U1-INS-001-INTO-DOCUMENT",
+        "A0U1-INS-005-COLLECTION-EXACT",
+        "A0U1-INS-011-NULL-APPLY"
       ],
       "negativeOrNearMissTransitionIds": [
         "A0U1-INS-003-REFUSED",
-        "A0U1-INS-009-COLLISION",
         "A0U1-INS-010-STALE-TEXT",
         "A0U1-INS-010-STALE-TARGET",
-        "A0U1-PIPE-001-REFUSED",
-        "A0U1-PIPE-002-REFUSED",
-        "A0U1-PIPE-003-REFUSED",
-        "A0U1-PIPE-004-REFUSED",
-        "A0U1-PIPE-005-REFUSED",
-        "A0U1-PIPE-006-REFUSED",
-        "A0U1-PIPE-007-REFUSED",
-        "A0U1-PIPE-008-REFUSED",
-        "A0U1-PIPE-009-REFUSED",
-        "A0U1-PIPE-010-REFUSED",
         "A0U1-SPLITS-002-REFUSED",
         "A0U1-SPLITS-003-REFUSED",
-        "A0U1-SPLITS-004-REFUSED"
+        "A0U1-SPLITS-004-REFUSED",
+        "A0U1-INS-008-DOCUMENT-FACTORY-0",
+        "A0U1-INS-008-DOCUMENT-FACTORY-1",
+        "A0U1-INS-008-DOCUMENT-FACTORY-2",
+        "A0U1-INS-008-DOCUMENT-FACTORY-3",
+        "A0U1-INS-008-DOCUMENT-FACTORY-4",
+        "A0U1-INS-008-DOCUMENT-FACTORY-5",
+        "A0U1-INS-008-DOCUMENT-COLLISION-0",
+        "A0U1-INS-008-DOCUMENT-COLLISION-1",
+        "A0U1-INS-008-DOCUMENT-COLLISION-2",
+        "A0U1-INS-008-DOCUMENT-COLLISION-3",
+        "A0U1-INS-008-DOCUMENT-COLLISION-4",
+        "A0U1-INS-008-DOCUMENT-COLLISION-5",
+        "A0U1-SPLITD-008-FACTORY-0",
+        "A0U1-SPLITS-008-FACTORY-0"
       ],
       "boundaryTransitionIds": [
         "A0U1-INS-007-BOUNDARY",
-        "A0U1-INS-009-COLLISION",
-        "A0U1-INS-010-STALE-TEXT",
-        "A0U1-INS-010-STALE-TARGET",
-        "A0U1-PIPE-001-REFUSED",
-        "A0U1-PIPE-002-REFUSED",
-        "A0U1-SPLITS-004-REFUSED"
+        "A0U1-SPLITD-005-EXACT",
+        "A0U1-JOIND-005-EXACT",
+        "A0U1-SPLITS-005-EXACT",
+        "A0U1-JOINS-005-EXACT",
+        "A0U1-INS-005-COLLECTION-EXACT"
       ],
       "applicabilityRowIds": [
         "A0U1-APP-INSERT",
@@ -1009,11 +1549,11 @@
       ],
       "authorityIds": [
         "A0U1-AUTH-A0",
-        "A0U1-AUTH-VERIFICATION",
         "A0U1-AUTH-T0",
         "A0U1-AUTH-DOMAIN",
         "A0U1-AUTH-F2-F3",
-        "A0U1-AUTH-U1"
+        "A0U1-AUTH-U1",
+        "A0U1-AUTH-VERIFICATION"
       ]
     },
     {
@@ -1021,38 +1561,35 @@
       "requirement": "Commit publishes one revision/history entry, exact bookmark and focus repair, four ordered effects, and no partial refusal state.",
       "positiveTransitionIds": [
         "A0U1-INS-001-APPLY",
-        "A0U1-INS-001-UNDO",
-        "A0U1-INS-001-REDO",
         "A0U1-INS-002-APPLY",
         "A0U1-INS-005-CALLER-APPLY",
         "A0U1-INS-007-BOUNDARY",
         "A0U1-SPLITD-001-APPLY",
-        "A0U1-SPLITD-001-UNDO",
-        "A0U1-SPLITD-001-REDO",
         "A0U1-JOIND-001-APPLY",
-        "A0U1-JOIND-001-UNDO",
-        "A0U1-JOIND-001-REDO",
         "A0U1-SPLITS-001-APPLY",
-        "A0U1-SPLITS-001-UNDO",
-        "A0U1-SPLITS-001-REDO",
         "A0U1-JOINS-001-APPLY",
-        "A0U1-JOINS-001-UNDO",
-        "A0U1-JOINS-001-REDO"
+        "A0U1-INS-007-APPLY",
+        "A0U1-SPLITD-007-APPLY",
+        "A0U1-JOIND-007-APPLY",
+        "A0U1-SPLITS-007-APPLY",
+        "A0U1-JOINS-007-APPLY",
+        "A0U1-SPLITD-005-EXACT",
+        "A0U1-JOIND-005-EXACT",
+        "A0U1-SPLITS-005-EXACT",
+        "A0U1-JOINS-005-EXACT",
+        "A0U1-JOIND-008-HOSTILE-FACTORY-UNUSED",
+        "A0U1-JOINS-008-HOSTILE-FACTORY-UNUSED",
+        "A0U1-INS-009-BASE",
+        "A0U1-INS-001-INTO-MEASURE",
+        "A0U1-INS-001-WARNING-ACKNOWLEDGED",
+        "A0U1-INS-001-INTO-DOCUMENT",
+        "A0U1-INS-005-COLLECTION-EXACT",
+        "A0U1-INS-011-NULL-APPLY"
       ],
       "negativeOrNearMissTransitionIds": [
         "A0U1-INS-009-COLLISION",
         "A0U1-INS-010-STALE-TEXT",
         "A0U1-INS-010-STALE-TARGET",
-        "A0U1-PIPE-001-REFUSED",
-        "A0U1-PIPE-002-REFUSED",
-        "A0U1-PIPE-003-REFUSED",
-        "A0U1-PIPE-004-REFUSED",
-        "A0U1-PIPE-005-REFUSED",
-        "A0U1-PIPE-006-REFUSED",
-        "A0U1-PIPE-007-REFUSED",
-        "A0U1-PIPE-008-REFUSED",
-        "A0U1-PIPE-009-REFUSED",
-        "A0U1-PIPE-010-REFUSED",
         "A0U1-SPLITD-002-REFUSED",
         "A0U1-SPLITD-003-REFUSED",
         "A0U1-SPLITD-004-REFUSED",
@@ -1068,17 +1605,48 @@
         "A0U1-SPLITS-004-REFUSED",
         "A0U1-JOINS-002-REFUSED",
         "A0U1-JOINS-003-REFUSED",
-        "A0U1-JOINS-004-REFUSED"
+        "A0U1-JOINS-004-REFUSED",
+        "A0U1-INS-003-WRONG-DOCUMENT",
+        "A0U1-INS-003-STALE-REVISION",
+        "A0U1-SPLITD-003-STALE-REVISION",
+        "A0U1-JOIND-003-STALE-REVISION",
+        "A0U1-SPLITS-003-STALE-REVISION",
+        "A0U1-JOINS-003-WRONG-DOCUMENT",
+        "A0U1-JOINS-003-STALE-REVISION",
+        "A0U1-INS-003-STALE-BASE-REVISION",
+        "A0U1-INS-003-STALE-ISSUE-CODES",
+        "A0U1-INS-003-STALE-STATUS",
+        "A0U1-INS-003-STALE-LANE",
+        "A0U1-INS-005-TIMELINE-EXACT",
+        "A0U1-INS-006-TIMELINE-PLUS-ONE",
+        "A0U1-INS-008-DOCUMENT-FACTORY-0",
+        "A0U1-INS-008-DOCUMENT-FACTORY-1",
+        "A0U1-INS-008-DOCUMENT-FACTORY-2",
+        "A0U1-INS-008-DOCUMENT-FACTORY-3",
+        "A0U1-INS-008-DOCUMENT-FACTORY-4",
+        "A0U1-INS-008-DOCUMENT-FACTORY-5",
+        "A0U1-INS-008-DOCUMENT-COLLISION-0",
+        "A0U1-INS-008-DOCUMENT-COLLISION-1",
+        "A0U1-INS-008-DOCUMENT-COLLISION-2",
+        "A0U1-INS-008-DOCUMENT-COLLISION-3",
+        "A0U1-INS-008-DOCUMENT-COLLISION-4",
+        "A0U1-INS-008-DOCUMENT-COLLISION-5",
+        "A0U1-SPLITD-008-FACTORY-0",
+        "A0U1-SPLITS-008-FACTORY-0",
+        "A0U1-INS-002-F2-REFUSED",
+        "A0U1-INS-002-F3-REFUSED",
+        "A0U1-INS-002-HISTORY-REFUSED",
+        "A0U1-INS-013-DUP-COUNT",
+        "A0U1-INS-013-DUP-ORDER"
       ],
       "boundaryTransitionIds": [
         "A0U1-INS-007-BOUNDARY",
-        "A0U1-INS-009-COLLISION",
-        "A0U1-INS-010-STALE-TEXT",
-        "A0U1-INS-010-STALE-TARGET",
-        "A0U1-PIPE-001-REFUSED",
-        "A0U1-PIPE-002-REFUSED",
-        "A0U1-SPLITD-005-REFUSED",
-        "A0U1-SPLITS-004-REFUSED"
+        "A0U1-SPLITD-004-REFUSED",
+        "A0U1-SPLITD-005-EXACT",
+        "A0U1-JOIND-005-EXACT",
+        "A0U1-SPLITS-005-EXACT",
+        "A0U1-JOINS-005-EXACT",
+        "A0U1-INS-005-COLLECTION-EXACT"
       ],
       "applicabilityRowIds": [
         "A0U1-APP-INSERT",
@@ -1102,11 +1670,11 @@
       ],
       "authorityIds": [
         "A0U1-AUTH-A0",
-        "A0U1-AUTH-VERIFICATION",
         "A0U1-AUTH-T0",
         "A0U1-AUTH-DOMAIN",
         "A0U1-AUTH-F2-F3",
-        "A0U1-AUTH-U1"
+        "A0U1-AUTH-U1",
+        "A0U1-AUTH-VERIFICATION"
       ]
     },
     {
@@ -1126,23 +1694,24 @@
         "A0U1-SPLITS-005-TRANSPOSED",
         "A0U1-JOINS-001-APPLY",
         "A0U1-JOINS-005-BASE",
-        "A0U1-JOINS-005-TRANSPOSED"
+        "A0U1-JOINS-005-TRANSPOSED",
+        "A0U1-SPLITD-005-EXACT",
+        "A0U1-JOIND-005-EXACT",
+        "A0U1-SPLITS-005-EXACT",
+        "A0U1-JOINS-005-EXACT",
+        "A0U1-JOIND-008-HOSTILE-FACTORY-UNUSED",
+        "A0U1-JOINS-008-HOSTILE-FACTORY-UNUSED",
+        "A0U1-INS-009-BASE",
+        "A0U1-INS-011-NULL-APPLY"
       ],
       "negativeOrNearMissTransitionIds": [
-        "A0U1-PIPE-001-REFUSED",
-        "A0U1-PIPE-002-REFUSED",
-        "A0U1-PIPE-003-REFUSED",
-        "A0U1-PIPE-004-REFUSED",
-        "A0U1-PIPE-005-REFUSED",
-        "A0U1-PIPE-006-REFUSED",
-        "A0U1-PIPE-007-REFUSED",
-        "A0U1-PIPE-008-REFUSED",
-        "A0U1-PIPE-009-REFUSED",
-        "A0U1-PIPE-010-REFUSED"
+        "A0U1-INS-003-REFUSED"
       ],
       "boundaryTransitionIds": [
-        "A0U1-PIPE-001-REFUSED",
-        "A0U1-PIPE-002-REFUSED"
+        "A0U1-SPLITD-005-EXACT",
+        "A0U1-JOIND-005-EXACT",
+        "A0U1-SPLITS-005-EXACT",
+        "A0U1-JOINS-005-EXACT"
       ],
       "applicabilityRowIds": [
         "A0U1-APP-INSERT",
@@ -1164,11 +1733,11 @@
       ],
       "authorityIds": [
         "A0U1-AUTH-A0",
-        "A0U1-AUTH-VERIFICATION",
         "A0U1-AUTH-T0",
         "A0U1-AUTH-DOMAIN",
         "A0U1-AUTH-F2-F3",
-        "A0U1-AUTH-U1"
+        "A0U1-AUTH-U1",
+        "A0U1-AUTH-VERIFICATION"
       ]
     }
   ]

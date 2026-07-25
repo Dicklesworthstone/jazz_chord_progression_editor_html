@@ -7,12 +7,12 @@
   "prospectiveConsumer": "U1 chart editor",
   "activeLeaf": "jcpe-milestone-reliable-studio-l3a.10.4.1",
   "contractModule": "src/application/application-edit-plan-contract.ts",
-  "applicationContractSchema": "changes.application.atomic-edit-plan-contract.v1",
-  "receiptSchema": "changes.application.atomic-edit-plan-receipt.v1",
-  "implementationStatus": "specified-unimplemented",
-  "productionImplementationClaim": false,
+  "applicationContractSchema": "changes.application.atomic-edit-plan-contract.v2",
+  "receiptSchema": "changes.application.atomic-edit-plan-receipt.v2",
+  "implementationStatus": "implemented-live",
+  "productionImplementationClaim": true,
   "u1UiCompletionClaim": false,
-  "humanAcceptanceClaim": false,
+  "humanAcceptanceClaim": true,
   "expertReviewClaim": false,
   "productionOutputUsedAsOracle": false,
   "expectedValuesGenerated": false,
@@ -54,7 +54,7 @@
       "lanes": {
         "complete-draft": {
           "parseOutcome": "success",
-          "measurePolicy": "every-materialized-measure-complete",
+          "measurePolicy": "zero-event-measures-empty-and-new-nonempty-closed-measures-complete",
           "partialTokenApplyAllowed": false,
           "placementKinds": [
             "into-measure",
@@ -95,12 +95,38 @@
         ],
         "bindingPhase": "before-id-allocation",
         "canonicalTargetPolicy": {
-          "intoMeasureBeforeEvent": "before-event-id-equals-beforeEventId",
-          "intoMeasureAppend": "measure-end-id-equals-measureId",
-          "intoSectionBeforeMeasure": "before-measure-id-equals-beforeMeasureId",
-          "intoSectionAppend": "section-end-id-equals-sectionId",
-          "intoDocumentBeforeSection": "before-section-id-equals-beforeSectionId",
-          "intoDocumentAppend": "document-end"
+          "parentOwnership": "same-declared-parent-required",
+          "measure": {
+            "measure-start": "before-first-event-or-append-when-empty",
+            "before-event": "before-that-event",
+            "after-event": "before-next-event-or-append",
+            "measure-end": "append"
+          },
+          "section": {
+            "section-start": "before-first-measure-or-append-when-empty",
+            "before-measure": "before-that-measure",
+            "after-measure": "before-next-measure-or-append",
+            "section-end": "append"
+          },
+          "document": {
+            "document-start": "before-first-section-or-append-when-empty",
+            "before-section": "before-that-section",
+            "after-section": "before-next-section-or-append",
+            "document-end": "append"
+          },
+          "placementSlots": {
+            "intoMeasure": "resolved-before-event-sibling-id-equals-beforeEventId-or-append-equals-null",
+            "intoSection": "resolved-before-measure-sibling-id-equals-beforeMeasureId-or-append-equals-null",
+            "intoDocument": "resolved-before-section-sibling-id-equals-beforeSectionId-or-append-equals-null"
+          },
+          "completeDraftIntoEmptyMeasure": {
+            "acceptedTargets": [
+              "measure-start",
+              "measure-end"
+            ],
+            "canonicalDestination": "append",
+            "beforeEventId": null
+          }
         },
         "completeDraftStatus": "ready",
         "completeDraftLane": "complete-draft",
@@ -349,6 +375,8 @@
     "validationCalls"
   ],
   "workCounterNames": [
+    "structuralDecodeCalls",
+    "semanticValidationCalls",
     "planNodesVisited",
     "sourceCodePointsObserved",
     "sourceUtf8BytesObserved",
@@ -363,6 +391,7 @@
     "draftEventsVisited",
     "completionDeclarationsVisited",
     "metadataFieldsCompared",
+    "metadataCodePointsObserved",
     "exactBeatAdditions",
     "exactBeatComparisons",
     "idAllocationAttempts",
@@ -374,6 +403,8 @@
     "peakDiagnosticRecords"
   ],
   "limits": {
+    "structuralDecodeCalls": 1,
+    "semanticValidationCalls": 1,
     "fragmentSourceCodePoints": 4096,
     "fragmentSourceUtf8Bytes": 16384,
     "fragmentSections": 64,
@@ -393,14 +424,18 @@
     "occupiedIdRecords": 73793,
     "planNodeRecords": 73793,
     "bookmarkRecordsExamined": 8196,
-    "exactBeatAdditions": 8192,
-    "exactBeatComparisons": 8192,
-    "metadataFieldsCompared": 12
+    "exactBeatAdditions": 8193,
+    "exactBeatComparisons": 8193,
+    "metadataFieldsCompared": 12,
+    "sectionNameCodePoints": 256,
+    "sectionAnnotationCodePoints": 2000,
+    "completionReasonCodePoints": 2000,
+    "planMetadataCodePoints": 8768
   },
   "ordering": {
     "runnerStages": [
-      "a0-envelope",
       "exact-runtime-shape",
+      "a0-envelope",
       "quick-entry-snapshot",
       "bounded-source-preflight",
       "target-and-destination",
@@ -416,7 +451,7 @@
       "bookmarks-history-and-atomic-publication"
     ],
     "idAllocation": [
-      "preflight-all-non-id-laws",
+      "preflight-operation-local-shape-snapshot-parser-declarations-laws-and-bounds",
       "index-document-section-measure-event-ids-globally",
       "fragment-section-before-descendants",
       "fragment-measure-before-events",
@@ -428,7 +463,7 @@
       "stop-without-retry-on-first-failure-or-collision"
     ],
     "diagnostics": [
-      "path-ecmascript-code-unit-lexical",
+      "path-domain-segment-order",
       "null-source-range-before-ranged",
       "source-range-start-ascending",
       "source-range-end-ascending",
@@ -441,19 +476,45 @@
       "announce"
     ],
     "bookmarks": {
-      "insertFragment": "preserve-selection-and-range-move-insertion-after-last-inserted",
+      "insertFragment": "preserve-selection-and-range-set-insertion-after-last-inserted",
       "splitEventDuration": "preserve-original-selection-rewrite-original-span-end-to-second",
       "joinEventDurations": "replace-removed-right-selection-with-left-clear-unrepresentable-range",
       "splitSection": "preserve-node-identities-rewrite-source-section-end-to-suffix",
-      "joinSections": "preserve-measure-event-identities-map-internal-edge-to-measure-boundary"
+      "joinSections": "preserve-measure-event-identities-map-internal-edge-to-first-measure-or-surviving-end"
     },
     "quickEntryTargetMatch": {
-      "intoMeasureBeforeEvent": "before-event-id-equals-beforeEventId",
-      "intoMeasureAppend": "measure-end-id-equals-measureId",
-      "intoSectionBeforeMeasure": "before-measure-id-equals-beforeMeasureId",
-      "intoSectionAppend": "section-end-id-equals-sectionId",
-      "intoDocumentBeforeSection": "before-section-id-equals-beforeSectionId",
-      "intoDocumentAppend": "document-end"
+      "parentOwnership": "same-declared-parent-required",
+      "measure": {
+        "measure-start": "before-first-event-or-append-when-empty",
+        "before-event": "before-that-event",
+        "after-event": "before-next-event-or-append",
+        "measure-end": "append"
+      },
+      "section": {
+        "section-start": "before-first-measure-or-append-when-empty",
+        "before-measure": "before-that-measure",
+        "after-measure": "before-next-measure-or-append",
+        "section-end": "append"
+      },
+      "document": {
+        "document-start": "before-first-section-or-append-when-empty",
+        "before-section": "before-that-section",
+        "after-section": "before-next-section-or-append",
+        "document-end": "append"
+      },
+      "placementSlots": {
+        "intoMeasure": "resolved-before-event-sibling-id-equals-beforeEventId-or-append-equals-null",
+        "intoSection": "resolved-before-measure-sibling-id-equals-beforeMeasureId-or-append-equals-null",
+        "intoDocument": "resolved-before-section-sibling-id-equals-beforeSectionId-or-append-equals-null"
+      },
+      "completeDraftIntoEmptyMeasure": {
+        "acceptedTargets": [
+          "measure-start",
+          "measure-end"
+        ],
+        "canonicalDestination": "append",
+        "beforeEventId": null
+      }
     }
   },
   "coverageFamilies": [
@@ -493,9 +554,10 @@
     "planKinds": 5,
     "lawRows": 17,
     "caseGroups": 50,
-    "literalTransitions": 70,
+    "literalTransitions": 149,
     "applicabilityRows": 5,
     "transpositionWitnesses": 5,
+    "obligationRows": 24,
     "mutationControls": 30,
     "traces": 6,
     "authorities": 6
@@ -529,9 +591,9 @@
     "existingAcceptedBehaviorChangedBySpecLeaf": false
   },
   "companionSha256": {
-    "edit-plan-cases.json": "04aebe01fd33716b355907c64cde431cac1efa68730334afe2ae7c532ffc6754",
-    "mutation-controls.json": "34bae67af32efece64804aaa63e258329d47651630fc3f3672197e50d886f051",
-    "provenance-ledger.json": "f432b32c8eabd18afdbed298ab96dc6676f98451d69517c2d5502f413cf3b136",
-    "trace-ledger.json": "1f2b0d08ea642e0f384ad7adac055473bff7b372f3ee0af3d2edf99b0408f02c"
+    "edit-plan-cases.json": "32639e5c132a0bc22fe0a77574df256f44a9eae669e565b0247d09ecf8b7223a",
+    "mutation-controls.json": "5279bc75145b91f149849047deb535a915013b435f3985dd5a44e1af503e8b9c",
+    "provenance-ledger.json": "775bafdda2ab6e20ffa954a56578f6c4cc4dcc043c9bd8cd69a9b9153363e5d1",
+    "trace-ledger.json": "11bfd589ea6ce54cdbea1f8f96b372b9cb70dfdf0d85a003832b79b211e3c692"
   }
 }

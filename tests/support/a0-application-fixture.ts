@@ -22,6 +22,7 @@ import {
   requireF3Record,
   type F3FixtureRecord,
 } from "../../src/test-support/f3-publication-materializer";
+import { parseChartText } from "../../src/theory";
 import publicationFixture from "../fixtures/publication/document-cases.json";
 
 export function publishA0Candidate(candidate: unknown): ValidatedDocument {
@@ -242,6 +243,7 @@ export function a0Dependencies(
     copyDomain,
     stableIdFactory: a0StableIdFactory(),
     estimateHistoryRetainedBytes: applicationHistoryRetainedByteEstimator,
+    parseChartText,
     ...overrides,
   });
 }

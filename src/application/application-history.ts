@@ -8,8 +8,6 @@ import {
 } from "./application-state-contract";
 import { runtimeField } from "./application-state-helpers";
 
-type EntryWithoutEstimate = Omit<HistoryEntry, "retainedBytesEstimate">;
-
 function estimateValue(
   value: unknown,
   visited: WeakSet<object>,
@@ -66,9 +64,14 @@ function estimateValue(
   return bytes;
 }
 
-export const estimateHistoryRetainedBytes: HistoryRetainedByteEstimator = (
-  entry: EntryWithoutEstimate,
-): number => estimateValue(entry, new WeakSet(), new TextEncoder());
+export const estimateHistoryRetainedBytes = ((
+  entry: unknown,
+): number =>
+  estimateValue(
+    entry,
+    new WeakSet(),
+    new TextEncoder(),
+  )) satisfies HistoryRetainedByteEstimator;
 
 export function historyEntryCount(history: HistoryState): number {
   return history.undo.length + history.redo.length;
@@ -85,10 +88,16 @@ export function isValidHistoryEstimate(value: number): boolean {
   return Number.isSafeInteger(value) && value >= 0;
 }
 
-export function withRecomputedHistoryBytes(
-  undo: readonly HistoryEntry[],
-  redo: readonly HistoryEntry[],
-): HistoryState | null {
+export function withRecomputedHistoryBytes<
+  Entry extends Readonly<{ retainedBytesEstimate: number }>,
+>(
+  undo: readonly Entry[],
+  redo: readonly Entry[],
+): Readonly<{
+  undo: readonly Entry[];
+  redo: readonly Entry[];
+  retainedBytesEstimate: number;
+}> | null {
   let retainedBytesEstimate = 0;
   for (const entry of [...undo, ...redo]) {
     if (!isValidHistoryEstimate(entry.retainedBytesEstimate)) return null;

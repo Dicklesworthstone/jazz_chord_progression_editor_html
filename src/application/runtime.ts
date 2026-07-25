@@ -15,12 +15,15 @@ export {
 } from "./studio-controller";
 
 export type {
+  StudioBoundaryInput,
   StudioController,
   StudioControllerAction,
   StudioControllerActionResult,
   StudioControllerCreationResult,
   StudioControllerListener,
+  StudioControllerOptions,
   StudioControllerRefusal,
+  StudioQuickEntryPreview,
   StudioRailSide,
 } from "./studio-controller";
 

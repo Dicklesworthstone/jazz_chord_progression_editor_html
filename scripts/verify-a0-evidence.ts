@@ -90,6 +90,7 @@ export const A0_FOCUSED_TEST_FILES = Object.freeze([
   "tests/static/a0-production-policy.test.ts",
   "tests/static/dependency-boundaries.test.ts",
   "tests/static/validated-document-cast-policy.test.ts",
+  "tests/unit/a0-randomized-shards.test.ts",
 ] as const);
 
 export const A0_EXPECTED_COUNTS = Object.freeze({
@@ -205,6 +206,8 @@ export const A0_INPUT_GROUPS = Object.freeze({
   ],
   harness: [
     "tests/support/a0-application-fixture.ts",
+    "tests/support/a0-randomized-protocol.ts",
+    "tests/support/a0-randomized-shard.ts",
     "tests/support/a0-reference-model.ts",
     ...A0_FOCUSED_TEST_FILES,
   ],

@@ -7,6 +7,7 @@ import {
   type MeasureCompletion,
 } from "../domain";
 import {
+  selectBeatRange,
   selectDirtyState,
   selectHistoryAvailability,
 } from "./application-selectors";
@@ -15,7 +16,23 @@ import type {
   ApplicationPanelId,
   ApplicationTransportStatus,
   Notice,
+  StableBoundary,
 } from "./application-state-contract";
+
+export type StudioChordViewModel = Readonly<{
+  id: string;
+  ordinal: number;
+  measureId: string;
+  sectionId: string;
+  symbolText: string;
+  durationBeatLabel: string;
+  startBeatLabel: string;
+  voicingMode: "auto" | "manual" | "frozen";
+  hasAnnotation: boolean;
+  selected: boolean;
+  isSelectionFocus: boolean;
+  inRange: boolean;
+}>;
 
 export type StudioMeasureViewModel = Readonly<{
   id: string;
@@ -27,13 +44,37 @@ export type StudioMeasureViewModel = Readonly<{
   durationBeatLabel: string;
   endBeatLabel: string;
   capacityBeatLabel: string;
+  fill: "empty" | "exact-fill" | "underfilled" | "overfilled";
+  events: readonly StudioChordViewModel[];
 }>;
 
 export type StudioSectionViewModel = Readonly<{
   id: string;
   name: string;
   annotation: string;
+  voiceLeadingBoundary: "reset" | "continue";
   measures: readonly StudioMeasureViewModel[];
+}>;
+
+export type StudioBookmarkViewModel = Readonly<{
+  selectedEventIds: readonly string[];
+  selectionFocusEventId: string | null;
+  selectionAnchorEventId: string | null;
+  insertionLabel: string | null;
+  insertionTargetId: string | null;
+  rangeStartBeatLabel: string | null;
+  rangeEndBeatLabel: string | null;
+  rangeActive: boolean;
+}>;
+
+export type StudioQuickEntryViewModel = Readonly<{
+  text: string;
+  status: "idle" | "invalid" | "ready";
+  baseRevision: number;
+  baseRevisionCurrent: boolean;
+  targetLabel: string | null;
+  issueCodes: readonly string[];
+  codePointCount: number;
 }>;
 
 export type StudioTransportViewModel = Readonly<{
@@ -84,6 +125,9 @@ export type StudioViewModel = Readonly<{
   countInBars: number;
   sections: readonly StudioSectionViewModel[];
   measureCount: number;
+  chordCount: number;
+  bookmarks: StudioBookmarkViewModel;
+  quickEntry: StudioQuickEntryViewModel;
   transport: StudioTransportViewModel;
   panels: StudioPanelViewModel;
   noticeCount: number;
@@ -118,6 +162,17 @@ function durationTicks(value: Pick<BeatValue, "numerator" | "denominator">): big
     (BigInt(value.numerator) * BigInt(MIDI_PPQ)) /
     BigInt(value.denominator)
   );
+}
+
+/** Exact measure fill against the meter capacity; no wall clock is consulted. */
+function measureFill(
+  eventCount: number,
+  measureTicks: bigint,
+  capacityTicks: bigint,
+): "empty" | "exact-fill" | "underfilled" | "overfilled" {
+  if (eventCount === 0) return "empty";
+  if (measureTicks === capacityTicks) return "exact-fill";
+  return measureTicks < capacityTicks ? "underfilled" : "overfilled";
 }
 
 function completionLabel(completion: MeasureCompletion["kind"]): string {
@@ -205,22 +260,136 @@ function exportStatusLabel(state: AppState, sinceExport: boolean): string {
     : `Exported at revision ${String(state.exportRevision)}`;
 }
 
+function voicingMode(
+  voicing: Readonly<{ mode: string }>,
+): "auto" | "manual" | "frozen" {
+  if (voicing.mode === "auto") return "auto";
+  return voicing.mode === "frozen" ? "frozen" : "manual";
+}
+
+/** Identity-free boundary phrase; the surface composes it with an ordinal. */
+function boundaryLabel(boundary: StableBoundary | null): string | null {
+  if (boundary === null) return null;
+  switch (boundary.kind) {
+    case "document-start":
+      return "Before the first section";
+    case "document-end":
+      return "After the last section";
+    case "before-section":
+      return "Before section";
+    case "after-section":
+      return "After section";
+    case "section-start":
+      return "At section start";
+    case "section-end":
+      return "At section end";
+    case "before-measure":
+      return "Before measure";
+    case "after-measure":
+      return "After measure";
+    case "measure-start":
+      return "At measure start";
+    case "measure-end":
+      return "At measure end";
+    case "before-event":
+      return "Before chord";
+    case "after-event":
+      return "After chord";
+  }
+}
+
+function boundaryTargetId(boundary: StableBoundary | null): string | null {
+  if (boundary === null) return null;
+  if ("eventId" in boundary) return boundary.eventId;
+  if ("measureId" in boundary) return boundary.measureId;
+  if ("sectionId" in boundary) return boundary.sectionId;
+  return null;
+}
+
+function bookmarkView(state: AppState): StudioBookmarkViewModel {
+  const selection = state.bookmarks.selection;
+  const range = selectBeatRange(state);
+  return Object.freeze({
+    selectedEventIds:
+      selection.kind === "events"
+        ? Object.freeze([...selection.eventIds])
+        : Object.freeze([]),
+    selectionFocusEventId:
+      selection.kind === "events" ? selection.focusEventId : null,
+    selectionAnchorEventId:
+      selection.kind === "events" ? selection.anchorEventId : null,
+    insertionLabel: boundaryLabel(state.bookmarks.insertion),
+    insertionTargetId: boundaryTargetId(state.bookmarks.insertion),
+    rangeStartBeatLabel:
+      range === null ? null : formatExactBeatLabel(range.start),
+    rangeEndBeatLabel: range === null ? null : formatExactBeatLabel(range.end),
+    rangeActive: state.bookmarks.range !== null,
+  });
+}
+
+function countCodePoints(text: string): number {
+  let count = 0;
+  const scalars = text[Symbol.iterator]();
+  while (!scalars.next().done) count += 1;
+  return count;
+}
+
+function quickEntryView(state: AppState): StudioQuickEntryViewModel {
+  const draft = state.quickEntry;
+  return Object.freeze({
+    text: draft.text,
+    status: draft.status,
+    baseRevision: draft.baseRevision,
+    baseRevisionCurrent: draft.baseRevision === state.revision,
+    targetLabel: boundaryLabel(draft.target),
+    issueCodes: Object.freeze([...draft.issueCodes]),
+    codePointCount: countCodePoints(draft.text),
+  });
+}
+
 /** Derive a frozen, presentation-only projection from the authoritative A0 tree. */
 export function selectStudioViewModel(state: AppState): StudioViewModel {
   const dirty = selectDirtyState(state);
   const history = selectHistoryAvailability(state);
   const capacity = measureCapacity(state.document.meter);
+  const capacityTicks = durationTicks(capacity);
+  const bookmarks = bookmarkView(state);
+  const selected = new Set(bookmarks.selectedEventIds);
+  const range = selectBeatRange(state);
+  const rangeStartTicks = range === null ? null : durationTicks(range.start);
+  const rangeEndTicks = range === null ? null : durationTicks(range.end);
   let runningTicks = 0n;
   let measureCount = 0;
+  let chordCount = 0;
 
   const sections = state.document.sections.map((section) => {
     const measures = section.measures.map((measure) => {
       measureCount += 1;
       const startTicks = runningTicks;
       let measureTicks = 0n;
-      for (const event of measure.events) {
+      const events = measure.events.map((event) => {
+        chordCount += 1;
+        const eventStart = runningTicks + measureTicks;
         measureTicks += durationTicks(event.duration);
-      }
+        return Object.freeze({
+          id: event.id,
+          ordinal: chordCount,
+          measureId: measure.id,
+          sectionId: section.id,
+          symbolText: event.chord.sourceText,
+          durationBeatLabel: formatExactBeatLabel(event.duration),
+          startBeatLabel: exactTicksLabel(eventStart),
+          voicingMode: voicingMode(event.voicing),
+          hasAnnotation: event.annotation.length > 0,
+          selected: selected.has(event.id),
+          isSelectionFocus: bookmarks.selectionFocusEventId === event.id,
+          inRange:
+            rangeStartTicks !== null &&
+            rangeEndTicks !== null &&
+            eventStart >= rangeStartTicks &&
+            eventStart < rangeEndTicks,
+        });
+      });
       runningTicks += measureTicks;
       return Object.freeze({
         id: measure.id,
@@ -232,12 +401,15 @@ export function selectStudioViewModel(state: AppState): StudioViewModel {
         durationBeatLabel: exactTicksLabel(measureTicks),
         endBeatLabel: exactTicksLabel(runningTicks),
         capacityBeatLabel: formatExactBeatLabel(capacity),
+        fill: measureFill(measure.events.length, measureTicks, capacityTicks),
+        events: Object.freeze(events),
       });
     });
     return Object.freeze({
       id: section.id,
       name: section.name,
       annotation: section.annotation,
+      voiceLeadingBoundary: section.voiceLeadingBoundary,
       measures: Object.freeze(measures),
     });
   });
@@ -261,6 +433,9 @@ export function selectStudioViewModel(state: AppState): StudioViewModel {
     countInBars: state.document.playback.countInBars,
     sections: Object.freeze(sections),
     measureCount,
+    chordCount,
+    bookmarks,
+    quickEntry: quickEntryView(state),
     transport: Object.freeze({
       status: state.transport.status,
       statusLabel: transportStatusLabel(state.transport.status),

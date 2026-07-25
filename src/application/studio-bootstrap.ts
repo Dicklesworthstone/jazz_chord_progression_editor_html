@@ -7,6 +7,7 @@ import {
   type DomainPath,
   type ValidatedDocument,
 } from "../domain";
+import { parseChartText } from "../theory";
 import {
   applicationHistoryRetainedByteEstimator,
   createInitialAppState,
@@ -167,6 +168,7 @@ export function createStudioApplicationDependencies(): ApplicationCommandDepende
     copyDomain,
     stableIdFactory: createProductionStableIdFactory(),
     estimateHistoryRetainedBytes: applicationHistoryRetainedByteEstimator,
+    parseChartText,
   });
 }
 

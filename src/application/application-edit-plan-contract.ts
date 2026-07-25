@@ -1,6 +1,8 @@
 import {
+  BEAT_UNITS,
   MAX_DOCUMENT_CHORD_EVENTS,
   MAX_DOCUMENT_SECTIONS,
+  MAX_BEATS_PER_BAR,
   MAX_LONG_TEXT_CODE_POINTS,
   MAX_SECTION_MEASURES,
   MAX_SHORT_TEXT_CODE_POINTS,
@@ -36,14 +38,14 @@ import {
 
 /** Proposed A0/U1 specification surface; no production runner consumes it yet. */
 export const A0_U1_ATOMIC_EDIT_PLAN_CONTRACT_SCHEMA =
-  "changes.application.atomic-edit-plan-contract.v1";
+  "changes.application.atomic-edit-plan-contract.v2";
 export const A0_U1_ATOMIC_EDIT_PLAN_POLICY_ID =
   "changes.application-atomic-edit-plan";
-export const A0_U1_ATOMIC_EDIT_PLAN_POLICY_VERSION = 1;
+export const A0_U1_ATOMIC_EDIT_PLAN_POLICY_VERSION = 2;
 export const A0_U1_ATOMIC_EDIT_PLAN_RECEIPT_SCHEMA =
-  "changes.application.atomic-edit-plan-receipt.v1";
+  "changes.application.atomic-edit-plan-receipt.v2";
 export const A0_U1_ATOMIC_EDIT_IMPLEMENTATION_STATUS =
-  "specified-unimplemented";
+  "implemented-live";
 
 /** Proposed additive command surface; the live A0 tuple is deliberately unchanged. */
 export const A0_U1_PROPOSED_APPLICATION_COMMAND_KINDS: readonly [
@@ -63,7 +65,7 @@ export const A0_U1_PROPOSED_APPLICATION_COMMAND_KINDS: readonly [
   "apply-reharmonization",
   "replace-document",
   "apply-edit-plan",
-] = Object.freeze([
+] = /* @__PURE__ */ Object.freeze([
   "insert",
   "delete",
   "move",
@@ -91,7 +93,7 @@ export const A0_U1_ATOMIC_EDIT_PLAN_KINDS: readonly [
   "join-event-durations",
   "split-section",
   "join-sections",
-] = Object.freeze([
+] = /* @__PURE__ */ Object.freeze([
   "insert-fragment",
   "split-event-duration",
   "join-event-durations",
@@ -105,7 +107,7 @@ export const A0_U1_INSERT_FRAGMENT_PLACEMENT_KINDS: readonly [
   "into-measure",
   "into-section",
   "into-document",
-] = Object.freeze(["into-measure", "into-section", "into-document"]);
+] = /* @__PURE__ */ Object.freeze(["into-measure", "into-section", "into-document"]);
 
 export type InsertFragmentPlacementKind =
   (typeof A0_U1_INSERT_FRAGMENT_PLACEMENT_KINDS)[number];
@@ -121,11 +123,11 @@ export const A0_U1_NEW_EVENT_AUTO_VOICING: Readonly<{
   voiceCount: 4;
   range: Readonly<{ lowMidi: 48; highMidi: 84 }>;
   bassPolicy: "generated";
-}> = Object.freeze({
+}> = /* @__PURE__ */ Object.freeze({
   mode: "auto",
   family: "balanced",
   voiceCount: 4,
-  range: Object.freeze({ lowMidi: 48, highMidi: 84 }),
+  range: /* @__PURE__ */ Object.freeze({ lowMidi: 48, highMidi: 84 }),
   bassPolicy: "generated",
 });
 
@@ -162,7 +164,7 @@ export const A0_U1_RECOVERY_FIELD_COMPARISON_ORDER: readonly [
   "selected-global-ordinal",
   "layout-loss-acknowledgement",
   "duration-branch-and-value",
-] = Object.freeze([
+] = /* @__PURE__ */ Object.freeze([
   "placement",
   "selected-global-ordinal",
   "layout-loss-acknowledgement",
@@ -175,7 +177,7 @@ export const A0_U1_FINAL_COLLECTION_LIMIT_COMPARISON_ORDER: readonly [
   "final-document-events",
   "occupied-id-records",
   "plan-node-records",
-] = Object.freeze([
+] = /* @__PURE__ */ Object.freeze([
   "final-document-sections",
   "final-section-measures-in-section-order",
   "final-total-measures",
@@ -207,13 +209,18 @@ export const MAX_A0_U1_COMPLETION_REASON_CODE_POINTS =
   MAX_LONG_TEXT_CODE_POINTS;
 export const MAX_A0_U1_SECTION_METADATA_CODE_POINTS =
   MAX_A0_U1_SECTION_NAME_CODE_POINTS + MAX_A0_U1_SECTION_ANNOTATION_CODE_POINTS;
-/** Join validates expected-left, expected-right, then result metadata. */
+/**
+ * Join validates expected-left, expected-right, then result metadata, and the
+ * accepted-shape aggregate also covers the completion reason of the one
+ * first-extra declaration row inside the runtime-shape horizon.
+ */
 export const MAX_A0_U1_PLAN_METADATA_CODE_POINTS =
-  3 * MAX_A0_U1_SECTION_METADATA_CODE_POINTS;
+  3 * MAX_A0_U1_SECTION_METADATA_CODE_POINTS +
+  MAX_A0_U1_COMPLETION_REASON_CODE_POINTS;
 export const MAX_A0_U1_METADATA_CODE_POINTS_OBSERVED =
   MAX_A0_U1_PLAN_METADATA_CODE_POINTS + 1;
 
-export const A0_U1_FRAGMENT_SOURCE_REFUSAL_REACHABILITY = Object.freeze({
+export const A0_U1_FRAGMENT_SOURCE_REFUSAL_REACHABILITY = /* @__PURE__ */ Object.freeze({
   "edit-plan.source-code-points-exceeded":
     "static-dominated-by-accepted-quick-entry-invariants",
   "edit-plan.source-unicode-invalid":
@@ -222,7 +229,21 @@ export const A0_U1_FRAGMENT_SOURCE_REFUSAL_REACHABILITY = Object.freeze({
     "static-dominated-by-accepted-quick-entry-invariants",
 });
 
-export const A0_U1_ATOMIC_EDIT_LIMITS = Object.freeze({
+export const MAX_A0_U1_REACHABLE_FINAL_TIMELINE_QUARTER_NOTE_BEATS =
+  (MAX_DOCUMENT_CHORD_EVENTS * MAX_BEATS_PER_BAR * 4) / BEAT_UNITS[0];
+
+/**
+ * The domain's final event cap and largest legal meter capacity dominate the
+ * looser defensive timeline ceiling. A valid document therefore cannot reach
+ * the timeline refusal, even though the bounded runner retains the check.
+ */
+export const A0_U1_STATIC_REFUSAL_REACHABILITY = /* @__PURE__ */ Object.freeze({
+  ...A0_U1_FRAGMENT_SOURCE_REFUSAL_REACHABILITY,
+  "edit-plan.timeline-limit-exceeded":
+    "static-dominated-by-final-event-and-meter-capacity-invariants",
+});
+
+export const A0_U1_ATOMIC_EDIT_LIMITS = /* @__PURE__ */ Object.freeze({
   structuralDecodeCalls: 1,
   semanticValidationCalls: 1,
   fragmentSourceCodePoints: MAX_A0_U1_FRAGMENT_SOURCE_CODE_POINTS,
@@ -276,18 +297,18 @@ export type CompleteDraftIntoEmptyMeasureCompletionDeclaration = Readonly<{
  * Each field must be a valid Unicode scalar string within its domain bound
  * before allocation; the first failure is plan-shape-invalid at that field.
  */
-export const A0_U1_ATOMIC_EDIT_PLAN_TEXT_SHAPE_POLICY = Object.freeze({
+export const A0_U1_ATOMIC_EDIT_PLAN_TEXT_SHAPE_POLICY = /* @__PURE__ */ Object.freeze({
   stage: "exact-runtime-shape",
   refusalCode: "edit-plan.plan-shape-invalid",
   unicodePolicy: "valid-unicode-scalar-string",
   counter: "metadataCodePointsObserved",
-  splitSectionMetadataOrder: Object.freeze(["newSectionMetadata"] as const),
-  joinSectionsMetadataOrder: Object.freeze([
+  splitSectionMetadataOrder: /* @__PURE__ */ Object.freeze(["newSectionMetadata"] as const),
+  joinSectionsMetadataOrder: /* @__PURE__ */ Object.freeze([
     "expectedLeftMetadata",
     "expectedRightMetadata",
     "resultMetadata",
   ] as const),
-  sectionMetadataFieldOrder: Object.freeze(["name", "annotation"] as const),
+  sectionMetadataFieldOrder: /* @__PURE__ */ Object.freeze(["name", "annotation"] as const),
   sectionNameCodePoints: MAX_A0_U1_SECTION_NAME_CODE_POINTS,
   sectionAnnotationCodePoints: MAX_A0_U1_SECTION_ANNOTATION_CODE_POINTS,
   sectionNameBlankness:
@@ -298,7 +319,7 @@ export const A0_U1_ATOMIC_EDIT_PLAN_TEXT_SHAPE_POLICY = Object.freeze({
   pickupOrIncompleteReasonBlankness:
     "ecmascript-String.prototype.trim-result-must-be-nonempty",
   normalizationOrRepairPermitted: false,
-  pathAuthority: Object.freeze([
+  pathAuthority: /* @__PURE__ */ Object.freeze([
     "/plan/newSectionMetadata/name",
     "/plan/newSectionMetadata/annotation",
     "/plan/expectedLeftMetadata/name",
@@ -546,7 +567,7 @@ export const A0_U1_ATOMIC_EDIT_PLAN_RUNNER_STAGE_ORDER: readonly [
   "f2-once",
   "f3-once",
   "bookmarks-history-and-atomic-publication",
-] = Object.freeze([
+] = /* @__PURE__ */ Object.freeze([
   "exact-runtime-shape",
   "a0-envelope",
   "quick-entry-snapshot",
@@ -578,7 +599,7 @@ export const A0_U1_ATOMIC_EDIT_PLAN_ID_ALLOCATION_ORDER: readonly [
   "split-section-suffix-only",
   "reserve-each-returned-id-locally",
   "stop-without-retry-on-first-failure-or-collision",
-] = Object.freeze([
+] = /* @__PURE__ */ Object.freeze([
   "preflight-operation-local-shape-snapshot-parser-declarations-laws-and-bounds",
   "index-document-section-measure-event-ids-globally",
   "fragment-section-before-descendants",
@@ -605,7 +626,7 @@ export const A0_U1_ATOMIC_EDIT_DIAGNOSTIC_PATH_ORDER: readonly [
   "string-string-by-ecmascript-code-unit",
   "mixed-numeric-before-string",
   "shared-prefix-shorter-first",
-] = Object.freeze([
+] = /* @__PURE__ */ Object.freeze([
   "numeric-numeric-by-number",
   "string-string-by-ecmascript-code-unit",
   "mixed-numeric-before-string",
@@ -618,7 +639,7 @@ export const A0_U1_ATOMIC_EDIT_PLAN_DIAGNOSTIC_ORDER: readonly [
   "source-range-start-ascending",
   "source-range-end-ascending",
   "code-ecmascript-code-unit-lexical",
-] = Object.freeze([
+] = /* @__PURE__ */ Object.freeze([
   "path-domain-segment-order",
   "null-source-range-before-ranged",
   "source-range-start-ascending",
@@ -659,7 +680,7 @@ export const A0_U1_ATOMIC_EDIT_REFUSAL_CODES: readonly [
   "edit-plan.structural-publication-refused",
   "edit-plan.semantic-publication-refused",
   "edit-plan.history-refused",
-] = Object.freeze([
+] = /* @__PURE__ */ Object.freeze([
   "edit-plan.command-shape-invalid",
   "edit-plan.plan-shape-invalid",
   "edit-plan.quick-entry-snapshot-mismatch",
@@ -697,18 +718,18 @@ export const A0_U1_ATOMIC_EDIT_REFUSAL_CODES: readonly [
 export type AtomicEditPlanRefusalCode =
   (typeof A0_U1_ATOMIC_EDIT_REFUSAL_CODES)[number];
 
-export const A0_U1_ATOMIC_EDIT_PATH_TEMPLATE_GRAMMAR = Object.freeze({
+export const A0_U1_ATOMIC_EDIT_PATH_TEMPLATE_GRAMMAR = /* @__PURE__ */ Object.freeze({
   format: "rfc6901-json-pointer-template",
   root: "",
   separator: "/",
-  escaping: Object.freeze({ tilde: "~0", slash: "~1" }),
-  dynamicIndex: Object.freeze({
+  escaping: /* @__PURE__ */ Object.freeze({ tilde: "~0", slash: "~1" }),
+  dynamicIndex: /* @__PURE__ */ Object.freeze({
     token: "{index}",
     meaning: "canonical-nonnegative-base10-source-order-array-index",
   }),
-  dynamicMetadataField: Object.freeze({
+  dynamicMetadataField: /* @__PURE__ */ Object.freeze({
     token: "{metadataField}",
-    values: Object.freeze([
+    values: /* @__PURE__ */ Object.freeze([
       "name",
       "annotation",
       "keyOverride",
@@ -731,7 +752,7 @@ const COMMAND_SHAPE_PATH_AUTHORITY: readonly [
   "/coalescing",
   "/kind",
   "/plan",
-] = Object.freeze([
+] = /* @__PURE__ */ Object.freeze([
   "",
   "/id",
   "/label",
@@ -746,7 +767,7 @@ const COMMAND_SHAPE_PATH_AUTHORITY: readonly [
 const PLAN_SHAPE_PATH_AUTHORITY: readonly [
   AtomicEditPlanPathTemplate,
   ...AtomicEditPlanPathTemplate[],
-] = Object.freeze([
+] = /* @__PURE__ */ Object.freeze([
   "/plan",
   "/plan/kind",
   "/plan/voicingPolicy",
@@ -870,7 +891,7 @@ export type AtomicEditPlanRefusalAuthorityRow = Readonly<{
  * array order and explicit precedence must equal ATOMIC_EDIT_REFUSAL_CODES.
  */
 export const A0_U1_ATOMIC_EDIT_REFUSAL_AUTHORITY: readonly AtomicEditPlanRefusalAuthorityRow[] =
-  Object.freeze([
+  /* @__PURE__ */ Object.freeze([
     {
       code: "edit-plan.command-shape-invalid",
       precedence: 0,
@@ -1197,7 +1218,7 @@ export const A0_U1_ATOMIC_EDIT_OUTER_REFUSAL_CODES: readonly [
   "command.semantic_validation_failed",
   "history.entry_too_large",
   "history.byte_estimate_invalid",
-] = Object.freeze([
+] = /* @__PURE__ */ Object.freeze([
   "command.payload_invalid",
   "command.target_missing",
   "command.destination_invalid",
@@ -1248,40 +1269,40 @@ export type AtomicEditPlanRefusalCodeForOuter<
             : "edit-plan.history-refused";
 
 const PAYLOAD_INVALID_OUTER_CODES: readonly ["command.payload_invalid"] =
-  Object.freeze(["command.payload_invalid"]);
+  /* @__PURE__ */ Object.freeze(["command.payload_invalid"]);
 const TARGET_MISSING_OUTER_CODES: readonly ["command.target_missing"] =
-  Object.freeze(["command.target_missing"]);
+  /* @__PURE__ */ Object.freeze(["command.target_missing"]);
 const DESTINATION_INVALID_OUTER_CODES: readonly [
   "command.destination_invalid",
-] = Object.freeze(["command.destination_invalid"]);
+] = /* @__PURE__ */ Object.freeze(["command.destination_invalid"]);
 const ID_ALLOCATION_FAILED_OUTER_CODES: readonly [
   "command.id_allocation_failed",
-] = Object.freeze(["command.id_allocation_failed"]);
+] = /* @__PURE__ */ Object.freeze(["command.id_allocation_failed"]);
 const STRUCTURAL_VALIDATION_FAILED_OUTER_CODES: readonly [
   "command.structural_validation_failed",
-] = Object.freeze(["command.structural_validation_failed"]);
+] = /* @__PURE__ */ Object.freeze(["command.structural_validation_failed"]);
 const SEMANTIC_VALIDATION_FAILED_OUTER_CODES: readonly [
   "command.semantic_validation_failed",
-] = Object.freeze(["command.semantic_validation_failed"]);
+] = /* @__PURE__ */ Object.freeze(["command.semantic_validation_failed"]);
 const HISTORY_REFUSAL_OUTER_CODES: readonly [
   "history.entry_too_large",
   "history.byte_estimate_invalid",
-] = Object.freeze(["history.entry_too_large", "history.byte_estimate_invalid"]);
+] = /* @__PURE__ */ Object.freeze(["history.entry_too_large", "history.byte_estimate_invalid"]);
 
 /** Exact inherited A0 history dependency outcome; the two outer codes do not commute. */
-export const A0_U1_ATOMIC_EDIT_HISTORY_REFUSAL_POLICY = Object.freeze({
-  invalidEstimate: Object.freeze({
+export const A0_U1_ATOMIC_EDIT_HISTORY_REFUSAL_POLICY = /* @__PURE__ */ Object.freeze({
+  invalidEstimate: /* @__PURE__ */ Object.freeze({
     predicate: "not-a-nonnegative-safe-integer",
     outerCode: "history.byte_estimate_invalid",
     nestedCode: "edit-plan.history-refused",
-    path: Object.freeze(["history"] as const),
+    path: /* @__PURE__ */ Object.freeze(["history"] as const),
   }),
-  oversizedEstimate: Object.freeze({
+  oversizedEstimate: /* @__PURE__ */ Object.freeze({
     predicate: "valid-estimate-greater-than-retained-byte-maximum",
     maximum: MAX_HISTORY_RETAINED_BYTES,
     outerCode: "history.entry_too_large",
     nestedCode: "edit-plan.history-refused",
-    path: Object.freeze(["history"] as const),
+    path: /* @__PURE__ */ Object.freeze(["history"] as const),
   }),
 });
 
@@ -1293,7 +1314,7 @@ export const A0_U1_ATOMIC_EDIT_ALLOWED_OUTER_CODES_BY_REFUSAL_CODE: Readonly<
       ...AtomicEditPlanOuterRefusalCode[],
     ]
   >
-> = Object.freeze({
+> = /* @__PURE__ */ Object.freeze({
   "edit-plan.command-shape-invalid": PAYLOAD_INVALID_OUTER_CODES,
   "edit-plan.plan-shape-invalid": PAYLOAD_INVALID_OUTER_CODES,
   "edit-plan.quick-entry-snapshot-mismatch": PAYLOAD_INVALID_OUTER_CODES,
@@ -1346,7 +1367,7 @@ export const A0_U1_ATOMIC_EDIT_PREPLAN_OUTER_REFUSAL_CODES: readonly [
   "application.sequence_exhausted",
   "command.coalescing_invalid",
   "history.locked",
-] = Object.freeze([
+] = /* @__PURE__ */ Object.freeze([
   "command.id_invalid",
   "command.label_invalid",
   "command.logical_time_invalid",
@@ -1367,25 +1388,25 @@ export type AtomicEditPlanPreplanOuterRefusalCode =
  * is not history traversal, and bookmark repair counts calls rather than
  * rewritten records.
  */
-export const A0_U1_ATOMIC_EDIT_OUTER_WORK_POLICY = Object.freeze({
-  indexPassesByOutcome: Object.freeze({
-    applyRefusalBeforeTargetResolution: Object.freeze([] as const),
-    applyRefusalFromTargetThroughF3: Object.freeze(["before"] as const),
-    applySuccessOrHistoryRefusal: Object.freeze(["before", "after"] as const),
-    undoOrRedo: Object.freeze(["restored"] as const),
+export const A0_U1_ATOMIC_EDIT_OUTER_WORK_POLICY = /* @__PURE__ */ Object.freeze({
+  indexPassesByOutcome: /* @__PURE__ */ Object.freeze({
+    applyRefusalBeforeTargetResolution: /* @__PURE__ */ Object.freeze([] as const),
+    applyRefusalFromTargetThroughF3: /* @__PURE__ */ Object.freeze(["before"] as const),
+    applySuccessOrHistoryRefusal: /* @__PURE__ */ Object.freeze(["before", "after"] as const),
+    undoOrRedo: /* @__PURE__ */ Object.freeze(["restored"] as const),
   }),
   indexVisitOrder: "section-then-measure-then-event-source-order",
   stableIdsIndexed: "one-per-indexed-section-measure-or-event-not-document",
-  historyEntriesVisited: Object.freeze({
+  historyEntriesVisited: /* @__PURE__ */ Object.freeze({
     apply: 0,
     undoOrRedoAfterEntryResolution: 1,
   }),
-  historyBytesEstimated: Object.freeze({
+  historyBytesEstimated: /* @__PURE__ */ Object.freeze({
     beforeValidEstimatorReturn: 0,
     afterValidEstimatorReturn: "exact-returned-nonnegative-safe-integer",
     validOversizeStillCounted: true,
   }),
-  bookmarksRepaired: Object.freeze({
+  bookmarksRepaired: /* @__PURE__ */ Object.freeze({
     beforeSuccessfulF3: 0,
     applySuccessOrHistoryRefusal: 1,
     undoOrRedo: 0,
@@ -1393,7 +1414,7 @@ export const A0_U1_ATOMIC_EDIT_OUTER_WORK_POLICY = Object.freeze({
   }),
   requestsCompared: 0,
   transportNotificationsCompared: 0,
-  validationCalls: Object.freeze({
+  validationCalls: /* @__PURE__ */ Object.freeze({
     throughF2Refusal: 0,
     f3RefusalSuccessOrHistoryRefusal: 1,
     undoOrRedo: 0,
@@ -1437,7 +1458,7 @@ export const A0_U1_ATOMIC_EDIT_WORK_COUNTER_NAMES: readonly [
   "peakPlanNodeRecords",
   "peakAllocatedIdRecords",
   "peakDiagnosticRecords",
-] = Object.freeze([
+] = /* @__PURE__ */ Object.freeze([
   "structuralDecodeCalls",
   "semanticValidationCalls",
   "planNodesVisited",
@@ -1475,7 +1496,7 @@ export type AtomicEditPlanWorkCounterName =
  */
 export const A0_U1_ATOMIC_EDIT_WORK_COUNTER_MAXIMA: Readonly<
   Record<AtomicEditPlanWorkCounterName, number>
-> = Object.freeze({
+> = /* @__PURE__ */ Object.freeze({
   structuralDecodeCalls: 1,
   semanticValidationCalls: 1,
   planNodesVisited: MAX_A0_U1_PLAN_NODE_RECORDS + 1,
@@ -1507,7 +1528,7 @@ export const A0_U1_ATOMIC_EDIT_WORK_COUNTER_MAXIMA: Readonly<
 });
 
 export const A0_U1_ATOMIC_EDIT_FIRST_EXCESS_WORK_COUNTERS: readonly AtomicEditPlanWorkCounterName[] =
-  Object.freeze([
+  /* @__PURE__ */ Object.freeze([
     "planNodesVisited",
     "sourceCodePointsObserved",
     "sourceUtf8BytesObserved",
@@ -1526,7 +1547,7 @@ export const A0_U1_ATOMIC_EDIT_PLAN_TERMINATIONS: readonly [
   "allocation-refusal",
   "publication-refusal",
   "history-refusal",
-] = Object.freeze([
+] = /* @__PURE__ */ Object.freeze([
   "complete",
   "input-refusal",
   "allocation-refusal",
@@ -1615,27 +1636,27 @@ export type AtomicEditPlanBoundary =
  * structural identity. Every event/measure boundary must resolve within the
  * placement's declared parent.
  */
-export const A0_U1_QUICK_ENTRY_TARGET_MATCH_POLICY = Object.freeze({
+export const A0_U1_QUICK_ENTRY_TARGET_MATCH_POLICY = /* @__PURE__ */ Object.freeze({
   parentOwnership: "same-declared-parent-required",
-  measure: Object.freeze({
+  measure: /* @__PURE__ */ Object.freeze({
     "measure-start": "before-first-event-or-append-when-empty",
     "before-event": "before-that-event",
     "after-event": "before-next-event-or-append",
     "measure-end": "append",
   }),
-  section: Object.freeze({
+  section: /* @__PURE__ */ Object.freeze({
     "section-start": "before-first-measure-or-append-when-empty",
     "before-measure": "before-that-measure",
     "after-measure": "before-next-measure-or-append",
     "section-end": "append",
   }),
-  document: Object.freeze({
+  document: /* @__PURE__ */ Object.freeze({
     "document-start": "before-first-section-or-append-when-empty",
     "before-section": "before-that-section",
     "after-section": "before-next-section-or-append",
     "document-end": "append",
   }),
-  placementSlots: Object.freeze({
+  placementSlots: /* @__PURE__ */ Object.freeze({
     intoMeasure:
       "resolved-before-event-sibling-id-equals-beforeEventId-or-append-equals-null",
     intoSection:
@@ -1643,8 +1664,8 @@ export const A0_U1_QUICK_ENTRY_TARGET_MATCH_POLICY = Object.freeze({
     intoDocument:
       "resolved-before-section-sibling-id-equals-beforeSectionId-or-append-equals-null",
   }),
-  completeDraftIntoEmptyMeasure: Object.freeze({
-    acceptedTargets: Object.freeze(["measure-start", "measure-end"] as const),
+  completeDraftIntoEmptyMeasure: /* @__PURE__ */ Object.freeze({
+    acceptedTargets: /* @__PURE__ */ Object.freeze(["measure-start", "measure-end"] as const),
     canonicalDestination: "append",
     beforeEventId: null,
   }),
@@ -1665,7 +1686,7 @@ export const A0_U1_ATOMIC_EDIT_PLAN_FOCUS_DERIVATION_ORDER: readonly [
   "non-chart-insertion-target",
   "first-inserted-structural-ref",
   "chart",
-] = Object.freeze([
+] = /* @__PURE__ */ Object.freeze([
   "selection-focus-event",
   "non-chart-insertion-target",
   "first-inserted-structural-ref",
@@ -1782,6 +1803,18 @@ type AtomicEditPlanMovedInsertionReceipt = Readonly<{
   insertionCleared: false;
 }>;
 
+/**
+ * Honest branch for a valid null before insertion bookmark: the receipt
+ * records the exact created after boundary and never fabricates a rewrite
+ * source. `insertionCreated` is frozen to this branch only.
+ */
+type AtomicEditPlanCreatedInsertionReceipt = Readonly<{
+  insertionPolicy: "create-after-last-inserted";
+  insertionRewrite: null;
+  insertionCreated: AtomicEditPlanBoundary;
+  insertionCleared: false;
+}>;
+
 type AtomicEditPlanSpanEndInsertionReceipt = Readonly<{
   insertionPolicy: "rewrite-exact-span-end";
   insertionRewrite: AtomicEditPlanBoundaryRewrite;
@@ -1825,9 +1858,12 @@ type InsertFragmentBookmarkReceiptForFocus<
   FocusReceipt extends InsertFragmentFocusReceipt,
 > = Readonly<
   AtomicEditPlanPreservedSelectionReceipt &
-    AtomicEditPlanMovedInsertionReceipt &
+    (
+      | AtomicEditPlanMovedInsertionReceipt
+      | AtomicEditPlanCreatedInsertionReceipt
+    ) &
     AtomicEditPlanPreservedRangeReceipt & {
-      operationPolicy: "preserve-selection-and-range-move-insertion-after-last-inserted";
+      operationPolicy: "preserve-selection-and-range-set-insertion-after-last-inserted";
     } & FocusReceipt
 >;
 
@@ -1926,9 +1962,9 @@ export type AtomicEditPlanBookmarkReceipt =
   | SplitSectionBookmarkReceipt
   | JoinSectionsBookmarkReceipt;
 
-export const A0_U1_ATOMIC_EDIT_PLAN_BOOKMARK_POLICIES = Object.freeze({
+export const A0_U1_ATOMIC_EDIT_PLAN_BOOKMARK_POLICIES = /* @__PURE__ */ Object.freeze({
   insertFragment:
-    "preserve-selection-and-range-move-insertion-after-last-inserted",
+    "preserve-selection-and-range-set-insertion-after-last-inserted",
   splitEventDuration:
     "preserve-original-selection-rewrite-original-span-end-to-second",
   joinEventDurations:
@@ -2355,7 +2391,7 @@ export const A0_U1_ATOMIC_EDIT_LAW_IDS: readonly [
   "A0-U1-ATOM-015-ids-preflight-preorder-honest-entropy",
   "A0-U1-ATOM-016-bookmarks-publication-history-atomic",
   "A0-U1-ATOM-017-transposition-and-existing-a0-unchanged",
-] = Object.freeze([
+] = /* @__PURE__ */ Object.freeze([
   "A0-U1-ATOM-001-command-and-five-closed-variants",
   "A0-U1-ATOM-002-quick-entry-snapshot-and-target-exact",
   "A0-U1-ATOM-003-raw-source-reparsed-once-by-t0",
@@ -2375,7 +2411,7 @@ export const A0_U1_ATOMIC_EDIT_LAW_IDS: readonly [
   "A0-U1-ATOM-017-transposition-and-existing-a0-unchanged",
 ]);
 
-export const A0_U1_ATOMIC_EDIT_PLAN_TRANSPOSITION_POLICY = Object.freeze({
+export const A0_U1_ATOMIC_EDIT_PLAN_TRANSPOSITION_POLICY = /* @__PURE__ */ Object.freeze({
   operationPerformsTransposition: false,
   insertFragment: "preserve-t0-source-spelling-exactly",
   splitEventDuration: "copy-current-chord-and-voicing-exactly",
@@ -2387,16 +2423,16 @@ export const A0_U1_ATOMIC_EDIT_PLAN_TRANSPOSITION_POLICY = Object.freeze({
     "commutes-with-spelling-preserving-transposition-of-affected-event-ids",
 });
 
-export const A0_U1_T0_NEW_MEASURE_COMPLETION_POLICY = Object.freeze({
+export const A0_U1_T0_NEW_MEASURE_COMPLETION_POLICY = /* @__PURE__ */ Object.freeze({
   zeroEvents: "empty",
   nonemptySuccessfulClosedMeasure: "complete",
 });
 
-export const A0_U1_ATOMIC_EDIT_PLAN_ID_ENTROPY_POLICY = Object.freeze({
+export const A0_U1_ATOMIC_EDIT_PLAN_ID_ENTROPY_POLICY = /* @__PURE__ */ Object.freeze({
   factoryCallsOccurOnlyAfterOperationLocalPreflight: true,
   operationLocalPreflight:
     "shape-snapshot-parser-declarations-operation-laws-and-final-bounds",
-  postAllocationRefusalsMayConsumeEntropy: Object.freeze([
+  postAllocationRefusalsMayConsumeEntropy: /* @__PURE__ */ Object.freeze([
     "f2",
     "f3",
     "history",
@@ -2412,8 +2448,8 @@ export const A0_U1_ATOMIC_EDIT_PLAN_ID_ENTROPY_POLICY = Object.freeze({
 });
 
 /** Runtime exact-object validators consume this declarative key authority. */
-export const A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS = Object.freeze({
-  envelope: Object.freeze([
+export const A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS = /* @__PURE__ */ Object.freeze({
+  envelope: /* @__PURE__ */ Object.freeze([
     "id",
     "label",
     "expectedDocumentId",
@@ -2423,31 +2459,31 @@ export const A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS = Object.freeze({
     "kind",
     "plan",
   ]),
-  completeDraftPlan: Object.freeze([
+  completeDraftPlan: /* @__PURE__ */ Object.freeze([
     "kind",
     "source",
     "placement",
     "voicingPolicy",
   ]),
-  recoveredChordPlan: Object.freeze([
+  recoveredChordPlan: /* @__PURE__ */ Object.freeze([
     "kind",
     "source",
     "placement",
     "voicingPolicy",
   ]),
-  completeDraftSource: Object.freeze([
+  completeDraftSource: /* @__PURE__ */ Object.freeze([
     "kind",
     "quickEntrySnapshot",
     "warningAcknowledgements",
   ]),
-  recoveredChordSource: Object.freeze([
+  recoveredChordSource: /* @__PURE__ */ Object.freeze([
     "kind",
     "quickEntrySnapshot",
     "selectedGlobalOrdinal",
     "layoutLossAcknowledgement",
     "callerDuration",
   ]),
-  quickEntrySnapshot: Object.freeze([
+  quickEntrySnapshot: /* @__PURE__ */ Object.freeze([
     "sourceText",
     "baseRevision",
     "target",
@@ -2455,62 +2491,62 @@ export const A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS = Object.freeze({
     "expectedStatus",
     "expectedLane",
   ]),
-  documentBoundary: Object.freeze(["kind"]),
-  sectionBoundary: Object.freeze(["kind", "sectionId"]),
-  measureBoundary: Object.freeze(["kind", "measureId"]),
-  eventBoundary: Object.freeze(["kind", "eventId"]),
-  completeDraftIntoMeasurePlacement: Object.freeze([
+  documentBoundary: /* @__PURE__ */ Object.freeze(["kind"]),
+  sectionBoundary: /* @__PURE__ */ Object.freeze(["kind", "sectionId"]),
+  measureBoundary: /* @__PURE__ */ Object.freeze(["kind", "measureId"]),
+  eventBoundary: /* @__PURE__ */ Object.freeze(["kind", "eventId"]),
+  completeDraftIntoMeasurePlacement: /* @__PURE__ */ Object.freeze([
     "kind",
     "measureId",
     "beforeEventId",
     "layoutDisposition",
     "completionDeclarations",
   ]),
-  recoveredChordIntoMeasurePlacement: Object.freeze([
+  recoveredChordIntoMeasurePlacement: /* @__PURE__ */ Object.freeze([
     "kind",
     "measureId",
     "beforeEventId",
     "layoutDisposition",
     "completionDeclarations",
   ]),
-  intoSectionPlacement: Object.freeze([
+  intoSectionPlacement: /* @__PURE__ */ Object.freeze([
     "kind",
     "sectionId",
     "beforeMeasureId",
     "layoutDisposition",
     "completionDeclarations",
   ]),
-  intoDocumentPlacement: Object.freeze([
+  intoDocumentPlacement: /* @__PURE__ */ Object.freeze([
     "kind",
     "beforeSectionId",
     "layoutDisposition",
     "sectionDeclarations",
     "completionDeclarations",
   ]),
-  warningAcknowledgement: Object.freeze(["code", "range"]),
-  sourceRange: Object.freeze(["start", "end"]),
-  beatDuration: Object.freeze(["numerator", "denominator"]),
-  measureCompletionEmpty: Object.freeze(["kind"]),
-  measureCompletionComplete: Object.freeze(["kind"]),
-  measureCompletionPickupOrIncomplete: Object.freeze([
+  warningAcknowledgement: /* @__PURE__ */ Object.freeze(["code", "range"]),
+  sourceRange: /* @__PURE__ */ Object.freeze(["start", "end"]),
+  beatDuration: /* @__PURE__ */ Object.freeze(["numerator", "denominator"]),
+  measureCompletionEmpty: /* @__PURE__ */ Object.freeze(["kind"]),
+  measureCompletionComplete: /* @__PURE__ */ Object.freeze(["kind"]),
+  measureCompletionPickupOrIncomplete: /* @__PURE__ */ Object.freeze([
     "kind",
     "expectedDuration",
     "reason",
   ]),
-  keyContext: Object.freeze(["tonic", "mode"]),
-  spelledPitchClass: Object.freeze(["step", "alter"]),
-  completionDeclaration: Object.freeze(["measureId", "completion"]),
-  sectionDeclaration: Object.freeze([
+  keyContext: /* @__PURE__ */ Object.freeze(["tonic", "mode"]),
+  spelledPitchClass: /* @__PURE__ */ Object.freeze(["step", "alter"]),
+  completionDeclaration: /* @__PURE__ */ Object.freeze(["measureId", "completion"]),
+  sectionDeclaration: /* @__PURE__ */ Object.freeze([
     "sourceSectionOrdinal",
     "voiceLeadingBoundary",
   ]),
-  sectionMetadata: Object.freeze([
+  sectionMetadata: /* @__PURE__ */ Object.freeze([
     "name",
     "annotation",
     "keyOverride",
     "voiceLeadingBoundary",
   ]),
-  splitEventDurationPlan: Object.freeze([
+  splitEventDurationPlan: /* @__PURE__ */ Object.freeze([
     "kind",
     "eventId",
     "firstDuration",
@@ -2520,7 +2556,7 @@ export const A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS = Object.freeze({
     "contentPolicy",
     "annotationPolicy",
   ]),
-  joinEventDurationsPlan: Object.freeze([
+  joinEventDurationsPlan: /* @__PURE__ */ Object.freeze([
     "kind",
     "leftEventId",
     "rightEventId",
@@ -2530,7 +2566,7 @@ export const A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS = Object.freeze({
     "contentPolicy",
     "annotationPolicy",
   ]),
-  splitSectionPlan: Object.freeze([
+  splitSectionPlan: /* @__PURE__ */ Object.freeze([
     "kind",
     "sectionId",
     "beforeMeasureId",
@@ -2539,7 +2575,7 @@ export const A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS = Object.freeze({
     "identityPolicy",
     "measurePolicy",
   ]),
-  joinSectionsPlan: Object.freeze([
+  joinSectionsPlan: /* @__PURE__ */ Object.freeze([
     "kind",
     "leftSectionId",
     "rightSectionId",
@@ -2552,15 +2588,15 @@ export const A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS = Object.freeze({
     "metadataPolicy",
     "internalBoundaryPolicy",
   ]),
-  newEventAutoVoicing: Object.freeze([
+  newEventAutoVoicing: /* @__PURE__ */ Object.freeze([
     "mode",
     "family",
     "voiceCount",
     "range",
     "bassPolicy",
   ]),
-  newEventAutoVoicingRange: Object.freeze(["lowMidi", "highMidi"]),
-  receiptBase: Object.freeze([
+  newEventAutoVoicingRange: /* @__PURE__ */ Object.freeze(["lowMidi", "highMidi"]),
+  receiptBase: /* @__PURE__ */ Object.freeze([
     "schema",
     "commandKind",
     "commandId",
@@ -2572,7 +2608,7 @@ export const A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS = Object.freeze({
     "effects",
     "work",
   ]),
-  receiptOperation: Object.freeze([
+  receiptOperation: /* @__PURE__ */ Object.freeze([
     "planKind",
     "insertLane",
     "placementKind",
@@ -2584,14 +2620,14 @@ export const A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS = Object.freeze({
     "timelineDisposition",
     "bookmarks",
   ]),
-  completeDraftInsertSourceReceipt: Object.freeze([
+  completeDraftInsertSourceReceipt: /* @__PURE__ */ Object.freeze([
     "kind",
     "parserOutcome",
     "quickEntrySnapshotMatched",
     "canonicalTargetMatched",
     "acknowledgedWarningCount",
   ]),
-  recoveredChordInsertSourceReceipt: Object.freeze([
+  recoveredChordInsertSourceReceipt: /* @__PURE__ */ Object.freeze([
     "kind",
     "parserOutcome",
     "quickEntrySnapshotMatched",
@@ -2602,7 +2638,7 @@ export const A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS = Object.freeze({
     "siblingsApplied",
     "layoutLossAcknowledged",
   ]),
-  bookmarkReceiptCore: Object.freeze([
+  bookmarkReceiptCore: /* @__PURE__ */ Object.freeze([
     "operationPolicy",
     "selectionPolicy",
     "selectionReplacements",
@@ -2615,36 +2651,44 @@ export const A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS = Object.freeze({
     "focusPolicy",
     "focusTarget",
   ]),
-  joinSectionsBookmarkReceiptExtension: Object.freeze([
+  joinSectionsBookmarkReceiptExtension: /* @__PURE__ */ Object.freeze([
     "rightSectionWasEmpty",
     "rightSectionFirstMeasureId",
     "rightSectionStartRewrite",
   ]),
-  boundaryRewrite: Object.freeze(["from", "to"]),
-  selectionReplacement: Object.freeze(["fromEventId", "toEventId"]),
-  focusTargetChart: Object.freeze(["kind"]),
-  focusTargetSection: Object.freeze(["kind", "sectionId"]),
-  focusTargetMeasure: Object.freeze(["kind", "measureId"]),
-  focusTargetEvent: Object.freeze(["kind", "eventId"]),
-  allocatedIdentity: Object.freeze(["kind", "id", "source"]),
-  fragmentSectionIdentitySource: Object.freeze([
+  /**
+   * Conditional creation-branch extension: `insertionCreated` appears only on
+   * an insert receipt whose before insertion bookmark was null, ordered
+   * immediately after `insertionRewrite`.
+   */
+  createdInsertionBookmarkReceiptExtension: /* @__PURE__ */ Object.freeze([
+    "insertionCreated",
+  ]),
+  boundaryRewrite: /* @__PURE__ */ Object.freeze(["from", "to"]),
+  selectionReplacement: /* @__PURE__ */ Object.freeze(["fromEventId", "toEventId"]),
+  focusTargetChart: /* @__PURE__ */ Object.freeze(["kind"]),
+  focusTargetSection: /* @__PURE__ */ Object.freeze(["kind", "sectionId"]),
+  focusTargetMeasure: /* @__PURE__ */ Object.freeze(["kind", "measureId"]),
+  focusTargetEvent: /* @__PURE__ */ Object.freeze(["kind", "eventId"]),
+  allocatedIdentity: /* @__PURE__ */ Object.freeze(["kind", "id", "source"]),
+  fragmentSectionIdentitySource: /* @__PURE__ */ Object.freeze([
     "kind",
     "sourceSectionOrdinal",
   ]),
-  splitSectionIdentitySource: Object.freeze(["kind", "sourceSectionId"]),
-  fragmentMeasureIdentitySource: Object.freeze([
+  splitSectionIdentitySource: /* @__PURE__ */ Object.freeze(["kind", "sourceSectionId"]),
+  fragmentMeasureIdentitySource: /* @__PURE__ */ Object.freeze([
     "kind",
     "sourceSectionOrdinal",
     "sourceMeasureOrdinal",
   ]),
-  fragmentEventIdentitySource: Object.freeze(["kind", "sourceEventOrdinal"]),
-  recoveredChordIdentitySource: Object.freeze([
+  fragmentEventIdentitySource: /* @__PURE__ */ Object.freeze(["kind", "sourceEventOrdinal"]),
+  recoveredChordIdentitySource: /* @__PURE__ */ Object.freeze([
     "kind",
     "selectedGlobalOrdinal",
   ]),
-  splitEventSecondIdentitySource: Object.freeze(["kind", "sourceEventId"]),
-  removedIdentity: Object.freeze(["kind", "id"]),
-  diagnostic: Object.freeze([
+  splitEventSecondIdentitySource: /* @__PURE__ */ Object.freeze(["kind", "sourceEventId"]),
+  removedIdentity: /* @__PURE__ */ Object.freeze(["kind", "id"]),
+  diagnostic: /* @__PURE__ */ Object.freeze([
     "code",
     "owner",
     "path",
@@ -2653,7 +2697,7 @@ export const A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS = Object.freeze({
     "observed",
     "maximum",
   ]),
-  workEvidence: Object.freeze([
+  workEvidence: /* @__PURE__ */ Object.freeze([
     "structuralDecodeCalls",
     "semanticValidationCalls",
     "planNodesVisited",
@@ -2694,7 +2738,7 @@ export const A0_U1_ATOMIC_EDIT_PLAN_FORBIDDEN_PAYLOAD_KEYS: readonly [
   "derivedPatch",
   "replacement",
   "importDraft",
-] = Object.freeze([
+] = /* @__PURE__ */ Object.freeze([
   "candidate",
   "document",
   "commands",
