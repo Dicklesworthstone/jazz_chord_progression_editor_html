@@ -1,0 +1,368 @@
+{
+  "schema": "changes.fixtures.v2-limit-cases.v1",
+  "fixtureVersion": "1.0.0",
+  "status": "independently-authored-pre-production",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "notes": "Exact 24/48/512/8192 edge behavior. Generator descriptors expand deterministically in the validator: candidateCount ids are candidate-000 upward; voiceMidis for candidate j are [48+j, 52+j, 59+j] capped at 127; costRule abs-index-distance yields [d+1, d+1, 0, 0, 0, 0, 12] for d = |i-j|; costRule uniform yields the given tuple for every pair; costRule table applies the same pair table at every layer and at fixed-start window boundaries. Realization patterns: stay-chains expands one chain per candidate repeating its id; uniform expands a single chain repeating candidateId; lexicographic-first expands the first `count` id sequences of the given length in lexicographic order. Expectations were hand-computed from the contract document.",
+  "requestDefaults": {
+    "documentId": "doc-v2-spec-0001",
+    "sourceRevision": 1,
+    "loopClosure": false,
+    "maxWorkQuanta": 8192
+  },
+  "cases": [
+    {
+      "id": "V2-LIM-001",
+      "kind": "optimize",
+      "bruteForceCertified": true,
+      "title": "Full 24-candidate events: bucket dominance keeps exactly the stay-chains",
+      "request": {
+        "requestId": "v2-lim-001",
+        "generator": {
+          "eventCount": 2,
+          "candidateCount": 24,
+          "costRule": "abs-index-distance"
+        }
+      },
+      "expected": {
+        "kind": "optimized",
+        "termination": "complete",
+        "segments": [
+          {
+            "segmentOrdinal": 0,
+            "windowOrdinal": 0,
+            "boundaryCondition": "open",
+            "realizationPattern": {
+              "patternKind": "stay-chains",
+              "count": 24,
+              "length": 2,
+              "cost": [1, 1, 0, 0, 0, 0, 12]
+            }
+          }
+        ],
+        "aggregateSelectedCost": [1, 1, 0, 0, 0, 0, 12],
+        "degradations": [],
+        "conflicts": [],
+        "counters": {
+          "workQuanta": 1,
+          "workUnits": 600,
+          "seededStates": 24,
+          "statePairExpansions": 576,
+          "oracleTransitionCalls": 576,
+          "oracleRefusedTransitions": 0,
+          "generatedStates": 600,
+          "dominancePrunes": 552,
+          "beamEvictions": 0,
+          "constraintFilteredCandidates": 0,
+          "loopClosureUnits": 0,
+          "loopClosureRefusals": 0,
+          "windowsOptimized": 1,
+          "segmentsOptimized": 1
+        },
+        "memory": {
+          "peakFrontierStates": 24,
+          "peakLayerGeneratedStates": 576,
+          "peakTrackedStates": 600,
+          "peakRealizationRecords": 24
+        }
+      },
+      "traceIds": ["V2-TRACE-LIMITS", "V2-TRACE-BRUTE-FORCE", "V2-TRACE-PARETO-DOMINANCE"],
+      "authorityIds": ["V2-AUTH-V0", "V2-AUTH-DERIVED", "V2-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "V2-LIM-002",
+      "kind": "optimize",
+      "bruteForceCertified": false,
+      "title": "Uniform costs force beam eviction at width 48 and the full 48-alternative front",
+      "request": {
+        "requestId": "v2-lim-002",
+        "generator": {
+          "eventCount": 3,
+          "candidateCount": 24,
+          "costRule": "uniform",
+          "uniformCost": [1, 1, 0, 0, 0, 0, 12]
+        }
+      },
+      "expected": {
+        "kind": "optimized",
+        "termination": "exhausted",
+        "segments": [
+          {
+            "segmentOrdinal": 0,
+            "windowOrdinal": 0,
+            "boundaryCondition": "open",
+            "realizationPattern": {
+              "patternKind": "lexicographic-first",
+              "count": 48,
+              "length": 3,
+              "candidateCount": 24,
+              "cost": [2, 1, 0, 0, 0, 0, 12]
+            }
+          }
+        ],
+        "aggregateSelectedCost": [2, 1, 0, 0, 0, 0, 12],
+        "degradations": [
+          {
+            "reason": "beam-eviction",
+            "segmentOrdinal": 0,
+            "windowOrdinal": 0,
+            "eventIds": ["event-0001", "event-0002"],
+            "constraintRefs": []
+          }
+        ],
+        "conflicts": [],
+        "counters": {
+          "workQuanta": 2,
+          "workUnits": 1752,
+          "seededStates": 24,
+          "statePairExpansions": 1728,
+          "oracleTransitionCalls": 1152,
+          "oracleRefusedTransitions": 0,
+          "generatedStates": 1752,
+          "dominancePrunes": 0,
+          "beamEvictions": 1632,
+          "constraintFilteredCandidates": 0,
+          "loopClosureUnits": 0,
+          "loopClosureRefusals": 0,
+          "windowsOptimized": 1,
+          "segmentsOptimized": 1
+        },
+        "memory": {
+          "peakFrontierStates": 48,
+          "peakLayerGeneratedStates": 1152,
+          "peakTrackedStates": 1224,
+          "peakRealizationRecords": 48
+        }
+      },
+      "traceIds": ["V2-TRACE-LIMITS", "V2-TRACE-TIE-BREAK", "V2-TRACE-COUNTERS"],
+      "authorityIds": ["V2-AUTH-PLAN", "V2-AUTH-DERIVED", "V2-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "V2-LIM-003",
+      "kind": "optimize",
+      "bruteForceCertified": false,
+      "title": "513 events partition into 512-event windows with a fixed boundary voicing",
+      "request": {
+        "requestId": "v2-lim-003",
+        "generator": {
+          "eventCount": 513,
+          "candidateCount": 2,
+          "costRule": "table",
+          "costTable": {
+            "candidate-000->candidate-000": [1, 1, 0, 0, 0, 0, 11],
+            "candidate-000->candidate-001": [2, 1, 0, 0, 0, 0, 12],
+            "candidate-001->candidate-000": [3, 1, 0, 0, 0, 0, 11],
+            "candidate-001->candidate-001": [3, 1, 0, 0, 0, 0, 12]
+          }
+        }
+      },
+      "expected": {
+        "kind": "optimized",
+        "termination": "exhausted",
+        "segments": [
+          {
+            "segmentOrdinal": 0,
+            "windowOrdinal": 0,
+            "boundaryCondition": "open",
+            "firstEventOrdinal": 0,
+            "lastEventOrdinal": 511,
+            "realizationPattern": {
+              "patternKind": "uniform",
+              "candidateId": "candidate-000",
+              "length": 512,
+              "cost": [511, 1, 0, 0, 0, 0, 11]
+            }
+          },
+          {
+            "segmentOrdinal": 0,
+            "windowOrdinal": 1,
+            "boundaryCondition": "fixed-start",
+            "firstEventOrdinal": 512,
+            "lastEventOrdinal": 512,
+            "realizationPattern": {
+              "patternKind": "uniform",
+              "candidateId": "candidate-000",
+              "length": 1,
+              "cost": [1, 1, 0, 0, 0, 0, 11]
+            }
+          }
+        ],
+        "aggregateSelectedCost": [512, 1, 0, 0, 0, 0, 11],
+        "degradations": [
+          {
+            "reason": "window-partition",
+            "segmentOrdinal": 0,
+            "windowOrdinal": null,
+            "eventIds": ["event-0512"],
+            "constraintRefs": []
+          }
+        ],
+        "conflicts": [],
+        "counters": {
+          "workQuanta": 2,
+          "workUnits": 2049,
+          "seededStates": 3,
+          "statePairExpansions": 2046,
+          "oracleTransitionCalls": 2046,
+          "oracleRefusedTransitions": 0,
+          "generatedStates": 2049,
+          "dominancePrunes": 1022,
+          "beamEvictions": 0,
+          "constraintFilteredCandidates": 0,
+          "loopClosureUnits": 0,
+          "loopClosureRefusals": 0,
+          "windowsOptimized": 2,
+          "segmentsOptimized": 1
+        },
+        "memory": {
+          "peakFrontierStates": 2,
+          "peakLayerGeneratedStates": 4,
+          "peakTrackedStates": 1026,
+          "peakRealizationRecords": 2
+        }
+      },
+      "traceIds": ["V2-TRACE-WINDOWING", "V2-TRACE-LIMITS", "V2-TRACE-COUNTERS"],
+      "authorityIds": ["V2-AUTH-PLAN", "V2-AUTH-DERIVED", "V2-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "V2-LIM-004",
+      "kind": "refuse",
+      "title": "8,193 events exceed the request cap",
+      "request": {
+        "requestId": "v2-lim-004",
+        "generator": {
+          "eventCount": 8193,
+          "candidateCount": 1,
+          "costRule": "uniform",
+          "uniformCost": [1, 1, 0, 0, 0, 0, 12]
+        }
+      },
+      "expected": { "refusal": { "code": "progression.event_count_exceeded", "pointer": "/events" } },
+      "traceIds": ["V2-TRACE-LIMITS", "V2-TRACE-REFUSALS"],
+      "authorityIds": ["V2-AUTH-DOMAIN", "V2-AUTH-DERIVED"]
+    },
+    {
+      "id": "V2-LIM-005",
+      "kind": "optimize",
+      "bruteForceCertified": false,
+      "title": "Quantum budget of one on a two-quantum search: work-quanta-cap with no partial options",
+      "request": {
+        "requestId": "v2-lim-005",
+        "maxWorkQuanta": 1,
+        "generator": {
+          "eventCount": 3,
+          "candidateCount": 24,
+          "costRule": "uniform",
+          "uniformCost": [1, 1, 0, 0, 0, 0, 12]
+        }
+      },
+      "expected": {
+        "kind": "unfinished",
+        "termination": "work-quanta-cap",
+        "counters": {
+          "workQuanta": 1,
+          "workUnits": 1152,
+          "seededStates": 24,
+          "statePairExpansions": 1128,
+          "oracleTransitionCalls": 1128,
+          "oracleRefusedTransitions": 0,
+          "generatedStates": 1152,
+          "dominancePrunes": 0,
+          "beamEvictions": 528,
+          "constraintFilteredCandidates": 0,
+          "loopClosureUnits": 0,
+          "loopClosureRefusals": 0,
+          "windowsOptimized": 0,
+          "segmentsOptimized": 0
+        },
+        "memory": {
+          "peakFrontierStates": 48,
+          "peakLayerGeneratedStates": 576,
+          "peakTrackedStates": 624,
+          "peakRealizationRecords": 0
+        }
+      },
+      "traceIds": ["V2-TRACE-LIMITS", "V2-TRACE-NO-PARTIAL", "V2-TRACE-COUNTERS"],
+      "authorityIds": ["V2-AUTH-PLAN", "V2-AUTH-DERIVED", "V2-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "V2-LIM-006",
+      "kind": "refuse",
+      "title": "Eight locks exceed the per-event lock cap",
+      "request": {
+        "requestId": "v2-lim-006",
+        "events": [
+          {
+            "kind": "auto",
+            "eventId": "event-0000",
+            "chainBoundary": "reset",
+            "candidates": [
+              { "candidateId": "candidate-000", "family": "balanced", "voiceMidis": [48, 52, 59] }
+            ],
+            "constraints": {
+              "families": null,
+              "range": null,
+              "bassRange": null,
+              "locks": [
+                { "voiceId": "voice-0000", "midi": 60 },
+                { "voiceId": "voice-0001", "midi": 61 },
+                { "voiceId": "voice-0002", "midi": 62 },
+                { "voiceId": "voice-0003", "midi": 63 },
+                { "voiceId": "voice-0004", "midi": 64 },
+                { "voiceId": "voice-0005", "midi": 65 },
+                { "voiceId": "voice-0006", "midi": 66 },
+                { "voiceId": "voice-0007", "midi": 67 }
+              ]
+            }
+          }
+        ],
+        "transitions": []
+      },
+      "expected": { "refusal": { "code": "progression.constraint_invalid", "pointer": "/events/0/constraints/locks" } },
+      "traceIds": ["V2-TRACE-LIMITS", "V2-TRACE-REFUSALS"],
+      "authorityIds": ["V2-AUTH-V1", "V2-AUTH-DERIVED"]
+    },
+    {
+      "id": "V2-LIM-007",
+      "kind": "refuse",
+      "title": "Twenty-five candidates exceed the per-event candidate cap",
+      "request": {
+        "requestId": "v2-lim-007",
+        "generator": {
+          "eventCount": 1,
+          "candidateCount": 25,
+          "costRule": "uniform",
+          "uniformCost": [1, 1, 0, 0, 0, 0, 12]
+        }
+      },
+      "expected": { "refusal": { "code": "progression.candidate_invalid", "pointer": "/events/0/candidates" } },
+      "traceIds": ["V2-TRACE-LIMITS", "V2-TRACE-REFUSALS"],
+      "authorityIds": ["V2-AUTH-V0", "V2-AUTH-DERIVED"]
+    },
+    {
+      "id": "V2-LIM-008",
+      "kind": "refuse",
+      "title": "Quantum budget above the frozen maximum",
+      "request": {
+        "requestId": "v2-lim-008",
+        "maxWorkQuanta": 8193,
+        "events": [
+          {
+            "kind": "auto",
+            "eventId": "event-0000",
+            "chainBoundary": "reset",
+            "candidates": [
+              { "candidateId": "candidate-000", "family": "balanced", "voiceMidis": [48, 52, 59] }
+            ],
+            "constraints": { "families": null, "range": null, "bassRange": null, "locks": [] }
+          }
+        ],
+        "transitions": []
+      },
+      "expected": { "refusal": { "code": "progression.quantum_budget_invalid", "pointer": "/maxWorkQuanta" } },
+      "traceIds": ["V2-TRACE-LIMITS", "V2-TRACE-REFUSALS"],
+      "authorityIds": ["V2-AUTH-DERIVED"]
+    }
+  ]
+}

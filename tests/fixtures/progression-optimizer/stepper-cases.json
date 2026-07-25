@@ -1,0 +1,126 @@
+{
+  "schema": "changes.fixtures.v2-stepper-cases.v1",
+  "fixtureVersion": "1.0.0",
+  "status": "independently-authored-pre-production",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "notes": "Section 9 state-machine witnesses. Each case replays a base optimize case's request through an explicit operation script. Trajectory entries snapshot observables after each advance. The yield-equivalence case requires the validator to compare its stepped reference (quantum-aware, resumable) against its unstepped reference (straight-line) byte for byte.",
+  "cases": [
+    {
+      "id": "V2-STP-001",
+      "kind": "stepper",
+      "baseCaseId": "V2-OPT-001",
+      "title": "Initialize validates, seeds nothing, consumes no quanta",
+      "script": ["initialize"],
+      "expected": {
+        "final": { "status": "running", "quantaConsumed": 0, "workUnits": 0, "countersAllZero": true }
+      },
+      "traceIds": ["V2-TRACE-STEPPER"],
+      "authorityIds": ["V2-AUTH-PLAN"]
+    },
+    {
+      "id": "V2-STP-002",
+      "kind": "stepper",
+      "baseCaseId": "V2-LIM-002",
+      "title": "Quantum-by-quantum counter trajectory to a two-quantum terminal",
+      "script": ["initialize", "advance", "advance"],
+      "expected": {
+        "trajectory": [
+          { "afterOperation": 1, "status": "running", "quantaConsumed": 1, "workUnits": 1152 },
+          { "afterOperation": 2, "status": "terminal", "quantaConsumed": 2, "workUnits": 1752, "outcomeKind": "optimized", "termination": "exhausted" }
+        ]
+      },
+      "traceIds": ["V2-TRACE-STEPPER", "V2-TRACE-COUNTERS"],
+      "authorityIds": ["V2-AUTH-PLAN", "V2-AUTH-DERIVED"]
+    },
+    {
+      "id": "V2-STP-003",
+      "kind": "yield-equivalence",
+      "baseCaseId": "V2-LIM-002",
+      "title": "Stepped and unstepped execution produce byte-identical terminal outcomes",
+      "script": ["initialize", "advance-until-terminal"],
+      "expected": { "equivalence": "stepped-equals-unstepped" },
+      "traceIds": ["V2-TRACE-STEPPER", "V2-TRACE-DETERMINISM"],
+      "authorityIds": ["V2-AUTH-PLAN", "V2-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "V2-STP-004",
+      "kind": "stepper",
+      "baseCaseId": "V2-LIM-002",
+      "title": "User cancellation freezes stats at the cut and returns no partial options",
+      "script": ["initialize", "advance", "cancel:user-cancel"],
+      "expected": {
+        "final": {
+          "status": "terminal",
+          "quantaConsumed": 1,
+          "workUnits": 1152,
+          "outcomeKind": "cancelled",
+          "termination": "cancelled",
+          "cancelReason": "user-cancel",
+          "realizationRecords": 0
+        }
+      },
+      "traceIds": ["V2-TRACE-STEPPER", "V2-TRACE-NO-PARTIAL"],
+      "authorityIds": ["V2-AUTH-PLAN"]
+    },
+    {
+      "id": "V2-STP-005",
+      "kind": "stepper",
+      "baseCaseId": "V2-OPT-001",
+      "title": "Stale-revision cancellation before any quantum",
+      "script": ["initialize", "cancel:stale-revision"],
+      "expected": {
+        "final": {
+          "status": "terminal",
+          "quantaConsumed": 0,
+          "workUnits": 0,
+          "outcomeKind": "cancelled",
+          "termination": "cancelled",
+          "cancelReason": "stale-revision",
+          "realizationRecords": 0
+        }
+      },
+      "traceIds": ["V2-TRACE-STEPPER", "V2-TRACE-NO-PARTIAL"],
+      "authorityIds": ["V2-AUTH-PLAN"]
+    },
+    {
+      "id": "V2-STP-006",
+      "kind": "stepper",
+      "baseCaseId": "V2-OPT-001",
+      "title": "Advancing a terminal state refuses",
+      "script": ["initialize", "advance", "advance"],
+      "expected": {
+        "trajectory": [
+          { "afterOperation": 1, "status": "terminal", "quantaConsumed": 1, "workUnits": 6, "outcomeKind": "optimized", "termination": "complete" }
+        ],
+        "finalRefusal": { "code": "progression.resume_invalid", "pointer": "/status" }
+      },
+      "traceIds": ["V2-TRACE-STEPPER"],
+      "authorityIds": ["V2-AUTH-PLAN"]
+    },
+    {
+      "id": "V2-STP-007",
+      "kind": "stepper",
+      "baseCaseId": "V2-OPT-001",
+      "title": "Cancelling a terminal state refuses",
+      "script": ["initialize", "advance", "cancel:user-cancel"],
+      "expected": {
+        "finalRefusal": { "code": "progression.resume_invalid", "pointer": "/status" }
+      },
+      "traceIds": ["V2-TRACE-STEPPER"],
+      "authorityIds": ["V2-AUTH-PLAN"]
+    },
+    {
+      "id": "V2-STP-008",
+      "kind": "stepper",
+      "baseCaseId": "V2-OPT-001",
+      "title": "A tampered continuation version tag refuses as stale",
+      "script": ["initialize", "tamper-continuation-tag", "advance"],
+      "expected": {
+        "finalRefusal": { "code": "progression.resume_stale", "pointer": "/continuation/engineVersionTag" }
+      },
+      "traceIds": ["V2-TRACE-STEPPER"],
+      "authorityIds": ["V2-AUTH-PLAN"]
+    }
+  ]
+}

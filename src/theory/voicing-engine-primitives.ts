@@ -78,11 +78,20 @@ const CANONICAL_VOICING_DEGREES = Object.freeze([
  * Callers must not pass an input-owned mutable graph: `Object.freeze` is an
  * observable mutation. V0 uses this only while publishing records it owns.
  */
+const DEEPLY_FROZEN = new WeakSet();
+
 export function deepFreezeOwned<Value>(value: Value): Readonly<Value> {
   if (typeof value !== "object" || value === null) {
     return value;
   }
+  // Skip only subtrees this function itself already sealed: published
+  // results share role contexts, endpoints, and constant records across
+  // calls, and re-walking those dominates per-call publication cost. An
+  // externally frozen node still gets its children walked, because shallow
+  // freezing elsewhere proves nothing about the subtree.
+  if (DEEPLY_FROZEN.has(value)) return value;
   for (const child of Object.values(value)) deepFreezeOwned(child);
+  DEEPLY_FROZEN.add(value);
   return Object.isFrozen(value) ? value : Object.freeze(value);
 }
 
