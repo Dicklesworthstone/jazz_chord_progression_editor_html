@@ -1,0 +1,2457 @@
+{
+  "schema": "changes.fixtures.u1-edit-operation-matrix.v1",
+  "reviewState": "proposed-independent-spec",
+  "pinState": "reviewed-byte-and-semantic-pinned",
+  "expectedValuesGenerated": false,
+  "productionOutputUsedAsOracle": false,
+  "dispatchPolicy": {
+    "commandsPerUserAction": 1,
+    "batchedCommands": "forbidden",
+    "nestedPlans": "forbidden",
+    "directDocumentMutation": "forbidden",
+    "expectedDocumentIdRequired": "every-document-command",
+    "expectedRevisionRequired": "every-document-command",
+    "refusalHandling": "surface-verbatim-never-retry"
+  },
+  "rows": [
+    {
+      "id": "U1-OPC-001",
+      "kind": "positive",
+      "family": "edit-operation",
+      "operationId": "U1-OP-001",
+      "operation": "quick-entry-edit-draft",
+      "surface": "quick-entry",
+      "gesture": "type into the quick-entry field",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": false
+      },
+      "expected": {
+        "channel": "ephemeral-intent",
+        "commandKind": null,
+        "planKind": null,
+        "intentKind": "set-quick-entry",
+        "commandCount": 0,
+        "intentCount": 1,
+        "requiresExpectedDocumentId": false,
+        "requiresExpectedRevision": false,
+        "coalescing": null,
+        "undoable": false,
+        "pointerAlternative": "keyboard",
+        "focusBranch": "unchanged",
+        "keyboardAccess": "text-entry",
+        "refusalCode": null
+      },
+      "lawIds": [
+        "U1-EDIT-001-no-new-mutation-channel",
+        "U1-EDIT-014-keyboard-or-menu-alternative-for-every-pointer-operation"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY",
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-BEAD",
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-OPC-002",
+      "kind": "positive",
+      "family": "edit-operation",
+      "operationId": "U1-OP-002",
+      "operation": "quick-entry-set-target",
+      "surface": "quick-entry",
+      "gesture": "choose an insertion boundary for the draft",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": false
+      },
+      "expected": {
+        "channel": "ephemeral-intent",
+        "commandKind": null,
+        "planKind": null,
+        "intentKind": "set-quick-entry",
+        "commandCount": 0,
+        "intentCount": 1,
+        "requiresExpectedDocumentId": false,
+        "requiresExpectedRevision": false,
+        "coalescing": null,
+        "undoable": false,
+        "pointerAlternative": "keyboard-and-menu",
+        "focusBranch": "unchanged",
+        "keyboardAccess": "menu-item",
+        "refusalCode": null
+      },
+      "lawIds": [
+        "U1-EDIT-001-no-new-mutation-channel",
+        "U1-EDIT-014-keyboard-or-menu-alternative-for-every-pointer-operation"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY",
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-BEAD",
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-OPC-003",
+      "kind": "positive",
+      "family": "edit-operation",
+      "operationId": "U1-OP-003",
+      "operation": "quick-entry-clear-draft",
+      "surface": "quick-entry",
+      "gesture": "activate Clear or press Escape in the draft field",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": false
+      },
+      "expected": {
+        "channel": "ephemeral-intent",
+        "commandKind": null,
+        "planKind": null,
+        "intentKind": "set-quick-entry",
+        "commandCount": 0,
+        "intentCount": 1,
+        "requiresExpectedDocumentId": false,
+        "requiresExpectedRevision": false,
+        "coalescing": null,
+        "undoable": false,
+        "pointerAlternative": "keyboard",
+        "focusBranch": "unchanged",
+        "keyboardAccess": "shortcut",
+        "refusalCode": null
+      },
+      "lawIds": [
+        "U1-EDIT-001-no-new-mutation-channel",
+        "U1-EDIT-014-keyboard-or-menu-alternative-for-every-pointer-operation"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY",
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-BEAD",
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-OPC-004",
+      "kind": "positive",
+      "family": "edit-operation",
+      "operationId": "U1-OP-004",
+      "operation": "quick-entry-insert-preview",
+      "surface": "quick-entry",
+      "gesture": "activate Insert on a ready preview",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": false
+      },
+      "expected": {
+        "channel": "document-command",
+        "commandKind": "apply-edit-plan",
+        "planKind": "insert-fragment",
+        "intentKind": null,
+        "commandCount": 1,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": true,
+        "requiresExpectedRevision": true,
+        "coalescing": null,
+        "undoable": true,
+        "pointerAlternative": "keyboard",
+        "focusBranch": "non-chart-insertion-target",
+        "keyboardAccess": "shortcut",
+        "refusalCode": null
+      },
+      "lawIds": [
+        "U1-EDIT-001-no-new-mutation-channel",
+        "U1-EDIT-005-whole-preview-apply-is-one-atomic-command",
+        "U1-EDIT-004-insertion-plan-statement-exact"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY",
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-BEAD",
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-OPC-005",
+      "kind": "positive",
+      "family": "edit-operation",
+      "operationId": "U1-OP-005",
+      "operation": "quick-entry-insert-one-chord",
+      "surface": "quick-entry",
+      "gesture": "activate Insert this chord on one recoverable token",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": false
+      },
+      "expected": {
+        "channel": "document-command",
+        "commandKind": "apply-edit-plan",
+        "planKind": "insert-fragment",
+        "intentKind": null,
+        "commandCount": 1,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": true,
+        "requiresExpectedRevision": true,
+        "coalescing": null,
+        "undoable": true,
+        "pointerAlternative": "keyboard",
+        "focusBranch": "non-chart-insertion-target",
+        "keyboardAccess": "shortcut",
+        "refusalCode": null
+      },
+      "lawIds": [
+        "U1-EDIT-001-no-new-mutation-channel",
+        "U1-EDIT-005-whole-preview-apply-is-one-atomic-command",
+        "U1-EDIT-006-recovered-chord-lane-requires-explicit-loss-acknowledgement"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY",
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-BEAD",
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-OPC-006",
+      "kind": "positive",
+      "family": "edit-operation",
+      "operationId": "U1-OP-006",
+      "operation": "insert-empty-measure",
+      "surface": "chart",
+      "gesture": "activate a measure insertion target",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": true
+      },
+      "expected": {
+        "channel": "document-command",
+        "commandKind": "insert",
+        "planKind": null,
+        "intentKind": null,
+        "commandCount": 1,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": true,
+        "requiresExpectedRevision": true,
+        "coalescing": null,
+        "undoable": true,
+        "pointerAlternative": "keyboard-and-menu",
+        "focusBranch": "first-inserted-structural-ref",
+        "keyboardAccess": "shortcut",
+        "refusalCode": null
+      },
+      "lawIds": [
+        "U1-EDIT-001-no-new-mutation-channel",
+        "U1-EDIT-014-keyboard-or-menu-alternative-for-every-pointer-operation"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-BEAD",
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-OPC-007",
+      "kind": "positive",
+      "family": "edit-operation",
+      "operationId": "U1-OP-007",
+      "operation": "insert-empty-section",
+      "surface": "chart",
+      "gesture": "activate a section insertion target",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": true
+      },
+      "expected": {
+        "channel": "document-command",
+        "commandKind": "insert",
+        "planKind": null,
+        "intentKind": null,
+        "commandCount": 1,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": true,
+        "requiresExpectedRevision": true,
+        "coalescing": null,
+        "undoable": true,
+        "pointerAlternative": "keyboard-and-menu",
+        "focusBranch": "first-inserted-structural-ref",
+        "keyboardAccess": "shortcut",
+        "refusalCode": null
+      },
+      "lawIds": [
+        "U1-EDIT-001-no-new-mutation-channel",
+        "U1-EDIT-014-keyboard-or-menu-alternative-for-every-pointer-operation"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-BEAD",
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-OPC-008",
+      "kind": "positive",
+      "family": "edit-operation",
+      "operationId": "U1-OP-008",
+      "operation": "delete-selection",
+      "surface": "chart",
+      "gesture": "press Delete or choose Delete from the More menu",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": true
+      },
+      "expected": {
+        "channel": "document-command",
+        "commandKind": "delete",
+        "planKind": null,
+        "intentKind": null,
+        "commandCount": 1,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": true,
+        "requiresExpectedRevision": true,
+        "coalescing": null,
+        "undoable": true,
+        "pointerAlternative": "keyboard-and-menu",
+        "focusBranch": "non-chart-insertion-target",
+        "keyboardAccess": "shortcut",
+        "refusalCode": null
+      },
+      "lawIds": [
+        "U1-EDIT-001-no-new-mutation-channel",
+        "U1-EDIT-010-delete-focus-repair-order"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-BEAD",
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-OPC-009",
+      "kind": "positive",
+      "family": "edit-operation",
+      "operationId": "U1-OP-009",
+      "operation": "duplicate-selection",
+      "surface": "chart",
+      "gesture": "press Alt+D or choose Duplicate",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": true
+      },
+      "expected": {
+        "channel": "document-command",
+        "commandKind": "duplicate",
+        "planKind": null,
+        "intentKind": null,
+        "commandCount": 1,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": true,
+        "requiresExpectedRevision": true,
+        "coalescing": null,
+        "undoable": true,
+        "pointerAlternative": "keyboard-and-menu",
+        "focusBranch": "first-inserted-structural-ref",
+        "keyboardAccess": "shortcut",
+        "refusalCode": null
+      },
+      "lawIds": [
+        "U1-EDIT-001-no-new-mutation-channel",
+        "U1-EDIT-014-keyboard-or-menu-alternative-for-every-pointer-operation"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-BEAD",
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-OPC-010",
+      "kind": "positive",
+      "family": "edit-operation",
+      "operationId": "U1-OP-010",
+      "operation": "move-previous",
+      "surface": "chart",
+      "gesture": "press Alt+ArrowLeft or choose Move previous",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": true
+      },
+      "expected": {
+        "channel": "document-command",
+        "commandKind": "move",
+        "planKind": null,
+        "intentKind": null,
+        "commandCount": 1,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": true,
+        "requiresExpectedRevision": true,
+        "coalescing": null,
+        "undoable": true,
+        "pointerAlternative": "keyboard-and-menu",
+        "focusBranch": "selection-focus-event",
+        "keyboardAccess": "shortcut",
+        "refusalCode": null
+      },
+      "lawIds": [
+        "U1-EDIT-001-no-new-mutation-channel",
+        "U1-EDIT-014-keyboard-or-menu-alternative-for-every-pointer-operation"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-BEAD",
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-OPC-011",
+      "kind": "positive",
+      "family": "edit-operation",
+      "operationId": "U1-OP-011",
+      "operation": "move-next",
+      "surface": "chart",
+      "gesture": "press Alt+ArrowRight or choose Move next",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": true
+      },
+      "expected": {
+        "channel": "document-command",
+        "commandKind": "move",
+        "planKind": null,
+        "intentKind": null,
+        "commandCount": 1,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": true,
+        "requiresExpectedRevision": true,
+        "coalescing": null,
+        "undoable": true,
+        "pointerAlternative": "keyboard-and-menu",
+        "focusBranch": "selection-focus-event",
+        "keyboardAccess": "shortcut",
+        "refusalCode": null
+      },
+      "lawIds": [
+        "U1-EDIT-001-no-new-mutation-channel",
+        "U1-EDIT-014-keyboard-or-menu-alternative-for-every-pointer-operation"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-BEAD",
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-OPC-012",
+      "kind": "positive",
+      "family": "edit-operation",
+      "operationId": "U1-OP-012",
+      "operation": "move-to-boundary",
+      "surface": "chart",
+      "gesture": "drop a dragged handle on a boundary, or choose Move before/after",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": true
+      },
+      "expected": {
+        "channel": "document-command",
+        "commandKind": "move",
+        "planKind": null,
+        "intentKind": null,
+        "commandCount": 1,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": true,
+        "requiresExpectedRevision": true,
+        "coalescing": null,
+        "undoable": true,
+        "pointerAlternative": "keyboard-and-menu",
+        "focusBranch": "selection-focus-event",
+        "keyboardAccess": "shortcut",
+        "refusalCode": null
+      },
+      "lawIds": [
+        "U1-EDIT-001-no-new-mutation-channel",
+        "U1-EDIT-013-pointer-drag-optional-and-threshold-gated",
+        "U1-EDIT-014-keyboard-or-menu-alternative-for-every-pointer-operation"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-BEAD",
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-OPC-013",
+      "kind": "positive",
+      "family": "edit-operation",
+      "operationId": "U1-OP-013",
+      "operation": "move-following-events",
+      "surface": "chart",
+      "gesture": "choose Move following events from the overfill notice",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": true
+      },
+      "expected": {
+        "channel": "document-command",
+        "commandKind": "move",
+        "planKind": null,
+        "intentKind": null,
+        "commandCount": 1,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": true,
+        "requiresExpectedRevision": true,
+        "coalescing": null,
+        "undoable": true,
+        "pointerAlternative": "keyboard-and-menu",
+        "focusBranch": "selection-focus-event",
+        "keyboardAccess": "menu-item",
+        "refusalCode": null
+      },
+      "lawIds": [
+        "U1-EDIT-001-no-new-mutation-channel",
+        "U1-EDIT-012-duration-edit-states-measure-fill-and-explicit-resolution"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-BEAD",
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-OPC-014",
+      "kind": "positive",
+      "family": "edit-operation",
+      "operationId": "U1-OP-014",
+      "operation": "split-event-duration",
+      "surface": "chart",
+      "gesture": "press Alt+S or choose Split duration",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": true
+      },
+      "expected": {
+        "channel": "document-command",
+        "commandKind": "apply-edit-plan",
+        "planKind": "split-event-duration",
+        "intentKind": null,
+        "commandCount": 1,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": true,
+        "requiresExpectedRevision": true,
+        "coalescing": null,
+        "undoable": true,
+        "pointerAlternative": "keyboard-and-menu",
+        "focusBranch": "selection-focus-event",
+        "keyboardAccess": "shortcut",
+        "refusalCode": null
+      },
+      "lawIds": [
+        "U1-EDIT-001-no-new-mutation-channel",
+        "U1-EDIT-005-whole-preview-apply-is-one-atomic-command",
+        "U1-EDIT-012-duration-edit-states-measure-fill-and-explicit-resolution"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-BEAD",
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-OPC-015",
+      "kind": "positive",
+      "family": "edit-operation",
+      "operationId": "U1-OP-015",
+      "operation": "join-event-durations",
+      "surface": "chart",
+      "gesture": "press Alt+J or choose Join with next",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": true
+      },
+      "expected": {
+        "channel": "document-command",
+        "commandKind": "apply-edit-plan",
+        "planKind": "join-event-durations",
+        "intentKind": null,
+        "commandCount": 1,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": true,
+        "requiresExpectedRevision": true,
+        "coalescing": null,
+        "undoable": true,
+        "pointerAlternative": "keyboard-and-menu",
+        "focusBranch": "selection-focus-event",
+        "keyboardAccess": "shortcut",
+        "refusalCode": null
+      },
+      "lawIds": [
+        "U1-EDIT-001-no-new-mutation-channel",
+        "U1-EDIT-005-whole-preview-apply-is-one-atomic-command",
+        "U1-EDIT-012-duration-edit-states-measure-fill-and-explicit-resolution"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-BEAD",
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-OPC-016",
+      "kind": "positive",
+      "family": "edit-operation",
+      "operationId": "U1-OP-016",
+      "operation": "split-section",
+      "surface": "chart",
+      "gesture": "press Alt+K or choose Split section here",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": true
+      },
+      "expected": {
+        "channel": "document-command",
+        "commandKind": "apply-edit-plan",
+        "planKind": "split-section",
+        "intentKind": null,
+        "commandCount": 1,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": true,
+        "requiresExpectedRevision": true,
+        "coalescing": null,
+        "undoable": true,
+        "pointerAlternative": "keyboard-and-menu",
+        "focusBranch": "first-inserted-structural-ref",
+        "keyboardAccess": "shortcut",
+        "refusalCode": null
+      },
+      "lawIds": [
+        "U1-EDIT-001-no-new-mutation-channel",
+        "U1-EDIT-005-whole-preview-apply-is-one-atomic-command"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-BEAD",
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-OPC-017",
+      "kind": "positive",
+      "family": "edit-operation",
+      "operationId": "U1-OP-017",
+      "operation": "join-sections",
+      "surface": "chart",
+      "gesture": "press Alt+L or choose Join with next section",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": true
+      },
+      "expected": {
+        "channel": "document-command",
+        "commandKind": "apply-edit-plan",
+        "planKind": "join-sections",
+        "intentKind": null,
+        "commandCount": 1,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": true,
+        "requiresExpectedRevision": true,
+        "coalescing": null,
+        "undoable": true,
+        "pointerAlternative": "keyboard-and-menu",
+        "focusBranch": "chart",
+        "keyboardAccess": "shortcut",
+        "refusalCode": null
+      },
+      "lawIds": [
+        "U1-EDIT-001-no-new-mutation-channel",
+        "U1-EDIT-005-whole-preview-apply-is-one-atomic-command"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-BEAD",
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-OPC-018",
+      "kind": "positive",
+      "family": "edit-operation",
+      "operationId": "U1-OP-018",
+      "operation": "set-event-duration",
+      "surface": "chart",
+      "gesture": "commit an exact beat value in the duration editor",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": true
+      },
+      "expected": {
+        "channel": "document-command",
+        "commandKind": "set-duration",
+        "planKind": null,
+        "intentKind": null,
+        "commandCount": 1,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": true,
+        "requiresExpectedRevision": true,
+        "coalescing": null,
+        "undoable": true,
+        "pointerAlternative": "keyboard-and-menu",
+        "focusBranch": "selection-focus-event",
+        "keyboardAccess": "shortcut",
+        "refusalCode": null
+      },
+      "lawIds": [
+        "U1-EDIT-001-no-new-mutation-channel",
+        "U1-EDIT-012-duration-edit-states-measure-fill-and-explicit-resolution"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-BEAD",
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-OPC-019",
+      "kind": "positive",
+      "family": "edit-operation",
+      "operationId": "U1-OP-019",
+      "operation": "set-measure-completion",
+      "surface": "chart",
+      "gesture": "confirm an explicit incomplete measure and reason",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": true
+      },
+      "expected": {
+        "channel": "document-command",
+        "commandKind": "set-measure-completion",
+        "planKind": null,
+        "intentKind": null,
+        "commandCount": 1,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": true,
+        "requiresExpectedRevision": true,
+        "coalescing": null,
+        "undoable": true,
+        "pointerAlternative": "keyboard-and-menu",
+        "focusBranch": "selection-focus-event",
+        "keyboardAccess": "shortcut",
+        "refusalCode": null
+      },
+      "lawIds": [
+        "U1-EDIT-001-no-new-mutation-channel",
+        "U1-EDIT-012-duration-edit-states-measure-fill-and-explicit-resolution"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-BEAD",
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-OPC-020",
+      "kind": "positive",
+      "family": "edit-operation",
+      "operationId": "U1-OP-020",
+      "operation": "apply-inline-symbol",
+      "surface": "chart",
+      "gesture": "press Enter or activate Apply in the inline symbol editor",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": true
+      },
+      "expected": {
+        "channel": "document-command",
+        "commandKind": "set-chord",
+        "planKind": null,
+        "intentKind": null,
+        "commandCount": 1,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": true,
+        "requiresExpectedRevision": true,
+        "coalescing": null,
+        "undoable": true,
+        "pointerAlternative": "keyboard-and-menu",
+        "focusBranch": "selection-focus-event",
+        "keyboardAccess": "shortcut",
+        "refusalCode": null
+      },
+      "lawIds": [
+        "U1-EDIT-001-no-new-mutation-channel",
+        "U1-EDIT-011-inline-symbol-edit-valid-on-apply"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-BEAD",
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-OPC-021",
+      "kind": "positive",
+      "family": "edit-operation",
+      "operationId": "U1-OP-021",
+      "operation": "rename-section",
+      "surface": "chart",
+      "gesture": "commit a section name field",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": true
+      },
+      "expected": {
+        "channel": "document-command",
+        "commandKind": "set-text",
+        "planKind": null,
+        "intentKind": null,
+        "commandCount": 1,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": true,
+        "requiresExpectedRevision": true,
+        "coalescing": "text-field",
+        "undoable": true,
+        "pointerAlternative": "keyboard",
+        "focusBranch": "selection-focus-event",
+        "keyboardAccess": "text-entry",
+        "refusalCode": null
+      },
+      "lawIds": [
+        "U1-EDIT-001-no-new-mutation-channel",
+        "U1-EDIT-014-keyboard-or-menu-alternative-for-every-pointer-operation"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-BEAD",
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-OPC-022",
+      "kind": "positive",
+      "family": "edit-operation",
+      "operationId": "U1-OP-022",
+      "operation": "annotate-section",
+      "surface": "chart",
+      "gesture": "commit a section annotation field",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": true
+      },
+      "expected": {
+        "channel": "document-command",
+        "commandKind": "set-text",
+        "planKind": null,
+        "intentKind": null,
+        "commandCount": 1,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": true,
+        "requiresExpectedRevision": true,
+        "coalescing": "text-field",
+        "undoable": true,
+        "pointerAlternative": "keyboard",
+        "focusBranch": "selection-focus-event",
+        "keyboardAccess": "text-entry",
+        "refusalCode": null
+      },
+      "lawIds": [
+        "U1-EDIT-001-no-new-mutation-channel",
+        "U1-EDIT-014-keyboard-or-menu-alternative-for-every-pointer-operation"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-BEAD",
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-OPC-023",
+      "kind": "positive",
+      "family": "edit-operation",
+      "operationId": "U1-OP-023",
+      "operation": "set-section-boundary",
+      "surface": "chart",
+      "gesture": "choose preserve or reset voice leading at a section boundary",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": true
+      },
+      "expected": {
+        "channel": "document-command",
+        "commandKind": "set-section",
+        "planKind": null,
+        "intentKind": null,
+        "commandCount": 1,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": true,
+        "requiresExpectedRevision": true,
+        "coalescing": null,
+        "undoable": true,
+        "pointerAlternative": "keyboard-and-menu",
+        "focusBranch": "selection-focus-event",
+        "keyboardAccess": "shortcut",
+        "refusalCode": null
+      },
+      "lawIds": [
+        "U1-EDIT-001-no-new-mutation-channel",
+        "U1-EDIT-014-keyboard-or-menu-alternative-for-every-pointer-operation"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-BEAD",
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-OPC-024",
+      "kind": "positive",
+      "family": "edit-operation",
+      "operationId": "U1-OP-024",
+      "operation": "select-event",
+      "surface": "chart",
+      "gesture": "click or press Enter on a chord card",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": false
+      },
+      "expected": {
+        "channel": "ephemeral-intent",
+        "commandKind": null,
+        "planKind": null,
+        "intentKind": "set-bookmarks",
+        "commandCount": 0,
+        "intentCount": 1,
+        "requiresExpectedDocumentId": false,
+        "requiresExpectedRevision": false,
+        "coalescing": null,
+        "undoable": false,
+        "pointerAlternative": "keyboard",
+        "focusBranch": "unchanged",
+        "keyboardAccess": "shortcut",
+        "refusalCode": null
+      },
+      "lawIds": [
+        "U1-EDIT-008-four-independent-bookmarks",
+        "U1-EDIT-007-stable-identity-keys-only"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-BEAD",
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-OPC-025",
+      "kind": "positive",
+      "family": "edit-operation",
+      "operationId": "U1-OP-025",
+      "operation": "extend-selection",
+      "surface": "chart",
+      "gesture": "shift-click or press Shift+Arrow",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": false
+      },
+      "expected": {
+        "channel": "ephemeral-intent",
+        "commandKind": null,
+        "planKind": null,
+        "intentKind": "set-bookmarks",
+        "commandCount": 0,
+        "intentCount": 1,
+        "requiresExpectedDocumentId": false,
+        "requiresExpectedRevision": false,
+        "coalescing": null,
+        "undoable": false,
+        "pointerAlternative": "keyboard",
+        "focusBranch": "unchanged",
+        "keyboardAccess": "shortcut",
+        "refusalCode": null
+      },
+      "lawIds": [
+        "U1-EDIT-008-four-independent-bookmarks",
+        "U1-EDIT-016-touch-range-mode-explicit-and-exact"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-BEAD",
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-OPC-026",
+      "kind": "positive",
+      "family": "edit-operation",
+      "operationId": "U1-OP-026",
+      "operation": "set-insertion-point",
+      "surface": "chart",
+      "gesture": "focus an insertion target and press Alt+P",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": false
+      },
+      "expected": {
+        "channel": "ephemeral-intent",
+        "commandKind": null,
+        "planKind": null,
+        "intentKind": "set-bookmarks",
+        "commandCount": 0,
+        "intentCount": 1,
+        "requiresExpectedDocumentId": false,
+        "requiresExpectedRevision": false,
+        "coalescing": null,
+        "undoable": false,
+        "pointerAlternative": "keyboard",
+        "focusBranch": "unchanged",
+        "keyboardAccess": "shortcut",
+        "refusalCode": null
+      },
+      "lawIds": [
+        "U1-EDIT-008-four-independent-bookmarks"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-BEAD",
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-OPC-027",
+      "kind": "positive",
+      "family": "edit-operation",
+      "operationId": "U1-OP-027",
+      "operation": "range-enter-mode",
+      "surface": "range",
+      "gesture": "activate Select range",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": false
+      },
+      "expected": {
+        "channel": "presentation-only",
+        "commandKind": null,
+        "planKind": null,
+        "intentKind": null,
+        "commandCount": 0,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": false,
+        "requiresExpectedRevision": false,
+        "coalescing": null,
+        "undoable": false,
+        "pointerAlternative": "keyboard",
+        "focusBranch": "unchanged",
+        "keyboardAccess": "shortcut",
+        "refusalCode": null
+      },
+      "lawIds": [
+        "U1-EDIT-016-touch-range-mode-explicit-and-exact"
+      ],
+      "traceIds": [
+        "U1-TRACE-BOOKMARKS"
+      ],
+      "authorityIds": [
+        "U1-AUTH-BEAD",
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-OPC-028",
+      "kind": "positive",
+      "family": "edit-operation",
+      "operationId": "U1-OP-028",
+      "operation": "range-set-start",
+      "surface": "range",
+      "gesture": "activate Set start or commit the start beat field",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": false
+      },
+      "expected": {
+        "channel": "ephemeral-intent",
+        "commandKind": null,
+        "planKind": null,
+        "intentKind": "set-bookmarks",
+        "commandCount": 0,
+        "intentCount": 1,
+        "requiresExpectedDocumentId": false,
+        "requiresExpectedRevision": false,
+        "coalescing": null,
+        "undoable": false,
+        "pointerAlternative": "keyboard",
+        "focusBranch": "unchanged",
+        "keyboardAccess": "shortcut",
+        "refusalCode": null
+      },
+      "lawIds": [
+        "U1-EDIT-016-touch-range-mode-explicit-and-exact"
+      ],
+      "traceIds": [
+        "U1-TRACE-BOOKMARKS"
+      ],
+      "authorityIds": [
+        "U1-AUTH-BEAD",
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-OPC-029",
+      "kind": "positive",
+      "family": "edit-operation",
+      "operationId": "U1-OP-029",
+      "operation": "range-set-end",
+      "surface": "range",
+      "gesture": "activate Set end or commit the end beat field",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": false
+      },
+      "expected": {
+        "channel": "ephemeral-intent",
+        "commandKind": null,
+        "planKind": null,
+        "intentKind": "set-bookmarks",
+        "commandCount": 0,
+        "intentCount": 1,
+        "requiresExpectedDocumentId": false,
+        "requiresExpectedRevision": false,
+        "coalescing": null,
+        "undoable": false,
+        "pointerAlternative": "keyboard",
+        "focusBranch": "unchanged",
+        "keyboardAccess": "shortcut",
+        "refusalCode": null
+      },
+      "lawIds": [
+        "U1-EDIT-016-touch-range-mode-explicit-and-exact"
+      ],
+      "traceIds": [
+        "U1-TRACE-BOOKMARKS"
+      ],
+      "authorityIds": [
+        "U1-AUTH-BEAD",
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-OPC-030",
+      "kind": "positive",
+      "family": "edit-operation",
+      "operationId": "U1-OP-030",
+      "operation": "range-clear",
+      "surface": "range",
+      "gesture": "activate Cancel in the range bar",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": false
+      },
+      "expected": {
+        "channel": "ephemeral-intent",
+        "commandKind": null,
+        "planKind": null,
+        "intentKind": "set-bookmarks",
+        "commandCount": 0,
+        "intentCount": 1,
+        "requiresExpectedDocumentId": false,
+        "requiresExpectedRevision": false,
+        "coalescing": null,
+        "undoable": false,
+        "pointerAlternative": "keyboard",
+        "focusBranch": "unchanged",
+        "keyboardAccess": "shortcut",
+        "refusalCode": null
+      },
+      "lawIds": [
+        "U1-EDIT-016-touch-range-mode-explicit-and-exact"
+      ],
+      "traceIds": [
+        "U1-TRACE-BOOKMARKS"
+      ],
+      "authorityIds": [
+        "U1-AUTH-BEAD",
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-OPC-031",
+      "kind": "positive",
+      "family": "edit-operation",
+      "operationId": "U1-OP-031",
+      "operation": "toggle-view-mode",
+      "surface": "view",
+      "gesture": "activate the compact/teaching toggle",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": false
+      },
+      "expected": {
+        "channel": "presentation-only",
+        "commandKind": null,
+        "planKind": null,
+        "intentKind": null,
+        "commandCount": 0,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": false,
+        "requiresExpectedRevision": false,
+        "coalescing": null,
+        "undoable": false,
+        "pointerAlternative": "keyboard",
+        "focusBranch": "unchanged",
+        "keyboardAccess": "shortcut",
+        "refusalCode": null
+      },
+      "lawIds": [
+        "U1-EDIT-018-view-modes-render-identical-musical-facts"
+      ],
+      "traceIds": [
+        "U1-TRACE-VIEW"
+      ],
+      "authorityIds": [
+        "U1-AUTH-BEAD",
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-OPC-032",
+      "kind": "positive",
+      "family": "edit-operation",
+      "operationId": "U1-OP-032",
+      "operation": "open-card-menu",
+      "surface": "chart",
+      "gesture": "press Shift+F10 or activate More",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": false
+      },
+      "expected": {
+        "channel": "presentation-only",
+        "commandKind": null,
+        "planKind": null,
+        "intentKind": null,
+        "commandCount": 0,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": false,
+        "requiresExpectedRevision": false,
+        "coalescing": null,
+        "undoable": false,
+        "pointerAlternative": "keyboard",
+        "focusBranch": "unchanged",
+        "keyboardAccess": "shortcut",
+        "refusalCode": null
+      },
+      "lawIds": [
+        "U1-EDIT-014-keyboard-or-menu-alternative-for-every-pointer-operation"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-BEAD",
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-OPC-033",
+      "kind": "positive",
+      "family": "edit-operation",
+      "operationId": "U1-OP-033",
+      "operation": "cancel-inline-edit",
+      "surface": "chart",
+      "gesture": "press Escape in the inline editor",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": false
+      },
+      "expected": {
+        "channel": "presentation-only",
+        "commandKind": null,
+        "planKind": null,
+        "intentKind": null,
+        "commandCount": 0,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": false,
+        "requiresExpectedRevision": false,
+        "coalescing": null,
+        "undoable": false,
+        "pointerAlternative": "keyboard",
+        "focusBranch": "unchanged",
+        "keyboardAccess": "shortcut",
+        "refusalCode": null
+      },
+      "lawIds": [
+        "U1-EDIT-011-inline-symbol-edit-valid-on-apply"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-BEAD",
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-OPC-034",
+      "kind": "stale",
+      "family": "edit-operation",
+      "operationId": "U1-OP-008",
+      "operation": "delete-selection",
+      "surface": "chart",
+      "gesture": "press Delete after the revision advanced",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": false,
+        "selectionRequired": false
+      },
+      "expected": {
+        "channel": "presentation-only",
+        "commandKind": null,
+        "planKind": null,
+        "intentKind": null,
+        "commandCount": 0,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": false,
+        "requiresExpectedRevision": false,
+        "coalescing": null,
+        "undoable": false,
+        "pointerAlternative": "keyboard",
+        "focusBranch": "unchanged",
+        "refusalCode": "u1.stale_revision"
+      },
+      "lawIds": [
+        "U1-EDIT-001-no-new-mutation-channel",
+        "U1-EDIT-017-application-refusals-surfaced-verbatim"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "A gesture whose captured revision is stale never reaches A0; the surface re-reads the snapshot instead of retrying."
+    },
+    {
+      "id": "U1-OPC-035",
+      "kind": "stale",
+      "family": "edit-operation",
+      "operationId": "U1-OP-004",
+      "operation": "quick-entry-insert-preview",
+      "surface": "quick-entry",
+      "gesture": "activate Insert after another command replaced the document",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": false,
+        "selectionRequired": false
+      },
+      "expected": {
+        "channel": "document-command",
+        "commandKind": "apply-edit-plan",
+        "planKind": "insert-fragment",
+        "intentKind": null,
+        "commandCount": 1,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": true,
+        "requiresExpectedRevision": true,
+        "coalescing": null,
+        "undoable": false,
+        "pointerAlternative": "keyboard",
+        "focusBranch": "unchanged",
+        "refusalCode": "command.wrong_document"
+      },
+      "lawIds": [
+        "U1-EDIT-017-application-refusals-surfaced-verbatim",
+        "U1-EDIT-001-no-new-mutation-channel"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL",
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-A0",
+        "U1-AUTH-A0U1"
+      ],
+      "note": "When the mismatch is only visible to A0, the command is dispatched and the application refusal code is surfaced verbatim."
+    },
+    {
+      "id": "U1-OPC-036",
+      "kind": "near-miss",
+      "family": "edit-operation",
+      "operationId": "U1-OP-020",
+      "operation": "apply-inline-symbol",
+      "surface": "chart",
+      "gesture": "press F2 on a card whose voicing mode is manual",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": false
+      },
+      "expected": {
+        "channel": "presentation-only",
+        "commandKind": null,
+        "planKind": null,
+        "intentKind": null,
+        "commandCount": 0,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": false,
+        "requiresExpectedRevision": false,
+        "coalescing": null,
+        "undoable": false,
+        "pointerAlternative": "keyboard",
+        "focusBranch": "unchanged",
+        "refusalCode": "u1.symbol_edit_blocked_manual_voicing"
+      },
+      "lawIds": [
+        "U1-EDIT-011-inline-symbol-edit-valid-on-apply"
+      ],
+      "traceIds": [
+        "U1-TRACE-INLINE"
+      ],
+      "authorityIds": [
+        "U1-AUTH-LEGACY",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "Manual pitches are exact; U1 refuses the inline rename rather than relabelling stale pitches under a new symbol."
+    },
+    {
+      "id": "U1-OPC-037",
+      "kind": "near-miss",
+      "family": "edit-operation",
+      "operationId": "U1-OP-020",
+      "operation": "apply-inline-symbol",
+      "surface": "chart",
+      "gesture": "press F2 on a card whose voicing mode is frozen",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": false
+      },
+      "expected": {
+        "channel": "presentation-only",
+        "commandKind": null,
+        "planKind": null,
+        "intentKind": null,
+        "commandCount": 0,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": false,
+        "requiresExpectedRevision": false,
+        "coalescing": null,
+        "undoable": false,
+        "pointerAlternative": "keyboard",
+        "focusBranch": "unchanged",
+        "refusalCode": "u1.symbol_edit_blocked_manual_voicing"
+      },
+      "lawIds": [
+        "U1-EDIT-011-inline-symbol-edit-valid-on-apply"
+      ],
+      "traceIds": [
+        "U1-TRACE-INLINE"
+      ],
+      "authorityIds": [
+        "U1-AUTH-LEGACY",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "Frozen voicings receive the same refusal as manual voicings."
+    },
+    {
+      "id": "U1-OPC-038",
+      "kind": "malformed",
+      "family": "edit-operation",
+      "operationId": "U1-OP-020",
+      "operation": "apply-inline-symbol",
+      "surface": "chart",
+      "gesture": "commit an unparsable symbol draft",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": false
+      },
+      "expected": {
+        "channel": "presentation-only",
+        "commandKind": null,
+        "planKind": null,
+        "intentKind": null,
+        "commandCount": 0,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": false,
+        "requiresExpectedRevision": false,
+        "coalescing": null,
+        "undoable": false,
+        "pointerAlternative": "keyboard",
+        "focusBranch": "unchanged",
+        "refusalCode": "u1.symbol_draft_invalid"
+      },
+      "lawIds": [
+        "U1-EDIT-011-inline-symbol-edit-valid-on-apply",
+        "U1-EDIT-003-preview-status-is-t0-derived"
+      ],
+      "traceIds": [
+        "U1-TRACE-INLINE"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "Apply commits only on a successful parse; the raw text is preserved."
+    },
+    {
+      "id": "U1-OPC-039",
+      "kind": "near-miss",
+      "family": "edit-operation",
+      "operationId": "U1-OP-020",
+      "operation": "apply-inline-symbol",
+      "surface": "chart",
+      "gesture": "move focus out of an inline editor holding invalid text",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": false
+      },
+      "expected": {
+        "channel": "presentation-only",
+        "commandKind": null,
+        "planKind": null,
+        "intentKind": null,
+        "commandCount": 0,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": false,
+        "requiresExpectedRevision": false,
+        "coalescing": null,
+        "undoable": false,
+        "pointerAlternative": "keyboard",
+        "focusBranch": "unchanged",
+        "refusalCode": null
+      },
+      "lawIds": [
+        "U1-EDIT-011-inline-symbol-edit-valid-on-apply"
+      ],
+      "traceIds": [
+        "U1-TRACE-INLINE"
+      ],
+      "authorityIds": [
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "Blur neither commits nor coerces; the dirty draft prompts Apply, Discard, or Continue editing."
+    },
+    {
+      "id": "U1-OPC-040",
+      "kind": "near-miss",
+      "family": "edit-operation",
+      "operationId": "U1-OP-018",
+      "operation": "set-event-duration",
+      "surface": "chart",
+      "gesture": "commit a duration that exceeds the measure capacity",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": false
+      },
+      "expected": {
+        "channel": "presentation-only",
+        "commandKind": null,
+        "planKind": null,
+        "intentKind": null,
+        "commandCount": 0,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": false,
+        "requiresExpectedRevision": false,
+        "coalescing": null,
+        "undoable": false,
+        "pointerAlternative": "keyboard",
+        "focusBranch": "unchanged",
+        "refusalCode": "u1.duration_overfills_measure"
+      },
+      "lawIds": [
+        "U1-EDIT-012-duration-edit-states-measure-fill-and-explicit-resolution"
+      ],
+      "traceIds": [
+        "U1-TRACE-INLINE"
+      ],
+      "authorityIds": [
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "Overfill is stated with its exact resulting fill and offers Move following events, Shorten, or Cancel; no silent rebalance occurs."
+    },
+    {
+      "id": "U1-OPC-041",
+      "kind": "near-miss",
+      "family": "edit-operation",
+      "operationId": "U1-OP-018",
+      "operation": "set-event-duration",
+      "surface": "chart",
+      "gesture": "commit a shorter duration without a completion reason",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": false
+      },
+      "expected": {
+        "channel": "presentation-only",
+        "commandKind": null,
+        "planKind": null,
+        "intentKind": null,
+        "commandCount": 0,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": false,
+        "requiresExpectedRevision": false,
+        "coalescing": null,
+        "undoable": false,
+        "pointerAlternative": "keyboard",
+        "focusBranch": "unchanged",
+        "refusalCode": "u1.completion_reason_required"
+      },
+      "lawIds": [
+        "U1-EDIT-012-duration-edit-states-measure-fill-and-explicit-resolution"
+      ],
+      "traceIds": [
+        "U1-TRACE-INLINE"
+      ],
+      "authorityIds": [
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "An intentionally short measure requires an explicit reason; the first release synthesizes no rest."
+    },
+    {
+      "id": "U1-OPC-042",
+      "kind": "positive",
+      "family": "edit-operation",
+      "operationId": "U1-OP-018",
+      "operation": "set-event-duration",
+      "surface": "chart",
+      "gesture": "commit a shorter duration with an explicit incomplete reason",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": false
+      },
+      "expected": {
+        "channel": "document-command",
+        "commandKind": "set-duration",
+        "planKind": null,
+        "intentKind": null,
+        "commandCount": 1,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": true,
+        "requiresExpectedRevision": true,
+        "coalescing": null,
+        "undoable": true,
+        "pointerAlternative": "keyboard",
+        "focusBranch": "selection-focus-event",
+        "refusalCode": null
+      },
+      "lawIds": [
+        "U1-EDIT-012-duration-edit-states-measure-fill-and-explicit-resolution",
+        "U1-EDIT-001-no-new-mutation-channel"
+      ],
+      "traceIds": [
+        "U1-TRACE-INLINE",
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "The accepted underfill travels as one set-duration command carrying the exact incomplete completion update."
+    },
+    {
+      "id": "U1-OPC-043",
+      "kind": "near-miss",
+      "family": "edit-operation",
+      "operationId": "U1-OP-015",
+      "operation": "join-event-durations",
+      "surface": "chart",
+      "gesture": "join two nonadjacent events",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": false
+      },
+      "expected": {
+        "channel": "presentation-only",
+        "commandKind": null,
+        "planKind": null,
+        "intentKind": null,
+        "commandCount": 0,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": false,
+        "requiresExpectedRevision": false,
+        "coalescing": null,
+        "undoable": false,
+        "pointerAlternative": "keyboard",
+        "focusBranch": "unchanged",
+        "refusalCode": "u1.join_requires_adjacent_events"
+      },
+      "lawIds": [
+        "U1-EDIT-012-duration-edit-states-measure-fill-and-explicit-resolution"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "Only adjacent siblings inside one measure may join."
+    },
+    {
+      "id": "U1-OPC-044",
+      "kind": "near-miss",
+      "family": "edit-operation",
+      "operationId": "U1-OP-015",
+      "operation": "join-event-durations",
+      "surface": "chart",
+      "gesture": "join when the right event carries an annotation",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": false
+      },
+      "expected": {
+        "channel": "presentation-only",
+        "commandKind": null,
+        "planKind": null,
+        "intentKind": null,
+        "commandCount": 0,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": false,
+        "requiresExpectedRevision": false,
+        "coalescing": null,
+        "undoable": false,
+        "pointerAlternative": "keyboard",
+        "focusBranch": "unchanged",
+        "refusalCode": "u1.join_right_annotation_not_empty"
+      },
+      "lawIds": [
+        "U1-EDIT-012-duration-edit-states-measure-fill-and-explicit-resolution"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "The join keeps the left annotation and refuses to discard the right one silently."
+    },
+    {
+      "id": "U1-OPC-045",
+      "kind": "near-miss",
+      "family": "edit-operation",
+      "operationId": "U1-OP-014",
+      "operation": "split-event-duration",
+      "surface": "chart",
+      "gesture": "split into two durations whose sum differs from the original",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": false
+      },
+      "expected": {
+        "channel": "presentation-only",
+        "commandKind": null,
+        "planKind": null,
+        "intentKind": null,
+        "commandCount": 0,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": false,
+        "requiresExpectedRevision": false,
+        "coalescing": null,
+        "undoable": false,
+        "pointerAlternative": "keyboard",
+        "focusBranch": "unchanged",
+        "refusalCode": "u1.split_partition_invalid"
+      },
+      "lawIds": [
+        "U1-EDIT-012-duration-edit-states-measure-fill-and-explicit-resolution"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-A0U1",
+        "U1-AUTH-MECHANICAL"
+      ],
+      "note": "The exact rational sum must equal the source duration."
+    },
+    {
+      "id": "U1-OPC-046",
+      "kind": "near-miss",
+      "family": "edit-operation",
+      "operationId": "U1-OP-016",
+      "operation": "split-section",
+      "surface": "chart",
+      "gesture": "split a section at its first measure boundary",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": false
+      },
+      "expected": {
+        "channel": "presentation-only",
+        "commandKind": null,
+        "planKind": null,
+        "intentKind": null,
+        "commandCount": 0,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": false,
+        "requiresExpectedRevision": false,
+        "coalescing": null,
+        "undoable": false,
+        "pointerAlternative": "keyboard",
+        "focusBranch": "unchanged",
+        "refusalCode": "u1.section_split_boundary_invalid"
+      },
+      "lawIds": [
+        "U1-EDIT-001-no-new-mutation-channel"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "A split must leave a nonempty leading section."
+    },
+    {
+      "id": "U1-OPC-047",
+      "kind": "near-miss",
+      "family": "edit-operation",
+      "operationId": "U1-OP-017",
+      "operation": "join-sections",
+      "surface": "chart",
+      "gesture": "join two nonadjacent sections",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": false
+      },
+      "expected": {
+        "channel": "presentation-only",
+        "commandKind": null,
+        "planKind": null,
+        "intentKind": null,
+        "commandCount": 0,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": false,
+        "requiresExpectedRevision": false,
+        "coalescing": null,
+        "undoable": false,
+        "pointerAlternative": "keyboard",
+        "focusBranch": "unchanged",
+        "refusalCode": "u1.section_join_requires_adjacent_sections"
+      },
+      "lawIds": [
+        "U1-EDIT-001-no-new-mutation-channel"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "Only adjacent sections may join."
+    },
+    {
+      "id": "U1-OPC-048",
+      "kind": "near-miss",
+      "family": "edit-operation",
+      "operationId": "U1-OP-012",
+      "operation": "move-to-boundary",
+      "surface": "chart",
+      "gesture": "drop a dragged card on a destination inside its own subtree",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": false
+      },
+      "expected": {
+        "channel": "presentation-only",
+        "commandKind": null,
+        "planKind": null,
+        "intentKind": null,
+        "commandCount": 0,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": false,
+        "requiresExpectedRevision": false,
+        "coalescing": null,
+        "undoable": false,
+        "pointerAlternative": "keyboard",
+        "focusBranch": "unchanged",
+        "refusalCode": "u1.move_destination_invalid"
+      },
+      "lawIds": [
+        "U1-EDIT-013-pointer-drag-optional-and-threshold-gated",
+        "U1-EDIT-001-no-new-mutation-channel"
+      ],
+      "traceIds": [
+        "U1-TRACE-POINTER",
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "An ancestor/descendant destination refuses before dispatch."
+    },
+    {
+      "id": "U1-OPC-049",
+      "kind": "near-miss",
+      "family": "edit-operation",
+      "operationId": "U1-OP-008",
+      "operation": "delete-selection",
+      "surface": "chart",
+      "gesture": "press Delete with no selection",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": false
+      },
+      "expected": {
+        "channel": "presentation-only",
+        "commandKind": null,
+        "planKind": null,
+        "intentKind": null,
+        "commandCount": 0,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": false,
+        "requiresExpectedRevision": false,
+        "coalescing": null,
+        "undoable": false,
+        "pointerAlternative": "keyboard",
+        "focusBranch": "unchanged",
+        "refusalCode": "u1.selection_empty"
+      },
+      "lawIds": [
+        "U1-EDIT-008-four-independent-bookmarks"
+      ],
+      "traceIds": [
+        "U1-TRACE-BOOKMARKS"
+      ],
+      "authorityIds": [
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "Delete requires a nonempty selection; the empty case is stated, not silently ignored."
+    },
+    {
+      "id": "U1-OPC-050",
+      "kind": "limit",
+      "family": "edit-operation",
+      "operationId": "U1-OP-025",
+      "operation": "extend-selection",
+      "surface": "chart",
+      "gesture": "extend the selection to exactly 8,192 events",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": false
+      },
+      "expected": {
+        "channel": "ephemeral-intent",
+        "commandKind": null,
+        "planKind": null,
+        "intentKind": null,
+        "commandCount": 0,
+        "intentCount": 1,
+        "requiresExpectedDocumentId": false,
+        "requiresExpectedRevision": false,
+        "coalescing": null,
+        "undoable": false,
+        "pointerAlternative": "keyboard",
+        "focusBranch": "unchanged",
+        "refusalCode": null
+      },
+      "lawIds": [
+        "U1-EDIT-008-four-independent-bookmarks"
+      ],
+      "traceIds": [
+        "U1-TRACE-BOOKMARKS"
+      ],
+      "authorityIds": [
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "Exactly the maximum selection size is accepted."
+    },
+    {
+      "id": "U1-OPC-051",
+      "kind": "limit",
+      "family": "edit-operation",
+      "operationId": "U1-OP-025",
+      "operation": "extend-selection",
+      "surface": "chart",
+      "gesture": "extend the selection to 8,193 events",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": false
+      },
+      "expected": {
+        "channel": "presentation-only",
+        "commandKind": null,
+        "planKind": null,
+        "intentKind": null,
+        "commandCount": 0,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": false,
+        "requiresExpectedRevision": false,
+        "coalescing": null,
+        "undoable": false,
+        "pointerAlternative": "keyboard",
+        "focusBranch": "unchanged",
+        "refusalCode": "u1.selection_limit"
+      },
+      "lawIds": [
+        "U1-EDIT-008-four-independent-bookmarks"
+      ],
+      "traceIds": [
+        "U1-TRACE-BOOKMARKS"
+      ],
+      "authorityIds": [
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "One event beyond the maximum refuses before any intent is dispatched."
+    },
+    {
+      "id": "U1-OPC-052",
+      "kind": "malformed",
+      "family": "edit-operation",
+      "operationId": "U1-OP-004",
+      "operation": "quick-entry-insert-preview",
+      "surface": "quick-entry",
+      "gesture": "activate Insert on a draft that T0 refuses",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": false
+      },
+      "expected": {
+        "channel": "document-command",
+        "commandKind": "apply-edit-plan",
+        "planKind": "insert-fragment",
+        "intentKind": null,
+        "commandCount": 1,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": true,
+        "requiresExpectedRevision": true,
+        "coalescing": null,
+        "undoable": false,
+        "pointerAlternative": "keyboard",
+        "focusBranch": "unchanged",
+        "refusalCode": "edit-plan.syntax-refused"
+      },
+      "lawIds": [
+        "U1-EDIT-017-application-refusals-surfaced-verbatim",
+        "U1-EDIT-003-preview-status-is-t0-derived"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL",
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-A0U1",
+        "U1-AUTH-T0"
+      ],
+      "note": "When the surface cannot see the refusal in advance, the command is dispatched once and the nested refusal code is shown verbatim."
+    },
+    {
+      "id": "U1-OPC-053",
+      "kind": "near-miss",
+      "family": "edit-operation",
+      "operationId": "U1-OP-024",
+      "operation": "select-event",
+      "surface": "chart",
+      "gesture": "attempt a voicing change from a chord card",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": false
+      },
+      "expected": {
+        "channel": "presentation-only",
+        "commandKind": null,
+        "planKind": null,
+        "intentKind": null,
+        "commandCount": 0,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": false,
+        "requiresExpectedRevision": false,
+        "coalescing": null,
+        "undoable": false,
+        "pointerAlternative": "keyboard",
+        "focusBranch": "unchanged",
+        "refusalCode": "u1.operation_not_authorized"
+      },
+      "lawIds": [
+        "U1-EDIT-001-no-new-mutation-channel"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "set-voicing, set-document-settings, transpose, apply-suggestion, apply-reharmonization, and replace-document are outside the U1 surface."
+    },
+    {
+      "id": "U1-OPC-054",
+      "kind": "limit",
+      "family": "edit-operation",
+      "operationId": "U1-OP-009",
+      "operation": "duplicate-selection",
+      "surface": "chart",
+      "gesture": "activate Duplicate twice within one animation frame",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": false
+      },
+      "expected": {
+        "channel": "document-command",
+        "commandKind": "duplicate",
+        "planKind": null,
+        "intentKind": null,
+        "commandCount": 1,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": true,
+        "requiresExpectedRevision": true,
+        "coalescing": null,
+        "undoable": true,
+        "pointerAlternative": "keyboard",
+        "focusBranch": "first-inserted-structural-ref",
+        "refusalCode": null
+      },
+      "lawIds": [
+        "U1-EDIT-001-no-new-mutation-channel",
+        "U1-EDIT-005-whole-preview-apply-is-one-atomic-command"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "Each activation is one command; U1 never batches or nests commands in a single gesture."
+    },
+    {
+      "id": "U1-OPC-055",
+      "kind": "cancellation",
+      "family": "edit-operation",
+      "operationId": "U1-OP-033",
+      "operation": "cancel-inline-edit",
+      "surface": "chart",
+      "gesture": "press Escape while editing a symbol",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": false
+      },
+      "expected": {
+        "channel": "presentation-only",
+        "commandKind": null,
+        "planKind": null,
+        "intentKind": null,
+        "commandCount": 0,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": false,
+        "requiresExpectedRevision": false,
+        "coalescing": null,
+        "undoable": false,
+        "pointerAlternative": "keyboard",
+        "focusBranch": "unchanged",
+        "refusalCode": null
+      },
+      "lawIds": [
+        "U1-EDIT-011-inline-symbol-edit-valid-on-apply"
+      ],
+      "traceIds": [
+        "U1-TRACE-INLINE"
+      ],
+      "authorityIds": [
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "Escape restores the exact prior source text and dispatches nothing."
+    },
+    {
+      "id": "U1-OPC-056",
+      "kind": "cancellation",
+      "family": "edit-operation",
+      "operationId": "U1-OP-012",
+      "operation": "move-to-boundary",
+      "surface": "chart",
+      "gesture": "lose pointer capture during a drag",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": false
+      },
+      "expected": {
+        "channel": "presentation-only",
+        "commandKind": null,
+        "planKind": null,
+        "intentKind": null,
+        "commandCount": 0,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": false,
+        "requiresExpectedRevision": false,
+        "coalescing": null,
+        "undoable": false,
+        "pointerAlternative": "keyboard",
+        "focusBranch": "unchanged",
+        "refusalCode": "u1.pointer_capture_lost"
+      },
+      "lawIds": [
+        "U1-EDIT-013-pointer-drag-optional-and-threshold-gated"
+      ],
+      "traceIds": [
+        "U1-TRACE-POINTER"
+      ],
+      "authorityIds": [
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "A cancelled drag releases capture, removes its transient listeners, and dispatches nothing."
+    },
+    {
+      "id": "U1-OPC-057",
+      "kind": "cancellation",
+      "family": "edit-operation",
+      "operationId": "U1-OP-012",
+      "operation": "move-to-boundary",
+      "surface": "chart",
+      "gesture": "release the pointer after moving 7 CSS pixels",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": false
+      },
+      "expected": {
+        "channel": "presentation-only",
+        "commandKind": null,
+        "planKind": null,
+        "intentKind": null,
+        "commandCount": 0,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": false,
+        "requiresExpectedRevision": false,
+        "coalescing": null,
+        "undoable": false,
+        "pointerAlternative": "keyboard",
+        "focusBranch": "unchanged",
+        "refusalCode": null
+      },
+      "lawIds": [
+        "U1-EDIT-013-pointer-drag-optional-and-threshold-gated"
+      ],
+      "traceIds": [
+        "U1-TRACE-POINTER"
+      ],
+      "authorityIds": [
+        "U1-AUTH-LEGACY",
+        "U1-AUTH-U0"
+      ],
+      "note": "Below the 8 CSS pixel threshold the gesture stays a tap; no drag starts and preventDefault is never called."
+    },
+    {
+      "id": "U1-OPC-058",
+      "kind": "positive",
+      "family": "edit-operation",
+      "operationId": "U1-OP-021",
+      "operation": "rename-section",
+      "surface": "chart",
+      "gesture": "type two characters into a section name within one second",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": false
+      },
+      "expected": {
+        "channel": "document-command",
+        "commandKind": "set-text",
+        "planKind": null,
+        "intentKind": null,
+        "commandCount": 1,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": true,
+        "requiresExpectedRevision": true,
+        "coalescing": "text-field",
+        "undoable": true,
+        "pointerAlternative": "keyboard",
+        "focusBranch": "selection-focus-event",
+        "refusalCode": null
+      },
+      "lawIds": [
+        "U1-EDIT-001-no-new-mutation-channel"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "Section text coalesces exactly like the accepted A0 text policy: one retained history entry inside the window."
+    },
+    {
+      "id": "U1-OPC-059",
+      "kind": "positive",
+      "family": "edit-operation",
+      "operationId": "U1-OP-021",
+      "operation": "rename-section",
+      "surface": "chart",
+      "gesture": "type again after the coalescing window elapses",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": false
+      },
+      "expected": {
+        "channel": "document-command",
+        "commandKind": "set-text",
+        "planKind": null,
+        "intentKind": null,
+        "commandCount": 1,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": true,
+        "requiresExpectedRevision": true,
+        "coalescing": "text-field",
+        "undoable": true,
+        "pointerAlternative": "keyboard",
+        "focusBranch": "selection-focus-event",
+        "refusalCode": null
+      },
+      "lawIds": [
+        "U1-EDIT-001-no-new-mutation-channel"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "Beyond the window the next keystroke opens a new history entry."
+    }
+  ]
+}

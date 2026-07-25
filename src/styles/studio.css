@@ -1619,3 +1619,240 @@
     overflow: visible;
   }
 }
+
+/* U1 chord cards, quick entry, and edit feedback. */
+.studio-measure__chords {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: center;
+  padding: var(--space-2);
+  margin: 0;
+  list-style: none;
+}
+
+.studio-chord-card {
+  display: grid;
+  gap: var(--space-1);
+  min-inline-size: 5.5rem;
+  min-block-size: 2.75rem;
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-elevated);
+  cursor: pointer;
+  text-align: start;
+}
+
+.studio-chord-card:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.studio-chord-card[data-selected="true"] {
+  border-color: var(--border-strong);
+  background: var(--state-selected);
+}
+
+.studio-chord-card[data-in-range="true"] {
+  box-shadow: inset 0 0 0 var(--border-width) var(--border-strong);
+}
+
+.studio-chord-card__symbol {
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.studio-chord-card__duration {
+  color: var(--text-subtle);
+  font-size: var(--text-xs);
+}
+
+.studio-chord-card__marks {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.studio-chart__selection {
+  margin-block-start: var(--space-1);
+  color: var(--text-subtle);
+  font-size: var(--text-xs);
+}
+
+.studio-chart__edit-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.studio-chart__refusal {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width) solid var(--state-error);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: var(--text-xs);
+}
+
+.studio-quick-entry {
+  display: grid;
+  gap: var(--space-2);
+  padding-block-end: var(--space-3);
+}
+
+.studio-quick-entry__label {
+  color: var(--text-subtle);
+  font-size: var(--text-xs);
+}
+
+.studio-quick-entry__field {
+  inline-size: 100%;
+  padding: var(--space-2);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  resize: vertical;
+}
+
+.studio-quick-entry__field:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.studio-quick-entry__status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  color: var(--text-subtle);
+  font-size: var(--text-xs);
+}
+
+.studio-quick-entry__issues {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.studio-quick-entry__refusal {
+  color: var(--state-error);
+  font-size: var(--text-xs);
+}
+
+.studio-quick-entry__actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.studio-insertion-target {
+  display: flex;
+  justify-content: center;
+  padding-block: var(--space-1);
+}
+
+.studio-insertion-target--append {
+  list-style: none;
+}
+
+.studio-chord-card__editor {
+  inline-size: 100%;
+  padding: var(--space-1);
+  border: var(--border-width) solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+
+.studio-chart__resolutions {
+  color: var(--text-subtle);
+  font-size: var(--text-xs);
+}
+
+.studio-chart__reason {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.studio-chart__reason input {
+  flex: 1 1 12rem;
+  padding: var(--space-1);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+}
+
+.studio-section__metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: end;
+  padding-block-end: var(--space-2);
+}
+
+.studio-section__field {
+  display: grid;
+  gap: var(--space-1);
+  flex: 1 1 12rem;
+  color: var(--text-subtle);
+  font-size: var(--text-xs);
+}
+
+.studio-section__field input {
+  padding: var(--space-1) var(--space-2);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+}
+
+.studio-section__boundary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+  color: var(--text-subtle);
+  font-size: var(--text-xs);
+}
+
+/* Every U1 text control keeps the project coarse-pointer target minimum. */
+@media (pointer: coarse) {
+  .studio-section__field input,
+  .studio-chart__reason input,
+  .studio-chord-card__editor,
+  .studio-quick-entry__field {
+    min-block-size: var(--touch-target);
+  }
+
+  .studio-chord-card {
+    min-block-size: var(--touch-target);
+  }
+}
+
+.studio-chord-card__handle {
+  display: block;
+  inline-size: 100%;
+  block-size: 0.5rem;
+  border-radius: var(--radius-xs);
+  background: var(--border-default);
+  cursor: grab;
+  touch-action: none;
+}
+
+.studio-chord-card__handle[data-dragging="true"] {
+  background: var(--border-strong);
+  cursor: grabbing;
+}

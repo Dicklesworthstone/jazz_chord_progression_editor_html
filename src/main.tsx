@@ -33,16 +33,35 @@ function StudioRoot({ controller }: StudioRootProps) {
     <App
       snapshot={snapshot}
       actions={{
+        annotateSection: controller.annotateSection,
+        applyInlineSymbol: controller.applyInlineSymbol,
+        applyQuickEntryPreview: controller.applyQuickEntryPreview,
+        clearQuickEntry: controller.clearQuickEntry,
+        deleteSelection: controller.deleteSelection,
+        duplicateSelection: controller.duplicateSelection,
+        insertMeasure: controller.insertMeasure,
+        insertSection: controller.insertSection,
+        moveSelection: controller.moveSelection,
+        moveSelectionTo: controller.moveSelectionTo,
+        extendSelectionTo: controller.extendSelectionTo,
+        previewChartText: controller.previewChartText,
+        redo: controller.redo,
+        renameSection: controller.renameSection,
+        selectEvent: controller.selectEvent,
+        setSectionBoundary: controller.setSectionBoundary,
+        setEventDurationText: controller.setEventDurationText,
+        setQuickEntryDraft: controller.setQuickEntryDraft,
+        setRailCollapsed: controller.setRailCollapsed,
         setTitle: controller.setTitle,
         undo: controller.undo,
-        redo: controller.redo,
-        setRailCollapsed: controller.setRailCollapsed,
       }}
     />
   );
 }
 
-const creation = createStudioController();
+const creation = createStudioController({
+  nowMs: () => performance.now(),
+});
 
 if (creation.ok) {
   render(<StudioRoot controller={creation.controller} />, mountPoint);

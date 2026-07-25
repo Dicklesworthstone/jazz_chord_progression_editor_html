@@ -1,0 +1,1239 @@
+{
+  "schema": "changes.fixtures.u1-editing-contract.v1",
+  "reviewState": "proposed-independent-spec",
+  "pinState": "reviewed-byte-and-semantic-pinned",
+  "package": "U1",
+  "contractVersion": 1,
+  "beadId": "jcpe-milestone-reliable-studio-l3a.10.1",
+  "contractModule": "src/ui/studio/u1-editing-contract.ts",
+  "policyId": "changes.ui.chart-editing",
+  "policyVersion": 1,
+  "implementationStatus": "specified-not-implemented",
+  "productionImplementationClaim": false,
+  "uiCompletionClaim": false,
+  "humanAcceptanceClaim": false,
+  "expertReviewClaim": false,
+  "productionOutputUsedAsOracle": false,
+  "expectedValuesGenerated": false,
+  "upstreamPackages": [
+    "U0",
+    "T0",
+    "A0",
+    "A0/U1"
+  ],
+  "companions": [
+    "edit-operation-matrix.json",
+    "interaction-state-matrix.json",
+    "mutation-controls.json",
+    "provenance-ledger.json",
+    "quick-entry-cases.json",
+    "trace-ledger.json"
+  ],
+  "companionSha256": {
+    "edit-operation-matrix.json": "33a8e348709cc7b82945ab6fffac600044e2de0d5d3673dec98a63a4b11bef63",
+    "interaction-state-matrix.json": "2293cfbb0d115c07b81c37ca397ccb9a0a750efdec643380b66ba9b80d7265c1",
+    "mutation-controls.json": "c4089f4ba4694e9e8d267e11906c9d567b636383bb7f9cc3c3f9c8b8a86aa0c0",
+    "provenance-ledger.json": "848ba4174dac0ec9290477ef398984928ea83dbb572a88c3afb8187d5bf72d48",
+    "quick-entry-cases.json": "8365afcee203dcf76086ab82b5e1de21964e044b63bed745e33dfbaa1146eaa3",
+    "trace-ledger.json": "61856d301c9fcc050686fda3c21ab215ae2589ed2a1ebc816b0327ea65b39b6b"
+  },
+  "surfaces": [
+    "quick-entry",
+    "chart",
+    "range",
+    "view"
+  ],
+  "components": [
+    {
+      "id": "U1-CMP-001",
+      "name": "QuickEntryPanel",
+      "surface": "quick-entry"
+    },
+    {
+      "id": "U1-CMP-002",
+      "name": "QuickEntryDraftField",
+      "surface": "quick-entry"
+    },
+    {
+      "id": "U1-CMP-003",
+      "name": "QuickEntryPreview",
+      "surface": "quick-entry"
+    },
+    {
+      "id": "U1-CMP-004",
+      "name": "QuickEntryTokenList",
+      "surface": "quick-entry"
+    },
+    {
+      "id": "U1-CMP-005",
+      "name": "QuickEntryToken",
+      "surface": "quick-entry"
+    },
+    {
+      "id": "U1-CMP-006",
+      "name": "QuickEntryTargetPicker",
+      "surface": "quick-entry"
+    },
+    {
+      "id": "U1-CMP-007",
+      "name": "InsertionPlanNotice",
+      "surface": "quick-entry"
+    },
+    {
+      "id": "U1-CMP-008",
+      "name": "ChartRegion",
+      "surface": "chart"
+    },
+    {
+      "id": "U1-CMP-009",
+      "name": "ChartSectionView",
+      "surface": "chart"
+    },
+    {
+      "id": "U1-CMP-010",
+      "name": "ChartSectionHeader",
+      "surface": "chart"
+    },
+    {
+      "id": "U1-CMP-011",
+      "name": "ChartMeasureView",
+      "surface": "chart"
+    },
+    {
+      "id": "U1-CMP-012",
+      "name": "ChordCard",
+      "surface": "chart"
+    },
+    {
+      "id": "U1-CMP-013",
+      "name": "ChordCardMenu",
+      "surface": "chart"
+    },
+    {
+      "id": "U1-CMP-014",
+      "name": "ChordCardDragHandle",
+      "surface": "chart"
+    },
+    {
+      "id": "U1-CMP-015",
+      "name": "InsertionTarget",
+      "surface": "chart"
+    },
+    {
+      "id": "U1-CMP-016",
+      "name": "InlineSymbolEditor",
+      "surface": "chart"
+    },
+    {
+      "id": "U1-CMP-017",
+      "name": "DurationEditor",
+      "surface": "chart"
+    },
+    {
+      "id": "U1-CMP-018",
+      "name": "MeasureFillNotice",
+      "surface": "chart"
+    },
+    {
+      "id": "U1-CMP-019",
+      "name": "MeasureCompletionDialog",
+      "surface": "chart"
+    },
+    {
+      "id": "U1-CMP-020",
+      "name": "SectionBoundaryMenu",
+      "surface": "chart"
+    },
+    {
+      "id": "U1-CMP-021",
+      "name": "EditRefusalNotice",
+      "surface": "chart"
+    },
+    {
+      "id": "U1-CMP-022",
+      "name": "RangeSelectionBar",
+      "surface": "range"
+    },
+    {
+      "id": "U1-CMP-023",
+      "name": "RangeBoundaryHandle",
+      "surface": "range"
+    },
+    {
+      "id": "U1-CMP-024",
+      "name": "RangeBeatField",
+      "surface": "range"
+    },
+    {
+      "id": "U1-CMP-025",
+      "name": "ChartViewModeToggle",
+      "surface": "view"
+    }
+  ],
+  "limits": {
+    "maxDraftCodePoints": 4096,
+    "maxDraftUtf8Bytes": 16384,
+    "maxPreviewTokens": 2048,
+    "maxPreviewMeasures": 2048,
+    "maxPreviewSections": 64,
+    "maxPreviewDiagnostics": 64,
+    "maxQuickEntryIssueCodes": 64,
+    "maxIssueCodeCodePoints": 128,
+    "maxRenderedSections": 64,
+    "maxRenderedMeasures": 65536,
+    "maxRenderedEvents": 8192,
+    "maxSelectedEventIds": 8192,
+    "maxSymbolDraftCodePoints": 256,
+    "maxSectionNameCodePoints": 256,
+    "maxSectionAnnotationCodePoints": 2000,
+    "maxCompletionReasonCodePoints": 2000,
+    "maxExactBeatCodePoints": 128,
+    "maxCardMenuItems": 200,
+    "maxCardMenuDepth": 2,
+    "maxUndoLabelCodePoints": 160,
+    "maxRefusalMessageCodePoints": 512,
+    "maxCommandsPerUserAction": 1,
+    "maxConcurrentDragSessions": 1,
+    "maxPointerCapturesPerCard": 1,
+    "staticListenersPerChordCard": 3,
+    "staticListenersPerInsertionTarget": 1,
+    "staticListenersPerChartRegion": 3,
+    "transientDragListenersPerSession": 3,
+    "pointerDragThresholdCssPx": 8,
+    "touchTargetCssPx": 44,
+    "typeaheadResetMs": 700,
+    "textCommandCoalesceWindowMs": 1000
+  },
+  "publicBoundAssignments": {
+    "quickEntryDraftText": "maxDraftCodePoints",
+    "quickEntryDraftBytes": "maxDraftUtf8Bytes",
+    "quickEntryPreviewTokens": "maxPreviewTokens",
+    "quickEntryPreviewMeasures": "maxPreviewMeasures",
+    "quickEntryPreviewSections": "maxPreviewSections",
+    "quickEntryDiagnostics": "maxPreviewDiagnostics",
+    "quickEntryIssueCodes": "maxQuickEntryIssueCodes",
+    "quickEntryIssueCodeText": "maxIssueCodeCodePoints",
+    "chartSections": "maxRenderedSections",
+    "chartMeasures": "maxRenderedMeasures",
+    "chartEvents": "maxRenderedEvents",
+    "selectionEventIds": "maxSelectedEventIds",
+    "inlineSymbolDraft": "maxSymbolDraftCodePoints",
+    "sectionNameDraft": "maxSectionNameCodePoints",
+    "sectionAnnotationDraft": "maxSectionAnnotationCodePoints",
+    "completionReasonDraft": "maxCompletionReasonCodePoints",
+    "rangeBeatFieldText": "maxExactBeatCodePoints",
+    "cardMenuItems": "maxCardMenuItems",
+    "cardMenuDepth": "maxCardMenuDepth",
+    "undoDescription": "maxUndoLabelCodePoints",
+    "refusalMessage": "maxRefusalMessageCodePoints"
+  },
+  "workBounds": {
+    "previewTokenVisits": "at-most-maxPreviewTokens-per-draft-change",
+    "chartCardVisits": "at-most-maxRenderedEvents-per-render",
+    "rovingFocusVisits": "at-most-maxRenderedEvents-per-focus-transition",
+    "measureFillRecomputation": "at-most-the-target-measure-event-count-per-duration-preview",
+    "dragSessionListeners": "at-most-transientDragListenersPerSession-and-released",
+    "commandsPerUserAction": "exactly-maxCommandsPerUserAction",
+    "wallTimeCutoff": "forbidden"
+  },
+  "mutationChannels": [
+    "document-command",
+    "ephemeral-intent",
+    "presentation-only"
+  ],
+  "authorizedCommandKinds": [
+    "insert",
+    "delete",
+    "move",
+    "duplicate",
+    "set-text",
+    "set-duration",
+    "set-measure-completion",
+    "set-section",
+    "set-chord",
+    "apply-edit-plan"
+  ],
+  "unauthorizedCommandKinds": [
+    "set-voicing",
+    "set-document-settings",
+    "transpose",
+    "apply-suggestion",
+    "apply-reharmonization",
+    "replace-document"
+  ],
+  "authorizedEphemeralIntentKinds": [
+    "set-bookmarks",
+    "set-quick-entry"
+  ],
+  "authorizedEditPlanKinds": [
+    "insert-fragment",
+    "split-event-duration",
+    "join-event-durations",
+    "split-section",
+    "join-sections"
+  ],
+  "textFieldTargetKinds": [
+    "section-name",
+    "section-annotation"
+  ],
+  "operations": [
+    {
+      "id": "U1-OP-001",
+      "operation": "quick-entry-edit-draft",
+      "surface": "quick-entry",
+      "channel": "ephemeral-intent",
+      "commandKind": null,
+      "planKind": null,
+      "intentKind": "set-quick-entry",
+      "undoable": false,
+      "pointerAlternative": "keyboard",
+      "keyboardAccess": "text-entry"
+    },
+    {
+      "id": "U1-OP-002",
+      "operation": "quick-entry-set-target",
+      "surface": "quick-entry",
+      "channel": "ephemeral-intent",
+      "commandKind": null,
+      "planKind": null,
+      "intentKind": "set-quick-entry",
+      "undoable": false,
+      "pointerAlternative": "keyboard-and-menu",
+      "keyboardAccess": "menu-item"
+    },
+    {
+      "id": "U1-OP-003",
+      "operation": "quick-entry-clear-draft",
+      "surface": "quick-entry",
+      "channel": "ephemeral-intent",
+      "commandKind": null,
+      "planKind": null,
+      "intentKind": "set-quick-entry",
+      "undoable": false,
+      "pointerAlternative": "keyboard",
+      "keyboardAccess": "shortcut"
+    },
+    {
+      "id": "U1-OP-004",
+      "operation": "quick-entry-insert-preview",
+      "surface": "quick-entry",
+      "channel": "document-command",
+      "commandKind": "apply-edit-plan",
+      "planKind": "insert-fragment",
+      "intentKind": null,
+      "undoable": true,
+      "pointerAlternative": "keyboard",
+      "keyboardAccess": "shortcut"
+    },
+    {
+      "id": "U1-OP-005",
+      "operation": "quick-entry-insert-one-chord",
+      "surface": "quick-entry",
+      "channel": "document-command",
+      "commandKind": "apply-edit-plan",
+      "planKind": "insert-fragment",
+      "intentKind": null,
+      "undoable": true,
+      "pointerAlternative": "keyboard",
+      "keyboardAccess": "shortcut"
+    },
+    {
+      "id": "U1-OP-006",
+      "operation": "insert-empty-measure",
+      "surface": "chart",
+      "channel": "document-command",
+      "commandKind": "insert",
+      "planKind": null,
+      "intentKind": null,
+      "undoable": true,
+      "pointerAlternative": "keyboard-and-menu",
+      "keyboardAccess": "shortcut"
+    },
+    {
+      "id": "U1-OP-007",
+      "operation": "insert-empty-section",
+      "surface": "chart",
+      "channel": "document-command",
+      "commandKind": "insert",
+      "planKind": null,
+      "intentKind": null,
+      "undoable": true,
+      "pointerAlternative": "keyboard-and-menu",
+      "keyboardAccess": "shortcut"
+    },
+    {
+      "id": "U1-OP-008",
+      "operation": "delete-selection",
+      "surface": "chart",
+      "channel": "document-command",
+      "commandKind": "delete",
+      "planKind": null,
+      "intentKind": null,
+      "undoable": true,
+      "pointerAlternative": "keyboard-and-menu",
+      "keyboardAccess": "shortcut"
+    },
+    {
+      "id": "U1-OP-009",
+      "operation": "duplicate-selection",
+      "surface": "chart",
+      "channel": "document-command",
+      "commandKind": "duplicate",
+      "planKind": null,
+      "intentKind": null,
+      "undoable": true,
+      "pointerAlternative": "keyboard-and-menu",
+      "keyboardAccess": "shortcut"
+    },
+    {
+      "id": "U1-OP-010",
+      "operation": "move-previous",
+      "surface": "chart",
+      "channel": "document-command",
+      "commandKind": "move",
+      "planKind": null,
+      "intentKind": null,
+      "undoable": true,
+      "pointerAlternative": "keyboard-and-menu",
+      "keyboardAccess": "shortcut"
+    },
+    {
+      "id": "U1-OP-011",
+      "operation": "move-next",
+      "surface": "chart",
+      "channel": "document-command",
+      "commandKind": "move",
+      "planKind": null,
+      "intentKind": null,
+      "undoable": true,
+      "pointerAlternative": "keyboard-and-menu",
+      "keyboardAccess": "shortcut"
+    },
+    {
+      "id": "U1-OP-012",
+      "operation": "move-to-boundary",
+      "surface": "chart",
+      "channel": "document-command",
+      "commandKind": "move",
+      "planKind": null,
+      "intentKind": null,
+      "undoable": true,
+      "pointerAlternative": "keyboard-and-menu",
+      "keyboardAccess": "shortcut"
+    },
+    {
+      "id": "U1-OP-013",
+      "operation": "move-following-events",
+      "surface": "chart",
+      "channel": "document-command",
+      "commandKind": "move",
+      "planKind": null,
+      "intentKind": null,
+      "undoable": true,
+      "pointerAlternative": "keyboard-and-menu",
+      "keyboardAccess": "menu-item"
+    },
+    {
+      "id": "U1-OP-014",
+      "operation": "split-event-duration",
+      "surface": "chart",
+      "channel": "document-command",
+      "commandKind": "apply-edit-plan",
+      "planKind": "split-event-duration",
+      "intentKind": null,
+      "undoable": true,
+      "pointerAlternative": "keyboard-and-menu",
+      "keyboardAccess": "shortcut"
+    },
+    {
+      "id": "U1-OP-015",
+      "operation": "join-event-durations",
+      "surface": "chart",
+      "channel": "document-command",
+      "commandKind": "apply-edit-plan",
+      "planKind": "join-event-durations",
+      "intentKind": null,
+      "undoable": true,
+      "pointerAlternative": "keyboard-and-menu",
+      "keyboardAccess": "shortcut"
+    },
+    {
+      "id": "U1-OP-016",
+      "operation": "split-section",
+      "surface": "chart",
+      "channel": "document-command",
+      "commandKind": "apply-edit-plan",
+      "planKind": "split-section",
+      "intentKind": null,
+      "undoable": true,
+      "pointerAlternative": "keyboard-and-menu",
+      "keyboardAccess": "shortcut"
+    },
+    {
+      "id": "U1-OP-017",
+      "operation": "join-sections",
+      "surface": "chart",
+      "channel": "document-command",
+      "commandKind": "apply-edit-plan",
+      "planKind": "join-sections",
+      "intentKind": null,
+      "undoable": true,
+      "pointerAlternative": "keyboard-and-menu",
+      "keyboardAccess": "shortcut"
+    },
+    {
+      "id": "U1-OP-018",
+      "operation": "set-event-duration",
+      "surface": "chart",
+      "channel": "document-command",
+      "commandKind": "set-duration",
+      "planKind": null,
+      "intentKind": null,
+      "undoable": true,
+      "pointerAlternative": "keyboard-and-menu",
+      "keyboardAccess": "shortcut"
+    },
+    {
+      "id": "U1-OP-019",
+      "operation": "set-measure-completion",
+      "surface": "chart",
+      "channel": "document-command",
+      "commandKind": "set-measure-completion",
+      "planKind": null,
+      "intentKind": null,
+      "undoable": true,
+      "pointerAlternative": "keyboard-and-menu",
+      "keyboardAccess": "shortcut"
+    },
+    {
+      "id": "U1-OP-020",
+      "operation": "apply-inline-symbol",
+      "surface": "chart",
+      "channel": "document-command",
+      "commandKind": "set-chord",
+      "planKind": null,
+      "intentKind": null,
+      "undoable": true,
+      "pointerAlternative": "keyboard-and-menu",
+      "keyboardAccess": "shortcut"
+    },
+    {
+      "id": "U1-OP-021",
+      "operation": "rename-section",
+      "surface": "chart",
+      "channel": "document-command",
+      "commandKind": "set-text",
+      "planKind": null,
+      "intentKind": null,
+      "undoable": true,
+      "pointerAlternative": "keyboard",
+      "keyboardAccess": "text-entry"
+    },
+    {
+      "id": "U1-OP-022",
+      "operation": "annotate-section",
+      "surface": "chart",
+      "channel": "document-command",
+      "commandKind": "set-text",
+      "planKind": null,
+      "intentKind": null,
+      "undoable": true,
+      "pointerAlternative": "keyboard",
+      "keyboardAccess": "text-entry"
+    },
+    {
+      "id": "U1-OP-023",
+      "operation": "set-section-boundary",
+      "surface": "chart",
+      "channel": "document-command",
+      "commandKind": "set-section",
+      "planKind": null,
+      "intentKind": null,
+      "undoable": true,
+      "pointerAlternative": "keyboard-and-menu",
+      "keyboardAccess": "shortcut"
+    },
+    {
+      "id": "U1-OP-024",
+      "operation": "select-event",
+      "surface": "chart",
+      "channel": "ephemeral-intent",
+      "commandKind": null,
+      "planKind": null,
+      "intentKind": "set-bookmarks",
+      "undoable": false,
+      "pointerAlternative": "keyboard",
+      "keyboardAccess": "shortcut"
+    },
+    {
+      "id": "U1-OP-025",
+      "operation": "extend-selection",
+      "surface": "chart",
+      "channel": "ephemeral-intent",
+      "commandKind": null,
+      "planKind": null,
+      "intentKind": "set-bookmarks",
+      "undoable": false,
+      "pointerAlternative": "keyboard",
+      "keyboardAccess": "shortcut"
+    },
+    {
+      "id": "U1-OP-026",
+      "operation": "set-insertion-point",
+      "surface": "chart",
+      "channel": "ephemeral-intent",
+      "commandKind": null,
+      "planKind": null,
+      "intentKind": "set-bookmarks",
+      "undoable": false,
+      "pointerAlternative": "keyboard",
+      "keyboardAccess": "shortcut"
+    },
+    {
+      "id": "U1-OP-027",
+      "operation": "range-enter-mode",
+      "surface": "range",
+      "channel": "presentation-only",
+      "commandKind": null,
+      "planKind": null,
+      "intentKind": null,
+      "undoable": false,
+      "pointerAlternative": "keyboard",
+      "keyboardAccess": "shortcut"
+    },
+    {
+      "id": "U1-OP-028",
+      "operation": "range-set-start",
+      "surface": "range",
+      "channel": "ephemeral-intent",
+      "commandKind": null,
+      "planKind": null,
+      "intentKind": "set-bookmarks",
+      "undoable": false,
+      "pointerAlternative": "keyboard",
+      "keyboardAccess": "shortcut"
+    },
+    {
+      "id": "U1-OP-029",
+      "operation": "range-set-end",
+      "surface": "range",
+      "channel": "ephemeral-intent",
+      "commandKind": null,
+      "planKind": null,
+      "intentKind": "set-bookmarks",
+      "undoable": false,
+      "pointerAlternative": "keyboard",
+      "keyboardAccess": "shortcut"
+    },
+    {
+      "id": "U1-OP-030",
+      "operation": "range-clear",
+      "surface": "range",
+      "channel": "ephemeral-intent",
+      "commandKind": null,
+      "planKind": null,
+      "intentKind": "set-bookmarks",
+      "undoable": false,
+      "pointerAlternative": "keyboard",
+      "keyboardAccess": "shortcut"
+    },
+    {
+      "id": "U1-OP-031",
+      "operation": "toggle-view-mode",
+      "surface": "view",
+      "channel": "presentation-only",
+      "commandKind": null,
+      "planKind": null,
+      "intentKind": null,
+      "undoable": false,
+      "pointerAlternative": "keyboard",
+      "keyboardAccess": "shortcut"
+    },
+    {
+      "id": "U1-OP-032",
+      "operation": "open-card-menu",
+      "surface": "chart",
+      "channel": "presentation-only",
+      "commandKind": null,
+      "planKind": null,
+      "intentKind": null,
+      "undoable": false,
+      "pointerAlternative": "keyboard",
+      "keyboardAccess": "shortcut"
+    },
+    {
+      "id": "U1-OP-033",
+      "operation": "cancel-inline-edit",
+      "surface": "chart",
+      "channel": "presentation-only",
+      "commandKind": null,
+      "planKind": null,
+      "intentKind": null,
+      "undoable": false,
+      "pointerAlternative": "keyboard",
+      "keyboardAccess": "shortcut"
+    }
+  ],
+  "quickEntryStatuses": [
+    "idle",
+    "invalid",
+    "ready"
+  ],
+  "quickEntryLanes": [
+    "complete-draft",
+    "recovered-chord"
+  ],
+  "tokenStates": [
+    "valid",
+    "invalid",
+    "insertable"
+  ],
+  "insertionPlanKinds": [
+    "fits-measure",
+    "completes-measures",
+    "incomplete-requires-confirmation",
+    "overfill-requires-split",
+    "not-atomic-refusal"
+  ],
+  "insertionPlanAuthority": [
+    {
+      "kind": "fits-measure",
+      "committableInV1": true,
+      "planKind": "insert-fragment",
+      "lane": "complete-draft",
+      "placement": "into-measure",
+      "blockedReason": null,
+      "resolutions": [
+        "insert-parsed-preview"
+      ]
+    },
+    {
+      "kind": "completes-measures",
+      "committableInV1": true,
+      "planKind": "insert-fragment",
+      "lane": "complete-draft",
+      "placement": "into-section",
+      "blockedReason": null,
+      "resolutions": [
+        "insert-parsed-preview"
+      ]
+    },
+    {
+      "kind": "incomplete-requires-confirmation",
+      "committableInV1": false,
+      "planKind": null,
+      "lane": null,
+      "placement": null,
+      "blockedReason": "u1.insertion_plan_requires_confirmation",
+      "resolutions": [
+        "complete-the-final-measure",
+        "insert-one-recovered-chord-into-a-measure",
+        "cancel"
+      ]
+    },
+    {
+      "kind": "overfill-requires-split",
+      "committableInV1": false,
+      "planKind": null,
+      "lane": null,
+      "placement": null,
+      "blockedReason": "u1.insertion_plan_overfills_destination",
+      "resolutions": [
+        "choose-an-empty-measure-or-structural-boundary",
+        "shorten-the-draft",
+        "cancel"
+      ]
+    },
+    {
+      "kind": "not-atomic-refusal",
+      "committableInV1": false,
+      "planKind": null,
+      "lane": null,
+      "placement": null,
+      "blockedReason": "u1.insertion_plan_not_atomic",
+      "resolutions": [
+        "correct-the-draft",
+        "cancel"
+      ]
+    }
+  ],
+  "documentPlacementPolicy": {
+    "namedSectionDraft": "insert-new-sections-before-the-target-or-append",
+    "existingSectionNameCollision": "warn-and-still-create-a-new-section",
+    "sectionMergeInV1": "deferred"
+  },
+  "measureFillKinds": [
+    "exact-fill",
+    "underfill-requires-reason",
+    "overfill-requires-resolution"
+  ],
+  "measureFillAuthority": [
+    {
+      "kind": "exact-fill",
+      "completion": "complete",
+      "committableInV1": true,
+      "resolutions": [
+        "apply-duration"
+      ]
+    },
+    {
+      "kind": "underfill-requires-reason",
+      "completion": "incomplete",
+      "committableInV1": true,
+      "resolutions": [
+        "declare-incomplete-measure-with-reason",
+        "cancel"
+      ]
+    },
+    {
+      "kind": "overfill-requires-resolution",
+      "completion": null,
+      "committableInV1": false,
+      "resolutions": [
+        "move-following-events",
+        "shorten-the-duration",
+        "cancel"
+      ]
+    }
+  ],
+  "restSynthesisPolicy": "forbidden-no-rest-model-in-v1",
+  "bookmarkConcepts": [
+    {
+      "concept": "selection",
+      "owner": "bookmarks.selection",
+      "movesPlayhead": false
+    },
+    {
+      "concept": "insertion",
+      "owner": "bookmarks.insertion",
+      "movesPlayhead": false
+    },
+    {
+      "concept": "range",
+      "owner": "bookmarks.range",
+      "movesPlayhead": false
+    },
+    {
+      "concept": "playhead",
+      "owner": "transport.playhead",
+      "movesPlayhead": true
+    }
+  ],
+  "bookmarkIndependencePolicy": {
+    "selectionMovesPlayhead": false,
+    "previewChangesSelection": false,
+    "playbackChangesSelection": false,
+    "selectionChangesInsertion": false,
+    "rangeChangesSelection": false
+  },
+  "focusPriority": [
+    "selection-focus-event",
+    "non-chart-insertion-target",
+    "first-inserted-structural-ref",
+    "chart"
+  ],
+  "deleteFocusRepairOrder": [
+    "next-event",
+    "previous-event",
+    "section-insertion-target"
+  ],
+  "pointerPolicy": {
+    "dragIsOptionalEnhancement": true,
+    "dragHandleRequired": true,
+    "dragThresholdCssPx": 8,
+    "preventDefaultBeforeThreshold": false,
+    "preventDefaultAfterThreshold": true,
+    "pointerCaptureReleasedOnCancel": true,
+    "pointerCaptureReleasedOnUnmount": true,
+    "listenersScopedToComponent": true,
+    "listenersMultipliedByDocumentMutation": false,
+    "hoverOnlyPrimaryActions": "forbidden"
+  },
+  "touchRangeActions": [
+    "select-range",
+    "set-start",
+    "set-end",
+    "start-beat-field",
+    "end-beat-field",
+    "done",
+    "cancel"
+  ],
+  "keyBindings": [
+    {
+      "keys": "ArrowLeft",
+      "operationId": "U1-OP-032",
+      "scope": "chart"
+    },
+    {
+      "keys": "ArrowRight",
+      "operationId": "U1-OP-032",
+      "scope": "chart"
+    },
+    {
+      "keys": "ArrowUp",
+      "operationId": "U1-OP-032",
+      "scope": "chart"
+    },
+    {
+      "keys": "ArrowDown",
+      "operationId": "U1-OP-032",
+      "scope": "chart"
+    },
+    {
+      "keys": "Home",
+      "operationId": "U1-OP-032",
+      "scope": "chart"
+    },
+    {
+      "keys": "End",
+      "operationId": "U1-OP-032",
+      "scope": "chart"
+    },
+    {
+      "keys": "Enter",
+      "operationId": "U1-OP-024",
+      "scope": "chord-card"
+    },
+    {
+      "keys": "Space",
+      "operationId": "U1-OP-024",
+      "scope": "chord-card"
+    },
+    {
+      "keys": "Shift+ArrowLeft",
+      "operationId": "U1-OP-025",
+      "scope": "chord-card"
+    },
+    {
+      "keys": "Shift+ArrowRight",
+      "operationId": "U1-OP-025",
+      "scope": "chord-card"
+    },
+    {
+      "keys": "F2",
+      "operationId": "U1-OP-020",
+      "scope": "chord-card"
+    },
+    {
+      "keys": "Escape",
+      "operationId": "U1-OP-033",
+      "scope": "chord-card"
+    },
+    {
+      "keys": "Delete",
+      "operationId": "U1-OP-008",
+      "scope": "chord-card"
+    },
+    {
+      "keys": "Backspace",
+      "operationId": "U1-OP-008",
+      "scope": "chord-card"
+    },
+    {
+      "keys": "Alt+D",
+      "operationId": "U1-OP-009",
+      "scope": "chord-card"
+    },
+    {
+      "keys": "Alt+ArrowLeft",
+      "operationId": "U1-OP-010",
+      "scope": "chord-card"
+    },
+    {
+      "keys": "Alt+ArrowRight",
+      "operationId": "U1-OP-011",
+      "scope": "chord-card"
+    },
+    {
+      "keys": "Alt+M",
+      "operationId": "U1-OP-012",
+      "scope": "chord-card"
+    },
+    {
+      "keys": "Alt+S",
+      "operationId": "U1-OP-014",
+      "scope": "chord-card"
+    },
+    {
+      "keys": "Alt+J",
+      "operationId": "U1-OP-015",
+      "scope": "chord-card"
+    },
+    {
+      "keys": "Alt+T",
+      "operationId": "U1-OP-018",
+      "scope": "chord-card"
+    },
+    {
+      "keys": "Alt+I",
+      "operationId": "U1-OP-006",
+      "scope": "chart"
+    },
+    {
+      "keys": "Alt+N",
+      "operationId": "U1-OP-007",
+      "scope": "chart"
+    },
+    {
+      "keys": "Alt+K",
+      "operationId": "U1-OP-016",
+      "scope": "chart"
+    },
+    {
+      "keys": "Alt+L",
+      "operationId": "U1-OP-017",
+      "scope": "chart"
+    },
+    {
+      "keys": "Alt+C",
+      "operationId": "U1-OP-019",
+      "scope": "chart"
+    },
+    {
+      "keys": "Alt+B",
+      "operationId": "U1-OP-023",
+      "scope": "chart"
+    },
+    {
+      "keys": "Alt+P",
+      "operationId": "U1-OP-026",
+      "scope": "chart"
+    },
+    {
+      "keys": "Alt+R",
+      "operationId": "U1-OP-027",
+      "scope": "range"
+    },
+    {
+      "keys": "Alt+V",
+      "operationId": "U1-OP-031",
+      "scope": "chart"
+    },
+    {
+      "keys": "Shift+F10",
+      "operationId": "U1-OP-032",
+      "scope": "chord-card"
+    },
+    {
+      "keys": "ContextMenu",
+      "operationId": "U1-OP-032",
+      "scope": "chord-card"
+    },
+    {
+      "keys": "Enter",
+      "operationId": "U1-OP-004",
+      "scope": "quick-entry"
+    },
+    {
+      "keys": "Alt+Enter",
+      "operationId": "U1-OP-005",
+      "scope": "quick-entry"
+    },
+    {
+      "keys": "Escape",
+      "operationId": "U1-OP-003",
+      "scope": "quick-entry"
+    },
+    {
+      "keys": "Home",
+      "operationId": "U1-OP-028",
+      "scope": "range"
+    },
+    {
+      "keys": "End",
+      "operationId": "U1-OP-029",
+      "scope": "range"
+    },
+    {
+      "keys": "Escape",
+      "operationId": "U1-OP-030",
+      "scope": "range"
+    }
+  ],
+  "viewModes": [
+    "compact",
+    "teaching"
+  ],
+  "viewModePolicy": {
+    "owner": "u1-presentation-state",
+    "mutatesDocument": false,
+    "mutatesBookmarks": false,
+    "persisted": false,
+    "identicalMusicalFacts": true
+  },
+  "identityPolicy": {
+    "chartKeys": "stable-domain-ids-only",
+    "indexKeys": "forbidden",
+    "focusFollowsStableId": true,
+    "reorderPreservesSelection": true,
+    "reorderPreservesPlaybackIdentity": true
+  },
+  "inlineEditPolicy": {
+    "rawTextOwner": "component-local-draft",
+    "commitTrigger": "enter-or-apply",
+    "commitRequiresValidParse": true,
+    "escapeRestoresExactPriorText": true,
+    "blurCommits": false,
+    "blurCoercesInvalidText": false,
+    "dirtyDraftSwitchAway": "prompt-apply-discard-or-continue",
+    "manualOrFrozenVoicing": "inline-symbol-edit-disabled-with-named-reason"
+  },
+  "refusalCodes": [
+    "u1.draft_code_points_exceeded",
+    "u1.draft_unicode_invalid",
+    "u1.preview_token_limit",
+    "u1.quick_entry_target_missing",
+    "u1.quick_entry_stale_revision",
+    "u1.quick_entry_lane_mismatch",
+    "u1.insertion_plan_requires_confirmation",
+    "u1.insertion_plan_overfills_destination",
+    "u1.insertion_plan_not_atomic",
+    "u1.symbol_draft_invalid",
+    "u1.symbol_edit_blocked_manual_voicing",
+    "u1.duration_invalid",
+    "u1.duration_overfills_measure",
+    "u1.duration_underfills_measure_requires_reason",
+    "u1.completion_reason_required",
+    "u1.split_partition_invalid",
+    "u1.join_requires_adjacent_events",
+    "u1.join_right_annotation_not_empty",
+    "u1.section_split_boundary_invalid",
+    "u1.section_join_requires_adjacent_sections",
+    "u1.move_destination_invalid",
+    "u1.selection_limit",
+    "u1.selection_empty",
+    "u1.range_boundary_invalid",
+    "u1.range_endpoints_unordered",
+    "u1.target_missing",
+    "u1.stale_revision",
+    "u1.pointer_capture_lost",
+    "u1.operation_not_authorized"
+  ],
+  "refusalSurfacingPolicy": {
+    "applicationRefusalCode": "preserved-verbatim",
+    "editPlanRefusalCode": "preserved-verbatim",
+    "syntaxDiagnosticCodeAndRange": "preserved-verbatim",
+    "silentRetry": "forbidden",
+    "downgradeToSuccess": "forbidden",
+    "u1CodesDescribePreDispatchGuardsOnly": true
+  },
+  "lawIds": [
+    "U1-EDIT-001-no-new-mutation-channel",
+    "U1-EDIT-002-draft-text-is-caller-owned-and-exact",
+    "U1-EDIT-003-preview-status-is-t0-derived",
+    "U1-EDIT-004-insertion-plan-statement-exact",
+    "U1-EDIT-005-whole-preview-apply-is-one-atomic-command",
+    "U1-EDIT-006-recovered-chord-lane-requires-explicit-loss-acknowledgement",
+    "U1-EDIT-007-stable-identity-keys-only",
+    "U1-EDIT-008-four-independent-bookmarks",
+    "U1-EDIT-009-roving-focus-visual-order-stable-across-reorder",
+    "U1-EDIT-010-delete-focus-repair-order",
+    "U1-EDIT-011-inline-symbol-edit-valid-on-apply",
+    "U1-EDIT-012-duration-edit-states-measure-fill-and-explicit-resolution",
+    "U1-EDIT-013-pointer-drag-optional-and-threshold-gated",
+    "U1-EDIT-014-keyboard-or-menu-alternative-for-every-pointer-operation",
+    "U1-EDIT-015-listener-counts-constant-across-mount-reorder-and-mutation",
+    "U1-EDIT-016-touch-range-mode-explicit-and-exact",
+    "U1-EDIT-017-application-refusals-surfaced-verbatim",
+    "U1-EDIT-018-view-modes-render-identical-musical-facts"
+  ],
+  "forbiddenShortcuts": [
+    "array-index-keys-for-chart-nodes",
+    "drag-required-authoring",
+    "silent-beat-loss",
+    "silent-measure-rebalance",
+    "synthesized-hidden-rests",
+    "blur-coerced-invalid-symbol-text",
+    "second-syntax-classifier-in-ui",
+    "direct-document-mutation-from-ui",
+    "batched-or-nested-application-commands-per-gesture",
+    "wall-time-as-a-musical-or-correctness-cutoff",
+    "mock-only-substitute-for-a-named-browser-gate",
+    "listener-registration-per-document-mutation"
+  ],
+  "coverageFamilies": [
+    "positive",
+    "near-miss",
+    "malformed",
+    "limit",
+    "cancellation",
+    "stale"
+  ],
+  "counts": {
+    "companions": 6,
+    "components": 25,
+    "operations": 33,
+    "quickEntryCases": 46,
+    "operationRows": 59,
+    "interactionCases": 58,
+    "viewports": 5,
+    "keyBindings": 38,
+    "refusalCodes": 29,
+    "lawRows": 18,
+    "traces": 8,
+    "authorities": 9,
+    "mutationControls": 32
+  },
+  "proofRequirements": {
+    "everyLawHasPositiveAndNegativeCases": true,
+    "everyOperationBindsExactlyOneChannel": true,
+    "insertionPlanIndependentlyRecomputed": true,
+    "measureCapacityIndependentlyRecomputed": true,
+    "exactAndPlusOneBoundaries": true,
+    "reciprocalCaseTraceAuthorityLinks": true,
+    "mutationObservationDistinctFromMutationTarget": true,
+    "productionOutputMayAuthorExpectedValues": false,
+    "wallTimeMayAffectOutcome": false
+  },
+  "acceptedUpstreamBoundary": {
+    "u0ContractSchema": "changes.ui.u0-contract.v1",
+    "t0GrammarMode": "fragment",
+    "a0CommandKinds": 16,
+    "a0EditPlanKinds": 5,
+    "a0EditPlanPolicyVersion": 2,
+    "existingAcceptedBehaviorChangedBySpecLeaf": false
+  },
+  "independence": {
+    "author": "u1-specification-fixture-author",
+    "productionImplementationAvailableWhenAuthored": false,
+    "oracle": "reviewed-classification-and-channel-matrices",
+    "productionImportsForbidden": true,
+    "productionOutputUsedAsOracle": false,
+    "expectedValuesGenerated": false,
+    "mutationObservationsDistinctFromMutationTargets": true
+  },
+  "handoff": {
+    "implementationMayConsultMarkdownPlan": false,
+    "mustUseReviewedFixtures": true,
+    "openDecisionsResolvedHere": [
+      {
+        "decision": "duration-suffix-domain",
+        "resolution": "T0 already owns the suffix grammar; U1 accepts every positive integer and rational T0 accepts and narrows nothing."
+      },
+      {
+        "decision": "section-marker-matching-an-existing-section",
+        "resolution": "Document placement is insert-only; a colliding name warns and still creates a new section. Section merge stays deferred."
+      },
+      {
+        "decision": "compact-and-teaching-view-toggle-placement",
+        "resolution": "The toggle lives in the chart region toolbar and owns presentation-only state that never reaches the application."
+      },
+      {
+        "decision": "quick-entry-overfill-and-underfill-resolution",
+        "resolution": "Both states are stated, not committed: v1 offers explicit resolutions and never silently rebalances or drops beats."
+      }
+    ],
+    "deferredToDependentLeaves": [
+      {
+        "item": "atomic-split-measure-plan-variant",
+        "reason": "Splitting an overfilled measure at the bar line needs a new A0 atomic plan variant; v1 resolves overfill with one move command or Cancel and never composes two commands into one gesture.",
+        "owner": "a future A0/U1 amendment leaf"
+      },
+      {
+        "item": "chord-inspector-annotation-and-voicing-editing",
+        "reason": "Owned by U2, not U1.",
+        "owner": "U2"
+      }
+    ]
+  }
+}

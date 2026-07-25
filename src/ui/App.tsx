@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 
 import type {
   StudioControllerActionResult,
+  StudioBoundaryInput,
   StudioRailSide,
   StudioViewModel,
 } from "../application/runtime";
@@ -21,7 +22,68 @@ export type AppActions = Readonly<{
     side: StudioRailSide,
     collapsed: boolean,
   ) => StudioControllerActionResult;
+  setQuickEntryDraft: (
+    text: string,
+    target: StudioBoundaryInput | null,
+    status: "idle" | "invalid" | "ready",
+    issueCodes: readonly string[],
+  ) => StudioControllerActionResult;
+  clearQuickEntry: () => StudioControllerActionResult;
+  applyQuickEntryPreview: () => StudioControllerActionResult;
+  selectEvent: (eventId: string) => StudioControllerActionResult;
+  extendSelectionTo: (eventId: string) => StudioControllerActionResult;
+  deleteSelection: (
+    incompleteReason?: string | null,
+  ) => StudioControllerActionResult;
+  duplicateSelection: (
+    destinationMeasureId?: string | null,
+    incompleteReason?: string | null,
+  ) => StudioControllerActionResult;
+  moveSelection: (
+    direction: "previous" | "next",
+    incompleteReason?: string | null,
+  ) => StudioControllerActionResult;
+  insertMeasure: (
+    sectionId: string,
+    beforeMeasureId: string | null,
+  ) => StudioControllerActionResult;
+  insertSection: (
+    beforeSectionId: string | null,
+    name: string,
+  ) => StudioControllerActionResult;
+  applyInlineSymbol: (
+    eventId: string,
+    symbolText: string,
+  ) => StudioControllerActionResult;
+  renameSection: (
+    sectionId: string,
+    name: string,
+  ) => StudioControllerActionResult;
+  annotateSection: (
+    sectionId: string,
+    annotation: string,
+  ) => StudioControllerActionResult;
+  setSectionBoundary: (
+    sectionId: string,
+    boundary: "reset" | "continue",
+  ) => StudioControllerActionResult;
+  moveSelectionTo: (
+    measureId: string,
+    beforeEventId?: string | null,
+    incompleteReason?: string | null,
+  ) => StudioControllerActionResult;
+  setEventDurationText: (
+    eventId: string,
+    beatText: string,
+    incompleteReason?: string | null,
+  ) => StudioControllerActionResult;
+  previewChartText: (text: string) => Readonly<{
+    status: "idle" | "invalid" | "ready";
+    issueCodes: readonly string[];
+  }>;
 }>;
+
+const QUICK_ENTRY_MAX_CODE_POINTS = 4_096;
 
 export type AppProps = Readonly<{
   snapshot: StudioViewModel;
@@ -32,21 +94,46 @@ function countLabel(count: number, singular: string, plural = `${singular}s`): s
   return `${String(count)} ${count === 1 ? singular : plural}`;
 }
 
+function fillLabel(
+  fill: StudioViewModel["sections"][number]["measures"][number]["fill"],
+): string {
+  switch (fill) {
+    case "empty":
+      return "Empty";
+    case "exact-fill":
+      return "Exactly full";
+    case "underfilled":
+      return "Shorter than the bar";
+    case "overfilled":
+      return "Longer than the bar";
+  }
+}
+
+function quickEntryStatusLabel(
+  status: StudioViewModel["quickEntry"]["status"],
+): string {
+  switch (status) {
+    case "idle":
+      return "No draft";
+    case "invalid":
+      return "Draft has parse errors";
+    case "ready":
+      return "Draft parses";
+  }
+}
+
 function viewFromSnapshot(
   snapshot: StudioViewModel,
   titleDraft: string,
   titleFeedback: StudioTitleFeedback,
   activeSheet: StudioPanelSide | null,
   uiRefusal: StudioShellView["layout"]["uiRefusal"],
+  rovingFocusId: string | null,
+  editRefusal: StudioShellView["chart"]["editRefusal"],
+  quickEntryRefusal: string | null,
 ): StudioShellView {
-  const chordCount = snapshot.sections.reduce(
-    (total, section) =>
-      total + section.measures.reduce(
-        (sectionTotal, measure) => sectionTotal + measure.eventCount,
-        0,
-      ),
-    0,
-  );
+  const chordCount = snapshot.chordCount;
+  const selectionCount = snapshot.bookmarks.selectedEventIds.length;
 
   return Object.freeze({
     document: Object.freeze({
@@ -73,12 +160,30 @@ function viewFromSnapshot(
       sectionCountLabel: countLabel(snapshot.sections.length, "section"),
       measureCountLabel: countLabel(snapshot.measureCount, "measure"),
       chordCountLabel: countLabel(chordCount, "chord"),
+      rovingFocusId,
+      selectionCount,
+      selectionStatusLabel:
+        selectionCount === 0
+          ? "No chord selected"
+          : countLabel(selectionCount, "chord") + " selected",
+      canDeleteSelection: selectionCount > 0,
+      canDuplicateSelection: selectionCount > 0,
+      canMoveSelection: selectionCount > 0,
+      appendSectionLabel: "Append section",
+      editRefusal,
       sections: Object.freeze(
         snapshot.sections.map((section) =>
           Object.freeze({
             id: section.id,
             label: section.name,
             measureCountLabel: countLabel(section.measures.length, "measure"),
+            appendMeasureLabel: `Append measure to section ${section.name}`,
+            annotation: section.annotation,
+            voiceLeadingBoundary: section.voiceLeadingBoundary,
+            voiceLeadingLabel:
+              section.voiceLeadingBoundary === "reset"
+                ? "Voice leading resets at this boundary"
+                : "Voice leading continues across this boundary",
             measures: Object.freeze(
               section.measures.map((measure) =>
                 Object.freeze({
@@ -91,12 +196,52 @@ function viewFromSnapshot(
                   endBeatLabel: measure.endBeatLabel,
                   chordCountLabel: countLabel(measure.eventCount, "chord"),
                   state: measure.eventCount === 0 ? "empty" : "populated",
+                  fillLabel: fillLabel(measure.fill),
+                  insertBeforeLabel: `Insert measure before measure ${String(measure.ordinal)}`,
+                  dropLabel: `Move selection into measure ${String(measure.ordinal)}`,
+                  chords: Object.freeze(
+                    measure.events.map((event) =>
+                      Object.freeze({
+                        id: event.id,
+                        ordinal: event.ordinal,
+                        symbolText: event.symbolText,
+                        durationLabel: `${event.durationBeatLabel} beats`,
+                        voicingMode: event.voicingMode,
+                        hasAnnotation: event.hasAnnotation,
+                        selected: event.selected,
+                        inRange: event.inRange,
+                        accessibleName:
+                          `Chord ${String(event.ordinal)}: ${event.symbolText}, `
+                          + `${event.durationBeatLabel} beats`,
+                        inlineEditable: event.voicingMode === "auto",
+                        inlineEditBlockedReason:
+                          event.voicingMode === "auto"
+                            ? null
+                            : "Open the chord inspector to change a "
+                              + `${event.voicingMode} voicing.`,
+                      }),
+                    ),
+                  ),
                 }),
               ),
             ),
           }),
         ),
       ),
+    }),
+    quickEntry: Object.freeze({
+      draftText: snapshot.quickEntry.text,
+      maxCodePoints: QUICK_ENTRY_MAX_CODE_POINTS,
+      codePointCount: snapshot.quickEntry.codePointCount,
+      statusLabel: quickEntryStatusLabel(snapshot.quickEntry.status),
+      targetLabel:
+        snapshot.quickEntry.targetLabel ?? "No insertion target",
+      canInsert:
+        snapshot.quickEntry.status === "ready"
+        && snapshot.quickEntry.targetLabel !== null,
+      canClear: snapshot.quickEntry.text.length > 0,
+      issueCodes: snapshot.quickEntry.issueCodes,
+      refusalMessage: quickEntryRefusal,
     }),
     harmony: Object.freeze({
       selectedChordLabel: null,
@@ -159,6 +304,18 @@ export function App({ snapshot, actions }: AppProps) {
   const [uiRefusal, setUiRefusal] = useState<
     StudioShellView["layout"]["uiRefusal"]
   >(null);
+  const [rovingFocusId, setRovingFocusId] = useState<string | null>(null);
+  const [editRefusal, setEditRefusal] = useState<
+    StudioShellView["chart"]["editRefusal"]
+  >(null);
+  const [quickEntryRefusal, setQuickEntryRefusal] = useState<string | null>(
+    null,
+  );
+  /** The exact beat text awaiting an explicit incomplete-measure reason. */
+  const [pendingDuration, setPendingDuration] = useState<Readonly<{
+    chordId: string;
+    beatText: string;
+  }> | null>(null);
   const [titleFeedback, setTitleFeedback] = useState<StudioTitleFeedback>(() =>
     Object.freeze({
       kind: "idle",
@@ -202,6 +359,69 @@ export function App({ snapshot, actions }: AppProps) {
     );
   };
 
+  /** The draft insertion target follows the current insertion bookmark. */
+  const quickEntryTarget = (): StudioBoundaryInput | null => {
+    const targetId = snapshot.bookmarks.insertionTargetId;
+    if (targetId === null) return null;
+    for (const section of snapshot.sections) {
+      if (section.id === targetId) {
+        return { kind: "section-end", sectionId: targetId };
+      }
+      for (const measure of section.measures) {
+        if (measure.id === targetId) {
+          return { kind: "measure-start", measureId: targetId };
+        }
+      }
+    }
+    return null;
+  };
+
+  /** Deterministic default name: the next unused letter, then an ordinal. */
+  const nextSectionName = (): string => {
+    const used = new Set(snapshot.sections.map((section) => section.name));
+    for (let index = 0; index < 26; index += 1) {
+      const letter = String.fromCharCode(65 + index);
+      if (!used.has(letter)) return letter;
+    }
+    return `Section ${String(snapshot.sections.length + 1)}`;
+  };
+
+  const RESOLUTIONS: Readonly<Record<string, readonly string[]>> =
+    Object.freeze({
+      "u1.completion_reason_required": Object.freeze([
+        "Declare an intentionally incomplete measure with a reason",
+        "Cancel",
+      ]),
+      "u1.duration_overfills_measure": Object.freeze([
+        "Move following chords into the next measure",
+        "Shorten the duration",
+        "Cancel",
+      ]),
+      "u1.insertion_plan_overfills_destination": Object.freeze([
+        "Choose an empty measure or a structural boundary",
+        "Shorten the draft",
+        "Cancel",
+      ]),
+    });
+
+  const recordEditResult = (result: StudioControllerActionResult): void => {
+    if (result.ok) {
+      setEditRefusal(null);
+      setPendingDuration(null);
+      return;
+    }
+    const code = result.refusal.code;
+    setEditRefusal(
+      Object.freeze({
+        code,
+        message: result.refusal.message,
+        needsIncompleteReason: code === "u1.completion_reason_required",
+        recoveryAction: result.refusal.recoveryAction,
+        resolutions: RESOLUTIONS[code] ?? Object.freeze([]),
+      }),
+    );
+  };
+
   const applyHistoryResult = (
     result: StudioControllerActionResult,
     successMessage: string,
@@ -222,12 +442,108 @@ export function App({ snapshot, actions }: AppProps) {
     titleFeedback,
     activeSheet,
     uiRefusal,
+    rovingFocusId,
+    editRefusal,
+    quickEntryRefusal,
   );
 
   return (
     <StudioShell
       view={view}
       callbacks={{
+        onQuickEntryDraftChange: (value) => {
+          const preview = actions.previewChartText(value);
+          const result = actions.setQuickEntryDraft(
+            value,
+            quickEntryTarget(),
+            preview.status,
+            preview.issueCodes,
+          );
+          setQuickEntryRefusal(
+            result.ok
+              ? null
+              : `${result.refusal.message} ${result.refusal.recoveryAction}`,
+          );
+        },
+        onQuickEntryInsert: () => {
+          const result = actions.applyQuickEntryPreview();
+          setQuickEntryRefusal(
+            result.ok
+              ? null
+              : `${result.refusal.message} ${result.refusal.recoveryAction}`,
+          );
+        },
+        onQuickEntryClear: () => {
+          actions.clearQuickEntry();
+          setQuickEntryRefusal(null);
+        },
+        onSelectChord: (chordId, extend) => {
+          setRovingFocusId(chordId);
+          recordEditResult(
+            extend
+              ? actions.extendSelectionTo(chordId)
+              : actions.selectEvent(chordId),
+          );
+        },
+        onRovingFocusChange: (chordId) => {
+          setRovingFocusId(chordId);
+        },
+        onDeleteSelection: () => {
+          recordEditResult(actions.deleteSelection());
+        },
+        onDuplicateSelection: () => {
+          recordEditResult(actions.duplicateSelection());
+        },
+        onMoveSelection: (direction) => {
+          recordEditResult(actions.moveSelection(direction));
+        },
+        onInsertMeasure: (sectionId, beforeMeasureId) => {
+          recordEditResult(actions.insertMeasure(sectionId, beforeMeasureId));
+        },
+        onInsertSection: () => {
+          recordEditResult(actions.insertSection(null, nextSectionName()));
+        },
+        onApplyInlineSymbol: (chordId, symbolText) => {
+          recordEditResult(actions.applyInlineSymbol(chordId, symbolText));
+        },
+        onApplyDuration: (chordId, beatText) => {
+          const result = actions.setEventDurationText(chordId, beatText);
+          setPendingDuration(
+            result.ok ||
+              result.refusal.code !== "u1.completion_reason_required"
+              ? null
+              : Object.freeze({ beatText, chordId }),
+          );
+          recordEditResult(result);
+        },
+        onConfirmIncompleteMeasure: (reason) => {
+          if (pendingDuration === null) {
+            recordEditResult(actions.deleteSelection(reason));
+            return;
+          }
+          const result = actions.setEventDurationText(
+            pendingDuration.chordId,
+            pendingDuration.beatText,
+            reason,
+          );
+          recordEditResult(result);
+        },
+        onRenameSection: (sectionId, name) => {
+          recordEditResult(actions.renameSection(sectionId, name));
+        },
+        onAnnotateSection: (sectionId, annotation) => {
+          recordEditResult(actions.annotateSection(sectionId, annotation));
+        },
+        onDropChordOnMeasure: (measureId) => {
+          recordEditResult(actions.moveSelectionTo(measureId));
+        },
+        onSetSectionBoundary: (sectionId, boundary) => {
+          recordEditResult(actions.setSectionBoundary(sectionId, boundary));
+        },
+        onCancelPendingEdit: () => {
+          setPendingDuration(null);
+          setEditRefusal(null);
+        },
         onTitleDraftChange: (value) => {
           setTitleDraft(value);
           setTitleFeedback(

@@ -39,13 +39,32 @@ export function StudioShell({ view, callbacks }: StudioShellProps) {
           <main id="workspace" class="studio-workspace" tabIndex={-1}>
             <LibraryPanel
               collapsed={view.layout.libraryCollapsed}
+              onQuickEntryClear={callbacks.onQuickEntryClear}
+              onQuickEntryDraftChange={callbacks.onQuickEntryDraftChange}
+              onQuickEntryInsert={callbacks.onQuickEntryInsert}
+              quickEntry={view.quickEntry}
               onCollapsedChange={(collapsed) => {
                 callbacks.onRailCollapsedChange("library", collapsed);
               }}
             />
             <ChartWorkspace
-              view={view.chart}
+              onApplyDuration={callbacks.onApplyDuration}
+              onApplyInlineSymbol={callbacks.onApplyInlineSymbol}
+              onCancelPendingEdit={callbacks.onCancelPendingEdit}
+              onAnnotateSection={callbacks.onAnnotateSection}
+              onConfirmIncompleteMeasure={callbacks.onConfirmIncompleteMeasure}
+              onRenameSection={callbacks.onRenameSection}
+              onSetSectionBoundary={callbacks.onSetSectionBoundary}
+              onDeleteSelection={callbacks.onDeleteSelection}
+              onDropChordOnMeasure={callbacks.onDropChordOnMeasure}
+              onDuplicateSelection={callbacks.onDuplicateSelection}
+              onInsertMeasure={callbacks.onInsertMeasure}
+              onInsertSection={callbacks.onInsertSection}
+              onMoveSelection={callbacks.onMoveSelection}
               onRequestPanelSheet={callbacks.onRequestPanelSheet}
+              onRovingFocusChange={callbacks.onRovingFocusChange}
+              onSelectChord={callbacks.onSelectChord}
+              view={view.chart}
             />
             <HarmonyLens
               collapsed={view.layout.harmonyCollapsed}
@@ -70,6 +89,10 @@ export function StudioShell({ view, callbacks }: StudioShellProps) {
                 <LibraryPanelContent
                   context="sheet"
                   headingId={`${sheetId}-title`}
+                  onQuickEntryClear={callbacks.onQuickEntryClear}
+                  onQuickEntryDraftChange={callbacks.onQuickEntryDraftChange}
+                  onQuickEntryInsert={callbacks.onQuickEntryInsert}
+                  quickEntry={view.quickEntry}
                 />
               ) : (
                 <HarmonyLensContent

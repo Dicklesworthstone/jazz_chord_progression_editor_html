@@ -1,0 +1,908 @@
+{
+  "schema": "changes.fixtures.u1-trace-ledger.v1",
+  "reviewState": "proposed-independent-spec",
+  "pinState": "reviewed-byte-and-semantic-pinned",
+  "expectedValuesGenerated": false,
+  "productionOutputUsedAsOracle": false,
+  "tracePolicy": "Every U1 parent invariant and success criterion links to independently authored quick-entry, operation, and interaction expectations. Planned evidence owners name future proof surfaces and do not claim that evidence already exists.",
+  "traces": [
+    {
+      "id": "U1-TRACE-CHANNEL",
+      "scope": "application-channel",
+      "requirement": "Every U1 edit is exactly one existing A0 command or ephemeral intent carrying the expected document identity and revision; refusals are surfaced verbatim and never retried.",
+      "lawIds": [
+        "U1-EDIT-001-no-new-mutation-channel",
+        "U1-EDIT-002-draft-text-is-caller-owned-and-exact",
+        "U1-EDIT-003-preview-status-is-t0-derived",
+        "U1-EDIT-004-insertion-plan-statement-exact",
+        "U1-EDIT-005-whole-preview-apply-is-one-atomic-command",
+        "U1-EDIT-006-recovered-chord-lane-requires-explicit-loss-acknowledgement",
+        "U1-EDIT-007-stable-identity-keys-only",
+        "U1-EDIT-008-four-independent-bookmarks",
+        "U1-EDIT-010-delete-focus-repair-order",
+        "U1-EDIT-011-inline-symbol-edit-valid-on-apply",
+        "U1-EDIT-012-duration-edit-states-measure-fill-and-explicit-resolution",
+        "U1-EDIT-013-pointer-drag-optional-and-threshold-gated",
+        "U1-EDIT-014-keyboard-or-menu-alternative-for-every-pointer-operation",
+        "U1-EDIT-016-touch-range-mode-explicit-and-exact",
+        "U1-EDIT-017-application-refusals-surfaced-verbatim",
+        "U1-EDIT-018-view-modes-render-identical-musical-facts"
+      ],
+      "caseIds": [
+        "U1-OPC-001",
+        "U1-OPC-002",
+        "U1-OPC-003",
+        "U1-OPC-004",
+        "U1-OPC-005",
+        "U1-OPC-006",
+        "U1-OPC-007",
+        "U1-OPC-008",
+        "U1-OPC-009",
+        "U1-OPC-010",
+        "U1-OPC-011",
+        "U1-OPC-012",
+        "U1-OPC-013",
+        "U1-OPC-014",
+        "U1-OPC-015",
+        "U1-OPC-016",
+        "U1-OPC-017",
+        "U1-OPC-018",
+        "U1-OPC-019",
+        "U1-OPC-020",
+        "U1-OPC-021",
+        "U1-OPC-022",
+        "U1-OPC-023",
+        "U1-OPC-024",
+        "U1-OPC-025",
+        "U1-OPC-026",
+        "U1-OPC-032",
+        "U1-OPC-033",
+        "U1-OPC-034",
+        "U1-OPC-035",
+        "U1-OPC-042",
+        "U1-OPC-043",
+        "U1-OPC-044",
+        "U1-OPC-045",
+        "U1-OPC-046",
+        "U1-OPC-047",
+        "U1-OPC-048",
+        "U1-OPC-052",
+        "U1-OPC-053",
+        "U1-OPC-054",
+        "U1-OPC-058",
+        "U1-OPC-059",
+        "U1-INT-021",
+        "U1-INT-035",
+        "U1-INT-044",
+        "U1-INT-050",
+        "U1-INT-051",
+        "U1-INT-056",
+        "U1-INT-057"
+      ],
+      "authorityIds": [
+        "U1-AUTH-A0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-BEAD",
+        "U1-AUTH-MECHANICAL",
+        "U1-AUTH-PLAN",
+        "U1-AUTH-T0",
+        "U1-AUTH-WCAG"
+      ],
+      "plannedEvidenceOwner": "tests/integration/u1-edit-channel.test.ts"
+    },
+    {
+      "id": "U1-TRACE-QUICKENTRY",
+      "scope": "quick-entry",
+      "requirement": "The raw draft stays caller-owned and exact, token status comes from one T0 parse, and the preview states exactly one insertion plan without silent beat loss or measure rebalance.",
+      "lawIds": [
+        "U1-EDIT-001-no-new-mutation-channel",
+        "U1-EDIT-002-draft-text-is-caller-owned-and-exact",
+        "U1-EDIT-003-preview-status-is-t0-derived",
+        "U1-EDIT-004-insertion-plan-statement-exact",
+        "U1-EDIT-005-whole-preview-apply-is-one-atomic-command",
+        "U1-EDIT-006-recovered-chord-lane-requires-explicit-loss-acknowledgement",
+        "U1-EDIT-014-keyboard-or-menu-alternative-for-every-pointer-operation",
+        "U1-EDIT-017-application-refusals-surfaced-verbatim"
+      ],
+      "caseIds": [
+        "U1-QE-001",
+        "U1-QE-002",
+        "U1-QE-003",
+        "U1-QE-004",
+        "U1-QE-005",
+        "U1-QE-006",
+        "U1-QE-007",
+        "U1-QE-008",
+        "U1-QE-009",
+        "U1-QE-010",
+        "U1-QE-011",
+        "U1-QE-012",
+        "U1-QE-013",
+        "U1-QE-014",
+        "U1-QE-015",
+        "U1-QE-016",
+        "U1-QE-017",
+        "U1-QE-018",
+        "U1-QE-019",
+        "U1-QE-020",
+        "U1-QE-021",
+        "U1-QE-022",
+        "U1-QE-023",
+        "U1-QE-024",
+        "U1-QE-025",
+        "U1-QE-026",
+        "U1-QE-027",
+        "U1-QE-028",
+        "U1-QE-029",
+        "U1-QE-030",
+        "U1-QE-031",
+        "U1-QE-032",
+        "U1-QE-033",
+        "U1-QE-034",
+        "U1-QE-035",
+        "U1-QE-036",
+        "U1-QE-037",
+        "U1-QE-038",
+        "U1-QE-039",
+        "U1-QE-040",
+        "U1-QE-041",
+        "U1-QE-042",
+        "U1-QE-043",
+        "U1-QE-044",
+        "U1-QE-045",
+        "U1-QE-046",
+        "U1-OPC-001",
+        "U1-OPC-002",
+        "U1-OPC-003",
+        "U1-OPC-004",
+        "U1-OPC-005",
+        "U1-OPC-035",
+        "U1-OPC-052",
+        "U1-INT-042",
+        "U1-INT-043",
+        "U1-INT-050"
+      ],
+      "authorityIds": [
+        "U1-AUTH-A0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-BEAD",
+        "U1-AUTH-PLAN",
+        "U1-AUTH-T0",
+        "U1-AUTH-U0"
+      ],
+      "plannedEvidenceOwner": "tests/e2e/u1-quick-entry.spec.ts"
+    },
+    {
+      "id": "U1-TRACE-IDENTITY",
+      "scope": "stable-identity",
+      "requirement": "Chart nodes are keyed by stable domain identity, roving focus follows visual order, and reorder preserves focus, selection, and playback identity.",
+      "lawIds": [
+        "U1-EDIT-007-stable-identity-keys-only",
+        "U1-EDIT-009-roving-focus-visual-order-stable-across-reorder",
+        "U1-EDIT-010-delete-focus-repair-order",
+        "U1-EDIT-018-view-modes-render-identical-musical-facts"
+      ],
+      "caseIds": [
+        "U1-INT-007",
+        "U1-INT-008",
+        "U1-INT-009",
+        "U1-INT-010",
+        "U1-INT-011",
+        "U1-INT-012",
+        "U1-INT-053",
+        "U1-INT-054",
+        "U1-INT-055"
+      ],
+      "authorityIds": [
+        "U1-AUTH-A0",
+        "U1-AUTH-LEGACY",
+        "U1-AUTH-PLAN",
+        "U1-AUTH-U0",
+        "U1-AUTH-WCAG"
+      ],
+      "plannedEvidenceOwner": "tests/e2e/u1-chart-reorder.spec.ts"
+    },
+    {
+      "id": "U1-TRACE-BOOKMARKS",
+      "scope": "bookmarks",
+      "requirement": "Selection, insertion point, range, and playhead stay four independent values, and the touch range mode exposes explicit exact boundaries.",
+      "lawIds": [
+        "U1-EDIT-008-four-independent-bookmarks",
+        "U1-EDIT-010-delete-focus-repair-order",
+        "U1-EDIT-014-keyboard-or-menu-alternative-for-every-pointer-operation",
+        "U1-EDIT-016-touch-range-mode-explicit-and-exact",
+        "U1-EDIT-018-view-modes-render-identical-musical-facts"
+      ],
+      "caseIds": [
+        "U1-OPC-027",
+        "U1-OPC-028",
+        "U1-OPC-029",
+        "U1-OPC-030",
+        "U1-OPC-049",
+        "U1-OPC-050",
+        "U1-OPC-051",
+        "U1-INT-001",
+        "U1-INT-002",
+        "U1-INT-003",
+        "U1-INT-004",
+        "U1-INT-005",
+        "U1-INT-006",
+        "U1-INT-027",
+        "U1-INT-028",
+        "U1-INT-029",
+        "U1-INT-030",
+        "U1-INT-031",
+        "U1-INT-032",
+        "U1-INT-033",
+        "U1-INT-036",
+        "U1-INT-045",
+        "U1-INT-052"
+      ],
+      "authorityIds": [
+        "U1-AUTH-A0",
+        "U1-AUTH-BEAD",
+        "U1-AUTH-MECHANICAL",
+        "U1-AUTH-PLAN",
+        "U1-AUTH-U0",
+        "U1-AUTH-WCAG"
+      ],
+      "plannedEvidenceOwner": "tests/e2e/u1-selection-range.spec.ts"
+    },
+    {
+      "id": "U1-TRACE-FOCUS",
+      "scope": "focus-repair",
+      "requirement": "Focus after a destructive command follows the declared repair order and uses the A0 focus request rather than an inferred DOM focus.",
+      "lawIds": [
+        "U1-EDIT-008-four-independent-bookmarks",
+        "U1-EDIT-009-roving-focus-visual-order-stable-across-reorder",
+        "U1-EDIT-010-delete-focus-repair-order"
+      ],
+      "caseIds": [
+        "U1-INT-013",
+        "U1-INT-014",
+        "U1-INT-015",
+        "U1-INT-052",
+        "U1-INT-054"
+      ],
+      "authorityIds": [
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ],
+      "plannedEvidenceOwner": "tests/e2e/u1-chart-focus.spec.ts"
+    },
+    {
+      "id": "U1-TRACE-INLINE",
+      "scope": "inline-editing",
+      "requirement": "Inline symbol and duration editing commit only on a valid result, restore exact prior text on cancel, never coerce on blur, and always state the resulting measure fill.",
+      "lawIds": [
+        "U1-EDIT-001-no-new-mutation-channel",
+        "U1-EDIT-003-preview-status-is-t0-derived",
+        "U1-EDIT-011-inline-symbol-edit-valid-on-apply",
+        "U1-EDIT-012-duration-edit-states-measure-fill-and-explicit-resolution"
+      ],
+      "caseIds": [
+        "U1-OPC-036",
+        "U1-OPC-037",
+        "U1-OPC-038",
+        "U1-OPC-039",
+        "U1-OPC-040",
+        "U1-OPC-041",
+        "U1-OPC-042",
+        "U1-OPC-055",
+        "U1-INT-046",
+        "U1-INT-047",
+        "U1-INT-048",
+        "U1-INT-049"
+      ],
+      "authorityIds": [
+        "U1-AUTH-A0",
+        "U1-AUTH-LEGACY",
+        "U1-AUTH-MECHANICAL",
+        "U1-AUTH-PLAN",
+        "U1-AUTH-T0"
+      ],
+      "plannedEvidenceOwner": "tests/e2e/u1-inline-edit.spec.ts"
+    },
+    {
+      "id": "U1-TRACE-POINTER",
+      "scope": "pointer-and-listeners",
+      "requirement": "Drag is an optional threshold-gated enhancement with a keyboard or menu alternative for every operation, and listener counts stay constant across mount, reorder, and document mutation.",
+      "lawIds": [
+        "U1-EDIT-001-no-new-mutation-channel",
+        "U1-EDIT-007-stable-identity-keys-only",
+        "U1-EDIT-013-pointer-drag-optional-and-threshold-gated",
+        "U1-EDIT-014-keyboard-or-menu-alternative-for-every-pointer-operation",
+        "U1-EDIT-015-listener-counts-constant-across-mount-reorder-and-mutation",
+        "U1-EDIT-018-view-modes-render-identical-musical-facts"
+      ],
+      "caseIds": [
+        "U1-OPC-048",
+        "U1-OPC-056",
+        "U1-OPC-057",
+        "U1-INT-016",
+        "U1-INT-017",
+        "U1-INT-018",
+        "U1-INT-019",
+        "U1-INT-020",
+        "U1-INT-021",
+        "U1-INT-022",
+        "U1-INT-023",
+        "U1-INT-024",
+        "U1-INT-025",
+        "U1-INT-026",
+        "U1-INT-037",
+        "U1-INT-038",
+        "U1-INT-039",
+        "U1-INT-040",
+        "U1-INT-041",
+        "U1-INT-056"
+      ],
+      "authorityIds": [
+        "U1-AUTH-A0",
+        "U1-AUTH-BEAD",
+        "U1-AUTH-LEGACY",
+        "U1-AUTH-MECHANICAL",
+        "U1-AUTH-PLAN",
+        "U1-AUTH-U0",
+        "U1-AUTH-WCAG"
+      ],
+      "plannedEvidenceOwner": "tests/e2e/touch-chart.spec.ts"
+    },
+    {
+      "id": "U1-TRACE-VIEW",
+      "scope": "view-modes",
+      "requirement": "Compact and teaching views render identical musical facts and change no document or bookmark state.",
+      "lawIds": [
+        "U1-EDIT-001-no-new-mutation-channel",
+        "U1-EDIT-008-four-independent-bookmarks",
+        "U1-EDIT-009-roving-focus-visual-order-stable-across-reorder",
+        "U1-EDIT-014-keyboard-or-menu-alternative-for-every-pointer-operation",
+        "U1-EDIT-018-view-modes-render-identical-musical-facts"
+      ],
+      "caseIds": [
+        "U1-OPC-031",
+        "U1-INT-012",
+        "U1-INT-034",
+        "U1-INT-035",
+        "U1-INT-036",
+        "U1-INT-037",
+        "U1-INT-038",
+        "U1-INT-039",
+        "U1-INT-040",
+        "U1-INT-041",
+        "U1-INT-058"
+      ],
+      "authorityIds": [
+        "U1-AUTH-A0",
+        "U1-AUTH-BEAD",
+        "U1-AUTH-PLAN",
+        "U1-AUTH-U0",
+        "U1-AUTH-WCAG"
+      ],
+      "plannedEvidenceOwner": "tests/e2e/u1-view-modes.spec.ts"
+    }
+  ],
+  "lawCoverage": [
+    {
+      "lawId": "U1-EDIT-001-no-new-mutation-channel",
+      "positiveCaseIds": [
+        "U1-QE-001",
+        "U1-QE-002",
+        "U1-QE-003",
+        "U1-QE-004",
+        "U1-QE-005",
+        "U1-QE-006",
+        "U1-QE-007",
+        "U1-QE-008",
+        "U1-QE-009",
+        "U1-QE-010",
+        "U1-QE-011",
+        "U1-QE-012",
+        "U1-QE-013",
+        "U1-QE-014",
+        "U1-QE-015",
+        "U1-QE-045",
+        "U1-OPC-001",
+        "U1-OPC-002",
+        "U1-OPC-003",
+        "U1-OPC-004",
+        "U1-OPC-005",
+        "U1-OPC-006",
+        "U1-OPC-007",
+        "U1-OPC-008",
+        "U1-OPC-009",
+        "U1-OPC-010",
+        "U1-OPC-011",
+        "U1-OPC-012",
+        "U1-OPC-013",
+        "U1-OPC-014",
+        "U1-OPC-015",
+        "U1-OPC-016",
+        "U1-OPC-017",
+        "U1-OPC-018",
+        "U1-OPC-019",
+        "U1-OPC-020",
+        "U1-OPC-021",
+        "U1-OPC-022",
+        "U1-OPC-023",
+        "U1-OPC-042",
+        "U1-OPC-058",
+        "U1-OPC-059",
+        "U1-INT-035"
+      ],
+      "negativeOrNearMissCaseIds": [
+        "U1-QE-040",
+        "U1-QE-041",
+        "U1-QE-042",
+        "U1-OPC-034",
+        "U1-OPC-035",
+        "U1-OPC-046",
+        "U1-OPC-047",
+        "U1-OPC-048",
+        "U1-OPC-053",
+        "U1-OPC-054",
+        "U1-INT-050",
+        "U1-INT-051"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL",
+        "U1-TRACE-INLINE",
+        "U1-TRACE-POINTER",
+        "U1-TRACE-QUICKENTRY",
+        "U1-TRACE-VIEW"
+      ]
+    },
+    {
+      "lawId": "U1-EDIT-002-draft-text-is-caller-owned-and-exact",
+      "positiveCaseIds": [
+        "U1-QE-045",
+        "U1-QE-046"
+      ],
+      "negativeOrNearMissCaseIds": [
+        "U1-QE-029",
+        "U1-QE-036",
+        "U1-QE-037",
+        "U1-QE-038",
+        "U1-QE-039",
+        "U1-QE-040",
+        "U1-QE-041",
+        "U1-QE-042",
+        "U1-INT-043",
+        "U1-INT-050"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL",
+        "U1-TRACE-QUICKENTRY"
+      ]
+    },
+    {
+      "lawId": "U1-EDIT-003-preview-status-is-t0-derived",
+      "positiveCaseIds": [
+        "U1-QE-001",
+        "U1-QE-002",
+        "U1-QE-003",
+        "U1-QE-004",
+        "U1-QE-005",
+        "U1-QE-006",
+        "U1-QE-007",
+        "U1-QE-008",
+        "U1-QE-009",
+        "U1-QE-010",
+        "U1-QE-011",
+        "U1-QE-012",
+        "U1-QE-013",
+        "U1-QE-014",
+        "U1-QE-015",
+        "U1-QE-045",
+        "U1-QE-046"
+      ],
+      "negativeOrNearMissCaseIds": [
+        "U1-QE-016",
+        "U1-QE-017",
+        "U1-QE-018",
+        "U1-QE-019",
+        "U1-QE-020",
+        "U1-QE-021",
+        "U1-QE-022",
+        "U1-QE-023",
+        "U1-QE-024",
+        "U1-QE-025",
+        "U1-QE-026",
+        "U1-QE-027",
+        "U1-QE-028",
+        "U1-QE-030",
+        "U1-QE-036",
+        "U1-QE-037",
+        "U1-QE-039",
+        "U1-OPC-038",
+        "U1-OPC-052",
+        "U1-INT-043"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL",
+        "U1-TRACE-INLINE",
+        "U1-TRACE-QUICKENTRY"
+      ]
+    },
+    {
+      "lawId": "U1-EDIT-004-insertion-plan-statement-exact",
+      "positiveCaseIds": [
+        "U1-QE-001",
+        "U1-QE-002",
+        "U1-QE-003",
+        "U1-QE-004",
+        "U1-QE-005",
+        "U1-QE-006",
+        "U1-QE-007",
+        "U1-QE-008",
+        "U1-QE-009",
+        "U1-QE-010",
+        "U1-QE-011",
+        "U1-QE-012",
+        "U1-QE-013",
+        "U1-QE-014",
+        "U1-QE-015",
+        "U1-QE-031",
+        "U1-QE-033",
+        "U1-QE-045",
+        "U1-QE-046",
+        "U1-OPC-004",
+        "U1-INT-042"
+      ],
+      "negativeOrNearMissCaseIds": [
+        "U1-QE-016",
+        "U1-QE-017",
+        "U1-QE-018",
+        "U1-QE-019",
+        "U1-QE-020",
+        "U1-QE-021",
+        "U1-QE-022",
+        "U1-QE-023",
+        "U1-QE-024",
+        "U1-QE-025",
+        "U1-QE-026",
+        "U1-QE-027",
+        "U1-QE-028",
+        "U1-QE-029",
+        "U1-QE-030",
+        "U1-QE-032",
+        "U1-QE-034",
+        "U1-QE-035",
+        "U1-QE-043",
+        "U1-QE-044"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL",
+        "U1-TRACE-QUICKENTRY"
+      ]
+    },
+    {
+      "lawId": "U1-EDIT-005-whole-preview-apply-is-one-atomic-command",
+      "positiveCaseIds": [
+        "U1-QE-001",
+        "U1-QE-002",
+        "U1-QE-003",
+        "U1-QE-004",
+        "U1-QE-005",
+        "U1-QE-006",
+        "U1-QE-007",
+        "U1-QE-008",
+        "U1-QE-009",
+        "U1-QE-010",
+        "U1-QE-011",
+        "U1-QE-012",
+        "U1-QE-013",
+        "U1-QE-014",
+        "U1-QE-015",
+        "U1-QE-046",
+        "U1-OPC-004",
+        "U1-OPC-005",
+        "U1-OPC-014",
+        "U1-OPC-015",
+        "U1-OPC-016",
+        "U1-OPC-017"
+      ],
+      "negativeOrNearMissCaseIds": [
+        "U1-OPC-054"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL",
+        "U1-TRACE-QUICKENTRY"
+      ]
+    },
+    {
+      "lawId": "U1-EDIT-006-recovered-chord-lane-requires-explicit-loss-acknowledgement",
+      "positiveCaseIds": [
+        "U1-QE-031",
+        "U1-QE-033",
+        "U1-OPC-005"
+      ],
+      "negativeOrNearMissCaseIds": [
+        "U1-QE-021",
+        "U1-QE-023",
+        "U1-QE-024",
+        "U1-QE-027",
+        "U1-QE-028",
+        "U1-QE-030",
+        "U1-QE-032",
+        "U1-QE-034",
+        "U1-QE-035"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL",
+        "U1-TRACE-QUICKENTRY"
+      ]
+    },
+    {
+      "lawId": "U1-EDIT-007-stable-identity-keys-only",
+      "positiveCaseIds": [
+        "U1-OPC-024",
+        "U1-INT-011",
+        "U1-INT-023"
+      ],
+      "negativeOrNearMissCaseIds": [
+        "U1-INT-053"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL",
+        "U1-TRACE-IDENTITY",
+        "U1-TRACE-POINTER"
+      ]
+    },
+    {
+      "lawId": "U1-EDIT-008-four-independent-bookmarks",
+      "positiveCaseIds": [
+        "U1-OPC-024",
+        "U1-OPC-025",
+        "U1-OPC-026",
+        "U1-INT-001",
+        "U1-INT-002",
+        "U1-INT-003",
+        "U1-INT-004",
+        "U1-INT-005",
+        "U1-INT-006",
+        "U1-INT-028",
+        "U1-INT-029",
+        "U1-INT-036",
+        "U1-INT-045"
+      ],
+      "negativeOrNearMissCaseIds": [
+        "U1-OPC-049",
+        "U1-OPC-050",
+        "U1-OPC-051",
+        "U1-INT-052"
+      ],
+      "traceIds": [
+        "U1-TRACE-BOOKMARKS",
+        "U1-TRACE-CHANNEL",
+        "U1-TRACE-FOCUS",
+        "U1-TRACE-VIEW"
+      ]
+    },
+    {
+      "lawId": "U1-EDIT-009-roving-focus-visual-order-stable-across-reorder",
+      "positiveCaseIds": [
+        "U1-INT-007",
+        "U1-INT-008",
+        "U1-INT-009",
+        "U1-INT-010",
+        "U1-INT-011",
+        "U1-INT-012"
+      ],
+      "negativeOrNearMissCaseIds": [
+        "U1-INT-054",
+        "U1-INT-055"
+      ],
+      "traceIds": [
+        "U1-TRACE-FOCUS",
+        "U1-TRACE-IDENTITY",
+        "U1-TRACE-VIEW"
+      ]
+    },
+    {
+      "lawId": "U1-EDIT-010-delete-focus-repair-order",
+      "positiveCaseIds": [
+        "U1-OPC-008",
+        "U1-INT-013",
+        "U1-INT-014",
+        "U1-INT-015"
+      ],
+      "negativeOrNearMissCaseIds": [
+        "U1-INT-052",
+        "U1-INT-054"
+      ],
+      "traceIds": [
+        "U1-TRACE-BOOKMARKS",
+        "U1-TRACE-CHANNEL",
+        "U1-TRACE-FOCUS",
+        "U1-TRACE-IDENTITY"
+      ]
+    },
+    {
+      "lawId": "U1-EDIT-011-inline-symbol-edit-valid-on-apply",
+      "positiveCaseIds": [
+        "U1-OPC-020",
+        "U1-OPC-033"
+      ],
+      "negativeOrNearMissCaseIds": [
+        "U1-OPC-036",
+        "U1-OPC-037",
+        "U1-OPC-038",
+        "U1-OPC-039",
+        "U1-OPC-055",
+        "U1-INT-048"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL",
+        "U1-TRACE-INLINE"
+      ]
+    },
+    {
+      "lawId": "U1-EDIT-012-duration-edit-states-measure-fill-and-explicit-resolution",
+      "positiveCaseIds": [
+        "U1-OPC-013",
+        "U1-OPC-014",
+        "U1-OPC-015",
+        "U1-OPC-018",
+        "U1-OPC-019",
+        "U1-OPC-042"
+      ],
+      "negativeOrNearMissCaseIds": [
+        "U1-OPC-040",
+        "U1-OPC-041",
+        "U1-OPC-043",
+        "U1-OPC-044",
+        "U1-OPC-045",
+        "U1-INT-046",
+        "U1-INT-047",
+        "U1-INT-049"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL",
+        "U1-TRACE-INLINE"
+      ]
+    },
+    {
+      "lawId": "U1-EDIT-013-pointer-drag-optional-and-threshold-gated",
+      "positiveCaseIds": [
+        "U1-OPC-012",
+        "U1-INT-016",
+        "U1-INT-017",
+        "U1-INT-018",
+        "U1-INT-025"
+      ],
+      "negativeOrNearMissCaseIds": [
+        "U1-OPC-048",
+        "U1-OPC-056",
+        "U1-OPC-057",
+        "U1-INT-019",
+        "U1-INT-020"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL",
+        "U1-TRACE-POINTER"
+      ]
+    },
+    {
+      "lawId": "U1-EDIT-014-keyboard-or-menu-alternative-for-every-pointer-operation",
+      "positiveCaseIds": [
+        "U1-OPC-001",
+        "U1-OPC-002",
+        "U1-OPC-003",
+        "U1-OPC-006",
+        "U1-OPC-007",
+        "U1-OPC-009",
+        "U1-OPC-010",
+        "U1-OPC-011",
+        "U1-OPC-012",
+        "U1-OPC-021",
+        "U1-OPC-022",
+        "U1-OPC-023",
+        "U1-OPC-032",
+        "U1-INT-021",
+        "U1-INT-027",
+        "U1-INT-037",
+        "U1-INT-038",
+        "U1-INT-039",
+        "U1-INT-040",
+        "U1-INT-041"
+      ],
+      "negativeOrNearMissCaseIds": [
+        "U1-INT-056"
+      ],
+      "traceIds": [
+        "U1-TRACE-BOOKMARKS",
+        "U1-TRACE-CHANNEL",
+        "U1-TRACE-POINTER",
+        "U1-TRACE-QUICKENTRY",
+        "U1-TRACE-VIEW"
+      ]
+    },
+    {
+      "lawId": "U1-EDIT-015-listener-counts-constant-across-mount-reorder-and-mutation",
+      "positiveCaseIds": [
+        "U1-INT-022",
+        "U1-INT-023",
+        "U1-INT-025",
+        "U1-INT-026"
+      ],
+      "negativeOrNearMissCaseIds": [
+        "U1-INT-019",
+        "U1-INT-020",
+        "U1-INT-024"
+      ],
+      "traceIds": [
+        "U1-TRACE-POINTER"
+      ]
+    },
+    {
+      "lawId": "U1-EDIT-016-touch-range-mode-explicit-and-exact",
+      "positiveCaseIds": [
+        "U1-OPC-025",
+        "U1-OPC-027",
+        "U1-OPC-028",
+        "U1-OPC-029",
+        "U1-OPC-030",
+        "U1-INT-004",
+        "U1-INT-027",
+        "U1-INT-028",
+        "U1-INT-029",
+        "U1-INT-030"
+      ],
+      "negativeOrNearMissCaseIds": [
+        "U1-INT-031",
+        "U1-INT-032",
+        "U1-INT-033"
+      ],
+      "traceIds": [
+        "U1-TRACE-BOOKMARKS",
+        "U1-TRACE-CHANNEL"
+      ]
+    },
+    {
+      "lawId": "U1-EDIT-017-application-refusals-surfaced-verbatim",
+      "positiveCaseIds": [
+        "U1-INT-057"
+      ],
+      "negativeOrNearMissCaseIds": [
+        "U1-QE-025",
+        "U1-QE-043",
+        "U1-QE-044",
+        "U1-OPC-034",
+        "U1-OPC-035",
+        "U1-OPC-052",
+        "U1-INT-044",
+        "U1-INT-051"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL",
+        "U1-TRACE-QUICKENTRY"
+      ]
+    },
+    {
+      "lawId": "U1-EDIT-018-view-modes-render-identical-musical-facts",
+      "positiveCaseIds": [
+        "U1-OPC-031",
+        "U1-INT-012",
+        "U1-INT-034",
+        "U1-INT-035",
+        "U1-INT-036",
+        "U1-INT-037",
+        "U1-INT-038",
+        "U1-INT-039",
+        "U1-INT-040",
+        "U1-INT-041"
+      ],
+      "negativeOrNearMissCaseIds": [
+        "U1-INT-058"
+      ],
+      "traceIds": [
+        "U1-TRACE-BOOKMARKS",
+        "U1-TRACE-CHANNEL",
+        "U1-TRACE-IDENTITY",
+        "U1-TRACE-POINTER",
+        "U1-TRACE-VIEW"
+      ]
+    }
+  ]
+}

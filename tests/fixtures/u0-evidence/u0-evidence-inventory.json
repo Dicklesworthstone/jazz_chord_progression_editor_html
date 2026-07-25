@@ -76,7 +76,7 @@
     },
     {
       "path": "tests/e2e/u0-touch-targets.spec.ts",
-      "sha256": "adbdf23595a4af987872e8882e2d3c4ba897288f6aeeed23634cebf16d3cac7a"
+      "sha256": "090ac9dd89740cb599efad9a0c9afa28d70957e23f41f3fe0009ac83657cfdf0"
     },
     {
       "path": "tests/fixtures/ui/primitive-state-matrix.json",

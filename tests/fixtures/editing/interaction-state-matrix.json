@@ -1,0 +1,1129 @@
+{
+  "schema": "changes.fixtures.u1-interaction-matrix.v1",
+  "reviewState": "proposed-independent-spec",
+  "pinState": "reviewed-byte-and-semantic-pinned",
+  "expectedValuesGenerated": false,
+  "productionOutputUsedAsOracle": false,
+  "viewports": [
+    {
+      "id": "U1-VP-320",
+      "width": 320,
+      "height": 568,
+      "mode": "compact"
+    },
+    {
+      "id": "U1-VP-390",
+      "width": 390,
+      "height": 844,
+      "mode": "compact"
+    },
+    {
+      "id": "U1-VP-768",
+      "width": 768,
+      "height": 1024,
+      "mode": "medium"
+    },
+    {
+      "id": "U1-VP-1280",
+      "width": 1280,
+      "height": 800,
+      "mode": "wide"
+    },
+    {
+      "id": "U1-VP-1440",
+      "width": 1440,
+      "height": 900,
+      "mode": "wide"
+    }
+  ],
+  "listenerPolicy": {
+    "staticListenersPerChordCard": 3,
+    "staticListenersPerInsertionTarget": 1,
+    "staticListenersPerChartRegion": 3,
+    "transientDragListenersPerSession": 3,
+    "maxConcurrentDragSessions": 1,
+    "documentMutationRegistersListeners": false
+  },
+  "cases": [
+    {
+      "id": "U1-INT-001",
+      "kind": "positive",
+      "family": "bookmarks",
+      "subject": "selection does not move the playhead",
+      "given": "a chord card is selected while the transport is paused at beat 0",
+      "expected": "bookmarks.selection changes; transport.playhead is byte-for-byte equal",
+      "lawIds": [
+        "U1-EDIT-008-four-independent-bookmarks"
+      ],
+      "traceIds": [
+        "U1-TRACE-BOOKMARKS"
+      ],
+      "authorityIds": [
+        "U1-AUTH-PLAN",
+        "U1-AUTH-A0"
+      ]
+    },
+    {
+      "id": "U1-INT-002",
+      "kind": "positive",
+      "family": "bookmarks",
+      "subject": "playback does not change the selection",
+      "given": "playback advances across three chords with one card selected",
+      "expected": "bookmarks.selection is byte-for-byte equal; only the playhead advances",
+      "lawIds": [
+        "U1-EDIT-008-four-independent-bookmarks"
+      ],
+      "traceIds": [
+        "U1-TRACE-BOOKMARKS"
+      ],
+      "authorityIds": [
+        "U1-AUTH-PLAN",
+        "U1-AUTH-A0"
+      ]
+    },
+    {
+      "id": "U1-INT-003",
+      "kind": "positive",
+      "family": "bookmarks",
+      "subject": "preview does not change the selection",
+      "given": "a chord preview is auditioned from the card menu",
+      "expected": "bookmarks.selection, insertion, and range are all byte-for-byte equal",
+      "lawIds": [
+        "U1-EDIT-008-four-independent-bookmarks"
+      ],
+      "traceIds": [
+        "U1-TRACE-BOOKMARKS"
+      ],
+      "authorityIds": [
+        "U1-AUTH-PLAN",
+        "U1-AUTH-A0"
+      ]
+    },
+    {
+      "id": "U1-INT-004",
+      "kind": "positive",
+      "family": "bookmarks",
+      "subject": "range does not change the selection",
+      "given": "an ordered range is set across four events",
+      "expected": "bookmarks.range changes; bookmarks.selection is byte-for-byte equal",
+      "lawIds": [
+        "U1-EDIT-008-four-independent-bookmarks",
+        "U1-EDIT-016-touch-range-mode-explicit-and-exact"
+      ],
+      "traceIds": [
+        "U1-TRACE-BOOKMARKS"
+      ],
+      "authorityIds": [
+        "U1-AUTH-PLAN",
+        "U1-AUTH-A0"
+      ]
+    },
+    {
+      "id": "U1-INT-005",
+      "kind": "positive",
+      "family": "bookmarks",
+      "subject": "selection does not move the insertion point",
+      "given": "a different chord card is selected",
+      "expected": "bookmarks.insertion is byte-for-byte equal",
+      "lawIds": [
+        "U1-EDIT-008-four-independent-bookmarks"
+      ],
+      "traceIds": [
+        "U1-TRACE-BOOKMARKS"
+      ],
+      "authorityIds": [
+        "U1-AUTH-PLAN",
+        "U1-AUTH-A0"
+      ]
+    },
+    {
+      "id": "U1-INT-006",
+      "kind": "positive",
+      "family": "bookmarks",
+      "subject": "all four concepts are simultaneously distinct",
+      "given": "selection on event 2, insertion after event 5, range 3 through 7, playhead at beat 12",
+      "expected": "each concept is rendered with its own accessible name and none of the four values is derived from another",
+      "lawIds": [
+        "U1-EDIT-008-four-independent-bookmarks"
+      ],
+      "traceIds": [
+        "U1-TRACE-BOOKMARKS"
+      ],
+      "authorityIds": [
+        "U1-AUTH-PLAN",
+        "U1-AUTH-A0"
+      ]
+    },
+    {
+      "id": "U1-INT-007",
+      "kind": "positive",
+      "family": "roving-focus",
+      "subject": "the chart is one tab stop",
+      "given": "Tab moves into a chart holding twelve chord cards",
+      "expected": "exactly one card is tabbable; the remaining cards have tabindex -1",
+      "lawIds": [
+        "U1-EDIT-009-roving-focus-visual-order-stable-across-reorder"
+      ],
+      "traceIds": [
+        "U1-TRACE-IDENTITY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-U0",
+        "U1-AUTH-WCAG"
+      ]
+    },
+    {
+      "id": "U1-INT-008",
+      "kind": "positive",
+      "family": "roving-focus",
+      "subject": "arrow order equals visual order",
+      "given": "ArrowRight is pressed repeatedly from the first card of section A",
+      "expected": "focus visits cards in document order across measure and section boundaries without skipping insertion targets' own stop",
+      "lawIds": [
+        "U1-EDIT-009-roving-focus-visual-order-stable-across-reorder"
+      ],
+      "traceIds": [
+        "U1-TRACE-IDENTITY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-PLAN",
+        "U1-AUTH-A0"
+      ]
+    },
+    {
+      "id": "U1-INT-009",
+      "kind": "positive",
+      "family": "roving-focus",
+      "subject": "Home and End reach the section bounds",
+      "given": "Home then End is pressed inside section B",
+      "expected": "focus lands on the first then the last enabled card of section B",
+      "lawIds": [
+        "U1-EDIT-009-roving-focus-visual-order-stable-across-reorder"
+      ],
+      "traceIds": [
+        "U1-TRACE-IDENTITY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-U0",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-INT-010",
+      "kind": "positive",
+      "family": "roving-focus",
+      "subject": "disabled cards keep order but are skipped",
+      "given": "a card is disabled while a command is in flight",
+      "expected": "the disabled card retains its ordinal and is not focused by arrow movement",
+      "lawIds": [
+        "U1-EDIT-009-roving-focus-visual-order-stable-across-reorder"
+      ],
+      "traceIds": [
+        "U1-TRACE-IDENTITY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-U0",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-INT-011",
+      "kind": "positive",
+      "family": "roving-focus",
+      "subject": "focus survives reorder by stable identity",
+      "given": "the focused card is moved from position 3 to position 1",
+      "expected": "the same event id remains focused and selected at its new position",
+      "lawIds": [
+        "U1-EDIT-009-roving-focus-visual-order-stable-across-reorder",
+        "U1-EDIT-007-stable-identity-keys-only"
+      ],
+      "traceIds": [
+        "U1-TRACE-IDENTITY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-LEGACY",
+        "U1-AUTH-A0"
+      ]
+    },
+    {
+      "id": "U1-INT-012",
+      "kind": "positive",
+      "family": "roving-focus",
+      "subject": "focus survives a view-mode toggle",
+      "given": "the chart switches from compact to teaching while a card is focused",
+      "expected": "the same event id remains focused; no command and no bookmark change",
+      "lawIds": [
+        "U1-EDIT-009-roving-focus-visual-order-stable-across-reorder",
+        "U1-EDIT-018-view-modes-render-identical-musical-facts"
+      ],
+      "traceIds": [
+        "U1-TRACE-IDENTITY",
+        "U1-TRACE-VIEW"
+      ],
+      "authorityIds": [
+        "U1-AUTH-PLAN",
+        "U1-AUTH-A0"
+      ]
+    },
+    {
+      "id": "U1-INT-013",
+      "kind": "positive",
+      "family": "focus-repair",
+      "subject": "focus moves to the next event",
+      "given": "the focused middle event of a three-event measure is deleted",
+      "expected": "focus moves to the following event in the same measure",
+      "lawIds": [
+        "U1-EDIT-010-delete-focus-repair-order"
+      ],
+      "traceIds": [
+        "U1-TRACE-FOCUS"
+      ],
+      "authorityIds": [
+        "U1-AUTH-PLAN",
+        "U1-AUTH-A0"
+      ]
+    },
+    {
+      "id": "U1-INT-014",
+      "kind": "positive",
+      "family": "focus-repair",
+      "subject": "focus falls back to the previous event",
+      "given": "the focused last event of a measure is deleted",
+      "expected": "focus moves to the preceding event",
+      "lawIds": [
+        "U1-EDIT-010-delete-focus-repair-order"
+      ],
+      "traceIds": [
+        "U1-TRACE-FOCUS"
+      ],
+      "authorityIds": [
+        "U1-AUTH-PLAN",
+        "U1-AUTH-A0"
+      ]
+    },
+    {
+      "id": "U1-INT-015",
+      "kind": "positive",
+      "family": "focus-repair",
+      "subject": "focus falls back to the section insertion target",
+      "given": "the only event of the only measure is deleted",
+      "expected": "focus moves to the section insertion target, never to the document body",
+      "lawIds": [
+        "U1-EDIT-010-delete-focus-repair-order"
+      ],
+      "traceIds": [
+        "U1-TRACE-FOCUS"
+      ],
+      "authorityIds": [
+        "U1-AUTH-PLAN",
+        "U1-AUTH-A0"
+      ]
+    },
+    {
+      "id": "U1-INT-016",
+      "kind": "positive",
+      "family": "pointer",
+      "subject": "a short movement stays a tap",
+      "given": "a touch pointer moves 7 CSS pixels before release",
+      "expected": "no drag starts, preventDefault is never called, and the tap activates the card",
+      "lawIds": [
+        "U1-EDIT-013-pointer-drag-optional-and-threshold-gated"
+      ],
+      "traceIds": [
+        "U1-TRACE-POINTER"
+      ],
+      "authorityIds": [
+        "U1-AUTH-LEGACY",
+        "U1-AUTH-U0"
+      ]
+    },
+    {
+      "id": "U1-INT-017",
+      "kind": "positive",
+      "family": "pointer",
+      "subject": "the threshold starts a drag",
+      "given": "a pointer moves exactly 8 CSS pixels",
+      "expected": "the drag session starts and preventDefault applies from that move onward",
+      "lawIds": [
+        "U1-EDIT-013-pointer-drag-optional-and-threshold-gated"
+      ],
+      "traceIds": [
+        "U1-TRACE-POINTER"
+      ],
+      "authorityIds": [
+        "U1-AUTH-U0",
+        "U1-AUTH-MECHANICAL"
+      ]
+    },
+    {
+      "id": "U1-INT-018",
+      "kind": "positive",
+      "family": "pointer",
+      "subject": "scrolling is preserved below the threshold",
+      "given": "a vertical touch drag of 6 CSS pixels crosses a chord card",
+      "expected": "the page scrolls; no card is dragged and no command is dispatched",
+      "lawIds": [
+        "U1-EDIT-013-pointer-drag-optional-and-threshold-gated"
+      ],
+      "traceIds": [
+        "U1-TRACE-POINTER"
+      ],
+      "authorityIds": [
+        "U1-AUTH-LEGACY",
+        "U1-AUTH-U0"
+      ]
+    },
+    {
+      "id": "U1-INT-019",
+      "kind": "cancellation",
+      "family": "pointer",
+      "subject": "pointer cancel releases capture",
+      "given": "the browser cancels the pointer mid-drag",
+      "expected": "capture is released, transient listeners are removed, and no command is dispatched",
+      "lawIds": [
+        "U1-EDIT-013-pointer-drag-optional-and-threshold-gated",
+        "U1-EDIT-015-listener-counts-constant-across-mount-reorder-and-mutation"
+      ],
+      "traceIds": [
+        "U1-TRACE-POINTER"
+      ],
+      "authorityIds": [
+        "U1-AUTH-PLAN",
+        "U1-AUTH-A0"
+      ]
+    },
+    {
+      "id": "U1-INT-020",
+      "kind": "cancellation",
+      "family": "pointer",
+      "subject": "unmount releases capture",
+      "given": "the dragged card is unmounted by an undo while the drag is active",
+      "expected": "capture is released and the transient listener count returns to zero",
+      "lawIds": [
+        "U1-EDIT-013-pointer-drag-optional-and-threshold-gated",
+        "U1-EDIT-015-listener-counts-constant-across-mount-reorder-and-mutation"
+      ],
+      "traceIds": [
+        "U1-TRACE-POINTER"
+      ],
+      "authorityIds": [
+        "U1-AUTH-PLAN",
+        "U1-AUTH-A0"
+      ]
+    },
+    {
+      "id": "U1-INT-021",
+      "kind": "positive",
+      "family": "pointer",
+      "subject": "no primary action requires hover or drag",
+      "given": "the pointer is never used",
+      "expected": "every chart operation is reachable through the keyboard bindings or the More menu",
+      "lawIds": [
+        "U1-EDIT-014-keyboard-or-menu-alternative-for-every-pointer-operation"
+      ],
+      "traceIds": [
+        "U1-TRACE-POINTER",
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-WCAG",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-INT-022",
+      "kind": "positive",
+      "family": "listeners",
+      "subject": "mount installs the declared listeners",
+      "given": "a chart with twenty chord cards is mounted",
+      "expected": "each card owns exactly three static listeners and each insertion target owns exactly one",
+      "lawIds": [
+        "U1-EDIT-015-listener-counts-constant-across-mount-reorder-and-mutation"
+      ],
+      "traceIds": [
+        "U1-TRACE-POINTER"
+      ],
+      "authorityIds": [
+        "U1-AUTH-LEGACY",
+        "U1-AUTH-MECHANICAL"
+      ]
+    },
+    {
+      "id": "U1-INT-023",
+      "kind": "positive",
+      "family": "listeners",
+      "subject": "reorder does not multiply listeners",
+      "given": "ten move commands reorder the same twenty cards",
+      "expected": "the static listener totals are unchanged",
+      "lawIds": [
+        "U1-EDIT-015-listener-counts-constant-across-mount-reorder-and-mutation",
+        "U1-EDIT-007-stable-identity-keys-only"
+      ],
+      "traceIds": [
+        "U1-TRACE-POINTER"
+      ],
+      "authorityIds": [
+        "U1-AUTH-LEGACY",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-INT-024",
+      "kind": "limit",
+      "family": "listeners",
+      "subject": "repeated mutation does not multiply listeners",
+      "given": "one hundred insert and delete commands are applied",
+      "expected": "static listener totals track the rendered node counts exactly and never accumulate",
+      "lawIds": [
+        "U1-EDIT-015-listener-counts-constant-across-mount-reorder-and-mutation"
+      ],
+      "traceIds": [
+        "U1-TRACE-POINTER"
+      ],
+      "authorityIds": [
+        "U1-AUTH-LEGACY",
+        "U1-AUTH-MECHANICAL"
+      ]
+    },
+    {
+      "id": "U1-INT-025",
+      "kind": "positive",
+      "family": "listeners",
+      "subject": "a drag adds at most three transient listeners",
+      "given": "one drag session is active",
+      "expected": "exactly three transient listeners exist and at most one drag session is open",
+      "lawIds": [
+        "U1-EDIT-015-listener-counts-constant-across-mount-reorder-and-mutation",
+        "U1-EDIT-013-pointer-drag-optional-and-threshold-gated"
+      ],
+      "traceIds": [
+        "U1-TRACE-POINTER"
+      ],
+      "authorityIds": [
+        "U1-AUTH-PLAN",
+        "U1-AUTH-A0"
+      ]
+    },
+    {
+      "id": "U1-INT-026",
+      "kind": "positive",
+      "family": "listeners",
+      "subject": "unmount removes every listener",
+      "given": "the chart region is unmounted",
+      "expected": "static and transient listener totals are zero",
+      "lawIds": [
+        "U1-EDIT-015-listener-counts-constant-across-mount-reorder-and-mutation"
+      ],
+      "traceIds": [
+        "U1-TRACE-POINTER"
+      ],
+      "authorityIds": [
+        "U1-AUTH-PLAN",
+        "U1-AUTH-A0"
+      ]
+    },
+    {
+      "id": "U1-INT-027",
+      "kind": "positive",
+      "family": "range",
+      "subject": "Select range exposes explicit boundary actions",
+      "given": "Select range is activated on a touch viewport",
+      "expected": "Set start, Set end, start and end beat fields, Done, and Cancel are all reachable without a drag",
+      "lawIds": [
+        "U1-EDIT-016-touch-range-mode-explicit-and-exact",
+        "U1-EDIT-014-keyboard-or-menu-alternative-for-every-pointer-operation"
+      ],
+      "traceIds": [
+        "U1-TRACE-BOOKMARKS"
+      ],
+      "authorityIds": [
+        "U1-AUTH-PLAN",
+        "U1-AUTH-WCAG"
+      ]
+    },
+    {
+      "id": "U1-INT-028",
+      "kind": "positive",
+      "family": "range",
+      "subject": "Set start uses the focused boundary",
+      "given": "a card is focused and Set start is activated",
+      "expected": "the range anchor becomes that card's leading boundary; the selection is unchanged",
+      "lawIds": [
+        "U1-EDIT-016-touch-range-mode-explicit-and-exact",
+        "U1-EDIT-008-four-independent-bookmarks"
+      ],
+      "traceIds": [
+        "U1-TRACE-BOOKMARKS"
+      ],
+      "authorityIds": [
+        "U1-AUTH-PLAN",
+        "U1-AUTH-A0"
+      ]
+    },
+    {
+      "id": "U1-INT-029",
+      "kind": "positive",
+      "family": "range",
+      "subject": "Set end uses the focused boundary",
+      "given": "a later card is focused and Set end is activated",
+      "expected": "the range focus becomes that card's trailing boundary",
+      "lawIds": [
+        "U1-EDIT-016-touch-range-mode-explicit-and-exact",
+        "U1-EDIT-008-four-independent-bookmarks"
+      ],
+      "traceIds": [
+        "U1-TRACE-BOOKMARKS"
+      ],
+      "authorityIds": [
+        "U1-AUTH-PLAN",
+        "U1-AUTH-A0"
+      ]
+    },
+    {
+      "id": "U1-INT-030",
+      "kind": "positive",
+      "family": "range",
+      "subject": "beat fields accept exact rational text",
+      "given": "the start beat field receives 5/2",
+      "expected": "the exact rational boundary is stored without decimal rounding",
+      "lawIds": [
+        "U1-EDIT-016-touch-range-mode-explicit-and-exact"
+      ],
+      "traceIds": [
+        "U1-TRACE-BOOKMARKS"
+      ],
+      "authorityIds": [
+        "U1-AUTH-MECHANICAL",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-INT-031",
+      "kind": "malformed",
+      "family": "range",
+      "subject": "an unparsable beat field refuses",
+      "given": "the end beat field receives 5..2",
+      "expected": "the refusal is u1.range_boundary_invalid and the prior range is intact",
+      "lawIds": [
+        "U1-EDIT-016-touch-range-mode-explicit-and-exact"
+      ],
+      "traceIds": [
+        "U1-TRACE-BOOKMARKS"
+      ],
+      "authorityIds": [
+        "U1-AUTH-PLAN",
+        "U1-AUTH-A0"
+      ]
+    },
+    {
+      "id": "U1-INT-032",
+      "kind": "near-miss",
+      "family": "range",
+      "subject": "unordered endpoints refuse",
+      "given": "Set end names a boundary earlier than the anchor in document order",
+      "expected": "the refusal is u1.range_endpoints_unordered and no intent is dispatched",
+      "lawIds": [
+        "U1-EDIT-016-touch-range-mode-explicit-and-exact"
+      ],
+      "traceIds": [
+        "U1-TRACE-BOOKMARKS"
+      ],
+      "authorityIds": [
+        "U1-AUTH-PLAN",
+        "U1-AUTH-A0"
+      ]
+    },
+    {
+      "id": "U1-INT-033",
+      "kind": "cancellation",
+      "family": "range",
+      "subject": "Cancel restores the prior range",
+      "given": "boundaries were changed and Cancel is activated",
+      "expected": "bookmarks.range returns to its exact prior value and the mode closes",
+      "lawIds": [
+        "U1-EDIT-016-touch-range-mode-explicit-and-exact"
+      ],
+      "traceIds": [
+        "U1-TRACE-BOOKMARKS"
+      ],
+      "authorityIds": [
+        "U1-AUTH-PLAN",
+        "U1-AUTH-A0"
+      ]
+    },
+    {
+      "id": "U1-INT-034",
+      "kind": "positive",
+      "family": "view-mode",
+      "subject": "both views render identical musical facts",
+      "given": "the same measure is rendered compact and teaching",
+      "expected": "symbol, exact duration, measure fill, and completion are identical; teaching adds explanatory labels only",
+      "lawIds": [
+        "U1-EDIT-018-view-modes-render-identical-musical-facts"
+      ],
+      "traceIds": [
+        "U1-TRACE-VIEW"
+      ],
+      "authorityIds": [
+        "U1-AUTH-PLAN",
+        "U1-AUTH-A0"
+      ]
+    },
+    {
+      "id": "U1-INT-035",
+      "kind": "positive",
+      "family": "view-mode",
+      "subject": "toggling never mutates the document",
+      "given": "the toggle is activated twice",
+      "expected": "no document command is dispatched and the revision is unchanged",
+      "lawIds": [
+        "U1-EDIT-018-view-modes-render-identical-musical-facts",
+        "U1-EDIT-001-no-new-mutation-channel"
+      ],
+      "traceIds": [
+        "U1-TRACE-VIEW",
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-PLAN",
+        "U1-AUTH-A0"
+      ]
+    },
+    {
+      "id": "U1-INT-036",
+      "kind": "positive",
+      "family": "view-mode",
+      "subject": "toggling never mutates bookmarks",
+      "given": "the toggle is activated with a selection and a range set",
+      "expected": "selection, insertion, and range are byte-for-byte equal",
+      "lawIds": [
+        "U1-EDIT-018-view-modes-render-identical-musical-facts",
+        "U1-EDIT-008-four-independent-bookmarks"
+      ],
+      "traceIds": [
+        "U1-TRACE-VIEW",
+        "U1-TRACE-BOOKMARKS"
+      ],
+      "authorityIds": [
+        "U1-AUTH-PLAN",
+        "U1-AUTH-A0"
+      ]
+    },
+    {
+      "id": "U1-INT-037",
+      "kind": "positive",
+      "family": "responsive",
+      "subject": "chart and transport stay reachable at 320 CSS pixels",
+      "given": "the studio renders at 320x568 in compact mode",
+      "expected": "the chart region and every chord-card action remain operable; no primary action is hidden behind hover",
+      "lawIds": [
+        "U1-EDIT-014-keyboard-or-menu-alternative-for-every-pointer-operation",
+        "U1-EDIT-018-view-modes-render-identical-musical-facts"
+      ],
+      "traceIds": [
+        "U1-TRACE-VIEW",
+        "U1-TRACE-POINTER"
+      ],
+      "authorityIds": [
+        "U1-AUTH-U0",
+        "U1-AUTH-WCAG"
+      ]
+    },
+    {
+      "id": "U1-INT-038",
+      "kind": "positive",
+      "family": "responsive",
+      "subject": "chart and transport stay reachable at 390 CSS pixels",
+      "given": "the studio renders at 390x844 in compact mode",
+      "expected": "the chart region and every chord-card action remain operable; no primary action is hidden behind hover",
+      "lawIds": [
+        "U1-EDIT-014-keyboard-or-menu-alternative-for-every-pointer-operation",
+        "U1-EDIT-018-view-modes-render-identical-musical-facts"
+      ],
+      "traceIds": [
+        "U1-TRACE-VIEW",
+        "U1-TRACE-POINTER"
+      ],
+      "authorityIds": [
+        "U1-AUTH-U0",
+        "U1-AUTH-WCAG"
+      ]
+    },
+    {
+      "id": "U1-INT-039",
+      "kind": "positive",
+      "family": "responsive",
+      "subject": "chart and transport stay reachable at 768 CSS pixels",
+      "given": "the studio renders at 768x1024 in medium mode",
+      "expected": "the chart region and every chord-card action remain operable; no primary action is hidden behind hover",
+      "lawIds": [
+        "U1-EDIT-014-keyboard-or-menu-alternative-for-every-pointer-operation",
+        "U1-EDIT-018-view-modes-render-identical-musical-facts"
+      ],
+      "traceIds": [
+        "U1-TRACE-VIEW",
+        "U1-TRACE-POINTER"
+      ],
+      "authorityIds": [
+        "U1-AUTH-U0",
+        "U1-AUTH-WCAG"
+      ]
+    },
+    {
+      "id": "U1-INT-040",
+      "kind": "positive",
+      "family": "responsive",
+      "subject": "chart and transport stay reachable at 1280 CSS pixels",
+      "given": "the studio renders at 1280x800 in wide mode",
+      "expected": "the chart region and every chord-card action remain operable; no primary action is hidden behind hover",
+      "lawIds": [
+        "U1-EDIT-014-keyboard-or-menu-alternative-for-every-pointer-operation",
+        "U1-EDIT-018-view-modes-render-identical-musical-facts"
+      ],
+      "traceIds": [
+        "U1-TRACE-VIEW",
+        "U1-TRACE-POINTER"
+      ],
+      "authorityIds": [
+        "U1-AUTH-U0",
+        "U1-AUTH-WCAG"
+      ]
+    },
+    {
+      "id": "U1-INT-041",
+      "kind": "positive",
+      "family": "responsive",
+      "subject": "chart and transport stay reachable at 1440 CSS pixels",
+      "given": "the studio renders at 1440x900 in wide mode",
+      "expected": "the chart region and every chord-card action remain operable; no primary action is hidden behind hover",
+      "lawIds": [
+        "U1-EDIT-014-keyboard-or-menu-alternative-for-every-pointer-operation",
+        "U1-EDIT-018-view-modes-render-identical-musical-facts"
+      ],
+      "traceIds": [
+        "U1-TRACE-VIEW",
+        "U1-TRACE-POINTER"
+      ],
+      "authorityIds": [
+        "U1-AUTH-U0",
+        "U1-AUTH-WCAG"
+      ]
+    },
+    {
+      "id": "U1-INT-042",
+      "kind": "positive",
+      "family": "empty-error",
+      "subject": "an empty chart states its next action",
+      "given": "the document has one empty measure and no events",
+      "expected": "the chart shows the empty state with a named insertion target and the quick-entry field remains operable",
+      "lawIds": [
+        "U1-EDIT-004-insertion-plan-statement-exact"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-PLAN",
+        "U1-AUTH-U0"
+      ]
+    },
+    {
+      "id": "U1-INT-043",
+      "kind": "malformed",
+      "family": "empty-error",
+      "subject": "token errors are individually visible",
+      "given": "the draft holds two valid and one invalid token",
+      "expected": "each invalid token keeps its source text and shows its own T0 code and range",
+      "lawIds": [
+        "U1-EDIT-003-preview-status-is-t0-derived",
+        "U1-EDIT-002-draft-text-is-caller-owned-and-exact"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-INT-044",
+      "kind": "malformed",
+      "family": "empty-error",
+      "subject": "an application refusal is shown verbatim",
+      "given": "A0 refuses a dispatched command",
+      "expected": "the refusal code and path are shown without translation and no retry occurs",
+      "lawIds": [
+        "U1-EDIT-017-application-refusals-surfaced-verbatim"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-INT-045",
+      "kind": "positive",
+      "family": "empty-error",
+      "subject": "an empty selection states its requirement",
+      "given": "no chord card is selected",
+      "expected": "selection-scoped actions are disabled with a named reason rather than silently inert",
+      "lawIds": [
+        "U1-EDIT-008-four-independent-bookmarks"
+      ],
+      "traceIds": [
+        "U1-TRACE-BOOKMARKS"
+      ],
+      "authorityIds": [
+        "U1-AUTH-U0",
+        "U1-AUTH-WCAG"
+      ]
+    },
+    {
+      "id": "U1-INT-046",
+      "kind": "malformed",
+      "family": "empty-error",
+      "subject": "an overfilled measure states exact beats",
+      "given": "a duration edit would exceed the bar capacity",
+      "expected": "the notice reports the exact current fill, the exact resulting fill, and the capacity as rationals",
+      "lawIds": [
+        "U1-EDIT-012-duration-edit-states-measure-fill-and-explicit-resolution"
+      ],
+      "traceIds": [
+        "U1-TRACE-INLINE"
+      ],
+      "authorityIds": [
+        "U1-AUTH-MECHANICAL",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-INT-047",
+      "kind": "malformed",
+      "family": "empty-error",
+      "subject": "an underfilled measure states its reason",
+      "given": "an explicit incomplete measure is confirmed",
+      "expected": "the stored reason is displayed with the measure and never invented",
+      "lawIds": [
+        "U1-EDIT-012-duration-edit-states-measure-fill-and-explicit-resolution"
+      ],
+      "traceIds": [
+        "U1-TRACE-INLINE"
+      ],
+      "authorityIds": [
+        "U1-AUTH-PLAN",
+        "U1-AUTH-A0"
+      ]
+    },
+    {
+      "id": "U1-INT-048",
+      "kind": "cancellation",
+      "family": "cancellation",
+      "subject": "an inline edit cancels cleanly",
+      "given": "Escape is pressed with a dirty symbol draft",
+      "expected": "the exact prior source text is restored and nothing is dispatched",
+      "lawIds": [
+        "U1-EDIT-011-inline-symbol-edit-valid-on-apply"
+      ],
+      "traceIds": [
+        "U1-TRACE-INLINE"
+      ],
+      "authorityIds": [
+        "U1-AUTH-PLAN",
+        "U1-AUTH-A0"
+      ]
+    },
+    {
+      "id": "U1-INT-049",
+      "kind": "cancellation",
+      "family": "cancellation",
+      "subject": "a completion dialog cancels cleanly",
+      "given": "Cancel is chosen in the incomplete-measure dialog",
+      "expected": "no command is dispatched and the duration editor keeps its draft",
+      "lawIds": [
+        "U1-EDIT-012-duration-edit-states-measure-fill-and-explicit-resolution"
+      ],
+      "traceIds": [
+        "U1-TRACE-INLINE"
+      ],
+      "authorityIds": [
+        "U1-AUTH-PLAN",
+        "U1-AUTH-A0"
+      ]
+    },
+    {
+      "id": "U1-INT-050",
+      "kind": "cancellation",
+      "family": "cancellation",
+      "subject": "quick entry cancels cleanly",
+      "given": "Escape is pressed in the draft field",
+      "expected": "the draft clears to idle through one ephemeral intent and no document command is dispatched",
+      "lawIds": [
+        "U1-EDIT-002-draft-text-is-caller-owned-and-exact",
+        "U1-EDIT-001-no-new-mutation-channel"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY",
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-PLAN",
+        "U1-AUTH-A0"
+      ]
+    },
+    {
+      "id": "U1-INT-051",
+      "kind": "stale",
+      "family": "stale",
+      "subject": "a stale gesture never reaches A0",
+      "given": "the captured revision no longer equals the application revision",
+      "expected": "the surface refuses with u1.stale_revision and re-reads the snapshot",
+      "lawIds": [
+        "U1-EDIT-017-application-refusals-surfaced-verbatim",
+        "U1-EDIT-001-no-new-mutation-channel"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-PLAN",
+        "U1-AUTH-A0"
+      ]
+    },
+    {
+      "id": "U1-INT-052",
+      "kind": "stale",
+      "family": "stale",
+      "subject": "A0 repairs bookmarks after an out-of-band change",
+      "given": "another command deletes the selected event",
+      "expected": "the surface renders the repaired bookmarks and the requested focus target without inventing its own",
+      "lawIds": [
+        "U1-EDIT-010-delete-focus-repair-order",
+        "U1-EDIT-008-four-independent-bookmarks"
+      ],
+      "traceIds": [
+        "U1-TRACE-FOCUS",
+        "U1-TRACE-BOOKMARKS"
+      ],
+      "authorityIds": [
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-INT-053",
+      "kind": "near-miss",
+      "family": "stable-identity",
+      "subject": "array-position keys are a contract violation",
+      "given": "a counterfactual chart keyed by array position is reordered",
+      "expected": "focus and selection follow the position instead of the event id, which is exactly the confirmed legacy failure this package must make impossible",
+      "lawIds": [
+        "U1-EDIT-007-stable-identity-keys-only"
+      ],
+      "traceIds": [
+        "U1-TRACE-IDENTITY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-LEGACY",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "Recorded as a refused counterfactual so the reorder proof cannot pass by accident."
+    },
+    {
+      "id": "U1-INT-054",
+      "kind": "stale",
+      "family": "roving-focus",
+      "subject": "the focused card is removed out of band",
+      "given": "another command deletes the focused event while the chart is focused",
+      "expected": "roving focus follows the declared repair order and never resets to the first card by position",
+      "lawIds": [
+        "U1-EDIT-009-roving-focus-visual-order-stable-across-reorder",
+        "U1-EDIT-010-delete-focus-repair-order"
+      ],
+      "traceIds": [
+        "U1-TRACE-IDENTITY",
+        "U1-TRACE-FOCUS"
+      ],
+      "authorityIds": [
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-INT-055",
+      "kind": "near-miss",
+      "family": "roving-focus",
+      "subject": "arrow movement never leaves the chart region",
+      "given": "ArrowRight is pressed on the last enabled card with wrapping disabled",
+      "expected": "focus stays on the last card; movement is consumed and no command is dispatched",
+      "lawIds": [
+        "U1-EDIT-009-roving-focus-visual-order-stable-across-reorder"
+      ],
+      "traceIds": [
+        "U1-TRACE-IDENTITY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-U0",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-INT-056",
+      "kind": "near-miss",
+      "family": "pointer",
+      "subject": "a pointer-only operation is a contract violation",
+      "given": "a counterfactual card action reachable only by dragging",
+      "expected": "no inventory row may declare a pointerAlternative of none; the specification refuses such a row",
+      "lawIds": [
+        "U1-EDIT-014-keyboard-or-menu-alternative-for-every-pointer-operation"
+      ],
+      "traceIds": [
+        "U1-TRACE-POINTER",
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-WCAG",
+        "U1-AUTH-BEAD"
+      ]
+    },
+    {
+      "id": "U1-INT-057",
+      "kind": "positive",
+      "family": "empty-error",
+      "subject": "a committed command shows no refusal",
+      "given": "A0 accepts a dispatched command and returns a receipt",
+      "expected": "the refusal region stays empty and the announced result names the committed operation",
+      "lawIds": [
+        "U1-EDIT-017-application-refusals-surfaced-verbatim"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-A0",
+        "U1-AUTH-BEAD"
+      ]
+    },
+    {
+      "id": "U1-INT-058",
+      "kind": "near-miss",
+      "family": "view-mode",
+      "subject": "the teaching view never introduces a musical fact",
+      "given": "a measure with no Roman label is rendered in teaching view",
+      "expected": "teaching adds explanatory labels only; absent analysis is shown as absent and never invented",
+      "lawIds": [
+        "U1-EDIT-018-view-modes-render-identical-musical-facts"
+      ],
+      "traceIds": [
+        "U1-TRACE-VIEW"
+      ],
+      "authorityIds": [
+        "U1-AUTH-PLAN",
+        "U1-AUTH-BEAD"
+      ]
+    }
+  ]
+}

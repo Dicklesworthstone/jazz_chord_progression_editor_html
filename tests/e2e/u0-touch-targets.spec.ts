@@ -122,10 +122,42 @@ async function proveCenterOwnership(
 
 async function nonNestedOverlaps(page: Page, selector: string) {
   return page.evaluate((targetSelector) => {
+    /**
+     * A control scrolled outside a clipping ancestor cannot be pressed at that
+     * position, so overlap is measured against the visible rectangle rather
+     * than the raw layout box. Without this, any scrollable region would
+     * report a false overlap as soon as its content grew past one screen.
+     */
+    const visibleRect = (element: HTMLElement): DOMRect => {
+      let rect = element.getBoundingClientRect();
+      let ancestor = element.parentElement;
+      while (ancestor !== null) {
+        const style = getComputedStyle(ancestor);
+        const clips = ["auto", "scroll", "hidden", "clip"].some(
+          (value) =>
+            style.overflowX === value || style.overflowY === value,
+        );
+        if (clips) {
+          const bounds = ancestor.getBoundingClientRect();
+          const left = Math.max(rect.left, bounds.left);
+          const top = Math.max(rect.top, bounds.top);
+          const right = Math.min(rect.right, bounds.right);
+          const bottom = Math.min(rect.bottom, bounds.bottom);
+          rect = new DOMRect(
+            left,
+            top,
+            Math.max(0, right - left),
+            Math.max(0, bottom - top),
+          );
+        }
+        ancestor = ancestor.parentElement;
+      }
+      return rect;
+    };
     const targets = Array.from(document.querySelectorAll<HTMLElement>(targetSelector))
       .filter((element) => {
         const style = getComputedStyle(element);
-        const box = element.getBoundingClientRect();
+        const box = visibleRect(element);
         return style.display !== "none" && style.visibility !== "hidden" &&
           box.width > 0 && box.height > 0;
       });
@@ -133,11 +165,11 @@ async function nonNestedOverlaps(page: Page, selector: string) {
     for (let firstIndex = 0; firstIndex < targets.length; firstIndex += 1) {
       const first = targets[firstIndex];
       if (first === undefined) continue;
-      const firstBox = first.getBoundingClientRect();
+      const firstBox = visibleRect(first);
       for (let secondIndex = firstIndex + 1; secondIndex < targets.length; secondIndex += 1) {
         const second = targets[secondIndex];
         if (second === undefined || first.contains(second) || second.contains(first)) continue;
-        const secondBox = second.getBoundingClientRect();
+        const secondBox = visibleRect(second);
         const overlapsInline = Math.min(firstBox.right, secondBox.right) -
           Math.max(firstBox.left, secondBox.left);
         const overlapsBlock = Math.min(firstBox.bottom, secondBox.bottom) -

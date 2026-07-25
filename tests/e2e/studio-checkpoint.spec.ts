@@ -114,8 +114,11 @@ test.describe("interactive studio checkpoint", () => {
     }
     await expect(page.getByText("Empty measure", { exact: true })).toBeVisible();
     await expect(
-      page.locator(".studio-measure").getByText("0 chords", { exact: true }),
+      page
+        .locator(".studio-measure")
+        .getByText("Type chart text to fill this bar.", { exact: true }),
     ).toBeVisible();
+    await expect(page.locator(".studio-chord-card")).toHaveCount(0);
 
     expectCleanDiagnostics(diagnostics);
   });

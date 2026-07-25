@@ -1,0 +1,3919 @@
+{
+  "schema": "changes.fixtures.u1-quick-entry-cases.v1",
+  "reviewState": "proposed-independent-spec",
+  "pinState": "reviewed-byte-and-semantic-pinned",
+  "expectedValuesGenerated": false,
+  "productionOutputUsedAsOracle": false,
+  "t0ResultIsScenarioInput": true,
+  "classificationPolicy": {
+    "order": [
+      "draft-preflight",
+      "t0-outcome",
+      "staleness",
+      "destination-level",
+      "draft-shape",
+      "destination-occupancy"
+    ],
+    "capacityFormula": "beatsPerBar-times-four-over-beatUnit",
+    "arithmetic": "exact-rational",
+    "measureFillFromProduction": false,
+    "wallTimeCutoff": "forbidden"
+  },
+  "cases": [
+    {
+      "id": "U1-QE-001",
+      "kind": "positive",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "| Dm9:2 G13:2 | Cmaj9:4 |",
+      "draftCodePoints": 25,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "section",
+        "boundaryKind": "section-start",
+        "measureEventCount": 0,
+        "measureCompletion": "empty",
+        "measureFilled": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "ok",
+        "sections": [
+          {
+            "kind": "implicit",
+            "name": null,
+            "measures": [
+              {
+                "events": [
+                  {
+                    "symbol": "Dm9",
+                    "duration": {
+                      "numerator": 2,
+                      "denominator": 1
+                    }
+                  },
+                  {
+                    "symbol": "G13",
+                    "duration": {
+                      "numerator": 2,
+                      "denominator": 1
+                    }
+                  }
+                ]
+              },
+              {
+                "events": [
+                  {
+                    "symbol": "Cmaj9",
+                    "duration": {
+                      "numerator": 4,
+                      "denominator": 1
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "diagnosticCodes": [],
+        "insertableChords": []
+      },
+      "expected": {
+        "status": "ready",
+        "lane": "complete-draft",
+        "tokenStates": [
+          "valid",
+          "valid",
+          "valid"
+        ],
+        "preflightRefusal": null,
+        "insertionPlan": "completes-measures",
+        "committable": true,
+        "planKind": "insert-fragment",
+        "placement": "into-section",
+        "blockedReason": null,
+        "resolutions": [
+          "insert-parsed-preview"
+        ],
+        "canInsertPreview": true,
+        "canInsertOneChord": false,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-003-preview-status-is-t0-derived",
+        "U1-EDIT-004-insertion-plan-statement-exact",
+        "U1-EDIT-005-whole-preview-apply-is-one-atomic-command",
+        "U1-EDIT-001-no-new-mutation-channel"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-QE-002",
+      "kind": "positive",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "Cmaj9:4",
+      "draftCodePoints": 7,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "measure",
+        "boundaryKind": "measure-start",
+        "measureEventCount": 0,
+        "measureCompletion": "empty",
+        "measureFilled": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "ok",
+        "sections": [
+          {
+            "kind": "implicit",
+            "name": null,
+            "measures": [
+              {
+                "events": [
+                  {
+                    "symbol": "Cmaj9",
+                    "duration": {
+                      "numerator": 4,
+                      "denominator": 1
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "diagnosticCodes": [],
+        "insertableChords": []
+      },
+      "expected": {
+        "status": "ready",
+        "lane": "complete-draft",
+        "tokenStates": [
+          "valid"
+        ],
+        "preflightRefusal": null,
+        "insertionPlan": "fits-measure",
+        "committable": true,
+        "planKind": "insert-fragment",
+        "placement": "into-measure",
+        "blockedReason": null,
+        "resolutions": [
+          "insert-parsed-preview"
+        ],
+        "canInsertPreview": true,
+        "canInsertOneChord": false,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-003-preview-status-is-t0-derived",
+        "U1-EDIT-004-insertion-plan-statement-exact",
+        "U1-EDIT-005-whole-preview-apply-is-one-atomic-command",
+        "U1-EDIT-001-no-new-mutation-channel"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-QE-003",
+      "kind": "positive",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "Dm9:2 G13:2",
+      "draftCodePoints": 11,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "measure",
+        "boundaryKind": "measure-end",
+        "measureEventCount": 0,
+        "measureCompletion": "empty",
+        "measureFilled": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "ok",
+        "sections": [
+          {
+            "kind": "implicit",
+            "name": null,
+            "measures": [
+              {
+                "events": [
+                  {
+                    "symbol": "Dm9",
+                    "duration": {
+                      "numerator": 2,
+                      "denominator": 1
+                    }
+                  },
+                  {
+                    "symbol": "G13",
+                    "duration": {
+                      "numerator": 2,
+                      "denominator": 1
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "diagnosticCodes": [],
+        "insertableChords": []
+      },
+      "expected": {
+        "status": "ready",
+        "lane": "complete-draft",
+        "tokenStates": [
+          "valid",
+          "valid"
+        ],
+        "preflightRefusal": null,
+        "insertionPlan": "fits-measure",
+        "committable": true,
+        "planKind": "insert-fragment",
+        "placement": "into-measure",
+        "blockedReason": null,
+        "resolutions": [
+          "insert-parsed-preview"
+        ],
+        "canInsertPreview": true,
+        "canInsertOneChord": false,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-003-preview-status-is-t0-derived",
+        "U1-EDIT-004-insertion-plan-statement-exact",
+        "U1-EDIT-005-whole-preview-apply-is-one-atomic-command",
+        "U1-EDIT-001-no-new-mutation-channel"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "An unbarred sequence is one virtual measure whose slots share the exact bar capacity."
+    },
+    {
+      "id": "U1-QE-004",
+      "kind": "positive",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "[A]\n| C:4 |\n[B]\n| Dm7:4 |",
+      "draftCodePoints": 25,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "document",
+        "boundaryKind": "document-end",
+        "measureEventCount": 0,
+        "measureCompletion": "empty",
+        "measureFilled": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "ok",
+        "sections": [
+          {
+            "kind": "named",
+            "name": "A",
+            "measures": [
+              {
+                "events": [
+                  {
+                    "symbol": "C",
+                    "duration": {
+                      "numerator": 4,
+                      "denominator": 1
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "kind": "named",
+            "name": "B",
+            "measures": [
+              {
+                "events": [
+                  {
+                    "symbol": "Dm7",
+                    "duration": {
+                      "numerator": 4,
+                      "denominator": 1
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "diagnosticCodes": [],
+        "insertableChords": []
+      },
+      "expected": {
+        "status": "ready",
+        "lane": "complete-draft",
+        "tokenStates": [
+          "valid",
+          "valid"
+        ],
+        "preflightRefusal": null,
+        "insertionPlan": "completes-measures",
+        "committable": true,
+        "planKind": "insert-fragment",
+        "placement": "into-document",
+        "blockedReason": null,
+        "resolutions": [
+          "insert-parsed-preview"
+        ],
+        "canInsertPreview": true,
+        "canInsertOneChord": false,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-003-preview-status-is-t0-derived",
+        "U1-EDIT-004-insertion-plan-statement-exact",
+        "U1-EDIT-005-whole-preview-apply-is-one-atomic-command",
+        "U1-EDIT-001-no-new-mutation-channel"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-QE-005",
+      "kind": "positive",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "| C:4 |",
+      "draftCodePoints": 7,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "section",
+        "boundaryKind": "after-measure",
+        "measureEventCount": 0,
+        "measureCompletion": "empty",
+        "measureFilled": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "ok",
+        "sections": [
+          {
+            "kind": "implicit",
+            "name": null,
+            "measures": [
+              {
+                "events": [
+                  {
+                    "symbol": "C",
+                    "duration": {
+                      "numerator": 4,
+                      "denominator": 1
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "diagnosticCodes": [],
+        "insertableChords": []
+      },
+      "expected": {
+        "status": "ready",
+        "lane": "complete-draft",
+        "tokenStates": [
+          "valid"
+        ],
+        "preflightRefusal": null,
+        "insertionPlan": "completes-measures",
+        "committable": true,
+        "planKind": "insert-fragment",
+        "placement": "into-section",
+        "blockedReason": null,
+        "resolutions": [
+          "insert-parsed-preview"
+        ],
+        "canInsertPreview": true,
+        "canInsertOneChord": false,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-003-preview-status-is-t0-derived",
+        "U1-EDIT-004-insertion-plan-statement-exact",
+        "U1-EDIT-005-whole-preview-apply-is-one-atomic-command",
+        "U1-EDIT-001-no-new-mutation-channel"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-QE-006",
+      "kind": "positive",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "Cmaj9",
+      "draftCodePoints": 5,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "measure",
+        "boundaryKind": "measure-start",
+        "measureEventCount": 0,
+        "measureCompletion": "empty",
+        "measureFilled": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "ok",
+        "sections": [
+          {
+            "kind": "implicit",
+            "name": null,
+            "measures": [
+              {
+                "events": [
+                  {
+                    "symbol": "Cmaj9",
+                    "duration": {
+                      "numerator": 4,
+                      "denominator": 1
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "diagnosticCodes": [],
+        "insertableChords": []
+      },
+      "expected": {
+        "status": "ready",
+        "lane": "complete-draft",
+        "tokenStates": [
+          "valid"
+        ],
+        "preflightRefusal": null,
+        "insertionPlan": "fits-measure",
+        "committable": true,
+        "planKind": "insert-fragment",
+        "placement": "into-measure",
+        "blockedReason": null,
+        "resolutions": [
+          "insert-parsed-preview"
+        ],
+        "canInsertPreview": true,
+        "canInsertOneChord": false,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-003-preview-status-is-t0-derived",
+        "U1-EDIT-004-insertion-plan-statement-exact",
+        "U1-EDIT-005-whole-preview-apply-is-one-atomic-command",
+        "U1-EDIT-001-no-new-mutation-channel"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "T0 allocates the whole bar to the single undurated slot; U1 never invents a duration of its own."
+    },
+    {
+      "id": "U1-QE-007",
+      "kind": "positive",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "| C:1 D:1 E:1 F:1 |",
+      "draftCodePoints": 19,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "section",
+        "boundaryKind": "section-end",
+        "measureEventCount": 0,
+        "measureCompletion": "empty",
+        "measureFilled": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "ok",
+        "sections": [
+          {
+            "kind": "implicit",
+            "name": null,
+            "measures": [
+              {
+                "events": [
+                  {
+                    "symbol": "C",
+                    "duration": {
+                      "numerator": 1,
+                      "denominator": 1
+                    }
+                  },
+                  {
+                    "symbol": "D",
+                    "duration": {
+                      "numerator": 1,
+                      "denominator": 1
+                    }
+                  },
+                  {
+                    "symbol": "E",
+                    "duration": {
+                      "numerator": 1,
+                      "denominator": 1
+                    }
+                  },
+                  {
+                    "symbol": "F",
+                    "duration": {
+                      "numerator": 1,
+                      "denominator": 1
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "diagnosticCodes": [],
+        "insertableChords": []
+      },
+      "expected": {
+        "status": "ready",
+        "lane": "complete-draft",
+        "tokenStates": [
+          "valid",
+          "valid",
+          "valid",
+          "valid"
+        ],
+        "preflightRefusal": null,
+        "insertionPlan": "completes-measures",
+        "committable": true,
+        "planKind": "insert-fragment",
+        "placement": "into-section",
+        "blockedReason": null,
+        "resolutions": [
+          "insert-parsed-preview"
+        ],
+        "canInsertPreview": true,
+        "canInsertOneChord": false,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-003-preview-status-is-t0-derived",
+        "U1-EDIT-004-insertion-plan-statement-exact",
+        "U1-EDIT-005-whole-preview-apply-is-one-atomic-command",
+        "U1-EDIT-001-no-new-mutation-channel"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-QE-008",
+      "kind": "positive",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 3,
+        "beatUnit": 4
+      },
+      "draftText": "| C:1 D:1 E:1 |",
+      "draftCodePoints": 15,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "section",
+        "boundaryKind": "section-start",
+        "measureEventCount": 0,
+        "measureCompletion": "empty",
+        "measureFilled": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 3,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "ok",
+        "sections": [
+          {
+            "kind": "implicit",
+            "name": null,
+            "measures": [
+              {
+                "events": [
+                  {
+                    "symbol": "C",
+                    "duration": {
+                      "numerator": 1,
+                      "denominator": 1
+                    }
+                  },
+                  {
+                    "symbol": "D",
+                    "duration": {
+                      "numerator": 1,
+                      "denominator": 1
+                    }
+                  },
+                  {
+                    "symbol": "E",
+                    "duration": {
+                      "numerator": 1,
+                      "denominator": 1
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "diagnosticCodes": [],
+        "insertableChords": []
+      },
+      "expected": {
+        "status": "ready",
+        "lane": "complete-draft",
+        "tokenStates": [
+          "valid",
+          "valid",
+          "valid"
+        ],
+        "preflightRefusal": null,
+        "insertionPlan": "completes-measures",
+        "committable": true,
+        "planKind": "insert-fragment",
+        "placement": "into-section",
+        "blockedReason": null,
+        "resolutions": [
+          "insert-parsed-preview"
+        ],
+        "canInsertPreview": true,
+        "canInsertOneChord": false,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-003-preview-status-is-t0-derived",
+        "U1-EDIT-004-insertion-plan-statement-exact",
+        "U1-EDIT-005-whole-preview-apply-is-one-atomic-command",
+        "U1-EDIT-001-no-new-mutation-channel"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-QE-009",
+      "kind": "positive",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 6,
+        "beatUnit": 8
+      },
+      "draftText": "| C:3/2 D:3/2 |",
+      "draftCodePoints": 15,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "measure",
+        "boundaryKind": "measure-end",
+        "measureEventCount": 0,
+        "measureCompletion": "empty",
+        "measureFilled": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 3,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "ok",
+        "sections": [
+          {
+            "kind": "implicit",
+            "name": null,
+            "measures": [
+              {
+                "events": [
+                  {
+                    "symbol": "C",
+                    "duration": {
+                      "numerator": 3,
+                      "denominator": 2
+                    }
+                  },
+                  {
+                    "symbol": "D",
+                    "duration": {
+                      "numerator": 3,
+                      "denominator": 2
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "diagnosticCodes": [],
+        "insertableChords": []
+      },
+      "expected": {
+        "status": "ready",
+        "lane": "complete-draft",
+        "tokenStates": [
+          "valid",
+          "valid"
+        ],
+        "preflightRefusal": null,
+        "insertionPlan": "fits-measure",
+        "committable": true,
+        "planKind": "insert-fragment",
+        "placement": "into-measure",
+        "blockedReason": null,
+        "resolutions": [
+          "insert-parsed-preview"
+        ],
+        "canInsertPreview": true,
+        "canInsertOneChord": false,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-003-preview-status-is-t0-derived",
+        "U1-EDIT-004-insertion-plan-statement-exact",
+        "U1-EDIT-005-whole-preview-apply-is-one-atomic-command",
+        "U1-EDIT-001-no-new-mutation-channel"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "Rational duration suffixes belong to the T0 grammar; U1 does not narrow them to integers."
+    },
+    {
+      "id": "U1-QE-010",
+      "kind": "positive",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 2,
+        "beatUnit": 2
+      },
+      "draftText": "| C:2 D:2 |",
+      "draftCodePoints": 11,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "measure",
+        "boundaryKind": "measure-start",
+        "measureEventCount": 0,
+        "measureCompletion": "empty",
+        "measureFilled": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "ok",
+        "sections": [
+          {
+            "kind": "implicit",
+            "name": null,
+            "measures": [
+              {
+                "events": [
+                  {
+                    "symbol": "C",
+                    "duration": {
+                      "numerator": 2,
+                      "denominator": 1
+                    }
+                  },
+                  {
+                    "symbol": "D",
+                    "duration": {
+                      "numerator": 2,
+                      "denominator": 1
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "diagnosticCodes": [],
+        "insertableChords": []
+      },
+      "expected": {
+        "status": "ready",
+        "lane": "complete-draft",
+        "tokenStates": [
+          "valid",
+          "valid"
+        ],
+        "preflightRefusal": null,
+        "insertionPlan": "fits-measure",
+        "committable": true,
+        "planKind": "insert-fragment",
+        "placement": "into-measure",
+        "blockedReason": null,
+        "resolutions": [
+          "insert-parsed-preview"
+        ],
+        "canInsertPreview": true,
+        "canInsertOneChord": false,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-003-preview-status-is-t0-derived",
+        "U1-EDIT-004-insertion-plan-statement-exact",
+        "U1-EDIT-005-whole-preview-apply-is-one-atomic-command",
+        "U1-EDIT-001-no-new-mutation-channel"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-QE-011",
+      "kind": "positive",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "[A]\n| C:4 |",
+      "draftCodePoints": 11,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "document",
+        "boundaryKind": "document-start",
+        "measureEventCount": 0,
+        "measureCompletion": "empty",
+        "measureFilled": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "ok",
+        "sections": [
+          {
+            "kind": "named",
+            "name": "A",
+            "measures": [
+              {
+                "events": [
+                  {
+                    "symbol": "C",
+                    "duration": {
+                      "numerator": 4,
+                      "denominator": 1
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "diagnosticCodes": [],
+        "insertableChords": []
+      },
+      "expected": {
+        "status": "ready",
+        "lane": "complete-draft",
+        "tokenStates": [
+          "valid"
+        ],
+        "preflightRefusal": null,
+        "insertionPlan": "completes-measures",
+        "committable": true,
+        "planKind": "insert-fragment",
+        "placement": "into-document",
+        "blockedReason": null,
+        "resolutions": [
+          "insert-parsed-preview"
+        ],
+        "canInsertPreview": true,
+        "canInsertOneChord": false,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-003-preview-status-is-t0-derived",
+        "U1-EDIT-004-insertion-plan-statement-exact",
+        "U1-EDIT-005-whole-preview-apply-is-one-atomic-command",
+        "U1-EDIT-001-no-new-mutation-channel"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-QE-012",
+      "kind": "positive",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "[A]\n| C:4 |",
+      "draftCodePoints": 11,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "document",
+        "boundaryKind": "after-section",
+        "measureEventCount": 0,
+        "measureCompletion": "empty",
+        "measureFilled": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "ok",
+        "sections": [
+          {
+            "kind": "named",
+            "name": "A",
+            "measures": [
+              {
+                "events": [
+                  {
+                    "symbol": "C",
+                    "duration": {
+                      "numerator": 4,
+                      "denominator": 1
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "diagnosticCodes": [],
+        "insertableChords": []
+      },
+      "expected": {
+        "status": "ready",
+        "lane": "complete-draft",
+        "tokenStates": [
+          "valid"
+        ],
+        "preflightRefusal": null,
+        "insertionPlan": "completes-measures",
+        "committable": true,
+        "planKind": "insert-fragment",
+        "placement": "into-document",
+        "blockedReason": null,
+        "resolutions": [
+          "insert-parsed-preview"
+        ],
+        "canInsertPreview": true,
+        "canInsertOneChord": false,
+        "sectionNameCollisionWarnings": [
+          "A"
+        ]
+      },
+      "lawIds": [
+        "U1-EDIT-003-preview-status-is-t0-derived",
+        "U1-EDIT-004-insertion-plan-statement-exact",
+        "U1-EDIT-005-whole-preview-apply-is-one-atomic-command",
+        "U1-EDIT-001-no-new-mutation-channel"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "A draft section name equal to an existing name warns and still creates a new section; v1 defines no section merge."
+    },
+    {
+      "id": "U1-QE-013",
+      "kind": "positive",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "| C:4 | | D:4 |",
+      "draftCodePoints": 15,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "section",
+        "boundaryKind": "section-end",
+        "measureEventCount": 0,
+        "measureCompletion": "empty",
+        "measureFilled": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "ok",
+        "sections": [
+          {
+            "kind": "implicit",
+            "name": null,
+            "measures": [
+              {
+                "events": [
+                  {
+                    "symbol": "C",
+                    "duration": {
+                      "numerator": 4,
+                      "denominator": 1
+                    }
+                  }
+                ]
+              },
+              {
+                "events": []
+              },
+              {
+                "events": [
+                  {
+                    "symbol": "D",
+                    "duration": {
+                      "numerator": 4,
+                      "denominator": 1
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "diagnosticCodes": [],
+        "insertableChords": []
+      },
+      "expected": {
+        "status": "ready",
+        "lane": "complete-draft",
+        "tokenStates": [
+          "valid",
+          "valid"
+        ],
+        "preflightRefusal": null,
+        "insertionPlan": "completes-measures",
+        "committable": true,
+        "planKind": "insert-fragment",
+        "placement": "into-section",
+        "blockedReason": null,
+        "resolutions": [
+          "insert-parsed-preview"
+        ],
+        "canInsertPreview": true,
+        "canInsertOneChord": false,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-003-preview-status-is-t0-derived",
+        "U1-EDIT-004-insertion-plan-statement-exact",
+        "U1-EDIT-005-whole-preview-apply-is-one-atomic-command",
+        "U1-EDIT-001-no-new-mutation-channel"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "Two adjacent boundary tokens deliberately enclose one empty measure; the preview keeps it instead of joining the neighbours."
+    },
+    {
+      "id": "U1-QE-014",
+      "kind": "positive",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "| C:4 |\n| D:4 |",
+      "draftCodePoints": 15,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "section",
+        "boundaryKind": "before-measure",
+        "measureEventCount": 0,
+        "measureCompletion": "empty",
+        "measureFilled": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "ok",
+        "sections": [
+          {
+            "kind": "implicit",
+            "name": null,
+            "measures": [
+              {
+                "events": [
+                  {
+                    "symbol": "C",
+                    "duration": {
+                      "numerator": 4,
+                      "denominator": 1
+                    }
+                  }
+                ]
+              },
+              {
+                "events": [
+                  {
+                    "symbol": "D",
+                    "duration": {
+                      "numerator": 4,
+                      "denominator": 1
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "diagnosticCodes": [],
+        "insertableChords": []
+      },
+      "expected": {
+        "status": "ready",
+        "lane": "complete-draft",
+        "tokenStates": [
+          "valid",
+          "valid"
+        ],
+        "preflightRefusal": null,
+        "insertionPlan": "completes-measures",
+        "committable": true,
+        "planKind": "insert-fragment",
+        "placement": "into-section",
+        "blockedReason": null,
+        "resolutions": [
+          "insert-parsed-preview"
+        ],
+        "canInsertPreview": true,
+        "canInsertOneChord": false,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-003-preview-status-is-t0-derived",
+        "U1-EDIT-004-insertion-plan-statement-exact",
+        "U1-EDIT-005-whole-preview-apply-is-one-atomic-command",
+        "U1-EDIT-001-no-new-mutation-channel"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-QE-015",
+      "kind": "positive",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "[A]\n| C:4 |\n| D:4 |",
+      "draftCodePoints": 19,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "document",
+        "boundaryKind": "before-section",
+        "measureEventCount": 0,
+        "measureCompletion": "empty",
+        "measureFilled": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "ok",
+        "sections": [
+          {
+            "kind": "named",
+            "name": "A",
+            "measures": [
+              {
+                "events": [
+                  {
+                    "symbol": "C",
+                    "duration": {
+                      "numerator": 4,
+                      "denominator": 1
+                    }
+                  }
+                ]
+              },
+              {
+                "events": [
+                  {
+                    "symbol": "D",
+                    "duration": {
+                      "numerator": 4,
+                      "denominator": 1
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "diagnosticCodes": [],
+        "insertableChords": []
+      },
+      "expected": {
+        "status": "ready",
+        "lane": "complete-draft",
+        "tokenStates": [
+          "valid",
+          "valid"
+        ],
+        "preflightRefusal": null,
+        "insertionPlan": "completes-measures",
+        "committable": true,
+        "planKind": "insert-fragment",
+        "placement": "into-document",
+        "blockedReason": null,
+        "resolutions": [
+          "insert-parsed-preview"
+        ],
+        "canInsertPreview": true,
+        "canInsertOneChord": false,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-003-preview-status-is-t0-derived",
+        "U1-EDIT-004-insertion-plan-statement-exact",
+        "U1-EDIT-005-whole-preview-apply-is-one-atomic-command",
+        "U1-EDIT-001-no-new-mutation-channel"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-QE-016",
+      "kind": "near-miss",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "| C:4 | D:4 |",
+      "draftCodePoints": 13,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "measure",
+        "boundaryKind": "measure-start",
+        "measureEventCount": 0,
+        "measureCompletion": "empty",
+        "measureFilled": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "ok",
+        "sections": [
+          {
+            "kind": "implicit",
+            "name": null,
+            "measures": [
+              {
+                "events": [
+                  {
+                    "symbol": "C",
+                    "duration": {
+                      "numerator": 4,
+                      "denominator": 1
+                    }
+                  }
+                ]
+              },
+              {
+                "events": [
+                  {
+                    "symbol": "D",
+                    "duration": {
+                      "numerator": 4,
+                      "denominator": 1
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "diagnosticCodes": [],
+        "insertableChords": []
+      },
+      "expected": {
+        "status": "ready",
+        "lane": "complete-draft",
+        "tokenStates": [
+          "valid",
+          "valid"
+        ],
+        "preflightRefusal": null,
+        "insertionPlan": "overfill-requires-split",
+        "committable": false,
+        "planKind": null,
+        "placement": null,
+        "blockedReason": "u1.insertion_plan_overfills_destination",
+        "resolutions": [
+          "choose-an-empty-measure-or-structural-boundary",
+          "shorten-the-draft",
+          "cancel"
+        ],
+        "canInsertPreview": false,
+        "canInsertOneChord": false,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-003-preview-status-is-t0-derived",
+        "U1-EDIT-004-insertion-plan-statement-exact"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "Two complete measures cannot enter one measure boundary."
+    },
+    {
+      "id": "U1-QE-017",
+      "kind": "near-miss",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "Cmaj9:4",
+      "draftCodePoints": 7,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "measure",
+        "boundaryKind": "measure-start",
+        "measureEventCount": 2,
+        "measureCompletion": "complete",
+        "measureFilled": {
+          "numerator": 4,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "ok",
+        "sections": [
+          {
+            "kind": "implicit",
+            "name": null,
+            "measures": [
+              {
+                "events": [
+                  {
+                    "symbol": "Cmaj9",
+                    "duration": {
+                      "numerator": 4,
+                      "denominator": 1
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "diagnosticCodes": [],
+        "insertableChords": []
+      },
+      "expected": {
+        "status": "ready",
+        "lane": "complete-draft",
+        "tokenStates": [
+          "valid"
+        ],
+        "preflightRefusal": null,
+        "insertionPlan": "overfill-requires-split",
+        "committable": false,
+        "planKind": null,
+        "placement": null,
+        "blockedReason": "u1.insertion_plan_overfills_destination",
+        "resolutions": [
+          "choose-an-empty-measure-or-structural-boundary",
+          "shorten-the-draft",
+          "cancel"
+        ],
+        "canInsertPreview": false,
+        "canInsertOneChord": false,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-003-preview-status-is-t0-derived",
+        "U1-EDIT-004-insertion-plan-statement-exact"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "The destination measure already holds its complete capacity."
+    },
+    {
+      "id": "U1-QE-018",
+      "kind": "near-miss",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "Cmaj9:4",
+      "draftCodePoints": 7,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "measure",
+        "boundaryKind": "after-event",
+        "measureEventCount": 1,
+        "measureCompletion": "incomplete",
+        "measureFilled": {
+          "numerator": 2,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "ok",
+        "sections": [
+          {
+            "kind": "implicit",
+            "name": null,
+            "measures": [
+              {
+                "events": [
+                  {
+                    "symbol": "Cmaj9",
+                    "duration": {
+                      "numerator": 4,
+                      "denominator": 1
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "diagnosticCodes": [],
+        "insertableChords": []
+      },
+      "expected": {
+        "status": "ready",
+        "lane": "complete-draft",
+        "tokenStates": [
+          "valid"
+        ],
+        "preflightRefusal": null,
+        "insertionPlan": "overfill-requires-split",
+        "committable": false,
+        "planKind": null,
+        "placement": null,
+        "blockedReason": "u1.insertion_plan_overfills_destination",
+        "resolutions": [
+          "choose-an-empty-measure-or-structural-boundary",
+          "shorten-the-draft",
+          "cancel"
+        ],
+        "canInsertPreview": false,
+        "canInsertOneChord": false,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-003-preview-status-is-t0-derived",
+        "U1-EDIT-004-insertion-plan-statement-exact"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "A before/after-event boundary always denotes a non-empty measure, so the complete lane can never target it."
+    },
+    {
+      "id": "U1-QE-019",
+      "kind": "near-miss",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "[A]\n| C:4 |",
+      "draftCodePoints": 11,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "section",
+        "boundaryKind": "section-start",
+        "measureEventCount": 0,
+        "measureCompletion": "empty",
+        "measureFilled": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "ok",
+        "sections": [
+          {
+            "kind": "named",
+            "name": "A",
+            "measures": [
+              {
+                "events": [
+                  {
+                    "symbol": "C",
+                    "duration": {
+                      "numerator": 4,
+                      "denominator": 1
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "diagnosticCodes": [],
+        "insertableChords": []
+      },
+      "expected": {
+        "status": "ready",
+        "lane": "complete-draft",
+        "tokenStates": [
+          "valid"
+        ],
+        "preflightRefusal": null,
+        "insertionPlan": "not-atomic-refusal",
+        "committable": false,
+        "planKind": null,
+        "placement": null,
+        "blockedReason": "u1.insertion_plan_not_atomic",
+        "resolutions": [
+          "correct-the-draft",
+          "cancel"
+        ],
+        "canInsertPreview": false,
+        "canInsertOneChord": false,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-003-preview-status-is-t0-derived",
+        "U1-EDIT-004-insertion-plan-statement-exact"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "A named-section draft cannot enter a section boundary."
+    },
+    {
+      "id": "U1-QE-020",
+      "kind": "near-miss",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "| C:4 |",
+      "draftCodePoints": 7,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "document",
+        "boundaryKind": "document-end",
+        "measureEventCount": 0,
+        "measureCompletion": "empty",
+        "measureFilled": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "ok",
+        "sections": [
+          {
+            "kind": "implicit",
+            "name": null,
+            "measures": [
+              {
+                "events": [
+                  {
+                    "symbol": "C",
+                    "duration": {
+                      "numerator": 4,
+                      "denominator": 1
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "diagnosticCodes": [],
+        "insertableChords": []
+      },
+      "expected": {
+        "status": "ready",
+        "lane": "complete-draft",
+        "tokenStates": [
+          "valid"
+        ],
+        "preflightRefusal": null,
+        "insertionPlan": "not-atomic-refusal",
+        "committable": false,
+        "planKind": null,
+        "placement": null,
+        "blockedReason": "u1.insertion_plan_not_atomic",
+        "resolutions": [
+          "correct-the-draft",
+          "cancel"
+        ],
+        "canInsertPreview": false,
+        "canInsertOneChord": false,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-003-preview-status-is-t0-derived",
+        "U1-EDIT-004-insertion-plan-statement-exact"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "An implicit draft cannot enter the document level; every document section must be named."
+    },
+    {
+      "id": "U1-QE-021",
+      "kind": "malformed",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "| C:4 |\n[A]\n| D:4 |",
+      "draftCodePoints": 19,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "document",
+        "boundaryKind": "document-end",
+        "measureEventCount": 0,
+        "measureCompletion": "empty",
+        "measureFilled": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "failed",
+        "sections": [],
+        "diagnosticCodes": [
+          "chart.unsupported_notation"
+        ],
+        "insertableChords": [
+          {
+            "globalOrdinal": 0,
+            "symbol": "C",
+            "durationKind": "resolved",
+            "duration": {
+              "numerator": 4,
+              "denominator": 1
+            }
+          },
+          {
+            "globalOrdinal": 1,
+            "symbol": "D",
+            "durationKind": "resolved",
+            "duration": {
+              "numerator": 4,
+              "denominator": 1
+            }
+          }
+        ]
+      },
+      "expected": {
+        "status": "invalid",
+        "lane": "recovered-chord",
+        "tokenStates": [
+          "insertable",
+          "insertable"
+        ],
+        "preflightRefusal": null,
+        "insertionPlan": "not-atomic-refusal",
+        "committable": false,
+        "planKind": null,
+        "placement": null,
+        "blockedReason": "u1.insertion_plan_not_atomic",
+        "resolutions": [
+          "correct-the-draft",
+          "cancel"
+        ],
+        "canInsertPreview": false,
+        "canInsertOneChord": false,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-003-preview-status-is-t0-derived",
+        "U1-EDIT-004-insertion-plan-statement-exact",
+        "U1-EDIT-006-recovered-chord-lane-requires-explicit-loss-acknowledgement"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "A fragment may not mix an implicit sequence with named sections, so the draft refuses and only single-chord recovery remains."
+    },
+    {
+      "id": "U1-QE-022",
+      "kind": "near-miss",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "| |",
+      "draftCodePoints": 3,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "measure",
+        "boundaryKind": "measure-start",
+        "measureEventCount": 0,
+        "measureCompletion": "empty",
+        "measureFilled": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "ok",
+        "sections": [
+          {
+            "kind": "implicit",
+            "name": null,
+            "measures": [
+              {
+                "events": []
+              }
+            ]
+          }
+        ],
+        "diagnosticCodes": [],
+        "insertableChords": []
+      },
+      "expected": {
+        "status": "ready",
+        "lane": "complete-draft",
+        "tokenStates": [],
+        "preflightRefusal": null,
+        "insertionPlan": "not-atomic-refusal",
+        "committable": false,
+        "planKind": null,
+        "placement": null,
+        "blockedReason": "u1.insertion_plan_not_atomic",
+        "resolutions": [
+          "correct-the-draft",
+          "cancel"
+        ],
+        "canInsertPreview": false,
+        "canInsertOneChord": false,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-003-preview-status-is-t0-derived",
+        "U1-EDIT-004-insertion-plan-statement-exact"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "A draft of one empty measure has nothing to place into an empty target measure; the complete lane requires one non-empty measure."
+    },
+    {
+      "id": "U1-QE-023",
+      "kind": "malformed",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "| C:2 |",
+      "draftCodePoints": 7,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "measure",
+        "boundaryKind": "measure-start",
+        "measureEventCount": 0,
+        "measureCompletion": "empty",
+        "measureFilled": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "failed",
+        "sections": [],
+        "diagnosticCodes": [
+          "chart.bar_underfilled"
+        ],
+        "insertableChords": [
+          {
+            "globalOrdinal": 0,
+            "symbol": "C",
+            "durationKind": "resolved",
+            "duration": {
+              "numerator": 2,
+              "denominator": 1
+            }
+          }
+        ]
+      },
+      "expected": {
+        "status": "invalid",
+        "lane": "recovered-chord",
+        "tokenStates": [
+          "insertable"
+        ],
+        "preflightRefusal": null,
+        "insertionPlan": "incomplete-requires-confirmation",
+        "committable": false,
+        "planKind": null,
+        "placement": null,
+        "blockedReason": "u1.insertion_plan_requires_confirmation",
+        "resolutions": [
+          "complete-the-final-measure",
+          "insert-one-recovered-chord-into-a-measure",
+          "cancel"
+        ],
+        "canInsertPreview": false,
+        "canInsertOneChord": true,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-003-preview-status-is-t0-derived",
+        "U1-EDIT-004-insertion-plan-statement-exact",
+        "U1-EDIT-006-recovered-chord-lane-requires-explicit-loss-acknowledgement"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "A short bar is a T0 refusal, never a silent partial insertion."
+    },
+    {
+      "id": "U1-QE-024",
+      "kind": "malformed",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "| C:4 D:4 |",
+      "draftCodePoints": 11,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "measure",
+        "boundaryKind": "measure-start",
+        "measureEventCount": 0,
+        "measureCompletion": "empty",
+        "measureFilled": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "failed",
+        "sections": [],
+        "diagnosticCodes": [
+          "chart.bar_overfilled"
+        ],
+        "insertableChords": [
+          {
+            "globalOrdinal": 0,
+            "symbol": "C",
+            "durationKind": "resolved",
+            "duration": {
+              "numerator": 4,
+              "denominator": 1
+            }
+          },
+          {
+            "globalOrdinal": 1,
+            "symbol": "D",
+            "durationKind": "resolved",
+            "duration": {
+              "numerator": 4,
+              "denominator": 1
+            }
+          }
+        ]
+      },
+      "expected": {
+        "status": "invalid",
+        "lane": "recovered-chord",
+        "tokenStates": [
+          "insertable",
+          "insertable"
+        ],
+        "preflightRefusal": null,
+        "insertionPlan": "overfill-requires-split",
+        "committable": false,
+        "planKind": null,
+        "placement": null,
+        "blockedReason": "u1.insertion_plan_overfills_destination",
+        "resolutions": [
+          "choose-an-empty-measure-or-structural-boundary",
+          "shorten-the-draft",
+          "cancel"
+        ],
+        "canInsertPreview": false,
+        "canInsertOneChord": true,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-003-preview-status-is-t0-derived",
+        "U1-EDIT-004-insertion-plan-statement-exact",
+        "U1-EDIT-006-recovered-chord-lane-requires-explicit-loss-acknowledgement"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-QE-025",
+      "kind": "malformed",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "H7",
+      "draftCodePoints": 2,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "measure",
+        "boundaryKind": "measure-start",
+        "measureEventCount": 0,
+        "measureCompletion": "empty",
+        "measureFilled": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "failed",
+        "sections": [],
+        "diagnosticCodes": [
+          "symbol.root_invalid"
+        ],
+        "insertableChords": []
+      },
+      "expected": {
+        "status": "invalid",
+        "lane": "recovered-chord",
+        "tokenStates": [
+          "invalid"
+        ],
+        "preflightRefusal": null,
+        "insertionPlan": "not-atomic-refusal",
+        "committable": false,
+        "planKind": null,
+        "placement": null,
+        "blockedReason": "u1.insertion_plan_not_atomic",
+        "resolutions": [
+          "correct-the-draft",
+          "cancel"
+        ],
+        "canInsertPreview": false,
+        "canInsertOneChord": false,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-003-preview-status-is-t0-derived",
+        "U1-EDIT-004-insertion-plan-statement-exact",
+        "U1-EDIT-017-application-refusals-surfaced-verbatim"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "T0 owns syntax classification; U1 preserves its code and range and never substitutes a guessed chord."
+    },
+    {
+      "id": "U1-QE-026",
+      "kind": "malformed",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "@meter 4/4\n| C:4 |",
+      "draftCodePoints": 18,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "section",
+        "boundaryKind": "section-start",
+        "measureEventCount": 0,
+        "measureCompletion": "empty",
+        "measureFilled": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "failed",
+        "sections": [],
+        "diagnosticCodes": [
+          "chart.header_forbidden_in_fragment"
+        ],
+        "insertableChords": []
+      },
+      "expected": {
+        "status": "invalid",
+        "lane": "recovered-chord",
+        "tokenStates": [
+          "invalid"
+        ],
+        "preflightRefusal": null,
+        "insertionPlan": "not-atomic-refusal",
+        "committable": false,
+        "planKind": null,
+        "placement": null,
+        "blockedReason": "u1.insertion_plan_not_atomic",
+        "resolutions": [
+          "correct-the-draft",
+          "cancel"
+        ],
+        "canInsertPreview": false,
+        "canInsertOneChord": false,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-003-preview-status-is-t0-derived",
+        "U1-EDIT-004-insertion-plan-statement-exact"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-QE-027",
+      "kind": "malformed",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "| C:4 | D",
+      "draftCodePoints": 9,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "section",
+        "boundaryKind": "section-start",
+        "measureEventCount": 0,
+        "measureCompletion": "empty",
+        "measureFilled": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "failed",
+        "sections": [],
+        "diagnosticCodes": [
+          "chart.measure_unclosed"
+        ],
+        "insertableChords": [
+          {
+            "globalOrdinal": 0,
+            "symbol": "C",
+            "durationKind": "resolved",
+            "duration": {
+              "numerator": 4,
+              "denominator": 1
+            }
+          }
+        ]
+      },
+      "expected": {
+        "status": "invalid",
+        "lane": "recovered-chord",
+        "tokenStates": [
+          "insertable",
+          "invalid"
+        ],
+        "preflightRefusal": null,
+        "insertionPlan": "not-atomic-refusal",
+        "committable": false,
+        "planKind": null,
+        "placement": null,
+        "blockedReason": "u1.insertion_plan_not_atomic",
+        "resolutions": [
+          "correct-the-draft",
+          "cancel"
+        ],
+        "canInsertPreview": false,
+        "canInsertOneChord": false,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-003-preview-status-is-t0-derived",
+        "U1-EDIT-004-insertion-plan-statement-exact",
+        "U1-EDIT-006-recovered-chord-lane-requires-explicit-loss-acknowledgement"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "Recoverable tokens keep their source text and stay individually insertable while the whole draft refuses."
+    },
+    {
+      "id": "U1-QE-028",
+      "kind": "malformed",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "| C:4 | \"unterminated",
+      "draftCodePoints": 21,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "section",
+        "boundaryKind": "section-start",
+        "measureEventCount": 0,
+        "measureCompletion": "empty",
+        "measureFilled": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "failed",
+        "sections": [],
+        "diagnosticCodes": [
+          "chart.annotation_unclosed"
+        ],
+        "insertableChords": [
+          {
+            "globalOrdinal": 0,
+            "symbol": "C",
+            "durationKind": "resolved",
+            "duration": {
+              "numerator": 4,
+              "denominator": 1
+            }
+          }
+        ]
+      },
+      "expected": {
+        "status": "invalid",
+        "lane": "recovered-chord",
+        "tokenStates": [
+          "insertable",
+          "invalid"
+        ],
+        "preflightRefusal": null,
+        "insertionPlan": "not-atomic-refusal",
+        "committable": false,
+        "planKind": null,
+        "placement": null,
+        "blockedReason": "u1.insertion_plan_not_atomic",
+        "resolutions": [
+          "correct-the-draft",
+          "cancel"
+        ],
+        "canInsertPreview": false,
+        "canInsertOneChord": false,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-003-preview-status-is-t0-derived",
+        "U1-EDIT-004-insertion-plan-statement-exact",
+        "U1-EDIT-006-recovered-chord-lane-requires-explicit-loss-acknowledgement"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-QE-029",
+      "kind": "malformed",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "| \ud800:4 |",
+      "draftCodePoints": 7,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "measure",
+        "boundaryKind": "measure-start",
+        "measureEventCount": 0,
+        "measureCompletion": "empty",
+        "measureFilled": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "not-called",
+        "sections": [],
+        "diagnosticCodes": [],
+        "insertableChords": []
+      },
+      "expected": {
+        "status": "invalid",
+        "lane": null,
+        "tokenStates": [],
+        "preflightRefusal": "u1.draft_unicode_invalid",
+        "insertionPlan": null,
+        "committable": false,
+        "planKind": null,
+        "placement": null,
+        "blockedReason": null,
+        "resolutions": [],
+        "canInsertPreview": false,
+        "canInsertOneChord": false,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-002-draft-text-is-caller-owned-and-exact",
+        "U1-EDIT-004-insertion-plan-statement-exact"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "A lone surrogate refuses inside U1 before T0 is called, because the accepted quick-entry state admits only valid scalar text."
+    },
+    {
+      "id": "U1-QE-030",
+      "kind": "malformed",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "| C:4 | | ",
+      "draftCodePoints": 10,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "section",
+        "boundaryKind": "section-start",
+        "measureEventCount": 0,
+        "measureCompletion": "empty",
+        "measureFilled": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "failed",
+        "sections": [],
+        "diagnosticCodes": [
+          "chart.unsupported_notation"
+        ],
+        "insertableChords": [
+          {
+            "globalOrdinal": 0,
+            "symbol": "C",
+            "durationKind": "resolved",
+            "duration": {
+              "numerator": 4,
+              "denominator": 1
+            }
+          }
+        ]
+      },
+      "expected": {
+        "status": "invalid",
+        "lane": "recovered-chord",
+        "tokenStates": [
+          "insertable",
+          "invalid"
+        ],
+        "preflightRefusal": null,
+        "insertionPlan": "not-atomic-refusal",
+        "committable": false,
+        "planKind": null,
+        "placement": null,
+        "blockedReason": "u1.insertion_plan_not_atomic",
+        "resolutions": [
+          "correct-the-draft",
+          "cancel"
+        ],
+        "canInsertPreview": false,
+        "canInsertOneChord": false,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-003-preview-status-is-t0-derived",
+        "U1-EDIT-004-insertion-plan-statement-exact",
+        "U1-EDIT-006-recovered-chord-lane-requires-explicit-loss-acknowledgement"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-QE-031",
+      "kind": "positive",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "| C:2 |",
+      "draftCodePoints": 7,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "measure",
+        "boundaryKind": "after-event",
+        "measureEventCount": 1,
+        "measureCompletion": "incomplete",
+        "measureFilled": {
+          "numerator": 2,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "failed",
+        "sections": [],
+        "diagnosticCodes": [
+          "chart.bar_underfilled"
+        ],
+        "insertableChords": [
+          {
+            "globalOrdinal": 0,
+            "symbol": "C",
+            "durationKind": "resolved",
+            "duration": {
+              "numerator": 2,
+              "denominator": 1
+            }
+          }
+        ]
+      },
+      "expected": {
+        "status": "invalid",
+        "lane": "recovered-chord",
+        "tokenStates": [
+          "insertable"
+        ],
+        "preflightRefusal": null,
+        "insertionPlan": "incomplete-requires-confirmation",
+        "committable": false,
+        "planKind": null,
+        "placement": null,
+        "blockedReason": "u1.insertion_plan_requires_confirmation",
+        "resolutions": [
+          "complete-the-final-measure",
+          "insert-one-recovered-chord-into-a-measure",
+          "cancel"
+        ],
+        "canInsertPreview": false,
+        "canInsertOneChord": true,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-006-recovered-chord-lane-requires-explicit-loss-acknowledgement",
+        "U1-EDIT-004-insertion-plan-statement-exact"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "One recovered two-beat chord still fits the two remaining beats."
+    },
+    {
+      "id": "U1-QE-032",
+      "kind": "near-miss",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "| C:2 |",
+      "draftCodePoints": 7,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "measure",
+        "boundaryKind": "after-event",
+        "measureEventCount": 2,
+        "measureCompletion": "complete",
+        "measureFilled": {
+          "numerator": 4,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "failed",
+        "sections": [],
+        "diagnosticCodes": [
+          "chart.bar_underfilled"
+        ],
+        "insertableChords": [
+          {
+            "globalOrdinal": 0,
+            "symbol": "C",
+            "durationKind": "resolved",
+            "duration": {
+              "numerator": 2,
+              "denominator": 1
+            }
+          }
+        ]
+      },
+      "expected": {
+        "status": "invalid",
+        "lane": "recovered-chord",
+        "tokenStates": [
+          "insertable"
+        ],
+        "preflightRefusal": null,
+        "insertionPlan": "incomplete-requires-confirmation",
+        "committable": false,
+        "planKind": null,
+        "placement": null,
+        "blockedReason": "u1.insertion_plan_requires_confirmation",
+        "resolutions": [
+          "complete-the-final-measure",
+          "insert-one-recovered-chord-into-a-measure",
+          "cancel"
+        ],
+        "canInsertPreview": false,
+        "canInsertOneChord": false,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-006-recovered-chord-lane-requires-explicit-loss-acknowledgement",
+        "U1-EDIT-004-insertion-plan-statement-exact"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "The destination measure has no remaining capacity, so the single-chord lane is unavailable as well."
+    },
+    {
+      "id": "U1-QE-033",
+      "kind": "positive",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "| C |",
+      "draftCodePoints": 5,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "measure",
+        "boundaryKind": "measure-start",
+        "measureEventCount": 0,
+        "measureCompletion": "empty",
+        "measureFilled": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "failed",
+        "sections": [],
+        "diagnosticCodes": [
+          "chart.layout_invalid"
+        ],
+        "insertableChords": [
+          {
+            "globalOrdinal": 0,
+            "symbol": "C",
+            "durationKind": "requires-caller",
+            "duration": null
+          }
+        ]
+      },
+      "expected": {
+        "status": "invalid",
+        "lane": "recovered-chord",
+        "tokenStates": [
+          "insertable"
+        ],
+        "preflightRefusal": null,
+        "insertionPlan": "not-atomic-refusal",
+        "committable": false,
+        "planKind": null,
+        "placement": null,
+        "blockedReason": "u1.insertion_plan_not_atomic",
+        "resolutions": [
+          "correct-the-draft",
+          "cancel"
+        ],
+        "canInsertPreview": false,
+        "canInsertOneChord": true,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-006-recovered-chord-lane-requires-explicit-loss-acknowledgement",
+        "U1-EDIT-004-insertion-plan-statement-exact"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "T0 could not resolve the duration, so the caller must supply one exact positive beat duration before the single-chord lane commits."
+    },
+    {
+      "id": "U1-QE-034",
+      "kind": "near-miss",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "| C:2 |",
+      "draftCodePoints": 7,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "section",
+        "boundaryKind": "section-start",
+        "measureEventCount": 0,
+        "measureCompletion": "empty",
+        "measureFilled": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "failed",
+        "sections": [],
+        "diagnosticCodes": [
+          "chart.bar_underfilled"
+        ],
+        "insertableChords": [
+          {
+            "globalOrdinal": 0,
+            "symbol": "C",
+            "durationKind": "resolved",
+            "duration": {
+              "numerator": 2,
+              "denominator": 1
+            }
+          }
+        ]
+      },
+      "expected": {
+        "status": "invalid",
+        "lane": "recovered-chord",
+        "tokenStates": [
+          "insertable"
+        ],
+        "preflightRefusal": null,
+        "insertionPlan": "incomplete-requires-confirmation",
+        "committable": false,
+        "planKind": null,
+        "placement": null,
+        "blockedReason": "u1.insertion_plan_requires_confirmation",
+        "resolutions": [
+          "complete-the-final-measure",
+          "insert-one-recovered-chord-into-a-measure",
+          "cancel"
+        ],
+        "canInsertPreview": false,
+        "canInsertOneChord": false,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-006-recovered-chord-lane-requires-explicit-loss-acknowledgement",
+        "U1-EDIT-004-insertion-plan-statement-exact"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "Recovery may use only a measure placement."
+    },
+    {
+      "id": "U1-QE-035",
+      "kind": "near-miss",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "| C:5 |",
+      "draftCodePoints": 7,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "measure",
+        "boundaryKind": "measure-start",
+        "measureEventCount": 0,
+        "measureCompletion": "empty",
+        "measureFilled": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "failed",
+        "sections": [],
+        "diagnosticCodes": [
+          "chart.bar_overfilled"
+        ],
+        "insertableChords": [
+          {
+            "globalOrdinal": 0,
+            "symbol": "C",
+            "durationKind": "resolved",
+            "duration": {
+              "numerator": 5,
+              "denominator": 1
+            }
+          }
+        ]
+      },
+      "expected": {
+        "status": "invalid",
+        "lane": "recovered-chord",
+        "tokenStates": [
+          "insertable"
+        ],
+        "preflightRefusal": null,
+        "insertionPlan": "overfill-requires-split",
+        "committable": false,
+        "planKind": null,
+        "placement": null,
+        "blockedReason": "u1.insertion_plan_overfills_destination",
+        "resolutions": [
+          "choose-an-empty-measure-or-structural-boundary",
+          "shorten-the-draft",
+          "cancel"
+        ],
+        "canInsertPreview": false,
+        "canInsertOneChord": false,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-006-recovered-chord-lane-requires-explicit-loss-acknowledgement",
+        "U1-EDIT-004-insertion-plan-statement-exact"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "A single recovered chord longer than the bar capacity cannot be inserted into an empty measure either."
+    },
+    {
+      "id": "U1-QE-036",
+      "kind": "limit",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4 C:4",
+      "draftCodePoints": 4095,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "measure",
+        "boundaryKind": "measure-start",
+        "measureEventCount": 0,
+        "measureCompletion": "empty",
+        "measureFilled": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "failed",
+        "sections": [],
+        "diagnosticCodes": [
+          "chart.bar_overfilled"
+        ],
+        "insertableChords": []
+      },
+      "expected": {
+        "status": "invalid",
+        "lane": "recovered-chord",
+        "tokenStates": [
+          "invalid"
+        ],
+        "preflightRefusal": null,
+        "insertionPlan": "overfill-requires-split",
+        "committable": false,
+        "planKind": null,
+        "placement": null,
+        "blockedReason": "u1.insertion_plan_overfills_destination",
+        "resolutions": [
+          "choose-an-empty-measure-or-structural-boundary",
+          "shorten-the-draft",
+          "cancel"
+        ],
+        "canInsertPreview": false,
+        "canInsertOneChord": false,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-002-draft-text-is-caller-owned-and-exact",
+        "U1-EDIT-003-preview-status-is-t0-derived"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "Exactly 4,095 code points remain inside the draft bound."
+    },
+    {
+      "id": "U1-QE-037",
+      "kind": "limit",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC",
+      "draftCodePoints": 4096,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "measure",
+        "boundaryKind": "measure-start",
+        "measureEventCount": 0,
+        "measureCompletion": "empty",
+        "measureFilled": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "failed",
+        "sections": [],
+        "diagnosticCodes": [
+          "chart.unsupported_notation"
+        ],
+        "insertableChords": []
+      },
+      "expected": {
+        "status": "invalid",
+        "lane": "recovered-chord",
+        "tokenStates": [
+          "invalid"
+        ],
+        "preflightRefusal": null,
+        "insertionPlan": "not-atomic-refusal",
+        "committable": false,
+        "planKind": null,
+        "placement": null,
+        "blockedReason": "u1.insertion_plan_not_atomic",
+        "resolutions": [
+          "correct-the-draft",
+          "cancel"
+        ],
+        "canInsertPreview": false,
+        "canInsertOneChord": false,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-002-draft-text-is-caller-owned-and-exact",
+        "U1-EDIT-003-preview-status-is-t0-derived"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "Exactly the maximum draft length is accepted by the field and still refused by the grammar."
+    },
+    {
+      "id": "U1-QE-038",
+      "kind": "limit",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC",
+      "draftCodePoints": 4097,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "measure",
+        "boundaryKind": "measure-start",
+        "measureEventCount": 0,
+        "measureCompletion": "empty",
+        "measureFilled": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "not-called",
+        "sections": [],
+        "diagnosticCodes": [],
+        "insertableChords": []
+      },
+      "expected": {
+        "status": "invalid",
+        "lane": null,
+        "tokenStates": [],
+        "preflightRefusal": "u1.draft_code_points_exceeded",
+        "insertionPlan": null,
+        "committable": false,
+        "planKind": null,
+        "placement": null,
+        "blockedReason": null,
+        "resolutions": [],
+        "canInsertPreview": false,
+        "canInsertOneChord": false,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-002-draft-text-is-caller-owned-and-exact"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "One code point beyond the bound refuses inside U1 before T0 is called and before any ephemeral intent is dispatched."
+    },
+    {
+      "id": "U1-QE-039",
+      "kind": "limit",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞𝄞",
+      "draftCodePoints": 4096,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "measure",
+        "boundaryKind": "measure-start",
+        "measureEventCount": 0,
+        "measureCompletion": "empty",
+        "measureFilled": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "failed",
+        "sections": [],
+        "diagnosticCodes": [
+          "chart.unsupported_notation"
+        ],
+        "insertableChords": []
+      },
+      "expected": {
+        "status": "invalid",
+        "lane": "recovered-chord",
+        "tokenStates": [
+          "invalid"
+        ],
+        "preflightRefusal": null,
+        "insertionPlan": "not-atomic-refusal",
+        "committable": false,
+        "planKind": null,
+        "placement": null,
+        "blockedReason": "u1.insertion_plan_not_atomic",
+        "resolutions": [
+          "correct-the-draft",
+          "cancel"
+        ],
+        "canInsertPreview": false,
+        "canInsertOneChord": false,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-002-draft-text-is-caller-owned-and-exact",
+        "U1-EDIT-003-preview-status-is-t0-derived"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "Four thousand ninety-six four-byte scalars reach exactly the 16,384 UTF-8 byte bound as well as the code-point bound."
+    },
+    {
+      "id": "U1-QE-040",
+      "kind": "cancellation",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "",
+      "draftCodePoints": 0,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "measure",
+        "boundaryKind": "measure-start",
+        "measureEventCount": 0,
+        "measureCompletion": "empty",
+        "measureFilled": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "not-called",
+        "sections": [],
+        "diagnosticCodes": [],
+        "insertableChords": []
+      },
+      "expected": {
+        "status": "idle",
+        "lane": null,
+        "tokenStates": [],
+        "preflightRefusal": null,
+        "insertionPlan": null,
+        "committable": false,
+        "planKind": null,
+        "placement": null,
+        "blockedReason": null,
+        "resolutions": [],
+        "canInsertPreview": false,
+        "canInsertOneChord": false,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-002-draft-text-is-caller-owned-and-exact",
+        "U1-EDIT-001-no-new-mutation-channel"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "An empty draft is idle: no parse, no plan, no document command."
+    },
+    {
+      "id": "U1-QE-041",
+      "kind": "cancellation",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "",
+      "draftCodePoints": 0,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "section",
+        "boundaryKind": "section-start",
+        "measureEventCount": 0,
+        "measureCompletion": "empty",
+        "measureFilled": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "not-called",
+        "sections": [],
+        "diagnosticCodes": [],
+        "insertableChords": []
+      },
+      "expected": {
+        "status": "idle",
+        "lane": null,
+        "tokenStates": [],
+        "preflightRefusal": null,
+        "insertionPlan": null,
+        "committable": false,
+        "planKind": null,
+        "placement": null,
+        "blockedReason": null,
+        "resolutions": [],
+        "canInsertPreview": false,
+        "canInsertOneChord": false,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-002-draft-text-is-caller-owned-and-exact",
+        "U1-EDIT-001-no-new-mutation-channel"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "Clearing a previously ready draft returns the field to idle and dispatches no document command."
+    },
+    {
+      "id": "U1-QE-042",
+      "kind": "cancellation",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "| C:4 |",
+      "draftCodePoints": 7,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "section",
+        "boundaryKind": "section-start",
+        "measureEventCount": 0,
+        "measureCompletion": "empty",
+        "measureFilled": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "ok",
+        "sections": [
+          {
+            "kind": "implicit",
+            "name": null,
+            "measures": [
+              {
+                "events": [
+                  {
+                    "symbol": "C",
+                    "duration": {
+                      "numerator": 4,
+                      "denominator": 1
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "diagnosticCodes": [],
+        "insertableChords": []
+      },
+      "expected": {
+        "status": "ready",
+        "lane": "complete-draft",
+        "tokenStates": [
+          "valid"
+        ],
+        "preflightRefusal": null,
+        "insertionPlan": "completes-measures",
+        "committable": true,
+        "planKind": "insert-fragment",
+        "placement": "into-section",
+        "blockedReason": null,
+        "resolutions": [
+          "insert-parsed-preview"
+        ],
+        "canInsertPreview": true,
+        "canInsertOneChord": false,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-002-draft-text-is-caller-owned-and-exact",
+        "U1-EDIT-001-no-new-mutation-channel"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "Dismissing the preview without activating Insert leaves the ready draft intact and still dispatches no document command."
+    },
+    {
+      "id": "U1-QE-043",
+      "kind": "stale",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "| C:4 |",
+      "draftCodePoints": 7,
+      "staleness": {
+        "baseRevisionMatchesState": false,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "section",
+        "boundaryKind": "section-start",
+        "measureEventCount": 0,
+        "measureCompletion": "empty",
+        "measureFilled": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "ok",
+        "sections": [
+          {
+            "kind": "implicit",
+            "name": null,
+            "measures": [
+              {
+                "events": [
+                  {
+                    "symbol": "C",
+                    "duration": {
+                      "numerator": 4,
+                      "denominator": 1
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "diagnosticCodes": [],
+        "insertableChords": []
+      },
+      "expected": {
+        "status": "invalid",
+        "lane": null,
+        "tokenStates": [
+          "valid"
+        ],
+        "preflightRefusal": "u1.quick_entry_stale_revision",
+        "insertionPlan": null,
+        "committable": false,
+        "planKind": null,
+        "placement": null,
+        "blockedReason": null,
+        "resolutions": [],
+        "canInsertPreview": false,
+        "canInsertOneChord": false,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-004-insertion-plan-statement-exact",
+        "U1-EDIT-017-application-refusals-surfaced-verbatim"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "The draft base revision no longer equals the application revision, so no plan may be claimed."
+    },
+    {
+      "id": "U1-QE-044",
+      "kind": "stale",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "| C:4 |",
+      "draftCodePoints": 7,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": false
+      },
+      "destination": {
+        "level": "measure",
+        "boundaryKind": "measure-start",
+        "measureEventCount": 0,
+        "measureCompletion": "empty",
+        "measureFilled": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "ok",
+        "sections": [
+          {
+            "kind": "implicit",
+            "name": null,
+            "measures": [
+              {
+                "events": [
+                  {
+                    "symbol": "C",
+                    "duration": {
+                      "numerator": 4,
+                      "denominator": 1
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "diagnosticCodes": [],
+        "insertableChords": []
+      },
+      "expected": {
+        "status": "invalid",
+        "lane": null,
+        "tokenStates": [
+          "valid"
+        ],
+        "preflightRefusal": "u1.quick_entry_target_missing",
+        "insertionPlan": null,
+        "committable": false,
+        "planKind": null,
+        "placement": null,
+        "blockedReason": null,
+        "resolutions": [],
+        "canInsertPreview": false,
+        "canInsertOneChord": false,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-004-insertion-plan-statement-exact",
+        "U1-EDIT-017-application-refusals-surfaced-verbatim"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "The stored quick-entry target no longer resolves in the current document."
+    },
+    {
+      "id": "U1-QE-045",
+      "kind": "positive",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "| C:4 | ; a trailing comment",
+      "draftCodePoints": 28,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "section",
+        "boundaryKind": "section-start",
+        "measureEventCount": 0,
+        "measureCompletion": "empty",
+        "measureFilled": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "ok",
+        "sections": [
+          {
+            "kind": "implicit",
+            "name": null,
+            "measures": [
+              {
+                "events": [
+                  {
+                    "symbol": "C",
+                    "duration": {
+                      "numerator": 4,
+                      "denominator": 1
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "diagnosticCodes": [],
+        "insertableChords": []
+      },
+      "expected": {
+        "status": "ready",
+        "lane": "complete-draft",
+        "tokenStates": [
+          "valid"
+        ],
+        "preflightRefusal": null,
+        "insertionPlan": "completes-measures",
+        "committable": true,
+        "planKind": "insert-fragment",
+        "placement": "into-section",
+        "blockedReason": null,
+        "resolutions": [
+          "insert-parsed-preview"
+        ],
+        "canInsertPreview": true,
+        "canInsertOneChord": false,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-002-draft-text-is-caller-owned-and-exact",
+        "U1-EDIT-003-preview-status-is-t0-derived",
+        "U1-EDIT-004-insertion-plan-statement-exact",
+        "U1-EDIT-001-no-new-mutation-channel"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "The field preserves the caller's exact source text, including the comment T0 reports as not round-tripped; U1 never rewrites the draft to its canonical form."
+    },
+    {
+      "id": "U1-QE-046",
+      "kind": "positive",
+      "family": "quick-entry",
+      "meter": {
+        "beatsPerBar": 4,
+        "beatUnit": 4
+      },
+      "draftText": "| Cmaj7 \"head in\":4 |",
+      "draftCodePoints": 21,
+      "staleness": {
+        "baseRevisionMatchesState": true,
+        "targetResolvesInDocument": true
+      },
+      "destination": {
+        "level": "measure",
+        "boundaryKind": "measure-start",
+        "measureEventCount": 0,
+        "measureCompletion": "empty",
+        "measureFilled": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "measureCapacity": {
+          "numerator": 4,
+          "denominator": 1
+        }
+      },
+      "t0Result": {
+        "outcome": "ok",
+        "sections": [
+          {
+            "kind": "implicit",
+            "name": null,
+            "measures": [
+              {
+                "events": [
+                  {
+                    "symbol": "Cmaj7",
+                    "duration": {
+                      "numerator": 4,
+                      "denominator": 1
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "diagnosticCodes": [],
+        "insertableChords": []
+      },
+      "expected": {
+        "status": "ready",
+        "lane": "complete-draft",
+        "tokenStates": [
+          "valid"
+        ],
+        "preflightRefusal": null,
+        "insertionPlan": "fits-measure",
+        "committable": true,
+        "planKind": "insert-fragment",
+        "placement": "into-measure",
+        "blockedReason": null,
+        "resolutions": [
+          "insert-parsed-preview"
+        ],
+        "canInsertPreview": true,
+        "canInsertOneChord": false,
+        "sectionNameCollisionWarnings": []
+      },
+      "lawIds": [
+        "U1-EDIT-002-draft-text-is-caller-owned-and-exact",
+        "U1-EDIT-003-preview-status-is-t0-derived",
+        "U1-EDIT-004-insertion-plan-statement-exact",
+        "U1-EDIT-005-whole-preview-apply-is-one-atomic-command"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-T0",
+        "U1-AUTH-A0U1",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "An event annotation is inert data carried through unchanged."
+    }
+  ]
+}

@@ -1,0 +1,1001 @@
+{
+  "schema": "changes.fixtures.u1-mutation-controls.v1",
+  "reviewState": "proposed-independent-spec",
+  "pinState": "reviewed-byte-and-semantic-pinned",
+  "expectedValuesGenerated": false,
+  "productionOutputUsedAsOracle": false,
+  "controls": [
+    {
+      "id": "U1-MUT-001",
+      "category": "insertion-plan",
+      "lawIds": [
+        "U1-EDIT-004-insertion-plan-statement-exact"
+      ],
+      "materialization": "quick-entry-cases.json",
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/cases/1/expected/insertionPlan",
+        "from": "fits-measure",
+        "to": "completes-measures",
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "jsonPointer": "/cases/1/destination/level",
+        "unchangedValue": "measure"
+      },
+      "expectedFindingCode": "U1_CONTRACT_INSERTION_PLAN",
+      "oracleExpectation": "baseline-accepted-mutant-rejected-by-the-independent-oracle",
+      "linkedCaseIds": [
+        "U1-QE-002"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-MECHANICAL",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-MUT-002",
+      "category": "insertion-plan",
+      "lawIds": [
+        "U1-EDIT-004-insertion-plan-statement-exact"
+      ],
+      "materialization": "quick-entry-cases.json",
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/cases/0/expected/insertionPlan",
+        "from": "completes-measures",
+        "to": "fits-measure",
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "jsonPointer": "/cases/0/destination/level",
+        "unchangedValue": "section"
+      },
+      "expectedFindingCode": "U1_CONTRACT_INSERTION_PLAN",
+      "oracleExpectation": "baseline-accepted-mutant-rejected-by-the-independent-oracle",
+      "linkedCaseIds": [
+        "U1-QE-001"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-MECHANICAL",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-MUT-003",
+      "category": "insertion-plan",
+      "lawIds": [
+        "U1-EDIT-004-insertion-plan-statement-exact"
+      ],
+      "materialization": "quick-entry-cases.json",
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/cases/15/expected/insertionPlan",
+        "from": "overfill-requires-split",
+        "to": "fits-measure",
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "jsonPointer": "/cases/15/destination/boundaryKind",
+        "unchangedValue": "measure-start"
+      },
+      "expectedFindingCode": "U1_CONTRACT_INSERTION_PLAN",
+      "oracleExpectation": "baseline-accepted-mutant-rejected-by-the-independent-oracle",
+      "linkedCaseIds": [
+        "U1-QE-016"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-MECHANICAL",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-MUT-004",
+      "category": "measure-arithmetic",
+      "lawIds": [
+        "U1-EDIT-004-insertion-plan-statement-exact"
+      ],
+      "materialization": "quick-entry-cases.json",
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/cases/0/t0Result/sections/0/measures/0/events/0/duration/numerator",
+        "from": 2,
+        "to": 3,
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "jsonPointer": "/cases/0/meter/beatsPerBar",
+        "unchangedValue": 4
+      },
+      "expectedFindingCode": "U1_CONTRACT_MEASURE_ARITHMETIC",
+      "oracleExpectation": "baseline-accepted-mutant-rejected-by-the-independent-oracle",
+      "linkedCaseIds": [
+        "U1-QE-001"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-MECHANICAL",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-MUT-005",
+      "category": "measure-arithmetic",
+      "lawIds": [
+        "U1-EDIT-004-insertion-plan-statement-exact"
+      ],
+      "materialization": "quick-entry-cases.json",
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/cases/8/meter/beatUnit",
+        "from": 8,
+        "to": 4,
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "jsonPointer": "/cases/8/destination/measureCapacity/numerator",
+        "unchangedValue": 3
+      },
+      "expectedFindingCode": "U1_CONTRACT_MEASURE_ARITHMETIC",
+      "oracleExpectation": "baseline-accepted-mutant-rejected-by-the-independent-oracle",
+      "linkedCaseIds": [
+        "U1-QE-009"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-MECHANICAL",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-MUT-006",
+      "category": "plan-authority",
+      "lawIds": [
+        "U1-EDIT-004-insertion-plan-statement-exact"
+      ],
+      "materialization": "quick-entry-cases.json",
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/cases/1/expected/committable",
+        "from": true,
+        "to": false,
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "jsonPointer": "/cases/1/expected/insertionPlan",
+        "unchangedValue": "fits-measure"
+      },
+      "expectedFindingCode": "U1_CONTRACT_PLAN_AUTHORITY",
+      "oracleExpectation": "baseline-accepted-mutant-rejected-by-the-independent-oracle",
+      "linkedCaseIds": [
+        "U1-QE-002"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-MECHANICAL",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-MUT-007",
+      "category": "plan-authority",
+      "lawIds": [
+        "U1-EDIT-004-insertion-plan-statement-exact"
+      ],
+      "materialization": "quick-entry-cases.json",
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/cases/22/expected/blockedReason",
+        "from": "u1.insertion_plan_requires_confirmation",
+        "to": "u1.insertion_plan_not_atomic",
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "jsonPointer": "/cases/22/expected/insertionPlan",
+        "unchangedValue": "incomplete-requires-confirmation"
+      },
+      "expectedFindingCode": "U1_CONTRACT_PLAN_AUTHORITY",
+      "oracleExpectation": "baseline-accepted-mutant-rejected-by-the-independent-oracle",
+      "linkedCaseIds": [
+        "U1-QE-023"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-MECHANICAL",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-MUT-008",
+      "category": "recovery-lane",
+      "lawIds": [
+        "U1-EDIT-006-recovered-chord-lane-requires-explicit-loss-acknowledgement"
+      ],
+      "materialization": "quick-entry-cases.json",
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/cases/22/expected/canInsertOneChord",
+        "from": true,
+        "to": false,
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "jsonPointer": "/cases/22/destination/measureCapacity/numerator",
+        "unchangedValue": 4
+      },
+      "expectedFindingCode": "U1_CONTRACT_RECOVERY_LANE",
+      "oracleExpectation": "baseline-accepted-mutant-rejected-by-the-independent-oracle",
+      "linkedCaseIds": [
+        "U1-QE-023"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-MECHANICAL",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-MUT-009",
+      "category": "recovery-lane",
+      "lawIds": [
+        "U1-EDIT-006-recovered-chord-lane-requires-explicit-loss-acknowledgement"
+      ],
+      "materialization": "quick-entry-cases.json",
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/cases/31/expected/canInsertOneChord",
+        "from": false,
+        "to": true,
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "jsonPointer": "/cases/31/destination/measureFilled/numerator",
+        "unchangedValue": 4
+      },
+      "expectedFindingCode": "U1_CONTRACT_RECOVERY_LANE",
+      "oracleExpectation": "baseline-accepted-mutant-rejected-by-the-independent-oracle",
+      "linkedCaseIds": [
+        "U1-QE-032"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-MECHANICAL",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-MUT-010",
+      "category": "recovery-lane",
+      "lawIds": [
+        "U1-EDIT-006-recovered-chord-lane-requires-explicit-loss-acknowledgement"
+      ],
+      "materialization": "quick-entry-cases.json",
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/cases/33/expected/canInsertOneChord",
+        "from": false,
+        "to": true,
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "jsonPointer": "/cases/33/destination/level",
+        "unchangedValue": "section"
+      },
+      "expectedFindingCode": "U1_CONTRACT_RECOVERY_LANE",
+      "oracleExpectation": "baseline-accepted-mutant-rejected-by-the-independent-oracle",
+      "linkedCaseIds": [
+        "U1-QE-034"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-MECHANICAL",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-MUT-011",
+      "category": "token-state",
+      "lawIds": [
+        "U1-EDIT-003-preview-status-is-t0-derived"
+      ],
+      "materialization": "quick-entry-cases.json",
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/cases/26/expected/tokenStates/0",
+        "from": "insertable",
+        "to": "valid",
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "jsonPointer": "/cases/26/t0Result/outcome",
+        "unchangedValue": "failed"
+      },
+      "expectedFindingCode": "U1_CONTRACT_TOKEN_STATE",
+      "oracleExpectation": "baseline-accepted-mutant-rejected-by-the-independent-oracle",
+      "linkedCaseIds": [
+        "U1-QE-027"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-MECHANICAL",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-MUT-012",
+      "category": "token-state",
+      "lawIds": [
+        "U1-EDIT-003-preview-status-is-t0-derived"
+      ],
+      "materialization": "quick-entry-cases.json",
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/cases/0/expected/tokenStates/2",
+        "from": "valid",
+        "to": "insertable",
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "jsonPointer": "/cases/0/t0Result/outcome",
+        "unchangedValue": "ok"
+      },
+      "expectedFindingCode": "U1_CONTRACT_TOKEN_STATE",
+      "oracleExpectation": "baseline-accepted-mutant-rejected-by-the-independent-oracle",
+      "linkedCaseIds": [
+        "U1-QE-001"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-MECHANICAL",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-MUT-013",
+      "category": "draft-bound",
+      "lawIds": [
+        "U1-EDIT-002-draft-text-is-caller-owned-and-exact"
+      ],
+      "materialization": "quick-entry-cases.json",
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/cases/37/expected/preflightRefusal",
+        "from": "u1.draft_code_points_exceeded",
+        "to": null,
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "jsonPointer": "/cases/37/draftCodePoints",
+        "unchangedValue": 4097
+      },
+      "expectedFindingCode": "U1_CONTRACT_DRAFT_BOUND",
+      "oracleExpectation": "baseline-accepted-mutant-rejected-by-the-independent-oracle",
+      "linkedCaseIds": [
+        "U1-QE-038"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-MECHANICAL",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-MUT-014",
+      "category": "draft-bound",
+      "lawIds": [
+        "U1-EDIT-002-draft-text-is-caller-owned-and-exact"
+      ],
+      "materialization": "quick-entry-cases.json",
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/cases/36/expected/preflightRefusal",
+        "from": null,
+        "to": "u1.draft_code_points_exceeded",
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "jsonPointer": "/cases/36/draftCodePoints",
+        "unchangedValue": 4096
+      },
+      "expectedFindingCode": "U1_CONTRACT_DRAFT_BOUND",
+      "oracleExpectation": "baseline-accepted-mutant-rejected-by-the-independent-oracle",
+      "linkedCaseIds": [
+        "U1-QE-037"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-MECHANICAL",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-MUT-015",
+      "category": "channel-binding",
+      "lawIds": [
+        "U1-EDIT-001-no-new-mutation-channel"
+      ],
+      "materialization": "edit-operation-matrix.json",
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/rows/3/expected/commandKind",
+        "from": "apply-edit-plan",
+        "to": "insert",
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "jsonPointer": "/rows/3/operationId",
+        "unchangedValue": "U1-OP-004"
+      },
+      "expectedFindingCode": "U1_CONTRACT_CHANNEL_BINDING",
+      "oracleExpectation": "baseline-accepted-mutant-rejected-by-the-independent-oracle",
+      "linkedCaseIds": [
+        "U1-OPC-004"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-MECHANICAL",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-MUT-016",
+      "category": "channel-binding",
+      "lawIds": [
+        "U1-EDIT-001-no-new-mutation-channel"
+      ],
+      "materialization": "edit-operation-matrix.json",
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/rows/23/expected/channel",
+        "from": "ephemeral-intent",
+        "to": "document-command",
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "jsonPointer": "/rows/23/operationId",
+        "unchangedValue": "U1-OP-024"
+      },
+      "expectedFindingCode": "U1_CONTRACT_CHANNEL_BINDING",
+      "oracleExpectation": "baseline-accepted-mutant-rejected-by-the-independent-oracle",
+      "linkedCaseIds": [
+        "U1-OPC-024"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-MECHANICAL",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-MUT-017",
+      "category": "channel-binding",
+      "lawIds": [
+        "U1-EDIT-005-whole-preview-apply-is-one-atomic-command"
+      ],
+      "materialization": "edit-operation-matrix.json",
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/rows/7/expected/commandCount",
+        "from": 1,
+        "to": 2,
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "jsonPointer": "/rows/7/expected/channel",
+        "unchangedValue": "document-command"
+      },
+      "expectedFindingCode": "U1_CONTRACT_CHANNEL_BINDING",
+      "oracleExpectation": "baseline-accepted-mutant-rejected-by-the-independent-oracle",
+      "linkedCaseIds": [
+        "U1-OPC-008"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-MECHANICAL",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-MUT-018",
+      "category": "command-authorization",
+      "lawIds": [
+        "U1-EDIT-001-no-new-mutation-channel"
+      ],
+      "materialization": "edit-operation-matrix.json",
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/rows/9/expected/commandKind",
+        "from": "move",
+        "to": "set-voicing",
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "jsonPointer": "/rows/9/operationId",
+        "unchangedValue": "U1-OP-010"
+      },
+      "expectedFindingCode": "U1_CONTRACT_COMMAND_AUTHORIZATION",
+      "oracleExpectation": "baseline-accepted-mutant-rejected-by-the-independent-oracle",
+      "linkedCaseIds": [
+        "U1-OPC-010"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-MECHANICAL",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-MUT-019",
+      "category": "command-authorization",
+      "lawIds": [
+        "U1-EDIT-001-no-new-mutation-channel"
+      ],
+      "materialization": "u1-editing-contract.json",
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/authorizedCommandKinds/9",
+        "from": "apply-edit-plan",
+        "to": "replace-document",
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "jsonPointer": "/operations/3/commandKind",
+        "unchangedValue": "apply-edit-plan"
+      },
+      "expectedFindingCode": "U1_CONTRACT_COMMAND_AUTHORIZATION",
+      "oracleExpectation": "baseline-accepted-mutant-rejected-by-the-independent-oracle",
+      "linkedCaseIds": [
+        "U1-OPC-004"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-MECHANICAL",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-MUT-020",
+      "category": "operation-inventory",
+      "lawIds": [
+        "U1-EDIT-014-keyboard-or-menu-alternative-for-every-pointer-operation"
+      ],
+      "materialization": "u1-editing-contract.json",
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/operations/11/pointerAlternative",
+        "from": "keyboard-and-menu",
+        "to": "none",
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "jsonPointer": "/operations/11/id",
+        "unchangedValue": "U1-OP-012"
+      },
+      "expectedFindingCode": "U1_CONTRACT_OPERATION_INVENTORY",
+      "oracleExpectation": "baseline-accepted-mutant-rejected-by-the-independent-oracle",
+      "linkedCaseIds": [
+        "U1-OPC-012"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-MECHANICAL",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-MUT-021",
+      "category": "pointer-policy",
+      "lawIds": [
+        "U1-EDIT-013-pointer-drag-optional-and-threshold-gated"
+      ],
+      "materialization": "u1-editing-contract.json",
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/pointerPolicy/dragThresholdCssPx",
+        "from": 8,
+        "to": 0,
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "jsonPointer": "/limits/pointerDragThresholdCssPx",
+        "unchangedValue": 8
+      },
+      "expectedFindingCode": "U1_CONTRACT_POINTER_POLICY",
+      "oracleExpectation": "baseline-accepted-mutant-rejected-by-the-independent-oracle",
+      "linkedCaseIds": [
+        "U1-INT-017"
+      ],
+      "traceIds": [
+        "U1-TRACE-POINTER"
+      ],
+      "authorityIds": [
+        "U1-AUTH-MECHANICAL",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-MUT-022",
+      "category": "pointer-policy",
+      "lawIds": [
+        "U1-EDIT-013-pointer-drag-optional-and-threshold-gated"
+      ],
+      "materialization": "u1-editing-contract.json",
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/pointerPolicy/preventDefaultBeforeThreshold",
+        "from": false,
+        "to": true,
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "jsonPointer": "/pointerPolicy/preventDefaultAfterThreshold",
+        "unchangedValue": true
+      },
+      "expectedFindingCode": "U1_CONTRACT_POINTER_POLICY",
+      "oracleExpectation": "baseline-accepted-mutant-rejected-by-the-independent-oracle",
+      "linkedCaseIds": [
+        "U1-INT-016"
+      ],
+      "traceIds": [
+        "U1-TRACE-POINTER"
+      ],
+      "authorityIds": [
+        "U1-AUTH-MECHANICAL",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-MUT-023",
+      "category": "listener-policy",
+      "lawIds": [
+        "U1-EDIT-015-listener-counts-constant-across-mount-reorder-and-mutation"
+      ],
+      "materialization": "interaction-state-matrix.json",
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/listenerPolicy/documentMutationRegistersListeners",
+        "from": false,
+        "to": true,
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "jsonPointer": "/listenerPolicy/staticListenersPerChordCard",
+        "unchangedValue": 3
+      },
+      "expectedFindingCode": "U1_CONTRACT_LISTENER_POLICY",
+      "oracleExpectation": "baseline-accepted-mutant-rejected-by-the-independent-oracle",
+      "linkedCaseIds": [
+        "U1-INT-024"
+      ],
+      "traceIds": [
+        "U1-TRACE-POINTER"
+      ],
+      "authorityIds": [
+        "U1-AUTH-MECHANICAL",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-MUT-024",
+      "category": "listener-policy",
+      "lawIds": [
+        "U1-EDIT-015-listener-counts-constant-across-mount-reorder-and-mutation"
+      ],
+      "materialization": "interaction-state-matrix.json",
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/listenerPolicy/staticListenersPerChordCard",
+        "from": 3,
+        "to": 4,
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "jsonPointer": "/listenerPolicy/transientDragListenersPerSession",
+        "unchangedValue": 3
+      },
+      "expectedFindingCode": "U1_CONTRACT_LISTENER_POLICY",
+      "oracleExpectation": "baseline-accepted-mutant-rejected-by-the-independent-oracle",
+      "linkedCaseIds": [
+        "U1-INT-023"
+      ],
+      "traceIds": [
+        "U1-TRACE-POINTER"
+      ],
+      "authorityIds": [
+        "U1-AUTH-MECHANICAL",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-MUT-025",
+      "category": "limits",
+      "lawIds": [
+        "U1-EDIT-002-draft-text-is-caller-owned-and-exact"
+      ],
+      "materialization": "u1-editing-contract.json",
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/limits/maxDraftCodePoints",
+        "from": 4096,
+        "to": 8192,
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "jsonPointer": "/limits/maxDraftUtf8Bytes",
+        "unchangedValue": 16384
+      },
+      "expectedFindingCode": "U1_CONTRACT_LIMITS",
+      "oracleExpectation": "baseline-accepted-mutant-rejected-by-the-independent-oracle",
+      "linkedCaseIds": [
+        "U1-QE-037"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-MECHANICAL",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-MUT-026",
+      "category": "bound-assignment",
+      "lawIds": [
+        "U1-EDIT-002-draft-text-is-caller-owned-and-exact"
+      ],
+      "materialization": "u1-editing-contract.json",
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/publicBoundAssignments/quickEntryDraftText",
+        "from": "maxDraftCodePoints",
+        "to": "maxPreviewTokens",
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "jsonPointer": "/limits/maxDraftCodePoints",
+        "unchangedValue": 4096
+      },
+      "expectedFindingCode": "U1_CONTRACT_BOUND_ASSIGNMENT",
+      "oracleExpectation": "baseline-accepted-mutant-rejected-by-the-independent-oracle",
+      "linkedCaseIds": [
+        "U1-QE-038"
+      ],
+      "traceIds": [
+        "U1-TRACE-QUICKENTRY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-MECHANICAL",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-MUT-027",
+      "category": "identity",
+      "lawIds": [
+        "U1-EDIT-007-stable-identity-keys-only"
+      ],
+      "materialization": "u1-editing-contract.json",
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/identityPolicy/indexKeys",
+        "from": "forbidden",
+        "to": "allowed",
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "jsonPointer": "/identityPolicy/chartKeys",
+        "unchangedValue": "stable-domain-ids-only"
+      },
+      "expectedFindingCode": "U1_CONTRACT_IDENTITY",
+      "oracleExpectation": "baseline-accepted-mutant-rejected-by-the-independent-oracle",
+      "linkedCaseIds": [
+        "U1-INT-011"
+      ],
+      "traceIds": [
+        "U1-TRACE-IDENTITY"
+      ],
+      "authorityIds": [
+        "U1-AUTH-MECHANICAL",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-MUT-028",
+      "category": "independence",
+      "lawIds": [
+        "U1-EDIT-001-no-new-mutation-channel"
+      ],
+      "materialization": "u1-editing-contract.json",
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/expectedValuesGenerated",
+        "from": false,
+        "to": true,
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "jsonPointer": "/productionOutputUsedAsOracle",
+        "unchangedValue": false
+      },
+      "expectedFindingCode": "U1_CONTRACT_INDEPENDENCE",
+      "oracleExpectation": "baseline-accepted-mutant-rejected-by-the-independent-oracle",
+      "linkedCaseIds": [
+        "U1-OPC-001"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-MECHANICAL",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-MUT-029",
+      "category": "reciprocity",
+      "lawIds": [
+        "U1-EDIT-001-no-new-mutation-channel"
+      ],
+      "materialization": "trace-ledger.json",
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/traces/7/authorityIds/0",
+        "from": "U1-AUTH-A0",
+        "to": "U1-AUTH-T0",
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "jsonPointer": "/traces/7/id",
+        "unchangedValue": "U1-TRACE-VIEW"
+      },
+      "expectedFindingCode": "U1_CONTRACT_NONRECIPROCAL_LINK",
+      "oracleExpectation": "baseline-accepted-mutant-rejected-by-the-independent-oracle",
+      "linkedCaseIds": [
+        "U1-OPC-001"
+      ],
+      "traceIds": [
+        "U1-TRACE-VIEW"
+      ],
+      "authorityIds": [
+        "U1-AUTH-MECHANICAL",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-MUT-030",
+      "category": "reciprocity",
+      "lawIds": [
+        "U1-EDIT-018-view-modes-render-identical-musical-facts"
+      ],
+      "materialization": "provenance-ledger.json",
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/authorities/1/traceIds/0",
+        "from": "U1-TRACE-CHANNEL",
+        "to": "U1-TRACE-UNKNOWN",
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "jsonPointer": "/authorities/1/id",
+        "unchangedValue": "U1-AUTH-PLAN"
+      },
+      "expectedFindingCode": "U1_CONTRACT_UNKNOWN_LINK",
+      "oracleExpectation": "baseline-accepted-mutant-rejected-by-the-independent-oracle",
+      "linkedCaseIds": [
+        "U1-OPC-001"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-MECHANICAL",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-MUT-031",
+      "category": "focus-repair",
+      "lawIds": [
+        "U1-EDIT-010-delete-focus-repair-order"
+      ],
+      "materialization": "u1-editing-contract.json",
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/deleteFocusRepairOrder/0",
+        "from": "next-event",
+        "to": "chart",
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "jsonPointer": "/deleteFocusRepairOrder/1",
+        "unchangedValue": "previous-event"
+      },
+      "expectedFindingCode": "U1_CONTRACT_IDENTITY",
+      "oracleExpectation": "baseline-accepted-mutant-rejected-by-the-independent-oracle",
+      "linkedCaseIds": [
+        "U1-INT-013"
+      ],
+      "traceIds": [
+        "U1-TRACE-FOCUS"
+      ],
+      "authorityIds": [
+        "U1-AUTH-MECHANICAL",
+        "U1-AUTH-PLAN"
+      ]
+    },
+    {
+      "id": "U1-MUT-032",
+      "category": "key-binding",
+      "lawIds": [
+        "U1-EDIT-014-keyboard-or-menu-alternative-for-every-pointer-operation"
+      ],
+      "materialization": "u1-editing-contract.json",
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/keyBindings/12/operationId",
+        "from": "U1-OP-008",
+        "to": "U1-OP-999",
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "jsonPointer": "/keyBindings/12/keys",
+        "unchangedValue": "Delete"
+      },
+      "expectedFindingCode": "U1_CONTRACT_KEY_BINDING",
+      "oracleExpectation": "baseline-accepted-mutant-rejected-by-the-independent-oracle",
+      "linkedCaseIds": [
+        "U1-OPC-008"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-MECHANICAL",
+        "U1-AUTH-PLAN"
+      ]
+    }
+  ]
+}
