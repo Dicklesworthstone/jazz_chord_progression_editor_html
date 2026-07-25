@@ -1,0 +1,918 @@
+{
+  "schema": "changes.fixtures.e1-golden-cases.v1",
+  "fixtureVersion": "1.0.0",
+  "status": "independently-authored-pre-production",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "notes": "Every bytesHex golden was assembled by hand from docs/E1_MIDI_EXPORT_CONTRACT.md section 3. The validator must (a) parse bytesHex with its own minimal SMF reader and diff against expectedModel, and (b) re-derive expectedModel and expectedReport independently from planSpec/request and diff again. Pitches carry spelled {step, alter, octave} aligned with midi numbers so the spelling-loss law is checkable.",
+  "requestDefaults": {
+    "sourceRevision": 7,
+    "voicingTrackName": "V",
+    "instrumentName": "I"
+  },
+  "cases": [
+    {
+      "id": "E1-GLD-001",
+      "title": "Minimal 4/4 one-event chart with one chord marker",
+      "request": {
+        "requestId": "e1-gld-001",
+        "documentId": "doc-e1-g1",
+        "title": "T",
+        "markers": [
+          {
+            "kind": "chord",
+            "eventId": "event-0000",
+            "text": "Cmaj"
+          }
+        ]
+      },
+      "planSpec": {
+        "documentId": "doc-e1-g1",
+        "tempoBpm": 120,
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        },
+        "totalTicks": 960,
+        "loop": null,
+        "events": [
+          {
+            "eventId": "event-0000",
+            "ordinal": 0,
+            "startTick": 0,
+            "durationTicks": 960,
+            "gateDurationTicks": 936,
+            "pitches": [
+              {
+                "step": "C",
+                "alter": 0,
+                "octave": 4,
+                "midi": 60
+              },
+              {
+                "step": "E",
+                "alter": 0,
+                "octave": 4,
+                "midi": 64
+              },
+              {
+                "step": "G",
+                "alter": 0,
+                "octave": 4,
+                "midi": 67
+              }
+            ]
+          }
+        ]
+      },
+      "bytesHex": "4D546864000000060001000203C04D54726B0000002100FF03015400FF510307A12000FF58040402180800FF0604436D616A8740FF2F004D54726B0000002300FF03015600FF04014900903C600040600043608728803C0000400000430018FF2F00",
+      "expectedModel": {
+        "track0": [
+          {
+            "tick": 0,
+            "type": "track-name",
+            "text": "T"
+          },
+          {
+            "tick": 0,
+            "type": "tempo",
+            "microseconds": 500000
+          },
+          {
+            "tick": 0,
+            "type": "time-signature",
+            "numerator": 4,
+            "denominatorPower": 2
+          },
+          {
+            "tick": 0,
+            "type": "marker",
+            "text": "Cmaj"
+          },
+          {
+            "tick": 960,
+            "type": "end-of-track"
+          }
+        ],
+        "track1": [
+          {
+            "tick": 0,
+            "type": "track-name",
+            "text": "V"
+          },
+          {
+            "tick": 0,
+            "type": "instrument-name",
+            "text": "I"
+          },
+          {
+            "tick": 0,
+            "kind": "on",
+            "note": 60
+          },
+          {
+            "tick": 0,
+            "kind": "on",
+            "note": 64
+          },
+          {
+            "tick": 0,
+            "kind": "on",
+            "note": 67
+          },
+          {
+            "tick": 936,
+            "kind": "off",
+            "note": 60
+          },
+          {
+            "tick": 936,
+            "kind": "off",
+            "note": 64
+          },
+          {
+            "tick": 936,
+            "kind": "off",
+            "note": 67
+          },
+          {
+            "tick": 960,
+            "type": "end-of-track"
+          }
+        ]
+      },
+      "expectedReport": {
+        "requestedBpm": 120,
+        "encodedMicrosecondsPerQuarter": 500000,
+        "roundingErrorNumerator": 0,
+        "roundingErrorDenominator": 120,
+        "noteCount": 3,
+        "markerCount": 1,
+        "byteLength": 98,
+        "totalTicks": 960,
+        "filename": "changes-doc-e1-g1.mid",
+        "losses": []
+      },
+      "traceIds": [
+        "E1-TRACE-BYTES",
+        "E1-TRACE-TEMPO",
+        "E1-TRACE-MARKERS",
+        "E1-TRACE-REPORT",
+        "E1-TRACE-AUTHORITY-INTEGRITY"
+      ],
+      "authorityIds": [
+        "E1-AUTH-SMF",
+        "E1-AUTH-PLAN",
+        "E1-AUTH-INDEPENDENCE"
+      ]
+    },
+    {
+      "id": "E1-GLD-002",
+      "title": "6/8 two-event chart, unsorted request markers, nonzero tempo rounding error",
+      "request": {
+        "requestId": "e1-gld-002",
+        "documentId": "doc-e1-g2",
+        "title": "G2",
+        "voicingTrackName": "Vc",
+        "instrumentName": "Pi",
+        "markers": [
+          {
+            "kind": "chord",
+            "eventId": "event-0001",
+            "text": "Cmaj7"
+          },
+          {
+            "kind": "section",
+            "eventId": "event-0000",
+            "text": "A"
+          },
+          {
+            "kind": "chord",
+            "eventId": "event-0000",
+            "text": "Dm7"
+          }
+        ]
+      },
+      "planSpec": {
+        "documentId": "doc-e1-g2",
+        "tempoBpm": 90,
+        "meter": {
+          "beatsPerBar": 6,
+          "beatUnit": 8
+        },
+        "totalTicks": 960,
+        "loop": null,
+        "events": [
+          {
+            "eventId": "event-0000",
+            "ordinal": 0,
+            "startTick": 0,
+            "durationTicks": 480,
+            "gateDurationTicks": 456,
+            "pitches": [
+              {
+                "step": "D",
+                "alter": 0,
+                "octave": 3,
+                "midi": 50
+              },
+              {
+                "step": "A",
+                "alter": 0,
+                "octave": 3,
+                "midi": 57
+              }
+            ]
+          },
+          {
+            "eventId": "event-0001",
+            "ordinal": 1,
+            "startTick": 480,
+            "durationTicks": 480,
+            "gateDurationTicks": 456,
+            "pitches": [
+              {
+                "step": "C",
+                "alter": 0,
+                "octave": 3,
+                "midi": 48
+              },
+              {
+                "step": "G",
+                "alter": 0,
+                "octave": 3,
+                "midi": 55
+              }
+            ]
+          }
+        ]
+      },
+      "bytesHex": "4D546864000000060001000203C04D54726B0000003000FF0302473200FF51030A2C2B00FF58040603180800FF06014100FF0603446D378360FF0605436D616A378360FF2F004D54726B0000002E00FF0302566300FF0402506900903260003960834880320000390018903060003760834880300000370018FF2F00",
+      "expectedModel": {
+        "track0": [
+          {
+            "tick": 0,
+            "type": "track-name",
+            "text": "G2"
+          },
+          {
+            "tick": 0,
+            "type": "tempo",
+            "microseconds": 666667
+          },
+          {
+            "tick": 0,
+            "type": "time-signature",
+            "numerator": 6,
+            "denominatorPower": 3
+          },
+          {
+            "tick": 0,
+            "type": "marker",
+            "text": "A"
+          },
+          {
+            "tick": 0,
+            "type": "marker",
+            "text": "Dm7"
+          },
+          {
+            "tick": 480,
+            "type": "marker",
+            "text": "Cmaj7"
+          },
+          {
+            "tick": 960,
+            "type": "end-of-track"
+          }
+        ],
+        "track1": [
+          {
+            "tick": 0,
+            "type": "track-name",
+            "text": "Vc"
+          },
+          {
+            "tick": 0,
+            "type": "instrument-name",
+            "text": "Pi"
+          },
+          {
+            "tick": 0,
+            "kind": "on",
+            "note": 50
+          },
+          {
+            "tick": 0,
+            "kind": "on",
+            "note": 57
+          },
+          {
+            "tick": 456,
+            "kind": "off",
+            "note": 50
+          },
+          {
+            "tick": 456,
+            "kind": "off",
+            "note": 57
+          },
+          {
+            "tick": 480,
+            "kind": "on",
+            "note": 48
+          },
+          {
+            "tick": 480,
+            "kind": "on",
+            "note": 55
+          },
+          {
+            "tick": 936,
+            "kind": "off",
+            "note": 48
+          },
+          {
+            "tick": 936,
+            "kind": "off",
+            "note": 55
+          },
+          {
+            "tick": 960,
+            "type": "end-of-track"
+          }
+        ]
+      },
+      "expectedReport": {
+        "requestedBpm": 90,
+        "encodedMicrosecondsPerQuarter": 666667,
+        "roundingErrorNumerator": 30,
+        "roundingErrorDenominator": 90,
+        "noteCount": 4,
+        "markerCount": 3,
+        "byteLength": 124,
+        "totalTicks": 960,
+        "filename": "changes-doc-e1-g2.mid",
+        "losses": []
+      },
+      "traceIds": [
+        "E1-TRACE-BYTES",
+        "E1-TRACE-TEMPO",
+        "E1-TRACE-METER",
+        "E1-TRACE-MARKERS",
+        "E1-TRACE-ORDERING"
+      ],
+      "authorityIds": [
+        "E1-AUTH-SMF",
+        "E1-AUTH-PLAN",
+        "E1-AUTH-INDEPENDENCE"
+      ]
+    },
+    {
+      "id": "E1-GLD-003",
+      "title": "Equal-tick shared note number: off before on, running status runs and breaks",
+      "request": {
+        "requestId": "e1-gld-003",
+        "documentId": "doc-e1-g3",
+        "title": "G3",
+        "markers": []
+      },
+      "planSpec": {
+        "documentId": "doc-e1-g3",
+        "tempoBpm": 120,
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        },
+        "totalTicks": 960,
+        "loop": null,
+        "events": [
+          {
+            "eventId": "event-0000",
+            "ordinal": 0,
+            "startTick": 0,
+            "durationTicks": 480,
+            "gateDurationTicks": 480,
+            "pitches": [
+              {
+                "step": "C",
+                "alter": 0,
+                "octave": 4,
+                "midi": 60
+              },
+              {
+                "step": "E",
+                "alter": 0,
+                "octave": 4,
+                "midi": 64
+              }
+            ]
+          },
+          {
+            "eventId": "event-0001",
+            "ordinal": 1,
+            "startTick": 480,
+            "durationTicks": 480,
+            "gateDurationTicks": 456,
+            "pitches": [
+              {
+                "step": "C",
+                "alter": 0,
+                "octave": 4,
+                "midi": 60
+              },
+              {
+                "step": "G",
+                "alter": 0,
+                "octave": 4,
+                "midi": 67
+              }
+            ]
+          }
+        ]
+      },
+      "bytesHex": "4D546864000000060001000203C04D54726B0000001A00FF0302473300FF510307A12000FF5804040218088740FF2F004D54726B0000002C00FF03015600FF04014900903C600040608360803C0000400000903C600043608348803C0000430018FF2F00",
+      "expectedModel": {
+        "track0": [
+          {
+            "tick": 0,
+            "type": "track-name",
+            "text": "G3"
+          },
+          {
+            "tick": 0,
+            "type": "tempo",
+            "microseconds": 500000
+          },
+          {
+            "tick": 0,
+            "type": "time-signature",
+            "numerator": 4,
+            "denominatorPower": 2
+          },
+          {
+            "tick": 960,
+            "type": "end-of-track"
+          }
+        ],
+        "track1": [
+          {
+            "tick": 0,
+            "type": "track-name",
+            "text": "V"
+          },
+          {
+            "tick": 0,
+            "type": "instrument-name",
+            "text": "I"
+          },
+          {
+            "tick": 0,
+            "kind": "on",
+            "note": 60
+          },
+          {
+            "tick": 0,
+            "kind": "on",
+            "note": 64
+          },
+          {
+            "tick": 480,
+            "kind": "off",
+            "note": 60
+          },
+          {
+            "tick": 480,
+            "kind": "off",
+            "note": 64
+          },
+          {
+            "tick": 480,
+            "kind": "on",
+            "note": 60
+          },
+          {
+            "tick": 480,
+            "kind": "on",
+            "note": 67
+          },
+          {
+            "tick": 936,
+            "kind": "off",
+            "note": 60
+          },
+          {
+            "tick": 936,
+            "kind": "off",
+            "note": 67
+          },
+          {
+            "tick": 960,
+            "type": "end-of-track"
+          }
+        ]
+      },
+      "expectedReport": {
+        "requestedBpm": 120,
+        "encodedMicrosecondsPerQuarter": 500000,
+        "roundingErrorNumerator": 0,
+        "roundingErrorDenominator": 120,
+        "noteCount": 4,
+        "markerCount": 0,
+        "byteLength": 100,
+        "totalTicks": 960,
+        "filename": "changes-doc-e1-g3.mid",
+        "losses": [
+          {
+            "kind": "annotation-text",
+            "eventIds": [
+              "event-0000",
+              "event-0001"
+            ],
+            "detail": "no chord marker was supplied for these events"
+          }
+        ]
+      },
+      "traceIds": [
+        "E1-TRACE-BYTES",
+        "E1-TRACE-ORDERING",
+        "E1-TRACE-LOSSES"
+      ],
+      "authorityIds": [
+        "E1-AUTH-SMF",
+        "E1-AUTH-INDEPENDENCE"
+      ]
+    },
+    {
+      "id": "E1-GLD-004",
+      "title": "One-tick duration keeps its full gate",
+      "request": {
+        "requestId": "e1-gld-004",
+        "documentId": "doc-e1-g4",
+        "title": "G4",
+        "markers": []
+      },
+      "planSpec": {
+        "documentId": "doc-e1-g4",
+        "tempoBpm": 120,
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        },
+        "totalTicks": 1,
+        "loop": null,
+        "events": [
+          {
+            "eventId": "event-0000",
+            "ordinal": 0,
+            "startTick": 0,
+            "durationTicks": 1,
+            "gateDurationTicks": 1,
+            "pitches": [
+              {
+                "step": "C",
+                "alter": 0,
+                "octave": 5,
+                "midi": 72
+              }
+            ]
+          }
+        ]
+      },
+      "bytesHex": "4D546864000000060001000203C04D54726B0000001900FF0302473400FF510307A12000FF58040402180801FF2F004D54726B0000001600FF03015600FF040149009048600180480000FF2F00",
+      "expectedModel": {
+        "track0": [
+          {
+            "tick": 0,
+            "type": "track-name",
+            "text": "G4"
+          },
+          {
+            "tick": 0,
+            "type": "tempo",
+            "microseconds": 500000
+          },
+          {
+            "tick": 0,
+            "type": "time-signature",
+            "numerator": 4,
+            "denominatorPower": 2
+          },
+          {
+            "tick": 1,
+            "type": "end-of-track"
+          }
+        ],
+        "track1": [
+          {
+            "tick": 0,
+            "type": "track-name",
+            "text": "V"
+          },
+          {
+            "tick": 0,
+            "type": "instrument-name",
+            "text": "I"
+          },
+          {
+            "tick": 0,
+            "kind": "on",
+            "note": 72
+          },
+          {
+            "tick": 1,
+            "kind": "off",
+            "note": 72
+          },
+          {
+            "tick": 1,
+            "type": "end-of-track"
+          }
+        ]
+      },
+      "expectedReport": {
+        "requestedBpm": 120,
+        "encodedMicrosecondsPerQuarter": 500000,
+        "roundingErrorNumerator": 0,
+        "roundingErrorDenominator": 120,
+        "noteCount": 1,
+        "markerCount": 0,
+        "byteLength": 77,
+        "totalTicks": 1,
+        "filename": "changes-doc-e1-g4.mid",
+        "losses": [
+          {
+            "kind": "annotation-text",
+            "eventIds": [
+              "event-0000"
+            ],
+            "detail": "no chord marker was supplied for these events"
+          }
+        ]
+      },
+      "traceIds": [
+        "E1-TRACE-BYTES",
+        "E1-TRACE-GATES"
+      ],
+      "authorityIds": [
+        "E1-AUTH-SMF",
+        "E1-AUTH-PLAN",
+        "E1-AUTH-INDEPENDENCE"
+      ]
+    },
+    {
+      "id": "E1-GLD-005",
+      "title": "Tempo ceiling 400 with a sharped spelling: enharmonic loss reported",
+      "request": {
+        "requestId": "e1-gld-005",
+        "documentId": "doc-e1-g5",
+        "title": "G5",
+        "markers": [
+          {
+            "kind": "chord",
+            "eventId": "event-0000",
+            "text": "C#"
+          }
+        ]
+      },
+      "planSpec": {
+        "documentId": "doc-e1-g5",
+        "tempoBpm": 400,
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        },
+        "totalTicks": 960,
+        "loop": null,
+        "events": [
+          {
+            "eventId": "event-0000",
+            "ordinal": 0,
+            "startTick": 0,
+            "durationTicks": 960,
+            "gateDurationTicks": 936,
+            "pitches": [
+              {
+                "step": "C",
+                "alter": 1,
+                "octave": 4,
+                "midi": 61
+              }
+            ]
+          }
+        ]
+      },
+      "bytesHex": "4D546864000000060001000203C04D54726B0000002000FF0302473500FF51030249F000FF58040402180800FF060243238740FF2F004D54726B0000001700FF03015600FF04014900903D608728803D0018FF2F00",
+      "expectedModel": {
+        "track0": [
+          {
+            "tick": 0,
+            "type": "track-name",
+            "text": "G5"
+          },
+          {
+            "tick": 0,
+            "type": "tempo",
+            "microseconds": 150000
+          },
+          {
+            "tick": 0,
+            "type": "time-signature",
+            "numerator": 4,
+            "denominatorPower": 2
+          },
+          {
+            "tick": 0,
+            "type": "marker",
+            "text": "C#"
+          },
+          {
+            "tick": 960,
+            "type": "end-of-track"
+          }
+        ],
+        "track1": [
+          {
+            "tick": 0,
+            "type": "track-name",
+            "text": "V"
+          },
+          {
+            "tick": 0,
+            "type": "instrument-name",
+            "text": "I"
+          },
+          {
+            "tick": 0,
+            "kind": "on",
+            "note": 61
+          },
+          {
+            "tick": 936,
+            "kind": "off",
+            "note": 61
+          },
+          {
+            "tick": 960,
+            "type": "end-of-track"
+          }
+        ]
+      },
+      "expectedReport": {
+        "requestedBpm": 400,
+        "encodedMicrosecondsPerQuarter": 150000,
+        "roundingErrorNumerator": 0,
+        "roundingErrorDenominator": 400,
+        "noteCount": 1,
+        "markerCount": 1,
+        "byteLength": 85,
+        "totalTicks": 960,
+        "filename": "changes-doc-e1-g5.mid",
+        "losses": [
+          {
+            "kind": "enharmonic-spelling",
+            "eventIds": [
+              "event-0000"
+            ],
+            "detail": "MIDI note numbers cannot encode these spellings; canonical symbols remain in markers and JSON"
+          }
+        ]
+      },
+      "traceIds": [
+        "E1-TRACE-TEMPO",
+        "E1-TRACE-LOSSES",
+        "E1-TRACE-MARKERS"
+      ],
+      "authorityIds": [
+        "E1-AUTH-SMF",
+        "E1-AUTH-PLAN",
+        "E1-AUTH-INDEPENDENCE"
+      ]
+    },
+    {
+      "id": "E1-GLD-006",
+      "title": "Tempo floor 20 with a loop range: loop loss reported, bytes carry no loop",
+      "request": {
+        "requestId": "e1-gld-006",
+        "documentId": "doc-e1-g6",
+        "title": "G6",
+        "markers": []
+      },
+      "planSpec": {
+        "documentId": "doc-e1-g6",
+        "tempoBpm": 20,
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        },
+        "totalTicks": 960,
+        "loop": {
+          "startTick": 0,
+          "endTick": 960
+        },
+        "events": [
+          {
+            "eventId": "event-0000",
+            "ordinal": 0,
+            "startTick": 0,
+            "durationTicks": 960,
+            "gateDurationTicks": 936,
+            "pitches": [
+              {
+                "step": "C",
+                "alter": 0,
+                "octave": 4,
+                "midi": 60
+              }
+            ]
+          }
+        ]
+      },
+      "bytesHex": "4D546864000000060001000203C04D54726B0000001A00FF0302473600FF51032DC6C000FF5804040218088740FF2F004D54726B0000001700FF03015600FF04014900903C608728803C0018FF2F00",
+      "expectedModel": {
+        "track0": [
+          {
+            "tick": 0,
+            "type": "track-name",
+            "text": "G6"
+          },
+          {
+            "tick": 0,
+            "type": "tempo",
+            "microseconds": 3000000
+          },
+          {
+            "tick": 0,
+            "type": "time-signature",
+            "numerator": 4,
+            "denominatorPower": 2
+          },
+          {
+            "tick": 960,
+            "type": "end-of-track"
+          }
+        ],
+        "track1": [
+          {
+            "tick": 0,
+            "type": "track-name",
+            "text": "V"
+          },
+          {
+            "tick": 0,
+            "type": "instrument-name",
+            "text": "I"
+          },
+          {
+            "tick": 0,
+            "kind": "on",
+            "note": 60
+          },
+          {
+            "tick": 936,
+            "kind": "off",
+            "note": 60
+          },
+          {
+            "tick": 960,
+            "type": "end-of-track"
+          }
+        ]
+      },
+      "expectedReport": {
+        "requestedBpm": 20,
+        "encodedMicrosecondsPerQuarter": 3000000,
+        "roundingErrorNumerator": 0,
+        "roundingErrorDenominator": 20,
+        "noteCount": 1,
+        "markerCount": 0,
+        "byteLength": 79,
+        "totalTicks": 960,
+        "filename": "changes-doc-e1-g6.mid",
+        "losses": [
+          {
+            "kind": "annotation-text",
+            "eventIds": [
+              "event-0000"
+            ],
+            "detail": "no chord marker was supplied for these events"
+          },
+          {
+            "kind": "loop-range",
+            "eventIds": [],
+            "detail": "SMF format 1 has no loop chunk; the plan loop is reported, not encoded"
+          }
+        ]
+      },
+      "traceIds": [
+        "E1-TRACE-TEMPO",
+        "E1-TRACE-LOSSES"
+      ],
+      "authorityIds": [
+        "E1-AUTH-SMF",
+        "E1-AUTH-PLAN",
+        "E1-AUTH-INDEPENDENCE"
+      ]
+    }
+  ]
+}

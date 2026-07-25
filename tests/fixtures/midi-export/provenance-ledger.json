@@ -1,0 +1,62 @@
+{
+  "schema": "changes.fixtures.e1-provenance-ledger.v1",
+  "ledgerVersion": 1,
+  "authoringStatement": "E1 expectations were authored by hand from docs/E1_MIDI_EXPORT_CONTRACT.md before any production SMF writer existed. Every golden byte was assembled manually from the byte model in section 3 (header fields, chunk lengths, VLQ encodings, running-status runs, meta payloads, note events); every report and loss expectation was derived on paper. The validator re-parses each golden with its own minimal SMF reader and independently re-derives the expected model and report; no value was produced by, or copied from, production writer output.",
+  "reviewState": "reviewed-for-e1-spec",
+  "expectedValuesGenerated": false,
+  "productionOutputUsed": false,
+  "classificationPolicy": {
+    "primary-standard": "A current normative Web platform standard.",
+    "reviewed-contract": "A normative repository architecture or package decision.",
+    "legacy-observation": "A reproduced legacy failure the replacement must not preserve.",
+    "mechanical-derivation": "A direct result of a declared formula, integer algorithm, or cap.",
+    "human-review": "A judgment that automation cannot honestly certify."
+  },
+  "authorities": [
+    {
+      "id": "E1-AUTH-SMF",
+      "class": "primary-standard",
+      "source": "Standard MIDI File 1.0 specification (MMA): header/track chunk layout, big-endian integers, variable-length quantities, running status, meta event types 0x03/0x04/0x06/0x2F/0x51/0x58, time-signature payload semantics",
+      "supports": [
+        "Format 1 with two tracks and 16-bit division 960",
+        "VLQ encoding and the four-byte 0x0FFFFFFF ceiling",
+        "Running-status omission and meta cancellation",
+        "Meta payload layouts for name, instrument, marker, tempo, time signature, end of track",
+        "MIDI note number and velocity ranges 0..127"
+      ]
+    },
+    {
+      "id": "E1-AUTH-PLAN",
+      "class": "reviewed-contract",
+      "source": "docs/REBUILD_PLAN.md sections 9 (tick and tempo laws), 9.6 (nearest-microsecond tempo), 16.3 (MIDI export) plus the P0 playback-plan contract pins (PPQ 960, fixed velocity 96, gate ticks, event fields) and bead jcpe-milestone-advanced-craft-ulj.2.1",
+      "supports": [
+        "Conductor-plus-voicing track split and marker content",
+        "Consume the finished plan; never reparse, revoice, or re-quantize",
+        "Integer tempo 20..400 with reported requested and encoded values",
+        "Note-off before note-on at equal ticks",
+        "Exact gates including full gate at one tick",
+        "Stale pairing refuses; losses are reported, never silent"
+      ]
+    },
+    {
+      "id": "E1-AUTH-DERIVED",
+      "class": "mechanical-derivation",
+      "source": "Integer arithmetic over frozen values: chunk lengths summed from event byte counts, VLQ group arithmetic, round(60000000/bpm) and its error terms, filename sanitize-truncate, byte and count caps",
+      "supports": [
+        "Every chunk length, delta encoding, and byteLength in the goldens",
+        "Tempo microsecond values 500000, 666667, 150000, 3000000 and error 30/90",
+        "The 4 MiB byte ceiling and marker/text caps",
+        "Filename derivations including the 64-character truncation"
+      ]
+    },
+    {
+      "id": "E1-AUTH-INDEPENDENCE",
+      "class": "human-review",
+      "source": "E1/spec authoring session; goldens hand-assembled and cross-checked by the validator's independent parser and derivation passes",
+      "supports": [
+        "Expectations authored before production and never regenerated from it",
+        "Compact plan specs standing in for full P0 plans carry exactly the fields byte emission depends on"
+      ]
+    }
+  ]
+}
