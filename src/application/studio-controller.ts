@@ -2,9 +2,13 @@ import {
   addBeatValues,
   compareBeatValues,
   makeBeatDuration,
+  makeBeatPosition,
   measureCapacity,
+  subtractBeatValues,
   type BeatDuration,
+  type BeatValue,
   type ChordEvent,
+  type ChordEventId,
   type ChordSpec,
   type MeasureCompletion,
   type ParsedChordEvent,
@@ -13,6 +17,7 @@ import {
 } from "../domain";
 import {
   A0_U1_NEW_EVENT_POLICY_ID,
+  A0_U1_RECOVERED_CHORD_LAYOUT_LOSS_ACKNOWLEDGEMENT,
   type ApplyEditPlanCommand,
   type AtomicEditPlanQuickEntrySnapshot,
   type CompleteDraftInsertFragmentPlacement,
@@ -55,7 +60,9 @@ import {
   type StudioBootstrapRefusal,
 } from "./studio-bootstrap";
 import {
+  formatExactBeatLabel,
   selectStudioViewModel,
+  type StudioBoundaryDescriptor,
   type StudioViewModel,
 } from "./studio-view-model";
 
@@ -83,6 +90,12 @@ export const STUDIO_EDIT_REFUSAL_CODES = Object.freeze([
   "u1.draft_code_points_exceeded",
   "u1.draft_unicode_invalid",
   "u1.range_endpoints_unordered",
+  "u1.range_boundary_invalid",
+  "u1.split_partition_invalid",
+  "u1.join_requires_adjacent_events",
+  "u1.join_right_annotation_not_empty",
+  "u1.section_split_boundary_invalid",
+  "u1.section_join_requires_adjacent_sections",
   "u1.quick_entry_stale_revision",
   "u1.quick_entry_target_missing",
   "u1.insertion_plan_not_atomic",
@@ -124,7 +137,15 @@ export type StudioControllerAction =
   | "rename-section"
   | "annotate-section"
   | "set-section-boundary"
-  | "move-to-measure";
+  | "move-to-measure"
+  | "set-range-edge"
+  | "move-following-events"
+  | "split-event-duration"
+  | "join-event-durations"
+  | "split-section"
+  | "join-sections"
+  | "insert-recovered-chord"
+  | "acknowledge-focus";
 
 export type StudioControllerRefusal = Readonly<{
   action: StudioControllerAction;
@@ -149,21 +170,127 @@ export type StudioControllerActionResult =
     }>;
 
 /** Identity-brand-free boundary the UI layer can construct from its view model. */
-export type StudioBoundaryInput =
-  | Readonly<{ kind: "document-start" | "document-end" }>
-  | Readonly<{
-      kind: "before-section" | "after-section" | "section-start" | "section-end";
-      sectionId: string;
-    }>
-  | Readonly<{
-      kind: "before-measure" | "after-measure" | "measure-start" | "measure-end";
-      measureId: string;
-    }>
-  | Readonly<{ kind: "before-event" | "after-event"; eventId: string }>;
+export type StudioBoundaryInput = StudioBoundaryDescriptor;
 
 export type StudioQuickEntryPreview = Readonly<{
   status: "idle" | "invalid" | "ready";
   issueCodes: readonly string[];
+}>;
+
+/**
+ * The five insertion-plan statements. Exactly one is true of any draft and
+ * destination, and the classification is presentation, not publication: A0
+ * remains the sole publisher and its receipt or refusal wins at dispatch.
+ */
+export type StudioInsertionPlanStatement =
+  | "no-draft"
+  | "fits-measure"
+  | "completes-measures"
+  | "incomplete-requires-confirmation"
+  | "overfill-requires-split"
+  | "not-atomic-refusal";
+
+export type StudioInsertionPlan = Readonly<{
+  statement: StudioInsertionPlanStatement;
+  committable: boolean;
+  /** The authorized plan kind a committable statement will publish. */
+  planKind: "insert-fragment" | null;
+  /**
+   * Reported separately from the statement, because `completes-measures`
+   * reaches either a section or the document: a preview must never claim a
+   * placement it will not perform.
+   */
+  placement: "into-measure" | "into-section" | "into-document" | null;
+  /** The U1 refusal code a blocked statement carries, or null. */
+  blockedReason: string | null;
+  /**
+   * The reviewed resolution tokens, not sentences. A blocked statement is
+   * never resolved silently, and the surface owns the wording.
+   */
+  resolutions: readonly string[];
+}>;
+
+/**
+ * The reviewed statement tables. They restate the U1 insertion-plan authority
+ * rather than importing it: the contract module is specification-only and must
+ * stay out of the release graph, so a static test proves these equal it.
+ */
+const BLOCKED_REASON_BY_STATEMENT: Readonly<
+  Record<StudioInsertionPlanStatement, string | null>
+> = Object.freeze({
+  "completes-measures": null,
+  "fits-measure": null,
+  "incomplete-requires-confirmation": "u1.insertion_plan_requires_confirmation",
+  "no-draft": null,
+  "not-atomic-refusal": "u1.insertion_plan_not_atomic",
+  "overfill-requires-split": "u1.insertion_plan_overfills_destination",
+});
+
+const RESOLUTIONS_BY_STATEMENT: Readonly<
+  Record<StudioInsertionPlanStatement, readonly string[]>
+> = Object.freeze({
+  "completes-measures": Object.freeze(["insert-parsed-preview"]),
+  "fits-measure": Object.freeze(["insert-parsed-preview"]),
+  "incomplete-requires-confirmation": Object.freeze([
+    "complete-the-final-measure",
+    "insert-one-recovered-chord-into-a-measure",
+    "cancel",
+  ]),
+  "no-draft": Object.freeze([]),
+  "not-atomic-refusal": Object.freeze(["correct-the-draft", "cancel"]),
+  "overfill-requires-split": Object.freeze([
+    "choose-an-empty-measure-or-structural-boundary",
+    "shorten-the-draft",
+    "cancel",
+  ]),
+});
+
+/**
+ * One preview row. A successful draft yields one `valid` row per parsed event;
+ * a refused draft yields one `insertable` row per chord T0 published in its
+ * recoverable lane, plus one `invalid` row per diagnostic, and no `valid` rows.
+ * Every `sourceText` is the exact draft slice, never a repaired guess.
+ */
+export type StudioQuickEntryToken = Readonly<{
+  ordinal: number;
+  sourceText: string;
+  state: "valid" | "invalid" | "insertable";
+  diagnosticCode: string | null;
+  /** The T0 recoverable-chord ordinal an `insertable` row can be inserted by. */
+  globalOrdinal: number | null;
+  durationLabel: string | null;
+  /** T0 could not resolve a duration; the caller must supply one exactly. */
+  requiresDuration: boolean;
+  /** Inserting it leaves the measure short, so a reason must be declared. */
+  requiresCompletionReason: boolean;
+  blockedReason: string | null;
+}>;
+
+export type StudioRecoveredChordLane = Readonly<{
+  available: boolean;
+  /** The literal acknowledgement A0 requires; the caller must return it. */
+  acknowledgement: string;
+  measureLabel: string | null;
+  remainderLabel: string | null;
+  unavailableReason: string | null;
+}>;
+
+/** One bounded T0 parse answers both the token rows and the recovery lane. */
+export type StudioDraftPreview = Readonly<{
+  /**
+   * Which lane the draft belongs to: a parsed draft is `complete-draft`, a
+   * draft T0 refused is `recovered-chord`, and a draft that never reached T0 —
+   * idle, or refused by a U1 preflight guard — belongs to neither.
+   */
+  lane: "complete-draft" | "recovered-chord" | null;
+  tokens: readonly StudioQuickEntryToken[];
+  recovery: StudioRecoveredChordLane;
+  /**
+   * Draft section names that already name a document section. Document
+   * placement is insert-only, so a collision warns and still creates a new
+   * section; v1 defines no section merge.
+   */
+  sectionNameCollisionWarnings: readonly string[];
 }>;
 
 export type StudioRailSide = "left" | "right";
@@ -199,6 +326,14 @@ export interface StudioController {
     issueCodes: readonly string[],
   ) => StudioControllerActionResult;
   readonly clearQuickEntry: () => StudioControllerActionResult;
+  /**
+   * Confirm that the surface has rendered the focus A0 asked for. A0 clears
+   * the request only for the sequence it published, so a late or duplicated
+   * acknowledgement is ignored rather than clearing a newer request.
+   */
+  readonly acknowledgeFocus: (
+    sequence: number,
+  ) => StudioControllerActionResult;
   /** Each editing action publishes exactly one A0 document command. */
   readonly deleteSelection: (
     incompleteReason?: string | null,
@@ -217,9 +352,39 @@ export interface StudioController {
     measureId: string,
     completion: MeasureCompletion,
   ) => StudioControllerActionResult;
+  /**
+   * Publish the completion a measure's own exact fill implies. A short measure
+   * refuses without a stated reason instead of being silently rebalanced.
+   */
+  readonly declareMeasureCompletion: (
+    measureId: string,
+    reason?: string | null,
+  ) => StudioControllerActionResult;
   readonly applyQuickEntryPreview: () => StudioControllerActionResult;
   /** Read-only T0 classification for the draft preview; changes no state. */
   readonly previewChartText: (text: string) => StudioQuickEntryPreview;
+  /**
+   * State exactly one of the five insertion-plan statements for the current
+   * draft and its target. Read-only: it dispatches nothing and mutates
+   * nothing, and it never resolves a blocked statement on the caller's behalf.
+   */
+  readonly previewInsertionPlan: () => StudioInsertionPlan;
+  /**
+   * Read-only preview rows for the current draft plus the recovered-chord
+   * lane's state against the current destination. It dispatches nothing.
+   */
+  readonly previewQuickEntryDraft: () => StudioDraftPreview;
+  /**
+   * Publish exactly one recovered chord. The acknowledgement is the literal the
+   * lane requires, and a `requires-caller` duration must arrive as exact beat
+   * text; neither is ever supplied on the caller's behalf.
+   */
+  readonly insertRecoveredChord: (
+    globalOrdinal: number,
+    callerBeatText?: string | null,
+    acknowledgement?: string,
+    incompleteReason?: string | null,
+  ) => StudioControllerActionResult;
   readonly insertMeasure: (
     sectionId: string,
     beforeMeasureId: string | null,
@@ -258,6 +423,44 @@ export interface StudioController {
     beforeEventId?: string | null,
     incompleteReason?: string | null,
   ) => StudioControllerActionResult;
+  /**
+   * Move every chord after the selection focus, inside its own measure, into
+   * the next measure. This is the named resolution for an overfilled bar; it
+   * is one `move` command and never a hidden pair of commands.
+   */
+  readonly moveFollowingEvents: (
+    incompleteReason?: string | null,
+  ) => StudioControllerActionResult;
+  /** The four remaining atomic plan kinds; each is exactly one command. */
+  readonly splitEventDuration: (
+    eventId: string,
+    firstBeatText: string,
+    secondBeatText?: string,
+  ) => StudioControllerActionResult;
+  readonly joinEventDurations: (
+    leftEventId: string,
+  ) => StudioControllerActionResult;
+  readonly splitSection: (
+    sectionId: string,
+    beforeMeasureId: string,
+    name: string,
+  ) => StudioControllerActionResult;
+  readonly joinSections: (
+    leftSectionId: string,
+  ) => StudioControllerActionResult;
+  /** Set one range edge from a stable boundary, keeping the other edge exact. */
+  readonly setRangeEdge: (
+    edge: "start" | "end",
+    boundary: StudioBoundaryInput,
+  ) => StudioControllerActionResult;
+  /**
+   * Set one range edge from exact rational beat text. The controller resolves
+   * the text against the chart so no surface performs musical arithmetic.
+   */
+  readonly setRangeEdgeBeat: (
+    edge: "start" | "end",
+    beatText: string,
+  ) => StudioControllerActionResult;
 }
 
 export type StudioControllerConstructionRefusal =
@@ -289,6 +492,18 @@ const EDIT_RECOVERY_ACTIONS: Readonly<Record<StudioEditRefusalCode, string>> =
       "Remove the unpaired surrogate from the quick-entry draft.",
     "u1.range_endpoints_unordered":
       "Set the range end at or after the range start in document order.",
+    "u1.range_boundary_invalid":
+      "Enter an exact beat such as 4 or 5/2 that falls on a chord or bar boundary.",
+    "u1.split_partition_invalid":
+      "Enter two exact durations whose sum equals the original duration.",
+    "u1.join_requires_adjacent_events":
+      "Select a chord that has a following chord in the same measure.",
+    "u1.join_right_annotation_not_empty":
+      "Clear the following chord's note before joining the two durations.",
+    "u1.section_split_boundary_invalid":
+      "Split a section at a measure after its first measure.",
+    "u1.section_join_requires_adjacent_sections":
+      "Select a section that has a following section to join.",
     "u1.quick_entry_stale_revision":
       "Retype or re-target the quick-entry draft against the current chart.",
     "u1.quick_entry_target_missing":
@@ -364,6 +579,8 @@ function transitionIssueCodes(
 }
 
 const MAX_DRAFT_CODE_POINTS = 4_096;
+/** Rendered preview rows are bounded; no wall clock is consulted anywhere. */
+const MAX_PREVIEW_TOKENS = 2_048;
 const MAX_SELECTED_EVENTS = 8_192;
 const MAX_PREVIEW_ISSUE_CODES = 64;
 const MAX_SYMBOL_DRAFT_CODE_POINTS = 256;
@@ -383,7 +600,10 @@ function hasLoneSurrogate(value: string): boolean {
   return false;
 }
 
-function totalDuration(events: readonly ChordEvent[]): BeatDuration | null {
+/** Only the exact duration is read, so parsed draft events qualify too. */
+function totalDuration(
+  events: readonly Readonly<{ duration: BeatDuration }>[],
+): BeatDuration | null {
   let total = makeBeatDuration({ numerator: 0, denominator: 1 });
   if (events.length === 0) return null;
   for (const [index, event] of events.entries()) {
@@ -406,21 +626,51 @@ function totalDuration(events: readonly ChordEvent[]): BeatDuration | null {
 }
 
 /**
+ * State a measure fill in exact rationals.
+ *
+ * A duration notice that only says "this changes the fill" leaves the reader
+ * to redo the arithmetic; the reviewed interaction state requires the current
+ * fill, the resulting fill, and the capacity to be stated exactly.
+ */
+function exactFillSentence(
+  current: BeatDuration | null,
+  resulting: BeatDuration | null,
+  capacity: BeatDuration,
+): string {
+  const currentLabel =
+    current === null ? "none" : formatExactBeatLabel(current);
+  const resultingLabel =
+    resulting === null ? "not measurable" : formatExactBeatLabel(resulting);
+  return `This measure holds ${currentLabel} of ${formatExactBeatLabel(capacity)} beats; the new duration would make it ${resultingLabel}.`;
+}
+
+/**
  * Derive the literal completion a measure must carry after an edit. Returning
  * a refusal code rather than guessing keeps every incomplete measure explicit.
  */
 function completionAfterEdit(
-  events: readonly ChordEvent[],
+  events: readonly Readonly<{ duration: BeatDuration }>[],
   capacity: BeatDuration,
   reason: string | null,
 ): Readonly<{ ok: true; completion: MeasureCompletion }>
-  | Readonly<{ ok: false; code: StudioEditRefusalCode }> {
+  | Readonly<{
+      ok: false;
+      code: StudioEditRefusalCode;
+      /** The exact fill the edit would produce, when one could be measured. */
+      resulting: BeatDuration | null;
+      capacity: BeatDuration;
+    }> {
   if (events.length === 0) {
     return Object.freeze({ ok: true, completion: Object.freeze({ kind: "empty" as const }) });
   }
   const total = totalDuration(events);
   if (total === null) {
-    return Object.freeze({ code: "u1.duration_invalid" as const, ok: false });
+    return Object.freeze({
+      capacity,
+      code: "u1.duration_invalid" as const,
+      ok: false,
+      resulting: null,
+    });
   }
   const comparison = compareBeatValues(total, capacity);
   if (comparison === 0) {
@@ -431,14 +681,18 @@ function completionAfterEdit(
   }
   if (comparison > 0) {
     return Object.freeze({
+      capacity,
       code: "u1.duration_overfills_measure" as const,
       ok: false,
+      resulting: total,
     });
   }
   if (reason === null || reason.trim().length === 0) {
     return Object.freeze({
+      capacity,
       code: "u1.completion_reason_required" as const,
       ok: false,
+      resulting: total,
     });
   }
   return Object.freeze({
@@ -473,6 +727,7 @@ function makeStudioController(
   let nextTitleCommandOrdinal = 1;
   let nextCommandOrdinal = 1;
   let lastLogicalTimeMs = 0;
+  let lastTitleLogicalTimeMs: number | null = null;
   const readClock = options.nowMs;
   const listeners = new Set<StudioControllerListener>();
 
@@ -482,6 +737,31 @@ function makeStudioController(
     const floored = Number.isFinite(observed) ? Math.floor(observed) : 0;
     lastLogicalTimeMs = Math.max(lastLogicalTimeMs, Math.max(0, floored));
     return lastLogicalTimeMs;
+  };
+
+  /**
+   * Title edits need two things at once: A0's non-decreasing logical time, and
+   * a gap wider than the text-field coalescing window so consecutive renames
+   * stay separate undo entries with exact snapshots.
+   *
+   * An earlier version supplied only the second by numbering title commands on
+   * a private clock of its own, `(ordinal - 1) * TITLE_COMMAND_INTERVAL_MS`.
+   * That clock started at zero and never saw the shared one, so the first
+   * rename after any chord edit travelled backwards in logical time and A0
+   * refused it with `command.logical_time_invalid` — renaming a chart the user
+   * had actually worked on was impossible. The spacing is now measured from
+   * the shared clock instead of replacing it.
+   */
+  const titleLogicalTimeMs = (): number | null => {
+    const shared = logicalTimeMs();
+    const spaced =
+      lastTitleLogicalTimeMs === null
+        ? shared
+        : Math.max(shared, lastTitleLogicalTimeMs + TITLE_COMMAND_INTERVAL_MS);
+    if (!Number.isSafeInteger(spaced)) return null;
+    lastTitleLogicalTimeMs = spaced;
+    lastLogicalTimeMs = Math.max(lastLogicalTimeMs, spaced);
+    return spaced;
   };
 
   const commandEnvelope = (
@@ -582,6 +862,18 @@ function makeStudioController(
         snapshot,
       });
     }
+    const stamped = titleLogicalTimeMs();
+    if (stamped === null) {
+      return Object.freeze({
+        ok: false,
+        refusal: controllerRefusal(
+          "set-title",
+          "studio.controller.command_sequence_exhausted",
+          "The deterministic title-command sequence is exhausted.",
+        ),
+        snapshot,
+      });
+    }
     const ordinal = nextTitleCommandOrdinal;
     nextTitleCommandOrdinal += 1;
     const command: SetTextCommand = Object.freeze({
@@ -590,7 +882,7 @@ function makeStudioController(
       label: "Rename document",
       expectedDocumentId: state.document.id,
       expectedRevision: state.revision,
-      logicalTimeMs: (ordinal - 1) * TITLE_COMMAND_INTERVAL_MS,
+      logicalTimeMs: stamped,
       coalescing: Object.freeze({
         kind: "text-field",
         key: "title",
@@ -780,6 +1072,100 @@ function makeStudioController(
     });
   };
 
+  /**
+   * Total document order over stable boundaries. The three components are
+   * section, measure, and a doubled event index so that `before-event` and
+   * `after-event` occupy distinct integral slots. Structural sentinels place
+   * a section or measure edge before or after everything it contains.
+   */
+  const boundaryOrderKey = (
+    boundary: StableBoundary,
+  ): readonly [number, number, number] | null => {
+    const START = -1;
+    const END = Number.MAX_SAFE_INTEGER;
+    switch (boundary.kind) {
+      case "document-start":
+        return [START, START, START];
+      case "document-end":
+        return [END, END, END];
+      case "before-section":
+      case "section-start":
+      case "after-section":
+      case "section-end": {
+        const section = documentIndex.sections.get(boundary.sectionId);
+        if (section === undefined) return null;
+        const trailing =
+          boundary.kind === "after-section" || boundary.kind === "section-end";
+        return [section.sectionIndex, trailing ? END : START, trailing ? END : START];
+      }
+      case "before-measure":
+      case "measure-start":
+      case "after-measure":
+      case "measure-end": {
+        const measure = documentIndex.measures.get(boundary.measureId);
+        if (measure === undefined) return null;
+        const trailing =
+          boundary.kind === "after-measure" || boundary.kind === "measure-end";
+        return [
+          measure.sectionIndex,
+          measure.measureIndex,
+          trailing ? END : START,
+        ];
+      }
+      case "before-event":
+      case "after-event": {
+        const event = documentIndex.events.get(boundary.eventId);
+        if (event === undefined) return null;
+        return [
+          event.sectionIndex,
+          event.measureIndex,
+          event.eventIndex * 2 + (boundary.kind === "after-event" ? 1 : 0),
+        ];
+      }
+    }
+  };
+
+  /** Negative when `left` precedes `right`; zero when they denote one point. */
+  const compareBoundaries = (
+    left: StableBoundary,
+    right: StableBoundary,
+  ): number | null => {
+    const a = boundaryOrderKey(left);
+    const b = boundaryOrderKey(right);
+    if (a === null || b === null) return null;
+    for (let index = 0; index < 3; index += 1) {
+      const first = a[index] ?? 0;
+      const second = b[index] ?? 0;
+      if (first !== second) return first < second ? -1 : 1;
+    }
+    return 0;
+  };
+
+  const publishRange = (
+    action: StudioControllerAction,
+    anchor: StableBoundary,
+    focus: StableBoundary,
+  ): StudioControllerActionResult => {
+    const order = compareBoundaries(anchor, focus);
+    if (order === null) {
+      return editRefusal(
+        action,
+        "u1.target_missing",
+        "A range boundary is no longer part of this chart.",
+        ["range"],
+      );
+    }
+    if (order > 0) {
+      return editRefusal(
+        action,
+        "u1.range_endpoints_unordered",
+        "The range end precedes the range start in document order.",
+        ["range", "focus"],
+      );
+    }
+    return publishBookmarks(action, { ...state.bookmarks, range: { anchor, focus } });
+  };
+
   const setRange = (
     anchor: StudioBoundaryInput,
     focus: StudioBoundaryInput,
@@ -794,10 +1180,100 @@ function makeStudioController(
         ["range"],
       );
     }
-    return publishBookmarks("set-range", {
-      ...state.bookmarks,
-      range: { anchor: resolvedAnchor, focus: resolvedFocus },
+    return publishRange("set-range", resolvedAnchor, resolvedFocus);
+  };
+
+  /**
+   * Replace one edge of the range and keep the other exactly as stored. With
+   * no range yet, the new edge becomes both endpoints, which is the empty
+   * range at that point rather than a guessed span.
+   */
+  const setRangeEdge = (
+    edge: "start" | "end",
+    boundary: StudioBoundaryInput,
+  ): StudioControllerActionResult => {
+    const resolved = resolveBoundary(boundary);
+    if (resolved === null) {
+      return editRefusal(
+        "set-range-edge",
+        "u1.target_missing",
+        "That range boundary is no longer part of this chart.",
+        ["range", edge],
+      );
+    }
+    const current = state.bookmarks.range;
+    const anchor =
+      edge === "start" ? resolved : (current?.anchor ?? resolved);
+    const focus = edge === "end" ? resolved : (current?.focus ?? resolved);
+    return publishRange("set-range-edge", anchor, focus);
+  };
+
+  /**
+   * Candidate boundaries in document order with their exact start beat. The
+   * first exact match wins, so a beat that several boundaries share resolves
+   * deterministically to the earliest one.
+   */
+  const boundaryAtExactBeat = (beat: BeatValue): StableBoundary | null => {
+    const zero = makeBeatPosition({ denominator: 1, numerator: 0 });
+    if (!zero.ok) return null;
+    let position: BeatValue = zero.value;
+    for (const section of state.document.sections) {
+      for (const measure of section.measures) {
+        if (compareBeatValues(position, beat) === 0) {
+          return Object.freeze({ kind: "measure-start", measureId: measure.id });
+        }
+        for (const event of measure.events) {
+          const next = addBeatValues(position, event.duration);
+          if (!next.ok) return null;
+          position = next.value;
+          if (compareBeatValues(position, beat) === 0) {
+            return Object.freeze({ eventId: event.id, kind: "after-event" });
+          }
+        }
+      }
+    }
+    return null;
+  };
+
+  const setRangeEdgeBeat = (
+    edge: "start" | "end",
+    beatText: string,
+  ): StudioControllerActionResult => {
+    const match = /^(\d{1,10})(?:\/(\d{1,10}))?$/u.exec(beatText.trim());
+    const numerator = match?.[1];
+    if (match === null || numerator === undefined) {
+      return editRefusal(
+        "set-range-edge",
+        "u1.range_boundary_invalid",
+        "The range beat is not an exact non-negative rational value.",
+        ["range", edge],
+      );
+    }
+    const beat = makeBeatPosition({
+      denominator: Number(match[2] ?? "1"),
+      numerator: Number(numerator),
     });
+    if (!beat.ok) {
+      return editRefusal(
+        "set-range-edge",
+        "u1.range_boundary_invalid",
+        "The range beat is not an exact non-negative rational value.",
+        ["range", edge],
+      );
+    }
+    const boundary = boundaryAtExactBeat(beat.value);
+    if (boundary === null) {
+      return editRefusal(
+        "set-range-edge",
+        "u1.range_boundary_invalid",
+        "No chord or bar boundary starts exactly at that beat.",
+        ["range", edge],
+      );
+    }
+    const current = state.bookmarks.range;
+    const anchor = edge === "start" ? boundary : (current?.anchor ?? boundary);
+    const focus = edge === "end" ? boundary : (current?.focus ?? boundary);
+    return publishRange("set-range-edge", anchor, focus);
   };
 
   const clearRange = (): StudioControllerActionResult =>
@@ -850,6 +1326,14 @@ function makeStudioController(
       }),
     );
   };
+
+  const acknowledgeFocus = (sequence: number): StudioControllerActionResult =>
+    apply("acknowledge-focus", (current) =>
+      reduceEphemeralIntent({
+        intent: { kind: "acknowledge-focus", sequence },
+        state: current,
+      }),
+    );
 
   const clearQuickEntry = (): StudioControllerActionResult =>
     apply("clear-quick-entry", (current) =>
@@ -1072,16 +1556,24 @@ function makeStudioController(
         ? { ...event, duration: duration.value }
         : event,
     );
+    const capacity = measureCapacity(state.document.meter);
     const completion = completionAfterEdit(
       projected,
-      measureCapacity(state.document.meter),
+      capacity,
       incompleteReason,
     );
     if (!completion.ok) {
+      // The notice states the exact arithmetic rather than a summary: the fill
+      // the measure has now, the fill this duration would produce, and the bar
+      // capacity, all as exact rationals. A reader can check the decision.
       return editRefusal(
         "set-event-duration",
         completion.code,
-        "The new duration changes the measure fill and needs an explicit decision.",
+        exactFillSentence(
+          totalDuration(measure.measure.events),
+          completion.resulting,
+          capacity,
+        ),
         ["completionUpdate"],
       );
     }
@@ -1098,6 +1590,81 @@ function makeStudioController(
     return apply("set-event-duration", (current) =>
       runDocumentCommand({ command, dependencies, state: current }),
     );
+  };
+
+  /**
+   * Classify the current draft against its destination. The order is the
+   * reviewed one: draft preflight, T0 outcome, staleness, then destination
+   * shape and occupancy. Every branch reuses the same placement chooser the
+   * real command uses, so the statement cannot drift from the dispatch.
+   */
+  const previewInsertionPlan = (): StudioInsertionPlan => {
+    const blocked = (
+      statement: StudioInsertionPlanStatement,
+    ): StudioInsertionPlan =>
+      Object.freeze({
+        blockedReason: BLOCKED_REASON_BY_STATEMENT[statement],
+        committable: false,
+        placement: null,
+        planKind: null,
+        resolutions: RESOLUTIONS_BY_STATEMENT[statement],
+        statement,
+      });
+
+    const draft = state.quickEntry;
+    if (draft.text.length === 0) return blocked("no-draft");
+    if (draft.baseRevision !== state.revision) {
+      return blocked("not-atomic-refusal");
+    }
+    // The draft's own status is not consulted here: it is a summary, and the
+    // two blocked statements are distinguished by the T0 diagnostics below.
+    const target = draft.target;
+    if (target === null) return blocked("not-atomic-refusal");
+    const parsed = dependencies.parseChartText(
+      draft.text,
+      { meter: state.document.meter, mode: "fragment" },
+      "ascii",
+    );
+    if (!parsed.ok) {
+      /**
+       * T0 refuses a bar that does not fill exactly rather than publishing a
+       * short or long measure, so both fill statements are visible only in its
+       * diagnostics. A draft refused for nothing but one bar-fill code states
+       * that fill; any other diagnostic is a genuine non-atomic refusal.
+       */
+      const codes = new Set(
+        parsed.diagnostics.map((diagnostic) => diagnostic.code),
+      );
+      if (codes.size === 1) {
+        if (codes.has("chart.bar_underfilled")) {
+          return blocked("incomplete-requires-confirmation");
+        }
+        if (codes.has("chart.bar_overfilled")) {
+          return blocked("overfill-requires-split");
+        }
+      }
+      return blocked("not-atomic-refusal");
+    }
+    const placement = completeDraftPlacement(parsed.draft, target);
+    if (!placement.ok) {
+      return placement.code === "u1.insertion_plan_overfills_destination"
+        ? blocked("overfill-requires-split")
+        : blocked("not-atomic-refusal");
+    }
+    const statement =
+      placement.placement.kind === "into-measure"
+        ? ("fits-measure" as const)
+        : ("completes-measures" as const);
+    return Object.freeze({
+      blockedReason: null,
+      committable: true,
+      // The placement is reported separately so a preview never claims a
+      // measure-level insertion it will not perform.
+      placement: placement.placement.kind,
+      planKind: "insert-fragment",
+      resolutions: RESOLUTIONS_BY_STATEMENT[statement],
+      statement,
+    });
   };
 
   /**
@@ -1305,6 +1872,389 @@ function makeStudioController(
     });
   };
 
+  /**
+   * Exact beats still free in a measure. A full or overfilled measure has no
+   * positive remainder at all, which `makeBeatDuration` already refuses, so the
+   * absent value is the honest answer rather than a synthesized zero.
+   */
+  const measureRemainder = (
+    events: readonly Readonly<{ duration: BeatDuration }>[],
+  ): BeatDuration | null => {
+    const capacity = measureCapacity(state.document.meter);
+    const filled = totalDuration(events);
+    return filled === null ? capacity : remainderAfter(capacity, filled);
+  };
+
+  /**
+   * One bounded T0 parse states the whole preview: the token rows, and, for a
+   * refused draft, the recovered-chord lane. It dispatches nothing and resolves
+   * nothing on the caller's behalf — the layout-loss acknowledgement and any
+   * duration T0 could not resolve stay with the user.
+   */
+  const previewQuickEntryDraft = (): StudioDraftPreview => {
+    const lane = (
+      available: boolean,
+      unavailableReason: string | null,
+      measureLabel: string | null = null,
+      remainderLabel: string | null = null,
+    ): StudioRecoveredChordLane =>
+      Object.freeze({
+        acknowledgement: A0_U1_RECOVERED_CHORD_LAYOUT_LOSS_ACKNOWLEDGEMENT,
+        available,
+        measureLabel,
+        remainderLabel,
+        unavailableReason,
+      });
+    const closed = (
+      tokens: readonly StudioQuickEntryToken[],
+      reason: string,
+      draftLane: StudioDraftPreview["lane"] = null,
+      warnings: readonly string[] = Object.freeze([]),
+    ): StudioDraftPreview =>
+      Object.freeze({
+        lane: draftLane,
+        recovery: lane(false, reason),
+        sectionNameCollisionWarnings: warnings,
+        tokens,
+      });
+
+    const draft = state.quickEntry;
+    const empty = Object.freeze([]) as readonly StudioQuickEntryToken[];
+    if (draft.text.length === 0) {
+      return closed(empty, "Type a draft before recovering a chord from it.");
+    }
+    if (draft.baseRevision !== state.revision) {
+      return closed(
+        empty,
+        "The draft was written against an older revision; retype it.",
+      );
+    }
+    const parsed = dependencies.parseChartText(
+      draft.text,
+      { meter: state.document.meter, mode: "fragment" },
+      "ascii",
+    );
+    const slice = (range: Readonly<{ start: number; end: number }>): string =>
+      draft.text.slice(range.start, range.end);
+
+    if (parsed.ok) {
+      const rows: StudioQuickEntryToken[] = [];
+      for (const section of parsed.draft.sections) {
+        for (const measure of section.measures) {
+          for (const event of measure.events) {
+            if (rows.length >= MAX_PREVIEW_TOKENS) break;
+            rows.push(
+              Object.freeze({
+                blockedReason: null,
+                diagnosticCode: null,
+                durationLabel: formatExactBeatLabel(event.duration),
+                globalOrdinal: null,
+                ordinal: rows.length + 1,
+                requiresCompletionReason: false,
+                requiresDuration: false,
+                sourceText: slice(event.range),
+                state: "valid" as const,
+              }),
+            );
+          }
+        }
+      }
+      /**
+       * Only a document placement creates sections, so only that placement can
+       * collide with an existing section name.
+       */
+      const target = draft.target;
+      const placement =
+        target === null ? null : completeDraftPlacement(parsed.draft, target);
+      const existing = new Set(
+        state.document.sections.map((section) => section.name),
+      );
+      const warnings =
+        placement !== null && placement.ok &&
+        placement.placement.kind === "into-document"
+          ? parsed.draft.sections
+              .filter(
+                (section) =>
+                  section.kind === "named" &&
+                  section.name !== null &&
+                  existing.has(section.name),
+              )
+              .map((section) => section.name ?? "")
+          : [];
+      return closed(
+        Object.freeze(rows),
+        "The draft parses; insert the whole preview instead of one chord.",
+        "complete-draft",
+        Object.freeze(warnings),
+      );
+    }
+
+    /**
+     * The destination decides only whether a recovered row can be committed.
+     * The rows themselves are T0's, so they are still shown when no measure is
+     * aimed at yet, together with the reason the lane is closed.
+     */
+    const target = draft.target;
+    const destination = target === null ? null : measureInsertPoint(target);
+    const measure =
+      destination === null
+        ? undefined
+        : documentIndex.measures.get(destination.measureId);
+    const remainder =
+      measure === undefined ? null : measureRemainder(measure.measure.events);
+    const closedReason =
+      target === null
+        ? "Choose the measure this chord should go into."
+        : destination === null
+          ? "One recovered chord goes into a measure; aim at a measure or a chord."
+          : measure === undefined
+            ? "The target measure is no longer part of this chart."
+            : remainder === null
+              ? "The target measure has no beats left."
+              : null;
+
+    const rows: StudioQuickEntryToken[] = [];
+    for (const chord of parsed.insertableChords) {
+      if (rows.length >= MAX_PREVIEW_TOKENS) break;
+      const resolved =
+        chord.duration.kind === "resolved" ? chord.duration.value : null;
+      const fits =
+        resolved === null ||
+        (remainder !== null && compareBeatValues(resolved, remainder) <= 0);
+      const short =
+        resolved !== null &&
+        remainder !== null &&
+        compareBeatValues(resolved, remainder) < 0;
+      rows.push(
+        Object.freeze({
+          blockedReason: fits
+            ? closedReason
+            : "Longer than the beats left in the target measure.",
+          diagnosticCode: null,
+          durationLabel: resolved === null ? null : formatExactBeatLabel(resolved),
+          globalOrdinal: chord.ordinal,
+          ordinal: rows.length + 1,
+          requiresCompletionReason: short,
+          requiresDuration: resolved === null,
+          sourceText: slice(chord.range),
+          state: "insertable" as const,
+        }),
+      );
+    }
+    const recoveredCount = rows.length;
+    for (const diagnostic of parsed.diagnostics) {
+      if (rows.length >= MAX_PREVIEW_TOKENS) break;
+      rows.push(
+        Object.freeze({
+          blockedReason: null,
+          diagnosticCode: diagnostic.code,
+          durationLabel: null,
+          globalOrdinal: null,
+          ordinal: rows.length + 1,
+          requiresCompletionReason: false,
+          requiresDuration: false,
+          sourceText: slice(diagnostic.range),
+          state: "invalid" as const,
+        }),
+      );
+    }
+    if (recoveredCount === 0) {
+      return closed(
+        Object.freeze(rows),
+        "T0 recovered no chord from this draft.",
+        "recovered-chord",
+      );
+    }
+    return Object.freeze({
+      lane: "recovered-chord" as const,
+      sectionNameCollisionWarnings: Object.freeze([]),
+      recovery: lane(
+        closedReason === null,
+        closedReason,
+        measure === undefined
+          ? null
+          : `Measure ${String(measure.measureIndex + 1)}`,
+        remainder === null ? null : formatExactBeatLabel(remainder),
+      ),
+      tokens: Object.freeze(rows),
+    });
+  };
+
+  /**
+   * Publish exactly one T0-recovered chord as one atomic A0/U1 command. The
+   * whole draft is never partially applied: this inserts the single chord the
+   * caller selected, at the boundary the draft is already aimed at, and only
+   * once the caller has acknowledged that the source layout is lost.
+   */
+  const insertRecoveredChord = (
+    globalOrdinal: number,
+    callerBeatText: string | null = null,
+    acknowledgement = "",
+    incompleteReason: string | null = null,
+  ): StudioControllerActionResult => {
+    const draft = state.quickEntry;
+    if (draft.status !== "invalid") {
+      return editRefusal(
+        "insert-recovered-chord",
+        "u1.quick_entry_lane_mismatch",
+        "The recovered-chord lane requires a draft T0 refused.",
+        ["quickEntry", "status"],
+      );
+    }
+    if (draft.baseRevision !== state.revision) {
+      return editRefusal(
+        "insert-recovered-chord",
+        "u1.quick_entry_stale_revision",
+        "The quick-entry draft was written against an older revision.",
+        ["quickEntry", "baseRevision"],
+      );
+    }
+    const target = draft.target;
+    if (target === null) {
+      return editRefusal(
+        "insert-recovered-chord",
+        "u1.quick_entry_target_missing",
+        "The quick-entry draft has no insertion target.",
+        ["quickEntry", "target"],
+      );
+    }
+    /**
+     * §4.2 states the acknowledgement as a precondition of the lane itself, so
+     * a request without it is not a recovered-chord request. Refusing here
+     * keeps the A0 code `edit-plan.recovered-chord-layout-loss-unacknowledged`
+     * meaning exactly what it says: A0 saw a plan carrying the wrong literal.
+     */
+    if (acknowledgement !== A0_U1_RECOVERED_CHORD_LAYOUT_LOSS_ACKNOWLEDGEMENT) {
+      return editRefusal(
+        "insert-recovered-chord",
+        "u1.quick_entry_lane_mismatch",
+        "Recovering one chord discards the draft's bar and section layout; acknowledge that first.",
+        ["quickEntry", "layoutLossAcknowledgement"],
+      );
+    }
+    const destination = measureInsertPoint(target);
+    if (destination === null) {
+      return editRefusal(
+        "insert-recovered-chord",
+        "u1.insertion_plan_not_atomic",
+        "One recovered chord goes into a measure; aim at a measure or a chord.",
+        ["quickEntry", "target"],
+      );
+    }
+    const measure = documentIndex.measures.get(destination.measureId);
+    if (measure === undefined) {
+      return editRefusal(
+        "insert-recovered-chord",
+        "u1.quick_entry_target_missing",
+        "The target measure is no longer part of this chart.",
+        ["quickEntry", "target"],
+      );
+    }
+    const parsed = dependencies.parseChartText(
+      draft.text,
+      { meter: state.document.meter, mode: "fragment" },
+      "ascii",
+    );
+    if (parsed.ok) {
+      return editRefusal(
+        "insert-recovered-chord",
+        "u1.quick_entry_lane_mismatch",
+        "The draft parses; insert the whole preview instead of one chord.",
+        ["quickEntry", "text"],
+      );
+    }
+    const selected = parsed.insertableChords.find(
+      (chord) => chord.ordinal === globalOrdinal,
+    );
+    if (selected === undefined) {
+      return editRefusal(
+        "insert-recovered-chord",
+        "u1.target_missing",
+        "T0 did not publish a recoverable chord with that ordinal.",
+        ["quickEntry", "selectedGlobalOrdinal"],
+      );
+    }
+    const supplied = callerBeatText === null ? "" : callerBeatText.trim();
+    let callerDuration: BeatDuration | null = null;
+    let insertedDuration: BeatDuration;
+    if (selected.duration.kind === "resolved") {
+      if (supplied.length !== 0) {
+        return editRefusal(
+          "insert-recovered-chord",
+          "u1.duration_invalid",
+          "T0 already resolved this chord's duration; leave the field empty.",
+          ["quickEntry", "callerDuration"],
+        );
+      }
+      insertedDuration = selected.duration.value;
+    } else {
+      const exact = exactBeats(supplied);
+      if (exact === null) {
+        return editRefusal(
+          "insert-recovered-chord",
+          "u1.duration_invalid",
+          "Enter an exact positive beat value such as 2 or 5/2.",
+          ["quickEntry", "callerDuration"],
+        );
+      }
+      callerDuration = exact;
+      insertedDuration = exact;
+    }
+    const completion = completionAfterEdit(
+      [...measure.measure.events, { duration: insertedDuration }],
+      measureCapacity(state.document.meter),
+      incompleteReason,
+    );
+    if (!completion.ok) {
+      return editRefusal(
+        "insert-recovered-chord",
+        completion.code,
+        completion.code === "u1.duration_overfills_measure"
+          ? "The recovered chord is longer than the beats left in that measure."
+          : "Declare why the measure stays shorter than the bar.",
+        ["quickEntry", "callerDuration"],
+      );
+    }
+    const snapshot: AtomicEditPlanQuickEntrySnapshot<
+      "invalid",
+      "recovered-chord"
+    > = Object.freeze({
+      baseRevision: draft.baseRevision,
+      expectedLane: "recovered-chord",
+      expectedStatus: "invalid",
+      issueCodes: Object.freeze([...draft.issueCodes]),
+      sourceText: draft.text,
+      target,
+    });
+    const command: ApplyEditPlanCommand = Object.freeze({
+      ...commandEnvelope("studio-recovered-chord", "Insert one recovered chord"),
+      kind: "apply-edit-plan",
+      plan: Object.freeze({
+        kind: "insert-fragment" as const,
+        placement: Object.freeze({
+          beforeEventId: destination.beforeEventId,
+          completionDeclarations: [
+            { completion: completion.completion, measureId: measure.id },
+          ] as const,
+          kind: "into-measure" as const,
+          layoutDisposition: "insert-one-recovered-chord" as const,
+          measureId: measure.id,
+        }),
+        source: Object.freeze({
+          callerDuration,
+          kind: "recovered-chord" as const,
+          layoutLossAcknowledgement: acknowledgement,
+          quickEntrySnapshot: snapshot,
+          selectedGlobalOrdinal: globalOrdinal,
+        }),
+        voicingPolicy: A0_U1_NEW_EVENT_POLICY_ID,
+      }),
+    });
+    return apply("insert-recovered-chord", (current) =>
+      runDocumentCommand({ command, dependencies, state: current }),
+    );
+  };
+
   const sectionInsertPoint = (
     target: StableBoundary,
   ): Readonly<{ sectionId: SectionId; beforeMeasureId: MeasureId | null }> | null => {
@@ -1337,6 +2287,49 @@ function makeStudioController(
     return Object.freeze({
       beforeMeasureId: next === undefined ? null : next.id,
       sectionId: section.id,
+    });
+  };
+
+  /**
+   * Canonicalize a measure-level boundary exactly as A0 does, so a recovered
+   * placement and the snapshot target it was aimed at cannot disagree at
+   * dispatch. Section- and document-level boundaries have no measure slot.
+   */
+  const measureInsertPoint = (
+    target: StableBoundary,
+  ): Readonly<{
+    measureId: MeasureId;
+    beforeEventId: ChordEventId | null;
+  }> | null => {
+    if (target.kind === "measure-start" || target.kind === "measure-end") {
+      const measure = documentIndex.measures.get(target.measureId);
+      if (measure === undefined) return null;
+      const first = measure.measure.events[0];
+      return Object.freeze({
+        beforeEventId:
+          target.kind === "measure-start" && first !== undefined
+            ? first.id
+            : null,
+        measureId: measure.id,
+      });
+    }
+    if (target.kind !== "before-event" && target.kind !== "after-event") {
+      return null;
+    }
+    const event = documentIndex.events.get(target.eventId);
+    if (event === undefined) return null;
+    if (target.kind === "before-event") {
+      return Object.freeze({
+        beforeEventId: event.id,
+        measureId: event.measureId,
+      });
+    }
+    const measure = documentIndex.measures.get(event.measureId);
+    if (measure === undefined) return null;
+    const next = measure.measure.events[event.eventIndex + 1];
+    return Object.freeze({
+      beforeEventId: next === undefined ? null : next.id,
+      measureId: event.measureId,
     });
   };
 
@@ -2059,6 +3052,412 @@ function makeStudioController(
     );
   };
 
+  /**
+   * The named resolution for an overfilled bar: move every chord that follows
+   * the selection focus, within its own measure, into the next measure. It is
+   * one `move` command, and it refuses rather than overfilling the neighbour.
+   */
+  const moveFollowingEvents = (
+    incompleteReason: string | null = null,
+  ): StudioControllerActionResult => {
+    const selection = state.bookmarks.selection;
+    if (selection.kind !== "events") {
+      return editRefusal(
+        "move-following-events",
+        "u1.selection_empty",
+        "Select a chord before moving the chords that follow it.",
+        ["selection"],
+      );
+    }
+    const focus = documentIndex.events.get(selection.focusEventId);
+    if (focus === undefined) {
+      return editRefusal(
+        "move-following-events",
+        "u1.target_missing",
+        "The selected chord is no longer part of this chart.",
+        ["selection"],
+      );
+    }
+    const source = documentIndex.measures.get(focus.measureId);
+    if (source === undefined) {
+      return editRefusal(
+        "move-following-events",
+        "u1.target_missing",
+        "The owning measure is no longer part of this chart.",
+        ["selection"],
+      );
+    }
+    const following = source.measure.events.slice(focus.eventIndex + 1);
+    const [firstFollowing, ...restFollowing] = following;
+    if (firstFollowing === undefined) {
+      return editRefusal(
+        "move-following-events",
+        "u1.move_destination_invalid",
+        "No chord follows the selected chord inside this measure.",
+        ["selection"],
+      );
+    }
+    const section = documentIndex.sections.get(focus.sectionId);
+    const destination = section?.section.measures[source.measureIndex + 1];
+    if (destination === undefined) {
+      return editRefusal(
+        "move-following-events",
+        "u1.move_destination_invalid",
+        "This measure has no following measure in its section.",
+        ["destination"],
+      );
+    }
+    const capacity = measureCapacity(state.document.meter);
+    const remaining = source.measure.events.slice(0, focus.eventIndex + 1);
+    const sourceCompletion = completionAfterEdit(
+      remaining,
+      capacity,
+      incompleteReason,
+    );
+    if (!sourceCompletion.ok) {
+      return editRefusal(
+        "move-following-events",
+        sourceCompletion.code,
+        "Moving the following chords leaves this measure needing an explicit decision.",
+        ["completionUpdates", source.id],
+      );
+    }
+    const destinationCompletion = completionAfterEdit(
+      [...following, ...destination.events],
+      capacity,
+      incompleteReason,
+    );
+    if (!destinationCompletion.ok) {
+      return editRefusal(
+        "move-following-events",
+        destinationCompletion.code,
+        "The next measure cannot accept the following chords.",
+        ["completionUpdates", destination.id],
+      );
+    }
+    const followingTargets: readonly [DocumentNodeRef, ...DocumentNodeRef[]] =
+      Object.freeze([
+        { id: firstFollowing.id, kind: "event" },
+        ...restFollowing.map(
+          (event): DocumentNodeRef => ({ id: event.id, kind: "event" }),
+        ),
+      ]);
+    const command: MoveDocumentNodesCommand = Object.freeze({
+      ...commandEnvelope("studio-move-following", "Move following chords"),
+      completionUpdates: Object.freeze([
+        { completion: sourceCompletion.completion, measureId: source.id },
+        {
+          completion: destinationCompletion.completion,
+          measureId: destination.id,
+        },
+      ]),
+      destination: Object.freeze({
+        beforeEventId: destination.events[0]?.id ?? null,
+        kind: "event" as const,
+        measureId: destination.id,
+      }),
+      kind: "move",
+      targets: followingTargets,
+    });
+    return apply("move-following-events", (current) =>
+      runDocumentCommand({ command, dependencies, state: current }),
+    );
+  };
+
+  /** The exact remainder of a duration after a split point, or null. */
+  const remainderAfter = (
+    total: BeatDuration,
+    first: BeatDuration | null,
+  ): BeatDuration | null => {
+    if (first === null) return null;
+    const difference = subtractBeatValues(total, first);
+    if (!difference.ok) return null;
+    const remainder = makeBeatDuration({
+      denominator: difference.value.denominator,
+      numerator: difference.value.numerator,
+    });
+    return remainder.ok ? remainder.value : null;
+  };
+
+  /** Parse exact rational beat text; U1 narrows nothing T0 or the domain accepts. */
+  const exactBeats = (text: string): BeatDuration | null => {
+    const match = /^(\d{1,10})(?:\/(\d{1,10}))?$/u.exec(text.trim());
+    const numerator = match?.[1];
+    if (match === null || numerator === undefined) return null;
+    const value = makeBeatDuration({
+      denominator: Number(match[2] ?? "1"),
+      numerator: Number(numerator),
+    });
+    return value.ok ? value.value : null;
+  };
+
+  /**
+   * Split one chord into two exact spans whose sum equals the original. The
+   * measure total is unchanged, so its literal completion is restated rather
+   * than recomputed under a rule that could silently rebalance the bar.
+   */
+  const splitEventDuration = (
+    eventId: string,
+    firstBeatText: string,
+    secondBeatText?: string,
+  ): StudioControllerActionResult => {
+    const location = documentIndex.events.get(eventId);
+    if (location === undefined) {
+      return editRefusal(
+        "split-event-duration",
+        "u1.target_missing",
+        "The chord is no longer part of this chart.",
+        ["eventId"],
+      );
+    }
+    const first = exactBeats(firstBeatText);
+    /**
+     * With only the split point named, the remainder is derived exactly here
+     * rather than in the surface: no UI layer performs musical arithmetic, and
+     * the plan still states both spans literally.
+     */
+    const second =
+      secondBeatText === undefined
+        ? remainderAfter(location.event.duration, first)
+        : exactBeats(secondBeatText);
+    if (first !== null && secondBeatText === undefined && second === null) {
+      // The split point parsed but leaves no positive remainder, so it does
+      // not partition the chord. That is a partition failure, not bad text.
+      return editRefusal(
+        "split-event-duration",
+        "u1.split_partition_invalid",
+        "The split point does not leave a positive remainder inside the chord.",
+        ["duration"],
+      );
+    }
+    if (first === null || second === null) {
+      return editRefusal(
+        "split-event-duration",
+        "u1.duration_invalid",
+        "Enter two exact positive beat values such as 1 and 1.",
+        ["duration"],
+      );
+    }
+    const sum = addBeatValues(first, second);
+    if (!sum.ok || compareBeatValues(sum.value, location.event.duration) !== 0) {
+      return editRefusal(
+        "split-event-duration",
+        "u1.split_partition_invalid",
+        "The two durations do not sum to the chord's exact duration.",
+        ["duration"],
+      );
+    }
+    const measure = documentIndex.measures.get(location.measureId);
+    if (measure === undefined) {
+      return editRefusal(
+        "split-event-duration",
+        "u1.target_missing",
+        "The owning measure is no longer part of this chart.",
+        ["eventId"],
+      );
+    }
+    const command: ApplyEditPlanCommand = Object.freeze({
+      ...commandEnvelope("studio-split-duration", "Split chord duration"),
+      kind: "apply-edit-plan",
+      plan: Object.freeze({
+        annotationPolicy: "retain-source-first-clear-second" as const,
+        completionDeclarations: [
+          { completion: measure.measure.completion, measureId: measure.id },
+        ] as const,
+        contentPolicy: "copy-exact-chord-and-voicing" as const,
+        eventId: location.id,
+        firstDuration: first,
+        identityPolicy: "retain-source-first-allocate-second" as const,
+        kind: "split-event-duration" as const,
+        secondDuration: second,
+      }),
+    });
+    return apply("split-event-duration", (current) =>
+      runDocumentCommand({ command, dependencies, state: current }),
+    );
+  };
+
+  /** Join a chord with the next chord in the same measure into one exact span. */
+  const joinEventDurations = (
+    leftEventId: string,
+  ): StudioControllerActionResult => {
+    const left = documentIndex.events.get(leftEventId);
+    if (left === undefined) {
+      return editRefusal(
+        "join-event-durations",
+        "u1.target_missing",
+        "The chord is no longer part of this chart.",
+        ["eventId"],
+      );
+    }
+    const measure = documentIndex.measures.get(left.measureId);
+    const right = measure?.measure.events[left.eventIndex + 1];
+    if (measure === undefined || right === undefined) {
+      return editRefusal(
+        "join-event-durations",
+        "u1.join_requires_adjacent_events",
+        "This chord has no following chord inside the same measure.",
+        ["eventId"],
+      );
+    }
+    if (right.annotation.length > 0) {
+      return editRefusal(
+        "join-event-durations",
+        "u1.join_right_annotation_not_empty",
+        "The following chord carries a note that a join would discard.",
+        ["annotation"],
+      );
+    }
+    const sum = addBeatValues(left.event.duration, right.duration);
+    const joined =
+      sum.ok
+        ? makeBeatDuration({
+            denominator: sum.value.denominator,
+            numerator: sum.value.numerator,
+          })
+        : null;
+    if (joined === null || !joined.ok) {
+      return editRefusal(
+        "join-event-durations",
+        "u1.duration_invalid",
+        "The joined duration is not an exact representable beat value.",
+        ["duration"],
+      );
+    }
+    const command: ApplyEditPlanCommand = Object.freeze({
+      ...commandEnvelope("studio-join-duration", "Join chord durations"),
+      kind: "apply-edit-plan",
+      plan: Object.freeze({
+        annotationPolicy: "require-right-empty-retain-left" as const,
+        completionDeclarations: [
+          { completion: measure.measure.completion, measureId: measure.id },
+        ] as const,
+        contentPolicy: "require-exact-chord-and-voicing" as const,
+        identityPolicy: "retain-left-remove-right" as const,
+        joinedDuration: joined.value,
+        kind: "join-event-durations" as const,
+        leftEventId: left.id,
+        rightEventId: right.id,
+      }),
+    });
+    return apply("join-event-durations", (current) =>
+      runDocumentCommand({ command, dependencies, state: current }),
+    );
+  };
+
+  /** Split a section at a measure boundary that is not its first measure. */
+  const splitSection = (
+    sectionId: string,
+    beforeMeasureId: string,
+    name: string,
+  ): StudioControllerActionResult => {
+    const section = documentIndex.sections.get(sectionId);
+    if (section === undefined) {
+      return editRefusal(
+        "split-section",
+        "u1.target_missing",
+        "The section is no longer part of this chart.",
+        ["sectionId"],
+      );
+    }
+    const measure = documentIndex.measures.get(beforeMeasureId);
+    if (
+      measure === undefined ||
+      measure.sectionId !== section.id ||
+      measure.measureIndex === 0
+    ) {
+      return editRefusal(
+        "split-section",
+        "u1.section_split_boundary_invalid",
+        "Split at a measure that follows the section's first measure.",
+        ["beforeMeasureId"],
+      );
+    }
+    const command: ApplyEditPlanCommand = Object.freeze({
+      ...commandEnvelope("studio-split-section", "Split section"),
+      kind: "apply-edit-plan",
+      plan: Object.freeze({
+        beforeMeasureId: measure.id,
+        completionDeclarations: [] as const,
+        identityPolicy: "retain-source-prefix-allocate-suffix" as const,
+        kind: "split-section" as const,
+        measurePolicy: "move-suffix-preserve-identities" as const,
+        newSectionMetadata: Object.freeze({
+          annotation: "",
+          keyOverride: section.section.keyOverride,
+          name,
+          voiceLeadingBoundary: section.section.voiceLeadingBoundary,
+        }),
+        sectionId: section.id,
+      }),
+    });
+    return apply("split-section", (current) =>
+      runDocumentCommand({ command, dependencies, state: current }),
+    );
+  };
+
+  /**
+   * Join a section with the next section. Both metadata blocks are stated
+   * literally so A0 can compare them; the result keeps the left section's
+   * metadata rather than merging two descriptions into a guess.
+   */
+  const joinSections = (
+    leftSectionId: string,
+  ): StudioControllerActionResult => {
+    const left = documentIndex.sections.get(leftSectionId);
+    if (left === undefined) {
+      return editRefusal(
+        "join-sections",
+        "u1.target_missing",
+        "The section is no longer part of this chart.",
+        ["sectionId"],
+      );
+    }
+    const right = state.document.sections[left.sectionIndex + 1];
+    if (right === undefined) {
+      return editRefusal(
+        "join-sections",
+        "u1.section_join_requires_adjacent_sections",
+        "This section has no following section to join.",
+        ["sectionId"],
+      );
+    }
+    const metadata = (
+      source: typeof left.section,
+    ): Readonly<{
+      name: string;
+      annotation: string;
+      keyOverride: typeof source.keyOverride;
+      voiceLeadingBoundary: typeof source.voiceLeadingBoundary;
+    }> =>
+      Object.freeze({
+        annotation: source.annotation,
+        keyOverride: source.keyOverride,
+        name: source.name,
+        voiceLeadingBoundary: source.voiceLeadingBoundary,
+      });
+    const command: ApplyEditPlanCommand = Object.freeze({
+      ...commandEnvelope("studio-join-sections", "Join sections"),
+      kind: "apply-edit-plan",
+      plan: Object.freeze({
+        completionDeclarations: [] as const,
+        expectedLeftMetadata: metadata(left.section),
+        expectedRightMetadata: metadata(right),
+        identityPolicy: "retain-left-remove-right" as const,
+        internalBoundaryPolicy: "remove-right-entry-boundary-confirmed" as const,
+        kind: "join-sections" as const,
+        leftSectionId: left.id,
+        measurePolicy: "left-then-right-preserve-identities" as const,
+        metadataPolicy: "compare-both-then-apply-explicit-result" as const,
+        resultMetadata: metadata(left.section),
+        rightSectionId: right.id,
+      }),
+    });
+    return apply("join-sections", (current) =>
+      runDocumentCommand({ command, dependencies, state: current }),
+    );
+  };
+
   /** Section text coalesces exactly like the accepted A0 text policy. */
   const setSectionText = (
     action: StudioControllerAction,
@@ -2172,7 +3571,46 @@ function makeStudioController(
     );
   };
 
+  /**
+   * Declare the literal completion a measure already has. The fill is measured
+   * exactly, never assumed: a full bar is complete, an empty bar is empty, a
+   * short bar needs a stated reason, and an overfilled bar refuses rather than
+   * being rebalanced into something that fits.
+   */
+  const declareMeasureCompletion = (
+    measureId: string,
+    reason: string | null = null,
+  ): StudioControllerActionResult => {
+    const location = documentIndex.measures.get(measureId);
+    if (location === undefined) {
+      return editRefusal(
+        "set-measure-completion",
+        "u1.target_missing",
+        "The measure is no longer part of this chart.",
+        ["measureId"],
+      );
+    }
+    const completion = completionAfterEdit(
+      location.measure.events,
+      measureCapacity(state.document.meter),
+      reason,
+    );
+    if (!completion.ok) {
+      return editRefusal(
+        "set-measure-completion",
+        completion.code,
+        completion.code === "u1.duration_overfills_measure"
+          ? "This measure already holds more beats than the bar; shorten it first."
+          : "Declare why this measure stays shorter than the bar.",
+        ["measureId"],
+      );
+    }
+    return setMeasureCompletion(measureId, completion.completion);
+  };
+
   return Object.freeze({
+    acknowledgeFocus,
+    declareMeasureCompletion,
     getSnapshot: () => snapshot,
     annotateSection,
     applyInlineSymbol,
@@ -2182,7 +3620,17 @@ function makeStudioController(
     insertSection,
     moveSelection,
     moveSelectionTo,
+    moveFollowingEvents,
+    joinEventDurations,
+    joinSections,
+    splitEventDuration,
+    splitSection,
+    setRangeEdge,
+    setRangeEdgeBeat,
+    insertRecoveredChord,
     previewChartText,
+    previewInsertionPlan,
+    previewQuickEntryDraft,
     renameSection,
     setSectionBoundary,
     clearRange,
@@ -2218,6 +3666,24 @@ function makeStudioController(
           : !state.panels.rightRailCollapsed,
       ),
   });
+}
+
+/**
+ * Compose the controller over an already-published document.
+ *
+ * `createStudioController` is the production composition root and publishes
+ * the built-in blank chart, which is always 4/4. Conformance evidence must
+ * host the other reviewed meters, and the only honest way to do that is the
+ * real controller over a document published through the same F2/F3 boundary —
+ * a second controller would be a duplicated implementation. This adds no
+ * behaviour of its own.
+ */
+export function createStudioControllerOverState(
+  state: AppState,
+  dependencies: ApplicationCommandDependencies,
+  options: StudioControllerOptions = {},
+): StudioController {
+  return makeStudioController(state, dependencies, options);
 }
 
 export function createStudioController(

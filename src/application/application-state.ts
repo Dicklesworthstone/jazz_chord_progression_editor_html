@@ -60,11 +60,13 @@ import { replayRetainedHistory } from "./application-history-transition";
 import {
   appendApplicationNotice,
   buildDocumentIndex,
+  codePointLength,
   createWorkCounters,
   failureResult,
   isBoundedToken,
   isNonnegativeSafeInteger,
   isPositiveSafeInteger,
+  isUnicodeScalarString,
   runtimeField,
   successResult,
   type MutableApplicationWorkCounters,
@@ -710,7 +712,13 @@ export const reduceEphemeralIntent: ReduceEphemeralIntent = ({ state, intent }) 
     case "set-quick-entry":
       if (
         intent.draft.baseRevision !== state.revision ||
-        !isBoundedToken(intent.draft.text || " ", MAX_QUICK_ENTRY_CODE_POINTS) ||
+        // The draft is caller-owned raw text, not a token: an empty draft and
+        // a whitespace-only draft are both legal and are stored exactly. Only
+        // Unicode validity and the code-point bound are enforced here. The
+        // earlier `text || " "` form substituted a space and then rejected it,
+        // so clearing a draft could never succeed.
+        !isUnicodeScalarString(intent.draft.text) ||
+        codePointLength(intent.draft.text) > MAX_QUICK_ENTRY_CODE_POINTS ||
         intent.draft.issueCodes.length > MAX_DRAFT_ISSUES ||
         intent.draft.issueCodes.some(
           (code) => !isBoundedToken(code, MAX_COMMAND_ID_CODE_POINTS),

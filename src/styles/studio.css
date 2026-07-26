@@ -1772,6 +1772,59 @@
   font-size: var(--text-sm);
 }
 
+/* U1-CMP-019 MeasureCompletionDialog contents. */
+.studio-completion-dialog {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.studio-completion-dialog__refusal {
+  color: var(--state-warning);
+  font-size: var(--text-sm);
+}
+
+.studio-completion-dialog__label {
+  color: var(--text-subtle);
+  font-size: var(--text-xs);
+}
+
+.studio-completion-dialog__field {
+  inline-size: 100%;
+  padding: var(--space-2);
+  border: var(--border-width) solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+}
+
+.studio-completion-dialog__field:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.studio-completion-dialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* The dirty-draft prompt (contract 5.3). Switching away from an unapplied
+   symbol draft offers Apply, Discard, or Continue editing, and never picks. */
+.studio-chord-card__prompt {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border: var(--border-width) solid var(--state-warning);
+  border-radius: var(--radius-sm);
+  background: var(--surface-elevated);
+}
+
+.studio-chord-card__prompt-text {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
 .studio-chart__resolutions {
   color: var(--text-subtle);
   font-size: var(--text-xs);
@@ -1820,6 +1873,7 @@
 }
 
 .studio-section__boundary {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
@@ -1828,16 +1882,74 @@
   font-size: var(--text-xs);
 }
 
+/* U1-CMP-020 SectionBoundaryMenu. Both boundaries are named items rather than
+   one toggle whose next state the caller has to infer. */
+.studio-section__boundary-trigger {
+  padding: var(--space-1) var(--space-2);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--action-secondary);
+  color: var(--text-primary);
+  font-size: var(--text-xs);
+  cursor: pointer;
+}
+
+.studio-section__boundary-trigger:focus-visible,
+.studio-section__boundary-item:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.studio-section__boundary-menu {
+  position: absolute;
+  z-index: 2;
+  inset-block-start: 100%;
+  inset-inline-start: 0;
+  display: grid;
+  min-inline-size: 14rem;
+  padding: var(--space-1);
+  border: var(--border-width) solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-overlay);
+}
+
+.studio-section__boundary-item {
+  padding: var(--space-1) var(--space-2);
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--text-xs);
+  text-align: start;
+  cursor: pointer;
+}
+
+.studio-section__boundary-item:hover {
+  background: var(--surface-sunken);
+}
+
+.studio-section__boundary-item[aria-checked="true"] {
+  color: var(--state-info);
+}
+
+.studio-section__boundary-item[aria-disabled="true"] {
+  color: var(--text-muted);
+  cursor: default;
+}
+
 /* Every U1 text control keeps the project coarse-pointer target minimum. */
 @media (pointer: coarse) {
   .studio-section__field input,
   .studio-chart__reason input,
   .studio-chord-card__editor,
+  .studio-completion-dialog__field,
   .studio-quick-entry__field {
     min-block-size: var(--touch-target);
   }
 
-  .studio-chord-card {
+  .studio-chord-card,
+  .studio-section__boundary-trigger,
+  .studio-section__boundary-item {
     min-block-size: var(--touch-target);
   }
 }
@@ -1855,4 +1967,263 @@
 .studio-chord-card__handle[data-dragging="true"] {
   background: var(--border-strong);
   cursor: grabbing;
+}
+
+/* Chord-card More menu (U1-CMP-013). The trigger and every item live inside
+   the card so the card's three delegated listeners handle them all. */
+.studio-chord-card {
+  position: relative;
+}
+
+.studio-chord-card__more {
+  position: absolute;
+  inset-block-start: var(--space-1);
+  inset-inline-end: var(--space-1);
+  min-inline-size: 1.5rem;
+  min-block-size: 1.5rem;
+  padding: 0;
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--text-subtle);
+  font-size: var(--text-sm);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.studio-chord-card__more:hover,
+.studio-chord-card[data-selected="true"] .studio-chord-card__more {
+  border-color: var(--border-default);
+  color: var(--text-primary);
+}
+
+.studio-chord-card__menu {
+  position: absolute;
+  z-index: 2;
+  inset-block-start: 100%;
+  inset-inline-end: 0;
+  display: grid;
+  min-inline-size: 14rem;
+  padding: var(--space-1);
+  border: var(--border-width) solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-overlay);
+}
+
+.studio-chord-card__menu-item {
+  padding: var(--space-1) var(--space-2);
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--text-xs);
+  text-align: start;
+  cursor: pointer;
+}
+
+.studio-chord-card__menu-item:hover {
+  background: var(--surface-sunken);
+}
+
+.studio-chord-card__menu-item:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: calc(var(--focus-offset) * -1);
+}
+
+.studio-chord-card__menu-item[aria-disabled="true"] {
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+/* Explicit range mode (U1-CMP-022/023/024): every action is a real control. */
+.studio-range-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-2);
+  margin-block-end: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width) solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+}
+
+.studio-range-bar__status {
+  flex-basis: 100%;
+  color: var(--text-subtle);
+  font-size: var(--text-xs);
+}
+
+/* U1-CMP-023 RangeBoundaryHandle. Dragging one onto a chord is optional; the
+   same edge is always reachable from the handle itself, the Set buttons, and
+   the exact beat fields, so no range action depends on a drag. */
+.studio-range-bar__handle {
+  min-inline-size: var(--touch-target);
+  min-block-size: var(--touch-target);
+  border: var(--border-width) solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--action-secondary);
+  color: var(--text-primary);
+  font-size: var(--text-md);
+  touch-action: none;
+  cursor: grab;
+}
+
+.studio-range-bar__handle:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.studio-range-bar__handle[data-dragging="true"] {
+  border-color: var(--state-info);
+  cursor: grabbing;
+}
+
+.studio-range-bar__field {
+  display: grid;
+  gap: var(--space-1);
+  font-size: var(--text-xs);
+}
+
+.studio-range-bar__field input {
+  min-inline-size: 6rem;
+  min-block-size: var(--touch-target);
+  padding: var(--space-1);
+  border: var(--border-width) solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-elevated);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+}
+
+.studio-chart__view-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.studio-chart__view-status {
+  color: var(--text-subtle);
+  font-size: var(--text-xs);
+}
+
+/* Teaching view adds explanatory labels only; it invents no musical fact. */
+.studio-chord-card__teaching {
+  display: grid;
+  gap: 0.125rem;
+  margin: 0;
+  padding: 0;
+  color: var(--text-subtle);
+  font-size: var(--text-xs);
+  list-style: none;
+}
+
+.studio-chart[data-view-mode="teaching"] .studio-chord-card {
+  min-inline-size: 9rem;
+}
+
+/* The insertion-plan statement (U1-CMP-007). Exactly one is shown, and a
+   blocked statement always names its explicit resolutions. */
+.studio-quick-entry__plan {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border-inline-start: var(--border-width) solid var(--border-default);
+  color: var(--text-subtle);
+  font-size: var(--text-xs);
+}
+
+.studio-quick-entry__plan[data-statement="fits-measure"],
+.studio-quick-entry__plan[data-statement="completes-measures"] {
+  border-inline-start-color: var(--state-success);
+}
+
+.studio-quick-entry__plan[data-statement="incomplete-requires-confirmation"],
+.studio-quick-entry__plan[data-statement="overfill-requires-split"] {
+  border-inline-start-color: var(--state-warning);
+}
+
+.studio-quick-entry__plan[data-statement="not-atomic-refusal"] {
+  border-inline-start-color: var(--state-error);
+}
+
+.studio-quick-entry__plan-resolutions {
+  color: var(--text-muted);
+}
+
+/* Preview rows (U1-CMP-004/005). A parsed draft lists what parsed; a refused
+   draft lists what T0 could still recover and what it could not read at all. */
+.studio-quick-entry__tokens {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.studio-quick-entry__token {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border-inline-start: var(--border-width) solid var(--border-default);
+  font-size: var(--text-xs);
+}
+
+.studio-quick-entry__token[data-state="valid"] {
+  border-inline-start-color: var(--state-success);
+}
+
+.studio-quick-entry__token[data-state="insertable"] {
+  border-inline-start-color: var(--state-warning);
+}
+
+.studio-quick-entry__token[data-state="invalid"] {
+  border-inline-start-color: var(--state-error);
+}
+
+.studio-quick-entry__token-state {
+  color: var(--text-subtle);
+}
+
+.studio-quick-entry__token-text {
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.studio-quick-entry__token-duration {
+  color: var(--text-muted);
+}
+
+.studio-quick-entry__token-note {
+  color: var(--text-subtle);
+  flex-basis: 100%;
+}
+
+/* The recovered-chord lane. Its acknowledgement is a real gesture: nothing in
+   this block can publish until the caller accepts the stated layout loss. */
+.studio-quick-entry__recovery {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-panel);
+}
+
+.studio-quick-entry__recovery[data-available="false"] {
+  border-color: var(--state-warning);
+}
+
+.studio-quick-entry__recovery-target {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.studio-quick-entry__recovery-blocked {
+  color: var(--state-warning);
+  font-size: var(--text-xs);
 }

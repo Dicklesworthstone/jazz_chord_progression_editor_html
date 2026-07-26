@@ -4,8 +4,84 @@ import { LibraryPanel, LibraryPanelContent } from "./LibraryPanel";
 import { StudioHeader } from "./StudioHeader";
 import { StudioShellNotice } from "./StudioShellNotice";
 import { TransportBar } from "./TransportBar";
-import { SheetDrawer } from "../overlays";
+import { Dialog, SheetDrawer } from "../overlays";
+import { Button } from "../primitives";
 import type { StudioShellProps } from "./studio-contract";
+
+/**
+ * U1-CMP-019 MeasureCompletionDialog. A measure that stays shorter than the
+ * bar is declared here, with a reason the caller types and Confirm disabled
+ * until it exists. Nothing is rebalanced, padded, or assumed on their behalf.
+ */
+function MeasureCompletionDialogContent({
+  reasonDraft,
+  message,
+  onReasonDraftChange,
+  onConfirm,
+  onCancel,
+}: Readonly<{
+  reasonDraft: string;
+  message: string;
+  onReasonDraftChange: (value: string) => void;
+  onConfirm: (reason: string) => void;
+  onCancel: () => void;
+}>) {
+  return (
+    <div class="studio-completion-dialog">
+      <p class="studio-completion-dialog__refusal">{message}</p>
+      <label
+        class="studio-completion-dialog__label"
+        for="studio-incomplete-reason"
+      >
+        Reason for the incomplete measure
+      </label>
+      <input
+        class="studio-completion-dialog__field"
+        data-testid="incomplete-reason-field"
+        id="studio-incomplete-reason"
+        onInput={(event) => {
+          onReasonDraftChange(event.currentTarget.value);
+        }}
+        onKeyDown={(event) => {
+          if (event.key !== "Enter") return;
+          event.preventDefault();
+          if (reasonDraft.trim().length === 0) return;
+          onConfirm(reasonDraft);
+        }}
+        type="text"
+        value={reasonDraft}
+      />
+      <div class="studio-completion-dialog__actions">
+        <Button
+          busy={false}
+          density="comfortable"
+          describedBy={[]}
+          disabled={reasonDraft.trim().length === 0}
+          id="studio-confirm-incomplete"
+          invalid={false}
+          label="Confirm incomplete measure"
+          onAction={() => {
+            onConfirm(reasonDraft);
+          }}
+          type="button"
+          variant="primary"
+        />
+        <Button
+          busy={false}
+          density="comfortable"
+          describedBy={[]}
+          disabled={false}
+          id="studio-abandon-pending-edit"
+          invalid={false}
+          label="Cancel the edit"
+          onAction={onCancel}
+          type="button"
+          variant="secondary"
+        />
+      </div>
+    </div>
+  );
+}
 
 export function StudioShell({ view, callbacks }: StudioShellProps) {
   const activeSheet = view.layout.activeSheet;
@@ -39,6 +115,11 @@ export function StudioShell({ view, callbacks }: StudioShellProps) {
           <main id="workspace" class="studio-workspace" tabIndex={-1}>
             <LibraryPanel
               collapsed={view.layout.libraryCollapsed}
+              onInsertRecoveredChord={callbacks.onInsertRecoveredChord}
+              onRecoveryAcknowledgeChange={callbacks.onRecoveryAcknowledgeChange}
+              onRecoveryDurationDraftChange={
+                callbacks.onRecoveryDurationDraftChange
+              }
               onQuickEntryClear={callbacks.onQuickEntryClear}
               onQuickEntryDraftChange={callbacks.onQuickEntryDraftChange}
               onQuickEntryInsert={callbacks.onQuickEntryInsert}
@@ -52,7 +133,7 @@ export function StudioShell({ view, callbacks }: StudioShellProps) {
               onApplyInlineSymbol={callbacks.onApplyInlineSymbol}
               onCancelPendingEdit={callbacks.onCancelPendingEdit}
               onAnnotateSection={callbacks.onAnnotateSection}
-              onConfirmIncompleteMeasure={callbacks.onConfirmIncompleteMeasure}
+              onDeclareMeasureCompletion={callbacks.onDeclareMeasureCompletion}
               onRenameSection={callbacks.onRenameSection}
               onSetSectionBoundary={callbacks.onSetSectionBoundary}
               onDeleteSelection={callbacks.onDeleteSelection}
@@ -64,6 +145,20 @@ export function StudioShell({ view, callbacks }: StudioShellProps) {
               onRequestPanelSheet={callbacks.onRequestPanelSheet}
               onRovingFocusChange={callbacks.onRovingFocusChange}
               onSelectChord={callbacks.onSelectChord}
+              onCardMenuOpenChange={callbacks.onCardMenuOpenChange}
+              onCardMenuAction={callbacks.onCardMenuAction}
+              onSplitDuration={callbacks.onSplitDuration}
+              onSplitSection={callbacks.onSplitSection}
+              onJoinSections={callbacks.onJoinSections}
+              onSetInsertionPoint={callbacks.onSetInsertionPoint}
+              onRangeModeChange={callbacks.onRangeModeChange}
+              onRangeEdgeFromFocus={callbacks.onRangeEdgeFromFocus}
+              onRangeEdgeToChord={callbacks.onRangeEdgeToChord}
+              onRangeDraftChange={callbacks.onRangeDraftChange}
+              onRangeDraftCommit={callbacks.onRangeDraftCommit}
+              onRangeCancel={callbacks.onRangeCancel}
+              onRangeClear={callbacks.onRangeClear}
+              onViewModeChange={callbacks.onViewModeChange}
               view={view.chart}
             />
             <HarmonyLens
@@ -79,6 +174,48 @@ export function StudioShell({ view, callbacks }: StudioShellProps) {
       </div>
 
       <div id="dialog-host">
+        {view.chart.completionDialog.open && view.chart.editRefusal !== null ? (
+          <Dialog
+            backgroundRootId="studio-shell-background"
+            busy={false}
+            closeLabel="Close the incomplete-measure dialog"
+            content={
+              <MeasureCompletionDialogContent
+                message={view.chart.editRefusal.message}
+                onCancel={callbacks.onCancelPendingEdit}
+                onConfirm={callbacks.onConfirmIncompleteMeasure}
+                onReasonDraftChange={callbacks.onCompletionReasonDraftChange}
+                reasonDraft={view.chart.completionDialog.reasonDraft}
+              />
+            }
+            density="comfortable"
+            describedBy={[]}
+            description="This measure would stay shorter than the bar. Declare it explicitly or cancel the edit."
+            disabled={false}
+            dismissibility={{ kind: "dismissible" }}
+            /**
+             * The chart region owns the interrupted operation and outlives
+             * every refusal notice, so focus returns exactly where the work
+             * was. A control inside the notice would be removed by the very
+             * success that closes this dialog.
+             */
+            focusTargets={{
+              triggerId: "chart-workspace",
+              workflowTargetId: null,
+              workspaceId: "workspace",
+            }}
+            id="studio-measure-completion-dialog"
+            initialFocus="explicit"
+            initialFocusId="studio-incomplete-reason"
+            invalid={false}
+            onContractRefusal={callbacks.onUiContractRefusal}
+            onDismiss={() => {
+              callbacks.onCompletionDialogOpenChange(false);
+            }}
+            open
+            title="Declare an incomplete measure"
+          />
+        ) : null}
         {activeSheet === null || sheetId === null ? null : (
           <SheetDrawer
             backgroundRootId="studio-shell-background"
@@ -89,6 +226,13 @@ export function StudioShell({ view, callbacks }: StudioShellProps) {
                 <LibraryPanelContent
                   context="sheet"
                   headingId={`${sheetId}-title`}
+                  onInsertRecoveredChord={callbacks.onInsertRecoveredChord}
+                  onRecoveryAcknowledgeChange={
+                    callbacks.onRecoveryAcknowledgeChange
+                  }
+                  onRecoveryDurationDraftChange={
+                    callbacks.onRecoveryDurationDraftChange
+                  }
                   onQuickEntryClear={callbacks.onQuickEntryClear}
                   onQuickEntryDraftChange={callbacks.onQuickEntryDraftChange}
                   onQuickEntryInsert={callbacks.onQuickEntryInsert}

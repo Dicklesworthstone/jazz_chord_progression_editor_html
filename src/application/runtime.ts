@@ -23,8 +23,12 @@ export type {
   StudioControllerListener,
   StudioControllerOptions,
   StudioControllerRefusal,
+  StudioDraftPreview,
+  StudioInsertionPlan,
   StudioQuickEntryPreview,
+  StudioQuickEntryToken,
   StudioRailSide,
+  StudioRecoveredChordLane,
 } from "./studio-controller";
 
 export type { StudioViewModel } from "./studio-view-model";

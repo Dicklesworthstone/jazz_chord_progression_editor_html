@@ -117,10 +117,12 @@ export type {
 
 export {
   createStudioController,
+  createStudioControllerOverState,
   STUDIO_CONTROLLER_REFUSAL_CODES,
 } from "./studio-controller";
 
 export type {
+  StudioBoundaryInput,
   StudioController,
   StudioControllerAction,
   StudioControllerActionResult,
@@ -128,7 +130,12 @@ export type {
   StudioControllerCreationResult,
   StudioControllerListener,
   StudioControllerRefusal,
+  StudioDraftPreview,
+  StudioInsertionPlan,
+  StudioInsertionPlanStatement,
+  StudioQuickEntryToken,
   StudioRailSide,
+  StudioRecoveredChordLane,
 } from "./studio-controller";
 
 export {

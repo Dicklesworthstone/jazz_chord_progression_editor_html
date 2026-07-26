@@ -1,17 +1,21 @@
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 
 import type {
   StudioControllerActionResult,
   StudioBoundaryInput,
+  StudioDraftPreview,
+  StudioInsertionPlan,
   StudioRailSide,
   StudioViewModel,
 } from "../application/runtime";
 import { MAX_SHORT_TEXT_CODE_POINTS } from "../domain";
 import {
   StudioShell,
+  type StudioCardMenuItemView,
   type StudioPanelSide,
   type StudioShellView,
   type StudioTitleFeedback,
+  type StudioViewMode,
 } from "./studio";
 
 export type AppActions = Readonly<{
@@ -77,13 +81,73 @@ export type AppActions = Readonly<{
     beatText: string,
     incompleteReason?: string | null,
   ) => StudioControllerActionResult;
+  moveFollowingEvents: (
+    incompleteReason?: string | null,
+  ) => StudioControllerActionResult;
+  splitEventDuration: (
+    eventId: string,
+    firstBeatText: string,
+    secondBeatText?: string,
+  ) => StudioControllerActionResult;
+  joinEventDurations: (leftEventId: string) => StudioControllerActionResult;
+  splitSection: (
+    sectionId: string,
+    beforeMeasureId: string,
+    name: string,
+  ) => StudioControllerActionResult;
+  joinSections: (leftSectionId: string) => StudioControllerActionResult;
+  setRange: (
+    anchor: StudioBoundaryInput,
+    focus: StudioBoundaryInput,
+  ) => StudioControllerActionResult;
+  setRangeEdge: (
+    edge: "start" | "end",
+    boundary: StudioBoundaryInput,
+  ) => StudioControllerActionResult;
+  setRangeEdgeBeat: (
+    edge: "start" | "end",
+    beatText: string,
+  ) => StudioControllerActionResult;
+  clearRange: () => StudioControllerActionResult;
+  setInsertionPoint: (
+    boundary: StudioBoundaryInput,
+  ) => StudioControllerActionResult;
   previewChartText: (text: string) => Readonly<{
     status: "idle" | "invalid" | "ready";
     issueCodes: readonly string[];
   }>;
+  previewInsertionPlan: () => StudioInsertionPlan;
+  previewQuickEntryDraft: () => StudioDraftPreview;
+  acknowledgeFocus: (sequence: number) => StudioControllerActionResult;
+  insertRecoveredChord: (
+    globalOrdinal: number,
+    callerBeatText?: string | null,
+    acknowledgement?: string,
+    incompleteReason?: string | null,
+  ) => StudioControllerActionResult;
+  declareMeasureCompletion: (
+    measureId: string,
+    reason?: string | null,
+  ) => StudioControllerActionResult;
 }>;
 
 const QUICK_ENTRY_MAX_CODE_POINTS = 4_096;
+
+/** The operation that a `u1.completion_reason_required` refusal interrupted. */
+type PendingEdit =
+  | Readonly<{ kind: "duration"; chordId: string; beatText: string }>
+  | Readonly<{ kind: "delete" }>
+  | Readonly<{ kind: "duplicate" }>
+  | Readonly<{ kind: "move"; direction: "previous" | "next" }>
+  | Readonly<{ kind: "move-following" }>
+  | Readonly<{ kind: "move-to"; measureId: string }>
+  | Readonly<{ kind: "measure-completion"; measureId: string }>
+  | Readonly<{
+      kind: "recovered-chord";
+      globalOrdinal: number;
+      beatText: string;
+    }>
+  | null;
 
 export type AppProps = Readonly<{
   snapshot: StudioViewModel;
@@ -109,6 +173,47 @@ function fillLabel(
   }
 }
 
+/** One sentence per statement; a blocked one always names its resolutions. */
+function insertionPlanLabel(
+  statement: StudioInsertionPlan["statement"],
+): string {
+  switch (statement) {
+    case "no-draft":
+      return "Nothing to insert yet";
+    case "fits-measure":
+      return "Fills the target measure exactly";
+    case "completes-measures":
+      return "Creates one or more complete measures";
+    case "incomplete-requires-confirmation":
+      return "Leaves a measure shorter than the bar";
+    case "overfill-requires-split":
+      return "Does not fit the chosen destination";
+    case "not-atomic-refusal":
+      return "Cannot be inserted atomically";
+  }
+}
+
+/**
+ * The application reports the reviewed resolution tokens; the surface owns
+ * their wording. An unknown token is shown verbatim rather than dropped, so a
+ * resolution can never disappear from the statement that requires it.
+ */
+const RESOLUTION_LABELS: Readonly<Record<string, string>> = Object.freeze({
+  cancel: "Cancel",
+  "choose-an-empty-measure-or-structural-boundary":
+    "Choose an empty measure or a structural boundary",
+  "complete-the-final-measure": "Complete the final measure",
+  "correct-the-draft": "Correct the draft",
+  "insert-one-recovered-chord-into-a-measure":
+    "Insert one recovered chord into a measure",
+  "insert-parsed-preview": "Insert the parsed preview",
+  "shorten-the-draft": "Shorten the draft",
+});
+
+function resolutionLabels(tokens: readonly string[]): readonly string[] {
+  return Object.freeze(tokens.map((token) => RESOLUTION_LABELS[token] ?? token));
+}
+
 function quickEntryStatusLabel(
   status: StudioViewModel["quickEntry"]["status"],
 ): string {
@@ -122,16 +227,113 @@ function quickEntryStatusLabel(
   }
 }
 
+/**
+ * Every field here is presentation-only state the surface owns. None of it is
+ * ever published: toggling a view mode, opening a menu, or typing into a range
+ * draft leaves the document, its revision, and its bookmarks untouched.
+ */
+type PresentationState = Readonly<{
+  titleDraft: string;
+  titleFeedback: StudioTitleFeedback;
+  activeSheet: StudioPanelSide | null;
+  uiRefusal: StudioShellView["layout"]["uiRefusal"];
+  rovingFocusId: string | null;
+  editRefusal: StudioShellView["chart"]["editRefusal"];
+  quickEntryRefusal: string | null;
+  completionDialogOpen: boolean;
+  completionReasonDraft: string;
+  /** The caller accepted that recovering one chord discards the draft layout. */
+  recoveryAcknowledged: boolean;
+  /** Raw beat text for a duration T0 could not resolve; never coerced. */
+  recoveryDurationDraft: string;
+  viewMode: StudioViewMode;
+  rangeModeActive: boolean;
+  rangeStartDraft: string;
+  rangeEndDraft: string;
+  openMenuChordId: string | null;
+}>;
+
+/** Teaching labels restate stored facts; an absent fact is shown as absent. */
+function teachingNotes(
+  event: StudioViewModel["sections"][number]["measures"][number]["events"][number],
+): readonly string[] {
+  return Object.freeze([
+    `Starts at beat ${event.startBeatLabel}`,
+    `Lasts ${event.durationBeatLabel} beats`,
+    `Voicing mode: ${event.voicingMode}`,
+    event.hasAnnotation ? "Carries a note" : "No note",
+    "Roman numeral: not analysed yet",
+  ]);
+}
+
+function cardMenuItems(
+  event: StudioViewModel["sections"][number]["measures"][number]["events"][number],
+  measure: StudioViewModel["sections"][number]["measures"][number],
+  eventIndex: number,
+): readonly StudioCardMenuItemView[] {
+  const following = measure.events.length - eventIndex - 1;
+  const manualReason =
+    event.voicingMode === "auto"
+      ? null
+      : `Open the chord inspector to change a ${event.voicingMode} voicing.`;
+  return Object.freeze([
+    { action: "edit-symbol", disabledReason: manualReason, label: "Edit symbol" },
+    { action: "edit-duration", disabledReason: null, label: "Edit duration" },
+    { action: "duplicate", disabledReason: null, label: "Duplicate" },
+    { action: "delete", disabledReason: null, label: "Delete" },
+    {
+      action: "move-previous",
+      disabledReason: eventIndex === 0 ? "This is the first chord in its measure." : null,
+      label: "Move previous",
+    },
+    {
+      action: "move-next",
+      disabledReason:
+        following === 0 ? "This is the last chord in its measure." : null,
+      label: "Move next",
+    },
+    {
+      action: "move-following",
+      disabledReason:
+        following === 0 ? "No chord follows this one in the measure." : null,
+      label: "Move following chords to the next measure",
+    },
+    { action: "split-duration", disabledReason: null, label: "Split duration" },
+    {
+      action: "join-next",
+      disabledReason:
+        following === 0 ? "This chord has no following chord to join." : null,
+      label: "Join with next",
+    },
+    { action: "range-start", disabledReason: null, label: "Set range start here" },
+    { action: "range-end", disabledReason: null, label: "Set range end here" },
+    {
+      action: "declare-completion",
+      disabledReason: null,
+      label: "Declare this measure's completion",
+    },
+  ] as const satisfies readonly StudioCardMenuItemView[]);
+}
+
 function viewFromSnapshot(
   snapshot: StudioViewModel,
-  titleDraft: string,
-  titleFeedback: StudioTitleFeedback,
-  activeSheet: StudioPanelSide | null,
-  uiRefusal: StudioShellView["layout"]["uiRefusal"],
-  rovingFocusId: string | null,
-  editRefusal: StudioShellView["chart"]["editRefusal"],
-  quickEntryRefusal: string | null,
+  presentation: PresentationState,
+  insertionPlan: StudioInsertionPlan,
+  draftPreview: StudioDraftPreview,
 ): StudioShellView {
+  const {
+    titleDraft,
+    titleFeedback,
+    activeSheet,
+    uiRefusal,
+    rovingFocusId,
+    editRefusal,
+    quickEntryRefusal,
+    completionDialogOpen,
+    completionReasonDraft,
+    recoveryAcknowledged,
+    recoveryDurationDraft,
+  } = presentation;
   const chordCount = snapshot.chordCount;
   const selectionCount = snapshot.bookmarks.selectedEventIds.length;
 
@@ -170,9 +372,23 @@ function viewFromSnapshot(
       canDuplicateSelection: selectionCount > 0,
       canMoveSelection: selectionCount > 0,
       appendSectionLabel: "Append section",
+      viewMode: presentation.viewMode,
+      openMenuChordId: presentation.openMenuChordId,
+      range: Object.freeze({
+        active: presentation.rangeModeActive,
+        endBeatLabel: snapshot.bookmarks.rangeEndBeatLabel,
+        endDraft: presentation.rangeEndDraft,
+        hasRange: snapshot.bookmarks.rangeActive,
+        startBeatLabel: snapshot.bookmarks.rangeStartBeatLabel,
+        startDraft: presentation.rangeStartDraft,
+      }),
       editRefusal,
+      completionDialog: Object.freeze({
+        open: completionDialogOpen && editRefusal?.needsIncompleteReason === true,
+        reasonDraft: completionReasonDraft,
+      }),
       sections: Object.freeze(
-        snapshot.sections.map((section) =>
+        snapshot.sections.map((section, sectionIndex) =>
           Object.freeze({
             id: section.id,
             label: section.name,
@@ -180,12 +396,13 @@ function viewFromSnapshot(
             appendMeasureLabel: `Append measure to section ${section.name}`,
             annotation: section.annotation,
             voiceLeadingBoundary: section.voiceLeadingBoundary,
+            canJoinNextSection: sectionIndex < snapshot.sections.length - 1,
             voiceLeadingLabel:
               section.voiceLeadingBoundary === "reset"
                 ? "Voice leading resets at this boundary"
                 : "Voice leading continues across this boundary",
             measures: Object.freeze(
-              section.measures.map((measure) =>
+              section.measures.map((measure, measureIndex) =>
                 Object.freeze({
                   id: measure.id,
                   number: measure.ordinal,
@@ -197,10 +414,15 @@ function viewFromSnapshot(
                   chordCountLabel: countLabel(measure.eventCount, "chord"),
                   state: measure.eventCount === 0 ? "empty" : "populated",
                   fillLabel: fillLabel(measure.fill),
+                  completionLabel: measure.completionLabel,
+                  completionReason: measure.completionReason,
+                  canSplitSectionHere: measureIndex > 0,
+                  isInsertionTarget: snapshot.quickEntry.targetId === measure.id,
+                  targetLabel: `Aim quick entry at measure ${String(measure.ordinal)}`,
                   insertBeforeLabel: `Insert measure before measure ${String(measure.ordinal)}`,
                   dropLabel: `Move selection into measure ${String(measure.ordinal)}`,
                   chords: Object.freeze(
-                    measure.events.map((event) =>
+                    measure.events.map((event, eventIndex) =>
                       Object.freeze({
                         id: event.id,
                         ordinal: event.ordinal,
@@ -219,6 +441,8 @@ function viewFromSnapshot(
                             ? null
                             : "Open the chord inspector to change a "
                               + `${event.voicingMode} voicing.`,
+                        teachingNotes: teachingNotes(event),
+                        menuItems: cardMenuItems(event, measure, eventIndex),
                       }),
                     ),
                   ),
@@ -231,17 +455,35 @@ function viewFromSnapshot(
     }),
     quickEntry: Object.freeze({
       draftText: snapshot.quickEntry.text,
+      insertionPlan: Object.freeze({
+        committable: insertionPlan.committable,
+        label: insertionPlanLabel(insertionPlan.statement),
+        resolutions: resolutionLabels(insertionPlan.resolutions),
+        statement: insertionPlan.statement,
+      }),
       maxCodePoints: QUICK_ENTRY_MAX_CODE_POINTS,
       codePointCount: snapshot.quickEntry.codePointCount,
       statusLabel: quickEntryStatusLabel(snapshot.quickEntry.status),
       targetLabel:
         snapshot.quickEntry.targetLabel ?? "No insertion target",
-      canInsert:
-        snapshot.quickEntry.status === "ready"
-        && snapshot.quickEntry.targetLabel !== null,
+      // Insert is offered only when the stated plan is committable, so the
+      // statement and the affordance can never disagree.
+      canInsert: insertionPlan.committable,
       canClear: snapshot.quickEntry.text.length > 0,
       issueCodes: snapshot.quickEntry.issueCodes,
       refusalMessage: quickEntryRefusal,
+      tokens: draftPreview.tokens,
+      recovery: Object.freeze({
+        acknowledged: recoveryAcknowledged,
+        // The literal A0 requires, shown verbatim next to what accepting it
+        // costs. Nothing is inserted until the caller returns exactly this.
+        acknowledgementLabel: draftPreview.recovery.acknowledgement,
+        available: draftPreview.recovery.available,
+        durationDraft: recoveryDurationDraft,
+        measureLabel: draftPreview.recovery.measureLabel,
+        remainderLabel: draftPreview.recovery.remainderLabel,
+        unavailableReason: draftPreview.recovery.unavailableReason,
+      }),
     }),
     harmony: Object.freeze({
       selectedChordLabel: null,
@@ -311,10 +553,39 @@ export function App({ snapshot, actions }: AppProps) {
   const [quickEntryRefusal, setQuickEntryRefusal] = useState<string | null>(
     null,
   );
-  /** The exact beat text awaiting an explicit incomplete-measure reason. */
-  const [pendingDuration, setPendingDuration] = useState<Readonly<{
-    chordId: string;
-    beatText: string;
+  /**
+   * The layout-loss acknowledgement is a real gesture, not a formality: until
+   * the caller makes it, the recovered-chord lane has no committable action.
+   */
+  /** The last focus sequence this surface rendered, so it renders each once. */
+  const acknowledgedFocus = useRef<number | null>(null);
+  const [recoveryAcknowledged, setRecoveryAcknowledged] = useState(false);
+  const [recoveryDurationDraft, setRecoveryDurationDraft] = useState("");
+  /**
+   * The operation awaiting an explicit incomplete-measure reason. Every edit
+   * that can leave a short bar records itself here so Confirm re-runs exactly
+   * that operation with the reason, instead of guessing one.
+   */
+  const [pendingEdit, setPendingEdit] = useState<PendingEdit>(null);
+  /**
+   * U1-CMP-019 presentation state. The dialog opens only when the caller asks
+   * for it, and its raw reason text is never written back into the document
+   * except through an explicit Confirm.
+   */
+  const [completionDialogOpen, setCompletionDialogOpen] = useState(false);
+  const [completionReasonDraft, setCompletionReasonDraft] = useState("");
+  const [viewMode, setViewMode] = useState<StudioViewMode>("compact");
+  const [rangeModeActive, setRangeModeActive] = useState(false);
+  const [rangeStartDraft, setRangeStartDraft] = useState("");
+  const [rangeEndDraft, setRangeEndDraft] = useState("");
+  const [openMenuChordId, setOpenMenuChordId] = useState<string | null>(null);
+  /**
+   * The range as it stood when the mode opened, so Cancel restores it exactly
+   * rather than clearing whatever the user had before.
+   */
+  const rangeOnEntry = useRef<Readonly<{
+    anchor: StudioBoundaryInput;
+    focus: StudioBoundaryInput;
   }> | null>(null);
   const [titleFeedback, setTitleFeedback] = useState<StudioTitleFeedback>(() =>
     Object.freeze({
@@ -322,6 +593,39 @@ export function App({ snapshot, actions }: AppProps) {
       message: "The committed document title is shown above.",
     }),
   );
+
+  /**
+   * Render the focus A0 asked for (contract 5.1). U1 never reads or infers
+   * the current DOM focus to decide this: it moves focus to the requested
+   * target, records it as the chart's tab stop when the target is a chord,
+   * and then acknowledges the exact sequence so A0 can clear the request.
+   * A target that is no longer rendered falls back to the chart region, which
+   * is the last step of the declared priority, rather than to the document.
+   */
+  useEffect(() => {
+    const request = snapshot.focusRequest;
+    if (request === null) return;
+    if (acknowledgedFocus.current === request.sequence) return;
+    acknowledgedFocus.current = request.sequence;
+    if (request.kind === "event" && request.targetId !== null) {
+      setRovingFocusId(request.targetId);
+    }
+    const selector =
+      request.targetId === null
+        ? "#chart-workspace"
+        : request.kind === "event"
+          ? `[data-chord-id="${request.targetId}"]`
+          : request.kind === "measure"
+            ? `[data-measure-id="${request.targetId}"]`
+            : request.kind === "section"
+              ? `[data-section-id="${request.targetId}"]`
+              : `#${request.targetId}`;
+    const target =
+      document.querySelector<HTMLElement>(selector) ??
+      document.querySelector<HTMLElement>("#chart-workspace");
+    target?.focus();
+    actions.acknowledgeFocus(request.sequence);
+  }, [actions, snapshot.focusRequest]);
 
   useEffect(() => {
     const previousTitle = previousCommittedTitle.current;
@@ -359,8 +663,14 @@ export function App({ snapshot, actions }: AppProps) {
     );
   };
 
-  /** The draft insertion target follows the current insertion bookmark. */
+  /**
+   * A draft keeps the target it was aimed at. Only when it has none does the
+   * target follow the insertion bookmark, so re-aiming an existing draft is
+   * not silently undone by the next keystroke.
+   */
   const quickEntryTarget = (): StudioBoundaryInput | null => {
+    const existing = snapshot.quickEntry.target;
+    if (existing !== null) return existing;
     const targetId = snapshot.bookmarks.insertionTargetId;
     if (targetId === null) return null;
     for (const section of snapshot.sections) {
@@ -404,13 +714,24 @@ export function App({ snapshot, actions }: AppProps) {
       ]),
     });
 
-  const recordEditResult = (result: StudioControllerActionResult): void => {
+  const recordEditResult = (
+    result: StudioControllerActionResult,
+    pending: PendingEdit = null,
+  ): void => {
     if (result.ok) {
       setEditRefusal(null);
-      setPendingDuration(null);
+      setPendingEdit(null);
       return;
     }
     const code = result.refusal.code;
+    // Only a reason-required refusal is resumable; anything else clears the
+    // pending operation so Confirm can never re-run the wrong edit.
+    const resumable = code === "u1.completion_reason_required";
+    setPendingEdit(resumable ? pending : null);
+    // The interrupted operation can continue only through an explicit
+    // declaration, so U1-CMP-019 opens with it. Nothing is declared until the
+    // caller types a reason and confirms.
+    if (resumable) setCompletionDialogOpen(true);
     setEditRefusal(
       Object.freeze({
         code,
@@ -436,16 +757,86 @@ export function App({ snapshot, actions }: AppProps) {
     );
   };
 
-  const view = viewFromSnapshot(
-    snapshot,
+  /** The boundary a card denotes for each range edge. */
+  const cardBoundary = (
+    chordId: string,
+    edge: "start" | "end",
+  ): StudioBoundaryInput =>
+    edge === "start"
+      ? { eventId: chordId, kind: "before-event" }
+      : { eventId: chordId, kind: "after-event" };
+
+  const rangeEdgeFromFocus = (edge: "start" | "end"): void => {
+    /**
+     * The focused card is the one the chart renders as the single tab stop:
+     * the roving focus id, or the first chord when nothing has moved it yet.
+     * U1 never reads `document.activeElement` to decide this.
+     */
+    const firstChordId =
+      snapshot.sections
+        .flatMap((section) => section.measures)
+        .flatMap((measure) => measure.events)[0]?.id ?? null;
+    const chordId =
+      rovingFocusId ?? snapshot.bookmarks.selectionFocusEventId ?? firstChordId;
+    if (chordId === null) {
+      setEditRefusal(
+        Object.freeze({
+          code: "u1.range_boundary_invalid",
+          message: "No chord is focused.",
+          needsIncompleteReason: false,
+          recoveryAction: "Focus a chord card, then set the range boundary.",
+          resolutions: Object.freeze([]),
+        }),
+      );
+      return;
+    }
+    recordEditResult(actions.setRangeEdge(edge, cardBoundary(chordId, edge)));
+  };
+
+  /**
+   * The insertion plan re-parses the draft, so it is recomputed only when the
+   * draft, its target, or the revision actually changes. Computing it on every
+   * render would exceed the declared at-most-once-per-draft-change work bound.
+   */
+  const insertionPlan = useMemo(
+    () => actions.previewInsertionPlan(),
+    [
+      actions,
+      snapshot.quickEntry.text,
+      snapshot.quickEntry.targetId,
+      snapshot.revision,
+    ],
+  );
+
+  /** Same bound, same reason: one T0 parse per draft change, not per render. */
+  const draftPreview = useMemo(
+    () => actions.previewQuickEntryDraft(),
+    [
+      actions,
+      snapshot.quickEntry.text,
+      snapshot.quickEntry.targetId,
+      snapshot.revision,
+    ],
+  );
+
+  const view = viewFromSnapshot(snapshot, {
+    activeSheet,
+    completionDialogOpen,
+    completionReasonDraft,
+    editRefusal,
+    openMenuChordId,
+    quickEntryRefusal,
+    rangeEndDraft,
+    rangeModeActive,
+    rangeStartDraft,
+    recoveryAcknowledged,
+    recoveryDurationDraft,
+    rovingFocusId,
     titleDraft,
     titleFeedback,
-    activeSheet,
     uiRefusal,
-    rovingFocusId,
-    editRefusal,
-    quickEntryRefusal,
-  );
+    viewMode,
+  }, insertionPlan, draftPreview);
 
   return (
     <StudioShell
@@ -474,8 +865,57 @@ export function App({ snapshot, actions }: AppProps) {
           );
         },
         onQuickEntryClear: () => {
-          actions.clearQuickEntry();
-          setQuickEntryRefusal(null);
+          // A refusal here is surfaced, never presented as a success. The
+          // earlier form discarded the result, which hid a real defect where
+          // clearing the draft could not succeed at all.
+          const result = actions.clearQuickEntry();
+          setQuickEntryRefusal(
+            result.ok
+              ? null
+              : `${result.refusal.message} ${result.refusal.recoveryAction}`,
+          );
+        },
+        onRecoveryAcknowledgeChange: (acknowledged) => {
+          setRecoveryAcknowledged(acknowledged);
+        },
+        onRecoveryDurationDraftChange: (value) => {
+          setRecoveryDurationDraft(value);
+        },
+        onInsertRecoveredChord: (globalOrdinal) => {
+          /**
+           * The acknowledgement travels from the checkbox the caller ticked to
+           * the plan A0 receives. An unticked box sends nothing, so the lane's
+           * own precondition refuses before any command is published.
+           */
+          // The duration field belongs to a chord T0 could not measure; a
+          // chord whose duration T0 already resolved is inserted with none,
+          // so a stale draft in the field cannot refuse an unrelated row.
+          const row = view.quickEntry.tokens.find(
+            (token) => token.globalOrdinal === globalOrdinal,
+          );
+          const result = actions.insertRecoveredChord(
+            globalOrdinal,
+            row?.requiresDuration === true ? recoveryDurationDraft : "",
+            recoveryAcknowledged
+              ? view.quickEntry.recovery.acknowledgementLabel
+              : "",
+          );
+          // Resume with exactly the duration this attempt used, so Confirm
+          // re-runs the same command with only the reason added.
+          recordEditResult(result, {
+            beatText: row?.requiresDuration === true ? recoveryDurationDraft : "",
+            globalOrdinal,
+            kind: "recovered-chord",
+          });
+          if (result.ok) {
+            setRecoveryDurationDraft("");
+            setRecoveryAcknowledged(false);
+          }
+          setQuickEntryRefusal(
+            result.ok
+              ? null
+              : `${result.refusal.message} ${result.refusal.recoveryAction}`,
+          );
         },
         onSelectChord: (chordId, extend) => {
           setRovingFocusId(chordId);
@@ -489,13 +929,16 @@ export function App({ snapshot, actions }: AppProps) {
           setRovingFocusId(chordId);
         },
         onDeleteSelection: () => {
-          recordEditResult(actions.deleteSelection());
+          recordEditResult(actions.deleteSelection(), { kind: "delete" });
         },
         onDuplicateSelection: () => {
-          recordEditResult(actions.duplicateSelection());
+          recordEditResult(actions.duplicateSelection(), { kind: "duplicate" });
         },
         onMoveSelection: (direction) => {
-          recordEditResult(actions.moveSelection(direction));
+          recordEditResult(actions.moveSelection(direction), {
+            direction,
+            kind: "move",
+          });
         },
         onInsertMeasure: (sectionId, beforeMeasureId) => {
           recordEditResult(actions.insertMeasure(sectionId, beforeMeasureId));
@@ -507,26 +950,69 @@ export function App({ snapshot, actions }: AppProps) {
           recordEditResult(actions.applyInlineSymbol(chordId, symbolText));
         },
         onApplyDuration: (chordId, beatText) => {
-          const result = actions.setEventDurationText(chordId, beatText);
-          setPendingDuration(
-            result.ok ||
-              result.refusal.code !== "u1.completion_reason_required"
-              ? null
-              : Object.freeze({ beatText, chordId }),
-          );
-          recordEditResult(result);
+          recordEditResult(actions.setEventDurationText(chordId, beatText), {
+            beatText,
+            chordId,
+            kind: "duration",
+          });
         },
         onConfirmIncompleteMeasure: (reason) => {
-          if (pendingDuration === null) {
-            recordEditResult(actions.deleteSelection(reason));
-            return;
+          // Re-run exactly the operation the refusal interrupted. Guessing an
+          // operation here would publish a command the user never asked for.
+          if (pendingEdit === null) return;
+          setCompletionDialogOpen(false);
+          setCompletionReasonDraft("");
+          switch (pendingEdit.kind) {
+            case "duration":
+              recordEditResult(
+                actions.setEventDurationText(
+                  pendingEdit.chordId,
+                  pendingEdit.beatText,
+                  reason,
+                ),
+              );
+              return;
+            case "delete":
+              recordEditResult(actions.deleteSelection(reason));
+              return;
+            case "duplicate":
+              recordEditResult(actions.duplicateSelection(null, reason));
+              return;
+            case "move":
+              recordEditResult(
+                actions.moveSelection(pendingEdit.direction, reason),
+              );
+              return;
+            case "move-following":
+              recordEditResult(actions.moveFollowingEvents(reason));
+              return;
+            case "move-to":
+              recordEditResult(
+                actions.moveSelectionTo(pendingEdit.measureId, null, reason),
+              );
+              return;
+            case "measure-completion":
+              recordEditResult(
+                actions.declareMeasureCompletion(pendingEdit.measureId, reason),
+              );
+              return;
+            case "recovered-chord": {
+              const result = actions.insertRecoveredChord(
+                pendingEdit.globalOrdinal,
+                pendingEdit.beatText,
+                recoveryAcknowledged
+                  ? view.quickEntry.recovery.acknowledgementLabel
+                  : "",
+                reason,
+              );
+              recordEditResult(result);
+              if (result.ok) {
+                setRecoveryDurationDraft("");
+                setRecoveryAcknowledged(false);
+              }
+              return;
+            }
           }
-          const result = actions.setEventDurationText(
-            pendingDuration.chordId,
-            pendingDuration.beatText,
-            reason,
-          );
-          recordEditResult(result);
         },
         onRenameSection: (sectionId, name) => {
           recordEditResult(actions.renameSection(sectionId, name));
@@ -535,14 +1021,185 @@ export function App({ snapshot, actions }: AppProps) {
           recordEditResult(actions.annotateSection(sectionId, annotation));
         },
         onDropChordOnMeasure: (measureId) => {
-          recordEditResult(actions.moveSelectionTo(measureId));
+          recordEditResult(actions.moveSelectionTo(measureId), {
+            kind: "move-to",
+            measureId,
+          });
+        },
+        onCardMenuOpenChange: (chordId) => {
+          // Opening a menu selects its card, so every item afterwards acts on
+          // a known selection and is itself exactly one command. The selection
+          // change is an ephemeral intent and creates no history entry.
+          if (chordId !== null) {
+            setRovingFocusId(chordId);
+            recordEditResult(actions.selectEvent(chordId));
+          }
+          setOpenMenuChordId(chordId);
+        },
+        onCardMenuAction: (chordId, action) => {
+          setOpenMenuChordId(null);
+          switch (action) {
+            case "duplicate":
+              recordEditResult(actions.duplicateSelection(), {
+                kind: "duplicate",
+              });
+              return;
+            case "delete":
+              recordEditResult(actions.deleteSelection(), { kind: "delete" });
+              return;
+            case "move-previous":
+              recordEditResult(actions.moveSelection("previous"), {
+                direction: "previous",
+                kind: "move",
+              });
+              return;
+            case "move-next":
+              recordEditResult(actions.moveSelection("next"), {
+                direction: "next",
+                kind: "move",
+              });
+              return;
+            case "move-following":
+              recordEditResult(actions.moveFollowingEvents(), {
+                kind: "move-following",
+              });
+              return;
+            case "join-next":
+              recordEditResult(actions.joinEventDurations(chordId));
+              return;
+            case "range-start":
+              recordEditResult(
+                actions.setRangeEdge("start", cardBoundary(chordId, "start")),
+              );
+              return;
+            case "range-end":
+              recordEditResult(
+                actions.setRangeEdge("end", cardBoundary(chordId, "end")),
+              );
+              return;
+            case "declare-completion": {
+              // U1-OP-019's pointer alternative. The measure is the one this
+              // card belongs to; a short bar still needs a stated reason.
+              const owner = snapshot.sections
+                .flatMap((section) => section.measures)
+                .find((measure) =>
+                  measure.events.some((event) => event.id === chordId),
+                );
+              if (owner === undefined) return;
+              recordEditResult(actions.declareMeasureCompletion(owner.id), {
+                kind: "measure-completion",
+                measureId: owner.id,
+              });
+              return;
+            }
+            case "edit-symbol":
+            case "edit-duration":
+            case "split-duration":
+              // These open a component-local editor; the chart owns that
+              // presentation step and never reaches the application here.
+              return;
+          }
+        },
+        onSplitDuration: (chordId, firstBeats) => {
+          // Only the split point travels; the application derives the exact
+          // remainder, so no surface performs musical arithmetic.
+          recordEditResult(actions.splitEventDuration(chordId, firstBeats));
+        },
+        onSplitSection: (sectionId, beforeMeasureId) => {
+          recordEditResult(
+            actions.splitSection(sectionId, beforeMeasureId, nextSectionName()),
+          );
+        },
+        onJoinSections: (sectionId) => {
+          recordEditResult(actions.joinSections(sectionId));
+        },
+        onSetInsertionPoint: (measureId) => {
+          // Aiming re-targets the existing draft in place: exactly one
+          // `set-quick-entry` intent, so a typed draft follows the new target
+          // instead of staying pointed at the previous measure.
+          const preview = actions.previewChartText(snapshot.quickEntry.text);
+          recordEditResult(
+            actions.setQuickEntryDraft(
+              snapshot.quickEntry.text,
+              { kind: "measure-start", measureId },
+              preview.status,
+              preview.issueCodes,
+            ),
+          );
+        },
+        onRangeModeChange: (active) => {
+          if (active) {
+            const anchor = snapshot.bookmarks.rangeAnchor;
+            const focus = snapshot.bookmarks.rangeFocus;
+            rangeOnEntry.current =
+              anchor === null || focus === null ? null : { anchor, focus };
+            setRangeStartDraft(snapshot.bookmarks.rangeStartBeatLabel ?? "");
+            setRangeEndDraft(snapshot.bookmarks.rangeEndBeatLabel ?? "");
+          }
+          setRangeModeActive(active);
+        },
+        onRangeEdgeFromFocus: rangeEdgeFromFocus,
+        onRangeEdgeToChord: (edge, chordId) => {
+          // The handle drop names the chord explicitly; the same edge is also
+          // reachable from Set start/Set end and from the exact beat fields.
+          recordEditResult(
+            actions.setRangeEdge(edge, cardBoundary(chordId, edge)),
+          );
+        },
+        onRangeDraftChange: (edge, value) => {
+          if (edge === "start") setRangeStartDraft(value);
+          else setRangeEndDraft(value);
+        },
+        onRangeDraftCommit: (edge) => {
+          recordEditResult(
+            actions.setRangeEdgeBeat(
+              edge,
+              edge === "start" ? rangeStartDraft : rangeEndDraft,
+            ),
+          );
+        },
+        onRangeClear: () => {
+          recordEditResult(actions.clearRange());
+          setRangeStartDraft("");
+          setRangeEndDraft("");
+        },
+        onRangeCancel: () => {
+          const prior = rangeOnEntry.current;
+          recordEditResult(
+            prior === null
+              ? actions.clearRange()
+              : actions.setRange(prior.anchor, prior.focus),
+          );
+          setRangeModeActive(false);
+          setRangeStartDraft("");
+          setRangeEndDraft("");
+        },
+        onViewModeChange: (mode) => {
+          setViewMode(mode);
         },
         onSetSectionBoundary: (sectionId, boundary) => {
           recordEditResult(actions.setSectionBoundary(sectionId, boundary));
         },
         onCancelPendingEdit: () => {
-          setPendingDuration(null);
+          setPendingEdit(null);
           setEditRefusal(null);
+          setCompletionDialogOpen(false);
+          setCompletionReasonDraft("");
+        },
+        onCompletionDialogOpenChange: (open) => {
+          setCompletionDialogOpen(open);
+          // Closing without confirming keeps the interrupted operation and its
+          // refusal intact; only Cancel abandons them.
+          if (!open) setCompletionReasonDraft("");
+        },
+        onCompletionReasonDraftChange: (value) => {
+          setCompletionReasonDraft(value);
+        },
+        onDeclareMeasureCompletion: (measureId) => {
+          recordEditResult(actions.declareMeasureCompletion(measureId), {
+            kind: "measure-completion",
+            measureId,
+          });
         },
         onTitleDraftChange: (value) => {
           setTitleDraft(value);

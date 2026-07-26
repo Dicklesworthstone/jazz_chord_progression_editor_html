@@ -20,17 +20,26 @@ export type { StudioShellNoticeProps } from "./StudioShellNotice";
 export { TransportBar } from "./TransportBar";
 export type { TransportBarProps } from "./TransportBar";
 export type {
+  StudioCardMenuAction,
+  StudioCardMenuItemView,
   StudioChartView,
+  StudioChordCardView,
   StudioDocumentView,
   StudioFactView,
   StudioHarmonyView,
+  StudioInsertionPlanView,
   StudioLayoutView,
   StudioMeasureView,
   StudioPanelSide,
+  StudioQuickEntryTokenView,
+  StudioQuickEntryView,
+  StudioRangeView,
+  StudioRecoveryLaneView,
   StudioSectionView,
   StudioShellCallbacks,
   StudioShellProps,
   StudioShellView,
   StudioTitleFeedback,
   StudioTransportView,
+  StudioViewMode,
 } from "./studio-contract";

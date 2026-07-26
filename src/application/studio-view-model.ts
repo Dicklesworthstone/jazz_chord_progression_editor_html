@@ -40,6 +40,15 @@ export type StudioMeasureViewModel = Readonly<{
   eventCount: number;
   completion: MeasureCompletion["kind"];
   completionLabel: string;
+  /**
+   * The stored reason a pickup or incomplete measure carries, verbatim.
+   *
+   * A short bar is only legal because someone declared why, so the surface has
+   * to be able to show that reason with the measure. It is read from the
+   * document and never invented: a measure with no stored reason reports null
+   * rather than a plausible sentence.
+   */
+  completionReason: string | null;
   startBeatLabel: string;
   durationBeatLabel: string;
   endBeatLabel: string;
@@ -56,6 +65,23 @@ export type StudioSectionViewModel = Readonly<{
   measures: readonly StudioMeasureViewModel[];
 }>;
 
+/**
+ * A stable boundary with its identity brand removed. The surface can hold one
+ * and hand it back to the controller, which re-resolves it against the current
+ * chart; it can never fabricate a branded domain identity from this value.
+ */
+export type StudioBoundaryDescriptor =
+  | Readonly<{ kind: "document-start" | "document-end" }>
+  | Readonly<{
+      kind: "before-section" | "after-section" | "section-start" | "section-end";
+      sectionId: string;
+    }>
+  | Readonly<{
+      kind: "before-measure" | "after-measure" | "measure-start" | "measure-end";
+      measureId: string;
+    }>
+  | Readonly<{ kind: "before-event" | "after-event"; eventId: string }>;
+
 export type StudioBookmarkViewModel = Readonly<{
   selectedEventIds: readonly string[];
   selectionFocusEventId: string | null;
@@ -65,6 +91,9 @@ export type StudioBookmarkViewModel = Readonly<{
   rangeStartBeatLabel: string | null;
   rangeEndBeatLabel: string | null;
   rangeActive: boolean;
+  /** The exact stored edges, so Cancel can restore a range byte-for-byte. */
+  rangeAnchor: StudioBoundaryDescriptor | null;
+  rangeFocus: StudioBoundaryDescriptor | null;
 }>;
 
 export type StudioQuickEntryViewModel = Readonly<{
@@ -73,6 +102,9 @@ export type StudioQuickEntryViewModel = Readonly<{
   baseRevision: number;
   baseRevisionCurrent: boolean;
   targetLabel: string | null;
+  /** The exact stored target, so a surface can re-aim an existing draft. */
+  target: StudioBoundaryDescriptor | null;
+  targetId: string | null;
   issueCodes: readonly string[];
   codePointCount: number;
 }>;
@@ -91,6 +123,24 @@ export type StudioPanelViewModel = Readonly<{
   active: ApplicationPanelId;
   leftRailCollapsed: boolean;
   rightRailCollapsed: boolean;
+}>;
+
+/**
+ * The focus A0 asked the surface to render. U1 never infers focus from the
+ * DOM: it renders this request and then acknowledges the sequence, so a focus
+ * repair is an application fact rather than a guess about where the caret was.
+ */
+export type StudioFocusRequestViewModel = Readonly<{
+  sequence: number;
+  kind: "chart" | "section" | "measure" | "event" | "dialog";
+  targetId: string | null;
+  reason:
+    | "command"
+    | "delete-repair"
+    | "replacement"
+    | "undo"
+    | "redo"
+    | "dialog-close";
 }>;
 
 export type StudioNoticeViewModel = Readonly<{
@@ -132,6 +182,7 @@ export type StudioViewModel = Readonly<{
   panels: StudioPanelViewModel;
   noticeCount: number;
   latestNotice: StudioNoticeViewModel | null;
+  focusRequest: StudioFocusRequestViewModel | null;
 }>;
 
 function greatestCommonDivisor(left: bigint, right: bigint): bigint {
@@ -243,6 +294,30 @@ function transportStatusLabel(status: ApplicationTransportStatus): string {
   }
 }
 
+/** Brand-free projection of the A0 focus request the surface must render. */
+function focusRequestView(
+  request: AppState["focusRequest"],
+): StudioFocusRequestViewModel | null {
+  if (request === null) return null;
+  const target = request.target;
+  const targetId =
+    target.kind === "section"
+      ? target.sectionId
+      : target.kind === "measure"
+        ? target.measureId
+        : target.kind === "event"
+          ? target.eventId
+          : target.kind === "dialog"
+            ? target.dialogId
+            : null;
+  return Object.freeze({
+    kind: target.kind,
+    reason: request.reason,
+    sequence: request.sequence,
+    targetId,
+  });
+}
+
 function latestNoticeView(notice: Notice | undefined): StudioNoticeViewModel | null {
   if (notice === undefined) return null;
   return Object.freeze({
@@ -298,6 +373,23 @@ function boundaryLabel(boundary: StableBoundary | null): string | null {
   }
 }
 
+/** Strip the identity brand without changing the boundary's meaning. */
+function boundaryDescriptor(
+  boundary: StableBoundary | null,
+): StudioBoundaryDescriptor | null {
+  if (boundary === null) return null;
+  if ("eventId" in boundary) {
+    return Object.freeze({ eventId: boundary.eventId, kind: boundary.kind });
+  }
+  if ("measureId" in boundary) {
+    return Object.freeze({ kind: boundary.kind, measureId: boundary.measureId });
+  }
+  if ("sectionId" in boundary) {
+    return Object.freeze({ kind: boundary.kind, sectionId: boundary.sectionId });
+  }
+  return Object.freeze({ kind: boundary.kind });
+}
+
 function boundaryTargetId(boundary: StableBoundary | null): string | null {
   if (boundary === null) return null;
   if ("eventId" in boundary) return boundary.eventId;
@@ -324,6 +416,8 @@ function bookmarkView(state: AppState): StudioBookmarkViewModel {
       range === null ? null : formatExactBeatLabel(range.start),
     rangeEndBeatLabel: range === null ? null : formatExactBeatLabel(range.end),
     rangeActive: state.bookmarks.range !== null,
+    rangeAnchor: boundaryDescriptor(state.bookmarks.range?.anchor ?? null),
+    rangeFocus: boundaryDescriptor(state.bookmarks.range?.focus ?? null),
   });
 }
 
@@ -342,6 +436,8 @@ function quickEntryView(state: AppState): StudioQuickEntryViewModel {
     baseRevision: draft.baseRevision,
     baseRevisionCurrent: draft.baseRevision === state.revision,
     targetLabel: boundaryLabel(draft.target),
+    target: boundaryDescriptor(draft.target),
+    targetId: boundaryTargetId(draft.target),
     issueCodes: Object.freeze([...draft.issueCodes]),
     codePointCount: countCodePoints(draft.text),
   });
@@ -397,6 +493,11 @@ export function selectStudioViewModel(state: AppState): StudioViewModel {
         eventCount: measure.events.length,
         completion: measure.completion.kind,
         completionLabel: completionLabel(measure.completion.kind),
+        completionReason:
+          measure.completion.kind === "incomplete" ||
+          measure.completion.kind === "pickup"
+            ? measure.completion.reason
+            : null,
         startBeatLabel: exactTicksLabel(startTicks),
         durationBeatLabel: exactTicksLabel(measureTicks),
         endBeatLabel: exactTicksLabel(runningTicks),
@@ -452,5 +553,6 @@ export function selectStudioViewModel(state: AppState): StudioViewModel {
     }),
     noticeCount: state.notices.length,
     latestNotice: latestNoticeView(state.notices[state.notices.length - 1]),
+    focusRequest: focusRequestView(state.focusRequest),
   });
 }

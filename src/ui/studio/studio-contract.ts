@@ -23,6 +23,31 @@ export type StudioDocumentView = Readonly<{
   redoDescription: string;
 }>;
 
+/**
+ * One semantic operation offered by a chord card's More menu. Every item is a
+ * named alternative to a pointer gesture; none of them is drag-only, and the
+ * disabled ones state their reason rather than disappearing.
+ */
+export type StudioCardMenuItemView = Readonly<{
+  action: StudioCardMenuAction;
+  label: string;
+  disabledReason: string | null;
+}>;
+
+export type StudioCardMenuAction =
+  | "duplicate"
+  | "delete"
+  | "move-previous"
+  | "move-next"
+  | "move-following"
+  | "split-duration"
+  | "join-next"
+  | "edit-symbol"
+  | "edit-duration"
+  | "range-start"
+  | "range-end"
+  | "declare-completion";
+
 export type StudioChordCardView = Readonly<{
   id: string;
   ordinal: number;
@@ -36,6 +61,9 @@ export type StudioChordCardView = Readonly<{
   /** Inline editing is offered only where exact stored pitches are not at risk. */
   inlineEditable: boolean;
   inlineEditBlockedReason: string | null;
+  /** Teaching view adds explanatory labels only; it never invents analysis. */
+  teachingNotes: readonly string[];
+  menuItems: readonly StudioCardMenuItemView[];
 }>;
 
 export type StudioMeasureView = Readonly<{
@@ -53,6 +81,19 @@ export type StudioMeasureView = Readonly<{
   /** Insertion targets are real controls, never drag-only affordances. */
   insertBeforeLabel: string;
   dropLabel: string;
+  /** The literal completion A0 stores, shown as-is in the teaching view. */
+  completionLabel: string;
+  /**
+   * The stored reason a short or pickup measure carries, verbatim, or null.
+   * It is shown with the measure in both views: a bar is only allowed to be
+   * short because someone said why, and the surface never supplies that why.
+   */
+  completionReason: string | null;
+  /** True when the quick-entry insertion point already names this measure. */
+  isInsertionTarget: boolean;
+  targetLabel: string;
+  /** Splitting a section here is legal only after its first measure. */
+  canSplitSectionHere: boolean;
 }>;
 
 export type StudioSectionView = Readonly<{
@@ -64,6 +105,23 @@ export type StudioSectionView = Readonly<{
   annotation: string;
   voiceLeadingBoundary: "reset" | "continue";
   voiceLeadingLabel: string;
+  /** Joining is offered only where a following section actually exists. */
+  canJoinNextSection: boolean;
+}>;
+
+export type StudioViewMode = "compact" | "teaching";
+
+/**
+ * Presentation-only range state. The exact beat labels come from A0; the mode
+ * flag and the draft field text are owned by the surface and never published.
+ */
+export type StudioRangeView = Readonly<{
+  active: boolean;
+  hasRange: boolean;
+  startBeatLabel: string | null;
+  endBeatLabel: string | null;
+  startDraft: string;
+  endDraft: string;
 }>;
 
 export type StudioChartView = Readonly<{
@@ -79,6 +137,11 @@ export type StudioChartView = Readonly<{
   canDuplicateSelection: boolean;
   canMoveSelection: boolean;
   appendSectionLabel: string;
+  /** Presentation-only; toggling it changes no document state at all. */
+  viewMode: StudioViewMode;
+  range: StudioRangeView;
+  /** The card whose More menu is open, or null. Presentation-only. */
+  openMenuChordId: string | null;
   editRefusal: Readonly<{
     code: string;
     message: string;
@@ -87,10 +150,69 @@ export type StudioChartView = Readonly<{
     resolutions: readonly string[];
     needsIncompleteReason: boolean;
   }> | null;
+  /**
+   * U1-CMP-019. A short measure is declared in a modal dialog the caller opens
+   * deliberately; the reason draft is presentation state and is never coerced.
+   */
+  completionDialog: Readonly<{
+    open: boolean;
+    reasonDraft: string;
+  }>;
+}>;
+
+/**
+ * The insertion-plan statement shown before anything is published. It is
+ * presentation, not publication: if it disagrees with A0 at dispatch, the A0
+ * receipt or refusal wins and is surfaced verbatim.
+ */
+export type StudioInsertionPlanView = Readonly<{
+  statement:
+    | "no-draft"
+    | "fits-measure"
+    | "completes-measures"
+    | "incomplete-requires-confirmation"
+    | "overfill-requires-split"
+    | "not-atomic-refusal";
+  label: string;
+  committable: boolean;
+  resolutions: readonly string[];
+}>;
+
+/**
+ * One preview row. A parsed draft shows `valid` rows; a refused draft shows one
+ * `insertable` row per chord T0 recovered plus one `invalid` row per
+ * diagnostic. `sourceText` is always the exact draft slice, never a guess.
+ */
+export type StudioQuickEntryTokenView = Readonly<{
+  ordinal: number;
+  sourceText: string;
+  state: "valid" | "invalid" | "insertable";
+  diagnosticCode: string | null;
+  globalOrdinal: number | null;
+  durationLabel: string | null;
+  requiresDuration: boolean;
+  requiresCompletionReason: boolean;
+  blockedReason: string | null;
+}>;
+
+/**
+ * The recovered-chord lane. It commits one chord into one measure and always
+ * costs the draft's own bar and section layout, so the literal acknowledgement
+ * is a real gesture the caller makes before anything can be inserted.
+ */
+export type StudioRecoveryLaneView = Readonly<{
+  available: boolean;
+  acknowledgementLabel: string;
+  acknowledged: boolean;
+  measureLabel: string | null;
+  remainderLabel: string | null;
+  unavailableReason: string | null;
+  durationDraft: string;
 }>;
 
 export type StudioQuickEntryView = Readonly<{
   draftText: string;
+  insertionPlan: StudioInsertionPlanView;
   maxCodePoints: number;
   codePointCount: number;
   statusLabel: string;
@@ -99,6 +221,8 @@ export type StudioQuickEntryView = Readonly<{
   canClear: boolean;
   issueCodes: readonly string[];
   refusalMessage: string | null;
+  tokens: readonly StudioQuickEntryTokenView[];
+  recovery: StudioRecoveryLaneView;
 }>;
 
 export type StudioFactView = Readonly<{
@@ -161,6 +285,12 @@ export type StudioShellCallbacks = Readonly<{
   onQuickEntryDraftChange: (value: string) => void;
   onQuickEntryInsert: () => void;
   onQuickEntryClear: () => void;
+  /** Presentation-only: records that the caller accepted the layout loss. */
+  onRecoveryAcknowledgeChange: (acknowledged: boolean) => void;
+  /** Presentation-only draft for a duration T0 could not resolve. */
+  onRecoveryDurationDraftChange: (value: string) => void;
+  /** Publish exactly one recovered chord into the aimed measure. */
+  onInsertRecoveredChord: (globalOrdinal: number) => void;
   onSelectChord: (chordId: string, extend: boolean) => void;
   onRovingFocusChange: (chordId: string) => void;
   onDeleteSelection: () => void;
@@ -172,6 +302,11 @@ export type StudioShellCallbacks = Readonly<{
   onApplyDuration: (chordId: string, beatText: string) => void;
   onConfirmIncompleteMeasure: (reason: string) => void;
   onCancelPendingEdit: () => void;
+  /** Presentation-only: opens or closes the measure-completion dialog. */
+  onCompletionDialogOpenChange: (open: boolean) => void;
+  onCompletionReasonDraftChange: (value: string) => void;
+  /** Declare the completion a measure's own exact fill already implies. */
+  onDeclareMeasureCompletion: (measureId: string) => void;
   onRenameSection: (sectionId: string, name: string) => void;
   onAnnotateSection: (sectionId: string, annotation: string) => void;
   onSetSectionBoundary: (
@@ -179,6 +314,26 @@ export type StudioShellCallbacks = Readonly<{
     boundary: "reset" | "continue",
   ) => void;
   onDropChordOnMeasure: (measureId: string) => void;
+  /** Presentation-only: opens or closes one card's More menu. */
+  onCardMenuOpenChange: (chordId: string | null) => void;
+  onCardMenuAction: (chordId: string, action: StudioCardMenuAction) => void;
+  onSplitDuration: (chordId: string, firstBeats: string) => void;
+  onSplitSection: (sectionId: string, beforeMeasureId: string) => void;
+  onJoinSections: (sectionId: string) => void;
+  /** Aim the quick-entry draft at a measure without publishing anything. */
+  onSetInsertionPoint: (measureId: string) => void;
+  /** Presentation-only: enters or leaves the explicit range mode. */
+  onRangeModeChange: (active: boolean) => void;
+  onRangeEdgeFromFocus: (edge: "start" | "end") => void;
+  /** Set one range edge from a chord a boundary handle was dropped on. */
+  onRangeEdgeToChord: (edge: "start" | "end", chordId: string) => void;
+  onRangeDraftChange: (edge: "start" | "end", value: string) => void;
+  onRangeDraftCommit: (edge: "start" | "end") => void;
+  onRangeCancel: () => void;
+  /** Clear the range and stay in the mode; Cancel instead restores and exits. */
+  onRangeClear: () => void;
+  /** Presentation-only: swaps compact and teaching rendering. */
+  onViewModeChange: (mode: StudioViewMode) => void;
 }>;
 
 export type StudioShellProps = Readonly<{
