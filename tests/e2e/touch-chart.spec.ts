@@ -1,6 +1,14 @@
-import { expect, test, type Page } from "@playwright/test";
-import { join } from "node:path";
-import { pathToFileURL } from "node:url";
+import { expect, test } from "@playwright/test";
+
+import {
+  captureDiagnostics,
+  declareIncompleteMeasure,
+  expectCleanDiagnostics,
+  installListenerProbe,
+  listenerCounts,
+  openStudio,
+  typeAndInsert,
+} from "./u1-chart-kit";
 
 /**
  * L-TOUCH-01 owner. The confirmed legacy failure was touch listeners that
@@ -8,139 +16,8 @@ import { pathToFileURL } from "node:url";
  * runs against the real generated artifact in a real browser.
  */
 
-type PageDiagnostics = Readonly<{
-  consoleErrors: string[];
-  pageErrors: string[];
-}>;
-
-function captureDiagnostics(page: Page): PageDiagnostics {
-  const consoleErrors: string[] = [];
-  const pageErrors: string[] = [];
-  page.on("console", (message) => {
-    if (message.type() === "error") consoleErrors.push(message.text());
-  });
-  page.on("pageerror", (error) => {
-    pageErrors.push(error.message);
-  });
-  return { consoleErrors, pageErrors };
-}
-
-function artifactUrl(): string {
-  return pathToFileURL(
-    join(process.cwd(), "jazz_chord_progression_editor.html"),
-  ).href;
-}
-
-async function openStudio(page: Page): Promise<void> {
-  await page.goto(artifactUrl(), { waitUntil: "load" });
-  await expect(page.locator('[data-app-ready="true"]')).toBeVisible();
-}
-
-function expectCleanDiagnostics(diagnostics: PageDiagnostics): void {
-  expect(diagnostics.consoleErrors).toEqual([]);
-  expect(diagnostics.pageErrors).toEqual([]);
-}
-
-/**
- * Count listeners that are still attached to nodes the document still holds.
- * A raw add-minus-remove tally would over-count listeners on discarded nodes,
- * which is not the legacy failure: L-TOUCH-01 was listeners multiplying on
- * surviving nodes. This probe measures exactly that.
- */
-async function installListenerProbe(page: Page): Promise<void> {
-  await page.addInitScript(() => {
-    type Record = { target: EventTarget; type: string; active: boolean };
-    const records: Record[] = [];
-    const target = EventTarget.prototype;
-    /* eslint-disable @typescript-eslint/unbound-method */
-    const add = target.addEventListener;
-    const remove = target.removeEventListener;
-    /* eslint-enable @typescript-eslint/unbound-method */
-    function patchedAdd(
-      this: EventTarget,
-      ...args: Parameters<typeof add>
-    ): void {
-      const [type] = args;
-      if (typeof type === "string") {
-        records.push({ active: true, target: this, type });
-      }
-      add.apply(this, args);
-    }
-    function patchedRemove(
-      this: EventTarget,
-      ...args: Parameters<typeof remove>
-    ): void {
-      const [type] = args;
-      if (typeof type === "string") {
-        for (let index = records.length - 1; index >= 0; index -= 1) {
-          const record = records[index];
-          if (
-            record !== undefined &&
-            record.active &&
-            record.target === this &&
-            record.type === type
-          ) {
-            record.active = false;
-            break;
-          }
-        }
-      }
-      remove.apply(this, args);
-    }
-    target.addEventListener = patchedAdd;
-    target.removeEventListener = patchedRemove;
-    Object.defineProperty(window, "__listenerCounts", {
-      value: () => {
-        const counts: Record0 = {};
-        for (const record of records) {
-          if (!record.active) continue;
-          const node = record.target;
-          const live =
-            node === window ||
-            node === document ||
-            (node instanceof Node && document.contains(node));
-          if (!live) continue;
-          counts[record.type] = (counts[record.type] ?? 0) + 1;
-        }
-        return counts;
-      },
-    });
-    type Record0 = globalThis.Record<string, number>;
-  });
-}
-
-async function listenerCounts(
-  page: Page,
-): Promise<Readonly<Record<string, number>>> {
-  return page.evaluate(
-    () =>
-      (
-        window as unknown as {
-          __listenerCounts: () => Record<string, number>;
-        }
-      ).__listenerCounts(),
-  );
-}
-
-/** On a mobile viewport the Library lives in a sheet; open it before typing. */
-async function typeAndInsert(page: Page, text: string): Promise<void> {
-  const field = page.getByTestId("quick-entry-field");
-  if (!(await field.first().isVisible())) {
-    await page.locator("#studio-open-library-sheet").click();
-  }
-  const visibleField = field.filter({ visible: true }).first();
-  await visibleField.fill(text);
-  await page
-    .locator("#studio-quick-entry-insert")
-    .filter({ visible: true })
-    .first()
-    .click();
-  const close = page.getByRole("button", { name: /^Close / });
-  if (await close.first().isVisible()) await close.first().click();
-}
-
 test.describe("L-TOUCH-01 chart touch behaviour", () => {
-  test("a touch shorter than the drag threshold stays a tap", async ({
+  test("U1-INT-016 a touch shorter than the drag threshold stays a tap", async ({
     browser,
   }) => {
     const context = await browser.newContext({
@@ -189,7 +66,7 @@ test.describe("L-TOUCH-01 chart touch behaviour", () => {
     }
   });
 
-  test("chart listeners do not multiply across repeated document mutation", async ({
+  test("U1-INT-024 chart listeners do not multiply across repeated document mutation", async ({
     browser,
   }) => {
     const context = await browser.newContext({
@@ -230,7 +107,7 @@ test.describe("L-TOUCH-01 chart touch behaviour", () => {
     }
   });
 
-  test("a cancelled drag releases capture and dispatches nothing", async ({
+  test("U1-INT-019 a cancelled drag releases capture and dispatches nothing", async ({
     browser,
   }) => {
     const context = await browser.newContext({
@@ -285,6 +162,69 @@ test.describe("L-TOUCH-01 chart touch behaviour", () => {
     }
   });
 
+  test("U1-INT-022 each chord card owns exactly three static listeners", async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({
+      hasTouch: true,
+      isMobile: true,
+      viewport: { height: 844, width: 390 },
+    });
+    const page = await context.newPage();
+    const diagnostics = captureDiagnostics(page);
+    try {
+      await installListenerProbe(page);
+      await openStudio(page);
+      await typeAndInsert(page, "C:1 D:1 E:1 F:1");
+      await expect(page.locator(".studio-chord-card")).toHaveCount(4);
+
+      // "Static" means with no inline editor open and no drag session active.
+      // Every control inside a card — the drag handle, the More trigger, and
+      // every menu item — is delegated to these three, so the count cannot
+      // grow as the card gains controls.
+      const perCard = await page.evaluate(() => {
+        const counts = (
+          window as unknown as {
+            __listenerCounts: (selector?: string) => Record<string, number>;
+          }
+        ).__listenerCounts;
+        return [...document.querySelectorAll(".studio-chord-card")].map(
+          (card, index) => {
+            card.setAttribute("data-probe-index", String(index));
+            const scoped = counts(`[data-probe-index="${String(index)}"]`);
+            card.removeAttribute("data-probe-index");
+            return Object.values(scoped).reduce((sum, n) => sum + n, 0);
+          },
+        );
+      });
+      expect(perCard).toEqual([3, 3, 3, 3]);
+
+      // Opening a card menu adds nine menu items and still no listener.
+      await page
+        .locator(".studio-chord-card")
+        .first()
+        .getByTestId("chord-card-more")
+        .click();
+      await expect(page.getByTestId("chord-card-menu")).toBeVisible();
+      const withMenu = await page.evaluate(() => {
+        const counts = (
+          window as unknown as {
+            __listenerCounts: (selector?: string) => Record<string, number>;
+          }
+        ).__listenerCounts;
+        const card = document.querySelector(".studio-chord-card");
+        card?.setAttribute("data-probe-index", "0");
+        const scoped = counts('[data-probe-index="0"]');
+        card?.removeAttribute("data-probe-index");
+        return Object.values(scoped).reduce((sum, n) => sum + n, 0);
+      });
+      expect(withMenu).toBe(3);
+      expectCleanDiagnostics(diagnostics);
+    } finally {
+      await context.close();
+    }
+  });
+
   test("every chart operation stays reachable without a pointer", async ({
     browser,
   }) => {
@@ -318,5 +258,87 @@ test.describe("L-TOUCH-01 chart touch behaviour", () => {
     } finally {
       await context.close();
     }
+  });
+
+  test("U1-INT-044 U1-EDIT-014 every declared chart shortcut publishes its own row, and an A0 refusal is shown verbatim", async ({
+    page,
+  }) => {
+    const diagnostics = captureDiagnostics(page);
+    await openStudio(page);
+    await typeAndInsert(page, "Dm9:2 G13:2");
+    const cards = page.locator(".studio-chord-card");
+    await cards.nth(0).focus();
+
+    // Alt+B is U1-OP-023: it publishes the section boundary, undoably.
+    await page.keyboard.press("Alt+b");
+    await expect(page.getByTestId("section-boundary-label")).toContainText(
+      "Voice leading continues across this boundary",
+    );
+    await page.locator("#studio-undo").click();
+    await expect(page.getByTestId("section-boundary-label")).toContainText(
+      "Voice leading resets at this boundary",
+    );
+
+    // Alt+I appends a measure; Alt+K then splits the section before it.
+    await cards.nth(0).focus();
+    await page.keyboard.press("Alt+i");
+    await expect(page.locator(".studio-measure")).toHaveCount(2);
+    await page.locator('[id^="studio-target-measure-"]').last().click();
+    await page.locator("#chart-workspace").focus();
+    await page.keyboard.press("Alt+k");
+    await expect(page.locator(".studio-section")).toHaveCount(2);
+
+    // Alt+L joins them back, restoring the single section.
+    await page.locator("#chart-workspace").focus();
+    await page.keyboard.press("Alt+l");
+    await expect(page.locator(".studio-section")).toHaveCount(1);
+
+    // Alt+C declares the aimed measure's own completion. The appended measure
+    // is already empty, so there is nothing to declare and A0's refusal is
+    // surfaced verbatim rather than rewritten into a U1 code or hidden.
+    await page.locator('[id^="studio-target-measure-"]').last().click();
+    await page.locator("#chart-workspace").focus();
+    await page.keyboard.press("Alt+c");
+    await expect(page.getByTestId("chart-edit-refusal")).toHaveAttribute(
+      "data-code",
+      "command.payload_invalid",
+    );
+    expectCleanDiagnostics(diagnostics);
+  });
+
+  test("U1-OP-012 Alt+M moves the selection to the insertion point", async ({
+    page,
+  }) => {
+    const diagnostics = captureDiagnostics(page);
+    await openStudio(page);
+    await typeAndInsert(page, "Dm9:2 G13:2");
+    const cards = page.locator(".studio-chord-card");
+
+    // A second, empty measure becomes the named destination.
+    await page.locator('[id^="studio-append-measure-"]').first().click();
+    await expect(page.locator(".studio-measure")).toHaveCount(2);
+    await page.locator('[id^="studio-target-measure-"]').last().click();
+
+    await cards.nth(1).click();
+    await expect(page.getByTestId("chart-selection-status")).toContainText(
+      "1 chord selected",
+    );
+    await cards.nth(1).focus();
+    await page.keyboard.press("Alt+m");
+
+    // Emptying half of the source bar is never silent: the move stops and asks
+    // for an explicit reason before anything is published.
+    await expect(page.getByTestId("chart-edit-refusal")).toHaveAttribute(
+      "data-code",
+      "u1.completion_reason_required",
+    );
+    await declareIncompleteMeasure(page, "Second half moved on");
+
+    // The chord moved into the destination the insertion point already named.
+    const measures = page.locator(".studio-measure");
+    await expect(measures.nth(0).locator(".studio-chord-card")).toHaveCount(1);
+    await expect(measures.nth(1).locator(".studio-chord-card")).toHaveCount(1);
+    await expect(measures.nth(1)).toContainText("G13");
+    expectCleanDiagnostics(diagnostics);
   });
 });
