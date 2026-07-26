@@ -185,6 +185,7 @@ export function outerCodeForAtomicEditPlanRefusal(
     case "edit-plan.destination-invalid":
     case "edit-plan.event-order-invalid":
     case "edit-plan.section-split-boundary-invalid":
+    case "edit-plan.measure-split-boundary-invalid":
     case "edit-plan.section-order-invalid":
       return "command.destination_invalid";
     case "edit-plan.id-factory-failed":
@@ -217,6 +218,7 @@ export function outerCodeForAtomicEditPlanRefusal(
     case "edit-plan.recovered-chord-duration-mismatch":
     case "edit-plan.duration-invalid":
     case "edit-plan.duration-sum-mismatch":
+    case "edit-plan.measure-partition-mismatch":
     case "edit-plan.event-content-mismatch":
     case "edit-plan.right-annotation-not-empty":
     case "edit-plan.collection-limit-exceeded":

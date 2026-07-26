@@ -692,61 +692,74 @@ function firstCompletionShapeFailure(
     ) {
       return immutablePath([...rowPath, "measureId"]);
     }
-    const completionValue = valueAt(declaration, "completion");
-    const completion = recordValue(completionValue);
-    if (completion === null) {
-      return immutablePath([...rowPath, "completion"]);
-    }
-    const kind = scalarAt(completion, "kind");
-    if (typeof kind !== "string") {
-      return immutablePath([...rowPath, "completion", "kind"]);
-    }
-    const completionKeys =
-      kind === "empty"
-        ? A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS.measureCompletionEmpty
-        : kind === "complete"
-          ? A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS.measureCompletionComplete
-          : kind === "pickup" || kind === "incomplete"
-            ? A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS
-                .measureCompletionPickupOrIncomplete
-            : null;
-    if (completionKeys === null) {
-      return immutablePath([...rowPath, "completion", "kind"]);
-    }
-    const completionPath = [...rowPath, "completion"];
-    const completionFailure = firstExactKeyFailure(
-      completion,
-      completionKeys,
-      completionPath,
+    const completionFailure = firstMeasureCompletionShapeFailure(
+      valueAt(declaration, "completion"),
+      [...rowPath, "completion"],
+      textScans,
     );
     if (completionFailure !== null) return completionFailure;
-    if (kind === "pickup" || kind === "incomplete") {
-      const durationFailure = firstDurationShapeFailure(
-        valueAt(completion, "expectedDuration"),
-        [...completionPath, "expectedDuration"],
-      );
-      if (durationFailure !== null) return durationFailure;
-      const reason = scalarAt(completion, "reason");
-      if (typeof reason !== "string") {
-        return immutablePath([...completionPath, "reason"]);
-      }
-      const reasonScan = scanBoundedTextAtPath(
-        textScans,
-        [...completionPath, "reason"],
-        reason,
-        MAX_LONG_TEXT_CODE_POINTS,
-      );
-      if (
-        !reasonScan.unicodeValid ||
-        reasonScan.exceeded ||
-        reasonScan.truncated ||
-        !reasonScan.nonblank
-      ) {
-        return immutablePath([...completionPath, "reason"]);
-      }
-    }
   }
   return null;
+}
+
+/**
+ * One exact closed `MeasureCompletion` value. Shared by the declaration rows
+ * above and by split-measure's standalone `newMeasureCompletion` field, so both
+ * report the same paths and consume the same bounded text ledger.
+ */
+function firstMeasureCompletionShapeFailure(
+  completionValue: CapturedValue | undefined,
+  completionPath: readonly (string | number)[],
+  textScans: BoundedTextScanLedger,
+): DomainPath | null {
+  const completion = recordValue(completionValue);
+  if (completion === null) {
+    return immutablePath(completionPath);
+  }
+  const kind = scalarAt(completion, "kind");
+  if (typeof kind !== "string") {
+    return immutablePath([...completionPath, "kind"]);
+  }
+  const completionKeys =
+    kind === "empty"
+      ? A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS.measureCompletionEmpty
+      : kind === "complete"
+        ? A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS.measureCompletionComplete
+        : kind === "pickup" || kind === "incomplete"
+          ? A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS
+              .measureCompletionPickupOrIncomplete
+          : null;
+  if (completionKeys === null) {
+    return immutablePath([...completionPath, "kind"]);
+  }
+  const completionFailure = firstExactKeyFailure(
+    completion,
+    completionKeys,
+    completionPath,
+  );
+  if (completionFailure !== null) return completionFailure;
+  if (kind !== "pickup" && kind !== "incomplete") return null;
+  const durationFailure = firstDurationShapeFailure(
+    valueAt(completion, "expectedDuration"),
+    [...completionPath, "expectedDuration"],
+  );
+  if (durationFailure !== null) return durationFailure;
+  const reason = scalarAt(completion, "reason");
+  if (typeof reason !== "string") {
+    return immutablePath([...completionPath, "reason"]);
+  }
+  const reasonScan = scanBoundedTextAtPath(
+    textScans,
+    [...completionPath, "reason"],
+    reason,
+    MAX_LONG_TEXT_CODE_POINTS,
+  );
+  return !reasonScan.unicodeValid ||
+    reasonScan.exceeded ||
+    reasonScan.truncated ||
+    !reasonScan.nonblank
+    ? immutablePath([...completionPath, "reason"])
+    : null;
 }
 
 function firstMetadataShapeFailure(
@@ -1350,6 +1363,50 @@ function firstPlanShapeFailure(
         ? null
         : immutablePath(["plan", "internalBoundaryPolicy"]);
     }
+    case "split-measure": {
+      const keyFailure = firstExactKeyFailure(
+        plan,
+        A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS.splitMeasurePlan,
+        ["plan"],
+      );
+      if (keyFailure !== null) return keyFailure;
+      if (!isStableId(scalarAt(plan, "measureId"), "measure")) {
+        return immutablePath(["plan", "measureId"]);
+      }
+      if (!isStableId(scalarAt(plan, "beforeEventId"), "event")) {
+        return immutablePath(["plan", "beforeEventId"]);
+      }
+      for (const field of ["firstMeasureTotal", "secondMeasureTotal"]) {
+        const durationFailure = firstDurationShapeFailure(
+          valueAt(plan, field),
+          ["plan", field],
+        );
+        if (durationFailure !== null) return durationFailure;
+      }
+      const newCompletionFailure = firstMeasureCompletionShapeFailure(
+        valueAt(plan, "newMeasureCompletion"),
+        ["plan", "newMeasureCompletion"],
+        textScans,
+      );
+      if (newCompletionFailure !== null) return newCompletionFailure;
+      const completionFailure = firstCompletionShapeFailure(
+        valueAt(plan, "completionDeclarations"),
+        ["plan", "completionDeclarations"],
+        textScans,
+        1,
+      );
+      if (completionFailure !== null) return completionFailure;
+      if (
+        scalarAt(plan, "identityPolicy") !==
+        "retain-source-prefix-allocate-suffix"
+      ) {
+        return immutablePath(["plan", "identityPolicy"]);
+      }
+      return scalarAt(plan, "eventPolicy") ===
+        "move-suffix-preserve-identities"
+        ? null
+        : immutablePath(["plan", "eventPolicy"]);
+    }
     default:
       return immutablePath(["plan", "kind"]);
   }
@@ -1430,6 +1487,18 @@ function metadataWorkThroughPath(
                 "completionDeclarations",
                 "identityPolicy",
                 "measurePolicy",
+              ]
+            : kind === "split-measure"
+            ? [
+                "kind",
+                "measureId",
+                "beforeEventId",
+                "firstMeasureTotal",
+                "secondMeasureTotal",
+                "newMeasureCompletion",
+                "completionDeclarations",
+                "identityPolicy",
+                "eventPolicy",
               ]
             : [
                 "kind",
@@ -1530,6 +1599,43 @@ function metadataWorkThroughPath(
           metadataCodePointsObserved: codePointsObserved,
           peakPlanNodeRecords: 1,
         });
+      }
+    }
+  }
+
+  /*
+   * Split-measure declares no section metadata, but the fresh suffix measure's
+   * own completion reason is caller-owned text scanned before the declaration
+   * tuple. A stop path at that reason means the scan already happened and its
+   * observed code points are physical work; a shallower stop path inside
+   * `newMeasureCompletion` means validation ended before the reason was read.
+   */
+  if (kind === "split-measure") {
+    const rootIndex = topLevelOrder.indexOf("newMeasureCompletion");
+    const stoppedInside = stopTop === "newMeasureCompletion";
+    const reasonReached =
+      stopTopIndex >= rootIndex &&
+      (!stoppedInside || stopPath?.includes("reason") === true);
+    if (reasonReached) {
+      const completion = recordValue(valueAt(plan, "newMeasureCompletion"));
+      const completionKind =
+        completion === null ? null : scalarAt(completion, "kind");
+      const reason =
+        completion === null ? null : scalarAt(completion, "reason");
+      if (
+        (completionKind === "pickup" || completionKind === "incomplete") &&
+        typeof reason === "string"
+      ) {
+        const reasonScan = scanBoundedTextAtPath(
+          textScans,
+          ["plan", "newMeasureCompletion", "reason"],
+          reason,
+          MAX_LONG_TEXT_CODE_POINTS,
+        );
+        codePointsObserved = Math.min(
+          MAX_A0_U1_METADATA_CODE_POINTS_OBSERVED,
+          codePointsObserved + reasonScan.observed,
+        );
       }
     }
   }

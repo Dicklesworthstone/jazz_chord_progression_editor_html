@@ -176,7 +176,8 @@ type PreparedNonInsert = Readonly<{
     | "split-event-duration"
     | "join-event-durations"
     | "split-section"
-    | "join-sections";
+    | "join-sections"
+    | "split-measure";
   allocationSpecs: readonly AllocationSpec[];
 }>;
 
@@ -203,7 +204,7 @@ type MaterializedPlan = Readonly<{
     | Readonly<{ kind: "section"; id: SectionId }>
     | Readonly<{ kind: "event"; id: ChordEventId }>
   )[];
-  survivorId: SectionId | ChordEventId | null;
+  survivorId: SectionId | MeasureId | ChordEventId | null;
   insertSource: AtomicEditPlanInsertSourceReceipt | null;
   completionMeasureIds: readonly MeasureId[];
   timelineDisposition:
@@ -1015,6 +1016,7 @@ function atomicFailure(
     case "edit-plan.destination-invalid":
     case "edit-plan.event-order-invalid":
     case "edit-plan.section-split-boundary-invalid":
+    case "edit-plan.measure-split-boundary-invalid":
     case "edit-plan.section-order-invalid":
       return correlatedAtomicFailure(
         "command.destination_invalid",
@@ -1075,6 +1077,7 @@ function atomicFailure(
     case "edit-plan.recovered-chord-duration-mismatch":
     case "edit-plan.duration-invalid":
     case "edit-plan.duration-sum-mismatch":
+    case "edit-plan.measure-partition-mismatch":
     case "edit-plan.event-content-mismatch":
     case "edit-plan.right-annotation-not-empty":
     case "edit-plan.collection-limit-exceeded":
@@ -1665,6 +1668,39 @@ function targetFailure(
     }
     return null;
   }
+  if (plan.kind === "split-measure") {
+    const measure = index.measures.get(plan.measureId);
+    if (measure === undefined) {
+      return {
+        code: "edit-plan.target-missing",
+        path: ["plan", "measureId"],
+      };
+    }
+    const boundary = index.events.get(plan.beforeEventId);
+    if (boundary === undefined) {
+      return {
+        code: "edit-plan.target-missing",
+        path: ["plan", "beforeEventId"],
+      };
+    }
+    /*
+     * Strict interior: the boundary event must belong to the target measure,
+     * at least one event must remain in the retained measure, and at least one
+     * must move. Neither result may be empty, so the operation is never a
+     * no-op dressed as a split.
+     */
+    if (
+      boundary.measureId !== measure.id ||
+      boundary.eventIndex <= 0 ||
+      boundary.eventIndex >= measure.measure.events.length
+    ) {
+      return {
+        code: "edit-plan.measure-split-boundary-invalid",
+        path: ["plan", "beforeEventId"],
+      };
+    }
+    return null;
+  }
   const left = index.sections.get(plan.leftSectionId);
   if (left === undefined) {
     return {
@@ -2227,6 +2263,19 @@ function completionDeclarationFailure(
         completion: measure.measure.completion,
       }),
     ]);
+  } else if (plan.kind === "split-measure") {
+    /*
+     * The retained measure keeps the source ID and is the single declared row.
+     * Its completion value is caller-owned rather than compared: the retained
+     * measure holds fewer beats after the split, so its old completion is
+     * exactly the value that must not be carried forward silently. The suffix
+     * carries the plan's explicit `newMeasureCompletion` instead, because a
+     * caller cannot name an ID that does not exist yet.
+     */
+    if (!index.measures.has(plan.measureId)) {
+      throw new Error("A0_U1_INTERNAL_COMPLETION_MEASURE");
+    }
+    expected = Object.freeze([Object.freeze({ measureId: plan.measureId })]);
   } else {
     expected = Object.freeze([]);
   }
@@ -2455,6 +2504,89 @@ function operationLawFailure(
       };
     }
   }
+
+  if (plan.kind === "split-measure") {
+    /*
+     * A0-U1-ATOM-018. The two totals are the caller's exact statement of the
+     * partition; nothing is computed for the caller, redistributed, rounded,
+     * or repaired. A split moves a bar line, never a beat.
+     */
+    const measure = index.measures.get(plan.measureId);
+    if (measure === undefined) {
+      throw new Error("A0_U1_INTERNAL_SPLIT_MEASURE_TARGET");
+    }
+    const first = canonicalDuration(plan.firstMeasureTotal);
+    if (first === null) {
+      return {
+        code: "edit-plan.measure-partition-mismatch",
+        path: ["plan", "firstMeasureTotal"],
+      };
+    }
+    const second = canonicalDuration(plan.secondMeasureTotal);
+    if (second === null) {
+      return {
+        code: "edit-plan.measure-partition-mismatch",
+        path: ["plan", "secondMeasureTotal"],
+      };
+    }
+    const events = measure.measure.events;
+    const splitIndex = events.findIndex(
+      (event) => event.id === plan.beforeEventId,
+    );
+    if (splitIndex <= 0 || splitIndex >= events.length) {
+      throw new Error("A0_U1_INTERNAL_SPLIT_MEASURE_BOUNDARY");
+    }
+    const exactSum = (
+      spans: readonly ChordEvent[],
+    ): BeatValue | null => {
+      let total: BeatValue | null = null;
+      for (const span of spans) {
+        if (total === null) {
+          total = span.duration;
+          continue;
+        }
+        work.exactBeatAdditions += 1;
+        const added = addBeatValues(total, span.duration);
+        if (!added.ok) return null;
+        total = added.value;
+      }
+      return total;
+    };
+    const retainedTotal = exactSum(events.slice(0, splitIndex));
+    work.exactBeatComparisons += 1;
+    if (
+      retainedTotal === null ||
+      compareBeatValues(retainedTotal, first) !== 0
+    ) {
+      return {
+        code: "edit-plan.measure-partition-mismatch",
+        path: ["plan", "firstMeasureTotal"],
+      };
+    }
+    const movedTotal = exactSum(events.slice(splitIndex));
+    work.exactBeatComparisons += 1;
+    if (movedTotal === null || compareBeatValues(movedTotal, second) !== 0) {
+      return {
+        code: "edit-plan.measure-partition-mismatch",
+        path: ["plan", "secondMeasureTotal"],
+      };
+    }
+    work.exactBeatAdditions += 1;
+    const declaredTotal = addBeatValues(first, second);
+    work.exactBeatAdditions += 1;
+    const sourceTotal = addBeatValues(retainedTotal, movedTotal);
+    work.exactBeatComparisons += 1;
+    if (
+      !declaredTotal.ok ||
+      !sourceTotal.ok ||
+      compareBeatValues(declaredTotal.value, sourceTotal.value) !== 0
+    ) {
+      return {
+        code: "edit-plan.measure-partition-mismatch",
+        path: ["plan", "secondMeasureTotal"],
+      };
+    }
+  }
   return null;
 }
 
@@ -2482,6 +2614,19 @@ function nonInsertPreparation(plan: AtomicEditPlan): PreparedNonInsert {
             source: Object.freeze({
               kind: "split-section-suffix",
               sourceSectionId: plan.sectionId,
+            }),
+          }),
+        ]),
+      });
+    case "split-measure":
+      return Object.freeze({
+        kind: plan.kind,
+        allocationSpecs: Object.freeze([
+          Object.freeze({
+            kind: "measure",
+            source: Object.freeze({
+              kind: "split-measure-suffix",
+              sourceMeasureId: plan.measureId,
             }),
           }),
         ]),
@@ -2599,6 +2744,22 @@ function finalCollectionProjection(
       current - boundary.measureIndex,
     );
     sections += 1;
+  } else if (plan.kind === "split-measure") {
+    /*
+     * One measure becomes two inside one section. No event is created or
+     * removed and no section boundary moves.
+     */
+    const boundary = index.measures.get(plan.measureId);
+    if (boundary === undefined) {
+      throw new Error("A0_U1_INTERNAL_SPLIT_MEASURE_PROJECTION");
+    }
+    const section = index.sections.get(boundary.sectionId);
+    if (section === undefined) {
+      throw new Error("A0_U1_INTERNAL_SPLIT_MEASURE_PROJECTION_SECTION");
+    }
+    perSectionMeasures[section.sectionIndex] =
+      (perSectionMeasures[section.sectionIndex] ?? 0) + 1;
+    totalMeasures += 1;
   } else {
     const left = index.sections.get(plan.leftSectionId);
     const right = index.sections.get(plan.rightSectionId);
@@ -2979,6 +3140,26 @@ function mutableMeasureById(
   return null;
 }
 
+function mutableMeasureLocationById(
+  sections: readonly MutableCandidateSection[],
+  id: MeasureId,
+): Readonly<{
+  section: MutableCandidateSection;
+  measure: MutableCandidateMeasure;
+  index: number;
+}> | null {
+  for (const section of sections) {
+    const index = section.measures.findIndex(
+      (candidate) => candidate.id === id,
+    );
+    const measure = section.measures[index];
+    if (index >= 0 && measure !== undefined) {
+      return { section, measure, index };
+    }
+  }
+  return null;
+}
+
 function mutableSectionById(
   sections: readonly MutableCandidateSection[],
   id: SectionId,
@@ -3291,6 +3472,39 @@ function materializePlan(
       measures: suffixMeasures,
     });
     survivorId = plan.sectionId;
+    timelineDisposition =
+      "preserve-flattened-event-order-and-durations";
+  } else if (plan.kind === "split-measure") {
+    const location = mutableMeasureLocationById(
+      candidate.sections,
+      plan.measureId,
+    );
+    const suffixIdentity = nextIdentity("measure");
+    if (location === null) {
+      throw new Error("A0_U1_INTERNAL_SPLIT_MEASURE_MATERIALIZATION_TARGET");
+    }
+    const splitIndex = location.measure.events.findIndex(
+      (event) => event.id === plan.beforeEventId,
+    );
+    if (splitIndex <= 0 || splitIndex >= location.measure.events.length) {
+      throw new Error("A0_U1_INTERNAL_SPLIT_MEASURE_MATERIALIZATION_BOUNDARY");
+    }
+    /*
+     * Every moved event keeps its exact ID, chord, voicing, annotation, and
+     * duration, and its order relative to every other event is unchanged. The
+     * suffix's completion is the plan's explicit declaration; section 6.4's
+     * conversion does not apply because this measure is not built from a
+     * parsed fragment.
+     */
+    const suffixEvents = location.measure.events.splice(splitIndex);
+    location.section.measures.splice(location.index + 1, 0, {
+      id: suffixIdentity.id,
+      events: suffixEvents,
+      completion: plan.newMeasureCompletion,
+    });
+    applyCompletionDeclarations(candidate.sections, plan);
+    survivorId = plan.measureId;
+    completionMeasureIds = Object.freeze([plan.measureId]);
     timelineDisposition =
       "preserve-flattened-event-order-and-durations";
   } else {

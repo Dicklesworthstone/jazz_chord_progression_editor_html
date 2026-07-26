@@ -1114,3 +1114,175 @@ root binds the real synchronous T0 parser through the live dependency record,
 the live history ports replay the widened row union, and the release-facing A0
 gate passes without relaxing any existing test. U1 browser behavior remains a
 later leaf; the packet still claims no UI completion.
+
+## 21. Amendment: split one measure
+
+Status: **cut over into the live surface** by `jcpe-pwp2`; independent proof
+still owed by `jcpe-tcm7`. Bead `jcpe-2rhf` (spec, closed), `jcpe-pwp2`
+(build), `jcpe-tcm7` (verify). Source of truth:
+`src/application/application-edit-plan-contract.ts`.
+
+This section began as an amendment carried in its own module so that the R1
+acceptance record stayed verifiable while the variant was still proposed. That
+module (`application-split-measure-amendment-contract.ts`) has been retired: the
+build leaf moved every declaration onto the live surface, so sections 1 through
+20 now describe five of the six live variants and this section describes the
+sixth. The live plan set is six kinds, the live nested refusal set is
+thirty-four codes, and the live law set is eighteen. Every index the accepted
+R1 packet pinned still names the same variant, because the plan kind and the
+law were appended and the two refusal codes were inserted at their declared
+anchors with the authority rows renumbered mechanically.
+
+`tests/static/a0-u1-split-measure.test.ts` pins both halves: what the sixth
+variant declares, and the fact that the accepted names, order, and indices were
+extended rather than edited.
+
+### 21.1 Why a sixth variant exists
+
+REBUILD_PLAN 17.4 requires a duration edit that overfills a measure to offer
+**Split at bar**, **Move following events**, or **Cancel**. Only the last two
+are expressible with one accepted command. Move following events is one `move`.
+Split at bar would need a measure inserted *and* existing events moved into it:
+two commands, which the one-command-per-gesture rule forbids and which no
+gesture may compose to hide the gap. U1 v1 therefore states the overfill with
+its exact current fill, resulting fill, and bar capacity and offers only Move or
+Cancel — honest, and incomplete against the plan. `split-measure` closes that
+gap with one atomic, singly undoable action.
+
+### 21.2 Shape and laws
+
+`split-measure` is `split-section` one level down.
+
+```text
+kind:                   "split-measure"
+measureId:              MeasureId
+beforeEventId:          ChordEventId
+firstMeasureTotal:      BeatDuration
+secondMeasureTotal:     BeatDuration
+newMeasureCompletion:   MeasureCompletion
+completionDeclarations: readonly [AtomicEditPlanCompletionDeclaration]
+identityPolicy:         "retain-source-prefix-allocate-suffix"
+eventPolicy:            "move-suffix-preserve-identities"
+```
+
+`beforeEventId` is the first event of the suffix and must be **strict
+interior**: it must name an event of `measureId`, and at least one event must
+remain in the retained measure while at least one moves. A boundary that is
+missing, in another measure, or the measure's first event is
+`edit-plan.measure-split-boundary-invalid` at `/plan/beforeEventId`. Neither
+result may be empty, so the operation is never a no-op dressed as a split.
+
+The two totals are the caller's exact statement of the partition. Both are
+recomputed from the stored durations before any identity work:
+`firstMeasureTotal` must equal the exact rational sum of the retained events,
+`secondMeasureTotal` the exact rational sum of the moved events, and their sum
+the source measure's current exact total. Any of the three failing is
+`edit-plan.measure-partition-mismatch`. Nothing is computed for the caller,
+redistributed, rounded, or repaired: **a split moves a bar line, never a beat.**
+
+The retained measure keeps the source ID, and the single `completionDeclarations`
+row declares it. The suffix receives one fresh measure ID and the explicit
+`newMeasureCompletion`. A caller cannot name an ID that does not exist yet,
+which is why the second declaration is a dedicated field rather than a second
+row — exactly as `split-section` gives its fresh suffix an explicit
+`newSectionMetadata`. Section 6.4's conversion does not apply: this measure is
+not built from a parsed fragment, so its completion is declared, never inferred.
+
+Every moved event keeps its exact ID, chord, voicing, annotation, and duration,
+and its order relative to every other event is unchanged. The operation
+allocates exactly one measure ID, removes none, and creates no event. No
+timeline span moves relative to another span.
+
+### 21.3 Completion-declaration accounting
+
+Extending the table in section 8:
+
+| Plan/lane     | Expected rows | Shape horizon | Maximum metadata | Maximum reason text | Full accepted-shape scan | First excess |
+| ------------- | ------------: | ------------: | ---------------: | ------------------: | -----------------------: | -----------: |
+| Split measure |             1 |             2 |            2,000 |               4,000 |                    6,000 |        6,001 |
+
+The metadata column is the fresh measure's own completion reason; the reason
+column is the declaration tuple's horizon at 2,000 code points per row.
+
+### 21.4 Stable IDs
+
+The allocation step is `split-measure-suffix-only`. It is inserted between
+`split-event-second-only` and `split-section-suffix-only` rather than appended,
+so the order stays event, measure, section. The allocated identity records
+`{kind: "measure", id, source: {kind: "split-measure-suffix", sourceMeasureId}}`.
+
+### 21.5 Bookmark and focus mapping
+
+Extending section 14. Every event identity survives, so selection and every
+event boundary are untouched. Only the two boundaries that denoted the end of
+the *complete* source measure move, because that is where that musical point
+now is:
+
+| Before boundary                    | Insertion and either range endpoint |
+| ---------------------------------- | ----------------------------------- |
+| `before-measure(source)`           | unchanged                           |
+| `measure-start(source)`            | unchanged                           |
+| `after-measure(source)`            | `after-measure(suffix)`             |
+| `measure-end(source)`              | `measure-end(suffix)`               |
+| `before-event(any surviving event)`| unchanged                           |
+| `after-event(any surviving event)` | unchanged                           |
+
+No internal musical beat is approximated and no boundary is guessed.
+
+### 21.6 The eighteenth law
+
+`A0-U1-ATOM-018-split-measure-partition-exact`: a split-measure command either
+refuses, or produces exactly two measures whose declared totals are the exact
+rational sums of their own events, whose union preserves every event identity,
+value, and order, and whose combined total equals the source measure's total.
+
+`A0-U1-ATOM-001-command-and-five-closed-variants` keeps its accepted
+identifier. The closed set is six; the identifier records the count at R1
+acceptance. Renaming it would rewrite 109 references inside the byte-pinned
+packet whose acceptance record cites those names, which needs its own recorded
+acceptance rather than a side effect of this amendment.
+
+### 21.7 Cutover record
+
+The build leaf moved every declaration onto the live surface and added the
+runner, runtime-shape, and bookmark branches TypeScript then demanded:
+`targetFailure`, `completionDeclarationFailure`, `operationLawFailure`,
+`nonInsertPreparation`, `finalCollectionProjection`, and `materializePlan` in
+`application-edit-plan.ts`; the `split-measure` case in `firstPlanShapeFailure`
+and the field-order ladder plus the `newMeasureCompletion` reason scan in
+`metadataWorkThroughPath`; and `mapSplitMeasureBoundary` with its switch case in
+`application-edit-plan-bookmarks.ts`. U1 gained operation `U1-OP-034`
+(`split-at-bar`), appended rather than placed beside `U1-OP-013` so every
+accepted operation index still names its own row, and section 17.4's overfill
+row now offers all three of its options.
+
+Three build-leaf refinements the amendment module did not state, recorded here
+because the verify leaf authors its oracles from this section:
+
+1. **Two extra pointer templates.** The amendment listed thirteen `/plan/...`
+   templates for the shape authority and omitted
+   `/plan/newMeasureCompletion/expectedDuration/numerator` and
+   `/denominator`. The runtime shape check emits those exact paths for a
+   malformed pickup or incomplete duration, and the accepted packet already
+   carries the analogous pair for a declaration row's `expectedDuration`, so
+   both are included. The authority is fifteen templates.
+2. **Non-canonical totals refuse.** `firstMeasureTotal` and
+   `secondMeasureTotal` must be positive canonical reduced PPQ durations, and a
+   value that is not is `edit-plan.measure-partition-mismatch` at its own
+   pointer rather than `edit-plan.duration-invalid`, whose path authority does
+   not cover these two fields. Refusing rather than comparing a non-canonical
+   literal keeps `normalizationOrRepairPermitted: false` true of this operation
+   as well.
+3. **The declared retained completion is caller-owned.** The single
+   `completionDeclarations` row is checked for the retained measure's ID but its
+   completion value is not compared against the measure's current completion —
+   the retained measure holds fewer beats after the split, so its old completion
+   is exactly the value that must not be carried forward silently. This mirrors
+   the recovered-chord lane rather than the split-event/join-event lanes.
+
+The verify leaf owes ten case groups, the literal apply, undo, redo, refusal,
+collision, and plus-one transitions, one applicability row, one transposition
+witness, the mutation controls, and the reciprocal trace and provenance links —
+the same discipline the accepted packet holds itself to. Until it lands,
+`bun run verify` is red on the `a0-u1-atomic-edit-plan-contract` gate; that
+gate's remaining findings are exactly the corpus obligations and nothing else.

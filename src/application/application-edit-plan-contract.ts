@@ -87,18 +87,28 @@ export const A0_U1_PROPOSED_APPLICATION_COMMAND_KINDS: readonly [
 export type ProposedApplicationCommandKind =
   (typeof A0_U1_PROPOSED_APPLICATION_COMMAND_KINDS)[number];
 
+/**
+ * The closed set is six. `split-measure` is appended rather than inserted, so
+ * every index the accepted R1 packet pinned still names the same variant.
+ * `A0-U1-ATOM-001-command-and-five-closed-variants` keeps its accepted
+ * identifier: it records the count at R1 acceptance, and renaming it would
+ * rewrite 109 references inside the byte-pinned packet whose human-acceptance
+ * record cites those names. See contract section 21.6.
+ */
 export const A0_U1_ATOMIC_EDIT_PLAN_KINDS: readonly [
   "insert-fragment",
   "split-event-duration",
   "join-event-durations",
   "split-section",
   "join-sections",
+  "split-measure",
 ] = /* @__PURE__ */ Object.freeze([
   "insert-fragment",
   "split-event-duration",
   "join-event-durations",
   "split-section",
   "join-sections",
+  "split-measure",
 ]);
 
 export type AtomicEditPlanKind = (typeof A0_U1_ATOMIC_EDIT_PLAN_KINDS)[number];
@@ -303,6 +313,12 @@ export const A0_U1_ATOMIC_EDIT_PLAN_TEXT_SHAPE_POLICY = /* @__PURE__ */ Object.f
   unicodePolicy: "valid-unicode-scalar-string",
   counter: "metadataCodePointsObserved",
   splitSectionMetadataOrder: /* @__PURE__ */ Object.freeze(["newSectionMetadata"] as const),
+  /**
+   * Split-measure declares no section metadata. Its only caller-owned text is
+   * the fresh suffix measure's own completion reason, validated before the
+   * declaration tuple exactly as the field order states.
+   */
+  splitMeasureMetadataOrder: /* @__PURE__ */ Object.freeze(["newMeasureCompletion"] as const),
   joinSectionsMetadataOrder: /* @__PURE__ */ Object.freeze([
     "expectedLeftMetadata",
     "expectedRightMetadata",
@@ -328,6 +344,7 @@ export const A0_U1_ATOMIC_EDIT_PLAN_TEXT_SHAPE_POLICY = /* @__PURE__ */ Object.f
     "/plan/expectedRightMetadata/annotation",
     "/plan/resultMetadata/name",
     "/plan/resultMetadata/annotation",
+    "/plan/newMeasureCompletion/reason",
     "/plan/completionDeclarations/{index}/completion/reason",
     "/plan/placement/completionDeclarations/{index}/completion/reason",
   ] as const),
@@ -490,13 +507,51 @@ export type JoinSectionsEditPlan = Readonly<{
   internalBoundaryPolicy: "remove-right-entry-boundary-confirmed";
 }>;
 
-/** Exactly five operation-specific variants; nesting or arbitrary batches do not exist. */
+/**
+ * Split one measure at an interior bar line.
+ *
+ * This is `split-section` one level down. `beforeEventId` is the first event of
+ * the suffix and must be strict interior: at least one event stays in the
+ * retained measure and at least one moves, so neither result is empty and the
+ * operation is never a no-op dressed as a split.
+ *
+ * `firstMeasureTotal` and `secondMeasureTotal` are the caller's exact statement
+ * of the partition. No beat is computed, redistributed, rounded, or repaired
+ * here: both are recomputed from the stored durations and confirmed before any
+ * identity work, and their exact rational sum must equal the source measure's
+ * current exact total. A split moves a bar line, never a beat.
+ *
+ * The retained measure keeps the source ID, and its declaration is the single
+ * `completionDeclarations` row. The suffix receives one fresh measure ID and
+ * the explicit `newMeasureCompletion` — a caller cannot name an ID that does
+ * not exist yet, which is why the second declaration is a dedicated field
+ * rather than a second row, exactly as `split-section` gives its fresh suffix
+ * an explicit `newSectionMetadata`.
+ *
+ * Every moved event keeps its exact ID, chord, voicing, annotation, and
+ * duration, and its order relative to every other event is unchanged. The
+ * operation allocates one measure ID, removes none, and creates no event.
+ */
+export type SplitMeasureEditPlan = Readonly<{
+  kind: "split-measure";
+  measureId: MeasureId;
+  beforeEventId: ChordEventId;
+  firstMeasureTotal: BeatDuration;
+  secondMeasureTotal: BeatDuration;
+  newMeasureCompletion: MeasureCompletion;
+  completionDeclarations: readonly [AtomicEditPlanCompletionDeclaration];
+  identityPolicy: "retain-source-prefix-allocate-suffix";
+  eventPolicy: "move-suffix-preserve-identities";
+}>;
+
+/** Exactly six operation-specific variants; nesting or arbitrary batches do not exist. */
 export type AtomicEditPlan =
   | InsertFragmentEditPlan
   | SplitEventDurationEditPlan
   | JoinEventDurationsEditPlan
   | SplitSectionEditPlan
-  | JoinSectionsEditPlan;
+  | JoinSectionsEditPlan
+  | SplitMeasureEditPlan;
 
 /**
  * Proposed sixteenth A0 command. It is intentionally separate from the live
@@ -596,6 +651,7 @@ export const A0_U1_ATOMIC_EDIT_PLAN_ID_ALLOCATION_ORDER: readonly [
   "fragment-events-in-source-order",
   "recovered-chord-selected-only",
   "split-event-second-only",
+  "split-measure-suffix-only",
   "split-section-suffix-only",
   "reserve-each-returned-id-locally",
   "stop-without-retry-on-first-failure-or-collision",
@@ -607,6 +663,7 @@ export const A0_U1_ATOMIC_EDIT_PLAN_ID_ALLOCATION_ORDER: readonly [
   "fragment-events-in-source-order",
   "recovered-chord-selected-only",
   "split-event-second-only",
+  "split-measure-suffix-only",
   "split-section-suffix-only",
   "reserve-each-returned-id-locally",
   "stop-without-retry-on-first-failure-or-collision",
@@ -658,6 +715,7 @@ export const A0_U1_ATOMIC_EDIT_REFUSAL_CODES: readonly [
   "edit-plan.destination-invalid",
   "edit-plan.event-order-invalid",
   "edit-plan.section-split-boundary-invalid",
+  "edit-plan.measure-split-boundary-invalid",
   "edit-plan.section-order-invalid",
   "edit-plan.recovered-chord-placement-invalid",
   "edit-plan.syntax-refused",
@@ -671,6 +729,7 @@ export const A0_U1_ATOMIC_EDIT_REFUSAL_CODES: readonly [
   "edit-plan.recovered-chord-duration-mismatch",
   "edit-plan.duration-invalid",
   "edit-plan.duration-sum-mismatch",
+  "edit-plan.measure-partition-mismatch",
   "edit-plan.event-content-mismatch",
   "edit-plan.right-annotation-not-empty",
   "edit-plan.collection-limit-exceeded",
@@ -691,6 +750,7 @@ export const A0_U1_ATOMIC_EDIT_REFUSAL_CODES: readonly [
   "edit-plan.destination-invalid",
   "edit-plan.event-order-invalid",
   "edit-plan.section-split-boundary-invalid",
+  "edit-plan.measure-split-boundary-invalid",
   "edit-plan.section-order-invalid",
   "edit-plan.recovered-chord-placement-invalid",
   "edit-plan.syntax-refused",
@@ -704,6 +764,7 @@ export const A0_U1_ATOMIC_EDIT_REFUSAL_CODES: readonly [
   "edit-plan.recovered-chord-duration-mismatch",
   "edit-plan.duration-invalid",
   "edit-plan.duration-sum-mismatch",
+  "edit-plan.measure-partition-mismatch",
   "edit-plan.event-content-mismatch",
   "edit-plan.right-annotation-not-empty",
   "edit-plan.collection-limit-exceeded",
@@ -866,10 +927,25 @@ const PLAN_SHAPE_PATH_AUTHORITY: readonly [
   "/plan/completionDeclarations/{index}/completion/expectedDuration/numerator",
   "/plan/completionDeclarations/{index}/completion/expectedDuration/denominator",
   "/plan/completionDeclarations/{index}/completion/reason",
+  "/plan/measureId",
+  "/plan/beforeEventId",
+  "/plan/firstMeasureTotal",
+  "/plan/firstMeasureTotal/numerator",
+  "/plan/firstMeasureTotal/denominator",
+  "/plan/secondMeasureTotal",
+  "/plan/secondMeasureTotal/numerator",
+  "/plan/secondMeasureTotal/denominator",
+  "/plan/newMeasureCompletion",
+  "/plan/newMeasureCompletion/kind",
+  "/plan/newMeasureCompletion/expectedDuration",
+  "/plan/newMeasureCompletion/expectedDuration/numerator",
+  "/plan/newMeasureCompletion/expectedDuration/denominator",
+  "/plan/newMeasureCompletion/reason",
   "/plan/identityPolicy",
   "/plan/contentPolicy",
   "/plan/annotationPolicy",
   "/plan/measurePolicy",
+  "/plan/eventPolicy",
   "/plan/metadataPolicy",
   "/plan/internalBoundaryPolicy",
 ]);
@@ -1012,15 +1088,22 @@ export const A0_U1_ATOMIC_EDIT_REFUSAL_AUTHORITY: readonly AtomicEditPlanRefusal
       pathAuthority: ["/plan/beforeMeasureId"],
     },
     {
-      code: "edit-plan.section-order-invalid",
+      code: "edit-plan.measure-split-boundary-invalid",
       precedence: 10,
+      stage: "target-and-destination",
+      condition: "split boundary is not strict interior to the target measure",
+      pathAuthority: ["/plan/beforeEventId"],
+    },
+    {
+      code: "edit-plan.section-order-invalid",
+      precedence: 11,
       stage: "target-and-destination",
       condition: "join section IDs are not immediate ordered siblings",
       pathAuthority: ["/plan/rightSectionId"],
     },
     {
       code: "edit-plan.recovered-chord-placement-invalid",
-      precedence: 11,
+      precedence: 12,
       stage: "target-and-destination",
       condition:
         "recovered-chord lane does not use its exact into-measure placement",
@@ -1028,21 +1111,21 @@ export const A0_U1_ATOMIC_EDIT_REFUSAL_AUTHORITY: readonly AtomicEditPlanRefusal
     },
     {
       code: "edit-plan.syntax-refused",
-      precedence: 12,
+      precedence: 13,
       stage: "t0-fragment-parse",
       condition: "complete-draft lane receives a T0 parse refusal",
       pathAuthority: ["/plan/source/quickEntrySnapshot/sourceText"],
     },
     {
       code: "edit-plan.recovered-chord-requires-parse-failure",
-      precedence: 13,
+      precedence: 14,
       stage: "t0-fragment-parse",
       condition: "recovered-chord lane receives a T0 parse success",
       pathAuthority: ["/plan/source/kind"],
     },
     {
       code: "edit-plan.recovered-chord-ordinal-missing",
-      precedence: 14,
+      precedence: 15,
       stage: "t0-fragment-parse",
       condition:
         "no returned T0 insertable chord has the selected global ordinal",
@@ -1050,7 +1133,7 @@ export const A0_U1_ATOMIC_EDIT_REFUSAL_AUTHORITY: readonly AtomicEditPlanRefusal
     },
     {
       code: "edit-plan.warning-acknowledgements-mismatch",
-      precedence: 15,
+      precedence: 16,
       stage: "warning-acknowledgements",
       condition:
         "ordered warning code/range acknowledgement sequence differs from T0",
@@ -1064,7 +1147,7 @@ export const A0_U1_ATOMIC_EDIT_REFUSAL_AUTHORITY: readonly AtomicEditPlanRefusal
     },
     {
       code: "edit-plan.fragment-placement-mismatch",
-      precedence: 16,
+      precedence: 17,
       stage: "completion-and-metadata-declarations",
       condition:
         "T0 fragment structure does not match the declared complete-draft placement",
@@ -1072,7 +1155,7 @@ export const A0_U1_ATOMIC_EDIT_REFUSAL_AUTHORITY: readonly AtomicEditPlanRefusal
     },
     {
       code: "edit-plan.completion-declarations-mismatch",
-      precedence: 17,
+      precedence: 18,
       stage: "completion-and-metadata-declarations",
       condition:
         "completion declaration tuple is missing, extra, unrelated, duplicated, or unequal",
@@ -1093,7 +1176,7 @@ export const A0_U1_ATOMIC_EDIT_REFUSAL_AUTHORITY: readonly AtomicEditPlanRefusal
     },
     {
       code: "edit-plan.section-metadata-mismatch",
-      precedence: 18,
+      precedence: 19,
       stage: "completion-and-metadata-declarations",
       condition:
         "section declaration or well-shaped expected section metadata is missing, reordered, duplicated, or unequal",
@@ -1107,14 +1190,14 @@ export const A0_U1_ATOMIC_EDIT_REFUSAL_AUTHORITY: readonly AtomicEditPlanRefusal
     },
     {
       code: "edit-plan.recovered-chord-layout-loss-unacknowledged",
-      precedence: 19,
+      precedence: 20,
       stage: "operation-laws",
       condition: "recovery layout-loss acknowledgement literal is not exact",
       pathAuthority: ["/plan/source/layoutLossAcknowledgement"],
     },
     {
       code: "edit-plan.recovered-chord-duration-mismatch",
-      precedence: 20,
+      precedence: 21,
       stage: "operation-laws",
       condition:
         "caller duration nullability/value does not match the selected T0 duration branch",
@@ -1122,7 +1205,7 @@ export const A0_U1_ATOMIC_EDIT_REFUSAL_AUTHORITY: readonly AtomicEditPlanRefusal
     },
     {
       code: "edit-plan.duration-invalid",
-      precedence: 21,
+      precedence: 22,
       stage: "operation-laws",
       condition: "duration is not a positive canonical reduced PPQ duration",
       pathAuthority: [
@@ -1134,15 +1217,23 @@ export const A0_U1_ATOMIC_EDIT_REFUSAL_AUTHORITY: readonly AtomicEditPlanRefusal
     },
     {
       code: "edit-plan.duration-sum-mismatch",
-      precedence: 22,
+      precedence: 23,
       stage: "operation-laws",
       condition:
         "declared exact split or join sum differs from source span sum",
       pathAuthority: ["/plan/secondDuration", "/plan/joinedDuration"],
     },
     {
+      code: "edit-plan.measure-partition-mismatch",
+      precedence: 24,
+      stage: "operation-laws",
+      condition:
+        "a declared measure total is not the exact sum of its side, or the two do not sum to the source measure total",
+      pathAuthority: ["/plan/firstMeasureTotal", "/plan/secondMeasureTotal"],
+    },
+    {
       code: "edit-plan.event-content-mismatch",
-      precedence: 23,
+      precedence: 25,
       stage: "operation-laws",
       condition:
         "join siblings differ in literal spelling-first chord or voicing content",
@@ -1150,14 +1241,14 @@ export const A0_U1_ATOMIC_EDIT_REFUSAL_AUTHORITY: readonly AtomicEditPlanRefusal
     },
     {
       code: "edit-plan.right-annotation-not-empty",
-      precedence: 24,
+      precedence: 26,
       stage: "operation-laws",
       condition: "right join sibling annotation is not the empty string",
       pathAuthority: ["/plan/rightEventId"],
     },
     {
       code: "edit-plan.collection-limit-exceeded",
-      precedence: 25,
+      precedence: 27,
       stage: "final-collection-and-timeline-limits",
       condition:
         "first final section, measure, event, or tracked-record excess",
@@ -1165,42 +1256,42 @@ export const A0_U1_ATOMIC_EDIT_REFUSAL_AUTHORITY: readonly AtomicEditPlanRefusal
     },
     {
       code: "edit-plan.timeline-limit-exceeded",
-      precedence: 26,
+      precedence: 28,
       stage: "final-collection-and-timeline-limits",
       condition: "first exact final timeline sum beyond the domain maximum",
       pathAuthority: ["/plan"],
     },
     {
       code: "edit-plan.id-factory-failed",
-      precedence: 27,
+      precedence: 29,
       stage: "stable-id-allocation",
       condition: "first required StableIdFactory.next call returns failure",
       pathAuthority: ["/plan"],
     },
     {
       code: "edit-plan.id-collision",
-      precedence: 28,
+      precedence: 30,
       stage: "stable-id-allocation",
       condition: "first returned ID collides in the global reserved set",
       pathAuthority: ["/plan"],
     },
     {
       code: "edit-plan.structural-publication-refused",
-      precedence: 29,
+      precedence: 31,
       stage: "f2-once",
       condition: "the single structural decode rejects the private candidate",
       pathAuthority: ["/candidate"],
     },
     {
       code: "edit-plan.semantic-publication-refused",
-      precedence: 30,
+      precedence: 32,
       stage: "f3-once",
       condition: "the single semantic validation rejects the decoded candidate",
       pathAuthority: ["/candidate"],
     },
     {
       code: "edit-plan.history-refused",
-      precedence: 31,
+      precedence: 33,
       stage: "bookmarks-history-and-atomic-publication",
       condition:
         "history retained-byte estimate is invalid or the entry cannot be retained",
@@ -1236,6 +1327,7 @@ export type AtomicEditPlanDestinationRefusalCode =
   | "edit-plan.destination-invalid"
   | "edit-plan.event-order-invalid"
   | "edit-plan.section-split-boundary-invalid"
+  | "edit-plan.measure-split-boundary-invalid"
   | "edit-plan.section-order-invalid";
 
 export type AtomicEditPlanIdAllocationRefusalCode =
@@ -1325,6 +1417,7 @@ export const A0_U1_ATOMIC_EDIT_ALLOWED_OUTER_CODES_BY_REFUSAL_CODE: Readonly<
   "edit-plan.destination-invalid": DESTINATION_INVALID_OUTER_CODES,
   "edit-plan.event-order-invalid": DESTINATION_INVALID_OUTER_CODES,
   "edit-plan.section-split-boundary-invalid": DESTINATION_INVALID_OUTER_CODES,
+  "edit-plan.measure-split-boundary-invalid": DESTINATION_INVALID_OUTER_CODES,
   "edit-plan.section-order-invalid": DESTINATION_INVALID_OUTER_CODES,
   "edit-plan.recovered-chord-placement-invalid": PAYLOAD_INVALID_OUTER_CODES,
   "edit-plan.syntax-refused": PAYLOAD_INVALID_OUTER_CODES,
@@ -1340,6 +1433,7 @@ export const A0_U1_ATOMIC_EDIT_ALLOWED_OUTER_CODES_BY_REFUSAL_CODE: Readonly<
   "edit-plan.recovered-chord-duration-mismatch": PAYLOAD_INVALID_OUTER_CODES,
   "edit-plan.duration-invalid": PAYLOAD_INVALID_OUTER_CODES,
   "edit-plan.duration-sum-mismatch": PAYLOAD_INVALID_OUTER_CODES,
+  "edit-plan.measure-partition-mismatch": PAYLOAD_INVALID_OUTER_CODES,
   "edit-plan.event-content-mismatch": PAYLOAD_INVALID_OUTER_CODES,
   "edit-plan.right-annotation-not-empty": PAYLOAD_INVALID_OUTER_CODES,
   "edit-plan.collection-limit-exceeded": PAYLOAD_INVALID_OUTER_CODES,
@@ -1731,6 +1825,11 @@ type AtomicEditPlanFirstInsertedSectionFocusReceipt = Readonly<{
   focusTarget: Extract<UiFocusTarget, { kind: "section" }>;
 }>;
 
+type AtomicEditPlanFirstInsertedMeasureFocusReceipt = Readonly<{
+  focusPolicy: "first-inserted-structural-ref";
+  focusTarget: Extract<UiFocusTarget, { kind: "measure" }>;
+}>;
+
 type AtomicEditPlanChartFocusReceipt = Readonly<{
   focusPolicy: "chart";
   focusTarget: Extract<UiFocusTarget, { kind: "chart" }>;
@@ -1763,6 +1862,11 @@ export type SplitSectionFocusReceipt =
   | AtomicEditPlanInsertionFocusReceipt
   | AtomicEditPlanFirstInsertedSectionFocusReceipt;
 
+export type SplitMeasureFocusReceipt =
+  | AtomicEditPlanSelectionFocusReceipt
+  | AtomicEditPlanInsertionFocusReceipt
+  | AtomicEditPlanFirstInsertedMeasureFocusReceipt;
+
 export type JoinEditPlanFocusReceipt =
   | AtomicEditPlanSelectionFocusReceipt
   | AtomicEditPlanInsertionFocusReceipt
@@ -1772,6 +1876,7 @@ export type AtomicEditPlanFocusReceipt =
   | InsertFragmentFocusReceipt
   | SplitEventDurationFocusReceipt
   | SplitSectionFocusReceipt
+  | SplitMeasureFocusReceipt
   | JoinEditPlanFocusReceipt;
 
 type AtomicEditPlanRangeBoundaryRewrites =
@@ -1923,6 +2028,19 @@ export type SplitSectionBookmarkReceipt = Readonly<
     } & SplitSectionFocusReceipt
 >;
 
+export type SplitMeasureBookmarkReceipt = Readonly<
+  AtomicEditPlanPreservedSelectionReceipt &
+    (
+      | AtomicEditPlanPreservedInsertionReceipt
+      | AtomicEditPlanRepresentableInsertionReceipt
+    ) &
+    (
+      AtomicEditPlanPreservedRangeReceipt | AtomicEditPlanRewrittenRangeReceipt
+    ) & {
+      operationPolicy: "preserve-node-identities-rewrite-source-measure-end-to-suffix";
+    } & SplitMeasureFocusReceipt
+>;
+
 export type JoinSectionsRightStartReceipt =
   | Readonly<{
       rightSectionWasEmpty: false;
@@ -1960,6 +2078,7 @@ export type AtomicEditPlanBookmarkReceipt =
   | SplitEventDurationBookmarkReceipt
   | JoinEventDurationsBookmarkReceipt
   | SplitSectionBookmarkReceipt
+  | SplitMeasureBookmarkReceipt
   | JoinSectionsBookmarkReceipt;
 
 export const A0_U1_ATOMIC_EDIT_PLAN_BOOKMARK_POLICIES = /* @__PURE__ */ Object.freeze({
@@ -1972,6 +2091,13 @@ export const A0_U1_ATOMIC_EDIT_PLAN_BOOKMARK_POLICIES = /* @__PURE__ */ Object.f
   splitSection: "preserve-node-identities-rewrite-source-section-end-to-suffix",
   joinSections:
     "preserve-measure-event-identities-map-internal-edge-to-first-measure-or-surviving-end",
+  /**
+   * Every event identity survives, so selection and every event boundary are
+   * untouched. Only the two boundaries that denoted the end of the *complete*
+   * source measure move to the suffix, because that is where that musical point
+   * now is. No internal beat is approximated. See contract section 21.5.
+   */
+  splitMeasure: "preserve-node-identities-rewrite-source-measure-end-to-suffix",
 });
 
 export type AtomicEditPlanFragmentSectionIdentity = Readonly<{
@@ -1989,6 +2115,16 @@ export type AtomicEditPlanSplitSectionIdentity = Readonly<{
   source: Readonly<{
     kind: "split-section-suffix";
     sourceSectionId: SectionId;
+  }>;
+}>;
+
+/** The freshly allocated suffix measure, in allocation-trace form. */
+export type AtomicEditPlanSplitMeasureIdentity = Readonly<{
+  kind: "measure";
+  id: MeasureId;
+  source: Readonly<{
+    kind: "split-measure-suffix";
+    sourceMeasureId: MeasureId;
   }>;
 }>;
 
@@ -2033,6 +2169,7 @@ export type AtomicEditPlanAllocatedIdentity =
   | AtomicEditPlanFragmentSectionIdentity
   | AtomicEditPlanSplitSectionIdentity
   | AtomicEditPlanFragmentMeasureIdentity
+  | AtomicEditPlanSplitMeasureIdentity
   | AtomicEditPlanFragmentEventIdentity
   | AtomicEditPlanRecoveredChordIdentity
   | AtomicEditPlanSplitEventSecondIdentity;
@@ -2235,6 +2372,26 @@ export type SplitSectionEditPlanReceipt = Readonly<
   }
 >;
 
+export type SplitMeasureEditPlanReceipt = Readonly<
+  AtomicEditPlanReceiptBase & {
+    planKind: "split-measure";
+    insertLane: null;
+    placementKind: null;
+    allocatedIdentities: readonly [AtomicEditPlanSplitMeasureIdentity];
+    removedIdentities: readonly [];
+    survivorId: MeasureId;
+    insertSource: null;
+    /**
+     * Only the retained measure is declared. The suffix carries the plan's
+     * explicit `newMeasureCompletion` instead, because a caller cannot name an
+     * ID that does not exist yet.
+     */
+    completionMeasureIds: readonly [MeasureId];
+    timelineDisposition: "preserve-flattened-event-order-and-durations";
+    bookmarks: SplitMeasureBookmarkReceipt;
+  }
+>;
+
 export type JoinSectionsEditPlanReceipt = Readonly<
   AtomicEditPlanReceiptBase & {
     planKind: "join-sections";
@@ -2259,6 +2416,7 @@ export type AtomicEditPlanReceipt =
   | SplitEventDurationEditPlanReceipt
   | JoinEventDurationsEditPlanReceipt
   | SplitSectionEditPlanReceipt
+  | SplitMeasureEditPlanReceipt
   | JoinSectionsEditPlanReceipt;
 
 /** Future composition adds T0 and widens only the history estimator's input kind. */
@@ -2391,6 +2549,7 @@ export const A0_U1_ATOMIC_EDIT_LAW_IDS: readonly [
   "A0-U1-ATOM-015-ids-preflight-preorder-honest-entropy",
   "A0-U1-ATOM-016-bookmarks-publication-history-atomic",
   "A0-U1-ATOM-017-transposition-and-existing-a0-unchanged",
+  "A0-U1-ATOM-018-split-measure-partition-exact",
 ] = /* @__PURE__ */ Object.freeze([
   "A0-U1-ATOM-001-command-and-five-closed-variants",
   "A0-U1-ATOM-002-quick-entry-snapshot-and-target-exact",
@@ -2409,6 +2568,7 @@ export const A0_U1_ATOMIC_EDIT_LAW_IDS: readonly [
   "A0-U1-ATOM-015-ids-preflight-preorder-honest-entropy",
   "A0-U1-ATOM-016-bookmarks-publication-history-atomic",
   "A0-U1-ATOM-017-transposition-and-existing-a0-unchanged",
+  "A0-U1-ATOM-018-split-measure-partition-exact",
 ]);
 
 export const A0_U1_ATOMIC_EDIT_PLAN_TRANSPOSITION_POLICY = /* @__PURE__ */ Object.freeze({
@@ -2420,6 +2580,9 @@ export const A0_U1_ATOMIC_EDIT_PLAN_TRANSPOSITION_POLICY = /* @__PURE__ */ Objec
   splitSection:
     "commutes-with-spelling-preserving-transposition-of-affected-event-ids",
   joinSections:
+    "commutes-with-spelling-preserving-transposition-of-affected-event-ids",
+  /** A bar line carries no spelling, so this behaves exactly as the other structural splits do. */
+  splitMeasure:
     "commutes-with-spelling-preserving-transposition-of-affected-event-ids",
 });
 
@@ -2575,6 +2738,17 @@ export const A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS = /* @__PURE__ */ Object.freeze({
     "identityPolicy",
     "measurePolicy",
   ]),
+  splitMeasurePlan: /* @__PURE__ */ Object.freeze([
+    "kind",
+    "measureId",
+    "beforeEventId",
+    "firstMeasureTotal",
+    "secondMeasureTotal",
+    "newMeasureCompletion",
+    "completionDeclarations",
+    "identityPolicy",
+    "eventPolicy",
+  ]),
   joinSectionsPlan: /* @__PURE__ */ Object.freeze([
     "kind",
     "leftSectionId",
@@ -2687,6 +2861,7 @@ export const A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS = /* @__PURE__ */ Object.freeze({
     "selectedGlobalOrdinal",
   ]),
   splitEventSecondIdentitySource: /* @__PURE__ */ Object.freeze(["kind", "sourceEventId"]),
+  splitMeasureIdentitySource: /* @__PURE__ */ Object.freeze(["kind", "sourceMeasureId"]),
   removedIdentity: /* @__PURE__ */ Object.freeze(["kind", "id"]),
   diagnostic: /* @__PURE__ */ Object.freeze([
     "code",

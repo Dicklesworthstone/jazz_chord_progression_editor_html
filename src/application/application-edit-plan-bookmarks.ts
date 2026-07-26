@@ -381,6 +381,33 @@ function mapSplitSectionBoundary(
   return unchangedBoundary(boundary);
 }
 
+/**
+ * Section 21.5, one level down from `mapSplitSectionBoundary`. Every event
+ * identity survives, so `before-event` and `after-event` on any surviving event
+ * are unchanged, and so are `before-measure` and `measure-start` on the
+ * retained measure — those still denote the same point. Only the two boundaries
+ * that denoted the end of the *complete* source measure move to the suffix,
+ * because that is where that musical point now is. No internal beat is
+ * approximated and no boundary is guessed.
+ */
+function mapSplitMeasureBoundary(
+  boundary: StableBoundary,
+  source: MeasureId,
+  suffix: MeasureId,
+): BoundaryMapping {
+  if (
+    (boundary.kind === "after-measure" ||
+      boundary.kind === "measure-end") &&
+    boundary.measureId === source
+  ) {
+    return rewrittenBoundary(
+      boundary,
+      Object.freeze({ kind: boundary.kind, measureId: suffix }),
+    );
+  }
+  return unchangedBoundary(boundary);
+}
+
 function mapJoinSectionBoundary(
   boundary: StableBoundary,
   left: SectionId,
@@ -563,6 +590,17 @@ export function mapAtomicEditPlanBookmarks(
       }
       mapper = (boundary) =>
         mapSplitSectionBoundary(boundary, plan.sectionId, suffix.id);
+      break;
+    }
+    case "split-measure": {
+      operationPolicy =
+        "preserve-node-identities-rewrite-source-measure-end-to-suffix";
+      const suffix = allocations[0];
+      if (suffix?.kind !== "measure") {
+        throw new Error("A0_U1_INTERNAL_SPLIT_MEASURE_BOOKMARK");
+      }
+      mapper = (boundary) =>
+        mapSplitMeasureBoundary(boundary, plan.measureId, suffix.id);
       break;
     }
     case "join-sections": {
