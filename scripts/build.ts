@@ -224,6 +224,15 @@ async function runBunBuild(root: string, stagingDir: string): Promise<string> {
       stagingDir,
       "--minify-whitespace",
       "--minify-syntax",
+      /**
+       * Identifier mangling is deterministic for a fixed input, so it keeps
+       * the reproducibility and CSP-hash gates intact while reclaiming the
+       * artifact headroom the studio needs. Inspectability of the release
+       * bundle is not a project contract: `src/` is authoritative, the
+       * generated banner points at it, and every embedded asset, license and
+       * hash stays recorded in `dist/standalone-manifest.json`.
+       */
+      "--minify-identifiers",
       "--sourcemap=none",
       "--packages=bundle",
       "--reject-unresolved",

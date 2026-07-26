@@ -304,8 +304,7 @@ measured artifact rose to 975,349 bytes — 7,691 bytes below the previous
 ceiling. Because the remaining U1 surfaces (card menus, inline symbol and
 duration editors, pointer drag, touch range mode, and the teaching view) cannot
 fit in that margin, the checkpoint ceiling is raised once to 1,048,576 bytes
-(1 MiB) rather than nudged repeatedly. The identifier-preserving inspectable
-bundle policy is deliberate and unchanged.
+(1 MiB) rather than nudged repeatedly.
 
 The 1,572,864-byte final limit and its 524,288-byte Atlas/content reservation
 remain unchanged. The new checkpoint ceiling is exactly the non-Atlas
@@ -314,6 +313,35 @@ inside the shell allocation and the slack outside both is zero. That reserve was
 spendable only by an explicit contract change, and this is it. Later packages
 still cannot spend the reserved content allowance silently, and a further shell
 increase requires the same measured justification recorded here.
+
+### Identifier minification, and why the earlier policy was reversed
+
+The identifier-preserving inspectable bundle policy recorded above has been
+**withdrawn**. It held while the shell had room; once the completed U1 chart
+editor measured 1,041,445 bytes it did not, and the only remaining ways to
+continue were to spend the Atlas reservation or to raise the pinned 1.5 MiB
+total. Both trade a real future capability for bundle readability.
+
+`scripts/build.ts` therefore now passes `--minify-identifiers` alongside
+`--minify-whitespace` and `--minify-syntax`. The measured effect on the U1
+checkpoint artifact is 1,041,445 → 752,096 bytes, a 289,349-byte (27.8%)
+reduction that restores 296,480 bytes of headroom under the unchanged 1 MiB
+checkpoint ceiling.
+
+What the reversal does not cost:
+
+- reproducibility — mangling is deterministic for a fixed input, and
+  `bun run verify:reproducible` rebuilds in isolated paths with different
+  mtimes and reports the identical SHA-256;
+- the embedded hash-based CSP — the build recomputes the script and style
+  hashes from the emitted bytes;
+- auditability — `src/` remains authoritative, the generated banner points at
+  it, and `dist/standalone-manifest.json` still records the SHA-256, byte
+  count, CSP hashes, embedded assets, and license inventory.
+
+What it does cost is reading the release bundle directly, which was never a
+release requirement: the F0 verification gates inspect capabilities and
+behaviour, not identifier names.
 
 Both generated HTML files begin with the fixed timestamp-free banner
 `<!-- @generated; edit src/, then run bun run build -->`, followed by a
