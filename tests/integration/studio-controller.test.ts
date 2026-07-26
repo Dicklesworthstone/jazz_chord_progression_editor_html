@@ -107,6 +107,8 @@ describe("studio application checkpoint", () => {
       rangeStartBeatLabel: null,
       rangeEndBeatLabel: null,
       rangeActive: false,
+      rangeAnchor: null,
+      rangeFocus: null,
     });
     expect(view.quickEntry).toEqual({
       text: "",
@@ -114,6 +116,11 @@ describe("studio application checkpoint", () => {
       baseRevision: 0,
       baseRevisionCurrent: true,
       targetLabel: "At measure start",
+      target: {
+        kind: "measure-start",
+        measureId: STUDIO_BLANK_DOCUMENT_IDS.measure,
+      },
+      targetId: STUDIO_BLANK_DOCUMENT_IDS.measure,
       issueCodes: [],
       codePointCount: 0,
     });
