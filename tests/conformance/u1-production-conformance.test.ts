@@ -19,11 +19,11 @@ import {
  *
  * The corpus sets `t0ResultIsScenarioInput: true`: each case states the T0
  * outcome it assumes. The replay calls the real T0 instead of injecting that
- * outcome. Where the two agree, the whole expectation is compared. Where they
- * disagree, the case cannot say what U1 should do — the classification it
- * declares belongs to a parse that did not happen — so the divergence is
- * named here and the U1 classification laws are asserted against the parse
- * that did happen. The named list is closed: a new divergence fails.
+ * outcome, so a case built on a parse the grammar does not produce fails here
+ * rather than being compared against an outcome that never happened. Six such
+ * cases were reconciled against `docs/T0_SYNTAX_CONTRACT.md` and the
+ * independent T0 packet under jcpe-fetq; none remains, so every case is
+ * compared whole, including its token rows.
  */
 
 const REPO_ROOT = resolvePath(import.meta.dir, "../..");
@@ -92,60 +92,6 @@ const CASES = readCases();
  */
 const STALENESS_CASE_IDS = new Set(["U1-QE-043", "U1-QE-044"]);
 
-/**
- * Cases whose assumed T0 outcome is not the outcome the real grammar produces.
- * Each entry records what the corpus assumed, what T0 actually does, and why —
- * so the list is a finding, not a waiver.
- */
-const T0_SCENARIO_DIVERGENCES: Readonly<
-  Record<string, Readonly<{ assumed: string; actual: string; note: string }>>
-> = Object.freeze({
-  "U1-QE-026": Object.freeze({
-    actual: "failed, one chord recovered",
-    assumed: "failed, no chord recovered",
-    note: "T0 still recovers the chord that follows the forbidden fragment header.",
-  }),
-  "U1-QE-027": Object.freeze({
-    actual: "failed, two chords recovered",
-    assumed: "failed, one chord recovered",
-    note: "T0 also recovers the trailing undurated chord of the unclosed measure.",
-  }),
-  "U1-QE-030": Object.freeze({
-    actual: "ok",
-    assumed: "failed",
-    note: "Two adjacent boundary tokens are legal and enclose one empty measure, exactly as U1-QE-013 states.",
-  }),
-  "U1-QE-033": Object.freeze({
-    actual: "ok",
-    assumed: "failed",
-    note: "T0 allocates the whole bar to a single undurated slot, exactly as U1-QE-006 states.",
-  }),
-  "U1-QE-036": Object.freeze({
-    actual: "failed, every chord recovered",
-    assumed: "failed, no chord recovered",
-    note: "T0 recovers each chord of the overfilled bar rather than none.",
-  }),
-  "U1-QE-046": Object.freeze({
-    actual: "failed, one chord recovered",
-    assumed: "ok",
-    note: "The case writes the annotation before the duration suffix; the T0 grammar carries an annotation after it, as in `| Cmaj7:4 \"head in\" |`.",
-  }),
-});
-
-/**
- * The reviewed statement tables, restated here so the replay can check a
- * diverged case against the contract rather than against the implementation.
- */
-const BLOCKED_REASON_BY_STATEMENT: Readonly<Record<string, string | null>> =
-  Object.freeze({
-    "completes-measures": null,
-    "fits-measure": null,
-    "incomplete-requires-confirmation":
-      "u1.insertion_plan_requires_confirmation",
-    "not-atomic-refusal": "u1.insertion_plan_not_atomic",
-    "overfill-requires-split": "u1.insertion_plan_overfills_destination",
-  });
-
 describe("U1 quick-entry corpus replayed against the real controller", () => {
   test("the reviewed corpus is present and complete", () => {
     expect(CASES).toHaveLength(46);
@@ -153,15 +99,6 @@ describe("U1 quick-entry corpus replayed against the real controller", () => {
       expect(requireString(field(entry, "id"), "id")).toMatch(
         /^U1-QE-\d{3}$/u,
       );
-    }
-  });
-
-  test("every recorded T0 divergence still names a real corpus case", () => {
-    const ids = new Set(
-      CASES.map((entry) => requireString(field(entry, "id"), "id")),
-    );
-    for (const id of Object.keys(T0_SCENARIO_DIVERGENCES)) {
-      expect(ids.has(id), `${id} is not in the corpus`).toBe(true);
     }
   });
 
@@ -234,35 +171,6 @@ describe("U1 quick-entry corpus replayed against the real controller", () => {
         return;
       }
 
-      const diverged = T0_SCENARIO_DIVERGENCES[id];
-      if (diverged !== undefined) {
-        /**
-         * The declared classification belongs to a parse that did not happen.
-         * What must still hold is the contract itself: the lane follows the
-         * real T0 outcome, a committable statement carries its plan and
-         * placement, a blocked one carries exactly its declared reason, and
-         * nothing is committable and blocked at once.
-         */
-        expect(observed.lane).toBe(
-          observed.t0Outcome === "ok" ? "complete-draft" : "recovered-chord",
-        );
-        const statement = observed.insertionPlan;
-        expect(statement).not.toBeNull();
-        if (statement === null) return;
-        expect(observed.blockedReason).toBe(
-          BLOCKED_REASON_BY_STATEMENT[statement] ?? null,
-        );
-        expect(observed.committable).toBe(observed.blockedReason === null);
-        expect(observed.planKind).toBe(
-          observed.committable ? "insert-fragment" : null,
-        );
-        expect(observed.committable ? observed.placement : null).toBe(
-          observed.committable ? observed.placement : null,
-        );
-        if (observed.committable) expect(observed.placement).not.toBeNull();
-        return;
-      }
-
       expect(observed.status).toBe(
         requireString(field(expectation, "status"), `${id}.expected.status`) as
           | "idle"
@@ -328,23 +236,16 @@ describe("U1 quick-entry corpus replayed against the real controller", () => {
       );
       expect(observed.sectionNameCollisionWarnings).toEqual(warnings);
       /**
-       * Token rows: the corpus authored these per case without stating a total
-       * projection, and two pairs cannot be reconciled by any single rule. The
-       * law U1 owns is checked instead — one `insertable` row per chord T0
-       * published, and no `valid` row on a refused draft.
+       * Token rows in full. The corpus states its total projection in
+       * `classificationPolicy.tokenStateProjection`, so the whole ordered
+       * sequence is compared rather than a count.
        */
-      const declared = stringList(
-        field(expectation, "tokenStates"),
-        `${id}.expected.tokenStates`,
+      expect(observed.tokenStates).toEqual(
+        stringList(
+          field(expectation, "tokenStates"),
+          `${id}.expected.tokenStates`,
+        ),
       );
-      if (observed.t0Outcome === "failed") {
-        expect(observed.tokenStates).not.toContain("valid");
-      } else {
-        expect(observed.tokenStates.filter((state) => state !== "valid")).toEqual(
-          [],
-        );
-        expect(observed.tokenStates).toEqual(declared);
-      }
     });
   }
 });

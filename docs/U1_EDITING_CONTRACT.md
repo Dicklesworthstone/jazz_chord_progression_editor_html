@@ -121,9 +121,22 @@ meter. Tokens carry exactly three states:
   recoverable-chord lane;
 - `invalid` — the token did not parse.
 
-A successful draft shows one `valid` row per parsed event. A refused draft
-shows exactly one `insertable` row per published recoverable chord and no
-`valid` rows.
+The projection from one parse to the rows is total and exact:
+
+- a successful draft shows one `valid` row per parsed event, in draft order,
+  and no other row;
+- a refused draft shows one `insertable` row per chord T0 published in its
+  recoverable-chord lane, in T0 ordinal order, followed by one `invalid` row
+  per T0 diagnostic, in T0 order, and no `valid` row;
+- a draft that never reached T0 — idle, or stopped by a U1 preflight guard —
+  shows no rows at all;
+- the sequence is truncated at `maxPreviewTokens` and nowhere else.
+
+Counting only the `insertable` rows is not the law: a preview that drops its
+diagnostic rows hides the reason the draft refused. The corpus states this
+projection in `classificationPolicy.tokenStateProjection`, the validator
+recomputes the whole ordered sequence per case, and the production replay
+compares it exactly.
 
 ### 4.1 The five insertion-plan statements
 
@@ -242,6 +255,13 @@ A0 plan variant and is deferred with that dependency named in the packet's
 handoff record. No U1 gesture may compose two application commands to hide the
 gap.
 
+That variant is now specified. `split-measure` is the proposed sixth atomic
+plan kind — `docs/A0_U1_ATOMIC_EDIT_PLAN_CONTRACT.md` section 21 and
+`src/application/application-split-measure-amendment-contract.ts` — and it is
+deliberately additive: nothing in the accepted A0/U1 packet changes and no U1
+operation binds it yet. Until its build leaf lands, this surface still offers
+only Move following events, Shorten the duration, or Cancel, and says so.
+
 ### 5.4 Pointer, keyboard, and listeners
 
 Drag is an optional enhancement on a dedicated handle. Touch activation does
@@ -277,11 +297,40 @@ visits per draft change, at most `maxRenderedEvents` card and roving-focus
 visits, and at most the target measure's event count per duration preview.
 Elapsed wall time is never a musical or correctness cutoff.
 
-`U1_REFUSAL_CODES` holds 29 pre-dispatch guard codes. They describe what U1
+A rendering bound never hides why a draft refused. A draft inside the
+code-point bound can publish more recoverable chords than `maxPreviewTokens` —
+2,048 undurated chords are 4,095 code points — so the preview reserves a row
+for every T0 diagnostic before it lists any recovered chord, and states the
+shortfall with `u1.preview_token_limit`. Filling the preview with insertable
+rows while the diagnostic row falls off the end would present a refusal as a
+success.
+
+`U1_REFUSAL_CODES` holds 25 pre-dispatch guard codes. They describe what U1
 refuses before dispatch and never rename an application refusal: application,
 atomic-edit-plan, and T0 diagnostic codes and ranges are surfaced verbatim, a
 refused command is never silently retried, and a refusal is never presented as
 a success.
+
+The inventory is exactly the codes a gesture can produce; a name no gesture
+reaches is not a guard. Four were removed for that reason, and the static test
+now proves every remaining code has a production site:
+
+| Removed | Why no gesture produces it |
+|---|---|
+| `u1.duration_underfills_measure_requires_reason` | a second name for the state `u1.completion_reason_required` already names |
+| `u1.stale_revision` | only quick entry captures a revision, and it refuses with the more precise `u1.quick_entry_stale_revision`; every other gesture reads the live snapshot at dispatch |
+| `u1.pointer_capture_lost` | losing capture during a drag is a cancellation, not a refusal: capture is released, transient listeners are removed, and nothing is dispatched |
+| `u1.operation_not_authorized` | the six unauthorized command kinds have no U1 control at all, so there is no gesture to refuse |
+
+### 6.1 States the product cannot enter
+
+A declared state that no gesture can reach must say so. Interaction and
+operation rows carry an optional `reachability` record with either
+`state: "blocked"` and the package that will make it reachable, or
+`state: "unreachable-by-design"` and the constraint that forbids it. Both
+require a written reason. A row without the record is claiming to be
+reachable, and the evidence ledger holds it to that: a reachable row with no
+executed evidence is a gap, while a declared one is a decision.
 
 ## 7. Independent fixtures, traceability, and mutation controls
 
@@ -291,7 +340,12 @@ The packet under `tests/fixtures/editing/` is reciprocal:
   authorization, plan and fill authority, policies, counts, and the companion
   byte digests;
 - `quick-entry-cases.json` owns 46 draft classification cases whose `t0Result`
-  block is a declared scenario input, not a prediction about T0;
+  block is a declared scenario input, not a prediction about T0. A scenario
+  input still has to be a parse the grammar can produce: six cases that assumed
+  one it cannot were reconciled against `docs/T0_SYNTAX_CONTRACT.md` and the
+  independent T0 packet, and the production replay now compares every case
+  whole, so a case built on an impossible parse fails rather than being
+  excused;
 - `edit-operation-matrix.json` owns 59 rows binding gestures to channels,
   including stale, malformed, limit, and cancellation guards;
 - `interaction-state-matrix.json` owns 58 bookmark, focus, pointer, listener,

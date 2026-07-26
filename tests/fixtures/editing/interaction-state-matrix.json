@@ -79,7 +79,12 @@
       "authorityIds": [
         "U1-AUTH-PLAN",
         "U1-AUTH-A0"
-      ]
+      ],
+      "reachability": {
+        "state": "blocked",
+        "byPackage": "X1",
+        "reason": "Playback advancing the playhead needs the serialized transport. The studio transport reports status 'unavailable' with isAvailable false because X0/X1 are not wired to it, so no gesture can advance a playhead to observe the selection against."
+      }
     },
     {
       "id": "U1-INT-003",
@@ -97,7 +102,12 @@
       "authorityIds": [
         "U1-AUTH-PLAN",
         "U1-AUTH-A0"
-      ]
+      ],
+      "reachability": {
+        "state": "blocked",
+        "byPackage": "U2",
+        "reason": "Auditioning one chord from the card menu is a U2 preview control over the X0 engine. U1 declares no audition gesture, so there is nothing to invoke and no preview to hold the bookmarks steady across."
+      }
     },
     {
       "id": "U1-INT-004",
@@ -152,7 +162,12 @@
       "authorityIds": [
         "U1-AUTH-PLAN",
         "U1-AUTH-A0"
-      ]
+      ],
+      "reachability": {
+        "state": "blocked",
+        "byPackage": "X1",
+        "reason": "The case states 'playhead at beat 12' as a precondition. No U1 operation may move the playhead — that is the law this case tests — and nothing else can until the transport is wired. The three-bookmark half is proven independently by U1-INT-005; the fourth value and the four-way rendered-name claim wait on X1."
+      }
     },
     {
       "id": "U1-INT-007",
@@ -520,7 +535,11 @@
       "authorityIds": [
         "U1-AUTH-PLAN",
         "U1-AUTH-A0"
-      ]
+      ],
+      "reachability": {
+        "state": "unreachable-by-design",
+        "reason": "StudioShell mounts ChartWorkspace unconditionally for the lifetime of the application, so the chart region never unmounts while the page lives. The row is a design constraint on that composition rather than a state a gesture can enter. The leak class it guards is covered by U1-INT-020, a card unmounted mid-drag, and U1-INT-023, per-card listener totals across ten reorders."
+      }
     },
     {
       "id": "U1-INT-027",
@@ -980,7 +999,7 @@
       "family": "stale",
       "subject": "a stale gesture never reaches A0",
       "given": "the captured revision no longer equals the application revision",
-      "expected": "the surface refuses with u1.stale_revision and re-reads the snapshot",
+      "expected": "the gesture never reaches A0: publication clears the pending draft, so a draft carrying a stale captured revision cannot exist to be dispatched, and activating Insert anyway is a U1 pre-dispatch refusal",
       "lawIds": [
         "U1-EDIT-017-application-refusals-surfaced-verbatim",
         "U1-EDIT-001-no-new-mutation-channel"
