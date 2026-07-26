@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 
 import {
   Badge,
@@ -194,6 +194,58 @@ export function ChartWorkspace({
   };
 
   useEffect(() => endDragSession, []);
+
+  /**
+   * Release a session whose handle left the document.
+   *
+   * A card can be unmounted while its drag is still live — an undo, a delete
+   * repair, or any other out-of-band command removes the chord the pointer is
+   * holding. The detached handle can never fire `pointerup` or `pointercancel`
+   * again, so without this the session ref stayed set forever: `beginDrag`
+   * returned early on every later attempt and dragging was dead for the rest of
+   * the session. Ending it here is the "capture is released on unmount" half of
+   * the reviewed pointer policy, applied per card rather than only to the
+   * region.
+   */
+  useEffect(() => {
+    const session = dragSession.current;
+    if (session === null) return;
+    if (document.contains(session.handle)) return;
+    endDragSession();
+  });
+
+  /**
+   * Give the keyboard the editor, and give the card back when it closes.
+   *
+   * `autoFocus` alone is neither sufficient nor portable on a dynamically
+   * inserted input. Chromium and Firefox ignore it, so F2 opened an editor the
+   * caret never entered and every keystroke went to the card underneath;
+   * WebKit honours it and then drops focus to the document body when the input
+   * unmounts, which strands the chart's only tab stop and silently swallows
+   * every following key. Focus is therefore moved explicitly on open and
+   * returned to the owning card on close, identically in all three engines.
+   */
+  const openEditorChordId =
+    editing?.chordId ?? durationEdit?.chordId ?? splitEdit?.chordId ?? null;
+  const lastEditorChordId = useRef<string | null>(null);
+  useLayoutEffect(() => {
+    const previous = lastEditorChordId.current;
+    lastEditorChordId.current = openEditorChordId;
+    if (openEditorChordId !== null) {
+      document
+        .querySelector<HTMLElement>(
+          `[data-chord-id="${openEditorChordId}"] [data-card-action="editor"]`,
+        )
+        ?.focus();
+      return;
+    }
+    if (previous === null) return;
+    // The card may itself be gone — a committed split or join replaces it — in
+    // which case the roving focus request A0 published owns the repair.
+    document
+      .querySelector<HTMLElement>(`[data-chord-id="${previous}"]`)
+      ?.focus();
+  }, [openEditorChordId]);
 
   const measureIdAtPoint = (clientX: number, clientY: number): string | null => {
     const element = document.elementFromPoint(clientX, clientY);

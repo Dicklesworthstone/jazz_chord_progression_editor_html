@@ -1,4 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "preact/hooks";
 
 import type {
   StudioControllerActionResult,
@@ -601,8 +607,15 @@ export function App({ snapshot, actions }: AppProps) {
    * and then acknowledges the exact sequence so A0 can clear the request.
    * A target that is no longer rendered falls back to the chart region, which
    * is the last step of the declared priority, rather than to the document.
+   *
+   * This is a layout effect, not a passive one, because a deferred effect runs
+   * after the browser is already free to deliver the next keystroke. On WebKit
+   * that gap was observable: focus sat on the document body between a command
+   * and its repair, so the key a user pressed immediately after (say Delete
+   * right after a move) reached nothing at all. A layout effect closes the gap
+   * before the next event can be dispatched.
    */
-  useEffect(() => {
+  useLayoutEffect(() => {
     const request = snapshot.focusRequest;
     if (request === null) return;
     if (acknowledgedFocus.current === request.sequence) return;
