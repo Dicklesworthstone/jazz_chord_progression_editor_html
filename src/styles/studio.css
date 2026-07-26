@@ -2162,6 +2162,14 @@
   list-style: none;
 }
 
+.studio-quick-entry__truncation {
+  margin: var(--space-1) 0 0;
+  padding: var(--space-1) var(--space-2);
+  border-inline-start: var(--border-width) solid var(--state-warning);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
 .studio-quick-entry__token {
   display: flex;
   flex-wrap: wrap;
@@ -2201,6 +2209,11 @@
 .studio-quick-entry__token-note {
   color: var(--text-subtle);
   flex-basis: 100%;
+}
+
+.studio-quick-entry__token-range {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
 }
 
 /* The recovered-chord lane. Its acknowledgement is a real gesture: nothing in

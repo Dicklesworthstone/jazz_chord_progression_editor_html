@@ -90,6 +90,7 @@ describe("studio application checkpoint", () => {
       eventCount: 0,
       completion: "empty",
       completionLabel: "Empty measure",
+      completionReason: null,
       startBeatLabel: "0/1",
       durationBeatLabel: "0/1",
       endBeatLabel: "0/1",

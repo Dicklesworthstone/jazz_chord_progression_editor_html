@@ -490,6 +490,7 @@ function viewFromSnapshot(
         remainderLabel: draftPreview.recovery.remainderLabel,
         unavailableReason: draftPreview.recovery.unavailableReason,
       }),
+      truncationNotice: draftPreview.truncation?.message ?? null,
     }),
     harmony: Object.freeze({
       selectedChordLabel: null,

@@ -256,6 +256,12 @@ export type StudioQuickEntryToken = Readonly<{
   sourceText: string;
   state: "valid" | "invalid" | "insertable";
   diagnosticCode: string | null;
+  /**
+   * The T0 diagnostic's own draft range, surfaced verbatim beside its code so
+   * a reader can find the offending characters in a long draft. Null on rows
+   * that carry no diagnostic.
+   */
+  diagnosticRange: Readonly<{ start: number; end: number }> | null;
   /** The T0 recoverable-chord ordinal an `insertable` row can be inserted by. */
   globalOrdinal: number | null;
   durationLabel: string | null;
@@ -275,6 +281,19 @@ export type StudioRecoveredChordLane = Readonly<{
   unavailableReason: string | null;
 }>;
 
+/**
+ * What the preview bound left out. The bound is a rendering limit, never a
+ * musical or correctness cutoff, so the rows it drops are stated rather than
+ * silently absent: `u1.preview_token_limit` is the declared U1 code for exactly
+ * this state.
+ */
+export type StudioPreviewTruncation = Readonly<{
+  code: "u1.preview_token_limit";
+  shownTokens: number;
+  totalTokens: number;
+  message: string;
+}>;
+
 /** One bounded T0 parse answers both the token rows and the recovery lane. */
 export type StudioDraftPreview = Readonly<{
   /**
@@ -291,6 +310,8 @@ export type StudioDraftPreview = Readonly<{
    * section; v1 defines no section merge.
    */
   sectionNameCollisionWarnings: readonly string[];
+  /** Null when every row the parse produced is shown. */
+  truncation: StudioPreviewTruncation | null;
 }>;
 
 export type StudioRailSide = "left" | "right";
@@ -584,6 +605,32 @@ const MAX_PREVIEW_TOKENS = 2_048;
 const MAX_SELECTED_EVENTS = 8_192;
 const MAX_PREVIEW_ISSUE_CODES = 64;
 const MAX_SYMBOL_DRAFT_CODE_POINTS = 256;
+
+/**
+ * State what the preview bound left out, or null when nothing was left out.
+ * The counts are of rows the parse produced, so the reader can tell how much
+ * of the draft the preview is not showing.
+ */
+function previewTruncation(
+  recoverableTotal: number,
+  recoverableShown: number,
+  diagnosticTotal: number,
+  diagnosticsShown: number,
+): StudioPreviewTruncation | null {
+  const totalTokens = recoverableTotal + diagnosticTotal;
+  const shownTokens = recoverableShown + diagnosticsShown;
+  if (shownTokens >= totalTokens) return null;
+  const hidden = totalTokens - shownTokens;
+  return Object.freeze({
+    code: "u1.preview_token_limit" as const,
+    message:
+      `The preview shows the first ${String(shownTokens)} of `
+      + `${String(totalTokens)} rows; ${String(hidden)} more are not listed. `
+      + "Shorten the draft to see them.",
+    shownTokens,
+    totalTokens,
+  });
+}
 
 function countCodePoints(value: string): number {
   let count = 0;
@@ -1910,12 +1957,14 @@ function makeStudioController(
       reason: string,
       draftLane: StudioDraftPreview["lane"] = null,
       warnings: readonly string[] = Object.freeze([]),
+      truncation: StudioDraftPreview["truncation"] = null,
     ): StudioDraftPreview =>
       Object.freeze({
         lane: draftLane,
         recovery: lane(false, reason),
         sectionNameCollisionWarnings: warnings,
         tokens,
+        truncation,
       });
 
     const draft = state.quickEntry;
@@ -1939,14 +1988,17 @@ function makeStudioController(
 
     if (parsed.ok) {
       const rows: StudioQuickEntryToken[] = [];
+      let eventCount = 0;
       for (const section of parsed.draft.sections) {
         for (const measure of section.measures) {
           for (const event of measure.events) {
-            if (rows.length >= MAX_PREVIEW_TOKENS) break;
+            eventCount += 1;
+            if (rows.length >= MAX_PREVIEW_TOKENS) continue;
             rows.push(
               Object.freeze({
                 blockedReason: null,
                 diagnosticCode: null,
+                diagnosticRange: null,
                 durationLabel: formatExactBeatLabel(event.duration),
                 globalOrdinal: null,
                 ordinal: rows.length + 1,
@@ -1986,6 +2038,7 @@ function makeStudioController(
         "The draft parses; insert the whole preview instead of one chord.",
         "complete-draft",
         Object.freeze(warnings),
+        previewTruncation(eventCount, rows.length, 0, 0),
       );
     }
 
@@ -2013,9 +2066,25 @@ function makeStudioController(
               ? "The target measure has no beats left."
               : null;
 
+    /**
+     * The diagnostic rows say why the draft refused, so they are never the
+     * rows the preview bound drops. A draft inside the 4,096 code-point bound
+     * can still publish more than `maxPreviewTokens` recoverable chords —
+     * 2,048 undurated chords are 4,095 code points — and emitting them first
+     * used to push the sole diagnostic row out of the preview, leaving a
+     * refused draft rendered as nothing but a list of chords to insert. Room
+     * for every diagnostic is reserved up front and the shortfall is stated
+     * with `u1.preview_token_limit` instead.
+     */
+    const diagnosticBudget = Math.min(
+      parsed.diagnostics.length,
+      MAX_PREVIEW_TOKENS,
+    );
+    const insertableBudget = MAX_PREVIEW_TOKENS - diagnosticBudget;
+
     const rows: StudioQuickEntryToken[] = [];
     for (const chord of parsed.insertableChords) {
-      if (rows.length >= MAX_PREVIEW_TOKENS) break;
+      if (rows.length >= insertableBudget) break;
       const resolved =
         chord.duration.kind === "resolved" ? chord.duration.value : null;
       const fits =
@@ -2031,6 +2100,7 @@ function makeStudioController(
             ? closedReason
             : "Longer than the beats left in the target measure.",
           diagnosticCode: null,
+          diagnosticRange: null,
           durationLabel: resolved === null ? null : formatExactBeatLabel(resolved),
           globalOrdinal: chord.ordinal,
           ordinal: rows.length + 1,
@@ -2042,12 +2112,18 @@ function makeStudioController(
       );
     }
     const recoveredCount = rows.length;
+    let diagnosticsShown = 0;
     for (const diagnostic of parsed.diagnostics) {
-      if (rows.length >= MAX_PREVIEW_TOKENS) break;
+      if (diagnosticsShown >= diagnosticBudget) break;
+      diagnosticsShown += 1;
       rows.push(
         Object.freeze({
           blockedReason: null,
           diagnosticCode: diagnostic.code,
+          diagnosticRange: Object.freeze({
+            end: diagnostic.range.end,
+            start: diagnostic.range.start,
+          }),
           durationLabel: null,
           globalOrdinal: null,
           ordinal: rows.length + 1,
@@ -2058,11 +2134,19 @@ function makeStudioController(
         }),
       );
     }
+    const truncation = previewTruncation(
+      parsed.insertableChords.length,
+      recoveredCount,
+      parsed.diagnostics.length,
+      diagnosticsShown,
+    );
     if (recoveredCount === 0) {
       return closed(
         Object.freeze(rows),
         "T0 recovered no chord from this draft.",
         "recovered-chord",
+        Object.freeze([]),
+        truncation,
       );
     }
     return Object.freeze({
@@ -2077,6 +2161,7 @@ function makeStudioController(
         remainder === null ? null : formatExactBeatLabel(remainder),
       ),
       tokens: Object.freeze(rows),
+      truncation,
     });
   };
 

@@ -188,6 +188,8 @@ export type StudioQuickEntryTokenView = Readonly<{
   sourceText: string;
   state: "valid" | "invalid" | "insertable";
   diagnosticCode: string | null;
+  /** The T0 range the diagnostic covers, shown verbatim beside its code. */
+  diagnosticRange: Readonly<{ start: number; end: number }> | null;
   globalOrdinal: number | null;
   durationLabel: string | null;
   requiresDuration: boolean;
@@ -223,6 +225,12 @@ export type StudioQuickEntryView = Readonly<{
   refusalMessage: string | null;
   tokens: readonly StudioQuickEntryTokenView[];
   recovery: StudioRecoveryLaneView;
+  /**
+   * What the bounded preview left out, stated verbatim. Null when the token
+   * list is the whole parse. A rendering bound never hides the row that says
+   * why a draft refused, so this is shown rather than absorbed.
+   */
+  truncationNotice: string | null;
 }>;
 
 export type StudioFactView = Readonly<{

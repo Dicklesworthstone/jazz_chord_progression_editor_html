@@ -80,6 +80,16 @@ function QuickEntryToken({
       {token.diagnosticCode === null ? null : (
         <Badge label={token.diagnosticCode} tone="error" />
       )}
+      {token.diagnosticRange === null ? null : (
+        // The T0 range verbatim: a code without the characters it covers makes
+        // the reader search a long draft for the offending token.
+        <span
+          class="studio-quick-entry__token-range"
+          data-testid="quick-entry-token-range"
+        >
+          {`characters ${String(token.diagnosticRange.start)}–${String(token.diagnosticRange.end)}`}
+        </span>
+      )}
       {token.requiresCompletionReason ? (
         <span class="studio-quick-entry__token-note">
           Leaves the measure short; a reason is required.
@@ -123,16 +133,26 @@ function QuickEntryTokenList({
 }>) {
   if (view.tokens.length === 0) return null;
   return (
-    <ol class="studio-quick-entry__tokens" data-testid="quick-entry-tokens">
-      {view.tokens.map((token) => (
-        <QuickEntryToken
-          acknowledged={view.recovery.acknowledged}
-          key={`${token.state}-${String(token.ordinal)}`}
-          onInsertRecoveredChord={onInsertRecoveredChord}
-          token={token}
-        />
-      ))}
-    </ol>
+    <>
+      <ol class="studio-quick-entry__tokens" data-testid="quick-entry-tokens">
+        {view.tokens.map((token) => (
+          <QuickEntryToken
+            acknowledged={view.recovery.acknowledged}
+            key={`${token.state}-${String(token.ordinal)}`}
+            onInsertRecoveredChord={onInsertRecoveredChord}
+            token={token}
+          />
+        ))}
+      </ol>
+      {view.truncationNotice === null ? null : (
+        <p
+          class="studio-quick-entry__truncation"
+          data-testid="quick-entry-truncation"
+        >
+          {view.truncationNotice}
+        </p>
+      )}
+    </>
   );
 }
 

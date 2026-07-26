@@ -54,6 +54,7 @@ const BASE_VIEW: Omit<StudioShellView, "layout"> = Object.freeze({
     statusLabel: "No draft",
     targetLabel: "No insertion target",
     tokens: Object.freeze([]),
+    truncationNotice: null,
   }),
   chart: Object.freeze({
     sectionCountLabel: "1 section",
@@ -100,6 +101,7 @@ const BASE_VIEW: Omit<StudioShellView, "layout"> = Object.freeze({
             chordCountLabel: "0 chords",
             fillLabel: "Empty",
             completionLabel: "Empty measure",
+            completionReason: null,
             canSplitSectionHere: false,
             isInsertionTarget: true,
             targetLabel: "Aim quick entry at measure 1",

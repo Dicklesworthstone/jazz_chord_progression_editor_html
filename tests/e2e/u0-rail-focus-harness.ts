@@ -55,6 +55,7 @@ function RailFocusHarness() {
         statusLabel: "No draft",
         targetLabel: "No insertion target",
         tokens: Object.freeze([]),
+        truncationNotice: null,
       },
       collapsed: libraryCollapsed,
       onCollapsedChange: setLibraryCollapsed,
