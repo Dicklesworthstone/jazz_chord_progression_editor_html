@@ -1,6 +1,7 @@
+import { readFileSync, readdirSync, statSync } from "node:fs";
 import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve as resolvePath } from "node:path";
 
 import { describe, expect, setDefaultTimeout, test } from "bun:test";
 
@@ -75,6 +76,7 @@ const intentAssertions: readonly [
 ] = [true];
 
 const fixtureRoot = new URL("../fixtures/editing", import.meta.url).pathname;
+const REPO_ROOT = new URL("../..", import.meta.url).pathname;
 
 function requireObject(value: unknown): JsonObject {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
@@ -142,8 +144,8 @@ describe("U1 reviewed chart-editing contract", () => {
         interactionCases: 58,
         mutationControls: 32,
         mutationControlsReplayed: 32,
-        operationRows: 59,
-        operations: 33,
+        operationRows: 60,
+        operations: 34,
         quickEntryCases: 46,
         traces: 8,
       },
@@ -285,6 +287,84 @@ describe("U1 reviewed chart-editing contract", () => {
     expect(contract["lawIds"]).toEqual([...U1_LAW_IDS]);
     expect(contract["limits"]).toEqual({ ...U1_EDITING_LIMITS });
     expect(contract["companions"]).toEqual([...U1_REVIEWED_COMPANIONS]);
+  });
+
+  /**
+   * A refusal code no gesture can produce is not a guard, it is a name. The
+   * inventory is a closed list of what U1 refuses before dispatch, so each
+   * entry must appear somewhere in production besides the inventory that
+   * declares it. jcpe-bdga removed four codes that failed this and fixed the
+   * production gap behind a fifth.
+   */
+  test("every declared refusal code has a production site", () => {
+    const DECLARATION = resolvePath(
+      REPO_ROOT,
+      "src/ui/studio/u1-editing-contract.ts",
+    );
+    const sites = new Map<string, string[]>(
+      U1_REFUSAL_CODES.map((code) => [code, []]),
+    );
+    const walk = (directory: string): void => {
+      for (const entry of readdirSync(directory)) {
+        const path = join(directory, entry);
+        if (statSync(path).isDirectory()) {
+          walk(path);
+          continue;
+        }
+        if (!path.endsWith(".ts") && !path.endsWith(".tsx")) continue;
+        if (path === DECLARATION) continue;
+        const source = readFileSync(path, "utf8");
+        for (const code of U1_REFUSAL_CODES) {
+          if (source.includes(`"${code}"`)) sites.get(code)?.push(path);
+        }
+      }
+    };
+    walk(resolvePath(REPO_ROOT, "src"));
+
+    const orphaned = [...sites.entries()]
+      .filter(([, found]) => found.length === 0)
+      .map(([code]) => code);
+    expect(orphaned, "refusal codes with no production site").toEqual([]);
+  });
+
+  /**
+   * U1-INT-026 says an unmounted chart region leaves no listener behind. The
+   * product has no path to that state: StudioShell renders ChartWorkspace as
+   * an unconditional child of the workspace landmark for the lifetime of the
+   * application. The row is a constraint on that composition, so the
+   * constraint itself is what gets measured — "cannot happen" is otherwise
+   * indistinguishable from "was never tried". The leak class the row guards is
+   * covered behaviourally by U1-INT-020 and U1-INT-023.
+   */
+  test("U1-INT-026 the chart region is mounted unconditionally", () => {
+    const shell = readFileSync(
+      resolvePath(REPO_ROOT, "src/ui/studio/StudioShell.tsx"),
+      "utf8",
+    );
+    const mounts = [...shell.matchAll(/<ChartWorkspace\b/gu)];
+    expect(mounts, "ChartWorkspace is mounted exactly once").toHaveLength(1);
+
+    // Nothing may gate the mount: no conditional operator, logical guard, or
+    // null branch may share a line with it, and it must sit directly inside
+    // the workspace landmark rather than in a nested expression.
+    const lines = shell.split("\n");
+    const at = lines.findIndex((line) => line.includes("<ChartWorkspace"));
+    expect(at).toBeGreaterThan(-1);
+    const mountLine = lines[at] ?? "";
+    expect(mountLine).not.toContain("&&");
+    expect(mountLine).not.toContain("?");
+    expect(mountLine).not.toContain(":");
+
+    const before = lines.slice(0, at).join("\n");
+    const openWorkspace = before.lastIndexOf("<main");
+    const closeWorkspace = before.lastIndexOf("</main>");
+    expect(
+      openWorkspace,
+      "the mount sits inside the workspace landmark",
+    ).toBeGreaterThan(closeWorkspace);
+    // No conditional expression is open between the landmark and the mount.
+    const between = before.slice(openWorkspace);
+    expect(between).not.toContain("&&");
   });
 
   test("rejects missing, extra, malformed, and duplicate-key files", async () => {

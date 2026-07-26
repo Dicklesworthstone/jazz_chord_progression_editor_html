@@ -30,12 +30,12 @@
     "trace-ledger.json"
   ],
   "companionSha256": {
-    "edit-operation-matrix.json": "33a8e348709cc7b82945ab6fffac600044e2de0d5d3673dec98a63a4b11bef63",
-    "interaction-state-matrix.json": "2293cfbb0d115c07b81c37ca397ccb9a0a750efdec643380b66ba9b80d7265c1",
+    "edit-operation-matrix.json": "ce29ffd892750e002996ee1b55337243228b37855eefd77c95d176ad098c7e71",
+    "interaction-state-matrix.json": "4a8fd91eb5c23f6e3f8d8a9ab03c95b4c4a0bff391f5c7eb606fbbc54adbd9ba",
     "mutation-controls.json": "c4089f4ba4694e9e8d267e11906c9d567b636383bb7f9cc3c3f9c8b8a86aa0c0",
     "provenance-ledger.json": "848ba4174dac0ec9290477ef398984928ea83dbb572a88c3afb8187d5bf72d48",
-    "quick-entry-cases.json": "8365afcee203dcf76086ab82b5e1de21964e044b63bed745e33dfbaa1146eaa3",
-    "trace-ledger.json": "61856d301c9fcc050686fda3c21ab215ae2589ed2a1ebc816b0327ea65b39b6b"
+    "quick-entry-cases.json": "f15b5bc60d343afbdd7d73013efd552855ec8bdf7521dc10f14a10e69282e405",
+    "trace-ledger.json": "57e1ab3bb440d9952a5b26142c0dc70974d2ee4237ec6c9c654fb025ac9743f8"
   },
   "surfaces": [
     "quick-entry",
@@ -270,7 +270,8 @@
     "split-event-duration",
     "join-event-durations",
     "split-section",
-    "join-sections"
+    "join-sections",
+    "split-measure"
   ],
   "textFieldTargetKinds": [
     "section-name",
@@ -672,6 +673,18 @@
       "undoable": false,
       "pointerAlternative": "keyboard",
       "keyboardAccess": "shortcut"
+    },
+    {
+      "id": "U1-OP-034",
+      "operation": "split-at-bar",
+      "surface": "chart",
+      "channel": "document-command",
+      "commandKind": "apply-edit-plan",
+      "planKind": "split-measure",
+      "intentKind": null,
+      "undoable": true,
+      "pointerAlternative": "keyboard-and-menu",
+      "keyboardAccess": "menu-item"
     }
   ],
   "quickEntryStatuses": [
@@ -790,6 +803,7 @@
       "completion": null,
       "committableInV1": false,
       "resolutions": [
+        "split-at-bar",
         "move-following-events",
         "shorten-the-duration",
         "cancel"
@@ -1092,22 +1106,19 @@
     "u1.symbol_edit_blocked_manual_voicing",
     "u1.duration_invalid",
     "u1.duration_overfills_measure",
-    "u1.duration_underfills_measure_requires_reason",
     "u1.completion_reason_required",
     "u1.split_partition_invalid",
     "u1.join_requires_adjacent_events",
     "u1.join_right_annotation_not_empty",
     "u1.section_split_boundary_invalid",
+    "u1.measure_split_boundary_invalid",
     "u1.section_join_requires_adjacent_sections",
     "u1.move_destination_invalid",
     "u1.selection_limit",
     "u1.selection_empty",
     "u1.range_boundary_invalid",
     "u1.range_endpoints_unordered",
-    "u1.target_missing",
-    "u1.stale_revision",
-    "u1.pointer_capture_lost",
-    "u1.operation_not_authorized"
+    "u1.target_missing"
   ],
   "refusalSurfacingPolicy": {
     "applicationRefusalCode": "preserved-verbatim",
@@ -1162,13 +1173,13 @@
   "counts": {
     "companions": 6,
     "components": 25,
-    "operations": 33,
+    "operations": 34,
     "quickEntryCases": 46,
-    "operationRows": 59,
+    "operationRows": 60,
     "interactionCases": 58,
     "viewports": 5,
     "keyBindings": 38,
-    "refusalCodes": 29,
+    "refusalCodes": 26,
     "lawRows": 18,
     "traces": 8,
     "authorities": 9,
@@ -1220,15 +1231,10 @@
       },
       {
         "decision": "quick-entry-overfill-and-underfill-resolution",
-        "resolution": "Both states are stated, not committed: v1 offers explicit resolutions and never silently rebalances or drops beats."
+        "resolution": "Both states are stated, not committed: v1 offers explicit resolutions and never silently rebalances or drops beats. Overfill now offers all three REBUILD_PLAN 17.4 options, because the sixth atomic plan variant (split-measure, U1-OP-034) made Split at bar expressible as one command."
       }
     ],
     "deferredToDependentLeaves": [
-      {
-        "item": "atomic-split-measure-plan-variant",
-        "reason": "Splitting an overfilled measure at the bar line needs a new A0 atomic plan variant; v1 resolves overfill with one move command or Cancel and never composes two commands into one gesture.",
-        "owner": "a future A0/U1 amendment leaf"
-      },
       {
         "item": "chord-inspector-annotation-and-voicing-editing",
         "reason": "Owned by U2, not U1.",

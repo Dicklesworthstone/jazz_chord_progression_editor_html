@@ -306,6 +306,19 @@ const DRIVERS: Readonly<Record<string, OperationDriver>> = Object.freeze({
     if (second === undefined) throw new Error("U1_OPC_NO_SECOND_MEASURE");
     return () => studio.splitSection(firstSectionId(studio.getSnapshot()), second, "B");
   },
+  /*
+   * The third overfill resolution. Seed a two-chord bar and split it at the
+   * second chord: each half then holds two of four beats, so each needs its own
+   * stated reason rather than an inferred completion.
+   */
+  "U1-OP-034": (studio) => {
+    seedBar(studio, "Dm9:2 G13:2");
+    const events = studio.getSnapshot().sections[0]?.measures[0]?.events ?? [];
+    const second = events[1]?.id;
+    if (second === undefined) throw new Error("U1_OPC_NO_SECOND_CHORD");
+    return () =>
+      studio.splitAtBar(second, "Retained half", "Suffix half");
+  },
   "U1-OP-017": (studio) => {
     expectOk(studio.insertSection(null, "B"), "seed");
     return () => studio.joinSections(firstSectionId(studio.getSnapshot()));
@@ -428,10 +441,10 @@ describe("U1 operation matrix: every operation binds exactly one channel", () =>
     }
   });
 
-  test("the reviewed matrix is present and covers all 33 operations", () => {
-    expect(ROWS).toHaveLength(59);
+  test("the reviewed matrix is present and covers all 34 operations", () => {
+    expect(ROWS).toHaveLength(60);
     const operations = new Set(POSITIVE_ROWS.map((row) => row["operationId"]));
-    expect(operations.size).toBe(33);
+    expect(operations.size).toBe(34);
     for (const operationId of operations) {
       expect(
         typeof operationId === "string" && operationId in DRIVERS,

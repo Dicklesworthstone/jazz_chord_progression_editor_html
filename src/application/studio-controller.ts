@@ -95,6 +95,7 @@ export const STUDIO_EDIT_REFUSAL_CODES = Object.freeze([
   "u1.join_requires_adjacent_events",
   "u1.join_right_annotation_not_empty",
   "u1.section_split_boundary_invalid",
+  "u1.measure_split_boundary_invalid",
   "u1.section_join_requires_adjacent_sections",
   "u1.quick_entry_stale_revision",
   "u1.quick_entry_target_missing",
@@ -144,6 +145,7 @@ export type StudioControllerAction =
   | "join-event-durations"
   | "split-section"
   | "join-sections"
+  | "split-at-bar"
   | "insert-recovered-chord"
   | "acknowledge-focus";
 
@@ -466,6 +468,16 @@ export interface StudioController {
     beforeMeasureId: string,
     name: string,
   ) => StudioControllerActionResult;
+  /**
+   * Split a bar at an interior chord boundary. Each reason is required only if
+   * that side ends short of a full bar; a side that exactly fills the bar is
+   * declared complete and ignores its reason.
+   */
+  readonly splitAtBar: (
+    beforeEventId: string,
+    retainedReason?: string | null,
+    suffixReason?: string | null,
+  ) => StudioControllerActionResult;
   readonly joinSections: (
     leftSectionId: string,
   ) => StudioControllerActionResult;
@@ -523,6 +535,8 @@ const EDIT_RECOVERY_ACTIONS: Readonly<Record<StudioEditRefusalCode, string>> =
       "Clear the following chord's note before joining the two durations.",
     "u1.section_split_boundary_invalid":
       "Split a section at a measure after its first measure.",
+    "u1.measure_split_boundary_invalid":
+      "Split a bar at a chord after its first chord.",
     "u1.section_join_requires_adjacent_sections":
       "Select a section that has a following section to join.",
     "u1.quick_entry_stale_revision":
@@ -3430,6 +3444,110 @@ function makeStudioController(
     );
   };
 
+  /**
+   * Split a bar at an interior chord boundary — the third overfill resolution
+   * REBUILD_PLAN 17.4 asks for, and the one that needed A0's sixth atomic plan
+   * variant before it could be one command instead of two.
+   *
+   * Both measure totals are recomputed here from the stored durations and
+   * stated literally in the plan; A0 recomputes them again and refuses if they
+   * disagree. Neither side's completion is inferred: each is derived from its
+   * own exact fill against the bar capacity, and a short side needs a stated
+   * reason exactly as a manually declared incomplete measure does. A split
+   * moves a bar line, never a beat.
+   */
+  const splitAtBar = (
+    beforeEventId: string,
+    retainedReason: string | null = null,
+    suffixReason: string | null = null,
+  ): StudioControllerActionResult => {
+    const location = documentIndex.events.get(beforeEventId);
+    if (location === undefined) {
+      return editRefusal(
+        "split-at-bar",
+        "u1.target_missing",
+        "The chord is no longer part of this chart.",
+        ["eventId"],
+      );
+    }
+    const measure = documentIndex.measures.get(location.measureId);
+    if (measure === undefined) {
+      return editRefusal(
+        "split-at-bar",
+        "u1.target_missing",
+        "The owning measure is no longer part of this chart.",
+        ["eventId"],
+      );
+    }
+    const events = measure.measure.events;
+    if (location.eventIndex <= 0 || location.eventIndex >= events.length) {
+      return editRefusal(
+        "split-at-bar",
+        "u1.measure_split_boundary_invalid",
+        "Split a bar at a chord after its first chord.",
+        ["eventId"],
+      );
+    }
+    const retained = events.slice(0, location.eventIndex);
+    const moved = events.slice(location.eventIndex);
+    const firstMeasureTotal = totalDuration(retained);
+    const secondMeasureTotal = totalDuration(moved);
+    if (firstMeasureTotal === null || secondMeasureTotal === null) {
+      return editRefusal(
+        "split-at-bar",
+        "u1.duration_invalid",
+        "This bar's chord durations do not sum exactly.",
+        ["eventId"],
+      );
+    }
+    const capacity = measureCapacity(state.document.meter);
+    const retainedCompletion = completionAfterEdit(
+      retained,
+      capacity,
+      retainedReason,
+    );
+    if (!retainedCompletion.ok) {
+      return editRefusal(
+        "split-at-bar",
+        retainedCompletion.code,
+        "Declare why the retained bar stays shorter than a full bar.",
+        ["eventId"],
+      );
+    }
+    const suffixCompletion = completionAfterEdit(moved, capacity, suffixReason);
+    if (!suffixCompletion.ok) {
+      return editRefusal(
+        "split-at-bar",
+        suffixCompletion.code,
+        "Declare why the new bar stays shorter than a full bar.",
+        ["eventId"],
+      );
+    }
+    const command: ApplyEditPlanCommand = Object.freeze({
+      ...commandEnvelope("studio-split-at-bar", "Split at bar"),
+      kind: "apply-edit-plan",
+      plan: Object.freeze({
+        beforeEventId: location.id,
+        completionDeclarations: [
+          {
+            completion: retainedCompletion.completion,
+            measureId: measure.id,
+          },
+        ] as const,
+        eventPolicy: "move-suffix-preserve-identities" as const,
+        firstMeasureTotal,
+        identityPolicy: "retain-source-prefix-allocate-suffix" as const,
+        kind: "split-measure" as const,
+        measureId: measure.id,
+        newMeasureCompletion: suffixCompletion.completion,
+        secondMeasureTotal,
+      }),
+    });
+    return apply("split-at-bar", (current) =>
+      runDocumentCommand({ command, dependencies, state: current }),
+    );
+  };
+
   /** Split a section at a measure boundary that is not its first measure. */
   const splitSection = (
     sectionId: string,
@@ -3708,6 +3826,7 @@ function makeStudioController(
     moveFollowingEvents,
     joinEventDurations,
     joinSections,
+    splitAtBar,
     splitEventDuration,
     splitSection,
     setRangeEdge,

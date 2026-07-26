@@ -1428,7 +1428,7 @@
         "undoable": false,
         "pointerAlternative": "keyboard",
         "focusBranch": "unchanged",
-        "refusalCode": "u1.stale_revision"
+        "refusalCode": null
       },
       "lawIds": [
         "U1-EDIT-001-no-new-mutation-channel",
@@ -1441,7 +1441,11 @@
         "U1-AUTH-A0",
         "U1-AUTH-PLAN"
       ],
-      "note": "A gesture whose captured revision is stale never reaches A0; the surface re-reads the snapshot instead of retrying."
+      "note": "A gesture whose captured revision is stale never reaches A0. This surface reaches that guarantee by capturing no revision outside quick entry, so there is no U1 refusal to name; U1-INT-051 states the quick-entry half.",
+      "reachability": {
+        "state": "unreachable-by-design",
+        "reason": "Only quick entry captures a revision; every other gesture reads the live snapshot at dispatch, so `delete-selection` has no captured revision that can go stale. The row's guarantee — a stale gesture never reaches A0 — therefore holds one step earlier than the row states, and the Delete that does run is the correct one against current state."
+      }
     },
     {
       "id": "U1-OPC-035",
@@ -2198,7 +2202,7 @@
         "undoable": false,
         "pointerAlternative": "keyboard",
         "focusBranch": "unchanged",
-        "refusalCode": "u1.operation_not_authorized"
+        "refusalCode": null
       },
       "lawIds": [
         "U1-EDIT-001-no-new-mutation-channel"
@@ -2210,7 +2214,7 @@
         "U1-AUTH-A0",
         "U1-AUTH-PLAN"
       ],
-      "note": "set-voicing, set-document-settings, transpose, apply-suggestion, apply-reharmonization, and replace-document are outside the U1 surface."
+      "note": "set-voicing, set-document-settings, transpose, apply-suggestion, apply-reharmonization, and replace-document are outside the U1 surface. No U1 control offers any of them, so the gesture has nothing to refuse: the proof is behavioural — driving the surface hard never moves a value those six commands own."
     },
     {
       "id": "U1-OPC-054",
@@ -2319,7 +2323,7 @@
         "undoable": false,
         "pointerAlternative": "keyboard",
         "focusBranch": "unchanged",
-        "refusalCode": "u1.pointer_capture_lost"
+        "refusalCode": null
       },
       "lawIds": [
         "U1-EDIT-013-pointer-drag-optional-and-threshold-gated"
@@ -2331,7 +2335,7 @@
         "U1-AUTH-A0",
         "U1-AUTH-PLAN"
       ],
-      "note": "A cancelled drag releases capture, removes its transient listeners, and dispatches nothing."
+      "note": "A cancelled drag releases capture, removes its transient listeners, and dispatches nothing. Losing capture is a cancellation, not a refusal, so no code is named and none is shown to the reader."
     },
     {
       "id": "U1-OPC-057",
@@ -2452,6 +2456,50 @@
         "U1-AUTH-PLAN"
       ],
       "note": "Beyond the window the next keystroke opens a new history entry."
+    },
+    {
+      "id": "U1-OPC-060",
+      "kind": "positive",
+      "family": "edit-operation",
+      "operationId": "U1-OP-034",
+      "operation": "split-at-bar",
+      "surface": "chart",
+      "gesture": "choose Split at bar from the overfill notice",
+      "preconditions": {
+        "documentPublished": true,
+        "revisionCurrent": true,
+        "selectionRequired": true
+      },
+      "expected": {
+        "channel": "document-command",
+        "commandKind": "apply-edit-plan",
+        "planKind": "split-measure",
+        "intentKind": null,
+        "commandCount": 1,
+        "intentCount": 0,
+        "requiresExpectedDocumentId": true,
+        "requiresExpectedRevision": true,
+        "coalescing": null,
+        "undoable": true,
+        "pointerAlternative": "keyboard-and-menu",
+        "focusBranch": "first-inserted-structural-ref",
+        "keyboardAccess": "menu-item",
+        "refusalCode": null
+      },
+      "lawIds": [
+        "U1-EDIT-001-no-new-mutation-channel",
+        "U1-EDIT-005-whole-preview-apply-is-one-atomic-command",
+        "U1-EDIT-012-duration-edit-states-measure-fill-and-explicit-resolution"
+      ],
+      "traceIds": [
+        "U1-TRACE-CHANNEL"
+      ],
+      "authorityIds": [
+        "U1-AUTH-BEAD",
+        "U1-AUTH-A0",
+        "U1-AUTH-PLAN"
+      ],
+      "note": "The third overfill resolution. One atomic, singly undoable split-measure command; never two commands composed into one gesture."
     }
   ]
 }

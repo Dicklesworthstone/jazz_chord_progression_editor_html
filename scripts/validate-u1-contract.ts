@@ -76,22 +76,22 @@ export const U1_REVIEWED_BYTE_DIGESTS: Readonly<
   Record<(typeof U1_REVIEWED_COMPANIONS)[number], string>
 > = {
   "edit-operation-matrix.json":
-    "33a8e348709cc7b82945ab6fffac600044e2de0d5d3673dec98a63a4b11bef63",
+    "ce29ffd892750e002996ee1b55337243228b37855eefd77c95d176ad098c7e71",
   "interaction-state-matrix.json":
-    "2293cfbb0d115c07b81c37ca397ccb9a0a750efdec643380b66ba9b80d7265c1",
+    "4a8fd91eb5c23f6e3f8d8a9ab03c95b4c4a0bff391f5c7eb606fbbc54adbd9ba",
   "mutation-controls.json":
     "c4089f4ba4694e9e8d267e11906c9d567b636383bb7f9cc3c3f9c8b8a86aa0c0",
   "provenance-ledger.json":
     "848ba4174dac0ec9290477ef398984928ea83dbb572a88c3afb8187d5bf72d48",
   "quick-entry-cases.json":
-    "8365afcee203dcf76086ab82b5e1de21964e044b63bed745e33dfbaa1146eaa3",
+    "f15b5bc60d343afbdd7d73013efd552855ec8bdf7521dc10f14a10e69282e405",
   "trace-ledger.json":
-    "61856d301c9fcc050686fda3c21ab215ae2589ed2a1ebc816b0327ea65b39b6b",
+    "57e1ab3bb440d9952a5b26142c0dc70974d2ee4237ec6c9c654fb025ac9743f8",
 };
 
 /** Independently reviewed canonical-JSON digest over all seven parsed roots. */
 export const U1_REVIEWED_SEMANTIC_DIGEST =
-  "e652c52416e35dbcbbf7a695c2af9843fd311f22a9d41b6cd699b642fccbb725";
+  "58684344f0a04393709f4d888c0207b11bfd4d31329863ca81342716d915f8b7";
 
 export const U1_REVIEWED_COMPONENT_COUNT = 25;
 
@@ -141,6 +141,7 @@ export const U1_REVIEWED_EDIT_PLAN_KINDS = [
   "join-event-durations",
   "split-section",
   "join-sections",
+  "split-measure",
 ] as const;
 
 export const U1_REVIEWED_INSERTION_PLAN_KINDS = [
@@ -262,12 +263,12 @@ export const U1_REVIEWED_REFUSAL_CODES = [
   "u1.symbol_edit_blocked_manual_voicing",
   "u1.duration_invalid",
   "u1.duration_overfills_measure",
-  "u1.duration_underfills_measure_requires_reason",
   "u1.completion_reason_required",
   "u1.split_partition_invalid",
   "u1.join_requires_adjacent_events",
   "u1.join_right_annotation_not_empty",
   "u1.section_split_boundary_invalid",
+  "u1.measure_split_boundary_invalid",
   "u1.section_join_requires_adjacent_sections",
   "u1.move_destination_invalid",
   "u1.selection_limit",
@@ -275,9 +276,6 @@ export const U1_REVIEWED_REFUSAL_CODES = [
   "u1.range_boundary_invalid",
   "u1.range_endpoints_unordered",
   "u1.target_missing",
-  "u1.stale_revision",
-  "u1.pointer_capture_lost",
-  "u1.operation_not_authorized",
 ] as const;
 
 export const U1_REVIEWED_LAW_IDS = [
@@ -657,6 +655,120 @@ const DOCUMENT_BOUNDARIES = new Set([
   "before-section",
   "after-section",
 ]);
+
+/**
+ * Packages a `reachability` record may name as the owner of a blocked state.
+ * A row may not defer itself to a package the plan does not contain.
+ */
+const U1_DOWNSTREAM_PACKAGES = new Set([
+  "A1",
+  "E0",
+  "E1",
+  "U2",
+  "U3",
+  "U4",
+  "U5",
+  "X0",
+  "X1",
+]);
+
+/**
+ * A declared state the product cannot enter must say so, and say why. A row
+ * with no `reachability` record is claiming its state is reachable, which the
+ * evidence ledger then holds it to; a row that declares one owes a written
+ * reason and, when it is merely deferred, the package that will land it.
+ */
+function checkReachability(
+  row: JsonObject,
+  path: string,
+  findings: U1ContractFinding[],
+): void {
+  const declared = row["reachability"];
+  if (declared === undefined) return;
+  if (!isObject(declared)) {
+    finding(
+      findings,
+      "U1_CONTRACT_REACHABILITY",
+      path + ".reachability",
+      "A reachability declaration must be one object.",
+    );
+    return;
+  }
+  const state = readText(declared, "state");
+  if (state !== "blocked" && state !== "unreachable-by-design") {
+    finding(
+      findings,
+      "U1_CONTRACT_REACHABILITY",
+      path + ".reachability.state",
+      "Reachability is either 'blocked' or 'unreachable-by-design'.",
+    );
+  }
+  if ((readText(declared, "reason") ?? "").length < 40) {
+    finding(
+      findings,
+      "U1_CONTRACT_REACHABILITY",
+      path + ".reachability.reason",
+      "A state the product cannot enter states why in its own words.",
+    );
+  }
+  const owner = readText(declared, "byPackage");
+  if (state === "blocked" && (owner === null || !U1_DOWNSTREAM_PACKAGES.has(owner))) {
+    finding(
+      findings,
+      "U1_CONTRACT_REACHABILITY",
+      path + ".reachability.byPackage",
+      "A blocked state names the downstream package that will reach it.",
+    );
+  }
+  if (state === "unreachable-by-design" && owner !== null) {
+    finding(
+      findings,
+      "U1_CONTRACT_REACHABILITY",
+      path + ".reachability.byPackage",
+      "A state forbidden by design is not waiting on a package.",
+    );
+  }
+}
+
+/**
+ * The total token projection the corpus declares in
+ * `classificationPolicy.tokenStateProjection`. A parsed draft shows one `valid`
+ * row per parsed event; a refused draft shows one `insertable` row per chord T0
+ * published in its recoverable lane, in T0 ordinal order, then one `invalid`
+ * row per T0 diagnostic, in T0 order. Counting the insertable rows alone let a
+ * case drop its diagnostic rows silently, so the whole ordered sequence is
+ * recomputed and compared.
+ */
+function expectProjectedTokenStates(
+  findings: U1ContractFinding[],
+  path: string,
+  limits: JsonObject,
+  declared: readonly string[],
+  unbounded: readonly string[],
+): void {
+  const bound = readNumber(limits, "maxPreviewTokens") ?? unbounded.length;
+  const projected = unbounded.slice(0, bound);
+  if (declared.length !== projected.length) {
+    finding(
+      findings,
+      "U1_CONTRACT_TOKEN_STATE",
+      path + ".expected.tokenStates",
+      "Declared token rows differ in count from the recomputed projection: "
+        + "declared " + String(declared.length) + ", projected "
+        + String(projected.length) + ".",
+    );
+    return;
+  }
+  for (const [index, state] of projected.entries()) {
+    if (declared[index] === state) continue;
+    finding(
+      findings,
+      "U1_CONTRACT_TOKEN_STATE",
+      path + ".expected.tokenStates." + String(index),
+      "Declared token row differs from the recomputed projection.",
+    );
+  }
+}
 
 function classifyQuickEntry(
   testCase: JsonObject,
@@ -1501,6 +1613,34 @@ function checkQuickEntryCases(
   const tokenStates = new Set(strings(contract["tokenStates"]));
   const cases = objects(quick["cases"]);
 
+  /**
+   * The corpus must state its total token projection, not just the per-case
+   * rows. Without the statement, a case could drop its diagnostic rows and no
+   * oracle would name the rule it broke.
+   */
+  const projection = readObject(
+    readObject(quick, "classificationPolicy"),
+    "tokenStateProjection",
+  );
+  for (const [key, required] of [
+    ["parsedDraft", "one-valid-row-per-parsed-event-in-draft-order"],
+    [
+      "refusedDraft",
+      "one-insertable-row-per-published-recoverable-chord-in-t0-ordinal-order,"
+        + "-then-one-invalid-row-per-t0-diagnostic-in-t0-order",
+    ],
+    ["unparsedDraft", "no-rows"],
+    ["truncation", "maxPreviewTokens"],
+  ] as const) {
+    if (readText(projection, key) === required) continue;
+    finding(
+      findings,
+      "U1_CONTRACT_TOKEN_STATE",
+      "quick-entry-cases.json.classificationPolicy.tokenStateProjection." + key,
+      "The declared token projection is missing or restated.",
+    );
+  }
+
   cases.forEach((testCase, index) => {
     const path = "quick-entry-cases.json.cases." + String(index);
     const expected = readObject(testCase, "expected");
@@ -1628,6 +1768,13 @@ function checkQuickEntryCases(
           "Every token of a successful draft is valid.",
         );
       }
+      expectProjectedTokenStates(
+        findings,
+        path,
+        limits,
+        declaredTokens,
+        Array.from({ length: eventCount }, () => "valid"),
+      );
     }
     if (readText(t0, "outcome") === "failed") {
       const declaredTokens = strings(expected["tokenStates"]);
@@ -1651,6 +1798,10 @@ function checkQuickEntryCases(
           "A refused draft has no valid token rows.",
         );
       }
+      expectProjectedTokenStates(findings, path, limits, declaredTokens, [
+        ...objects(t0["insertableChords"]).map(() => "insertable"),
+        ...strings(t0["diagnosticCodes"]).map(() => "invalid"),
+      ]);
     }
 
     const oracle = classifyQuickEntry(testCase, limits);
@@ -1822,6 +1973,7 @@ function checkOperationRows(
 
   rows.forEach((row, index) => {
     const path = "edit-operation-matrix.json.rows." + String(index);
+    checkReachability(row, path, findings);
     const operationId = readText(row, "operationId");
     const operation = operationId === null
       ? undefined
@@ -2021,6 +2173,7 @@ function checkInteractionCases(
   }
   cases.forEach((testCase, index) => {
     const path = "interaction-state-matrix.json.cases." + String(index);
+    checkReachability(testCase, path, findings);
     if ((readText(testCase, "given") ?? "").length === 0) {
       finding(
         findings,

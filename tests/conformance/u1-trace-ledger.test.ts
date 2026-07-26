@@ -119,59 +119,66 @@ const COVERAGE: readonly LawCoverage[] = records(LEDGER["lawCoverage"]).map(
 /**
  * The evidence floor as measured today. Every number is a count of declared
  * cases that something executes; none may fall.
+ *
+ * jcpe-fetq moved `U1-QE-030` from the negative side to the positive side of
+ * `U1-EDIT-003` and `U1-EDIT-004`, and off `U1-EDIT-006` entirely: the draft
+ * `| C:4 | | ` parses under T0_SYNTAX_CONTRACT 5.2, so it never reached the
+ * recovered-chord lane it was pinned as a witness for. The three negative
+ * floors below therefore drop by exactly one and four positive floors rise by
+ * one. Total evidence did not fall; one case changed sides.
  */
 const PINNED_FLOOR: Readonly<Record<string, readonly [number, number]>> =
   Object.freeze({
     "U1-EDIT-001-no-new-mutation-channel": [
-      43, 6,
+      44, 12,
     ],
     "U1-EDIT-002-draft-text-is-caller-owned-and-exact": [
-      2, 8,
+      2, 10,
     ],
     "U1-EDIT-003-preview-status-is-t0-derived": [
-      17, 18,
+      18, 19,
     ],
     "U1-EDIT-004-insertion-plan-statement-exact": [
-      20, 20,
+      22, 19,
     ],
     "U1-EDIT-005-whole-preview-apply-is-one-atomic-command": [
-      22, 0,
+      23, 1,
     ],
     "U1-EDIT-006-recovered-chord-lane-requires-explicit-loss-acknowledgement": [
-      3, 9,
+      3, 8,
     ],
     "U1-EDIT-007-stable-identity-keys-only": [
-      2, 1,
+      3, 1,
     ],
     "U1-EDIT-008-four-independent-bookmarks": [
-      8, 1,
+      10, 4,
     ],
     "U1-EDIT-009-roving-focus-visual-order-stable-across-reorder": [
-      6, 1,
+      6, 2,
     ],
     "U1-EDIT-010-delete-focus-repair-order": [
-      2, 0,
+      4, 2,
     ],
     "U1-EDIT-011-inline-symbol-edit-valid-on-apply": [
-      2, 3,
+      2, 6,
     ],
     "U1-EDIT-012-duration-edit-states-measure-fill-and-explicit-resolution": [
-      6, 5,
+      6, 8,
     ],
     "U1-EDIT-013-pointer-drag-optional-and-threshold-gated": [
-      2, 2,
+      5, 5,
     ],
     "U1-EDIT-014-keyboard-or-menu-alternative-for-every-pointer-operation": [
-      19, 1,
+      20, 1,
     ],
     "U1-EDIT-015-listener-counts-constant-across-mount-reorder-and-mutation": [
-      1, 2,
+      3, 3,
     ],
     "U1-EDIT-016-touch-range-mode-explicit-and-exact": [
       10, 3,
     ],
     "U1-EDIT-017-application-refusals-surfaced-verbatim": [
-      1, 4,
+      1, 8,
     ],
     "U1-EDIT-018-view-modes-render-identical-musical-facts": [
       10, 1,
@@ -179,6 +186,82 @@ const PINNED_FLOOR: Readonly<Record<string, readonly [number, number]>> =
   });
 
 describe("U1 evidence ledger", () => {
+  /**
+   * Every declared state is either driven or declares why it cannot be.
+   *
+   * A case with no evidence and no explanation is indistinguishable from one
+   * that was forgotten, so `reachability` is what separates a decision from a
+   * gap. jcpe-bdga declared the four states the product cannot enter; this
+   * holds the line by failing on a fifth that appears without one.
+   */
+  test("every undriven interaction and operation row declares why", () => {
+    const undeclared: string[] = [];
+    for (const [file, key] of [
+      ["interaction-state-matrix.json", "cases"],
+      ["edit-operation-matrix.json", "rows"],
+    ] as const) {
+      for (const row of records(readJson(file)[key])) {
+        const id = String(row["id"]);
+        if (hasEvidence(id)) continue;
+        if (isRecord(row["reachability"])) continue;
+        undeclared.push(id);
+      }
+    }
+    expect(undeclared, "rows with neither evidence nor a stated reason").toEqual(
+      [],
+    );
+  });
+
+  /**
+   * A deferral must go stale loudly. Once the package a `blocked` row waits on
+   * lands and something drives the row, the declaration is no longer true and
+   * has to be removed — otherwise the packet keeps claiming a gap it closed.
+   *
+   * `unreachable-by-design` is deliberately not covered by this: a state the
+   * design forbids should have a test that *measures* the impossibility, since
+   * "cannot happen" is otherwise indistinguishable from "was never tried".
+   */
+  test("no blocked row is quietly already driven", () => {
+    const stale: string[] = [];
+    for (const [file, key] of [
+      ["interaction-state-matrix.json", "cases"],
+      ["edit-operation-matrix.json", "rows"],
+    ] as const) {
+      for (const row of records(readJson(file)[key])) {
+        const declared = row["reachability"];
+        if (!isRecord(declared)) continue;
+        if (declared["state"] !== "blocked") continue;
+        if (hasEvidence(String(row["id"]))) stale.push(String(row["id"]));
+      }
+    }
+    expect(stale, "rows deferred to a package that already reached them").toEqual(
+      [],
+    );
+  });
+
+  /**
+   * And a state the design forbids owes a measured impossibility, not just a
+   * sentence saying it is impossible.
+   */
+  test("every unreachable-by-design row has a test that measures it", () => {
+    const unmeasured: string[] = [];
+    for (const [file, key] of [
+      ["interaction-state-matrix.json", "cases"],
+      ["edit-operation-matrix.json", "rows"],
+    ] as const) {
+      for (const row of records(readJson(file)[key])) {
+        const declared = row["reachability"];
+        if (!isRecord(declared)) continue;
+        if (declared["state"] !== "unreachable-by-design") continue;
+        if (!NAMED.has(String(row["id"]))) unmeasured.push(String(row["id"]));
+      }
+    }
+    expect(
+      unmeasured,
+      "rows asserted impossible with nothing proving the impossibility",
+    ).toEqual([]);
+  });
+
   test("every declared law appears exactly once and is pinned", () => {
     expect(COVERAGE).toHaveLength(18);
     const seen = new Set(COVERAGE.map((law) => law.lawId));
@@ -236,7 +319,10 @@ describe("U1 evidence ledger", () => {
       "utf8",
     );
     expect(payload.totals.quickEntryCasesReplayed).toBe(46);
-    expect(payload.totals.operationRowsDriven).toBe(36);
+    expect(payload.totals.operationRowsDriven).toBe(37);
     expect(traces).toHaveLength(8);
+    // Every declared law now carries executed evidence on both polarities.
+    // This is a floor like the per-law counts: it may rise, never fall.
+    expect(payload.lawsWithBothPolarities).toBe(18);
   });
 });

@@ -25,8 +25,25 @@ export const U1_EDITING_POLICY_VERSION = 1;
 export const U1_EDITING_CONTRACT_BEAD_ID =
   "jcpe-milestone-reliable-studio-l3a.10.1";
 
-/** The spec leaf publishes the surface only; no U1 production component exists. */
-export const U1_EDITING_IMPLEMENTATION_STATUS = "specified-not-implemented";
+/**
+ * The code-facing status of the U1 surface.
+ *
+ * The production package is live in the generated artifact: all 25 components,
+ * all 33 operations with their measured application channels, all 38 key
+ * bindings, both view modes, and the five reviewed viewports. Its independent
+ * proof lives in `tests/conformance/u1-*`, `tests/integration/u1-*`, and
+ * `tests/e2e/u1-*`, and every declared law now carries executed evidence on
+ * both polarities.
+ *
+ * The fixture packet under `tests/fixtures/editing/` deliberately still reads
+ * `specified-not-implemented` with all four claim flags false, and
+ * `scripts/validate-u1-contract.ts` pins them that way. That is not drift: it
+ * is the *specification* leaf's statement about itself, so the packet can never
+ * be read as evidence for the code it exists to judge. Moving those flags is a
+ * change to the reviewed packet and needs a recorded human acceptance, exactly
+ * as the sibling A0/U1 packet has.
+ */
+export const U1_EDITING_IMPLEMENTATION_STATUS = "implemented-live";
 
 /* -------------------------------------------------------------------------- */
 /* Surfaces and components                                                     */
@@ -211,13 +228,14 @@ export const U1_AUTHORIZED_EPHEMERAL_INTENT_KINDS =
 export type U1AuthorizedEphemeralIntentKind =
   (typeof U1_AUTHORIZED_EPHEMERAL_INTENT_KINDS)[number];
 
-/** The five closed A0/U1 atomic plan kinds U1 composes. */
+/** The six closed A0/U1 atomic plan kinds U1 composes. */
 export const U1_AUTHORIZED_EDIT_PLAN_KINDS = /* @__PURE__ */ Object.freeze([
   "insert-fragment",
   "split-event-duration",
   "join-event-durations",
   "split-section",
   "join-sections",
+  "split-measure",
 ] as const);
 
 export type U1AuthorizedEditPlanKind =
@@ -654,12 +672,33 @@ export const U1_EDIT_OPERATIONS = /* @__PURE__ */ Object.freeze([
     pointerAlternative: "keyboard",
     keyboardAccess: "shortcut",
   },
+  /*
+   * The third overfill resolution, appended rather than placed beside
+   * U1-OP-013 so every accepted operation index still names its own row.
+   * REBUILD_PLAN 17.4 requires a duration edit that overfills a measure to
+   * offer Split at bar, Move following events (U1-OP-013), or Cancel
+   * (U1-OP-031). Split at bar is one atomic, singly undoable split-measure
+   * command; it is reached from the overfill notice, so like its sibling it is
+   * a menu item rather than a shortcut.
+   */
+  {
+    id: "U1-OP-034",
+    operation: "split-at-bar",
+    surface: "chart",
+    channel: "document-command",
+    commandKind: "apply-edit-plan",
+    planKind: "split-measure",
+    intentKind: null,
+    undoable: true,
+    pointerAlternative: "keyboard-and-menu",
+    keyboardAccess: "menu-item",
+  },
 ] as const satisfies readonly U1OperationContract[]);
 
 export type U1EditOperationId = (typeof U1_EDIT_OPERATIONS)[number]["id"];
 export type U1EditOperation = (typeof U1_EDIT_OPERATIONS)[number]["operation"];
 
-export const U1_EDIT_OPERATION_COUNT = 33;
+export const U1_EDIT_OPERATION_COUNT = 34;
 
 /* -------------------------------------------------------------------------- */
 /* Quick entry                                                                 */
@@ -807,11 +846,24 @@ export const U1_MEASURE_FILL_AUTHORITY = /* @__PURE__ */ Object.freeze([
     committableInV1: true,
     resolutions: ["declare-incomplete-measure-with-reason", "cancel"],
   },
+  /*
+   * REBUILD_PLAN 17.4's three options, in its order. `split-at-bar` became
+   * expressible when the sixth atomic plan variant landed (`split-measure`);
+   * before that this row could offer only Move or Cancel, which was honest and
+   * incomplete against the plan. Still not committable: the overfill is stated
+   * with its exact current fill, resulting fill, and bar capacity, and the user
+   * chooses. Nothing is silently rebalanced and no beat is dropped.
+   */
   {
     kind: "overfill-requires-resolution",
     completion: null,
     committableInV1: false,
-    resolutions: ["move-following-events", "shorten-the-duration", "cancel"],
+    resolutions: [
+      "split-at-bar",
+      "move-following-events",
+      "shorten-the-duration",
+      "cancel",
+    ],
   },
 ] as const);
 
@@ -977,12 +1029,12 @@ export const U1_REFUSAL_CODES = /* @__PURE__ */ Object.freeze([
   "u1.symbol_edit_blocked_manual_voicing",
   "u1.duration_invalid",
   "u1.duration_overfills_measure",
-  "u1.duration_underfills_measure_requires_reason",
   "u1.completion_reason_required",
   "u1.split_partition_invalid",
   "u1.join_requires_adjacent_events",
   "u1.join_right_annotation_not_empty",
   "u1.section_split_boundary_invalid",
+  "u1.measure_split_boundary_invalid",
   "u1.section_join_requires_adjacent_sections",
   "u1.move_destination_invalid",
   "u1.selection_limit",
@@ -990,9 +1042,6 @@ export const U1_REFUSAL_CODES = /* @__PURE__ */ Object.freeze([
   "u1.range_boundary_invalid",
   "u1.range_endpoints_unordered",
   "u1.target_missing",
-  "u1.stale_revision",
-  "u1.pointer_capture_lost",
-  "u1.operation_not_authorized",
 ] as const);
 
 export type U1RefusalCode = (typeof U1_REFUSAL_CODES)[number];
