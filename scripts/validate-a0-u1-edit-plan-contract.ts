@@ -210,6 +210,7 @@ const EXPECTED_NESTED_REFUSAL_PRECEDENCE = Object.freeze([
   "edit-plan.destination-invalid",
   "edit-plan.event-order-invalid",
   "edit-plan.section-split-boundary-invalid",
+  "edit-plan.measure-split-boundary-invalid",
   "edit-plan.section-order-invalid",
   "edit-plan.recovered-chord-placement-invalid",
   "edit-plan.syntax-refused",
@@ -223,6 +224,7 @@ const EXPECTED_NESTED_REFUSAL_PRECEDENCE = Object.freeze([
   "edit-plan.recovered-chord-duration-mismatch",
   "edit-plan.duration-invalid",
   "edit-plan.duration-sum-mismatch",
+  "edit-plan.measure-partition-mismatch",
   "edit-plan.event-content-mismatch",
   "edit-plan.right-annotation-not-empty",
   "edit-plan.collection-limit-exceeded",
@@ -425,6 +427,7 @@ const EXPECTED_DESTINATION_REFUSAL_CODES: readonly string[] = Object.freeze([
   "edit-plan.destination-invalid",
   "edit-plan.event-order-invalid",
   "edit-plan.section-split-boundary-invalid",
+  "edit-plan.measure-split-boundary-invalid",
   "edit-plan.section-order-invalid",
 ]);
 
@@ -564,6 +567,7 @@ const EXPECTED_DECISION_KEYS = Object.freeze([
   "joinEventDurations",
   "splitSection",
   "joinSections",
+  "splitMeasure",
 ] as const);
 
 const EXPECTED_ORDERING_KEYS = Object.freeze([
@@ -6882,6 +6886,25 @@ function deriveExactNestedWork(
     code === null
       ? EXPECTED_NESTED_REFUSAL_PRECEDENCE.length
       : EXPECTED_NESTED_REFUSAL_PRECEDENCE.indexOf(code);
+  /*
+   * Named precedence bands. These were numeric literals until the sixth plan
+   * variant inserted two codes mid-list and silently shifted every later index;
+   * deriving the bounds from the code names keeps the windows correct under any
+   * future insertion instead of failing three unrelated join witnesses.
+   */
+  const bandIndex = (name: string): number => {
+    const index = EXPECTED_NESTED_REFUSAL_PRECEDENCE.indexOf(name as never);
+    if (index < 0) throw new Error(`A0U1_UNKNOWN_PRECEDENCE_BAND_${name}`);
+    return index;
+  };
+  const TARGET_AND_DESTINATION_BAND = Object.freeze({
+    first: bandIndex("edit-plan.target-missing"),
+    last: bandIndex("edit-plan.section-order-invalid"),
+  });
+  const OPERATION_LAW_DURATION_BAND = Object.freeze({
+    first: bandIndex("edit-plan.duration-invalid"),
+    last: bandIndex("edit-plan.right-annotation-not-empty"),
+  });
   const expectedResult = isObject(expected["result"])
     ? expected["result"]
     : {};
@@ -6959,7 +6982,10 @@ function deriveExactNestedWork(
       return { ...counters, termination: "input-refusal" };
     }
   }
-  if (codeIndex >= 6 && codeIndex <= 10) {
+  if (
+    codeIndex >= TARGET_AND_DESTINATION_BAND.first &&
+    codeIndex <= TARGET_AND_DESTINATION_BAND.last
+  ) {
     retainDiagnostics(1);
     return { ...counters, termination: "input-refusal" };
   }
@@ -7099,7 +7125,10 @@ function deriveExactNestedWork(
       counters["exactBeatComparisons"] = 1;
     }
   }
-  if (codeIndex >= 21 && codeIndex <= 24) {
+  if (
+    codeIndex >= OPERATION_LAW_DURATION_BAND.first &&
+    codeIndex <= OPERATION_LAW_DURATION_BAND.last
+  ) {
     retainDiagnostics(1);
     return { ...counters, termination: "input-refusal" };
   }
@@ -11698,6 +11727,8 @@ function validateSourceContractAuthorities(
         "commutes-with-spelling-preserving-transposition-of-affected-event-ids",
       joinSections:
         "commutes-with-spelling-preserving-transposition-of-affected-event-ids",
+      splitMeasure:
+        "commutes-with-spelling-preserving-transposition-of-affected-event-ids",
     },
     "EDIT_PLAN_SOURCE_TRANSPOSITION_POLICY",
     "src/application/application-edit-plan-contract.ts.A0_U1_ATOMIC_EDIT_PLAN_TRANSPOSITION_POLICY",
@@ -11756,6 +11787,7 @@ function validateSourceContractAuthorities(
       unicodePolicy: "valid-unicode-scalar-string",
       counter: "metadataCodePointsObserved",
       splitSectionMetadataOrder: ["newSectionMetadata"],
+      splitMeasureMetadataOrder: ["newMeasureCompletion"],
       joinSectionsMetadataOrder: [
         "expectedLeftMetadata",
         "expectedRightMetadata",
@@ -11781,6 +11813,7 @@ function validateSourceContractAuthorities(
         "/plan/expectedRightMetadata/annotation",
         "/plan/resultMetadata/name",
         "/plan/resultMetadata/annotation",
+        "/plan/newMeasureCompletion/reason",
         "/plan/completionDeclarations/{index}/completion/reason",
         "/plan/placement/completionDeclarations/{index}/completion/reason",
       ],

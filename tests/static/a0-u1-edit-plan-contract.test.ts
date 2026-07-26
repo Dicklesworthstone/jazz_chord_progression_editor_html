@@ -131,6 +131,7 @@ type PlanKindsAreExact = Assert<
     | "join-event-durations"
     | "split-section"
     | "join-sections"
+    | "split-measure"
   >
 >;
 type InsertPlacementKindsAreExact = Assert<
@@ -1771,6 +1772,7 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
       "join-event-durations",
       "split-section",
       "join-sections",
+      "split-measure",
     ]);
     expect(
       MAX_A0_U1_REACHABLE_FINAL_TIMELINE_QUARTER_NOTE_BEATS,
@@ -1818,6 +1820,7 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
       "fragment-events-in-source-order",
       "recovered-chord-selected-only",
       "split-event-second-only",
+      "split-measure-suffix-only",
       "split-section-suffix-only",
       "reserve-each-returned-id-locally",
       "stop-without-retry-on-first-failure-or-collision",
@@ -1919,6 +1922,7 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
       "edit-plan.destination-invalid",
       "edit-plan.event-order-invalid",
       "edit-plan.section-split-boundary-invalid",
+      "edit-plan.measure-split-boundary-invalid",
       "edit-plan.section-order-invalid",
       "edit-plan.recovered-chord-placement-invalid",
       "edit-plan.syntax-refused",
@@ -1932,6 +1936,7 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
       "edit-plan.recovered-chord-duration-mismatch",
       "edit-plan.duration-invalid",
       "edit-plan.duration-sum-mismatch",
+      "edit-plan.measure-partition-mismatch",
       "edit-plan.event-content-mismatch",
       "edit-plan.right-annotation-not-empty",
       "edit-plan.collection-limit-exceeded",
@@ -1988,6 +1993,7 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
       "A0-U1-ATOM-015-ids-preflight-preorder-honest-entropy",
       "A0-U1-ATOM-016-bookmarks-publication-history-atomic",
       "A0-U1-ATOM-017-transposition-and-existing-a0-unchanged",
+      "A0-U1-ATOM-018-split-measure-partition-exact",
     ]);
   });
 
@@ -2003,6 +2009,9 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
       "edit-plan.destination-invalid": ["command.destination_invalid"],
       "edit-plan.event-order-invalid": ["command.destination_invalid"],
       "edit-plan.section-split-boundary-invalid": [
+        "command.destination_invalid",
+      ],
+      "edit-plan.measure-split-boundary-invalid": [
         "command.destination_invalid",
       ],
       "edit-plan.section-order-invalid": ["command.destination_invalid"],
@@ -2028,6 +2037,7 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
       ],
       "edit-plan.duration-invalid": ["command.payload_invalid"],
       "edit-plan.duration-sum-mismatch": ["command.payload_invalid"],
+      "edit-plan.measure-partition-mismatch": ["command.payload_invalid"],
       "edit-plan.event-content-mismatch": ["command.payload_invalid"],
       "edit-plan.right-annotation-not-empty": ["command.payload_invalid"],
       "edit-plan.collection-limit-exceeded": ["command.payload_invalid"],
@@ -2162,6 +2172,17 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
         "identityPolicy",
         "measurePolicy",
       ],
+      splitMeasurePlan: [
+        "kind",
+        "measureId",
+        "beforeEventId",
+        "firstMeasureTotal",
+        "secondMeasureTotal",
+        "newMeasureCompletion",
+        "completionDeclarations",
+        "identityPolicy",
+        "eventPolicy",
+      ],
       joinSectionsPlan: [
         "kind",
         "leftSectionId",
@@ -2261,6 +2282,7 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
       fragmentEventIdentitySource: ["kind", "sourceEventOrdinal"],
       recoveredChordIdentitySource: ["kind", "selectedGlobalOrdinal"],
       splitEventSecondIdentitySource: ["kind", "sourceEventId"],
+      splitMeasureIdentitySource: ["kind", "sourceMeasureId"],
       removedIdentity: ["kind", "id"],
       diagnostic: [
         "code",
@@ -2681,6 +2703,8 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
         "preserve-node-identities-rewrite-source-section-end-to-suffix",
       joinSections:
         "preserve-measure-event-identities-map-internal-edge-to-first-measure-or-surviving-end",
+      splitMeasure:
+        "preserve-node-identities-rewrite-source-measure-end-to-suffix",
     });
     expect(A0_U1_ATOMIC_EDIT_OUTER_WORK_POLICY).toEqual({
       indexPassesByOutcome: {
@@ -2738,6 +2762,8 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
       splitSection:
         "commutes-with-spelling-preserving-transposition-of-affected-event-ids",
       joinSections:
+        "commutes-with-spelling-preserving-transposition-of-affected-event-ids",
+      splitMeasure:
         "commutes-with-spelling-preserving-transposition-of-affected-event-ids",
     });
     expect(A0_U1_ATOMIC_EDIT_PLAN_ID_ENTROPY_POLICY).toEqual({

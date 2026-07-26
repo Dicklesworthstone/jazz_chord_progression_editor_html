@@ -24,7 +24,8 @@
     "split-event-duration",
     "join-event-durations",
     "split-section",
-    "join-sections"
+    "join-sections",
+    "split-measure"
   ],
   "commandEnvelope": {
     "fieldsInOrder": [
@@ -172,6 +173,14 @@
       "measurePolicy": "left-then-right-preserve-identities",
       "metadataPolicy": "compare-both-then-apply-explicit-result",
       "internalBoundaryPolicy": "remove-right-entry-boundary-confirmed"
+    },
+    "splitMeasure": {
+      "survivor": "leading-original-measure",
+      "newMeasure": "trailing-fresh-id",
+      "eventIdentity": "preserved",
+      "resultCompletion": "explicit-declared-retained-row-and-explicit-new-measure-completion",
+      "identityPolicy": "retain-source-prefix-allocate-suffix",
+      "eventPolicy": "move-suffix-preserve-identities"
     }
   },
   "refusalCodes": [
@@ -185,6 +194,7 @@
     "edit-plan.destination-invalid",
     "edit-plan.event-order-invalid",
     "edit-plan.section-split-boundary-invalid",
+    "edit-plan.measure-split-boundary-invalid",
     "edit-plan.section-order-invalid",
     "edit-plan.recovered-chord-placement-invalid",
     "edit-plan.syntax-refused",
@@ -198,6 +208,7 @@
     "edit-plan.recovered-chord-duration-mismatch",
     "edit-plan.duration-invalid",
     "edit-plan.duration-sum-mismatch",
+    "edit-plan.measure-partition-mismatch",
     "edit-plan.event-content-mismatch",
     "edit-plan.right-annotation-not-empty",
     "edit-plan.collection-limit-exceeded",
@@ -260,6 +271,9 @@
     "edit-plan.section-split-boundary-invalid": [
       "command.destination_invalid"
     ],
+    "edit-plan.measure-split-boundary-invalid": [
+      "command.destination_invalid"
+    ],
     "edit-plan.section-order-invalid": [
       "command.destination_invalid"
     ],
@@ -297,6 +311,9 @@
       "command.payload_invalid"
     ],
     "edit-plan.duration-sum-mismatch": [
+      "command.payload_invalid"
+    ],
+    "edit-plan.measure-partition-mismatch": [
       "command.payload_invalid"
     ],
     "edit-plan.event-content-mismatch": [
@@ -339,6 +356,7 @@
     "edit-plan.destination-invalid",
     "edit-plan.event-order-invalid",
     "edit-plan.section-split-boundary-invalid",
+    "edit-plan.measure-split-boundary-invalid",
     "edit-plan.section-order-invalid",
     "edit-plan.recovered-chord-placement-invalid",
     "edit-plan.syntax-refused",
@@ -352,6 +370,7 @@
     "edit-plan.recovered-chord-duration-mismatch",
     "edit-plan.duration-invalid",
     "edit-plan.duration-sum-mismatch",
+    "edit-plan.measure-partition-mismatch",
     "edit-plan.event-content-mismatch",
     "edit-plan.right-annotation-not-empty",
     "edit-plan.collection-limit-exceeded",
@@ -458,6 +477,7 @@
       "fragment-events-in-source-order",
       "recovered-chord-selected-only",
       "split-event-second-only",
+      "split-measure-suffix-only",
       "split-section-suffix-only",
       "reserve-each-returned-id-locally",
       "stop-without-retry-on-first-failure-or-collision"
@@ -480,7 +500,8 @@
       "splitEventDuration": "preserve-original-selection-rewrite-original-span-end-to-second",
       "joinEventDurations": "replace-removed-right-selection-with-left-clear-unrepresentable-range",
       "splitSection": "preserve-node-identities-rewrite-source-section-end-to-suffix",
-      "joinSections": "preserve-measure-event-identities-map-internal-edge-to-first-measure-or-surviving-end"
+      "joinSections": "preserve-measure-event-identities-map-internal-edge-to-first-measure-or-surviving-end",
+      "splitMeasure": "preserve-node-identities-rewrite-source-measure-end-to-suffix"
     },
     "quickEntryTargetMatch": {
       "parentOwnership": "same-declared-parent-required",
@@ -546,20 +567,21 @@
     "A0-U1-ATOM-014-timeline-and-bounds-preserved",
     "A0-U1-ATOM-015-ids-preflight-preorder-honest-entropy",
     "A0-U1-ATOM-016-bookmarks-publication-history-atomic",
-    "A0-U1-ATOM-017-transposition-and-existing-a0-unchanged"
+    "A0-U1-ATOM-017-transposition-and-existing-a0-unchanged",
+    "A0-U1-ATOM-018-split-measure-partition-exact"
   ],
   "counts": {
     "files": 5,
     "commandKinds": 1,
-    "planKinds": 5,
-    "lawRows": 17,
-    "caseGroups": 50,
+    "planKinds": 6,
+    "lawRows": 18,
+    "caseGroups": 60,
     "literalTransitions": 149,
-    "applicabilityRows": 5,
-    "transpositionWitnesses": 5,
+    "applicabilityRows": 6,
+    "transpositionWitnesses": 6,
     "obligationRows": 24,
     "mutationControls": 30,
-    "traces": 6,
+    "traces": 7,
     "authorities": 6
   },
   "proofRequirements": {
