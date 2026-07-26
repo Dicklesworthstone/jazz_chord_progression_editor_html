@@ -1280,6 +1280,7 @@ test("the success matrix remains exactly the eight contract branches", () => {
     "join-event-durations",
     "split-section",
     "join-sections",
+    "split-measure",
   ]);
   expect(A0_U1_SECTION_A_METADATA).toEqual({
     name: "Head",

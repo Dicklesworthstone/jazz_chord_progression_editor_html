@@ -19,6 +19,7 @@ import {
   makeBeatDuration,
   type BeatDuration,
   type ChordEventId,
+  type MeasureCompletion,
   type MeasureId,
   type SectionId,
   type StableIdFactory,
@@ -43,6 +44,7 @@ export const A0_U1_SCENARIO_IDS = Object.freeze([
   "join-event-durations",
   "split-section",
   "join-sections",
+  "split-measure",
 ] as const);
 
 export type A0U1ScenarioId = (typeof A0_U1_SCENARIO_IDS)[number];
@@ -53,6 +55,7 @@ export const A0_U1_REPLAY_SCENARIO_IDS = Object.freeze([
   "join-event-durations",
   "split-section",
   "join-sections",
+  "split-measure",
 ] as const satisfies readonly A0U1ScenarioId[]);
 
 export const A0_U1_IDS = Object.freeze({
@@ -137,6 +140,28 @@ function exactDuration(numerator: number, denominator = 1): BeatDuration {
 
 const TWO_BEATS = exactDuration(2);
 const FOUR_BEATS = exactDuration(4);
+
+/**
+ * Splitting the two-beat pair measure at its second event leaves each side
+ * holding two beats of a four-beat bar, so neither side may keep the source
+ * measure's `complete` declaration. Both completions are caller-owned and
+ * explicit; nothing is inferred and no beat moves.
+ *
+ * F3 reads `expectedDuration` as the measure's own exact event sum, which must
+ * be positive and strictly short of the bar capacity — not as the capacity it
+ * falls short of. Each half therefore declares two beats.
+ */
+export const A0_U1_SPLIT_MEASURE_RETAINED_COMPLETION = Object.freeze({
+  kind: "incomplete",
+  expectedDuration: TWO_BEATS,
+  reason: "Retained half of the split bar",
+}) satisfies MeasureCompletion;
+
+export const A0_U1_SPLIT_MEASURE_SUFFIX_COMPLETION = Object.freeze({
+  kind: "incomplete",
+  expectedDuration: TWO_BEATS,
+  reason: "Suffix half of the split bar",
+}) satisfies MeasureCompletion;
 
 function mixedDocumentCandidate(): FixtureRecord {
   const root = a0Candidate();
@@ -692,6 +717,30 @@ function scenarioPlan(
         },
         allocationKinds: ["section"],
         allocatedWires: ["section-a0-u1-split-suffix"],
+      };
+    }
+    case "split-measure": {
+      const state = a0InitialState(document);
+      return {
+        state,
+        plan: {
+          kind: "split-measure",
+          measureId: A0_U1_IDS.measurePair,
+          beforeEventId: A0_U1_IDS.eventPairRight,
+          firstMeasureTotal: TWO_BEATS,
+          secondMeasureTotal: TWO_BEATS,
+          newMeasureCompletion: A0_U1_SPLIT_MEASURE_SUFFIX_COMPLETION,
+          completionDeclarations: [
+            {
+              measureId: A0_U1_IDS.measurePair,
+              completion: A0_U1_SPLIT_MEASURE_RETAINED_COMPLETION,
+            },
+          ],
+          identityPolicy: "retain-source-prefix-allocate-suffix",
+          eventPolicy: "move-suffix-preserve-identities",
+        },
+        allocationKinds: ["measure"],
+        allocatedWires: ["measure-a0-u1-split-suffix"],
       };
     }
     case "join-sections": {
