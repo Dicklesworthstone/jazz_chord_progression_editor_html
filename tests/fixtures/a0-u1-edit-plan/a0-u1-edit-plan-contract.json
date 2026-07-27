@@ -576,11 +576,11 @@
     "planKinds": 6,
     "lawRows": 18,
     "caseGroups": 60,
-    "literalTransitions": 149,
+    "literalTransitions": 172,
     "applicabilityRows": 6,
     "transpositionWitnesses": 6,
     "obligationRows": 24,
-    "mutationControls": 30,
+    "mutationControls": 35,
     "traces": 7,
     "authorities": 6
   },
@@ -613,9 +613,9 @@
     "existingAcceptedBehaviorChangedBySpecLeaf": false
   },
   "companionSha256": {
-    "edit-plan-cases.json": "32639e5c132a0bc22fe0a77574df256f44a9eae669e565b0247d09ecf8b7223a",
-    "mutation-controls.json": "5279bc75145b91f149849047deb535a915013b435f3985dd5a44e1af503e8b9c",
-    "provenance-ledger.json": "775bafdda2ab6e20ffa954a56578f6c4cc4dcc043c9bd8cd69a9b9153363e5d1",
-    "trace-ledger.json": "11bfd589ea6ce54cdbea1f8f96b372b9cb70dfdf0d85a003832b79b211e3c692"
+    "edit-plan-cases.json": "05e8bbbd9703fd8e65ed433796531b6c6731d9969c2e7f8a36a42d409613e6aa",
+    "mutation-controls.json": "d99d831e5c71f698ba4f01f3071b8e4a2dc92a077f887bfdf398b89b55e98361",
+    "provenance-ledger.json": "34eb896a3ec17afa71283ea629d62a41487cad387e14ba739ad462f793ce65ab",
+    "trace-ledger.json": "257228ba951c2bfe04493b67aebcf5fc0caa3f75782e2f24175ad34ca46c4349"
   }
 }

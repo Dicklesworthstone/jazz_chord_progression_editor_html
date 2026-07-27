@@ -24,7 +24,8 @@
         "A0-U1-ATOM-010-split-event-lossless-exact",
         "A0-U1-ATOM-011-join-events-left-inverse-exact",
         "A0-U1-ATOM-012-split-section-leading-survivor-exact",
-        "A0-U1-ATOM-013-join-sections-left-metadata-exact"
+        "A0-U1-ATOM-013-join-sections-left-metadata-exact",
+        "A0-U1-ATOM-018-split-measure-partition-exact"
       ],
       "caseIds": [
         "A0U1-INS-001",
@@ -692,6 +693,85 @@
         "mutation"
       ],
       "implementationOwner": "A0 application controller"
+    },
+    {
+      "id": "A0U1-TRACE-SPLIT-MEASURE",
+      "scope": "split-measure",
+      "requirement": "strict-interior bar split, exact caller-declared partition, retained-prefix suffix-allocation identities, declared completions, bookmarks, transposition, and history",
+      "lawIds": [
+        "A0-U1-ATOM-018-split-measure-partition-exact",
+        "A0-U1-ATOM-014-timeline-and-bounds-preserved",
+        "A0-U1-ATOM-015-ids-preflight-preorder-honest-entropy",
+        "A0-U1-ATOM-016-bookmarks-publication-history-atomic",
+        "A0-U1-ATOM-017-transposition-and-existing-a0-unchanged",
+        "A0-U1-ATOM-001-command-and-five-closed-variants",
+        "A0-U1-ATOM-009-completion-declarations-exact"
+      ],
+      "caseIds": [
+        "A0U1-SPLITM-001",
+        "A0U1-SPLITM-002",
+        "A0U1-SPLITM-003",
+        "A0U1-SPLITM-004",
+        "A0U1-SPLITM-005",
+        "A0U1-SPLITM-006",
+        "A0U1-SPLITM-007",
+        "A0U1-SPLITM-008",
+        "A0U1-SPLITM-009",
+        "A0U1-SPLITM-010"
+      ],
+      "transitionIds": [
+        "A0U1-SPLITM-001-APPLY",
+        "A0U1-SPLITM-001-UNDO",
+        "A0U1-SPLITM-001-REDO",
+        "A0U1-SPLITM-002-REFUSED",
+        "A0U1-SPLITM-003-REFUSED",
+        "A0U1-SPLITM-004-REFUSED",
+        "A0U1-SPLITM-003-WRONG-DOCUMENT",
+        "A0U1-SPLITM-003-STALE-REVISION",
+        "A0U1-SPLITM-004-EXTRA-PLAN-KEY",
+        "A0U1-SPLITM-004-FORBIDDEN-NESTEDPLAN",
+        "A0U1-SPLITM-004-FIRST-TOTAL-STRING",
+        "A0U1-SPLITM-004-COMPLETION-DURATION-NUMERATOR",
+        "A0U1-SPLITM-004-COMPLETION-DURATION-DENOMINATOR",
+        "A0U1-SPLITM-005-EXACT",
+        "A0U1-SPLITM-006-ROW-PLUS-ONE",
+        "A0U1-SPLITM-006-REASON-EXCESS",
+        "A0U1-SPLITM-006-METADATA-EXCESS",
+        "A0U1-SPLITM-007-APPLY",
+        "A0U1-SPLITM-008-COLLISION",
+        "A0U1-SPLITM-009-BASE",
+        "A0U1-SPLITM-009-TRANSPOSED",
+        "A0U1-SPLITM-010-BASE",
+        "A0U1-SPLITM-010-KILLER"
+      ],
+      "controlIds": [
+        "A0U1-MUT-031",
+        "A0U1-MUT-032",
+        "A0U1-MUT-033",
+        "A0U1-MUT-034",
+        "A0U1-MUT-035"
+      ],
+      "authorityIds": [
+        "A0U1-AUTH-A0",
+        "A0U1-AUTH-T0",
+        "A0U1-AUTH-DOMAIN",
+        "A0U1-AUTH-F2-F3",
+        "A0U1-AUTH-U1",
+        "A0U1-AUTH-VERIFICATION"
+      ],
+      "proofKinds": [
+        "positive",
+        "negative-near-miss",
+        "stale-wrong-document",
+        "malformed-exact-shape",
+        "exact-boundary",
+        "plus-one",
+        "undo-redo",
+        "collision-allocation",
+        "transposition-applicability",
+        "mutation"
+      ],
+      "implementationOwner": "A0 application controller"
     }
   ],
   "lawCoverage": [
@@ -781,7 +861,18 @@
         "A0U1-JOINS-011-INVALID-SURROGATE-LAST",
         "A0U1-JOINS-011-MALFORMED-FIRST-EXTRA",
         "A0U1-JOINS-011-EXACT-8768",
-        "A0U1-JOINS-011-FIRST-EXCESS-8769"
+        "A0U1-JOINS-011-FIRST-EXCESS-8769",
+        "A0U1-SPLITM-003-WRONG-DOCUMENT",
+        "A0U1-SPLITM-003-STALE-REVISION",
+        "A0U1-SPLITM-004-EXTRA-PLAN-KEY",
+        "A0U1-SPLITM-004-FORBIDDEN-NESTEDPLAN",
+        "A0U1-SPLITM-004-FIRST-TOTAL-STRING",
+        "A0U1-SPLITM-004-COMPLETION-DURATION-NUMERATOR",
+        "A0U1-SPLITM-004-COMPLETION-DURATION-DENOMINATOR",
+        "A0U1-SPLITM-006-ROW-PLUS-ONE",
+        "A0U1-SPLITM-006-REASON-EXCESS",
+        "A0U1-SPLITM-006-METADATA-EXCESS",
+        "A0U1-SPLITM-010-KILLER"
       ],
       "boundaryTransitionIds": [
         "A0U1-INS-008-PLUS-ONE",
@@ -819,7 +910,8 @@
         "A0U1-TRACE-SPLIT-EVENT-DURATION",
         "A0U1-TRACE-JOIN-EVENT-DURATIONS",
         "A0U1-TRACE-SPLIT-SECTION",
-        "A0U1-TRACE-JOIN-SECTIONS"
+        "A0U1-TRACE-JOIN-SECTIONS",
+        "A0U1-TRACE-SPLIT-MEASURE"
       ],
       "authorityIds": [
         "A0U1-AUTH-A0",
@@ -1192,7 +1284,8 @@
         "A0U1-TRACE-SPLIT-EVENT-DURATION",
         "A0U1-TRACE-JOIN-EVENT-DURATIONS",
         "A0U1-TRACE-SPLIT-SECTION",
-        "A0U1-TRACE-JOIN-SECTIONS"
+        "A0U1-TRACE-JOIN-SECTIONS",
+        "A0U1-TRACE-SPLIT-MEASURE"
       ],
       "authorityIds": [
         "A0U1-AUTH-A0",
@@ -1421,7 +1514,13 @@
         "A0U1-JOINS-008-HOSTILE-FACTORY-UNUSED",
         "A0U1-INS-009-BASE",
         "A0U1-INS-005-COLLECTION-EXACT",
-        "A0U1-INS-011-NULL-APPLY"
+        "A0U1-INS-011-NULL-APPLY",
+        "A0U1-SPLITM-001-APPLY",
+        "A0U1-SPLITM-005-EXACT",
+        "A0U1-SPLITM-007-APPLY",
+        "A0U1-SPLITM-009-BASE",
+        "A0U1-SPLITM-009-TRANSPOSED",
+        "A0U1-SPLITM-010-BASE"
       ],
       "negativeOrNearMissTransitionIds": [
         "A0U1-INS-005-CALLER-REFUSED",
@@ -1465,7 +1564,8 @@
         "A0U1-TRACE-SPLIT-EVENT-DURATION",
         "A0U1-TRACE-JOIN-EVENT-DURATIONS",
         "A0U1-TRACE-SPLIT-SECTION",
-        "A0U1-TRACE-JOIN-SECTIONS"
+        "A0U1-TRACE-JOIN-SECTIONS",
+        "A0U1-TRACE-SPLIT-MEASURE"
       ],
       "authorityIds": [
         "A0U1-AUTH-A0",
@@ -1497,7 +1597,13 @@
         "A0U1-INS-001-INTO-MEASURE",
         "A0U1-INS-001-INTO-DOCUMENT",
         "A0U1-INS-005-COLLECTION-EXACT",
-        "A0U1-INS-011-NULL-APPLY"
+        "A0U1-INS-011-NULL-APPLY",
+        "A0U1-SPLITM-001-APPLY",
+        "A0U1-SPLITM-005-EXACT",
+        "A0U1-SPLITM-007-APPLY",
+        "A0U1-SPLITM-009-BASE",
+        "A0U1-SPLITM-009-TRANSPOSED",
+        "A0U1-SPLITM-010-BASE"
       ],
       "negativeOrNearMissTransitionIds": [
         "A0U1-INS-003-REFUSED",
@@ -1519,7 +1625,8 @@
         "A0U1-INS-008-DOCUMENT-COLLISION-4",
         "A0U1-INS-008-DOCUMENT-COLLISION-5",
         "A0U1-SPLITD-008-FACTORY-0",
-        "A0U1-SPLITS-008-FACTORY-0"
+        "A0U1-SPLITS-008-FACTORY-0",
+        "A0U1-SPLITM-008-COLLISION"
       ],
       "boundaryTransitionIds": [
         "A0U1-INS-007-BOUNDARY",
@@ -1545,7 +1652,8 @@
         "A0U1-TRACE-SPLIT-EVENT-DURATION",
         "A0U1-TRACE-JOIN-EVENT-DURATIONS",
         "A0U1-TRACE-SPLIT-SECTION",
-        "A0U1-TRACE-JOIN-SECTIONS"
+        "A0U1-TRACE-JOIN-SECTIONS",
+        "A0U1-TRACE-SPLIT-MEASURE"
       ],
       "authorityIds": [
         "A0U1-AUTH-A0",
@@ -1584,7 +1692,13 @@
         "A0U1-INS-001-WARNING-ACKNOWLEDGED",
         "A0U1-INS-001-INTO-DOCUMENT",
         "A0U1-INS-005-COLLECTION-EXACT",
-        "A0U1-INS-011-NULL-APPLY"
+        "A0U1-INS-011-NULL-APPLY",
+        "A0U1-SPLITM-001-APPLY",
+        "A0U1-SPLITM-005-EXACT",
+        "A0U1-SPLITM-007-APPLY",
+        "A0U1-SPLITM-009-BASE",
+        "A0U1-SPLITM-009-TRANSPOSED",
+        "A0U1-SPLITM-010-BASE"
       ],
       "negativeOrNearMissTransitionIds": [
         "A0U1-INS-009-COLLISION",
@@ -1637,7 +1751,9 @@
         "A0U1-INS-002-F3-REFUSED",
         "A0U1-INS-002-HISTORY-REFUSED",
         "A0U1-INS-013-DUP-COUNT",
-        "A0U1-INS-013-DUP-ORDER"
+        "A0U1-INS-013-DUP-ORDER",
+        "A0U1-SPLITM-003-WRONG-DOCUMENT",
+        "A0U1-SPLITM-003-STALE-REVISION"
       ],
       "boundaryTransitionIds": [
         "A0U1-INS-007-BOUNDARY",
@@ -1666,7 +1782,8 @@
         "A0U1-TRACE-SPLIT-EVENT-DURATION",
         "A0U1-TRACE-JOIN-EVENT-DURATIONS",
         "A0U1-TRACE-SPLIT-SECTION",
-        "A0U1-TRACE-JOIN-SECTIONS"
+        "A0U1-TRACE-JOIN-SECTIONS",
+        "A0U1-TRACE-SPLIT-MEASURE"
       ],
       "authorityIds": [
         "A0U1-AUTH-A0",
@@ -1702,7 +1819,13 @@
         "A0U1-JOIND-008-HOSTILE-FACTORY-UNUSED",
         "A0U1-JOINS-008-HOSTILE-FACTORY-UNUSED",
         "A0U1-INS-009-BASE",
-        "A0U1-INS-011-NULL-APPLY"
+        "A0U1-INS-011-NULL-APPLY",
+        "A0U1-SPLITM-001-APPLY",
+        "A0U1-SPLITM-005-EXACT",
+        "A0U1-SPLITM-007-APPLY",
+        "A0U1-SPLITM-009-BASE",
+        "A0U1-SPLITM-009-TRANSPOSED",
+        "A0U1-SPLITM-010-BASE"
       ],
       "negativeOrNearMissTransitionIds": [
         "A0U1-INS-003-REFUSED"
@@ -1729,7 +1852,63 @@
         "A0U1-TRACE-SPLIT-EVENT-DURATION",
         "A0U1-TRACE-JOIN-EVENT-DURATIONS",
         "A0U1-TRACE-SPLIT-SECTION",
-        "A0U1-TRACE-JOIN-SECTIONS"
+        "A0U1-TRACE-JOIN-SECTIONS",
+        "A0U1-TRACE-SPLIT-MEASURE"
+      ],
+      "authorityIds": [
+        "A0U1-AUTH-A0",
+        "A0U1-AUTH-T0",
+        "A0U1-AUTH-DOMAIN",
+        "A0U1-AUTH-F2-F3",
+        "A0U1-AUTH-U1",
+        "A0U1-AUTH-VERIFICATION"
+      ]
+    },
+    {
+      "lawId": "A0-U1-ATOM-018-split-measure-partition-exact",
+      "requirement": "A split-measure command either refuses, or produces exactly two measures whose declared totals are the exact rational sums of their own events, whose union preserves every event identity, value, and order, and whose combined total equals the source measure's total.",
+      "positiveTransitionIds": [
+        "A0U1-SPLITM-001-APPLY",
+        "A0U1-SPLITM-005-EXACT",
+        "A0U1-SPLITM-007-APPLY",
+        "A0U1-SPLITM-009-BASE",
+        "A0U1-SPLITM-009-TRANSPOSED",
+        "A0U1-SPLITM-010-BASE"
+      ],
+      "negativeOrNearMissTransitionIds": [
+        "A0U1-SPLITM-002-REFUSED",
+        "A0U1-SPLITM-003-REFUSED",
+        "A0U1-SPLITM-004-REFUSED",
+        "A0U1-SPLITM-010-KILLER",
+        "A0U1-SPLITM-003-WRONG-DOCUMENT",
+        "A0U1-SPLITM-003-STALE-REVISION",
+        "A0U1-SPLITM-004-EXTRA-PLAN-KEY",
+        "A0U1-SPLITM-004-FORBIDDEN-NESTEDPLAN",
+        "A0U1-SPLITM-004-FIRST-TOTAL-STRING",
+        "A0U1-SPLITM-004-COMPLETION-DURATION-NUMERATOR",
+        "A0U1-SPLITM-004-COMPLETION-DURATION-DENOMINATOR",
+        "A0U1-SPLITM-006-ROW-PLUS-ONE",
+        "A0U1-SPLITM-006-REASON-EXCESS",
+        "A0U1-SPLITM-006-METADATA-EXCESS",
+        "A0U1-SPLITM-008-COLLISION"
+      ],
+      "boundaryTransitionIds": [
+        "A0U1-SPLITM-005-EXACT",
+        "A0U1-SPLITM-006-ROW-PLUS-ONE"
+      ],
+      "applicabilityRowIds": [
+        "A0U1-APP-SPLITM"
+      ],
+      "mutationControlIds": [
+        "A0U1-MUT-031",
+        "A0U1-MUT-032",
+        "A0U1-MUT-033",
+        "A0U1-MUT-034",
+        "A0U1-MUT-035"
+      ],
+      "traceIds": [
+        "A0U1-TRACE-PIPELINE",
+        "A0U1-TRACE-SPLIT-MEASURE"
       ],
       "authorityIds": [
         "A0U1-AUTH-A0",

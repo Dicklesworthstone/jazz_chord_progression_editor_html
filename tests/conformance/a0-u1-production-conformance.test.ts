@@ -215,7 +215,7 @@ const transitionIds = Object.keys(transitionsBucket).sort();
 
 describe("A0/U1 production conformance against the accepted literal packet", () => {
   test("the packet exposes the complete reviewed transition inventory", () => {
-    expect(transitionIds).toHaveLength(149);
+    expect(transitionIds).toHaveLength(172);
   });
 
   for (const transitionId of transitionIds) {

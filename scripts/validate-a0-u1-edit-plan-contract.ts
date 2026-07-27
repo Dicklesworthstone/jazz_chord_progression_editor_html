@@ -170,32 +170,32 @@ export const A0_U1_EDIT_PLAN_SPEC_BYTE_DIGESTS: Readonly<
   Record<SpecFilename, string>
 > = Object.freeze({
   "a0-u1-edit-plan-contract.json":
-    "47098e85e4090dbf668535babb2633a689b2112b59a58059744ff75e226f96b6",
+    "62ec6105ca3e246b9eb15bcfb8e42fc623b021cac79adcb78249286414bb0c89",
   "edit-plan-cases.json":
-    "32639e5c132a0bc22fe0a77574df256f44a9eae669e565b0247d09ecf8b7223a",
+    "05e8bbbd9703fd8e65ed433796531b6c6731d9969c2e7f8a36a42d409613e6aa",
   "mutation-controls.json":
-    "5279bc75145b91f149849047deb535a915013b435f3985dd5a44e1af503e8b9c",
+    "d99d831e5c71f698ba4f01f3071b8e4a2dc92a077f887bfdf398b89b55e98361",
   "provenance-ledger.json":
-    "775bafdda2ab6e20ffa954a56578f6c4cc4dcc043c9bd8cd69a9b9153363e5d1",
+    "34eb896a3ec17afa71283ea629d62a41487cad387e14ba739ad462f793ce65ab",
   "trace-ledger.json":
-    "11bfd589ea6ce54cdbea1f8f96b372b9cb70dfdf0d85a003832b79b211e3c692",
+    "257228ba951c2bfe04493b67aebcf5fc0caa3f75782e2f24175ad34ca46c4349",
 });
 
 export const A0_U1_EDIT_PLAN_SPEC_SEMANTIC_DIGEST =
-  "fed0a7f818b16c82956c01d23c4d6a7eddb39dbf2827ebd240ebf82341a5d8c8";
+  "0f07f99bcf1b774b8fa4c4045eb193a3771bdffd8939dcf86c2d1455d16fe9b3";
 
 const EXPECTED_COUNTS = Object.freeze({
   files: 5,
   commandKinds: 1,
-  planKinds: 5,
-  lawRows: 17,
-  caseGroups: 50,
-  literalTransitions: 149,
-  applicabilityRows: 5,
-  transpositionWitnesses: 5,
+  planKinds: 6,
+  lawRows: 18,
+  caseGroups: 60,
+  literalTransitions: 172,
+  applicabilityRows: 6,
+  transpositionWitnesses: 6,
   obligationRows: 24,
-  mutationControls: 30,
-  traces: 6,
+  mutationControls: 35,
+  traces: 7,
   authorities: 6,
 });
 
@@ -904,6 +904,11 @@ const EXPECTED_MUTATION_CATEGORIES = Object.freeze([
   "join-section-metadata-policy",
   "join-section-snapshot",
   "join-section-result-metadata",
+  "split-measure-boundary",
+  "split-measure-partition-total",
+  "split-measure-noncanonical-total",
+  "split-measure-metadata-reason",
+  "split-measure-event-policy",
 ] as const);
 
 const EXPECTED_MUTATION_REFUSALS: Readonly<
@@ -1029,6 +1034,26 @@ const EXPECTED_MUTATION_REFUSALS: Readonly<
     nested: "edit-plan.section-metadata-mismatch",
   }),
   "join-section-result-metadata": Object.freeze({
+    outer: "command.payload_invalid",
+    nested: "edit-plan.plan-shape-invalid",
+  }),
+  "split-measure-boundary": Object.freeze({
+    outer: "command.destination_invalid",
+    nested: "edit-plan.measure-split-boundary-invalid",
+  }),
+  "split-measure-partition-total": Object.freeze({
+    outer: "command.payload_invalid",
+    nested: "edit-plan.measure-partition-mismatch",
+  }),
+  "split-measure-noncanonical-total": Object.freeze({
+    outer: "command.payload_invalid",
+    nested: "edit-plan.measure-partition-mismatch",
+  }),
+  "split-measure-metadata-reason": Object.freeze({
+    outer: "command.payload_invalid",
+    nested: "edit-plan.plan-shape-invalid",
+  }),
+  "split-measure-event-policy": Object.freeze({
     outer: "command.payload_invalid",
     nested: "edit-plan.plan-shape-invalid",
   }),
@@ -1194,6 +1219,31 @@ const EXPECTED_MUTATION_TARGETS: Readonly<
     operation: "join-sections",
     materialization: "command",
     jsonPointer: "/plan/resultMetadata/name",
+  },
+  "split-measure-boundary": {
+    operation: "split-measure",
+    materialization: "command",
+    jsonPointer: "/plan/beforeEventId",
+  },
+  "split-measure-partition-total": {
+    operation: "split-measure",
+    materialization: "command",
+    jsonPointer: "/plan/firstMeasureTotal/numerator",
+  },
+  "split-measure-noncanonical-total": {
+    operation: "split-measure",
+    materialization: "command",
+    jsonPointer: "/plan/firstMeasureTotal/denominator",
+  },
+  "split-measure-metadata-reason": {
+    operation: "split-measure",
+    materialization: "command",
+    jsonPointer: "/plan/newMeasureCompletion/reason",
+  },
+  "split-measure-event-policy": {
+    operation: "split-measure",
+    materialization: "command",
+    jsonPointer: "/plan/eventPolicy",
   },
 });
 
@@ -2600,6 +2650,43 @@ function buildCandidateOracle(
     leftMeasures.push(...rightMeasures);
     sections.splice(right.index, 1);
     removedIdentities.push({ kind: "section", id: plan["rightSectionId"] });
+  } else if (plan["kind"] === "split-measure") {
+    /*
+     * Section 21: split-section one level down. The retained measure keeps
+     * the source ID and takes the caller's declared completion; the suffix
+     * takes the moved events with their exact identities plus the explicit
+     * newMeasureCompletion; exactly one measure ID is allocated.
+     */
+    const source = findMeasureLocation(document, plan["measureId"]);
+    const measureId = allocate("measure", {
+      kind: "split-measure-suffix",
+      sourceMeasureId: plan["measureId"],
+    });
+    if (source === null || measureId === null) return null;
+    const sections = mutableSections(document);
+    const owner = sections[source.sectionIndex];
+    if (owner === undefined || !Array.isArray(owner["measures"])) return null;
+    const ownerMeasures: unknown[] = owner["measures"];
+    const retained: unknown = ownerMeasures[source.measureIndex];
+    if (!isObject(retained) || !Array.isArray(retained["events"])) {
+      return null;
+    }
+    const splitIndex = retained["events"].findIndex(
+      (event) => isObject(event) && event["id"] === plan["beforeEventId"],
+    );
+    if (splitIndex <= 0 || splitIndex >= retained["events"].length) {
+      return null;
+    }
+    const suffixEvents = retained["events"].splice(splitIndex);
+    const declarations = recordsAt(plan["completionDeclarations"]);
+    const declaredCompletion = declarations[0]?.["completion"];
+    if (declaredCompletion === undefined) return null;
+    retained["completion"] = cloneJson(declaredCompletion);
+    owner["measures"].splice(source.measureIndex + 1, 0, {
+      id: measureId,
+      events: suffixEvents,
+      completion: cloneJson(plan["newMeasureCompletion"]),
+    });
   } else {
     return null;
   }
@@ -2962,12 +3049,43 @@ function validateBookmarkOracle(
       }
       return cloneJson(boundary);
     };
+  } else if (plan["kind"] === "split-measure") {
+    /*
+     * Section 21.5: every event identity survives, so only the two
+     * boundaries that denoted the end of the complete source measure move —
+     * to where that musical point now is, the end of the suffix.
+     */
+    operationPolicy = A0_U1_ATOMIC_EDIT_PLAN_BOOKMARK_POLICIES.splitMeasure;
+    const suffix = candidate.allocatedIdentities.find(
+      (row) => row["kind"] === "measure",
+    );
+    if (suffix !== undefined) {
+      mapBoundary = (boundary): JsonObject => {
+        if (
+          jsonDeepEqual(boundary, {
+            kind: "after-measure",
+            measureId: plan["measureId"],
+          })
+        ) {
+          return { kind: "after-measure", measureId: suffix["id"] };
+        }
+        if (
+          jsonDeepEqual(boundary, {
+            kind: "measure-end",
+            measureId: plan["measureId"],
+          })
+        ) {
+          return { kind: "measure-end", measureId: suffix["id"] };
+        }
+        return cloneJson(boundary);
+      };
+    }
   } else {
     addFinding(
       findings,
       "EDIT_PLAN_BOOKMARK_OPERATION",
       `${path}.command.plan.kind`,
-      "Bookmark oracle requires one of the five closed edit-plan operations.",
+      "Bookmark oracle requires one of the six closed edit-plan operations.",
     );
   }
 
@@ -3094,6 +3212,16 @@ function validateBookmarkOracle(
         "selection-focus-event",
         "non-chart-insertion-target",
         "chart",
+      ],
+      /*
+       * Split-measure preserves every event identity, so focus behaves as
+       * split-section's does: the selection's focus event when one exists,
+       * else the non-chart insertion target, else the fresh structural ref.
+       */
+      "split-measure": [
+        "selection-focus-event",
+        "non-chart-insertion-target",
+        "first-inserted-structural-ref",
       ],
     };
   if (
@@ -3852,6 +3980,7 @@ function expectedTimelineDisposition(plan: JsonObject): string | null {
       return "replace-two-equal-content-spans-with-one-exact-sum-span";
     case "split-section":
     case "join-sections":
+    case "split-measure":
       return "preserve-flattened-event-order-and-durations";
     default:
       return null;
@@ -3868,6 +3997,8 @@ function expectedSurvivorId(plan: JsonObject): unknown {
       return plan["sectionId"];
     case "join-sections":
       return plan["leftSectionId"];
+    case "split-measure":
+      return plan["measureId"];
     default:
       return null;
   }
@@ -4439,42 +4570,57 @@ function firstCompletionShapeFailure(
     if (!isObject(declaration) || !isStableId(declaration["measureId"])) {
       return [...rowPath, "measureId"];
     }
-    const completion = declaration["completion"];
-    if (!isObject(completion)) return [...rowPath, "completion"];
-    const kindProperty = ownEnumerableDataProperty(completion, "kind");
-    if (typeof kindProperty?.value !== "string") {
-      return [...rowPath, "completion", "kind"];
-    }
-    const kind = kindProperty.value;
-    const completionKeys =
-      kind === "empty" || kind === "complete"
-        ? ["kind"]
-        : kind === "pickup" || kind === "incomplete"
-          ? ["kind", "expectedDuration", "reason"]
-          : null;
-    if (completionKeys === null) return [...rowPath, "completion", "kind"];
-    const completionPath = [...rowPath, "completion"];
-    const completionKeyFailure = firstExactKeyFailure(
-      completion,
-      completionKeys,
-      completionPath,
+    const completionFailure = firstSingleCompletionShapeFailure(
+      declaration["completion"],
+      [...rowPath, "completion"],
     );
-    if (completionKeyFailure !== null) return completionKeyFailure;
-    if (kind === "pickup" || kind === "incomplete") {
-      const durationFailure = firstDurationShapeFailure(
-        completion["expectedDuration"],
-        [...completionPath, "expectedDuration"],
-      );
-      if (durationFailure !== null) return durationFailure;
-      const reason = completion["reason"];
-      if (
-        typeof reason !== "string" ||
-        !isUnicodeScalarString(reason) ||
-        codePointLength(reason) > MAX_LONG_TEXT_CODE_POINTS ||
-        reason.trim().length === 0
-      ) {
-        return [...completionPath, "reason"];
-      }
+    if (completionFailure !== null) return completionFailure;
+  }
+  return null;
+}
+
+/**
+ * One completion object's exact shape — shared by declaration rows and the
+ * split-measure plan's own `newMeasureCompletion`, whose expectedDuration
+ * pointers are the two templates section 21.7 added to the path authority.
+ */
+function firstSingleCompletionShapeFailure(
+  completion: unknown,
+  completionPath: readonly (string | number)[],
+): readonly (string | number)[] | null {
+  if (!isObject(completion)) return completionPath;
+  const kindProperty = ownEnumerableDataProperty(completion, "kind");
+  if (typeof kindProperty?.value !== "string") {
+    return [...completionPath, "kind"];
+  }
+  const kind = kindProperty.value;
+  const completionKeys =
+    kind === "empty" || kind === "complete"
+      ? ["kind"]
+      : kind === "pickup" || kind === "incomplete"
+        ? ["kind", "expectedDuration", "reason"]
+        : null;
+  if (completionKeys === null) return [...completionPath, "kind"];
+  const completionKeyFailure = firstExactKeyFailure(
+    completion,
+    completionKeys,
+    completionPath,
+  );
+  if (completionKeyFailure !== null) return completionKeyFailure;
+  if (kind === "pickup" || kind === "incomplete") {
+    const durationFailure = firstDurationShapeFailure(
+      completion["expectedDuration"],
+      [...completionPath, "expectedDuration"],
+    );
+    if (durationFailure !== null) return durationFailure;
+    const reason = completion["reason"];
+    if (
+      typeof reason !== "string" ||
+      !isUnicodeScalarString(reason) ||
+      codePointLength(reason) > MAX_LONG_TEXT_CODE_POINTS ||
+      reason.trim().length === 0
+    ) {
+      return [...completionPath, "reason"];
     }
   }
   return null;
@@ -4965,6 +5111,61 @@ function firstPlanShapeFailure(
         ? null
         : ["plan", "internalBoundaryPolicy"];
     }
+    case "split-measure": {
+      const keyFailure = firstExactKeyFailure(
+        plan,
+        [
+          "kind",
+          "measureId",
+          "beforeEventId",
+          "firstMeasureTotal",
+          "secondMeasureTotal",
+          "newMeasureCompletion",
+          "completionDeclarations",
+          "identityPolicy",
+          "eventPolicy",
+        ],
+        ["plan"],
+      );
+      if (keyFailure !== null) return keyFailure;
+      if (!isStableId(plan["measureId"])) return ["plan", "measureId"];
+      if (!isStableId(plan["beforeEventId"])) {
+        return ["plan", "beforeEventId"];
+      }
+      /*
+       * The two totals are shape-checked as durations only; positivity and
+       * canonical reduction refuse later as measure-partition-mismatch at
+       * their own pointers (section 21.7 refinement 2), never as
+       * duration-invalid.
+       */
+      const firstTotalFailure = firstDurationShapeFailure(
+        plan["firstMeasureTotal"],
+        ["plan", "firstMeasureTotal"],
+      );
+      if (firstTotalFailure !== null) return firstTotalFailure;
+      const secondTotalFailure = firstDurationShapeFailure(
+        plan["secondMeasureTotal"],
+        ["plan", "secondMeasureTotal"],
+      );
+      if (secondTotalFailure !== null) return secondTotalFailure;
+      const newCompletionFailure = firstSingleCompletionShapeFailure(
+        plan["newMeasureCompletion"],
+        ["plan", "newMeasureCompletion"],
+      );
+      if (newCompletionFailure !== null) return newCompletionFailure;
+      const completionFailure = firstCompletionShapeFailure(
+        plan["completionDeclarations"],
+        ["plan", "completionDeclarations"],
+        1,
+      );
+      if (completionFailure !== null) return completionFailure;
+      if (plan["identityPolicy"] !== "retain-source-prefix-allocate-suffix") {
+        return ["plan", "identityPolicy"];
+      }
+      return plan["eventPolicy"] === "move-suffix-preserve-identities"
+        ? null
+        : ["plan", "eventPolicy"];
+    }
     default:
       return ["plan", "kind"];
   }
@@ -5221,11 +5422,16 @@ function firstMissingTarget(
           ? ["sectionId", "beforeMeasureId"]
           : plan["kind"] === "join-sections"
             ? ["leftSectionId", "rightSectionId"]
-            : [];
+            : plan["kind"] === "split-measure"
+              ? // The boundary event is deliberately absent here: section 21.2
+                // makes a missing beforeEventId a boundary refusal at its own
+                // pointer, never a target-missing.
+                ["measureId"]
+              : [];
   for (const field of fields) {
     const idField = ["eventId", "leftEventId", "rightEventId"].includes(field)
       ? "eventId"
-      : field === "beforeMeasureId"
+      : field === "beforeMeasureId" || field === "measureId"
         ? "measureId"
         : "sectionId";
     if (!idExistsForField(document, idField, plan[field])) {
@@ -5276,6 +5482,22 @@ function expectedCompletionDeclarations(
             completion: location.measure["completion"],
           },
         ];
+  }
+  if (plan["kind"] === "split-measure") {
+    /*
+     * Section 21.7 refinement 3: the single row is checked for the retained
+     * measure's ID only. Its completion value is caller-owned — the retained
+     * measure holds fewer beats after the split, so the old completion is
+     * exactly the value that must not be carried forward silently. This
+     * mirrors the recovered-chord lane, not the split/join-event lanes.
+     */
+    const observed = recordsAt(plan["completionDeclarations"]);
+    return [
+      {
+        measureId: plan["measureId"],
+        completion: observed[0]?.["completion"],
+      },
+    ];
   }
   return [];
 }
@@ -5800,6 +6022,75 @@ function deriveCausalRefusal(
         f2Ok: false,
         f3Ok: false,
       };
+    }
+  }
+  if (plan["kind"] === "split-measure") {
+    /*
+     * Section 21.2: the boundary must be strict interior, and both declared
+     * totals must be canonical positive durations equal to the exact rational
+     * sums of their own events (21.7 refinement 2 routes a non-canonical
+     * total here, at its own pointer, never to duration-invalid).
+     */
+    const location = findMeasureLocation(before["document"], plan["measureId"]);
+    const events =
+      location === null ? [] : recordsAt(location.measure["events"]);
+    const boundaryIndex = events.findIndex(
+      (event) => event["id"] === plan["beforeEventId"],
+    );
+    if (location === null || boundaryIndex <= 0) {
+      return {
+        refusal: {
+          code: "edit-plan.measure-split-boundary-invalid",
+          path: ["plan", "beforeEventId"],
+        },
+        candidate: null,
+        f2Ok: false,
+        f3Ok: false,
+      };
+    }
+    const zero: ExactRational = Object.freeze({
+      numerator: 0n,
+      denominator: 1n,
+    });
+    const sumOf = (rows: readonly JsonObject[]): ExactRational =>
+      rows.reduce<ExactRational>(
+        (total, event) =>
+          addRationals(
+            total,
+            durationRational(event["duration"]) ?? zero,
+          ),
+        zero,
+      );
+    for (const [field, slice] of [
+      ["firstMeasureTotal", events.slice(0, boundaryIndex)],
+      ["secondMeasureTotal", events.slice(boundaryIndex)],
+    ] as const) {
+      const declaredValue = plan[field];
+      const declared = durationRational(declaredValue);
+      const canonical =
+        declared !== null &&
+        isObject(declaredValue) &&
+        typeof declaredValue["numerator"] === "number" &&
+        typeof declaredValue["denominator"] === "number" &&
+        declared.numerator > 0n &&
+        BigInt(declaredValue["numerator"]) === declared.numerator &&
+        BigInt(declaredValue["denominator"]) === declared.denominator;
+      const expectedTotal = sumOf(slice);
+      if (
+        !canonical ||
+        declared.numerator !== expectedTotal.numerator ||
+        declared.denominator !== expectedTotal.denominator
+      ) {
+        return {
+          refusal: {
+            code: "edit-plan.measure-partition-mismatch",
+            path: ["plan", field],
+          },
+          candidate: null,
+          f2Ok: false,
+          f3Ok: false,
+        };
+      }
     }
   }
   if (
@@ -6426,6 +6717,23 @@ function boundaryMapperForWork(
       return cloneJson(boundary);
     };
   }
+  if (plan["kind"] === "split-measure") {
+    // Section 21.5: only the complete-source-measure-end boundaries move.
+    const fresh = candidate.allocatedIdentities.find(
+      (row) => row["kind"] === "measure",
+    );
+    return (boundary) => {
+      if (
+        fresh !== undefined &&
+        boundary["measureId"] === plan["measureId"] &&
+        (boundary["kind"] === "after-measure" ||
+          boundary["kind"] === "measure-end")
+      ) {
+        return { kind: boundary["kind"], measureId: fresh["id"] };
+      }
+      return cloneJson(boundary);
+    };
+  }
   return (boundary) => cloneJson(boundary);
 }
 
@@ -6736,19 +7044,31 @@ function metadataWorkThroughPath(
                 "identityPolicy",
                 "measurePolicy",
               ]
-            : [
-                "kind",
-                "leftSectionId",
-                "rightSectionId",
-                "expectedLeftMetadata",
-                "expectedRightMetadata",
-                "resultMetadata",
-                "completionDeclarations",
-                "identityPolicy",
-                "measurePolicy",
-                "metadataPolicy",
-                "internalBoundaryPolicy",
-              ];
+            : plan["kind"] === "split-measure"
+              ? [
+                  "kind",
+                  "measureId",
+                  "beforeEventId",
+                  "firstMeasureTotal",
+                  "secondMeasureTotal",
+                  "newMeasureCompletion",
+                  "completionDeclarations",
+                  "identityPolicy",
+                  "eventPolicy",
+                ]
+              : [
+                  "kind",
+                  "leftSectionId",
+                  "rightSectionId",
+                  "expectedLeftMetadata",
+                  "expectedRightMetadata",
+                  "resultMetadata",
+                  "completionDeclarations",
+                  "identityPolicy",
+                  "measurePolicy",
+                  "metadataPolicy",
+                  "internalBoundaryPolicy",
+                ];
   const stopTop = typeof stopPath?.[1] === "string" ? stopPath[1] : null;
   const stopTopIndex =
     stopTop === null
@@ -6800,6 +7120,35 @@ function metadataWorkThroughPath(
       }
       if (stopField === field) {
         return { fieldsCompared, codePointsObserved };
+      }
+    }
+  }
+  /*
+   * Split-measure declares no section metadata, but the fresh suffix
+   * measure's own completion reason is caller-owned text scanned before the
+   * declaration tuple; a stop path at that reason means the scan already
+   * happened and its observed code points are physical work.
+   */
+  if (plan["kind"] === "split-measure") {
+    const rootIndex = topLevelOrder.indexOf("newMeasureCompletion");
+    const stoppedInside = stopTop === "newMeasureCompletion";
+    const reasonReached =
+      stopTopIndex >= rootIndex &&
+      (!stoppedInside || stopPath?.includes("reason") === true);
+    if (reasonReached) {
+      const completion = isObject(plan["newMeasureCompletion"])
+        ? plan["newMeasureCompletion"]
+        : null;
+      const completionKind = completion?.["kind"];
+      const reason = completion?.["reason"];
+      if (
+        (completionKind === "pickup" || completionKind === "incomplete") &&
+        typeof reason === "string"
+      ) {
+        codePointsObserved += Math.min(
+          codePointLength(reason),
+          MAX_LONG_TEXT_CODE_POINTS + 1,
+        );
       }
     }
   }
@@ -7125,6 +7474,56 @@ function deriveExactNestedWork(
       counters["exactBeatComparisons"] = 1;
     }
   }
+  if (plan["kind"] === "split-measure") {
+    /*
+     * Production's exact partition accounting (17.1): canonicality refusals
+     * cost nothing; each multi-event exact sum costs its pairwise additions;
+     * each declared-total equality is one comparison; the committed path
+     * adds the declared and source totals (one addition each) and compares
+     * them once.
+     */
+    const isCanonicalTotal = (value: unknown): boolean => {
+      const declared = durationRational(value);
+      return (
+        declared !== null &&
+        isObject(value) &&
+        typeof value["numerator"] === "number" &&
+        typeof value["denominator"] === "number" &&
+        declared.numerator > 0n &&
+        BigInt(value["numerator"]) === declared.numerator &&
+        BigInt(value["denominator"]) === declared.denominator
+      );
+    };
+    const location = findMeasureLocation(before["document"], plan["measureId"]);
+    const events =
+      location === null ? [] : recordsAt(location.measure["events"]);
+    const splitIndex = events.findIndex(
+      (event) => event["id"] === plan["beforeEventId"],
+    );
+    const partitionAt = (field: string): boolean =>
+      code === "edit-plan.measure-partition-mismatch" &&
+      oracle.refusal?.path[1] === field;
+    if (
+      splitIndex > 0 &&
+      isCanonicalTotal(plan["firstMeasureTotal"]) &&
+      isCanonicalTotal(plan["secondMeasureTotal"])
+    ) {
+      let additions = Math.max(0, splitIndex - 1);
+      let comparisons = 1;
+      if (!partitionAt("firstMeasureTotal")) {
+        additions += Math.max(0, events.length - splitIndex - 1);
+        comparisons += 1;
+        if (!partitionAt("secondMeasureTotal")) {
+          additions += 2;
+          comparisons += 1;
+        }
+      }
+      counters["exactBeatAdditions"] =
+        Number(counters["exactBeatAdditions"]) + additions;
+      counters["exactBeatComparisons"] =
+        Number(counters["exactBeatComparisons"]) + comparisons;
+    }
+  }
   if (
     codeIndex >= OPERATION_LAW_DURATION_BAND.first &&
     codeIndex <= OPERATION_LAW_DURATION_BAND.last
@@ -7250,6 +7649,13 @@ function validateExactNestedWorkOracle(
       : isObject(result["editPlanRefusal"])
         ? result["editPlanRefusal"]["work"]
         : null;
+  if (
+    process.env["JCPE_SPLITM_DEBUG"] === "1" &&
+    path.includes("SPLITM") &&
+    !jsonDeepEqual(observedWork, expectedWork)
+  ) {
+    console.error("STAGE-WORK-DEBUG", path, JSON.stringify(expectedWork));
+  }
   requireExact(
     observedWork,
     expectedWork,
@@ -7518,6 +7924,18 @@ function successfulPlanMetadataWork(plan: JsonObject): Readonly<{
         : 0),
     0,
   );
+  // Split-measure's fresh suffix completion reason is plan-owned text.
+  if (plan["kind"] === "split-measure") {
+    const fresh = isObject(plan["newMeasureCompletion"])
+      ? plan["newMeasureCompletion"]
+      : null;
+    if (
+      (fresh?.["kind"] === "pickup" || fresh?.["kind"] === "incomplete") &&
+      typeof fresh["reason"] === "string"
+    ) {
+      codePointsObserved += codePointLength(fresh["reason"]);
+    }
+  }
   const placement = isObject(plan["placement"]) ? plan["placement"] : null;
   const declarations = recordsAt(
     placement?.["completionDeclarations"] ?? plan["completionDeclarations"],
@@ -9117,6 +9535,9 @@ function expectedAllocationKinds(
       return ["event"];
     case "split-section":
       return ["section"];
+    case "split-measure":
+      // Section 21.4: the suffix measure is the operation's only allocation.
+      return ["measure"];
     case "join-event-durations":
     case "join-sections":
       return [];
@@ -9626,56 +10047,72 @@ function validateCompletionDeclarations(
         "Completion declaration measure IDs must be canonical stable IDs.",
       );
     }
-    const completion = declaration["completion"];
-    if (!isObject(completion)) {
-      addFinding(
-        findings,
-        "EDIT_PLAN_COMPLETION_SHAPE",
-        `${path}[${String(index)}].completion`,
-        "Completion declaration must carry one exact completion object.",
-      );
-      continue;
-    }
-    const completionKind = completion["kind"];
-    const completionKeys =
-      completionKind === "empty" || completionKind === "complete"
-        ? ["kind"]
-        : completionKind === "pickup" || completionKind === "incomplete"
-          ? ["kind", "expectedDuration", "reason"]
-          : [];
-    checkExactKeys(
-      completion,
-      completionKeys,
-      "EDIT_PLAN_COMPLETION_SHAPE",
+    validateMeasureCompletionValue(
+      declaration["completion"],
       `${path}[${String(index)}].completion`,
       findings,
     );
-    if (completionKeys.length === 0) {
+  }
+}
+
+/**
+ * One exact completion object, shared by the declaration rows and the
+ * split-measure plan's own `newMeasureCompletion` field — the same closed
+ * vocabulary, key sets, duration shape, and bounded reason text.
+ */
+function validateMeasureCompletionValue(
+  completion: unknown,
+  path: string,
+  findings: A0U1EditPlanContractFinding[],
+): void {
+  if (!isObject(completion)) {
+    addFinding(
+      findings,
+      "EDIT_PLAN_COMPLETION_SHAPE",
+      path,
+      "Completion declaration must carry one exact completion object.",
+    );
+    return;
+  }
+  const completionKind = completion["kind"];
+  const completionKeys =
+    completionKind === "empty" || completionKind === "complete"
+      ? ["kind"]
+      : completionKind === "pickup" || completionKind === "incomplete"
+        ? ["kind", "expectedDuration", "reason"]
+        : [];
+  checkExactKeys(
+    completion,
+    completionKeys,
+    "EDIT_PLAN_COMPLETION_SHAPE",
+    path,
+    findings,
+  );
+  if (completionKeys.length === 0) {
+    addFinding(
+      findings,
+      "EDIT_PLAN_COMPLETION_KIND",
+      `${path}.kind`,
+      "Completion kind is outside the closed domain vocabulary.",
+    );
+  } else if (completionKind === "pickup" || completionKind === "incomplete") {
+    validateBeatDurationShape(
+      completion["expectedDuration"],
+      `${path}.expectedDuration`,
+      findings,
+    );
+    if (
+      typeof completion["reason"] !== "string" ||
+      !isUnicodeScalarString(completion["reason"]) ||
+      codePointLength(completion["reason"]) > MAX_LONG_TEXT_CODE_POINTS ||
+      completion["reason"].trim().length === 0
+    ) {
       addFinding(
         findings,
-        "EDIT_PLAN_COMPLETION_KIND",
-        `${path}[${String(index)}].completion.kind`,
-        "Completion kind is outside the closed domain vocabulary.",
+        "EDIT_PLAN_COMPLETION_REASON",
+        `${path}.reason`,
+        "Partial completion reasons must be nonblank bounded Unicode scalar text.",
       );
-    } else if (completionKind === "pickup" || completionKind === "incomplete") {
-      validateBeatDurationShape(
-        completion["expectedDuration"],
-        `${path}[${String(index)}].completion.expectedDuration`,
-        findings,
-      );
-      if (
-        typeof completion["reason"] !== "string" ||
-        !isUnicodeScalarString(completion["reason"]) ||
-        codePointLength(completion["reason"]) > MAX_LONG_TEXT_CODE_POINTS ||
-        completion["reason"].trim().length === 0
-      ) {
-        addFinding(
-          findings,
-          "EDIT_PLAN_COMPLETION_REASON",
-          `${path}[${String(index)}].completion.reason`,
-          "Partial completion reasons must be nonblank bounded Unicode scalar text.",
-        );
-      }
     }
   }
 }
@@ -11510,12 +11947,69 @@ function validateApplyEditPlanShape(
         findings,
       );
       break;
+    case "split-measure":
+      checkExactKeys(
+        plan,
+        A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS.splitMeasurePlan,
+        "EDIT_PLAN_SPLIT_MEASURE_KEYS",
+        planPath,
+        findings,
+      );
+      if (
+        !isStableId(plan["measureId"]) ||
+        !isStableId(plan["beforeEventId"])
+      ) {
+        addFinding(
+          findings,
+          "EDIT_PLAN_SPLIT_MEASURE_IDS",
+          planPath,
+          "Split-measure target and boundary must be canonical stable IDs.",
+        );
+      }
+      validateBeatDurationShape(
+        plan["firstMeasureTotal"],
+        `${planPath}.firstMeasureTotal`,
+        findings,
+      );
+      validateBeatDurationShape(
+        plan["secondMeasureTotal"],
+        `${planPath}.secondMeasureTotal`,
+        findings,
+      );
+      validateMeasureCompletionValue(
+        plan["newMeasureCompletion"],
+        `${planPath}.newMeasureCompletion`,
+        findings,
+      );
+      validateCompletionDeclarations(
+        plan["completionDeclarations"],
+        1,
+        `${planPath}.completionDeclarations`,
+        findings,
+      );
+      requireExact(
+        plan["identityPolicy"],
+        "retain-source-prefix-allocate-suffix",
+        "EDIT_PLAN_POLICY",
+        `${planPath}.identityPolicy`,
+        "Split-measure survivor policy changed.",
+        findings,
+      );
+      requireExact(
+        plan["eventPolicy"],
+        "move-suffix-preserve-identities",
+        "EDIT_PLAN_POLICY",
+        `${planPath}.eventPolicy`,
+        "Split-measure event policy changed.",
+        findings,
+      );
+      break;
     default:
       addFinding(
         findings,
         "EDIT_PLAN_KIND",
         `${planPath}.kind`,
-        "Plan discriminant must be one of the five closed variants.",
+        "Plan discriminant must be one of the six closed variants.",
       );
   }
 }
@@ -14479,12 +14973,12 @@ function validateObligationSemantics(
   {
     const id = "A0U1-OBL-021-MUTATIONS";
     requireObligation(
-      controls.size === 30 &&
+      controls.size === 35 &&
         stringsAt(obligations.get(id)?.["transitionIds"]).every(
           (transitionId) => materialized.has(transitionId),
         ),
       id,
-      "Mutation closure requires all 30 controls and only materializable baseline/killer transition references.",
+      "Mutation closure requires all 35 controls and only materializable baseline/killer transition references.",
       findings,
     );
   }
@@ -15385,6 +15879,87 @@ function mutationCategoryPredicate(
         )
       );
     }
+    case "split-measure-boundary": {
+      const isStrictInterior = (
+        document: unknown,
+        plan: JsonObject,
+      ): boolean => {
+        const location = findMeasureLocation(document, plan["measureId"]);
+        if (location === null) return false;
+        const events = recordsAt(location.measure["events"]);
+        const boundaryIndex = events.findIndex(
+          (event) => event["id"] === plan["beforeEventId"],
+        );
+        return boundaryIndex > 0 && boundaryIndex < events.length;
+      };
+      return (
+        isStrictInterior(baselineDocument, baselinePlan) &&
+        !isStrictInterior(killerDocument, killerPlan)
+      );
+    }
+    case "split-measure-partition-total":
+    case "split-measure-noncanonical-total": {
+      const partitionHolds = (
+        document: unknown,
+        plan: JsonObject,
+      ): boolean => {
+        const location = findMeasureLocation(document, plan["measureId"]);
+        if (location === null) return false;
+        const events = recordsAt(location.measure["events"]);
+        const boundaryIndex = events.findIndex(
+          (event) => event["id"] === plan["beforeEventId"],
+        );
+        if (boundaryIndex <= 0) return false;
+        const zero: ExactRational = Object.freeze({
+          numerator: 0n,
+          denominator: 1n,
+        });
+        const sumOf = (rows: readonly JsonObject[]): ExactRational =>
+          rows.reduce<ExactRational>(
+            (total, event) =>
+              addRationals(
+                total,
+                durationRational(event["duration"]) ?? zero,
+              ),
+            zero,
+          );
+        for (const [field, slice] of [
+          ["firstMeasureTotal", events.slice(0, boundaryIndex)],
+          ["secondMeasureTotal", events.slice(boundaryIndex)],
+        ] as const) {
+          const declaredValue = plan[field];
+          const declared = durationRational(declaredValue);
+          const expectedTotal = sumOf(slice);
+          if (
+            declared === null ||
+            !isObject(declaredValue) ||
+            typeof declaredValue["numerator"] !== "number" ||
+            typeof declaredValue["denominator"] !== "number" ||
+            declared.numerator <= 0n ||
+            BigInt(declaredValue["numerator"]) !== declared.numerator ||
+            BigInt(declaredValue["denominator"]) !== declared.denominator ||
+            declared.numerator !== expectedTotal.numerator ||
+            declared.denominator !== expectedTotal.denominator
+          ) {
+            return false;
+          }
+        }
+        return true;
+      };
+      return (
+        partitionHolds(baselineDocument, baselinePlan) &&
+        !partitionHolds(killerDocument, killerPlan)
+      );
+    }
+    case "split-measure-metadata-reason":
+      return (
+        isBoundedToken(from, MAX_LONG_TEXT_CODE_POINTS) &&
+        typeof to === "string" &&
+        isUnicodeScalarString(to) &&
+        codePointLength(to) === MAX_LONG_TEXT_CODE_POINTS + 1
+      );
+    case "split-measure-event-policy":
+      return from === "move-suffix-preserve-identities" && to !== from;
   }
 }
 

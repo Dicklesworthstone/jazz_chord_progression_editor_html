@@ -1367,6 +1367,205 @@
         "A0U1-AUTH-U1",
         "A0U1-AUTH-VERIFICATION"
       ]
+    },
+    {
+      "id": "A0U1-MUT-031",
+      "category": "split-measure-boundary",
+      "operation": "split-measure",
+      "lawIds": [
+        "A0-U1-ATOM-018-split-measure-partition-exact"
+      ],
+      "baselineTransitionId": "A0U1-SPLITM-001-APPLY",
+      "killerTransitionId": "A0U1-SPLITM-002-REFUSED",
+      "mutation": {
+        "materialization": "command",
+        "operator": "replace",
+        "jsonPointer": "/plan/beforeEventId",
+        "from": "event-u1-split-1",
+        "to": "event-e0-auto",
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "expected.afterState",
+        "jsonPointer": "/document/sections/0/measures/1/id",
+        "baselineValue": "measure-u1-splitm-1",
+        "killerValue": "measure-e0-manual"
+      },
+      "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
+      "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
+      "linkedCaseIds": [
+        "A0U1-SPLITM-001",
+        "A0U1-SPLITM-002"
+      ],
+      "traceIds": [
+        "A0U1-TRACE-SPLIT-MEASURE"
+      ],
+      "authorityIds": [
+        "A0U1-AUTH-A0",
+        "A0U1-AUTH-DOMAIN",
+        "A0U1-AUTH-F2-F3",
+        "A0U1-AUTH-U1",
+        "A0U1-AUTH-VERIFICATION"
+      ]
+    },
+    {
+      "id": "A0U1-MUT-032",
+      "category": "split-measure-partition-total",
+      "operation": "split-measure",
+      "lawIds": [
+        "A0-U1-ATOM-018-split-measure-partition-exact"
+      ],
+      "baselineTransitionId": "A0U1-SPLITM-001-APPLY",
+      "killerTransitionId": "A0U1-SPLITM-003-REFUSED",
+      "mutation": {
+        "materialization": "command",
+        "operator": "replace",
+        "jsonPointer": "/plan/firstMeasureTotal/numerator",
+        "from": 2,
+        "to": 3,
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "expected.afterState",
+        "jsonPointer": "/document/sections/0/measures/1/id",
+        "baselineValue": "measure-u1-splitm-1",
+        "killerValue": "measure-e0-manual"
+      },
+      "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
+      "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
+      "linkedCaseIds": [
+        "A0U1-SPLITM-001",
+        "A0U1-SPLITM-002"
+      ],
+      "traceIds": [
+        "A0U1-TRACE-SPLIT-MEASURE"
+      ],
+      "authorityIds": [
+        "A0U1-AUTH-A0",
+        "A0U1-AUTH-DOMAIN",
+        "A0U1-AUTH-F2-F3",
+        "A0U1-AUTH-U1",
+        "A0U1-AUTH-VERIFICATION"
+      ]
+    },
+    {
+      "id": "A0U1-MUT-033",
+      "category": "split-measure-noncanonical-total",
+      "operation": "split-measure",
+      "lawIds": [
+        "A0-U1-ATOM-018-split-measure-partition-exact"
+      ],
+      "baselineTransitionId": "A0U1-SPLITM-001-APPLY",
+      "killerTransitionId": "A0U1-SPLITM-004-REFUSED",
+      "mutation": {
+        "materialization": "command",
+        "operator": "replace",
+        "jsonPointer": "/plan/firstMeasureTotal/denominator",
+        "from": 1,
+        "to": 2,
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "expected.afterState",
+        "jsonPointer": "/document/sections/0/measures/1/id",
+        "baselineValue": "measure-u1-splitm-1",
+        "killerValue": "measure-e0-manual"
+      },
+      "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
+      "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
+      "linkedCaseIds": [
+        "A0U1-SPLITM-001",
+        "A0U1-SPLITM-002"
+      ],
+      "traceIds": [
+        "A0U1-TRACE-SPLIT-MEASURE"
+      ],
+      "authorityIds": [
+        "A0U1-AUTH-A0",
+        "A0U1-AUTH-DOMAIN",
+        "A0U1-AUTH-F2-F3",
+        "A0U1-AUTH-U1",
+        "A0U1-AUTH-VERIFICATION"
+      ]
+    },
+    {
+      "id": "A0U1-MUT-034",
+      "category": "split-measure-metadata-reason",
+      "operation": "split-measure",
+      "lawIds": [
+        "A0-U1-ATOM-018-split-measure-partition-exact"
+      ],
+      "baselineTransitionId": "A0U1-SPLITM-001-APPLY",
+      "killerTransitionId": "A0U1-SPLITM-006-METADATA-EXCESS",
+      "mutation": {
+        "materialization": "command",
+        "operator": "replace",
+        "jsonPointer": "/plan/newMeasureCompletion/reason",
+        "from": "Second half of the split bar",
+        "to": "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr",
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "expected.afterState",
+        "jsonPointer": "/document/sections/0/measures/1/id",
+        "baselineValue": "measure-u1-splitm-1",
+        "killerValue": "measure-e0-manual"
+      },
+      "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
+      "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
+      "linkedCaseIds": [
+        "A0U1-SPLITM-001",
+        "A0U1-SPLITM-006"
+      ],
+      "traceIds": [
+        "A0U1-TRACE-SPLIT-MEASURE"
+      ],
+      "authorityIds": [
+        "A0U1-AUTH-A0",
+        "A0U1-AUTH-DOMAIN",
+        "A0U1-AUTH-F2-F3",
+        "A0U1-AUTH-U1",
+        "A0U1-AUTH-VERIFICATION"
+      ]
+    },
+    {
+      "id": "A0U1-MUT-035",
+      "category": "split-measure-event-policy",
+      "operation": "split-measure",
+      "lawIds": [
+        "A0-U1-ATOM-018-split-measure-partition-exact"
+      ],
+      "baselineTransitionId": "A0U1-SPLITM-010-BASE",
+      "killerTransitionId": "A0U1-SPLITM-010-KILLER",
+      "mutation": {
+        "materialization": "command",
+        "operator": "replace",
+        "jsonPointer": "/plan/eventPolicy",
+        "from": "move-suffix-preserve-identities",
+        "to": "copy-suffix-reallocate-identities",
+        "exactChangedFieldCount": 1
+      },
+      "observation": {
+        "materialization": "expected.afterState",
+        "jsonPointer": "/document/sections/0/measures/1/id",
+        "baselineValue": "measure-u1-splitm-1",
+        "killerValue": "measure-e0-manual"
+      },
+      "exactExpectedDifference": "one-recursive-input-delta-at-declared-pointer",
+      "oracleExpectation": "baseline-accepted-killer-rejected-by-independent-semantic-oracle",
+      "linkedCaseIds": [
+        "A0U1-SPLITM-010"
+      ],
+      "traceIds": [
+        "A0U1-TRACE-SPLIT-MEASURE"
+      ],
+      "authorityIds": [
+        "A0U1-AUTH-A0",
+        "A0U1-AUTH-DOMAIN",
+        "A0U1-AUTH-F2-F3",
+        "A0U1-AUTH-U1",
+        "A0U1-AUTH-VERIFICATION"
+      ]
     }
   ]
 }
