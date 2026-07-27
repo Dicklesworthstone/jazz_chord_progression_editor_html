@@ -12,6 +12,7 @@ playwright-report/
 test-results/
 
 # Tool caches and temporary reproducibility roots
+.bun/
 .eslintcache
 .tmp/
 *.tsbuildinfo
