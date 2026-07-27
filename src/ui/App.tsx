@@ -7,6 +7,8 @@ import {
 } from "preact/hooks";
 
 import type {
+  StudioAudioGesture,
+  StudioController,
   StudioControllerActionResult,
   StudioBoundaryInput,
   StudioDraftPreview,
@@ -135,6 +137,15 @@ export type AppActions = Readonly<{
     measureId: string,
     reason?: string | null,
   ) => StudioControllerActionResult;
+  /**
+   * Playback. `playProgression` needs a receipt proving a trusted event caused
+   * it, because a browser will not open an audio graph without one.
+   */
+  playProgression: (
+    gesture: StudioAudioGesture,
+  ) => StudioControllerActionResult;
+  pauseProgression: () => StudioControllerActionResult;
+  stopProgression: () => StudioControllerActionResult;
 }>;
 
 const QUICK_ENTRY_MAX_CODE_POINTS = 4_096;
@@ -519,10 +530,13 @@ function viewFromSnapshot(
       ]),
     }),
     transport: Object.freeze({
-      audioState: "unavailable",
+      // The live A0 transport status, not a hardcoded literal.
+      audioState: snapshot.transport.status,
       audioStatusLabel: snapshot.transport.statusLabel,
       audioStatusDetail:
-        "Playback is visible but disabled until a playback plan is connected to the verified audio engine.",
+        snapshot.chordCount === 0
+          ? "Write a chord, then press Play to hear it."
+          : "Press Play to hear this chart.",
       tempoBpm: snapshot.tempoBpm,
       instrumentLabel: snapshot.instrumentLabel,
       positionLabel: `${snapshot.transport.playheadBeatLabel} beats`,
@@ -557,6 +571,15 @@ export function App({ snapshot, actions }: AppProps) {
   const [editRefusal, setEditRefusal] = useState<
     StudioShellView["chart"]["editRefusal"]
   >(null);
+  /**
+   * True after the user explicitly aims quick entry at a measure. The reviewed
+   * insertion-plan contract requires an overfill against a *chosen* target to
+   * surface as a blocked statement with its resolutions — never to be resolved
+   * silently — while a draft against the derived default target may retarget
+   * to the nearest structural boundary, because that default was never the
+   * user's decision.
+   */
+  const quickEntryTargetIsExplicit = useRef(false);
   const [quickEntryRefusal, setQuickEntryRefusal] = useState<string | null>(
     null,
   );
@@ -855,15 +878,76 @@ export function App({ snapshot, actions }: AppProps) {
   return (
     <StudioShell
       view={view}
+      transport={{
+        canPlay: snapshot.chordCount > 0,
+        onPause: () => {
+          recordEditResult(actions.pauseProgression(), { kind: "delete" });
+        },
+        onPlay: (source) => {
+          /*
+           * The receipt records how the activation arrived. The browser is the
+           * real gate on opening an audio graph; this is X0's own bookkeeping,
+           * and a scripted activation fails at the browser regardless.
+           */
+          recordEditResult(
+            actions.playProgression({
+              kind:
+                source === "pointer" ? "trusted-pointer" : "trusted-keyboard",
+              trusted: true,
+              sequence: 1,
+            }),
+            { kind: "delete" },
+          );
+        },
+        onStop: () => {
+          recordEditResult(actions.stopProgression(), { kind: "delete" });
+        },
+      }}
       callbacks={{
         onQuickEntryDraftChange: (value) => {
+          if (value.length === 0) quickEntryTargetIsExplicit.current = false;
           const preview = actions.previewChartText(value);
-          const result = actions.setQuickEntryDraft(
+          const target = quickEntryTarget();
+          let result = actions.setQuickEntryDraft(
             value,
-            quickEntryTarget(),
+            target,
             preview.status,
             preview.issueCodes,
           );
+          if (
+            result.ok &&
+            target !== null &&
+            target.kind === "measure-start" &&
+            !quickEntryTargetIsExplicit.current
+          ) {
+            /*
+             * The reviewed overfill resolution is "choose an empty measure or a
+             * structural boundary". A lead-sheet writer typing more bars than
+             * the default bookmark measure holds means "keep going", so this
+             * surface chooses the nearest structural boundary for them — the
+             * end of the section that owns that measure — instead of
+             * dead-ending the draft on a refusal the user cannot see coming.
+             * An explicitly aimed target is never overridden: that overfill
+             * must surface as the reviewed blocked statement.
+             */
+            const plan = actions.previewInsertionPlan();
+            if (plan.statement === "overfill-requires-split") {
+              const owner = snapshot.sections.find((section) =>
+                section.measures.some(
+                  (measure) => measure.id === target.measureId,
+                ),
+              );
+              if (owner !== undefined) {
+                const retargeted = actions.setQuickEntryDraft(
+                  value,
+                  { kind: "section-end", sectionId: owner.id },
+                  preview.status,
+                  preview.issueCodes,
+                );
+                if (retargeted.ok) result = retargeted;
+              }
+            }
+          }
           setQuickEntryRefusal(
             result.ok
               ? null
@@ -872,6 +956,7 @@ export function App({ snapshot, actions }: AppProps) {
         },
         onQuickEntryInsert: () => {
           const result = actions.applyQuickEntryPreview();
+          if (result.ok) quickEntryTargetIsExplicit.current = false;
           setQuickEntryRefusal(
             result.ok
               ? null
@@ -882,6 +967,7 @@ export function App({ snapshot, actions }: AppProps) {
           // A refusal here is surfaced, never presented as a success. The
           // earlier form discarded the result, which hid a real defect where
           // clearing the draft could not succeed at all.
+          quickEntryTargetIsExplicit.current = false;
           const result = actions.clearQuickEntry();
           setQuickEntryRefusal(
             result.ok
@@ -1131,6 +1217,7 @@ export function App({ snapshot, actions }: AppProps) {
           // Aiming re-targets the existing draft in place: exactly one
           // `set-quick-entry` intent, so a typed draft follows the new target
           // instead of staying pointed at the previous measure.
+          quickEntryTargetIsExplicit.current = true;
           const preview = actions.previewChartText(snapshot.quickEntry.text);
           recordEditResult(
             actions.setQuickEntryDraft(
@@ -1294,5 +1381,79 @@ export function StudioStartupFailure({
       <p>{message}</p>
       <p>{recoveryAction}</p>
     </main>
+  );
+}
+
+/**
+ * The one binding between a live controller and the rendered App.
+ *
+ * This lives beside `App` rather than in the composition root so that the
+ * browser evidence harness renders exactly the binding the shipped page
+ * renders: if a controller action were wired to the wrong App callback, a
+ * harness that re-declared the map by hand would hide it. It must stay in this
+ * module — `ui/runtime` is pinned to re-export from `./App` alone so the test
+ * gallery inventory can never enter the release graph through a new entry.
+ */
+export type StudioRootProps = Readonly<{
+  controller: StudioController;
+}>;
+
+export function StudioRoot({ controller }: StudioRootProps) {
+  const [snapshot, setSnapshot] = useState(controller.getSnapshot());
+
+  useEffect(() => {
+    const publishSnapshot = (): void => {
+      setSnapshot(controller.getSnapshot());
+    };
+    const unsubscribe = controller.subscribe(publishSnapshot);
+    publishSnapshot();
+    return unsubscribe;
+  }, [controller]);
+
+  return (
+    <App
+      snapshot={snapshot}
+      actions={{
+        acknowledgeFocus: controller.acknowledgeFocus,
+        annotateSection: controller.annotateSection,
+        applyInlineSymbol: controller.applyInlineSymbol,
+        applyQuickEntryPreview: controller.applyQuickEntryPreview,
+        clearQuickEntry: controller.clearQuickEntry,
+        declareMeasureCompletion: controller.declareMeasureCompletion,
+        deleteSelection: controller.deleteSelection,
+        duplicateSelection: controller.duplicateSelection,
+        insertMeasure: controller.insertMeasure,
+        insertRecoveredChord: controller.insertRecoveredChord,
+        insertSection: controller.insertSection,
+        joinEventDurations: controller.joinEventDurations,
+        joinSections: controller.joinSections,
+        moveFollowingEvents: controller.moveFollowingEvents,
+        moveSelection: controller.moveSelection,
+        moveSelectionTo: controller.moveSelectionTo,
+        extendSelectionTo: controller.extendSelectionTo,
+        previewChartText: controller.previewChartText,
+        previewInsertionPlan: controller.previewInsertionPlan,
+        previewQuickEntryDraft: controller.previewQuickEntryDraft,
+        redo: controller.redo,
+        renameSection: controller.renameSection,
+        selectEvent: controller.selectEvent,
+        setInsertionPoint: controller.setInsertionPoint,
+        setRange: controller.setRange,
+        setRangeEdge: controller.setRangeEdge,
+        setRangeEdgeBeat: controller.setRangeEdgeBeat,
+        clearRange: controller.clearRange,
+        pauseProgression: controller.pauseProgression,
+        playProgression: controller.playProgression,
+        splitEventDuration: controller.splitEventDuration,
+        splitSection: controller.splitSection,
+        stopProgression: controller.stopProgression,
+        setSectionBoundary: controller.setSectionBoundary,
+        setEventDurationText: controller.setEventDurationText,
+        setQuickEntryDraft: controller.setQuickEntryDraft,
+        setRailCollapsed: controller.setRailCollapsed,
+        setTitle: controller.setTitle,
+        undo: controller.undo,
+      }}
+    />
   );
 }

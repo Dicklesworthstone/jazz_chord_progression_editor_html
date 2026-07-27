@@ -32,3 +32,15 @@ export type {
 } from "./studio-controller";
 
 export type { StudioViewModel } from "./studio-view-model";
+
+/**
+ * The audio composition the root injects into the controller. Exported from
+ * the runtime entry rather than the headless barrel because only the
+ * composition root builds one.
+ */
+export { createStudioAudio } from "./studio-audio";
+export type {
+  CreateStudioAudioOptions,
+  StudioAudioGesture,
+  StudioAudioPort,
+} from "./studio-audio";

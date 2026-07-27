@@ -244,7 +244,10 @@ test("U0-ENV-004 coarse-pointer mobile keeps primary actions at 44 CSS px and ex
         };
       }),
     );
-    expect(primaryTargets.length).toBeGreaterThanOrEqual(10);
+    // Title apply/reset, both sheet openers, and the three wired transport
+    // controls. The unwired previous/next/loop buttons no longer render, so
+    // the floor is seven real targets, every one of them 44 px.
+    expect(primaryTargets.length).toBeGreaterThanOrEqual(7);
     for (const target of primaryTargets) {
       expect(target.width, `${target.id || target.name} coarse width`).toBeGreaterThanOrEqual(44);
       expect(target.height, `${target.id || target.name} coarse height`).toBeGreaterThanOrEqual(44);

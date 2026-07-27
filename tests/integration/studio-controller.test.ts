@@ -78,7 +78,7 @@ describe("studio application checkpoint", () => {
       measureCount: 1,
       transport: {
         status: "unavailable",
-        statusLabel: "Audio unavailable",
+        statusLabel: "Audio off",
         isAvailable: false,
         playheadBeatLabel: "0/1",
         startBeatLabel: "0/1",

@@ -248,7 +248,15 @@ export type StudioHarmonyView = Readonly<{
 }>;
 
 export type StudioTransportView = Readonly<{
-  audioState: "unavailable";
+  /** The live A0 transport status, not a hardcoded literal. */
+  audioState:
+    | "unavailable"
+    | "ready"
+    | "starting"
+    | "playing"
+    | "paused"
+    | "stopping"
+    | "failed";
   audioStatusLabel: string;
   audioStatusDetail: string;
   tempoBpm: number;
@@ -344,7 +352,21 @@ export type StudioShellCallbacks = Readonly<{
   onViewModeChange: (mode: StudioViewMode) => void;
 }>;
 
+/**
+ * The transport surface the shell renders. Kept beside the callbacks rather
+ * than inside them because playback is the one control group whose enablement
+ * is derived from the chart rather than from a bookmark or selection.
+ */
+export type StudioTransportCallbacks = Readonly<{
+  /** False when the chart has no chord to play. */
+  canPlay: boolean;
+  onPlay: (source: "pointer" | "keyboard") => void;
+  onPause: () => void;
+  onStop: () => void;
+}>;
+
 export type StudioShellProps = Readonly<{
   view: StudioShellView;
   callbacks: StudioShellCallbacks;
+  transport: StudioTransportCallbacks;
 }>;

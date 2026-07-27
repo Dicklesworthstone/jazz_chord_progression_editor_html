@@ -1707,6 +1707,24 @@
   font-size: var(--text-xs);
 }
 
+.studio-quick-entry__demos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.studio-quick-entry__demos-label {
+  color: var(--text-subtle);
+  font-size: var(--text-xs);
+}
+
+.studio-quick-entry__hint {
+  margin: 0;
+  color: var(--text-subtle);
+  font-size: var(--text-xs);
+}
+
 .studio-quick-entry__field {
   inline-size: 100%;
   padding: var(--space-2);

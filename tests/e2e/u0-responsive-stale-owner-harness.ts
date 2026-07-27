@@ -127,7 +127,7 @@ const BASE_VIEW: Omit<StudioShellView, "layout"> = Object.freeze({
   }),
   transport: Object.freeze({
     audioState: "unavailable",
-    audioStatusLabel: "Audio unavailable",
+    audioStatusLabel: "Audio off",
     audioStatusDetail: "Playback is unavailable in this focused proof.",
     tempoBpm: 120,
     instrumentLabel: "Studio piano",
@@ -227,7 +227,17 @@ function ResponsiveStaleOwnerHarness() {
       "data-refusal-count": String(refusalCount),
       id: "u0-responsive-stale-owner-harness",
     },
-    h(StudioShell, { callbacks, view }),
+    h(StudioShell, {
+      callbacks,
+      // U0 harness: the transport is out of scope for these layout proofs.
+      transport: {
+        canPlay: false,
+        onPause: () => undefined,
+        onPlay: () => undefined,
+        onStop: () => undefined,
+      },
+      view,
+    }),
   );
 }
 

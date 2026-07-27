@@ -6,6 +6,7 @@ import {
   measureCapacity,
   subtractBeatValues,
   type BeatDuration,
+  type BeatPosition,
   type BeatValue,
   type ChordEvent,
   type ChordEventId,
@@ -29,6 +30,7 @@ import {
   type EventLocation,
 } from "./application-state-helpers";
 import {
+  acceptTransportNotification,
   redoDocumentCommand,
   reduceEphemeralIntent,
   runDocumentCommand,
@@ -55,6 +57,11 @@ import type {
   StableUiBookmarks,
 } from "./application-state-contract";
 import { parseChordSymbol, type ChartTextDraft } from "../theory";
+import type { StudioAudioGesture, StudioAudioPort } from "./studio-audio";
+import {
+  compileStudioPlaybackPlan,
+  studioPlanIsPlayable,
+} from "./studio-playback";
 import {
   createStudioBootstrap,
   type StudioBootstrapRefusal,
@@ -96,6 +103,9 @@ export const STUDIO_EDIT_REFUSAL_CODES = Object.freeze([
   "u1.join_right_annotation_not_empty",
   "u1.section_split_boundary_invalid",
   "u1.measure_split_boundary_invalid",
+  "u1.playback_unavailable",
+  "u1.playback_refused",
+  "u1.playback_requires_a_chord",
   "u1.section_join_requires_adjacent_sections",
   "u1.quick_entry_stale_revision",
   "u1.quick_entry_target_missing",
@@ -146,6 +156,10 @@ export type StudioControllerAction =
   | "split-section"
   | "join-sections"
   | "split-at-bar"
+  | "play-progression"
+  | "pause-progression"
+  | "stop-progression"
+  | "transport-notification"
   | "insert-recovered-chord"
   | "acknowledge-focus";
 
@@ -478,6 +492,16 @@ export interface StudioController {
     retainedReason?: string | null,
     suffixReason?: string | null,
   ) => StudioControllerActionResult;
+  /**
+   * Play the chart from its start. The gesture receipt must come from a real
+   * trusted event: browsers gate the audio graph on one, and fabricating it
+   * would make the refusal dishonest rather than making the sound work.
+   */
+  readonly playProgression: (
+    gesture: StudioAudioGesture,
+  ) => StudioControllerActionResult;
+  readonly pauseProgression: () => StudioControllerActionResult;
+  readonly stopProgression: () => StudioControllerActionResult;
   readonly joinSections: (
     leftSectionId: string,
   ) => StudioControllerActionResult;
@@ -537,6 +561,12 @@ const EDIT_RECOVERY_ACTIONS: Readonly<Record<StudioEditRefusalCode, string>> =
       "Split a section at a measure after its first measure.",
     "u1.measure_split_boundary_invalid":
       "Split a bar at a chord after its first chord.",
+    "u1.playback_unavailable":
+      "Open this chart in a browser that allows audio.",
+    "u1.playback_refused":
+      "Fix the chord the message names, then play again.",
+    "u1.playback_requires_a_chord":
+      "Type a chord such as Dm7 into quick entry, then press Play.",
     "u1.section_join_requires_adjacent_sections":
       "Select a section that has a following section to join.",
     "u1.quick_entry_stale_revision":
@@ -772,6 +802,12 @@ export type StudioControllerOptions = Readonly<{
    * musical or correctness cutoff.
    */
   nowMs?: () => number;
+  /**
+   * The composed audio stack. Absent in headless tests and in any build that
+   * deliberately ships without sound; the transport then reports `unavailable`
+   * and every playback action refuses honestly rather than pretending.
+   */
+  audio?: StudioAudioPort;
 }>;
 
 function makeStudioController(
@@ -787,6 +823,9 @@ function makeStudioController(
   );
   let nextTitleCommandOrdinal = 1;
   let nextCommandOrdinal = 1;
+  /** Positive, strictly increasing: A0 refuses a non-advancing request ID. */
+  let transportRequestOrdinal = 1;
+  const audioPort = options.audio ?? null;
   let lastLogicalTimeMs = 0;
   let lastTitleLogicalTimeMs: number | null = null;
   const readClock = options.nowMs;
@@ -3444,6 +3483,180 @@ function makeStudioController(
     );
   };
 
+  /* ------------------------------------------------------------------ */
+  /* Transport                                                           */
+  /* ------------------------------------------------------------------ */
+
+  /**
+   * A0 installs its expectation before every transport command and matches the
+   * notification that comes back by request ID, so the IDs are minted here and
+   * handed to the audio port rather than the other way round.
+   */
+  const nextTransportRequestId = (): number => {
+    const id = transportRequestOrdinal;
+    transportRequestOrdinal += 1;
+    return id;
+  };
+
+  const expectTransport = (
+    action: StudioControllerAction,
+    commandRequestId: number,
+    status: "starting" | "stopping",
+    beat: BeatPosition,
+  ): StudioControllerActionResult =>
+    apply(action, (current) =>
+      reduceEphemeralIntent({
+        state: current,
+        intent: {
+          kind: "expect-transport",
+          commandRequestId,
+          documentId: current.document.id,
+          planRevision: current.revision,
+          status,
+          startBeat: beat,
+          playhead: beat,
+        },
+      }),
+    );
+
+  /**
+   * Play the chart from its start.
+   *
+   * The plan is compiled fresh from the current document every time: a plan
+   * that outlived the edit which invalidated it is the one thing a transport
+   * must never be handed. A browser will not open an audio graph without a
+   * trusted gesture, so the first Play carries the receipt proving one happened
+   * and performs the initialization; later plays reuse the same graph.
+   */
+  const playProgression = (
+    gesture: StudioAudioGesture,
+  ): StudioControllerActionResult => {
+    if (audioPort === null) {
+      return editRefusal(
+        "play-progression",
+        "u1.playback_unavailable",
+        "This build has no audio output wired.",
+      );
+    }
+    const compiled = compileStudioPlaybackPlan(state.document);
+    if (!compiled.ok) {
+      return editRefusal(
+        "play-progression",
+        "u1.playback_refused",
+        compiled.refusal.message,
+      );
+    }
+    if (!studioPlanIsPlayable(compiled.plan)) {
+      return editRefusal(
+        "play-progression",
+        "u1.playback_requires_a_chord",
+        "Write at least one chord before playing.",
+      );
+    }
+    const commandRequestId = nextTransportRequestId();
+    const startBeat = state.transport.startBeat;
+    const expectation = expectTransport(
+      "play-progression",
+      commandRequestId,
+      "starting",
+      startBeat,
+    );
+    if (!expectation.ok) return expectation;
+
+    const binding = Object.freeze({
+      plan: compiled.plan,
+      documentId: state.document.id,
+      planRevision: state.revision,
+    });
+    const port = audioPort;
+    void (async () => {
+      if (!port.isInitialized()) {
+        await port.initialize(
+          commandRequestId,
+          gesture,
+          binding.documentId,
+          binding.planRevision,
+        );
+        const playRequestId = nextTransportRequestId();
+        expectTransport("play-progression", playRequestId, "starting", startBeat);
+        await port.play(playRequestId, binding, startBeat);
+        return;
+      }
+      await port.play(commandRequestId, binding, startBeat);
+    })();
+    return expectation;
+  };
+
+  const pauseProgression = (): StudioControllerActionResult => {
+    if (audioPort === null) {
+      return editRefusal(
+        "pause-progression",
+        "u1.playback_unavailable",
+        "This build has no audio output wired.",
+      );
+    }
+    const commandRequestId = nextTransportRequestId();
+    const expectation = expectTransport(
+      "pause-progression",
+      commandRequestId,
+      "stopping",
+      state.transport.playhead,
+    );
+    if (!expectation.ok) return expectation;
+    void audioPort.pause(commandRequestId);
+    return expectation;
+  };
+
+  /** Stop retires every sounding voice; a stuck note is never acceptable. */
+  const stopProgression = (): StudioControllerActionResult => {
+    if (audioPort === null) {
+      return editRefusal(
+        "stop-progression",
+        "u1.playback_unavailable",
+        "This build has no audio output wired.",
+      );
+    }
+    const commandRequestId = nextTransportRequestId();
+    const expectation = expectTransport(
+      "stop-progression",
+      commandRequestId,
+      "stopping",
+      state.transport.startBeat,
+    );
+    if (!expectation.ok) return expectation;
+    void audioPort.stop(commandRequestId);
+    return expectation;
+  };
+
+  /*
+   * Every transport notification flows back through A0's own acceptance law:
+   * stale generations, superseded request IDs, and foreign document IDs are
+   * dropped there, not here. Without this feedback loop the expectation
+   * installed before each command waits forever and the visible status sticks
+   * at "starting" — which is exactly what the first browser evidence run
+   * recorded on all three engines.
+   */
+  if (audioPort !== null) {
+    audioPort.subscribe((notification) => {
+      apply("transport-notification", (current) =>
+        acceptTransportNotification({
+          state: current,
+          notification: Object.freeze({
+            status: notification.status,
+            generation: notification.generation,
+            commandRequestId: notification.commandRequestId,
+            notificationSequence: notification.notificationSequence,
+            documentId: notification.documentId,
+            planRevision: notification.planRevision,
+            startBeat: notification.startBeat,
+            playhead: notification.playhead,
+            failureCode: notification.failureCode,
+          }),
+        }),
+      );
+    });
+  }
+
   /**
    * Split a bar at an interior chord boundary — the third overfill resolution
    * REBUILD_PLAN 17.4 asks for, and the one that needed A0's sixth atomic plan
@@ -3826,9 +4039,12 @@ function makeStudioController(
     moveFollowingEvents,
     joinEventDurations,
     joinSections,
+    pauseProgression,
+    playProgression,
     splitAtBar,
     splitEventDuration,
     splitSection,
+    stopProgression,
     setRangeEdge,
     setRangeEdgeBeat,
     insertRecoveredChord,

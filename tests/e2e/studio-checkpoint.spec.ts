@@ -108,9 +108,17 @@ test.describe("interactive studio checkpoint", () => {
     await expect(expandHarmony).toBeVisible();
     await expandHarmony.click();
 
-    await expect(page.getByText("Audio unavailable", { exact: true })).toBeVisible();
-    for (const name of ["Previous chord", "Play", "Stop", "Next chord"]) {
+    await expect(page.getByText("Audio off", { exact: true })).toBeVisible();
+    /*
+     * The empty checkpoint chart has nothing to play, so every transport
+     * control is disabled — and the controls that exist are exactly the wired
+     * ones. Unwired previous/next/loop must not render at all.
+     */
+    for (const name of ["Play", "Pause", "Stop"]) {
       await expect(page.getByRole("button", { name })).toBeDisabled();
+    }
+    for (const name of ["Previous chord", "Next chord", "Loop progression"]) {
+      await expect(page.getByRole("button", { name })).toHaveCount(0);
     }
     await expect(page.getByText("Empty measure", { exact: true })).toBeVisible();
     await expect(

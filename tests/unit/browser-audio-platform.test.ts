@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { createBrowserAudioPlatform } from "../../src/audio";
+import { createBrowserAudioPlatform } from "../../src/audio/runtime";
 import { holdAudioParamAtTime } from "../../src/audio/audio-dsp";
 
 type ParameterEvent = Readonly<{

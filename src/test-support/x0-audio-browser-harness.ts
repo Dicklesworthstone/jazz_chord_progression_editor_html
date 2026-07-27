@@ -1,6 +1,5 @@
 import {
   createAudioEngine,
-  createBrowserAudioPlatform,
   type AudioContextPort,
   type AudioEngineResult,
   type AudioEngineSnapshot,
@@ -8,6 +7,7 @@ import {
   type AudioEngineWorkCounters,
   type AudioPlatform,
 } from "../audio";
+import { createBrowserAudioPlatform } from "../audio/runtime";
 import {
   makeInstrumentId,
   makeMidiPitch,

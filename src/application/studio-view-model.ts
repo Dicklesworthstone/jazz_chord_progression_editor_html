@@ -277,8 +277,13 @@ function instrumentLabel(instrumentId: InstrumentId): string {
 
 function transportStatusLabel(status: ApplicationTransportStatus): string {
   switch (status) {
+    /*
+     * One status covers "not started yet" (every load before the first Play,
+     * because browsers gate the graph on a gesture) and "cannot start". The
+     * label must be truthful for both; the detail line carries the action.
+     */
     case "unavailable":
-      return "Audio unavailable";
+      return "Audio off";
     case "ready":
       return "Audio ready";
     case "starting":

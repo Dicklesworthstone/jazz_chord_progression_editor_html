@@ -6,9 +6,10 @@
  * that test-gallery inventories cannot enter the release module graph through
  * barrel initialization.
  */
-export { App, StudioStartupFailure } from "./App";
+export { App, StudioRoot, StudioStartupFailure } from "./App";
 export type {
   AppActions,
   AppProps,
+  StudioRootProps,
   StudioStartupFailureProps,
 } from "./App";

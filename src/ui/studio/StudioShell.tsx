@@ -83,7 +83,11 @@ function MeasureCompletionDialogContent({
   );
 }
 
-export function StudioShell({ view, callbacks }: StudioShellProps) {
+export function StudioShell({
+  view,
+  callbacks,
+  transport,
+}: StudioShellProps) {
   const activeSheet = view.layout.activeSheet;
   const sheetId =
     activeSheet === null ? null : `studio-${activeSheet}-sheet`;
@@ -170,7 +174,13 @@ export function StudioShell({ view, callbacks }: StudioShellProps) {
             />
           </main>
         </div>
-        <TransportBar view={view.transport} />
+        <TransportBar
+          canPlay={transport.canPlay}
+          onPause={transport.onPause}
+          onPlay={transport.onPlay}
+          onStop={transport.onStop}
+          view={view.transport}
+        />
       </div>
 
       <div id="dialog-host">

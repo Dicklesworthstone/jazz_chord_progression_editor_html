@@ -29,6 +29,24 @@ export type LibraryPanelContentProps = Readonly<{
   onInsertRecoveredChord: (globalOrdinal: number) => void;
 }>;
 
+/**
+ * Reviewed demo charts. Every entry must parse `ready` under the real T0
+ * grammar — a demo that gets refused would teach a first-time user that the
+ * app is broken, which is worse than no demo at all.
+ */
+const DEMO_PROGRESSIONS = [
+  {
+    id: "two-five-one",
+    label: "ii–V–I",
+    chartText: "| Dm7 G7 | Cmaj7 |",
+  },
+  {
+    id: "turnaround",
+    label: "Turnaround",
+    chartText: "| Cmaj7 A7 | Dm7 G7 |",
+  },
+] as const;
+
 const TOKEN_STATE_LABELS = {
   valid: "Parsed",
   insertable: "Recoverable",
@@ -193,9 +211,43 @@ function QuickEntryPanel({
   return (
     <section class="studio-quick-entry" aria-labelledby="studio-quick-entry-heading">
       <h3 id="studio-quick-entry-heading">Quick entry</h3>
+      {/*
+        One-click demos exist so the first minute can contain sound. Each goes
+        through exactly the typed path — draft change, then insert — so a demo
+        can never do anything typing the same text could not.
+      */}
+      <div
+        class="studio-quick-entry__demos"
+        role="group"
+        aria-label="Demo progressions"
+      >
+        <span class="studio-quick-entry__demos-label">Try one:</span>
+        {DEMO_PROGRESSIONS.map((demo) => (
+          <Button
+            busy={false}
+            density="dense"
+            describedBy={["studio-quick-entry-status"]}
+            disabled={false}
+            id={`studio-quick-entry-demo-${demo.id}`}
+            invalid={false}
+            key={demo.id}
+            label={demo.label}
+            onAction={() => {
+              onDraftChange(demo.chartText);
+              onInsert();
+            }}
+            type="button"
+            variant="secondary"
+          />
+        ))}
+      </div>
       <label class="studio-quick-entry__label" for="studio-quick-entry-field">
         Chart text
       </label>
+      <p class="studio-quick-entry__hint" id="studio-quick-entry-hint">
+        Bars sit between | marks; chords are symbols such as Dm7 or Cmaj7.
+        Press Enter to add them to the chart.
+      </p>
       <textarea
         id="studio-quick-entry-field"
         class="studio-quick-entry__field"
@@ -203,7 +255,8 @@ function QuickEntryPanel({
         rows={3}
         spellcheck={false}
         value={view.draftText}
-        aria-describedby="studio-quick-entry-status"
+        placeholder="| Dm7 G7 | Cmaj7 |"
+        aria-describedby="studio-quick-entry-status studio-quick-entry-hint"
         onInput={(event) => {
           onDraftChange(event.currentTarget.value);
         }}

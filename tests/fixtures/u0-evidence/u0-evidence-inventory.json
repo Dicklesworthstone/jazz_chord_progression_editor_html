@@ -56,7 +56,7 @@
     },
     {
       "path": "tests/e2e/u0-mobile-shell.spec.ts",
-      "sha256": "0c2b77081fc091cf577ca4ca71e88f39981eb873a715762eed037e4abc4f5978"
+      "sha256": "a7650288f851e4585ac70cba785db5ba3d9132d942e5b1ded8b8c83adf8d06e1"
     },
     {
       "path": "tests/e2e/u0-nonhappy-states.spec.ts",
@@ -132,7 +132,7 @@
     },
     {
       "path": "tests/visual/u0-responsive-shell.spec.ts",
-      "sha256": "5435f3dc474c2d3190b62c86ebadb5e6a98ac44c7e9a3ec005d15f5c26be3083"
+      "sha256": "a28606e1904668edf8b7453953d27fa9cf5842a0d19cfd2da80f1eb15ada548d"
     }
   ],
   "bunSuites": [

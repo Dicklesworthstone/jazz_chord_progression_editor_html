@@ -84,9 +84,12 @@ test.describe("U1 responsive matrix over the real artifact", () => {
         await expect(page.getByTestId("inline-symbol-editor")).toBeVisible();
         await page.keyboard.press("Escape");
 
-        // The transport stays present and honestly disabled.
+        // The transport stays present, and with chords on the chart the wired
+        // Play is honestly enabled; Pause and Stop stay disabled until sound
+        // is actually running.
         await expect(page.locator("#studio-transport-play")).toBeVisible();
-        await expect(page.locator("#studio-transport-play")).toBeDisabled();
+        await expect(page.locator("#studio-transport-play")).toBeEnabled();
+        await expect(page.locator("#studio-transport-stop")).toBeDisabled();
         expectCleanDiagnostics(diagnostics);
       } finally {
         await context.close();
