@@ -52,6 +52,7 @@
     "verify:v2-evidence": "bun scripts/verify-v2-evidence.ts",
     "verify:f3-evidence": "bun scripts/verify-f3-evidence.ts",
     "verify:p0-evidence": "bun scripts/verify-p0-evidence.ts",
+    "verify:e1-evidence": "bun scripts/verify-e1-evidence.ts",
     "verify:a0-evidence": "bun scripts/verify-a0-evidence.ts",
     "verify:u0-evidence": "bun scripts/verify-u0-evidence.ts",
     "verify:c0-evidence": "bun scripts/verify-c0-evidence.ts",

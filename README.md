@@ -146,6 +146,7 @@ If source and artifact disagree, regenerate the artifact; do not copy changes ba
 | `bun run verify:f1-evidence` | Run the exact F1 suite and emit a hash-bound trace/seed/mutation ledger under `test-results/` |
 | `bun run verify:c0-evidence` | Run the exact C0 suite and emit a hash-bound adversarial-case, preset, trace, counter, and mutation ledger under `test-results/` |
 | `bun run verify:v2-evidence` | Re-run the exact V2 suite and validator from a drift-checked input closure, sweep seeded metamorphic charts against an independent exhaustive fold, and emit a hash-bound ledger under `test-results/` |
+| `bun run verify:e1-evidence` | Re-run the exact E1 MIDI-export suite and validator from a drift-checked input closure, sweep seeded plans through a freshly written independent SMF reader with replay, marker-permutation, tempo-isolation, and loss-recomputation relations, and emit a hash-bound ledger under `test-results/` |
 | `bun run verify` | Run the aggregate release-facing gate in dependency order |
 
 The aggregate gate does not silently skip, retry, quarantine, or relax a failed check.

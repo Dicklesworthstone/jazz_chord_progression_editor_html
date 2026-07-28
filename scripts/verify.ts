@@ -137,6 +137,10 @@ const gates: Gate[] = [
     command: [process.execPath, "scripts/verify-p0-evidence.ts"],
   },
   {
+    id: "e1-evidence",
+    command: [process.execPath, "scripts/verify-e1-evidence.ts"],
+  },
+  {
     id: "a0-evidence",
     command: [process.execPath, "scripts/verify-a0-evidence.ts"],
   },
