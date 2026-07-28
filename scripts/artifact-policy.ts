@@ -1388,6 +1388,17 @@ function inspectEnvelope(
         cspElement?.offset ?? 0,
       );
     }
+    // 'wasm-unsafe-eval' is the one permitted relaxation, and only on
+    // script-src: it lets the page instantiate the inventoried embedded
+    // wasm bytes. It authorizes no URL and stays forbidden elsewhere.
+    if (name !== "script-src" && values.includes("'wasm-unsafe-eval'")) {
+      collector.add(
+        "ARTIFACT_CSP_UNSAFE_SOURCE",
+        `$.artifact.csp.${name}`,
+        `${name} may not carry 'wasm-unsafe-eval'; only script-src may.`,
+        cspElement?.offset ?? 0,
+      );
+    }
   }
 
   const executableScripts = elements.filter(

@@ -186,7 +186,7 @@ const EXPECTED_SCHEMAS: Readonly<Record<ExpectedFilename, string>> = {
 };
 
 export const X0_REVIEWED_CONTRACT_BYTE_DIGEST =
-  "c3ae11c64ead87503a90ccf234fa3edb319c9f0f597b25d094ec2fa4086faf5c";
+  "d997a5bdbfb57416885add0cf03041036326914c014eac71699bd8d020e9223e";
 
 export const X0_REVIEWED_BYTE_DIGESTS: Readonly<
   Record<CompanionFilename, string>
@@ -196,21 +196,21 @@ export const X0_REVIEWED_BYTE_DIGESTS: Readonly<
   "impulse-golden.json":
     "43cc1f30289f60e0d15d57653b644db76684957a2d7e1e68e0e0304cba42699f",
   "instrument-recipes.json":
-    "4462c57b3c1dc77c152b28a9622d68c6dc37da40732f6674682cece7660c231e",
+    "5a690b958f59394a782eeeaaa5e7b468640158a8fa773c8a6c26fb4cf924b182",
   "lifecycle-cases.json":
-    "82e19dc0452efe6a9c773c76d6d85d02fbe4fe02d153b4bd4502a27ca9fb4e2c",
+    "3ad712126fe22bf314ea76e41fb501ee549be2ef944a45aafbe1c1f2e8b8dcf5",
   "listening-rubric.json":
-    "ccbe19943bba3c1534bfddd16cd17bdb09dffaab7d3aec4afb00b47c572addbd",
+    "d2111f1571cc044d9b19a77d64ec5e70f4d2a5de2c59ffd07369a875c7a1f491",
   "mutation-controls.json":
-    "d5c63589eab35983769e7fc8c7c2b2a63429b38acfbb446fd2223dbad435df78",
+    "12d896515143dcd978e7a8839692dfc6c4248e3569bf23f2268c8e2aa1466cad",
   "provenance-ledger.json":
-    "cf8b2de1e09c6ba9126aa2ddc0191d0b2f1b9a9cf7308a8e2aa28409872e14ef",
+    "66f3fa709c6ce6522abc7e881dbd83b587e14860c9e4db870ba0887231f94e1b",
   "registry-cases.json":
     "2f373b5d3fb35e99dc9c7dddf6b324a33cf76f94d62bfb210453c74788e391c8",
   "render-matrix.json":
-    "ef0aa260cf78a6c397ebf47bcca92103d36c053fd82bf08202e36a209214d96d",
+    "300ed448f53000fde7408929a556ed8c745382e6b39b53dd57950d8e032169b3",
   "trace-ledger.json":
-    "4fdf8175c3db442cb2b41ec0a6869d7d9fb578f0f3c7bb1806adaf0d16d0443a",
+    "ccf7414cd10a081377776d66b93eea48c484189c446d4a0d743ab92968f861c6",
 };
 
 export const X0_REVIEWED_OPERATION_ORDER = [
@@ -221,6 +221,7 @@ export const X0_REVIEWED_OPERATION_ORDER = [
   "retireAudioVoices",
   "inspectAudioEngine",
   "disposeAudioEngine",
+  "prepareRenderedAudioVoices",
 ] as const;
 
 export const X0_REVIEWED_STATES = [
@@ -267,6 +268,7 @@ export const X0_REVIEWED_REFUSAL_CODES = [
   "audio.retirement_selector_invalid",
   "audio.retirement_time_invalid",
   "audio.dispose_reason_invalid",
+  "audio.renderer_unavailable",
 ] as const;
 
 export const X0_REVIEWED_LIMITS = {
@@ -376,11 +378,51 @@ export const X0_REVIEWED_RECIPE_IDS = [
   "vibraphone",
   "warm-pad",
   "analog-poly",
+  "concert-grand",
 ] as const;
 
-export const X0_REVIEWED_RECIPE_LEVELS = [0.62, 0.48, 0.5, 0.3, 0.34] as const;
-export const X0_REVIEWED_RECIPE_POLYPHONY = [64, 48, 48, 32, 48] as const;
-export const X0_REVIEWED_RECIPE_SOURCE_COUNTS = [3, 2, 4, 3, 3] as const;
+export const X0_REVIEWED_RECIPE_LEVELS = [0.62, 0.48, 0.5, 0.3, 0.34, 0.85] as const;
+export const X0_REVIEWED_RECIPE_POLYPHONY = [64, 48, 48, 32, 48, 64] as const;
+export const X0_REVIEWED_RECIPE_SOURCE_COUNTS = [3, 2, 4, 3, 3, 1] as const;
+
+/**
+ * The reviewed rendered recipe, checked literal-by-literal the same way the
+ * additive and fm recipes are checked through the canonical recipe digest.
+ * A rendered voice schedules exactly one AudioBufferSourceNode of embedded
+ * project-owned DSP output; its amplitude keeps only the click-guard attack
+ * and the damper release, and its flat filter preserves the uniform
+ * source-filter-gain-bus voice topology.
+ */
+export const X0_REVIEWED_RENDERED_RECIPE = {
+  id: "concert-grand",
+  label: "Concert Grand",
+  designClaim:
+    "deterministic rendered piano: inharmonic partials, unison detuning, dual-rate decay, hammer noise",
+  synthesis: "rendered",
+  outputLevel: 0.85,
+  polyphonyLimit: 64,
+  scheduledSourceCount: 1,
+  renderer: {
+    algorithmId: "changes.dsp.concert-grand@1",
+    channels: 2,
+    maximumRenderSeconds: 8,
+    bufferCacheLimit: 96,
+  },
+  amplitude: {
+    attackSeconds: 0.002,
+    decaySeconds: 0,
+    sustainLevel: 1,
+    releaseSeconds: 0.2,
+  },
+  filter: {
+    type: "lowpass",
+    attackHz: 16_000,
+    peakHz: 16_000,
+    sustainHz: 16_000,
+    q: 0.5,
+    decaySeconds: 0.1,
+  },
+} as const;
 
 export const X0_REVIEWED_IMPULSE = {
   algorithmId: "changes.audio.impulse.xorshift32-q15.v1",
@@ -449,14 +491,14 @@ export const X0_REVIEWED_RELEASE_SECONDS = {
 export const X0_REVIEWED_COUNTS = {
   companions: 10,
   routingCases: 14,
-  recipes: 5,
+  recipes: 6,
   impulseCheckpoints: 8,
-  lifecycleCases: 45,
+  lifecycleCases: 46,
   registryCases: 32,
-  renderCases: 15,
-  listeningInstrumentRows: 5,
+  renderCases: 18,
+  listeningInstrumentRows: 6,
   listeningScenarioRows: 9,
-  mutationControls: 30,
+  mutationControls: 31,
   traces: 18,
   authorities: 7,
 } as const;
@@ -466,21 +508,21 @@ const REVIEWED_CANONICAL_DIGESTS = {
   graphEdges: "86f0e0d8307ab85e40d9ed1f1f1d7547f34018bf117a754521d3814ca4c526b0",
   graphSettings: "ed4816e5e4ea9fbcb1a941cddb2479db072453f54a44272f35717a6ebf9c53a5",
   routingCases: "cb78dae03ce88d9bc853f8c8a6339f6de64f53ad8d38d566d7b311191834b2cc",
-  recipes: "d49124cb527c33e992eb88e3d903ac15bed5992fc31a05ce8a5ebdd64a20c3bd",
-  normalization: "3a8f10911fc1f7e39c4decd287f377882c227141c46706653571628065bd7c03",
+  recipes: "23f53a2698cf74530a378a0eb04e6cc9d14d0649048964531df35b26a8ef42d4",
+  normalization: "7decf2152281865e7b29827a25f26807f14f265316da2b70d744e0fa13ff255e",
   pulse: "e5bad32f09dbfe03ef87124d811125144145168bc8f07a48ef78b530b1c1e839",
   impulseCheckpoints: "f3a26aed6b7239dfb6ac4aec73710626254df8efdc78e58ba7afa412e8b7f4a6",
-  lifecycleCases: "e1b8436a7416e52e7749a02ddb4dbcfee0a896314d1316ba9c779dfe9730b85b",
+  lifecycleCases: "2c62e2859e3b9f38f146d7ffd8d6546580f6ee43153c9be68b39330684760c2e",
   registryCases: "97191f50abef6e929f508244f2c5e260d4c9a3616380cb87477a841f02d598f1",
   renderPolicy: "2f48761e269d258d5768c5a708b744c663897140871f9eeadef083ab594cd5db",
-  renderCases: "cf4b4a953cb3d37ae9c9f7e8fd9185d77ac792a173598f2818b7502113f0cefe",
+  renderCases: "85f86f1edc7e570d8c69f57185ce31d613c7b9a8eedeccea6b4f66b3523995f6",
   listeningInstruments:
-    "f49499de30ca267564b89b4505ddf5adf66dbc0f951b2a726e5ffc265286ea0b",
+    "e676a634a33271eab7f4c2ed9d8cbda008248b3a4403afbe0fc6db4c31596906",
   listeningScenarios:
     "ac4e15093fb990ec23eadb7c9470002442cafc732dbf3b7ac8457e3787424e31",
-  authorities: "0d05bf5b8a4a3a6ad0656ad48b953b83e5609998b18e6a21e6551f08a7b389b1",
-  controls: "12daaa242b90715ae7aef16b09448460b3bd010d6b870de5ba4b1ad4cc514216",
-  traces: "a1758edccec8e27d504bc3a3d8a1974f0d65266601bdc69f6f2df2b7b839f7af",
+  authorities: "b964ac82a872c50a40454571225f1a033b25c08f1b25f7a18ca61947b5d52040",
+  controls: "dfd0d0df78484042f29d7825c376219d5adf81c2d69f53194e7838f44c8bd2aa",
+  traces: "07699cf1ff56714749b89f2e5ff5d8ea6c9c21b1585eb16285f4f51c52e0e44b",
 } as const;
 
 type ParsedFixture = Readonly<{
@@ -885,6 +927,24 @@ function validateRecipes(value: JsonObject | undefined, findings: X0ContractFind
     recipeRows.map((recipe) => recipe.scheduledSourceCount),
     X0_REVIEWED_RECIPE_SOURCE_COUNTS,
   );
+  const renderedRows = recipeRows.filter(
+    (recipe) => recipe["synthesis"] === "rendered",
+  );
+  if (renderedRows.length !== 1) {
+    addFinding(
+      findings,
+      "X0_RECIPES",
+      "recipes.rendered",
+      "exactly one reviewed rendered recipe is required",
+    );
+  }
+  expectEqual(
+    findings,
+    "X0_RECIPES",
+    "recipes.rendered.concert-grand",
+    renderedRows[0],
+    X0_REVIEWED_RENDERED_RECIPE,
+  );
   expectCanonicalDigest(
     findings,
     "X0_NORMALIZATION",
@@ -1110,7 +1170,7 @@ function validateRender(value: JsonObject | undefined, findings: X0ContractFindi
     "X0_RENDER_CASES",
     "render.cases",
     value.cases,
-    15,
+    18,
     "X0-RENDER-",
   );
   const recipeCounts = new Map<string, number>();
@@ -1167,7 +1227,7 @@ function validateListening(
     "X0_LISTENING_ROWS",
     "listening.instrumentRows",
     value.instrumentRows,
-    5,
+    6,
     "X0-LISTEN-INST-",
   );
   const scenarioIds = validateUniqueIds(
@@ -1217,7 +1277,7 @@ function validateMutations(
     "X0_MUTATIONS",
     "mutations.controls",
     value.controls,
-    30,
+    31,
     "X0-MUT-",
   );
   const allowedFiles = new Set<string>(EXPECTED_FILES);
@@ -1438,7 +1498,7 @@ export async function validateX0Contract(
   validateImpulse(impulse, findings);
   const lifecycleIds = validateCaseCorpus(lifecycle, findings, {
     key: "lifecycle",
-    count: 45,
+    count: 46,
     prefix: "X0-LIFE-",
     code: "X0_LIFECYCLE_CASES",
     digest: REVIEWED_CANONICAL_DIGESTS.lifecycleCases,

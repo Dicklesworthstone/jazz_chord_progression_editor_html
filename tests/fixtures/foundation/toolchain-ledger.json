@@ -66,6 +66,15 @@
       "source": "https://github.com/eslint/eslint"
     },
     {
+      "name": "libm",
+      "version": "0.2.16",
+      "role": "wasm-softfloat-math",
+      "class": "compiled-into-wasm",
+      "bundledInArtifact": true,
+      "license": "MIT OR Apache-2.0",
+      "source": "https://github.com/rust-lang/libm"
+    },
+    {
       "name": "node",
       "version": "24.18.0",
       "role": "preferred-playwright-runtime",

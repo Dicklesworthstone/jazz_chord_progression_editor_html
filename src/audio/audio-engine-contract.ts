@@ -20,6 +20,7 @@ export const AUDIO_ENGINE_OPERATION_NAMES = Object.freeze([
   "retireAudioVoices",
   "inspectAudioEngine",
   "disposeAudioEngine",
+  "prepareRenderedAudioVoices",
 ] as const);
 
 export type AudioEngineOperationName =
@@ -74,6 +75,7 @@ export const AUDIO_ENGINE_REFUSAL_CODES = Object.freeze([
   "audio.retirement_selector_invalid",
   "audio.retirement_time_invalid",
   "audio.dispose_reason_invalid",
+  "audio.renderer_unavailable",
 ] as const);
 
 export type AudioEngineRefusalCode =
@@ -527,6 +529,27 @@ export type AudioEngine = Readonly<{
   disposeAudioEngine(
     request: DisposeAudioEngineRequest,
   ): Promise<AudioEngineResult<AudioDisposeReceipt>>;
+  /**
+   * Warm the rendered-instrument buffer cache for the given notes so the
+   * synchronous attack path finds every buffer ready. Idempotent per note;
+   * a non-rendered instrument resolves as an empty receipt. An attack that
+   * misses the cache still succeeds by rendering synchronously — this
+   * operation exists to keep that slow path off the scheduling deadline.
+   */
+  prepareRenderedAudioVoices(
+    request: PrepareRenderedVoicesRequest,
+  ): Promise<AudioEngineResult<PrepareRenderedVoicesReceipt>>;
+}>;
+
+export type PrepareRenderedVoicesRequest = Readonly<{
+  instrumentId: InstrumentId;
+  notes: readonly Readonly<{ midiPitch: MidiPitch; velocity: number }>[];
+}>;
+
+export type PrepareRenderedVoicesReceipt = Readonly<{
+  instrumentId: InstrumentId;
+  renderedCount: number;
+  cachedCount: number;
 }>;
 
 export type CreateAudioEngine = (platform: AudioPlatform) => AudioEngine;

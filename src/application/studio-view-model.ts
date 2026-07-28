@@ -272,6 +272,8 @@ function instrumentLabel(instrumentId: InstrumentId): string {
       return "Warm Pad";
     case "analog-poly":
       return "Analog Poly";
+    case "concert-grand":
+      return "Concert Grand";
   }
 }
 

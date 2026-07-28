@@ -1,0 +1,22 @@
+[package]
+name = "concert-grand"
+version = "1.0.0"
+edition = "2021"
+license = "MIT"
+description = "Deterministic rendered-piano and spectrum-analysis DSP core for Changes (compiled to wasm32-unknown-unknown and embedded in the standalone artifact)."
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# Software float transcendentals: identical results on every host and in
+# every browser, which is what lets the PCM goldens pin exact hashes.
+libm = "0.2"
+
+[profile.release]
+opt-level = "z"
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = "symbols"

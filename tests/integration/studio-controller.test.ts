@@ -36,7 +36,7 @@ describe("studio application checkpoint", () => {
       tempoBpm: 120,
       key: null,
       playback: {
-        instrumentId: "mellow-keys",
+        instrumentId: "concert-grand",
         masterVolume: 0.8,
         reverbAmount: 0.2,
         countInBars: 0,
@@ -71,7 +71,7 @@ describe("studio application checkpoint", () => {
       meterLabel: "4/4",
       tempoBpm: 120,
       keyLabel: "No key",
-      instrumentLabel: "Mellow Keys",
+      instrumentLabel: "Concert Grand",
       masterVolume: 0.8,
       reverbAmount: 0.2,
       countInBars: 0,

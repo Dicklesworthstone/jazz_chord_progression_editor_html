@@ -42,6 +42,13 @@
       "label": "Analog Poly",
       "requiredPerception": ["distinct saw and pulse color", "audible quiet sub foundation", "resonant filter motion without whistle", "compact synth release"],
       "rejectIf": ["pulse is indistinguishable from saw", "resonance rings painfully", "sub dominates voicing", "label claims analog circuitry"]
+    },
+    {
+      "id": "X0-LISTEN-INST-006",
+      "instrumentId": "concert-grand",
+      "label": "Concert Grand",
+      "requiredPerception": ["percussive hammer-like onset without a click", "inharmonic piano-like partials with audible unison shimmer", "fast early decay settling into a longer singing tail", "damper-style release that ends cleanly"],
+      "rejectIf": ["sounds like a static organ-like sustain", "metallic alias-like harshness", "click at attack or release", "label claims a sampled or recorded acoustic piano"]
     }
   ],
   "scenarioRows": [

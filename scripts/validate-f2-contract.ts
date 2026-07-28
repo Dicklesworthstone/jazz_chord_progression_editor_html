@@ -211,7 +211,7 @@ const EXPECTED_REVIEWED_DIGESTS = {
     "provenance-ledger.json":
       "e9a24fdb862292cc774e5866c704160d33110f270aa43fe058cc55d390daef99",
     "shape-cases.json":
-      "da96366002d40fe30bfb564b262a696723e217ea9a6271919b0db72da309d1b2",
+      "97015da60e1fc4a2b30fcecc92ad4e23f4be9c8d7f442a43d479b29a8f0e59b9",
     "trace-ledger.json":
       "664427ba257c0a6efcad69d926b472def777d20326c24cf22f62dd79c90ad6cd",
   },
@@ -227,13 +227,13 @@ const EXPECTED_REVIEWED_DIGESTS = {
 const EXPECTED_SEMANTIC_SNAPSHOT_DIGESTS = {
   json: {
     "f2-decoder-contract.json":
-      "a5ec89058c84126dcb5d3ca8700858a14dd7a2a733581e39248c8472dfb4a300",
+      "7c2604b429b87e645a4c69c9306b086013c9d165faa5a23cffd150ec67b31563",
     "adversarial-cases.json":
       "4a321bf2437b7a4ee37861f7dd387ab50b3d2b11bc51e553ed791752047f2f69",
     "provenance-ledger.json":
       "45eabc724d9d0a4e9ca2fab5bc1189c1eb042b0b1272fcdf6f3b37d88a9ffef1",
     "shape-cases.json":
-      "240735ad36763dd9a9c7e55e7398e3a7c2af773627bac0083ad7f0c8719207ae",
+      "bee4b306ffe3b0977c5dbbce8be29f5b06e0fe29086915d2dd41511adff51bd4",
     "trace-ledger.json":
       "bf61e11d067bbcf466fa8e9a376dbf23007f1eb7f28705010679ac0760100199",
   },
@@ -307,6 +307,7 @@ const EXPECTED_INVENTORIES = {
     "vibraphone",
     "warm-pad",
     "analog-poly",
+    "concert-grand",
   ],
   completionKinds: ["empty", "complete", "pickup", "incomplete"],
   voiceLeadingBoundaries: ["continue", "reset"],

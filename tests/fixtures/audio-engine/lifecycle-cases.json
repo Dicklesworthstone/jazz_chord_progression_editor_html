@@ -515,6 +515,18 @@
       "expectedGraphDelta": 1,
       "expectedCode": null,
       "expectedDetail": "admitted initialization has no AbortSignal or cancellation hook and leaves no partial graph"
+    },
+    {
+      "id": "X0-LIFE-046",
+      "category": "renderer-unavailable",
+      "setup": "ready engine whose embedded DSP renderer module failed to load; otherwise valid concert-grand batch",
+      "action": "attack one concert-grand voice",
+      "expectedOutcome": "refused",
+      "expectedState": "ready",
+      "expectedContextDelta": 0,
+      "expectedGraphDelta": 0,
+      "expectedCode": "audio.renderer_unavailable",
+      "expectedDetail": "refusal is atomic before any node or registry mutation and oscillator recipes keep working"
     }
   ]
 }

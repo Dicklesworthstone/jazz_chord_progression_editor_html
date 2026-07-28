@@ -57,7 +57,7 @@ const STUDIO_BLANK_DOCUMENT_CANDIDATE = Object.freeze({
     }),
   ]),
   playback: Object.freeze({
-    instrumentId: "mellow-keys",
+    instrumentId: "concert-grand",
     masterVolume: 0.8,
     reverbAmount: 0.2,
     countInBars: 0,

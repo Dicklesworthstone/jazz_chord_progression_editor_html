@@ -14,6 +14,7 @@ import {
 } from "./audio-engine-contract";
 import { holdAudioParamAtTime } from "./audio-dsp";
 import type {
+  AudioBufferPort,
   AudioContextPort,
   AudioNodePort,
   AudioParamPort,
@@ -87,6 +88,8 @@ export type PrepareSynthVoiceRequest = Readonly<{
   normalizationGain: number;
   velocityGain: number;
   recipe: AudioInstrumentRecipe;
+  /** Deterministic PCM for rendered recipes; null for oscillator recipes. */
+  renderedBuffer: AudioBufferPort | null;
   onSourceEnded(
     graphInstanceId: number,
     voiceId: string,
@@ -409,7 +412,7 @@ export function prepareSynthVoice(
         tremoloOscillator.onended = () => { onEnded(ordinal); };
         sources.push({ ordinal, node: tremoloOscillator });
       }
-    } else {
+    } else if (request.recipe.synthesis === "fm-pair") {
       const carrier = request.context.createOscillator();
       ownedNodes.push(carrier);
       const carrierGain = request.context.createGain();
@@ -501,6 +504,25 @@ export function prepareSynthVoice(
       const modulatorOrdinal = sources.length;
       modulator.onended = () => { onEnded(modulatorOrdinal); };
       sources.push({ ordinal: modulatorOrdinal, node: modulator });
+    } else {
+      /*
+       * Rendered instrument: one buffer source carrying deterministic PCM
+       * from the embedded DSP module. The buffer's own decay is the musical
+       * envelope; the shared amplitude gain contributes only the click-guard
+       * attack and the damper release, and the recipe's flat filter keeps the
+       * uniform source → filter → gain → bus voice topology.
+       */
+      if (request.renderedBuffer === null) {
+        throw new Error("AUDIO_RENDERED_BUFFER_MISSING");
+      }
+      const bufferSource = request.context.createBufferSource();
+      ownedNodes.push(bufferSource);
+      bufferSource.buffer = request.renderedBuffer;
+      bufferSource.connect(filter);
+      amplitudeGain.connect(request.instrumentBus);
+      const ordinal = sources.length;
+      bufferSource.onended = () => { onEnded(ordinal); };
+      sources.push({ ordinal, node: bufferSource });
     }
 
     setValue(amplitudeGain.gain, 0, request.startTimeSeconds, record);

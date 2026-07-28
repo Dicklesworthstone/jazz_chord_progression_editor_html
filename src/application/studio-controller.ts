@@ -12,6 +12,7 @@ import {
   type ChordEventId,
   type ChordSpec,
   type MeasureCompletion,
+  type MidiPitch,
   type ParsedChordEvent,
   type MeasureId,
   type SectionId,
@@ -3577,6 +3578,30 @@ function makeStudioController(
       planRevision: state.revision,
     });
     const port = audioPort;
+    /*
+     * The document's instrument travels with every run: the transport keeps
+     * its own instrument state, and before this handoff existed its default
+     * silently overrode the document. Rendered instruments also pre-render
+     * their note buffers here so the scheduler's synchronous attacks land on
+     * a warm cache instead of a render inside the lookahead deadline.
+     */
+    const instrumentId = state.document.playback.instrumentId;
+    const distinctNotes = new Map<
+      string,
+      Readonly<{ midiPitch: MidiPitch; velocity: number }>
+    >();
+    for (const event of compiled.plan.events) {
+      for (const midiPitch of event.midiPitches) {
+        const key = `${String(midiPitch)}:${String(event.velocity)}`;
+        if (!distinctNotes.has(key)) {
+          distinctNotes.set(
+            key,
+            Object.freeze({ midiPitch, velocity: event.velocity }),
+          );
+        }
+      }
+    }
+    const preparedNotes = Object.freeze([...distinctNotes.values()]);
     void (async () => {
       if (!port.isInitialized()) {
         await port.initialize(
@@ -3584,13 +3609,24 @@ function makeStudioController(
           gesture,
           binding.documentId,
           binding.planRevision,
+          /* jcpe-vy6w: the document, not a module constant, owns the mix. */
+          Object.freeze({
+            masterVolume: state.document.playback.masterVolume,
+            reverbAmount: state.document.playback.reverbAmount,
+          }),
         );
+        await port.prepareInstrument(instrumentId, preparedNotes);
+        await port.setInstrument(nextTransportRequestId(), instrumentId);
         const playRequestId = nextTransportRequestId();
         expectTransport("play-progression", playRequestId, "starting", startBeat);
         await port.play(playRequestId, binding, startBeat);
         return;
       }
-      await port.play(commandRequestId, binding, startBeat);
+      await port.prepareInstrument(instrumentId, preparedNotes);
+      await port.setInstrument(nextTransportRequestId(), instrumentId);
+      const playRequestId = nextTransportRequestId();
+      expectTransport("play-progression", playRequestId, "starting", startBeat);
+      await port.play(playRequestId, binding, startBeat);
     })();
     return expectation;
   };

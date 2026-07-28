@@ -6648,7 +6648,8 @@
             "fm-electric-piano",
             "vibraphone",
             "warm-pad",
-            "analog-poly"
+            "analog-poly",
+            "concert-grand"
           ]
         },
         {
@@ -7026,7 +7027,7 @@
           {
             "source": "acceptedCells",
             "order": "entry-major then nested values order",
-            "atomicCellCount": 40
+            "atomicCellCount": 41
           },
           {
             "source": "rejectedCells",
@@ -7044,7 +7045,7 @@
             "atomicCellCount": 10
           }
         ],
-        "atomicCellCount": 88
+        "atomicCellCount": 89
       },
       "expected": {
         "exactNestedPaths": true,
@@ -7064,7 +7065,7 @@
           "instrumentIds",
           "countInBars"
         ],
-        "materializedCellCount": 88
+        "materializedCellCount": 89
       }
     },
     {

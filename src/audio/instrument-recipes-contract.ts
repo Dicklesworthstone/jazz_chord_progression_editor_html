@@ -167,9 +167,28 @@ export type AudioFmInstrumentRecipe = AudioInstrumentRecipeBase &
     }>;
   }>;
 
+/**
+ * A rendered recipe plays deterministic PCM produced by the embedded DSP
+ * module instead of scheduling oscillators. The buffer's own decay is the
+ * musical envelope; the recipe amplitude keeps only a click-guard attack and
+ * the damper release, and the flat filter preserves the uniform per-voice
+ * topology (source → filter → gain → bus).
+ */
+export type AudioRenderedInstrumentRecipe = AudioInstrumentRecipeBase &
+  Readonly<{
+    synthesis: "rendered";
+    renderer: Readonly<{
+      algorithmId: string;
+      channels: 2;
+      maximumRenderSeconds: number;
+      bufferCacheLimit: number;
+    }>;
+  }>;
+
 export type AudioInstrumentRecipe =
   | AudioAdditiveInstrumentRecipe
-  | AudioFmInstrumentRecipe;
+  | AudioFmInstrumentRecipe
+  | AudioRenderedInstrumentRecipe;
 
 export const AUDIO_INSTRUMENT_RECIPES = Object.freeze([
   Object.freeze({
@@ -259,6 +278,24 @@ export const AUDIO_INSTRUMENT_RECIPES = Object.freeze([
     tremolo: null,
     amplitude: Object.freeze({ attackSeconds: 0.012, decaySeconds: 0.3, sustainLevel: 0.52, releaseSeconds: 0.65 }),
     filter: Object.freeze({ type: "lowpass", attackHz: 700, peakHz: 4_800, sustainHz: 1_300, q: 4.2, decaySeconds: 0.32 }),
+  }),
+  Object.freeze({
+    id: "concert-grand",
+    label: "Concert Grand",
+    designClaim:
+      "deterministic rendered piano: inharmonic partials, unison detuning, dual-rate decay, hammer noise",
+    synthesis: "rendered",
+    outputLevel: 0.85,
+    polyphonyLimit: 64,
+    renderer: Object.freeze({
+      algorithmId: "changes.dsp.concert-grand@1",
+      channels: 2,
+      maximumRenderSeconds: 8,
+      bufferCacheLimit: 96,
+    }),
+    /* Click guard and damper only: the rendered PCM carries the real envelope. */
+    amplitude: Object.freeze({ attackSeconds: 0.002, decaySeconds: 0, sustainLevel: 1, releaseSeconds: 0.2 }),
+    filter: Object.freeze({ type: "lowpass", attackHz: 16_000, peakHz: 16_000, sustainHz: 16_000, q: 0.5, decaySeconds: 0.1 }),
   }),
 ] as const satisfies readonly AudioInstrumentRecipe[]);
 

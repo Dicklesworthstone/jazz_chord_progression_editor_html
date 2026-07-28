@@ -244,7 +244,13 @@ function bootHarness(): StudioAudibleEvidenceApi {
      * way through — pure observation, no behavior of its own.
      */
     const audio: StudioAudioPort = Object.freeze({
-      initialize: async (commandRequestId, gesture, documentId, planRevision) =>
+      initialize: async (
+        commandRequestId,
+        gesture,
+        documentId,
+        planRevision,
+        initialMix,
+      ) =>
         journalCommand(
           "initialize",
           await realPort.initialize(
@@ -252,6 +258,7 @@ function bootHarness(): StudioAudibleEvidenceApi {
             gesture,
             documentId,
             planRevision,
+            initialMix,
           ),
         ),
       play: async (commandRequestId, binding, startBeat) =>
@@ -268,6 +275,12 @@ function bootHarness(): StudioAudibleEvidenceApi {
         ),
       stop: async (commandRequestId) =>
         journalCommand("stop", await realPort.stop(commandRequestId)),
+      setInstrument: async (commandRequestId, instrumentId) =>
+        journalCommand(
+          "set-instrument",
+          await realPort.setInstrument(commandRequestId, instrumentId),
+        ),
+      prepareInstrument: realPort.prepareInstrument,
       subscribe: realPort.subscribe,
       isInitialized: realPort.isInitialized,
       readPlayheadBeat: realPort.readPlayheadBeat,

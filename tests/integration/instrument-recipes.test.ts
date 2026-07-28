@@ -71,6 +71,16 @@ const RECIPE_CASES: readonly Readonly<{
     attackSeconds: 0.012,
     releaseSeconds: 0.65,
   },
+  {
+    caseId: "X0-RENDER-016",
+    instrumentId: "concert-grand",
+    label: "Concert Grand",
+    outputLevel: 0.85,
+    polyphonyLimit: 64,
+    scheduledSourceCount: 1,
+    attackSeconds: 0.002,
+    releaseSeconds: 0.2,
+  },
 ];
 
 function oneEvent(
@@ -161,9 +171,9 @@ function expectOscillatorComponent(
 }
 
 describe("TR-X0-RECIPES instrument recipes", () => {
-  test("X0-RENDER-001/X0-RENDER-004/X0-RENDER-007/X0-RENDER-010/X0-RENDER-013 schedules every exact source-owned recipe", async () => {
+  test("X0-RENDER-001/X0-RENDER-004/X0-RENDER-007/X0-RENDER-010/X0-RENDER-013/X0-RENDER-016 schedules every exact source-owned recipe", async () => {
     const { engine, fake, context } = await readyEngine();
-    expect(AUDIO_INSTRUMENT_RECIPES).toHaveLength(5);
+    expect(AUDIO_INSTRUMENT_RECIPES).toHaveLength(6);
 
     for (let index = 0; index < RECIPE_CASES.length; index += 1) {
       const expected = RECIPE_CASES[index];
@@ -497,6 +507,35 @@ describe("TR-X0-RECIPES instrument recipes", () => {
               event.subject === lifecycleGainId,
           ).detail,
         ).toBe(filterId);
+      } else if (reviewed.synthesis === "rendered") {
+        const renderer = reviewed.renderer;
+        if (renderer === undefined) {
+          throw new Error("TEST_REVIEWED_RENDERED_RECIPE_MALFORMED");
+        }
+        expect(renderer).toEqual({
+          algorithmId: "changes.dsp.concert-grand@1",
+          channels: 2,
+          maximumRenderSeconds: 8,
+          bufferCacheLimit: 96,
+        });
+        expect(oscillatorIds).toHaveLength(0);
+        const bufferSourceIds = nodeCreates
+          .filter((event) => event.detail === "buffer-source")
+          .map((event) => event.subject);
+        expect(bufferSourceIds).toHaveLength(1);
+        const bufferSourceId = bufferSourceIds[0];
+        if (bufferSourceId === undefined) {
+          throw new Error("TEST_RECIPE_BUFFER_SOURCE_MISSING");
+        }
+        expect(
+          oneEvent(
+            events,
+            `${reviewed.id} rendered source filter connection`,
+            (event) =>
+              event.kind === "node-connect" &&
+              event.subject === bufferSourceId,
+          ).detail,
+        ).toBe(filterId);
       } else {
         throw new Error("TEST_REVIEWED_RECIPE_SYNTHESIS_UNKNOWN");
       }
@@ -517,6 +556,7 @@ describe("TR-X0-RECIPES instrument recipes", () => {
       "X0-RENDER-007",
       "X0-RENDER-010",
       "X0-RENDER-013",
+      "X0-RENDER-016",
     ]);
   });
 });

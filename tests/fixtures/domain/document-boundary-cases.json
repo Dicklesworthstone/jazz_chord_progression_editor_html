@@ -66,8 +66,8 @@
       "traceIds": ["F1-TRACE-DOCUMENT-TYPES"],
       "authorityIds": ["F1-AUTH-DOCUMENT"],
       "kind": "instrument-id-set",
-      "input": ["mellow-keys", "fm-electric-piano", "vibraphone", "warm-pad", "analog-poly"],
-      "expected": {"allValid": true, "preservedOrder": ["mellow-keys", "fm-electric-piano", "vibraphone", "warm-pad", "analog-poly"]}
+      "input": ["mellow-keys", "fm-electric-piano", "vibraphone", "warm-pad", "analog-poly", "concert-grand"],
+      "expected": {"allValid": true, "preservedOrder": ["mellow-keys", "fm-electric-piano", "vibraphone", "warm-pad", "analog-poly", "concert-grand"]}
     },
     {
       "id": "F1-DOC-004",

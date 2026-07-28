@@ -30,7 +30,12 @@ import {
   type TransportTimerHandle,
   type TransportTimingPolicy,
 } from "../audio";
-import type { BeatPosition, DocumentId } from "../domain";
+import type {
+  BeatPosition,
+  DocumentId,
+  InstrumentId,
+  MidiPitch,
+} from "../domain";
 import type { PlaybackPlan } from "../playback";
 
 /**
@@ -58,6 +63,12 @@ export type StudioAudioPort = Readonly<{
     gesture: StudioAudioGesture,
     documentId: DocumentId,
     planRevision: number,
+    /**
+     * The document's playback mix. The document is the mix authority
+     * (jcpe-vy6w); the module default exists only for callers with no
+     * document in hand.
+     */
+    initialMix?: AudioMix,
   ) => Promise<TransportCommandOutcome>;
   play: (
     commandRequestId: number,
@@ -70,6 +81,20 @@ export type StudioAudioPort = Readonly<{
     gesture: StudioAudioGesture | null,
   ) => Promise<TransportCommandOutcome>;
   stop: (commandRequestId: number) => Promise<TransportCommandOutcome>;
+  /** Bind the document's instrument to the next run's scheduled attacks. */
+  setInstrument: (
+    commandRequestId: number,
+    instrumentId: InstrumentId,
+  ) => Promise<TransportCommandOutcome>;
+  /**
+   * Warm the rendered-instrument buffer cache for the run's distinct notes.
+   * Resolves false when the renderer refuses; oscillator instruments resolve
+   * true without work.
+   */
+  prepareInstrument: (
+    instrumentId: InstrumentId,
+    notes: readonly Readonly<{ midiPitch: MidiPitch; velocity: number }>[],
+  ) => Promise<boolean>;
   /** Every transport notification, in the order the service published them. */
   subscribe: (
     listener: (notification: TransportServiceNotification) => void,
@@ -252,14 +277,20 @@ export function createStudioAudio(
   };
 
   return Object.freeze({
-    initialize: async (commandRequestId, gesture, documentId, planRevision) => {
+    initialize: async (
+      commandRequestId,
+      gesture,
+      documentId,
+      planRevision,
+      initialMix,
+    ) => {
       const outcome = await submit(
         commandRequestId,
         Object.freeze({
           kind: "initialize-transport" as const,
           gesture,
           timing: STUDIO_TRANSPORT_TIMING,
-          initialMix: STUDIO_INITIAL_MIX,
+          initialMix: initialMix ?? STUDIO_INITIAL_MIX,
           documentId,
           planRevision,
         }),
@@ -289,6 +320,26 @@ export function createStudioAudio(
       ),
     stop: async (commandRequestId) =>
       submit(commandRequestId, Object.freeze({ kind: "stop" as const })),
+    setInstrument: async (commandRequestId, instrumentId) =>
+      submit(
+        commandRequestId,
+        Object.freeze({ kind: "set-instrument" as const, instrumentId }),
+      ),
+    prepareInstrument: async (instrumentId, notes) => {
+      const outcome = await engine.prepareRenderedAudioVoices({
+        instrumentId,
+        notes,
+      });
+      /*
+       * One extra macrotask before the caller submits transport commands:
+       * the browser gets a full event-loop turn to refresh the audio clock
+       * after the render burst, so the play epoch anchors on a live reading.
+       */
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 0);
+      });
+      return outcome.ok;
+    },
     subscribe: (listener) => {
       listeners.add(listener);
       return () => listeners.delete(listener);

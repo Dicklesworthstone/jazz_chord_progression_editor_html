@@ -32,6 +32,7 @@
     { "id": "X0-MUT-027", "file": "render-matrix.json", "operation": "replace", "pointer": "/cases/7/expectedSourceCount", "value": 21, "expectedFindingCode": "X0_RENDER_CASES" },
     { "id": "X0-MUT-028", "file": "listening-rubric.json", "operation": "replace", "pointer": "/automatedListeningClaim", "value": true, "expectedFindingCode": "X0_LISTENING_POLICY" },
     { "id": "X0-MUT-029", "file": "provenance-ledger.json", "operation": "replace", "pointer": "/productionOutputUsed", "value": true, "expectedFindingCode": "X0_PROVENANCE" },
-    { "id": "X0-MUT-030", "file": "trace-ledger.json", "operation": "replace", "pointer": "/traces/0/caseIds/0", "value": "X0-MISSING-999", "expectedFindingCode": "X0_TRACE_LINK" }
+    { "id": "X0-MUT-030", "file": "trace-ledger.json", "operation": "replace", "pointer": "/traces/0/caseIds/0", "value": "X0-MISSING-999", "expectedFindingCode": "X0_TRACE_LINK" },
+    { "id": "X0-MUT-031", "file": "instrument-recipes.json", "operation": "replace", "pointer": "/recipes/5/outputLevel", "value": 0.9, "expectedFindingCode": "X0_RECIPES" }
   ]
 }

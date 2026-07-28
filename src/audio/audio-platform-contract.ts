@@ -93,6 +93,22 @@ export type ConvolverNodePort = AudioNodePort & {
   normalize: boolean;
 };
 
+export type AudioBufferSourceNodePort = AudioScheduledSourceNodePort & {
+  buffer: AudioBufferPort | null;
+};
+
+/**
+ * Read-only spectral tap for the analyzer surface. It observes the master
+ * signal; it cannot alter it, and it is never part of the persistent graph —
+ * the engine attaches it on demand and counts it like a dynamic node.
+ */
+export type AnalyserNodePort = AudioNodePort & {
+  fftSize: number;
+  readonly frequencyBinCount: number;
+  smoothingTimeConstant: number;
+  getFloatTimeDomainData(target: Float32Array<ArrayBuffer>): void;
+};
+
 export type AudioBufferPort = {
   readonly numberOfChannels: number;
   readonly length: number;
@@ -128,6 +144,8 @@ export type AudioContextPort = {
     length: number,
     sampleRate: number,
   ): AudioBufferPort;
+  createBufferSource(): AudioBufferSourceNodePort;
+  createAnalyser(): AnalyserNodePort;
   createPeriodicWave(
     real: Float32Array,
     imag: Float32Array,

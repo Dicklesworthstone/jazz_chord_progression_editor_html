@@ -42,7 +42,7 @@ The public source files are:
 |---|---|
 | `src/audio/audio-platform-contract.ts` | narrow injectable browser/fake/offline adapter ports |
 | `src/audio/audio-engine-contract.ts` | operations, states, inputs, receipts, refusals, snapshots, ordering, and bounds |
-| `src/audio/instrument-recipes-contract.ts` | graph DSP constants, impulse policy, five recipes, pulse, and normalization |
+| `src/audio/instrument-recipes-contract.ts` | graph DSP constants, impulse policy, six recipes, pulse, and normalization |
 | `src/audio/index.ts` | the only public package barrel |
 
 Only production audio modules may construct Web Audio objects. Fake and real
@@ -175,7 +175,7 @@ The left/right hashes, eight checkpoints, peak, and final PRNG state are frozen
 in `impulse-golden.json`. The validator independently recomputes this integer
 oracle; production impulse code is never imported.
 
-## 5. Five honest recipes
+## 5. Six honest recipes
 
 All components of an additive recipe sum to 1. FM's modulator routes only to the
 carrier frequency parameter. A recipe filter is a per-voice low-pass before the
@@ -189,6 +189,7 @@ is separate and remains fixed.
 | Vibraphone | sine 1x .88; sine 4x .12; sine transient 7x .1; tremolo LFO | .5 | 48 | .002/1.4/.45/1.1 | 7000/12000/7000 Hz, .3, .25 s |
 | Warm Pad | saws at -7/+7 cents .34 each; triangle .32 | .3 | 32 | .32/1.2/.72/1.8 | 900/2800/1600 Hz, .8, 1.4 s |
 | Analog Poly | saw -4 cents .48; 25% pulse +4 cents .36; sine sub .5x .16 | .34 | 48 | .012/.3/.52/.65 | 700/4800/1300 Hz, 4.2, .32 s |
+| Concert Grand | one rendered PCM buffer source (embedded project DSP) | .85 | 64 | .002/0/1/.2 | 16000/16000/16000 Hz, .5, .1 s |
 
 FM peak/sustain indices are 3.2/.55 over .65 seconds. Velocity linearly maps its
 index multiplier from .55 at velocity 1 to 1 at velocity 127. Vibraphone's
@@ -204,6 +205,25 @@ normalization enabled, cosine coefficient
 The independently authored recipe file is the exhaustive value authority. A
 recipe's label claims only the declared synthetic design; it does not claim a
 sampled brand, acoustic model, analog circuitry, or mastering behavior.
+
+### 5.1 Concert Grand rendered recipe (additive amendment, 2026-07-28)
+
+Concert Grand is a rendered deterministic PCM instrument. The embedded
+project-owned wasm DSP module (`changes.dsp.concert-grand@1`, two channels,
+at most 8 render seconds per note) deterministically synthesizes inharmonic
+partials, unison detuning, dual-rate decay, and hammer noise; no sample,
+network, or third-party asset is involved. A rendered voice schedules exactly
+one `AudioBufferSourceNode` and keeps the uniform source → filter → gain →
+bus per-voice topology. Its recipe amplitude carries only a click-guard
+attack (.002 s) and the damper release (.2 s) because the buffer's own decay
+is the musical envelope, and its flat 16 kHz low-pass preserves the shared
+filter stage without coloring the render. Rendered buffers live in a
+per-note LRU cache bounded at 96 entries. The eighth public operation,
+`prepareRenderedAudioVoices()`, warms that cache so the synchronous attack
+path finds every buffer ready; an attack that misses the cache still
+succeeds by rendering synchronously. An engine whose renderer module failed
+to load refuses rendered work with `audio.renderer_unavailable` while every
+oscillator recipe keeps working.
 
 ## 6. Parameter automation and normalization
 
@@ -421,13 +441,14 @@ The main manifest byte-binds ten companions. The validator imports no production
 audio code and checks exact schemas, counts, identities, limits, topology,
 recipes, normalization references, impulse integer output, lifecycle and
 registry witnesses, render matrix, listening honesty, provenance, trace links,
-and thirty semantic mutations.
+and thirty-one semantic mutations (2026-07-28 amendment: the thirty-first
+control targets the rendered recipe).
 
 The future X0 implementation must pass:
 
 - fake-adapter topology, scheduling, state, registry, ordering, and cleanup
   tests;
-- real OfflineAudioContext renders for all fifteen matrix rows, including
+- real OfflineAudioContext renders for all eighteen matrix rows, including
   finite/non-silent output, onset, release/tail decay, peak/RMS, dense seven-note
   safety, zero NaN/infinity/unity clipping, source counts, and impulse identity;
 - supported real-browser AudioContext state, gesture, graph bookkeeping, and
@@ -462,7 +483,9 @@ listening session has already occurred.
 ## 12. Implementation handoff and forbidden shortcuts
 
 Production implementation will provide `createAudioEngine(platform)` and the
-seven public operations without broadening the public platform ports. Before
+eight public operations (the 2026-07-28 amendment appends
+`prepareRenderedAudioVoices`, whose unavailable-renderer path refuses with
+`audio.renderer_unavailable`) without broadening the public platform ports. Before
 claiming X0 complete, an implementer must prove every trace in
 `trace-ledger.json`, including L-AUDIO-02 at
 `tests/integration/audio-routing.test.ts` under evidence heading

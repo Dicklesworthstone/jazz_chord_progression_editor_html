@@ -307,6 +307,11 @@ duration editors, pointer drag, touch range mode, and the teaching view) cannot
 fit in that margin, the checkpoint ceiling is raised once to 1,048,576 bytes
 (1 MiB) rather than nudged repeatedly.
 
+Measured 2026-07-28: with the embedded Concert Grand WebAssembly DSP payload
+(20,714 wasm bytes carried as a ~27.6 KB base64 constant; see the amendment
+below) and its renderer bound into the live graph, the artifact is exactly
+1,003,161 bytes — 45,415 bytes below the 1,048,576-byte checkpoint ceiling.
+
 The 1,572,864-byte final limit and its 524,288-byte Atlas/content reservation
 remain unchanged. The new checkpoint ceiling is exactly the non-Atlas
 allocation, so the 65,536 bytes formerly held outside both allocations are now
@@ -351,7 +356,9 @@ standards-mode doctype. Runtime tests require
 
 The generated artifact may not contain a runtime dependency on:
 
-- an external `script`, stylesheet, font, image, media, manifest, or module;
+- an external `script`, stylesheet, font, image, media, manifest, or module,
+  or WebAssembly fetched from any URL (the inventoried project-owned wasm
+  bytes embedded in the artifact itself are not a runtime dependency);
 - static or dynamic JavaScript imports;
 - `fetch`, XMLHttpRequest, WebSocket, EventSource, sendBeacon, service-worker
   registration, Worker, SharedWorker, or worklet module loading;
@@ -361,9 +368,11 @@ The generated artifact may not contain a runtime dependency on:
 The build injects and verifies a meta Content Security Policy. Its default,
 connect, worker, object, frame, manifest, base, and form destinations are
 `'none'`; executable inline script/style blocks are authorized by generated
-SHA-256 hashes, and only inventoried passive `data:`/local `blob:` assets may
-be allowed. CSP is defense in depth: static capability analysis and the
-no-CSP negative-control harness must still prove that interception works.
+SHA-256 hashes, `script-src` additionally carries `'wasm-unsafe-eval'` solely
+for instantiating the inventoried embedded WebAssembly payload, and only
+inventoried passive `data:`/local `blob:` assets may be allowed. CSP is
+defense in depth: static capability analysis and the no-CSP negative-control
+harness must still prove that interception works.
 
 Harmless URLs in license and documentation text are allowed. Verification
 therefore inspects executable import/call sites and URL-bearing HTML/CSS
@@ -391,6 +400,38 @@ spaces, Unicode, and `#` and is converted with `pathToFileURL`.
 A separate malicious no-CSP fixture attempts a remote request and must be
 recorded and aborted. This negative control prevents an inert request logger or
 CSP alone from making the real artifact appear offline.
+
+### Embedded WebAssembly DSP payload (additive amendment, 2026-07-28)
+
+The artifact may embed project-owned WebAssembly compiled from the Rust
+sources under `dsp/`. The rules:
+
+- Each payload is checked in as generated TypeScript under `src/audio/wasm/`
+  (currently `concert-grand-wasm.ts`), carrying the module bytes as a base64
+  constant pinned by exported SHA-256 and byte-length constants. It is
+  regenerated — and drift between the Rust source and the checked-in payload
+  is detected — with `bun scripts/build-dsp.ts [--check]`.
+- `bun run build` never runs cargo. The Bun-only build contract is unchanged:
+  the wasm payload enters the bundle as ordinary checked-in TypeScript, and
+  the Rust toolchain is a development-time generator concern only.
+- The CSP `script-src` directive carries `'wasm-unsafe-eval'` solely so the
+  page can `WebAssembly.instantiate` those embedded bytes under the
+  hash-based policy (Chromium, Firefox, and WebKit all require the token).
+  It authorizes no URL. Fetching or stream-compiling wasm from any URL,
+  workers, and worklets remain forbidden; every `'none'` directive above,
+  including `worker-src` and `connect-src`, is unchanged, and the artifact
+  policy rejects `'wasm-unsafe-eval'` on any directive other than
+  `script-src`.
+- Every wasm payload is an inventoried embedded asset: the build verifies the
+  bundled base64 against the generated module's SHA-256/byte pins, and
+  `dist/standalone-manifest.json` plus `dist/licenses.json` record its id,
+  `application/wasm` MIME, source crate path (`dsp/concert-grand`), generator
+  (`scripts/build-dsp.ts`), license, SHA-256, and byte count.
+- Third-party code compiled into the wasm is inventoried in the license
+  report's `wasmCompiled` provenance list and in the toolchain ledger as a
+  `compiled-into-wasm` record. Today that is exactly `libm@0.2.16`
+  (`MIT OR Apache-2.0`), a Rust software-float library — not a JavaScript
+  dependency; Preact remains the only bundled JS production package.
 
 ## Reproducibility and reports
 
