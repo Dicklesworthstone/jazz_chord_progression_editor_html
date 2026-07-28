@@ -1,17 +1,43 @@
 import { expect, test } from "bun:test";
 
 import {
+  MIDI_EXPORT_REQUEST_SCHEMA,
+  MIDI_EXPORT_WRITER_ID,
+  MIDI_EXPORT_WRITER_VERSION,
+  exportMidi,
+  type MidiExportRequest,
+} from "../../src/export";
+import {
   compilePlaybackPlan,
   type PlaybackPlan,
 } from "../../src/playback";
+import { parseSmfBytes } from "../support/midi-export-test-kit";
 import {
   canonicalP0Json,
   observeP0Case,
   p0FixtureCase,
   requireP0Record,
 } from "../support/p0-conformance";
-import { materializeP0TimelineCase } from
-  "../support/p0-playback-fixtures";
+import {
+  materializeP0LoopCase,
+  materializeP0TimelineCase,
+} from "../support/p0-playback-fixtures";
+
+function midiRequestFor(plan: PlaybackPlan): MidiExportRequest {
+  return {
+    schema: MIDI_EXPORT_REQUEST_SCHEMA,
+    requestId: "p0-law-012-midi-join",
+    writerId: MIDI_EXPORT_WRITER_ID,
+    writerVersion: MIDI_EXPORT_WRITER_VERSION,
+    documentId: plan.sourceDocumentId,
+    sourceRevision: 0,
+    title: "P0 join",
+    voicingTrackName: "Voicings",
+    instrumentName: "Piano",
+    markers: [],
+    plan,
+  };
+}
 
 type TestConsumer = Readonly<{
   consume: (plan: PlaybackPlan) => void;
@@ -104,4 +130,50 @@ test("P0-LAW-012 literal law observation is digest-equal to its fixture", () => 
   expect(observation.actualProjectionSha256).toBe(
     observation.expectedProjectionSha256,
   );
+});
+
+test("the real MIDI consumer exports a production loop plan and reports the loop loss", () => {
+  const result = compilePlaybackPlan(materializeP0LoopCase("P0-LOOP-006").request);
+  if (!result.ok) throw new Error(`P0_E1_JOIN:${result.refusal.code}`);
+  const before = canonicalP0Json(result.plan);
+
+  const exported = exportMidi(midiRequestFor(result.plan));
+  if (!exported.ok) throw new Error(`P0_E1_JOIN:${exported.refusal.code}`);
+
+  expect(canonicalP0Json(result.plan)).toBe(before);
+  const parsed = parseSmfBytes(exported.value.bytes);
+  expect(parsed.format).toBe(1);
+  expect(parsed.division).toBe(960);
+  const track1 = parsed.tracks[1] ?? [];
+  const firstOn = track1.find((event) => event["kind"] === "on");
+  expect(firstOn?.["tick"]).toBe(result.plan.events[0]?.startTick);
+  expect(exported.value.report.totalTicks).toBe(result.plan.totalTicks);
+  expect(exported.value.report.noteCount).toBe(
+    result.plan.events.reduce(
+      (sum, event) => sum + event.midiPitches.length,
+      0,
+    ),
+  );
+  expect(
+    exported.value.report.losses.map((loss) => loss.kind),
+  ).toContain("loop-range");
+  expect(exported.value.report.filename).toBe("changes-doc-p0-loop.mid");
+});
+
+test("the frozen duplicate-note law refuses the production Manual unison plan (jcpe-u0mc)", () => {
+  const result = compilePlaybackPlan(
+    materializeP0TimelineCase("P0-TIME-001").request,
+  );
+  if (!result.ok) throw new Error("P0_E1_JOIN_MANUAL_REFUSAL");
+  const manual = result.plan.events.find(
+    ({ eventId }) => eventId === "event-p0-a1-2",
+  );
+  expect(
+    new Set(manual?.midiPitches).size,
+  ).toBeLessThan(manual?.midiPitches.length ?? 0);
+
+  const exported = exportMidi(midiRequestFor(result.plan));
+  if (exported.ok) throw new Error("P0_E1_JOIN_DUPLICATE_ACCEPTED");
+  expect(exported.refusal.code).toBe("midi.plan_invalid");
+  expect(exported.refusal.path).toEqual(["plan", "events", 1, "midiPitches"]);
 });
