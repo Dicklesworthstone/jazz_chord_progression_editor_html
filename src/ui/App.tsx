@@ -15,9 +15,12 @@ import type {
   StudioInsertionPlan,
   StudioRailSide,
   StudioViewModel,
+  StudioAnalysisFrame,
+  StudioAnalyzerExpectation,
 } from "../application/runtime";
 import { MAX_SHORT_TEXT_CODE_POINTS } from "../domain";
 import {
+  AnalyzerPanel,
   StudioShell,
   type StudioCardMenuItemView,
   type StudioPanelSide,
@@ -152,6 +155,9 @@ export type AppActions = Readonly<{
    * transport state still arrives only through notifications.
    */
   readTransportPlayheadLabel: () => string | null;
+  /** Display-only analyzer reads (jcpe-7she); never a command path. */
+  readTransportAnalysisFrame: () => StudioAnalysisFrame | null;
+  readEventPitchClasses: (eventId: string) => readonly number[] | null;
 }>;
 
 const QUICK_ENTRY_MAX_CODE_POINTS = 4_096;
@@ -1014,7 +1020,29 @@ export function App({ snapshot, actions }: AppProps) {
     viewMode,
   }, insertionPlan, draftPreview, livePlayheadLabel);
 
+  /*
+   * jcpe-7she: the independent ear compares what the tap heard with the
+   * chord the chart says is sounding right now. Both inputs are the same
+   * display-only reads the highlight uses.
+   */
+  const analyzerPointer = playbackPointer(snapshot, livePlayheadLabel);
+  const analyzerExpectation: StudioAnalyzerExpectation | null =
+    analyzerPointer.chordId === null || analyzerPointer.chordLabel === null
+      ? null
+      : (() => {
+          const pitchClasses = actions.readEventPitchClasses(
+            analyzerPointer.chordId,
+          );
+          return pitchClasses === null
+            ? null
+            : Object.freeze({
+                chordLabel: analyzerPointer.chordLabel,
+                pitchClasses,
+              });
+        })();
+
   return (
+    <>
     <StudioShell
       view={view}
       transport={{
@@ -1500,6 +1528,12 @@ export function App({ snapshot, actions }: AppProps) {
         },
       }}
     />
+      <AnalyzerPanel
+        active={snapshot.transport.status === "playing"}
+        readFrame={actions.readTransportAnalysisFrame}
+        expectation={analyzerExpectation}
+      />
+    </>
   );
 }
 
@@ -1584,6 +1618,8 @@ export function StudioRoot({ controller }: StudioRootProps) {
         pauseProgression: controller.pauseProgression,
         playProgression: controller.playProgression,
         readTransportPlayheadLabel: controller.readTransportPlayheadLabel,
+        readTransportAnalysisFrame: controller.readTransportAnalysisFrame,
+        readEventPitchClasses: controller.readEventPitchClasses,
         splitEventDuration: controller.splitEventDuration,
         splitSection: controller.splitSection,
         stopProgression: controller.stopProgression,

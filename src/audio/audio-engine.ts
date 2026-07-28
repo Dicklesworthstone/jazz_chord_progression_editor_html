@@ -51,6 +51,8 @@ import {
   type AudioRetireRequest,
   type AudioRetirementReceipt,
   type AudioRetirementSelector,
+  AUDIO_ANALYSIS_FFT_SIZE,
+  type AudioAnalysisFrame,
   type AudioUserGestureReceipt,
   type AudioVoiceOwner,
   type PrepareRenderedVoicesReceipt,
@@ -61,6 +63,7 @@ import {
   type ConcertGrandRenderer,
 } from "./dsp-renderer";
 import type {
+  AnalyserNodePort,
   AudioBufferPort,
   AudioContextPort,
   AudioContextStatePort,
@@ -642,6 +645,15 @@ function createAudioEngineInternal(
    */
   let renderer: ConcertGrandRenderer | null = null;
   const renderedBufferCache = new Map<string, AudioBufferPort>();
+  /**
+   * Display-only spectral tap (jcpe-7she). Created lazily on the first
+   * analysis read as a DYNAMIC node — the persistent graph stays exactly
+   * twelve nodes and thirteen edges — and observes the post-processing,
+   * pre-volume signal at the safety gain. It has no output connection, so
+   * it cannot alter what the listener hears.
+   */
+  let analysisTap: AnalyserNodePort | null = null;
+  let analysisWindow: Float32Array<ArrayBuffer> | null = null;
 
   function renderedBufferKey(
     instrumentId: InstrumentId,
@@ -1162,6 +1174,8 @@ function createAudioEngineInternal(
     currentGraph = null;
     currentContext = null;
     renderedBufferCache.clear();
+    analysisTap = null;
+    analysisWindow = null;
     reportedContextState = observedState ?? "absent";
     state = "fault";
   }
@@ -2309,6 +2323,62 @@ function createAudioEngineInternal(
     return pending;
   }
 
+  /**
+   * Display-only analysis read: sample the safety-gain tap and run the
+   * embedded DSP analysis over it. A pure observation — no registry, mix,
+   * counter, or graph-count change; callable every animation frame.
+   */
+  function analyzeAudioOutput(): AudioEngineResult<AudioAnalysisFrame> {
+    const context = currentContext;
+    const graph = currentGraph;
+    if (state !== "ready" || context === null || graph === null) {
+      return failureResult("audio.engine_not_ready", ["state"], "refused");
+    }
+    if (renderer === null) {
+      return failureResult(
+        "audio.renderer_unavailable",
+        ["renderer"],
+        "refused",
+      );
+    }
+    try {
+      if (analysisTap === null) {
+        const tap = context.createAnalyser();
+        tap.fftSize = AUDIO_ANALYSIS_FFT_SIZE;
+        tap.smoothingTimeConstant = 0;
+        graph.safetyGain.connect(tap);
+        analysisTap = tap;
+      }
+      analysisWindow ??= new Float32Array(AUDIO_ANALYSIS_FFT_SIZE);
+      analysisTap.getFloatTimeDomainData(analysisWindow);
+      const analyzed = renderer.analyzeWindow(
+        analysisWindow,
+        context.sampleRate,
+      );
+      if (analyzed === null) {
+        return failureResult(
+          "audio.renderer_unavailable",
+          ["analysis"],
+          "refused",
+        );
+      }
+      const samples = new Float32Array(analysisWindow.length);
+      samples.set(analysisWindow);
+      return success(
+        Object.freeze({
+          sampleRateHz: analyzed.sampleRateHz,
+          fftSize: analyzed.fftSize,
+          samples,
+          magnitudes: analyzed.magnitudes,
+          notes: analyzed.notes,
+          chroma: analyzed.chroma,
+        }),
+      );
+    } catch {
+      return failureResult("audio.context_unusable", ["analysis"], "refused");
+    }
+  }
+
   async function prepareRenderedAudioVoices(
     request: PrepareRenderedVoicesRequest,
   ): Promise<AudioEngineResult<PrepareRenderedVoicesReceipt>> {
@@ -2443,6 +2513,7 @@ function createAudioEngineInternal(
     inspectAudioEngine,
     disposeAudioEngine,
     prepareRenderedAudioVoices,
+    analyzeAudioOutput,
   });
 }
 

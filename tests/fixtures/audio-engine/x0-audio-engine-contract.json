@@ -50,7 +50,8 @@
       "retireAudioVoices",
       "inspectAudioEngine",
       "disposeAudioEngine",
-      "prepareRenderedAudioVoices"
+      "prepareRenderedAudioVoices",
+      "analyzeAudioOutput"
     ]
   },
   "states": [

@@ -67,6 +67,7 @@ import {
   createStudioBootstrap,
   type StudioBootstrapRefusal,
 } from "./studio-bootstrap";
+import type { StudioAnalysisFrame } from "./studio-analysis";
 import {
   formatExactBeatLabel,
   selectStudioViewModel,
@@ -511,6 +512,15 @@ export interface StudioController {
    * Null when no audio port is wired.
    */
   readonly readTransportPlayheadLabel: () => string | null;
+  /** Display-only analyzer frame from the audio tap; null when unavailable. */
+  readonly readTransportAnalysisFrame: () => StudioAnalysisFrame | null;
+  /**
+   * Display-only pitch classes of one plan event from the last compiled run,
+   * for the analyzer's expected-vs-heard comparison. Never musical authority.
+   */
+  readonly readEventPitchClasses: (
+    eventId: string,
+  ) => readonly number[] | null;
   readonly joinSections: (
     leftSectionId: string,
   ) => StudioControllerActionResult;
@@ -3586,6 +3596,15 @@ function makeStudioController(
      * a warm cache instead of a render inside the lookahead deadline.
      */
     const instrumentId = state.document.playback.instrumentId;
+    /* Display-only: retained so the analyzer can name expected chord tones. */
+    lastPlanPitchClasses = new Map(
+      compiled.plan.events.map((event) => [
+        event.eventId,
+        Object.freeze([
+          ...new Set(event.midiPitches.map((midi) => ((midi % 12) + 12) % 12)),
+        ]),
+      ]),
+    );
     const distinctNotes = new Map<
       string,
       Readonly<{ midiPitch: MidiPitch; velocity: number }>
@@ -3681,6 +3700,15 @@ function makeStudioController(
     audioPort === null
       ? null
       : formatExactBeatLabel(audioPort.readPlayheadBeat());
+
+  let lastPlanPitchClasses: Map<string, readonly number[]> | null = null;
+
+  const readTransportAnalysisFrame = (): StudioAnalysisFrame | null =>
+    audioPort === null ? null : audioPort.readAnalysisFrame();
+
+  const readEventPitchClasses = (
+    eventId: string,
+  ): readonly number[] | null => lastPlanPitchClasses?.get(eventId) ?? null;
 
   /*
    * Every transport notification flows back through A0's own acceptance law:
@@ -4096,6 +4124,8 @@ function makeStudioController(
     pauseProgression,
     playProgression,
     readTransportPlayheadLabel,
+    readTransportAnalysisFrame,
+    readEventPitchClasses,
     splitAtBar,
     splitEventDuration,
     splitSection,

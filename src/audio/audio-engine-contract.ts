@@ -21,7 +21,27 @@ export const AUDIO_ENGINE_OPERATION_NAMES = Object.freeze([
   "inspectAudioEngine",
   "disposeAudioEngine",
   "prepareRenderedAudioVoices",
+  "analyzeAudioOutput",
 ] as const);
+
+/** One analysis window: 4096 samples balances bass resolution and latency. */
+export const AUDIO_ANALYSIS_FFT_SIZE = 4_096;
+
+export type AudioAnalysisDetectedNote = Readonly<{
+  midiPitch: number;
+  centsDeviation: number;
+  strength: number;
+}>;
+
+/** Display-only spectral observation of the safety-gain tap. */
+export type AudioAnalysisFrame = Readonly<{
+  sampleRateHz: number;
+  fftSize: number;
+  samples: Float32Array;
+  magnitudes: Float32Array;
+  notes: readonly AudioAnalysisDetectedNote[];
+  chroma: Float32Array;
+}>;
 
 export type AudioEngineOperationName =
   (typeof AUDIO_ENGINE_OPERATION_NAMES)[number];
@@ -539,6 +559,12 @@ export type AudioEngine = Readonly<{
   prepareRenderedAudioVoices(
     request: PrepareRenderedVoicesRequest,
   ): Promise<AudioEngineResult<PrepareRenderedVoicesReceipt>>;
+  /**
+   * Display-only spectral read of the master path via a dynamic analyser
+   * tap. Pure observation for the analyzer panel: no state, registry, or
+   * graph-count change; callable every animation frame.
+   */
+  analyzeAudioOutput(): AudioEngineResult<AudioAnalysisFrame>;
 }>;
 
 export type PrepareRenderedVoicesRequest = Readonly<{

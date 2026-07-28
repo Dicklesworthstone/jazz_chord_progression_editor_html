@@ -186,7 +186,7 @@ const EXPECTED_SCHEMAS: Readonly<Record<ExpectedFilename, string>> = {
 };
 
 export const X0_REVIEWED_CONTRACT_BYTE_DIGEST =
-  "d997a5bdbfb57416885add0cf03041036326914c014eac71699bd8d020e9223e";
+  "e856c4aa04e7821c84fe9be6094e04cf3ce294a7809efd26f74e8927b470635d";
 
 export const X0_REVIEWED_BYTE_DIGESTS: Readonly<
   Record<CompanionFilename, string>
@@ -222,6 +222,7 @@ export const X0_REVIEWED_OPERATION_ORDER = [
   "inspectAudioEngine",
   "disposeAudioEngine",
   "prepareRenderedAudioVoices",
+  "analyzeAudioOutput",
 ] as const;
 
 export const X0_REVIEWED_STATES = [

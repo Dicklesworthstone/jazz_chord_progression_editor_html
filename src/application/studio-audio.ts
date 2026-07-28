@@ -18,6 +18,7 @@
 import {
   createAudioEngine,
   createTransportService,
+  type AudioAnalysisFrame,
   type AudioEngineSnapshot,
   type AudioMix,
   type AudioPlatform,
@@ -100,6 +101,11 @@ export type StudioAudioPort = Readonly<{
     listener: (notification: TransportServiceNotification) => void,
   ) => () => void;
   isInitialized: () => boolean;
+  /**
+   * Display-only spectral frame from the engine's analyser tap, or null
+   * outside a ready engine. The analyzer panel polls this per frame.
+   */
+  readAnalysisFrame: () => AudioAnalysisFrame | null;
   /**
    * Display-only live playhead beat from the transport's audio-clock anchor.
    * The UI's animation frame interpolates from this read; it never enters A0
@@ -346,6 +352,10 @@ export function createStudioAudio(
     },
     isInitialized: () => initialized,
     readPlayheadBeat: () => transport.readDisplayPlayheadBeat(),
+    readAnalysisFrame: () => {
+      const outcome = engine.analyzeAudioOutput();
+      return outcome.ok ? outcome.value : null;
+    },
     inspect: () =>
       Object.freeze({
         engine: engine.inspectAudioEngine(),

@@ -47,3 +47,14 @@ export type {
   StudioAudioGesture,
   StudioAudioPort,
 } from "./studio-audio";
+
+export {
+  computeAnalyzerVerdict,
+  PITCH_CLASS_LABELS,
+} from "./studio-analysis";
+export type {
+  StudioAnalysisFrame,
+  StudioAnalyzerExpectation,
+  StudioAnalyzerVerdict,
+  StudioDetectedNote,
+} from "./studio-analysis";

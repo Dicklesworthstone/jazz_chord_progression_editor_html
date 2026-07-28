@@ -131,7 +131,7 @@ function ensureCapacity(
 let rendererPromise: Promise<ConcertGrandRenderer> | null = null;
 
 function requireExportedFunction(
-  exports: WebAssembly.Exports,
+  exports: Readonly<Record<string, unknown>>,
   name: string,
 ): CallableFunction {
   const candidate = exports[name];
@@ -144,7 +144,7 @@ function requireExportedFunction(
 async function instantiate(): Promise<ConcertGrandRenderer> {
   const bytes = decodeWasmBytes();
   const { instance } = await WebAssembly.instantiate(bytes, {});
-  const rawExports = instance.exports;
+  const rawExports: Readonly<Record<string, unknown>> = instance.exports;
   const memoryCandidate = rawExports["memory"];
   if (!(memoryCandidate instanceof WebAssembly.Memory)) {
     throw new Error("DSP_WASM_EXPORT_MISSING:memory");

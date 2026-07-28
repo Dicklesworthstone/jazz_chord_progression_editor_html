@@ -43,3 +43,5 @@ export type {
   StudioTransportView,
   StudioViewMode,
 } from "./studio-contract";
+export { AnalyzerPanel } from "./AnalyzerPanel";
+export type { AnalyzerPanelProps } from "./AnalyzerPanel";

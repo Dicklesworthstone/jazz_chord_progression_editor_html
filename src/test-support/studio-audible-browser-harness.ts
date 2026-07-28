@@ -281,6 +281,7 @@ function bootHarness(): StudioAudibleEvidenceApi {
           await realPort.setInstrument(commandRequestId, instrumentId),
         ),
       prepareInstrument: realPort.prepareInstrument,
+      readAnalysisFrame: realPort.readAnalysisFrame,
       subscribe: realPort.subscribe,
       isInitialized: realPort.isInitialized,
       readPlayheadBeat: realPort.readPlayheadBeat,
