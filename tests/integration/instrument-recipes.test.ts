@@ -75,7 +75,7 @@ const RECIPE_CASES: readonly Readonly<{
     caseId: "X0-RENDER-016",
     instrumentId: "concert-grand",
     label: "Concert Grand",
-    outputLevel: 0.85,
+    outputLevel: 0.3,
     polyphonyLimit: 64,
     scheduledSourceCount: 1,
     attackSeconds: 0.002,

@@ -15,13 +15,13 @@ import type {
 } from "../../src/audio/audio-platform-contract";
 
 function createBuffer(sampleRate: number): AudioBufferPort {
-  const length = sampleRate * 2;
+  const length = sampleRate * 4;
   const channels = [new Float32Array(length), new Float32Array(length)] as const;
   return {
     numberOfChannels: 2,
     length,
     sampleRate,
-    duration: 2,
+    duration: 4,
     getChannelData(channel) {
       const data = channels[channel];
       if (data === undefined) throw new Error("TEST_AUDIO_CHANNEL_INVALID");
@@ -43,9 +43,9 @@ describe("X0 deterministic audio DSP", () => {
     const buffer = createBuffer(48_000);
     const observation = writeDeterministicImpulse(buffer);
     expect(observation).toEqual({
-      samplesWritten: 192_000,
-      peakQ15: 32_595,
-      finalStateUint32: 0xa07e6c9f,
+      samplesWritten: 384_000,
+      peakQ15: 13_352,
+      finalStateUint32: 0xd2e26364,
     });
 
     const leftBytes = int16Bytes(buffer.getChannelData(0));
@@ -56,13 +56,13 @@ describe("X0 deterministic audio DSP", () => {
       rightBytes.copy(interleaved, frame * 4 + 2, frame * 2, frame * 2 + 2);
     }
     expect(createHash("sha256").update(leftBytes).digest("hex")).toBe(
-      "fca2e65890c77fdb0ad08d6cada5b0ed398ce9f97c46e279b306a5c8a870fe53",
+      "f97dee335bf4a7308a2dff2c6b9a609cac4f345edc90aa3b1058f45c1d415394",
     );
     expect(createHash("sha256").update(rightBytes).digest("hex")).toBe(
-      "060054f6c4797b6ba6a11798e261455596a7ab4f17042aa7d2882b7569fd5bec",
+      "7ff4c5a34a8848bc08148c821aac3d23940a3a94bba9c041615ce6e093795416",
     );
     expect(createHash("sha256").update(interleaved).digest("hex")).toBe(
-      "8329fc9abc8b16eeac673bd4a1e0f1e8c9a4900939e6fc00191b429066867f89",
+      "ee0449f080bc31f1a9710ec7a316e8e34fb7979421f1a56c6ffd55b667df2017",
     );
   });
 

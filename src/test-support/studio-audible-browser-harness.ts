@@ -41,6 +41,8 @@ export type StudioAudiblePhaseRecord = Readonly<{
   sampleCount: number;
   /** Largest absolute sample value observed at the tap during this phase. */
   maxPeak: number;
+  /** Non-finite tap samples seen this phase; NaN poisoning reads as silence. */
+  nonFiniteSamples?: number;
   /**
    * Audio-clock seconds at the phase boundaries. A phase whose wall time moved
    * while these stayed equal caught a stalled rendering clock — the silent-
@@ -120,6 +122,7 @@ type MutablePhase = {
   endedAtMs: number | null;
   sampleCount: number;
   maxPeak: number;
+  nonFiniteSamples?: number;
   contextTimeStart: number | null;
   contextTimeEnd: number | null;
 };
@@ -328,12 +331,19 @@ function bootHarness(): StudioAudibleEvidenceApi {
     if (analyser === null || phase === undefined) return;
     analyser.getFloatTimeDomainData(sampleBuffer);
     let peak = 0;
+    let nonFinite = 0;
     for (const value of sampleBuffer) {
+      if (!Number.isFinite(value)) {
+        nonFinite += 1;
+        continue;
+      }
       const magnitude = Math.abs(value);
       if (magnitude > peak) peak = magnitude;
     }
     phase.sampleCount += 1;
     if (peak > phase.maxPeak) phase.maxPeak = peak;
+    /* NaN poisoning reads as exact silence without this witness. */
+    phase.nonFiniteSamples = (phase.nonFiniteSamples ?? 0) + nonFinite;
   }, SAMPLING_INTERVAL_MS);
 
   return Object.freeze({

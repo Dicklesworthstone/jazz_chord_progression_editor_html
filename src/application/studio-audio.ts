@@ -139,7 +139,7 @@ export const STUDIO_TRANSPORT_TIMING: TransportTimingPolicy =
 
 export const STUDIO_INITIAL_MIX: AudioMix = /* @__PURE__ */ Object.freeze({
   masterVolume: 0.8,
-  reverbAmount: 0.25,
+  reverbAmount: 0.32,
 });
 
 /**

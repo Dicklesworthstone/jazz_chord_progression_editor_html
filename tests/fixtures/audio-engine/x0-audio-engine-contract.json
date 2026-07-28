@@ -18,8 +18,8 @@
   ],
   "reviewedFileSha256": {
     "graph-topology.json": "72a4c6aa8951186fcabd66d75cb9d4aec7404950a7c9dee7917c9be686e89290",
-    "impulse-golden.json": "43cc1f30289f60e0d15d57653b644db76684957a2d7e1e68e0e0304cba42699f",
-    "instrument-recipes.json": "5a690b958f59394a782eeeaaa5e7b468640158a8fa773c8a6c26fb4cf924b182",
+    "impulse-golden.json": "9330b747b85defb801b6456ad7d4ee519f78bdf83ea22a4b6ab47268b3b79888",
+    "instrument-recipes.json": "a170f0d076aafd00f67749dbdb3e0ce1c29252e202b09dc4763a1a77af14015c",
     "lifecycle-cases.json": "3ad712126fe22bf314ea76e41fb501ee549be2ef944a45aafbe1c1f2e8b8dcf5",
     "listening-rubric.json": "d2111f1571cc044d9b19a77d64ec5e70f4d2a5de2c59ffd07369a875c7a1f491",
     "mutation-controls.json": "12d896515143dcd978e7a8839692dfc6c4248e3569bf23f2268c8e2aa1466cad",
@@ -29,10 +29,19 @@
     "trace-ledger.json": "ccf7414cd10a081377776d66b93eea48c484189c446d4a0d743ab92968f861c6"
   },
   "identities": {
-    "enginePolicy": { "id": "changes.audio-engine", "version": 1 },
-    "registryPolicy": { "id": "changes.audio-active-voice-registry", "version": 1 },
-    "recipeSet": { "id": "changes.audio.instrument-recipes", "version": 1 },
-    "impulseAlgorithm": "changes.audio.impulse.xorshift32-q15.v1",
+    "enginePolicy": {
+      "id": "changes.audio-engine",
+      "version": 1
+    },
+    "registryPolicy": {
+      "id": "changes.audio-active-voice-registry",
+      "version": 1
+    },
+    "recipeSet": {
+      "id": "changes.audio.instrument-recipes",
+      "version": 1
+    },
+    "impulseAlgorithm": "changes.audio.impulse.hall-quartic-q15.v2",
     "normalizationPolicy": "changes.audio.voice-normalization.v1"
   },
   "publicSurface": {
@@ -63,7 +72,11 @@
     "fault",
     "closed"
   ],
-  "terminations": ["completed", "refused", "platform-fault"],
+  "terminations": [
+    "completed",
+    "refused",
+    "platform-fault"
+  ],
   "refusalCodes": [
     "audio.user_gesture_required",
     "audio.gesture_sequence_invalid",
@@ -115,8 +128,8 @@
     "registryIndexReferences": 768,
     "persistentCreatedNodes": 12,
     "persistentEdges": 13,
-    "impulseScalarSamples": 768000,
-    "impulseBytes": 3072000,
+    "impulseScalarSamples": 1536000,
+    "impulseBytes": 6144000,
     "softClipCurveLength": 4097,
     "debugEvents": 4096
   },

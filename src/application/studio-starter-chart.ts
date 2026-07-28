@@ -15,9 +15,15 @@ import type { StudioController } from "./studio-controller";
  * chart; nothing here is a side door around the command surface.
  */
 export const STARTER_CHART = Object.freeze({
-  title: "Mu Major Journey",
+  /*
+   * jcpe-x0z9: the owner-directed seed is the Deacon Blues intro (Steely
+   * Dan, Aja 1977) — the famous chromatic descent, two chords per bar,
+   * closing on the Ebmaj7 / E7#9 turnaround. Every symbol is proven
+   * playable through the real transport composition by the seed gates.
+   */
+  title: "Deacon Blues",
   chartText:
-    "| Gadd9 | Cadd9/E | Bm7 E7#9 | Am9 D13 | Gmaj7#11 | Fadd9 | Em9 A13 | Dmaj7 Bb13 | Ebmaj7 | Dm9 G13 | Cmaj7#11 | Bm7b5 E7b9 | Am11 | Ab7#11 | Gadd9/B C6/9 | Am7/D D7sus |",
+    "| Cmaj7 Bm7#5 | Bbmaj7 Am7#5 | Dmaj7 C#m7#5 | Cmaj7 Bm7#5 | Ebmaj7 | E7#9 |",
   /**
    * The chart lands in two atomic inserts because the closed insertion-plan
    * vocabulary has no fill-and-append statement: the opening bar fills the
@@ -25,9 +31,9 @@ export const STARTER_CHART = Object.freeze({
    * the section end (`completes-measures`). One insert aimed at either
    * target alone would leave a hollow first bar or refuse as overfill.
    */
-  firstBarText: "| Gadd9 |",
+  firstBarText: "| Cmaj7 Bm7#5 |",
   remainingBarsText:
-    "| Cadd9/E | Bm7 E7#9 | Am9 D13 | Gmaj7#11 | Fadd9 | Em9 A13 | Dmaj7 Bb13 | Ebmaj7 | Dm9 G13 | Cmaj7#11 | Bm7b5 E7b9 | Am11 | Ab7#11 | Gadd9/B C6/9 | Am7/D D7sus |",
+    "| Bbmaj7 Am7#5 | Dmaj7 C#m7#5 | Cmaj7 Bm7#5 | Ebmaj7 | E7#9 |",
   /** Undo presses that return the pristine studio: title + two inserts. */
   undoDepth: 3,
 } as const);

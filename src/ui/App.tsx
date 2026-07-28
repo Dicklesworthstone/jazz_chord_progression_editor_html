@@ -464,6 +464,53 @@ function useLivePlayheadLabel(
   return status === "playing" ? label : null;
 }
 
+/**
+ * Literal facts for the most recently selected chord (jcpe-ja9f): the Lens
+ * previously claimed "No chord selected" while a card sat ringed in the
+ * chart. Everything here is a verbatim selector value — no harmonic reading.
+ */
+function selectedChordView(
+  snapshot: StudioViewModel,
+): StudioShellView["harmony"]["selected"] {
+  const selectedIds = snapshot.bookmarks.selectedEventIds;
+  const targetId = selectedIds[selectedIds.length - 1];
+  if (targetId === undefined) return null;
+  for (const section of snapshot.sections) {
+    for (const measure of section.measures) {
+      for (const event of measure.events) {
+        if (event.id !== targetId) continue;
+        return Object.freeze({
+          symbolText: event.symbolText,
+          accessibleName: `Selected chord ${event.symbolText}`,
+          facts: Object.freeze([
+            Object.freeze({
+              id: "bar",
+              label: "Bar",
+              value: `Measure ${String(measure.ordinal)} · Section ${section.name}`,
+            }),
+            Object.freeze({
+              id: "start",
+              label: "Starts at beat",
+              value: event.startBeatLabel,
+            }),
+            Object.freeze({
+              id: "duration",
+              label: "Duration",
+              value: `${event.durationBeatLabel} beats`,
+            }),
+            Object.freeze({
+              id: "spelling",
+              label: "Stored spelling",
+              value: event.symbolText,
+            }),
+          ]),
+        });
+      }
+    }
+  }
+  return null;
+}
+
 function viewFromSnapshot(
   snapshot: StudioViewModel,
   presentation: PresentationState,
@@ -644,9 +691,12 @@ function viewFromSnapshot(
     }),
     harmony: Object.freeze({
       selectedChordLabel: null,
+      selected: selectedChordView(snapshot),
       selectionStatusLabel: chordCount === 0
         ? "No chord events in this chart"
-        : "No chord selected",
+        : selectedChordView(snapshot) === null
+          ? "No chord selected"
+          : "Chord selected",
       emptyTitle: chordCount === 0
         ? "Harmony begins with a real chord"
         : "Select a chord to inspect it",

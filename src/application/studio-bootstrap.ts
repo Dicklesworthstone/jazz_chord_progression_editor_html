@@ -58,8 +58,8 @@ const STUDIO_BLANK_DOCUMENT_CANDIDATE = Object.freeze({
   ]),
   playback: Object.freeze({
     instrumentId: "concert-grand",
-    masterVolume: 0.8,
-    reverbAmount: 0.2,
+    masterVolume: 0.9,
+    reverbAmount: 0.32,
     countInBars: 0,
   }),
 });

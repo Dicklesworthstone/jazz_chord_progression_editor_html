@@ -53,6 +53,8 @@ type JsonObjectProperty =
   | "license"
   | "limits"
   | "linkedCaseId"
+  | "lowpassAlphaQ15"
+  | "lowpassStages"
   | "maximums"
   | "nearMissOf"
   | "nodes"
@@ -67,6 +69,7 @@ type JsonObjectProperty =
   | "pointer"
   | "policies"
   | "polyphonyLimit"
+  | "predelayDivisor"
   | "presets"
   | "productionImplementationAvailableWhenAuthored"
   | "productionImportsForbidden"
@@ -85,6 +88,7 @@ type JsonObjectProperty =
   | "referenceFrames"
   | "referenceInterleavedInt16LeSha256"
   | "referencePeakQ15"
+  | "referencePredelayFrames"
   | "referenceSampleRate"
   | "referenceScalarSamples"
   | "refusal"
@@ -186,7 +190,7 @@ const EXPECTED_SCHEMAS: Readonly<Record<ExpectedFilename, string>> = {
 };
 
 export const X0_REVIEWED_CONTRACT_BYTE_DIGEST =
-  "e856c4aa04e7821c84fe9be6094e04cf3ce294a7809efd26f74e8927b470635d";
+  "89d5df19c0187603f05f5c46ba1be3ff90136211b309fdb8b8901cb69850d056";
 
 export const X0_REVIEWED_BYTE_DIGESTS: Readonly<
   Record<CompanionFilename, string>
@@ -194,9 +198,9 @@ export const X0_REVIEWED_BYTE_DIGESTS: Readonly<
   "graph-topology.json":
     "72a4c6aa8951186fcabd66d75cb9d4aec7404950a7c9dee7917c9be686e89290",
   "impulse-golden.json":
-    "43cc1f30289f60e0d15d57653b644db76684957a2d7e1e68e0e0304cba42699f",
+    "9330b747b85defb801b6456ad7d4ee519f78bdf83ea22a4b6ab47268b3b79888",
   "instrument-recipes.json":
-    "5a690b958f59394a782eeeaaa5e7b468640158a8fa773c8a6c26fb4cf924b182",
+    "a170f0d076aafd00f67749dbdb3e0ce1c29252e202b09dc4763a1a77af14015c",
   "lifecycle-cases.json":
     "3ad712126fe22bf314ea76e41fb501ee549be2ef944a45aafbe1c1f2e8b8dcf5",
   "listening-rubric.json":
@@ -293,8 +297,8 @@ export const X0_REVIEWED_LIMITS = {
   registryIndexReferences: 768,
   persistentCreatedNodes: 12,
   persistentEdges: 13,
-  impulseScalarSamples: 768_000,
-  impulseBytes: 3_072_000,
+  impulseScalarSamples: 1_536_000,
+  impulseBytes: 6_144_000,
   softClipCurveLength: 4_097,
   debugEvents: 4_096,
 } as const;
@@ -382,7 +386,7 @@ export const X0_REVIEWED_RECIPE_IDS = [
   "concert-grand",
 ] as const;
 
-export const X0_REVIEWED_RECIPE_LEVELS = [0.62, 0.48, 0.5, 0.3, 0.34, 0.85] as const;
+export const X0_REVIEWED_RECIPE_LEVELS = [0.62, 0.48, 0.5, 0.3, 0.34, 0.3] as const;
 export const X0_REVIEWED_RECIPE_POLYPHONY = [64, 48, 48, 32, 48, 64] as const;
 export const X0_REVIEWED_RECIPE_SOURCE_COUNTS = [3, 2, 4, 3, 3, 1] as const;
 
@@ -400,7 +404,7 @@ export const X0_REVIEWED_RENDERED_RECIPE = {
   designClaim:
     "deterministic rendered piano: inharmonic partials, unison detuning, dual-rate decay, hammer noise",
   synthesis: "rendered",
-  outputLevel: 0.85,
+  outputLevel: 0.3,
   polyphonyLimit: 64,
   scheduledSourceCount: 1,
   renderer: {
@@ -426,25 +430,28 @@ export const X0_REVIEWED_RENDERED_RECIPE = {
 } as const;
 
 export const X0_REVIEWED_IMPULSE = {
-  algorithmId: "changes.audio.impulse.xorshift32-q15.v1",
+  algorithmId: "changes.audio.impulse.hall-quartic-q15.v2",
   seedUint32: 0x58403031,
   channels: 2,
-  durationSeconds: 2,
+  durationSeconds: 4,
+  predelayDivisor: 50,
+  lowpassAlphaQ15: 6_000,
+  lowpassStages: 2,
   minimumSampleRate: 8_000,
   maximumSampleRate: 192_000,
   referenceSampleRate: 48_000,
-  referenceFrames: 96_000,
+  referenceFrames: 192_000,
   q15Divisor: 32_768,
   envelopeQ15Maximum: 32_767,
   convolverNormalize: true,
   referenceInterleavedInt16LeSha256:
-    "8329fc9abc8b16eeac673bd4a1e0f1e8c9a4900939e6fc00191b429066867f89",
+    "ee0449f080bc31f1a9710ec7a316e8e34fb7979421f1a56c6ffd55b667df2017",
   referenceChannelInt16LeSha256: [
-    "fca2e65890c77fdb0ad08d6cada5b0ed398ce9f97c46e279b306a5c8a870fe53",
-    "060054f6c4797b6ba6a11798e261455596a7ab4f17042aa7d2882b7569fd5bec",
+    "f97dee335bf4a7308a2dff2c6b9a609cac4f345edc90aa3b1058f45c1d415394",
+    "7ff4c5a34a8848bc08148c821aac3d23940a3a94bba9c041615ce6e093795416",
   ],
-  referencePeakQ15: 32_595,
-  referenceFinalStateUint32: 0xa07e6c9f,
+  referencePeakQ15: 13_352,
+  referenceFinalStateUint32: 0xd2e26364,
 } as const;
 
 export const X0_REVIEWED_RENDER_POLICY = {
@@ -509,10 +516,10 @@ const REVIEWED_CANONICAL_DIGESTS = {
   graphEdges: "86f0e0d8307ab85e40d9ed1f1f1d7547f34018bf117a754521d3814ca4c526b0",
   graphSettings: "ed4816e5e4ea9fbcb1a941cddb2479db072453f54a44272f35717a6ebf9c53a5",
   routingCases: "cb78dae03ce88d9bc853f8c8a6339f6de64f53ad8d38d566d7b311191834b2cc",
-  recipes: "23f53a2698cf74530a378a0eb04e6cc9d14d0649048964531df35b26a8ef42d4",
-  normalization: "7decf2152281865e7b29827a25f26807f14f265316da2b70d744e0fa13ff255e",
+  recipes: "a113bd8a9f085a4295e95698cf6a90d7bf7c63230471d2d6a80adc3be2161019",
+  normalization: "f927955f137a6d4800b8845b3a472c92d22c662083e9de5d9ebaf47614b028bc",
   pulse: "e5bad32f09dbfe03ef87124d811125144145168bc8f07a48ef78b530b1c1e839",
-  impulseCheckpoints: "f3a26aed6b7239dfb6ac4aec73710626254df8efdc78e58ba7afa412e8b7f4a6",
+  impulseCheckpoints: "29ffb97240f4a5f80f24812ff592df1a15413bf2a21d1b8f314ef0e2ee15c1d8",
   lifecycleCases: "2c62e2859e3b9f38f146d7ffd8d6546580f6ee43153c9be68b39330684760c2e",
   registryCases: "97191f50abef6e929f508244f2c5e260d4c9a3616380cb87477a841f02d598f1",
   renderPolicy: "2f48761e269d258d5768c5a708b744c663897140871f9eeadef083ab594cd5db",
@@ -704,7 +711,7 @@ function validateMain(
         version: 1,
       },
       recipeSet: { id: "changes.audio.instrument-recipes", version: 1 },
-      impulseAlgorithm: "changes.audio.impulse.xorshift32-q15.v1",
+      impulseAlgorithm: "changes.audio.impulse.hall-quartic-q15.v2",
       normalizationPolicy: "changes.audio.voice-normalization.v1",
     },
   );
@@ -977,19 +984,29 @@ function generateIndependentImpulseReference(): ImpulseReference {
   const interleaved = Buffer.alloc(length * 4);
   const left = Buffer.alloc(length * 2);
   const right = Buffer.alloc(length * 2);
-  const checkpointFrames = new Set([0, 1, 2, 23_999, 47_999, 71_999, 95_998, 95_999]);
+  const checkpointFrames = new Set([0, 1, 2, 47_999, 95_999, 143_999, 191_998, 191_999]);
   const checkpoints: JsonObject[] = [];
   const firstEightLeft: number[] = [];
   const firstEightRight: number[] = [];
   let state = X0_REVIEWED_IMPULSE.seedUint32 >>> 0;
   let peakQ15 = 0;
+  const predelayFrames = Math.floor(
+    X0_REVIEWED_IMPULSE.referenceSampleRate / X0_REVIEWED_IMPULSE.predelayDivisor,
+  );
+  /* remaining^4 exceeds 2^53, so the quartic envelope must be BigInt-exact. */
+  const lengthFourth = BigInt(length) ** 4n;
+  const lowpassFirst: [number, number] = [0, 0];
+  const lowpassSecond: [number, number] = [0, 0];
 
   for (let frame = 0; frame < length; frame += 1) {
-    const remaining = length - frame;
-    const envelopeQ15 = Math.floor(
-      (remaining * remaining * X0_REVIEWED_IMPULSE.envelopeQ15Maximum) /
-        (length * length),
-    );
+    const envelopeQ15 =
+      frame < predelayFrames
+        ? 0
+        : Number(
+            (BigInt(length - frame) ** 4n *
+              BigInt(X0_REVIEWED_IMPULSE.envelopeQ15Maximum)) /
+              lengthFourth,
+          );
     const samples: [number, number] = [0, 0];
     for (let channel = 0; channel < 2; channel += 1) {
       state ^= state << 13;
@@ -997,7 +1014,23 @@ function generateIndependentImpulseReference(): ImpulseReference {
       state ^= state << 5;
       state >>>= 0;
       const noise = (state >>> 16) - 32_768;
-      const sample = Math.trunc((noise * envelopeQ15) / 32_768);
+      const lp1 =
+        (lowpassFirst[channel] ?? 0) +
+        Math.trunc(
+          (X0_REVIEWED_IMPULSE.lowpassAlphaQ15 *
+            (noise - (lowpassFirst[channel] ?? 0))) /
+            32_768,
+        );
+      const lp2 =
+        (lowpassSecond[channel] ?? 0) +
+        Math.trunc(
+          (X0_REVIEWED_IMPULSE.lowpassAlphaQ15 *
+            (lp1 - (lowpassSecond[channel] ?? 0))) /
+            32_768,
+        );
+      lowpassFirst[channel] = lp1;
+      lowpassSecond[channel] = lp2;
+      const sample = Math.trunc((lp2 * envelopeQ15) / 32_768);
       samples[channel] = sample;
       peakQ15 = Math.max(peakQ15, Math.abs(sample));
       interleaved.writeInt16LE(sample, frame * 4 + channel * 2);
@@ -1038,6 +1071,10 @@ function validateImpulse(value: JsonObject | undefined, findings: X0ContractFind
     seedHex: value.seedHex,
     channels: value.channels,
     durationSeconds: value.durationSeconds,
+    predelayDivisor: value.predelayDivisor,
+    referencePredelayFrames: value.referencePredelayFrames,
+    lowpassAlphaQ15: value.lowpassAlphaQ15,
+    lowpassStages: value.lowpassStages,
     sampleRateRange: value.sampleRateRange,
     referenceSampleRate: value.referenceSampleRate,
     referenceFrames: value.referenceFrames,
@@ -1053,12 +1090,16 @@ function validateImpulse(value: JsonObject | undefined, findings: X0ContractFind
     seedUint32: X0_REVIEWED_IMPULSE.seedUint32,
     seedHex: "0x58403031",
     channels: 2,
-    durationSeconds: 2,
+    durationSeconds: 4,
+    predelayDivisor: 50,
+    referencePredelayFrames: 960,
+    lowpassAlphaQ15: 6_000,
+    lowpassStages: 2,
     sampleRateRange: [8_000, 192_000],
     referenceSampleRate: 48_000,
-    referenceFrames: 96_000,
-    referenceScalarSamples: 192_000,
-    referenceBytes: 384_000,
+    referenceFrames: 192_000,
+    referenceScalarSamples: 384_000,
+    referenceBytes: 768_000,
     convolverNormalize: true,
   });
 
@@ -1080,7 +1121,7 @@ function validateImpulse(value: JsonObject | undefined, findings: X0ContractFind
   if (
     value.referencePeakQ15 !== reference.peakQ15 ||
     value.referenceFinalStateUint32 !== reference.finalState ||
-    value.referenceFinalStateHex !== "0xa07e6c9f"
+    value.referenceFinalStateHex !== "0xd2e26364"
   ) {
     addFinding(findings, "X0_IMPULSE_HASH", "impulse.summary", "impulse summary changed");
   }

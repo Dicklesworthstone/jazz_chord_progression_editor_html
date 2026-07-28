@@ -151,9 +151,14 @@ The impulse is generated once per graph into a two-channel `AudioBuffer`. It is
 project code under the project license, not a recording or third-party asset.
 It uses no fetch, decode, sample package, CDN, telemetry, clock, or random API.
 
-Algorithm `changes.audio.impulse.xorshift32-q15.v1` uses seed `0x58403031`, two
-seconds, and the context sample rate. Sample rates are finite integers in
-8,000...192,000 Hz. For every frame, visit left then right:
+Algorithm `changes.audio.impulse.hall-quartic-q15.v2` (2026-07-28 "hall v2"
+amendment, bead jcpe-6veb: the v1 two-second white-noise/quadratic impulse
+sounded metallic; v2 is a longer, lowpass-colored, quartic-decay hall with a
+20 ms predelay) uses seed `0x58403031`, four seconds, and the context sample
+rate. Sample rates are finite integers in 8,000...192,000 Hz.
+`predelayFrames = floor(sampleRate / 50)`. For every frame, visit left then
+right; each channel keeps two persistent integer one-pole lowpass states
+(`lp1`, `lp2`), all starting at 0:
 
 ```text
 state ^= state << 13
@@ -161,16 +166,23 @@ state ^= state >>> 17
 state ^= state << 5
 state = uint32(state)
 
-remaining   = frameLength - frameIndex
-envelopeQ15 = floor(remaining^2 * 32767 / frameLength^2)
 noise       = (state >>> 16) - 32768
-sampleQ15   = trunc(noise * envelopeQ15 / 32768)
+lp1         = lp1 + trunc(6000 * (noise - lp1) / 32768)
+lp2         = lp2 + trunc(6000 * (lp1 - lp2) / 32768)
+envelopeQ15 = 0 when frameIndex < predelayFrames, else
+              trunc((frameLength - frameIndex)^4 * 32767 / frameLength^4)
+sampleQ15   = trunc(lp2 * envelopeQ15 / 32768)
 sampleFloat = sampleQ15 / 32768
 ```
 
-At 48,000 Hz the buffer has 96,000 frames. Interleaved signed-int16 little-endian
-reference bytes hash to
-`8329fc9abc8b16eeac673bd4a1e0f1e8c9a4900939e6fc00191b429066867f89`.
+The quartic envelope must be computed with exact big-integer arithmetic:
+`(frameLength - frameIndex)^4` overflows IEEE doubles. The PRNG and both
+lowpass stages advance on every frame including the predelay; only the
+envelope silences the head.
+
+At 48,000 Hz the buffer has 192,000 frames and 960 predelay frames. Interleaved
+signed-int16 little-endian reference bytes hash to
+`ee0449f080bc31f1a9710ec7a316e8e34fb7979421f1a56c6ffd55b667df2017`.
 The left/right hashes, eight checkpoints, peak, and final PRNG state are frozen
 in `impulse-golden.json`. The validator independently recomputes this integer
 oracle; production impulse code is never imported.
@@ -427,7 +439,7 @@ result.
 | retained source nodes | 896 |
 | registry index references | 768 |
 | persistent created nodes / edges | 12 / 13 |
-| impulse scalar samples / Float32 bytes | 768,000 / 3,072,000 |
+| impulse scalar samples / Float32 bytes | 1,536,000 / 6,144,000 |
 | soft-clip curve points | 4,097 |
 | debug events retained | 4,096 |
 | schedule lookahead accepted by X0 | .25 seconds |

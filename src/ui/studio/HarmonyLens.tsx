@@ -39,18 +39,44 @@ export function HarmonyLensContent({
         />
       </div>
 
-      <div class="studio-harmony-empty">
-        <span class="studio-harmony-empty__mark" aria-hidden="true">
-          <UiIcon iconId="harmony" />
-        </span>
-        <div>
-          <h3>{view.emptyTitle}</h3>
-          <p>{view.emptyDescription}</p>
-          <p class="studio-harmony-empty__next-step">
-            Select a chord when chord editing becomes available.
-          </p>
+      {view.selected === null ? (
+        <div class="studio-harmony-empty">
+          <span class="studio-harmony-empty__mark" aria-hidden="true">
+            <UiIcon iconId="harmony" />
+          </span>
+          <div>
+            <h3>{view.emptyTitle}</h3>
+            <p>{view.emptyDescription}</p>
+            <p class="studio-harmony-empty__next-step">
+              Click any chord in the chart to inspect it here.
+            </p>
+          </div>
         </div>
-      </div>
+      ) : (
+        <section
+          class="studio-harmony-selected"
+          aria-label={view.selected.accessibleName}
+        >
+          <header>
+            <p class="studio-kicker">Selected chord</p>
+            <h3 class="studio-harmony-selected__symbol">
+              {view.selected.symbolText}
+            </h3>
+          </header>
+          <KeyValueList
+            accessibleName={null}
+            items={view.selected.facts.map((fact) => ({
+              description: null,
+              id: fact.id,
+              key: fact.label,
+              value: fact.value,
+            }))}
+          />
+          <p class="studio-truth-note">
+            Literal stored values. No harmonic reading is inferred.
+          </p>
+        </section>
+      )}
 
       <section
         class="studio-document-facts"

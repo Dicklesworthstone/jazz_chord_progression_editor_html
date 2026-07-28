@@ -2650,3 +2650,52 @@
   margin: 0.125rem 0 0;
   color: var(--text-subtle);
 }
+
+/* jcpe-ja9f: the Lens's literal selected-chord panel. */
+.studio-harmony-selected {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--surface-panel);
+}
+
+.studio-harmony-selected__symbol {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+
+/*
+ * jcpe-ja9f: an open card menu must never be painted over by the following
+ * measure rows (sibling stacking contexts) or clipped at the chart's last
+ * row. The measure hosting an open menu is lifted above its siblings, and
+ * menus in the final row open upward instead of into the clipped edge.
+ */
+.studio-measure:has(.studio-chord-card__menu) {
+  position: relative;
+  z-index: 25;
+}
+
+.studio-chord-card:has(.studio-chord-card__menu) {
+  z-index: 26;
+}
+
+.studio-chord-card .studio-chord-card__menu {
+  z-index: 30;
+}
+
+/*
+ * Near the chart's end the menu opens upward: below the last rows there is
+ * only the clipped container edge and the transport bar.
+ */
+.studio-measure:nth-last-child(-n + 3) .studio-chord-card__menu {
+  inset-block-start: auto;
+  inset-block-end: calc(100% + var(--space-2));
+}
+
+/* The canvas clip must yield while its card menu is open (jcpe-ja9f). */
+.studio-measure__canvas:has(.studio-chord-card__menu) {
+  overflow: visible;
+  z-index: 25;
+}

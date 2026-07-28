@@ -241,11 +241,19 @@ export type StudioFactView = Readonly<{
   value: string;
 }>;
 
+export type StudioSelectedChordView = Readonly<{
+  symbolText: string;
+  accessibleName: string;
+  facts: readonly StudioFactView[];
+}>;
+
 export type StudioHarmonyView = Readonly<{
   selectedChordLabel: null;
   selectionStatusLabel: string;
   emptyTitle: string;
   emptyDescription: string;
+  /** Literal facts for the most recently selected chord; null when none. */
+  selected: StudioSelectedChordView | null;
   documentFacts: readonly StudioFactView[];
 }>;
 

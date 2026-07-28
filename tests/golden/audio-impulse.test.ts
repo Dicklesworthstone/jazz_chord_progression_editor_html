@@ -18,14 +18,14 @@ const IMPULSE_CASE_IDS = [
 ] as const;
 
 const CHECKPOINTS = [
-  [0, 5_760, -30_637],
-  [1, 6_392, -10_676],
-  [2, -6_236, 16_279],
-  [23_999, -1_564, -660],
-  [47_999, -3_175, 6_489],
-  [71_999, -330, 48],
-  [95_998, 0, 0],
-  [95_999, 0, 0],
+  [0, 0, 0],
+  [1, 0, 0],
+  [2, 0, 0],
+  [47_999, 116, 3_300],
+  [95_999, 47, 148],
+  [143_999, 24, 3],
+  [191_998, 0, 0],
+  [191_999, 0, 0],
 ] as const;
 
 function q15(sample: number): number {
@@ -71,12 +71,12 @@ function hashQ15Channels(
 describe("TR-X0-IMPULSE deterministic audio impulse golden", () => {
   test("X0-ROUTE-001 constructs exactly one normalized project-authored impulse", async () => {
     const { engine, fake } = await readyEngine();
-    expect(engine.inspectAudioEngine().work.impulseSamplesWritten).toBe(192_000);
+    expect(engine.inspectAudioEngine().work.impulseSamplesWritten).toBe(384_000);
     const bufferEvents = fake.events.filter(
       (event) => event.kind === "buffer-create",
     );
     expect(bufferEvents).toHaveLength(1);
-    expect(bufferEvents[0]).toMatchObject({ detail: "buffer", value: 96_000 });
+    expect(bufferEvents[0]).toMatchObject({ detail: "buffer", value: 192_000 });
     expect(
       fake.events.some(
         (event) =>
@@ -89,12 +89,12 @@ describe("TR-X0-IMPULSE deterministic audio impulse golden", () => {
   });
 
   test("X0-RENDER-003/X0-RENDER-006/X0-RENDER-009/X0-RENDER-012/X0-RENDER-015 matches the independent Q15 checkpoints and hashes", () => {
-    const channels = [new Float32Array(96_000), new Float32Array(96_000)] as const;
+    const channels = [new Float32Array(192_000), new Float32Array(192_000)] as const;
     const buffer: AudioBufferPort = {
       numberOfChannels: 2,
-      length: 96_000,
+      length: 192_000,
       sampleRate: 48_000,
-      duration: 2,
+      duration: 4,
       getChannelData(channel) {
         const data = channels[channel];
         if (data === undefined) throw new Error("TEST_CHANNEL_INVALID");
@@ -104,9 +104,9 @@ describe("TR-X0-IMPULSE deterministic audio impulse golden", () => {
 
     const observation = writeDeterministicImpulse(buffer);
     expect(observation).toEqual({
-      samplesWritten: 192_000,
-      peakQ15: 32_595,
-      finalStateUint32: 2_692_639_903,
+      samplesWritten: 384_000,
+      peakQ15: 13_352,
+      finalStateUint32: 3_538_051_940,
     });
     for (const [frame, left, right] of CHECKPOINTS) {
       expect(q15(channels[0][frame] ?? 0)).toBe(left);
@@ -115,14 +115,14 @@ describe("TR-X0-IMPULSE deterministic audio impulse golden", () => {
 
     const hashes = hashQ15Channels(channels[0], channels[1]);
     expect(hashes.interleaved).toBe(
-      "8329fc9abc8b16eeac673bd4a1e0f1e8c9a4900939e6fc00191b429066867f89",
+      "ee0449f080bc31f1a9710ec7a316e8e34fb7979421f1a56c6ffd55b667df2017",
     );
     expect(hashes.channels).toEqual([
-      "fca2e65890c77fdb0ad08d6cada5b0ed398ce9f97c46e279b306a5c8a870fe53",
-      "060054f6c4797b6ba6a11798e261455596a7ab4f17042aa7d2882b7569fd5bec",
+      "f97dee335bf4a7308a2dff2c6b9a609cac4f345edc90aa3b1058f45c1d415394",
+      "7ff4c5a34a8848bc08148c821aac3d23940a3a94bba9c041615ce6e093795416",
     ]);
     expect(AUDIO_IMPULSE_POLICY.algorithmId).toBe(
-      "changes.audio.impulse.xorshift32-q15.v1",
+      "changes.audio.impulse.hall-quartic-q15.v2",
     );
     expect(IMPULSE_CASE_IDS).toHaveLength(6);
   });

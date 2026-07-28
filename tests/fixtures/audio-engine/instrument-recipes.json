@@ -13,14 +13,44 @@
       "polyphonyLimit": 64,
       "scheduledSourceCount": 3,
       "oscillators": [
-        { "id": "fundamental", "waveform": "triangle", "frequencyRatio": 1, "detuneCents": 0, "level": 0.78 },
-        { "id": "second", "waveform": "sine", "frequencyRatio": 2, "detuneCents": 0, "level": 0.16 },
-        { "id": "third", "waveform": "sine", "frequencyRatio": 3, "detuneCents": 0, "level": 0.06 }
+        {
+          "id": "fundamental",
+          "waveform": "triangle",
+          "frequencyRatio": 1,
+          "detuneCents": 0,
+          "level": 0.78
+        },
+        {
+          "id": "second",
+          "waveform": "sine",
+          "frequencyRatio": 2,
+          "detuneCents": 0,
+          "level": 0.16
+        },
+        {
+          "id": "third",
+          "waveform": "sine",
+          "frequencyRatio": 3,
+          "detuneCents": 0,
+          "level": 0.06
+        }
       ],
       "transient": null,
       "tremolo": null,
-      "amplitude": { "attackSeconds": 0.008, "decaySeconds": 0.42, "sustainLevel": 0.22, "releaseSeconds": 0.55 },
-      "filter": { "type": "lowpass", "attackHz": 2100, "peakHz": 5200, "sustainHz": 2100, "q": 0.7, "decaySeconds": 0.45 }
+      "amplitude": {
+        "attackSeconds": 0.008,
+        "decaySeconds": 0.42,
+        "sustainLevel": 0.22,
+        "releaseSeconds": 0.55
+      },
+      "filter": {
+        "type": "lowpass",
+        "attackHz": 2100,
+        "peakHz": 5200,
+        "sustainHz": 2100,
+        "q": 0.7,
+        "decaySeconds": 0.45
+      }
     },
     {
       "id": "fm-electric-piano",
@@ -30,10 +60,37 @@
       "outputLevel": 0.48,
       "polyphonyLimit": 48,
       "scheduledSourceCount": 2,
-      "carrier": { "id": "carrier", "waveform": "sine", "frequencyRatio": 1, "detuneCents": 0, "level": 1 },
-      "modulator": { "waveform": "sine", "frequencyRatio": 2, "detuneCents": 3, "peakIndex": 3.2, "sustainIndex": 0.55, "decaySeconds": 0.65, "velocityIndexScaleMinimum": 0.55, "velocityIndexScaleMaximum": 1 },
-      "amplitude": { "attackSeconds": 0.003, "decaySeconds": 0.85, "sustainLevel": 0.14, "releaseSeconds": 0.9 },
-      "filter": { "type": "lowpass", "attackHz": 4200, "peakHz": 9000, "sustainHz": 4200, "q": 0.5, "decaySeconds": 0.6 }
+      "carrier": {
+        "id": "carrier",
+        "waveform": "sine",
+        "frequencyRatio": 1,
+        "detuneCents": 0,
+        "level": 1
+      },
+      "modulator": {
+        "waveform": "sine",
+        "frequencyRatio": 2,
+        "detuneCents": 3,
+        "peakIndex": 3.2,
+        "sustainIndex": 0.55,
+        "decaySeconds": 0.65,
+        "velocityIndexScaleMinimum": 0.55,
+        "velocityIndexScaleMaximum": 1
+      },
+      "amplitude": {
+        "attackSeconds": 0.003,
+        "decaySeconds": 0.85,
+        "sustainLevel": 0.14,
+        "releaseSeconds": 0.9
+      },
+      "filter": {
+        "type": "lowpass",
+        "attackHz": 4200,
+        "peakHz": 9000,
+        "sustainHz": 4200,
+        "q": 0.5,
+        "decaySeconds": 0.6
+      }
     },
     {
       "id": "vibraphone",
@@ -44,13 +101,47 @@
       "polyphonyLimit": 48,
       "scheduledSourceCount": 4,
       "oscillators": [
-        { "id": "fundamental", "waveform": "sine", "frequencyRatio": 1, "detuneCents": 0, "level": 0.88 },
-        { "id": "fourth-partial", "waveform": "sine", "frequencyRatio": 4, "detuneCents": 0, "level": 0.12 }
+        {
+          "id": "fundamental",
+          "waveform": "sine",
+          "frequencyRatio": 1,
+          "detuneCents": 0,
+          "level": 0.88
+        },
+        {
+          "id": "fourth-partial",
+          "waveform": "sine",
+          "frequencyRatio": 4,
+          "detuneCents": 0,
+          "level": 0.12
+        }
       ],
-      "transient": { "waveform": "sine", "frequencyRatio": 7, "level": 0.1, "decaySeconds": 0.018 },
-      "tremolo": { "waveform": "sine", "rateHz": 5.8, "depth": 0.16, "delaySeconds": 0.12 },
-      "amplitude": { "attackSeconds": 0.002, "decaySeconds": 1.4, "sustainLevel": 0.45, "releaseSeconds": 1.1 },
-      "filter": { "type": "lowpass", "attackHz": 7000, "peakHz": 12000, "sustainHz": 7000, "q": 0.3, "decaySeconds": 0.25 }
+      "transient": {
+        "waveform": "sine",
+        "frequencyRatio": 7,
+        "level": 0.1,
+        "decaySeconds": 0.018
+      },
+      "tremolo": {
+        "waveform": "sine",
+        "rateHz": 5.8,
+        "depth": 0.16,
+        "delaySeconds": 0.12
+      },
+      "amplitude": {
+        "attackSeconds": 0.002,
+        "decaySeconds": 1.4,
+        "sustainLevel": 0.45,
+        "releaseSeconds": 1.1
+      },
+      "filter": {
+        "type": "lowpass",
+        "attackHz": 7000,
+        "peakHz": 12000,
+        "sustainHz": 7000,
+        "q": 0.3,
+        "decaySeconds": 0.25
+      }
     },
     {
       "id": "warm-pad",
@@ -61,14 +152,44 @@
       "polyphonyLimit": 32,
       "scheduledSourceCount": 3,
       "oscillators": [
-        { "id": "saw-left", "waveform": "sawtooth", "frequencyRatio": 1, "detuneCents": -7, "level": 0.34 },
-        { "id": "saw-right", "waveform": "sawtooth", "frequencyRatio": 1, "detuneCents": 7, "level": 0.34 },
-        { "id": "triangle-center", "waveform": "triangle", "frequencyRatio": 1, "detuneCents": 0, "level": 0.32 }
+        {
+          "id": "saw-left",
+          "waveform": "sawtooth",
+          "frequencyRatio": 1,
+          "detuneCents": -7,
+          "level": 0.34
+        },
+        {
+          "id": "saw-right",
+          "waveform": "sawtooth",
+          "frequencyRatio": 1,
+          "detuneCents": 7,
+          "level": 0.34
+        },
+        {
+          "id": "triangle-center",
+          "waveform": "triangle",
+          "frequencyRatio": 1,
+          "detuneCents": 0,
+          "level": 0.32
+        }
       ],
       "transient": null,
       "tremolo": null,
-      "amplitude": { "attackSeconds": 0.32, "decaySeconds": 1.2, "sustainLevel": 0.72, "releaseSeconds": 1.8 },
-      "filter": { "type": "lowpass", "attackHz": 900, "peakHz": 2800, "sustainHz": 1600, "q": 0.8, "decaySeconds": 1.4 }
+      "amplitude": {
+        "attackSeconds": 0.32,
+        "decaySeconds": 1.2,
+        "sustainLevel": 0.72,
+        "releaseSeconds": 1.8
+      },
+      "filter": {
+        "type": "lowpass",
+        "attackHz": 900,
+        "peakHz": 2800,
+        "sustainHz": 1600,
+        "q": 0.8,
+        "decaySeconds": 1.4
+      }
     },
     {
       "id": "analog-poly",
@@ -79,26 +200,73 @@
       "polyphonyLimit": 48,
       "scheduledSourceCount": 3,
       "oscillators": [
-        { "id": "saw", "waveform": "sawtooth", "frequencyRatio": 1, "detuneCents": -4, "level": 0.48 },
-        { "id": "pulse", "waveform": "periodic-pulse-25", "frequencyRatio": 1, "detuneCents": 4, "level": 0.36 },
-        { "id": "sub", "waveform": "sine", "frequencyRatio": 0.5, "detuneCents": 0, "level": 0.16 }
+        {
+          "id": "saw",
+          "waveform": "sawtooth",
+          "frequencyRatio": 1,
+          "detuneCents": -4,
+          "level": 0.48
+        },
+        {
+          "id": "pulse",
+          "waveform": "periodic-pulse-25",
+          "frequencyRatio": 1,
+          "detuneCents": 4,
+          "level": 0.36
+        },
+        {
+          "id": "sub",
+          "waveform": "sine",
+          "frequencyRatio": 0.5,
+          "detuneCents": 0,
+          "level": 0.16
+        }
       ],
       "transient": null,
       "tremolo": null,
-      "amplitude": { "attackSeconds": 0.012, "decaySeconds": 0.3, "sustainLevel": 0.52, "releaseSeconds": 0.65 },
-      "filter": { "type": "lowpass", "attackHz": 700, "peakHz": 4800, "sustainHz": 1300, "q": 4.2, "decaySeconds": 0.32 }
+      "amplitude": {
+        "attackSeconds": 0.012,
+        "decaySeconds": 0.3,
+        "sustainLevel": 0.52,
+        "releaseSeconds": 0.65
+      },
+      "filter": {
+        "type": "lowpass",
+        "attackHz": 700,
+        "peakHz": 4800,
+        "sustainHz": 1300,
+        "q": 4.2,
+        "decaySeconds": 0.32
+      }
     },
     {
       "id": "concert-grand",
       "label": "Concert Grand",
       "designClaim": "deterministic rendered piano: inharmonic partials, unison detuning, dual-rate decay, hammer noise",
       "synthesis": "rendered",
-      "outputLevel": 0.85,
+      "outputLevel": 0.3,
       "polyphonyLimit": 64,
       "scheduledSourceCount": 1,
-      "renderer": { "algorithmId": "changes.dsp.concert-grand@1", "channels": 2, "maximumRenderSeconds": 8, "bufferCacheLimit": 96 },
-      "amplitude": { "attackSeconds": 0.002, "decaySeconds": 0, "sustainLevel": 1, "releaseSeconds": 0.2 },
-      "filter": { "type": "lowpass", "attackHz": 16000, "peakHz": 16000, "sustainHz": 16000, "q": 0.5, "decaySeconds": 0.1 }
+      "renderer": {
+        "algorithmId": "changes.dsp.concert-grand@1",
+        "channels": 2,
+        "maximumRenderSeconds": 8,
+        "bufferCacheLimit": 96
+      },
+      "amplitude": {
+        "attackSeconds": 0.002,
+        "decaySeconds": 0,
+        "sustainLevel": 1,
+        "releaseSeconds": 0.2
+      },
+      "filter": {
+        "type": "lowpass",
+        "attackHz": 16000,
+        "peakHz": 16000,
+        "sustainHz": 16000,
+        "q": 0.5,
+        "decaySeconds": 0.1
+      }
     }
   ],
   "pulseWave": {
@@ -114,18 +282,69 @@
     "id": "changes.audio.voice-normalization.v1",
     "formula": "recipe.outputLevel/sqrt(totalGeneratedVoiceCount)",
     "velocityFormula": "pow(velocity/127,1.5)",
-    "voiceCountRange": [1, 16],
-    "velocityRange": [1, 127],
-    "referenceVoiceCounts": [1, 4, 7, 16],
+    "voiceCountRange": [
+      1,
+      16
+    ],
+    "velocityRange": [
+      1,
+      127
+    ],
+    "referenceVoiceCounts": [
+      1,
+      4,
+      7,
+      16
+    ],
     "referenceGains": {
-      "mellow-keys": [0.62, 0.31, 0.234337973266, 0.155],
-      "fm-electric-piano": [0.48, 0.24, 0.181422947044, 0.12],
-      "vibraphone": [0.5, 0.25, 0.188982236505, 0.125],
-      "warm-pad": [0.3, 0.15, 0.113389341903, 0.075],
-      "analog-poly": [0.34, 0.17, 0.128507920823, 0.085],
-      "concert-grand": [0.85, 0.425, 0.321269802058, 0.2125]
+      "mellow-keys": [
+        0.62,
+        0.31,
+        0.234337973266,
+        0.155
+      ],
+      "fm-electric-piano": [
+        0.48,
+        0.24,
+        0.181422947044,
+        0.12
+      ],
+      "vibraphone": [
+        0.5,
+        0.25,
+        0.188982236505,
+        0.125
+      ],
+      "warm-pad": [
+        0.3,
+        0.15,
+        0.113389341903,
+        0.075
+      ],
+      "analog-poly": [
+        0.34,
+        0.17,
+        0.128507920823,
+        0.085
+      ],
+      "concert-grand": [
+        0.3,
+        0.212132034356,
+        0.173205080757,
+        0.15
+      ]
     },
-    "referenceVelocities": [1, 64, 100, 127],
-    "referenceVelocityGains": [0.000698705913, 0.357737427418, 0.698705912926, 1]
+    "referenceVelocities": [
+      1,
+      64,
+      100,
+      127
+    ],
+    "referenceVelocityGains": [
+      0.000698705913,
+      0.357737427418,
+      0.698705912926,
+      1
+    ]
   }
 }

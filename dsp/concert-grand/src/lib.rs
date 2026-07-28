@@ -174,8 +174,15 @@ pub extern "C" fn cg_render(
      * corner up. The strike point comb (|sin(pi n x)| at x ~ 1/8.7 of the
      * string) is the fixed piano signature that notches the 8th-ish partial.
      */
-    let rolloff_power = 1.7 + 1.3 * (1.0 - v_norm);
-    let corner_hz = 800.0 + 8_000.0 * pow(v_norm, 1.6);
+    /*
+     * jcpe-6veb warmth: the original corner (800 + 8000·v^1.6 ≈ 5.9 kHz at
+     * velocity 96) let the hammer read as glassy. A concert grand played at
+     * mezzo-forte keeps its energy centered low; the corner now rises from
+     * 500 Hz to ~3.1 kHz at maximum velocity and the rolloff floor is a
+     * touch steeper.
+     */
+    let rolloff_power = 1.9 + 1.2 * (1.0 - v_norm);
+    let corner_hz = 500.0 + 2_600.0 * pow(v_norm, 1.6);
     let strike_point = 0.115;
 
     /* Fundamental decay: T60 from ~20 s in the bass to ~1 s at the top. */

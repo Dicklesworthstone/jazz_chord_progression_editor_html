@@ -479,16 +479,27 @@ function validateWorkCounters(
   return value;
 }
 
-export function replayX0ImpulseQ15(
-  sampleRate: number,
-  impulseGolden: unknown,
-): Readonly<{
+type X0ImpulseReplay = Readonly<{
   sampleRate: number;
   frameCount: number;
   scalarSamples: number;
   finalStateUint32: number;
   sha256: string;
-}> {
+}>;
+
+/*
+ * The replay is a pure function of the sample rate and the pinned authority
+ * scalars, so identical calls share the frozen result. The cache key names
+ * every input that reaches the integer algorithm (the other authority fields
+ * are pinned by the guard above the loop), keeping repeated 4-second replays
+ * from dominating verifier wall time.
+ */
+const replayX0ImpulseCache = new Map<string, X0ImpulseReplay>();
+
+export function replayX0ImpulseQ15(
+  sampleRate: number,
+  impulseGolden: unknown,
+): X0ImpulseReplay {
   if (!Number.isInteger(sampleRate) || sampleRate < 8_000 || sampleRate > 192_000) {
     throw new Error("X0_IMPULSE_REPLAY_SAMPLE_RATE_INVALID");
   }
@@ -498,37 +509,63 @@ export function replayX0ImpulseQ15(
   const seed = impulseGolden["seedUint32"];
   const channels = impulseGolden["channels"];
   const duration = impulseGolden["durationSeconds"];
-  if (!safeCounter(seed) || channels !== 2 || duration !== 2) {
+  const predelayDivisor = impulseGolden["predelayDivisor"];
+  const lowpassAlphaQ15 = impulseGolden["lowpassAlphaQ15"];
+  if (
+    !safeCounter(seed) ||
+    channels !== 2 ||
+    duration !== 4 ||
+    predelayDivisor !== 50 ||
+    lowpassAlphaQ15 !== 6_000
+  ) {
     throw new Error("X0_IMPULSE_REPLAY_AUTHORITY_INVALID");
   }
+  const cacheKey = `${String(sampleRate)}|${String(seed)}`;
+  const cached = replayX0ImpulseCache.get(cacheKey);
+  if (cached !== undefined) return cached;
   const frameCount = sampleRate * duration;
+  const predelayFrames = Math.floor(sampleRate / predelayDivisor);
+  /* remaining^4 exceeds 2^53, so the quartic envelope must be BigInt-exact. */
+  const frameCountFourth = BigInt(frameCount) ** 4n;
   const bytes = new Uint8Array(frameCount * channels * Int16Array.BYTES_PER_ELEMENT);
   const view = new DataView(bytes.buffer);
   let state = seed >>> 0;
   let offset = 0;
+  const lowpassFirst: [number, number] = [0, 0];
+  const lowpassSecond: [number, number] = [0, 0];
   for (let frame = 0; frame < frameCount; frame += 1) {
-    const remaining = frameCount - frame;
-    const envelopeQ15 = Math.floor(
-      (remaining * remaining * 32_767) / (frameCount * frameCount),
-    );
+    const envelopeQ15 =
+      frame < predelayFrames
+        ? 0
+        : Number((BigInt(frameCount - frame) ** 4n * 32_767n) / frameCountFourth);
     for (let channel = 0; channel < channels; channel += 1) {
       state ^= state << 13;
       state ^= state >>> 17;
       state ^= state << 5;
       state >>>= 0;
       const noise = (state >>> 16) - 32_768;
-      const sampleQ15 = Math.trunc((noise * envelopeQ15) / 32_768);
+      const lp1 =
+        (lowpassFirst[channel] ?? 0) +
+        Math.trunc((lowpassAlphaQ15 * (noise - (lowpassFirst[channel] ?? 0))) / 32_768);
+      const lp2 =
+        (lowpassSecond[channel] ?? 0) +
+        Math.trunc((lowpassAlphaQ15 * (lp1 - (lowpassSecond[channel] ?? 0))) / 32_768);
+      lowpassFirst[channel] = lp1;
+      lowpassSecond[channel] = lp2;
+      const sampleQ15 = Math.trunc((lp2 * envelopeQ15) / 32_768);
       view.setInt16(offset, sampleQ15, true);
       offset += Int16Array.BYTES_PER_ELEMENT;
     }
   }
-  return Object.freeze({
+  const replay = Object.freeze({
     sampleRate,
     frameCount,
     scalarSamples: frameCount * channels,
     finalStateUint32: state,
     sha256: canonicalSha256(bytes),
   });
+  replayX0ImpulseCache.set(cacheKey, replay);
+  return replay;
 }
 
 function validateArtifactDigest(

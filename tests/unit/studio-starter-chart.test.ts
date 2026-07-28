@@ -3,7 +3,10 @@
  * typed command path, lands the reviewed progression exactly, never touches
  * a non-pristine studio, and unwinds with exactly two Undo presses.
  */
-import { describe, expect, test } from "bun:test";
+import { describe, expect, setDefaultTimeout, test } from "bun:test";
+
+/* The palette sweep renders real piano buffers; wall time is not a gate. */
+setDefaultTimeout(120_000);
 
 import {
   STARTER_CHART,
@@ -75,13 +78,13 @@ describe("the reviewed starter chart", () => {
     expect(result).toEqual({ seeded: true, reason: "seeded" });
     const snapshot = controller.getSnapshot();
     expect(snapshot.title).toBe(STARTER_CHART.title);
-    expect(snapshot.chordCount).toBe(24);
-    expect(snapshot.measureCount).toBe(16);
+    expect(snapshot.chordCount).toBe(10);
+    expect(snapshot.measureCount).toBe(6);
     expect(snapshot.quickEntry.text).toBe("");
     const fills = snapshot.sections[0]?.measures.map(
       (measure) => measure.eventCount,
     );
-    expect(fills).toEqual([1, 1, 2, 2, 1, 1, 2, 2, 1, 2, 1, 2, 1, 1, 2, 2]);
+    expect(fills).toEqual([2, 2, 2, 2, 1, 1]);
   });
 
   test("STARTER_CHART.undoDepth Undo presses return the exact pristine studio", () => {
@@ -119,8 +122,8 @@ describe("the reviewed starter chart", () => {
       seeded: false,
       reason: "document-not-pristine",
     });
-    expect(controller.getSnapshot().chordCount).toBe(24);
-    expect(controller.getSnapshot().measureCount).toBe(16);
+    expect(controller.getSnapshot().chordCount).toBe(10);
+    expect(controller.getSnapshot().measureCount).toBe(6);
   });
 
   test("the seeded chart PLAYS through the real transport composition", () => {
@@ -176,7 +179,7 @@ describe("the reviewed starter chart", () => {
     );
     expect(drafted.ok).toBe(true);
     const tokens = controller.previewQuickEntryDraft().tokens;
-    expect(tokens.length).toBe(24);
+    expect(tokens.length).toBe(10);
     for (const token of tokens) {
       expect(`${token.sourceText}:${token.state}`).toBe(
         `${token.sourceText}:valid`,

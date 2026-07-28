@@ -12,6 +12,7 @@ const HARMONY_VIEW: StudioHarmonyView = Object.freeze({
   emptyDescription: "The test document has no selected chord.",
   emptyTitle: "No chord selected",
   selectedChordLabel: null,
+  selected: null,
   selectionStatusLabel: "No selection",
 });
 

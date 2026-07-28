@@ -62,6 +62,7 @@ const BASE_VIEW: Omit<StudioShellView, "layout"> = Object.freeze({
     chordCountLabel: "0 chords",
     rovingFocusId: null,
     selectionCount: 0,
+    selected: null,
     selectionStatusLabel: "No chord selected",
     canDeleteSelection: false,
     canDuplicateSelection: false,
@@ -116,6 +117,7 @@ const BASE_VIEW: Omit<StudioShellView, "layout"> = Object.freeze({
   }),
   harmony: Object.freeze({
     selectedChordLabel: null,
+    selected: null,
     selectionStatusLabel: "No chord events in this chart",
     emptyTitle: "Harmony begins with a real chord",
     emptyDescription:

@@ -51,7 +51,7 @@ test.describe("interactive studio checkpoint", () => {
      * title is committed at revision 3, so the checkpoint's title flow
      * starts from the seeded value rather than the pristine default.
      */
-    await expect(title).toHaveValue("Mu Major Journey");
+    await expect(title).toHaveValue("Deacon Blues");
     await expect(apply).toBeDisabled();
     await title.fill("Blue in Green");
     await expect(apply).toBeEnabled();
@@ -77,7 +77,7 @@ test.describe("interactive studio checkpoint", () => {
     await reset.click();
     await expect(title).toHaveValue("Blue in Green");
     await page.getByRole("button", { name: "Undo" }).click();
-    await expect(title).toHaveValue("Mu Major Journey");
+    await expect(title).toHaveValue("Deacon Blues");
     await page.getByRole("button", { name: "Redo" }).click();
     await expect(title).toHaveValue("Blue in Green");
 

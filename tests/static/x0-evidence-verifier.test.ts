@@ -187,7 +187,7 @@ function realContextRecord(userAgent: string): JsonRecord {
       operationsStarted: 204,
       graphNodesCreated: 12,
       graphEdgesConnected: 13,
-      impulseSamplesWritten: 192_000,
+      impulseSamplesWritten: 384_000,
       voiceBatchesValidated: 100,
       voiceSpecsValidated: 100,
       voicesExaminedForRetirement: 100,
@@ -761,20 +761,20 @@ describe("X0 package evidence verifier", () => {
   test("independently reproduces every reviewed impulse-rate hash", () => {
     expect(replayX0ImpulseQ15(44_100, impulseGolden)).toEqual({
       sampleRate: 44_100,
-      frameCount: 88_200,
-      scalarSamples: 176_400,
-      finalStateUint32: 986_166_539,
-      sha256: "d5c074e95e0a0cf31ea263a3f749a1b85f353f2cdd49deaaedebfc4ec5f48633",
+      frameCount: 176_400,
+      scalarSamples: 352_800,
+      finalStateUint32: 2_868_554_189,
+      sha256: "9897adb592774e1ea2624320f9a9d00d78e1304432cee3ab020b6d1eb29a7837",
     });
     expect(replayX0ImpulseQ15(48_000, impulseGolden).sha256).toBe(
       impulseGolden.referenceInterleavedInt16LeSha256,
     );
     expect(replayX0ImpulseQ15(96_000, impulseGolden)).toEqual({
       sampleRate: 96_000,
-      frameCount: 192_000,
-      scalarSamples: 384_000,
-      finalStateUint32: 3_538_051_940,
-      sha256: "fe3b2d83f016720c16a7359b32bc34350bf36901fa2811273121ebe750b48d3a",
+      frameCount: 384_000,
+      scalarSamples: 768_000,
+      finalStateUint32: 4_285_710_797,
+      sha256: "abe1b82bc48a5afdde7b6732244ebc1d8ce8d06d90e176ef3ed0b4e4f681ee53",
     });
   });
 
