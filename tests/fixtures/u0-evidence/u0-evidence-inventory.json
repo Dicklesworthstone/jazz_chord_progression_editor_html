@@ -56,7 +56,7 @@
     },
     {
       "path": "tests/e2e/u0-mobile-shell.spec.ts",
-      "sha256": "a7650288f851e4585ac70cba785db5ba3d9132d942e5b1ded8b8c83adf8d06e1"
+      "sha256": "ba4b7c191d0771146d10f10fd48d265f77c0052355376c2fb416f6089cc78f74"
     },
     {
       "path": "tests/e2e/u0-nonhappy-states.spec.ts",
@@ -76,7 +76,7 @@
     },
     {
       "path": "tests/e2e/u0-touch-targets.spec.ts",
-      "sha256": "090ac9dd89740cb599efad9a0c9afa28d70957e23f41f3fe0009ac83657cfdf0"
+      "sha256": "ea804c1b4aa57532aa59006cdbb361b87c4100e467a09bf16278f93a681fd8fd"
     },
     {
       "path": "tests/fixtures/ui/primitive-state-matrix.json",

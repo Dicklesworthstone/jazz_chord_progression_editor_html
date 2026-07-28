@@ -33,6 +33,9 @@ export type {
 
 export type { StudioViewModel } from "./studio-view-model";
 
+export { STARTER_CHART, seedStarterChart } from "./studio-starter-chart";
+export type { SeedStarterChartResult } from "./studio-starter-chart";
+
 /**
  * The audio composition the root injects into the controller. Exported from
  * the runtime entry rather than the headless barrel because only the

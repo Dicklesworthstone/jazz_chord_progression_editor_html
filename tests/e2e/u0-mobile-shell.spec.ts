@@ -162,7 +162,7 @@ for (const mobileCase of [
       await title.focus();
       await title.fill("Keyboard-only mobile draft");
       await expect(title).toHaveValue("Keyboard-only mobile draft");
-      await expect(page.getByText("Revision 0", { exact: true })).toBeVisible();
+      await expect(page.getByText("Revision 3", { exact: true })).toBeVisible();
 
       const observationsBySheet: Record<string, MobileObservation> = {};
       for (const name of ["Library", "Harmony Lens"] as const) {
@@ -468,7 +468,7 @@ test("U0-ENV-006 virtual-keyboard viewport contraction preserves draft authority
     const titleBox = await title.boundingBox();
     const transportBox = await page.locator("#transport-bar").boundingBox();
     await expect(title).toHaveValue("Uncommitted keyboard draft");
-    await expect(page.getByText("Revision 0", { exact: true })).toBeVisible();
+    await expect(page.getByText("Revision 3", { exact: true })).toBeVisible();
     await page.getByRole("button", { exact: true, name: "Library" }).click();
     const close = page.getByRole("button", { name: "Close Library" });
     await expect(close).toBeVisible();

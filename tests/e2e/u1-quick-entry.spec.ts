@@ -265,4 +265,47 @@ test.describe("U1-TRACE-QUICKENTRY quick entry over the real artifact", () => {
     await expect(cards(page).nth(0)).toContainText("4/1 beats");
     expectCleanDiagnostics(diagnostics);
   });
+
+  test("jcpe-8idn the chord palette appends draft text through the typed path only", async ({
+    page,
+  }) => {
+    const diagnostics = captureDiagnostics(page);
+    await openStudio(page);
+
+    const field = page.getByTestId("quick-entry-field");
+    const palette = page.getByTestId("chord-palette");
+    await expect(palette).toBeVisible();
+
+    // The default root is C; a quality chip appends the full symbol.
+    await page.locator("#studio-palette-quality-m7").click();
+    await expect(field).toHaveValue("Cm7 ");
+
+    // Switching roots changes only what the next chip appends.
+    await page.locator("#studio-palette-root-g").click();
+    await expect(palette).toHaveAttribute(
+      "aria-label",
+      "Chord palette, root G",
+    );
+    await page.locator("#studio-palette-quality-dom7").click();
+    await expect(field).toHaveValue("Cm7 G7 ");
+
+    // Sharped and slash-free symbols parse ready straight off the chips.
+    await page.locator("#studio-palette-root-f-sharp").click();
+    await page.locator("#studio-palette-quality-maj7-sharp11").click();
+    await expect(field).toHaveValue("Cm7 G7 F#maj7#11 ");
+    await expect(page.getByTestId("quick-entry-status")).toContainText(
+      "Draft parses",
+    );
+
+    // The palette publishes nothing: only the existing Insert commits.
+    await expect(cards(page)).toHaveCount(0);
+    await page
+      .locator("#studio-quick-entry-insert")
+      .filter({ visible: true })
+      .first()
+      .click();
+    await expect(cards(page)).toHaveCount(3);
+    await expect(cards(page).nth(2)).toContainText("F#maj7#11");
+    expectCleanDiagnostics(diagnostics);
+  });
 });

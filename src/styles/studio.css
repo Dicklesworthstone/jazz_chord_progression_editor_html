@@ -1507,6 +1507,7 @@
   .studio-transport__controls .ui-icon-button {
     inline-size: var(--touch-target);
   }
+
 }
 
 @media (prefers-contrast: more) {
@@ -1723,6 +1724,20 @@
   margin: 0;
   color: var(--text-subtle);
   font-size: var(--text-xs);
+}
+
+.studio-quick-entry__palette {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.studio-quick-entry__palette-roots,
+.studio-quick-entry__palette-qualities {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
 }
 
 .studio-quick-entry__field {
@@ -2013,6 +2028,16 @@
 .studio-chord-card[data-selected="true"] .studio-chord-card__more {
   border-color: var(--border-default);
   color: var(--text-primary);
+}
+
+/* The More trigger is a bare button outside the ui-* classes; a coarse
+   pointer still owes it the full 44px application target. This rule must
+   follow the base rule above — equal specificity resolves by order. */
+@media (pointer: coarse) {
+  .studio-chord-card__more {
+    min-inline-size: var(--touch-target);
+    min-block-size: var(--touch-target);
+  }
 }
 
 .studio-chord-card__menu {

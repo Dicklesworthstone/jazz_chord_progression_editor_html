@@ -1,3 +1,6 @@
+import { useState } from "preact/hooks";
+
+import { STARTER_CHART } from "../../application/runtime";
 import { Badge, Button, Checkbox, UiIcon } from "../primitives";
 import type {
   StudioQuickEntryTokenView,
@@ -6,15 +9,47 @@ import type {
 
 const stagedLibraryAreas = [
   {
-    name: "Chord palette",
-    description:
-      "Spelling-aware chord choices arrive after real document insertion is wired.",
-  },
-  {
     name: "Lessons",
     description:
       "Guided progressions remain staged until loading them is an undoable action.",
   },
+] as const;
+
+/**
+ * Palette vocabulary. Every root/quality pair concatenates to a symbol the
+ * real T0 grammar parses `ready` (proven in the palette unit test); a chip
+ * that could produce a refused token would teach the grammar wrong. Display
+ * labels may use proper accidental glyphs, but appended draft text is the
+ * plain ASCII the grammar and the hint teach.
+ */
+const PALETTE_ROOTS = [
+  { id: "c", text: "C", label: "C" },
+  { id: "d-flat", text: "Db", label: "D♭" },
+  { id: "d", text: "D", label: "D" },
+  { id: "e-flat", text: "Eb", label: "E♭" },
+  { id: "e", text: "E", label: "E" },
+  { id: "f", text: "F", label: "F" },
+  { id: "f-sharp", text: "F#", label: "F♯" },
+  { id: "g", text: "G", label: "G" },
+  { id: "a-flat", text: "Ab", label: "A♭" },
+  { id: "a", text: "A", label: "A" },
+  { id: "b-flat", text: "Bb", label: "B♭" },
+  { id: "b", text: "B", label: "B" },
+] as const;
+
+const PALETTE_QUALITIES = [
+  { id: "maj7", suffix: "maj7", label: "maj7" },
+  { id: "m7", suffix: "m7", label: "m7" },
+  { id: "dom7", suffix: "7", label: "7" },
+  { id: "six-nine", suffix: "6/9", label: "6/9" },
+  { id: "add9", suffix: "add9", label: "add9" },
+  { id: "m9", suffix: "m9", label: "m9" },
+  { id: "m7b5", suffix: "m7b5", label: "m7♭5" },
+  { id: "dim7", suffix: "dim7", label: "dim7" },
+  { id: "sus4", suffix: "sus4", label: "sus4" },
+  { id: "thirteen", suffix: "13", label: "13" },
+  { id: "seven-alt", suffix: "7alt", label: "7alt" },
+  { id: "maj7-sharp11", suffix: "maj7#11", label: "maj7♯11" },
 ] as const;
 
 export type LibraryPanelContentProps = Readonly<{
@@ -44,6 +79,11 @@ const DEMO_PROGRESSIONS = [
     id: "turnaround",
     label: "Turnaround",
     chartText: "| Cmaj7 A7 | Dm7 G7 |",
+  },
+  {
+    id: "mu-major-journey",
+    label: STARTER_CHART.title,
+    chartText: STARTER_CHART.chartText,
   },
 ] as const;
 
@@ -208,6 +248,20 @@ function QuickEntryPanel({
     view.tokens.some((token) => token.state === "insertable");
   /** The field appears only where T0 actually left a duration to the caller. */
   const needsCallerDuration = view.tokens.some((token) => token.requiresDuration);
+  /**
+   * Palette root selection is pure presentation: it only decides what text the
+   * next quality chip appends to the draft, so it lives here rather than in
+   * application state. Appending near the draft cap is disabled instead of
+   * letting a chip manufacture a refusal the typist never typed.
+   */
+  const [paletteRoot, setPaletteRoot] = useState<string>("C");
+  const paletteFull =
+    view.codePointCount + 16 > view.maxCodePoints;
+  const appendPaletteChord = (suffix: string): void => {
+    const base = view.draftText;
+    const separator = base.length === 0 || base.endsWith(" ") ? "" : " ";
+    onDraftChange(`${base}${separator}${paletteRoot}${suffix} `);
+  };
   return (
     <section class="studio-quick-entry" aria-labelledby="studio-quick-entry-heading">
       <h3 id="studio-quick-entry-heading">Quick entry</h3>
@@ -240,6 +294,65 @@ function QuickEntryPanel({
             variant="secondary"
           />
         ))}
+      </div>
+      {/*
+        The palette is a faster way to type, not a second insertion channel:
+        every chip only appends symbol text to the same draft the field owns,
+        so a chip can never do anything typing the same characters could not.
+      */}
+      <div
+        class="studio-quick-entry__palette"
+        data-testid="chord-palette"
+        role="group"
+        aria-label={`Chord palette, root ${paletteRoot}`}
+      >
+        <span class="studio-quick-entry__demos-label">Palette:</span>
+        <div
+          class="studio-quick-entry__palette-roots"
+          role="group"
+          aria-label="Palette root"
+        >
+          {PALETTE_ROOTS.map((root) => (
+            <Button
+              busy={false}
+              density="dense"
+              describedBy={["studio-quick-entry-status"]}
+              disabled={false}
+              id={`studio-palette-root-${root.id}`}
+              invalid={false}
+              key={root.id}
+              label={root.label}
+              onAction={() => {
+                setPaletteRoot(root.text);
+              }}
+              type="button"
+              variant={paletteRoot === root.text ? "primary" : "ghost"}
+            />
+          ))}
+        </div>
+        <div
+          class="studio-quick-entry__palette-qualities"
+          role="group"
+          aria-label={`Chord qualities on ${paletteRoot}`}
+        >
+          {PALETTE_QUALITIES.map((quality) => (
+            <Button
+              busy={false}
+              density="dense"
+              describedBy={["studio-quick-entry-status"]}
+              disabled={paletteFull}
+              id={`studio-palette-quality-${quality.id}`}
+              invalid={false}
+              key={quality.id}
+              label={quality.label}
+              onAction={() => {
+                appendPaletteChord(quality.suffix);
+              }}
+              type="button"
+              variant="outline"
+            />
+          ))}
+        </div>
       </div>
       <label class="studio-quick-entry__label" for="studio-quick-entry-field">
         Chart text

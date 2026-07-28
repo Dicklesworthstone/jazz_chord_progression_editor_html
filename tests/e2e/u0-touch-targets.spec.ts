@@ -287,8 +287,15 @@ test("U0-ENV-004 U0-PRIM-015 U0-PRIM-016 enforces 24 and 44 CSS px target polici
       expect(applicationTarget.width, `${applicationTarget.id} coarse width`).toBeGreaterThanOrEqual(44);
       expect(applicationTarget.height, `${applicationTarget.id} coarse height`).toBeGreaterThanOrEqual(44);
     }
-    const applicationHitOwnership = await artifactPage.evaluate(() =>
-      Array.from(
+    /*
+     * The ownership law hunts covered or overlapping controls, not content
+     * that has scrolled beneath the sticky transport bar: the seeded first-
+     * open chart (jcpe-b20t) makes the page taller than one viewport, so
+     * each target is measured in its scrolled-into-view position. A center
+     * that still resolves to another element there is a genuine defect.
+     */
+    const applicationHitOwnership = await artifactPage.evaluate(() => {
+      const measurements = Array.from(
         document.querySelectorAll<HTMLElement>(
           '.studio-shell button, .studio-shell input, .studio-shell select, .studio-shell textarea, .studio-shell a[href]',
         ),
@@ -299,14 +306,17 @@ test("U0-ENV-004 U0-PRIM-015 U0-PRIM-016 enforces 24 and 44 CSS px target polici
           box.width > 0 && box.height > 0 && box.bottom > 0 && box.right > 0 &&
           box.left < window.innerWidth && box.top < window.innerHeight;
       }).map((element) => {
+        element.scrollIntoView({ block: "center", inline: "nearest" });
         const box = element.getBoundingClientRect();
         const hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
         return {
           centerOwned: hit !== null && (hit === element || element.contains(hit)),
           id: element.id,
         };
-      }),
-    );
+      });
+      window.scrollTo(0, 0);
+      return measurements;
+    });
     expect(
       applicationHitOwnership.filter((item) => !item.centerOwned),
       "every application target center belongs to that target",

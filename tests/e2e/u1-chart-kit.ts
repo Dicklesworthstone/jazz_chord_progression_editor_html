@@ -40,6 +40,20 @@ function artifactUrl(): string {
 export async function openStudio(page: Page): Promise<void> {
   await page.goto(artifactUrl(), { waitUntil: "load" });
   await expect(page.locator('[data-app-ready="true"]')).toBeVisible();
+  /*
+   * First open seeds the reviewed starter chart through real commands
+   * (jcpe-b20t). These specs author their own charts against the pristine
+   * studio, so the kit unwinds the seed the way a user would: pressing
+   * Undo until history is exhausted. Asserting the seeded state first
+   * keeps every spec run an incidental witness that the seed landed.
+   */
+  await expect(page.locator(".studio-chord-card").first()).toBeVisible();
+  const undo = page.locator("#studio-undo");
+  for (let press = 0; press < 6 && (await undo.isEnabled()); press += 1) {
+    await undo.click();
+  }
+  await expect(page.locator(".studio-chord-card")).toHaveCount(0);
+  await expect(undo).toBeDisabled();
 }
 
 /** Type chart text and publish it through the real atomic command. */

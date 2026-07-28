@@ -46,7 +46,12 @@ test.describe("interactive studio checkpoint", () => {
     const apply = page.getByRole("button", { name: "Apply title" });
     const reset = page.getByRole("button", { name: "Reset" });
 
-    await expect(title).toHaveValue("Untitled Changes");
+    /*
+     * First open now carries the seeded starter chart (jcpe-b20t): its
+     * title is committed at revision 3, so the checkpoint's title flow
+     * starts from the seeded value rather than the pristine default.
+     */
+    await expect(title).toHaveValue("Mu Major Journey");
     await expect(apply).toBeDisabled();
     await title.fill("Blue in Green");
     await expect(apply).toBeEnabled();
@@ -54,7 +59,7 @@ test.describe("interactive studio checkpoint", () => {
 
     await expect(title).toHaveValue("Blue in Green");
     await expect(page.getByText("Not exported", { exact: true })).toBeVisible();
-    await expect(page.getByText("Revision 1", { exact: true })).toBeVisible();
+    await expect(page.getByText("Revision 4", { exact: true })).toBeVisible();
     await expect(
       page.getByText("Title committed as an undoable document change."),
     ).toBeVisible();
@@ -64,7 +69,7 @@ test.describe("interactive studio checkpoint", () => {
     await apply.click();
     await expect(title).toHaveValue(refusedDraft);
     await expect(page.getByRole("alert")).toBeVisible();
-    await expect(page.getByText("Revision 1", { exact: true })).toBeVisible();
+    await expect(page.getByText("Revision 4", { exact: true })).toBeVisible();
     await expect(
       page.getByText(/A refused title leaves “Blue in Green” unchanged\./u),
     ).toBeVisible();
@@ -72,7 +77,7 @@ test.describe("interactive studio checkpoint", () => {
     await reset.click();
     await expect(title).toHaveValue("Blue in Green");
     await page.getByRole("button", { name: "Undo" }).click();
-    await expect(title).toHaveValue("Untitled Changes");
+    await expect(title).toHaveValue("Mu Major Journey");
     await page.getByRole("button", { name: "Redo" }).click();
     await expect(title).toHaveValue("Blue in Green");
 
@@ -110,15 +115,26 @@ test.describe("interactive studio checkpoint", () => {
 
     await expect(page.getByText("Audio off", { exact: true })).toBeVisible();
     /*
-     * The empty checkpoint chart has nothing to play, so every transport
-     * control is disabled — and the controls that exist are exactly the wired
-     * ones. Unwired previous/next/loop must not render at all.
+     * The seeded starter chart (jcpe-b20t) gives the transport something to
+     * play from the first paint: Play is enabled while Pause and Stop stay
+     * disabled at idle. The controls that exist are exactly the wired ones;
+     * unwired previous/next/loop must not render at all.
      */
-    for (const name of ["Play", "Pause", "Stop"]) {
+    await expect(page.getByRole("button", { name: "Play" })).toBeEnabled();
+    for (const name of ["Pause", "Stop"]) {
       await expect(page.getByRole("button", { name })).toBeDisabled();
     }
     for (const name of ["Previous chord", "Next chord", "Loop progression"]) {
       await expect(page.getByRole("button", { name })).toHaveCount(0);
+    }
+    await expect(page.locator(".studio-chord-card")).toHaveCount(24);
+    /*
+     * The pristine empty-measure statement remains reachable and honest:
+     * undoing the seed away restores the empty studio and its hint.
+     */
+    const undo = page.locator("#studio-undo");
+    for (let press = 0; press < 6 && (await undo.isEnabled()); press += 1) {
+      await undo.click();
     }
     await expect(page.getByText("Empty measure", { exact: true })).toBeVisible();
     await expect(
@@ -127,6 +143,9 @@ test.describe("interactive studio checkpoint", () => {
         .getByText("Type chart text to fill this bar.", { exact: true }),
     ).toBeVisible();
     await expect(page.locator(".studio-chord-card")).toHaveCount(0);
+    for (const name of ["Play", "Pause", "Stop"]) {
+      await expect(page.getByRole("button", { name })).toBeDisabled();
+    }
 
     expectCleanDiagnostics(diagnostics);
   });

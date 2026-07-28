@@ -21,10 +21,12 @@ import { StudioRoot } from "../ui/runtime";
  * own studio stack, driven through the real quick-entry field and the real Play
  * button, making actual sound. This harness renders exactly what `main.tsx`
  * renders — the same `StudioRoot` binding over a live controller and the same
- * `createStudioAudio` composition — with one difference at the documented
- * platform seam: the native `AudioContext` handed to the engine routes its
- * destination through an `AnalyserNode` tap so automation can measure output
- * amplitude instead of claiming to hear.
+ * `createStudioAudio` composition — with two deliberate differences: the
+ * native `AudioContext` handed to the engine routes its destination through
+ * an `AnalyserNode` tap so automation can measure output amplitude instead
+ * of claiming to hear, and the first-open starter-chart seed (jcpe-b20t) is
+ * not applied, because this evidence contract's typed-chart baseline and its
+ * pinned digests measure the empty-studio-to-sound path.
  *
  * The tap sits outside every reviewed contract: the engine still builds its
  * persistent graph through `createNativeAudioContextPort` and still connects

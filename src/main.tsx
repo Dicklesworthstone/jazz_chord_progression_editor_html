@@ -1,6 +1,10 @@
 import { render } from "preact";
 
-import { createStudioAudio, createStudioController } from "./application/runtime";
+import {
+  createStudioAudio,
+  createStudioController,
+  seedStarterChart,
+} from "./application/runtime";
 import { createBrowserAudioPlatform } from "./audio/runtime";
 import { StudioRoot, StudioStartupFailure } from "./ui/runtime";
 
@@ -24,6 +28,13 @@ const creation = createStudioController({
 });
 
 if (creation.ok) {
+  /*
+   * A pristine first open receives the reviewed starter chart through the
+   * same typed command path a user travels (jcpe-b20t). Seeding happens
+   * before the first render so the opening paint already shows a playable
+   * progression; a seed refusal simply opens the familiar empty studio.
+   */
+  seedStarterChart(creation.controller);
   render(<StudioRoot controller={creation.controller} />, mountPoint);
 } else {
   render(
