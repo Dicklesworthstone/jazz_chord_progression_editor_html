@@ -851,6 +851,28 @@
 }
 
 /*
+ * Reading-view tooling is typographically quiet: hairline text buttons
+ * that never compete with the chord symbols they serve. Coarse pointers
+ * keep the full touch floor through the existing 44px rules.
+ */
+.studio-chart[data-view-mode="compact"] .studio-measure__tools .ui-button,
+.studio-chart[data-view-mode="compact"] .studio-insertion-target .ui-button {
+  min-block-size: 1.25rem;
+  padding-block: 0;
+  padding-inline: var(--space-1);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--text-subtle);
+}
+
+@media (pointer: coarse) {
+  .studio-chart[data-view-mode="compact"] .studio-measure__tools .ui-button,
+  .studio-chart[data-view-mode="compact"] .studio-insertion-target .ui-button {
+    min-block-size: var(--touch-target);
+  }
+}
+
+/*
  * Reading-view bar tools are always-interactive ghosts: dim enough to let
  * the music dominate, bright the moment the bar is engaged. Nothing ever
  * toggles hit-testing, so every pointer — mouse, finger, automation —
