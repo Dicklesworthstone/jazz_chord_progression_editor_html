@@ -76,6 +76,12 @@ export type StudioAudioPort = Readonly<{
   ) => () => void;
   isInitialized: () => boolean;
   /**
+   * Display-only live playhead beat from the transport's audio-clock anchor.
+   * The UI's animation frame interpolates from this read; it never enters A0
+   * state, never defines musical time, and never replaces a notification.
+   */
+  readPlayheadBeat: () => BeatPosition;
+  /**
    * Read-only diagnostics: the engine's and transport's own inspection
    * snapshots, verbatim. Voice, node, edge, and queue counters are the leak
    * evidence the browser proofs assert on; nothing here can steer playback.
@@ -288,6 +294,7 @@ export function createStudioAudio(
       return () => listeners.delete(listener);
     },
     isInitialized: () => initialized,
+    readPlayheadBeat: () => transport.readDisplayPlayheadBeat(),
     inspect: () =>
       Object.freeze({
         engine: engine.inspectAudioEngine(),

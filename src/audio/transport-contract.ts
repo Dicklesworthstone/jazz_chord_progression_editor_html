@@ -459,4 +459,12 @@ export type TransportService = Readonly<{
     command: TransportCommand,
   ) => Promise<TransportCommandOutcome>;
   inspectTransport: () => TransportSnapshot;
+  /**
+   * Display-only live playhead: the exact 960-PPQ-quantized beat the epoch
+   * anchor implies at the audio clock's current reading, or the paused/run
+   * beat outside `playing`. This is the UI-interpolation source the contract's
+   * "animation frame is display-only" law names — it never defines musical
+   * time, never mutates transport state, and never counts as a notification.
+   */
+  readDisplayPlayheadBeat: () => BeatPosition;
 }>;

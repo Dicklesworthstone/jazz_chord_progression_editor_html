@@ -232,7 +232,33 @@ test("the shipped studio composition is audibly non-silent and stops to silence"
     await page.click("#studio-transport-play");
     await waitForTransportStatus(page, "playing");
     await markPhase(page, "playing");
-    await page.waitForTimeout(PLAYING_SAMPLE_MS);
+    /*
+     * jcpe-v31p: while the peak evidence accumulates, the chart itself must
+     * show the run moving. The two-second window covers the one-second Dm7
+     * bar half and enters G7, so the ordered distinct set of highlighted
+     * chord ids proves the live playhead feed — a frozen first-chord
+     * highlight was exactly the shipped defect.
+     */
+    const playingChordIds: string[] = [];
+    const samplingDeadline = Date.now() + PLAYING_SAMPLE_MS;
+    while (Date.now() < samplingDeadline) {
+      const highlighted = await page.evaluate(() => {
+        const card = document.querySelector(
+          'article.studio-chord-card[data-playing="true"]',
+        );
+        return card?.getAttribute("data-chord-id") ?? null;
+      });
+      if (
+        highlighted !== null &&
+        playingChordIds[playingChordIds.length - 1] !== highlighted
+      ) {
+        playingChordIds.push(highlighted);
+      }
+      await page.waitForTimeout(100);
+    }
+    expect(playingChordIds.length).toBeGreaterThanOrEqual(2);
+    /* The highlight only ever advances: no id is revisited after leaving. */
+    expect(new Set(playingChordIds).size).toBe(playingChordIds.length);
 
     await markPhase(page, "stopping");
     await page.click("#studio-transport-stop");

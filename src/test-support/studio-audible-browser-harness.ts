@@ -270,6 +270,7 @@ function bootHarness(): StudioAudibleEvidenceApi {
         journalCommand("stop", await realPort.stop(commandRequestId)),
       subscribe: realPort.subscribe,
       isInitialized: realPort.isInitialized,
+      readPlayheadBeat: realPort.readPlayheadBeat,
       inspect: realPort.inspect,
     });
     inspectionReader = () => {

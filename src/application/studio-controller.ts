@@ -502,6 +502,14 @@ export interface StudioController {
   ) => StudioControllerActionResult;
   readonly pauseProgression: () => StudioControllerActionResult;
   readonly stopProgression: () => StudioControllerActionResult;
+  /**
+   * Display-only live playhead label in the exact-beat format the transport
+   * view already uses. The UI's animation frame reads this while the transport
+   * status says `playing`; it is interpolation for display, never state — the
+   * published notification remains the only writer of `transport.playhead`.
+   * Null when no audio port is wired.
+   */
+  readonly readTransportPlayheadLabel: () => string | null;
   readonly joinSections: (
     leftSectionId: string,
   ) => StudioControllerActionResult;
@@ -3628,6 +3636,16 @@ function makeStudioController(
     return expectation;
   };
 
+  /**
+   * Display-only live playhead label. A pure read: it dispatches no intent,
+   * installs no expectation, and cannot change state — the UI animation frame
+   * may call it every frame without touching the command path.
+   */
+  const readTransportPlayheadLabel = (): string | null =>
+    audioPort === null
+      ? null
+      : formatExactBeatLabel(audioPort.readPlayheadBeat());
+
   /*
    * Every transport notification flows back through A0's own acceptance law:
    * stale generations, superseded request IDs, and foreign document IDs are
@@ -4041,6 +4059,7 @@ function makeStudioController(
     joinSections,
     pauseProgression,
     playProgression,
+    readTransportPlayheadLabel,
     splitAtBar,
     splitEventDuration,
     splitSection,

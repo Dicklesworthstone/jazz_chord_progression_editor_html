@@ -102,4 +102,29 @@ describe("the playback pointer", () => {
     expect(past.chordId).toBe(null);
     expect(past.progressPercent).toBe(100);
   });
+
+  /* jcpe-v31p: the live display label outranks the last-notified label. */
+  test("a live playhead label overrides the committed label while playing", () => {
+    const live = playbackPointer(snapshotWith("playing", "0/1"), "9/1");
+    expect(live.chordId).toBe("ev-3");
+    expect(live.chordLabel).toBe("Bm7");
+    expect(live.progressPercent).toBe(75);
+  });
+
+  test("a null live label falls back to the committed label", () => {
+    expect(playbackPointer(snapshotWith("playing", "4/1"), null).chordId).toBe(
+      "ev-2",
+    );
+  });
+
+  test("while starting, the committed start beat highlights and the live label is ignored", () => {
+    const starting = playbackPointer(snapshotWith("starting", "0/1"), "9/1");
+    expect(starting.chordId).toBe("ev-1");
+  });
+
+  test("outside playing and starting the live label cannot resurrect a pointer", () => {
+    expect(playbackPointer(snapshotWith("ready", "0/1"), "9/1").chordId).toBe(
+      null,
+    );
+  });
 });

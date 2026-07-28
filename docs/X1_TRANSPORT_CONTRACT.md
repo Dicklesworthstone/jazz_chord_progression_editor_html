@@ -262,6 +262,26 @@ impossible on the service side and rejected on the application side.
 Sequence exhaustion refuses/faults with
 `transport.internal_sequence_exhausted`; sequences never wrap.
 
+### 9.1 Display playhead read (additive amendment, 2026-07-28)
+
+Section 1 already assigns continuous playhead motion to display-only
+interpolation in the UI layer; `readDisplayPlayheadBeat()` is the source
+that interpolation reads. It returns the exact 960-PPQ-quantized beat the
+current epoch anchor implies at the audio clock's present reading while
+`playing`, and the committed paused/run beat in every other state. Its
+laws:
+
+- it is a pure read: no state, generation, queue, scheduler, cursor,
+  counter, or debug change, and no notification;
+- it never defines musical time — scheduling still derives only from the
+  epoch anchor, and A0's `transport.playhead` is still written only by
+  accepted notifications;
+- it is callable in any state at any frequency (the UI animation frame
+  polls it), and repeated reads at one clock reading are identical;
+- it clamps at the bound plan's `totalBeats` and never runs past the
+  chart (evidence: `tests/integration/transport-display-playhead.test.ts`,
+  bug jcpe-v31p).
+
 ## 10. Work, memory, and termination bounds
 
 | Resource | Hard maximum |
@@ -321,8 +341,9 @@ The future X1 implementation must pass:
 
 ## 12. Implementation handoff and forbidden shortcuts
 
-Production implementation provides `createTransportService(platform)` and
-the two public operations without broadening the platform port. Before
+Production implementation provides `createTransportService(platform)`,
+the two public command/inspection operations, and the display-only
+playhead read of §9.1, without broadening the platform port. Before
 claiming X1 complete, an implementer must prove every trace in
 `tests/fixtures/transport/trace-ledger.json`, including the legacy
 regressions L-RUNTIME-01 (whole-chart silence), L-AUDIO-01 (post-Stop

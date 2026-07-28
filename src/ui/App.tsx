@@ -146,6 +146,12 @@ export type AppActions = Readonly<{
   ) => StudioControllerActionResult;
   pauseProgression: () => StudioControllerActionResult;
   stopProgression: () => StudioControllerActionResult;
+  /**
+   * Display-only live playhead label the animation frame reads while playing.
+   * Interpolation for the eye, never a second musical clock: committed
+   * transport state still arrives only through notifications.
+   */
+  readTransportPlayheadLabel: () => string | null;
 }>;
 
 const QUICK_ENTRY_MAX_CODE_POINTS = 4_096;
@@ -191,14 +197,27 @@ export type PlaybackPointer = Readonly<{
   progressPercent: number | null;
 }>;
 
-export function playbackPointer(snapshot: StudioViewModel): PlaybackPointer {
+export function playbackPointer(
+  snapshot: StudioViewModel,
+  livePlayheadLabel: string | null = null,
+): PlaybackPointer {
   const none: PlaybackPointer = Object.freeze({
     chordId: null,
     chordLabel: null,
     progressPercent: null,
   });
-  if (snapshot.transport.status !== "playing") return none;
-  const playhead = parseExactLabel(snapshot.transport.playheadBeatLabel);
+  const status = snapshot.transport.status;
+  /*
+   * `starting` is the gap between the Play press and the transport's first
+   * `playing` notification; the run start beat is already committed, so the
+   * first sounding chord highlights immediately instead of blinking off.
+   */
+  if (status !== "playing" && status !== "starting") return none;
+  const label =
+    status === "playing" && livePlayheadLabel !== null
+      ? livePlayheadLabel
+      : snapshot.transport.playheadBeatLabel;
+  const playhead = parseExactLabel(label);
   if (playhead === null) return none;
   const [pn, pd] = playhead;
   let chordId: string | null = null;
@@ -396,11 +415,55 @@ function cardMenuItems(
   ] as const satisfies readonly StudioCardMenuItemView[]);
 }
 
+/**
+ * Poll the display-only playhead once per animation frame while playing.
+ *
+ * This is the interpolation layer the transport contract names: committed
+ * state still arrives only through notifications, and this hook may only
+ * repaint. Repaints are quantized to eighth-beat steps so a long chart does
+ * not re-render at the full frame rate for imperceptible sweep movement.
+ */
+function useLivePlayheadLabel(
+  status: StudioViewModel["transport"]["status"],
+  read: () => string | null,
+): string | null {
+  const [label, setLabel] = useState<string | null>(null);
+  const readRef = useRef(read);
+  readRef.current = read;
+  useEffect(() => {
+    if (status !== "playing") {
+      setLabel(null);
+      return undefined;
+    }
+    let frame = 0;
+    let lastEighths = -1;
+    const tick = (): void => {
+      const next = readRef.current();
+      const parsed = next === null ? null : parseExactLabel(next);
+      if (next !== null && parsed !== null) {
+        const [n, d] = parsed;
+        const eighths = Math.floor((Number(n) / Number(d)) * 8);
+        if (eighths !== lastEighths) {
+          lastEighths = eighths;
+          setLabel(next);
+        }
+      }
+      frame = window.requestAnimationFrame(tick);
+    };
+    frame = window.requestAnimationFrame(tick);
+    return () => {
+      window.cancelAnimationFrame(frame);
+    };
+  }, [status]);
+  return status === "playing" ? label : null;
+}
+
 function viewFromSnapshot(
   snapshot: StudioViewModel,
   presentation: PresentationState,
   insertionPlan: StudioInsertionPlan,
   draftPreview: StudioDraftPreview,
+  livePlayheadLabel: string | null,
 ): StudioShellView {
   const {
     titleDraft,
@@ -417,7 +480,11 @@ function viewFromSnapshot(
   } = presentation;
   const chordCount = snapshot.chordCount;
   const selectionCount = snapshot.bookmarks.selectedEventIds.length;
-  const pointer = playbackPointer(snapshot);
+  const pointer = playbackPointer(snapshot, livePlayheadLabel);
+  const playheadLabel =
+    snapshot.transport.status === "playing" && livePlayheadLabel !== null
+      ? livePlayheadLabel
+      : snapshot.transport.playheadBeatLabel;
 
   return Object.freeze({
     document: Object.freeze({
@@ -605,7 +672,7 @@ function viewFromSnapshot(
           : "Press Play to hear this chart.",
       tempoBpm: snapshot.tempoBpm,
       instrumentLabel: snapshot.instrumentLabel,
-      positionLabel: `${snapshot.transport.playheadBeatLabel} beats`,
+      positionLabel: `${playheadLabel} beats`,
       currentChordLabel: pointer.chordLabel,
       progressPercent: pointer.progressPercent,
     }),
@@ -923,6 +990,11 @@ export function App({ snapshot, actions }: AppProps) {
     ],
   );
 
+  const livePlayheadLabel = useLivePlayheadLabel(
+    snapshot.transport.status,
+    actions.readTransportPlayheadLabel,
+  );
+
   const view = viewFromSnapshot(snapshot, {
     activeSheet,
     completionDialogOpen,
@@ -940,7 +1012,7 @@ export function App({ snapshot, actions }: AppProps) {
     titleFeedback,
     uiRefusal,
     viewMode,
-  }, insertionPlan, draftPreview);
+  }, insertionPlan, draftPreview, livePlayheadLabel);
 
   return (
     <StudioShell
@@ -1511,6 +1583,7 @@ export function StudioRoot({ controller }: StudioRootProps) {
         clearRange: controller.clearRange,
         pauseProgression: controller.pauseProgression,
         playProgression: controller.playProgression,
+        readTransportPlayheadLabel: controller.readTransportPlayheadLabel,
         splitEventDuration: controller.splitEventDuration,
         splitSection: controller.splitSection,
         stopProgression: controller.stopProgression,
