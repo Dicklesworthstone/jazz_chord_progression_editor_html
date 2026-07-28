@@ -17,12 +17,13 @@ const stagedLibraryAreas = [
 
 /**
  * Palette vocabulary. Every root/quality pair concatenates to a symbol the
- * real T0 grammar parses `ready` (proven in the palette unit test); a chip
- * that could produce a refused token would teach the grammar wrong. Display
- * labels may use proper accidental glyphs, but appended draft text is the
- * plain ASCII the grammar and the hint teach.
+ * real T0 grammar parses `ready` AND the real voicing/playback path plays
+ * (both proven exhaustively in tests/unit/studio-starter-chart.test.ts); a
+ * chip that produced an unplayable chord would hand a first-time user a
+ * refusal on Play. Display labels may use proper accidental glyphs, but
+ * appended draft text is the plain ASCII the grammar and the hint teach.
  */
-const PALETTE_ROOTS = [
+export const PALETTE_ROOTS = [
   { id: "c", text: "C", label: "C" },
   { id: "d-flat", text: "Db", label: "D♭" },
   { id: "d", text: "D", label: "D" },
@@ -37,7 +38,7 @@ const PALETTE_ROOTS = [
   { id: "b", text: "B", label: "B" },
 ] as const;
 
-const PALETTE_QUALITIES = [
+export const PALETTE_QUALITIES = [
   { id: "maj7", suffix: "maj7", label: "maj7" },
   { id: "m7", suffix: "m7", label: "m7" },
   { id: "dom7", suffix: "7", label: "7" },
@@ -48,7 +49,7 @@ const PALETTE_QUALITIES = [
   { id: "dim7", suffix: "dim7", label: "dim7" },
   { id: "sus4", suffix: "sus4", label: "sus4" },
   { id: "thirteen", suffix: "13", label: "13" },
-  { id: "seven-alt", suffix: "7alt", label: "7alt" },
+  { id: "seven-flat9", suffix: "7b9", label: "7♭9" },
   { id: "maj7-sharp11", suffix: "maj7#11", label: "maj7♯11" },
 ] as const;
 

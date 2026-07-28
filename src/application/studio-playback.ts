@@ -45,6 +45,30 @@ function realizationMessage(refusal: StudioRealizationRefusal): string {
 }
 
 /**
+ * Name the chord a playback refusal is about. The recovery copy tells the
+ * user to fix "the chord the message names", so the message must actually
+ * name it: the symbol as they wrote it and the bar it sits in.
+ */
+function refusedChordLabel(
+  document: ValidatedDocument,
+  eventId: unknown,
+): string | null {
+  if (typeof eventId !== "string") return null;
+  let barNumber = 0;
+  for (const section of document.sections) {
+    for (const measure of section.measures) {
+      barNumber += 1;
+      for (const event of measure.events) {
+        if (event.id === eventId) {
+          return `“${event.chord.sourceText}” in bar ${String(barNumber)}`;
+        }
+      }
+    }
+  }
+  return null;
+}
+
+/**
  * Compile the current document into a playback plan.
  *
  * Refusals are surfaced verbatim from the package that owns them and are never
@@ -86,6 +110,8 @@ export function compileStudioPlaybackPlan(
   });
 
   if (!compiled.ok) {
+    const refusalRecord = compiled.refusal as Readonly<Record<string, unknown>>;
+    const chordLabel = refusedChordLabel(document, refusalRecord["eventId"]);
     return Object.freeze({
       ok: false,
       refusal: Object.freeze({
@@ -94,7 +120,9 @@ export function compileStudioPlaybackPlan(
           compiled.refusal.code === "playback.custom_voicing_missing"
             ? "A chord written as literal pitches needs its own voicing before "
               + "it can be played."
-            : "This chart cannot be turned into playback yet.",
+            : chordLabel === null
+              ? "This chart cannot be turned into playback yet."
+              : `${chordLabel} cannot be voiced for playback yet.`,
       }),
     });
   }

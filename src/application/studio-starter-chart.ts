@@ -17,7 +17,7 @@ import type { StudioController } from "./studio-controller";
 export const STARTER_CHART = Object.freeze({
   title: "Mu Major Journey",
   chartText:
-    "| Gadd9 | Cadd9/E | Bm7 E7#9 | Am9 D13 | Gmaj7#11 | Fadd9 | Em9 A13 | Dmaj7 Bb13 | Ebmaj7 | Dm9 G13 | Cmaj7#11 | Bm7b5 E7alt | Am11 | Ab13#11 | Gadd9/B C6/9 | Am7/D D7sus |",
+    "| Gadd9 | Cadd9/E | Bm7 E7#9 | Am9 D13 | Gmaj7#11 | Fadd9 | Em9 A13 | Dmaj7 Bb13 | Ebmaj7 | Dm9 G13 | Cmaj7#11 | Bm7b5 E7b9 | Am11 | Ab7#11 | Gadd9/B C6/9 | Am7/D D7sus |",
   /**
    * The chart lands in two atomic inserts because the closed insertion-plan
    * vocabulary has no fill-and-append statement: the opening bar fills the
@@ -27,7 +27,7 @@ export const STARTER_CHART = Object.freeze({
    */
   firstBarText: "| Gadd9 |",
   remainingBarsText:
-    "| Cadd9/E | Bm7 E7#9 | Am9 D13 | Gmaj7#11 | Fadd9 | Em9 A13 | Dmaj7 Bb13 | Ebmaj7 | Dm9 G13 | Cmaj7#11 | Bm7b5 E7alt | Am11 | Ab13#11 | Gadd9/B C6/9 | Am7/D D7sus |",
+    "| Cadd9/E | Bm7 E7#9 | Am9 D13 | Gmaj7#11 | Fadd9 | Em9 A13 | Dmaj7 Bb13 | Ebmaj7 | Dm9 G13 | Cmaj7#11 | Bm7b5 E7b9 | Am11 | Ab7#11 | Gadd9/B C6/9 | Am7/D D7sus |",
   /** Undo presses that return the pristine studio: title + two inserts. */
   undoDepth: 3,
 } as const);
