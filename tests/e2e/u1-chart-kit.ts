@@ -56,6 +56,22 @@ export async function openStudio(page: Page): Promise<void> {
   await expect(undo).toBeDisabled();
 }
 
+/**
+ * Enter the teaching view the way a user does. The reading view keeps
+ * per-measure telemetry and bar tooling out of the engraved chart
+ * (jcpe-t8xh); specs that assert fill labels or drive bar tools flip the
+ * real toggle first.
+ */
+export async function showTeachingView(page: Page): Promise<void> {
+  const toggle = page.getByRole("button", { name: "Teaching view" });
+  if (await toggle.first().isVisible()) {
+    await toggle.first().click();
+    await expect(page.getByTestId("chart-view-mode")).toHaveText(
+      "Teaching view",
+    );
+  }
+}
+
 /** Type chart text and publish it through the real atomic command. */
 export async function typeAndInsert(page: Page, text: string): Promise<void> {
   const field = page.getByTestId("quick-entry-field");

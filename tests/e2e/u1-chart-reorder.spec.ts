@@ -9,6 +9,7 @@ import {
   expectCleanDiagnostics,
   openCardMenu,
   openStudio,
+  showTeachingView,
   typeAndInsert,
 } from "./u1-chart-kit";
 
@@ -25,6 +26,7 @@ test.describe("U1-TRACE-IDENTITY stable identity across reorder", () => {
   }) => {
     const diagnostics = captureDiagnostics(page);
     await openStudio(page);
+    await showTeachingView(page);
     await typeAndInsert(page, "C:1 D:1 E:1 F:1");
 
     const ids = await chordIds(page);
@@ -43,6 +45,7 @@ test.describe("U1-TRACE-IDENTITY stable identity across reorder", () => {
   }) => {
     const diagnostics = captureDiagnostics(page);
     await openStudio(page);
+    await showTeachingView(page);
     await typeAndInsert(page, "Dm9:2 G13:2");
 
     const before = await chordIds(page);
@@ -68,6 +71,7 @@ test.describe("U1-TRACE-IDENTITY stable identity across reorder", () => {
   }) => {
     const diagnostics = captureDiagnostics(page);
     await openStudio(page);
+    await showTeachingView(page);
     await typeAndInsert(page, "Dm9:2 G13:2");
 
     await cards(page).nth(1).click();
@@ -84,6 +88,7 @@ test.describe("U1-TRACE-IDENTITY stable identity across reorder", () => {
   }) => {
     const diagnostics = captureDiagnostics(page);
     await openStudio(page);
+    await showTeachingView(page);
     await typeAndInsert(page, "Dm9:2 G13:2");
     await page.locator('[id^="studio-append-measure-"]').first().click();
     await expect(page.locator(".studio-measure")).toHaveCount(2);
@@ -114,6 +119,7 @@ test.describe("U1-TRACE-IDENTITY stable identity across reorder", () => {
   }) => {
     const diagnostics = captureDiagnostics(page);
     await openStudio(page);
+    await showTeachingView(page);
     await typeAndInsert(page, "Dm9:2 G13:2");
     await page.locator('[id^="studio-append-measure-"]').first().click();
     await expect(page.locator(".studio-measure")).toHaveCount(2);
@@ -145,6 +151,7 @@ test.describe("U1-TRACE-IDENTITY stable identity across reorder", () => {
   }) => {
     const diagnostics = captureDiagnostics(page);
     await openStudio(page);
+    await showTeachingView(page);
     await typeAndInsert(page, "Dm9:2 G13:2");
     await page.locator('[id^="studio-append-measure-"]').first().click();
     const measureIds = await page.evaluate(() =>
@@ -174,6 +181,7 @@ test.describe("U1-TRACE-IDENTITY stable identity across reorder", () => {
   }) => {
     const diagnostics = captureDiagnostics(page);
     await openStudio(page);
+    await showTeachingView(page);
 
     await expect(page.locator(".studio-measure")).toHaveCount(1);
     await page.locator('[id^="studio-append-measure-"]').first().click();
@@ -192,6 +200,7 @@ test.describe("U1-TRACE-IDENTITY stable identity across reorder", () => {
   }) => {
     const diagnostics = captureDiagnostics(page);
     await openStudio(page);
+    await showTeachingView(page);
 
     await expect(page.getByTestId("section-boundary-label")).toContainText(
       "Voice leading resets at this boundary",

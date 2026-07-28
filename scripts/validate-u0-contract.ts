@@ -67,9 +67,9 @@ export const U0_REVIEWED_SEMANTIC_DIGESTS: Readonly<
   Record<ExpectedFilename, string>
 > = {
   "u0-ui-contract.json":
-    "d73a1dbc9dd7c3cab9464a73dba9d664d9373912484b679daa24dedafeb2b680",
+    "f30e5eb15810343d9dc8b63c9e12bdde27a031eea237af5ef056112462f29672",
   "primitive-state-matrix.json":
-    "3259da348510338393b99d3b93203f1680c3115dc0e11dc5236a8fe9f448aeec",
+    "6e05bbe3bb4d442adb0510f87d12b72bcc3c19e01c7a56655025bd0e699c9568",
   "provenance-ledger.json":
     "ceb276f41a9eef5b22af193cb63b3c18348c6d57a139bc9094032b56745e3a61",
   "shell-state-matrix.json":
@@ -480,7 +480,7 @@ export const U0_REVIEWED_ALLOWED_CONTRAST_PAIRS = [
   },
   {
     id: "inverse-text-on-strong-fills",
-    foregrounds: ["--text-inverse"],
+    foregrounds: ["--text-inverse", "--on-accent"],
     backgrounds: [
       "--action-primary",
       "--action-primary-hover",
@@ -488,6 +488,8 @@ export const U0_REVIEWED_ALLOWED_CONTRAST_PAIRS = [
       "--state-success",
       "--state-warning",
       "--state-error",
+      "--accent",
+      "--accent-strong",
     ],
     minimumRatio: 4.5,
     purpose: "normal-text",
@@ -2560,13 +2562,28 @@ function checkContrastRatios(
   findings: U0ContractFinding[],
 ): void {
   const tokenDefinitions = contract["tokenDefinitions"];
-  const colors =
+  const baseColors =
     isObject(tokenDefinitions) && isObject(tokenDefinitions["color"])
       ? tokenDefinitions["color"]
       : {};
+  const lightOverrides =
+    isObject(tokenDefinitions) && isObject(tokenDefinitions["colorLight"])
+      ? tokenDefinitions["colorLight"]
+      : {};
+  /* Both reviewed themes must clear every pair: the dark base map, and the
+   * light map formed by the overrides layered over that base. */
+  const themes: readonly (readonly [string, JsonObject])[] = [
+    ["dark", baseColors],
+    ["light", { ...baseColors, ...lightOverrides }],
+  ];
   const pairs = objects(contract["allowedContrastPairs"]);
+  for (const [themeName, colors] of themes)
   for (const [index, pair] of pairs.entries()) {
-    const path = "u0-ui-contract.json.allowedContrastPairs[" + String(index) + "]";
+    const path =
+      "u0-ui-contract.json.allowedContrastPairs[" +
+      String(index) +
+      "]@" +
+      themeName;
     const minimum = pair["minimumRatio"];
     if (typeof minimum !== "number" || !Number.isFinite(minimum)) {
       finding(

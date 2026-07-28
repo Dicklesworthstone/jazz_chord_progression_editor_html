@@ -52,6 +52,8 @@ export type StudioChordCardView = Readonly<{
   id: string;
   ordinal: number;
   symbolText: string;
+  /** True while the transport is sounding exactly this event. */
+  playing: boolean;
   durationLabel: string;
   voicingMode: "auto" | "manual" | "frozen";
   hasAnnotation: boolean;
@@ -263,6 +265,8 @@ export type StudioTransportView = Readonly<{
   instrumentLabel: string;
   positionLabel: string;
   currentChordLabel: string | null;
+  /** 0..100 while playing, or null; drives the transport progress sweep. */
+  progressPercent: number | null;
 }>;
 
 export type StudioLayoutView = Readonly<{

@@ -133,6 +133,7 @@ const BASE_VIEW: Omit<StudioShellView, "layout"> = Object.freeze({
     instrumentLabel: "Studio piano",
     positionLabel: "0 beats",
     currentChordLabel: null,
+    progressPercent: null,
   }),
 });
 

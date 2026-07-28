@@ -592,12 +592,23 @@
   line-height: var(--line-tight);
 }
 
+/*
+ * On a phone the panel triggers ride the bottom of the chart scroll, just
+ * above the transport, inside thumb reach; wide layouts return them to the
+ * chart header row. Names, roles, and ids never change with the position.
+ */
 .studio-mobile-panel-actions {
+  position: sticky;
+  inset-block-end: 0;
+  z-index: 4;
   display: flex;
   inline-size: 100%;
   flex-wrap: wrap;
   gap: var(--space-2);
   order: 3;
+  padding-block: var(--space-2);
+  background: color-mix(in srgb, var(--surface-chart) 88%, transparent);
+  backdrop-filter: blur(6px);
 }
 
 .studio-mobile-panel-actions .ui-button {
@@ -735,79 +746,243 @@
   font-size: var(--text-xs);
 }
 
+/*
+ * The lead-sheet system: measures sit four to a row like an engraved chart,
+ * sharing hairline barlines through collapsed borders. The reading surface
+ * is quiet — editing chrome lives in each bar's hover/focus-revealed header
+ * so the music, not the tooling, is what a chart reads as.
+ */
 .studio-measure-list {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-3);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  background: var(--surface-chart);
+  border: var(--border-width) solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-2);
+  /* No overflow clip: the floating bar tools rise above the first system. */
+}
+
+.studio-measure-list > li {
+  position: relative;
+  min-inline-size: 0;
+  display: grid;
+  border-inline-start: var(--border-width) solid var(--border-strong);
+  border-block-start: var(--border-width) solid
+    color-mix(in srgb, var(--border-strong) 55%, transparent);
+}
+
+.studio-measure-list > li:nth-child(2n + 1) {
+  border-inline-start: 0;
+}
+
+.studio-measure-list > li:nth-child(-n + 2) {
+  border-block-start: 0;
+}
+
+@media (min-width: 64rem) {
+  .studio-measure-list {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .studio-measure-list > li:nth-child(2n + 1) {
+    border-inline-start: var(--border-width) solid var(--border-strong);
+  }
+
+  .studio-measure-list > li:nth-child(4n + 1) {
+    border-inline-start: 0;
+  }
+
+  .studio-measure-list > li:nth-child(-n + 4) {
+    border-block-start: 0;
+  }
 }
 
 .studio-measure {
   min-inline-size: 0;
-  overflow: hidden;
-  border: var(--border-width) solid
-    color-mix(in srgb, var(--border-default) 90%, transparent);
-  border-radius: var(--radius-lg);
-  background: var(--surface-panel);
-  box-shadow: 0 14px 34px -24px
-    color-mix(in srgb, var(--surface-sunken) 92%, transparent);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
 }
 
 .studio-measure__header {
+  display: block;
+  padding: var(--space-1) var(--space-2) 0;
+}
+
+.studio-measure__tag {
   display: flex;
-  min-block-size: var(--control-min-block);
-  padding: var(--space-2) var(--space-3);
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  border-block-end: var(--border-width) solid
-    color-mix(in srgb, var(--border-default) 80%, transparent);
-  background: linear-gradient(
-    180deg,
-    var(--surface-elevated),
-    color-mix(in srgb, var(--surface-elevated) 72%, var(--surface-panel))
-  );
+  align-items: baseline;
+  gap: var(--space-2);
 }
 
 .studio-measure__header h4 {
-  font-size: var(--text-sm);
+  color: var(--text-subtle);
+  font-size: var(--text-xs);
+  font-weight: 500;
   line-height: var(--line-tight);
 }
 
 .studio-meter-signature {
-  color: var(--action-primary-hover);
+  color: var(--accent);
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-xs);
   font-weight: 800;
+}
+
+/*
+ * Bar tooling floats over the bar and appears when the bar is engaged. The
+ * buttons stay in the accessibility tree and keyboard order at all times:
+ * the reveal is opacity, never display or visibility, so tabbing into a
+ * tool shows the whole strip; and because the strip is absolutely
+ * positioned it reserves no reading-view height. The teaching view pins
+ * the tools open in flow instead.
+ */
+/*
+ * Bar tools default to flowing with the bar, exactly as the teaching view
+ * shows them: any surface a finger can drive — phones, tablets, hybrid
+ * touchscreens — must never hide tooling behind a hover that touch cannot
+ * perform. Only a true hover-and-fine-pointer machine earns the floating
+ * hover-revealed strip below.
+ */
+.studio-measure__tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  padding-block: var(--space-1);
+}
+
+/*
+ * Reading-view bar tools are always-interactive ghosts: dim enough to let
+ * the music dominate, bright the moment the bar is engaged. Nothing ever
+ * toggles hit-testing, so every pointer — mouse, finger, automation —
+ * reaches the same controls the accessibility tree lists.
+ */
+@media (hover: hover) and (not (any-pointer: coarse)) {
+  .studio-chart[data-view-mode="compact"] .studio-measure__tools {
+    opacity: 0.45;
+    transition: opacity var(--motion-fast) var(--ease-standard);
+  }
+
+  .studio-chart[data-view-mode="compact"]
+    .studio-measure-list
+    > li:hover
+    .studio-measure__tools,
+  .studio-chart[data-view-mode="compact"]
+    .studio-measure-list
+    > li:focus-within
+    .studio-measure__tools {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .studio-measure__tools {
+    transition-duration: var(--motion-reduced);
+  }
 }
 
 .studio-measure__canvas {
   position: relative;
   display: grid;
-  min-block-size: 8rem;
-  padding: var(--space-5);
+  min-block-size: 5.25rem;
+  padding: var(--space-2) var(--space-1) var(--space-3);
   place-items: center;
   overflow: hidden;
-  background: color-mix(in srgb, var(--surface-sunken) 72%, var(--surface-panel));
+}
+
+/*
+ * The reading view is the engraved page: symbols and barlines carry the
+ * music, and per-chord telemetry (durations, voicing marks, the More
+ * trigger) waits for the bar to be engaged or for the teaching view.
+ */
+.studio-chart[data-view-mode="compact"] .studio-chord-card__duration,
+.studio-chart[data-view-mode="compact"] .studio-chord-card__marks {
+  display: none;
+}
+
+.studio-chart[data-view-mode="compact"] .studio-chord-card__more {
+  opacity: 0;
+  transition: opacity var(--motion-fast) var(--ease-standard);
+}
+
+.studio-chart[data-view-mode="compact"] .studio-chord-card:hover .studio-chord-card__more,
+.studio-chart[data-view-mode="compact"] .studio-chord-card:focus-within .studio-chord-card__more,
+.studio-chart[data-view-mode="compact"] .studio-chord-card[data-selected="true"] .studio-chord-card__more {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .studio-chart[data-view-mode="compact"] .studio-chord-card__more {
+    transition-duration: var(--motion-reduced);
+  }
+}
+
+/* The playhead sweep: a hairline of accent light across the transport's
+   top edge, driven by the exact playhead the position fact announces. */
+.studio-transport__sweep {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  block-size: 2px;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+.studio-transport__sweep-fill {
+  display: block;
+  block-size: 100%;
+  inline-size: 0;
+  background: var(--accent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 70%, transparent);
+  transition: inline-size var(--motion-deliberate) linear;
+}
+
+.studio-transport__sweep-fill[data-active="false"] {
+  inline-size: 0 !important;
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .studio-transport__sweep-fill {
+    transition-duration: var(--motion-reduced);
+  }
+}
+
+/* The drag handle is a pointer affordance; in the reading view it waits
+   for the card to be engaged like the rest of the tooling. */
+.studio-chart[data-view-mode="compact"] .studio-chord-card__handle {
+  opacity: 0;
+}
+
+.studio-chart[data-view-mode="compact"] .studio-chord-card:hover .studio-chord-card__handle,
+.studio-chart[data-view-mode="compact"] .studio-chord-card:focus-within .studio-chord-card__handle,
+.studio-chart[data-view-mode="compact"] .studio-chord-card[data-selected="true"] .studio-chord-card__handle {
+  opacity: 1;
+}
+
+/* One meter signature per chart in the reading view, engraved-style. */
+.studio-chart[data-view-mode="compact"]
+  .studio-measure-list
+  > li:not(:first-child)
+  .studio-meter-signature {
+  display: none;
 }
 
 .studio-measure__staff {
   position: absolute;
-  inset: var(--space-4);
+  inset-block: auto var(--space-2);
+  inset-inline: var(--space-2);
   display: grid;
+  block-size: var(--space-2);
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  border-block: var(--border-width) solid
-    color-mix(in srgb, var(--border-default) 65%, transparent);
-  opacity: 0.8;
+  opacity: 0.55;
 }
 
 .studio-measure__staff span {
-  border-inline-start: var(--border-width) solid
-    color-mix(in srgb, var(--border-default) 65%, transparent);
+  border-inline-start: var(--border-width) dotted
+    color-mix(in srgb, var(--border-default) 80%, transparent);
 }
 
-.studio-measure__staff span:last-child {
-  border-inline-end: var(--border-width) solid
-    color-mix(in srgb, var(--border-default) 65%, transparent);
+.studio-measure__staff span:first-child {
+  border-inline-start: 0;
 }
 
 .studio-measure__empty-copy,
@@ -973,6 +1148,7 @@
 .studio-transport {
   position: relative;
   z-index: 3;
+  padding-block-end: env(safe-area-inset-bottom, 0px);
   display: grid;
   min-inline-size: 0;
   min-block-size: var(--transport-min-block);
@@ -1356,17 +1532,20 @@
   }
 
   .studio-mobile-panel-actions {
+    position: static;
     inline-size: auto;
     order: 0;
+    padding-block: 0;
+    background: transparent;
+    backdrop-filter: none;
   }
 
   .studio-chart__header {
     align-items: center;
   }
 
-  .studio-measure-list {
-    grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
-  }
+  /* Four bars to a system on wide screens; the base grid already carries
+     the barline borders, so only the column count changes here. */
 
   .studio-transport {
     grid-template-columns: minmax(0, 1fr) auto;
@@ -1626,25 +1805,39 @@
   position: relative;
   z-index: 1;
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  justify-content: center;
-  padding: var(--space-2);
+  flex-wrap: nowrap;
+  gap: var(--space-1);
+  align-items: center;
+  justify-content: space-evenly;
+  inline-size: 100%;
+  padding: var(--space-1);
   margin: 0;
   list-style: none;
+}
+
+.studio-measure__chords > li {
+  min-inline-size: 0;
 }
 
 .studio-chord-card {
   display: grid;
   gap: var(--space-1);
-  min-inline-size: 5.5rem;
+  min-inline-size: 3.5rem;
   min-block-size: 2.75rem;
-  padding: var(--space-2) var(--space-3);
-  border: var(--border-width) solid var(--border-default);
-  border-radius: var(--radius-md);
-  background: var(--surface-elevated);
+  padding: var(--space-1) var(--space-2);
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
   cursor: pointer;
-  text-align: start;
+  text-align: center;
+  justify-items: center;
+  transition:
+    background var(--motion-fast) var(--ease-standard),
+    box-shadow var(--motion-fast) var(--ease-standard);
+}
+
+.studio-chord-card:hover {
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
 }
 
 .studio-chord-card:focus-visible {
@@ -1653,7 +1846,7 @@
 }
 
 .studio-chord-card[data-selected="true"] {
-  border-color: var(--border-strong);
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
   background: var(--state-selected);
 }
 
@@ -1661,9 +1854,32 @@
   box-shadow: inset 0 0 0 var(--border-width) var(--border-strong);
 }
 
+.studio-chord-card[data-playing="true"] {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  box-shadow: var(--glow-accent);
+}
+
 .studio-chord-card__symbol {
-  font-size: var(--text-sm);
-  font-weight: 600;
+  font-family: var(--font-chord);
+  font-size: var(--text-chord);
+  font-weight: 700;
+  line-height: var(--line-tight);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.studio-symbol__root {
+  font-size: 1em;
+}
+
+.studio-symbol__quality {
+  font-size: var(--text-chord-super);
+  vertical-align: 0.42em;
+  letter-spacing: 0;
+}
+
+.studio-symbol__bass {
+  font-size: 0.78em;
 }
 
 .studio-chord-card__duration {
@@ -1784,14 +2000,69 @@
   gap: var(--space-2);
 }
 
+/*
+ * Insertion strips ride each bar's top edge and appear when the bar is
+ * engaged; keyboard users reach them in document order and the reveal is
+ * opacity only, so nothing leaves the accessibility tree. The append
+ * target after the last bar keeps its own full-width row.
+ */
 .studio-insertion-target {
   display: flex;
   justify-content: center;
   padding-block: var(--space-1);
 }
 
+@media (hover: hover) and (not (any-pointer: coarse)) {
+  .studio-chart[data-view-mode="compact"] .studio-insertion-target {
+    opacity: 0.45;
+    transition: opacity var(--motion-fast) var(--ease-standard);
+  }
+
+  .studio-chart[data-view-mode="compact"]
+    .studio-measure-list
+    > li:hover
+    .studio-insertion-target,
+  .studio-chart[data-view-mode="compact"]
+    .studio-measure-list
+    > li:focus-within
+    .studio-insertion-target {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .studio-insertion-target {
+    transition-duration: var(--motion-reduced);
+  }
+}
+
+.studio-insertion-target .ui-button {
+  min-block-size: unset;
+  padding-block: 0;
+  font-size: var(--text-xs);
+  background: var(--surface-elevated);
+  box-shadow: var(--shadow-1);
+}
+
+/* The slim strip look never outranks the touch floor. */
+@media (pointer: coarse) {
+  .studio-insertion-target .ui-button {
+    min-block-size: var(--touch-target);
+  }
+}
+
 .studio-insertion-target--append {
+  position: static !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
   list-style: none;
+  padding-block: var(--space-2);
+}
+
+/* The reading view keeps measure telemetry out of the chart; the teaching
+   view restores it. */
+.studio-chart[data-view-mode="compact"] .studio-measure__facts {
+  display: none;
 }
 
 .studio-chord-card__editor {

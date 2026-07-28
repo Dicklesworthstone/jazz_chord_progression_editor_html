@@ -7,6 +7,7 @@ import {
   expectCleanDiagnostics,
   openCardMenu,
   openStudio,
+  showTeachingView,
   typeAndInsert,
 } from "./u1-chart-kit";
 
@@ -23,6 +24,7 @@ test.describe("U1-TRACE-INLINE inline symbol and duration editing", () => {
   }) => {
     const diagnostics = captureDiagnostics(page);
     await openStudio(page);
+    await showTeachingView(page);
     await typeAndInsert(page, "Dm9:2 G13:2");
 
     await cards(page).nth(0).focus();
@@ -46,6 +48,7 @@ test.describe("U1-TRACE-INLINE inline symbol and duration editing", () => {
   }) => {
     const diagnostics = captureDiagnostics(page);
     await openStudio(page);
+    await showTeachingView(page);
     await typeAndInsert(page, "Cmaj9:4");
 
     const card = cards(page).first();
@@ -64,6 +67,7 @@ test.describe("U1-TRACE-INLINE inline symbol and duration editing", () => {
   }) => {
     const diagnostics = captureDiagnostics(page);
     await openStudio(page);
+    await showTeachingView(page);
     await typeAndInsert(page, "Cmaj9:4");
 
     const card = cards(page).first();
@@ -85,6 +89,7 @@ test.describe("U1-TRACE-INLINE inline symbol and duration editing", () => {
   }) => {
     const diagnostics = captureDiagnostics(page);
     await openStudio(page);
+    await showTeachingView(page);
     await typeAndInsert(page, "Cmaj9:4");
 
     const card = cards(page).first();
@@ -110,6 +115,7 @@ test.describe("U1-TRACE-INLINE inline symbol and duration editing", () => {
   }) => {
     const diagnostics = captureDiagnostics(page);
     await openStudio(page);
+    await showTeachingView(page);
     await typeAndInsert(page, "Dm9:2 G13:2");
 
     const card = cards(page).first();
@@ -136,6 +142,7 @@ test.describe("U1-TRACE-INLINE inline symbol and duration editing", () => {
   }) => {
     const diagnostics = captureDiagnostics(page);
     await openStudio(page);
+    await showTeachingView(page);
     await typeAndInsert(page, "Dm9:2 G13:2");
 
     const card = cards(page).first();
@@ -172,6 +179,7 @@ test.describe("U1-TRACE-INLINE inline symbol and duration editing", () => {
   }) => {
     const diagnostics = captureDiagnostics(page);
     await openStudio(page);
+    await showTeachingView(page);
     await typeAndInsert(page, "Dm9:2 G13:2");
 
     await cards(page).nth(0).focus();
@@ -195,6 +203,7 @@ test.describe("U1-TRACE-INLINE inline symbol and duration editing", () => {
   test("U1-OPC-045 a split that does not sum refuses", async ({ page }) => {
     const diagnostics = captureDiagnostics(page);
     await openStudio(page);
+    await showTeachingView(page);
     await typeAndInsert(page, "Dm9:2 G13:2");
 
     await cards(page).nth(0).focus();
@@ -215,6 +224,7 @@ test.describe("U1-TRACE-INLINE inline symbol and duration editing", () => {
   }) => {
     const diagnostics = captureDiagnostics(page);
     await openStudio(page);
+    await showTeachingView(page);
     await typeAndInsert(page, "Dm9:2 Dm9:2");
 
     await openCardMenu(page, 0);
@@ -233,6 +243,7 @@ test.describe("U1-TRACE-INLINE inline symbol and duration editing", () => {
   }) => {
     const diagnostics = captureDiagnostics(page);
     await openStudio(page);
+    await showTeachingView(page);
     await typeAndInsert(page, "Dm9:2 G13:2");
 
     await openCardMenu(page, 1);
@@ -253,6 +264,7 @@ test.describe("U1-TRACE-INLINE inline symbol and duration editing", () => {
   }) => {
     const diagnostics = captureDiagnostics(page);
     await openStudio(page);
+    await showTeachingView(page);
     await typeAndInsert(page, "Dm9:2 G13:2");
 
     await cards(page).nth(0).focus();
@@ -284,6 +296,7 @@ test.describe("U1-TRACE-INLINE inline symbol and duration editing", () => {
   }) => {
     const diagnostics = captureDiagnostics(page);
     await openStudio(page);
+    await showTeachingView(page);
     await typeAndInsert(page, "Dm9:2 G13:2");
 
     await cards(page).nth(0).focus();
@@ -308,6 +321,7 @@ test.describe("U1-TRACE-INLINE inline symbol and duration editing", () => {
   }) => {
     const diagnostics = captureDiagnostics(page);
     await openStudio(page);
+    await showTeachingView(page);
     await typeAndInsert(page, "Dm9:2 G13:2");
 
     await cards(page).nth(0).focus();
@@ -331,6 +345,7 @@ test.describe("U1-TRACE-INLINE inline symbol and duration editing", () => {
   }) => {
     const diagnostics = captureDiagnostics(page);
     await openStudio(page);
+    await showTeachingView(page);
     await typeAndInsert(page, "Dm9:2 G13:2");
 
     await cards(page).nth(0).focus();

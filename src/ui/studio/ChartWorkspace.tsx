@@ -54,6 +54,36 @@ export type ChartWorkspaceProps = Readonly<{
 const DRAG_THRESHOLD_CSS_PX = 8;
 
 /**
+ * Lead-sheet symbol layout: the root (letter plus accidentals) renders at
+ * display size while the quality tail and slash bass step down, the way an
+ * engraved chart sets them. This is wrapping only — the concatenated text
+ * content stays exactly the stored symbol, so the exact-spelling law and
+ * every text-matching test see the unchanged string.
+ */
+const SYMBOL_ROOT_PATTERN = /^([A-G](?:bb|##|[b#♭♯𝄫𝄪])?)(.*)$/u;
+
+function LeadSheetSymbol({ text }: Readonly<{ text: string }>) {
+  const match = SYMBOL_ROOT_PATTERN.exec(text);
+  if (match === null) return <>{text}</>;
+  const root = match[1] ?? "";
+  const tail = match[2] ?? "";
+  const slashAt = tail.indexOf("/");
+  const quality = slashAt < 0 ? tail : tail.slice(0, slashAt);
+  const bass = slashAt < 0 ? "" : tail.slice(slashAt);
+  return (
+    <>
+      <span class="studio-symbol__root">{root}</span>
+      {quality.length > 0 ? (
+        <span class="studio-symbol__quality">{quality}</span>
+      ) : null}
+      {bass.length > 0 ? (
+        <span class="studio-symbol__bass">{bass}</span>
+      ) : null}
+    </>
+  );
+}
+
+/**
  * A transition a dirty inline symbol draft can interrupt. Each one is recorded
  * literally so Apply and Discard resume exactly the action the caller asked
  * for, rather than a guess about what they meant.
@@ -1504,12 +1534,15 @@ export function ChartWorkspace({
                             aria-labelledby={measureHeadingId}
                           >
                             <header class="studio-measure__header">
-                              <h4 id={measureHeadingId}>
-                                Measure {measure.number}
-                              </h4>
-                              <span class="studio-meter-signature">
-                                {measure.meterLabel}
-                              </span>
+                              <div class="studio-measure__tag">
+                                <h4 id={measureHeadingId}>
+                                  Measure {measure.number}
+                                </h4>
+                                <span class="studio-meter-signature">
+                                  {measure.meterLabel}
+                                </span>
+                              </div>
+                              <div class="studio-measure__tools">
                               <Button
                                 busy={false}
                                 density="comfortable"
@@ -1544,6 +1577,7 @@ export function ChartWorkspace({
                                   variant="ghost"
                                 />
                               ) : null}
+                              </div>
                             </header>
 
                             <div class="studio-measure__canvas">
@@ -1579,6 +1613,7 @@ export function ChartWorkspace({
                                         data-chord-id={chord.id}
                                         data-selected={String(chord.selected)}
                                         data-in-range={String(chord.inRange)}
+                                        data-playing={String(chord.playing)}
                                         aria-label={chord.accessibleName}
                                         aria-current={
                                           chord.selected ? "true" : undefined
@@ -1630,7 +1665,9 @@ export function ChartWorkspace({
                                             class="studio-chord-card__symbol"
                                             data-card-action="symbol"
                                           >
-                                            {chord.symbolText}
+                                            <LeadSheetSymbol
+                                              text={chord.symbolText}
+                                            />
                                           </span>
                                         )}
                                         {deferredSwitch !== null &&

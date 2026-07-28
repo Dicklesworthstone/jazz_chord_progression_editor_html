@@ -80,7 +80,7 @@
     },
     {
       "path": "tests/fixtures/ui/primitive-state-matrix.json",
-      "sha256": "fec8a3d6b35d9e96d97715d66ae2237da0b596438126c1566359964277fa0ac3"
+      "sha256": "be49e61578dcaeac5fced77c08621a6cdfc28855a73ef21732776cc5dafbb09d"
     },
     {
       "path": "tests/fixtures/ui/trace-ledger.json",
@@ -116,7 +116,7 @@
     },
     {
       "path": "tests/static/u0-token-usage.test.ts",
-      "sha256": "977acec0dee8cba4d2f8c6d8add95b08681a7cef1fc752e708349b3242d3862e"
+      "sha256": "d8318a6dfba0e6dfae57b731c5d280dc3719d2556808329afa533419155bb9aa"
     },
     {
       "path": "tests/visual/u0-component-gallery.spec.ts",

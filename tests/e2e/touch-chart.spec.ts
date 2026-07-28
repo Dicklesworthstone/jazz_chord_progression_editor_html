@@ -296,6 +296,9 @@ test.describe("L-TOUCH-01 chart touch behaviour", () => {
     // Alt+C declares the aimed measure's own completion. The appended measure
     // is already empty, so there is nothing to declare and A0's refusal is
     // surfaced verbatim rather than rewritten into a U1 code or hidden.
+    // The reading view reveals bar tools on bar hover (jcpe-t8xh), so the
+    // pointer travels through the bar the way a hand does before clicking.
+    await page.locator(".studio-measure").last().hover();
     await page.locator('[id^="studio-target-measure-"]').last().click();
     await page.locator("#chart-workspace").focus();
     await page.keyboard.press("Alt+c");

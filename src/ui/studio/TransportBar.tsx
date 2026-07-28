@@ -38,6 +38,22 @@ export function TransportBar({
       <h2 id="studio-transport-heading" class="studio-visually-hidden">
         Transport
       </h2>
+      {/*
+        The sweep mirrors the exact playhead the status text already
+        announces, so it is presentation only and aria-hidden; screen
+        readers keep the Position fact as their source of truth.
+      */}
+      <div class="studio-transport__sweep" aria-hidden="true">
+        <span
+          class="studio-transport__sweep-fill"
+          style={
+            view.progressPercent === null
+              ? undefined
+              : `inline-size: ${String(view.progressPercent)}%`
+          }
+          data-active={String(view.progressPercent !== null)}
+        />
+      </div>
 
       <div class="studio-transport__status">
         <span class="studio-transport__status-icon" aria-hidden="true">

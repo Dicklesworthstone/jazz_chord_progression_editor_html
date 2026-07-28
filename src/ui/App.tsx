@@ -171,6 +171,70 @@ export type AppProps = Readonly<{
   actions: AppActions;
 }>;
 
+/**
+ * The sounding chord, computed from the exact fraction labels the view
+ * model already publishes. Cross-multiplied bigint comparison keeps the
+ * arithmetic exact; this is presentation-only reading of committed state,
+ * never a second musical clock.
+ */
+function parseExactLabel(label: string): readonly [bigint, bigint] | null {
+  const match = /^(\d+)\/(\d+)$/u.exec(label);
+  if (match?.[1] === undefined || match[2] === undefined) return null;
+  const denominator = BigInt(match[2]);
+  if (denominator === 0n) return null;
+  return [BigInt(match[1]), denominator];
+}
+
+export type PlaybackPointer = Readonly<{
+  chordId: string | null;
+  chordLabel: string | null;
+  progressPercent: number | null;
+}>;
+
+export function playbackPointer(snapshot: StudioViewModel): PlaybackPointer {
+  const none: PlaybackPointer = Object.freeze({
+    chordId: null,
+    chordLabel: null,
+    progressPercent: null,
+  });
+  if (snapshot.transport.status !== "playing") return none;
+  const playhead = parseExactLabel(snapshot.transport.playheadBeatLabel);
+  if (playhead === null) return none;
+  const [pn, pd] = playhead;
+  let chordId: string | null = null;
+  let chordLabel: string | null = null;
+  let endN = 0n;
+  let endD = 1n;
+  for (const section of snapshot.sections) {
+    for (const measure of section.measures) {
+      for (const event of measure.events) {
+        const start = parseExactLabel(event.startBeatLabel);
+        const duration = parseExactLabel(event.durationBeatLabel);
+        if (start === null || duration === null) continue;
+        const [sn, sd] = start;
+        const [dn, dd] = duration;
+        /* end = start + duration */
+        const eN = sn * dd + dn * sd;
+        const eD = sd * dd;
+        if (eN * endD > endN * eD) {
+          endN = eN;
+          endD = eD;
+        }
+        /* start <= playhead < end, cross-multiplied. */
+        if (sn * pd <= pn * sd && pn * eD < eN * pd) {
+          chordId = event.id;
+          chordLabel = event.symbolText;
+        }
+      }
+    }
+  }
+  const progressPercent =
+    endN === 0n
+      ? null
+      : Math.min(100, (Number(pn) / Number(pd)) / (Number(endN) / Number(endD)) * 100);
+  return Object.freeze({ chordId, chordLabel, progressPercent });
+}
+
 function countLabel(count: number, singular: string, plural = `${singular}s`): string {
   return `${String(count)} ${count === 1 ? singular : plural}`;
 }
@@ -353,6 +417,7 @@ function viewFromSnapshot(
   } = presentation;
   const chordCount = snapshot.chordCount;
   const selectionCount = snapshot.bookmarks.selectedEventIds.length;
+  const pointer = playbackPointer(snapshot);
 
   return Object.freeze({
     document: Object.freeze({
@@ -444,6 +509,7 @@ function viewFromSnapshot(
                         id: event.id,
                         ordinal: event.ordinal,
                         symbolText: event.symbolText,
+                        playing: event.id === pointer.chordId,
                         durationLabel: `${event.durationBeatLabel} beats`,
                         voicingMode: event.voicingMode,
                         hasAnnotation: event.hasAnnotation,
@@ -540,7 +606,8 @@ function viewFromSnapshot(
       tempoBpm: snapshot.tempoBpm,
       instrumentLabel: snapshot.instrumentLabel,
       positionLabel: `${snapshot.transport.playheadBeatLabel} beats`,
-      currentChordLabel: null,
+      currentChordLabel: pointer.chordLabel,
+      progressPercent: pointer.progressPercent,
     }),
     layout: Object.freeze({
       libraryCollapsed: snapshot.panels.leftRailCollapsed,
