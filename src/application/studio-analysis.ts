@@ -99,32 +99,38 @@ export function computeAnalyzerVerdict(
   const unexpected = [...detectedClasses]
     .filter((value) => !expectedClasses.has(value))
     .sort((a, b) => a - b);
-  if (missing.length === 0 && unexpected.length === 0) {
+  /*
+   * jcpe-1gao changed what an honest verdict can claim. The transport now
+   * plays a band sketch: at any instant a bass note may sound alone between
+   * comping stabs, and a comp voicing deliberately drops the voice the bass
+   * is already carrying. An absent chord tone is therefore normal
+   * performance, not an error, and flagging it would make the analyzer cry
+   * wolf through correct playback.
+   *
+   * What the analyzer can still assert without qualification is that
+   * everything it heard belongs to the sounding chord — a foreign pitch
+   * class is a real defect, and that is what MISMATCH now means. Absent
+   * classes remain reported as context so the panel can still show which
+   * tones this window did not carry.
+   */
+  if (unexpected.length === 0) {
     return Object.freeze({
       kind: "match",
-      detail: `Heard exactly ${expected.chordLabel}.`,
-      missingClasses: Object.freeze([]),
+      detail:
+        missing.length === 0
+          ? `Heard exactly ${expected.chordLabel}.`
+          : `All of it belongs to ${expected.chordLabel} (this window omits ${missing
+              .map((value) => PITCH_CLASS_LABELS[value] ?? "?")
+              .join(", ")}).`,
+      missingClasses: Object.freeze(missing),
       unexpectedClasses: Object.freeze([]),
     });
   }
-  const parts: string[] = [];
-  if (missing.length > 0) {
-    parts.push(
-      `missing ${missing
-        .map((value) => PITCH_CLASS_LABELS[value] ?? "?")
-        .join(", ")}`,
-    );
-  }
-  if (unexpected.length > 0) {
-    parts.push(
-      `extra ${unexpected
-        .map((value) => PITCH_CLASS_LABELS[value] ?? "?")
-        .join(", ")}`,
-    );
-  }
   return Object.freeze({
     kind: "mismatch",
-    detail: `${expected.chordLabel}: ${parts.join("; ")}.`,
+    detail: `${expected.chordLabel}: heard ${unexpected
+      .map((value) => PITCH_CLASS_LABELS[value] ?? "?")
+      .join(", ")}, which ${unexpected.length === 1 ? "is not a chord tone" : "are not chord tones"}.`,
     missingClasses: Object.freeze(missing),
     unexpectedClasses: Object.freeze(unexpected),
   });

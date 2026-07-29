@@ -77,9 +77,11 @@ describe("jcpe-r7f7 concert grand renderer", () => {
       /*
        * Analysis window in the body of the note, past the hammer noise, and
        * long enough for at least ~48 cycles of the fundamental so a quarter
-       * tone is resolvable even at C2.
+       * tone is resolvable even at C2. jcpe-l751 moved it past 320 ms: the
+       * hybrid renderer owns the first third of a second with a recorded
+       * strike whose broadband noise floor is not a pitch measurement.
        */
-      const start = Math.floor(0.05 * SAMPLE_RATE);
+      const start = Math.floor(0.34 * SAMPLE_RATE);
       const length = Math.min(
         Math.max(16_384, Math.round((SAMPLE_RATE * 48) / f0)),
         pcm.frameCount - start,

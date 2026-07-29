@@ -15,6 +15,7 @@ import {
   createStudioAudio,
   type StudioAudioPort,
 } from "../../src/application/studio-audio";
+import type { DocumentId } from "../../src/domain";
 import { createFakeAudioPlatform } from "../../src/test-support/fake-audio-platform";
 
 setDefaultTimeout(120_000);
@@ -85,6 +86,30 @@ describe("jcpe-gnyy chord-click preview", () => {
     /* The run is untouched: transport ready, no plan-bound run started. */
     expect(inspection.transport.state).toBe("ready");
     expect(controller.getSnapshot().transport.status).not.toBe("playing");
+  });
+
+  test("a refused initialization leaves the port uninitialized", async () => {
+    /*
+     * The first press is also the initialization. If a refused one counted,
+     * every later press would skip initialization on a graph that was never
+     * built and the studio would be silent for the rest of the page — with no
+     * recovery but a reload. Both reachable refusals are proved: a receipt the
+     * browser did not trust, and a context the browser would not open.
+     */
+    const documentId = "document-preview-init" as DocumentId;
+    const refusing = createStudioAudio(
+      createFakeAudioPlatform({ failContextCreation: true }).platform,
+    );
+    const refused = await refusing.initialize(1, GESTURE, documentId, 0);
+    expect(refused.termination).toBe("refusal");
+    expect(refusing.isInitialized()).toBe(false);
+
+    /* A receipt, and only a receipt, is what initialization means. */
+    const working = createStudioAudio(createFakeAudioPlatform().platform);
+    expect(working.isInitialized()).toBe(false);
+    const accepted = await working.initialize(1, GESTURE, documentId, 0);
+    expect(accepted.termination).toBe("receipt");
+    expect(working.isInitialized()).toBe(true);
   });
 
   test("a second preview replaces the first (no preview pile-up)", async () => {

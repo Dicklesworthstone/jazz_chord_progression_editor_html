@@ -62,6 +62,7 @@ import { parseChordSymbol, type ChartTextDraft } from "../theory";
 import type { StudioAudioGesture, StudioAudioPort } from "./studio-audio";
 import {
   compileStudioPlaybackPlan,
+  performStudioPlaybackPlan,
   studioPlanIsPlayable,
 } from "./studio-playback";
 import {
@@ -3684,8 +3685,16 @@ function makeStudioController(
     );
     if (!expectation.ok) return expectation;
 
+    /*
+     * jcpe-1gao: the transport plays the band sketch, not the written pad.
+     * The literal plan stays the chart's source of truth — the analyzer below
+     * and every export path still read it — and a performance-layer refusal
+     * silently returns that literal plan, so Play can never fail because the
+     * sketch could not be rendered.
+     */
+    const performance = performStudioPlaybackPlan(compiled.plan);
     const binding = Object.freeze({
-      plan: compiled.plan,
+      plan: performance,
       documentId: state.document.id,
       planRevision: state.revision,
     });
@@ -3711,7 +3720,7 @@ function makeStudioController(
       string,
       Readonly<{ midiPitch: MidiPitch; velocity: number }>
     >();
-    for (const event of compiled.plan.events) {
+    for (const event of performance.events) {
       for (const midiPitch of event.midiPitches) {
         const key = `${String(midiPitch)}:${String(event.velocity)}`;
         if (!distinctNotes.has(key)) {
@@ -3819,6 +3828,13 @@ function makeStudioController(
         "This build has no audio output wired.",
       );
     }
+    /*
+     * jcpe-1gao: a preview deliberately keeps the LITERAL plan. Previewing one
+     * chord asks "what does this symbol sound like", and the answer is the
+     * written voicing — not the first fragment of a bar-long comp pattern.
+     * The literal plan is also the only one whose event ids are the chart's
+     * own, which is what this lookup matches against.
+     */
     const compiled = compileStudioPlaybackPlan(state.document);
     if (!compiled.ok) {
       return editRefusal(

@@ -2,6 +2,13 @@ import {
   CONCERT_GRAND_WASM_BYTE_LENGTH,
   CONCERT_GRAND_WASM_SHA256,
 } from "../src/audio/wasm/concert-grand-wasm";
+import {
+  PIANO_ATTACK_SAMPLES_ATTRIBUTION,
+  PIANO_ATTACK_SAMPLES_BYTE_LENGTH,
+  PIANO_ATTACK_SAMPLES_LICENSE,
+  PIANO_ATTACK_SAMPLES_SHA256,
+  PIANO_ATTACK_SAMPLE_RATE_HZ,
+} from "../src/audio/wasm/piano-attack-samples";
 import { sha256Hex } from "./foundation-io";
 
 type Ledger = {
@@ -44,6 +51,7 @@ type LicenseReport = {
     license: string;
     embedding: string;
     generator?: string;
+    attribution?: string;
   }>;
 };
 
@@ -63,6 +71,22 @@ const expectedWasmAsset = {
   generator: "scripts/build-dsp.ts",
   license: "MIT (project) + libm MIT OR Apache-2.0",
   embedding: "inline-script-base64",
+};
+
+/*
+ * The recorded piano attack payload is third-party content under an
+ * attribution license, so the inventory must carry the credit line verbatim
+ * as well as the digest, and both are pinned to the generated module rather
+ * than restated here.
+ */
+const expectedPianoAsset = {
+  id: "salamander-piano-attack-pcm",
+  mime: `audio/L16;rate=${String(PIANO_ATTACK_SAMPLE_RATE_HZ)};channels=1`,
+  source: "SalamanderGrandPianoV3_44.1khz16bit",
+  generator: "scripts/build-piano-samples.ts",
+  license: PIANO_ATTACK_SAMPLES_LICENSE,
+  embedding: "inline-script-base64",
+  attribution: PIANO_ATTACK_SAMPLES_ATTRIBUTION,
 };
 
 export async function verifyLicenses(): Promise<{
@@ -126,9 +150,10 @@ export async function verifyLicenses(): Promise<{
     }
   }
 
-  if (report.assets.length !== 2) {
+  if (report.assets.length !== 3) {
     throw new Error(
-      "LICENSE_ASSET_COUNT: expected the source-owned favicon and the concert-grand wasm payload.",
+      "LICENSE_ASSET_COUNT: expected the source-owned favicon, the " +
+        "concert-grand wasm payload, and the recorded piano attack payload.",
     );
   }
   const asset = report.assets.find((item) => item.id === expectedOwnedAsset.id);
@@ -164,6 +189,34 @@ export async function verifyLicenses(): Promise<{
   ) {
     throw new Error(
       "LICENSE_ASSET_MISMATCH: wasm payload provenance does not match the generated module pins.",
+    );
+  }
+
+  const pianoAsset = report.assets.find(
+    (item) => item.id === expectedPianoAsset.id,
+  );
+  if (pianoAsset === undefined) {
+    throw new Error(
+      "LICENSE_ASSET_MISSING: piano attack payload provenance is absent.",
+    );
+  }
+  if (
+    pianoAsset.mime !== expectedPianoAsset.mime ||
+    pianoAsset.source !== expectedPianoAsset.source ||
+    pianoAsset.generator !== expectedPianoAsset.generator ||
+    pianoAsset.license !== expectedPianoAsset.license ||
+    pianoAsset.embedding !== expectedPianoAsset.embedding ||
+    pianoAsset.attribution !== expectedPianoAsset.attribution ||
+    pianoAsset.bytes !== PIANO_ATTACK_SAMPLES_BYTE_LENGTH ||
+    pianoAsset.sha256 !== PIANO_ATTACK_SAMPLES_SHA256
+  ) {
+    throw new Error(
+      "LICENSE_ASSET_MISMATCH: piano attack payload provenance does not match the generated module pins.",
+    );
+  }
+  if (!pianoAsset.attribution.includes("CC-BY-3.0")) {
+    throw new Error(
+      "LICENSE_ASSET_ATTRIBUTION: the recorded piano payload must carry its CC-BY credit.",
     );
   }
 

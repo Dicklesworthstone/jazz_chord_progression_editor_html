@@ -324,10 +324,17 @@ export function createStudioAudio(
           planRevision,
         }),
       );
+      /*
+       * Only a receipt initializes. A refused initialization — an untrusted
+       * receipt, or a browser that would not open the context — leaves no
+       * graph behind, so remembering it as initialized would make every later
+       * Play and preview skip the one step they need and refuse forever. The
+       * flag records what happened, not what was attempted.
+       */
       if (outcome.termination === "receipt") {
         await awaitEngineReady(gesture);
+        initialized = true;
       }
-      initialized = true;
       return outcome;
     },
     play: async (commandRequestId, binding, startBeat) =>

@@ -5,6 +5,14 @@ import {
   CONCERT_GRAND_WASM_BYTE_LENGTH,
   CONCERT_GRAND_WASM_SHA256,
 } from "../src/audio/wasm/concert-grand-wasm";
+import {
+  PIANO_ATTACK_SAMPLES_ATTRIBUTION,
+  PIANO_ATTACK_SAMPLES_BASE64,
+  PIANO_ATTACK_SAMPLES_BYTE_LENGTH,
+  PIANO_ATTACK_SAMPLES_LICENSE,
+  PIANO_ATTACK_SAMPLES_SHA256,
+  PIANO_ATTACK_SAMPLE_RATE_HZ,
+} from "../src/audio/wasm/piano-attack-samples";
 import { inspectArtifact } from "./artifact-policy";
 import {
   assertByteEqual,
@@ -69,6 +77,8 @@ type EmbeddedAssetRecord = {
    */
   embedding: "data-url" | "inline-script-base64";
   generator?: string;
+  /** Required credit line for a third-party asset under an attribution license. */
+  attribution?: string;
 };
 
 export type BuildOptions = {
@@ -192,6 +202,26 @@ async function inventoriedEmbeddedAssets(
     );
   }
 
+  if (!html.includes(PIANO_ATTACK_SAMPLES_BASE64)) {
+    throw new Error(
+      "ASSET_PIANO_SAMPLES_MISSING: the embedded piano attack payload was not bundled.",
+    );
+  }
+  const pianoBytes = Uint8Array.from(
+    Buffer.from(PIANO_ATTACK_SAMPLES_BASE64, "base64"),
+  );
+  const pianoSha256 = await sha256Hex(pianoBytes);
+  if (
+    pianoBytes.byteLength !== PIANO_ATTACK_SAMPLES_BYTE_LENGTH ||
+    pianoSha256 !== PIANO_ATTACK_SAMPLES_SHA256
+  ) {
+    throw new Error(
+      "ASSET_PIANO_SAMPLES_DRIFT: the piano attack base64 does not match its " +
+        "pinned sha256/byte length; regenerate with " +
+        "bun scripts/build-piano-samples.ts.",
+    );
+  }
+
   return [
     {
       id: "changes-empty-favicon",
@@ -211,6 +241,17 @@ async function inventoriedEmbeddedAssets(
       generator: "scripts/build-dsp.ts",
       license: "MIT (project) + libm MIT OR Apache-2.0",
       embedding: "inline-script-base64",
+    },
+    {
+      id: "salamander-piano-attack-pcm",
+      mime: `audio/L16;rate=${String(PIANO_ATTACK_SAMPLE_RATE_HZ)};channels=1`,
+      bytes: pianoBytes.byteLength,
+      sha256: pianoSha256,
+      source: "SalamanderGrandPianoV3_44.1khz16bit",
+      generator: "scripts/build-piano-samples.ts",
+      license: PIANO_ATTACK_SAMPLES_LICENSE,
+      embedding: "inline-script-base64",
+      attribution: PIANO_ATTACK_SAMPLES_ATTRIBUTION,
     },
   ];
 }
@@ -235,6 +276,11 @@ async function finalizeHtml(
   const notice = `<!--
 Third-party notice: Preact ${preactVersion}, MIT License
 ${safeHtmlComment(preactLicense)}
+
+Third-party notice: recorded piano attack transients embedded in the audio
+engine come from ${PIANO_ATTACK_SAMPLES_ATTRIBUTION},
+<https://creativecommons.org/licenses/by/3.0/>. Sliced and re-encoded by
+scripts/build-piano-samples.ts; see dist/licenses.json for the payload digest.
 -->`;
   body = body.replace(/^<!doctype html>/i, (doctype) => `${doctype}\n${notice}`);
   const csp = await contentSecurityPolicy(body);

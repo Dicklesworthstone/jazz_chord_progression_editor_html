@@ -210,6 +210,38 @@ function optimizeSelections(
 export function buildStudioRealizations(
   document: ValidatedDocument,
 ): StudioRealizationResult {
+  const memoized = REALIZATION_MEMO.get(document);
+  if (memoized !== undefined) return memoized;
+  const built = realizeDocument(document);
+  REALIZATION_MEMO.set(document, built);
+  return built;
+}
+
+/**
+ * Realization memo, keyed by the document object itself.
+ *
+ * Selecting candidates across a chart costs hundreds of milliseconds of main
+ * thread — V2 expands one beam layer per chord over up to twenty-four V0
+ * candidates, calling the real V1 transition oracle for each pair — and the
+ * controller compiles a fresh plan on every Play AND every chord click. Held
+ * literally, that made clicking a chord in the ten-chord starter chart block
+ * the page for ~0.7 s before a note sounded.
+ *
+ * The key is the document object, not its id or a revision counter, and that
+ * is the whole safety argument: a `ValidatedDocument` is deeply frozen and
+ * every edit publishes a new one, so identical keys mean byte-identical
+ * input to a pure function. An id-and-revision key would be weaker in both
+ * directions — it could collide across two documents that share an id, and
+ * it would make the determinism proof tautological by answering the second
+ * build from the first build's cache. Entries are weakly held, so a
+ * superseded document's realizations are collected with it.
+ */
+const REALIZATION_MEMO = new WeakMap<
+  ValidatedDocument,
+  StudioRealizationResult
+>();
+
+function realizeDocument(document: ValidatedDocument): StudioRealizationResult {
   const realizations = new Map<ChordEventId, PlaybackRealizationBinding>();
   const pending: PendingAutoBinding[] = [];
   const chain: ProgressionEvent[] = [];

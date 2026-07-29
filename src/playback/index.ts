@@ -87,3 +87,52 @@ export {
   compilePlaybackPlan,
   playbackPlanOperations,
 } from "./compile-playback-plan";
+/*
+ * The band-sketch performance layer (jcpe-1gao). It consumes a compiled P0
+ * plan and returns another P0-shaped plan, so it is published here rather
+ * than as a package of its own; its sources live under `./performance/` so
+ * P0's pinned three-file production inventory stays exactly what its accepted
+ * evidence says it is.
+ */
+export {
+  MAX_PERFORMANCE_PLAN_BARS_VISITED,
+  MAX_PERFORMANCE_PLAN_EVENTS,
+  MAX_PERFORMANCE_PLAN_SLOTS_CONSIDERED,
+  MAX_PERFORMANCE_PLAN_SOURCE_EVENTS,
+  PERFORMANCE_BASS_REGISTER,
+  PERFORMANCE_BASS_TONES,
+  PERFORMANCE_COMP_VOICINGS,
+  PERFORMANCE_PLAN_COMPILER_ID,
+  PERFORMANCE_PLAN_COMPILER_VERSION,
+  PERFORMANCE_PLAN_CONTRACT_SCHEMA,
+  PERFORMANCE_PLAN_MIDI_PPQ,
+  PERFORMANCE_PLAN_REFUSAL_CODES,
+  PERFORMANCE_PLAN_TERMINATIONS,
+  PERFORMANCE_PLAN_WORK_LIMITS,
+  PERFORMANCE_ROLES,
+  PERFORMANCE_ROLE_ID_SUFFIXES,
+  PERFORMANCE_STYLES,
+  PERFORMANCE_STYLE_IDS,
+} from "./performance/performance-plan-contract";
+export type {
+  CompilePerformancePlan,
+  CompilePerformancePlanFailure,
+  CompilePerformancePlanRequest,
+  CompilePerformancePlanResult,
+  CompilePerformancePlanSuccess,
+  ExactBeats,
+  PerformanceBassSlot,
+  PerformanceBassTone,
+  PerformanceCompSlot,
+  PerformanceCompVoicing,
+  PerformancePlanRefusal,
+  PerformancePlanRefusalCode,
+  PerformancePlanTermination,
+  PerformancePlanWorkCounterName,
+  PerformancePlanWorkEvidence,
+  PerformanceRole,
+  PerformanceStyle,
+  PerformanceStyleId,
+  PerformanceStyleKind,
+} from "./performance/performance-plan-contract";
+export { compilePerformancePlan } from "./performance/performance-plan";

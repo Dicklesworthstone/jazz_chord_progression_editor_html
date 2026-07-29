@@ -9,6 +9,7 @@
  * revision that changes the timeline invalidates it.
  */
 import {
+  compilePerformancePlan,
   compilePlaybackPlan,
   PLAYBACK_ARTICULATION_POLICY_ID,
   PLAYBACK_ARTICULATION_POLICY_VERSION,
@@ -21,6 +22,7 @@ import {
   PLAYBACK_REALIZATION_BINDING_POLICY_VERSION,
   PLAYBACK_VELOCITY_POLICY_ID,
   PLAYBACK_VELOCITY_POLICY_VERSION,
+  type PerformanceStyleId,
   type PlaybackPlan,
 } from "../playback";
 import type { BeatRange, ValidatedDocument } from "../domain";
@@ -133,4 +135,42 @@ export function compileStudioPlaybackPlan(
 /** True when the chart has at least one sounding event to play. */
 export function studioPlanIsPlayable(plan: PlaybackPlan): boolean {
   return plan.events.length > 0;
+}
+
+/**
+ * The performance style every studio run is rendered with (jcpe-1gao).
+ *
+ * The document has no style field and adding one is a pinned-contract change,
+ * so the studio names one style here. A per-document style selector — a
+ * ballad chart and a medium-swing chart in the same session — is future work
+ * the owner tracks; this constant is the seam it will replace.
+ */
+export const STUDIO_PERFORMANCE_STYLE: PerformanceStyleId = "ballad-comp@1";
+
+/**
+ * Render a literal P0 plan as the band sketch the transport actually plays.
+ *
+ * The literal plan remains the chart's source of truth — the chart view and
+ * MIDI export keep consuming it — and only the audio path is routed through
+ * here. A refusal from the performance layer returns the literal plan
+ * unchanged, silently and deterministically: playback existed before this
+ * layer did and must never start failing because of it.
+ */
+export function performStudioPlaybackPlan(plan: PlaybackPlan): PlaybackPlan {
+  const performed = compilePerformancePlan({
+    plan,
+    styleId: STUDIO_PERFORMANCE_STYLE,
+  });
+  if (!performed.ok) return plan;
+  /*
+   * A playable chart must stay playable. `studioPlanIsPlayable` gates Play on
+   * the literal plan, so a performance that emitted nothing — every slot
+   * falling outside every event window — would bind an empty plan and end the
+   * run the instant it started, with no refusal anyone could see. Falling back
+   * keeps the chart audible and keeps that silent-success failure impossible.
+   */
+  if (!studioPlanIsPlayable(performed.plan) && studioPlanIsPlayable(plan)) {
+    return plan;
+  }
+  return performed.plan;
 }

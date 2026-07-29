@@ -8,6 +8,15 @@
  * are bit-deterministic: the module imports nothing from the host — no clock,
  * no random device, no I/O — so the PCM goldens can pin exact hashes.
  *
+ * The rendered note is a HYBRID. Synthesis alone cannot produce the hammer
+ * strike of a real instrument, so the first third of a second comes from a
+ * recorded Yamaha C5 (`./wasm/piano-attack-samples.ts`) and is crossfaded
+ * into the synthesized sustain. The sampled layer is transposed from the
+ * nearest recorded key, level- and balance-matched to the synth layer over
+ * the crossfade window, and peak-limited; a pitch or velocity outside the
+ * recorded set simply renders as pure synthesis. Everything here is a pure
+ * function of `(midiPitch, velocity, sampleRateHz)`.
+ *
  * Layer position: audio-internal. The engine caches the PCM in Web Audio
  * buffers; no other layer sees this module or the wasm instance.
  */
@@ -16,9 +25,57 @@ import {
   CONCERT_GRAND_WASM_BYTE_LENGTH,
   CONCERT_GRAND_WASM_SHA256,
 } from "./wasm/concert-grand-wasm";
+import {
+  PIANO_ATTACK_SAMPLE_RATE_HZ,
+  PIANO_ATTACK_SAMPLES_ATTRIBUTION,
+  PIANO_ATTACK_SAMPLES_BASE64,
+  PIANO_ATTACK_SAMPLES_BYTE_LENGTH,
+  PIANO_ATTACK_SAMPLES_LICENSE,
+  PIANO_ATTACK_SAMPLES_SHA256,
+  PIANO_ATTACK_SLICE_INDEX,
+  type PianoAttackSlice,
+} from "./wasm/piano-attack-samples";
 
 export const CONCERT_GRAND_RENDERER_ALGORITHM_ID =
   "changes.dsp.concert-grand@1";
+
+/**
+ * The reviewed crossfade design. The sampled attack owns the note outright
+ * until `sampleOnlySeconds`; an equal-power crossfade then hands the note to
+ * the synthesized sustain by `crossfadeEndSeconds`. Equal power (cosine and
+ * sine of the same quarter turn) is the correct law here because the two
+ * layers are the same note from unrelated sources: their partials are not
+ * phase-locked, so their powers add rather than their amplitudes.
+ */
+export const PIANO_ATTACK_LAYER_POLICY = Object.freeze({
+  id: "changes.dsp.piano-attack-layer.v1",
+  attribution: PIANO_ATTACK_SAMPLES_ATTRIBUTION,
+  license: PIANO_ATTACK_SAMPLES_LICENSE,
+  payloadSha256: PIANO_ATTACK_SAMPLES_SHA256,
+  sampleOnlySeconds: 0.18,
+  crossfadeEndSeconds: 0.32,
+  /**
+   * Level is matched twice: once over the attack the sampled layer owns, and
+   * once over the crossfade window it hands off in. A recorded string and a
+   * modelled one do not decay at quite the same rate, so a single match would
+   * either misstate the attack's loudness or step at the seam. The correction
+   * interpolates log-linearly in time between the two — the exact shape that
+   * turns one exponential decay into another — and is clamped so a badly
+   * mismatched pair degrades instead of exploding.
+   */
+  attackWindowStartSeconds: 0.02,
+  attackWindowEndSeconds: 0.18,
+  matchWindowStartSeconds: 0.18,
+  matchWindowEndSeconds: 0.32,
+  maximumDecayCorrectionRatio: 4,
+  /** A recorded key is never stretched further than this. */
+  maximumTranspositionSemitones: 3,
+  /** The sampled layer is ducked before the hybrid can exceed this. */
+  peakCeiling: 0.945,
+  /** How fast that duck may move, so it can never be heard as a step. */
+  peakGuardSlewDecibelsPerSecond: 60,
+  interpolation: "catmull-rom",
+} as const);
 
 export type RenderedNotePcm = Readonly<{
   sampleRateHz: number;
@@ -47,16 +104,37 @@ export type AnalysisFrame = Readonly<{
 export type ConcertGrandRenderer = Readonly<{
   algorithmId: typeof CONCERT_GRAND_RENDERER_ALGORITHM_ID;
   wasmSha256: string;
+  attackSamplesSha256: string;
   /**
-   * Render one note. Synchronous and pure after instantiation; returns null
-   * only for an out-of-contract request (pitch outside 21..108, velocity
-   * outside 1..127, unsupported sample rate).
+   * Render one note: the recorded attack crossfaded into the synthesized
+   * sustain. Synchronous and pure after instantiation; returns null only for
+   * an out-of-contract request (pitch outside 21..108, velocity outside
+   * 1..127, unsupported sample rate). A note the sample corpus cannot serve
+   * still renders — as pure synthesis.
    */
   renderNote: (
     midiPitch: number,
     velocity: number,
     sampleRateHz: number,
   ) => RenderedNotePcm | null;
+  /**
+   * The same note with the sampled attack layer withheld. Evidence surface
+   * only: it exists so a test can prove the layer changes the tone, and the
+   * engine never calls it.
+   */
+  renderSynthesizedNote: (
+    midiPitch: number,
+    velocity: number,
+    sampleRateHz: number,
+  ) => RenderedNotePcm | null;
+  /**
+   * The recorded slice `renderNote` would use, or null when the request
+   * falls outside the sampled set. Evidence surface only.
+   */
+  attackSliceFor: (
+    midiPitch: number,
+    velocity: number,
+  ) => PianoAttackSlice | null;
   /**
    * Analyze one time-domain window: windowed FFT, spectral-peak note
    * detection with harmonic grouping, and a chroma fold. `samples.length`
@@ -108,6 +186,321 @@ function decodeWasmBytes(): Uint8Array<ArrayBuffer> {
     bytes[index] = decoded.charCodeAt(index);
   }
   return bytes;
+}
+
+/* ------------------------------------------------------------------ *
+ * Recorded attack layer                                               *
+ * ------------------------------------------------------------------ */
+
+let attackSampleStore: Int16Array<ArrayBuffer> | null = null;
+let attackSampleStoreRefused = false;
+
+/**
+ * Decode the embedded PCM once, on the first note that needs it. The payload
+ * is raw single-channel 16-bit little-endian PCM, and each pair of bytes is
+ * recombined explicitly rather than aliased through a typed-array view: the
+ * result is identical on a big-endian host, and the decode never depends on
+ * a browser media API.
+ */
+function attackSamples(): Int16Array<ArrayBuffer> | null {
+  if (attackSampleStore !== null) return attackSampleStore;
+  if (attackSampleStoreRefused) return null;
+  try {
+    const decoded = atob(PIANO_ATTACK_SAMPLES_BASE64);
+    if (
+      decoded.length !== PIANO_ATTACK_SAMPLES_BYTE_LENGTH ||
+      decoded.length % 2 !== 0
+    ) {
+      throw new Error("DSP_ATTACK_PAYLOAD_LENGTH_MISMATCH");
+    }
+    const samples = new Int16Array(decoded.length / 2);
+    for (let index = 0; index < samples.length; index += 1) {
+      const low = decoded.charCodeAt(index * 2) & 0xff;
+      const high = decoded.charCodeAt(index * 2 + 1) & 0xff;
+      samples[index] = (((high << 8) | low) << 16) >> 16;
+    }
+    attackSampleStore = samples;
+    return samples;
+  } catch {
+    /* A corrupt payload demotes the instrument to pure synthesis, never a
+     * failed note. */
+    attackSampleStoreRefused = true;
+    return null;
+  }
+}
+
+/**
+ * The recorded slice that serves this request: the velocity bucket that
+ * contains the velocity, and within it the recorded key nearest the target.
+ * Ties resolve to the higher key so the transposition runs downward, which
+ * consumes less of the stored slice.
+ */
+function selectAttackSlice(
+  midiPitch: number,
+  velocity: number,
+): PianoAttackSlice | null {
+  let best: PianoAttackSlice | null = null;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  for (const slice of PIANO_ATTACK_SLICE_INDEX) {
+    if (velocity < slice.lowVelocity || velocity > slice.highVelocity) continue;
+    const distance = Math.abs(slice.midiPitch - midiPitch);
+    if (distance <= bestDistance) {
+      bestDistance = distance;
+      best = slice;
+    }
+  }
+  if (
+    best === null ||
+    bestDistance > PIANO_ATTACK_LAYER_POLICY.maximumTranspositionSemitones
+  ) {
+    return null;
+  }
+  return best;
+}
+
+/**
+ * Transpose one slice onto the requested pitch and output rate with a
+ * Catmull-Rom kernel. The kernel is a fixed cubic over four neighbours: no
+ * table, no filter state, no branch on data, so the same request yields the
+ * same floats on every host.
+ */
+function transposeAttackSlice(
+  store: Int16Array,
+  slice: PianoAttackSlice,
+  midiPitch: number,
+  sampleRateHz: number,
+  frames: number,
+): Float32Array<ArrayBuffer> {
+  const out = new Float32Array(frames);
+  const base = slice.byteOffset / 2;
+  const last = slice.frameCount - 1;
+  /*
+   * The recorded key is stretch-tuned; `tuningCents` is how far it sits from
+   * 12-TET, so subtracting it lands the transposed attack on the same pitch
+   * the synthesized sustain holds and the two layers do not beat.
+   */
+  const semitones =
+    midiPitch - slice.midiPitch - slice.tuningCents / 100;
+  const step =
+    2 ** (semitones / 12) * (PIANO_ATTACK_SAMPLE_RATE_HZ / sampleRateHz);
+  const at = (offset: number): number => {
+    const clamped = offset < 0 ? 0 : offset > last ? last : offset;
+    return (store[base + clamped] ?? 0) / 32_768;
+  };
+  for (let frame = 0; frame < frames; frame += 1) {
+    const position = frame * step;
+    const index = Math.floor(position);
+    if (index >= last) break;
+    const t = position - index;
+    const p0 = at(index - 1);
+    const p1 = at(index);
+    const p2 = at(index + 1);
+    const p3 = at(index + 2);
+    out[frame] =
+      0.5 *
+      (2 * p1 +
+        (p2 - p0) * t +
+        (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t +
+        (3 * p1 - p0 - 3 * p2 + p3) * t * t * t);
+  }
+  return out;
+}
+
+function windowRms(
+  channel: Float32Array,
+  start: number,
+  end: number,
+): number {
+  if (end <= start) return 0;
+  let total = 0;
+  for (let frame = start; frame < end; frame += 1) {
+    const value = channel[frame] ?? 0;
+    total += value * value;
+  }
+  return Math.sqrt(total / (end - start));
+}
+
+/**
+ * Fold the recorded attack into an already-rendered synthesized note, in
+ * place. Returns false when the corpus cannot serve the request, in which
+ * case the synthesized note is left exactly as it was.
+ */
+function applyAttackLayer(
+  left: Float32Array,
+  right: Float32Array,
+  frameCount: number,
+  midiPitch: number,
+  velocity: number,
+  sampleRateHz: number,
+): boolean {
+  const slice = selectAttackSlice(midiPitch, velocity);
+  if (slice === null) return false;
+  const store = attackSamples();
+  if (store === null) return false;
+
+  const policy = PIANO_ATTACK_LAYER_POLICY;
+  const layerFrames = Math.min(
+    Math.round(policy.crossfadeEndSeconds * sampleRateHz),
+    frameCount,
+  );
+  const soloFrames = Math.min(
+    Math.round(policy.sampleOnlySeconds * sampleRateHz),
+    layerFrames,
+  );
+  const crossfadeFrames = layerFrames - soloFrames;
+  if (crossfadeFrames <= 0) return false;
+
+  const attack = transposeAttackSlice(
+    store,
+    slice,
+    midiPitch,
+    sampleRateHz,
+    layerFrames,
+  );
+
+  /*
+   * Two matching windows. The seam window fixes the handover level exactly;
+   * the attack window fixes how loud the recorded hammer strike sits inside
+   * the note, which is what carries the instrument's velocity law.
+   */
+  const attackStart = Math.min(
+    Math.round(policy.attackWindowStartSeconds * sampleRateHz),
+    layerFrames,
+  );
+  const attackEnd = Math.min(
+    Math.round(policy.attackWindowEndSeconds * sampleRateHz),
+    layerFrames,
+  );
+  const matchStart = Math.min(
+    Math.round(policy.matchWindowStartSeconds * sampleRateHz),
+    layerFrames,
+  );
+  const matchEnd = Math.min(
+    Math.round(policy.matchWindowEndSeconds * sampleRateHz),
+    layerFrames,
+  );
+  const sampleSeamRms = windowRms(attack, matchStart, matchEnd);
+  const sampleAttackRms = windowRms(attack, attackStart, attackEnd);
+  if (!(sampleSeamRms > 1e-9) || !(sampleAttackRms > 1e-9)) return false;
+
+  const synthSeamLeft = windowRms(left, matchStart, matchEnd);
+  const synthSeamRight = windowRms(right, matchStart, matchEnd);
+  const synthSeamRms = Math.sqrt(
+    (synthSeamLeft * synthSeamLeft + synthSeamRight * synthSeamRight) / 2,
+  );
+  const synthAttackRms = Math.sqrt(
+    (windowRms(left, attackStart, attackEnd) ** 2 +
+      windowRms(right, attackStart, attackEnd) ** 2) /
+      2,
+  );
+  if (!(synthSeamRms > 1e-9) || !(synthAttackRms > 1e-9)) return false;
+
+  /* Stereo placement comes from the synth layer, measured at the seam. */
+  const balanceLeft = synthSeamLeft / synthSeamRms;
+  const balanceRight = synthSeamRight / synthSeamRms;
+
+  const seamGain = synthSeamRms / sampleSeamRms;
+  const rawAttackGain = synthAttackRms / sampleAttackRms;
+  const maximum = policy.maximumDecayCorrectionRatio;
+  const correction = Math.min(
+    maximum,
+    Math.max(1 / maximum, rawAttackGain / seamGain),
+  );
+
+  /*
+   * Equal-power crossfade weights and the decay correction, computed once
+   * per note. `correction` is applied in full across the attack window and
+   * unwound log-linearly to unity by the centre of the seam window, so the
+   * handover level is exactly `seamGain` however the two decays differ.
+   */
+  const correctionStart = (attackStart + attackEnd) / 2;
+  const correctionEnd = (matchStart + matchEnd) / 2;
+  const correctionSpan = Math.max(1, correctionEnd - correctionStart);
+  const synthGain = new Float64Array(layerFrames);
+  const sampleGain = new Float64Array(layerFrames);
+  for (let frame = 0; frame < layerFrames; frame += 1) {
+    const unwind =
+      frame <= correctionStart
+        ? 1
+        : frame >= correctionEnd
+          ? 0
+          : 1 - (frame - correctionStart) / correctionSpan;
+    const level = seamGain * correction ** unwind;
+    if (frame < soloFrames) {
+      synthGain[frame] = 0;
+      sampleGain[frame] = level;
+      continue;
+    }
+    const phase = ((frame - soloFrames) / crossfadeFrames) * (Math.PI / 2);
+    synthGain[frame] = Math.sin(phase);
+    sampleGain[frame] = Math.cos(phase) * level;
+  }
+
+  /*
+   * Peak limit. The ceiling never falls below the synthesized note's own
+   * peak, so the guard can only scale the added layer — it never attenuates
+   * the sustain the rest of the note depends on.
+   *
+   * The guard is an envelope, not a scalar. A recorded fortissimo bass
+   * strike has a far higher crest factor than the model does, and scaling
+   * the whole layer to tame one sample would leave the handover several
+   * decibels below the sustain it hands to — an audible swell at the seam.
+   * The envelope instead ducks only around the offending sample and slews
+   * back at a fixed decibels-per-second rate, so the seam stays matched and
+   * the gain never moves fast enough to click.
+   */
+  let synthPeak = 0;
+  for (let frame = 0; frame < frameCount; frame += 1) {
+    const magnitude = Math.max(
+      Math.abs(left[frame] ?? 0),
+      Math.abs(right[frame] ?? 0),
+    );
+    if (magnitude > synthPeak) synthPeak = magnitude;
+  }
+  const ceiling = Math.max(policy.peakCeiling, synthPeak);
+  const guard = new Float64Array(layerFrames);
+  for (let frame = 0; frame < layerFrames; frame += 1) {
+    let allowed = 1;
+    const weight = sampleGain[frame] ?? 0;
+    const faded = synthGain[frame] ?? 0;
+    const source = attack[frame] ?? 0;
+    for (const [channel, balance] of [
+      [left, balanceLeft],
+      [right, balanceRight],
+    ] as const) {
+      const added = weight * source * balance;
+      if (added === 0) continue;
+      const carried = faded * (channel[frame] ?? 0);
+      const bound =
+        added > 0 ? (ceiling - carried) / added : (-ceiling - carried) / added;
+      if (bound < allowed) allowed = bound;
+    }
+    guard[frame] = allowed > 0 ? allowed : 0;
+  }
+  /*
+   * Two slew passes, each of which can only lower a value, so the per-frame
+   * bound above still holds everywhere: backwards so the duck arrives before
+   * the sample it protects against, forwards so the recovery is just as
+   * gradual.
+   */
+  const slew = 10 ** (policy.peakGuardSlewDecibelsPerSecond / (20 * sampleRateHz));
+  for (let frame = layerFrames - 2; frame >= 0; frame -= 1) {
+    const next = (guard[frame + 1] ?? 1) * slew;
+    if (next < (guard[frame] ?? 1)) guard[frame] = next;
+  }
+  for (let frame = 1; frame < layerFrames; frame += 1) {
+    const previous = (guard[frame - 1] ?? 1) * slew;
+    if (previous < (guard[frame] ?? 1)) guard[frame] = previous;
+  }
+
+  for (let frame = 0; frame < layerFrames; frame += 1) {
+    const weight = (sampleGain[frame] ?? 0) * (guard[frame] ?? 0);
+    const faded = synthGain[frame] ?? 0;
+    const source = attack[frame] ?? 0;
+    left[frame] = faded * (left[frame] ?? 0) + weight * source * balanceLeft;
+    right[frame] = faded * (right[frame] ?? 0) + weight * source * balanceRight;
+  }
+  return true;
 }
 
 const PAGE_BYTES = 65_536;
@@ -188,7 +581,7 @@ async function instantiate(): Promise<ConcertGrandRenderer> {
       : memory.buffer.byteLength;
   const scratchBase = Math.ceil((heapBase + 1_024) / 16) * 16;
 
-  const renderNote = (
+  const renderSynthesizedNote = (
     midiPitch: number,
     velocity: number,
     sampleRateHz: number,
@@ -219,6 +612,24 @@ async function instantiate(): Promise<ConcertGrandRenderer> {
       left,
       right,
     });
+  };
+
+  const renderNote = (
+    midiPitch: number,
+    velocity: number,
+    sampleRateHz: number,
+  ): RenderedNotePcm | null => {
+    const synthesized = renderSynthesizedNote(midiPitch, velocity, sampleRateHz);
+    if (synthesized === null) return null;
+    applyAttackLayer(
+      synthesized.left,
+      synthesized.right,
+      synthesized.frameCount,
+      midiPitch,
+      velocity,
+      sampleRateHz,
+    );
+    return synthesized;
   };
 
   const MAX_DETECTED_NOTES = 12;
@@ -293,7 +704,10 @@ async function instantiate(): Promise<ConcertGrandRenderer> {
   return Object.freeze({
     algorithmId: CONCERT_GRAND_RENDERER_ALGORITHM_ID,
     wasmSha256: CONCERT_GRAND_WASM_SHA256,
+    attackSamplesSha256: PIANO_ATTACK_SAMPLES_SHA256,
     renderNote,
+    renderSynthesizedNote,
+    attackSliceFor: selectAttackSlice,
     analyzeWindow,
   });
 }

@@ -266,6 +266,34 @@ describe("V2-selected playback voicings", () => {
     }
   });
 
+  test("one document object is realized once, not once per compile", () => {
+    /*
+     * Selecting across the chart is hundreds of milliseconds of V1 oracle
+     * calls, and the controller compiles a fresh plan on every Play AND every
+     * chord click. Repeating that work for a document that cannot have
+     * changed is the difference between a chord click sounding at once and
+     * blocking the page; the memo is keyed by the frozen document object, so
+     * the second build must return the very same binding map.
+     */
+    const document = publishDocument(DEACON_MEASURES);
+    const first = buildStudioRealizations(document);
+    const second = buildStudioRealizations(document);
+    if (!first.ok || !second.ok) throw new Error("STUDIO_REALIZATION_TEST_MEMO");
+    expect(second.realizations).toBe(first.realizations);
+
+    /* A different document object recomputes, even sharing id and event ids. */
+    const edited = publishDocument([
+      [{ id: "event-deacon-00", chord: "Fmaj7", beats: 4 }],
+    ]);
+    const rebuilt = buildStudioRealizations(edited);
+    if (!rebuilt.ok) throw new Error("STUDIO_REALIZATION_TEST_MEMO_STALE");
+    expect(rebuilt.realizations).not.toBe(first.realizations);
+    expect(
+      generatedBinding(rebuilt.realizations, "event-deacon-00").request.resolved
+        .source.sourceText,
+    ).toBe("Fmaj7");
+  });
+
   test("selection beats the naive first-candidate chain under the real V1 cost", () => {
     const document = publishDocument([
       [{ id: "event-lead-0", chord: "Cmaj7", beats: 4 }],

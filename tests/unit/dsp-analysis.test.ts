@@ -12,12 +12,24 @@ import { loadConcertGrandRenderer } from "../../src/audio/dsp-renderer";
 const SAMPLE_RATE = 48_000;
 const FFT_SIZE = 8_192;
 
+/**
+ * jcpe-l751 split these windows. The renderer is now a hybrid whose first
+ * 320 ms is a recorded hammer strike: broadband, as a struck string is on any
+ * instrument, so no spectral peak picker resolves individual fundamentals
+ * inside it. Fundamental detection is therefore read from the sustain, while
+ * the pitch-class fold — which is a coarse energy statement, not a peak
+ * search — is read from the strike where the chord is loudest.
+ */
+const SUSTAIN_WINDOW_SECONDS = 0.36;
+const STRIKE_WINDOW_SECONDS = 0.06;
+
 async function renderedChordMix(
   chord: readonly number[],
+  startSeconds: number = SUSTAIN_WINDOW_SECONDS,
 ): Promise<Float32Array> {
   const renderer = await loadConcertGrandRenderer();
   const mix = new Float32Array(FFT_SIZE);
-  const start = Math.floor(0.06 * SAMPLE_RATE);
+  const start = Math.floor(startSeconds * SAMPLE_RATE);
   for (const midi of chord) {
     const pcm = renderer.renderNote(midi, 96, SAMPLE_RATE);
     if (pcm === null) throw new Error("RENDER_REFUSED");
@@ -51,6 +63,17 @@ describe("jcpe-7she wasm analysis loop", () => {
     for (const note of frame.notes) {
       expect(Math.abs(note.centsDeviation)).toBeLessThan(25);
     }
+  });
+
+  test("the chroma fold of a struck chord peaks only on its own classes", async () => {
+    const renderer = await loadConcertGrandRenderer();
+    const chord = [48, 60, 64, 67, 71];
+    const frame = renderer.analyzeWindow(
+      await renderedChordMix(chord, STRIKE_WINDOW_SECONDS),
+      SAMPLE_RATE,
+    );
+    expect(frame).not.toBeNull();
+    if (frame === null) return;
     /* Chroma peaks only on C, E, G, B pitch classes. */
     const chordClasses = new Set(chord.map((midi) => midi % 12));
     let weakestChordTone = Number.POSITIVE_INFINITY;

@@ -59,14 +59,28 @@ describe("the analyzer verdict", () => {
     expect(verdict.kind).toBe("match");
   });
 
-  test("a missing chord tone is named", () => {
+  /*
+   * jcpe-1gao: the band sketch sounds a subset of each chord at any instant
+   * (bass alone between stabs; comps drop the doubled bass voice), so an
+   * absent tone is normal performance. It is reported, never a mismatch.
+   */
+  test("a chord tone this window omits is reported without crying mismatch", () => {
     const verdict = computeAnalyzerVerdict(
       frameWith([note(50, 1), note(65, 0.8), note(69, 0.7)]),
       { chordLabel: "Dm7", pitchClasses: [2, 5, 9, 0] },
     );
-    expect(verdict.kind).toBe("mismatch");
+    expect(verdict.kind).toBe("match");
     expect(verdict.missingClasses).toEqual([0]);
-    expect(verdict.detail).toContain("missing C");
+    expect(verdict.detail).toContain("omits C");
+  });
+
+  test("a lone bass note belonging to the chord still reads as a match", () => {
+    const verdict = computeAnalyzerVerdict(frameWith([note(38, 1)]), {
+      chordLabel: "Dm7",
+      pitchClasses: [2, 5, 9, 0],
+    });
+    expect(verdict.kind).toBe("match");
+    expect(verdict.unexpectedClasses).toEqual([]);
   });
 
   test("a strong wrong note is named as extra", () => {
@@ -77,6 +91,7 @@ describe("the analyzer verdict", () => {
     expect(verdict.kind).toBe("mismatch");
     expect(verdict.unexpectedClasses).toEqual([6]);
     expect(verdict.detail).toContain("F♯");
+    expect(verdict.detail).toContain("not a chord tone");
   });
 
   test("weak spectral residue below the floor cannot flip a verdict", () => {

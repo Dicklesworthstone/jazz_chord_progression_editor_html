@@ -433,6 +433,35 @@ sources under `dsp/`. The rules:
   (`MIT OR Apache-2.0`), a Rust software-float library — not a JavaScript
   dependency; Preact remains the only bundled JS production package.
 
+### Embedded recorded audio payload (additive amendment, 2026-07-29)
+
+The Concert Grand is a hybrid: a recorded hammer strike crossfaded into the
+synthesized sustain. The recordings are a third embedded asset and follow the
+same rules as the wasm payload, plus attribution:
+
+- The payload is checked in as generated TypeScript at
+  `src/audio/wasm/piano-attack-samples.ts`: raw little-endian 16-bit PCM,
+  base64, pinned by exported SHA-256 and byte-length constants, with a frozen
+  index describing every slice. There is no container and no codec, so the
+  runtime decodes it with `atob` alone — no `decodeAudioData`, no new browser
+  API surface, and no change to the audio platform port.
+- It is regenerated — and drift against the recorded corpus is detected —
+  with `bun scripts/build-piano-samples.ts [--check]`. The corpus location
+  comes from `PIANO_SAMPLE_SOURCE_DIR`; `bun run build` never reads a wav
+  file.
+- The source recordings are third-party content under an attribution
+  license: Salamander Grand Piano V3 by Alexander Holm, CC-BY-3.0. The credit
+  line is an exported constant, is embedded verbatim in the artifact's
+  third-party notice comment, and is inventoried in
+  `dist/licenses.json`/`dist/standalone-manifest.json` alongside the id, MIME
+  (`audio/L16;rate=44100;channels=1`), generator, SHA-256, and byte count.
+  `bun run verify:licenses` fails if the credit, the digest, or the byte
+  count drifts from the generated module.
+- The runtime never fails a note over the sampled layer. A pitch, velocity,
+  or sample rate the corpus cannot serve renders as pure synthesis, and a
+  corrupt payload demotes the whole instrument to synthesis rather than
+  refusing to play.
+
 ## Reproducibility and reports
 
 One build invocation produces:
