@@ -91,6 +91,14 @@ export type StudioAudibleInspectionFacts = Readonly<{
   retainedVoiceCount: number;
   transportState: string;
   queuedCommandCount: number;
+  /** jcpe-nu6t probe: which side swallows a silent run. */
+  schedulerTicks?: number;
+  attackBatchesIssued?: number;
+  eventsScheduled?: number;
+  voicesCreated?: number;
+  scheduledEventCursor?: number;
+  staleCallbacksIgnored?: number;
+  transportGeneration?: number;
 }>;
 
 export type StudioAudibleEvidenceApi = Readonly<{
@@ -301,6 +309,13 @@ function bootHarness(): StudioAudibleEvidenceApi {
         retainedVoiceCount: inspection.engine.retainedVoiceCount,
         transportState: inspection.transport.state,
         queuedCommandCount: inspection.transport.queuedCommandCount,
+        schedulerTicks: inspection.transport.work.schedulerTicks,
+        attackBatchesIssued: inspection.transport.work.attackBatchesIssued,
+        eventsScheduled: inspection.transport.work.eventsScheduled,
+        voicesCreated: inspection.engine.work.voicesCreated,
+        scheduledEventCursor: inspection.transport.scheduledEventCursor,
+        staleCallbacksIgnored: inspection.transport.work.staleCallbacksIgnored,
+        transportGeneration: inspection.transport.generation,
       });
     };
     const creation = createStudioController({

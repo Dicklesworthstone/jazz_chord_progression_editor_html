@@ -38,7 +38,7 @@ const STUDIO_BLANK_DOCUMENT_CANDIDATE = Object.freeze({
   title: "Untitled Changes",
   description: "",
   meter: Object.freeze({ beatsPerBar: 4, beatUnit: 4 }),
-  tempoBpm: 120,
+  tempoBpm: 76,
   key: null,
   sections: Object.freeze([
     Object.freeze({
