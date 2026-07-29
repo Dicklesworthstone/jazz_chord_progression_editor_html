@@ -9,14 +9,18 @@
  *
  * What it emits, per source chord event:
  *
- *  - a BASS voice, transposed into MIDI 33..52, sounding a chord tone the
- *    source event actually contains, placed at the style's bar-relative bass
- *    slots plus always at the event's own start;
+ *  - a BASS voice, transposed into `PERFORMANCE_BASS_REGISTER` (MIDI 28..48),
+ *    sounding a chord tone the source event actually contains, placed at the
+ *    style's bar-relative bass slots plus always at the event's own start;
  *  - COMP stabs at the style's bar-relative offsets, sounding the source
- *    event's own voicing octave-transposed as a whole into the style's comping
- *    register, plus always one at the event's own start;
+ *    event's own voicing — its top `PERFORMANCE_COMP_TARGET_VOICES` voices for
+ *    an `upper-voices` slot — octave-transposed as a whole into the style's
+ *    comping register, plus always one at the event's own start;
  *  - a velocity contour taken from the frozen style table and eased per bar by
- *    the style's bar-cycle accent.
+ *    the style's bar-cycle accent;
+ *  - a RELEASE: every slot's length comes from the table and every clipped
+ *    length keeps `PERFORMANCE_RELEASE_GAP_TICKS` of air before the next
+ *    attack of its own role, so notes stop rather than smear.
  *
  * Two style levers shape the result, both of them frozen data and both of them
  * integer arithmetic:
@@ -48,7 +52,7 @@
  *     chord ONCE: where the table already declares a slot on that tick, the
  *     declared slot is the statement and nothing is added.
  *  4. Every comp sits in the style's comping register and clears the bass note
- *     under it by a minor ninth (`placeCompInRegister`). The document's voicing
+ *     under it by a major third (`placeCompInRegister`). The document's voicing
  *     policy scores candidates for voice leading, which is a relative law, so
  *     absolute register wanders between chords; this layer fixes the register
  *     without touching a single written pitch class or spelling.
@@ -90,12 +94,15 @@ import {
   PERFORMANCE_COMP_BASS_SEPARATION_SEMITONES,
   PERFORMANCE_COMP_MAX_SPAN_SEMITONES,
   PERFORMANCE_COMP_MIN_WIDTH_VOICES,
+  PERFORMANCE_COMP_TARGET_VOICES,
+  PERFORMANCE_RELEASE_GAP_TICKS,
   PERFORMANCE_ROLE_ID_SUFFIXES,
   PERFORMANCE_STYLES,
   type CompilePerformancePlanFailure,
   type CompilePerformancePlanRequest,
   type CompilePerformancePlanResult,
   type ExactBeats,
+  type PerformanceBassPlacement,
   type PerformanceBassTone,
   type PerformanceCompRegister,
   type PerformanceCompVoicing,
@@ -112,7 +119,7 @@ import {
 /** The largest MIDI pitch count X1 accepts on one event. */
 const MAX_EVENT_PITCHES = 16;
 
-/** Octave shifts searched when placing a bass note; 33..52 spans under two. */
+/** Octave shifts searched when placing a bass note; 28..48 spans under two. */
 const MAX_BASS_OCTAVE_SHIFT = 10;
 
 type Counters = {
@@ -262,10 +269,13 @@ function styleTableWellFormed(style: PerformanceStyle): boolean {
  *  - the home octave is twelve consecutive semitones and the declared
  *    `highMidi` is the octave above it, so a lifted placement is inside the
  *    range the style publishes;
- *  - `lowMidi + 12` clears the TOP of the bass register by a minor ninth, so
+ *  - `lowMidi + 12` clears the TOP of the bass register by the separation, so
  *    ONE lift is always enough however high the bass line climbs. Without this
  *    a bass near its own ceiling would need two lifts and the comp's register
- *    would swing an octave between adjacent bars;
+ *    would swing an octave between adjacent bars. With the measured bass
+ *    window and the measured major-third separation the bound is
+ *    `lowMidi >= 48 + 4 - 12 = 40`, and both published band sketches (47 and
+ *    60) clear it by seven and twenty semitones;
  *  - `highMidi` is at or below `ceilingMidi`, so the lifted placement of a
  *    single voice can never exceed the ceiling and the fallback always has an
  *    answer.
@@ -426,15 +436,29 @@ function toneFor(tones: ChordTones, tone: PerformanceBassTone): Voice {
 }
 
 /**
- * Place a chord tone in the bass register, choosing the octave nearest the
- * previous bass note so the line moves stepwise rather than by leaps. Ties
- * resolve to the lower octave, deterministically.
+ * Place a chord tone in the bass register, choosing the octave nearest a TARGET
+ * so the line moves stepwise rather than by leaps. Ties resolve to the lower
+ * octave, deterministically.
+ *
+ * The target is the slot's own declared placement:
+ *
+ *  - `nearest` targets the PREVIOUS bass note, or the register's anchor for the
+ *    first note of a plan, which is ordinary voice leading;
+ *  - `register-floor` targets `lowMidi`, so the slot takes the lowest placement
+ *    the window admits and the line drops to the bottom of the instrument.
+ *
+ * Both searches are the same search over the same window, so no placement can
+ * leave `[lowMidi, highMidi]` whichever target asked for it.
  */
 function placeInBassRegister(
   tone: Voice,
   previousBassMidi: number | null,
+  placement: PerformanceBassPlacement,
 ): Voice | null {
-  const target = previousBassMidi ?? PERFORMANCE_BASS_REGISTER.anchorMidi;
+  const target =
+    placement === "register-floor"
+      ? PERFORMANCE_BASS_REGISTER.lowMidi
+      : (previousBassMidi ?? PERFORMANCE_BASS_REGISTER.anchorMidi);
   let bestMidi: number | null = null;
   let bestShift = 0;
   let bestDistance = 0;
@@ -464,17 +488,29 @@ function placeInBassRegister(
 }
 
 /**
- * The voices a comp stab sounds. `upper-voices` drops the lowest voice of a
- * four-or-more-voice chord, because a bass slot is already sounding that
- * pitch class far below and doubling it in the comp thickens the middle
- * without adding harmony.
+ * The voices a comp stab sounds.
+ *
+ * `upper-voices` keeps the TOP `PERFORMANCE_COMP_TARGET_VOICES` voices,
+ * dropping from the bottom — the same mechanism and the same direction as the
+ * width rule in `placeCompInRegister`, given a voice-count target instead of a
+ * span. The lowest voice is the one to drop because a bass slot is already
+ * sounding that pitch class two octaves below and doubling it in the comp
+ * thickens the middle without adding harmony; the top voices are the guide
+ * tones and the colour the voicing was chosen for.
+ *
+ * Three is measured, not chosen: the comping instrument in the style
+ * statistics this package is tuned against plays three simultaneous notes at
+ * better than two to one over four. A voicing that already has three or fewer
+ * voices is returned exactly as it is — this rule only ever removes.
  */
 function compVoices(
   voices: readonly Voice[],
   rule: PerformanceCompVoicing,
 ): readonly Voice[] {
   if (rule === "all") return voices;
-  return voices.length >= 4 ? voices.slice(1) : voices;
+  return voices.length > PERFORMANCE_COMP_TARGET_VOICES
+    ? voices.slice(voices.length - PERFORMANCE_COMP_TARGET_VOICES)
+    : voices;
 }
 
 /**
@@ -529,18 +565,39 @@ function voicingSpan(voices: readonly Voice[]): number {
  *     relative law that never looks at absolute width.
  *
  *  2. REGISTER. Octave-transpose the whole voicing so its lowest voice lands
- *     in the HOME OCTAVE `[lowMidi, lowMidi + 11]`. That is twelve consecutive
- *     semitones, so exactly one placement qualifies for any pitch class and
- *     the choice needs no tie-break and no scoring.
+ *     inside the register's published range `[lowMidi, lowMidi + 23]`. Exactly
+ *     two octave placements can qualify — the HOME OCTAVE `[lowMidi,
+ *     lowMidi + 11]` and the LIFT above it — and which of the two is taken is
+ *     decided by rule 3.
  *
- *  3. SEPARATION and CEILING. The home placement is accepted when its lowest
- *     voice is at least `PERFORMANCE_COMP_BASS_SEPARATION_SEMITONES` above the
- *     bass note sounding under it AND its highest voice is at or below
- *     `ceilingMidi`. Otherwise the whole voicing is lifted ONE octave and the
- *     same two questions are asked again. If neither placement answers both,
- *     the lowest voice is dropped and the search repeats — dropping it raises
- *     the bottom, which lets a lower placement clear the bass and pulls the
- *     top back under the ceiling.
+ *  3. SEPARATION, CEILING, and VOICE LEADING. A placement is ADMISSIBLE when
+ *     its lowest voice is at least `PERFORMANCE_COMP_BASS_SEPARATION_SEMITONES`
+ *     above the bass note sounding under it AND its highest voice is at or
+ *     below `ceilingMidi`. Of the admissible placements the one whose bottom
+ *     voice is NEAREST the previous comp's bottom voice is taken; ties resolve
+ *     DOWN, to the home octave. If neither placement is admissible, the lowest
+ *     voice is dropped and the search repeats — dropping it raises the bottom,
+ *     which lets a lower placement clear the bass and pulls the top back under
+ *     the ceiling.
+ *
+ * WHY NEAREST-TO-PREVIOUS RATHER THAN ALWAYS-HOME (measured, round 20). Home
+ * normalization alone is unique and needs no tie-break, which is why it was
+ * written that way first — but it WRAPS. Two chords a semitone apart across the
+ * home octave's boundary (a B bottom and the C above it) are normalized eleven
+ * semitones APART, and the comping hand leaps an octave between adjacent bars
+ * for no musical reason. Measured against the style reference, that put our
+ * comp's bottom-voice motion at 1.65 semitones mean / 4.60 p90 against the
+ * reference's 0.82 / 2.00 — the comping hand was moving twice as far as a
+ * player's does. Choosing the nearer of the two admissible placements IS voice
+ * leading, and it is fully deterministic: the previous comp bottom is a pure
+ * function of the plan prefix, the candidate set has at most two members, and
+ * the tie-break is stated. The register window is unchanged and still bounds
+ * the result; only the choice inside it is now led rather than wrapped.
+ *
+ * The FIRST comp of a plan has no previous bottom, so it is led from
+ * `register.lowMidi`. That is below every admissible bottom, so the home octave
+ * always wins there and the plan's opening register is exactly what pure home
+ * normalization produced.
  *
  * The loop is bounded by the voice count: each pass either returns or removes
  * one voice, and a single voice always has an answer, because the well-formed
@@ -548,14 +605,16 @@ function voicingSpan(voices: readonly Voice[]): number {
  * `lowMidi + 23 <= ceilingMidi`. So the comp is never emptied, never sounds
  * under or in unison with the bass, and never sounds above the ceiling.
  *
- * Only the width rule and this fallback ever remove a voice; nothing here ever
- * adds, reorders, respells or re-voices one. Whatever survives is an exact
- * octave transposition of a contiguous TOP SLICE of the voicing it was given.
+ * Only the width rule and this fallback ever remove a voice here, and the only
+ * other remover in the package is the `upper-voices` target above; nothing
+ * anywhere adds, reorders, respells or re-voices one. Whatever survives is an
+ * exact octave transposition of a contiguous TOP SLICE of the written voicing.
  */
 function placeCompInRegister(
   voices: readonly Voice[],
   bassMidi: number | null,
   register: PerformanceCompRegister,
+  previousCompBottomMidi: number | null,
 ): readonly Voice[] | null {
   let work: readonly Voice[] = voices;
   while (
@@ -571,17 +630,25 @@ function placeCompInRegister(
           register.lowMidi,
           bassMidi + PERFORMANCE_COMP_BASS_SEPARATION_SEMITONES,
         );
+  const leadFrom = previousCompBottomMidi ?? register.lowMidi;
   for (let pass = 0; pass < voices.length; pass += 1) {
     const lowest = work[0];
     const highest = work[work.length - 1];
     if (lowest === undefined || highest === undefined) return null;
     /* The unique shift that lands the lowest voice in the home octave. */
     const homeShift = floorDivide(register.lowMidi - lowest.midi + 11, 12);
+    let bestShift: number | null = null;
+    let bestDistance = 0;
     for (const shift of [homeShift, homeShift + 1]) {
       if (lowest.midi + 12 * shift < floor) continue;
       if (highest.midi + 12 * shift > register.ceilingMidi) continue;
-      return transposeOctaves(work, shift);
+      const distance = Math.abs(lowest.midi + 12 * shift - leadFrom);
+      if (bestShift === null || distance < bestDistance) {
+        bestShift = shift;
+        bestDistance = distance;
+      }
     }
+    if (bestShift !== null) return transposeOctaves(work, bestShift);
     if (work.length <= 1) {
       /*
        * One voice and neither placement answered: the lift clears the bass by
@@ -602,6 +669,7 @@ type SlotDraft = {
   nominalDurationTicks: number;
   velocity: number;
   bassTone: PerformanceBassTone;
+  bassPlacement: PerformanceBassPlacement;
   compVoicing: PerformanceCompVoicing;
 };
 
@@ -672,6 +740,23 @@ function compareDrafts(left: SlotDraft, right: SlotDraft): number {
  * own source chord or the plan. That is what makes the no-overlap-per-role law
  * structural rather than a property of the chosen numbers, and it is what lets
  * a style declare "ring until something stops you" as a plain long duration.
+ *
+ * A CLIPPED release also CLEARS. Where the limit actually cuts a slot short,
+ * the release is pulled back a further `PERFORMANCE_RELEASE_GAP_TICKS` so the
+ * note stops before the next attack of its own role rather than butting
+ * against it — the difference between a chord that changes and a chord that
+ * smears. Three properties of that rule matter and all three are deliberate:
+ *
+ *  - a slot whose declared length already ends before the limit is NOT
+ *    shortened. The style tables decide note length; this is only a floor
+ *    under the release where clipping has taken that decision away.
+ *  - the gap is measured against whichever limit binds — the next same-role
+ *    attack, the source chord's end, or the plan total — so a chord change
+ *    gets the same clearance an in-chord repeat does.
+ *  - where the remaining window is shorter than the gap itself the note keeps
+ *    its hard-clipped length instead of vanishing. The arrival law states a
+ *    chord at its own start, and an articulation rule may never be the reason
+ *    a chord is silent.
  */
 function clipDrafts(
   drafts: readonly SlotDraft[],
@@ -690,7 +775,9 @@ function clipDrafts(
       limit = Math.min(limit, next.startTick);
       break;
     }
-    const end = Math.min(draft.startTick + draft.nominalDurationTicks, limit);
+    const hardEnd = Math.min(draft.startTick + draft.nominalDurationTicks, limit);
+    const clearedEnd = Math.min(hardEnd, limit - PERFORMANCE_RELEASE_GAP_TICKS);
+    const end = clearedEnd > draft.startTick ? clearedEnd : hardEnd;
     const durationTicks = end - draft.startTick;
     if (durationTicks < 1) continue;
     clipped.push(Object.freeze({ draft, durationTicks }));
@@ -856,6 +943,13 @@ export function compilePerformancePlan(
   const emittedRoles: PerformanceRole[] = [];
   let previousBassMidi: number | null = null;
   /*
+   * The bottom voice of the comp that sounded most recently, and the note the
+   * next comp's octave placement is led from. Null until the first comp is
+   * emitted. It is a pure function of the plan prefix, so the placement it
+   * decides is as deterministic as the plan itself.
+   */
+  let previousCompBottomMidi: number | null = null;
+  /*
    * Slot offsets are relative to the start of the event's own WRITTEN measure,
    * which is not `startTick / barTicks`. A pickup bar or an incomplete bar is
    * shorter than the meter's capacity, so from the first such bar onward every
@@ -949,6 +1043,7 @@ export function compilePerformancePlan(
           nominalDurationTicks: slot.durationTicks,
           velocity: declared.velocity + accent,
           bassTone: declared.tone,
+          bassPlacement: declared.placement,
           compVoicing: "all",
         });
       }
@@ -967,6 +1062,7 @@ export function compilePerformancePlan(
           nominalDurationTicks: slot.durationTicks,
           velocity: declared.velocity + accent,
           bassTone: "root",
+          bassPlacement: "nearest",
           compVoicing: declared.voicing,
         });
       }
@@ -1020,6 +1116,7 @@ export function compilePerformancePlan(
           nominalDurationTicks: firstBassSlot.durationTicks,
           velocity: firstDeclaredBass.velocity + accentForPhase(arrivalPhase),
           bassTone: firstDeclaredBass.tone,
+          bassPlacement: firstDeclaredBass.placement,
           compVoicing: "all",
         });
       }
@@ -1067,6 +1164,7 @@ export function compilePerformancePlan(
           velocity:
             declaredArrivalComp.velocity + accentForPhase(arrivalPhase),
           bassTone: "root",
+          bassPlacement: "nearest",
           compVoicing: declaredArrivalComp.voicing,
         });
       }
@@ -1122,6 +1220,7 @@ export function compilePerformancePlan(
         const placed = placeInBassRegister(
           toneFor(tones, draft.bassTone),
           previousBassMidi,
+          draft.bassPlacement,
         );
         if (placed === null) {
           return refuse(
@@ -1148,10 +1247,20 @@ export function compilePerformancePlan(
          * table — keeps the rule true of what is actually played.
          */
         const chosen = compVoices(voices, draft.compVoicing);
-        const placed =
+        /*
+         * Annotated rather than inferred: `previousCompBottomMidi` is READ in
+         * this initializer and WRITTEN from its result two lines down, and
+         * without the annotation that is a cycle the checker refuses to walk.
+         */
+        const placed: readonly Voice[] | null =
           compRegister === null
             ? chosen
-            : placeCompInRegister(chosen, previousBassMidi, compRegister);
+            : placeCompInRegister(
+                chosen,
+                previousBassMidi,
+                compRegister,
+                previousCompBottomMidi,
+              );
         if (placed === null) {
           return refuse(
             styleId,
@@ -1162,6 +1271,8 @@ export function compilePerformancePlan(
             "emission-invalid",
           );
         }
+        const bottom: Voice | undefined = placed[0];
+        if (bottom !== undefined) previousCompBottomMidi = bottom.midi;
         sounding = placed;
       }
 

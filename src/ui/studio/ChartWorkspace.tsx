@@ -54,6 +54,27 @@ export type ChartWorkspaceProps = Readonly<{
 const DRAG_THRESHOLD_CSS_PX = 8;
 
 /**
+ * Beat-proportional lead-sheet spacing: a chord that holds four beats takes
+ * roughly twice the ink of one holding two, the way an engraved chart
+ * spaces symbols. The label is the frozen selector string ("N beats" or
+ * "N/D beats"); only its leading exact count is read, and the result is
+ * clamped so a long pedal tone cannot starve its neighbors. Presentation
+ * only — no duration is ever computed or altered here.
+ */
+const DURATION_BEATS_PATTERN = /^(\d+)(?:\/(\d+))?/u;
+
+function chordBeatFlexGrow(durationLabel: string): number {
+  const match = DURATION_BEATS_PATTERN.exec(durationLabel);
+  if (match === null) return 1;
+  const numerator = Number(match[1]);
+  const denominator = match[2] === undefined ? 1 : Number(match[2]);
+  if (!Number.isFinite(numerator) || !Number.isFinite(denominator) || denominator === 0) {
+    return 1;
+  }
+  return Math.min(16, Math.max(0.5, numerator / denominator));
+}
+
+/**
  * Lead-sheet symbol layout: the root (letter plus accidentals) renders at
  * display size while the quality tail and slash bass step down, the way an
  * engraved chart sets them. This is wrapping only — the concatenated text
@@ -1607,7 +1628,14 @@ export function ChartWorkspace({
                                   aria-label={`Measure ${measure.number.toString()} chords`}
                                 >
                                   {measure.chords.map((chord) => (
-                                    <li key={chord.id}>
+                                    <li
+                                      key={chord.id}
+                                      style={{
+                                        flexGrow: chordBeatFlexGrow(
+                                          chord.durationLabel,
+                                        ),
+                                      }}
+                                    >
                                       <article
                                         class="studio-chord-card"
                                         data-chord-id={chord.id}

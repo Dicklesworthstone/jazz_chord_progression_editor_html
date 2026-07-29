@@ -67,7 +67,7 @@ export const U0_REVIEWED_SEMANTIC_DIGESTS: Readonly<
   Record<ExpectedFilename, string>
 > = {
   "u0-ui-contract.json":
-    "f30e5eb15810343d9dc8b63c9e12bdde27a031eea237af5ef056112462f29672",
+    "5df94c4fac91ad9e159ab07cbdea6cf6ba096ee433f37b89ea4ad681b0f311a6",
   "primitive-state-matrix.json":
     "6e05bbe3bb4d442adb0510f87d12b72bcc3c19e01c7a56655025bd0e699c9568",
   "provenance-ledger.json":

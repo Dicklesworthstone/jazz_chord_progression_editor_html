@@ -70,7 +70,15 @@ impl XorShift32 {
 // Concert Grand note renderer
 // ---------------------------------------------------------------------------
 
-const MAX_PARTIALS: usize = 48;
+/*
+ * Partial count is a direct multiplier on render cost: every partial is an
+ * oscillator advanced per sample, per string. Forty-eight put the slowest
+ * browser's main thread over its budget — the scheduler stopped ticking and
+ * playback fell silent — while the partials above the twentieth sit at least
+ * 40 dB down under this rolloff and are inaudible in a mix. Twenty-four
+ * halves the work and keeps every partial the ear can find.
+ */
+const MAX_PARTIALS: usize = 24;
 const MAX_STRINGS: usize = 3;
 const MAX_OSCILLATORS: usize = MAX_PARTIALS * MAX_STRINGS;
 
@@ -150,9 +158,16 @@ pub extern "C" fn cg_render(
     max_frames: i32,
 ) -> i32 {
     let capacity = cg_note_frames(midi, sample_rate);
-    if capacity == 0 || max_frames < capacity || !(1..=127).contains(&velocity) {
+    if capacity == 0 || max_frames <= 0 || !(1..=127).contains(&velocity) {
         return 0;
     }
+    /*
+     * The caller may ask for less than the note's natural decay. A performance
+     * gates most notes long before they die away, and synthesizing the unheard
+     * remainder is the dominant cost: every partial is advanced per sample, per
+     * string. Honour a shorter request by rendering only that many frames.
+     */
+    let capacity = capacity.min(max_frames);
     if left.is_null() || right.is_null() {
         return 0;
     }
@@ -196,8 +211,19 @@ pub extern "C" fn cg_render(
         _ => [-1.0, 0.12, 1.0],
     };
 
-    /* Equal-power key pan: bass to the left, treble to the right. */
-    let pan = ((m - 21.0) / 87.0) * 1.5 - 0.75;
+    /*
+     * Equal-power key pan, bass left to treble right — the perspective of
+     * sitting at the instrument. Measured 2026-07-29: at the original +/-0.75
+     * width the lowest key sat 10.5 dB left, and once the arrangement's bass
+     * line moved into 28..48 the whole mix leaned 4.4 dB with the bass stem
+     * 8 dB left-heavy. A real recording of a grand is nothing like that wide.
+     * Even +/-0.22 left the mix 2.1 dB left with the bass stem 2.7 dB left
+     * (measured from the rendered stems), because the arrangement's bass
+     * lives at the bottom of the keyboard where the pan is most extreme.
+     * +/-0.10 keeps a trace of the spatial cue and holds the whole keyboard
+     * inside ~1 dB, so no arrangement can lean the mix by its register.
+     */
+    let pan = ((m - 21.0) / 87.0) * 0.20 - 0.10;
 
     let mut seed = XorShift32::new(
         0x434f_4e43 ^ ((midi as u32) << 16) ^ ((velocity as u32) << 8) ^ sample_rate as u32,

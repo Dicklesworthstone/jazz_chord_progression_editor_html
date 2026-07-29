@@ -39,12 +39,15 @@ const STUDIO_BLANK_DOCUMENT_CANDIDATE = Object.freeze({
   description: "",
   meter: Object.freeze({ beatsPerBar: 4, beatUnit: 4 }),
   /*
-   * 116 BPM in 4/4 with a half-time feel: the backbeat lands on beat 3, so it
-   * is *heard* at about 58 while the harmonic rhythm — two chords a bar
-   * through the seeded chart — moves at a tempo that can actually swing. The
-   * ballad performance style is written for exactly this pulse.
+   * 105 BPM in 4/4 — MEASURED. It is the tempo of the aggregate structural
+   * statistics the ballad performance style is fitted to (see
+   * `BALLAD_COMP_V1`), and the pulse every slot offset and note length in that
+   * table was computed against: a quarter is 571 ms, so the comping grid's
+   * 0.8-beat voicings ring for about 457 ms and clear for 114, and the bass's
+   * 0.4-beat notes speak for 229. At the 116 this seeded before, the same
+   * table's releases were 10 % shorter than the measurement says they are.
    */
-  tempoBpm: 116,
+  tempoBpm: 105,
   key: null,
   sections: Object.freeze([
     Object.freeze({
@@ -62,10 +65,20 @@ const STUDIO_BLANK_DOCUMENT_CANDIDATE = Object.freeze({
       ]),
     }),
   ]),
+  /*
+   * `reverbAmount` 0.18 rather than the 0.32 this seeded before. The hall is
+   * about four seconds long, and 0.32 of it was chosen when the performance
+   * sustained every chord for its whole written length — a wash under a pad is
+   * inaudible as a wash. The tuned ballad style releases every comp inside a
+   * beat and every detached bass note inside half of one, so the tail is now
+   * the longest thing in the arrangement: at 0.32 it filled the gaps the
+   * release exists to create and put the smear back by another route. 0.18
+   * keeps the room and lets the silence between attacks be silence.
+   */
   playback: Object.freeze({
     instrumentId: "concert-grand",
-    masterVolume: 0.9,
-    reverbAmount: 0.32,
+    masterVolume: 1,
+    reverbAmount: 0.55,
     countInBars: 0,
   }),
 });

@@ -123,6 +123,14 @@ export type ConcertGrandRenderer = Readonly<{
     midiPitch: number,
     velocity: number,
     sampleRateHz: number,
+    /**
+     * Optional ceiling on the rendered length, seconds. A performance holds
+     * most notes for a fraction of their natural decay, and rendering the
+     * full eight-second bass tail only to gate it off after half a second
+     * costs more than an order of magnitude of the work. The tail is trimmed
+     * with a short fade so a truncated render cannot click.
+     */
+    maxSeconds?: number,
   ) => RenderedNotePcm | null;
   /**
    * The same note with the sampled attack layer withheld. Evidence surface
@@ -678,9 +686,14 @@ async function instantiate(): Promise<ConcertGrandRenderer> {
     midiPitch: number,
     velocity: number,
     sampleRateHz: number,
+    maxSeconds?: number,
   ): RenderedNotePcm | null => {
-    const capacity = exports.cg_note_frames(midiPitch, sampleRateHz);
-    if (capacity <= 0) return null;
+    const natural = exports.cg_note_frames(midiPitch, sampleRateHz);
+    if (natural <= 0) return null;
+    const capacity =
+      maxSeconds === undefined || !Number.isFinite(maxSeconds)
+        ? natural
+        : Math.min(natural, Math.max(1, Math.round(maxSeconds * sampleRateHz)));
     const channelBytes = capacity * 4;
     const leftPointer = scratchBase;
     const rightPointer = scratchBase + channelBytes;
@@ -711,8 +724,14 @@ async function instantiate(): Promise<ConcertGrandRenderer> {
     midiPitch: number,
     velocity: number,
     sampleRateHz: number,
+    maxSeconds?: number,
   ): RenderedNotePcm | null => {
-    const synthesized = renderSynthesizedNote(midiPitch, velocity, sampleRateHz);
+    const synthesized = renderSynthesizedNote(
+      midiPitch,
+      velocity,
+      sampleRateHz,
+      maxSeconds,
+    );
     if (synthesized === null) return null;
     applyAttackLayer(
       synthesized.left,
@@ -722,7 +741,27 @@ async function instantiate(): Promise<ConcertGrandRenderer> {
       velocity,
       sampleRateHz,
     );
-    return synthesized;
+    if (maxSeconds === undefined || !Number.isFinite(maxSeconds)) {
+      return synthesized;
+    }
+    const wanted = Math.max(1, Math.round(maxSeconds * sampleRateHz));
+    if (wanted >= synthesized.frameCount) return synthesized;
+    /* Fade the truncation over ~15 ms so the cut cannot click. */
+    const fade = Math.min(Math.round(0.015 * sampleRateHz), wanted);
+    const left = synthesized.left.slice(0, wanted);
+    const right = synthesized.right.slice(0, wanted);
+    for (let index = 0; index < fade; index += 1) {
+      const gain = (fade - index) / fade;
+      const at = wanted - fade + index;
+      left[at] = (left[at] ?? 0) * gain;
+      right[at] = (right[at] ?? 0) * gain;
+    }
+    return Object.freeze({
+      sampleRateHz: synthesized.sampleRateHz,
+      frameCount: wanted,
+      left,
+      right,
+    });
   };
 
   const MAX_DETECTED_NOTES = 12;

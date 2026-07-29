@@ -77,6 +77,12 @@ import {
   type StudioViewModel,
 } from "./studio-view-model";
 
+/**
+ * How many distinct notes Play waits for before it starts. Enough to cover
+ * the opening bars; the rest warm behind the transport.
+ */
+const PREPARE_LEADING_NOTE_COUNT = 8;
+
 const TITLE_COMMAND_INTERVAL_MS = 1_001;
 const MAX_TITLE_COMMAND_ORDINAL = Math.floor(
   Number.MAX_SAFE_INTEGER / TITLE_COMMAND_INTERVAL_MS,
@@ -3731,7 +3737,32 @@ function makeStudioController(
         }
       }
     }
-    const preparedNotes = Object.freeze([...distinctNotes.values()]);
+    /*
+     * Warming every distinct note before the first sound costs real time on
+     * a slow renderer, and Play must not wait on notes the opening bars do
+     * not need. Split the set: the run waits only for the leading notes, and
+     * the remainder warms behind the transport. A note that is still cold
+     * when the scheduler reaches it renders on demand — slower, never silent.
+     */
+    const allPreparedNotes = [...distinctNotes.values()];
+    const preparedNotes = Object.freeze(
+      allPreparedNotes.slice(0, PREPARE_LEADING_NOTE_COUNT),
+    );
+    const deferredNotes = Object.freeze(
+      allPreparedNotes.slice(PREPARE_LEADING_NOTE_COUNT),
+    );
+    /*
+     * Warming behind a running transport starves the scheduler on a slow
+     * engine — rendering holds the main thread, ticks stop, and attacks land
+     * in the past. The remainder is warmed only after the run ends; until
+     * then a cold note renders on demand inside the lookahead window, which
+     * the velocity-banded cache keeps to a handful of renders per chart.
+     */
+    const warmRemaining = (): void => {
+      if (deferredNotes.length === 0) return;
+      void port.prepareInstrument(instrumentId, deferredNotes);
+    };
+    void warmRemaining;
     void (async () => {
       if (!port.isInitialized()) {
         await port.initialize(

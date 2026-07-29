@@ -1,41 +1,47 @@
 :root {
   color-scheme: dark;
 
-  --background: #0e0c09;
-  --surface-app: #0e0c09;
-  --surface-header: #14110d;
-  --surface-rail: #16130e;
-  --surface-chart: #1a1611;
-  --surface-panel: #1d1913;
-  --surface-elevated: #262019;
-  --surface-sunken: #0a0806;
+  /*
+   * Blue Note identity (2026-07-29, jcpe-z4h1): ink-blue night surfaces,
+   * warm paper-white notation text, brass for musical structure and the
+   * current beat, cyan for analysis/focus, coral for destructive states.
+   * Supersedes the warm-brown Stage base of the 2026-07-28 overhaul.
+   */
+  --background: #07090e;
+  --surface-app: #07090e;
+  --surface-header: #0a0f16;
+  --surface-rail: #0c121b;
+  --surface-chart: #101725;
+  --surface-panel: #121a29;
+  --surface-elevated: #1a2434;
+  --surface-sunken: #04060a;
   /* Backdrop scrim ONLY. A menu, popover, or dialog paints itself with the
      elevated surface instead; painting a content surface with this scrim
      lets the text behind it bleed through (owner report, 2026-07-29). */
-  --surface-overlay: rgb(8 6 3 / 0.76);
-  --text-primary: #f6f2e9;
-  --text-muted: #c2b9a8;
-  --text-subtle: #a89e8b;
-  --text-inverse: #14110d;
-  --border-default: #3b342a;
-  --border-strong: #83765f;
-  --action-primary: #d6b15f;
-  --action-primary-hover: #e5c67d;
-  --action-secondary: #2b2418;
-  --state-info: #7db8ff;
-  --state-success: #74d69e;
-  --state-warning: #edc26a;
-  --state-error: #ff9090;
-  --state-selected: #4a3d21;
-  --focus-ring: #ffd48a;
-  --accent: #e8b45a;
-  --accent-strong: #f4cd85;
-  --accent-soft: #5c4a24;
-  --on-accent: #14110d;
-  --shadow-1: 0 1px 2px rgb(0 0 0 / 0.4);
-  --shadow-2: 0 2px 8px rgb(0 0 0 / 0.45);
-  --shadow-3: 0 8px 28px rgb(0 0 0 / 0.5);
-  --glow-accent: 0 0 0 1px rgb(232 180 90 / 0.55), 0 0 18px rgb(232 180 90 / 0.25);
+  --surface-overlay: rgb(4 7 12 / 0.74);
+  --text-primary: #f5f0e2;
+  --text-muted: #b3bdcc;
+  --text-subtle: #93a0b3;
+  --text-inverse: #131007;
+  --border-default: #243143;
+  --border-strong: #677990;
+  --action-primary: #d9a63f;
+  --action-primary-hover: #efc25e;
+  --action-secondary: #1c2737;
+  --state-info: #63c9de;
+  --state-success: #5fd39c;
+  --state-warning: #e5b95c;
+  --state-error: #ff7d6d;
+  --state-selected: #1d3a54;
+  --focus-ring: #7fd4e6;
+  --accent: #e0b04a;
+  --accent-strong: #f2cd77;
+  --accent-soft: #3c3319;
+  --on-accent: #171204;
+  --shadow-1: 0 1px 2px rgb(2 4 9 / 0.55);
+  --shadow-2: 0 3px 12px rgb(2 4 9 / 0.5);
+  --shadow-3: 0 14px 36px rgb(2 4 9 / 0.6);
+  --glow-accent: 0 0 0 1px rgb(224 176 74 / 0.6), 0 0 22px rgb(224 176 74 / 0.28);
 
   --font-ui: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono: ui-monospace, 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
@@ -45,9 +51,9 @@
   --text-md: 1rem;
   --text-lg: 1.125rem;
   --text-xl: 1.5rem;
-  --text-chord: 1.375rem;
+  --text-chord: 1.5rem;
   --text-chord-super: 0.66em;
-  --text-display: 1.875rem;
+  --text-display: 2rem;
   --line-tight: 1.25;
   --line-normal: 1.5;
 
@@ -92,37 +98,37 @@
   :root {
     color-scheme: light;
 
-    --background: #f3ecdd;
-    --surface-app: #f3ecdd;
+    --background: #f4eee1;
+    --surface-app: #f4eee1;
     --surface-header: #ece3d0;
-    --surface-rail: #efe7d6;
-    --surface-chart: #f8f3e8;
-    --surface-panel: #faf6ee;
+    --surface-rail: #efe8d7;
+    --surface-chart: #faf6eb;
+    --surface-panel: #fbf8f0;
     --surface-elevated: #ffffff;
-    --surface-sunken: #e5dbc6;
-    --surface-overlay: rgb(58 48 28 / 0.45);
-    --text-primary: #262015;
-    --text-muted: #544a36;
-    --text-subtle: #665b44;
-    --text-inverse: #fdfaf3;
-    --border-default: #cbbfa4;
-    --border-strong: #7d7052;
-    --action-primary: #7d5c14;
-    --action-primary-hover: #65490e;
-    --action-secondary: #e6dcc4;
-    --state-info: #155a9e;
-    --state-success: #136b3f;
-    --state-warning: #7a5a10;
-    --state-error: #a52f2f;
-    --state-selected: #dcc99b;
-    --focus-ring: #7a5510;
-    --accent: #8a6314;
-    --accent-strong: #6b4c0e;
-    --accent-soft: #e9d9b4;
-    --on-accent: #fdfaf3;
-    --shadow-1: 0 1px 2px rgb(90 74 40 / 0.18);
-    --shadow-2: 0 2px 8px rgb(90 74 40 / 0.2);
-    --shadow-3: 0 8px 28px rgb(90 74 40 / 0.24);
-    --glow-accent: 0 0 0 1px rgb(138 99 20 / 0.55), 0 0 18px rgb(138 99 20 / 0.2);
+    --surface-sunken: #e6dcc3;
+    --surface-overlay: rgb(46 40 24 / 0.44);
+    --text-primary: #1f2530;
+    --text-muted: #4a5262;
+    --text-subtle: #57606c;
+    --text-inverse: #fdfaf2;
+    --border-default: #d3c8ab;
+    --border-strong: #7e7256;
+    --action-primary: #7a5a10;
+    --action-primary-hover: #63490b;
+    --action-secondary: #e8ddc2;
+    --state-info: #0b6577;
+    --state-success: #136b40;
+    --state-warning: #7b5a0d;
+    --state-error: #a93425;
+    --state-selected: #d7e6f2;
+    --focus-ring: #10657c;
+    --accent: #8a6412;
+    --accent-strong: #6c4d0c;
+    --accent-soft: #e9dbb0;
+    --on-accent: #fdfaf2;
+    --shadow-1: 0 1px 2px rgb(80 66 36 / 0.16);
+    --shadow-2: 0 3px 12px rgb(80 66 36 / 0.18);
+    --shadow-3: 0 14px 36px rgb(80 66 36 / 0.22);
+    --glow-accent: 0 0 0 1px rgb(138 100 18 / 0.55), 0 0 20px rgb(138 100 18 / 0.22);
   }
 }

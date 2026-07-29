@@ -160,9 +160,17 @@ export const STUDIO_TRANSPORT_TIMING: TransportTimingPolicy =
     immediateStartMarginSeconds: 0.01,
   });
 
+/**
+ * The mix the graph is initialized with, before any document's own playback
+ * settings reach it. `reverbAmount` matches the seeded document's 0.18 (see
+ * `STUDIO_BLANK_DOCUMENT_CANDIDATE` in `studio-bootstrap.ts`) so the first
+ * sound a visitor hears is the balance the style was tuned at: the hall is
+ * about four seconds long, and the tuned ballad style's short, released notes
+ * would otherwise be joined back together by its tail.
+ */
 export const STUDIO_INITIAL_MIX: AudioMix = /* @__PURE__ */ Object.freeze({
-  masterVolume: 0.8,
-  reverbAmount: 0.32,
+  masterVolume: 1,
+  reverbAmount: 0.55,
 });
 
 /**

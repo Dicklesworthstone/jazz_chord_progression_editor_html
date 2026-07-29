@@ -266,95 +266,6 @@ function QuickEntryPanel({
   return (
     <section class="studio-quick-entry" aria-labelledby="studio-quick-entry-heading">
       <h3 id="studio-quick-entry-heading">Quick entry</h3>
-      {/*
-        One-click demos exist so the first minute can contain sound. Each goes
-        through exactly the typed path — draft change, then insert — so a demo
-        can never do anything typing the same text could not.
-      */}
-      <div
-        class="studio-quick-entry__demos"
-        role="group"
-        aria-label="Demo progressions"
-      >
-        <span class="studio-quick-entry__demos-label">Try one:</span>
-        {DEMO_PROGRESSIONS.map((demo) => (
-          <Button
-            busy={false}
-            density="dense"
-            describedBy={["studio-quick-entry-status"]}
-            disabled={false}
-            id={`studio-quick-entry-demo-${demo.id}`}
-            invalid={false}
-            key={demo.id}
-            label={demo.label}
-            onAction={() => {
-              onDraftChange(demo.chartText);
-              onInsert();
-            }}
-            type="button"
-            variant="secondary"
-          />
-        ))}
-      </div>
-      {/*
-        The palette is a faster way to type, not a second insertion channel:
-        every chip only appends symbol text to the same draft the field owns,
-        so a chip can never do anything typing the same characters could not.
-      */}
-      <div
-        class="studio-quick-entry__palette"
-        data-testid="chord-palette"
-        role="group"
-        aria-label={`Chord palette, root ${paletteRoot}`}
-      >
-        <span class="studio-quick-entry__demos-label">Palette:</span>
-        <div
-          class="studio-quick-entry__palette-roots"
-          role="group"
-          aria-label="Palette root"
-        >
-          {PALETTE_ROOTS.map((root) => (
-            <Button
-              busy={false}
-              density="dense"
-              describedBy={["studio-quick-entry-status"]}
-              disabled={false}
-              id={`studio-palette-root-${root.id}`}
-              invalid={false}
-              key={root.id}
-              label={root.label}
-              onAction={() => {
-                setPaletteRoot(root.text);
-              }}
-              type="button"
-              variant={paletteRoot === root.text ? "primary" : "ghost"}
-            />
-          ))}
-        </div>
-        <div
-          class="studio-quick-entry__palette-qualities"
-          role="group"
-          aria-label={`Chord qualities on ${paletteRoot}`}
-        >
-          {PALETTE_QUALITIES.map((quality) => (
-            <Button
-              busy={false}
-              density="dense"
-              describedBy={["studio-quick-entry-status"]}
-              disabled={paletteFull}
-              id={`studio-palette-quality-${quality.id}`}
-              invalid={false}
-              key={quality.id}
-              label={quality.label}
-              onAction={() => {
-                appendPaletteChord(quality.suffix);
-              }}
-              type="button"
-              variant="outline"
-            />
-          ))}
-        </div>
-      </div>
       <label class="studio-quick-entry__label" for="studio-quick-entry-field">
         Chart text
       </label>
@@ -522,6 +433,95 @@ function QuickEntryPanel({
           type="button"
           variant="secondary"
         />
+      </div>
+      {/*
+        The palette is a faster way to type, not a second insertion channel:
+        every chip only appends symbol text to the same draft the field owns,
+        so a chip can never do anything typing the same characters could not.
+      */}
+      <div
+        class="studio-quick-entry__palette"
+        data-testid="chord-palette"
+        role="group"
+        aria-label={`Chord palette, root ${paletteRoot}`}
+      >
+        <span class="studio-quick-entry__demos-label">Palette:</span>
+        <div
+          class="studio-quick-entry__palette-roots"
+          role="group"
+          aria-label="Palette root"
+        >
+          {PALETTE_ROOTS.map((root) => (
+            <Button
+              busy={false}
+              density="dense"
+              describedBy={["studio-quick-entry-status"]}
+              disabled={false}
+              id={`studio-palette-root-${root.id}`}
+              invalid={false}
+              key={root.id}
+              label={root.label}
+              onAction={() => {
+                setPaletteRoot(root.text);
+              }}
+              type="button"
+              variant={paletteRoot === root.text ? "primary" : "ghost"}
+            />
+          ))}
+        </div>
+        <div
+          class="studio-quick-entry__palette-qualities"
+          role="group"
+          aria-label={`Chord qualities on ${paletteRoot}`}
+        >
+          {PALETTE_QUALITIES.map((quality) => (
+            <Button
+              busy={false}
+              density="dense"
+              describedBy={["studio-quick-entry-status"]}
+              disabled={paletteFull}
+              id={`studio-palette-quality-${quality.id}`}
+              invalid={false}
+              key={quality.id}
+              label={quality.label}
+              onAction={() => {
+                appendPaletteChord(quality.suffix);
+              }}
+              type="button"
+              variant="outline"
+            />
+          ))}
+        </div>
+      </div>
+      {/*
+        One-click demos exist so the first minute can contain sound. Each goes
+        through exactly the typed path — draft change, then insert — so a demo
+        can never do anything typing the same text could not.
+      */}
+      <div
+        class="studio-quick-entry__demos"
+        role="group"
+        aria-label="Demo progressions"
+      >
+        <span class="studio-quick-entry__demos-label">Try one:</span>
+        {DEMO_PROGRESSIONS.map((demo) => (
+          <Button
+            busy={false}
+            density="dense"
+            describedBy={["studio-quick-entry-status"]}
+            disabled={false}
+            id={`studio-quick-entry-demo-${demo.id}`}
+            invalid={false}
+            key={demo.id}
+            label={demo.label}
+            onAction={() => {
+              onDraftChange(demo.chartText);
+              onInsert();
+            }}
+            type="button"
+            variant="secondary"
+          />
+        ))}
       </div>
     </section>
   );

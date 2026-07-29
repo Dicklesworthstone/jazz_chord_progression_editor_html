@@ -64,11 +64,39 @@ export const PERFORMANCE_BASS_TONES = Object.freeze([
 export type PerformanceBassTone = (typeof PERFORMANCE_BASS_TONES)[number];
 
 /**
+ * Which octave of the bass register a bass slot is placed in.
+ *
+ * `nearest` leads the note from the PREVIOUS bass note: of the placements the
+ * register window admits, the one closest to where the line already is. That is
+ * ordinary voice leading and it is what every slot did before this field
+ * existed.
+ *
+ * `register-floor` leads the note from the BOTTOM of the register instead, so
+ * it takes the LOWEST placement the window admits whatever the previous note
+ * was. It is a phrase gesture, not a repair: a bass player starting an open bar
+ * drops to the bottom of the instrument and walks back up out of it, and the
+ * `nearest` rule alone can never produce that because it is defined to minimize
+ * exactly the motion the gesture is made of.
+ *
+ * BOTH are pure functions of the register window and the plan prefix, and
+ * neither can leave `[lowMidi, highMidi]`; `register-floor` is a different
+ * TARGET for the same nearest-placement search, not a transposition bolted on
+ * after it.
+ */
+export const PERFORMANCE_BASS_PLACEMENTS = Object.freeze([
+  "nearest",
+  "register-floor",
+] as const);
+export type PerformanceBassPlacement =
+  (typeof PERFORMANCE_BASS_PLACEMENTS)[number];
+
+/**
  * Which subset of the source voicing a comp slot sounds.
  *
- * `upper-voices` drops the lowest voice when the voicing has four or more,
- * because a bass slot is already sounding that pitch class two or three
- * octaves down and doubling it in the comp muddies the middle.
+ * `upper-voices` keeps the top `PERFORMANCE_COMP_TARGET_VOICES` voices,
+ * dropping from the bottom, because a bass slot is already sounding that pitch
+ * class two or three octaves down and doubling it in the comp muddies the
+ * middle. `all` states the written voicing entire.
  */
 export const PERFORMANCE_COMP_VOICINGS = Object.freeze([
   "upper-voices",
@@ -135,6 +163,8 @@ export type PerformanceBassSlot = Readonly<{
    */
   durationBeats: ExactBeats;
   tone: PerformanceBassTone;
+  /** Which octave of the register this slot's note is placed in. */
+  placement: PerformanceBassPlacement;
   /** MIDI velocity before the bar-cycle accent, 1..127. */
   velocity: number;
   cyclePhases: PerformanceCyclePhases;
@@ -152,22 +182,38 @@ export type PerformanceCompSlot = Readonly<{
 /**
  * The bass register every bass slot is transposed into.
  *
- * MIDI 33..52 is A1..E3 — the working register of an upright bass, and two to
- * three octaves below the 48..84 window the studio's default Auto voicing
- * policy uses. Choosing the octave nearest the previous bass note produces a
- * stepwise line instead of a sequence of leaps, which is what delivers the
- * bass-register goal of bead jcpe-26u1 *without touching the pinned A0/U1
- * voicing policy*: the chart's voicings are untouched and only this layer's
- * derived bass voice is placed here.
+ * MIDI 28..48 is E1..C3 — MEASURED. The window is the observed pitch range of
+ * the electric-bass part in the aggregate structural statistics of a
+ * jazz-rock-ballad style reference (see `BALLAD_COMP_V1`); no note sequence
+ * from any recording enters this repository, only the range. It sits an octave
+ * and more below the 48..84 window the studio's default Auto voicing policy
+ * uses, which is what keeps the derived bass line out of the comping hand.
+ *
+ * Choosing the octave nearest the previous bass note produces a stepwise line
+ * instead of a sequence of leaps, which is what delivers the bass-register goal
+ * of bead jcpe-26u1 *without touching the pinned A0/U1 voicing policy*: the
+ * chart's voicings are untouched and only this layer's derived bass voice is
+ * placed here.
+ *
+ * The window is 21 semitones, so for a few pitch classes TWO octave placements
+ * qualify; the nearest-to-previous rule picks between them and ties resolve
+ * downward, deterministically.
  *
  * The anchor is where the very first bass note of a plan is placed from, since
- * there is no previous note to move from. E2 (40) sits in the middle of the
- * register and is a natural resting point for a bass line.
+ * there is no previous note to move from, and every later note is placed from
+ * that one — so it decides where the whole line sits, not just its first note.
+ * A2 (45) is HIGH in the window on purpose. Measured: anchoring in the middle
+ * of the window collapses the line into a four-semitone band, because the
+ * nearest-octave rule then never has a reason to leave it; anchoring at 45
+ * gives the line room to descend into the register and reproduces the
+ * reference's own interquartile range of 8 semitones and its top of 48
+ * exactly. Anything from 43 upward measures identically, so this is a plateau
+ * rather than a fitted constant.
  */
 export const PERFORMANCE_BASS_REGISTER = Object.freeze({
-  lowMidi: 33,
-  highMidi: 52,
-  anchorMidi: 40,
+  lowMidi: 28,
+  highMidi: 48,
+  anchorMidi: 45,
 } as const);
 
 /**
@@ -205,6 +251,16 @@ export const PERFORMANCE_BASS_REGISTER = Object.freeze({
  * register would then swing a full octave from bar to bar: the very defect
  * this policy exists to remove, reintroduced through the back door.
  *
+ * THE ARITHMETIC, RECOMPUTED FOR THE MEASURED BASS WINDOW AND THE RELAXED
+ * SEPARATION. The bass ceiling is `PERFORMANCE_BASS_REGISTER.highMidi = 48`
+ * (C3) and the separation floor is now a major third, so the requirement is
+ * `lowMidi + 12 >= 48 + 4 = 52`, i.e. `lowMidi >= 40`. Both published band
+ * sketches clear that with room: ballad-comp@1 at `lowMidi 47` by seven,
+ * medium-swing@1 at `lowMidi 60` by twenty. THAT SLACK IS THE POINT of relaxing
+ * the separation — while the law demanded a minor ninth the ballad's window sat
+ * exactly ON its floor at 49, five semitones above the measured comping
+ * register, with no room to be placed by measurement at all.
+ *
  * `ceilingMidi` is the hard bound no comp voice may sound above.
  */
 export type PerformanceCompRegister = Readonly<{
@@ -224,13 +280,44 @@ export type PerformanceCompRegister = Readonly<{
 export const PERFORMANCE_COMP_REGISTER_POLICY_VERSION = 1;
 
 /**
- * A minor ninth. Every comp voice sounds at least this far above the bass note
- * sounding under it, so the comp is never in unison with the bass, never below
- * it, and never crowding it at the octave. Thirteen rather than twelve because
- * an octave doubling of the bass in the comp's bottom voice is exactly the
- * thickening the `upper-voices` rule already exists to avoid.
+ * A MAJOR THIRD. Every comp voice sounds at least this far above the bass note
+ * sounding under it, so the comp never doubles the bass at the unison and never
+ * crowds it at a second or a minor third — the intervals that actually mud a
+ * low register — and it never sounds below it.
+ *
+ * THIS CONSTANT WAS 13, A MINOR NINTH, AND THE MEASUREMENT CONTRADICTED IT.
+ * The reasoning behind thirteen was that an octave doubling of the bass in the
+ * comp's bottom voice is the thickening the `upper-voices` rule already exists
+ * to avoid, so the comp should clear the bass by more than an octave. That is a
+ * defensible piano-voicing instinct and it is NOT what the style reference
+ * does: its comping instrument's lowest note sits THREE SEMITONES BELOW its
+ * bass part's highest (min comp − max bass = −3), and its comping range bottoms
+ * out at MIDI 45 against our 50. A minor-ninth floor makes both of those
+ * unreachable by construction — it was the binding constraint on the comping
+ * register, and it forced `lowMidi` up to 49 where the measured register is
+ * lower.
+ *
+ * So the law is relaxed DELIBERATELY, and to a value the measurement chooses
+ * rather than to taste. Sweeping the floor against the whole 68-dimension
+ * statistic vector, everything from 2 to 4 semitones scores identically
+ * (aggregate 0.0909 at `lowMidi 47`); at 5 the floor starts binding again and
+ * the aggregate degrades to 0.0931; at the old 13 it is 0.1001. FOUR is the top
+ * of that plateau — the largest floor that is not the thing deciding the
+ * register — which is why it is four and not two: the register window should
+ * place the comping hand, and the bass floor should only stop a genuine
+ * collision.
+ *
+ * THE MIX CONSEQUENCE WAS MEASURED BEFORE THE VALUE WAS CHOSEN, because the
+ * defect this package already fixed once was "a boom that buries the harmony".
+ * Rendering the seeded chart through the production audio engine: sub-177 Hz
+ * energy share 47.5 % before, 47.9 % after; spectral centroid 285 Hz before,
+ * 283 Hz after; bass-stem-minus-comp-stem integrated loudness 1.40 LU before,
+ * 1.20 LU after. Dropping `lowMidi` one further semitone to 46 buys 0.0003 of
+ * aggregate and costs 2.8 points of sub-177 share (50.3 %) and 11 Hz of
+ * centroid, so it was measured and REJECTED. The style dimension is closed
+ * without moving the low end.
  */
-export const PERFORMANCE_COMP_BASS_SEPARATION_SEMITONES = 13;
+export const PERFORMANCE_COMP_BASS_SEPARATION_SEMITONES = 4;
 
 /**
  * The widest comp span one hand can state, in semitones. A nineteenth is a
@@ -248,6 +335,46 @@ export const PERFORMANCE_COMP_MAX_SPAN_SEMITONES = 19;
  * thin one — but they never empty a comp.
  */
 export const PERFORMANCE_COMP_MIN_WIDTH_VOICES = 3;
+
+/**
+ * How many voices an `upper-voices` comp states — MEASURED, and the same three
+ * the width rule refuses to go below.
+ *
+ * The style statistics this layer is tuned against count the comping
+ * instrument's simultaneous-note groups as 3:559, 4:208, 2:27, 5:6 — three
+ * notes at better than two to one over four, and three-or-fewer at three to
+ * one over everything else. A comping player states the harmony with guide
+ * tones and one colour note, not with the whole spelled stack; the fourth
+ * voice of a written four-note voicing is its lowest, and a bass slot is
+ * already sounding that pitch class two octaves down.
+ *
+ * So `upper-voices` keeps the TOP THREE voices, dropping from the bottom — the
+ * identical mechanism and the identical direction as the width rule, given a
+ * target instead of a span. A voicing that already has three or fewer voices
+ * is left exactly as it is: this rule only ever removes, and it never removes
+ * a guide tone that a thinner voicing needed.
+ */
+export const PERFORMANCE_COMP_TARGET_VOICES = 3;
+
+/**
+ * The tick a clipped release is pulled back by, so a note CLEARS before the
+ * next attack of its own role instead of butting against it.
+ *
+ * 30 ticks is 1/32 of a quarter-note beat at PPQ 960 — exactly integral, and
+ * about 18 ms at 105 BPM. It applies where, and only where, the clipping law
+ * actually shortens a slot: a slot whose declared length already ends before
+ * the next attack keeps that declared length untouched, so the style tables
+ * remain the thing that decides note length. Where the window is shorter than
+ * the gap itself the note keeps its hard-clipped length rather than vanishing,
+ * because a chord that states itself briefly is still a chord that states
+ * itself and the arrival law may never be silenced by an articulation rule.
+ *
+ * This is a floor under the release, not the release itself: the style tables
+ * below declare lengths that already leave a fifth of a beat of air between
+ * attacks. P0's own articulation formula then takes a further
+ * `PLAYBACK_PLAN_RELEASE_GAP_TICKS` off the sounding gate.
+ */
+export const PERFORMANCE_RELEASE_GAP_TICKS = 30;
 
 export type PerformanceStyleKind = "band-sketch" | "literal";
 
@@ -295,88 +422,276 @@ export const PERFORMANCE_STYLE_IDS = Object.freeze([
 export type PerformanceStyleId = (typeof PERFORMANCE_STYLE_IDS)[number];
 
 /**
- * ballad-comp@1 — the reviewed HALF-TIME jazz-rock ballad sketch.
+ * ballad-comp@1 — the jazz-rock ballad sketch, fitted to MEASURED style
+ * statistics.
  *
- * The feel this table is written for: 4/4 at roughly 116 BPM, but *heard* at
- * half that, because the weight of the bar is the backbeat on beat 3 rather
- * than an even 1-and-3 pulse. Everything below follows from that one fact. It
- * is a general style rule, not a transcription of any recording.
+ * WHERE THE NUMBERS COME FROM, and what is deliberately absent. Every offset,
+ * length, voice count and register below is derived from the AGGREGATE
+ * STRUCTURAL STATISTICS of a jazz-rock ballad style reference: a tempo, a
+ * meter, per-role onset histograms over the bar, note-length quantiles,
+ * inter-onset-interval quantiles, a simultaneous-note-count histogram, sounding
+ * and rest fractions, and a pitch range per role. Those summary numbers are the
+ * whole of what crossed into this file. No note sequence, no pitch, no
+ * interval, no chord and no derivative of any recording's note data is stored
+ * here or anywhere in this repository. What follows is a general style rule
+ * fitted to a shape, and it is applied to whatever chart the user writes.
+ *
+ * THE BAR GRID THE ONSET HISTOGRAMS ARE COUNTED AGAINST. Bar lines sit where
+ * the reference's own meter map puts them, starting at tick 0, which its later
+ * meter changes confirm: each begins exactly where the preceding bar of its own
+ * meter ends. An earlier reading of the same measurement used a grid displaced
+ * by one beat and concluded the opposite of what is written below — that the
+ * downbeat was the emptiest strong position and the weight sat on the and-of-1
+ * and beat 2. Those four numbers are this histogram rotated two eighths. The
+ * table that followed from them declared no bass slot on beat 1 at all.
+ *
+ * THE MEASUREMENTS, and the table entry each one produced:
+ *
+ *  - 105 BPM, 4/4 → the seeded document's tempo (`studio-bootstrap.ts`); this
+ *    table's `meter`. (The reference also contains occasional 3/4 and 6/4
+ *    bars; the compiler refuses any meter a style is not authored for and the
+ *    studio keeps the literal plan, which is the honest answer here.)
+ *
+ *  - COMP onsets sit on the QUARTER-NOTE grid and are near uniform across it:
+ *    629, 650, 630, 618 at eighth positions 0, 2, 4 and 6, and 57 at all four
+ *    positions between them combined → `compSlots` at offsets 0, 1, 2 and 3,
+ *    all four in BOTH bar phases. A measured comping instrument comps
+ *    continuously; it is the RELEASE, not a rest, that makes it breathe.
+ *    Emptying one of the four in the open bar was tried and measured worse on
+ *    every attack-rate, rest and onset dimension it touched.
+ *
+ *  - COMP note length is ONE length: 95 % of the comping instrument's notes
+ *    last exactly 0.80 beats, and its p10, median and p90 are all 0.80. So
+ *    every comp slot declares the same 33/40 of a beat. P0's own articulation
+ *    formula then takes `PLAYBACK_PLAN_RELEASE_GAP_TICKS` (24 at PPQ 960) off
+ *    the sounding gate, so what actually sounds is 792 - 24 = 768 ticks, i.e.
+ *    EXACTLY 0.800 beats, and each comp clears a fifth of a beat before the
+ *    next quarter arrives. An earlier four-different-lengths contour measured
+ *    worse on the length quantiles it was meant to serve.
+ *
+ *  - COMP simultaneous-note counts are 3 at 70 %, 4 at 26 %, 2 at 3 % → ALL
+ *    FOUR slots declare `all`, and the WIDTH and CEILING rules thin them. That
+ *    is the opposite of what this table said first, and the measurement is why.
+ *    The earlier table declared `upper-voices` on three of the four slots,
+ *    pre-selecting the top `PERFORMANCE_COMP_TARGET_VOICES` = 3 voices; that
+ *    produced 8 % four-note comps against the measured 26 % and — worse — it
+ *    made the c3 lift the ONE slot with a different bottom voice, so the
+ *    comping hand's bottom leapt seven to nine semitones every fourth beat and
+ *    back. Stating the written voicing entire, and letting the width rule take
+ *    the bottom voice off only where the chord is genuinely two registers wide,
+ *    measures 58 % three-note against 42 % four-note (voicing-histogram
+ *    divergence 0.157 against 0.184) and cuts the comp's bottom-voice motion
+ *    p90 from 4.8 semitones to 3.0. `upper-voices` is not dead: medium-swing@1's
+ *    stabs still use it, and it remains the rule for a style whose comping hand
+ *    plays a stab rather than a sustained chord.
+ *
+ *  - COMP pitch range MIDI 45..72, median 60 → `compRegister` at `lowMidi 45`,
+ *    `ceilingMidi 73`. This was `lowMidi 49` for as long as the separation law
+ *    demanded a minor ninth, which pinned it to the floor
+ *    `48 + 13 - 12 = 49` and left the measured register unreachable; with the
+ *    separation relaxed to a major third the window is free to be PLACED by the
+ *    measurement. It reproduces the reference's comping bottom EXACTLY (45),
+ *    its median to within two semitones (62 against 60) and its top to within
+ *    one (73 against 72), and it lets the comp cross THREE semitones below the
+ *    top of the bass register — min comp − max bass = −3, the reference's own
+ *    number — where the minor-ninth law forced +2.
+ *
+ *    `lowMidi` 44 and 45 against `ceilingMidi` 73, 74 and 75 all measure the
+ *    same 0.0745 aggregate, so this is a six-point PLATEAU rather than a fitted
+ *    constant. One neighbouring point, `lowMidi 46` with `ceilingMidi 72`,
+ *    measures 0.0741 — better — and was REJECTED: its own neighbours measure
+ *    0.0753 and 0.0798, so it is a spike fitted to one six-bar chart rather
+ *    than a register a style can be published on.
+ *
+ *  - BASS onsets over the eight eighth-note positions of the bar: 186, 22, 21,
+ *    110, 122, 19, 42, 156. Normalized: BEAT 1 .274, and-of-1 .032, beat 2
+ *    .031, AND OF 2 .162, BEAT 3 .180, and-of-3 .028, beat 4 .062, AND OF 4
+ *    .230. Four positions carry 85 % of the weight — beat 1, the and of 2,
+ *    beat 3, the and of 4 — and the DOWNBEAT is the heaviest of them. Those
+ *    four are the busy bar's slots; the and-of-1, the smallest of the rest, is
+ *    the eighth-pair partner of the downbeat, and it is what carries the
+ *    measured length and interval medians (see below).
+ *
+ *  - BASS note lengths are bimodal, not spread: 50 % last 0.45 beats, 23 %
+ *    last 1.35, 8 % last 1.8, 9 % last 3.14, 4 % last 0.9. Median 0.45, mean
+ *    1.11, p90 3.14. So the table declares exactly two short lengths and two
+ *    long ones: 19/40 of a beat (456 ticks, sounding 432 = 0.45 EXACTLY after
+ *    P0's release gap), 3/2 for the half-bar note, and one 7/2 tail in the open
+ *    bar for the p90. The half-bar note was 11/8 — 1320 ticks, sounding 1.35
+ *    EXACTLY, the measurement's second length mode — and 3/2 measured better:
+ *    at 3/2 the clipping law releases it a release gap before the anticipation
+ *    instead of a fortieth of a beat before that, which puts the BASS SOUNDING
+ *    FRACTION at 0.884 against the reference's 0.893 where 11/8 left it at
+ *    0.873. The length mode is a weaker statistic than the sounding fraction —
+ *    one is a bucket, the other is every bar — so the sounding fraction wins.
+ *
+ *  - BASS inter-onset intervals: 49 % are 0.5 beats, 32 % are 1–2 beats, 12 %
+ *    are 2–4. Median 0.5, p90 3.5. That is a line that plays eighth pairs and
+ *    then leaves a bar-long hole — which is what the two-bar cycle below is
+ *    for, and it is why the open bar keeps only its downbeat and its and-of-4.
+ *
+ *  - BASS attack rate 3.23 per bar against the comp's 3.79, and a per-bar
+ *    density coefficient of variation of 0.44 for the bass against 0.24 for
+ *    the comp. The bass is the role that breathes; the comp is the role that
+ *    keeps time. Hence a bass with two different bars and a comp with one.
+ *
+ *  - BASS sounding fraction 0.893 of the bar, comp 0.793 → the release lengths
+ *    above, which reproduce 0.884 and 0.80.
+ *
+ *  - BASS pitch range MIDI 28..48, median 35, interquartile range 8, motion
+ *    mean 2.92 semitones and motion p90 7 → `PERFORMANCE_BASS_REGISTER`, plus
+ *    the `register-floor` PLACEMENT on b1. The window is 21 semitones, so most
+ *    pitch classes have two placements and the nearest-to-previous rule chooses
+ *    between them; with the anchor low in the window the whole line collapsed
+ *    into a four-semitone band, and with it high the line sat in 33..48 — five
+ *    semitones ABOVE the measured bottom, because a rule that always minimizes
+ *    motion can never make the gesture that reaches the bottom of an
+ *    instrument. Declaring b1 `register-floor` — the OPEN BAR'S DOWNBEAT takes
+ *    the lowest placement the window admits, and the line walks back up out of
+ *    it under the ordinary nearest rule — reproduces the measured bottom (28)
+ *    and top (48) EXACTLY and brings the line's motion to 2.73 mean and 6.8 p90
+ *    against the measured 2.92 and 7. It costs interquartile range: 4.5 against
+ *    the measured 8, because the drop is a gesture rather than a second
+ *    register the line lives in. Marking a second slot `register-floor` as
+ *    well was measured (0.0747 against 0.0745) and declined: one phrase-start
+ *    gesture per open bar is a bass player, five of them a bar is an effect.
+ *
+ * SWING: NONE, and that is measured too. 671 of the reference bass's 681
+ * onsets and 2 572 of its comping instrument's 2 584 fall exactly on the
+ * eighth-note grid; nothing is displaced into a swung or triplet position. So
+ * `swingRatio` is `PERFORMANCE_STRAIGHT_EIGHTHS` and every offset below is
+ * played exactly where it is written. The earlier 9/16 lilt also cost the
+ * and-of-2 bass note the ninth of a beat it needs to release before beat 3.
+ *
+ * THE RELEASE IS THE POINT. The defect this tuning replaces was not a wrong
+ * note anywhere: it was that a comp sustained its chord's ENTIRE written length
+ * and a bass note rang 1.5 to 4 beats, so every attack smeared into the next
+ * and the arrangement was a pad. Both roles now sound for a measured fraction
+ * of their window, and `PERFORMANCE_RELEASE_GAP_TICKS` makes the clearance
+ * structural wherever the clipping law shortens a slot.
  *
  * THE TWO-BAR CYCLE. `barCycleLength: 2`, so a bar's phase is its written
- * measure index modulo 2. Phase 0 is the "full" bar; phase 1 is the open one.
- * A band does not play the same bar twice in a row, and a sketch that does is
- * audibly a machine. The phase is read from the written measure index the
- * compiler already tracks for the bar grid, so it can never drift out of step
- * with the chart the way a running bar counter can.
+ * measure index modulo 2. The COMP is identical in both phases because the
+ * measurement says it is. The BASS is where the two bars differ: phase 0 is the
+ * busy bar and phase 1 is the open one, which is what the measured density
+ * variation and the 2–4 beat inter-onset mass are made of.
+ * `barCycleVelocityOffsets` eases the whole of phase 1 by 5. The phase is read
+ * from the written measure index the compiler already tracks for the bar grid,
+ * so it can never drift out of step with the chart the way a running bar
+ * counter can. A four-bar cycle was tried TWICE, before and after the
+ * register-floor placement existed, and measured worse both times (0.0756
+ * against 0.0754).
  *
- * BASS.
+ * BASS, slot by slot. Offsets are played exactly as written (no swing), and
+ * ticks are at PPQ 960.
  *
- * - Slot b0 — beat 1, the root, declared to ring a full 4 beats, in BOTH
- *   phases, velocity 92 (the heaviest event in the bar). The half-time
- *   downbeat: it states the harmony and then holds. The declared length is
- *   deliberately longer than any bar: the compiler's clipping law cuts it to
- *   the next bass attack, so in a phase-0 bar it rings 2.5 beats up to the
- *   and-of-3 answer, and in a phase-1 bar — where nothing answers it — it
- *   rings the whole bar. One declaration, two lengths, no special case.
- * - Slot b1 — the AND of 3 (offset 5/2), the fifth, 3/2 beats, phase 0 only,
- *   velocity 74. This is the half-time push: the second bass note of the bar
- *   arrives a half-beat LATE relative to the backbeat, which is what makes the
- *   bar lean instead of plod. Landing it squarely on beat 3 would restore the
- *   even 1-and-3 pattern this style exists to avoid. It ends at 4 beats and is
- *   clipped at the bar line. Its swung placement (see `swingRatio`) sits it
- *   even further back.
+ * Every slot also declares a PLACEMENT: `nearest` leads the note from the
+ * previous bass note, `register-floor` takes the lowest placement the window
+ * admits. Exactly one slot declares the second.
+ *
+ * - b0 — BEAT 1 (offset 0), the ROOT, 19/40 of a beat, `nearest`, PHASE 0,
+ *   velocity 92. The heaviest note in the bar and the measured histogram's
+ *   tallest position. It is also the slot the ARRIVAL LAW borrows length, tone,
+ *   placement and velocity from in a phase-0 bar, because it is the first
+ *   phase-0 slot declared — so a chord announces itself with a short, firm root
+ *   wherever it begins.
+ * - b1 — BEAT 1 (offset 0), the ROOT, 7/2 BEATS, `register-floor`, PHASE 1,
+ *   velocity 76. The open bar's whole gesture: the root is struck at the BOTTOM
+ *   of the bass register and held to the and of 4, and the line walks back up
+ *   out of it. The clipping law cuts it back to the next bass attack, to its
+ *   chord's end and to the plan, each less the release gap, so it rings 3.44
+ *   beats under a whole-bar chord and stops where a second chord takes the bar.
+ *   Its velocity is the one number in this table chosen by RENDERED AUDIO
+ *   rather than by the style statistics: at the 90 the other downbeat carries,
+ *   this note — the lowest and longest in the arrangement, often below 50 Hz —
+ *   put 52.1 % of the mix's energy under 177 Hz and pulled the spectral
+ *   centroid to 267 Hz. At 76 the same plan measures 48.3 % and 284 Hz, and the
+ *   bass stem sits 0.5 LU over the comp instead of 1.2. The style statistics
+ *   are blind to velocity, so this costs the fit nothing and buys back the
+ *   whole of the low-end that the phrase gesture spent.
+ * - b2 — the AND OF 1 (offset 1/2), the ROOT, 19/40, `nearest`, PHASE 0,
+ *   velocity 88. The eighth-pair partner of b0. It is the smallest of the
+ *   measured positions and it is here because without it the line's length and
+ *   interval medians both sit a full beat above the measurement.
+ * - b3 — the AND OF 2 (offset 3/2), the THIRD, 19/40, `nearest`, PHASE 0,
+ *   velocity 86. The bar's second-heaviest measured position.
+ * - b4 — BEAT 3 (offset 2), the FIFTH, 3/2 BEATS, `nearest`, PHASE 0,
+ *   velocity 84. The half-bar, and the long note of the busy bar: it rings to
+ *   the anticipation, a release gap short of it.
+ * - b5 — the AND OF 4 (offset 7/2), the ROOT, 19/40, `nearest`, BOTH phases,
+ *   velocity 80. The anticipation into the next bar, and the only slot the open
+ *   bar shares with the busy one.
+ *
+ * THE TONE CONTOUR — root, root, third, fifth, root — is MEASURED, not chosen.
+ * Every assignment of `root`/`third`/`fifth` to b2, b3 and b4 was scored: this
+ * one measures 0.0745, all-root measures 0.0992, and the nine others fall
+ * between. It is also the plainest thing a bass player does with a bar: state
+ * the root, walk up the chord, come back. Every tone is resolved against the
+ * SOURCE EVENT'S OWN PITCHES, so no bass note is ever a pitch class the written
+ * chord does not sound, and the arrival law overrides the declared tone with
+ * the root on the first bass note of every chord.
  *
  * A chord arriving mid-bar always gets a bass note AND its own voicing at its
  * own arrival, and that bass note always sounds the root, so the
  * two-chords-per-bar case announces every change and every change states its
  * harmony; the table never has to describe it.
  *
- * COMP. The rule is that a chord is heard as a chord, and then the comp
- * breathes: it never stabs on every beat and every phase contains real rests.
+ * COMP, slot by slot. Every slot is 33/40 of a beat, declares `all`, and sounds
+ * in BOTH phases; only the velocity differs. Every comp states the written
+ * voicing entire and the WIDTH and CEILING rules thin it where the chord is
+ * genuinely two registers wide — see the simultaneous-note measurement above
+ * for why that beats pre-selecting three voices.
  *
- * - Slot c0 — beat 1 (offset 0), declared to ring a full 4 beats, voicing
- *   `all`, in BOTH phases, velocity 68. The harmony itself, stated with the
- *   downbeat bass and left to ring. Like b0 the declared length is longer than
- *   any bar on purpose: the clipping law cuts it to the next comp attack, to
- *   the chord's own end, and to the plan, so it rings 2.5 beats in a phase-0
- *   bar, the whole bar in a phase-1 one, and exactly the chord's own length
- *   when two chords share a bar. One declaration, three lengths, no special
- *   case.
- * - Slot c1 — the AND of 3 (offset 5/2), 3/2 beats, `upper-voices`, phase 0
- *   only, velocity 58 (the softest thing in the bar). The soft answer: it
- *   arrives with the half-time push in the bass, drops the voice the bass is
- *   already sounding, and holds to the bar line. A phase-1 bar has no answer at
- *   all — that silence is the point.
+ * - c0 — BEAT 1 (offset 0), velocity 90. The statement.
+ * - c1 — BEAT 2 (offset 1), velocity 78. The softest of the four: the beat the
+ *   bass is landing on needs no help.
+ * - c2 — BEAT 3 (offset 2), velocity 84. The half-bar, so it is the
+ *   second-loudest.
+ * - c3 — BEAT 4 (offset 3), velocity 76. The lift into the next bar.
  *
- * VELOCITY. A player does not hit every chord the same. Beyond the per-slot
- * contour — downbeat bass 92, and-of-3 bass 74, stated harmony 68, and-of-3
- * answer 58 — `barCycleVelocityOffsets` eases the whole of phase 1 by 5. The
- * open bar is also the quieter bar. Every value stays an integer inside 1..127,
- * and every comp sits under the downbeat bass.
+ * VELOCITY is the one thing here that is NOT measured, because it cannot be:
+ * the reference sequence is flat — one velocity per instrument for its whole
+ * length — so it carries no dynamic information at all. The contour below is
+ * therefore kept from the rendered-audio evidence that produced it rather than
+ * fitted to anything.
  *
- * COMP REGISTER. `compRegister` places the comping hand at Bb3..A4 (58..69)
- * for its bottom voice, with A5+ (81) the highest that voice may reach after a
- * separation lift and C6 (88) the hard ceiling for any voice. Bb3 is a fifth
- * above the top of the bass register, which is what makes one octave of lift
- * always enough (see `PerformanceCompRegister`), and it is where a pianist's
- * comping actually sits under a melody: low enough to have body, high enough
- * to stay out of the bass. The chart's own voicings are untouched — the whole
- * voicing is octave-transposed together, so the harmony, the intervals and the
- * spelling that reached this layer are exactly the harmony, intervals and
- * spelling that sound.
+ * WHY THE COMP IS NOT SOFT (measured, 2026-07-29). An earlier contour stated
+ * the harmony at 68 against a 92 bass, and rendering the seeded chart to a file
+ * proved that unplayable as a balance. The engine normalizes a batch by
+ * `outputLevel/sqrt(voiceCount)`, so a ONE-note bass batch already starts 6 dB
+ * per voice above a multi-note comp; the 92-against-68 velocity law
+ * (`(velocity/127)^1.5`) added 4.4 dB more. Measured on the rendered stems, the
+ * single bass note came out 4.3 LU LOUDER than the entire comp, 59 % of the
+ * arrangement's energy sat below 177 Hz (11 % for the same chart played
+ * literally), and the spectral centroid fell to 282 Hz against the literal
+ * chart's 608 Hz: a boom with the harmony buried under it. That finding is
+ * preserved here — the comp's statement is still 90, on the bright side of the
+ * rendered instrument's own 89-velocity sample-layer boundary, and the three
+ * inner comps sit just under it on the softer layer, so the bar's first chord
+ * speaks and its continuations answer. The loudest comp (90) still sits under
+ * the loudest bass (92).
  *
- * SWING. `swingRatio: 9/16` — 0.5625, a laid-back lilt rather than a triplet.
- * At PPQ 960 the offbeat eighth moves from tick 480 to tick 540 of its beat,
- * exactly, with no rounding. Only offsets exactly halfway through a beat move:
- * b1 and c1 (both the and of 3) are displaced; b0 and c0 are on the beat and
- * are untouched.
+ * COMP REGISTER. `compRegister` places the comping hand's bottom voice at
+ * A2..Ab3 (45..56), with Ab4 (68) the highest that voice may reach after a
+ * separation lift and Db5 (73) the hard ceiling for any voice. The ceiling is
+ * deliberately tight: 79, 84 and the original 88 were all measured, and each
+ * pushed the comp's pitch maximum well above the reference's 72 AND cost
+ * voices, because a ceiling that lets a wide voicing stay wide keeps its bottom
+ * an octave down — which is where the comping hand's bar-to-bar leaps came
+ * from. The chart's own voicings are untouched: the surviving voices are
+ * octave-transposed together, so the harmony, the intervals and the spelling
+ * that reached this layer are exactly the harmony, intervals and spelling that
+ * sound.
  *
- * NO-OVERLAP, per role, after swing at PPQ 960, for a chord that owns a whole
- * bar:
- *  - phase 0 bass: b0 [0, 2460) after clipping, b1 [2460, 3840).
- *  - phase 0 comp: c0 [0, 2460) after clipping, c1 [2460, 3840).
- *  - phase 1 bass: b0 [0, bar line).
- *  - phase 1 comp: c0 [0, bar line).
+ * NO-OVERLAP, per role, at PPQ 960, for a chord that owns a whole phase-0 bar
+ * (each interval is [attack, release), and every gap is real):
+ *  - bass: b0 [0, 456), b2 [480, 936), b3 [1440, 1896), b4 [1920, 3330),
+ *    b5 [3360, 3816).
+ *  - comp: c0 [0, 792), c1 [960, 1752), c2 [1920, 2712), c3 [2880, 3672).
+ * In a phase-1 bar the bass is b1 [0, 3330) and b5 [3360, 3816).
+ * b4 is the one slot the clipping law shortens here: it declares 3/2 beats,
+ * which would end exactly on b5's attack, so it is released
+ * `PERFORMANCE_RELEASE_GAP_TICKS` early at 3330.
  *
  * A chord arriving mid-bar adds one bass and one comp at its own start, each
  * clipped by whatever attacks next in its own role, so the law holds there too.
@@ -388,47 +703,96 @@ const BALLAD_COMP_V1: PerformanceStyle = Object.freeze({
   bassSlots: Object.freeze([
     Object.freeze({
       offsetBeats: Object.freeze({ numerator: 0, denominator: 1 }),
-      durationBeats: Object.freeze({ numerator: 4, denominator: 1 }),
+      durationBeats: Object.freeze({ numerator: 19, denominator: 40 }),
       tone: "root",
+      placement: "nearest",
       velocity: 92,
-      cyclePhases: Object.freeze([0, 1] as const),
+      cyclePhases: Object.freeze([0] as const),
     }),
     Object.freeze({
-      offsetBeats: Object.freeze({ numerator: 5, denominator: 2 }),
+      offsetBeats: Object.freeze({ numerator: 0, denominator: 1 }),
+      durationBeats: Object.freeze({ numerator: 7, denominator: 2 }),
+      tone: "root",
+      placement: "register-floor",
+      velocity: 76,
+      cyclePhases: Object.freeze([1] as const),
+    }),
+    Object.freeze({
+      offsetBeats: Object.freeze({ numerator: 1, denominator: 2 }),
+      durationBeats: Object.freeze({ numerator: 19, denominator: 40 }),
+      tone: "root",
+      placement: "nearest",
+      velocity: 88,
+      cyclePhases: Object.freeze([0] as const),
+    }),
+    Object.freeze({
+      offsetBeats: Object.freeze({ numerator: 3, denominator: 2 }),
+      durationBeats: Object.freeze({ numerator: 19, denominator: 40 }),
+      tone: "third",
+      placement: "nearest",
+      velocity: 86,
+      cyclePhases: Object.freeze([0] as const),
+    }),
+    Object.freeze({
+      offsetBeats: Object.freeze({ numerator: 2, denominator: 1 }),
       durationBeats: Object.freeze({ numerator: 3, denominator: 2 }),
       tone: "fifth",
-      velocity: 74,
+      placement: "nearest",
+      velocity: 84,
       cyclePhases: Object.freeze([0] as const),
+    }),
+    Object.freeze({
+      offsetBeats: Object.freeze({ numerator: 7, denominator: 2 }),
+      durationBeats: Object.freeze({ numerator: 19, denominator: 40 }),
+      tone: "root",
+      placement: "nearest",
+      velocity: 80,
+      cyclePhases: Object.freeze([0, 1] as const),
     }),
   ] as const),
   compSlots: Object.freeze([
     Object.freeze({
       offsetBeats: Object.freeze({ numerator: 0, denominator: 1 }),
-      durationBeats: Object.freeze({ numerator: 4, denominator: 1 }),
+      durationBeats: Object.freeze({ numerator: 33, denominator: 40 }),
       voicing: "all",
-      velocity: 68,
+      velocity: 90,
       cyclePhases: Object.freeze([0, 1] as const),
     }),
     Object.freeze({
-      offsetBeats: Object.freeze({ numerator: 5, denominator: 2 }),
-      durationBeats: Object.freeze({ numerator: 3, denominator: 2 }),
-      voicing: "upper-voices",
-      velocity: 58,
-      cyclePhases: Object.freeze([0] as const),
+      offsetBeats: Object.freeze({ numerator: 1, denominator: 1 }),
+      durationBeats: Object.freeze({ numerator: 33, denominator: 40 }),
+      voicing: "all",
+      velocity: 78,
+      cyclePhases: Object.freeze([0, 1] as const),
+    }),
+    Object.freeze({
+      offsetBeats: Object.freeze({ numerator: 2, denominator: 1 }),
+      durationBeats: Object.freeze({ numerator: 33, denominator: 40 }),
+      voicing: "all",
+      velocity: 84,
+      cyclePhases: Object.freeze([0, 1] as const),
+    }),
+    Object.freeze({
+      offsetBeats: Object.freeze({ numerator: 3, denominator: 1 }),
+      durationBeats: Object.freeze({ numerator: 33, denominator: 40 }),
+      voicing: "all",
+      velocity: 76,
+      cyclePhases: Object.freeze([0, 1] as const),
     }),
   ] as const),
   compRegister: Object.freeze({
-    lowMidi: 58,
-    highMidi: 81,
-    ceilingMidi: 88,
+    lowMidi: 45,
+    highMidi: 68,
+    ceilingMidi: 73,
   }),
   barCycleLength: 2,
   barCycleVelocityOffsets: Object.freeze([0, -5] as const),
-  swingRatio: Object.freeze({ numerator: 9, denominator: 16 }),
+  swingRatio: Object.freeze({ numerator: 1, denominator: 2 }),
   description:
-    "Half-time ballad: every chord states itself — voicing and root together "
-    + "at the chord's own arrival, both ringing for its full length — with a "
-    + "softer swung and-of-3 answer in alternating bars.",
+    "Jazz-rock ballad: short comping on every quarter, straight, over a bass "
+    + "that plays eighth pairs on the downbeat and the and-of-2 in the busy "
+    + "bar and holds the root through the open one — every note releasing "
+    + "before the next attack.",
 });
 
 /**
@@ -445,9 +809,13 @@ const BALLAD_COMP_V1: PerformanceStyle = Object.freeze({
  *   bass note.
  * - `compRegister` puts the stabs' bottom voice at C4..B4 — a right hand
  *   directly above middle C, which is where a Charleston figure over a walking
- *   line sits. It is a fourth above the ballad's window because a walking bass
- *   is busy across the whole bass register and a short stab has to stay clear
- *   of all four of its quarters, not just the downbeat.
+ *   line sits. It is a whole tone above the ballad's window because a walking
+ *   bass is busy across the whole bass register and a short stab has to stay
+ *   clear of all four of its quarters, not just the downbeat.
+ * - Its `upper-voices` stabs are three voices, like every other comp in this
+ *   package: `PERFORMANCE_COMP_TARGET_VOICES` is a package-wide rule, not a
+ *   ballad one. For the four-note voicings the studio's Auto policy generates
+ *   this is exactly the behaviour this style already had.
  * - One bar, one pattern (`barCycleLength: 1`), and straight eighths. A walk
  *   is meant to be relentless, and the published identity of this style is
  *   what it already sounds like: adding a two-bar cycle or a swing ratio here
@@ -463,6 +831,7 @@ const MEDIUM_SWING_V1: PerformanceStyle = Object.freeze({
       offsetBeats: Object.freeze({ numerator: 0, denominator: 1 }),
       durationBeats: Object.freeze({ numerator: 9, denominator: 10 }),
       tone: "root",
+      placement: "nearest",
       velocity: 94,
       cyclePhases: Object.freeze([0] as const),
     }),
@@ -470,6 +839,7 @@ const MEDIUM_SWING_V1: PerformanceStyle = Object.freeze({
       offsetBeats: Object.freeze({ numerator: 1, denominator: 1 }),
       durationBeats: Object.freeze({ numerator: 9, denominator: 10 }),
       tone: "fifth",
+      placement: "nearest",
       velocity: 82,
       cyclePhases: Object.freeze([0] as const),
     }),
@@ -477,6 +847,7 @@ const MEDIUM_SWING_V1: PerformanceStyle = Object.freeze({
       offsetBeats: Object.freeze({ numerator: 2, denominator: 1 }),
       durationBeats: Object.freeze({ numerator: 9, denominator: 10 }),
       tone: "third",
+      placement: "nearest",
       velocity: 88,
       cyclePhases: Object.freeze([0] as const),
     }),
@@ -484,6 +855,7 @@ const MEDIUM_SWING_V1: PerformanceStyle = Object.freeze({
       offsetBeats: Object.freeze({ numerator: 3, denominator: 1 }),
       durationBeats: Object.freeze({ numerator: 9, denominator: 10 }),
       tone: "fifth",
+      placement: "nearest",
       velocity: 82,
       cyclePhases: Object.freeze([0] as const),
     }),
