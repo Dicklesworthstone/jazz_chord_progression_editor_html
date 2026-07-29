@@ -41,11 +41,18 @@ export const CONCERT_GRAND_RENDERER_ALGORITHM_ID =
 
 /**
  * The reviewed crossfade design. The sampled attack owns the note outright
- * until `sampleOnlySeconds`; an equal-power crossfade then hands the note to
- * the synthesized sustain by `crossfadeEndSeconds`. Equal power (cosine and
- * sine of the same quarter turn) is the correct law here because the two
- * layers are the same note from unrelated sources: their partials are not
- * phase-locked, so their powers add rather than their amplitudes.
+ * until `sampleOnlySeconds`; a cosine/sine crossfade then hands the note to
+ * the synthesized sustain by `crossfadeEndSeconds`.
+ *
+ * Equal power alone would be the wrong law. It assumes the two layers are
+ * uncorrelated, and these two are not: they are the same note, they both
+ * begin at the onset, and the build-time stretch correction deliberately
+ * puts their fundamentals on one frequency, so their relative phase is fixed
+ * for the whole handover. Measured across the keyboard that correlation runs
+ * from -0.97 to +0.99, and where it is negative the two layers cancel — a
+ * hole up to 14.4 dB deep in the middle of the crossfade. The weights are
+ * therefore corrected for the coherence the note actually has; see
+ * `applyAttackLayer`.
  */
 export const PIANO_ATTACK_LAYER_POLICY = Object.freeze({
   id: "changes.dsp.piano-attack-layer.v1",
@@ -259,6 +266,28 @@ function selectAttackSlice(
 }
 
 /**
+ * Whether a slice's whole PCM range is addressable inside the decoded
+ * payload. The generator guarantees this, but that guarantee lives in a
+ * generated file, and reading outside the range is not a benign failure: a
+ * partial overrun truncates the layer to silence mid-crossfade and a
+ * negative offset plays a neighbouring recording, both audible. Checking it
+ * here means a malformed entry degrades to pure synthesis instead.
+ */
+function attackSliceIsAddressable(
+  store: Int16Array,
+  slice: PianoAttackSlice,
+): boolean {
+  const base = slice.byteOffset / 2;
+  return (
+    Number.isSafeInteger(base) &&
+    base >= 0 &&
+    Number.isSafeInteger(slice.frameCount) &&
+    slice.frameCount >= 2 &&
+    base + slice.frameCount <= store.length
+  );
+}
+
+/**
  * Transpose one slice onto the requested pitch and output rate with a
  * Catmull-Rom kernel. The kernel is a fixed cubic over four neighbours: no
  * table, no filter state, no branch on data, so the same request yields the
@@ -337,6 +366,7 @@ function applyAttackLayer(
   if (slice === null) return false;
   const store = attackSamples();
   if (store === null) return false;
+  if (!attackSliceIsAddressable(store, slice)) return false;
 
   const policy = PIANO_ATTACK_LAYER_POLICY;
   const layerFrames = Math.min(
@@ -399,7 +429,29 @@ function applyAttackLayer(
   const balanceLeft = synthSeamLeft / synthSeamRms;
   const balanceRight = synthSeamRight / synthSeamRms;
 
-  const seamGain = synthSeamRms / sampleSeamRms;
+  /*
+   * The handover window: the middle half of the seam window, which is where
+   * the two layers actually overlap — the product of the crossfade weights
+   * peaks at the centre and vanishes at both ends. Both the level the note
+   * hands over at and the coherence correction below are measured here
+   * rather than over the whole seam. A recorded string and a modelled one
+   * do not decay at the same rate, so an RMS averaged over the full seam is
+   * dominated by whichever layer is loudest at its start and can leave the
+   * two mismatched by several decibels at the instant they cross.
+   */
+  const handoverRadius = Math.max(1, Math.round((matchEnd - matchStart) / 4));
+  const handoverCentre = Math.round((matchStart + matchEnd) / 2);
+  const handoverStart = Math.max(0, handoverCentre - handoverRadius);
+  const handoverEnd = Math.min(layerFrames, handoverCentre + handoverRadius);
+  const sampleHandoverRms = windowRms(attack, handoverStart, handoverEnd);
+  const synthHandoverRms = Math.sqrt(
+    (windowRms(left, handoverStart, handoverEnd) ** 2 +
+      windowRms(right, handoverStart, handoverEnd) ** 2) /
+      2,
+  );
+  if (!(sampleHandoverRms > 1e-9) || !(synthHandoverRms > 1e-9)) return false;
+
+  const seamGain = synthHandoverRms / sampleHandoverRms;
   const rawAttackGain = synthAttackRms / sampleAttackRms;
   const maximum = policy.maximumDecayCorrectionRatio;
   const correction = Math.min(
@@ -408,10 +460,49 @@ function applyAttackLayer(
   );
 
   /*
-   * Equal-power crossfade weights and the decay correction, computed once
-   * per note. `correction` is applied in full across the attack window and
-   * unwound log-linearly to unity by the centre of the seam window, so the
-   * handover level is exactly `seamGain` however the two decays differ.
+   * How much of the two layers is literally the same waveform. A
+   * cosine/sine pair only holds the level constant when this is zero; at -1
+   * the layers annihilate at the midpoint, and half the keyboard measures
+   * past -0.5.
+   */
+  const balanceEnergy = balanceLeft * balanceLeft + balanceRight * balanceRight;
+  let crossEnergy = 0;
+  let sampleEnergy = 0;
+  let synthEnergy = 0;
+  for (let frame = handoverStart; frame < handoverEnd; frame += 1) {
+    const source = attack[frame] ?? 0;
+    const carriedLeft = left[frame] ?? 0;
+    const carriedRight = right[frame] ?? 0;
+    crossEnergy +=
+      source * (balanceLeft * carriedLeft + balanceRight * carriedRight);
+    sampleEnergy += source * source * balanceEnergy;
+    synthEnergy += carriedLeft * carriedLeft + carriedRight * carriedRight;
+  }
+  const coherence =
+    sampleEnergy > 0 && synthEnergy > 0
+      ? crossEnergy / Math.sqrt(sampleEnergy * synthEnergy)
+      : 0;
+  /*
+   * Two deterministic corrections make the handover level-flat anyway.
+   *
+   * A recording's polarity is arbitrary — a note and its inverse are the
+   * same sound — so the sampled layer is inverted whenever it would cancel,
+   * which turns every handover constructive. What remains is then a
+   * predictable bump of at most 3 dB, and dividing both weights by the
+   * factor the measured coherence implies removes it exactly. That factor
+   * is 1 at both ends of the crossfade, so neither boundary can step, and
+   * it never exceeds 1, so it can only attenuate: it cannot lift the note
+   * into the limiter or amplify the sustain.
+   */
+  const polarity = coherence < 0 ? -1 : 1;
+  const alignedCoherence = Math.min(Math.abs(coherence), 1);
+
+  /*
+   * Crossfade weights and the decay correction, computed once per note.
+   * `correction` is applied in full across the attack window and unwound
+   * log-linearly to unity by the centre of the seam window — which is
+   * exactly the crossfade midpoint — so the handover level is exactly
+   * `seamGain` however the two decays differ.
    */
   const correctionStart = (attackStart + attackEnd) / 2;
   const correctionEnd = (matchStart + matchEnd) / 2;
@@ -428,12 +519,14 @@ function applyAttackLayer(
     const level = seamGain * correction ** unwind;
     if (frame < soloFrames) {
       synthGain[frame] = 0;
-      sampleGain[frame] = level;
+      sampleGain[frame] = level * polarity;
       continue;
     }
     const phase = ((frame - soloFrames) / crossfadeFrames) * (Math.PI / 2);
-    synthGain[frame] = Math.sin(phase);
-    sampleGain[frame] = Math.cos(phase) * level;
+    const coherent =
+      1 / Math.sqrt(1 + alignedCoherence * Math.sin(2 * phase));
+    synthGain[frame] = Math.sin(phase) * coherent;
+    sampleGain[frame] = Math.cos(phase) * level * polarity * coherent;
   }
 
   /*

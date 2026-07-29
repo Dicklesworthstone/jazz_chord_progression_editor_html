@@ -38,7 +38,13 @@ const STUDIO_BLANK_DOCUMENT_CANDIDATE = Object.freeze({
   title: "Untitled Changes",
   description: "",
   meter: Object.freeze({ beatsPerBar: 4, beatUnit: 4 }),
-  tempoBpm: 76,
+  /*
+   * 116 BPM in 4/4 with a half-time feel: the backbeat lands on beat 3, so it
+   * is *heard* at about 58 while the harmonic rhythm — two chords a bar
+   * through the seeded chart — moves at a tempo that can actually swing. The
+   * ballad performance style is written for exactly this pulse.
+   */
+  tempoBpm: 116,
   key: null,
   sections: Object.freeze([
     Object.freeze({

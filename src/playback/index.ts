@@ -101,6 +101,10 @@ export {
   MAX_PERFORMANCE_PLAN_SOURCE_EVENTS,
   PERFORMANCE_BASS_REGISTER,
   PERFORMANCE_BASS_TONES,
+  PERFORMANCE_COMP_BASS_SEPARATION_SEMITONES,
+  PERFORMANCE_COMP_MAX_SPAN_SEMITONES,
+  PERFORMANCE_COMP_MIN_WIDTH_VOICES,
+  PERFORMANCE_COMP_REGISTER_POLICY_VERSION,
   PERFORMANCE_COMP_VOICINGS,
   PERFORMANCE_PLAN_COMPILER_ID,
   PERFORMANCE_PLAN_COMPILER_VERSION,
@@ -111,6 +115,7 @@ export {
   PERFORMANCE_PLAN_WORK_LIMITS,
   PERFORMANCE_ROLES,
   PERFORMANCE_ROLE_ID_SUFFIXES,
+  PERFORMANCE_STRAIGHT_EIGHTHS,
   PERFORMANCE_STYLES,
   PERFORMANCE_STYLE_IDS,
 } from "./performance/performance-plan-contract";
@@ -123,8 +128,10 @@ export type {
   ExactBeats,
   PerformanceBassSlot,
   PerformanceBassTone,
+  PerformanceCompRegister,
   PerformanceCompSlot,
   PerformanceCompVoicing,
+  PerformanceCyclePhases,
   PerformancePlanRefusal,
   PerformancePlanRefusalCode,
   PerformancePlanTermination,
@@ -134,5 +141,6 @@ export type {
   PerformanceStyle,
   PerformanceStyleId,
   PerformanceStyleKind,
+  PerformanceSwingRatio,
 } from "./performance/performance-plan-contract";
 export { compilePerformancePlan } from "./performance/performance-plan";

@@ -10,6 +10,7 @@
  */
 import { describe, expect, test } from "bun:test";
 
+import { estimateCents } from "../../scripts/build-piano-samples";
 import {
   loadConcertGrandRenderer,
   PIANO_ATTACK_LAYER_POLICY,
@@ -315,6 +316,124 @@ describe("jcpe-l751 hybrid piano attack layer", () => {
     }
   });
 
+  test("the crossfade midpoint holds its level: the layers do not cancel", async () => {
+    /*
+     * Model-free oracle for the handover.
+     *
+     * The decay correction unwinds to unity by the centre of the seam
+     * window, which is exactly the crossfade midpoint, so at that instant
+     * the two layers are matched in level by construction and a correct
+     * fade reproduces that level: the hybrid must measure what the pure
+     * synthesis measures. It does not follow automatically. The layers are
+     * the same note, both start at the onset, and the build-time stretch
+     * correction puts their fundamentals on one frequency, so their
+     * relative phase is fixed for the whole handover and a naive
+     * cosine/sine pair lets them cancel — a hole, not a fade.
+     *
+     * Swept over the keyboard because the cancellation is per-note: the
+     * relative phase is whatever the recording and the model happen to
+     * start with. Measured over all 88 keys at five velocities, a plain
+     * equal-power fade leaves 109 of 440 pairs more than 3 dB out, worst
+     * -14.4 dB, mean 2.4 dB.
+     */
+    const centre = frameAt(
+      (PIANO_ATTACK_LAYER_POLICY.matchWindowStartSeconds +
+        PIANO_ATTACK_LAYER_POLICY.matchWindowEndSeconds) /
+        2,
+    );
+    const half = frameAt(0.006);
+    const level = (pcm: RenderedNotePcm): number =>
+      Math.hypot(
+        windowRms(pcm.left, centre - half, centre + half),
+        windowRms(pcm.right, centre - half, centre + half),
+      );
+    let total = 0;
+    let count = 0;
+    let worst = 0;
+    let worstAt = "";
+    for (let midi = 21; midi <= 108; midi += 3) {
+      for (const velocity of [1, 64, 127] as const) {
+        const hybrid = await renderOrThrow(midi, velocity);
+        const synth = await renderSynthOrThrow(midi, velocity);
+        const synthLevel = level(synth);
+        expect(synthLevel).toBeGreaterThan(0);
+        const decibels = Math.abs(20 * Math.log10(level(hybrid) / synthLevel));
+        total += decibels;
+        count += 1;
+        if (decibels > worst) {
+          worst = decibels;
+          worstAt = `midi ${String(midi)} velocity ${String(velocity)}`;
+        }
+      }
+    }
+    /* The label rides along so a failure names the note it failed on. */
+    expect([worstAt, worst < 4.5]).toEqual([worstAt, true]);
+    expect(total / count).toBeLessThan(1.5);
+  }, 60_000);
+
+  test("a malformed slice entry falls back to synthesis, never to garbage", async () => {
+    /*
+     * The index is generated and the payload is pinned by hash, but the
+     * runtime must not depend on that: an entry whose PCM range runs off
+     * either end of the payload would truncate the layer to silence
+     * mid-crossfade or replay a neighbouring recording, both audible. The
+     * contract is that such a request renders as pure synthesis.
+     */
+    const renderer = await loadConcertGrandRenderer();
+    const entry = PIANO_ATTACK_SLICE_INDEX.find(
+      (slice) => slice.midiPitch === 60 && slice.velocityBucket === 2,
+    );
+    expect(entry).toBeDefined();
+    if (entry === undefined) return;
+    const mutable = entry as { byteOffset: number; frameCount: number };
+    const savedOffset = mutable.byteOffset;
+    const savedFrames = mutable.frameCount;
+    const synth = await renderSynthOrThrow(60, 96);
+    const corruptions: readonly (readonly [string, number, number])[] = [
+      ["past the payload", PIANO_ATTACK_SAMPLES_BYTE_LENGTH, savedFrames],
+      [
+        "overrunning the tail",
+        PIANO_ATTACK_SAMPLES_BYTE_LENGTH - 9_000 * 2,
+        savedFrames,
+      ],
+      ["negative", -4_000, savedFrames],
+      ["odd", savedOffset + 1, savedFrames],
+      ["non-integer frame count", savedOffset, Number.NaN],
+    ];
+    try {
+      /* The clean entry really does engage the layer. */
+      const clean = renderer.renderNote(60, 96, SAMPLE_RATE);
+      expect(clean).not.toBeNull();
+      expect(
+        Buffer.from(clean?.left.buffer ?? new ArrayBuffer(0)).equals(
+          Buffer.from(synth.left.buffer),
+        ),
+      ).toBe(false);
+
+      for (const [label, byteOffset, frameCount] of corruptions) {
+        mutable.byteOffset = byteOffset;
+        mutable.frameCount = frameCount;
+        const pcm = renderer.renderNote(60, 96, SAMPLE_RATE);
+        expect(pcm).not.toBeNull();
+        if (pcm === null) continue;
+        expect(`${label}:${String(pcm.frameCount)}`).toBe(
+          `${label}:${String(synth.frameCount)}`,
+        );
+        expect(
+          `${label}:${String(
+            Buffer.from(pcm.left.buffer).equals(Buffer.from(synth.left.buffer)),
+          )}`,
+        ).toBe(`${label}:true`);
+        expect(
+          Buffer.from(pcm.right.buffer).equals(Buffer.from(synth.right.buffer)),
+        ).toBe(true);
+      }
+    } finally {
+      mutable.byteOffset = savedOffset;
+      mutable.frameCount = savedFrames;
+    }
+  });
+
   test("the sampled attack agrees with the sustain on pitch", async () => {
     /*
      * The recordings are stretch-tuned; if the build-time correction were
@@ -423,5 +542,42 @@ describe("jcpe-l751 hybrid piano attack layer", () => {
     expect(missing).toBe(false);
     expect(renderer.attackSliceFor(200, 96)).toBeNull();
     expect(renderer.attackSliceFor(60, 200)).toBeNull();
+  });
+
+  test("the build-time tuning estimator refuses what it cannot measure", () => {
+    /*
+     * The payload's cents corrections are measurements, and a measurement
+     * that fails must fail the build. A scan whose maximum is an artifact —
+     * a silent window, or one pegged at an endpoint of the scan range —
+     * would otherwise write a fabricated correction that `--check` then
+     * reproduces exactly and blesses, detuning the sampled layer against
+     * the sustain it is crossfaded into with no gate able to see it.
+     */
+    expect(() => estimateCents(new Float64Array(17_640), 60)).toThrow(
+      /PIANO_SAMPLES_TUNING_SILENT/u,
+    );
+    expect(() => estimateCents(new Float64Array(300), 60)).toThrow(
+      /PIANO_SAMPLES_TUNING_WINDOW/u,
+    );
+
+    /* A clean 12-TET tone still measures as exactly on pitch. */
+    const rate = PIANO_ATTACK_SAMPLE_RATE_HZ;
+    const tone = new Float64Array(PIANO_ATTACK_SLICE_FRAMES);
+    for (let index = 0; index < tone.length; index += 1) {
+      tone[index] = Math.sin(
+        (2 * Math.PI * midiFrequency(60) * index) / rate,
+      );
+    }
+    expect(estimateCents(tone, 60)).toBe(0);
+
+    /* And a tone further out than the scan can resolve is refused. */
+    const far = new Float64Array(PIANO_ATTACK_SLICE_FRAMES);
+    const detuned = midiFrequency(60) * 2 ** (90 / 1_200);
+    for (let index = 0; index < far.length; index += 1) {
+      far[index] = Math.sin((2 * Math.PI * detuned * index) / rate);
+    }
+    expect(() => estimateCents(far, 60)).toThrow(
+      /PIANO_SAMPLES_TUNING_UNRESOLVED/u,
+    );
   });
 });

@@ -40,14 +40,14 @@ const CHART_TEXT = "| Dm7 G7 | Cmaj7 |";
 const EXPECTED_CHORD_COUNT = 3;
 
 /**
- * Since jcpe-73h1 the typed chart fills the pristine first bar, so sound
- * starts at beat zero. The 4.5 s window is kept deliberately wider than one
- * bar at any supported tempo so a placement regression (sound pushed later
- * by a reintroduced silent bar) still lands inside the sampled window and
- * fails on the silence claims instead of timing out. Stop while sounding,
- * wait out the 4 s hall tail, then require digital silence.
+ * The window has to fit INSIDE the chart's own sounding length, because Stop
+ * must be exercised while the transport is still playing — a window that
+ * outlives the music finds the button disabled after a natural end. Two bars
+ * at the seeded 116 BPM last ~4.1 s, so 2.5 s samples the body of the run and
+ * still leaves it sounding. Derived from musical time, not a wall constant:
+ * if the seed tempo or the typed chart changes, revisit this number.
  */
-const PLAYING_SAMPLE_MS = 4_500;
+const PLAYING_SAMPLE_MS = 2_500;
 const POST_STOP_SETTLE_MS = 2_600;
 const SILENCE_WINDOW_MS = 900;
 const PLAYING_MIN_PEAK = 0.02;

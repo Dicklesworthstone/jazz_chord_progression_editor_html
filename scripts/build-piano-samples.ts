@@ -223,6 +223,8 @@ const TUNING_SCAN_STEP_CENTS = 0.5;
 const TUNING_PARTIALS = [1, 2, 3, 4] as const;
 const TUNING_WINDOW_START_FRAMES = 882;
 const TUNING_WINDOW_FRAMES = 13_230;
+/** Below this the scan resolution is finer than the window can support. */
+const TUNING_MINIMUM_WINDOW_FRAMES = 4_410;
 
 function midiFrequencyHz(midiPitch: number): number {
   return 440 * 2 ** ((midiPitch - 69) / 12);
@@ -253,14 +255,27 @@ function goertzelPower(
   );
 }
 
-function estimateCents(window: Float64Array, midiPitch: number): number {
+/**
+ * The scan must resolve a maximum strictly inside its own range. A window
+ * with no measurable energy scores zero at every candidate and a window
+ * whose true deviation sits outside the scan pegs at an endpoint; in both
+ * cases the "estimate" is an artifact of the loop, and writing it would put
+ * a fabricated cents correction into the payload that `--check` would then
+ * reproduce and bless. Refusing keeps a bad measurement a build failure.
+ */
+export function estimateCents(window: Float64Array, midiPitch: number): number {
   const nominal = midiFrequencyHz(midiPitch);
   const length = Math.min(
     TUNING_WINDOW_FRAMES,
     window.length - TUNING_WINDOW_START_FRAMES,
   );
+  if (length < TUNING_MINIMUM_WINDOW_FRAMES) {
+    throw new Error(
+      `PIANO_SAMPLES_TUNING_WINDOW: ${String(length)} frames is too short to pitch midi ${String(midiPitch)}`,
+    );
+  }
   let bestCents = 0;
-  let bestScore = -1;
+  let bestScore = 0;
   for (
     let cents = -TUNING_SCAN_CENTS;
     cents <= TUNING_SCAN_CENTS;
@@ -285,6 +300,16 @@ function estimateCents(window: Float64Array, midiPitch: number): number {
       bestScore = score;
       bestCents = cents;
     }
+  }
+  if (bestScore <= 0) {
+    throw new Error(
+      `PIANO_SAMPLES_TUNING_SILENT: no measurable energy at midi ${String(midiPitch)}`,
+    );
+  }
+  if (Math.abs(bestCents) >= TUNING_SCAN_CENTS) {
+    throw new Error(
+      `PIANO_SAMPLES_TUNING_UNRESOLVED: midi ${String(midiPitch)} pegged the scan at ${String(bestCents)} cents`,
+    );
   }
   return bestCents;
 }
@@ -661,4 +686,6 @@ async function run(): Promise<void> {
   );
 }
 
-await run();
+if (import.meta.main) {
+  await run();
+}

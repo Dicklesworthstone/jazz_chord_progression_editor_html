@@ -33,7 +33,7 @@ describe("studio application checkpoint", () => {
       title: "Untitled Changes",
       description: "",
       meter: { beatsPerBar: 4, beatUnit: 4 },
-      tempoBpm: 76,
+      tempoBpm: 116,
       key: null,
       playback: {
         instrumentId: "concert-grand",
@@ -69,7 +69,7 @@ describe("studio application checkpoint", () => {
       title: "Untitled Changes",
       revision: 0,
       meterLabel: "4/4",
-      tempoBpm: 76,
+      tempoBpm: 116,
       keyLabel: "No key",
       instrumentLabel: "Concert Grand",
       masterVolume: 0.9,
