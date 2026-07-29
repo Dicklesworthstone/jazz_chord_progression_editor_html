@@ -425,7 +425,7 @@ async function main(): Promise<void> {
     !Number.isSafeInteger(max) ||
     !Number.isSafeInteger(shell) ||
     !Number.isSafeInteger(atlas) ||
-    Number(max) !== 1_572_864 ||
+    Number(max) !== 8_388_608 ||
     Number(shell) <= 0 ||
     Number(atlas) <= 0 ||
     Number(shell) + Number(atlas) > Number(max)

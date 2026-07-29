@@ -2236,7 +2236,7 @@
   padding: var(--space-1);
   border: var(--border-width) solid var(--border-strong);
   border-radius: var(--radius-md);
-  background: var(--surface-overlay);
+  background: var(--surface-elevated);
 }
 
 .studio-section__boundary-item {
@@ -2343,7 +2343,7 @@
   padding: var(--space-1);
   border: var(--border-width) solid var(--border-strong);
   border-radius: var(--radius-md);
-  background: var(--surface-overlay);
+  background: var(--surface-elevated);
 }
 
 .studio-chord-card__menu-item {
@@ -2587,7 +2587,7 @@
   padding: 0.5rem 0.625rem 0.625rem;
   border: var(--border-width) solid var(--border-default);
   border-radius: var(--radius-sm);
-  background: var(--surface-overlay);
+  background: var(--surface-elevated);
   color: var(--text-primary);
   font-family: var(--font-mono);
   font-size: var(--text-xs);

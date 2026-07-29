@@ -148,6 +148,16 @@ export const STUDIO_TRANSPORT_TIMING: TransportTimingPolicy =
   /* @__PURE__ */ Object.freeze({
     tickIntervalMs: 50,
     lookaheadSeconds: 0.12,
+    /*
+     * The live audio clock advances between the scheduler's read and the
+     * engine's admission read, so an attack due exactly now can arrive a
+     * fraction of a millisecond in the past and be refused. The contract's
+     * measured-browser margin re-issues such an attack at now + margin; it
+     * can only delay an already-due attack, never silence or reorder one.
+     * Measured need: WebKit refused the first attack of a run outright once
+     * candidate selection made the pre-play work heavier.
+     */
+    immediateStartMarginSeconds: 0.01,
   });
 
 export const STUDIO_INITIAL_MIX: AudioMix = /* @__PURE__ */ Object.freeze({

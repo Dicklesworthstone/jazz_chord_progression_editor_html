@@ -3,7 +3,7 @@ import * as ts from "typescript";
 
 export const GENERATED_ARTIFACT_BANNER =
   "<!-- @generated; edit src/, then run bun run build -->";
-export const DEFAULT_MAX_ARTIFACT_BYTES = 1_572_864;
+export const DEFAULT_MAX_ARTIFACT_BYTES = 8_388_608;
 export const DEFAULT_FOUNDATION_SHELL_BYTES = 262_144;
 
 const REQUIRED_NONE_DIRECTIVES = [
