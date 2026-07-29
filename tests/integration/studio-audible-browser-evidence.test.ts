@@ -40,11 +40,12 @@ const CHART_TEXT = "| Dm7 G7 | Cmaj7 |";
 const EXPECTED_CHORD_COUNT = 3;
 
 /**
- * The typed chart lands after the pristine empty first bar (jcpe-73h1), so
- * at the bootstrap 76 BPM the first attack sounds ~3.16 s after Play. The
- * sampling window must cover that regardless of tempo — 4.5 s spans the
- * empty bar plus the first sounding bar with margin — then Stop while still
- * sounding, wait out the 4 s hall tail, and require digital silence.
+ * Since jcpe-73h1 the typed chart fills the pristine first bar, so sound
+ * starts at beat zero. The 4.5 s window is kept deliberately wider than one
+ * bar at any supported tempo so a placement regression (sound pushed later
+ * by a reintroduced silent bar) still lands inside the sampled window and
+ * fails on the silence claims instead of timing out. Stop while sounding,
+ * wait out the 4 s hall tail, then require digital silence.
  */
 const PLAYING_SAMPLE_MS = 4_500;
 const POST_STOP_SETTLE_MS = 2_600;

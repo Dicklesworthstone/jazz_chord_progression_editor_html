@@ -293,7 +293,7 @@ describe("U1 editing controller", () => {
     expect(studio.getSnapshot().chordCount).toBe(0);
   });
 
-  test("a multi-measure draft enters a section boundary", () => {
+  test("a multi-measure draft into a pristine section fills the empty bar first (jcpe-73h1)", () => {
     const studio = controller();
     const sectionId = firstSectionId(studio.getSnapshot());
     expectOk(
@@ -306,10 +306,39 @@ describe("U1 editing controller", () => {
     );
     const applied = expectOk(studio.applyQuickEntryPreview());
     expect(applied.snapshot.chordCount).toBe(2);
+    /* The pristine empty bar is consumed, not skipped: no silent bar one. */
+    expect(applied.snapshot.measureCount).toBe(2);
+    expect(
+      applied.snapshot.sections[0]?.measures.map((measure) => measure.fill),
+    ).toEqual(["exact-fill", "exact-fill"]);
+  });
+
+  test("a multi-measure draft appends whole once the section is no longer pristine", () => {
+    const studio = controller();
+    const sectionId = firstSectionId(studio.getSnapshot());
+    expectOk(
+      studio.setQuickEntryDraft(
+        "| G:4 |",
+        { kind: "section-end", sectionId },
+        "ready",
+        [],
+      ),
+    );
+    expectOk(studio.applyQuickEntryPreview());
+    expectOk(
+      studio.setQuickEntryDraft(
+        "| C:4 | D:4 |",
+        { kind: "section-end", sectionId },
+        "ready",
+        [],
+      ),
+    );
+    const applied = expectOk(studio.applyQuickEntryPreview());
+    expect(applied.snapshot.chordCount).toBe(3);
     expect(applied.snapshot.measureCount).toBe(3);
     expect(
       applied.snapshot.sections[0]?.measures.map((measure) => measure.fill),
-    ).toEqual(["empty", "exact-fill", "exact-fill"]);
+    ).toEqual(["exact-fill", "exact-fill", "exact-fill"]);
   });
 
   test("named sections enter the document boundary", () => {
