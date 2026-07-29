@@ -155,6 +155,11 @@ export type AppActions = Readonly<{
    * transport state still arrives only through notifications.
    */
   readTransportPlayheadLabel: () => string | null;
+  /** Sound one chord immediately on selection (jcpe-gnyy). */
+  previewChord: (
+    eventId: string,
+    gesture: StudioAudioGesture,
+  ) => StudioControllerActionResult;
   /** Display-only analyzer reads (jcpe-7she); never a command path. */
   readTransportAnalysisFrame: () => StudioAnalysisFrame | null;
   readEventPitchClasses: (eventId: string) => readonly number[] | null;
@@ -1241,6 +1246,18 @@ export function App({ snapshot, actions }: AppProps) {
               ? actions.extendSelectionTo(chordId)
               : actions.selectEvent(chordId),
           );
+          /*
+           * jcpe-gnyy: a plain selection also sounds the chord. The card
+           * activation is a real trusted gesture, which is exactly what the
+           * first preview needs to open the audio graph.
+           */
+          if (!extend) {
+            actions.previewChord(chordId, {
+              kind: "trusted-pointer",
+              trusted: true,
+              sequence: 1,
+            });
+          }
         },
         onRovingFocusChange: (chordId) => {
           setRovingFocusId(chordId);
@@ -1667,6 +1684,7 @@ export function StudioRoot({ controller }: StudioRootProps) {
         clearRange: controller.clearRange,
         pauseProgression: controller.pauseProgression,
         playProgression: controller.playProgression,
+        previewChord: controller.previewChord,
         readTransportPlayheadLabel: controller.readTransportPlayheadLabel,
         readTransportAnalysisFrame: controller.readTransportAnalysisFrame,
         readEventPitchClasses: controller.readEventPitchClasses,

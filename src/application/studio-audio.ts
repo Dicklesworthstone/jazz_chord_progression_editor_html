@@ -88,6 +88,19 @@ export type StudioAudioPort = Readonly<{
     instrumentId: InstrumentId,
   ) => Promise<TransportCommandOutcome>;
   /**
+   * Sound one chord immediately as a preview voice batch (jcpe-gnyy). The
+   * preview owner is isolated from progression playback by X0/X1 law:
+   * starting a new preview releases the prior one, and previews never touch
+   * the playhead, plan binding, or published status.
+   */
+  startPreview: (
+    commandRequestId: number,
+    previewId: string,
+    instrumentId: InstrumentId,
+    midiPitches: readonly [MidiPitch, ...MidiPitch[]],
+    gateSeconds: number,
+  ) => Promise<TransportCommandOutcome>;
+  /**
    * Warm the rendered-instrument buffer cache for the run's distinct notes.
    * Resolves false when the renderer refuses; oscillator instruments resolve
    * true without work.
@@ -326,6 +339,23 @@ export function createStudioAudio(
       ),
     stop: async (commandRequestId) =>
       submit(commandRequestId, Object.freeze({ kind: "stop" as const })),
+    startPreview: async (
+      commandRequestId,
+      previewId,
+      instrumentId,
+      midiPitches,
+      gateSeconds,
+    ) =>
+      submit(
+        commandRequestId,
+        Object.freeze({
+          kind: "start-preview" as const,
+          previewId,
+          instrumentId,
+          midiPitches,
+          gateSeconds,
+        }),
+      ),
     setInstrument: async (commandRequestId, instrumentId) =>
       submit(
         commandRequestId,

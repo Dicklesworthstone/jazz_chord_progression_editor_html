@@ -27,6 +27,7 @@ import {
 import {
   buildDocumentIndex,
   createWorkCounters,
+  successResult,
   type DocumentIndex,
   type EventLocation,
 } from "./application-state-helpers";
@@ -159,6 +160,7 @@ export type StudioControllerAction =
   | "join-sections"
   | "split-at-bar"
   | "play-progression"
+  | "preview-chord"
   | "pause-progression"
   | "stop-progression"
   | "transport-notification"
@@ -504,6 +506,15 @@ export interface StudioController {
   ) => StudioControllerActionResult;
   readonly pauseProgression: () => StudioControllerActionResult;
   readonly stopProgression: () => StudioControllerActionResult;
+  /**
+   * Sound one chord immediately (jcpe-gnyy). The first preview on a fresh
+   * page performs the gesture-gated audio initialization exactly like Play;
+   * previews never move the playhead or touch the run state.
+   */
+  readonly previewChord: (
+    eventId: string,
+    gesture: StudioAudioGesture,
+  ) => StudioControllerActionResult;
   /**
    * Display-only live playhead label in the exact-beat format the transport
    * view already uses. The UI's animation frame reads this while the transport
@@ -3702,6 +3713,89 @@ function makeStudioController(
       : formatExactBeatLabel(audioPort.readPlayheadBeat());
 
   let lastPlanPitchClasses: Map<string, readonly number[]> | null = null;
+  let previewOrdinal = 0;
+
+  const PREVIEW_GATE_SECONDS = 1.2;
+
+  const previewChord = (
+    eventId: string,
+    gesture: StudioAudioGesture,
+  ): StudioControllerActionResult => {
+    if (audioPort === null) {
+      return editRefusal(
+        "preview-chord",
+        "u1.playback_unavailable",
+        "This build has no audio output wired.",
+      );
+    }
+    const compiled = compileStudioPlaybackPlan(state.document);
+    if (!compiled.ok) {
+      return editRefusal(
+        "preview-chord",
+        "u1.playback_refused",
+        compiled.refusal.message,
+      );
+    }
+    const event = compiled.plan.events.find(
+      (candidate) => candidate.eventId === eventId,
+    );
+    if (event === undefined) {
+      return editRefusal(
+        "preview-chord",
+        "u1.playback_refused",
+        "This chord has no playable realization yet.",
+      );
+    }
+    /* P0 pins every event to at least one pitch; the type carries it. */
+    const [firstPitch, ...restPitches] = event.midiPitches;
+    const midiPitches: readonly [MidiPitch, ...MidiPitch[]] = [
+      firstPitch,
+      ...restPitches,
+    ];
+    const instrumentId = state.document.playback.instrumentId;
+    previewOrdinal += 1;
+    const previewId = `x1:preview:chord-${String(previewOrdinal)}`;
+    const port = audioPort;
+    const documentId = state.document.id;
+    const planRevision = state.revision;
+    const mix = Object.freeze({
+      masterVolume: state.document.playback.masterVolume,
+      reverbAmount: state.document.playback.reverbAmount,
+    });
+    void (async () => {
+      if (!port.isInitialized()) {
+        await port.initialize(
+          nextTransportRequestId(),
+          gesture,
+          documentId,
+          planRevision,
+          mix,
+        );
+      }
+      await port.prepareInstrument(
+        instrumentId,
+        midiPitches.map((midiPitch) =>
+          Object.freeze({ midiPitch, velocity: event.velocity }),
+        ),
+      );
+      await port.setInstrument(nextTransportRequestId(), instrumentId);
+      await port.startPreview(
+        nextTransportRequestId(),
+        previewId,
+        instrumentId,
+        midiPitches,
+        PREVIEW_GATE_SECONDS,
+      );
+    })();
+    /*
+     * A preview is an audio-only effect: application state is untouched, so
+     * the success carries the current snapshot as an ephemeral no-change
+     * transition and apply() will not notify (state object is unchanged).
+     */
+    return apply("preview-chord", (current) =>
+      successResult(current, createWorkCounters(), "ephemeral-updated"),
+    );
+  };
 
   const readTransportAnalysisFrame = (): StudioAnalysisFrame | null =>
     audioPort === null ? null : audioPort.readAnalysisFrame();
@@ -4123,6 +4217,7 @@ function makeStudioController(
     joinSections,
     pauseProgression,
     playProgression,
+    previewChord,
     readTransportPlayheadLabel,
     readTransportAnalysisFrame,
     readEventPitchClasses,
