@@ -40,11 +40,13 @@ const CHART_TEXT = "| Dm7 G7 | Cmaj7 |";
 const EXPECTED_CHORD_COUNT = 3;
 
 /**
- * The chart is 8 beats at the bootstrap 120 BPM, so ~4 s of sound. Sample two
- * seconds of it, stop while it is still sounding, wait out the 2 s reverb
- * impulse tail, then require the tap to read digital silence.
+ * The typed chart lands after the pristine empty first bar (jcpe-73h1), so
+ * at the bootstrap 76 BPM the first attack sounds ~3.16 s after Play. The
+ * sampling window must cover that regardless of tempo — 4.5 s spans the
+ * empty bar plus the first sounding bar with margin — then Stop while still
+ * sounding, wait out the 4 s hall tail, and require digital silence.
  */
-const PLAYING_SAMPLE_MS = 2_000;
+const PLAYING_SAMPLE_MS = 4_500;
 const POST_STOP_SETTLE_MS = 2_600;
 const SILENCE_WINDOW_MS = 900;
 const PLAYING_MIN_PEAK = 0.02;
