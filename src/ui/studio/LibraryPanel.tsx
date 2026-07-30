@@ -1,8 +1,9 @@
 import { useState } from "preact/hooks";
 
 import { PROGRESSION_LIBRARY, STARTER_CHART } from "../../application/runtime";
-import { Badge, Button, Checkbox, UiIcon } from "../primitives";
+import { Badge, Button, Checkbox, Input, Label, UiIcon } from "../primitives";
 import type {
+  StudioPlaybackSettingsView,
   StudioQuickEntryTokenView,
   StudioQuickEntryView,
 } from "./studio-contract";
@@ -57,9 +58,12 @@ export type LibraryPanelContentProps = Readonly<{
   headingId: string;
   context: "rail" | "sheet";
   quickEntry: StudioQuickEntryView;
+  playback: StudioPlaybackSettingsView;
   onQuickEntryDraftChange: (value: string) => void;
   onQuickEntryInsert: () => void;
   onQuickEntryClear: () => void;
+  onTempoDraftChange: (value: string) => void;
+  onTempoCommit: () => void;
   onRecoveryAcknowledgeChange: (acknowledged: boolean) => void;
   onRecoveryDurationDraftChange: (value: string) => void;
   onInsertRecoveredChord: (globalOrdinal: number) => void;
@@ -404,7 +408,13 @@ function QuickEntryPanel({
         </section>
       ) : null}
       {view.refusalMessage === null ? null : (
-        <p class="studio-quick-entry__refusal" data-testid="quick-entry-refusal">
+        <p
+          class="studio-quick-entry__refusal"
+          data-testid="quick-entry-refusal"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
           {view.refusalMessage}
         </p>
       )}
@@ -572,9 +582,12 @@ export function LibraryPanelContent({
   headingId,
   context,
   quickEntry,
+  playback,
   onQuickEntryDraftChange,
   onQuickEntryInsert,
   onQuickEntryClear,
+  onTempoDraftChange,
+  onTempoCommit,
   onRecoveryAcknowledgeChange,
   onRecoveryDurationDraftChange,
   onInsertRecoveredChord,
@@ -606,6 +619,73 @@ export function LibraryPanelContent({
         view={quickEntry}
       />
 
+      {/*
+        Playback settings live with the writing tools rather than in the
+        fixed-height transport bar, which has no room to grow at phone
+        widths. Ids are suffixed with the panel context because the mobile
+        sheet renders a second copy of this panel while open (jcpe-ph6d).
+      */}
+      <section
+        class="studio-playback-settings"
+        aria-labelledby={`studio-playback-heading-${context}`}
+      >
+        <h3 id={`studio-playback-heading-${context}`}>Playback</h3>
+        <form
+          aria-label="Tempo"
+          class="studio-playback-settings__tempo"
+          onSubmit={(event) => {
+            event.preventDefault();
+            onTempoCommit();
+          }}
+        >
+          <Label
+            controlId={`studio-tempo-input-${context}`}
+            id={`studio-tempo-label-${context}`}
+            required={false}
+            text="Tempo (BPM)"
+          />
+          <div class="studio-playback-settings__tempo-row">
+            <Input
+              accessibleName="Tempo in beats per minute"
+              busy={false}
+              density="dense"
+              describedBy={[`studio-tempo-feedback-${context}`]}
+              disabled={false}
+              id={`studio-tempo-input-${context}`}
+              inputType="text"
+              invalid={playback.tempoInvalid}
+              onValueChange={(event) => {
+                onTempoDraftChange(event.value);
+              }}
+              placeholder={null}
+              readOnly={false}
+              value={playback.tempoDraft}
+            />
+            <Button
+              busy={false}
+              density="dense"
+              describedBy={[`studio-tempo-feedback-${context}`]}
+              disabled={false}
+              id={`studio-apply-tempo-${context}`}
+              invalid={false}
+              label="Apply tempo"
+              onAction={() => undefined}
+              type="submit"
+              variant="secondary"
+            />
+          </div>
+          <p
+            class="studio-playback-settings__feedback"
+            id={`studio-tempo-feedback-${context}`}
+            role={playback.tempoInvalid ? "alert" : "status"}
+            aria-live={playback.tempoInvalid ? "assertive" : "polite"}
+            aria-atomic="true"
+          >
+            {playback.tempoFeedback ?? ""}
+          </p>
+        </form>
+      </section>
+
       <p class="studio-panel-intro">
         The remaining entry tools appear here only when they can create real,
         validated chart changes.
@@ -634,9 +714,12 @@ export type LibraryPanelProps = Readonly<{
   collapsed: boolean;
   onCollapsedChange: (collapsed: boolean) => void;
   quickEntry: StudioQuickEntryView;
+  playback: StudioPlaybackSettingsView;
   onQuickEntryDraftChange: (value: string) => void;
   onQuickEntryInsert: () => void;
   onQuickEntryClear: () => void;
+  onTempoDraftChange: (value: string) => void;
+  onTempoCommit: () => void;
   onRecoveryAcknowledgeChange: (acknowledged: boolean) => void;
   onRecoveryDurationDraftChange: (value: string) => void;
   onInsertRecoveredChord: (globalOrdinal: number) => void;
@@ -646,9 +729,12 @@ export function LibraryPanel({
   collapsed,
   onCollapsedChange,
   quickEntry,
+  playback,
   onQuickEntryDraftChange,
   onQuickEntryInsert,
   onQuickEntryClear,
+  onTempoDraftChange,
+  onTempoCommit,
   onRecoveryAcknowledgeChange,
   onRecoveryDurationDraftChange,
   onInsertRecoveredChord,
@@ -678,8 +764,11 @@ export function LibraryPanel({
             onQuickEntryClear={onQuickEntryClear}
             onQuickEntryDraftChange={onQuickEntryDraftChange}
             onQuickEntryInsert={onQuickEntryInsert}
+            onTempoDraftChange={onTempoDraftChange}
+            onTempoCommit={onTempoCommit}
             onRecoveryAcknowledgeChange={onRecoveryAcknowledgeChange}
             onRecoveryDurationDraftChange={onRecoveryDurationDraftChange}
+            playback={playback}
             quickEntry={quickEntry}
           />
         )}

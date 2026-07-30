@@ -28,8 +28,16 @@ function RailFocusHarness() {
       onQuickEntryClear: () => undefined,
       onQuickEntryDraftChange: () => undefined,
       onQuickEntryInsert: () => undefined,
+      onTempoDraftChange: () => undefined,
+      onTempoCommit: () => undefined,
       onRecoveryAcknowledgeChange: () => undefined,
       onRecoveryDurationDraftChange: () => undefined,
+      playback: Object.freeze({
+        tempoBpm: 105,
+        tempoDraft: "105",
+        tempoFeedback: null,
+        tempoInvalid: false,
+      }),
       quickEntry: {
         canClear: false,
         canInsert: false,

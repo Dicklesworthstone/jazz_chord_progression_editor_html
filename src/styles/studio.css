@@ -1671,6 +1671,48 @@
   gap: var(--space-2);
 }
 
+/*
+ * Playback settings group in the Library rail. Tempo (and later the groove
+ * picker) live here rather than in the fixed-height transport bar, which
+ * has no room to grow at phone widths.
+ */
+.studio-playback-settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-block-start: var(--space-3);
+  border-block-start: var(--border-width) solid var(--border-default);
+}
+
+.studio-playback-settings h3 {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+}
+
+.studio-playback-settings__tempo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.studio-playback-settings__tempo-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.studio-playback-settings__tempo-row .ui-input {
+  inline-size: 6rem;
+}
+
+.studio-playback-settings__feedback {
+  margin: 0;
+  min-block-size: 1.25em;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
 .studio-progression-list {
   display: flex;
   flex-direction: column;

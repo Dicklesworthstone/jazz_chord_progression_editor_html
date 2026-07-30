@@ -127,6 +127,9 @@ export function StudioShell({
               onQuickEntryClear={callbacks.onQuickEntryClear}
               onQuickEntryDraftChange={callbacks.onQuickEntryDraftChange}
               onQuickEntryInsert={callbacks.onQuickEntryInsert}
+              onTempoDraftChange={callbacks.onTempoDraftChange}
+              onTempoCommit={callbacks.onTempoCommit}
+              playback={view.playback}
               quickEntry={view.quickEntry}
               onCollapsedChange={(collapsed) => {
                 callbacks.onRailCollapsedChange("library", collapsed);
@@ -154,6 +157,8 @@ export function StudioShell({
               onSplitDuration={callbacks.onSplitDuration}
               onSplitSection={callbacks.onSplitSection}
               onJoinSections={callbacks.onJoinSections}
+              onDeleteMeasure={callbacks.onDeleteMeasure}
+              onSplitAtBar={callbacks.onSplitAtBar}
               onSetInsertionPoint={callbacks.onSetInsertionPoint}
               onRangeModeChange={callbacks.onRangeModeChange}
               onRangeEdgeFromFocus={callbacks.onRangeEdgeFromFocus}
@@ -246,6 +251,9 @@ export function StudioShell({
                   onQuickEntryClear={callbacks.onQuickEntryClear}
                   onQuickEntryDraftChange={callbacks.onQuickEntryDraftChange}
                   onQuickEntryInsert={callbacks.onQuickEntryInsert}
+                  onTempoDraftChange={callbacks.onTempoDraftChange}
+                  onTempoCommit={callbacks.onTempoCommit}
+                  playback={view.playback}
                   quickEntry={view.quickEntry}
                 />
               ) : (

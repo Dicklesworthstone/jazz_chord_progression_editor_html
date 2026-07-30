@@ -1,4 +1,11 @@
-import { Button, Field, Input, Label, StatusPill } from "../primitives";
+import {
+  Button,
+  Field,
+  Input,
+  Label,
+  StatusPill,
+  VisuallyHidden,
+} from "../primitives";
 import type {
   StudioDocumentView,
   StudioShellCallbacks,
@@ -176,8 +183,9 @@ export function StudioHeader({ view, callbacks }: StudioHeaderProps) {
           {/*
             Clearing is destructive but not irreversible: it is one undoable
             command, so the confirmation exists to stop an accidental click,
-            not to guard something unrecoverable. It is offered only when
-            there is something to clear, so the affordance never lies.
+            not to guard something unrecoverable. It is an owned two-step
+            control — never a native confirm dialog: press once to arm, again
+            to clear, and the armed state announces itself politely.
           */}
           <Button
             busy={false}
@@ -186,11 +194,21 @@ export function StudioHeader({ view, callbacks }: StudioHeaderProps) {
             disabled={!view.canClearChart}
             id="studio-clear-chart"
             invalid={false}
-            label="Clear"
+            label={view.clearLabel}
             onAction={callbacks.onClearChart}
             type="button"
             variant="destructive"
           />
+          <span aria-live="polite">
+            <VisuallyHidden
+              content={
+                view.clearArmed
+                  ? "Press Clear again to empty the chart. Undo restores it."
+                  : ""
+              }
+              focusableWhenSkippedTo={false}
+            />
+          </span>
         </div>
       </div>
     </header>

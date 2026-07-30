@@ -39,6 +39,8 @@ export type ChartWorkspaceProps = Readonly<{
   onSplitDuration: (chordId: string, firstBeats: string) => void;
   onSplitSection: (sectionId: string, beforeMeasureId: string) => void;
   onJoinSections: (sectionId: string) => void;
+  onDeleteMeasure: (measureId: string) => void;
+  onSplitAtBar: (beforeEventId: string) => void;
   onSetInsertionPoint: (measureId: string) => void;
   onRangeModeChange: (active: boolean) => void;
   onRangeEdgeFromFocus: (edge: "start" | "end") => void;
@@ -124,6 +126,27 @@ type DeferredSwitch =
   | null;
 
 /** Visual order of every chord card, used only for roving-focus movement. */
+/**
+ * The chord after `chordId` inside its own measure, or null when the chord
+ * is missing or already last in its bar. This is the only legal split-at-bar
+ * boundary the overfill fix can name.
+ */
+function nextChordInSameMeasure(
+  view: StudioChartView,
+  chordId: string | null,
+): string | null {
+  if (chordId === null) return null;
+  for (const section of view.sections) {
+    for (const measure of section.measures) {
+      const index = measure.chords.findIndex((chord) => chord.id === chordId);
+      if (index === -1) continue;
+      const next = measure.chords[index + 1];
+      return next === undefined ? null : next.id;
+    }
+  }
+  return null;
+}
+
 function chartChordOrder(view: StudioChartView): readonly string[] {
   return view.sections.flatMap((section) =>
     section.measures.flatMap((measure) =>
@@ -173,6 +196,8 @@ export function ChartWorkspace({
   onSplitDuration,
   onSplitSection,
   onJoinSections,
+  onDeleteMeasure,
+  onSplitAtBar,
   onSetInsertionPoint,
   onRangeModeChange,
   onRangeEdgeFromFocus,
@@ -1337,6 +1362,36 @@ export function ChartWorkspace({
               variant="secondary"
             />
           ) : null}
+          {/*
+            The reviewed overfill authority names split-at-bar as a peer of
+            move-following-events (jcpe-aacz). The split boundary is the
+            chord after the focused one in its own bar; when the focused
+            chord is the bar's last, there is nothing to split before and
+            the fix is not offered rather than offered-and-refused.
+          */}
+          {view.editRefusal.code === "u1.duration_overfills_measure" &&
+          nextChordInSameMeasure(view, view.rovingFocusId) !== null ? (
+            <Button
+              busy={false}
+              density="comfortable"
+              describedBy={[]}
+              disabled={false}
+              id="studio-split-at-bar"
+              invalid={false}
+              label="Split this bar here"
+              onAction={() => {
+                const boundary = nextChordInSameMeasure(
+                  view,
+                  view.rovingFocusId,
+                );
+                if (boundary !== null) {
+                  onSplitAtBar(boundary);
+                }
+              }}
+              type="button"
+              variant="secondary"
+            />
+          ) : null}
           {view.editRefusal.needsIncompleteReason ? (
             <span class="studio-chart__reason">
               {/* The declaration itself happens in U1-CMP-019, which this
@@ -1593,6 +1648,22 @@ export function ChartWorkspace({
                                   label={`Split section before measure ${String(measure.number)}`}
                                   onAction={() => {
                                     onSplitSection(section.id, measure.id);
+                                  }}
+                                  type="button"
+                                  variant="ghost"
+                                />
+                              ) : null}
+                              {measure.canDelete ? (
+                                <Button
+                                  busy={false}
+                                  density="comfortable"
+                                  describedBy={[]}
+                                  disabled={false}
+                                  id={`studio-delete-measure-${measure.id}`}
+                                  invalid={false}
+                                  label={measure.deleteLabel}
+                                  onAction={() => {
+                                    onDeleteMeasure(measure.id);
                                   }}
                                   type="button"
                                   variant="ghost"

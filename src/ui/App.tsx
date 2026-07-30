@@ -33,6 +33,12 @@ export type AppActions = Readonly<{
   setTitle: (value: string) => StudioControllerActionResult;
   setTempo: (bpm: number) => StudioControllerActionResult;
   clearChart: () => StudioControllerActionResult;
+  deleteMeasure: (measureId: string) => StudioControllerActionResult;
+  splitAtBar: (
+    beforeEventId: string,
+    retainedReason?: string | null,
+    suffixReason?: string | null,
+  ) => StudioControllerActionResult;
   undo: () => StudioControllerActionResult;
   redo: () => StudioControllerActionResult;
   setRailCollapsed: (
@@ -176,6 +182,7 @@ type PendingEdit =
   | Readonly<{ kind: "duplicate" }>
   | Readonly<{ kind: "move"; direction: "previous" | "next" }>
   | Readonly<{ kind: "move-following" }>
+  | Readonly<{ kind: "split-at-bar"; beforeEventId: string }>
   | Readonly<{ kind: "move-to"; measureId: string }>
   | Readonly<{ kind: "measure-completion"; measureId: string }>
   | Readonly<{
@@ -364,6 +371,11 @@ type PresentationState = Readonly<{
   rangeStartDraft: string;
   rangeEndDraft: string;
   openMenuChordId: string | null;
+  /** Two-step Clear confirmation; presentation-only. */
+  clearArmed: boolean;
+  tempoDraft: string;
+  tempoInvalid: boolean;
+  tempoFeedback: string | null;
 }>;
 
 /** Teaching labels restate stored facts; an absent fact is shown as absent. */
@@ -537,6 +549,10 @@ function viewFromSnapshot(
     completionReasonDraft,
     recoveryAcknowledged,
     recoveryDurationDraft,
+    clearArmed,
+    tempoDraft,
+    tempoInvalid,
+    tempoFeedback,
   } = presentation;
   const chordCount = snapshot.chordCount;
   const selectionCount = snapshot.bookmarks.selectedEventIds.length;
@@ -565,6 +581,8 @@ function viewFromSnapshot(
         snapshot.chordCount > 0 ||
         snapshot.sections.length > 1 ||
         (snapshot.sections[0]?.measures.length ?? 0) > 1,
+      clearArmed,
+      clearLabel: clearArmed ? "Really clear?" : "Clear",
       undoDescription: snapshot.history.undoLabel === null
         ? "Nothing to undo"
         : `Undo ${snapshot.history.undoLabel}`,
@@ -631,6 +649,9 @@ function viewFromSnapshot(
                   completionLabel: measure.completionLabel,
                   completionReason: measure.completionReason,
                   canSplitSectionHere: measureIndex > 0,
+                  canDelete:
+                    measure.eventCount === 0 && snapshot.measureCount > 1,
+                  deleteLabel: `Remove empty measure ${String(measure.ordinal)}`,
                   isInsertionTarget: snapshot.quickEntry.targetId === measure.id,
                   targetLabel: `Aim quick entry at measure ${String(measure.ordinal)}`,
                   insertBeforeLabel: `Insert measure before measure ${String(measure.ordinal)}`,
@@ -744,6 +765,12 @@ function viewFromSnapshot(
       currentChordLabel: pointer.chordLabel,
       progressPercent: pointer.progressPercent,
     }),
+    playback: Object.freeze({
+      tempoBpm: snapshot.tempoBpm,
+      tempoDraft,
+      tempoInvalid,
+      tempoFeedback,
+    }),
     layout: Object.freeze({
       libraryCollapsed: snapshot.panels.leftRailCollapsed,
       harmonyCollapsed: snapshot.panels.rightRailCollapsed,
@@ -782,6 +809,38 @@ export function App({ snapshot, actions }: AppProps) {
    * user's decision.
    */
   const quickEntryTargetIsExplicit = useRef(false);
+
+  /*
+   * The Clear confirmation is an owned two-step control, not a native
+   * `confirm()` dialog: the first press arms the button, the second performs
+   * the undoable clear, and a few seconds of inaction disarm it again. The
+   * armed state is presentation-only and never reaches the controller.
+   */
+  const [clearArmed, setClearArmed] = useState(false);
+  const clearArmTimer = useRef<number | null>(null);
+
+  /*
+   * The tempo field mirrors the title editor: a local draft, an explicit
+   * Apply, and refusal text that names the accepted range instead of
+   * silently replacing the number a musician chose.
+   */
+  const [tempoDraft, setTempoDraft] = useState(String(snapshot.tempoBpm));
+  const [tempoInvalid, setTempoInvalid] = useState(false);
+  const [tempoFeedback, setTempoFeedback] = useState<string | null>(null);
+  const previousCommittedTempo = useRef(snapshot.tempoBpm);
+  useEffect(() => {
+    if (previousCommittedTempo.current === snapshot.tempoBpm) return;
+    previousCommittedTempo.current = snapshot.tempoBpm;
+    setTempoDraft(String(snapshot.tempoBpm));
+    setTempoInvalid(false);
+  }, [snapshot.tempoBpm]);
+  const disarmClear = (): void => {
+    if (clearArmTimer.current !== null) {
+      window.clearTimeout(clearArmTimer.current);
+      clearArmTimer.current = null;
+    }
+    setClearArmed(false);
+  };
   const [quickEntryRefusal, setQuickEntryRefusal] = useState<string | null>(
     null,
   );
@@ -961,6 +1020,7 @@ export function App({ snapshot, actions }: AppProps) {
       ]),
       "u1.duration_overfills_measure": Object.freeze([
         "Move following chords into the next measure",
+        "Split this bar at the next chord",
         "Shorten the duration",
         "Cancel",
       ]),
@@ -1098,6 +1158,10 @@ export function App({ snapshot, actions }: AppProps) {
     titleFeedback,
     uiRefusal,
     viewMode,
+    clearArmed,
+    tempoDraft,
+    tempoInvalid,
+    tempoFeedback,
   }, insertionPlan, draftPreview, livePlayheadLabel);
 
   /*
@@ -1226,6 +1290,25 @@ export function App({ snapshot, actions }: AppProps) {
         },
       }}
       callbacks={{
+        onTempoDraftChange: (value) => {
+          setTempoDraft(value);
+          setTempoInvalid(false);
+          setTempoFeedback(null);
+        },
+        onTempoCommit: () => {
+          const trimmed = tempoDraft.trim();
+          const bpm = /^[0-9]+$/.test(trimmed) ? Number(trimmed) : Number.NaN;
+          const result = actions.setTempo(bpm);
+          if (result.ok) {
+            setTempoInvalid(false);
+            setTempoFeedback("Tempo committed as an undoable change.");
+            return;
+          }
+          setTempoInvalid(true);
+          setTempoFeedback(
+            `${result.refusal.message} ${result.refusal.recoveryAction}`,
+          );
+        },
         onQuickEntryDraftChange: (value) => {
           if (value.length === 0) quickEntryTargetIsExplicit.current = false;
           const preview = actions.previewChartText(value);
@@ -1239,7 +1322,8 @@ export function App({ snapshot, actions }: AppProps) {
           if (
             result.ok &&
             target !== null &&
-            target.kind === "measure-start" &&
+            (target.kind === "measure-start" ||
+              target.kind === "measure-end") &&
             !quickEntryTargetIsExplicit.current
           ) {
             /*
@@ -1420,6 +1504,13 @@ export function App({ snapshot, actions }: AppProps) {
             case "move-following":
               recordEditResult(actions.moveFollowingEvents(reason));
               return;
+            case "split-at-bar":
+              // One split can leave two short bars; the one typed reason
+              // declares the split itself, so both sides carry it.
+              recordEditResult(
+                actions.splitAtBar(pendingEdit.beforeEventId, reason, reason),
+              );
+              return;
             case "move-to":
               recordEditResult(
                 actions.moveSelectionTo(pendingEdit.measureId, null, reason),
@@ -1547,6 +1638,15 @@ export function App({ snapshot, actions }: AppProps) {
         onJoinSections: (sectionId) => {
           recordEditResult(actions.joinSections(sectionId));
         },
+        onDeleteMeasure: (measureId) => {
+          recordEditResult(actions.deleteMeasure(measureId), { kind: "delete" });
+        },
+        onSplitAtBar: (beforeEventId) => {
+          recordEditResult(actions.splitAtBar(beforeEventId), {
+            kind: "split-at-bar",
+            beforeEventId,
+          });
+        },
         onSetInsertionPoint: (measureId) => {
           // Aiming re-targets the existing draft in place: exactly one
           // `set-quick-entry` intent, so a typed draft follows the new target
@@ -1668,17 +1768,22 @@ export function App({ snapshot, actions }: AppProps) {
         onClearChart: () => {
           /*
            * Destructive but undoable, so the confirmation stops an accidental
-           * click rather than guarding something unrecoverable. A refusal is
+           * click rather than guarding something unrecoverable. The first
+           * press arms; the second within the window performs. A refusal is
            * surfaced like any other, never swallowed.
            */
-          if (
-            typeof window !== "undefined" &&
-            !window.confirm(
-              "Clear this chart? Every chord is removed, leaving one empty bar. Undo restores it.",
-            )
-          ) {
+          if (!clearArmed) {
+            setClearArmed(true);
+            if (clearArmTimer.current !== null) {
+              window.clearTimeout(clearArmTimer.current);
+            }
+            clearArmTimer.current = window.setTimeout(() => {
+              clearArmTimer.current = null;
+              setClearArmed(false);
+            }, 5000);
             return;
           }
+          disarmClear();
           recordEditResult(actions.clearChart(), { kind: "delete" });
         },
         onRedo: () => {
@@ -1814,6 +1919,8 @@ export function StudioRoot({ controller }: StudioRootProps) {
         setTitle: controller.setTitle,
         setTempo: controller.setTempo,
         clearChart: controller.clearChart,
+        deleteMeasure: controller.deleteMeasure,
+        splitAtBar: controller.splitAtBar,
         undo: controller.undo,
       }}
     />

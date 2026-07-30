@@ -15,6 +15,7 @@ import {
   type MidiPitch,
   type ParsedChordEvent,
   type MeasureId,
+  type Section,
   type SectionId,
 } from "../domain";
 import {
@@ -1722,10 +1723,10 @@ function makeStudioController(
         }),
       ]),
       kind: "delete",
-      targets: Object.freeze([head, ...rest]) as readonly [
-        DocumentNodeRef,
-        ...DocumentNodeRef[],
-      ],
+      targets: Object.freeze<readonly [DocumentNodeRef, ...DocumentNodeRef[]]>([
+        head,
+        ...rest,
+      ]),
     });
     return apply("clear-chart", (current) =>
       runDocumentCommand({ command, dependencies, state: current }),
@@ -2006,11 +2007,44 @@ function makeStudioController(
      * step one targets measure-start and step two sees a non-empty section,
      * so the recursion terminates by construction. If any step refuses,
      * every applied step is unwound with a real undo before returning.
+     *
+     * Every into-section aim gets this treatment, not just section-end: a
+     * consumed draft keeps an after-measure target, and Clear repoints it at
+     * the surviving empty bar, so a library click after Clear used to append
+     * eight full measures behind a permanently blank bar 1. Measure-start
+     * and measure-end aims are excluded on purpose — a multi-bar draft
+     * against those must keep stating overfill-requires-split (U1-EDIT-004).
      */
-    if (target.kind === "section-end") {
-      const section = state.document.sections.find(
-        (candidate) => candidate.id === target.sectionId,
-      );
+    {
+      let section: Section | undefined;
+      switch (target.kind) {
+        case "section-end": {
+          const sectionId = target.sectionId;
+          section = state.document.sections.find(
+            (candidate) => candidate.id === sectionId,
+          );
+          break;
+        }
+        case "after-measure":
+        case "before-measure": {
+          const measureId = target.measureId;
+          section = state.document.sections.find((candidate) =>
+            candidate.measures.some((measure) => measure.id === measureId),
+          );
+          break;
+        }
+        case "document-start":
+        case "document-end":
+        case "before-section":
+        case "after-section":
+        case "section-start":
+        case "measure-start":
+        case "measure-end":
+        case "before-event":
+        case "after-event":
+          section = undefined;
+          break;
+      }
       const onlyMeasure = section?.measures.length === 1
         ? section.measures[0]
         : undefined;

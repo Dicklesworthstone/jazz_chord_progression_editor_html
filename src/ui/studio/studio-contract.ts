@@ -21,6 +21,13 @@ export type StudioDocumentView = Readonly<{
   canRedo: boolean;
   /** False when the chart is already a single empty measure. */
   canClearChart: boolean;
+  /**
+   * Clearing arms on the first press and fires on the second, in place of a
+   * native confirm dialog. The armed state is presentation-only and disarms
+   * itself after a few seconds of inaction.
+   */
+  clearArmed: boolean;
+  clearLabel: string;
   undoDescription: string;
   redoDescription: string;
 }>;
@@ -98,6 +105,13 @@ export type StudioMeasureView = Readonly<{
   targetLabel: string;
   /** Splitting a section here is legal only after its first measure. */
   canSplitSectionHere: boolean;
+  /**
+   * An empty bar the chart can spare offers its own removal. A populated
+   * measure never does: chord deletion is the card's own affordance, and a
+   * bar that vanishes with its chords would be a silent bulk delete.
+   */
+  canDelete: boolean;
+  deleteLabel: string;
 }>;
 
 export type StudioSectionView = Readonly<{
@@ -289,12 +303,26 @@ export type StudioLayoutView = Readonly<{
   }> | null;
 }>;
 
+/**
+ * The editable playback settings the Library rail offers. Tempo commits
+ * through the document command surface and refuses out-of-range values with
+ * the exact stored draft preserved; feedback is the refusal or confirmation
+ * sentence, never a silently corrected number.
+ */
+export type StudioPlaybackSettingsView = Readonly<{
+  tempoBpm: number;
+  tempoDraft: string;
+  tempoInvalid: boolean;
+  tempoFeedback: string | null;
+}>;
+
 export type StudioShellView = Readonly<{
   document: StudioDocumentView;
   quickEntry: StudioQuickEntryView;
   chart: StudioChartView;
   harmony: StudioHarmonyView;
   transport: StudioTransportView;
+  playback: StudioPlaybackSettingsView;
   layout: StudioLayoutView;
 }>;
 
@@ -313,6 +341,8 @@ export type StudioShellCallbacks = Readonly<{
   onDismissPanelSheet: () => void;
   onUiContractRefusal: (diagnostic: UiDiagnostic) => void;
   onDismissUiRefusal: () => void;
+  onTempoDraftChange: (value: string) => void;
+  onTempoCommit: () => void;
   onQuickEntryDraftChange: (value: string) => void;
   onQuickEntryInsert: () => void;
   onQuickEntryClear: () => void;
@@ -351,6 +381,10 @@ export type StudioShellCallbacks = Readonly<{
   onSplitDuration: (chordId: string, firstBeats: string) => void;
   onSplitSection: (sectionId: string, beforeMeasureId: string) => void;
   onJoinSections: (sectionId: string) => void;
+  /** Remove one empty measure; refusals surface like any other edit. */
+  onDeleteMeasure: (measureId: string) => void;
+  /** Split the owning bar before this chord (the reviewed overfill fix). */
+  onSplitAtBar: (beforeEventId: string) => void;
   /** Aim the quick-entry draft at a measure without publishing anything. */
   onSetInsertionPoint: (measureId: string) => void;
   /** Presentation-only: enters or leaves the explicit range mode. */
