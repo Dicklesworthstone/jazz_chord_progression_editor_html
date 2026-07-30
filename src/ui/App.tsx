@@ -32,6 +32,7 @@ import {
 export type AppActions = Readonly<{
   setTitle: (value: string) => StudioControllerActionResult;
   setTempo: (bpm: number) => StudioControllerActionResult;
+  setPerformanceStyle: (styleId: string) => StudioControllerActionResult;
   clearChart: () => StudioControllerActionResult;
   deleteMeasure: (measureId: string) => StudioControllerActionResult;
   splitAtBar: (
@@ -770,6 +771,10 @@ function viewFromSnapshot(
       tempoDraft,
       tempoInvalid,
       tempoFeedback,
+      groove: Object.freeze({
+        activeStyleId: snapshot.performance.styleId,
+        options: snapshot.performance.options,
+      }),
     }),
     layout: Object.freeze({
       libraryCollapsed: snapshot.panels.leftRailCollapsed,
@@ -1294,6 +1299,19 @@ export function App({ snapshot, actions }: AppProps) {
           setTempoDraft(value);
           setTempoInvalid(false);
           setTempoFeedback(null);
+        },
+        onGrooveStyleChange: (styleId) => {
+          const result = actions.setPerformanceStyle(styleId);
+          /*
+           * The picker only offers declared styles, so a refusal here means
+           * the surface and the controller disagree — worth a visible
+           * sentence in the Playback group's status line, never silence.
+           */
+          setTempoFeedback(
+            result.ok
+              ? null
+              : `${result.refusal.message} ${result.refusal.recoveryAction}`,
+          );
         },
         onTempoCommit: () => {
           const trimmed = tempoDraft.trim();
@@ -1918,6 +1936,7 @@ export function StudioRoot({ controller }: StudioRootProps) {
         setRailCollapsed: controller.setRailCollapsed,
         setTitle: controller.setTitle,
         setTempo: controller.setTempo,
+        setPerformanceStyle: controller.setPerformanceStyle,
         clearChart: controller.clearChart,
         deleteMeasure: controller.deleteMeasure,
         splitAtBar: controller.splitAtBar,

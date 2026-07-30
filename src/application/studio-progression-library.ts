@@ -27,6 +27,8 @@
  * play, which is exactly how the first starter chart shipped broken.
  */
 
+import type { PerformanceStyleId } from "../playback";
+
 export type ProgressionProvenance = "public-domain" | "device" | "study";
 
 export type ProgressionLibraryEntry = Readonly<{
@@ -40,6 +42,13 @@ export type ProgressionLibraryEntry = Readonly<{
   provenance: ProgressionProvenance;
   /** Bars in the quick-entry grammar. */
   chartText: string;
+  /**
+   * The performance style loading this entry selects for the session — a
+   * reviewed musical judgment per entry, machine-checked against the
+   * declared style set. It never touches the document: grooves are session
+   * state, and the chart the entry inserts is style-free.
+   */
+  grooveStyleId: PerformanceStyleId;
 }>;
 
 export const PROGRESSION_LIBRARY: readonly ProgressionLibraryEntry[] =
@@ -47,6 +56,7 @@ export const PROGRESSION_LIBRARY: readonly ProgressionLibraryEntry[] =
     /* ---------------------------------------------- public domain works */
     Object.freeze({
       id: "tristan",
+      grooveStyleId: "ballad-comp@1",
       title: "Tristan Prelude opening",
       kicker: "Wagner, 1859",
       note: "The Tristan chord: a half-diminished sonority that resolves to a dominant which never lands, then repeats a minor third higher.",
@@ -56,6 +66,7 @@ export const PROGRESSION_LIBRARY: readonly ProgressionLibraryEntry[] =
     }),
     Object.freeze({
       id: "commendatore",
+      grooveStyleId: "ballad-comp@1",
       title: "Don Giovanni, Commendatore",
       kicker: "Mozart, 1787",
       note: "D minor with diminished-seventh pivots — the chord Mozart uses to make the ground give way.",
@@ -65,6 +76,7 @@ export const PROGRESSION_LIBRARY: readonly ProgressionLibraryEntry[] =
     }),
     Object.freeze({
       id: "lament-bass",
+      grooveStyleId: "ballad-comp@1",
       title: "Lament bass",
       kicker: "Bach and the Baroque",
       note: "The descending chromatic bass of the passacaglia: one line walks down a fourth while the harmony re-reads it every step.",
@@ -74,6 +86,7 @@ export const PROGRESSION_LIBRARY: readonly ProgressionLibraryEntry[] =
     }),
     Object.freeze({
       id: "pachelbel",
+      grooveStyleId: "straight-eighths@1",
       title: "Pachelbel cycle",
       kicker: "Pachelbel, c. 1680",
       note: "The most-borrowed eight-bar cycle in music; every pop turnaround since is a re-voicing of it.",
@@ -82,6 +95,7 @@ export const PROGRESSION_LIBRARY: readonly ProgressionLibraryEntry[] =
     }),
     Object.freeze({
       id: "gymnopedie",
+      grooveStyleId: "ballad-comp@1",
       title: "Gymnopedie colours",
       kicker: "Satie, 1888",
       note: "Two major sevenths a fifth apart, breathing against each other with no cadence at all.",
@@ -91,6 +105,7 @@ export const PROGRESSION_LIBRARY: readonly ProgressionLibraryEntry[] =
     }),
     Object.freeze({
       id: "ragtime",
+      grooveStyleId: "medium-swing@1",
       title: "Ragtime secondary dominants",
       kicker: "Joplin, 1899",
       note: "A chain of dominants, each one tonicising the next — the engine of ragtime and of early jazz.",
@@ -99,6 +114,7 @@ export const PROGRESSION_LIBRARY: readonly ProgressionLibraryEntry[] =
     }),
     Object.freeze({
       id: "chopin-chromatic",
+      grooveStyleId: "ballad-comp@1",
       title: "Chromatic descent",
       kicker: "Chopin, 1839",
       note: "Romantic voice leading: the top line holds while inner voices slide by semitone under it.",
@@ -110,6 +126,7 @@ export const PROGRESSION_LIBRARY: readonly ProgressionLibraryEntry[] =
     /* ------------------------------------------- shared harmonic devices */
     Object.freeze({
       id: "major-third-cycle",
+      grooveStyleId: "medium-swing@1",
       title: "Major-third cycle",
       kicker: "Coltrane matrix",
       note: "Three tonal centres a major third apart, each reached by its own dominant. The hardest common changes in jazz.",
@@ -119,6 +136,7 @@ export const PROGRESSION_LIBRARY: readonly ProgressionLibraryEntry[] =
     }),
     Object.freeze({
       id: "rhythm-turnaround",
+      grooveStyleId: "medium-swing@1",
       title: "Rhythm-changes A section",
       kicker: "Turnaround template",
       note: "I-vi-ii-V twice over, then the flat-three diminished pivot: the most-played eight bars in the repertoire.",
@@ -128,6 +146,7 @@ export const PROGRESSION_LIBRARY: readonly ProgressionLibraryEntry[] =
     }),
     Object.freeze({
       id: "bird-blues",
+      grooveStyleId: "medium-swing@1",
       title: "Bird blues",
       kicker: "Bebop blues template",
       note: "A twelve-bar blues rebuilt out of ii-Vs, descending by step until it rejoins the form.",
@@ -137,6 +156,7 @@ export const PROGRESSION_LIBRARY: readonly ProgressionLibraryEntry[] =
     }),
     Object.freeze({
       id: "minor-blues",
+      grooveStyleId: "medium-swing@1",
       title: "Minor blues with backdoor",
       kicker: "Blues template",
       note: "Minor blues closing through the backdoor cadence — bVII7 into I, the cadence that avoids the leading tone.",
@@ -146,6 +166,7 @@ export const PROGRESSION_LIBRARY: readonly ProgressionLibraryEntry[] =
     }),
     Object.freeze({
       id: "tritone-chain",
+      grooveStyleId: "bossa-nova@1",
       title: "Tritone substitution chain",
       kicker: "Substitution device",
       note: "Every dominant replaced by the one a tritone away, so the roots walk down chromatically under a shared tritone.",
@@ -155,6 +176,7 @@ export const PROGRESSION_LIBRARY: readonly ProgressionLibraryEntry[] =
     }),
     Object.freeze({
       id: "modal-planing",
+      grooveStyleId: "bossa-nova@1",
       title: "Modal planing",
       kicker: "Modal device",
       note: "One voicing shape moved bodily up and down; the mode changes, the hand shape does not.",
@@ -164,6 +186,7 @@ export const PROGRESSION_LIBRARY: readonly ProgressionLibraryEntry[] =
     }),
     Object.freeze({
       id: "chromatic-mediants",
+      grooveStyleId: "straight-eighths@1",
       title: "Chromatic mediants",
       kicker: "Late-romantic device",
       note: "Major triads a third apart sharing one tone — the sound of film scoring, borrowed straight from Schubert.",
@@ -175,6 +198,7 @@ export const PROGRESSION_LIBRARY: readonly ProgressionLibraryEntry[] =
     /* -------------------------------------- original studies, named idiom */
     Object.freeze({
       id: "mu-major-study",
+      grooveStyleId: "straight-eighths@1",
       title: "Mu-major study",
       kicker: "Original study",
       note: "The add9 major triad with no seventh — bright, rootless-sounding, and the signature of the West Coast studio sound.",
@@ -184,6 +208,7 @@ export const PROGRESSION_LIBRARY: readonly ProgressionLibraryEntry[] =
     }),
     Object.freeze({
       id: "lush-ballad-study",
+      grooveStyleId: "ballad-comp@1",
       title: "Lush ballad study",
       kicker: "Original study",
       note: "Extended harmony that never sits still: sixths and ninths over a bass that keeps stepping down.",
@@ -193,6 +218,7 @@ export const PROGRESSION_LIBRARY: readonly ProgressionLibraryEntry[] =
     }),
     Object.freeze({
       id: "gospel-blues-study",
+      grooveStyleId: "medium-swing@1",
       title: "Gospel-blues study",
       kicker: "Original study",
       note: "Church cadences pushed through blues harmony — plagal motion, a diminished pivot, and a walk-up to the turn.",
@@ -202,6 +228,7 @@ export const PROGRESSION_LIBRARY: readonly ProgressionLibraryEntry[] =
     }),
     Object.freeze({
       id: "whole-tone-study",
+      grooveStyleId: "ballad-comp@1",
       title: "Whole-tone approach",
       kicker: "Original study",
       note: "Augmented triads and altered dominants where no note is a semitone from its neighbour: harmony with no gravity.",

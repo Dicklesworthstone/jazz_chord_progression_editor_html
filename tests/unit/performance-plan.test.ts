@@ -2341,11 +2341,20 @@ describe("the comp register", () => {
         }
       }
       /*
-       * Twenty-four ballad comps — the measured quarter-note grid over six
-       * bars — and twenty-two Charleston stabs. All of them.
+       * All of them, per style: twenty-four ballad comps — the measured
+       * quarter-note grid over six bars — twenty-two Charleston stabs,
+       * twenty-three bossa hits across the two-bar figure, and twenty-four
+       * pop-eighths hits. A style missing from this tally has not had its
+       * normalization law checked at all.
        */
+      const CHECKED_COMPS: Record<string, number> = {
+        "ballad-comp@1": 24,
+        "medium-swing@1": 22,
+        "bossa-nova@1": 23,
+        "straight-eighths@1": 24,
+      };
       expect(`${styleId}:${String(checked)}`).toBe(
-        `${styleId}:${styleId === "ballad-comp@1" ? "24" : "22"}`,
+        `${styleId}:${String(CHECKED_COMPS[styleId] ?? -1)}`,
       );
     }
   });

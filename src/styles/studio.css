@@ -1713,6 +1713,12 @@
   font-size: var(--text-xs);
 }
 
+.studio-playback-settings__groove {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
 .studio-progression-list {
   display: flex;
   flex-direction: column;

@@ -30,6 +30,7 @@ function RailFocusHarness() {
       onQuickEntryInsert: () => undefined,
       onTempoDraftChange: () => undefined,
       onTempoCommit: () => undefined,
+      onGrooveStyleChange: () => undefined,
       onRecoveryAcknowledgeChange: () => undefined,
       onRecoveryDurationDraftChange: () => undefined,
       playback: Object.freeze({
@@ -37,6 +38,13 @@ function RailFocusHarness() {
         tempoDraft: "105",
         tempoFeedback: null,
         tempoInvalid: false,
+        groove: Object.freeze({
+          activeStyleId: "ballad-comp@1",
+          options: Object.freeze([
+            Object.freeze({ id: "ballad-comp@1", label: "Ballad" }),
+            Object.freeze({ id: "medium-swing@1", label: "Medium swing" }),
+          ]),
+        }),
       }),
       quickEntry: {
         canClear: false,

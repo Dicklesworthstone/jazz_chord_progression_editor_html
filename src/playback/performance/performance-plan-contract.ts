@@ -417,6 +417,8 @@ export type PerformanceStyle = Readonly<{
 export const PERFORMANCE_STYLE_IDS = Object.freeze([
   "ballad-comp@1",
   "medium-swing@1",
+  "bossa-nova@1",
+  "straight-eighths@1",
   "block-chords@1",
 ] as const);
 export type PerformanceStyleId = (typeof PERFORMANCE_STYLE_IDS)[number];
@@ -890,6 +892,236 @@ const MEDIUM_SWING_V1: PerformanceStyle = Object.freeze({
 });
 
 /**
+ * bossa-nova@1 — the bossa sketch: an unvarying two-beat bass ostinato under
+ * a two-bar syncopated comp figure.
+ *
+ * What makes a bossa a bossa in this vocabulary is the division of labour:
+ * the BASS is a constant — the same root-and-fifth ostinato in every bar,
+ * modelled on the surdo's two strokes per half-bar — while the COMP carries
+ * the two-bar syncopation, the partido-alto shape of chord hits displaced
+ * onto offbeats and answered across the barline. That is the inverse of the
+ * ballad, where the bass breathes and the comp keeps time, and it is why
+ * both tables below look the way they do.
+ *
+ * - BASS, both phases identically (an ostinato does not know what bar it is
+ *   in): root on beat 1 held to the and-of-2 (3/2), fifth on the and-of-2
+ *   (1/2), root on beat 3 held to the and-of-4 (3/2), fifth on the and-of-4
+ *   (19/40, releasing at 3.975 inside the bar). Adjacent notes are declared
+ *   contiguous and the clipping law's release gap supplies the articulation,
+ *   exactly as the ballad's b4/b5 pair already proves out.
+ * - COMP, phase 0: the statement bar — beat 1 (3/4), the and-of-2 (1/2), the
+ *   and-of-3 (1/2). Phase 1: the answer bar — the and-of-1 (1/2), beat 3
+ *   (3/4), the and-of-4 (19/40, the anticipation into the next phase-0 bar).
+ *   Six hits across two bars with real rests between them; `upper-voices`
+ *   throughout, because a bossa guitar states a clipped top of the chord,
+ *   not a sustained pad.
+ * - `compRegister` sits five semitones above the ballad's window (50..73,
+ *   ceiling 78): the comp shares no beat with the bass's strong strokes and
+ *   a bossa's chord hand sits higher than a ballad's sustaining one.
+ * - Straight eighths (`PERFORMANCE_STRAIGHT_EIGHTHS`): bossa is played
+ *   straight; the lilt is written into WHERE the hits fall, never into a
+ *   swung displacement.
+ * - `barCycleVelocityOffsets` eases the answer bar by 3, the small
+ *   phase-to-phase lean the two-bar figure implies.
+ */
+const BOSSA_NOVA_V1: PerformanceStyle = Object.freeze({
+  id: "bossa-nova@1",
+  kind: "band-sketch",
+  meter: Object.freeze({ beatsPerBar: 4, beatUnit: 4 }),
+  bassSlots: Object.freeze([
+    Object.freeze({
+      offsetBeats: Object.freeze({ numerator: 0, denominator: 1 }),
+      durationBeats: Object.freeze({ numerator: 3, denominator: 2 }),
+      tone: "root",
+      placement: "nearest",
+      velocity: 90,
+      cyclePhases: Object.freeze([0, 1] as const),
+    }),
+    Object.freeze({
+      offsetBeats: Object.freeze({ numerator: 3, denominator: 2 }),
+      durationBeats: Object.freeze({ numerator: 1, denominator: 2 }),
+      tone: "fifth",
+      placement: "nearest",
+      velocity: 76,
+      cyclePhases: Object.freeze([0, 1] as const),
+    }),
+    Object.freeze({
+      offsetBeats: Object.freeze({ numerator: 2, denominator: 1 }),
+      durationBeats: Object.freeze({ numerator: 3, denominator: 2 }),
+      tone: "root",
+      placement: "nearest",
+      velocity: 84,
+      cyclePhases: Object.freeze([0, 1] as const),
+    }),
+    Object.freeze({
+      offsetBeats: Object.freeze({ numerator: 7, denominator: 2 }),
+      durationBeats: Object.freeze({ numerator: 19, denominator: 40 }),
+      tone: "fifth",
+      placement: "nearest",
+      velocity: 78,
+      cyclePhases: Object.freeze([0, 1] as const),
+    }),
+  ] as const),
+  compSlots: Object.freeze([
+    Object.freeze({
+      offsetBeats: Object.freeze({ numerator: 0, denominator: 1 }),
+      durationBeats: Object.freeze({ numerator: 3, denominator: 4 }),
+      voicing: "upper-voices",
+      velocity: 80,
+      cyclePhases: Object.freeze([0] as const),
+    }),
+    Object.freeze({
+      offsetBeats: Object.freeze({ numerator: 3, denominator: 2 }),
+      durationBeats: Object.freeze({ numerator: 1, denominator: 2 }),
+      voicing: "upper-voices",
+      velocity: 72,
+      cyclePhases: Object.freeze([0] as const),
+    }),
+    Object.freeze({
+      offsetBeats: Object.freeze({ numerator: 5, denominator: 2 }),
+      durationBeats: Object.freeze({ numerator: 1, denominator: 2 }),
+      voicing: "upper-voices",
+      velocity: 76,
+      cyclePhases: Object.freeze([0] as const),
+    }),
+    Object.freeze({
+      offsetBeats: Object.freeze({ numerator: 1, denominator: 2 }),
+      durationBeats: Object.freeze({ numerator: 1, denominator: 2 }),
+      voicing: "upper-voices",
+      velocity: 74,
+      cyclePhases: Object.freeze([1] as const),
+    }),
+    Object.freeze({
+      offsetBeats: Object.freeze({ numerator: 2, denominator: 1 }),
+      durationBeats: Object.freeze({ numerator: 3, denominator: 4 }),
+      voicing: "upper-voices",
+      velocity: 78,
+      cyclePhases: Object.freeze([1] as const),
+    }),
+    Object.freeze({
+      offsetBeats: Object.freeze({ numerator: 7, denominator: 2 }),
+      durationBeats: Object.freeze({ numerator: 19, denominator: 40 }),
+      voicing: "upper-voices",
+      velocity: 72,
+      cyclePhases: Object.freeze([1] as const),
+    }),
+  ] as const),
+  compRegister: Object.freeze({
+    lowMidi: 50,
+    highMidi: 73,
+    ceilingMidi: 78,
+  }),
+  barCycleLength: 2,
+  barCycleVelocityOffsets: Object.freeze([0, -3] as const),
+  swingRatio: PERFORMANCE_STRAIGHT_EIGHTHS,
+  description:
+    "Bossa nova: a constant root-and-fifth ostinato bass under a two-bar "
+    + "syncopated comp figure with the anticipation on the answer bar's "
+    + "and-of-4.",
+});
+
+/**
+ * straight-eighths@1 — the pop/rock sketch: even keyboard comping with
+ * space, over roots anchored on beats 1 and 3.
+ *
+ * The identity of a straight-eighths pop groove is REGULARITY with an accent
+ * contour, not syncopation: the comp states the chord on the strong beats
+ * and answers on chosen offbeats, every hit exactly where it is written, and
+ * the accent shape — statement loudest, answers under it — is what keeps a
+ * grid from sounding like a metronome.
+ *
+ * - BASS: the pop anchor — the root on beat 1 (9/10, the walking length that
+ *   releases before the next quarter) and again on beat 3, both phases; and
+ *   in the SECOND bar of the cycle only, a fifth pickup on the and-of-4
+ *   (19/40) leading back to the downbeat. One gesture per two bars, so the
+ *   pickup reads as a fill rather than a habit.
+ * - COMP: four hits a bar, both phases — beat 1 (3/4), the and-of-2 (1/2),
+ *   beat 3 (3/4), beat 4 (1/2) — with `all` voicing throughout: a pop
+ *   keyboard states whole chords, and the package's width and ceiling rules
+ *   thin only what is genuinely two registers wide. The and-of-2 is the one
+ *   offbeat in the figure; beats 2 and the and-of-1/-3/-4 are real rests.
+ * - Accent contour 86 / 74 / 80 / 72: the statement, the offbeat under it,
+ *   the half-bar restatement, the lift into the next bar.
+ * - `compRegister` 48..71 (ceiling 76): a keyboard part centred a fourth
+ *   below the swing stabs and a third above the ballad's sustaining hand.
+ * - Two-bar cycle only because the bass pickup needs a phase to live in;
+ *   `barCycleVelocityOffsets` eases bar two by 4.
+ */
+const STRAIGHT_EIGHTHS_V1: PerformanceStyle = Object.freeze({
+  id: "straight-eighths@1",
+  kind: "band-sketch",
+  meter: Object.freeze({ beatsPerBar: 4, beatUnit: 4 }),
+  bassSlots: Object.freeze([
+    Object.freeze({
+      offsetBeats: Object.freeze({ numerator: 0, denominator: 1 }),
+      durationBeats: Object.freeze({ numerator: 9, denominator: 10 }),
+      tone: "root",
+      placement: "nearest",
+      velocity: 92,
+      cyclePhases: Object.freeze([0, 1] as const),
+    }),
+    Object.freeze({
+      offsetBeats: Object.freeze({ numerator: 2, denominator: 1 }),
+      durationBeats: Object.freeze({ numerator: 9, denominator: 10 }),
+      tone: "root",
+      placement: "nearest",
+      velocity: 86,
+      cyclePhases: Object.freeze([0, 1] as const),
+    }),
+    Object.freeze({
+      offsetBeats: Object.freeze({ numerator: 7, denominator: 2 }),
+      durationBeats: Object.freeze({ numerator: 19, denominator: 40 }),
+      tone: "fifth",
+      placement: "nearest",
+      velocity: 78,
+      cyclePhases: Object.freeze([1] as const),
+    }),
+  ] as const),
+  compSlots: Object.freeze([
+    Object.freeze({
+      offsetBeats: Object.freeze({ numerator: 0, denominator: 1 }),
+      durationBeats: Object.freeze({ numerator: 3, denominator: 4 }),
+      voicing: "all",
+      velocity: 86,
+      cyclePhases: Object.freeze([0, 1] as const),
+    }),
+    Object.freeze({
+      offsetBeats: Object.freeze({ numerator: 3, denominator: 2 }),
+      durationBeats: Object.freeze({ numerator: 1, denominator: 2 }),
+      voicing: "all",
+      velocity: 74,
+      cyclePhases: Object.freeze([0, 1] as const),
+    }),
+    Object.freeze({
+      offsetBeats: Object.freeze({ numerator: 2, denominator: 1 }),
+      durationBeats: Object.freeze({ numerator: 3, denominator: 4 }),
+      voicing: "all",
+      velocity: 80,
+      cyclePhases: Object.freeze([0, 1] as const),
+    }),
+    Object.freeze({
+      offsetBeats: Object.freeze({ numerator: 3, denominator: 1 }),
+      durationBeats: Object.freeze({ numerator: 1, denominator: 2 }),
+      voicing: "all",
+      velocity: 72,
+      cyclePhases: Object.freeze([0, 1] as const),
+    }),
+  ] as const),
+  compRegister: Object.freeze({
+    lowMidi: 48,
+    highMidi: 71,
+    ceilingMidi: 76,
+  }),
+  barCycleLength: 2,
+  barCycleVelocityOffsets: Object.freeze([0, -4] as const),
+  swingRatio: PERFORMANCE_STRAIGHT_EIGHTHS,
+  description:
+    "Straight-eighths pop: even keyboard comping with an accent contour and "
+    + "real rests, over roots on beats 1 and 3 with a fifth pickup every "
+    + "second bar.",
+});
+
+/**
  * block-chords@1 — the identity style.
  *
  * It declares no slots and the compiler returns the input plan itself, so the
@@ -919,6 +1151,8 @@ export const PERFORMANCE_STYLES: Readonly<
 > = Object.freeze({
   "ballad-comp@1": BALLAD_COMP_V1,
   "medium-swing@1": MEDIUM_SWING_V1,
+  "bossa-nova@1": BOSSA_NOVA_V1,
+  "straight-eighths@1": STRAIGHT_EIGHTHS_V1,
   "block-chords@1": BLOCK_CHORDS_V1,
 });
 

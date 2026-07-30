@@ -7,6 +7,11 @@ import {
   type MeasureCompletion,
 } from "../domain";
 import {
+  PERFORMANCE_STYLE_IDS,
+  type PerformanceStyleId,
+} from "../playback";
+import { STUDIO_PERFORMANCE_STYLE } from "./studio-playback";
+import {
   selectBeatRange,
   selectDirtyState,
   selectHistoryAvailability,
@@ -150,6 +155,22 @@ export type StudioNoticeViewModel = Readonly<{
   message: string;
 }>;
 
+/**
+ * Session-scoped inputs the selector cannot read from `AppState`. The
+ * performance style is controller-owned session state (the document schema
+ * has no style field by design), so the controller passes it in whenever it
+ * publishes a snapshot.
+ */
+export type StudioSessionViewInput = Readonly<{
+  performanceStyleId?: PerformanceStyleId;
+}>;
+
+export type StudioPerformanceViewModel = Readonly<{
+  styleId: PerformanceStyleId;
+  styleLabel: string;
+  options: readonly Readonly<{ id: PerformanceStyleId; label: string }>[];
+}>;
+
 export type StudioViewModel = Readonly<{
   documentId: string;
   title: string;
@@ -179,6 +200,7 @@ export type StudioViewModel = Readonly<{
   bookmarks: StudioBookmarkViewModel;
   quickEntry: StudioQuickEntryViewModel;
   transport: StudioTransportViewModel;
+  performance: StudioPerformanceViewModel;
   panels: StudioPanelViewModel;
   noticeCount: number;
   latestNotice: StudioNoticeViewModel | null;
@@ -258,6 +280,22 @@ function keyLabel(key: KeyContext | null): string {
   if (key === null) return "No key";
   const mode = key.mode.replaceAll("-", " ");
   return `${key.tonic.step}${accidentalLabel(key.tonic.alter)} ${mode}`;
+}
+
+/** One human name per declared style; the picker renders these verbatim. */
+export function performanceStyleLabel(styleId: PerformanceStyleId): string {
+  switch (styleId) {
+    case "ballad-comp@1":
+      return "Ballad";
+    case "medium-swing@1":
+      return "Medium swing";
+    case "bossa-nova@1":
+      return "Bossa nova";
+    case "straight-eighths@1":
+      return "Straight eighths";
+    case "block-chords@1":
+      return "Block chords";
+  }
 }
 
 function instrumentLabel(instrumentId: InstrumentId): string {
@@ -451,7 +489,12 @@ function quickEntryView(state: AppState): StudioQuickEntryViewModel {
 }
 
 /** Derive a frozen, presentation-only projection from the authoritative A0 tree. */
-export function selectStudioViewModel(state: AppState): StudioViewModel {
+export function selectStudioViewModel(
+  state: AppState,
+  session?: StudioSessionViewInput,
+): StudioViewModel {
+  const performanceStyleId =
+    session?.performanceStyleId ?? STUDIO_PERFORMANCE_STYLE;
   const dirty = selectDirtyState(state);
   const history = selectHistoryAvailability(state);
   const capacity = measureCapacity(state.document.meter);
@@ -551,6 +594,15 @@ export function selectStudioViewModel(state: AppState): StudioViewModel {
       playheadBeatLabel: formatExactBeatLabel(state.transport.playhead),
       startBeatLabel: formatExactBeatLabel(state.transport.startBeat),
       failureCode: state.transport.failureCode,
+    }),
+    performance: Object.freeze({
+      styleId: performanceStyleId,
+      styleLabel: performanceStyleLabel(performanceStyleId),
+      options: Object.freeze(
+        PERFORMANCE_STYLE_IDS.map((id) =>
+          Object.freeze({ id, label: performanceStyleLabel(id) }),
+        ),
+      ),
     }),
     panels: Object.freeze({
       open: Object.freeze([...state.panels.open]),

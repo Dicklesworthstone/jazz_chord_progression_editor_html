@@ -66,7 +66,12 @@ import {
   compileStudioPlaybackPlan,
   performStudioPlaybackPlan,
   studioPlanIsPlayable,
+  STUDIO_PERFORMANCE_STYLE,
 } from "./studio-playback";
+import {
+  PERFORMANCE_STYLE_IDS,
+  type PerformanceStyleId,
+} from "../playback";
 import {
   createStudioBootstrap,
   type StudioBootstrapRefusal,
@@ -132,6 +137,7 @@ export const STUDIO_EDIT_REFUSAL_CODES = Object.freeze([
   "u1.tempo_out_of_range",
   "u1.chart_already_empty",
   "u1.measure_last_cannot_delete",
+  "u1.performance_style_unknown",
 ] as const);
 
 /** The reviewed tempo window, in beats per minute. */
@@ -185,7 +191,8 @@ export type StudioControllerAction =
   | "acknowledge-focus"
   | "set-tempo"
   | "clear-chart"
-  | "delete-measure";
+  | "delete-measure"
+  | "set-performance-style";
 
 export type StudioControllerRefusal = Readonly<{
   action: StudioControllerAction;
@@ -364,6 +371,15 @@ export interface StudioController {
   readonly setTempo: (bpm: number) => StudioControllerActionResult;
   readonly clearChart: () => StudioControllerActionResult;
   readonly deleteMeasure: (measureId: string) => StudioControllerActionResult;
+  /**
+   * Choose the session's performance style. Session state, not a document
+   * command: it enters no history and marks nothing dirty, because the
+   * document schema deliberately has no style field. The choice applies to
+   * the NEXT Play; a run already sounding keeps the style it started with.
+   */
+  readonly setPerformanceStyle: (
+    styleId: string,
+  ) => StudioControllerActionResult;
   readonly undo: () => StudioControllerActionResult;
   readonly redo: () => StudioControllerActionResult;
   readonly setRailCollapsed: (
@@ -594,6 +610,8 @@ const EDIT_RECOVERY_ACTIONS: Readonly<Record<StudioEditRefusalCode, string>> =
     "u1.chart_already_empty": "This chart has nothing to clear.",
     "u1.measure_last_cannot_delete":
       "A chart keeps at least one measure; clear its chords instead.",
+    "u1.performance_style_unknown":
+      "Pick one of the playback styles the groove picker lists.",
     "u1.selection_empty": "Select at least one chord before this action.",
     "u1.selection_limit": "Select at most 8,192 chords.",
     "u1.target_missing": "Choose a chord, measure, or boundary that still exists.",
@@ -875,7 +893,18 @@ function makeStudioController(
   options: StudioControllerOptions,
 ): StudioController {
   let state = initialState;
-  let snapshot = selectStudioViewModel(state);
+  /*
+   * Session-scoped performance style (jcpe-1gao follow-up): the picker and
+   * the library's per-entry grooves change what the next Play sounds like
+   * without touching the validated document — the schema has no style field
+   * by design, and this variable is the seam a future per-document field
+   * will replace.
+   */
+  let performanceStyleId: PerformanceStyleId = STUDIO_PERFORMANCE_STYLE;
+  const sessionView = (): Readonly<{
+    performanceStyleId: PerformanceStyleId;
+  }> => Object.freeze({ performanceStyleId });
+  let snapshot = selectStudioViewModel(state, sessionView());
   let documentIndex: DocumentIndex = buildDocumentIndex(
     state.document,
     createWorkCounters(),
@@ -965,7 +994,7 @@ function makeStudioController(
     try {
       result = operation(state);
       if (result.state !== state) {
-        nextSnapshot = selectStudioViewModel(result.state);
+        nextSnapshot = selectStudioViewModel(result.state, sessionView());
       }
     } catch {
       return Object.freeze({
@@ -1598,6 +1627,35 @@ function makeStudioController(
    * clamped: silently replacing a musician's tempo with a different one is a
    * worse answer than declining and saying why.
    */
+  /*
+   * Session state, not a document command: the style enters no history and
+   * marks nothing dirty, because the schema has no style field by design.
+   * A run already sounding keeps the style it started with — rebinding a
+   * playing transport mid-flight would re-anchor its timeline — so the
+   * choice audibly lands on the next Play.
+   */
+  const setPerformanceStyle = (
+    styleId: string,
+  ): StudioControllerActionResult => {
+    if (!(PERFORMANCE_STYLE_IDS as readonly string[]).includes(styleId)) {
+      return editRefusal(
+        "set-performance-style",
+        "u1.performance_style_unknown",
+        `"${styleId}" is not a playback style this studio declares.`,
+        ["performanceStyleId"],
+      );
+    }
+    performanceStyleId = styleId as PerformanceStyleId;
+    snapshot = selectStudioViewModel(state, sessionView());
+    notify();
+    return Object.freeze({
+      ok: true,
+      outcome: "ephemeral-updated",
+      snapshot,
+      effects: Object.freeze([]),
+    });
+  };
+
   const setTempo = (bpm: number): StudioControllerActionResult => {
     if (!Number.isInteger(bpm)) {
       return editRefusal(
@@ -1657,9 +1715,9 @@ function makeStudioController(
       ...commandEnvelope("studio-delete-measure", "Delete measure"),
       completionUpdates: Object.freeze([]),
       kind: "delete",
-      targets: Object.freeze([
+      targets: Object.freeze<readonly [DocumentNodeRef, ...DocumentNodeRef[]]>([
         Object.freeze({ id: location.id, kind: "measure" as const }),
-      ]) as unknown as readonly [DocumentNodeRef, ...DocumentNodeRef[]],
+      ]),
     });
     return apply("delete-measure", (current) =>
       runDocumentCommand({ command, dependencies, state: current }),
@@ -3893,7 +3951,10 @@ function makeStudioController(
      * silently returns that literal plan, so Play can never fail because the
      * sketch could not be rendered.
      */
-    const performance = performStudioPlaybackPlan(compiled.plan);
+    const performance = performStudioPlaybackPlan(
+      compiled.plan,
+      performanceStyleId,
+    );
     const binding = Object.freeze({
       plan: performance,
       documentId: state.document.id,
@@ -4590,6 +4651,7 @@ function makeStudioController(
     clearChart,
     deleteMeasure,
     setTempo,
+    setPerformanceStyle,
     setTitle,
     undo: () => apply("undo", (current) => undoDocumentCommand({ state: current })),
     redo: () => apply("redo", (current) => redoDocumentCommand({ state: current })),

@@ -314,6 +314,14 @@ export type StudioPlaybackSettingsView = Readonly<{
   tempoDraft: string;
   tempoInvalid: boolean;
   tempoFeedback: string | null;
+  /**
+   * The session's performance style and the declared styles a picker may
+   * offer. Session state: choosing a groove never edits the document.
+   */
+  groove: Readonly<{
+    activeStyleId: string;
+    options: readonly Readonly<{ id: string; label: string }>[];
+  }>;
 }>;
 
 export type StudioShellView = Readonly<{
@@ -343,6 +351,8 @@ export type StudioShellCallbacks = Readonly<{
   onDismissUiRefusal: () => void;
   onTempoDraftChange: (value: string) => void;
   onTempoCommit: () => void;
+  /** Choose the session's groove; a library row also applies its own. */
+  onGrooveStyleChange: (styleId: string) => void;
   onQuickEntryDraftChange: (value: string) => void;
   onQuickEntryInsert: () => void;
   onQuickEntryClear: () => void;

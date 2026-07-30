@@ -138,12 +138,13 @@ export function studioPlanIsPlayable(plan: PlaybackPlan): boolean {
 }
 
 /**
- * The performance style every studio run is rendered with (jcpe-1gao).
+ * The performance style a fresh studio session starts with (jcpe-1gao).
  *
  * The document has no style field and adding one is a pinned-contract change,
- * so the studio names one style here. A per-document style selector — a
- * ballad chart and a medium-swing chart in the same session — is future work
- * the owner tracks; this constant is the seam it will replace.
+ * so the default lives here and the controller owns the SESSION's current
+ * selection around it: the picker changes what the next Play sounds like,
+ * the library assigns each entry an apt style, and none of that touches the
+ * validated document or its pinned schema.
  */
 export const STUDIO_PERFORMANCE_STYLE: PerformanceStyleId = "ballad-comp@1";
 
@@ -156,10 +157,13 @@ export const STUDIO_PERFORMANCE_STYLE: PerformanceStyleId = "ballad-comp@1";
  * unchanged, silently and deterministically: playback existed before this
  * layer did and must never start failing because of it.
  */
-export function performStudioPlaybackPlan(plan: PlaybackPlan): PlaybackPlan {
+export function performStudioPlaybackPlan(
+  plan: PlaybackPlan,
+  styleId: PerformanceStyleId = STUDIO_PERFORMANCE_STYLE,
+): PlaybackPlan {
   const performed = compilePerformancePlan({
     plan,
-    styleId: STUDIO_PERFORMANCE_STYLE,
+    styleId,
   });
   if (!performed.ok) return plan;
   /*

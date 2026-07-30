@@ -1,7 +1,15 @@
 import { useState } from "preact/hooks";
 
 import { PROGRESSION_LIBRARY, STARTER_CHART } from "../../application/runtime";
-import { Badge, Button, Checkbox, Input, Label, UiIcon } from "../primitives";
+import {
+  Badge,
+  Button,
+  Checkbox,
+  Input,
+  Label,
+  RadioGroup,
+  UiIcon,
+} from "../primitives";
 import type {
   StudioPlaybackSettingsView,
   StudioQuickEntryTokenView,
@@ -64,6 +72,7 @@ export type LibraryPanelContentProps = Readonly<{
   onQuickEntryClear: () => void;
   onTempoDraftChange: (value: string) => void;
   onTempoCommit: () => void;
+  onGrooveStyleChange: (styleId: string) => void;
   onRecoveryAcknowledgeChange: (acknowledged: boolean) => void;
   onRecoveryDurationDraftChange: (value: string) => void;
   onInsertRecoveredChord: (globalOrdinal: number) => void;
@@ -225,6 +234,7 @@ function QuickEntryPanel({
   onDraftChange,
   onInsert,
   onClear,
+  onGrooveStyleChange,
   onRecoveryAcknowledgeChange,
   onRecoveryDurationDraftChange,
   onInsertRecoveredChord,
@@ -233,6 +243,7 @@ function QuickEntryPanel({
   onDraftChange: (value: string) => void;
   onInsert: () => void;
   onClear: () => void;
+  onGrooveStyleChange: (styleId: string) => void;
   onRecoveryAcknowledgeChange: (acknowledged: boolean) => void;
   onRecoveryDurationDraftChange: (value: string) => void;
   onInsertRecoveredChord: (globalOrdinal: number) => void;
@@ -559,6 +570,12 @@ function QuickEntryPanel({
                 onAction={() => {
                   onDraftChange(entry.chartText);
                   onInsert();
+                  /*
+                   * Each entry carries its reviewed groove; loading one
+                   * selects that session style so the next Play sounds the
+                   * idiom the note describes.
+                   */
+                  onGrooveStyleChange(entry.grooveStyleId);
                 }}
                 type="button"
                 variant="secondary"
@@ -588,6 +605,7 @@ export function LibraryPanelContent({
   onQuickEntryClear,
   onTempoDraftChange,
   onTempoCommit,
+  onGrooveStyleChange,
   onRecoveryAcknowledgeChange,
   onRecoveryDurationDraftChange,
   onInsertRecoveredChord,
@@ -612,6 +630,7 @@ export function LibraryPanelContent({
       <QuickEntryPanel
         onClear={onQuickEntryClear}
         onDraftChange={onQuickEntryDraftChange}
+        onGrooveStyleChange={onGrooveStyleChange}
         onInsert={onQuickEntryInsert}
         onInsertRecoveredChord={onInsertRecoveredChord}
         onRecoveryAcknowledgeChange={onRecoveryAcknowledgeChange}
@@ -684,6 +703,49 @@ export function LibraryPanelContent({
             {playback.tempoFeedback ?? ""}
           </p>
         </form>
+
+        {/*
+          The groove picker. Session state, not a document edit: the choice
+          shapes the NEXT Play and never touches the chart, and each library
+          entry above applies its own reviewed groove when loaded. Ids carry
+          the panel context because the mobile sheet renders a second copy of
+          this panel while open (jcpe-ph6d).
+        */}
+        <div class="studio-playback-settings__groove">
+          <Label
+            controlId={`studio-groove-picker-${context}`}
+            id={`studio-groove-label-${context}`}
+            required={false}
+            text="Groove"
+          />
+          <RadioGroup
+            accessibleName="Playback groove"
+            busy={false}
+            density="dense"
+            describedBy={[`studio-groove-note-${context}`]}
+            disabled={false}
+            id={`studio-groove-picker-${context}`}
+            insideToolbar={false}
+            invalid={false}
+            onValueChange={(event) => {
+              onGrooveStyleChange(event.value);
+            }}
+            options={playback.groove.options.map((option) => ({
+              description: null,
+              disabled: false,
+              id: `studio-groove-${option.id}-${context}`,
+              label: option.label,
+              value: option.id,
+            }))}
+            value={playback.groove.activeStyleId}
+          />
+          <p
+            class="studio-playback-settings__feedback"
+            id={`studio-groove-note-${context}`}
+          >
+            Applies to the next Play. Library entries pick their own groove.
+          </p>
+        </div>
       </section>
 
       <p class="studio-panel-intro">
@@ -720,6 +782,7 @@ export type LibraryPanelProps = Readonly<{
   onQuickEntryClear: () => void;
   onTempoDraftChange: (value: string) => void;
   onTempoCommit: () => void;
+  onGrooveStyleChange: (styleId: string) => void;
   onRecoveryAcknowledgeChange: (acknowledged: boolean) => void;
   onRecoveryDurationDraftChange: (value: string) => void;
   onInsertRecoveredChord: (globalOrdinal: number) => void;
@@ -735,6 +798,7 @@ export function LibraryPanel({
   onQuickEntryClear,
   onTempoDraftChange,
   onTempoCommit,
+  onGrooveStyleChange,
   onRecoveryAcknowledgeChange,
   onRecoveryDurationDraftChange,
   onInsertRecoveredChord,
@@ -766,6 +830,7 @@ export function LibraryPanel({
             onQuickEntryInsert={onQuickEntryInsert}
             onTempoDraftChange={onTempoDraftChange}
             onTempoCommit={onTempoCommit}
+            onGrooveStyleChange={onGrooveStyleChange}
             onRecoveryAcknowledgeChange={onRecoveryAcknowledgeChange}
             onRecoveryDurationDraftChange={onRecoveryDurationDraftChange}
             playback={playback}

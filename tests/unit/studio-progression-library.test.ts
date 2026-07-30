@@ -23,6 +23,7 @@ import {
   PROGRESSION_LIBRARY_IDS,
 } from "../../src/application/studio-progression-library";
 import { createFakeAudioPlatform } from "../../src/test-support/fake-audio-platform";
+import { PERFORMANCE_STYLE_IDS } from "../../src/playback";
 
 const PLAY_GESTURE = Object.freeze({
   kind: "trusted-pointer",
@@ -124,6 +125,21 @@ describe("progression library", () => {
       if (entry.provenance === "study") {
         expect(entry.kicker).toBe("Original study");
       }
+    }
+  });
+
+  /*
+   * The groove law mirrors the provenance law: every entry names a style the
+   * performance package actually declares, so a library click can never
+   * select a groove the compiler would refuse. The set is imported from the
+   * declaring package rather than restated, because a style REMOVED from the
+   * package must fail here, not silently strand its library entries.
+   */
+  test("assigns every entry a declared performance style", () => {
+    for (const entry of PROGRESSION_LIBRARY) {
+      expect(
+        `${entry.id}:${String((PERFORMANCE_STYLE_IDS as readonly string[]).includes(entry.grooveStyleId))}`,
+      ).toBe(`${entry.id}:true`);
     }
   });
 
