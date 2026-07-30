@@ -60,6 +60,10 @@
   inset-block-start: var(--space-2);
   inset-inline-start: var(--space-2);
   z-index: 100;
+  display: grid;
+  place-items: center;
+  /* The first stop of a keyboard pass still owes the 44px target law. */
+  min-block-size: var(--touch-target);
   padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-md);
   background: var(--surface-elevated);
@@ -561,17 +565,26 @@
   white-space: nowrap;
 }
 
+/*
+ * The segmented pill keeps its clipped corners, but hidden on both axes made
+ * the last segment unreachable at narrow widths (scrollWidth 446 in a 356
+ * box). Scroll the inline axis like the toolbars above; the block axis stays
+ * hidden so the rounding still bites.
+ */
 .studio-chart-summary {
   display: flex;
   gap: 0;
   border: var(--border-width) solid var(--border-default);
   border-radius: var(--radius-md);
   background: var(--surface-panel);
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
 }
 
 .studio-chart-summary .ui-key-value-list {
   display: flex;
+  flex: none;
 }
 
 .studio-chart-summary .ui-key-value-list__item {
@@ -2310,14 +2323,31 @@
   border-color: var(--state-error);
 }
 
-.studio-transport__status strong {
+/*
+ * The text block must be allowed to shrink. A min-inline-size:auto ancestor
+ * pins it to its content width, so the nowrap ellipsis below never engages
+ * and the sentence paints straight across the transport controls.
+ */
+.studio-transport__status p {
+  min-inline-size: 0;
+  overflow: hidden;
+}
+
+/*
+ * Scoped through the p on purpose: a bare `.studio-transport__status span`
+ * outranks .studio-transport__status-icon and would flip the icon out of
+ * its grid centering.
+ */
+.studio-transport__status p strong {
   display: block;
   font-size: var(--text-sm);
   font-weight: 650;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.studio-transport__status span {
+.studio-transport__status p span {
   display: block;
   color: var(--text-subtle);
   font-size: var(--text-xs);
@@ -2369,6 +2399,35 @@
 
   .studio-transport__facts .ui-key-value-list__item:not(:nth-child(2)) {
     display: none;
+  }
+
+  /*
+   * Measured budget at 390px: the row spends 148 on controls and 99 on the
+   * facts, leaving 103 for the status. The decorative glyph costs 40 of it,
+   * which clipped even "Audio off" (72). It is aria-hidden, so dropping it
+   * here loses no meaning and lets every steady label state itself in full
+   * ("Audio ready" 96, "Audio failed" 95); only the sub-second transients
+   * "Starting/Stopping playback" (140/147) ellipsis.
+   */
+  .studio-transport__status-icon {
+    display: none;
+  }
+
+  /*
+   * A thumb-width console states its condition, not its explanation: the
+   * supporting sentence would only ellipsis to a stub and starve the label.
+   * It is hidden visually rather than with display:none because it carries
+   * #studio-transport-status-detail, the aria-describedby target of the
+   * playback controls group -- display:none would drop that description.
+   */
+  .studio-transport__status p span {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   .studio-transport__facts .ui-key-value-list__item dd {
