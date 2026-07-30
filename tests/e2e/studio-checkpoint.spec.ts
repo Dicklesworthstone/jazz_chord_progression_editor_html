@@ -288,10 +288,8 @@ test.describe("interactive studio checkpoint", () => {
       { timeout: 15000 },
     );
 
-    let sawPlayingCard = false;
-    for (let sample = 0; sample < 6; sample += 1) {
-      await page.waitForTimeout(1000);
-      const visibility = await page.evaluate(() => {
+    const readVisibility = () =>
+      page.evaluate(() => {
         const card = document.querySelector(
           '.studio-chord-card[data-playing="true"]',
         );
@@ -304,10 +302,33 @@ test.describe("interactive studio checkpoint", () => {
         const rect = card.getBoundingClientRect();
         return { top: rect.top, bottom: rect.bottom, limit };
       });
+
+    let sawPlayingCard = false;
+    for (let sample = 0; sample < 6; sample += 1) {
+      await page.waitForTimeout(900);
+      /*
+       * The claim is that the sounding chord ENDS UP visible, not that it is
+       * never caught mid-flight: the follow scroll is animated unless the
+       * viewer asked for reduced motion, and a fixed sampling clock will land
+       * inside that animation (it did, on Firefox, 40px past the limit). So
+       * settle first, and still fail if it never arrives.
+       */
+      let visibility = await readVisibility();
       if (visibility === null) continue;
       sawPlayingCard = true;
-      expect(visibility.top).toBeGreaterThanOrEqual(-1);
-      expect(visibility.bottom).toBeLessThanOrEqual(visibility.limit + 1);
+      let settled =
+        visibility.top >= -1 && visibility.bottom <= visibility.limit + 1;
+      for (let attempt = 0; attempt < 12 && !settled; attempt += 1) {
+        await page.waitForTimeout(150);
+        const next = await readVisibility();
+        if (next === null) break;
+        visibility = next;
+        settled = next.top >= -1 && next.bottom <= next.limit + 1;
+      }
+      expect(
+        settled,
+        `sounding chord never settled on screen: ${JSON.stringify(visibility)}`,
+      ).toBe(true);
     }
     expect(sawPlayingCard).toBe(true);
 
