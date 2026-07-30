@@ -89,6 +89,49 @@ particular:
 - `bun run verify` is the aggregate release-facing gate once the scaffold
   exists.
 
+## Deploying
+
+The live site is Cloudflare Pages on the `jazzchords.org` custom domain, with
+a byte-identical Vercel mirror. Both serve the tracked root artifact as
+`index.html`. Every rule below was paid for by a real failure.
+
+- Verify deployed bytes against `git show HEAD:jazz_chord_progression_editor.html`,
+  never the working-tree copy. `bun run build` builds the TREE, so a tree
+  carrying anyone's uncommitted edits yields an artifact reproducible from no
+  commit at all. That has already shipped: the hosts served bytes no commit
+  could regenerate, and comparing against the tree hid it precisely because
+  the tree was what got built.
+- Stage explicit paths. `git add -A` has twice swept in files that were not
+  part of the change: another contributor's in-flight work, which landed it
+  under an unrelated commit message and made the history lie about who wrote
+  it, and a third-party MIDI file (`*.mid` is ignored now for that reason).
+- Assume another agent is editing this worktree. Before starting gates, check
+  source mtimes and `pgrep -f playwright`; then re-check mtimes and rebuild
+  immediately before commit and deploy. A staged snapshot went stale mid-gate
+  once, when `studio.css` was rewritten during a twenty-minute e2e run.
+- Never race a second Playwright suite. Two of them thrash into flakes; chain
+  behind the running one instead.
+- A reaped background wrapper does not mean the test process died. Recover the
+  result from `test-results/playwright-results.json` (`stats.expected` and
+  `stats.unexpected`) rather than re-running twenty minutes of browsers.
+- The custom domain serves stale for roughly 30-60 seconds. Poll until the
+  hash matches before reporting a mismatch; the mirror flips immediately, so a
+  disagreement between the two hosts right after a deploy is usually cache.
+- Cloudflare Web Analytics injects `beacon.min.js` into browser-UA responses
+  on the custom domain. The hash CSP blocks it, that console error is
+  expected, and the CSP must never be weakened for it. A `curl` request with a
+  browser user-agent does NOT reproduce the injection - only a real browser
+  does, so do not conclude it is gone from a curl check.
+- A matching hash is not a working deploy. Load each host in a real browser at
+  desktop and phone widths and confirm it boots with no console or page
+  errors. Confirm the specific behaviour the change claims, too: a deploy that
+  serves the right bytes can still be broken for users.
+- Shipping ahead of a named gate is the owner's call, never yours to assume.
+  When they ask for it, say plainly which gate is outstanding, treat it as a
+  live liability, and land the fix the moment it reports. A serious
+  accessibility regression reached production this way, and the e2e suite that
+  would have caught it was already running.
+
 <!-- bv-agent-instructions-v3 -->
 
 ---
