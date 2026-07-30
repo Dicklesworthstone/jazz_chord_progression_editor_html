@@ -20,7 +20,9 @@ export function StudioShellNotice({
         !
       </span>
       <div>
-        <h2 id="studio-shell-notice-title">Panel could not open</h2>
+        <h2 id="studio-shell-notice-title">
+          {refusal.heading ?? "Panel could not open"}
+        </h2>
         <p>{refusal.message}</p>
         {refusal.recoveryAction === null ? null : (
           <p class="studio-shell-notice__recovery">

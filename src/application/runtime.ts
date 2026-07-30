@@ -37,6 +37,19 @@ export type { StudioViewModel } from "./studio-view-model";
 export { STARTER_CHART, seedStarterChart } from "./studio-starter-chart";
 export type { SeedStarterChartResult } from "./studio-starter-chart";
 export {
+  applySharedStartup,
+  buildSharePayload,
+  decodeShareFragment,
+  encodeShareFragment,
+  SHARE_FRAGMENT_PREFIX,
+} from "./studio-share";
+export type {
+  ApplySharedResult,
+  SharePayload,
+  ShareRefusalCode,
+  ShareResult,
+} from "./studio-share";
+export {
   PROGRESSION_LIBRARY,
   PROGRESSION_LIBRARY_IDS,
 } from "./studio-progression-library";

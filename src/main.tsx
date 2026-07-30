@@ -1,8 +1,10 @@
 import { render } from "preact";
 
 import {
+  applySharedStartup,
   createStudioAudio,
   createStudioController,
+  decodeShareFragment,
   seedStarterChart,
 } from "./application/runtime";
 import { createBrowserAudioPlatform } from "./audio/runtime";
@@ -29,13 +31,35 @@ const creation = createStudioController({
 
 if (creation.ok) {
   /*
-   * A pristine first open receives the reviewed starter chart through the
-   * same typed command path a user travels (jcpe-b20t). Seeding happens
-   * before the first render so the opening paint already shows a playable
-   * progression; a seed refusal simply opens the familiar empty studio.
+   * A `#zdoc=` fragment is a shared chart: decode it through the bounded
+   * total decoder and apply it through the exact typed command path a user
+   * travels. A refused share falls back to the reviewed starter chart with
+   * the refusal surfaced, never a half-applied document. With no share
+   * present, a pristine first open receives the starter chart (jcpe-b20t).
+   * Seeding happens before the first render so the opening paint already
+   * shows a playable progression.
    */
-  seedStarterChart(creation.controller);
-  render(<StudioRoot controller={creation.controller} />, mountPoint);
+  let startupNotice: string | null = null;
+  const shared = decodeShareFragment(window.location.hash);
+  if (shared.ok) {
+    const applied = applySharedStartup(creation.controller, shared.value);
+    if (!applied.applied) {
+      startupNotice = `The shared chart was not opened: ${applied.reason}`;
+      seedStarterChart(creation.controller);
+    }
+  } else if (shared.code !== "share.fragment_absent") {
+    startupNotice = `The share link could not be read: ${shared.message}`;
+    seedStarterChart(creation.controller);
+  } else {
+    seedStarterChart(creation.controller);
+  }
+  render(
+    <StudioRoot
+      controller={creation.controller}
+      startupNotice={startupNotice}
+    />,
+    mountPoint,
+  );
 } else {
   render(
     <StudioStartupFailure

@@ -250,7 +250,7 @@ The runtime boundary is intentionally small:
 - static capability inspection plus real-browser request interception, including a malicious negative-control fixture;
 - deterministic license and embedded-asset inventory.
 
-The current shell does not accept or store chart data. Planned recovery will remain local and best-effort; planned exports will occur only after an explicit user gesture. Imported text and JSON will cross bounded decoders and will never be evaluated, inserted as HTML, or turned into a URL.
+The current shell does not accept or store chart data. Planned recovery will remain local and best-effort; planned exports will occur only after an explicit user gesture. Imported text and JSON will cross bounded decoders and will never be evaluated, inserted as HTML, or turned into a URL. The one deliberate exception is the explicit **Copy link** action: on a user gesture the studio encodes the current chart, title, tempo, and groove into a local `#zdoc=` URL fragment. No request is made in either direction — the fragment never leaves the page except by the user sharing the link — and an opened fragment crosses the same bounded, refusing decoders as typed text; any diagnostic falls back to the starter chart with the refusal stated.
 
 A single local file is portable, but it is not cloud backup. When authoring and export arrive, users will remain responsible for keeping copies of important charts.
 

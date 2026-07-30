@@ -21,6 +21,8 @@ export type StudioDocumentView = Readonly<{
   canRedo: boolean;
   /** False when the chart is already a single empty measure. */
   canClearChart: boolean;
+  /** Outcome of the last Copy-link press, stated concretely; null before one. */
+  shareFeedback: string | null;
   /**
    * Clearing arms on the first press and fires on the second, in place of a
    * native confirm dialog. The armed state is presentation-only and disarms
@@ -319,6 +321,8 @@ export type StudioLayoutView = Readonly<{
   uiRefusal: Readonly<{
     message: string;
     recoveryAction: string | null;
+    /** Overrides the notice's default heading when the refusal is not a panel failure. */
+    heading?: string;
   }> | null;
 }>;
 
@@ -370,6 +374,8 @@ export type StudioShellCallbacks = Readonly<{
   onDismissUiRefusal: () => void;
   onTempoDraftChange: (value: string) => void;
   onTempoCommit: () => void;
+  /** Copy a #zdoc= share link for the current chart; explicit gesture only. */
+  onCopyShareLink: () => void;
   /** Choose the session's groove; a library row also applies its own. */
   onGrooveStyleChange: (styleId: string) => void;
   /** Append one suggested chord through the shared quick-entry path. */

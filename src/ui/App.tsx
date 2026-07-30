@@ -6,18 +6,20 @@ import {
   useState,
 } from "preact/hooks";
 
-import type {
-  StudioAudioGesture,
-  StudioContinuationView,
-  StudioController,
-  StudioControllerActionResult,
-  StudioBoundaryInput,
-  StudioDraftPreview,
-  StudioInsertionPlan,
-  StudioRailSide,
-  StudioViewModel,
-  StudioAnalysisFrame,
-  StudioAnalyzerExpectation,
+import {
+  buildSharePayload,
+  encodeShareFragment,
+  type StudioAudioGesture,
+  type StudioContinuationView,
+  type StudioController,
+  type StudioControllerActionResult,
+  type StudioBoundaryInput,
+  type StudioDraftPreview,
+  type StudioInsertionPlan,
+  type StudioRailSide,
+  type StudioViewModel,
+  type StudioAnalysisFrame,
+  type StudioAnalyzerExpectation,
 } from "../application/runtime";
 import { MAX_SHORT_TEXT_CODE_POINTS } from "../domain";
 import {
@@ -198,6 +200,8 @@ type PendingEdit =
 export type AppProps = Readonly<{
   snapshot: StudioViewModel;
   actions: AppActions;
+  /** A boot-time refusal to surface once in the shell notice. */
+  startupNotice?: string | null;
 }>;
 
 /**
@@ -379,6 +383,7 @@ type PresentationState = Readonly<{
   tempoDraft: string;
   tempoInvalid: boolean;
   tempoFeedback: string | null;
+  shareFeedback: string | null;
 }>;
 
 /** Teaching labels restate stored facts; an absent fact is shown as absent. */
@@ -566,6 +571,7 @@ function viewFromSnapshot(
     tempoDraft,
     tempoInvalid,
     tempoFeedback,
+    shareFeedback,
   } = presentation;
   const chordCount = snapshot.chordCount;
   const selectionCount = snapshot.bookmarks.selectedEventIds.length;
@@ -596,6 +602,7 @@ function viewFromSnapshot(
         (snapshot.sections[0]?.measures.length ?? 0) > 1,
       clearArmed,
       clearLabel: clearArmed ? "Really clear?" : "Clear",
+      shareFeedback,
       undoDescription: snapshot.history.undoLabel === null
         ? "Nothing to undo"
         : `Undo ${snapshot.history.undoLabel}`,
@@ -824,13 +831,22 @@ function feedbackFromRefusal(
   });
 }
 
-export function App({ snapshot, actions }: AppProps) {
+export function App({ snapshot, actions, startupNotice }: AppProps) {
   const [titleDraft, setTitleDraft] = useState(snapshot.title);
   const previousCommittedTitle = useRef(snapshot.title);
   const [activeSheet, setActiveSheet] = useState<StudioPanelSide | null>(null);
   const [uiRefusal, setUiRefusal] = useState<
     StudioShellView["layout"]["uiRefusal"]
-  >(null);
+  >(
+    startupNotice === null || startupNotice === undefined
+      ? null
+      : Object.freeze({
+          heading: "Share link not opened",
+          message: startupNotice,
+          recoveryAction:
+            "The studio opened with the starter chart instead; ask for a fresh link if the chart matters.",
+        }),
+  );
   const [rovingFocusId, setRovingFocusId] = useState<string | null>(null);
   const [editRefusal, setEditRefusal] = useState<
     StudioShellView["chart"]["editRefusal"]
@@ -862,6 +878,7 @@ export function App({ snapshot, actions }: AppProps) {
   const [tempoDraft, setTempoDraft] = useState(String(snapshot.tempoBpm));
   const [tempoInvalid, setTempoInvalid] = useState(false);
   const [tempoFeedback, setTempoFeedback] = useState<string | null>(null);
+  const [shareFeedback, setShareFeedback] = useState<string | null>(null);
   const previousCommittedTempo = useRef(snapshot.tempoBpm);
   useEffect(() => {
     if (previousCommittedTempo.current === snapshot.tempoBpm) return;
@@ -1286,6 +1303,7 @@ export function App({ snapshot, actions }: AppProps) {
     tempoDraft,
     tempoInvalid,
     tempoFeedback,
+    shareFeedback,
   }, insertionPlan, draftPreview, livePlayheadLabel, continuation);
 
   /*
@@ -1414,6 +1432,46 @@ export function App({ snapshot, actions }: AppProps) {
         },
       }}
       callbacks={{
+        onCopyShareLink: () => {
+          /*
+           * The share link is built from the committed chart and written to
+           * the clipboard and the address bar. Nothing is requested from
+           * anywhere; a chart the share grammar cannot carry refuses with
+           * the exact reason instead of copying a lossy link.
+           */
+          const payload = buildSharePayload(snapshot);
+          if (!payload.ok) {
+            setShareFeedback(payload.message);
+            return;
+          }
+          const fragment = encodeShareFragment(payload.value);
+          if (!fragment.ok) {
+            setShareFeedback(fragment.message);
+            return;
+          }
+          const base = window.location.href.split("#")[0] ?? "";
+          const url = `${base}${fragment.value}`;
+          window.history.replaceState(null, "", fragment.value);
+          const clipboard = navigator.clipboard as
+            | Clipboard
+            | undefined;
+          if (clipboard === undefined) {
+            setShareFeedback(
+              "Share link placed in the address bar; copy it from there.",
+            );
+            return;
+          }
+          clipboard.writeText(url).then(
+            () => {
+              setShareFeedback("Share link copied to the clipboard.");
+            },
+            () => {
+              setShareFeedback(
+                "Share link placed in the address bar; copy it from there.",
+              );
+            },
+          );
+        },
         onTempoDraftChange: (value) => {
           setTempoDraft(value);
           setTempoInvalid(false);
@@ -1943,9 +2001,11 @@ export function StudioStartupFailure({
  */
 export type StudioRootProps = Readonly<{
   controller: StudioController;
+  /** A boot-time refusal (for example, an unreadable share link). */
+  startupNotice?: string | null;
 }>;
 
-export function StudioRoot({ controller }: StudioRootProps) {
+export function StudioRoot({ controller, startupNotice }: StudioRootProps) {
   const [snapshot, setSnapshot] = useState(controller.getSnapshot());
 
   useEffect(() => {
@@ -1960,6 +2020,7 @@ export function StudioRoot({ controller }: StudioRootProps) {
   return (
     <App
       snapshot={snapshot}
+      startupNotice={startupNotice ?? null}
       actions={{
         acknowledgeFocus: controller.acknowledgeFocus,
         annotateSection: controller.annotateSection,

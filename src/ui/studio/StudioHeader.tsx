@@ -21,6 +21,7 @@ export type StudioHeaderProps = Readonly<{
     | "onUndo"
     | "onRedo"
     | "onClearChart"
+    | "onCopyShareLink"
   >;
 }>;
 
@@ -206,6 +207,34 @@ export function StudioHeader({ view, callbacks }: StudioHeaderProps) {
                   ? "Press Clear again to empty the chart. Undo restores it."
                   : ""
               }
+              focusableWhenSkippedTo={false}
+            />
+          </span>
+          {/*
+            Sharing is an explicit gesture that encodes the current chart
+            into a local #zdoc= fragment — no request leaves the page. The
+            outcome line states exactly where the link went.
+          */}
+          <Button
+            busy={false}
+            density="comfortable"
+            describedBy={["studio-share-feedback"]}
+            disabled={false}
+            id="studio-copy-share-link"
+            invalid={false}
+            label="Copy link"
+            onAction={callbacks.onCopyShareLink}
+            type="button"
+            variant="secondary"
+          />
+          <span
+            aria-live="polite"
+            aria-atomic="true"
+            id="studio-share-feedback"
+            role="status"
+          >
+            <VisuallyHidden
+              content={view.shareFeedback ?? ""}
               focusableWhenSkippedTo={false}
             />
           </span>
