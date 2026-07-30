@@ -11,7 +11,7 @@ import { StudioRoot, StudioStartupFailure } from "./ui/runtime";
 const mountPoint = document.querySelector<HTMLElement>("#app");
 
 if (mountPoint === null) {
-  throw new Error("Changes could not find its application mount point.");
+  throw new Error("JazzChords.org could not find its application mount point.");
 }
 
 /*

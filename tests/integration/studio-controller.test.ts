@@ -30,7 +30,7 @@ describe("studio application checkpoint", () => {
     expect(state.document).toMatchObject({
       schema: "changes.progression.v2",
       id: STUDIO_BLANK_DOCUMENT_IDS.document,
-      title: "Untitled Changes",
+      title: "Untitled Chart",
       description: "",
       meter: { beatsPerBar: 4, beatUnit: 4 },
       tempoBpm: 105,
@@ -66,7 +66,7 @@ describe("studio application checkpoint", () => {
     const view = studio.getSnapshot();
 
     expect(view).toMatchObject({
-      title: "Untitled Changes",
+      title: "Untitled Chart",
       revision: 0,
       meterLabel: "4/4",
       tempoBpm: 105,
@@ -184,7 +184,7 @@ describe("studio application checkpoint", () => {
       ok: true,
       outcome: "undone",
       snapshot: {
-        title: "Untitled Changes",
+        title: "Untitled Chart",
         revision: 2,
         history: { canUndo: false, canRedo: true },
       },
@@ -252,7 +252,7 @@ describe("studio application checkpoint", () => {
         recoveryAction: "Make a document edit before using Undo.",
       },
       snapshot: {
-        title: "Untitled Changes",
+        title: "Untitled Chart",
         revision: 0,
         noticeCount: 1,
       },

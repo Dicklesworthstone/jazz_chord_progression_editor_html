@@ -1691,7 +1691,7 @@ export function StudioStartupFailure({
   return (
     <main class="studio-startup-failure" data-app-ready="false">
       <p class="studio-kicker">Local startup stopped safely</p>
-      <h1>Changes</h1>
+      <h1>JazzChords.org</h1>
       <h2>The blank studio could not be validated.</h2>
       <p>{message}</p>
       <p>{recoveryAction}</p>

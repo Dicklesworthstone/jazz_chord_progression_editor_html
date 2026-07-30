@@ -35,7 +35,7 @@ export const STUDIO_INITIAL_PANELS = Object.freeze({
 const STUDIO_BLANK_DOCUMENT_CANDIDATE = Object.freeze({
   schema: PROGRESSION_DOCUMENT_SCHEMA,
   id: STUDIO_BLANK_DOCUMENT_IDS.document,
-  title: "Untitled Changes",
+  title: "Untitled Chart",
   description: "",
   meter: Object.freeze({ beatsPerBar: 4, beatUnit: 4 }),
   /*

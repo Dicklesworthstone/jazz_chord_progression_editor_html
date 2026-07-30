@@ -7,7 +7,7 @@ import type { StudioHarmonyView } from "../../src/ui/studio/studio-contract";
 
 const HARMONY_VIEW: StudioHarmonyView = Object.freeze({
   documentFacts: Object.freeze([
-    Object.freeze({ id: "title", label: "Title", value: "Untitled Changes" }),
+    Object.freeze({ id: "title", label: "Title", value: "Untitled Chart" }),
   ]),
   emptyDescription: "The test document has no selected chord.",
   emptyTitle: "No chord selected",

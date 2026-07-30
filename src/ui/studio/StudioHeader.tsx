@@ -28,7 +28,7 @@ export function StudioHeader({ view, callbacks }: StudioHeaderProps) {
         </span>
         <div class="studio-brand__copy">
           <p class="studio-kicker">Offline jazz studio</p>
-          <h1>Changes</h1>
+          <h1>JazzChords.org</h1>
         </div>
       </div>
 

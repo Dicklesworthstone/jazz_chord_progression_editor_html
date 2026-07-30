@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "contractId": "F0",
   "product": {
-    "name": "Changes",
-    "subtitle": "Jazz Progression Studio"
+    "name": "JazzChords.org",
+    "subtitle": "Jazz Chord Progression Studio"
   },
   "toolchain": {
     "packageManager": "bun@1.3.14",
@@ -212,7 +212,7 @@
     "webkit"
   ],
   "requiredReadyMarker": "[data-app-ready=\"true\"]",
-  "expectedHeading": "Changes",
+  "expectedHeading": "JazzChords.org",
   "traceability": [
     {
       "id": "F0-TOOLCHAIN-01",

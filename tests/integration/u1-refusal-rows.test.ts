@@ -278,7 +278,7 @@ describe("U1-TRACE-CHANNEL regressions found while verifying U1", () => {
     expectOk(studio.undo());
     expect(studio.getSnapshot().title).toBe("First name");
     expectOk(studio.undo());
-    expect(studio.getSnapshot().title).toBe("Untitled Changes");
+    expect(studio.getSnapshot().title).toBe("Untitled Chart");
   });
 
   test("U1-OP-021 a rename between two edits keeps logical time monotonic", () => {
