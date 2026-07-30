@@ -45,6 +45,7 @@ import type {
   ApplicationTransitionOutcome,
   ApplicationTransitionResult,
   DeleteDocumentNodesCommand,
+  SetDocumentSettingsCommand,
   DocumentNodeRef,
   DuplicateDocumentNodesCommand,
   InsertDocumentNodeCommand,
@@ -126,7 +127,15 @@ export const STUDIO_EDIT_REFUSAL_CODES = Object.freeze([
   "u1.move_destination_invalid",
   "u1.symbol_draft_invalid",
   "u1.symbol_edit_blocked_manual_voicing",
+  "u1.tempo_invalid",
+  "u1.tempo_out_of_range",
+  "u1.chart_already_empty",
+  "u1.measure_last_cannot_delete",
 ] as const);
+
+/** The reviewed tempo window, in beats per minute. */
+const MIN_TEMPO_BPM = 20;
+const MAX_TEMPO_BPM = 300;
 
 export type StudioEditRefusalCode =
   (typeof STUDIO_EDIT_REFUSAL_CODES)[number];
@@ -172,7 +181,10 @@ export type StudioControllerAction =
   | "stop-progression"
   | "transport-notification"
   | "insert-recovered-chord"
-  | "acknowledge-focus";
+  | "acknowledge-focus"
+  | "set-tempo"
+  | "clear-chart"
+  | "delete-measure";
 
 export type StudioControllerRefusal = Readonly<{
   action: StudioControllerAction;
@@ -348,6 +360,9 @@ export interface StudioController {
   readonly getSnapshot: () => StudioViewModel;
   readonly subscribe: (listener: StudioControllerListener) => () => void;
   readonly setTitle: (value: string) => StudioControllerActionResult;
+  readonly setTempo: (bpm: number) => StudioControllerActionResult;
+  readonly clearChart: () => StudioControllerActionResult;
+  readonly deleteMeasure: (measureId: string) => StudioControllerActionResult;
   readonly undo: () => StudioControllerActionResult;
   readonly redo: () => StudioControllerActionResult;
   readonly setRailCollapsed: (
@@ -572,6 +587,12 @@ export type StudioControllerCreationResult =
 
 const EDIT_RECOVERY_ACTIONS: Readonly<Record<StudioEditRefusalCode, string>> =
   Object.freeze({
+    "u1.tempo_invalid": "Enter a whole number of beats per minute.",
+    "u1.tempo_out_of_range":
+      "Choose a tempo between 20 and 300 beats per minute.",
+    "u1.chart_already_empty": "This chart has nothing to clear.",
+    "u1.measure_last_cannot_delete":
+      "A chart keeps at least one measure; clear its chords instead.",
     "u1.selection_empty": "Select at least one chord before this action.",
     "u1.selection_limit": "Select at most 8,192 chords.",
     "u1.target_missing": "Choose a chord, measure, or boundary that still exists.",
@@ -1567,6 +1588,146 @@ function makeStudioController(
       targets: deleteTargets,
     });
     return apply("delete-selection", (current) =>
+      runDocumentCommand({ command, dependencies, state: current }),
+    );
+  };
+
+  /**
+   * The reviewed tempo window. Outside it the number is REFUSED, never
+   * clamped: silently replacing a musician's tempo with a different one is a
+   * worse answer than declining and saying why.
+   */
+  const setTempo = (bpm: number): StudioControllerActionResult => {
+    if (!Number.isInteger(bpm)) {
+      return editRefusal(
+        "set-tempo",
+        "u1.tempo_invalid",
+        "Tempo is a whole number of beats per minute.",
+        ["tempoBpm"],
+      );
+    }
+    if (bpm < MIN_TEMPO_BPM || bpm > MAX_TEMPO_BPM) {
+      return editRefusal(
+        "set-tempo",
+        "u1.tempo_out_of_range",
+        `Tempo must be between ${String(MIN_TEMPO_BPM)} and ${String(MAX_TEMPO_BPM)} beats per minute.`,
+        ["tempoBpm"],
+      );
+    }
+    const command: SetDocumentSettingsCommand = Object.freeze({
+      ...commandEnvelope("studio-tempo", "Set tempo"),
+      completionUpdates: Object.freeze([]),
+      kind: "set-document-settings",
+      patch: Object.freeze({ tempoBpm: bpm }),
+    });
+    return apply("set-tempo", (current) =>
+      runDocumentCommand({ command, dependencies, state: current }),
+    );
+  };
+
+  /**
+   * Remove one measure. The chart always keeps at least one, because a
+   * document with no measure has nowhere to put the next chord and the
+   * insertion-plan vocabulary has no statement for creating one from nothing.
+   */
+  const deleteMeasure = (measureId: string): StudioControllerActionResult => {
+    const location = documentIndex.measures.get(measureId);
+    if (location === undefined) {
+      return editRefusal(
+        "delete-measure",
+        "u1.target_missing",
+        "That measure is no longer part of this chart.",
+        ["measureId"],
+      );
+    }
+    let measureCount = 0;
+    for (const section of state.document.sections) {
+      measureCount += section.measures.length;
+    }
+    if (measureCount <= 1) {
+      return editRefusal(
+        "delete-measure",
+        "u1.measure_last_cannot_delete",
+        "This is the only measure; clear its chords instead of removing it.",
+        ["measureId"],
+      );
+    }
+    const command: DeleteDocumentNodesCommand = Object.freeze({
+      ...commandEnvelope("studio-delete-measure", "Delete measure"),
+      completionUpdates: Object.freeze([]),
+      kind: "delete",
+      targets: Object.freeze([
+        Object.freeze({ id: location.id, kind: "measure" as const }),
+      ]) as unknown as readonly [DocumentNodeRef, ...DocumentNodeRef[]],
+    });
+    return apply("delete-measure", (current) =>
+      runDocumentCommand({ command, dependencies, state: current }),
+    );
+  };
+
+  /**
+   * Empty the chart back to a single empty measure in one undoable command.
+   *
+   * Everything except the first measure of the first section is deleted, so
+   * nothing hollow is left behind -- the complaint that made this command
+   * necessary was that clearing left a wall of empty bars. The surviving
+   * measure keeps its identity and becomes `empty`, which is exactly the
+   * pristine shape a first-open document has.
+   */
+  const clearChart = (): StudioControllerActionResult => {
+    const sections = state.document.sections;
+    const firstSection = sections[0];
+    const keptMeasure = firstSection?.measures[0];
+    if (firstSection === undefined || keptMeasure === undefined) {
+      return editRefusal(
+        "clear-chart",
+        "u1.target_missing",
+        "This chart has no measure to keep.",
+        ["document"],
+      );
+    }
+    const targets: DocumentNodeRef[] = [];
+    for (const section of sections) {
+      if (section.id !== firstSection.id) {
+        targets.push(Object.freeze({ id: section.id, kind: "section" as const }));
+        continue;
+      }
+      for (const measure of section.measures) {
+        if (measure.id !== keptMeasure.id) {
+          targets.push(
+            Object.freeze({ id: measure.id, kind: "measure" as const }),
+          );
+          continue;
+        }
+        for (const event of measure.events) {
+          targets.push(Object.freeze({ id: event.id, kind: "event" as const }));
+        }
+      }
+    }
+    const [head, ...rest] = targets;
+    if (head === undefined) {
+      return editRefusal(
+        "clear-chart",
+        "u1.chart_already_empty",
+        "This chart is already a single empty measure.",
+        ["document"],
+      );
+    }
+    const command: DeleteDocumentNodesCommand = Object.freeze({
+      ...commandEnvelope("studio-clear-chart", "Clear chart"),
+      completionUpdates: Object.freeze([
+        Object.freeze({
+          completion: Object.freeze({ kind: "empty" as const }),
+          measureId: keptMeasure.id,
+        }),
+      ]),
+      kind: "delete",
+      targets: Object.freeze([head, ...rest]) as readonly [
+        DocumentNodeRef,
+        ...DocumentNodeRef[],
+      ],
+    });
+    return apply("clear-chart", (current) =>
       runDocumentCommand({ command, dependencies, state: current }),
     );
   };
@@ -4392,6 +4553,9 @@ function makeStudioController(
         listeners.delete(listener);
       };
     },
+    clearChart,
+    deleteMeasure,
+    setTempo,
     setTitle,
     undo: () => apply("undo", (current) => undoDocumentCommand({ state: current })),
     redo: () => apply("redo", (current) => redoDocumentCommand({ state: current })),
