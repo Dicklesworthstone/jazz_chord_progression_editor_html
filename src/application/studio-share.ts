@@ -304,14 +304,22 @@ export function applySharedStartup(
   const unwind = (): void => {
     for (let step = 0; step < undoDepth; step += 1) void controller.undo();
   };
-  const titled = controller.setTitle(payload.title);
-  if (!titled.ok) {
-    return Object.freeze({
-      applied: false,
-      reason: `${titled.refusal.message} ${titled.refusal.recoveryAction}`,
-    });
+  /*
+   * A same-value command refuses rather than recording a no-op, so a share
+   * that happens to carry the blank studio's own defaults (title
+   * "Untitled Chart", tempo 105) must skip those steps instead of dying on
+   * them — the chart is the payload's point.
+   */
+  if (payload.title !== snapshot.title) {
+    const titled = controller.setTitle(payload.title);
+    if (!titled.ok) {
+      return Object.freeze({
+        applied: false,
+        reason: `${titled.refusal.message} ${titled.refusal.recoveryAction}`,
+      });
+    }
+    undoDepth += 1;
   }
-  undoDepth += 1;
   const sectionId = controller.getSnapshot().sections[0]?.id ?? "";
   const preview = controller.previewChartText(payload.chartText);
   if (preview.status !== "ready") {
@@ -351,13 +359,15 @@ export function applySharedStartup(
     .length > 1
     ? undoDepth + 2
     : undoDepth + 1;
-  const tempoSet = controller.setTempo(payload.tempoBpm);
-  if (!tempoSet.ok) {
-    unwind();
-    return Object.freeze({
-      applied: false,
-      reason: `${tempoSet.refusal.message} ${tempoSet.refusal.recoveryAction}`,
-    });
+  if (payload.tempoBpm !== snapshot.tempoBpm) {
+    const tempoSet = controller.setTempo(payload.tempoBpm);
+    if (!tempoSet.ok) {
+      unwind();
+      return Object.freeze({
+        applied: false,
+        reason: `${tempoSet.refusal.message} ${tempoSet.refusal.recoveryAction}`,
+      });
+    }
   }
   // Session state last: it has no history entry and needs no unwind.
   const styled = controller.setPerformanceStyle(payload.grooveStyleId);

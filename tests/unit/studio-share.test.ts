@@ -193,6 +193,26 @@ describe("applying a shared chart", () => {
     expect(reshared.value.chartText).toBe(payload.value.chartText);
   });
 
+  test("a share carrying the blank studio's own defaults still applies", () => {
+    /*
+     * Same-value commands refuse rather than record no-ops, so a payload
+     * whose title and tempo equal the blank document's defaults must skip
+     * those steps. This is exactly what a Copy link on an untitled chart
+     * at the default tempo produces — the WebKit reopen caught it live.
+     */
+    const blank = freshController();
+    const defaults = blank.getSnapshot();
+    const target = freshController();
+    const applied = applySharedStartup(target, {
+      chartText: "| Am7:2/1 D7:2/1 | Gmaj7:4/1 |",
+      grooveStyleId: "ballad-comp@1",
+      tempoBpm: defaults.tempoBpm,
+      title: defaults.title,
+    });
+    expect(applied.applied).toBe(true);
+    expect(target.getSnapshot().chordCount).toBe(3);
+  });
+
   test("a studio with content is never touched", () => {
     const controller = freshController();
     insertText(controller, "| Cmaj7 |");

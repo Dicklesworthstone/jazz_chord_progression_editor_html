@@ -87,9 +87,13 @@ test.describe("share links", () => {
     const feedback = page.locator("#studio-share-feedback");
     await expect(feedback).toContainText(/clipboard|address bar/);
 
-    // The link the button produced reopens as the same chart.
-    const hash = await page.evaluate(() => window.location.hash);
-    await page.goto(`${artifactUrl()}${hash}`, { waitUntil: "load" });
+    /*
+     * The link the button produced reopens as the same chart. Reload
+     * rather than re-goto: a same-URL hash navigation is same-document in
+     * some engines and a full load in others, and this assertion is about
+     * the boot path running with the fragment in place on every engine.
+     */
+    await page.reload({ waitUntil: "load" });
     await expect(page.locator('[data-app-ready="true"]')).toBeVisible();
     await expect(cards(page)).toHaveCount(3);
     expectCleanDiagnostics(diagnostics);
