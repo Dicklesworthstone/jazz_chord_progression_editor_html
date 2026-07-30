@@ -915,8 +915,26 @@ export function App({ snapshot, actions }: AppProps) {
         }
       }
     }
-    return null;
+    return endOfChartTarget();
   };
+
+  /**
+   * Where chords go when nobody said otherwise: the end of the chart.
+   *
+   * Adding to a progression you already have loaded is the common case, and
+   * it used to be the awkward one -- with no target the draft had nowhere to
+   * land, and with a stale one it aimed at a bar too full to hold it, so
+   * Insert sat disabled for a reason the surface never explained. Appending
+   * at the section end is the statement the plan vocabulary calls
+   * `completes-measures`, which is committable whenever the draft is whole
+   * bars.
+   */
+  function endOfChartTarget(): StudioBoundaryInput | null {
+    const sections = snapshot.sections;
+    const last = sections[sections.length - 1];
+    if (last === undefined) return null;
+    return { kind: "section-end", sectionId: last.id };
+  }
 
   /** Deterministic default name: the next unused letter, then an ordinal. */
   const nextSectionName = (): string => {
