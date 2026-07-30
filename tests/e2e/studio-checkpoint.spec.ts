@@ -118,7 +118,8 @@ test.describe("interactive studio checkpoint", () => {
      * The seeded starter chart (jcpe-b20t) gives the transport something to
      * play from the first paint: Play is enabled while Pause and Stop stay
      * disabled at idle. The controls that exist are exactly the wired ones;
-     * unwired previous/next/loop must not render at all.
+     * unwired previous/next/loop must not render at all. The current seed is
+     * the Deacon Blues intro (jcpe-x0z9, 202ce66): ten chord events.
      */
     await expect(page.getByRole("button", { name: "Play" })).toBeEnabled();
     for (const name of ["Pause", "Stop"]) {
@@ -127,7 +128,7 @@ test.describe("interactive studio checkpoint", () => {
     for (const name of ["Previous chord", "Next chord", "Loop progression"]) {
       await expect(page.getByRole("button", { name })).toHaveCount(0);
     }
-    await expect(page.locator(".studio-chord-card")).toHaveCount(24);
+    await expect(page.locator(".studio-chord-card")).toHaveCount(10);
     /*
      * The pristine empty-measure statement remains reachable and honest:
      * undoing the seed away restores the empty studio and its hint.

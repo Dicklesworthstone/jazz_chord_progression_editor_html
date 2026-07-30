@@ -17,14 +17,16 @@
   border-radius: var(--radius-sm);
   color: var(--text-primary);
   background: var(--action-secondary);
-  font-weight: 700;
+  font-weight: 650;
+  letter-spacing: 0.005em;
   line-height: var(--line-tight);
   cursor: pointer;
   transition:
     color var(--motion-fast) var(--ease-standard),
     background-color var(--motion-fast) var(--ease-standard),
     border-color var(--motion-fast) var(--ease-standard),
-    box-shadow var(--motion-fast) var(--ease-standard);
+    box-shadow var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-standard);
 }
 
 .ui-button {
@@ -48,7 +50,12 @@
   min-inline-size: var(--touch-target);
   min-block-size: var(--touch-target);
   color: var(--text-inverse);
-  background: var(--action-primary);
+  background: linear-gradient(
+    160deg,
+    var(--action-primary-hover),
+    var(--action-primary) 62%,
+    color-mix(in srgb, var(--action-primary) 82%, var(--surface-sunken))
+  );
   border-color: var(--action-primary);
 }
 
@@ -82,6 +89,7 @@
   color: var(--text-inverse);
   background: var(--action-primary-hover);
   border-color: var(--action-primary-hover);
+  box-shadow: var(--shadow-1);
 }
 
 .ui-button[data-variant="destructive"]:not(:disabled, [aria-disabled="true"]):hover,
@@ -95,6 +103,7 @@
 .ui-icon-button:not(:disabled, [aria-disabled="true"]):active,
 .ui-disclosure__trigger:not(:disabled, [aria-disabled="true"]):active {
   box-shadow: inset 0 0 0 var(--border-width) var(--text-primary);
+  transform: translateY(1px);
 }
 
 .ui-button:focus-visible,

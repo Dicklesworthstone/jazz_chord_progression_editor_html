@@ -48,6 +48,8 @@
 
 .studio-shell__frame {
   grid-row: 1;
+  position: relative;
+  z-index: 2;
   display: flex;
   flex-direction: column;
   min-block-size: 0;
@@ -84,6 +86,7 @@
   align-items: center;
   gap: var(--space-2) var(--space-4);
   padding: var(--space-2) var(--space-4);
+  padding-block-start: calc(var(--space-2) + env(safe-area-inset-top, 0px));
   background: color-mix(in srgb, var(--surface-header) 88%, transparent);
   border-block-end: var(--border-width) solid var(--border-default);
   backdrop-filter: blur(8px);
@@ -204,7 +207,7 @@
   inset-block-start: calc(100% + var(--space-1));
   inset-inline-start: 0;
   z-index: 40;
-  max-inline-size: min(28rem, 80vw);
+  inline-size: 100%;
   margin: 0;
   padding: var(--space-2) var(--space-3);
   border: var(--border-width) solid var(--border-default);
@@ -213,6 +216,8 @@
   color: var(--text-muted);
   font-size: var(--text-xs);
   box-shadow: var(--shadow-3);
+  /* Pure status text: it must never steal a click from the header. */
+  pointer-events: none;
 }
 
 .studio-title-editor__feedback[data-feedback-kind="idle"] {
@@ -434,6 +439,7 @@
   .studio-header {
     gap: var(--space-1) var(--space-3);
     padding: var(--space-2) var(--space-3);
+    padding-block-start: calc(var(--space-2) + env(safe-area-inset-top, 0px));
   }
 
   .studio-brand__mark {
@@ -452,13 +458,14 @@
     max-inline-size: none;
   }
 
-  /* Commit affordances appear exactly when the draft makes them actionable. */
-  .studio-title-editor__control-row .ui-button[disabled] {
-    display: none;
-  }
-
   .studio-title-editor__label-row {
-    display: none;
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   .studio-document-actions {
@@ -477,10 +484,6 @@
     flex-wrap: nowrap;
     white-space: nowrap;
     padding: var(--space-1) var(--space-2);
-  }
-
-  .studio-chart-summary .ui-key-value-list__item dt {
-    font-size: 0.625rem;
   }
 
   .studio-section__metadata {
@@ -511,9 +514,6 @@
 }
 
 .studio-chart__header {
-  position: sticky;
-  inset-block-start: 0;
-  z-index: 20;
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
@@ -563,23 +563,29 @@
 
 .studio-chart-summary {
   display: flex;
-  gap: var(--space-2);
+  gap: 0;
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-panel);
+  overflow: hidden;
 }
 
 .studio-chart-summary .ui-key-value-list {
   display: flex;
-  gap: var(--space-2);
 }
 
 .studio-chart-summary .ui-key-value-list__item {
   display: flex;
   align-items: baseline;
   gap: var(--space-1);
-  padding: var(--space-1) var(--space-2);
-  border: var(--border-width) solid var(--border-default);
-  border-radius: var(--radius-md);
-  background: var(--surface-panel);
+  padding: var(--space-1) var(--space-3);
+  border-inline-start: var(--border-width) solid var(--border-default);
   font-size: var(--text-xs);
+  white-space: nowrap;
+}
+
+.studio-chart-summary .ui-key-value-list__item:first-child {
+  border-inline-start: none;
 }
 
 .studio-chart-summary .ui-key-value-list__item dt {
@@ -1351,28 +1357,31 @@
 
 /* -------------------------------------------------------- insertion chips */
 
+/*
+ * Between-bar insertion is a slim in-flow tap zone on the barline: it can
+ * never overlap a neighbor control, and on touch it grows to the full
+ * 44 px law without eating the measure. The full sentence stays as the
+ * accessible name; sighted users get a quiet plus.
+ */
 .studio-insertion-target {
-  position: absolute;
-  inset-block-start: 0;
-  inset-inline-start: 0;
-  z-index: 6;
-  transform: translate(-40%, -40%);
+  display: grid;
+  place-items: center;
+  padding: var(--space-1) var(--space-2) 0;
 }
 
 .studio-insertion-target .ui-button {
   display: grid;
   place-items: center;
-  inline-size: 1.375rem;
-  min-inline-size: 1.375rem;
-  block-size: 1.375rem;
-  min-block-size: 1.375rem;
+  inline-size: 100%;
+  min-inline-size: 0;
+  block-size: 1.5rem;
+  min-block-size: 1.5rem;
   padding: 0;
-  border: var(--border-width) solid var(--border-strong);
-  border-radius: 50%;
-  background: var(--surface-elevated);
-  color: var(--text-muted);
+  border: var(--border-width) dashed transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-subtle);
   font-size: 0;
-  box-shadow: var(--shadow-1);
 }
 
 .studio-insertion-target .ui-button::after {
@@ -1385,7 +1394,7 @@
 .studio-insertion-target .ui-button:hover {
   border-color: var(--accent);
   color: var(--accent);
-  box-shadow: var(--glow-accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
 }
 
 .studio-insertion-target .ui-button:focus-visible {
@@ -1413,6 +1422,7 @@
   min-block-size: var(--control-min-block);
   padding: var(--space-1) var(--space-4);
   border-style: dashed;
+  border-color: var(--border-strong);
   border-radius: var(--radius-md);
   font-size: var(--text-sm);
 }
@@ -1451,7 +1461,7 @@
   }
 }
 
-/* Touch keeps every affordance on the table. */
+/* Touch keeps every affordance on the table and every target at 44 px. */
 @media (pointer: coarse) {
   .studio-chord-card__more {
     opacity: 1;
@@ -1459,11 +1469,25 @@
     block-size: var(--touch-target);
   }
 
-  .studio-insertion-target .ui-button {
-    inline-size: 2rem;
-    min-inline-size: 2rem;
-    block-size: 2rem;
-    min-block-size: 2rem;
+  .studio-shell .studio-icon-button,
+  .studio-shell .studio-range-bar__handle,
+  .studio-shell .studio-section__boundary-trigger,
+  .studio-shell .studio-section__boundary-item,
+  .studio-shell .studio-chord-card__menu-item,
+  .studio-shell .studio-section__field input {
+    min-inline-size: var(--touch-target);
+    min-block-size: var(--touch-target);
+  }
+
+  .studio-shell .studio-insertion-target .ui-button {
+    inline-size: 100%;
+    min-inline-size: 0;
+    block-size: var(--touch-target);
+    min-block-size: var(--touch-target);
+  }
+
+  .studio-shell .studio-insertion-target--append .ui-button {
+    min-block-size: var(--touch-target);
   }
 
   .studio-measure__tools .ui-button {
@@ -1475,6 +1499,11 @@
 
   .studio-measure__tools .ui-button::after {
     font-size: var(--text-md);
+  }
+
+  /* 44 px root chips need four-wide rows in the rail's measure. */
+  .studio-quick-entry__palette .studio-quick-entry__palette-roots {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
@@ -1503,12 +1532,58 @@
 }
 
 .studio-chart[data-view-mode="teaching"] .studio-chord-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
   min-inline-size: 7rem;
   min-block-size: 5rem;
+  padding: var(--space-2) var(--space-3);
+  text-align: start;
+}
+
+.studio-chart[data-view-mode="teaching"] .studio-chord-card__marks {
+  position: static;
+  order: -1;
+}
+
+.studio-chart[data-view-mode="teaching"] .studio-chord-card__teaching {
+  text-align: start;
 }
 
 .studio-chart[data-view-mode="teaching"] .studio-measure {
   min-block-size: 9.5rem;
+}
+
+/* Teaching trades columns for legibility: two bars per system at most. */
+@media (min-width: 40rem) and (max-width: 63.999rem) {
+  .studio-chart[data-view-mode="teaching"] .studio-measure-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 64rem) {
+  .studio-chart[data-view-mode="teaching"] .studio-measure-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .studio-chart[data-view-mode="teaching"] .studio-measure-list > li {
+    border-inline-start: var(--border-width) solid var(--border-default);
+    border-block-start: none;
+  }
+
+  .studio-chart[data-view-mode="teaching"] .studio-measure-list > li:nth-child(2n + 1) {
+    border-inline-start: none;
+  }
+
+  .studio-chart[data-view-mode="teaching"] .studio-measure-list > li:nth-child(n + 3) {
+    border-block-start: var(--border-width) solid var(--border-default);
+  }
+
+  .studio-chart[data-view-mode="teaching"] .studio-measure-list > li.studio-insertion-target--append {
+    border-inline-start: none;
+  }
 }
 
 /* --------------------------------------------------------- empty document */
@@ -1889,6 +1964,11 @@
 
 /* ------------------------------------------------------- mobile panel bar */
 
+/*
+ * Sheet triggers mirror rail visibility exactly: a panel that has no rail
+ * keeps its trigger. Below 40rem both panels are sheets; from 40rem the
+ * Harmony rail exists; from 68.75rem both rails exist and the group rests.
+ */
 @media (max-width: 39.999rem) {
   .studio-mobile-panel-actions {
     position: sticky;
@@ -1902,7 +1982,15 @@
 }
 
 @media (min-width: 40rem) {
-  .studio-mobile-panel-actions {
+  #studio-open-harmony-sheet {
+    display: none;
+  }
+}
+
+@media (min-width: 68.75rem) {
+  .studio-mobile-panel-actions,
+  .studio-mobile-panel-actions .ui-button,
+  #studio-open-library-sheet {
     display: none;
   }
 }
@@ -2111,6 +2199,7 @@
 
 .studio-transport {
   position: relative;
+  z-index: 1;
   grid-row: 2;
   display: grid;
   grid-template-areas: "controls status facts";
@@ -2118,6 +2207,9 @@
   align-items: center;
   gap: var(--space-3);
   min-block-size: var(--transport-min-block);
+  /* The sheet layer anchors to this exact height; never let content grow it. */
+  block-size: calc(var(--transport-min-block) + env(safe-area-inset-bottom, 0px));
+  overflow: hidden;
   padding: var(--space-2) var(--space-4);
   padding-block-end: calc(var(--space-2) + env(safe-area-inset-bottom, 0px));
   border-block-start: var(--border-width) solid var(--border-default);
@@ -2219,14 +2311,20 @@
 }
 
 .studio-transport__status strong {
+  display: block;
   font-size: var(--text-sm);
   font-weight: 650;
+  white-space: nowrap;
 }
 
 .studio-transport__status span {
   display: block;
   color: var(--text-subtle);
   font-size: var(--text-xs);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-inline-size: 32rem;
 }
 
 .studio-transport__facts {
@@ -2383,8 +2481,15 @@
   .studio-measure-list,
   .studio-quick-entry,
   .studio-chord-card__menu,
-  .studio-section__boundary-menu {
+  .studio-section__boundary-menu,
+  .studio-chart-summary {
     border-color: var(--border-strong);
+  }
+
+  .studio-truth-note,
+  .studio-chart__view-status,
+  .studio-quick-entry__hint {
+    color: var(--text-muted);
   }
 
   .studio-chord-card[data-selected="true"] {
