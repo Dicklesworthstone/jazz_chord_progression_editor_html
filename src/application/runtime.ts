@@ -35,6 +35,14 @@ export type { StudioViewModel } from "./studio-view-model";
 
 export { STARTER_CHART, seedStarterChart } from "./studio-starter-chart";
 export type { SeedStarterChartResult } from "./studio-starter-chart";
+export {
+  PROGRESSION_LIBRARY,
+  PROGRESSION_LIBRARY_IDS,
+} from "./studio-progression-library";
+export type {
+  ProgressionLibraryEntry,
+  ProgressionProvenance,
+} from "./studio-progression-library";
 
 /**
  * The audio composition the root injects into the controller. Exported from

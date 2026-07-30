@@ -1,6 +1,6 @@
 import { useState } from "preact/hooks";
 
-import { STARTER_CHART } from "../../application/runtime";
+import { PROGRESSION_LIBRARY, STARTER_CHART } from "../../application/runtime";
 import { Badge, Button, Checkbox, UiIcon } from "../primitives";
 import type {
   StudioQuickEntryTokenView,
@@ -522,6 +522,47 @@ function QuickEntryPanel({
             variant="secondary"
           />
         ))}
+      </div>
+      {/*
+        The reviewed catalogue (jcpe-lib1). Same typed path as the demos
+        above: draft, then insert. Each row states its provenance, because
+        a public-domain transcription, a shared harmonic device, and an
+        original study are three different claims and must not read alike.
+      */}
+      <div
+        class="studio-quick-entry__library"
+        role="group"
+        aria-label="Progression library"
+      >
+        <span class="studio-quick-entry__demos-label">Library:</span>
+        <ul class="studio-progression-list">
+          {PROGRESSION_LIBRARY.map((entry) => (
+            <li class="studio-progression" key={entry.id}>
+              <Button
+                busy={false}
+                density="dense"
+                describedBy={[`studio-progression-note-${entry.id}`]}
+                disabled={false}
+                id={`studio-progression-${entry.id}`}
+                invalid={false}
+                label={entry.title}
+                onAction={() => {
+                  onDraftChange(entry.chartText);
+                  onInsert();
+                }}
+                type="button"
+                variant="secondary"
+              />
+              <p
+                class="studio-progression__note"
+                id={`studio-progression-note-${entry.id}`}
+              >
+                <span class="studio-progression__kicker">{entry.kicker}</span>
+                {` ${entry.note}`}
+              </p>
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
   );

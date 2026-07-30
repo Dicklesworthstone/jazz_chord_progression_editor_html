@@ -566,10 +566,12 @@
 }
 
 /*
- * The segmented pill keeps its clipped corners, but hidden on both axes made
- * the last segment unreachable at narrow widths (scrollWidth 446 in a 356
- * box). Scroll the inline axis like the toolbars above; the block axis stays
- * hidden so the rounding still bites.
+ * The segmented pill keeps its clipped corners. Hidden on both axes made the
+ * last segment unreachable at narrow widths (scrollWidth 446 in a 356 box),
+ * and scrolling it was worse: unlike the toolbars above, this pill holds only
+ * text, so a scroll container here is a region no keyboard can reach
+ * (axe scrollable-region-focusable, serious). It wraps instead -- every
+ * segment stays on screen and no new tab stop is invented.
  */
 .studio-chart-summary {
   display: flex;
@@ -577,14 +579,12 @@
   border: var(--border-width) solid var(--border-default);
   border-radius: var(--radius-md);
   background: var(--surface-panel);
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: none;
+  overflow: hidden;
 }
 
 .studio-chart-summary .ui-key-value-list {
   display: flex;
-  flex: none;
+  flex-wrap: wrap;
 }
 
 .studio-chart-summary .ui-key-value-list__item {
@@ -1660,10 +1660,67 @@
   gap: var(--space-1);
 }
 
+/*
+ * The catalogue reads as a list, not a wall of chips: each row states what
+ * it is before it states what it does. The note carries the provenance, so
+ * it is quiet but never hidden.
+ */
+.studio-quick-entry__library {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.studio-progression-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.studio-progression {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.studio-progression .ui-button {
+  justify-content: flex-start;
+  inline-size: 100%;
+  text-align: start;
+}
+
+.studio-progression__note {
+  color: var(--text-subtle);
+  font-size: var(--text-xs);
+  line-height: var(--line-normal);
+  text-wrap: pretty;
+}
+
+.studio-progression__kicker {
+  color: var(--accent);
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+
 .studio-quick-entry__palette-roots .ui-button,
 .studio-quick-entry__palette-qualities .ui-button {
   font-family: var(--font-chord);
   font-weight: 600;
+}
+
+/*
+ * Roots are a tight six-across grid of bare letters; only the selected root
+ * wears a chip, and it takes the primary variant -- which carries
+ * min-inline-size:44px. That is wider than the ~29.7px cell, so the chip
+ * spilled out of its column and painted over the next letter. In this grid
+ * the cell is the target: the 44px law is met on touch by the four-column
+ * coarse rule above, and the block axis already stands at 44.
+ */
+.studio-quick-entry__palette-roots .ui-button {
+  min-inline-size: 0;
 }
 
 .studio-quick-entry__label {

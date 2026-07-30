@@ -1096,6 +1096,81 @@ export function App({ snapshot, actions }: AppProps) {
               });
         })();
 
+  /*
+   * Space is the transport key every DAW and score reader shares. It must
+   * never take the key away from a text field, nor from an already-focused
+   * button or link, where the browser's own activation is the right answer
+   * and stealing it would fire two things at once. A real keydown is a user
+   * gesture, so the browser will open the audio graph for it.
+   */
+  const transportStatus = snapshot.transport.status;
+  const chordCountForKeys = snapshot.chordCount;
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== " " && event.code !== "Space") return;
+      if (event.defaultPrevented) return;
+      if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) {
+        return;
+      }
+      const target = event.target;
+      if (target instanceof HTMLElement) {
+        const tag = target.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+        if (target.isContentEditable) return;
+        if (target.closest('button, a[href], [role="button"]')) return;
+      }
+      event.preventDefault();
+      if (transportStatus === "playing") {
+        recordEditResult(actions.pauseProgression(), { kind: "delete" });
+        return;
+      }
+      if (chordCountForKeys === 0) return;
+      recordEditResult(
+        actions.playProgression({
+          kind: "trusted-keyboard",
+          trusted: true,
+          sequence: 1,
+        }),
+        { kind: "delete" },
+      );
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [transportStatus, chordCountForKeys, actions, recordEditResult]);
+
+  /*
+   * A highlight nobody can see is not a highlight. On a phone the chart is
+   * taller than the viewport, so the sounding card marched off screen while
+   * the transport still said "Playing" (measured: every sample off screen,
+   * the card walking from y=820 to y=1552 in an 844px viewport). Follow it
+   * with the smallest scroll that works -- "nearest" is a no-op while the
+   * card is already visible, so a chart that fits never moves at all.
+   */
+  const followedChordId = useRef<string | null>(null);
+  useEffect(() => {
+    const chordId = analyzerPointer.chordId;
+    if (chordId === null) {
+      followedChordId.current = null;
+      return;
+    }
+    if (followedChordId.current === chordId) return;
+    followedChordId.current = chordId;
+    const card = document.querySelector(
+      `.studio-chord-card[data-chord-id="${CSS.escape(chordId)}"]`,
+    );
+    if (!(card instanceof HTMLElement)) return;
+    const reducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    card.scrollIntoView({
+      behavior: reducedMotion ? "auto" : "smooth",
+      block: "nearest",
+      inline: "nearest",
+    });
+  }, [analyzerPointer.chordId]);
+
   return (
     <>
     <StudioShell

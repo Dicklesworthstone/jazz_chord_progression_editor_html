@@ -234,4 +234,83 @@ test.describe("interactive studio checkpoint", () => {
 
     expectCleanDiagnostics(diagnostics);
   });
+
+  /*
+   * Space is the transport key, but only where no other control owns it.
+   * The near-miss halves matter more than the happy path: inside a text
+   * field it must type, and on a focused button the browser's own
+   * activation must be the single thing that fires.
+   */
+  test("toggles playback with Space without stealing the key from fields or buttons", async ({
+    page,
+  }) => {
+    const diagnostics = captureDiagnostics(page);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await openStudio(page);
+
+    const status = page.locator(".studio-transport__status p strong");
+    await expect(status).toHaveText("Audio off");
+
+    await page.locator("#studio-chart-heading").click();
+    await page.keyboard.press("Space");
+    await expect(status).toHaveText("Playing", { timeout: 15000 });
+
+    await page.keyboard.press("Space");
+    await expect(status).toHaveText("Paused", { timeout: 15000 });
+
+    /* Near miss: a text field keeps its own space. */
+    const field = page.locator("#studio-document-title");
+    const before = await field.inputValue();
+    await field.click();
+    await page.keyboard.press("End");
+    await page.keyboard.press("Space");
+    await expect(field).toHaveValue(`${before} `);
+    await expect(status).toHaveText("Paused");
+
+    expectCleanDiagnostics(diagnostics);
+  });
+
+  /*
+   * A highlight that has scrolled off screen is not a highlight. On a phone
+   * the chart is taller than the viewport, so the sounding card has to be
+   * followed; a chart that already fits must never be scrolled at all.
+   */
+  test("keeps the sounding chord on screen while playing on a phone", async ({
+    page,
+  }) => {
+    const diagnostics = captureDiagnostics(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await openStudio(page);
+
+    await page.locator("#studio-transport-play").click();
+    await expect(page.locator(".studio-transport__status p strong")).toHaveText(
+      "Playing",
+      { timeout: 15000 },
+    );
+
+    let sawPlayingCard = false;
+    for (let sample = 0; sample < 6; sample += 1) {
+      await page.waitForTimeout(1000);
+      const visibility = await page.evaluate(() => {
+        const card = document.querySelector(
+          '.studio-chord-card[data-playing="true"]',
+        );
+        if (!(card instanceof HTMLElement)) return null;
+        const transport = document.querySelector(".studio-transport");
+        const limit =
+          transport instanceof HTMLElement
+            ? transport.getBoundingClientRect().top
+            : window.innerHeight;
+        const rect = card.getBoundingClientRect();
+        return { top: rect.top, bottom: rect.bottom, limit };
+      });
+      if (visibility === null) continue;
+      sawPlayingCard = true;
+      expect(visibility.top).toBeGreaterThanOrEqual(-1);
+      expect(visibility.bottom).toBeLessThanOrEqual(visibility.limit + 1);
+    }
+    expect(sawPlayingCard).toBe(true);
+
+    expectCleanDiagnostics(diagnostics);
+  });
 });
