@@ -8,6 +8,7 @@ import {
 
 import type {
   StudioAudioGesture,
+  StudioContinuationView,
   StudioController,
   StudioControllerActionResult,
   StudioBoundaryInput,
@@ -172,6 +173,7 @@ export type AppActions = Readonly<{
   /** Display-only analyzer reads (jcpe-7she); never a command path. */
   readTransportAnalysisFrame: () => StudioAnalysisFrame | null;
   readEventPitchClasses: (eventId: string) => readonly number[] | null;
+  readContinuationSuggestions: () => StudioContinuationView;
 }>;
 
 const QUICK_ENTRY_MAX_CODE_POINTS = 4_096;
@@ -531,12 +533,22 @@ function selectedChordView(
   return null;
 }
 
+const SUGGESTION_CATEGORY_LABELS: Readonly<Record<string, string>> =
+  Object.freeze({
+    "resolve": "Resolve",
+    "continue-pattern": "Continue the pattern",
+    "approach-target": "Approach a target",
+    "increase-color": "Add color",
+    "explore": "Explore",
+  });
+
 function viewFromSnapshot(
   snapshot: StudioViewModel,
   presentation: PresentationState,
   insertionPlan: StudioInsertionPlan,
   draftPreview: StudioDraftPreview,
   livePlayheadLabel: string | null,
+  continuation: StudioContinuationView,
 ): StudioShellView {
   const {
     titleDraft,
@@ -751,6 +763,24 @@ function viewFromSnapshot(
           value: `${countLabel(snapshot.sections.length, "section")} · ${countLabel(snapshot.measureCount, "measure")}`,
         }),
       ]),
+      continuation:
+        continuation.afterLabel === null
+          ? null
+          : Object.freeze({
+              afterLabel: continuation.afterLabel,
+              suggestions: Object.freeze(
+                continuation.suggestions.map((suggestion) =>
+                  Object.freeze({
+                    id: suggestion.id,
+                    symbolText: suggestion.symbolText,
+                    categoryLabel:
+                      SUGGESTION_CATEGORY_LABELS[suggestion.category] ??
+                      suggestion.category,
+                    sentence: suggestion.explanation.sentence,
+                  }),
+                ),
+              ),
+            }),
     }),
     transport: Object.freeze({
       // The live A0 transport status, not a hardcoded literal.
@@ -1146,6 +1176,95 @@ export function App({ snapshot, actions }: AppProps) {
     actions.readTransportPlayheadLabel,
   );
 
+  /*
+   * Display-only continuation options. The controller memoizes on the frozen
+   * document object, so calling per render is a WeakMap hit until an edit
+   * publishes a new document.
+   */
+  const continuation = actions.readContinuationSuggestions();
+
+  /**
+   * The one insertion path, shared by typing, the demo chips, the library
+   * rows, and the Lens's Add buttons: stage the draft (with the derived-target
+   * retarget law), then apply the whole preview atomically. A second path
+   * would eventually disagree with this one about targets or refusals.
+   */
+  const stageQuickEntryDraft = (value: string): void => {
+    if (value.length === 0) quickEntryTargetIsExplicit.current = false;
+    const preview = actions.previewChartText(value);
+    const target = quickEntryTarget();
+    let result = actions.setQuickEntryDraft(
+      value,
+      target,
+      preview.status,
+      preview.issueCodes,
+    );
+    if (
+      result.ok &&
+      target !== null &&
+      (target.kind === "measure-start" ||
+        target.kind === "measure-end" ||
+        target.kind === "before-event" ||
+        target.kind === "after-event") &&
+      !quickEntryTargetIsExplicit.current
+    ) {
+      /*
+       * The reviewed overfill resolution is "choose an empty measure or a
+       * structural boundary". A lead-sheet writer typing more bars than
+       * the default bookmark measure holds means "keep going", so this
+       * surface chooses the nearest structural boundary for them — the
+       * end of the section that owns that measure — instead of
+       * dead-ending the draft on a refusal the user cannot see coming.
+       * An explicitly aimed target is never overridden: that overfill
+       * must surface as the reviewed blocked statement.
+       */
+      const plan = actions.previewInsertionPlan();
+      if (plan.statement === "overfill-requires-split") {
+        /*
+         * A consumed draft's leftover aim can be a measure OR an event
+         * boundary — apply re-aims "after what you just inserted", which
+         * is an after-event target that can never accept a whole-bar
+         * draft. Either way, the owning section is the reviewed
+         * structural boundary to fall back to.
+         */
+        const targetEventId = "eventId" in target ? target.eventId : null;
+        const targetMeasureId =
+          "measureId" in target ? target.measureId : null;
+        const owner = snapshot.sections.find((section) =>
+          section.measures.some((measure) =>
+            targetEventId !== null
+              ? measure.events.some((event) => event.id === targetEventId)
+              : measure.id === targetMeasureId,
+          ),
+        );
+        if (owner !== undefined) {
+          const retargeted = actions.setQuickEntryDraft(
+            value,
+            { kind: "section-end", sectionId: owner.id },
+            preview.status,
+            preview.issueCodes,
+          );
+          if (retargeted.ok) result = retargeted;
+        }
+      }
+    }
+    setQuickEntryRefusal(
+      result.ok
+        ? null
+        : `${result.refusal.message} ${result.refusal.recoveryAction}`,
+    );
+  };
+
+  const applyQuickEntryInsert = (): void => {
+    const result = actions.applyQuickEntryPreview();
+    if (result.ok) quickEntryTargetIsExplicit.current = false;
+    setQuickEntryRefusal(
+      result.ok
+        ? null
+        : `${result.refusal.message} ${result.refusal.recoveryAction}`,
+    );
+  };
+
   const view = viewFromSnapshot(snapshot, {
     activeSheet,
     completionDialogOpen,
@@ -1167,7 +1286,7 @@ export function App({ snapshot, actions }: AppProps) {
     tempoDraft,
     tempoInvalid,
     tempoFeedback,
-  }, insertionPlan, draftPreview, livePlayheadLabel);
+  }, insertionPlan, draftPreview, livePlayheadLabel, continuation);
 
   /*
    * jcpe-7she: the independent ear compares what the tap heard with the
@@ -1327,65 +1446,14 @@ export function App({ snapshot, actions }: AppProps) {
             `${result.refusal.message} ${result.refusal.recoveryAction}`,
           );
         },
-        onQuickEntryDraftChange: (value) => {
-          if (value.length === 0) quickEntryTargetIsExplicit.current = false;
-          const preview = actions.previewChartText(value);
-          const target = quickEntryTarget();
-          let result = actions.setQuickEntryDraft(
-            value,
-            target,
-            preview.status,
-            preview.issueCodes,
-          );
-          if (
-            result.ok &&
-            target !== null &&
-            (target.kind === "measure-start" ||
-              target.kind === "measure-end") &&
-            !quickEntryTargetIsExplicit.current
-          ) {
-            /*
-             * The reviewed overfill resolution is "choose an empty measure or a
-             * structural boundary". A lead-sheet writer typing more bars than
-             * the default bookmark measure holds means "keep going", so this
-             * surface chooses the nearest structural boundary for them — the
-             * end of the section that owns that measure — instead of
-             * dead-ending the draft on a refusal the user cannot see coming.
-             * An explicitly aimed target is never overridden: that overfill
-             * must surface as the reviewed blocked statement.
-             */
-            const plan = actions.previewInsertionPlan();
-            if (plan.statement === "overfill-requires-split") {
-              const owner = snapshot.sections.find((section) =>
-                section.measures.some(
-                  (measure) => measure.id === target.measureId,
-                ),
-              );
-              if (owner !== undefined) {
-                const retargeted = actions.setQuickEntryDraft(
-                  value,
-                  { kind: "section-end", sectionId: owner.id },
-                  preview.status,
-                  preview.issueCodes,
-                );
-                if (retargeted.ok) result = retargeted;
-              }
-            }
-          }
-          setQuickEntryRefusal(
-            result.ok
-              ? null
-              : `${result.refusal.message} ${result.refusal.recoveryAction}`,
-          );
-        },
-        onQuickEntryInsert: () => {
-          const result = actions.applyQuickEntryPreview();
-          if (result.ok) quickEntryTargetIsExplicit.current = false;
-          setQuickEntryRefusal(
-            result.ok
-              ? null
-              : `${result.refusal.message} ${result.refusal.recoveryAction}`,
-          );
+        onQuickEntryDraftChange: stageQuickEntryDraft,
+        onQuickEntryInsert: applyQuickEntryInsert,
+        onAddSuggestedChord: (symbolText) => {
+          // A suggestion is one bar of one chord through the same staged
+          // path a demo chip travels; the pristine fill and derived-target
+          // laws apply unchanged, and a refusal lands in the same line.
+          stageQuickEntryDraft(`| ${symbolText} |`);
+          applyQuickEntryInsert();
         },
         onQuickEntryClear: () => {
           // A refusal here is surfaced, never presented as a success. The
@@ -1927,6 +1995,7 @@ export function StudioRoot({ controller }: StudioRootProps) {
         readTransportPlayheadLabel: controller.readTransportPlayheadLabel,
         readTransportAnalysisFrame: controller.readTransportAnalysisFrame,
         readEventPitchClasses: controller.readEventPitchClasses,
+        readContinuationSuggestions: controller.readContinuationSuggestions,
         splitEventDuration: controller.splitEventDuration,
         splitSection: controller.splitSection,
         stopProgression: controller.stopProgression,

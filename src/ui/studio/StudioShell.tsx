@@ -174,6 +174,7 @@ export function StudioShell({
             <HarmonyLens
               collapsed={view.layout.harmonyCollapsed}
               view={view.harmony}
+              onAddSuggestedChord={callbacks.onAddSuggestedChord}
               onCollapsedChange={(collapsed) => {
                 callbacks.onRailCollapsedChange("harmony", collapsed);
               }}
@@ -263,6 +264,7 @@ export function StudioShell({
                   context="sheet"
                   headingId={`${sheetId}-title`}
                   view={view.harmony}
+                  onAddSuggestedChord={callbacks.onAddSuggestedChord}
                 />
               )
             }

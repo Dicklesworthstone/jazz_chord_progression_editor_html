@@ -16,6 +16,7 @@ export {
 
 export type {
   StudioBoundaryInput,
+  StudioContinuationView,
   StudioController,
   StudioControllerAction,
   StudioControllerActionResult,

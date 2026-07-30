@@ -60,7 +60,14 @@ import type {
   StableBoundary,
   StableUiBookmarks,
 } from "./application-state-contract";
-import { parseChordSymbol, type ChartTextDraft } from "../theory";
+import {
+  MAX_CONTINUATION_CONTEXT_EVENTS,
+  deriveContinuationSuggestions,
+  parseChordSymbol,
+  resolutionOperations,
+  type ChartTextDraft,
+  type ContinuationSuggestion,
+} from "../theory";
 import type { StudioAudioGesture, StudioAudioPort } from "./studio-audio";
 import {
   compileStudioPlaybackPlan,
@@ -255,6 +262,17 @@ export type StudioInsertionPlan = Readonly<{
    * never resolved silently, and the surface owns the wording.
    */
   resolutions: readonly string[];
+}>;
+
+/**
+ * Plural continuation options for the end of the chart, display-only.
+ * `afterLabel` is the exact stored symbol the options follow, or null when
+ * the chart has no parsed chord yet — in which case the suggestion list is
+ * empty and the surface shows nothing rather than inventing an opening.
+ */
+export type StudioContinuationView = Readonly<{
+  afterLabel: string | null;
+  suggestions: readonly ContinuationSuggestion[];
 }>;
 
 /**
@@ -571,6 +589,14 @@ export interface StudioController {
   readonly readEventPitchClasses: (
     eventId: string,
   ) => readonly number[] | null;
+  /**
+   * Display-only plural next-chord options for the end of the chart, from
+   * the session continuation engine. Memoized on the frozen document object
+   * itself, so an unchanged document returns the identical result and an
+   * edit recomputes — never keyed on id+revision, which would let a stale
+   * cache masquerade as determinism.
+   */
+  readonly readContinuationSuggestions: () => StudioContinuationView;
   readonly joinSections: (
     leftSectionId: string,
   ) => StudioControllerActionResult;
@@ -4199,6 +4225,49 @@ function makeStudioController(
   ): readonly number[] | null => lastPlanPitchClasses?.get(eventId) ?? null;
 
   /*
+   * Continuation options for "what could come next" at the end of the chart.
+   * The cache key is the frozen document object: an unchanged document hands
+   * back the identical view (render-cheap), any published edit produces a
+   * fresh document and therefore a fresh derivation. Custom chords carry no
+   * parsed root/quality facts, so the context window is built from parsed
+   * chords only.
+   */
+  const continuationCache = new WeakMap<object, StudioContinuationView>();
+  const readContinuationSuggestions = (): StudioContinuationView => {
+    const document = state.document;
+    const cached = continuationCache.get(document);
+    if (cached !== undefined) return cached;
+    const parsed: ChordSpec[] = [];
+    for (const section of document.sections) {
+      for (const measure of section.measures) {
+        for (const event of measure.events) {
+          if (event.chord.kind === "parsed") parsed.push(event.chord);
+        }
+      }
+    }
+    const window = parsed.slice(-MAX_CONTINUATION_CONTEXT_EVENTS);
+    const last = window[window.length - 1];
+    let view: StudioContinuationView;
+    if (last === undefined) {
+      view = Object.freeze({
+        afterLabel: null,
+        suggestions: Object.freeze([]),
+      });
+    } else {
+      const result = deriveContinuationSuggestions(
+        { context: Object.freeze(window) },
+        resolutionOperations,
+      );
+      view = Object.freeze({
+        afterLabel: last.sourceText,
+        suggestions: result.suggestions,
+      });
+    }
+    continuationCache.set(document, view);
+    return view;
+  };
+
+  /*
    * Every transport notification flows back through A0's own acceptance law:
    * stale generations, superseded request IDs, and foreign document IDs are
    * dropped there, not here. Without this feedback loop the expectation
@@ -4615,6 +4684,7 @@ function makeStudioController(
     readTransportPlayheadLabel,
     readTransportAnalysisFrame,
     readEventPitchClasses,
+    readContinuationSuggestions,
     splitAtBar,
     splitEventDuration,
     splitSection,

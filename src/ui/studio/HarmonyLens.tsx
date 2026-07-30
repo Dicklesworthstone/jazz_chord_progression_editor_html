@@ -1,18 +1,21 @@
-import { KeyValueList, StatusPill, UiIcon } from "../primitives";
+import { Button, KeyValueList, StatusPill, UiIcon } from "../primitives";
 import type { StudioHarmonyView } from "./studio-contract";
 
 export type HarmonyLensContentProps = Readonly<{
   headingId: string;
   context: "rail" | "sheet";
   view: StudioHarmonyView;
+  onAddSuggestedChord: (symbolText: string) => void;
 }>;
 
 export function HarmonyLensContent({
   headingId,
   context,
   view,
+  onAddSuggestedChord,
 }: HarmonyLensContentProps) {
   const factsHeadingId = `${headingId}-facts`;
+  const continuationHeadingId = `${headingId}-continuation`;
 
   return (
     <section
@@ -78,6 +81,58 @@ export function HarmonyLensContent({
         </section>
       )}
 
+      {/*
+        Plural continuation options from the session engine: each row is one
+        option with its own explanation, never a verdict. Add travels the
+        same staged quick-entry path as typing, so every insertion law —
+        pristine fill, derived-target retarget, refusal surfacing — applies
+        unchanged (jcpe-73h1, U1-EDIT-004).
+      */}
+      {view.continuation === null ? null : (
+        <section
+          class="studio-continuation"
+          data-testid={`lens-continuation-${context}`}
+          aria-labelledby={continuationHeadingId}
+        >
+          <header>
+            <p class="studio-kicker">Plural options, never verdicts</p>
+            <h3 id={continuationHeadingId}>What could come next</h3>
+          </header>
+          <p class="studio-continuation__after">
+            After <strong>{view.continuation.afterLabel}</strong>:
+          </p>
+          <ul class="studio-continuation__list">
+            {view.continuation.suggestions.map((suggestion) => (
+              <li class="studio-continuation__row" key={suggestion.id}>
+                <div class="studio-continuation__head">
+                  <span class="studio-continuation__symbol">
+                    {suggestion.symbolText}
+                  </span>
+                  <span class="studio-continuation__category">
+                    {suggestion.categoryLabel}
+                  </span>
+                  <Button
+                    busy={false}
+                    density="dense"
+                    describedBy={[]}
+                    disabled={false}
+                    id={`studio-add-suggestion-${context}-${suggestion.id.replace(/[^a-zA-Z0-9-]/g, "-")}`}
+                    invalid={false}
+                    label={`Add ${suggestion.symbolText}`}
+                    onAction={() => {
+                      onAddSuggestedChord(suggestion.symbolText);
+                    }}
+                    type="button"
+                    variant="secondary"
+                  />
+                </div>
+                <p class="studio-continuation__why">{suggestion.sentence}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <section
         class="studio-document-facts"
         aria-labelledby={factsHeadingId}
@@ -107,12 +162,14 @@ export type HarmonyLensProps = Readonly<{
   collapsed: boolean;
   view: StudioHarmonyView;
   onCollapsedChange: (collapsed: boolean) => void;
+  onAddSuggestedChord: (symbolText: string) => void;
 }>;
 
 export function HarmonyLens({
   collapsed,
   view,
   onCollapsedChange,
+  onAddSuggestedChord,
 }: HarmonyLensProps) {
   const headingId = "studio-harmony-heading";
 
@@ -132,7 +189,12 @@ export function HarmonyLens({
             Harmony Lens
           </h2>
         ) : (
-          <HarmonyLensContent headingId={headingId} context="rail" view={view} />
+          <HarmonyLensContent
+            headingId={headingId}
+            context="rail"
+            view={view}
+            onAddSuggestedChord={onAddSuggestedChord}
+          />
         )}
         <button
           aria-expanded={collapsed ? "false" : "true"}

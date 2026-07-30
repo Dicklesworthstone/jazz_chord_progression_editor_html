@@ -193,3 +193,10 @@ export {
   initializeProgressionOptimization,
   progressionOptimizerOperations,
 } from "./progression-optimizer";
+
+export * from "./continuation-contract";
+export { deriveContinuationSuggestions } from "./continuation";
+export {
+  continuationOperations,
+  type ContinuationOperations,
+} from "./continuation-operations";

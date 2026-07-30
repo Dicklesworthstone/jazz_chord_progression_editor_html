@@ -263,6 +263,23 @@ export type StudioSelectedChordView = Readonly<{
   facts: readonly StudioFactView[];
 }>;
 
+/**
+ * One plural continuation option. The sentence is the engine's typed
+ * explanation verbatim; the surface never rewrites it into a verdict.
+ */
+export type StudioSuggestionRowView = Readonly<{
+  id: string;
+  symbolText: string;
+  categoryLabel: string;
+  sentence: string;
+}>;
+
+export type StudioContinuationSectionView = Readonly<{
+  /** The exact stored symbol the options follow. */
+  afterLabel: string;
+  suggestions: readonly StudioSuggestionRowView[];
+}>;
+
 export type StudioHarmonyView = Readonly<{
   selectedChordLabel: null;
   selectionStatusLabel: string;
@@ -271,6 +288,8 @@ export type StudioHarmonyView = Readonly<{
   /** Literal facts for the most recently selected chord; null when none. */
   selected: StudioSelectedChordView | null;
   documentFacts: readonly StudioFactView[];
+  /** Plural next-chord options; null while the chart has no parsed chord. */
+  continuation: StudioContinuationSectionView | null;
 }>;
 
 export type StudioTransportView = Readonly<{
@@ -353,6 +372,8 @@ export type StudioShellCallbacks = Readonly<{
   onTempoCommit: () => void;
   /** Choose the session's groove; a library row also applies its own. */
   onGrooveStyleChange: (styleId: string) => void;
+  /** Append one suggested chord through the shared quick-entry path. */
+  onAddSuggestedChord: (symbolText: string) => void;
   onQuickEntryDraftChange: (value: string) => void;
   onQuickEntryInsert: () => void;
   onQuickEntryClear: () => void;

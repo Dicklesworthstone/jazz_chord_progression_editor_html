@@ -36,7 +36,7 @@
     },
     {
       "path": "tests/e2e/u0-accessibility.spec.ts",
-      "sha256": "56b41e1a432df5db413f75bcfa765d344f8c0bee362a6c0b4fd352b121cd2b3a"
+      "sha256": "b115e2d2083d9f20bc42dce2b418bd6ab5e175321e93febcb1549c21fe5417f0"
     },
     {
       "path": "tests/e2e/u0-browser-test-kit.ts",

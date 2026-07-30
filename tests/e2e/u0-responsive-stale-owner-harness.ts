@@ -131,6 +131,7 @@ const BASE_VIEW: Omit<StudioShellView, "layout"> = Object.freeze({
       Object.freeze({ id: "meter", label: "Meter", value: "4/4" }),
       Object.freeze({ id: "key", label: "Key", value: "C major" }),
     ]),
+    continuation: null,
   }),
   transport: Object.freeze({
     audioState: "unavailable",
@@ -204,6 +205,7 @@ function ResponsiveStaleOwnerHarness() {
     onTempoDraftChange: () => undefined,
     onTempoCommit: () => undefined,
     onGrooveStyleChange: () => undefined,
+    onAddSuggestedChord: () => undefined,
     onCompletionDialogOpenChange: () => undefined,
     onDeclareMeasureCompletion: () => undefined,
     onRangeEdgeToChord: () => undefined,

@@ -1713,6 +1713,66 @@
   font-size: var(--text-xs);
 }
 
+/*
+ * Continuation options in the Harmony Lens: one row per plural option,
+ * symbol and category on the head line, the typed explanation beneath.
+ */
+.studio-continuation {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-block-start: var(--space-3);
+  border-block-start: var(--border-width) solid var(--border-default);
+}
+
+.studio-continuation__after {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.studio-continuation__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.studio-continuation__row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-elevated);
+}
+
+.studio-continuation__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.studio-continuation__symbol {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.studio-continuation__category {
+  margin-inline-end: auto;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.studio-continuation__why {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
 .studio-playback-settings__groove {
   display: flex;
   flex-direction: column;

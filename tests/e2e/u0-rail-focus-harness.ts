@@ -14,6 +14,7 @@ const HARMONY_VIEW: StudioHarmonyView = Object.freeze({
   selectedChordLabel: null,
   selected: null,
   selectionStatusLabel: "No selection",
+  continuation: null,
 });
 
 function RailFocusHarness() {
@@ -79,6 +80,7 @@ function RailFocusHarness() {
     }),
     h(HarmonyLens, {
       collapsed: harmonyCollapsed,
+      onAddSuggestedChord: () => undefined,
       onCollapsedChange: setHarmonyCollapsed,
       view: HARMONY_VIEW,
     }),
