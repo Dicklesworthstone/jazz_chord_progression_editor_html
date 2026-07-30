@@ -13,6 +13,7 @@ export type StudioHeaderProps = Readonly<{
     | "onResetTitleDraft"
     | "onUndo"
     | "onRedo"
+    | "onClearChart"
   >;
 }>;
 
@@ -171,6 +172,24 @@ export function StudioHeader({ view, callbacks }: StudioHeaderProps) {
             onAction={callbacks.onRedo}
             type="button"
             variant="secondary"
+          />
+          {/*
+            Clearing is destructive but not irreversible: it is one undoable
+            command, so the confirmation exists to stop an accidental click,
+            not to guard something unrecoverable. It is offered only when
+            there is something to clear, so the affordance never lies.
+          */}
+          <Button
+            busy={false}
+            density="comfortable"
+            describedBy={[]}
+            disabled={!view.canClearChart}
+            id="studio-clear-chart"
+            invalid={false}
+            label="Clear"
+            onAction={callbacks.onClearChart}
+            type="button"
+            variant="destructive"
           />
         </div>
       </div>

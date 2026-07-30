@@ -31,6 +31,8 @@ import {
 
 export type AppActions = Readonly<{
   setTitle: (value: string) => StudioControllerActionResult;
+  setTempo: (bpm: number) => StudioControllerActionResult;
+  clearChart: () => StudioControllerActionResult;
   undo: () => StudioControllerActionResult;
   redo: () => StudioControllerActionResult;
   setRailCollapsed: (
@@ -558,6 +560,11 @@ function viewFromSnapshot(
         titleDraft !== snapshot.title || titleFeedback.kind === "refused",
       canUndo: snapshot.history.canUndo,
       canRedo: snapshot.history.canRedo,
+      /* Offered only when there is something to clear. */
+      canClearChart:
+        snapshot.chordCount > 0 ||
+        snapshot.sections.length > 1 ||
+        (snapshot.sections[0]?.measures.length ?? 0) > 1,
       undoDescription: snapshot.history.undoLabel === null
         ? "Nothing to undo"
         : `Undo ${snapshot.history.undoLabel}`,
@@ -1658,6 +1665,22 @@ export function App({ snapshot, actions }: AppProps) {
         onUndo: () => {
           applyHistoryResult(actions.undo(), "The last document change was undone.");
         },
+        onClearChart: () => {
+          /*
+           * Destructive but undoable, so the confirmation stops an accidental
+           * click rather than guarding something unrecoverable. A refusal is
+           * surfaced like any other, never swallowed.
+           */
+          if (
+            typeof window !== "undefined" &&
+            !window.confirm(
+              "Clear this chart? Every chord is removed, leaving one empty bar. Undo restores it.",
+            )
+          ) {
+            return;
+          }
+          recordEditResult(actions.clearChart(), { kind: "delete" });
+        },
         onRedo: () => {
           applyHistoryResult(actions.redo(), "The document change was restored.");
         },
@@ -1789,6 +1812,8 @@ export function StudioRoot({ controller }: StudioRootProps) {
         setQuickEntryDraft: controller.setQuickEntryDraft,
         setRailCollapsed: controller.setRailCollapsed,
         setTitle: controller.setTitle,
+        setTempo: controller.setTempo,
+        clearChart: controller.clearChart,
         undo: controller.undo,
       }}
     />

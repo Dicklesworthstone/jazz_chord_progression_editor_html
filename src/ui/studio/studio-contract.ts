@@ -19,6 +19,8 @@ export type StudioDocumentView = Readonly<{
   canResetTitleDraft: boolean;
   canUndo: boolean;
   canRedo: boolean;
+  /** False when the chart is already a single empty measure. */
+  canClearChart: boolean;
   undoDescription: string;
   redoDescription: string;
 }>;
@@ -302,6 +304,7 @@ export type StudioShellCallbacks = Readonly<{
   onResetTitleDraft: () => void;
   onUndo: () => void;
   onRedo: () => void;
+  onClearChart: () => void;
   onRailCollapsedChange: (
     side: StudioPanelSide,
     collapsed: boolean,

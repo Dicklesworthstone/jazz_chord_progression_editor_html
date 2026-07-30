@@ -25,6 +25,7 @@ const BASE_VIEW: Omit<StudioShellView, "layout"> = Object.freeze({
     canResetTitleDraft: false,
     canUndo: false,
     canRedo: false,
+    canClearChart: false,
     undoDescription: "Nothing to undo",
     redoDescription: "Nothing to redo",
   }),
@@ -162,6 +163,7 @@ function ResponsiveStaleOwnerHarness() {
     onResetTitleDraft: () => undefined,
     onUndo: () => undefined,
     onRedo: () => undefined,
+    onClearChart: () => undefined,
     onRailCollapsedChange: () => undefined,
     onRequestPanelSheet: (side) => {
       setUiRefusal(null);
