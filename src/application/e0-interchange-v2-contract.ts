@@ -134,13 +134,18 @@ export const E0_V2_PREVIEW_TO_OWNER_REQUEST_PROJECTION = Object.freeze({
 /* ------------------------------------------------------------------ */
 
 /**
- * The draft retains verbatim the requirement it displayed; the submitted
- * acknowledgement must byte-match its identity, statement, and impact
- * digest BEFORE the owner request is built. A mismatch refuses
- * `import.confirmation_identity_mismatch` without calling the owner.
+ * The draft retains verbatim the requirement it displayed — null for the
+ * retained disposition, where no requirement is ever shown. A submitted
+ * acknowledgement's embedded requirement must deep-equal the retained one
+ * (every field: schema, confirmationId, identity, candidateDocumentId,
+ * commandId, disclosedImpact) BEFORE the owner request is built. A mismatch
+ * refuses `import.confirmation_identity_mismatch`, and an absent
+ * acknowledgement for the explicitly-unavailable disposition refuses
+ * `history.nonundoable_confirmation_required` — both without calling the
+ * owner.
  */
 export type E0V2RetainedConfirmationBinding = Readonly<{
-  displayedRequirement: ImportNonUndoableConfirmationRequirement;
+  displayedRequirement: ImportNonUndoableConfirmationRequirement | null;
   acknowledgement: ImportNonUndoableConfirmationAcknowledgement | null;
   byteMatchProvedBeforeOwnerCall: true;
 }>;

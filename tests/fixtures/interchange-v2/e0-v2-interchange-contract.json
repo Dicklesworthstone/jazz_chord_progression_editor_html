@@ -65,27 +65,26 @@
   "companions": [
     "normalization-cases.json",
     "resolution-cases.json",
+    "projection-cases.json",
     "trace-ledger.json",
     "provenance-ledger.json"
   ],
   "pendingCompanions": [
-    "projection-cases.json",
     "workflow-cases.json",
     "mutation-controls.json"
   ],
-  "pendingResolutionCoverage": [
-    "E0V2-RES-03-preview-to-owner-request-projection",
-    "E0V2-RES-04-acknowledgement-provenance"
-  ],
+  "pendingResolutionCoverage": [],
   "counts": {
     "normalizationCases": 22,
     "resolutionCases": 16,
+    "projectionCases": 7,
     "traces": 6,
     "authorities": 5
   },
   "reviewedFileSha256": {
     "normalization-cases.json": "pending-validator-freeze",
     "resolution-cases.json": "pending-validator-freeze",
+    "projection-cases.json": "pending-validator-freeze",
     "trace-ledger.json": "pending-validator-freeze",
     "provenance-ledger.json": "pending-validator-freeze"
   }

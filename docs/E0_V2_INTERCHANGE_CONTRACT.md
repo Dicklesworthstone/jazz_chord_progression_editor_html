@@ -89,13 +89,18 @@ field; the projection table is total and admits no defaulting.
 ### E0V2-RES-04 — preview authority and consent provenance
 
 The v2 import draft retains, verbatim, the
-`ImportNonUndoableConfirmationRequirement` it displayed. A submitted
-acknowledgement must byte-match that retained requirement's identity,
-statement, and impact digest before the owner request is built; a mismatch
-refuses `import.confirmation_identity_mismatch` WITHOUT calling the owner.
-This is the provenance proof the owner contract names as mandatory E0 v2
-binding work: v2 proves the acknowledgement answers the requirement the user
-actually saw; the owner re-checks only internal consistency.
+`ImportNonUndoableConfirmationRequirement` it displayed — null for the
+retained disposition, where no requirement is shown. A submitted
+acknowledgement embeds a complete requirement, and that embedded requirement
+must deep-equal the retained one on every field (schema, confirmationId,
+identity, candidateDocumentId, commandId, disclosedImpact) before the owner
+request is built; a mismatch refuses `import.confirmation_identity_mismatch`,
+and a missing acknowledgement for the explicitly-unavailable disposition
+refuses `history.nonundoable_confirmation_required` — both WITHOUT calling
+the owner. This is the provenance proof the owner contract names as
+mandatory E0 v2 binding work: v2 proves the acknowledgement answers the
+requirement the user actually saw; the owner re-checks only internal
+consistency.
 
 ### E0V2-RES-05 / E0V2-RES-06 / E0V2-RES-07 — state-free commit results
 

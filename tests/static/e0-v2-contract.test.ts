@@ -60,15 +60,43 @@ describe("E0 v2 amendment packet", () => {
       pinState: "pending-validator-freeze",
       outcome: "pass",
       counts: {
-        companions: 4,
-        pendingCompanions: 3,
+        companions: 5,
+        pendingCompanions: 2,
         normalizationCases: 22,
         resolutionCases: 16,
+        projectionCases: 7,
         traces: 6,
         authorities: 5,
-        pendingResolutionRows: 2,
+        pendingResolutionRows: 0,
       },
       findings: [],
+    });
+  });
+
+  test("the provenance oracle is recomputed from the binding, not read from the fixture", async () => {
+    await withFixtureCopy(async (root) => {
+      await mutateJson(root, "projection-cases.json", (value) => {
+        const cases = value["cases"] as JsonObject[];
+        const positive = cases.find(
+          (row) => row["id"] === "E0V2-PROJ-004",
+        ) as JsonObject;
+        (positive["expectedProvenance"] as JsonObject)["ownerCalls"] = 0;
+      });
+      await expectRejected(root, "E0V2_PROVENANCE_ORACLE");
+    });
+  });
+
+  test("the projection table cannot silently drift from the frozen total table", async () => {
+    await withFixtureCopy(async (root) => {
+      await mutateJson(root, "projection-cases.json", (value) => {
+        const cases = value["cases"] as JsonObject[];
+        const positive = cases.find(
+          (row) => row["id"] === "E0V2-PROJ-001",
+        ) as JsonObject;
+        (positive["projectionTable"] as JsonObject)["disclosedImpact"] =
+          "default:retained-empty-impact";
+      });
+      await expectRejected(root, "E0V2_PROJECTION_TABLE_DRIFT");
     });
   });
 

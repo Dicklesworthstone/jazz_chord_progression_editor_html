@@ -114,9 +114,14 @@
         "E0V2-RES-03-preview-to-owner-request-projection",
         "E0V2-RES-04-acknowledgement-provenance"
       ],
-      "caseIds": [],
-      "pendingCaseFamilies": [
-        "projection-cases.json"
+      "caseIds": [
+        "E0V2-PROJ-001",
+        "E0V2-PROJ-002",
+        "E0V2-PROJ-003",
+        "E0V2-PROJ-004",
+        "E0V2-PROJ-005",
+        "E0V2-PROJ-006",
+        "E0V2-PROJ-007"
       ],
       "authorityIds": [
         "E0V2-AUTH-OWNER",

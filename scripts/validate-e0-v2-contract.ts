@@ -33,6 +33,7 @@ export type E0V2ContractValidationReport = Readonly<{
     pendingCompanions: number;
     normalizationCases: number;
     resolutionCases: number;
+    projectionCases: number;
     traces: number;
     authorities: number;
     pendingResolutionRows: number;
@@ -55,12 +56,12 @@ const CONTRACT_FILENAME = "e0-v2-interchange-contract.json";
 const EXPECTED_COMPANIONS = Object.freeze([
   "normalization-cases.json",
   "resolution-cases.json",
+  "projection-cases.json",
   "trace-ledger.json",
   "provenance-ledger.json",
 ] as const);
 
 const EXPECTED_PENDING_COMPANIONS = Object.freeze([
-  "projection-cases.json",
   "workflow-cases.json",
   "mutation-controls.json",
 ] as const);
@@ -74,6 +75,7 @@ const E0_V2_SPEC_BYTE_DIGESTS: Readonly<Record<string, string>> =
     [CONTRACT_FILENAME]: "pending-validator-freeze",
     "normalization-cases.json": "pending-validator-freeze",
     "resolution-cases.json": "pending-validator-freeze",
+    "projection-cases.json": "pending-validator-freeze",
     "trace-ledger.json": "pending-validator-freeze",
     "provenance-ledger.json": "pending-validator-freeze",
   });
@@ -472,6 +474,163 @@ function validateResolutionCases(
   return ids.size;
 }
 
+/** Independent copy of the doc's total projection table (E0V2-RES-03). */
+const EXPECTED_PROJECTION_TABLE: Readonly<Record<string, string>> =
+  Object.freeze({
+    identity: "preview.requestToken",
+    sourceFormat: "preview.routedSourceFormat",
+    replacementOrigin: "owner-table-for-source-format",
+    candidate: "preview.validatedCandidate-by-reference-never-redecoded",
+    replacementCommandSeed: "preview.displayedCommandIdentity",
+    disclosedImpact: "request.replacementImpactProjection",
+    currentTransition: "workflow.retiring-transport-transition",
+    nonUndoableConfirmation: "draft.acknowledgement-after-byte-match",
+  });
+
+function resolveLiteralRefs(value: unknown, catalog: JsonObject): unknown {
+  if (Array.isArray(value)) {
+    return value.map((item) => resolveLiteralRefs(item, catalog));
+  }
+  if (!isObject(value)) return value;
+  const ref = value["$literalRef"];
+  if (typeof ref === "string" && Object.keys(value).length === 1) {
+    const entry = catalog[ref];
+    if (!isObject(entry)) return { $unresolved: ref };
+    return resolveLiteralRefs(entry["value"] ?? entry, catalog);
+  }
+  return Object.fromEntries(
+    Object.entries(value).map(([key, child]) => [
+      key,
+      resolveLiteralRefs(child, catalog),
+    ]),
+  );
+}
+
+function validateProjectionCases(
+  root: JsonObject,
+  findings: E0V2ContractFinding[],
+): number {
+  const cases = Array.isArray(root["cases"]) ? root["cases"] : [];
+  const catalog = isObject(root["literalCatalog"])
+    ? root["literalCatalog"]
+    : {};
+  const ids = new Set<string>();
+  const coveredRows = new Set<string>();
+  for (const [index, raw] of cases.entries()) {
+    const path = `projection-cases.json:$.cases[${String(index)}]`;
+    if (!isObject(raw) || typeof raw["id"] !== "string") {
+      finding(findings, "E0V2_PROJ_CASE_SHAPE", path, "Case requires an id.");
+      continue;
+    }
+    if (ids.has(raw["id"])) {
+      finding(findings, "E0V2_PROJ_CASE_DUPLICATE", path, raw["id"]);
+    }
+    ids.add(raw["id"]);
+    coveredRows.add(String(raw["resolutionId"]));
+    const statePaths = forbiddenStateKeyPaths(raw, path);
+    if (statePaths.length > 0) {
+      finding(
+        findings,
+        "E0V2_STATE_KEY_FORBIDDEN",
+        statePaths[0] ?? path,
+        "Projection cases are state-free by construction.",
+      );
+    }
+    const table = isObject(raw["projectionTable"])
+      ? raw["projectionTable"]
+      : null;
+    if (table !== null) {
+      const drifts = !jsonEqual(
+        Object.fromEntries(
+          Object.entries(table).sort(([a], [b]) => codeUnitCompare(a, b)),
+        ),
+        Object.fromEntries(
+          Object.entries(EXPECTED_PROJECTION_TABLE).sort(([a], [b]) =>
+            codeUnitCompare(a, b),
+          ),
+        ),
+      );
+      const documentedDrift =
+        raw["expectedFixtureFailure"] === "E0V2_PROJECTION_TABLE_DRIFT";
+      if (drifts && !documentedDrift) {
+        finding(
+          findings,
+          "E0V2_PROJECTION_TABLE_DRIFT",
+          path,
+          "The projection table must equal the frozen total table exactly.",
+        );
+      }
+      if (!drifts && documentedDrift) {
+        finding(
+          findings,
+          "E0V2_PROJ_NEGATIVE_INVALID",
+          path,
+          "The documented-drift case must actually drift.",
+        );
+      }
+    }
+    const binding = isObject(raw["confirmationBinding"])
+      ? raw["confirmationBinding"]
+      : null;
+    const expected = isObject(raw["expectedProvenance"])
+      ? raw["expectedProvenance"]
+      : null;
+    if (binding !== null && expected !== null) {
+      // Independently recompute the provenance decision from the binding.
+      const displayed = resolveLiteralRefs(
+        binding["displayedRequirement"],
+        catalog,
+      );
+      const acknowledgement = resolveLiteralRefs(
+        binding["acknowledgement"],
+        catalog,
+      );
+      let matches: boolean;
+      let refusalCode: string | null;
+      if (displayed === null) {
+        matches = acknowledgement === null;
+        refusalCode = matches ? null : "import.confirmation_identity_mismatch";
+      } else if (acknowledgement === null) {
+        matches = false;
+        refusalCode = "history.nonundoable_confirmation_required";
+      } else {
+        const embedded = isObject(acknowledgement)
+          ? acknowledgement["requirement"]
+          : undefined;
+        matches = jsonEqual(embedded, displayed);
+        refusalCode = matches ? null : "import.confirmation_identity_mismatch";
+      }
+      const ownerCalls = matches ? 1 : 0;
+      if (
+        expected["matches"] !== matches ||
+        (expected["refusalCode"] ?? null) !== refusalCode ||
+        expected["ownerCalls"] !== ownerCalls
+      ) {
+        finding(
+          findings,
+          "E0V2_PROVENANCE_ORACLE",
+          path,
+          "Provenance expectations must match the independently recomputed deep-equality decision.",
+        );
+      }
+    }
+  }
+  for (const row of [
+    "E0V2-RES-03-preview-to-owner-request-projection",
+    "E0V2-RES-04-acknowledgement-provenance",
+  ]) {
+    if (!coveredRows.has(row)) {
+      finding(
+        findings,
+        "E0V2_RESCASE_ROW_UNCOVERED",
+        "projection-cases.json:$.cases",
+        row,
+      );
+    }
+  }
+  return ids.size;
+}
+
 export async function validateE0V2Contract(
   fixtureRoot = fileURLToPath(
     new URL("../tests/fixtures/interchange-v2", import.meta.url),
@@ -636,6 +795,8 @@ export async function validateE0V2Contract(
   );
   const resolutionRoot = loaded.get("resolution-cases.json") ?? {};
   const resolutionCases = validateResolutionCases(resolutionRoot, findings);
+  const projectionRoot = loaded.get("projection-cases.json") ?? {};
+  const projectionCases = validateProjectionCases(projectionRoot, findings);
 
   const traceRoot = loaded.get("trace-ledger.json") ?? {};
   const traces = Array.isArray(traceRoot["traces"]) ? traceRoot["traces"] : [];
@@ -656,6 +817,9 @@ export async function validateE0V2Contract(
         : []),
       ...(Array.isArray(resolutionRoot["cases"])
         ? resolutionRoot["cases"]
+        : []),
+      ...(Array.isArray(projectionRoot["cases"])
+        ? projectionRoot["cases"]
         : []),
     ]
       .filter(isObject)
@@ -740,6 +904,7 @@ export async function validateE0V2Contract(
     pendingCompanions: declaredPending.length,
     normalizationCases,
     resolutionCases,
+    projectionCases,
     traces: traces.length,
     authorities: authorities.length,
     pendingResolutionRows: pendingResolutions.length,
@@ -748,6 +913,7 @@ export async function validateE0V2Contract(
   if (
     declaredCounts["normalizationCases"] !== counts.normalizationCases ||
     declaredCounts["resolutionCases"] !== counts.resolutionCases ||
+    declaredCounts["projectionCases"] !== counts.projectionCases ||
     declaredCounts["traces"] !== counts.traces ||
     declaredCounts["authorities"] !== counts.authorities
   ) {
