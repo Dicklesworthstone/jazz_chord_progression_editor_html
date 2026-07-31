@@ -419,6 +419,7 @@ export const PERFORMANCE_STYLE_IDS = Object.freeze([
   "medium-swing@1",
   "bossa-nova@1",
   "straight-eighths@1",
+  "syncopated-sixteenths@1",
   "block-chords@1",
 ] as const);
 export type PerformanceStyleId = (typeof PERFORMANCE_STYLE_IDS)[number];
@@ -1122,6 +1123,223 @@ const STRAIGHT_EIGHTHS_V1: PerformanceStyle = Object.freeze({
 });
 
 /**
+ * syncopated-sixteenths@1 — the pushed straight-16th pop groove.
+ *
+ * WHY THIS STYLE EXISTS. The owner-directed "What a Fool Believes" library
+ * entry (studio-progression-library.ts, 2026-07-31) is a mid-tempo
+ * straight-16th tune (~120 BPM on the Minute by Minute recording, per
+ * SongBPM/Tunebat), and none of the five styles above can state it: the
+ * ballad comps quarters, the swing walks, the bossa is an ostinato over a
+ * partido-alto figure, and straight-eighths@1 never subdivides past the
+ * eighth. The idiom this table freezes is the late-seventies pop-funk
+ * keyboard groove — the sixteenth-note PUSH — and it is named for the
+ * idiom, not for any song.
+ *
+ * WHERE THE SHAPE COMES FROM, and what is deliberately absent. The rhythmic
+ * character is verified against published descriptions of the flagship
+ * recording — Wikipedia's "easy funk backing", the tempo indices' 120 BPM,
+ * and the piano-tutorial literature's account of the riff (the keyboard
+ * figure that PUSHES into the following beat by a sixteenth, over a bass
+ * that states the root on the downbeat and syncopates the bar's back half).
+ * No note sequence, no MIDI file and no derivative of the recording's note
+ * data is stored here or anywhere in this repository; the table below is a
+ * general sixteenth-push comping rule, applied to whatever chart the user
+ * writes. Unlike ballad-comp@1 there is no measured onset histogram behind
+ * these numbers — the honest provenance claim is "authored to the
+ * documented character of the idiom", and the style's own unit suite
+ * (performance-style-syncopated-sixteenths.test.ts) freezes that claimed
+ * character as independently written fixture expectations.
+ *
+ * THE GRID. A sixteenth is 1/4 beat — 240 ticks at PPQ 960, exactly
+ * integral. Every offset below sits on that grid, and none sits on the
+ * half-beat EXCEPT b1 (the and-of-2), so the straight `swingRatio` is
+ * load-bearing: a swung ratio would displace the one offbeat-eighth slot
+ * and nothing else, and this style is declared straight because the idiom
+ * is played straight — the lilt lives in WHERE the attacks fall.
+ *
+ * COMP — a two-bar statement/answer figure, dotted-eighth-plus-push:
+ *
+ *  phase 0 (the statement bar):
+ *  - c0 @ 0,    3/4 beat, `all`,          v86: the downbeat statement, a
+ *    dotted eighth that clears before its own push.
+ *  - c1 @ 3/4,  1/2 beat, `upper-voices`, v74: the SIXTEENTH PUSH INTO
+ *    BEAT 2 — the attack lands a sixteenth early and rings over the beat
+ *    it anticipates, which is the figure the whole style is named for.
+ *  - c2 @ 2,    3/4 beat, `all`,          v82: the half-bar restatement,
+ *    where a two-chords-per-bar chart changes harmony.
+ *  - c3 @ 11/4, 1/2 beat, `upper-voices`, v72: the push into beat 4.
+ *
+ *  phase 1 (the answer bar):
+ *  - c4 @ 0,    3/4 beat, `all`,          v86: the statement again.
+ *  - c5 @ 3/4,  1/2 beat, `upper-voices`, v74: the push into beat 2.
+ *  - c6 @ 3/2,  1/2 beat, `upper-voices`, v70: the and-of-2 answer.
+ *  - c7 @ 5/2,  1/2 beat, `upper-voices`, v72: the and-of-3.
+ *  - c8 @ 15/4, 1/2 beat, `upper-voices`, v78: the CROSS-BARLINE
+ *    anticipation — a sixteenth before the next downbeat, clipped by the
+ *    next bar's statement to 210 ticks, leaning in at v78 because an
+ *    anticipation that mumbles is not an anticipation.
+ *
+ *  The statements declare `all` and the pushes `upper-voices`: a pushed
+ *  jab is the top of the chord, not the whole hand, and the bass slot is
+ *  already sounding the root two octaves down.
+ *
+ * BASS — one pattern, BOTH phases (the pop-funk bass keeps its cell while
+ * the keyboard varies, the inverse of the ballad's division of labour and
+ * the same division as the bossa's, on a completely different grid):
+ *  - b0 @ 0,    root,  3/2 beats, v92: the downbeat anchor, ringing to the
+ *    and-of-2 and released by b1's attack less the release gap.
+ *  - b1 @ 3/2,  root,  19/40,     v84: the AND-OF-2 push, the signature
+ *    syncopation of the idiom's bass line, clearing before beat 3.
+ *  - b2 @ 5/2,  fifth, 19/40,     v80: the and-of-3 colour tone.
+ *  - b3 @ 15/4, root,  1/4,       v86: the sixteenth pickup into the next
+ *    downbeat, the bass's own cross-barline anticipation.
+ *
+ * NO-OVERLAP, per role, at PPQ 960, for a chord owning a whole phase-0 bar
+ * (each interval is [attack, release), every gap real):
+ *  - bass: b0 [0, 1410), b1 [1440, 1896), b2 [2400, 2856), b3 [3600, 3810).
+ *  - comp: c0 [0, 690), c1 [720, 1200), c2 [1920, 2610), c3 [2640, 3120).
+ * In a phase-1 bar the comp is c4 [0, 690), c5 [720, 1200), c6 [1440,
+ * 1920), c7 [2400, 2880), c8 [3600, 3810). b0, c0/c4 and c2 are the slots
+ * the clipping law shortens (against b1, c1/c5 and c3 respectively); both
+ * cross-barline slots clip against the next bar's own downbeat attack.
+ * Each role sounds 2,532 (bass) and 2,340 (comp) of the bar's 3,840 ticks,
+ * so both roles leave real silence in every bar and the anti-pad law holds
+ * by construction.
+ *
+ * ONE-ATTACK-PER-TICK. c0 and b0 both declare offset 0, so every
+ * bar-aligned chord reaches a declared slot of both roles at its own start
+ * and the arrival law adds nothing there — the ballad's own precedent. A
+ * chord arriving at the half-bar meets c2 in phase 0 and the arrival law's
+ * added events elsewhere; no two same-role attacks ever share a tick.
+ *
+ * REGISTER. `compRegister` 49..72 (ceiling 77): one semitone above the
+ * straight-eighths keyboard and one below the bossa hand — a pushed jab
+ * sits just over the knuckle of middle C, above the sustaining pop hand
+ * but under the bossa guitar's clipped top. `lowMidi 49` clears the
+ * well-formedness floor (`>= 40`) by nine.
+ *
+ * The velocity contour keeps the loudest comp (86) under the loudest bass
+ * (92) — the balance law every band sketch in this package obeys — and
+ * `barCycleVelocityOffsets` eases the answer bar by 3, as the bossa does.
+ */
+const SYNCOPATED_SIXTEENTHS_V1: PerformanceStyle = Object.freeze({
+  id: "syncopated-sixteenths@1",
+  kind: "band-sketch",
+  meter: Object.freeze({ beatsPerBar: 4, beatUnit: 4 }),
+  bassSlots: Object.freeze([
+    Object.freeze({
+      offsetBeats: Object.freeze({ numerator: 0, denominator: 1 }),
+      durationBeats: Object.freeze({ numerator: 3, denominator: 2 }),
+      tone: "root",
+      placement: "nearest",
+      velocity: 92,
+      cyclePhases: Object.freeze([0, 1] as const),
+    }),
+    Object.freeze({
+      offsetBeats: Object.freeze({ numerator: 3, denominator: 2 }),
+      durationBeats: Object.freeze({ numerator: 19, denominator: 40 }),
+      tone: "root",
+      placement: "nearest",
+      velocity: 84,
+      cyclePhases: Object.freeze([0, 1] as const),
+    }),
+    Object.freeze({
+      offsetBeats: Object.freeze({ numerator: 5, denominator: 2 }),
+      durationBeats: Object.freeze({ numerator: 19, denominator: 40 }),
+      tone: "fifth",
+      placement: "nearest",
+      velocity: 80,
+      cyclePhases: Object.freeze([0, 1] as const),
+    }),
+    Object.freeze({
+      offsetBeats: Object.freeze({ numerator: 15, denominator: 4 }),
+      durationBeats: Object.freeze({ numerator: 1, denominator: 4 }),
+      tone: "root",
+      placement: "nearest",
+      velocity: 86,
+      cyclePhases: Object.freeze([0, 1] as const),
+    }),
+  ] as const),
+  compSlots: Object.freeze([
+    Object.freeze({
+      offsetBeats: Object.freeze({ numerator: 0, denominator: 1 }),
+      durationBeats: Object.freeze({ numerator: 3, denominator: 4 }),
+      voicing: "all",
+      velocity: 86,
+      cyclePhases: Object.freeze([0] as const),
+    }),
+    Object.freeze({
+      offsetBeats: Object.freeze({ numerator: 3, denominator: 4 }),
+      durationBeats: Object.freeze({ numerator: 1, denominator: 2 }),
+      voicing: "upper-voices",
+      velocity: 74,
+      cyclePhases: Object.freeze([0] as const),
+    }),
+    Object.freeze({
+      offsetBeats: Object.freeze({ numerator: 2, denominator: 1 }),
+      durationBeats: Object.freeze({ numerator: 3, denominator: 4 }),
+      voicing: "all",
+      velocity: 82,
+      cyclePhases: Object.freeze([0] as const),
+    }),
+    Object.freeze({
+      offsetBeats: Object.freeze({ numerator: 11, denominator: 4 }),
+      durationBeats: Object.freeze({ numerator: 1, denominator: 2 }),
+      voicing: "upper-voices",
+      velocity: 72,
+      cyclePhases: Object.freeze([0] as const),
+    }),
+    Object.freeze({
+      offsetBeats: Object.freeze({ numerator: 0, denominator: 1 }),
+      durationBeats: Object.freeze({ numerator: 3, denominator: 4 }),
+      voicing: "all",
+      velocity: 86,
+      cyclePhases: Object.freeze([1] as const),
+    }),
+    Object.freeze({
+      offsetBeats: Object.freeze({ numerator: 3, denominator: 4 }),
+      durationBeats: Object.freeze({ numerator: 1, denominator: 2 }),
+      voicing: "upper-voices",
+      velocity: 74,
+      cyclePhases: Object.freeze([1] as const),
+    }),
+    Object.freeze({
+      offsetBeats: Object.freeze({ numerator: 3, denominator: 2 }),
+      durationBeats: Object.freeze({ numerator: 1, denominator: 2 }),
+      voicing: "upper-voices",
+      velocity: 70,
+      cyclePhases: Object.freeze([1] as const),
+    }),
+    Object.freeze({
+      offsetBeats: Object.freeze({ numerator: 5, denominator: 2 }),
+      durationBeats: Object.freeze({ numerator: 1, denominator: 2 }),
+      voicing: "upper-voices",
+      velocity: 72,
+      cyclePhases: Object.freeze([1] as const),
+    }),
+    Object.freeze({
+      offsetBeats: Object.freeze({ numerator: 15, denominator: 4 }),
+      durationBeats: Object.freeze({ numerator: 1, denominator: 2 }),
+      voicing: "upper-voices",
+      velocity: 78,
+      cyclePhases: Object.freeze([1] as const),
+    }),
+  ] as const),
+  compRegister: Object.freeze({
+    lowMidi: 49,
+    highMidi: 72,
+    ceilingMidi: 77,
+  }),
+  barCycleLength: 2,
+  barCycleVelocityOffsets: Object.freeze([0, -3] as const),
+  swingRatio: PERFORMANCE_STRAIGHT_EIGHTHS,
+  description:
+    "Syncopated sixteenths: dotted-eighth statements pushed by sixteenth "
+    + "anticipations into beats 2 and 4 and across the barline, over a bass "
+    + "that anchors the downbeat and pushes the and-of-2.",
+});
+
+/**
  * block-chords@1 — the identity style.
  *
  * It declares no slots and the compiler returns the input plan itself, so the
@@ -1153,6 +1371,7 @@ export const PERFORMANCE_STYLES: Readonly<
   "medium-swing@1": MEDIUM_SWING_V1,
   "bossa-nova@1": BOSSA_NOVA_V1,
   "straight-eighths@1": STRAIGHT_EIGHTHS_V1,
+  "syncopated-sixteenths@1": SYNCOPATED_SIXTEENTHS_V1,
   "block-chords@1": BLOCK_CHORDS_V1,
 });
 

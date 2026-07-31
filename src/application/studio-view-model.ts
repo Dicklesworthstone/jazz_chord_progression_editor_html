@@ -294,6 +294,8 @@ export function performanceStyleLabel(styleId: PerformanceStyleId): string {
       return "Bossa nova";
     case "straight-eighths@1":
       return "Straight eighths";
+    case "syncopated-sixteenths@1":
+      return "Syncopated sixteenths";
     case "block-chords@1":
       return "Block chords";
   }

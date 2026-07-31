@@ -26,12 +26,20 @@ export const SECTION_VOICE_LEADING_BOUNDARIES = ["continue", "reset"] as const;
  * stored — the canonical form of "ballad comp" is the absent field, and the
  * constructor and decoder refuse a stored explicit default as noncanonical
  * rather than repairing it, mirroring the beat.not_normalized precedent.
+ *
+ * 2026-07-31 (owner-directed What a Fool Believes entry):
+ * "syncopated-sixteenths@1" joins as the sixth id. The addition is purely
+ * additive — every previously valid document decodes unchanged, absence
+ * still canonically means the default, and the F2 fixture oracles for the
+ * original four storable ids remain byte-identical. The F2 contract doc's
+ * groove amendment carries the matching recorded expansion.
  */
 export const GROOVE_STYLE_IDS = [
   "ballad-comp@1",
   "medium-swing@1",
   "bossa-nova@1",
   "straight-eighths@1",
+  "syncopated-sixteenths@1",
   "block-chords@1",
 ] as const;
 export const DEFAULT_GROOVE_STYLE_ID = "ballad-comp@1";

@@ -2343,15 +2343,19 @@ describe("the comp register", () => {
       /*
        * All of them, per style: twenty-four ballad comps — the measured
        * quarter-note grid over six bars — twenty-two Charleston stabs,
-       * twenty-three bossa hits across the two-bar figure, and twenty-four
-       * pop-eighths hits. A style missing from this tally has not had its
-       * normalization law checked at all.
+       * twenty-three bossa hits across the two-bar figure, twenty-four
+       * pop-eighths hits, and twenty-nine sixteenth-push hits (4+6+4+6 over
+       * the four two-chord bars — the phase-1 bars gain the mid-bar arrival
+       * their table does not declare — plus 4 and 5 for the whole-bar
+       * statement and answer). A style missing from this tally has not had
+       * its normalization law checked at all.
        */
       const CHECKED_COMPS: Record<string, number> = {
         "ballad-comp@1": 24,
         "medium-swing@1": 22,
         "bossa-nova@1": 23,
         "straight-eighths@1": 24,
+        "syncopated-sixteenths@1": 29,
       };
       expect(`${styleId}:${String(checked)}`).toBe(
         `${styleId}:${String(CHECKED_COMPS[styleId] ?? -1)}`,

@@ -655,3 +655,28 @@ schema. The amendment authorizes exactly this and nothing wider:
 - Every other record keeps the frozen no-optional-properties law. A second
   optional property requires its own recorded amendment with the same
   fixture and digest discipline.
+
+### Groove vocabulary expansion (additive amendment, 2026-07-31)
+
+The owner-directed What a Fool Believes landing adds a sixth declared
+groove id, `syncopated-sixteenths@1`, to the domain inventory. Where the
+2026-07-30 amendment above says "one of the four non-default declared
+groove ids", read "one of the five": the storable set is now
+`medium-swing@1`, `bossa-nova@1`, `straight-eighths@1`,
+`syncopated-sixteenths@1`, and `block-chords@1`. Everything else the
+amendment froze is unchanged:
+
+- The default remains `ballad-comp@1`, expressed only by absence; a stored
+  explicit default still reports `playback.groove_style_not_canonical`, and
+  ids outside the expanded set still report `playback.groove_style_invalid`.
+- The addition is purely additive: every previously accepted document,
+  byte golden, and fixture oracle decodes byte-for-byte unchanged, so the
+  `shape-cases.json` F2-VALUE-002 cells for the original four storable ids
+  remain the pinned oracles and are not re-authored. The new id's
+  acceptance law lives with its declaring vocabulary:
+  `tests/unit/performance-style-syncopated-sixteenths.test.ts` sweeps every
+  `GROOVE_STYLE_IDS` member through the production decoder, refuses the
+  explicit default, and refuses a near-miss unknown id.
+- The normative inventory pointer is unchanged: `GROOVE_STYLE_IDS` in
+  `src/domain/document.ts`, kept identical to the playback layer's
+  performance-style ids by the pinned vocabulary law.
