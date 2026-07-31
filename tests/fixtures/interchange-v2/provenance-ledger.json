@@ -1,0 +1,58 @@
+{
+  "schema": "changes.fixtures.e0-v2-provenance-ledger.v1",
+  "reviewState": "proposed-independent-spec",
+  "expectedValuesGenerated": false,
+  "productionOutputUsedAsOracle": false,
+  "authoringStatement": "Every expectation in this packet was derived by hand from the named contract documents and the frozen type surfaces; no production algorithm, decoder, or coordinator produced, patched, or confirmed an expected value.",
+  "independence": {
+    "productionModulesImported": false,
+    "acceptedE0V1BytesModified": false,
+    "bridgePacketBytesModified": false,
+    "semanticBindingRequiresExplicitProjectOwnerAcceptance": true,
+    "currentHumanAcceptanceClaim": false,
+    "expertReviewClaim": false,
+    "implementationClaim": false
+  },
+  "authorities": [
+    {
+      "id": "E0V2-AUTH-PLAN",
+      "authorityClass": "reviewed-plan",
+      "sourceKind": "document",
+      "sourceRef": "docs/REBUILD_PLAN.md sections 14.4 and 15.4; docs/E0_V2_INTERCHANGE_CONTRACT.md",
+      "scope": "phase DAG position, replacement transaction order, and the v2 resolution semantics",
+      "judgmentBearing": true
+    },
+    {
+      "id": "E0V2-AUTH-OWNER",
+      "authorityClass": "frozen-contract",
+      "sourceKind": "document-and-type-surface",
+      "sourceRef": "docs/A0_E0_OWNER_PORTS_CONTRACT.md; src/application/application-interchange-owner-contract.ts",
+      "scope": "the five ports, their exact result envelopes, refusal tuples, registry and CAS laws, and the section 3.2 conflict inventory this packet resolves",
+      "judgmentBearing": true
+    },
+    {
+      "id": "E0V2-AUTH-V1",
+      "authorityClass": "immutable-archival",
+      "sourceKind": "accepted-packet",
+      "sourceRef": "accepted E0 v1 closure as pinned by scripts/validate-a0-e0-bridge-contract.ts",
+      "scope": "archived v1 shapes, the six v1 preparation refusal codes, and the adapterExceptionPolicy stateEffect vocabulary; grants no compatibility or supersession authority",
+      "judgmentBearing": false
+    },
+    {
+      "id": "E0V2-AUTH-BEAD",
+      "authorityClass": "tracker",
+      "sourceKind": "bead",
+      "sourceRef": "jcpe-milestone-reliable-studio-l3a.8.4",
+      "scope": "required deliverables, non-claims, and the owner-acceptance gate",
+      "judgmentBearing": false
+    },
+    {
+      "id": "E0V2-AUTH-INDEPENDENT",
+      "authorityClass": "independent-authoring",
+      "sourceKind": "method",
+      "sourceRef": "hand derivation with independent literal copies restated inside scripts/validate-e0-v2-contract.ts",
+      "scope": "every expected diagnostic, stateEffect, key set, and count in this packet",
+      "judgmentBearing": true
+    }
+  ]
+}

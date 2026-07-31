@@ -1,0 +1,67 @@
+{
+  "schema": "changes.fixtures.e0-v2-trace-ledger.v1",
+  "reviewState": "proposed-independent-literal-spec",
+  "expectedValuesGenerated": false,
+  "productionOutputUsedAsOracle": false,
+  "tracePolicy": "Every conflict-resolution row and normalization law traces to literal cases; families named in the manifest's pendingCompanions carry pendingCaseFamilies entries instead of caseIds until authored, and the validator refuses a frozen packet containing any pending entry.",
+  "traces": [
+    {
+      "id": "E0V2-TRACE-NORMALIZATION",
+      "requirement": "Every fallible owner-port return is validated with recursively exact keys against the owner result type; malformed envelopes and synchronous throws each produce one diagnostic with the raw value never retained, mapped to the accepted v1 reconciliation stateEffect for that boundary.",
+      "parentSource": "E0_V2_INTERCHANGE_CONTRACT.md section 3; A0_E0_OWNER_PORTS_CONTRACT.md sections 2 and 7",
+      "resolutionIds": ["E0V2-RES-08-state-free-marker-path"],
+      "caseIds": ["E0V2-NORM-001", "E0V2-NORM-002", "E0V2-NORM-003", "E0V2-NORM-004", "E0V2-NORM-005", "E0V2-NORM-006", "E0V2-NORM-007", "E0V2-NORM-008", "E0V2-NORM-009", "E0V2-NORM-010", "E0V2-NORM-011", "E0V2-NORM-012", "E0V2-NORM-013", "E0V2-NORM-014", "E0V2-NORM-015", "E0V2-NORM-016", "E0V2-NORM-017", "E0V2-NORM-018", "E0V2-NORM-019", "E0V2-NORM-020", "E0V2-NORM-021"],
+      "authorityIds": ["E0V2-AUTH-OWNER", "E0V2-AUTH-V1"],
+      "evidenceOwner": "tests/static/e0-v2-contract.test.ts"
+    },
+    {
+      "id": "E0V2-TRACE-DISCARD-EXCEPTION",
+      "requirement": "The discard port is the deliberate exact-result exception: never normalized, never wrapped, called only for the four closed cleanup reasons.",
+      "parentSource": "A0_E0_OWNER_PORTS_CONTRACT.md section 2; E0_V2_INTERCHANGE_CONTRACT.md section 3",
+      "resolutionIds": [],
+      "caseIds": ["E0V2-NORM-022"],
+      "authorityIds": ["E0V2-AUTH-OWNER"],
+      "evidenceOwner": "tests/static/e0-v2-contract.test.ts"
+    },
+    {
+      "id": "E0V2-TRACE-STATE-FREEDOM",
+      "requirement": "No v2 request or result carries state, currentState, lastKnownState, or observedBefore at any depth; smuggled state keys are protocol breaches, never data.",
+      "parentSource": "A0_E0_OWNER_PORTS_CONTRACT.md section 3; E0_V2_INTERCHANGE_CONTRACT.md section 2",
+      "resolutionIds": ["E0V2-RES-05-state-free-commit-success", "E0V2-RES-06-state-free-commit-refusals", "E0V2-RES-07-state-free-publication-protocol-failure", "E0V2-RES-11-state-free-public-marker-requests"],
+      "caseIds": ["E0V2-NORM-003", "E0V2-NORM-009", "E0V2-NORM-014", "E0V2-NORM-020"],
+      "pendingCaseFamilies": ["resolution-cases.json", "workflow-cases.json"],
+      "authorityIds": ["E0V2-AUTH-OWNER", "E0V2-AUTH-PLAN"],
+      "evidenceOwner": "tests/static/e0-v2-contract.test.ts"
+    },
+    {
+      "id": "E0V2-TRACE-REFUSAL-ADOPTION",
+      "requirement": "The v2 preparation vocabulary is the owner's twenty-code tuple with the six v1 codes proven members; publication adopts the owner's three codes; no rename anywhere.",
+      "parentSource": "E0_V2_INTERCHANGE_CONTRACT.md resolutions E0V2-RES-09 and E0V2-RES-10",
+      "resolutionIds": ["E0V2-RES-09-widened-preparation-refusals", "E0V2-RES-10-replacement-publication-refusals"],
+      "caseIds": [],
+      "pendingCaseFamilies": ["resolution-cases.json"],
+      "authorityIds": ["E0V2-AUTH-OWNER", "E0V2-AUTH-V1"],
+      "evidenceOwner": "scripts/validate-e0-v2-contract.ts"
+    },
+    {
+      "id": "E0V2-TRACE-PROJECTION",
+      "requirement": "The preview-to-owner-request projection is total, one declared source per owner-request field, no defaulting and no caller state; the acknowledgement must byte-match the retained displayed requirement before any owner call.",
+      "parentSource": "E0_V2_INTERCHANGE_CONTRACT.md resolutions E0V2-RES-03 and E0V2-RES-04",
+      "resolutionIds": ["E0V2-RES-03-preview-to-owner-request-projection", "E0V2-RES-04-acknowledgement-provenance"],
+      "caseIds": [],
+      "pendingCaseFamilies": ["projection-cases.json"],
+      "authorityIds": ["E0V2-AUTH-OWNER", "E0V2-AUTH-PLAN"],
+      "evidenceOwner": "scripts/validate-e0-v2-contract.ts"
+    },
+    {
+      "id": "E0V2-TRACE-COMMIT-SURFACE",
+      "requirement": "The v2 commit request carries only state-free owner evidence plus the confirmation binding, and the result union is fully state-free with observed identity and explicit reconciliation obligations.",
+      "parentSource": "E0_V2_INTERCHANGE_CONTRACT.md resolutions E0V2-RES-01, -02, -05, -06, -07",
+      "resolutionIds": ["E0V2-RES-01-import-request-current-state", "E0V2-RES-02-preview-impact-projection", "E0V2-RES-05-state-free-commit-success", "E0V2-RES-06-state-free-commit-refusals", "E0V2-RES-07-state-free-publication-protocol-failure"],
+      "caseIds": [],
+      "pendingCaseFamilies": ["resolution-cases.json", "workflow-cases.json"],
+      "authorityIds": ["E0V2-AUTH-OWNER", "E0V2-AUTH-V1", "E0V2-AUTH-PLAN"],
+      "evidenceOwner": "scripts/validate-e0-v2-contract.ts"
+    }
+  ]
+}
