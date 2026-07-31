@@ -77,9 +77,6 @@
         "E0V2-RESCASE-014",
         "E0V2-RESCASE-015"
       ],
-      "pendingCaseFamilies": [
-        "workflow-cases.json"
-      ],
       "authorityIds": [
         "E0V2-AUTH-OWNER",
         "E0V2-AUTH-PLAN"
@@ -151,13 +148,37 @@
         "E0V2-RESCASE-009",
         "E0V2-RESCASE-016"
       ],
-      "pendingCaseFamilies": [
-        "workflow-cases.json"
-      ],
       "authorityIds": [
         "E0V2-AUTH-OWNER",
         "E0V2-AUTH-V1",
         "E0V2-AUTH-PLAN"
+      ],
+      "evidenceOwner": "scripts/validate-e0-v2-contract.ts"
+    },
+    {
+      "id": "E0V2-TRACE-WORKFLOW",
+      "requirement": "Every v1 workflow row whose payload carried AppState is re-materialized in v2 keyed to its ancestor: the ancestor's stateEffect, markerEffect, failureStage, resultCategory, and terminationReason are preserved verbatim (validator cross-checks the accepted v1 file), while the result shape sheds state for observalIdentity, diagnostics, and explicit reconciliation obligations.",
+      "parentSource": "E0_V2_INTERCHANGE_CONTRACT.md resolutions E0V2-RES-05..08 and -11; accepted v1 workflow-adapter-cases.json (archival)",
+      "resolutionIds": [
+        "E0V2-RES-05-state-free-commit-success",
+        "E0V2-RES-06-state-free-commit-refusals",
+        "E0V2-RES-07-state-free-publication-protocol-failure",
+        "E0V2-RES-08-state-free-marker-path",
+        "E0V2-RES-11-state-free-public-marker-requests"
+      ],
+      "caseIds": [
+        "E0V2-WF-001",
+        "E0V2-WF-002",
+        "E0V2-WF-003",
+        "E0V2-WF-004",
+        "E0V2-WF-005",
+        "E0V2-WF-006",
+        "E0V2-WF-007",
+        "E0V2-WF-008"
+      ],
+      "authorityIds": [
+        "E0V2-AUTH-V1",
+        "E0V2-AUTH-OWNER"
       ],
       "evidenceOwner": "scripts/validate-e0-v2-contract.ts"
     }

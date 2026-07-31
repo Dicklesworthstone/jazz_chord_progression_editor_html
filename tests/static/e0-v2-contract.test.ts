@@ -60,16 +60,58 @@ describe("E0 v2 amendment packet", () => {
       pinState: "pending-validator-freeze",
       outcome: "pass",
       counts: {
-        companions: 5,
-        pendingCompanions: 2,
+        companions: 6,
+        pendingCompanions: 1,
         normalizationCases: 22,
         resolutionCases: 16,
         projectionCases: 7,
-        traces: 6,
+        workflowCases: 8,
+        traces: 7,
         authorities: 5,
         pendingResolutionRows: 0,
       },
       findings: [],
+    });
+  });
+
+  test("a v2 workflow case cannot quietly reassign its ancestor's semantics", async () => {
+    await withFixtureCopy(async (root) => {
+      await mutateJson(root, "workflow-cases.json", (value) => {
+        const cases = value["cases"] as JsonObject[];
+        const target = cases.find(
+          (row) => row["id"] === "E0V2-WF-003",
+        ) as JsonObject;
+        (target["ancestorPreserved"] as JsonObject)["stateEffect"] = "NONE";
+      });
+      await expectRejected(root, "E0V2_WF_ANCESTOR_DRIFT");
+    });
+  });
+
+  test("the reconciliation obligation must follow the ancestor's stateEffect", async () => {
+    await withFixtureCopy(async (root) => {
+      await mutateJson(root, "workflow-cases.json", (value) => {
+        const cases = value["cases"] as JsonObject[];
+        const target = cases.find(
+          (row) => row["id"] === "E0V2-WF-002",
+        ) as JsonObject;
+        target["expectedReconciliation"] =
+          "application-transport-reconciliation-required";
+      });
+      await expectRejected(root, "E0V2_WF_RECONCILIATION");
+    });
+  });
+
+  test("a throw-terminated ancestor demands the threw-or-rejected reason", async () => {
+    await withFixtureCopy(async (root) => {
+      await mutateJson(root, "workflow-cases.json", (value) => {
+        const cases = value["cases"] as JsonObject[];
+        const target = cases.find(
+          (row) => row["id"] === "E0V2-WF-005",
+        ) as JsonObject;
+        (target["expectedDiagnostic"] as JsonObject)["reason"] =
+          "invalid-envelope";
+      });
+      await expectRejected(root, "E0V2_WF_DIAGNOSTIC_REASON");
     });
   });
 

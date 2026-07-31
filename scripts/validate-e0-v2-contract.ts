@@ -34,6 +34,7 @@ export type E0V2ContractValidationReport = Readonly<{
     normalizationCases: number;
     resolutionCases: number;
     projectionCases: number;
+    workflowCases: number;
     traces: number;
     authorities: number;
     pendingResolutionRows: number;
@@ -57,12 +58,12 @@ const EXPECTED_COMPANIONS = Object.freeze([
   "normalization-cases.json",
   "resolution-cases.json",
   "projection-cases.json",
+  "workflow-cases.json",
   "trace-ledger.json",
   "provenance-ledger.json",
 ] as const);
 
 const EXPECTED_PENDING_COMPANIONS = Object.freeze([
-  "workflow-cases.json",
   "mutation-controls.json",
 ] as const);
 
@@ -76,6 +77,7 @@ const E0_V2_SPEC_BYTE_DIGESTS: Readonly<Record<string, string>> =
     "normalization-cases.json": "pending-validator-freeze",
     "resolution-cases.json": "pending-validator-freeze",
     "projection-cases.json": "pending-validator-freeze",
+    "workflow-cases.json": "pending-validator-freeze",
     "trace-ledger.json": "pending-validator-freeze",
     "provenance-ledger.json": "pending-validator-freeze",
   });
@@ -631,6 +633,154 @@ function validateProjectionCases(
   return ids.size;
 }
 
+const EXPECTED_WORKFLOW_ANCESTORS = Object.freeze([
+  "E0-WF-009",
+  "E0-WF-024",
+  "E0-WF-025",
+  "E0-WF-026",
+  "E0-WF-029",
+  "E0-WF-030",
+  "E0-MK-012",
+  "E0-MK-019",
+] as const);
+
+const ANCESTOR_PRESERVED_FIELDS = Object.freeze([
+  "resultCategory",
+  "failureStage",
+  "stateEffect",
+  "markerEffect",
+  "terminationReason",
+] as const);
+
+async function validateWorkflowCases(
+  root: JsonObject,
+  findings: E0V2ContractFinding[],
+): Promise<number> {
+  const cases = Array.isArray(root["cases"]) ? root["cases"] : [];
+  // Archival reference only: the accepted v1 packet is byte-pinned by its own
+  // validator; reading it here cross-checks ancestry without reinterpreting it.
+  let ancestors = new Map<string, JsonObject>();
+  try {
+    const v1 = JSON.parse(
+      await readFile(
+        fileURLToPath(
+          new URL(
+            "../tests/fixtures/interchange/workflow-adapter-cases.json",
+            import.meta.url,
+          ),
+        ),
+        "utf8",
+      ),
+    ) as JsonObject;
+    ancestors = new Map(
+      (Array.isArray(v1["cases"]) ? v1["cases"] : [])
+        .filter(isObject)
+        .map((row) => [String(row["id"]), row]),
+    );
+  } catch {
+    finding(
+      findings,
+      "E0V2_WF_ANCESTOR_SOURCE",
+      "tests/fixtures/interchange/workflow-adapter-cases.json",
+      "The accepted v1 workflow file must be readable for ancestry checks.",
+    );
+  }
+  const ids = new Set<string>();
+  const seenAncestors = new Set<string>();
+  for (const [index, raw] of cases.entries()) {
+    const path = `workflow-cases.json:$.cases[${String(index)}]`;
+    if (!isObject(raw) || typeof raw["id"] !== "string") {
+      finding(findings, "E0V2_WF_CASE_SHAPE", path, "Case requires an id.");
+      continue;
+    }
+    if (ids.has(raw["id"])) {
+      finding(findings, "E0V2_WF_CASE_DUPLICATE", path, raw["id"]);
+    }
+    ids.add(raw["id"]);
+    const statePaths = forbiddenStateKeyPaths(raw, path);
+    if (statePaths.length > 0) {
+      finding(
+        findings,
+        "E0V2_STATE_KEY_FORBIDDEN",
+        statePaths[0] ?? path,
+        "Workflow cases are state-free by construction.",
+      );
+    }
+    const ancestorId = String(raw["ancestorId"] ?? "");
+    seenAncestors.add(ancestorId);
+    const ancestor = ancestors.get(ancestorId);
+    const preserved = isObject(raw["ancestorPreserved"])
+      ? raw["ancestorPreserved"]
+      : {};
+    if (ancestor === undefined) {
+      finding(findings, "E0V2_WF_ANCESTOR_UNKNOWN", path, ancestorId);
+    } else {
+      for (const field of ANCESTOR_PRESERVED_FIELDS) {
+        if (!jsonEqual(preserved[field], ancestor[field] ?? null)) {
+          finding(
+            findings,
+            "E0V2_WF_ANCESTOR_DRIFT",
+            `${path}.ancestorPreserved.${field}`,
+            "A v2 case may change the result shape but never the ancestor's semantics.",
+          );
+        }
+      }
+    }
+    // Recompute the diagnostic expectations from the independent port tables.
+    const diagnostic = isObject(raw["expectedDiagnostic"])
+      ? raw["expectedDiagnostic"]
+      : null;
+    if (diagnostic !== null) {
+      const port = String(diagnostic["port"]);
+      if (!(EXPECTED_NORMALIZED_PORTS as readonly string[]).includes(port)) {
+        finding(findings, "E0V2_WF_DIAGNOSTIC_PORT", path, port);
+      }
+      if (diagnostic["rawResultRetained"] !== false) {
+        finding(findings, "E0V2_WF_DIAGNOSTIC_RETENTION", path, "raw retention");
+      }
+      const expectedReason =
+        String(preserved["terminationReason"] ?? "").includes("exception")
+          ? "threw-or-rejected"
+          : "invalid-envelope";
+      if (diagnostic["reason"] !== expectedReason) {
+        finding(
+          findings,
+          "E0V2_WF_DIAGNOSTIC_REASON",
+          path,
+          "The diagnostic reason must follow the ancestor's exception/protocol termination kind.",
+        );
+      }
+      const declaredReconciliation = raw["expectedReconciliation"];
+      if (declaredReconciliation !== undefined) {
+        const stateEffect = String(preserved["stateEffect"]);
+        const expectedReconciliation =
+          stateEffect === "APPLICATION_TRANSPORT_RECONCILIATION_REQUIRED"
+            ? "application-transport-reconciliation-required"
+            : "none";
+        if (declaredReconciliation !== expectedReconciliation) {
+          finding(
+            findings,
+            "E0V2_WF_RECONCILIATION",
+            path,
+            "The reconciliation obligation must follow the ancestor's stateEffect.",
+          );
+        }
+      }
+    }
+  }
+  for (const ancestorId of EXPECTED_WORKFLOW_ANCESTORS) {
+    if (!seenAncestors.has(ancestorId)) {
+      finding(
+        findings,
+        "E0V2_WF_ANCESTOR_UNCOVERED",
+        "workflow-cases.json:$.cases",
+        ancestorId,
+      );
+    }
+  }
+  return ids.size;
+}
+
 export async function validateE0V2Contract(
   fixtureRoot = fileURLToPath(
     new URL("../tests/fixtures/interchange-v2", import.meta.url),
@@ -797,6 +947,8 @@ export async function validateE0V2Contract(
   const resolutionCases = validateResolutionCases(resolutionRoot, findings);
   const projectionRoot = loaded.get("projection-cases.json") ?? {};
   const projectionCases = validateProjectionCases(projectionRoot, findings);
+  const workflowRoot = loaded.get("workflow-cases.json") ?? {};
+  const workflowCases = await validateWorkflowCases(workflowRoot, findings);
 
   const traceRoot = loaded.get("trace-ledger.json") ?? {};
   const traces = Array.isArray(traceRoot["traces"]) ? traceRoot["traces"] : [];
@@ -820,6 +972,9 @@ export async function validateE0V2Contract(
         : []),
       ...(Array.isArray(projectionRoot["cases"])
         ? projectionRoot["cases"]
+        : []),
+      ...(Array.isArray(workflowRoot["cases"])
+        ? workflowRoot["cases"]
         : []),
     ]
       .filter(isObject)
@@ -905,6 +1060,7 @@ export async function validateE0V2Contract(
     normalizationCases,
     resolutionCases,
     projectionCases,
+    workflowCases,
     traces: traces.length,
     authorities: authorities.length,
     pendingResolutionRows: pendingResolutions.length,
@@ -914,6 +1070,7 @@ export async function validateE0V2Contract(
     declaredCounts["normalizationCases"] !== counts.normalizationCases ||
     declaredCounts["resolutionCases"] !== counts.resolutionCases ||
     declaredCounts["projectionCases"] !== counts.projectionCases ||
+    declaredCounts["workflowCases"] !== counts.workflowCases ||
     declaredCounts["traces"] !== counts.traces ||
     declaredCounts["authorities"] !== counts.authorities
   ) {

@@ -198,7 +198,8 @@ export type CommitImportReplacementResultV2 =
       code:
         | E0V2PreparationRefusalCode
         | E0V2PublicationRefusalCode
-        | "transport.replacement_retirement_refused";
+        | "transport.replacement_retirement_refused"
+        | "transport.replacement_retirement_evidence_invalid";
       identity: ImportRequestIdentity;
       observedIdentity: ApplicationDocumentIdentity;
       liveForRequest: 0;
@@ -210,7 +211,13 @@ export type CommitImportReplacementResultV2 =
       diagnostic: E0V2PortProtocolDiagnostic;
       identity: ImportRequestIdentity;
       observedIdentity: ApplicationDocumentIdentity;
-      reconciliation: "application-transport-reconciliation-required";
+      /**
+       * The breached boundary's obligation, mirroring the accepted v1
+       * adapterExceptionPolicy: a prepare or identity-read breach changes
+       * nothing ("none"); a publication breach demands application and
+       * transport reconciliation.
+       */
+      reconciliation: "none" | "application-transport-reconciliation-required";
       liveForRequest: 0;
     }>;
 

@@ -1,0 +1,154 @@
+{
+  "schema": "changes.fixtures.e0-v2-workflow-cases.v1",
+  "reviewState": "proposed-independent-literal-spec",
+  "expectedValuesGenerated": false,
+  "productionOutputUsedAsOracle": false,
+  "ancestorPolicy": {
+    "source": "tests/fixtures/interchange/workflow-adapter-cases.json",
+    "reading": "archival-reference-only-byte-pinned-by-accepted-v1",
+    "law": "Each v2 case keys to exactly one v1 ancestor and restates the ancestor's stateEffect, markerEffect, failureStage, resultCategory, and terminationReason verbatim; the validator cross-checks every restatement against the accepted file, so a v2 case can change the RESULT SHAPE but never quietly reassign the ancestor's semantics."
+  },
+  "cases": [
+    {
+      "id": "E0V2-WF-001",
+      "resolutionId": "E0V2-RES-05-state-free-commit-success",
+      "variant": "positive",
+      "ancestorId": "E0-WF-009",
+      "ancestorPreserved": {
+        "resultCategory": "REPLACED_ONCE",
+        "failureStage": null,
+        "stateEffect": "REPLACE_ONCE",
+        "markerEffect": "UNCHANGED",
+        "terminationReason": "matrix-complete"
+      },
+      "v2Delta": "The committed result loses its nested publication.state; success carries identity, published documentId/revision, effects, counters, liveForRequest 0.",
+      "expectedResultTopLevelKeys": ["ok", "outcome", "identity", "documentId", "revision", "effects", "counters", "liveForRequest"],
+      "traceIds": ["E0V2-TRACE-WORKFLOW"]
+    },
+    {
+      "id": "E0V2-WF-002",
+      "resolutionId": "E0V2-RES-07-state-free-publication-protocol-failure",
+      "variant": "malformed",
+      "ancestorId": "E0-WF-024",
+      "ancestorPreserved": {
+        "resultCategory": "REPLACEMENT_COMMIT_REFUSED",
+        "failureStage": "replacement-preparation-result",
+        "stateEffect": "NONE",
+        "markerEffect": "UNCHANGED",
+        "terminationReason": "preparation-protocol-invalid"
+      },
+      "v2Delta": "v1 returned state: AppState with the protocol refusal; v2 returns the diagnostic with observedIdentity and reconciliation 'none' — a prepare breach changes nothing.",
+      "expectedDiagnostic": { "port": "prepareImportReplacementPublication", "reason": "invalid-envelope", "rawResultRetained": false },
+      "expectedReconciliation": "none",
+      "traceIds": ["E0V2-TRACE-WORKFLOW"]
+    },
+    {
+      "id": "E0V2-WF-003",
+      "resolutionId": "E0V2-RES-07-state-free-publication-protocol-failure",
+      "variant": "malformed",
+      "ancestorId": "E0-WF-025",
+      "ancestorPreserved": {
+        "resultCategory": "REPLACEMENT_COMMIT_REFUSED",
+        "failureStage": "replacement-publication-result",
+        "stateEffect": "APPLICATION_TRANSPORT_RECONCILIATION_REQUIRED",
+        "markerEffect": "UNCHANGED",
+        "terminationReason": "publication-protocol-invalid-reconciliation-required"
+      },
+      "v2Delta": "v1 returned lastKnownState: AppState; v2 returns the diagnostic with observedIdentity and the application-transport reconciliation obligation.",
+      "expectedDiagnostic": { "port": "publishImportReplacement", "reason": "invalid-envelope", "rawResultRetained": false },
+      "expectedReconciliation": "application-transport-reconciliation-required",
+      "traceIds": ["E0V2-TRACE-WORKFLOW"]
+    },
+    {
+      "id": "E0V2-WF-004",
+      "resolutionId": "E0V2-RES-06-state-free-commit-refusals",
+      "variant": "stale",
+      "ancestorId": "E0-WF-026",
+      "ancestorPreserved": {
+        "resultCategory": "REPLACEMENT_COMMIT_REFUSED",
+        "failureStage": "transport-retirement-evidence",
+        "stateEffect": "TRANSPORT_RECONCILIATION_REQUIRED",
+        "markerEffect": "UNCHANGED",
+        "terminationReason": "adapter-exception-reconciliation-required"
+      },
+      "v2Delta": "The X1 retirement boundary is not an owner port; its evidence-invalid refusal keeps the v1 code but sheds state: AppState for observedIdentity at the transport-retirement stage.",
+      "expectedResultFragment": {
+        "ok": false,
+        "outcome": "refused",
+        "stage": "transport-retirement",
+        "code": "transport.replacement_retirement_evidence_invalid",
+        "liveForRequest": 0
+      },
+      "traceIds": ["E0V2-TRACE-WORKFLOW"]
+    },
+    {
+      "id": "E0V2-WF-005",
+      "resolutionId": "E0V2-RES-07-state-free-publication-protocol-failure",
+      "variant": "malformed",
+      "ancestorId": "E0-WF-029",
+      "ancestorPreserved": {
+        "resultCategory": "REPLACEMENT_COMMIT_REFUSED",
+        "failureStage": "replacement-preparation-result",
+        "stateEffect": "NONE",
+        "markerEffect": "UNCHANGED",
+        "terminationReason": "preparation-exception-normalized"
+      },
+      "v2Delta": "A prepare-port throw normalizes to the threw-or-rejected diagnostic; nothing changed, reconciliation 'none'.",
+      "expectedDiagnostic": { "port": "prepareImportReplacementPublication", "reason": "threw-or-rejected", "rawResultRetained": false },
+      "expectedReconciliation": "none",
+      "traceIds": ["E0V2-TRACE-WORKFLOW"]
+    },
+    {
+      "id": "E0V2-WF-006",
+      "resolutionId": "E0V2-RES-07-state-free-publication-protocol-failure",
+      "variant": "malformed",
+      "ancestorId": "E0-WF-030",
+      "ancestorPreserved": {
+        "resultCategory": "REPLACEMENT_COMMIT_REFUSED",
+        "failureStage": "replacement-publication-result",
+        "stateEffect": "APPLICATION_TRANSPORT_RECONCILIATION_REQUIRED",
+        "markerEffect": "UNCHANGED",
+        "terminationReason": "publication-exception-reconciliation-required"
+      },
+      "v2Delta": "A publish-port throw normalizes to the threw-or-rejected diagnostic with the application-transport reconciliation obligation.",
+      "expectedDiagnostic": { "port": "publishImportReplacement", "reason": "threw-or-rejected", "rawResultRetained": false },
+      "expectedReconciliation": "application-transport-reconciliation-required",
+      "traceIds": ["E0V2-TRACE-WORKFLOW"]
+    },
+    {
+      "id": "E0V2-WF-007",
+      "resolutionId": "E0V2-RES-08-state-free-marker-path",
+      "variant": "malformed",
+      "ancestorId": "E0-MK-012",
+      "ancestorPreserved": {
+        "resultCategory": "DOWNLOAD_COMPLETED",
+        "failureStage": "marker-publication-result",
+        "stateEffect": "APPLICATION_RECONCILIATION_REQUIRED",
+        "markerEffect": "UNCHANGED",
+        "terminationReason": "publication-protocol-invalid"
+      },
+      "v2Delta": "v1's raw marker adapter result (observedBefore + state) is retired; a malformed CAS-port return is the invalid-envelope diagnostic with application reconciliation and no A1 call.",
+      "expectedDiagnostic": { "port": "publishCanonicalExportRevision", "reason": "invalid-envelope", "rawResultRetained": false },
+      "a1Calls": 0,
+      "traceIds": ["E0V2-TRACE-WORKFLOW"]
+    },
+    {
+      "id": "E0V2-WF-008",
+      "resolutionId": "E0V2-RES-11-state-free-public-marker-requests",
+      "variant": "malformed",
+      "ancestorId": "E0-MK-019",
+      "ancestorPreserved": {
+        "resultCategory": "EXPORT_STATE_IDENTITY_PROTOCOL_INVALID",
+        "failureStage": "latest-application-state-identity",
+        "stateEffect": "NONE",
+        "markerEffect": "UNCHANGED",
+        "terminationReason": "state-identity-protocol-invalid"
+      },
+      "v2Delta": "The identity-read port replaces v1's state-bearing identity plumbing; a malformed return is the invalid-envelope diagnostic, release gate fails, and no browser, A0, or A1 call follows.",
+      "expectedDiagnostic": { "port": "readCurrentApplicationDocumentIdentity", "reason": "invalid-envelope", "rawResultRetained": false },
+      "browserCalls": 0,
+      "a1Calls": 0,
+      "traceIds": ["E0V2-TRACE-WORKFLOW"]
+    }
+  ]
+}
