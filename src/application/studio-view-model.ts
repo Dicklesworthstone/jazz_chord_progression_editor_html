@@ -121,6 +121,7 @@ export type StudioTransportViewModel = Readonly<{
   playheadBeatLabel: string;
   startBeatLabel: string;
   failureCode: string | null;
+  failureDetail: string | null;
 }>;
 
 export type StudioPanelViewModel = Readonly<{
@@ -336,6 +337,92 @@ function transportStatusLabel(status: ApplicationTransportStatus): string {
       return "Stopping playback";
     case "failed":
       return "Audio failed";
+  }
+}
+
+/**
+ * jcpe-uslp: every stable failure code the transport view can carry — the 20
+ * X1 refusal codes, the 28 X0 engine codes, and the interruption marker —
+ * maps to a sentence that says what happened and the next safe action. The
+ * default arm keeps the map total for any future code without hiding it.
+ */
+export function transportFailureDetail(code: string): string {
+  switch (code) {
+    case "transport.locked":
+      return "Audio has not started yet. Press Play to start it.";
+    case "transport.disposed":
+    case "audio.engine_closed":
+    case "audio.dispose_reason_invalid":
+      return "Audio was shut down. Reload the page to restore playback.";
+    case "transport.fault_requires_initialize":
+      return "Audio hit a fault. Press Play to restart it.";
+    case "transport.state_invalid":
+      return "That control is not available right now. The chart is unchanged.";
+    case "transport.gesture_invalid":
+    case "audio.user_gesture_required":
+    case "audio.gesture_sequence_invalid":
+      return "The browser needs a fresh click before audio can start. Press Play again.";
+    case "transport.command_request_id_invalid":
+    case "transport.internal_sequence_exhausted":
+    case "audio.internal_sequence_exhausted":
+      return "Playback commands got out of order. Press Stop, then try again.";
+    case "transport.queue_overflow":
+      return "Too many playback commands at once. Wait a moment, then try again.";
+    case "transport.timing_policy_invalid":
+      return "The playback timing settings were rejected. Reload the page.";
+    case "transport.plan_invalid":
+    case "transport.plan_mismatch":
+      return "The chart changed while playback was starting. Press Play again.";
+    case "transport.start_beat_out_of_range":
+    case "transport.seek_out_of_range":
+      return "That position is outside the chart. Press Stop, then Play.";
+    case "transport.tempo_out_of_range":
+      return "The tempo is outside the playable 20–400 BPM range.";
+    case "transport.loop_invalid":
+      return "The loop range is not playable. Clear the loop and try again.";
+    case "transport.instrument_unknown":
+    case "audio.instrument_id_invalid":
+      return "That instrument is not available. Pick another instrument.";
+    case "transport.preview_invalid":
+      return "That preview could not be played. Click a chord and try again.";
+    case "transport.count_in_invalid":
+      return "The count-in setting was rejected. Change it and try again.";
+    case "transport.metronome_invalid":
+      return "The metronome setting was rejected. Change it and try again.";
+    case "transport.engine_refusal":
+      return "The audio engine refused the command. Press Stop, then Play.";
+    case "transport.interrupted":
+      return "The browser interrupted audio. Press Play to resume.";
+    case "audio.engine_not_ready":
+      return "Audio is still warming up. Try again in a moment.";
+    case "audio.context_create_failed":
+    case "audio.context_unusable":
+    case "audio.context_sample_rate_unsupported":
+    case "audio.graph_create_failed":
+      return "This browser could not open an audio output. Check the output device and reload.";
+    case "audio.context_resume_failed":
+      return "The browser blocked audio from resuming. Click the page, then press Play.";
+    case "audio.mix_invalid":
+      return "The volume or reverb setting was rejected. Adjust them and try again.";
+    case "audio.renderer_unavailable":
+      return "The piano renderer is unavailable. Playback falls back to synthesis; press Play again.";
+    case "audio.owner_invalid":
+    case "audio.event_id_invalid":
+    case "audio.voice_batch_empty":
+    case "audio.voice_batch_limit":
+    case "audio.voice_id_invalid":
+    case "audio.voice_id_duplicate":
+    case "audio.midi_pitch_invalid":
+    case "audio.velocity_invalid":
+    case "audio.start_time_invalid":
+    case "audio.release_time_invalid":
+    case "audio.gate_duration_limit":
+    case "audio.retiring_voice_capacity":
+    case "audio.retirement_selector_invalid":
+    case "audio.retirement_time_invalid":
+      return "The audio engine rejected scheduled notes. Press Stop, then Play.";
+    default:
+      return `Audio failed (${code}). Press Stop, then Play.`;
   }
 }
 
@@ -594,6 +681,10 @@ export function selectStudioViewModel(
       playheadBeatLabel: formatExactBeatLabel(state.transport.playhead),
       startBeatLabel: formatExactBeatLabel(state.transport.startBeat),
       failureCode: state.transport.failureCode,
+      failureDetail:
+        state.transport.failureCode === null
+          ? null
+          : transportFailureDetail(state.transport.failureCode),
     }),
     performance: Object.freeze({
       styleId: performanceStyleId,

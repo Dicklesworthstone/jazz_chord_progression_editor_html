@@ -369,11 +369,16 @@ export function applySharedStartup(
       });
     }
   }
-  // Session state last: it has no history entry and needs no unwind.
+  /*
+   * jcpe-jnnu: the groove is a document setting now. setPerformanceStyle
+   * no-ops when the payload carries the chart's current groove (a
+   * default-groove share applies zero extra commands) and otherwise lands
+   * one undoable Set-groove entry after the chart. A refusal here leaves
+   * the applied chart standing — the default style plays — and cannot
+   * happen for a payload the decoder accepted.
+   */
   const styled = controller.setPerformanceStyle(payload.grooveStyleId);
   if (!styled.ok) {
-    // The document commands stand; a groove refusal only means the default
-    // style plays. This cannot happen for a payload the decoder accepted.
     return Object.freeze({ applied: true });
   }
   return Object.freeze({ applied: true });

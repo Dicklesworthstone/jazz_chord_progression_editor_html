@@ -43,10 +43,11 @@ export type ProgressionLibraryEntry = Readonly<{
   /** Bars in the quick-entry grammar. */
   chartText: string;
   /**
-   * The performance style loading this entry selects for the session — a
-   * reviewed musical judgment per entry, machine-checked against the
-   * declared style set. It never touches the document: grooves are session
-   * state, and the chart the entry inserts is style-free.
+   * The performance style loading this entry selects — a reviewed musical
+   * judgment per entry, machine-checked against the declared style set.
+   * Since jcpe-jnnu the groove is a document setting: applying an entry's
+   * non-default groove lands one undoable Set-groove command, so the choice
+   * travels with the chart through share links and recovery.
    */
   grooveStyleId: PerformanceStyleId;
 }>;

@@ -15,12 +15,14 @@ import {
   type Voicing,
 } from "./chord";
 import {
+  DEFAULT_GROOVE_STYLE_ID,
   MAX_DOCUMENT_CHORD_EVENTS,
   MAX_DOCUMENT_SECTIONS,
   MAX_JSON_NESTING_DEPTH,
   MAX_SECTION_MEASURES,
   MAX_UTF8_IMPORT_BYTES,
   PROGRESSION_DOCUMENT_SCHEMA,
+  type GrooveStyleId,
   type MeasureCompletionShape,
   type MeasureShape,
   type PlaybackSettings,
@@ -1507,6 +1509,19 @@ function isInstrument(value: string): value is InstrumentId {
   return makeInstrumentId(value).ok;
 }
 
+function isGrooveStyle(value: string): value is GrooveStyleId {
+  // Literal equalities, not a lookup through the imported tuple: the F2
+  // source policy forbids method calls through imported state owners. The
+  // groove-vocabulary static law keeps this list equal to GROOVE_STYLE_IDS.
+  return (
+    value === "ballad-comp@1" ||
+    value === "medium-swing@1" ||
+    value === "bossa-nova@1" ||
+    value === "straight-eighths@1" ||
+    value === "block-chords@1"
+  );
+}
+
 function isVoiceLeadingBoundary(
   value: string,
 ): value is SectionShape["voiceLeadingBoundary"] {
@@ -2533,7 +2548,13 @@ function decodePlayback(
   const issueCount = state.issues.length;
   auditRecord(
     snapshot,
-    ["instrumentId", "masterVolume", "reverbAmount", "countInBars"],
+    [
+      "instrumentId",
+      "masterVolume",
+      "reverbAmount",
+      "countInBars",
+      "grooveStyleId",
+    ],
     state,
   );
   const instrument = decodeEnumField(
@@ -2558,20 +2579,60 @@ function decodePlayback(
       appendIssue(state, "playback.count_in_bars_invalid", pathWith(snapshot.path, "countInBars"));
     }
   }
+  /*
+   * jcpe-jnnu: the one optional persisted property in v2. Absence means the
+   * default groove; a stored explicit default is noncanonical and refuses
+   * (the beat.not_normalized precedent), so absent-in decodes absent-out and
+   * the canonical wire form stays unique.
+   */
+  let grooveStyleId: PlaybackSettings["grooveStyleId"];
+  let grooveOk = true;
+  if (snapshot.descriptors.get("grooveStyleId") !== undefined) {
+    const groove = decodeEnumField(
+      snapshot,
+      "grooveStyleId",
+      state,
+      isGrooveStyle,
+      "playback.groove_style_invalid",
+    );
+    if (!groove.ok) {
+      grooveOk = false;
+    } else if (groove.value === DEFAULT_GROOVE_STYLE_ID) {
+      appendIssue(
+        state,
+        "playback.groove_style_not_canonical",
+        pathWith(snapshot.path, "grooveStyleId"),
+      );
+      grooveOk = false;
+    } else {
+      grooveStyleId = groove.value;
+    }
+  }
   if (
     !instrument.ok ||
     !masterVolume.ok ||
     !reverbAmount.ok ||
     countInBars === null ||
+    !grooveOk ||
     state.issues.length !== issueCount
   ) {
     return { ok: false };
+  }
+  if (grooveStyleId === undefined) {
+    const candidate: PlaybackSettings = allocateCandidateObject(state, {
+      instrumentId: instrument.value,
+      masterVolume: masterVolume.value,
+      reverbAmount: reverbAmount.value,
+      countInBars,
+    });
+    return { ok: true, value: candidate };
   }
   const candidate: PlaybackSettings = allocateCandidateObject(state, {
     instrumentId: instrument.value,
     masterVolume: masterVolume.value,
     reverbAmount: reverbAmount.value,
     countInBars,
+    grooveStyleId,
   });
   return { ok: true, value: candidate };
 }

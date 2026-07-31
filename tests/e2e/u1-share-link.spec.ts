@@ -79,6 +79,15 @@ test.describe("share links", () => {
     const diagnostics = captureDiagnostics(page);
     await openStudio(page);
     await typeAndInsert(page, "| Am7 D7 | Gmaj7 |");
+    /*
+     * jcpe-jnnu: the groove is a document setting, so the picked style must
+     * survive the whole copy → reload cycle through the fragment and the
+     * document field rather than evaporating with the session.
+     */
+    await page
+      .locator("#studio-groove-picker-rail")
+      .getByRole("radio", { name: "Bossa nova" })
+      .click();
 
     await page.locator("#studio-copy-share-link").click();
     await expect
@@ -96,6 +105,11 @@ test.describe("share links", () => {
     await page.reload({ waitUntil: "load" });
     await expect(page.locator('[data-app-ready="true"]')).toBeVisible();
     await expect(cards(page)).toHaveCount(3);
+    await expect(
+      page
+        .locator("#studio-groove-picker-rail")
+        .getByRole("radio", { name: "Bossa nova" }),
+    ).toHaveAttribute("aria-checked", "true");
     expectCleanDiagnostics(diagnostics);
   });
 

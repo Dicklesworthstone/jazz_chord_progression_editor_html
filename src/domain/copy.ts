@@ -652,12 +652,22 @@ function cloneKeyContext(source: KeyContext | null): KeyContext | null {
 }
 
 function clonePlaybackSettings(source: PlaybackSettings): PlaybackSettings {
-  return Object.freeze({
-    instrumentId: source.instrumentId,
-    masterVolume: source.masterVolume,
-    reverbAmount: source.reverbAmount,
-    countInBars: source.countInBars,
-  });
+  return Object.freeze(
+    source.grooveStyleId === undefined
+      ? {
+          instrumentId: source.instrumentId,
+          masterVolume: source.masterVolume,
+          reverbAmount: source.reverbAmount,
+          countInBars: source.countInBars,
+        }
+      : {
+          instrumentId: source.instrumentId,
+          masterVolume: source.masterVolume,
+          reverbAmount: source.reverbAmount,
+          countInBars: source.countInBars,
+          grooveStyleId: source.grooveStyleId,
+        },
+  );
 }
 
 function cloneMeasureCompletion(

@@ -138,13 +138,13 @@ export function studioPlanIsPlayable(plan: PlaybackPlan): boolean {
 }
 
 /**
- * The performance style a fresh studio session starts with (jcpe-1gao).
+ * The default performance style (jcpe-1gao, amended by jcpe-jnnu).
  *
- * The document has no style field and adding one is a pinned-contract change,
- * so the default lives here and the controller owns the SESSION's current
- * selection around it: the picker changes what the next Play sounds like,
- * the library assigns each entry an apt style, and none of that touches the
- * validated document or its pinned schema.
+ * The document now carries an optional `playback.grooveStyleId` whose
+ * canonical default form is ABSENCE, so this constant is what absence means:
+ * the controller derives the active style as the document's stored groove or
+ * this default. It must stay equal to the domain's DEFAULT_GROOVE_STYLE_ID;
+ * a static law pins the two vocabularies together.
  */
 export const STUDIO_PERFORMANCE_STYLE: PerformanceStyleId = "ballad-comp@1";
 

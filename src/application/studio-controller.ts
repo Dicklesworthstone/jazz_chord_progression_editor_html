@@ -1,6 +1,7 @@
 import {
   addBeatValues,
   compareBeatValues,
+  DEFAULT_GROOVE_STYLE_ID,
   makeBeatDuration,
   makeBeatPosition,
   measureCapacity,
@@ -15,8 +16,10 @@ import {
   type MidiPitch,
   type ParsedChordEvent,
   type MeasureId,
+  type PlaybackSettings,
   type Section,
   type SectionId,
+  type StoredGrooveStyleId,
 } from "../domain";
 import {
   A0_U1_NEW_EVENT_POLICY_ID,
@@ -68,6 +71,7 @@ import {
   type ChartTextDraft,
   type ContinuationSuggestion,
 } from "../theory";
+import type { TransportCommandOutcome, TransportState } from "../audio";
 import type { StudioAudioGesture, StudioAudioPort } from "./studio-audio";
 import {
   compileStudioPlaybackPlan,
@@ -920,16 +924,26 @@ function makeStudioController(
 ): StudioController {
   let state = initialState;
   /*
-   * Session-scoped performance style (jcpe-1gao follow-up): the picker and
-   * the library's per-entry grooves change what the next Play sounds like
-   * without touching the validated document — the schema has no style field
-   * by design, and this variable is the seam a future per-document field
-   * will replace.
+   * jcpe-jnnu: the groove is a document field now, so the active performance
+   * style derives from the validated document — absence means the default —
+   * and undo, share, and recovery all move the audible groove with the
+   * chart. The domain groove and playback style vocabularies are pinned
+   * identical by a static law, which is what makes this projection safe.
    */
-  let performanceStyleId: PerformanceStyleId = STUDIO_PERFORMANCE_STYLE;
+  const performanceStyleFor = (
+    document: AppState["document"],
+  ): PerformanceStyleId =>
+    document.playback.grooveStyleId ?? STUDIO_PERFORMANCE_STYLE;
+  const activePerformanceStyleId = (): PerformanceStyleId =>
+    performanceStyleFor(state.document);
+  const sessionViewFor = (
+    document: AppState["document"],
+  ): Readonly<{
+    performanceStyleId: PerformanceStyleId;
+  }> => Object.freeze({ performanceStyleId: performanceStyleFor(document) });
   const sessionView = (): Readonly<{
     performanceStyleId: PerformanceStyleId;
-  }> => Object.freeze({ performanceStyleId });
+  }> => sessionViewFor(state.document);
   let snapshot = selectStudioViewModel(state, sessionView());
   let documentIndex: DocumentIndex = buildDocumentIndex(
     state.document,
@@ -1020,7 +1034,12 @@ function makeStudioController(
     try {
       result = operation(state);
       if (result.state !== state) {
-        nextSnapshot = selectStudioViewModel(result.state, sessionView());
+        // The session projection must read the RESULT document: a groove
+        // edit changes the derived style in the same publication.
+        nextSnapshot = selectStudioViewModel(
+          result.state,
+          sessionViewFor(result.state.document),
+        );
       }
     } catch {
       return Object.freeze({
@@ -1654,11 +1673,13 @@ function makeStudioController(
    * worse answer than declining and saying why.
    */
   /*
-   * Session state, not a document command: the style enters no history and
-   * marks nothing dirty, because the schema has no style field by design.
-   * A run already sounding keeps the style it started with — rebinding a
-   * playing transport mid-flight would re-anchor its timeline — so the
-   * choice audibly lands on the next Play.
+   * jcpe-jnnu: the groove is an undoable document setting, exactly like
+   * tempo. The default groove is canonically ABSENT (F2 refuses a stored
+   * explicit default), so picking it deletes the field rather than writing
+   * it, and picking the current groove is a friendly no-op instead of a
+   * same-value refusal. A run already sounding keeps the style it started
+   * with — rebinding a playing transport mid-flight would re-anchor its
+   * timeline — so the choice audibly lands on the next Play.
    */
   const setPerformanceStyle = (
     styleId: string,
@@ -1671,15 +1692,40 @@ function makeStudioController(
         ["performanceStyleId"],
       );
     }
-    performanceStyleId = styleId as PerformanceStyleId;
-    snapshot = selectStudioViewModel(state, sessionView());
-    notify();
-    return Object.freeze({
-      ok: true,
-      outcome: "ephemeral-updated",
-      snapshot,
-      effects: Object.freeze([]),
+    if (styleId === activePerformanceStyleId()) {
+      return Object.freeze({
+        ok: true,
+        outcome: "ephemeral-updated",
+        snapshot,
+        effects: Object.freeze([]),
+      });
+    }
+    const playback = state.document.playback;
+    const playbackPatch: PlaybackSettings = Object.freeze(
+      styleId === DEFAULT_GROOVE_STYLE_ID
+        ? {
+            instrumentId: playback.instrumentId,
+            masterVolume: playback.masterVolume,
+            reverbAmount: playback.reverbAmount,
+            countInBars: playback.countInBars,
+          }
+        : {
+            instrumentId: playback.instrumentId,
+            masterVolume: playback.masterVolume,
+            reverbAmount: playback.reverbAmount,
+            countInBars: playback.countInBars,
+            grooveStyleId: styleId as StoredGrooveStyleId,
+          },
+    );
+    const command: SetDocumentSettingsCommand = Object.freeze({
+      ...commandEnvelope("studio-groove", "Set groove"),
+      completionUpdates: Object.freeze([]),
+      kind: "set-document-settings",
+      patch: Object.freeze({ playback: playbackPatch }),
     });
+    return apply("set-performance-style", (current) =>
+      runDocumentCommand({ command, dependencies, state: current }),
+    );
   };
 
   const setTempo = (bpm: number): StudioControllerActionResult => {
@@ -3895,6 +3941,27 @@ function makeStudioController(
   /* ------------------------------------------------------------------ */
 
   /**
+   * jcpe-e183: what a refusal settlement claims for each transport state the
+   * service echoes. X1's own projection covers only publishable states;
+   * locked and disposed publish nothing there, so the application maps them
+   * to its honest "unavailable".
+   */
+  const SETTLED_TRANSPORT_STATUS: Readonly<
+    Record<
+      TransportState,
+      "unavailable" | "ready" | "playing" | "paused" | "failed"
+    >
+  > = Object.freeze({
+    locked: "unavailable",
+    ready: "ready",
+    playing: "playing",
+    paused: "paused",
+    interrupted: "paused",
+    fault: "failed",
+    disposed: "unavailable",
+  });
+
+  /**
    * A0 installs its expectation before every transport command and matches the
    * notification that comes back by request ID, so the IDs are minted here and
    * handed to the audio port rather than the other way round.
@@ -3925,6 +3992,37 @@ function makeStudioController(
         },
       }),
     );
+
+  /**
+   * jcpe-e183: an X1 refusal is total and publishes no notification, so the
+   * optimistic expectation above would otherwise stick at starting/stopping
+   * forever. The refusal outcome the port already returns settles it with the
+   * transport's own echoed state and the stable cause code (jcpe-uslp). The
+   * identity travels from dispatch time so a settlement that outlives a
+   * document replacement lands as ignored-stale instead of matching fresh
+   * state.
+   */
+  const settleRefusedTransport = (
+    action: StudioControllerAction,
+    documentId: AppState["document"]["id"],
+    planRevision: number,
+    outcome: TransportCommandOutcome,
+  ): void => {
+    if (outcome.termination !== "refusal") return;
+    apply(action, (current) =>
+      reduceEphemeralIntent({
+        state: current,
+        intent: {
+          kind: "settle-transport-expectation",
+          commandRequestId: outcome.commandRequestId,
+          documentId,
+          planRevision,
+          status: SETTLED_TRANSPORT_STATUS[outcome.state],
+          failureCode: outcome.engineRefusalCode ?? outcome.code,
+        },
+      }),
+    );
+  };
 
   /**
    * Play the chart from its start.
@@ -3979,7 +4077,7 @@ function makeStudioController(
      */
     const performance = performStudioPlaybackPlan(
       compiled.plan,
-      performanceStyleId,
+      activePerformanceStyleId(),
     );
     const binding = Object.freeze({
       plan: performance,
@@ -4047,7 +4145,7 @@ function makeStudioController(
     void warmRemaining;
     void (async () => {
       if (!port.isInitialized()) {
-        await port.initialize(
+        const initializeOutcome = await port.initialize(
           commandRequestId,
           gesture,
           binding.documentId,
@@ -4058,18 +4156,39 @@ function makeStudioController(
             reverbAmount: state.document.playback.reverbAmount,
           }),
         );
+        if (initializeOutcome.termination === "refusal") {
+          settleRefusedTransport(
+            "play-progression",
+            binding.documentId,
+            binding.planRevision,
+            initializeOutcome,
+          );
+          return;
+        }
         await port.prepareInstrument(instrumentId, preparedNotes);
         await port.setInstrument(nextTransportRequestId(), instrumentId);
         const playRequestId = nextTransportRequestId();
         expectTransport("play-progression", playRequestId, "starting", startBeat);
-        await port.play(playRequestId, binding, startBeat);
+        const playOutcome = await port.play(playRequestId, binding, startBeat);
+        settleRefusedTransport(
+          "play-progression",
+          binding.documentId,
+          binding.planRevision,
+          playOutcome,
+        );
         return;
       }
       await port.prepareInstrument(instrumentId, preparedNotes);
       await port.setInstrument(nextTransportRequestId(), instrumentId);
       const playRequestId = nextTransportRequestId();
       expectTransport("play-progression", playRequestId, "starting", startBeat);
-      await port.play(playRequestId, binding, startBeat);
+      const playOutcome = await port.play(playRequestId, binding, startBeat);
+      settleRefusedTransport(
+        "play-progression",
+        binding.documentId,
+        binding.planRevision,
+        playOutcome,
+      );
     })();
     return expectation;
   };
@@ -4090,7 +4209,16 @@ function makeStudioController(
       state.transport.playhead,
     );
     if (!expectation.ok) return expectation;
-    void audioPort.pause(commandRequestId);
+    const documentId = state.document.id;
+    const planRevision = state.revision;
+    void audioPort.pause(commandRequestId).then((outcome) => {
+      settleRefusedTransport(
+        "pause-progression",
+        documentId,
+        planRevision,
+        outcome,
+      );
+    });
     return expectation;
   };
 
@@ -4111,7 +4239,16 @@ function makeStudioController(
       state.transport.startBeat,
     );
     if (!expectation.ok) return expectation;
-    void audioPort.stop(commandRequestId);
+    const documentId = state.document.id;
+    const planRevision = state.revision;
+    void audioPort.stop(commandRequestId).then((outcome) => {
+      settleRefusedTransport(
+        "stop-progression",
+        documentId,
+        planRevision,
+        outcome,
+      );
+    });
     return expectation;
   };
 

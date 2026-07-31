@@ -826,6 +826,17 @@ export type EphemeralIntent =
       startBeat: BeatPosition;
       playhead: BeatPosition;
     }>
+  | Readonly<{
+      // Settles a still-optimistic expectation whose command the transport
+      // REFUSED without publishing: the status is the controller-projected
+      // actual service state echoed by the refusal, never an invented value.
+      kind: "settle-transport-expectation";
+      commandRequestId: TransportRequestId;
+      documentId: DocumentId;
+      planRevision: AppRevision;
+      status: Exclude<ApplicationTransportStatus, "starting" | "stopping">;
+      failureCode: string;
+    }>
   | Readonly<{ kind: "acknowledge-focus"; sequence: ApplicationSequence }>;
 
 export type ReduceEphemeralIntentRequest = Readonly<{

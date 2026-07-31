@@ -79,7 +79,7 @@ export const E0_ACCEPTED_BYTE_DIGESTS: Readonly<Record<string, string>> = {
   "chart-text-cases.json":
     "79875e4060148663e8c8af717cd22abf3afbe6c1999f1c811f530b5b05253bad",
   "e0-interchange-contract.json":
-    "d81a831bc9e67d15b595001513c854870fd1ebac3d89687d4f6d5a7a756fbcb2",
+    "a53963189636dd1f8cba3b2c4dd2b4c4f1b44187f452fd887705fa4768ec35be",
   "import-cases.json":
     "22ab4a62d9f62d93eae169f60d51de9780218bbcc160b4cdfe3e7f0101c38688",
   "input-fixture-ledger.json":
@@ -109,7 +109,7 @@ export const E0_ACCEPTED_BYTE_DIGESTS: Readonly<Record<string, string>> = {
 };
 
 export const E0_ACCEPTED_SEMANTIC_DIGEST =
-  "0455fe8afa398e9f5cbafa3209d563ad72365435b4cd4f896477271a06027ccc";
+  "af7c46751b2bbbd8a24de4f80b4b6b8208ac2e86cdce7764593531cf5ca60e52";
 
 const EXPECTED_SCHEMAS: Readonly<Record<string, string>> = {
   "canonical-json-cases.json": "changes.fixtures.e0-canonical-json-cases.v1",
@@ -755,6 +755,26 @@ function requireExact(
   if (!sameJson(actual, expected)) addFinding(findings, code, path, message);
 }
 
+/**
+ * jcpe-jnnu: `playback.grooveStyleId` is the single optional persisted key —
+ * canonically absent at the default groove — so a golden's key sequence must
+ * equal the declared order minus any declared-optional key the record does
+ * not store. Every other key remains required in declared order.
+ */
+const OPTIONAL_CANONICAL_KEYS: Readonly<Record<string, readonly string[]>> =
+  Object.freeze({ playback: Object.freeze(["grooveStyleId"]) });
+
+function expectedShapeKeys(
+  record: JsonObject,
+  shape: string,
+  declared: readonly string[],
+): readonly string[] {
+  const optional = OPTIONAL_CANONICAL_KEYS[shape] ?? [];
+  return declared.filter(
+    (key) => !optional.includes(key) || Object.hasOwn(record, key),
+  );
+}
+
 function requireShapeKeys(
   value: unknown,
   keyOrders: JsonObject,
@@ -775,7 +795,7 @@ function requireShapeKeys(
   }
   requireExact(
     Object.keys(record),
-    expected,
+    expectedShapeKeys(record, shape, expected),
     "E0_GOLDEN_NESTED_ORDER",
     path,
     `Nested golden ${shape} keys must use the declared canonical order.`,
@@ -12924,14 +12944,21 @@ export async function validateE0Contract(
     "Minimal golden must exercise the exact meter key order.",
     findings,
   );
-  requireExact(
-    Object.keys(objectAt(minimalJson["playback"]) ?? {}),
-    keyOrder?.["playback"],
-    "E0_GOLDEN_PLAYBACK_ORDER",
-    "goldens/minimal.changes.json.playback",
-    "Minimal golden must exercise the exact playback key order.",
-    findings,
-  );
+  {
+    const minimalPlayback = objectAt(minimalJson["playback"]) ?? {};
+    requireExact(
+      Object.keys(minimalPlayback),
+      expectedShapeKeys(
+        minimalPlayback,
+        "playback",
+        stringsAt(keyOrder?.["playback"]),
+      ),
+      "E0_GOLDEN_PLAYBACK_ORDER",
+      "goldens/minimal.changes.json.playback",
+      "Minimal golden must exercise the exact playback key order.",
+      findings,
+    );
+  }
   const negativePlayback = objectAt(negativeZeroJson["playback"]) ?? {};
   if (
     !Object.is(negativePlayback["masterVolume"], -0) ||

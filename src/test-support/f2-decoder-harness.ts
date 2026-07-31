@@ -228,13 +228,26 @@ function canonicalDocumentOrder(value: unknown): boolean {
     "playback",
   ])) return false;
   const key = ownData(value, "key");
+  const playback = ownData(value, "playback");
   return ownKeysExactly(ownData(value, "meter"), ["beatsPerBar", "beatUnit"]) &&
     (key === null || checkKey(key)) &&
     arrayEntries(ownData(value, "sections")).every(checkSection) &&
-    ownKeysExactly(
-      ownData(value, "playback"),
+    // jcpe-jnnu: grooveStyleId is the one optional persisted key; when the
+    // document stores it, it follows the four required keys exactly.
+    (ownKeysExactly(
+      playback,
       ["instrumentId", "masterVolume", "reverbAmount", "countInBars"],
-    );
+    ) ||
+      ownKeysExactly(
+        playback,
+        [
+          "instrumentId",
+          "masterVolume",
+          "reverbAmount",
+          "countInBars",
+          "grooveStyleId",
+        ],
+      ));
 }
 
 function issueProjection(result: unknown): F2CellProjection {

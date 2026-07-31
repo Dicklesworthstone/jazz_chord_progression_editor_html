@@ -62,7 +62,7 @@ export const A0_REVIEWED_BYTE_DIGESTS: Readonly<
   Record<CompanionFilename, string>
 > = {
   "mutation-controls.json":
-    "c6e942addb9204519bd6a766e1288fc7086fce66e58d31315790ab80e3d89dd0",
+    "ae65750167b20e0cea40520820dfdd459f86e3938ca96965b1bd3af310985a83",
   "provenance-ledger.json":
     "3fba29f7989a2e7d5b233341b968e6d8c6dc4935ffdffafcc4642eab075d794d",
   "sequence-cases.json":
@@ -70,9 +70,9 @@ export const A0_REVIEWED_BYTE_DIGESTS: Readonly<
   "stale-and-transport-cases.json":
     "6989eb99432a1375758c7a7bd92b45562ef54b68215d36dedaa68622a3b8af58",
   "state-matrix.json":
-    "fc630039a1366deeb11e8c8c03bddaeae7cbb9a1a5bc33d0c1947ddc97d4f171",
+    "8589e846285870489b5d61301c6a795eb394e7a70cfd3437787d9bd303abf343",
   "trace-ledger.json":
-    "d8bf6b801c04d2a814425b6437c7bdcd6eb49704ee293bebdb3f648ca401b302",
+    "e222347208f6a4b392efe02295ee4fcdcfba013de80967b1ff18d84ec872f35a",
 };
 
 export const A0_REVIEWED_OPERATION_ORDER = [
@@ -258,12 +258,12 @@ export const A0_REVIEWED_HISTORY_ESTIMATE_WEIGHTS = {
 
 export const A0_REVIEWED_COUNTS = {
   companions: 6,
-  stateCases: 65,
+  stateCases: 68,
   staleAndTransportCases: 20,
   namedSequences: 6,
   randomizedSequences: 1_000,
-  mutationControls: 30,
-  traces: 18,
+  mutationControls: 32,
+  traces: 19,
   authorities: 7,
 } as const;
 

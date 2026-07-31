@@ -20,6 +20,7 @@ import {
   type ApplicationRequestKind,
   type ApplicationStateOperations,
   type ApplicationTransitionResult,
+  type ApplicationTransportStatus,
   type BeginApplicationRequest,
   type CreateInitialAppState,
   type DialogDescriptor,
@@ -92,6 +93,16 @@ function validTransportNotificationStatus(
 ): value is TransportNotification["status"] {
   return (
     value !== "unavailable" &&
+    APPLICATION_TRANSPORT_STATUSES.some((status) => status === value)
+  );
+}
+
+function validSettledTransportStatus(
+  value: unknown,
+): value is Exclude<ApplicationTransportStatus, "starting" | "stopping"> {
+  return (
+    value !== "starting" &&
+    value !== "stopping" &&
     APPLICATION_TRANSPORT_STATUSES.some((status) => status === value)
   );
 }
@@ -820,6 +831,41 @@ export const reduceEphemeralIntent: ReduceEphemeralIntent = ({ state, intent }) 
           startBeat: intent.startBeat,
           playhead: intent.playhead,
           failureCode: null,
+        }),
+      });
+      break;
+    case "settle-transport-expectation":
+      if (
+        !isPositiveSafeInteger(intent.commandRequestId) ||
+        !isNonnegativeSafeInteger(intent.planRevision) ||
+        !validSettledTransportStatus(intent.status) ||
+        typeof intent.failureCode !== "string" ||
+        !isBoundedToken(intent.failureCode, MAX_COMMAND_ID_CODE_POINTS)
+      ) {
+        return failureResult(
+          state,
+          counters,
+          "transport.expectation_invalid",
+          ["transport"],
+        );
+      }
+      // A settlement may resolve only the still-optimistic expectation it
+      // names; a genuine notification that already settled the slot wins.
+      if (
+        intent.commandRequestId !== state.transport.commandRequestId ||
+        intent.documentId !== state.document.id ||
+        intent.planRevision !== state.revision ||
+        (state.transport.status !== "starting" &&
+          state.transport.status !== "stopping")
+      ) {
+        return successResult(state, counters, "ignored-stale");
+      }
+      next = Object.freeze({
+        ...state,
+        transport: Object.freeze({
+          ...state.transport,
+          status: intent.status,
+          failureCode: intent.failureCode,
         }),
       });
       break;

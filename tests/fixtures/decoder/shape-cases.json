@@ -7136,9 +7136,63 @@
             "octave"
           ],
           "value": -20
+        },
+        {
+          "path": [
+            "playback",
+            "grooveStyleId"
+          ],
+          "values": [
+            "medium-swing@1",
+            "bossa-nova@1",
+            "straight-eighths@1",
+            "block-chords@1"
+          ]
         }
       ],
       "rejectedCells": [
+        {
+          "path": [
+            "playback",
+            "grooveStyleId"
+          ],
+          "value": "trap-beat@9",
+          "expected": {
+            "code": "playback.groove_style_invalid",
+            "path": [
+              "playback",
+              "grooveStyleId"
+            ]
+          }
+        },
+        {
+          "path": [
+            "playback",
+            "grooveStyleId"
+          ],
+          "value": "ballad-comp@1",
+          "expected": {
+            "code": "playback.groove_style_not_canonical",
+            "path": [
+              "playback",
+              "grooveStyleId"
+            ]
+          }
+        },
+        {
+          "path": [
+            "playback",
+            "grooveStyleId"
+          ],
+          "value": 7,
+          "expected": {
+            "code": "shape.invalid_type",
+            "path": [
+              "playback",
+              "grooveStyleId"
+            ]
+          }
+        },
         {
           "path": [
             "id"
@@ -7915,12 +7969,12 @@
           {
             "source": "acceptedCells",
             "order": "entry order then nested values order; an entry without values is one cell",
-            "atomicCellCount": 14
+            "atomicCellCount": 18
           },
           {
             "source": "rejectedCells",
             "order": "checked-in order",
-            "atomicCellCount": 13
+            "atomicCellCount": 16
           },
           {
             "source": "invalidPitchClassConsumerTargets x invalidPitchClassFaults",
@@ -7988,7 +8042,7 @@
           }
         ],
         "freshTemplatePerCell": true,
-        "atomicCellCount": 193
+        "atomicCellCount": 200
       },
       "expected": {
         "everyCellUsesOneFreshRepresentativeDocument": true,

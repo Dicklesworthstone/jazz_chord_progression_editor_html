@@ -173,6 +173,8 @@ export const F1_REVIEWED_ISSUE_CODES = [
   "playback.level_not_finite",
   "playback.level_out_of_range",
   "playback.count_in_bars_invalid",
+  "playback.groove_style_invalid",
+  "playback.groove_style_not_canonical",
   "section.voice_leading_boundary_invalid",
   "measure.empty_has_events",
   "measure.nonempty_has_no_events",
@@ -229,7 +231,8 @@ export const F1_REVIEWED_STAGE_ISSUE_CODES = {
     "meter.beats_per_bar_out_of_range", "meter.beat_unit_invalid",
     "tempo.not_finite", "tempo.not_integer", "tempo.out_of_range",
     "playback.level_not_finite", "playback.level_out_of_range",
-    "playback.count_in_bars_invalid",
+    "playback.count_in_bars_invalid", "playback.groove_style_invalid",
+    "playback.groove_style_not_canonical",
   ],
   F2: [
     "shape.unknown_field", "shape.invalid_type", "document.root_not_object",
@@ -374,7 +377,7 @@ const EXPECTED_AUTHORITY_IDS = [
 ] as const;
 const EXPECTED_COVERAGE_SUMMARY: Readonly<JsonObject> = {
   companionFiles: 10,
-  fixtureCaseRecords: 317,
+  fixtureCaseRecords: 320,
   traceRecords: 18,
   authorityRecords: 9,
   stableSeeds: 6,
@@ -388,7 +391,7 @@ const EXPECTED_COVERAGE_SUMMARY: Readonly<JsonObject> = {
   additionalCompoundMeterNearMisses: 1,
   autoVoicingPolicyMatrixCells: 42,
   customAutoRefusalMatrixCells: 42,
-  expectedDiagnosticCodes: 85,
+  expectedDiagnosticCodes: 87,
 };
 const EXPECTED_OBSERVATION_CONTRACT: Readonly<JsonObject> = {
   purpose: "expected records are independent oracle observations, not serialized production result envelopes",
@@ -470,7 +473,7 @@ const EXPECTED_CASE_IDS_BY_COLLECTION = new Map<string, readonly string[]>([
   ["voicing-custom-cases.json#autoPolicyMatrix", numberedIds("F1-VOICE-AUTO-MATRIX-", 7)],
   ["voicing-custom-cases.json#customAutoPolicyMatrix", ["F1-VOICE-CUSTOM-AUTO-MATRIX-001"]],
   ["voicing-custom-cases.json#cases", numberedIds("F1-VOICE-", 44)],
-  ["document-boundary-cases.json#cases", numberedIds("F1-DOC-", 85)],
+  ["document-boundary-cases.json#cases", numberedIds("F1-DOC-", 88)],
   ["operation-state-cases.json#cases", numberedIds("F1-OPSTATE-", 10)],
 ]);
 const EXPECTED_ROOT_KEYS = new Map<string, readonly string[]>([
@@ -489,8 +492,8 @@ const EXPECTED_ROOT_KEYS = new Map<string, readonly string[]>([
 const EXPECTED_REVIEWED_FILE_SHA256 = new Map<string, string>([
   ["beat-value-cases.json", "cb1e89b2cd756d02dbf8c385d751191dac8c52041a151f60dd67d9aa44dfae42"],
   ["chord-shape-cases.json", "f9b99efb4510ad36e21dd3719d90687af97d43b12adc612e42b83aa365e4ea48"],
-  ["document-boundary-cases.json", "1854fc1e2520ce5174a3f5138cfc186fd7104372d714f3f7e4fe50a549216d6e"],
-  ["f1-domain-contract.json", "2608955ebcc092843c348236b8e74deb9f46b0e8d0d5eb514bde673ddff325f3"],
+  ["document-boundary-cases.json", "0ca2e224fc5701ccefc9fc56b253530930e6d9cb4060b829f46e3224005a5edb"],
+  ["f1-domain-contract.json", "be1b218cc095d692c7be13cff71cbdb8e3a6d63b48a39b4a44173a00ea58b62d"],
   ["identity-cases.json", "caa285efd879394c002af71de8c2ed0ab2d46cab040be5e3155dbd4952a165dc"],
   ["meter-measure-cases.json", "5e35c53ae5aebfe02115a907a3798f6efeb0d0b42a02902e901b2531387b9d1d"],
   ["operation-state-cases.json", "b01bb5d272100f665d6c1bda2c18d2dbb82add04ebefee20c750597f98ba3a6e"],
@@ -1559,7 +1562,7 @@ function validateExpectedIssueCodes(
     findings.push({
       code: "F1_EXPECTED_ISSUE_CODE_INVENTORY",
       path: "$computedExpectedIssueCodes",
-      message: "Expected issue codes must match the exact reviewed 85-code inventory.",
+      message: "Expected issue codes must match the exact reviewed 87-code inventory.",
     });
   }
   return observedCodes;

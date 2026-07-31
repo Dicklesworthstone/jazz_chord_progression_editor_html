@@ -793,10 +793,13 @@ function viewFromSnapshot(
       // The live A0 transport status, not a hardcoded literal.
       audioState: snapshot.transport.status,
       audioStatusLabel: snapshot.transport.statusLabel,
+      // jcpe-uslp: a carried failure code outranks the standing hint — the
+      // detail line then says what failed and the next safe action.
       audioStatusDetail:
-        snapshot.chordCount === 0
+        snapshot.transport.failureDetail ??
+        (snapshot.chordCount === 0
           ? "Write a chord, then press Play to hear it."
-          : "Press Play to hear this chart.",
+          : "Press Play to hear this chart."),
       tempoBpm: snapshot.tempoBpm,
       instrumentLabel: snapshot.instrumentLabel,
       positionLabel: `${playheadLabel} beats`,

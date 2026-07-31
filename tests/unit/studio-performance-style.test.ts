@@ -1,10 +1,11 @@
 /**
- * Session groove state (groove expansion, 2026-07-30).
+ * Document groove state (groove expansion 2026-07-30, amended by jcpe-jnnu).
  *
- * The style is controller-owned session state around the schema's deliberate
- * absence of a style field: choosing one must never touch the document,
- * history, or dirty state, and the choice must be what the transport
- * actually receives on the next Play.
+ * The groove is a document field now: choosing a non-default style lands one
+ * undoable Set-groove entry, the default is stored as ABSENCE (picking it
+ * deletes the field), re-picking the current groove is a friendly no-op,
+ * and the active style always derives from the validated document — so
+ * undo, share, and recovery move the audible groove with the chart.
  */
 import { describe, expect, setDefaultTimeout, test } from "bun:test";
 
@@ -15,7 +16,9 @@ import {
 } from "../../src/application/runtime";
 import type { StudioController } from "../../src/application/runtime";
 import type { StudioAudioPort } from "../../src/application/studio-audio";
-import type { PlaybackPlan } from "../../src/playback";
+import { DEFAULT_GROOVE_STYLE_ID, GROOVE_STYLE_IDS } from "../../src/domain";
+import { PERFORMANCE_STYLE_IDS, type PlaybackPlan } from "../../src/playback";
+import { STUDIO_PERFORMANCE_STYLE } from "../../src/application/studio-playback";
 import { createFakeAudioPlatform } from "../../src/test-support/fake-audio-platform";
 
 setDefaultTimeout(30_000);
@@ -58,6 +61,16 @@ function onsetSignature(plans: readonly PlaybackPlan[]): string {
     .join(",");
 }
 
+describe("groove vocabulary law", () => {
+  test("the domain groove ids and playback style ids are one pinned vocabulary", () => {
+    // jcpe-jnnu: the controller projects document.playback.grooveStyleId
+    // straight into a PerformanceStyleId; that cast is safe exactly while
+    // these two tuples are identical and share the default.
+    expect([...GROOVE_STYLE_IDS]).toEqual([...PERFORMANCE_STYLE_IDS]);
+    expect(DEFAULT_GROOVE_STYLE_ID).toBe(STUDIO_PERFORMANCE_STYLE);
+  });
+});
+
 describe("setPerformanceStyle", () => {
   test("selects a declared style and publishes it in the snapshot", () => {
     const { controller } = capturingController();
@@ -91,7 +104,7 @@ describe("setPerformanceStyle", () => {
     );
   });
 
-  test("is session state: no history entry, no dirty document", () => {
+  test("is a document setting: one undoable history entry that undo reverts", () => {
     const { controller } = capturingController();
     const seeded = seedStarterChart(controller);
     expect(seeded.seeded).toBe(true);
@@ -99,10 +112,47 @@ describe("setPerformanceStyle", () => {
 
     expect(controller.setPerformanceStyle("bossa-nova@1").ok).toBe(true);
     const after = controller.getSnapshot();
+    expect(after.revision).toBe(before.revision + 1);
+    expect(after.history.canUndo).toBe(true);
+    expect(after.history.undoLabel).toBe("Set groove");
+    expect(after.performance.styleId).toBe("bossa-nova@1");
+
+    // Undo moves the audible groove back with the chart.
+    expect(controller.undo().ok).toBe(true);
+    expect(controller.getSnapshot().performance.styleId).toBe(
+      before.performance.styleId,
+    );
+  });
+
+  test("re-picking the current groove is a no-op, not a same-value refusal", () => {
+    const { controller } = capturingController();
+    const before = controller.getSnapshot();
+    expect(before.performance.styleId).toBe("ballad-comp@1");
+    const result = controller.setPerformanceStyle("ballad-comp@1");
+    expect(result.ok).toBe(true);
+    const after = controller.getSnapshot();
     expect(after.revision).toBe(before.revision);
     expect(after.history.canUndo).toBe(before.history.canUndo);
-    expect(after.history.undoLabel).toBe(before.history.undoLabel);
-    expect(after.dirty.sinceExport).toBe(before.dirty.sinceExport);
+  });
+
+  test("picking the default groove after a stored one deletes the field undoably", () => {
+    const { controller } = capturingController();
+    expect(controller.setPerformanceStyle("medium-swing@1").ok).toBe(true);
+    expect(controller.getSnapshot().performance.styleId).toBe(
+      "medium-swing@1",
+    );
+    expect(controller.setPerformanceStyle("ballad-comp@1").ok).toBe(true);
+    const restored = controller.getSnapshot();
+    expect(restored.performance.styleId).toBe("ballad-comp@1");
+    // Two entries: swing, then back to the canonical absent default.
+    expect(controller.undo().ok).toBe(true);
+    expect(controller.getSnapshot().performance.styleId).toBe(
+      "medium-swing@1",
+    );
+    expect(controller.undo().ok).toBe(true);
+    expect(controller.getSnapshot().performance.styleId).toBe(
+      "ballad-comp@1",
+    );
   });
 
   test("the next Play performs the chart in the selected style", async () => {

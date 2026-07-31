@@ -37,7 +37,7 @@ const EXPECTED_SEED_DIGESTS = Object.freeze({
   "F2-SEED-IDS": "76b9ffebf7a7f31242269ea460499d4765e0169fcd7fb6ceeb18241a92667f0a",
   "F2-SEED-ORDER": "8dfa51b0fc1f7c9538a1cb1b8570620cd93cb7bda5930f5e5c6a870d48a2b18c",
   "F2-SEED-SHAPE": "3fd433ba290d8f5a4e626ebaf2a6e94a75cc932b65cf249cd664aba8e1cb4495",
-  "F2-SEED-TIME": "7f6ea254bbba3237287d7df2f6c259470cf1d6e10140fb9cf755a7862723c737",
+  "F2-SEED-TIME": "a180df41fae8ae0aa99b1380743e45a9d159705f26227c7f03ff98c188b002c8",
   "F2-SEED-UNICODE": "f5a00e190955eed19455eb55aeb031919a1b98cb73c2a744a28a14838dce02e0",
 });
 
@@ -180,7 +180,7 @@ describe("F2 production structural decoder conformance", () => {
   });
 
   test("materializes the reviewed authority with exact atomic counts", () => {
-    expect(shapeCells).toHaveLength(1_018);
+    expect(shapeCells).toHaveLength(1_025);
     expect(adversarialCells).toHaveLength(343);
     expect(counterGoldenCells).toHaveLength(3);
     expect(new Set(shapeCells.map((cell) => cell.caseId)).size).toBe(33);
@@ -217,7 +217,7 @@ describe("F2 production structural decoder conformance", () => {
       .map((cell) => runF2FixtureCell(cell, () => {
         Bun.gc(true);
       }));
-    expect(observations).toHaveLength(1_361);
+    expect(observations).toHaveLength(1_368);
 
     const grouped = groupF2CaseProjections(observations);
     const seeds = parsedSeeds(adversarialFixture);

@@ -19,6 +19,23 @@ export const MAX_PLAYBACK_LEVEL = 1;
 export const COUNT_IN_BARS_VALUES = [0, 1, 2] as const;
 export const SECTION_VOICE_LEADING_BOUNDARIES = ["continue", "reset"] as const;
 
+/**
+ * jcpe-jnnu: the closed groove vocabulary a document may persist. The
+ * playback layer's performance styles must stay identical to this list; a
+ * static law pins the two tuples together. The default groove is never
+ * stored — the canonical form of "ballad comp" is the absent field, and the
+ * constructor and decoder refuse a stored explicit default as noncanonical
+ * rather than repairing it, mirroring the beat.not_normalized precedent.
+ */
+export const GROOVE_STYLE_IDS = [
+  "ballad-comp@1",
+  "medium-swing@1",
+  "bossa-nova@1",
+  "straight-eighths@1",
+  "block-chords@1",
+] as const;
+export const DEFAULT_GROOVE_STYLE_ID = "ballad-comp@1";
+
 export const TEXT_FIELD_CODE_POINT_LIMITS = {
   chordSourceText: MAX_SHORT_TEXT_CODE_POINTS,
   customChordLabel: MAX_SHORT_TEXT_CODE_POINTS,
@@ -96,12 +113,20 @@ export type SectionShape = Readonly<{
 export type CountInBars = (typeof COUNT_IN_BARS_VALUES)[number];
 export type SectionVoiceLeadingBoundary =
   (typeof SECTION_VOICE_LEADING_BOUNDARIES)[number];
+export type GrooveStyleId = (typeof GROOVE_STYLE_IDS)[number];
+
+/** A groove the document may actually store: any declared id but the default. */
+export type StoredGrooveStyleId = Exclude<
+  GrooveStyleId,
+  typeof DEFAULT_GROOVE_STYLE_ID
+>;
 
 export type PlaybackSettings = Readonly<{
   instrumentId: InstrumentId;
   masterVolume: number;
   reverbAmount: number;
   countInBars: CountInBars;
+  grooveStyleId?: StoredGrooveStyleId;
 }>;
 
 export type PlaybackSettingsInput = Readonly<{
@@ -109,6 +134,7 @@ export type PlaybackSettingsInput = Readonly<{
   masterVolume: number;
   reverbAmount: number;
   countInBars: number;
+  grooveStyleId?: string;
 }>;
 
 export type PlaybackLevelField = "masterVolume" | "reverbAmount";
@@ -129,6 +155,14 @@ export type PlaybackSettingsRefusal =
   | PathRefusal<{
       code: "playback.count_in_bars_invalid";
       received: number;
+    }>
+  | PathRefusal<{
+      code: "playback.groove_style_invalid";
+      received: string;
+    }>
+  | PathRefusal<{
+      code: "playback.groove_style_not_canonical";
+      received: string;
     }>;
 
 export type PlaybackSettingsResult =
@@ -164,6 +198,15 @@ function isCountInBars(received: number): received is CountInBars {
   return received === 0 || received === 1 || received === 2;
 }
 
+function isStorableGrooveStyleId(
+  received: string,
+): received is StoredGrooveStyleId {
+  return (
+    received !== DEFAULT_GROOVE_STYLE_ID &&
+    GROOVE_STYLE_IDS.some((id) => id === received)
+  );
+}
+
 export function makePlaybackSettings(
   input: PlaybackSettingsInput,
 ): PlaybackSettingsResult {
@@ -194,14 +237,46 @@ export function makePlaybackSettings(
     };
   }
 
+  const grooveStyleId = input.grooveStyleId;
+  if (grooveStyleId !== undefined && !isStorableGrooveStyleId(grooveStyleId)) {
+    if (grooveStyleId === DEFAULT_GROOVE_STYLE_ID) {
+      return {
+        ok: false,
+        refusal: {
+          code: "playback.groove_style_not_canonical",
+          path: ["grooveStyleId"],
+          received: grooveStyleId,
+        },
+      };
+    }
+    return {
+      ok: false,
+      refusal: {
+        code: "playback.groove_style_invalid",
+        path: ["grooveStyleId"],
+        received: grooveStyleId,
+      },
+    };
+  }
+
   return {
     ok: true,
-    value: Object.freeze({
-      instrumentId: input.instrumentId,
-      masterVolume: input.masterVolume,
-      reverbAmount: input.reverbAmount,
-      countInBars: input.countInBars,
-    }),
+    value: Object.freeze(
+      grooveStyleId === undefined
+        ? {
+            instrumentId: input.instrumentId,
+            masterVolume: input.masterVolume,
+            reverbAmount: input.reverbAmount,
+            countInBars: input.countInBars,
+          }
+        : {
+            instrumentId: input.instrumentId,
+            masterVolume: input.masterVolume,
+            reverbAmount: input.reverbAmount,
+            countInBars: input.countInBars,
+            grooveStyleId,
+          },
+    ),
   };
 }
 

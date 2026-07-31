@@ -148,6 +148,14 @@
       "caseIds": ["A0-PROP-1000", "A0-SEQ-001", "A0-SEQ-002", "A0-SEQ-003"],
       "controlIds": ["A0-MUT-030"],
       "evidenceOwner": "tests/property/randomized-edit-history.test.ts"
+    },
+    {
+      "id": "TR-A0-TRANSPORT-SETTLE",
+      "requirement": "A refused transport command settles its optimistic expectation with the service-echoed status and stable failure code; a settlement can never fabricate a notification, claim starting/stopping, or override a genuine settled slot.",
+      "parentSource": "A0 contract section 13 amendment (jcpe-e183, jcpe-uslp)",
+      "caseIds": ["A0-UI-012", "A0-UI-013", "A0-UI-014"],
+      "controlIds": ["A0-MUT-031", "A0-MUT-032"],
+      "evidenceOwner": "tests/conformance/a0-state-matrix-gaps.test.ts"
     }
   ]
 }

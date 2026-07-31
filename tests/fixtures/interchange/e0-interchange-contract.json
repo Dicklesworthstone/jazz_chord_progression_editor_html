@@ -193,7 +193,8 @@
         "instrumentId",
         "masterVolume",
         "reverbAmount",
-        "countInBars"
+        "countInBars",
+        "grooveStyleId"
       ]
     }
   },

@@ -213,8 +213,11 @@ in this list is emitted for one voicing. Independent events still aggregate.
 ## Exact persisted schema
 
 Every listed field is required, including nullable fields and empty arrays.
-There are no optional persisted properties in v2. A property present with
-`undefined` is not equivalent to absence and fails its field rule.
+There are no optional persisted properties in v2 — with exactly one amended
+exception, `playback.grooveStyleId` (see the groove amendment section at the
+end of this document). A property present with `undefined` is not equivalent
+to absence and fails its field rule; that rule applies to the optional groove
+field too.
 
 | Record / variant | Exact own fields |
 |---|---|
@@ -237,7 +240,7 @@ There are no optional persisted properties in v2. A property present with
 | Manual voicing | `mode`, `pitches`, `bassPolicy` |
 | Frozen voicing | `mode`, `pitches`, `bassPolicy`, `generatedBy` |
 | Frozen provenance | `engineVersion`, `family` |
-| playback | `instrumentId`, `masterVolume`, `reverbAmount`, `countInBars` |
+| playback | `instrumentId`, `masterVolume`, `reverbAmount`, `countInBars`; optional `grooveStyleId` |
 
 Discriminators are exact, case-sensitive strings:
 
@@ -336,6 +339,12 @@ then prefixes every F1 operation-relative path exactly once.
 - Playback instrument is one of `mellow-keys`, `fm-electric-piano`,
   `vibraphone`, `warm-pad`, or `analog-poly`; levels are finite `0..1`; count-in
   bars is 0, 1, or 2.
+- A present `playback.grooveStyleId` is one of `medium-swing@1`,
+  `bossa-nova@1`, `straight-eighths@1`, or `block-chords@1`
+  (`playback.groove_style_invalid` otherwise). The default `ballad-comp@1` is
+  expressed only by absence: a stored explicit default reports
+  `playback.groove_style_not_canonical` at the field path, mirroring the
+  `beat.not_normalized` no-repair precedent.
 - `voiceLeadingBoundary` is `continue` or `reset`.
 - Beat wire values use a safe integer numerator and denominator. They must
   already be canonical and reduced, with nonnegative numerator no greater than
@@ -621,3 +630,28 @@ Forbidden shortcuts:
 - treating F3 semantic failures as F2 structural failures;
 - using elapsed time as a musical or resource cutoff;
 - adding a runtime network, model, prompt, telemetry, or remote-content path.
+
+## Optional groove field (additive amendment, 2026-07-30, jcpe-jnnu)
+
+`playback.grooveStyleId` is the single optional persisted property in the v2
+schema. The amendment authorizes exactly this and nothing wider:
+
+- Absence is the canonical — and only — representation of the default groove
+  `ballad-comp@1`. The decoder never materializes the default; an absent
+  field decodes to an absent field, so every previously accepted v2 document
+  and byte golden decodes byte-for-byte unchanged.
+- A present value must be one of the four non-default declared groove ids;
+  unknown ids report `playback.groove_style_invalid`, and a stored explicit
+  default reports `playback.groove_style_not_canonical`. F2 refuses the
+  noncanonical form rather than repairing it, exactly as `beat.not_normalized`
+  refuses reducible fractions.
+- The domain groove inventory is `GROOVE_STYLE_IDS` in `src/domain/document.ts`
+  and must stay identical to the playback layer's performance-style ids; a
+  static law pins the two tuples together.
+- The fixture authority for this amendment: the `playback` object schema in
+  `f2-decoder-contract.json` carries the sole `optionalFields` entry, and
+  `shape-cases.json` F2-VALUE-002 carries the accepted, unknown-id,
+  explicit-default, and wrong-type oracles.
+- Every other record keeps the frozen no-optional-properties law. A second
+  optional property requires its own recorded amendment with the same
+  fixture and digest discipline.

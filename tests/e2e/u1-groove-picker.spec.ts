@@ -7,13 +7,13 @@ import {
 } from "./u1-chart-kit";
 
 /**
- * The groove picker (groove expansion, 2026-07-30).
+ * The groove picker (groove expansion 2026-07-30, amended by jcpe-jnnu).
  *
- * Session state with a visible control: the picker lists every declared
- * performance style, the default is the studio's ballad, choosing another
- * persists in the radio state, and a library entry applies its own reviewed
- * groove when loaded. All of it without a document edit — Undo stays
- * whatever the chart's history says it is.
+ * The groove is a document setting: the picker lists every declared
+ * performance style with the ballad default checked, choosing another lands
+ * ONE undoable "Set groove" edit whose undo audibly restores the previous
+ * groove, and a library entry applies its own reviewed groove when loaded —
+ * so the choice travels with the chart through share links and recovery.
  */
 
 test.describe("groove picker", () => {
@@ -43,7 +43,7 @@ test.describe("groove picker", () => {
     expectCleanDiagnostics(diagnostics);
   });
 
-  test("choosing a style persists and never edits the document", async ({
+  test("choosing a style is one undoable document edit", async ({
     page,
   }) => {
     const diagnostics = captureDiagnostics(page);
@@ -62,7 +62,13 @@ test.describe("groove picker", () => {
       picker.getByRole("radio", { name: "Ballad" }),
     ).toHaveAttribute("aria-checked", "false");
 
-    // Session state: the empty chart still has nothing to undo.
+    // jcpe-jnnu: the groove is a document setting — the pick landed exactly
+    // one undoable edit, and undo audibly restores the previous groove.
+    await expect(undo).toBeEnabled();
+    await undo.click();
+    await expect(
+      picker.getByRole("radio", { name: "Ballad" }),
+    ).toHaveAttribute("aria-checked", "true");
     await expect(undo).toBeDisabled();
     expectCleanDiagnostics(diagnostics);
   });

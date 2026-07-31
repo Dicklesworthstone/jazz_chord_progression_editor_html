@@ -719,6 +719,39 @@
       "expect": { "outcome": "ephemeral-updated", "transport": "starting G5 sequence 8 request 21 D1 R12", "revisionDelta": 0, "historyDelta": 0 },
       "traceIds": ["TR-A0-TRANSPORT", "TR-A0-NONHISTORY"],
       "authorityIds": ["AUTH-PLAN-A0", "AUTH-ARCH"]
+    },
+    {
+      "id": "A0-UI-012",
+      "category": "positive",
+      "operation": "reduceEphemeralIntent",
+      "summary": "A refused transport command settles its still-optimistic expectation with the service-echoed status and stable failure code without touching generation, sequence, or revision.",
+      "given": { "transport": "starting G5 sequence 8 request 21 D1 R12" },
+      "action": { "kind": "settle-transport-expectation", "commandRequestId": 21, "documentId": "D1", "planRevision": 12, "status": "ready", "failureCode": "transport.queue_overflow" },
+      "expect": { "outcome": "ephemeral-updated", "transport": "ready G5 sequence 8 request 21 D1 R12", "failureCode": "transport.queue_overflow", "revisionDelta": 0, "historyDelta": 0 },
+      "traceIds": ["TR-A0-TRANSPORT-SETTLE", "TR-A0-NONHISTORY"],
+      "authorityIds": ["AUTH-PLAN-A0", "AUTH-ARCH"]
+    },
+    {
+      "id": "A0-UI-013",
+      "category": "stale",
+      "operation": "reduceEphemeralIntent",
+      "summary": "A refusal settlement arriving after a genuine notification already settled the slot is ignored with exact state identity; the notification always wins.",
+      "given": { "transport": "playing G6 sequence 9 request 21 D1 R12" },
+      "action": { "kind": "settle-transport-expectation", "commandRequestId": 21, "documentId": "D1", "planRevision": 12, "status": "ready", "failureCode": "transport.queue_overflow" },
+      "expect": { "outcome": "ignored-stale", "stateIdentity": true, "revisionDelta": 0, "historyDelta": 0 },
+      "traceIds": ["TR-A0-TRANSPORT-SETTLE", "TR-A0-STALE"],
+      "authorityIds": ["AUTH-PLAN-A0"]
+    },
+    {
+      "id": "A0-UI-014",
+      "category": "malformed",
+      "operation": "reduceEphemeralIntent",
+      "summary": "A settlement with a blank failure code or a starting/stopping status claim refuses transport.expectation_invalid and changes nothing.",
+      "given": { "transport": "starting G5 sequence 8 request 21 D1 R12" },
+      "action": { "kind": "settle-transport-expectation", "commandRequestId": 21, "documentId": "D1", "planRevision": 12, "status": "ready", "failureCode": "" },
+      "expect": { "refusal": "transport.expectation_invalid", "revisionDelta": 0, "historyDelta": 0 },
+      "traceIds": ["TR-A0-TRANSPORT-SETTLE", "TR-A0-ATOMIC"],
+      "authorityIds": ["AUTH-DEFINITION"]
     }
   ]
 }

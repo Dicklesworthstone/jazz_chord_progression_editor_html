@@ -30,7 +30,7 @@ type FixtureIssue = Readonly<{
 }>;
 
 type IndependentResult = Readonly<{
-  input?: number;
+  input?: number | string;
   inputDescriptor?: JsonRecord;
   inputIndex?: number;
   code: string;
@@ -63,6 +63,8 @@ type FixtureExpected = Readonly<{
   valueExactly?: string;
   distinct?: boolean;
   normalizationApplied?: boolean;
+  storedExactly?: boolean;
+  absentInputStaysAbsent?: boolean;
 }>;
 
 type FixtureCase = Readonly<{
@@ -557,6 +559,9 @@ const RUNTIME_DOCUMENT_CASE_IDS = [
   "F1-DOC-080",
   "F1-DOC-081",
   "F1-DOC-082",
+  "F1-DOC-086",
+  "F1-DOC-087",
+  "F1-DOC-088",
 ] as const;
 
 const UNAVAILABLE_DOCUMENT_CASES: Readonly<Record<string, string>> = {
@@ -823,6 +828,82 @@ function runPlaybackCase(row: FixtureCase): void {
   );
 }
 
+function groovePlaybackInput(value?: string): Readonly<{
+  instrumentId: InstrumentId;
+  masterVolume: number;
+  reverbAmount: number;
+  countInBars: number;
+  grooveStyleId?: string;
+}> {
+  const base = {
+    instrumentId: instrumentId(),
+    masterVolume: 0.8,
+    reverbAmount: 0.2,
+    countInBars: 1,
+  };
+  return value === undefined ? base : { ...base, grooveStyleId: value };
+}
+
+function runGrooveStyleCase(row: FixtureCase): void {
+  const expected = requireExpected(row);
+  if (row.kind === "groove-style-storable-set") {
+    for (const value of requireStringArray(row.input, `${row.id}.input`)) {
+      const result = domainOperations.makePlaybackSettings(
+        groovePlaybackInput(value),
+      );
+      if (!result.ok) throw new Error(`${row.id}: ${result.refusal.code}`);
+      const storedGroove: string | undefined = result.value.grooveStyleId;
+      expect(storedGroove).toBe(value);
+    }
+    // The load-bearing absence law: an omitted groove stays omitted, so the
+    // default is never materialized into stored data.
+    const absent = domainOperations.makePlaybackSettings(groovePlaybackInput());
+    if (!absent.ok) throw new Error(`${row.id}: ${absent.refusal.code}`);
+    expect("grooveStyleId" in absent.value).toBe(false);
+    expect(requireBoolean(expected.allValid, `${row.id}.allValid`)).toBe(true);
+    expect(
+      requireBoolean(expected.storedExactly, `${row.id}.storedExactly`),
+    ).toBe(true);
+    expect(
+      requireBoolean(
+        expected.absentInputStaysAbsent,
+        `${row.id}.absentInputStaysAbsent`,
+      ),
+    ).toBe(true);
+    return;
+  }
+  if (row.kind === "groove-style-unknown") {
+    const values = requireStringArray(row.input, `${row.id}.input`);
+    const observations =
+      expected.independentResults ??
+      fixtureFailure(`${row.id}.independentResults`);
+    expect(observations).toHaveLength(values.length);
+    for (const [index, value] of values.entries()) {
+      const observation =
+        observations[index] ??
+        fixtureFailure(`${row.id}.observation[${String(index)}]`);
+      const result = domainOperations.makePlaybackSettings(
+        groovePlaybackInput(value),
+      );
+      if (result.ok) throw new Error(`${row.id}: expected ${observation.code}`);
+      const actualCode: string = result.refusal.code;
+      expect(actualCode).toBe(observation.code);
+      expect(["playback", ...result.refusal.path]).toEqual([
+        "playback",
+        "grooveStyleId",
+      ]);
+    }
+    return;
+  }
+  const record = requireRecord(row.input, `${row.id}.input`);
+  const value = requireString(record["value"], `${row.id}.value`);
+  exactRefusal(
+    domainOperations.makePlaybackSettings(groovePlaybackInput(value)),
+    requireIssue(row),
+    ["playback"],
+  );
+}
+
 function runOrderingCase(row: FixtureCase): void {
   const expected = expectedIssues(row);
   const actual: Array<{
@@ -954,6 +1035,11 @@ function runDocumentRuntimeCase(row: FixtureCase): void {
     case "count-in-bars-invalid":
       runPlaybackCase(row);
       return;
+    case "groove-style-storable-set":
+    case "groove-style-unknown":
+    case "groove-style-explicit-default-noncanonical":
+      runGrooveStyleCase(row);
+      return;
     case "id-case-sensitive-distinct": {
       const inputs = requireStringArray(row.input, `${row.id}.input`);
       const values = inputs.map((wire) => {
@@ -1054,7 +1140,7 @@ describe("F1 production conformance to independent reviewed value fixtures", () 
   test("accounts explicitly for every document fixture row outside F1 runtime", async () => {
     const fixture = await documentFixture;
     expect(fixture.schema).toBe("changes.fixtures.f1-document-boundary.v1");
-    expect(fixture.cases).toHaveLength(85);
+    expect(fixture.cases).toHaveLength(88);
     const runtimeIds: readonly string[] = RUNTIME_DOCUMENT_CASE_IDS;
     const classified = [
       ...runtimeIds,

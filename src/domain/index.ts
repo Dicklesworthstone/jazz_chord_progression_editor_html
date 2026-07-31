@@ -79,6 +79,8 @@ export {
 } from "./copy";
 export {
   COUNT_IN_BARS_VALUES,
+  DEFAULT_GROOVE_STYLE_ID,
+  GROOVE_STYLE_IDS,
   makePlaybackSettings,
   MAX_DOCUMENT_CHORD_EVENTS,
   MAX_DOCUMENT_SECTIONS,
@@ -268,6 +270,7 @@ export type {
 } from "./chord";
 export type {
   CountInBars,
+  GrooveStyleId,
   Measure,
   MeasureCompletion,
   MeasureCompletionShape,
@@ -283,6 +286,7 @@ export type {
   Section,
   SectionShape,
   SectionVoiceLeadingBoundary,
+  StoredGrooveStyleId,
 } from "./document";
 export type {
   DecodeResult,
