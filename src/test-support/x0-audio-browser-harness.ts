@@ -553,10 +553,16 @@ export async function runOfflineRenderCase(
   if (impulseBuffer === undefined) {
     throw new Error("X0_RENDER_IMPULSE_NOT_ASSIGNED");
   }
+  /*
+   * The claim is exactly "the one convolver assignment is a buffer this
+   * context generated" — by object identity. The created-buffer COUNT is
+   * a separate per-instrument law (the Concert Grand renders one attack
+   * buffer per note beside the impulse) asserted by the evidence spec,
+   * so it must not be smuggled into the identity flag.
+   */
   const assignedGeneratedBufferByIdentity =
     assignedBuffers.length === 1 &&
-    createdBuffers.length === 1 &&
-    createdBuffers[0] === impulseBuffer;
+    createdBuffers.includes(impulseBuffer);
   const webCryptoAvailable = webCryptoSha256Available();
   const [pcmSha256, impulseQ15Hash] = await Promise.all([
     audioBufferSha256(rendered),
