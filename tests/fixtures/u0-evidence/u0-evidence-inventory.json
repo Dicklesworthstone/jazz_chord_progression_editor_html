@@ -23,7 +23,7 @@
   "expectedCounts": {
     "browserCells": 84,
     "browserCellTemplates": 28,
-    "bunCases": 117,
+    "bunCases": 118,
     "playwrightSpecifications": 30,
     "playwrightTests": 90,
     "reviewedSources": 26,
@@ -96,7 +96,7 @@
     },
     {
       "path": "tests/static/u0-evidence-inventory.test.ts",
-      "sha256": "ac744b1ee51fa4b114ba048cbca870e9b3fa830529e95fda920b738a98927b5a"
+      "sha256": "42546a8121eea34052d0c8d5051ceb6376e89de8e9fa58f6c994d2ec0c62e4e2"
     },
     {
       "path": "tests/static/u0-evidence.test.ts",
@@ -287,10 +287,11 @@
     {
       "file": "tests/static/u0-token-usage.test.ts",
       "titles": [
-        "U0-CONTRAST-001 U0-CONTRAST-002 U0-CONTRAST-003 U0-CONTRAST-004 U0-CONTRAST-005 U0-CONTRAST-006 U0-CONTRAST-007 U0-CONTRAST-008 U0-CONTRAST-009 actual token values satisfy every declared contrast cross-product",
+        "U0-CONTRAST-001 U0-CONTRAST-002 U0-CONTRAST-003 U0-CONTRAST-004 U0-CONTRAST-005 U0-CONTRAST-006 U0-CONTRAST-007 U0-CONTRAST-008 U0-CONTRAST-009 actual token values satisfy every declared contrast cross-product in both themes",
         "U0-CONTRAST-001 semantic counterfactual detects a low-contrast production token",
         "U0-PRIM-012 U0-PRIM-013 U0-VIEW-005 component CSS uses declared semantic tokens without copied color literals",
-        "U0-PRIM-013 mutation controls detect copied literals, undefined references, and duplicate declarations"
+        "U0-PRIM-013 mutation controls detect copied literals, undefined references, and duplicate declarations",
+        "every light-theme override names a token the base theme declares"
       ]
     }
   ],
