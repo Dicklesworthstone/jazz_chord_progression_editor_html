@@ -212,7 +212,7 @@ describe("F2 evidence verifier self-controls", () => {
       schema: "changes.evidence.f2-conformance-observation.v1",
       runtimeCaseIds,
       caseHashes,
-      cells: 1_360,
+      cells: 1_368,
       seedDigests: F2_SEED_DIGESTS,
     };
     const observation = { ...semantic, semanticDigest: digest(semantic) };
@@ -324,7 +324,7 @@ describe("F2 evidence verifier self-controls", () => {
       schema: "changes.evidence.f2-conformance-observation.v1" as const,
       runtimeCaseIds: ["F2-RUNTIME-001"],
       caseHashes: { "F2-RUNTIME-001": hash },
-      cells: 1_360 as const,
+      cells: 1_368 as const,
       seedDigests: F2_SEED_DIGESTS,
       semanticDigest: hash,
     };
@@ -363,7 +363,7 @@ describe("F2 evidence verifier self-controls", () => {
       schema: "changes.evidence.f2-conformance-observation.v1" as const,
       runtimeCaseIds: ["F2-RUNTIME-001"],
       caseHashes: { "F2-RUNTIME-001": hash },
-      cells: 1_360 as const,
+      cells: 1_368 as const,
       seedDigests: F2_SEED_DIGESTS,
       semanticDigest: hash,
     };
