@@ -116,14 +116,27 @@ describe("progression library", () => {
 
   /*
    * The provenance law is machine-checked, not merely documented: only the
-   * three reviewed kinds may appear, and a study must never be dressed up
+   * four reviewed kinds may appear, and a study must never be dressed up
    * as a transcription by carrying a composer-and-year kicker.
+   *
+   * "owner-directed" is the narrowest kind: a transcription the project
+   * owner explicitly directed, with the instruction recorded verbatim in a
+   * code comment on the entry (the jcpe-x0z9 Deacon Blues precedent). The
+   * allowlist below is that review record's machine half — an entry cannot
+   * claim the kind without being enumerated here, so a new owner-directed
+   * transcription always changes this test and shows up in review.
    */
   test("declares a reviewed provenance for every entry", () => {
+    const ownerDirected = ["what-a-fool-believes"];
     for (const entry of PROGRESSION_LIBRARY) {
-      expect(["public-domain", "device", "study"]).toContain(entry.provenance);
+      expect(["public-domain", "device", "study", "owner-directed"]).toContain(
+        entry.provenance,
+      );
       if (entry.provenance === "study") {
         expect(entry.kicker).toBe("Original study");
+      }
+      if (entry.provenance === "owner-directed") {
+        expect(ownerDirected).toContain(entry.id);
       }
     }
   });
