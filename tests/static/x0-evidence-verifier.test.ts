@@ -90,7 +90,12 @@ function renderRecord(
       totalIndexReferences: 0,
     },
     impulse: {
-      createdBufferCount: 1,
+      /* The Concert Grand renders one attack buffer per note beside the
+         shared impulse; every synth pad owns the impulse alone. */
+      createdBufferCount:
+        fixture.instrumentId === "concert-grand"
+          ? 1 + fixture.midiPitches.length
+          : 1,
       convolverAssignmentCount: 1,
       assignedGeneratedBufferByIdentity: true,
       numberOfChannels: 2,
