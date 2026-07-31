@@ -14,11 +14,15 @@
  * in WHICH eighths sound, the accents, and the rests. Per the Deacon Blues
  * rule — when a self-authored law contradicts measurement, change the law
  * and record the contradiction — the eighth-grid law below is the exact
- * inversion of the sub-eighth law it replaces.
+ * inversion of the sub-eighth law it replaces. The statistically
+ * optimized table was then ALSO rejected by ear, and the owner directed
+ * the final authority: the reference's own dominant bar patterns,
+ * transcribed (the verse riff and the two-note resting bass vamp).
+ * Aggregates average the whole song; the ear hears the figure.
  *
- * Every number below is authored HERE, from the campaign's final fixture
- * (rounds/final.json of the measured campaign), never read back from the
- * table it checks — a table edit that changes the groove must turn this
+ * Every number below is authored HERE, from the campaign's answer-key
+ * fixture (rounds/answer-key.json), never read back from the table it
+ * checks — a table edit that changes the groove must turn this
  * file red. Green gates still never prove a groove sounds right; the
  * owner's ear remains the final gate.
  */
@@ -54,63 +58,72 @@ const EIGHTH = 480;
 
 /**
  * The four-phase bass, per phase: [offsetTicks, tone, placement,
- * durationTicks, velocity]. Phase 1 is the near-solo whole note (the
- * reference's per-bar density varies, CV 0.39); phase 2 enters at beat 3
- * (the arrival law supplies the chord-start root); the register-floor
- * placements are the octave drops the reference's leap profile demanded.
+ * durationTicks, velocity]. The verse vamp transcribed: root at beat 1,
+ * the octave pair at the and-of-1 (register-floor drops it in two of the
+ * three vamp phases, the third recovers upward), then SILENCE — the
+ * reference's dominant bass bar is two notes and rest. Phase 3 is the
+ * one active walk bar in four.
  */
 const EXPECTED_BASS = {
   0: [
-    [0, "root", "register-floor", 420, 92],
-    [480, "third", "nearest", 300, 80],
-    [1_440, "fifth", "nearest", 420, 78],
-    [1_920, "root", "nearest", 420, 82],
-    [2_880, "third", "register-floor", 600, 75],
-    [3_360, "root", "nearest", 420, 84],
+    [0, "root", "nearest", 420, 88],
+    [480, "root", "register-floor", 360, 92],
   ],
-  1: [[0, "root", "nearest", 960, 90]],
+  1: [
+    [0, "root", "nearest", 420, 88],
+    [480, "root", "nearest", 360, 92],
+  ],
   2: [
-    [1_920, "root", "register-floor", 420, 92],
-    [2_400, "third", "register-floor", 420, 80],
-    [3_360, "root", "nearest", 420, 82],
+    [0, "root", "nearest", 420, 88],
+    [480, "root", "register-floor", 360, 92],
   ],
   3: [
-    [0, "root", "register-floor", 300, 90],
-    [480, "root", "nearest", 420, 80],
-    [3_360, "root", "nearest", 300, 92],
+    [0, "root", "nearest", 420, 92],
+    [480, "root", "register-floor", 480, 84],
+    [1_440, "root", "nearest", 480, 84],
+    [2_400, "third", "nearest", 360, 78],
+    [3_360, "root", "nearest", 360, 66],
   ],
 } as const;
 
 /**
  * The four-phase comp, per phase: [offsetTicks, voicing, durationTicks,
- * velocity]. Phase 3 is the pedal bar — one held chord and nothing to
- * truncate it. The thin voicings (top-voice, guide-tones) are the moving
- * right-hand line; the arrival floor widens any of them that lands on a
+ * velocity]. THE riff, transcribed: beat 1, and-of-1 (soft), beat 2,
+ * and-of-2, then the lone and-of-3 — third-beat stabs with the measured
+ * accent contour — in phases 0, 2 and 3; phase 1 is the alternation bar
+ * (1, and-1, 2, 3, 4). The guide-tones at the and-of-1 are the soft
+ * inner answer; the arrival floor widens any thin voicing landing on a
  * chord's own start.
  */
 const EXPECTED_COMP = {
   0: [
-    [480, "all", 300, 72],
-    [960, "upper-voices", 360, 76],
-    [1_440, "guide-tones", 360, 82],
-    [1_920, "upper-voices", 480, 80],
-    [2_880, "all", 360, 88],
-    [3_360, "top-voice", 300, 68],
+    [0, "all", 320, 89],
+    [480, "guide-tones", 320, 63],
+    [960, "upper-voices", 320, 80],
+    [1_440, "upper-voices", 320, 87],
+    [2_400, "upper-voices", 320, 90],
   ],
   1: [
-    [960, "upper-voices", 240, 72],
-    [1_440, "upper-voices", 360, 76],
-    [1_920, "upper-voices", 360, 74],
-    [2_400, "upper-voices", 360, 74],
-    [3_360, "guide-tones", 300, 70],
+    [0, "upper-voices", 360, 85],
+    [480, "guide-tones", 320, 72],
+    [960, "upper-voices", 360, 87],
+    [1_920, "upper-voices", 360, 89],
+    [2_880, "upper-voices", 360, 90],
   ],
   2: [
-    [480, "top-voice", 360, 72],
-    [960, "upper-voices", 360, 78],
-    [2_400, "upper-voices", 600, 76],
-    [3_360, "upper-voices", 600, 72],
+    [0, "all", 320, 89],
+    [480, "guide-tones", 320, 63],
+    [960, "upper-voices", 320, 80],
+    [1_440, "upper-voices", 320, 87],
+    [2_400, "upper-voices", 320, 90],
   ],
-  3: [[0, "all", 3_840, 76]],
+  3: [
+    [0, "all", 320, 86],
+    [480, "guide-tones", 320, 60],
+    [960, "upper-voices", 320, 77],
+    [1_440, "upper-voices", 320, 84],
+    [2_400, "upper-voices", 320, 87],
+  ],
 } as const;
 
 const OTHER_BAND_SKETCHES = PERFORMANCE_STYLE_IDS.filter(
@@ -243,7 +256,7 @@ describe("the syncopated-sixteenths style table", () => {
         .sort((left, right) => Number(left[0]) - Number(right[0]));
       expect(declared).toEqual(EXPECTED_BASS[phase].map((row) => [...row]));
     }
-    expect(style.bassSlots.length).toBe(13);
+    expect(style.bassSlots.length).toBe(11);
     for (const slot of style.bassSlots) {
       expect(slot.cyclePhases.length).toBe(1);
     }
@@ -262,7 +275,7 @@ describe("the syncopated-sixteenths style table", () => {
         .sort((left, right) => Number(left[0]) - Number(right[0]));
       expect(declared).toEqual(EXPECTED_COMP[phase].map((row) => [...row]));
     }
-    expect(style.compSlots.length).toBe(16);
+    expect(style.compSlots.length).toBe(20);
   });
 
   test("every attack sits ON the eighth grid: the inverted law the measurement forced", () => {
@@ -292,13 +305,13 @@ describe("the syncopated-sixteenths style table", () => {
   });
 
   test("declares the measured registers: the lifted right hand and its own electric bass", () => {
-    expect(style.compRegister).toEqual({ lowMidi: 60, highMidi: 83, ceilingMidi: 94 });
+    expect(style.compRegister).toEqual({ lowMidi: 65, highMidi: 88, ceilingMidi: 94 });
     /*
      * The per-style bass register is the field this campaign added: the
      * reference bass lives at MIDI 41..61, an octave above the package's
      * jazz register, and no other style may be detuned to reach it.
      */
-    expect(style.bassRegister).toEqual({ lowMidi: 43, highMidi: 61, anchorMidi: 55 });
+    expect(style.bassRegister).toEqual({ lowMidi: 41, highMidi: 61, anchorMidi: 54 });
     for (const other of OTHER_BAND_SKETCHES) {
       expect(PERFORMANCE_STYLES[other].bassRegister).toBeNull();
     }
@@ -324,31 +337,21 @@ describe("the compiled measured groove", () => {
       .sort((left, right) => left - right);
   }
 
-  test("a whole-bar phase-0 chord states the measured figure exactly", () => {
-    /*
-     * Bar 4 (Ebmaj7): written measure index 4, phase 0. The bass declares
-     * its own downbeat; the comp does not, so the arrival law adds the
-     * chord statement at 0 beside the declared eighth-grid figure.
-     */
+  test("a whole-bar phase-0 chord states the riff bar exactly", () => {
+    /* Bar 4 (Ebmaj7): written measure index 4, phase 0 - THE riff. */
     const barStart = 4 * BAR_TICKS;
-    expect(relativeAttacks(barStart, "bass")).toEqual([
-      0, 480, 1_440, 1_920, 2_880, 3_360,
-    ]);
+    expect(relativeAttacks(barStart, "bass")).toEqual([0, 480]);
     expect(relativeAttacks(barStart, "comp")).toEqual([
-      0, 480, 960, 1_440, 1_920, 2_880, 3_360,
+      0, 480, 960, 1_440, 2_400,
     ]);
   });
 
-  test("a whole-bar phase-1 chord is the near-solo bass bar", () => {
-    /*
-     * Bar 5 (E7#9): written measure index 5, phase 1 — the sparse bar the
-     * reference's density variance demanded. One declared bass note; the
-     * comp enters off the downbeat with the arrival statement added at 0.
-     */
+  test("a whole-bar phase-1 chord is the alternation bar", () => {
+    /* Bar 5 (E7#9): written measure index 5, phase 1. */
     const barStart = 5 * BAR_TICKS;
-    expect(relativeAttacks(barStart, "bass")).toEqual([0]);
+    expect(relativeAttacks(barStart, "bass")).toEqual([0, 480]);
     expect(relativeAttacks(barStart, "comp")).toEqual([
-      0, 960, 1_440, 1_920, 2_400, 3_360,
+      0, 480, 960, 1_920, 2_880,
     ]);
   });
 
@@ -368,13 +371,19 @@ describe("the compiled measured groove", () => {
     }
   });
 
-  test("no same-role attacks collide, and only the pedal bar fills its bar", () => {
+  test("no same-role attacks collide, and both roles rest in every bar", () => {
     const seen = new Set<string>();
     for (const event of performance.events) {
       const key = `${roleOf(event.eventId)}@${String(event.startTick)}`;
       expect(seen.has(key)).toBe(false);
       seen.add(key);
     }
+    /*
+     * The transcribed vamp is rest-heavy by construction: the bass
+     * sounds under a beat per bar in the vamp phases and the comp's
+     * stabs clear well before the barline. Silence is the figure's
+     * other half.
+     */
     for (let bar = 0; bar < 6; bar += 1) {
       for (const role of ["bass", "comp"] as const) {
         const sounding = performance.events
@@ -386,16 +395,7 @@ describe("the compiled measured groove", () => {
           )
           .reduce((sum, event) => sum + event.durationTicks, 0);
         expect(sounding).toBeGreaterThan(0);
-        /*
-         * The pedal bar (phase 3, written bar 3) holds its chord to the
-         * bar's edge less the release gap; every other bar rests.
-         */
-        if (role === "comp" && bar % 4 === 3) {
-          expect(sounding).toBeGreaterThan(3_000);
-          expect(sounding).toBeLessThanOrEqual(BAR_TICKS);
-        } else {
-          expect(sounding).toBeLessThan(BAR_TICKS);
-        }
+        expect(sounding).toBeLessThan(BAR_TICKS);
       }
     }
   });

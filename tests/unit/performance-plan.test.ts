@@ -2368,8 +2368,8 @@ describe("the comp register", () => {
         "medium-swing@1": 22,
         "bossa-nova@1": 23,
         "straight-eighths@1": 24,
-        /* Re-pinned for the measured four-phase table (2026-07-31). */
-        "syncopated-sixteenths@1": 34,
+        /* Re-pinned for the transcribed answer-key table (2026-07-31). */
+        "syncopated-sixteenths@1": 33,
       };
       expect(`${styleId}:${String(checked)}`).toBe(
         `${styleId}:${String(CHECKED_COMPS[styleId] ?? -1)}`,

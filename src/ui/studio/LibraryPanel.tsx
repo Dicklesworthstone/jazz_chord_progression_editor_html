@@ -235,6 +235,8 @@ function QuickEntryPanel({
   onInsert,
   onClear,
   onGrooveStyleChange,
+  onTempoDraftChange,
+  onTempoCommit,
   onRecoveryAcknowledgeChange,
   onRecoveryDurationDraftChange,
   onInsertRecoveredChord,
@@ -244,6 +246,8 @@ function QuickEntryPanel({
   onInsert: () => void;
   onClear: () => void;
   onGrooveStyleChange: (styleId: string) => void;
+  onTempoDraftChange: (value: string) => void;
+  onTempoCommit: () => void;
   onRecoveryAcknowledgeChange: (acknowledged: boolean) => void;
   onRecoveryDurationDraftChange: (value: string) => void;
   onInsertRecoveredChord: (globalOrdinal: number) => void;
@@ -576,6 +580,17 @@ function QuickEntryPanel({
                    * idiom the note describes.
                    */
                   onGrooveStyleChange(entry.grooveStyleId);
+                  /*
+                   * An entry that declares a tempo commits it through the
+                   * same draft-then-commit path the tempo field uses: the
+                   * What a Fool Believes chart at the studio's 105 default
+                   * dragged 13% under the record, and no groove survives
+                   * the wrong tempo.
+                   */
+                  if (entry.tempoBpm !== undefined) {
+                    onTempoDraftChange(String(entry.tempoBpm));
+                    onTempoCommit();
+                  }
                 }}
                 type="button"
                 variant="secondary"
@@ -635,6 +650,8 @@ export function LibraryPanelContent({
         onInsertRecoveredChord={onInsertRecoveredChord}
         onRecoveryAcknowledgeChange={onRecoveryAcknowledgeChange}
         onRecoveryDurationDraftChange={onRecoveryDurationDraftChange}
+        onTempoCommit={onTempoCommit}
+        onTempoDraftChange={onTempoDraftChange}
         view={quickEntry}
       />
 

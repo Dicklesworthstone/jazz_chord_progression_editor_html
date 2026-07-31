@@ -60,6 +60,14 @@ export type ProgressionLibraryEntry = Readonly<{
    * travels with the chart through share links and recovery.
    */
   grooveStyleId: PerformanceStyleId;
+  /**
+   * The tempo the entry commits when loaded, through the same tempo-field
+   * command path a user travels. Optional because most entries are studies
+   * with no canonical tempo; a transcription has one, and the What a Fool
+   * Believes chart at the studio's 105 default dragged 13% under its
+   * record — no groove survives the wrong tempo.
+   */
+  tempoBpm?: number;
 }>;
 
 export const PROGRESSION_LIBRARY: readonly ProgressionLibraryEntry[] =
@@ -275,6 +283,7 @@ export const PROGRESSION_LIBRARY: readonly ProgressionLibraryEntry[] =
     Object.freeze({
       id: "what-a-fool-believes",
       grooveStyleId: "syncopated-sixteenths@1",
+      tempoBpm: 120,
       title: "What a Fool Believes",
       kicker: "McDonald & Loggins, 1979",
       note: "The keyboard riff walks IVmaj7 through a first-inversion tonic to ii7 under slash-chord elevenths, then the parallel-minor iv pivots the chorus into E major without a seam.",
