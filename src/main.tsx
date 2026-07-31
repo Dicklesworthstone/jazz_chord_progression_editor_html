@@ -17,6 +17,14 @@ if (mountPoint === null) {
 }
 
 /*
+ * Preact renders BESIDE pre-existing static children, it does not replace
+ * them: without this, the "Opening the local studio…" placeholder survives
+ * below the shell forever as a dead 24vh scroll zone that phones can
+ * rubber-band into. The placeholder's job ends the moment scripts run.
+ */
+mountPoint.replaceChildren();
+
+/*
  * The composition root owns adapter choice. The audio stack is built here, not
  * inside the application layer, so the layer that orchestrates playback never
  * reaches for a browser API and stays compilable headless. No `AudioContext`

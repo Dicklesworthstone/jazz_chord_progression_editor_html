@@ -56,7 +56,7 @@
     },
     {
       "path": "tests/e2e/u0-mobile-shell.spec.ts",
-      "sha256": "ba4b7c191d0771146d10f10fd48d265f77c0052355376c2fb416f6089cc78f74"
+      "sha256": "30d5996f97dd376299629e69f2e3d693b28e5883a965ab1ed3988bf442eb2f77"
     },
     {
       "path": "tests/e2e/u0-nonhappy-states.spec.ts",

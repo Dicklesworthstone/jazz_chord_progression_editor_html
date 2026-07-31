@@ -16,6 +16,15 @@
   isolation: isolate;
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto auto;
+  /*
+   * minmax(0, 1fr), never a bare auto column: with overflow hidden on this
+   * shell, an auto column inflates to the widest row's min-content and the
+   * excess is CLIPPED, not scrollable. That is exactly how a four-button
+   * header row silently pushed Copy link and the Harmony Lens off every
+   * phone. The column must be the viewport, and each row must solve its
+   * own width inside it.
+   */
+  grid-template-columns: minmax(0, 1fr);
   block-size: 100dvh;
   overflow: hidden;
   background: var(--surface-app);
@@ -53,6 +62,7 @@
   display: flex;
   flex-direction: column;
   min-block-size: 0;
+  min-inline-size: 0;
 }
 
 .studio-skip-link {
@@ -91,6 +101,10 @@
   gap: var(--space-2) var(--space-4);
   padding: var(--space-2) var(--space-4);
   padding-block-start: calc(var(--space-2) + env(safe-area-inset-top, 0px));
+  /* viewport-fit=cover means notches eat the inline edges in landscape. */
+  padding-inline:
+    max(var(--space-4), env(safe-area-inset-left, 0px))
+    max(var(--space-4), env(safe-area-inset-right, 0px));
   background: color-mix(in srgb, var(--surface-header) 88%, transparent);
   border-block-end: var(--border-width) solid var(--border-default);
   backdrop-filter: blur(8px);
@@ -145,12 +159,21 @@
   text-transform: uppercase;
 }
 
-/* Title: one quiet line that becomes a field when you reach for it. */
-.studio-title-editor {
-  position: relative;
+/*
+ * Title: one quiet line that becomes a field when you reach for it. The
+ * header's actual flex item is the Field wrapper (div.ui-field), not the
+ * form inside it — flex rules written on .studio-title-editor are inert,
+ * which is precisely how the phone header shipped broken while every
+ * suite stayed green.
+ */
+.studio-header > .ui-field {
   flex: 1 1 18rem;
   min-inline-size: 12rem;
   max-inline-size: 34rem;
+}
+
+.studio-title-editor {
+  position: relative;
 }
 
 .studio-title-editor__label-row {
@@ -243,9 +266,12 @@
 
 .studio-document-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-3);
+  justify-content: flex-end;
+  gap: var(--space-2) var(--space-3);
   margin-inline-start: auto;
+  min-inline-size: 0;
 }
 
 .studio-document-status {
@@ -444,6 +470,9 @@
     gap: var(--space-1) var(--space-3);
     padding: var(--space-2) var(--space-3);
     padding-block-start: calc(var(--space-2) + env(safe-area-inset-top, 0px));
+    padding-inline:
+      max(var(--space-3), env(safe-area-inset-left, 0px))
+      max(var(--space-3), env(safe-area-inset-right, 0px));
   }
 
   .studio-brand__mark {
@@ -456,9 +485,16 @@
     display: none;
   }
 
-  .studio-title-editor {
+  /*
+   * The phone header is three deliberate rows: identity and document
+   * status share the top line, the title field owns the second, and the
+   * command row sits third — the same order the DOM and the keyboard
+   * travel, so focus never jumps against the visual flow.
+   */
+  .studio-header > .ui-field {
+    order: 1;
     flex-basis: 100%;
-    order: 3;
+    min-inline-size: 0;
     max-inline-size: none;
   }
 
@@ -472,8 +508,50 @@
     white-space: nowrap;
   }
 
+  /*
+   * The title itself outranks its buttons: the input never squeezes below
+   * a readable 8rem — the buttons wrap under it instead, and only when
+   * the width truly demands it.
+   */
+  .studio-title-editor__control-row {
+    flex-wrap: wrap;
+  }
+
+  .studio-title-editor__control-row .ui-input {
+    flex: 1 1 8rem;
+    min-inline-size: 8rem;
+  }
+
+  .studio-title-editor__control-row .ui-button {
+    padding-inline: var(--space-2);
+  }
+
+  /*
+   * display: contents on the plain grouping div (it carries no role) lets
+   * the status pill and the command row wrap as header rows of their own.
+   * The nested live-region and group divs keep their boxes and semantics.
+   */
   .studio-document-actions {
-    gap: var(--space-2);
+    display: contents;
+  }
+
+  .studio-document-status {
+    margin-inline-start: auto;
+  }
+
+  .studio-history-actions {
+    order: 2;
+    flex-basis: 100%;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1) var(--space-2);
+  }
+
+  /* Trim label padding so all four commands share one 320px row; the
+     coarse-pointer floor in primitives.css still guarantees 44px targets. */
+  .studio-history-actions .ui-button {
+    min-inline-size: 2.5rem;
+    padding-inline: var(--space-2);
   }
 
   .studio-chart__header {
@@ -484,7 +562,18 @@
     font-size: var(--text-lg);
   }
 
+  /*
+   * Each chip stays one unbroken line, but the ROW may wrap: a clipped
+   * third chip is a lie about the chart, a second line is just a second
+   * line.
+   */
+  .studio-chart-summary .ui-key-value-list {
+    flex-wrap: wrap;
+  }
+
   .studio-chart-summary .ui-key-value-list__item {
+    flex: 1 1 auto;
+    justify-content: center;
     flex-wrap: nowrap;
     white-space: nowrap;
     padding: var(--space-1) var(--space-2);
@@ -2159,6 +2248,23 @@
   }
 }
 
+/*
+ * On short viewports the sticky dock's flow slot sits below the chart's
+ * scrollport before the user ever scrolls, so the dock gets pulled up and
+ * floats over the view toolbar — translucent buttons on top of buttons.
+ * There, the triggers return to normal flow: reachable by the same scroll
+ * that reaches everything else, occluding nothing.
+ */
+@media (max-width: 39.999rem) and (max-height: 37.49rem) {
+  .studio-mobile-panel-actions {
+    position: static;
+    margin: 0;
+    padding: 0;
+    background: none;
+    backdrop-filter: none;
+  }
+}
+
 @media (min-width: 40rem) {
   #studio-open-harmony-sheet {
     display: none;
@@ -2559,7 +2665,9 @@
     grid-template-areas: "status controls facts";
     grid-template-columns: minmax(0, 1fr) auto auto;
     gap: var(--space-2);
-    padding-inline: var(--space-3);
+    padding-inline:
+      max(var(--space-3), env(safe-area-inset-left, 0px))
+      max(var(--space-3), env(safe-area-inset-right, 0px));
   }
 
   .studio-transport__facts .ui-key-value-list__item:not(:nth-child(2)) {
@@ -2603,6 +2711,24 @@
   #studio-transport-play:not(:disabled) {
     inline-size: var(--touch-target);
     block-size: var(--touch-target);
+  }
+}
+
+/*
+ * Below ~360px the one remaining fact and the status label cannot share
+ * the row: the fact wins the arithmetic and the audio-state truth
+ * ellipsizes to a single letter. The chart and Harmony Lens both state
+ * the current chord; the transport's condition has no other voice.
+ */
+@media (max-width: 22.49rem) {
+  .studio-transport__facts {
+    display: none;
+  }
+
+  /* One field-width row each: the input, then its two buttons together —
+     never a lone orphaned Reset. */
+  .studio-title-editor__control-row .ui-input {
+    flex-basis: 100%;
   }
 }
 
