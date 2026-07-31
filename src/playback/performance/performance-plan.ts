@@ -295,7 +295,7 @@ function compRegisterWellFormed(style: PerformanceStyle): boolean {
   if (register.highMidi > register.ceilingMidi) return false;
   return (
     register.lowMidi + 12 >=
-    PERFORMANCE_BASS_REGISTER.highMidi +
+    (style.bassRegister ?? PERFORMANCE_BASS_REGISTER).highMidi +
       PERFORMANCE_COMP_BASS_SEPARATION_SEMITONES
   );
 }
@@ -454,11 +454,12 @@ function placeInBassRegister(
   tone: Voice,
   previousBassMidi: number | null,
   placement: PerformanceBassPlacement,
+  register: Readonly<{ lowMidi: number; highMidi: number; anchorMidi: number }>,
 ): Voice | null {
   const target =
     placement === "register-floor"
-      ? PERFORMANCE_BASS_REGISTER.lowMidi
-      : (previousBassMidi ?? PERFORMANCE_BASS_REGISTER.anchorMidi);
+      ? register.lowMidi
+      : (previousBassMidi ?? register.anchorMidi);
   let bestMidi: number | null = null;
   let bestShift = 0;
   let bestDistance = 0;
@@ -468,8 +469,8 @@ function placeInBassRegister(
     shift += 1
   ) {
     const midi = tone.midi + 12 * shift;
-    if (midi < PERFORMANCE_BASS_REGISTER.lowMidi) continue;
-    if (midi > PERFORMANCE_BASS_REGISTER.highMidi) continue;
+    if (midi < register.lowMidi) continue;
+    if (midi > register.highMidi) continue;
     const distance = Math.abs(midi - target);
     if (bestMidi === null || distance < bestDistance) {
       bestMidi = midi;
@@ -508,9 +509,9 @@ function compVoices(
   rule: PerformanceCompVoicing,
 ): readonly Voice[] {
   if (rule === "all") return voices;
-  return voices.length > PERFORMANCE_COMP_TARGET_VOICES
-    ? voices.slice(voices.length - PERFORMANCE_COMP_TARGET_VOICES)
-    : voices;
+  const keep =
+    rule === "top-voice" ? 1 : rule === "guide-tones" ? 2 : PERFORMANCE_COMP_TARGET_VOICES;
+  return voices.length > keep ? voices.slice(voices.length - keep) : voices;
 }
 
 /**
@@ -1155,6 +1156,23 @@ export function compilePerformancePlan(
       const hasCompAtStart = drafts.some(
         (draft) => draft.role === "comp" && draft.startTick === eventStart,
       );
+      /*
+       * A declared slot at the arrival wins — but the arrival law's floor
+       * still binds it: a chord must be heard AS A CHORD when it arrives,
+       * and the thin voicings (top-voice, guide-tones) hint rather than
+       * state. An arrival-coincident thin draft widens to upper-voices;
+       * everywhere else the thin voicings keep the table's word.
+       */
+      for (const draft of drafts) {
+        if (
+          draft.role === "comp" &&
+          draft.startTick === eventStart &&
+          (draft.compVoicing === "top-voice" ||
+            draft.compVoicing === "guide-tones")
+        ) {
+          draft.compVoicing = "upper-voices";
+        }
+      }
       if (!hasCompAtStart) {
         drafts.push({
           role: "comp",
@@ -1165,7 +1183,13 @@ export function compilePerformancePlan(
             declaredArrivalComp.velocity + accentForPhase(arrivalPhase),
           bassTone: "root",
           bassPlacement: "nearest",
-          compVoicing: declaredArrivalComp.voicing,
+          /* The arrival floor binds the added statement too: an arrival
+             borrowed from a thin slot still states the chord. */
+          compVoicing:
+            declaredArrivalComp.voicing === "top-voice" ||
+            declaredArrivalComp.voicing === "guide-tones"
+              ? "upper-voices"
+              : declaredArrivalComp.voicing,
         });
       }
     }
@@ -1221,6 +1245,7 @@ export function compilePerformancePlan(
           toneFor(tones, draft.bassTone),
           previousBassMidi,
           draft.bassPlacement,
+          style.bassRegister ?? PERFORMANCE_BASS_REGISTER,
         );
         if (placed === null) {
           return refuse(

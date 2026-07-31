@@ -168,8 +168,25 @@ describe("the style catalogue", () => {
     expect(result.plan).toBe(literalPlan());
   });
 
-  test("bass notes of every band-sketch style stay in the published bass register", () => {
+  test("bass notes of every band-sketch style stay in that style's effective bass register", () => {
     for (const styleId of BAND_SKETCH_IDS) {
+      /*
+       * The effective register is the style's own declared window when it
+       * has one (the measured pop-funk style plays an electric bass an
+       * octave above the package's jazz register) and the package-wide
+       * window otherwise. The independently restated global bounds are
+       * 28..48; an override must still be a real window inside MIDI.
+       */
+      const override = PERFORMANCE_STYLES[styleId].bassRegister;
+      const low = override === null ? 28 : override.lowMidi;
+      const high = override === null ? 48 : override.highMidi;
+      if (override !== null) {
+        expect(override.lowMidi).toBeLessThan(override.highMidi);
+        expect(override.lowMidi).toBeGreaterThanOrEqual(0);
+        expect(override.highMidi).toBeLessThanOrEqual(127);
+        expect(override.anchorMidi).toBeGreaterThanOrEqual(override.lowMidi);
+        expect(override.anchorMidi).toBeLessThanOrEqual(override.highMidi);
+      }
       const plan = performedBy(styleId);
       let bassNotes = 0;
       for (const event of plan.events) {
@@ -179,7 +196,7 @@ describe("the style catalogue", () => {
         if (dot < 0 || eventId.slice(dot + 1, dot + 2) !== "b") continue;
         bassNotes += 1;
         for (const midi of event.midiPitches) {
-          expect(`${styleId}:${String(midi >= 28 && midi <= 48)}`).toBe(
+          expect(`${styleId}:${String(midi >= low && midi <= high)}`).toBe(
             `${styleId}:true`,
           );
         }

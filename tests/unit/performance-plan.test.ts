@@ -394,7 +394,16 @@ function arrivalCompVoicing(
   const phase =
     style.barCycleLength <= 1 ? 0 : measureIndex % style.barCycleLength;
   for (const slot of style.compSlots) {
-    if (slot.cyclePhases.includes(phase)) return slot.voicing;
+    if (!slot.cyclePhases.includes(phase)) continue;
+    /*
+     * The arrival floor, restated independently: a chord is heard AS A
+     * CHORD when it arrives, so an arrival statement borrowed from a thin
+     * slot (top-voice, guide-tones) widens to the package's three-voice
+     * statement. Thin voicings decorate between arrivals only.
+     */
+    return slot.voicing === "top-voice" || slot.voicing === "guide-tones"
+      ? "upper-voices"
+      : slot.voicing;
   }
   return null;
 }
@@ -422,7 +431,11 @@ function compVoicesOf(
 ): readonly number[] {
   const ascending = [...midiPitches].sort((left, right) => left - right);
   if (voicing === "all") return ascending;
-  const dropped = Math.max(0, ascending.length - TARGET_COMP_VOICES);
+  /* The thin voicings (measured campaign, 2026-07-31) keep the TOP one or
+     two voices; upper-voices keeps the package target of three. */
+  const keep =
+    voicing === "top-voice" ? 1 : voicing === "guide-tones" ? 2 : TARGET_COMP_VOICES;
+  const dropped = Math.max(0, ascending.length - keep);
   return ascending.filter((_unused, index) => index >= dropped);
 }
 
@@ -2355,7 +2368,8 @@ describe("the comp register", () => {
         "medium-swing@1": 22,
         "bossa-nova@1": 23,
         "straight-eighths@1": 24,
-        "syncopated-sixteenths@1": 29,
+        /* Re-pinned for the measured four-phase table (2026-07-31). */
+        "syncopated-sixteenths@1": 34,
       };
       expect(`${styleId}:${String(checked)}`).toBe(
         `${styleId}:${String(CHECKED_COMPS[styleId] ?? -1)}`,
@@ -2392,7 +2406,9 @@ describe("the comp register", () => {
          * agreeing with it is a real claim about the compiler's arithmetic.
          */
         const derived = new Set(
-          (["all", "upper-voices"] as const).map((voicing) =>
+          (
+            ["all", "upper-voices", "guide-tones", "top-voice"] as const
+          ).map((voicing) =>
             independentlyPlacedComp(
               compVoicesOf(chord.midiPitches, voicing),
               comp.bass,
