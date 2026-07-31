@@ -46,18 +46,14 @@ async function expectRejected(
 }
 
 describe("E0 v2 amendment packet", () => {
-  test("the pending packet validates deterministically with exact counts", async () => {
-    const first = await validateE0V2Contract(fixtureRoot, {
-      allowPendingFreeze: true,
-    });
-    const second = await validateE0V2Contract(fixtureRoot, {
-      allowPendingFreeze: true,
-    });
+  test("the frozen packet validates deterministically with exact counts", async () => {
+    const first = await validateE0V2Contract(fixtureRoot);
+    const second = await validateE0V2Contract(fixtureRoot);
     expect(first).toEqual(second);
     expect(first).toMatchObject({
       schema: "changes.validation.e0-v2-contract.v1",
       package: "E0-v2",
-      pinState: "pending-validator-freeze",
+      pinState: "reviewed-byte-and-semantic-pinned",
       outcome: "pass",
       counts: {
         companions: 7,
@@ -197,12 +193,17 @@ describe("E0 v2 amendment packet", () => {
     });
   });
 
-  test("the frozen gate refuses a pending packet outright", async () => {
-    const report = await validateE0V2Contract(fixtureRoot);
-    expect(report.outcome).toBe("fail");
-    const codes = report.findings.map(({ code }) => code);
-    expect(codes).toContain("E0V2_PIN_STATE");
-    expect(codes).toContain("E0V2_BYTE_DIGEST");
+  test("the frozen gate rejects byte and pin-state tampering", async () => {
+    await withFixtureCopy(async (root) => {
+      await mutateJson(root, "e0-v2-interchange-contract.json", (value) => {
+        value["pinState"] = "pending-validator-freeze";
+      });
+      const report = await validateE0V2Contract(root);
+      expect(report.outcome).toBe("fail");
+      const codes = report.findings.map(({ code }) => code);
+      expect(codes).toContain("E0V2_PIN_STATE");
+      expect(codes).toContain("E0V2_BYTE_DIGEST");
+    });
   });
 
   test("independence and implementation claims are enforced", async () => {

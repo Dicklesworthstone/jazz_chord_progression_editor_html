@@ -73,17 +73,26 @@ const EXPECTED_PENDING_COMPANIONS = Object.freeze([] as const);
  */
 const E0_V2_SPEC_BYTE_DIGESTS: Readonly<Record<string, string>> =
   Object.freeze({
-    [CONTRACT_FILENAME]: "pending-validator-freeze",
-    "normalization-cases.json": "pending-validator-freeze",
-    "resolution-cases.json": "pending-validator-freeze",
-    "projection-cases.json": "pending-validator-freeze",
-    "workflow-cases.json": "pending-validator-freeze",
-    "mutation-controls.json": "pending-validator-freeze",
-    "trace-ledger.json": "pending-validator-freeze",
-    "provenance-ledger.json": "pending-validator-freeze",
+    [CONTRACT_FILENAME]:
+      "beea52d09b0e3fc1da2a43ba2476c1777a8b72dfe2ce9014923c9e597ff8cd40",
+    "normalization-cases.json":
+      "eba43965f65a8833f0f09e3f89c575db7763a0b59dc14a848ecab6798fa65d69",
+    "resolution-cases.json":
+      "9e8d3e3ece79325b454f43240a160cac52470f41c990ebf03126c6818474a25d",
+    "projection-cases.json":
+      "db41caf392aae15ee8122486416a9d6f0591a3e3d18e945ea5b5f263c5536219",
+    "workflow-cases.json":
+      "6799a9afff2557c4517c3aaaf111a667bde64c7ebb68031882ccb0c813a7404c",
+    "mutation-controls.json":
+      "82dbbab50c6467b530a96a66193ad29e08d9efc48670b14bd58a9a92d2834bae",
+    "trace-ledger.json":
+      "0329f17849a6083b618423493fb8cf31d63688bee860fdf2950a7599e84ca4a7",
+    "provenance-ledger.json":
+      "2465c32faab1ecf37d42534e2d01b29ce70c3dd309b4e5d939bf09cf2a2d6d57",
   });
 
-const E0_V2_SPEC_SEMANTIC_DIGEST = "pending-validator-freeze";
+const E0_V2_SPEC_SEMANTIC_DIGEST =
+  "185dc700b81d82e546aa614314a4f230195a5aaab4f4cfd1b75bdaf539585171";
 
 /** Independent copy of the eleven resolution rows (doc section 2). */
 const EXPECTED_RESOLUTION_IDS = Object.freeze([

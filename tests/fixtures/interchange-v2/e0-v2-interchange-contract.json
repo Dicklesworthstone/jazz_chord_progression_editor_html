@@ -3,7 +3,7 @@
   "contractDocument": "docs/E0_V2_INTERCHANGE_CONTRACT.md",
   "beadId": "jcpe-milestone-reliable-studio-l3a.8.4",
   "package": "E0-v2",
-  "pinState": "pending-validator-freeze",
+  "pinState": "reviewed-byte-and-semantic-pinned",
   "reviewState": "proposed-independent-spec",
   "expectedValuesGenerated": false,
   "productionOutputUsedAsOracle": false,
@@ -83,12 +83,12 @@
     "authorities": 5
   },
   "reviewedFileSha256": {
-    "normalization-cases.json": "pending-validator-freeze",
-    "resolution-cases.json": "pending-validator-freeze",
-    "projection-cases.json": "pending-validator-freeze",
-    "workflow-cases.json": "pending-validator-freeze",
-    "mutation-controls.json": "pending-validator-freeze",
-    "trace-ledger.json": "pending-validator-freeze",
-    "provenance-ledger.json": "pending-validator-freeze"
+    "normalization-cases.json": "eba43965f65a8833f0f09e3f89c575db7763a0b59dc14a848ecab6798fa65d69",
+    "resolution-cases.json": "9e8d3e3ece79325b454f43240a160cac52470f41c990ebf03126c6818474a25d",
+    "projection-cases.json": "db41caf392aae15ee8122486416a9d6f0591a3e3d18e945ea5b5f263c5536219",
+    "workflow-cases.json": "6799a9afff2557c4517c3aaaf111a667bde64c7ebb68031882ccb0c813a7404c",
+    "mutation-controls.json": "82dbbab50c6467b530a96a66193ad29e08d9efc48670b14bd58a9a92d2834bae",
+    "trace-ledger.json": "0329f17849a6083b618423493fb8cf31d63688bee860fdf2950a7599e84ca4a7",
+    "provenance-ledger.json": "2465c32faab1ecf37d42534e2d01b29ce70c3dd309b4e5d939bf09cf2a2d6d57"
   }
 }
