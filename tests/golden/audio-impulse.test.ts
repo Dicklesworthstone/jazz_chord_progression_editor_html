@@ -15,6 +15,10 @@ const IMPULSE_CASE_IDS = [
   "X0-RENDER-009",
   "X0-RENDER-012",
   "X0-RENDER-015",
+  /* The Concert Grand release-tail case renders at 96 kHz, a rate this
+     writer proof already covers; its in-situ impulse frames are validated
+     per case by the browser evidence. */
+  "X0-RENDER-018",
 ] as const;
 
 const CHECKPOINTS = [
@@ -88,7 +92,7 @@ describe("TR-X0-IMPULSE deterministic audio impulse golden", () => {
     expect(AUDIO_PERSISTENT_GRAPH_SETTINGS.createdNodeCount).toBe(12);
   });
 
-  test("X0-RENDER-003/X0-RENDER-006/X0-RENDER-009/X0-RENDER-012/X0-RENDER-015 matches the independent Q15 checkpoints and hashes", () => {
+  test("X0-RENDER-003/X0-RENDER-006/X0-RENDER-009/X0-RENDER-012/X0-RENDER-015/X0-RENDER-018 matches the independent Q15 checkpoints and hashes", () => {
     const channels = [new Float32Array(192_000), new Float32Array(192_000)] as const;
     const buffer: AudioBufferPort = {
       numberOfChannels: 2,
@@ -124,6 +128,6 @@ describe("TR-X0-IMPULSE deterministic audio impulse golden", () => {
     expect(AUDIO_IMPULSE_POLICY.algorithmId).toBe(
       "changes.audio.impulse.hall-quartic-q15.v2",
     );
-    expect(IMPULSE_CASE_IDS).toHaveLength(6);
+    expect(IMPULSE_CASE_IDS).toHaveLength(7);
   });
 });

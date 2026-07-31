@@ -1,4 +1,29 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, mock, test } from "bun:test";
+
+import * as realDspRenderer from "../../src/audio/dsp-renderer";
+
+/*
+ * X0-LIFE-046 fault injection: the lifecycle case demands "embedded DSP
+ * renderer module failed to load", a condition the real module cannot
+ * produce on demand. The wrap passes every call through to the real
+ * loader unless the one refusal test flips the flag, so every other test
+ * in this file (and this process) exercises the genuine wasm renderer.
+ */
+let failConcertGrandRendererLoads = false;
+const realLoadConcertGrandRenderer = realDspRenderer.loadConcertGrandRenderer;
+void mock.module("../../src/audio/dsp-renderer", () => ({
+  ...realDspRenderer,
+  loadConcertGrandRenderer: (): ReturnType<
+    typeof realLoadConcertGrandRenderer
+  > => {
+    if (failConcertGrandRendererLoads) {
+      return Promise.reject(
+        new Error("X0-LIFE-046 induced renderer load failure"),
+      );
+    }
+    return realLoadConcertGrandRenderer();
+  },
+}));
 
 import { AUDIO_INSTRUMENT_RECIPES } from "../../src/audio";
 import type { InstrumentId } from "../../src/domain";
@@ -7,6 +32,7 @@ import type { FakeAudioEvent } from "../../src/test-support/fake-audio-platform"
 import {
   attackRequest,
   readyEngine,
+  requireFailure,
   requireSuccess,
   voice,
 } from "../support/audio-engine-test-kit";
@@ -558,5 +584,45 @@ describe("TR-X0-RECIPES instrument recipes", () => {
       "X0-RENDER-013",
       "X0-RENDER-016",
     ]);
+  });
+
+  test("X0-LIFE-046 a failed renderer module refuses rendered attacks atomically while oscillator recipes keep working", async () => {
+    failConcertGrandRendererLoads = true;
+    try {
+      const { engine, context } = await readyEngine();
+      const before = engine.inspectAudioEngine();
+      const sourcesBefore = context.sourceIds().length;
+
+      const refusal = requireFailure(
+        engine.attackAudioVoices(
+          attackRequest([voice("cg-unavailable", 60, 100)], {
+            eventId: "cg-renderer-unavailable",
+            instrumentId: "concert-grand",
+          }),
+        ),
+        "audio.renderer_unavailable",
+      );
+      expect(refusal.code).toBe("audio.renderer_unavailable");
+
+      const after = engine.inspectAudioEngine();
+      expect(after.state).toBe("ready");
+      expect(after.activeVoices).toHaveLength(0);
+      expect(after.work.voicesCreated).toBe(before.work.voicesCreated);
+      expect(after.work.graphNodesCreated).toBe(before.work.graphNodesCreated);
+      expect(context.sourceIds().length).toBe(sourcesBefore);
+
+      const oscillator = requireSuccess(
+        engine.attackAudioVoices(
+          attackRequest([voice("osc-still-working", 60, 100)], {
+            eventId: "oscillator-after-renderer-failure",
+            instrumentId: "mellow-keys",
+          }),
+        ),
+      );
+      expect(oscillator.snapshot.activeVoices).toHaveLength(1);
+      expect(context.sourceIds().length).toBeGreaterThan(sourcesBefore);
+    } finally {
+      failConcertGrandRendererLoads = false;
+    }
   });
 });

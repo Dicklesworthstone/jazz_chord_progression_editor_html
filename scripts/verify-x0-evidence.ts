@@ -792,7 +792,14 @@ function validateRenderRecord(
   }
 
   const impulse = isRecord(raw["impulse"]) ? raw["impulse"] : {};
-  requireEqual(impulse["createdBufferCount"], 1, "X0_EVIDENCE_RENDER_IMPULSE_COUNT", `${path}.impulse.createdBufferCount`, findings);
+  /*
+   * Synth pads create exactly the shared impulse buffer; the Concert
+   * Grand additionally renders one attack-sample buffer per sounding
+   * note. Same per-instrument law the evidence spec asserts.
+   */
+  const expectedCreatedBuffers =
+    fixture["instrumentId"] === "concert-grand" ? 1 + pitches.length : 1;
+  requireEqual(impulse["createdBufferCount"], expectedCreatedBuffers, "X0_EVIDENCE_RENDER_IMPULSE_COUNT", `${path}.impulse.createdBufferCount`, findings);
   requireEqual(impulse["convolverAssignmentCount"], 1, "X0_EVIDENCE_RENDER_IMPULSE_ASSIGNMENT", `${path}.impulse.convolverAssignmentCount`, findings);
   requireEqual(impulse["assignedGeneratedBufferByIdentity"], true, "X0_EVIDENCE_RENDER_IMPULSE_IDENTITY", `${path}.impulse.assignedGeneratedBufferByIdentity`, findings);
   requireEqual(impulse["numberOfChannels"], 2, "X0_EVIDENCE_RENDER_IMPULSE_CHANNELS", `${path}.impulse.numberOfChannels`, findings);
