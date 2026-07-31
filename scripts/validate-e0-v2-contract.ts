@@ -716,7 +716,8 @@ async function validateWorkflowCases(
         "Workflow cases are state-free by construction.",
       );
     }
-    const ancestorId = String(raw["ancestorId"] ?? "");
+    const ancestorId =
+      typeof raw["ancestorId"] === "string" ? raw["ancestorId"] : "";
     seenAncestors.add(ancestorId);
     const ancestor = ancestors.get(ancestorId);
     const preserved = isObject(raw["ancestorPreserved"])
@@ -748,10 +749,13 @@ async function validateWorkflowCases(
       if (diagnostic["rawResultRetained"] !== false) {
         finding(findings, "E0V2_WF_DIAGNOSTIC_RETENTION", path, "raw retention");
       }
-      const expectedReason =
-        String(preserved["terminationReason"] ?? "").includes("exception")
-          ? "threw-or-rejected"
-          : "invalid-envelope";
+      const terminationReason =
+        typeof preserved["terminationReason"] === "string"
+          ? preserved["terminationReason"]
+          : "";
+      const expectedReason = terminationReason.includes("exception")
+        ? "threw-or-rejected"
+        : "invalid-envelope";
       if (diagnostic["reason"] !== expectedReason) {
         finding(
           findings,
@@ -856,7 +860,8 @@ function validateMutationControls(
       finding(findings, "E0V2_MUT_DUPLICATE", path, raw["id"]);
     }
     ids.add(raw["id"]);
-    const expectedFinding = String(raw["expectedFinding"] ?? "");
+    const expectedFinding =
+      typeof raw["expectedFinding"] === "string" ? raw["expectedFinding"] : "";
     coveredFindings.add(expectedFinding);
     if (!(KNOWN_MUTATION_FINDINGS as readonly string[]).includes(expectedFinding)) {
       finding(findings, "E0V2_MUT_FINDING_UNKNOWN", path, expectedFinding);
@@ -878,7 +883,8 @@ function validateMutationControls(
       }
     }
     const mutation = isObject(raw["mutation"]) ? raw["mutation"] : null;
-    const targetFile = String(raw["targetFile"] ?? "");
+    const targetFile =
+      typeof raw["targetFile"] === "string" ? raw["targetFile"] : "";
     const target = loaded.get(targetFile);
     if (mutation === null || target === undefined) {
       finding(findings, "E0V2_MUT_TARGET", path, targetFile);
@@ -892,9 +898,13 @@ function validateMutationControls(
     }
     // Recompute the from-assertion against the live packet so a control can
     // never drift from what it claims to mutate.
-    const pointer = String(mutation["jsonPointer"] ?? "");
+    const pointer =
+      typeof mutation["jsonPointer"] === "string"
+        ? mutation["jsonPointer"]
+        : "";
     const resolved = resolveJsonPointer(target, pointer);
-    const operator = String(mutation["operator"] ?? "");
+    const operator =
+      typeof mutation["operator"] === "string" ? mutation["operator"] : "";
     if (operator === "add") {
       const absent =
         isObject(mutation["from"]) && mutation["from"]["$absent"] === true;
@@ -1104,20 +1114,14 @@ export async function validateE0V2Contract(
       .map((row) => row["id"])
       .filter((id): id is string => typeof id === "string"),
   );
+  const rowsOf = (value: unknown): readonly unknown[] =>
+    Array.isArray(value) ? (value as readonly unknown[]) : [];
   const caseIds = new Set(
     [
-      ...(Array.isArray(normalizationRoot["cases"])
-        ? normalizationRoot["cases"]
-        : []),
-      ...(Array.isArray(resolutionRoot["cases"])
-        ? resolutionRoot["cases"]
-        : []),
-      ...(Array.isArray(projectionRoot["cases"])
-        ? projectionRoot["cases"]
-        : []),
-      ...(Array.isArray(workflowRoot["cases"])
-        ? workflowRoot["cases"]
-        : []),
+      ...rowsOf(normalizationRoot["cases"]),
+      ...rowsOf(resolutionRoot["cases"]),
+      ...rowsOf(projectionRoot["cases"]),
+      ...rowsOf(workflowRoot["cases"]),
     ]
       .filter(isObject)
       .map((row) => row["id"])
