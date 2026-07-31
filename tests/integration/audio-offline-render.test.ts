@@ -52,6 +52,9 @@ const EXPECTED_RENDER_IDS = Object.freeze([
   "X0-RENDER-013",
   "X0-RENDER-014",
   "X0-RENDER-015",
+  "X0-RENDER-016",
+  "X0-RENDER-017",
+  "X0-RENDER-018",
 ] as const);
 
 const WORK_COUNTER_NAMES = Object.freeze([
@@ -680,7 +683,17 @@ function validateRenderRecord(
     const expectedLength = Math.ceil(
       renderCase.sampleRate * impulseAuthority.durationSeconds,
     );
-    expect(value.impulse.createdBufferCount).toBe(1);
+    /*
+     * The synth pads own exactly the shared impulse buffer. The Concert
+     * Grand additionally renders one attack-sample buffer per sounding
+     * note (cache-missed per pitch/velocity/duration), so its count is
+     * the impulse plus the case's note list.
+     */
+    const expectedCreatedBuffers =
+      renderCase.instrumentId === "concert-grand"
+        ? 1 + renderCase.midiPitches.length
+        : 1;
+    expect(value.impulse.createdBufferCount).toBe(expectedCreatedBuffers);
     expect(value.impulse.convolverAssignmentCount).toBe(1);
     expect(value.impulse.assignedGeneratedBufferByIdentity).toBe(true);
     expect(value.impulse.numberOfChannels).toBe(impulseAuthority.channels);
@@ -1152,7 +1165,7 @@ test(TEST_TITLE, async ({
       expect(renderMatrix.cases.map((item) => item.id)).toEqual(
         EXPECTED_RENDER_IDS,
       );
-      expect(renderMatrix.cases).toHaveLength(15);
+      expect(renderMatrix.cases).toHaveLength(18);
     });
     runAssertion(assertions, findings, "authority/frozen-analysis-policy", () => {
       expect(renderMatrix.numericPolicy).toMatchObject({
