@@ -32,6 +32,7 @@ export type E0V2ContractValidationReport = Readonly<{
     companions: number;
     pendingCompanions: number;
     normalizationCases: number;
+    resolutionCases: number;
     traces: number;
     authorities: number;
     pendingResolutionRows: number;
@@ -53,12 +54,12 @@ const CONTRACT_FILENAME = "e0-v2-interchange-contract.json";
 
 const EXPECTED_COMPANIONS = Object.freeze([
   "normalization-cases.json",
+  "resolution-cases.json",
   "trace-ledger.json",
   "provenance-ledger.json",
 ] as const);
 
 const EXPECTED_PENDING_COMPANIONS = Object.freeze([
-  "resolution-cases.json",
   "projection-cases.json",
   "workflow-cases.json",
   "mutation-controls.json",
@@ -72,6 +73,7 @@ const E0_V2_SPEC_BYTE_DIGESTS: Readonly<Record<string, string>> =
   Object.freeze({
     [CONTRACT_FILENAME]: "pending-validator-freeze",
     "normalization-cases.json": "pending-validator-freeze",
+    "resolution-cases.json": "pending-validator-freeze",
     "trace-ledger.json": "pending-validator-freeze",
     "provenance-ledger.json": "pending-validator-freeze",
   });
@@ -324,6 +326,152 @@ function validateNormalizationCases(
   return ids.size;
 }
 
+const RESOLUTION_CASE_ROWS_EXPECTED = Object.freeze([
+  "E0V2-RES-01-import-request-current-state",
+  "E0V2-RES-02-preview-impact-projection",
+  "E0V2-RES-05-state-free-commit-success",
+  "E0V2-RES-06-state-free-commit-refusals",
+  "E0V2-RES-07-state-free-publication-protocol-failure",
+  "E0V2-RES-09-widened-preparation-refusals",
+  "E0V2-RES-10-replacement-publication-refusals",
+  "E0V2-RES-11-state-free-public-marker-requests",
+] as const);
+
+const OWNER_PUBLICATION_CODES = Object.freeze([
+  "import.replacement_preparation_missing",
+  "import.replacement_preparation_stale",
+  "import.replacement_retirement_mismatch",
+] as const);
+
+function validateResolutionCases(
+  root: JsonObject,
+  findings: E0V2ContractFinding[],
+): number {
+  const cases = Array.isArray(root["cases"]) ? root["cases"] : [];
+  const catalog = isObject(root["literalCatalog"])
+    ? root["literalCatalog"]
+    : {};
+  const ids = new Set<string>();
+  const coveredRows = new Set<string>();
+  for (const [index, raw] of cases.entries()) {
+    const path = `resolution-cases.json:$.cases[${String(index)}]`;
+    if (!isObject(raw) || typeof raw["id"] !== "string") {
+      finding(findings, "E0V2_RESCASE_SHAPE", path, "Case requires an id.");
+      continue;
+    }
+    if (ids.has(raw["id"])) {
+      finding(findings, "E0V2_RESCASE_DUPLICATE", path, raw["id"]);
+    }
+    ids.add(raw["id"]);
+    const resolutionId =
+      typeof raw["resolutionId"] === "string" ? raw["resolutionId"] : "";
+    coveredRows.add(resolutionId);
+    if (!(RESOLUTION_CASE_ROWS_EXPECTED as readonly string[]).includes(resolutionId)) {
+      finding(findings, "E0V2_RESCASE_ROW_UNKNOWN", path, resolutionId);
+    }
+    // The dual smuggle law: a deliberate STATE-smuggle case must actually
+    // contain a forbidden state key (it proves the law by construction);
+    // every other case must be completely free of them. A documented
+    // negative of a DIFFERENT kind (e.g. the unknown-code case) is neither.
+    const documentedFailure =
+      typeof raw["expectedFixtureFailure"] === "string"
+        ? raw["expectedFixtureFailure"]
+        : null;
+    const deliberate =
+      documentedFailure === "E0V2_STATE_KEY_FORBIDDEN" ||
+      (documentedFailure === null &&
+        (raw["variant"] === "malformed" || isObject(raw["oneFieldNearMiss"])));
+    const statePaths = forbiddenStateKeyPaths(raw, path);
+    if (deliberate && statePaths.length === 0) {
+      finding(
+        findings,
+        "E0V2_RESCASE_SMUGGLE_MISSING",
+        path,
+        "A deliberate-smuggle case must materialize the forbidden key it refuses.",
+      );
+    }
+    if (!deliberate && statePaths.length > 0) {
+      finding(
+        findings,
+        "E0V2_STATE_KEY_FORBIDDEN",
+        statePaths[0] ?? path,
+        "A clean v2 case may not carry a forbidden state key.",
+      );
+    }
+    // Refusal codes surface verbatim from the independent tuples; a code
+    // outside them is legal only when the case documents that negative.
+    const expectedResult = isObject(raw["expectedResult"])
+      ? raw["expectedResult"]
+      : null;
+    if (expectedResult && typeof expectedResult["code"] === "string") {
+      const code = expectedResult["code"];
+      const known =
+        (EXPECTED_OWNER_PREPARATION_CODES as readonly string[]).includes(code) ||
+        (OWNER_PUBLICATION_CODES as readonly string[]).includes(code) ||
+        code === "transport.replacement_retirement_refused";
+      if (!known && raw["expectedFixtureFailure"] !== "E0V2_RESCASE_CODE_UNKNOWN") {
+        finding(findings, "E0V2_RESCASE_CODE_UNKNOWN", path, code);
+      }
+      if (known && raw["expectedFixtureFailure"] === "E0V2_RESCASE_CODE_UNKNOWN") {
+        finding(
+          findings,
+          "E0V2_RESCASE_CODE_NEGATIVE_INVALID",
+          path,
+          "The documented-unknown-code case must use a code outside the tuples.",
+        );
+      }
+    }
+    if (raw["codeIsMemberOfV1Six"] !== undefined && expectedResult) {
+      const code = String(expectedResult["code"]);
+      const inSix = (EXPECTED_V1_PREPARATION_CODES as readonly string[]).includes(code);
+      if (raw["codeIsMemberOfV1Six"] !== inSix) {
+        finding(findings, "E0V2_RESCASE_SUBSET_FLAG", path, code);
+      }
+    }
+  }
+  // The groove witness: the catalog's inline candidate must store a
+  // non-default groove, independently recomputed against the domain law.
+  const witness = isObject(catalog["candidate-groove-witness"])
+    ? catalog["candidate-groove-witness"]
+    : null;
+  const witnessDocument =
+    witness && isObject(witness["value"]) ? witness["value"] : null;
+  const witnessPlayback =
+    witnessDocument && isObject(witnessDocument["playback"])
+      ? witnessDocument["playback"]
+      : null;
+  const storableGrooves = [
+    "medium-swing@1",
+    "bossa-nova@1",
+    "straight-eighths@1",
+    "block-chords@1",
+  ];
+  if (
+    witnessPlayback === null ||
+    typeof witnessPlayback["grooveStyleId"] !== "string" ||
+    !storableGrooves.includes(witnessPlayback["grooveStyleId"]) ||
+    witnessPlayback["grooveStyleId"] === "ballad-comp@1"
+  ) {
+    finding(
+      findings,
+      "E0V2_GROOVE_WITNESS",
+      "resolution-cases.json:$.literalCatalog.candidate-groove-witness",
+      "The groove witness must store one of the four non-default groove ids.",
+    );
+  }
+  for (const row of RESOLUTION_CASE_ROWS_EXPECTED) {
+    if (!coveredRows.has(row)) {
+      finding(
+        findings,
+        "E0V2_RESCASE_ROW_UNCOVERED",
+        "resolution-cases.json:$.cases",
+        row,
+      );
+    }
+  }
+  return ids.size;
+}
+
 export async function validateE0V2Contract(
   fixtureRoot = fileURLToPath(
     new URL("../tests/fixtures/interchange-v2", import.meta.url),
@@ -486,6 +634,8 @@ export async function validateE0V2Contract(
     normalizationRoot,
     findings,
   );
+  const resolutionRoot = loaded.get("resolution-cases.json") ?? {};
+  const resolutionCases = validateResolutionCases(resolutionRoot, findings);
 
   const traceRoot = loaded.get("trace-ledger.json") ?? {};
   const traces = Array.isArray(traceRoot["traces"]) ? traceRoot["traces"] : [];
@@ -500,10 +650,14 @@ export async function validateE0V2Contract(
       .filter((id): id is string => typeof id === "string"),
   );
   const caseIds = new Set(
-    (Array.isArray(normalizationRoot["cases"])
-      ? normalizationRoot["cases"]
-      : []
-    )
+    [
+      ...(Array.isArray(normalizationRoot["cases"])
+        ? normalizationRoot["cases"]
+        : []),
+      ...(Array.isArray(resolutionRoot["cases"])
+        ? resolutionRoot["cases"]
+        : []),
+    ]
       .filter(isObject)
       .map((row) => row["id"])
       .filter((id): id is string => typeof id === "string"),
@@ -585,6 +739,7 @@ export async function validateE0V2Contract(
     companions: EXPECTED_COMPANIONS.length,
     pendingCompanions: declaredPending.length,
     normalizationCases,
+    resolutionCases,
     traces: traces.length,
     authorities: authorities.length,
     pendingResolutionRows: pendingResolutions.length,
@@ -592,6 +747,7 @@ export async function validateE0V2Contract(
   const declaredCounts = isObject(contract["counts"]) ? contract["counts"] : {};
   if (
     declaredCounts["normalizationCases"] !== counts.normalizationCases ||
+    declaredCounts["resolutionCases"] !== counts.resolutionCases ||
     declaredCounts["traces"] !== counts.traces ||
     declaredCounts["authorities"] !== counts.authorities
   ) {

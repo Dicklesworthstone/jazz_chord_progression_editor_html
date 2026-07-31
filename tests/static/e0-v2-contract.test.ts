@@ -60,14 +60,69 @@ describe("E0 v2 amendment packet", () => {
       pinState: "pending-validator-freeze",
       outcome: "pass",
       counts: {
-        companions: 3,
-        pendingCompanions: 4,
+        companions: 4,
+        pendingCompanions: 3,
         normalizationCases: 22,
+        resolutionCases: 16,
         traces: 6,
         authorities: 5,
-        pendingResolutionRows: 8,
+        pendingResolutionRows: 2,
       },
       findings: [],
+    });
+  });
+
+  test("a clean resolution case cannot gain a forbidden state key", async () => {
+    await withFixtureCopy(async (root) => {
+      await mutateJson(root, "resolution-cases.json", (value) => {
+        const cases = value["cases"] as JsonObject[];
+        const positive = cases.find(
+          (row) => row["id"] === "E0V2-RESCASE-005",
+        ) as JsonObject;
+        (positive["expectedResult"] as JsonObject)["lastKnownState"] = "x";
+      });
+      await expectRejected(root, "E0V2_STATE_KEY_FORBIDDEN");
+    });
+  });
+
+  test("a deliberate smuggle case must materialize its forbidden key", async () => {
+    await withFixtureCopy(async (root) => {
+      await mutateJson(root, "resolution-cases.json", (value) => {
+        const cases = value["cases"] as JsonObject[];
+        const smuggle = cases.find(
+          (row) => row["id"] === "E0V2-RESCASE-002",
+        ) as JsonObject;
+        delete (smuggle["request"] as JsonObject)["currentState"];
+      });
+      await expectRejected(root, "E0V2_RESCASE_SMUGGLE_MISSING");
+    });
+  });
+
+  test("the groove witness must store a non-default groove id", async () => {
+    await withFixtureCopy(async (root) => {
+      await mutateJson(root, "resolution-cases.json", (value) => {
+        const catalog = value["literalCatalog"] as JsonObject;
+        const witness = catalog["candidate-groove-witness"] as JsonObject;
+        const playback = (witness["value"] as JsonObject)[
+          "playback"
+        ] as JsonObject;
+        playback["grooveStyleId"] = "ballad-comp@1";
+      });
+      await expectRejected(root, "E0V2_GROOVE_WITNESS");
+    });
+  });
+
+  test("a refusal code outside the adopted tuples is refused", async () => {
+    await withFixtureCopy(async (root) => {
+      await mutateJson(root, "resolution-cases.json", (value) => {
+        const cases = value["cases"] as JsonObject[];
+        const positive = cases.find(
+          (row) => row["id"] === "E0V2-RESCASE-010",
+        ) as JsonObject;
+        (positive["expectedResult"] as JsonObject)["code"] =
+          "import.invented_code";
+      });
+      await expectRejected(root, "E0V2_RESCASE_CODE_UNKNOWN");
     });
   });
 

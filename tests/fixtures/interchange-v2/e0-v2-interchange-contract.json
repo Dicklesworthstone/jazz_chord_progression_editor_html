@@ -14,8 +14,14 @@
     "commitRequestSchema": "changes.import-commit-request.v2",
     "exportDeliveryRequestSchema": "changes.canonical-export-delivery-request.v2",
     "markerSettlementRequestSchema": "changes.canonical-export-marker-settlement-request.v2",
-    "importTransactionPolicy": { "id": "changes.import-transaction", "version": 2 },
-    "exportMarkerSettlementPolicy": { "id": "changes.export-marker-settlement", "version": 2 }
+    "importTransactionPolicy": {
+      "id": "changes.import-transaction",
+      "version": 2
+    },
+    "exportMarkerSettlementPolicy": {
+      "id": "changes.export-marker-settlement",
+      "version": 2
+    }
   },
   "adoptedOwnerSchemas": [
     "changes.prepared-import-replacement-publication.v1",
@@ -58,32 +64,28 @@
   },
   "companions": [
     "normalization-cases.json",
+    "resolution-cases.json",
     "trace-ledger.json",
     "provenance-ledger.json"
   ],
   "pendingCompanions": [
-    "resolution-cases.json",
     "projection-cases.json",
     "workflow-cases.json",
     "mutation-controls.json"
   ],
   "pendingResolutionCoverage": [
-    "E0V2-RES-01-import-request-current-state",
-    "E0V2-RES-02-preview-impact-projection",
     "E0V2-RES-03-preview-to-owner-request-projection",
-    "E0V2-RES-04-acknowledgement-provenance",
-    "E0V2-RES-05-state-free-commit-success",
-    "E0V2-RES-06-state-free-commit-refusals",
-    "E0V2-RES-09-widened-preparation-refusals",
-    "E0V2-RES-10-replacement-publication-refusals"
+    "E0V2-RES-04-acknowledgement-provenance"
   ],
   "counts": {
     "normalizationCases": 22,
+    "resolutionCases": 16,
     "traces": 6,
     "authorities": 5
   },
   "reviewedFileSha256": {
     "normalization-cases.json": "pending-validator-freeze",
+    "resolution-cases.json": "pending-validator-freeze",
     "trace-ledger.json": "pending-validator-freeze",
     "provenance-ledger.json": "pending-validator-freeze"
   }
