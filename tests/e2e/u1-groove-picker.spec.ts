@@ -26,7 +26,7 @@ test.describe("groove picker", () => {
     const picker = page.locator("#studio-groove-picker-rail");
     await picker.scrollIntoViewIfNeeded();
     const radios = picker.getByRole("radio");
-    await expect(radios).toHaveCount(5);
+    await expect(radios).toHaveCount(6);
     await expect(
       picker.getByRole("radio", { name: "Ballad" }),
     ).toHaveAttribute("aria-checked", "true");
@@ -34,6 +34,7 @@ test.describe("groove picker", () => {
       "Medium swing",
       "Bossa nova",
       "Straight eighths",
+      "Syncopated sixteenths",
       "Block chords",
     ]) {
       await expect(

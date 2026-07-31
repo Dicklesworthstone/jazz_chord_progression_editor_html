@@ -1518,6 +1518,7 @@ function isGrooveStyle(value: string): value is GrooveStyleId {
     value === "medium-swing@1" ||
     value === "bossa-nova@1" ||
     value === "straight-eighths@1" ||
+    value === "syncopated-sixteenths@1" ||
     value === "block-chords@1"
   );
 }

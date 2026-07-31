@@ -6,7 +6,7 @@
  * mediants, half-diminished suspensions, dim7 pivots, tritone substitution,
  * planing, modal shifts, extended dominants — on real, recognisable harmony.
  *
- * PROVENANCE LAW. Three kinds of entry are allowed here and nothing else:
+ * PROVENANCE LAW. Four kinds of entry are allowed here and nothing else:
  *
  *   "public-domain"  A named work whose composition is in the public domain
  *                    (pre-1929 publication). Transcribed harmony is fine.
@@ -15,11 +15,17 @@
  *                    blues form, a substitution pattern. Not any one work.
  *   "study"          An ORIGINAL progression written here in a named
  *                    harmonic idiom, to show what that language sounds like.
+ *   "owner-directed" A transcription of a copyrighted work that the project
+ *                    owner EXPLICITLY DIRECTED, with the instruction
+ *                    recorded verbatim in a comment on the entry — the
+ *                    jcpe-x0z9 Deacon Blues starter-chart precedent
+ *                    (studio-starter-chart.ts). Never a default; never
+ *                    added on an agent's own judgment.
  *
  * A faithful chord-by-chord transcription of a copyrighted song is NOT
- * permitted, however famous, and no entry may be titled as one. The studio
- * already applies this rule to reference recordings, which are measuring
- * sticks for aggregate statistics only and are never committed.
+ * otherwise permitted, however famous, and no entry may be titled as one.
+ * The studio already applies this rule to reference recordings, which are
+ * measuring sticks for aggregate statistics only and are never committed.
  *
  * Every entry is proven to parse and to reach sound through the real
  * transport composition by tests/unit/studio-progression-library.test.ts.
@@ -29,7 +35,11 @@
 
 import type { PerformanceStyleId } from "../playback";
 
-export type ProgressionProvenance = "public-domain" | "device" | "study";
+export type ProgressionProvenance =
+  | "public-domain"
+  | "device"
+  | "study"
+  | "owner-directed";
 
 export type ProgressionLibraryEntry = Readonly<{
   /** Stable id; also the button id suffix. */
@@ -236,6 +246,41 @@ export const PROGRESSION_LIBRARY: readonly ProgressionLibraryEntry[] =
       provenance: "study",
       chartText:
         "| Caug | Daug | Caug | Fmaj7 | Bm7b5 E7b9 | Am7 | Dm7 G7 | Cmaj7 |",
+    }),
+
+    /* ------------------------------- owner-directed transcriptions */
+    /*
+     * OWNER DIRECTION, recorded verbatim (Gracie Terzian, 2026-07-31):
+     * "add 'What a Fool Believes' (the Doobie Brothers, writers Michael
+     * McDonald & Kenny Loggins, 1979) to the progression library with
+     * ACCURATE changes and an ACCURATE groove — replicating the discipline
+     * of the earlier owner-directed Deacon Blues work."
+     *
+     * That direction is the sole authority for this entry, exactly as the
+     * jcpe-x0z9 comment in studio-starter-chart.ts is for the Deacon Blues
+     * seed. The changes were verified against multiple independent sources
+     * before writing: the published sheet-music key (Db major, Musicnotes
+     * editions MN0161692/MN0062166/MN0085521), Gordon Tebo's Roman-numeral
+     * breakdown (verse IV -> I/iii -> ii -> I then ii -> I/iii -> vi -> #v+,
+     * chorus in E reached through the A-chord pivot), the Modulation of the
+     * Day analysis (the chorus begins on the PARALLEL-MINOR iv of Db, which
+     * is ii of E — the imperceptible modulation), Ryan Welton's bass-line
+     * account (Ab-Gb-F-Eb down, back up to Bb), and the Cifra Club chart
+     * (Ab4 / F# / Fm / Ebm7 ... Bbm / A7 verse; Bbm / Ab7 / Ebm7 / Ab /
+     * Dbmaj7 / Gm7b5 pre-chorus; F#m / B4 / Emaj7 / C#m7 / A7#5 chorus).
+     * Tempo ~120 BPM per SongBPM/Tunebat. Every symbol below is proven to
+     * parse AND reach sound through the real transport composition by
+     * tests/unit/studio-progression-library.test.ts.
+     */
+    Object.freeze({
+      id: "what-a-fool-believes",
+      grooveStyleId: "syncopated-sixteenths@1",
+      title: "What a Fool Believes",
+      kicker: "McDonald & Loggins, 1979",
+      note: "The keyboard riff walks IVmaj7 through a first-inversion tonic to ii7 under slash-chord elevenths, then the parallel-minor iv pivots the chorus into E major without a seam.",
+      provenance: "owner-directed",
+      chartText:
+        "| Gb/Ab Gbmaj7 | Db/F Ebm7 | Gb/Ab Gbmaj7 | Db/F Ebm7 | Ebm7 Db/F | Bbm7 A7#5 | Bbm7 | Ab7sus4 | Ebm7 Gb/Ab | Dbmaj7 Gm7b5 | F#m7 A/B | Emaj7 C#m7 | F#m7 A/B | Emaj7 A7#5 |",
     }),
   ]);
 
