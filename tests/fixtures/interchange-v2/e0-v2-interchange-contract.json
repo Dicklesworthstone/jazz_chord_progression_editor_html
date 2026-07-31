@@ -67,18 +67,18 @@
     "resolution-cases.json",
     "projection-cases.json",
     "workflow-cases.json",
+    "mutation-controls.json",
     "trace-ledger.json",
     "provenance-ledger.json"
   ],
-  "pendingCompanions": [
-    "mutation-controls.json"
-  ],
+  "pendingCompanions": [],
   "pendingResolutionCoverage": [],
   "counts": {
     "normalizationCases": 22,
     "resolutionCases": 16,
     "projectionCases": 7,
     "workflowCases": 8,
+    "mutationControls": 14,
     "traces": 7,
     "authorities": 5
   },
@@ -87,6 +87,7 @@
     "resolution-cases.json": "pending-validator-freeze",
     "projection-cases.json": "pending-validator-freeze",
     "workflow-cases.json": "pending-validator-freeze",
+    "mutation-controls.json": "pending-validator-freeze",
     "trace-ledger.json": "pending-validator-freeze",
     "provenance-ledger.json": "pending-validator-freeze"
   }

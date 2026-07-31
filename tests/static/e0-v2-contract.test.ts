@@ -60,12 +60,13 @@ describe("E0 v2 amendment packet", () => {
       pinState: "pending-validator-freeze",
       outcome: "pass",
       counts: {
-        companions: 6,
-        pendingCompanions: 1,
+        companions: 7,
+        pendingCompanions: 0,
         normalizationCases: 22,
         resolutionCases: 16,
         projectionCases: 7,
         workflowCases: 8,
+        mutationControls: 14,
         traces: 7,
         authorities: 5,
         pendingResolutionRows: 0,
@@ -201,7 +202,6 @@ describe("E0 v2 amendment packet", () => {
     expect(report.outcome).toBe("fail");
     const codes = report.findings.map(({ code }) => code);
     expect(codes).toContain("E0V2_PIN_STATE");
-    expect(codes).toContain("E0V2_FROZEN_PENDING");
     expect(codes).toContain("E0V2_BYTE_DIGEST");
   });
 
@@ -247,14 +247,40 @@ describe("E0 v2 amendment packet", () => {
     });
   });
 
-  test("dropping a port's thrown variant is a coverage failure", async () => {
+  test("reassigning a port's only thrown variant is a coverage failure", async () => {
     await withFixtureCopy(async (root) => {
       await mutateJson(root, "normalization-cases.json", (value) => {
-        value["cases"] = (value["cases"] as JsonObject[]).filter(
-          (row) => row["id"] !== "E0V2-NORM-017",
-        );
+        const cases = value["cases"] as JsonObject[];
+        const target = cases.find(
+          (row) => row["id"] === "E0V2-NORM-017",
+        ) as JsonObject;
+        target["variant"] = "extra-key";
       });
-      await expectRejected(root, "E0V2_NORM_COVERAGE", "E0V2_COUNTS");
+      await expectRejected(root, "E0V2_NORM_COVERAGE");
+    });
+  });
+
+  test("reassigning a trace's first case id leaves the original case untraced", async () => {
+    await withFixtureCopy(async (root) => {
+      await mutateJson(root, "trace-ledger.json", (value) => {
+        const traces = value["traces"] as JsonObject[];
+        const first = traces[0] as JsonObject;
+        (first["caseIds"] as string[])[0] = "E0V2-NORM-002";
+      });
+      await expectRejected(root, "E0V2_CASE_UNTRACED");
+    });
+  });
+
+  test("every mutation control's from-assertion is recomputed against the live packet", async () => {
+    await withFixtureCopy(async (root) => {
+      await mutateJson(root, "mutation-controls.json", (value) => {
+        const controls = value["controls"] as JsonObject[];
+        const first = controls.find(
+          (row) => row["id"] === "E0V2-MUT-002",
+        ) as JsonObject;
+        (first["mutation"] as JsonObject)["from"] = "invalid-envelope";
+      });
+      await expectRejected(root, "E0V2_MUT_FROM_ASSERTION");
     });
   });
 

@@ -35,6 +35,7 @@ export type E0V2ContractValidationReport = Readonly<{
     resolutionCases: number;
     projectionCases: number;
     workflowCases: number;
+    mutationControls: number;
     traces: number;
     authorities: number;
     pendingResolutionRows: number;
@@ -59,13 +60,12 @@ const EXPECTED_COMPANIONS = Object.freeze([
   "resolution-cases.json",
   "projection-cases.json",
   "workflow-cases.json",
+  "mutation-controls.json",
   "trace-ledger.json",
   "provenance-ledger.json",
 ] as const);
 
-const EXPECTED_PENDING_COMPANIONS = Object.freeze([
-  "mutation-controls.json",
-] as const);
+const EXPECTED_PENDING_COMPANIONS = Object.freeze([] as const);
 
 /**
  * Frozen at packet freeze; while the packet is pending these remain the
@@ -78,6 +78,7 @@ const E0_V2_SPEC_BYTE_DIGESTS: Readonly<Record<string, string>> =
     "resolution-cases.json": "pending-validator-freeze",
     "projection-cases.json": "pending-validator-freeze",
     "workflow-cases.json": "pending-validator-freeze",
+    "mutation-controls.json": "pending-validator-freeze",
     "trace-ledger.json": "pending-validator-freeze",
     "provenance-ledger.json": "pending-validator-freeze",
   });
@@ -781,6 +782,137 @@ async function validateWorkflowCases(
   return ids.size;
 }
 
+const KNOWN_MUTATION_FINDINGS = Object.freeze([
+  "E0V2_STATE_KEY_FORBIDDEN",
+  "E0V2_NORM_ORACLE",
+  "E0V2_NORM_COVERAGE",
+  "E0V2_REFUSAL_ADOPTION",
+  "E0V2_CASE_UNTRACED",
+  "E0V2_RESCASE_SMUGGLE_MISSING",
+  "E0V2_GROOVE_WITNESS",
+  "E0V2_RESCASE_CODE_UNKNOWN",
+  "E0V2_PROVENANCE_ORACLE",
+  "E0V2_PROJECTION_TABLE_DRIFT",
+  "E0V2_WF_ANCESTOR_DRIFT",
+  "E0V2_WF_RECONCILIATION",
+  "E0V2_WF_DIAGNOSTIC_REASON",
+] as const);
+
+function resolveJsonPointer(
+  root: unknown,
+  pointer: string,
+): Readonly<{ found: boolean; value: unknown; parentFound: boolean }> {
+  const segments = pointer
+    .split("/")
+    .slice(1)
+    .map((segment) => segment.replaceAll("~1", "/").replaceAll("~0", "~"));
+  let current: unknown = root;
+  for (const [index, segment] of segments.entries()) {
+    const last = index === segments.length - 1;
+    let next: unknown;
+    if (Array.isArray(current)) {
+      next = current[Number(segment)];
+    } else if (isObject(current)) {
+      next = Object.hasOwn(current, segment) ? current[segment] : undefined;
+    } else {
+      return { found: false, value: undefined, parentFound: false };
+    }
+    if (last) {
+      const present = Array.isArray(current)
+        ? Number(segment) < current.length
+        : isObject(current) && Object.hasOwn(current, segment);
+      return { found: present, value: next, parentFound: true };
+    }
+    current = next;
+  }
+  return { found: true, value: current, parentFound: true };
+}
+
+function validateMutationControls(
+  root: JsonObject,
+  loaded: ReadonlyMap<string, JsonObject>,
+  allCaseIds: ReadonlySet<string>,
+  findings: E0V2ContractFinding[],
+): number {
+  const controls = Array.isArray(root["controls"]) ? root["controls"] : [];
+  const ids = new Set<string>();
+  const coveredFindings = new Set<string>();
+  for (const [index, raw] of controls.entries()) {
+    const path = `mutation-controls.json:$.controls[${String(index)}]`;
+    if (!isObject(raw) || typeof raw["id"] !== "string") {
+      finding(findings, "E0V2_MUT_SHAPE", path, "Control requires an id.");
+      continue;
+    }
+    if (ids.has(raw["id"])) {
+      finding(findings, "E0V2_MUT_DUPLICATE", path, raw["id"]);
+    }
+    ids.add(raw["id"]);
+    const expectedFinding = String(raw["expectedFinding"] ?? "");
+    coveredFindings.add(expectedFinding);
+    if (!(KNOWN_MUTATION_FINDINGS as readonly string[]).includes(expectedFinding)) {
+      finding(findings, "E0V2_MUT_FINDING_UNKNOWN", path, expectedFinding);
+    }
+    if (
+      typeof raw["executedBy"] !== "string" ||
+      raw["executedBy"].trim().length === 0
+    ) {
+      finding(
+        findings,
+        "E0V2_MUT_EXECUTION_OWNER",
+        path,
+        "Every control names the static test that executes it; a control is never its own oracle.",
+      );
+    }
+    for (const linked of stringsAt(raw["linkedCaseIds"])) {
+      if (!allCaseIds.has(linked)) {
+        finding(findings, "E0V2_MUT_CASE_MISSING", path, linked);
+      }
+    }
+    const mutation = isObject(raw["mutation"]) ? raw["mutation"] : null;
+    const targetFile = String(raw["targetFile"] ?? "");
+    const target = loaded.get(targetFile);
+    if (mutation === null || target === undefined) {
+      finding(findings, "E0V2_MUT_TARGET", path, targetFile);
+      continue;
+    }
+    if (jsonEqual(mutation["from"], mutation["to"])) {
+      finding(findings, "E0V2_MUT_NO_CHANGE", path, "from equals to");
+    }
+    if (mutation["exactChangedFieldCount"] !== 1) {
+      finding(findings, "E0V2_MUT_CHANGE_COUNT", path, "must be exactly one");
+    }
+    // Recompute the from-assertion against the live packet so a control can
+    // never drift from what it claims to mutate.
+    const pointer = String(mutation["jsonPointer"] ?? "");
+    const resolved = resolveJsonPointer(target, pointer);
+    const operator = String(mutation["operator"] ?? "");
+    if (operator === "add") {
+      const absent =
+        isObject(mutation["from"]) && mutation["from"]["$absent"] === true;
+      if (!absent || resolved.found || !resolved.parentFound) {
+        finding(
+          findings,
+          "E0V2_MUT_FROM_ASSERTION",
+          path,
+          "An add-operator control requires the $absent sentinel and a live-absent key with a present parent.",
+        );
+      }
+    } else if (operator === "replace" || operator === "remove") {
+      if (!resolved.found || !jsonEqual(resolved.value, mutation["from"])) {
+        finding(
+          findings,
+          "E0V2_MUT_FROM_ASSERTION",
+          path,
+          "The from value must equal the live packet value at the pointer.",
+        );
+      }
+    } else {
+      finding(findings, "E0V2_MUT_OPERATOR", path, operator);
+    }
+  }
+  return ids.size;
+}
+
 export async function validateE0V2Contract(
   fixtureRoot = fileURLToPath(
     new URL("../tests/fixtures/interchange-v2", import.meta.url),
@@ -949,6 +1081,7 @@ export async function validateE0V2Contract(
   const projectionCases = validateProjectionCases(projectionRoot, findings);
   const workflowRoot = loaded.get("workflow-cases.json") ?? {};
   const workflowCases = await validateWorkflowCases(workflowRoot, findings);
+  const mutationRoot = loaded.get("mutation-controls.json") ?? {};
 
   const traceRoot = loaded.get("trace-ledger.json") ?? {};
   const traces = Array.isArray(traceRoot["traces"]) ? traceRoot["traces"] : [];
@@ -980,6 +1113,12 @@ export async function validateE0V2Contract(
       .filter(isObject)
       .map((row) => row["id"])
       .filter((id): id is string => typeof id === "string"),
+  );
+  const mutationControls = validateMutationControls(
+    mutationRoot,
+    loaded,
+    caseIds,
+    findings,
   );
   const coveredResolutions = new Set<string>();
   const referencedCaseIds = new Set<string>();
@@ -1061,6 +1200,7 @@ export async function validateE0V2Contract(
     resolutionCases,
     projectionCases,
     workflowCases,
+    mutationControls,
     traces: traces.length,
     authorities: authorities.length,
     pendingResolutionRows: pendingResolutions.length,
@@ -1071,6 +1211,7 @@ export async function validateE0V2Contract(
     declaredCounts["resolutionCases"] !== counts.resolutionCases ||
     declaredCounts["projectionCases"] !== counts.projectionCases ||
     declaredCounts["workflowCases"] !== counts.workflowCases ||
+    declaredCounts["mutationControls"] !== counts.mutationControls ||
     declaredCounts["traces"] !== counts.traces ||
     declaredCounts["authorities"] !== counts.authorities
   ) {
