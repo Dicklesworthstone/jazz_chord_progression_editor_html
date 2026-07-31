@@ -109,6 +109,9 @@ export default tseslint.config(
     ignores: [
       ".beads/**",
       ".bv/**",
+      /* Agent worktrees are transient checkouts of this same repo; linting
+         them double-reports every finding against a tree nobody releases. */
+      ".claude/**",
       ".tmp/**",
       "blob-report/**",
       "coverage/**",
