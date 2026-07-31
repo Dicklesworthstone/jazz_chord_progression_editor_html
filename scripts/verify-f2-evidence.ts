@@ -186,7 +186,7 @@ type F2ConformanceObservation = Readonly<{
   schema: "changes.evidence.f2-conformance-observation.v1";
   runtimeCaseIds: readonly string[];
   caseHashes: Readonly<Record<string, string>>;
-  cells: 1_360;
+  cells: 1_368;
   seedDigests: Readonly<Record<string, string>>;
   semanticDigest: string;
 }>;
@@ -208,6 +208,13 @@ export const F2_FOCUSED_TEST_FILES = [
   "tests/conformance/f2-freshness-host-evidence.test.ts",
 ] as const;
 
+/*
+ * Re-pinned 2026-07-31: the groove document field (51b1240) grew the shape
+ * campaign by eight cells (1,017 -> 1,025; totals 1,360 -> 1,368, decoder
+ * calls 5,440 -> 5,472) and changed the TIME seed's decoded playback shape.
+ * The focused suite's own reviewed oracles moved with that landing; this
+ * gate's mirror pins did not, which left f2-evidence red on a green tree.
+ */
 export const F2_SEED_DIGESTS = Object.freeze({
   "F2-SEED-BOUNDS": "4d582edc0fd4557c6b5f325e783d7a81a5abe67bbf43f518e09ad91b51970af2",
   "F2-SEED-CHORD": "26a3bd06842c4de0e3310507414651b7c8fe55dd235fc719b293ab660961cc7a",
@@ -215,7 +222,7 @@ export const F2_SEED_DIGESTS = Object.freeze({
   "F2-SEED-IDS": "76b9ffebf7a7f31242269ea460499d4765e0169fcd7fb6ceeb18241a92667f0a",
   "F2-SEED-ORDER": "8dfa51b0fc1f7c9538a1cb1b8570620cd93cb7bda5930f5e5c6a870d48a2b18c",
   "F2-SEED-SHAPE": "3fd433ba290d8f5a4e626ebaf2a6e94a75cc932b65cf249cd664aba8e1cb4495",
-  "F2-SEED-TIME": "b8eb063375ab625bd5b3bbb8f550f35f4cf8b8c4aa93cede9de761961e91b65c",
+  "F2-SEED-TIME": "a180df41fae8ae0aa99b1380743e45a9d159705f26227c7f03ff98c188b002c8",
   "F2-SEED-UNICODE": "f5a00e190955eed19455eb55aeb031919a1b98cb73c2a744a28a14838dce02e0",
 });
 
@@ -272,13 +279,13 @@ const EXPECTED_VALIDATOR_COUNTS = Object.freeze({
 const EXPECTED_COUNTERS = Object.freeze({
   shapeCaseRecords: 33,
   adversarialCaseRecords: 32,
-  runtimeShapeCells: 1_017,
+  runtimeShapeCells: 1_025,
   runtimeAdversarialCells: 343,
   counterGoldenCells: 3,
-  materializedRuntimeCells: 1_360,
+  materializedRuntimeCells: 1_368,
   publicCallsPerMaterializedCell: 2,
   privateCallsPerMaterializedCell: 2,
-  mainCampaignDecoderCalls: 5_440,
+  mainCampaignDecoderCalls: 5_472,
   decoderEvidenceCounters: 28,
   harnessObservationCounters: 7,
   traceRecords: 12,
@@ -699,7 +706,7 @@ export function parseF2ConformanceObservation(output: string): Readonly<{
     const semanticDigest = sha256Sync(JSON.stringify(canonicalJsonValue(semanticInput)));
     if (
       parsed["schema"] !== "changes.evidence.f2-conformance-observation.v1" ||
-      parsed["cells"] !== 1_360 ||
+      parsed["cells"] !== 1_368 ||
       runtimeCaseIds.length !== 59 ||
       new Set(runtimeCaseIds).size !== 59 ||
       stableJson(runtimeCaseIds) !== stableJson([...runtimeCaseIds].sort(compare)) ||
@@ -713,7 +720,7 @@ export function parseF2ConformanceObservation(output: string): Readonly<{
         schema: "changes.evidence.f2-conformance-observation.v1",
         runtimeCaseIds,
         caseHashes,
-        cells: 1_360,
+        cells: 1_368,
         seedDigests,
         semanticDigest,
       },
@@ -1458,7 +1465,7 @@ export function validateF2EvidenceCandidate(
     `F2_EVIDENCE_OBSERVATION ${JSON.stringify(observation)}`,
   );
   if (parsedStoredObservation.observation === null) {
-    findings.push(finding("F2_EVIDENCE_OBSERVATION_INVALID", `${OUTPUT_PATH}#conformanceObservation`, "The 1,360-cell, 59-case, eight-seed observation is required."));
+    findings.push(finding("F2_EVIDENCE_OBSERVATION_INVALID", `${OUTPUT_PATH}#conformanceObservation`, "The 1,368-cell, 59-case, eight-seed observation is required."));
   }
   const expectedSpecial = buildF2SpecialCaseEvidence(storedSummary, "pass");
   findings.push(...expectedSpecial.findings);
@@ -1469,7 +1476,7 @@ export function validateF2EvidenceCandidate(
       schema: "changes.evidence.f2-conformance-observation.v1",
       runtimeCaseIds: [],
       caseHashes: {},
-      cells: 1_360 as const,
+      cells: 1_368 as const,
       seedDigests: {},
       semanticDigest: "unavailable",
     };
@@ -1708,7 +1715,7 @@ export async function verifyF2Evidence(): Promise<F2EvidenceLedger> {
     schema: "changes.evidence.f2-conformance-observation.v1" as const,
     runtimeCaseIds: [],
     caseHashes: {},
-    cells: 1_360 as const,
+    cells: 1_368 as const,
     seedDigests: {},
     semanticDigest: "unavailable",
   };
