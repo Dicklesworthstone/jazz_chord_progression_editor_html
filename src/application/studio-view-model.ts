@@ -343,15 +343,29 @@ function transportStatusLabel(status: ApplicationTransportStatus): string {
 }
 
 /**
+ * jcpe-my0j: the stable application-settlement cause the controller publishes
+ * when a command's RECEIPT has to settle a still-optimistic expectation
+ * because the genuine X1 notification was identity-superseded — the document
+ * was replaced or edited after the sounding plan was bound, so the echoed
+ * (documentId, planRevision) can never satisfy the A0 acceptance law again.
+ * Minted by the studio controller, never by X1; it is not an X1 refusal code.
+ */
+export const TRANSPORT_PLAN_SUPERSEDED_FAILURE_CODE =
+  "transport.plan_superseded";
+
+/**
  * jcpe-uslp: every stable failure code the transport view can carry — the 20
- * X1 refusal codes, the 28 X0 engine codes, and the interruption marker —
- * maps to a sentence that says what happened and the next safe action. The
- * default arm keeps the map total for any future code without hiding it.
+ * X1 refusal codes, the 28 X0 engine codes, the interruption marker, and the
+ * jcpe-my0j plan-superseded settlement cause — maps to a sentence that says
+ * what happened and the next safe action. The default arm keeps the map total
+ * for any future code without hiding it.
  */
 export function transportFailureDetail(code: string): string {
   switch (code) {
     case "transport.locked":
       return "Audio has not started yet. Press Play to start it.";
+    case TRANSPORT_PLAN_SUPERSEDED_FAILURE_CODE:
+      return "The chart changed during playback. Press Play to hear the current chart.";
     case "transport.disposed":
     case "audio.engine_closed":
     case "audio.dispose_reason_invalid":

@@ -57,6 +57,8 @@ export type {
   ProgressionLibraryEntry,
   ProgressionProvenance,
 } from "./studio-progression-library";
+export { loadProgressionLibraryEntry } from "./studio-library-load";
+export type { LoadProgressionLibraryEntryResult } from "./studio-library-load";
 
 /**
  * The audio composition the root injects into the controller. Exported from
