@@ -7,13 +7,21 @@ export type StudioTitleFeedback = Readonly<{
   message: string;
 }>;
 
+/**
+ * Outcome of the last Copy-link press, stated concretely. `copied` reached
+ * the clipboard, `manual` reached only the address bar, and `refused` names
+ * the exact reason the share grammar could not carry the chart.
+ */
+export type StudioShareFeedback = Readonly<{
+  kind: "copied" | "manual" | "refused";
+  message: string;
+}>;
+
 export type StudioDocumentView = Readonly<{
   committedTitle: string;
   titleDraft: string;
   titleMaxCodePoints: number;
-  lifecycleLabel: string;
   revisionLabel: string;
-  dirty: boolean;
   titleFeedback: StudioTitleFeedback;
   canCommitTitle: boolean;
   canResetTitleDraft: boolean;
@@ -21,8 +29,10 @@ export type StudioDocumentView = Readonly<{
   canRedo: boolean;
   /** False when the chart is already a single empty measure. */
   canClearChart: boolean;
-  /** Outcome of the last Copy-link press, stated concretely; null before one. */
-  shareFeedback: string | null;
+  /** Outcome of the last Copy-link press; null before one. */
+  shareFeedback: StudioShareFeedback | null;
+  /** True for ~2 seconds after a clipboard success; flips the button label. */
+  shareCopied: boolean;
   /**
    * Clearing arms on the first press and fires on the second, in place of a
    * native confirm dialog. The armed state is presentation-only and disarms
@@ -148,6 +158,12 @@ export type StudioChartView = Readonly<{
   sectionCountLabel: string;
   measureCountLabel: string;
   chordCountLabel: string;
+  /**
+   * True while the seeded starter chart is untouched (title still the seed's
+   * and revision at the seed level). Drives a dismissible one-line demo
+   * banner above the chart; dismissal is component state, never persisted.
+   */
+  isSeededDemo: boolean;
   sections: readonly StudioSectionView[];
   /** Exactly one chord card is tabbable; the rest are reachable by arrow keys. */
   rovingFocusId: string | null;
@@ -308,7 +324,10 @@ export type StudioTransportView = Readonly<{
   audioStatusDetail: string;
   tempoBpm: number;
   instrumentLabel: string;
+  /** Musical bar·beat readout ("Bar 2 · beat 3.0"), derived at render time. */
   positionLabel: string;
+  /** The exact rational playhead, kept for a title attribute; never rounded. */
+  positionExactLabel: string;
   currentChordLabel: string | null;
   /** 0..100 while playing, or null; drives the transport progress sweep. */
   progressPercent: number | null;

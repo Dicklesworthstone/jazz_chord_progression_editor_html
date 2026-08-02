@@ -234,6 +234,12 @@ export function ChartWorkspace({
   const [openBoundaryMenuId, setOpenBoundaryMenuId] = useState<string | null>(
     null,
   );
+  /**
+   * The demo-chart banner's dismissal. Component state on purpose: the
+   * banner is a greeting, not a document fact, so it never persists and
+   * never reaches the controller.
+   */
+  const [demoBannerDismissed, setDemoBannerDismissed] = useState(false);
   const [dragging, setDragging] = useState<string | null>(null);
   /**
    * A completed drag ends with a click on the captured handle. Without this the
@@ -980,6 +986,28 @@ export function ChartWorkspace({
       tabIndex={-1}
       onKeyDown={onChartKeyDown}
     >
+      {view.isSeededDemo && !demoBannerDismissed ? (
+        <div class="studio-demo-banner" data-testid="demo-banner" role="status">
+          <p>
+            This is a demo chart — press Play to hear it, or Clear to start
+            your own.
+          </p>
+          <Button
+            busy={false}
+            density="dense"
+            describedBy={[]}
+            disabled={false}
+            id="studio-dismiss-demo-banner"
+            invalid={false}
+            label="Dismiss"
+            onAction={() => {
+              setDemoBannerDismissed(true);
+            }}
+            type="button"
+            variant="ghost"
+          />
+        </div>
+      ) : null}
       <header class="studio-chart__header">
         <div>
           <p class="studio-kicker">Lead sheet</p>
@@ -1337,7 +1365,13 @@ export function ChartWorkspace({
           role="status"
         >
           <strong>{view.editRefusal.message}</strong>
-          <span>{view.editRefusal.recoveryAction}</span>
+          {/*
+            Explicit spaces: these spans are inline siblings, and JSX drops
+            the newline between them, so without the literal space the
+            recovery sentence and the first resolution fused mid-word
+            ("…measure.Move following…").
+          */}
+          <span>{view.editRefusal.recoveryAction}</span>{" "}
           {view.editRefusal.resolutions.length === 0 ? null : (
             <span class="studio-chart__resolutions">
               {view.editRefusal.resolutions.join(" · ")}
