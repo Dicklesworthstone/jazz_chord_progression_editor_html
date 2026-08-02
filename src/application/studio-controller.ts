@@ -87,6 +87,11 @@ import {
   createStudioBootstrap,
   type StudioBootstrapRefusal,
 } from "./studio-bootstrap";
+import type { A0E0InterchangeOwnerOperations } from "./application-interchange-owner-contract";
+import {
+  createStudioInterchangeOwnerOperations,
+  type StudioInterchangeOwnerDiagnostic,
+} from "./studio-interchange-owner";
 import type { StudioAnalysisFrame } from "./studio-analysis";
 import {
   formatExactBeatLabel,
@@ -915,13 +920,38 @@ export type StudioControllerOptions = Readonly<{
    * and every playback action refuses honestly rather than pretending.
    */
   audio?: StudioAudioPort;
+  /**
+   * Optional structured-diagnostics sink for the A0/E0 interchange owner
+   * ports. Events are state-free `{operation, event, ordinal}` records; a
+   * throwing sink is swallowed and can never fail an owner operation.
+   */
+  interchangeDiagnostics?: (
+    diagnostic: StudioInterchangeOwnerDiagnostic,
+  ) => void;
 }>;
 
-function makeStudioController(
+/**
+ * The full application composition: the public studio controller plus the
+ * composition-private A0/E0 interchange owner aggregate, both closed over the
+ * SAME private state cell. The owner aggregate is deliberately not a member
+ * of `StudioController`: only a composition root (or a bridge-verification
+ * harness standing in for one) may hold it, and it is never passed through
+ * public E0 calls, exposed to Preact, or accepted from callers.
+ */
+export type StudioComposition = Readonly<{
+  controller: StudioController;
+  interchangeOwner: A0E0InterchangeOwnerOperations;
+}>;
+
+export type StudioCompositionCreationResult =
+  | Readonly<{ ok: true; composition: StudioComposition }>
+  | Readonly<{ ok: false; refusal: StudioControllerConstructionRefusal }>;
+
+function makeStudioComposition(
   initialState: AppState,
   dependencies: ApplicationCommandDependencies,
   options: StudioControllerOptions,
-): StudioController {
+): StudioComposition {
   let state = initialState;
   /*
    * jcpe-jnnu: the groove is a document field now, so the active performance
@@ -4800,7 +4830,53 @@ function makeStudioController(
     return setMeasureCompletion(measureId, completion.completion);
   };
 
-  return Object.freeze({
+  /**
+   * Install a state published by the A0/E0 interchange owner ports. This is
+   * `apply`'s exact install discipline — derive the view model from the next
+   * state, publish the state cell, and rebuild the document index when the
+   * document changed — so an owner publication can never leave the snapshot
+   * or index stale. Listener notification is deliberately a separate step:
+   * the marker-CAS and replacement-publication laws order it strictly after
+   * installation.
+   */
+  const installOwnerState = (next: AppState): void => {
+    if (next === state) return;
+    const nextSnapshot = selectStudioViewModel(
+      next,
+      sessionViewFor(next.document),
+    );
+    const previous = state;
+    state = next;
+    snapshot = nextSnapshot;
+    if (next.document !== previous.document) {
+      documentIndex = buildDocumentIndex(next.document, createWorkCounters());
+    }
+  };
+
+  /*
+   * The five A0/E0 owner ports (docs/A0_E0_OWNER_PORTS_CONTRACT.md) close
+   * over the same private `state` cell, install path, and listener set as
+   * the controller itself. They are returned beside the controller, never on
+   * it: the composition root decides who may hold them.
+   */
+  const interchangeOwner = createStudioInterchangeOwnerOperations(
+    options.interchangeDiagnostics === undefined
+      ? {
+          dependencies,
+          readState: () => state,
+          installState: installOwnerState,
+          notifyListeners: notify,
+        }
+      : {
+          dependencies,
+          readState: () => state,
+          installState: installOwnerState,
+          notifyListeners: notify,
+          emitDiagnostic: options.interchangeDiagnostics,
+        },
+  );
+
+  const controller: StudioController = Object.freeze({
     acknowledgeFocus,
     declareMeasureCompletion,
     getSnapshot: () => snapshot,
@@ -4871,12 +4947,14 @@ function makeStudioController(
           : !state.panels.rightRailCollapsed,
       ),
   });
+
+  return Object.freeze({ controller, interchangeOwner });
 }
 
 /**
  * Compose the controller over an already-published document.
  *
- * `createStudioController` is the production composition root and publishes
+ * `createStudioComposition` is the production composition entry and publishes
  * the built-in blank chart, which is always 4/4. Conformance evidence must
  * host the other reviewed meters, and the only honest way to do that is the
  * real controller over a document published through the same F2/F3 boundary —
@@ -4888,18 +4966,39 @@ export function createStudioControllerOverState(
   dependencies: ApplicationCommandDependencies,
   options: StudioControllerOptions = {},
 ): StudioController {
-  return makeStudioController(state, dependencies, options);
+  return makeStudioComposition(state, dependencies, options).controller;
 }
 
-export function createStudioController(
+/**
+ * Compose the controller AND the composition-private A0/E0 interchange owner
+ * aggregate over an already-published state. Bridge verification uses this to
+ * exercise the owner ports against the real controller; production owner
+ * binding goes through `createStudioComposition`.
+ */
+export function createStudioCompositionOverState(
+  state: AppState,
+  dependencies: ApplicationCommandDependencies,
   options: StudioControllerOptions = {},
-): StudioControllerCreationResult {
+): StudioComposition {
+  return makeStudioComposition(state, dependencies, options);
+}
+
+/**
+ * The production composition entry. The A0/E0 owner aggregate is constructed
+ * here, in the same closure as the controller, and handed only to the caller
+ * — the composition root — which decides whether any consumer may receive
+ * the narrowed untrusted ports. Until an accepted E0 v2 consumer exists,
+ * nothing does.
+ */
+export function createStudioComposition(
+  options: StudioControllerOptions = {},
+): StudioCompositionCreationResult {
   const bootstrap = createStudioBootstrap();
   if (!bootstrap.ok) return bootstrap;
   try {
     return Object.freeze({
       ok: true,
-      controller: makeStudioController(
+      composition: makeStudioComposition(
         bootstrap.value.state,
         bootstrap.value.dependencies,
         options,
@@ -4917,4 +5016,15 @@ export function createStudioController(
       }),
     });
   }
+}
+
+export function createStudioController(
+  options: StudioControllerOptions = {},
+): StudioControllerCreationResult {
+  const composed = createStudioComposition(options);
+  if (!composed.ok) return composed;
+  return Object.freeze({
+    ok: true,
+    controller: composed.composition.controller,
+  });
 }

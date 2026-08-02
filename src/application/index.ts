@@ -116,13 +116,27 @@ export type {
 } from "./studio-bootstrap";
 
 export {
+  createStudioComposition,
+  createStudioCompositionOverState,
   createStudioController,
   createStudioControllerOverState,
   STUDIO_CONTROLLER_REFUSAL_CODES,
 } from "./studio-controller";
 
+export {
+  applyPreparedImportReplacementToLatestState,
+  createExportRevisionMarkedState,
+} from "./studio-interchange-owner";
+
+export type {
+  StudioInterchangeOwnerDiagnostic,
+  StudioPreparedImportReplacementMaterial,
+} from "./studio-interchange-owner";
+
 export type {
   StudioBoundaryInput,
+  StudioComposition,
+  StudioCompositionCreationResult,
   StudioController,
   StudioControllerAction,
   StudioControllerActionResult,
