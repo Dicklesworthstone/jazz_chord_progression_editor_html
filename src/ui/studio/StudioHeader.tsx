@@ -3,7 +3,6 @@ import {
   Field,
   Input,
   Label,
-  StatusPill,
   VisuallyHidden,
 } from "../primitives";
 import type {
@@ -67,11 +66,6 @@ export function StudioHeader({ view, callbacks }: StudioHeaderProps) {
                 required
                 text="Chart title"
               />
-              <span
-                aria-label={`${titleLength.toString()} of ${view.titleMaxCodePoints.toString()} code points`}
-              >
-                {titleLength}/{view.titleMaxCodePoints}
-              </span>
             </div>
             <div class="studio-title-editor__control-row">
               <Input
@@ -90,6 +84,13 @@ export function StudioHeader({ view, callbacks }: StudioHeaderProps) {
                 readOnly={false}
                 value={view.titleDraft}
               />
+              {/* The length counter sits beside the field it counts. */}
+              <span
+                class="studio-title-editor__count"
+                aria-label={`${titleLength.toString()} of ${view.titleMaxCodePoints.toString()} code points`}
+              >
+                {titleLength}/{view.titleMaxCodePoints}
+              </span>
               <Button
                 busy={false}
                 density="comfortable"
@@ -134,6 +135,12 @@ export function StudioHeader({ view, callbacks }: StudioHeaderProps) {
       />
 
       <div class="studio-document-actions">
+        {/*
+          The revision counter alone: the retired "Not exported" pill named
+          an export feature this build does not have, which read as jargon
+          to strangers. The live-region container stays for the contract's
+          shell-region inventory and for revision announcements.
+        */}
         <div
           class="studio-document-status"
           id="document-status"
@@ -142,11 +149,6 @@ export function StudioHeader({ view, callbacks }: StudioHeaderProps) {
           aria-atomic="true"
           role="status"
         >
-          <StatusPill
-            iconId="status"
-            label={view.lifecycleLabel}
-            tone={view.dirty ? "warning" : "neutral"}
-          />
           <span class="studio-document-status__revision">
             {view.revisionLabel}
           </span>
@@ -213,7 +215,10 @@ export function StudioHeader({ view, callbacks }: StudioHeaderProps) {
           {/*
             Sharing is an explicit gesture that encodes the current chart
             into a local #zdoc= fragment — no request leaves the page. The
-            outcome line states exactly where the link went.
+            outcome line states exactly where the link went, and it renders
+            VISIBLY beside the button: a status only a screen reader could
+            hear was a dead click for everyone else. The span itself stays
+            the polite live region, and refusals land in the same spot.
           */}
           <Button
             busy={false}
@@ -222,7 +227,7 @@ export function StudioHeader({ view, callbacks }: StudioHeaderProps) {
             disabled={false}
             id="studio-copy-share-link"
             invalid={false}
-            label="Copy link"
+            label={view.shareCopied ? "Copied ✓" : "Copy link"}
             onAction={callbacks.onCopyShareLink}
             type="button"
             variant="secondary"
@@ -230,13 +235,12 @@ export function StudioHeader({ view, callbacks }: StudioHeaderProps) {
           <span
             aria-live="polite"
             aria-atomic="true"
+            class="studio-share-feedback"
+            data-feedback-kind={view.shareFeedback?.kind ?? "idle"}
             id="studio-share-feedback"
             role="status"
           >
-            <VisuallyHidden
-              content={view.shareFeedback ?? ""}
-              focusableWhenSkippedTo={false}
-            />
+            {view.shareFeedback?.message ?? ""}
           </span>
         </div>
       </div>

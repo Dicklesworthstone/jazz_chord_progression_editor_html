@@ -58,7 +58,9 @@ test.describe("interactive studio checkpoint", () => {
     await apply.click();
 
     await expect(title).toHaveValue("Blue in Green");
-    await expect(page.getByText("Not exported", { exact: true })).toBeVisible();
+    // jcpe-xzjo removed the "Not exported" pill: the UI has no export
+    // feature, so the status region now states only the revision.
+    await expect(page.getByText("Not exported", { exact: true })).toHaveCount(0);
     await expect(page.getByText("Revision 4", { exact: true })).toBeVisible();
     await expect(
       page.getByText("Title committed as an undoable document change."),
