@@ -130,9 +130,9 @@ test.describe("U1-TRACE-INLINE inline symbol and duration editing", () => {
       "data-code",
       "u1.duration_overfills_measure",
     );
-    await expect(page.getByTestId("chart-edit-refusal")).toContainText(
-      "Move following chords into the next measure",
-    );
+    // jcpe-yvni: each named remedy is its own control in the strip.
+    await expect(page.locator("#studio-move-following")).toBeVisible();
+    await expect(page.locator("#studio-cancel-pending-edit")).toBeVisible();
     await expect(card).toContainText("2/1 beats");
     expectCleanDiagnostics(diagnostics);
   });

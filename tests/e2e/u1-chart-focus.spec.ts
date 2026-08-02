@@ -2,7 +2,6 @@ import { expect, test } from "@playwright/test";
 
 import {
   cards,
-  declareIncompleteMeasure,
   captureDiagnostics,
   expectCleanDiagnostics,
   focusCard,
@@ -109,14 +108,10 @@ test.describe("U1-TRACE-FOCUS roving focus and focus repair", () => {
     await cards(page).nth(1).click();
     await page.locator("#studio-delete-selection").click();
 
-    // Deleting one of four quarter notes leaves a short bar, which needs an
-    // explicit reason before anything is published.
-    await expect(page.getByTestId("chart-edit-refusal")).toHaveAttribute(
-      "data-code",
-      "u1.completion_reason_required",
-    );
-    await declareIncompleteMeasure(page, "Deliberate gap");
-
+    // jcpe-yvni: a routine delete lands at once. The short bar it leaves is
+    // auto-declared with the reviewed reason — no dialog interrogates the
+    // user — so the focus repair happens on the delete itself.
+    await expect(page.getByTestId("incomplete-reason-field")).toHaveCount(0);
     await expect(cards(page)).toHaveCount(3);
     // The next event by document order takes the tab stop.
     await expect(cards(page).nth(1)).toContainText("E");

@@ -418,7 +418,11 @@ test.describe("U1-TRACE-FOCUS editors take the caret and give the card back", ()
     );
     expect(active).not.toBe("BODY");
     await page.keyboard.press("Delete");
-    await expect(page.getByTestId("incomplete-reason-field")).toBeVisible();
+    // jcpe-yvni: the Delete key acts immediately — the card count dropping is
+    // the proof the keystroke reached a chart control, and no dialog
+    // interrogates the user for the routine reason.
+    await expect(cards(page)).toHaveCount(3);
+    await expect(page.getByTestId("incomplete-reason-field")).toHaveCount(0);
     expectCleanDiagnostics(diagnostics);
   });
 });
@@ -488,7 +492,22 @@ test.describe("U1-TRACE-POINTER authoring never requires a pointer", () => {
     await expect(page.getByTestId("chart-selection-status")).toContainText("1");
 
     await page.keyboard.press("Delete");
-    // A short bar needs its stated reason; the dialog is keyboard-reachable.
+    // jcpe-yvni: the routine delete lands at once with its auto-declared
+    // reason; no dialog interrupts the keyboard session.
+    await expect(cards(page)).toHaveCount(3);
+    await expect(page.getByTestId("incomplete-reason-field")).toHaveCount(0);
+
+    // The deliberate declaration path stays keyboard-reachable: the card
+    // menu's "Declare this measure's completion" opens U1-CMP-019, and the
+    // typed custom reason replaces the auto-declared one.
+    await focusCard(page, 0);
+    await page.keyboard.press("Shift+F10");
+    await expect(page.getByTestId("chord-card-menu")).toBeVisible();
+    // Tab enters the menu's first item; End reaches its last item, which is
+    // the declaration; Enter activates it.
+    await page.keyboard.press("Tab");
+    await page.keyboard.press("End");
+    await page.keyboard.press("Enter");
     const reason = page.getByTestId("incomplete-reason-field");
     await expect(reason).toBeVisible();
     await reason.fill("Removed by the keyboard-only proof");

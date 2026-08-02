@@ -1,12 +1,16 @@
 import { expect, test } from "@playwright/test";
 
 import {
+  activateMenuItem,
   cards,
   captureDiagnostics,
   chordIds,
+  declareIncompleteMeasure,
   expectCleanDiagnostics,
   focusCard,
+  openCardMenu,
   openStudio,
+  showTeachingView,
   typeAndInsert,
 } from "./u1-chart-kit";
 
@@ -153,18 +157,27 @@ test.describe("U1-TRACE-INLINE measures state exact beats and stored reasons", (
     const diagnostics = captureDiagnostics(page);
     await openStudio(page);
     await typeAndInsert(page, "| Dm9:1 G13:1 C6:1 A7:1 |");
-    const reasonText = "Pickup bar into the head";
 
     await focusCard(page, 3);
     await page.keyboard.press("Enter");
     await page.keyboard.press("Delete");
-    const reason = page.getByTestId("incomplete-reason-field");
-    await expect(reason).toBeVisible();
-    await reason.fill(reasonText);
-    await page.locator("#studio-confirm-incomplete").click();
+    // jcpe-yvni: the routine delete lands at once, auto-declared with the
+    // reviewed constant. The default (compact) view marks the short bar
+    // with a VISIBLE badge carrying the stored reason verbatim.
+    await expect(page.getByTestId("incomplete-reason-field")).toHaveCount(0);
     await expect(cards(page)).toHaveCount(3);
+    const badge = page.getByTestId("measure-completion-badge");
+    await expect(badge).toBeVisible();
+    await expect(badge).toHaveAttribute("title", "Shortened by delete");
 
-    // Verbatim, shown with the measure, in the default (compact) view.
+    // The deliberate card-menu path still stores a typed reason, replacing
+    // the constant verbatim and shown with the measure's teaching facts.
+    const reasonText = "Pickup bar into the head";
+    await openCardMenu(page, 0);
+    await activateMenuItem(page, "Declare this measure's completion");
+    await declareIncompleteMeasure(page, reasonText);
+    await expect(badge).toHaveAttribute("title", reasonText);
+    await showTeachingView(page);
     await expect(page.locator(".studio-measure__facts")).toContainText(
       reasonText,
     );
@@ -208,11 +221,18 @@ test.describe("U1-TRACE-INLINE cancellation restores the exact prior value", () 
     const diagnostics = captureDiagnostics(page);
     await openStudio(page);
     await typeAndInsert(page, "| Dm9:1 G13:1 C6:1 A7:1 |");
-    const before = await chordIds(page);
 
+    // jcpe-yvni: routine deletes no longer open the dialog, so the dialog
+    // under test is reached through the deliberate declaration path on the
+    // bar the delete left short.
     await focusCard(page, 3);
     await page.keyboard.press("Enter");
     await page.keyboard.press("Delete");
+    await expect(cards(page)).toHaveCount(3);
+    const before = await chordIds(page);
+
+    await openCardMenu(page, 0);
+    await activateMenuItem(page, "Declare this measure's completion");
     const reason = page.getByTestId("incomplete-reason-field");
     await expect(reason).toBeVisible();
     await reason.fill("A reason typed and then abandoned");
@@ -220,9 +240,14 @@ test.describe("U1-TRACE-INLINE cancellation restores the exact prior value", () 
     await page.locator("#studio-abandon-pending-edit").click();
     await expect(reason).toHaveCount(0);
 
-    // The chart is exactly where it was; no measure was declared incomplete.
+    // The chart is exactly where it was; the stored auto-declared reason is
+    // untouched by the abandoned draft.
     expect(await chordIds(page)).toEqual(before);
-    await expect(cards(page)).toHaveCount(4);
+    await expect(cards(page)).toHaveCount(3);
+    await expect(page.getByTestId("measure-completion-badge")).toHaveAttribute(
+      "title",
+      "Shortened by delete",
+    );
     await expect(page.locator(".studio-measure__facts")).not.toContainText(
       "abandoned",
     );
