@@ -839,11 +839,23 @@
 }
 
 .studio-chart__resolutions {
+  /* Its own block (jcpe-yvni): rendered inline, the joined remedy list ran
+     straight on from the recovery sentence with no space between them. */
+  display: block;
+  margin-block-start: var(--space-1);
   color: var(--text-muted);
   font-size: var(--text-xs);
 }
 
+.studio-chart__refusal-actions,
 .studio-chart__reason {
+  /* One button per named remedy, wrapped as a single toolbar row. */
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-block-start: var(--space-2);
+  margin-inline-end: var(--space-2);
   color: var(--text-subtle);
   font-size: var(--text-xs);
 }

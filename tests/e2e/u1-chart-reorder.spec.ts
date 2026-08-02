@@ -238,3 +238,38 @@ test.describe("U1-TRACE-IDENTITY stable identity across reorder", () => {
     expectCleanDiagnostics(diagnostics);
   });
 });
+
+/**
+ * jcpe-yvni: duplicate lands by default. A full focused bar no longer refuses
+ * the copy; the reviewed split-here resolution runs instead, landing the copy
+ * in a fresh bar immediately after the full one with its short fill
+ * auto-declared under the reviewed constant.
+ */
+test.describe("U1-TRACE-IDENTITY duplicate lands by default", () => {
+  test("duplicating in a full bar lands the copy in a fresh following bar", async ({
+    page,
+  }) => {
+    const diagnostics = captureDiagnostics(page);
+    await openStudio(page);
+    await showTeachingView(page);
+    await typeAndInsert(page, "Dm9:2 G13:2");
+
+    await cards(page).first().click();
+    await page.locator("#studio-duplicate-selection").click();
+
+    // No refusal strip and no dialog: the gesture resolves the overfill.
+    await expect(page.getByTestId("chart-edit-refusal")).toHaveCount(0);
+    await expect(page.getByTestId("incomplete-reason-field")).toHaveCount(0);
+    await expect(cards(page)).toHaveCount(3);
+    const measures = page.locator(".studio-measure");
+    await expect(measures).toHaveCount(2);
+    // The source bar is untouched; the copy sits alone in the fresh bar.
+    await expect(measures.nth(0).locator(".studio-chord-card")).toHaveCount(2);
+    await expect(measures.nth(1).locator(".studio-chord-card")).toHaveCount(1);
+    await expect(measures.nth(1)).toContainText("Dm9");
+    await expect(
+      measures.nth(1).getByTestId("measure-completion-badge"),
+    ).toHaveAttribute("title", "Shortened by duplicate");
+    expectCleanDiagnostics(diagnostics);
+  });
+});

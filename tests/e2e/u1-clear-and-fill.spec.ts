@@ -194,7 +194,11 @@ test.describe("split-at-bar one-click fix", () => {
       "data-code",
       "u1.duration_overfills_measure",
     );
-    await expect(refusal).toContainText("Split this bar at the next chord");
+    // jcpe-yvni: every named remedy is its own control, including Cancel.
+    await expect(page.locator("#studio-move-following")).toBeVisible();
+    await expect(page.locator("#studio-shorten-duration")).toBeVisible();
+    await expect(page.locator("#studio-cancel-pending-edit")).toBeVisible();
+    await expect(page.locator("#studio-split-at-bar")).toBeVisible();
 
     await page.locator("#studio-split-at-bar").click();
     /*

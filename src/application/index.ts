@@ -153,6 +153,14 @@ export type {
 } from "./studio-controller";
 
 export {
+  DELETE_AUTO_COMPLETION_REASON,
+  DUPLICATE_AUTO_COMPLETION_REASON,
+  deleteSelectionAutoDeclaring,
+  duplicateSelectionAutoResolving,
+} from "./studio-edit-gestures";
+export type { StudioEditGestureActions } from "./studio-edit-gestures";
+
+export {
   formatExactBeatLabel,
   selectStudioViewModel,
 } from "./studio-view-model";

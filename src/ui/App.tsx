@@ -8,6 +8,8 @@ import {
 
 import {
   buildSharePayload,
+  deleteSelectionAutoDeclaring,
+  duplicateSelectionAutoResolving,
   encodeShareFragment,
   loadProgressionLibraryEntry,
   STARTER_CHART,
@@ -1828,10 +1830,25 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
           setRovingFocusId(chordId);
         },
         onDeleteSelection: () => {
-          recordEditResult(actions.deleteSelection(), { kind: "delete" });
+          /*
+           * jcpe-yvni: a routine delete never interrogates the user. The
+           * gesture auto-declares any bar it leaves short with the reviewed
+           * constant; the card menu's "Declare this measure's completion"
+           * remains the deliberate path to a custom reason.
+           */
+          recordEditResult(deleteSelectionAutoDeclaring(actions), {
+            kind: "delete",
+          });
         },
         onDuplicateSelection: () => {
-          recordEditResult(actions.duplicateSelection(), { kind: "duplicate" });
+          /*
+           * jcpe-yvni: duplicate lands by default. When the copies overfill
+           * the focused bar, the gesture performs the reviewed split-here
+           * resolution — a fresh bar right after it — instead of refusing.
+           */
+          recordEditResult(duplicateSelectionAutoResolving(actions), {
+            kind: "duplicate",
+          });
         },
         onMoveSelection: (direction) => {
           recordEditResult(actions.moveSelection(direction), {
@@ -1946,12 +1963,16 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
           setOpenMenuChordId(null);
           switch (action) {
             case "duplicate":
-              recordEditResult(actions.duplicateSelection(), {
+              // Same jcpe-yvni gesture the toolbar uses: the copy lands.
+              recordEditResult(duplicateSelectionAutoResolving(actions), {
                 kind: "duplicate",
               });
               return;
             case "delete":
-              recordEditResult(actions.deleteSelection(), { kind: "delete" });
+              // Same jcpe-yvni gesture: routine deletes auto-declare.
+              recordEditResult(deleteSelectionAutoDeclaring(actions), {
+                kind: "delete",
+              });
               return;
             case "move-previous":
               recordEditResult(actions.moveSelection("previous"), {

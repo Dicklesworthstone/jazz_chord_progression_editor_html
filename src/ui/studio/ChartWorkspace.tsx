@@ -1365,71 +1365,102 @@ export function ChartWorkspace({
           role="status"
         >
           <strong>{view.editRefusal.message}</strong>
+          <span>{view.editRefusal.recoveryAction}</span>
           {/*
-            Explicit spaces: these spans are inline siblings, and JSX drops
-            the newline between them, so without the literal space the
-            recovery sentence and the first resolution fused mid-word
-            ("…measure.Move following…").
+            The overfill strip renders one button per named remedy below, so
+            repeating them as prose would say everything twice; every other
+            code still states its reviewed resolutions verbatim. The joined
+            list is its own block (jcpe-yvni): rendered inline it ran
+            straight on from the recovery sentence with no space between.
           */}
-          <span>{view.editRefusal.recoveryAction}</span>{" "}
-          {view.editRefusal.resolutions.length === 0 ? null : (
+          {view.editRefusal.resolutions.length === 0 ||
+          view.editRefusal.code === "u1.duration_overfills_measure" ? null : (
             <span class="studio-chart__resolutions">
               {view.editRefusal.resolutions.join(" · ")}
             </span>
           )}
           {view.editRefusal.code === "u1.duration_overfills_measure" ? (
-            <Button
-              busy={false}
-              density="comfortable"
-              describedBy={[]}
-              disabled={false}
-              id="studio-move-following"
-              invalid={false}
-              label="Move following chords"
-              onAction={() => {
-                const chordId = view.rovingFocusId;
-                if (chordId !== null) {
-                  onCardMenuAction(chordId, "move-following");
-                }
-              }}
-              type="button"
-              variant="secondary"
-            />
+            <span class="studio-chart__refusal-actions">
+              {/*
+                One button per reviewed remedy (jcpe-yvni). The overfill
+                authority names four: move-following-events, split-at-bar,
+                shorten-the-duration, and cancel.
+              */}
+              <Button
+                busy={false}
+                density="comfortable"
+                describedBy={[]}
+                disabled={false}
+                id="studio-move-following"
+                invalid={false}
+                label="Move following chords"
+                onAction={() => {
+                  const chordId = view.rovingFocusId;
+                  if (chordId !== null) {
+                    onCardMenuAction(chordId, "move-following");
+                  }
+                }}
+                type="button"
+                variant="secondary"
+              />
+              {/*
+                The reviewed overfill authority names split-at-bar as a peer
+                of move-following-events (jcpe-aacz). The split boundary is
+                the chord after the focused one in its own bar; when the
+                focused chord is the bar's last, there is nothing to split
+                before and the fix is not offered rather than
+                offered-and-refused.
+              */}
+              {nextChordInSameMeasure(view, view.rovingFocusId) !== null ? (
+                <Button
+                  busy={false}
+                  density="comfortable"
+                  describedBy={[]}
+                  disabled={false}
+                  id="studio-split-at-bar"
+                  invalid={false}
+                  label="Split this bar here"
+                  onAction={() => {
+                    const boundary = nextChordInSameMeasure(
+                      view,
+                      view.rovingFocusId,
+                    );
+                    if (boundary !== null) {
+                      onSplitAtBar(boundary);
+                    }
+                  }}
+                  type="button"
+                  variant="secondary"
+                />
+              ) : null}
+              {view.rovingFocusId !== null ? (
+                <Button
+                  busy={false}
+                  density="comfortable"
+                  describedBy={[]}
+                  disabled={false}
+                  id="studio-shorten-duration"
+                  invalid={false}
+                  label="Shorten the duration"
+                  onAction={() => {
+                    const chordId = view.rovingFocusId;
+                    if (chordId !== null) {
+                      guardedSwitch({ chordId, kind: "edit-duration" });
+                    }
+                  }}
+                  type="button"
+                  variant="secondary"
+                />
+              ) : null}
+            </span>
           ) : null}
-          {/*
-            The reviewed overfill authority names split-at-bar as a peer of
-            move-following-events (jcpe-aacz). The split boundary is the
-            chord after the focused one in its own bar; when the focused
-            chord is the bar's last, there is nothing to split before and
-            the fix is not offered rather than offered-and-refused.
-          */}
-          {view.editRefusal.code === "u1.duration_overfills_measure" &&
-          nextChordInSameMeasure(view, view.rovingFocusId) !== null ? (
-            <Button
-              busy={false}
-              density="comfortable"
-              describedBy={[]}
-              disabled={false}
-              id="studio-split-at-bar"
-              invalid={false}
-              label="Split this bar here"
-              onAction={() => {
-                const boundary = nextChordInSameMeasure(
-                  view,
-                  view.rovingFocusId,
-                );
-                if (boundary !== null) {
-                  onSplitAtBar(boundary);
-                }
-              }}
-              type="button"
-              variant="secondary"
-            />
-          ) : null}
-          {view.editRefusal.needsIncompleteReason ? (
+          {view.editRefusal.code === "u1.duration_overfills_measure" ||
+          view.editRefusal.needsIncompleteReason ? (
             <span class="studio-chart__reason">
-              {/* The declaration itself happens in U1-CMP-019, which this
-                  refusal opens; a short bar is never declared in passing. */}
+              {/* For a reason-required refusal the declaration itself happens
+                  in U1-CMP-019, which the refusal opens; a short bar is never
+                  declared in passing. Cancel abandons the pending edit either
+                  way — every named remedy has a control, including this one. */}
               <Button
                 busy={false}
                 density="comfortable"
@@ -1651,6 +1682,22 @@ export function ChartWorkspace({
                                 <span class="studio-meter-signature">
                                   {measure.meterLabel}
                                 </span>
+                                {/*
+                                  A declared-short bar stays visibly marked in
+                                  BOTH views (jcpe-yvni): the teaching facts
+                                  carry the stored reason, and this badge is
+                                  the compact view's affordance, titled with
+                                  the same verbatim reason.
+                                */}
+                                {measure.completionReason === null ? null : (
+                                  <span
+                                    class="studio-measure__completion-badge"
+                                    data-testid="measure-completion-badge"
+                                    title={measure.completionReason}
+                                  >
+                                    <Badge label="Short bar" tone="warning" />
+                                  </span>
+                                )}
                               </div>
                               <div class="studio-measure__tools">
                               <Button
