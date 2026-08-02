@@ -382,6 +382,12 @@ export type StudioShellCallbacks = Readonly<{
   onAddSuggestedChord: (symbolText: string) => void;
   onQuickEntryDraftChange: (value: string) => void;
   onQuickEntryInsert: () => void;
+  /**
+   * Load a library entry as one document gesture: replace the chart,
+   * retitle, set the entry's groove and (when declared) its tempo — all
+   * through controller actions, never through chained field callbacks.
+   */
+  onLoadLibraryEntry: (entryId: string) => void;
   onQuickEntryClear: () => void;
   /** Presentation-only: records that the caller accepted the layout loss. */
   onRecoveryAcknowledgeChange: (acknowledged: boolean) => void;

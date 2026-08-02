@@ -73,6 +73,7 @@ export type LibraryPanelContentProps = Readonly<{
   onTempoDraftChange: (value: string) => void;
   onTempoCommit: () => void;
   onGrooveStyleChange: (styleId: string) => void;
+  onLoadLibraryEntry: (entryId: string) => void;
   onRecoveryAcknowledgeChange: (acknowledged: boolean) => void;
   onRecoveryDurationDraftChange: (value: string) => void;
   onInsertRecoveredChord: (globalOrdinal: number) => void;
@@ -234,9 +235,7 @@ function QuickEntryPanel({
   onDraftChange,
   onInsert,
   onClear,
-  onGrooveStyleChange,
-  onTempoDraftChange,
-  onTempoCommit,
+  onLoadLibraryEntry,
   onRecoveryAcknowledgeChange,
   onRecoveryDurationDraftChange,
   onInsertRecoveredChord,
@@ -245,9 +244,7 @@ function QuickEntryPanel({
   onDraftChange: (value: string) => void;
   onInsert: () => void;
   onClear: () => void;
-  onGrooveStyleChange: (styleId: string) => void;
-  onTempoDraftChange: (value: string) => void;
-  onTempoCommit: () => void;
+  onLoadLibraryEntry: (entryId: string) => void;
   onRecoveryAcknowledgeChange: (acknowledged: boolean) => void;
   onRecoveryDurationDraftChange: (value: string) => void;
   onInsertRecoveredChord: (globalOrdinal: number) => void;
@@ -572,25 +569,15 @@ function QuickEntryPanel({
                 invalid={false}
                 label={entry.title}
                 onAction={() => {
-                  onDraftChange(entry.chartText);
-                  onInsert();
                   /*
-                   * Each entry carries its reviewed groove; loading one
-                   * selects that session style so the next Play sounds the
-                   * idiom the note describes.
+                   * One gesture, application-owned: replace the chart,
+                   * retitle it, set the entry's groove and tempo. The
+                   * earlier chained-callback wiring APPENDED the chart
+                   * after whatever was written and committed a stale
+                   * tempo draft — the owner heard six bars of the wrong
+                   * song at the wrong speed.
                    */
-                  onGrooveStyleChange(entry.grooveStyleId);
-                  /*
-                   * An entry that declares a tempo commits it through the
-                   * same draft-then-commit path the tempo field uses: the
-                   * What a Fool Believes chart at the studio's 105 default
-                   * dragged 13% under the record, and no groove survives
-                   * the wrong tempo.
-                   */
-                  if (entry.tempoBpm !== undefined) {
-                    onTempoDraftChange(String(entry.tempoBpm));
-                    onTempoCommit();
-                  }
+                  onLoadLibraryEntry(entry.id);
                 }}
                 type="button"
                 variant="secondary"
@@ -621,6 +608,7 @@ export function LibraryPanelContent({
   onTempoDraftChange,
   onTempoCommit,
   onGrooveStyleChange,
+  onLoadLibraryEntry,
   onRecoveryAcknowledgeChange,
   onRecoveryDurationDraftChange,
   onInsertRecoveredChord,
@@ -645,13 +633,11 @@ export function LibraryPanelContent({
       <QuickEntryPanel
         onClear={onQuickEntryClear}
         onDraftChange={onQuickEntryDraftChange}
-        onGrooveStyleChange={onGrooveStyleChange}
         onInsert={onQuickEntryInsert}
         onInsertRecoveredChord={onInsertRecoveredChord}
         onRecoveryAcknowledgeChange={onRecoveryAcknowledgeChange}
+        onLoadLibraryEntry={onLoadLibraryEntry}
         onRecoveryDurationDraftChange={onRecoveryDurationDraftChange}
-        onTempoCommit={onTempoCommit}
-        onTempoDraftChange={onTempoDraftChange}
         view={quickEntry}
       />
 
@@ -800,6 +786,7 @@ export type LibraryPanelProps = Readonly<{
   onTempoDraftChange: (value: string) => void;
   onTempoCommit: () => void;
   onGrooveStyleChange: (styleId: string) => void;
+  onLoadLibraryEntry: (entryId: string) => void;
   onRecoveryAcknowledgeChange: (acknowledged: boolean) => void;
   onRecoveryDurationDraftChange: (value: string) => void;
   onInsertRecoveredChord: (globalOrdinal: number) => void;
@@ -816,6 +803,7 @@ export function LibraryPanel({
   onTempoDraftChange,
   onTempoCommit,
   onGrooveStyleChange,
+  onLoadLibraryEntry,
   onRecoveryAcknowledgeChange,
   onRecoveryDurationDraftChange,
   onInsertRecoveredChord,
@@ -848,6 +836,7 @@ export function LibraryPanel({
             onTempoDraftChange={onTempoDraftChange}
             onTempoCommit={onTempoCommit}
             onGrooveStyleChange={onGrooveStyleChange}
+            onLoadLibraryEntry={onLoadLibraryEntry}
             onRecoveryAcknowledgeChange={onRecoveryAcknowledgeChange}
             onRecoveryDurationDraftChange={onRecoveryDurationDraftChange}
             playback={playback}

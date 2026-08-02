@@ -9,6 +9,7 @@ import {
 import {
   buildSharePayload,
   encodeShareFragment,
+  PROGRESSION_LIBRARY,
   type StudioAudioGesture,
   type StudioContinuationView,
   type StudioController,
@@ -33,6 +34,13 @@ import {
 } from "./studio";
 
 export type AppActions = Readonly<{
+  /**
+   * The controller's LIVE snapshot. The render's `snapshot` prop is frozen
+   * per render; a handler that mutates the document and then derives a
+   * target from the render prop aims at ids that no longer exist. Any
+   * multi-step gesture reads THIS after each mutating step.
+   */
+  getSnapshot: () => ReturnType<StudioController["getSnapshot"]>;
   setTitle: (value: string) => StudioControllerActionResult;
   setTempo: (bpm: number) => StudioControllerActionResult;
   setPerformanceStyle: (styleId: string) => StudioControllerActionResult;
@@ -1507,6 +1515,62 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
             `${result.refusal.message} ${result.refusal.recoveryAction}`,
           );
         },
+        onLoadLibraryEntry: (entryId) => {
+          /*
+           * Loading a library entry is ONE document gesture — replace the
+           * chart, retitle it, set its groove and its tempo — through the
+           * same controller actions each control uses alone. The first
+           * wiring chained UI callbacks instead, and every link failed the
+           * owner: the chart APPENDED after whatever was already written,
+           * the title never changed, and the tempo commit read a stale
+           * render's draft. Controller actions only; no component state is
+           * read anywhere in this handler.
+           */
+          const entry = PROGRESSION_LIBRARY.find(
+            (candidate) => candidate.id === entryId,
+          );
+          if (entry === undefined) return;
+          if (snapshot.chordCount > 0) {
+            recordEditResult(actions.clearChart(), { kind: "delete" });
+          }
+          /*
+           * The render's snapshot predates the clear, so every id it holds
+           * is stale; the section-end target must come from the LIVE
+           * snapshot or the staging refuses and the chart loads empty --
+           * exactly the defect the owner heard.
+           */
+          const fresh = actions.getSnapshot();
+          const lastSection = fresh.sections[fresh.sections.length - 1];
+          const preview = actions.previewChartText(entry.chartText);
+          const staged = actions.setQuickEntryDraft(
+            entry.chartText,
+            lastSection === undefined
+              ? null
+              : { kind: "section-end", sectionId: lastSection.id },
+            preview.status,
+            preview.issueCodes,
+          );
+          if (staged.ok) {
+            applyQuickEntryInsert();
+          } else {
+            setQuickEntryRefusal(
+              `${staged.refusal.message} ${staged.refusal.recoveryAction}`,
+            );
+          }
+          const titled = actions.setTitle(entry.title);
+          if (titled.ok) setTitleDraft(entry.title);
+          const groove = actions.setPerformanceStyle(entry.grooveStyleId);
+          let tempoNote: string | null = groove.ok
+            ? null
+            : `${groove.refusal.message} ${groove.refusal.recoveryAction}`;
+          if (entry.tempoBpm !== undefined) {
+            const tempo = actions.setTempo(entry.tempoBpm);
+            if (!tempo.ok) {
+              tempoNote = `${tempo.refusal.message} ${tempo.refusal.recoveryAction}`;
+            }
+          }
+          setTempoFeedback(tempoNote);
+        },
         onQuickEntryDraftChange: stageQuickEntryDraft,
         onQuickEntryInsert: applyQuickEntryInsert,
         onAddSuggestedChord: (symbolText) => {
@@ -2065,6 +2129,7 @@ export function StudioRoot({ controller, startupNotice }: StudioRootProps) {
         stopProgression: controller.stopProgression,
         setSectionBoundary: controller.setSectionBoundary,
         setEventDurationText: controller.setEventDurationText,
+        getSnapshot: controller.getSnapshot,
         setQuickEntryDraft: controller.setQuickEntryDraft,
         setRailCollapsed: controller.setRailCollapsed,
         setTitle: controller.setTitle,

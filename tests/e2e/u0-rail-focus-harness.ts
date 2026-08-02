@@ -32,6 +32,7 @@ function RailFocusHarness() {
       onTempoDraftChange: () => undefined,
       onTempoCommit: () => undefined,
       onGrooveStyleChange: () => undefined,
+      onLoadLibraryEntry: () => undefined,
       onRecoveryAcknowledgeChange: () => undefined,
       onRecoveryDurationDraftChange: () => undefined,
       playback: Object.freeze({

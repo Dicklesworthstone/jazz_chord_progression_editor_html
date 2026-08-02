@@ -130,6 +130,7 @@ export function StudioShell({
               onTempoDraftChange={callbacks.onTempoDraftChange}
               onTempoCommit={callbacks.onTempoCommit}
               onGrooveStyleChange={callbacks.onGrooveStyleChange}
+              onLoadLibraryEntry={callbacks.onLoadLibraryEntry}
               playback={view.playback}
               quickEntry={view.quickEntry}
               onCollapsedChange={(collapsed) => {
@@ -256,6 +257,7 @@ export function StudioShell({
                   onTempoDraftChange={callbacks.onTempoDraftChange}
                   onTempoCommit={callbacks.onTempoCommit}
                   onGrooveStyleChange={callbacks.onGrooveStyleChange}
+              onLoadLibraryEntry={callbacks.onLoadLibraryEntry}
                   playback={view.playback}
                   quickEntry={view.quickEntry}
                 />

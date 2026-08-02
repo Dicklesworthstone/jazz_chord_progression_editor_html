@@ -207,6 +207,7 @@ function ResponsiveStaleOwnerHarness() {
     onTempoCommit: () => undefined,
     onCopyShareLink: () => undefined,
     onGrooveStyleChange: () => undefined,
+    onLoadLibraryEntry: () => undefined,
     onAddSuggestedChord: () => undefined,
     onCompletionDialogOpenChange: () => undefined,
     onDeclareMeasureCompletion: () => undefined,
