@@ -1303,7 +1303,7 @@ const SYNCOPATED_SIXTEENTHS_V1: PerformanceStyle = Object.freeze({
     Object.freeze({
       offsetBeats: Object.freeze({ numerator: 0, denominator: 1 }),
       durationBeats: Object.freeze({ numerator: 1, denominator: 3 }),
-      voicing: "all",
+      voicing: "upper-voices",
       velocity: 89,
       cyclePhases: Object.freeze([0] as const),
     }),
@@ -1373,7 +1373,7 @@ const SYNCOPATED_SIXTEENTHS_V1: PerformanceStyle = Object.freeze({
     Object.freeze({
       offsetBeats: Object.freeze({ numerator: 0, denominator: 1 }),
       durationBeats: Object.freeze({ numerator: 1, denominator: 3 }),
-      voicing: "all",
+      voicing: "upper-voices",
       velocity: 89,
       cyclePhases: Object.freeze([2] as const),
     }),
@@ -1408,7 +1408,7 @@ const SYNCOPATED_SIXTEENTHS_V1: PerformanceStyle = Object.freeze({
     Object.freeze({
       offsetBeats: Object.freeze({ numerator: 0, denominator: 1 }),
       durationBeats: Object.freeze({ numerator: 1, denominator: 3 }),
-      voicing: "all",
+      voicing: "upper-voices",
       velocity: 86,
       cyclePhases: Object.freeze([3] as const),
     }),
@@ -1441,10 +1441,19 @@ const SYNCOPATED_SIXTEENTHS_V1: PerformanceStyle = Object.freeze({
       cyclePhases: Object.freeze([3] as const),
     }),
   ] as const),
+  /*
+   * Note-level comparison against the reference (2026-08-02): the record's
+   * right hand lives at Ab4..F5 — tight closed triads around C5 — and OUR
+   * hand sat an octave above it, wandering octaves bar to bar, which is
+   * what "shrill and wrong" sounds like in table form. lowMidi 53 is the
+   * exact legal floor (bass high 61 + separation 4 - 12), and it pins the
+   * LIFTED hand — the common case over this style's high bass — to
+   * 65..76: the record's hand.
+   */
   compRegister: Object.freeze({
-    lowMidi: 65,
-    highMidi: 88,
-    ceilingMidi: 94,
+    lowMidi: 53,
+    highMidi: 76,
+    ceilingMidi: 79,
   }),
   bassRegister: Object.freeze({ lowMidi: 41, highMidi: 61, anchorMidi: 54 }),
   barCycleLength: 4,
