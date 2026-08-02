@@ -174,8 +174,13 @@ export function AnalyzerPanel({
         height={128}
         aria-hidden="true"
       />
+      {/*
+        The trailing space is load-bearing: this paragraph and the detail
+        line below are adjacent in the extracted text flow, and without it
+        they fuse into "…detected.No signal…".
+      */}
       <p class="studio-analyzer__notes" aria-live="off">
-        {detected.length === 0 ? "No notes detected." : detected.join("  ")}
+        {detected.length === 0 ? "No notes detected. " : detected.join("  ")}
       </p>
       <p class="studio-analyzer__detail">{verdict.detail}</p>
     </aside>

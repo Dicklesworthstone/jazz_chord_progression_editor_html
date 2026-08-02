@@ -69,7 +69,11 @@ test.describe("U1-TRACE-QUICKENTRY empty and error states name themselves", () =
     await expect(invalid.first()).toContainText("§");
 
     // That row carries T0's own code and T0's own range — both verbatim.
-    const code = await invalid.first().locator(".ui-badge").innerText();
+    // jcpe-xzjo: the code is now small secondary text beside its prose.
+    const code = await invalid
+      .first()
+      .locator(".studio-quick-entry__token-code")
+      .innerText();
     expect(code).toContain(".");
     await expect(invalid.first().getByTestId("quick-entry-token-range")).toContainText(
       /characters \d+–\d+/u,
