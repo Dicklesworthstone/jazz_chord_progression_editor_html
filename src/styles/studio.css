@@ -188,13 +188,16 @@
 
 .studio-title-editor__control-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
 }
 
 .studio-title-editor__control-row .ui-input {
   flex: 1;
-  min-inline-size: 0;
+  /* The committed title outranks its buttons: "Deacon Blues" must fit at
+     1280 instead of ellipsing while the buttons keep their full width. */
+  min-inline-size: 9rem;
   font-weight: 600;
   background: transparent;
   border-color: transparent;
@@ -216,6 +219,14 @@
 
 .studio-title-editor__control-row .ui-button {
   flex: none;
+}
+
+/* The length counter sits at the inline end of the field it counts. */
+.studio-title-editor__count {
+  flex: none;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
 }
 
 .studio-title-editor__policy {
@@ -281,7 +292,8 @@
 }
 
 .studio-document-status__revision {
-  color: var(--text-subtle);
+  /* --text-muted, not subtle: 12px status text must clear 4.5:1. */
+  color: var(--text-muted);
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   white-space: nowrap;
@@ -289,7 +301,29 @@
 
 .studio-history-actions {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: var(--space-1);
+}
+
+/*
+ * The share outcome, visible beside the Copy link button it answers. The
+ * span is also the polite live region, so it exists empty; :empty keeps the
+ * flex gap from reserving a slot for a message that has not happened yet.
+ */
+.studio-share-feedback {
+  flex: 1 1 100%;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.studio-share-feedback:empty {
+  display: none;
+}
+
+.studio-share-feedback[data-feedback-kind="refused"] {
+  color: var(--state-error);
 }
 
 .studio-history-actions .ui-button {
@@ -425,31 +459,6 @@
   margin: 0;
   color: var(--text-muted);
   font-size: var(--text-sm);
-}
-
-.studio-truth-note {
-  margin: 0;
-  color: var(--text-subtle);
-  font-size: var(--text-xs);
-  font-style: italic;
-}
-
-.studio-staged-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.studio-staged-list__heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  font-size: var(--text-sm);
-  font-weight: 600;
 }
 
 .studio-visually-hidden {
@@ -606,6 +615,32 @@
   outline-offset: calc(-1 * var(--focus-width));
 }
 
+/*
+ * The demo-chart greeting: one dismissible line above the chart while the
+ * seeded starter chart is untouched. Notice styling, never a modal.
+ */
+.studio-demo-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-3);
+  margin: var(--space-3) var(--space-4) 0;
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width) solid var(--border-default);
+  border-inline-start: 3px solid var(--accent);
+  border-radius: var(--radius-md);
+  background: var(--surface-panel);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+}
+
+.studio-demo-banner p {
+  flex: 1 1 14rem;
+  min-inline-size: 0;
+  margin: 0;
+}
+
 .studio-chart__header {
   display: flex;
   flex-direction: column;
@@ -629,7 +664,7 @@
   letter-spacing: 0.01em;
 }
 
-/* One calm toolbar: quiet chips that scroll sideways instead of stacking. */
+/* One calm toolbar: phone widths scroll sideways instead of stacking. */
 .studio-chart__edit-actions,
 .studio-chart__view-actions {
   display: flex;
@@ -637,6 +672,19 @@
   gap: var(--space-1);
   overflow-x: auto;
   scrollbar-width: none;
+}
+
+/*
+ * Desktop wraps instead: the hidden-scroll clip cut "Append section" to
+ * "Appe" with no scrollbar to say more existed. A second toolbar row is
+ * honest; a silently clipped control is not.
+ */
+@media (min-width: 40rem) {
+  .studio-chart__edit-actions,
+  .studio-chart__view-actions {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
 }
 
 .studio-chart__edit-actions .ui-button,
@@ -649,7 +697,8 @@
   flex: none;
   margin: 0;
   align-self: center;
-  color: var(--text-subtle);
+  /* --text-muted, not subtle: 12px status text must clear 4.5:1. */
+  color: var(--text-muted);
   font-size: var(--text-xs);
   white-space: nowrap;
 }
@@ -1235,7 +1284,15 @@
   font-size: var(--text-chord);
   font-weight: 600;
   line-height: 1.1;
-  overflow-wrap: anywhere;
+  /* A chord symbol is one word: "Bbmaj7" must never break mid-symbol. */
+  white-space: nowrap;
+}
+
+/* Narrow cards step the symbol down instead of letting it spill. */
+@media (max-width: 39.999rem) {
+  .studio-chord-card__symbol {
+    font-size: 1.25rem;
+  }
 }
 
 .studio-symbol__root {
@@ -1984,8 +2041,9 @@
 /* The insertion plan states its fate with a colored marker, never color only. */
 .studio-quick-entry__plan {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
-  gap: var(--space-3);
+  gap: var(--space-1) var(--space-3);
   margin: 0;
   padding: var(--space-2) var(--space-3);
   border: var(--border-width) solid var(--border-default);
@@ -1994,8 +2052,14 @@
   font-size: var(--text-sm);
 }
 
+/*
+ * The statement may shrink and wrap at word boundaries. flex:none pinned
+ * it to its full width, so a narrow rail clipped "Cannot be inserted
+ * atomically" mid-word at the panel edge.
+ */
 .studio-quick-entry__plan strong {
-  flex: none;
+  flex: 0 1 auto;
+  min-inline-size: 0;
 }
 
 .studio-quick-entry__plan::before {
@@ -2030,13 +2094,22 @@
   font-size: var(--text-xs);
 }
 
+/* One prose sentence per parse issue, the frozen code in small type beside. */
 .studio-quick-entry__issues {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: var(--space-1);
   margin: 0;
   padding: 0;
   list-style: none;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.studio-quick-entry__token-code {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
 }
 
 .studio-quick-entry__tokens {
@@ -2620,7 +2693,8 @@
 
 .studio-transport__status p span {
   display: block;
-  color: var(--text-subtle);
+  /* --text-muted, not subtle: 12px status text must clear 4.5:1. */
+  color: var(--text-muted);
   font-size: var(--text-xs);
   white-space: nowrap;
   overflow: hidden;
@@ -2836,7 +2910,6 @@
     border-color: var(--border-strong);
   }
 
-  .studio-truth-note,
   .studio-chart__view-status,
   .studio-quick-entry__hint {
     color: var(--text-muted);
