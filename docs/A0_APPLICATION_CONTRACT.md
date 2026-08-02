@@ -396,3 +396,34 @@ the only path that may advance generation/sequence, and X1 still never
 publishes for a refusal. The settlement is the application-side dual of the
 refusal result the service already produced; fabricating a
 `TransportNotification` to the same effect remains forbidden.
+
+### 13.1 Receipt settlement after identity supersession (additive, 2026-08-02)
+
+A receipt DOES publish a genuine notification, but X1 echoes the
+`(documentId, planRevision)` captured when the plan was bound. After a
+mid-play document replacement or edit — a library load, a tempo commit, any
+chart mutation — that echoed identity is superseded, the acceptance law of
+section 9 rightly drops the notification as stale, and no settlement could
+ever fire: a successful Stop after a mid-play library load left the
+optimistic `stopping` status on screen forever (bug jcpe-my0j).
+
+The controller therefore also feeds the same `settle-transport-expectation`
+intent from a command's RECEIPT outcome, with:
+
+- the receipt's `commandRequestId`;
+- the dispatch-time document ID and plan revision of the installed
+  expectation, exactly as the refusal path captures them;
+- the controller's projection of `TransportCommandReceipt.stateAfter` —
+  the transport's own echoed post-command state, never an invented value;
+- the stable application-settlement cause `transport.plan_superseded`,
+  minted by the controller (it is not an X1 refusal code).
+
+Every acceptance law of section 13 applies unchanged. In particular, when
+the genuine notification WAS accepted the slot is no longer `starting` or
+`stopping`, so the receipt settlement lands as `ignored-stale` and the
+notification wins; the settlement can take effect only in the one case
+where the notification could not — when the run's bound identity was
+superseded while the expectation's dispatch-time identity still equals the
+current document and revision. Notifications remain the only path that may
+advance generation/sequence, and fabricating a `TransportNotification`
+remains forbidden.

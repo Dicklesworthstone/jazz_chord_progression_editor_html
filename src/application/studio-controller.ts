@@ -96,6 +96,7 @@ import type { StudioAnalysisFrame } from "./studio-analysis";
 import {
   formatExactBeatLabel,
   selectStudioViewModel,
+  TRANSPORT_PLAN_SUPERSEDED_FAILURE_CODE,
   type StudioBoundaryDescriptor,
   type StudioViewModel,
 } from "./studio-view-model";
@@ -4027,18 +4028,41 @@ function makeStudioComposition(
    * jcpe-e183: an X1 refusal is total and publishes no notification, so the
    * optimistic expectation above would otherwise stick at starting/stopping
    * forever. The refusal outcome the port already returns settles it with the
-   * transport's own echoed state and the stable cause code (jcpe-uslp). The
-   * identity travels from dispatch time so a settlement that outlives a
-   * document replacement lands as ignored-stale instead of matching fresh
-   * state.
+   * transport's own echoed state and the stable cause code (jcpe-uslp).
+   *
+   * jcpe-my0j: a RECEIPT does publish a genuine notification, but X1 echoes
+   * the (documentId, planRevision) captured when the plan was bound at Play.
+   * After a mid-play document replacement (library load, tempo commit, any
+   * chart edit) that identity is superseded, A0's acceptance law rightly
+   * drops the notification as stale, and the receipt was the only settlement
+   * that could ever fire — before this fix a successful Stop after a mid-play
+   * library load left "Stopping playback" on screen forever. Receipts
+   * therefore settle here too, with the receipt's own echoed post-command
+   * state and the stable plan-superseded cause. Nothing is invented: status
+   * comes from the transport's echo, and when the genuine notification WAS
+   * accepted the slot is no longer optimistic, so this settlement lands as
+   * ignored-stale and the notification wins, exactly as A0 pins.
+   *
+   * The identity travels from dispatch time so a settlement that outlives a
+   * further document replacement lands as ignored-stale instead of matching
+   * fresh state.
    */
-  const settleRefusedTransport = (
+  const settleTransportOutcome = (
     action: StudioControllerAction,
     documentId: AppState["document"]["id"],
     planRevision: number,
     outcome: TransportCommandOutcome,
   ): void => {
-    if (outcome.termination !== "refusal") return;
+    const settlement =
+      outcome.termination === "refusal"
+        ? {
+            failureCode: outcome.engineRefusalCode ?? outcome.code,
+            status: SETTLED_TRANSPORT_STATUS[outcome.state],
+          }
+        : {
+            failureCode: TRANSPORT_PLAN_SUPERSEDED_FAILURE_CODE,
+            status: SETTLED_TRANSPORT_STATUS[outcome.stateAfter],
+          };
     apply(action, (current) =>
       reduceEphemeralIntent({
         state: current,
@@ -4047,8 +4071,8 @@ function makeStudioComposition(
           commandRequestId: outcome.commandRequestId,
           documentId,
           planRevision,
-          status: SETTLED_TRANSPORT_STATUS[outcome.state],
-          failureCode: outcome.engineRefusalCode ?? outcome.code,
+          status: settlement.status,
+          failureCode: settlement.failureCode,
         },
       }),
     );
@@ -4187,7 +4211,7 @@ function makeStudioComposition(
           }),
         );
         if (initializeOutcome.termination === "refusal") {
-          settleRefusedTransport(
+          settleTransportOutcome(
             "play-progression",
             binding.documentId,
             binding.planRevision,
@@ -4200,7 +4224,7 @@ function makeStudioComposition(
         const playRequestId = nextTransportRequestId();
         expectTransport("play-progression", playRequestId, "starting", startBeat);
         const playOutcome = await port.play(playRequestId, binding, startBeat);
-        settleRefusedTransport(
+        settleTransportOutcome(
           "play-progression",
           binding.documentId,
           binding.planRevision,
@@ -4213,7 +4237,7 @@ function makeStudioComposition(
       const playRequestId = nextTransportRequestId();
       expectTransport("play-progression", playRequestId, "starting", startBeat);
       const playOutcome = await port.play(playRequestId, binding, startBeat);
-      settleRefusedTransport(
+      settleTransportOutcome(
         "play-progression",
         binding.documentId,
         binding.planRevision,
@@ -4242,7 +4266,7 @@ function makeStudioComposition(
     const documentId = state.document.id;
     const planRevision = state.revision;
     void audioPort.pause(commandRequestId).then((outcome) => {
-      settleRefusedTransport(
+      settleTransportOutcome(
         "pause-progression",
         documentId,
         planRevision,
@@ -4272,7 +4296,7 @@ function makeStudioComposition(
     const documentId = state.document.id;
     const planRevision = state.revision;
     void audioPort.stop(commandRequestId).then((outcome) => {
-      settleRefusedTransport(
+      settleTransportOutcome(
         "stop-progression",
         documentId,
         planRevision,

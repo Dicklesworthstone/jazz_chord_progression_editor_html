@@ -9,8 +9,9 @@ import {
 import {
   buildSharePayload,
   encodeShareFragment,
-  PROGRESSION_LIBRARY,
+  loadProgressionLibraryEntry,
   STARTER_CHART,
+  type LoadProgressionLibraryEntryResult,
   type StudioAudioGesture,
   type StudioContinuationView,
   type StudioController,
@@ -172,6 +173,13 @@ export type AppActions = Readonly<{
   pauseProgression: () => StudioControllerActionResult;
   stopProgression: () => StudioControllerActionResult;
   /**
+   * The one library-load gesture (jcpe-my0j), owned by the application layer
+   * so a test can drive the real path: replace the chart, retitle, set
+   * groove and tempo, and STOP a live run explicitly. The surface only
+   * renders the returned step results.
+   */
+  loadLibraryEntry: (entryId: string) => LoadProgressionLibraryEntryResult;
+  /**
    * Display-only live playhead label the animation frame reads while playing.
    * Interpolation for the eye, never a second musical clock: committed
    * transport state still arrives only through notifications.
@@ -189,6 +197,16 @@ export type AppActions = Readonly<{
 }>;
 
 const QUICK_ENTRY_MAX_CODE_POINTS = 4_096;
+
+/**
+ * A run the user would still call "playback": sounding, warming up, or
+ * paused mid-chart. Used by gestures that must be loud about what a
+ * document edit does to that run (jcpe-my0j); `stopping` is excluded
+ * because that run is already on its way out.
+ */
+function transportRunIsLive(status: string): boolean {
+  return status === "starting" || status === "playing" || status === "paused";
+}
 
 /** The operation that a `u1.completion_reason_required` refusal interrupted. */
 type PendingEdit =
@@ -1617,6 +1635,15 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
           setTempoFeedback(null);
         },
         onGrooveStyleChange: (styleId) => {
+          /*
+           * A groove change never reaches the sounding run — the transport
+           * plays the immutable plan it was bound to — so during a live run
+           * the line must say the deferral out loud instead of letting the
+           * click appear to do nothing (jcpe-my0j).
+           */
+          const runWasLive = transportRunIsLive(
+            actions.getSnapshot().transport.status,
+          );
           const result = actions.setPerformanceStyle(styleId);
           /*
            * The picker only offers declared styles, so a refusal here means
@@ -1625,17 +1652,35 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
            */
           setTempoFeedback(
             result.ok
-              ? null
+              ? runWasLive
+                ? "Groove applies on the next Play."
+                : null
               : `${result.refusal.message} ${result.refusal.recoveryAction}`,
           );
         },
         onTempoCommit: () => {
           const trimmed = tempoDraft.trim();
           const bpm = /^[0-9]+$/.test(trimmed) ? Number(trimmed) : Number.NaN;
+          /*
+           * Read the LIVE transport before committing: the sounding run keeps
+           * the plan it was bound to, so the committed tempo cannot reach it.
+           * A live run is therefore stopped explicitly — the chart is the
+           * source of truth, and a run sounding a superseded tempo under a
+           * chart that states the new one is exactly the lie jcpe-my0j
+           * documents — and the line says so at the moment it happens.
+           */
+          const runWasLive = transportRunIsLive(
+            actions.getSnapshot().transport.status,
+          );
           const result = actions.setTempo(bpm);
           if (result.ok) {
             setTempoInvalid(false);
-            setTempoFeedback("Tempo committed as an undoable change.");
+            if (runWasLive) {
+              recordEditResult(actions.stopProgression(), { kind: "delete" });
+              setTempoFeedback("Tempo applied — playback stopped.");
+            } else {
+              setTempoFeedback("Tempo committed as an undoable change.");
+            }
             return;
           }
           setTempoInvalid(true);
@@ -1654,56 +1699,45 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
         onLoadLibraryEntry: (entryId) => {
           /*
            * Loading a library entry is ONE document gesture — replace the
-           * chart, retitle it, set its groove and its tempo — through the
-           * same controller actions each control uses alone. The first
-           * wiring chained UI callbacks instead, and every link failed the
-           * owner: the chart APPENDED after whatever was already written,
-           * the title never changed, and the tempo commit read a stale
-           * render's draft. Controller actions only; no component state is
-           * read anywhere in this handler.
+           * chart, retitle it, set its groove and its tempo, and STOP a
+           * live run explicitly — owned by the application layer
+           * (`loadProgressionLibraryEntry`) so a test can drive the real
+           * path. The first wiring chained UI callbacks instead, and every
+           * link failed the owner: the chart APPENDED after whatever was
+           * already written, the title never changed, and the tempo commit
+           * read a stale render's draft. Without the explicit stop the old
+           * plan kept sounding under the new chart's playhead while the
+           * status said "Playing", and a later Stop stuck at "Stopping
+           * playback" forever (jcpe-my0j). This handler only renders the
+           * gesture's results; no component state feeds it.
            */
-          const entry = PROGRESSION_LIBRARY.find(
-            (candidate) => candidate.id === entryId,
-          );
-          if (entry === undefined) return;
-          if (snapshot.chordCount > 0) {
-            recordEditResult(actions.clearChart(), { kind: "delete" });
+          const result = actions.loadLibraryEntry(entryId);
+          if (result.entry === null) return;
+          if (result.cleared !== null) {
+            recordEditResult(result.cleared, { kind: "delete" });
           }
-          /*
-           * The render's snapshot predates the clear, so every id it holds
-           * is stale; the section-end target must come from the LIVE
-           * snapshot or the staging refuses and the chart loads empty --
-           * exactly the defect the owner heard.
-           */
-          const fresh = actions.getSnapshot();
-          const lastSection = fresh.sections[fresh.sections.length - 1];
-          const preview = actions.previewChartText(entry.chartText);
-          const staged = actions.setQuickEntryDraft(
-            entry.chartText,
-            lastSection === undefined
-              ? null
-              : { kind: "section-end", sectionId: lastSection.id },
-            preview.status,
-            preview.issueCodes,
-          );
-          if (staged.ok) {
-            applyQuickEntryInsert();
-          } else {
+          if (result.stopped !== null) {
+            recordEditResult(result.stopped, { kind: "delete" });
+          }
+          const chartResult =
+            result.staged !== null && !result.staged.ok
+              ? result.staged
+              : result.inserted;
+          if (chartResult !== null) {
+            if (chartResult.ok) quickEntryTargetIsExplicit.current = false;
             setQuickEntryRefusal(
-              `${staged.refusal.message} ${staged.refusal.recoveryAction}`,
+              chartResult.ok
+                ? null
+                : `${chartResult.refusal.message} ${chartResult.refusal.recoveryAction}`,
             );
           }
-          const titled = actions.setTitle(entry.title);
-          if (titled.ok) setTitleDraft(entry.title);
-          const groove = actions.setPerformanceStyle(entry.grooveStyleId);
-          let tempoNote: string | null = groove.ok
-            ? null
-            : `${groove.refusal.message} ${groove.refusal.recoveryAction}`;
-          if (entry.tempoBpm !== undefined) {
-            const tempo = actions.setTempo(entry.tempoBpm);
-            if (!tempo.ok) {
-              tempoNote = `${tempo.refusal.message} ${tempo.refusal.recoveryAction}`;
-            }
+          if (result.titled?.ok === true) setTitleDraft(result.entry.title);
+          let tempoNote: string | null =
+            result.groove === null || result.groove.ok
+              ? null
+              : `${result.groove.refusal.message} ${result.groove.refusal.recoveryAction}`;
+          if (result.tempo !== null && !result.tempo.ok) {
+            tempoNote = `${result.tempo.refusal.message} ${result.tempo.refusal.recoveryAction}`;
           }
           setTempoFeedback(tempoNote);
         },
@@ -2253,6 +2287,8 @@ export function StudioRoot({ controller, startupNotice }: StudioRootProps) {
         setRangeEdge: controller.setRangeEdge,
         setRangeEdgeBeat: controller.setRangeEdgeBeat,
         clearRange: controller.clearRange,
+        loadLibraryEntry: (entryId) =>
+          loadProgressionLibraryEntry(controller, entryId),
         pauseProgression: controller.pauseProgression,
         playProgression: controller.playProgression,
         previewChord: controller.previewChord,
