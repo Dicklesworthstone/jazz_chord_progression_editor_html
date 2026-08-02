@@ -126,7 +126,12 @@ export function TransportBar({
         />
       </div>
 
-      <div class="studio-transport__facts">
+      {/*
+        The Position fact reads as music ("Bar 2 · beat 3.0"); the exact
+        rational the domain keeps is preserved verbatim in the title below,
+        so nothing musical was rounded away — only restated.
+      */}
+      <div class="studio-transport__facts" title={view.positionExactLabel}>
         <KeyValueList
           accessibleName="Transport settings"
           items={[

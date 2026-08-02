@@ -219,7 +219,7 @@ test("U0-ENV-007 prefers-contrast-more strengthens separation without changing s
         document.querySelectorAll("#app-header, #library-rail, #chart-workspace, #harmony-lens-rail, #transport-bar"),
         (element) => element.id,
       ),
-      textColor: getComputedStyle(document.querySelector(".studio-truth-note") as Element).color,
+      textColor: getComputedStyle(document.querySelector(".studio-quick-entry__hint") as Element).color,
     }));
     if (browserName === "chromium") {
       const session = await page.context().newCDPSession(page);
@@ -235,7 +235,7 @@ test("U0-ENV-007 prefers-contrast-more strengthens separation without changing s
         document.querySelectorAll("#app-header, #library-rail, #chart-workspace, #harmony-lens-rail, #transport-bar"),
         (element) => element.id,
       ),
-      textColor: getComputedStyle(document.querySelector(".studio-truth-note") as Element).color,
+      textColor: getComputedStyle(document.querySelector(".studio-quick-entry__hint") as Element).color,
     }));
     if (emulationSupported) {
       expect(active).toBe(true);

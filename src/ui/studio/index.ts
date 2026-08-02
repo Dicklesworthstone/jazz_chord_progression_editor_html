@@ -36,6 +36,7 @@ export type {
   StudioRangeView,
   StudioRecoveryLaneView,
   StudioSectionView,
+  StudioShareFeedback,
   StudioShellCallbacks,
   StudioShellProps,
   StudioShellView,

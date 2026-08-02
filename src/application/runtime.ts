@@ -10,12 +10,15 @@
  * the release graph.
  */
 export {
+  createStudioComposition,
   createStudioController,
   STUDIO_CONTROLLER_REFUSAL_CODES,
 } from "./studio-controller";
 
 export type {
   StudioBoundaryInput,
+  StudioComposition,
+  StudioCompositionCreationResult,
   StudioContinuationView,
   StudioController,
   StudioControllerAction,

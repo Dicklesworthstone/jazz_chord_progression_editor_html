@@ -10,6 +10,7 @@ import {
   buildSharePayload,
   encodeShareFragment,
   loadProgressionLibraryEntry,
+  STARTER_CHART,
   type LoadProgressionLibraryEntryResult,
   type StudioAudioGesture,
   type StudioContinuationView,
@@ -29,6 +30,7 @@ import {
   StudioShell,
   type StudioCardMenuItemView,
   type StudioPanelSide,
+  type StudioShareFeedback,
   type StudioShellView,
   type StudioTitleFeedback,
   type StudioViewMode,
@@ -367,6 +369,84 @@ function resolutionLabels(tokens: readonly string[]): readonly string[] {
   return Object.freeze(tokens.map((token) => RESOLUTION_LABELS[token] ?? token));
 }
 
+/**
+ * Musical bar·beat readout for the transport Position fact. Presentation
+ * only: the domain's exact rational is untouched and rides along verbatim as
+ * `positionExactLabel` for a title attribute. Bars count quarter-note beats
+ * in fours, matching the studio's 4/4 charts.
+ */
+function musicalPositionLabel(exactBeatLabel: string): string {
+  const parsed = parseExactLabel(exactBeatLabel);
+  if (parsed === null) return `${exactBeatLabel} beats`;
+  const [numerator, denominator] = parsed;
+  const beats = Number(numerator) / Number(denominator);
+  if (!Number.isFinite(beats)) return `${exactBeatLabel} beats`;
+  const bar = Math.floor(beats / 4) + 1;
+  const beat = (beats % 4) + 1;
+  return `Bar ${String(bar)} · beat ${beat.toFixed(1)}`;
+}
+
+/**
+ * The insertion-target sentence with its identity restored. A0's boundary
+ * phrase is deliberately identity-free ("After measure"), and the surface is
+ * the layer that knows which measure that is — without this composition the
+ * status line read "After measure " with nothing after it. The ordinal is
+ * the 1-based one the chart already shows; nothing here re-derives identity.
+ */
+function composedTargetLabel(snapshot: StudioViewModel): string {
+  const base = snapshot.quickEntry.targetLabel;
+  if (base === null) return "No insertion target";
+  const target = snapshot.quickEntry.target;
+  if (target === null) return base;
+  if ("measureId" in target) {
+    for (const section of snapshot.sections) {
+      for (const measure of section.measures) {
+        if (measure.id !== target.measureId) continue;
+        const ordinal = String(measure.ordinal);
+        switch (target.kind) {
+          case "before-measure":
+            return `Before measure ${ordinal}`;
+          case "after-measure":
+            return `After measure ${ordinal}`;
+          case "measure-start":
+            return `At the start of measure ${ordinal}`;
+          case "measure-end":
+            return `At the end of measure ${ordinal}`;
+        }
+      }
+    }
+    return base;
+  }
+  if ("sectionId" in target) {
+    const section = snapshot.sections.find(
+      (candidate) => candidate.id === target.sectionId,
+    );
+    if (section === undefined) return base;
+    switch (target.kind) {
+      case "before-section":
+        return `Before section ${section.name}`;
+      case "after-section":
+        return `After section ${section.name}`;
+      case "section-start":
+        return `At the start of section ${section.name}`;
+      case "section-end":
+        return `At the end of section ${section.name}`;
+    }
+  }
+  if ("eventId" in target) {
+    for (const section of snapshot.sections) {
+      for (const measure of section.measures) {
+        for (const event of measure.events) {
+          if (event.id === target.eventId) {
+            return `${base} ${String(event.ordinal)}`;
+          }
+        }
+      }
+    }
+  }
+  return base;
+}
+
 function quickEntryStatusLabel(
   status: StudioViewModel["quickEntry"]["status"],
 ): string {
@@ -409,7 +489,9 @@ type PresentationState = Readonly<{
   tempoDraft: string;
   tempoInvalid: boolean;
   tempoFeedback: string | null;
-  shareFeedback: string | null;
+  shareFeedback: StudioShareFeedback | null;
+  /** True for ~2s after a clipboard success; flips the Copy-link label. */
+  shareCopied: boolean;
 }>;
 
 /** Teaching labels restate stored facts; an absent fact is shown as absent. */
@@ -598,6 +680,7 @@ function viewFromSnapshot(
     tempoInvalid,
     tempoFeedback,
     shareFeedback,
+    shareCopied,
   } = presentation;
   const chordCount = snapshot.chordCount;
   const selectionCount = snapshot.bookmarks.selectedEventIds.length;
@@ -612,9 +695,7 @@ function viewFromSnapshot(
       committedTitle: snapshot.title,
       titleDraft,
       titleMaxCodePoints: MAX_SHORT_TEXT_CODE_POINTS,
-      lifecycleLabel: snapshot.dirty.label,
       revisionLabel: `Revision ${String(snapshot.revision)}`,
-      dirty: snapshot.dirty.sinceExport,
       titleFeedback,
       canCommitTitle: titleDraft !== snapshot.title,
       canResetTitleDraft:
@@ -629,6 +710,7 @@ function viewFromSnapshot(
       clearArmed,
       clearLabel: clearArmed ? "Really clear?" : "Clear",
       shareFeedback,
+      shareCopied,
       undoDescription: snapshot.history.undoLabel === null
         ? "Nothing to undo"
         : `Undo ${snapshot.history.undoLabel}`,
@@ -640,6 +722,14 @@ function viewFromSnapshot(
       sectionCountLabel: countLabel(snapshot.sections.length, "section"),
       measureCountLabel: countLabel(snapshot.measureCount, "measure"),
       chordCountLabel: countLabel(chordCount, "chord"),
+      /*
+       * Untouched seed: the title is still the starter chart's and the
+       * revision sits exactly at the seed's own command count, so nothing
+       * the visitor did has entered the document yet.
+       */
+      isSeededDemo:
+        snapshot.title === STARTER_CHART.title &&
+        snapshot.revision === STARTER_CHART.undoDepth,
       rovingFocusId,
       selectionCount,
       selectionStatusLabel:
@@ -746,8 +836,7 @@ function viewFromSnapshot(
       maxCodePoints: QUICK_ENTRY_MAX_CODE_POINTS,
       codePointCount: snapshot.quickEntry.codePointCount,
       statusLabel: quickEntryStatusLabel(snapshot.quickEntry.status),
-      targetLabel:
-        snapshot.quickEntry.targetLabel ?? "No insertion target",
+      targetLabel: composedTargetLabel(snapshot),
       // Insert is offered only when the stated plan is committable, so the
       // statement and the affordance can never disagree.
       canInsert: insertionPlan.committable,
@@ -820,15 +909,20 @@ function viewFromSnapshot(
       audioState: snapshot.transport.status,
       audioStatusLabel: snapshot.transport.statusLabel,
       // jcpe-uslp: a carried failure code outranks the standing hint — the
-      // detail line then says what failed and the next safe action.
+      // detail line then says what failed and the next safe action. While
+      // sound is running, "press Play" would be a lie, so the line states
+      // the truth and the way out instead.
       audioStatusDetail:
         snapshot.transport.failureDetail ??
-        (snapshot.chordCount === 0
-          ? "Write a chord, then press Play to hear it."
-          : "Press Play to hear this chart."),
+        (snapshot.transport.status === "playing"
+          ? "Playing — press Stop to end."
+          : snapshot.chordCount === 0
+            ? "Write a chord, then press Play to hear it."
+            : "Press Play to hear this chart."),
       tempoBpm: snapshot.tempoBpm,
       instrumentLabel: snapshot.instrumentLabel,
-      positionLabel: `${playheadLabel} beats`,
+      positionLabel: musicalPositionLabel(playheadLabel),
+      positionExactLabel: `${playheadLabel} beats`,
       currentChordLabel: pointer.chordLabel,
       progressPercent: pointer.progressPercent,
     }),
@@ -907,7 +1001,35 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
   const [tempoDraft, setTempoDraft] = useState(String(snapshot.tempoBpm));
   const [tempoInvalid, setTempoInvalid] = useState(false);
   const [tempoFeedback, setTempoFeedback] = useState<string | null>(null);
-  const [shareFeedback, setShareFeedback] = useState<string | null>(null);
+  const [shareFeedback, setShareFeedback] = useState<StudioShareFeedback | null>(
+    null,
+  );
+  /*
+   * "Copied ✓" on the button itself for two seconds after a clipboard
+   * success — a deterministic timeout, presentation-only, disarmed by any
+   * later outcome that did not reach the clipboard.
+   */
+  const [shareCopied, setShareCopied] = useState(false);
+  const shareCopiedTimer = useRef<number | null>(null);
+  const recordShareOutcome = (
+    kind: StudioShareFeedback["kind"],
+    message: string,
+  ): void => {
+    setShareFeedback(Object.freeze({ kind, message }));
+    if (shareCopiedTimer.current !== null) {
+      window.clearTimeout(shareCopiedTimer.current);
+      shareCopiedTimer.current = null;
+    }
+    if (kind !== "copied") {
+      setShareCopied(false);
+      return;
+    }
+    setShareCopied(true);
+    shareCopiedTimer.current = window.setTimeout(() => {
+      shareCopiedTimer.current = null;
+      setShareCopied(false);
+    }, 2000);
+  };
   const previousCommittedTempo = useRef(snapshot.tempoBpm);
   useEffect(() => {
     if (previousCommittedTempo.current === snapshot.tempoBpm) return;
@@ -1333,6 +1455,7 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
     tempoInvalid,
     tempoFeedback,
     shareFeedback,
+    shareCopied,
   }, insertionPlan, draftPreview, livePlayheadLabel, continuation);
 
   /*
@@ -1470,12 +1593,12 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
            */
           const payload = buildSharePayload(snapshot);
           if (!payload.ok) {
-            setShareFeedback(payload.message);
+            recordShareOutcome("refused", payload.message);
             return;
           }
           const fragment = encodeShareFragment(payload.value);
           if (!fragment.ok) {
-            setShareFeedback(fragment.message);
+            recordShareOutcome("refused", fragment.message);
             return;
           }
           const base = window.location.href.split("#")[0] ?? "";
@@ -1485,17 +1608,22 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
             | Clipboard
             | undefined;
           if (clipboard === undefined) {
-            setShareFeedback(
+            recordShareOutcome(
+              "manual",
               "Share link placed in the address bar; copy it from there.",
             );
             return;
           }
           clipboard.writeText(url).then(
             () => {
-              setShareFeedback("Share link copied to the clipboard.");
+              recordShareOutcome(
+                "copied",
+                "Share link copied to the clipboard.",
+              );
             },
             () => {
-              setShareFeedback(
+              recordShareOutcome(
+                "manual",
                 "Share link placed in the address bar; copy it from there.",
               );
             },
@@ -1556,8 +1684,16 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
             return;
           }
           setTempoInvalid(true);
+          /*
+           * The out-of-range message and its recovery sentence both name the
+           * accepted range; concatenated they said "between 20 and 300"
+           * twice in one line. The message alone already states the range
+           * and the fix, so the recovery sentence is dropped here only.
+           */
           setTempoFeedback(
-            `${result.refusal.message} ${result.refusal.recoveryAction}`,
+            result.refusal.code === "u1.tempo_out_of_range"
+              ? result.refusal.message
+              : `${result.refusal.message} ${result.refusal.recoveryAction}`,
           );
         },
         onLoadLibraryEntry: (entryId) => {

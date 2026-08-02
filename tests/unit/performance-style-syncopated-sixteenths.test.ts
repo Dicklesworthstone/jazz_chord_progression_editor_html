@@ -97,7 +97,7 @@ const EXPECTED_BASS = {
  */
 const EXPECTED_COMP = {
   0: [
-    [0, "all", 320, 89],
+    [0, "upper-voices", 320, 89],
     [480, "guide-tones", 320, 63],
     [960, "upper-voices", 320, 80],
     [1_440, "upper-voices", 320, 87],
@@ -111,14 +111,14 @@ const EXPECTED_COMP = {
     [2_880, "upper-voices", 360, 90],
   ],
   2: [
-    [0, "all", 320, 89],
+    [0, "upper-voices", 320, 89],
     [480, "guide-tones", 320, 63],
     [960, "upper-voices", 320, 80],
     [1_440, "upper-voices", 320, 87],
     [2_400, "upper-voices", 320, 90],
   ],
   3: [
-    [0, "all", 320, 86],
+    [0, "upper-voices", 320, 86],
     [480, "guide-tones", 320, 60],
     [960, "upper-voices", 320, 77],
     [1_440, "upper-voices", 320, 84],
@@ -305,7 +305,7 @@ describe("the syncopated-sixteenths style table", () => {
   });
 
   test("declares the measured registers: the lifted right hand and its own electric bass", () => {
-    expect(style.compRegister).toEqual({ lowMidi: 65, highMidi: 88, ceilingMidi: 94 });
+    expect(style.compRegister).toEqual({ lowMidi: 53, highMidi: 76, ceilingMidi: 79 });
     /*
      * The per-style bass register is the field this campaign added: the
      * reference bass lives at MIDI 41..61, an octave above the package's

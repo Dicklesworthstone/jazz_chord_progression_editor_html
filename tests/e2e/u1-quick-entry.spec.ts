@@ -208,8 +208,10 @@ test.describe("U1-TRACE-QUICKENTRY quick entry over the real artifact", () => {
     await page.getByTestId("quick-entry-field").fill("Dm9:2 G13:1 X");
     const lane = page.getByTestId("quick-entry-recovery");
     await expect(lane).toBeVisible();
+    // jcpe-xzjo: the checkbox states the loss in prose; the machine token
+    // still travels to A0 verbatim when the box is ticked.
     await expect(lane).toContainText(
-      "source-bar-and-section-layout-will-be-lost@1",
+      "The original bar and section layout will be lost",
     );
 
     // Until the loss is accepted, the only control that could publish is off.

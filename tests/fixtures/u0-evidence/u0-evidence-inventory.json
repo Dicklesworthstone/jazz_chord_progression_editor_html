@@ -124,7 +124,7 @@
     },
     {
       "path": "tests/visual/u0-forced-colors.spec.ts",
-      "sha256": "a214158773c2dd52c07eac74d532b8d49772f6fcd7ff1dc5777737402d11a3f9"
+      "sha256": "aac803736dbaf0f6b1a277ab4074064e2697cfa89f3f57e0f1e2a66b10d42a2a"
     },
     {
       "path": "tests/visual/u0-reduced-motion.spec.ts",
