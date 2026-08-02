@@ -34,6 +34,14 @@ export type {
 
 export type { StudioViewModel } from "./studio-view-model";
 
+export {
+  DELETE_AUTO_COMPLETION_REASON,
+  DUPLICATE_AUTO_COMPLETION_REASON,
+  deleteSelectionAutoDeclaring,
+  duplicateSelectionAutoResolving,
+} from "./studio-edit-gestures";
+export type { StudioEditGestureActions } from "./studio-edit-gestures";
+
 export { STARTER_CHART, seedStarterChart } from "./studio-starter-chart";
 export type { SeedStarterChartResult } from "./studio-starter-chart";
 export {
