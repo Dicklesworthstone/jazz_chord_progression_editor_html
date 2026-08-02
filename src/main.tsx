@@ -3,7 +3,7 @@ import { render } from "preact";
 import {
   applySharedStartup,
   createStudioAudio,
-  createStudioController,
+  createStudioComposition,
   decodeShareFragment,
   seedStarterChart,
 } from "./application/runtime";
@@ -32,7 +32,13 @@ mountPoint.replaceChildren();
  */
 const audio = createStudioAudio(createBrowserAudioPlatform());
 
-const creation = createStudioController({
+/*
+ * The composition root also owns the A0/E0 interchange owner aggregate the
+ * controller closure constructs beside itself (`composition.interchangeOwner`).
+ * No accepted E0 v2 consumer exists yet, so the aggregate stays sealed here:
+ * only `controller` is distributed, and nothing else may mint that authority.
+ */
+const creation = createStudioComposition({
   audio,
   nowMs: () => performance.now(),
 });
@@ -47,23 +53,24 @@ if (creation.ok) {
    * Seeding happens before the first render so the opening paint already
    * shows a playable progression.
    */
+  const { controller } = creation.composition;
   let startupNotice: string | null = null;
   const shared = decodeShareFragment(window.location.hash);
   if (shared.ok) {
-    const applied = applySharedStartup(creation.controller, shared.value);
+    const applied = applySharedStartup(controller, shared.value);
     if (!applied.applied) {
       startupNotice = `The shared chart was not opened: ${applied.reason}`;
-      seedStarterChart(creation.controller);
+      seedStarterChart(controller);
     }
   } else if (shared.code !== "share.fragment_absent") {
     startupNotice = `The share link could not be read: ${shared.message}`;
-    seedStarterChart(creation.controller);
+    seedStarterChart(controller);
   } else {
-    seedStarterChart(creation.controller);
+    seedStarterChart(controller);
   }
   render(
     <StudioRoot
-      controller={creation.controller}
+      controller={controller}
       startupNotice={startupNotice}
     />,
     mountPoint,
