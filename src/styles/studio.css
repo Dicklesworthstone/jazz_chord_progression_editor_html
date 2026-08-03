@@ -1300,6 +1300,21 @@
   white-space: nowrap;
 }
 
+/*
+ * jcpe-disi.1: the selected chord advertises that its symbol is re-enterable.
+ * State-based, never hover-revealed: the dotted underline appears the moment
+ * the card is the selection, on every pointer kind, and the text cursor
+ * confirms the promise on fine pointers.
+ */
+.studio-chord-card[data-selected="true"] .studio-chord-card__symbol {
+  cursor: text;
+  text-decoration-color: color-mix(in srgb, var(--accent) 65%, transparent);
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.22em;
+}
+
 /* Narrow cards step the symbol down instead of letting it spill. */
 @media (max-width: 39.999rem) {
   .studio-chord-card__symbol {

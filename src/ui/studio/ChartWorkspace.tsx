@@ -647,7 +647,16 @@ export function ChartWorkspace({
       }
       case "symbol":
         // A double activation opens the inline editor; a single one selects.
-        if (event.detail >= 2) {
+        // jcpe-disi.1: activating the symbol of the chord that is ALREADY the
+        // selection also edits — select, then click again to change your
+        // mind. Shift keeps extending and an active range keeps its
+        // range-edge semantics, so neither gesture can fall into the editor.
+        if (
+          event.detail >= 2 ||
+          (!event.shiftKey &&
+            !view.range.active &&
+            chordById(chordId)?.selected === true)
+        ) {
           guardedSwitch({ chordId, kind: "edit-symbol" });
           return;
         }
@@ -1844,6 +1853,11 @@ export function ChartWorkspace({
                                           <span
                                             class="studio-chord-card__symbol"
                                             data-card-action="symbol"
+                                            title={
+                                              chord.selected
+                                                ? "Edit this chord — click its symbol again, or press F2"
+                                                : undefined
+                                            }
                                           >
                                             <LeadSheetSymbol
                                               text={chord.symbolText}
