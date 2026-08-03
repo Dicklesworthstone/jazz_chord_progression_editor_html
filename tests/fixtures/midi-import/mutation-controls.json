@@ -1,0 +1,24 @@
+{
+  "schema": "changes.fixtures.m0-mutation-controls.v1",
+  "fixtureVersion": 1,
+  "productionImportsForbidden": true,
+  "notes": "Each control corrupts one reviewed value through an RFC-6901 pointer (replace or remove); the validator must fail with the named finding code when the mutation is overlaid. M0-MUT-009 flips the first note-on key byte inside the pinned E1 round-trip golden, which must break the byte pin.",
+  "controls": [
+    { "id": "M0-MUT-001", "file": "m0-midi-import-contract.json", "operation": "replace", "pointer": "/limits/maxNotes", "value": 131073, "expectedFindingCode": "M0_MANIFEST" },
+    { "id": "M0-MUT-002", "file": "m0-midi-import-contract.json", "operation": "remove", "pointer": "/refusalCodes/27", "expectedFindingCode": "M0_MANIFEST" },
+    { "id": "M0-MUT-003", "file": "m0-midi-import-contract.json", "operation": "replace", "pointer": "/sonorityLaws/simultaneityWindowMicroseconds", "value": 41000, "expectedFindingCode": "M0_MANIFEST" },
+    { "id": "M0-MUT-004", "file": "m0-midi-import-contract.json", "operation": "replace", "pointer": "/templates/1/pitchClassOffsets/1", "value": 3, "expectedFindingCode": "M0_MANIFEST" },
+    { "id": "M0-MUT-005", "file": "golden-cases.json", "operation": "replace", "pointer": "/cases/0/expectedModel/tracks/1/notes/0/key", "value": 61, "expectedFindingCode": "M0_GOLDEN" },
+    { "id": "M0-MUT-006", "file": "golden-cases.json", "operation": "replace", "pointer": "/cases/0/expectedCounters/notesPaired", "value": 4, "expectedFindingCode": "M0_COUNTER" },
+    { "id": "M0-MUT-007", "file": "golden-cases.json", "operation": "replace", "pointer": "/cases/1/expectedSonorities/1/windowTicks", "value": 38, "expectedFindingCode": "M0_SONORITY" },
+    { "id": "M0-MUT-008", "file": "golden-cases.json", "operation": "replace", "pointer": "/cases/1/expectedResolutions/1/outcome/alternatives/0/formulaRuleId", "value": "sixth-major", "expectedFindingCode": "M0_RESOLUTION" },
+    { "id": "M0-MUT-009", "file": "golden-cases.json", "operation": "replace", "pointer": "/cases/0/bytesHex", "value": "4D546864000000060001000203C04D54726B0000002100FF03015400FF510307A12000FF58040402180800FF0604436D616A8740FF2F004D54726B0000002300FF03015600FF04014900903D600040600043608728803C0000400000430018FF2F00", "expectedFindingCode": "M0_E1PIN" },
+    { "id": "M0-MUT-010", "file": "refusal-cases.json", "operation": "replace", "pointer": "/cases/6/expected/code", "value": "smf.division_zero", "expectedFindingCode": "M0_REFUSAL" },
+    { "id": "M0-MUT-011", "file": "refusal-cases.json", "operation": "replace", "pointer": "/cases/16/expected/byteOffset", "value": 23, "expectedFindingCode": "M0_REFUSAL" },
+    { "id": "M0-MUT-012", "file": "sonority-cases.json", "operation": "replace", "pointer": "/cases/3/expected/sonorities/1/quantizationErrorNumerator", "value": 0, "expectedFindingCode": "M0_SONORITY" },
+    { "id": "M0-MUT-013", "file": "resolution-cases.json", "operation": "remove", "pointer": "/cases/2/expected/alternatives/3", "expectedFindingCode": "M0_RESOLUTION" },
+    { "id": "M0-MUT-014", "file": "trace-ledger.json", "operation": "remove", "pointer": "/traces/0/caseIds/0", "expectedFindingCode": "M0_TRACE" },
+    { "id": "M0-MUT-015", "file": "provenance-ledger.json", "operation": "replace", "pointer": "/expectedValuesGenerated", "value": true, "expectedFindingCode": "M0_PROVENANCE" },
+    { "id": "M0-MUT-016", "file": "resolution-cases.json", "operation": "replace", "pointer": "/cases/7/expected/spelledPitchClasses/1/alter", "value": 0, "expectedFindingCode": "M0_RESOLUTION" }
+  ]
+}

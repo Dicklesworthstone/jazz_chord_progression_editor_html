@@ -1,0 +1,166 @@
+{
+  "schema": "changes.fixtures.m0-resolution-cases.v1",
+  "fixtureVersion": "1.0.0",
+  "status": "independently-authored-pre-production",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "notes": "Reverse-T1 law cases: pitch-class set plus bass against the frozen 24-template table. Every alternative set was derived on paper by trying each present pitch class as a root and applying the exact/omitted-fifth match law and the frozen five-key ranking. Plurality is the point: the classic m7/6 duality, dim7 symmetry, and the sus family each yield multiple honestly ranked readings, and clusters with no template yield the literal Custom pitch set - never an invented name.",
+  "cases": [
+    {
+      "id": "M0-RES-001",
+      "title": "The m7/6 duality: D F A C reads as Dm7 in root position and as F6 over D",
+      "input": { "pitchClasses": [0, 2, 5, 9], "bassPitchClass": 2 },
+      "expected": {
+        "kind": "alternatives",
+        "totalMatches": 2,
+        "alternatives": [
+          { "templateId": "M0-TPL-12", "formulaRuleId": "seventh-minor", "realizationId": null, "extensionNumber": null, "rootPitchClass": 2, "rootSpelled": { "step": "D", "alter": 0 }, "bassPitchClass": 2, "inversion": "root", "matchKind": "exact", "missingDegreeNumbers": [] },
+          { "templateId": "M0-TPL-08", "formulaRuleId": "sixth-major", "realizationId": null, "extensionNumber": null, "rootPitchClass": 5, "rootSpelled": { "step": "F", "alter": 0 }, "bassPitchClass": 2, "inversion": "slash", "matchKind": "exact", "missingDegreeNumbers": [] }
+        ]
+      },
+      "traceIds": ["M0-TRACE-REVERSE-T1"],
+      "authorityIds": ["M0-AUTH-T1", "M0-AUTH-DERIVED", "M0-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "M0-RES-002",
+      "title": "Transposition reciprocity: the same structure a fourth higher transposes every alternative",
+      "input": { "pitchClasses": [2, 5, 7, 10], "bassPitchClass": 7 },
+      "expected": {
+        "kind": "alternatives",
+        "totalMatches": 2,
+        "alternatives": [
+          { "templateId": "M0-TPL-12", "formulaRuleId": "seventh-minor", "realizationId": null, "extensionNumber": null, "rootPitchClass": 7, "rootSpelled": { "step": "G", "alter": 0 }, "bassPitchClass": 7, "inversion": "root", "matchKind": "exact", "missingDegreeNumbers": [] },
+          { "templateId": "M0-TPL-08", "formulaRuleId": "sixth-major", "realizationId": null, "extensionNumber": null, "rootPitchClass": 10, "rootSpelled": { "step": "B", "alter": -1 }, "bassPitchClass": 7, "inversion": "slash", "matchKind": "exact", "missingDegreeNumbers": [] }
+        ]
+      },
+      "traceIds": ["M0-TRACE-REVERSE-T1"],
+      "authorityIds": ["M0-AUTH-T1", "M0-AUTH-DERIVED", "M0-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "M0-RES-003",
+      "title": "Diminished-seventh symmetry yields four ranked readings, root position first",
+      "input": { "pitchClasses": [0, 3, 6, 9], "bassPitchClass": 0 },
+      "expected": {
+        "kind": "alternatives",
+        "totalMatches": 4,
+        "alternatives": [
+          { "templateId": "M0-TPL-15", "formulaRuleId": "seventh-diminished", "realizationId": null, "extensionNumber": null, "rootPitchClass": 0, "rootSpelled": { "step": "C", "alter": 0 }, "bassPitchClass": 0, "inversion": "root", "matchKind": "exact", "missingDegreeNumbers": [] },
+          { "templateId": "M0-TPL-15", "formulaRuleId": "seventh-diminished", "realizationId": null, "extensionNumber": null, "rootPitchClass": 3, "rootSpelled": { "step": "E", "alter": -1 }, "bassPitchClass": 0, "inversion": "slash", "matchKind": "exact", "missingDegreeNumbers": [] },
+          { "templateId": "M0-TPL-15", "formulaRuleId": "seventh-diminished", "realizationId": null, "extensionNumber": null, "rootPitchClass": 6, "rootSpelled": { "step": "G", "alter": -1 }, "bassPitchClass": 0, "inversion": "slash", "matchKind": "exact", "missingDegreeNumbers": [] },
+          { "templateId": "M0-TPL-15", "formulaRuleId": "seventh-diminished", "realizationId": null, "extensionNumber": null, "rootPitchClass": 9, "rootSpelled": { "step": "A", "alter": 0 }, "bassPitchClass": 0, "inversion": "slash", "matchKind": "exact", "missingDegreeNumbers": [] }
+        ]
+      },
+      "traceIds": ["M0-TRACE-REVERSE-T1"],
+      "authorityIds": ["M0-AUTH-T1", "M0-AUTH-DERIVED", "M0-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "M0-RES-004",
+      "title": "An exact slash reading outranks an omitted-fifth root reading: Am over C before C6(no5)",
+      "input": { "pitchClasses": [0, 4, 9], "bassPitchClass": 0 },
+      "expected": {
+        "kind": "alternatives",
+        "totalMatches": 2,
+        "alternatives": [
+          { "templateId": "M0-TPL-03", "formulaRuleId": "base-minor", "realizationId": null, "extensionNumber": null, "rootPitchClass": 9, "rootSpelled": { "step": "A", "alter": 0 }, "bassPitchClass": 0, "inversion": "slash", "matchKind": "exact", "missingDegreeNumbers": [] },
+          { "templateId": "M0-TPL-08", "formulaRuleId": "sixth-major", "realizationId": null, "extensionNumber": null, "rootPitchClass": 0, "rootSpelled": { "step": "C", "alter": 0 }, "bassPitchClass": 0, "inversion": "root", "matchKind": "omitted-fifth", "missingDegreeNumbers": [5] }
+        ]
+      },
+      "traceIds": ["M0-TRACE-REVERSE-T1"],
+      "authorityIds": ["M0-AUTH-T1", "M0-AUTH-DERIVED", "M0-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "M0-RES-005",
+      "title": "A rootless Cmaj9 voicing resolves to what it literally contains: Em7, then G6 over E",
+      "input": { "pitchClasses": [2, 4, 7, 11], "bassPitchClass": 4 },
+      "expected": {
+        "kind": "alternatives",
+        "totalMatches": 2,
+        "alternatives": [
+          { "templateId": "M0-TPL-12", "formulaRuleId": "seventh-minor", "realizationId": null, "extensionNumber": null, "rootPitchClass": 4, "rootSpelled": { "step": "E", "alter": 0 }, "bassPitchClass": 4, "inversion": "root", "matchKind": "exact", "missingDegreeNumbers": [] },
+          { "templateId": "M0-TPL-08", "formulaRuleId": "sixth-major", "realizationId": null, "extensionNumber": null, "rootPitchClass": 7, "rootSpelled": { "step": "G", "alter": 0 }, "bassPitchClass": 4, "inversion": "slash", "matchKind": "exact", "missingDegreeNumbers": [] }
+        ]
+      },
+      "traceIds": ["M0-TRACE-REVERSE-T1"],
+      "authorityIds": ["M0-AUTH-T1", "M0-AUTH-DERIVED", "M0-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "M0-RES-006",
+      "title": "The sus family: Csus2 exactly, Gsus4 over C exactly, and D7sus4(no5) over C",
+      "input": { "pitchClasses": [0, 2, 7], "bassPitchClass": 0 },
+      "expected": {
+        "kind": "alternatives",
+        "totalMatches": 3,
+        "alternatives": [
+          { "templateId": "M0-TPL-06", "formulaRuleId": "base-sus2", "realizationId": null, "extensionNumber": null, "rootPitchClass": 0, "rootSpelled": { "step": "C", "alter": 0 }, "bassPitchClass": 0, "inversion": "root", "matchKind": "exact", "missingDegreeNumbers": [] },
+          { "templateId": "M0-TPL-07", "formulaRuleId": "base-sus4", "realizationId": null, "extensionNumber": null, "rootPitchClass": 7, "rootSpelled": { "step": "G", "alter": 0 }, "bassPitchClass": 0, "inversion": "slash", "matchKind": "exact", "missingDegreeNumbers": [] },
+          { "templateId": "M0-TPL-17", "formulaRuleId": "extension-suspended-dominant", "realizationId": null, "extensionNumber": null, "rootPitchClass": 2, "rootSpelled": { "step": "D", "alter": 0 }, "bassPitchClass": 0, "inversion": "slash", "matchKind": "omitted-fifth", "missingDegreeNumbers": [5] }
+        ]
+      },
+      "traceIds": ["M0-TRACE-REVERSE-T1"],
+      "authorityIds": ["M0-AUTH-T1", "M0-AUTH-DERIVED", "M0-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "M0-RES-007",
+      "title": "The altered dominant lands on its exact T1 realization with no rival",
+      "input": { "pitchClasses": [0, 1, 4, 6, 10], "bassPitchClass": 0 },
+      "expected": {
+        "kind": "alternatives",
+        "totalMatches": 1,
+        "alternatives": [
+          { "templateId": "M0-TPL-21", "formulaRuleId": "altered-dominant", "realizationId": "alt-b9-b5", "extensionNumber": null, "rootPitchClass": 0, "rootSpelled": { "step": "C", "alter": 0 }, "bassPitchClass": 0, "inversion": "root", "matchKind": "exact", "missingDegreeNumbers": [] }
+        ]
+      },
+      "traceIds": ["M0-TRACE-REVERSE-T1"],
+      "authorityIds": ["M0-AUTH-T1", "M0-AUTH-DERIVED", "M0-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "M0-RES-008",
+      "title": "A cluster with no template yields the literal Custom pitch set, never an invented name",
+      "input": { "pitchClasses": [0, 1, 6], "bassPitchClass": 0 },
+      "expected": {
+        "kind": "custom",
+        "bassPitchClass": 0,
+        "spelledPitchClasses": [
+          { "step": "C", "alter": 0 },
+          { "step": "D", "alter": -1 },
+          { "step": "G", "alter": -1 }
+        ]
+      },
+      "traceIds": ["M0-TRACE-CUSTOM-FALLBACK"],
+      "authorityIds": ["M0-AUTH-T1", "M0-AUTH-DERIVED", "M0-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "M0-RES-009",
+      "title": "The whole-tone hexachord falls back to Custom, spelled bass-first ascending",
+      "input": { "pitchClasses": [0, 2, 4, 6, 8, 10], "bassPitchClass": 4 },
+      "expected": {
+        "kind": "custom",
+        "bassPitchClass": 4,
+        "spelledPitchClasses": [
+          { "step": "E", "alter": 0 },
+          { "step": "G", "alter": -1 },
+          { "step": "A", "alter": -1 },
+          { "step": "B", "alter": -1 },
+          { "step": "C", "alter": 0 },
+          { "step": "D", "alter": 0 }
+        ]
+      },
+      "traceIds": ["M0-TRACE-CUSTOM-FALLBACK"],
+      "authorityIds": ["M0-AUTH-T1", "M0-AUTH-DERIVED", "M0-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "M0-RES-010",
+      "title": "A full dominant ninth matches the extension-dominant template exactly and uniquely",
+      "input": { "pitchClasses": [0, 2, 4, 7, 10], "bassPitchClass": 0 },
+      "expected": {
+        "kind": "alternatives",
+        "totalMatches": 1,
+        "alternatives": [
+          { "templateId": "M0-TPL-19", "formulaRuleId": "extension-dominant", "realizationId": null, "extensionNumber": 9, "rootPitchClass": 0, "rootSpelled": { "step": "C", "alter": 0 }, "bassPitchClass": 0, "inversion": "root", "matchKind": "exact", "missingDegreeNumbers": [] }
+        ]
+      },
+      "traceIds": ["M0-TRACE-REVERSE-T1"],
+      "authorityIds": ["M0-AUTH-T1", "M0-AUTH-DERIVED", "M0-AUTH-INDEPENDENCE"]
+    }
+  ]
+}

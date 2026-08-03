@@ -1,0 +1,618 @@
+{
+  "schema": "changes.fixtures.m0-golden-cases.v1",
+  "fixtureVersion": "1.0.0",
+  "status": "independently-authored-pre-production",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "notes": "Every bytesHex was assembled by hand from the SMF 1.0 byte model (chunk layouts, VLQ arithmetic, running status, meta payloads); no production parser exists yet and none generated any expectation. M0-GLD-001 restates the E1-GLD-001 writer golden byte-for-byte as the round-trip pin; the validator cross-checks the two fixture files. Cases 002-006 are import-only families the E1 writer can never emit: format 0, non-zero channels, velocity-zero note-offs, mid-track tempo and meter changes, multi-channel running status, overlong-but-legal VLQs, alien chunks, sysex, and tolerated metas and channel messages. Sonority and resolution expectations chain the decoded models through the frozen grid, window, and reverse-T1 laws with exact integer arithmetic done on paper.",
+  "cases": [
+    {
+      "id": "M0-GLD-001",
+      "title": "E1 round-trip pin: the writer's minimal 4/4 golden decodes and resolves back to its chord",
+      "request": { "requestId": "m0-gld-001" },
+      "bytesHex": "4D546864000000060001000203C04D54726B0000002100FF03015400FF510307A12000FF58040402180800FF0604436D616A8740FF2F004D54726B0000002300FF03015600FF04014900903C600040600043608728803C0000400000430018FF2F00",
+      "expectedModel": {
+        "header": { "format": 1, "trackCount": 2, "division": 960 },
+        "tempoMap": [{ "tick": 0, "microsecondsPerQuarter": 500000 }],
+        "meterMap": [{ "tick": 0, "numerator": 4, "denominatorPower": 2 }],
+        "tracks": [
+          {
+            "index": 0,
+            "name": "T",
+            "instrumentName": null,
+            "markers": [{ "tick": 0, "text": "Cmaj" }],
+            "notes": []
+          },
+          {
+            "index": 1,
+            "name": "V",
+            "instrumentName": "I",
+            "markers": [],
+            "notes": [
+              { "channel": 0, "key": 60, "onTick": 0, "offTick": 936, "onVelocity": 96 },
+              { "channel": 0, "key": 64, "onTick": 0, "offTick": 936, "onVelocity": 96 },
+              { "channel": 0, "key": 67, "onTick": 0, "offTick": 936, "onVelocity": 96 }
+            ]
+          }
+        ],
+        "ignoredEvents": [],
+        "alienChunks": []
+      },
+      "expectedCounters": {
+        "bytesRead": 98,
+        "chunksSeen": 3,
+        "eventsDecoded": 14,
+        "eventsIgnored": 0,
+        "notesPaired": 3,
+        "peakOpenNotes": 3,
+        "tempoChanges": 1,
+        "meterChanges": 1
+      },
+      "expectedSonorities": [
+        {
+          "anchorTick": 0,
+          "memberCount": 3,
+          "bassMidi": 60,
+          "bassPitchClass": 0,
+          "pitchClasses": [0, 4, 7],
+          "windowTicks": 76,
+          "tempoMicrosecondsAtAnchor": 500000,
+          "segmentIndex": 0,
+          "gridIndex": 0,
+          "quantizedTickNumerator": 0,
+          "quantizedTickDenominator": 4,
+          "quantizationErrorNumerator": 0,
+          "quantizationErrorDenominator": 4,
+          "measureIndex": 0
+        }
+      ],
+      "expectedResolutions": [
+        {
+          "sonorityIndex": 0,
+          "outcome": {
+            "kind": "alternatives",
+            "totalMatches": 1,
+            "alternatives": [
+              {
+                "templateId": "M0-TPL-02",
+                "formulaRuleId": "base-major",
+                "realizationId": null,
+                "extensionNumber": null,
+                "rootPitchClass": 0,
+                "rootSpelled": { "step": "C", "alter": 0 },
+                "bassPitchClass": 0,
+                "inversion": "root",
+                "matchKind": "exact",
+                "missingDegreeNumbers": []
+              }
+            ]
+          }
+        }
+      ],
+      "traceIds": [
+        "M0-TRACE-DECODE-BYTES",
+        "M0-TRACE-REVERSE-T1",
+        "M0-TRACE-ROUND-TRIP",
+        "M0-TRACE-AUTHORITY-INTEGRITY"
+      ],
+      "authorityIds": ["M0-AUTH-SMF", "M0-AUTH-E1", "M0-AUTH-DERIVED", "M0-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "M0-GLD-002",
+      "title": "Format 0 on channel 3 with velocity-zero note-offs and a mid-track tempo change halving the window",
+      "request": { "requestId": "m0-gld-002" },
+      "bytesHex": "4D546864000000060000000101E04D54726B0000004800FF510307A12000FF58040402180800933C6400406400436483603C0000400000430000FF51030F424000933E5000415000455000485083603E0000410000450000480000FF2F00",
+      "expectedModel": {
+        "header": { "format": 0, "trackCount": 1, "division": 480 },
+        "tempoMap": [
+          { "tick": 0, "microsecondsPerQuarter": 500000 },
+          { "tick": 480, "microsecondsPerQuarter": 1000000 }
+        ],
+        "meterMap": [{ "tick": 0, "numerator": 4, "denominatorPower": 2 }],
+        "tracks": [
+          {
+            "index": 0,
+            "name": null,
+            "instrumentName": null,
+            "markers": [],
+            "notes": [
+              { "channel": 3, "key": 60, "onTick": 0, "offTick": 480, "onVelocity": 100 },
+              { "channel": 3, "key": 64, "onTick": 0, "offTick": 480, "onVelocity": 100 },
+              { "channel": 3, "key": 67, "onTick": 0, "offTick": 480, "onVelocity": 100 },
+              { "channel": 3, "key": 62, "onTick": 480, "offTick": 960, "onVelocity": 80 },
+              { "channel": 3, "key": 65, "onTick": 480, "offTick": 960, "onVelocity": 80 },
+              { "channel": 3, "key": 69, "onTick": 480, "offTick": 960, "onVelocity": 80 },
+              { "channel": 3, "key": 72, "onTick": 480, "offTick": 960, "onVelocity": 80 }
+            ]
+          }
+        ],
+        "ignoredEvents": [],
+        "alienChunks": []
+      },
+      "expectedCounters": {
+        "bytesRead": 94,
+        "chunksSeen": 2,
+        "eventsDecoded": 18,
+        "eventsIgnored": 0,
+        "notesPaired": 7,
+        "peakOpenNotes": 4,
+        "tempoChanges": 2,
+        "meterChanges": 1
+      },
+      "expectedSonorities": [
+        {
+          "anchorTick": 0,
+          "memberCount": 3,
+          "bassMidi": 60,
+          "bassPitchClass": 0,
+          "pitchClasses": [0, 4, 7],
+          "windowTicks": 38,
+          "tempoMicrosecondsAtAnchor": 500000,
+          "segmentIndex": 0,
+          "gridIndex": 0,
+          "quantizedTickNumerator": 0,
+          "quantizedTickDenominator": 4,
+          "quantizationErrorNumerator": 0,
+          "quantizationErrorDenominator": 4,
+          "measureIndex": 0
+        },
+        {
+          "anchorTick": 480,
+          "memberCount": 4,
+          "bassMidi": 62,
+          "bassPitchClass": 2,
+          "pitchClasses": [0, 2, 5, 9],
+          "windowTicks": 19,
+          "tempoMicrosecondsAtAnchor": 1000000,
+          "segmentIndex": 0,
+          "gridIndex": 4,
+          "quantizedTickNumerator": 1920,
+          "quantizedTickDenominator": 4,
+          "quantizationErrorNumerator": 0,
+          "quantizationErrorDenominator": 4,
+          "measureIndex": 0
+        }
+      ],
+      "expectedResolutions": [
+        {
+          "sonorityIndex": 0,
+          "outcome": {
+            "kind": "alternatives",
+            "totalMatches": 1,
+            "alternatives": [
+              {
+                "templateId": "M0-TPL-02",
+                "formulaRuleId": "base-major",
+                "realizationId": null,
+                "extensionNumber": null,
+                "rootPitchClass": 0,
+                "rootSpelled": { "step": "C", "alter": 0 },
+                "bassPitchClass": 0,
+                "inversion": "root",
+                "matchKind": "exact",
+                "missingDegreeNumbers": []
+              }
+            ]
+          }
+        },
+        {
+          "sonorityIndex": 1,
+          "outcome": {
+            "kind": "alternatives",
+            "totalMatches": 2,
+            "alternatives": [
+              {
+                "templateId": "M0-TPL-12",
+                "formulaRuleId": "seventh-minor",
+                "realizationId": null,
+                "extensionNumber": null,
+                "rootPitchClass": 2,
+                "rootSpelled": { "step": "D", "alter": 0 },
+                "bassPitchClass": 2,
+                "inversion": "root",
+                "matchKind": "exact",
+                "missingDegreeNumbers": []
+              },
+              {
+                "templateId": "M0-TPL-08",
+                "formulaRuleId": "sixth-major",
+                "realizationId": null,
+                "extensionNumber": null,
+                "rootPitchClass": 5,
+                "rootSpelled": { "step": "F", "alter": 0 },
+                "bassPitchClass": 2,
+                "inversion": "slash",
+                "matchKind": "exact",
+                "missingDegreeNumbers": []
+              }
+            ]
+          }
+        }
+      ],
+      "traceIds": [
+        "M0-TRACE-DECODE-BYTES",
+        "M0-TRACE-PAIRING",
+        "M0-TRACE-CONDUCTOR",
+        "M0-TRACE-WINDOW",
+        "M0-TRACE-REVERSE-T1"
+      ],
+      "authorityIds": ["M0-AUTH-SMF", "M0-AUTH-T1", "M0-AUTH-DERIVED", "M0-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "M0-GLD-003",
+      "title": "Two channels in one track, overlong VLQ, alien chunk, sysex, and tolerated metas all recorded",
+      "request": { "requestId": "m0-gld-003" },
+      "bytesHex": "4D546864000000060001000200604D54726B0000001F00FF010341424300FF02016300FF510307A12000FF58040302180800FF2F005846686400000004DEADBEEF4D54726B0000002800F0034312F700B0407F00C105009030500091405000435080408030000081400000430000FF2F00",
+      "expectedModel": {
+        "header": { "format": 1, "trackCount": 2, "division": 96 },
+        "tempoMap": [{ "tick": 0, "microsecondsPerQuarter": 500000 }],
+        "meterMap": [{ "tick": 0, "numerator": 3, "denominatorPower": 2 }],
+        "tracks": [
+          {
+            "index": 0,
+            "name": null,
+            "instrumentName": null,
+            "markers": [],
+            "notes": []
+          },
+          {
+            "index": 1,
+            "name": null,
+            "instrumentName": null,
+            "markers": [],
+            "notes": [
+              { "channel": 0, "key": 48, "onTick": 0, "offTick": 64, "onVelocity": 80 },
+              { "channel": 1, "key": 64, "onTick": 0, "offTick": 64, "onVelocity": 80 },
+              { "channel": 1, "key": 67, "onTick": 0, "offTick": 64, "onVelocity": 80 }
+            ]
+          }
+        ],
+        "ignoredEvents": [
+          { "trackIndex": 0, "tick": 0, "kind": "text", "byteOffset": 23 },
+          { "trackIndex": 0, "tick": 0, "kind": "copyright", "byteOffset": 30 },
+          { "trackIndex": 1, "tick": 0, "kind": "sysex", "byteOffset": 74 },
+          { "trackIndex": 1, "tick": 0, "kind": "control-change", "byteOffset": 80 },
+          { "trackIndex": 1, "tick": 0, "kind": "program-change", "byteOffset": 84 }
+        ],
+        "alienChunks": [{ "byteOffset": 53, "tag": "XFhd", "dataLength": 4 }]
+      },
+      "expectedCounters": {
+        "bytesRead": 113,
+        "chunksSeen": 4,
+        "eventsDecoded": 10,
+        "eventsIgnored": 5,
+        "notesPaired": 3,
+        "peakOpenNotes": 3,
+        "tempoChanges": 1,
+        "meterChanges": 1
+      },
+      "expectedSonorities": [
+        {
+          "anchorTick": 0,
+          "memberCount": 3,
+          "bassMidi": 48,
+          "bassPitchClass": 0,
+          "pitchClasses": [0, 4, 7],
+          "windowTicks": 7,
+          "tempoMicrosecondsAtAnchor": 500000,
+          "segmentIndex": 0,
+          "gridIndex": 0,
+          "quantizedTickNumerator": 0,
+          "quantizedTickDenominator": 4,
+          "quantizationErrorNumerator": 0,
+          "quantizationErrorDenominator": 4,
+          "measureIndex": 0
+        }
+      ],
+      "expectedResolutions": [
+        {
+          "sonorityIndex": 0,
+          "outcome": {
+            "kind": "alternatives",
+            "totalMatches": 1,
+            "alternatives": [
+              {
+                "templateId": "M0-TPL-02",
+                "formulaRuleId": "base-major",
+                "realizationId": null,
+                "extensionNumber": null,
+                "rootPitchClass": 0,
+                "rootSpelled": { "step": "C", "alter": 0 },
+                "bassPitchClass": 0,
+                "inversion": "root",
+                "matchKind": "exact",
+                "missingDegreeNumbers": []
+              }
+            ]
+          }
+        }
+      ],
+      "traceIds": [
+        "M0-TRACE-DECODE-BYTES",
+        "M0-TRACE-DECODE-TOLERATED",
+        "M0-TRACE-GROUPING"
+      ],
+      "authorityIds": ["M0-AUTH-SMF", "M0-AUTH-DERIVED", "M0-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "M0-GLD-004",
+      "title": "Window-boundary join, off-grid quantization, meter change to 3/4, and a dyad falling back to Custom",
+      "request": { "requestId": "m0-gld-004" },
+      "bytesHex": "4D546864000000060000000101E04D54726B0000003E00FF510307A12000FF58040402180800903C60264060810A3C000040008D50FF58040302180807903E6000416000456083593E0000410000450000FF2F00",
+      "expectedModel": {
+        "header": { "format": 0, "trackCount": 1, "division": 480 },
+        "tempoMap": [{ "tick": 0, "microsecondsPerQuarter": 500000 }],
+        "meterMap": [
+          { "tick": 0, "numerator": 4, "denominatorPower": 2 },
+          { "tick": 1920, "numerator": 3, "denominatorPower": 2 }
+        ],
+        "tracks": [
+          {
+            "index": 0,
+            "name": null,
+            "instrumentName": null,
+            "markers": [],
+            "notes": [
+              { "channel": 0, "key": 60, "onTick": 0, "offTick": 176, "onVelocity": 96 },
+              { "channel": 0, "key": 64, "onTick": 38, "offTick": 176, "onVelocity": 96 },
+              { "channel": 0, "key": 62, "onTick": 1927, "offTick": 2400, "onVelocity": 96 },
+              { "channel": 0, "key": 65, "onTick": 1927, "offTick": 2400, "onVelocity": 96 },
+              { "channel": 0, "key": 69, "onTick": 1927, "offTick": 2400, "onVelocity": 96 }
+            ]
+          }
+        ],
+        "ignoredEvents": [],
+        "alienChunks": []
+      },
+      "expectedCounters": {
+        "bytesRead": 84,
+        "chunksSeen": 2,
+        "eventsDecoded": 14,
+        "eventsIgnored": 0,
+        "notesPaired": 5,
+        "peakOpenNotes": 3,
+        "tempoChanges": 1,
+        "meterChanges": 2
+      },
+      "expectedSonorities": [
+        {
+          "anchorTick": 0,
+          "memberCount": 2,
+          "bassMidi": 60,
+          "bassPitchClass": 0,
+          "pitchClasses": [0, 4],
+          "windowTicks": 38,
+          "tempoMicrosecondsAtAnchor": 500000,
+          "segmentIndex": 0,
+          "gridIndex": 0,
+          "quantizedTickNumerator": 0,
+          "quantizedTickDenominator": 4,
+          "quantizationErrorNumerator": 0,
+          "quantizationErrorDenominator": 4,
+          "measureIndex": 0
+        },
+        {
+          "anchorTick": 1927,
+          "memberCount": 3,
+          "bassMidi": 62,
+          "bassPitchClass": 2,
+          "pitchClasses": [2, 5, 9],
+          "windowTicks": 38,
+          "tempoMicrosecondsAtAnchor": 500000,
+          "segmentIndex": 1,
+          "gridIndex": 0,
+          "quantizedTickNumerator": 7680,
+          "quantizedTickDenominator": 4,
+          "quantizationErrorNumerator": 28,
+          "quantizationErrorDenominator": 4,
+          "measureIndex": 1
+        }
+      ],
+      "expectedResolutions": [
+        {
+          "sonorityIndex": 0,
+          "outcome": {
+            "kind": "custom",
+            "bassPitchClass": 0,
+            "spelledPitchClasses": [
+              { "step": "C", "alter": 0 },
+              { "step": "E", "alter": 0 }
+            ]
+          }
+        },
+        {
+          "sonorityIndex": 1,
+          "outcome": {
+            "kind": "alternatives",
+            "totalMatches": 2,
+            "alternatives": [
+              {
+                "templateId": "M0-TPL-03",
+                "formulaRuleId": "base-minor",
+                "realizationId": null,
+                "extensionNumber": null,
+                "rootPitchClass": 2,
+                "rootSpelled": { "step": "D", "alter": 0 },
+                "bassPitchClass": 2,
+                "inversion": "root",
+                "matchKind": "exact",
+                "missingDegreeNumbers": []
+              },
+              {
+                "templateId": "M0-TPL-08",
+                "formulaRuleId": "sixth-major",
+                "realizationId": null,
+                "extensionNumber": null,
+                "rootPitchClass": 5,
+                "rootSpelled": { "step": "F", "alter": 0 },
+                "bassPitchClass": 2,
+                "inversion": "slash",
+                "matchKind": "omitted-fifth",
+                "missingDegreeNumbers": [5]
+              }
+            ]
+          }
+        }
+      ],
+      "traceIds": [
+        "M0-TRACE-PAIRING",
+        "M0-TRACE-CONDUCTOR",
+        "M0-TRACE-GRID",
+        "M0-TRACE-MEASURES",
+        "M0-TRACE-CUSTOM-FALLBACK"
+      ],
+      "authorityIds": ["M0-AUTH-SMF", "M0-AUTH-T1", "M0-AUTH-DERIVED", "M0-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "M0-GLD-005",
+      "title": "No tempo or meter meta: SMF defaults apply and a cluster yields the literal Custom pitch set",
+      "request": { "requestId": "m0-gld-005" },
+      "bytesHex": "4D546864000000060000000100604D54726B0000001700903C40003D40004240603C00003D0000420000FF2F00",
+      "expectedModel": {
+        "header": { "format": 0, "trackCount": 1, "division": 96 },
+        "tempoMap": [],
+        "meterMap": [],
+        "tracks": [
+          {
+            "index": 0,
+            "name": null,
+            "instrumentName": null,
+            "markers": [],
+            "notes": [
+              { "channel": 0, "key": 60, "onTick": 0, "offTick": 96, "onVelocity": 64 },
+              { "channel": 0, "key": 61, "onTick": 0, "offTick": 96, "onVelocity": 64 },
+              { "channel": 0, "key": 66, "onTick": 0, "offTick": 96, "onVelocity": 64 }
+            ]
+          }
+        ],
+        "ignoredEvents": [],
+        "alienChunks": []
+      },
+      "expectedCounters": {
+        "bytesRead": 45,
+        "chunksSeen": 2,
+        "eventsDecoded": 7,
+        "eventsIgnored": 0,
+        "notesPaired": 3,
+        "peakOpenNotes": 3,
+        "tempoChanges": 0,
+        "meterChanges": 0
+      },
+      "expectedSonorities": [
+        {
+          "anchorTick": 0,
+          "memberCount": 3,
+          "bassMidi": 60,
+          "bassPitchClass": 0,
+          "pitchClasses": [0, 1, 6],
+          "windowTicks": 7,
+          "tempoMicrosecondsAtAnchor": 500000,
+          "segmentIndex": 0,
+          "gridIndex": 0,
+          "quantizedTickNumerator": 0,
+          "quantizedTickDenominator": 4,
+          "quantizationErrorNumerator": 0,
+          "quantizationErrorDenominator": 4,
+          "measureIndex": 0
+        }
+      ],
+      "expectedResolutions": [
+        {
+          "sonorityIndex": 0,
+          "outcome": {
+            "kind": "custom",
+            "bassPitchClass": 0,
+            "spelledPitchClasses": [
+              { "step": "C", "alter": 0 },
+              { "step": "D", "alter": -1 },
+              { "step": "G", "alter": -1 }
+            ]
+          }
+        }
+      ],
+      "traceIds": ["M0-TRACE-DECODE-DEFAULTS", "M0-TRACE-CUSTOM-FALLBACK"],
+      "authorityIds": ["M0-AUTH-SMF", "M0-AUTH-DERIVED", "M0-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "M0-GLD-006",
+      "title": "Altered dominant on channel 2 resolves to the alt-b9-b5 realization with T1 evidence",
+      "request": { "requestId": "m0-gld-006" },
+      "bytesHex": "4D546864000000060000000100F04D54726B000000240092305A00345A00365A003A5A003D5A81703000003400003600003A00003D0000FF2F00",
+      "expectedModel": {
+        "header": { "format": 0, "trackCount": 1, "division": 240 },
+        "tempoMap": [],
+        "meterMap": [],
+        "tracks": [
+          {
+            "index": 0,
+            "name": null,
+            "instrumentName": null,
+            "markers": [],
+            "notes": [
+              { "channel": 2, "key": 48, "onTick": 0, "offTick": 240, "onVelocity": 90 },
+              { "channel": 2, "key": 52, "onTick": 0, "offTick": 240, "onVelocity": 90 },
+              { "channel": 2, "key": 54, "onTick": 0, "offTick": 240, "onVelocity": 90 },
+              { "channel": 2, "key": 58, "onTick": 0, "offTick": 240, "onVelocity": 90 },
+              { "channel": 2, "key": 61, "onTick": 0, "offTick": 240, "onVelocity": 90 }
+            ]
+          }
+        ],
+        "ignoredEvents": [],
+        "alienChunks": []
+      },
+      "expectedCounters": {
+        "bytesRead": 58,
+        "chunksSeen": 2,
+        "eventsDecoded": 11,
+        "eventsIgnored": 0,
+        "notesPaired": 5,
+        "peakOpenNotes": 5,
+        "tempoChanges": 0,
+        "meterChanges": 0
+      },
+      "expectedSonorities": [
+        {
+          "anchorTick": 0,
+          "memberCount": 5,
+          "bassMidi": 48,
+          "bassPitchClass": 0,
+          "pitchClasses": [0, 1, 4, 6, 10],
+          "windowTicks": 19,
+          "tempoMicrosecondsAtAnchor": 500000,
+          "segmentIndex": 0,
+          "gridIndex": 0,
+          "quantizedTickNumerator": 0,
+          "quantizedTickDenominator": 4,
+          "quantizationErrorNumerator": 0,
+          "quantizationErrorDenominator": 4,
+          "measureIndex": 0
+        }
+      ],
+      "expectedResolutions": [
+        {
+          "sonorityIndex": 0,
+          "outcome": {
+            "kind": "alternatives",
+            "totalMatches": 1,
+            "alternatives": [
+              {
+                "templateId": "M0-TPL-21",
+                "formulaRuleId": "altered-dominant",
+                "realizationId": "alt-b9-b5",
+                "extensionNumber": null,
+                "rootPitchClass": 0,
+                "rootSpelled": { "step": "C", "alter": 0 },
+                "bassPitchClass": 0,
+                "inversion": "root",
+                "matchKind": "exact",
+                "missingDegreeNumbers": []
+              }
+            ]
+          }
+        }
+      ],
+      "traceIds": ["M0-TRACE-DECODE-DEFAULTS", "M0-TRACE-REVERSE-T1"],
+      "authorityIds": ["M0-AUTH-SMF", "M0-AUTH-T1", "M0-AUTH-DERIVED", "M0-AUTH-INDEPENDENCE"]
+    }
+  ]
+}
