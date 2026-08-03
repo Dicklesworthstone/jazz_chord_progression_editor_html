@@ -4,10 +4,14 @@ import {
   applySharedStartup,
   createStudioAudio,
   createStudioComposition,
+  createStudioMidiImport,
   decodeShareFragment,
   seedStarterChart,
 } from "./application/runtime";
-import { createBrowserAudioPlatform } from "./audio/runtime";
+import {
+  createBrowserAudioPlatform,
+  loadSmfWasmDecoder,
+} from "./audio/runtime";
 import { StudioRoot, StudioStartupFailure } from "./ui/runtime";
 
 const mountPoint = document.querySelector<HTMLElement>("#app");
@@ -31,6 +35,15 @@ mountPoint.replaceChildren();
  * work happens until the first Play carries a trusted gesture receipt.
  */
 const audio = createStudioAudio(createBrowserAudioPlatform());
+
+/*
+ * The MIDI import decoder is the same discipline: the embedded wasm module's
+ * host lives in the audio layer because the release contract pins wasm
+ * payloads there, and the application layer receives it as an injected
+ * function. It is loaded lazily on the first import gesture, so a session that
+ * never imports a file pays nothing for it.
+ */
+const midiImport = createStudioMidiImport(loadSmfWasmDecoder);
 
 /*
  * The composition root also owns the A0/E0 interchange owner aggregate the
@@ -71,6 +84,7 @@ if (creation.ok) {
   render(
     <StudioRoot
       controller={controller}
+      midiImport={midiImport}
       startupNotice={startupNotice}
     />,
     mountPoint,

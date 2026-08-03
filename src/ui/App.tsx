@@ -14,6 +14,9 @@ import {
   loadProgressionLibraryEntry,
   STARTER_CHART,
   type LoadProgressionLibraryEntryResult,
+  type MidiImportCommitResult,
+  type MidiImportPreview,
+  type StudioMidiImportService,
   type StudioAudioGesture,
   type StudioContinuationView,
   type StudioController,
@@ -31,6 +34,8 @@ import {
   AnalyzerPanel,
   StudioShell,
   type StudioCardMenuItemView,
+  type StudioFactView,
+  type StudioMidiImportView,
   type StudioPanelSide,
   type StudioShareFeedback,
   type StudioShellView,
@@ -181,6 +186,19 @@ export type AppActions = Readonly<{
    * renders the returned step results.
    */
   loadLibraryEntry: (entryId: string) => LoadProgressionLibraryEntryResult;
+  /**
+   * The MIDI import gesture, composed at the root. False here is honest —
+   * a session whose composition wired no decoder hides the surface rather
+   * than offering a control that cannot work.
+   */
+  midiImportAvailable: boolean;
+  readMidiFile: (
+    fileName: string,
+    bytes: Uint8Array,
+  ) => Promise<MidiImportPreview>;
+  commitMidiImport: (
+    preview: MidiImportPreview,
+  ) => MidiImportCommitResult | null;
   /**
    * Display-only live playhead label the animation frame reads while playing.
    * Interpolation for the eye, never a second musical clock: committed
@@ -657,6 +675,193 @@ const SUGGESTION_CATEGORY_LABELS: Readonly<Record<string, string>> =
     "explore": "Explore",
   });
 
+const MIDI_IMPORT_REFUSAL_PROSE: Readonly<Record<string, string>> =
+  Object.freeze({
+    "import.schema_invalid": "That import request is not one this reader accepts.",
+    "import.request_id_invalid": "That import request carries an unusable id.",
+    "limit.midi_import_bytes_exceeded": "That file is larger than the 4 MiB this reader accepts.",
+    "smf.header_invalid": "That file does not start with a Standard MIDI File header.",
+    "smf.format_unsupported": "Only MIDI format 0 and format 1 files can be read.",
+    "smf.track_count_invalid": "The file's track count does not match the tracks it contains.",
+    "smf.division_smpte_unsupported": "This reader needs ticks per quarter note, not SMPTE timecode.",
+    "smf.division_zero": "The file declares zero ticks per quarter note.",
+    "smf.chunk_invalid": "A chunk in this file has an unreadable tag.",
+    "smf.chunk_truncated": "The file ends inside a chunk that declared more data.",
+    "smf.delta_invalid": "A timing value in this file is longer than MIDI allows.",
+    "smf.event_invalid": "An event in this file is not a MIDI event this reader knows.",
+    "smf.meta_unknown": "A meta event type in this file is outside the accepted set.",
+    "smf.meta_length_invalid": "A meta event declares the wrong number of bytes.",
+    "smf.meta_oversized": "A meta event declares more than 1 KiB of text.",
+    "smf.tempo_zero": "The file sets a tempo of zero microseconds per beat.",
+    "smf.meter_invalid": "The file declares a time signature this reader cannot use.",
+    "smf.end_of_track_invalid": "A track does not end where it says it ends.",
+    "smf.conductor_meta_misplaced": "Tempo and meter belong to track 0 in a format 1 file.",
+    "smf.note_overlap": "The same note starts twice without ending.",
+    "smf.note_off_unmatched": "A note ends without ever having started.",
+    "smf.note_on_unterminated": "A note is still sounding when its track ends.",
+    "limit.midi_import_tracks_exceeded": "That file has more than 64 tracks.",
+    "limit.midi_import_events_exceeded": "That file has more events than this reader accepts.",
+    "limit.midi_import_notes_exceeded": "That file has more notes than this reader accepts.",
+    "limit.midi_import_tick_horizon_exceeded": "That file's timeline runs past the reader's horizon.",
+    "limit.midi_import_tempo_changes_exceeded": "That file has more tempo changes than this reader accepts.",
+    "limit.midi_import_meter_changes_exceeded": "That file has more meter changes than this reader accepts.",
+  });
+
+/**
+ * The MIDI import view. Nothing here decides anything: every sentence restates
+ * what the decoder and the reverse-T1 resolver already found, including the
+ * readings that were NOT chosen and the sonorities nothing could name.
+ */
+function midiImportView(
+  available: boolean,
+  preview: MidiImportPreview | null,
+  notice: string | null,
+): StudioMidiImportView {
+  if (!available) {
+    return Object.freeze({
+      available: false,
+      statusLabel: "MIDI import is not available in this session.",
+      refusal: null,
+      summary: null,
+      sonorities: Object.freeze([]),
+      blockedReason: null,
+      canCommit: false,
+    });
+  }
+  if (preview === null) {
+    return Object.freeze({
+      available: true,
+      statusLabel: notice ?? "No file chosen.",
+      refusal: null,
+      summary: null,
+      sonorities: Object.freeze([]),
+      blockedReason: null,
+      canCommit: false,
+    });
+  }
+  const statusLabel =
+    notice ??
+    `${preview.fileName} · ${countLabel(preview.byteLength, "byte")}`;
+  if (preview.refusal !== null) {
+    const refusal = preview.refusal;
+    const where =
+      refusal.byteOffset === null
+        ? "Detected before any byte was read."
+        : `Detected at byte ${String(refusal.byteOffset)}${
+            refusal.trackIndex === null
+              ? ""
+              : `, while reading track ${String(refusal.trackIndex)}`
+          }. Nothing was imported.`;
+    return Object.freeze({
+      available: true,
+      statusLabel,
+      refusal: Object.freeze({
+        code: refusal.code,
+        sentence:
+          MIDI_IMPORT_REFUSAL_PROSE[refusal.code] ??
+          "That file could not be read as a Standard MIDI File.",
+        where,
+      }),
+      summary: null,
+      sonorities: Object.freeze([]),
+      blockedReason: null,
+      canCommit: false,
+    });
+  }
+  const decoded = preview.decoded;
+  const plan = preview.plan;
+  if (decoded === null) {
+    return Object.freeze({
+      available: true,
+      statusLabel,
+      refusal: null,
+      summary: null,
+      sonorities: Object.freeze([]),
+      blockedReason: preview.blockedReason,
+      canCommit: false,
+    });
+  }
+  const counters = decoded.model.counters;
+  const facts: StudioFactView[] = [
+    Object.freeze({
+      id: "file",
+      label: "File",
+      value: `${preview.fileName} · ${countLabel(preview.byteLength, "byte")}`,
+    }),
+    Object.freeze({
+      id: "envelope",
+      label: "Envelope",
+      value: `format ${String(decoded.model.header.format)} · ${String(decoded.model.header.division)} ticks per quarter · ${countLabel(decoded.model.tracks.length, "track")}`,
+    }),
+    Object.freeze({
+      id: "notes",
+      label: "Notes read",
+      value: `${countLabel(counters.notesPaired, "note")} · ${countLabel(counters.eventsIgnored, "ignored event")} recorded`,
+    }),
+    Object.freeze({
+      id: "sonorities",
+      label: "Sonorities",
+      value: countLabel(decoded.sonorities.length, "vertical sonority"),
+    }),
+  ];
+  if (plan !== null) {
+    facts.push(
+      Object.freeze({
+        id: "chart",
+        label: "Would write",
+        value: `${countLabel(plan.measureCount, "bar")} · ${countLabel(plan.writtenChordCount, "chord")}${
+          plan.unnamedSonorityCount === 0
+            ? ""
+            : ` · ${countLabel(plan.unnamedSonorityCount, "sonority")} left unwritten`
+        }`,
+      }),
+    );
+  }
+  const sonorities = preview.sonorities.map((entry, index) => {
+    const sonority = entry.sonority;
+    const quantized = `${String(sonority.quantizedTickNumerator)}/${String(sonority.quantizedTickDenominator)}`;
+    const evidence =
+      entry.outcome.kind === "alternatives"
+        ? (() => {
+            const best = entry.outcome.alternatives[0];
+            return best === undefined
+              ? `${countLabel(sonority.memberCount, "note")}, window ${String(sonority.windowTicks)} ticks`
+              : `${best.templateId} · ${best.matchKind} · ${best.inversion} · ${countLabel(entry.outcome.totalMatches, "reading")} · ${countLabel(sonority.memberCount, "note")}, window ${String(sonority.windowTicks)} ticks`;
+          })()
+        : `no template matches · ${countLabel(sonority.memberCount, "note")}, window ${String(sonority.windowTicks)} ticks`;
+    return Object.freeze({
+      id: `midi-sonority-${String(index)}`,
+      where: `Bar ${String(sonority.measureIndex + 1)} · tick ${String(sonority.anchorTick)} → ${quantized}`,
+      symbolText: entry.symbolText,
+      evidence,
+      alternatives: Object.freeze(entry.alternativeTexts.slice(1)),
+      customNote:
+        entry.customPitchNames.length === 0
+          ? null
+          : `No chord in the grammar spells these pitches: ${entry.customPitchNames.join(" ")}. Nothing was invented and no chord was written here.`,
+      written: entry.written,
+    });
+  });
+  return Object.freeze({
+    available: true,
+    statusLabel,
+    refusal: null,
+    summary:
+      plan === null
+        ? null
+        : Object.freeze({
+            facts: Object.freeze(facts),
+            durationLawNote: plan.usesExplicitDurations
+              ? "Each bar's chords run from one quantized onset to the next. At least one bar carries exact beats measured in this file's own meter, so it refuses rather than rebalances if the chart's meter differs."
+              : "Each bar's chords run from one quantized onset to the next, and every bar divides evenly, so no explicit beats are written and the bars fit this chart's meter.",
+            chartText: plan.chartText,
+          }),
+    sonorities: Object.freeze(sonorities),
+    blockedReason: preview.blockedReason,
+    canCommit: plan !== null && preview.blockedReason === null,
+  });
+}
+
 function viewFromSnapshot(
   snapshot: StudioViewModel,
   presentation: PresentationState,
@@ -664,6 +869,7 @@ function viewFromSnapshot(
   draftPreview: StudioDraftPreview,
   livePlayheadLabel: string | null,
   continuation: StudioContinuationView,
+  midiImport: StudioMidiImportView,
 ): StudioShellView {
   const {
     titleDraft,
@@ -859,6 +1065,7 @@ function viewFromSnapshot(
       }),
       truncationNotice: draftPreview.truncation?.message ?? null,
     }),
+    midiImport,
     harmony: Object.freeze({
       selectedChordLabel: null,
       selected: selectedChordView(snapshot),
@@ -972,6 +1179,17 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
             "The studio opened with the starter chart instead; ask for a fresh link if the chart matters.",
         }),
   );
+  /*
+   * The MIDI import preview is ephemeral session state, exactly like the
+   * palette's selected root: reading a file changes no document, and the
+   * decode result exists only until it is committed or discarded. The
+   * decoder itself never enters this layer — `actions.readMidiFile` is the
+   * application service the composition root wired.
+   */
+  const [midiPreview, setMidiPreview] = useState<MidiImportPreview | null>(
+    null,
+  );
+  const [midiImportNotice, setMidiImportNotice] = useState<string | null>(null);
   const [rovingFocusId, setRovingFocusId] = useState<string | null>(null);
   const [editRefusal, setEditRefusal] = useState<
     StudioShellView["chart"]["editRefusal"]
@@ -1458,7 +1676,11 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
     tempoFeedback,
     shareFeedback,
     shareCopied,
-  }, insertionPlan, draftPreview, livePlayheadLabel, continuation);
+  }, insertionPlan, draftPreview, livePlayheadLabel, continuation, midiImportView(
+    actions.midiImportAvailable,
+    midiPreview,
+    midiImportNotice,
+  ));
 
   /*
    * jcpe-7she: the independent ear compares what the tap heard with the
@@ -1751,6 +1973,72 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
           // laws apply unchanged, and a refusal lands in the same line.
           stageQuickEntryDraft(`| ${symbolText} |`);
           applyQuickEntryInsert();
+        },
+        /*
+         * A local file, read on a user gesture with FileReader. The runtime
+         * boundary forbids every network capability, so there is no other way
+         * a file can arrive and no other way it should: nothing is uploaded,
+         * nothing is fetched, and the bytes go straight to the application
+         * service that owns the decoder.
+         */
+        onMidiImportChooseFile: (file) => {
+          setMidiPreview(null);
+          setMidiImportNotice(`Reading ${file.name}…`);
+          const reader = new FileReader();
+          reader.onerror = () => {
+            setMidiImportNotice(
+              `${file.name} could not be read from this device.`,
+            );
+          };
+          reader.onload = () => {
+            const buffer = reader.result;
+            if (!(buffer instanceof ArrayBuffer)) {
+              setMidiImportNotice(
+                `${file.name} could not be read from this device.`,
+              );
+              return;
+            }
+            void actions
+              .readMidiFile(file.name, new Uint8Array(buffer))
+              .then((preview) => {
+                setMidiImportNotice(null);
+                setMidiPreview(preview);
+              })
+              .catch(() => {
+                setMidiImportNotice(
+                  `${file.name} could not be decoded on this device.`,
+                );
+              });
+          };
+          reader.readAsArrayBuffer(file);
+        },
+        onMidiImportCommit: () => {
+          if (midiPreview === null) return;
+          const result = actions.commitMidiImport(midiPreview);
+          if (result === null) return;
+          if (result.committed) {
+            quickEntryTargetIsExplicit.current = false;
+            setMidiPreview(null);
+            setMidiImportNotice(
+              `${midiPreview.fileName} was added as one edit. Undo returns the chart.`,
+            );
+            return;
+          }
+          const refused =
+            result.inserted !== null && !result.inserted.ok
+              ? result.inserted
+              : result.staged !== null && !result.staged.ok
+                ? result.staged
+                : null;
+          setMidiImportNotice(
+            refused === null
+              ? "That import was not added."
+              : `${refused.refusal.message} ${refused.refusal.recoveryAction}`,
+          );
+        },
+        onMidiImportDiscard: () => {
+          setMidiPreview(null);
+          setMidiImportNotice(null);
         },
         onQuickEntryClear: () => {
           // A refusal here is surfaced, never presented as a success. The
@@ -2261,9 +2549,20 @@ export type StudioRootProps = Readonly<{
   controller: StudioController;
   /** A boot-time refusal (for example, an unreadable share link). */
   startupNotice?: string | null;
+  /**
+   * The MIDI import service the composition root built around the embedded
+   * wasm decoder. Absent means the surface is not offered at all — the UI
+   * never reaches for a decoder itself.
+   */
+  midiImport?: StudioMidiImportService | null;
 }>;
 
-export function StudioRoot({ controller, startupNotice }: StudioRootProps) {
+export function StudioRoot({
+  controller,
+  startupNotice,
+  midiImport,
+}: StudioRootProps) {
+  const midiImportService = midiImport ?? null;
   const [snapshot, setSnapshot] = useState(controller.getSnapshot());
 
   useEffect(() => {
@@ -2310,6 +2609,26 @@ export function StudioRoot({ controller, startupNotice }: StudioRootProps) {
         clearRange: controller.clearRange,
         loadLibraryEntry: (entryId) =>
           loadProgressionLibraryEntry(controller, entryId),
+        midiImportAvailable: midiImportService !== null,
+        readMidiFile: (fileName, bytes) =>
+          midiImportService === null
+            ? Promise.resolve(
+                Object.freeze({
+                  fileName,
+                  byteLength: bytes.byteLength,
+                  decoded: null,
+                  refusal: null,
+                  plan: null,
+                  sonorities: Object.freeze([]),
+                  blockedReason:
+                    "MIDI import is not available in this session.",
+                }),
+              )
+            : midiImportService.readFile(fileName, bytes),
+        commitMidiImport: (preview) =>
+          midiImportService === null
+            ? null
+            : midiImportService.commit(controller, preview),
         pauseProgression: controller.pauseProgression,
         playProgression: controller.playProgression,
         previewChord: controller.previewChord,

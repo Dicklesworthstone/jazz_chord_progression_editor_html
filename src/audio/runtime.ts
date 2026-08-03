@@ -10,3 +10,13 @@
  * `src/application/runtime`.
  */
 export { createBrowserAudioPlatform } from "./browser-audio-platform";
+
+/**
+ * The embedded module's Standard MIDI File decoder. It lives in this layer
+ * because the release contract pins wasm payloads to `src/audio/wasm/`, and it
+ * is exported here rather than from the DOM-free barrel because it decodes
+ * base64 with `atob`. Only the composition root imports it, and it hands the
+ * function to the application layer as an ordinary injected adapter.
+ */
+export { loadSmfWasmDecoder } from "./smf-wasm";
+export type { SmfWasmDecode } from "./smf-wasm";

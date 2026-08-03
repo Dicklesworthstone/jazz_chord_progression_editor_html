@@ -366,9 +366,56 @@ export type StudioPlaybackSettingsView = Readonly<{
   }>;
 }>;
 
+/**
+ * The MIDI import surface's view. Everything here is a statement about a file
+ * the caller chose: what decoded, what refused, what each sonority could be
+ * read as, and what an insert would write. Nothing in it is a document edit.
+ */
+export type StudioMidiImportRefusalView = Readonly<{
+  /** The frozen M0 refusal code, verbatim. */
+  code: string;
+  /** One plain sentence for the person reading it. */
+  sentence: string;
+  /** The detection byte offset and track, stated rather than hidden. */
+  where: string;
+}>;
+
+export type StudioMidiImportSonorityView = Readonly<{
+  id: string;
+  /** Bar, raw tick, and the exact quantized onset this sonority landed on. */
+  where: string;
+  /** The chord the import would write, or null when nothing could name it. */
+  symbolText: string | null;
+  /** Template, match kind, inversion, member count, and window evidence. */
+  evidence: string;
+  /** Every other ranked reading the reverse-T1 law found. */
+  alternatives: readonly string[];
+  /** The literal pitch classes when no template matched; null otherwise. */
+  customNote: string | null;
+  written: boolean;
+}>;
+
+export type StudioMidiImportSummaryView = Readonly<{
+  facts: readonly StudioFactView[];
+  durationLawNote: string;
+  chartText: string;
+}>;
+
+export type StudioMidiImportView = Readonly<{
+  /** False when the composition root wired no decoder into this session. */
+  available: boolean;
+  statusLabel: string;
+  refusal: StudioMidiImportRefusalView | null;
+  summary: StudioMidiImportSummaryView | null;
+  sonorities: readonly StudioMidiImportSonorityView[];
+  blockedReason: string | null;
+  canCommit: boolean;
+}>;
+
 export type StudioShellView = Readonly<{
   document: StudioDocumentView;
   quickEntry: StudioQuickEntryView;
+  midiImport: StudioMidiImportView;
   chart: StudioChartView;
   harmony: StudioHarmonyView;
   transport: StudioTransportView;
@@ -408,6 +455,12 @@ export type StudioShellCallbacks = Readonly<{
    */
   onLoadLibraryEntry: (entryId: string) => void;
   onQuickEntryClear: () => void;
+  /** Read a local file the caller picked. No network, ever. */
+  onMidiImportChooseFile: (file: File) => void;
+  /** Land the previewed import as one ordinary undoable edit. */
+  onMidiImportCommit: () => void;
+  /** Drop the preview without touching the document. */
+  onMidiImportDiscard: () => void;
   /** Presentation-only: records that the caller accepted the layout loss. */
   onRecoveryAcknowledgeChange: (acknowledged: boolean) => void;
   /** Presentation-only draft for a duration T0 could not resolve. */

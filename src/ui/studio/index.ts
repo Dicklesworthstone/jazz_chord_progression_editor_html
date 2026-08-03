@@ -10,6 +10,8 @@ export type {
   LibraryPanelContentProps,
   LibraryPanelProps,
 } from "./LibraryPanel";
+export { MidiImportPanel } from "./MidiImportPanel";
+export type { MidiImportPanelProps } from "./MidiImportPanel";
 export { StudioHeader } from "./StudioHeader";
 export type { StudioHeaderProps } from "./StudioHeader";
 export { StudioIcon } from "./StudioIcon";
@@ -30,6 +32,10 @@ export type {
   StudioInsertionPlanView,
   StudioLayoutView,
   StudioMeasureView,
+  StudioMidiImportRefusalView,
+  StudioMidiImportSonorityView,
+  StudioMidiImportSummaryView,
+  StudioMidiImportView,
   StudioPanelSide,
   StudioQuickEntryTokenView,
   StudioQuickEntryView,

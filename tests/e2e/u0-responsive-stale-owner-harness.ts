@@ -10,6 +10,16 @@ import type {
 } from "../../src/ui/studio/studio-contract";
 
 const BASE_VIEW: Omit<StudioShellView, "layout"> = Object.freeze({
+  /* This harness proves responsive ownership, not the import surface. */
+  midiImport: Object.freeze({
+    available: false,
+    statusLabel: "MIDI import is not available in this session.",
+    refusal: null,
+    summary: null,
+    sonorities: Object.freeze([]),
+    blockedReason: null,
+    canCommit: false,
+  }),
   document: Object.freeze({
     committedTitle: "Responsive ownership proof",
     titleDraft: "Responsive ownership proof",
@@ -178,6 +188,9 @@ function ResponsiveStaleOwnerHarness() {
     },
   };
   const callbacks: StudioShellCallbacks = {
+    onMidiImportChooseFile: () => undefined,
+    onMidiImportCommit: () => undefined,
+    onMidiImportDiscard: () => undefined,
     onTitleDraftChange: () => undefined,
     onCommitTitle: () => undefined,
     onResetTitleDraft: () => undefined,

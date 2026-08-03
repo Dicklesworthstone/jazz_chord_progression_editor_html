@@ -93,3 +93,18 @@ export type {
   StudioAnalyzerVerdict,
   StudioDetectedNote,
 } from "./studio-analysis";
+
+/**
+ * The MIDI-import gesture. Exported from the runtime entry rather than the
+ * headless barrel because only the composition root builds one: it receives
+ * the embedded wasm decoder by injection, exactly like the audio platform.
+ */
+export {
+  MAX_MIDI_IMPORT_DRAFT_CODE_POINTS,
+  createStudioMidiImport,
+} from "./studio-midi-import";
+export type {
+  MidiImportCommitResult,
+  MidiImportPreview,
+  StudioMidiImportService,
+} from "./studio-midi-import";

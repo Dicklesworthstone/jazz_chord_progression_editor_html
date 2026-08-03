@@ -1,6 +1,6 @@
 //! Deterministic DSP core for the Changes studio.
 //!
-//! Two independent capabilities share this module so the standalone artifact
+//! Three independent capabilities share this module so the standalone artifact
 //! embeds exactly one wasm payload:
 //!
 //! - `cg_*`: the Concert Grand note renderer. Modal/additive synthesis of a
@@ -12,6 +12,9 @@
 //!   parabolic refinement, harmonic grouping into fundamentals, and a
 //!   pitch-class chroma fold. This is the independent empirical check that
 //!   what sounded is what the chart says.
+//! - `smf_*`: the M0 Standard MIDI File decoder. A total streaming decode of
+//!   the frozen SMF subset in which every hostile input maps to a structured
+//!   refusal code and detection byte offset rather than a trap. See `smf.rs`.
 //!
 //! Everything is pure integer/float arithmetic over caller-provided buffers:
 //! no clock, no random device, no allocation, no host import of any kind.
@@ -26,6 +29,8 @@
 fn panic(_info: &core::panic::PanicInfo) -> ! {
     core::arch::wasm32::unreachable()
 }
+
+mod smf;
 
 use libm::{cos, exp, log2, pow, sin, sqrt};
 

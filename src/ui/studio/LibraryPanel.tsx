@@ -1,6 +1,7 @@
 import { useState } from "preact/hooks";
 
 import { PROGRESSION_LIBRARY, STARTER_CHART } from "../../application/runtime";
+import { MidiImportPanel } from "./MidiImportPanel";
 import {
   Button,
   Checkbox,
@@ -10,6 +11,7 @@ import {
   UiIcon,
 } from "../primitives";
 import type {
+  StudioMidiImportView,
   StudioPlaybackSettingsView,
   StudioQuickEntryTokenView,
   StudioQuickEntryView,
@@ -153,7 +155,11 @@ export type LibraryPanelContentProps = Readonly<{
   headingId: string;
   context: "rail" | "sheet";
   quickEntry: StudioQuickEntryView;
+  midiImport: StudioMidiImportView;
   playback: StudioPlaybackSettingsView;
+  onMidiImportChooseFile: (file: File) => void;
+  onMidiImportCommit: () => void;
+  onMidiImportDiscard: () => void;
   onQuickEntryDraftChange: (value: string) => void;
   onQuickEntryInsert: () => void;
   onQuickEntryClear: () => void;
@@ -706,7 +712,11 @@ export function LibraryPanelContent({
   headingId,
   context,
   quickEntry,
+  midiImport,
   playback,
+  onMidiImportChooseFile,
+  onMidiImportCommit,
+  onMidiImportDiscard,
   onQuickEntryDraftChange,
   onQuickEntryInsert,
   onQuickEntryClear,
@@ -745,6 +755,21 @@ export function LibraryPanelContent({
         onRecoveryDurationDraftChange={onRecoveryDurationDraftChange}
         view={quickEntry}
       />
+
+      {/*
+        MIDI import sits beside quick entry because it is the same act by
+        another route: it writes chart text through the identical staged
+        insert. It never becomes a second mutation channel (jcpe-v3c2.2).
+      */}
+      {midiImport.available ? (
+        <MidiImportPanel
+          context={context}
+          onChooseFile={onMidiImportChooseFile}
+          onCommit={onMidiImportCommit}
+          onDiscard={onMidiImportDiscard}
+          view={midiImport}
+        />
+      ) : null}
 
       {/*
         Playback settings live with the writing tools rather than in the
@@ -872,7 +897,11 @@ export type LibraryPanelProps = Readonly<{
   sheetOpen: boolean;
   onCollapsedChange: (collapsed: boolean) => void;
   quickEntry: StudioQuickEntryView;
+  midiImport: StudioMidiImportView;
   playback: StudioPlaybackSettingsView;
+  onMidiImportChooseFile: (file: File) => void;
+  onMidiImportCommit: () => void;
+  onMidiImportDiscard: () => void;
   onQuickEntryDraftChange: (value: string) => void;
   onQuickEntryInsert: () => void;
   onQuickEntryClear: () => void;
@@ -890,7 +919,11 @@ export function LibraryPanel({
   sheetOpen,
   onCollapsedChange,
   quickEntry,
+  midiImport,
   playback,
+  onMidiImportChooseFile,
+  onMidiImportCommit,
+  onMidiImportDiscard,
   onQuickEntryDraftChange,
   onQuickEntryInsert,
   onQuickEntryClear,
@@ -923,6 +956,10 @@ export function LibraryPanel({
           <LibraryPanelContent
             context="rail"
             headingId={headingId}
+            midiImport={midiImport}
+            onMidiImportChooseFile={onMidiImportChooseFile}
+            onMidiImportCommit={onMidiImportCommit}
+            onMidiImportDiscard={onMidiImportDiscard}
             onInsertRecoveredChord={onInsertRecoveredChord}
             onQuickEntryClear={onQuickEntryClear}
             onQuickEntryDraftChange={onQuickEntryDraftChange}

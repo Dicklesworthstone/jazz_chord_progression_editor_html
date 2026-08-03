@@ -120,6 +120,10 @@ export function StudioShell({
             <LibraryPanel
               collapsed={view.layout.libraryCollapsed}
               sheetOpen={activeSheet === "library"}
+              midiImport={view.midiImport}
+              onMidiImportChooseFile={callbacks.onMidiImportChooseFile}
+              onMidiImportCommit={callbacks.onMidiImportCommit}
+              onMidiImportDiscard={callbacks.onMidiImportDiscard}
               onInsertRecoveredChord={callbacks.onInsertRecoveredChord}
               onRecoveryAcknowledgeChange={callbacks.onRecoveryAcknowledgeChange}
               onRecoveryDurationDraftChange={
@@ -246,6 +250,10 @@ export function StudioShell({
                 <LibraryPanelContent
                   context="sheet"
                   headingId={`${sheetId}-title`}
+                  midiImport={view.midiImport}
+                  onMidiImportChooseFile={callbacks.onMidiImportChooseFile}
+                  onMidiImportCommit={callbacks.onMidiImportCommit}
+                  onMidiImportDiscard={callbacks.onMidiImportDiscard}
                   onInsertRecoveredChord={callbacks.onInsertRecoveredChord}
                   onRecoveryAcknowledgeChange={
                     callbacks.onRecoveryAcknowledgeChange

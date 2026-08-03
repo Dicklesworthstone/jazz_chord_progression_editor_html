@@ -25,6 +25,19 @@ function RailFocusHarness() {
     "main",
     { "data-rail-focus-ready": "true" },
     h(LibraryPanel, {
+      /* The rail-focus harness proves focus order, not the import surface. */
+      midiImport: Object.freeze({
+        available: false,
+        statusLabel: "MIDI import is not available in this session.",
+        refusal: null,
+        summary: null,
+        sonorities: Object.freeze([]),
+        blockedReason: null,
+        canCommit: false,
+      }),
+      onMidiImportChooseFile: () => undefined,
+      onMidiImportCommit: () => undefined,
+      onMidiImportDiscard: () => undefined,
       onInsertRecoveredChord: () => undefined,
       onQuickEntryClear: () => undefined,
       onQuickEntryDraftChange: () => undefined,
