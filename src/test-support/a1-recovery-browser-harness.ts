@@ -148,7 +148,11 @@ const harness: A1RecoveryBrowserHarness = Object.freeze({
       document: { documentVersion: 2 },
     };
     const checksum = await computeEnvelopeChecksum(corrupt);
-    corrupt["checksum"] = `${checksum.slice(0, 63)}0`;
+    // Flip the final hex digit so the stored checksum can never equal the
+    // genuine one; appending a fixed "0" was a no-op 1 time in 16.
+    const lastDigit = Number.parseInt(checksum.slice(63), 16);
+    const flipped = ((lastDigit + 1) % 16).toString(16);
+    corrupt["checksum"] = `${checksum.slice(0, 63)}${flipped}`;
     const outcome = await adapter.writeCurrentWithRotation(
       key,
       recoveryStorageKey(documentId, "previous"),
