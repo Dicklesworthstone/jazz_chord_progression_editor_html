@@ -85,6 +85,10 @@ const gates: Gate[] = [
     command: [process.execPath, "scripts/validate-e1-contract.ts"],
   },
   {
+    id: "m0-midi-import-contract",
+    command: [process.execPath, "scripts/validate-m0-contract.ts"],
+  },
+  {
     id: "a0-e0-owner-bridge-contract",
     command: [process.execPath, "scripts/validate-a0-e0-bridge-contract.ts"],
   },
