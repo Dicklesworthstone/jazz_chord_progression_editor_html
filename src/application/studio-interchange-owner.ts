@@ -406,6 +406,31 @@ export function createStudioInterchangeOwnerOperations(
     if (rawConfirmation !== null && !isPlainRecord(rawConfirmation)) {
       return refuse("import.replacement_request_invalid");
     }
+    /*
+     * jcpe-94yu.3: recursively exact keys are a STEP-1 envelope law at every
+     * owner-defined request boundary, including a present confirmation
+     * acknowledgement. A smuggled key anywhere in the acknowledgement,
+     * requirement, requirement identity, or disclosed impact is a malformed
+     * present confirmation and refuses `import.confirmation_identity_mismatch`
+     * BEFORE any identity comparison or candidate work (BRIDGE-REP-023
+     * extra-key family). Value-level confirmation semantics stay in step 10.
+     */
+    if (rawConfirmation !== null) {
+      const structurallyExact =
+        hasExactKeys(rawConfirmation, ACKNOWLEDGEMENT_KEYS) &&
+        hasExactKeys(rawConfirmation["requirement"], REQUIREMENT_KEYS) &&
+        hasExactKeys(
+          runtimeField(rawConfirmation["requirement"], "identity"),
+          IDENTITY_KEYS,
+        ) &&
+        hasExactKeys(
+          runtimeField(rawConfirmation["requirement"], "disclosedImpact"),
+          IMPACT_KEYS,
+        );
+      if (!structurallyExact) {
+        return refuse("import.confirmation_identity_mismatch");
+      }
+    }
 
     /* 2. Complete identity against controller-owned current state. */
     emit("prepareImportReplacementPublication", "compare.complete-identity");
@@ -635,11 +660,13 @@ export function createStudioInterchangeOwnerOperations(
       "inspect.registry-capacity-one",
     );
     if (liveEntry !== null) {
+      /*
+       * jcpe-94yu.3: the pinned busy event order is exactly
+       * `observe.registry-busy` then `return.refused` — the observation event
+       * already records the refusal fact, so no separate `refuse.*` event is
+       * emitted on this branch (BRIDGE-REP-024/capacity-one-busy).
+       */
       emit("prepareImportReplacementPublication", "observe.registry-busy");
-      emit(
-        "prepareImportReplacementPublication",
-        `refuse.import.replacement_preparation_busy`,
-      );
       emit("prepareImportReplacementPublication", "return.refused");
       return Object.freeze({
         ok: false,
@@ -784,6 +811,13 @@ export function createStudioInterchangeOwnerOperations(
     const documentId = runtimeField(rawIdentity, "documentId");
     const baseRevision = runtimeField(rawIdentity, "baseRevision");
     const entry = liveEntry;
+    /*
+     * jcpe-94yu.3: on the wrong-identity branch the pinned return event is
+     * `return.live-zero-for-request` — the count is zero FOR THE REQUEST while
+     * an unrelated live entry survives (BRIDGE-REP-028). The matching and
+     * empty branches return the plain `return.live-zero`.
+     */
+    let unrelatedEntryPreserved = false;
     if (entry === null) {
       emit("discardImportReplacementPublication", "lookup.empty");
     } else if (
@@ -800,8 +834,12 @@ export function createStudioInterchangeOwnerOperations(
         "discardImportReplacementPublication",
         "preserve.unrelated-entry",
       );
+      unrelatedEntryPreserved = true;
     }
-    emit("discardImportReplacementPublication", "return.live-zero");
+    emit(
+      "discardImportReplacementPublication",
+      unrelatedEntryPreserved ? "return.live-zero-for-request" : "return.live-zero",
+    );
     /*
      * Exact-result law: the identity crosses the boundary verbatim, and the
      * cleanup is total and nonthrowing even for hostile raw input outside the
@@ -896,6 +934,16 @@ export function createStudioInterchangeOwnerOperations(
       emit("publishImportReplacement", "consume.entry-before-return");
       return refuse("import.replacement_preparation_stale", entry.key);
     }
+    /*
+     * jcpe-94yu.3: the receipt must certify retirement of EXACTLY the latest
+     * transport generation. A receipt claiming a NEWER generation than the
+     * transport ever reached is not covering evidence — X1 cannot have
+     * retired a generation that does not exist — and the pinned law refuses
+     * it as a retirement mismatch (BRIDGE-REP-030/retirement-mismatch pins
+     * receipt generation 12 against latest generation 11). A receipt older
+     * than the latest generation stays refused as before
+     * (BRIDGE-REP-030/transport-advanced-after-prepare).
+     */
     const retirementValid =
       hasExactKeys(rawRetirement, RETIREMENT_KEYS) &&
       rawRetirement["requestId"] === entry.key.requestId &&
@@ -906,7 +954,7 @@ export function createStudioInterchangeOwnerOperations(
       isNonnegativeSafeInteger(rawRetirement["retiredTransportGeneration"]) &&
       rawRetirement["retiredTransportGeneration"] >=
         material.expectedTransportGeneration &&
-      rawRetirement["retiredTransportGeneration"] >=
+      rawRetirement["retiredTransportGeneration"] ===
         latest.transport.generation;
     if (!retirementValid) {
       emit("publishImportReplacement", "compare.retirement-mismatch");
@@ -957,7 +1005,12 @@ export function createStudioInterchangeOwnerOperations(
 
   const publishMarker: PublishCanonicalExportRevisionOperation = (request) => {
     emit("publishCanonicalExportRevision", "call.publish-marker");
-    emit("publishCanonicalExportRevision", "validate.envelope");
+    /*
+     * jcpe-94yu.3: `validate.envelope` is the pinned event for a VALID
+     * envelope; a malformed request pins `validate.schema-refuse` alone
+     * (BRIDGE-MARK-005), so the success event is emitted only after the
+     * check passes.
+     */
     const raw: unknown = request;
     const rawPublication = runtimeField(raw, "publication");
     const revision = runtimeField(rawPublication, "revision");
@@ -990,19 +1043,26 @@ export function createStudioInterchangeOwnerOperations(
         observedRevision: observed.revision,
       });
     }
+    emit("publishCanonicalExportRevision", "validate.envelope");
     /*
      * The atomic critical section: read, compare BOTH identity fields,
      * conditional single-field write, notify after install. No await or
      * microtask boundary may appear between the read and the install.
+     *
+     * jcpe-94yu.3: the pinned stale events name WHICH identity field went
+     * stale (`compare.document-stale` for a different document,
+     * `compare.revision-stale` for a matching document at another revision);
+     * the paired `compare.document-id`/`compare.revision` events are the
+     * pinned both-fields-match observation (BRIDGE-MARK-003/004).
      */
     const state = readState();
     emit("publishCanonicalExportRevision", "read.controller-state");
-    emit("publishCanonicalExportRevision", "compare.document-id");
-    emit("publishCanonicalExportRevision", "compare.revision");
     if (documentId !== state.document.id || revision !== state.revision) {
       emit(
         "publishCanonicalExportRevision",
-        "refuse.export.marker_publication_stale",
+        documentId !== state.document.id
+          ? "compare.document-stale"
+          : "compare.revision-stale",
       );
       emit(
         "publishCanonicalExportRevision",
@@ -1016,6 +1076,8 @@ export function createStudioInterchangeOwnerOperations(
         observedRevision: state.revision,
       });
     }
+    emit("publishCanonicalExportRevision", "compare.document-id");
+    emit("publishCanonicalExportRevision", "compare.revision");
     if (state.exportRevision === revision) {
       emit("publishCanonicalExportRevision", "observe.marker-already-equal");
       emit(
