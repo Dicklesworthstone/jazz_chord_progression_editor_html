@@ -119,6 +119,7 @@ export function StudioShell({
           <main id="workspace" class="studio-workspace" tabIndex={-1}>
             <LibraryPanel
               collapsed={view.layout.libraryCollapsed}
+              sheetOpen={activeSheet === "library"}
               onInsertRecoveredChord={callbacks.onInsertRecoveredChord}
               onRecoveryAcknowledgeChange={callbacks.onRecoveryAcknowledgeChange}
               onRecoveryDurationDraftChange={
@@ -174,6 +175,7 @@ export function StudioShell({
             />
             <HarmonyLens
               collapsed={view.layout.harmonyCollapsed}
+              sheetOpen={activeSheet === "harmony"}
               view={view.harmony}
               onAddSuggestedChord={callbacks.onAddSuggestedChord}
               onCollapsedChange={(collapsed) => {

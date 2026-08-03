@@ -77,10 +77,12 @@ function RailFocusHarness() {
         truncationNotice: null,
       },
       collapsed: libraryCollapsed,
+      sheetOpen: false,
       onCollapsedChange: setLibraryCollapsed,
     }),
     h(HarmonyLens, {
       collapsed: harmonyCollapsed,
+      sheetOpen: false,
       onAddSuggestedChord: () => undefined,
       onCollapsedChange: setHarmonyCollapsed,
       view: HARMONY_VIEW,

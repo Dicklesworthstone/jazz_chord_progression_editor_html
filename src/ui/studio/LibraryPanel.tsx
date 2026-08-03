@@ -862,6 +862,14 @@ export function LibraryPanelContent({
 
 export type LibraryPanelProps = Readonly<{
   collapsed: boolean;
+  /**
+   * True while the library sheet renders its own LibraryPanelContent copy.
+   * The rail must not mount a second copy then: every static id inside the
+   * content would be duplicated document-wide, breaking label/for and
+   * aria references. The sheet is modal and every width that can open it
+   * hides this rail, so nothing visible is lost.
+   */
+  sheetOpen: boolean;
   onCollapsedChange: (collapsed: boolean) => void;
   quickEntry: StudioQuickEntryView;
   playback: StudioPlaybackSettingsView;
@@ -879,6 +887,7 @@ export type LibraryPanelProps = Readonly<{
 
 export function LibraryPanel({
   collapsed,
+  sheetOpen,
   onCollapsedChange,
   quickEntry,
   playback,
@@ -906,7 +915,7 @@ export function LibraryPanel({
         class="studio-rail__contents"
         data-collapsed={collapsed ? "true" : "false"}
       >
-        {collapsed ? (
+        {collapsed || sheetOpen ? (
           <h2 id={headingId} class="studio-visually-hidden">
             Library
           </h2>

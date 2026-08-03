@@ -160,6 +160,14 @@ export function HarmonyLensContent({
 
 export type HarmonyLensProps = Readonly<{
   collapsed: boolean;
+  /**
+   * True while the harmony sheet renders its own HarmonyLensContent copy.
+   * The rail must not mount a second copy then: every static id inside the
+   * content would be duplicated document-wide, breaking label/for and
+   * aria references. The sheet is modal and every width that can open it
+   * hides this rail, so nothing visible is lost.
+   */
+  sheetOpen: boolean;
   view: StudioHarmonyView;
   onCollapsedChange: (collapsed: boolean) => void;
   onAddSuggestedChord: (symbolText: string) => void;
@@ -167,6 +175,7 @@ export type HarmonyLensProps = Readonly<{
 
 export function HarmonyLens({
   collapsed,
+  sheetOpen,
   view,
   onCollapsedChange,
   onAddSuggestedChord,
@@ -184,7 +193,7 @@ export function HarmonyLens({
         class="studio-rail__contents"
         data-collapsed={collapsed ? "true" : "false"}
       >
-        {collapsed ? (
+        {collapsed || sheetOpen ? (
           <h2 id={headingId} class="studio-visually-hidden">
             Harmony Lens
           </h2>
