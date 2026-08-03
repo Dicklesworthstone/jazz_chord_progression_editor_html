@@ -1392,6 +1392,60 @@
   padding: 0 var(--space-1);
 }
 
+/*
+ * jcpe-disi.6: the context action bar rides sticky at the chart's block-end
+ * while a selection exists. It wraps at narrow widths — the 320 px law
+ * forbids horizontal scroll — and sits under the card menus (z 30).
+ */
+.studio-context-bar {
+  position: sticky;
+  inset-block-end: 0;
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-block-start: var(--border-width) solid var(--border-default);
+  background: color-mix(in srgb, var(--surface-raised) 92%, transparent);
+  backdrop-filter: blur(6px);
+}
+
+.studio-context-bar__status {
+  flex: 1 1 12rem;
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+/*
+ * jcpe-disi.5: the bar's name is a real button that selects the bar. It
+ * inherits the heading's look so the sheet stays calm, and declares itself
+ * on hover/focus the way links do.
+ */
+.studio-measure__select {
+  border: none;
+  padding: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.studio-measure__select:hover {
+  text-decoration: underline dotted;
+  text-underline-offset: 0.2em;
+}
+
+.studio-measure__select:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
 .studio-chord-card__handle {
   position: absolute;
   inset-block: var(--space-2);

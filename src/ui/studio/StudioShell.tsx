@@ -136,7 +136,7 @@ export function StudioShell({
     const ranged = [...chordPlaces.values()].filter((place) => place.inRange);
     if (ranged.length > 1) return `${String(ranged.length)} chords`;
     const chosen = [...chordPlaces.values()].find((place) => place.selected);
-    return chosen === null || chosen === undefined
+    return chosen === undefined
       ? null
       : `${chosen.symbol} from bar ${String(chosen.bar)}`;
   };

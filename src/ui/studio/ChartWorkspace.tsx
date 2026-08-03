@@ -464,6 +464,45 @@ export function ChartWorkspace({
     }
   };
 
+  /* jcpe-disi.6: the context bar exists exactly while something is chosen. */
+  const chartHasSelection = allChords.some(
+    (chord) => chord.selected || chord.inRange,
+  );
+  const rangedCount = allChords.filter((chord) => chord.inRange).length;
+  const singleSelectedChordId =
+    rangedCount > 1
+      ? null
+      : (allChords.find((chord) => chord.selected)?.id ?? null);
+
+  /**
+   * jcpe-disi.5: bar selection is range selection over the bar's chords —
+   * the same two gestures a person performs by hand, so the dirty-draft
+   * guard applies exactly as it would to those clicks.
+   */
+  const selectMeasureChords = (measureId: string): void => {
+    const measure = view.sections
+      .flatMap((section) => section.measures)
+      .find((candidate) => candidate.id === measureId);
+    if (measure === undefined) return;
+    const first = measure.chords[0];
+    const last = measure.chords[measure.chords.length - 1];
+    if (first === undefined || last === undefined) return;
+    guardedSwitch({
+      chordId: first.id,
+      extend: false,
+      focusAfter: false,
+      kind: "select-card",
+    });
+    if (last.id !== first.id) {
+      guardedSwitch({
+        chordId: last.id,
+        extend: true,
+        focusAfter: false,
+        kind: "select-card",
+      });
+    }
+  };
+
   const beginInlineEdit = (chordId: string): void => {
     const chord = chordById(chordId);
     if (chord === undefined || !chord.inlineEditable) return;
@@ -1692,7 +1731,31 @@ export function ChartWorkspace({
                             <header class="studio-measure__header">
                               <div class="studio-measure__tag">
                                 <h4 id={measureHeadingId}>
-                                  Measure {measure.number}
+                                  {/*
+                                    jcpe-disi.5: the bar's name selects the
+                                    bar. The button replays exactly what a
+                                    person does by hand — select the first
+                                    chord, shift-extend to the last — so it
+                                    rides the existing selection channels
+                                    and no new state kind exists. An empty
+                                    bar has nothing to select and stays a
+                                    plain label.
+                                  */}
+                                  {measure.chords.length === 0 ? (
+                                    <>Measure {measure.number}</>
+                                  ) : (
+                                    <button
+                                      class="studio-measure__select"
+                                      data-testid="measure-select"
+                                      type="button"
+                                      aria-label={`Select all chords in measure ${measure.number.toString()}`}
+                                      onClick={() => {
+                                        selectMeasureChords(measure.id);
+                                      }}
+                                    >
+                                      Measure {measure.number}
+                                    </button>
+                                  )}
                                 </h4>
                                 <span class="studio-meter-signature">
                                   {measure.meterLabel}
@@ -2181,6 +2244,94 @@ export function ChartWorkspace({
           })}
         </ol>
       )}
+
+      {/*
+        jcpe-disi.6: the context action bar. The verbs that apply to the
+        current selection ride sticky at the chart's block-end — in reach
+        beside long charts and under the thumb at phone widths — and leave
+        with the selection. Names deliberately differ from the top
+        toolbar's so role+name queries stay unambiguous.
+      */}
+      {chartHasSelection ? (
+        <div
+          aria-label="Selection actions"
+          class="studio-context-bar"
+          data-testid="context-action-bar"
+          role="toolbar"
+        >
+          <p class="studio-context-bar__status">
+            {view.selectionStatusLabel}
+          </p>
+          <Button
+            busy={false}
+            density="dense"
+            describedBy={[]}
+            disabled={!view.canMoveSelection}
+            id="studio-context-move-earlier"
+            invalid={false}
+            label="Move earlier"
+            onAction={() => {
+              onMoveSelection("previous");
+            }}
+            type="button"
+            variant="secondary"
+          />
+          <Button
+            busy={false}
+            density="dense"
+            describedBy={[]}
+            disabled={!view.canMoveSelection}
+            id="studio-context-move-later"
+            invalid={false}
+            label="Move later"
+            onAction={() => {
+              onMoveSelection("next");
+            }}
+            type="button"
+            variant="secondary"
+          />
+          <Button
+            busy={false}
+            density="dense"
+            describedBy={[]}
+            disabled={!view.canDuplicateSelection}
+            id="studio-context-duplicate"
+            invalid={false}
+            label="Duplicate chords"
+            onAction={onDuplicateSelection}
+            type="button"
+            variant="secondary"
+          />
+          <Button
+            busy={false}
+            density="dense"
+            describedBy={[]}
+            disabled={!view.canDeleteSelection}
+            id="studio-context-delete"
+            invalid={false}
+            label="Delete chords"
+            onAction={onDeleteSelection}
+            type="button"
+            variant="secondary"
+          />
+          {singleSelectedChordId === null ? null : (
+            <Button
+              busy={false}
+              density="dense"
+              describedBy={[]}
+              disabled={false}
+              id="studio-context-duration"
+              invalid={false}
+              label="Duration"
+              onAction={() => {
+                beginDurationEdit(singleSelectedChordId);
+              }}
+              type="button"
+              variant="secondary"
+            />
+          )}
+        </div>
+      ) : null}
     </section>
   );
 }

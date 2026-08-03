@@ -390,4 +390,81 @@ test.describe("U1-TRACE-BOOKMARKS selection, range, and the playhead", () => {
     await expect(cards(page).nth(3)).toHaveAttribute("data-selected", "true");
     expectCleanDiagnostics(diagnostics);
   });
+
+  test("jcpe-disi.4 shift-click builds a range with no mode toggle", async ({
+    page,
+  }) => {
+    const diagnostics = captureDiagnostics(page);
+    await openStudio(page);
+    await typeAndInsert(page, "| Dm9:1 G13:1 C6:1 A7:1 |");
+
+    await cards(page).nth(0).click();
+    await cards(page).nth(2).click({ modifiers: ["Shift"] });
+    await expect(page.getByTestId("chart-selection-status")).toContainText(
+      "3 chords selected",
+    );
+    for (const index of [0, 1, 2]) {
+      await expect(cards(page).nth(index)).toHaveAttribute(
+        "data-in-range",
+        "true",
+      );
+    }
+    await expect(cards(page).nth(3)).toHaveAttribute("data-in-range", "false");
+    // The explicit range mode was never entered.
+    await expect(
+      page.getByRole("button", { exact: true, name: "Select range" }),
+    ).toBeVisible();
+    expectCleanDiagnostics(diagnostics);
+  });
+
+  test("jcpe-disi.4 shift-arrows extend the range from the keyboard", async ({
+    page,
+  }) => {
+    const diagnostics = captureDiagnostics(page);
+    await openStudio(page);
+    await typeAndInsert(page, "| Dm9:1 G13:1 C6:1 A7:1 |");
+
+    await focusCard(page, 1);
+    await page.keyboard.press("Enter");
+    await page.keyboard.press("Shift+ArrowRight");
+    await page.keyboard.press("Shift+ArrowRight");
+    await expect(page.getByTestId("chart-selection-status")).toContainText(
+      "3 chords selected",
+    );
+    await expect(cards(page).nth(0)).toHaveAttribute("data-in-range", "false");
+    for (const index of [1, 2, 3]) {
+      await expect(cards(page).nth(index)).toHaveAttribute(
+        "data-in-range",
+        "true",
+      );
+    }
+    expectCleanDiagnostics(diagnostics);
+  });
+
+  test("jcpe-disi.5 the bar's name selects exactly the bar's chords", async ({
+    page,
+  }) => {
+    const diagnostics = captureDiagnostics(page);
+    await openStudio(page);
+    await typeAndInsert(page, "| Dm9:2 G13:2 | C6:2 A7:2 |");
+
+    await page.getByTestId("measure-select").nth(1).click();
+    await expect(page.getByTestId("chart-selection-status")).toContainText(
+      "2 chords selected",
+    );
+    // Exactly bar 2's chords — bar 1 stays out of the range.
+    await expect(cards(page).nth(0)).toHaveAttribute("data-in-range", "false");
+    await expect(cards(page).nth(1)).toHaveAttribute("data-in-range", "false");
+    await expect(cards(page).nth(2)).toHaveAttribute("data-in-range", "true");
+    await expect(cards(page).nth(3)).toHaveAttribute("data-in-range", "true");
+
+    // The bar's verbs apply to the bar selection: one Delete, one Undo.
+    await page
+      .getByRole("button", { exact: true, name: "Delete selection" })
+      .click();
+    await expect(cards(page)).toHaveCount(2);
+    await page.locator("#studio-undo").click();
+    await expect(cards(page)).toHaveCount(4);
+    expectCleanDiagnostics(diagnostics);
+  });
 });
