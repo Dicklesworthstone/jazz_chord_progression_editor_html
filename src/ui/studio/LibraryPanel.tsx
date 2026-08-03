@@ -745,21 +745,14 @@ export function LibraryPanelContent({
         <p class="studio-kicker">Write and discover</p>
       )}
 
-      <QuickEntryPanel
-        onClear={onQuickEntryClear}
-        onDraftChange={onQuickEntryDraftChange}
-        onInsert={onQuickEntryInsert}
-        onInsertRecoveredChord={onInsertRecoveredChord}
-        onRecoveryAcknowledgeChange={onRecoveryAcknowledgeChange}
-        onLoadLibraryEntry={onLoadLibraryEntry}
-        onRecoveryDurationDraftChange={onRecoveryDurationDraftChange}
-        view={quickEntry}
-      />
-
       {/*
-        MIDI import sits beside quick entry because it is the same act by
-        another route: it writes chart text through the identical staged
-        insert. It never becomes a second mutation channel (jcpe-v3c2.2).
+        MIDI import renders BEFORE quick entry: the quick-entry section ends
+        with the multi-thousand-pixel progression catalogue, and anything
+        placed after it sits ~3.9k px deep in a ~750 px rail viewport —
+        users reported the shipped feature as invisible (jcpe-osxq). The
+        233 px panel keeps the quick-entry field above the fold. It remains
+        the same act by another route: it writes chart text through the
+        identical staged insert, never a second mutation channel.
       */}
       {midiImport.available ? (
         <MidiImportPanel
@@ -770,6 +763,17 @@ export function LibraryPanelContent({
           view={midiImport}
         />
       ) : null}
+
+      <QuickEntryPanel
+        onClear={onQuickEntryClear}
+        onDraftChange={onQuickEntryDraftChange}
+        onInsert={onQuickEntryInsert}
+        onInsertRecoveredChord={onInsertRecoveredChord}
+        onRecoveryAcknowledgeChange={onRecoveryAcknowledgeChange}
+        onLoadLibraryEntry={onLoadLibraryEntry}
+        onRecoveryDurationDraftChange={onRecoveryDurationDraftChange}
+        view={quickEntry}
+      />
 
       {/*
         Playback settings live with the writing tools rather than in the

@@ -222,3 +222,35 @@ test.describe("M0 MIDI import over the real artifact", () => {
     expectCleanDiagnostics(diagnostics);
   });
 });
+
+test("the import panel is visible in the rail without scrolling", async ({
+  page,
+}) => {
+  /*
+   * jcpe-osxq: the shipped panel originally rendered after the full
+   * quick-entry section (~3.9k px deep in a ~750 px rail viewport) and
+   * users reported the feature as nonexistent. Reachable-by-autoscroll
+   * is not visible: the law is that the panel's box starts inside the
+   * rail's own visible height with the rail unscrolled.
+   */
+  await page.setViewportSize({ height: 900, width: 1440 });
+  await openStudio(page);
+  const geometry = await page.evaluate(() => {
+    const rail = document.querySelector("#library-rail");
+    const panel = document.querySelector('[data-testid="midi-import-rail"]');
+    if (!(rail instanceof HTMLElement) || !(panel instanceof HTMLElement)) {
+      return null;
+    }
+    const railBox = rail.getBoundingClientRect();
+    const panelBox = panel.getBoundingClientRect();
+    return {
+      panelTop: panelBox.top,
+      railTop: railBox.top,
+      railVisibleBottom: railBox.top + rail.clientHeight,
+    };
+  });
+  expect(geometry).not.toBeNull();
+  if (geometry === null) return;
+  expect(geometry.panelTop).toBeGreaterThanOrEqual(geometry.railTop);
+  expect(geometry.panelTop).toBeLessThan(geometry.railVisibleBottom);
+});
