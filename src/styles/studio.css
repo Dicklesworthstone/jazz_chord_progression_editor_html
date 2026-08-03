@@ -65,6 +65,40 @@
   min-inline-size: 0;
 }
 
+/*
+ * jcpe-disi.3: the labeled-undo notice row. Zero height while empty so the
+ * workspace geometry is untouched until a command lands; one compact row
+ * above the transport once it does. Never floats over content.
+ */
+.studio-action-notice {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-inline-size: 0;
+  padding: 0;
+  border-block-start: 0 solid transparent;
+  background: var(--surface-raised);
+}
+
+.studio-action-notice[data-empty="false"] {
+  padding: var(--space-1) var(--space-3);
+  border-block-start: var(--border-width) solid var(--border-default);
+}
+
+.studio-action-notice__sentence {
+  flex: 1;
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+}
+
+.studio-action-notice__dismiss {
+  color: var(--text-muted);
+}
+
 .studio-skip-link {
   position: absolute;
   inset-block-start: var(--space-2);
@@ -1410,6 +1444,66 @@
   outline: var(--focus-width) solid var(--focus-ring);
 }
 
+/*
+ * jcpe-disi.2: the × is the menu's Delete one click closer. It mirrors the
+ * ⋯ button and sits just inside it. Coarse pointers never render it — two
+ * 44 px targets would occlude a narrow card, and touch already reaches the
+ * same one-step delete through the 44 px menu.
+ */
+.studio-chord-card__delete {
+  position: absolute;
+  inset-block-start: 2px;
+  inset-inline-end: calc(2px + 1.5rem + 2px);
+  display: grid;
+  place-items: center;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  border: none;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  line-height: 1;
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity var(--motion-fast) var(--ease-standard);
+}
+
+.studio-chord-card__delete:hover {
+  background: color-mix(in srgb, var(--state-error) 14%, transparent);
+  color: var(--state-error);
+}
+
+.studio-chord-card__delete:focus-visible {
+  opacity: 1;
+  outline: var(--focus-width) solid var(--focus-ring);
+}
+
+/*
+ * jcpe-disi.2 dim-ghost law for the editing (teaching) view: handles are
+ * FINDABLE without hover — a dim ghost at rest, full strength on hover,
+ * focus, or selection. The compact reading view keeps its clean sheet and
+ * reveals handles only for the engaged card (hover/focus/selected), which
+ * the block below already governs.
+ */
+.studio-chart:not([data-view-mode="compact"]) .studio-chord-card__more,
+.studio-chart:not([data-view-mode="compact"]) .studio-chord-card__handle,
+.studio-chart:not([data-view-mode="compact"]) .studio-chord-card__delete {
+  opacity: 0.45;
+}
+
+.studio-chart:not([data-view-mode="compact"]) .studio-chord-card:hover .studio-chord-card__more,
+.studio-chart:not([data-view-mode="compact"]) .studio-chord-card:hover .studio-chord-card__handle,
+.studio-chart:not([data-view-mode="compact"]) .studio-chord-card:hover .studio-chord-card__delete,
+.studio-chart:not([data-view-mode="compact"]) .studio-chord-card:focus-within .studio-chord-card__more,
+.studio-chart:not([data-view-mode="compact"]) .studio-chord-card:focus-within .studio-chord-card__handle,
+.studio-chart:not([data-view-mode="compact"]) .studio-chord-card:focus-within .studio-chord-card__delete,
+.studio-chart:not([data-view-mode="compact"]) .studio-chord-card[data-selected="true"] .studio-chord-card__more,
+.studio-chart:not([data-view-mode="compact"]) .studio-chord-card[data-selected="true"] .studio-chord-card__handle,
+.studio-chart:not([data-view-mode="compact"]) .studio-chord-card[data-selected="true"] .studio-chord-card__delete {
+  opacity: 1;
+}
+
 .studio-chord-card__menu {
   position: absolute;
   inset-block-start: calc(100% + var(--space-1));
@@ -1633,16 +1727,20 @@
   }
 
   .studio-chart[data-view-mode="compact"] .studio-chord-card__more,
-  .studio-chart[data-view-mode="compact"] .studio-chord-card__handle {
+  .studio-chart[data-view-mode="compact"] .studio-chord-card__handle,
+  .studio-chart[data-view-mode="compact"] .studio-chord-card__delete {
     opacity: 0;
   }
 
   .studio-chart[data-view-mode="compact"] .studio-chord-card:hover .studio-chord-card__more,
   .studio-chart[data-view-mode="compact"] .studio-chord-card:hover .studio-chord-card__handle,
+  .studio-chart[data-view-mode="compact"] .studio-chord-card:hover .studio-chord-card__delete,
   .studio-chart[data-view-mode="compact"] .studio-chord-card:focus-within .studio-chord-card__more,
   .studio-chart[data-view-mode="compact"] .studio-chord-card:focus-within .studio-chord-card__handle,
+  .studio-chart[data-view-mode="compact"] .studio-chord-card:focus-within .studio-chord-card__delete,
   .studio-chart[data-view-mode="compact"] .studio-chord-card[data-selected="true"] .studio-chord-card__more,
-  .studio-chart[data-view-mode="compact"] .studio-chord-card[data-selected="true"] .studio-chord-card__handle {
+  .studio-chart[data-view-mode="compact"] .studio-chord-card[data-selected="true"] .studio-chord-card__handle,
+  .studio-chart[data-view-mode="compact"] .studio-chord-card[data-selected="true"] .studio-chord-card__delete {
     opacity: 1;
   }
 }
@@ -1653,6 +1751,12 @@
     opacity: 1;
     inline-size: var(--touch-target);
     block-size: var(--touch-target);
+  }
+
+  /* jcpe-disi.2: no × on touch — the 44 px menu carries the same one-step
+     delete, and a second 44 px target would occlude a narrow card. */
+  .studio-chord-card__delete {
+    display: none;
   }
 
   .studio-shell .studio-icon-button,

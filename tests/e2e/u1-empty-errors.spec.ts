@@ -257,4 +257,34 @@ test.describe("U1-TRACE-INLINE cancellation restores the exact prior value", () 
     );
     expectCleanDiagnostics(diagnostics);
   });
+
+  test("jcpe-disi.2 the x handle is findable without hover and deletes in one step", async ({
+    page,
+  }) => {
+    const diagnostics = captureDiagnostics(page);
+    await openStudio(page);
+    await showTeachingView(page);
+    await typeAndInsert(page, "| Dm9:1 G13:1 C6:1 A7:1 |");
+
+    // Dim-ghost law: the handle cluster is visible at rest in the editing
+    // view — no hover required to learn the card is editable.
+    const deleteHandle = cards(page).nth(3).getByTestId("chord-card-delete");
+    const restOpacity = await deleteHandle.evaluate(
+      (element) => Number(getComputedStyle(element).opacity),
+    );
+    expect(restOpacity).toBeGreaterThanOrEqual(0.4);
+
+    // One activation, one undoable command, the landed auto-declare policy.
+    await deleteHandle.click();
+    await expect(page.getByTestId("incomplete-reason-field")).toHaveCount(0);
+    await expect(cards(page)).toHaveCount(3);
+    const badge = page.getByTestId("measure-completion-badge");
+    await expect(badge).toBeVisible();
+    await expect(badge).toHaveAttribute("title", "Shortened by delete");
+
+    // One Undo restores the chord — the x never costs a second step.
+    await page.locator("#studio-undo").click();
+    await expect(cards(page)).toHaveCount(4);
+    expectCleanDiagnostics(diagnostics);
+  });
 });

@@ -1,3 +1,5 @@
+import { useEffect, useRef, useState } from "preact/hooks";
+
 import { ChartWorkspace } from "./ChartWorkspace";
 import { HarmonyLens, HarmonyLensContent } from "./HarmonyLens";
 import { LibraryPanel, LibraryPanelContent } from "./LibraryPanel";
@@ -6,7 +8,10 @@ import { StudioShellNotice } from "./StudioShellNotice";
 import { TransportBar } from "./TransportBar";
 import { Dialog, SheetDrawer } from "../overlays";
 import { Button } from "../primitives";
-import type { StudioShellProps } from "./studio-contract";
+import type {
+  StudioCardMenuAction,
+  StudioShellProps,
+} from "./studio-contract";
 
 /**
  * U1-CMP-019 MeasureCompletionDialog. A measure that stays shorter than the
@@ -88,6 +93,183 @@ export function StudioShell({
   callbacks,
   transport,
 }: StudioShellProps) {
+  /*
+   * jcpe-disi.3 labeled undo. Every mutation path already flows through the
+   * callbacks this shell hands down, so the sentence is composed centrally
+   * at dispatch — but it is only PROMOTED to the visible notice once the
+   * document revision actually advances. A refusal leaves the revision
+   * unchanged, so a refused intent can never produce a lying notice.
+   */
+  const [actionNotice, setActionNotice] = useState<string | null>(null);
+  const pendingNotice = useRef<{
+    revisionLabel: string;
+    sentence: string;
+  } | null>(null);
+  const revisionLabel = view.document.revisionLabel;
+  useEffect(() => {
+    const staged = pendingNotice.current;
+    if (staged !== null && staged.revisionLabel !== revisionLabel) {
+      pendingNotice.current = null;
+      setActionNotice(staged.sentence);
+    }
+  }, [revisionLabel]);
+
+  const chordPlaces = new Map<
+    string,
+    Readonly<{ bar: number; inRange: boolean; selected: boolean; symbol: string }>
+  >();
+  const measureBars = new Map<string, number>();
+  for (const section of view.chart.sections) {
+    for (const measure of section.measures) {
+      measureBars.set(measure.id, measure.number);
+      for (const chord of measure.chords) {
+        chordPlaces.set(chord.id, {
+          bar: measure.number,
+          inRange: chord.inRange,
+          selected: chord.selected,
+          symbol: chord.symbolText,
+        });
+      }
+    }
+  }
+  const selectionPhrase = (): string | null => {
+    const ranged = [...chordPlaces.values()].filter((place) => place.inRange);
+    if (ranged.length > 1) return `${String(ranged.length)} chords`;
+    const chosen = [...chordPlaces.values()].find((place) => place.selected);
+    return chosen === null || chosen === undefined
+      ? null
+      : `${chosen.symbol} from bar ${String(chosen.bar)}`;
+  };
+  const stage = (sentence: string | null): void => {
+    if (sentence !== null) pendingNotice.current = { revisionLabel, sentence };
+  };
+  const forgetNotice = (): void => {
+    pendingNotice.current = null;
+    setActionNotice(null);
+  };
+  const chordSentence = (
+    chordId: string,
+    compose: (place: Readonly<{ bar: number; symbol: string }>) => string,
+  ): string | null => {
+    const place = chordPlaces.get(chordId);
+    return place === undefined ? null : compose(place);
+  };
+  const menuActionSentence = (
+    chordId: string,
+    action: string,
+  ): string | null => {
+    switch (action) {
+      case "delete":
+        return chordSentence(
+          chordId,
+          (p) => `Deleted ${p.symbol} from bar ${String(p.bar)}`,
+        );
+      case "duplicate":
+        return chordSentence(chordId, (p) => `Duplicated ${p.symbol}`);
+      case "move-previous":
+        return chordSentence(chordId, (p) => `Moved ${p.symbol} earlier`);
+      case "move-next":
+        return chordSentence(chordId, (p) => `Moved ${p.symbol} later`);
+      case "move-following":
+        return chordSentence(
+          chordId,
+          (p) => `Moved the chords after ${p.symbol}`,
+        );
+      case "join-next":
+        return chordSentence(
+          chordId,
+          (p) => `Joined ${p.symbol} with the next chord`,
+        );
+      default:
+        return null;
+    }
+  };
+  const shellCallbacks = {
+    ...callbacks,
+    onApplyDuration: (chordId: string, beatText: string) => {
+      stage(
+        chordSentence(
+          chordId,
+          (p) => `Changed the length of ${p.symbol} in bar ${String(p.bar)}`,
+        ),
+      );
+      callbacks.onApplyDuration(chordId, beatText);
+    },
+    onApplyInlineSymbol: (chordId: string, symbolText: string) => {
+      stage(
+        chordSentence(
+          chordId,
+          (p) =>
+            `Changed ${p.symbol} to ${symbolText.trim()} in bar ${String(p.bar)}`,
+        ),
+      );
+      callbacks.onApplyInlineSymbol(chordId, symbolText);
+    },
+    onCardMenuAction: (chordId: string, action: StudioCardMenuAction) => {
+      stage(menuActionSentence(chordId, action));
+      callbacks.onCardMenuAction(chordId, action);
+    },
+    onDeleteMeasure: (measureId: string) => {
+      const bar = measureBars.get(measureId);
+      stage(bar === undefined ? null : `Deleted bar ${String(bar)}`);
+      callbacks.onDeleteMeasure(measureId);
+    },
+    onDeleteSelection: () => {
+      const phrase = selectionPhrase();
+      stage(phrase === null ? null : `Deleted ${phrase}`);
+      callbacks.onDeleteSelection();
+    },
+    onDropChordOnMeasure: (measureId: string) => {
+      const bar = measureBars.get(measureId);
+      const phrase = selectionPhrase();
+      stage(
+        phrase === null || bar === undefined
+          ? null
+          : `Moved ${phrase} to bar ${String(bar)}`,
+      );
+      callbacks.onDropChordOnMeasure(measureId);
+    },
+    onDuplicateSelection: () => {
+      const phrase = selectionPhrase();
+      stage(phrase === null ? null : `Duplicated ${phrase}`);
+      callbacks.onDuplicateSelection();
+    },
+    onMidiImportCommit: () => {
+      stage("Imported the MIDI file into the chart");
+      callbacks.onMidiImportCommit();
+    },
+    onMoveSelection: (direction: "previous" | "next") => {
+      const phrase = selectionPhrase();
+      stage(
+        phrase === null
+          ? null
+          : `Moved ${phrase} ${direction === "previous" ? "earlier" : "later"}`,
+      );
+      callbacks.onMoveSelection(direction);
+    },
+    onQuickEntryInsert: () => {
+      stage("Inserted the draft into the chart");
+      callbacks.onQuickEntryInsert();
+    },
+    onRedo: () => {
+      forgetNotice();
+      callbacks.onRedo();
+    },
+    onSplitDuration: (chordId: string, firstBeats: string) => {
+      stage(
+        chordSentence(
+          chordId,
+          (p) => `Split ${p.symbol} in bar ${String(p.bar)}`,
+        ),
+      );
+      callbacks.onSplitDuration(chordId, firstBeats);
+    },
+    onUndo: () => {
+      forgetNotice();
+      callbacks.onUndo();
+    },
+  };
+
   const activeSheet = view.layout.activeSheet;
   const sheetId =
     activeSheet === null ? null : `studio-${activeSheet}-sheet`;
@@ -114,7 +296,7 @@ export function StudioShell({
             Skip to studio workspace
           </a>
 
-          <StudioHeader view={view.document} callbacks={callbacks} />
+          <StudioHeader view={view.document} callbacks={shellCallbacks} />
 
           <main id="workspace" class="studio-workspace" tabIndex={-1}>
             <LibraryPanel
@@ -122,7 +304,7 @@ export function StudioShell({
               sheetOpen={activeSheet === "library"}
               midiImport={view.midiImport}
               onMidiImportChooseFile={callbacks.onMidiImportChooseFile}
-              onMidiImportCommit={callbacks.onMidiImportCommit}
+              onMidiImportCommit={shellCallbacks.onMidiImportCommit}
               onMidiImportDiscard={callbacks.onMidiImportDiscard}
               onInsertRecoveredChord={callbacks.onInsertRecoveredChord}
               onRecoveryAcknowledgeChange={callbacks.onRecoveryAcknowledgeChange}
@@ -131,7 +313,7 @@ export function StudioShell({
               }
               onQuickEntryClear={callbacks.onQuickEntryClear}
               onQuickEntryDraftChange={callbacks.onQuickEntryDraftChange}
-              onQuickEntryInsert={callbacks.onQuickEntryInsert}
+              onQuickEntryInsert={shellCallbacks.onQuickEntryInsert}
               onTempoDraftChange={callbacks.onTempoDraftChange}
               onTempoCommit={callbacks.onTempoCommit}
               onGrooveStyleChange={callbacks.onGrooveStyleChange}
@@ -143,28 +325,28 @@ export function StudioShell({
               }}
             />
             <ChartWorkspace
-              onApplyDuration={callbacks.onApplyDuration}
-              onApplyInlineSymbol={callbacks.onApplyInlineSymbol}
+              onApplyDuration={shellCallbacks.onApplyDuration}
+              onApplyInlineSymbol={shellCallbacks.onApplyInlineSymbol}
               onCancelPendingEdit={callbacks.onCancelPendingEdit}
               onAnnotateSection={callbacks.onAnnotateSection}
               onDeclareMeasureCompletion={callbacks.onDeclareMeasureCompletion}
               onRenameSection={callbacks.onRenameSection}
               onSetSectionBoundary={callbacks.onSetSectionBoundary}
-              onDeleteSelection={callbacks.onDeleteSelection}
-              onDropChordOnMeasure={callbacks.onDropChordOnMeasure}
-              onDuplicateSelection={callbacks.onDuplicateSelection}
+              onDeleteSelection={shellCallbacks.onDeleteSelection}
+              onDropChordOnMeasure={shellCallbacks.onDropChordOnMeasure}
+              onDuplicateSelection={shellCallbacks.onDuplicateSelection}
               onInsertMeasure={callbacks.onInsertMeasure}
               onInsertSection={callbacks.onInsertSection}
-              onMoveSelection={callbacks.onMoveSelection}
+              onMoveSelection={shellCallbacks.onMoveSelection}
               onRequestPanelSheet={callbacks.onRequestPanelSheet}
               onRovingFocusChange={callbacks.onRovingFocusChange}
               onSelectChord={callbacks.onSelectChord}
               onCardMenuOpenChange={callbacks.onCardMenuOpenChange}
-              onCardMenuAction={callbacks.onCardMenuAction}
-              onSplitDuration={callbacks.onSplitDuration}
+              onCardMenuAction={shellCallbacks.onCardMenuAction}
+              onSplitDuration={shellCallbacks.onSplitDuration}
               onSplitSection={callbacks.onSplitSection}
               onJoinSections={callbacks.onJoinSections}
-              onDeleteMeasure={callbacks.onDeleteMeasure}
+              onDeleteMeasure={shellCallbacks.onDeleteMeasure}
               onSplitAtBar={callbacks.onSplitAtBar}
               onSetInsertionPoint={callbacks.onSetInsertionPoint}
               onRangeModeChange={callbacks.onRangeModeChange}
@@ -187,6 +369,47 @@ export function StudioShell({
               }}
             />
           </main>
+
+          {/*
+            jcpe-disi.3: the labeled-undo notice. The region always exists so
+            aria-live announcement works; content appears only after a
+            command verifiably landed (revision advanced). No timers — the
+            sentence persists until the next action, an undo, or dismissal.
+          */}
+          <div
+            aria-live="polite"
+            class="studio-action-notice"
+            data-testid="action-notice"
+            data-empty={actionNotice === null ? "true" : "false"}
+            role="status"
+          >
+            {actionNotice === null ? null : (
+              <>
+                <p class="studio-action-notice__sentence">{actionNotice}</p>
+                <Button
+                  busy={false}
+                  density="dense"
+                  describedBy={[]}
+                  disabled={!view.document.canUndo}
+                  id="studio-action-undo"
+                  invalid={false}
+                  label="Undo"
+                  onAction={shellCallbacks.onUndo}
+                  type="button"
+                  variant="secondary"
+                />
+                <button
+                  aria-label="Dismiss this notice"
+                  class="studio-icon-button studio-action-notice__dismiss"
+                  id="studio-action-dismiss"
+                  onClick={forgetNotice}
+                  type="button"
+                >
+                  ×
+                </button>
+              </>
+            )}
+          </div>
         </div>
         <TransportBar
           canPlay={transport.canPlay}
@@ -252,7 +475,7 @@ export function StudioShell({
                   headingId={`${sheetId}-title`}
                   midiImport={view.midiImport}
                   onMidiImportChooseFile={callbacks.onMidiImportChooseFile}
-                  onMidiImportCommit={callbacks.onMidiImportCommit}
+                  onMidiImportCommit={shellCallbacks.onMidiImportCommit}
                   onMidiImportDiscard={callbacks.onMidiImportDiscard}
                   onInsertRecoveredChord={callbacks.onInsertRecoveredChord}
                   onRecoveryAcknowledgeChange={
@@ -263,7 +486,7 @@ export function StudioShell({
                   }
                   onQuickEntryClear={callbacks.onQuickEntryClear}
                   onQuickEntryDraftChange={callbacks.onQuickEntryDraftChange}
-                  onQuickEntryInsert={callbacks.onQuickEntryInsert}
+                  onQuickEntryInsert={shellCallbacks.onQuickEntryInsert}
                   onTempoDraftChange={callbacks.onTempoDraftChange}
                   onTempoCommit={callbacks.onTempoCommit}
                   onGrooveStyleChange={callbacks.onGrooveStyleChange}

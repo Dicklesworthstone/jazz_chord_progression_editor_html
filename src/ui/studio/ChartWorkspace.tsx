@@ -637,6 +637,12 @@ export function ChartWorkspace({
       case "menu":
         onCardMenuOpenChange(view.openMenuChordId === chordId ? null : chordId);
         return;
+      case "delete":
+        // jcpe-disi.2: the × handle is the menu's Delete one click closer.
+        // Same per-chord action, same landed auto-declare policy, one
+        // undoable command.
+        runMenuAction(chordId, "delete");
+        return;
       case "item": {
         const value = hit.element.dataset["menuAction"];
         if (hit.element.getAttribute("aria-disabled") === "true") return;
@@ -2025,6 +2031,16 @@ export function ChartWorkspace({
                                           tabIndex={-1}
                                         >
                                           ⋯
+                                        </button>
+                                        <button
+                                          class="studio-chord-card__delete"
+                                          data-card-action="delete"
+                                          data-testid="chord-card-delete"
+                                          type="button"
+                                          aria-label={`Delete chord ${String(chord.ordinal)}`}
+                                          tabIndex={-1}
+                                        >
+                                          ×
                                         </button>
                                         {view.openMenuChordId === chord.id ? (
                                           <div
