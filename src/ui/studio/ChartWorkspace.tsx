@@ -678,8 +678,11 @@ export function ChartWorkspace({
         return;
       case "delete":
         // jcpe-disi.2: the × handle is the menu's Delete one click closer.
-        // Same per-chord action, same landed auto-declare policy, one
-        // undoable command.
+        // The menu vocabulary acts on the SELECTION, so the × first makes
+        // its own chord the selection — the controller is synchronous, and
+        // selection changes are bookmark moves, not history commands, so
+        // the gesture still lands as ONE undoable delete.
+        onSelectChord(chordId, false);
         runMenuAction(chordId, "delete");
         return;
       case "item": {
