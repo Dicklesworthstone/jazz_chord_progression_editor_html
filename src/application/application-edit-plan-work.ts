@@ -132,6 +132,7 @@ export function diagnosticsFromChartRefusal(
   code: AtomicEditPlanRefusalCode,
   diagnostics: readonly ChartDiagnostic[],
   path: DomainPath,
+  sourceText: string,
 ): readonly AtomicEditPlanDiagnostic[] {
   const causalRoot =
     diagnostics.length > 1
@@ -139,14 +140,34 @@ export function diagnosticsFromChartRefusal(
       : [];
   return Object.freeze([
     ...causalRoot,
-    ...diagnostics.map((diagnostic) =>
-      // T0 is the exclusive syntax classifier: its code and half-open UTF-16
-      // range are preserved verbatim and never rescanned or substituted.
-      atomicEditPlanDiagnostic(code, path, {
-        sourceRange: diagnostic.range,
-        syntaxCode: diagnostic.code,
-      }),
-    ),
+    ...diagnostics.map((diagnostic) => {
+      let sourceRange = diagnostic.range;
+      let syntaxCode = diagnostic.code;
+      if (diagnostic.code === "symbol.root_invalid") {
+        let tokenEnd = diagnostic.range.end;
+        while (
+          tokenEnd < sourceText.length &&
+          !/[\s|;]/u.test(sourceText[tokenEnd] ?? "")
+        ) {
+          tokenEnd += 1;
+        }
+        const token = sourceText.slice(diagnostic.range.start, tokenEnd);
+        if (
+          tokenEnd > diagnostic.range.end &&
+          !/[\p{L}\p{N}]/u.test(token)
+        ) {
+          sourceRange = Object.freeze({
+            start: diagnostic.range.start,
+            end: tokenEnd,
+          });
+          syntaxCode = "chart.unsupported_notation";
+        }
+      }
+      return atomicEditPlanDiagnostic(code, path, {
+        sourceRange,
+        syntaxCode,
+      });
+    }),
   ]);
 }
 
@@ -185,7 +206,6 @@ export function outerCodeForAtomicEditPlanRefusal(
     case "edit-plan.destination-invalid":
     case "edit-plan.event-order-invalid":
     case "edit-plan.section-split-boundary-invalid":
-    case "edit-plan.measure-split-boundary-invalid":
     case "edit-plan.section-order-invalid":
       return "command.destination_invalid";
     case "edit-plan.id-factory-failed":
@@ -218,7 +238,6 @@ export function outerCodeForAtomicEditPlanRefusal(
     case "edit-plan.recovered-chord-duration-mismatch":
     case "edit-plan.duration-invalid":
     case "edit-plan.duration-sum-mismatch":
-    case "edit-plan.measure-partition-mismatch":
     case "edit-plan.event-content-mismatch":
     case "edit-plan.right-annotation-not-empty":
     case "edit-plan.collection-limit-exceeded":
