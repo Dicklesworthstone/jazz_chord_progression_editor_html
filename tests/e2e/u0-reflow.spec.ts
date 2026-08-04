@@ -158,6 +158,7 @@ test("U0-ENV-001 separate 200-percent scale and effective CSS viewport evidence 
       return {
         clientWidth: document.documentElement.clientWidth,
         harmonyRailVisible: visible("#harmony-lens-rail"),
+        harmonyTriggerVisible: visible("#studio-open-harmony-sheet"),
         libraryRailVisible: visible("#library-rail"),
         libraryTriggerVisible: visible("#studio-open-library-sheet"),
         scrollWidth: document.documentElement.scrollWidth,
@@ -176,7 +177,10 @@ test("U0-ENV-001 separate 200-percent scale and effective CSS viewport evidence 
     expect(effective.scrollWidth).toBeLessThanOrEqual(640);
     expect(effective.libraryRailVisible).toBe(false);
     expect(effective.libraryTriggerVisible).toBe(true);
-    expect(effective.harmonyRailVisible).toBe(true);
+    /* jcpe-v2r-shell-i9up: at 640 effective CSS px the v2 chord-detail rail
+     * (threshold 820px) is a sheet; operability is its visible trigger. */
+    expect(effective.harmonyRailVisible).toBe(false);
+    expect(effective.harmonyTriggerVisible).toBe(true);
     expect(effective.transportBottom).toBeLessThanOrEqual(effective.viewportHeight + 1);
     await expect(page.getByRole("textbox", { name: "Chart title" })).toBeEditable();
     expect(diagnostics.consoleErrors).toEqual([]);

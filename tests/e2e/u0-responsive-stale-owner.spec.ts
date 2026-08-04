@@ -144,13 +144,16 @@ async function proveStaleOwnerDismissal(
 }
 
 test.describe("responsive overlay owner retirement", () => {
-  test("retires the compact Harmony sheet once when the 640px rail appears", async ({
+  /* jcpe-v2r-shell-i9up: the v2 redesign moved the rail thresholds to the
+   * prototype's 820px (chord-detail rail) and 1280px (library rail). The
+   * retirement law itself is unchanged. */
+  test("retires the compact Harmony sheet once when the 820px rail appears", async ({
     page,
   }) => {
     const diagnostics = captureDiagnostics(page);
     const proof: ResponsiveProof = {
-      afterWidth: 641,
-      beforeWidth: 639,
+      afterWidth: 821,
+      beforeWidth: 819,
       railId: "harmony-lens-rail",
       sheetName: "Harmony Lens",
       triggerId: "studio-open-harmony-sheet",
@@ -160,13 +163,13 @@ test.describe("responsive overlay owner retirement", () => {
     expect(diagnostics).toEqual({ consoleErrors: [], pageErrors: [] });
   });
 
-  test("retires the Library sheet once when the 1100px rail appears", async ({
+  test("retires the Library sheet once when the 1280px rail appears", async ({
     page,
   }) => {
     const diagnostics = captureDiagnostics(page);
     const proof: ResponsiveProof = {
-      afterWidth: 1_101,
-      beforeWidth: 1_099,
+      afterWidth: 1_281,
+      beforeWidth: 1_279,
       railId: "library-rail",
       sheetName: "Library",
       triggerId: "studio-open-library-sheet",

@@ -13,7 +13,10 @@ import {
   type U0CompiledBrowserHarness,
 } from "./u0-browser-test-kit";
 
-const viewport = { height: 1024, width: 768 } as const;
+/* jcpe-v2r-shell-i9up: 880px — above the v2 chord-detail rail threshold
+ * (820px) and below the library rail (1280px), keeping the old intent of
+ * "harmony rail visible, library rail collapsed". */
+const viewport = { height: 1024, width: 880 } as const;
 const bindings = [
   u0Binding("U0-PRIM-003", "TR-U0-LANDMARKS"),
   u0Binding("U0-PRIM-004", "TR-U0-LANDMARKS"),
