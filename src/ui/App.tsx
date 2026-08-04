@@ -2636,6 +2636,7 @@ export function StudioRoot({
                   refusal: null,
                   plan: null,
                   sonorities: Object.freeze([]),
+                  salvage: null,
                   blockedReason:
                     "MIDI import is not available in this session.",
                 }),
