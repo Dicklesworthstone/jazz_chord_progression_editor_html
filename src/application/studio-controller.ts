@@ -65,9 +65,15 @@ import type {
 } from "./application-state-contract";
 import {
   MAX_CONTINUATION_CONTEXT_EVENTS,
+  analyzeChartEvent,
+  deriveChordDetail,
   deriveContinuationSuggestions,
+  detectChartPhrases,
   parseChordSymbol,
   resolutionOperations,
+  type ChartChordDetail,
+  type ChartEventAnalysis,
+  type ChartPhraseKind,
   type ChartTextDraft,
   type ContinuationSuggestion,
 } from "../theory";
@@ -284,6 +290,27 @@ export type StudioContinuationView = Readonly<{
   afterLabel: string | null;
   suggestions: readonly ContinuationSuggestion[];
 }>;
+
+/**
+ * Display-only chart annotation views (jcpe-v2-redesign-z323): one event's
+ * reading, one section's pencilled phrase spans, and the chord-detail
+ * teaching panel. All three pass the chart-annotation engine's frozen values
+ * through unwrapped; none of them is musical authority or a command path.
+ */
+export type StudioEventAnalysisView = ChartEventAnalysis;
+
+export type StudioSectionPhraseView = Readonly<{
+  kind: ChartPhraseKind;
+  label: string;
+  fromEventId: string;
+  toEventId: string;
+}>;
+
+export type StudioSectionPhrasesView = Readonly<{
+  phrases: readonly StudioSectionPhraseView[];
+}>;
+
+export type StudioChordDetailView = ChartChordDetail;
 
 /**
  * The reviewed statement tables. They restate the U1 insertion-plan authority
@@ -607,6 +634,29 @@ export interface StudioController {
    * cache masquerade as determinism.
    */
   readonly readContinuationSuggestions: () => StudioContinuationView;
+  /**
+   * Display-only roman/function/scale reading of one event against the
+   * document key. Memoized on the frozen document object like the
+   * continuation view; null when the event id is unknown.
+   */
+  readonly readEventAnalysis: (
+    eventId: string,
+  ) => StudioEventAnalysisView | null;
+  /**
+   * Display-only pencilled phrase spans for one section, each span naming
+   * its first and last event id in chart order. Null for an unknown section.
+   */
+  readonly readSectionPhrases: (
+    sectionId: string,
+  ) => StudioSectionPhrasesView | null;
+  /**
+   * Display-only chord-detail teaching data for one event: tones with
+   * interval roles, guide tones, guide-tone motion into the next chord, and
+   * plural next options. Null when the event id is unknown.
+   */
+  readonly readChordDetail: (
+    eventId: string,
+  ) => StudioChordDetailView | null;
   readonly joinSections: (
     leftSectionId: string,
   ) => StudioControllerActionResult;
@@ -4459,6 +4509,135 @@ function makeStudioComposition(
   };
 
   /*
+   * Chart-annotation read ports (jcpe-v2-redesign-z323). Same cache law as
+   * the continuation view: the key is the frozen document object, so an
+   * unchanged document hands back identical values and any published edit
+   * recomputes. Each port materializes lazily per id.
+   */
+  const eventAnalysisCache = new WeakMap<
+    object,
+    Map<string, StudioEventAnalysisView | null>
+  >();
+  const readEventAnalysis = (
+    eventId: string,
+  ): StudioEventAnalysisView | null => {
+    const document = state.document;
+    let cache = eventAnalysisCache.get(document);
+    if (cache === undefined) {
+      cache = new Map();
+      eventAnalysisCache.set(document, cache);
+    }
+    const cached = cache.get(eventId);
+    if (cached !== undefined) return cached;
+    let view: StudioEventAnalysisView | null = null;
+    outer: for (const section of document.sections) {
+      for (const measure of section.measures) {
+        for (const event of measure.events) {
+          if (event.id !== eventId) continue;
+          view = analyzeChartEvent(
+            { current: event.chord, key: document.key },
+            resolutionOperations,
+          );
+          break outer;
+        }
+      }
+    }
+    cache.set(eventId, view);
+    return view;
+  };
+
+  const sectionPhrasesCache = new WeakMap<
+    object,
+    Map<string, StudioSectionPhrasesView | null>
+  >();
+  const readSectionPhrases = (
+    sectionId: string,
+  ): StudioSectionPhrasesView | null => {
+    const document = state.document;
+    let cache = sectionPhrasesCache.get(document);
+    if (cache === undefined) {
+      cache = new Map();
+      sectionPhrasesCache.set(document, cache);
+    }
+    const cached = cache.get(sectionId);
+    if (cached !== undefined) return cached;
+    const section = document.sections.find(
+      (candidate) => candidate.id === sectionId,
+    );
+    let view: StudioSectionPhrasesView | null = null;
+    if (section !== undefined) {
+      const events = section.measures.flatMap((measure) => measure.events);
+      const result = detectChartPhrases({
+        events: events.map((event) => event.chord),
+        key: document.key,
+      });
+      view = Object.freeze({
+        phrases: Object.freeze(
+          result.phrases.flatMap((phrase) => {
+            const fromEvent = events[phrase.fromIndex];
+            const toEvent = events[phrase.toIndex];
+            if (fromEvent === undefined || toEvent === undefined) return [];
+            return [
+              Object.freeze({
+                kind: phrase.kind,
+                label: phrase.label,
+                fromEventId: fromEvent.id,
+                toEventId: toEvent.id,
+              }),
+            ];
+          }),
+        ),
+      });
+    }
+    cache.set(sectionId, view);
+    return view;
+  };
+
+  const chordDetailCache = new WeakMap<
+    object,
+    Map<string, StudioChordDetailView | null>
+  >();
+  const readChordDetail = (
+    eventId: string,
+  ): StudioChordDetailView | null => {
+    const document = state.document;
+    let cache = chordDetailCache.get(document);
+    if (cache === undefined) {
+      cache = new Map();
+      chordDetailCache.set(document, cache);
+    }
+    const cached = cache.get(eventId);
+    if (cached !== undefined) return cached;
+    const ordered = document.sections.flatMap((section) =>
+      section.measures.flatMap((measure) => measure.events),
+    );
+    const index = ordered.findIndex((event) => event.id === eventId);
+    let view: StudioChordDetailView | null = null;
+    if (index >= 0) {
+      const current = ordered[index];
+      const following = ordered[index + 1];
+      if (current !== undefined) {
+        view = deriveChordDetail(
+          {
+            current: current.chord,
+            next:
+              following === undefined
+                ? null
+                : {
+                    spec: following.chord,
+                    symbolText: following.chord.sourceText,
+                  },
+            key: document.key,
+          },
+          resolutionOperations,
+        );
+      }
+    }
+    cache.set(eventId, view);
+    return view;
+  };
+
+  /*
    * Every transport notification flows back through A0's own acceptance law:
    * stale generations, superseded request IDs, and foreign document IDs are
    * dropped there, not here. Without this feedback loop the expectation
@@ -4922,6 +5101,9 @@ function makeStudioComposition(
     readTransportAnalysisFrame,
     readEventPitchClasses,
     readContinuationSuggestions,
+    readEventAnalysis,
+    readSectionPhrases,
+    readChordDetail,
     splitAtBar,
     splitEventDuration,
     splitSection,

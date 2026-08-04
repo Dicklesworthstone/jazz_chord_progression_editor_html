@@ -18,8 +18,11 @@ import {
   type MidiImportPreview,
   type StudioMidiImportService,
   type StudioAudioGesture,
+  type StudioChordDetailView,
   type StudioContinuationView,
   type StudioController,
+  type StudioEventAnalysisView,
+  type StudioSectionPhrasesView,
   type StudioControllerActionResult,
   type StudioBoundaryInput,
   type StudioDraftPreview,
@@ -214,6 +217,10 @@ export type AppActions = Readonly<{
   readTransportAnalysisFrame: () => StudioAnalysisFrame | null;
   readEventPitchClasses: (eventId: string) => readonly number[] | null;
   readContinuationSuggestions: () => StudioContinuationView;
+  /** Display-only chart annotation reads (jcpe-v2-redesign-z323). */
+  readEventAnalysis: (eventId: string) => StudioEventAnalysisView | null;
+  readSectionPhrases: (sectionId: string) => StudioSectionPhrasesView | null;
+  readChordDetail: (eventId: string) => StudioChordDetailView | null;
 }>;
 
 const QUICK_ENTRY_MAX_CODE_POINTS = 4_096;
@@ -2636,6 +2643,9 @@ export function StudioRoot({
         readTransportAnalysisFrame: controller.readTransportAnalysisFrame,
         readEventPitchClasses: controller.readEventPitchClasses,
         readContinuationSuggestions: controller.readContinuationSuggestions,
+        readEventAnalysis: controller.readEventAnalysis,
+        readSectionPhrases: controller.readSectionPhrases,
+        readChordDetail: controller.readChordDetail,
         splitEventDuration: controller.splitEventDuration,
         splitSection: controller.splitSection,
         stopProgression: controller.stopProgression,
