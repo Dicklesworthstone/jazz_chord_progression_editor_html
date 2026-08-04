@@ -143,6 +143,62 @@ export const PROGRESSION_LIBRARY: readonly ProgressionLibraryEntry[] =
     }),
 
     /* ------------------------------------------- shared harmonic devices */
+    /*
+     * The five foundation standards of the v2 redesign's library surface
+     * (jcpe-v2r-library-ulwb): the plain sentences every other entry here
+     * elaborates. Tempi follow the owner-approved prototype's metadata.
+     */
+    Object.freeze({
+      id: "two-five-one",
+      grooveStyleId: "medium-swing@1",
+      tempoBpm: 132,
+      title: "ii–V–I in C",
+      kicker: "The foundation cadence",
+      note: "The sentence every other progression is built from.",
+      provenance: "device",
+      chartText: "| Dm7 | G7 | Cmaj7 | Cmaj7 |",
+    }),
+    Object.freeze({
+      id: "one-six-two-five",
+      grooveStyleId: "medium-swing@1",
+      tempoBpm: 144,
+      title: "I–vi–ii–V turnaround",
+      kicker: "Turnaround template",
+      note: "Four bars that loop forever. The standard vamp for practice.",
+      provenance: "device",
+      chartText: "| Cmaj7 | Am7 | Dm7 | G7 |",
+    }),
+    Object.freeze({
+      id: "minor-two-five-one",
+      grooveStyleId: "ballad-comp@1",
+      tempoBpm: 120,
+      title: "Minor ii–V–i",
+      kicker: "The minor cadence",
+      note: "Half-diminished into an altered dominant, landing minor.",
+      provenance: "device",
+      chartText: "| Dm7b5 | G7b9 | Cm9 | Cm9 |",
+    }),
+    Object.freeze({
+      id: "jazz-blues-f",
+      grooveStyleId: "medium-swing@1",
+      tempoBpm: 152,
+      title: "Jazz blues in F",
+      kicker: "Blues template",
+      note: "Twelve bars, with the quick IV in bar two and a ii–V turnaround.",
+      provenance: "device",
+      chartText:
+        "| F7 | Bb7 | F7 | F7 | Bb7 | Bb7 | F7 | D7 | Gm7 | C7 | F7 D7 | Gm7 C7 |",
+    }),
+    Object.freeze({
+      id: "dorian-vamp",
+      grooveStyleId: "straight-eighths@1",
+      tempoBpm: 116,
+      title: "Modal vamp in D Dorian",
+      kicker: "Modal device",
+      note: "Two chords, no cadence. Room to hear a mode instead of a key.",
+      provenance: "device",
+      chartText: "| Dm9 | Dm9 | Em9 | Dm9 |",
+    }),
     Object.freeze({
       id: "major-third-cycle",
       grooveStyleId: "medium-swing@1",
