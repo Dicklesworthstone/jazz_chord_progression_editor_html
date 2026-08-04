@@ -388,37 +388,42 @@ export function StudioShell({
             data-empty={actionNotice === null ? "true" : "false"}
             role="status"
           >
+            {/*
+              The strip's controls are PERMANENT: a mount that came and went
+              with the notice changed the document's listener census across
+              mutation cycles, which U1-INT-024 pins as invariant. Empty,
+              they sit disabled beside the hint.
+            */}
             {actionNotice === null ? (
               <p class="studio-action-notice__sentence studio-action-notice__sentence--hint">
                 Every change lands as one undoable step — select any chord to
                 edit, move, or delete it.
               </p>
             ) : (
-              <>
-                <p class="studio-action-notice__sentence">{actionNotice}</p>
-                <Button
-                  busy={false}
-                  density="dense"
-                  describedBy={[]}
-                  disabled={!view.document.canUndo}
-                  id="studio-action-undo"
-                  invalid={false}
-                  label="Undo"
-                  onAction={shellCallbacks.onUndo}
-                  type="button"
-                  variant="secondary"
-                />
-                <button
-                  aria-label="Dismiss this notice"
-                  class="studio-icon-button studio-action-notice__dismiss"
-                  id="studio-action-dismiss"
-                  onClick={forgetNotice}
-                  type="button"
-                >
-                  ×
-                </button>
-              </>
+              <p class="studio-action-notice__sentence">{actionNotice}</p>
             )}
+            <Button
+              busy={false}
+              density="dense"
+              describedBy={[]}
+              disabled={actionNotice === null || !view.document.canUndo}
+              id="studio-action-undo"
+              invalid={false}
+              label="Undo"
+              onAction={shellCallbacks.onUndo}
+              type="button"
+              variant="secondary"
+            />
+            <button
+              aria-label="Dismiss this notice"
+              class="studio-icon-button studio-action-notice__dismiss"
+              disabled={actionNotice === null}
+              id="studio-action-dismiss"
+              onClick={forgetNotice}
+              type="button"
+            >
+              ×
+            </button>
           </div>
         </div>
         <TransportBar

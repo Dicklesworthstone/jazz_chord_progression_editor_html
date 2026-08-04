@@ -1831,6 +1831,14 @@
     display: none;
   }
 
+  /* jcpe-disi.5: bar selection has no other touch path, so the bar's name
+     grows to the coarse floor instead of hiding. */
+  .studio-measure__select {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--touch-target);
+  }
+
   .studio-shell .studio-icon-button,
   .studio-shell .studio-range-bar__handle,
   .studio-shell .studio-section__boundary-trigger,
