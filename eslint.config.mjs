@@ -119,6 +119,9 @@ export default tseslint.config(
       "eslint.config.mjs",
       "jazz_chord_progression_editor.html",
       "node_modules/**",
+      /* Owner-supplied design prototype: reference material with fake guts,
+         ported piecewise by jcpe-v2-redesign-z323, never released. */
+      "redesign_prototype/**",
       "playwright-report/**",
       "test-results/**",
       "tests/fixtures/**",
