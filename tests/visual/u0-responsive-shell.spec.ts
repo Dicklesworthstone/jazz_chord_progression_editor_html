@@ -28,7 +28,8 @@ const cases: readonly ShellCase[] = [
     ],
     id: "U0-VIEW-003",
     mode: "balanced",
-    viewport: { width: 768, height: 1024 },
+    /* jcpe-v2r-gates-xaib: the v2 chord-detail rail begins at 820px. */
+    viewport: { width: 900, height: 1024 },
   },
   {
     bindings: [u0Binding("U0-VIEW-004", "TR-U0-SHELL")],
@@ -126,7 +127,8 @@ async function observeShell(page: Page): Promise<ShellObservation> {
       } : null,
       libraryTokenPx: px("--rail-library-inline"),
       libraryTriggerVisible: visible(libraryTrigger),
-      mode: width < 640 ? "compact" : width < 1100 ? "balanced" : "wide",
+      /* jcpe-v2r-gates-xaib: v2 thresholds — 820px detail rail, 1280px library. */
+      mode: width < 820 ? "compact" : width < 1280 ? "balanced" : "wide",
       scrollHeight: document.documentElement.scrollHeight,
       scrollWidth: document.documentElement.scrollWidth,
       shell: {
@@ -209,24 +211,21 @@ async function proveShellCase(
       expect(Math.abs((observed.harmonyRail?.width ?? 0) - observed.harmonyTokenPx)).toBeLessThanOrEqual(1);
     }
 
-    // Exactly the wired controls: the audible landing removed the unwired
-    // previous/next/loop buttons rather than advertising dead capability.
+    // Exactly the wired controls (jcpe-v2r-gates-xaib): V2R-8 wired the
+    // previous/next chord steppers, so they are real capability now; loop
+    // remains unwired and must stay absent rather than advertised dead.
     expect(observed.transportControlNames).toEqual(expect.arrayContaining([
+      "Previous chord",
       "Play",
       "Pause",
       "Stop",
+      "Next chord",
     ]));
     expect(
-      observed.transportControlNames.filter((name) =>
-        /previous|next|loop/iu.test(name),
-      ),
+      observed.transportControlNames.filter((name) => /loop/iu.test(name)),
     ).toEqual([]);
-    expect(observed.transportFactKeys).toEqual([
-      "Position",
-      "Current chord",
-      "Tempo",
-      "Instrument",
-    ]);
+    // The V2R-8 footer replaced the dt fact list with labeled now-blocks.
+    expect(observed.transportFactKeys).toEqual([]);
     expect(diagnostics.consoleErrors).toEqual([]);
     expect(diagnostics.pageErrors).toEqual([]);
     expect(diagnostics.requests).toHaveLength(1);

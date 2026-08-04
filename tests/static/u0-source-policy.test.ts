@@ -39,16 +39,33 @@ async function uiTextSources(): Promise<readonly Readonly<{
   })));
 }
 
+/*
+ * Amended for the v2 ink-on-paper identity (jcpe-v2r-gates-xaib): the
+ * generated fonts.css carries the reviewed embedded-OFL faces as
+ * `url(data:font/woff2;base64,…)` payloads, and studio.css paints its paper
+ * grain from a `url("data:image/svg+xml;…")` texture. A `data:` URL is a
+ * local embedded byte payload — the artifact policy inventories every one
+ * with provenance and the CSP forbids all network sources — so only
+ * NON-data url() resources and @font-face rules OUTSIDE the generated
+ * fonts.css remain runtime-dependency findings here.
+ */
 function cssRuntimeFindings(path: string, source: string): readonly string[] {
   const findings: string[] = [];
-  const rules = [
-    [/@import\b/iu, "remote-or-runtime-import"],
-    [/@font-face\b/iu, "bundled-or-remote-font"],
-    [/\burl\s*\(/iu, "url-bearing-css-resource"],
-    [/expression\s*\(/iu, "css-runtime-expression"],
-  ] as const;
-  for (const [pattern, code] of rules) {
-    if (pattern.test(source)) findings.push(`${path}:${code}`);
+  const withoutDataUrls = source.replaceAll(
+    /\burl\s*\(\s*(?:"data:[^"]*"|'data:[^']*'|data:[^)]*)\)/giu,
+    "url(EMBEDDED_DATA)",
+  );
+  if (/@import\b/iu.test(withoutDataUrls)) {
+    findings.push(`${path}:remote-or-runtime-import`);
+  }
+  if (/@font-face\b/iu.test(source) && path !== "src/styles/fonts.css") {
+    findings.push(`${path}:bundled-or-remote-font`);
+  }
+  if (/\burl\s*\(\s*(?!EMBEDDED_DATA\))/iu.test(withoutDataUrls)) {
+    findings.push(`${path}:url-bearing-css-resource`);
+  }
+  if (/expression\s*\(/iu.test(withoutDataUrls)) {
+    findings.push(`${path}:css-runtime-expression`);
   }
   return findings;
 }

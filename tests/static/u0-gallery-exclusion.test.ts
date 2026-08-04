@@ -193,7 +193,14 @@ describe("U0 component gallery fixture ownership", () => {
     expect(moduleSpecifiers("src/main.tsx", mainSource)).toContain("./ui/runtime");
     expect(moduleSpecifiers("src/main.tsx", mainSource)).not.toContain("./ui");
     const runtimeSource = await readFile(resolve(root, "src/ui/runtime.ts"), "utf8");
-    expect(moduleSpecifiers("src/ui/runtime.ts", runtimeSource)).toEqual(["./App", "./App"]);
+    /* jcpe-v2r-gates-xaib: runtime.ts also re-exports the theme module (the
+     * v2 paper/night pin) — value then type export, hence the pair. */
+    expect(moduleSpecifiers("src/ui/runtime.ts", runtimeSource)).toEqual([
+      "./App",
+      "./theme",
+      "./theme",
+      "./App",
+    ]);
 
     const sources = await productionSources();
     for (const [path, source] of sources) {

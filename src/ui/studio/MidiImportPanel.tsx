@@ -63,20 +63,26 @@ export function MidiImportPanel({
       <label class="studio-midi-import__choose" for={fieldId}>
         <span class="studio-midi-import__choose-copy">Choose a MIDI file</span>
         <span class="studio-midi-import__choose-hint">Standard MIDI file</span>
+        {/*
+          The input fills the drop zone invisibly, so the GENUINE control is
+          the 44px+ target the size law measures — not a clipped 1px proxy
+          (jcpe-v2r-gates-xaib, U0-ENV-004). Opacity keeps it focusable and
+          visible to assistive tech; display:none would not.
+        */}
+        <input
+          accept=".mid,.midi,audio/midi,audio/x-midi"
+          aria-describedby={`${fieldId}-hint ${statusId}`}
+          class="studio-midi-import__field"
+          data-testid="midi-import-file"
+          id={fieldId}
+          onChange={(event) => {
+            const chosen = event.currentTarget.files?.[0];
+            if (chosen === undefined) return;
+            onChooseFile(chosen);
+          }}
+          type="file"
+        />
       </label>
-      <input
-        accept=".mid,.midi,audio/midi,audio/x-midi"
-        aria-describedby={`${fieldId}-hint ${statusId}`}
-        class="studio-midi-import__field"
-        data-testid="midi-import-file"
-        id={fieldId}
-        onChange={(event) => {
-          const chosen = event.currentTarget.files?.[0];
-          if (chosen === undefined) return;
-          onChooseFile(chosen);
-        }}
-        type="file"
-      />
       {onOpenCommandLane === undefined ? null : (
         <button
           class="studio-midi-import__paste"

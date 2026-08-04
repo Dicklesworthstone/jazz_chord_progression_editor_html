@@ -3710,6 +3710,7 @@
  * genuine control (jcpe-v2r-import-ariu).
  */
 .studio-midi-import__choose {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -3794,13 +3795,16 @@
 }
 
 .studio-midi-import__field {
+  /* Fills the drop zone: the real input IS the target (jcpe-v2r-gates-xaib). */
   position: absolute;
-  inline-size: 1px;
-  block-size: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  clip-path: inset(50%);
-  white-space: nowrap;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.studio-midi-import__choose:focus-within {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
 }
 
 .studio-midi-import__field:focus-visible + .studio-midi-import__paste,
@@ -4061,9 +4065,16 @@ button.studio-paper-head__key:focus-visible {
   border-block-end-color: var(--rule-2);
 }
 
+/*
+ * The red underline is the focus signal on the paper, but it vanishes under
+ * forced colors, so a transparent outline stands behind it: invisible in
+ * both themes, repainted solid by forced-colors mode (jcpe-v2r-gates-xaib,
+ * U0-ENV-002).
+ */
 .studio-paper-head__title .studio-title-editor__control-row .ui-input:focus {
   border-block-end-color: var(--red);
-  outline: none;
+  outline: var(--focus-width) solid transparent;
+  outline-offset: var(--focus-offset);
 }
 
 .studio-paper-head__title
@@ -5465,4 +5476,32 @@ button.studio-paper-head__key:focus-visible {
 
 .studio-tour-figure__meter-bar[data-hot="true"] {
   background: var(--red);
+}
+
+/*
+ * Coarse-pointer floors for the v2 chrome controls (jcpe-v2r-gates-xaib,
+ * U0-ENV-004). Placed at the end of the sheet so the 44px floor outranks
+ * each control's own later-sourced sizing at equal specificity.
+ */
+@media (pointer: coarse) {
+  .studio-theme-toggle,
+  .studio-tour-button,
+  .studio-layout-tab,
+  .studio-header__type-changes,
+  .studio-header__standards,
+  .studio-midi-import__paste,
+  #studio-transport-tempo-down,
+  #studio-transport-tempo-up,
+  .studio-transport__select,
+  #studio-transport-groove,
+  #studio-transport-instrument,
+  #studio-transport-volume {
+    min-inline-size: var(--touch-target);
+    min-block-size: var(--touch-target);
+  }
+
+  /* The range input's visible track stays slim; its hit slab grows. */
+  #studio-transport-volume {
+    padding-block: calc((var(--touch-target) - 1rem) / 2);
+  }
 }
