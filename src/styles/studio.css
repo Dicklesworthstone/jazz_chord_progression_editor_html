@@ -4032,3 +4032,260 @@
     display: none;
   }
 }
+
+/* -------------------------------------------- entry keypad (V2R-3) */
+
+/*
+ * A flex sibling below the chart scroller: it can shrink the page but never
+ * cover it (the 1e6e49f occlusion law). Chips edit the open inline draft
+ * only; commitment stays on Enter/Tab/Done.
+ */
+.studio-entry-bar {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  background: var(--chrome);
+  border-block-start: var(--border-width) solid var(--rule-2);
+}
+
+.studio-entry-bar__group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.studio-entry-bar__kicker {
+  margin-inline-end: var(--space-1);
+  color: var(--ink-3);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.studio-entry-bar__chip {
+  min-inline-size: 2.0625rem;
+  min-block-size: 1.9375rem;
+  padding: 0 var(--space-2);
+  border: var(--border-width) solid var(--rule);
+  border-radius: var(--radius-xs);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-chord);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.studio-entry-bar__chip:hover {
+  border-color: var(--ink);
+}
+
+.studio-entry-bar__chip:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.studio-entry-bar__chip--root[data-active="true"] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+
+.studio-entry-bar__hint {
+  margin-inline-start: auto;
+  color: var(--ink-3);
+  font-size: var(--text-xs);
+}
+
+.studio-entry-bar__done {
+  min-block-size: 1.9375rem;
+  padding: 0 var(--space-3);
+  border: var(--border-width) solid var(--ink);
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--ink);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.studio-entry-bar__done:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.studio-entry-bar__done:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+@media (max-width: 51.249rem) {
+  .studio-entry-bar__chip,
+  .studio-entry-bar__done {
+    min-block-size: var(--touch-target);
+    min-inline-size: var(--touch-target);
+  }
+
+  .studio-entry-bar__hint {
+    display: none;
+  }
+}
+
+/* ------------------------------------------- command lane (V2R-3) */
+
+.studio-command-lane {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-inline-size: min(34rem, 78vw);
+}
+
+.studio-command-lane__input {
+  inline-size: 100%;
+  padding: var(--space-3) var(--space-3) var(--space-2);
+  border: 0;
+  border-block-end: var(--border-width) solid var(--rule);
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-chord);
+  font-size: var(--text-xl);
+}
+
+.studio-command-lane__input:focus-visible {
+  outline: none;
+  border-block-end-color: var(--red);
+}
+
+.studio-command-lane__status {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: var(--text-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.studio-command-lane__refusal {
+  margin: 0;
+  color: var(--state-error);
+  font-size: var(--text-sm);
+}
+
+.studio-command-lane__tokens {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+  min-block-size: 1.75rem;
+  align-items: baseline;
+}
+
+.studio-command-lane__token {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-1);
+}
+
+.studio-command-lane__token-symbol {
+  font-family: var(--font-chord);
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+.studio-command-lane__token[data-state="invalid"] .studio-command-lane__token-symbol {
+  color: var(--state-error);
+  text-decoration: underline wavy;
+}
+
+.studio-command-lane__token-code {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.studio-command-lane__truncation {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: var(--text-xs);
+}
+
+.studio-command-lane__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.studio-command-lane__hint {
+  margin-inline-start: auto;
+  color: var(--ink-4);
+  font-size: var(--text-xs);
+}
+
+.studio-command-lane__shortcuts {
+  margin: 0;
+  padding-block-start: var(--space-3);
+  border-block-start: var(--border-width) solid var(--line-2);
+  display: grid;
+  gap: var(--space-1);
+}
+
+.studio-command-lane__shortcut {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+}
+
+.studio-command-lane__shortcut dt {
+  min-inline-size: 5.5rem;
+  text-align: end;
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.studio-command-lane__shortcut dd {
+  margin: 0;
+}
+
+/* -------------------------------------- header type-changes (V2R-3) */
+
+.studio-header__type-changes {
+  display: none;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: 2rem;
+  padding: 0 var(--space-2) 0 var(--space-3);
+  border: var(--border-width) solid var(--rule-2);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink-3);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.studio-header__type-changes:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.studio-header__type-changes:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.studio-header__type-changes kbd {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+}
+
+@media (min-width: 64rem) {
+  .studio-header__type-changes {
+    display: inline-flex;
+  }
+}

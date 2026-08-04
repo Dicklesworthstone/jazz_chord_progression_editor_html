@@ -59,7 +59,11 @@ export type StudioHeaderProps = Readonly<{
   >;
 }>;
 
-export function StudioHeader({ view, callbacks }: StudioHeaderProps) {
+export function StudioHeader({
+  view,
+  callbacks,
+  onOpenCommandLane,
+}: StudioHeaderProps & Readonly<{ onOpenCommandLane: () => void }>) {
   return (
     <header class="studio-header" id="app-header">
       <div class="studio-brand">
@@ -80,6 +84,17 @@ export function StudioHeader({ view, callbacks }: StudioHeaderProps) {
           see ChartWorkspace's engraved head. The chrome bar keeps only the
           document-level commands. */}
       <div class="studio-header__spacer" aria-hidden="true" />
+
+      {/* The ⌘K route's visible door (jcpe-v2r-entry-5zz7). */}
+      <button
+        class="studio-header__type-changes"
+        id="studio-open-command-lane"
+        type="button"
+        onClick={onOpenCommandLane}
+      >
+        <span>Type changes</span>
+        <kbd aria-hidden="true">⌘K</kbd>
+      </button>
 
       <div class="studio-document-actions">
         {/*

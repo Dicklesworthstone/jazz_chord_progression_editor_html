@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 
+import { CommandLaneContent } from "./CommandLane";
+
 import { ChartWorkspace } from "./ChartWorkspace";
 import { HarmonyLens, HarmonyLensContent } from "./HarmonyLens";
 import { LibraryPanel, LibraryPanelContent } from "./LibraryPanel";
@@ -87,6 +89,15 @@ function MeasureCompletionDialogContent({
     </div>
   );
 }
+
+/*
+ * A stable dismissibility identity (jcpe-v2r-entry-5zz7): the overlay
+ * preflight re-runs whenever this prop's identity changes, and a re-run
+ * while the modal lease holds the background inert reads its own trigger
+ * as unavailable. An inline literal re-created every render turned each
+ * keystroke inside a dialog into a false stale-owner refusal.
+ */
+const DISMISSIBLE = Object.freeze({ kind: "dismissible" } as const);
 
 export function StudioShell({
   view,
@@ -276,6 +287,52 @@ export function StudioShell({
     },
   };
 
+  /*
+   * The command lane (jcpe-v2r-entry-5zz7): the ⌘K "type the changes" route.
+   * Open/closed is pure presentation state; every musical fact inside it is
+   * the real quick-entry draft surface (A0 draft, T0 parse tokens, the
+   * insertion plan) rendered with the prototype's dialog treatment. The
+   * global keys live here because the shell owns both the trigger and the
+   * undo/redo callbacks; bare letters stay unbound until their surfaces
+   * exist (V=grid V2R-4, I=detail V2R-7, ?=tour V2R-11).
+   */
+  const [commandLaneOpen, setCommandLaneOpen] = useState(false);
+  const completionDialogOpen =
+    view.chart.completionDialog.open && view.chart.editRefusal !== null;
+  const onUndoRef = useRef(shellCallbacks.onUndo);
+  const onRedoRef = useRef(shellCallbacks.onRedo);
+  onUndoRef.current = shellCallbacks.onUndo;
+  onRedoRef.current = shellCallbacks.onRedo;
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (!(event.metaKey || event.ctrlKey) || event.altKey) return;
+      const key = event.key.toLowerCase();
+      const target = event.target;
+      const editingTarget =
+        target instanceof HTMLElement &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable);
+      if (key === "k" && !event.shiftKey) {
+        event.preventDefault();
+        setCommandLaneOpen((open) => !open);
+        return;
+      }
+      /* Text fields keep the browser's own undo stack. */
+      if (editingTarget) return;
+      if (key === "z") {
+        event.preventDefault();
+        if (event.shiftKey) onRedoRef.current();
+        else onUndoRef.current();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, []);
+
   const activeSheet = view.layout.activeSheet;
   const sheetId =
     activeSheet === null ? null : `studio-${activeSheet}-sheet`;
@@ -302,7 +359,13 @@ export function StudioShell({
             Skip to studio workspace
           </a>
 
-          <StudioHeader view={view.document} callbacks={shellCallbacks} />
+          <StudioHeader
+            view={view.document}
+            callbacks={shellCallbacks}
+            onOpenCommandLane={() => {
+              setCommandLaneOpen(true);
+            }}
+          />
 
           <main id="workspace" class="studio-workspace" tabIndex={-1}>
             <LibraryPanel
@@ -396,6 +459,44 @@ export function StudioShell({
       </div>
 
       <div id="dialog-host">
+        {commandLaneOpen && !completionDialogOpen ? (
+          <Dialog
+            backgroundRootId="studio-shell-background"
+            busy={false}
+            closeLabel="Close the command lane"
+            content={
+              <CommandLaneContent
+                quickEntry={view.quickEntry}
+                onDraftChange={callbacks.onQuickEntryDraftChange}
+                onInsert={() => {
+                  shellCallbacks.onQuickEntryInsert();
+                  setCommandLaneOpen(false);
+                }}
+                onClear={callbacks.onQuickEntryClear}
+              />
+            }
+            density="comfortable"
+            describedBy={[]}
+            description="Type a chart fragment. The insert lands at the insertion point as one undoable step."
+            disabled={false}
+            dismissibility={DISMISSIBLE}
+            focusTargets={{
+              triggerId: "studio-open-command-lane",
+              workflowTargetId: null,
+              workspaceId: "workspace",
+            }}
+            id="studio-command-lane"
+            initialFocus="explicit"
+            initialFocusId="studio-command-lane-input"
+            invalid={false}
+            onContractRefusal={callbacks.onUiContractRefusal}
+            onDismiss={() => {
+              setCommandLaneOpen(false);
+            }}
+            open
+            title="Type the changes"
+          />
+        ) : null}
         {view.chart.completionDialog.open && view.chart.editRefusal !== null ? (
           <Dialog
             backgroundRootId="studio-shell-background"
@@ -414,7 +515,7 @@ export function StudioShell({
             describedBy={[]}
             description="This measure would stay shorter than the bar. Declare it explicitly or cancel the edit."
             disabled={false}
-            dismissibility={{ kind: "dismissible" }}
+            dismissibility={DISMISSIBLE}
             /**
              * The chart region owns the interrupted operation and outlives
              * every refusal notice, so focus returns exactly where the work
@@ -483,7 +584,7 @@ export function StudioShell({
             describedBy={[]}
             description={sheetDescription}
             disabled={false}
-            dismissibility={{ kind: "dismissible" }}
+            dismissibility={DISMISSIBLE}
             focusTargets={{
               triggerId: sheetTriggerId,
               workflowTargetId: null,

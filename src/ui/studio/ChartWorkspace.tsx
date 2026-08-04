@@ -98,6 +98,28 @@ function chordBeatFlexGrow(durationLabel: string): number {
 }
 
 /**
+ * The entry keypad's chip tables (jcpe-v2r-entry-5zz7). Labels wear engraved
+ * accidentals; payloads stay the ASCII the T0 grammar reads. Chips only edit
+ * the open inline draft — commitment stays on Enter/Tab/Done, so the dirty-
+ * draft prompt and the blur-is-inert law keep their meaning.
+ */
+const ENTRY_ROOT_CHIPS: readonly (readonly [ascii: string, label: string])[] =
+  Object.freeze([
+    ["C", "C"], ["Db", "D♭"], ["D", "D"], ["Eb", "E♭"],
+    ["E", "E"], ["F", "F"], ["F#", "F♯"], ["G", "G"],
+    ["Ab", "A♭"], ["A", "A"], ["Bb", "B♭"], ["B", "B"],
+  ] as const);
+
+const ENTRY_QUALITY_CHIPS: readonly string[] = Object.freeze([
+  "maj7", "m7", "7", "6/9", "m9", "m7b5",
+  "dim7", "sus4", "13", "7b9", "maj7#11", "m11",
+]);
+
+function entryChipLabel(ascii: string): string {
+  return ascii.replaceAll("#", "♯").replaceAll("b", "♭");
+}
+
+/**
  * Lead-sheet symbol layout: the root (letter plus accidentals) renders at
  * display size while the quality tail and slash bass step down, the way an
  * engraved chart sets them. This is wrapping only — the concatenated text
@@ -2186,6 +2208,38 @@ export function ChartWorkspace({
                                                 );
                                                 setEditing(null);
                                               }
+                                              /*
+                                               * The prototype's entry law
+                                               * (jcpe-v2r-entry-5zz7): Tab
+                                               * commits and edits the next
+                                               * chord, Shift+Tab the previous
+                                               * one, so a whole chart can be
+                                               * typed without the pointer.
+                                               * A refused symbol still shows
+                                               * its banner; the advance never
+                                               * hides it. Blur stays inert.
+                                               */
+                                              if (event.key === "Tab") {
+                                                event.preventDefault();
+                                                onApplyInlineSymbol(
+                                                  chord.id,
+                                                  editing.draft,
+                                                );
+                                                const index = order.indexOf(
+                                                  chord.id,
+                                                );
+                                                const next =
+                                                  order[
+                                                    index +
+                                                      (event.shiftKey ? -1 : 1)
+                                                  ];
+                                                if (next === undefined) {
+                                                  setEditing(null);
+                                                } else {
+                                                  onSelectChord(next, false);
+                                                  beginInlineEdit(next);
+                                                }
+                                              }
                                               if (event.key === "Escape") {
                                                 event.preventDefault();
                                                 setEditing(null);
@@ -2604,6 +2658,92 @@ export function ChartWorkspace({
         controls hide with `visibility`, never unmount). Verb names differ
         from the top toolbar's so role+name queries stay unambiguous.
       */}
+      {/*
+        The entry keypad (jcpe-v2r-entry-5zz7): a flex sibling below the
+        scroller — never floating over music (the 1e6e49f occlusion law) —
+        that appears only while the inline editor is open. A root chip
+        rewrites the draft's root and keeps its tail; a quality chip
+        composes root+quality. Chips edit the DRAFT only: commitment stays
+        on Enter, Tab, or Done, exactly like typing, so every editor law
+        (dirty prompt, inert blur, refusal banner) applies unchanged. On
+        phone widths the same bar reads as a bottom sheet above the
+        transport. There is no sound path for an uncommitted symbol —
+        previewChord speaks document events only — so chips stay silent.
+      */}
+      {editing !== null ? (
+        <div class="studio-entry-bar" data-testid="entry-keypad">
+          {(() => {
+            const rootMatch = SYMBOL_ROOT_PATTERN.exec(editing.draft);
+            const draftRoot = rootMatch?.[1] ?? null;
+            const draftTail = rootMatch?.[2] ?? "";
+            return (
+              <>
+                <div class="studio-entry-bar__group" role="group" aria-label="Root">
+                  <span class="studio-entry-bar__kicker" aria-hidden="true">
+                    Root
+                  </span>
+                  {ENTRY_ROOT_CHIPS.map(([ascii, label]) => (
+                    <button
+                      key={ascii}
+                      class="studio-entry-bar__chip studio-entry-bar__chip--root"
+                      data-active={draftRoot === ascii ? "true" : "false"}
+                      type="button"
+                      onClick={() => {
+                        setEditing({
+                          chordId: editing.chordId,
+                          draft: `${ascii}${draftTail}`,
+                        });
+                        focusInlineEditor();
+                      }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <div
+                  class="studio-entry-bar__group"
+                  role="group"
+                  aria-label="Quality"
+                >
+                  <span class="studio-entry-bar__kicker" aria-hidden="true">
+                    Quality
+                  </span>
+                  {ENTRY_QUALITY_CHIPS.map((quality) => (
+                    <button
+                      key={quality}
+                      class="studio-entry-bar__chip"
+                      type="button"
+                      onClick={() => {
+                        setEditing({
+                          chordId: editing.chordId,
+                          draft: `${draftRoot ?? "C"}${quality}`,
+                        });
+                        focusInlineEditor();
+                      }}
+                    >
+                      {entryChipLabel(quality)}
+                    </button>
+                  ))}
+                </div>
+                <span class="studio-entry-bar__hint">
+                  enter or tab commits · esc closes
+                </span>
+                <button
+                  class="studio-entry-bar__done"
+                  id="studio-entry-done"
+                  type="button"
+                  onClick={() => {
+                    onApplyInlineSymbol(editing.chordId, editing.draft);
+                    setEditing(null);
+                  }}
+                >
+                  Done
+                </button>
+              </>
+            );
+          })()}
+        </div>
+      ) : null}
       <div class="studio-command-bar" data-selection={String(chartHasSelection)}>
         <div
           aria-live="polite"
