@@ -92,6 +92,7 @@ export function StudioShell({
   view,
   callbacks,
   transport,
+  annotations,
 }: StudioShellProps) {
   /*
    * jcpe-disi.3 labeled undo. Every mutation path already flows through the
@@ -331,6 +332,11 @@ export function StudioShell({
             />
             <ChartWorkspace
               actionNotice={actionNotice}
+              annotations={annotations}
+              document={view.document}
+              onTitleDraftChange={callbacks.onTitleDraftChange}
+              onCommitTitle={callbacks.onCommitTitle}
+              onResetTitleDraft={callbacks.onResetTitleDraft}
               canUndo={view.document.canUndo}
               onNoticeDismiss={forgetNotice}
               onNoticeUndo={shellCallbacks.onUndo}

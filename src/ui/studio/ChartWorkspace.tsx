@@ -4,17 +4,33 @@ import {
   Badge,
   Button,
   EmptyState,
+  Field,
+  Input,
   KeyValueList,
+  Label,
 } from "../primitives";
 import type {
   StudioCardMenuAction,
+  StudioChartAnnotationPorts,
   StudioChartView,
+  StudioDocumentView,
   StudioPanelSide,
   StudioViewMode,
 } from "./studio-contract";
 
 export type ChartWorkspaceProps = Readonly<{
   view: StudioChartView;
+  /**
+   * V2R-2: the title lives ON the paper now, centered over the chart like an
+   * engraved lead sheet. The editing surface (ids, commit/refuse/reset flow)
+   * is the exact one the header carried; only its position and dress moved.
+   */
+  document: StudioDocumentView;
+  onTitleDraftChange: (value: string) => void;
+  onCommitTitle: (value: string) => void;
+  onResetTitleDraft: () => void;
+  /** Display-only roman/phrase read ports; null results render as nothing. */
+  annotations: StudioChartAnnotationPorts;
   /** jcpe-disi.3: the landed-command sentence, or null while none stands. */
   actionNotice: string | null;
   canUndo: boolean;
@@ -178,8 +194,81 @@ function cardActionAt(target: EventTarget | null): Readonly<{
   return element === null || action === undefined ? null : { action, element };
 }
 
+/**
+ * Slash marks for the beats a chord holds, the way an engraved chart fills a
+ * bar. Purely decorative (aria-hidden); the exact duration stays stated by
+ * the duration label the tests read.
+ */
+function slashCount(durationLabel: string): number {
+  const match = DURATION_BEATS_PATTERN.exec(durationLabel);
+  if (match === null) return 0;
+  const numerator = Number(match[1]);
+  const denominator = match[2] === undefined ? 1 : Number(match[2]);
+  if (!Number.isFinite(numerator) || !Number.isFinite(denominator) || denominator === 0) {
+    return 0;
+  }
+  return Math.max(0, Math.min(8, Math.round(numerator / denominator)));
+}
+
+/** Measures grouped four to a system, the engraved page's row unit. */
+const MEASURES_PER_SYSTEM = 4;
+
+function chunkMeasures<T>(measures: readonly T[]): readonly (readonly T[])[] {
+  const systems: T[][] = [];
+  for (let index = 0; index < measures.length; index += MEASURES_PER_SYSTEM) {
+    systems.push([...measures.slice(index, index + MEASURES_PER_SYSTEM)]);
+  }
+  return systems;
+}
+
+type PhraseLaneMark = Readonly<{
+  key: string;
+  column: string;
+  row: string;
+  label: string;
+}>;
+
+/**
+ * The prototype's lane algorithm: spans sorted by start, each taking the
+ * first lane whose previous span ended before it starts, so overlapping
+ * brackets stack instead of colliding.
+ */
+function phraseLaneMarks(
+  spans: readonly Readonly<{ from: number; to: number; label: string }>[],
+  systemStart: number,
+  systemEnd: number,
+): readonly PhraseLaneMark[] {
+  const lanes: number[] = [];
+  return spans
+    .filter((span) => span.to >= systemStart && span.from <= systemEnd)
+    .map((span) => ({
+      from: Math.max(span.from, systemStart) - systemStart,
+      label: span.label,
+      to: Math.min(span.to, systemEnd) - systemStart,
+    }))
+    .sort((left, right) => left.from - right.from || left.to - right.to)
+    .map((span) => {
+      let lane = 0;
+      while (lanes[lane] !== undefined && (lanes[lane] ?? -1) >= span.from) {
+        lane += 1;
+      }
+      lanes[lane] = span.to;
+      return Object.freeze({
+        column: `${String(span.from + 1)} / ${String(span.to + 2)}`,
+        key: `${String(systemStart)}:${String(span.from)}:${span.label}`,
+        label: span.label,
+        row: String(lane + 1),
+      });
+    });
+}
+
 export function ChartWorkspace({
   view,
+  document: documentView,
+  onTitleDraftChange,
+  onCommitTitle,
+  onResetTitleDraft,
+  annotations,
   actionNotice,
   canUndo,
   onNoticeDismiss,
@@ -1077,6 +1166,128 @@ export function ChartWorkspace({
           />
         </div>
       ) : null}
+      {/*
+        V2R-2 engraved paper header: KEY · centered Literata title · TEMPO
+        over a heavy ink rule, exactly the prototype's lead-sheet head. The
+        title editor is the same surface the chrome header carried — same
+        ids, same commit/refuse/reset flow — relocated and dressed down.
+      */}
+      <div class="studio-paper-head">
+        <div class="studio-paper-head__key">
+          <span class="studio-paper-head__kicker">Key</span>
+          {/* Read-only: no set-key command surface exists yet, so this block
+              states the stored fact rather than promising an edit. */}
+          <span class="studio-paper-head__value">{view.keyLabel}</span>
+        </div>
+        <div class="studio-paper-head__title">
+          <Field
+            controlId="studio-document-title"
+            descriptionIds={["studio-title-policy"]}
+            errorIds={["studio-title-feedback"]}
+            id="studio-title-field"
+            invalid={documentView.titleFeedback.kind === "refused"}
+            labelId="studio-title-label"
+            required
+            content={
+              <form
+                class="studio-title-editor"
+                aria-label="Chart title"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  if (documentView.canCommitTitle) {
+                    onCommitTitle(documentView.titleDraft);
+                  }
+                }}
+              >
+                <div class="studio-title-editor__label-row">
+                  <Label
+                    controlId="studio-document-title"
+                    id="studio-title-label"
+                    required
+                    text="Chart title"
+                  />
+                </div>
+                <div class="studio-title-editor__control-row">
+                  <Input
+                    accessibleName="Chart title"
+                    busy={false}
+                    density="comfortable"
+                    describedBy={["studio-title-policy", "studio-title-feedback"]}
+                    disabled={false}
+                    id="studio-document-title"
+                    inputType="text"
+                    invalid={documentView.titleFeedback.kind === "refused"}
+                    onValueChange={(event) => {
+                      onTitleDraftChange(event.value);
+                    }}
+                    placeholder={null}
+                    readOnly={false}
+                    value={documentView.titleDraft}
+                  />
+                  <span
+                    class="studio-title-editor__count"
+                    aria-label={`${Array.from(documentView.titleDraft).length.toString()} of ${documentView.titleMaxCodePoints.toString()} code points`}
+                  >
+                    {Array.from(documentView.titleDraft).length}/
+                    {documentView.titleMaxCodePoints}
+                  </span>
+                  <Button
+                    busy={false}
+                    density="comfortable"
+                    describedBy={[]}
+                    disabled={!documentView.canCommitTitle}
+                    id="studio-apply-title"
+                    invalid={false}
+                    label="Apply title"
+                    onAction={() => undefined}
+                    type="submit"
+                    variant="primary"
+                  />
+                  <Button
+                    busy={false}
+                    density="comfortable"
+                    describedBy={[]}
+                    disabled={!documentView.canResetTitleDraft}
+                    id="studio-reset-title"
+                    invalid={false}
+                    label="Reset"
+                    onAction={onResetTitleDraft}
+                    type="button"
+                    variant="ghost"
+                  />
+                </div>
+                <p id="studio-title-policy" class="studio-title-editor__policy">
+                  Apply commits the title. A refused title leaves “
+                  {documentView.committedTitle}” unchanged.
+                </p>
+                <p
+                  id="studio-title-feedback"
+                  class="studio-title-editor__feedback"
+                  data-feedback-kind={documentView.titleFeedback.kind}
+                  role={
+                    documentView.titleFeedback.kind === "refused"
+                      ? "alert"
+                      : "status"
+                  }
+                  aria-live={
+                    documentView.titleFeedback.kind === "refused"
+                      ? "assertive"
+                      : "polite"
+                  }
+                  aria-atomic="true"
+                >
+                  {documentView.titleFeedback.message}
+                </p>
+              </form>
+            }
+          />
+        </div>
+        <div class="studio-paper-head__tempo">
+          <span class="studio-paper-head__kicker">Tempo</span>
+          <span class="studio-paper-head__value">{view.tempoLabel}</span>
+        </div>
+      </div>
+
       <header class="studio-chart__header">
         <div>
           <p class="studio-kicker">Lead sheet</p>
@@ -1713,8 +1924,56 @@ export function ChartWorkspace({
                     </div>
                   </div>
 
-                  <ol class="studio-measure-list">
-                    {section.measures.map((measure, measureIndex) => {
+                  {chunkMeasures(section.measures).map(
+                    (system, systemIndex, systems) => {
+                      const systemStart = systemIndex * MEASURES_PER_SYSTEM;
+                      /* Phrase spans arrive as event ids; brackets draw over
+                         measure columns, so each span maps to the measures
+                         its edge events live in. */
+                      const measureIndexOfEvent = new Map<string, number>();
+                      section.measures.forEach((entry, entryIndex) => {
+                        for (const chord of entry.chords) {
+                          measureIndexOfEvent.set(chord.id, entryIndex);
+                        }
+                      });
+                      const spans = teaching
+                        ? annotations
+                            .phrasesForSection(section.id)
+                            .flatMap((span) => {
+                              const from = measureIndexOfEvent.get(
+                                span.fromEventId,
+                              );
+                              const to = measureIndexOfEvent.get(
+                                span.toEventId,
+                              );
+                              return from === undefined || to === undefined
+                                ? []
+                                : [{ from, label: span.label, to }];
+                            })
+                        : [];
+                      const marks = phraseLaneMarks(
+                        spans,
+                        systemStart,
+                        systemStart + system.length - 1,
+                      );
+                      return (
+                        <div
+                          class="studio-system-block"
+                          key={system[0]?.id ?? `system-${String(systemIndex)}`}
+                        >
+                          <ol
+                            class="studio-measure-list studio-system"
+                            data-last-system={
+                              systemIndex === systems.length - 1
+                                ? "true"
+                                : "false"
+                            }
+                            style={{
+                              "--studio-system-columns": String(system.length),
+                            }}
+                          >
+                    {system.map((measure, systemMeasureIndex) => {
+                      const measureIndex = systemStart + systemMeasureIndex;
                       const measureHeadingId = `studio-section-${sectionIndex.toString()}-measure-${measureIndex.toString()}-heading`;
 
                       return (
@@ -2055,6 +2314,44 @@ export function ChartWorkspace({
                                             {chord.durationLabel}
                                           </span>
                                         )}
+                                        {/* Engraved slash marks: one per held
+                                            beat, decoration only — the exact
+                                            duration is the label above. */}
+                                        {slashCount(chord.durationLabel) >
+                                        0 ? (
+                                          <span
+                                            class="studio-chord-card__slashes"
+                                            aria-hidden="true"
+                                          >
+                                            {Array.from(
+                                              {
+                                                length: slashCount(
+                                                  chord.durationLabel,
+                                                ),
+                                              },
+                                              (_, slashIndex) => (
+                                                <span key={slashIndex}>/</span>
+                                              ),
+                                            )}
+                                          </span>
+                                        ) : null}
+                                        {(() => {
+                                          if (!teaching) return null;
+                                          const roman =
+                                            annotations.romanForEvent(
+                                              chord.id,
+                                            );
+                                          /* An absent analysis renders as
+                                             absence, never a guess. */
+                                          return roman === null ? null : (
+                                            <span
+                                              class="studio-chord-card__roman"
+                                              data-testid="chord-roman"
+                                            >
+                                              {roman}
+                                            </span>
+                                          );
+                                        })()}
                                         {splitEdit?.chordId === chord.id ? (
                                           <input
                                             class="studio-chord-card__editor"
@@ -2236,23 +2533,58 @@ export function ChartWorkspace({
                         </li>
                       );
                     })}
-                    <li class="studio-insertion-target studio-insertion-target--append">
-                      <Button
-                        busy={false}
-                        density="comfortable"
-                        describedBy={[]}
-                        disabled={false}
-                        id={`studio-append-measure-${section.id}`}
-                        invalid={false}
-                        label={section.appendMeasureLabel}
-                        onAction={() => {
-                          onInsertMeasure(section.id, null);
-                        }}
-                        type="button"
-                        variant="ghost"
-                      />
-                    </li>
-                  </ol>
+                          </ol>
+                          {marks.length > 0 ? (
+                            <div
+                              class="studio-phrase-lane"
+                              data-testid="phrase-lane"
+                              aria-label={`Phrases in section ${section.label}`}
+                              style={{
+                                "--studio-system-columns": String(
+                                  system.length,
+                                ),
+                              }}
+                            >
+                              {marks.map((mark) => (
+                                <div
+                                  class="studio-phrase-lane__mark"
+                                  key={mark.key}
+                                  style={{
+                                    gridColumn: mark.column,
+                                    gridRow: mark.row,
+                                  }}
+                                >
+                                  <span
+                                    class="studio-phrase-lane__bracket"
+                                    aria-hidden="true"
+                                  />
+                                  <span class="studio-phrase-lane__label">
+                                    {mark.label}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : null}
+                        </div>
+                      );
+                    },
+                  )}
+                  <div class="studio-insertion-target studio-insertion-target--append">
+                    <Button
+                      busy={false}
+                      density="comfortable"
+                      describedBy={[]}
+                      disabled={false}
+                      id={`studio-append-measure-${section.id}`}
+                      invalid={false}
+                      label={section.appendMeasureLabel}
+                      onAction={() => {
+                        onInsertMeasure(section.id, null);
+                      }}
+                      type="button"
+                      variant="ghost"
+                    />
+                  </div>
                 </section>
               </li>
             );

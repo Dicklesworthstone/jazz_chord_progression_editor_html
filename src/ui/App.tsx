@@ -937,6 +937,8 @@ function viewFromSnapshot(
       sectionCountLabel: countLabel(snapshot.sections.length, "section"),
       measureCountLabel: countLabel(snapshot.measureCount, "measure"),
       chordCountLabel: countLabel(chordCount, "chord"),
+      keyLabel: snapshot.keyLabel,
+      tempoLabel: `${String(snapshot.tempoBpm)} BPM`,
       /*
        * Untouched seed: the title is still the starter chart's and the
        * revision sits exactly at the seed's own command count, so nothing
@@ -1789,6 +1791,13 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
     <>
     <StudioShell
       view={view}
+      annotations={{
+        /* Display-only ports; a null result renders as absence. */
+        phrasesForSection: (sectionId) =>
+          actions.readSectionPhrases(sectionId)?.phrases ?? [],
+        romanForEvent: (eventId) =>
+          actions.readEventAnalysis(eventId)?.roman ?? null,
+      }}
       transport={{
         canPlay: snapshot.chordCount > 0,
         onPause: () => {

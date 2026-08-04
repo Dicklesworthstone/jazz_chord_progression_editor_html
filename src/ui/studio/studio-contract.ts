@@ -159,6 +159,14 @@ export type StudioChartView = Readonly<{
   measureCountLabel: string;
   chordCountLabel: string;
   /**
+   * V2R-2 engraved chart header: the document key and tempo, stated on the
+   * paper beside the title. The key block is read-only presentation — no
+   * set-key command surface exists yet, so offering an editor here would
+   * promise an edit the application cannot land.
+   */
+  keyLabel: string;
+  tempoLabel: string;
+  /**
    * True while the seeded starter chart is untouched (title still the seed's
    * and revision at the seed level). Drives a dismissible one-line demo
    * banner above the chart; dismissal is component state, never persisted.
@@ -529,8 +537,26 @@ export type StudioTransportCallbacks = Readonly<{
   onStop: () => void;
 }>;
 
+/**
+ * V2R-2/V2R-6 display-only annotation ports. The chart never computes theory:
+ * it reads a roman numeral per event and pencilled phrase spans per section
+ * from the application's cached read ports, and renders nothing when a port
+ * returns null — an absent analysis is shown as absent, never invented.
+ */
+export type StudioPhraseSpanView = Readonly<{
+  label: string;
+  fromEventId: string;
+  toEventId: string;
+}>;
+
+export type StudioChartAnnotationPorts = Readonly<{
+  romanForEvent: (eventId: string) => string | null;
+  phrasesForSection: (sectionId: string) => readonly StudioPhraseSpanView[];
+}>;
+
 export type StudioShellProps = Readonly<{
   view: StudioShellView;
   callbacks: StudioShellCallbacks;
   transport: StudioTransportCallbacks;
+  annotations: StudioChartAnnotationPorts;
 }>;
