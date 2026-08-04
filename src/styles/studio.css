@@ -80,7 +80,7 @@
   block-size: 2.75rem;
   padding: var(--space-1) var(--space-3);
   border-block-start: var(--border-width) solid var(--border-default);
-  background: var(--surface-raised);
+  background: var(--surface-header);
   overflow: hidden;
 }
 
@@ -1424,7 +1424,7 @@
   padding: var(--space-2) var(--space-3);
   border: var(--border-width) solid var(--border-default);
   border-radius: var(--radius-lg);
-  background: color-mix(in srgb, var(--surface-raised) 92%, transparent);
+  background: color-mix(in srgb, var(--surface-header) 92%, transparent);
   backdrop-filter: blur(6px);
   box-shadow: var(--shadow-2);
 }
