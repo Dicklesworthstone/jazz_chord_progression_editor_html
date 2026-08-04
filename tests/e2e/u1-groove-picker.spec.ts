@@ -91,3 +91,46 @@ test.describe("groove picker", () => {
     expectCleanDiagnostics(diagnostics);
   });
 });
+
+/*
+ * The master-volume fader (owner report 2026-08-04, post-ship polish): a
+ * POINTER drag moves a local draft (the thumb follows the pointer through
+ * mid-drag re-renders) and commits exactly ONE undoable edit on release.
+ * Discrete keyboard ticks stay one-command-per-press — the tempo stepper's
+ * law — because text-field coalescing is contractually unavailable to
+ * settings commands (SetDocumentSettingsCommand = CommandEnvelope<null>).
+ */
+test.describe("master volume fader", () => {
+  test("a pointer drag lands exactly one undoable edit and the thumb follows", async ({
+    page,
+  }) => {
+    const diagnostics = captureDiagnostics(page);
+    await openStudio(page);
+
+    const undo = page.locator("#studio-undo");
+    await expect(undo).toBeDisabled();
+
+    const slider = page.locator("#studio-transport-volume");
+    await slider.scrollIntoViewIfNeeded();
+    const before = await slider.inputValue();
+    const box = await slider.boundingBox();
+    if (box === null) throw new Error("volume slider has no box");
+    const y = box.y + box.height / 2;
+    await page.mouse.move(box.x + box.width * 0.9, y);
+    await page.mouse.down();
+    /* Several drag samples in one engagement: only the draft moves. */
+    await page.mouse.move(box.x + box.width * 0.6, y, { steps: 4 });
+    await expect(undo).toBeDisabled();
+    await page.mouse.move(box.x + box.width * 0.35, y, { steps: 4 });
+    await page.mouse.up();
+
+    const after = await slider.inputValue();
+    expect(after).not.toBe(before);
+    /* Release committed exactly one edit; one undo restores the old mix. */
+    await expect(undo).toBeEnabled();
+    await undo.click();
+    await expect(slider).toHaveValue(before);
+    await expect(undo).toBeDisabled();
+    expectCleanDiagnostics(diagnostics);
+  });
+});

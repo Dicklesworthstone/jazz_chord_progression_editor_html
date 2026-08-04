@@ -568,16 +568,6 @@
       max(var(--space-3), env(safe-area-inset-right, 0px));
   }
 
-  .studio-brand__mark {
-    inline-size: 1.875rem;
-    block-size: 1.875rem;
-    font-size: var(--text-md);
-  }
-
-  .studio-brand__copy .studio-kicker {
-    display: none;
-  }
-
   /*
    * The phone header is three deliberate rows: identity and document
    * status share the top line, the title field owns the second, and the
@@ -3603,7 +3593,6 @@
     box-shadow: none;
   }
 
-  .studio-brand__mark,
   .studio-shell-notice__cue {
     background: Canvas;
     color: CanvasText;

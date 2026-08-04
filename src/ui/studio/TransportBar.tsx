@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 
 import { IconButton, UiIcon } from "../primitives";
 import type {
@@ -8,6 +8,52 @@ import type {
 } from "./studio-contract";
 
 export type TransportGestureSource = "pointer" | "keyboard";
+
+/**
+ * The master-volume fader (owner report, 2026-08-04): a controlled range
+ * whose value came straight from the committed snapshot fought the native
+ * drag — any re-render mid-drag (the live playhead poll, a notice timer)
+ * snapped the thumb back to the committed value, and the commit itself only
+ * lands on release. The drag now moves a LOCAL draft, so the thumb answers
+ * the pointer immediately, and exactly ONE document command commits on
+ * release (`change`): a full drag is one undoable step, never a tick spray.
+ * The committed value re-adopts the thumb whenever no drag is live.
+ */
+function VolumeSlider({
+  committedPercent,
+  onVolumeCommit,
+}: Readonly<{
+  committedPercent: number;
+  onVolumeCommit: (volume: number) => void;
+}>) {
+  const [draftPercent, setDraftPercent] = useState<number | null>(null);
+  return (
+    <label
+      class="studio-transport__volume"
+      title="Master volume — applies when playback next starts"
+    >
+      <span class="studio-visually-hidden">
+        Master volume. Applies when playback next starts.
+      </span>
+      <input
+        aria-label="Master volume"
+        id="studio-transport-volume"
+        max={100}
+        min={0}
+        onInput={(event) => {
+          setDraftPercent(Number(event.currentTarget.value));
+        }}
+        onChange={(event) => {
+          setDraftPercent(null);
+          onVolumeCommit(Number(event.currentTarget.value) / 100);
+        }}
+        step={5}
+        type="range"
+        value={draftPercent ?? committedPercent}
+      />
+    </label>
+  );
+}
 
 export type TransportBarProps = Readonly<{
   view: StudioTransportView;
@@ -356,34 +402,10 @@ export function TransportBar({
             </select>
           </label>
 
-          {/*
-            The document's master volume. The document is the mix authority
-            and the engine reads it when the audio graph starts, so the
-            slider says exactly when the committed value applies rather than
-            pretending to be a live fader.
-          */}
-          <label
-            class="studio-transport__volume"
-            title="Master volume — applies when playback next starts"
-          >
-            <span class="studio-visually-hidden">
-              Master volume. Applies when playback next starts.
-            </span>
-            <input
-              aria-label="Master volume"
-              id="studio-transport-volume"
-              max={100}
-              min={0}
-              onChange={(event) => {
-                callbacks.onVolumeCommit(
-                  Number(event.currentTarget.value) / 100,
-                );
-              }}
-              step={5}
-              type="range"
-              value={view.masterVolumePercent}
-            />
-          </label>
+          <VolumeSlider
+            committedPercent={view.masterVolumePercent}
+            onVolumeCommit={callbacks.onVolumeCommit}
+          />
         </div>
       </div>
     </section>

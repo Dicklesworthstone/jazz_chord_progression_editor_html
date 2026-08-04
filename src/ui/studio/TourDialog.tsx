@@ -167,7 +167,7 @@ export function TourDialogContent({
         <Illustration />
       </div>
       <div class="studio-tour__footer">
-        <div class="studio-tour__dots" role="list" aria-label="Tour steps">
+        <div class="studio-tour__dots" role="group" aria-label="Tour steps">
           {TOUR_STEPS.map((candidate, index) => (
             <button
               aria-label={`Step ${candidate.numeral}`}

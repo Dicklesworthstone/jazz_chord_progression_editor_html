@@ -384,6 +384,15 @@ export function StudioShell({
           target.isContentEditable);
       if (editingTarget) return;
       if (event.key.toLowerCase() === "l") {
+        /*
+         * Polish round (owner report 2026-08-04): from 80rem the library
+         * rail already shows the standards and the Standards button is
+         * CSS-hidden — opening the modal there tripped the overlay's
+         * trigger-visibility preflight into a "Panel could not open"
+         * banner. The key mirrors its trigger: hidden trigger, inert key.
+         */
+        const trigger = document.getElementById("studio-open-standards");
+        if (trigger === null || trigger.offsetParent === null) return;
         event.preventDefault();
         setStandardsOpen(true);
         return;

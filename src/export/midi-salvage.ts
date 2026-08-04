@@ -171,11 +171,9 @@ export function salvageMidiBytes(bytes: Uint8Array): MidiSalvageOutcome {
 
       let status = bytes[position];
       if (status === undefined) return unreadable;
-      let statusExplicit = true;
       if (status < 0x80) {
         if (runningStatus < 0x80) return unreadable;
         status = runningStatus;
-        statusExplicit = false;
       } else {
         position += 1;
       }
@@ -253,7 +251,7 @@ export function salvageMidiBytes(bytes: Uint8Array): MidiSalvageOutcome {
       if (high < 0x80 || high === 0xf0) return unreadable;
       runningStatus = status;
       const dataCount = high === 0xc0 || high === 0xd0 ? 1 : 2;
-      const firstDataOffset = statusExplicit ? position : position;
+      const firstDataOffset = position;
       const data: number[] = [];
       for (let index = 0; index < dataCount; index += 1) {
         const byte = bytes[position];
