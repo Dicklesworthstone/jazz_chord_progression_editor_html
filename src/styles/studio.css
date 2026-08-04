@@ -4289,3 +4289,307 @@
     display: inline-flex;
   }
 }
+
+/* -------------------------------------------------- chord detail (V2R-7) */
+
+/*
+ * The teaching panel (jcpe-v2r-detail-yimm). The keyboard keeps real key
+ * colours and the spectrum keeps its DAW-dark inset in BOTH themes — their
+ * tokens are base-scope constants with no night override, deliberately.
+ */
+.studio-chord-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.studio-chord-detail__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-block-end: var(--space-3);
+  border-block-end: var(--border-width) solid var(--rule);
+}
+
+.studio-chord-detail__symbol {
+  margin: 0;
+  font-family: var(--font-chord);
+  font-size: 2.875rem;
+  font-weight: 600;
+  line-height: 0.95;
+  letter-spacing: -0.025em;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.studio-chord-detail__accidental {
+  font-size: 0.78em;
+  vertical-align: 0.05em;
+}
+
+.studio-chord-detail__quality {
+  font-size: 0.5em;
+  vertical-align: super;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.studio-chord-detail__roman {
+  margin: 0;
+  font-family: var(--font-chord);
+  font-size: var(--text-lg);
+  font-style: italic;
+  color: var(--blue);
+}
+
+.studio-chord-detail__function {
+  margin: 0;
+  font-family: var(--font-chord);
+  font-size: var(--text-md);
+  line-height: 1.55;
+  color: var(--ink-1);
+  text-wrap: pretty;
+}
+
+.studio-chord-detail__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-block-start: var(--space-2);
+}
+
+.studio-chord-detail__chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-inline-size: 2.875rem;
+  padding: var(--space-1) var(--space-2);
+  border: var(--border-width) solid var(--rule);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
+}
+
+.studio-chord-detail__chip:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.studio-chord-detail__chip[data-active="true"] {
+  border-color: var(--ink);
+  background: var(--ink);
+}
+
+.studio-chord-detail__chip-name {
+  font-family: var(--font-chord);
+  font-size: var(--text-xl);
+  font-weight: 600;
+  line-height: 1;
+  color: var(--ink);
+}
+
+.studio-chord-detail__chip[data-guide="true"] .studio-chord-detail__chip-name {
+  color: var(--red);
+}
+
+.studio-chord-detail__chip[data-active="true"] .studio-chord-detail__chip-name,
+.studio-chord-detail__chip[data-active="true"] .studio-chord-detail__chip-role {
+  color: var(--paper);
+}
+
+.studio-chord-detail__chip-role {
+  font-size: 0.59375rem;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+}
+
+/* ------------------------------------------------------------- keyboard */
+
+.studio-chord-detail__keyboard {
+  position: relative;
+  block-size: 5.25rem;
+  border: var(--border-width) solid var(--key-frame);
+  border-radius: var(--radius-xs);
+  background: var(--key-frame);
+  overflow: hidden;
+}
+
+.studio-chord-detail__whites {
+  display: flex;
+  block-size: 100%;
+  gap: 1px;
+}
+
+.studio-detail-key {
+  padding: 0;
+  border: 0;
+}
+
+.studio-detail-key--white {
+  position: relative;
+  flex: 1 1 0;
+  background: var(--key-white);
+}
+
+.studio-detail-key--white[data-lit="true"] {
+  background: var(--key-white-lit);
+  cursor: pointer;
+}
+
+.studio-detail-key--black {
+  position: absolute;
+  inset-block-start: 0;
+  inline-size: 4.6%;
+  block-size: 62%;
+  background: var(--key-black);
+  border-radius: 0 0 2px 2px;
+  z-index: 2;
+}
+
+.studio-detail-key--black[data-lit="true"] {
+  background: var(--blue);
+  cursor: pointer;
+}
+
+.studio-detail-key:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: calc(-1 * var(--focus-width));
+}
+
+.studio-detail-key__dot {
+  position: absolute;
+  inset-inline-start: 50%;
+  inset-block-end: 6px;
+  transform: translateX(-50%);
+  display: grid;
+  place-items: center;
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
+  border-radius: 50%;
+  background: var(--blue);
+  color: var(--paper);
+  font-size: 0.53125rem;
+  font-weight: 700;
+}
+
+.studio-detail-key--black .studio-detail-key__dot {
+  inset-block-end: 3px;
+  inline-size: 0.9375rem;
+  block-size: 0.9375rem;
+  background: var(--key-white-lit);
+  color: var(--blue);
+  font-size: 0.46875rem;
+}
+
+/* ------------------------------------------------------------- spectrum */
+
+.studio-detail-spectrum {
+  position: relative;
+  block-size: 8.5rem;
+  background: var(--daw-inset);
+  border: var(--border-width) solid var(--daw-inset-edge);
+  overflow: hidden;
+}
+
+.studio-detail-spectrum canvas {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+}
+
+/* ---------------------------------------------------------------- facts */
+
+.studio-chord-detail__fact {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.studio-chord-detail__fact-value {
+  margin: 0;
+  font-family: var(--font-chord);
+  font-size: var(--text-lg);
+  color: var(--ink);
+}
+
+.studio-chord-detail__fact-note {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--ink-3);
+  line-height: 1.5;
+  max-inline-size: 36ch;
+}
+
+.studio-chord-detail__resolution {
+  padding: var(--space-3) var(--space-3) var(--space-3);
+  background: var(--tint);
+  border-inline-start: 2px solid var(--red);
+}
+
+.studio-chord-detail__moves {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin-block: var(--space-2);
+}
+
+.studio-chord-detail__move {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1);
+  font-family: var(--font-chord);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.studio-chord-detail__move-arrow {
+  font-size: var(--text-sm);
+  color: var(--red);
+}
+
+.studio-chord-detail__next {
+  padding-block-start: var(--space-3);
+  border-block-start: var(--border-width) solid var(--rule);
+}
+
+.studio-chord-detail__next-list {
+  list-style: none;
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.studio-chord-detail__next-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.studio-chord-detail__next-symbol {
+  font-family: var(--font-chord);
+  font-size: var(--text-xl);
+  font-weight: 600;
+  line-height: 1;
+  color: var(--ink);
+}
+
+.studio-chord-detail__next-roman {
+  flex: 1 1 auto;
+  font-family: var(--font-chord);
+  font-size: var(--text-sm);
+  font-style: italic;
+  color: var(--blue);
+}
+
+.studio-chord-detail__next-why {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+  line-height: 1.5;
+  max-inline-size: 40ch;
+  text-wrap: pretty;
+}

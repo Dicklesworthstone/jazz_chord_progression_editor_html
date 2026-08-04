@@ -272,7 +272,7 @@ export function ChordDetailPanel({
   );
   const blackKeys = [0, 1].flatMap((octave) =>
     BLACK_AFTER_WHITE.map((whiteIndex, index) => {
-      const pitchClass = (WHITE_PITCH_CLASSES[whiteIndex] ?? 0) + 1;
+      const pitchClass = WHITE_PITCH_CLASSES[whiteIndex] + 1;
       return {
         id: `black-${String(octave)}-${String(index)}`,
         midi: KEYBOARD_BASE_MIDI + octave * 12 + pitchClass,
@@ -307,7 +307,12 @@ export function ChordDetailPanel({
         )}
       </header>
 
-      <p class="studio-chord-detail__function">{detail.functionSentence}.</p>
+      <p class="studio-chord-detail__function">
+        {/* Some sentences arrive with terminal punctuation; add none. */}
+        {detail.functionSentence.endsWith(".")
+          ? detail.functionSentence
+          : `${detail.functionSentence}.`}
+      </p>
 
       <section class="studio-chord-detail__tones" aria-label="Chord tones">
         <p class="studio-kicker">Notes — hover to hear</p>

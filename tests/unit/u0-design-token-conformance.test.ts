@@ -78,6 +78,12 @@ const EXPECTED_BASE_TOKENS = Object.freeze({
   "--page-edge": "transparent",
   "--shadow-page":
     "0 1px 1px rgb(25 23 19 / 0.1), 0 2px 5px rgb(25 23 19 / 0.07), 0 18px 44px rgb(25 23 19 / 0.22)",
+  "--daw-inset": "#17150f",
+  "--daw-inset-edge": "#2a261c",
+  "--key-white": "#ede9de",
+  "--key-white-lit": "#fffdf4",
+  "--key-black": "#1a1814",
+  "--key-frame": "#8b8474",
   "--font-ui": "'Archivo', system-ui, -apple-system, 'Segoe UI', sans-serif",
   "--font-mono":
     "ui-monospace, 'SFMono-Regular', Consolas, 'Liberation Mono', monospace",

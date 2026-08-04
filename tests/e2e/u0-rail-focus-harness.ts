@@ -13,6 +13,7 @@ const HARMONY_VIEW: StudioHarmonyView = Object.freeze({
   emptyTitle: "No chord selected",
   selectedChordLabel: null,
   selected: null,
+  detail: null,
   selectionStatusLabel: "No selection",
   continuation: null,
 });

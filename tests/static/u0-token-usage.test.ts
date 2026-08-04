@@ -31,6 +31,8 @@ const DARK_MEDIA_MARKER = "@media (prefers-color-scheme: dark)";
 const DARK_PIN_MARKER = ':root[data-theme="dark"]';
 const LOCAL_CUSTOM_PROPERTY_OWNERS = Object.freeze({
   "--studio-collapsed-rail": "src/styles/studio.css",
+  /* System column count set inline per system by the engraved chart (V2R-2). */
+  "--studio-system-columns": "src/ui/studio/ChartWorkspace.tsx",
   "--ui-tree-level": "src/ui/primitives/StructuredViews.tsx",
 } as const);
 /**
