@@ -1,0 +1,84 @@
+{
+  "schema": "changes.fixtures.v2-provenance-ledger.v1",
+  "ledgerVersion": 1,
+  "authoringStatement": "V2 expectations were authored by hand from docs/V2_PROGRESSION_OPTIMIZER_CONTRACT.md before any production progression optimizer existed. Every search outcome, counter value, front, and refusal in these fixtures was derived on paper from the frozen semantics; the validator independently recomputes each with its own reference implementations and rejects divergence. No value was produced by, or copied from, production optimizer output.",
+  "reviewState": "reviewed-for-v2-spec",
+  "expectedValuesGenerated": false,
+  "productionOutputUsed": false,
+  "classificationPolicy": {
+    "primary-standard": "A current normative Web platform standard.",
+    "reviewed-contract": "A normative repository architecture or package decision.",
+    "legacy-observation": "A reproduced legacy failure the replacement must not preserve.",
+    "mechanical-derivation": "A direct result of a declared formula, integer algorithm, or cap.",
+    "human-review": "A judgment that automation cannot honestly certify."
+  },
+  "authorities": [
+    {
+      "id": "V2-AUTH-PLAN",
+      "class": "reviewed-contract",
+      "source": "docs/REBUILD_PLAN.md sections 11.9, 12.1, 12.5, and 12.6 plus bead jcpe-milestone-advanced-craft-ulj.1.1",
+      "supports": [
+        "Beam width 48 and the 512-event window",
+        "The voicing.optimization_degraded notice",
+        "The seven-axis cost order of section 12.5",
+        "Fixed work quanta with cooperative yield; wall time never semantic",
+        "Termination vocabulary complete/exhausted/cancelled/work-quanta-cap",
+        "Cancellation and quanta exhaustion return no partial option set",
+        "Manual/Frozen events as immutable boundary candidates",
+        "Section reset chains and optional loop-boundary cost",
+        "100 ms / 500 ms performance gates as observations only"
+      ]
+    },
+    {
+      "id": "V2-AUTH-V0",
+      "class": "reviewed-contract",
+      "source": "docs/V0_VOICING_CONTRACT.md and src/theory/voicing-candidates-contract.ts",
+      "supports": [
+        "24 retained candidates per event as the V2 ingest cap",
+        "The candidate-000..candidate-023 id vocabulary",
+        "The seven-family vocabulary used by family constraints"
+      ]
+    },
+    {
+      "id": "V2-AUTH-V1",
+      "class": "reviewed-contract",
+      "source": "docs/V1_VOICE_ASSIGNMENT_CONTRACT.md and src/theory/voice-assignment-contract.ts",
+      "supports": [
+        "The seven reported per-transition cost axes and their caps",
+        "The 7-lock per-event cap",
+        "Oracle refusal semantics (no-assignment, lock conflicts)",
+        "Transition facts come only from assignVoiceTransition"
+      ]
+    },
+    {
+      "id": "V2-AUTH-DOMAIN",
+      "class": "reviewed-contract",
+      "source": "src/domain/document.ts MAX_DOCUMENT_CHORD_EVENTS via theory MAX_CHART_EVENTS",
+      "supports": ["The 8,192-event request cap"]
+    },
+    {
+      "id": "V2-AUTH-DERIVED",
+      "class": "mechanical-derivation",
+      "source": "Integer products of frozen values, tabulated in contract section 10",
+      "supports": [
+        "Quantum of 1,152 units (48 x 24)",
+        "8,192 quanta and 9,437,184 total units",
+        "576 oracle calls per layer and 4,718,592 total",
+        "24,576 retained states, 25,728 tracked states, 1,152 layer states",
+        "48 alternatives per segment-window and 393,216 realization records",
+        "Aggregate axis caps as 8,192 x the V1 per-transition caps",
+        "Every hand-computed counter and cost expectation in these fixtures"
+      ]
+    },
+    {
+      "id": "V2-AUTH-INDEPENDENCE",
+      "class": "human-review",
+      "source": "V2/spec authoring session; validator reference implementations written against the contract document only",
+      "supports": [
+        "Expectations authored before production and never regenerated from it",
+        "Brute-force certification of every small optimize case",
+        "Table oracles standing in for V1 so spec fixtures stay independent of V1 numerics"
+      ]
+    }
+  ]
+}

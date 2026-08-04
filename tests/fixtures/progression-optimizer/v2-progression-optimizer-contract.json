@@ -1,0 +1,196 @@
+{
+  "schema": "changes.fixtures.v2-progression-optimizer-contract.v1",
+  "fixtureVersion": "1.0.0",
+  "status": "independently-authored-pre-production",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "identity": {
+    "package": "V2",
+    "module": "src/theory/progression-optimizer-contract.ts",
+    "contractSchema": "changes.theory.progression-optimizer-contract.v1",
+    "requestSchema": "changes.theory.progression-optimizer-request.v1",
+    "eventSchema": "changes.theory.progression-event.v1",
+    "stateSchema": "changes.theory.progression-optimizer-state.v1",
+    "resultSchema": "changes.theory.progression-optimizer-result.v1",
+    "realizationSchema": "changes.theory.progression-realization.v1",
+    "degradationSchema": "changes.theory.progression-degradation.v1",
+    "conflictSchema": "changes.theory.progression-conflict.v1",
+    "engineId": "changes.progression-optimizer",
+    "engineVersion": 1,
+    "engineVersionTag": "changes.progression-optimizer.v1",
+    "costPolicyId": "changes.progression-optimizer.aggregate-cost",
+    "costPolicyVersion": 1,
+    "searchPolicyId": "changes.progression-optimizer.bounded-beam",
+    "searchPolicyVersion": 1,
+    "tieBreakPolicyId": "changes.progression-optimizer.tie-break",
+    "tieBreakPolicyVersion": 1
+  },
+  "declaredFiles": [
+    "boundary-cases.json",
+    "limit-cases.json",
+    "mutation-controls.json",
+    "optimization-cases.json",
+    "provenance-ledger.json",
+    "stepper-cases.json",
+    "trace-ledger.json",
+    "v2-progression-optimizer-contract.json"
+  ],
+  "limits": {
+    "maxCandidatesPerEvent": 24,
+    "beamWidth": 48,
+    "maxWindowEvents": 512,
+    "maxRequestEvents": 8192,
+    "maxWindowsPerSegment": 16,
+    "maxSegments": 8192,
+    "maxLocksPerEvent": 7,
+    "maxRequestIdAsciiLength": 128,
+    "requestIdPatternSource": "^[A-Za-z0-9._-]{1,128}$",
+    "workQuantumUnits": 1152,
+    "maxWorkQuanta": 8192,
+    "maxTotalWorkUnits": 9437184,
+    "maxLayerGeneratedStates": 1152,
+    "maxRetainedStates": 24576,
+    "maxTrackedStates": 25728,
+    "maxOracleCallsPerLayer": 576,
+    "maxOracleTransitionCalls": 4718592,
+    "maxAlternatives": 48,
+    "maxRealizationRecords": 393216,
+    "maxChainTransitions": 8191,
+    "maxCostTransitions": 8192
+  },
+  "costAxes": [
+    "totalAbsoluteMotion",
+    "maximumAbsoluteLeap",
+    "commonTonesLost",
+    "crowdedLowIntervals",
+    "doubledGuideTones",
+    "omittedColors",
+    "totalSpan"
+  ],
+  "costAggregations": {
+    "totalAbsoluteMotion": "sum",
+    "maximumAbsoluteLeap": "max",
+    "commonTonesLost": "sum",
+    "crowdedLowIntervals": "sum",
+    "doubledGuideTones": "sum",
+    "omittedColors": "sum",
+    "totalSpan": "max"
+  },
+  "costValueLimits": {
+    "totalAbsoluteMotion": 7282688,
+    "maximumAbsoluteLeap": 127,
+    "commonTonesLost": 57344,
+    "crowdedLowIntervals": 49152,
+    "doubledGuideTones": 49152,
+    "omittedColors": 131072,
+    "totalSpan": 127
+  },
+  "tieBreakOrder": [
+    "aggregate-cost-axis-order",
+    "candidate-id-sequence-lexicographic"
+  ],
+  "chainBoundaries": ["continue", "reset"],
+  "fixedEventReasons": ["manual", "frozen"],
+  "constraintKinds": [
+    "families",
+    "range",
+    "bassRange",
+    "lock",
+    "loop-closure",
+    "transition-no-assignment"
+  ],
+  "constraintFilterOrder": ["families", "range", "bassRange"],
+  "terminations": ["complete", "exhausted", "cancelled", "work-quanta-cap"],
+  "cancelReasons": ["user-cancel", "stale-revision"],
+  "degradationCode": "voicing.optimization_degraded",
+  "degradationReasons": [
+    "window-partition",
+    "beam-eviction",
+    "fixed-candidate-constraint-conflict",
+    "loop-closure-skipped"
+  ],
+  "refusalCodes": [
+    "progression.schema_invalid",
+    "progression.policy_invalid",
+    "progression.identity_invalid",
+    "progression.request_id_invalid",
+    "progression.quantum_budget_invalid",
+    "progression.event_count_exceeded",
+    "progression.event_invalid",
+    "progression.candidate_invalid",
+    "progression.constraint_invalid",
+    "progression.resume_stale",
+    "progression.resume_invalid",
+    "limit.progression_work_exceeded"
+  ],
+  "validationPrecedence": {
+    "order": [
+      "progression.schema_invalid",
+      "progression.policy_invalid",
+      "progression.identity_invalid",
+      "progression.request_id_invalid",
+      "progression.quantum_budget_invalid",
+      "progression.event_count_exceeded",
+      "progression.event_invalid",
+      "progression.candidate_invalid",
+      "progression.constraint_invalid"
+    ],
+    "perEventOrder": [
+      "progression.event_invalid",
+      "progression.candidate_invalid",
+      "progression.constraint_invalid"
+    ],
+    "eventOrderWins": true
+  },
+  "workCounterNames": [
+    "workQuanta",
+    "workUnits",
+    "seededStates",
+    "statePairExpansions",
+    "oracleTransitionCalls",
+    "oracleRefusedTransitions",
+    "generatedStates",
+    "dominancePrunes",
+    "beamEvictions",
+    "constraintFilteredCandidates",
+    "loopClosureUnits",
+    "loopClosureRefusals",
+    "windowsOptimized",
+    "segmentsOptimized"
+  ],
+  "memoryCounterNames": [
+    "peakFrontierStates",
+    "peakLayerGeneratedStates",
+    "peakTrackedStates",
+    "peakRealizationRecords"
+  ],
+  "workUnitIdentity": "workUnits = seededStates + statePairExpansions + loopClosureUnits",
+  "stepperStatuses": ["running", "terminal"],
+  "operationNames": [
+    "initializeProgressionOptimization",
+    "advanceProgressionOptimization",
+    "cancelProgressionOptimization"
+  ],
+  "explanationLiterals": {
+    "wallTimeAffectedSelection": false,
+    "documentMutated": false,
+    "hardConstraintsRelaxed": false,
+    "manualFrozenPitchesRewritten": false,
+    "deterministicForIdenticalInputs": true
+  },
+  "costTupleColumns": [
+    "totalAbsoluteMotion",
+    "maximumAbsoluteLeap",
+    "commonTonesLost",
+    "crowdedLowIntervals",
+    "doubledGuideTones",
+    "omittedColors",
+    "totalSpan"
+  ],
+  "performanceObservationTargets": {
+    "interactiveTargetMs": 100,
+    "interactiveTargetEvents": 64,
+    "releaseCeilingMs": 500,
+    "semanticEffect": "none"
+  }
+}

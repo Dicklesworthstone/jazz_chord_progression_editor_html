@@ -1,0 +1,899 @@
+{
+  "schema": "changes.fixtures.v2-optimization-cases.v1",
+  "fixtureVersion": "1.0.0",
+  "status": "independently-authored-pre-production",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "notes": "Cost tuples use the frozen PROGRESSION_COST_AXES column order. Expectations were hand-computed from docs/V2_PROGRESSION_OPTIMIZER_CONTRACT.md sections 2 and 6; the validator recomputes every value with its own reference implementations and rejects divergence. bruteForceCertified cases must also equal the validator's exhaustive chain enumeration.",
+  "requestDefaults": {
+    "documentId": "doc-v2-spec-0001",
+    "sourceRevision": 1,
+    "loopClosure": false,
+    "maxWorkQuanta": 8192
+  },
+  "cases": [
+    {
+      "id": "V2-OPT-001",
+      "kind": "optimize",
+      "bruteForceCertified": true,
+      "title": "Two events, dominance prunes in both buckets, two-chain Pareto front",
+      "request": {
+        "requestId": "v2-opt-001",
+        "events": [
+          {
+            "kind": "auto",
+            "eventId": "event-0000",
+            "chainBoundary": "reset",
+            "candidates": [
+              { "candidateId": "candidate-000", "family": "balanced", "voiceMidis": [48, 52, 59] },
+              { "candidateId": "candidate-001", "family": "balanced", "voiceMidis": [50, 55, 62] }
+            ],
+            "constraints": { "families": null, "range": null, "bassRange": null, "locks": [] }
+          },
+          {
+            "kind": "auto",
+            "eventId": "event-0001",
+            "chainBoundary": "continue",
+            "candidates": [
+              { "candidateId": "candidate-000", "family": "balanced", "voiceMidis": [47, 53, 59] },
+              { "candidateId": "candidate-001", "family": "balanced", "voiceMidis": [50, 54, 62] }
+            ],
+            "constraints": { "families": null, "range": null, "bassRange": null, "locks": [] }
+          }
+        ],
+        "transitions": [
+          { "fromEventOrdinal": 0, "from": "candidate-000", "to": "candidate-000", "cost": [2, 2, 0, 0, 0, 0, 11] },
+          { "fromEventOrdinal": 0, "from": "candidate-000", "to": "candidate-001", "cost": [5, 3, 1, 0, 0, 0, 12] },
+          { "fromEventOrdinal": 0, "from": "candidate-001", "to": "candidate-000", "cost": [4, 4, 0, 0, 0, 0, 11] },
+          { "fromEventOrdinal": 0, "from": "candidate-001", "to": "candidate-001", "cost": [1, 1, 1, 0, 0, 0, 12] }
+        ]
+      },
+      "expected": {
+        "kind": "optimized",
+        "termination": "complete",
+        "segments": [
+          {
+            "segmentOrdinal": 0,
+            "windowOrdinal": 0,
+            "boundaryCondition": "open",
+            "realizations": [
+              { "candidateIds": ["candidate-001", "candidate-001"], "cost": [1, 1, 1, 0, 0, 0, 12], "loopClosureApplied": false },
+              { "candidateIds": ["candidate-000", "candidate-000"], "cost": [2, 2, 0, 0, 0, 0, 11], "loopClosureApplied": false }
+            ]
+          }
+        ],
+        "aggregateSelectedCost": [1, 1, 1, 0, 0, 0, 12],
+        "degradations": [],
+        "conflicts": [],
+        "counters": {
+          "workQuanta": 1,
+          "workUnits": 6,
+          "seededStates": 2,
+          "statePairExpansions": 4,
+          "oracleTransitionCalls": 4,
+          "oracleRefusedTransitions": 0,
+          "generatedStates": 6,
+          "dominancePrunes": 2,
+          "beamEvictions": 0,
+          "constraintFilteredCandidates": 0,
+          "loopClosureUnits": 0,
+          "loopClosureRefusals": 0,
+          "windowsOptimized": 1,
+          "segmentsOptimized": 1
+        },
+        "memory": {
+          "peakFrontierStates": 2,
+          "peakLayerGeneratedStates": 4,
+          "peakTrackedStates": 6,
+          "peakRealizationRecords": 2
+        }
+      },
+      "traceIds": ["V2-TRACE-DETERMINISM", "V2-TRACE-BRUTE-FORCE", "V2-TRACE-PARETO-DOMINANCE", "V2-TRACE-COUNTERS", "V2-TRACE-AUTHORITY-INTEGRITY"],
+      "authorityIds": ["V2-AUTH-PLAN", "V2-AUTH-V1", "V2-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "V2-OPT-002",
+      "kind": "optimize",
+      "bruteForceCertified": true,
+      "title": "All-equal costs: total tie-break by candidate-id sequence, full equal front retained",
+      "request": {
+        "requestId": "v2-opt-002",
+        "events": [
+          {
+            "kind": "auto",
+            "eventId": "event-0000",
+            "chainBoundary": "reset",
+            "candidates": [
+              { "candidateId": "candidate-000", "family": "balanced", "voiceMidis": [48, 52, 59] },
+              { "candidateId": "candidate-001", "family": "balanced", "voiceMidis": [50, 55, 62] }
+            ],
+            "constraints": { "families": null, "range": null, "bassRange": null, "locks": [] }
+          },
+          {
+            "kind": "auto",
+            "eventId": "event-0001",
+            "chainBoundary": "continue",
+            "candidates": [
+              { "candidateId": "candidate-000", "family": "balanced", "voiceMidis": [45, 52, 57] },
+              { "candidateId": "candidate-001", "family": "balanced", "voiceMidis": [53, 58, 65] }
+            ],
+            "constraints": { "families": null, "range": null, "bassRange": null, "locks": [] }
+          }
+        ],
+        "transitions": [
+          { "fromEventOrdinal": 0, "from": "candidate-000", "to": "candidate-000", "cost": [3, 3, 0, 0, 0, 0, 12] },
+          { "fromEventOrdinal": 0, "from": "candidate-000", "to": "candidate-001", "cost": [3, 3, 0, 0, 0, 0, 12] },
+          { "fromEventOrdinal": 0, "from": "candidate-001", "to": "candidate-000", "cost": [3, 3, 0, 0, 0, 0, 12] },
+          { "fromEventOrdinal": 0, "from": "candidate-001", "to": "candidate-001", "cost": [3, 3, 0, 0, 0, 0, 12] }
+        ]
+      },
+      "expected": {
+        "kind": "optimized",
+        "termination": "complete",
+        "segments": [
+          {
+            "segmentOrdinal": 0,
+            "windowOrdinal": 0,
+            "boundaryCondition": "open",
+            "realizations": [
+              { "candidateIds": ["candidate-000", "candidate-000"], "cost": [3, 3, 0, 0, 0, 0, 12], "loopClosureApplied": false },
+              { "candidateIds": ["candidate-000", "candidate-001"], "cost": [3, 3, 0, 0, 0, 0, 12], "loopClosureApplied": false },
+              { "candidateIds": ["candidate-001", "candidate-000"], "cost": [3, 3, 0, 0, 0, 0, 12], "loopClosureApplied": false },
+              { "candidateIds": ["candidate-001", "candidate-001"], "cost": [3, 3, 0, 0, 0, 0, 12], "loopClosureApplied": false }
+            ]
+          }
+        ],
+        "aggregateSelectedCost": [3, 3, 0, 0, 0, 0, 12],
+        "degradations": [],
+        "conflicts": [],
+        "counters": {
+          "workQuanta": 1,
+          "workUnits": 6,
+          "seededStates": 2,
+          "statePairExpansions": 4,
+          "oracleTransitionCalls": 4,
+          "oracleRefusedTransitions": 0,
+          "generatedStates": 6,
+          "dominancePrunes": 0,
+          "beamEvictions": 0,
+          "constraintFilteredCandidates": 0,
+          "loopClosureUnits": 0,
+          "loopClosureRefusals": 0,
+          "windowsOptimized": 1,
+          "segmentsOptimized": 1
+        },
+        "memory": {
+          "peakFrontierStates": 4,
+          "peakLayerGeneratedStates": 4,
+          "peakTrackedStates": 6,
+          "peakRealizationRecords": 4
+        }
+      },
+      "traceIds": ["V2-TRACE-DETERMINISM", "V2-TRACE-BRUTE-FORCE", "V2-TRACE-TIE-BREAK"],
+      "authorityIds": ["V2-AUTH-PLAN", "V2-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "V2-OPT-003",
+      "kind": "optimize",
+      "bruteForceCertified": true,
+      "title": "Three mutually non-dominated chains ordered by the frozen axis order",
+      "request": {
+        "requestId": "v2-opt-003",
+        "events": [
+          {
+            "kind": "auto",
+            "eventId": "event-0000",
+            "chainBoundary": "reset",
+            "candidates": [
+              { "candidateId": "candidate-000", "family": "balanced", "voiceMidis": [48, 52, 59] }
+            ],
+            "constraints": { "families": null, "range": null, "bassRange": null, "locks": [] }
+          },
+          {
+            "kind": "auto",
+            "eventId": "event-0001",
+            "chainBoundary": "continue",
+            "candidates": [
+              { "candidateId": "candidate-000", "family": "balanced", "voiceMidis": [47, 52, 59] },
+              { "candidateId": "candidate-001", "family": "balanced", "voiceMidis": [46, 53, 59] },
+              { "candidateId": "candidate-002", "family": "balanced", "voiceMidis": [45, 54, 60] }
+            ],
+            "constraints": { "families": null, "range": null, "bassRange": null, "locks": [] }
+          }
+        ],
+        "transitions": [
+          { "fromEventOrdinal": 0, "from": "candidate-000", "to": "candidate-000", "cost": [1, 3, 2, 0, 0, 0, 12] },
+          { "fromEventOrdinal": 0, "from": "candidate-000", "to": "candidate-001", "cost": [2, 2, 1, 0, 0, 0, 12] },
+          { "fromEventOrdinal": 0, "from": "candidate-000", "to": "candidate-002", "cost": [3, 1, 0, 0, 0, 0, 12] }
+        ]
+      },
+      "expected": {
+        "kind": "optimized",
+        "termination": "complete",
+        "segments": [
+          {
+            "segmentOrdinal": 0,
+            "windowOrdinal": 0,
+            "boundaryCondition": "open",
+            "realizations": [
+              { "candidateIds": ["candidate-000", "candidate-000"], "cost": [1, 3, 2, 0, 0, 0, 12], "loopClosureApplied": false },
+              { "candidateIds": ["candidate-000", "candidate-001"], "cost": [2, 2, 1, 0, 0, 0, 12], "loopClosureApplied": false },
+              { "candidateIds": ["candidate-000", "candidate-002"], "cost": [3, 1, 0, 0, 0, 0, 12], "loopClosureApplied": false }
+            ]
+          }
+        ],
+        "aggregateSelectedCost": [1, 3, 2, 0, 0, 0, 12],
+        "degradations": [],
+        "conflicts": [],
+        "counters": {
+          "workQuanta": 1,
+          "workUnits": 4,
+          "seededStates": 1,
+          "statePairExpansions": 3,
+          "oracleTransitionCalls": 3,
+          "oracleRefusedTransitions": 0,
+          "generatedStates": 4,
+          "dominancePrunes": 0,
+          "beamEvictions": 0,
+          "constraintFilteredCandidates": 0,
+          "loopClosureUnits": 0,
+          "loopClosureRefusals": 0,
+          "windowsOptimized": 1,
+          "segmentsOptimized": 1
+        },
+        "memory": {
+          "peakFrontierStates": 3,
+          "peakLayerGeneratedStates": 3,
+          "peakTrackedStates": 4,
+          "peakRealizationRecords": 3
+        }
+      },
+      "traceIds": ["V2-TRACE-BRUTE-FORCE", "V2-TRACE-PARETO-DOMINANCE"],
+      "authorityIds": ["V2-AUTH-PLAN", "V2-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "V2-OPT-004",
+      "kind": "optimize",
+      "bruteForceCertified": true,
+      "title": "Greedy trap: locally best first transition loses; cross-bucket dominance must not apply",
+      "request": {
+        "requestId": "v2-opt-004",
+        "events": [
+          {
+            "kind": "auto",
+            "eventId": "event-0000",
+            "chainBoundary": "reset",
+            "candidates": [
+              { "candidateId": "candidate-000", "family": "balanced", "voiceMidis": [48, 52, 59] }
+            ],
+            "constraints": { "families": null, "range": null, "bassRange": null, "locks": [] }
+          },
+          {
+            "kind": "auto",
+            "eventId": "event-0001",
+            "chainBoundary": "continue",
+            "candidates": [
+              { "candidateId": "candidate-000", "family": "balanced", "voiceMidis": [48, 53, 59] },
+              { "candidateId": "candidate-001", "family": "balanced", "voiceMidis": [46, 52, 60] }
+            ],
+            "constraints": { "families": null, "range": null, "bassRange": null, "locks": [] }
+          },
+          {
+            "kind": "auto",
+            "eventId": "event-0002",
+            "chainBoundary": "continue",
+            "candidates": [
+              { "candidateId": "candidate-000", "family": "balanced", "voiceMidis": [47, 52, 60] },
+              { "candidateId": "candidate-001", "family": "balanced", "voiceMidis": [45, 50, 58] }
+            ],
+            "constraints": { "families": null, "range": null, "bassRange": null, "locks": [] }
+          }
+        ],
+        "transitions": [
+          { "fromEventOrdinal": 0, "from": "candidate-000", "to": "candidate-000", "cost": [1, 1, 0, 0, 0, 0, 12] },
+          { "fromEventOrdinal": 0, "from": "candidate-000", "to": "candidate-001", "cost": [2, 2, 0, 0, 0, 0, 12] },
+          { "fromEventOrdinal": 1, "from": "candidate-000", "to": "candidate-000", "cost": [9, 5, 2, 0, 0, 0, 12] },
+          { "fromEventOrdinal": 1, "from": "candidate-000", "to": "candidate-001", "cost": [8, 4, 1, 0, 0, 0, 12] },
+          { "fromEventOrdinal": 1, "from": "candidate-001", "to": "candidate-000", "cost": [1, 1, 0, 0, 0, 0, 12] },
+          { "fromEventOrdinal": 1, "from": "candidate-001", "to": "candidate-001", "cost": [2, 1, 0, 0, 0, 0, 12] }
+        ]
+      },
+      "expected": {
+        "kind": "optimized",
+        "termination": "complete",
+        "segments": [
+          {
+            "segmentOrdinal": 0,
+            "windowOrdinal": 0,
+            "boundaryCondition": "open",
+            "realizations": [
+              { "candidateIds": ["candidate-000", "candidate-001", "candidate-000"], "cost": [3, 2, 0, 0, 0, 0, 12], "loopClosureApplied": false }
+            ]
+          }
+        ],
+        "aggregateSelectedCost": [3, 2, 0, 0, 0, 0, 12],
+        "degradations": [],
+        "conflicts": [],
+        "counters": {
+          "workQuanta": 1,
+          "workUnits": 7,
+          "seededStates": 1,
+          "statePairExpansions": 6,
+          "oracleTransitionCalls": 6,
+          "oracleRefusedTransitions": 0,
+          "generatedStates": 7,
+          "dominancePrunes": 2,
+          "beamEvictions": 0,
+          "constraintFilteredCandidates": 0,
+          "loopClosureUnits": 0,
+          "loopClosureRefusals": 0,
+          "windowsOptimized": 1,
+          "segmentsOptimized": 1
+        },
+        "memory": {
+          "peakFrontierStates": 2,
+          "peakLayerGeneratedStates": 4,
+          "peakTrackedStates": 7,
+          "peakRealizationRecords": 1
+        }
+      },
+      "traceIds": ["V2-TRACE-BRUTE-FORCE", "V2-TRACE-CROSS-BUCKET", "V2-TRACE-COUNTERS"],
+      "authorityIds": ["V2-AUTH-PLAN", "V2-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "V2-OPT-005",
+      "kind": "optimize",
+      "bruteForceCertified": true,
+      "title": "Equal-cost states in one bucket are both retained and both reach the front",
+      "request": {
+        "requestId": "v2-opt-005",
+        "events": [
+          {
+            "kind": "auto",
+            "eventId": "event-0000",
+            "chainBoundary": "reset",
+            "candidates": [
+              { "candidateId": "candidate-000", "family": "balanced", "voiceMidis": [48, 52, 59] },
+              { "candidateId": "candidate-001", "family": "balanced", "voiceMidis": [50, 55, 62] }
+            ],
+            "constraints": { "families": null, "range": null, "bassRange": null, "locks": [] }
+          },
+          {
+            "kind": "auto",
+            "eventId": "event-0001",
+            "chainBoundary": "continue",
+            "candidates": [
+              { "candidateId": "candidate-000", "family": "balanced", "voiceMidis": [46, 52, 59] },
+              { "candidateId": "candidate-001", "family": "balanced", "voiceMidis": [52, 55, 64] }
+            ],
+            "constraints": { "families": null, "range": null, "bassRange": null, "locks": [] }
+          },
+          {
+            "kind": "auto",
+            "eventId": "event-0002",
+            "chainBoundary": "continue",
+            "candidates": [
+              { "candidateId": "candidate-000", "family": "balanced", "voiceMidis": [47, 52, 59] }
+            ],
+            "constraints": { "families": null, "range": null, "bassRange": null, "locks": [] }
+          }
+        ],
+        "transitions": [
+          { "fromEventOrdinal": 0, "from": "candidate-000", "to": "candidate-000", "cost": [2, 2, 0, 0, 0, 0, 12] },
+          { "fromEventOrdinal": 0, "from": "candidate-000", "to": "candidate-001", "cost": [9, 9, 0, 0, 0, 0, 12] },
+          { "fromEventOrdinal": 0, "from": "candidate-001", "to": "candidate-000", "cost": [9, 9, 0, 0, 0, 0, 12] },
+          { "fromEventOrdinal": 0, "from": "candidate-001", "to": "candidate-001", "cost": [2, 2, 0, 0, 0, 0, 12] },
+          { "fromEventOrdinal": 1, "from": "candidate-000", "to": "candidate-000", "cost": [1, 1, 0, 0, 0, 0, 12] },
+          { "fromEventOrdinal": 1, "from": "candidate-001", "to": "candidate-000", "cost": [1, 1, 0, 0, 0, 0, 12] }
+        ]
+      },
+      "expected": {
+        "kind": "optimized",
+        "termination": "complete",
+        "segments": [
+          {
+            "segmentOrdinal": 0,
+            "windowOrdinal": 0,
+            "boundaryCondition": "open",
+            "realizations": [
+              { "candidateIds": ["candidate-000", "candidate-000", "candidate-000"], "cost": [3, 2, 0, 0, 0, 0, 12], "loopClosureApplied": false },
+              { "candidateIds": ["candidate-001", "candidate-001", "candidate-000"], "cost": [3, 2, 0, 0, 0, 0, 12], "loopClosureApplied": false }
+            ]
+          }
+        ],
+        "aggregateSelectedCost": [3, 2, 0, 0, 0, 0, 12],
+        "degradations": [],
+        "conflicts": [],
+        "counters": {
+          "workQuanta": 1,
+          "workUnits": 8,
+          "seededStates": 2,
+          "statePairExpansions": 6,
+          "oracleTransitionCalls": 6,
+          "oracleRefusedTransitions": 0,
+          "generatedStates": 8,
+          "dominancePrunes": 2,
+          "beamEvictions": 0,
+          "constraintFilteredCandidates": 0,
+          "loopClosureUnits": 0,
+          "loopClosureRefusals": 0,
+          "windowsOptimized": 1,
+          "segmentsOptimized": 1
+        },
+        "memory": {
+          "peakFrontierStates": 2,
+          "peakLayerGeneratedStates": 4,
+          "peakTrackedStates": 6,
+          "peakRealizationRecords": 2
+        }
+      },
+      "traceIds": ["V2-TRACE-BRUTE-FORCE", "V2-TRACE-PARETO-DOMINANCE", "V2-TRACE-TIE-BREAK", "V2-TRACE-COUNTERS"],
+      "authorityIds": ["V2-AUTH-PLAN", "V2-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "V2-OPT-006",
+      "kind": "optimize",
+      "bruteForceCertified": true,
+      "title": "A refused oracle pair is excluded without failing the command",
+      "request": {
+        "requestId": "v2-opt-006",
+        "events": [
+          {
+            "kind": "auto",
+            "eventId": "event-0000",
+            "chainBoundary": "reset",
+            "candidates": [
+              { "candidateId": "candidate-000", "family": "balanced", "voiceMidis": [48, 52, 59] },
+              { "candidateId": "candidate-001", "family": "balanced", "voiceMidis": [50, 55, 62] }
+            ],
+            "constraints": { "families": null, "range": null, "bassRange": null, "locks": [] }
+          },
+          {
+            "kind": "auto",
+            "eventId": "event-0001",
+            "chainBoundary": "continue",
+            "candidates": [
+              { "candidateId": "candidate-000", "family": "balanced", "voiceMidis": [46, 51, 58] },
+              { "candidateId": "candidate-001", "family": "balanced", "voiceMidis": [51, 56, 63] }
+            ],
+            "constraints": { "families": null, "range": null, "bassRange": null, "locks": [] }
+          }
+        ],
+        "transitions": [
+          { "fromEventOrdinal": 0, "from": "candidate-000", "to": "candidate-000", "cost": [4, 4, 0, 0, 0, 0, 12] },
+          { "fromEventOrdinal": 0, "from": "candidate-000", "to": "candidate-001", "refusal": "no-assignment", "lockConflictVoiceIds": [] },
+          { "fromEventOrdinal": 0, "from": "candidate-001", "to": "candidate-000", "cost": [2, 2, 0, 0, 0, 0, 12] },
+          { "fromEventOrdinal": 0, "from": "candidate-001", "to": "candidate-001", "cost": [1, 1, 0, 0, 0, 0, 12] }
+        ]
+      },
+      "expected": {
+        "kind": "optimized",
+        "termination": "complete",
+        "segments": [
+          {
+            "segmentOrdinal": 0,
+            "windowOrdinal": 0,
+            "boundaryCondition": "open",
+            "realizations": [
+              { "candidateIds": ["candidate-001", "candidate-001"], "cost": [1, 1, 0, 0, 0, 0, 12], "loopClosureApplied": false }
+            ]
+          }
+        ],
+        "aggregateSelectedCost": [1, 1, 0, 0, 0, 0, 12],
+        "degradations": [],
+        "conflicts": [],
+        "counters": {
+          "workQuanta": 1,
+          "workUnits": 6,
+          "seededStates": 2,
+          "statePairExpansions": 4,
+          "oracleTransitionCalls": 4,
+          "oracleRefusedTransitions": 1,
+          "generatedStates": 5,
+          "dominancePrunes": 1,
+          "beamEvictions": 0,
+          "constraintFilteredCandidates": 0,
+          "loopClosureUnits": 0,
+          "loopClosureRefusals": 0,
+          "windowsOptimized": 1,
+          "segmentsOptimized": 1
+        },
+        "memory": {
+          "peakFrontierStates": 2,
+          "peakLayerGeneratedStates": 3,
+          "peakTrackedStates": 5,
+          "peakRealizationRecords": 1
+        }
+      },
+      "traceIds": ["V2-TRACE-BRUTE-FORCE", "V2-TRACE-PARETO-DOMINANCE", "V2-TRACE-V1-ORACLE-BINDING", "V2-TRACE-COUNTERS"],
+      "authorityIds": ["V2-AUTH-V1", "V2-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "V2-OPT-007",
+      "kind": "optimize",
+      "bruteForceCertified": true,
+      "title": "Single-event chart: zero-transition chains carry the zero vector; tie-break selects candidate-000",
+      "request": {
+        "requestId": "v2-opt-007",
+        "events": [
+          {
+            "kind": "auto",
+            "eventId": "event-0000",
+            "chainBoundary": "reset",
+            "candidates": [
+              { "candidateId": "candidate-000", "family": "balanced", "voiceMidis": [48, 52, 59] },
+              { "candidateId": "candidate-001", "family": "balanced", "voiceMidis": [50, 55, 62] },
+              { "candidateId": "candidate-002", "family": "balanced", "voiceMidis": [52, 57, 64] }
+            ],
+            "constraints": { "families": null, "range": null, "bassRange": null, "locks": [] }
+          }
+        ],
+        "transitions": []
+      },
+      "expected": {
+        "kind": "optimized",
+        "termination": "complete",
+        "segments": [
+          {
+            "segmentOrdinal": 0,
+            "windowOrdinal": 0,
+            "boundaryCondition": "open",
+            "realizations": [
+              { "candidateIds": ["candidate-000"], "cost": [0, 0, 0, 0, 0, 0, 0], "loopClosureApplied": false },
+              { "candidateIds": ["candidate-001"], "cost": [0, 0, 0, 0, 0, 0, 0], "loopClosureApplied": false },
+              { "candidateIds": ["candidate-002"], "cost": [0, 0, 0, 0, 0, 0, 0], "loopClosureApplied": false }
+            ]
+          }
+        ],
+        "aggregateSelectedCost": [0, 0, 0, 0, 0, 0, 0],
+        "degradations": [],
+        "conflicts": [],
+        "counters": {
+          "workQuanta": 1,
+          "workUnits": 3,
+          "seededStates": 3,
+          "statePairExpansions": 0,
+          "oracleTransitionCalls": 0,
+          "oracleRefusedTransitions": 0,
+          "generatedStates": 3,
+          "dominancePrunes": 0,
+          "beamEvictions": 0,
+          "constraintFilteredCandidates": 0,
+          "loopClosureUnits": 0,
+          "loopClosureRefusals": 0,
+          "windowsOptimized": 1,
+          "segmentsOptimized": 1
+        },
+        "memory": {
+          "peakFrontierStates": 3,
+          "peakLayerGeneratedStates": 3,
+          "peakTrackedStates": 3,
+          "peakRealizationRecords": 3
+        }
+      },
+      "traceIds": ["V2-TRACE-BRUTE-FORCE", "V2-TRACE-TIE-BREAK", "V2-TRACE-DETERMINISM"],
+      "authorityIds": ["V2-AUTH-PLAN", "V2-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "V2-OPT-R01",
+      "kind": "refuse",
+      "title": "Wrong request schema string",
+      "request": {
+        "requestId": "v2-opt-r01",
+        "schemaOverride": "changes.theory.progression-optimizer-request.v2",
+        "events": [
+          {
+            "kind": "auto",
+            "eventId": "event-0000",
+            "chainBoundary": "reset",
+            "candidates": [
+              { "candidateId": "candidate-000", "family": "balanced", "voiceMidis": [48, 52, 59] }
+            ],
+            "constraints": { "families": null, "range": null, "bassRange": null, "locks": [] }
+          }
+        ],
+        "transitions": []
+      },
+      "expected": { "refusal": { "code": "progression.schema_invalid", "pointer": "/schema" } },
+      "traceIds": ["V2-TRACE-REFUSALS"],
+      "authorityIds": ["V2-AUTH-PLAN"]
+    },
+    {
+      "id": "V2-OPT-R02",
+      "kind": "refuse",
+      "title": "Engine version pin mismatch",
+      "request": {
+        "requestId": "v2-opt-r02",
+        "engineVersionOverride": 2,
+        "events": [
+          {
+            "kind": "auto",
+            "eventId": "event-0000",
+            "chainBoundary": "reset",
+            "candidates": [
+              { "candidateId": "candidate-000", "family": "balanced", "voiceMidis": [48, 52, 59] }
+            ],
+            "constraints": { "families": null, "range": null, "bassRange": null, "locks": [] }
+          }
+        ],
+        "transitions": []
+      },
+      "expected": { "refusal": { "code": "progression.policy_invalid", "pointer": "/identity/engineVersion" } },
+      "traceIds": ["V2-TRACE-REFUSALS"],
+      "authorityIds": ["V2-AUTH-PLAN"]
+    },
+    {
+      "id": "V2-OPT-R03",
+      "kind": "refuse",
+      "title": "Negative source revision",
+      "request": {
+        "requestId": "v2-opt-r03",
+        "sourceRevisionOverride": -1,
+        "events": [
+          {
+            "kind": "auto",
+            "eventId": "event-0000",
+            "chainBoundary": "reset",
+            "candidates": [
+              { "candidateId": "candidate-000", "family": "balanced", "voiceMidis": [48, 52, 59] }
+            ],
+            "constraints": { "families": null, "range": null, "bassRange": null, "locks": [] }
+          }
+        ],
+        "transitions": []
+      },
+      "expected": { "refusal": { "code": "progression.identity_invalid", "pointer": "/identity/sourceRevision" } },
+      "traceIds": ["V2-TRACE-REFUSALS"],
+      "authorityIds": ["V2-AUTH-PLAN"]
+    },
+    {
+      "id": "V2-OPT-R04",
+      "kind": "refuse",
+      "title": "Request id fails the frozen pattern",
+      "request": {
+        "requestId": "bad id!",
+        "events": [
+          {
+            "kind": "auto",
+            "eventId": "event-0000",
+            "chainBoundary": "reset",
+            "candidates": [
+              { "candidateId": "candidate-000", "family": "balanced", "voiceMidis": [48, 52, 59] }
+            ],
+            "constraints": { "families": null, "range": null, "bassRange": null, "locks": [] }
+          }
+        ],
+        "transitions": []
+      },
+      "expected": { "refusal": { "code": "progression.request_id_invalid", "pointer": "/identity/requestId" } },
+      "traceIds": ["V2-TRACE-REFUSALS"],
+      "authorityIds": ["V2-AUTH-PLAN"]
+    },
+    {
+      "id": "V2-OPT-R05",
+      "kind": "refuse",
+      "title": "Zero quantum budget",
+      "request": {
+        "requestId": "v2-opt-r05",
+        "maxWorkQuantaOverride": 0,
+        "events": [
+          {
+            "kind": "auto",
+            "eventId": "event-0000",
+            "chainBoundary": "reset",
+            "candidates": [
+              { "candidateId": "candidate-000", "family": "balanced", "voiceMidis": [48, 52, 59] }
+            ],
+            "constraints": { "families": null, "range": null, "bassRange": null, "locks": [] }
+          }
+        ],
+        "transitions": []
+      },
+      "expected": { "refusal": { "code": "progression.quantum_budget_invalid", "pointer": "/maxWorkQuanta" } },
+      "traceIds": ["V2-TRACE-REFUSALS"],
+      "authorityIds": ["V2-AUTH-PLAN"]
+    },
+    {
+      "id": "V2-OPT-R06",
+      "kind": "refuse",
+      "title": "First event must open with a reset boundary",
+      "request": {
+        "requestId": "v2-opt-r06",
+        "events": [
+          {
+            "kind": "auto",
+            "eventId": "event-0000",
+            "chainBoundary": "continue",
+            "candidates": [
+              { "candidateId": "candidate-000", "family": "balanced", "voiceMidis": [48, 52, 59] }
+            ],
+            "constraints": { "families": null, "range": null, "bassRange": null, "locks": [] }
+          }
+        ],
+        "transitions": []
+      },
+      "expected": { "refusal": { "code": "progression.event_invalid", "pointer": "/events/0/chainBoundary" } },
+      "traceIds": ["V2-TRACE-REFUSALS"],
+      "authorityIds": ["V2-AUTH-PLAN"]
+    },
+    {
+      "id": "V2-OPT-R07",
+      "kind": "refuse",
+      "title": "Duplicate candidate ids within one event",
+      "request": {
+        "requestId": "v2-opt-r07",
+        "events": [
+          {
+            "kind": "auto",
+            "eventId": "event-0000",
+            "chainBoundary": "reset",
+            "candidates": [
+              { "candidateId": "candidate-000", "family": "balanced", "voiceMidis": [48, 52, 59] }
+            ],
+            "constraints": { "families": null, "range": null, "bassRange": null, "locks": [] }
+          },
+          {
+            "kind": "auto",
+            "eventId": "event-0001",
+            "chainBoundary": "continue",
+            "candidates": [
+              { "candidateId": "candidate-000", "family": "balanced", "voiceMidis": [48, 52, 59] },
+              { "candidateId": "candidate-000", "family": "balanced", "voiceMidis": [50, 55, 62] }
+            ],
+            "constraints": { "families": null, "range": null, "bassRange": null, "locks": [] }
+          }
+        ],
+        "transitions": [
+          { "fromEventOrdinal": 0, "from": "candidate-000", "to": "candidate-000", "cost": [1, 1, 0, 0, 0, 0, 12] }
+        ]
+      },
+      "expected": { "refusal": { "code": "progression.candidate_invalid", "pointer": "/events/1/candidates" } },
+      "traceIds": ["V2-TRACE-REFUSALS"],
+      "authorityIds": ["V2-AUTH-PLAN"]
+    },
+    {
+      "id": "V2-OPT-R08",
+      "kind": "refuse",
+      "title": "Empty family subset is not a constraint",
+      "request": {
+        "requestId": "v2-opt-r08",
+        "events": [
+          {
+            "kind": "auto",
+            "eventId": "event-0000",
+            "chainBoundary": "reset",
+            "candidates": [
+              { "candidateId": "candidate-000", "family": "balanced", "voiceMidis": [48, 52, 59] }
+            ],
+            "constraints": { "families": null, "range": null, "bassRange": null, "locks": [] }
+          },
+          {
+            "kind": "auto",
+            "eventId": "event-0001",
+            "chainBoundary": "continue",
+            "candidates": [
+              { "candidateId": "candidate-000", "family": "balanced", "voiceMidis": [48, 52, 59] }
+            ],
+            "constraints": { "families": [], "range": null, "bassRange": null, "locks": [] }
+          }
+        ],
+        "transitions": [
+          { "fromEventOrdinal": 0, "from": "candidate-000", "to": "candidate-000", "cost": [1, 1, 0, 0, 0, 0, 12] }
+        ]
+      },
+      "expected": { "refusal": { "code": "progression.constraint_invalid", "pointer": "/events/1/constraints/families" } },
+      "traceIds": ["V2-TRACE-REFUSALS"],
+      "authorityIds": ["V2-AUTH-PLAN"]
+    },
+    {
+      "id": "V2-OPT-R09",
+      "kind": "refuse",
+      "title": "Precedence: policy pin mismatch outranks a later per-event constraint fault",
+      "request": {
+        "requestId": "v2-opt-r09",
+        "engineVersionOverride": 2,
+        "events": [
+          {
+            "kind": "auto",
+            "eventId": "event-0000",
+            "chainBoundary": "reset",
+            "candidates": [
+              { "candidateId": "candidate-000", "family": "balanced", "voiceMidis": [48, 52, 59] }
+            ],
+            "constraints": { "families": [], "range": null, "bassRange": null, "locks": [] }
+          }
+        ],
+        "transitions": []
+      },
+      "expected": { "refusal": { "code": "progression.policy_invalid", "pointer": "/identity/engineVersion" } },
+      "traceIds": ["V2-TRACE-REFUSALS"],
+      "authorityIds": ["V2-AUTH-PLAN"]
+    },
+    {
+      "id": "V2-OPT-R10",
+      "kind": "refuse",
+      "title": "Candidates out of ascending candidate-id order",
+      "request": {
+        "requestId": "v2-opt-r10",
+        "events": [
+          {
+            "kind": "auto",
+            "eventId": "event-0000",
+            "chainBoundary": "reset",
+            "candidates": [
+              { "candidateId": "candidate-001", "family": "balanced", "voiceMidis": [50, 55, 62] },
+              { "candidateId": "candidate-000", "family": "balanced", "voiceMidis": [48, 52, 59] }
+            ],
+            "constraints": { "families": null, "range": null, "bassRange": null, "locks": [] }
+          }
+        ],
+        "transitions": []
+      },
+      "expected": { "refusal": { "code": "progression.candidate_invalid", "pointer": "/events/0/candidates" } },
+      "traceIds": ["V2-TRACE-REFUSALS"],
+      "authorityIds": ["V2-AUTH-PLAN"]
+    },
+    {
+      "id": "V2-OPT-R11",
+      "kind": "refuse",
+      "title": "Inverted MIDI range bounds",
+      "request": {
+        "requestId": "v2-opt-r11",
+        "events": [
+          {
+            "kind": "auto",
+            "eventId": "event-0000",
+            "chainBoundary": "reset",
+            "candidates": [
+              { "candidateId": "candidate-000", "family": "balanced", "voiceMidis": [48, 52, 59] }
+            ],
+            "constraints": {
+              "families": null,
+              "range": { "lowMidi": 70, "highMidi": 60 },
+              "bassRange": null,
+              "locks": []
+            }
+          }
+        ],
+        "transitions": []
+      },
+      "expected": { "refusal": { "code": "progression.constraint_invalid", "pointer": "/events/0/constraints/range" } },
+      "traceIds": ["V2-TRACE-REFUSALS"],
+      "authorityIds": ["V2-AUTH-PLAN"]
+    },
+    {
+      "id": "V2-OPT-R12",
+      "kind": "refuse",
+      "title": "Duplicate event ids",
+      "request": {
+        "requestId": "v2-opt-r12",
+        "events": [
+          {
+            "kind": "auto",
+            "eventId": "event-0000",
+            "chainBoundary": "reset",
+            "candidates": [
+              { "candidateId": "candidate-000", "family": "balanced", "voiceMidis": [48, 52, 59] }
+            ],
+            "constraints": { "families": null, "range": null, "bassRange": null, "locks": [] }
+          },
+          {
+            "kind": "auto",
+            "eventId": "event-0000",
+            "chainBoundary": "continue",
+            "candidates": [
+              { "candidateId": "candidate-000", "family": "balanced", "voiceMidis": [48, 52, 59] }
+            ],
+            "constraints": { "families": null, "range": null, "bassRange": null, "locks": [] }
+          }
+        ],
+        "transitions": [
+          { "fromEventOrdinal": 0, "from": "candidate-000", "to": "candidate-000", "cost": [1, 1, 0, 0, 0, 0, 12] }
+        ]
+      },
+      "expected": { "refusal": { "code": "progression.event_invalid", "pointer": "/events/1/eventId" } },
+      "traceIds": ["V2-TRACE-REFUSALS"],
+      "authorityIds": ["V2-AUTH-PLAN"]
+    }
+  ]
+}

@@ -185,3 +185,11 @@ export {
   assignVoiceTransition,
   initializeVoiceFrame,
 } from "./voice-assignment";
+
+export * from "./progression-optimizer-contract";
+export {
+  advanceProgressionOptimization,
+  cancelProgressionOptimization,
+  initializeProgressionOptimization,
+  progressionOptimizerOperations,
+} from "./progression-optimizer";

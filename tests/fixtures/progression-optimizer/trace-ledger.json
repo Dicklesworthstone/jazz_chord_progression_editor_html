@@ -1,0 +1,143 @@
+{
+  "schema": "changes.fixtures.v2-trace-ledger.v1",
+  "fixtureVersion": 1,
+  "reciprocityLaw": "Every trace names at least one existing case; every case and mutation control belongs to at least one trace; a case lists a trace id exactly when that trace lists the case id; every evidence owner is a named future test file for V2/build (or this package's own static test for authority-integrity).",
+  "traces": [
+    {
+      "id": "V2-TRACE-DETERMINISM",
+      "requirement": "Identical input, engine version, and cost/search/tie-break policy yield byte-identical alternatives, ordering, and counters under every quantum schedule.",
+      "parentSource": "V2 bead success criteria and REBUILD_PLAN 11.9/12.1 determinism laws",
+      "caseIds": ["V2-OPT-001", "V2-OPT-002", "V2-OPT-007", "V2-STP-003"],
+      "controlIds": ["V2-MUT-005"],
+      "evidenceOwner": "tests/unit/progression-optimizer-determinism.test.ts"
+    },
+    {
+      "id": "V2-TRACE-BRUTE-FORCE",
+      "requirement": "Small cases equal exhaustive brute force: the beam result matches full chain enumeration in front content, selection, and ordering.",
+      "parentSource": "V2 bead success criteria (brute-force oracle tests)",
+      "caseIds": ["V2-OPT-001", "V2-OPT-002", "V2-OPT-003", "V2-OPT-004", "V2-OPT-005", "V2-OPT-006", "V2-OPT-007", "V2-BND-001", "V2-BND-004", "V2-BND-010", "V2-BND-011", "V2-BND-012", "V2-LIM-001"],
+      "controlIds": ["V2-MUT-005", "V2-MUT-025"],
+      "evidenceOwner": "tests/unit/progression-optimizer-oracle-equivalence.test.ts"
+    },
+    {
+      "id": "V2-TRACE-PARETO-DOMINANCE",
+      "requirement": "Weak dominance prunes only within a bucket during search and across chains only at the final front; equal vectors never dominate; the front contains exactly the non-dominated chains.",
+      "parentSource": "V2 bead (Pareto dominance) and REBUILD_PLAN 12.5",
+      "caseIds": ["V2-OPT-001", "V2-OPT-003", "V2-OPT-005", "V2-OPT-006", "V2-LIM-001"],
+      "controlIds": ["V2-MUT-008", "V2-MUT-026"],
+      "evidenceOwner": "tests/unit/progression-optimizer-pareto.test.ts"
+    },
+    {
+      "id": "V2-TRACE-TIE-BREAK",
+      "requirement": "The frozen total order is aggregate axes lexicographically, then the unique candidate-id sequence; selection is its minimum.",
+      "parentSource": "V2 bead (stable ordering/tie-breaks)",
+      "caseIds": ["V2-OPT-002", "V2-OPT-005", "V2-OPT-007", "V2-LIM-002"],
+      "controlIds": ["V2-MUT-007"],
+      "evidenceOwner": "tests/unit/progression-optimizer-pareto.test.ts"
+    },
+    {
+      "id": "V2-TRACE-CROSS-BUCKET",
+      "requirement": "Cross-bucket dominance is never applied before the final layer; a locally worse prefix may carry the global optimum.",
+      "parentSource": "REBUILD_PLAN 12.6 (no greedy optimization from the previous chord only)",
+      "caseIds": ["V2-OPT-004"],
+      "controlIds": ["V2-MUT-009"],
+      "evidenceOwner": "tests/unit/progression-optimizer-search.test.ts"
+    },
+    {
+      "id": "V2-TRACE-FIXED-EVENTS",
+      "requirement": "Manual/Frozen events contribute exactly one immutable candidate whose pitches survive bit-for-bit; constraint violations on fixed candidates are preserved and degraded, never repaired.",
+      "parentSource": "V2 bead (Manual/Frozen seams) and REBUILD_PLAN 12.6 boundaries",
+      "caseIds": ["V2-BND-001", "V2-BND-002", "V2-BND-010"],
+      "controlIds": ["V2-MUT-013", "V2-MUT-014"],
+      "evidenceOwner": "tests/unit/progression-optimizer-boundaries.test.ts"
+    },
+    {
+      "id": "V2-TRACE-SEGMENTATION",
+      "requirement": "Reset boundaries split independent chains; no transition cost crosses a reset; the aggregate cost folds across segments by the frozen per-axis aggregation.",
+      "parentSource": "REBUILD_PLAN 12.6 (section reset starts a new chain)",
+      "caseIds": ["V2-BND-003", "V2-BND-007"],
+      "controlIds": ["V2-MUT-018"],
+      "evidenceOwner": "tests/unit/progression-optimizer-boundaries.test.ts"
+    },
+    {
+      "id": "V2-TRACE-LOOP-CLOSURE",
+      "requirement": "Loop closure folds each chain's last-to-first transition before the final front, drops refused chains, applies only to single-segment single-window requests, and is otherwise skipped with a visible degradation.",
+      "parentSource": "REBUILD_PLAN 12.6 (loop boundaries may include last-to-first transition cost)",
+      "caseIds": ["V2-BND-004", "V2-BND-005", "V2-BND-006", "V2-BND-007"],
+      "controlIds": ["V2-MUT-015", "V2-MUT-024"],
+      "evidenceOwner": "tests/unit/progression-optimizer-boundaries.test.ts"
+    },
+    {
+      "id": "V2-TRACE-CONSTRAINTS",
+      "requirement": "Family/range/bass filters run in the frozen order charging the first failing kind; locks travel verbatim to the oracle; impossible constraints yield a typed no-realization naming every responsible constraint; nothing is silently relaxed.",
+      "parentSource": "V2 bead (impossible locks/ranges; degradation/conflict explanations)",
+      "caseIds": ["V2-BND-002", "V2-BND-006", "V2-BND-008", "V2-BND-009", "V2-BND-011", "V2-BND-012"],
+      "controlIds": ["V2-MUT-016"],
+      "evidenceOwner": "tests/unit/progression-optimizer-constraints.test.ts"
+    },
+    {
+      "id": "V2-TRACE-REFUSALS",
+      "requirement": "Every refusal code fires from its dedicated near-miss with the documented JSON pointer, and validation precedence resolves multi-fault requests deterministically.",
+      "parentSource": "V2 bead (malformed cases) and the Section 4 precedence table",
+      "caseIds": ["V2-OPT-R01", "V2-OPT-R02", "V2-OPT-R03", "V2-OPT-R04", "V2-OPT-R05", "V2-OPT-R06", "V2-OPT-R07", "V2-OPT-R08", "V2-OPT-R09", "V2-OPT-R10", "V2-OPT-R11", "V2-OPT-R12", "V2-LIM-004", "V2-LIM-006", "V2-LIM-007", "V2-LIM-008"],
+      "controlIds": ["V2-MUT-011", "V2-MUT-012"],
+      "evidenceOwner": "tests/unit/progression-optimizer-refusals.test.ts"
+    },
+    {
+      "id": "V2-TRACE-LIMITS",
+      "requirement": "The 96/24 upstream caps, beam width 48, 512-event window, 8,192-event request cap, 7-lock cap, and quantum arithmetic hold exactly at their edges.",
+      "parentSource": "V2 bead (96/24/48/512 bound cases) and REBUILD_PLAN 12.6",
+      "caseIds": ["V2-LIM-001", "V2-LIM-002", "V2-LIM-003", "V2-LIM-004", "V2-LIM-005", "V2-LIM-006", "V2-LIM-007", "V2-LIM-008"],
+      "controlIds": ["V2-MUT-017", "V2-MUT-019"],
+      "evidenceOwner": "tests/unit/progression-optimizer-limits.test.ts"
+    },
+    {
+      "id": "V2-TRACE-WINDOWING",
+      "requirement": "Charts beyond 512 events optimize as consecutive windows with fixed boundary voicings, a window-partition degradation, exhausted termination, and window realizations covering only their own events.",
+      "parentSource": "REBUILD_PLAN 12.6 (explicit 512-event windows with fixed boundary voicings)",
+      "caseIds": ["V2-LIM-003"],
+      "controlIds": ["V2-MUT-018"],
+      "evidenceOwner": "tests/unit/progression-optimizer-windows.test.ts"
+    },
+    {
+      "id": "V2-TRACE-STEPPER",
+      "requirement": "The Section 9 state machine holds: initialize consumes no quanta, each advance exactly one, terminal states refuse resume/cancel, tampered pins refuse as stale, and quantum boundaries are invisible in observables.",
+      "parentSource": "V2 bead (cancellation/resume/yield-schedule equivalence) and REBUILD_PLAN 11.9 stepper law",
+      "caseIds": ["V2-STP-001", "V2-STP-002", "V2-STP-003", "V2-STP-004", "V2-STP-005", "V2-STP-006", "V2-STP-007", "V2-STP-008"],
+      "controlIds": ["V2-MUT-020", "V2-MUT-027"],
+      "evidenceOwner": "tests/unit/progression-optimizer-stepper.test.ts"
+    },
+    {
+      "id": "V2-TRACE-NO-PARTIAL",
+      "requirement": "Cancelled and work-quanta-cap outcomes return diagnostics and counters only, never a partial option set.",
+      "parentSource": "REBUILD_PLAN 11.9 (user cancellation produces no partial option set)",
+      "caseIds": ["V2-LIM-005", "V2-STP-004", "V2-STP-005"],
+      "controlIds": ["V2-MUT-019"],
+      "evidenceOwner": "tests/unit/progression-optimizer-stepper.test.ts"
+    },
+    {
+      "id": "V2-TRACE-COUNTERS",
+      "requirement": "All fourteen work counters and four memory counters follow the frozen operational definitions, satisfy the work-unit identity, and stay within the frozen limits.",
+      "parentSource": "V2 bead (memory/work counters; SearchStats) and REBUILD_PLAN 11.9 SearchStats",
+      "caseIds": ["V2-OPT-001", "V2-OPT-004", "V2-OPT-005", "V2-OPT-006", "V2-BND-003", "V2-BND-004", "V2-BND-012", "V2-LIM-002", "V2-LIM-003", "V2-LIM-005", "V2-STP-002"],
+      "controlIds": ["V2-MUT-006", "V2-MUT-010", "V2-MUT-017"],
+      "evidenceOwner": "tests/unit/progression-optimizer-counters.test.ts"
+    },
+    {
+      "id": "V2-TRACE-V1-ORACLE-BINDING",
+      "requirement": "V2 consumes transition facts only through the injected V1 operation with per-pair memoization; oracle refusals exclude pairs or name lock conflicts; V2/build must add integration tests against the real assignVoiceTransition.",
+      "parentSource": "V2 bead (resumable optimizer over V1 motion/cost vectors) and V1 contract handoff",
+      "caseIds": ["V2-OPT-006", "V2-BND-008"],
+      "controlIds": ["V2-MUT-010"],
+      "evidenceOwner": "tests/integration/progression-optimizer-v1-oracle.test.ts"
+    },
+    {
+      "id": "V2-TRACE-AUTHORITY-INTEGRITY",
+      "requirement": "The fixture package itself is mutation-sensitive: manifest constants match the frozen module, trace reciprocity holds, and provenance flags cannot flip silently.",
+      "parentSource": "V2 bead exit criteria (mutation-sensitive contract, independent authorship)",
+      "caseIds": ["V2-OPT-001"],
+      "controlIds": ["V2-MUT-001", "V2-MUT-002", "V2-MUT-003", "V2-MUT-004", "V2-MUT-021", "V2-MUT-022", "V2-MUT-023"],
+      "evidenceOwner": "tests/static/v2-contract.test.ts"
+    }
+  ]
+}
