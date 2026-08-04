@@ -99,7 +99,6 @@ export {
 export { createStudioAtomicEditPlanDependencies } from "./studio-edit-plan-dependencies";
 
 export {
-  createStudioAtomicEditPlanDependencies,
   createStudioApplicationDependencies,
   createStudioBootstrap,
   publishBlankStudioDocument,
