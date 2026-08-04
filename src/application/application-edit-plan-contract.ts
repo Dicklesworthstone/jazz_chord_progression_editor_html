@@ -38,14 +38,14 @@ import {
 
 /** Proposed A0/U1 specification surface; no production runner consumes it yet. */
 export const A0_U1_ATOMIC_EDIT_PLAN_CONTRACT_SCHEMA =
-  "changes.application.atomic-edit-plan-contract.v1";
+  "changes.application.atomic-edit-plan-contract.v2";
 export const A0_U1_ATOMIC_EDIT_PLAN_POLICY_ID =
   "changes.application-atomic-edit-plan";
-export const A0_U1_ATOMIC_EDIT_PLAN_POLICY_VERSION = 1;
+export const A0_U1_ATOMIC_EDIT_PLAN_POLICY_VERSION = 2;
 export const A0_U1_ATOMIC_EDIT_PLAN_RECEIPT_SCHEMA =
-  "changes.application.atomic-edit-plan-receipt.v1";
+  "changes.application.atomic-edit-plan-receipt.v2";
 export const A0_U1_ATOMIC_EDIT_IMPLEMENTATION_STATUS =
-  "specified-unimplemented";
+  "implemented-live";
 
 /** Proposed additive command surface; the live A0 tuple is deliberately unchanged. */
 export const A0_U1_PROPOSED_APPLICATION_COMMAND_KINDS: readonly [
@@ -65,7 +65,7 @@ export const A0_U1_PROPOSED_APPLICATION_COMMAND_KINDS: readonly [
   "apply-reharmonization",
   "replace-document",
   "apply-edit-plan",
-] = Object.freeze([
+] = /* @__PURE__ */ Object.freeze([
   "insert",
   "delete",
   "move",
@@ -87,18 +87,28 @@ export const A0_U1_PROPOSED_APPLICATION_COMMAND_KINDS: readonly [
 export type ProposedApplicationCommandKind =
   (typeof A0_U1_PROPOSED_APPLICATION_COMMAND_KINDS)[number];
 
+/**
+ * The closed set is six. `split-measure` is appended rather than inserted, so
+ * every index the accepted R1 packet pinned still names the same variant.
+ * `A0-U1-ATOM-001-command-and-five-closed-variants` keeps its accepted
+ * identifier: it records the count at R1 acceptance, and renaming it would
+ * rewrite 109 references inside the byte-pinned packet whose human-acceptance
+ * record cites those names. See contract section 21.6.
+ */
 export const A0_U1_ATOMIC_EDIT_PLAN_KINDS: readonly [
   "insert-fragment",
   "split-event-duration",
   "join-event-durations",
   "split-section",
   "join-sections",
-] = Object.freeze([
+  "split-measure",
+] = /* @__PURE__ */ Object.freeze([
   "insert-fragment",
   "split-event-duration",
   "join-event-durations",
   "split-section",
   "join-sections",
+  "split-measure",
 ]);
 
 export type AtomicEditPlanKind = (typeof A0_U1_ATOMIC_EDIT_PLAN_KINDS)[number];
@@ -107,7 +117,7 @@ export const A0_U1_INSERT_FRAGMENT_PLACEMENT_KINDS: readonly [
   "into-measure",
   "into-section",
   "into-document",
-] = Object.freeze(["into-measure", "into-section", "into-document"]);
+] = /* @__PURE__ */ Object.freeze(["into-measure", "into-section", "into-document"]);
 
 export type InsertFragmentPlacementKind =
   (typeof A0_U1_INSERT_FRAGMENT_PLACEMENT_KINDS)[number];
@@ -123,11 +133,11 @@ export const A0_U1_NEW_EVENT_AUTO_VOICING: Readonly<{
   voiceCount: 4;
   range: Readonly<{ lowMidi: 48; highMidi: 84 }>;
   bassPolicy: "generated";
-}> = Object.freeze({
+}> = /* @__PURE__ */ Object.freeze({
   mode: "auto",
   family: "balanced",
   voiceCount: 4,
-  range: Object.freeze({ lowMidi: 48, highMidi: 84 }),
+  range: /* @__PURE__ */ Object.freeze({ lowMidi: 48, highMidi: 84 }),
   bassPolicy: "generated",
 });
 
@@ -164,7 +174,7 @@ export const A0_U1_RECOVERY_FIELD_COMPARISON_ORDER: readonly [
   "selected-global-ordinal",
   "layout-loss-acknowledgement",
   "duration-branch-and-value",
-] = Object.freeze([
+] = /* @__PURE__ */ Object.freeze([
   "placement",
   "selected-global-ordinal",
   "layout-loss-acknowledgement",
@@ -177,7 +187,7 @@ export const A0_U1_FINAL_COLLECTION_LIMIT_COMPARISON_ORDER: readonly [
   "final-document-events",
   "occupied-id-records",
   "plan-node-records",
-] = Object.freeze([
+] = /* @__PURE__ */ Object.freeze([
   "final-document-sections",
   "final-section-measures-in-section-order",
   "final-total-measures",
@@ -209,13 +219,18 @@ export const MAX_A0_U1_COMPLETION_REASON_CODE_POINTS =
   MAX_LONG_TEXT_CODE_POINTS;
 export const MAX_A0_U1_SECTION_METADATA_CODE_POINTS =
   MAX_A0_U1_SECTION_NAME_CODE_POINTS + MAX_A0_U1_SECTION_ANNOTATION_CODE_POINTS;
-/** Join validates expected-left, expected-right, then result metadata. */
+/**
+ * Join validates expected-left, expected-right, then result metadata, and the
+ * accepted-shape aggregate also covers the completion reason of the one
+ * first-extra declaration row inside the runtime-shape horizon.
+ */
 export const MAX_A0_U1_PLAN_METADATA_CODE_POINTS =
-  3 * MAX_A0_U1_SECTION_METADATA_CODE_POINTS;
+  3 * MAX_A0_U1_SECTION_METADATA_CODE_POINTS +
+  MAX_A0_U1_COMPLETION_REASON_CODE_POINTS;
 export const MAX_A0_U1_METADATA_CODE_POINTS_OBSERVED =
   MAX_A0_U1_PLAN_METADATA_CODE_POINTS + 1;
 
-export const A0_U1_FRAGMENT_SOURCE_REFUSAL_REACHABILITY = Object.freeze({
+export const A0_U1_FRAGMENT_SOURCE_REFUSAL_REACHABILITY = /* @__PURE__ */ Object.freeze({
   "edit-plan.source-code-points-exceeded":
     "static-dominated-by-accepted-quick-entry-invariants",
   "edit-plan.source-unicode-invalid":
@@ -232,13 +247,13 @@ export const MAX_A0_U1_REACHABLE_FINAL_TIMELINE_QUARTER_NOTE_BEATS =
  * looser defensive timeline ceiling. A valid document therefore cannot reach
  * the timeline refusal, even though the bounded runner retains the check.
  */
-export const A0_U1_STATIC_REFUSAL_REACHABILITY = Object.freeze({
+export const A0_U1_STATIC_REFUSAL_REACHABILITY = /* @__PURE__ */ Object.freeze({
   ...A0_U1_FRAGMENT_SOURCE_REFUSAL_REACHABILITY,
   "edit-plan.timeline-limit-exceeded":
     "static-dominated-by-final-event-and-meter-capacity-invariants",
 });
 
-export const A0_U1_ATOMIC_EDIT_LIMITS = Object.freeze({
+export const A0_U1_ATOMIC_EDIT_LIMITS = /* @__PURE__ */ Object.freeze({
   structuralDecodeCalls: 1,
   semanticValidationCalls: 1,
   fragmentSourceCodePoints: MAX_A0_U1_FRAGMENT_SOURCE_CODE_POINTS,
@@ -292,18 +307,24 @@ export type CompleteDraftIntoEmptyMeasureCompletionDeclaration = Readonly<{
  * Each field must be a valid Unicode scalar string within its domain bound
  * before allocation; the first failure is plan-shape-invalid at that field.
  */
-export const A0_U1_ATOMIC_EDIT_PLAN_TEXT_SHAPE_POLICY = Object.freeze({
+export const A0_U1_ATOMIC_EDIT_PLAN_TEXT_SHAPE_POLICY = /* @__PURE__ */ Object.freeze({
   stage: "exact-runtime-shape",
   refusalCode: "edit-plan.plan-shape-invalid",
   unicodePolicy: "valid-unicode-scalar-string",
   counter: "metadataCodePointsObserved",
-  splitSectionMetadataOrder: Object.freeze(["newSectionMetadata"] as const),
-  joinSectionsMetadataOrder: Object.freeze([
+  splitSectionMetadataOrder: /* @__PURE__ */ Object.freeze(["newSectionMetadata"] as const),
+  /**
+   * Split-measure declares no section metadata. Its only caller-owned text is
+   * the fresh suffix measure's own completion reason, validated before the
+   * declaration tuple exactly as the field order states.
+   */
+  splitMeasureMetadataOrder: /* @__PURE__ */ Object.freeze(["newMeasureCompletion"] as const),
+  joinSectionsMetadataOrder: /* @__PURE__ */ Object.freeze([
     "expectedLeftMetadata",
     "expectedRightMetadata",
     "resultMetadata",
   ] as const),
-  sectionMetadataFieldOrder: Object.freeze(["name", "annotation"] as const),
+  sectionMetadataFieldOrder: /* @__PURE__ */ Object.freeze(["name", "annotation"] as const),
   sectionNameCodePoints: MAX_A0_U1_SECTION_NAME_CODE_POINTS,
   sectionAnnotationCodePoints: MAX_A0_U1_SECTION_ANNOTATION_CODE_POINTS,
   sectionNameBlankness:
@@ -314,7 +335,7 @@ export const A0_U1_ATOMIC_EDIT_PLAN_TEXT_SHAPE_POLICY = Object.freeze({
   pickupOrIncompleteReasonBlankness:
     "ecmascript-String.prototype.trim-result-must-be-nonempty",
   normalizationOrRepairPermitted: false,
-  pathAuthority: Object.freeze([
+  pathAuthority: /* @__PURE__ */ Object.freeze([
     "/plan/newSectionMetadata/name",
     "/plan/newSectionMetadata/annotation",
     "/plan/expectedLeftMetadata/name",
@@ -323,6 +344,7 @@ export const A0_U1_ATOMIC_EDIT_PLAN_TEXT_SHAPE_POLICY = Object.freeze({
     "/plan/expectedRightMetadata/annotation",
     "/plan/resultMetadata/name",
     "/plan/resultMetadata/annotation",
+    "/plan/newMeasureCompletion/reason",
     "/plan/completionDeclarations/{index}/completion/reason",
     "/plan/placement/completionDeclarations/{index}/completion/reason",
   ] as const),
@@ -485,13 +507,51 @@ export type JoinSectionsEditPlan = Readonly<{
   internalBoundaryPolicy: "remove-right-entry-boundary-confirmed";
 }>;
 
-/** Exactly five operation-specific variants; nesting or arbitrary batches do not exist. */
+/**
+ * Split one measure at an interior bar line.
+ *
+ * This is `split-section` one level down. `beforeEventId` is the first event of
+ * the suffix and must be strict interior: at least one event stays in the
+ * retained measure and at least one moves, so neither result is empty and the
+ * operation is never a no-op dressed as a split.
+ *
+ * `firstMeasureTotal` and `secondMeasureTotal` are the caller's exact statement
+ * of the partition. No beat is computed, redistributed, rounded, or repaired
+ * here: both are recomputed from the stored durations and confirmed before any
+ * identity work, and their exact rational sum must equal the source measure's
+ * current exact total. A split moves a bar line, never a beat.
+ *
+ * The retained measure keeps the source ID, and its declaration is the single
+ * `completionDeclarations` row. The suffix receives one fresh measure ID and
+ * the explicit `newMeasureCompletion` — a caller cannot name an ID that does
+ * not exist yet, which is why the second declaration is a dedicated field
+ * rather than a second row, exactly as `split-section` gives its fresh suffix
+ * an explicit `newSectionMetadata`.
+ *
+ * Every moved event keeps its exact ID, chord, voicing, annotation, and
+ * duration, and its order relative to every other event is unchanged. The
+ * operation allocates one measure ID, removes none, and creates no event.
+ */
+export type SplitMeasureEditPlan = Readonly<{
+  kind: "split-measure";
+  measureId: MeasureId;
+  beforeEventId: ChordEventId;
+  firstMeasureTotal: BeatDuration;
+  secondMeasureTotal: BeatDuration;
+  newMeasureCompletion: MeasureCompletion;
+  completionDeclarations: readonly [AtomicEditPlanCompletionDeclaration];
+  identityPolicy: "retain-source-prefix-allocate-suffix";
+  eventPolicy: "move-suffix-preserve-identities";
+}>;
+
+/** Exactly six operation-specific variants; nesting or arbitrary batches do not exist. */
 export type AtomicEditPlan =
   | InsertFragmentEditPlan
   | SplitEventDurationEditPlan
   | JoinEventDurationsEditPlan
   | SplitSectionEditPlan
-  | JoinSectionsEditPlan;
+  | JoinSectionsEditPlan
+  | SplitMeasureEditPlan;
 
 /**
  * Proposed sixteenth A0 command. It is intentionally separate from the live
@@ -562,7 +622,7 @@ export const A0_U1_ATOMIC_EDIT_PLAN_RUNNER_STAGE_ORDER: readonly [
   "f2-once",
   "f3-once",
   "bookmarks-history-and-atomic-publication",
-] = Object.freeze([
+] = /* @__PURE__ */ Object.freeze([
   "exact-runtime-shape",
   "a0-envelope",
   "quick-entry-snapshot",
@@ -591,10 +651,11 @@ export const A0_U1_ATOMIC_EDIT_PLAN_ID_ALLOCATION_ORDER: readonly [
   "fragment-events-in-source-order",
   "recovered-chord-selected-only",
   "split-event-second-only",
+  "split-measure-suffix-only",
   "split-section-suffix-only",
   "reserve-each-returned-id-locally",
   "stop-without-retry-on-first-failure-or-collision",
-] = Object.freeze([
+] = /* @__PURE__ */ Object.freeze([
   "preflight-operation-local-shape-snapshot-parser-declarations-laws-and-bounds",
   "index-document-section-measure-event-ids-globally",
   "fragment-section-before-descendants",
@@ -602,6 +663,7 @@ export const A0_U1_ATOMIC_EDIT_PLAN_ID_ALLOCATION_ORDER: readonly [
   "fragment-events-in-source-order",
   "recovered-chord-selected-only",
   "split-event-second-only",
+  "split-measure-suffix-only",
   "split-section-suffix-only",
   "reserve-each-returned-id-locally",
   "stop-without-retry-on-first-failure-or-collision",
@@ -621,7 +683,7 @@ export const A0_U1_ATOMIC_EDIT_DIAGNOSTIC_PATH_ORDER: readonly [
   "string-string-by-ecmascript-code-unit",
   "mixed-numeric-before-string",
   "shared-prefix-shorter-first",
-] = Object.freeze([
+] = /* @__PURE__ */ Object.freeze([
   "numeric-numeric-by-number",
   "string-string-by-ecmascript-code-unit",
   "mixed-numeric-before-string",
@@ -634,7 +696,7 @@ export const A0_U1_ATOMIC_EDIT_PLAN_DIAGNOSTIC_ORDER: readonly [
   "source-range-start-ascending",
   "source-range-end-ascending",
   "code-ecmascript-code-unit-lexical",
-] = Object.freeze([
+] = /* @__PURE__ */ Object.freeze([
   "path-domain-segment-order",
   "null-source-range-before-ranged",
   "source-range-start-ascending",
@@ -653,6 +715,7 @@ export const A0_U1_ATOMIC_EDIT_REFUSAL_CODES: readonly [
   "edit-plan.destination-invalid",
   "edit-plan.event-order-invalid",
   "edit-plan.section-split-boundary-invalid",
+  "edit-plan.measure-split-boundary-invalid",
   "edit-plan.section-order-invalid",
   "edit-plan.recovered-chord-placement-invalid",
   "edit-plan.syntax-refused",
@@ -666,6 +729,7 @@ export const A0_U1_ATOMIC_EDIT_REFUSAL_CODES: readonly [
   "edit-plan.recovered-chord-duration-mismatch",
   "edit-plan.duration-invalid",
   "edit-plan.duration-sum-mismatch",
+  "edit-plan.measure-partition-mismatch",
   "edit-plan.event-content-mismatch",
   "edit-plan.right-annotation-not-empty",
   "edit-plan.collection-limit-exceeded",
@@ -675,7 +739,7 @@ export const A0_U1_ATOMIC_EDIT_REFUSAL_CODES: readonly [
   "edit-plan.structural-publication-refused",
   "edit-plan.semantic-publication-refused",
   "edit-plan.history-refused",
-] = Object.freeze([
+] = /* @__PURE__ */ Object.freeze([
   "edit-plan.command-shape-invalid",
   "edit-plan.plan-shape-invalid",
   "edit-plan.quick-entry-snapshot-mismatch",
@@ -686,6 +750,7 @@ export const A0_U1_ATOMIC_EDIT_REFUSAL_CODES: readonly [
   "edit-plan.destination-invalid",
   "edit-plan.event-order-invalid",
   "edit-plan.section-split-boundary-invalid",
+  "edit-plan.measure-split-boundary-invalid",
   "edit-plan.section-order-invalid",
   "edit-plan.recovered-chord-placement-invalid",
   "edit-plan.syntax-refused",
@@ -699,6 +764,7 @@ export const A0_U1_ATOMIC_EDIT_REFUSAL_CODES: readonly [
   "edit-plan.recovered-chord-duration-mismatch",
   "edit-plan.duration-invalid",
   "edit-plan.duration-sum-mismatch",
+  "edit-plan.measure-partition-mismatch",
   "edit-plan.event-content-mismatch",
   "edit-plan.right-annotation-not-empty",
   "edit-plan.collection-limit-exceeded",
@@ -713,18 +779,18 @@ export const A0_U1_ATOMIC_EDIT_REFUSAL_CODES: readonly [
 export type AtomicEditPlanRefusalCode =
   (typeof A0_U1_ATOMIC_EDIT_REFUSAL_CODES)[number];
 
-export const A0_U1_ATOMIC_EDIT_PATH_TEMPLATE_GRAMMAR = Object.freeze({
+export const A0_U1_ATOMIC_EDIT_PATH_TEMPLATE_GRAMMAR = /* @__PURE__ */ Object.freeze({
   format: "rfc6901-json-pointer-template",
   root: "",
   separator: "/",
-  escaping: Object.freeze({ tilde: "~0", slash: "~1" }),
-  dynamicIndex: Object.freeze({
+  escaping: /* @__PURE__ */ Object.freeze({ tilde: "~0", slash: "~1" }),
+  dynamicIndex: /* @__PURE__ */ Object.freeze({
     token: "{index}",
     meaning: "canonical-nonnegative-base10-source-order-array-index",
   }),
-  dynamicMetadataField: Object.freeze({
+  dynamicMetadataField: /* @__PURE__ */ Object.freeze({
     token: "{metadataField}",
-    values: Object.freeze([
+    values: /* @__PURE__ */ Object.freeze([
       "name",
       "annotation",
       "keyOverride",
@@ -747,7 +813,7 @@ const COMMAND_SHAPE_PATH_AUTHORITY: readonly [
   "/coalescing",
   "/kind",
   "/plan",
-] = Object.freeze([
+] = /* @__PURE__ */ Object.freeze([
   "",
   "/id",
   "/label",
@@ -762,7 +828,7 @@ const COMMAND_SHAPE_PATH_AUTHORITY: readonly [
 const PLAN_SHAPE_PATH_AUTHORITY: readonly [
   AtomicEditPlanPathTemplate,
   ...AtomicEditPlanPathTemplate[],
-] = Object.freeze([
+] = /* @__PURE__ */ Object.freeze([
   "/plan",
   "/plan/kind",
   "/plan/voicingPolicy",
@@ -861,10 +927,25 @@ const PLAN_SHAPE_PATH_AUTHORITY: readonly [
   "/plan/completionDeclarations/{index}/completion/expectedDuration/numerator",
   "/plan/completionDeclarations/{index}/completion/expectedDuration/denominator",
   "/plan/completionDeclarations/{index}/completion/reason",
+  "/plan/measureId",
+  "/plan/beforeEventId",
+  "/plan/firstMeasureTotal",
+  "/plan/firstMeasureTotal/numerator",
+  "/plan/firstMeasureTotal/denominator",
+  "/plan/secondMeasureTotal",
+  "/plan/secondMeasureTotal/numerator",
+  "/plan/secondMeasureTotal/denominator",
+  "/plan/newMeasureCompletion",
+  "/plan/newMeasureCompletion/kind",
+  "/plan/newMeasureCompletion/expectedDuration",
+  "/plan/newMeasureCompletion/expectedDuration/numerator",
+  "/plan/newMeasureCompletion/expectedDuration/denominator",
+  "/plan/newMeasureCompletion/reason",
   "/plan/identityPolicy",
   "/plan/contentPolicy",
   "/plan/annotationPolicy",
   "/plan/measurePolicy",
+  "/plan/eventPolicy",
   "/plan/metadataPolicy",
   "/plan/internalBoundaryPolicy",
 ]);
@@ -886,7 +967,7 @@ export type AtomicEditPlanRefusalAuthorityRow = Readonly<{
  * array order and explicit precedence must equal ATOMIC_EDIT_REFUSAL_CODES.
  */
 export const A0_U1_ATOMIC_EDIT_REFUSAL_AUTHORITY: readonly AtomicEditPlanRefusalAuthorityRow[] =
-  Object.freeze([
+  /* @__PURE__ */ Object.freeze([
     {
       code: "edit-plan.command-shape-invalid",
       precedence: 0,
@@ -1007,15 +1088,22 @@ export const A0_U1_ATOMIC_EDIT_REFUSAL_AUTHORITY: readonly AtomicEditPlanRefusal
       pathAuthority: ["/plan/beforeMeasureId"],
     },
     {
-      code: "edit-plan.section-order-invalid",
+      code: "edit-plan.measure-split-boundary-invalid",
       precedence: 10,
+      stage: "target-and-destination",
+      condition: "split boundary is not strict interior to the target measure",
+      pathAuthority: ["/plan/beforeEventId"],
+    },
+    {
+      code: "edit-plan.section-order-invalid",
+      precedence: 11,
       stage: "target-and-destination",
       condition: "join section IDs are not immediate ordered siblings",
       pathAuthority: ["/plan/rightSectionId"],
     },
     {
       code: "edit-plan.recovered-chord-placement-invalid",
-      precedence: 11,
+      precedence: 12,
       stage: "target-and-destination",
       condition:
         "recovered-chord lane does not use its exact into-measure placement",
@@ -1023,21 +1111,21 @@ export const A0_U1_ATOMIC_EDIT_REFUSAL_AUTHORITY: readonly AtomicEditPlanRefusal
     },
     {
       code: "edit-plan.syntax-refused",
-      precedence: 12,
+      precedence: 13,
       stage: "t0-fragment-parse",
       condition: "complete-draft lane receives a T0 parse refusal",
       pathAuthority: ["/plan/source/quickEntrySnapshot/sourceText"],
     },
     {
       code: "edit-plan.recovered-chord-requires-parse-failure",
-      precedence: 13,
+      precedence: 14,
       stage: "t0-fragment-parse",
       condition: "recovered-chord lane receives a T0 parse success",
       pathAuthority: ["/plan/source/kind"],
     },
     {
       code: "edit-plan.recovered-chord-ordinal-missing",
-      precedence: 14,
+      precedence: 15,
       stage: "t0-fragment-parse",
       condition:
         "no returned T0 insertable chord has the selected global ordinal",
@@ -1045,7 +1133,7 @@ export const A0_U1_ATOMIC_EDIT_REFUSAL_AUTHORITY: readonly AtomicEditPlanRefusal
     },
     {
       code: "edit-plan.warning-acknowledgements-mismatch",
-      precedence: 15,
+      precedence: 16,
       stage: "warning-acknowledgements",
       condition:
         "ordered warning code/range acknowledgement sequence differs from T0",
@@ -1059,7 +1147,7 @@ export const A0_U1_ATOMIC_EDIT_REFUSAL_AUTHORITY: readonly AtomicEditPlanRefusal
     },
     {
       code: "edit-plan.fragment-placement-mismatch",
-      precedence: 16,
+      precedence: 17,
       stage: "completion-and-metadata-declarations",
       condition:
         "T0 fragment structure does not match the declared complete-draft placement",
@@ -1067,7 +1155,7 @@ export const A0_U1_ATOMIC_EDIT_REFUSAL_AUTHORITY: readonly AtomicEditPlanRefusal
     },
     {
       code: "edit-plan.completion-declarations-mismatch",
-      precedence: 17,
+      precedence: 18,
       stage: "completion-and-metadata-declarations",
       condition:
         "completion declaration tuple is missing, extra, unrelated, duplicated, or unequal",
@@ -1088,7 +1176,7 @@ export const A0_U1_ATOMIC_EDIT_REFUSAL_AUTHORITY: readonly AtomicEditPlanRefusal
     },
     {
       code: "edit-plan.section-metadata-mismatch",
-      precedence: 18,
+      precedence: 19,
       stage: "completion-and-metadata-declarations",
       condition:
         "section declaration or well-shaped expected section metadata is missing, reordered, duplicated, or unequal",
@@ -1102,14 +1190,14 @@ export const A0_U1_ATOMIC_EDIT_REFUSAL_AUTHORITY: readonly AtomicEditPlanRefusal
     },
     {
       code: "edit-plan.recovered-chord-layout-loss-unacknowledged",
-      precedence: 19,
+      precedence: 20,
       stage: "operation-laws",
       condition: "recovery layout-loss acknowledgement literal is not exact",
       pathAuthority: ["/plan/source/layoutLossAcknowledgement"],
     },
     {
       code: "edit-plan.recovered-chord-duration-mismatch",
-      precedence: 20,
+      precedence: 21,
       stage: "operation-laws",
       condition:
         "caller duration nullability/value does not match the selected T0 duration branch",
@@ -1117,7 +1205,7 @@ export const A0_U1_ATOMIC_EDIT_REFUSAL_AUTHORITY: readonly AtomicEditPlanRefusal
     },
     {
       code: "edit-plan.duration-invalid",
-      precedence: 21,
+      precedence: 22,
       stage: "operation-laws",
       condition: "duration is not a positive canonical reduced PPQ duration",
       pathAuthority: [
@@ -1129,15 +1217,23 @@ export const A0_U1_ATOMIC_EDIT_REFUSAL_AUTHORITY: readonly AtomicEditPlanRefusal
     },
     {
       code: "edit-plan.duration-sum-mismatch",
-      precedence: 22,
+      precedence: 23,
       stage: "operation-laws",
       condition:
         "declared exact split or join sum differs from source span sum",
       pathAuthority: ["/plan/secondDuration", "/plan/joinedDuration"],
     },
     {
+      code: "edit-plan.measure-partition-mismatch",
+      precedence: 24,
+      stage: "operation-laws",
+      condition:
+        "a declared measure total is not the exact sum of its side, or the two do not sum to the source measure total",
+      pathAuthority: ["/plan/firstMeasureTotal", "/plan/secondMeasureTotal"],
+    },
+    {
       code: "edit-plan.event-content-mismatch",
-      precedence: 23,
+      precedence: 25,
       stage: "operation-laws",
       condition:
         "join siblings differ in literal spelling-first chord or voicing content",
@@ -1145,14 +1241,14 @@ export const A0_U1_ATOMIC_EDIT_REFUSAL_AUTHORITY: readonly AtomicEditPlanRefusal
     },
     {
       code: "edit-plan.right-annotation-not-empty",
-      precedence: 24,
+      precedence: 26,
       stage: "operation-laws",
       condition: "right join sibling annotation is not the empty string",
       pathAuthority: ["/plan/rightEventId"],
     },
     {
       code: "edit-plan.collection-limit-exceeded",
-      precedence: 25,
+      precedence: 27,
       stage: "final-collection-and-timeline-limits",
       condition:
         "first final section, measure, event, or tracked-record excess",
@@ -1160,42 +1256,42 @@ export const A0_U1_ATOMIC_EDIT_REFUSAL_AUTHORITY: readonly AtomicEditPlanRefusal
     },
     {
       code: "edit-plan.timeline-limit-exceeded",
-      precedence: 26,
+      precedence: 28,
       stage: "final-collection-and-timeline-limits",
       condition: "first exact final timeline sum beyond the domain maximum",
       pathAuthority: ["/plan"],
     },
     {
       code: "edit-plan.id-factory-failed",
-      precedence: 27,
+      precedence: 29,
       stage: "stable-id-allocation",
       condition: "first required StableIdFactory.next call returns failure",
       pathAuthority: ["/plan"],
     },
     {
       code: "edit-plan.id-collision",
-      precedence: 28,
+      precedence: 30,
       stage: "stable-id-allocation",
       condition: "first returned ID collides in the global reserved set",
       pathAuthority: ["/plan"],
     },
     {
       code: "edit-plan.structural-publication-refused",
-      precedence: 29,
+      precedence: 31,
       stage: "f2-once",
       condition: "the single structural decode rejects the private candidate",
       pathAuthority: ["/candidate"],
     },
     {
       code: "edit-plan.semantic-publication-refused",
-      precedence: 30,
+      precedence: 32,
       stage: "f3-once",
       condition: "the single semantic validation rejects the decoded candidate",
       pathAuthority: ["/candidate"],
     },
     {
       code: "edit-plan.history-refused",
-      precedence: 31,
+      precedence: 33,
       stage: "bookmarks-history-and-atomic-publication",
       condition:
         "history retained-byte estimate is invalid or the entry cannot be retained",
@@ -1213,7 +1309,7 @@ export const A0_U1_ATOMIC_EDIT_OUTER_REFUSAL_CODES: readonly [
   "command.semantic_validation_failed",
   "history.entry_too_large",
   "history.byte_estimate_invalid",
-] = Object.freeze([
+] = /* @__PURE__ */ Object.freeze([
   "command.payload_invalid",
   "command.target_missing",
   "command.destination_invalid",
@@ -1231,6 +1327,7 @@ export type AtomicEditPlanDestinationRefusalCode =
   | "edit-plan.destination-invalid"
   | "edit-plan.event-order-invalid"
   | "edit-plan.section-split-boundary-invalid"
+  | "edit-plan.measure-split-boundary-invalid"
   | "edit-plan.section-order-invalid";
 
 export type AtomicEditPlanIdAllocationRefusalCode =
@@ -1264,40 +1361,40 @@ export type AtomicEditPlanRefusalCodeForOuter<
             : "edit-plan.history-refused";
 
 const PAYLOAD_INVALID_OUTER_CODES: readonly ["command.payload_invalid"] =
-  Object.freeze(["command.payload_invalid"]);
+  /* @__PURE__ */ Object.freeze(["command.payload_invalid"]);
 const TARGET_MISSING_OUTER_CODES: readonly ["command.target_missing"] =
-  Object.freeze(["command.target_missing"]);
+  /* @__PURE__ */ Object.freeze(["command.target_missing"]);
 const DESTINATION_INVALID_OUTER_CODES: readonly [
   "command.destination_invalid",
-] = Object.freeze(["command.destination_invalid"]);
+] = /* @__PURE__ */ Object.freeze(["command.destination_invalid"]);
 const ID_ALLOCATION_FAILED_OUTER_CODES: readonly [
   "command.id_allocation_failed",
-] = Object.freeze(["command.id_allocation_failed"]);
+] = /* @__PURE__ */ Object.freeze(["command.id_allocation_failed"]);
 const STRUCTURAL_VALIDATION_FAILED_OUTER_CODES: readonly [
   "command.structural_validation_failed",
-] = Object.freeze(["command.structural_validation_failed"]);
+] = /* @__PURE__ */ Object.freeze(["command.structural_validation_failed"]);
 const SEMANTIC_VALIDATION_FAILED_OUTER_CODES: readonly [
   "command.semantic_validation_failed",
-] = Object.freeze(["command.semantic_validation_failed"]);
+] = /* @__PURE__ */ Object.freeze(["command.semantic_validation_failed"]);
 const HISTORY_REFUSAL_OUTER_CODES: readonly [
   "history.entry_too_large",
   "history.byte_estimate_invalid",
-] = Object.freeze(["history.entry_too_large", "history.byte_estimate_invalid"]);
+] = /* @__PURE__ */ Object.freeze(["history.entry_too_large", "history.byte_estimate_invalid"]);
 
 /** Exact inherited A0 history dependency outcome; the two outer codes do not commute. */
-export const A0_U1_ATOMIC_EDIT_HISTORY_REFUSAL_POLICY = Object.freeze({
-  invalidEstimate: Object.freeze({
+export const A0_U1_ATOMIC_EDIT_HISTORY_REFUSAL_POLICY = /* @__PURE__ */ Object.freeze({
+  invalidEstimate: /* @__PURE__ */ Object.freeze({
     predicate: "not-a-nonnegative-safe-integer",
     outerCode: "history.byte_estimate_invalid",
     nestedCode: "edit-plan.history-refused",
-    path: Object.freeze(["history"] as const),
+    path: /* @__PURE__ */ Object.freeze(["history"] as const),
   }),
-  oversizedEstimate: Object.freeze({
+  oversizedEstimate: /* @__PURE__ */ Object.freeze({
     predicate: "valid-estimate-greater-than-retained-byte-maximum",
     maximum: MAX_HISTORY_RETAINED_BYTES,
     outerCode: "history.entry_too_large",
     nestedCode: "edit-plan.history-refused",
-    path: Object.freeze(["history"] as const),
+    path: /* @__PURE__ */ Object.freeze(["history"] as const),
   }),
 });
 
@@ -1309,7 +1406,7 @@ export const A0_U1_ATOMIC_EDIT_ALLOWED_OUTER_CODES_BY_REFUSAL_CODE: Readonly<
       ...AtomicEditPlanOuterRefusalCode[],
     ]
   >
-> = Object.freeze({
+> = /* @__PURE__ */ Object.freeze({
   "edit-plan.command-shape-invalid": PAYLOAD_INVALID_OUTER_CODES,
   "edit-plan.plan-shape-invalid": PAYLOAD_INVALID_OUTER_CODES,
   "edit-plan.quick-entry-snapshot-mismatch": PAYLOAD_INVALID_OUTER_CODES,
@@ -1320,6 +1417,7 @@ export const A0_U1_ATOMIC_EDIT_ALLOWED_OUTER_CODES_BY_REFUSAL_CODE: Readonly<
   "edit-plan.destination-invalid": DESTINATION_INVALID_OUTER_CODES,
   "edit-plan.event-order-invalid": DESTINATION_INVALID_OUTER_CODES,
   "edit-plan.section-split-boundary-invalid": DESTINATION_INVALID_OUTER_CODES,
+  "edit-plan.measure-split-boundary-invalid": DESTINATION_INVALID_OUTER_CODES,
   "edit-plan.section-order-invalid": DESTINATION_INVALID_OUTER_CODES,
   "edit-plan.recovered-chord-placement-invalid": PAYLOAD_INVALID_OUTER_CODES,
   "edit-plan.syntax-refused": PAYLOAD_INVALID_OUTER_CODES,
@@ -1335,6 +1433,7 @@ export const A0_U1_ATOMIC_EDIT_ALLOWED_OUTER_CODES_BY_REFUSAL_CODE: Readonly<
   "edit-plan.recovered-chord-duration-mismatch": PAYLOAD_INVALID_OUTER_CODES,
   "edit-plan.duration-invalid": PAYLOAD_INVALID_OUTER_CODES,
   "edit-plan.duration-sum-mismatch": PAYLOAD_INVALID_OUTER_CODES,
+  "edit-plan.measure-partition-mismatch": PAYLOAD_INVALID_OUTER_CODES,
   "edit-plan.event-content-mismatch": PAYLOAD_INVALID_OUTER_CODES,
   "edit-plan.right-annotation-not-empty": PAYLOAD_INVALID_OUTER_CODES,
   "edit-plan.collection-limit-exceeded": PAYLOAD_INVALID_OUTER_CODES,
@@ -1362,7 +1461,7 @@ export const A0_U1_ATOMIC_EDIT_PREPLAN_OUTER_REFUSAL_CODES: readonly [
   "application.sequence_exhausted",
   "command.coalescing_invalid",
   "history.locked",
-] = Object.freeze([
+] = /* @__PURE__ */ Object.freeze([
   "command.id_invalid",
   "command.label_invalid",
   "command.logical_time_invalid",
@@ -1383,25 +1482,25 @@ export type AtomicEditPlanPreplanOuterRefusalCode =
  * is not history traversal, and bookmark repair counts calls rather than
  * rewritten records.
  */
-export const A0_U1_ATOMIC_EDIT_OUTER_WORK_POLICY = Object.freeze({
-  indexPassesByOutcome: Object.freeze({
-    applyRefusalBeforeTargetResolution: Object.freeze([] as const),
-    applyRefusalFromTargetThroughF3: Object.freeze(["before"] as const),
-    applySuccessOrHistoryRefusal: Object.freeze(["before", "after"] as const),
-    undoOrRedo: Object.freeze(["restored"] as const),
+export const A0_U1_ATOMIC_EDIT_OUTER_WORK_POLICY = /* @__PURE__ */ Object.freeze({
+  indexPassesByOutcome: /* @__PURE__ */ Object.freeze({
+    applyRefusalBeforeTargetResolution: /* @__PURE__ */ Object.freeze([] as const),
+    applyRefusalFromTargetThroughF3: /* @__PURE__ */ Object.freeze(["before"] as const),
+    applySuccessOrHistoryRefusal: /* @__PURE__ */ Object.freeze(["before", "after"] as const),
+    undoOrRedo: /* @__PURE__ */ Object.freeze(["restored"] as const),
   }),
   indexVisitOrder: "section-then-measure-then-event-source-order",
   stableIdsIndexed: "one-per-indexed-section-measure-or-event-not-document",
-  historyEntriesVisited: Object.freeze({
+  historyEntriesVisited: /* @__PURE__ */ Object.freeze({
     apply: 0,
     undoOrRedoAfterEntryResolution: 1,
   }),
-  historyBytesEstimated: Object.freeze({
+  historyBytesEstimated: /* @__PURE__ */ Object.freeze({
     beforeValidEstimatorReturn: 0,
     afterValidEstimatorReturn: "exact-returned-nonnegative-safe-integer",
     validOversizeStillCounted: true,
   }),
-  bookmarksRepaired: Object.freeze({
+  bookmarksRepaired: /* @__PURE__ */ Object.freeze({
     beforeSuccessfulF3: 0,
     applySuccessOrHistoryRefusal: 1,
     undoOrRedo: 0,
@@ -1409,7 +1508,7 @@ export const A0_U1_ATOMIC_EDIT_OUTER_WORK_POLICY = Object.freeze({
   }),
   requestsCompared: 0,
   transportNotificationsCompared: 0,
-  validationCalls: Object.freeze({
+  validationCalls: /* @__PURE__ */ Object.freeze({
     throughF2Refusal: 0,
     f3RefusalSuccessOrHistoryRefusal: 1,
     undoOrRedo: 0,
@@ -1453,7 +1552,7 @@ export const A0_U1_ATOMIC_EDIT_WORK_COUNTER_NAMES: readonly [
   "peakPlanNodeRecords",
   "peakAllocatedIdRecords",
   "peakDiagnosticRecords",
-] = Object.freeze([
+] = /* @__PURE__ */ Object.freeze([
   "structuralDecodeCalls",
   "semanticValidationCalls",
   "planNodesVisited",
@@ -1491,7 +1590,7 @@ export type AtomicEditPlanWorkCounterName =
  */
 export const A0_U1_ATOMIC_EDIT_WORK_COUNTER_MAXIMA: Readonly<
   Record<AtomicEditPlanWorkCounterName, number>
-> = Object.freeze({
+> = /* @__PURE__ */ Object.freeze({
   structuralDecodeCalls: 1,
   semanticValidationCalls: 1,
   planNodesVisited: MAX_A0_U1_PLAN_NODE_RECORDS + 1,
@@ -1523,7 +1622,7 @@ export const A0_U1_ATOMIC_EDIT_WORK_COUNTER_MAXIMA: Readonly<
 });
 
 export const A0_U1_ATOMIC_EDIT_FIRST_EXCESS_WORK_COUNTERS: readonly AtomicEditPlanWorkCounterName[] =
-  Object.freeze([
+  /* @__PURE__ */ Object.freeze([
     "planNodesVisited",
     "sourceCodePointsObserved",
     "sourceUtf8BytesObserved",
@@ -1542,7 +1641,7 @@ export const A0_U1_ATOMIC_EDIT_PLAN_TERMINATIONS: readonly [
   "allocation-refusal",
   "publication-refusal",
   "history-refusal",
-] = Object.freeze([
+] = /* @__PURE__ */ Object.freeze([
   "complete",
   "input-refusal",
   "allocation-refusal",
@@ -1631,27 +1730,27 @@ export type AtomicEditPlanBoundary =
  * structural identity. Every event/measure boundary must resolve within the
  * placement's declared parent.
  */
-export const A0_U1_QUICK_ENTRY_TARGET_MATCH_POLICY = Object.freeze({
+export const A0_U1_QUICK_ENTRY_TARGET_MATCH_POLICY = /* @__PURE__ */ Object.freeze({
   parentOwnership: "same-declared-parent-required",
-  measure: Object.freeze({
+  measure: /* @__PURE__ */ Object.freeze({
     "measure-start": "before-first-event-or-append-when-empty",
     "before-event": "before-that-event",
     "after-event": "before-next-event-or-append",
     "measure-end": "append",
   }),
-  section: Object.freeze({
+  section: /* @__PURE__ */ Object.freeze({
     "section-start": "before-first-measure-or-append-when-empty",
     "before-measure": "before-that-measure",
     "after-measure": "before-next-measure-or-append",
     "section-end": "append",
   }),
-  document: Object.freeze({
+  document: /* @__PURE__ */ Object.freeze({
     "document-start": "before-first-section-or-append-when-empty",
     "before-section": "before-that-section",
     "after-section": "before-next-section-or-append",
     "document-end": "append",
   }),
-  placementSlots: Object.freeze({
+  placementSlots: /* @__PURE__ */ Object.freeze({
     intoMeasure:
       "resolved-before-event-sibling-id-equals-beforeEventId-or-append-equals-null",
     intoSection:
@@ -1659,8 +1758,8 @@ export const A0_U1_QUICK_ENTRY_TARGET_MATCH_POLICY = Object.freeze({
     intoDocument:
       "resolved-before-section-sibling-id-equals-beforeSectionId-or-append-equals-null",
   }),
-  completeDraftIntoEmptyMeasure: Object.freeze({
-    acceptedTargets: Object.freeze(["measure-start", "measure-end"] as const),
+  completeDraftIntoEmptyMeasure: /* @__PURE__ */ Object.freeze({
+    acceptedTargets: /* @__PURE__ */ Object.freeze(["measure-start", "measure-end"] as const),
     canonicalDestination: "append",
     beforeEventId: null,
   }),
@@ -1681,7 +1780,7 @@ export const A0_U1_ATOMIC_EDIT_PLAN_FOCUS_DERIVATION_ORDER: readonly [
   "non-chart-insertion-target",
   "first-inserted-structural-ref",
   "chart",
-] = Object.freeze([
+] = /* @__PURE__ */ Object.freeze([
   "selection-focus-event",
   "non-chart-insertion-target",
   "first-inserted-structural-ref",
@@ -1726,6 +1825,11 @@ type AtomicEditPlanFirstInsertedSectionFocusReceipt = Readonly<{
   focusTarget: Extract<UiFocusTarget, { kind: "section" }>;
 }>;
 
+type AtomicEditPlanFirstInsertedMeasureFocusReceipt = Readonly<{
+  focusPolicy: "first-inserted-structural-ref";
+  focusTarget: Extract<UiFocusTarget, { kind: "measure" }>;
+}>;
+
 type AtomicEditPlanChartFocusReceipt = Readonly<{
   focusPolicy: "chart";
   focusTarget: Extract<UiFocusTarget, { kind: "chart" }>;
@@ -1758,6 +1862,11 @@ export type SplitSectionFocusReceipt =
   | AtomicEditPlanInsertionFocusReceipt
   | AtomicEditPlanFirstInsertedSectionFocusReceipt;
 
+export type SplitMeasureFocusReceipt =
+  | AtomicEditPlanSelectionFocusReceipt
+  | AtomicEditPlanInsertionFocusReceipt
+  | AtomicEditPlanFirstInsertedMeasureFocusReceipt;
+
 export type JoinEditPlanFocusReceipt =
   | AtomicEditPlanSelectionFocusReceipt
   | AtomicEditPlanInsertionFocusReceipt
@@ -1767,6 +1876,7 @@ export type AtomicEditPlanFocusReceipt =
   | InsertFragmentFocusReceipt
   | SplitEventDurationFocusReceipt
   | SplitSectionFocusReceipt
+  | SplitMeasureFocusReceipt
   | JoinEditPlanFocusReceipt;
 
 type AtomicEditPlanRangeBoundaryRewrites =
@@ -1795,6 +1905,18 @@ type AtomicEditPlanPreservedInsertionReceipt = Readonly<{
 type AtomicEditPlanMovedInsertionReceipt = Readonly<{
   insertionPolicy: "move-after-last-inserted";
   insertionRewrite: AtomicEditPlanBoundaryRewrite;
+  insertionCleared: false;
+}>;
+
+/**
+ * Honest branch for a valid null before insertion bookmark: the receipt
+ * records the exact created after boundary and never fabricates a rewrite
+ * source. `insertionCreated` is frozen to this branch only.
+ */
+type AtomicEditPlanCreatedInsertionReceipt = Readonly<{
+  insertionPolicy: "create-after-last-inserted";
+  insertionRewrite: null;
+  insertionCreated: AtomicEditPlanBoundary;
   insertionCleared: false;
 }>;
 
@@ -1841,9 +1963,12 @@ type InsertFragmentBookmarkReceiptForFocus<
   FocusReceipt extends InsertFragmentFocusReceipt,
 > = Readonly<
   AtomicEditPlanPreservedSelectionReceipt &
-    AtomicEditPlanMovedInsertionReceipt &
+    (
+      | AtomicEditPlanMovedInsertionReceipt
+      | AtomicEditPlanCreatedInsertionReceipt
+    ) &
     AtomicEditPlanPreservedRangeReceipt & {
-      operationPolicy: "preserve-selection-and-range-move-insertion-after-last-inserted";
+      operationPolicy: "preserve-selection-and-range-set-insertion-after-last-inserted";
     } & FocusReceipt
 >;
 
@@ -1903,6 +2028,19 @@ export type SplitSectionBookmarkReceipt = Readonly<
     } & SplitSectionFocusReceipt
 >;
 
+export type SplitMeasureBookmarkReceipt = Readonly<
+  AtomicEditPlanPreservedSelectionReceipt &
+    (
+      | AtomicEditPlanPreservedInsertionReceipt
+      | AtomicEditPlanRepresentableInsertionReceipt
+    ) &
+    (
+      AtomicEditPlanPreservedRangeReceipt | AtomicEditPlanRewrittenRangeReceipt
+    ) & {
+      operationPolicy: "preserve-node-identities-rewrite-source-measure-end-to-suffix";
+    } & SplitMeasureFocusReceipt
+>;
+
 export type JoinSectionsRightStartReceipt =
   | Readonly<{
       rightSectionWasEmpty: false;
@@ -1940,11 +2078,12 @@ export type AtomicEditPlanBookmarkReceipt =
   | SplitEventDurationBookmarkReceipt
   | JoinEventDurationsBookmarkReceipt
   | SplitSectionBookmarkReceipt
+  | SplitMeasureBookmarkReceipt
   | JoinSectionsBookmarkReceipt;
 
-export const A0_U1_ATOMIC_EDIT_PLAN_BOOKMARK_POLICIES = Object.freeze({
+export const A0_U1_ATOMIC_EDIT_PLAN_BOOKMARK_POLICIES = /* @__PURE__ */ Object.freeze({
   insertFragment:
-    "preserve-selection-and-range-move-insertion-after-last-inserted",
+    "preserve-selection-and-range-set-insertion-after-last-inserted",
   splitEventDuration:
     "preserve-original-selection-rewrite-original-span-end-to-second",
   joinEventDurations:
@@ -1952,6 +2091,13 @@ export const A0_U1_ATOMIC_EDIT_PLAN_BOOKMARK_POLICIES = Object.freeze({
   splitSection: "preserve-node-identities-rewrite-source-section-end-to-suffix",
   joinSections:
     "preserve-measure-event-identities-map-internal-edge-to-first-measure-or-surviving-end",
+  /**
+   * Every event identity survives, so selection and every event boundary are
+   * untouched. Only the two boundaries that denoted the end of the *complete*
+   * source measure move to the suffix, because that is where that musical point
+   * now is. No internal beat is approximated. See contract section 21.5.
+   */
+  splitMeasure: "preserve-node-identities-rewrite-source-measure-end-to-suffix",
 });
 
 export type AtomicEditPlanFragmentSectionIdentity = Readonly<{
@@ -1969,6 +2115,16 @@ export type AtomicEditPlanSplitSectionIdentity = Readonly<{
   source: Readonly<{
     kind: "split-section-suffix";
     sourceSectionId: SectionId;
+  }>;
+}>;
+
+/** The freshly allocated suffix measure, in allocation-trace form. */
+export type AtomicEditPlanSplitMeasureIdentity = Readonly<{
+  kind: "measure";
+  id: MeasureId;
+  source: Readonly<{
+    kind: "split-measure-suffix";
+    sourceMeasureId: MeasureId;
   }>;
 }>;
 
@@ -2013,6 +2169,7 @@ export type AtomicEditPlanAllocatedIdentity =
   | AtomicEditPlanFragmentSectionIdentity
   | AtomicEditPlanSplitSectionIdentity
   | AtomicEditPlanFragmentMeasureIdentity
+  | AtomicEditPlanSplitMeasureIdentity
   | AtomicEditPlanFragmentEventIdentity
   | AtomicEditPlanRecoveredChordIdentity
   | AtomicEditPlanSplitEventSecondIdentity;
@@ -2215,6 +2372,26 @@ export type SplitSectionEditPlanReceipt = Readonly<
   }
 >;
 
+export type SplitMeasureEditPlanReceipt = Readonly<
+  AtomicEditPlanReceiptBase & {
+    planKind: "split-measure";
+    insertLane: null;
+    placementKind: null;
+    allocatedIdentities: readonly [AtomicEditPlanSplitMeasureIdentity];
+    removedIdentities: readonly [];
+    survivorId: MeasureId;
+    insertSource: null;
+    /**
+     * Only the retained measure is declared. The suffix carries the plan's
+     * explicit `newMeasureCompletion` instead, because a caller cannot name an
+     * ID that does not exist yet.
+     */
+    completionMeasureIds: readonly [MeasureId];
+    timelineDisposition: "preserve-flattened-event-order-and-durations";
+    bookmarks: SplitMeasureBookmarkReceipt;
+  }
+>;
+
 export type JoinSectionsEditPlanReceipt = Readonly<
   AtomicEditPlanReceiptBase & {
     planKind: "join-sections";
@@ -2239,6 +2416,7 @@ export type AtomicEditPlanReceipt =
   | SplitEventDurationEditPlanReceipt
   | JoinEventDurationsEditPlanReceipt
   | SplitSectionEditPlanReceipt
+  | SplitMeasureEditPlanReceipt
   | JoinSectionsEditPlanReceipt;
 
 /** Future composition adds T0 and widens only the history estimator's input kind. */
@@ -2371,7 +2549,8 @@ export const A0_U1_ATOMIC_EDIT_LAW_IDS: readonly [
   "A0-U1-ATOM-015-ids-preflight-preorder-honest-entropy",
   "A0-U1-ATOM-016-bookmarks-publication-history-atomic",
   "A0-U1-ATOM-017-transposition-and-existing-a0-unchanged",
-] = Object.freeze([
+  "A0-U1-ATOM-018-split-measure-partition-exact",
+] = /* @__PURE__ */ Object.freeze([
   "A0-U1-ATOM-001-command-and-five-closed-variants",
   "A0-U1-ATOM-002-quick-entry-snapshot-and-target-exact",
   "A0-U1-ATOM-003-raw-source-reparsed-once-by-t0",
@@ -2389,9 +2568,10 @@ export const A0_U1_ATOMIC_EDIT_LAW_IDS: readonly [
   "A0-U1-ATOM-015-ids-preflight-preorder-honest-entropy",
   "A0-U1-ATOM-016-bookmarks-publication-history-atomic",
   "A0-U1-ATOM-017-transposition-and-existing-a0-unchanged",
+  "A0-U1-ATOM-018-split-measure-partition-exact",
 ]);
 
-export const A0_U1_ATOMIC_EDIT_PLAN_TRANSPOSITION_POLICY = Object.freeze({
+export const A0_U1_ATOMIC_EDIT_PLAN_TRANSPOSITION_POLICY = /* @__PURE__ */ Object.freeze({
   operationPerformsTransposition: false,
   insertFragment: "preserve-t0-source-spelling-exactly",
   splitEventDuration: "copy-current-chord-and-voicing-exactly",
@@ -2401,18 +2581,21 @@ export const A0_U1_ATOMIC_EDIT_PLAN_TRANSPOSITION_POLICY = Object.freeze({
     "commutes-with-spelling-preserving-transposition-of-affected-event-ids",
   joinSections:
     "commutes-with-spelling-preserving-transposition-of-affected-event-ids",
+  /** A bar line carries no spelling, so this behaves exactly as the other structural splits do. */
+  splitMeasure:
+    "commutes-with-spelling-preserving-transposition-of-affected-event-ids",
 });
 
-export const A0_U1_T0_NEW_MEASURE_COMPLETION_POLICY = Object.freeze({
+export const A0_U1_T0_NEW_MEASURE_COMPLETION_POLICY = /* @__PURE__ */ Object.freeze({
   zeroEvents: "empty",
   nonemptySuccessfulClosedMeasure: "complete",
 });
 
-export const A0_U1_ATOMIC_EDIT_PLAN_ID_ENTROPY_POLICY = Object.freeze({
+export const A0_U1_ATOMIC_EDIT_PLAN_ID_ENTROPY_POLICY = /* @__PURE__ */ Object.freeze({
   factoryCallsOccurOnlyAfterOperationLocalPreflight: true,
   operationLocalPreflight:
     "shape-snapshot-parser-declarations-operation-laws-and-final-bounds",
-  postAllocationRefusalsMayConsumeEntropy: Object.freeze([
+  postAllocationRefusalsMayConsumeEntropy: /* @__PURE__ */ Object.freeze([
     "f2",
     "f3",
     "history",
@@ -2428,8 +2611,8 @@ export const A0_U1_ATOMIC_EDIT_PLAN_ID_ENTROPY_POLICY = Object.freeze({
 });
 
 /** Runtime exact-object validators consume this declarative key authority. */
-export const A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS = Object.freeze({
-  envelope: Object.freeze([
+export const A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS = /* @__PURE__ */ Object.freeze({
+  envelope: /* @__PURE__ */ Object.freeze([
     "id",
     "label",
     "expectedDocumentId",
@@ -2439,31 +2622,31 @@ export const A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS = Object.freeze({
     "kind",
     "plan",
   ]),
-  completeDraftPlan: Object.freeze([
+  completeDraftPlan: /* @__PURE__ */ Object.freeze([
     "kind",
     "source",
     "placement",
     "voicingPolicy",
   ]),
-  recoveredChordPlan: Object.freeze([
+  recoveredChordPlan: /* @__PURE__ */ Object.freeze([
     "kind",
     "source",
     "placement",
     "voicingPolicy",
   ]),
-  completeDraftSource: Object.freeze([
+  completeDraftSource: /* @__PURE__ */ Object.freeze([
     "kind",
     "quickEntrySnapshot",
     "warningAcknowledgements",
   ]),
-  recoveredChordSource: Object.freeze([
+  recoveredChordSource: /* @__PURE__ */ Object.freeze([
     "kind",
     "quickEntrySnapshot",
     "selectedGlobalOrdinal",
     "layoutLossAcknowledgement",
     "callerDuration",
   ]),
-  quickEntrySnapshot: Object.freeze([
+  quickEntrySnapshot: /* @__PURE__ */ Object.freeze([
     "sourceText",
     "baseRevision",
     "target",
@@ -2471,62 +2654,62 @@ export const A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS = Object.freeze({
     "expectedStatus",
     "expectedLane",
   ]),
-  documentBoundary: Object.freeze(["kind"]),
-  sectionBoundary: Object.freeze(["kind", "sectionId"]),
-  measureBoundary: Object.freeze(["kind", "measureId"]),
-  eventBoundary: Object.freeze(["kind", "eventId"]),
-  completeDraftIntoMeasurePlacement: Object.freeze([
+  documentBoundary: /* @__PURE__ */ Object.freeze(["kind"]),
+  sectionBoundary: /* @__PURE__ */ Object.freeze(["kind", "sectionId"]),
+  measureBoundary: /* @__PURE__ */ Object.freeze(["kind", "measureId"]),
+  eventBoundary: /* @__PURE__ */ Object.freeze(["kind", "eventId"]),
+  completeDraftIntoMeasurePlacement: /* @__PURE__ */ Object.freeze([
     "kind",
     "measureId",
     "beforeEventId",
     "layoutDisposition",
     "completionDeclarations",
   ]),
-  recoveredChordIntoMeasurePlacement: Object.freeze([
+  recoveredChordIntoMeasurePlacement: /* @__PURE__ */ Object.freeze([
     "kind",
     "measureId",
     "beforeEventId",
     "layoutDisposition",
     "completionDeclarations",
   ]),
-  intoSectionPlacement: Object.freeze([
+  intoSectionPlacement: /* @__PURE__ */ Object.freeze([
     "kind",
     "sectionId",
     "beforeMeasureId",
     "layoutDisposition",
     "completionDeclarations",
   ]),
-  intoDocumentPlacement: Object.freeze([
+  intoDocumentPlacement: /* @__PURE__ */ Object.freeze([
     "kind",
     "beforeSectionId",
     "layoutDisposition",
     "sectionDeclarations",
     "completionDeclarations",
   ]),
-  warningAcknowledgement: Object.freeze(["code", "range"]),
-  sourceRange: Object.freeze(["start", "end"]),
-  beatDuration: Object.freeze(["numerator", "denominator"]),
-  measureCompletionEmpty: Object.freeze(["kind"]),
-  measureCompletionComplete: Object.freeze(["kind"]),
-  measureCompletionPickupOrIncomplete: Object.freeze([
+  warningAcknowledgement: /* @__PURE__ */ Object.freeze(["code", "range"]),
+  sourceRange: /* @__PURE__ */ Object.freeze(["start", "end"]),
+  beatDuration: /* @__PURE__ */ Object.freeze(["numerator", "denominator"]),
+  measureCompletionEmpty: /* @__PURE__ */ Object.freeze(["kind"]),
+  measureCompletionComplete: /* @__PURE__ */ Object.freeze(["kind"]),
+  measureCompletionPickupOrIncomplete: /* @__PURE__ */ Object.freeze([
     "kind",
     "expectedDuration",
     "reason",
   ]),
-  keyContext: Object.freeze(["tonic", "mode"]),
-  spelledPitchClass: Object.freeze(["step", "alter"]),
-  completionDeclaration: Object.freeze(["measureId", "completion"]),
-  sectionDeclaration: Object.freeze([
+  keyContext: /* @__PURE__ */ Object.freeze(["tonic", "mode"]),
+  spelledPitchClass: /* @__PURE__ */ Object.freeze(["step", "alter"]),
+  completionDeclaration: /* @__PURE__ */ Object.freeze(["measureId", "completion"]),
+  sectionDeclaration: /* @__PURE__ */ Object.freeze([
     "sourceSectionOrdinal",
     "voiceLeadingBoundary",
   ]),
-  sectionMetadata: Object.freeze([
+  sectionMetadata: /* @__PURE__ */ Object.freeze([
     "name",
     "annotation",
     "keyOverride",
     "voiceLeadingBoundary",
   ]),
-  splitEventDurationPlan: Object.freeze([
+  splitEventDurationPlan: /* @__PURE__ */ Object.freeze([
     "kind",
     "eventId",
     "firstDuration",
@@ -2536,7 +2719,7 @@ export const A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS = Object.freeze({
     "contentPolicy",
     "annotationPolicy",
   ]),
-  joinEventDurationsPlan: Object.freeze([
+  joinEventDurationsPlan: /* @__PURE__ */ Object.freeze([
     "kind",
     "leftEventId",
     "rightEventId",
@@ -2546,7 +2729,7 @@ export const A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS = Object.freeze({
     "contentPolicy",
     "annotationPolicy",
   ]),
-  splitSectionPlan: Object.freeze([
+  splitSectionPlan: /* @__PURE__ */ Object.freeze([
     "kind",
     "sectionId",
     "beforeMeasureId",
@@ -2555,7 +2738,18 @@ export const A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS = Object.freeze({
     "identityPolicy",
     "measurePolicy",
   ]),
-  joinSectionsPlan: Object.freeze([
+  splitMeasurePlan: /* @__PURE__ */ Object.freeze([
+    "kind",
+    "measureId",
+    "beforeEventId",
+    "firstMeasureTotal",
+    "secondMeasureTotal",
+    "newMeasureCompletion",
+    "completionDeclarations",
+    "identityPolicy",
+    "eventPolicy",
+  ]),
+  joinSectionsPlan: /* @__PURE__ */ Object.freeze([
     "kind",
     "leftSectionId",
     "rightSectionId",
@@ -2568,15 +2762,15 @@ export const A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS = Object.freeze({
     "metadataPolicy",
     "internalBoundaryPolicy",
   ]),
-  newEventAutoVoicing: Object.freeze([
+  newEventAutoVoicing: /* @__PURE__ */ Object.freeze([
     "mode",
     "family",
     "voiceCount",
     "range",
     "bassPolicy",
   ]),
-  newEventAutoVoicingRange: Object.freeze(["lowMidi", "highMidi"]),
-  receiptBase: Object.freeze([
+  newEventAutoVoicingRange: /* @__PURE__ */ Object.freeze(["lowMidi", "highMidi"]),
+  receiptBase: /* @__PURE__ */ Object.freeze([
     "schema",
     "commandKind",
     "commandId",
@@ -2588,7 +2782,7 @@ export const A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS = Object.freeze({
     "effects",
     "work",
   ]),
-  receiptOperation: Object.freeze([
+  receiptOperation: /* @__PURE__ */ Object.freeze([
     "planKind",
     "insertLane",
     "placementKind",
@@ -2600,14 +2794,14 @@ export const A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS = Object.freeze({
     "timelineDisposition",
     "bookmarks",
   ]),
-  completeDraftInsertSourceReceipt: Object.freeze([
+  completeDraftInsertSourceReceipt: /* @__PURE__ */ Object.freeze([
     "kind",
     "parserOutcome",
     "quickEntrySnapshotMatched",
     "canonicalTargetMatched",
     "acknowledgedWarningCount",
   ]),
-  recoveredChordInsertSourceReceipt: Object.freeze([
+  recoveredChordInsertSourceReceipt: /* @__PURE__ */ Object.freeze([
     "kind",
     "parserOutcome",
     "quickEntrySnapshotMatched",
@@ -2618,7 +2812,7 @@ export const A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS = Object.freeze({
     "siblingsApplied",
     "layoutLossAcknowledged",
   ]),
-  bookmarkReceiptCore: Object.freeze([
+  bookmarkReceiptCore: /* @__PURE__ */ Object.freeze([
     "operationPolicy",
     "selectionPolicy",
     "selectionReplacements",
@@ -2631,36 +2825,45 @@ export const A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS = Object.freeze({
     "focusPolicy",
     "focusTarget",
   ]),
-  joinSectionsBookmarkReceiptExtension: Object.freeze([
+  joinSectionsBookmarkReceiptExtension: /* @__PURE__ */ Object.freeze([
     "rightSectionWasEmpty",
     "rightSectionFirstMeasureId",
     "rightSectionStartRewrite",
   ]),
-  boundaryRewrite: Object.freeze(["from", "to"]),
-  selectionReplacement: Object.freeze(["fromEventId", "toEventId"]),
-  focusTargetChart: Object.freeze(["kind"]),
-  focusTargetSection: Object.freeze(["kind", "sectionId"]),
-  focusTargetMeasure: Object.freeze(["kind", "measureId"]),
-  focusTargetEvent: Object.freeze(["kind", "eventId"]),
-  allocatedIdentity: Object.freeze(["kind", "id", "source"]),
-  fragmentSectionIdentitySource: Object.freeze([
+  /**
+   * Conditional creation-branch extension: `insertionCreated` appears only on
+   * an insert receipt whose before insertion bookmark was null, ordered
+   * immediately after `insertionRewrite`.
+   */
+  createdInsertionBookmarkReceiptExtension: /* @__PURE__ */ Object.freeze([
+    "insertionCreated",
+  ]),
+  boundaryRewrite: /* @__PURE__ */ Object.freeze(["from", "to"]),
+  selectionReplacement: /* @__PURE__ */ Object.freeze(["fromEventId", "toEventId"]),
+  focusTargetChart: /* @__PURE__ */ Object.freeze(["kind"]),
+  focusTargetSection: /* @__PURE__ */ Object.freeze(["kind", "sectionId"]),
+  focusTargetMeasure: /* @__PURE__ */ Object.freeze(["kind", "measureId"]),
+  focusTargetEvent: /* @__PURE__ */ Object.freeze(["kind", "eventId"]),
+  allocatedIdentity: /* @__PURE__ */ Object.freeze(["kind", "id", "source"]),
+  fragmentSectionIdentitySource: /* @__PURE__ */ Object.freeze([
     "kind",
     "sourceSectionOrdinal",
   ]),
-  splitSectionIdentitySource: Object.freeze(["kind", "sourceSectionId"]),
-  fragmentMeasureIdentitySource: Object.freeze([
+  splitSectionIdentitySource: /* @__PURE__ */ Object.freeze(["kind", "sourceSectionId"]),
+  fragmentMeasureIdentitySource: /* @__PURE__ */ Object.freeze([
     "kind",
     "sourceSectionOrdinal",
     "sourceMeasureOrdinal",
   ]),
-  fragmentEventIdentitySource: Object.freeze(["kind", "sourceEventOrdinal"]),
-  recoveredChordIdentitySource: Object.freeze([
+  fragmentEventIdentitySource: /* @__PURE__ */ Object.freeze(["kind", "sourceEventOrdinal"]),
+  recoveredChordIdentitySource: /* @__PURE__ */ Object.freeze([
     "kind",
     "selectedGlobalOrdinal",
   ]),
-  splitEventSecondIdentitySource: Object.freeze(["kind", "sourceEventId"]),
-  removedIdentity: Object.freeze(["kind", "id"]),
-  diagnostic: Object.freeze([
+  splitEventSecondIdentitySource: /* @__PURE__ */ Object.freeze(["kind", "sourceEventId"]),
+  splitMeasureIdentitySource: /* @__PURE__ */ Object.freeze(["kind", "sourceMeasureId"]),
+  removedIdentity: /* @__PURE__ */ Object.freeze(["kind", "id"]),
+  diagnostic: /* @__PURE__ */ Object.freeze([
     "code",
     "owner",
     "path",
@@ -2669,7 +2872,7 @@ export const A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS = Object.freeze({
     "observed",
     "maximum",
   ]),
-  workEvidence: Object.freeze([
+  workEvidence: /* @__PURE__ */ Object.freeze([
     "structuralDecodeCalls",
     "semanticValidationCalls",
     "planNodesVisited",
@@ -2710,7 +2913,7 @@ export const A0_U1_ATOMIC_EDIT_PLAN_FORBIDDEN_PAYLOAD_KEYS: readonly [
   "derivedPatch",
   "replacement",
   "importDraft",
-] = Object.freeze([
+] = /* @__PURE__ */ Object.freeze([
   "candidate",
   "document",
   "commands",

@@ -168,7 +168,7 @@ export type X0AutomatedEvidenceReport = Readonly<{
   runId: string | null;
   expectedBrowserRecords: 3;
   observedBrowserRecords: number;
-  expectedRenderCells: 45;
+  expectedRenderCells: 54;
   observedRenderCells: number;
   passingRealContextCells: number;
   unsupportedRealContextCells: number;
@@ -479,16 +479,27 @@ function validateWorkCounters(
   return value;
 }
 
-export function replayX0ImpulseQ15(
-  sampleRate: number,
-  impulseGolden: unknown,
-): Readonly<{
+type X0ImpulseReplay = Readonly<{
   sampleRate: number;
   frameCount: number;
   scalarSamples: number;
   finalStateUint32: number;
   sha256: string;
-}> {
+}>;
+
+/*
+ * The replay is a pure function of the sample rate and the pinned authority
+ * scalars, so identical calls share the frozen result. The cache key names
+ * every input that reaches the integer algorithm (the other authority fields
+ * are pinned by the guard above the loop), keeping repeated 4-second replays
+ * from dominating verifier wall time.
+ */
+const replayX0ImpulseCache = new Map<string, X0ImpulseReplay>();
+
+export function replayX0ImpulseQ15(
+  sampleRate: number,
+  impulseGolden: unknown,
+): X0ImpulseReplay {
   if (!Number.isInteger(sampleRate) || sampleRate < 8_000 || sampleRate > 192_000) {
     throw new Error("X0_IMPULSE_REPLAY_SAMPLE_RATE_INVALID");
   }
@@ -498,37 +509,63 @@ export function replayX0ImpulseQ15(
   const seed = impulseGolden["seedUint32"];
   const channels = impulseGolden["channels"];
   const duration = impulseGolden["durationSeconds"];
-  if (!safeCounter(seed) || channels !== 2 || duration !== 2) {
+  const predelayDivisor = impulseGolden["predelayDivisor"];
+  const lowpassAlphaQ15 = impulseGolden["lowpassAlphaQ15"];
+  if (
+    !safeCounter(seed) ||
+    channels !== 2 ||
+    duration !== 4 ||
+    predelayDivisor !== 50 ||
+    lowpassAlphaQ15 !== 6_000
+  ) {
     throw new Error("X0_IMPULSE_REPLAY_AUTHORITY_INVALID");
   }
+  const cacheKey = `${String(sampleRate)}|${String(seed)}`;
+  const cached = replayX0ImpulseCache.get(cacheKey);
+  if (cached !== undefined) return cached;
   const frameCount = sampleRate * duration;
+  const predelayFrames = Math.floor(sampleRate / predelayDivisor);
+  /* remaining^4 exceeds 2^53, so the quartic envelope must be BigInt-exact. */
+  const frameCountFourth = BigInt(frameCount) ** 4n;
   const bytes = new Uint8Array(frameCount * channels * Int16Array.BYTES_PER_ELEMENT);
   const view = new DataView(bytes.buffer);
   let state = seed >>> 0;
   let offset = 0;
+  const lowpassFirst: [number, number] = [0, 0];
+  const lowpassSecond: [number, number] = [0, 0];
   for (let frame = 0; frame < frameCount; frame += 1) {
-    const remaining = frameCount - frame;
-    const envelopeQ15 = Math.floor(
-      (remaining * remaining * 32_767) / (frameCount * frameCount),
-    );
+    const envelopeQ15 =
+      frame < predelayFrames
+        ? 0
+        : Number((BigInt(frameCount - frame) ** 4n * 32_767n) / frameCountFourth);
     for (let channel = 0; channel < channels; channel += 1) {
       state ^= state << 13;
       state ^= state >>> 17;
       state ^= state << 5;
       state >>>= 0;
       const noise = (state >>> 16) - 32_768;
-      const sampleQ15 = Math.trunc((noise * envelopeQ15) / 32_768);
+      const lp1 =
+        (lowpassFirst[channel] ?? 0) +
+        Math.trunc((lowpassAlphaQ15 * (noise - (lowpassFirst[channel] ?? 0))) / 32_768);
+      const lp2 =
+        (lowpassSecond[channel] ?? 0) +
+        Math.trunc((lowpassAlphaQ15 * (lp1 - (lowpassSecond[channel] ?? 0))) / 32_768);
+      lowpassFirst[channel] = lp1;
+      lowpassSecond[channel] = lp2;
+      const sampleQ15 = Math.trunc((lp2 * envelopeQ15) / 32_768);
       view.setInt16(offset, sampleQ15, true);
       offset += Int16Array.BYTES_PER_ELEMENT;
     }
   }
-  return Object.freeze({
+  const replay = Object.freeze({
     sampleRate,
     frameCount,
     scalarSamples: frameCount * channels,
     finalStateUint32: state,
     sha256: canonicalSha256(bytes),
   });
+  replayX0ImpulseCache.set(cacheKey, replay);
+  return replay;
 }
 
 function validateArtifactDigest(
@@ -755,7 +792,14 @@ function validateRenderRecord(
   }
 
   const impulse = isRecord(raw["impulse"]) ? raw["impulse"] : {};
-  requireEqual(impulse["createdBufferCount"], 1, "X0_EVIDENCE_RENDER_IMPULSE_COUNT", `${path}.impulse.createdBufferCount`, findings);
+  /*
+   * Synth pads create exactly the shared impulse buffer; the Concert
+   * Grand additionally renders one attack-sample buffer per sounding
+   * note. Same per-instrument law the evidence spec asserts.
+   */
+  const expectedCreatedBuffers =
+    fixture["instrumentId"] === "concert-grand" ? 1 + pitches.length : 1;
+  requireEqual(impulse["createdBufferCount"], expectedCreatedBuffers, "X0_EVIDENCE_RENDER_IMPULSE_COUNT", `${path}.impulse.createdBufferCount`, findings);
   requireEqual(impulse["convolverAssignmentCount"], 1, "X0_EVIDENCE_RENDER_IMPULSE_ASSIGNMENT", `${path}.impulse.convolverAssignmentCount`, findings);
   requireEqual(impulse["assignedGeneratedBufferByIdentity"], true, "X0_EVIDENCE_RENDER_IMPULSE_IDENTITY", `${path}.impulse.assignedGeneratedBufferByIdentity`, findings);
   requireEqual(impulse["numberOfChannels"], 2, "X0_EVIDENCE_RENDER_IMPULSE_CHANNELS", `${path}.impulse.numberOfChannels`, findings);
@@ -1267,8 +1311,8 @@ export async function validateX0AutomatedEvidence(
     addFinding(findings, "X0_EVIDENCE_BROWSER_AUTHORITY", "renderMatrix", "Browser support and unsupported-capability policy must equal the reviewed authority.");
   }
   const fixtureCases = records(renderMatrix["cases"]);
-  if (fixtureCases.length !== 15) {
-    addFinding(findings, "X0_EVIDENCE_RENDER_AUTHORITY_COUNT", "renderMatrix.cases", "The reviewed render authority must contain exactly fifteen cases.");
+  if (fixtureCases.length !== 18) {
+    addFinding(findings, "X0_EVIDENCE_RENDER_AUTHORITY_COUNT", "renderMatrix.cases", "The reviewed render authority must contain exactly eighteen cases.");
   }
   const fixtureById = new Map<string, JsonRecord>();
   for (const fixture of fixtureCases) {
@@ -1432,7 +1476,7 @@ export async function validateX0AutomatedEvidence(
     requireEqual(raw["listeningAssessment"], "not-performed-by-automation", "X0_EVIDENCE_BROWSER_LISTENING_CLAIM", `${path}.listeningAssessment`, findings);
     const renders = records(raw["offlineRenders"]);
     if (!Array.isArray(raw["offlineRenders"]) || renders.length !== fixtureCases.length) {
-      addFinding(findings, "X0_EVIDENCE_BROWSER_RENDER_COUNT", `${path}.offlineRenders`, "Each browser record must contain exactly fifteen render cells.");
+      addFinding(findings, "X0_EVIDENCE_BROWSER_RENDER_COUNT", `${path}.offlineRenders`, "Each browser record must contain exactly eighteen render cells.");
     }
     const seenCases = new Set<string>();
     for (const [index, render] of renders.entries()) {
@@ -1533,7 +1577,7 @@ export async function validateX0AutomatedEvidence(
     runId: SAFE_RUN_ID.test(runId) ? runId : null,
     expectedBrowserRecords: 3,
     observedBrowserRecords: rawByProject.size,
-    expectedRenderCells: 45,
+    expectedRenderCells: 54,
     observedRenderCells,
     passingRealContextCells,
     unsupportedRealContextCells,

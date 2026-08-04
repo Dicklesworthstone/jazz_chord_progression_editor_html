@@ -88,6 +88,62 @@ const TEMPLATE_FAMILY_BY_ID: ReadonlyMap<string, AutoVoicingFamily> = new Map(
   VOICING_TEMPLATE_ROWS.map((row) => [row.id, row.family]),
 );
 
+/**
+ * Rebuild a bounded lock tuple with the transition's request ID. The closed
+ * arity switch preserves the `VoiceAssignmentLocks` tuple bound without a
+ * type assertion; mapping through a plain array would erase it.
+ */
+function locksWithRequestId(
+  locks: VoiceAssignmentLocks,
+  requestId: string,
+): VoiceAssignmentLocks {
+  const stamp = (lock: VoiceLock): VoiceLock => ({ ...lock, requestId });
+  switch (locks.length) {
+    case 0:
+      return locks;
+    case 1:
+      return [stamp(locks[0])];
+    case 2:
+      return [stamp(locks[0]), stamp(locks[1])];
+    case 3:
+      return [stamp(locks[0]), stamp(locks[1]), stamp(locks[2])];
+    case 4:
+      return [
+        stamp(locks[0]),
+        stamp(locks[1]),
+        stamp(locks[2]),
+        stamp(locks[3]),
+      ];
+    case 5:
+      return [
+        stamp(locks[0]),
+        stamp(locks[1]),
+        stamp(locks[2]),
+        stamp(locks[3]),
+        stamp(locks[4]),
+      ];
+    case 6:
+      return [
+        stamp(locks[0]),
+        stamp(locks[1]),
+        stamp(locks[2]),
+        stamp(locks[3]),
+        stamp(locks[4]),
+        stamp(locks[5]),
+      ];
+    case 7:
+      return [
+        stamp(locks[0]),
+        stamp(locks[1]),
+        stamp(locks[2]),
+        stamp(locks[3]),
+        stamp(locks[4]),
+        stamp(locks[5]),
+        stamp(locks[6]),
+      ];
+  }
+}
+
 const IDENTITY_PIN_FIELDS = Object.freeze([
   "engineId",
   "engineVersion",
@@ -301,9 +357,8 @@ function validateRequest(
   if (requestSchema !== PROGRESSION_OPTIMIZER_REQUEST_SCHEMA) {
     return refuse("progression.schema_invalid", ["schema"]);
   }
-  const identity = request.identity as unknown as Record<string, unknown>;
   for (const field of IDENTITY_PIN_FIELDS) {
-    if (identity[field] !== IDENTITY_PIN_VALUES[field]) {
+    if (request.identity[field] !== IDENTITY_PIN_VALUES[field]) {
       return refuse("progression.policy_invalid", ["identity", field]);
     }
   }
@@ -793,9 +848,7 @@ class Engine {
       this.contentCache.set(contentKey, outcome);
       return outcome;
     }
-    const locks = toEvent.constraints.locks.map(
-      (lock): VoiceLock => ({ ...lock, requestId }),
-    ) as unknown as VoiceAssignmentLocks;
+    const locks = locksWithRequestId(toEvent.constraints.locks, requestId);
     const transition = this.operations.assignVoiceTransition({
       schema: VOICE_ASSIGNMENT_REQUEST_SCHEMA,
       kind: "transition",

@@ -116,6 +116,8 @@ export const DOCUMENT_SHAPE_ISSUE_CODES = [
   "playback.level_out_of_range",
   "playback.count_in_bars_invalid",
   "section.voice_leading_boundary_invalid",
+  "playback.groove_style_invalid",
+  "playback.groove_style_not_canonical",
 ] as const satisfies readonly F2DecodeIssueCode[];
 
 export type DocumentShapeIssueCode =

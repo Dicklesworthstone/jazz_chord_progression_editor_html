@@ -1,14 +1,18 @@
 # A0/U1 Golden-Packet Reconciliation R1
 
-Status: proposed correction packet; not accepted and not normative.
+Status: accepted correction packet. The owner recorded the exact acceptance
+phrase `Accept A0/U1 reconciliation packet R1` on 2026-07-24, after the
+corrections had been implemented and every named static validator, tamper
+control, and independent executable fixture gate was green. The reconciled v2
+packet in `docs/A0_U1_ATOMIC_EDIT_PLAN_CONTRACT.md` and
+`tests/fixtures/a0-u1-edit-plan/` is now the frozen authority; the superseded
+v1 laws listed below must not be restored.
 
-This proposal resolves contradictions found while independently implementing
-and replaying the A0/U1 atomic-edit-plan packet. It does not amend E0, undo the
-accepted E0 packet, or authorize production changes by itself. Until explicit
-human acceptance, `docs/A0_U1_ATOMIC_EDIT_PLAN_CONTRACT.md` and its checked-in
-fixtures remain the frozen authority.
+This proposal resolved contradictions found while independently implementing
+and replaying the A0/U1 atomic-edit-plan packet. It does not amend E0 or undo
+the accepted E0 packet.
 
-The proposed acceptance phrase is:
+The recorded acceptance phrase was:
 
 ```text
 Accept A0/U1 reconciliation packet R1

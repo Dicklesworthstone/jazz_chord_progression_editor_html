@@ -111,7 +111,7 @@ const EXPECTED_REVIEW_STATES: Readonly<Record<string, string>> = Object.freeze({
 export const A0_E0_BRIDGE_SPEC_BYTE_DIGESTS: Readonly<Record<string, string>> =
   Object.freeze({
     "a0-e0-bridge-contract.json":
-      "494b74eeb35b672d070b4a58b059dad5f70b7720b82d115383dbeef6de3d192d",
+      "67cbf2c05eb32876bd499a84f6f34c01c5390ccecb22efb7cba4efe55dabd9cb",
     "mutation-controls.json":
       "40a21b19b8a738ff6930f5a4667cad191b735b22851335a78d11920023a77cbc",
     "owner-port-cases.json":
@@ -123,10 +123,10 @@ export const A0_E0_BRIDGE_SPEC_BYTE_DIGESTS: Readonly<Record<string, string>> =
   });
 
 export const A0_E0_BRIDGE_SPEC_SEMANTIC_DIGEST =
-  "3cd161f6accb3aec3f62d4d2ed824a546444d8d768faece616841a7443f43e3b";
+  "e1e6df67e72bacb3fd9098ffd0652c32a0a02b2b8e81c616004ade9477fb36b8";
 
 export const A0_E0_BRIDGE_ACCEPTED_E0_BYTE_MANIFEST_DIGEST =
-  "8c48f2ab156c702e877f3bec7f3acd51763dc1448cc696232a4761160ba7a9e9";
+  "a056af4cc18d502ff75a4890e4ce360b26365976e18962ce8da4d827b971ce48";
 
 export const A0_E0_BRIDGE_OWNER_OPERATION_NAMES = Object.freeze([
   "prepareImportReplacementPublication",
@@ -173,12 +173,12 @@ const ACCEPTED_E0_V1_ARTIFACT_PINS = Object.freeze([
   {
     role: "documentation",
     path: "docs/E0_INTERCHANGE_CONTRACT.md",
-    sha256: "b46824f731fe2a632f994e09aa8bb19e510c83f572a73a23b7c2c09f455d1ca3",
+    sha256: "288c7ba1e36f8422c9753d501feb68efa721fa8b320b5e20bce8503da85e7d4f",
   },
   {
     role: "export-source",
     path: "src/export/interchange-contract.ts",
-    sha256: "5c7a0a962ece42ea140a602c53a9c7c3853b38ded99bea77b0001c56d08524de",
+    sha256: "a8db592fb3b4f8c35385052753284f1a604b683d207b6aa7abd89fec04f2d035",
   },
   {
     role: "application-source",
@@ -188,12 +188,12 @@ const ACCEPTED_E0_V1_ARTIFACT_PINS = Object.freeze([
   {
     role: "validator",
     path: "scripts/validate-e0-contract.ts",
-    sha256: "d0e7c80b0a7cea1e1ce11443b148eadcdfd7c02a0855f06ab5761580c7a12e4b",
+    sha256: "3cc96d2ece16e22f98689057dbf1d64b64929dfbb2f92fd85391a7dc1d6bee04",
   },
   {
     role: "static-test",
     path: "tests/static/e0-contract.test.ts",
-    sha256: "13422e127091fa6c9118439c52fe0725e6ff74ab94b89be347aedafae0b80063",
+    sha256: "9873a0342bdf4ce6ab3754572d2f62cef6dbecbcb2a41105b316635204719cf4",
   },
   {
     role: "test-support",

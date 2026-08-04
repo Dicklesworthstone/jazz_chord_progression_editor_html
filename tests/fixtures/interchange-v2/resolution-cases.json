@@ -1,0 +1,634 @@
+{
+  "schema": "changes.fixtures.e0-v2-resolution-cases.v1",
+  "reviewState": "proposed-independent-literal-spec",
+  "expectedValuesGenerated": false,
+  "productionOutputUsedAsOracle": false,
+  "materializationPolicy": {
+    "version": 1,
+    "referenceResolutionOrder": [
+      "verify source path sha256 before parse",
+      "resolve RFC-6901 jsonPointer",
+      "resolve $literalRef recursively",
+      "validate the complete materialized value against materializeAs"
+    ],
+    "duplicateKeys": "refused",
+    "unresolvedReference": "fixture-failure"
+  },
+  "literalCatalog": {
+    "candidate-minimal": {
+      "kind": "accepted-e0-v1-reference",
+      "path": "tests/fixtures/interchange/goldens/minimal.changes.json",
+      "sha256": "c73321857e0ad8cc6ac03961ec872d456090d190d2d5c1a659883259c7f20fe5",
+      "jsonPointer": "",
+      "materializeAs": "ValidatedDocument"
+    },
+    "candidate-groove-witness": {
+      "kind": "inline",
+      "materializeAs": "ValidatedDocument",
+      "note": "The first fixture witness anywhere for the optional playback.grooveStyleId field (jcpe-jnnu): stored non-default groove, default-absent law respected.",
+      "value": {
+        "schema": "changes.progression.v2",
+        "id": "document-v2-groove",
+        "title": "Groove Witness",
+        "description": "",
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        },
+        "tempoBpm": 132,
+        "key": null,
+        "sections": [
+          {
+            "id": "section-v2-groove-a",
+            "name": "A",
+            "annotation": "",
+            "keyOverride": null,
+            "voiceLeadingBoundary": "reset",
+            "measures": [
+              {
+                "id": "measure-v2-groove-1",
+                "events": [],
+                "completion": {
+                  "kind": "empty"
+                }
+              }
+            ]
+          }
+        ],
+        "playback": {
+          "instrumentId": "concert-grand",
+          "masterVolume": 0.9,
+          "reverbAmount": 0.4,
+          "countInBars": 1,
+          "grooveStyleId": "bossa-nova@1"
+        }
+      }
+    },
+    "identity-v2-import": {
+      "kind": "inline",
+      "materializeAs": "ImportRequestIdentity",
+      "value": {
+        "requestId": 301,
+        "documentId": "document-v2-base",
+        "baseRevision": 9
+      }
+    },
+    "retained-impact-v2": {
+      "kind": "inline",
+      "materializeAs": "RetainedImportReplacementImpact",
+      "value": {
+        "historyEntryRetainedBytes": 4210,
+        "evictedUndoEntries": 0,
+        "redoEntriesCleared": 0,
+        "confirmationRequired": true,
+        "undoDisposition": "retained",
+        "undoEntriesAfterCommit": 3,
+        "undoRetainedBytesAfterCommit": 12630,
+        "exportRecommended": false
+      }
+    },
+    "owner-request-retained-v2": {
+      "kind": "inline",
+      "materializeAs": "PrepareImportReplacementPublicationRequest",
+      "value": {
+        "identity": {
+          "$literalRef": "identity-v2-import"
+        },
+        "sourceFormat": "canonical-json-v2",
+        "replacementOrigin": "canonical-import",
+        "candidate": {
+          "$literalRef": "candidate-minimal"
+        },
+        "replacementCommandSeed": {
+          "id": "command-v2-replace-1",
+          "label": "Import Changes",
+          "logicalTimeMs": 12000
+        },
+        "disclosedImpact": {
+          "$literalRef": "retained-impact-v2"
+        },
+        "currentTransition": {
+          "kind": "retiring-transport",
+          "requestId": 301,
+          "origin": "canonical-import",
+          "baseRevision": 9,
+          "candidateDocumentId": "document-e0-minimal",
+          "undoDisposition": "retained"
+        },
+        "nonUndoableConfirmation": null
+      }
+    },
+    "commit-request-v2": {
+      "kind": "inline",
+      "materializeAs": "CommitImportReplacementRequestV2",
+      "value": {
+        "schema": "changes.import-commit-request.v2",
+        "ownerRequest": {
+          "$literalRef": "owner-request-retained-v2"
+        },
+        "confirmationBinding": {
+          "displayedRequirement": null,
+          "acknowledgement": null,
+          "byteMatchProvedBeforeOwnerCall": true
+        }
+      }
+    }
+  },
+  "cases": [
+    {
+      "id": "E0V2-RESCASE-001",
+      "resolutionId": "E0V2-RES-01-import-request-current-state",
+      "variant": "positive",
+      "summary": "The v2 commit request is state-free evidence: its complete key set is schema/ownerRequest/confirmationBinding, and no forbidden state key exists at any depth.",
+      "request": {
+        "$literalRef": "commit-request-v2"
+      },
+      "expectedRequestTopLevelKeys": [
+        "schema",
+        "ownerRequest",
+        "confirmationBinding"
+      ],
+      "traceIds": [
+        "E0V2-TRACE-COMMIT-SURFACE"
+      ]
+    },
+    {
+      "id": "E0V2-RESCASE-002",
+      "resolutionId": "E0V2-RES-01-import-request-current-state",
+      "variant": "malformed",
+      "summary": "A caller smuggling v1's currentState into the v2 request is refused before any owner call.",
+      "request": {
+        "schema": "changes.import-commit-request.v2",
+        "ownerRequest": {
+          "$literalRef": "owner-request-retained-v2"
+        },
+        "confirmationBinding": null,
+        "currentState": {
+          "$smuggledAppState": true
+        }
+      },
+      "expectedResult": {
+        "ok": false,
+        "outcome": "refused",
+        "stage": "pre-owner-provenance",
+        "code": "import.replacement_request_invalid",
+        "identity": {
+          "$literalRef": "identity-v2-import"
+        },
+        "observedIdentity": {
+          "documentId": "document-v2-base",
+          "revision": 9
+        },
+        "liveForRequest": 0
+      },
+      "ownerCalls": 0,
+      "traceIds": [
+        "E0V2-TRACE-COMMIT-SURFACE",
+        "E0V2-TRACE-STATE-FREEDOM"
+      ]
+    },
+    {
+      "id": "E0V2-RESCASE-003",
+      "resolutionId": "E0V2-RES-02-preview-impact-projection",
+      "variant": "positive",
+      "summary": "The preview request carries the state-free impact projection; the same disclosure travels into the owner request unchanged.",
+      "previewProjection": {
+        "$literalRef": "retained-impact-v2"
+      },
+      "ownerDisclosedImpact": {
+        "$literalRef": "retained-impact-v2"
+      },
+      "projectionIsAuthority": false,
+      "traceIds": [
+        "E0V2-TRACE-COMMIT-SURFACE"
+      ]
+    },
+    {
+      "id": "E0V2-RESCASE-004",
+      "resolutionId": "E0V2-RES-02-preview-impact-projection",
+      "variant": "stale",
+      "summary": "A projection that disagrees with the owner's recomputation refuses impact-mismatch; the projection is never authority.",
+      "previewProjection": {
+        "$literalRef": "retained-impact-v2"
+      },
+      "ownerRecomputedDelta": {
+        "undoEntriesAfterCommit": 4
+      },
+      "expectedResult": {
+        "ok": false,
+        "outcome": "refused",
+        "stage": "owner-preparation",
+        "code": "import.replacement_impact_mismatch",
+        "identity": {
+          "$literalRef": "identity-v2-import"
+        },
+        "observedIdentity": {
+          "documentId": "document-v2-base",
+          "revision": 9
+        },
+        "liveForRequest": 0
+      },
+      "traceIds": [
+        "E0V2-TRACE-COMMIT-SURFACE"
+      ]
+    },
+    {
+      "id": "E0V2-RESCASE-005",
+      "resolutionId": "E0V2-RES-05-state-free-commit-success",
+      "variant": "positive",
+      "summary": "Success carries identity, published document identity, effects, counters, and liveForRequest 0 \u2014 never a nested publication.state.",
+      "request": {
+        "$literalRef": "commit-request-v2"
+      },
+      "expectedResult": {
+        "ok": true,
+        "outcome": "committed",
+        "identity": {
+          "$literalRef": "identity-v2-import"
+        },
+        "documentId": "document-e0-minimal",
+        "revision": 10,
+        "effects": [],
+        "counters": {
+          "$counterObject": "complete-application-work-counter-object"
+        },
+        "liveForRequest": 0
+      },
+      "expectedResultTopLevelKeys": [
+        "ok",
+        "outcome",
+        "identity",
+        "documentId",
+        "revision",
+        "effects",
+        "counters",
+        "liveForRequest"
+      ],
+      "traceIds": [
+        "E0V2-TRACE-COMMIT-SURFACE",
+        "E0V2-TRACE-STATE-FREEDOM"
+      ]
+    },
+    {
+      "id": "E0V2-RESCASE-006",
+      "resolutionId": "E0V2-RES-05-state-free-commit-success",
+      "variant": "near-miss",
+      "summary": "One smuggled publication.state key on an otherwise exact success envelope makes it protocol-invalid, not data.",
+      "oneFieldNearMiss": {
+        "baselineCaseId": "E0V2-RESCASE-005",
+        "operator": "add",
+        "jsonPointer": "/publication",
+        "from": {
+          "$absent": true
+        },
+        "to": {
+          "state": {
+            "$smuggledAppState": true
+          }
+        },
+        "exactChangedFieldCount": 1
+      },
+      "expectedResult": {
+        "ok": false,
+        "outcome": "protocol-invalid",
+        "stage": "port-protocol",
+        "diagnostic": {
+          "port": "publishImportReplacement",
+          "reason": "invalid-envelope",
+          "rawResultRetained": false
+        },
+        "identity": {
+          "$literalRef": "identity-v2-import"
+        },
+        "observedIdentity": {
+          "documentId": "document-v2-base",
+          "revision": 9
+        },
+        "reconciliation": "application-transport-reconciliation-required",
+        "liveForRequest": 0
+      },
+      "traceIds": [
+        "E0V2-TRACE-STATE-FREEDOM"
+      ]
+    },
+    {
+      "id": "E0V2-RESCASE-007",
+      "resolutionId": "E0V2-RES-06-state-free-commit-refusals",
+      "variant": "positive",
+      "summary": "A preparation refusal surfaces the owner code with observedIdentity in place of v1's state: AppState.",
+      "request": {
+        "$literalRef": "commit-request-v2"
+      },
+      "expectedResult": {
+        "ok": false,
+        "outcome": "refused",
+        "stage": "owner-preparation",
+        "code": "import.replacement_request_stale",
+        "identity": {
+          "$literalRef": "identity-v2-import"
+        },
+        "observedIdentity": {
+          "documentId": "document-v2-base",
+          "revision": 11
+        },
+        "liveForRequest": 0
+      },
+      "expectedResultTopLevelKeys": [
+        "ok",
+        "outcome",
+        "stage",
+        "code",
+        "identity",
+        "observedIdentity",
+        "liveForRequest"
+      ],
+      "traceIds": [
+        "E0V2-TRACE-COMMIT-SURFACE",
+        "E0V2-TRACE-STATE-FREEDOM"
+      ]
+    },
+    {
+      "id": "E0V2-RESCASE-008",
+      "resolutionId": "E0V2-RES-06-state-free-commit-refusals",
+      "variant": "stale",
+      "summary": "The retirement stage refusal keeps the same state-free shape with the transport code.",
+      "request": {
+        "$literalRef": "commit-request-v2"
+      },
+      "expectedResult": {
+        "ok": false,
+        "outcome": "refused",
+        "stage": "transport-retirement",
+        "code": "transport.replacement_retirement_refused",
+        "identity": {
+          "$literalRef": "identity-v2-import"
+        },
+        "observedIdentity": {
+          "documentId": "document-v2-base",
+          "revision": 9
+        },
+        "liveForRequest": 0
+      },
+      "traceIds": [
+        "E0V2-TRACE-COMMIT-SURFACE"
+      ]
+    },
+    {
+      "id": "E0V2-RESCASE-009",
+      "resolutionId": "E0V2-RES-07-state-free-publication-protocol-failure",
+      "variant": "positive",
+      "summary": "The publication protocol failure carries observedIdentity plus the explicit reconciliation obligation in place of v1's lastKnownState.",
+      "request": {
+        "$literalRef": "commit-request-v2"
+      },
+      "expectedResult": {
+        "ok": false,
+        "outcome": "protocol-invalid",
+        "stage": "port-protocol",
+        "diagnostic": {
+          "port": "publishImportReplacement",
+          "reason": "threw-or-rejected",
+          "rawResultRetained": false
+        },
+        "identity": {
+          "$literalRef": "identity-v2-import"
+        },
+        "observedIdentity": {
+          "documentId": "document-v2-base",
+          "revision": 9
+        },
+        "reconciliation": "application-transport-reconciliation-required",
+        "liveForRequest": 0
+      },
+      "expectedResultTopLevelKeys": [
+        "ok",
+        "outcome",
+        "stage",
+        "diagnostic",
+        "identity",
+        "observedIdentity",
+        "reconciliation",
+        "liveForRequest"
+      ],
+      "traceIds": [
+        "E0V2-TRACE-COMMIT-SURFACE",
+        "E0V2-TRACE-STATE-FREEDOM"
+      ]
+    },
+    {
+      "id": "E0V2-RESCASE-010",
+      "resolutionId": "E0V2-RES-09-widened-preparation-refusals",
+      "variant": "positive",
+      "summary": "A code from the owner-widened set (absent from v1's six) surfaces verbatim through the v2 result.",
+      "request": {
+        "$literalRef": "commit-request-v2"
+      },
+      "expectedResult": {
+        "ok": false,
+        "outcome": "refused",
+        "stage": "owner-preparation",
+        "code": "import.candidate_semantic_invalid",
+        "identity": {
+          "$literalRef": "identity-v2-import"
+        },
+        "observedIdentity": {
+          "documentId": "document-v2-base",
+          "revision": 9
+        },
+        "liveForRequest": 0
+      },
+      "codeIsMemberOfOwnerTwenty": true,
+      "codeIsMemberOfV1Six": false,
+      "traceIds": [
+        "E0V2-TRACE-REFUSAL-ADOPTION"
+      ]
+    },
+    {
+      "id": "E0V2-RESCASE-011",
+      "resolutionId": "E0V2-RES-09-widened-preparation-refusals",
+      "variant": "positive",
+      "summary": "A v1-era code still surfaces with its exact unrenamed name through the same v2 shape.",
+      "request": {
+        "$literalRef": "commit-request-v2"
+      },
+      "expectedResult": {
+        "ok": false,
+        "outcome": "refused",
+        "stage": "owner-preparation",
+        "code": "import.confirmation_stale",
+        "identity": {
+          "$literalRef": "identity-v2-import"
+        },
+        "observedIdentity": {
+          "documentId": "document-v2-base",
+          "revision": 9
+        },
+        "liveForRequest": 0
+      },
+      "codeIsMemberOfOwnerTwenty": true,
+      "codeIsMemberOfV1Six": true,
+      "traceIds": [
+        "E0V2-TRACE-REFUSAL-ADOPTION"
+      ]
+    },
+    {
+      "id": "E0V2-RESCASE-012",
+      "resolutionId": "E0V2-RES-09-widened-preparation-refusals",
+      "variant": "malformed",
+      "summary": "A code outside the owner twenty cannot enter the v2 result; the validator's independent tuple refuses it.",
+      "expectedResult": {
+        "ok": false,
+        "outcome": "refused",
+        "stage": "owner-preparation",
+        "code": "import.not_a_real_code",
+        "identity": {
+          "$literalRef": "identity-v2-import"
+        },
+        "observedIdentity": {
+          "documentId": "document-v2-base",
+          "revision": 9
+        },
+        "liveForRequest": 0
+      },
+      "expectedFixtureFailure": "E0V2_RESCASE_CODE_UNKNOWN",
+      "traceIds": [
+        "E0V2-TRACE-REFUSAL-ADOPTION"
+      ]
+    },
+    {
+      "id": "E0V2-RESCASE-013",
+      "resolutionId": "E0V2-RES-10-replacement-publication-refusals",
+      "variant": "positive",
+      "summary": "The owner's publication refusal surfaces at the owner-publication stage with the reconciliation-bearing stateEffect vocabulary.",
+      "request": {
+        "$literalRef": "commit-request-v2"
+      },
+      "expectedResult": {
+        "ok": false,
+        "outcome": "refused",
+        "stage": "owner-publication",
+        "code": "import.replacement_retirement_mismatch",
+        "identity": {
+          "$literalRef": "identity-v2-import"
+        },
+        "observedIdentity": {
+          "documentId": "document-v2-base",
+          "revision": 9
+        },
+        "liveForRequest": 0
+      },
+      "stateEffect": "APPLICATION_TRANSPORT_RECONCILIATION_REQUIRED",
+      "traceIds": [
+        "E0V2-TRACE-REFUSAL-ADOPTION"
+      ]
+    },
+    {
+      "id": "E0V2-RESCASE-014",
+      "resolutionId": "E0V2-RES-11-state-free-public-marker-requests",
+      "variant": "positive",
+      "summary": "The v2 marker settlement request carries only its schema and the owner CAS envelope; the delivery request carries only schema and identity.",
+      "markerRequest": {
+        "schema": "changes.canonical-export-marker-settlement-request.v2",
+        "ownerRequest": {
+          "publication": {
+            "schema": "changes.canonical-export-revision-publication.v1",
+            "documentId": "document-v2-base",
+            "revision": 9
+          }
+        }
+      },
+      "deliveryRequest": {
+        "schema": "changes.canonical-export-delivery-request.v2",
+        "identity": {
+          "$literalRef": "identity-v2-import"
+        }
+      },
+      "expectedMarkerRequestTopLevelKeys": [
+        "schema",
+        "ownerRequest"
+      ],
+      "expectedDeliveryRequestTopLevelKeys": [
+        "schema",
+        "identity"
+      ],
+      "traceIds": [
+        "E0V2-TRACE-STATE-FREEDOM"
+      ]
+    },
+    {
+      "id": "E0V2-RESCASE-015",
+      "resolutionId": "E0V2-RES-11-state-free-public-marker-requests",
+      "variant": "malformed",
+      "summary": "v1's state field on a v2 marker request is a smuggle, refused as request-invalid before the CAS port is called.",
+      "markerRequest": {
+        "schema": "changes.canonical-export-marker-settlement-request.v2",
+        "ownerRequest": {
+          "publication": {
+            "schema": "changes.canonical-export-revision-publication.v1",
+            "documentId": "document-v2-base",
+            "revision": 9
+          }
+        },
+        "state": {
+          "$smuggledAppState": true
+        }
+      },
+      "expectedFixtureFailure": "E0V2_STATE_KEY_FORBIDDEN",
+      "ownerCalls": 0,
+      "traceIds": [
+        "E0V2-TRACE-STATE-FREEDOM"
+      ]
+    },
+    {
+      "id": "E0V2-RESCASE-016",
+      "resolutionId": "E0V2-RES-01-import-request-current-state",
+      "variant": "positive",
+      "summary": "The groove witness: a candidate document storing the optional playback.grooveStyleId travels through the state-free owner request unchanged \u2014 the first fixture witness for the jcpe-jnnu field.",
+      "request": {
+        "schema": "changes.import-commit-request.v2",
+        "ownerRequest": {
+          "identity": {
+            "requestId": 302,
+            "documentId": "document-v2-base",
+            "baseRevision": 9
+          },
+          "sourceFormat": "canonical-json-v2",
+          "replacementOrigin": "canonical-import",
+          "candidate": {
+            "$literalRef": "candidate-groove-witness"
+          },
+          "replacementCommandSeed": {
+            "id": "command-v2-replace-groove",
+            "label": "Import Changes",
+            "logicalTimeMs": 13000
+          },
+          "disclosedImpact": {
+            "$literalRef": "retained-impact-v2"
+          },
+          "currentTransition": {
+            "kind": "retiring-transport",
+            "requestId": 302,
+            "origin": "canonical-import",
+            "baseRevision": 9,
+            "candidateDocumentId": "document-v2-groove",
+            "undoDisposition": "retained"
+          },
+          "nonUndoableConfirmation": null
+        },
+        "confirmationBinding": {
+          "displayedRequirement": null,
+          "acknowledgement": null,
+          "byteMatchProvedBeforeOwnerCall": true
+        }
+      },
+      "grooveWitness": {
+        "candidateLiteralId": "candidate-groove-witness",
+        "storedGrooveStyleId": "bossa-nova@1",
+        "defaultExpressedOnlyByAbsence": true
+      },
+      "traceIds": [
+        "E0V2-TRACE-COMMIT-SURFACE"
+      ]
+    }
+  ]
+}

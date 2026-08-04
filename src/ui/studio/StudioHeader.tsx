@@ -1,4 +1,10 @@
-import { Button, Field, Input, Label, StatusPill } from "../primitives";
+import {
+  Button,
+  Field,
+  Input,
+  Label,
+  VisuallyHidden,
+} from "../primitives";
 import type {
   StudioDocumentView,
   StudioShellCallbacks,
@@ -13,6 +19,8 @@ export type StudioHeaderProps = Readonly<{
     | "onResetTitleDraft"
     | "onUndo"
     | "onRedo"
+    | "onClearChart"
+    | "onCopyShareLink"
   >;
 }>;
 
@@ -28,7 +36,7 @@ export function StudioHeader({ view, callbacks }: StudioHeaderProps) {
         </span>
         <div class="studio-brand__copy">
           <p class="studio-kicker">Offline jazz studio</p>
-          <h1>Changes</h1>
+          <h1>JazzChords.org</h1>
         </div>
       </div>
 
@@ -58,11 +66,6 @@ export function StudioHeader({ view, callbacks }: StudioHeaderProps) {
                 required
                 text="Chart title"
               />
-              <span
-                aria-label={`${titleLength.toString()} of ${view.titleMaxCodePoints.toString()} code points`}
-              >
-                {titleLength}/{view.titleMaxCodePoints}
-              </span>
             </div>
             <div class="studio-title-editor__control-row">
               <Input
@@ -81,6 +84,13 @@ export function StudioHeader({ view, callbacks }: StudioHeaderProps) {
                 readOnly={false}
                 value={view.titleDraft}
               />
+              {/* The length counter sits beside the field it counts. */}
+              <span
+                class="studio-title-editor__count"
+                aria-label={`${titleLength.toString()} of ${view.titleMaxCodePoints.toString()} code points`}
+              >
+                {titleLength}/{view.titleMaxCodePoints}
+              </span>
               <Button
                 busy={false}
                 density="comfortable"
@@ -125,6 +135,12 @@ export function StudioHeader({ view, callbacks }: StudioHeaderProps) {
       />
 
       <div class="studio-document-actions">
+        {/*
+          The revision counter alone: the retired "Not exported" pill named
+          an export feature this build does not have, which read as jargon
+          to strangers. The live-region container stays for the contract's
+          shell-region inventory and for revision announcements.
+        */}
         <div
           class="studio-document-status"
           id="document-status"
@@ -133,11 +149,6 @@ export function StudioHeader({ view, callbacks }: StudioHeaderProps) {
           aria-atomic="true"
           role="status"
         >
-          <StatusPill
-            iconId="status"
-            label={view.lifecycleLabel}
-            tone={view.dirty ? "warning" : "neutral"}
-          />
           <span class="studio-document-status__revision">
             {view.revisionLabel}
           </span>
@@ -172,6 +183,65 @@ export function StudioHeader({ view, callbacks }: StudioHeaderProps) {
             type="button"
             variant="secondary"
           />
+          {/*
+            Clearing is destructive but not irreversible: it is one undoable
+            command, so the confirmation exists to stop an accidental click,
+            not to guard something unrecoverable. It is an owned two-step
+            control — never a native confirm dialog: press once to arm, again
+            to clear, and the armed state announces itself politely.
+          */}
+          <Button
+            busy={false}
+            density="comfortable"
+            describedBy={[]}
+            disabled={!view.canClearChart}
+            id="studio-clear-chart"
+            invalid={false}
+            label={view.clearLabel}
+            onAction={callbacks.onClearChart}
+            type="button"
+            variant="destructive"
+          />
+          <span aria-live="polite">
+            <VisuallyHidden
+              content={
+                view.clearArmed
+                  ? "Press Clear again to empty the chart. Undo restores it."
+                  : ""
+              }
+              focusableWhenSkippedTo={false}
+            />
+          </span>
+          {/*
+            Sharing is an explicit gesture that encodes the current chart
+            into a local #zdoc= fragment — no request leaves the page. The
+            outcome line states exactly where the link went, and it renders
+            VISIBLY beside the button: a status only a screen reader could
+            hear was a dead click for everyone else. The span itself stays
+            the polite live region, and refusals land in the same spot.
+          */}
+          <Button
+            busy={false}
+            density="comfortable"
+            describedBy={["studio-share-feedback"]}
+            disabled={false}
+            id="studio-copy-share-link"
+            invalid={false}
+            label={view.shareCopied ? "Copied ✓" : "Copy link"}
+            onAction={callbacks.onCopyShareLink}
+            type="button"
+            variant="secondary"
+          />
+          <span
+            aria-live="polite"
+            aria-atomic="true"
+            class="studio-share-feedback"
+            data-feedback-kind={view.shareFeedback?.kind ?? "idle"}
+            id="studio-share-feedback"
+            role="status"
+          >
+            {view.shareFeedback?.message ?? ""}
+          </span>
         </div>
       </div>
     </header>

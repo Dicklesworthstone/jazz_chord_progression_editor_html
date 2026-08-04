@@ -277,7 +277,7 @@ function assertCommonSuccess(
   expect(historyEntry?.retainedBytesEstimate).toBe(4_096);
 
   expect(receipt.schema).toBe(
-    "changes.application.atomic-edit-plan-receipt.v1",
+    "changes.application.atomic-edit-plan-receipt.v2",
   );
   expect(receipt.commandKind).toBe("apply-edit-plan");
   expect(receipt.commandId).toBe(fixture.command.id);
@@ -1280,6 +1280,7 @@ test("the success matrix remains exactly the eight contract branches", () => {
     "join-event-durations",
     "split-section",
     "join-sections",
+    "split-measure",
   ]);
   expect(A0_U1_SECTION_A_METADATA).toEqual({
     name: "Head",

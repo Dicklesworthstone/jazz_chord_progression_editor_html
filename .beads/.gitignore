@@ -3,6 +3,8 @@
 *.db-journal
 *.db-shm
 *.db-wal
+# fsqlite namespace sidecars written beside the db by beads_rust
+*.db-fsqlite-*
 
 # Lock files
 *.lock

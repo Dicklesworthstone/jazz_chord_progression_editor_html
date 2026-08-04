@@ -1,0 +1,179 @@
+{
+  "schema": "changes.fixtures.e0-v2-projection-cases.v1",
+  "reviewState": "proposed-independent-literal-spec",
+  "expectedValuesGenerated": false,
+  "productionOutputUsedAsOracle": false,
+  "literalCatalog": {
+    "identity-v2-projection": {
+      "kind": "inline",
+      "materializeAs": "ImportRequestIdentity",
+      "value": { "requestId": 401, "documentId": "document-v2-base", "baseRevision": 15 }
+    },
+    "unavailable-impact-v2": {
+      "kind": "inline",
+      "materializeAs": "ExplicitlyUnavailableImportReplacementImpact",
+      "value": {
+        "historyEntryRetainedBytes": 17825794,
+        "evictedUndoEntries": 6,
+        "redoEntriesCleared": 2,
+        "confirmationRequired": true,
+        "undoDisposition": "explicitly-unavailable",
+        "undoEntriesAfterCommit": 0,
+        "undoRetainedBytesAfterCommit": 0,
+        "exportRecommended": true
+      }
+    },
+    "requirement-v2": {
+      "kind": "inline",
+      "materializeAs": "ImportNonUndoableConfirmationRequirement",
+      "value": {
+        "schema": "changes.import-nonundoable-confirmation.v1",
+        "confirmationId": "confirm-v2-oversize-1",
+        "identity": { "$literalRef": "identity-v2-projection" },
+        "candidateDocumentId": "document-v2-oversize",
+        "commandId": "command-v2-replace-oversize",
+        "disclosedImpact": { "$literalRef": "unavailable-impact-v2" }
+      }
+    },
+    "acknowledgement-v2": {
+      "kind": "inline",
+      "materializeAs": "ImportNonUndoableConfirmationAcknowledgement",
+      "value": {
+        "kind": "acknowledged",
+        "requirement": { "$literalRef": "requirement-v2" }
+      }
+    }
+  },
+  "cases": [
+    {
+      "id": "E0V2-PROJ-001",
+      "resolutionId": "E0V2-RES-03-preview-to-owner-request-projection",
+      "variant": "positive",
+      "summary": "The projection table is total: every owner-request field is populated from exactly one declared preview source, matching the frozen type-surface constant verbatim.",
+      "projectionTable": {
+        "identity": "preview.requestToken",
+        "sourceFormat": "preview.routedSourceFormat",
+        "replacementOrigin": "owner-table-for-source-format",
+        "candidate": "preview.validatedCandidate-by-reference-never-redecoded",
+        "replacementCommandSeed": "preview.displayedCommandIdentity",
+        "disclosedImpact": "request.replacementImpactProjection",
+        "currentTransition": "workflow.retiring-transport-transition",
+        "nonUndoableConfirmation": "draft.acknowledgement-after-byte-match"
+      },
+      "traceIds": ["E0V2-TRACE-PROJECTION"]
+    },
+    {
+      "id": "E0V2-PROJ-002",
+      "resolutionId": "E0V2-RES-03-preview-to-owner-request-projection",
+      "variant": "near-miss",
+      "summary": "A table missing one owner-request field is not total and is refused; partial projection cannot be declared complete.",
+      "projectionTable": {
+        "identity": "preview.requestToken",
+        "sourceFormat": "preview.routedSourceFormat",
+        "replacementOrigin": "owner-table-for-source-format",
+        "candidate": "preview.validatedCandidate-by-reference-never-redecoded",
+        "replacementCommandSeed": "preview.displayedCommandIdentity",
+        "currentTransition": "workflow.retiring-transport-transition",
+        "nonUndoableConfirmation": "draft.acknowledgement-after-byte-match"
+      },
+      "expectedFixtureFailure": "E0V2_PROJECTION_TABLE_DRIFT",
+      "traceIds": ["E0V2-TRACE-PROJECTION"]
+    },
+    {
+      "id": "E0V2-PROJ-003",
+      "resolutionId": "E0V2-RES-03-preview-to-owner-request-projection",
+      "variant": "malformed",
+      "summary": "A defaulted source is not a declared preview field; the projection admits no defaulting.",
+      "projectionTable": {
+        "identity": "preview.requestToken",
+        "sourceFormat": "preview.routedSourceFormat",
+        "replacementOrigin": "owner-table-for-source-format",
+        "candidate": "preview.validatedCandidate-by-reference-never-redecoded",
+        "replacementCommandSeed": "preview.displayedCommandIdentity",
+        "disclosedImpact": "default:retained-empty-impact",
+        "currentTransition": "workflow.retiring-transport-transition",
+        "nonUndoableConfirmation": "draft.acknowledgement-after-byte-match"
+      },
+      "expectedFixtureFailure": "E0V2_PROJECTION_TABLE_DRIFT",
+      "traceIds": ["E0V2-TRACE-PROJECTION"]
+    },
+    {
+      "id": "E0V2-PROJ-004",
+      "resolutionId": "E0V2-RES-04-acknowledgement-provenance",
+      "variant": "positive",
+      "summary": "The acknowledgement's embedded requirement deep-equals the retained displayed requirement on every field, so the owner call proceeds.",
+      "confirmationBinding": {
+        "displayedRequirement": { "$literalRef": "requirement-v2" },
+        "acknowledgement": { "$literalRef": "acknowledgement-v2" },
+        "byteMatchProvedBeforeOwnerCall": true
+      },
+      "expectedProvenance": { "matches": true, "refusalCode": null, "ownerCalls": 1 },
+      "traceIds": ["E0V2-TRACE-PROJECTION"]
+    },
+    {
+      "id": "E0V2-PROJ-005",
+      "resolutionId": "E0V2-RES-04-acknowledgement-provenance",
+      "variant": "near-miss",
+      "summary": "One changed field in the embedded requirement breaks provenance: the acknowledgement answers a requirement the user never saw.",
+      "confirmationBinding": {
+        "displayedRequirement": { "$literalRef": "requirement-v2" },
+        "acknowledgement": {
+          "kind": "acknowledged",
+          "requirement": {
+            "schema": "changes.import-nonundoable-confirmation.v1",
+            "confirmationId": "confirm-v2-oversize-2",
+            "identity": { "$literalRef": "identity-v2-projection" },
+            "candidateDocumentId": "document-v2-oversize",
+            "commandId": "command-v2-replace-oversize",
+            "disclosedImpact": { "$literalRef": "unavailable-impact-v2" }
+          }
+        },
+        "byteMatchProvedBeforeOwnerCall": true
+      },
+      "oneFieldNearMiss": {
+        "baselineCaseId": "E0V2-PROJ-004",
+        "operator": "replace",
+        "jsonPointer": "/acknowledgement/requirement/confirmationId",
+        "from": "confirm-v2-oversize-1",
+        "to": "confirm-v2-oversize-2",
+        "exactChangedFieldCount": 1
+      },
+      "expectedProvenance": {
+        "matches": false,
+        "refusalCode": "import.confirmation_identity_mismatch",
+        "ownerCalls": 0
+      },
+      "traceIds": ["E0V2-TRACE-PROJECTION"]
+    },
+    {
+      "id": "E0V2-PROJ-006",
+      "resolutionId": "E0V2-RES-04-acknowledgement-provenance",
+      "variant": "malformed",
+      "summary": "A displayed requirement with no acknowledgement cannot proceed: the explicitly-unavailable disposition demands acknowledged consent.",
+      "confirmationBinding": {
+        "displayedRequirement": { "$literalRef": "requirement-v2" },
+        "acknowledgement": null,
+        "byteMatchProvedBeforeOwnerCall": true
+      },
+      "expectedProvenance": {
+        "matches": false,
+        "refusalCode": "history.nonundoable_confirmation_required",
+        "ownerCalls": 0
+      },
+      "traceIds": ["E0V2-TRACE-PROJECTION"]
+    },
+    {
+      "id": "E0V2-PROJ-007",
+      "resolutionId": "E0V2-RES-04-acknowledgement-provenance",
+      "variant": "positive",
+      "summary": "The retained disposition displays no requirement and needs no acknowledgement; provenance passes vacuously and the owner call proceeds.",
+      "confirmationBinding": {
+        "displayedRequirement": null,
+        "acknowledgement": null,
+        "byteMatchProvedBeforeOwnerCall": true
+      },
+      "expectedProvenance": { "matches": true, "refusalCode": null, "ownerCalls": 1 },
+      "traceIds": ["E0V2-TRACE-PROJECTION"]
+    }
+  ]
+}

@@ -122,10 +122,42 @@ async function proveCenterOwnership(
 
 async function nonNestedOverlaps(page: Page, selector: string) {
   return page.evaluate((targetSelector) => {
+    /**
+     * A control scrolled outside a clipping ancestor cannot be pressed at that
+     * position, so overlap is measured against the visible rectangle rather
+     * than the raw layout box. Without this, any scrollable region would
+     * report a false overlap as soon as its content grew past one screen.
+     */
+    const visibleRect = (element: HTMLElement): DOMRect => {
+      let rect = element.getBoundingClientRect();
+      let ancestor = element.parentElement;
+      while (ancestor !== null) {
+        const style = getComputedStyle(ancestor);
+        const clips = ["auto", "scroll", "hidden", "clip"].some(
+          (value) =>
+            style.overflowX === value || style.overflowY === value,
+        );
+        if (clips) {
+          const bounds = ancestor.getBoundingClientRect();
+          const left = Math.max(rect.left, bounds.left);
+          const top = Math.max(rect.top, bounds.top);
+          const right = Math.min(rect.right, bounds.right);
+          const bottom = Math.min(rect.bottom, bounds.bottom);
+          rect = new DOMRect(
+            left,
+            top,
+            Math.max(0, right - left),
+            Math.max(0, bottom - top),
+          );
+        }
+        ancestor = ancestor.parentElement;
+      }
+      return rect;
+    };
     const targets = Array.from(document.querySelectorAll<HTMLElement>(targetSelector))
       .filter((element) => {
         const style = getComputedStyle(element);
-        const box = element.getBoundingClientRect();
+        const box = visibleRect(element);
         return style.display !== "none" && style.visibility !== "hidden" &&
           box.width > 0 && box.height > 0;
       });
@@ -133,11 +165,11 @@ async function nonNestedOverlaps(page: Page, selector: string) {
     for (let firstIndex = 0; firstIndex < targets.length; firstIndex += 1) {
       const first = targets[firstIndex];
       if (first === undefined) continue;
-      const firstBox = first.getBoundingClientRect();
+      const firstBox = visibleRect(first);
       for (let secondIndex = firstIndex + 1; secondIndex < targets.length; secondIndex += 1) {
         const second = targets[secondIndex];
         if (second === undefined || first.contains(second) || second.contains(first)) continue;
-        const secondBox = second.getBoundingClientRect();
+        const secondBox = visibleRect(second);
         const overlapsInline = Math.min(firstBox.right, secondBox.right) -
           Math.max(firstBox.left, secondBox.left);
         const overlapsBlock = Math.min(firstBox.bottom, secondBox.bottom) -
@@ -255,8 +287,15 @@ test("U0-ENV-004 U0-PRIM-015 U0-PRIM-016 enforces 24 and 44 CSS px target polici
       expect(applicationTarget.width, `${applicationTarget.id} coarse width`).toBeGreaterThanOrEqual(44);
       expect(applicationTarget.height, `${applicationTarget.id} coarse height`).toBeGreaterThanOrEqual(44);
     }
-    const applicationHitOwnership = await artifactPage.evaluate(() =>
-      Array.from(
+    /*
+     * The ownership law hunts covered or overlapping controls, not content
+     * that has scrolled beneath the sticky transport bar: the seeded first-
+     * open chart (jcpe-b20t) makes the page taller than one viewport, so
+     * each target is measured in its scrolled-into-view position. A center
+     * that still resolves to another element there is a genuine defect.
+     */
+    const applicationHitOwnership = await artifactPage.evaluate(() => {
+      const measurements = Array.from(
         document.querySelectorAll<HTMLElement>(
           '.studio-shell button, .studio-shell input, .studio-shell select, .studio-shell textarea, .studio-shell a[href]',
         ),
@@ -267,14 +306,17 @@ test("U0-ENV-004 U0-PRIM-015 U0-PRIM-016 enforces 24 and 44 CSS px target polici
           box.width > 0 && box.height > 0 && box.bottom > 0 && box.right > 0 &&
           box.left < window.innerWidth && box.top < window.innerHeight;
       }).map((element) => {
+        element.scrollIntoView({ block: "center", inline: "nearest" });
         const box = element.getBoundingClientRect();
         const hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
         return {
           centerOwned: hit !== null && (hit === element || element.contains(hit)),
           id: element.id,
         };
-      }),
-    );
+      });
+      window.scrollTo(0, 0);
+      return measurements;
+    });
     expect(
       applicationHitOwnership.filter((item) => !item.centerOwned),
       "every application target center belongs to that target",

@@ -1,18 +1,29 @@
 # A0/U1 Atomic Edit Plan Contract
 
-Status: proposed independent specification packet; production implementation
-and human acceptance are not claimed.
+Status: independent specification packet incorporating the R1 reconciliation
+from `docs/A0_U1_PACKET_RECONCILIATION_PROPOSAL.md`, accepted by the owner on
+2026-07-24 with the recorded phrase
+`Accept A0/U1 reconciliation packet R1`. The live cutover is implemented: the
+sixteenth `apply-edit-plan` kind ships in the live command tuple, dispatches
+through the live runner, and replays through the live history ports. U1 UI
+completion is not claimed.
 
-Code-facing schema:
-`changes.application.atomic-edit-plan-contract.v1`.
+Code-facing schemas:
+`changes.application.atomic-edit-plan-contract.v2` and
+`changes.application.atomic-edit-plan-receipt.v2`, with
+`A0_U1_ATOMIC_EDIT_PLAN_POLICY_VERSION = 2`. Version 2 supersedes the v1
+packet's syntax-normalization literal, non-null-only insertion receipt, and
+6,768/6,769 text-work ceiling; restoring any superseded v1 value or behavior
+is packet tampering.
 
 This document is the normative A0/U1 amendment for one additive
 `apply-edit-plan` command. The exact proposed types and machine-readable
 inventories are in
-`src/application/application-edit-plan-contract.ts`. The existing
+`src/application/application-edit-plan-contract.ts`. The live
 `APPLICATION_COMMAND_KINDS`, `DocumentCommand`, runner, application barrel, and
-production bundle remain unchanged until a later implementation leaf implements
-this proposal.
+production bundle carry the implemented amendment: the first fifteen kinds
+remain exactly the accepted historical tuple and `apply-edit-plan` is the sole
+authorized suffix.
 
 The words **must**, **must not**, **exactly**, and **refuse** are normative.
 
@@ -38,12 +49,12 @@ The forbidden payload keys are frozen in
 
 ## 2. Proposed command surface
 
-The proposed command-kind tuple is the current fifteen A0 kinds in their
-current order followed by `apply-edit-plan`. It is published separately as
-`A0_U1_PROPOSED_APPLICATION_COMMAND_KINDS`; it does not mutate the live tuple.
-Likewise, `ProposedDocumentCommand` is the separate type-only union of the live
-`DocumentCommand` and `ApplyEditPlanCommand`; it does not replace or re-export
-the live union.
+The command-kind tuple is the historical fifteen A0 kinds in their accepted
+order followed by `apply-edit-plan`. Since the live cutover,
+`A0_U1_PROPOSED_APPLICATION_COMMAND_KINDS` and `ProposedDocumentCommand` are
+equality mirrors of the merged live `APPLICATION_COMMAND_KINDS` and
+`DocumentCommand`; the gates verify that equality and that the historical
+fifteen-kind prefix is never rewritten.
 
 The proposed envelope inherits the existing A0 field order exactly and then
 adds its discriminant and plan:
@@ -78,6 +89,15 @@ compare their enumerable string keys against the applicable row exactly;
 reading values through ordinary property access before this capture is
 forbidden. TypeScript's erased structural types are not runtime proof.
 
+Every proxy-sensitive reflection operation this gate performs — including
+`Array.isArray`, own-key enumeration, prototype reads, and own data-property
+descriptor reads — executes inside the descriptor-capture refusal boundary. A
+revoked or otherwise hostile proxy at the command root produces the frozen
+`edit-plan.command-shape-invalid` refusal, and at any nested position the
+frozen `edit-plan.plan-shape-invalid` refusal, each at its exact frozen path
+with zero downstream work. A hostile value never throws through the public
+runner.
+
 Exact shape includes bounded caller-owned text, not merely JavaScript string
 type checks. Section names must be nonblank valid Unicode scalar text of at
 most 256 code points; section annotations must be valid scalar text of at most
@@ -85,8 +105,14 @@ most 256 code points; section annotations must be valid scalar text of at most
 valid scalar text of at most 2,000 code points. These are the existing F2/F3
 domain limits, frozen here as pre-allocation plan-shape checks so a malformed
 plan cannot consume ID entropy before failing. The bounded scan is reported by
-`metadataCodePointsObserved`; across the largest join plan it observes at most
-6,768 accepted code points or 6,769 with one first-excess witness.
+`metadataCodePointsObserved`; across the largest join-sections plan it observes
+at most 8,768 accepted code points — 6,768 across the three maximum
+join-section metadata objects plus 2,000 for the completion reason of the one
+first-extra declaration row inside the shape horizon of section 8 — or 8,769
+including one first-excess or invalid-scalar witness. Every accepted string is
+validated completely within that reported bounded work; no truncated text scan
+is ever treated as valid, and the implementation reports physical work actually
+performed rather than clamping a larger hidden scan to the public maximum.
 
 The source-only `RunAtomicEditPlan` signature closes the implementation handoff.
 Its request contains `AtomicEditPlanAppState`, one `ApplyEditPlanCommand`, and
@@ -144,6 +170,15 @@ allocation, A0/U1 must prove all of the following:
 - `issueCodes` is equal in length, order, and string value;
 - `expectedStatus` equals the current QuickEntry status; and
 - `expectedLane` agrees with the source-union discriminant.
+
+`issueCodes` is an ordered sequence, not a set. Repeated equal codes are
+permitted, significant, preserved, and compared at their original positions.
+The common accepted-state and A0/U1 shape invariant is at most 64 codes, each
+a nonblank valid-Unicode-scalar string of at most 128 code points. Live
+`set-quick-entry` enforces that invariant before publishing state; the
+atomic-edit shape gate mirrors it exactly. An already-corrupted
+non-authoritative state does not weaken the command shape gate, and no gate may
+impose `Set` semantics on the sequence.
 
 The complete lane requires status `ready` and lane `complete-draft`. The
 recovery lane requires status `invalid` and lane `recovered-chord`. `idle`, a
@@ -212,6 +247,15 @@ same state snapshot guarded by the command envelope.
 `source.kind: "complete-draft"` requires T0 success. T0 failure refuses with
 `edit-plan.syntax-refused`; the runner must not silently fall through to chord
 recovery.
+
+On T0 failure, A0/U1 preserves each T0 diagnostic's `code` and half-open
+UTF-16 `range` exactly. It may wrap the cause in the A0/U1 refusal envelope,
+sanitize messages, sort the resulting structured diagnostics by the frozen
+diagnostic order, and apply the retained-row cap. It must not rescan source
+text, extend a token range, or substitute a syntax code; T0 is the exclusive
+syntax classifier and A0/U1 never operates as a second one. Positive,
+multi-diagnostic, ordering, range, and mutation proof compare against
+independently authored T0 evidence rather than production output.
 
 The supplied warning acknowledgements must match the success result's warnings
 one-for-one and in T0 order. Equality uses only exact warning `code` and exact
@@ -362,6 +406,30 @@ their declaration must equal the measure's current completion value. No
 operation may silently flip, infer, or repair an existing measure's completion;
 section 6.4 is the sole explicit conversion for newly allocated measures.
 
+The runtime-shape horizon for each completion tuple is the expected tuple
+cardinality plus one first-unpaired witness. The completion array's length is
+read through its own data-property descriptor before child capture. A length
+beyond the horizon is `edit-plan.plan-shape-invalid` at the completion-array
+path; no child beyond the horizon is captured or scanned. Every row within the
+horizon is validated completely before the completion-declaration comparison
+stage:
+
+- a malformed expected or first-extra row is the earlier shape refusal;
+- a fully shaped first-extra row reaches
+  `edit-plan.completion-declarations-mismatch` at its index;
+- a missing expected row reaches the same mismatch stage; and
+- no truncated text scan is ever treated as valid.
+
+| Plan/lane                             | Expected rows | Shape horizon | Maximum metadata | Maximum reason text | Full accepted-shape scan | First excess |
+| ------------------------------------- | ------------: | ------------: | ---------------: | ------------------: | -----------------------: | -----------: |
+| Complete insert into measure          |             1 |             2 |                0 |               4,000 |                    4,000 |        4,001 |
+| Complete insert into section/document |             0 |             1 |                0 |               2,000 |                    2,000 |        2,001 |
+| Recovered insert into measure         |             1 |             2 |                0 |               4,000 |                    4,000 |        4,001 |
+| Split event                           |             1 |             2 |                0 |               4,000 |                    4,000 |        4,001 |
+| Join events                           |             1 |             2 |                0 |               4,000 |                    4,000 |        4,001 |
+| Split section                         |             0 |             1 |            2,256 |               2,000 |                    4,256 |        4,257 |
+| Join sections                         |             0 |             1 |            6,768 |               2,000 |                    8,768 |        8,769 |
+
 ## 9. Split one event duration
 
 `split-event-duration` targets one existing event. Both supplied durations
@@ -485,9 +553,27 @@ its target survives.
 ### 14.1 Insert fragment
 
 Existing selection and range values remain byte-for-byte equal. The insertion
-point moves to `after-event` of the last inserted event for measure placement,
-`after-measure` of the last inserted measure for section placement, or
-`after-section` of the last inserted section for document placement.
+point is set to `after-event` of the last inserted event for measure
+placement, `after-measure` of the last inserted measure for section placement,
+or `after-section` of the last inserted section for document placement.
+
+"Set" is true for both movement and creation, in two honest receipt branches:
+
+- when the before insertion bookmark is non-null, the receipt records one
+  exact `{from, to}` movement rewrite (`move-after-last-inserted`) and no
+  `insertionCreated` key is present; and
+- when the before insertion bookmark is `null`, the receipt records the exact
+  new after boundary in `insertionCreated` (`create-after-last-inserted`) with
+  `insertionRewrite: null`.
+
+In both branches the after bookmark is the exact boundary after the last
+inserted event, measure, or section. A QuickEntry target proves placement; it
+is never reported as a bookmark that did not exist. Refusing an otherwise
+valid null-insertion state or silently preserving `null` is not permitted.
+Null-to-non-null creation increments `bookmarkRecordsRewritten` once because
+the insertion record changed; it does not increment
+`bookmarkRecordsExamined`, because there was no before insertion record to
+examine.
 
 ### 14.2 Split event
 
@@ -580,9 +666,15 @@ focus branch, and focus target so proof cannot rely on an unobserved helper.
 Those fields are correlated discriminated outcomes, not independent flags:
 preserve means no rewrite and `cleared: false`; rewrite means one actual
 insertion rewrite or one/two actual range-endpoint rewrites and
-`cleared: false`; clear means no rewrite and `cleared: true`. Each operation's
-receipt union contains only the preserve/rewrite/clear outcomes admitted by
-the tables above.
+`cleared: false`; create means no rewrite, one exact `insertionCreated`
+boundary, and `cleared: false`, and occurs only for insert-fragment with a
+null before insertion bookmark; clear means no rewrite and `cleared: true`.
+The conditional receipt extension freezes `insertionCreated` only on the
+creation branch; adding `insertionCreated: null` to unrelated branches is
+forbidden. The generic insert operation policy is
+`preserve-selection-and-range-set-insertion-after-last-inserted`. Each
+operation's receipt union contains only the preserve/rewrite/create/clear
+outcomes admitted by the tables above.
 
 ## 15. Atomic publication, history, and receipt
 
@@ -810,7 +902,7 @@ The accepted input, domain, and retained-record maxima are exported in
 | Section-name code points            |       256 |
 | Section-annotation code points      |     2,000 |
 | Completion-reason code points       |     2,000 |
-| Plan metadata code points           |     6,768 |
+| Plan metadata code points           |     8,768 |
 
 Every published work counter has a separate absolute ceiling in
 `A0_U1_ATOMIC_EDIT_WORK_COUNTER_MAXIMA`. A permitted-value maximum and an
@@ -835,7 +927,7 @@ retains one first-excess witness:
 | `draftEventsVisited`               |   8,193 |
 | `completionDeclarationsVisited`    |       2 |
 | `metadataFieldsCompared`           |      12 |
-| `metadataCodePointsObserved`       |   6,769 |
+| `metadataCodePointsObserved`       |   8,769 |
 | `exactBeatAdditions`               |   8,193 |
 | `exactBeatComparisons`             |   8,193 |
 | `idAllocationAttempts`             |  73,792 |
@@ -900,13 +992,13 @@ from the expected result.
 | `draftSectionsVisited` / `draftMeasuresVisited` / `draftEventsVisited` | One per successful T0 draft record entered in structural source order, including a first-excess record.                                                                                                                                                                                                                 |
 | `completionDeclarationsVisited`                                        | One per supplied declaration entered, including the first unexpected/extra row.                                                                                                                                                                                                                                         |
 | `metadataFieldsCompared`                                               | One per plan-owned section metadata field entered in `name`, `annotation`, `keyOverride`, `voiceLeadingBoundary` order: four for split metadata and twelve for join expected-left, expected-right, then result metadata. Section-declaration row visits are accounted by draft/plan-node counters.                      |
-| `metadataCodePointsObserved`                                           | One per code-point iteration entered while validating plan-owned section names, annotations, or pickup/incomplete reasons, including the first invalid or over-limit item. Join order is expected-left, expected-right, then result metadata; no operation combines that three-object maximum with a completion reason. |
+| `metadataCodePointsObserved`                                           | One per code-point iteration entered while validating plan-owned section names, annotations, or pickup/incomplete reasons, including the first invalid or over-limit item. Join order is expected-left, expected-right, then result metadata, followed by any completion-declaration reason inside the section 8 shape horizon; the join-sections maximum therefore combines the three-object metadata maximum with one first-extra completion reason.  |
 | `exactBeatAdditions`                                                   | One per exact operation-local duration sum plus one per event accumulated by the reached final-timeline scan.                                                                                                                                                                                                           |
 | `exactBeatComparisons`                                                 | One per exact operation-local equality/order check plus one per accumulated final event compared with the timeline bound.                                                                                                                                                                                               |
 | `idAllocationAttempts`                                                 | One immediately before each factory call.                                                                                                                                                                                                                                                                               |
 | `idCollisionChecks`                                                    | One for each ID actually returned and checked against the occupied/local set; a thrown/refused factory attempt returns no ID and adds zero.                                                                                                                                                                             |
 | `bookmarkRecordsExamined`                                              | One for the selection record, one per selected event ID, one for a non-null insertion boundary, and one for each non-null range endpoint.                                                                                                                                                                               |
-| `bookmarkRecordsRewritten`                                             | One per selected event ID replacement, one per changed/cleared insertion, one per rewritten range endpoint, or one for clearing the complete range; unchanged records add zero.                                                                                                                                         |
+| `bookmarkRecordsRewritten`                                             | One per selected event ID replacement, one per created/changed/cleared insertion, one per rewritten range endpoint, or one for clearing the complete range; unchanged records add zero. Null-to-non-null insertion creation counts once here and adds zero examined records.                                              |
 | `structuralDecodeCalls`                                                | One immediately before F2; otherwise zero.                                                                                                                                                                                                                                                                              |
 | `semanticValidationCalls`                                              | One immediately before F3 after F2 succeeds; otherwise zero.                                                                                                                                                                                                                                                            |
 | `peakPlanNodeRecords`                                                  | Maximum simultaneously retained plan/draft/recovery records counted by the plan-node rule.                                                                                                                                                                                                                              |
@@ -1013,11 +1105,184 @@ transposition obligations above. Root booleans, reciprocal links, summaries,
 or category labels cannot satisfy an obligation without a semantically checked
 literal witness.
 
-## 20. Implementation handoff
+## 20. Implementation record
 
-This packet intentionally defines data and laws only. It adds no runner branch,
-parser adapter wiring, barrel export, browser behavior, generated artifact, or
-release claim. A later implementation bead must adopt these exact inventories,
-author independent fixtures first, bind the synchronous T0 dependency, and
-then prove the complete release-facing A0 gate without relaxing any existing
-test.
+The implementation leaf adopted these exact inventories against independently
+authored fixtures: the live `runDocumentCommand` dispatches `apply-edit-plan`
+to the atomic runner ahead of the inherited envelope stage, the composition
+root binds the real synchronous T0 parser through the live dependency record,
+the live history ports replay the widened row union, and the release-facing A0
+gate passes without relaxing any existing test. U1 browser behavior remains a
+later leaf; the packet still claims no UI completion.
+
+## 21. Amendment: split one measure
+
+Status: **cut over into the live surface** by `jcpe-pwp2`; independent proof
+still owed by `jcpe-tcm7`. Bead `jcpe-2rhf` (spec, closed), `jcpe-pwp2`
+(build), `jcpe-tcm7` (verify). Source of truth:
+`src/application/application-edit-plan-contract.ts`.
+
+This section began as an amendment carried in its own module so that the R1
+acceptance record stayed verifiable while the variant was still proposed. That
+module (`application-split-measure-amendment-contract.ts`) has been retired: the
+build leaf moved every declaration onto the live surface, so sections 1 through
+20 now describe five of the six live variants and this section describes the
+sixth. The live plan set is six kinds, the live nested refusal set is
+thirty-four codes, and the live law set is eighteen. Every index the accepted
+R1 packet pinned still names the same variant, because the plan kind and the
+law were appended and the two refusal codes were inserted at their declared
+anchors with the authority rows renumbered mechanically.
+
+`tests/static/a0-u1-split-measure.test.ts` pins both halves: what the sixth
+variant declares, and the fact that the accepted names, order, and indices were
+extended rather than edited.
+
+### 21.1 Why a sixth variant exists
+
+REBUILD_PLAN 17.4 requires a duration edit that overfills a measure to offer
+**Split at bar**, **Move following events**, or **Cancel**. Only the last two
+are expressible with one accepted command. Move following events is one `move`.
+Split at bar would need a measure inserted *and* existing events moved into it:
+two commands, which the one-command-per-gesture rule forbids and which no
+gesture may compose to hide the gap. U1 v1 therefore states the overfill with
+its exact current fill, resulting fill, and bar capacity and offers only Move or
+Cancel — honest, and incomplete against the plan. `split-measure` closes that
+gap with one atomic, singly undoable action.
+
+### 21.2 Shape and laws
+
+`split-measure` is `split-section` one level down.
+
+```text
+kind:                   "split-measure"
+measureId:              MeasureId
+beforeEventId:          ChordEventId
+firstMeasureTotal:      BeatDuration
+secondMeasureTotal:     BeatDuration
+newMeasureCompletion:   MeasureCompletion
+completionDeclarations: readonly [AtomicEditPlanCompletionDeclaration]
+identityPolicy:         "retain-source-prefix-allocate-suffix"
+eventPolicy:            "move-suffix-preserve-identities"
+```
+
+`beforeEventId` is the first event of the suffix and must be **strict
+interior**: it must name an event of `measureId`, and at least one event must
+remain in the retained measure while at least one moves. A boundary that is
+missing, in another measure, or the measure's first event is
+`edit-plan.measure-split-boundary-invalid` at `/plan/beforeEventId`. Neither
+result may be empty, so the operation is never a no-op dressed as a split.
+
+The two totals are the caller's exact statement of the partition. Both are
+recomputed from the stored durations before any identity work:
+`firstMeasureTotal` must equal the exact rational sum of the retained events,
+`secondMeasureTotal` the exact rational sum of the moved events, and their sum
+the source measure's current exact total. Any of the three failing is
+`edit-plan.measure-partition-mismatch`. Nothing is computed for the caller,
+redistributed, rounded, or repaired: **a split moves a bar line, never a beat.**
+
+The retained measure keeps the source ID, and the single `completionDeclarations`
+row declares it. The suffix receives one fresh measure ID and the explicit
+`newMeasureCompletion`. A caller cannot name an ID that does not exist yet,
+which is why the second declaration is a dedicated field rather than a second
+row — exactly as `split-section` gives its fresh suffix an explicit
+`newSectionMetadata`. Section 6.4's conversion does not apply: this measure is
+not built from a parsed fragment, so its completion is declared, never inferred.
+
+Every moved event keeps its exact ID, chord, voicing, annotation, and duration,
+and its order relative to every other event is unchanged. The operation
+allocates exactly one measure ID, removes none, and creates no event. No
+timeline span moves relative to another span.
+
+### 21.3 Completion-declaration accounting
+
+Extending the table in section 8:
+
+| Plan/lane     | Expected rows | Shape horizon | Maximum metadata | Maximum reason text | Full accepted-shape scan | First excess |
+| ------------- | ------------: | ------------: | ---------------: | ------------------: | -----------------------: | -----------: |
+| Split measure |             1 |             2 |            2,000 |               4,000 |                    6,000 |        6,001 |
+
+The metadata column is the fresh measure's own completion reason; the reason
+column is the declaration tuple's horizon at 2,000 code points per row.
+
+### 21.4 Stable IDs
+
+The allocation step is `split-measure-suffix-only`. It is inserted between
+`split-event-second-only` and `split-section-suffix-only` rather than appended,
+so the order stays event, measure, section. The allocated identity records
+`{kind: "measure", id, source: {kind: "split-measure-suffix", sourceMeasureId}}`.
+
+### 21.5 Bookmark and focus mapping
+
+Extending section 14. Every event identity survives, so selection and every
+event boundary are untouched. Only the two boundaries that denoted the end of
+the *complete* source measure move, because that is where that musical point
+now is:
+
+| Before boundary                    | Insertion and either range endpoint |
+| ---------------------------------- | ----------------------------------- |
+| `before-measure(source)`           | unchanged                           |
+| `measure-start(source)`            | unchanged                           |
+| `after-measure(source)`            | `after-measure(suffix)`             |
+| `measure-end(source)`              | `measure-end(suffix)`               |
+| `before-event(any surviving event)`| unchanged                           |
+| `after-event(any surviving event)` | unchanged                           |
+
+No internal musical beat is approximated and no boundary is guessed.
+
+### 21.6 The eighteenth law
+
+`A0-U1-ATOM-018-split-measure-partition-exact`: a split-measure command either
+refuses, or produces exactly two measures whose declared totals are the exact
+rational sums of their own events, whose union preserves every event identity,
+value, and order, and whose combined total equals the source measure's total.
+
+`A0-U1-ATOM-001-command-and-five-closed-variants` keeps its accepted
+identifier. The closed set is six; the identifier records the count at R1
+acceptance. Renaming it would rewrite 109 references inside the byte-pinned
+packet whose acceptance record cites those names, which needs its own recorded
+acceptance rather than a side effect of this amendment.
+
+### 21.7 Cutover record
+
+The build leaf moved every declaration onto the live surface and added the
+runner, runtime-shape, and bookmark branches TypeScript then demanded:
+`targetFailure`, `completionDeclarationFailure`, `operationLawFailure`,
+`nonInsertPreparation`, `finalCollectionProjection`, and `materializePlan` in
+`application-edit-plan.ts`; the `split-measure` case in `firstPlanShapeFailure`
+and the field-order ladder plus the `newMeasureCompletion` reason scan in
+`metadataWorkThroughPath`; and `mapSplitMeasureBoundary` with its switch case in
+`application-edit-plan-bookmarks.ts`. U1 gained operation `U1-OP-034`
+(`split-at-bar`), appended rather than placed beside `U1-OP-013` so every
+accepted operation index still names its own row, and section 17.4's overfill
+row now offers all three of its options.
+
+Three build-leaf refinements the amendment module did not state, recorded here
+because the verify leaf authors its oracles from this section:
+
+1. **Two extra pointer templates.** The amendment listed thirteen `/plan/...`
+   templates for the shape authority and omitted
+   `/plan/newMeasureCompletion/expectedDuration/numerator` and
+   `/denominator`. The runtime shape check emits those exact paths for a
+   malformed pickup or incomplete duration, and the accepted packet already
+   carries the analogous pair for a declaration row's `expectedDuration`, so
+   both are included. The authority is fifteen templates.
+2. **Non-canonical totals refuse.** `firstMeasureTotal` and
+   `secondMeasureTotal` must be positive canonical reduced PPQ durations, and a
+   value that is not is `edit-plan.measure-partition-mismatch` at its own
+   pointer rather than `edit-plan.duration-invalid`, whose path authority does
+   not cover these two fields. Refusing rather than comparing a non-canonical
+   literal keeps `normalizationOrRepairPermitted: false` true of this operation
+   as well.
+3. **The declared retained completion is caller-owned.** The single
+   `completionDeclarations` row is checked for the retained measure's ID but its
+   completion value is not compared against the measure's current completion —
+   the retained measure holds fewer beats after the split, so its old completion
+   is exactly the value that must not be carried forward silently. This mirrors
+   the recovered-chord lane rather than the split-event/join-event lanes.
+
+The verify leaf owes ten case groups, the literal apply, undo, redo, refusal,
+collision, and plus-one transitions, one applicability row, one transposition
+witness, the mutation controls, and the reciprocal trace and provenance links —
+the same discipline the accepted packet holds itself to. Until it lands,
+`bun run verify` is red on the `a0-u1-atomic-edit-plan-contract` gate; that
+gate's remaining findings are exactly the corpus obligations and nothing else.

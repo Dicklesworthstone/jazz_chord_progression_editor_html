@@ -1,0 +1,212 @@
+{
+  "schema": "changes.fixtures.e0-v2-normalization-cases.v1",
+  "reviewState": "proposed-independent-literal-spec",
+  "expectedValuesGenerated": false,
+  "productionOutputUsedAsOracle": false,
+  "policy": {
+    "rawValueRetained": false,
+    "validation": "recursively-exact-keys-against-owner-result-type",
+    "throwHandling": "caught-once-at-call-site-never-rethrown",
+    "successIsEvidenceNotAuthority": true
+  },
+  "portExpectations": {
+    "prepareImportReplacementPublication": {
+      "exactSuccessKeys": ["ok", "value"],
+      "exactRefusalKeys": ["ok", "code"],
+      "breachStateEffect": "NONE"
+    },
+    "publishImportReplacement": {
+      "exactSuccessKeys": ["ok", "outcome", "identity", "documentId", "revision", "effects", "counters", "liveForRequest"],
+      "exactRefusalKeys": ["ok", "outcome", "code", "identity", "observedDocumentId", "observedRevision", "liveForRequest"],
+      "breachStateEffect": "APPLICATION_TRANSPORT_RECONCILIATION_REQUIRED"
+    },
+    "readCurrentApplicationDocumentIdentity": {
+      "exactSuccessKeys": ["documentId", "revision"],
+      "exactRefusalKeys": null,
+      "breachStateEffect": "NONE"
+    },
+    "publishCanonicalExportRevision": {
+      "exactSuccessKeys": ["ok", "outcome", "documentId", "revision"],
+      "exactRefusalKeys": ["ok", "outcome", "code", "observedDocumentId", "observedRevision"],
+      "breachStateEffect": "APPLICATION_RECONCILIATION_REQUIRED"
+    }
+  },
+  "cases": [
+    {
+      "id": "E0V2-NORM-001",
+      "port": "prepareImportReplacementPublication",
+      "variant": "exact-success-envelope",
+      "rawReturn": { "ok": true, "value": { "schema": "changes.prepared-import-replacement-publication.v1", "identity": { "requestId": 7, "documentId": "D1", "baseRevision": 4 }, "sourceFormat": "canonical-json-v2", "candidateDocumentId": "D2", "expectedTransportGeneration": 3, "committingTransition": { "kind": "committing", "requestId": 7, "baseRevision": 4, "undoDisposition": "retained" } } },
+      "expected": { "outcome": "normalized", "diagnostic": null },
+      "traceIds": ["E0V2-TRACE-NORMALIZATION"]
+    },
+    {
+      "id": "E0V2-NORM-002",
+      "port": "prepareImportReplacementPublication",
+      "variant": "exact-refusal-envelope",
+      "rawReturn": { "ok": false, "code": "import.replacement_preparation_busy" },
+      "expected": { "outcome": "normalized", "diagnostic": null },
+      "traceIds": ["E0V2-TRACE-NORMALIZATION"]
+    },
+    {
+      "id": "E0V2-NORM-003",
+      "port": "prepareImportReplacementPublication",
+      "variant": "extra-key",
+      "rawReturn": { "ok": false, "code": "import.replacement_preparation_busy", "state": "smuggled" },
+      "expected": { "outcome": "protocol-invalid", "diagnostic": { "port": "prepareImportReplacementPublication", "reason": "invalid-envelope", "rawResultRetained": false }, "stateEffect": "NONE" },
+      "traceIds": ["E0V2-TRACE-NORMALIZATION", "E0V2-TRACE-STATE-FREEDOM"]
+    },
+    {
+      "id": "E0V2-NORM-004",
+      "port": "prepareImportReplacementPublication",
+      "variant": "missing-key",
+      "rawReturn": { "ok": false },
+      "expected": { "outcome": "protocol-invalid", "diagnostic": { "port": "prepareImportReplacementPublication", "reason": "invalid-envelope", "rawResultRetained": false }, "stateEffect": "NONE" },
+      "traceIds": ["E0V2-TRACE-NORMALIZATION"]
+    },
+    {
+      "id": "E0V2-NORM-005",
+      "port": "prepareImportReplacementPublication",
+      "variant": "wrong-kind",
+      "rawReturn": { "ok": "yes", "code": "import.replacement_preparation_busy" },
+      "expected": { "outcome": "protocol-invalid", "diagnostic": { "port": "prepareImportReplacementPublication", "reason": "invalid-envelope", "rawResultRetained": false }, "stateEffect": "NONE" },
+      "traceIds": ["E0V2-TRACE-NORMALIZATION"]
+    },
+    {
+      "id": "E0V2-NORM-006",
+      "port": "prepareImportReplacementPublication",
+      "variant": "thrown",
+      "rawReturn": { "$thrown": "synchronous-throw-value-never-retained" },
+      "expected": { "outcome": "protocol-invalid", "diagnostic": { "port": "prepareImportReplacementPublication", "reason": "threw-or-rejected", "rawResultRetained": false }, "stateEffect": "NONE" },
+      "traceIds": ["E0V2-TRACE-NORMALIZATION"]
+    },
+    {
+      "id": "E0V2-NORM-007",
+      "port": "publishImportReplacement",
+      "variant": "exact-success-envelope",
+      "rawReturn": { "ok": true, "outcome": "committed", "identity": { "requestId": 7, "documentId": "D1", "baseRevision": 4 }, "documentId": "D2", "revision": 5, "effects": [], "counters": { "$counterObject": "complete-application-work-counter-object" }, "liveForRequest": 0 },
+      "expected": { "outcome": "normalized", "diagnostic": null },
+      "traceIds": ["E0V2-TRACE-NORMALIZATION"]
+    },
+    {
+      "id": "E0V2-NORM-008",
+      "port": "publishImportReplacement",
+      "variant": "exact-refusal-envelope",
+      "rawReturn": { "ok": false, "outcome": "refused", "code": "import.replacement_preparation_stale", "identity": { "requestId": 7, "documentId": "D1", "baseRevision": 4 }, "observedDocumentId": "D1", "observedRevision": 6, "liveForRequest": 0 },
+      "expected": { "outcome": "normalized", "diagnostic": null },
+      "traceIds": ["E0V2-TRACE-NORMALIZATION"]
+    },
+    {
+      "id": "E0V2-NORM-009",
+      "port": "publishImportReplacement",
+      "variant": "extra-key",
+      "rawReturn": { "ok": true, "outcome": "committed", "identity": { "requestId": 7, "documentId": "D1", "baseRevision": 4 }, "documentId": "D2", "revision": 5, "effects": [], "counters": { "$counterObject": "complete-application-work-counter-object" }, "liveForRequest": 0, "lastKnownState": "smuggled" },
+      "expected": { "outcome": "protocol-invalid", "diagnostic": { "port": "publishImportReplacement", "reason": "invalid-envelope", "rawResultRetained": false }, "stateEffect": "APPLICATION_TRANSPORT_RECONCILIATION_REQUIRED" },
+      "traceIds": ["E0V2-TRACE-NORMALIZATION", "E0V2-TRACE-STATE-FREEDOM"]
+    },
+    {
+      "id": "E0V2-NORM-010",
+      "port": "publishImportReplacement",
+      "variant": "missing-key",
+      "rawReturn": { "ok": true, "outcome": "committed", "identity": { "requestId": 7, "documentId": "D1", "baseRevision": 4 }, "documentId": "D2", "revision": 5, "effects": [], "liveForRequest": 0 },
+      "expected": { "outcome": "protocol-invalid", "diagnostic": { "port": "publishImportReplacement", "reason": "invalid-envelope", "rawResultRetained": false }, "stateEffect": "APPLICATION_TRANSPORT_RECONCILIATION_REQUIRED" },
+      "traceIds": ["E0V2-TRACE-NORMALIZATION"]
+    },
+    {
+      "id": "E0V2-NORM-011",
+      "port": "publishImportReplacement",
+      "variant": "wrong-kind",
+      "rawReturn": { "ok": true, "outcome": "committed", "identity": { "requestId": 7, "documentId": "D1", "baseRevision": 4 }, "documentId": "D2", "revision": "5", "effects": [], "counters": { "$counterObject": "complete-application-work-counter-object" }, "liveForRequest": 0 },
+      "expected": { "outcome": "protocol-invalid", "diagnostic": { "port": "publishImportReplacement", "reason": "invalid-envelope", "rawResultRetained": false }, "stateEffect": "APPLICATION_TRANSPORT_RECONCILIATION_REQUIRED" },
+      "traceIds": ["E0V2-TRACE-NORMALIZATION"]
+    },
+    {
+      "id": "E0V2-NORM-012",
+      "port": "publishImportReplacement",
+      "variant": "thrown",
+      "rawReturn": { "$thrown": "synchronous-throw-value-never-retained" },
+      "expected": { "outcome": "protocol-invalid", "diagnostic": { "port": "publishImportReplacement", "reason": "threw-or-rejected", "rawResultRetained": false }, "stateEffect": "APPLICATION_TRANSPORT_RECONCILIATION_REQUIRED" },
+      "traceIds": ["E0V2-TRACE-NORMALIZATION"]
+    },
+    {
+      "id": "E0V2-NORM-013",
+      "port": "readCurrentApplicationDocumentIdentity",
+      "variant": "exact-success-envelope",
+      "rawReturn": { "documentId": "D1", "revision": 4 },
+      "expected": { "outcome": "normalized", "diagnostic": null },
+      "traceIds": ["E0V2-TRACE-NORMALIZATION"]
+    },
+    {
+      "id": "E0V2-NORM-014",
+      "port": "readCurrentApplicationDocumentIdentity",
+      "variant": "extra-key",
+      "rawReturn": { "documentId": "D1", "revision": 4, "observedBefore": "smuggled" },
+      "expected": { "outcome": "protocol-invalid", "diagnostic": { "port": "readCurrentApplicationDocumentIdentity", "reason": "invalid-envelope", "rawResultRetained": false }, "stateEffect": "NONE" },
+      "traceIds": ["E0V2-TRACE-NORMALIZATION", "E0V2-TRACE-STATE-FREEDOM"]
+    },
+    {
+      "id": "E0V2-NORM-015",
+      "port": "readCurrentApplicationDocumentIdentity",
+      "variant": "missing-key",
+      "rawReturn": { "documentId": "D1" },
+      "expected": { "outcome": "protocol-invalid", "diagnostic": { "port": "readCurrentApplicationDocumentIdentity", "reason": "invalid-envelope", "rawResultRetained": false }, "stateEffect": "NONE" },
+      "traceIds": ["E0V2-TRACE-NORMALIZATION"]
+    },
+    {
+      "id": "E0V2-NORM-016",
+      "port": "readCurrentApplicationDocumentIdentity",
+      "variant": "wrong-kind",
+      "rawReturn": { "documentId": "D1", "revision": -1.5 },
+      "expected": { "outcome": "protocol-invalid", "diagnostic": { "port": "readCurrentApplicationDocumentIdentity", "reason": "invalid-envelope", "rawResultRetained": false }, "stateEffect": "NONE" },
+      "traceIds": ["E0V2-TRACE-NORMALIZATION"]
+    },
+    {
+      "id": "E0V2-NORM-017",
+      "port": "readCurrentApplicationDocumentIdentity",
+      "variant": "thrown",
+      "rawReturn": { "$thrown": "synchronous-throw-value-never-retained" },
+      "expected": { "outcome": "protocol-invalid", "diagnostic": { "port": "readCurrentApplicationDocumentIdentity", "reason": "threw-or-rejected", "rawResultRetained": false }, "stateEffect": "NONE" },
+      "traceIds": ["E0V2-TRACE-NORMALIZATION"]
+    },
+    {
+      "id": "E0V2-NORM-018",
+      "port": "publishCanonicalExportRevision",
+      "variant": "exact-success-envelope",
+      "rawReturn": { "ok": true, "outcome": "published", "documentId": "D1", "revision": 4 },
+      "expected": { "outcome": "normalized", "diagnostic": null },
+      "traceIds": ["E0V2-TRACE-NORMALIZATION"]
+    },
+    {
+      "id": "E0V2-NORM-019",
+      "port": "publishCanonicalExportRevision",
+      "variant": "exact-refusal-envelope",
+      "rawReturn": { "ok": false, "outcome": "refused", "code": "export.marker_publication_stale", "observedDocumentId": "D1", "observedRevision": 6 },
+      "expected": { "outcome": "normalized", "diagnostic": null },
+      "traceIds": ["E0V2-TRACE-NORMALIZATION"]
+    },
+    {
+      "id": "E0V2-NORM-020",
+      "port": "publishCanonicalExportRevision",
+      "variant": "extra-key",
+      "rawReturn": { "ok": true, "outcome": "published", "documentId": "D1", "revision": 4, "state": "smuggled" },
+      "expected": { "outcome": "protocol-invalid", "diagnostic": { "port": "publishCanonicalExportRevision", "reason": "invalid-envelope", "rawResultRetained": false }, "stateEffect": "APPLICATION_RECONCILIATION_REQUIRED" },
+      "traceIds": ["E0V2-TRACE-NORMALIZATION", "E0V2-TRACE-STATE-FREEDOM"]
+    },
+    {
+      "id": "E0V2-NORM-021",
+      "port": "publishCanonicalExportRevision",
+      "variant": "thrown",
+      "rawReturn": { "$thrown": "synchronous-throw-value-never-retained" },
+      "expected": { "outcome": "protocol-invalid", "diagnostic": { "port": "publishCanonicalExportRevision", "reason": "threw-or-rejected", "rawResultRetained": false }, "stateEffect": "APPLICATION_RECONCILIATION_REQUIRED" },
+      "traceIds": ["E0V2-TRACE-NORMALIZATION"]
+    },
+    {
+      "id": "E0V2-NORM-022",
+      "port": "discardImportReplacementPublication",
+      "variant": "exact-exception-unwrapped",
+      "rawReturn": { "outcome": "invalidated-by-request", "identity": { "requestId": 7, "documentId": "D1", "baseRevision": 4 }, "liveForRequest": 0 },
+      "expected": { "outcome": "exact-unwrapped", "diagnostic": null, "law": { "normalized": false, "wrappedInTryCatch": false, "reasons": "four-closed-cleanup-reasons-only" } },
+      "traceIds": ["E0V2-TRACE-DISCARD-EXCEPTION"]
+    }
+  ]
+}

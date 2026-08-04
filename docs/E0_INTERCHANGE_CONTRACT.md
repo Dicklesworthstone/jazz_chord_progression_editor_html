@@ -127,7 +127,12 @@ Arrays retain their declared semantic order:
 - Custom pitch names retain stored order.
 
 Nullable fields are emitted as `null`; empty arrays and empty optional text are
-emitted. There are no omitted persisted fields. The projection uses ordinary
+emitted. There are no omitted persisted fields, with exactly one amended
+exception (2026-07-30, jcpe-jnnu): `playback.grooveStyleId` is emitted exactly
+when the validated document stores it. The default groove `ballad-comp@1` is
+expressed only by absence — F2 refuses a stored explicit default as
+noncanonical — so the canonical bytes of every previously accepted document,
+including the owner-accepted goldens, are unchanged. The projection uses ordinary
 ECMAScript JSON string escaping, two ASCII spaces, LF line endings, and exactly
 one final LF. It does not normalize Unicode, escape HTML specially, round
 rational values, stringify nonfinite values, or sort object keys lexically.

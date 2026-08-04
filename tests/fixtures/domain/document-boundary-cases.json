@@ -66,8 +66,8 @@
       "traceIds": ["F1-TRACE-DOCUMENT-TYPES"],
       "authorityIds": ["F1-AUTH-DOCUMENT"],
       "kind": "instrument-id-set",
-      "input": ["mellow-keys", "fm-electric-piano", "vibraphone", "warm-pad", "analog-poly"],
-      "expected": {"allValid": true, "preservedOrder": ["mellow-keys", "fm-electric-piano", "vibraphone", "warm-pad", "analog-poly"]}
+      "input": ["mellow-keys", "fm-electric-piano", "vibraphone", "warm-pad", "analog-poly", "concert-grand"],
+      "expected": {"allValid": true, "preservedOrder": ["mellow-keys", "fm-electric-piano", "vibraphone", "warm-pad", "analog-poly", "concert-grand"]}
     },
     {
       "id": "F1-DOC-004",
@@ -802,6 +802,36 @@
       "kind": "required-text-next-line-code-point-nonblank",
       "input": {"field": "title", "value": "\u0085"},
       "expected": {"ok": true, "valueExactly": "\u0085", "ecmascriptTrimmedLength": 1, "normalizationApplied": false}
+    },
+    {
+      "id": "F1-DOC-086",
+      "traceIds": ["F1-TRACE-DOCUMENT-TYPES", "F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-DOCUMENT", "F1-AUTH-VALIDATION"],
+      "kind": "groove-style-storable-set",
+      "input": ["medium-swing@1", "bossa-nova@1", "straight-eighths@1", "block-chords@1"],
+      "expected": {"allValid": true, "storedExactly": true, "absentInputStaysAbsent": true}
+    },
+    {
+      "id": "F1-DOC-087",
+      "traceIds": ["F1-TRACE-DOCUMENT-TYPES", "F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-DOCUMENT", "F1-AUTH-VALIDATION"],
+      "kind": "groove-style-unknown",
+      "input": ["trap-beat@9", "ballad-comp@2", ""],
+      "expected": {
+        "independentResults": [
+          {"input": "trap-beat@9", "code": "playback.groove_style_invalid"},
+          {"input": "ballad-comp@2", "code": "playback.groove_style_invalid"},
+          {"input": "", "code": "playback.groove_style_invalid"}
+        ]
+      }
+    },
+    {
+      "id": "F1-DOC-088",
+      "traceIds": ["F1-TRACE-DOCUMENT-TYPES", "F1-TRACE-TIME-LIMITS"],
+      "authorityIds": ["F1-AUTH-DOCUMENT", "F1-AUTH-VALIDATION"],
+      "kind": "groove-style-explicit-default-noncanonical",
+      "input": {"value": "ballad-comp@1"},
+      "expected": {"ok": false, "issue": {"code": "playback.groove_style_not_canonical", "path": ["playback", "grooveStyleId"]}}
     }
   ]
 }

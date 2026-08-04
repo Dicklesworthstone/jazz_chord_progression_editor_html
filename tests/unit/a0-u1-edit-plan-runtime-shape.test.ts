@@ -336,6 +336,46 @@ function decodeWithCharCodeAtBudget(
 }
 
 describe("A0-U1 descriptor-safe runtime-shape decoding", () => {
+  test("refuses revoked proxies at their exact frozen paths with zero downstream work", () => {
+    const revokedRoot = Proxy.revocable(completeDraftInsertCommand(), {});
+    revokedRoot.revoke();
+    expectShapeRefusal(
+      revokedRoot.proxy,
+      "edit-plan.command-shape-invalid",
+      [],
+    );
+
+    const revokedPlanCommand = completeDraftInsertCommand();
+    const revokedPlan = Proxy.revocable(
+      recordProperty(revokedPlanCommand, "plan"),
+      {},
+    );
+    revokedPlan.revoke();
+    revokedPlanCommand["plan"] = revokedPlan.proxy;
+    expectShapeRefusal(
+      revokedPlanCommand,
+      "edit-plan.plan-shape-invalid",
+      ["plan"],
+    );
+
+    const revokedCompletionCommand = splitEventCommand();
+    const revokedCompletionPlan = recordProperty(
+      revokedCompletionCommand,
+      "plan",
+    );
+    const revokedCompletion = Proxy.revocable(
+      revokedCompletionPlan["completionDeclarations"] as object,
+      {},
+    );
+    revokedCompletion.revoke();
+    revokedCompletionPlan["completionDeclarations"] = revokedCompletion.proxy;
+    expectShapeRefusal(
+      revokedCompletionCommand,
+      "edit-plan.plan-shape-invalid",
+      ["plan", "completionDeclarations"],
+    );
+  });
+
   test("accepts independently authored exact values for every plan lane", () => {
     const cases = [
       {
@@ -711,7 +751,7 @@ describe("A0-U1 descriptor-safe runtime-shape decoding", () => {
     expectRecursivelyFrozen(metadataProbe.result);
   });
 
-  test("keeps accepted metadata work exact and caps later-invalid tuple work", () => {
+  test("fully validates the horizon tuple at 8,768 and refuses the 8,769 first excess", () => {
     const accepted = joinSectionsAtMetadataLimit();
     const acceptedProbe = decodeWithCharCodeAtBudget(accepted, 6_768);
     expect(acceptedProbe.calls).toBe(6_768);
@@ -726,34 +766,90 @@ describe("A0-U1 descriptor-safe runtime-shape decoding", () => {
       peakPlanNodeRecords: 1,
     });
 
-    const laterInvalidTuple = joinSectionsAtMetadataLimit();
-    const laterInvalidPlan = recordProperty(laterInvalidTuple, "plan");
-    laterInvalidPlan["completionDeclarations"] = [
+    const horizonTuple = joinSectionsAtMetadataLimit();
+    const horizonPlan = recordProperty(horizonTuple, "plan");
+    horizonPlan["completionDeclarations"] = [
       partialDeclaration(
-        "measure-unit-later-invalid-tuple",
+        "measure-unit-horizon-tuple",
         "incomplete",
         "R".repeat(2_000),
       ),
     ];
-    const invalidTupleProbe = decodeWithCharCodeAtBudget(
-      laterInvalidTuple,
-      6_769,
-    );
-    expect(invalidTupleProbe.calls).toBe(6_769);
-    expect(invalidTupleProbe.result.ok).toBe(true);
-    if (!invalidTupleProbe.result.ok) {
-      throw new Error(invalidTupleProbe.result.code);
+    const horizonProbe = decodeWithCharCodeAtBudget(horizonTuple, 8_768);
+    expect(horizonProbe.calls).toBe(8_768);
+    expect(horizonProbe.result.ok).toBe(true);
+    if (!horizonProbe.result.ok) {
+      throw new Error(horizonProbe.result.code);
     }
-    expect(invalidTupleProbe.result.shapeWork).toEqual({
+    expect(horizonProbe.result.shapeWork).toEqual({
       planNodesVisited: 1,
       metadataFieldsCompared: 12,
-      metadataCodePointsObserved: 6_769,
+      metadataCodePointsObserved: 8_768,
       peakPlanNodeRecords: 1,
     });
-    expect(
-      invalidTupleProbe.result.shapeWork.metadataCodePointsObserved,
-    ).toBeLessThanOrEqual(6_769);
+
+    const firstExcess = joinSectionsAtMetadataLimit();
+    const firstExcessPlan = recordProperty(firstExcess, "plan");
+    firstExcessPlan["completionDeclarations"] = [
+      partialDeclaration(
+        "measure-unit-first-excess",
+        "incomplete",
+        "R".repeat(2_001),
+      ),
+    ];
+    const firstExcessProbe = decodeWithCharCodeAtBudget(firstExcess, 8_769);
+    expect(firstExcessProbe.calls).toBe(8_769);
+    expect(firstExcessProbe.result).toEqual({
+      ok: false,
+      code: "edit-plan.plan-shape-invalid",
+      path: [
+        "plan",
+        "completionDeclarations",
+        0,
+        "completion",
+        "reason",
+      ],
+      shapeWork: {
+        planNodesVisited: 1,
+        metadataFieldsCompared: 12,
+        metadataCodePointsObserved: 8_769,
+        peakPlanNodeRecords: 1,
+      },
+      observed: 2_001,
+      maximum: 2_000,
+    });
+
+    const grossCardinality = joinSectionsAtMetadataLimit();
+    const grossPlan = recordProperty(grossCardinality, "plan");
+    grossPlan["completionDeclarations"] = [
+      partialDeclaration(
+        "measure-unit-gross-a",
+        "incomplete",
+        "R".repeat(2_000),
+      ),
+      partialDeclaration(
+        "measure-unit-gross-b",
+        "incomplete",
+        "R".repeat(2_000),
+      ),
+    ];
+    const grossProbe = decodeWithCharCodeAtBudget(grossCardinality, 6_768);
+    expect(grossProbe.calls).toBe(6_768);
+    expect(grossProbe.result).toEqual({
+      ok: false,
+      code: "edit-plan.plan-shape-invalid",
+      path: ["plan", "completionDeclarations"],
+      shapeWork: {
+        planNodesVisited: 1,
+        metadataFieldsCompared: 12,
+        metadataCodePointsObserved: 6_768,
+        peakPlanNodeRecords: 1,
+      },
+    });
+
     expectRecursivelyFrozen(acceptedProbe.result);
-    expectRecursivelyFrozen(invalidTupleProbe.result);
+    expectRecursivelyFrozen(horizonProbe.result);
+    expectRecursivelyFrozen(firstExcessProbe.result);
+    expectRecursivelyFrozen(grossProbe.result);
   });
 });

@@ -101,7 +101,7 @@ test("U0-ENV-001 U0-ENV-002 U0-ENV-003 U0-PRIM-003 U0-PRIM-004 U0-PRIM-005 U0-PR
       JSON.stringify(releaseAxe.violations),
     ).toEqual([]);
     const releaseAriaSnapshot = await page.locator(".studio-shell").ariaSnapshot();
-    expect(releaseAriaSnapshot).toContain('heading "Changes" [level=1]');
+    expect(releaseAriaSnapshot).toContain('heading "JazzChords.org" [level=1]');
     expect(releaseAriaSnapshot).toContain('main');
 
     await page.locator("body").press("Tab");

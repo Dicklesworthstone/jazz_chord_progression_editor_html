@@ -96,6 +96,8 @@ export {
   validateDocumentSemantics,
 } from "./document-validation";
 
+export { createStudioAtomicEditPlanDependencies } from "./studio-edit-plan-dependencies";
+
 export {
   createStudioAtomicEditPlanDependencies,
   createStudioApplicationDependencies,
@@ -115,11 +117,27 @@ export type {
 } from "./studio-bootstrap";
 
 export {
+  createStudioComposition,
+  createStudioCompositionOverState,
   createStudioController,
+  createStudioControllerOverState,
   STUDIO_CONTROLLER_REFUSAL_CODES,
 } from "./studio-controller";
 
+export {
+  applyPreparedImportReplacementToLatestState,
+  createExportRevisionMarkedState,
+} from "./studio-interchange-owner";
+
 export type {
+  StudioInterchangeOwnerDiagnostic,
+  StudioPreparedImportReplacementMaterial,
+} from "./studio-interchange-owner";
+
+export type {
+  StudioBoundaryInput,
+  StudioComposition,
+  StudioCompositionCreationResult,
   StudioController,
   StudioControllerAction,
   StudioControllerActionResult,
@@ -127,8 +145,21 @@ export type {
   StudioControllerCreationResult,
   StudioControllerListener,
   StudioControllerRefusal,
+  StudioDraftPreview,
+  StudioInsertionPlan,
+  StudioInsertionPlanStatement,
+  StudioQuickEntryToken,
   StudioRailSide,
+  StudioRecoveredChordLane,
 } from "./studio-controller";
+
+export {
+  DELETE_AUTO_COMPLETION_REASON,
+  DUPLICATE_AUTO_COMPLETION_REASON,
+  deleteSelectionAutoDeclaring,
+  duplicateSelectionAutoResolving,
+} from "./studio-edit-gestures";
+export type { StudioEditGestureActions } from "./studio-edit-gestures";
 
 export {
   formatExactBeatLabel,

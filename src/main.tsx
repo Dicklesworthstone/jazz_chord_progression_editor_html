@@ -1,51 +1,94 @@
 import { render } from "preact";
-import { useEffect, useState } from "preact/hooks";
 
 import {
-  createStudioController,
-  type StudioController,
+  applySharedStartup,
+  createStudioAudio,
+  createStudioComposition,
+  createStudioMidiImport,
+  decodeShareFragment,
+  seedStarterChart,
 } from "./application/runtime";
-import { App, StudioStartupFailure } from "./ui/runtime";
+import {
+  createBrowserAudioPlatform,
+  loadSmfWasmDecoder,
+} from "./audio/runtime";
+import { StudioRoot, StudioStartupFailure } from "./ui/runtime";
 
 const mountPoint = document.querySelector<HTMLElement>("#app");
 
 if (mountPoint === null) {
-  throw new Error("Changes could not find its application mount point.");
+  throw new Error("JazzChords.org could not find its application mount point.");
 }
 
-type StudioRootProps = Readonly<{
-  controller: StudioController;
-}>;
+/*
+ * Preact renders BESIDE pre-existing static children, it does not replace
+ * them: without this, the "Opening the local studio…" placeholder survives
+ * below the shell forever as a dead 24vh scroll zone that phones can
+ * rubber-band into. The placeholder's job ends the moment scripts run.
+ */
+mountPoint.replaceChildren();
 
-function StudioRoot({ controller }: StudioRootProps) {
-  const [snapshot, setSnapshot] = useState(controller.getSnapshot());
+/*
+ * The composition root owns adapter choice. The audio stack is built here, not
+ * inside the application layer, so the layer that orchestrates playback never
+ * reaches for a browser API and stays compilable headless. No `AudioContext`
+ * work happens until the first Play carries a trusted gesture receipt.
+ */
+const audio = createStudioAudio(createBrowserAudioPlatform());
 
-  useEffect(() => {
-    const publishSnapshot = (): void => {
-      setSnapshot(controller.getSnapshot());
-    };
-    const unsubscribe = controller.subscribe(publishSnapshot);
-    publishSnapshot();
-    return unsubscribe;
-  }, [controller]);
+/*
+ * The MIDI import decoder is the same discipline: the embedded wasm module's
+ * host lives in the audio layer because the release contract pins wasm
+ * payloads there, and the application layer receives it as an injected
+ * function. It is loaded lazily on the first import gesture, so a session that
+ * never imports a file pays nothing for it.
+ */
+const midiImport = createStudioMidiImport(loadSmfWasmDecoder);
 
-  return (
-    <App
-      snapshot={snapshot}
-      actions={{
-        setTitle: controller.setTitle,
-        undo: controller.undo,
-        redo: controller.redo,
-        setRailCollapsed: controller.setRailCollapsed,
-      }}
-    />
-  );
-}
-
-const creation = createStudioController();
+/*
+ * The composition root also owns the A0/E0 interchange owner aggregate the
+ * controller closure constructs beside itself (`composition.interchangeOwner`).
+ * No accepted E0 v2 consumer exists yet, so the aggregate stays sealed here:
+ * only `controller` is distributed, and nothing else may mint that authority.
+ */
+const creation = createStudioComposition({
+  audio,
+  nowMs: () => performance.now(),
+});
 
 if (creation.ok) {
-  render(<StudioRoot controller={creation.controller} />, mountPoint);
+  /*
+   * A `#zdoc=` fragment is a shared chart: decode it through the bounded
+   * total decoder and apply it through the exact typed command path a user
+   * travels. A refused share falls back to the reviewed starter chart with
+   * the refusal surfaced, never a half-applied document. With no share
+   * present, a pristine first open receives the starter chart (jcpe-b20t).
+   * Seeding happens before the first render so the opening paint already
+   * shows a playable progression.
+   */
+  const { controller } = creation.composition;
+  let startupNotice: string | null = null;
+  const shared = decodeShareFragment(window.location.hash);
+  if (shared.ok) {
+    const applied = applySharedStartup(controller, shared.value);
+    if (!applied.applied) {
+      startupNotice = `The shared chart was not opened: ${applied.reason}`;
+      seedStarterChart(controller);
+    }
+  } else if (shared.code !== "share.fragment_absent") {
+    startupNotice = `The share link could not be read: ${shared.message}`;
+    seedStarterChart(controller);
+  } else {
+    seedStarterChart(controller);
+  }
+  render(
+    <StudioRoot
+      controller={controller}
+      midiImport={midiImport}
+      startupNotice={startupNotice}
+    />,
+    mountPoint,
+  );
 } else {
   render(
     <StudioStartupFailure

@@ -235,6 +235,16 @@ function findingCodes(report: X0ContractValidationReport): readonly string[] {
 
 function sourceCount(recipe: (typeof AUDIO_INSTRUMENT_RECIPES)[number]): number {
   if (recipe.synthesis === "fm-pair") return 2;
+  if (recipe.synthesis === "rendered") {
+    /* One AudioBufferSourceNode per rendered voice; renderer shape is exact. */
+    expect(recipe.renderer).toEqual({
+      algorithmId: "changes.dsp.concert-grand@1",
+      channels: 2,
+      maximumRenderSeconds: 8,
+      bufferCacheLimit: 96,
+    });
+    return 1;
+  }
   return (
     recipe.oscillators.length +
     (recipe.transient === null ? 0 : 1) +
@@ -372,6 +382,9 @@ describe("X0 reviewed persistent audio engine contract", () => {
       seedUint32: X0_REVIEWED_IMPULSE.seedUint32,
       channels: X0_REVIEWED_IMPULSE.channels,
       durationSeconds: X0_REVIEWED_IMPULSE.durationSeconds,
+      predelayDivisor: X0_REVIEWED_IMPULSE.predelayDivisor,
+      lowpassAlphaQ15: X0_REVIEWED_IMPULSE.lowpassAlphaQ15,
+      lowpassStages: X0_REVIEWED_IMPULSE.lowpassStages,
       minimumSampleRate: X0_REVIEWED_IMPULSE.minimumSampleRate,
       maximumSampleRate: X0_REVIEWED_IMPULSE.maximumSampleRate,
       referenceSampleRate: X0_REVIEWED_IMPULSE.referenceSampleRate,
@@ -462,7 +475,7 @@ describe("X0 reviewed persistent audio engine contract", () => {
     expect(listeningTrace?.["deferredUntilPackage"]).toBe("X1");
   });
 
-  test("all thirty semantic mutations are independently rejected", async () => {
+  test("all thirty-one semantic mutations are independently rejected", async () => {
     const mutationFixture = await readJsonObject(
       join(fixtureRoot, "mutation-controls.json"),
     );
@@ -486,7 +499,7 @@ describe("X0 reviewed persistent audio engine contract", () => {
         };
       },
     );
-    expect(controls).toHaveLength(30);
+    expect(controls).toHaveLength(31);
 
     const parent = await mkdtemp(join(tmpdir(), "jcpe x0 contract Ω path-"));
     const root = join(parent, "reviewed audio fixtures");

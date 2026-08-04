@@ -1,0 +1,127 @@
+{
+  "schema": "changes.fixtures.m0-trace-ledger.v1",
+  "fixtureVersion": 1,
+  "reciprocityLaw": "Every trace names at least one existing case; every case and mutation control belongs to at least one trace; a case lists a trace id exactly when that trace lists the case id; every evidence owner is a named future test file for M0/build (or this package's own static test for authority-integrity).",
+  "traces": [
+    {
+      "id": "M0-TRACE-DECODE-BYTES",
+      "requirement": "SMF headers, chunk lengths, variable-length quantities (including overlong-but-legal encodings), running status across meta cancellation and channel changes, and velocity-zero note-offs decode independently and deterministically.",
+      "parentSource": "jcpe-v3c2 design mandate (1) and SMF 1.0",
+      "caseIds": ["M0-GLD-001", "M0-GLD-002", "M0-GLD-003"],
+      "controlIds": ["M0-MUT-005"],
+      "evidenceOwner": "tests/unit/midi-import-decode.test.ts"
+    },
+    {
+      "id": "M0-TRACE-DECODE-TOTALITY",
+      "requirement": "Every hostile input maps to a structured refusal with the frozen code and detection byte offset - never a panic, throw, or silent skip.",
+      "parentSource": "jcpe-v3c2 design mandate (1): hostile-input refusal with structured error codes",
+      "caseIds": ["M0-REF-001", "M0-REF-002", "M0-REF-004", "M0-REF-005", "M0-REF-006", "M0-REF-007", "M0-REF-008", "M0-REF-009", "M0-REF-010", "M0-REF-011", "M0-REF-012", "M0-REF-013", "M0-REF-014", "M0-REF-015", "M0-REF-016", "M0-REF-017", "M0-REF-018", "M0-REF-019", "M0-REF-020", "M0-REF-021", "M0-REF-022", "M0-REF-023", "M0-REF-024", "M0-REF-025", "M0-REF-026", "M0-REF-027", "M0-REF-028", "M0-REF-029", "M0-REF-030", "M0-REF-031", "M0-REF-032"],
+      "controlIds": ["M0-MUT-010", "M0-MUT-011"],
+      "evidenceOwner": "tests/unit/midi-import-refusals.test.ts"
+    },
+    {
+      "id": "M0-TRACE-DECODE-DEFAULTS",
+      "requirement": "Files without tempo or time-signature metas receive the SMF defaults (500000 microseconds, 4/4) as a recorded law, never a silent repair.",
+      "parentSource": "SMF 1.0 defaults and the M0 window/grid derivations",
+      "caseIds": ["M0-GLD-005", "M0-GLD-006", "M0-SON-001"],
+      "controlIds": [],
+      "evidenceOwner": "tests/unit/midi-import-decode.test.ts"
+    },
+    {
+      "id": "M0-TRACE-DECODE-TOLERATED",
+      "requirement": "Tolerated metas, sysex, non-note channel messages, and alien chunks are recorded in the ignored ledgers with tick and byte offset; nothing is skipped silently.",
+      "parentSource": "M0 totality law: refuse or record, never drop",
+      "caseIds": ["M0-GLD-003"],
+      "controlIds": [],
+      "evidenceOwner": "tests/unit/midi-import-decode.test.ts"
+    },
+    {
+      "id": "M0-TRACE-PAIRING",
+      "requirement": "Note on/off pairing per (track, channel, key) including velocity-zero offs; overlapping, orphan-off, and unterminated notes refuse with their dedicated codes.",
+      "parentSource": "jcpe-v3c2 design mandate (1): note on/off pairing",
+      "caseIds": ["M0-GLD-002", "M0-GLD-004", "M0-REF-030", "M0-REF-031", "M0-REF-032"],
+      "controlIds": [],
+      "evidenceOwner": "tests/unit/midi-import-pairing.test.ts"
+    },
+    {
+      "id": "M0-TRACE-CONDUCTOR",
+      "requirement": "Tempo and meter maps extract from the conductor stream with zero-tempo, invalid-meter, and misplaced-meta refusals; mid-file changes are ordinary data.",
+      "parentSource": "SMF 1.0 conductor conventions and the E1 writer's conductor-track law",
+      "caseIds": ["M0-GLD-002", "M0-GLD-004", "M0-REF-024", "M0-REF-025", "M0-REF-026", "M0-REF-029"],
+      "controlIds": [],
+      "evidenceOwner": "tests/unit/midi-import-decode.test.ts"
+    },
+    {
+      "id": "M0-TRACE-GRID",
+      "requirement": "Onset quantization derives from PPQ plus meter as exact rationals: floor((2N+D)/(2D)) with half-cell ties rounding up, segment-local indices, and exact error terms.",
+      "parentSource": "jcpe-v3c2 design mandate (2): quantize onsets to a grid derived from PPQ and meter",
+      "caseIds": ["M0-SON-004", "M0-SON-005", "M0-SON-006", "M0-GLD-004"],
+      "controlIds": ["M0-MUT-012"],
+      "evidenceOwner": "tests/unit/midi-import-sonority.test.ts"
+    },
+    {
+      "id": "M0-TRACE-WINDOW",
+      "requirement": "The simultaneity window is the exact tick bound floor(40000 * ppq / microsecondsAtAnchor), inclusive at the bound, derived from the file's own tempo and never wall-clock time.",
+      "parentSource": "jcpe-v3c2 design mandate (2): a ~30-60 ms window as an exact tempo-derived tick bound",
+      "caseIds": ["M0-SON-001", "M0-SON-002", "M0-SON-003", "M0-SON-008", "M0-GLD-002"],
+      "controlIds": ["M0-MUT-007"],
+      "evidenceOwner": "tests/unit/midi-import-sonority.test.ts"
+    },
+    {
+      "id": "M0-TRACE-GROUPING",
+      "requirement": "Sonorities group by anchored windows over notes merged from all tracks and channels, sorted by (onTick, trackIndex, channel, key), with the lowest MIDI number as bass; windows never chain.",
+      "parentSource": "jcpe-v3c2 design mandate (2): group near-simultaneous notes into vertical sonorities",
+      "caseIds": ["M0-SON-002", "M0-SON-003", "M0-SON-007", "M0-GLD-003"],
+      "controlIds": [],
+      "evidenceOwner": "tests/unit/midi-import-sonority.test.ts"
+    },
+    {
+      "id": "M0-TRACE-MEASURES",
+      "requirement": "Measure indices derive from the meter map with exact ceil segment counts; every meter change starts a new measure.",
+      "parentSource": "jcpe-v3c2 design mandate (3): segment into measures using the meter",
+      "caseIds": ["M0-SON-006", "M0-GLD-004"],
+      "controlIds": [],
+      "evidenceOwner": "tests/unit/midi-import-sonority.test.ts"
+    },
+    {
+      "id": "M0-TRACE-REVERSE-T1",
+      "requirement": "Pitch-class set plus bass matches the frozen T1-vocabulary template table into PLURAL ranked alternatives with evidence (template, root, inversion, match kind, missing degrees) under the frozen five-key ranking; roots are never invented.",
+      "parentSource": "jcpe-v3c2 design mandate (2): infer symbols via the existing T1 vocabulary in reverse, reporting alternatives with evidence",
+      "caseIds": ["M0-RES-001", "M0-RES-002", "M0-RES-003", "M0-RES-004", "M0-RES-005", "M0-RES-006", "M0-RES-007", "M0-RES-010", "M0-GLD-001", "M0-GLD-002", "M0-GLD-006"],
+      "controlIds": ["M0-MUT-008", "M0-MUT-013"],
+      "evidenceOwner": "tests/unit/midi-import-resolution.test.ts"
+    },
+    {
+      "id": "M0-TRACE-CUSTOM-FALLBACK",
+      "requirement": "A sonority with no confident symbol yields the literal canonically spelled pitch set as a Custom chord - never an invented name.",
+      "parentSource": "jcpe-v3c2 design mandate (4): refuse honestly when no confident symbol exists",
+      "caseIds": ["M0-RES-008", "M0-RES-009", "M0-GLD-004", "M0-GLD-005"],
+      "controlIds": ["M0-MUT-016"],
+      "evidenceOwner": "tests/unit/midi-import-resolution.test.ts"
+    },
+    {
+      "id": "M0-TRACE-ROUND-TRIP",
+      "requirement": "The E1 writer golden is byte-pinned into this corpus and decodes to the notes, tempo, meter, and markers the writer fixture states; its sonority resolves to the family the chord marker names, seeding the import(export(doc)) law.",
+      "parentSource": "jcpe-v3c2 round-trip law and the E1 accepted packet",
+      "caseIds": ["M0-GLD-001"],
+      "controlIds": ["M0-MUT-009"],
+      "evidenceOwner": "tests/integration/midi-roundtrip.test.ts"
+    },
+    {
+      "id": "M0-TRACE-LIMITS",
+      "requirement": "Every resource cap refuses deterministically one step past its bound on real expanded hostile bytes, at the frozen detection offset.",
+      "parentSource": "M0 exact-integer resource bounds and the verification discipline's bounded-work law",
+      "caseIds": ["M0-REF-003", "M0-REF-033", "M0-REF-034", "M0-REF-035", "M0-REF-036", "M0-REF-037", "M0-REF-038"],
+      "controlIds": [],
+      "evidenceOwner": "tests/unit/midi-import-limits.test.ts"
+    },
+    {
+      "id": "M0-TRACE-AUTHORITY-INTEGRITY",
+      "requirement": "The fixture package itself is mutation-sensitive: manifest constants match the frozen module and validator, byte goldens cannot drift, trace reciprocity holds, and provenance flags cannot flip silently.",
+      "parentSource": "jcpe-v3c2.1 exit criteria (mutation-sensitive contract, independent authorship)",
+      "caseIds": ["M0-GLD-001"],
+      "controlIds": ["M0-MUT-001", "M0-MUT-002", "M0-MUT-003", "M0-MUT-004", "M0-MUT-006", "M0-MUT-014", "M0-MUT-015"],
+      "evidenceOwner": "tests/static/m0-contract.test.ts"
+    }
+  ]
+}

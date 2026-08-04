@@ -69,6 +69,17 @@ what the release artifact is, and how those claims are proved.
   guard, deterministic identity/time/bookmark/history laws, literal cases,
   traces, provenance, and mutations. The live A0 command union and U1 UI do not
   consume this specification until their dependent implementation leaves.
+- `docs/U1_EDITING_CONTRACT.md`,
+  `src/ui/studio/u1-editing-contract.ts`, and the six companions under
+  `tests/fixtures/editing/` are the proposed independent U1 quick-entry,
+  chart-editing, insertion-plan, bookmark, focus, pointer, listener, refusal,
+  trace, provenance, and mutation authority. U1 adds no mutation channel: the
+  packet freezes the subset of the live sixteen A0 command kinds, the two
+  ephemeral intents, and the five atomic plan kinds a U1 surface may dispatch,
+  and the static contract test proves the authorized and unauthorized lists
+  partition the live tuple exactly. No U1 production component exists yet, and
+  the packet makes no implementation, UI-completion, human-acceptance, or
+  expert-review claim.
 - `docs/C0_LEGACY_MIGRATION_CONTRACT.md`,
   `tests/fixtures/legacy-migration/c0-legacy-migration-contract.json`, and their
   hash-bound companions are the independently authored C0 legacy-corpus,
@@ -154,6 +165,7 @@ The manifest exposes these stable commands:
 | `bun run validate:a0-contract` | validate the independent application-state, command, history, bookmark, stale-result, transport-view, selector, trace, provenance, and mutation authority corpus |
 | `bun run validate:a0-u1-edit-plan-contract` | validate the proposed additive A0/U1 five-variant atomic-edit contract, independently materialized state transitions, exact-time/identity laws, traces, provenance, and mutations without claiming production implementation or UI completion |
 | `bun run validate:u0-contract` | validate the source-owned UI inventory, exact limits, 714-cell state gallery authority, responsive/overlay matrices, topology and contrast cases, trace links, provenance, and release-gallery exclusion contract |
+| `bun run validate:u1-contract` | validate the proposed independent U1 quick-entry classification, operation-to-channel binding, interaction states, bounds, traces, provenance, and replayed mutation controls without claiming any U1 implementation |
 | `bun run validate:c0-contract` | validate the independent legacy corpus, precedence, hostile-input, report, work-bound, trace, provenance, and mutation authority package |
 | `bun run validate:e0-contract` | validate the independent E0 JSON/text interchange, transactional import, exact limits, reciprocal traces, provenance, accepted byte goldens, and mutation authority package |
 | `bun run validate:a0-e0-bridge-contract` | validate the independent A0 owner-port registry, identity, marker-CAS, literal applicability/provenance/trace/mutation packet, and immutable accepted-E0-v1 pins without claiming consumer compatibility |
@@ -174,6 +186,7 @@ The manifest exposes these stable commands:
 | `bun run verify:v1-evidence` | run the exact V1 voice-assignment suite and emit a hash-bound assignment, law/transposition, exhaustive-oracle, exact-plus-one accounting, trace, semantic-counterfactual, termination, and resource ledger |
 | `bun run verify:f3-evidence` | run the exact F3 publication suite and emit a hash-bound case, operation-state, sole-cast, trace, semantic-counterfactual, termination, and resource ledger |
 | `bun run verify:p0-evidence` | run the exact P0 playback-plan owner suite and emit a hash-bound timeline, realization, loop, transposition, shared-consumer, exact-limit, trace, semantic-counterfactual, termination, and resource ledger; first-golden acceptance remains explicitly human-reviewed |
+| `bun run verify:e1-evidence` | re-run the exact E1 MIDI-export suite and validator from a drift-checked input closure, sweep seeded plans through a freshly written SMF reader with replay, marker-permutation, tempo-isolation, and loss-recomputation relations, and emit a hash-bound ledger under `test-results/` |
 | `bun run verify:a0-evidence` | run the exact A0 application suite and emit a hash-bound state-case, stale-token, named-sequence, 1,000-sequence reference-model, mutation-link, trace, termination, and resource ledger |
 | `bun run verify:c0-evidence` | run the exact C0 compatibility suite and emit a hash-bound 70-case, 80-preset, hostile-input, boundary-counter, trace, semantic-counterfactual, termination, and resource ledger |
 | `bun run verify:x0-evidence` | run the exact X0 native-browser, contract, and trace-owner package proof; keep the result incomplete until the separate physical listening matrix is complete |
@@ -280,12 +293,61 @@ The release is one UTF-8 HTML file with all production JavaScript, CSS, icons,
 images, and compiled content inlined. Its initial uncompressed limit is
 1,572,864 bytes (1.5 MiB), including the final Harmonic Atlas.
 
-The retired F0 bootstrap shell had a temporary 262,144-byte ceiling. The first
-U0 studio checkpoint is measured against a 786,432-byte ceiling after bundling
-its source-owned UI plus the F2/F3/A0 publication and application path. The
-1,572,864-byte final limit and its 524,288-byte Atlas/content reservation remain
-unchanged, leaving another 262,144 bytes outside both allocations. Later
-packages cannot spend the reserved content allowance silently.
+The retired F0 bootstrap shell had a temporary 262,144-byte ceiling, and the
+first U0 studio checkpoint was measured against a 786,432-byte ceiling, then
+851,968 bytes after the A0-E0 owner-ports bridge and X1 serialized-transport
+scheduling entered the live path. After the accepted A0/U1 `apply-edit-plan`
+cutover bound the atomic runner and the real T0 parser into the live
+application graph, that ceiling became 983,040 bytes (960 KiB). The U1 chart
+editor then bound the chord-level view-model projection, the U1 command surface,
+and the first quick-entry and chord-card components into the live graph, and the
+measured artifact rose to 975,349 bytes — 7,691 bytes below the previous
+ceiling. Because the remaining U1 surfaces (card menus, inline symbol and
+duration editors, pointer drag, touch range mode, and the teaching view) cannot
+fit in that margin, the checkpoint ceiling is raised once to 1,048,576 bytes
+(1 MiB) rather than nudged repeatedly.
+
+Measured 2026-07-28: with the embedded Concert Grand WebAssembly DSP payload
+(20,714 wasm bytes carried as a ~27.6 KB base64 constant; see the amendment
+below) and its renderer bound into the live graph, the artifact is exactly
+1,003,161 bytes — 45,415 bytes below the 1,048,576-byte checkpoint ceiling.
+
+The 1,572,864-byte final limit and its 524,288-byte Atlas/content reservation
+remain unchanged. The new checkpoint ceiling is exactly the non-Atlas
+allocation, so the 65,536 bytes formerly held outside both allocations are now
+inside the shell allocation and the slack outside both is zero. That reserve was
+spendable only by an explicit contract change, and this is it. Later packages
+still cannot spend the reserved content allowance silently, and a further shell
+increase requires the same measured justification recorded here.
+
+### Identifier minification, and why the earlier policy was reversed
+
+The identifier-preserving inspectable bundle policy recorded above has been
+**withdrawn**. It held while the shell had room; once the completed U1 chart
+editor measured 1,041,445 bytes it did not, and the only remaining ways to
+continue were to spend the Atlas reservation or to raise the pinned 1.5 MiB
+total. Both trade a real future capability for bundle readability.
+
+`scripts/build.ts` therefore now passes `--minify-identifiers` alongside
+`--minify-whitespace` and `--minify-syntax`. The measured effect on the U1
+checkpoint artifact is 1,041,445 → 752,096 bytes, a 289,349-byte (27.8%)
+reduction that restores 296,480 bytes of headroom under the unchanged 1 MiB
+checkpoint ceiling.
+
+What the reversal does not cost:
+
+- reproducibility — mangling is deterministic for a fixed input, and
+  `bun run verify:reproducible` rebuilds in isolated paths with different
+  mtimes and reports the identical SHA-256;
+- the embedded hash-based CSP — the build recomputes the script and style
+  hashes from the emitted bytes;
+- auditability — `src/` remains authoritative, the generated banner points at
+  it, and `dist/standalone-manifest.json` still records the SHA-256, byte
+  count, CSP hashes, embedded assets, and license inventory.
+
+What it does cost is reading the release bundle directly, which was never a
+release requirement: the F0 verification gates inspect capabilities and
+behaviour, not identifier names.
 
 Both generated HTML files begin with the fixed timestamp-free banner
 `<!-- @generated; edit src/, then run bun run build -->`, followed by a
@@ -294,7 +356,9 @@ standards-mode doctype. Runtime tests require
 
 The generated artifact may not contain a runtime dependency on:
 
-- an external `script`, stylesheet, font, image, media, manifest, or module;
+- an external `script`, stylesheet, font, image, media, manifest, or module,
+  or WebAssembly fetched from any URL (the inventoried project-owned wasm
+  bytes embedded in the artifact itself are not a runtime dependency);
 - static or dynamic JavaScript imports;
 - `fetch`, XMLHttpRequest, WebSocket, EventSource, sendBeacon, service-worker
   registration, Worker, SharedWorker, or worklet module loading;
@@ -304,9 +368,11 @@ The generated artifact may not contain a runtime dependency on:
 The build injects and verifies a meta Content Security Policy. Its default,
 connect, worker, object, frame, manifest, base, and form destinations are
 `'none'`; executable inline script/style blocks are authorized by generated
-SHA-256 hashes, and only inventoried passive `data:`/local `blob:` assets may
-be allowed. CSP is defense in depth: static capability analysis and the
-no-CSP negative-control harness must still prove that interception works.
+SHA-256 hashes, `script-src` additionally carries `'wasm-unsafe-eval'` solely
+for instantiating the inventoried embedded WebAssembly payload, and only
+inventoried passive `data:`/local `blob:` assets may be allowed. CSP is
+defense in depth: static capability analysis and the no-CSP negative-control
+harness must still prove that interception works.
 
 Harmless URLs in license and documentation text are allowed. Verification
 therefore inspects executable import/call sites and URL-bearing HTML/CSS
@@ -334,6 +400,67 @@ spaces, Unicode, and `#` and is converted with `pathToFileURL`.
 A separate malicious no-CSP fixture attempts a remote request and must be
 recorded and aborted. This negative control prevents an inert request logger or
 CSP alone from making the real artifact appear offline.
+
+### Embedded WebAssembly DSP payload (additive amendment, 2026-07-28)
+
+The artifact may embed project-owned WebAssembly compiled from the Rust
+sources under `dsp/`. The rules:
+
+- Each payload is checked in as generated TypeScript under `src/audio/wasm/`
+  (currently `concert-grand-wasm.ts`), carrying the module bytes as a base64
+  constant pinned by exported SHA-256 and byte-length constants. It is
+  regenerated — and drift between the Rust source and the checked-in payload
+  is detected — with `bun scripts/build-dsp.ts [--check]`.
+- `bun run build` never runs cargo. The Bun-only build contract is unchanged:
+  the wasm payload enters the bundle as ordinary checked-in TypeScript, and
+  the Rust toolchain is a development-time generator concern only.
+- The CSP `script-src` directive carries `'wasm-unsafe-eval'` solely so the
+  page can `WebAssembly.instantiate` those embedded bytes under the
+  hash-based policy (Chromium, Firefox, and WebKit all require the token).
+  It authorizes no URL. Fetching or stream-compiling wasm from any URL,
+  workers, and worklets remain forbidden; every `'none'` directive above,
+  including `worker-src` and `connect-src`, is unchanged, and the artifact
+  policy rejects `'wasm-unsafe-eval'` on any directive other than
+  `script-src`.
+- Every wasm payload is an inventoried embedded asset: the build verifies the
+  bundled base64 against the generated module's SHA-256/byte pins, and
+  `dist/standalone-manifest.json` plus `dist/licenses.json` record its id,
+  `application/wasm` MIME, source crate path (`dsp/concert-grand`), generator
+  (`scripts/build-dsp.ts`), license, SHA-256, and byte count.
+- Third-party code compiled into the wasm is inventoried in the license
+  report's `wasmCompiled` provenance list and in the toolchain ledger as a
+  `compiled-into-wasm` record. Today that is exactly `libm@0.2.16`
+  (`MIT OR Apache-2.0`), a Rust software-float library — not a JavaScript
+  dependency; Preact remains the only bundled JS production package.
+
+### Embedded recorded audio payload (additive amendment, 2026-07-29)
+
+The Concert Grand is a hybrid: a recorded hammer strike crossfaded into the
+synthesized sustain. The recordings are a third embedded asset and follow the
+same rules as the wasm payload, plus attribution:
+
+- The payload is checked in as generated TypeScript at
+  `src/audio/wasm/piano-attack-samples.ts`: raw little-endian 16-bit PCM,
+  base64, pinned by exported SHA-256 and byte-length constants, with a frozen
+  index describing every slice. There is no container and no codec, so the
+  runtime decodes it with `atob` alone — no `decodeAudioData`, no new browser
+  API surface, and no change to the audio platform port.
+- It is regenerated — and drift against the recorded corpus is detected —
+  with `bun scripts/build-piano-samples.ts [--check]`. The corpus location
+  comes from `PIANO_SAMPLE_SOURCE_DIR`; `bun run build` never reads a wav
+  file.
+- The source recordings are third-party content under an attribution
+  license: Salamander Grand Piano V3 by Alexander Holm, CC-BY-3.0. The credit
+  line is an exported constant, is embedded verbatim in the artifact's
+  third-party notice comment, and is inventoried in
+  `dist/licenses.json`/`dist/standalone-manifest.json` alongside the id, MIME
+  (`audio/L16;rate=44100;channels=1`), generator, SHA-256, and byte count.
+  `bun run verify:licenses` fails if the credit, the digest, or the byte
+  count drifts from the generated module.
+- The runtime never fails a note over the sampled layer. A pitch, velocity,
+  or sample rate the corpus cannot serve renders as pure synthesis, and a
+  corrupt payload demotes the whole instrument to synthesis rather than
+  refusing to play.
 
 ## Reproducibility and reports
 

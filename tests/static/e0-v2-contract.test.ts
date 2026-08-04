@@ -1,0 +1,336 @@
+import { cp, mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
+import { describe, expect, test } from "bun:test";
+
+import { validateE0V2Contract } from "../../scripts/validate-e0-v2-contract";
+
+const fixtureRoot = new URL(
+  "../fixtures/interchange-v2",
+  import.meta.url,
+).pathname;
+
+type JsonObject = Record<string, unknown>;
+
+async function withFixtureCopy(
+  run: (root: string) => Promise<void>,
+): Promise<void> {
+  const root = await mkdtemp(join(tmpdir(), "e0 v2 pending fixtures-"));
+  await cp(fixtureRoot, root, { recursive: true });
+  await run(root);
+}
+
+async function mutateJson(
+  root: string,
+  filename: string,
+  mutate: (value: JsonObject) => void,
+): Promise<void> {
+  const path = join(root, filename);
+  const value = JSON.parse(await readFile(path, "utf8")) as JsonObject;
+  mutate(value);
+  await writeFile(path, JSON.stringify(value, null, 2) + "\n", "utf8");
+}
+
+async function expectRejected(
+  root: string,
+  ...codes: readonly string[]
+): Promise<void> {
+  const report = await validateE0V2Contract(root, {
+    allowPendingFreeze: true,
+  });
+  expect(report.outcome).toBe("fail");
+  for (const code of codes) {
+    expect(report.findings.map(({ code: found }) => found)).toContain(code);
+  }
+}
+
+describe("E0 v2 amendment packet", () => {
+  test("the frozen packet validates deterministically with exact counts", async () => {
+    const first = await validateE0V2Contract(fixtureRoot);
+    const second = await validateE0V2Contract(fixtureRoot);
+    expect(first).toEqual(second);
+    expect(first).toMatchObject({
+      schema: "changes.validation.e0-v2-contract.v1",
+      package: "E0-v2",
+      pinState: "reviewed-byte-and-semantic-pinned",
+      outcome: "pass",
+      counts: {
+        companions: 7,
+        pendingCompanions: 0,
+        normalizationCases: 22,
+        resolutionCases: 16,
+        projectionCases: 7,
+        workflowCases: 8,
+        mutationControls: 14,
+        traces: 7,
+        authorities: 5,
+        pendingResolutionRows: 0,
+      },
+      findings: [],
+    });
+  });
+
+  test("a v2 workflow case cannot quietly reassign its ancestor's semantics", async () => {
+    await withFixtureCopy(async (root) => {
+      await mutateJson(root, "workflow-cases.json", (value) => {
+        const cases = value["cases"] as JsonObject[];
+        const target = cases.find(
+          (row) => row["id"] === "E0V2-WF-003",
+        ) as JsonObject;
+        (target["ancestorPreserved"] as JsonObject)["stateEffect"] = "NONE";
+      });
+      await expectRejected(root, "E0V2_WF_ANCESTOR_DRIFT");
+    });
+  });
+
+  test("the reconciliation obligation must follow the ancestor's stateEffect", async () => {
+    await withFixtureCopy(async (root) => {
+      await mutateJson(root, "workflow-cases.json", (value) => {
+        const cases = value["cases"] as JsonObject[];
+        const target = cases.find(
+          (row) => row["id"] === "E0V2-WF-002",
+        ) as JsonObject;
+        target["expectedReconciliation"] =
+          "application-transport-reconciliation-required";
+      });
+      await expectRejected(root, "E0V2_WF_RECONCILIATION");
+    });
+  });
+
+  test("a throw-terminated ancestor demands the threw-or-rejected reason", async () => {
+    await withFixtureCopy(async (root) => {
+      await mutateJson(root, "workflow-cases.json", (value) => {
+        const cases = value["cases"] as JsonObject[];
+        const target = cases.find(
+          (row) => row["id"] === "E0V2-WF-005",
+        ) as JsonObject;
+        (target["expectedDiagnostic"] as JsonObject)["reason"] =
+          "invalid-envelope";
+      });
+      await expectRejected(root, "E0V2_WF_DIAGNOSTIC_REASON");
+    });
+  });
+
+  test("the provenance oracle is recomputed from the binding, not read from the fixture", async () => {
+    await withFixtureCopy(async (root) => {
+      await mutateJson(root, "projection-cases.json", (value) => {
+        const cases = value["cases"] as JsonObject[];
+        const positive = cases.find(
+          (row) => row["id"] === "E0V2-PROJ-004",
+        ) as JsonObject;
+        (positive["expectedProvenance"] as JsonObject)["ownerCalls"] = 0;
+      });
+      await expectRejected(root, "E0V2_PROVENANCE_ORACLE");
+    });
+  });
+
+  test("the projection table cannot silently drift from the frozen total table", async () => {
+    await withFixtureCopy(async (root) => {
+      await mutateJson(root, "projection-cases.json", (value) => {
+        const cases = value["cases"] as JsonObject[];
+        const positive = cases.find(
+          (row) => row["id"] === "E0V2-PROJ-001",
+        ) as JsonObject;
+        (positive["projectionTable"] as JsonObject)["disclosedImpact"] =
+          "default:retained-empty-impact";
+      });
+      await expectRejected(root, "E0V2_PROJECTION_TABLE_DRIFT");
+    });
+  });
+
+  test("a clean resolution case cannot gain a forbidden state key", async () => {
+    await withFixtureCopy(async (root) => {
+      await mutateJson(root, "resolution-cases.json", (value) => {
+        const cases = value["cases"] as JsonObject[];
+        const positive = cases.find(
+          (row) => row["id"] === "E0V2-RESCASE-005",
+        ) as JsonObject;
+        (positive["expectedResult"] as JsonObject)["lastKnownState"] = "x";
+      });
+      await expectRejected(root, "E0V2_STATE_KEY_FORBIDDEN");
+    });
+  });
+
+  test("a deliberate smuggle case must materialize its forbidden key", async () => {
+    await withFixtureCopy(async (root) => {
+      await mutateJson(root, "resolution-cases.json", (value) => {
+        const cases = value["cases"] as JsonObject[];
+        const smuggle = cases.find(
+          (row) => row["id"] === "E0V2-RESCASE-002",
+        ) as JsonObject;
+        delete (smuggle["request"] as JsonObject)["currentState"];
+      });
+      await expectRejected(root, "E0V2_RESCASE_SMUGGLE_MISSING");
+    });
+  });
+
+  test("the groove witness must store a non-default groove id", async () => {
+    await withFixtureCopy(async (root) => {
+      await mutateJson(root, "resolution-cases.json", (value) => {
+        const catalog = value["literalCatalog"] as JsonObject;
+        const witness = catalog["candidate-groove-witness"] as JsonObject;
+        const playback = (witness["value"] as JsonObject)[
+          "playback"
+        ] as JsonObject;
+        playback["grooveStyleId"] = "ballad-comp@1";
+      });
+      await expectRejected(root, "E0V2_GROOVE_WITNESS");
+    });
+  });
+
+  test("a refusal code outside the adopted tuples is refused", async () => {
+    await withFixtureCopy(async (root) => {
+      await mutateJson(root, "resolution-cases.json", (value) => {
+        const cases = value["cases"] as JsonObject[];
+        const positive = cases.find(
+          (row) => row["id"] === "E0V2-RESCASE-010",
+        ) as JsonObject;
+        (positive["expectedResult"] as JsonObject)["code"] =
+          "import.invented_code";
+      });
+      await expectRejected(root, "E0V2_RESCASE_CODE_UNKNOWN");
+    });
+  });
+
+  test("the frozen gate rejects byte and pin-state tampering", async () => {
+    await withFixtureCopy(async (root) => {
+      await mutateJson(root, "e0-v2-interchange-contract.json", (value) => {
+        value["pinState"] = "pending-validator-freeze";
+      });
+      const report = await validateE0V2Contract(root);
+      expect(report.outcome).toBe("fail");
+      const codes = report.findings.map(({ code }) => code);
+      expect(codes).toContain("E0V2_PIN_STATE");
+      expect(codes).toContain("E0V2_BYTE_DIGEST");
+    });
+  });
+
+  test("independence and implementation claims are enforced", async () => {
+    await withFixtureCopy(async (root) => {
+      await mutateJson(root, "e0-v2-interchange-contract.json", (value) => {
+        value["expectedValuesGenerated"] = true;
+        value["implementationStatus"] = "implemented";
+      });
+      await expectRejected(
+        root,
+        "E0V2_INDEPENDENCE",
+        "E0V2_IMPLEMENTATION_CLAIM",
+      );
+    });
+  });
+
+  test("a smuggled state key inside an expected result is refused", async () => {
+    await withFixtureCopy(async (root) => {
+      await mutateJson(root, "normalization-cases.json", (value) => {
+        const cases = value["cases"] as JsonObject[];
+        const target = cases[0] as JsonObject;
+        (target["expected"] as JsonObject)["lastKnownState"] = "smuggled";
+      });
+      await expectRejected(root, "E0V2_STATE_KEY_FORBIDDEN");
+    });
+  });
+
+  test("the normalization oracle is independently recomputed, not read from the fixture", async () => {
+    await withFixtureCopy(async (root) => {
+      await mutateJson(root, "normalization-cases.json", (value) => {
+        const cases = value["cases"] as JsonObject[];
+        const thrownCase = cases.find(
+          (row) => row["id"] === "E0V2-NORM-006",
+        ) as JsonObject;
+        (thrownCase["expected"] as JsonObject)["diagnostic"] = {
+          port: "prepareImportReplacementPublication",
+          reason: "invalid-envelope",
+          rawResultRetained: false,
+        };
+      });
+      await expectRejected(root, "E0V2_NORM_ORACLE");
+    });
+  });
+
+  test("reassigning a port's only thrown variant is a coverage failure", async () => {
+    await withFixtureCopy(async (root) => {
+      await mutateJson(root, "normalization-cases.json", (value) => {
+        const cases = value["cases"] as JsonObject[];
+        const target = cases.find(
+          (row) => row["id"] === "E0V2-NORM-017",
+        ) as JsonObject;
+        target["variant"] = "extra-key";
+      });
+      await expectRejected(root, "E0V2_NORM_COVERAGE");
+    });
+  });
+
+  test("reassigning a trace's first case id leaves the original case untraced", async () => {
+    await withFixtureCopy(async (root) => {
+      await mutateJson(root, "trace-ledger.json", (value) => {
+        const traces = value["traces"] as JsonObject[];
+        const first = traces[0] as JsonObject;
+        (first["caseIds"] as string[])[0] = "E0V2-NORM-002";
+      });
+      await expectRejected(root, "E0V2_CASE_UNTRACED");
+    });
+  });
+
+  test("every mutation control's from-assertion is recomputed against the live packet", async () => {
+    await withFixtureCopy(async (root) => {
+      await mutateJson(root, "mutation-controls.json", (value) => {
+        const controls = value["controls"] as JsonObject[];
+        const first = controls.find(
+          (row) => row["id"] === "E0V2-MUT-002",
+        ) as JsonObject;
+        (first["mutation"] as JsonObject)["from"] = "invalid-envelope";
+      });
+      await expectRejected(root, "E0V2_MUT_FROM_ASSERTION");
+    });
+  });
+
+  test("the six-in-twenty refusal adoption relation is pinned", async () => {
+    await withFixtureCopy(async (root) => {
+      await mutateJson(root, "e0-v2-interchange-contract.json", (value) => {
+        const adoption = value["refusalAdoption"] as JsonObject;
+        adoption["v1PreparationCodesProvenMembers"] = [
+          "import.confirmation_stale",
+        ];
+      });
+      await expectRejected(root, "E0V2_REFUSAL_ADOPTION");
+    });
+  });
+
+  test("a resolution row cannot silently lose both coverage and pending status", async () => {
+    await withFixtureCopy(async (root) => {
+      // RES-02 is carried only by the commit-surface trace; dropping it there
+      // AND from the pending declaration leaves it with no evidence path.
+      await mutateJson(root, "trace-ledger.json", (value) => {
+        const traces = value["traces"] as JsonObject[];
+        const commitSurface = traces.find(
+          (row) => row["id"] === "E0V2-TRACE-COMMIT-SURFACE",
+        ) as JsonObject;
+        commitSurface["resolutionIds"] = (
+          commitSurface["resolutionIds"] as string[]
+        ).filter((id) => !id.startsWith("E0V2-RES-02"));
+      });
+      await mutateJson(root, "e0-v2-interchange-contract.json", (value) => {
+        value["pendingResolutionCoverage"] = (
+          value["pendingResolutionCoverage"] as string[]
+        ).filter((id) => !id.startsWith("E0V2-RES-02"));
+      });
+      await expectRejected(root, "E0V2_RESOLUTION_UNCOVERED");
+    });
+  });
+
+  test("every case must stay reachable from a trace", async () => {
+    await withFixtureCopy(async (root) => {
+      await mutateJson(root, "trace-ledger.json", (value) => {
+        const traces = value["traces"] as JsonObject[];
+        const normalization = traces.find(
+          (row) => row["id"] === "E0V2-TRACE-NORMALIZATION",
+        ) as JsonObject;
+        normalization["caseIds"] = (
+          normalization["caseIds"] as string[]
+        ).filter((id) => id !== "E0V2-NORM-001");
+      });
+      await expectRejected(root, "E0V2_CASE_UNTRACED");
+    });
+  });
+});

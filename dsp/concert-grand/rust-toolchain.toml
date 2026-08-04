@@ -1,0 +1,8 @@
+# The embedded wasm payload is checked in and byte-pinned, so `bun
+# scripts/build-dsp.ts --check` only means something against a fixed compiler.
+# A rolling nightly silently changes the output hash overnight (observed
+# 2026-07-29: rustc 09ee43b2d -> 26ae60a9e with dsp/ untouched), which turns a
+# reproducibility gate into a date check. Pin it.
+[toolchain]
+channel = "nightly-2026-07-28"
+targets = ["wasm32-unknown-unknown"]

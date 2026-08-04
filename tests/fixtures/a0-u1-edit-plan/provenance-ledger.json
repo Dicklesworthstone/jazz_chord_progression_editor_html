@@ -3,7 +3,7 @@
   "reviewState": "proposed-independent-spec",
   "pinState": "reviewed-byte-and-semantic-pinned",
   "expertReviewClaim": false,
-  "humanAcceptanceClaim": false,
+  "humanAcceptanceClaim": true,
   "independence": {
     "productionOutputUsedAsOracle": false,
     "expectedValuesGenerated": false,
@@ -38,7 +38,8 @@
         "A0-U1-ATOM-010-split-event-lossless-exact",
         "A0-U1-ATOM-011-join-events-left-inverse-exact",
         "A0-U1-ATOM-012-split-section-leading-survivor-exact",
-        "A0-U1-ATOM-013-join-sections-left-metadata-exact"
+        "A0-U1-ATOM-013-join-sections-left-metadata-exact",
+        "A0-U1-ATOM-018-split-measure-partition-exact"
       ],
       "caseIds": [
         "A0U1-INS-001",
@@ -90,7 +91,17 @@
         "A0U1-JOINS-007",
         "A0U1-JOINS-008",
         "A0U1-JOINS-009",
-        "A0U1-JOINS-010"
+        "A0U1-JOINS-010",
+        "A0U1-SPLITM-001",
+        "A0U1-SPLITM-002",
+        "A0U1-SPLITM-003",
+        "A0U1-SPLITM-004",
+        "A0U1-SPLITM-005",
+        "A0U1-SPLITM-006",
+        "A0U1-SPLITM-007",
+        "A0U1-SPLITM-008",
+        "A0U1-SPLITM-009",
+        "A0U1-SPLITM-010"
       ],
       "transitionIds": [
         "A0U1-INS-001-APPLY",
@@ -229,7 +240,30 @@
         "A0U1-JOIND-004-FORBIDDEN-REPLACEMENT",
         "A0U1-SPLITS-004-FORBIDDEN-IMPORTDRAFT",
         "A0U1-JOINS-010-METADATA-POLICY-KILLER",
-        "A0U1-INS-002-MULTI-DIAGNOSTIC-SYNTAX"
+        "A0U1-INS-002-MULTI-DIAGNOSTIC-SYNTAX",
+        "A0U1-SPLITM-001-APPLY",
+        "A0U1-SPLITM-001-UNDO",
+        "A0U1-SPLITM-001-REDO",
+        "A0U1-SPLITM-002-REFUSED",
+        "A0U1-SPLITM-003-REFUSED",
+        "A0U1-SPLITM-004-REFUSED",
+        "A0U1-SPLITM-003-WRONG-DOCUMENT",
+        "A0U1-SPLITM-003-STALE-REVISION",
+        "A0U1-SPLITM-004-EXTRA-PLAN-KEY",
+        "A0U1-SPLITM-004-FORBIDDEN-NESTEDPLAN",
+        "A0U1-SPLITM-004-FIRST-TOTAL-STRING",
+        "A0U1-SPLITM-004-COMPLETION-DURATION-NUMERATOR",
+        "A0U1-SPLITM-004-COMPLETION-DURATION-DENOMINATOR",
+        "A0U1-SPLITM-005-EXACT",
+        "A0U1-SPLITM-006-ROW-PLUS-ONE",
+        "A0U1-SPLITM-006-REASON-EXCESS",
+        "A0U1-SPLITM-006-METADATA-EXCESS",
+        "A0U1-SPLITM-007-APPLY",
+        "A0U1-SPLITM-008-COLLISION",
+        "A0U1-SPLITM-009-BASE",
+        "A0U1-SPLITM-009-TRANSPOSED",
+        "A0U1-SPLITM-010-BASE",
+        "A0U1-SPLITM-010-KILLER"
       ],
       "controlIds": [
         "A0U1-MUT-001",
@@ -261,7 +295,12 @@
         "A0U1-MUT-027",
         "A0U1-MUT-028",
         "A0U1-MUT-029",
-        "A0U1-MUT-030"
+        "A0U1-MUT-030",
+        "A0U1-MUT-031",
+        "A0U1-MUT-032",
+        "A0U1-MUT-033",
+        "A0U1-MUT-034",
+        "A0U1-MUT-035"
       ],
       "traceIds": [
         "A0U1-TRACE-PIPELINE",
@@ -269,7 +308,8 @@
         "A0U1-TRACE-SPLIT-EVENT-DURATION",
         "A0U1-TRACE-JOIN-EVENT-DURATIONS",
         "A0U1-TRACE-SPLIT-SECTION",
-        "A0U1-TRACE-JOIN-SECTIONS"
+        "A0U1-TRACE-JOIN-SECTIONS",
+        "A0U1-TRACE-SPLIT-MEASURE"
       ]
     },
     {
@@ -293,7 +333,8 @@
         "A0-U1-ATOM-016-bookmarks-publication-history-atomic",
         "A0-U1-ATOM-017-transposition-and-existing-a0-unchanged",
         "A0-U1-ATOM-005-recovered-failure-selects-one-chord",
-        "A0-U1-ATOM-006-recovered-loss-duration-placement-exact"
+        "A0-U1-ATOM-006-recovered-loss-duration-placement-exact",
+        "A0-U1-ATOM-018-split-measure-partition-exact"
       ],
       "caseIds": [
         "A0U1-INS-001",
@@ -345,7 +386,17 @@
         "A0U1-JOINS-007",
         "A0U1-JOINS-008",
         "A0U1-JOINS-009",
-        "A0U1-JOINS-010"
+        "A0U1-JOINS-010",
+        "A0U1-SPLITM-001",
+        "A0U1-SPLITM-002",
+        "A0U1-SPLITM-003",
+        "A0U1-SPLITM-004",
+        "A0U1-SPLITM-005",
+        "A0U1-SPLITM-006",
+        "A0U1-SPLITM-007",
+        "A0U1-SPLITM-008",
+        "A0U1-SPLITM-009",
+        "A0U1-SPLITM-010"
       ],
       "transitionIds": [
         "A0U1-INS-001-APPLY",
@@ -484,7 +535,30 @@
         "A0U1-JOIND-004-FORBIDDEN-REPLACEMENT",
         "A0U1-SPLITS-004-FORBIDDEN-IMPORTDRAFT",
         "A0U1-JOINS-010-METADATA-POLICY-KILLER",
-        "A0U1-INS-002-MULTI-DIAGNOSTIC-SYNTAX"
+        "A0U1-INS-002-MULTI-DIAGNOSTIC-SYNTAX",
+        "A0U1-SPLITM-001-APPLY",
+        "A0U1-SPLITM-001-UNDO",
+        "A0U1-SPLITM-001-REDO",
+        "A0U1-SPLITM-002-REFUSED",
+        "A0U1-SPLITM-003-REFUSED",
+        "A0U1-SPLITM-004-REFUSED",
+        "A0U1-SPLITM-003-WRONG-DOCUMENT",
+        "A0U1-SPLITM-003-STALE-REVISION",
+        "A0U1-SPLITM-004-EXTRA-PLAN-KEY",
+        "A0U1-SPLITM-004-FORBIDDEN-NESTEDPLAN",
+        "A0U1-SPLITM-004-FIRST-TOTAL-STRING",
+        "A0U1-SPLITM-004-COMPLETION-DURATION-NUMERATOR",
+        "A0U1-SPLITM-004-COMPLETION-DURATION-DENOMINATOR",
+        "A0U1-SPLITM-005-EXACT",
+        "A0U1-SPLITM-006-ROW-PLUS-ONE",
+        "A0U1-SPLITM-006-REASON-EXCESS",
+        "A0U1-SPLITM-006-METADATA-EXCESS",
+        "A0U1-SPLITM-007-APPLY",
+        "A0U1-SPLITM-008-COLLISION",
+        "A0U1-SPLITM-009-BASE",
+        "A0U1-SPLITM-009-TRANSPOSED",
+        "A0U1-SPLITM-010-BASE",
+        "A0U1-SPLITM-010-KILLER"
       ],
       "controlIds": [
         "A0U1-MUT-001",
@@ -524,7 +598,8 @@
         "A0U1-TRACE-SPLIT-EVENT-DURATION",
         "A0U1-TRACE-JOIN-EVENT-DURATIONS",
         "A0U1-TRACE-SPLIT-SECTION",
-        "A0U1-TRACE-JOIN-SECTIONS"
+        "A0U1-TRACE-JOIN-SECTIONS",
+        "A0U1-TRACE-SPLIT-MEASURE"
       ]
     },
     {
@@ -552,7 +627,8 @@
         "A0-U1-ATOM-010-split-event-lossless-exact",
         "A0-U1-ATOM-011-join-events-left-inverse-exact",
         "A0-U1-ATOM-012-split-section-leading-survivor-exact",
-        "A0-U1-ATOM-013-join-sections-left-metadata-exact"
+        "A0-U1-ATOM-013-join-sections-left-metadata-exact",
+        "A0-U1-ATOM-018-split-measure-partition-exact"
       ],
       "caseIds": [
         "A0U1-INS-001",
@@ -604,7 +680,17 @@
         "A0U1-JOINS-007",
         "A0U1-JOINS-008",
         "A0U1-JOINS-009",
-        "A0U1-JOINS-010"
+        "A0U1-JOINS-010",
+        "A0U1-SPLITM-001",
+        "A0U1-SPLITM-002",
+        "A0U1-SPLITM-003",
+        "A0U1-SPLITM-004",
+        "A0U1-SPLITM-005",
+        "A0U1-SPLITM-006",
+        "A0U1-SPLITM-007",
+        "A0U1-SPLITM-008",
+        "A0U1-SPLITM-009",
+        "A0U1-SPLITM-010"
       ],
       "transitionIds": [
         "A0U1-INS-001-APPLY",
@@ -743,7 +829,30 @@
         "A0U1-JOIND-004-FORBIDDEN-REPLACEMENT",
         "A0U1-SPLITS-004-FORBIDDEN-IMPORTDRAFT",
         "A0U1-JOINS-010-METADATA-POLICY-KILLER",
-        "A0U1-INS-002-MULTI-DIAGNOSTIC-SYNTAX"
+        "A0U1-INS-002-MULTI-DIAGNOSTIC-SYNTAX",
+        "A0U1-SPLITM-001-APPLY",
+        "A0U1-SPLITM-001-UNDO",
+        "A0U1-SPLITM-001-REDO",
+        "A0U1-SPLITM-002-REFUSED",
+        "A0U1-SPLITM-003-REFUSED",
+        "A0U1-SPLITM-004-REFUSED",
+        "A0U1-SPLITM-003-WRONG-DOCUMENT",
+        "A0U1-SPLITM-003-STALE-REVISION",
+        "A0U1-SPLITM-004-EXTRA-PLAN-KEY",
+        "A0U1-SPLITM-004-FORBIDDEN-NESTEDPLAN",
+        "A0U1-SPLITM-004-FIRST-TOTAL-STRING",
+        "A0U1-SPLITM-004-COMPLETION-DURATION-NUMERATOR",
+        "A0U1-SPLITM-004-COMPLETION-DURATION-DENOMINATOR",
+        "A0U1-SPLITM-005-EXACT",
+        "A0U1-SPLITM-006-ROW-PLUS-ONE",
+        "A0U1-SPLITM-006-REASON-EXCESS",
+        "A0U1-SPLITM-006-METADATA-EXCESS",
+        "A0U1-SPLITM-007-APPLY",
+        "A0U1-SPLITM-008-COLLISION",
+        "A0U1-SPLITM-009-BASE",
+        "A0U1-SPLITM-009-TRANSPOSED",
+        "A0U1-SPLITM-010-BASE",
+        "A0U1-SPLITM-010-KILLER"
       ],
       "controlIds": [
         "A0U1-MUT-001",
@@ -775,7 +884,12 @@
         "A0U1-MUT-027",
         "A0U1-MUT-028",
         "A0U1-MUT-029",
-        "A0U1-MUT-030"
+        "A0U1-MUT-030",
+        "A0U1-MUT-031",
+        "A0U1-MUT-032",
+        "A0U1-MUT-033",
+        "A0U1-MUT-034",
+        "A0U1-MUT-035"
       ],
       "traceIds": [
         "A0U1-TRACE-PIPELINE",
@@ -783,7 +897,8 @@
         "A0U1-TRACE-SPLIT-EVENT-DURATION",
         "A0U1-TRACE-JOIN-EVENT-DURATIONS",
         "A0U1-TRACE-SPLIT-SECTION",
-        "A0U1-TRACE-JOIN-SECTIONS"
+        "A0U1-TRACE-JOIN-SECTIONS",
+        "A0U1-TRACE-SPLIT-MEASURE"
       ]
     },
     {
@@ -811,7 +926,8 @@
         "A0-U1-ATOM-010-split-event-lossless-exact",
         "A0-U1-ATOM-011-join-events-left-inverse-exact",
         "A0-U1-ATOM-012-split-section-leading-survivor-exact",
-        "A0-U1-ATOM-013-join-sections-left-metadata-exact"
+        "A0-U1-ATOM-013-join-sections-left-metadata-exact",
+        "A0-U1-ATOM-018-split-measure-partition-exact"
       ],
       "caseIds": [
         "A0U1-INS-001",
@@ -863,7 +979,17 @@
         "A0U1-JOINS-007",
         "A0U1-JOINS-008",
         "A0U1-JOINS-009",
-        "A0U1-JOINS-010"
+        "A0U1-JOINS-010",
+        "A0U1-SPLITM-001",
+        "A0U1-SPLITM-002",
+        "A0U1-SPLITM-003",
+        "A0U1-SPLITM-004",
+        "A0U1-SPLITM-005",
+        "A0U1-SPLITM-006",
+        "A0U1-SPLITM-007",
+        "A0U1-SPLITM-008",
+        "A0U1-SPLITM-009",
+        "A0U1-SPLITM-010"
       ],
       "transitionIds": [
         "A0U1-INS-001-APPLY",
@@ -1002,7 +1128,30 @@
         "A0U1-JOIND-004-FORBIDDEN-REPLACEMENT",
         "A0U1-SPLITS-004-FORBIDDEN-IMPORTDRAFT",
         "A0U1-JOINS-010-METADATA-POLICY-KILLER",
-        "A0U1-INS-002-MULTI-DIAGNOSTIC-SYNTAX"
+        "A0U1-INS-002-MULTI-DIAGNOSTIC-SYNTAX",
+        "A0U1-SPLITM-001-APPLY",
+        "A0U1-SPLITM-001-UNDO",
+        "A0U1-SPLITM-001-REDO",
+        "A0U1-SPLITM-002-REFUSED",
+        "A0U1-SPLITM-003-REFUSED",
+        "A0U1-SPLITM-004-REFUSED",
+        "A0U1-SPLITM-003-WRONG-DOCUMENT",
+        "A0U1-SPLITM-003-STALE-REVISION",
+        "A0U1-SPLITM-004-EXTRA-PLAN-KEY",
+        "A0U1-SPLITM-004-FORBIDDEN-NESTEDPLAN",
+        "A0U1-SPLITM-004-FIRST-TOTAL-STRING",
+        "A0U1-SPLITM-004-COMPLETION-DURATION-NUMERATOR",
+        "A0U1-SPLITM-004-COMPLETION-DURATION-DENOMINATOR",
+        "A0U1-SPLITM-005-EXACT",
+        "A0U1-SPLITM-006-ROW-PLUS-ONE",
+        "A0U1-SPLITM-006-REASON-EXCESS",
+        "A0U1-SPLITM-006-METADATA-EXCESS",
+        "A0U1-SPLITM-007-APPLY",
+        "A0U1-SPLITM-008-COLLISION",
+        "A0U1-SPLITM-009-BASE",
+        "A0U1-SPLITM-009-TRANSPOSED",
+        "A0U1-SPLITM-010-BASE",
+        "A0U1-SPLITM-010-KILLER"
       ],
       "controlIds": [
         "A0U1-MUT-001",
@@ -1034,7 +1183,12 @@
         "A0U1-MUT-027",
         "A0U1-MUT-028",
         "A0U1-MUT-029",
-        "A0U1-MUT-030"
+        "A0U1-MUT-030",
+        "A0U1-MUT-031",
+        "A0U1-MUT-032",
+        "A0U1-MUT-033",
+        "A0U1-MUT-034",
+        "A0U1-MUT-035"
       ],
       "traceIds": [
         "A0U1-TRACE-PIPELINE",
@@ -1042,7 +1196,8 @@
         "A0U1-TRACE-SPLIT-EVENT-DURATION",
         "A0U1-TRACE-JOIN-EVENT-DURATIONS",
         "A0U1-TRACE-SPLIT-SECTION",
-        "A0U1-TRACE-JOIN-SECTIONS"
+        "A0U1-TRACE-JOIN-SECTIONS",
+        "A0U1-TRACE-SPLIT-MEASURE"
       ]
     },
     {
@@ -1070,7 +1225,8 @@
         "A0-U1-ATOM-010-split-event-lossless-exact",
         "A0-U1-ATOM-011-join-events-left-inverse-exact",
         "A0-U1-ATOM-012-split-section-leading-survivor-exact",
-        "A0-U1-ATOM-013-join-sections-left-metadata-exact"
+        "A0-U1-ATOM-013-join-sections-left-metadata-exact",
+        "A0-U1-ATOM-018-split-measure-partition-exact"
       ],
       "caseIds": [
         "A0U1-INS-001",
@@ -1122,7 +1278,17 @@
         "A0U1-JOINS-007",
         "A0U1-JOINS-008",
         "A0U1-JOINS-009",
-        "A0U1-JOINS-010"
+        "A0U1-JOINS-010",
+        "A0U1-SPLITM-001",
+        "A0U1-SPLITM-002",
+        "A0U1-SPLITM-003",
+        "A0U1-SPLITM-004",
+        "A0U1-SPLITM-005",
+        "A0U1-SPLITM-006",
+        "A0U1-SPLITM-007",
+        "A0U1-SPLITM-008",
+        "A0U1-SPLITM-009",
+        "A0U1-SPLITM-010"
       ],
       "transitionIds": [
         "A0U1-INS-001-APPLY",
@@ -1261,7 +1427,30 @@
         "A0U1-JOIND-004-FORBIDDEN-REPLACEMENT",
         "A0U1-SPLITS-004-FORBIDDEN-IMPORTDRAFT",
         "A0U1-JOINS-010-METADATA-POLICY-KILLER",
-        "A0U1-INS-002-MULTI-DIAGNOSTIC-SYNTAX"
+        "A0U1-INS-002-MULTI-DIAGNOSTIC-SYNTAX",
+        "A0U1-SPLITM-001-APPLY",
+        "A0U1-SPLITM-001-UNDO",
+        "A0U1-SPLITM-001-REDO",
+        "A0U1-SPLITM-002-REFUSED",
+        "A0U1-SPLITM-003-REFUSED",
+        "A0U1-SPLITM-004-REFUSED",
+        "A0U1-SPLITM-003-WRONG-DOCUMENT",
+        "A0U1-SPLITM-003-STALE-REVISION",
+        "A0U1-SPLITM-004-EXTRA-PLAN-KEY",
+        "A0U1-SPLITM-004-FORBIDDEN-NESTEDPLAN",
+        "A0U1-SPLITM-004-FIRST-TOTAL-STRING",
+        "A0U1-SPLITM-004-COMPLETION-DURATION-NUMERATOR",
+        "A0U1-SPLITM-004-COMPLETION-DURATION-DENOMINATOR",
+        "A0U1-SPLITM-005-EXACT",
+        "A0U1-SPLITM-006-ROW-PLUS-ONE",
+        "A0U1-SPLITM-006-REASON-EXCESS",
+        "A0U1-SPLITM-006-METADATA-EXCESS",
+        "A0U1-SPLITM-007-APPLY",
+        "A0U1-SPLITM-008-COLLISION",
+        "A0U1-SPLITM-009-BASE",
+        "A0U1-SPLITM-009-TRANSPOSED",
+        "A0U1-SPLITM-010-BASE",
+        "A0U1-SPLITM-010-KILLER"
       ],
       "controlIds": [
         "A0U1-MUT-001",
@@ -1293,7 +1482,12 @@
         "A0U1-MUT-027",
         "A0U1-MUT-028",
         "A0U1-MUT-029",
-        "A0U1-MUT-030"
+        "A0U1-MUT-030",
+        "A0U1-MUT-031",
+        "A0U1-MUT-032",
+        "A0U1-MUT-033",
+        "A0U1-MUT-034",
+        "A0U1-MUT-035"
       ],
       "traceIds": [
         "A0U1-TRACE-PIPELINE",
@@ -1301,7 +1495,8 @@
         "A0U1-TRACE-SPLIT-EVENT-DURATION",
         "A0U1-TRACE-JOIN-EVENT-DURATIONS",
         "A0U1-TRACE-SPLIT-SECTION",
-        "A0U1-TRACE-JOIN-SECTIONS"
+        "A0U1-TRACE-JOIN-SECTIONS",
+        "A0U1-TRACE-SPLIT-MEASURE"
       ]
     },
     {
@@ -1329,7 +1524,8 @@
         "A0-U1-ATOM-010-split-event-lossless-exact",
         "A0-U1-ATOM-011-join-events-left-inverse-exact",
         "A0-U1-ATOM-012-split-section-leading-survivor-exact",
-        "A0-U1-ATOM-013-join-sections-left-metadata-exact"
+        "A0-U1-ATOM-013-join-sections-left-metadata-exact",
+        "A0-U1-ATOM-018-split-measure-partition-exact"
       ],
       "caseIds": [
         "A0U1-INS-001",
@@ -1381,7 +1577,17 @@
         "A0U1-JOINS-007",
         "A0U1-JOINS-008",
         "A0U1-JOINS-009",
-        "A0U1-JOINS-010"
+        "A0U1-JOINS-010",
+        "A0U1-SPLITM-001",
+        "A0U1-SPLITM-002",
+        "A0U1-SPLITM-003",
+        "A0U1-SPLITM-004",
+        "A0U1-SPLITM-005",
+        "A0U1-SPLITM-006",
+        "A0U1-SPLITM-007",
+        "A0U1-SPLITM-008",
+        "A0U1-SPLITM-009",
+        "A0U1-SPLITM-010"
       ],
       "transitionIds": [
         "A0U1-INS-001-APPLY",
@@ -1520,7 +1726,30 @@
         "A0U1-JOIND-004-FORBIDDEN-REPLACEMENT",
         "A0U1-SPLITS-004-FORBIDDEN-IMPORTDRAFT",
         "A0U1-JOINS-010-METADATA-POLICY-KILLER",
-        "A0U1-INS-002-MULTI-DIAGNOSTIC-SYNTAX"
+        "A0U1-INS-002-MULTI-DIAGNOSTIC-SYNTAX",
+        "A0U1-SPLITM-001-APPLY",
+        "A0U1-SPLITM-001-UNDO",
+        "A0U1-SPLITM-001-REDO",
+        "A0U1-SPLITM-002-REFUSED",
+        "A0U1-SPLITM-003-REFUSED",
+        "A0U1-SPLITM-004-REFUSED",
+        "A0U1-SPLITM-003-WRONG-DOCUMENT",
+        "A0U1-SPLITM-003-STALE-REVISION",
+        "A0U1-SPLITM-004-EXTRA-PLAN-KEY",
+        "A0U1-SPLITM-004-FORBIDDEN-NESTEDPLAN",
+        "A0U1-SPLITM-004-FIRST-TOTAL-STRING",
+        "A0U1-SPLITM-004-COMPLETION-DURATION-NUMERATOR",
+        "A0U1-SPLITM-004-COMPLETION-DURATION-DENOMINATOR",
+        "A0U1-SPLITM-005-EXACT",
+        "A0U1-SPLITM-006-ROW-PLUS-ONE",
+        "A0U1-SPLITM-006-REASON-EXCESS",
+        "A0U1-SPLITM-006-METADATA-EXCESS",
+        "A0U1-SPLITM-007-APPLY",
+        "A0U1-SPLITM-008-COLLISION",
+        "A0U1-SPLITM-009-BASE",
+        "A0U1-SPLITM-009-TRANSPOSED",
+        "A0U1-SPLITM-010-BASE",
+        "A0U1-SPLITM-010-KILLER"
       ],
       "controlIds": [
         "A0U1-MUT-001",
@@ -1552,7 +1781,12 @@
         "A0U1-MUT-027",
         "A0U1-MUT-028",
         "A0U1-MUT-029",
-        "A0U1-MUT-030"
+        "A0U1-MUT-030",
+        "A0U1-MUT-031",
+        "A0U1-MUT-032",
+        "A0U1-MUT-033",
+        "A0U1-MUT-034",
+        "A0U1-MUT-035"
       ],
       "traceIds": [
         "A0U1-TRACE-PIPELINE",
@@ -1560,7 +1794,8 @@
         "A0U1-TRACE-SPLIT-EVENT-DURATION",
         "A0U1-TRACE-JOIN-EVENT-DURATIONS",
         "A0U1-TRACE-SPLIT-SECTION",
-        "A0U1-TRACE-JOIN-SECTIONS"
+        "A0U1-TRACE-JOIN-SECTIONS",
+        "A0U1-TRACE-SPLIT-MEASURE"
       ]
     }
   ]

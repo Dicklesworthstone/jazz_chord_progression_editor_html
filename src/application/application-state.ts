@@ -20,6 +20,7 @@ import {
   type ApplicationRequestKind,
   type ApplicationStateOperations,
   type ApplicationTransitionResult,
+  type ApplicationTransportStatus,
   type BeginApplicationRequest,
   type CreateInitialAppState,
   type DialogDescriptor,
@@ -55,15 +56,18 @@ import {
   estimateHistoryRetainedBytes,
   isValidHistoryEstimate,
 } from "./application-history";
+import { runAtomicEditPlan } from "./application-edit-plan";
 import { replayRetainedHistory } from "./application-history-transition";
 import {
   appendApplicationNotice,
   buildDocumentIndex,
+  codePointLength,
   createWorkCounters,
   failureResult,
   isBoundedToken,
   isNonnegativeSafeInteger,
   isPositiveSafeInteger,
+  isUnicodeScalarString,
   runtimeField,
   successResult,
   type MutableApplicationWorkCounters,
@@ -89,6 +93,16 @@ function validTransportNotificationStatus(
 ): value is TransportNotification["status"] {
   return (
     value !== "unavailable" &&
+    APPLICATION_TRANSPORT_STATUSES.some((status) => status === value)
+  );
+}
+
+function validSettledTransportStatus(
+  value: unknown,
+): value is Exclude<ApplicationTransportStatus, "starting" | "stopping"> {
+  return (
+    value !== "starting" &&
+    value !== "stopping" &&
     APPLICATION_TRANSPORT_STATUSES.some((status) => status === value)
   );
 }
@@ -476,6 +490,15 @@ export const createInitialAppState: CreateInitialAppState = (request) => {
 
 export const runDocumentCommand: RunDocumentCommand = (request) => {
   const { state, command, dependencies } = request;
+  if (command.kind === "apply-edit-plan") {
+    /*
+     * The accepted A0/U1 amendment: the atomic runner re-captures the raw
+     * command through its descriptor-safe shape gate before the inherited A0
+     * envelope stage, so it owns the complete sixteenth command path. The
+     * fifteen historical paths below remain byte-for-byte unchanged.
+     */
+    return runAtomicEditPlan({ state, command, dependencies });
+  }
   const counters = createWorkCounters();
   const envelope = envelopeFailure(state, command);
   if (envelope !== null) {
@@ -602,10 +625,10 @@ export const runDocumentCommand: RunDocumentCommand = (request) => {
 };
 
 export const undoDocumentCommand: UndoDocumentCommand = ({ state }) =>
-  replayRetainedHistory<HistoryEntry>(state, "undo");
+  replayRetainedHistory(state, "undo");
 
 export const redoDocumentCommand: RedoDocumentCommand = ({ state }) =>
-  replayRetainedHistory<HistoryEntry>(state, "redo");
+  replayRetainedHistory(state, "redo");
 
 function validPanelState(intent: Extract<EphemeralIntent, { kind: "set-panels" }>): boolean {
   const open = intent.panels.open;
@@ -700,8 +723,17 @@ export const reduceEphemeralIntent: ReduceEphemeralIntent = ({ state, intent }) 
     case "set-quick-entry":
       if (
         intent.draft.baseRevision !== state.revision ||
-        !isBoundedToken(intent.draft.text || " ", MAX_QUICK_ENTRY_CODE_POINTS) ||
-        intent.draft.issueCodes.length > MAX_DRAFT_ISSUES
+        // The draft is caller-owned raw text, not a token: an empty draft and
+        // a whitespace-only draft are both legal and are stored exactly. Only
+        // Unicode validity and the code-point bound are enforced here. The
+        // earlier `text || " "` form substituted a space and then rejected it,
+        // so clearing a draft could never succeed.
+        !isUnicodeScalarString(intent.draft.text) ||
+        codePointLength(intent.draft.text) > MAX_QUICK_ENTRY_CODE_POINTS ||
+        intent.draft.issueCodes.length > MAX_DRAFT_ISSUES ||
+        intent.draft.issueCodes.some(
+          (code) => !isBoundedToken(code, MAX_COMMAND_ID_CODE_POINTS),
+        )
       ) {
         return failureResult(state, counters, "ephemeral.intent_invalid", ["quickEntry"]);
       }
@@ -799,6 +831,41 @@ export const reduceEphemeralIntent: ReduceEphemeralIntent = ({ state, intent }) 
           startBeat: intent.startBeat,
           playhead: intent.playhead,
           failureCode: null,
+        }),
+      });
+      break;
+    case "settle-transport-expectation":
+      if (
+        !isPositiveSafeInteger(intent.commandRequestId) ||
+        !isNonnegativeSafeInteger(intent.planRevision) ||
+        !validSettledTransportStatus(intent.status) ||
+        typeof intent.failureCode !== "string" ||
+        !isBoundedToken(intent.failureCode, MAX_COMMAND_ID_CODE_POINTS)
+      ) {
+        return failureResult(
+          state,
+          counters,
+          "transport.expectation_invalid",
+          ["transport"],
+        );
+      }
+      // A settlement may resolve only the still-optimistic expectation it
+      // names; a genuine notification that already settled the slot wins.
+      if (
+        intent.commandRequestId !== state.transport.commandRequestId ||
+        intent.documentId !== state.document.id ||
+        intent.planRevision !== state.revision ||
+        (state.transport.status !== "starting" &&
+          state.transport.status !== "stopping")
+      ) {
+        return successResult(state, counters, "ignored-stale");
+      }
+      next = Object.freeze({
+        ...state,
+        transport: Object.freeze({
+          ...state.transport,
+          status: intent.status,
+          failureCode: intent.failureCode,
         }),
       });
       break;

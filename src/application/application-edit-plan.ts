@@ -44,10 +44,13 @@ import {
   type AtomicEditPlanAppState,
   type AtomicEditPlanDependencies,
   type AtomicEditPlanDiagnostic,
+  type AtomicEditPlanFailureForOuterCode,
   type AtomicEditPlanInsertSourceReceipt,
+  type AtomicEditPlanOuterRefusalCode,
   type AtomicEditPlanPreplanOuterRefusalCode,
   type AtomicEditPlanReceipt,
   type AtomicEditPlanRefusalCode,
+  type AtomicEditPlanRefusalCodeForOuter,
   type AtomicEditPlanTransitionResult,
   type AtomicEditPlanWorkEvidence,
   type ProposedAtomicEditPlanHistoryEntry,
@@ -64,7 +67,6 @@ import {
   diagnosticsFromSemanticRefusal,
   diagnosticsFromStructuralRefusal,
   freezeAtomicEditPlanWork,
-  outerCodeForAtomicEditPlanRefusal,
   sortAndRetainAtomicEditPlanDiagnostics,
   type MutableAtomicEditPlanWork,
 } from "./application-edit-plan-work";
@@ -76,7 +78,6 @@ import {
   MAX_HISTORY_ENTRIES,
   MAX_HISTORY_RETAINED_BYTES,
   type ApplicationEffect,
-  type ApplicationRefusal,
   type StableBoundary,
   type StableUiBookmarks,
   type UiFocusTarget,
@@ -100,6 +101,12 @@ type AtomicPreplanFailure = Readonly<{
 }>;
 
 const ATOMIC_EDIT_REFUSAL_MESSAGE = "The edit was not applied.";
+
+const EMPTY_EFFECTS_SOURCE: [] = [];
+/** Frozen empty effect tuple; refusals publish no effects. */
+const NO_ATOMIC_EDIT_EFFECTS: readonly [] = Object.freeze(
+  EMPTY_EFFECTS_SOURCE,
+);
 
 type PlanFailure = Readonly<{
   code: AtomicEditPlanRefusalCode;
@@ -169,7 +176,8 @@ type PreparedNonInsert = Readonly<{
     | "split-event-duration"
     | "join-event-durations"
     | "split-section"
-    | "join-sections";
+    | "join-sections"
+    | "split-measure";
   allocationSpecs: readonly AllocationSpec[];
 }>;
 
@@ -196,7 +204,7 @@ type MaterializedPlan = Readonly<{
     | Readonly<{ kind: "section"; id: SectionId }>
     | Readonly<{ kind: "event"; id: ChordEventId }>
   )[];
-  survivorId: SectionId | ChordEventId | null;
+  survivorId: SectionId | MeasureId | ChordEventId | null;
   insertSource: AtomicEditPlanInsertSourceReceipt | null;
   completionMeasureIds: readonly MeasureId[];
   timelineDisposition:
@@ -239,7 +247,7 @@ function captureDependencyField(
     ) {
       return null;
     }
-    const capturedValue = descriptor.value as unknown;
+    const capturedValue: unknown = descriptor.value;
     return Object.freeze({ value: capturedValue });
   } catch {
     return null;
@@ -318,7 +326,7 @@ function hasNonemptyDependencyArray(value: unknown): boolean {
     ) {
       return false;
     }
-    const length = lengthDescriptor.value as unknown;
+    const length: unknown = lengthDescriptor.value;
     if (
       typeof length !== "number" ||
       !Number.isSafeInteger(length) ||
@@ -898,7 +906,7 @@ function isDeepFrozenDependencyValue(
       ) {
         return false;
       }
-      const child = descriptor.value as unknown;
+      const child: unknown = descriptor.value;
       if (!isDeepFrozenDependencyValue(child, state, depth + 1)) {
         return false;
       }
@@ -925,6 +933,53 @@ function isDeepFrozenDependencyDocument(value: unknown): boolean {
   );
 }
 
+type AtomicFailureParts = Readonly<{
+  state: AtomicEditPlanAppState;
+  outerWork: MutableApplicationWorkCounters;
+  path: DomainPath;
+  diagnostics: readonly AtomicEditPlanDiagnostic[];
+  work: AtomicEditPlanWorkEvidence;
+}>;
+
+/**
+ * Build one type-correlated postplan failure branch. The generic outer code
+ * carries the frozen nested-to-outer refusal correlation through the result
+ * type instead of laundering it with an assertion.
+ */
+function correlatedAtomicFailure<
+  OuterCode extends AtomicEditPlanOuterRefusalCode,
+>(
+  outerCode: OuterCode,
+  code: AtomicEditPlanRefusalCodeForOuter<OuterCode>,
+  parts: AtomicFailureParts,
+): AtomicEditPlanFailureForOuterCode<OuterCode> {
+  const appended = appendApplicationNotice(
+    parts.state,
+    "error",
+    outerCode,
+    ATOMIC_EDIT_REFUSAL_MESSAGE,
+  );
+  return Object.freeze({
+    ok: false,
+    state: appended.state,
+    refusal: Object.freeze({
+      code: outerCode,
+      path: Object.freeze([...parts.path]),
+      message: ATOMIC_EDIT_REFUSAL_MESSAGE,
+    }),
+    notice: appended.notice,
+    effects: NO_ATOMIC_EDIT_EFFECTS,
+    counters: freezeWorkCounters(parts.outerWork),
+    editPlanRefusal: Object.freeze({
+      code,
+      outerCode,
+      path: Object.freeze([...parts.path]),
+      diagnostics: parts.diagnostics,
+      work: parts.work,
+    }),
+  });
+}
+
 function atomicFailure(
   state: AtomicEditPlanAppState,
   outerWork: MutableApplicationWorkCounters,
@@ -936,46 +991,103 @@ function atomicFailure(
     | "publication-refusal"
     | "history-refusal",
 ): AtomicEditPlanTransitionResult {
-  const outerCode = outerCodeForAtomicEditPlanRefusal(
-    failure.code,
-    failure.historyOuterCode ?? null,
-  );
-  const appended = appendApplicationNotice(
-    state,
-    "error",
-    outerCode,
-    ATOMIC_EDIT_REFUSAL_MESSAGE,
-  );
-  const refusal: ApplicationRefusal = Object.freeze({
-    code: outerCode,
-    path: Object.freeze([...failure.path]),
-    message: ATOMIC_EDIT_REFUSAL_MESSAGE,
-  });
   const sourceDiagnostics =
     failure.diagnostics ??
     Object.freeze([
       atomicEditPlanDiagnostic(failure.code, failure.path),
     ]);
-  const diagnostics = sortAndRetainAtomicEditPlanDiagnostics(
-    sourceDiagnostics,
-    planWork,
-  );
-  const work = freezeAtomicEditPlanWork(planWork, termination);
-  return Object.freeze({
-    ok: false,
-    state: appended.state,
-    refusal,
-    notice: appended.notice,
-    effects: Object.freeze([]),
-    counters: freezeWorkCounters(outerWork),
-    editPlanRefusal: Object.freeze({
-      code: failure.code,
-      outerCode,
-      path: Object.freeze([...failure.path]),
-      diagnostics,
-      work,
-    }),
-  }) as AtomicEditPlanTransitionResult;
+  const parts: AtomicFailureParts = Object.freeze({
+    state,
+    outerWork,
+    path: failure.path,
+    diagnostics: sortAndRetainAtomicEditPlanDiagnostics(
+      sourceDiagnostics,
+      planWork,
+    ),
+    work: freezeAtomicEditPlanWork(planWork, termination),
+  });
+  switch (failure.code) {
+    case "edit-plan.target-missing":
+      return correlatedAtomicFailure(
+        "command.target_missing",
+        failure.code,
+        parts,
+      );
+    case "edit-plan.destination-invalid":
+    case "edit-plan.event-order-invalid":
+    case "edit-plan.section-split-boundary-invalid":
+    case "edit-plan.measure-split-boundary-invalid":
+    case "edit-plan.section-order-invalid":
+      return correlatedAtomicFailure(
+        "command.destination_invalid",
+        failure.code,
+        parts,
+      );
+    case "edit-plan.id-factory-failed":
+    case "edit-plan.id-collision":
+      return correlatedAtomicFailure(
+        "command.id_allocation_failed",
+        failure.code,
+        parts,
+      );
+    case "edit-plan.structural-publication-refused":
+      return correlatedAtomicFailure(
+        "command.structural_validation_failed",
+        failure.code,
+        parts,
+      );
+    case "edit-plan.semantic-publication-refused":
+      return correlatedAtomicFailure(
+        "command.semantic_validation_failed",
+        failure.code,
+        parts,
+      );
+    case "edit-plan.history-refused": {
+      const historyOuterCode = failure.historyOuterCode ?? null;
+      if (historyOuterCode === null) {
+        throw new Error("A0_U1_INTERNAL_HISTORY_OUTER_CODE");
+      }
+      return historyOuterCode === "history.entry_too_large"
+        ? correlatedAtomicFailure(
+            "history.entry_too_large",
+            failure.code,
+            parts,
+          )
+        : correlatedAtomicFailure(
+            "history.byte_estimate_invalid",
+            failure.code,
+            parts,
+          );
+    }
+    case "edit-plan.command-shape-invalid":
+    case "edit-plan.plan-shape-invalid":
+    case "edit-plan.quick-entry-snapshot-mismatch":
+    case "edit-plan.source-code-points-exceeded":
+    case "edit-plan.source-unicode-invalid":
+    case "edit-plan.source-utf8-bytes-exceeded":
+    case "edit-plan.recovered-chord-placement-invalid":
+    case "edit-plan.syntax-refused":
+    case "edit-plan.recovered-chord-requires-parse-failure":
+    case "edit-plan.recovered-chord-ordinal-missing":
+    case "edit-plan.warning-acknowledgements-mismatch":
+    case "edit-plan.fragment-placement-mismatch":
+    case "edit-plan.completion-declarations-mismatch":
+    case "edit-plan.section-metadata-mismatch":
+    case "edit-plan.recovered-chord-layout-loss-unacknowledged":
+    case "edit-plan.recovered-chord-duration-mismatch":
+    case "edit-plan.duration-invalid":
+    case "edit-plan.duration-sum-mismatch":
+    case "edit-plan.measure-partition-mismatch":
+    case "edit-plan.event-content-mismatch":
+    case "edit-plan.right-annotation-not-empty":
+    case "edit-plan.collection-limit-exceeded":
+    case "edit-plan.timeline-limit-exceeded":
+      return correlatedAtomicFailure(
+        "command.payload_invalid",
+        failure.code,
+        parts,
+      );
+  }
 }
 
 function preplanFailure(
@@ -989,20 +1101,21 @@ function preplanFailure(
     failure.code,
     ATOMIC_EDIT_REFUSAL_MESSAGE,
   );
-  const refusal: ApplicationRefusal = Object.freeze({
+  const refusal = Object.freeze({
     code: failure.code,
     path: Object.freeze([...failure.path]),
     message: ATOMIC_EDIT_REFUSAL_MESSAGE,
   });
-  return Object.freeze({
+  const result: AtomicEditPlanTransitionResult = Object.freeze({
     ok: false,
     state: appended.state,
     refusal,
     notice: appended.notice,
-    effects: Object.freeze([]),
+    effects: NO_ATOMIC_EDIT_EFFECTS,
     counters: freezeWorkCounters(outerWork),
     editPlanRefusal: null,
-  }) as AtomicEditPlanTransitionResult;
+  });
+  return result;
 }
 
 function envelopeFailure(
@@ -1555,6 +1668,39 @@ function targetFailure(
     }
     return null;
   }
+  if (plan.kind === "split-measure") {
+    const measure = index.measures.get(plan.measureId);
+    if (measure === undefined) {
+      return {
+        code: "edit-plan.target-missing",
+        path: ["plan", "measureId"],
+      };
+    }
+    const boundary = index.events.get(plan.beforeEventId);
+    if (boundary === undefined) {
+      return {
+        code: "edit-plan.target-missing",
+        path: ["plan", "beforeEventId"],
+      };
+    }
+    /*
+     * Strict interior: the boundary event must belong to the target measure,
+     * at least one event must remain in the retained measure, and at least one
+     * must move. Neither result may be empty, so the operation is never a
+     * no-op dressed as a split.
+     */
+    if (
+      boundary.measureId !== measure.id ||
+      boundary.eventIndex <= 0 ||
+      boundary.eventIndex >= measure.measure.events.length
+    ) {
+      return {
+        code: "edit-plan.measure-split-boundary-invalid",
+        path: ["plan", "beforeEventId"],
+      };
+    }
+    return null;
+  }
   const left = index.sections.get(plan.leftSectionId);
   if (left === undefined) {
     return {
@@ -2041,7 +2187,6 @@ function insertPreparation(
             "edit-plan.syntax-refused",
             called.diagnostics,
             ["plan", "source", "quickEntrySnapshot", "sourceText"],
-            plan.source.quickEntrySnapshot.sourceText,
           ),
         },
       };
@@ -2118,6 +2263,19 @@ function completionDeclarationFailure(
         completion: measure.measure.completion,
       }),
     ]);
+  } else if (plan.kind === "split-measure") {
+    /*
+     * The retained measure keeps the source ID and is the single declared row.
+     * Its completion value is caller-owned rather than compared: the retained
+     * measure holds fewer beats after the split, so its old completion is
+     * exactly the value that must not be carried forward silently. The suffix
+     * carries the plan's explicit `newMeasureCompletion` instead, because a
+     * caller cannot name an ID that does not exist yet.
+     */
+    if (!index.measures.has(plan.measureId)) {
+      throw new Error("A0_U1_INTERNAL_COMPLETION_MEASURE");
+    }
+    expected = Object.freeze([Object.freeze({ measureId: plan.measureId })]);
   } else {
     expected = Object.freeze([]);
   }
@@ -2346,6 +2504,89 @@ function operationLawFailure(
       };
     }
   }
+
+  if (plan.kind === "split-measure") {
+    /*
+     * A0-U1-ATOM-018. The two totals are the caller's exact statement of the
+     * partition; nothing is computed for the caller, redistributed, rounded,
+     * or repaired. A split moves a bar line, never a beat.
+     */
+    const measure = index.measures.get(plan.measureId);
+    if (measure === undefined) {
+      throw new Error("A0_U1_INTERNAL_SPLIT_MEASURE_TARGET");
+    }
+    const first = canonicalDuration(plan.firstMeasureTotal);
+    if (first === null) {
+      return {
+        code: "edit-plan.measure-partition-mismatch",
+        path: ["plan", "firstMeasureTotal"],
+      };
+    }
+    const second = canonicalDuration(plan.secondMeasureTotal);
+    if (second === null) {
+      return {
+        code: "edit-plan.measure-partition-mismatch",
+        path: ["plan", "secondMeasureTotal"],
+      };
+    }
+    const events = measure.measure.events;
+    const splitIndex = events.findIndex(
+      (event) => event.id === plan.beforeEventId,
+    );
+    if (splitIndex <= 0 || splitIndex >= events.length) {
+      throw new Error("A0_U1_INTERNAL_SPLIT_MEASURE_BOUNDARY");
+    }
+    const exactSum = (
+      spans: readonly ChordEvent[],
+    ): BeatValue | null => {
+      let total: BeatValue | null = null;
+      for (const span of spans) {
+        if (total === null) {
+          total = span.duration;
+          continue;
+        }
+        work.exactBeatAdditions += 1;
+        const added = addBeatValues(total, span.duration);
+        if (!added.ok) return null;
+        total = added.value;
+      }
+      return total;
+    };
+    const retainedTotal = exactSum(events.slice(0, splitIndex));
+    work.exactBeatComparisons += 1;
+    if (
+      retainedTotal === null ||
+      compareBeatValues(retainedTotal, first) !== 0
+    ) {
+      return {
+        code: "edit-plan.measure-partition-mismatch",
+        path: ["plan", "firstMeasureTotal"],
+      };
+    }
+    const movedTotal = exactSum(events.slice(splitIndex));
+    work.exactBeatComparisons += 1;
+    if (movedTotal === null || compareBeatValues(movedTotal, second) !== 0) {
+      return {
+        code: "edit-plan.measure-partition-mismatch",
+        path: ["plan", "secondMeasureTotal"],
+      };
+    }
+    work.exactBeatAdditions += 1;
+    const declaredTotal = addBeatValues(first, second);
+    work.exactBeatAdditions += 1;
+    const sourceTotal = addBeatValues(retainedTotal, movedTotal);
+    work.exactBeatComparisons += 1;
+    if (
+      !declaredTotal.ok ||
+      !sourceTotal.ok ||
+      compareBeatValues(declaredTotal.value, sourceTotal.value) !== 0
+    ) {
+      return {
+        code: "edit-plan.measure-partition-mismatch",
+        path: ["plan", "secondMeasureTotal"],
+      };
+    }
+  }
   return null;
 }
 
@@ -2373,6 +2614,19 @@ function nonInsertPreparation(plan: AtomicEditPlan): PreparedNonInsert {
             source: Object.freeze({
               kind: "split-section-suffix",
               sourceSectionId: plan.sectionId,
+            }),
+          }),
+        ]),
+      });
+    case "split-measure":
+      return Object.freeze({
+        kind: plan.kind,
+        allocationSpecs: Object.freeze([
+          Object.freeze({
+            kind: "measure",
+            source: Object.freeze({
+              kind: "split-measure-suffix",
+              sourceMeasureId: plan.measureId,
             }),
           }),
         ]),
@@ -2490,6 +2744,22 @@ function finalCollectionProjection(
       current - boundary.measureIndex,
     );
     sections += 1;
+  } else if (plan.kind === "split-measure") {
+    /*
+     * One measure becomes two inside one section. No event is created or
+     * removed and no section boundary moves.
+     */
+    const boundary = index.measures.get(plan.measureId);
+    if (boundary === undefined) {
+      throw new Error("A0_U1_INTERNAL_SPLIT_MEASURE_PROJECTION");
+    }
+    const section = index.sections.get(boundary.sectionId);
+    if (section === undefined) {
+      throw new Error("A0_U1_INTERNAL_SPLIT_MEASURE_PROJECTION_SECTION");
+    }
+    perSectionMeasures[section.sectionIndex] =
+      (perSectionMeasures[section.sectionIndex] ?? 0) + 1;
+    totalMeasures += 1;
   } else {
     const left = index.sections.get(plan.leftSectionId);
     const right = index.sections.get(plan.rightSectionId);
@@ -2870,6 +3140,26 @@ function mutableMeasureById(
   return null;
 }
 
+function mutableMeasureLocationById(
+  sections: readonly MutableCandidateSection[],
+  id: MeasureId,
+): Readonly<{
+  section: MutableCandidateSection;
+  measure: MutableCandidateMeasure;
+  index: number;
+}> | null {
+  for (const section of sections) {
+    const index = section.measures.findIndex(
+      (candidate) => candidate.id === id,
+    );
+    const measure = section.measures[index];
+    if (index >= 0 && measure !== undefined) {
+      return { section, measure, index };
+    }
+  }
+  return null;
+}
+
 function mutableSectionById(
   sections: readonly MutableCandidateSection[],
   id: SectionId,
@@ -3182,6 +3472,39 @@ function materializePlan(
       measures: suffixMeasures,
     });
     survivorId = plan.sectionId;
+    timelineDisposition =
+      "preserve-flattened-event-order-and-durations";
+  } else if (plan.kind === "split-measure") {
+    const location = mutableMeasureLocationById(
+      candidate.sections,
+      plan.measureId,
+    );
+    const suffixIdentity = nextIdentity("measure");
+    if (location === null) {
+      throw new Error("A0_U1_INTERNAL_SPLIT_MEASURE_MATERIALIZATION_TARGET");
+    }
+    const splitIndex = location.measure.events.findIndex(
+      (event) => event.id === plan.beforeEventId,
+    );
+    if (splitIndex <= 0 || splitIndex >= location.measure.events.length) {
+      throw new Error("A0_U1_INTERNAL_SPLIT_MEASURE_MATERIALIZATION_BOUNDARY");
+    }
+    /*
+     * Every moved event keeps its exact ID, chord, voicing, annotation, and
+     * duration, and its order relative to every other event is unchanged. The
+     * suffix's completion is the plan's explicit declaration; section 6.4's
+     * conversion does not apply because this measure is not built from a
+     * parsed fragment.
+     */
+    const suffixEvents = location.measure.events.splice(splitIndex);
+    location.section.measures.splice(location.index + 1, 0, {
+      id: suffixIdentity.id,
+      events: suffixEvents,
+      completion: plan.newMeasureCompletion,
+    });
+    applyCompletionDeclarations(candidate.sections, plan);
+    survivorId = plan.measureId;
+    completionMeasureIds = Object.freeze([plan.measureId]);
     timelineDisposition =
       "preserve-flattened-event-order-and-durations";
   } else {

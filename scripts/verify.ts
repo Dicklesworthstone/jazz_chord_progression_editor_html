@@ -69,6 +69,10 @@ const gates: Gate[] = [
     command: [process.execPath, "scripts/validate-u0-contract.ts"],
   },
   {
+    id: "u1-chart-editing-contract",
+    command: [process.execPath, "scripts/validate-u1-contract.ts"],
+  },
+  {
     id: "c0-legacy-migration-contract",
     command: [process.execPath, "scripts/validate-c0-contract.ts"],
   },
@@ -81,8 +85,24 @@ const gates: Gate[] = [
     command: [process.execPath, "scripts/validate-e1-contract.ts"],
   },
   {
+    id: "m0-midi-import-contract",
+    command: [process.execPath, "scripts/validate-m0-contract.ts"],
+  },
+  {
+    id: "m0-evidence",
+    command: [process.execPath, "scripts/verify-m0-evidence.ts"],
+  },
+  {
     id: "a0-e0-owner-bridge-contract",
     command: [process.execPath, "scripts/validate-a0-e0-bridge-contract.ts"],
+  },
+  {
+    id: "a0-e0-bridge-evidence",
+    command: [process.execPath, "scripts/verify-bridge-evidence.ts"],
+  },
+  {
+    id: "e0-v2-interchange-contract",
+    command: [process.execPath, "scripts/validate-e0-v2-contract.ts"],
   },
   {
     id: "x0-audio-engine-contract",
@@ -131,6 +151,10 @@ const gates: Gate[] = [
   {
     id: "p0-evidence",
     command: [process.execPath, "scripts/verify-p0-evidence.ts"],
+  },
+  {
+    id: "e1-evidence",
+    command: [process.execPath, "scripts/verify-e1-evidence.ts"],
   },
   {
     id: "a0-evidence",

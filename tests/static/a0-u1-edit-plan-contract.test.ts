@@ -131,6 +131,7 @@ type PlanKindsAreExact = Assert<
     | "join-event-durations"
     | "split-section"
     | "join-sections"
+    | "split-measure"
   >
 >;
 type InsertPlacementKindsAreExact = Assert<
@@ -183,10 +184,11 @@ type AtomicHistoryKindIsExact = Assert<
 type AtomicRunnerRequestCarriesOnlyNewCommand = Assert<
   Equal<RunAtomicEditPlanRequest["command"], ApplyEditPlanCommand>
 >;
-type AtomicResultRequiresMergedLiveHistoryKind = Assert<
+/** Post-cutover: the merged live history kind admits the atomic result. */
+type AtomicResultFlowsThroughMergedLiveResult = Assert<
   AtomicEditPlanTransitionResult extends ApplicationTransitionResult
-    ? false
-    : true
+    ? true
+    : false
 >;
 type LiveResultCannotStandInForAtomicResult = Assert<
   ApplicationTransitionResult extends AtomicEditPlanTransitionResult
@@ -288,8 +290,9 @@ type ProposedCommandKindIsExactlyAdditive = Assert<
 type ProposedCommandUnionIsExactlyAdditive = Assert<
   Equal<ProposedDocumentCommand, DocumentCommand | ApplyEditPlanCommand>
 >;
+/** Post-cutover: the proposed union equals the merged live union exactly. */
 type ExistingCommandUnionRemainsExact = Assert<
-  Equal<Exclude<ProposedDocumentCommand, ApplyEditPlanCommand>, DocumentCommand>
+  Equal<ProposedDocumentCommand, DocumentCommand>
 >;
 type ProposedApplyVariantIsExact = Assert<
   Equal<
@@ -506,7 +509,7 @@ const typeAssertions: readonly true[] = [
   true satisfies LiveStateCanEnterAtomicRunner,
   true satisfies AtomicHistoryKindIsExact,
   true satisfies AtomicRunnerRequestCarriesOnlyNewCommand,
-  true satisfies AtomicResultRequiresMergedLiveHistoryKind,
+  true satisfies AtomicResultFlowsThroughMergedLiveResult,
   true satisfies LiveResultCannotStandInForAtomicResult,
   true satisfies AtomicSuccessOutcomeIsCommitted,
   true satisfies AtomicSuccessReceiptIsExposed,
@@ -1040,6 +1043,74 @@ const semanticFieldMutations = [
     findingCode: "EDIT_PLAN_TRANSPOSITION_TRANSITION_REF",
     findingPathIncludes: "A0U1-WIT-INSERT",
   },
+  {
+    label: "R1 tamper: restore the superseded T0 syntax-code rewrite",
+    filename: "edit-plan-cases.json",
+    path: [
+      "literalCatalog",
+      "results",
+      "a0u1-ins-002-complete-syntax-refused",
+      "editPlanRefusal",
+      "diagnostics",
+      0,
+      "syntaxCode",
+    ],
+    from: "symbol.root_invalid",
+    to: "chart.unsupported_notation",
+    findingCode: "EDIT_PLAN_SYNTAX_DIAGNOSTIC_VERBATIM",
+    findingPathIncludes: "A0U1-INS-002-COMPLETE-SYNTAX-REFUSED",
+  },
+  {
+    label: "R1 tamper: alter the created insertion boundary",
+    filename: "edit-plan-cases.json",
+    path: [
+      "literalCatalog",
+      "results",
+      "a0u1-ins-011-null-apply",
+      "editPlanReceipt",
+      "bookmarks",
+      "insertionCreated",
+      "measureId",
+    ],
+    from: "measure-u1-insert-1",
+    to: "measure-e0-manual",
+    findingCode: "EDIT_PLAN_BOOKMARK_RECEIPT_ORACLE",
+    findingPathIncludes: "A0U1-INS-011-NULL-APPLY",
+  },
+  {
+    label: "R1 tamper: confuse the creation policy with the movement policy",
+    filename: "edit-plan-cases.json",
+    path: [
+      "literalCatalog",
+      "results",
+      "a0u1-ins-011-null-apply",
+      "editPlanReceipt",
+      "bookmarks",
+      "insertionPolicy",
+    ],
+    from: "create-after-last-inserted",
+    to: "move-after-last-inserted",
+    findingCode: "EDIT_PLAN_CREATED_INSERTION_TRIO_RECEIPT",
+    findingPathIncludes: "A0U1-INS-011-NULL-APPLY",
+  },
+  {
+    label: "R1 tamper: restore the superseded v1 receipt schema",
+    filename: "a0-u1-edit-plan-contract.json",
+    path: ["receiptSchema"],
+    from: "changes.application.atomic-edit-plan-receipt.v2",
+    to: "changes.application.atomic-edit-plan-receipt.v1",
+    findingCode: "EDIT_PLAN_RECEIPT_SCHEMA",
+    findingPathIncludes: "receiptSchema",
+  },
+  {
+    label: "R1 tamper: restore the superseded 6,768 text-work ceiling",
+    filename: "a0-u1-edit-plan-contract.json",
+    path: ["limits", "planMetadataCodePoints"],
+    from: 8_768,
+    to: 6_768,
+    findingCode: "EDIT_PLAN_PACKET_LIMITS",
+    findingPathIncludes: "limits",
+  },
 ] as const satisfies readonly SemanticFieldMutation[];
 
 describe("A0/U1 atomic edit-plan golden packet", () => {
@@ -1055,21 +1126,21 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
         counts: {
           files: 5,
           commandKinds: 1,
-          planKinds: 5,
-          lawRows: 17,
-          caseGroups: 50,
-          literalTransitions: 137,
-          applicabilityRows: 5,
-          transpositionWitnesses: 5,
+          planKinds: 6,
+          lawRows: 18,
+          caseGroups: 60,
+          literalTransitions: 172,
+          applicabilityRows: 6,
+          transpositionWitnesses: 6,
           obligationRows: 24,
-          mutationControls: 30,
-          traces: 6,
+          mutationControls: 35,
+          traces: 7,
           authorities: 6,
         },
         existingA0CommandKindsUnchanged: true,
-        productionImplementationClaim: false,
+        productionImplementationClaim: true,
         u1UiCompletionClaim: false,
-        humanAcceptanceClaim: false,
+        humanAcceptanceClaim: true,
         expertReviewClaim: false,
         findings: [],
       });
@@ -1675,14 +1746,18 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
       "replace-document",
     ] as const;
 
-    expect(APPLICATION_COMMAND_KINDS).toEqual(acceptedA0Kinds);
-    expect(APPLICATION_COMMAND_KINDS).toHaveLength(15);
+    expect(APPLICATION_COMMAND_KINDS.slice(0, 15)).toEqual([
+      ...acceptedA0Kinds,
+    ]);
+    expect(APPLICATION_COMMAND_KINDS).toHaveLength(16);
+    expect(APPLICATION_COMMAND_KINDS.slice(15)).toEqual(["apply-edit-plan"]);
     expect(A0_U1_PROPOSED_APPLICATION_COMMAND_KINDS).toEqual([
       ...acceptedA0Kinds,
       "apply-edit-plan",
     ]);
     expect(A0_U1_PROPOSED_APPLICATION_COMMAND_KINDS).toHaveLength(16);
-    expect(A0_U1_PROPOSED_APPLICATION_COMMAND_KINDS.slice(0, -1)).toEqual([
+    /* Post-cutover: the proposed tuple equals the merged live tuple exactly. */
+    expect(A0_U1_PROPOSED_APPLICATION_COMMAND_KINDS).toEqual([
       ...APPLICATION_COMMAND_KINDS,
     ]);
     expect(A0_U1_PROPOSED_APPLICATION_COMMAND_KINDS.slice(15)).toEqual([
@@ -1697,6 +1772,7 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
       "join-event-durations",
       "split-section",
       "join-sections",
+      "split-measure",
     ]);
     expect(
       MAX_A0_U1_REACHABLE_FINAL_TIMELINE_QUARTER_NOTE_BEATS,
@@ -1744,6 +1820,7 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
       "fragment-events-in-source-order",
       "recovered-chord-selected-only",
       "split-event-second-only",
+      "split-measure-suffix-only",
       "split-section-suffix-only",
       "reserve-each-returned-id-locally",
       "stop-without-retry-on-first-failure-or-collision",
@@ -1845,6 +1922,7 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
       "edit-plan.destination-invalid",
       "edit-plan.event-order-invalid",
       "edit-plan.section-split-boundary-invalid",
+      "edit-plan.measure-split-boundary-invalid",
       "edit-plan.section-order-invalid",
       "edit-plan.recovered-chord-placement-invalid",
       "edit-plan.syntax-refused",
@@ -1858,6 +1936,7 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
       "edit-plan.recovered-chord-duration-mismatch",
       "edit-plan.duration-invalid",
       "edit-plan.duration-sum-mismatch",
+      "edit-plan.measure-partition-mismatch",
       "edit-plan.event-content-mismatch",
       "edit-plan.right-annotation-not-empty",
       "edit-plan.collection-limit-exceeded",
@@ -1914,6 +1993,7 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
       "A0-U1-ATOM-015-ids-preflight-preorder-honest-entropy",
       "A0-U1-ATOM-016-bookmarks-publication-history-atomic",
       "A0-U1-ATOM-017-transposition-and-existing-a0-unchanged",
+      "A0-U1-ATOM-018-split-measure-partition-exact",
     ]);
   });
 
@@ -1929,6 +2009,9 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
       "edit-plan.destination-invalid": ["command.destination_invalid"],
       "edit-plan.event-order-invalid": ["command.destination_invalid"],
       "edit-plan.section-split-boundary-invalid": [
+        "command.destination_invalid",
+      ],
+      "edit-plan.measure-split-boundary-invalid": [
         "command.destination_invalid",
       ],
       "edit-plan.section-order-invalid": ["command.destination_invalid"],
@@ -1954,6 +2037,7 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
       ],
       "edit-plan.duration-invalid": ["command.payload_invalid"],
       "edit-plan.duration-sum-mismatch": ["command.payload_invalid"],
+      "edit-plan.measure-partition-mismatch": ["command.payload_invalid"],
       "edit-plan.event-content-mismatch": ["command.payload_invalid"],
       "edit-plan.right-annotation-not-empty": ["command.payload_invalid"],
       "edit-plan.collection-limit-exceeded": ["command.payload_invalid"],
@@ -2088,6 +2172,17 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
         "identityPolicy",
         "measurePolicy",
       ],
+      splitMeasurePlan: [
+        "kind",
+        "measureId",
+        "beforeEventId",
+        "firstMeasureTotal",
+        "secondMeasureTotal",
+        "newMeasureCompletion",
+        "completionDeclarations",
+        "identityPolicy",
+        "eventPolicy",
+      ],
       joinSectionsPlan: [
         "kind",
         "leftSectionId",
@@ -2169,6 +2264,7 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
         "rightSectionFirstMeasureId",
         "rightSectionStartRewrite",
       ],
+      createdInsertionBookmarkReceiptExtension: ["insertionCreated"],
       boundaryRewrite: ["from", "to"],
       selectionReplacement: ["fromEventId", "toEventId"],
       focusTargetChart: ["kind"],
@@ -2186,6 +2282,7 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
       fragmentEventIdentitySource: ["kind", "sourceEventOrdinal"],
       recoveredChordIdentitySource: ["kind", "selectedGlobalOrdinal"],
       splitEventSecondIdentitySource: ["kind", "sourceEventId"],
+      splitMeasureIdentitySource: ["kind", "sourceMeasureId"],
       removedIdentity: ["kind", "id"],
       diagnostic: [
         "code",
@@ -2415,6 +2512,51 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
     });
     expect(arrayIndexGetterCalls, "array index accessor").toBe(0);
 
+    const revokedRoot = Proxy.revocable(validRuntimeShapeProbeCommand(), {});
+    revokedRoot.revoke();
+    expect(
+      probeA0U1RuntimeShapeRefusal(revokedRoot.proxy),
+      "revoked root proxy",
+    ).toEqual({
+      code: "edit-plan.command-shape-invalid",
+      path: [],
+    });
+
+    const revokedPlanCommand = validRuntimeShapeProbeCommand() as Record<
+      string,
+      unknown
+    >;
+    const revokedPlan = Proxy.revocable(
+      revokedPlanCommand["plan"] as object,
+      {},
+    );
+    revokedPlan.revoke();
+    revokedPlanCommand["plan"] = revokedPlan.proxy;
+    expect(
+      probeA0U1RuntimeShapeRefusal(revokedPlanCommand),
+      "revoked nested plan proxy",
+    ).toEqual({
+      code: "edit-plan.plan-shape-invalid",
+      path: ["plan"],
+    });
+
+    const revokedCompletionCommand = validRuntimeShapeProbeSplitCommand();
+    const revokedCompletion = Proxy.revocable(
+      revokedCompletionCommand.plan.completionDeclarations,
+      {},
+    );
+    revokedCompletion.revoke();
+    (revokedCompletionCommand.plan as Record<string, unknown>)[
+      "completionDeclarations"
+    ] = revokedCompletion.proxy;
+    expect(
+      probeA0U1RuntimeShapeRefusal(revokedCompletionCommand),
+      "revoked completion-array proxy",
+    ).toEqual({
+      code: "edit-plan.plan-shape-invalid",
+      path: ["plan", "completionDeclarations"],
+    });
+
     for (const hostileCase of cases) {
       const command = validRuntimeShapeProbeCommand();
       let getterCalls = 0;
@@ -2441,11 +2583,11 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
       recoveredLayoutLossAcknowledgement:
         A0_U1_RECOVERED_CHORD_LAYOUT_LOSS_ACKNOWLEDGEMENT,
     }).toEqual({
-      contractSchema: "changes.application.atomic-edit-plan-contract.v1",
+      contractSchema: "changes.application.atomic-edit-plan-contract.v2",
       policyId: "changes.application-atomic-edit-plan",
-      policyVersion: 1,
-      receiptSchema: "changes.application.atomic-edit-plan-receipt.v1",
-      implementationStatus: "specified-unimplemented",
+      policyVersion: 2,
+      receiptSchema: "changes.application.atomic-edit-plan-receipt.v2",
+      implementationStatus: "implemented-live",
       parserAccidentalStyle: "ascii",
       newEventPolicyId: "a0-u1-balanced-4-48-84-generated@1",
       recoveredLayoutLossAcknowledgement:
@@ -2486,7 +2628,7 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
       sectionNameCodePoints: 256,
       sectionAnnotationCodePoints: 2_000,
       completionReasonCodePoints: 2_000,
-      planMetadataCodePoints: 6_768,
+      planMetadataCodePoints: 8_768,
     });
     expect(A0_U1_ATOMIC_EDIT_WORK_COUNTER_MAXIMA).toEqual({
       structuralDecodeCalls: 1,
@@ -2505,7 +2647,7 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
       draftEventsVisited: 8_193,
       completionDeclarationsVisited: 2,
       metadataFieldsCompared: 12,
-      metadataCodePointsObserved: 6_769,
+      metadataCodePointsObserved: 8_769,
       exactBeatAdditions: 8_193,
       exactBeatComparisons: 8_193,
       idAllocationAttempts: 73_792,
@@ -2552,7 +2694,7 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
     });
     expect(A0_U1_ATOMIC_EDIT_PLAN_BOOKMARK_POLICIES).toEqual({
       insertFragment:
-        "preserve-selection-and-range-move-insertion-after-last-inserted",
+        "preserve-selection-and-range-set-insertion-after-last-inserted",
       splitEventDuration:
         "preserve-original-selection-rewrite-original-span-end-to-second",
       joinEventDurations:
@@ -2561,6 +2703,8 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
         "preserve-node-identities-rewrite-source-section-end-to-suffix",
       joinSections:
         "preserve-measure-event-identities-map-internal-edge-to-first-measure-or-surviving-end",
+      splitMeasure:
+        "preserve-node-identities-rewrite-source-measure-end-to-suffix",
     });
     expect(A0_U1_ATOMIC_EDIT_OUTER_WORK_POLICY).toEqual({
       indexPassesByOutcome: {
@@ -2618,6 +2762,8 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
       splitSection:
         "commutes-with-spelling-preserving-transposition-of-affected-event-ids",
       joinSections:
+        "commutes-with-spelling-preserving-transposition-of-affected-event-ids",
+      splitMeasure:
         "commutes-with-spelling-preserving-transposition-of-affected-event-ids",
     });
     expect(A0_U1_ATOMIC_EDIT_PLAN_ID_ENTROPY_POLICY).toEqual({

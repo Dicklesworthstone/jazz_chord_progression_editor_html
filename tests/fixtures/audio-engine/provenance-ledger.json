@@ -41,7 +41,7 @@
       "id": "AUTH-F1-INSTRUMENTS",
       "class": "reviewed-contract",
       "source": "src/domain/instrument-id.ts",
-      "supports": ["exact five instrument IDs", "stable instrument vocabulary"]
+      "supports": ["exact six instrument IDs", "stable instrument vocabulary"]
     },
     {
       "id": "AUTH-X0-DEFINITION",

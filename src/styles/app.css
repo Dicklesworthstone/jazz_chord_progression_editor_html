@@ -13,26 +13,7 @@ body {
   min-height: 100dvh;
 }
 
-.skip-link {
-  position: fixed;
-  z-index: 100;
-  inset-block-start: var(--space-3);
-  inset-inline-start: var(--space-3);
-  min-block-size: var(--touch-target);
-  padding: var(--space-3) var(--space-4);
-  border: var(--border-width) solid var(--text-inverse);
-  border-radius: var(--radius-sm);
-  color: var(--text-inverse);
-  background: var(--action-primary-hover);
-  font-weight: 750;
-  text-decoration: none;
-  transform: translateY(calc(-100% - var(--space-6)));
-  transition: transform var(--motion-fast) var(--ease-standard);
-}
-
-.skip-link:focus-visible {
-  transform: translateY(0);
-}
+/* The live skip link is .studio-skip-link in studio.css. */
 
 .boot-message,
 .noscript-message {

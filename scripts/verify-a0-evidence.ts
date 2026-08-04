@@ -91,21 +91,22 @@ export const A0_FOCUSED_TEST_FILES = Object.freeze([
   "tests/static/a0-production-policy.test.ts",
   "tests/static/dependency-boundaries.test.ts",
   "tests/static/validated-document-cast-policy.test.ts",
+  "tests/unit/a0-randomized-shards.test.ts",
 ] as const);
 
 export const A0_EXPECTED_COUNTS = Object.freeze({
-  stateCases: 65,
-  gapCases: 32,
+  stateCases: 68,
+  gapCases: 35,
   staleAndTransportCases: 20,
   namedSequences: 6,
   randomizedSequences: 1_000,
   randomizedPrimaryActions: 100_000,
   randomizedReplayActions: 100_000,
   randomizedF3Revalidations: 200_000,
-  mutationControls: 30,
-  mutationLinks: 51,
-  mutationLinkedCases: 39,
-  traces: 18,
+  mutationControls: 32,
+  mutationLinks: 54,
+  mutationLinkedCases: 42,
+  traces: 19,
   authorities: 7,
 } as const);
 
@@ -326,6 +327,7 @@ function expectedGapIds(): readonly string[] {
     "A0-CMD-040", "A0-CMD-041", "A0-CMD-042", "A0-INIT-002",
     "A0-UI-001", "A0-UI-003", "A0-UI-004", "A0-UI-007",
     "A0-UI-008", "A0-UI-009", "A0-UI-010", "A0-UI-011",
+    "A0-UI-012", "A0-UI-013", "A0-UI-014",
   ]);
 }
 
@@ -349,7 +351,7 @@ function validateProduction(value: JsonRecord): A0EvidenceFinding[] {
     value["stateCasesObserved"] !== A0_EXPECTED_COUNTS.stateCases ||
     !exactDigestMap(value["caseHashes"], ids) ||
     !ownersValid ||
-    value["runtimeOwnerTestCount"] !== 20 ||
+    value["runtimeOwnerTestCount"] !== 21 ||
     value["authoritativePartialMutations"] !== 0 ||
     value["mutableInputAliases"] !== 0 ||
     value["wallTimeSemanticCutoff"] !== false ||
@@ -358,7 +360,7 @@ function validateProduction(value: JsonRecord): A0EvidenceFinding[] {
     return [finding(
       "A0_EVIDENCE_PRODUCTION",
       "observations.production",
-      "All 65 state cases must bind exact runtime owners and SHA-256 evidence.",
+      "All 68 state cases must bind exact runtime owners and SHA-256 evidence.",
     )];
   }
   return [];
@@ -379,7 +381,7 @@ function validateGaps(value: JsonRecord): A0EvidenceFinding[] {
     return [finding(
       "A0_EVIDENCE_GAPS",
       "observations.gaps",
-      "All 32 independently executed state-matrix gap cases are required.",
+      "All 35 independently executed state-matrix gap cases are required.",
     )];
   }
   return [];
@@ -516,7 +518,7 @@ function validateMutation(value: JsonRecord): A0EvidenceFinding[] {
     return [finding(
       "A0_EVIDENCE_MUTATION",
       "observations.mutation",
-      "All 30 operators and 51 reviewed killer links must execute and be killed.",
+      "All 32 operators and 54 reviewed killer links must execute and be killed.",
     )];
   }
   return [];

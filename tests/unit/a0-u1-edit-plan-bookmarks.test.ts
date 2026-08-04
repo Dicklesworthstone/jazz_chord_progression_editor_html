@@ -43,12 +43,22 @@ test("insert publication remains total when the existing insertion bookmark is n
 
   expect(result.state.bookmarks.insertion).toEqual(afterInsertion);
   expect(result.editPlanReceipt.bookmarks.insertionPolicy).toBe(
-    "move-after-last-inserted",
+    "create-after-last-inserted",
   );
-  expect(result.editPlanReceipt.bookmarks.insertionRewrite).toEqual({
-    from: plan.source.quickEntrySnapshot.target,
-    to: afterInsertion,
-  });
+  expect(result.editPlanReceipt.bookmarks.insertionRewrite).toBeNull();
+  if (
+    result.editPlanReceipt.bookmarks.insertionPolicy !==
+    "create-after-last-inserted"
+  ) {
+    throw new Error("A0_U1_NULL_INSERTION_POLICY");
+  }
+  expect(result.editPlanReceipt.bookmarks.insertionCreated).toEqual(
+    afterInsertion,
+  );
+  expect(result.editPlanReceipt.bookmarks.insertionCleared).toBe(false);
+  expect(
+    Object.keys(result.editPlanReceipt.bookmarks),
+  ).toContain("insertionCreated");
   expect(result.editPlanReceipt.work).toMatchObject({
     bookmarkRecordsExamined: 1,
     bookmarkRecordsRewritten: 1,

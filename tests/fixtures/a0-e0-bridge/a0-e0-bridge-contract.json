@@ -284,12 +284,12 @@
       {
         "role": "documentation",
         "path": "docs/E0_INTERCHANGE_CONTRACT.md",
-        "sha256": "b46824f731fe2a632f994e09aa8bb19e510c83f572a73a23b7c2c09f455d1ca3"
+        "sha256": "288c7ba1e36f8422c9753d501feb68efa721fa8b320b5e20bce8503da85e7d4f"
       },
       {
         "role": "export-source",
         "path": "src/export/interchange-contract.ts",
-        "sha256": "5c7a0a962ece42ea140a602c53a9c7c3853b38ded99bea77b0001c56d08524de"
+        "sha256": "a8db592fb3b4f8c35385052753284f1a604b683d207b6aa7abd89fec04f2d035"
       },
       {
         "role": "application-source",
@@ -299,12 +299,12 @@
       {
         "role": "validator",
         "path": "scripts/validate-e0-contract.ts",
-        "sha256": "d0e7c80b0a7cea1e1ce11443b148eadcdfd7c02a0855f06ab5761580c7a12e4b"
+        "sha256": "3cc96d2ece16e22f98689057dbf1d64b64929dfbb2f92fd85391a7dc1d6bee04"
       },
       {
         "role": "static-test",
         "path": "tests/static/e0-contract.test.ts",
-        "sha256": "13422e127091fa6c9118439c52fe0725e6ff74ab94b89be347aedafae0b80063"
+        "sha256": "9873a0342bdf4ce6ab3754572d2f62cef6dbecbcb2a41105b316635204719cf4"
       },
       {
         "role": "test-support",
@@ -513,8 +513,8 @@
   "acceptedE0Pins": {
     "version": "E0-v1",
     "fileCount": 16,
-    "byteManifestDigest": "8c48f2ab156c702e877f3bec7f3acd51763dc1448cc696232a4761160ba7a9e9",
-    "semanticDigest": "0455fe8afa398e9f5cbafa3209d563ad72365435b4cd4f896477271a06027ccc",
+    "byteManifestDigest": "a056af4cc18d502ff75a4890e4ce360b26365976e18962ce8da4d827b971ce48",
+    "semanticDigest": "af7c46751b2bbbd8a24de4f80b4b6b8208ac2e86cdce7764593531cf5ca60e52",
     "fixtureBytesMayChangeForThisOwnerSpec": false
   }
 }

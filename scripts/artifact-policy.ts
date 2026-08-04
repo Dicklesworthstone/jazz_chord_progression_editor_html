@@ -3,7 +3,7 @@ import * as ts from "typescript";
 
 export const GENERATED_ARTIFACT_BANNER =
   "<!-- @generated; edit src/, then run bun run build -->";
-export const DEFAULT_MAX_ARTIFACT_BYTES = 1_572_864;
+export const DEFAULT_MAX_ARTIFACT_BYTES = 8_388_608;
 export const DEFAULT_FOUNDATION_SHELL_BYTES = 262_144;
 
 const REQUIRED_NONE_DIRECTIVES = [
@@ -1385,6 +1385,17 @@ function inspectEnvelope(
         "ARTIFACT_CSP_UNSAFE_SOURCE",
         `$.artifact.csp.${name}`,
         `${name} contains an unsafe or network source.`,
+        cspElement?.offset ?? 0,
+      );
+    }
+    // 'wasm-unsafe-eval' is the one permitted relaxation, and only on
+    // script-src: it lets the page instantiate the inventoried embedded
+    // wasm bytes. It authorizes no URL and stays forbidden elsewhere.
+    if (name !== "script-src" && values.includes("'wasm-unsafe-eval'")) {
+      collector.add(
+        "ARTIFACT_CSP_UNSAFE_SOURCE",
+        `$.artifact.csp.${name}`,
+        `${name} may not carry 'wasm-unsafe-eval'; only script-src may.`,
         cspElement?.offset ?? 0,
       );
     }

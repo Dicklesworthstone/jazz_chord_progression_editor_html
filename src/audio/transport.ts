@@ -1545,5 +1545,18 @@ export function createTransportService(
     });
   }
 
-  return Object.freeze({ submitTransportCommand, inspectTransport });
+  /**
+   * Display-only read of the live playhead. `playheadNow()` already computes
+   * the exact quantized beat for command handlers; exposing that same value is
+   * a pure read: no state, generation, queue, scheduler, or counter changes.
+   */
+  function readDisplayPlayheadBeat(): BeatPosition {
+    return playheadNow();
+  }
+
+  return Object.freeze({
+    submitTransportCommand,
+    inspectTransport,
+    readDisplayPlayheadBeat,
+  });
 }

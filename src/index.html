@@ -9,9 +9,37 @@
     <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22/%3E">
     <meta
       name="description"
-      content="Changes is an offline, deterministic jazz chord-progression studio."
+      content="JazzChords.org is an offline, deterministic jazz chord-progression studio."
     >
-    <title>Changes — Jazz Progression Studio</title>
+    <!--
+      Social share cards. These meta tags are read by crawlers that fetch the
+      page over HTTP; the page itself never requests og-image.png or any other
+      URL, so the offline runtime boundary is unchanged. The image is served
+      alongside index.html by the deploy step from deploy-assets/og-image.png.
+    -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="JazzChords.org">
+    <meta property="og:url" content="https://jazzchords.org/">
+    <meta property="og:title" content="Changes — Jazz Progression Studio">
+    <meta
+      property="og:description"
+      content="Type the changes like a lead sheet, hear the band play them, and share any chart as a link. Free and offline — no accounts, no cloud."
+    >
+    <meta property="og:image" content="https://jazzchords.org/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta
+      property="og:image:alt"
+      content="A dark stage-lit card reading “Changes — Jazz Progression Studio” beside three chord cards: Dm9, G13, and a glowing Cmaj9 marked Playing, above jazzchords.org."
+    >
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Changes — Jazz Progression Studio">
+    <meta
+      name="twitter:description"
+      content="Type the changes like a lead sheet, hear the band play them, and share any chart as a link. Free and offline — no accounts, no cloud."
+    >
+    <meta name="twitter:image" content="https://jazzchords.org/og-image.png">
+    <title>JazzChords.org — Jazz Chord Progression Studio</title>
 <link rel="stylesheet" href="./styles/tokens.css">
 <link rel="stylesheet" href="./styles/reset.css">
 <link rel="stylesheet" href="./styles/primitives.css">
@@ -31,7 +59,7 @@
     </div>
     <noscript>
       <p class="noscript-message">
-        Changes needs JavaScript enabled, but it never needs a network connection.
+        JazzChords.org needs JavaScript enabled, but it never needs a network connection.
       </p>
     </noscript>
   </body>

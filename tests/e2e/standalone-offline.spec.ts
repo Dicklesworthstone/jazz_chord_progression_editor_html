@@ -310,7 +310,7 @@ async function runOfflineCell(
     assertions["expectedHeading"] = "pass";
     await expect(page.locator(contract.requiredReadyMarker)).toBeVisible();
     assertions["ready"] = "pass";
-    await expect(page).toHaveTitle("Changes — Jazz Progression Studio");
+    await expect(page).toHaveTitle("JazzChords.org — Jazz Chord Progression Studio");
     assertions["generatedTitle"] = "pass";
     expect(await page.evaluate(() => document.compatMode)).toBe(
       contract.artifact.compatMode,

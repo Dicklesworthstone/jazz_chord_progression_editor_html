@@ -12,6 +12,7 @@ import {
   A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS,
   A0_U1_NEW_EVENT_POLICY_ID,
   MAX_A0_U1_METADATA_CODE_POINTS_OBSERVED,
+  MAX_A0_U1_QUICK_ENTRY_ISSUE_CODES,
   type ApplyEditPlanCommand,
   type AtomicEditPlanWorkEvidence,
 } from "./application-edit-plan-contract";
@@ -78,11 +79,25 @@ type CapturedArray = Readonly<{
   values: readonly CapturedValue[];
 }>;
 
+/**
+ * Completion-declaration arrays defer child capture: only the length is read
+ * (through its own data-property descriptor) until the lane-specific shape
+ * horizon is known, so no child beyond the horizon is ever captured or
+ * scanned. `source` is retained solely for later descriptor-based row capture
+ * inside the same refusal boundary.
+ */
+type CapturedDeferredArray = Readonly<{
+  kind: "deferred-array";
+  length: number;
+  source: object;
+}>;
+
 type CapturedValue =
   | CapturedScalar
   | CapturedInvalid
   | CapturedRecord
-  | CapturedArray;
+  | CapturedArray
+  | CapturedDeferredArray;
 
 type CaptureState = {
   readonly active: WeakSet<object>;
@@ -105,6 +120,7 @@ type BoundedTextScan = Readonly<{
 type BoundedTextScanLedger = {
   readonly scans: Map<string, BoundedTextScan>;
   observed: number;
+  readonly completionRows: Map<string, readonly CapturedValue[]>;
 };
 
 const INVALID_CAPTURE: CapturedInvalid = Object.freeze({ kind: "invalid" });
@@ -135,6 +151,16 @@ function arrayIndexFromOwnKey(key: PropertyKey): number | null {
     String(index) === key
     ? index
     : null;
+}
+
+function isCompletionDeclarationsPath(
+  path: readonly (string | number)[],
+): boolean {
+  return (
+    path[0] === "plan" &&
+    path[path.length - 1] === "completionDeclarations" &&
+    (path.length === 2 || (path.length === 3 && path[1] === "placement"))
+  );
 }
 
 function capturePassiveData(
@@ -208,6 +234,17 @@ function capturePassiveData(
             prototypeValid,
             invalidOwnShape,
             values: Object.freeze([]),
+          }),
+        };
+      }
+
+      if (isCompletionDeclarationsPath(path)) {
+        return {
+          ok: true,
+          value: Object.freeze({
+            kind: "deferred-array",
+            length,
+            source: value,
           }),
         };
       }
@@ -588,14 +625,59 @@ function firstBoundaryShapeFailure(
     : immutablePath([...path, idField]);
 }
 
+type DeferredRowCapture =
+  | Readonly<{ ok: true; values: readonly CapturedValue[] }>
+  | Readonly<{ ok: false; path: DomainPath }>;
+
+function captureDeferredCompletionRows(
+  deferred: CapturedDeferredArray,
+  path: readonly (string | number)[],
+): DeferredRowCapture {
+  const values: CapturedValue[] = [];
+  for (let index = 0; index < deferred.length; index += 1) {
+    let descriptor: PropertyDescriptor | undefined;
+    try {
+      descriptor = Reflect.getOwnPropertyDescriptor(
+        deferred.source,
+        String(index),
+      );
+    } catch {
+      return { ok: false, path: immutablePath([...path, index]) };
+    }
+    if (
+      descriptor === undefined ||
+      !Object.hasOwn(descriptor, "value") ||
+      descriptor.enumerable !== true
+    ) {
+      values.push(INVALID_CAPTURE);
+      break;
+    }
+    const child = capturePassiveData(
+      descriptorValue(descriptor),
+      [...path, index],
+      { active: new WeakSet(), recordsObserved: 0 },
+      path.length + 1,
+    );
+    if (!child.ok) return child;
+    values.push(child.value);
+    if (child.value.kind === "invalid") break;
+  }
+  return { ok: true, values: Object.freeze(values) };
+}
+
 function firstCompletionShapeFailure(
   value: CapturedValue | undefined,
   path: readonly (string | number)[],
   textScans: BoundedTextScanLedger,
+  expectedRows: 0 | 1,
 ): DomainPath | null {
-  const declarations = arrayValue(value);
-  if (declarations === null) return immutablePath(path);
-  for (const [index, declarationValue] of declarations.values.entries()) {
+  if (value?.kind !== "deferred-array") return immutablePath(path);
+  const horizon = expectedRows + 1;
+  if (value.length > horizon) return immutablePath(path);
+  const rowCapture = captureDeferredCompletionRows(value, path);
+  if (!rowCapture.ok) return rowCapture.path;
+  textScans.completionRows.set(textScanKey(path), rowCapture.values);
+  for (const [index, declarationValue] of rowCapture.values.entries()) {
     const rowPath = [...path, index];
     const declarationFailure = firstExactKeyFailure(
       declarationValue,
@@ -610,60 +692,74 @@ function firstCompletionShapeFailure(
     ) {
       return immutablePath([...rowPath, "measureId"]);
     }
-    const completionValue = valueAt(declaration, "completion");
-    const completion = recordValue(completionValue);
-    if (completion === null) {
-      return immutablePath([...rowPath, "completion"]);
-    }
-    const kind = scalarAt(completion, "kind");
-    if (typeof kind !== "string") {
-      return immutablePath([...rowPath, "completion", "kind"]);
-    }
-    const completionKeys =
-      kind === "empty"
-        ? A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS.measureCompletionEmpty
-        : kind === "complete"
-          ? A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS.measureCompletionComplete
-          : kind === "pickup" || kind === "incomplete"
-            ? A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS
-                .measureCompletionPickupOrIncomplete
-            : null;
-    if (completionKeys === null) {
-      return immutablePath([...rowPath, "completion", "kind"]);
-    }
-    const completionPath = [...rowPath, "completion"];
-    const completionFailure = firstExactKeyFailure(
-      completion,
-      completionKeys,
-      completionPath,
+    const completionFailure = firstMeasureCompletionShapeFailure(
+      valueAt(declaration, "completion"),
+      [...rowPath, "completion"],
+      textScans,
     );
     if (completionFailure !== null) return completionFailure;
-    if (kind === "pickup" || kind === "incomplete") {
-      const durationFailure = firstDurationShapeFailure(
-        valueAt(completion, "expectedDuration"),
-        [...completionPath, "expectedDuration"],
-      );
-      if (durationFailure !== null) return durationFailure;
-      const reason = scalarAt(completion, "reason");
-      if (typeof reason !== "string") {
-        return immutablePath([...completionPath, "reason"]);
-      }
-      const reasonScan = scanBoundedTextAtPath(
-        textScans,
-        [...completionPath, "reason"],
-        reason,
-        MAX_LONG_TEXT_CODE_POINTS,
-      );
-      if (
-        !reasonScan.unicodeValid ||
-        reasonScan.exceeded ||
-        (!reasonScan.nonblank && !reasonScan.truncated)
-      ) {
-        return immutablePath([...completionPath, "reason"]);
-      }
-    }
   }
   return null;
+}
+
+/**
+ * One exact closed `MeasureCompletion` value. Shared by the declaration rows
+ * above and by split-measure's standalone `newMeasureCompletion` field, so both
+ * report the same paths and consume the same bounded text ledger.
+ */
+function firstMeasureCompletionShapeFailure(
+  completionValue: CapturedValue | undefined,
+  completionPath: readonly (string | number)[],
+  textScans: BoundedTextScanLedger,
+): DomainPath | null {
+  const completion = recordValue(completionValue);
+  if (completion === null) {
+    return immutablePath(completionPath);
+  }
+  const kind = scalarAt(completion, "kind");
+  if (typeof kind !== "string") {
+    return immutablePath([...completionPath, "kind"]);
+  }
+  const completionKeys =
+    kind === "empty"
+      ? A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS.measureCompletionEmpty
+      : kind === "complete"
+        ? A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS.measureCompletionComplete
+        : kind === "pickup" || kind === "incomplete"
+          ? A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS
+              .measureCompletionPickupOrIncomplete
+          : null;
+  if (completionKeys === null) {
+    return immutablePath([...completionPath, "kind"]);
+  }
+  const completionFailure = firstExactKeyFailure(
+    completion,
+    completionKeys,
+    completionPath,
+  );
+  if (completionFailure !== null) return completionFailure;
+  if (kind !== "pickup" && kind !== "incomplete") return null;
+  const durationFailure = firstDurationShapeFailure(
+    valueAt(completion, "expectedDuration"),
+    [...completionPath, "expectedDuration"],
+  );
+  if (durationFailure !== null) return durationFailure;
+  const reason = scalarAt(completion, "reason");
+  if (typeof reason !== "string") {
+    return immutablePath([...completionPath, "reason"]);
+  }
+  const reasonScan = scanBoundedTextAtPath(
+    textScans,
+    [...completionPath, "reason"],
+    reason,
+    MAX_LONG_TEXT_CODE_POINTS,
+  );
+  return !reasonScan.unicodeValid ||
+    reasonScan.exceeded ||
+    reasonScan.truncated ||
+    !reasonScan.nonblank
+    ? immutablePath([...completionPath, "reason"])
+    : null;
 }
 
 function firstMetadataShapeFailure(
@@ -692,7 +788,8 @@ function firstMetadataShapeFailure(
   if (
     !nameScan.unicodeValid ||
     nameScan.exceeded ||
-    (!nameScan.nonblank && !nameScan.truncated)
+    nameScan.truncated ||
+    !nameScan.nonblank
   ) {
     return immutablePath([...path, "name"]);
   }
@@ -706,7 +803,11 @@ function firstMetadataShapeFailure(
     annotation,
     MAX_LONG_TEXT_CODE_POINTS,
   );
-  if (!annotationScan.unicodeValid || annotationScan.exceeded) {
+  if (
+    !annotationScan.unicodeValid ||
+    annotationScan.exceeded ||
+    annotationScan.truncated
+  ) {
     return immutablePath([...path, "annotation"]);
   }
   const keyOverrideValue = valueAt(metadata, "keyOverride");
@@ -823,6 +924,7 @@ function firstPlacementShapeFailure(
     valueAt(placement, "completionDeclarations"),
     [...path, "completionDeclarations"],
     textScans,
+    kind === "into-measure" ? 1 : 0,
   );
   if (completionFailure !== null) return completionFailure;
 
@@ -928,7 +1030,10 @@ function firstPlanShapeFailure(
       );
       if (boundaryFailure !== null) return boundaryFailure;
       const issueCodes = arrayValue(valueAt(snapshot, "issueCodes"));
-      if (issueCodes === null) {
+      if (
+        issueCodes === null ||
+        issueCodes.values.length > MAX_A0_U1_QUICK_ENTRY_ISSUE_CODES
+      ) {
         return immutablePath([
           "plan",
           "source",
@@ -949,14 +1054,8 @@ function firstPlanShapeFailure(
         }
         observedIssueCodes.push(issue);
       }
-      if (new Set(observedIssueCodes).size !== observedIssueCodes.length) {
-        return immutablePath([
-          "plan",
-          "source",
-          "quickEntrySnapshot",
-          "issueCodes",
-        ]);
-      }
+      // Issue codes are an ordered sequence, not a set: repeated equal codes
+      // are permitted, significant, and compared at their original positions.
       const expectedStatus = scalarAt(snapshot, "expectedStatus");
       if (
         !["idle", "invalid", "ready"].some(
@@ -1116,6 +1215,7 @@ function firstPlanShapeFailure(
         valueAt(plan, "completionDeclarations"),
         ["plan", "completionDeclarations"],
         textScans,
+        1,
       );
       if (completionFailure !== null) return completionFailure;
       if (
@@ -1157,6 +1257,7 @@ function firstPlanShapeFailure(
         valueAt(plan, "completionDeclarations"),
         ["plan", "completionDeclarations"],
         textScans,
+        1,
       );
       if (completionFailure !== null) return completionFailure;
       if (scalarAt(plan, "identityPolicy") !== "retain-left-remove-right") {
@@ -1196,6 +1297,7 @@ function firstPlanShapeFailure(
         valueAt(plan, "completionDeclarations"),
         ["plan", "completionDeclarations"],
         textScans,
+        0,
       );
       if (completionFailure !== null) return completionFailure;
       if (
@@ -1238,6 +1340,7 @@ function firstPlanShapeFailure(
         valueAt(plan, "completionDeclarations"),
         ["plan", "completionDeclarations"],
         textScans,
+        0,
       );
       if (completionFailure !== null) return completionFailure;
       if (scalarAt(plan, "identityPolicy") !== "retain-left-remove-right") {
@@ -1259,6 +1362,50 @@ function firstPlanShapeFailure(
         "remove-right-entry-boundary-confirmed"
         ? null
         : immutablePath(["plan", "internalBoundaryPolicy"]);
+    }
+    case "split-measure": {
+      const keyFailure = firstExactKeyFailure(
+        plan,
+        A0_U1_ATOMIC_EDIT_PLAN_EXACT_KEYS.splitMeasurePlan,
+        ["plan"],
+      );
+      if (keyFailure !== null) return keyFailure;
+      if (!isStableId(scalarAt(plan, "measureId"), "measure")) {
+        return immutablePath(["plan", "measureId"]);
+      }
+      if (!isStableId(scalarAt(plan, "beforeEventId"), "event")) {
+        return immutablePath(["plan", "beforeEventId"]);
+      }
+      for (const field of ["firstMeasureTotal", "secondMeasureTotal"]) {
+        const durationFailure = firstDurationShapeFailure(
+          valueAt(plan, field),
+          ["plan", field],
+        );
+        if (durationFailure !== null) return durationFailure;
+      }
+      const newCompletionFailure = firstMeasureCompletionShapeFailure(
+        valueAt(plan, "newMeasureCompletion"),
+        ["plan", "newMeasureCompletion"],
+        textScans,
+      );
+      if (newCompletionFailure !== null) return newCompletionFailure;
+      const completionFailure = firstCompletionShapeFailure(
+        valueAt(plan, "completionDeclarations"),
+        ["plan", "completionDeclarations"],
+        textScans,
+        1,
+      );
+      if (completionFailure !== null) return completionFailure;
+      if (
+        scalarAt(plan, "identityPolicy") !==
+        "retain-source-prefix-allocate-suffix"
+      ) {
+        return immutablePath(["plan", "identityPolicy"]);
+      }
+      return scalarAt(plan, "eventPolicy") ===
+        "move-suffix-preserve-identities"
+        ? null
+        : immutablePath(["plan", "eventPolicy"]);
     }
     default:
       return immutablePath(["plan", "kind"]);
@@ -1341,6 +1488,18 @@ function metadataWorkThroughPath(
                 "identityPolicy",
                 "measurePolicy",
               ]
+            : kind === "split-measure"
+            ? [
+                "kind",
+                "measureId",
+                "beforeEventId",
+                "firstMeasureTotal",
+                "secondMeasureTotal",
+                "newMeasureCompletion",
+                "completionDeclarations",
+                "identityPolicy",
+                "eventPolicy",
+              ]
             : [
                 "kind",
                 "leftSectionId",
@@ -1422,9 +1581,8 @@ function metadataWorkThroughPath(
         if (
           !textScan.unicodeValid ||
           textScan.exceeded ||
-          (field === "name" &&
-            !textScan.nonblank &&
-            !textScan.truncated)
+          textScan.truncated ||
+          (field === "name" && !textScan.nonblank)
         ) {
           return Object.freeze({
             planNodesVisited: 1,
@@ -1441,6 +1599,43 @@ function metadataWorkThroughPath(
           metadataCodePointsObserved: codePointsObserved,
           peakPlanNodeRecords: 1,
         });
+      }
+    }
+  }
+
+  /*
+   * Split-measure declares no section metadata, but the fresh suffix measure's
+   * own completion reason is caller-owned text scanned before the declaration
+   * tuple. A stop path at that reason means the scan already happened and its
+   * observed code points are physical work; a shallower stop path inside
+   * `newMeasureCompletion` means validation ended before the reason was read.
+   */
+  if (kind === "split-measure") {
+    const rootIndex = topLevelOrder.indexOf("newMeasureCompletion");
+    const stoppedInside = stopTop === "newMeasureCompletion";
+    const reasonReached =
+      stopTopIndex >= rootIndex &&
+      (!stoppedInside || stopPath?.includes("reason") === true);
+    if (reasonReached) {
+      const completion = recordValue(valueAt(plan, "newMeasureCompletion"));
+      const completionKind =
+        completion === null ? null : scalarAt(completion, "kind");
+      const reason =
+        completion === null ? null : scalarAt(completion, "reason");
+      if (
+        (completionKind === "pickup" || completionKind === "incomplete") &&
+        typeof reason === "string"
+      ) {
+        const reasonScan = scanBoundedTextAtPath(
+          textScans,
+          ["plan", "newMeasureCompletion", "reason"],
+          reason,
+          MAX_LONG_TEXT_CODE_POINTS,
+        );
+        codePointsObserved = Math.min(
+          MAX_A0_U1_METADATA_CODE_POINTS_OBSERVED,
+          codePointsObserved + reasonScan.observed,
+        );
       }
     }
   }
@@ -1474,9 +1669,30 @@ function metadataWorkThroughPath(
             "completionDeclarations",
           )
         : valueAt(plan, "completionDeclarations");
-    const declarations = arrayValue(completionValue);
-    if (declarations !== null) {
-      for (const [index, declarationValue] of declarations.values.entries()) {
+    const declarationRows =
+      completionValue?.kind === "deferred-array"
+        ? (textScans.completionRows.get(
+            textScanKey(completionPath),
+          ) ?? null)
+        : null;
+    /*
+     * Rows within the shape horizon are validated completely before the
+     * later completion-comparison stage, so their reason scans are physical
+     * work that must be reported. A stop path ending at a bare row index is
+     * that later mismatch stage (shape passed; every row was scanned); a
+     * deeper stop path is a shape refusal that ends scanning at its row.
+     */
+    const stopRowIndex = stopIsInsideCompletion
+      ? stopPath?.find(
+          (segment): segment is number => typeof segment === "number",
+        )
+      : undefined;
+    const stopEndsAtRow =
+      stopIsInsideCompletion &&
+      stopRowIndex !== undefined &&
+      stopPath?.[stopPath.length - 1] === stopRowIndex;
+    if (declarationRows !== null) {
+      for (const [index, declarationValue] of declarationRows.entries()) {
         const declaration = recordValue(declarationValue);
         const completion =
           declaration === null
@@ -1490,12 +1706,14 @@ function metadataWorkThroughPath(
         ) {
           continue;
         }
-        if (
-          stopIsInsideCompletion &&
-          stopPath !== null &&
-          !stopPath.includes("reason")
-        ) {
-          break;
+        if (stopIsInsideCompletion && !stopEndsAtRow) {
+          if (stopRowIndex === undefined || index > stopRowIndex) break;
+          if (
+            index === stopRowIndex &&
+            stopPath?.includes("reason") !== true
+          ) {
+            break;
+          }
         }
         const reason = scalarAt(completion, "reason");
         if (typeof reason !== "string") break;
@@ -1512,14 +1730,18 @@ function metadataWorkThroughPath(
         if (
           !reasonScan.unicodeValid ||
           reasonScan.exceeded ||
-          (!reasonScan.nonblank && !reasonScan.truncated)
+          reasonScan.truncated ||
+          !reasonScan.nonblank
         ) {
           break;
         }
-        const stopIndex = stopPath?.find(
-          (segment): segment is number => typeof segment === "number",
-        );
-        if (stopIsInsideCompletion && stopIndex === index) break;
+        if (
+          stopIsInsideCompletion &&
+          !stopEndsAtRow &&
+          index === stopRowIndex
+        ) {
+          break;
+        }
       }
     }
   }
@@ -1531,14 +1753,30 @@ function metadataWorkThroughPath(
   });
 }
 
-function materializeCaptured(value: CapturedValue): unknown {
+function materializeCaptured(
+  value: CapturedValue,
+  path: readonly (string | number)[],
+  completionRows: ReadonlyMap<string, readonly CapturedValue[]>,
+): unknown {
   switch (value.kind) {
     case "scalar":
       return value.value;
     case "invalid":
       return undefined;
     case "array":
-      return Object.freeze(value.values.map(materializeCaptured));
+      return Object.freeze(
+        value.values.map((item, index) =>
+          materializeCaptured(item, [...path, index], completionRows),
+        ),
+      );
+    case "deferred-array": {
+      const rows = completionRows.get(textScanKey(path)) ?? [];
+      return Object.freeze(
+        rows.map((item, index) =>
+          materializeCaptured(item, [...path, index], completionRows),
+        ),
+      );
+    }
     case "record": {
       const materialized: Record<string, unknown> = {};
       for (const property of value.properties) {
@@ -1547,7 +1785,11 @@ function materializeCaptured(value: CapturedValue): unknown {
           property.data &&
           property.enumerable
         ) {
-          materialized[property.key] = materializeCaptured(property.value);
+          materialized[property.key] = materializeCaptured(
+            property.value,
+            [...path, property.key],
+            completionRows,
+          );
         }
       }
       return Object.freeze(materialized);
@@ -1695,6 +1937,7 @@ export function decodeAtomicEditPlanRuntimeShape(
   const textScans: BoundedTextScanLedger = {
     scans: new Map(),
     observed: 0,
+    completionRows: new Map(),
   };
   const planFailure = firstPlanShapeFailure(
     valueAt(envelope, "plan"),
@@ -1714,7 +1957,11 @@ export function decodeAtomicEditPlanRuntimeShape(
     );
   }
 
-  const materialized = materializeCaptured(captured.value);
+  const materialized = materializeCaptured(
+    captured.value,
+    [],
+    textScans.completionRows,
+  );
   /*
    * The exhaustive descriptor and value checks above are the runtime
    * constructor for this additive command. Tuple cardinality and correlated

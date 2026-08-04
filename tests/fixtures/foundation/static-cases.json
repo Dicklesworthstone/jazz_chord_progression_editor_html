@@ -369,12 +369,12 @@
   "sizeCases": [
     {
       "id": "artifact-size-boundary",
-      "bytes": 1572864,
+      "bytes": 8388608,
       "expected": "allow"
     },
     {
       "id": "artifact-size-plus-one",
-      "bytes": 1572865,
+      "bytes": 8388609,
       "expected": "reject",
       "codes": [
         "ARTIFACT_SIZE_BUDGET"

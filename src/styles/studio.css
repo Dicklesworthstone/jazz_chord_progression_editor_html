@@ -1,29 +1,54 @@
+/*
+ * Studio shell — Blue Note re-architecture (2026-07-29, jcpe-z4h1).
+ *
+ * The chart is the instrument: a quiet native-app shell wraps one engraved
+ * lead-sheet surface. Chrome recedes (ghost until asked), the chart carries
+ * the contrast, brass marks musical structure and the sounding beat, cyan
+ * marks analysis/focus, coral marks destruction. Every class and data-*
+ * hook the U1 surfaces render is styled here; behavior hooks are unchanged.
+ */
+
+/* ---------------------------------------------------------------- shell */
+
 .studio-shell {
   --studio-collapsed-rail: calc(var(--space-12) + var(--space-1));
   position: relative;
+  isolation: isolate;
   display: grid;
-  min-inline-size: 20rem;
-  min-block-size: 100vh;
-  min-block-size: 100dvh;
-  block-size: 100vh;
-  block-size: 100dvh;
-  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr) auto auto;
+  /*
+   * minmax(0, 1fr), never a bare auto column: with overflow hidden on this
+   * shell, an auto column inflates to the widest row's min-content and the
+   * excess is CLIPPED, not scrollable. That is exactly how a four-button
+   * header row silently pushed Copy link and the Harmony Lens off every
+   * phone. The column must be the viewport, and each row must solve its
+   * own width inside it.
+   */
+  grid-template-columns: minmax(0, 1fr);
+  block-size: 100dvh;
   overflow: hidden;
+  background: var(--surface-app);
   color: var(--text-primary);
+}
+
+/* Ambient room tone: a deep blue wash with the faintest brass horizon. */
+.studio-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
   background:
     radial-gradient(
-      52rem 34rem at 88% -12%,
-      color-mix(in srgb, var(--state-info) 5%, transparent),
+      120% 90% at 50% -20%,
+      color-mix(in srgb, var(--surface-rail) 72%, transparent),
       transparent 62%
     ),
     radial-gradient(
-      46rem 30rem at -8% 112%,
-      color-mix(in srgb, var(--action-primary) 5%, transparent),
-      transparent 62%
-    ),
-    var(--surface-app);
-  isolation: isolate;
+      90% 55% at 85% 110%,
+      color-mix(in srgb, var(--accent) 5%, transparent),
+      transparent 70%
+    );
 }
 
 .studio-shell__background {
@@ -31,1280 +56,383 @@
 }
 
 .studio-shell__frame {
-  display: flex;
-  min-inline-size: 0;
-  min-block-size: 0;
-  grid-column: 1;
   grid-row: 1;
-  overflow: hidden;
+  position: relative;
+  z-index: 2;
+  display: flex;
   flex-direction: column;
+  min-block-size: 0;
+  min-inline-size: 0;
 }
 
-.studio-visually-hidden {
-  position: absolute;
-  inline-size: 1px;
-  block-size: 1px;
-  padding: 0;
-  margin: -1px;
+/*
+ * jcpe-disi.3: the labeled-undo status strip. Its height is CONSTANT — a
+ * row that appears when a command lands would shift chart geometry mid-run
+ * and broke the exact 8 px drag-threshold law in whichever browser lost
+ * the render race. Empty, it teaches the one-undoable-step promise; full,
+ * it names the landed command with a live Undo.
+ */
+.studio-action-notice {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-inline-size: 0;
+  block-size: 2.75rem;
+  padding: var(--space-1) var(--space-3);
+  border-block-start: var(--border-width) solid var(--border-default);
+  background: var(--surface-header);
   overflow: hidden;
-  clip: rect(0 0 0 0);
-  clip-path: inset(50%);
+}
+
+.studio-action-notice__sentence--hint {
+  color: var(--text-muted);
+}
+
+/* The a11y wrapper must not change the strip's flex layout. */
+.studio-action-notice__controls {
+  display: contents;
+}
+
+.studio-action-notice__sentence {
+  flex: 1;
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
-  border: 0;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+}
+
+.studio-action-notice__dismiss {
+  color: var(--text-muted);
 }
 
 .studio-skip-link {
-  position: fixed;
+  position: absolute;
+  inset-block-start: var(--space-2);
+  inset-inline-start: var(--space-2);
   z-index: 100;
-  inset-block-start: max(var(--space-3), env(safe-area-inset-top));
-  inset-inline-start: max(var(--space-3), env(safe-area-inset-left));
-  display: inline-flex;
+  display: grid;
+  place-items: center;
+  /* The first stop of a keyboard pass still owes the 44px target law. */
   min-block-size: var(--touch-target);
-  padding: var(--space-3) var(--space-4);
-  align-items: center;
-  border: var(--border-width) solid var(--text-inverse);
-  border-radius: var(--radius-sm);
-  color: var(--text-inverse);
-  background: var(--action-primary-hover);
-  font-weight: 750;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--surface-elevated);
+  color: var(--text-primary);
+  font-weight: 600;
   text-decoration: none;
-  transform: translateY(calc(-100% - var(--space-8)));
+  box-shadow: var(--shadow-3);
+  transform: translateY(-260%);
   transition: transform var(--motion-fast) var(--ease-standard);
 }
 
 .studio-skip-link:focus-visible {
   transform: translateY(0);
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
 }
 
-.studio-kicker {
-  color: var(--text-subtle);
-  font-size: var(--text-xs);
-  font-weight: 750;
-  letter-spacing: 0.14em;
-  line-height: var(--line-tight);
-  text-transform: uppercase;
-}
-
-.studio-icon {
-  display: block;
-  inline-size: 1.125rem;
-  block-size: 1.125rem;
-  fill: none;
-  stroke: currentcolor;
-  stroke-width: 1.75;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.studio-icon-button {
-  display: inline-grid;
-  inline-size: var(--control-min-block);
-  min-block-size: var(--control-min-block);
-  padding: 0;
-  place-items: center;
-  border: var(--border-width) solid
-    color-mix(in srgb, var(--border-strong) 60%, transparent);
-  border-radius: var(--radius-sm);
-  color: var(--text-muted);
-  background: color-mix(in srgb, var(--surface-panel) 72%, transparent);
-  cursor: pointer;
-  transition:
-    color var(--motion-fast) var(--ease-standard),
-    background-color var(--motion-fast) var(--ease-standard),
-    border-color var(--motion-fast) var(--ease-standard),
-    transform var(--motion-fast) var(--ease-standard);
-}
-
-.studio-icon-button:disabled {
-  border-color: var(--border-default);
-  color: var(--text-subtle);
-  background: var(--surface-sunken);
-  cursor: not-allowed;
-  opacity: 0.72;
-  transform: none;
-}
-
-/* ---------------------------------------------------------------- header */
+/* --------------------------------------------------------------- header */
 
 .studio-header {
-  position: relative;
-  z-index: 2;
-  display: grid;
   flex: none;
-  grid-template-columns: minmax(0, 1fr) auto;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2) var(--space-4);
-  padding:
-    max(var(--space-3), env(safe-area-inset-top))
-    max(var(--space-3), env(safe-area-inset-right)) var(--space-3)
-    max(var(--space-3), env(safe-area-inset-left));
-  border-block-end: var(--border-width) solid
-    color-mix(in srgb, var(--border-default) 85%, transparent);
-  background: linear-gradient(
-    180deg,
-    var(--surface-header),
-    color-mix(in srgb, var(--surface-header) 78%, var(--surface-app))
-  );
+  padding: var(--space-2) var(--space-4);
+  padding-block-start: calc(var(--space-2) + env(safe-area-inset-top, 0px));
+  /* viewport-fit=cover means notches eat the inline edges in landscape. */
+  padding-inline:
+    max(var(--space-4), env(safe-area-inset-left, 0px))
+    max(var(--space-4), env(safe-area-inset-right, 0px));
+  background: color-mix(in srgb, var(--surface-header) 88%, transparent);
+  border-block-end: var(--border-width) solid var(--border-default);
+  backdrop-filter: blur(8px);
 }
 
 .studio-brand {
   display: flex;
-  min-inline-size: 0;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
+  min-inline-size: 0;
 }
 
 .studio-brand__mark {
   display: grid;
-  inline-size: var(--touch-target);
-  block-size: var(--touch-target);
-  flex: none;
   place-items: center;
+  inline-size: 2.25rem;
+  block-size: 2.25rem;
   border-radius: var(--radius-md);
-  color: var(--text-inverse);
   background: linear-gradient(
-    140deg,
-    var(--action-primary-hover),
-    var(--action-primary) 68%
+    150deg,
+    var(--accent-strong),
+    var(--accent) 55%,
+    color-mix(in srgb, var(--accent) 72%, var(--surface-sunken))
   );
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--text-primary) 35%, transparent),
-    0 6px 18px -8px color-mix(in srgb, var(--action-primary) 55%, transparent);
-  font-family: var(--font-mono);
-  font-size: var(--text-xl);
-  font-weight: 850;
-  line-height: 1;
+  color: var(--on-accent);
+  font-family: var(--font-chord);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  box-shadow: var(--shadow-1),
+    inset 0 1px 0 color-mix(in srgb, var(--text-primary) 22%, transparent);
+  user-select: none;
 }
 
 .studio-brand__copy {
-  min-inline-size: 0;
-}
-
-.studio-brand h1 {
-  font-size: var(--text-xl);
-  letter-spacing: -0.035em;
+  display: flex;
+  flex-direction: column;
   line-height: var(--line-tight);
 }
 
-.studio-title-editor {
-  display: grid;
-  min-inline-size: 0;
-  grid-column: 1 / -1;
-  gap: var(--space-1);
+.studio-brand__copy h1 {
+  font-size: var(--text-lg);
+  font-weight: 650;
+  letter-spacing: 0.01em;
 }
 
+.studio-kicker {
+  margin: 0;
+  color: var(--text-subtle);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/*
+ * Title: one quiet line that becomes a field when you reach for it. The
+ * header's actual flex item is the Field wrapper (div.ui-field), not the
+ * form inside it — flex rules written on .studio-title-editor are inert,
+ * which is precisely how the phone header shipped broken while every
+ * suite stayed green.
+ */
 .studio-header > .ui-field {
-  display: contents;
+  flex: 1 1 18rem;
+  min-inline-size: 12rem;
+  max-inline-size: 34rem;
+}
+
+.studio-title-editor {
+  position: relative;
 }
 
 .studio-title-editor__label-row {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: var(--space-3);
+  gap: var(--space-2);
+  margin-block-end: 1px;
   color: var(--text-subtle);
   font-size: var(--text-xs);
-  line-height: var(--line-tight);
-}
-
-.studio-title-editor__label-row label {
-  color: var(--text-muted);
-  font-size: var(--text-xs);
-  font-weight: 750;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.studio-title-editor__label-row span {
-  font-family: var(--font-mono);
 }
 
 .studio-title-editor__control-row {
-  display: grid;
-  min-inline-size: 0;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: var(--space-2);
 }
 
 .studio-title-editor__control-row .ui-input {
-  grid-column: 1 / -1;
-  border-color: color-mix(in srgb, var(--border-strong) 65%, transparent);
-  background: color-mix(in srgb, var(--surface-sunken) 82%, transparent);
-  font-size: var(--text-md);
-  font-weight: 650;
+  flex: 1;
+  /* The committed title outranks its buttons: "Deacon Blues" must fit at
+     1280 instead of ellipsing while the buttons keep their full width. */
+  min-inline-size: 9rem;
+  font-weight: 600;
+  background: transparent;
+  border-color: transparent;
+  border-block-end-color: var(--border-default);
+  border-radius: var(--radius-xs) var(--radius-xs) 0 0;
+}
+
+.studio-title-editor__control-row .ui-input:hover {
+  background: color-mix(in srgb, var(--text-primary) 4%, transparent);
+}
+
+.studio-title-editor__control-row .ui-input:focus {
+  background: var(--surface-panel);
 }
 
 .studio-title-editor__control-row .ui-input[data-invalid="true"] {
-  border-color: var(--state-error);
+  border-block-end-color: var(--state-error);
 }
 
-/* The full policy sentence stays available to assistive technology through
-   aria-describedby; visually the feedback line carries the state. */
+.studio-title-editor__control-row .ui-button {
+  flex: none;
+}
+
+/* The length counter sits at the inline end of the field it counts. */
+.studio-title-editor__count {
+  flex: none;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
 .studio-title-editor__policy {
   position: absolute;
   inline-size: 1px;
   block-size: 1px;
-  padding: 0;
-  margin: -1px;
   overflow: hidden;
   clip: rect(0 0 0 0);
   clip-path: inset(50%);
   white-space: nowrap;
-  border: 0;
 }
 
+/* Feedback floats under the field so the bar never grows; idle stays quiet. */
 .studio-title-editor__feedback {
-  max-inline-size: 70ch;
-  color: var(--text-subtle);
+  position: absolute;
+  inset-block-start: calc(100% + var(--space-1));
+  inset-inline-start: 0;
+  z-index: 40;
+  inline-size: 100%;
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-elevated);
+  color: var(--text-muted);
   font-size: var(--text-xs);
-  line-height: var(--line-tight);
-  overflow-wrap: anywhere;
+  box-shadow: var(--shadow-3);
+  /* Pure status text: it must never steal a click from the header. */
+  pointer-events: none;
+}
+
+.studio-title-editor__feedback[data-feedback-kind="idle"] {
+  display: none;
 }
 
 .studio-title-editor__feedback[data-feedback-kind="dirty"] {
-  color: var(--state-warning);
+  border-inline-start: 3px solid var(--state-warning);
 }
 
 .studio-title-editor__feedback[data-feedback-kind="committed"] {
-  color: var(--state-success);
+  border-inline-start: 3px solid var(--state-success);
 }
 
 .studio-title-editor__feedback[data-feedback-kind="refused"] {
-  color: var(--state-error);
-  font-weight: 700;
+  border-inline-start: 3px solid var(--state-error);
+  color: var(--text-primary);
 }
 
 .studio-document-actions {
-  display: contents;
-}
-
-.studio-history-actions {
   display: flex;
-  grid-column: 2;
-  grid-row: 1;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
-}
-
-.studio-history-actions .ui-button {
-  border-color: color-mix(in srgb, var(--border-strong) 60%, transparent);
-  background: color-mix(in srgb, var(--action-secondary) 78%, transparent);
-}
-
-.studio-history-actions .ui-button:first-child {
-  border-start-end-radius: 0;
-  border-end-end-radius: 0;
-  border-inline-end-width: 0;
-}
-
-.studio-history-actions .ui-button:last-child {
-  border-start-start-radius: 0;
-  border-end-start-radius: 0;
-}
-
-.studio-history-actions .ui-button:focus-visible {
-  position: relative;
-  z-index: 1;
+  gap: var(--space-2) var(--space-3);
+  margin-inline-start: auto;
+  min-inline-size: 0;
 }
 
 .studio-document-status {
   display: flex;
-  min-inline-size: 0;
-  grid-column: 1 / -1;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-}
-
-.studio-document-status .ui-status-pill {
-  border-color: color-mix(in srgb, var(--border-strong) 55%, transparent);
-  background: color-mix(in srgb, var(--surface-panel) 70%, transparent);
-  font-size: var(--text-xs);
+  align-items: baseline;
+  gap: var(--space-2);
 }
 
 .studio-document-status__revision {
-  color: var(--text-subtle);
+  /* --text-muted, not subtle: 12px status text must clear 4.5:1. */
+  color: var(--text-muted);
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   white-space: nowrap;
 }
 
-/* ---------------------------------------------------------------- notice */
-
-.studio-shell-notice {
-  display: grid;
-  flex: none;
-  grid-column: 1;
-  grid-row: 3;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: var(--space-3);
-  padding: var(--space-3) max(var(--space-3), env(safe-area-inset-right))
-    var(--space-3) max(var(--space-3), env(safe-area-inset-left));
-  border-block-end: var(--border-width) solid var(--state-error);
-  color: var(--text-primary);
-  background: var(--surface-panel);
+.studio-history-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
 }
 
-.studio-shell-notice__cue {
-  display: grid;
-  inline-size: var(--control-min-block);
-  block-size: var(--control-min-block);
-  place-items: center;
-  border: var(--border-width) solid var(--state-error);
-  border-radius: 50%;
-  color: var(--state-error);
-  font-weight: 850;
-}
-
-.studio-shell-notice h2 {
-  font-size: var(--text-sm);
-  line-height: var(--line-tight);
-}
-
-.studio-shell-notice p {
-  margin-block-start: var(--space-1);
+/*
+ * The share outcome, visible beside the Copy link button it answers. The
+ * span is also the polite live region, so it exists empty; :empty keeps the
+ * flex gap from reserving a slot for a message that has not happened yet.
+ */
+.studio-share-feedback {
+  flex: 1 1 100%;
+  margin: 0;
   color: var(--text-muted);
   font-size: var(--text-xs);
-  overflow-wrap: anywhere;
 }
 
-.studio-shell-notice .studio-shell-notice__recovery {
-  color: var(--state-info);
+.studio-share-feedback:empty {
+  display: none;
 }
 
-.studio-shell-notice .ui-button {
-  grid-column: 2;
-  justify-self: start;
+.studio-share-feedback[data-feedback-kind="refused"] {
+  color: var(--state-error);
 }
 
-/* ------------------------------------------------------------- workspace */
+.studio-history-actions .ui-button {
+  min-inline-size: 3.25rem;
+}
+
+/* ------------------------------------------------------- workspace grid */
 
 .studio-workspace {
-  display: grid;
-  min-inline-size: 0;
+  flex: 1;
   min-block-size: 0;
-  flex: 1 1 auto;
+  display: grid;
   grid-template-columns: minmax(0, 1fr);
   overflow: hidden;
-  background: transparent;
 }
 
 .studio-rail {
-  position: relative;
   display: none;
-  min-inline-size: 0;
   min-block-size: 0;
-  overflow: auto;
-  overscroll-behavior: contain;
-  scrollbar-gutter: stable;
-  background: linear-gradient(
-    180deg,
-    var(--surface-rail),
-    color-mix(in srgb, var(--surface-rail) 55%, var(--surface-app))
-  );
-}
-
-.studio-rail--library {
-  border-inline-end: var(--border-width) solid
-    color-mix(in srgb, var(--border-default) 85%, transparent);
-}
-
-.studio-rail--harmony {
-  border-inline-start: var(--border-width) solid
-    color-mix(in srgb, var(--border-default) 85%, transparent);
-}
-
-.studio-panel-content {
-  min-inline-size: 0;
-  padding: var(--space-5) var(--space-4) var(--space-8);
-}
-
-.studio-panel-content[data-panel-context="sheet"] {
-  padding: var(--space-2) 0 var(--space-6);
-}
-
-.studio-panel-heading {
-  display: flex;
-  padding-inline-end: var(--space-8);
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-3);
-}
-
-.studio-panel-heading h2 {
-  margin-block-start: var(--space-1);
-  font-size: var(--text-lg);
-  letter-spacing: -0.015em;
-  line-height: var(--line-tight);
-}
-
-.studio-panel-heading h2::after {
-  content: "";
-  display: block;
-  inline-size: var(--space-8);
-  block-size: var(--focus-width);
-  margin-block-start: var(--space-2);
-  border-radius: var(--radius-xs);
-  background: linear-gradient(
-    90deg,
-    var(--action-primary),
-    color-mix(in srgb, var(--action-primary) 15%, transparent)
-  );
-}
-
-.studio-panel-intro {
-  margin-block-start: var(--space-4);
-  color: var(--text-muted);
-  font-size: var(--text-sm);
-}
-
-.studio-staged-list {
-  display: grid;
-  margin-block-start: var(--space-4);
-  gap: var(--space-2);
-  list-style: none;
-}
-
-.studio-staged-list > li {
-  padding: var(--space-3) var(--space-4);
-  border: var(--border-width) solid
-    color-mix(in srgb, var(--border-default) 80%, transparent);
-  border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--surface-panel) 72%, transparent);
-}
-
-.studio-staged-list__heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-}
-
-.studio-staged-list h3 {
-  font-size: var(--text-sm);
-  line-height: var(--line-tight);
-}
-
-.studio-staged-list .ui-badge {
-  border-color: color-mix(in srgb, var(--border-strong) 55%, transparent);
-  color: var(--text-subtle);
-  background: transparent;
-  font-size: var(--text-xs);
-  font-weight: 750;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.studio-staged-list p {
-  margin-block-start: var(--space-2);
-  color: var(--text-subtle);
-  font-size: var(--text-xs);
-  line-height: var(--line-normal);
-  overflow-wrap: anywhere;
-}
-
-.studio-truth-note {
-  margin-block-start: var(--space-5);
-  padding-block-start: var(--space-3);
-  border-block-start: var(--border-width) solid
-    color-mix(in srgb, var(--border-default) 80%, transparent);
-  color: var(--text-subtle);
-  font-size: var(--text-xs);
-  line-height: var(--line-normal);
-  overflow-wrap: anywhere;
-}
-
-.studio-rail__collapse-button {
-  position: absolute;
-  z-index: 1;
-  inset-block-start: var(--space-3);
-}
-
-.studio-rail--library .studio-rail__collapse-button {
-  inset-inline-end: var(--space-3);
-}
-
-.studio-rail--harmony .studio-rail__collapse-button {
-  inset-inline-start: var(--space-3);
-}
-
-.studio-rail--harmony .studio-panel-heading {
-  padding-inline-start: var(--space-8);
-  padding-inline-end: 0;
+  background: var(--surface-rail);
 }
 
 .studio-rail__contents {
-  display: contents;
+  position: relative;
+  block-size: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .studio-rail__contents[data-collapsed="true"] {
   display: flex;
-  min-block-size: 100%;
-  padding-block: var(--space-3);
-  align-items: center;
   flex-direction: column;
-  gap: var(--space-5);
-}
-
-.studio-rail__contents[data-collapsed="true"] .studio-rail__collapse-button {
-  position: static;
+  align-items: center;
+  gap: var(--space-2);
+  padding-block-start: var(--space-3);
+  overflow: hidden;
 }
 
 .studio-rail__vertical-label {
-  color: var(--text-muted);
-  font-size: var(--text-xs);
-  font-weight: 750;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
   writing-mode: vertical-rl;
-}
-
-/* ----------------------------------------------------------------- chart */
-
-.studio-chart {
-  min-inline-size: 0;
-  min-block-size: 0;
-  padding: var(--space-4);
-  overflow: auto;
-  overscroll-behavior: contain;
-  scrollbar-gutter: stable;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--surface-chart) 88%, transparent),
-    transparent 24rem
-  );
-}
-
-.studio-chart__header {
-  display: flex;
-  max-inline-size: 72rem;
-  margin-inline: auto;
-  align-items: flex-start;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--space-3) var(--space-4);
-}
-
-.studio-chart__header h2 {
-  margin-block-start: var(--space-1);
-  font-size: var(--text-lg);
-  letter-spacing: -0.015em;
-  line-height: var(--line-tight);
-}
-
-.studio-mobile-panel-actions {
-  display: flex;
-  inline-size: 100%;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  order: 3;
-}
-
-.studio-mobile-panel-actions .ui-button {
-  flex: 1 1 auto;
-  border-color: color-mix(in srgb, var(--border-strong) 55%, transparent);
-  background: color-mix(in srgb, var(--action-secondary) 78%, transparent);
-}
-
-.studio-chart-summary {
-  display: flex;
-  min-inline-size: 0;
-  padding: var(--space-2) var(--space-3);
-  border: var(--border-width) solid
-    color-mix(in srgb, var(--border-default) 80%, transparent);
-  border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--surface-panel) 62%, transparent);
-}
-
-.studio-chart-summary .ui-key-value-list {
-  display: flex;
-}
-
-.studio-chart-summary .ui-key-value-list__item {
-  min-inline-size: 4.25rem;
-  padding: 0 var(--space-3);
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-1);
-  border-block-end: 0;
-  border-inline-start: var(--border-width) solid
-    color-mix(in srgb, var(--border-default) 80%, transparent);
-}
-
-.studio-chart-summary .ui-key-value-list__item:first-child {
-  padding-inline-start: 0;
-  border-inline-start: 0;
-}
-
-.studio-chart-summary .ui-key-value-list__item:last-child {
-  padding-inline-end: 0;
-}
-
-.studio-chart-summary .ui-key-value-list dd {
-  justify-items: start;
-}
-
-.studio-chart-summary dt {
   color: var(--text-subtle);
   font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
 }
 
-.studio-chart-summary dd {
-  margin-block-start: var(--space-1);
-  font-family: var(--font-mono);
-  font-size: var(--text-sm);
-  font-weight: 700;
-}
-
-.studio-chart__empty-document {
-  max-inline-size: 42rem;
-  margin: var(--space-8) auto 0;
-}
-
-.studio-chart__empty-document .ui-empty-state {
-  border-style: dashed;
-  background: transparent;
-}
-
-.studio-chart__empty-document h3 {
-  margin-block-start: var(--space-2);
-  font-size: var(--text-lg);
-}
-
-.studio-chart__empty-document p:last-child {
-  margin-block-start: var(--space-2);
-  color: var(--text-muted);
-}
-
-.studio-section-list,
-.studio-measure-list {
-  list-style: none;
-}
-
-.studio-section-list {
-  display: grid;
-  max-inline-size: 72rem;
-  margin: var(--space-6) auto 0;
-  gap: var(--space-8);
-}
-
-.studio-section {
-  min-inline-size: 0;
-}
-
-.studio-section__header {
-  display: flex;
-  margin-block-end: var(--space-3);
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
-}
-
-.studio-section__identity {
-  display: flex;
-  min-inline-size: 0;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-.studio-section__identity h3 {
-  font-size: var(--text-lg);
-  line-height: var(--line-tight);
-  overflow-wrap: anywhere;
-}
-
-.studio-section__letter {
-  display: grid;
-  inline-size: var(--touch-target);
-  block-size: var(--touch-target);
-  flex: none;
+.studio-icon-button {
+  display: inline-grid;
   place-items: center;
-  border: var(--border-width) solid
-    color-mix(in srgb, var(--action-primary) 50%, transparent);
-  border-radius: var(--radius-md);
-  color: var(--action-primary-hover);
-  background: color-mix(in srgb, var(--action-primary) 9%, transparent);
-  font-family: var(--font-mono);
-  font-size: var(--text-lg);
-  font-weight: 800;
-}
-
-.studio-section__header .ui-badge {
-  border-color: color-mix(in srgb, var(--border-strong) 55%, transparent);
-  color: var(--text-muted);
-  background: transparent;
-  font-size: var(--text-xs);
-}
-
-.studio-measure-list {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-3);
-}
-
-.studio-measure {
-  min-inline-size: 0;
-  overflow: hidden;
-  border: var(--border-width) solid
-    color-mix(in srgb, var(--border-default) 90%, transparent);
-  border-radius: var(--radius-lg);
-  background: var(--surface-panel);
-  box-shadow: 0 14px 34px -24px
-    color-mix(in srgb, var(--surface-sunken) 92%, transparent);
-}
-
-.studio-measure__header {
-  display: flex;
+  min-inline-size: var(--control-min-block);
   min-block-size: var(--control-min-block);
-  padding: var(--space-2) var(--space-3);
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  border-block-end: var(--border-width) solid
-    color-mix(in srgb, var(--border-default) 80%, transparent);
-  background: linear-gradient(
-    180deg,
-    var(--surface-elevated),
-    color-mix(in srgb, var(--surface-elevated) 72%, var(--surface-panel))
-  );
-}
-
-.studio-measure__header h4 {
-  font-size: var(--text-sm);
-  line-height: var(--line-tight);
-}
-
-.studio-meter-signature {
-  color: var(--action-primary-hover);
-  font-family: var(--font-mono);
-  font-size: var(--text-sm);
-  font-weight: 800;
-}
-
-.studio-measure__canvas {
-  position: relative;
-  display: grid;
-  min-block-size: 8rem;
-  padding: var(--space-5);
-  place-items: center;
-  overflow: hidden;
-  background: color-mix(in srgb, var(--surface-sunken) 72%, var(--surface-panel));
-}
-
-.studio-measure__staff {
-  position: absolute;
-  inset: var(--space-4);
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  border-block: var(--border-width) solid
-    color-mix(in srgb, var(--border-default) 65%, transparent);
-  opacity: 0.8;
-}
-
-.studio-measure__staff span {
-  border-inline-start: var(--border-width) solid
-    color-mix(in srgb, var(--border-default) 65%, transparent);
-}
-
-.studio-measure__staff span:last-child {
-  border-inline-end: var(--border-width) solid
-    color-mix(in srgb, var(--border-default) 65%, transparent);
-}
-
-.studio-measure__empty-copy,
-.studio-measure__populated-copy {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  max-inline-size: 24rem;
-  padding: var(--space-2) var(--space-4);
-  place-items: center;
-  text-align: center;
-}
-
-.studio-measure__empty-mark {
-  color: var(--action-primary);
-  font-size: var(--text-xl);
-  line-height: 1;
-}
-
-.studio-measure__empty-copy strong,
-.studio-measure__populated-copy strong {
-  font-size: var(--text-sm);
-}
-
-.studio-measure__empty-copy span:last-child,
-.studio-measure__populated-copy span {
-  margin-block-start: var(--space-1);
-  color: var(--text-subtle);
-  font-size: var(--text-xs);
-}
-
-.studio-measure__facts {
-  display: block;
-  border-block-start: var(--border-width) solid
-    color-mix(in srgb, var(--border-default) 80%, transparent);
-}
-
-.studio-measure__facts .ui-key-value-list {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0;
-}
-
-.studio-measure__facts .ui-key-value-list__item {
-  min-inline-size: 0;
-  padding: var(--space-2);
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-1);
-  border-block-end: 0;
-  border-inline-start: var(--border-width) solid
-    color-mix(in srgb, var(--border-default) 80%, transparent);
-}
-
-.studio-measure__facts .ui-key-value-list__item:first-child {
-  border-inline-start: 0;
-}
-
-.studio-measure__facts .ui-key-value-list dd {
-  justify-items: start;
-}
-
-.studio-measure__facts dt {
-  color: var(--text-subtle);
-  font-size: var(--text-xs);
-}
-
-.studio-measure__facts dd {
-  margin-block-start: var(--space-1);
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* --------------------------------------------------------------- harmony */
-
-.studio-harmony-content .studio-panel-intro {
-  display: flex;
-}
-
-.studio-harmony-empty {
-  display: grid;
-  margin-block-start: var(--space-4);
-  padding: var(--space-4);
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: var(--space-3);
-  border: var(--border-width) solid
-    color-mix(in srgb, var(--state-info) 28%, transparent);
+  padding: var(--space-1);
+  border: var(--border-width) solid transparent;
   border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--state-info) 4%, transparent);
-}
-
-.studio-harmony-empty__mark {
-  display: grid;
-  inline-size: var(--touch-target);
-  block-size: var(--touch-target);
-  place-items: center;
-  border: var(--border-width) solid
-    color-mix(in srgb, var(--state-info) 45%, transparent);
-  border-radius: 50%;
-  color: var(--state-info);
-  background: color-mix(in srgb, var(--state-info) 9%, transparent);
-}
-
-.studio-harmony-empty h3 {
-  font-size: var(--text-sm);
-  line-height: var(--line-tight);
-}
-
-.studio-harmony-empty p {
-  margin-block-start: var(--space-2);
+  background: transparent;
   color: var(--text-muted);
-  font-size: var(--text-xs);
-  line-height: var(--line-normal);
-  overflow-wrap: anywhere;
-}
-
-.studio-harmony-empty .studio-harmony-empty__next-step {
-  color: var(--text-muted);
-  font-weight: 700;
-}
-
-.studio-document-facts {
-  margin-block-start: var(--space-6);
-}
-
-.studio-document-facts h3 {
-  margin-block-start: var(--space-1);
-  font-size: var(--text-sm);
-}
-
-.studio-document-facts dl {
-  margin-block-start: var(--space-3);
-  border-block-start: var(--border-width) solid
-    color-mix(in srgb, var(--border-default) 80%, transparent);
-}
-
-.studio-document-facts dl > div {
-  display: grid;
-  padding-block: var(--space-3);
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: var(--space-3);
-  border-block-end: var(--border-width) solid
-    color-mix(in srgb, var(--border-default) 80%, transparent);
-}
-
-.studio-document-facts dt {
-  color: var(--text-subtle);
-  font-size: var(--text-xs);
-}
-
-.studio-document-facts dd {
-  color: var(--text-primary);
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  font-weight: 700;
-  text-align: end;
-  overflow-wrap: anywhere;
-}
-
-/* ------------------------------------------------------------- transport */
-
-.studio-transport {
-  position: relative;
-  z-index: 3;
-  display: grid;
-  min-inline-size: 0;
-  min-block-size: var(--transport-min-block);
-  flex: none;
-  grid-column: 1;
-  grid-row: 2;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3) max(var(--space-3), env(safe-area-inset-right))
-    max(var(--space-3), env(safe-area-inset-bottom))
-    max(var(--space-3), env(safe-area-inset-left));
-  border-block-start: var(--border-width) solid
-    color-mix(in srgb, var(--border-default) 85%, transparent);
-  background: linear-gradient(
-    180deg,
-    var(--surface-header),
-    color-mix(in srgb, var(--surface-header) 74%, var(--surface-app))
-  );
-}
-
-.studio-transport__status {
-  display: flex;
-  min-inline-size: 0;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.studio-transport__status-icon {
-  display: grid;
-  inline-size: var(--control-min-block);
-  block-size: var(--control-min-block);
-  flex: none;
-  place-items: center;
-  border: var(--border-width) solid
-    color-mix(in srgb, var(--state-warning) 55%, transparent);
-  border-radius: 50%;
-  color: var(--state-warning);
-  background: color-mix(in srgb, var(--state-warning) 7%, transparent);
-}
-
-.studio-transport__status p {
-  display: grid;
-  min-inline-size: 0;
-  line-height: var(--line-tight);
-}
-
-.studio-transport__status strong {
-  font-size: var(--text-xs);
-}
-
-.studio-transport__status p span {
-  margin-block-start: var(--space-1);
-  color: var(--text-subtle);
-  font-size: var(--text-xs);
-  overflow-wrap: anywhere;
-}
-
-.studio-transport__controls {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.studio-transport__controls .ui-icon-button {
-  inline-size: var(--control-min-block);
-  border-radius: 50%;
-  border-color: color-mix(in srgb, var(--border-strong) 50%, transparent);
-  background: color-mix(in srgb, var(--surface-panel) 65%, transparent);
-}
-
-.studio-transport__controls .ui-icon-button:disabled {
-  border-color: color-mix(in srgb, var(--border-default) 80%, transparent);
-  background: color-mix(in srgb, var(--surface-sunken) 55%, transparent);
-}
-
-#studio-transport-play {
-  inline-size: var(--touch-target);
-  min-block-size: var(--touch-target);
-}
-
-#studio-transport-play:not(:disabled) {
-  border-color: var(--action-primary);
-  color: var(--action-primary-hover);
-}
-
-.studio-transport__facts {
-  display: block;
-  min-inline-size: 0;
-  grid-column: 1 / -1;
-}
-
-.studio-transport__facts .ui-key-value-list {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0;
-}
-
-.studio-transport__facts .ui-key-value-list__item {
-  min-inline-size: 0;
-  padding: var(--space-1) var(--space-3);
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-1);
-  border-block-end: 0;
-  border-inline-start: var(--border-width) solid
-    color-mix(in srgb, var(--border-default) 80%, transparent);
-}
-
-.studio-transport__facts .ui-key-value-list__item:nth-child(odd) {
-  border-inline-start: 0;
-}
-
-.studio-transport__facts .ui-key-value-list dt {
-  color: var(--text-subtle);
-  font-size: var(--text-xs);
-  line-height: var(--line-tight);
-}
-
-.studio-transport__facts .ui-key-value-list dd {
-  justify-items: start;
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  font-weight: 700;
-  line-height: var(--line-tight);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* -------------------------------------------------------------- compact */
-
-@media (max-width: 39.999rem) {
-  .studio-brand__mark {
-    inline-size: var(--space-8);
-    block-size: var(--space-8);
-    font-size: var(--text-lg);
-  }
-
-  .studio-brand h1 {
-    font-size: var(--text-lg);
-  }
-
-  .studio-kicker {
-    font-size: 0.6875rem;
-  }
-
-  .studio-transport {
-    grid-template-columns: minmax(0, 1fr);
-    gap: var(--space-2);
-    padding-block: var(--space-2)
-      max(var(--space-2), env(safe-area-inset-bottom));
-  }
-
-  .studio-transport__status p span {
-    position: absolute;
-    inline-size: 1px;
-    block-size: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    clip-path: inset(50%);
-    white-space: nowrap;
-    border: 0;
-  }
-
-  .studio-transport__controls {
-    justify-content: space-between;
-  }
-
-  .studio-transport__facts {
-    grid-column: 1;
-  }
-
-  .studio-transport__facts .ui-key-value-list {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .studio-transport__facts .ui-key-value-list__item:not(:nth-child(2)) {
-    display: none;
-  }
-
-  .studio-transport__facts .ui-key-value-list__item:nth-child(2) {
-    display: grid;
-    padding: var(--space-1) 0 0;
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: baseline;
-    gap: var(--space-2);
-    border: 0;
-  }
-}
-
-/* ---------------------------------------------------------------- sheets */
-
-.studio-shell .ui-sheet-layer {
-  position: relative;
-  z-index: 60;
-  inset: auto;
-  min-inline-size: 0;
-  min-block-size: 0;
-  grid-column: 1;
-  grid-row: 1;
-  pointer-events: none;
-}
-
-#dialog-host,
-#notice-region,
-#help {
-  display: contents;
-}
-
-.studio-shell .ui-sheet-backdrop {
-  position: absolute;
-  inset: 0;
-  background: var(--surface-overlay);
-  backdrop-filter: blur(3px);
-  pointer-events: auto;
-}
-
-.studio-shell .ui-sheet {
-  position: absolute;
-  z-index: 1;
-  display: flex;
-  min-inline-size: 0;
-  max-inline-size: calc(100% - var(--sheet-context-reveal));
-  max-block-size: calc(100% - var(--sheet-context-reveal));
-  overflow: hidden;
-  flex-direction: column;
-  border: var(--border-width) solid
-    color-mix(in srgb, var(--border-strong) 70%, transparent);
-  color: var(--text-primary);
-  background: var(--surface-elevated);
-  box-shadow: 0 24px 64px -28px
-    color-mix(in srgb, var(--surface-sunken) 95%, transparent);
-  pointer-events: auto;
-}
-
-.studio-shell .ui-sheet[data-side="inline-start"] {
-  inset-block: 0;
-  inset-inline-start: 0;
-  inline-size: min(var(--rail-library-inline), calc(100% - var(--sheet-context-reveal)));
-  max-block-size: none;
-  border-block: 0;
-  border-inline-start: 0;
-  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
-}
-
-.studio-shell .ui-sheet[data-side="inline-end"] {
-  inset-block: 0;
-  inset-inline-end: 0;
-  inline-size: min(var(--rail-harmony-inline), calc(100% - var(--sheet-context-reveal)));
-  max-block-size: none;
-  border-block: 0;
-  border-inline-end: 0;
-  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
-}
-
-.studio-shell .ui-sheet[data-side="block-end"] {
-  inset-inline: 0;
-  inset-block-end: 0;
-  max-inline-size: none;
-  block-size: min(38rem, calc(100% - var(--sheet-context-reveal)));
-  border-inline: 0;
-  border-block-end: 0;
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-}
-
-.studio-shell .ui-sheet__header {
-  display: flex;
-  min-block-size: var(--touch-target);
-  padding: max(var(--space-3), env(safe-area-inset-top)) var(--space-4)
-    var(--space-3);
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
-  border-block-end: var(--border-width) solid
-    color-mix(in srgb, var(--border-default) 85%, transparent);
-  background: var(--surface-header);
-}
-
-.studio-shell .ui-sheet__title {
-  font-size: var(--text-lg);
-  line-height: var(--line-tight);
-}
-
-.studio-shell .ui-sheet__description {
-  padding: var(--space-3) var(--space-4);
-  border-block-end: var(--border-width) solid
-    color-mix(in srgb, var(--border-default) 80%, transparent);
-  color: var(--text-muted);
-  font-size: var(--text-sm);
-}
-
-.studio-shell .ui-sheet__blocked-reason {
-  padding: var(--space-3) var(--space-4);
-  color: var(--state-warning);
-  font-size: var(--text-sm);
-}
-
-.studio-shell .ui-sheet__content {
-  min-block-size: 0;
-  padding: var(--space-4);
-  overflow: auto;
-  overscroll-behavior: contain;
-  scrollbar-gutter: stable;
-}
-
-.studio-shell .ui-sheet .ui-button {
-  min-block-size: var(--control-min-block);
-  padding: var(--space-2) var(--space-3);
-  border: var(--border-width) solid
-    color-mix(in srgb, var(--border-strong) 60%, transparent);
-  border-radius: var(--radius-sm);
-  color: var(--text-primary);
-  background: color-mix(in srgb, var(--action-secondary) 78%, transparent);
-  font-weight: 700;
   cursor: pointer;
+  transition:
+    background var(--motion-fast) var(--ease-standard),
+    color var(--motion-fast) var(--ease-standard);
 }
 
-/* ----------------------------------------------------------- interaction */
-
-@media (hover: hover) {
-  .studio-icon-button:not(:disabled):hover,
-  .studio-shell .ui-sheet .ui-button:not(:disabled):hover {
-    border-color: var(--action-primary-hover);
-    color: var(--text-primary);
-    background: var(--surface-elevated);
-  }
-}
-
-.studio-icon-button:not(:disabled):active,
-.studio-shell .ui-sheet .ui-button:not(:disabled):active {
-  transform: translateY(var(--border-width));
+.studio-icon-button:hover {
+  background: color-mix(in srgb, var(--text-primary) 7%, transparent);
+  color: var(--text-primary);
 }
 
 .studio-icon-button:focus-visible {
@@ -1312,35 +440,2152 @@
   outline-offset: var(--focus-offset);
 }
 
-/* -------------------------------------------------------------- balanced */
+.studio-icon-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
 
-@media (min-width: 40rem) {
+.studio-icon {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  fill: currentColor;
+}
+
+.studio-rail__collapse-button {
+  position: absolute;
+  inset-block-start: var(--space-2);
+  inset-inline-end: var(--space-2);
+  z-index: 2;
+}
+
+.studio-rail__contents[data-collapsed="true"] .studio-rail__collapse-button {
+  position: static;
+}
+
+/* ------------------------------------------------------------ panels */
+
+.studio-panel-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4);
+}
+
+.studio-panel-heading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-inline-end: var(--space-8);
+}
+
+.studio-panel-heading h2 {
+  font-size: var(--text-lg);
+  font-weight: 650;
+}
+
+.studio-panel-heading h2::after {
+  content: "";
+  display: block;
+  inline-size: 2rem;
+  block-size: 2px;
+  margin-block-start: var(--space-1);
+  border-radius: 1px;
+  background: var(--accent);
+}
+
+.studio-panel-content[data-panel-context="sheet"] .studio-panel-heading {
+  padding-inline-end: 0;
+}
+
+.studio-panel-intro {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.studio-visually-hidden {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* --------------------------------------------------------- chart region */
+
+/* Small screens: the chart owns the viewport; chrome compresses. */
+@media (max-width: 39.999rem) {
   .studio-header {
-    padding-inline: var(--space-4);
+    gap: var(--space-1) var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    padding-block-start: calc(var(--space-2) + env(safe-area-inset-top, 0px));
+    padding-inline:
+      max(var(--space-3), env(safe-area-inset-left, 0px))
+      max(var(--space-3), env(safe-area-inset-right, 0px));
   }
 
+  .studio-brand__mark {
+    inline-size: 1.875rem;
+    block-size: 1.875rem;
+    font-size: var(--text-md);
+  }
+
+  .studio-brand__copy .studio-kicker {
+    display: none;
+  }
+
+  /*
+   * The phone header is three deliberate rows: identity and document
+   * status share the top line, the title field owns the second, and the
+   * command row sits third — the same order the DOM and the keyboard
+   * travel, so focus never jumps against the visual flow.
+   */
+  .studio-header > .ui-field {
+    order: 1;
+    flex-basis: 100%;
+    min-inline-size: 0;
+    max-inline-size: none;
+  }
+
+  .studio-title-editor__label-row {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /*
+   * The title itself outranks its buttons: the input never squeezes below
+   * a readable 8rem — the buttons wrap under it instead, and only when
+   * the width truly demands it.
+   */
   .studio-title-editor__control-row {
-    grid-template-columns: minmax(12rem, 1fr) auto auto;
+    flex-wrap: wrap;
   }
 
   .studio-title-editor__control-row .ui-input {
-    grid-column: auto;
+    flex: 1 1 8rem;
+    min-inline-size: 8rem;
   }
 
-  .studio-shell-notice {
-    grid-template-columns: auto minmax(0, 1fr) auto;
+  .studio-title-editor__control-row .ui-button {
+    padding-inline: var(--space-2);
+  }
+
+  /*
+   * display: contents on the plain grouping div (it carries no role) lets
+   * the status pill and the command row wrap as header rows of their own.
+   * The nested live-region and group divs keep their boxes and semantics.
+   */
+  .studio-document-actions {
+    display: contents;
+  }
+
+  .studio-document-status {
+    margin-inline-start: auto;
+  }
+
+  .studio-history-actions {
+    order: 2;
+    flex-basis: 100%;
+    flex-wrap: wrap;
     align-items: center;
+    gap: var(--space-1) var(--space-2);
   }
 
-  .studio-shell-notice .ui-button {
-    grid-column: 3;
-    grid-row: 1;
+  /* Trim label padding so all four commands share one 320px row; the
+     coarse-pointer floor in primitives.css still guarantees 44px targets. */
+  .studio-history-actions .ui-button {
+    min-inline-size: 2.5rem;
+    padding-inline: var(--space-2);
   }
 
+  .studio-chart__header {
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .studio-chart__header h2 {
+    font-size: var(--text-lg);
+  }
+
+  /*
+   * Each chip stays one unbroken line, but the ROW may wrap: a clipped
+   * third chip is a lie about the chart, a second line is just a second
+   * line.
+   */
+  .studio-chart-summary .ui-key-value-list {
+    flex-wrap: wrap;
+  }
+
+  .studio-chart-summary .ui-key-value-list__item {
+    flex: 1 1 auto;
+    justify-content: center;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+    padding: var(--space-1) var(--space-2);
+  }
+
+  .studio-section__metadata {
+    gap: var(--space-1) var(--space-2);
+  }
+
+  .studio-section__boundary > span {
+    font-size: var(--text-xs);
+  }
+
+  .studio-section-list {
+    padding: var(--space-3) var(--space-2) var(--space-8);
+  }
+}
+
+.studio-chart {
+  position: relative;
+  min-inline-size: 0;
+  min-block-size: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--surface-chart);
+}
+
+.studio-chart:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: calc(-1 * var(--focus-width));
+}
+
+/*
+ * The demo-chart greeting: one dismissible line above the chart while the
+ * seeded starter chart is untouched. Notice styling, never a modal.
+ */
+.studio-demo-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-3);
+  margin: var(--space-3) var(--space-4) 0;
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width) solid var(--border-default);
+  border-inline-start: 3px solid var(--accent);
+  border-radius: var(--radius-md);
+  background: var(--surface-panel);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+}
+
+.studio-demo-banner p {
+  flex: 1 1 14rem;
+  min-inline-size: 0;
+  margin: 0;
+}
+
+.studio-chart__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4) var(--space-2);
+  background: color-mix(in srgb, var(--surface-chart) 92%, transparent);
+  border-block-end: var(--border-width) solid var(--border-default);
+  backdrop-filter: blur(10px);
+}
+
+.studio-chart__selection {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.studio-chart__header h2 {
+  font-family: var(--font-chord);
+  font-size: var(--text-xl);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+/* One calm toolbar: phone widths scroll sideways instead of stacking. */
+.studio-chart__edit-actions,
+.studio-chart__view-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+/*
+ * Desktop wraps instead: the hidden-scroll clip cut "Append section" to
+ * "Appe" with no scrollbar to say more existed. A second toolbar row is
+ * honest; a silently clipped control is not.
+ */
+@media (min-width: 40rem) {
+  .studio-chart__edit-actions,
+  .studio-chart__view-actions {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+}
+
+.studio-chart__edit-actions .ui-button,
+.studio-chart__view-actions .ui-button {
+  flex: none;
+  font-size: var(--text-sm);
+}
+
+.studio-chart__view-status {
+  flex: none;
+  margin: 0;
+  align-self: center;
+  /* --text-muted, not subtle: 12px status text must clear 4.5:1. */
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+
+/*
+ * The segmented pill keeps its clipped corners. Hidden on both axes made the
+ * last segment unreachable at narrow widths (scrollWidth 446 in a 356 box),
+ * and scrolling it was worse: unlike the toolbars above, this pill holds only
+ * text, so a scroll container here is a region no keyboard can reach
+ * (axe scrollable-region-focusable, serious). It wraps instead -- every
+ * segment stays on screen and no new tab stop is invented.
+ */
+.studio-chart-summary {
+  display: flex;
+  gap: 0;
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-panel);
+  overflow: hidden;
+}
+
+.studio-chart-summary .ui-key-value-list {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.studio-chart-summary .ui-key-value-list__item {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  border-inline-start: var(--border-width) solid var(--border-default);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+
+.studio-chart-summary .ui-key-value-list__item:first-child {
+  border-inline-start: none;
+}
+
+.studio-chart-summary .ui-key-value-list__item dt {
+  color: var(--text-subtle);
+}
+
+.studio-chart-summary .ui-key-value-list__item dd {
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+
+.studio-mobile-panel-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.studio-mobile-panel-actions .ui-button {
+  flex: 1;
+}
+
+/* -------------------------------------------------------------- range bar */
+
+.studio-range-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-3) var(--space-4) 0;
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width) solid color-mix(in srgb, var(--state-info) 45%, var(--border-default));
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--state-selected) 55%, var(--surface-chart));
+}
+
+.studio-range-bar__status {
+  flex: 1 1 100%;
+  margin: 0;
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.studio-range-bar__handle {
+  display: grid;
+  place-items: center;
+  min-inline-size: var(--control-min-block);
+  min-block-size: var(--control-min-block);
+  padding: var(--space-1) var(--space-2);
+  border: var(--border-width) solid var(--state-info);
+  border-radius: var(--radius-sm);
+  background: var(--surface-elevated);
+  color: var(--state-info);
+  font-size: var(--text-lg);
+  cursor: grab;
+  touch-action: pan-x pan-y;
+}
+
+.studio-range-bar__handle:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.studio-range-bar__handle[data-dragging="true"] {
+  cursor: grabbing;
+  background: var(--state-info);
+  color: var(--text-inverse);
+}
+
+.studio-range-bar__field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.studio-range-bar__field .ui-input,
+.studio-range-bar__field input {
+  inline-size: 6rem;
+  font-family: var(--font-mono);
+}
+
+/* -------------------------------------------------------- refusal banner */
+
+.studio-chart__refusal {
+  margin: var(--space-3) var(--space-4) 0;
+  padding: var(--space-3);
+  border: var(--border-width) solid var(--border-default);
+  border-inline-start: 3px solid var(--state-error);
+  border-radius: var(--radius-md);
+  background: var(--surface-panel);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+}
+
+.studio-chart__refusal strong {
+  display: block;
+  margin-block-end: var(--space-1);
+}
+
+.studio-chart__resolutions {
+  /* Its own block (jcpe-yvni): rendered inline, the joined remedy list ran
+     straight on from the recovery sentence with no space between them. */
+  display: block;
+  margin-block-start: var(--space-1);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.studio-chart__refusal-actions,
+.studio-chart__reason {
+  /* One button per named remedy, wrapped as a single toolbar row. */
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-block-start: var(--space-2);
+  margin-inline-end: var(--space-2);
+  color: var(--text-subtle);
+  font-size: var(--text-xs);
+}
+
+/* --------------------------------------------------------------- sections */
+
+.studio-section-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  max-inline-size: 76rem;
+  margin: 0 auto;
+  padding: var(--space-4) var(--space-4) var(--space-8);
+  list-style: none;
+}
+
+.studio-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.studio-section:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.studio-section__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.studio-section__identity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-inline-size: 0;
+}
+
+/* The Real-Book rehearsal letter: boxed serif glyph on the margin. */
+.studio-section__letter {
+  display: grid;
+  place-items: center;
+  inline-size: 2.5rem;
+  block-size: 2.5rem;
+  border: 2px solid var(--accent);
+  border-radius: var(--radius-sm);
+  color: var(--accent);
+  font-family: var(--font-chord);
+  font-size: var(--text-xl);
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent);
+  user-select: none;
+}
+
+.studio-section__identity h3 {
+  font-size: var(--text-lg);
+  font-weight: 650;
+}
+
+.studio-section__metadata {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  padding-inline-start: calc(2.5rem + var(--space-3));
+}
+
+.studio-section__field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-subtle);
+  font-size: var(--text-xs);
+}
+
+.studio-section__field input {
+  min-inline-size: 8rem;
+  padding: var(--space-1) var(--space-2);
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.studio-section__field input:hover {
+  border-color: var(--border-default);
+}
+
+.studio-section__field input:focus-visible {
+  border-color: var(--border-default);
+  background: var(--surface-panel);
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.studio-section__boundary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  position: relative;
+}
+
+.studio-section__boundary-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-block-size: var(--control-min-block);
+  padding: var(--space-1) var(--space-2);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  cursor: pointer;
+}
+
+.studio-section__boundary-trigger:hover {
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+
+.studio-section__boundary-trigger:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.studio-section__boundary-menu {
+  position: absolute;
+  inset-block-start: calc(100% + var(--space-1));
+  inset-inline-start: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 15rem;
+  padding: var(--space-1);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-elevated);
+  box-shadow: var(--shadow-3);
+}
+
+.studio-section__boundary-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: var(--control-min-block);
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  text-align: start;
+  cursor: pointer;
+}
+
+.studio-section__boundary-item:hover {
+  background: color-mix(in srgb, var(--text-primary) 7%, transparent);
+}
+
+.studio-section__boundary-item:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: calc(-1 * var(--focus-width));
+}
+
+.studio-section__boundary-item[aria-checked="true"] {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.studio-section__boundary-item[aria-disabled="true"] {
+  color: var(--text-subtle);
+  cursor: default;
+}
+
+/* ------------------------------------------- measures: the engraved grid */
+
+.studio-measure-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: var(--border-width) solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-chart);
+  box-shadow: var(--shadow-2);
+}
+
+.studio-measure-list > li {
+  position: relative;
+  border-block-start: var(--border-width) solid var(--border-default);
+}
+
+.studio-measure-list > li:first-child {
+  border-block-start: none;
+}
+
+.studio-measure {
+  display: grid;
+  grid-template-rows: auto minmax(3rem, 1fr) auto;
+  gap: var(--space-1);
+  min-block-size: 7rem;
+  padding: var(--space-2) var(--space-3) var(--space-2);
+}
+
+.studio-measure:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: calc(-1 * var(--focus-width));
+}
+
+.studio-measure__header {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-block-size: 1.5rem;
+}
+
+.studio-measure__tag {
+  display: flex;
+  flex: none;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--text-subtle);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.studio-meter-signature {
+  color: var(--text-muted);
+  font-family: var(--font-chord);
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.studio-measure__tools {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* Icon-quiet tools: the full sentence stays as the accessible name. */
+.studio-measure__tools .ui-button {
+  display: grid;
+  place-items: center;
+  inline-size: 1.5rem;
+  min-inline-size: 1.5rem;
+  block-size: 1.5rem;
+  min-block-size: 1.5rem;
+  padding: 0;
+  border-radius: var(--radius-sm);
+  font-size: 0;
+  white-space: nowrap;
+}
+
+.studio-measure__tools .ui-button::after {
+  font-size: var(--text-xs);
+  line-height: 1;
+}
+
+.studio-measure__tools .ui-button[id^="studio-target-measure-"]::after {
+  content: "\25C9"; /* ◉ aim quick entry */
+}
+
+.studio-measure__tools .ui-button[id^="studio-split-section-"]::after {
+  content: "\2702"; /* ✂ split the section here */
+}
+
+/* The aimed measure says so with a brass marker, not a banner. */
+.studio-measure__tools .ui-button:disabled {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  opacity: 1;
+}
+
+.studio-measure__canvas {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* The staff: four hairlines the chord symbols sit on. */
+.studio-measure__staff {
+  position: absolute;
+  inset: var(--space-2) 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  pointer-events: none;
+}
+
+.studio-measure__staff span {
+  display: block;
+  block-size: 1px;
+  background: color-mix(in srgb, var(--text-primary) 7%, transparent);
+}
+
+.studio-measure__empty-copy {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  inline-size: 100%;
+  padding: var(--space-3) 0;
+  color: var(--text-subtle);
+  font-size: var(--text-sm);
+  text-align: center;
+}
+
+.studio-measure__empty-mark {
+  color: var(--border-strong);
+  font-family: var(--font-chord);
+  font-size: var(--text-lg);
+}
+
+.studio-measure__facts {
+  margin-block-start: var(--space-1);
+}
+
+.studio-measure__facts .ui-key-value-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+}
+
+.studio-measure__facts .ui-key-value-list__item {
+  display: flex;
+  gap: var(--space-1);
+  font-size: var(--text-xs);
+}
+
+.studio-measure__facts .ui-key-value-list__item dt {
+  color: var(--text-subtle);
+}
+
+.studio-measure__facts .ui-key-value-list__item dd {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+/* ------------------------------------------------------------- chord card */
+
+.studio-measure__chords {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-1);
+  inline-size: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.studio-measure__chords > li {
+  display: flex;
+  min-inline-size: 3.5rem;
+}
+
+.studio-chord-card {
+  position: relative;
+  flex: 1;
+  display: grid;
+  place-items: center;
+  gap: 0;
+  min-inline-size: 3.5rem;
+  min-block-size: 3.75rem;
+  padding: var(--space-2) var(--space-1);
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: center;
+  transition:
+    background var(--motion-fast) var(--ease-standard),
+    border-color var(--motion-fast) var(--ease-standard),
+    box-shadow var(--motion-fast) var(--ease-standard);
+}
+
+.studio-chord-card:hover {
+  background: color-mix(in srgb, var(--text-primary) 5%, transparent);
+}
+
+.studio-chord-card:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.studio-chord-card[data-selected="true"] {
+  border-color: var(--state-info);
+  background: color-mix(in srgb, var(--state-info) 13%, var(--surface-chart));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--state-info) 35%, transparent);
+}
+
+.studio-chord-card[data-in-range="true"] {
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--state-info) 45%, transparent);
+}
+
+.studio-chord-card[data-playing="true"] {
+  background: color-mix(in srgb, var(--accent) 15%, var(--surface-chart));
+  box-shadow: var(--glow-accent);
+}
+
+.studio-chord-card[data-playing="true"] .studio-chord-card__symbol {
+  color: var(--accent-strong);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .studio-chord-card[data-playing="true"] {
+    animation: studio-playing-pulse 2.4s var(--ease-standard) infinite;
+  }
+
+  @keyframes studio-playing-pulse {
+    0%, 100% { box-shadow: var(--glow-accent); }
+    50% {
+      box-shadow:
+        0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent),
+        0 0 10px color-mix(in srgb, var(--accent) 14%, transparent);
+    }
+  }
+}
+
+/* Lead-sheet symbol typography: engraved serif with stacked quality. */
+.studio-chord-card__symbol {
+  font-family: var(--font-chord);
+  font-size: var(--text-chord);
+  font-weight: 600;
+  line-height: 1.1;
+  /* A chord symbol is one word: "Bbmaj7" must never break mid-symbol. */
+  white-space: nowrap;
+}
+
+/*
+ * jcpe-disi.1: the selected chord advertises that its symbol is re-enterable.
+ * State-based, never hover-revealed: the dotted underline appears the moment
+ * the card is the selection, on every pointer kind, and the text cursor
+ * confirms the promise on fine pointers.
+ */
+.studio-chord-card[data-selected="true"] .studio-chord-card__symbol {
+  cursor: text;
+  text-decoration-color: color-mix(in srgb, var(--accent) 65%, transparent);
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.22em;
+}
+
+/* Narrow cards step the symbol down instead of letting it spill. */
+@media (max-width: 39.999rem) {
+  .studio-chord-card__symbol {
+    font-size: 1.25rem;
+  }
+}
+
+.studio-symbol__root {
+  font-weight: 700;
+}
+
+.studio-symbol__quality {
+  font-size: var(--text-chord-super);
+  font-weight: 500;
+  vertical-align: 0.42em;
+  letter-spacing: 0.01em;
+}
+
+.studio-symbol__bass {
+  color: var(--text-muted);
+  font-size: 0.72em;
+  font-weight: 500;
+}
+
+.studio-chord-card__duration {
+  color: var(--text-subtle);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.studio-chord-card__marks {
+  position: absolute;
+  inset-block-start: 2px;
+  inset-inline-start: 2px;
+  display: flex;
+  gap: 2px;
+}
+
+.studio-chord-card__marks .ui-badge {
+  font-size: 0.625rem;
+  padding: 0 var(--space-1);
+}
+
+/*
+ * jcpe-disi.6: the context action bar rides sticky at the chart's block-end
+ * while a selection exists. It wraps at narrow widths — the 320 px law
+ * forbids horizontal scroll — and sits under the card menus (z 30).
+ */
+.studio-context-bar {
+  /*
+   * A fixed overlay, never in-flow: appearing at selection time must not
+   * move a single pixel of chart geometry (a sticky bar broke the exact
+   * 8 px drag-threshold law the moment pointerdown selected a card). It
+   * floats just above the transport, whose height is pinned.
+   */
+  position: fixed;
+  inset-block-end: calc(
+    var(--transport-min-block) + env(safe-area-inset-bottom, 0px) +
+      var(--space-2)
+  );
+  inset-inline-start: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  max-inline-size: min(46rem, calc(100vw - 2 * var(--space-3)));
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--surface-header) 92%, transparent);
+  backdrop-filter: blur(6px);
+  box-shadow: var(--shadow-2);
+}
+
+.studio-context-bar__status {
+  flex: 1 1 12rem;
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+/*
+ * jcpe-disi.5: the bar's name is a real button that selects the bar. It
+ * inherits the heading's look so the sheet stays calm, and declares itself
+ * on hover/focus the way links do.
+ */
+.studio-measure__select {
+  border: none;
+  padding: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.studio-measure__select:hover {
+  text-decoration: underline dotted;
+  text-underline-offset: 0.2em;
+}
+
+.studio-measure__select:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+.studio-chord-card__handle {
+  position: absolute;
+  inset-block: var(--space-2);
+  inset-inline-start: 0;
+  inline-size: 0.375rem;
+  border-radius: 2px;
+  background: repeating-linear-gradient(
+    180deg,
+    var(--border-strong) 0 2px,
+    transparent 2px 6px
+  );
+  opacity: 0;
+  cursor: grab;
+  touch-action: none;
+  transition: opacity var(--motion-fast) var(--ease-standard);
+}
+
+.studio-chord-card__handle[data-dragging="true"] {
+  opacity: 1;
+  cursor: grabbing;
+  background: var(--state-info);
+}
+
+.studio-chord-card__more {
+  position: absolute;
+  inset-block-start: 2px;
+  inset-inline-end: 2px;
+  display: grid;
+  place-items: center;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  border: none;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  line-height: 1;
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity var(--motion-fast) var(--ease-standard);
+}
+
+.studio-chord-card__more:hover {
+  background: color-mix(in srgb, var(--text-primary) 9%, transparent);
+  color: var(--text-primary);
+}
+
+.studio-chord-card__more:focus-visible {
+  opacity: 1;
+  outline: var(--focus-width) solid var(--focus-ring);
+}
+
+/*
+ * jcpe-disi.2: the × is the menu's Delete one click closer. It mirrors the
+ * ⋯ button and sits just inside it. Coarse pointers never render it — two
+ * 44 px targets would occlude a narrow card, and touch already reaches the
+ * same one-step delete through the 44 px menu.
+ */
+.studio-chord-card__delete {
+  position: absolute;
+  inset-block-start: 2px;
+  inset-inline-end: calc(2px + 1.5rem + 2px);
+  display: grid;
+  place-items: center;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  border: none;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  line-height: 1;
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity var(--motion-fast) var(--ease-standard);
+}
+
+.studio-chord-card__delete:hover {
+  background: color-mix(in srgb, var(--state-error) 14%, transparent);
+  color: var(--state-error);
+}
+
+.studio-chord-card__delete:focus-visible {
+  opacity: 1;
+  outline: var(--focus-width) solid var(--focus-ring);
+}
+
+/*
+ * jcpe-disi.2 dim-ghost law for the editing (teaching) view: handles are
+ * FINDABLE without hover — a dim ghost at rest, full strength on hover,
+ * focus, or selection. The compact reading view keeps its clean sheet and
+ * reveals handles only for the engaged card (hover/focus/selected), which
+ * the block below already governs.
+ */
+.studio-chart:not([data-view-mode="compact"]) .studio-chord-card__more,
+.studio-chart:not([data-view-mode="compact"]) .studio-chord-card__handle,
+.studio-chart:not([data-view-mode="compact"]) .studio-chord-card__delete {
+  opacity: 0.45;
+}
+
+.studio-chart:not([data-view-mode="compact"]) .studio-chord-card:hover .studio-chord-card__more,
+.studio-chart:not([data-view-mode="compact"]) .studio-chord-card:hover .studio-chord-card__handle,
+.studio-chart:not([data-view-mode="compact"]) .studio-chord-card:hover .studio-chord-card__delete,
+.studio-chart:not([data-view-mode="compact"]) .studio-chord-card:focus-within .studio-chord-card__more,
+.studio-chart:not([data-view-mode="compact"]) .studio-chord-card:focus-within .studio-chord-card__handle,
+.studio-chart:not([data-view-mode="compact"]) .studio-chord-card:focus-within .studio-chord-card__delete,
+.studio-chart:not([data-view-mode="compact"]) .studio-chord-card[data-selected="true"] .studio-chord-card__more,
+.studio-chart:not([data-view-mode="compact"]) .studio-chord-card[data-selected="true"] .studio-chord-card__handle,
+.studio-chart:not([data-view-mode="compact"]) .studio-chord-card[data-selected="true"] .studio-chord-card__delete {
+  opacity: 1;
+}
+
+.studio-chord-card__menu {
+  position: absolute;
+  inset-block-start: calc(100% + var(--space-1));
+  inset-inline-start: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 13rem;
+  max-inline-size: min(18rem, calc(100vw - 2 * var(--space-4)));
+  padding: var(--space-1);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-elevated);
+  box-shadow: var(--shadow-3);
+}
+
+.studio-chord-card__menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-block-size: var(--control-min-block);
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  text-align: start;
+  cursor: pointer;
+}
+
+.studio-chord-card__menu-item:hover {
+  background: color-mix(in srgb, var(--text-primary) 7%, transparent);
+}
+
+.studio-chord-card__menu-item:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: calc(-1 * var(--focus-width));
+}
+
+.studio-chord-card__menu-item[aria-disabled="true"] {
+  color: var(--text-subtle);
+  cursor: default;
+}
+
+/* Editors keep their exact text; the card frame stays quiet behind them. */
+.studio-chord-card__editor,
+.studio-chord-card input[data-testid="duration-editor"],
+.studio-chord-card input[data-testid="split-editor"] {
+  inline-size: 100%;
+  min-inline-size: 4rem;
+  padding: var(--space-1) var(--space-2);
+  border: var(--border-width) solid var(--state-info);
+  border-radius: var(--radius-xs);
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+  font-family: var(--font-chord);
+  font-size: var(--text-md);
+  text-align: center;
+}
+
+.studio-chord-card__editor:focus-visible,
+.studio-chord-card input[data-testid="duration-editor"]:focus-visible,
+.studio-chord-card input[data-testid="split-editor"]:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.studio-chord-card__prompt {
+  position: absolute;
+  inset-block-start: calc(100% + var(--space-1));
+  inset-inline-start: 0;
+  z-index: 32;
+  inline-size: max(16rem, 100%);
+  padding: var(--space-3);
+  border: var(--border-width) solid var(--state-warning);
+  border-radius: var(--radius-md);
+  background: var(--surface-elevated);
+  box-shadow: var(--shadow-3);
+}
+
+.studio-chord-card__prompt-text {
+  margin: 0 0 var(--space-2);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+}
+
+.studio-chord-card__teaching {
+  margin: var(--space-1) 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  line-height: var(--line-normal);
+}
+
+/* Menu z-order: open menus float above sibling cards and later measures. */
+.studio-chord-card:has(.studio-chord-card__menu) {
+  z-index: 26;
+}
+
+.studio-measure:has(.studio-chord-card__menu) {
+  z-index: 25;
+}
+
+.studio-measure__canvas:has(.studio-chord-card__menu) {
+  z-index: 25;
+}
+
+/* Edge columns open inward so the chart's scroll clip never eats a menu. */
+@media (min-width: 40rem) and (max-width: 63.999rem) {
+  .studio-measure-list > li:nth-child(2n) .studio-chord-card__menu {
+    inset-inline-start: auto;
+    inset-inline-end: 0;
+  }
+}
+
+@media (min-width: 64rem) {
+  .studio-measure-list > li:nth-child(4n) .studio-chord-card__menu {
+    inset-inline-start: auto;
+    inset-inline-end: 0;
+  }
+}
+
+/* Near the section foot the menu opens upward instead of clipping away. */
+.studio-measure-list > li:nth-last-child(-n + 4) .studio-chord-card__menu {
+  inset-block-start: auto;
+  inset-block-end: calc(100% + var(--space-1));
+}
+
+/* -------------------------------------------------------- insertion chips */
+
+/*
+ * Between-bar insertion is a slim in-flow tap zone on the barline: it can
+ * never overlap a neighbor control, and on touch it grows to the full
+ * 44 px law without eating the measure. The full sentence stays as the
+ * accessible name; sighted users get a quiet plus.
+ */
+.studio-insertion-target {
+  display: grid;
+  place-items: center;
+  padding: var(--space-1) var(--space-2) 0;
+}
+
+.studio-insertion-target .ui-button {
+  display: grid;
+  place-items: center;
+  inline-size: 100%;
+  min-inline-size: 0;
+  block-size: 1.5rem;
+  min-block-size: 1.5rem;
+  padding: 0;
+  border: var(--border-width) dashed transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-subtle);
+  font-size: 0;
+}
+
+.studio-insertion-target .ui-button::after {
+  content: "+";
+  font-size: var(--text-sm);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.studio-insertion-target .ui-button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.studio-insertion-target .ui-button:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+/* The section-end append target keeps its full words: it is a real action. */
+.studio-insertion-target--append {
+  position: static;
+  transform: none;
+  grid-column: 1 / -1;
+  display: grid;
+  place-items: center;
+  padding: var(--space-2);
+  border-block-start: var(--border-width) dashed var(--border-strong);
+}
+
+.studio-insertion-target--append .ui-button {
+  inline-size: auto;
+  block-size: auto;
+  min-inline-size: 0;
+  min-block-size: var(--control-min-block);
+  padding: var(--space-1) var(--space-4);
+  border-style: dashed;
+  border-color: var(--border-strong);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+}
+
+.studio-insertion-target--append .ui-button::after {
+  content: none;
+}
+
+/* Quiet chrome: insertion points whisper until hovered or focused. */
+@media (hover: hover) and (not (any-pointer: coarse)) {
+  .studio-chart[data-view-mode="compact"] .studio-insertion-target,
+  .studio-chart[data-view-mode="compact"] .studio-measure__tools {
+    opacity: 0.35;
+    transition: opacity var(--motion-fast) var(--ease-standard);
+  }
+
+  .studio-chart[data-view-mode="compact"] .studio-measure-list > li:hover .studio-insertion-target,
+  .studio-chart[data-view-mode="compact"] .studio-measure-list > li:focus-within .studio-insertion-target,
+  .studio-chart[data-view-mode="compact"] .studio-measure-list > li:hover .studio-measure__tools,
+  .studio-chart[data-view-mode="compact"] .studio-measure-list > li:focus-within .studio-measure__tools {
+    opacity: 1;
+  }
+
+  .studio-chart[data-view-mode="compact"] .studio-chord-card__more,
+  .studio-chart[data-view-mode="compact"] .studio-chord-card__handle,
+  .studio-chart[data-view-mode="compact"] .studio-chord-card__delete {
+    opacity: 0;
+  }
+
+  .studio-chart[data-view-mode="compact"] .studio-chord-card:hover .studio-chord-card__more,
+  .studio-chart[data-view-mode="compact"] .studio-chord-card:hover .studio-chord-card__handle,
+  .studio-chart[data-view-mode="compact"] .studio-chord-card:hover .studio-chord-card__delete,
+  .studio-chart[data-view-mode="compact"] .studio-chord-card:focus-within .studio-chord-card__more,
+  .studio-chart[data-view-mode="compact"] .studio-chord-card:focus-within .studio-chord-card__handle,
+  .studio-chart[data-view-mode="compact"] .studio-chord-card:focus-within .studio-chord-card__delete,
+  .studio-chart[data-view-mode="compact"] .studio-chord-card[data-selected="true"] .studio-chord-card__more,
+  .studio-chart[data-view-mode="compact"] .studio-chord-card[data-selected="true"] .studio-chord-card__handle,
+  .studio-chart[data-view-mode="compact"] .studio-chord-card[data-selected="true"] .studio-chord-card__delete {
+    opacity: 1;
+  }
+}
+
+/* Touch keeps every affordance on the table and every target at 44 px. */
+@media (pointer: coarse) {
+  .studio-chord-card__more {
+    opacity: 1;
+    inline-size: var(--touch-target);
+    block-size: var(--touch-target);
+  }
+
+  /* jcpe-disi.2: no × on touch — the 44 px menu carries the same one-step
+     delete, and a second 44 px target would occlude a narrow card. */
+  .studio-chord-card__delete {
+    display: none;
+  }
+
+  /* jcpe-disi.5: bar selection has no other touch path, so the bar's name
+     grows to the coarse floor instead of hiding — and its header row grows
+     WITH it, because a 44 px button centered in a 20 px row bleeds into the
+     split-section boundary tools above and the u0 overlap law rejects any
+     intersecting hit areas. */
+  .studio-measure__header {
+    min-block-size: var(--touch-target);
+    align-items: center;
+    /* Bar columns run at exact capacity: with every tool inflated to the
+       44 px floor, nowrap headers kiss across the gutter by a pixel and the
+       overlap law rejects the pair. Wrapping is the structural cure — the
+       tools drop under the bar's name whenever a column is tight. */
+    flex-wrap: wrap;
+  }
+
+  .studio-measure__select {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--touch-target);
+  }
+
+  .studio-shell .studio-icon-button,
+  .studio-shell .studio-range-bar__handle,
+  .studio-shell .studio-section__boundary-trigger,
+  .studio-shell .studio-section__boundary-item,
+  .studio-shell .studio-chord-card__menu-item,
+  .studio-shell .studio-section__field input {
+    min-inline-size: var(--touch-target);
+    min-block-size: var(--touch-target);
+  }
+
+  .studio-shell .studio-insertion-target .ui-button {
+    inline-size: 100%;
+    min-inline-size: 0;
+    block-size: var(--touch-target);
+    min-block-size: var(--touch-target);
+  }
+
+  .studio-shell .studio-insertion-target--append .ui-button {
+    min-block-size: var(--touch-target);
+  }
+
+  .studio-measure__tools .ui-button {
+    inline-size: var(--touch-target);
+    min-inline-size: var(--touch-target);
+    block-size: var(--touch-target);
+    min-block-size: var(--touch-target);
+  }
+
+  .studio-measure__tools .ui-button::after {
+    font-size: var(--text-md);
+  }
+
+  /* 44 px root chips need four-wide rows in the rail's measure. */
+  .studio-quick-entry__palette .studio-quick-entry__palette-roots {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* ------------------------------------------------------------ view modes */
+
+.studio-chart[data-view-mode="compact"] .studio-measure__facts,
+.studio-chart[data-view-mode="compact"] .studio-chord-card__duration,
+.studio-chart[data-view-mode="compact"] .studio-chord-card__marks {
+  display: none;
+}
+
+.studio-chart[data-view-mode="compact"] .studio-measure__empty-copy {
+  padding: var(--space-1) 0;
+}
+
+.studio-chart[data-view-mode="compact"] .studio-measure {
+  min-block-size: 5.5rem;
+}
+
+.studio-chart[data-view-mode="compact"] .studio-meter-signature {
+  display: none;
+}
+
+.studio-chart[data-view-mode="compact"] .studio-measure-list > li:first-child .studio-meter-signature {
+  display: inline;
+}
+
+.studio-chart[data-view-mode="teaching"] .studio-chord-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+  min-inline-size: 7rem;
+  min-block-size: 5rem;
+  padding: var(--space-2) var(--space-3);
+  text-align: start;
+}
+
+.studio-chart[data-view-mode="teaching"] .studio-chord-card__marks {
+  position: static;
+  order: -1;
+}
+
+.studio-chart[data-view-mode="teaching"] .studio-chord-card__teaching {
+  text-align: start;
+}
+
+.studio-chart[data-view-mode="teaching"] .studio-measure {
+  min-block-size: 9.5rem;
+}
+
+/* Teaching trades columns for legibility: two bars per system at most. */
+@media (min-width: 40rem) and (max-width: 63.999rem) {
+  .studio-chart[data-view-mode="teaching"] .studio-measure-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 64rem) {
+  .studio-chart[data-view-mode="teaching"] .studio-measure-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .studio-chart[data-view-mode="teaching"] .studio-measure-list > li {
+    border-inline-start: var(--border-width) solid var(--border-default);
+    border-block-start: none;
+  }
+
+  .studio-chart[data-view-mode="teaching"] .studio-measure-list > li:nth-child(2n + 1) {
+    border-inline-start: none;
+  }
+
+  .studio-chart[data-view-mode="teaching"] .studio-measure-list > li:nth-child(n + 3) {
+    border-block-start: var(--border-width) solid var(--border-default);
+  }
+
+  .studio-chart[data-view-mode="teaching"] .studio-measure-list > li.studio-insertion-target--append {
+    border-inline-start: none;
+  }
+}
+
+/* --------------------------------------------------------- empty document */
+
+.studio-chart__empty-document {
+  display: grid;
+  place-items: center;
+  min-block-size: 40vh;
+  padding: var(--space-8) var(--space-4);
+}
+
+.studio-chart__empty-document p:last-child {
+  color: var(--text-muted);
+}
+
+/* ------------------------------------------------------------ quick entry */
+
+.studio-quick-entry {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--surface-panel);
+}
+
+.studio-quick-entry h3 {
+  font-size: var(--text-md);
+  font-weight: 650;
+}
+
+.studio-quick-entry__demos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.studio-quick-entry__demos-label {
+  color: var(--text-subtle);
+  font-size: var(--text-xs);
+  margin-inline-end: var(--space-1);
+}
+
+.studio-quick-entry__palette {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.studio-quick-entry__palette-roots {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--space-1);
+}
+
+.studio-quick-entry__palette-qualities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+/*
+ * The catalogue reads as a list, not a wall of chips: each row states what
+ * it is before it states what it does. The note carries the provenance, so
+ * it is quiet but never hidden.
+ */
+.studio-quick-entry__library {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/*
+ * Playback settings group in the Library rail. Tempo (and later the groove
+ * picker) live here rather than in the fixed-height transport bar, which
+ * has no room to grow at phone widths.
+ */
+.studio-playback-settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-block-start: var(--space-3);
+  border-block-start: var(--border-width) solid var(--border-default);
+}
+
+.studio-playback-settings h3 {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+}
+
+.studio-playback-settings__tempo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.studio-playback-settings__tempo-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.studio-playback-settings__tempo-row .ui-input {
+  inline-size: 6rem;
+}
+
+.studio-playback-settings__feedback {
+  margin: 0;
+  min-block-size: 1.25em;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+/*
+ * Continuation options in the Harmony Lens: one row per plural option,
+ * symbol and category on the head line, the typed explanation beneath.
+ */
+.studio-continuation {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-block-start: var(--space-3);
+  border-block-start: var(--border-width) solid var(--border-default);
+}
+
+.studio-continuation__after {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.studio-continuation__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.studio-continuation__row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-elevated);
+}
+
+.studio-continuation__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.studio-continuation__symbol {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.studio-continuation__category {
+  margin-inline-end: auto;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.studio-continuation__why {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.studio-playback-settings__groove {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.studio-progression-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.studio-progression {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.studio-progression .ui-button {
+  justify-content: flex-start;
+  inline-size: 100%;
+  text-align: start;
+}
+
+.studio-progression__note {
+  color: var(--text-subtle);
+  font-size: var(--text-xs);
+  line-height: var(--line-normal);
+  text-wrap: pretty;
+}
+
+.studio-progression__kicker {
+  color: var(--accent);
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+
+.studio-quick-entry__palette-roots .ui-button,
+.studio-quick-entry__palette-qualities .ui-button {
+  font-family: var(--font-chord);
+  font-weight: 600;
+}
+
+/*
+ * Roots are a tight six-across grid of bare letters; only the selected root
+ * wears a chip, and it takes the primary variant -- which carries
+ * min-inline-size:44px. That is wider than the ~29.7px cell, so the chip
+ * spilled out of its column and painted over the next letter. In this grid
+ * the cell is the target: the 44px law is met on touch by the four-column
+ * coarse rule above, and the block axis already stands at 44.
+ */
+.studio-quick-entry__palette-roots .ui-button {
+  min-inline-size: 0;
+}
+
+.studio-quick-entry__label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.studio-quick-entry__hint {
+  margin: 0;
+  color: var(--text-subtle);
+  font-size: var(--text-xs);
+  font-weight: 400;
+  line-height: var(--line-normal);
+}
+
+.studio-quick-entry__field {
+  inline-size: 100%;
+  padding: var(--space-3);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: var(--line-normal);
+  caret-color: var(--accent);
+  resize: vertical;
+}
+
+.studio-quick-entry__field::placeholder {
+  color: var(--text-subtle);
+}
+
+.studio-quick-entry__field:focus-visible {
+  border-color: var(--border-strong);
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.studio-quick-entry__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.studio-quick-entry__target {
+  font-family: var(--font-mono);
+}
+
+.studio-quick-entry__count {
+  margin-inline-start: auto;
+  color: var(--text-subtle);
+  font-family: var(--font-mono);
+}
+
+/* The insertion plan states its fate with a colored marker, never color only. */
+.studio-quick-entry__plan {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-3);
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-chart);
+  font-size: var(--text-sm);
+}
+
+/*
+ * The statement may shrink and wrap at word boundaries. flex:none pinned
+ * it to its full width, so a narrow rail clipped "Cannot be inserted
+ * atomically" mid-word at the panel edge.
+ */
+.studio-quick-entry__plan strong {
+  flex: 0 1 auto;
+  min-inline-size: 0;
+}
+
+.studio-quick-entry__plan::before {
+  content: "";
+  flex: none;
+  inline-size: 0.625rem;
+  block-size: 0.625rem;
+  border-radius: 50%;
+  background: var(--text-subtle);
+  align-self: center;
+}
+
+.studio-quick-entry__plan[data-statement="fits-measure"]::before {
+  background: var(--state-success);
+}
+
+.studio-quick-entry__plan[data-statement="completes-measures"]::before {
+  background: var(--state-info);
+}
+
+.studio-quick-entry__plan[data-statement="incomplete-requires-confirmation"]::before {
+  background: var(--state-warning);
+}
+
+.studio-quick-entry__plan[data-statement="overfill-requires-split"]::before,
+.studio-quick-entry__plan[data-statement="not-atomic-refusal"]::before {
+  background: var(--state-error);
+}
+
+.studio-quick-entry__plan-resolutions {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+/* One prose sentence per parse issue, the frozen code in small type beside. */
+.studio-quick-entry__issues {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.studio-quick-entry__token-code {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+}
+
+.studio-quick-entry__tokens {
+  display: flex;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0 0 var(--space-1);
+  list-style: none;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.studio-quick-entry__token {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-inline-size: 14rem;
+  padding: var(--space-2);
+  border: var(--border-width) solid var(--border-default);
+  border-inline-start-width: 3px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-chart);
+  font-size: var(--text-xs);
+}
+
+.studio-quick-entry__token[data-state="valid"] {
+  border-inline-start-color: var(--state-success);
+}
+
+.studio-quick-entry__token[data-state="insertable"] {
+  border-inline-start-color: var(--state-info);
+}
+
+.studio-quick-entry__token[data-state="invalid"] {
+  border-inline-start-color: var(--state-error);
+}
+
+.studio-quick-entry__token-state {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 0.625rem;
+  color: var(--text-subtle);
+}
+
+.studio-quick-entry__token-text {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.studio-quick-entry__token-duration,
+.studio-quick-entry__token-range,
+.studio-quick-entry__token-note {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.studio-quick-entry__token .ui-button {
+  align-self: flex-start;
+  margin-block-start: var(--space-1);
+}
+
+.studio-quick-entry__truncation {
+  margin: 0;
+  color: var(--state-warning);
+  font-size: var(--text-xs);
+}
+
+.studio-quick-entry__recovery {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: var(--border-width) solid var(--border-default);
+  border-inline-start: 3px solid var(--state-warning);
+  border-radius: var(--radius-md);
+  background: var(--surface-chart);
+}
+
+.studio-quick-entry__recovery[data-available="false"] {
+  border-inline-start-color: var(--border-strong);
+  opacity: 0.85;
+}
+
+.studio-quick-entry__recovery h4 {
+  font-size: var(--text-sm);
+  font-weight: 650;
+}
+
+.studio-quick-entry__recovery-target {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.studio-quick-entry__recovery-blocked {
+  margin: 0;
+  color: var(--state-warning);
+  font-size: var(--text-xs);
+}
+
+.studio-quick-entry__refusal {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-inline-start: 3px solid var(--state-error);
+  border-radius: var(--radius-sm);
+  background: var(--surface-chart);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+}
+
+.studio-quick-entry__actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.studio-quick-entry__actions .ui-button[data-variant="primary"] {
+  flex: 1;
+}
+
+/* --------------------------------------------------------------- harmony */
+
+.studio-harmony-content {
+  gap: var(--space-5);
+}
+
+.studio-harmony-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-3);
+  text-align: center;
+}
+
+.studio-harmony-empty__mark {
+  display: grid;
+  place-items: center;
+  inline-size: 3rem;
+  block-size: 3rem;
+  margin-block-end: var(--space-2);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: 50%;
+  color: var(--accent);
+  background: var(--surface-panel);
+}
+
+.studio-harmony-empty h3 {
+  font-size: var(--text-md);
+  font-weight: 650;
+}
+
+.studio-harmony-empty p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  line-height: var(--line-normal);
+}
+
+.studio-harmony-empty__next-step {
+  color: var(--text-subtle) !important;
+  font-size: var(--text-xs) !important;
+}
+
+.studio-harmony-selected {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.studio-harmony-selected__symbol {
+  font-family: var(--font-chord);
+  font-size: var(--text-display);
+  font-weight: 700;
+  color: var(--accent-strong);
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.studio-document-facts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.studio-document-facts h3 {
+  font-size: var(--text-md);
+  font-weight: 650;
+}
+
+/* ------------------------------------------------------- mobile panel bar */
+
+/*
+ * Sheet triggers mirror rail visibility exactly: a panel that has no rail
+ * keeps its trigger. Below 40rem both panels are sheets; from 40rem the
+ * Harmony rail exists; from 68.75rem both rails exist and the group rests.
+ */
+@media (max-width: 39.999rem) {
+  .studio-mobile-panel-actions {
+    position: sticky;
+    inset-block-end: 0;
+    z-index: 15;
+    padding: var(--space-2);
+    margin: 0 calc(-1 * var(--space-4)) calc(-1 * var(--space-2));
+    background: color-mix(in srgb, var(--surface-chart) 88%, transparent);
+    backdrop-filter: blur(8px);
+  }
+}
+
+/*
+ * On short viewports the sticky dock's flow slot sits below the chart's
+ * scrollport before the user ever scrolls, so the dock gets pulled up and
+ * floats over the view toolbar — translucent buttons on top of buttons.
+ * There, the triggers return to normal flow: reachable by the same scroll
+ * that reaches everything else, occluding nothing.
+ */
+@media (max-width: 39.999rem) and (max-height: 37.49rem) {
+  .studio-mobile-panel-actions {
+    position: static;
+    margin: 0;
+    padding: 0;
+    background: none;
+    backdrop-filter: none;
+  }
+}
+
+@media (min-width: 40rem) {
+  #studio-open-harmony-sheet {
+    display: none;
+  }
+}
+
+@media (min-width: 68.75rem) {
+  .studio-mobile-panel-actions,
+  .studio-mobile-panel-actions .ui-button,
+  #studio-open-library-sheet {
+    display: none;
+  }
+}
+
+/* ------------------------------------------------------ responsive rails */
+
+@media (min-width: 40rem) {
   .studio-workspace {
-    grid-template-columns:
-      minmax(0, 1fr)
-      var(--rail-harmony-inline);
+    grid-template-columns: minmax(0, 1fr) var(--rail-harmony-inline);
   }
 
   .studio-shell[data-harmony-collapsed="true"] .studio-workspace {
@@ -1349,254 +2594,611 @@
 
   .studio-rail--harmony {
     display: block;
-  }
-
-  #studio-open-harmony-sheet {
-    display: none;
-  }
-
-  .studio-mobile-panel-actions {
-    inline-size: auto;
-    order: 0;
+    border-inline-start: var(--border-width) solid var(--border-default);
   }
 
   .studio-chart__header {
+    flex-direction: row;
+    flex-wrap: wrap;
     align-items: center;
-  }
-
-  .studio-measure-list {
-    grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
-  }
-
-  .studio-transport {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-
-  .studio-transport__controls {
-    grid-column: 2;
-    grid-row: 1;
-    justify-content: center;
-  }
-
-  .studio-transport__facts {
-    grid-column: 1 / -1;
-  }
-
-  .studio-transport__facts .ui-key-value-list {
-    display: flex;
-  }
-
-  .studio-transport__facts .ui-key-value-list dt {
-    white-space: nowrap;
-  }
-
-  .studio-transport__facts .ui-key-value-list__item,
-  .studio-transport__facts .ui-key-value-list__item:nth-child(odd) {
-    border-block-start: 0;
-    border-inline-start: var(--border-width) solid
-      color-mix(in srgb, var(--border-default) 80%, transparent);
-  }
-
-  .studio-transport__facts .ui-key-value-list__item:first-child {
-    border-inline-start: 0;
-    padding-inline-start: 0;
-  }
-
-  .studio-transport__facts .ui-key-value-list__item:last-child {
-    padding-inline-end: 0;
   }
 }
 
-/* ------------------------------------------------------------------ wide */
+@media (min-width: 64rem) {
+  .studio-measure-list {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .studio-measure-list > li {
+    border-inline-start: var(--border-width) solid var(--border-default);
+    border-block-start: none;
+  }
+
+  .studio-measure-list > li:nth-child(4n + 1) {
+    border-inline-start: none;
+  }
+
+  .studio-measure-list > li:nth-child(n + 5) {
+    border-block-start: var(--border-width) solid var(--border-default);
+  }
+
+  .studio-measure-list > li.studio-insertion-target--append {
+    border-inline-start: none;
+  }
+}
+
+@media (min-width: 40rem) and (max-width: 63.999rem) {
+  .studio-measure-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .studio-measure-list > li {
+    border-inline-start: var(--border-width) solid var(--border-default);
+    border-block-start: none;
+  }
+
+  .studio-measure-list > li:nth-child(2n + 1) {
+    border-inline-start: none;
+  }
+
+  .studio-measure-list > li:nth-child(n + 3) {
+    border-block-start: var(--border-width) solid var(--border-default);
+  }
+
+  .studio-measure-list > li.studio-insertion-target--append {
+    border-inline-start: none;
+  }
+}
 
 @media (min-width: 68.75rem) {
-  .studio-header {
-    grid-template-columns: auto minmax(22rem, 40rem) auto;
-    justify-content: space-between;
-    align-items: center;
-    gap: var(--space-5);
-    padding-inline: var(--space-5);
-  }
-
-  .studio-title-editor {
-    grid-column: 2;
-    grid-row: 1;
-  }
-
-  .studio-document-actions {
-    display: flex;
-    min-inline-size: 0;
-    grid-column: 3;
-    grid-row: 1;
-    align-items: center;
-    gap: var(--space-4);
-  }
-
-  .studio-document-status {
-    display: grid;
-    justify-items: end;
-    gap: var(--space-1);
-  }
-
-  .studio-history-actions {
-    display: flex;
-  }
-
-  .studio-workspace,
-  .studio-shell[data-harmony-collapsed="true"] .studio-workspace {
-    grid-template-columns:
-      var(--rail-library-inline)
-      minmax(0, 1fr)
-      var(--rail-harmony-inline);
+  .studio-workspace {
+    grid-template-columns: var(--rail-library-inline) minmax(0, 1fr) var(--rail-harmony-inline);
   }
 
   .studio-shell[data-library-collapsed="true"] .studio-workspace {
-    grid-template-columns:
-      var(--studio-collapsed-rail)
-      minmax(0, 1fr)
-      var(--rail-harmony-inline);
+    grid-template-columns: var(--studio-collapsed-rail) minmax(0, 1fr) var(--rail-harmony-inline);
   }
 
   .studio-shell[data-harmony-collapsed="true"] .studio-workspace {
-    grid-template-columns:
-      var(--rail-library-inline)
-      minmax(0, 1fr)
-      var(--studio-collapsed-rail);
+    grid-template-columns: var(--rail-library-inline) minmax(0, 1fr) var(--studio-collapsed-rail);
   }
 
-  .studio-shell[data-library-collapsed="true"][data-harmony-collapsed="true"]
-    .studio-workspace {
+  .studio-shell[data-library-collapsed="true"][data-harmony-collapsed="true"] .studio-workspace {
     grid-template-columns:
-      var(--studio-collapsed-rail)
-      minmax(0, 1fr)
+      var(--studio-collapsed-rail) minmax(0, 1fr)
       var(--studio-collapsed-rail);
   }
 
   .studio-rail--library {
     display: block;
+    border-inline-end: var(--border-width) solid var(--border-default);
+  }
+}
+
+/* ------------------------------------------------------- sheet variants */
+
+.studio-shell .ui-sheet[data-side="inline-start"] {
+  inline-size: min(20rem, calc(100% - var(--sheet-context-reveal)));
+}
+
+.studio-shell .ui-sheet[data-side="inline-end"] {
+  inline-size: min(22rem, calc(100% - var(--sheet-context-reveal)));
+}
+
+.studio-shell .ui-sheet[data-side="block-end"] {
+  inline-size: min(38rem, calc(100% - var(--space-4)));
+  border-start-start-radius: var(--radius-lg);
+  border-start-end-radius: var(--radius-lg);
+}
+
+/* -------------------------------------------------------- completion dialog */
+
+.studio-completion-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.studio-completion-dialog__refusal {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  line-height: var(--line-normal);
+}
+
+.studio-completion-dialog__label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.studio-completion-dialog__field {
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+  font-size: var(--text-md);
+}
+
+.studio-completion-dialog__field:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.studio-completion-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+/* ------------------------------------------------------------- shell notice */
+
+.studio-shell-notice {
+  grid-row: 3;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  border-block-start: var(--border-width) solid var(--state-error);
+  background: color-mix(in srgb, var(--state-error) 10%, var(--surface-header));
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+}
+
+.studio-shell-notice__cue {
+  display: grid;
+  place-items: center;
+  flex: none;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  border-radius: 50%;
+  background: var(--state-error);
+  color: var(--text-inverse);
+  font-weight: 700;
+}
+
+.studio-shell-notice__recovery {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.studio-shell-notice .ui-button {
+  margin-inline-start: auto;
+}
+
+/* ---------------------------------------------------------- startup failure */
+
+.studio-startup-failure {
+  display: grid;
+  place-items: center;
+  min-block-size: 100dvh;
+  padding: var(--space-6);
+  background: var(--surface-app);
+  color: var(--text-primary);
+}
+
+/* ---------------------------------------------------------------- transport */
+
+.studio-transport {
+  position: relative;
+  z-index: 1;
+  grid-row: 2;
+  display: grid;
+  grid-template-areas: "controls status facts";
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  min-block-size: var(--transport-min-block);
+  /* The sheet layer anchors to this exact height; never let content grow it. */
+  block-size: calc(var(--transport-min-block) + env(safe-area-inset-bottom, 0px));
+  overflow: hidden;
+  padding: var(--space-2) var(--space-4);
+  padding-block-end: calc(var(--space-2) + env(safe-area-inset-bottom, 0px));
+  border-block-start: var(--border-width) solid var(--border-default);
+  background: color-mix(in srgb, var(--surface-header) 94%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+.studio-transport__sweep {
+  position: absolute;
+  inset-block-start: -1px;
+  inset-inline: 0;
+  block-size: 2px;
+  background: color-mix(in srgb, var(--text-primary) 8%, transparent);
+  pointer-events: none;
+}
+
+.studio-transport__sweep-fill {
+  display: block;
+  block-size: 100%;
+  inline-size: 0;
+  background: linear-gradient(90deg, var(--accent), var(--accent-strong));
+  box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+.studio-transport__sweep-fill[data-active="false"] {
+  inline-size: 0 !important;
+  box-shadow: none;
+}
+
+.studio-transport__controls {
+  grid-area: controls;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* The play key is the one brass object on the console. */
+#studio-transport-play:not(:disabled) {
+  inline-size: 3rem;
+  block-size: 3rem;
+  border: none;
+  border-radius: 50%;
+  background: linear-gradient(
+    150deg,
+    var(--accent-strong),
+    var(--accent) 60%,
+    color-mix(in srgb, var(--accent) 78%, var(--surface-sunken))
+  );
+  color: var(--on-accent);
+  box-shadow: var(--shadow-2),
+    inset 0 1px 0 color-mix(in srgb, var(--text-primary) 25%, transparent);
+}
+
+#studio-transport-play:not(:disabled):hover {
+  filter: brightness(1.06);
+  box-shadow: var(--glow-accent);
+}
+
+#studio-transport-play:not(:disabled):active {
+  transform: translateY(1px);
+}
+
+.studio-transport[data-audio-state="playing"] #studio-transport-play {
+  box-shadow: var(--glow-accent);
+}
+
+.studio-transport__controls .ui-icon-button:disabled {
+  opacity: 0.4;
+}
+
+.studio-transport__status {
+  grid-area: status;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-inline-size: 0;
+}
+
+.studio-transport__status-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  inline-size: 2rem;
+  block-size: 2rem;
+  border-radius: 50%;
+  border: var(--border-width) solid var(--border-default);
+  color: var(--text-muted);
+}
+
+.studio-transport[data-audio-state="playing"] .studio-transport__status-icon {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.studio-transport[data-audio-state="failed"] .studio-transport__status-icon,
+.studio-transport[data-audio-state="unavailable"] .studio-transport__status-icon {
+  color: var(--state-error);
+  border-color: var(--state-error);
+}
+
+/*
+ * The text block must be allowed to shrink. A min-inline-size:auto ancestor
+ * pins it to its content width, so the nowrap ellipsis below never engages
+ * and the sentence paints straight across the transport controls.
+ */
+.studio-transport__status p {
+  min-inline-size: 0;
+  overflow: hidden;
+}
+
+/*
+ * Scoped through the p on purpose: a bare `.studio-transport__status span`
+ * outranks .studio-transport__status-icon and would flip the icon out of
+ * its grid centering.
+ */
+.studio-transport__status p strong {
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: 650;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.studio-transport__status p span {
+  display: block;
+  /* --text-muted, not subtle: 12px status text must clear 4.5:1. */
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-inline-size: 32rem;
+}
+
+.studio-transport__facts {
+  grid-area: facts;
+}
+
+.studio-transport__facts .ui-key-value-list {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.studio-transport__facts .ui-key-value-list__item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-size: var(--text-xs);
+}
+
+.studio-transport__facts .ui-key-value-list__item dt {
+  color: var(--text-subtle);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.625rem;
+}
+
+.studio-transport__facts .ui-key-value-list__item dd {
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Compact transport: keep the facts to what a thumb needs. */
+@media (max-width: 39.999rem) {
+  .studio-transport {
+    grid-template-areas: "status controls facts";
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: var(--space-2);
+    padding-inline:
+      max(var(--space-3), env(safe-area-inset-left, 0px))
+      max(var(--space-3), env(safe-area-inset-right, 0px));
   }
 
-  #studio-open-library-sheet {
+  .studio-transport__facts .ui-key-value-list__item:not(:nth-child(2)) {
     display: none;
   }
 
-  .studio-chart {
-    padding: var(--space-6) var(--space-8);
+  /*
+   * Measured budget at 390px: the row spends 148 on controls and 99 on the
+   * facts, leaving 103 for the status. The decorative glyph costs 40 of it,
+   * which clipped even "Audio off" (72). It is aria-hidden, so dropping it
+   * here loses no meaning and lets every steady label state itself in full
+   * ("Audio ready" 96, "Audio failed" 95); only the sub-second transients
+   * "Starting/Stopping playback" (140/147) ellipsis.
+   */
+  .studio-transport__status-icon {
+    display: none;
   }
 
-  .studio-transport {
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  }
-
-  .studio-transport__facts {
-    grid-column: 3;
-    grid-row: 1;
-    justify-self: end;
-    min-inline-size: 0;
-  }
-}
-
-/* ---------------------------------------------------------- environments */
-
-@media (pointer: coarse) {
-  .studio-icon-button {
-    inline-size: var(--touch-target);
-    min-block-size: var(--touch-target);
-  }
-
-  .studio-transport__controls .ui-icon-button {
-    inline-size: var(--touch-target);
-  }
-}
-
-@media (prefers-contrast: more) {
-  .studio-header,
-  .studio-rail--library,
-  .studio-rail--harmony,
-  .studio-transport,
-  .studio-staged-list > li,
-  .studio-chart-summary,
-  .studio-measure,
-  .studio-measure__header,
-  .studio-measure__facts,
-  .studio-document-facts dl,
-  .studio-document-facts dl > div,
-  .studio-truth-note {
-    border-color: var(--border-strong);
-  }
-
-  .studio-title-editor__label-row,
-  .studio-truth-note,
-  .studio-staged-list p,
-  .studio-harmony-empty p,
+  /*
+   * A thumb-width console states its condition, not its explanation: the
+   * supporting sentence would only ellipsis to a stub and starve the label.
+   * It is hidden visually rather than with display:none because it carries
+   * #studio-transport-status-detail, the aria-describedby target of the
+   * playback controls group -- display:none would drop that description.
+   */
   .studio-transport__status p span {
-    color: var(--text-muted);
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .studio-transport__facts .ui-key-value-list__item dd {
+    font-family: var(--font-chord);
+    font-size: var(--text-md);
+  }
+
+  #studio-transport-play:not(:disabled) {
+    inline-size: var(--touch-target);
+    block-size: var(--touch-target);
   }
 }
+
+/*
+ * Below ~360px the one remaining fact and the status label cannot share
+ * the row: the fact wins the arithmetic and the audio-state truth
+ * ellipsizes to a single letter. The chart and Harmony Lens both state
+ * the current chord; the transport's condition has no other voice.
+ */
+@media (max-width: 22.49rem) {
+  .studio-transport__facts {
+    display: none;
+  }
+
+  /* One field-width row each: the input, then its two buttons together —
+     never a lone orphaned Reset. */
+  .studio-title-editor__control-row .ui-input {
+    flex-basis: 100%;
+  }
+}
+
+@media (min-width: 40rem) and (max-width: 63.999rem) {
+  .studio-transport__facts .ui-key-value-list__item:nth-child(odd) {
+    display: none;
+  }
+}
+
+/* ---------------------------------------------------------------- analyzer */
+
+.studio-analyzer {
+  position: fixed;
+  right: 1rem;
+  bottom: 5.75rem;
+  z-index: 30;
+  width: 20rem;
+  padding: var(--space-2) var(--space-3) var(--space-3);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--surface-elevated) 92%, transparent);
+  backdrop-filter: blur(8px);
+  box-shadow: var(--shadow-3);
+}
+
+.studio-analyzer[data-active="false"] {
+  display: none;
+}
+
+@media (max-width: 1279px) {
+  .studio-analyzer {
+    display: none;
+  }
+}
+
+.studio-analyzer__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-block-end: var(--space-2);
+}
+
+.studio-analyzer__title {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.studio-analyzer__verdict {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.studio-analyzer[data-verdict="match"] .studio-analyzer__verdict {
+  color: var(--accent);
+}
+
+.studio-analyzer[data-verdict="mismatch"] .studio-analyzer__verdict {
+  color: var(--text-primary);
+}
+
+.studio-analyzer__canvas {
+  display: block;
+  inline-size: 100%;
+  block-size: 8rem;
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+}
+
+.studio-analyzer__notes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-block-start: var(--space-2);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.studio-analyzer__detail {
+  margin-block-start: var(--space-1);
+  color: var(--text-subtle);
+  font-size: var(--text-xs);
+}
+
+/* ----------------------------------------------------- environment blocks */
 
 @media (prefers-reduced-motion: reduce) {
   .studio-shell *,
   .studio-shell *::before,
   .studio-shell *::after {
-    scroll-behavior: auto !important;
-    transition-duration: var(--motion-reduced) !important;
     animation-duration: var(--motion-reduced) !important;
+    transition-duration: var(--motion-reduced) !important;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .studio-measure-list,
+  .studio-quick-entry,
+  .studio-chord-card__menu,
+  .studio-section__boundary-menu,
+  .studio-chart-summary {
+    border-color: var(--border-strong);
+  }
+
+  .studio-chart__view-status,
+  .studio-quick-entry__hint {
+    color: var(--text-muted);
+  }
+
+  .studio-chord-card[data-selected="true"] {
+    border-color: var(--focus-ring);
   }
 }
 
 @media (forced-colors: active) {
-  .studio-shell,
-  .studio-shell__frame,
-  .studio-header,
-  .studio-workspace,
-  .studio-chart,
-  .studio-rail,
-  .studio-transport,
-  .studio-measure,
-  .studio-measure__canvas,
-  .studio-measure__header,
-  .studio-staged-list > li,
-  .studio-harmony-empty,
-  .studio-chart-summary,
-  .studio-shell .ui-sheet,
-  .studio-shell .ui-sheet__header {
+  .studio-shell::before,
+  .studio-measure__staff,
+  .studio-transport__sweep {
+    display: none;
+  }
+
+  .studio-chord-card[data-selected="true"] {
+    border-color: Highlight;
+    background: Canvas;
+    box-shadow: none;
+  }
+
+  .studio-chord-card[data-playing="true"] {
+    border-color: Mark;
+    box-shadow: none;
+  }
+
+  .studio-chord-card[data-in-range="true"] {
+    box-shadow: inset 0 0 0 2px Highlight;
+  }
+
+  #studio-transport-play:not(:disabled) {
+    background: ButtonFace;
+    color: ButtonText;
+    box-shadow: none;
+  }
+
+  .studio-brand__mark,
+  .studio-shell-notice__cue {
+    background: Canvas;
     color: CanvasText;
-    background: Canvas;
+    border: 1px solid CanvasText;
     box-shadow: none;
   }
 
-  .studio-icon-button,
-  .studio-measure,
-  .studio-harmony-empty,
-  .studio-staged-list > li,
-  .studio-chart-summary,
-  .studio-transport__status-icon,
-  .studio-shell .ui-sheet,
-  .studio-shell .ui-sheet .ui-button {
+  .studio-insertion-target .ui-button,
+  .studio-range-bar__handle,
+  .studio-section__letter {
+    border-color: ButtonBorder;
+    color: ButtonText;
+    background: ButtonFace;
+    box-shadow: none;
+  }
+
+  .studio-title-editor__feedback,
+  .studio-quick-entry__refusal,
+  .studio-chart__refusal,
+  .studio-quick-entry__recovery {
     border-color: CanvasText;
-  }
-
-  .studio-brand__mark {
-    color: HighlightText;
-    background: Highlight;
-    box-shadow: none;
-  }
-
-  .studio-panel-heading h2::after {
-    background: CanvasText;
-  }
-
-  .studio-icon-button:disabled {
-    color: GrayText;
-    border-color: GrayText;
-    background: Canvas;
-    opacity: 1;
-  }
-
-  .studio-shell .ui-sheet-backdrop {
-    background: Canvas;
-    backdrop-filter: none;
-    opacity: 0.75;
   }
 }
 
@@ -1604,18 +3206,246 @@
   .studio-header,
   .studio-rail,
   .studio-transport,
-  .studio-mobile-panel-actions,
   .studio-shell-notice,
-  .studio-shell .ui-sheet-layer {
-    display: none;
+  .studio-mobile-panel-actions,
+  .studio-analyzer,
+  .studio-skip-link,
+  .studio-chart__header .studio-chart__edit-actions,
+  .studio-chart__header .studio-chart__view-actions {
+    display: none !important;
   }
 
-  .studio-shell,
-  .studio-shell__frame,
-  .studio-workspace,
-  .studio-chart {
-    min-block-size: 0;
+  .studio-shell {
     block-size: auto;
     overflow: visible;
   }
+
+  .studio-shell::before {
+    display: none;
+  }
+
+  .studio-chart {
+    overflow: visible;
+  }
+
+  .studio-chart__header {
+    position: static;
+    border-block-end: none;
+  }
+
+  .studio-measure-list {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    box-shadow: none;
+  }
+
+  .studio-insertion-target {
+    display: none;
+  }
+}
+
+/*
+ * MIDI import (jcpe-v3c2.2). The surface lives inside the library panel, so it
+ * inherits that column's width and adds none of its own: every measurement is
+ * relative, the fact grid is minmax(0, 1fr) so a long value shrinks instead of
+ * pushing the rail past the viewport, and the chart-text preview scrolls
+ * inside itself rather than widening the page at 320px.
+ */
+.studio-midi-import {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-chart);
+}
+
+.studio-midi-import h3 {
+  font-size: var(--text-sm);
+  font-weight: 650;
+}
+
+.studio-midi-import__label {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+
+.studio-midi-import__hint {
+  margin: 0;
+  color: var(--text-subtle);
+  font-size: var(--text-xs);
+  line-height: var(--line-normal);
+}
+
+.studio-midi-import__field {
+  max-width: 100%;
+  min-width: 0;
+  padding: var(--space-2);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+}
+
+.studio-midi-import__field::file-selector-button {
+  margin-inline-end: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border: var(--border-width) solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--action-secondary);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.studio-midi-import__status {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.studio-midi-import__refusal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border-inline-start: 3px solid var(--state-error);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+}
+
+.studio-midi-import__refusal-sentence {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+}
+
+.studio-midi-import__refusal-where {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.studio-midi-import__code {
+  color: var(--text-subtle);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  overflow-wrap: anywhere;
+}
+
+.studio-midi-import__summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.studio-midi-import__facts {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.studio-midi-import__fact {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+}
+
+.studio-midi-import__fact-key {
+  color: var(--text-subtle);
+  overflow-wrap: anywhere;
+}
+
+.studio-midi-import__fact-value {
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.studio-midi-import__law {
+  margin: 0;
+  color: var(--text-subtle);
+  font-size: var(--text-xs);
+  line-height: var(--line-normal);
+}
+
+.studio-midi-import__chart {
+  max-width: 100%;
+  margin: 0;
+  padding: var(--space-2);
+  overflow-x: auto;
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  white-space: pre;
+}
+
+.studio-midi-import__sonorities {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.studio-midi-import__sonority {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-1);
+  padding: var(--space-2);
+  border: var(--border-width) solid var(--border-default);
+  border-inline-start: 3px solid var(--state-success);
+  border-radius: var(--radius-sm);
+  background: var(--surface-panel);
+}
+
+.studio-midi-import__sonority[data-written="false"] {
+  border-inline-start-color: var(--state-warning);
+}
+
+.studio-midi-import__sonority-where {
+  color: var(--text-subtle);
+  font-size: var(--text-xs);
+}
+
+.studio-midi-import__sonority-symbol {
+  color: var(--text-primary);
+  font-family: var(--font-chord);
+  font-size: var(--text-md);
+  overflow-wrap: anywhere;
+}
+
+.studio-midi-import__sonority-evidence,
+.studio-midi-import__sonority-alternatives,
+.studio-midi-import__sonority-custom {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  line-height: var(--line-normal);
+  overflow-wrap: anywhere;
+}
+
+.studio-midi-import__sonority-custom {
+  color: var(--state-warning);
+}
+
+.studio-midi-import__blocked {
+  margin: 0;
+  color: var(--state-warning);
+  font-size: var(--text-xs);
+  line-height: var(--line-normal);
+}
+
+.studio-midi-import__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
 }

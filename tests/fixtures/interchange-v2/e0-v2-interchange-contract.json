@@ -1,0 +1,94 @@
+{
+  "schema": "changes.fixtures.e0-v2-interchange-contract.v1",
+  "contractDocument": "docs/E0_V2_INTERCHANGE_CONTRACT.md",
+  "beadId": "jcpe-milestone-reliable-studio-l3a.8.4",
+  "package": "E0-v2",
+  "pinState": "reviewed-byte-and-semantic-pinned",
+  "reviewState": "proposed-independent-spec",
+  "expectedValuesGenerated": false,
+  "productionOutputUsedAsOracle": false,
+  "implementationStatus": "specified-unimplemented",
+  "semanticBindingRequiresExplicitProjectOwnerAcceptance": true,
+  "identities": {
+    "contractSchema": "changes.application.e0-interchange-v2-contract.v1",
+    "commitRequestSchema": "changes.import-commit-request.v2",
+    "exportDeliveryRequestSchema": "changes.canonical-export-delivery-request.v2",
+    "markerSettlementRequestSchema": "changes.canonical-export-marker-settlement-request.v2",
+    "importTransactionPolicy": {
+      "id": "changes.import-transaction",
+      "version": 2
+    },
+    "exportMarkerSettlementPolicy": {
+      "id": "changes.export-marker-settlement",
+      "version": 2
+    }
+  },
+  "adoptedOwnerSchemas": [
+    "changes.prepared-import-replacement-publication.v1",
+    "changes.canonical-export-revision-publication.v1",
+    "changes.import-nonundoable-confirmation.v1"
+  ],
+  "conflictResolutionIds": [
+    "E0V2-RES-01-import-request-current-state",
+    "E0V2-RES-02-preview-impact-projection",
+    "E0V2-RES-03-preview-to-owner-request-projection",
+    "E0V2-RES-04-acknowledgement-provenance",
+    "E0V2-RES-05-state-free-commit-success",
+    "E0V2-RES-06-state-free-commit-refusals",
+    "E0V2-RES-07-state-free-publication-protocol-failure",
+    "E0V2-RES-08-state-free-marker-path",
+    "E0V2-RES-09-widened-preparation-refusals",
+    "E0V2-RES-10-replacement-publication-refusals",
+    "E0V2-RES-11-state-free-public-marker-requests"
+  ],
+  "refusalAdoption": {
+    "preparationCodesAdoptedFromOwner": 20,
+    "v1PreparationCodesProvenMembers": [
+      "import.confirmation_stale",
+      "import.confirmation_wrong_document",
+      "import.replacement_impact_unavailable",
+      "import.confirmation_impact_mismatch",
+      "import.confirmation_identity_mismatch",
+      "history.nonundoable_confirmation_required"
+    ],
+    "publicationCodesAdoptedFromOwner": 3
+  },
+  "stateFreedom": {
+    "forbiddenKeysAtAnyDepthOfV2RequestOrResult": [
+      "state",
+      "currentState",
+      "lastKnownState",
+      "observedBefore"
+    ],
+    "falseFriendValueStringsAreNotKeys": true
+  },
+  "companions": [
+    "normalization-cases.json",
+    "resolution-cases.json",
+    "projection-cases.json",
+    "workflow-cases.json",
+    "mutation-controls.json",
+    "trace-ledger.json",
+    "provenance-ledger.json"
+  ],
+  "pendingCompanions": [],
+  "pendingResolutionCoverage": [],
+  "counts": {
+    "normalizationCases": 22,
+    "resolutionCases": 16,
+    "projectionCases": 7,
+    "workflowCases": 8,
+    "mutationControls": 14,
+    "traces": 7,
+    "authorities": 5
+  },
+  "reviewedFileSha256": {
+    "normalization-cases.json": "eba43965f65a8833f0f09e3f89c575db7763a0b59dc14a848ecab6798fa65d69",
+    "resolution-cases.json": "9e8d3e3ece79325b454f43240a160cac52470f41c990ebf03126c6818474a25d",
+    "projection-cases.json": "db41caf392aae15ee8122486416a9d6f0591a3e3d18e945ea5b5f263c5536219",
+    "workflow-cases.json": "6799a9afff2557c4517c3aaaf111a667bde64c7ebb68031882ccb0c813a7404c",
+    "mutation-controls.json": "82dbbab50c6467b530a96a66193ad29e08d9efc48670b14bd58a9a92d2834bae",
+    "trace-ledger.json": "0329f17849a6083b618423493fb8cf31d63688bee860fdf2950a7599e84ca4a7",
+    "provenance-ledger.json": "2465c32faab1ecf37d42534e2d01b29ce70c3dd309b4e5d939bf09cf2a2d6d57"
+  }
+}

@@ -1949,7 +1949,15 @@ describe("E0 accepted transactional interchange contract", () => {
       [nested["playback"] as JsonObject, "playback"],
     ];
     for (const [value, shape] of orderCases) {
-      expect(Object.keys(value)).toEqual(keyOrder[shape] as string[]);
+      // jcpe-jnnu: grooveStyleId is the single optional persisted key and is
+      // canonically absent at the default groove, so the accepted goldens
+      // exercise the declared order minus any optional key they do not store.
+      const expectedKeys = (keyOrder[shape] as string[]).filter(
+        (key) =>
+          !(shape === "playback" && key === "grooveStyleId") ||
+          Object.hasOwn(value, key),
+      );
+      expect(Object.keys(value)).toEqual(expectedKeys);
     }
 
     const decoded = decodeDocumentShape(nested);

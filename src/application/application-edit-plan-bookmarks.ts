@@ -381,6 +381,33 @@ function mapSplitSectionBoundary(
   return unchangedBoundary(boundary);
 }
 
+/**
+ * Section 21.5, one level down from `mapSplitSectionBoundary`. Every event
+ * identity survives, so `before-event` and `after-event` on any surviving event
+ * are unchanged, and so are `before-measure` and `measure-start` on the
+ * retained measure — those still denote the same point. Only the two boundaries
+ * that denoted the end of the *complete* source measure move to the suffix,
+ * because that is where that musical point now is. No internal beat is
+ * approximated and no boundary is guessed.
+ */
+function mapSplitMeasureBoundary(
+  boundary: StableBoundary,
+  source: MeasureId,
+  suffix: MeasureId,
+): BoundaryMapping {
+  if (
+    (boundary.kind === "after-measure" ||
+      boundary.kind === "measure-end") &&
+    boundary.measureId === source
+  ) {
+    return rewrittenBoundary(
+      boundary,
+      Object.freeze({ kind: boundary.kind, measureId: suffix }),
+    );
+  }
+  return unchangedBoundary(boundary);
+}
+
 function mapJoinSectionBoundary(
   boundary: StableBoundary,
   left: SectionId,
@@ -459,6 +486,7 @@ export function mapAtomicEditPlanBookmarks(
   let insertionPolicy:
     | "preserve-existing"
     | "move-after-last-inserted"
+    | "create-after-last-inserted"
     | "rewrite-exact-span-end"
     | "rewrite-representable-boundaries"
     | "clear-unrepresentable-internal-event-boundary" =
@@ -467,6 +495,7 @@ export function mapAtomicEditPlanBookmarks(
     from: AtomicEditPlanBoundary;
     to: AtomicEditPlanBoundary;
   }> | null = null;
+  let insertionCreated: AtomicEditPlanBoundary | null = null;
   let insertionCleared = false;
   let range =
     beforeBookmarks.range === null
@@ -490,20 +519,25 @@ export function mapAtomicEditPlanBookmarks(
   switch (plan.kind) {
     case "insert-fragment": {
       operationPolicy =
-        "preserve-selection-and-range-move-insertion-after-last-inserted";
+        "preserve-selection-and-range-set-insertion-after-last-inserted";
       const target = insertedBoundary(plan, allocations);
       if (target === null) {
         throw new Error("A0_U1_INTERNAL_INSERT_BOOKMARK");
       }
-      const sourceBoundary =
-        beforeBookmarks.insertion ??
-        freezeBoundary(plan.source.quickEntrySnapshot.target);
       insertion = target;
-      insertionPolicy = "move-after-last-inserted";
-      insertionRewrite = boundaryRewrite(
-        sourceBoundary,
-        target,
-      );
+      if (beforeBookmarks.insertion === null) {
+        // No before insertion record exists, so the receipt reports an
+        // honest creation instead of fabricating a rewrite source from the
+        // QuickEntry target.
+        insertionPolicy = "create-after-last-inserted";
+        insertionCreated = freezeBoundary(target);
+      } else {
+        insertionPolicy = "move-after-last-inserted";
+        insertionRewrite = boundaryRewrite(
+          beforeBookmarks.insertion,
+          target,
+        );
+      }
       recordsRewritten += 1;
       break;
     }
@@ -556,6 +590,17 @@ export function mapAtomicEditPlanBookmarks(
       }
       mapper = (boundary) =>
         mapSplitSectionBoundary(boundary, plan.sectionId, suffix.id);
+      break;
+    }
+    case "split-measure": {
+      operationPolicy =
+        "preserve-node-identities-rewrite-source-measure-end-to-suffix";
+      const suffix = allocations[0];
+      if (suffix?.kind !== "measure") {
+        throw new Error("A0_U1_INTERNAL_SPLIT_MEASURE_BOOKMARK");
+      }
+      mapper = (boundary) =>
+        mapSplitMeasureBoundary(boundary, plan.measureId, suffix.id);
       break;
     }
     case "join-sections": {
@@ -665,6 +710,7 @@ export function mapAtomicEditPlanBookmarks(
     selectionReplacements,
     insertionPolicy,
     insertionRewrite,
+    ...(insertionCreated === null ? {} : { insertionCreated }),
     insertionCleared,
     rangePolicy,
     rangeBoundaryRewrites,

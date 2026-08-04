@@ -24,7 +24,7 @@ setDefaultTimeout(60_000);
 const REVIEWED_ID_SEED = 1_414_213_562;
 const REVIEWED_BOUNDARY_SEED = 2_236_067_977;
 const REVIEWED_COPY_IMPLEMENTATION_SHA256 =
-  "c1ac11b1f36928c3a6410e5c5957f7d2a49d92b64f8572f4009fb5110e6b39dc";
+  "5dba94a499d5fb738bd4cc930dfe81f304978dc71a5e3b6409fa4fde8718139b";
 const GENERATED_GRAPH_COUNT = 24;
 const HEAVY_BOUNDARY_PROOF =
   "tests/unit/f1-identity-copy.test.ts#drives F1-ID-018 exact boundary with one allocation per node";

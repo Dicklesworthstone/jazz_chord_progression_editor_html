@@ -204,14 +204,14 @@ const EXPECTED_TERMINATION = {
 
 const EXPECTED_REVIEWED_DIGESTS = {
   contractDocumentSha256:
-    "0e421cf7dc4fe7b0efe107fbb6dcccadd7a92522b7fc305cd64adc957380bbec",
+    "1d489d5fee8dc9ef060391ce01cd3bdd1826ce761a4e38ba3fc5423c5c8b8bc8",
   companionsSha256: {
     "adversarial-cases.json":
       "a6a8573e53b11e044e22a267d82ddf57f930913f966d157ed4e4e0d96ded5243",
     "provenance-ledger.json":
       "e9a24fdb862292cc774e5866c704160d33110f270aa43fe058cc55d390daef99",
     "shape-cases.json":
-      "da96366002d40fe30bfb564b262a696723e217ea9a6271919b0db72da309d1b2",
+      "6fe69ec31d7136af24e02438a358ba2092378a62b1c7bd4ff6a268acc2a446bc",
     "trace-ledger.json":
       "664427ba257c0a6efcad69d926b472def777d20326c24cf22f62dd79c90ad6cd",
   },
@@ -227,18 +227,18 @@ const EXPECTED_REVIEWED_DIGESTS = {
 const EXPECTED_SEMANTIC_SNAPSHOT_DIGESTS = {
   json: {
     "f2-decoder-contract.json":
-      "a5ec89058c84126dcb5d3ca8700858a14dd7a2a733581e39248c8472dfb4a300",
+      "416367cfcceee10884c67d98e63b733b9d539f0e6e9b5b1205676d76bb527a4a",
     "adversarial-cases.json":
       "4a321bf2437b7a4ee37861f7dd387ab50b3d2b11bc51e553ed791752047f2f69",
     "provenance-ledger.json":
       "45eabc724d9d0a4e9ca2fab5bc1189c1eb042b0b1272fcdf6f3b37d88a9ffef1",
     "shape-cases.json":
-      "240735ad36763dd9a9c7e55e7398e3a7c2af773627bac0083ad7f0c8719207ae",
+      "0d0fe2a30bcf3a23be858943938615ad0a3b59ecb1a6864a1861cd3802d6a14d",
     "trace-ledger.json":
       "bf61e11d067bbcf466fa8e9a376dbf23007f1eb7f28705010679ac0760100199",
   },
   contractDocumentNormalizedSha256:
-    "0e421cf7dc4fe7b0efe107fbb6dcccadd7a92522b7fc305cd64adc957380bbec",
+    "1d489d5fee8dc9ef060391ce01cd3bdd1826ce761a4e38ba3fc5423c5c8b8bc8",
 } as const;
 
 const EXPECTED_MATERIALIZATION_PROTOCOL_SHA256 =
@@ -307,6 +307,7 @@ const EXPECTED_INVENTORIES = {
     "vibraphone",
     "warm-pad",
     "analog-poly",
+    "concert-grand",
   ],
   completionKinds: ["empty", "complete", "pickup", "incomplete"],
   voiceLeadingBoundaries: ["continue", "reset"],
@@ -362,6 +363,16 @@ const EXPECTED_OBJECT_SCHEMA_FIELDS = new Map<string, readonly string[]>([
   ["spelled-pitch", ["alter", "octave", "step"]],
   ["spelled-pitch-class", ["alter", "step"]],
 ]);
+
+/**
+ * jcpe-jnnu amendment: the single optional persisted property in v2. Every
+ * other record keeps the frozen no-optional-fields law; a second entry here
+ * requires its own recorded contract amendment.
+ */
+const EXPECTED_OBJECT_SCHEMA_OPTIONAL_FIELDS = new Map<
+  string,
+  readonly string[]
+>([["playback", ["grooveStyleId"]]]);
 
 const EXPECTED_OBJECT_SCHEMA_DISCRIMINATORS = new Map<
   string,
@@ -790,6 +801,8 @@ export const F2_REVIEWED_DOCUMENT_SHAPE_ISSUE_CODES = [
   "playback.level_out_of_range",
   "playback.count_in_bars_invalid",
   "section.voice_leading_boundary_invalid",
+  "playback.groove_style_invalid",
+  "playback.groove_style_not_canonical",
 ] as const;
 
 const ALLOWED_EXPECTED_ISSUE_CODES = new Set<string>([
@@ -1206,14 +1219,20 @@ function validateObjectSchemas(
     const expectedDiscriminator = EXPECTED_OBJECT_SCHEMA_DISCRIMINATORS.get(
       item["id"],
     );
+    const expectedOptionalFields = EXPECTED_OBJECT_SCHEMA_OPTIONAL_FIELDS.get(
+      item["id"],
+    );
     const expectedRecord = expectedFields
-      ? expectedDiscriminator
-        ? {
-            id: item["id"],
-            discriminator: expectedDiscriminator,
-            requiredFields: expectedFields,
-          }
-        : { id: item["id"], requiredFields: expectedFields }
+      ? {
+          id: item["id"],
+          ...(expectedDiscriminator
+            ? { discriminator: expectedDiscriminator }
+            : {}),
+          requiredFields: expectedFields,
+          ...(expectedOptionalFields
+            ? { optionalFields: expectedOptionalFields }
+            : {}),
+        }
       : undefined;
     if (!expectedRecord || !jsonEqual(item, expectedRecord)) {
       finding(findings, "F2_OBJECT_SCHEMA", path, "Exact object schema surface, discriminator, or fields drifted.");

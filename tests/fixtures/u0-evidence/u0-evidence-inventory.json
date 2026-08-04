@@ -23,7 +23,7 @@
   "expectedCounts": {
     "browserCells": 84,
     "browserCellTemplates": 28,
-    "bunCases": 117,
+    "bunCases": 118,
     "playwrightSpecifications": 30,
     "playwrightTests": 90,
     "reviewedSources": 26,
@@ -36,7 +36,7 @@
     },
     {
       "path": "tests/e2e/u0-accessibility.spec.ts",
-      "sha256": "56b41e1a432df5db413f75bcfa765d344f8c0bee362a6c0b4fd352b121cd2b3a"
+      "sha256": "b115e2d2083d9f20bc42dce2b418bd6ab5e175321e93febcb1549c21fe5417f0"
     },
     {
       "path": "tests/e2e/u0-browser-test-kit.ts",
@@ -56,7 +56,7 @@
     },
     {
       "path": "tests/e2e/u0-mobile-shell.spec.ts",
-      "sha256": "0c2b77081fc091cf577ca4ca71e88f39981eb873a715762eed037e4abc4f5978"
+      "sha256": "30d5996f97dd376299629e69f2e3d693b28e5883a965ab1ed3988bf442eb2f77"
     },
     {
       "path": "tests/e2e/u0-nonhappy-states.spec.ts",
@@ -76,11 +76,11 @@
     },
     {
       "path": "tests/e2e/u0-touch-targets.spec.ts",
-      "sha256": "adbdf23595a4af987872e8882e2d3c4ba897288f6aeeed23634cebf16d3cac7a"
+      "sha256": "ea804c1b4aa57532aa59006cdbb361b87c4100e467a09bf16278f93a681fd8fd"
     },
     {
       "path": "tests/fixtures/ui/primitive-state-matrix.json",
-      "sha256": "fec8a3d6b35d9e96d97715d66ae2237da0b596438126c1566359964277fa0ac3"
+      "sha256": "be49e61578dcaeac5fced77c08621a6cdfc28855a73ef21732776cc5dafbb09d"
     },
     {
       "path": "tests/fixtures/ui/trace-ledger.json",
@@ -96,7 +96,7 @@
     },
     {
       "path": "tests/static/u0-evidence-inventory.test.ts",
-      "sha256": "ac744b1ee51fa4b114ba048cbca870e9b3fa830529e95fda920b738a98927b5a"
+      "sha256": "42546a8121eea34052d0c8d5051ceb6376e89de8e9fa58f6c994d2ec0c62e4e2"
     },
     {
       "path": "tests/static/u0-evidence.test.ts",
@@ -116,7 +116,7 @@
     },
     {
       "path": "tests/static/u0-token-usage.test.ts",
-      "sha256": "977acec0dee8cba4d2f8c6d8add95b08681a7cef1fc752e708349b3242d3862e"
+      "sha256": "d8318a6dfba0e6dfae57b731c5d280dc3719d2556808329afa533419155bb9aa"
     },
     {
       "path": "tests/visual/u0-component-gallery.spec.ts",
@@ -124,7 +124,7 @@
     },
     {
       "path": "tests/visual/u0-forced-colors.spec.ts",
-      "sha256": "a214158773c2dd52c07eac74d532b8d49772f6fcd7ff1dc5777737402d11a3f9"
+      "sha256": "aac803736dbaf0f6b1a277ab4074064e2697cfa89f3f57e0f1e2a66b10d42a2a"
     },
     {
       "path": "tests/visual/u0-reduced-motion.spec.ts",
@@ -132,7 +132,7 @@
     },
     {
       "path": "tests/visual/u0-responsive-shell.spec.ts",
-      "sha256": "5435f3dc474c2d3190b62c86ebadb5e6a98ac44c7e9a3ec005d15f5c26be3083"
+      "sha256": "a28606e1904668edf8b7453953d27fa9cf5842a0d19cfd2da80f1eb15ada548d"
     }
   ],
   "bunSuites": [
@@ -287,10 +287,11 @@
     {
       "file": "tests/static/u0-token-usage.test.ts",
       "titles": [
-        "U0-CONTRAST-001 U0-CONTRAST-002 U0-CONTRAST-003 U0-CONTRAST-004 U0-CONTRAST-005 U0-CONTRAST-006 U0-CONTRAST-007 U0-CONTRAST-008 U0-CONTRAST-009 actual token values satisfy every declared contrast cross-product",
+        "U0-CONTRAST-001 U0-CONTRAST-002 U0-CONTRAST-003 U0-CONTRAST-004 U0-CONTRAST-005 U0-CONTRAST-006 U0-CONTRAST-007 U0-CONTRAST-008 U0-CONTRAST-009 actual token values satisfy every declared contrast cross-product in both themes",
         "U0-CONTRAST-001 semantic counterfactual detects a low-contrast production token",
         "U0-PRIM-012 U0-PRIM-013 U0-VIEW-005 component CSS uses declared semantic tokens without copied color literals",
-        "U0-PRIM-013 mutation controls detect copied literals, undefined references, and duplicate declarations"
+        "U0-PRIM-013 mutation controls detect copied literals, undefined references, and duplicate declarations",
+        "every light-theme override names a token the base theme declares"
       ]
     }
   ],

@@ -1,0 +1,135 @@
+{
+  "schema": "changes.fixtures.e0-v2-mutation-controls.v1",
+  "reviewState": "proposed-independent-literal-spec",
+  "expectedValuesGenerated": false,
+  "productionOutputUsedAsOracle": false,
+  "claim": "Each control names one exact mutation of the reviewed packet and the finding code the validator MUST emit for it. The validator recomputes every from-assertion against the live packet (so a control cannot drift from what it claims to mutate), and the static test executes each mutation on a temp copy and asserts the named finding — the control is never its own oracle.",
+  "controls": [
+    {
+      "id": "E0V2-MUT-001",
+      "category": "state-bearing-result",
+      "targetFile": "normalization-cases.json",
+      "mutation": { "operator": "add", "jsonPointer": "/cases/0/expected/lastKnownState", "from": { "$absent": true }, "to": "smuggled", "exactChangedFieldCount": 1 },
+      "expectedFinding": "E0V2_STATE_KEY_FORBIDDEN",
+      "executedBy": "a smuggled state key inside an expected result is refused",
+      "linkedCaseIds": ["E0V2-NORM-001"]
+    },
+    {
+      "id": "E0V2-MUT-002",
+      "category": "oracle-patch",
+      "targetFile": "normalization-cases.json",
+      "mutation": { "operator": "replace", "jsonPointer": "/cases/5/expected/diagnostic/reason", "from": "threw-or-rejected", "to": "invalid-envelope", "exactChangedFieldCount": 1 },
+      "expectedFinding": "E0V2_NORM_ORACLE",
+      "executedBy": "the normalization oracle is independently recomputed, not read from the fixture",
+      "linkedCaseIds": ["E0V2-NORM-006"]
+    },
+    {
+      "id": "E0V2-MUT-003",
+      "category": "coverage-deletion",
+      "targetFile": "normalization-cases.json",
+      "mutation": { "operator": "replace", "jsonPointer": "/cases/16/variant", "from": "thrown", "to": "extra-key", "exactChangedFieldCount": 1 },
+      "expectedFinding": "E0V2_NORM_COVERAGE",
+      "executedBy": "reassigning a port's only thrown variant is a coverage failure",
+      "linkedCaseIds": ["E0V2-NORM-017"]
+    },
+    {
+      "id": "E0V2-MUT-004",
+      "category": "subset-relation-drift",
+      "targetFile": "e0-v2-interchange-contract.json",
+      "mutation": { "operator": "replace", "jsonPointer": "/refusalAdoption/v1PreparationCodesProvenMembers", "from": ["import.confirmation_stale", "import.confirmation_wrong_document", "import.replacement_impact_unavailable", "import.confirmation_impact_mismatch", "import.confirmation_identity_mismatch", "history.nonundoable_confirmation_required"], "to": ["import.confirmation_stale"], "exactChangedFieldCount": 1 },
+      "expectedFinding": "E0V2_REFUSAL_ADOPTION",
+      "executedBy": "the six-in-twenty refusal adoption relation is pinned",
+      "linkedCaseIds": []
+    },
+    {
+      "id": "E0V2-MUT-005",
+      "category": "untraced-case",
+      "targetFile": "trace-ledger.json",
+      "mutation": { "operator": "replace", "jsonPointer": "/traces/0/caseIds/0", "from": "E0V2-NORM-001", "to": "E0V2-NORM-002", "exactChangedFieldCount": 1 },
+      "expectedFinding": "E0V2_CASE_UNTRACED",
+      "executedBy": "reassigning a trace's first case id leaves the original case untraced",
+      "linkedCaseIds": ["E0V2-NORM-001"]
+    },
+    {
+      "id": "E0V2-MUT-006",
+      "category": "state-bearing-result",
+      "targetFile": "resolution-cases.json",
+      "mutation": { "operator": "add", "jsonPointer": "/cases/4/expectedResult/lastKnownState", "from": { "$absent": true }, "to": "x", "exactChangedFieldCount": 1 },
+      "expectedFinding": "E0V2_STATE_KEY_FORBIDDEN",
+      "executedBy": "a clean resolution case cannot gain a forbidden state key",
+      "linkedCaseIds": ["E0V2-RESCASE-005"]
+    },
+    {
+      "id": "E0V2-MUT-007",
+      "category": "smuggle-removal",
+      "targetFile": "resolution-cases.json",
+      "mutation": { "operator": "remove", "jsonPointer": "/cases/1/request/currentState", "from": { "$smuggledAppState": true }, "to": { "$absent": true }, "exactChangedFieldCount": 1 },
+      "expectedFinding": "E0V2_RESCASE_SMUGGLE_MISSING",
+      "executedBy": "a deliberate smuggle case must materialize its forbidden key",
+      "linkedCaseIds": ["E0V2-RESCASE-002"]
+    },
+    {
+      "id": "E0V2-MUT-008",
+      "category": "groove-default-materialized",
+      "targetFile": "resolution-cases.json",
+      "mutation": { "operator": "replace", "jsonPointer": "/literalCatalog/candidate-groove-witness/value/playback/grooveStyleId", "from": "bossa-nova@1", "to": "ballad-comp@1", "exactChangedFieldCount": 1 },
+      "expectedFinding": "E0V2_GROOVE_WITNESS",
+      "executedBy": "the groove witness must store a non-default groove id",
+      "linkedCaseIds": ["E0V2-RESCASE-016"]
+    },
+    {
+      "id": "E0V2-MUT-009",
+      "category": "invented-refusal-code",
+      "targetFile": "resolution-cases.json",
+      "mutation": { "operator": "replace", "jsonPointer": "/cases/9/expectedResult/code", "from": "import.candidate_semantic_invalid", "to": "import.invented_code", "exactChangedFieldCount": 1 },
+      "expectedFinding": "E0V2_RESCASE_CODE_UNKNOWN",
+      "executedBy": "a refusal code outside the adopted tuples is refused",
+      "linkedCaseIds": ["E0V2-RESCASE-010"]
+    },
+    {
+      "id": "E0V2-MUT-010",
+      "category": "provenance-skip",
+      "targetFile": "projection-cases.json",
+      "mutation": { "operator": "replace", "jsonPointer": "/cases/3/expectedProvenance/ownerCalls", "from": 1, "to": 0, "exactChangedFieldCount": 1 },
+      "expectedFinding": "E0V2_PROVENANCE_ORACLE",
+      "executedBy": "the provenance oracle is recomputed from the binding, not read from the fixture",
+      "linkedCaseIds": ["E0V2-PROJ-004"]
+    },
+    {
+      "id": "E0V2-MUT-011",
+      "category": "projection-defaulting",
+      "targetFile": "projection-cases.json",
+      "mutation": { "operator": "replace", "jsonPointer": "/cases/0/projectionTable/disclosedImpact", "from": "request.replacementImpactProjection", "to": "default:retained-empty-impact", "exactChangedFieldCount": 1 },
+      "expectedFinding": "E0V2_PROJECTION_TABLE_DRIFT",
+      "executedBy": "the projection table cannot silently drift from the frozen total table",
+      "linkedCaseIds": ["E0V2-PROJ-001"]
+    },
+    {
+      "id": "E0V2-MUT-012",
+      "category": "ancestor-reassignment",
+      "targetFile": "workflow-cases.json",
+      "mutation": { "operator": "replace", "jsonPointer": "/cases/2/ancestorPreserved/stateEffect", "from": "APPLICATION_TRANSPORT_RECONCILIATION_REQUIRED", "to": "NONE", "exactChangedFieldCount": 1 },
+      "expectedFinding": "E0V2_WF_ANCESTOR_DRIFT",
+      "executedBy": "a v2 workflow case cannot quietly reassign its ancestor's semantics",
+      "linkedCaseIds": ["E0V2-WF-003"]
+    },
+    {
+      "id": "E0V2-MUT-013",
+      "category": "reconciliation-drift",
+      "targetFile": "workflow-cases.json",
+      "mutation": { "operator": "replace", "jsonPointer": "/cases/1/expectedReconciliation", "from": "none", "to": "application-transport-reconciliation-required", "exactChangedFieldCount": 1 },
+      "expectedFinding": "E0V2_WF_RECONCILIATION",
+      "executedBy": "the reconciliation obligation must follow the ancestor's stateEffect",
+      "linkedCaseIds": ["E0V2-WF-002"]
+    },
+    {
+      "id": "E0V2-MUT-014",
+      "category": "diagnostic-reason-drift",
+      "targetFile": "workflow-cases.json",
+      "mutation": { "operator": "replace", "jsonPointer": "/cases/4/expectedDiagnostic/reason", "from": "threw-or-rejected", "to": "invalid-envelope", "exactChangedFieldCount": 1 },
+      "expectedFinding": "E0V2_WF_DIAGNOSTIC_REASON",
+      "executedBy": "a throw-terminated ancestor demands the threw-or-rejected reason",
+      "linkedCaseIds": ["E0V2-WF-005"]
+    }
+  ]
+}

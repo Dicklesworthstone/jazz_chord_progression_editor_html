@@ -111,7 +111,7 @@ describe("X0 persistent production audio engine", () => {
     expect(first.persistentEdgeCount).toBe(13);
     expect(first.work.graphNodesCreated).toBe(12);
     expect(first.work.graphEdgesConnected).toBe(13);
-    expect(first.work.impulseSamplesWritten).toBe(192_000);
+    expect(first.work.impulseSamplesWritten).toBe(384_000);
     expect(fake.contextCreationCount()).toBe(1);
     expect(
       fake.events.filter((event) => event.kind === "node-connect"),

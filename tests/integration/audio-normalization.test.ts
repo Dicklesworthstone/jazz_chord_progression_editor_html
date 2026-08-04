@@ -17,6 +17,7 @@ const NORMALIZATION_CASE_IDS = [
   "X0-RENDER-008",
   "X0-RENDER-011",
   "X0-RENDER-014",
+  "X0-RENDER-017",
 ] as const;
 
 const DENSE_CASES: readonly Readonly<{
@@ -30,6 +31,8 @@ const DENSE_CASES: readonly Readonly<{
   { caseId: "X0-RENDER-008", instrumentId: "vibraphone", outputLevel: 0.5, sourcesPerVoice: 4 },
   { caseId: "X0-RENDER-011", instrumentId: "warm-pad", outputLevel: 0.3, sourcesPerVoice: 3 },
   { caseId: "X0-RENDER-014", instrumentId: "analog-poly", outputLevel: 0.34, sourcesPerVoice: 3 },
+  /* The rendered piano schedules one PCM buffer source per voice. */
+  { caseId: "X0-RENDER-017", instrumentId: "concert-grand", outputLevel: 0.3, sourcesPerVoice: 1 },
 ];
 
 describe("TR-X0-NORMALIZATION audio normalization", () => {
@@ -70,7 +73,7 @@ describe("TR-X0-NORMALIZATION audio normalization", () => {
     ).toBe(true);
   });
 
-  test("X0-RENDER-002/X0-RENDER-005/X0-RENDER-008/X0-RENDER-011/X0-RENDER-014 applies conservative seven-note gain to every recipe", async () => {
+  test("X0-RENDER-002/X0-RENDER-005/X0-RENDER-008/X0-RENDER-011/X0-RENDER-014/X0-RENDER-017 applies conservative seven-note gain to every recipe", async () => {
     for (const expected of DENSE_CASES) {
       const { engine, context } = await readyEngine();
       const sourceCountBefore = context.sourceIds().length;
@@ -101,6 +104,6 @@ describe("TR-X0-NORMALIZATION audio normalization", () => {
         ),
       ).toBe(true);
     }
-    expect(NORMALIZATION_CASE_IDS).toHaveLength(7);
+    expect(NORMALIZATION_CASE_IDS).toHaveLength(8);
   });
 });

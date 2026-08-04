@@ -86,8 +86,8 @@ One build produces:
 - `dist/standalone-manifest.json`, the deterministic hash, size, CSP, asset, and license record;
 - `dist/licenses.json`, the production dependency and embedded-asset inventory.
 
-The two HTML outputs must be byte-identical. The measured U0 checkpoint has a
-768 KiB ceiling; the completed artifact retains its 1.5 MiB ceiling and a
+The two HTML outputs must be byte-identical. The measured studio checkpoint has
+a 1 MiB ceiling; the completed artifact retains its 1.5 MiB ceiling and a
 separate 512 KiB reservation for the future reviewed Harmonic Atlas/content.
 
 ## Source and generated-file ownership
@@ -132,6 +132,7 @@ If source and artifact disagree, regenerate the artifact; do not copy changes ba
 | `bun run validate:e0-contract` | Validate the accepted E0 JSON/text interchange, transactional application boundary, exact limits, goldens, trace, provenance, and mutation authority |
 | `bun run validate:a0-e0-bridge-contract` | Validate the proposed A0-owned replacement-registry, latest-identity, atomic marker-CAS, state-isolation, literal fixtures, traces, provenance, and mutations while pinning immutable accepted E0 v1 without claiming semantic compatibility |
 | `bun run validate:a0-u1-edit-plan-contract` | Validate the proposed additive A0/U1 atomic-edit command, five closed plan variants, literal state transitions, exact identity/time/bookmark/history laws, traces, provenance, and mutations without claiming production or UI completion |
+| `bun run validate:u1-contract` | Validate the proposed independent U1 quick-entry insertion-plan classification, operation-to-application-channel binding, selection/focus/pointer/listener states, exact bounds, traces, provenance, and replayed mutation controls |
 | `bun run validate:a1-contract` | Validate the proposed A1 recovery envelope/checksum, scheduler, adapter, startup-matrix, export-binding, trace, provenance, and mutation authority |
 | `bun run validate:x1-contract` | Validate the proposed X1 serialized-transport state matrix, timing goldens, scheduler/stop/command/notification witnesses, trace, provenance, and mutation authority |
 | `bun run typecheck` | Run strict TypeScript checks across app, tools, tests, and E2E code |
@@ -145,6 +146,7 @@ If source and artifact disagree, regenerate the artifact; do not copy changes ba
 | `bun run verify:f1-evidence` | Run the exact F1 suite and emit a hash-bound trace/seed/mutation ledger under `test-results/` |
 | `bun run verify:c0-evidence` | Run the exact C0 suite and emit a hash-bound adversarial-case, preset, trace, counter, and mutation ledger under `test-results/` |
 | `bun run verify:v2-evidence` | Re-run the exact V2 suite and validator from a drift-checked input closure, sweep seeded metamorphic charts against an independent exhaustive fold, and emit a hash-bound ledger under `test-results/` |
+| `bun run verify:e1-evidence` | Re-run the exact E1 MIDI-export suite and validator from a drift-checked input closure, sweep seeded plans through a freshly written independent SMF reader with replay, marker-permutation, tempo-isolation, and loss-recomputation relations, and emit a hash-bound ledger under `test-results/` |
 | `bun run verify` | Run the aggregate release-facing gate in dependency order |
 
 The aggregate gate does not silently skip, retry, quarantine, or relax a failed check.
@@ -248,7 +250,7 @@ The runtime boundary is intentionally small:
 - static capability inspection plus real-browser request interception, including a malicious negative-control fixture;
 - deterministic license and embedded-asset inventory.
 
-The current shell does not accept or store chart data. Planned recovery will remain local and best-effort; planned exports will occur only after an explicit user gesture. Imported text and JSON will cross bounded decoders and will never be evaluated, inserted as HTML, or turned into a URL.
+The current shell does not accept or store chart data. Planned recovery will remain local and best-effort; planned exports will occur only after an explicit user gesture. Imported text and JSON will cross bounded decoders and will never be evaluated, inserted as HTML, or turned into a URL. The one deliberate exception is the explicit **Copy link** action: on a user gesture the studio encodes the current chart, title, tempo, and groove into a local `#zdoc=` URL fragment. No request is made in either direction — the fragment never leaves the page except by the user sharing the link — and an opened fragment crosses the same bounded, refusing decoders as typed text; any diagnostic falls back to the starter chart with the refusal stated.
 
 A single local file is portable, but it is not cloud backup. When authoring and export arrive, users will remain responsible for keeping copies of important charts.
 

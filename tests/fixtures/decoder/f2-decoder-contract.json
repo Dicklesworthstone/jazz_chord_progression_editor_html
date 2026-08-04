@@ -78,7 +78,7 @@
     "beatDenominators": [1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 16, 20, 24, 30, 32, 40, 48, 60, 64, 80, 96, 120, 160, 192, 240, 320, 480, 960],
     "beatUnits": [2, 4, 8],
     "keyModes": ["major", "natural-minor", "harmonic-minor", "melodic-minor"],
-    "instrumentIds": ["mellow-keys", "fm-electric-piano", "vibraphone", "warm-pad", "analog-poly"],
+    "instrumentIds": ["mellow-keys", "fm-electric-piano", "vibraphone", "warm-pad", "analog-poly", "concert-grand"],
     "completionKinds": ["empty", "complete", "pickup", "incomplete"],
     "voiceLeadingBoundaries": ["continue", "reset"],
     "chordKinds": ["parsed", "custom"],
@@ -111,7 +111,7 @@
     {"id": "meter", "requiredFields": ["beatUnit", "beatsPerBar"]},
     {"id": "midi-range", "requiredFields": ["highMidi", "lowMidi"]},
     {"id": "parsed-chord", "discriminator": {"field": "kind", "values": ["parsed"]}, "requiredFields": ["additions", "alterations", "bass", "colorPolicy", "extensions", "kind", "omissions", "root", "seventh", "sixth", "sourceText", "triad"]},
-    {"id": "playback", "requiredFields": ["countInBars", "instrumentId", "masterVolume", "reverbAmount"]},
+    {"id": "playback", "requiredFields": ["countInBars", "instrumentId", "masterVolume", "reverbAmount"], "optionalFields": ["grooveStyleId"]},
     {"id": "section", "requiredFields": ["annotation", "id", "keyOverride", "measures", "name", "voiceLeadingBoundary"]},
     {"id": "spelled-pitch", "requiredFields": ["alter", "octave", "step"]},
     {"id": "spelled-pitch-class", "requiredFields": ["alter", "step"]}
@@ -144,11 +144,11 @@
     {"path": "provenance-ledger.json", "schema": "changes.fixtures.f2-provenance-ledger.v1", "recordCollections": ["authorities"]}
   ],
   "reviewedDigests": {
-    "contractDocumentSha256": "0e421cf7dc4fe7b0efe107fbb6dcccadd7a92522b7fc305cd64adc957380bbec",
+    "contractDocumentSha256": "1d489d5fee8dc9ef060391ce01cd3bdd1826ce761a4e38ba3fc5423c5c8b8bc8",
     "companionsSha256": {
       "adversarial-cases.json": "a6a8573e53b11e044e22a267d82ddf57f930913f966d157ed4e4e0d96ded5243",
       "provenance-ledger.json": "e9a24fdb862292cc774e5866c704160d33110f270aa43fe058cc55d390daef99",
-      "shape-cases.json": "da96366002d40fe30bfb564b262a696723e217ea9a6271919b0db72da309d1b2",
+      "shape-cases.json": "6fe69ec31d7136af24e02438a358ba2092378a62b1c7bd4ff6a268acc2a446bc",
       "trace-ledger.json": "664427ba257c0a6efcad69d926b472def777d20326c24cf22f62dd79c90ad6cd"
     }
   },

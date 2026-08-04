@@ -91,12 +91,16 @@ function semanticVectors(operator: string): Readonly<{
       return { baseline: { authoritativeMutationOnFailure: 0 }, mutant: { authoritativeMutationOnFailure: 1 }, changedFields: ["authoritativeMutationOnFailure"] };
     case "use-wall-time-as-command-or-search-cutoff":
       return { baseline: { wallTimeSemanticCutoff: false }, mutant: { wallTimeSemanticCutoff: true }, changedFields: ["wallTimeSemanticCutoff"] };
+    case "settle-mismatched-transport-expectation":
+      return { baseline: { staleSettlementApplied: false }, mutant: { staleSettlementApplied: true }, changedFields: ["staleSettlementApplied"] };
+    case "claim-optimistic-status-on-refusal-settlement":
+      return { baseline: { settledStatus: "ready" }, mutant: { settledStatus: "starting" }, changedFields: ["settledStatus"] };
     default:
       throw new Error(`A0_MUTATION_OPERATOR_UNKNOWN:${operator}`);
   }
 }
 
-test("kills all 30 reviewed A0 semantic counterfactuals and all 51 killer links", () => {
+test("kills all 32 reviewed A0 semantic counterfactuals and all 54 killer links", () => {
   const controlIds: string[] = [];
   const linkedCaseIds = new Set<string>();
   const controlExecutionDigests: Record<string, string> = {};
@@ -144,9 +148,9 @@ test("kills all 30 reviewed A0 semantic counterfactuals and all 51 killer links"
       }));
     }
   }
-  expect(controlIds).toHaveLength(30);
-  expect(counterfactualExecutions).toHaveLength(51);
-  expect(linkedCaseIds.size).toBe(39);
+  expect(controlIds).toHaveLength(32);
+  expect(counterfactualExecutions).toHaveLength(54);
+  expect(linkedCaseIds.size).toBe(42);
   const observation = {
     schema: "changes.evidence.a0-mutation-conformance-observation.v1",
     claim: "executable-semantic-counterfactuals-not-source-mutants",

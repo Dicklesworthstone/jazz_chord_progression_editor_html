@@ -1,5 +1,7 @@
 import type {
+  AnalyserNodePort,
   AudioBufferPort,
+  AudioBufferSourceNodePort,
   AudioContextPort,
   AudioContextStatePort,
   AudioDestinationNodePort,
@@ -69,7 +71,7 @@ type NodeState = {
 
 type SourceState = Readonly<{
   id: string;
-  port: OscillatorNodePort;
+  port: OscillatorNodePort | AudioBufferSourceNodePort;
 }>;
 
 type DeferredResume = Readonly<{
@@ -316,6 +318,85 @@ function createFakeContext(
     return port;
   }
 
+  function createBufferSource(): AudioBufferSourceNodePort {
+    const methods = createNodeMethods(() => port);
+    let endedHandler: (() => void) | null = null;
+    let assignedBuffer: AudioBufferPort | null = null;
+    const port: AudioBufferSourceNodePort = {
+      ...methods,
+      get onended() {
+        return endedHandler;
+      },
+      set onended(value) {
+        endedHandler = value;
+      },
+      get buffer() {
+        return assignedBuffer;
+      },
+      set buffer(value) {
+        assignedBuffer = value;
+        record(
+          "node-setting",
+          requireNode(port).id,
+          "buffer",
+          value === null ? 0 : value.length,
+        );
+      },
+      start(atTimeSeconds = 0) {
+        record(
+          "source-start",
+          requireNode(port).id,
+          "start",
+          null,
+          atTimeSeconds,
+        );
+      },
+      stop(atTimeSeconds = 0) {
+        record(
+          "source-stop",
+          requireNode(port).id,
+          "stop",
+          null,
+          atTimeSeconds,
+        );
+      },
+    };
+    registerNode(port, "buffer-source");
+    const sourceId = requireNode(port).id;
+    sources.set(sourceId, { id: sourceId, port });
+    return port;
+  }
+
+  function createAnalyser(): AnalyserNodePort {
+    const methods = createNodeMethods(() => port);
+    let fftSize = 2_048;
+    let smoothing = 0.8;
+    const port: AnalyserNodePort = {
+      ...methods,
+      get fftSize() {
+        return fftSize;
+      },
+      set fftSize(value) {
+        fftSize = value;
+        record("node-setting", requireNode(port).id, "fft-size", value);
+      },
+      get frequencyBinCount() {
+        return fftSize / 2;
+      },
+      get smoothingTimeConstant() {
+        return smoothing;
+      },
+      set smoothingTimeConstant(value) {
+        smoothing = value;
+      },
+      getFloatTimeDomainData(target) {
+        target.fill(0);
+        record("node-setting", requireNode(port).id, "time-domain-read");
+      },
+    };
+    return registerNode(port, "analyser");
+  }
+
   function createCompressor(): DynamicsCompressorNodePort {
     const methods = createNodeMethods(() => port);
     const port: DynamicsCompressorNodePort = {
@@ -450,6 +531,8 @@ function createFakeContext(
     createDynamicsCompressor: createCompressor,
     createWaveShaper,
     createConvolver,
+    createBufferSource,
+    createAnalyser,
     createBuffer(numberOfChannels, length, requestedSampleRate) {
       const channels = Array.from(
         { length: numberOfChannels },

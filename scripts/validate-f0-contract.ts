@@ -307,6 +307,13 @@ async function main(): Promise<void> {
     );
   }
 
+  const wasmCompiled = objectAt(
+    toolchain,
+    "wasmCompiledDependencies",
+    "$.toolchain.wasmCompiledDependencies",
+  );
+  validateVersionMap(wasmCompiled, "$.toolchain.wasmCompiledDependencies");
+
   validateVersionMap(
     objectAt(
       toolchain,
@@ -327,6 +334,11 @@ async function main(): Promise<void> {
     if (name && version) declaredVersions.set(name, version);
   }
   for (const [name, version] of Object.entries(runtime)) {
+    if (typeof version === "string") declaredVersions.set(name, version);
+  }
+  // Rust crates compiled into the checked-in wasm payload; declared so the
+  // ledger's compiled-into-wasm provenance rows reconcile like package rows.
+  for (const [name, version] of Object.entries(wasmCompiled)) {
     if (typeof version === "string") declaredVersions.set(name, version);
   }
   const development = objectAt(
@@ -381,7 +393,7 @@ async function main(): Promise<void> {
         "Ledger source must be a primary HTTPS repository.",
       );
     }
-    if (!/^[A-Za-z0-9.-]+$/.test(license)) {
+    if (!/^[A-Za-z0-9.-]+(?: (?:OR|AND) [A-Za-z0-9.-]+)*$/.test(license)) {
       add(
         "F0_SPEC_LEDGER_LICENSE",
         `${path}.license`,
@@ -413,7 +425,7 @@ async function main(): Promise<void> {
     !Number.isSafeInteger(max) ||
     !Number.isSafeInteger(shell) ||
     !Number.isSafeInteger(atlas) ||
-    Number(max) !== 1_572_864 ||
+    Number(max) !== 8_388_608 ||
     Number(shell) <= 0 ||
     Number(atlas) <= 0 ||
     Number(shell) + Number(atlas) > Number(max)

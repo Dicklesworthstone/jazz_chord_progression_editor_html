@@ -1,0 +1,200 @@
+{
+  "schema": "changes.fixtures.m0-sonority-cases.v1",
+  "fixtureVersion": "1.0.0",
+  "status": "independently-authored-pre-production",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "notes": "Data-level cases for the grid, window, grouping, and measure laws. Inputs are already-paired note streams (the byte layer is proven by the golden and refusal corpora); every expected number was derived on paper with the exact integer formulas in the manifest. Windows are anchored, never chained; the tempo in effect at the anchor governs the whole window; ties round up; quantized ticks are exact rationals over the beat unit.",
+  "cases": [
+    {
+      "id": "M0-SON-001",
+      "title": "Default-tempo window at PPQ 960 joins at 76 ticks and splits at 77",
+      "input": {
+        "ppq": 960,
+        "tempoMap": [],
+        "meterMap": [],
+        "notes": [
+          { "trackIndex": 0, "channel": 0, "key": 60, "onTick": 0, "offTick": 480 },
+          { "trackIndex": 0, "channel": 0, "key": 64, "onTick": 76, "offTick": 480 },
+          { "trackIndex": 0, "channel": 0, "key": 67, "onTick": 77, "offTick": 480 }
+        ]
+      },
+      "expected": {
+        "sonorities": [
+          { "anchorTick": 0, "memberCount": 2, "bassMidi": 60, "bassPitchClass": 0, "pitchClasses": [0, 4], "windowTicks": 76, "tempoMicrosecondsAtAnchor": 500000, "segmentIndex": 0, "gridIndex": 0, "quantizedTickNumerator": 0, "quantizedTickDenominator": 4, "quantizationErrorNumerator": 0, "quantizationErrorDenominator": 4, "measureIndex": 0 },
+          { "anchorTick": 77, "memberCount": 1, "bassMidi": 67, "bassPitchClass": 7, "pitchClasses": [7], "windowTicks": 76, "tempoMicrosecondsAtAnchor": 500000, "segmentIndex": 0, "gridIndex": 0, "quantizedTickNumerator": 0, "quantizedTickDenominator": 4, "quantizationErrorNumerator": 308, "quantizationErrorDenominator": 4, "measureIndex": 0 }
+        ]
+      },
+      "traceIds": ["M0-TRACE-DECODE-DEFAULTS", "M0-TRACE-WINDOW"],
+      "authorityIds": ["M0-AUTH-DERIVED", "M0-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "M0-SON-002",
+      "title": "Anchored windows never chain: 0 and 38 join, 76 starts anew despite being 38 from the previous member",
+      "input": {
+        "ppq": 480,
+        "tempoMap": [{ "tick": 0, "microsecondsPerQuarter": 500000 }],
+        "meterMap": [{ "tick": 0, "numerator": 4, "denominatorPower": 2 }],
+        "notes": [
+          { "trackIndex": 0, "channel": 0, "key": 60, "onTick": 0, "offTick": 480 },
+          { "trackIndex": 0, "channel": 0, "key": 64, "onTick": 38, "offTick": 480 },
+          { "trackIndex": 0, "channel": 0, "key": 67, "onTick": 76, "offTick": 480 }
+        ]
+      },
+      "expected": {
+        "sonorities": [
+          { "anchorTick": 0, "memberCount": 2, "bassMidi": 60, "bassPitchClass": 0, "pitchClasses": [0, 4], "windowTicks": 38, "tempoMicrosecondsAtAnchor": 500000, "segmentIndex": 0, "gridIndex": 0, "quantizedTickNumerator": 0, "quantizedTickDenominator": 4, "quantizationErrorNumerator": 0, "quantizationErrorDenominator": 4, "measureIndex": 0 },
+          { "anchorTick": 76, "memberCount": 1, "bassMidi": 67, "bassPitchClass": 7, "pitchClasses": [7], "windowTicks": 38, "tempoMicrosecondsAtAnchor": 500000, "segmentIndex": 0, "gridIndex": 1, "quantizedTickNumerator": 480, "quantizedTickDenominator": 4, "quantizationErrorNumerator": 176, "quantizationErrorDenominator": 4, "measureIndex": 0 }
+        ]
+      },
+      "traceIds": ["M0-TRACE-WINDOW", "M0-TRACE-GROUPING"],
+      "authorityIds": ["M0-AUTH-DERIVED", "M0-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "M0-SON-003",
+      "title": "The tempo at each anchor governs its window across a mid-file tempo change",
+      "input": {
+        "ppq": 480,
+        "tempoMap": [
+          { "tick": 0, "microsecondsPerQuarter": 500000 },
+          { "tick": 480, "microsecondsPerQuarter": 1000000 }
+        ],
+        "meterMap": [],
+        "notes": [
+          { "trackIndex": 0, "channel": 0, "key": 60, "onTick": 0, "offTick": 100 },
+          { "trackIndex": 0, "channel": 0, "key": 62, "onTick": 470, "offTick": 600 },
+          { "trackIndex": 0, "channel": 0, "key": 64, "onTick": 508, "offTick": 600 },
+          { "trackIndex": 0, "channel": 0, "key": 65, "onTick": 510, "offTick": 700 },
+          { "trackIndex": 0, "channel": 0, "key": 67, "onTick": 529, "offTick": 700 },
+          { "trackIndex": 0, "channel": 0, "key": 69, "onTick": 530, "offTick": 700 }
+        ]
+      },
+      "expected": {
+        "sonorities": [
+          { "anchorTick": 0, "memberCount": 1, "bassMidi": 60, "bassPitchClass": 0, "pitchClasses": [0], "windowTicks": 38, "tempoMicrosecondsAtAnchor": 500000, "segmentIndex": 0, "gridIndex": 0, "quantizedTickNumerator": 0, "quantizedTickDenominator": 4, "quantizationErrorNumerator": 0, "quantizationErrorDenominator": 4, "measureIndex": 0 },
+          { "anchorTick": 470, "memberCount": 2, "bassMidi": 62, "bassPitchClass": 2, "pitchClasses": [2, 4], "windowTicks": 38, "tempoMicrosecondsAtAnchor": 500000, "segmentIndex": 0, "gridIndex": 4, "quantizedTickNumerator": 1920, "quantizedTickDenominator": 4, "quantizationErrorNumerator": 40, "quantizationErrorDenominator": 4, "measureIndex": 0 },
+          { "anchorTick": 510, "memberCount": 2, "bassMidi": 65, "bassPitchClass": 5, "pitchClasses": [5, 7], "windowTicks": 19, "tempoMicrosecondsAtAnchor": 1000000, "segmentIndex": 0, "gridIndex": 4, "quantizedTickNumerator": 1920, "quantizedTickDenominator": 4, "quantizationErrorNumerator": 120, "quantizationErrorDenominator": 4, "measureIndex": 0 },
+          { "anchorTick": 530, "memberCount": 1, "bassMidi": 69, "bassPitchClass": 9, "pitchClasses": [9], "windowTicks": 19, "tempoMicrosecondsAtAnchor": 1000000, "segmentIndex": 0, "gridIndex": 4, "quantizedTickNumerator": 1920, "quantizedTickDenominator": 4, "quantizationErrorNumerator": 200, "quantizationErrorDenominator": 4, "measureIndex": 0 }
+        ]
+      },
+      "traceIds": ["M0-TRACE-WINDOW", "M0-TRACE-GROUPING"],
+      "authorityIds": ["M0-AUTH-DERIVED", "M0-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "M0-SON-004",
+      "title": "Grid arithmetic: floor at 7 ticks, a half-cell tie at 60 rounding up, and 179 rounding back",
+      "input": {
+        "ppq": 480,
+        "tempoMap": [{ "tick": 0, "microsecondsPerQuarter": 500000 }],
+        "meterMap": [{ "tick": 0, "numerator": 4, "denominatorPower": 2 }],
+        "notes": [
+          { "trackIndex": 0, "channel": 0, "key": 60, "onTick": 7, "offTick": 57 },
+          { "trackIndex": 0, "channel": 0, "key": 62, "onTick": 60, "offTick": 110 },
+          { "trackIndex": 0, "channel": 0, "key": 64, "onTick": 179, "offTick": 229 }
+        ]
+      },
+      "expected": {
+        "sonorities": [
+          { "anchorTick": 7, "memberCount": 1, "bassMidi": 60, "bassPitchClass": 0, "pitchClasses": [0], "windowTicks": 38, "tempoMicrosecondsAtAnchor": 500000, "segmentIndex": 0, "gridIndex": 0, "quantizedTickNumerator": 0, "quantizedTickDenominator": 4, "quantizationErrorNumerator": 28, "quantizationErrorDenominator": 4, "measureIndex": 0 },
+          { "anchorTick": 60, "memberCount": 1, "bassMidi": 62, "bassPitchClass": 2, "pitchClasses": [2], "windowTicks": 38, "tempoMicrosecondsAtAnchor": 500000, "segmentIndex": 0, "gridIndex": 1, "quantizedTickNumerator": 480, "quantizedTickDenominator": 4, "quantizationErrorNumerator": 240, "quantizationErrorDenominator": 4, "measureIndex": 0 },
+          { "anchorTick": 179, "memberCount": 1, "bassMidi": 64, "bassPitchClass": 4, "pitchClasses": [4], "windowTicks": 38, "tempoMicrosecondsAtAnchor": 500000, "segmentIndex": 0, "gridIndex": 1, "quantizedTickNumerator": 480, "quantizedTickDenominator": 4, "quantizationErrorNumerator": 236, "quantizationErrorDenominator": 4, "measureIndex": 0 }
+        ]
+      },
+      "traceIds": ["M0-TRACE-GRID"],
+      "authorityIds": ["M0-AUTH-DERIVED", "M0-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "M0-SON-005",
+      "title": "Rational grid at PPQ 3 in 2/2: a three-halves-tick cell and a half-tick error, window zero",
+      "input": {
+        "ppq": 3,
+        "tempoMap": [],
+        "meterMap": [{ "tick": 0, "numerator": 2, "denominatorPower": 1 }],
+        "notes": [
+          { "trackIndex": 0, "channel": 0, "key": 60, "onTick": 0, "offTick": 3 },
+          { "trackIndex": 0, "channel": 0, "key": 64, "onTick": 2, "offTick": 5 }
+        ]
+      },
+      "expected": {
+        "sonorities": [
+          { "anchorTick": 0, "memberCount": 1, "bassMidi": 60, "bassPitchClass": 0, "pitchClasses": [0], "windowTicks": 0, "tempoMicrosecondsAtAnchor": 500000, "segmentIndex": 0, "gridIndex": 0, "quantizedTickNumerator": 0, "quantizedTickDenominator": 2, "quantizationErrorNumerator": 0, "quantizationErrorDenominator": 2, "measureIndex": 0 },
+          { "anchorTick": 2, "memberCount": 1, "bassMidi": 64, "bassPitchClass": 4, "pitchClasses": [4], "windowTicks": 0, "tempoMicrosecondsAtAnchor": 500000, "segmentIndex": 0, "gridIndex": 1, "quantizedTickNumerator": 3, "quantizedTickDenominator": 2, "quantizationErrorNumerator": 1, "quantizationErrorDenominator": 2, "measureIndex": 0 }
+        ]
+      },
+      "traceIds": ["M0-TRACE-GRID"],
+      "authorityIds": ["M0-AUTH-DERIVED", "M0-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "M0-SON-006",
+      "title": "Measure segmentation across a 4/4 to 3/4 change, including a quantization that lands mid-segment",
+      "input": {
+        "ppq": 480,
+        "tempoMap": [{ "tick": 0, "microsecondsPerQuarter": 500000 }],
+        "meterMap": [
+          { "tick": 0, "numerator": 4, "denominatorPower": 2 },
+          { "tick": 3840, "numerator": 3, "denominatorPower": 2 }
+        ],
+        "notes": [
+          { "trackIndex": 0, "channel": 0, "key": 60, "onTick": 0, "offTick": 100 },
+          { "trackIndex": 0, "channel": 0, "key": 62, "onTick": 1920, "offTick": 2000 },
+          { "trackIndex": 0, "channel": 0, "key": 64, "onTick": 3840, "offTick": 3900 },
+          { "trackIndex": 0, "channel": 0, "key": 65, "onTick": 5380, "offTick": 5500 }
+        ]
+      },
+      "expected": {
+        "sonorities": [
+          { "anchorTick": 0, "memberCount": 1, "bassMidi": 60, "bassPitchClass": 0, "pitchClasses": [0], "windowTicks": 38, "tempoMicrosecondsAtAnchor": 500000, "segmentIndex": 0, "gridIndex": 0, "quantizedTickNumerator": 0, "quantizedTickDenominator": 4, "quantizationErrorNumerator": 0, "quantizationErrorDenominator": 4, "measureIndex": 0 },
+          { "anchorTick": 1920, "memberCount": 1, "bassMidi": 62, "bassPitchClass": 2, "pitchClasses": [2], "windowTicks": 38, "tempoMicrosecondsAtAnchor": 500000, "segmentIndex": 0, "gridIndex": 16, "quantizedTickNumerator": 7680, "quantizedTickDenominator": 4, "quantizationErrorNumerator": 0, "quantizationErrorDenominator": 4, "measureIndex": 1 },
+          { "anchorTick": 3840, "memberCount": 1, "bassMidi": 64, "bassPitchClass": 4, "pitchClasses": [4], "windowTicks": 38, "tempoMicrosecondsAtAnchor": 500000, "segmentIndex": 1, "gridIndex": 0, "quantizedTickNumerator": 15360, "quantizedTickDenominator": 4, "quantizationErrorNumerator": 0, "quantizationErrorDenominator": 4, "measureIndex": 2 },
+          { "anchorTick": 5380, "memberCount": 1, "bassMidi": 65, "bassPitchClass": 5, "pitchClasses": [5], "windowTicks": 38, "tempoMicrosecondsAtAnchor": 500000, "segmentIndex": 1, "gridIndex": 13, "quantizedTickNumerator": 21600, "quantizedTickDenominator": 4, "quantizationErrorNumerator": 80, "quantizationErrorDenominator": 4, "measureIndex": 3 }
+        ]
+      },
+      "traceIds": ["M0-TRACE-GRID", "M0-TRACE-MEASURES"],
+      "authorityIds": ["M0-AUTH-DERIVED", "M0-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "M0-SON-007",
+      "title": "Notes merge across tracks into one sonority whose bass is the lowest MIDI number",
+      "input": {
+        "ppq": 960,
+        "tempoMap": [],
+        "meterMap": [],
+        "notes": [
+          { "trackIndex": 1, "channel": 0, "key": 36, "onTick": 0, "offTick": 960 },
+          { "trackIndex": 2, "channel": 0, "key": 64, "onTick": 0, "offTick": 960 },
+          { "trackIndex": 2, "channel": 0, "key": 67, "onTick": 0, "offTick": 960 },
+          { "trackIndex": 2, "channel": 0, "key": 71, "onTick": 0, "offTick": 960 }
+        ]
+      },
+      "expected": {
+        "sonorities": [
+          { "anchorTick": 0, "memberCount": 4, "bassMidi": 36, "bassPitchClass": 0, "pitchClasses": [0, 4, 7, 11], "windowTicks": 76, "tempoMicrosecondsAtAnchor": 500000, "segmentIndex": 0, "gridIndex": 0, "quantizedTickNumerator": 0, "quantizedTickDenominator": 4, "quantizationErrorNumerator": 0, "quantizationErrorDenominator": 4, "measureIndex": 0 }
+        ]
+      },
+      "traceIds": ["M0-TRACE-GROUPING"],
+      "authorityIds": ["M0-AUTH-DERIVED", "M0-AUTH-INDEPENDENCE"]
+    },
+    {
+      "id": "M0-SON-008",
+      "title": "An exact-integer window at 400 bpm: 256 joins, 257 splits",
+      "input": {
+        "ppq": 960,
+        "tempoMap": [{ "tick": 0, "microsecondsPerQuarter": 150000 }],
+        "meterMap": [],
+        "notes": [
+          { "trackIndex": 0, "channel": 0, "key": 60, "onTick": 0, "offTick": 960 },
+          { "trackIndex": 0, "channel": 0, "key": 64, "onTick": 256, "offTick": 960 },
+          { "trackIndex": 0, "channel": 0, "key": 67, "onTick": 257, "offTick": 960 }
+        ]
+      },
+      "expected": {
+        "sonorities": [
+          { "anchorTick": 0, "memberCount": 2, "bassMidi": 60, "bassPitchClass": 0, "pitchClasses": [0, 4], "windowTicks": 256, "tempoMicrosecondsAtAnchor": 150000, "segmentIndex": 0, "gridIndex": 0, "quantizedTickNumerator": 0, "quantizedTickDenominator": 4, "quantizationErrorNumerator": 0, "quantizationErrorDenominator": 4, "measureIndex": 0 },
+          { "anchorTick": 257, "memberCount": 1, "bassMidi": 67, "bassPitchClass": 7, "pitchClasses": [7], "windowTicks": 256, "tempoMicrosecondsAtAnchor": 150000, "segmentIndex": 0, "gridIndex": 1, "quantizedTickNumerator": 960, "quantizedTickDenominator": 4, "quantizationErrorNumerator": 68, "quantizationErrorDenominator": 4, "measureIndex": 0 }
+        ]
+      },
+      "traceIds": ["M0-TRACE-WINDOW"],
+      "authorityIds": ["M0-AUTH-DERIVED", "M0-AUTH-INDEPENDENCE"]
+    }
+  ]
+}

@@ -35,6 +35,8 @@
     { "id": "A0-MUT-027", "operator": "cache-selector-output-in-document", "mustDiffer": "document JSON gains derived keys", "killerCaseIds": ["A0-UI-008", "A0-UI-009"], "traceIds": ["TR-A0-SELECTORS", "TR-A0-NONHISTORY"] },
     { "id": "A0-MUT-028", "operator": "missing-event-selector-falls-back-to-same-index", "mustDiffer": "removed selection points to neighbor", "killerCaseIds": ["A0-UI-007", "A0-CMD-003"], "traceIds": ["TR-A0-SELECTORS", "TR-LEGACY-STATE"] },
     { "id": "A0-MUT-029", "operator": "failure-mutates-document-before-notice", "mustDiffer": "authoritative state changes on refusal", "killerCaseIds": ["A0-ATOMIC-001", "A0-CMD-018"], "traceIds": ["TR-A0-ATOMIC"] },
-    { "id": "A0-MUT-030", "operator": "use-wall-time-as-command-or-search-cutoff", "mustDiffer": "same input yields host-dependent result", "killerCaseIds": ["A0-PROP-1000", "A0-CMD-012", "A0-CMD-013"], "traceIds": ["TR-A0-RANDOM", "TR-A0-COALESCE"] }
+    { "id": "A0-MUT-030", "operator": "use-wall-time-as-command-or-search-cutoff", "mustDiffer": "same input yields host-dependent result", "killerCaseIds": ["A0-PROP-1000", "A0-CMD-012", "A0-CMD-013"], "traceIds": ["TR-A0-RANDOM", "TR-A0-COALESCE"] },
+    { "id": "A0-MUT-031", "operator": "settle-mismatched-transport-expectation", "mustDiffer": "stale settlement overwrites a genuine notification", "killerCaseIds": ["A0-UI-013"], "traceIds": ["TR-A0-TRANSPORT-SETTLE", "TR-A0-STALE"] },
+    { "id": "A0-MUT-032", "operator": "claim-optimistic-status-on-refusal-settlement", "mustDiffer": "refused command still reports starting", "killerCaseIds": ["A0-UI-012", "A0-UI-014"], "traceIds": ["TR-A0-TRANSPORT-SETTLE"] }
   ]
 }

@@ -162,7 +162,57 @@ for (const mobileCase of [
       await title.focus();
       await title.fill("Keyboard-only mobile draft");
       await expect(title).toHaveValue("Keyboard-only mobile draft");
-      await expect(page.getByText("Revision 0", { exact: true })).toBeVisible();
+      await expect(page.getByText("Revision 3", { exact: true })).toBeVisible();
+
+      /*
+       * The whole layout must FIT, not merely render: the shell clips at
+       * its own overflow, so a row whose min-content exceeds the viewport
+       * silently pushes real controls (Copy link, Clear, the sheet
+       * openers) off-screen with no scrollbar and no failing test. This
+       * assertion set is the law that was missing when exactly that
+       * shipped.
+       */
+      const layoutFit = await page.evaluate(() => {
+        const controlIds = [
+          "studio-copy-share-link",
+          "studio-clear-chart",
+          "studio-undo",
+          "studio-redo",
+          "studio-apply-title",
+          "studio-open-library-sheet",
+          "studio-open-harmony-sheet",
+        ];
+        return {
+          bootMessagePresent: document.querySelector(".boot-message") !== null,
+          controls: controlIds.map((id) => {
+            const box = document.getElementById(id)?.getBoundingClientRect();
+            return {
+              id,
+              left: box === undefined ? null : Math.round(box.left),
+              right: box === undefined ? null : Math.round(box.right),
+              width: box === undefined ? null : Math.round(box.width),
+            };
+          }),
+          documentScrollWidth: document.documentElement.scrollWidth,
+          viewportWidth: window.innerWidth,
+        };
+      });
+      expect(layoutFit.documentScrollWidth).toBeLessThanOrEqual(
+        mobileCase.viewport.width + 1,
+      );
+      expect(layoutFit.bootMessagePresent).toBe(false);
+      for (const control of layoutFit.controls) {
+        expect(control.width, `${control.id} rendered`).not.toBeNull();
+        expect(control.width ?? 0, `${control.id} real width`).toBeGreaterThan(0);
+        expect(
+          control.left ?? -1,
+          `${control.id} left edge on-screen`,
+        ).toBeGreaterThanOrEqual(0);
+        expect(
+          control.right ?? Infinity,
+          `${control.id} right edge on-screen`,
+        ).toBeLessThanOrEqual(mobileCase.viewport.width + 1);
+      }
 
       const observationsBySheet: Record<string, MobileObservation> = {};
       for (const name of ["Library", "Harmony Lens"] as const) {
@@ -183,7 +233,7 @@ for (const mobileCase of [
         await expect(sheet).toHaveCount(0);
         await expect(trigger).toBeFocused();
       }
-      observations = { observationsBySheet };
+      observations = { layoutFit, observationsBySheet };
       expect(diagnostics.consoleErrors).toEqual([]);
       expect(diagnostics.pageErrors).toEqual([]);
       expect(diagnostics.requests).toHaveLength(1);
@@ -244,7 +294,10 @@ test("U0-ENV-004 coarse-pointer mobile keeps primary actions at 44 CSS px and ex
         };
       }),
     );
-    expect(primaryTargets.length).toBeGreaterThanOrEqual(10);
+    // Title apply/reset, both sheet openers, and the three wired transport
+    // controls. The unwired previous/next/loop buttons no longer render, so
+    // the floor is seven real targets, every one of them 44 px.
+    expect(primaryTargets.length).toBeGreaterThanOrEqual(7);
     for (const target of primaryTargets) {
       expect(target.width, `${target.id || target.name} coarse width`).toBeGreaterThanOrEqual(44);
       expect(target.height, `${target.id || target.name} coarse height`).toBeGreaterThanOrEqual(44);
@@ -465,7 +518,7 @@ test("U0-ENV-006 virtual-keyboard viewport contraction preserves draft authority
     const titleBox = await title.boundingBox();
     const transportBox = await page.locator("#transport-bar").boundingBox();
     await expect(title).toHaveValue("Uncommitted keyboard draft");
-    await expect(page.getByText("Revision 0", { exact: true })).toBeVisible();
+    await expect(page.getByText("Revision 3", { exact: true })).toBeVisible();
     await page.getByRole("button", { exact: true, name: "Library" }).click();
     const close = page.getByRole("button", { name: "Close Library" });
     await expect(close).toBeVisible();

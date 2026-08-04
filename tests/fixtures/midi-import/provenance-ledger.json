@@ -1,0 +1,73 @@
+{
+  "schema": "changes.fixtures.m0-provenance-ledger.v1",
+  "ledgerVersion": 1,
+  "authoringStatement": "M0 expectations were authored by hand before any production SMF parser, sonority grouper, or reverse resolver existed. Every hostile and well-formed byte fixture was assembled from the SMF 1.0 byte model (chunk layouts, VLQ arithmetic, running status, meta payloads); repeated limit segments were produced by the authoring session's own byte arithmetic, never by any production code. Every window, grid, measure, counter, offset, and alternative-set expectation was derived on paper with the exact integer formulas frozen in the manifest and cross-checked against the validator's independent reference implementations. The round-trip golden restates the E1-GLD-001 writer fixture byte-for-byte and pins it; no value was produced by, or copied from, production output.",
+  "reviewState": "reviewed-for-m0-spec",
+  "expectedValuesGenerated": false,
+  "productionOutputUsed": false,
+  "classificationPolicy": {
+    "primary-standard": "A current normative specification of an external format or Web platform capability.",
+    "reviewed-contract": "A normative repository architecture or package decision.",
+    "legacy-observation": "A reproduced legacy failure the replacement must not preserve.",
+    "mechanical-derivation": "A direct result of a declared formula, integer algorithm, or cap.",
+    "human-review": "A judgment that automation cannot honestly certify."
+  },
+  "authorities": [
+    {
+      "id": "M0-AUTH-SMF",
+      "class": "primary-standard",
+      "source": "Standard MIDI File 1.0 specification (MMA): header/track chunk layout, big-endian integers, variable-length quantities of at most four bytes, running status with meta/sysex cancellation, velocity-zero note-off equivalence, meta event types and payload layouts, format 0/1/2 semantics, PPQ versus SMPTE division, alien-chunk tolerance, and the 120 bpm / 4-4 defaults",
+      "supports": [
+        "The accepted-format and division envelope and every smf.* refusal class",
+        "Running status across meta cancellation and multi-channel status changes",
+        "Velocity-zero note-offs and note pairing per (track, channel, key)",
+        "Tolerated meta and channel-message vocabularies recorded, never silent",
+        "Default tempo 500000 and default meter 4/4 as recorded laws"
+      ]
+    },
+    {
+      "id": "M0-AUTH-T1",
+      "class": "reviewed-contract",
+      "source": "docs/T1_RESOLUTION_CONTRACT.md and src/theory/resolution-contract.ts: the frozen CHORD_FORMULA_RULE_IDS vocabulary, the four altered-dominant realization ids and their degree sets, and the Custom-chord limitation law",
+      "supports": [
+        "Every template's formulaRuleId is an existing T1 rule id; none is invented",
+        "The four alt templates restate the T1 ALT_VARIANT degree sets as pitch-class offsets",
+        "The no-confident-symbol outcome is the T1 Custom shape: literal pitches, no analysis claim",
+        "Symbol text rendering is deferred to the T0 formatter so the grammar cannot fork"
+      ]
+    },
+    {
+      "id": "M0-AUTH-E1",
+      "class": "reviewed-contract",
+      "source": "docs/E1_MIDI_EXPORT_CONTRACT.md, src/export/midi-export-contract.ts, and tests/fixtures/midi-export/golden-cases.json: the writer's frozen meta vocabulary, PPQ-960 plan pins, and the byte-golden corpus",
+      "supports": [
+        "The consumed meta vocabulary is byte-identical to MIDI_EXPORT_META_TYPES",
+        "M0-GLD-001 restates E1-GLD-001 byte-for-byte and the validator pins the equality",
+        "The 4 MiB byte cap mirrors MAX_MIDI_EXPORT_BYTES and the note cap mirrors the writer's",
+        "Import-only golden families are exactly shapes the E1 writer can never emit"
+      ]
+    },
+    {
+      "id": "M0-AUTH-DERIVED",
+      "class": "mechanical-derivation",
+      "source": "Integer and exact-rational arithmetic over frozen values: floor(40000*ppq/microseconds) windows, the floor((2N+D)/(2D)) grid law, ceil segment-measure counts, VLQ and chunk-length sums, refusal byte offsets, limit thresholds, and deterministic work/state/memory counters",
+      "supports": [
+        "Every windowTicks, gridIndex, quantized rational, error rational, and measureIndex",
+        "Every refusal byteOffset under the manifest offsetSemantics",
+        "Every expectedCounters record and every limit-case threshold offset",
+        "The ranking tuples behind every alternative ordering"
+      ]
+    },
+    {
+      "id": "M0-AUTH-INDEPENDENCE",
+      "class": "human-review",
+      "source": "M0/spec authoring session for jcpe-v3c2.1: fixtures hand-assembled and cross-checked against the validator's independently written reference decoder, grouper, and matcher",
+      "supports": [
+        "Expectations authored before production and never regenerated from it",
+        "The 40 ms window constant chosen inside the owner's 30-60 ms band and frozen as musical time, not wall time",
+        "The candidate-roots-from-present-pitch-classes law and the exact-before-omitted-fifth ranking",
+        "The flat-preferring canonical import spelling table"
+      ]
+    }
+  ]
+}

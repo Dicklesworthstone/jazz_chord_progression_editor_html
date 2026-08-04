@@ -1,5 +1,18 @@
 import { mkdir } from "node:fs/promises";
 import { basename, resolve } from "node:path";
+import {
+  CONCERT_GRAND_WASM_BASE64,
+  CONCERT_GRAND_WASM_BYTE_LENGTH,
+  CONCERT_GRAND_WASM_SHA256,
+} from "../src/audio/wasm/concert-grand-wasm";
+import {
+  PIANO_ATTACK_SAMPLES_ATTRIBUTION,
+  PIANO_ATTACK_SAMPLES_BASE64,
+  PIANO_ATTACK_SAMPLES_BYTE_LENGTH,
+  PIANO_ATTACK_SAMPLES_LICENSE,
+  PIANO_ATTACK_SAMPLES_SHA256,
+  PIANO_ATTACK_SAMPLE_RATE_HZ,
+} from "../src/audio/wasm/piano-attack-samples";
 import { inspectArtifact } from "./artifact-policy";
 import {
   assertByteEqual,
@@ -30,6 +43,7 @@ type FoundationContract = {
   };
   toolchain: {
     runtimeDependencies: Record<string, string>;
+    wasmCompiledDependencies: Record<string, string>;
   };
 };
 
@@ -55,6 +69,16 @@ type EmbeddedAssetRecord = {
   sha256: string;
   source: string;
   license: string;
+  /**
+   * How the asset lives inside the single-file artifact: `data-url` assets are
+   * visible to the markup scanner as passive `data:` URLs; an
+   * `inline-script-base64` asset is a byte payload carried as a base64 string
+   * constant inside the bundled JavaScript (the embedded wasm module).
+   */
+  embedding: "data-url" | "inline-script-base64";
+  generator?: string;
+  /** Required credit line for a third-party asset under an attribution license. */
+  attribution?: string;
 };
 
 export type BuildOptions = {
@@ -111,9 +135,20 @@ async function contentSecurityPolicy(html: string): Promise<{
     hashes.length > 0
       ? hashes.map((hash) => `'sha256-${hash}'`).join(" ")
       : "'none'";
+  /**
+   * `'wasm-unsafe-eval'` authorizes `WebAssembly.instantiate` of the
+   * project-owned embedded payload under a hash-based script-src; Chromium,
+   * Firefox, and WebKit all require the token for that call. It never
+   * authorizes a URL: wasm fetched from anywhere stays blocked by the
+   * absence of any network source in this policy.
+   */
+  const scriptSources =
+    scriptHashes.length > 0
+      ? `${hashSources(scriptHashes)} 'wasm-unsafe-eval'`
+      : "'none'";
   const value = [
     "default-src 'none'",
-    `script-src ${hashSources(scriptHashes)}`,
+    `script-src ${scriptSources}`,
     "script-src-attr 'none'",
     `style-src ${hashSources(styleHashes)}`,
     "style-src-attr 'none'",
@@ -147,6 +182,46 @@ async function inventoriedEmbeddedAssets(
   const payload = new TextEncoder().encode(
     decodeURIComponent(OWNED_FAVICON_DATA_URL.slice(comma + 1)),
   );
+
+  if (!html.includes(CONCERT_GRAND_WASM_BASE64)) {
+    throw new Error(
+      "ASSET_WASM_MISSING: the embedded concert-grand wasm payload was not bundled.",
+    );
+  }
+  const wasmBytes = Uint8Array.from(
+    Buffer.from(CONCERT_GRAND_WASM_BASE64, "base64"),
+  );
+  const wasmSha256 = await sha256Hex(wasmBytes);
+  if (
+    wasmBytes.byteLength !== CONCERT_GRAND_WASM_BYTE_LENGTH ||
+    wasmSha256 !== CONCERT_GRAND_WASM_SHA256
+  ) {
+    throw new Error(
+      "ASSET_WASM_DRIFT: the concert-grand wasm base64 does not match its " +
+        "pinned sha256/byte length; regenerate with bun scripts/build-dsp.ts.",
+    );
+  }
+
+  if (!html.includes(PIANO_ATTACK_SAMPLES_BASE64)) {
+    throw new Error(
+      "ASSET_PIANO_SAMPLES_MISSING: the embedded piano attack payload was not bundled.",
+    );
+  }
+  const pianoBytes = Uint8Array.from(
+    Buffer.from(PIANO_ATTACK_SAMPLES_BASE64, "base64"),
+  );
+  const pianoSha256 = await sha256Hex(pianoBytes);
+  if (
+    pianoBytes.byteLength !== PIANO_ATTACK_SAMPLES_BYTE_LENGTH ||
+    pianoSha256 !== PIANO_ATTACK_SAMPLES_SHA256
+  ) {
+    throw new Error(
+      "ASSET_PIANO_SAMPLES_DRIFT: the piano attack base64 does not match its " +
+        "pinned sha256/byte length; regenerate with " +
+        "bun scripts/build-piano-samples.ts.",
+    );
+  }
+
   return [
     {
       id: "changes-empty-favicon",
@@ -155,6 +230,28 @@ async function inventoriedEmbeddedAssets(
       sha256: await sha256Hex(payload),
       source: "src/index.html#favicon",
       license: "LicenseRef-Project",
+      embedding: "data-url",
+    },
+    {
+      id: "concert-grand-dsp-wasm",
+      mime: "application/wasm",
+      bytes: wasmBytes.byteLength,
+      sha256: wasmSha256,
+      source: "dsp/concert-grand",
+      generator: "scripts/build-dsp.ts",
+      license: "MIT (project) + libm MIT OR Apache-2.0",
+      embedding: "inline-script-base64",
+    },
+    {
+      id: "salamander-piano-attack-pcm",
+      mime: `audio/L16;rate=${String(PIANO_ATTACK_SAMPLE_RATE_HZ)};channels=1`,
+      bytes: pianoBytes.byteLength,
+      sha256: pianoSha256,
+      source: "SalamanderGrandPianoV3_44.1khz16bit",
+      generator: "scripts/build-piano-samples.ts",
+      license: PIANO_ATTACK_SAMPLES_LICENSE,
+      embedding: "inline-script-base64",
+      attribution: PIANO_ATTACK_SAMPLES_ATTRIBUTION,
     },
   ];
 }
@@ -179,6 +276,11 @@ async function finalizeHtml(
   const notice = `<!--
 Third-party notice: Preact ${preactVersion}, MIT License
 ${safeHtmlComment(preactLicense)}
+
+Third-party notice: recorded piano attack transients embedded in the audio
+engine come from ${PIANO_ATTACK_SAMPLES_ATTRIBUTION},
+<https://creativecommons.org/licenses/by/3.0/>. Sliced and re-encoded by
+scripts/build-piano-samples.ts; see dist/licenses.json for the payload digest.
 -->`;
   body = body.replace(/^<!doctype html>/i, (doctype) => `${doctype}\n${notice}`);
   const csp = await contentSecurityPolicy(body);
@@ -224,6 +326,15 @@ async function runBunBuild(root: string, stagingDir: string): Promise<string> {
       stagingDir,
       "--minify-whitespace",
       "--minify-syntax",
+      /**
+       * Identifier mangling is deterministic for a fixed input, so it keeps
+       * the reproducibility and CSP-hash gates intact while reclaiming the
+       * artifact headroom the studio needs. Inspectability of the release
+       * bundle is not a project contract: `src/` is authoritative, the
+       * generated banner points at it, and every embedded asset, license and
+       * hash stays recorded in `dist/standalone-manifest.json`.
+       */
+      "--minify-identifiers",
       "--sourcemap=none",
       "--packages=bundle",
       "--reject-unresolved",
@@ -318,7 +429,12 @@ export async function buildStandalone(options: BuildOptions = {}): Promise<{
     );
   }
   const embeddedAssets = await inventoriedEmbeddedAssets(finalized.html);
-  if (inspection.html.embeddedAssets !== embeddedAssets.length) {
+  // The markup scanner can only see attribute-level data: URLs; script-carried
+  // payloads (the wasm module) are verified byte-for-byte above instead.
+  const markupVisibleAssets = embeddedAssets.filter(
+    (asset) => asset.embedding === "data-url",
+  );
+  if (inspection.html.embeddedAssets !== markupVisibleAssets.length) {
     throw new Error(
       "ASSET_INVENTORY_MISMATCH: every embedded artifact asset must have provenance.",
     );
@@ -348,9 +464,34 @@ export async function buildStandalone(options: BuildOptions = {}): Promise<{
     noticeEmbedded: true,
     licenseTextSha256: await sha256Hex(preactLicense),
   };
+
+  const libmVersion = contract.toolchain.wasmCompiledDependencies["libm"];
+  if (!libmVersion) {
+    throw new Error("LICENSE_LIBM_VERSION: contract is missing libm.");
+  }
+  const libmLedger = ledger.records.find((record) => record.name === "libm");
+  if (!libmLedger || libmLedger.version !== libmVersion) {
+    throw new Error("LICENSE_LIBM_LEDGER: libm ledger does not match contract.");
+  }
+  // Not a JS package: libm is Rust code compiled into the embedded wasm
+  // payload, so it is inventoried separately and `packages` stays Preact-only.
+  const wasmCompiledRecord = {
+    name: libmLedger.name,
+    version: libmLedger.version,
+    license: libmLedger.license,
+    source: libmLedger.source,
+    bundledInArtifact: true,
+    embedding: "compiled-into-wasm",
+    description:
+      "Rust software floating-point library compiled into the embedded " +
+      "concert-grand WebAssembly payload by scripts/build-dsp.ts; " +
+      "not a JavaScript dependency.",
+  };
+
   const licenses = {
     schemaVersion: 1,
     packages: [licenseRecord],
+    wasmCompiled: [wasmCompiledRecord],
     assets: embeddedAssets,
   };
   const manifest = {
@@ -376,7 +517,7 @@ export async function buildStandalone(options: BuildOptions = {}): Promise<{
       compatModeExpected: contract.artifact.compatMode,
       inlineScriptCount: inlineContents(finalized.html, "script").length,
       inlineStyleCount: inlineContents(finalized.html, "style").length,
-      embeddedAssetCount: inspection.html.embeddedAssets,
+      embeddedAssetCount: embeddedAssets.length,
       csp: {
         scriptHashes: finalized.csp.scriptHashes,
         styleHashes: finalized.csp.styleHashes,
@@ -384,6 +525,7 @@ export async function buildStandalone(options: BuildOptions = {}): Promise<{
       forbiddenReferences: [],
     },
     licenses: [licenseRecord],
+    wasmCompiled: [wasmCompiledRecord],
     assets: embeddedAssets,
   };
 

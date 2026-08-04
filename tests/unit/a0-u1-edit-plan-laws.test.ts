@@ -483,6 +483,90 @@ function splitSectionPlan(
   });
 }
 
+type SplitMeasurePlan = Extract<AtomicEditPlan, { kind: "split-measure" }>;
+
+/**
+ * A four-beat bar holding two two-beat events. Splitting it at the second event
+ * is the only strict-interior boundary it has, so the same document proves both
+ * the positive law and every boundary near miss.
+ */
+function measurePairDocument(
+  documentId = "document-split-measure-laws",
+): ValidatedDocument {
+  return publishDocument(
+    [
+      {
+        id: "section-split-measure",
+        name: "Pair",
+        measures: [
+          {
+            id: "measure-split-measure",
+            events: [
+              {
+                id: "event-split-measure-left",
+                chord: "Dm7",
+                duration: duration(2, 1),
+                annotation: "left annotation survives",
+              },
+              {
+                id: "event-split-measure-right",
+                chord: "G7",
+                duration: duration(2, 1),
+              },
+            ],
+          },
+        ],
+      },
+    ],
+    documentId,
+  );
+}
+
+function shortCompletion(
+  reason: string,
+): SplitMeasurePlan["newMeasureCompletion"] {
+  return Object.freeze({
+    kind: "incomplete",
+    expectedDuration: duration(2, 1),
+    reason,
+  });
+}
+
+function splitMeasurePlan(
+  document: ValidatedDocument,
+  overrides: Partial<{
+    beforeEventId: SplitMeasurePlan["beforeEventId"];
+    firstMeasureTotal: BeatDuration;
+    secondMeasureTotal: BeatDuration;
+  }> = {},
+): SplitMeasurePlan {
+  const section = document.sections[0];
+  const measure = section?.measures[0];
+  const boundary = measure?.events[1];
+  if (measure === undefined || boundary === undefined) {
+    throw new Error("A0_U1_LAW_SPLIT_MEASURE_TARGET");
+  }
+  const completionDeclarations: readonly [
+    SplitMeasurePlan["completionDeclarations"][0],
+  ] = Object.freeze([
+    Object.freeze({
+      measureId: measure.id,
+      completion: shortCompletion("Retained half of the split bar"),
+    }),
+  ]);
+  return Object.freeze({
+    kind: "split-measure",
+    measureId: measure.id,
+    beforeEventId: overrides.beforeEventId ?? boundary.id,
+    firstMeasureTotal: overrides.firstMeasureTotal ?? duration(2, 1),
+    secondMeasureTotal: overrides.secondMeasureTotal ?? duration(2, 1),
+    newMeasureCompletion: shortCompletion("Suffix half of the split bar"),
+    completionDeclarations,
+    identityPolicy: "retain-source-prefix-allocate-suffix",
+    eventPolicy: "move-suffix-preserve-identities",
+  });
+}
+
 function joinSectionsPlan(
   document: ValidatedDocument,
   leftIndex: number,
@@ -1435,5 +1519,232 @@ describe("A0/U1 atomic edit-plan runner laws", () => {
       semanticValidationCalls: 0,
       termination: "input-refusal",
     });
+  });
+  test("split-measure moves a bar line and never a beat", () => {
+    const document = measurePairDocument();
+    const state = initialState(document);
+    const factory = factoryHarness(["measure-split-measure-suffix"]);
+    const harness = dependencyHarness(factory.factory);
+    // Document-wide, because the point of the law is that events keep their
+    // identity, value, and order while crossing a moved bar line.
+    const flattened = (candidate: ValidatedDocument) =>
+      candidate.sections
+        .flatMap((section) => section.measures)
+        .flatMap((measure) => measure.events)
+        .map((event) => ({
+          id: String(event.id),
+          annotation: event.annotation,
+          duration: {
+            numerator: event.duration.numerator,
+            denominator: event.duration.denominator,
+          },
+          chord: JSON.stringify(event.chord),
+          voicing: JSON.stringify(event.voicing),
+        }));
+    const before = flattened(document);
+    const result = requireSuccess(
+      runAtomicEditPlan({
+        state,
+        command: command(state, splitMeasurePlan(document), 801),
+        dependencies: harness.dependencies,
+      }),
+    );
+
+    // One section, two measures, and the flattened event stream is untouched:
+    // same identities, same order, same exact durations, same annotations.
+    const after = result.state.document;
+    expect(after.sections).toHaveLength(1);
+    const measures = after.sections[0]?.measures ?? [];
+    expect(measures).toHaveLength(2);
+    expect(flattened(after)).toEqual(before);
+
+    const [retained, suffix] = measures;
+    expect(String(retained?.id)).toBe("measure-split-measure");
+    expect(retained?.events.map((event) => String(event.id))).toEqual([
+      "event-split-measure-left",
+    ]);
+    expect(suffix?.events.map((event) => String(event.id))).toEqual([
+      "event-split-measure-right",
+    ]);
+    // The suffix is the only allocated identity; nothing is removed.
+    expect(String(suffix?.id)).not.toBe(String(retained?.id));
+    expect(factory.calls).toEqual(["measure"]);
+    // Each side carries its own declared completion; neither inherits the
+    // source bar's `complete`, which is exactly the value a split invalidates.
+    expect(retained?.completion).toEqual(
+      shortCompletion("Retained half of the split bar"),
+    );
+    expect(suffix?.completion).toEqual(
+      shortCompletion("Suffix half of the split bar"),
+    );
+    expect(harness.calls).toEqual({ f2: 1, f3: 1 });
+  });
+
+  test("split-measure boundary must be strict interior", () => {
+    const document = measurePairDocument("document-split-measure-boundary");
+    const state = initialState(document);
+    const snapshot = JSON.stringify(state);
+
+    // The measure's first event would leave an empty retained half, so the
+    // split would be a no-op dressed as a split.
+    const factory = factoryHarness(["boundary-must-not-allocate"]);
+    const harness = dependencyHarness(factory.factory);
+    const firstEvent = requirePlanRefusal(
+      runAtomicEditPlan({
+        state,
+        command: command(
+          state,
+          splitMeasurePlan(document, {
+            beforeEventId: locateEvent(document, "event-split-measure-left")
+              .event.id,
+          }),
+          802,
+        ),
+        dependencies: harness.dependencies,
+      }),
+      "command.destination_invalid",
+      "edit-plan.measure-split-boundary-invalid",
+    );
+    expect(firstEvent.editPlanRefusal.path).toEqual(["plan", "beforeEventId"]);
+    // The boundary check precedes every identity and publication stage.
+    expect(factory.calls).toEqual([]);
+    expect(harness.calls).toEqual({ f2: 0, f3: 0 });
+    expectNoPublication(state, firstEvent, snapshot);
+
+    // An event that belongs to a different measure is a destination failure,
+    // not a missing target: the event exists, it just is not interior here.
+    const twoBars = publishDocument(
+      [
+        {
+          id: "section-split-measure",
+          name: "Pair",
+          measures: [
+            {
+              id: "measure-split-measure",
+              events: [
+                {
+                  id: "event-split-measure-left",
+                  chord: "Dm7",
+                  duration: duration(2, 1),
+                },
+                {
+                  id: "event-split-measure-right",
+                  chord: "G7",
+                  duration: duration(2, 1),
+                },
+              ],
+            },
+            {
+              id: "measure-split-measure-other",
+              events: [
+                {
+                  id: "event-split-measure-other",
+                  chord: "C7",
+                  duration: duration(4, 1),
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      "document-split-measure-two-bars",
+    );
+    const twoBarState = initialState(twoBars);
+    const twoBarSnapshot = JSON.stringify(twoBarState);
+    const otherMeasure = requirePlanRefusal(
+      runAtomicEditPlan({
+        state: twoBarState,
+        command: command(
+          twoBarState,
+          splitMeasurePlan(twoBars, {
+            beforeEventId: locateEvent(twoBars, "event-split-measure-other")
+              .event.id,
+          }),
+          803,
+        ),
+        dependencies: dependencyHarness(
+          factoryHarness(["foreign-must-not-allocate"]).factory,
+        ).dependencies,
+      }),
+      "command.destination_invalid",
+      "edit-plan.measure-split-boundary-invalid",
+    );
+    expectNoPublication(twoBarState, otherMeasure, twoBarSnapshot);
+
+    // A boundary naming no event at all is a missing target instead.
+    const absent = parseStableId("event", "event-split-measure-absent");
+    if (!absent.ok) throw new Error("A0_U1_LAW_ABSENT_EVENT_ID");
+    const missing = requirePlanRefusal(
+      runAtomicEditPlan({
+        state,
+        command: command(
+          state,
+          splitMeasurePlan(document, { beforeEventId: absent.value }),
+          804,
+        ),
+        dependencies: dependencyHarness(
+          factoryHarness(["missing-must-not-allocate"]).factory,
+        ).dependencies,
+      }),
+      "command.target_missing",
+      "edit-plan.target-missing",
+    );
+    expect(missing.editPlanRefusal.path).toEqual(["plan", "beforeEventId"]);
+    expectNoPublication(state, missing, snapshot);
+  });
+
+  test("split-measure refuses a partition that is not the exact sum", () => {
+    const document = measurePairDocument("document-split-measure-partition");
+    const state = initialState(document);
+    const snapshot = JSON.stringify(state);
+    const cases: readonly Readonly<{
+      label: string;
+      overrides: Parameters<typeof splitMeasurePlan>[1];
+      path: readonly string[];
+    }>[] = [
+      {
+        label: "retained side understated",
+        overrides: { firstMeasureTotal: duration(1, 1) },
+        path: ["plan", "firstMeasureTotal"],
+      },
+      {
+        label: "moved side overstated",
+        overrides: { secondMeasureTotal: duration(3, 1) },
+        path: ["plan", "secondMeasureTotal"],
+      },
+      {
+        label: "non-canonical retained total",
+        overrides: {
+          firstMeasureTotal: Object.freeze({
+            numerator: 4,
+            denominator: 2,
+          }) as unknown as BeatDuration,
+        },
+        path: ["plan", "firstMeasureTotal"],
+      },
+    ];
+    for (const [index, entry] of cases.entries()) {
+      const factory = factoryHarness(["partition-must-not-allocate"]);
+      const harness = dependencyHarness(factory.factory);
+      const refusal = requirePlanRefusal(
+        runAtomicEditPlan({
+          state,
+          command: command(
+            state,
+            splitMeasurePlan(document, entry.overrides),
+            810 + index,
+          ),
+          dependencies: harness.dependencies,
+        }),
+        "command.payload_invalid",
+        "edit-plan.measure-partition-mismatch",
+      );
+      expect(refusal.editPlanRefusal.path, entry.label).toEqual(entry.path);
+      // The law runs before any identity work, so no ID is consumed and
+      // neither publication stage is reached.
+      expect(factory.calls, entry.label).toEqual([]);
+      expect(harness.calls, entry.label).toEqual({ f2: 0, f3: 0 });
+      expectNoPublication(state, refusal, snapshot);
+    }
   });
 });

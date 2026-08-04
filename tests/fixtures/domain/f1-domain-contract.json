@@ -129,7 +129,7 @@
   },
   "coverageSummary": {
     "companionFiles": 10,
-    "fixtureCaseRecords": 317,
+    "fixtureCaseRecords": 320,
     "traceRecords": 18,
     "authorityRecords": 9,
     "stableSeeds": 6,
@@ -143,7 +143,7 @@
     "additionalCompoundMeterNearMisses": 1,
     "autoVoicingPolicyMatrixCells": 42,
     "customAutoRefusalMatrixCells": 42,
-    "expectedDiagnosticCodes": 85
+    "expectedDiagnosticCodes": 87
   },
   "fixtureObservationContract": {
     "purpose": "expected records are independent oracle observations, not serialized production result envelopes",

@@ -51,10 +51,20 @@ import {
   type AudioRetireRequest,
   type AudioRetirementReceipt,
   type AudioRetirementSelector,
+  AUDIO_ANALYSIS_FFT_SIZE,
+  type AudioAnalysisFrame,
   type AudioUserGestureReceipt,
   type AudioVoiceOwner,
+  type PrepareRenderedVoicesReceipt,
+  type PrepareRenderedVoicesRequest,
 } from "./audio-engine-contract";
+import {
+  loadConcertGrandRenderer,
+  type ConcertGrandRenderer,
+} from "./dsp-renderer";
 import type {
+  AnalyserNodePort,
+  AudioBufferPort,
   AudioContextPort,
   AudioContextStatePort,
   AudioNodePort,
@@ -72,6 +82,7 @@ import {
   AUDIO_INSTRUMENT_RECIPES,
   AUDIO_PERSISTENT_GRAPH_SETTINGS,
   type AudioInstrumentRecipe,
+  type AudioRenderedInstrumentRecipe,
 } from "./instrument-recipes-contract";
 import {
   cleanupSynthVoice,
@@ -555,6 +566,8 @@ function recipeForInstrument(instrumentId: InstrumentId): AudioInstrumentRecipe 
       return AUDIO_INSTRUMENT_RECIPES[3];
     case "analog-poly":
       return AUDIO_INSTRUMENT_RECIPES[4];
+    case "concert-grand":
+      return AUDIO_INSTRUMENT_RECIPES[5];
   }
 }
 
@@ -623,6 +636,115 @@ function createAudioEngineInternal(
   let state: AudioEngineState = "uninitialized";
   let currentContext: AudioContextPort | null = null;
   let currentGraph: PersistentGraph | null = null;
+  /**
+   * Rendered-instrument state. The renderer loads once during the first
+   * initialization; a failed load leaves it null and rendered attacks refuse
+   * with `audio.renderer_unavailable` while oscillator recipes keep working.
+   * The cache holds context-owned buffers keyed by instrument/pitch/velocity
+   * with least-recently-used eviction at the recipe's declared limit.
+   */
+  const RENDER_VELOCITY_BAND = 21;
+  /** Prepare warms the short bucket the performance layer actually uses. */
+  const PREPARE_RENDER_SECONDS = 2;
+  let renderer: ConcertGrandRenderer | null = null;
+  const renderedBufferCache = new Map<string, AudioBufferPort>();
+  /**
+   * Display-only spectral tap (jcpe-7she). Created lazily on the first
+   * analysis read as a DYNAMIC node — the persistent graph stays exactly
+   * twelve nodes and thirteen edges — and observes the post-processing,
+   * pre-volume signal at the safety gain. It has no output connection, so
+   * it cannot alter what the listener hears.
+   */
+  let analysisTap: AnalyserNodePort | null = null;
+  let analysisWindow: Float32Array<ArrayBuffer> | null = null;
+
+  /**
+   * Rendering a distinct buffer per velocity value is unaffordable: a
+   * performance uses many shades, each costing a full note render, and on a
+   * slow engine that starves the scheduler until attacks land in the past.
+   * Renders are therefore keyed and performed at a quantized velocity — one
+   * buffer per band — while the voice's own gain still carries the exact
+   * velocity, so dynamics are preserved and only the timbre snaps to the
+   * nearest band. The band width matches the recorded layers the renderer
+   * already switches between, so nothing audible is lost that the sample
+   * layer did not already quantize.
+   */
+  function quantizeRenderVelocity(velocity: number): number {
+    const band = Math.round((velocity - 1) / RENDER_VELOCITY_BAND) *
+      RENDER_VELOCITY_BAND + 1;
+    return Math.min(127, Math.max(1, band));
+  }
+
+  /**
+   * Rendered length is bucketed as well as keyed: a performance asks for many
+   * slightly different note lengths, and one buffer per length would defeat
+   * the cache. Buckets grow geometrically so a short comp chord costs a short
+   * render while a held bass note still gets its tail.
+   */
+  const RENDER_SECONDS_BUCKETS = Object.freeze([1, 2, 4, 8] as const);
+
+  function bucketRenderSeconds(seconds: number): number {
+    for (const bucket of RENDER_SECONDS_BUCKETS) {
+      if (seconds <= bucket) return bucket;
+    }
+    return RENDER_SECONDS_BUCKETS[RENDER_SECONDS_BUCKETS.length - 1] ?? 8;
+  }
+
+  function renderedBufferKey(
+    instrumentId: InstrumentId,
+    midiPitch: number,
+    velocity: number,
+    seconds: number,
+  ): string {
+    return `${instrumentId}:${String(midiPitch)}:${String(quantizeRenderVelocity(velocity))}:${String(seconds)}`;
+  }
+
+  /**
+   * Resolve the deterministic PCM buffer for one rendered note, rendering on
+   * a cache miss. Null only when the renderer is unavailable or refuses the
+   * request; the caller turns that into `audio.renderer_unavailable`.
+   */
+  function renderedBufferFor(
+    recipe: AudioRenderedInstrumentRecipe,
+    context: AudioContextPort,
+    midiPitch: number,
+    velocity: number,
+    requestedSeconds = 8,
+  ): AudioBufferPort | null {
+    const seconds = bucketRenderSeconds(requestedSeconds);
+    const key = renderedBufferKey(recipe.id, midiPitch, velocity, seconds);
+    const cached = renderedBufferCache.get(key);
+    if (cached !== undefined) {
+      /* Refresh recency: Map iteration order is the eviction order. */
+      renderedBufferCache.delete(key);
+      renderedBufferCache.set(key, cached);
+      return cached;
+    }
+    if (renderer === null || renderer.algorithmId !== recipe.renderer.algorithmId) {
+      return null;
+    }
+    const pcm = renderer.renderNote(
+      midiPitch,
+      quantizeRenderVelocity(velocity),
+      context.sampleRate,
+      seconds,
+    );
+    if (pcm === null) return null;
+    const buffer = context.createBuffer(
+      recipe.renderer.channels,
+      pcm.frameCount,
+      context.sampleRate,
+    );
+    buffer.getChannelData(0).set(pcm.left);
+    buffer.getChannelData(1).set(pcm.right);
+    renderedBufferCache.set(key, buffer);
+    while (renderedBufferCache.size > recipe.renderer.bufferCacheLimit) {
+      const oldest = renderedBufferCache.keys().next().value;
+      if (oldest === undefined) break;
+      renderedBufferCache.delete(oldest);
+    }
+    return buffer;
+  }
   let reportedContextState: AudioContextStatePort | "absent" = "absent";
   let mix: AudioMix = Object.freeze({ masterVolume: 1, reverbAmount: 0 });
   let lastAcceptedGestureSequence = 0;
@@ -1094,6 +1216,9 @@ function createAudioEngineInternal(
     }
     currentGraph = null;
     currentContext = null;
+    renderedBufferCache.clear();
+    analysisTap = null;
+    analysisWindow = null;
     reportedContextState = observedState ?? "absent";
     state = "fault";
   }
@@ -1309,6 +1434,18 @@ function createAudioEngineInternal(
         "audio.initialization.resume_failed",
         "audio.context_resume_failed",
       );
+    }
+    /*
+     * Best-effort renderer load: a failed wasm instantiation must not fault
+     * the oscillator engine. Rendered attacks refuse with a stable code
+     * until a later prepare call succeeds.
+     */
+    if (renderer === null) {
+      try {
+        renderer = await loadConcertGrandRenderer();
+      } catch {
+        renderer = null;
+      }
     }
     try {
       if (currentGraph !== graph || currentContext !== context) {
@@ -1915,6 +2052,41 @@ function createAudioEngineInternal(
       const recipe = recipeForInstrument(validated.value.instrumentId);
       const plan = planAttack(validated.value, recipe, atTimeSeconds);
       if (!plan.ok) return refuse(plan.failure);
+      /*
+       * Rendered recipes resolve every buffer before any node, registry, or
+       * retirement mutation so the batch refusal stays atomic. The prepare
+       * operation keeps this a cache hit; a miss renders synchronously.
+       */
+      let renderedBuffers: readonly AudioBufferPort[] | null = null;
+      if (recipe.synthesis === "rendered") {
+        const resolved: AudioBufferPort[] = [];
+        for (const voiceSpec of validated.value.voices) {
+          /*
+           * Only as much audio as this voice can sound: the gate plus the
+           * recipe release and a short tail. A performance gates most notes
+           * far short of their natural decay, and rendering the untouched
+           * remainder is the dominant cost on a slow engine.
+           */
+          const buffer = renderedBufferFor(
+            recipe,
+            context,
+            voiceSpec.midiPitch,
+            voiceSpec.velocity,
+            validated.value.releaseTimeSeconds -
+              validated.value.startTimeSeconds +
+              recipe.amplitude.releaseSeconds +
+              0.25,
+          );
+          if (buffer === null) {
+            return refuse({
+              code: "audio.renderer_unavailable",
+              path: ["instrumentId"],
+            });
+          }
+          resolved.push(buffer);
+        }
+        renderedBuffers = resolved;
+      }
       const normalizationGain = normalizationGainForVoiceCount(
         recipe.outputLevel,
         validated.value.voices.length,
@@ -1964,6 +2136,7 @@ function createAudioEngineInternal(
             normalizationGain,
             velocityGain,
             recipe,
+            renderedBuffer: renderedBuffers?.[index] ?? null,
             startTimeSeconds: validated.value.startTimeSeconds,
             releaseTimeSeconds: validated.value.releaseTimeSeconds,
             onSourceEnded: handleSourceEnded,
@@ -2203,6 +2376,193 @@ function createAudioEngineInternal(
     return pending;
   }
 
+  /**
+   * Display-only analysis read: sample the safety-gain tap and run the
+   * embedded DSP analysis over it. A pure observation — no registry, mix,
+   * counter, or graph-count change; callable every animation frame.
+   */
+  function analyzeAudioOutput(): AudioEngineResult<AudioAnalysisFrame> {
+    const context = currentContext;
+    const graph = currentGraph;
+    if (state !== "ready" || context === null || graph === null) {
+      return failureResult("audio.engine_not_ready", ["state"], "refused");
+    }
+    if (renderer === null) {
+      return failureResult(
+        "audio.renderer_unavailable",
+        ["renderer"],
+        "refused",
+      );
+    }
+    try {
+      if (analysisTap === null) {
+        const tap = context.createAnalyser();
+        tap.fftSize = AUDIO_ANALYSIS_FFT_SIZE;
+        tap.smoothingTimeConstant = 0;
+        graph.safetyGain.connect(tap);
+        analysisTap = tap;
+      }
+      analysisWindow ??= new Float32Array(AUDIO_ANALYSIS_FFT_SIZE);
+      analysisTap.getFloatTimeDomainData(analysisWindow);
+      const analyzed = renderer.analyzeWindow(
+        analysisWindow,
+        context.sampleRate,
+      );
+      if (analyzed === null) {
+        return failureResult(
+          "audio.renderer_unavailable",
+          ["analysis"],
+          "refused",
+        );
+      }
+      const samples = new Float32Array(analysisWindow.length);
+      samples.set(analysisWindow);
+      return success(
+        Object.freeze({
+          sampleRateHz: analyzed.sampleRateHz,
+          fftSize: analyzed.fftSize,
+          samples,
+          magnitudes: analyzed.magnitudes,
+          notes: analyzed.notes,
+          chroma: analyzed.chroma,
+        }),
+      );
+    } catch {
+      return failureResult("audio.context_unusable", ["analysis"], "refused");
+    }
+  }
+
+  async function prepareRenderedAudioVoices(
+    request: PrepareRenderedVoicesRequest,
+  ): Promise<AudioEngineResult<PrepareRenderedVoicesReceipt>> {
+    const started = beginOperation();
+    if (started !== null) return refuse(started);
+    if (state === "closed") {
+      return refuse({ code: "audio.engine_closed", path: ["state"] });
+    }
+    const requestValue: unknown = request;
+    if (!isRecord(requestValue)) {
+      return refuse({ code: "audio.instrument_id_invalid", path: [] });
+    }
+    const instrumentId = makeInstrumentId(
+      typeof requestValue["instrumentId"] === "string"
+        ? requestValue["instrumentId"]
+        : "",
+    );
+    if (!instrumentId.ok) {
+      return refuse({
+        code: "audio.instrument_id_invalid",
+        path: ["instrumentId"],
+      });
+    }
+    const context = currentContext;
+    if (context === null || (state !== "ready" && state !== "suspended")) {
+      return refuse({ code: "audio.engine_not_ready", path: ["state"] });
+    }
+    const recipe = recipeForInstrument(instrumentId.value);
+    if (recipe.synthesis !== "rendered") {
+      return success(
+        Object.freeze({
+          instrumentId: instrumentId.value,
+          renderedCount: 0,
+          cachedCount: 0,
+        }),
+      );
+    }
+    if (renderer === null) {
+      try {
+        renderer = await loadConcertGrandRenderer();
+      } catch {
+        return refuse({
+          code: "audio.renderer_unavailable",
+          path: ["instrumentId"],
+        });
+      }
+    }
+    const notesValue = requestValue["notes"];
+    if (!Array.isArray(notesValue)) {
+      return refuse({ code: "audio.midi_pitch_invalid", path: ["notes"] });
+    }
+    let renderedCount = 0;
+    let cachedCount = 0;
+    for (let index = 0; index < notesValue.length; index += 1) {
+      const noteValue: unknown = notesValue[index];
+      if (!isRecord(noteValue)) {
+        return refuse({
+          code: "audio.midi_pitch_invalid",
+          path: ["notes", index],
+        });
+      }
+      const midiPitch = makeMidiPitch(
+        typeof noteValue["midiPitch"] === "number"
+          ? noteValue["midiPitch"]
+          : -1,
+      );
+      if (!midiPitch.ok) {
+        return refuse({
+          code: "audio.midi_pitch_invalid",
+          path: ["notes", index, "midiPitch"],
+        });
+      }
+      const velocity = noteValue["velocity"];
+      if (
+        typeof velocity !== "number" ||
+        !Number.isInteger(velocity) ||
+        velocity < 1 ||
+        velocity > 127
+      ) {
+        return refuse({
+          code: "audio.velocity_invalid",
+          path: ["notes", index, "velocity"],
+        });
+      }
+      const key = renderedBufferKey(
+        recipe.id,
+        midiPitch.value,
+        velocity,
+        bucketRenderSeconds(PREPARE_RENDER_SECONDS),
+      );
+      if (renderedBufferCache.has(key)) {
+        cachedCount += 1;
+        continue;
+      }
+      const buffer = renderedBufferFor(
+        recipe,
+        context,
+        midiPitch.value,
+        velocity,
+        PREPARE_RENDER_SECONDS,
+      );
+      if (buffer === null) {
+        return refuse({
+          code: "audio.renderer_unavailable",
+          path: ["notes", index],
+        });
+      }
+      renderedCount += 1;
+      /*
+       * Yield one macrotask per rendered note. A long synchronous render run
+       * starves the event loop, and Firefox's `AudioContext.currentTime` is
+       * refreshed by main-thread runnables — without this yield the transport
+       * that runs next can anchor a whole run on a stale clock reading and
+       * natural-end it instantly (observed in the 2026-07-28 audible
+       * evidence). This timer initiates no attack, release, reconnection, or
+       * cleanup; it only paces cache warming, so the X0 no-anonymous-timer
+       * law is not implicated.
+       */
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 0);
+      });
+    }
+    return success(
+      Object.freeze({
+        instrumentId: instrumentId.value,
+        renderedCount,
+        cachedCount,
+      }),
+    );
+  }
+
   return Object.freeze({
     initializeAudioEngine,
     resumeAudioEngine,
@@ -2211,6 +2571,8 @@ function createAudioEngineInternal(
     retireAudioVoices,
     inspectAudioEngine,
     disposeAudioEngine,
+    prepareRenderedAudioVoices,
+    analyzeAudioOutput,
   });
 }
 

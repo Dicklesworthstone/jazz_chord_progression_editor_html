@@ -8,7 +8,6 @@ import {
   type ValidatedDocument,
 } from "../domain";
 import { parseChartText } from "../theory";
-import type { AtomicEditPlanDependencies } from "./application-edit-plan-contract";
 import {
   applicationHistoryRetainedByteEstimator,
   createInitialAppState,
@@ -36,10 +35,19 @@ export const STUDIO_INITIAL_PANELS = Object.freeze({
 const STUDIO_BLANK_DOCUMENT_CANDIDATE = Object.freeze({
   schema: PROGRESSION_DOCUMENT_SCHEMA,
   id: STUDIO_BLANK_DOCUMENT_IDS.document,
-  title: "Untitled Changes",
+  title: "Untitled Chart",
   description: "",
   meter: Object.freeze({ beatsPerBar: 4, beatUnit: 4 }),
-  tempoBpm: 120,
+  /*
+   * 105 BPM in 4/4 — MEASURED. It is the tempo of the aggregate structural
+   * statistics the ballad performance style is fitted to (see
+   * `BALLAD_COMP_V1`), and the pulse every slot offset and note length in that
+   * table was computed against: a quarter is 571 ms, so the comping grid's
+   * 0.8-beat voicings ring for about 457 ms and clear for 114, and the bass's
+   * 0.4-beat notes speak for 229. At the 116 this seeded before, the same
+   * table's releases were 10 % shorter than the measurement says they are.
+   */
+  tempoBpm: 105,
   key: null,
   sections: Object.freeze([
     Object.freeze({
@@ -57,10 +65,20 @@ const STUDIO_BLANK_DOCUMENT_CANDIDATE = Object.freeze({
       ]),
     }),
   ]),
+  /*
+   * `reverbAmount` 0.18 rather than the 0.32 this seeded before. The hall is
+   * about four seconds long, and 0.32 of it was chosen when the performance
+   * sustained every chord for its whole written length — a wash under a pad is
+   * inaudible as a wash. The tuned ballad style releases every comp inside a
+   * beat and every detached bass note inside half of one, so the tail is now
+   * the longest thing in the arrangement: at 0.32 it filled the gaps the
+   * release exists to create and put the smear back by another route. 0.18
+   * keeps the room and lets the silence between attacks be silence.
+   */
   playback: Object.freeze({
-    instrumentId: "mellow-keys",
-    masterVolume: 0.8,
-    reverbAmount: 0.2,
+    instrumentId: "concert-grand",
+    masterVolume: 1,
+    reverbAmount: 0.55,
     countInBars: 0,
   }),
 });
@@ -169,19 +187,6 @@ export function createStudioApplicationDependencies(): ApplicationCommandDepende
     copyDomain,
     stableIdFactory: createProductionStableIdFactory(),
     estimateHistoryRetainedBytes: applicationHistoryRetainedByteEstimator,
-  });
-}
-
-/**
- * Compose the additive A0/U1 runner from the same production F2, F3, copy,
- * stable-ID, and history policies as the live A0 command runner, plus the real
- * public T0 fragment parser.
- */
-export function createStudioAtomicEditPlanDependencies(): AtomicEditPlanDependencies {
-  return Object.freeze({
-    ...createStudioApplicationDependencies(),
-    estimateHistoryRetainedBytes:
-      applicationHistoryRetainedByteEstimator,
     parseChartText,
   });
 }

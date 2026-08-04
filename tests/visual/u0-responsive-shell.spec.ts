@@ -209,18 +209,18 @@ async function proveShellCase(
       expect(Math.abs((observed.harmonyRail?.width ?? 0) - observed.harmonyTokenPx)).toBeLessThanOrEqual(1);
     }
 
+    // Exactly the wired controls: the audible landing removed the unwired
+    // previous/next/loop buttons rather than advertising dead capability.
     expect(observed.transportControlNames).toEqual(expect.arrayContaining([
-      "Previous chord",
       "Play",
+      "Pause",
       "Stop",
-      "Next chord",
     ]));
-    if (shellCase.id === "U0-VIEW-001") {
-      expect(
-        observed.transportControlNames.some((name) => /loop/iu.test(name)),
-        "U0-VIEW-001 requires a visible loop control",
-      ).toBe(true);
-    }
+    expect(
+      observed.transportControlNames.filter((name) =>
+        /previous|next|loop/iu.test(name),
+      ),
+    ).toEqual([]);
     expect(observed.transportFactKeys).toEqual([
       "Position",
       "Current chord",

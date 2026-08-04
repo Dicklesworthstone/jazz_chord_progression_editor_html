@@ -161,6 +161,11 @@ export const CANONICAL_JSON_KEY_ORDER = Object.freeze({
     "masterVolume",
     "reverbAmount",
     "countInBars",
+    // jcpe-jnnu: the single optional persisted key. Canonical JSON emits it
+    // exactly when the document stores it; the default groove is expressed
+    // only by absence, so every previously accepted golden stays
+    // byte-identical.
+    "grooveStyleId",
   ] as const),
 } as const);
 

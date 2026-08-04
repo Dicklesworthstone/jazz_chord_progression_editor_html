@@ -3,7 +3,7 @@ import type { InstrumentId } from "../domain";
 export const AUDIO_RECIPE_SET_ID = "changes.audio.instrument-recipes";
 export const AUDIO_RECIPE_SET_VERSION = 1;
 export const AUDIO_IMPULSE_ALGORITHM_ID =
-  "changes.audio.impulse.xorshift32-q15.v1";
+  "changes.audio.impulse.hall-quartic-q15.v2";
 
 export const AUDIO_GRAPH_NODE_IDS = Object.freeze([
   "instrument-bus",
@@ -71,22 +71,27 @@ export const AUDIO_IMPULSE_POLICY = Object.freeze({
   algorithmId: AUDIO_IMPULSE_ALGORITHM_ID,
   seedUint32: 0x58403031,
   channels: 2,
-  durationSeconds: 2,
+  durationSeconds: 4,
+  /* predelayFrames = floor(sampleRate / predelayDivisor): 20 ms of silence. */
+  predelayDivisor: 50,
+  /* Two cascaded integer one-pole lowpasses with alpha 6000/32768. */
+  lowpassAlphaQ15: 6_000,
+  lowpassStages: 2,
   minimumSampleRate: 8_000,
   maximumSampleRate: 192_000,
   referenceSampleRate: 48_000,
-  referenceFrames: 96_000,
+  referenceFrames: 192_000,
   q15Divisor: 32_768,
   envelopeQ15Maximum: 32_767,
   convolverNormalize: true,
   referenceInterleavedInt16LeSha256:
-    "8329fc9abc8b16eeac673bd4a1e0f1e8c9a4900939e6fc00191b429066867f89",
+    "ee0449f080bc31f1a9710ec7a316e8e34fb7979421f1a56c6ffd55b667df2017",
   referenceChannelInt16LeSha256: Object.freeze([
-    "fca2e65890c77fdb0ad08d6cada5b0ed398ce9f97c46e279b306a5c8a870fe53",
-    "060054f6c4797b6ba6a11798e261455596a7ab4f17042aa7d2882b7569fd5bec",
+    "f97dee335bf4a7308a2dff2c6b9a609cac4f345edc90aa3b1058f45c1d415394",
+    "7ff4c5a34a8848bc08148c821aac3d23940a3a94bba9c041615ce6e093795416",
   ] as const),
-  referencePeakQ15: 32_595,
-  referenceFinalStateUint32: 0xa07e6c9f,
+  referencePeakQ15: 13_352,
+  referenceFinalStateUint32: 0xd2e26364,
 } as const);
 
 export type AudioOscillatorWaveform =
@@ -167,9 +172,28 @@ export type AudioFmInstrumentRecipe = AudioInstrumentRecipeBase &
     }>;
   }>;
 
+/**
+ * A rendered recipe plays deterministic PCM produced by the embedded DSP
+ * module instead of scheduling oscillators. The buffer's own decay is the
+ * musical envelope; the recipe amplitude keeps only a click-guard attack and
+ * the damper release, and the flat filter preserves the uniform per-voice
+ * topology (source → filter → gain → bus).
+ */
+export type AudioRenderedInstrumentRecipe = AudioInstrumentRecipeBase &
+  Readonly<{
+    synthesis: "rendered";
+    renderer: Readonly<{
+      algorithmId: string;
+      channels: 2;
+      maximumRenderSeconds: number;
+      bufferCacheLimit: number;
+    }>;
+  }>;
+
 export type AudioInstrumentRecipe =
   | AudioAdditiveInstrumentRecipe
-  | AudioFmInstrumentRecipe;
+  | AudioFmInstrumentRecipe
+  | AudioRenderedInstrumentRecipe;
 
 export const AUDIO_INSTRUMENT_RECIPES = Object.freeze([
   Object.freeze({
@@ -259,6 +283,29 @@ export const AUDIO_INSTRUMENT_RECIPES = Object.freeze([
     tremolo: null,
     amplitude: Object.freeze({ attackSeconds: 0.012, decaySeconds: 0.3, sustainLevel: 0.52, releaseSeconds: 0.65 }),
     filter: Object.freeze({ type: "lowpass", attackHz: 700, peakHz: 4_800, sustainHz: 1_300, q: 4.2, decaySeconds: 0.32 }),
+  }),
+  Object.freeze({
+    id: "concert-grand",
+    label: "Concert Grand",
+    designClaim:
+      "deterministic rendered piano: inharmonic partials, unison detuning, dual-rate decay, hammer noise",
+    synthesis: "rendered",
+    /*
+     * jcpe-6veb: at 0.85 a four-voice chord hit the soft clipper at ~5% THD.
+     * 0.40 keeps chord peaks below 0.3 into the curve (~0.5% THD); loudness
+     * lives after the clipper in the master stage and the listener's volume.
+     */
+    outputLevel: 0.3,
+    polyphonyLimit: 64,
+    renderer: Object.freeze({
+      algorithmId: "changes.dsp.concert-grand@1",
+      channels: 2,
+      maximumRenderSeconds: 8,
+      bufferCacheLimit: 96,
+    }),
+    /* Click guard and damper only: the rendered PCM carries the real envelope. */
+    amplitude: Object.freeze({ attackSeconds: 0.002, decaySeconds: 0, sustainLevel: 1, releaseSeconds: 0.2 }),
+    filter: Object.freeze({ type: "lowpass", attackHz: 16_000, peakHz: 16_000, sustainHz: 16_000, q: 0.5, decaySeconds: 0.1 }),
   }),
 ] as const satisfies readonly AudioInstrumentRecipe[]);
 

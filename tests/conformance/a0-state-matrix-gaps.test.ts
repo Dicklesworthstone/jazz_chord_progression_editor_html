@@ -866,11 +866,158 @@ describe("A0 state-matrix independently covered gaps", () => {
       },
     );
   });
+
+  test("settles a refused transport expectation exactly once and never over a genuine notification", () => {
+    const initial = a0InitialState();
+    const base: AppState = Object.freeze({
+      ...initial,
+      revision: 12,
+      transport: Object.freeze({
+        ...initial.transport,
+        status: "ready" as const,
+        generation: 5,
+        commandRequestId: 20,
+        notificationSequence: 8,
+        planRevision: 12,
+      }),
+    });
+    const expecting = success(reduceEphemeralIntent({
+      state: base,
+      intent: {
+        kind: "expect-transport",
+        commandRequestId: 21,
+        documentId: base.document.id,
+        planRevision: 12,
+        status: "starting",
+        startBeat: base.transport.startBeat,
+        playhead: base.transport.playhead,
+      },
+    }), "install expectation").state;
+
+    // A0-UI-012: the refusal outcome settles the optimistic status with the
+    // service-echoed state, retains generation/sequence, and moves no revision.
+    const settled = success(reduceEphemeralIntent({
+      state: expecting,
+      intent: {
+        kind: "settle-transport-expectation",
+        commandRequestId: 21,
+        documentId: expecting.document.id,
+        planRevision: 12,
+        status: "ready",
+        failureCode: "transport.queue_overflow",
+      },
+    }), "settle refusal");
+    expect(settled.outcome).toBe("ephemeral-updated");
+    expect(settled.state.transport).toMatchObject({
+      status: "ready",
+      generation: 5,
+      commandRequestId: 21,
+      notificationSequence: 8,
+      planRevision: 12,
+      failureCode: "transport.queue_overflow",
+    });
+    expect(settled.state.revision).toBe(12);
+    expect(settled.state.history).toBe(expecting.history);
+
+    // Exactly once: the same settlement replayed against the settled slot is
+    // stale with exact state identity.
+    const replay = success(reduceEphemeralIntent({
+      state: settled.state,
+      intent: {
+        kind: "settle-transport-expectation",
+        commandRequestId: 21,
+        documentId: settled.state.document.id,
+        planRevision: 12,
+        status: "ready",
+        failureCode: "transport.queue_overflow",
+      },
+    }), "replayed settlement");
+    expect(replay.outcome).toBe("ignored-stale");
+    expect(replay.state).toBe(settled.state);
+
+    // A0-UI-013: a genuine notification already settled the slot; the late
+    // refusal settlement is ignored with exact state identity.
+    const notified: AppState = Object.freeze({
+      ...expecting,
+      transport: Object.freeze({
+        ...expecting.transport,
+        status: "playing" as const,
+        generation: 6,
+        notificationSequence: 9,
+        failureCode: null,
+      }),
+    });
+    const lateSettle = success(reduceEphemeralIntent({
+      state: notified,
+      intent: {
+        kind: "settle-transport-expectation",
+        commandRequestId: 21,
+        documentId: notified.document.id,
+        planRevision: 12,
+        status: "ready",
+        failureCode: "transport.queue_overflow",
+      },
+    }), "late settlement");
+    expect(lateSettle.outcome).toBe("ignored-stale");
+    expect(lateSettle.state).toBe(notified);
+
+    // Unpinned near miss: a settlement naming a superseded command request is
+    // equally stale.
+    const oldRequest = success(reduceEphemeralIntent({
+      state: expecting,
+      intent: {
+        kind: "settle-transport-expectation",
+        commandRequestId: 20,
+        documentId: expecting.document.id,
+        planRevision: 12,
+        status: "ready",
+        failureCode: "transport.queue_overflow",
+      },
+    }), "old-request settlement");
+    expect(oldRequest.outcome).toBe("ignored-stale");
+    expect(oldRequest.state).toBe(expecting);
+
+    // A0-UI-014: a blank failure code refuses; so does a starting/stopping
+    // status claim smuggled past the type system.
+    const blankCode = refusal(reduceEphemeralIntent({
+      state: expecting,
+      intent: {
+        kind: "settle-transport-expectation",
+        commandRequestId: 21,
+        documentId: expecting.document.id,
+        planRevision: 12,
+        status: "ready",
+        failureCode: "",
+      },
+    }), "transport.expectation_invalid");
+    expect(blankCode.refusal.path).toEqual(["transport"]);
+    const optimisticClaim = refusal(reduceEphemeralIntent({
+      state: expecting,
+      intent: {
+        kind: "settle-transport-expectation",
+        commandRequestId: 21,
+        documentId: expecting.document.id,
+        planRevision: 12,
+        status: "starting" as unknown as "ready",
+        failureCode: "transport.queue_overflow",
+      },
+    }), "transport.expectation_invalid");
+    expect(optimisticClaim.refusal.path).toEqual(["transport"]);
+
+    record(["A0-UI-012", "A0-UI-013", "A0-UI-014"], {
+      settled: settled.state.transport,
+      replayOutcome: replay.outcome,
+      lateOutcome: lateSettle.outcome,
+      oldRequestOutcome: oldRequest.outcome,
+      blankCodeRefusal: blankCode.refusal.code,
+      optimisticClaimRefusal: optimisticClaim.refusal.code,
+    });
+  });
 });
 
 afterAll(() => {
   const ids = [...observations.keys()].sort();
-  expect(ids).toHaveLength(32);
+  expect(ids).toHaveLength(35);
   const observation = {
     schema: "changes.evidence.a0-state-matrix-gap-observation.v1",
     caseIds: ids,

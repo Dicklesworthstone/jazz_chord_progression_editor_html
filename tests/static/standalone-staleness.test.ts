@@ -69,12 +69,13 @@ async function mutateOneTitleByte(path: string): Promise<{
   byteLengthDelta: number;
   differingBytes: number;
 }> {
-  const marker = "<title>Changes";
+  /* The product title (eb22085): the one string every page variant carries. */
+  const marker = "<title>JazzChords";
   const source = await readFile(path, "utf8");
   if (!source.includes(marker)) {
     throw new Error(`TEST_MUTATION_MARKER_MISSING: ${path}.`);
   }
-  const mutated = source.replace(marker, "<title>Jhanges");
+  const mutated = source.replace(marker, "<title>JazzChorde");
   const sourceBytes = new TextEncoder().encode(source);
   const mutatedBytes = new TextEncoder().encode(mutated);
   let differingBytes = 0;

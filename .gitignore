@@ -12,6 +12,7 @@ playwright-report/
 test-results/
 
 # Tool caches and temporary reproducibility roots
+.bun/
 .eslintcache
 .tmp/
 *.tsbuildinfo
@@ -19,3 +20,8 @@ test-results/
 # OS and editor residue
 .DS_Store
 Thumbs.db
+
+# Reference material only: third-party sequences of copyrighted works are
+# never committed. Used locally to measure aggregate style statistics.
+*.mid
+*.midi

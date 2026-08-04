@@ -30,15 +30,15 @@ describe("studio application checkpoint", () => {
     expect(state.document).toMatchObject({
       schema: "changes.progression.v2",
       id: STUDIO_BLANK_DOCUMENT_IDS.document,
-      title: "Untitled Changes",
+      title: "Untitled Chart",
       description: "",
       meter: { beatsPerBar: 4, beatUnit: 4 },
-      tempoBpm: 120,
+      tempoBpm: 105,
       key: null,
       playback: {
-        instrumentId: "mellow-keys",
-        masterVolume: 0.8,
-        reverbAmount: 0.2,
+        instrumentId: "concert-grand",
+        masterVolume: 1,
+        reverbAmount: 0.55,
         countInBars: 0,
       },
     });
@@ -66,19 +66,19 @@ describe("studio application checkpoint", () => {
     const view = studio.getSnapshot();
 
     expect(view).toMatchObject({
-      title: "Untitled Changes",
+      title: "Untitled Chart",
       revision: 0,
       meterLabel: "4/4",
-      tempoBpm: 120,
+      tempoBpm: 105,
       keyLabel: "No key",
-      instrumentLabel: "Mellow Keys",
-      masterVolume: 0.8,
-      reverbAmount: 0.2,
+      instrumentLabel: "Concert Grand",
+      masterVolume: 1,
+      reverbAmount: 0.55,
       countInBars: 0,
       measureCount: 1,
       transport: {
         status: "unavailable",
-        statusLabel: "Audio unavailable",
+        statusLabel: "Audio off",
         isAvailable: false,
         playheadBeatLabel: "0/1",
         startBeatLabel: "0/1",
@@ -90,10 +90,40 @@ describe("studio application checkpoint", () => {
       eventCount: 0,
       completion: "empty",
       completionLabel: "Empty measure",
+      completionReason: null,
       startBeatLabel: "0/1",
       durationBeatLabel: "0/1",
       endBeatLabel: "0/1",
       capacityBeatLabel: "4/1",
+      fill: "empty",
+      events: [],
+    });
+    expect(view.chordCount).toBe(0);
+    expect(view.bookmarks).toEqual({
+      selectedEventIds: [],
+      selectionFocusEventId: null,
+      selectionAnchorEventId: null,
+      insertionLabel: "At measure start",
+      insertionTargetId: STUDIO_BLANK_DOCUMENT_IDS.measure,
+      rangeStartBeatLabel: null,
+      rangeEndBeatLabel: null,
+      rangeActive: false,
+      rangeAnchor: null,
+      rangeFocus: null,
+    });
+    expect(view.quickEntry).toEqual({
+      text: "",
+      status: "idle",
+      baseRevision: 0,
+      baseRevisionCurrent: true,
+      targetLabel: "At measure start",
+      target: {
+        kind: "measure-start",
+        measureId: STUDIO_BLANK_DOCUMENT_IDS.measure,
+      },
+      targetId: STUDIO_BLANK_DOCUMENT_IDS.measure,
+      issueCodes: [],
+      codePointCount: 0,
     });
     expect(Object.isFrozen(view)).toBe(true);
     expect(Object.isFrozen(view.sections)).toBe(true);
@@ -154,7 +184,7 @@ describe("studio application checkpoint", () => {
       ok: true,
       outcome: "undone",
       snapshot: {
-        title: "Untitled Changes",
+        title: "Untitled Chart",
         revision: 2,
         history: { canUndo: false, canRedo: true },
       },
@@ -222,7 +252,7 @@ describe("studio application checkpoint", () => {
         recoveryAction: "Make a document edit before using Undo.",
       },
       snapshot: {
-        title: "Untitled Changes",
+        title: "Untitled Chart",
         revision: 0,
         noticeCount: 1,
       },

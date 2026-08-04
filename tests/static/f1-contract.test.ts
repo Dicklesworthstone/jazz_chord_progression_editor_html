@@ -89,7 +89,7 @@ describe("F1 independent fixture contract", () => {
       outcome: "pass",
       counts: {
         companions: 10,
-        cases: 317,
+        cases: 320,
         traces: 18,
         authorities: 9,
         seeds: 6,

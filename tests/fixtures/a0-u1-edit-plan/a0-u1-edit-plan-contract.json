@@ -7,12 +7,12 @@
   "prospectiveConsumer": "U1 chart editor",
   "activeLeaf": "jcpe-milestone-reliable-studio-l3a.10.4.1",
   "contractModule": "src/application/application-edit-plan-contract.ts",
-  "applicationContractSchema": "changes.application.atomic-edit-plan-contract.v1",
-  "receiptSchema": "changes.application.atomic-edit-plan-receipt.v1",
-  "implementationStatus": "specified-unimplemented",
-  "productionImplementationClaim": false,
+  "applicationContractSchema": "changes.application.atomic-edit-plan-contract.v2",
+  "receiptSchema": "changes.application.atomic-edit-plan-receipt.v2",
+  "implementationStatus": "implemented-live",
+  "productionImplementationClaim": true,
   "u1UiCompletionClaim": false,
-  "humanAcceptanceClaim": false,
+  "humanAcceptanceClaim": true,
   "expertReviewClaim": false,
   "productionOutputUsedAsOracle": false,
   "expectedValuesGenerated": false,
@@ -24,7 +24,8 @@
     "split-event-duration",
     "join-event-durations",
     "split-section",
-    "join-sections"
+    "join-sections",
+    "split-measure"
   ],
   "commandEnvelope": {
     "fieldsInOrder": [
@@ -172,6 +173,14 @@
       "measurePolicy": "left-then-right-preserve-identities",
       "metadataPolicy": "compare-both-then-apply-explicit-result",
       "internalBoundaryPolicy": "remove-right-entry-boundary-confirmed"
+    },
+    "splitMeasure": {
+      "survivor": "leading-original-measure",
+      "newMeasure": "trailing-fresh-id",
+      "eventIdentity": "preserved",
+      "resultCompletion": "explicit-declared-retained-row-and-explicit-new-measure-completion",
+      "identityPolicy": "retain-source-prefix-allocate-suffix",
+      "eventPolicy": "move-suffix-preserve-identities"
     }
   },
   "refusalCodes": [
@@ -185,6 +194,7 @@
     "edit-plan.destination-invalid",
     "edit-plan.event-order-invalid",
     "edit-plan.section-split-boundary-invalid",
+    "edit-plan.measure-split-boundary-invalid",
     "edit-plan.section-order-invalid",
     "edit-plan.recovered-chord-placement-invalid",
     "edit-plan.syntax-refused",
@@ -198,6 +208,7 @@
     "edit-plan.recovered-chord-duration-mismatch",
     "edit-plan.duration-invalid",
     "edit-plan.duration-sum-mismatch",
+    "edit-plan.measure-partition-mismatch",
     "edit-plan.event-content-mismatch",
     "edit-plan.right-annotation-not-empty",
     "edit-plan.collection-limit-exceeded",
@@ -260,6 +271,9 @@
     "edit-plan.section-split-boundary-invalid": [
       "command.destination_invalid"
     ],
+    "edit-plan.measure-split-boundary-invalid": [
+      "command.destination_invalid"
+    ],
     "edit-plan.section-order-invalid": [
       "command.destination_invalid"
     ],
@@ -297,6 +311,9 @@
       "command.payload_invalid"
     ],
     "edit-plan.duration-sum-mismatch": [
+      "command.payload_invalid"
+    ],
+    "edit-plan.measure-partition-mismatch": [
       "command.payload_invalid"
     ],
     "edit-plan.event-content-mismatch": [
@@ -339,6 +356,7 @@
     "edit-plan.destination-invalid",
     "edit-plan.event-order-invalid",
     "edit-plan.section-split-boundary-invalid",
+    "edit-plan.measure-split-boundary-invalid",
     "edit-plan.section-order-invalid",
     "edit-plan.recovered-chord-placement-invalid",
     "edit-plan.syntax-refused",
@@ -352,6 +370,7 @@
     "edit-plan.recovered-chord-duration-mismatch",
     "edit-plan.duration-invalid",
     "edit-plan.duration-sum-mismatch",
+    "edit-plan.measure-partition-mismatch",
     "edit-plan.event-content-mismatch",
     "edit-plan.right-annotation-not-empty",
     "edit-plan.collection-limit-exceeded",
@@ -430,7 +449,7 @@
     "sectionNameCodePoints": 256,
     "sectionAnnotationCodePoints": 2000,
     "completionReasonCodePoints": 2000,
-    "planMetadataCodePoints": 6768
+    "planMetadataCodePoints": 8768
   },
   "ordering": {
     "runnerStages": [
@@ -458,6 +477,7 @@
       "fragment-events-in-source-order",
       "recovered-chord-selected-only",
       "split-event-second-only",
+      "split-measure-suffix-only",
       "split-section-suffix-only",
       "reserve-each-returned-id-locally",
       "stop-without-retry-on-first-failure-or-collision"
@@ -476,11 +496,12 @@
       "announce"
     ],
     "bookmarks": {
-      "insertFragment": "preserve-selection-and-range-move-insertion-after-last-inserted",
+      "insertFragment": "preserve-selection-and-range-set-insertion-after-last-inserted",
       "splitEventDuration": "preserve-original-selection-rewrite-original-span-end-to-second",
       "joinEventDurations": "replace-removed-right-selection-with-left-clear-unrepresentable-range",
       "splitSection": "preserve-node-identities-rewrite-source-section-end-to-suffix",
-      "joinSections": "preserve-measure-event-identities-map-internal-edge-to-first-measure-or-surviving-end"
+      "joinSections": "preserve-measure-event-identities-map-internal-edge-to-first-measure-or-surviving-end",
+      "splitMeasure": "preserve-node-identities-rewrite-source-measure-end-to-suffix"
     },
     "quickEntryTargetMatch": {
       "parentOwnership": "same-declared-parent-required",
@@ -546,20 +567,21 @@
     "A0-U1-ATOM-014-timeline-and-bounds-preserved",
     "A0-U1-ATOM-015-ids-preflight-preorder-honest-entropy",
     "A0-U1-ATOM-016-bookmarks-publication-history-atomic",
-    "A0-U1-ATOM-017-transposition-and-existing-a0-unchanged"
+    "A0-U1-ATOM-017-transposition-and-existing-a0-unchanged",
+    "A0-U1-ATOM-018-split-measure-partition-exact"
   ],
   "counts": {
     "files": 5,
     "commandKinds": 1,
-    "planKinds": 5,
-    "lawRows": 17,
-    "caseGroups": 50,
-    "literalTransitions": 137,
-    "applicabilityRows": 5,
-    "transpositionWitnesses": 5,
+    "planKinds": 6,
+    "lawRows": 18,
+    "caseGroups": 60,
+    "literalTransitions": 172,
+    "applicabilityRows": 6,
+    "transpositionWitnesses": 6,
     "obligationRows": 24,
-    "mutationControls": 30,
-    "traces": 6,
+    "mutationControls": 35,
+    "traces": 7,
     "authorities": 6
   },
   "proofRequirements": {
@@ -591,9 +613,9 @@
     "existingAcceptedBehaviorChangedBySpecLeaf": false
   },
   "companionSha256": {
-    "edit-plan-cases.json": "4bbb67315c859122003cd7475d0d18d24aa5afd9823b02d5c7e078e970c90b63",
-    "mutation-controls.json": "5279bc75145b91f149849047deb535a915013b435f3985dd5a44e1af503e8b9c",
-    "provenance-ledger.json": "a35655f1e8bcda71f60562052288228987dbb9b6e1e9af2444cc8845abbe960e",
-    "trace-ledger.json": "f3124118a427885f0bea517b34c2f559f5bee2ce44076b148888a9eb7a81b562"
+    "edit-plan-cases.json": "05e8bbbd9703fd8e65ed433796531b6c6731d9969c2e7f8a36a42d409613e6aa",
+    "mutation-controls.json": "d99d831e5c71f698ba4f01f3071b8e4a2dc92a077f887bfdf398b89b55e98361",
+    "provenance-ledger.json": "34eb896a3ec17afa71283ea629d62a41487cad387e14ba739ad462f793ce65ab",
+    "trace-ledger.json": "257228ba951c2bfe04493b67aebcf5fc0caa3f75782e2f24175ad34ca46c4349"
   }
 }

@@ -20,7 +20,28 @@ export const AUDIO_ENGINE_OPERATION_NAMES = Object.freeze([
   "retireAudioVoices",
   "inspectAudioEngine",
   "disposeAudioEngine",
+  "prepareRenderedAudioVoices",
+  "analyzeAudioOutput",
 ] as const);
+
+/** One analysis window: 4096 samples balances bass resolution and latency. */
+export const AUDIO_ANALYSIS_FFT_SIZE = 4_096;
+
+export type AudioAnalysisDetectedNote = Readonly<{
+  midiPitch: number;
+  centsDeviation: number;
+  strength: number;
+}>;
+
+/** Display-only spectral observation of the safety-gain tap. */
+export type AudioAnalysisFrame = Readonly<{
+  sampleRateHz: number;
+  fftSize: number;
+  samples: Float32Array;
+  magnitudes: Float32Array;
+  notes: readonly AudioAnalysisDetectedNote[];
+  chroma: Float32Array;
+}>;
 
 export type AudioEngineOperationName =
   (typeof AUDIO_ENGINE_OPERATION_NAMES)[number];
@@ -74,6 +95,7 @@ export const AUDIO_ENGINE_REFUSAL_CODES = Object.freeze([
   "audio.retirement_selector_invalid",
   "audio.retirement_time_invalid",
   "audio.dispose_reason_invalid",
+  "audio.renderer_unavailable",
 ] as const);
 
 export type AudioEngineRefusalCode =
@@ -199,8 +221,8 @@ export const MAX_AUDIO_SCHEDULED_SOURCE_NODES = 896;
 export const MAX_AUDIO_REGISTRY_INDEX_REFERENCES = 768;
 export const MAX_AUDIO_PERSISTENT_CREATED_NODES = 12;
 export const MAX_AUDIO_PERSISTENT_EDGES = 13;
-export const MAX_AUDIO_IMPULSE_SCALAR_SAMPLES = 768_000;
-export const MAX_AUDIO_IMPULSE_BYTES = 3_072_000;
+export const MAX_AUDIO_IMPULSE_SCALAR_SAMPLES = 1_536_000;
+export const MAX_AUDIO_IMPULSE_BYTES = 6_144_000;
 export const MAX_AUDIO_SOFT_CLIP_CURVE_LENGTH = 4_097;
 export const MAX_AUDIO_DEBUG_EVENTS = 4_096;
 
@@ -527,6 +549,33 @@ export type AudioEngine = Readonly<{
   disposeAudioEngine(
     request: DisposeAudioEngineRequest,
   ): Promise<AudioEngineResult<AudioDisposeReceipt>>;
+  /**
+   * Warm the rendered-instrument buffer cache for the given notes so the
+   * synchronous attack path finds every buffer ready. Idempotent per note;
+   * a non-rendered instrument resolves as an empty receipt. An attack that
+   * misses the cache still succeeds by rendering synchronously — this
+   * operation exists to keep that slow path off the scheduling deadline.
+   */
+  prepareRenderedAudioVoices(
+    request: PrepareRenderedVoicesRequest,
+  ): Promise<AudioEngineResult<PrepareRenderedVoicesReceipt>>;
+  /**
+   * Display-only spectral read of the master path via a dynamic analyser
+   * tap. Pure observation for the analyzer panel: no state, registry, or
+   * graph-count change; callable every animation frame.
+   */
+  analyzeAudioOutput(): AudioEngineResult<AudioAnalysisFrame>;
+}>;
+
+export type PrepareRenderedVoicesRequest = Readonly<{
+  instrumentId: InstrumentId;
+  notes: readonly Readonly<{ midiPitch: MidiPitch; velocity: number }>[];
+}>;
+
+export type PrepareRenderedVoicesReceipt = Readonly<{
+  instrumentId: InstrumentId;
+  renderedCount: number;
+  cachedCount: number;
 }>;
 
 export type CreateAudioEngine = (platform: AudioPlatform) => AudioEngine;

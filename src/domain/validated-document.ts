@@ -80,6 +80,8 @@ export const DOMAIN_VALIDATION_ISSUE_CODES = {
   playbackLevelNotFinite: "playback.level_not_finite",
   playbackLevelOutOfRange: "playback.level_out_of_range",
   playbackCountInBars: "playback.count_in_bars_invalid",
+  playbackGrooveStyleInvalid: "playback.groove_style_invalid",
+  playbackGrooveStyleNotCanonical: "playback.groove_style_not_canonical",
   sectionVoiceLeadingBoundary: "section.voice_leading_boundary_invalid",
   measureEmptyEvents: "measure.empty_has_events",
   measureNonemptyNoEvents: "measure.nonempty_has_no_events",
@@ -148,6 +150,8 @@ export const F1_VALUE_ISSUE_CODES = [
   "playback.level_not_finite",
   "playback.level_out_of_range",
   "playback.count_in_bars_invalid",
+  "playback.groove_style_invalid",
+  "playback.groove_style_not_canonical",
 ] as const;
 
 export const F2_STRUCTURAL_ISSUE_CODES = [

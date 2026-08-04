@@ -52,6 +52,9 @@ const EXPECTED_RENDER_IDS = Object.freeze([
   "X0-RENDER-013",
   "X0-RENDER-014",
   "X0-RENDER-015",
+  "X0-RENDER-016",
+  "X0-RENDER-017",
+  "X0-RENDER-018",
 ] as const);
 
 const WORK_COUNTER_NAMES = Object.freeze([
@@ -130,17 +133,20 @@ type RenderMatrixAuthority = Readonly<{
 
 type ImpulseAuthority = Readonly<{
   schema: "changes.fixtures.x0-impulse-golden.v1";
-  algorithmId: "changes.audio.impulse.xorshift32-q15.v1";
+  algorithmId: "changes.audio.impulse.hall-quartic-q15.v2";
   ownership: string;
   runtimeNetworkRequired: false;
   seedUint32: number;
   channels: 2;
-  durationSeconds: 2;
+  durationSeconds: 4;
+  predelayDivisor: 50;
+  lowpassAlphaQ15: 6_000;
+  lowpassStages: 2;
   sampleRateRange: readonly [number, number];
   referenceSampleRate: 48_000;
-  referenceFrames: 96_000;
-  referenceScalarSamples: 192_000;
-  referenceBytes: 384_000;
+  referenceFrames: 192_000;
+  referenceScalarSamples: 384_000;
+  referenceBytes: 768_000;
   referenceInterleavedInt16LeSha256: string;
 }>;
 
@@ -431,23 +437,44 @@ function expectedImpulseSha256(
   sampleRate: number,
 ): string {
   const frameCount = Math.ceil(sampleRate * authority.durationSeconds);
+  const predelayFrames = Math.floor(sampleRate / authority.predelayDivisor);
+  /* remaining^4 exceeds 2^53, so the quartic envelope must be BigInt-exact. */
+  const frameCountFourth = BigInt(frameCount) ** 4n;
   const bytes = Buffer.alloc(
     frameCount * authority.channels * Int16Array.BYTES_PER_ELEMENT,
   );
   let state = authority.seedUint32 >>> 0;
   let byteOffset = 0;
+  const lowpassFirst: [number, number] = [0, 0];
+  const lowpassSecond: [number, number] = [0, 0];
   for (let frame = 0; frame < frameCount; frame += 1) {
-    const remaining = frameCount - frame;
-    const envelopeQ15 = Math.floor(
-      (remaining * remaining * 32_767) / (frameCount * frameCount),
-    );
+    const envelopeQ15 =
+      frame < predelayFrames
+        ? 0
+        : Number(
+            (BigInt(frameCount - frame) ** 4n * 32_767n) / frameCountFourth,
+          );
     for (let channel = 0; channel < authority.channels; channel += 1) {
       state ^= state << 13;
       state ^= state >>> 17;
       state ^= state << 5;
       state >>>= 0;
       const noise = (state >>> 16) - 32_768;
-      const sampleQ15 = Math.trunc((noise * envelopeQ15) / 32_768);
+      const lp1 =
+        (lowpassFirst[channel] ?? 0) +
+        Math.trunc(
+          (authority.lowpassAlphaQ15 * (noise - (lowpassFirst[channel] ?? 0))) /
+            32_768,
+        );
+      const lp2 =
+        (lowpassSecond[channel] ?? 0) +
+        Math.trunc(
+          (authority.lowpassAlphaQ15 * (lp1 - (lowpassSecond[channel] ?? 0))) /
+            32_768,
+        );
+      lowpassFirst[channel] = lp1;
+      lowpassSecond[channel] = lp2;
+      const sampleQ15 = Math.trunc((lp2 * envelopeQ15) / 32_768);
       bytes.writeInt16LE(sampleQ15, byteOffset);
       byteOffset += Int16Array.BYTES_PER_ELEMENT;
     }
@@ -656,7 +683,17 @@ function validateRenderRecord(
     const expectedLength = Math.ceil(
       renderCase.sampleRate * impulseAuthority.durationSeconds,
     );
-    expect(value.impulse.createdBufferCount).toBe(1);
+    /*
+     * The synth pads own exactly the shared impulse buffer. The Concert
+     * Grand additionally renders one attack-sample buffer per sounding
+     * note (cache-missed per pitch/velocity/duration), so its count is
+     * the impulse plus the case's note list.
+     */
+    const expectedCreatedBuffers =
+      renderCase.instrumentId === "concert-grand"
+        ? 1 + renderCase.midiPitches.length
+        : 1;
+    expect(value.impulse.createdBufferCount).toBe(expectedCreatedBuffers);
     expect(value.impulse.convolverAssignmentCount).toBe(1);
     expect(value.impulse.assignedGeneratedBufferByIdentity).toBe(true);
     expect(value.impulse.numberOfChannels).toBe(impulseAuthority.channels);
@@ -1128,7 +1165,7 @@ test(TEST_TITLE, async ({
       expect(renderMatrix.cases.map((item) => item.id)).toEqual(
         EXPECTED_RENDER_IDS,
       );
-      expect(renderMatrix.cases).toHaveLength(15);
+      expect(renderMatrix.cases).toHaveLength(18);
     });
     runAssertion(assertions, findings, "authority/frozen-analysis-policy", () => {
       expect(renderMatrix.numericPolicy).toMatchObject({
@@ -1175,7 +1212,7 @@ test(TEST_TITLE, async ({
         "changes.fixtures.x0-impulse-golden.v1",
       );
       expect(impulseAuthority.algorithmId).toBe(
-        "changes.audio.impulse.xorshift32-q15.v1",
+        "changes.audio.impulse.hall-quartic-q15.v2",
       );
       expect(impulseAuthority.runtimeNetworkRequired).toBe(false);
       expect(impulseAuthority.channels).toBe(2);

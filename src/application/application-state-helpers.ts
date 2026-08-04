@@ -370,15 +370,21 @@ export function applicationRefusalMessage(code: ApplicationRefusalCode): string 
       return "A conflicting background operation is already active.";
     case "transport.notification_invalid":
       return "The transport update was malformed.";
+    case "command.target_missing":
+      return "The edit's target is no longer part of this chart.";
+    case "command.target_kind_mismatch":
+      return "The edit named a target of the wrong kind for this operation.";
+    case "command.destination_invalid":
+      return "The edit's destination cannot receive this material.";
+    case "command.duplicate_target":
+      return "The edit names the same target more than once.";
+    case "command.ancestor_descendant_overlap":
+      return "The edit targets both a container and its own contents.";
+    case "command.payload_invalid":
+      return "The edit's details were rejected as malformed; the chart is unchanged.";
     case "command.id_invalid":
     case "command.label_invalid":
     case "command.logical_time_invalid":
-    case "command.target_missing":
-    case "command.target_kind_mismatch":
-    case "command.destination_invalid":
-    case "command.duplicate_target":
-    case "command.ancestor_descendant_overlap":
-    case "command.payload_invalid":
     case "command.coalescing_invalid":
     case "command.id_allocation_failed":
     case "command.derived_patch_scope_mismatch":

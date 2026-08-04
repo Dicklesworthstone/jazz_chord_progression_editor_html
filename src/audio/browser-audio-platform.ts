@@ -1,5 +1,7 @@
 import type {
+  AnalyserNodePort,
   AudioBufferPort,
+  AudioBufferSourceNodePort,
   AudioBiquadFilterTypePort,
   AudioContextOptionsPort,
   AudioContextPort,
@@ -292,6 +294,72 @@ export function createNativeAudioContextPort(
     return registerNode(port, nativeNode);
   }
 
+  function wrapBufferSource(
+    nativeNode: AudioBufferSourceNode,
+  ): AudioBufferSourceNodePort {
+    let endedHandler: (() => void) | null = null;
+    const port: AudioBufferSourceNodePort = {
+      ...nodeMethods(nativeNode),
+      get onended() {
+        return endedHandler;
+      },
+      set onended(value) {
+        endedHandler = value;
+        nativeNode.onended = value;
+      },
+      get buffer() {
+        return nativeNode.buffer === null
+          ? null
+          : wrapBuffer(nativeNode.buffer);
+      },
+      set buffer(value) {
+        if (value === null) {
+          nativeNode.buffer = null;
+          return;
+        }
+        const nativeBuffer = nativeBuffers.get(value);
+        if (nativeBuffer === undefined) {
+          throw new Error("AUDIO_BROWSER_BUFFER_UNKNOWN");
+        }
+        nativeNode.buffer = nativeBuffer;
+      },
+      start(when) {
+        if (when === undefined) nativeNode.start();
+        else nativeNode.start(when);
+      },
+      stop(when) {
+        if (when === undefined) nativeNode.stop();
+        else nativeNode.stop(when);
+      },
+    };
+    return registerNode(port, nativeNode);
+  }
+
+  function wrapAnalyser(nativeNode: AnalyserNode): AnalyserNodePort {
+    const port: AnalyserNodePort = {
+      ...nodeMethods(nativeNode),
+      get fftSize() {
+        return nativeNode.fftSize;
+      },
+      set fftSize(value) {
+        nativeNode.fftSize = value;
+      },
+      get frequencyBinCount() {
+        return nativeNode.frequencyBinCount;
+      },
+      get smoothingTimeConstant() {
+        return nativeNode.smoothingTimeConstant;
+      },
+      set smoothingTimeConstant(value) {
+        nativeNode.smoothingTimeConstant = value;
+      },
+      getFloatTimeDomainData(target) {
+        nativeNode.getFloatTimeDomainData(target);
+      },
+    };
+    return registerNode(port, nativeNode);
+  }
+
   const nativeDestination = nativeContext.destination;
   const destination: AudioDestinationNodePort = registerNode(
     {
@@ -348,6 +416,12 @@ export function createNativeAudioContextPort(
       );
       observation.bufferCreated?.(nativeBuffer);
       return wrapBuffer(nativeBuffer);
+    },
+    createBufferSource() {
+      return wrapBufferSource(nativeContext.createBufferSource());
+    },
+    createAnalyser() {
+      return wrapAnalyser(nativeContext.createAnalyser());
     },
     createPeriodicWave(real, imaginary, options: PeriodicWaveOptionsPort) {
       const nativeWave = nativeContext.createPeriodicWave(real, imaginary, {

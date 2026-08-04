@@ -268,7 +268,14 @@ function isPublicLayerEntrypoint(targetPath: string, targetLayer: string): boole
     extensionless === `src/${targetLayer}/index` ||
     (targetLayer === "ui" && extensionless === "src/ui/runtime") ||
     (targetLayer === "application" &&
-      extensionless === "src/application/runtime")
+      extensionless === "src/application/runtime") ||
+    /*
+     * The audio layer publishes two entries for the same reason ui and
+     * application do: `index` is DOM-free so headless projects can consume the
+     * engine, transport, and port contracts, and `runtime` carries the one
+     * browser adapter that needs the DOM lib.
+     */
+    (targetLayer === "audio" && extensionless === "src/audio/runtime")
   );
 }
 

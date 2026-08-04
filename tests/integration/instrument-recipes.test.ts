@@ -1,4 +1,29 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, mock, test } from "bun:test";
+
+import * as realDspRenderer from "../../src/audio/dsp-renderer";
+
+/*
+ * X0-LIFE-046 fault injection: the lifecycle case demands "embedded DSP
+ * renderer module failed to load", a condition the real module cannot
+ * produce on demand. The wrap passes every call through to the real
+ * loader unless the one refusal test flips the flag, so every other test
+ * in this file (and this process) exercises the genuine wasm renderer.
+ */
+let failConcertGrandRendererLoads = false;
+const realLoadConcertGrandRenderer = realDspRenderer.loadConcertGrandRenderer;
+void mock.module("../../src/audio/dsp-renderer", () => ({
+  ...realDspRenderer,
+  loadConcertGrandRenderer: (): ReturnType<
+    typeof realLoadConcertGrandRenderer
+  > => {
+    if (failConcertGrandRendererLoads) {
+      return Promise.reject(
+        new Error("X0-LIFE-046 induced renderer load failure"),
+      );
+    }
+    return realLoadConcertGrandRenderer();
+  },
+}));
 
 import { AUDIO_INSTRUMENT_RECIPES } from "../../src/audio";
 import type { InstrumentId } from "../../src/domain";
@@ -7,6 +32,7 @@ import type { FakeAudioEvent } from "../../src/test-support/fake-audio-platform"
 import {
   attackRequest,
   readyEngine,
+  requireFailure,
   requireSuccess,
   voice,
 } from "../support/audio-engine-test-kit";
@@ -70,6 +96,16 @@ const RECIPE_CASES: readonly Readonly<{
     scheduledSourceCount: 3,
     attackSeconds: 0.012,
     releaseSeconds: 0.65,
+  },
+  {
+    caseId: "X0-RENDER-016",
+    instrumentId: "concert-grand",
+    label: "Concert Grand",
+    outputLevel: 0.3,
+    polyphonyLimit: 64,
+    scheduledSourceCount: 1,
+    attackSeconds: 0.002,
+    releaseSeconds: 0.2,
   },
 ];
 
@@ -161,9 +197,9 @@ function expectOscillatorComponent(
 }
 
 describe("TR-X0-RECIPES instrument recipes", () => {
-  test("X0-RENDER-001/X0-RENDER-004/X0-RENDER-007/X0-RENDER-010/X0-RENDER-013 schedules every exact source-owned recipe", async () => {
+  test("X0-RENDER-001/X0-RENDER-004/X0-RENDER-007/X0-RENDER-010/X0-RENDER-013/X0-RENDER-016 schedules every exact source-owned recipe", async () => {
     const { engine, fake, context } = await readyEngine();
-    expect(AUDIO_INSTRUMENT_RECIPES).toHaveLength(5);
+    expect(AUDIO_INSTRUMENT_RECIPES).toHaveLength(6);
 
     for (let index = 0; index < RECIPE_CASES.length; index += 1) {
       const expected = RECIPE_CASES[index];
@@ -497,6 +533,35 @@ describe("TR-X0-RECIPES instrument recipes", () => {
               event.subject === lifecycleGainId,
           ).detail,
         ).toBe(filterId);
+      } else if (reviewed.synthesis === "rendered") {
+        const renderer = reviewed.renderer;
+        if (renderer === undefined) {
+          throw new Error("TEST_REVIEWED_RENDERED_RECIPE_MALFORMED");
+        }
+        expect(renderer).toEqual({
+          algorithmId: "changes.dsp.concert-grand@1",
+          channels: 2,
+          maximumRenderSeconds: 8,
+          bufferCacheLimit: 96,
+        });
+        expect(oscillatorIds).toHaveLength(0);
+        const bufferSourceIds = nodeCreates
+          .filter((event) => event.detail === "buffer-source")
+          .map((event) => event.subject);
+        expect(bufferSourceIds).toHaveLength(1);
+        const bufferSourceId = bufferSourceIds[0];
+        if (bufferSourceId === undefined) {
+          throw new Error("TEST_RECIPE_BUFFER_SOURCE_MISSING");
+        }
+        expect(
+          oneEvent(
+            events,
+            `${reviewed.id} rendered source filter connection`,
+            (event) =>
+              event.kind === "node-connect" &&
+              event.subject === bufferSourceId,
+          ).detail,
+        ).toBe(filterId);
       } else {
         throw new Error("TEST_REVIEWED_RECIPE_SYNTHESIS_UNKNOWN");
       }
@@ -517,6 +582,47 @@ describe("TR-X0-RECIPES instrument recipes", () => {
       "X0-RENDER-007",
       "X0-RENDER-010",
       "X0-RENDER-013",
+      "X0-RENDER-016",
     ]);
+  });
+
+  test("X0-LIFE-046 a failed renderer module refuses rendered attacks atomically while oscillator recipes keep working", async () => {
+    failConcertGrandRendererLoads = true;
+    try {
+      const { engine, context } = await readyEngine();
+      const before = engine.inspectAudioEngine();
+      const sourcesBefore = context.sourceIds().length;
+
+      const refusal = requireFailure(
+        engine.attackAudioVoices(
+          attackRequest([voice("cg-unavailable", 60, 100)], {
+            eventId: "cg-renderer-unavailable",
+            instrumentId: "concert-grand",
+          }),
+        ),
+        "audio.renderer_unavailable",
+      );
+      expect(refusal.code).toBe("audio.renderer_unavailable");
+
+      const after = engine.inspectAudioEngine();
+      expect(after.state).toBe("ready");
+      expect(after.activeVoices).toHaveLength(0);
+      expect(after.work.voicesCreated).toBe(before.work.voicesCreated);
+      expect(after.work.graphNodesCreated).toBe(before.work.graphNodesCreated);
+      expect(context.sourceIds().length).toBe(sourcesBefore);
+
+      const oscillator = requireSuccess(
+        engine.attackAudioVoices(
+          attackRequest([voice("osc-still-working", 60, 100)], {
+            eventId: "oscillator-after-renderer-failure",
+            instrumentId: "mellow-keys",
+          }),
+        ),
+      );
+      expect(oscillator.snapshot.activeVoices).toHaveLength(1);
+      expect(context.sourceIds().length).toBeGreaterThan(sourcesBefore);
+    } finally {
+      failConcertGrandRendererLoads = false;
+    }
   });
 });

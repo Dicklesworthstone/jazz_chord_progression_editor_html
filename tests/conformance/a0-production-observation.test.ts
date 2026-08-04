@@ -97,6 +97,10 @@ const GAP_SELECTOR_OWNER = owner(
   GAP_FILE,
   "derives missing selectors, truthful history, and exact transport expectation without caching",
 );
+const GAP_TRANSPORT_SETTLE_OWNER = owner(
+  GAP_FILE,
+  "settles a refused transport expectation exactly once and never over a genuine notification",
+);
 
 const EXPLICIT_OWNERS = Object.freeze({
   "A0-INIT-001": INITIAL_OWNER,
@@ -165,6 +169,9 @@ const EXPLICIT_OWNERS = Object.freeze({
   "A0-UI-009": GAP_SELECTOR_OWNER,
   "A0-UI-010": GAP_SELECTOR_OWNER,
   "A0-UI-011": GAP_SELECTOR_OWNER,
+  "A0-UI-012": GAP_TRANSPORT_SETTLE_OWNER,
+  "A0-UI-013": GAP_TRANSPORT_SETTLE_OWNER,
+  "A0-UI-014": GAP_TRANSPORT_SETTLE_OWNER,
 } satisfies Readonly<Record<string, CaseOwner>>);
 
 export const A0_STATE_CASE_OWNERS: Readonly<Record<string, CaseOwner>> =
@@ -186,7 +193,7 @@ function digest(value: unknown): string {
     .digest("hex");
 }
 
-test("binds all 65 reviewed state cases to exact runtime owner tests", () => {
+test("binds all 68 reviewed state cases to exact runtime owner tests", () => {
   const caseIds = stateFixture.cases.map(({ id }) => id);
   expect(Object.keys(A0_STATE_CASE_OWNERS).sort()).toEqual([...caseIds].sort());
   const caseOwners = Object.fromEntries(caseIds.map((id) => {
@@ -213,7 +220,7 @@ test("binds all 65 reviewed state cases to exact runtime owner tests", () => {
       `${right.file}\u0000${right.testcase}`,
     )
   );
-  expect(runtimeOwnerTests).toHaveLength(20);
+  expect(runtimeOwnerTests).toHaveLength(21);
   const observation = {
     schema: "changes.evidence.a0-production-conformance-observation.v1",
     stateCaseIds: caseIds,

@@ -125,21 +125,33 @@ The bridge makes `semanticCompatibilityClaim = false`. It may verify these
 archival bytes, but it may not describe the proposed A0 surface as compatible
 with, binding to, or superseding E0 v1.
 
-The live accepted non-fixture closure is pinned as follows:
+The live accepted non-fixture closure is pinned as follows. The machine-checked
+authority for these values is `ACCEPTED_E0_V1_ARTIFACT_PINS` in
+`scripts/validate-a0-e0-bridge-contract.ts` together with the fixture's
+`immutableArtifactPins`; the table mirrors them for readers.
 
 | Role               | Immutable E0 v1 path                         | SHA-256                                                            |
 | ------------------ | -------------------------------------------- | ------------------------------------------------------------------ |
-| documentation      | `docs/E0_INTERCHANGE_CONTRACT.md`            | `b46824f731fe2a632f994e09aa8bb19e510c83f572a73a23b7c2c09f455d1ca3` |
-| export source      | `src/export/interchange-contract.ts`         | `5c7a0a962ece42ea140a602c53a9c7c3853b38ded99bea77b0001c56d08524de` |
+| documentation      | `docs/E0_INTERCHANGE_CONTRACT.md`            | `288c7ba1e36f8422c9753d501feb68efa721fa8b320b5e20bce8503da85e7d4f` |
+| export source      | `src/export/interchange-contract.ts`         | `a8db592fb3b4f8c35385052753284f1a604b683d207b6aa7abd89fec04f2d035` |
 | application source | `src/application/e0-interchange-contract.ts` | `32a51ef9eac0948a069fc3498348562f70e7703b430f9e1ad9c9961fe53cf10a` |
-| validator          | `scripts/validate-e0-contract.ts`            | `d0e7c80b0a7cea1e1ce11443b148eadcdfd7c02a0855f06ab5761580c7a12e4b` |
-| static test        | `tests/static/e0-contract.test.ts`           | `13422e127091fa6c9118439c52fe0725e6ff74ab94b89be347aedafae0b80063` |
+| validator          | `scripts/validate-e0-contract.ts`            | `3cc96d2ece16e22f98689057dbf1d64b64929dfbb2f92fd85391a7dc1d6bee04` |
+| static test        | `tests/static/e0-contract.test.ts`           | `9873a0342bdf4ce6ab3754572d2f62cef6dbecbcb2a41105b316635204719cf4` |
 | test support       | `tests/support/e0-interchange-fixture.ts`    | `cda73a5421b2635d1feb845ad39e1681920eddbf9d09f51b0ed624b19e06d522` |
 | acceptance review  | `docs/evidence/E0_GOLDEN_PACKET_REVIEW.md`   | `a11d79fe73811364d3d631f2a5b2d9d1fcce0f79fdc3ed64472d5980a2397693` |
 
 The accepted 16-file fixture closure remains pinned separately by its byte
 manifest digest
-`8c48f2ab156c702e877f3bec7f3acd51763dc1448cc696232a4761160ba7a9e9`.
+`a056af4cc18d502ff75a4890e4ce360b26365976e18962ce8da4d827b971ce48`.
+
+Pin-supersession record (2026-07-31): the hashes above were re-pinned by the
+accepted additive groove-field amendment (`jcpe-jnnu`, commit `51b1240`),
+which added the single optional persisted `playback.grooveStyleId` property.
+Every owner-accepted golden byte and the acceptance record are unchanged; the
+amended closure remains the immutable v1 authority in this bridge's sense —
+"immutable" forbids semantic reinterpretation by the bridge, not the parent
+packet's own recorded additive amendments, each of which re-pins this table
+and the validator constants together.
 
 ### 3.2 Unresolved semantic conflict inventory
 

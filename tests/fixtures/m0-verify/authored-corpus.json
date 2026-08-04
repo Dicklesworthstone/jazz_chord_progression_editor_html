@@ -1,0 +1,1417 @@
+{
+  "schema": "changes.evidence.m0-authored-corpus.v1",
+  "corpusVersion": 1,
+  "bead": "jcpe-v3c2.3",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "provenance": "Authored for the jcpe-v3c2.3 verify leaf by an independent Python SMF writer plus an independent implementation of the frozen M0 window, grid, measure, and reverse-T1 ranking laws read from src/export/midi-import-contract.ts and the SMF 1.0 specification. No production decoder, no production resolver, and no spec-packet fixture supplied a byte or an expected value. Every hostile file places its offending byte at an offset known by construction.",
+  "acceptedFiles": [
+    {
+      "id": "M0-VER-A01",
+      "title": "Format 0, one track, two channels, running status, velocity-zero note-offs",
+      "traits": [
+        "format-0",
+        "running-status",
+        "velocity-zero-note-off",
+        "multi-channel"
+      ],
+      "bytesHex": "4D546864000000060000000101E04D54726B0000005300FF58040402180800FF510307A12000903C40004040004340009330388360903C000040000043000093300000903E40004140004540004840009332388360903E000041000045000048000093320000FF2F00",
+      "expectedModel": {
+        "header": {
+          "format": 0,
+          "trackCount": 1,
+          "division": 480
+        },
+        "tempoMap": [
+          {
+            "tick": 0,
+            "microsecondsPerQuarter": 500000
+          }
+        ],
+        "meterMap": [
+          {
+            "tick": 0,
+            "numerator": 4,
+            "denominatorPower": 2
+          }
+        ],
+        "tracks": [
+          {
+            "index": 0,
+            "name": null,
+            "instrumentName": null,
+            "markers": [],
+            "notes": [
+              {
+                "channel": 0,
+                "key": 60,
+                "onTick": 0,
+                "offTick": 480,
+                "onVelocity": 64
+              },
+              {
+                "channel": 0,
+                "key": 64,
+                "onTick": 0,
+                "offTick": 480,
+                "onVelocity": 64
+              },
+              {
+                "channel": 0,
+                "key": 67,
+                "onTick": 0,
+                "offTick": 480,
+                "onVelocity": 64
+              },
+              {
+                "channel": 3,
+                "key": 48,
+                "onTick": 0,
+                "offTick": 480,
+                "onVelocity": 56
+              },
+              {
+                "channel": 0,
+                "key": 62,
+                "onTick": 480,
+                "offTick": 960,
+                "onVelocity": 64
+              },
+              {
+                "channel": 0,
+                "key": 65,
+                "onTick": 480,
+                "offTick": 960,
+                "onVelocity": 64
+              },
+              {
+                "channel": 0,
+                "key": 69,
+                "onTick": 480,
+                "offTick": 960,
+                "onVelocity": 64
+              },
+              {
+                "channel": 0,
+                "key": 72,
+                "onTick": 480,
+                "offTick": 960,
+                "onVelocity": 64
+              },
+              {
+                "channel": 3,
+                "key": 50,
+                "onTick": 480,
+                "offTick": 960,
+                "onVelocity": 56
+              }
+            ]
+          }
+        ],
+        "ignoredEvents": [],
+        "alienChunks": [],
+        "counters": {
+          "bytesRead": 105,
+          "chunksSeen": 2,
+          "eventsDecoded": 21,
+          "eventsIgnored": 0,
+          "notesPaired": 9,
+          "peakOpenNotes": 5,
+          "tempoChanges": 1,
+          "meterChanges": 1
+        }
+      },
+      "expectedSonorities": [
+        {
+          "anchorTick": 0,
+          "memberCount": 4,
+          "bassMidi": 48,
+          "bassPitchClass": 0,
+          "pitchClasses": [
+            0,
+            4,
+            7
+          ],
+          "windowTicks": 38,
+          "tempoMicrosecondsAtAnchor": 500000,
+          "segmentIndex": 0,
+          "gridIndex": 0,
+          "quantizedTickNumerator": 0,
+          "quantizedTickDenominator": 4,
+          "quantizationErrorNumerator": 0,
+          "quantizationErrorDenominator": 4,
+          "measureIndex": 0
+        },
+        {
+          "anchorTick": 480,
+          "memberCount": 5,
+          "bassMidi": 50,
+          "bassPitchClass": 2,
+          "pitchClasses": [
+            0,
+            2,
+            5,
+            9
+          ],
+          "windowTicks": 38,
+          "tempoMicrosecondsAtAnchor": 500000,
+          "segmentIndex": 0,
+          "gridIndex": 4,
+          "quantizedTickNumerator": 1920,
+          "quantizedTickDenominator": 4,
+          "quantizationErrorNumerator": 0,
+          "quantizationErrorDenominator": 4,
+          "measureIndex": 0
+        }
+      ],
+      "expectedResolutions": [
+        {
+          "kind": "alternatives",
+          "totalMatches": 1,
+          "alternatives": [
+            {
+              "templateId": "M0-TPL-02",
+              "formulaRuleId": "base-major",
+              "realizationId": null,
+              "extensionNumber": null,
+              "rootPitchClass": 0,
+              "rootSpelled": {
+                "step": "C",
+                "alter": 0
+              },
+              "bassPitchClass": 0,
+              "inversion": "root",
+              "matchKind": "exact",
+              "missingDegreeNumbers": []
+            }
+          ]
+        },
+        {
+          "kind": "alternatives",
+          "totalMatches": 2,
+          "alternatives": [
+            {
+              "templateId": "M0-TPL-12",
+              "formulaRuleId": "seventh-minor",
+              "realizationId": null,
+              "extensionNumber": null,
+              "rootPitchClass": 2,
+              "rootSpelled": {
+                "step": "D",
+                "alter": 0
+              },
+              "bassPitchClass": 2,
+              "inversion": "root",
+              "matchKind": "exact",
+              "missingDegreeNumbers": []
+            },
+            {
+              "templateId": "M0-TPL-08",
+              "formulaRuleId": "sixth-major",
+              "realizationId": null,
+              "extensionNumber": null,
+              "rootPitchClass": 5,
+              "rootSpelled": {
+                "step": "F",
+                "alter": 0
+              },
+              "bassPitchClass": 2,
+              "inversion": "slash",
+              "matchKind": "exact",
+              "missingDegreeNumbers": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "M0-VER-A02",
+      "title": "Format 1, conductor track with a mid-track tempo halving and a 4/4 to 3/4 meter change",
+      "traits": [
+        "format-1",
+        "mid-track-tempo",
+        "mid-track-meter",
+        "markers",
+        "conductor"
+      ],
+      "bytesHex": "4D546864000000060001000200604D54726B0000003A00FF0309436F6E647563746F7200FF58040402180800FF510307A12000FF0601418300FF58040302180800FF510303D09000FF06014200FF2F004D54726B0000004200FF0308566F6963696E677300FF04055069616E6F00903E5000415000455060803E000041000045008220914350004750004A5060814300004700004A0000FF2F00",
+      "expectedModel": {
+        "header": {
+          "format": 1,
+          "trackCount": 2,
+          "division": 96
+        },
+        "tempoMap": [
+          {
+            "tick": 0,
+            "microsecondsPerQuarter": 500000
+          },
+          {
+            "tick": 384,
+            "microsecondsPerQuarter": 250000
+          }
+        ],
+        "meterMap": [
+          {
+            "tick": 0,
+            "numerator": 4,
+            "denominatorPower": 2
+          },
+          {
+            "tick": 384,
+            "numerator": 3,
+            "denominatorPower": 2
+          }
+        ],
+        "tracks": [
+          {
+            "index": 0,
+            "name": "Conductor",
+            "instrumentName": null,
+            "markers": [
+              {
+                "tick": 0,
+                "text": "A"
+              },
+              {
+                "tick": 384,
+                "text": "B"
+              }
+            ],
+            "notes": []
+          },
+          {
+            "index": 1,
+            "name": "Voicings",
+            "instrumentName": "Piano",
+            "markers": [],
+            "notes": [
+              {
+                "channel": 0,
+                "key": 62,
+                "onTick": 0,
+                "offTick": 96,
+                "onVelocity": 80
+              },
+              {
+                "channel": 0,
+                "key": 65,
+                "onTick": 0,
+                "offTick": 96,
+                "onVelocity": 80
+              },
+              {
+                "channel": 0,
+                "key": 69,
+                "onTick": 0,
+                "offTick": 96,
+                "onVelocity": 80
+              },
+              {
+                "channel": 1,
+                "key": 67,
+                "onTick": 384,
+                "offTick": 480,
+                "onVelocity": 80
+              },
+              {
+                "channel": 1,
+                "key": 71,
+                "onTick": 384,
+                "offTick": 480,
+                "onVelocity": 80
+              },
+              {
+                "channel": 1,
+                "key": 74,
+                "onTick": 384,
+                "offTick": 480,
+                "onVelocity": 80
+              }
+            ]
+          }
+        ],
+        "ignoredEvents": [],
+        "alienChunks": [],
+        "counters": {
+          "bytesRead": 154,
+          "chunksSeen": 3,
+          "eventsDecoded": 23,
+          "eventsIgnored": 0,
+          "notesPaired": 6,
+          "peakOpenNotes": 3,
+          "tempoChanges": 2,
+          "meterChanges": 2
+        }
+      },
+      "expectedSonorities": [
+        {
+          "anchorTick": 0,
+          "memberCount": 3,
+          "bassMidi": 62,
+          "bassPitchClass": 2,
+          "pitchClasses": [
+            2,
+            5,
+            9
+          ],
+          "windowTicks": 7,
+          "tempoMicrosecondsAtAnchor": 500000,
+          "segmentIndex": 0,
+          "gridIndex": 0,
+          "quantizedTickNumerator": 0,
+          "quantizedTickDenominator": 4,
+          "quantizationErrorNumerator": 0,
+          "quantizationErrorDenominator": 4,
+          "measureIndex": 0
+        },
+        {
+          "anchorTick": 384,
+          "memberCount": 3,
+          "bassMidi": 67,
+          "bassPitchClass": 7,
+          "pitchClasses": [
+            2,
+            7,
+            11
+          ],
+          "windowTicks": 15,
+          "tempoMicrosecondsAtAnchor": 250000,
+          "segmentIndex": 1,
+          "gridIndex": 0,
+          "quantizedTickNumerator": 1536,
+          "quantizedTickDenominator": 4,
+          "quantizationErrorNumerator": 0,
+          "quantizationErrorDenominator": 4,
+          "measureIndex": 1
+        }
+      ],
+      "expectedResolutions": [
+        {
+          "kind": "alternatives",
+          "totalMatches": 2,
+          "alternatives": [
+            {
+              "templateId": "M0-TPL-03",
+              "formulaRuleId": "base-minor",
+              "realizationId": null,
+              "extensionNumber": null,
+              "rootPitchClass": 2,
+              "rootSpelled": {
+                "step": "D",
+                "alter": 0
+              },
+              "bassPitchClass": 2,
+              "inversion": "root",
+              "matchKind": "exact",
+              "missingDegreeNumbers": []
+            },
+            {
+              "templateId": "M0-TPL-08",
+              "formulaRuleId": "sixth-major",
+              "realizationId": null,
+              "extensionNumber": null,
+              "rootPitchClass": 5,
+              "rootSpelled": {
+                "step": "F",
+                "alter": 0
+              },
+              "bassPitchClass": 2,
+              "inversion": "slash",
+              "matchKind": "omitted-fifth",
+              "missingDegreeNumbers": [
+                5
+              ]
+            }
+          ]
+        },
+        {
+          "kind": "alternatives",
+          "totalMatches": 1,
+          "alternatives": [
+            {
+              "templateId": "M0-TPL-02",
+              "formulaRuleId": "base-major",
+              "realizationId": null,
+              "extensionNumber": null,
+              "rootPitchClass": 7,
+              "rootSpelled": {
+                "step": "G",
+                "alter": 0
+              },
+              "bassPitchClass": 7,
+              "inversion": "root",
+              "matchKind": "exact",
+              "missingDegreeNumbers": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "M0-VER-A03",
+      "title": "Alien chunk, sysex and escape, every tolerated meta, and duplicate track/instrument names",
+      "traits": [
+        "alien-chunk",
+        "sysex",
+        "tolerated-meta",
+        "duplicate-names",
+        "ignored-ledger"
+      ],
+      "bytesHex": "4D546864000000060001000100C058595A5700000004717575784D54726B000000AD00FF0305466972737400FF03065365636F6E6400FF040652686F64657300FF04055775726C6900FF010966726565207465787400FF020A286329206E6F626F647900FF05026C6100FF070363756500FF0002000100FF20010000FF21010000FF5405000000000000FF5902000000FF7F027D0100F0027EF700F7010000B0076400C00000A03C1000D01000E0004000903B44003E440041440045448140803B00003E0000410000450000FF2F00",
+      "expectedModel": {
+        "header": {
+          "format": 1,
+          "trackCount": 1,
+          "division": 192
+        },
+        "tempoMap": [],
+        "meterMap": [],
+        "tracks": [
+          {
+            "index": 0,
+            "name": "First",
+            "instrumentName": "Rhodes",
+            "markers": [],
+            "notes": [
+              {
+                "channel": 0,
+                "key": 59,
+                "onTick": 0,
+                "offTick": 192,
+                "onVelocity": 68
+              },
+              {
+                "channel": 0,
+                "key": 62,
+                "onTick": 0,
+                "offTick": 192,
+                "onVelocity": 68
+              },
+              {
+                "channel": 0,
+                "key": 65,
+                "onTick": 0,
+                "offTick": 192,
+                "onVelocity": 68
+              },
+              {
+                "channel": 0,
+                "key": 69,
+                "onTick": 0,
+                "offTick": 192,
+                "onVelocity": 68
+              }
+            ]
+          }
+        ],
+        "ignoredEvents": [
+          {
+            "trackIndex": 0,
+            "tick": 0,
+            "kind": "duplicate-track-name",
+            "byteOffset": 44
+          },
+          {
+            "trackIndex": 0,
+            "tick": 0,
+            "kind": "duplicate-instrument-name",
+            "byteOffset": 64
+          },
+          {
+            "trackIndex": 0,
+            "tick": 0,
+            "kind": "text",
+            "byteOffset": 73
+          },
+          {
+            "trackIndex": 0,
+            "tick": 0,
+            "kind": "copyright",
+            "byteOffset": 86
+          },
+          {
+            "trackIndex": 0,
+            "tick": 0,
+            "kind": "lyric",
+            "byteOffset": 100
+          },
+          {
+            "trackIndex": 0,
+            "tick": 0,
+            "kind": "cue-point",
+            "byteOffset": 106
+          },
+          {
+            "trackIndex": 0,
+            "tick": 0,
+            "kind": "sequence-number",
+            "byteOffset": 113
+          },
+          {
+            "trackIndex": 0,
+            "tick": 0,
+            "kind": "channel-prefix",
+            "byteOffset": 119
+          },
+          {
+            "trackIndex": 0,
+            "tick": 0,
+            "kind": "midi-port",
+            "byteOffset": 124
+          },
+          {
+            "trackIndex": 0,
+            "tick": 0,
+            "kind": "smpte-offset",
+            "byteOffset": 129
+          },
+          {
+            "trackIndex": 0,
+            "tick": 0,
+            "kind": "key-signature",
+            "byteOffset": 138
+          },
+          {
+            "trackIndex": 0,
+            "tick": 0,
+            "kind": "sequencer-specific",
+            "byteOffset": 144
+          },
+          {
+            "trackIndex": 0,
+            "tick": 0,
+            "kind": "sysex",
+            "byteOffset": 150
+          },
+          {
+            "trackIndex": 0,
+            "tick": 0,
+            "kind": "escape",
+            "byteOffset": 155
+          },
+          {
+            "trackIndex": 0,
+            "tick": 0,
+            "kind": "control-change",
+            "byteOffset": 159
+          },
+          {
+            "trackIndex": 0,
+            "tick": 0,
+            "kind": "program-change",
+            "byteOffset": 163
+          },
+          {
+            "trackIndex": 0,
+            "tick": 0,
+            "kind": "poly-aftertouch",
+            "byteOffset": 166
+          },
+          {
+            "trackIndex": 0,
+            "tick": 0,
+            "kind": "channel-aftertouch",
+            "byteOffset": 170
+          },
+          {
+            "trackIndex": 0,
+            "tick": 0,
+            "kind": "pitch-bend",
+            "byteOffset": 173
+          }
+        ],
+        "alienChunks": [
+          {
+            "byteOffset": 14,
+            "tag": "XYZW",
+            "dataLength": 4
+          }
+        ],
+        "counters": {
+          "bytesRead": 207,
+          "chunksSeen": 3,
+          "eventsDecoded": 11,
+          "eventsIgnored": 19,
+          "notesPaired": 4,
+          "peakOpenNotes": 4,
+          "tempoChanges": 0,
+          "meterChanges": 0
+        }
+      },
+      "expectedSonorities": [
+        {
+          "anchorTick": 0,
+          "memberCount": 4,
+          "bassMidi": 59,
+          "bassPitchClass": 11,
+          "pitchClasses": [
+            2,
+            5,
+            9,
+            11
+          ],
+          "windowTicks": 15,
+          "tempoMicrosecondsAtAnchor": 500000,
+          "segmentIndex": 0,
+          "gridIndex": 0,
+          "quantizedTickNumerator": 0,
+          "quantizedTickDenominator": 4,
+          "quantizationErrorNumerator": 0,
+          "quantizationErrorDenominator": 4,
+          "measureIndex": 0
+        }
+      ],
+      "expectedResolutions": [
+        {
+          "kind": "alternatives",
+          "totalMatches": 2,
+          "alternatives": [
+            {
+              "templateId": "M0-TPL-14",
+              "formulaRuleId": "seventh-half-diminished",
+              "realizationId": null,
+              "extensionNumber": null,
+              "rootPitchClass": 11,
+              "rootSpelled": {
+                "step": "B",
+                "alter": 0
+              },
+              "bassPitchClass": 11,
+              "inversion": "root",
+              "matchKind": "exact",
+              "missingDegreeNumbers": []
+            },
+            {
+              "templateId": "M0-TPL-09",
+              "formulaRuleId": "sixth-minor",
+              "realizationId": null,
+              "extensionNumber": null,
+              "rootPitchClass": 2,
+              "rootSpelled": {
+                "step": "D",
+                "alter": 0
+              },
+              "bassPitchClass": 11,
+              "inversion": "slash",
+              "matchKind": "exact",
+              "missingDegreeNumbers": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "M0-VER-A04",
+      "title": "No tempo and no meter meta: the SMF defaults apply and the cluster falls back to Custom",
+      "traits": [
+        "smf-defaults",
+        "custom-fallback",
+        "velocity-zero-note-off"
+      ],
+      "bytesHex": "4D546864000000060001000100F04D54726B0000001800903C30003D30003E3078903C00003D00003E0000FF2F00",
+      "expectedModel": {
+        "header": {
+          "format": 1,
+          "trackCount": 1,
+          "division": 240
+        },
+        "tempoMap": [],
+        "meterMap": [],
+        "tracks": [
+          {
+            "index": 0,
+            "name": null,
+            "instrumentName": null,
+            "markers": [],
+            "notes": [
+              {
+                "channel": 0,
+                "key": 60,
+                "onTick": 0,
+                "offTick": 120,
+                "onVelocity": 48
+              },
+              {
+                "channel": 0,
+                "key": 61,
+                "onTick": 0,
+                "offTick": 120,
+                "onVelocity": 48
+              },
+              {
+                "channel": 0,
+                "key": 62,
+                "onTick": 0,
+                "offTick": 120,
+                "onVelocity": 48
+              }
+            ]
+          }
+        ],
+        "ignoredEvents": [],
+        "alienChunks": [],
+        "counters": {
+          "bytesRead": 46,
+          "chunksSeen": 2,
+          "eventsDecoded": 7,
+          "eventsIgnored": 0,
+          "notesPaired": 3,
+          "peakOpenNotes": 3,
+          "tempoChanges": 0,
+          "meterChanges": 0
+        }
+      },
+      "expectedSonorities": [
+        {
+          "anchorTick": 0,
+          "memberCount": 3,
+          "bassMidi": 60,
+          "bassPitchClass": 0,
+          "pitchClasses": [
+            0,
+            1,
+            2
+          ],
+          "windowTicks": 19,
+          "tempoMicrosecondsAtAnchor": 500000,
+          "segmentIndex": 0,
+          "gridIndex": 0,
+          "quantizedTickNumerator": 0,
+          "quantizedTickDenominator": 4,
+          "quantizationErrorNumerator": 0,
+          "quantizationErrorDenominator": 4,
+          "measureIndex": 0
+        }
+      ],
+      "expectedResolutions": [
+        {
+          "kind": "custom",
+          "bassPitchClass": 0,
+          "spelledPitchClasses": [
+            {
+              "step": "C",
+              "alter": 0
+            },
+            {
+              "step": "D",
+              "alter": -1
+            },
+            {
+              "step": "D",
+              "alter": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "M0-VER-A05",
+      "title": "6/8 meter, a window that joins at 38 ticks and splits at 39, and off-grid quantization",
+      "traits": [
+        "window-boundary",
+        "off-grid",
+        "compound-meter"
+      ],
+      "bytesHex": "4D546864000000060001000101E04D54726B0000002A00FF58040603180800FF510307A1200090374026903B4001903E40822C903700003B00003E0000FF2F00",
+      "expectedModel": {
+        "header": {
+          "format": 1,
+          "trackCount": 1,
+          "division": 480
+        },
+        "tempoMap": [
+          {
+            "tick": 0,
+            "microsecondsPerQuarter": 500000
+          }
+        ],
+        "meterMap": [
+          {
+            "tick": 0,
+            "numerator": 6,
+            "denominatorPower": 3
+          }
+        ],
+        "tracks": [
+          {
+            "index": 0,
+            "name": null,
+            "instrumentName": null,
+            "markers": [],
+            "notes": [
+              {
+                "channel": 0,
+                "key": 55,
+                "onTick": 0,
+                "offTick": 339,
+                "onVelocity": 64
+              },
+              {
+                "channel": 0,
+                "key": 59,
+                "onTick": 38,
+                "offTick": 339,
+                "onVelocity": 64
+              },
+              {
+                "channel": 0,
+                "key": 62,
+                "onTick": 39,
+                "offTick": 339,
+                "onVelocity": 64
+              }
+            ]
+          }
+        ],
+        "ignoredEvents": [],
+        "alienChunks": [],
+        "counters": {
+          "bytesRead": 64,
+          "chunksSeen": 2,
+          "eventsDecoded": 9,
+          "eventsIgnored": 0,
+          "notesPaired": 3,
+          "peakOpenNotes": 3,
+          "tempoChanges": 1,
+          "meterChanges": 1
+        }
+      },
+      "expectedSonorities": [
+        {
+          "anchorTick": 0,
+          "memberCount": 2,
+          "bassMidi": 55,
+          "bassPitchClass": 7,
+          "pitchClasses": [
+            7,
+            11
+          ],
+          "windowTicks": 38,
+          "tempoMicrosecondsAtAnchor": 500000,
+          "segmentIndex": 0,
+          "gridIndex": 0,
+          "quantizedTickNumerator": 0,
+          "quantizedTickDenominator": 8,
+          "quantizationErrorNumerator": 0,
+          "quantizationErrorDenominator": 8,
+          "measureIndex": 0
+        },
+        {
+          "anchorTick": 39,
+          "memberCount": 1,
+          "bassMidi": 62,
+          "bassPitchClass": 2,
+          "pitchClasses": [
+            2
+          ],
+          "windowTicks": 38,
+          "tempoMicrosecondsAtAnchor": 500000,
+          "segmentIndex": 0,
+          "gridIndex": 1,
+          "quantizedTickNumerator": 480,
+          "quantizedTickDenominator": 8,
+          "quantizationErrorNumerator": 168,
+          "quantizationErrorDenominator": 8,
+          "measureIndex": 0
+        }
+      ],
+      "expectedResolutions": [
+        {
+          "kind": "custom",
+          "bassPitchClass": 7,
+          "spelledPitchClasses": [
+            {
+              "step": "G",
+              "alter": 0
+            },
+            {
+              "step": "B",
+              "alter": 0
+            }
+          ]
+        },
+        {
+          "kind": "custom",
+          "bassPitchClass": 2,
+          "spelledPitchClasses": [
+            {
+              "step": "D",
+              "alter": 0
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "hostileFiles": [
+    {
+      "id": "M0-VER-H01",
+      "title": "A request envelope carrying the wrong schema refuses before any byte is read",
+      "expected": {
+        "code": "import.schema_invalid",
+        "byteOffset": null,
+        "trackIndex": null
+      },
+      "bytesHex": "4D546864000000060001000100604D54726B0000000C00903C4060803C0000FF2F00"
+    },
+    {
+      "id": "M0-VER-H02",
+      "title": "A request id outside the frozen ASCII pattern refuses before any byte is read",
+      "expected": {
+        "code": "import.request_id_invalid",
+        "byteOffset": null,
+        "trackIndex": null
+      },
+      "bytesHex": "4D546864000000060001000100604D54726B0000000C00903C4060803C0000FF2F00"
+    },
+    {
+      "id": "M0-VER-H03",
+      "title": "A payload one byte past the four-mebibyte cap refuses at the boundary",
+      "expected": {
+        "code": "limit.midi_import_bytes_exceeded",
+        "byteOffset": 4194304,
+        "trackIndex": null
+      },
+      "byteSpec": {
+        "segments": [
+          {
+            "repeatHex": "00",
+            "count": 4194305
+          }
+        ]
+      }
+    },
+    {
+      "id": "M0-VER-H04",
+      "title": "A thirteen-byte file is shorter than the header and refuses at its length",
+      "expected": {
+        "code": "smf.header_invalid",
+        "byteOffset": 13,
+        "trackIndex": null
+      },
+      "bytesHex": "4D546864000000060001000100"
+    },
+    {
+      "id": "M0-VER-H05",
+      "title": "A wrong header tag refuses at byte zero",
+      "expected": {
+        "code": "smf.header_invalid",
+        "byteOffset": 0,
+        "trackIndex": null
+      },
+      "bytesHex": "4D546858000000060001000100604D54726B0000000C00903C4060803C0000FF2F00"
+    },
+    {
+      "id": "M0-VER-H06",
+      "title": "A header declaring a length other than six refuses at byte four",
+      "expected": {
+        "code": "smf.header_invalid",
+        "byteOffset": 4,
+        "trackIndex": null
+      },
+      "bytesHex": "4D546864000000070001000100604D54726B0000000C00903C4060803C0000FF2F00"
+    },
+    {
+      "id": "M0-VER-H07",
+      "title": "Format two refuses at byte eight",
+      "expected": {
+        "code": "smf.format_unsupported",
+        "byteOffset": 8,
+        "trackIndex": null
+      },
+      "bytesHex": "4D546864000000060002000100604D54726B0000000C00903C4060803C0000FF2F00"
+    },
+    {
+      "id": "M0-VER-H08",
+      "title": "A zero track count refuses at byte ten",
+      "expected": {
+        "code": "smf.track_count_invalid",
+        "byteOffset": 10,
+        "trackIndex": null
+      },
+      "bytesHex": "4D546864000000060001000000604D54726B0000000C00903C4060803C0000FF2F00"
+    },
+    {
+      "id": "M0-VER-H09",
+      "title": "Format zero declaring two tracks refuses at byte ten",
+      "expected": {
+        "code": "smf.track_count_invalid",
+        "byteOffset": 10,
+        "trackIndex": null
+      },
+      "bytesHex": "4D546864000000060000000200604D54726B0000000C00903C4060803C0000FF2F004D54726B0000000C00903C4060803C0000FF2F00"
+    },
+    {
+      "id": "M0-VER-H10",
+      "title": "A track chunk past the declared count refuses at that chunk",
+      "expected": {
+        "code": "smf.track_count_invalid",
+        "byteOffset": 34,
+        "trackIndex": null
+      },
+      "bytesHex": "4D546864000000060001000100604D54726B0000000C00903C4060803C0000FF2F004D54726B0000000C00903C4060803C0000FF2F00"
+    },
+    {
+      "id": "M0-VER-H11",
+      "title": "Fewer track chunks than the header declares refuses at the file length",
+      "expected": {
+        "code": "smf.track_count_invalid",
+        "byteOffset": 34,
+        "trackIndex": null
+      },
+      "bytesHex": "4D546864000000060001000200604D54726B0000000C00903C4060803C0000FF2F00"
+    },
+    {
+      "id": "M0-VER-H12",
+      "title": "An SMPTE division refuses at byte twelve",
+      "expected": {
+        "code": "smf.division_smpte_unsupported",
+        "byteOffset": 12,
+        "trackIndex": null
+      },
+      "bytesHex": "4D5468640000000600010001E2784D54726B0000000C00903C4060803C0000FF2F00"
+    },
+    {
+      "id": "M0-VER-H13",
+      "title": "A zero division refuses at byte twelve",
+      "expected": {
+        "code": "smf.division_zero",
+        "byteOffset": 12,
+        "trackIndex": null
+      },
+      "bytesHex": "4D546864000000060001000100004D54726B0000000C00903C4060803C0000FF2F00"
+    },
+    {
+      "id": "M0-VER-H14",
+      "title": "A chunk tag holding a non-printable byte refuses at that chunk",
+      "expected": {
+        "code": "smf.chunk_invalid",
+        "byteOffset": 14,
+        "trackIndex": null
+      },
+      "bytesHex": "4D546864000000060001000100604D54016B0000000C00903C4060803C0000FF2F00"
+    },
+    {
+      "id": "M0-VER-H15",
+      "title": "A second header chunk refuses at that chunk",
+      "expected": {
+        "code": "smf.chunk_invalid",
+        "byteOffset": 14,
+        "trackIndex": null
+      },
+      "bytesHex": "4D546864000000060001000100604D546864000000060001000100604D54726B0000000C00903C4060803C0000FF2F00"
+    },
+    {
+      "id": "M0-VER-H16",
+      "title": "A chunk declaring more bytes than the file holds refuses at the file length",
+      "expected": {
+        "code": "smf.chunk_truncated",
+        "byteOffset": 34,
+        "trackIndex": null
+      },
+      "bytesHex": "4D546864000000060001000100604D54726B0000000D00903C4060803C0000FF2F00"
+    },
+    {
+      "id": "M0-VER-H17",
+      "title": "A chunk header cut in half refuses at the file length",
+      "expected": {
+        "code": "smf.chunk_truncated",
+        "byteOffset": 18,
+        "trackIndex": null
+      },
+      "bytesHex": "4D546864000000060001000100604D54726B"
+    },
+    {
+      "id": "M0-VER-H18",
+      "title": "A five-byte variable-length quantity refuses at its first byte",
+      "expected": {
+        "code": "smf.delta_invalid",
+        "byteOffset": 22,
+        "trackIndex": 0
+      },
+      "bytesHex": "4D546864000000060001000100604D54726B000000088080808000FF2F00"
+    },
+    {
+      "id": "M0-VER-H19",
+      "title": "A system-common status byte refuses at that byte",
+      "expected": {
+        "code": "smf.event_invalid",
+        "byteOffset": 23,
+        "trackIndex": 0
+      },
+      "bytesHex": "4D546864000000060001000100604D54726B0000000700F10000FF2F00"
+    },
+    {
+      "id": "M0-VER-H20",
+      "title": "A data byte where no running status has been established refuses at that byte",
+      "expected": {
+        "code": "smf.event_invalid",
+        "byteOffset": 23,
+        "trackIndex": 0
+      },
+      "bytesHex": "4D546864000000060001000100604D54726B00000007003C4000FF2F00"
+    },
+    {
+      "id": "M0-VER-H21",
+      "title": "A status byte where a data byte belongs refuses at that byte",
+      "expected": {
+        "code": "smf.event_invalid",
+        "byteOffset": 24,
+        "trackIndex": 0
+      },
+      "bytesHex": "4D546864000000060001000100604D54726B000000080090904000FF2F00"
+    },
+    {
+      "id": "M0-VER-H22",
+      "title": "A meta type outside the consumed and tolerated vocabulary refuses at the type byte",
+      "expected": {
+        "code": "smf.meta_unknown",
+        "byteOffset": 24,
+        "trackIndex": 0
+      },
+      "bytesHex": "4D546864000000060001000100604D54726B0000000800FF600000FF2F00"
+    },
+    {
+      "id": "M0-VER-H23",
+      "title": "A tempo meta declaring four payload bytes refuses at the length byte",
+      "expected": {
+        "code": "smf.meta_length_invalid",
+        "byteOffset": 25,
+        "trackIndex": 0
+      },
+      "bytesHex": "4D546864000000060001000100604D54726B0000000C00FF510407A1200000FF2F00"
+    },
+    {
+      "id": "M0-VER-H24",
+      "title": "A free-length meta past the payload cap refuses at the length byte",
+      "expected": {
+        "code": "smf.meta_oversized",
+        "byteOffset": 25,
+        "trackIndex": 0
+      },
+      "bytesHex": "4D546864000000060001000100604D54726B0000040A00FF018801787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787800FF2F00"
+    },
+    {
+      "id": "M0-VER-H25",
+      "title": "A zero tempo refuses at the first payload byte",
+      "expected": {
+        "code": "smf.tempo_zero",
+        "byteOffset": 26,
+        "trackIndex": 0
+      },
+      "bytesHex": "4D546864000000060001000100604D54726B0000000B00FF510300000000FF2F00"
+    },
+    {
+      "id": "M0-VER-H26",
+      "title": "A zero meter numerator refuses at the numerator byte",
+      "expected": {
+        "code": "smf.meter_invalid",
+        "byteOffset": 26,
+        "trackIndex": 0
+      },
+      "bytesHex": "4D546864000000060001000100604D54726B0000000C00FF58040002180800FF2F00"
+    },
+    {
+      "id": "M0-VER-H27",
+      "title": "A meter denominator power past the cap refuses at the denominator byte",
+      "expected": {
+        "code": "smf.meter_invalid",
+        "byteOffset": 27,
+        "trackIndex": 0
+      },
+      "bytesHex": "4D546864000000060001000100604D54726B0000000C00FF58040406180800FF2F00"
+    },
+    {
+      "id": "M0-VER-H28",
+      "title": "A track that never reaches end-of-track refuses at the chunk end",
+      "expected": {
+        "code": "smf.end_of_track_invalid",
+        "byteOffset": 30,
+        "trackIndex": 0
+      },
+      "bytesHex": "4D546864000000060001000100604D54726B0000000800903C4060803C00"
+    },
+    {
+      "id": "M0-VER-H29",
+      "title": "Bytes after end-of-track inside the same chunk refuse at the meta payload end",
+      "expected": {
+        "code": "smf.end_of_track_invalid",
+        "byteOffset": 26,
+        "trackIndex": 0
+      },
+      "bytesHex": "4D546864000000060001000100604D54726B0000000800FF2F0000B00764"
+    },
+    {
+      "id": "M0-VER-H30",
+      "title": "A tempo meta outside the format-1 conductor track refuses at the type byte",
+      "expected": {
+        "code": "smf.conductor_meta_misplaced",
+        "byteOffset": 36,
+        "trackIndex": 1
+      },
+      "bytesHex": "4D546864000000060001000200604D54726B0000000400FF2F004D54726B0000000B00FF510307A12000FF2F00"
+    },
+    {
+      "id": "M0-VER-H31",
+      "title": "Two note-ons for the same channel and key refuse at the second event's first data byte",
+      "expected": {
+        "code": "smf.note_overlap",
+        "byteOffset": 28,
+        "trackIndex": 0
+      },
+      "bytesHex": "4D546864000000060001000100604D54726B0000000C00903C4000903C4000FF2F00"
+    },
+    {
+      "id": "M0-VER-H32",
+      "title": "A note-off with no matching note-on refuses at its first data byte",
+      "expected": {
+        "code": "smf.note_off_unmatched",
+        "byteOffset": 24,
+        "trackIndex": 0
+      },
+      "bytesHex": "4D546864000000060001000100604D54726B0000000800803C0000FF2F00"
+    },
+    {
+      "id": "M0-VER-H33",
+      "title": "A note-on still open at end-of-track refuses at the end-of-track type byte",
+      "expected": {
+        "code": "smf.note_on_unterminated",
+        "byteOffset": 28,
+        "trackIndex": 0
+      },
+      "bytesHex": "4D546864000000060001000100604D54726B0000000800903C4000FF2F00"
+    },
+    {
+      "id": "M0-VER-H34",
+      "title": "Sixty-five declared tracks refuse at byte ten",
+      "expected": {
+        "code": "limit.midi_import_tracks_exceeded",
+        "byteOffset": 10,
+        "trackIndex": null
+      },
+      "bytesHex": "4D546864000000060001004100604D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F004D54726B0000000400FF2F00"
+    },
+    {
+      "id": "M0-VER-H35",
+      "title": "The event past the 524,288 cap refuses at that event's first byte",
+      "expected": {
+        "code": "limit.midi_import_events_exceeded",
+        "byteOffset": 1572887,
+        "trackIndex": 0
+      },
+      "byteSpec": {
+        "segments": [
+          {
+            "hex": "4D546864000000060001000100604D54726B00180006"
+          },
+          {
+            "hex": "00B00740"
+          },
+          {
+            "repeatHex": "000740",
+            "count": 524287
+          },
+          {
+            "hex": "000740"
+          },
+          {
+            "hex": "FF2F00"
+          }
+        ]
+      }
+    },
+    {
+      "id": "M0-VER-H36",
+      "title": "The note-on past the 131,072 cap refuses at that event's first byte",
+      "expected": {
+        "code": "limit.midi_import_notes_exceeded",
+        "byteOffset": 917526,
+        "trackIndex": 0
+      },
+      "byteSpec": {
+        "segments": [
+          {
+            "hex": "4D546864000000060001000100604D54726B000E0006"
+          },
+          {
+            "repeatHex": "00903C40003C00",
+            "count": 131072
+          },
+          {
+            "hex": "003C40"
+          },
+          {
+            "hex": "FF2F00"
+          }
+        ]
+      }
+    },
+    {
+      "id": "M0-VER-H37",
+      "title": "The delta that crosses the 2^30 tick horizon refuses at its event's first byte",
+      "expected": {
+        "code": "limit.midi_import_tick_horizon_exceeded",
+        "byteOffset": 50,
+        "trackIndex": 0
+      },
+      "bytesHex": "4D546864000000060001000100604D54726B00000026FFFFFF7FB00740FFFFFF7FB00740FFFFFF7FB00740FFFFFF7FB00740FFFFFF7FB00740FF2F00"
+    },
+    {
+      "id": "M0-VER-H38",
+      "title": "The tempo meta past the 4,096 cap refuses at its event's first byte",
+      "expected": {
+        "code": "limit.midi_import_tempo_changes_exceeded",
+        "byteOffset": 28694,
+        "trackIndex": 0
+      },
+      "byteSpec": {
+        "segments": [
+          {
+            "hex": "4D546864000000060001000100604D54726B0000700A"
+          },
+          {
+            "repeatHex": "00FF510307A120",
+            "count": 4097
+          },
+          {
+            "hex": "FF2F00"
+          }
+        ]
+      }
+    },
+    {
+      "id": "M0-VER-H39",
+      "title": "The time-signature meta past the 1,024 cap refuses at its event's first byte",
+      "expected": {
+        "code": "limit.midi_import_meter_changes_exceeded",
+        "byteOffset": 8214,
+        "trackIndex": 0
+      },
+      "byteSpec": {
+        "segments": [
+          {
+            "hex": "4D546864000000060001000100604D54726B0000200B"
+          },
+          {
+            "repeatHex": "00FF580404021808",
+            "count": 1025
+          },
+          {
+            "hex": "FF2F00"
+          }
+        ]
+      }
+    },
+    {
+      "id": "M0-VER-H40",
+      "title": "A marker payload running past the chunk end refuses at that chunk end",
+      "expected": {
+        "code": "smf.chunk_truncated",
+        "byteOffset": 28,
+        "trackIndex": 0
+      },
+      "bytesHex": "4D546864000000060001000100604D54726B0000000600FF06086162"
+    }
+  ]
+}

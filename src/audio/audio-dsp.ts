@@ -140,23 +140,45 @@ export function writeDeterministicImpulse(
   let state = AUDIO_IMPULSE_POLICY.seedUint32 >>> 0;
   let peakQ15 = 0;
   let samplesWritten = 0;
-  const frameLengthSquared = buffer.length * buffer.length;
+  const predelayFrames = Math.floor(
+    buffer.sampleRate / AUDIO_IMPULSE_POLICY.predelayDivisor,
+  );
+  /* remaining^4 overflows doubles, so the quartic envelope is BigInt-exact. */
+  const frameLengthFourth = BigInt(buffer.length) ** 4n;
+  const envelopeMaximumBig = BigInt(AUDIO_IMPULSE_POLICY.envelopeQ15Maximum);
+  /* Two cascaded per-channel integer one-pole lowpass states, all zero. */
+  let lp1L = 0;
+  let lp2L = 0;
+  let lp1R = 0;
+  let lp2R = 0;
+  const alpha = AUDIO_IMPULSE_POLICY.lowpassAlphaQ15;
+  const q15 = AUDIO_IMPULSE_POLICY.q15Divisor;
   for (let frameIndex = 0; frameIndex < buffer.length; frameIndex += 1) {
-    const remaining = buffer.length - frameIndex;
-    const envelopeQ15 = Math.floor(
-      (remaining * remaining * AUDIO_IMPULSE_POLICY.envelopeQ15Maximum) /
-        frameLengthSquared,
-    );
-    for (const channel of channels) {
-      state = nextXorshift32(state);
-      const noise = (state >>> 16) - 32_768;
-      const sampleQ15 = Math.trunc(
-        (noise * envelopeQ15) / AUDIO_IMPULSE_POLICY.q15Divisor,
-      );
-      channel[frameIndex] = sampleQ15 / AUDIO_IMPULSE_POLICY.q15Divisor;
-      peakQ15 = Math.max(peakQ15, Math.abs(sampleQ15));
-      samplesWritten += 1;
-    }
+    const envelopeQ15 =
+      frameIndex < predelayFrames
+        ? 0
+        : Number(
+            (BigInt(buffer.length - frameIndex) ** 4n * envelopeMaximumBig) /
+              frameLengthFourth,
+          );
+
+    state = nextXorshift32(state);
+    const noiseLeft = (state >>> 16) - 32_768;
+    lp1L += Math.trunc((alpha * (noiseLeft - lp1L)) / q15);
+    lp2L += Math.trunc((alpha * (lp1L - lp2L)) / q15);
+    const leftQ15 = Math.trunc((lp2L * envelopeQ15) / q15);
+    channels[0][frameIndex] = leftQ15 / q15;
+    peakQ15 = Math.max(peakQ15, Math.abs(leftQ15));
+    samplesWritten += 1;
+
+    state = nextXorshift32(state);
+    const noiseRight = (state >>> 16) - 32_768;
+    lp1R += Math.trunc((alpha * (noiseRight - lp1R)) / q15);
+    lp2R += Math.trunc((alpha * (lp1R - lp2R)) / q15);
+    const rightQ15 = Math.trunc((lp2R * envelopeQ15) / q15);
+    channels[1][frameIndex] = rightQ15 / q15;
+    peakQ15 = Math.max(peakQ15, Math.abs(rightQ15));
+    samplesWritten += 1;
   }
 
   return {
