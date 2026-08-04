@@ -1832,7 +1832,20 @@
   }
 
   /* jcpe-disi.5: bar selection has no other touch path, so the bar's name
-     grows to the coarse floor instead of hiding. */
+     grows to the coarse floor instead of hiding — and its header row grows
+     WITH it, because a 44 px button centered in a 20 px row bleeds into the
+     split-section boundary tools above and the u0 overlap law rejects any
+     intersecting hit areas. */
+  .studio-measure__header {
+    min-block-size: var(--touch-target);
+    align-items: center;
+    /* Bar columns run at exact capacity: with every tool inflated to the
+       44 px floor, nowrap headers kiss across the gutter by a pixel and the
+       overlap law rejects the pair. Wrapping is the structural cure — the
+       tools drop under the bar's name whenever a column is tight. */
+    flex-wrap: wrap;
+  }
+
   .studio-measure__select {
     display: inline-flex;
     align-items: center;
