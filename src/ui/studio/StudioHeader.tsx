@@ -1,3 +1,5 @@
+import { useState } from "preact/hooks";
+
 import {
   Button,
   Field,
@@ -5,10 +7,49 @@ import {
   Label,
   VisuallyHidden,
 } from "../primitives";
+import { activeTheme, toggleTheme } from "../theme";
 import type {
   StudioDocumentView,
   StudioShellCallbacks,
 } from "./studio-contract";
+
+/**
+ * The paper/night switch. An explicit choice pins [data-theme] on the root
+ * and is remembered; until then the OS preference governs. The drawn glyphs
+ * (a moon cut from a disc, a small sun) avoid emoji so forced-colors and
+ * both themes render them from currentColor.
+ */
+function ThemeToggle() {
+  const [theme, setThemeState] = useState(activeTheme());
+  const label = theme === "dark" ? "Switch to paper" : "Switch to night";
+  return (
+    <button
+      aria-label={label}
+      class="studio-theme-toggle"
+      id="studio-theme-toggle"
+      onClick={() => {
+        setThemeState(toggleTheme());
+      }}
+      title={label}
+      type="button"
+    >
+      {theme === "dark" ? (
+        <span aria-hidden="true" class="studio-theme-toggle__sun">
+          <span class="studio-theme-toggle__sun-core" />
+          <span class="studio-theme-toggle__ray" data-ray="n" />
+          <span class="studio-theme-toggle__ray" data-ray="s" />
+          <span class="studio-theme-toggle__ray" data-ray="w" />
+          <span class="studio-theme-toggle__ray" data-ray="e" />
+        </span>
+      ) : (
+        <span aria-hidden="true" class="studio-theme-toggle__moon">
+          <span class="studio-theme-toggle__moon-disc" />
+          <span class="studio-theme-toggle__moon-bite" />
+        </span>
+      )}
+    </button>
+  );
+}
 
 export type StudioHeaderProps = Readonly<{
   view: StudioDocumentView;
@@ -31,13 +72,17 @@ export function StudioHeader({ view, callbacks }: StudioHeaderProps) {
   return (
     <header class="studio-header" id="app-header">
       <div class="studio-brand">
-        <span class="studio-brand__mark" aria-hidden="true">
-          C
-        </span>
         <div class="studio-brand__copy">
-          <p class="studio-kicker">Offline jazz studio</p>
-          <h1>JazzChords.org</h1>
+          <h1 class="studio-brand__wordmark">
+            Jazz<span class="studio-brand__wordmark-accent">Chords</span>
+            <VisuallyHidden
+              content=" — offline jazz studio"
+              focusableWhenSkippedTo={false}
+            />
+          </h1>
         </div>
+        <span class="studio-brand__divider" aria-hidden="true" />
+        <ThemeToggle />
       </div>
 
       <Field

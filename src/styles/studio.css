@@ -31,24 +31,19 @@
   color: var(--text-primary);
 }
 
-/* Ambient room tone: a deep blue wash with the faintest brass horizon. */
+/* The linen desk the paper sits on: lit from above, darker at the edges. */
 .studio-shell::before {
   content: "";
   position: absolute;
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background:
-    radial-gradient(
-      120% 90% at 50% -20%,
-      color-mix(in srgb, var(--surface-rail) 72%, transparent),
-      transparent 62%
-    ),
-    radial-gradient(
-      90% 55% at 85% 110%,
-      color-mix(in srgb, var(--accent) 5%, transparent),
-      transparent 70%
-    );
+  background: radial-gradient(
+    120% 80% at 50% -10%,
+    var(--desk-1) 0%,
+    var(--desk) 46%,
+    var(--desk-2) 100%
+  );
 }
 
 .studio-shell__background {
@@ -105,9 +100,8 @@
   padding-inline:
     max(var(--space-4), env(safe-area-inset-left, 0px))
     max(var(--space-4), env(safe-area-inset-right, 0px));
-  background: color-mix(in srgb, var(--surface-header) 88%, transparent);
-  border-block-end: var(--border-width) solid var(--border-default);
-  backdrop-filter: blur(8px);
+  background: var(--chrome);
+  border-block-end: var(--border-width) solid var(--rule-2);
 }
 
 .studio-brand {
@@ -117,37 +111,127 @@
   min-inline-size: 0;
 }
 
-.studio-brand__mark {
-  display: grid;
-  place-items: center;
-  inline-size: 2.25rem;
-  block-size: 2.25rem;
-  border-radius: var(--radius-md);
-  background: linear-gradient(
-    150deg,
-    var(--accent-strong),
-    var(--accent) 55%,
-    color-mix(in srgb, var(--accent) 72%, var(--surface-sunken))
-  );
-  color: var(--on-accent);
-  font-family: var(--font-chord);
-  font-size: var(--text-lg);
-  font-weight: 700;
-  box-shadow: var(--shadow-1),
-    inset 0 1px 0 color-mix(in srgb, var(--text-primary) 22%, transparent);
-  user-select: none;
-}
-
 .studio-brand__copy {
   display: flex;
   flex-direction: column;
   line-height: var(--line-tight);
 }
 
-.studio-brand__copy h1 {
-  font-size: var(--text-lg);
-  font-weight: 650;
-  letter-spacing: 0.01em;
+.studio-brand__wordmark {
+  font-family: var(--font-chord);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  user-select: none;
+}
+
+.studio-brand__wordmark-accent {
+  color: var(--red);
+}
+
+.studio-brand__divider {
+  inline-size: 1px;
+  block-size: 1.125rem;
+  background: var(--rule-2);
+}
+
+/* ------------------------------------------------------- theme toggle */
+
+.studio-theme-toggle {
+  display: grid;
+  place-items: center;
+  inline-size: var(--control-min-block);
+  block-size: var(--control-min-block);
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink-3);
+  cursor: pointer;
+}
+
+.studio-theme-toggle:hover {
+  border-color: var(--rule-2);
+  color: var(--ink);
+}
+
+.studio-theme-toggle:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.studio-theme-toggle__moon {
+  position: relative;
+  display: block;
+  inline-size: 0.9375rem;
+  block-size: 0.9375rem;
+  overflow: hidden;
+}
+
+.studio-theme-toggle__moon-disc {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.studio-theme-toggle__moon-bite {
+  position: absolute;
+  inset-inline-start: 0.3125rem;
+  inset-block-start: -0.1875rem;
+  inline-size: 0.9375rem;
+  block-size: 0.9375rem;
+  border-radius: 50%;
+  background: var(--chrome);
+}
+
+.studio-theme-toggle__sun {
+  position: relative;
+  display: block;
+  inline-size: 1rem;
+  block-size: 1rem;
+}
+
+.studio-theme-toggle__sun-core {
+  position: absolute;
+  inset-inline-start: 0.25rem;
+  inset-block-start: 0.25rem;
+  inline-size: 0.5rem;
+  block-size: 0.5rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.studio-theme-toggle__ray {
+  position: absolute;
+  background: currentColor;
+}
+
+.studio-theme-toggle__ray[data-ray="n"] {
+  inset-inline-start: 0.4375rem;
+  inset-block-start: 0;
+  inline-size: 0.125rem;
+  block-size: 0.1875rem;
+}
+
+.studio-theme-toggle__ray[data-ray="s"] {
+  inset-inline-start: 0.4375rem;
+  inset-block-end: 0;
+  inline-size: 0.125rem;
+  block-size: 0.1875rem;
+}
+
+.studio-theme-toggle__ray[data-ray="w"] {
+  inset-inline-start: 0;
+  inset-block-start: 0.4375rem;
+  inline-size: 0.1875rem;
+  block-size: 0.125rem;
+}
+
+.studio-theme-toggle__ray[data-ray="e"] {
+  inset-inline-end: 0;
+  inset-block-start: 0.4375rem;
+  inline-size: 0.1875rem;
+  block-size: 0.125rem;
 }
 
 .studio-kicker {
@@ -343,7 +427,7 @@
 .studio-rail {
   display: none;
   min-block-size: 0;
-  background: var(--surface-rail);
+  background: var(--chrome);
 }
 
 .studio-rail__contents {
@@ -601,6 +685,12 @@
   }
 }
 
+/*
+ * The paper: an ivory sheet floating on the linen desk, grain and all. The
+ * sheet owns its internal scroller (the command bar stays a flex sibling
+ * OUTSIDE the scrolled region — the 1e6e49f occlusion law), so the desk
+ * never scrolls; the page does.
+ */
 .studio-chart {
   position: relative;
   display: flex;
@@ -608,7 +698,34 @@
   min-inline-size: 0;
   min-block-size: 0;
   overflow: hidden;
-  background: var(--surface-chart);
+  background: linear-gradient(
+    176deg,
+    var(--paper-hi) 0%,
+    var(--paper) 42%,
+    var(--paper-lo) 100%
+  );
+  border: var(--border-width) solid var(--page-edge);
+  box-shadow: var(--shadow-page);
+}
+
+/* Paper grain: fractal noise, multiplied onto paper, screened onto night. */
+.studio-chart::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: var(--grain-op);
+  mix-blend-mode: var(--grain-blend);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='140' height='140' filter='url(%23n)' opacity='0.09'/></svg>");
+}
+
+@media (min-width: 40rem) {
+  .studio-chart {
+    margin-block: var(--space-6) var(--space-8);
+    justify-self: center;
+    inline-size: min(100% - 3rem, 62.5rem);
+  }
 }
 
 /*
@@ -623,6 +740,8 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   position: relative;
+  /* Above the paper grain overlay; the grain is texture, never a veil. */
+  z-index: 1;
 }
 
 .studio-chart:focus-visible {
@@ -2563,8 +2682,10 @@
 
 /*
  * Sheet triggers mirror rail visibility exactly: a panel that has no rail
- * keeps its trigger. Below 40rem both panels are sheets; from 40rem the
- * Harmony rail exists; from 68.75rem both rails exist and the group rests.
+ * keeps its trigger. Below 51.25rem (820 CSS px) both panels are sheets;
+ * from 51.25rem the chord-detail (Harmony) rail exists; from 80rem
+ * (1280 CSS px) both rails exist and the group rests — the v2 redesign's
+ * thresholds (jcpe-v2-redesign-z323), replacing the 40/68.75rem pair.
  */
 @media (max-width: 39.999rem) {
   .studio-mobile-panel-actions {
@@ -2595,13 +2716,13 @@
   }
 }
 
-@media (min-width: 40rem) {
+@media (min-width: 51.25rem) {
   #studio-open-harmony-sheet {
     display: none;
   }
 }
 
-@media (min-width: 68.75rem) {
+@media (min-width: 80rem) {
   .studio-mobile-panel-actions,
   .studio-mobile-panel-actions .ui-button,
   #studio-open-library-sheet {
@@ -2611,7 +2732,7 @@
 
 /* ------------------------------------------------------ responsive rails */
 
-@media (min-width: 40rem) {
+@media (min-width: 51.25rem) {
   .studio-workspace {
     grid-template-columns: minmax(0, 1fr) var(--rail-harmony-inline);
   }
@@ -2622,9 +2743,11 @@
 
   .studio-rail--harmony {
     display: block;
-    border-inline-start: var(--border-width) solid var(--border-default);
+    border-inline-start: var(--border-width) solid var(--rule-2);
   }
+}
 
+@media (min-width: 40rem) {
   .studio-chart__header {
     flex-direction: row;
     flex-wrap: wrap;
@@ -2678,7 +2801,7 @@
   }
 }
 
-@media (min-width: 68.75rem) {
+@media (min-width: 80rem) {
   .studio-workspace {
     grid-template-columns: var(--rail-library-inline) minmax(0, 1fr) var(--rail-harmony-inline);
   }
@@ -2699,7 +2822,7 @@
 
   .studio-rail--library {
     display: block;
-    border-inline-end: var(--border-width) solid var(--border-default);
+    border-inline-end: var(--border-width) solid var(--rule-2);
   }
 }
 

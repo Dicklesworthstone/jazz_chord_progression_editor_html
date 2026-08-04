@@ -76,6 +76,8 @@ const EXPECTED_BASE_TOKENS = Object.freeze({
   "--grain-blend": "multiply",
   "--grain-op": "0.28",
   "--page-edge": "transparent",
+  "--shadow-page":
+    "0 1px 1px rgb(25 23 19 / 0.1), 0 2px 5px rgb(25 23 19 / 0.07), 0 18px 44px rgb(25 23 19 / 0.22)",
   "--font-ui": "'Archivo', system-ui, -apple-system, 'Segoe UI', sans-serif",
   "--font-mono":
     "ui-monospace, 'SFMono-Regular', Consolas, 'Liberation Mono', monospace",
@@ -184,6 +186,8 @@ const EXPECTED_DARK_TOKENS = Object.freeze({
   "--grain-blend": "screen",
   "--grain-op": "0.09",
   "--page-edge": "#3a3527",
+  "--shadow-page":
+    "0 1px 1px rgb(0 0 0 / 0.3), 0 2px 5px rgb(0 0 0 / 0.26), 0 18px 44px rgb(0 0 0 / 0.5)",
 } as const);
 
 const TOKEN_NAME_PATTERN = /--[a-z][a-z0-9-]*/gu;
