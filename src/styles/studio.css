@@ -66,23 +66,26 @@
 }
 
 /*
- * jcpe-disi.3: the labeled-undo notice row. Zero height while empty so the
- * workspace geometry is untouched until a command lands; one compact row
- * above the transport once it does. Never floats over content.
+ * jcpe-disi.3: the labeled-undo status strip. Its height is CONSTANT — a
+ * row that appears when a command lands would shift chart geometry mid-run
+ * and broke the exact 8 px drag-threshold law in whichever browser lost
+ * the render race. Empty, it teaches the one-undoable-step promise; full,
+ * it names the landed command with a live Undo.
  */
 .studio-action-notice {
   display: flex;
   align-items: center;
   gap: var(--space-2);
   min-inline-size: 0;
-  padding: 0;
-  border-block-start: 0 solid transparent;
-  background: var(--surface-raised);
-}
-
-.studio-action-notice[data-empty="false"] {
+  block-size: 2.75rem;
   padding: var(--space-1) var(--space-3);
   border-block-start: var(--border-width) solid var(--border-default);
+  background: var(--surface-raised);
+  overflow: hidden;
+}
+
+.studio-action-notice__sentence--hint {
+  color: var(--text-muted);
 }
 
 .studio-action-notice__sentence {

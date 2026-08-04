@@ -388,7 +388,12 @@ export function StudioShell({
             data-empty={actionNotice === null ? "true" : "false"}
             role="status"
           >
-            {actionNotice === null ? null : (
+            {actionNotice === null ? (
+              <p class="studio-action-notice__sentence studio-action-notice__sentence--hint">
+                Every change lands as one undoable step — select any chord to
+                edit, move, or delete it.
+              </p>
+            ) : (
               <>
                 <p class="studio-action-notice__sentence">{actionNotice}</p>
                 <Button
