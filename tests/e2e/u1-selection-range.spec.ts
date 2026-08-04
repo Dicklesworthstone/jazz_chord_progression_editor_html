@@ -40,7 +40,9 @@ test.describe("U1-TRACE-BOOKMARKS selection, range, and the playhead", () => {
     await openStudio(page);
     await typeAndInsert(page, "C:2 D:2");
 
-    const position = page.locator(".studio-transport__facts");
+    /* jcpe-v2r-drag-032m: the V2R-8 footer replaced the facts strip with the
+     * now-block; the playhead readout lives in transport-now-place. */
+    const position = page.locator('[data-testid="transport-now-place"]');
     const before = await position.textContent();
 
     await cards(page).first().focus();

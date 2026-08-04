@@ -31,6 +31,13 @@ export type ChartWorkspaceProps = Readonly<{
   onResetTitleDraft: () => void;
   /** Display-only roman/phrase read ports; null results render as nothing. */
   annotations: StudioChartAnnotationPorts;
+  /**
+   * The empty-chart "three ways in" rows (jcpe-v2r-library-ulwb): load the
+   * foundation ii–V–I, open the command lane, open the Standards modal.
+   */
+  onStartFoundation: () => void;
+  onOpenCommandLane: () => void;
+  onOpenStandards: () => void;
   /** jcpe-disi.3: the landed-command sentence, or null while none stands. */
   actionNotice: string | null;
   canUndo: boolean;
@@ -295,6 +302,9 @@ function phraseLaneMarks(
 export function ChartWorkspace({
   view,
   document: documentView,
+  onStartFoundation,
+  onOpenCommandLane,
+  onOpenStandards,
   onTitleDraftChange,
   onCommitTitle,
   onResetTitleDraft,
@@ -393,6 +403,124 @@ export function ChartWorkspace({
     onCancel: () => void;
   }> | null>(null);
 
+  /**
+   * Presentation-only drag visuals (jcpe-v2r-drag-032m). The lifted bundle —
+   * the dragged card plus, when it is part of the selection, every selected
+   * card — follows the pointer by transform, and the bar under the pointer
+   * announces itself as the drop target. All writes happen inside the
+   * existing session handlers, so the reviewed listener counts are
+   * untouched, and everything here is erased when the session ends. The
+   * prototype's slide-aside reordering springs were deliberately NOT ported:
+   * the underlying command moves the selection INTO a bar, it does not
+   * reorder bars, and the motion must not claim otherwise.
+   */
+  const dragVisual = useRef<{
+    elements: readonly HTMLElement[];
+    chordIds: readonly string[];
+    hovered: HTMLElement | null;
+  } | null>(null);
+
+  const prefersReducedMotion = (): boolean =>
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const clearDragVisuals = (): void => {
+    const visual = dragVisual.current;
+    if (visual === null) return;
+    for (const element of visual.elements) {
+      element.style.transform = "";
+      element.removeAttribute("data-drag-lifted");
+    }
+    visual.hovered?.removeAttribute("data-drop-hover");
+    dragVisual.current = null;
+  };
+
+  const beginDragVisuals = (chordId: string): void => {
+    const dragged = document.querySelector<HTMLElement>(
+      `[data-chord-id="${chordId}"]`,
+    );
+    if (dragged === null) return;
+    const selected = [
+      ...document.querySelectorAll<HTMLElement>(
+        '.studio-chord-card[data-selected="true"]',
+      ),
+    ];
+    const elements = selected.includes(dragged) ? selected : [dragged];
+    for (const element of elements) {
+      element.setAttribute("data-drag-lifted", "true");
+    }
+    dragVisual.current = {
+      chordIds: elements.map(
+        (element) => element.dataset["chordId"] ?? "",
+      ),
+      elements,
+      hovered: null,
+    };
+  };
+
+  const moveDragVisuals = (event: PointerEvent, originX: number, originY: number): void => {
+    const visual = dragVisual.current;
+    if (visual === null) return;
+    if (!prefersReducedMotion()) {
+      const dx = event.clientX - originX;
+      const dy = event.clientY - originY;
+      const transform = `translate(${dx.toFixed(1)}px, ${dy.toFixed(1)}px)`;
+      for (const element of visual.elements) {
+        element.style.transform = transform;
+      }
+    }
+    const measureId = measureIdAtPoint(event.clientX, event.clientY);
+    const next =
+      measureId === null
+        ? null
+        : document.querySelector<HTMLElement>(
+            `[data-measure-id="${measureId}"]`,
+          );
+    if (next !== visual.hovered) {
+      visual.hovered?.removeAttribute("data-drop-hover");
+      next?.setAttribute("data-drop-hover", "true");
+      dragVisual.current = { ...visual, hovered: next };
+    }
+  };
+
+  /**
+   * The settle: after the drop commits and the moved cards re-render in
+   * their new bars, each one animates from where the pointer released it to
+   * where the document put it (a FLIP pass with a spring-shaped easing).
+   * Reduced motion skips the animation entirely; the commit itself is
+   * already done by the time this runs, so motion is never load-bearing.
+   */
+  const settleDrop = (chordIds: readonly string[]): void => {
+    if (prefersReducedMotion()) return;
+    const before = new Map<string, DOMRect>();
+    for (const chordId of chordIds) {
+      const element = document.querySelector<HTMLElement>(
+        `[data-chord-id="${chordId}"]`,
+      );
+      if (element !== null) before.set(chordId, element.getBoundingClientRect());
+    }
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        for (const [chordId, first] of before) {
+          const element = document.querySelector<HTMLElement>(
+            `[data-chord-id="${chordId}"]`,
+          );
+          if (element === null) continue;
+          const last = element.getBoundingClientRect();
+          const dx = first.left - last.left;
+          const dy = first.top - last.top;
+          if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) continue;
+          element.animate(
+            [
+              { transform: `translate(${String(dx)}px, ${String(dy)}px)` },
+              { transform: "none" },
+            ],
+            { duration: 300, easing: "cubic-bezier(0.2, 0.9, 0.25, 1.05)" },
+          );
+        }
+      });
+    });
+  };
+
   const endDragSession = (): void => {
     const session = dragSession.current;
     if (session === null) return;
@@ -400,6 +528,7 @@ export function ChartWorkspace({
     session.handle.removeEventListener("pointerup", session.onEnd);
     session.handle.removeEventListener("pointercancel", session.onCancel);
     dragSession.current = null;
+    clearDragVisuals();
     setDragging(null);
   };
 
@@ -495,15 +624,22 @@ export function ChartWorkspace({
         if (distance < DRAG_THRESHOLD_CSS_PX) return;
         dragSession.current = { ...session, started: true };
         setDragging(session.kind === "card" ? session.chordId : session.kind);
+        if (session.kind === "card") beginDragVisuals(session.chordId);
       }
       // preventDefault only after a real drag threshold is crossed.
       moveEvent.preventDefault();
+      if (session.kind === "card") {
+        moveDragVisuals(moveEvent, session.originX, session.originY);
+      }
     };
     const onEnd = (endEvent: PointerEvent): void => {
       const session = dragSession.current;
       const started = session?.started ?? false;
       const sessionKind = session?.kind ?? "card";
       const chord = session?.chordId ?? null;
+      // Snapshot the lifted bundle before the session teardown erases it;
+      // the settle pass needs the ids after the commit re-renders them.
+      const bundle = dragVisual.current?.chordIds ?? [];
       endDragSession();
       if (!started) return;
       if (sessionKind !== "card") {
@@ -521,7 +657,10 @@ export function ChartWorkspace({
       }
       if (chord === null) return;
       const measureId = measureIdAtPoint(endEvent.clientX, endEvent.clientY);
-      if (measureId !== null) onDropChordOnMeasure(measureId);
+      if (measureId !== null) {
+        onDropChordOnMeasure(measureId);
+        if (bundle.length > 0) settleDrop(bundle);
+      }
     };
     const onCancel = (): void => {
       endDragSession();
@@ -1793,6 +1932,69 @@ export function ChartWorkspace({
         </p>
       )}
 
+      {/*
+        The prototype's empty-chart welcome (jcpe-v2r-library-ulwb): whenever
+        the document holds no chord at all — no sections, or only empty
+        measures — the paper offers its three ways in. Each row rides an
+        existing surface: the foundation library entry, the command lane,
+        the Standards modal.
+      */}
+      {allChords.length === 0 ? (
+        <div class="studio-three-ways" data-testid="empty-chart-ways">
+          <p class="studio-three-ways__title">An empty chart.</p>
+          <p class="studio-three-ways__subtitle">Three ways in. All land here.</p>
+          <div class="studio-three-ways__rows" role="list">
+            <button
+              class="studio-three-ways__row"
+              type="button"
+              role="listitem"
+              id="studio-way-foundation"
+              onClick={onStartFoundation}
+            >
+              <span class="studio-three-ways__numeral" aria-hidden="true">
+                i
+              </span>
+              <span class="studio-three-ways__copy">
+                <strong>Start from a ii–V–I in C</strong>
+                <span>Four bars on the page, then change anything.</span>
+              </span>
+            </button>
+            <button
+              class="studio-three-ways__row"
+              type="button"
+              role="listitem"
+              id="studio-way-lane"
+              onClick={onOpenCommandLane}
+            >
+              <span class="studio-three-ways__numeral" aria-hidden="true">
+                ii
+              </span>
+              <span class="studio-three-ways__copy">
+                <strong>Type the changes</strong>
+                <span class="studio-three-ways__sample">
+                  | Dm7 G7 | Cmaj7 |
+                </span>
+              </span>
+            </button>
+            <button
+              class="studio-three-ways__row"
+              type="button"
+              role="listitem"
+              id="studio-way-standards"
+              onClick={onOpenStandards}
+            >
+              <span class="studio-three-ways__numeral" aria-hidden="true">
+                iii
+              </span>
+              <span class="studio-three-ways__copy">
+                <strong>Open a standard</strong>
+                <span>Rhythm changes, jazz blues, the major-thirds cycle.</span>
+              </span>
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       {view.sections.length === 0 ? (
         <div class="studio-chart__empty-document">
           <EmptyState
@@ -2173,7 +2375,7 @@ export function ChartWorkspace({
                                   class="studio-measure__chords"
                                   aria-label={`Measure ${measure.number.toString()} chords`}
                                 >
-                                  {measure.chords.map((chord) => (
+                                  {measure.chords.map((chord, chordSlot) => (
                                     <li
                                       key={chord.id}
                                       style={{
@@ -2182,6 +2384,40 @@ export function ChartWorkspace({
                                         ),
                                       }}
                                     >
+                                      {/*
+                                        The caesura (jcpe-v2r-drag-032m): on
+                                        the SELECTED shared bar, the dashed
+                                        divider before each later chord grows
+                                        a cut mark. One press, one existing
+                                        split-at-bar command, one undoable
+                                        step — the chord it precedes starts
+                                        its own measure. Render-on-selection
+                                        keeps the card listener census flat.
+                                      */}
+                                      {chordSlot > 0 &&
+                                      measure.chords.some(
+                                        (candidate) => candidate.selected,
+                                      ) ? (
+                                        <button
+                                          class="studio-caesura"
+                                          type="button"
+                                          data-testid="measure-cut-mark"
+                                          aria-label={`Separate the bar before chord ${String(chord.ordinal)} — it becomes its own measure`}
+                                          title="Separate into its own measure"
+                                          onClick={(event) => {
+                                            event.stopPropagation();
+                                            onSplitAtBar(chord.id);
+                                          }}
+                                        >
+                                          <span
+                                            class="studio-caesura__mark"
+                                            aria-hidden="true"
+                                          >
+                                            <span />
+                                            <span />
+                                          </span>
+                                        </button>
+                                      ) : null}
                                       <article
                                         class="studio-chord-card"
                                         data-chord-id={chord.id}

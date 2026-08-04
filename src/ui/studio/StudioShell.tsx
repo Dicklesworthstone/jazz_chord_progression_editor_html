@@ -434,6 +434,15 @@ export function StudioShell({
               }}
             />
             <ChartWorkspace
+              onStartFoundation={() => {
+                callbacks.onLoadLibraryEntry("two-five-one");
+              }}
+              onOpenCommandLane={() => {
+                setCommandLaneOpen(true);
+              }}
+              onOpenStandards={() => {
+                setStandardsOpen(true);
+              }}
               actionNotice={actionNotice}
               annotations={annotations}
               document={view.document}
