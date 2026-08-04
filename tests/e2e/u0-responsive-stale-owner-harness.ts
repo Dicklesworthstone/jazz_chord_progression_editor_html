@@ -73,6 +73,8 @@ const BASE_VIEW: Omit<StudioShellView, "layout"> = Object.freeze({
     sectionCountLabel: "1 section",
     measureCountLabel: "1 measure",
     chordCountLabel: "0 chords",
+    keyLabel: "No key",
+    tempoLabel: "105 BPM",
     isSeededDemo: false,
     rovingFocusId: null,
     selectionCount: 0,
@@ -114,6 +116,8 @@ const BASE_VIEW: Omit<StudioShellView, "layout"> = Object.freeze({
             startBeatLabel: "0",
             endBeatLabel: "4",
             chordCountLabel: "0 chords",
+            keyLabel: "No key",
+            tempoLabel: "105 BPM",
             fillLabel: "Empty",
             completionLabel: "Empty measure",
             completionReason: null,
@@ -274,6 +278,10 @@ function ResponsiveStaleOwnerHarness() {
       id: "u0-responsive-stale-owner-harness",
     },
     h(StudioShell, {
+      annotations: {
+        phrasesForSection: () => [],
+        romanForEvent: () => null,
+      },
       callbacks,
       // U0 harness: the transport is out of scope for these layout proofs.
       transport: {

@@ -20,6 +20,10 @@ import {
   resolutionOperations,
 } from "../../src/theory";
 
+const FLAT_NAMES = [
+  "C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B",
+] as const;
+
 function mustParse(sourceText: string): ChordSpec {
   const parsed = parseChordSymbol(sourceText, "ascii");
   if (!parsed.ok) throw new Error(`test symbol did not parse: ${sourceText}`);
@@ -306,6 +310,26 @@ describe("deriveChordDetail — tones, guides, resolution, next", () => {
   test("transposition: options follow the chord, spelled for flat roots", () => {
     const result = detail("Bb7", null, keyOf("E", -1, "major"));
     expect(result.next[0]?.symbolText).toBe("Ebmaj7");
+  });
+
+  test("every emitted next option parses, so inserting it reaches sound", () => {
+    /* The closed-emission law (jcpe-tkos): 12 roots × the option tables'
+     * qualities is exhaustible, so prove the whole space instead of
+     * sampling. Every root is exercised through each functional table. */
+    const seeds = [
+      ...FLAT_NAMES.map((name) => `${name}7`),
+      ...FLAT_NAMES.map((name) => `${name}m7`),
+      ...FLAT_NAMES.map((name) => `${name}maj7`),
+      ...FLAT_NAMES.map((name) => `${name}m7b5`),
+    ];
+    for (const seed of seeds) {
+      for (const option of detail(seed, null, C_MAJOR).next) {
+        const parsed = parseChordSymbol(option.symbolText, "ascii");
+        expect(
+          parsed.ok ? null : `${seed} offered unparseable ${option.symbolText}`,
+        ).toBeNull();
+      }
+    }
   });
 
   test("unkeyed detail still teaches tones and motion but claims no roman", () => {

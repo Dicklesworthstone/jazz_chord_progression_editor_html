@@ -143,7 +143,7 @@ export type ChartGuideToneMove = Readonly<{
   toName: string;
   fromPitchClass: PitchClass;
   toPitchClass: PitchClass;
-  /** Shortest directed pitch-class distance, 0..6. */
+  /** Shortest undirected pitch-class distance, 0..6 (min of up and down). */
   distance: number;
   motion: GuideToneMotion;
 }>;

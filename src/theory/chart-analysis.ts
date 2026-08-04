@@ -11,6 +11,7 @@ import {
 
 import {
   CHART_ANALYSIS_ENGINE_VERSION,
+  MAX_CHART_DETAIL_TONES,
   MAX_CHART_GUIDE_TONE_MOVES,
   MAX_CHART_NEXT_OPTIONS,
   MAX_CHART_PHRASES_PER_SECTION,
@@ -756,6 +757,7 @@ export function deriveChordDetail(
   const tones: ChartToneView[] = [];
   realization.spelledPitchNames.forEach(
     (spelled: SpelledPitchClass, index: number) => {
+      if (tones.length >= MAX_CHART_DETAIL_TONES) return;
       const pitchClass = realization.pitchClasses[index];
       if (pitchClass === undefined) return;
       const degree = realization.degrees?.[index] ?? null;
@@ -797,7 +799,7 @@ export function deriveChordDetail(
     engineVersion: CHART_ANALYSIS_ENGINE_VERSION,
     outcome: analysis.outcome,
     analysis,
-    tones: Object.freeze(tones.slice(0, 16)),
+    tones: Object.freeze(tones),
     guideToneNames,
     resolution,
     next,
