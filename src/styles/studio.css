@@ -3885,3 +3885,11 @@
   font-size: var(--text-sm);
   gap: var(--space-2);
 }
+
+/* The 44px coarse-pointer law outranks engraving quietness everywhere. */
+@media (pointer: coarse) {
+  .studio-paper-head__title .studio-title-editor__control-row .ui-button,
+  .studio-chart__header .ui-button {
+    min-block-size: var(--touch-target);
+  }
+}
