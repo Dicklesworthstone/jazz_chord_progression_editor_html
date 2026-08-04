@@ -1,61 +1,98 @@
+/*
+ * The ink-on-paper identity (2026-08-04, jcpe-v2-redesign-z323): an ivory
+ * lead-sheet page on a linen desk, engraved Literata symbols, Archivo chrome.
+ * Annotation colours carry meaning: red pencil belongs to playback and
+ * destructive edges, blue pencil to analysis and selection. Supersedes the
+ * Blue Note dark shell of 2026-07-29 (jcpe-z4h1).
+ *
+ * Theme model: the paper (light) theme is the base scope. The night theme is
+ * expressed twice with byte-identical declarations: once behind the OS
+ * preference for visitors who never chose, once behind the explicit
+ * [data-theme="dark"] pin written by the theme toggle. The static token gate
+ * proves the two night maps stay identical and that both themes clear every
+ * reviewed contrast pair.
+ */
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 
-  /*
-   * Blue Note identity (2026-07-29, jcpe-z4h1): ink-blue night surfaces,
-   * warm paper-white notation text, brass for musical structure and the
-   * current beat, cyan for analysis/focus, coral for destructive states.
-   * Supersedes the warm-brown Stage base of the 2026-07-28 overhaul.
-   */
-  --background: #07090e;
-  --surface-app: #07090e;
-  --surface-header: #0a0f16;
-  --surface-rail: #0c121b;
-  --surface-chart: #101725;
-  --surface-panel: #121a29;
-  --surface-elevated: #1a2434;
-  --surface-sunken: #04060a;
-  /* Backdrop scrim ONLY. A menu, popover, or dialog paints itself with the
-     elevated surface instead; painting a content surface with this scrim
-     lets the text behind it bleed through (owner report, 2026-07-29). */
-  --surface-overlay: rgb(4 7 12 / 0.74);
-  --text-primary: #f5f0e2;
-  --text-muted: #b3bdcc;
-  --text-subtle: #93a0b3;
-  --text-inverse: #131007;
-  --border-default: #243143;
-  --border-strong: #677990;
-  --action-primary: #d9a63f;
-  --action-primary-hover: #efc25e;
-  --action-secondary: #1c2737;
-  --state-info: #63c9de;
-  --state-success: #5fd39c;
-  --state-warning: #e5b95c;
-  --state-error: #ff7d6d;
-  --state-selected: #1d3a54;
-  --focus-ring: #7fd4e6;
-  --accent: #e0b04a;
-  --accent-strong: #f2cd77;
-  --accent-soft: #3c3319;
-  --on-accent: #171204;
-  --shadow-1: 0 1px 2px rgb(2 4 9 / 0.55);
-  --shadow-2: 0 3px 12px rgb(2 4 9 / 0.5);
-  --shadow-3: 0 14px 36px rgb(2 4 9 / 0.6);
-  --glow-accent: 0 0 0 1px rgb(224 176 74 / 0.6), 0 0 22px rgb(224 176 74 / 0.28);
+  --background: #d9d4c6;
+  --surface-app: #d9d4c6;
+  --surface-header: #f4f1e8;
+  --surface-rail: #f4f1e8;
+  --surface-chart: #fbf8f1;
+  --surface-panel: #fbf8f1;
+  --surface-elevated: #fdfcf8;
+  --surface-sunken: #d5cfc0;
+  --surface-overlay: rgb(25 23 19 / 0.4);
+  --text-primary: #191713;
+  --text-muted: #4a453a;
+  --text-subtle: #5c5647;
+  --text-inverse: #fbf8f1;
+  --border-default: #d6d0be;
+  --border-strong: #6b6353;
+  --action-primary: #191713;
+  --action-primary-hover: #b23a2a;
+  --action-secondary: #f3efe3;
+  --state-info: #2f5490;
+  --state-success: #0f5c37;
+  --state-warning: #6b4e0b;
+  --state-error: #9c2e20;
+  --state-selected: #dce3f0;
+  --focus-ring: #2f5490;
+  --accent: #b23a2a;
+  --accent-strong: #8e2e21;
+  --accent-soft: #f3dedb;
+  --on-accent: #fbf8f1;
+  --shadow-1: 0 1px 2px rgb(25 23 19 / 0.1);
+  --shadow-2: 0 3px 12px rgb(25 23 19 / 0.14);
+  --shadow-3: 0 14px 36px rgb(25 23 19 / 0.22);
+  --glow-accent: 0 0 0 1px rgb(178 58 42 / 0.55), 0 0 20px rgb(178 58 42 / 0.2);
 
-  --font-ui: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --desk: #d9d4c6;
+  --desk-1: #e4dfd1;
+  --desk-2: #cfc9b9;
+  --chrome: #f4f1e8;
+  --paper: #fbf8f1;
+  --paper-2: #fdfcf8;
+  --paper-hi: #fdfbf6;
+  --paper-lo: #f8f4ea;
+  --field: #fffdf7;
+  --field-2: #fffdf4;
+  --hover: #f3efe3;
+  --tint: #f4f0e4;
+  --line-1: #efebdf;
+  --line-2: #e2dcca;
+  --rule: #d6d0be;
+  --slash: #cdc6b2;
+  --rule-2: #c9c2ae;
+  --rule-3: #b8b19c;
+  --ink: #191713;
+  --ink-1: #2e2a22;
+  --ink-2: #4a453a;
+  --ink-3: #6b6353;
+  --ink-4: #a9a28c;
+  --red: #b23a2a;
+  --blue: #2f5490;
+  --red-wash: rgb(178 58 42 / 0.06);
+  --blue-wash: rgb(47 84 144 / 0.12);
+  --sh: 25 23 19;
+  --grain-blend: multiply;
+  --grain-op: 0.28;
+  --page-edge: transparent;
+
+  --font-ui: 'Archivo', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: ui-monospace, 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
-  --font-chord: 'Palatino Linotype', Palatino, Georgia, 'Times New Roman', serif;
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
   --text-md: 1rem;
   --text-lg: 1.125rem;
   --text-xl: 1.5rem;
+  --line-tight: 1.25;
+  --line-normal: 1.5;
+  --font-chord: 'Literata', Georgia, 'Times New Roman', serif;
   --text-chord: 1.5rem;
   --text-chord-super: 0.66em;
   --text-display: 2rem;
-  --line-tight: 1.25;
-  --line-normal: 1.5;
 
   --space-0: 0;
   --space-1: 0.25rem;
@@ -68,10 +105,10 @@
   --space-10: 2.5rem;
   --space-12: 3rem;
 
-  --radius-xs: 0.25rem;
-  --radius-sm: 0.5rem;
-  --radius-md: 0.625rem;
-  --radius-lg: 0.9375rem;
+  --radius-xs: 0.125rem;
+  --radius-sm: 0.1875rem;
+  --radius-md: 0.25rem;
+  --radius-lg: 0.5rem;
   --border-width: 1px;
   --focus-width: 2px;
   --focus-offset: 2px;
@@ -81,54 +118,148 @@
   --motion-reduced: 0ms;
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
 
-  --rail-library-inline: 17rem;
-  --rail-harmony-inline: 20rem;
+  --rail-library-inline: 18.25rem;
+  --rail-harmony-inline: 22.5rem;
   --transport-min-block: 4.5rem;
   --sheet-context-reveal: 3rem;
   --control-min-block: 2.25rem;
   --touch-target: 2.75rem;
 }
 
-/*
- * The Paper theme: a printed-chart ivory for readers who work in the light.
- * Every override below re-clears the same reviewed contrast pairs as the
- * dark base; the theme-aware token gate checks both maps independently.
- */
-@media (prefers-color-scheme: light) {
-  :root {
-    color-scheme: light;
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
 
-    --background: #f4eee1;
-    --surface-app: #f4eee1;
-    --surface-header: #ece3d0;
-    --surface-rail: #efe8d7;
-    --surface-chart: #faf6eb;
-    --surface-panel: #fbf8f0;
-    --surface-elevated: #ffffff;
-    --surface-sunken: #e6dcc3;
-    --surface-overlay: rgb(46 40 24 / 0.44);
-    --text-primary: #1f2530;
-    --text-muted: #4a5262;
-    --text-subtle: #57606c;
-    --text-inverse: #fdfaf2;
-    --border-default: #d3c8ab;
-    --border-strong: #7e7256;
-    --action-primary: #7a5a10;
-    --action-primary-hover: #63490b;
-    --action-secondary: #e8ddc2;
-    --state-info: #0b6577;
-    --state-success: #136b40;
-    --state-warning: #7b5a0d;
-    --state-error: #a93425;
-    --state-selected: #d7e6f2;
-    --focus-ring: #10657c;
-    --accent: #8a6412;
-    --accent-strong: #6c4d0c;
-    --accent-soft: #e9dbb0;
-    --on-accent: #fdfaf2;
-    --shadow-1: 0 1px 2px rgb(80 66 36 / 0.16);
-    --shadow-2: 0 3px 12px rgb(80 66 36 / 0.18);
-    --shadow-3: 0 14px 36px rgb(80 66 36 / 0.22);
-    --glow-accent: 0 0 0 1px rgb(138 100 18 / 0.55), 0 0 20px rgb(138 100 18 / 0.22);
+    --background: #100f0c;
+    --surface-app: #100f0c;
+    --surface-header: #1b1a15;
+    --surface-rail: #1b1a15;
+    --surface-chart: #272419;
+    --surface-panel: #272419;
+    --surface-elevated: #302c24;
+    --surface-sunken: #080806;
+    --surface-overlay: rgb(0 0 0 / 0.55);
+    --text-primary: #f2eee2;
+    --text-muted: #cdc6b2;
+    --text-subtle: #a19980;
+    --text-inverse: #191713;
+    --border-default: #423c2f;
+    --border-strong: #a19980;
+    --action-primary: #f2eee2;
+    --action-primary-hover: #e0654c;
+    --action-secondary: #2e2b23;
+    --state-info: #86a9e2;
+    --state-success: #5fd39c;
+    --state-warning: #e5b95c;
+    --state-error: #e88a72;
+    --state-selected: #2c3a55;
+    --focus-ring: #86a9e2;
+    --accent: #e0654c;
+    --accent-strong: #ee8a70;
+    --accent-soft: #3a2620;
+    --on-accent: #191713;
+    --shadow-1: 0 1px 2px rgb(0 0 0 / 0.55);
+    --shadow-2: 0 3px 12px rgb(0 0 0 / 0.5);
+    --shadow-3: 0 14px 36px rgb(0 0 0 / 0.6);
+    --glow-accent: 0 0 0 1px rgb(224 101 76 / 0.55), 0 0 22px rgb(224 101 76 / 0.24);
+    --desk: #100f0c;
+    --desk-1: #17160f;
+    --desk-2: #080806;
+    --chrome: #1b1a15;
+    --paper: #272419;
+    --paper-2: #2c2921;
+    --paper-hi: #2e2b21;
+    --paper-lo: #232017;
+    --field: #302c24;
+    --field-2: #353027;
+    --hover: #2e2b23;
+    --tint: #2c2921;
+    --line-1: #302c24;
+    --line-2: #383327;
+    --rule: #423c2f;
+    --slash: #4e4738;
+    --rule-2: #4e4738;
+    --rule-3: #635b49;
+    --ink: #f2eee2;
+    --ink-1: #e6e1d3;
+    --ink-2: #cdc6b2;
+    --ink-3: #a19980;
+    --ink-4: #7a7361;
+    --red: #e0654c;
+    --blue: #86a9e2;
+    --red-wash: rgb(224 101 76 / 0.1);
+    --blue-wash: rgb(134 169 226 / 0.16);
+    --sh: 0 0 0;
+    --grain-blend: screen;
+    --grain-op: 0.09;
+    --page-edge: #3a3527;
   }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --background: #100f0c;
+  --surface-app: #100f0c;
+  --surface-header: #1b1a15;
+  --surface-rail: #1b1a15;
+  --surface-chart: #272419;
+  --surface-panel: #272419;
+  --surface-elevated: #302c24;
+  --surface-sunken: #080806;
+  --surface-overlay: rgb(0 0 0 / 0.55);
+  --text-primary: #f2eee2;
+  --text-muted: #cdc6b2;
+  --text-subtle: #a19980;
+  --text-inverse: #191713;
+  --border-default: #423c2f;
+  --border-strong: #a19980;
+  --action-primary: #f2eee2;
+  --action-primary-hover: #e0654c;
+  --action-secondary: #2e2b23;
+  --state-info: #86a9e2;
+  --state-success: #5fd39c;
+  --state-warning: #e5b95c;
+  --state-error: #e88a72;
+  --state-selected: #2c3a55;
+  --focus-ring: #86a9e2;
+  --accent: #e0654c;
+  --accent-strong: #ee8a70;
+  --accent-soft: #3a2620;
+  --on-accent: #191713;
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 0.55);
+  --shadow-2: 0 3px 12px rgb(0 0 0 / 0.5);
+  --shadow-3: 0 14px 36px rgb(0 0 0 / 0.6);
+  --glow-accent: 0 0 0 1px rgb(224 101 76 / 0.55), 0 0 22px rgb(224 101 76 / 0.24);
+  --desk: #100f0c;
+  --desk-1: #17160f;
+  --desk-2: #080806;
+  --chrome: #1b1a15;
+  --paper: #272419;
+  --paper-2: #2c2921;
+  --paper-hi: #2e2b21;
+  --paper-lo: #232017;
+  --field: #302c24;
+  --field-2: #353027;
+  --hover: #2e2b23;
+  --tint: #2c2921;
+  --line-1: #302c24;
+  --line-2: #383327;
+  --rule: #423c2f;
+  --slash: #4e4738;
+  --rule-2: #4e4738;
+  --rule-3: #635b49;
+  --ink: #f2eee2;
+  --ink-1: #e6e1d3;
+  --ink-2: #cdc6b2;
+  --ink-3: #a19980;
+  --ink-4: #7a7361;
+  --red: #e0654c;
+  --blue: #86a9e2;
+  --red-wash: rgb(224 101 76 / 0.1);
+  --blue-wash: rgb(134 169 226 / 0.16);
+  --sh: 0 0 0;
+  --grain-blend: screen;
+  --grain-op: 0.09;
+  --page-edge: #3a3527;
 }
