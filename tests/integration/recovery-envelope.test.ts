@@ -7,6 +7,7 @@ import {
   MAX_RECOVERY_ENVELOPE_BYTES_INDEXEDDB,
   MAX_RECOVERY_ENVELOPE_BYTES_LOCALSTORAGE,
   recoveryStorageKey,
+  type RecoveryRefusalCode,
 } from "../../src/persistence";
 import {
   createRecoveryHarness,
@@ -23,8 +24,16 @@ type EnvelopeCase = Readonly<{
   envelope?: Readonly<Record<string, unknown>>;
   storedText?: string;
   invalidRevisions?: readonly number[];
-  expected: Readonly<{ outcome?: string; reasonCode?: string }>;
+  expected: Readonly<{ outcome?: string; reasonCode?: RecoveryRefusalCode }>;
 }>;
+
+function requireReasonCode(row: EnvelopeCase): RecoveryRefusalCode {
+  const reasonCode = row.expected.reasonCode;
+  if (reasonCode === undefined) {
+    throw new Error(`case ${row.caseId} names no expected reason code`);
+  }
+  return reasonCode;
+}
 
 async function loadCases(): Promise<readonly EnvelopeCase[]> {
   const raw = await readFile(
@@ -48,7 +57,7 @@ describe("TR-A1-ENVELOPE envelope validation", () => {
     const row = requireCase(await loadCases(), "A1-ENV-005");
     const decoded = await decodeRecoveryEnvelope(JSON.stringify(row.envelope));
     expect(decoded.outcome).toBe("corrupt");
-    expect(decoded.reasonCode).toBe(row.expected.reasonCode);
+    expect(decoded.reasonCode).toBe(requireReasonCode(row));
   });
 
   test("A1-ENV-006 hostile revisions refuse as revision_invalid", async () => {
@@ -64,7 +73,7 @@ describe("TR-A1-ENVELOPE envelope validation", () => {
         }),
       );
       expect(decoded.outcome).toBe("corrupt");
-      expect(decoded.reasonCode).toBe(row.expected.reasonCode);
+      expect(decoded.reasonCode).toBe(requireReasonCode(row));
     }
   });
 
@@ -72,14 +81,14 @@ describe("TR-A1-ENVELOPE envelope validation", () => {
     const row = requireCase(await loadCases(), "A1-ENV-007");
     const decoded = await decodeRecoveryEnvelope(JSON.stringify(row.envelope));
     expect(decoded.outcome).toBe("corrupt");
-    expect(decoded.reasonCode).toBe(row.expected.reasonCode);
+    expect(decoded.reasonCode).toBe(requireReasonCode(row));
   });
 
   test("A1-ENV-008 unparseable stored text is corrupt with a stable code", async () => {
     const row = requireCase(await loadCases(), "A1-ENV-008");
     const decoded = await decodeRecoveryEnvelope(row.storedText ?? "");
     expect(decoded.outcome).toBe("corrupt");
-    expect(decoded.reasonCode).toBe(row.expected.reasonCode);
+    expect(decoded.reasonCode).toBe(requireReasonCode(row));
   });
 
   test("A1-ENV-009 an envelope one byte over the adapter bound refuses without touching slots", async () => {

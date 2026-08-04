@@ -80,6 +80,7 @@ export const A0_FOCUSED_TEST_FILES = Object.freeze([
   "tests/conformance/a0-named-sequences.test.ts",
   "tests/conformance/a0-production-observation.test.ts",
   "tests/conformance/a0-randomized-sequences.test.ts",
+  "tests/unit/a0-randomized-shards.test.ts",
   "tests/conformance/a0-stale-transport-conformance.test.ts",
   "tests/conformance/a0-state-matrix-gaps.test.ts",
   "tests/integration/a0-application-state.test.ts",
@@ -205,6 +206,8 @@ export const A0_INPUT_GROUPS = Object.freeze({
   ],
   harness: [
     "tests/support/a0-application-fixture.ts",
+    "tests/support/a0-randomized-protocol.ts",
+    "tests/support/a0-randomized-shard.ts",
     "tests/support/a0-reference-model.ts",
     ...A0_FOCUSED_TEST_FILES,
   ],

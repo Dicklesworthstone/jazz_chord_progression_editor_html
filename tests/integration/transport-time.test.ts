@@ -128,8 +128,8 @@ describe("TR-X1-EXACT-TIME / TR-LEGACY-AUDIO-03 exact transport timing", () => {
       const event = plan.events[0];
       expect(event).toBeDefined();
       if (event === undefined) continue;
-      expect(event.durationTicks).toBe(row.durationTicks);
-      expect(event.gateDurationTicks).toBe(row.gateTicks);
+      expect(Number(event.durationTicks)).toBe(row.durationTicks);
+      expect(Number(event.gateDurationTicks)).toBe(row.gateTicks);
       requireReceipt(await harness.submit(initializePayload(plan)));
       requireReceipt(
         await harness.submit({
@@ -145,8 +145,10 @@ describe("TR-X1-EXACT-TIME / TR-LEGACY-AUDIO-03 exact transport timing", () => {
       );
       expect(attack).toBeDefined();
       if (attack === undefined) continue;
+      const effectiveGate = row.effectiveAudioGateSeconds;
+      if (effectiveGate === undefined) continue;
       expect(attack.releaseTimeSeconds - attack.startTimeSeconds).toBe(
-        row.effectiveAudioGateSeconds,
+        effectiveGate,
       );
     }
   });

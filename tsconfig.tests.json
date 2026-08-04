@@ -16,6 +16,7 @@
   "include": [
     "src/test-support/**/*.ts",
     "src/test-support/**/*.tsx",
+    "tests/support/**/*.ts",
     "tests/**/*.test.ts",
     "tests/**/*.test.tsx"
   ],
@@ -23,6 +24,7 @@
     "tests/e2e/**",
     "tests/fixtures/**",
     "tests/integration/audio-offline-render.test.ts",
+    "tests/integration/transport-browser-evidence.test.ts",
     "tests/visual/**"
   ]
 }

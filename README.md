@@ -125,8 +125,10 @@ If source and artifact disagree, regenerate the artifact; do not copy changes ba
 | `bun run validate:f1-contract` | Validate the independently authored F1 domain authority corpus, trace ledger, limits, matrices, and mutation-sensitive contract |
 | `bun run validate:f2-contract` | Validate the independently authored F2 decoder schema, adversarial corpus, trace ledger, and mutation controls |
 | `bun run validate:v0-contract` | Validate the independently authored V0 voicing-family templates, applicability matrix, goldens, operation states, limits, transpositions, trace, provenance, and mutation authority |
+| `bun run validate:v2-contract` | Validate the independently authored V2 progression-optimizer beam/Pareto/tie-break/window/loop/stepper corpus, trace, provenance, and mutation authority with reference and brute-force recomputation |
 | `bun run validate:p0-contract` | Validate the independently authored P0 playback-plan timeline, realization, loop, law, exact-limit, trace, provenance, and mutation authority corpus |
 | `bun run validate:c0-contract` | Validate the independently authored C0 legacy corpus, precedence, hostile-input, report, trace, provenance, and mutation authority |
+| `bun run validate:e1-contract` | Validate the independently authored E1 MIDI-export byte goldens (independent SMF parser and derivation), refusal precedence, limits, filename law, trace, provenance, and mutation authority |
 | `bun run validate:e0-contract` | Validate the accepted E0 JSON/text interchange, transactional application boundary, exact limits, goldens, trace, provenance, and mutation authority |
 | `bun run validate:a0-e0-bridge-contract` | Validate the proposed A0-owned replacement-registry, latest-identity, atomic marker-CAS, state-isolation, literal fixtures, traces, provenance, and mutations while pinning immutable accepted E0 v1 without claiming semantic compatibility |
 | `bun run validate:a0-u1-edit-plan-contract` | Validate the proposed additive A0/U1 atomic-edit command, five closed plan variants, literal state transitions, exact identity/time/bookmark/history laws, traces, provenance, and mutations without claiming production or UI completion |
@@ -142,6 +144,7 @@ If source and artifact disagree, regenerate the artifact; do not copy changes ba
 | `bun run verify:licenses` | Verify production package and embedded-asset provenance |
 | `bun run verify:f1-evidence` | Run the exact F1 suite and emit a hash-bound trace/seed/mutation ledger under `test-results/` |
 | `bun run verify:c0-evidence` | Run the exact C0 suite and emit a hash-bound adversarial-case, preset, trace, counter, and mutation ledger under `test-results/` |
+| `bun run verify:v2-evidence` | Re-run the exact V2 suite and validator from a drift-checked input closure, sweep seeded metamorphic charts against an independent exhaustive fold, and emit a hash-bound ledger under `test-results/` |
 | `bun run verify` | Run the aggregate release-facing gate in dependency order |
 
 The aggregate gate does not silently skip, retry, quarantine, or relax a failed check.
