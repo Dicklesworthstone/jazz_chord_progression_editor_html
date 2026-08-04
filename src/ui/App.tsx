@@ -49,6 +49,7 @@ import {
   type StudioDetailView,
   type StudioShellView,
   type StudioTitleFeedback,
+  type StudioChartLayout,
   type StudioViewMode,
 } from "./studio";
 
@@ -520,6 +521,8 @@ type PresentationState = Readonly<{
   /** Raw beat text for a duration T0 could not resolve; never coerced. */
   recoveryDurationDraft: string;
   viewMode: StudioViewMode;
+  /** Presentation-only sheet/grid layout (V2R-4). */
+  chartLayout: StudioChartLayout;
   rangeModeActive: boolean;
   rangeStartDraft: string;
   rangeEndDraft: string;
@@ -802,6 +805,49 @@ const MIDI_IMPORT_REFUSAL_PROSE: Readonly<Record<string, string>> =
   });
 
 /**
+ * The human account of a salvaged read (V2R-13): the engine's honest note
+ * plus one line per repair kind, so the person sees exactly what byte-level
+ * surgery stands between the file and this preview.
+ */
+const SALVAGE_REPAIR_PROSE: Readonly<Record<string, readonly [string, string]>> =
+  Object.freeze({
+    "restruck-note-ended": [
+      "restruck note ended early",
+      "restruck notes ended early",
+    ],
+    "orphan-off-dropped": [
+      "orphan note-off dropped",
+      "orphan note-offs dropped",
+    ],
+    "unterminated-note-closed": [
+      "unterminated note closed at track end",
+      "unterminated notes closed at track end",
+    ],
+  });
+
+function salvageView(
+  preview: MidiImportPreview,
+): StudioMidiImportView["salvage"] {
+  const report = preview.salvage;
+  if (report === null) return null;
+  return Object.freeze({
+    note: report.note,
+    repairLines: Object.freeze(
+      report.repairs.map((repair) => {
+        const prose = SALVAGE_REPAIR_PROSE[repair.kind];
+        const noun =
+          prose === undefined
+            ? repair.kind
+            : repair.count === 1
+              ? prose[0]
+              : prose[1];
+        return `${String(repair.count)} ${noun}`;
+      }),
+    ),
+  });
+}
+
+/**
  * The MIDI import view. Nothing here decides anything: every sentence restates
  * what the decoder and the reverse-T1 resolver already found, including the
  * readings that were NOT chosen and the sonorities nothing could name.
@@ -816,6 +862,7 @@ function midiImportView(
       available: false,
       statusLabel: "MIDI import is not available in this session.",
       refusal: null,
+      salvage: null,
       summary: null,
       sonorities: Object.freeze([]),
       blockedReason: null,
@@ -827,6 +874,7 @@ function midiImportView(
       available: true,
       statusLabel: notice ?? "No file chosen.",
       refusal: null,
+      salvage: null,
       summary: null,
       sonorities: Object.freeze([]),
       blockedReason: null,
@@ -856,6 +904,7 @@ function midiImportView(
           "That file could not be read as a Standard MIDI File.",
         where,
       }),
+      salvage: null,
       summary: null,
       sonorities: Object.freeze([]),
       blockedReason: null,
@@ -869,6 +918,7 @@ function midiImportView(
       available: true,
       statusLabel,
       refusal: null,
+      salvage: salvageView(preview),
       summary: null,
       sonorities: Object.freeze([]),
       blockedReason: preview.blockedReason,
@@ -895,7 +945,11 @@ function midiImportView(
     Object.freeze({
       id: "sonorities",
       label: "Sonorities",
-      value: countLabel(decoded.sonorities.length, "vertical sonority"),
+      value: countLabel(
+        decoded.sonorities.length,
+        "vertical sonority",
+        "vertical sonorities",
+      ),
     }),
   ];
   if (plan !== null) {
@@ -906,7 +960,7 @@ function midiImportView(
         value: `${countLabel(plan.measureCount, "bar")} · ${countLabel(plan.writtenChordCount, "chord")}${
           plan.unnamedSonorityCount === 0
             ? ""
-            : ` · ${countLabel(plan.unnamedSonorityCount, "sonority")} left unwritten`
+            : ` · ${countLabel(plan.unnamedSonorityCount, "sonority", "sonorities")} left unwritten`
         }`,
       }),
     );
@@ -940,6 +994,7 @@ function midiImportView(
     available: true,
     statusLabel,
     refusal: null,
+    salvage: salvageView(preview),
     summary:
       plan === null
         ? null
@@ -1046,6 +1101,7 @@ function viewFromSnapshot(
       canMoveSelection: selectionCount > 0,
       appendSectionLabel: "Append section",
       viewMode: presentation.viewMode,
+      layout: presentation.chartLayout,
       openMenuChordId: presentation.openMenuChordId,
       range: Object.freeze({
         active: presentation.rangeModeActive,
@@ -1397,6 +1453,8 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
   const [completionDialogOpen, setCompletionDialogOpen] = useState(false);
   const [completionReasonDraft, setCompletionReasonDraft] = useState("");
   const [viewMode, setViewMode] = useState<StudioViewMode>("compact");
+  /* V2R-4: sheet/grid layout, presentation-only like viewMode. */
+  const [chartLayout, setChartLayout] = useState<StudioChartLayout>("sheet");
   const [rangeModeActive, setRangeModeActive] = useState(false);
   const [rangeStartDraft, setRangeStartDraft] = useState("");
   const [rangeEndDraft, setRangeEndDraft] = useState("");
@@ -1779,6 +1837,7 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
     titleFeedback,
     uiRefusal,
     viewMode,
+    chartLayout,
     clearArmed,
     tempoDraft,
     tempoInvalid,
@@ -1897,6 +1956,19 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
           actions.readSectionPhrases(sectionId)?.phrases ?? [],
         romanForEvent: (eventId) =>
           actions.readEventAnalysis(eventId)?.roman ?? null,
+        /* V2R-4 grid-card lines. The function line keeps the first clause
+           ("Dominant", "Predominant") — the full sentence lives in the
+           detail panel; the notes line is the spelled tones verbatim. */
+        functionForEvent: (eventId) => {
+          const analysis = actions.readEventAnalysis(eventId);
+          if (analysis === null || analysis.outcome !== "analyzed") return null;
+          return analysis.functionSentence.split("—")[0]?.trim() ?? null;
+        },
+        notesForEvent: (eventId) => {
+          const tones = actions.readChordDetail(eventId)?.tones ?? [];
+          if (tones.length === 0) return null;
+          return tones.map((tone) => tone.name).join("  ");
+        },
       }}
       transport={{
         canPlay: snapshot.chordCount > 0,
@@ -2579,6 +2651,9 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
         },
         onViewModeChange: (mode) => {
           setViewMode(mode);
+        },
+        onChartLayoutChange: (layout) => {
+          setChartLayout(layout);
         },
         onSetSectionBoundary: (sectionId, boundary) => {
           recordEditResult(actions.setSectionBoundary(sectionId, boundary));

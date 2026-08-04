@@ -142,6 +142,15 @@ export type StudioSectionView = Readonly<{
 export type StudioViewMode = "compact" | "teaching";
 
 /**
+ * V2R-4 (jcpe-v2r-grid-uyyd): the chart's presentation layout — the engraved
+ * "sheet" of systems, or the "grid" of per-chord study cards. A layout is
+ * orthogonal to StudioViewMode on purpose: the reviewed U1 mode vocabulary
+ * (compact/teaching, fixture + validator pins) stays untouched, and both
+ * dimensions are presentation-only — toggling either mutates nothing.
+ */
+export type StudioChartLayout = "sheet" | "grid";
+
+/**
  * Presentation-only range state. The exact beat labels come from A0; the mode
  * flag and the draft field text are owned by the surface and never published.
  */
@@ -183,6 +192,8 @@ export type StudioChartView = Readonly<{
   appendSectionLabel: string;
   /** Presentation-only; toggling it changes no document state at all. */
   viewMode: StudioViewMode;
+  /** Presentation-only chart layout; same law as viewMode (V2R-4). */
+  layout: StudioChartLayout;
   range: StudioRangeView;
   /** The card whose More menu is open, or null. Presentation-only. */
   openMenuChordId: string | null;
@@ -486,11 +497,22 @@ export type StudioMidiImportSummaryView = Readonly<{
   chartText: string;
 }>;
 
+/**
+ * The salvage account when a preview came from repaired bytes (V2R-13):
+ * the honest one-sentence note plus one line per repair kind that fired.
+ * Null for a clean read — the panel must not imply repairs that never ran.
+ */
+export type StudioMidiImportSalvageView = Readonly<{
+  note: string;
+  repairLines: readonly string[];
+}>;
+
 export type StudioMidiImportView = Readonly<{
   /** False when the composition root wired no decoder into this session. */
   available: boolean;
   statusLabel: string;
   refusal: StudioMidiImportRefusalView | null;
+  salvage: StudioMidiImportSalvageView | null;
   summary: StudioMidiImportSummaryView | null;
   sonorities: readonly StudioMidiImportSonorityView[];
   blockedReason: string | null;
@@ -604,6 +626,8 @@ export type StudioShellCallbacks = Readonly<{
   onRangeClear: () => void;
   /** Presentation-only: swaps compact and teaching rendering. */
   onViewModeChange: (mode: StudioViewMode) => void;
+  /** Presentation-only: swaps the sheet and grid layouts (V2R-4). */
+  onChartLayoutChange: (layout: StudioChartLayout) => void;
 }>;
 
 /**
@@ -644,6 +668,14 @@ export type StudioPhraseSpanView = Readonly<{
 export type StudioChartAnnotationPorts = Readonly<{
   romanForEvent: (eventId: string) => string | null;
   phrasesForSection: (sectionId: string) => readonly StudioPhraseSpanView[];
+  /**
+   * V2R-4 grid-card lines: the harmonic-function clause and the spelled
+   * chord tones for one event. Null when the analysis honestly has nothing
+   * to say (no key, custom chord, refused resolution) — the card renders
+   * absence, never a guess.
+   */
+  functionForEvent: (eventId: string) => string | null;
+  notesForEvent: (eventId: string) => string | null;
 }>;
 
 export type StudioShellProps = Readonly<{

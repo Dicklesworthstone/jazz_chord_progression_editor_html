@@ -3,6 +3,7 @@ import { useState } from "preact/hooks";
 import { Button, VisuallyHidden } from "../primitives";
 import { activeTheme, toggleTheme } from "../theme";
 import type {
+  StudioChartLayout,
   StudioDocumentView,
   StudioShellCallbacks,
 } from "./studio-contract";
@@ -56,14 +57,24 @@ export type StudioHeaderProps = Readonly<{
     | "onRedo"
     | "onClearChart"
     | "onCopyShareLink"
+    | "onChartLayoutChange"
   >;
+  /** The chart's active presentation layout, for the Sheet/Edit tabs. */
+  chartLayout: StudioChartLayout;
 }>;
 
 export function StudioHeader({
   view,
   callbacks,
+  chartLayout,
   onOpenCommandLane,
-}: StudioHeaderProps & Readonly<{ onOpenCommandLane: () => void }>) {
+  onOpenStandards,
+}: StudioHeaderProps &
+  Readonly<{
+    onOpenCommandLane: () => void;
+    /** Opens the Standards modal where the library rail is hidden (<80rem). */
+    onOpenStandards: () => void;
+  }>) {
   return (
     <header class="studio-header" id="app-header">
       <div class="studio-brand">
@@ -85,6 +96,43 @@ export function StudioHeader({
           document-level commands. */}
       <div class="studio-header__spacer" aria-hidden="true" />
 
+      {/*
+        V2R-4 (jcpe-v2r-grid-uyyd): Sheet/Edit — the prototype's two ways of
+        looking at the same chart. Presentation-only; the underline marks the
+        active layout and toggling mutates nothing.
+      */}
+      <div
+        class="studio-layout-tabs"
+        role="group"
+        aria-label="Chart layout"
+        data-testid="chart-layout-tabs"
+      >
+        <button
+          class="studio-layout-tab"
+          id="studio-layout-sheet"
+          type="button"
+          aria-pressed={chartLayout === "sheet"}
+          data-active={chartLayout === "sheet" ? "true" : "false"}
+          onClick={() => {
+            callbacks.onChartLayoutChange("sheet");
+          }}
+        >
+          Sheet
+        </button>
+        <button
+          class="studio-layout-tab"
+          id="studio-layout-grid"
+          type="button"
+          aria-pressed={chartLayout === "grid"}
+          data-active={chartLayout === "grid" ? "true" : "false"}
+          onClick={() => {
+            callbacks.onChartLayoutChange("grid");
+          }}
+        >
+          Edit
+        </button>
+      </div>
+
       {/* The ⌘K route's visible door (jcpe-v2r-entry-5zz7). */}
       <button
         class="studio-header__type-changes"
@@ -94,6 +142,18 @@ export function StudioHeader({
       >
         <span>Type changes</span>
         <kbd aria-hidden="true">⌘K</kbd>
+      </button>
+      {/*
+        The Standards trigger mirrors the library rail exactly: CSS hides it
+        from 80rem up, where the rail's own list is on screen.
+      */}
+      <button
+        class="studio-header__standards"
+        id="studio-open-standards"
+        onClick={onOpenStandards}
+        type="button"
+      >
+        Standards
       </button>
 
       <div class="studio-document-actions">

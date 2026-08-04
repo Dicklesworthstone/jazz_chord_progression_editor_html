@@ -4,7 +4,11 @@ import { CommandLaneContent } from "./CommandLane";
 
 import { ChartWorkspace } from "./ChartWorkspace";
 import { HarmonyLens, HarmonyLensContent } from "./HarmonyLens";
-import { LibraryPanel, LibraryPanelContent } from "./LibraryPanel";
+import {
+  LibraryPanel,
+  LibraryPanelContent,
+  StandardProgressionList,
+} from "./LibraryPanel";
 import { StudioHeader } from "./StudioHeader";
 import { StudioShellNotice } from "./StudioShellNotice";
 import { TransportBar } from "./TransportBar";
@@ -297,6 +301,13 @@ export function StudioShell({
    * exist (V=grid V2R-4, I=detail V2R-7, ?=tour V2R-11).
    */
   const [commandLaneOpen, setCommandLaneOpen] = useState(false);
+  /*
+   * The Standards modal (jcpe-v2r-library-ulwb): the prototype's
+   * "Load a set of changes" surface for widths where the library rail is
+   * hidden. Open/closed is pure presentation; every row rides the same
+   * application-owned load as the rail list.
+   */
+  const [standardsOpen, setStandardsOpen] = useState(false);
   const completionDialogOpen =
     view.chart.completionDialog.open && view.chart.editRefusal !== null;
   const onUndoRef = useRef(shellCallbacks.onUndo);
@@ -327,9 +338,31 @@ export function StudioShell({
         else onUndoRef.current();
       }
     };
+    /*
+     * Bare-letter shortcuts never fire inside editing controls (U0 law) and
+     * never carry a modifier: L opens the Standards modal, matching the
+     * prototype's key map.
+     */
+    const onBareKey = (event: KeyboardEvent): void => {
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      const target = event.target;
+      const editingTarget =
+        target instanceof HTMLElement &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable);
+      if (editingTarget) return;
+      if (event.key.toLowerCase() === "l") {
+        event.preventDefault();
+        setStandardsOpen(true);
+      }
+    };
+    window.addEventListener("keydown", onBareKey);
     window.addEventListener("keydown", onKeyDown);
     return () => {
       window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keydown", onBareKey);
     };
   }, []);
 
@@ -362,8 +395,12 @@ export function StudioShell({
           <StudioHeader
             view={view.document}
             callbacks={shellCallbacks}
+            chartLayout={view.chart.layout}
             onOpenCommandLane={() => {
               setCommandLaneOpen(true);
+            }}
+            onOpenStandards={() => {
+              setStandardsOpen(true);
             }}
           />
 
@@ -380,6 +417,9 @@ export function StudioShell({
               onRecoveryDurationDraftChange={
                 callbacks.onRecoveryDurationDraftChange
               }
+              onOpenCommandLane={() => {
+                setCommandLaneOpen(true);
+              }}
               onQuickEntryClear={callbacks.onQuickEntryClear}
               onQuickEntryDraftChange={callbacks.onQuickEntryDraftChange}
               onQuickEntryInsert={shellCallbacks.onQuickEntryInsert}
@@ -460,6 +500,45 @@ export function StudioShell({
       </div>
 
       <div id="dialog-host">
+        {standardsOpen && !completionDialogOpen && !commandLaneOpen ? (
+          <Dialog
+            backgroundRootId="studio-shell-background"
+            busy={false}
+            closeLabel="Close the standards list"
+            content={
+              <div class="studio-standards-modal">
+                <StandardProgressionList
+                  grooveOptions={view.playback.groove.options}
+                  onLoadLibraryEntry={(entryId) => {
+                    callbacks.onLoadLibraryEntry(entryId);
+                    setStandardsOpen(false);
+                  }}
+                  variant="modal"
+                />
+              </div>
+            }
+            density="comfortable"
+            describedBy={[]}
+            description="Every entry loads as one undoable step with its reviewed groove and tempo."
+            disabled={false}
+            dismissibility={DISMISSIBLE}
+            focusTargets={{
+              triggerId: "studio-open-standards",
+              workflowTargetId: null,
+              workspaceId: "workspace",
+            }}
+            id="studio-standards-dialog"
+            initialFocus="heading"
+            initialFocusId={null}
+            invalid={false}
+            onContractRefusal={callbacks.onUiContractRefusal}
+            onDismiss={() => {
+              setStandardsOpen(false);
+            }}
+            open
+            title="Load a set of changes"
+          />
+        ) : null}
         {commandLaneOpen && !completionDialogOpen ? (
           <Dialog
             backgroundRootId="studio-shell-background"

@@ -15,6 +15,7 @@ const BASE_VIEW: Omit<StudioShellView, "layout"> = Object.freeze({
     available: false,
     statusLabel: "MIDI import is not available in this session.",
     refusal: null,
+    salvage: null,
     summary: null,
     sonorities: Object.freeze([]),
     blockedReason: null,
@@ -88,6 +89,8 @@ const BASE_VIEW: Omit<StudioShellView, "layout"> = Object.freeze({
     completionDialog: Object.freeze({ open: false, reasonDraft: "" }),
     openMenuChordId: null,
     viewMode: "compact",
+    /* V2R-4 (jcpe-v2r-grid-uyyd): layout is presentation-only like viewMode. */
+    layout: "sheet",
     range: Object.freeze({
       active: false,
       endBeatLabel: null,
@@ -280,6 +283,7 @@ function ResponsiveStaleOwnerHarness() {
     onRangeDraftCommit: () => undefined,
     onRangeCancel: () => undefined,
     onViewModeChange: () => undefined,
+    onChartLayoutChange: () => undefined,
     onDismissUiRefusal: () => {
       setUiRefusal(null);
     },
@@ -295,6 +299,8 @@ function ResponsiveStaleOwnerHarness() {
     },
     h(StudioShell, {
       annotations: {
+        functionForEvent: () => null,
+        notesForEvent: () => null,
         phrasesForSection: () => [],
         romanForEvent: () => null,
       },

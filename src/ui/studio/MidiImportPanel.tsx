@@ -27,6 +27,8 @@ export type MidiImportPanelProps = Readonly<{
   onChooseFile: (file: File) => void;
   onCommit: () => void;
   onDiscard: () => void;
+  /** Opens the ⌘K command lane — the paste-chart-text route lives there. */
+  onOpenCommandLane?: (() => void) | undefined;
 }>;
 
 export function MidiImportPanel({
@@ -35,6 +37,7 @@ export function MidiImportPanel({
   onChooseFile,
   onCommit,
   onDiscard,
+  onOpenCommandLane,
 }: MidiImportPanelProps) {
   const headingId = `studio-midi-import-heading-${context}`;
   const fieldId = `studio-midi-import-file-${context}`;
@@ -46,14 +49,21 @@ export function MidiImportPanel({
       data-testid={`midi-import-${context}`}
       aria-labelledby={headingId}
     >
+      <p class="studio-kicker">Import</p>
       <h3 id={headingId}>Import a MIDI file</h3>
-      <label class="studio-midi-import__label" for={fieldId}>
-        Standard MIDI file
-      </label>
       <p class="studio-midi-import__hint" id={`${fieldId}-hint`}>
         The file is read on this device and never uploaded. Nothing is added to
         the chart until you press Add.
       </p>
+      {/*
+        The dashed drop-zone treatment wraps the REAL file input: the label
+        forwards the click, and the input itself stays focusable and visible
+        to assistive tech (clipped, not display:none).
+      */}
+      <label class="studio-midi-import__choose" for={fieldId}>
+        <span class="studio-midi-import__choose-copy">Choose a MIDI file</span>
+        <span class="studio-midi-import__choose-hint">Standard MIDI file</span>
+      </label>
       <input
         accept=".mid,.midi,audio/midi,audio/x-midi"
         aria-describedby={`${fieldId}-hint ${statusId}`}
@@ -67,6 +77,17 @@ export function MidiImportPanel({
         }}
         type="file"
       />
+      {onOpenCommandLane === undefined ? null : (
+        <button
+          class="studio-midi-import__paste"
+          id={`studio-midi-import-paste-${context}`}
+          onClick={onOpenCommandLane}
+          type="button"
+        >
+          <span>Paste chart text</span>
+          <kbd aria-hidden="true">⌘K</kbd>
+        </button>
+      )}
 
       <p
         class="studio-midi-import__status"
@@ -90,6 +111,28 @@ export function MidiImportPanel({
           </p>
           <code class="studio-midi-import__code">{view.refusal.code}</code>
           <p class="studio-midi-import__refusal-where">{view.refusal.where}</p>
+        </div>
+      )}
+
+      {/*
+        The salvage account renders BEFORE the summary it qualifies: a
+        preview built from repaired bytes must say so before it says
+        anything else (V2R-13, jcpe-v2r-import-ariu).
+      */}
+      {view.salvage === null ? null : (
+        <div
+          class="studio-midi-import__salvage"
+          data-testid="midi-import-salvage"
+          role="status"
+        >
+          <p class="studio-midi-import__salvage-note">{view.salvage.note}</p>
+          {view.salvage.repairLines.length === 0 ? null : (
+            <ul class="studio-midi-import__salvage-repairs">
+              {view.salvage.repairLines.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
 

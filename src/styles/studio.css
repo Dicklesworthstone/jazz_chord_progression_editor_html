@@ -2320,38 +2320,154 @@
   gap: var(--space-1);
 }
 
-.studio-progression-list {
+/* ------------------------------------------- standard progressions (V2R-9) */
+
+.studio-standards-section {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-chart);
+}
+
+.studio-standards-section h3 {
+  font-size: var(--text-sm);
+  font-weight: 650;
+}
+
+.studio-standards {
+  display: flex;
+  flex-direction: column;
   margin: 0;
   padding: 0;
+  border-block-start: var(--border-width) solid var(--line-2);
   list-style: none;
 }
 
-.studio-progression {
+.studio-standards__row {
+  display: flex;
+  flex-direction: column;
+  border-block-end: var(--border-width) solid var(--line-2);
+}
+
+.studio-standards__load {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-}
-
-.studio-progression .ui-button {
-  justify-content: flex-start;
-  inline-size: 100%;
+  min-block-size: var(--touch-target);
+  padding: var(--space-2) var(--space-2) var(--space-3);
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
   text-align: start;
 }
 
-.studio-progression__note {
+.studio-standards__load:hover {
+  background: var(--hover);
+}
+
+.studio-standards__load:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: calc(-1 * var(--focus-width));
+}
+
+.studio-standards__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.studio-standards__title {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  line-height: var(--line-tight);
+}
+
+.studio-standards__meta {
+  flex: 0 0 auto;
+  color: var(--text-subtle);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.studio-standards__preview {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-family: var(--font-chord);
+  font-size: var(--text-sm);
+  line-height: var(--line-normal);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.studio-standards__note {
+  margin: 0;
+  padding: 0 var(--space-2) var(--space-3);
   color: var(--text-subtle);
   font-size: var(--text-xs);
   line-height: var(--line-normal);
   text-wrap: pretty;
 }
 
-.studio-progression__kicker {
+.studio-standards__kicker {
   color: var(--accent);
   font-weight: 650;
   letter-spacing: 0.02em;
+}
+
+/* The modal variant breathes wider and keeps its provenance notes visible. */
+.studio-standards-modal {
+  inline-size: min(48rem, 82vw);
+  max-block-size: 70vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.studio-standards[data-variant="modal"] .studio-standards__load {
+  padding-block: var(--space-3);
+}
+
+.studio-standards[data-variant="modal"] .studio-standards__preview {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+/* The header trigger mirrors rail visibility: hidden once the rail shows. */
+.studio-header__standards {
+  min-block-size: 2rem;
+  padding: 0 var(--space-3);
+  border: var(--border-width) solid var(--rule-2);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.studio-header__standards:hover {
+  border-color: var(--ink);
+}
+
+.studio-header__standards:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+@media (min-width: 80rem) {
+  .studio-header__standards {
+    display: none;
+  }
 }
 
 .studio-quick-entry__palette-roots .ui-button,
@@ -3404,16 +3520,109 @@
   line-height: var(--line-normal);
 }
 
-.studio-midi-import__field {
-  max-width: 100%;
-  min-width: 0;
-  padding: var(--space-2);
-  border: var(--border-width) solid var(--border-default);
+/*
+ * The dashed drop-zone label forwards clicks to the real input, which stays
+ * clipped-visible (never display:none) so focus and assistive tech keep the
+ * genuine control (jcpe-v2r-import-ariu).
+ */
+.studio-midi-import__choose {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-2);
+  border: var(--border-width) dashed var(--rule-2);
   border-radius: var(--radius-sm);
-  background: var(--surface-sunken);
+  cursor: pointer;
+  text-align: center;
+}
+
+.studio-midi-import__choose:hover {
+  border-color: var(--ink);
+  background: var(--hover);
+}
+
+.studio-midi-import__choose-copy {
   color: var(--text-primary);
-  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.studio-midi-import__choose-hint {
+  color: var(--text-subtle);
   font-size: var(--text-xs);
+}
+
+.studio-midi-import__paste {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-block-size: var(--control-min-block);
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width) solid var(--rule);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.studio-midi-import__paste:hover {
+  border-color: var(--ink);
+}
+
+.studio-midi-import__paste:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.studio-midi-import__paste kbd {
+  color: var(--text-subtle);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+/* The salvage account: repairs stated before the summary they qualify. */
+.studio-midi-import__salvage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border-inline-start: 3px solid var(--state-warning);
+  border-radius: var(--radius-xs);
+  background: var(--tint);
+}
+
+.studio-midi-import__salvage-note {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: var(--text-xs);
+  line-height: var(--line-normal);
+}
+
+.studio-midi-import__salvage-repairs {
+  margin: 0;
+  padding-inline-start: var(--space-4);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.studio-midi-import__field {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.studio-midi-import__field:focus-visible + .studio-midi-import__paste,
+.studio-midi-import__choose:has(+ .studio-midi-import__field:focus-visible) {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
 }
 
 .studio-midi-import__field::file-selector-button {
@@ -4592,4 +4801,103 @@
   line-height: 1.5;
   max-inline-size: 40ch;
   text-wrap: pretty;
+}
+
+/* -------------------------------------------- V2R-4: layout tabs + grid */
+
+/*
+ * Sheet/Edit tabs (jcpe-v2r-grid-uyyd): the prototype's two ways of looking
+ * at one chart. Text buttons; an ink underline marks the active layout.
+ */
+.studio-layout-tabs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.studio-layout-tab {
+  position: relative;
+  min-block-size: var(--control-min-block);
+  padding: var(--space-1) var(--space-2);
+  border: 0;
+  background: transparent;
+  color: var(--ink-3);
+  font-size: 0.78125rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+}
+
+.studio-layout-tab:hover {
+  color: var(--ink);
+}
+
+.studio-layout-tab:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: calc(-1 * var(--focus-offset));
+}
+
+.studio-layout-tab[data-active="true"] {
+  color: var(--ink);
+}
+
+.studio-layout-tab[data-active="true"]::after {
+  content: "";
+  position: absolute;
+  inset-inline: var(--space-2);
+  inset-block-end: 3px;
+  block-size: 2px;
+  background: var(--ink);
+}
+
+/*
+ * The grid (Edit) layout: the same DOM the sheet renders — same order, same
+ * listeners, same roving focus — flowed into study cards. The engraved
+ * side barlines, staff slashes, and phrase lanes belong to the sheet and
+ * rest here; every card instead carries its roman/function/notes lines.
+ */
+[data-chart-layout="grid"] .studio-system {
+  border-inline: 0;
+  background: transparent;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-2);
+}
+
+[data-chart-layout="grid"] .studio-system[data-last-system="true"]::after {
+  content: none;
+}
+
+[data-chart-layout="grid"] .studio-measure-list > li {
+  border-block-start: 0;
+  background: var(--paper);
+  border: var(--border-width) solid var(--line-2);
+  border-radius: var(--radius-sm);
+}
+
+[data-chart-layout="grid"] .studio-measure__staff,
+[data-chart-layout="grid"] .studio-chord-card__slashes {
+  display: none;
+}
+
+[data-chart-layout="grid"] .studio-chord-card__function {
+  color: var(--ink-3);
+  font-size: var(--text-xs);
+}
+
+[data-chart-layout="grid"] .studio-chord-card__notes {
+  color: var(--ink-3);
+  font-family: var(--font-chord);
+  font-size: var(--text-sm);
+  letter-spacing: 0.06em;
+}
+
+/* The prototype's selection mark in the grid: a blue inline-start edge. */
+[data-chart-layout="grid"] .studio-chord-card[data-selected="true"] {
+  box-shadow: inset 2.5px 0 0 var(--blue);
+}
+
+@media (min-width: 64rem) {
+  [data-chart-layout="grid"] .studio-system {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }

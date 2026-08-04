@@ -170,6 +170,8 @@ export type LibraryPanelContentProps = Readonly<{
   onRecoveryAcknowledgeChange: (acknowledged: boolean) => void;
   onRecoveryDurationDraftChange: (value: string) => void;
   onInsertRecoveredChord: (globalOrdinal: number) => void;
+  /** Opens the ⌘K command lane; the import panel's paste route points there. */
+  onOpenCommandLane?: (() => void) | undefined;
 }>;
 
 /**
@@ -340,7 +342,6 @@ function QuickEntryPanel({
   onDraftChange,
   onInsert,
   onClear,
-  onLoadLibraryEntry,
   onRecoveryAcknowledgeChange,
   onRecoveryDurationDraftChange,
   onInsertRecoveredChord,
@@ -349,7 +350,6 @@ function QuickEntryPanel({
   onDraftChange: (value: string) => void;
   onInsert: () => void;
   onClear: () => void;
-  onLoadLibraryEntry: (entryId: string) => void;
   onRecoveryAcknowledgeChange: (acknowledged: boolean) => void;
   onRecoveryDurationDraftChange: (value: string) => void;
   onInsertRecoveredChord: (globalOrdinal: number) => void;
@@ -656,55 +656,91 @@ function QuickEntryPanel({
           />
         ))}
       </div>
-      {/*
-        The reviewed catalogue (jcpe-lib1). Same typed path as the demos
-        above: draft, then insert. Each row states its provenance, because
-        a public-domain transcription, a shared harmonic device, and an
-        original study are three different claims and must not read alike.
-      */}
-      <div
-        class="studio-quick-entry__library"
-        role="group"
-        aria-label="Progression library"
-      >
-        <span class="studio-quick-entry__demos-label">Library:</span>
-        <ul class="studio-progression-list">
-          {PROGRESSION_LIBRARY.map((entry) => (
-            <li class="studio-progression" key={entry.id}>
-              <Button
-                busy={false}
-                density="dense"
-                describedBy={[`studio-progression-note-${entry.id}`]}
-                disabled={false}
-                id={`studio-progression-${entry.id}`}
-                invalid={false}
-                label={entry.title}
-                onAction={() => {
-                  /*
-                   * One gesture, application-owned: replace the chart,
-                   * retitle it, set the entry's groove and tempo. The
-                   * earlier chained-callback wiring APPENDED the chart
-                   * after whatever was written and committed a stale
-                   * tempo draft — the owner heard six bars of the wrong
-                   * song at the wrong speed.
-                   */
-                  onLoadLibraryEntry(entry.id);
-                }}
-                type="button"
-                variant="secondary"
-              />
-              <p
-                class="studio-progression__note"
-                id={`studio-progression-note-${entry.id}`}
-              >
-                <span class="studio-progression__kicker">{entry.kicker}</span>
-                {` ${entry.note}`}
-              </p>
-            </li>
-          ))}
-        </ul>
-      </div>
     </section>
+  );
+}
+
+/** "132 bpm · Medium swing" from an entry's reviewed judgments. */
+function standardMeta(
+  entry: (typeof PROGRESSION_LIBRARY)[number],
+  grooveLabels: ReadonlyMap<string, string>,
+): string {
+  const groove = grooveLabels.get(entry.grooveStyleId) ?? entry.grooveStyleId;
+  return entry.tempoBpm === undefined
+    ? groove
+    : `${String(entry.tempoBpm)} bpm · ${groove}`;
+}
+
+/** The chart text as one engraved preview line: │ between bars, ellipsized. */
+function standardPreview(chartText: string): string {
+  return chartText.replaceAll("|", "│").replaceAll(/\s+/gu, " ").trim();
+}
+
+/**
+ * The reviewed catalogue as the prototype's Standard-progressions rows
+ * (jcpe-v2r-library-ulwb): whole-row buttons with the title, the reviewed
+ * tempo·groove meta, an engraved one-line preview, and — in the roomy modal
+ * variant — the provenance note, because a public-domain transcription, a
+ * shared device, and an original study are three different claims and must
+ * not read alike. Every row rides the same application-owned load: one
+ * gesture replaces the chart, retitles it, and commits the entry's groove
+ * and tempo (the earlier chained-callback wiring appended six bars of the
+ * wrong song at the wrong speed).
+ */
+export function StandardProgressionList({
+  variant,
+  grooveOptions,
+  onLoadLibraryEntry,
+}: Readonly<{
+  variant: "rail" | "modal";
+  grooveOptions: readonly Readonly<{ id: string; label: string }>[];
+  onLoadLibraryEntry: (entryId: string) => void;
+}>) {
+  const grooveLabels = new Map(
+    grooveOptions.map((option) => [option.id, option.label]),
+  );
+  return (
+    <ul
+      class="studio-standards"
+      data-variant={variant}
+      data-testid={`standards-list-${variant}`}
+    >
+      {PROGRESSION_LIBRARY.map((entry) => (
+        <li class="studio-standards__row" key={entry.id}>
+          <button
+            aria-describedby={`studio-progression-note-${entry.id}-${variant}`}
+            class="studio-standards__load"
+            id={
+              variant === "rail"
+                ? `studio-progression-${entry.id}`
+                : `studio-progression-${entry.id}-modal`
+            }
+            onClick={() => {
+              onLoadLibraryEntry(entry.id);
+            }}
+            type="button"
+          >
+            <span class="studio-standards__head">
+              <span class="studio-standards__title">{entry.title}</span>
+              <span class="studio-standards__meta">
+                {standardMeta(entry, grooveLabels)}
+              </span>
+            </span>
+            <span class="studio-standards__preview">
+              {standardPreview(entry.chartText)}
+            </span>
+          </button>
+          <p
+            class="studio-standards__note"
+            id={`studio-progression-note-${entry.id}-${variant}`}
+            hidden={variant === "rail" ? true : undefined}
+          >
+            <span class="studio-standards__kicker">{entry.kicker}</span>
+            {` ${entry.note}`}
+          </p>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -727,6 +763,7 @@ export function LibraryPanelContent({
   onRecoveryAcknowledgeChange,
   onRecoveryDurationDraftChange,
   onInsertRecoveredChord,
+  onOpenCommandLane,
 }: LibraryPanelContentProps) {
   return (
     <section
@@ -760,6 +797,7 @@ export function LibraryPanelContent({
           onChooseFile={onMidiImportChooseFile}
           onCommit={onMidiImportCommit}
           onDiscard={onMidiImportDiscard}
+          onOpenCommandLane={onOpenCommandLane}
           view={midiImport}
         />
       ) : null}
@@ -770,10 +808,27 @@ export function LibraryPanelContent({
         onInsert={onQuickEntryInsert}
         onInsertRecoveredChord={onInsertRecoveredChord}
         onRecoveryAcknowledgeChange={onRecoveryAcknowledgeChange}
-        onLoadLibraryEntry={onLoadLibraryEntry}
         onRecoveryDurationDraftChange={onRecoveryDurationDraftChange}
         view={quickEntry}
       />
+
+      {/*
+        The prototype's Standard-progressions surface (jcpe-v2r-library-ulwb):
+        the reviewed catalogue as engraved rows. Ids stay stable in the rail
+        variant so the load path's pins survive.
+      */}
+      <section
+        class="studio-standards-section"
+        aria-labelledby={`studio-standards-heading-${context}`}
+      >
+        <p class="studio-kicker">Standard progressions</p>
+        <h3 id={`studio-standards-heading-${context}`}>Load a set of changes</h3>
+        <StandardProgressionList
+          grooveOptions={playback.groove.options}
+          onLoadLibraryEntry={onLoadLibraryEntry}
+          variant="rail"
+        />
+      </section>
 
       {/*
         Playback settings live with the writing tools rather than in the
@@ -916,6 +971,8 @@ export type LibraryPanelProps = Readonly<{
   onRecoveryAcknowledgeChange: (acknowledged: boolean) => void;
   onRecoveryDurationDraftChange: (value: string) => void;
   onInsertRecoveredChord: (globalOrdinal: number) => void;
+  /** Opens the ⌘K command lane; the import panel's paste route points there. */
+  onOpenCommandLane?: (() => void) | undefined;
 }>;
 
 export function LibraryPanel({
@@ -938,6 +995,7 @@ export function LibraryPanel({
   onRecoveryAcknowledgeChange,
   onRecoveryDurationDraftChange,
   onInsertRecoveredChord,
+  onOpenCommandLane,
 }: LibraryPanelProps) {
   const headingId = "studio-library-heading";
 
@@ -965,6 +1023,7 @@ export function LibraryPanel({
             onMidiImportCommit={onMidiImportCommit}
             onMidiImportDiscard={onMidiImportDiscard}
             onInsertRecoveredChord={onInsertRecoveredChord}
+            onOpenCommandLane={onOpenCommandLane}
             onQuickEntryClear={onQuickEntryClear}
             onQuickEntryDraftChange={onQuickEntryDraftChange}
             onQuickEntryInsert={onQuickEntryInsert}
