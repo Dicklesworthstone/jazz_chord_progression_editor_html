@@ -1398,17 +1398,32 @@
  * forbids horizontal scroll — and sits under the card menus (z 30).
  */
 .studio-context-bar {
-  position: sticky;
-  inset-block-end: 0;
-  z-index: 20;
+  /*
+   * A fixed overlay, never in-flow: appearing at selection time must not
+   * move a single pixel of chart geometry (a sticky bar broke the exact
+   * 8 px drag-threshold law the moment pointerdown selected a card). It
+   * floats just above the transport, whose height is pinned.
+   */
+  position: fixed;
+  inset-block-end: calc(
+    var(--transport-min-block) + env(safe-area-inset-bottom, 0px) +
+      var(--space-2)
+  );
+  inset-inline-start: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: var(--space-2);
+  max-inline-size: min(46rem, calc(100vw - 2 * var(--space-3)));
   padding: var(--space-2) var(--space-3);
-  border-block-start: var(--border-width) solid var(--border-default);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-lg);
   background: color-mix(in srgb, var(--surface-raised) 92%, transparent);
   backdrop-filter: blur(6px);
+  box-shadow: var(--shadow-2);
 }
 
 .studio-context-bar__status {

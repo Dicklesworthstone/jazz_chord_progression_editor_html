@@ -405,11 +405,11 @@ test.describe("U1-TRACE-BOOKMARKS selection, range, and the playhead", () => {
     );
     for (const index of [0, 1, 2]) {
       await expect(cards(page).nth(index)).toHaveAttribute(
-        "data-in-range",
+        "data-selected",
         "true",
       );
     }
-    await expect(cards(page).nth(3)).toHaveAttribute("data-in-range", "false");
+    await expect(cards(page).nth(3)).toHaveAttribute("data-selected", "false");
     // The explicit range mode was never entered.
     await expect(
       page.getByRole("button", { exact: true, name: "Select range" }),
@@ -431,10 +431,10 @@ test.describe("U1-TRACE-BOOKMARKS selection, range, and the playhead", () => {
     await expect(page.getByTestId("chart-selection-status")).toContainText(
       "3 chords selected",
     );
-    await expect(cards(page).nth(0)).toHaveAttribute("data-in-range", "false");
+    await expect(cards(page).nth(0)).toHaveAttribute("data-selected", "false");
     for (const index of [1, 2, 3]) {
       await expect(cards(page).nth(index)).toHaveAttribute(
-        "data-in-range",
+        "data-selected",
         "true",
       );
     }
@@ -452,11 +452,11 @@ test.describe("U1-TRACE-BOOKMARKS selection, range, and the playhead", () => {
     await expect(page.getByTestId("chart-selection-status")).toContainText(
       "2 chords selected",
     );
-    // Exactly bar 2's chords — bar 1 stays out of the range.
-    await expect(cards(page).nth(0)).toHaveAttribute("data-in-range", "false");
-    await expect(cards(page).nth(1)).toHaveAttribute("data-in-range", "false");
-    await expect(cards(page).nth(2)).toHaveAttribute("data-in-range", "true");
-    await expect(cards(page).nth(3)).toHaveAttribute("data-in-range", "true");
+    // Exactly bar 2's chords — bar 1 stays outside the selection.
+    await expect(cards(page).nth(0)).toHaveAttribute("data-selected", "false");
+    await expect(cards(page).nth(1)).toHaveAttribute("data-selected", "false");
+    await expect(cards(page).nth(2)).toHaveAttribute("data-selected", "true");
+    await expect(cards(page).nth(3)).toHaveAttribute("data-selected", "true");
 
     // The bar's verbs apply to the bar selection: one Delete, one Undo.
     await page

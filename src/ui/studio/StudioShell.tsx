@@ -133,12 +133,17 @@ export function StudioShell({
     }
   }
   const selectionPhrase = (): string | null => {
-    const ranged = [...chordPlaces.values()].filter((place) => place.inRange);
-    if (ranged.length > 1) return `${String(ranged.length)} chords`;
-    const chosen = [...chordPlaces.values()].find((place) => place.selected);
-    return chosen === undefined
+    // A multi-chord selection marks every member `selected`; the separate
+    // range feature marks `inRange`. Either plurality reads as "N chords".
+    const places = [...chordPlaces.values()];
+    const chosen = places.filter((place) => place.selected);
+    const ranged = places.filter((place) => place.inRange);
+    const plural = Math.max(chosen.length, ranged.length);
+    if (plural > 1) return `${String(plural)} chords`;
+    const single = chosen[0];
+    return single === undefined
       ? null
-      : `${chosen.symbol} from bar ${String(chosen.bar)}`;
+      : `${single.symbol} from bar ${String(single.bar)}`;
   };
   const stage = (sentence: string | null): void => {
     if (sentence !== null) pendingNotice.current = { revisionLabel, sentence };

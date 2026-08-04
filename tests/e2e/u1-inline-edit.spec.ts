@@ -368,33 +368,36 @@ test.describe("U1-TRACE-INLINE inline symbol and duration editing", () => {
     await openStudio(page);
     await typeAndInsert(page, "Dm7:2 G7:2");
 
-    // First activation selects; the symbol then advertises re-entry.
-    const first = cards(page).nth(0);
-    await first.locator(".studio-chord-card__symbol").click();
-    await expect(first).toHaveAttribute("data-selected", "true");
+    // The insert leaves the first chord selected, so the journey starts on
+    // the second card: its first activation selects, never edits.
+    const second = cards(page).nth(1);
+    await second.locator(".studio-chord-card__symbol").click();
+    await expect(second).toHaveAttribute("data-selected", "true");
     await expect(page.getByTestId("inline-symbol-editor")).toHaveCount(0);
-    await expect(first.locator(".studio-chord-card__symbol")).toHaveAttribute(
+    await expect(second.locator(".studio-chord-card__symbol")).toHaveAttribute(
       "title",
       /press F2/,
     );
 
-    // Second activation on the already-selected symbol opens the editor.
-    await first.locator(".studio-chord-card__symbol").click();
+    // Activating the already-selected symbol re-enters it for editing.
+    await second.locator(".studio-chord-card__symbol").click();
     const editor = page.getByTestId("inline-symbol-editor");
     await expect(editor).toBeVisible();
-    await editor.fill("Dm9");
+    await editor.fill("G9");
     await page.keyboard.press("Enter");
     await expect(editor).toHaveCount(0);
-    await expect(cards(page).nth(0)).toContainText("Dm9");
+    await expect(cards(page).nth(1)).toContainText("G9");
 
-    // Shift-activation on a selected symbol still extends — never edits.
+    // Shift-activation extends the SELECTION (every member wears
+    // data-selected) and never falls into the editor.
     await cards(page).nth(0).click();
     await cards(page)
       .nth(1)
       .locator(".studio-chord-card__symbol")
       .click({ modifiers: ["Shift"] });
     await expect(page.getByTestId("inline-symbol-editor")).toHaveCount(0);
-    await expect(cards(page).nth(1)).toHaveAttribute("data-in-range", "true");
+    await expect(cards(page).nth(0)).toHaveAttribute("data-selected", "true");
+    await expect(cards(page).nth(1)).toHaveAttribute("data-selected", "true");
     expectCleanDiagnostics(diagnostics);
   });
 });

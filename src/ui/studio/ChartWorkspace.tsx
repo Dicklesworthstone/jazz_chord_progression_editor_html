@@ -468,11 +468,12 @@ export function ChartWorkspace({
   const chartHasSelection = allChords.some(
     (chord) => chord.selected || chord.inRange,
   );
+  const selectedChords = allChords.filter((chord) => chord.selected);
   const rangedCount = allChords.filter((chord) => chord.inRange).length;
   const singleSelectedChordId =
-    rangedCount > 1
-      ? null
-      : (allChords.find((chord) => chord.selected)?.id ?? null);
+    selectedChords.length === 1 && rangedCount <= 1
+      ? (selectedChords[0]?.id ?? null)
+      : null;
 
   /**
    * jcpe-disi.5: bar selection is range selection over the bar's chords —
