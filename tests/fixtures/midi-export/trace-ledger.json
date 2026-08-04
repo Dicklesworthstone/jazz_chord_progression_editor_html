@@ -1,0 +1,111 @@
+{
+  "schema": "changes.fixtures.e1-trace-ledger.v1",
+  "fixtureVersion": 1,
+  "reciprocityLaw": "Every trace names at least one existing case; every case and mutation control belongs to at least one trace; a case lists a trace id exactly when that trace lists the case id; every evidence owner is a named future test file for E1/build (or this package's own static test for authority-integrity).",
+  "traces": [
+    {
+      "id": "E1-TRACE-BYTES",
+      "requirement": "SMF headers, chunk lengths, variable-length quantities, running status, and byte order are deterministic and parse independently as valid format-1 files.",
+      "parentSource": "E1 invariants and REBUILD_PLAN 16.3",
+      "caseIds": ["E1-GLD-001", "E1-GLD-002", "E1-GLD-003", "E1-GLD-004", "E1-REF-015", "E1-LIM-004"],
+      "controlIds": ["E1-MUT-005", "E1-MUT-016"],
+      "evidenceOwner": "tests/unit/midi-export-bytes.test.ts"
+    },
+    {
+      "id": "E1-TRACE-ORDERING",
+      "requirement": "Ascending ticks; at an equal tick meta precedes channel, note-offs precede note-ons, and equal kinds order by ascending note number.",
+      "parentSource": "REBUILD_PLAN 16.3 (note-off ordering before note-on at equal ticks)",
+      "caseIds": ["E1-GLD-002", "E1-GLD-003", "E1-REF-009"],
+      "controlIds": ["E1-MUT-009"],
+      "evidenceOwner": "tests/unit/midi-export-ordering.test.ts"
+    },
+    {
+      "id": "E1-TRACE-TEMPO",
+      "requirement": "Integer tempo encodes as nearest microseconds per quarter with the exact rational rounding error reported; 20 and 400 are inclusive bounds.",
+      "parentSource": "REBUILD_PLAN 9.6 and 16.3",
+      "caseIds": ["E1-GLD-001", "E1-GLD-002", "E1-GLD-005", "E1-GLD-006", "E1-REF-007"],
+      "controlIds": ["E1-MUT-008"],
+      "evidenceOwner": "tests/unit/midi-export-tempo.test.ts"
+    },
+    {
+      "id": "E1-TRACE-METER",
+      "requirement": "Time-signature meta carries beatsPerBar, log2(beatUnit), 24, 8; non-power-of-two units refuse.",
+      "parentSource": "SMF 1.0 time-signature meta and the domain meter shape",
+      "caseIds": ["E1-GLD-002", "E1-REF-008"],
+      "controlIds": [],
+      "evidenceOwner": "tests/unit/midi-export-tempo.test.ts"
+    },
+    {
+      "id": "E1-TRACE-MARKERS",
+      "requirement": "Markers bind to plan events, sort by tick then section-before-chord then bound-event ordinal, refuse unbound or duplicate bindings, and carry text verbatim.",
+      "parentSource": "REBUILD_PLAN 16.3 (conductor track markers; symbols retained in marker text)",
+      "caseIds": ["E1-GLD-001", "E1-GLD-002", "E1-GLD-005", "E1-REF-013", "E1-REF-014"],
+      "controlIds": ["E1-MUT-007"],
+      "evidenceOwner": "tests/unit/midi-export-markers.test.ts"
+    },
+    {
+      "id": "E1-TRACE-LOSSES",
+      "requirement": "Enharmonic spelling, absent chord annotations, and unrepresentable loop ranges are reported as explicit losses, never silently dropped.",
+      "parentSource": "E1 required implementation (explicit spelling/annotation losses) and REBUILD_PLAN 16.3",
+      "caseIds": ["E1-GLD-003", "E1-GLD-005", "E1-GLD-006"],
+      "controlIds": ["E1-MUT-010"],
+      "evidenceOwner": "tests/unit/midi-export-losses.test.ts"
+    },
+    {
+      "id": "E1-TRACE-GATES",
+      "requirement": "Gate ticks are exact: one-tick durations keep their full gate, gates below one tick or above the duration refuse.",
+      "parentSource": "P0 articulation policy and E1 exact-gate requirement",
+      "caseIds": ["E1-GLD-004", "E1-REF-011"],
+      "controlIds": [],
+      "evidenceOwner": "tests/unit/midi-export-bytes.test.ts"
+    },
+    {
+      "id": "E1-TRACE-REPORT",
+      "requirement": "The report states writer pins, tempo encoding with bounded error, counts, byte length, total ticks, filename, and losses exactly.",
+      "parentSource": "E1 required implementation (report nearest-microsecond conversion and losses)",
+      "caseIds": ["E1-GLD-001"],
+      "controlIds": ["E1-MUT-006"],
+      "evidenceOwner": "tests/unit/midi-export-report.test.ts"
+    },
+    {
+      "id": "E1-TRACE-REFUSALS",
+      "requirement": "Every reachable refusal code fires from its dedicated near-miss with the documented pointer under the frozen precedence.",
+      "parentSource": "E1 bead (malformed/near-miss cases) and the section-2 precedence",
+      "caseIds": ["E1-REF-001", "E1-REF-002", "E1-REF-003", "E1-REF-004", "E1-REF-005", "E1-REF-006", "E1-REF-007", "E1-REF-008", "E1-REF-009", "E1-REF-010", "E1-REF-011", "E1-REF-012", "E1-REF-013", "E1-REF-014", "E1-REF-015"],
+      "controlIds": ["E1-MUT-011"],
+      "evidenceOwner": "tests/unit/midi-export-refusals.test.ts"
+    },
+    {
+      "id": "E1-TRACE-LIMITS",
+      "requirement": "Text, marker, and VLQ bounds hold exactly at their edges: acceptance at each cap, refusal one past it.",
+      "parentSource": "E1 bead (limit cases) and the module limits",
+      "caseIds": ["E1-LIM-001", "E1-LIM-002", "E1-LIM-003", "E1-LIM-004", "E1-LIM-005"],
+      "controlIds": ["E1-MUT-012"],
+      "evidenceOwner": "tests/unit/midi-export-limits.test.ts"
+    },
+    {
+      "id": "E1-TRACE-FILENAME",
+      "requirement": "Filenames derive deterministically from the document id under the frozen sanitize-truncate law; object URLs are never created in the export layer.",
+      "parentSource": "E1 bead (filenames and object-URL cleanup)",
+      "caseIds": ["E1-LIM-005", "E1-LIM-006"],
+      "controlIds": ["E1-MUT-013"],
+      "evidenceOwner": "tests/unit/midi-export-report.test.ts"
+    },
+    {
+      "id": "E1-TRACE-STALE",
+      "requirement": "A request whose document id does not match the plan refuses rather than exporting stale state.",
+      "parentSource": "E1 invariants (never export stale state)",
+      "caseIds": ["E1-REF-005"],
+      "controlIds": [],
+      "evidenceOwner": "tests/unit/midi-export-refusals.test.ts"
+    },
+    {
+      "id": "E1-TRACE-AUTHORITY-INTEGRITY",
+      "requirement": "The fixture package itself is mutation-sensitive: manifest constants match the frozen module, byte goldens cannot drift, trace reciprocity holds, and provenance flags cannot flip silently.",
+      "parentSource": "E1 bead exit criteria (mutation-sensitive contract, independent authorship)",
+      "caseIds": ["E1-GLD-001"],
+      "controlIds": ["E1-MUT-001", "E1-MUT-002", "E1-MUT-003", "E1-MUT-004", "E1-MUT-014", "E1-MUT-015"],
+      "evidenceOwner": "tests/static/e1-contract.test.ts"
+    }
+  ]
+}

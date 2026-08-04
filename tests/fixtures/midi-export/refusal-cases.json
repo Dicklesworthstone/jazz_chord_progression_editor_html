@@ -1,0 +1,26 @@
+{
+  "schema": "changes.fixtures.e1-refusal-cases.v1",
+  "fixtureVersion": "1.0.0",
+  "status": "independently-authored-pre-production",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "notes": "One near-miss per reachable refusal code, in validation-precedence order. Each case derives from the E1-GLD-001 base request/plan with the named overrides applied; pointers are JSON pointers into the request shape. limit.midi_export_size_exceeded is a documented failsafe with no reachable near-miss (see manifest refusalCoverage).",
+  "baseCaseId": "E1-GLD-001",
+  "cases": [
+    { "id": "E1-REF-001", "override": { "path": "/schema", "value": "changes.export.midi-export-request.v2" }, "expected": { "code": "midi.schema_invalid", "pointer": "/schema" }, "traceIds": ["E1-TRACE-REFUSALS"], "authorityIds": ["E1-AUTH-PLAN"] },
+    { "id": "E1-REF-002", "override": { "path": "/writerVersion", "value": 2 }, "expected": { "code": "midi.policy_invalid", "pointer": "/writerVersion" }, "traceIds": ["E1-TRACE-REFUSALS"], "authorityIds": ["E1-AUTH-PLAN"] },
+    { "id": "E1-REF-003", "override": { "path": "/requestId", "value": "bad id!" }, "expected": { "code": "midi.request_id_invalid", "pointer": "/requestId" }, "traceIds": ["E1-TRACE-REFUSALS"], "authorityIds": ["E1-AUTH-PLAN"] },
+    { "id": "E1-REF-004", "override": { "path": "/sourceRevision", "value": -1 }, "expected": { "code": "midi.revision_invalid", "pointer": "/sourceRevision" }, "traceIds": ["E1-TRACE-REFUSALS"], "authorityIds": ["E1-AUTH-PLAN"] },
+    { "id": "E1-REF-005", "override": { "path": "/documentId", "value": "doc-e1-other" }, "expected": { "code": "midi.document_mismatch", "pointer": "/documentId" }, "traceIds": ["E1-TRACE-REFUSALS", "E1-TRACE-STALE"], "authorityIds": ["E1-AUTH-PLAN"] },
+    { "id": "E1-REF-006", "override": { "path": "/plan/schema", "value": "changes.playback.plan.v2" }, "expected": { "code": "midi.plan_invalid", "pointer": "/plan/schema" }, "traceIds": ["E1-TRACE-REFUSALS"], "authorityIds": ["E1-AUTH-PLAN"] },
+    { "id": "E1-REF-007", "override": { "path": "/plan/tempoBpm", "value": 401 }, "expected": { "code": "midi.tempo_invalid", "pointer": "/plan/tempoBpm" }, "traceIds": ["E1-TRACE-REFUSALS", "E1-TRACE-TEMPO"], "authorityIds": ["E1-AUTH-PLAN"] },
+    { "id": "E1-REF-008", "override": { "path": "/plan/meter/beatUnit", "value": 6 }, "expected": { "code": "midi.meter_invalid", "pointer": "/plan/meter/beatUnit" }, "traceIds": ["E1-TRACE-REFUSALS", "E1-TRACE-METER"], "authorityIds": ["E1-AUTH-SMF"] },
+    { "id": "E1-REF-009", "override": { "path": "/plan/events", "value": "reorder-descending-start-ticks" }, "expected": { "code": "midi.event_order_invalid", "pointer": "/plan/events/1/startTick" }, "traceIds": ["E1-TRACE-REFUSALS", "E1-TRACE-ORDERING"], "authorityIds": ["E1-AUTH-PLAN"] },
+    { "id": "E1-REF-010", "override": { "path": "/plan/events/0/midiPitches/0", "value": 128 }, "expected": { "code": "midi.pitch_out_of_range", "pointer": "/plan/events/0/midiPitches/0" }, "traceIds": ["E1-TRACE-REFUSALS"], "authorityIds": ["E1-AUTH-SMF"] },
+    { "id": "E1-REF-011", "override": { "path": "/plan/events/0/gateDurationTicks", "value": 0 }, "expected": { "code": "midi.gate_invalid", "pointer": "/plan/events/0/gateDurationTicks" }, "traceIds": ["E1-TRACE-REFUSALS", "E1-TRACE-GATES"], "authorityIds": ["E1-AUTH-PLAN"] },
+    { "id": "E1-REF-012", "override": { "path": "/title", "value": "line\nbreak" }, "expected": { "code": "midi.text_invalid", "pointer": "/title" }, "traceIds": ["E1-TRACE-REFUSALS"], "authorityIds": ["E1-AUTH-PLAN"] },
+    { "id": "E1-REF-013", "override": { "path": "/markers/0/eventId", "value": "event-9999" }, "expected": { "code": "midi.marker_unbound", "pointer": "/markers/0/eventId" }, "traceIds": ["E1-TRACE-REFUSALS", "E1-TRACE-MARKERS"], "authorityIds": ["E1-AUTH-PLAN"] },
+    { "id": "E1-REF-014", "override": { "path": "/markers", "value": "duplicate-first-marker" }, "expected": { "code": "midi.marker_duplicate", "pointer": "/markers/1" }, "traceIds": ["E1-TRACE-REFUSALS", "E1-TRACE-MARKERS"], "authorityIds": ["E1-AUTH-PLAN"] },
+    { "id": "E1-REF-015", "override": { "path": "/plan", "value": "sparse-event-at-tick-268435456" }, "expected": { "code": "midi.vlq_overflow", "pointer": "/plan/events/0/startTick" }, "traceIds": ["E1-TRACE-REFUSALS", "E1-TRACE-BYTES"], "authorityIds": ["E1-AUTH-SMF"] }
+  ]
+}

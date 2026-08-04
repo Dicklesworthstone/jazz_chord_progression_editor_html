@@ -1,0 +1,17 @@
+{
+  "schema": "changes.fixtures.e1-limit-cases.v1",
+  "fixtureVersion": "1.0.0",
+  "status": "independently-authored-pre-production",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "notes": "Exact boundary behavior: acceptance at each cap, refusal one past it, and the frozen filename derivation. Validation-only cases: expected.refusal null means the request must validate cleanly; no byte golden is claimed.",
+  "baseCaseId": "E1-GLD-001",
+  "cases": [
+    { "id": "E1-LIM-001", "kind": "validate", "override": { "path": "/title", "value": { "repeatChar": "a", "count": 96 } }, "expected": { "refusal": null }, "traceIds": ["E1-TRACE-LIMITS"], "authorityIds": ["E1-AUTH-DERIVED"] },
+    { "id": "E1-LIM-002", "kind": "validate", "override": { "path": "/title", "value": { "repeatChar": "a", "count": 97 } }, "expected": { "refusal": { "code": "midi.text_invalid", "pointer": "/title" } }, "traceIds": ["E1-TRACE-LIMITS"], "authorityIds": ["E1-AUTH-DERIVED"] },
+    { "id": "E1-LIM-003", "kind": "validate", "override": { "path": "/markers", "value": { "generateMarkers": 8257 } }, "expected": { "refusal": { "code": "midi.plan_invalid", "pointer": "/markers" } }, "traceIds": ["E1-TRACE-LIMITS"], "authorityIds": ["E1-AUTH-DERIVED"] },
+    { "id": "E1-LIM-004", "kind": "validate", "override": { "path": "/plan/events/0/startTick", "value": "shift-event-to-max-vlq" }, "expected": { "refusal": null }, "traceIds": ["E1-TRACE-LIMITS", "E1-TRACE-BYTES"], "authorityIds": ["E1-AUTH-SMF", "E1-AUTH-DERIVED"] },
+    { "id": "E1-LIM-005", "kind": "filename", "documentId": "doc/with spaces/and*chars-that-run-very-long-0123456789-0123456789-0123456789", "expected": { "filename": "changes-doc-with-spaces-and-chars-that-run-very-long-0123456.mid" }, "traceIds": ["E1-TRACE-FILENAME", "E1-TRACE-LIMITS"], "authorityIds": ["E1-AUTH-DERIVED"] },
+    { "id": "E1-LIM-006", "kind": "filename", "documentId": "doc-e1-simple", "expected": { "filename": "changes-doc-e1-simple.mid" }, "traceIds": ["E1-TRACE-FILENAME"], "authorityIds": ["E1-AUTH-DERIVED"] }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "schema": "changes.fixtures.e1-mutation-controls.v1",
+  "fixtureVersion": 1,
+  "productionImportsForbidden": true,
+  "notes": "Each control corrupts one reviewed value through an RFC-6901 pointer (replace or remove); the validator must fail with the named finding code when the mutation is overlaid.",
+  "controls": [
+    { "id": "E1-MUT-001", "file": "e1-midi-export-contract.json", "operation": "replace", "pointer": "/smf/division", "value": 961, "expectedFindingCode": "E1_MANIFEST" },
+    { "id": "E1-MUT-002", "file": "e1-midi-export-contract.json", "operation": "replace", "pointer": "/smf/trackCount", "value": 3, "expectedFindingCode": "E1_MANIFEST" },
+    { "id": "E1-MUT-003", "file": "e1-midi-export-contract.json", "operation": "replace", "pointer": "/smf/noteOnVelocity", "value": 95, "expectedFindingCode": "E1_MANIFEST" },
+    { "id": "E1-MUT-004", "file": "e1-midi-export-contract.json", "operation": "remove", "pointer": "/refusalCodes/15", "expectedFindingCode": "E1_MANIFEST" },
+    { "id": "E1-MUT-005", "file": "golden-cases.json", "operation": "replace", "pointer": "/cases/0/expectedModel/track1/2/note", "value": 61, "expectedFindingCode": "E1_GOLDEN" },
+    { "id": "E1-MUT-006", "file": "golden-cases.json", "operation": "replace", "pointer": "/cases/0/expectedReport/noteCount", "value": 4, "expectedFindingCode": "E1_REPORT" },
+    { "id": "E1-MUT-007", "file": "golden-cases.json", "operation": "replace", "pointer": "/cases/1/expectedModel/track0/3/text", "value": "Dm7", "expectedFindingCode": "E1_GOLDEN" },
+    { "id": "E1-MUT-008", "file": "golden-cases.json", "operation": "replace", "pointer": "/cases/1/expectedReport/roundingErrorNumerator", "value": 0, "expectedFindingCode": "E1_REPORT" },
+    { "id": "E1-MUT-009", "file": "golden-cases.json", "operation": "remove", "pointer": "/cases/2/expectedModel/track1/4", "expectedFindingCode": "E1_GOLDEN" },
+    { "id": "E1-MUT-010", "file": "golden-cases.json", "operation": "replace", "pointer": "/cases/4/expectedReport/losses", "value": [], "expectedFindingCode": "E1_REPORT" },
+    { "id": "E1-MUT-011", "file": "refusal-cases.json", "operation": "replace", "pointer": "/cases/4/expected/code", "value": "midi.plan_invalid", "expectedFindingCode": "E1_REFUSAL" },
+    { "id": "E1-MUT-012", "file": "limit-cases.json", "operation": "replace", "pointer": "/cases/1/expected/refusal", "value": null, "expectedFindingCode": "E1_LIMIT" },
+    { "id": "E1-MUT-013", "file": "limit-cases.json", "operation": "replace", "pointer": "/cases/4/expected/filename", "value": "changes-doc-with-spaces.mid", "expectedFindingCode": "E1_FILENAME" },
+    { "id": "E1-MUT-014", "file": "trace-ledger.json", "operation": "remove", "pointer": "/traces/0/caseIds/0", "expectedFindingCode": "E1_TRACE" },
+    { "id": "E1-MUT-015", "file": "provenance-ledger.json", "operation": "replace", "pointer": "/expectedValuesGenerated", "value": true, "expectedFindingCode": "E1_PROVENANCE" },
+    { "id": "E1-MUT-016", "file": "golden-cases.json", "operation": "replace", "pointer": "/cases/3/bytesHex", "value": "4D546864000000060001000203C14D54726B0000001900FF0302473400FF510307A12000FF58040402180801FF2F004D54726B0000001600FF03015600FF0401490090486001804800FF2F0000", "expectedFindingCode": "E1_GOLDEN" }
+  ]
+}

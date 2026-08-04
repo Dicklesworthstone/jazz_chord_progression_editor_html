@@ -1,0 +1,135 @@
+{
+  "schema": "changes.fixtures.e1-midi-export-contract.v1",
+  "fixtureVersion": "1.0.0",
+  "status": "independently-authored-pre-production",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "identity": {
+    "package": "E1",
+    "module": "src/export/midi-export-contract.ts",
+    "contractSchema": "changes.export.midi-export-contract.v1",
+    "requestSchema": "changes.export.midi-export-request.v1",
+    "resultSchema": "changes.export.midi-export-result.v1",
+    "reportSchema": "changes.export.midi-export-report.v1",
+    "markerSchema": "changes.export.midi-export-marker.v1",
+    "writerId": "changes.midi-export",
+    "writerVersion": 1,
+    "writerVersionTag": "changes.midi-export.v1",
+    "operationNames": ["exportMidi"]
+  },
+  "declaredFiles": [
+    "e1-midi-export-contract.json",
+    "golden-cases.json",
+    "limit-cases.json",
+    "mutation-controls.json",
+    "provenance-ledger.json",
+    "refusal-cases.json",
+    "trace-ledger.json"
+  ],
+  "smf": {
+    "format": 1,
+    "trackCount": 2,
+    "division": 960,
+    "channel": 0,
+    "noteOnVelocity": 96,
+    "noteOffVelocity": 0,
+    "metaTypes": {
+      "trackName": 3,
+      "instrumentName": 4,
+      "marker": 6,
+      "endOfTrack": 47,
+      "setTempo": 81,
+      "timeSignature": 88
+    },
+    "timeSignatureClocksPerClick": 24,
+    "timeSignature32ndsPerQuarter": 8,
+    "maxVlqValue": 268435455,
+    "runningStatusPolicy": "omit-when-previous-channel-status-identical-meta-cancels",
+    "eventOrder": [
+      "ascending-tick",
+      "meta-before-channel",
+      "note-off-before-note-on",
+      "ascending-note-number",
+      "conductor-meta-order"
+    ],
+    "conductorMetaOrder": [
+      "track-name",
+      "set-tempo",
+      "time-signature",
+      "section-markers",
+      "chord-markers"
+    ]
+  },
+  "tempo": {
+    "microsecondsPerMinute": 60000000,
+    "minBpm": 20,
+    "maxBpm": 400,
+    "encoding": "nearest-integer-microseconds-per-quarter",
+    "errorLaw": "roundingErrorNumerator = |60000000 - encoded * bpm|; denominator = bpm; error <= 1/2 microsecond"
+  },
+  "limits": {
+    "maxEvents": 8192,
+    "maxNotes": 131072,
+    "maxMarkers": 8256,
+    "maxTextUtf8Bytes": 96,
+    "maxFilenameChars": 64,
+    "maxRequestIdAsciiLength": 128,
+    "requestIdPatternSource": "^[A-Za-z0-9._-]{1,128}$",
+    "maxBytes": 4194304
+  },
+  "lossKinds": ["enharmonic-spelling", "annotation-text", "loop-range"],
+  "lossOrder": "sorted by lossKinds array order; one entry per kind with ascending-ordinal event ids",
+  "refusalCodes": [
+    "midi.schema_invalid",
+    "midi.policy_invalid",
+    "midi.request_id_invalid",
+    "midi.revision_invalid",
+    "midi.document_mismatch",
+    "midi.plan_invalid",
+    "midi.tempo_invalid",
+    "midi.meter_invalid",
+    "midi.event_order_invalid",
+    "midi.pitch_out_of_range",
+    "midi.gate_invalid",
+    "midi.text_invalid",
+    "midi.marker_unbound",
+    "midi.marker_duplicate",
+    "midi.vlq_overflow",
+    "limit.midi_export_size_exceeded"
+  ],
+  "validationPrecedence": [
+    "midi.schema_invalid",
+    "midi.policy_invalid",
+    "midi.request_id_invalid",
+    "midi.revision_invalid",
+    "midi.document_mismatch",
+    "midi.plan_invalid",
+    "midi.tempo_invalid",
+    "midi.meter_invalid",
+    "midi.event_order_invalid",
+    "midi.pitch_out_of_range",
+    "midi.gate_invalid",
+    "midi.text_invalid",
+    "midi.marker_unbound",
+    "midi.marker_duplicate",
+    "midi.vlq_overflow",
+    "limit.midi_export_size_exceeded"
+  ],
+  "refusalCoverage": {
+    "limit.midi_export_size_exceeded": "failsafe-unreachable-within-legal-plan-bounds"
+  },
+  "filenamePolicy": {
+    "prefix": "changes-",
+    "suffix": ".mid",
+    "safeClass": "^[A-Za-z0-9._-]+$",
+    "replacement": "-",
+    "maximumCharacters": 64,
+    "objectUrlOwnership": "the export layer never creates object URLs; download wiring and revocation belong to the application/UI layers"
+  },
+  "planPins": {
+    "planSchema": "changes.playback.plan.v1",
+    "eventSchema": "changes.playback.event.v1",
+    "midiPpq": 960,
+    "fixedVelocity": 96
+  }
+}
