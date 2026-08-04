@@ -138,6 +138,7 @@ const BASE_VIEW: Omit<StudioShellView, "layout"> = Object.freeze({
   harmony: Object.freeze({
     selectedChordLabel: null,
     selected: null,
+    detail: null,
     selectionStatusLabel: "No chord events in this chart",
     emptyTitle: "Harmony begins with a real chord",
     emptyDescription:
@@ -241,6 +242,7 @@ function ResponsiveStaleOwnerHarness() {
     onGrooveStyleChange: () => undefined,
     onLoadLibraryEntry: () => undefined,
     onAddSuggestedChord: () => undefined,
+    onPreviewPitch: () => undefined,
     onCompletionDialogOpenChange: () => undefined,
     onDeclareMeasureCompletion: () => undefined,
     onRangeEdgeToChord: () => undefined,

@@ -94,6 +94,7 @@ function RailFocusHarness() {
       onCollapsedChange: setLibraryCollapsed,
     }),
     h(HarmonyLens, {
+      onPreviewPitch: () => undefined,
       collapsed: harmonyCollapsed,
       sheetOpen: false,
       onAddSuggestedChord: () => undefined,
