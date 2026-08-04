@@ -15,6 +15,11 @@ import type {
 
 export type ChartWorkspaceProps = Readonly<{
   view: StudioChartView;
+  /** jcpe-disi.3: the landed-command sentence, or null while none stands. */
+  actionNotice: string | null;
+  canUndo: boolean;
+  onNoticeDismiss: () => void;
+  onNoticeUndo: () => void;
   onRequestPanelSheet: (side: StudioPanelSide) => void;
   onSelectChord: (chordId: string, extend: boolean) => void;
   onRovingFocusChange: (chordId: string) => void;
@@ -175,6 +180,10 @@ function cardActionAt(target: EventTarget | null): Readonly<{
 
 export function ChartWorkspace({
   view,
+  actionNotice,
+  canUndo,
+  onNoticeDismiss,
+  onNoticeUndo,
   onRequestPanelSheet,
   onSelectChord,
   onRovingFocusChange,
@@ -1044,6 +1053,8 @@ export function ChartWorkspace({
       tabIndex={-1}
       onKeyDown={onChartKeyDown}
     >
+      {/* The scroller owns overflow; the command bar lives OUTSIDE it so it can never overlay a card (firefox proved sticky-in-flow covers fold-crossing rows). */}
+      <div class="studio-chart__scroller">
       {view.isSeededDemo && !demoBannerDismissed ? (
         <div class="studio-demo-banner" data-testid="demo-banner" role="status">
           <p>
@@ -2249,23 +2260,46 @@ export function ChartWorkspace({
         </ol>
       )}
 
+      </div>
+
       {/*
-        jcpe-disi.6: the context action bar. The verbs that apply to the
-        current selection ride sticky at the chart's block-end — in reach
-        beside long charts and under the thumb at phone widths — and leave
-        with the selection. Names deliberately differ from the top
-        toolbar's so role+name queries stay unambiguous.
+        jcpe-disi.3+.6 unified command bar. ONE constant-height row, always
+        mounted, sticky at the chart's block-end: the sentence (landed
+        command > selection > hint), the selection verbs, and the notice's
+        Undo. Constant geometry is load-bearing three ways — nothing ever
+        floats over chart content, appearing controls cannot shift a drag's
+        pixel math, and the listener census stays invariant (inactive
+        controls hide with `visibility`, never unmount). Verb names differ
+        from the top toolbar's so role+name queries stay unambiguous.
       */}
-      {chartHasSelection ? (
+      <div class="studio-command-bar" data-selection={String(chartHasSelection)}>
         <div
+          aria-live="polite"
+          class="studio-command-bar__status"
+          data-empty={actionNotice === null ? "true" : "false"}
+          data-testid="action-notice"
+          role="status"
+        >
+          <p
+            class={`studio-command-bar__sentence${
+              actionNotice === null && !chartHasSelection
+                ? " studio-command-bar__sentence--hint"
+                : ""
+            }`}
+          >
+            {actionNotice ??
+              (chartHasSelection
+                ? view.selectionStatusLabel
+                : "Every change lands as one undoable step — select any chord to edit, move, or delete it.")}
+          </p>
+        </div>
+        <div
+          aria-hidden={chartHasSelection ? undefined : "true"}
           aria-label="Selection actions"
-          class="studio-context-bar"
+          class="studio-command-bar__verbs"
           data-testid="context-action-bar"
           role="toolbar"
         >
-          <p class="studio-context-bar__status">
-            {view.selectionStatusLabel}
-          </p>
           <Button
             busy={false}
             density="dense"
@@ -2278,7 +2312,7 @@ export function ChartWorkspace({
               onMoveSelection("previous");
             }}
             type="button"
-            variant="secondary"
+            variant="ghost"
           />
           <Button
             busy={false}
@@ -2292,7 +2326,7 @@ export function ChartWorkspace({
               onMoveSelection("next");
             }}
             type="button"
-            variant="secondary"
+            variant="ghost"
           />
           <Button
             busy={false}
@@ -2301,10 +2335,10 @@ export function ChartWorkspace({
             disabled={!view.canDuplicateSelection}
             id="studio-context-duplicate"
             invalid={false}
-            label="Duplicate chords"
+            label="Duplicate"
             onAction={onDuplicateSelection}
             type="button"
-            variant="secondary"
+            variant="ghost"
           />
           <Button
             busy={false}
@@ -2313,29 +2347,57 @@ export function ChartWorkspace({
             disabled={!view.canDeleteSelection}
             id="studio-context-delete"
             invalid={false}
-            label="Delete chords"
+            label="Delete"
             onAction={onDeleteSelection}
+            type="button"
+            variant="ghost"
+          />
+          <Button
+            busy={false}
+            density="dense"
+            describedBy={[]}
+            disabled={singleSelectedChordId === null}
+            id="studio-context-duration"
+            invalid={false}
+            label="Duration"
+            onAction={() => {
+              if (singleSelectedChordId !== null) {
+                beginDurationEdit(singleSelectedChordId);
+              }
+            }}
+            type="button"
+            variant="ghost"
+          />
+        </div>
+        <div
+          aria-hidden={actionNotice === null ? "true" : undefined}
+          class="studio-command-bar__undo"
+          data-active={actionNotice === null ? "false" : "true"}
+        >
+          <Button
+            busy={false}
+            density="dense"
+            describedBy={[]}
+            disabled={actionNotice === null || !canUndo}
+            id="studio-action-undo"
+            invalid={false}
+            label="Undo"
+            onAction={onNoticeUndo}
             type="button"
             variant="secondary"
           />
-          {singleSelectedChordId === null ? null : (
-            <Button
-              busy={false}
-              density="dense"
-              describedBy={[]}
-              disabled={false}
-              id="studio-context-duration"
-              invalid={false}
-              label="Duration"
-              onAction={() => {
-                beginDurationEdit(singleSelectedChordId);
-              }}
-              type="button"
-              variant="secondary"
-            />
-          )}
+          <button
+            aria-label="Dismiss this notice"
+            class="studio-icon-button studio-command-bar__dismiss"
+            disabled={actionNotice === null}
+            id="studio-action-dismiss"
+            onClick={onNoticeDismiss}
+            type="button"
+          >
+            ×
+          </button>
         </div>
-      ) : null}
+      </div>
     </section>
   );
 }

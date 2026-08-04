@@ -22,16 +22,23 @@ test.describe("jcpe-disi.6 context action bar", () => {
     await openStudio(page);
     await typeAndInsert(page, "| Dm9:1 G13:1 C6:1 A7:1 |");
 
+    // The bar is ALWAYS mounted (census law); inactive it hides and yields
+    // its width, so "appears" means becomes visible, never mounts.
     const bar = page.getByTestId("context-action-bar");
-    await expect(bar).toHaveCount(0);
+    await expect(bar).toBeHidden();
 
+    // The insert's own notice outranks the selection sentence (it carries
+    // the live Undo), so dismissing it is part of the journey.
+    await page.locator("#studio-action-dismiss").click();
     await cards(page).nth(1).click();
     await expect(bar).toBeVisible();
-    await expect(bar).toContainText("1 chord selected");
+    await expect(page.getByTestId("action-notice")).toContainText(
+      "1 chord selected",
+    );
 
     // Single selection offers Duration; a real verb round-trips with Undo.
-    await expect(bar.getByRole("button", { name: "Duration" })).toBeVisible();
-    await bar.getByRole("button", { name: "Delete chords" }).click();
+    await expect(bar.getByRole("button", { name: "Duration" })).toBeEnabled();
+    await bar.getByRole("button", { exact: true, name: "Delete" }).click();
     await expect(cards(page)).toHaveCount(3);
     await page.locator("#studio-undo").click();
     await expect(cards(page)).toHaveCount(4);
@@ -51,12 +58,16 @@ test.describe("jcpe-disi.6 context action bar", () => {
     await openStudio(page);
     await typeAndInsert(page, "| Dm9:1 G13:1 C6:1 A7:1 |");
 
+    await page.locator("#studio-action-dismiss").click();
     await cards(page).nth(0).click();
     await cards(page).nth(2).click({ modifiers: ["Shift"] });
     const bar = page.getByTestId("context-action-bar");
     await expect(bar).toBeVisible();
-    await expect(bar).toContainText("3 chords selected");
-    await expect(bar.getByRole("button", { name: "Duration" })).toHaveCount(0);
+    await expect(page.getByTestId("action-notice")).toContainText(
+      "3 chords selected",
+    );
+    // Plural selections keep Duration mounted (census law) but disabled.
+    await expect(bar.getByRole("button", { name: "Duration" })).toBeDisabled();
 
     // The 320 px law: the page never scrolls horizontally.
     await page.setViewportSize({ height: 800, width: 320 });
@@ -70,7 +81,9 @@ test.describe("jcpe-disi.6 context action bar", () => {
 
     // Move a range: three chords shift one slot later in one command.
     await bar.getByRole("button", { name: "Move later" }).click();
-    await expect(bar).toContainText("3 chords selected");
+    await expect(page.getByTestId("action-notice")).toContainText(
+      "Moved 3 chords later",
+    );
     await page.locator("#studio-undo").click();
     expectCleanDiagnostics(diagnostics);
   });

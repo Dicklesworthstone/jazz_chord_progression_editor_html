@@ -266,13 +266,15 @@ test.describe("U1-TRACE-INLINE cancellation restores the exact prior value", () 
     await showTeachingView(page);
     await typeAndInsert(page, "| Dm9:1 G13:1 C6:1 A7:1 |");
 
-    // Dim-ghost law: the handle cluster is visible at rest in the editing
-    // view — no hover required to learn the card is editable.
+    // Post-visual-review law: the sheet is CLEAN at rest; the handle
+    // cluster reveals for the card you engage. Selecting the card is the
+    // engagement — no hover required.
+    await cards(page).nth(3).click();
     const deleteHandle = cards(page).nth(3).getByTestId("chord-card-delete");
-    const restOpacity = await deleteHandle.evaluate(
+    const engagedOpacity = await deleteHandle.evaluate(
       (element) => Number(getComputedStyle(element).opacity),
     );
-    expect(restOpacity).toBeGreaterThanOrEqual(0.4);
+    expect(engagedOpacity).toBe(1);
 
     // One activation, one undoable command, the landed auto-declare policy.
     await deleteHandle.click();

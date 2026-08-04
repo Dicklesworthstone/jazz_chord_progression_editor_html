@@ -65,48 +65,6 @@
   min-inline-size: 0;
 }
 
-/*
- * jcpe-disi.3: the labeled-undo status strip. Its height is CONSTANT — a
- * row that appears when a command lands would shift chart geometry mid-run
- * and broke the exact 8 px drag-threshold law in whichever browser lost
- * the render race. Empty, it teaches the one-undoable-step promise; full,
- * it names the landed command with a live Undo.
- */
-.studio-action-notice {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-inline-size: 0;
-  block-size: 2.75rem;
-  padding: var(--space-1) var(--space-3);
-  border-block-start: var(--border-width) solid var(--border-default);
-  background: var(--surface-header);
-  overflow: hidden;
-}
-
-.studio-action-notice__sentence--hint {
-  color: var(--text-muted);
-}
-
-/* The a11y wrapper must not change the strip's flex layout. */
-.studio-action-notice__controls {
-  display: contents;
-}
-
-.studio-action-notice__sentence {
-  flex: 1;
-  min-inline-size: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: var(--text-sm);
-  color: var(--text-primary);
-}
-
-.studio-action-notice__dismiss {
-  color: var(--text-muted);
-}
-
 .studio-skip-link {
   position: absolute;
   inset-block-start: var(--space-2);
@@ -645,11 +603,26 @@
 
 .studio-chart {
   position: relative;
+  display: flex;
+  flex-direction: column;
   min-inline-size: 0;
+  min-block-size: 0;
+  overflow: hidden;
+  background: var(--surface-chart);
+}
+
+/*
+ * The scroller owns overflow so the command bar (its flex sibling) exists
+ * OUTSIDE the scrolled region — a sticky bar inside it overlaid whichever
+ * card row crossed the fold, and firefox's hit-testing proved the grip
+ * unreachable beneath it.
+ */
+.studio-chart__scroller {
+  flex: 1;
   min-block-size: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  background: var(--surface-chart);
+  position: relative;
 }
 
 .studio-chart:focus-visible {
@@ -1275,8 +1248,11 @@
   place-items: center;
   gap: 0;
   min-inline-size: 3.5rem;
-  min-block-size: 3.75rem;
-  padding: var(--space-2) var(--space-1);
+  min-block-size: 4.25rem;
+  /* Constant clearance for the top-right handle cluster: the symbol must
+     never sit under the × and ⋯ when the card is engaged (jcpe-disi.2
+     visual review). Constant, so engagement never shifts layout. */
+  padding: 1.625rem var(--space-1) var(--space-2);
   border: var(--border-width) solid transparent;
   border-radius: var(--radius-sm);
   background: transparent;
@@ -1401,47 +1377,105 @@
 }
 
 /*
- * jcpe-disi.6: the context action bar rides sticky at the chart's block-end
- * while a selection exists. It wraps at narrow widths — the 320 px law
- * forbids horizontal scroll — and sits under the card menus (z 30).
+ * jcpe-disi.3+.6: the unified command bar — one constant-height row, part
+ * of the chart surface (sticky in flow, never floating over content). The
+ * sentence breathes on the left; verbs and the notice Undo occupy fixed
+ * slots that hide with `visibility` so geometry and the listener census
+ * never move.
  */
-.studio-context-bar {
-  /*
-   * A fixed overlay, never in-flow: appearing at selection time must not
-   * move a single pixel of chart geometry (a sticky bar broke the exact
-   * 8 px drag-threshold law the moment pointerdown selected a card). It
-   * floats just above the transport, whose height is pinned.
-   */
-  position: fixed;
-  inset-block-end: calc(
-    var(--transport-min-block) + env(safe-area-inset-bottom, 0px) +
-      var(--space-2)
-  );
-  inset-inline-start: 50%;
-  transform: translateX(-50%);
-  z-index: 40;
+.studio-command-bar {
+  flex: none;
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  max-inline-size: min(46rem, calc(100vw - 2 * var(--space-3)));
-  padding: var(--space-2) var(--space-3);
-  border: var(--border-width) solid var(--border-default);
-  border-radius: var(--radius-lg);
-  background: color-mix(in srgb, var(--surface-header) 92%, transparent);
-  backdrop-filter: blur(6px);
-  box-shadow: var(--shadow-2);
+  gap: var(--space-3);
+  min-block-size: 3rem;
+  block-size: 3rem;
+  padding-inline: var(--space-4);
+  border-block-start: var(--border-width) solid var(--border-default);
+  background: color-mix(in srgb, var(--surface-header) 94%, transparent);
+  backdrop-filter: blur(10px);
 }
 
-.studio-context-bar__status {
-  flex: 1 1 12rem;
-  min-inline-size: 0;
+.studio-command-bar__status {
+  flex: 1 1 10rem;
+  /* The sentence may compress but never vanish. */
+  min-inline-size: 8rem;
+}
+
+.studio-command-bar__sentence {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: var(--text-sm);
+  color: var(--text-primary);
+}
+
+.studio-command-bar__sentence--hint {
   color: var(--text-muted);
+}
+
+.studio-command-bar__verbs {
+  display: flex;
+  flex: 0 1 auto;
+  min-inline-size: 0;
+  align-items: center;
+  gap: var(--space-1);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.studio-command-bar__verbs .ui-button {
+  flex: none;
+  white-space: nowrap;
+}
+
+.studio-command-bar[data-selection="false"] .studio-command-bar__verbs {
+  /* Same contract as the undo slot: mounted always (census law), but an
+     inactive slot yields its width — only text inside the bar reflows. */
+  visibility: hidden;
+  inline-size: 0;
+  min-inline-size: 0;
+  flex-basis: 0;
+  gap: 0;
+  overflow: hidden;
+}
+
+.studio-command-bar__undo {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.studio-command-bar__undo[data-active="false"] {
+  /* Inactive, the slot yields its width to the sentence and verbs. The
+     controls stay mounted (census law); only intra-bar text reflows when
+     a notice lands, and no pixel law measures inside the bar. */
+  visibility: hidden;
+  inline-size: 0;
+  gap: 0;
+  overflow: hidden;
+}
+
+.studio-command-bar__dismiss {
+  color: var(--text-muted);
+}
+
+/* Narrow widths: the sentence yields to the verbs; nothing wraps or spills. */
+@media (max-width: 39.999rem) {
+  .studio-command-bar {
+    gap: var(--space-2);
+    padding-inline: var(--space-2);
+  }
+
+  .studio-command-bar[data-selection="true"] .studio-command-bar__status {
+    display: none;
+  }
+
+  .studio-command-bar__verbs {
+    overflow-x: auto;
+    max-inline-size: 100%;
+  }
 }
 
 /*
@@ -1557,27 +1591,21 @@
 }
 
 /*
- * jcpe-disi.2 dim-ghost law for the editing (teaching) view: handles are
- * FINDABLE without hover — a dim ghost at rest, full strength on hover,
- * focus, or selection. The compact reading view keeps its clean sheet and
- * reveals handles only for the engaged card (hover/focus/selected), which
- * the block below already governs.
+ * jcpe-disi.2, revised after the owner's visual review: the sheet stays
+ * CLEAN at rest in every view. Handles appear only for the card you are
+ * engaging — selected, focused, or hovered — and the command bar's hint
+ * plus the selected card's affordances carry discovery. State-based, so
+ * touch engagement (tap = select) reveals them without hover.
  */
-.studio-chart:not([data-view-mode="compact"]) .studio-chord-card__more,
-.studio-chart:not([data-view-mode="compact"]) .studio-chord-card__handle,
-.studio-chart:not([data-view-mode="compact"]) .studio-chord-card__delete {
-  opacity: 0.45;
-}
-
-.studio-chart:not([data-view-mode="compact"]) .studio-chord-card:hover .studio-chord-card__more,
-.studio-chart:not([data-view-mode="compact"]) .studio-chord-card:hover .studio-chord-card__handle,
-.studio-chart:not([data-view-mode="compact"]) .studio-chord-card:hover .studio-chord-card__delete,
-.studio-chart:not([data-view-mode="compact"]) .studio-chord-card:focus-within .studio-chord-card__more,
-.studio-chart:not([data-view-mode="compact"]) .studio-chord-card:focus-within .studio-chord-card__handle,
-.studio-chart:not([data-view-mode="compact"]) .studio-chord-card:focus-within .studio-chord-card__delete,
-.studio-chart:not([data-view-mode="compact"]) .studio-chord-card[data-selected="true"] .studio-chord-card__more,
-.studio-chart:not([data-view-mode="compact"]) .studio-chord-card[data-selected="true"] .studio-chord-card__handle,
-.studio-chart:not([data-view-mode="compact"]) .studio-chord-card[data-selected="true"] .studio-chord-card__delete {
+.studio-chord-card:hover .studio-chord-card__more,
+.studio-chord-card:hover .studio-chord-card__handle,
+.studio-chord-card:hover .studio-chord-card__delete,
+.studio-chord-card:focus-within .studio-chord-card__more,
+.studio-chord-card:focus-within .studio-chord-card__handle,
+.studio-chord-card:focus-within .studio-chord-card__delete,
+.studio-chord-card[data-selected="true"] .studio-chord-card__more,
+.studio-chord-card[data-selected="true"] .studio-chord-card__handle,
+.studio-chord-card[data-selected="true"] .studio-chord-card__delete {
   opacity: 1;
 }
 

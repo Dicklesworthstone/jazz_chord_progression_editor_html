@@ -330,6 +330,10 @@ export function StudioShell({
               }}
             />
             <ChartWorkspace
+              actionNotice={actionNotice}
+              canUndo={view.document.canUndo}
+              onNoticeDismiss={forgetNotice}
+              onNoticeUndo={shellCallbacks.onUndo}
               onApplyDuration={shellCallbacks.onApplyDuration}
               onApplyInlineSymbol={shellCallbacks.onApplyInlineSymbol}
               onCancelPendingEdit={callbacks.onCancelPendingEdit}
@@ -374,68 +378,6 @@ export function StudioShell({
               }}
             />
           </main>
-
-          {/*
-            jcpe-disi.3: the labeled-undo notice. The region always exists so
-            aria-live announcement works; content appears only after a
-            command verifiably landed (revision advanced). No timers — the
-            sentence persists until the next action, an undo, or dismissal.
-          */}
-          <div
-            aria-live="polite"
-            class="studio-action-notice"
-            data-testid="action-notice"
-            data-empty={actionNotice === null ? "true" : "false"}
-            role="status"
-          >
-            {/*
-              The strip's controls are PERMANENT: a mount that came and went
-              with the notice changed the document's listener census across
-              mutation cycles, which U1-INT-024 pins as invariant. Empty,
-              they sit disabled beside the hint.
-            */}
-            {actionNotice === null ? (
-              <p class="studio-action-notice__sentence studio-action-notice__sentence--hint">
-                Every change lands as one undoable step — select any chord to
-                edit, move, or delete it.
-              </p>
-            ) : (
-              <p class="studio-action-notice__sentence">{actionNotice}</p>
-            )}
-            {/*
-              While the strip is empty its controls are dead weight for a
-              screen reader (and a second "Undo" answer for role+name
-              queries), so they leave the accessibility tree — but never the
-              DOM, which keeps the listener census invariant.
-            */}
-            <span
-              aria-hidden={actionNotice === null ? "true" : undefined}
-              class="studio-action-notice__controls"
-            >
-              <Button
-                busy={false}
-                density="dense"
-                describedBy={[]}
-                disabled={actionNotice === null || !view.document.canUndo}
-                id="studio-action-undo"
-                invalid={false}
-                label="Undo"
-                onAction={shellCallbacks.onUndo}
-                type="button"
-                variant="secondary"
-              />
-              <button
-                aria-label="Dismiss this notice"
-                class="studio-icon-button studio-action-notice__dismiss"
-                disabled={actionNotice === null}
-                id="studio-action-dismiss"
-                onClick={forgetNotice}
-                type="button"
-              >
-                ×
-              </button>
-            </span>
-          </div>
         </div>
         <TransportBar
           canPlay={transport.canPlay}
