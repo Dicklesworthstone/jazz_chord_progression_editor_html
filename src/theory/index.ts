@@ -200,3 +200,14 @@ export {
   continuationOperations,
   type ContinuationOperations,
 } from "./continuation-operations";
+
+export * from "./chart-analysis-contract";
+export {
+  analyzeChartEvent,
+  deriveChordDetail,
+  detectChartPhrases,
+} from "./chart-analysis";
+export {
+  chartAnalysisOperations,
+  type ChartAnalysisOperations,
+} from "./chart-analysis-operations";
