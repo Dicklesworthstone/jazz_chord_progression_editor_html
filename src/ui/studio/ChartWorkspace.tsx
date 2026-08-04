@@ -235,10 +235,18 @@ function slashCount(durationLabel: string): number {
 /** Measures grouped four to a system, the engraved page's row unit. */
 const MEASURES_PER_SYSTEM = 4;
 
-function chunkMeasures<T>(measures: readonly T[]): readonly (readonly T[])[] {
+/**
+ * The grid layout (V2R-4) keeps one run per section and lets CSS flow the
+ * cards into columns, so the DOM order — and with it roving focus, drag,
+ * and every listener — is identical in both layouts.
+ */
+function chunkMeasures<T>(
+  measures: readonly T[],
+  perSystem: number = MEASURES_PER_SYSTEM,
+): readonly (readonly T[])[] {
   const systems: T[][] = [];
-  for (let index = 0; index < measures.length; index += MEASURES_PER_SYSTEM) {
-    systems.push([...measures.slice(index, index + MEASURES_PER_SYSTEM)]);
+  for (let index = 0; index < measures.length; index += perSystem) {
+    systems.push([...measures.slice(index, index + perSystem)]);
   }
   return systems;
 }
@@ -1154,6 +1162,10 @@ export function ChartWorkspace({
   };
 
   const teaching = view.viewMode === "teaching";
+  /* V2R-4: the grid layout is the study view — cards flow in columns and
+     every card carries its analysis lines; the engraved systems return with
+     the sheet. Presentation-only, exactly like viewMode. */
+  const grid = view.layout === "grid";
 
   return (
     <section
@@ -1161,6 +1173,7 @@ export function ChartWorkspace({
       class="studio-chart"
       aria-labelledby="studio-chart-heading"
       data-view-mode={view.viewMode}
+      data-chart-layout={view.layout}
       tabIndex={-1}
       onKeyDown={onChartKeyDown}
     >
@@ -1946,7 +1959,12 @@ export function ChartWorkspace({
                     </div>
                   </div>
 
-                  {chunkMeasures(section.measures).map(
+                  {chunkMeasures(
+                    section.measures,
+                    grid
+                      ? Math.max(1, section.measures.length)
+                      : MEASURES_PER_SYSTEM,
+                  ).map(
                     (system, systemIndex, systems) => {
                       const systemStart = systemIndex * MEASURES_PER_SYSTEM;
                       /* Phrase spans arrive as event ids; brackets draw over
@@ -1958,7 +1976,9 @@ export function ChartWorkspace({
                           measureIndexOfEvent.set(chord.id, entryIndex);
                         }
                       });
-                      const spans = teaching
+                      /* Phrase brackets belong to the engraved sheet; the
+                         grid's per-card lines carry the teaching instead. */
+                      const spans = teaching && !grid
                         ? annotations
                             .phrasesForSection(section.id)
                             .flatMap((span) => {
@@ -2390,7 +2410,10 @@ export function ChartWorkspace({
                                           </span>
                                         ) : null}
                                         {(() => {
-                                          if (!teaching) return null;
+                                          /* The grid is the study layout:
+                                             its cards always carry the
+                                             analysis lines (V2R-4). */
+                                          if (!teaching && !grid) return null;
                                           const roman =
                                             annotations.romanForEvent(
                                               chord.id,
@@ -2406,6 +2429,32 @@ export function ChartWorkspace({
                                             </span>
                                           );
                                         })()}
+                                        {grid
+                                          ? (() => {
+                                              const fn =
+                                                annotations.functionForEvent(
+                                                  chord.id,
+                                                );
+                                              const notes =
+                                                annotations.notesForEvent(
+                                                  chord.id,
+                                                );
+                                              return (
+                                                <>
+                                                  {fn === null ? null : (
+                                                    <span class="studio-chord-card__function">
+                                                      {fn}
+                                                    </span>
+                                                  )}
+                                                  {notes === null ? null : (
+                                                    <span class="studio-chord-card__notes">
+                                                      {notes}
+                                                    </span>
+                                                  )}
+                                                </>
+                                              );
+                                            })()
+                                          : null}
                                         {splitEdit?.chordId === chord.id ? (
                                           <input
                                             class="studio-chord-card__editor"

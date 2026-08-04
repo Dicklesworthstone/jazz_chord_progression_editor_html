@@ -52,6 +52,7 @@ export type {
   StudioShellView,
   StudioTitleFeedback,
   StudioTransportView,
+  StudioChartLayout,
   StudioViewMode,
 } from "./studio-contract";
 export { AnalyzerPanel } from "./AnalyzerPanel";
