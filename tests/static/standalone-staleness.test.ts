@@ -32,6 +32,11 @@ async function copyBuildInputs(target: string): Promise<void> {
   ]);
   await Promise.all([
     cp(join(checkoutSource, "src"), join(target, "src"), { recursive: true }),
+    /* Embedded-font binaries are build inputs: the build re-derives
+       src/styles/fonts.css from them and refuses on drift. */
+    cp(join(checkoutSource, "assets"), join(target, "assets"), {
+      recursive: true,
+    }),
     cp(
       join(checkoutSource, "tests/fixtures/foundation"),
       join(target, "tests/fixtures/foundation"),
