@@ -88,6 +88,11 @@
   color: var(--text-muted);
 }
 
+/* The a11y wrapper must not change the strip's flex layout. */
+.studio-action-notice__controls {
+  display: contents;
+}
+
 .studio-action-notice__sentence {
   flex: 1;
   min-inline-size: 0;

@@ -402,28 +402,39 @@ export function StudioShell({
             ) : (
               <p class="studio-action-notice__sentence">{actionNotice}</p>
             )}
-            <Button
-              busy={false}
-              density="dense"
-              describedBy={[]}
-              disabled={actionNotice === null || !view.document.canUndo}
-              id="studio-action-undo"
-              invalid={false}
-              label="Undo"
-              onAction={shellCallbacks.onUndo}
-              type="button"
-              variant="secondary"
-            />
-            <button
-              aria-label="Dismiss this notice"
-              class="studio-icon-button studio-action-notice__dismiss"
-              disabled={actionNotice === null}
-              id="studio-action-dismiss"
-              onClick={forgetNotice}
-              type="button"
+            {/*
+              While the strip is empty its controls are dead weight for a
+              screen reader (and a second "Undo" answer for role+name
+              queries), so they leave the accessibility tree — but never the
+              DOM, which keeps the listener census invariant.
+            */}
+            <span
+              aria-hidden={actionNotice === null ? "true" : undefined}
+              class="studio-action-notice__controls"
             >
-              ×
-            </button>
+              <Button
+                busy={false}
+                density="dense"
+                describedBy={[]}
+                disabled={actionNotice === null || !view.document.canUndo}
+                id="studio-action-undo"
+                invalid={false}
+                label="Undo"
+                onAction={shellCallbacks.onUndo}
+                type="button"
+                variant="secondary"
+              />
+              <button
+                aria-label="Dismiss this notice"
+                class="studio-icon-button studio-action-notice__dismiss"
+                disabled={actionNotice === null}
+                id="studio-action-dismiss"
+                onClick={forgetNotice}
+                type="button"
+              >
+                ×
+              </button>
+            </span>
           </div>
         </div>
         <TransportBar
