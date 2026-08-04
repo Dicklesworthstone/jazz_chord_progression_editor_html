@@ -158,6 +158,20 @@ const BASE_VIEW: Omit<StudioShellView, "layout"> = Object.freeze({
     positionExactLabel: "0/1 beats",
     currentChordLabel: null,
     progressPercent: null,
+    /* V2R-8 footer fields, inert for these layout proofs. */
+    grooveStyleId: "ballad-comp@1",
+    grooveOptions: Object.freeze([
+      Object.freeze({ id: "ballad-comp@1", label: "Ballad comp" }),
+    ]),
+    instrumentId: "concert-grand",
+    instrumentOptions: Object.freeze([
+      Object.freeze({ id: "concert-grand", label: "Concert Grand" }),
+    ]),
+    masterVolumePercent: 100,
+    canStepPrevious: false,
+    canStepNext: false,
+    canTempoDown: false,
+    canTempoUp: false,
   }),
   playback: Object.freeze({
     tempoBpm: 120,
@@ -289,6 +303,12 @@ function ResponsiveStaleOwnerHarness() {
         onPause: () => undefined,
         onPlay: () => undefined,
         onStop: () => undefined,
+        onStepChord: () => undefined,
+        onTempoStep: () => undefined,
+        onGrooveChange: () => undefined,
+        onInstrumentChange: () => undefined,
+        onVolumeCommit: () => undefined,
+        readMeterFrame: () => null,
       },
       view,
     }),

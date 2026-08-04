@@ -4,6 +4,7 @@ import {
   DEFAULT_GROOVE_STYLE_ID,
   makeBeatDuration,
   makeBeatPosition,
+  makeInstrumentId,
   measureCapacity,
   subtractBeatValues,
   type BeatDuration,
@@ -161,6 +162,8 @@ export const STUDIO_EDIT_REFUSAL_CODES = Object.freeze([
   "u1.chart_already_empty",
   "u1.measure_last_cannot_delete",
   "u1.performance_style_unknown",
+  "u1.instrument_unknown",
+  "u1.master_volume_invalid",
 ] as const);
 
 /** The reviewed tempo window, in beats per minute. */
@@ -215,7 +218,9 @@ export type StudioControllerAction =
   | "set-tempo"
   | "clear-chart"
   | "delete-measure"
-  | "set-performance-style";
+  | "set-performance-style"
+  | "set-instrument"
+  | "set-master-volume";
 
 export type StudioControllerRefusal = Readonly<{
   action: StudioControllerAction;
@@ -434,6 +439,24 @@ export interface StudioController {
    */
   readonly setPerformanceStyle: (
     styleId: string,
+  ) => StudioControllerActionResult;
+  /**
+   * Choose the document's instrument. One undoable Set-instrument entry via
+   * the settings command; playback issues set-instrument to the engine on
+   * every Play, so the choice applies from the next run — a run already
+   * sounding keeps the instrument it started with.
+   */
+  readonly setInstrument: (
+    instrumentId: string,
+  ) => StudioControllerActionResult;
+  /**
+   * Commit the document's master volume (0..1). The document is the mix
+   * authority (jcpe-vy6w) and the engine reads the mix when the audio graph
+   * initializes, so the committed value governs playback from the next
+   * engine start; there is deliberately no live mix transport command yet.
+   */
+  readonly setMasterVolume: (
+    volume: number,
   ) => StudioControllerActionResult;
   readonly undo: () => StudioControllerActionResult;
   readonly redo: () => StudioControllerActionResult;
@@ -698,6 +721,10 @@ const EDIT_RECOVERY_ACTIONS: Readonly<Record<StudioEditRefusalCode, string>> =
       "A chart keeps at least one measure; clear its chords instead.",
     "u1.performance_style_unknown":
       "Pick one of the playback styles the groove picker lists.",
+    "u1.instrument_unknown":
+      "Pick one of the instruments the instrument picker lists.",
+    "u1.master_volume_invalid":
+      "Set the volume between 0 and 1.",
     "u1.selection_empty": "Select at least one chord before this action.",
     "u1.selection_limit": "Select at most 8,192 chords.",
     "u1.target_missing": "Choose a chord, measure, or boundary that still exists.",
@@ -1833,6 +1860,76 @@ function makeStudioComposition(
       patch: Object.freeze({ tempoBpm: bpm }),
     });
     return apply("set-tempo", (current) =>
+      runDocumentCommand({ command, dependencies, state: current }),
+    );
+  };
+
+  const setInstrument = (
+    instrumentId: string,
+  ): StudioControllerActionResult => {
+    const made = makeInstrumentId(instrumentId);
+    if (!made.ok) {
+      return editRefusal(
+        "set-instrument",
+        "u1.instrument_unknown",
+        `"${instrumentId}" is not an instrument this studio declares.`,
+        ["instrumentId"],
+      );
+    }
+    const playback = state.document.playback;
+    if (made.value === playback.instrumentId) {
+      return Object.freeze({
+        ok: true,
+        outcome: "ephemeral-updated",
+        snapshot,
+        effects: Object.freeze([]),
+      });
+    }
+    const command: SetDocumentSettingsCommand = Object.freeze({
+      ...commandEnvelope("studio-instrument", "Set instrument"),
+      completionUpdates: Object.freeze([]),
+      kind: "set-document-settings",
+      patch: Object.freeze({
+        playback: Object.freeze({ ...playback, instrumentId: made.value }),
+      }),
+    });
+    return apply("set-instrument", (current) =>
+      runDocumentCommand({ command, dependencies, state: current }),
+    );
+  };
+
+  const setMasterVolume = (volume: number): StudioControllerActionResult => {
+    if (
+      typeof volume !== "number" ||
+      !Number.isFinite(volume) ||
+      volume < 0 ||
+      volume > 1
+    ) {
+      return editRefusal(
+        "set-master-volume",
+        "u1.master_volume_invalid",
+        "Master volume is a number between 0 and 1.",
+        ["masterVolume"],
+      );
+    }
+    const playback = state.document.playback;
+    if (volume === playback.masterVolume) {
+      return Object.freeze({
+        ok: true,
+        outcome: "ephemeral-updated",
+        snapshot,
+        effects: Object.freeze([]),
+      });
+    }
+    const command: SetDocumentSettingsCommand = Object.freeze({
+      ...commandEnvelope("studio-master-volume", "Set volume"),
+      completionUpdates: Object.freeze([]),
+      kind: "set-document-settings",
+      patch: Object.freeze({
+        playback: Object.freeze({ ...playback, masterVolume: volume }),
+      }),
+    });
+    return apply("set-master-volume", (current) =>
       runDocumentCommand({ command, dependencies, state: current }),
     );
   };
@@ -5141,6 +5238,8 @@ function makeStudioComposition(
     deleteMeasure,
     setTempo,
     setPerformanceStyle,
+    setInstrument,
+    setMasterVolume,
     setTitle,
     undo: () => apply("undo", (current) => undoDocumentCommand({ state: current })),
     redo: () => apply("redo", (current) => redoDocumentCommand({ state: current })),

@@ -31,8 +31,13 @@ import {
   type StudioViewModel,
   type StudioAnalysisFrame,
   type StudioAnalyzerExpectation,
+  instrumentOptions,
 } from "../application/runtime";
 import { MAX_SHORT_TEXT_CODE_POINTS } from "../domain";
+
+/** The reviewed tempo window the controller enforces (20–300 BPM). */
+const MIN_STUDIO_TEMPO_BPM = 20;
+const MAX_STUDIO_TEMPO_BPM = 300;
 import {
   AnalyzerPanel,
   StudioShell,
@@ -57,6 +62,8 @@ export type AppActions = Readonly<{
   setTitle: (value: string) => StudioControllerActionResult;
   setTempo: (bpm: number) => StudioControllerActionResult;
   setPerformanceStyle: (styleId: string) => StudioControllerActionResult;
+  setInstrument: (instrumentId: string) => StudioControllerActionResult;
+  setMasterVolume: (volume: number) => StudioControllerActionResult;
   clearChart: () => StudioControllerActionResult;
   deleteMeasure: (measureId: string) => StudioControllerActionResult;
   splitAtBar: (
@@ -1143,6 +1150,16 @@ function viewFromSnapshot(
       positionExactLabel: `${playheadLabel} beats`,
       currentChordLabel: pointer.chordLabel,
       progressPercent: pointer.progressPercent,
+      /* V2R-8 footer settings: document/session truth from the snapshot. */
+      grooveStyleId: snapshot.performance.styleId,
+      grooveOptions: snapshot.performance.options,
+      instrumentId: snapshot.instrumentId,
+      instrumentOptions: instrumentOptions(),
+      masterVolumePercent: Math.round(snapshot.masterVolume * 100),
+      canStepPrevious: chordCount > 0,
+      canStepNext: chordCount > 0,
+      canTempoDown: snapshot.tempoBpm > MIN_STUDIO_TEMPO_BPM,
+      canTempoUp: snapshot.tempoBpm < MAX_STUDIO_TEMPO_BPM,
     }),
     playback: Object.freeze({
       tempoBpm: snapshot.tempoBpm,
@@ -1822,6 +1839,54 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
         onStop: () => {
           recordEditResult(actions.stopProgression(), { kind: "delete" });
         },
+        onStepChord: (direction) => {
+          /* Chart order from the live snapshot; selection previews (jcpe-gnyy). */
+          const live = actions.getSnapshot();
+          const ordered = live.sections.flatMap((section) =>
+            section.measures.flatMap((measure) =>
+              measure.events.map((event) => event.id),
+            ),
+          );
+          if (ordered.length === 0) return;
+          const current =
+            live.bookmarks.selectionFocusEventId ??
+            live.bookmarks.selectedEventIds[0] ??
+            null;
+          const at = current === null ? -1 : ordered.indexOf(current);
+          const nextIndex =
+            direction === "next"
+              ? Math.min(ordered.length - 1, at + 1)
+              : Math.max(0, at < 0 ? 0 : at - 1);
+          const target = ordered[nextIndex];
+          if (target === undefined || target === current) return;
+          setRovingFocusId(target);
+          recordEditResult(actions.selectEvent(target));
+        },
+        onTempoStep: (deltaBpm) => {
+          const live = actions.getSnapshot();
+          const next = Math.min(
+            MAX_STUDIO_TEMPO_BPM,
+            Math.max(MIN_STUDIO_TEMPO_BPM, live.tempoBpm + deltaBpm),
+          );
+          if (next === live.tempoBpm) return;
+          const result = actions.setTempo(next);
+          recordEditResult(result);
+          if (result.ok) {
+            setTempoDraft(String(next));
+            setTempoInvalid(false);
+            setTempoFeedback(null);
+          }
+        },
+        onGrooveChange: (styleId) => {
+          recordEditResult(actions.setPerformanceStyle(styleId));
+        },
+        onInstrumentChange: (instrumentId) => {
+          recordEditResult(actions.setInstrument(instrumentId));
+        },
+        onVolumeCommit: (volume) => {
+          recordEditResult(actions.setMasterVolume(volume));
+        },
+        readMeterFrame: actions.readTransportAnalysisFrame,
       }}
       callbacks={{
         onCopyShareLink: () => {
@@ -2666,6 +2731,8 @@ export function StudioRoot({
         setRailCollapsed: controller.setRailCollapsed,
         setTitle: controller.setTitle,
         setTempo: controller.setTempo,
+        setInstrument: controller.setInstrument,
+        setMasterVolume: controller.setMasterVolume,
         setPerformanceStyle: controller.setPerformanceStyle,
         clearChart: controller.clearChart,
         deleteMeasure: controller.deleteMeasure,

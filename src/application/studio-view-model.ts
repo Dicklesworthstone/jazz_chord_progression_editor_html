@@ -1,4 +1,5 @@
 import {
+  INSTRUMENT_IDS,
   MIDI_PPQ,
   measureCapacity,
   type BeatValue,
@@ -191,6 +192,7 @@ export type StudioViewModel = Readonly<{
   meterLabel: string;
   tempoBpm: number;
   keyLabel: string;
+  instrumentId: InstrumentId;
   instrumentLabel: string;
   masterVolume: number;
   reverbAmount: number;
@@ -299,6 +301,16 @@ export function performanceStyleLabel(styleId: PerformanceStyleId): string {
     case "block-chords@1":
       return "Block chords";
   }
+}
+
+/** Every declared instrument with its display label, for pickers. */
+export function instrumentOptions(): readonly Readonly<{
+  id: InstrumentId;
+  label: string;
+}>[] {
+  return Object.freeze(
+    INSTRUMENT_IDS.map((id) => Object.freeze({ id, label: instrumentLabel(id) })),
+  );
 }
 
 function instrumentLabel(instrumentId: InstrumentId): string {
@@ -681,6 +693,7 @@ export function selectStudioViewModel(
     meterLabel: `${String(state.document.meter.beatsPerBar)}/${String(state.document.meter.beatUnit)}`,
     tempoBpm: state.document.tempoBpm,
     keyLabel: keyLabel(state.document.key),
+    instrumentId: state.document.playback.instrumentId,
     instrumentLabel: instrumentLabel(state.document.playback.instrumentId),
     masterVolume: state.document.playback.masterVolume,
     reverbAmount: state.document.playback.reverbAmount,

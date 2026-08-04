@@ -2956,20 +2956,24 @@
   position: relative;
   z-index: 1;
   grid-row: 2;
-  display: grid;
-  grid-template-areas: "controls status facts";
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  display: flex;
   align-items: center;
-  gap: var(--space-3);
   min-block-size: var(--transport-min-block);
   /* The sheet layer anchors to this exact height; never let content grow it. */
   block-size: calc(var(--transport-min-block) + env(safe-area-inset-bottom, 0px));
   overflow: hidden;
   padding: var(--space-2) var(--space-4);
   padding-block-end: calc(var(--space-2) + env(safe-area-inset-bottom, 0px));
-  border-block-start: var(--border-width) solid var(--border-default);
-  background: color-mix(in srgb, var(--surface-header) 94%, transparent);
-  backdrop-filter: blur(10px);
+  border-block-start: var(--border-width) solid var(--rule-2);
+  background: var(--chrome);
+}
+
+.studio-transport__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  inline-size: 100%;
+  min-inline-size: 0;
 }
 
 .studio-transport__sweep {
@@ -2985,8 +2989,8 @@
   display: block;
   block-size: 100%;
   inline-size: 0;
-  background: linear-gradient(90deg, var(--accent), var(--accent-strong));
-  box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 55%, transparent);
+  background: var(--red);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--red) 55%, transparent);
 }
 
 .studio-transport__sweep-fill[data-active="false"] {
@@ -2995,10 +2999,10 @@
 }
 
 .studio-transport__controls {
-  grid-area: controls;
+  flex: none;
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-1);
 }
 
 /* The play key is the one brass object on the console. */
@@ -3036,7 +3040,8 @@
 }
 
 .studio-transport__status {
-  grid-area: status;
+  flex: 1 1 auto;
+  min-inline-size: 0;
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -3100,50 +3105,19 @@
   max-inline-size: 32rem;
 }
 
-.studio-transport__facts {
-  grid-area: facts;
-}
+/* V2R-8: the facts list became the now-block + settings cluster. */
 
-.studio-transport__facts .ui-key-value-list {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-}
 
-.studio-transport__facts .ui-key-value-list__item {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  font-size: var(--text-xs);
-}
 
-.studio-transport__facts .ui-key-value-list__item dt {
-  color: var(--text-subtle);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-size: 0.625rem;
-}
 
-.studio-transport__facts .ui-key-value-list__item dd {
-  color: var(--text-primary);
-  font-family: var(--font-mono);
-  font-weight: 600;
-  white-space: nowrap;
-}
 
-/* Compact transport: keep the facts to what a thumb needs. */
+/* Compact transport: keep the row to what a thumb needs. */
 @media (max-width: 39.999rem) {
   .studio-transport {
-    grid-template-areas: "status controls facts";
-    grid-template-columns: minmax(0, 1fr) auto auto;
     gap: var(--space-2);
     padding-inline:
       max(var(--space-3), env(safe-area-inset-left, 0px))
       max(var(--space-3), env(safe-area-inset-right, 0px));
-  }
-
-  .studio-transport__facts .ui-key-value-list__item:not(:nth-child(2)) {
-    display: none;
   }
 
   /*
@@ -3175,11 +3149,6 @@
     white-space: nowrap;
   }
 
-  .studio-transport__facts .ui-key-value-list__item dd {
-    font-family: var(--font-chord);
-    font-size: var(--text-md);
-  }
-
   #studio-transport-play:not(:disabled) {
     inline-size: var(--touch-target);
     block-size: var(--touch-target);
@@ -3187,26 +3156,14 @@
 }
 
 /*
- * Below ~360px the one remaining fact and the status label cannot share
- * the row: the fact wins the arithmetic and the audio-state truth
- * ellipsizes to a single letter. The chart and Harmony Lens both state
- * the current chord; the transport's condition has no other voice.
+ * Below ~360px the title editor's buttons cannot share the input's row.
+ * One field-width row each: the input, then its two buttons together —
+ * never a lone orphaned Reset. (The retired transport-facts rule that
+ * shared this block left with the V2R-8 footer.)
  */
 @media (max-width: 22.49rem) {
-  .studio-transport__facts {
-    display: none;
-  }
-
-  /* One field-width row each: the input, then its two buttons together —
-     never a lone orphaned Reset. */
   .studio-title-editor__control-row .ui-input {
     flex-basis: 100%;
-  }
-}
-
-@media (min-width: 40rem) and (max-width: 63.999rem) {
-  .studio-transport__facts .ui-key-value-list__item:nth-child(odd) {
-    display: none;
   }
 }
 
@@ -3891,5 +3848,187 @@
   .studio-paper-head__title .studio-title-editor__control-row .ui-button,
   .studio-chart__header .ui-button {
     min-block-size: var(--touch-target);
+  }
+}
+
+/* ----------------------------------------------------- V2R-8 footer kit */
+
+.studio-transport__now {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 7rem;
+  line-height: var(--line-tight);
+}
+
+.studio-transport__now-chord {
+  font-family: var(--font-chord);
+  font-size: var(--text-xl);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.studio-transport__now[data-sounding="true"] .studio-transport__now-chord {
+  color: var(--red);
+}
+
+.studio-transport__now-place {
+  color: var(--ink-3);
+  font-size: 0.65625rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.studio-transport__meter {
+  flex: none;
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+.studio-transport__meter-canvas {
+  display: block;
+  inline-size: 8rem;
+  block-size: 1.875rem;
+}
+
+.studio-transport__meter-unit {
+  color: var(--ink-4);
+  font-size: 0.59375rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding-block-end: 1px;
+}
+
+.studio-transport__settings {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.studio-transport__tempo {
+  display: flex;
+  align-items: center;
+  block-size: var(--control-min-block);
+  border: var(--border-width) solid var(--rule-2);
+  border-radius: var(--radius-sm);
+}
+
+.studio-transport__tempo-step {
+  inline-size: 1.75rem;
+  block-size: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--ink-3);
+  font-size: var(--text-md);
+  cursor: pointer;
+}
+
+.studio-transport__tempo-step:hover:not(:disabled) {
+  color: var(--ink);
+}
+
+.studio-transport__tempo-step:disabled {
+  color: var(--ink-4);
+  cursor: default;
+}
+
+.studio-transport__tempo-step:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: calc(-1 * var(--focus-width));
+}
+
+.studio-transport__tempo-value {
+  min-inline-size: 4.125rem;
+  text-align: center;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.studio-transport__tempo-unit {
+  color: var(--ink-3);
+  font-weight: 400;
+  font-size: 0.625rem;
+  letter-spacing: 0.06em;
+}
+
+.studio-transport__select select {
+  block-size: var(--control-min-block);
+  border: var(--border-width) solid var(--rule-2);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink);
+  font-size: var(--text-sm);
+  padding-inline: var(--space-2);
+  cursor: pointer;
+  max-inline-size: 9.5rem;
+}
+
+.studio-transport__select select:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.studio-transport__volume {
+  display: flex;
+  align-items: center;
+}
+
+.studio-transport__volume input[type="range"] {
+  inline-size: 4.625rem;
+  accent-color: var(--ink);
+  cursor: pointer;
+}
+
+.studio-transport__volume input[type="range"]:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+/*
+ * Footer density ladder. Below 71.875rem the mix settings retire from the
+ * footer — tempo and groove stay reachable through the Library panel's
+ * playback settings, so no capability is lost, and no dead control ships.
+ * Below 40rem the meter and now-place line retire too; the status line and
+ * the five playback keys always remain.
+ */
+@media (max-width: 71.874rem) {
+  .studio-transport__settings {
+    display: none;
+  }
+}
+
+@media (max-width: 55.999rem) {
+  .studio-transport__meter {
+    display: none;
+  }
+}
+
+@media (max-width: 39.999rem) {
+  .studio-transport__now {
+    min-inline-size: 4.5rem;
+  }
+
+  .studio-transport__now-place {
+    display: none;
+  }
+
+  .studio-transport__row {
+    gap: var(--space-2);
+  }
+
+  #studio-transport-previous,
+  #studio-transport-next {
+    display: none;
   }
 }

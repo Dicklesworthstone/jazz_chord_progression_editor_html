@@ -40,6 +40,7 @@ export type {
 } from "./studio-controller";
 
 export type { StudioViewModel } from "./studio-view-model";
+export { instrumentOptions } from "./studio-view-model";
 
 export {
   DELETE_AUTO_COMPLETION_REASON,

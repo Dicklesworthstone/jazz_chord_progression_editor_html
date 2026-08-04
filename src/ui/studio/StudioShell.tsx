@@ -390,6 +390,7 @@ export function StudioShell({
           onPause={transport.onPause}
           onPlay={transport.onPlay}
           onStop={transport.onStop}
+          callbacks={transport}
           view={view.transport}
         />
       </div>

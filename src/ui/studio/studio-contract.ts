@@ -339,6 +339,31 @@ export type StudioTransportView = Readonly<{
   currentChordLabel: string | null;
   /** 0..100 while playing, or null; drives the transport progress sweep. */
   progressPercent: number | null;
+  /**
+   * V2R-8 footer settings (jcpe-v2r-transport-k88n). All four are document
+   * or session values read from the snapshot; every change lands through a
+   * real command path and refusals surface in the status line.
+   */
+  grooveStyleId: string;
+  grooveOptions: readonly Readonly<{ id: string; label: string }>[];
+  instrumentId: string;
+  instrumentOptions: readonly Readonly<{ id: string; label: string }>[];
+  /** Document master volume, 0..100 for the slider. Applies at next engine start. */
+  masterVolumePercent: number;
+  canStepPrevious: boolean;
+  canStepNext: boolean;
+  /** Tempo stepper enablement at the reviewed 20–300 window's edges. */
+  canTempoDown: boolean;
+  canTempoUp: boolean;
+}>;
+
+/**
+ * The one field the footer meter reads per animation frame. Structurally a
+ * subset of the application's analysis frame so the UI depends on no audio
+ * type; a null frame renders the meter quiet.
+ */
+export type TransportMeterFrame = Readonly<{
+  magnitudes: Float32Array;
 }>;
 
 export type StudioLayoutView = Readonly<{
@@ -535,6 +560,16 @@ export type StudioTransportCallbacks = Readonly<{
   onPlay: (source: "pointer" | "keyboard") => void;
   onPause: () => void;
   onStop: () => void;
+  /** Select the previous/next chord in chart order; selection previews it. */
+  onStepChord: (direction: "previous" | "next") => void;
+  /** Step the document tempo by a signed BPM delta through setTempo. */
+  onTempoStep: (deltaBpm: number) => void;
+  onGrooveChange: (styleId: string) => void;
+  onInstrumentChange: (instrumentId: string) => void;
+  /** Commit the document master volume, 0..1. */
+  onVolumeCommit: (volume: number) => void;
+  /** Display-only spectral frame for the footer meter; null renders quiet. */
+  readMeterFrame: () => TransportMeterFrame | null;
 }>;
 
 /**
