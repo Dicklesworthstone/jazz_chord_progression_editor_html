@@ -75,7 +75,7 @@ type EmbeddedAssetRecord = {
    * `inline-script-base64` asset is a byte payload carried as a base64 string
    * constant inside the bundled JavaScript (the embedded wasm module).
    */
-  embedding: "data-url" | "inline-script-base64";
+  embedding: "data-url" | "inline-script-base64" | "css-data-url";
   generator?: string;
   /** Required credit line for a third-party asset under an attribution license. */
   attribution?: string;
@@ -168,6 +168,68 @@ async function contentSecurityPolicy(html: string): Promise<{
 
 function safeHtmlComment(value: string): string {
   return value.replaceAll("--", "- -").replace(/\s+$/u, "");
+}
+
+const FONT_FACE_DATA_URL = /\/\* (?<id>[a-z0-9-]+): [^*]*\*\/\s*@font-face \{[^}]*?src: url\(data:font\/woff2;base64,(?<base64>[A-Za-z0-9+/=]+)\)/gu;
+
+/**
+ * The v2 identity's Archivo/Literata faces travel as data-url payloads inside
+ * the generated `src/styles/fonts.css` (see scripts/build-fonts.ts). The
+ * build re-derives each payload from that stylesheet, confirms the bytes
+ * reached the finalized artifact, and inventories them with OFL provenance.
+ */
+async function inventoriedFontAssets(
+  root: string,
+  html: string,
+): Promise<EmbeddedAssetRecord[]> {
+  const { EMBEDDED_FONT_FACES, FONTS_CSS_PATH, FONTS_CSS_BANNER, generateFontsCss } =
+    await import("./build-fonts");
+  const cssFile = Bun.file(resolve(root, FONTS_CSS_PATH));
+  if (!(await cssFile.exists())) {
+    throw new Error("ASSET_FONT_CSS_MISSING: src/styles/fonts.css was not generated.");
+  }
+  const css = await cssFile.text();
+  if (!css.startsWith(FONTS_CSS_BANNER)) {
+    throw new Error("ASSET_FONT_CSS_BANNER: fonts.css is missing its generated banner.");
+  }
+  if (css !== (await generateFontsCss(root))) {
+    throw new Error(
+      "ASSET_FONT_CSS_DRIFT: fonts.css does not match assets/fonts; " +
+        "regenerate with bun scripts/build-fonts.ts.",
+    );
+  }
+  const records: EmbeddedAssetRecord[] = [];
+  for (const match of css.matchAll(FONT_FACE_DATA_URL)) {
+    const id = match.groups?.["id"];
+    const base64 = match.groups?.["base64"];
+    if (!id || !base64) continue;
+    const face = EMBEDDED_FONT_FACES.find((candidate) => candidate.id === id);
+    if (!face) {
+      throw new Error(`ASSET_FONT_UNKNOWN: fonts.css carries unregistered face ${id}.`);
+    }
+    if (!html.includes(base64)) {
+      throw new Error(
+        `ASSET_FONT_MISSING: the embedded ${id} payload was not bundled.`,
+      );
+    }
+    const bytes = Uint8Array.from(Buffer.from(base64, "base64"));
+    records.push({
+      id: face.id,
+      mime: "font/woff2",
+      bytes: bytes.byteLength,
+      sha256: await sha256Hex(bytes),
+      source: face.source,
+      generator: "scripts/build-fonts.ts",
+      license: `${face.license} (${face.licenseFile})`,
+      embedding: "css-data-url",
+    });
+  }
+  if (records.length !== EMBEDDED_FONT_FACES.length) {
+    throw new Error(
+      `ASSET_FONT_COUNT: expected ${String(EMBEDDED_FONT_FACES.length)} embedded faces, found ${String(records.length)}.`,
+    );
+  }
+  return records;
 }
 
 async function inventoriedEmbeddedAssets(
@@ -428,9 +490,13 @@ export async function buildStandalone(options: BuildOptions = {}): Promise<{
       `ARTIFACT_POLICY_FAILED\n${JSON.stringify(inspection.findings, null, 2)}`,
     );
   }
-  const embeddedAssets = await inventoriedEmbeddedAssets(finalized.html);
+  const embeddedAssets = [
+    ...(await inventoriedEmbeddedAssets(finalized.html)),
+    ...(await inventoriedFontAssets(root, finalized.html)),
+  ];
   // The markup scanner can only see attribute-level data: URLs; script-carried
-  // payloads (the wasm module) are verified byte-for-byte above instead.
+  // payloads (the wasm module) and CSS-carried font payloads are verified
+  // byte-for-byte above instead.
   const markupVisibleAssets = embeddedAssets.filter(
     (asset) => asset.embedding === "data-url",
   );
