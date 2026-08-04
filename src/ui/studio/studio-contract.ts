@@ -306,6 +306,56 @@ export type StudioContinuationSectionView = Readonly<{
   suggestions: readonly StudioSuggestionRowView[];
 }>;
 
+/**
+ * The chord-detail teaching panel (jcpe-v2r-detail-yimm): everything the
+ * ink-on-paper Chord Detail surface renders for the selected event. All
+ * values arrive verbatim from the chart-annotation read ports; the panel
+ * invents nothing — a null roman stays blank, an honest outcome sentence
+ * replaces analysis when no claim can be made.
+ */
+export type StudioDetailToneView = Readonly<{
+  /** Display name with engraved accidentals ("B♭"). */
+  name: string;
+  /** Interval role ("root", "♭3"); null for custom pitches. */
+  role: string | null;
+  guide: boolean;
+  /** 0..11; lights the keyboard and gates the preview per the owner law. */
+  pitchClass: number;
+}>;
+
+export type StudioDetailMoveView = Readonly<{
+  fromName: string;
+  toName: string;
+  /** True renders "=" (common tone); false renders an arrow. */
+  held: boolean;
+}>;
+
+export type StudioDetailResolutionView = Readonly<{
+  targetSymbol: string;
+  moves: readonly StudioDetailMoveView[];
+  note: string;
+}>;
+
+export type StudioDetailNextView = Readonly<{
+  id: string;
+  symbolText: string;
+  roman: string | null;
+  why: string;
+}>;
+
+export type StudioDetailView = Readonly<{
+  /** "Bar 2 · 4 beats · C major" — composed from real view-model fields. */
+  place: string;
+  symbolText: string;
+  roman: string | null;
+  functionSentence: string;
+  scaleSentence: string | null;
+  tones: readonly StudioDetailToneView[];
+  guideToneNames: readonly string[];
+  resolution: StudioDetailResolutionView | null;
+  next: readonly StudioDetailNextView[];
+}>;
+
 export type StudioHarmonyView = Readonly<{
   selectedChordLabel: null;
   selectionStatusLabel: string;
@@ -313,6 +363,8 @@ export type StudioHarmonyView = Readonly<{
   emptyDescription: string;
   /** Literal facts for the most recently selected chord; null when none. */
   selected: StudioSelectedChordView | null;
+  /** The teaching panel for the selected chord; null when none selected. */
+  detail: StudioDetailView | null;
   documentFacts: readonly StudioFactView[];
   /** Plural next-chord options; null while the chart has no parsed chord. */
   continuation: StudioContinuationSectionView | null;
@@ -479,6 +531,11 @@ export type StudioShellCallbacks = Readonly<{
   onGrooveStyleChange: (styleId: string) => void;
   /** Append one suggested chord through the shared quick-entry path. */
   onAddSuggestedChord: (symbolText: string) => void;
+  /**
+   * Preview one pitch from the chord-detail keyboard or a note chip. The
+   * owner law (jcpe-v2r-detail-yimm): only in-chord keys ever reach this.
+   */
+  onPreviewPitch: (midiPitch: number) => void;
   onQuickEntryDraftChange: (value: string) => void;
   onQuickEntryInsert: () => void;
   /**

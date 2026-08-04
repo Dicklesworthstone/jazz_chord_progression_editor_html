@@ -442,6 +442,7 @@ export function StudioShell({
               sheetOpen={activeSheet === "harmony"}
               view={view.harmony}
               onAddSuggestedChord={callbacks.onAddSuggestedChord}
+              onPreviewPitch={callbacks.onPreviewPitch}
               onCollapsedChange={(collapsed) => {
                 callbacks.onRailCollapsedChange("harmony", collapsed);
               }}
@@ -576,6 +577,7 @@ export function StudioShell({
                   headingId={`${sheetId}-title`}
                   view={view.harmony}
                   onAddSuggestedChord={callbacks.onAddSuggestedChord}
+                  onPreviewPitch={callbacks.onPreviewPitch}
                 />
               )
             }

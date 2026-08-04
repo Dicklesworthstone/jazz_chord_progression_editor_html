@@ -5,6 +5,7 @@ import {
   makeBeatDuration,
   makeBeatPosition,
   makeInstrumentId,
+  makeMidiPitch,
   measureCapacity,
   subtractBeatValues,
   type BeatDuration,
@@ -88,6 +89,7 @@ import {
 } from "./studio-playback";
 import {
   PERFORMANCE_STYLE_IDS,
+  PLAYBACK_PLAN_FIXED_VELOCITY,
   type PerformanceStyleId,
 } from "../playback";
 import {
@@ -630,6 +632,17 @@ export interface StudioController {
    */
   readonly previewChord: (
     eventId: string,
+    gesture: StudioAudioGesture,
+  ) => StudioControllerActionResult;
+  /**
+   * Sound one pitch immediately through the same preview owner as
+   * previewChord (jcpe-v2r-detail-yimm): the chord-detail keyboard and note
+   * chips speak single tones. Same X0/X1 preview isolation — starting a new
+   * preview releases the prior one, and the playhead and run state are never
+   * touched. The pitch must be a valid MIDI number; out-of-range refuses.
+   */
+  readonly previewPitch: (
+    midiPitch: number,
     gesture: StudioAudioGesture,
   ) => StudioControllerActionResult;
   /**
@@ -4555,6 +4568,69 @@ function makeStudioComposition(
     );
   };
 
+  const previewPitch = (
+    midiPitch: number,
+    gesture: StudioAudioGesture,
+  ): StudioControllerActionResult => {
+    if (audioPort === null) {
+      return editRefusal(
+        "preview-chord",
+        "u1.playback_unavailable",
+        "This build has no audio output wired.",
+      );
+    }
+    const made = makeMidiPitch(midiPitch);
+    if (!made.ok) {
+      return editRefusal(
+        "preview-chord",
+        "u1.playback_refused",
+        "That pitch is outside the MIDI range this studio speaks.",
+      );
+    }
+    const pitches: readonly [MidiPitch, ...MidiPitch[]] = [made.value];
+    const instrumentId = state.document.playback.instrumentId;
+    previewOrdinal += 1;
+    const previewId = `x1:preview:pitch-${String(previewOrdinal)}`;
+    const port = audioPort;
+    const documentId = state.document.id;
+    const planRevision = state.revision;
+    const mix = Object.freeze({
+      masterVolume: state.document.playback.masterVolume,
+      reverbAmount: state.document.playback.reverbAmount,
+    });
+    void (async () => {
+      if (!port.isInitialized()) {
+        await port.initialize(
+          nextTransportRequestId(),
+          gesture,
+          documentId,
+          planRevision,
+          mix,
+        );
+      }
+      await port.prepareInstrument(
+        instrumentId,
+        pitches.map((pitch) =>
+          Object.freeze({
+            midiPitch: pitch,
+            velocity: PLAYBACK_PLAN_FIXED_VELOCITY,
+          }),
+        ),
+      );
+      await port.setInstrument(nextTransportRequestId(), instrumentId);
+      await port.startPreview(
+        nextTransportRequestId(),
+        previewId,
+        instrumentId,
+        pitches,
+        PREVIEW_GATE_SECONDS,
+      );
+    })();
+    return apply("preview-chord", (current) =>
+      successResult(current, createWorkCounters(), "ephemeral-updated"),
+    );
+  };
+
   const readTransportAnalysisFrame = (): StudioAnalysisFrame | null =>
     audioPort === null ? null : audioPort.readAnalysisFrame();
 
@@ -5194,6 +5270,7 @@ function makeStudioComposition(
     pauseProgression,
     playProgression,
     previewChord,
+    previewPitch,
     readTransportPlayheadLabel,
     readTransportAnalysisFrame,
     readEventPitchClasses,

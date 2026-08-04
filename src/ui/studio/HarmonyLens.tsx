@@ -1,4 +1,5 @@
 import { Button, KeyValueList, StatusPill, UiIcon } from "../primitives";
+import { ChordDetailPanel } from "./ChordDetailPanel";
 import type { StudioHarmonyView } from "./studio-contract";
 
 export type HarmonyLensContentProps = Readonly<{
@@ -6,6 +7,7 @@ export type HarmonyLensContentProps = Readonly<{
   context: "rail" | "sheet";
   view: StudioHarmonyView;
   onAddSuggestedChord: (symbolText: string) => void;
+  onPreviewPitch: (midiPitch: number) => void;
 }>;
 
 export function HarmonyLensContent({
@@ -13,6 +15,7 @@ export function HarmonyLensContent({
   context,
   view,
   onAddSuggestedChord,
+  onPreviewPitch,
 }: HarmonyLensContentProps) {
   const factsHeadingId = `${headingId}-facts`;
   const continuationHeadingId = `${headingId}-continuation`;
@@ -42,7 +45,14 @@ export function HarmonyLensContent({
         />
       </div>
 
-      {view.selected === null ? (
+      {view.detail !== null && view.selected !== null ? (
+        <ChordDetailPanel
+          context={context}
+          detail={view.detail}
+          onAddSuggestedChord={onAddSuggestedChord}
+          onPreviewPitch={onPreviewPitch}
+        />
+      ) : view.selected === null ? (
         <div class="studio-harmony-empty">
           <span class="studio-harmony-empty__mark" aria-hidden="true">
             <UiIcon iconId="harmony" />
@@ -88,7 +98,7 @@ export function HarmonyLensContent({
         pristine fill, derived-target retarget, refusal surfacing — applies
         unchanged (jcpe-73h1, U1-EDIT-004).
       */}
-      {view.continuation === null ? null : (
+      {view.detail !== null || view.continuation === null ? null : (
         <section
           class="studio-continuation"
           data-testid={`lens-continuation-${context}`}
@@ -171,6 +181,7 @@ export type HarmonyLensProps = Readonly<{
   view: StudioHarmonyView;
   onCollapsedChange: (collapsed: boolean) => void;
   onAddSuggestedChord: (symbolText: string) => void;
+  onPreviewPitch: (midiPitch: number) => void;
 }>;
 
 export function HarmonyLens({
@@ -179,6 +190,7 @@ export function HarmonyLens({
   view,
   onCollapsedChange,
   onAddSuggestedChord,
+  onPreviewPitch,
 }: HarmonyLensProps) {
   const headingId = "studio-harmony-heading";
 
@@ -203,6 +215,7 @@ export function HarmonyLens({
             context="rail"
             view={view}
             onAddSuggestedChord={onAddSuggestedChord}
+            onPreviewPitch={onPreviewPitch}
           />
         )}
         <button

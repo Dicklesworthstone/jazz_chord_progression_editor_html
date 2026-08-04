@@ -46,6 +46,7 @@ import {
   type StudioMidiImportView,
   type StudioPanelSide,
   type StudioShareFeedback,
+  type StudioDetailView,
   type StudioShellView,
   type StudioTitleFeedback,
   type StudioViewMode,
@@ -218,6 +219,11 @@ export type AppActions = Readonly<{
   /** Sound one chord immediately on selection (jcpe-gnyy). */
   previewChord: (
     eventId: string,
+    gesture: StudioAudioGesture,
+  ) => StudioControllerActionResult;
+  /** Sound one pitch from the detail keyboard (jcpe-v2r-detail-yimm). */
+  previewPitch: (
+    midiPitch: number,
     gesture: StudioAudioGesture,
   ) => StudioControllerActionResult;
   /** Display-only analyzer reads (jcpe-7she); never a command path. */
@@ -680,6 +686,80 @@ function selectedChordView(
   return null;
 }
 
+/**
+ * The chord-detail panel's view (jcpe-v2r-detail-yimm): the chart-annotation
+ * read port's frozen values mapped onto the presentational shape, with the
+ * place line composed from the same view-model fields the facts list shows.
+ * Analysis honesty carries through: a non-analyzed outcome keeps its stated
+ * sentence and a null roman renders as nothing.
+ */
+function detailViewFrom(
+  read: (eventId: string) => StudioChordDetailView | null,
+  snapshot: StudioViewModel,
+): StudioDetailView | null {
+  const selectedIds = snapshot.bookmarks.selectedEventIds;
+  const targetId = selectedIds[selectedIds.length - 1];
+  if (targetId === undefined) return null;
+  const raw = read(targetId);
+  if (raw === null) return null;
+  let place = "";
+  let symbolText = "";
+  for (const section of snapshot.sections) {
+    for (const measure of section.measures) {
+      for (const event of measure.events) {
+        if (event.id !== targetId) continue;
+        place = `Bar ${String(measure.ordinal)} · ${event.durationBeatLabel} beats · ${snapshot.keyLabel}`;
+        symbolText = event.symbolText;
+      }
+    }
+  }
+  if (symbolText.length === 0) return null;
+  return Object.freeze({
+    place,
+    symbolText,
+    roman: raw.analysis.roman,
+    functionSentence: raw.analysis.functionSentence,
+    scaleSentence: raw.analysis.scaleSentence,
+    tones: Object.freeze(
+      raw.tones.map((tone) =>
+        Object.freeze({
+          name: tone.name,
+          role: tone.role,
+          guide: tone.guide,
+          pitchClass: tone.pitchClass,
+        }),
+      ),
+    ),
+    guideToneNames: raw.guideToneNames,
+    resolution:
+      raw.resolution === null
+        ? null
+        : Object.freeze({
+            targetSymbol: raw.resolution.targetSymbol,
+            moves: Object.freeze(
+              raw.resolution.moves.map((move) =>
+                Object.freeze({
+                  fromName: move.fromName,
+                  toName: move.toName,
+                  held: move.motion === "held",
+                }),
+              ),
+            ),
+            note: raw.resolution.note,
+          }),
+    next: Object.freeze(
+      raw.next.map((option) =>
+        Object.freeze({
+          id: option.id,
+          symbolText: option.symbolText,
+          roman: option.roman,
+          why: option.why,
+        }),
+      ),
+    ),
+  });
+}
+
 const SUGGESTION_CATEGORY_LABELS: Readonly<Record<string, string>> =
   Object.freeze({
     "resolve": "Resolve",
@@ -883,6 +963,7 @@ function viewFromSnapshot(
   draftPreview: StudioDraftPreview,
   livePlayheadLabel: string | null,
   continuation: StudioContinuationView,
+  detail: StudioDetailView | null,
   midiImport: StudioMidiImportView,
 ): StudioShellView {
   const {
@@ -1085,6 +1166,7 @@ function viewFromSnapshot(
     harmony: Object.freeze({
       selectedChordLabel: null,
       selected: selectedChordView(snapshot),
+      detail,
       selectionStatusLabel: chordCount === 0
         ? "No chord events in this chart"
         : selectedChordView(snapshot) === null
@@ -1596,6 +1678,7 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
    * publishes a new document.
    */
   const continuation = actions.readContinuationSuggestions();
+  const detailView = detailViewFrom(actions.readChordDetail, snapshot);
 
   /**
    * The one insertion path, shared by typing, the demo chips, the library
@@ -1702,7 +1785,7 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
     tempoFeedback,
     shareFeedback,
     shareCopied,
-  }, insertionPlan, draftPreview, livePlayheadLabel, continuation, midiImportView(
+  }, insertionPlan, draftPreview, livePlayheadLabel, continuation, detailView, midiImportView(
     actions.midiImportAvailable,
     midiPreview,
     midiImportNotice,
@@ -2054,6 +2137,20 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
           // laws apply unchanged, and a refusal lands in the same line.
           stageQuickEntryDraft(`| ${symbolText} |`);
           applyQuickEntryInsert();
+        },
+        onPreviewPitch: (midiPitch) => {
+          /*
+           * The detail keyboard/chips only ever offer in-chord pitches
+           * (jcpe-v2r-detail-yimm); the pointer event carrying us here is
+           * the trusted gesture the first preview needs. A refusal (no
+           * audio port, out-of-range pitch) is silence, deliberately —
+           * an exploration hover owes no error prose.
+           */
+          actions.previewPitch(midiPitch, {
+            kind: "trusted-pointer",
+            trusted: true,
+            sequence: 1,
+          });
         },
         /*
          * A local file, read on a user gesture with FileReader. The runtime
@@ -2714,6 +2811,7 @@ export function StudioRoot({
         pauseProgression: controller.pauseProgression,
         playProgression: controller.playProgression,
         previewChord: controller.previewChord,
+        previewPitch: controller.previewPitch,
         readTransportPlayheadLabel: controller.readTransportPlayheadLabel,
         readTransportAnalysisFrame: controller.readTransportAnalysisFrame,
         readEventPitchClasses: controller.readEventPitchClasses,
