@@ -66,8 +66,12 @@ const EXPECTED_SCHEMAS: Readonly<Record<ExpectedFilename, string>> = {
 export const U0_REVIEWED_SEMANTIC_DIGESTS: Readonly<
   Record<ExpectedFilename, string>
 > = {
+  /* Re-reviewed 2026-08-04 for the v2 ink-on-paper redesign
+   * (jcpe-v2-redesign-z323): paper-light base + night override token maps,
+   * the studio engraving token family, and the embedded-OFL-font asset
+   * policy. */
   "u0-ui-contract.json":
-    "5df94c4fac91ad9e159ab07cbdea6cf6ba096ee433f37b89ea4ad681b0f311a6",
+    "c872a5ff639e6b1211f1113dd6772a75c70e589fb33e7e6687b249b87cb8b2c9",
   "primitive-state-matrix.json":
     "6e05bbe3bb4d442adb0510f87d12b72bcc3c19e01c7a56655025bd0e699c9568",
   "provenance-ledger.json":
@@ -2566,15 +2570,16 @@ function checkContrastRatios(
     isObject(tokenDefinitions) && isObject(tokenDefinitions["color"])
       ? tokenDefinitions["color"]
       : {};
-  const lightOverrides =
-    isObject(tokenDefinitions) && isObject(tokenDefinitions["colorLight"])
-      ? tokenDefinitions["colorLight"]
+  const darkOverrides =
+    isObject(tokenDefinitions) && isObject(tokenDefinitions["colorDark"])
+      ? tokenDefinitions["colorDark"]
       : {};
-  /* Both reviewed themes must clear every pair: the dark base map, and the
-   * light map formed by the overrides layered over that base. */
+  /* Both reviewed themes must clear every pair: the paper (light) base map,
+   * and the night map formed by the overrides layered over that base
+   * (2026-08-04 v2 ink-on-paper redesign, jcpe-v2-redesign-z323). */
   const themes: readonly (readonly [string, JsonObject])[] = [
-    ["dark", baseColors],
-    ["light", { ...baseColors, ...lightOverrides }],
+    ["light", baseColors],
+    ["dark", { ...baseColors, ...darkOverrides }],
   ];
   const pairs = objects(contract["allowedContrastPairs"]);
   for (const [themeName, colors] of themes)
@@ -2825,7 +2830,10 @@ function checkManifest(
     !isObject(policies) ||
     policies["runtime"] !==
       "native-preact-and-css-source-owned-no-compat-layer" ||
-    policies["assets"] !== "system-fonts-and-inline-reviewed-svg-only" ||
+    /* 2026-08-04 v2 redesign: the ink-on-paper identity embeds the Archivo and
+     * Literata OFL faces as data-url payloads (external fonts stay forbidden;
+     * scripts/build-fonts.ts owns the generated stylesheet and provenance). */
+    policies["assets"] !== "embedded-ofl-reviewed-fonts-and-inline-reviewed-svg-only" ||
     policies["gallery"] !== "test-only-and-absent-from-standalone-artifact"
   ) {
     finding(

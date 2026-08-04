@@ -3,64 +3,93 @@ import { describe, expect, test } from "bun:test";
 /**
  * Independently transcribed from the frozen U0 token contract. Deliberately do
  * not import UI_TOKEN_DEFINITIONS: production data must not certify its CSS.
- * The 2026-07-28 owner-directed overhaul (jcpe-yngr) introduced the warm Stage
- * dark base, the Paper light overrides, the brass accent family, elevation
- * shadows, and the chord type scale. The 2026-07-29 owner-directed redesign
- * (jcpe-z4h1) replaced the Stage base with the Blue Note ink-blue identity
- * (brass structure, cyan focus/analysis, coral error), retuned both themes'
- * contrast pairs, and enlarged the chord/display type scale; both
- * transcriptions below were re-read against docs and fixture at that landing.
+ * The 2026-08-04 owner-directed v2 redesign (jcpe-v2-redesign-z323) replaced
+ * the Blue Note dark shell with the ink-on-paper identity: the paper (light)
+ * theme is now the base scope, the night theme is declared twice with
+ * byte-identical maps (OS-preference media block plus the explicit
+ * [data-theme="dark"] pin written by the theme toggle), and the studio
+ * engraving token family joined the contract. Both transcriptions below were
+ * re-read against docs and fixture at that landing.
  */
 const EXPECTED_BASE_TOKENS = Object.freeze({
-  "--background": "#07090e",
-  "--surface-app": "#07090e",
-  "--surface-header": "#0a0f16",
-  "--surface-rail": "#0c121b",
-  "--surface-chart": "#101725",
-  "--surface-panel": "#121a29",
-  "--surface-elevated": "#1a2434",
-  "--surface-sunken": "#04060a",
-  "--surface-overlay": "rgb(4 7 12 / 0.74)",
-  "--text-primary": "#f5f0e2",
-  "--text-muted": "#b3bdcc",
-  "--text-subtle": "#93a0b3",
-  "--text-inverse": "#131007",
-  "--border-default": "#243143",
-  "--border-strong": "#677990",
-  "--action-primary": "#d9a63f",
-  "--action-primary-hover": "#efc25e",
-  "--action-secondary": "#1c2737",
-  "--state-info": "#63c9de",
-  "--state-success": "#5fd39c",
-  "--state-warning": "#e5b95c",
-  "--state-error": "#ff7d6d",
-  "--state-selected": "#1d3a54",
-  "--focus-ring": "#7fd4e6",
-  "--accent": "#e0b04a",
-  "--accent-strong": "#f2cd77",
-  "--accent-soft": "#3c3319",
-  "--on-accent": "#171204",
-  "--shadow-1": "0 1px 2px rgb(2 4 9 / 0.55)",
-  "--shadow-2": "0 3px 12px rgb(2 4 9 / 0.5)",
-  "--shadow-3": "0 14px 36px rgb(2 4 9 / 0.6)",
+  "--background": "#d9d4c6",
+  "--surface-app": "#d9d4c6",
+  "--surface-header": "#f4f1e8",
+  "--surface-rail": "#f4f1e8",
+  "--surface-chart": "#fbf8f1",
+  "--surface-panel": "#fbf8f1",
+  "--surface-elevated": "#fdfcf8",
+  "--surface-sunken": "#d5cfc0",
+  "--surface-overlay": "rgb(25 23 19 / 0.4)",
+  "--text-primary": "#191713",
+  "--text-muted": "#4a453a",
+  "--text-subtle": "#5c5647",
+  "--text-inverse": "#fbf8f1",
+  "--border-default": "#d6d0be",
+  "--border-strong": "#6b6353",
+  "--action-primary": "#191713",
+  "--action-primary-hover": "#b23a2a",
+  "--action-secondary": "#f3efe3",
+  "--state-info": "#2f5490",
+  "--state-success": "#0f5c37",
+  "--state-warning": "#6b4e0b",
+  "--state-error": "#9c2e20",
+  "--state-selected": "#dce3f0",
+  "--focus-ring": "#2f5490",
+  "--accent": "#b23a2a",
+  "--accent-strong": "#8e2e21",
+  "--accent-soft": "#f3dedb",
+  "--on-accent": "#fbf8f1",
+  "--shadow-1": "0 1px 2px rgb(25 23 19 / 0.1)",
+  "--shadow-2": "0 3px 12px rgb(25 23 19 / 0.14)",
+  "--shadow-3": "0 14px 36px rgb(25 23 19 / 0.22)",
   "--glow-accent":
-    "0 0 0 1px rgb(224 176 74 / 0.6), 0 0 22px rgb(224 176 74 / 0.28)",
-  "--font-ui":
-    "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    "0 0 0 1px rgb(178 58 42 / 0.55), 0 0 20px rgb(178 58 42 / 0.2)",
+  "--desk": "#d9d4c6",
+  "--desk-1": "#e4dfd1",
+  "--desk-2": "#cfc9b9",
+  "--chrome": "#f4f1e8",
+  "--paper": "#fbf8f1",
+  "--paper-2": "#fdfcf8",
+  "--paper-hi": "#fdfbf6",
+  "--paper-lo": "#f8f4ea",
+  "--field": "#fffdf7",
+  "--field-2": "#fffdf4",
+  "--hover": "#f3efe3",
+  "--tint": "#f4f0e4",
+  "--line-1": "#efebdf",
+  "--line-2": "#e2dcca",
+  "--rule": "#d6d0be",
+  "--slash": "#cdc6b2",
+  "--rule-2": "#c9c2ae",
+  "--rule-3": "#b8b19c",
+  "--ink": "#191713",
+  "--ink-1": "#2e2a22",
+  "--ink-2": "#4a453a",
+  "--ink-3": "#6b6353",
+  "--ink-4": "#a9a28c",
+  "--red": "#b23a2a",
+  "--blue": "#2f5490",
+  "--red-wash": "rgb(178 58 42 / 0.06)",
+  "--blue-wash": "rgb(47 84 144 / 0.12)",
+  "--sh": "25 23 19",
+  "--grain-blend": "multiply",
+  "--grain-op": "0.28",
+  "--page-edge": "transparent",
+  "--font-ui": "'Archivo', system-ui, -apple-system, 'Segoe UI', sans-serif",
   "--font-mono":
     "ui-monospace, 'SFMono-Regular', Consolas, 'Liberation Mono', monospace",
-  "--font-chord":
-    "'Palatino Linotype', Palatino, Georgia, 'Times New Roman', serif",
   "--text-xs": "0.75rem",
   "--text-sm": "0.875rem",
   "--text-md": "1rem",
   "--text-lg": "1.125rem",
   "--text-xl": "1.5rem",
+  "--line-tight": "1.25",
+  "--line-normal": "1.5",
+  "--font-chord": "'Literata', Georgia, 'Times New Roman', serif",
   "--text-chord": "1.5rem",
   "--text-chord-super": "0.66em",
   "--text-display": "2rem",
-  "--line-tight": "1.25",
-  "--line-normal": "1.5",
   "--space-0": "0",
   "--space-1": "0.25rem",
   "--space-2": "0.5rem",
@@ -71,10 +100,10 @@ const EXPECTED_BASE_TOKENS = Object.freeze({
   "--space-8": "2rem",
   "--space-10": "2.5rem",
   "--space-12": "3rem",
-  "--radius-xs": "0.25rem",
-  "--radius-sm": "0.5rem",
-  "--radius-md": "0.625rem",
-  "--radius-lg": "0.9375rem",
+  "--radius-xs": "0.125rem",
+  "--radius-sm": "0.1875rem",
+  "--radius-md": "0.25rem",
+  "--radius-lg": "0.5rem",
   "--border-width": "1px",
   "--focus-width": "2px",
   "--focus-offset": "2px",
@@ -82,65 +111,107 @@ const EXPECTED_BASE_TOKENS = Object.freeze({
   "--motion-deliberate": "180ms",
   "--motion-reduced": "0ms",
   "--ease-standard": "cubic-bezier(0.2, 0, 0, 1)",
-  "--rail-library-inline": "17rem",
-  "--rail-harmony-inline": "20rem",
+  "--rail-library-inline": "18.25rem",
+  "--rail-harmony-inline": "22.5rem",
   "--transport-min-block": "4.5rem",
   "--sheet-context-reveal": "3rem",
   "--control-min-block": "2.25rem",
   "--touch-target": "2.75rem",
 } as const);
 
-const EXPECTED_LIGHT_TOKENS = Object.freeze({
-  "--background": "#f4eee1",
-  "--surface-app": "#f4eee1",
-  "--surface-header": "#ece3d0",
-  "--surface-rail": "#efe8d7",
-  "--surface-chart": "#faf6eb",
-  "--surface-panel": "#fbf8f0",
-  "--surface-elevated": "#ffffff",
-  "--surface-sunken": "#e6dcc3",
-  "--surface-overlay": "rgb(46 40 24 / 0.44)",
-  "--text-primary": "#1f2530",
-  "--text-muted": "#4a5262",
-  "--text-subtle": "#57606c",
-  "--text-inverse": "#fdfaf2",
-  "--border-default": "#d3c8ab",
-  "--border-strong": "#7e7256",
-  "--action-primary": "#7a5a10",
-  "--action-primary-hover": "#63490b",
-  "--action-secondary": "#e8ddc2",
-  "--state-info": "#0b6577",
-  "--state-success": "#136b40",
-  "--state-warning": "#7b5a0d",
-  "--state-error": "#a93425",
-  "--state-selected": "#d7e6f2",
-  "--focus-ring": "#10657c",
-  "--accent": "#8a6412",
-  "--accent-strong": "#6c4d0c",
-  "--accent-soft": "#e9dbb0",
-  "--on-accent": "#fdfaf2",
-  "--shadow-1": "0 1px 2px rgb(80 66 36 / 0.16)",
-  "--shadow-2": "0 3px 12px rgb(80 66 36 / 0.18)",
-  "--shadow-3": "0 14px 36px rgb(80 66 36 / 0.22)",
+const EXPECTED_DARK_TOKENS = Object.freeze({
+  "--background": "#100f0c",
+  "--surface-app": "#100f0c",
+  "--surface-header": "#1b1a15",
+  "--surface-rail": "#1b1a15",
+  "--surface-chart": "#272419",
+  "--surface-panel": "#272419",
+  "--surface-elevated": "#302c24",
+  "--surface-sunken": "#080806",
+  "--surface-overlay": "rgb(0 0 0 / 0.55)",
+  "--text-primary": "#f2eee2",
+  "--text-muted": "#cdc6b2",
+  "--text-subtle": "#a19980",
+  "--text-inverse": "#191713",
+  "--border-default": "#423c2f",
+  "--border-strong": "#a19980",
+  "--action-primary": "#f2eee2",
+  "--action-primary-hover": "#e0654c",
+  "--action-secondary": "#2e2b23",
+  "--state-info": "#86a9e2",
+  "--state-success": "#5fd39c",
+  "--state-warning": "#e5b95c",
+  "--state-error": "#e88a72",
+  "--state-selected": "#2c3a55",
+  "--focus-ring": "#86a9e2",
+  "--accent": "#e0654c",
+  "--accent-strong": "#ee8a70",
+  "--accent-soft": "#3a2620",
+  "--on-accent": "#191713",
+  "--shadow-1": "0 1px 2px rgb(0 0 0 / 0.55)",
+  "--shadow-2": "0 3px 12px rgb(0 0 0 / 0.5)",
+  "--shadow-3": "0 14px 36px rgb(0 0 0 / 0.6)",
   "--glow-accent":
-    "0 0 0 1px rgb(138 100 18 / 0.55), 0 0 20px rgb(138 100 18 / 0.22)",
+    "0 0 0 1px rgb(224 101 76 / 0.55), 0 0 22px rgb(224 101 76 / 0.24)",
+  "--desk": "#100f0c",
+  "--desk-1": "#17160f",
+  "--desk-2": "#080806",
+  "--chrome": "#1b1a15",
+  "--paper": "#272419",
+  "--paper-2": "#2c2921",
+  "--paper-hi": "#2e2b21",
+  "--paper-lo": "#232017",
+  "--field": "#302c24",
+  "--field-2": "#353027",
+  "--hover": "#2e2b23",
+  "--tint": "#2c2921",
+  "--line-1": "#302c24",
+  "--line-2": "#383327",
+  "--rule": "#423c2f",
+  "--slash": "#4e4738",
+  "--rule-2": "#4e4738",
+  "--rule-3": "#635b49",
+  "--ink": "#f2eee2",
+  "--ink-1": "#e6e1d3",
+  "--ink-2": "#cdc6b2",
+  "--ink-3": "#a19980",
+  "--ink-4": "#7a7361",
+  "--red": "#e0654c",
+  "--blue": "#86a9e2",
+  "--red-wash": "rgb(224 101 76 / 0.1)",
+  "--blue-wash": "rgb(134 169 226 / 0.16)",
+  "--sh": "0 0 0",
+  "--grain-blend": "screen",
+  "--grain-op": "0.09",
+  "--page-edge": "#3a3527",
 } as const);
 
 const TOKEN_NAME_PATTERN = /--[a-z][a-z0-9-]*/gu;
 const TOKEN_DECLARATION_PATTERN =
   /^\s*(--[a-z][a-z0-9-]*)\s*:\s*([^;\r\n]+)\s*;\s*$/gmu;
-const LIGHT_THEME_MARKER = "@media (prefers-color-scheme: light)";
+const DARK_MEDIA_MARKER = "@media (prefers-color-scheme: dark)";
+const DARK_PIN_MARKER = ':root[data-theme="dark"]';
 
-function themeScopes(source: string): { base: string; light: string } {
-  const lightStart = source.indexOf(LIGHT_THEME_MARKER);
-  if (lightStart < 0) {
-    throw new Error("tokens.css must contain the light-theme media block");
+type ThemeScopes = { base: string; darkMedia: string; darkPin: string };
+
+function themeScopes(source: string): ThemeScopes {
+  const mediaStart = source.indexOf(DARK_MEDIA_MARKER);
+  if (mediaStart < 0) {
+    throw new Error("tokens.css must contain the dark-theme media block");
   }
-  return { base: source.slice(0, lightStart), light: source.slice(lightStart) };
+  const pinStart = source.indexOf(DARK_PIN_MARKER, mediaStart + DARK_MEDIA_MARKER.length);
+  if (pinStart < 0) {
+    throw new Error("tokens.css must contain the explicit dark-theme pin block");
+  }
+  return {
+    base: source.slice(0, mediaStart),
+    darkMedia: source.slice(mediaStart, pinStart),
+    darkPin: source.slice(pinStart),
+  };
 }
 
 function rootBody(source: string): string {
-  const match = /:root\s*\{(?<body>[\s\S]*?)\}/u.exec(source);
+  const match = /:root[^{]*\{(?<body>[\s\S]*?)\}/u.exec(source);
   const body = match?.groups?.["body"];
   if (body === undefined) throw new Error("theme scope must contain one :root block");
   return body;
@@ -173,12 +244,14 @@ describe("U0 design-token CSS conformance", () => {
     expect(baseNames).toEqual(Object.keys(EXPECTED_BASE_TOKENS));
     expect(Object.fromEntries(baseEntries)).toEqual(EXPECTED_BASE_TOKENS);
 
-    const lightEntries = tokenEntries(rootBody(scopes.light));
-    const lightNames = lightEntries.map(([name]) => name);
-    expect(lightEntries).toHaveLength(Object.keys(EXPECTED_LIGHT_TOKENS).length);
-    expect(new Set(lightNames).size).toBe(lightNames.length);
-    expect(lightNames).toEqual(Object.keys(EXPECTED_LIGHT_TOKENS));
-    expect(Object.fromEntries(lightEntries)).toEqual(EXPECTED_LIGHT_TOKENS);
+    for (const scope of [scopes.darkMedia, scopes.darkPin]) {
+      const entries = tokenEntries(rootBody(scope));
+      const names = entries.map(([name]) => name);
+      expect(entries).toHaveLength(Object.keys(EXPECTED_DARK_TOKENS).length);
+      expect(new Set(names).size).toBe(names.length);
+      expect(names).toEqual(Object.keys(EXPECTED_DARK_TOKENS));
+      expect(Object.fromEntries(entries)).toEqual(EXPECTED_DARK_TOKENS);
+    }
   });
 
   test("declares contracted tokens exactly once per theme scope and only inside :root", async () => {
@@ -186,11 +259,12 @@ describe("U0 design-token CSS conformance", () => {
       new URL("../../src/styles/tokens.css", import.meta.url),
     ).text();
     const scopes = themeScopes(source);
-    expect(source.match(/:root\s*\{/gu)).toHaveLength(2);
+    expect(source.match(/:root[^{]*\{/gu)).toHaveLength(3);
 
     for (const [scope, expected] of [
       [scopes.base, EXPECTED_BASE_TOKENS],
-      [scopes.light, EXPECTED_LIGHT_TOKENS],
+      [scopes.darkMedia, EXPECTED_DARK_TOKENS],
+      [scopes.darkPin, EXPECTED_DARK_TOKENS],
     ] as const) {
       const body = rootBody(scope);
       const allNames = Array.from(scope.matchAll(TOKEN_NAME_PATTERN), (match) =>
@@ -202,9 +276,19 @@ describe("U0 design-token CSS conformance", () => {
     }
   });
 
-  test("every light override names a base token so the themes never diverge structurally", () => {
+  test("the two night maps stay byte-identical so the pin can never drift from the OS default", async () => {
+    const source = await Bun.file(
+      new URL("../../src/styles/tokens.css", import.meta.url),
+    ).text();
+    const scopes = themeScopes(source);
+    expect(tokenEntries(rootBody(scopes.darkPin))).toEqual(
+      tokenEntries(rootBody(scopes.darkMedia)),
+    );
+  });
+
+  test("every dark override names a base token so the themes never diverge structurally", () => {
     const baseNames = new Set(Object.keys(EXPECTED_BASE_TOKENS));
-    const orphans = Object.keys(EXPECTED_LIGHT_TOKENS).filter(
+    const orphans = Object.keys(EXPECTED_DARK_TOKENS).filter(
       (name) => !baseNames.has(name),
     );
     expect(orphans).toEqual([]);
