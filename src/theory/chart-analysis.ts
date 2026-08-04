@@ -300,7 +300,12 @@ export function analyzeChartEvent(
       sentence = "Tritone substitute for the V7";
       keyedScale = `${root} Lydian dominant`;
     } else {
-      const target = pcNumeral(pc(rootPc + 5 - keyPc), false);
+      /* The target degree wears its diatonic case in a major key: the V7 of
+       * ii, iii, or vi is written lowercase because the chord it tonicizes
+       * is minor there — the conventional "V7/ii" reading. */
+      const targetDistance = pc(rootPc + 5 - keyPc);
+      const minorTargets = new Set([2, 4, 9]);
+      const target = pcNumeral(targetDistance, minorTargets.has(targetDistance));
       sentence = `Secondary dominant — the V7 of ${target}`;
       keyedScale = `${root} Mixolydian`;
     }
@@ -539,12 +544,11 @@ function isGuideDegree(
 
 function guideTonesOf(resolved: ResolvedChord): readonly GuideTone[] {
   const realization = realizationOf(resolved);
-  if (realization.degrees === null || realization.guideToneDegrees === null) {
-    return Object.freeze([]);
-  }
+  if (realization.degrees === null) return Object.freeze([]);
+  const guideToneDegrees = realization.guideToneDegrees;
   const tones: GuideTone[] = [];
   realization.degrees.forEach((degree, index) => {
-    if (!isGuideDegree(degree, realization.guideToneDegrees ?? [])) return;
+    if (!isGuideDegree(degree, guideToneDegrees)) return;
     const spelled = realization.spelledPitchNames[index];
     const pitchClass = realization.pitchClasses[index];
     if (spelled === undefined || pitchClass === undefined) return;
