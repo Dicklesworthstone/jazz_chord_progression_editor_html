@@ -5,11 +5,14 @@ import {
   MIDI_IMPORT_SECTION_NAME,
   createMidiImportOperations,
   describeMidiImportSonorities,
+  isSalvageableRefusalCode,
   planMidiImportChart,
+  salvageMidiBytes,
   type MidiImportChartPlan,
   type MidiImportChartSonority,
   type MidiImportRefusal,
   type MidiImportValue,
+  type MidiSalvageReport,
   type SmfDecodeFrame,
 } from "../export";
 import type {
@@ -53,6 +56,12 @@ export type MidiImportPreview = Readonly<{
   sonorities: readonly MidiImportChartSonority[];
   /** Why this preview cannot be committed, stated plainly; null when it can. */
   blockedReason: string | null;
+  /**
+   * The salvage ledger when this preview came from repaired bytes: what was
+   * repaired, how often, and the honest sentence the surface must show. Null
+   * for a clean decode — the overwhelmingly common path is untouched.
+   */
+  salvage: MidiSalvageReport | null;
 }>;
 
 export type MidiImportCommitResult = Readonly<{
@@ -113,13 +122,39 @@ export function createStudioMidiImport(
     ordinal += 1;
     const decodeFrame = await loadDecodeFrame();
     const operations = createMidiImportOperations(decodeFrame);
-    const result = operations.decodeSmf({
-      schema: MIDI_IMPORT_REQUEST_SCHEMA,
-      requestId: requestIdFor(ordinal),
-      readerId: MIDI_IMPORT_READER_ID,
-      readerVersion: MIDI_IMPORT_READER_VERSION,
-      bytes,
-    });
+    const requestFor = (requestId: string, payload: Uint8Array) =>
+      ({
+        schema: MIDI_IMPORT_REQUEST_SCHEMA,
+        requestId,
+        readerId: MIDI_IMPORT_READER_ID,
+        readerVersion: MIDI_IMPORT_READER_VERSION,
+        bytes: payload,
+      }) as const;
+    const strict = operations.decodeSmf(requestFor(requestIdFor(ordinal), bytes));
+
+    let result = strict;
+    let salvage: MidiSalvageReport | null = null;
+    if (!strict.ok && isSalvageableRefusalCode(strict.refusal.code)) {
+      /*
+       * A content-level refusal gets one salvage attempt: repair the note
+       * stream at the byte level, then run the SAME strict decoder over the
+       * repaired bytes so every structural guarantee still comes from the
+       * one reviewed reader. If the repaired bytes still refuse — a second
+       * defect beyond the note stream — the ORIGINAL refusal stands, so the
+       * person sees the file's own first problem, not the repair's.
+       */
+      const attempt = salvageMidiBytes(bytes);
+      if (attempt.salvaged) {
+        const reread = operations.decodeSmf(
+          requestFor(`${requestIdFor(ordinal)}-salvaged`, attempt.bytes),
+        );
+        if (reread.ok) {
+          result = reread;
+          salvage = attempt.report;
+        }
+      }
+    }
+
     if (!result.ok) {
       return Object.freeze({
         fileName,
@@ -129,6 +164,7 @@ export function createStudioMidiImport(
         plan: null,
         sonorities: Object.freeze([]),
         blockedReason: null,
+        salvage: null,
       });
     }
     const plan = planMidiImportChart(result.value, sectionNameFor(fileName));
@@ -141,6 +177,7 @@ export function createStudioMidiImport(
       sonorities:
         plan === null ? describeMidiImportSonorities(result.value) : plan.sonorities,
       blockedReason: blockedReasonFor(plan),
+      salvage,
     });
   };
 
