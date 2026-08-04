@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="padding: 26px 28px 34px; font-family: 'Archivo', system-ui, sans-serif; color: var(--ink); background: var(--paper);">
+  <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; padding-bottom: 16px; border-bottom: 1px solid var(--rule);">
+    <div>
+      <p style="margin: 0 0 6px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-3);">{{ place }}</p>
+      <div style="font-family: 'Literata', Georgia, serif; font-size: 46px; font-weight: 600; line-height: 0.95; letter-spacing: -0.025em;">{{ head }}<span style="font-size: 0.5em; vertical-align: super; font-weight: 400; letter-spacing: 0;">{{ sup }}</span></div>
+      <p style="margin: 10px 0 0; font-family: 'Literata', serif; font-size: 19px; font-style: italic; color: var(--blue);">{{ roman }}</p>
+    </div>
+    <sc-if value="{{ dismissable }}" hint-placeholder-val="{{ false }}">
+      <button onClick="{{ onClose }}" aria-label="Close chord detail" style="flex: 0 0 auto; width: 30px; height: 30px; border-radius: 3px; border: 1px solid var(--rule); background: transparent; color: var(--ink-3); cursor: pointer; font-size: 15px; line-height: 1;" style-hover="border-color: var(--ink); color: var(--ink);">×</button>
+    </sc-if>
+  </div>
+
+  <p style="margin: 16px 0 22px; font-family: 'Literata', serif; font-size: 16px; line-height: 1.55; color: var(--ink-1); text-wrap: pretty;">{{ fn }}.</p>
+
+  <div style="margin-bottom: 20px;">
+    <p style="margin: 0 0 10px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-3);">Notes — hover to hear</p>
+    <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+      <sc-for list="{{ tones }}" as="t" hint-placeholder-count="4">
+        <button onMouseEnter="{{ t.onEnter }}" onMouseLeave="{{ onLeave }}" onClick="{{ t.onEnter }}" style="display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 46px; padding: 6px 8px 5px; border: 1px solid {{ t.border }}; border-radius: 3px; background: {{ t.bg }}; cursor: pointer;">
+          <span style="font-family: 'Literata', serif; font-size: 22px; font-weight: 600; line-height: 1; color: {{ t.ink }};">{{ t.name }}</span>
+          <span style="font-size: 9.5px; letter-spacing: 0.06em; color: {{ t.sub }};">{{ t.role }}</span>
+        </button>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="margin-bottom: 22px;">
+    <div onMouseLeave="{{ onLeave }}" style="position: relative; height: 84px; border: 1px solid #8B8474; border-radius: 2px; background: #8B8474; overflow: hidden;">
+      <div style="display: flex; height: 100%; gap: 1px;">
+        <sc-for list="{{ whites }}" as="w" hint-placeholder-count="14">
+          <div onMouseEnter="{{ w.onEnter }}" onClick="{{ w.onEnter }}" style="position: relative; flex: 1 1 0; background: {{ w.bg }}; cursor: pointer;">
+            <sc-if value="{{ w.on }}" hint-placeholder-val="{{ false }}">
+              <span style="position: absolute; left: 50%; bottom: 6px; transform: translateX(-50%); width: 18px; height: 18px; border-radius: 99px; background: {{ w.dot }}; color: var(--paper); font-size: 8.5px; font-weight: 700; display: grid; place-items: center;">{{ w.label }}</span>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+      <sc-for list="{{ blacks }}" as="b" hint-placeholder-count="10">
+        <div onMouseEnter="{{ b.onEnter }}" onClick="{{ b.onEnter }}" style="position: absolute; top: 0; left: {{ b.left }}; width: 4.6%; height: 62%; background: {{ b.bg }}; border-radius: 0 0 2px 2px; z-index: 2; cursor: pointer;">
+          <sc-if value="{{ b.on }}" hint-placeholder-val="{{ false }}">
+            <span style="position: absolute; left: 50%; bottom: 3px; transform: translateX(-50%); width: 15px; height: 15px; border-radius: 99px; background: var(--paper); color: {{ b.dot }}; font-size: 7.5px; font-weight: 700; display: grid; place-items: center;">{{ b.label }}</span>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="margin-bottom: 24px;">
+    <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 8px;">
+      <p style="margin: 0; font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-3);">Spectrum</p>
+      <p style="margin: 0; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-4);">{{ spectroHint }}</p>
+    </div>
+    <div style="position: relative; height: 136px; background: #17150F; border: 1px solid #2A261C; overflow: hidden;">
+      <canvas ref="{{ canvasRef }}" aria-label="Chord spectrum" style="display: block; width: 100%; height: 100%;"></canvas>
+    </div>
+  </div>
+
+  <div style="margin-bottom: 24px; display: grid; gap: 18px;">
+    <div>
+      <p style="margin: 0 0 5px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-3);">Scale to play over it</p>
+      <p style="margin: 0; font-family: 'Literata', serif; font-size: 19px;">{{ scale }}</p>
+    </div>
+    <div>
+      <p style="margin: 0 0 5px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-3);">Guide tones</p>
+      <p style="margin: 0; font-family: 'Literata', serif; font-size: 19px;">{{ guides }}</p>
+      <p style="margin: 5px 0 0; font-size: 12.5px; color: var(--ink-3); line-height: 1.5; max-width: 34ch;">The third and seventh. These two carry the voice leading into the next chord.</p>
+    </div>
+  </div>
+
+  <sc-if value="{{ hasRes }}" hint-placeholder-val="{{ true }}">
+    <div style="margin-bottom: 24px; padding: 14px 15px 15px; background: var(--tint); border-left: 2px solid var(--red);">
+      <p style="margin: 0 0 9px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-3);">Moving into {{ resTarget }}</p>
+      <div style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 8px;">
+        <sc-for list="{{ resMoves }}" as="m" hint-placeholder-count="2">
+          <span style="display: flex; align-items: baseline; gap: 6px; font-family: 'Literata', serif; font-size: 19px; font-weight: 600;">
+            <span>{{ m.from }}</span>
+            <span style="font-size: 13px; color: var(--red);">{{ m.arrow }}</span>
+            <span>{{ m.to }}</span>
+          </span>
+        </sc-for>
+      </div>
+      <p style="margin: 0; font-size: 12.5px; color: var(--ink-2); line-height: 1.5; max-width: 36ch;">{{ resNote }}.</p>
+    </div>
+  </sc-if>
+
+  <div style="padding-top: 20px; border-top: 1px solid var(--rule);">
+    <p style="margin: 0 0 3px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-3);">What could come next</p>
+    <p style="margin: 0 0 14px; font-size: 12.5px; color: var(--ink-3); line-height: 1.5;">Options, not answers.</p>
+    <div style="display: grid; gap: 14px;">
+      <sc-for list="{{ next }}" as="n" hint-placeholder-count="3">
+        <div>
+          <div style="display: flex; align-items: baseline; gap: 10px;">
+            <span style="font-family: 'Literata', serif; font-size: 23px; font-weight: 600; line-height: 1;">{{ n.sym }}</span>
+            <span style="font-family: 'Literata', serif; font-size: 14px; font-style: italic; color: var(--blue);">{{ n.roman }}</span>
+            <span style="flex: 1 1 auto;"></span>
+            <button onClick="{{ n.onAdd }}" style="flex: 0 0 auto; min-height: 34px; padding: 0 13px; border-radius: 3px; border: 1px solid var(--rule-3); background: transparent; color: var(--ink); font-size: 12px; font-weight: 600; letter-spacing: 0.02em; cursor: pointer;" style-hover="background: var(--ink); color: var(--paper); border-color: var(--ink);">Insert</button>
+          </div>
+          <p style="margin: 5px 0 0; font-size: 13px; color: var(--ink-2); line-height: 1.5; max-width: 40ch; text-wrap: pretty;">{{ n.why }}</p>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:360,&quot;height&quot;:980},&quot;data&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object&quot;},&quot;pinned&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;onclose&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;},&quot;onadd&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(sym: string) =&gt; void&quot;},&quot;onnote&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(midi: number) =&gt; void&quot;}}">
+const F0 = 55, F1 = 9000;
+const LOGSPAN = Math.log2(F1 / F0);
+const hz = (midi) => 440 * Math.pow(2, (midi - 69) / 12);
+
+class Component extends DCLogic {
+  state = { hover: null };
+
+  componentDidMount() { this.draw(); }
+  componentDidUpdate() { this.draw(); }
+
+  canvasRef = (el) => { this._cv = el; if (el) this.draw(); };
+
+  hit(midi) {
+    if (this.state.hover !== midi) {
+      this.setState({ hover: midi });
+      const play = this.props.onnote;
+      if (play) play(midi);
+    }
+  }
+  leave = () => { if (this.state.hover != null) this.setState({ hover: null }); };
+
+  series(midi, amp) {
+    const f = hz(midi);
+    const out = [];
+    for (let n = 1; n <= 14; n++) {
+      const fn = f * n;
+      if (fn > F1) break;
+      out.push({ x: Math.log2(fn / F0) / LOGSPAN, a: amp * Math.pow(n, -1.18), n });
+    }
+    return out;
+  }
+
+  curve(width, notes) {
+    const mag = new Float32Array(width);
+    notes.forEach(nt => {
+      this.series(nt.midi, nt.amp).forEach(h => {
+        const cx = h.x * width;
+        const sigma = Math.max(2.4, width * 0.0055);
+        const lo = Math.max(0, Math.floor(cx - 4 * sigma));
+        const hiX = Math.min(width, Math.ceil(cx + 4 * sigma));
+        for (let x = lo; x < hiX; x++) {
+          const d = x - cx;
+          mag[x] += h.a * Math.exp(-(d * d) / (2 * sigma * sigma));
+        }
+      });
+    });
+    return mag;
+  }
+
+  path(g, mag, width, height, peak) {
+    g.beginPath();
+    g.moveTo(0, height);
+    for (let x = 0; x < width; x++) {
+      const v = Math.min(1, mag[x] / peak);
+      g.lineTo(x, height - Math.pow(v, 0.78) * (height - 12) - 1);
+    }
+    g.lineTo(width - 1, height);
+    g.closePath();
+  }
+
+  draw() {
+    const cv = this._cv;
+    if (!cv) return;
+    const w = cv.clientWidth, h = cv.clientHeight;
+    if (!w || !h) return;
+    const dpr = window.devicePixelRatio || 1;
+    if (cv.width !== Math.round(w * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+    const g = cv.getContext('2d');
+    if (!g) return;
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, w, h);
+
+    const voiced = this.props.data && this.props.data.voiced ? this.props.data.voiced : [];
+    const hover = this.state.hover;
+
+    /* octave grid */
+    g.strokeStyle = 'rgba(251,248,241,0.07)';
+    g.lineWidth = 1;
+    g.font = '8px Archivo, sans-serif';
+    g.fillStyle = 'rgba(251,248,241,0.26)';
+    for (let oct = 1; oct <= 8; oct++) {
+      const f = 32.703 * Math.pow(2, oct);
+      if (f < F0 || f > F1) continue;
+      const x = Math.round(Math.log2(f / F0) / LOGSPAN * w) + 0.5;
+      g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h - 9); g.stroke();
+      g.fillText('C' + oct, x + 3, h - 3);
+    }
+
+    if (!voiced.length) return;
+
+    /* summed spectrum */
+    const all = voiced.map(v => ({ midi: v.midi, amp: v.role === 'bass' ? 1.15 : 0.9 }));
+    const mag = this.curve(w, all);
+    let peak = 0;
+    for (let x = 0; x < w; x++) if (mag[x] > peak) peak = mag[x];
+    if (peak <= 0) return;
+
+    const grad = g.createLinearGradient(0, h, 0, 0);
+    grad.addColorStop(0, 'rgba(178,58,42,0.95)');
+    grad.addColorStop(0.42, 'rgba(196,104,52,0.9)');
+    grad.addColorStop(0.78, 'rgba(226,168,86,0.85)');
+    grad.addColorStop(1, 'rgba(246,226,168,0.95)');
+    this.path(g, mag, w, h, peak);
+    g.fillStyle = grad;
+    g.fill();
+    g.strokeStyle = 'rgba(246,226,168,0.5)';
+    g.lineWidth = 1;
+    g.stroke();
+
+    /* hovered note's own harmonic series, drawn over the top */
+    if (hover != null) {
+      const hm = this.curve(w, [{ midi: hover, amp: 1 }]);
+      this.path(g, hm, w, h, peak);
+      g.fillStyle = 'rgba(127,168,232,0.42)';
+      g.fill();
+      g.strokeStyle = 'rgba(180,214,255,0.95)';
+      g.lineWidth = 1.4;
+      g.stroke();
+    }
+
+    /* fundamental markers */
+    g.font = '600 9px Archivo, sans-serif';
+    voiced.forEach(v => {
+      const x = Math.log2(hz(v.midi) / F0) / LOGSPAN * w;
+      const on = hover === v.midi;
+      g.strokeStyle = on ? 'rgba(180,214,255,0.95)' : (v.guide ? 'rgba(255,196,182,0.7)' : 'rgba(251,248,241,0.34)');
+      g.lineWidth = on ? 1.4 : 1;
+      g.beginPath(); g.moveTo(x, 0); g.lineTo(x, 9); g.stroke();
+      g.fillStyle = on ? '#DCEBFF' : (v.guide ? '#FFC9BC' : 'rgba(251,248,241,0.62)');
+      g.fillText(v.name, x + 3, 9);
+    });
+  }
+
+  renderVals() {
+    const d = this.props.data || {};
+    const onAdd = this.props.onadd || (() => {});
+    const hover = this.state.hover;
+    const voiced = d.voiced || [];
+    const midiFor = (name, fallback) => {
+      const m = voiced.find(v => v.name === name);
+      return m ? m.midi : fallback;
+    };
+    return {
+      head: d.head || '—', sup: d.sup || '', place: d.place || '', roman: d.roman || '',
+      fn: d.fn || 'Select a chord on the chart',
+      scale: d.scale || '—', guides: d.guides || '—',
+      spectroHint: hover != null ? 'harmonics of the held note' : 'harmonic content',
+      canvasRef: this.canvasRef,
+      onLeave: this.leave,
+      tones: (d.tones || []).map((t, i) => {
+        const midi = midiFor(t.name, 60);
+        const on = hover === midi;
+        return {
+          name: t.name, role: t.role,
+          ink: on ? 'var(--paper)' : (t.guide ? 'var(--red)' : 'var(--ink)'),
+          sub: on ? 'var(--paper)' : 'var(--ink-3)',
+          bg: on ? 'var(--ink)' : 'transparent',
+          border: on ? 'var(--ink)' : 'var(--rule)',
+          onEnter: () => this.hit(midi),
+        };
+      }),
+      whites: (d.whites || []).map(w => ({
+        ...w,
+        bg: hover === w.midi ? '#E2D7BC' : (w.on ? '#FFFDF4' : '#EDE9DE'),
+        dot: hover === w.midi ? 'var(--red)' : 'var(--blue)',
+        onEnter: () => this.hit(w.midi),
+      })),
+      blacks: (d.blacks || []).map(b => ({
+        ...b,
+        bg: hover === b.midi ? '#6B5A3E' : (b.on ? 'var(--blue)' : '#1A1814'),
+        dot: hover === b.midi ? 'var(--red)' : 'var(--blue)',
+        onEnter: () => this.hit(b.midi),
+      })),
+      hasRes: !!d.res, resTarget: d.res ? d.res.target : '', resNote: d.res ? d.res.note : '',
+      resMoves: d.res ? d.res.moves.map(m => ({ ...m, arrow: m.dist === 0 ? '=' : '\u2192' })) : [],
+      next: (d.next || []).map(n => ({ ...n, onAdd: () => onAdd(n.sym) })),
+      dismissable: !this.props.pinned,
+      onClose: this.props.onclose || (() => {}),
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,2140 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,500;0,7..72,600;1,7..72,400;1,7..72,600&display=swap" rel="stylesheet" />
+<style>
+
+  :root {
+    --desk: #D9D4C6; --desk-1: #E4DFD1; --desk-2: #CFC9B9;
+    --chrome: #F4F1E8; --paper: #FBF8F1; --paper-2: #FDFCF8; --paper-hi: #FDFBF6; --paper-lo: #F8F4EA;
+    --field: #FFFDF7; --field-2: #FFFDF4; --hover: #F3EFE3; --tint: #F4F0E4;
+    --line-1: #EFEBDF; --line-2: #E2DCCA; --rule: #D6D0BE; --slash: #CDC6B2; --rule-2: #C9C2AE; --rule-3: #B8B19C;
+    --ink: #191713; --ink-1: #2E2A22; --ink-2: #4A453A; --ink-3: #6B6353; --ink-4: #A9A28C;
+    --red: #B23A2A; --blue: #2F5490;
+    --red-wash: rgb(178 58 42 / 0.06); --blue-wash: rgb(47 84 144 / 0.12);
+    --sh: 25 23 19; --grain-blend: multiply; --grain-op: 0.28; --page-edge: transparent;
+  }
+  :root[data-theme="dark"] {
+    --desk: #100F0C; --desk-1: #17160F; --desk-2: #080806;
+    --chrome: #1B1A15; --paper: #272419; --paper-2: #2C2921; --paper-hi: #2E2B21; --paper-lo: #232017;
+    --field: #302C24; --field-2: #353027; --hover: #2E2B23; --tint: #2C2921;
+    --line-1: #302C24; --line-2: #383327; --rule: #423C2F; --slash: #4E4738; --rule-2: #4E4738; --rule-3: #635B49;
+    --ink: #F2EEE2; --ink-1: #E6E1D3; --ink-2: #CDC6B2; --ink-3: #A19980; --ink-4: #7A7361;
+    --red: #E0654C; --blue: #86A9E2;
+    --red-wash: rgb(224 101 76 / 0.1); --blue-wash: rgb(134 169 226 / 0.16);
+    --sh: 0 0 0; --grain-blend: screen; --grain-op: 0.09; --page-edge: #3A3527;
+  }
+  body, body * { transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body { background: var(--desk); color: var(--ink); font-family: 'Archivo', system-ui, sans-serif; -webkit-font-smoothing: antialiased; overscroll-behavior: none; }
+  a { color: var(--red); text-decoration: none; }
+  a:hover { color: var(--ink); text-decoration: underline; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  ::selection { background: var(--blue-wash); }
+  ::-webkit-scrollbar { width: 11px; height: 11px; }
+  ::-webkit-scrollbar-thumb { background: var(--rule-3); border-radius: 0; border: 3px solid var(--desk); }
+  ::-webkit-scrollbar-track { background: transparent; }
+  @keyframes jz-rise { from { transform: translateY(16px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
+  @keyframes jz-fade { from { opacity: 0 } to { opacity: 1 } }
+  @keyframes jz-blink { 0%, 49% { opacity: 1 } 50%, 100% { opacity: 0 } }
+</style>
+</helmet>
+
+<div style="height: 100vh; display: flex; flex-direction: column; background: var(--desk); overflow: hidden;">
+
+  <header style="flex: 0 0 auto; display: flex; align-items: center; gap: 18px; padding: 0 18px; height: 52px; background: var(--chrome); border-bottom: 1px solid var(--rule-2);">
+    <div style="flex: 0 0 auto; display: flex; align-items: center; gap: 10px;">
+      <sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}">
+        <span style="font-family: 'Literata', serif; font-size: 15px; font-weight: 600; letter-spacing: -0.01em;">Jazz<span style="color: var(--red);">Chords</span></span>
+      </sc-if>
+      <sc-if value="{{ narrow }}" hint-placeholder-val="{{ false }}">
+        <span style="font-family: 'Literata', serif; font-size: 16px; font-weight: 600; letter-spacing: -0.02em;">J<span style="color: var(--red);">C</span></span>
+      </sc-if>
+      <sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}">
+        <span style="width: 1px; height: 18px; background: var(--rule-2);"></span>
+      </sc-if>
+      <sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}">
+      <button onClick="{{ toggleTheme }}" title="{{ themeTitle }}" aria-label="{{ themeTitle }}" style="width: 30px; height: 30px; display: grid; place-items: center; border: 1px solid transparent; border-radius: 3px; background: transparent; cursor: pointer; color: var(--ink-3);" style-hover="border-color: var(--rule-2); color: var(--ink);">
+        <sc-if value="{{ isLight }}" hint-placeholder-val="{{ true }}">
+          <span style="position: relative; display: block; width: 15px; height: 15px; overflow: hidden;">
+            <span style="position: absolute; inset: 0; border-radius: 99px; background: currentColor;"></span>
+            <span style="position: absolute; left: 5px; top: -3px; width: 15px; height: 15px; border-radius: 99px; background: var(--chrome);"></span>
+          </span>
+        </sc-if>
+        <sc-if value="{{ isDark }}" hint-placeholder-val="{{ false }}">
+          <span style="position: relative; display: block; width: 16px; height: 16px;">
+            <span style="position: absolute; left: 4px; top: 4px; width: 8px; height: 8px; border-radius: 99px; background: currentColor;"></span>
+            <span style="position: absolute; left: 7.25px; top: 0; width: 1.5px; height: 3px; background: currentColor;"></span>
+            <span style="position: absolute; left: 7.25px; bottom: 0; width: 1.5px; height: 3px; background: currentColor;"></span>
+            <span style="position: absolute; top: 7.25px; left: 0; width: 3px; height: 1.5px; background: currentColor;"></span>
+            <span style="position: absolute; top: 7.25px; right: 0; width: 3px; height: 1.5px; background: currentColor;"></span>
+          </span>
+        </sc-if>
+      </button>
+      </sc-if>
+      <button onClick="{{ openTour }}" title="How this works (?)" aria-label="Help" style="width: 30px; height: 30px; display: grid; place-items: center; border: 1px solid var(--rule-2); border-radius: 99px; background: transparent; cursor: pointer; color: var(--ink-3); font-family: 'Literata', serif; font-size: 14px; font-weight: 600; line-height: 1;" style-hover="border-color: var(--ink); color: var(--ink);">?</button>
+    </div>
+
+    <div style="flex: 1 1 auto; min-width: 0;"></div>
+
+    <div style="flex: 0 0 auto; display: flex; align-items: center; gap: 4px;">
+      <button onClick="{{ setSheet }}" style="position: relative; border: 0; background: transparent; color: {{ sheetInk }}; padding: 6px 10px 7px; font-size: 12.5px; font-weight: 600; letter-spacing: 0.01em; cursor: pointer; min-height: 34px;">
+        <span>Sheet</span>
+        <sc-if value="{{ isSheet }}" hint-placeholder-val="{{ true }}"><span style="position: absolute; left: 10px; right: 10px; bottom: 3px; height: 2px; background: var(--ink);"></span></sc-if>
+      </button>
+      <button onClick="{{ setGrid }}" style="position: relative; border: 0; background: transparent; color: {{ gridInk }}; padding: 6px 10px 7px; font-size: 12.5px; font-weight: 600; letter-spacing: 0.01em; cursor: pointer; min-height: 34px;">
+        <span>Edit</span>
+        <sc-if value="{{ isGrid }}" hint-placeholder-val="{{ false }}"><span style="position: absolute; left: 10px; right: 10px; bottom: 3px; height: 2px; background: var(--ink);"></span></sc-if>
+      </button>
+
+      <span style="width: 1px; height: 20px; background: var(--rule-2); margin: 0 8px;"></span>
+
+      <sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}">
+        <div style="display: flex; align-items: center; gap: 4px;">
+          <button onClick="{{ toggleAnalysis }}" title="Roman numerals on the chart (A)" style="display: flex; align-items: center; gap: 7px; background: transparent; border: 1px solid {{ analysisBorder }}; border-radius: 3px; padding: 0 11px; height: 32px; cursor: pointer; white-space: nowrap; color: {{ analysisInk }};">
+            <span style="width: 8px; height: 8px; border-radius: 99px; background: {{ analysisDot }}; border: 1px solid {{ analysisDotBorder }};"></span>
+            <span style="font-size: 12.5px; font-weight: 600;">Analysis</span>
+          </button>
+          <sc-if value="{{ noLeftRail }}" hint-placeholder-val="{{ true }}">
+            <button onClick="{{ openLibrary }}" style="background: transparent; border: 1px solid var(--rule-2); border-radius: 3px; padding: 0 11px; height: 32px; cursor: pointer; font-size: 12.5px; font-weight: 600; white-space: nowrap;" style-hover="border-color: var(--ink);">Standards</button>
+          </sc-if>
+          <sc-if value="{{ roomy }}" hint-placeholder-val="{{ true }}">
+            <button onClick="{{ openCmd }}" title="Type changes (⌘K)" style="display: flex; align-items: center; gap: 8px; background: transparent; border: 1px solid var(--rule-2); border-radius: 3px; padding: 0 9px 0 11px; height: 32px; cursor: pointer; color: var(--ink-3); white-space: nowrap;" style-hover="border-color: var(--ink); color: var(--ink);">
+              <span style="font-size: 12.5px; font-weight: 600;">Type changes</span>
+              <span style="font-family: ui-monospace, monospace; font-size: 10px; color: var(--ink-3);">⌘K</span>
+            </button>
+          </sc-if>
+          <sc-if value="{{ snug }}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{ openCmd }}" title="Type changes (⌘K)" aria-label="Type changes" style="width: 32px; height: 32px; display: grid; place-items: center; background: transparent; border: 1px solid var(--rule-2); border-radius: 3px; cursor: pointer; color: var(--ink-3); font-family: ui-monospace, monospace; font-size: 10.5px;" style-hover="border-color: var(--ink); color: var(--ink);">⌘K</button>
+          </sc-if>
+          <span style="width: 1px; height: 20px; background: var(--rule-2); margin: 0 4px;"></span>
+          <button onClick="{{ undo }}" title="{{ undoTitle }}" style="height: 32px; padding: 0 9px; display: grid; place-items: center; background: transparent; border: 1px solid var(--rule-2); border-radius: 3px 0 0 3px; border-right-width: 0; cursor: pointer; color: var(--ink-3); font-size: 11.5px; font-weight: 600; letter-spacing: 0.03em;" style-hover="color: var(--ink);">Undo</button>
+          <button onClick="{{ redo }}" title="{{ redoTitle }}" style="height: 32px; padding: 0 9px; display: grid; place-items: center; background: transparent; border: 1px solid var(--rule-2); border-radius: 0 3px 3px 0; cursor: pointer; color: var(--ink-3); font-size: 11.5px; font-weight: 600; letter-spacing: 0.03em; margin-left: -1px;" style-hover="color: var(--ink);">Redo</button>
+        </div>
+      </sc-if>
+
+      <button onClick="{{ share }}" style="margin-left: 4px; background: var(--ink); border: 1px solid var(--ink); border-radius: 3px; padding: 0 14px; height: 32px; cursor: pointer; color: var(--paper); font-weight: 600; font-size: 12.5px; letter-spacing: 0.01em; white-space: nowrap;" style-hover="background: var(--red); border-color: var(--red);">{{ shareLabel }}</button>
+
+      <sc-if value="{{ narrow }}" hint-placeholder-val="{{ false }}">
+        <button onClick="{{ openMenu }}" aria-label="More" style="width: 34px; height: 34px; display: grid; place-items: center; background: transparent; border: 1px solid var(--rule-2); border-radius: 3px; cursor: pointer; color: var(--ink-3); font-size: 16px; margin-left: 4px;">⋯</button>
+      </sc-if>
+    </div>
+  </header>
+
+  <main style="flex: 1 1 auto; min-height: 0; display: flex; position: relative;">
+
+    <sc-if value="{{ leftRail }}" hint-placeholder-val="{{ false }}">
+      <aside style="flex: 0 0 292px; width: 292px; min-width: 0; max-width: 292px; min-height: 0; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; background: var(--chrome); border-right: 1px solid var(--rule-2);">
+        <div style="flex: 0 0 auto; padding: 14px 15px 13px; border-bottom: 1px solid var(--rule);">
+          <p style="margin: 0 0 2px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-3);">Chord palette</p>
+          <p style="margin: 0 0 10px; font-size: 11.5px; line-height: 1.45; color: var(--ink-3);">Pick a root, then a quality. It rewrites the selected chord.</p>
+          <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 3px; margin-bottom: 7px;">
+            <sc-for list="{{ roots }}" as="r" hint-placeholder-count="12">
+              <button onClick="{{ r.onPick }}" style="height: 30px; border: 1px solid {{ r.border }}; border-radius: 2px; background: {{ r.bg }}; color: {{ r.ink }}; cursor: pointer; font-family: 'Literata', serif; font-size: 13.5px; font-weight: 600;">{{ r.label }}</button>
+            </sc-for>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px;">
+            <sc-for list="{{ qualities }}" as="q" hint-placeholder-count="12">
+              <button onClick="{{ q.onPick }}" style="height: 29px; border: 1px solid var(--rule); border-radius: 2px; background: var(--paper); color: var(--ink); cursor: pointer; font-family: 'Literata', serif; font-size: 12.5px; overflow: hidden;" style-hover="border-color: var(--ink); background: var(--ink); color: var(--paper);">{{ q.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="flex: 1 1 auto; min-height: 168px; display: flex; flex-direction: column; border-bottom: 1px solid var(--rule);">
+          <p style="margin: 0; padding: 13px 15px 9px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-3);">Standard progressions</p>
+          <div style="flex: 1 1 auto; min-height: 0; overflow-y: auto;">
+            <sc-for list="{{ presets }}" as="p" hint-placeholder-count="8">
+              <button onClick="{{ p.onLoad }}" style="display: block; width: 100%; text-align: left; background: transparent; border: 0; border-top: 1px solid var(--line-2); padding: 10px 15px 11px; cursor: pointer;" style-hover="background: var(--hover);">
+                <div style="display: flex; align-items: baseline; gap: 8px;">
+                  <span style="flex: 1 1 auto; font-size: 13px; font-weight: 600; line-height: 1.3;">{{ p.title }}</span>
+                  <span style="flex: 0 0 auto; font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3);">{{ p.meta }}</span>
+                </div>
+                <div style="margin-top: 4px; font-family: 'Literata', serif; font-size: 12.5px; color: var(--ink-2); line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ p.preview }}</div>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="flex: 0 0 auto; padding: 13px 15px 15px;">
+          <p style="margin: 0 0 9px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-3);">Import</p>
+          <div style="display: grid; gap: 6px;">
+            <label style="display: block; text-align: center; border: 1px dashed var(--rule-2); border-radius: 3px; padding: 10px 8px; cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--ink);" style-hover="border-color: var(--ink); background: var(--hover);">
+              Choose a MIDI file
+              <input type="file" accept=".mid,.midi,audio/midi" onChange="{{ onMidi }}" style="position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none;" />
+            </label>
+            <button onClick="{{ openCmd }}" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; border: 1px solid var(--rule); border-radius: 3px; padding: 9px 10px; background: transparent; cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--ink);" style-hover="border-color: var(--ink);">
+              <span>Paste chart text</span>
+              <span style="font-family: ui-monospace, monospace; font-size: 10px; color: var(--ink-3);">⌘K</span>
+            </button>
+          </div>
+          <p style="margin: 8px 0 0; font-size: 11px; line-height: 1.45; color: var(--ink-3);">{{ importNote }}</p>
+        </div>
+      </aside>
+    </sc-if>
+
+    <section style="flex: 1 1 auto; min-width: 0; overflow-y: auto; overflow-x: hidden; padding: {{ deskPad }}; background: radial-gradient(120% 80% at 50% -10%, var(--desk-1) 0%, var(--desk) 46%, var(--desk-2) 100%);">
+      <article style="position: relative; max-width: 1000px; margin: 0 auto; background: linear-gradient(176deg, var(--paper-hi) 0%, var(--paper) 42%, var(--paper-lo) 100%); border: 1px solid var(--page-edge); box-shadow: 0 1px 1px rgb(var(--sh) / 0.10), 0 2px 5px rgb(var(--sh) / 0.07), 0 18px 44px rgb(var(--sh) / 0.22); padding: {{ sheetPad }};">
+        <span style="position: absolute; inset: 0; pointer-events: none; opacity: var(--grain-op); mix-blend-mode: var(--grain-blend); background-image: url(&quot;data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='140' height='140' filter='url(%23n)' opacity='0.09'/></svg>&quot;);"></span>
+
+        <div style="display: flex; align-items: flex-end; gap: 16px; padding-bottom: 14px; border-bottom: 1.5px solid var(--ink);">
+          <button onClick="{{ cycleKey }}" title="Change key" style="flex: 0 0 auto; text-align: left; background: transparent; border: 0; border-radius: 2px; padding: 3px 5px; margin-left: -5px; cursor: pointer;" style-hover="background: var(--line-1);">
+            <span style="display: block; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-3);">Key</span>
+            <span style="display: block; font-family: 'Literata', serif; font-size: 17px; font-weight: 600; line-height: 1.2;">{{ keyLabel }}</span>
+          </button>
+          <div style="flex: 1 1 auto; min-width: 0; text-align: center;">
+            <input value="{{ title }}" onInput="{{ onTitle }}" aria-label="Chart title" style="width: 100%; background: transparent; border: 0; border-bottom: 1px solid transparent; border-radius: 0; padding: 2px 4px 7px; font-family: 'Literata', Georgia, serif; font-size: {{ titleSize }}; font-weight: 600; line-height: 1.3; height: auto; letter-spacing: -0.02em; text-align: center; color: var(--ink); outline: none; text-overflow: ellipsis;" style-hover="border-bottom-color: var(--rule-2);" style-focus="border-bottom-color: var(--red);" />
+            <sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}">
+              <p style="margin: 1px 0 0; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3);">{{ chartMeta }}</p>
+            </sc-if>
+          </div>
+          <div style="flex: 0 0 auto; text-align: right;">
+            <span style="display: block; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-3);">Tempo</span>
+            <span style="display: block; font-family: 'Literata', serif; font-size: 17px; font-weight: 600; line-height: 1.2; font-variant-numeric: tabular-nums;">{{ tempo }}</span>
+          </div>
+        </div>
+
+        <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="padding: 56px 0 40px; max-width: 460px; margin: 0 auto; animation: jz-fade 240ms ease;">
+            <p style="margin: 0 0 4px; font-family: 'Literata', serif; font-size: 26px; font-weight: 600; text-align: center;">An empty chart.</p>
+            <p style="margin: 0 0 30px; text-align: center; font-size: 14px; color: var(--ink-3);">Three ways in. All land here.</p>
+            <div style="display: grid; gap: 0; border-top: 1px solid var(--rule);">
+              <button onClick="{{ startTypical }}" style="display: flex; align-items: baseline; gap: 14px; background: transparent; border: 0; border-bottom: 1px solid var(--rule); padding: 16px 6px; cursor: pointer; text-align: left;" style-hover="background: var(--hover);">
+                <span style="flex: 0 0 auto; font-family: 'Literata', serif; font-size: 13px; font-style: italic; color: var(--red); width: 14px;">i</span>
+                <span style="flex: 1 1 auto;"><span style="display: block; font-size: 15px; font-weight: 600;">Start from a ii–V–I in C</span><span style="display: block; font-size: 13px; color: var(--ink-3); margin-top: 2px;">Four bars on the page, then change anything.</span></span>
+              </button>
+              <button onClick="{{ openCmd }}" style="display: flex; align-items: baseline; gap: 14px; background: transparent; border: 0; border-bottom: 1px solid var(--rule); padding: 16px 6px; cursor: pointer; text-align: left;" style-hover="background: var(--hover);">
+                <span style="flex: 0 0 auto; font-family: 'Literata', serif; font-size: 13px; font-style: italic; color: var(--red); width: 14px;">ii</span>
+                <span style="flex: 1 1 auto;"><span style="display: block; font-size: 15px; font-weight: 600;">Type the changes</span><span style="display: block; font-family: 'Literata', serif; font-size: 14px; color: var(--ink-3); margin-top: 2px;">| Dm7 G7 | Cmaj7 |</span></span>
+              </button>
+              <button onClick="{{ openLibrary }}" style="display: flex; align-items: baseline; gap: 14px; background: transparent; border: 0; border-bottom: 1px solid var(--rule); padding: 16px 6px; cursor: pointer; text-align: left;" style-hover="background: var(--hover);">
+                <span style="flex: 0 0 auto; font-family: 'Literata', serif; font-size: 13px; font-style: italic; color: var(--red); width: 14px;">iii</span>
+                <span style="flex: 1 1 auto;"><span style="display: block; font-size: 15px; font-weight: 600;">Open a standard</span><span style="display: block; font-size: 13px; color: var(--ink-3); margin-top: 2px;">Rhythm changes, jazz blues, the major-thirds cycle.</span></span>
+              </button>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isSheetChart }}" hint-placeholder-val="{{ true }}">
+          <div style="padding-top: 26px;">
+            <sc-for list="{{ sections }}" as="sec" hint-placeholder-count="2">
+              <div style="margin-bottom: 30px;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                  <span style="flex: 0 0 auto; width: 25px; height: 25px; border: 1.5px solid var(--ink); display: grid; place-items: center; font-family: 'Literata', serif; font-weight: 600; font-size: 13px;">{{ sec.letter }}</span>
+                  <input value="{{ sec.name }}" onInput="{{ sec.onName }}" aria-label="Section name" style="flex: 0 1 auto; width: 190px; min-width: 60px; background: transparent; border: 0; border-bottom: 1px solid transparent; padding: 1px 4px 4px; line-height: 1.45; height: auto; font-size: 14.5px; font-weight: 600; letter-spacing: 0.01em; color: var(--ink); outline: none;" style-hover="border-bottom-color: var(--rule-2);" style-focus="border-bottom-color: var(--red);" />
+                  <span style="flex: 1 1 auto;"></span>
+                  <button onClick="{{ sec.onPlay }}" title="Loop this section" style="flex: 0 0 auto; height: 28px; padding: 0 9px; border: 1px solid var(--rule); border-radius: 3px; background: transparent; color: var(--ink-3); cursor: pointer; font-size: 11px; font-weight: 600; letter-spacing: 0.03em;" style-hover="border-color: var(--red); color: var(--red);">▶ Loop</button>
+                  <button onClick="{{ sec.onAddBar }}" style="flex: 0 0 auto; height: 28px; padding: 0 9px; border: 1px solid var(--rule); border-radius: 3px; background: transparent; color: var(--ink-3); cursor: pointer; font-size: 11px; font-weight: 600; letter-spacing: 0.03em;" style-hover="border-color: var(--ink); color: var(--ink);">+ Bar</button>
+                  <button onClick="{{ sec.onDelete }}" aria-label="Delete section" style="flex: 0 0 auto; width: 28px; height: 28px; border: 1px solid var(--rule-2); border-radius: 3px; background: transparent; color: var(--ink-3); cursor: pointer; font-size: 13px;" style-hover="border-color: var(--red); color: var(--red);">×</button>
+                </div>
+
+                <sc-for list="{{ sec.systems }}" as="sys" hint-placeholder-count="2">
+                  <div style="position: relative; display: flex; border-left: 2.5px solid var(--ink); border-right: 2.5px solid var(--ink); margin-bottom: 4px; background: var(--paper-2);">
+                    <sc-if value="{{ sys.isLast }}" hint-placeholder-val="{{ false }}">
+                      <span style="position: absolute; right: 3px; top: 0; bottom: 0; width: 1px; background: var(--ink); z-index: 5;"></span>
+                    </sc-if>
+                    <sc-for list="{{ sys.bars }}" as="bar" hint-placeholder-count="4">
+                      <div style="position: relative; flex: 1 1 0; min-width: 0; min-height: {{ barHeight }}; display: flex;">
+                        <sc-if value="{{ bar.divider }}" hint-placeholder-val="{{ true }}">
+                          <span style="position: absolute; left: 0; top: 0; bottom: 0; width: 1px; background: var(--rule-2);"></span>
+                        </sc-if>
+                        <sc-if value="{{ bar.isPlaying }}" hint-placeholder-val="{{ false }}">
+                          <span style="position: absolute; inset: 0; background: var(--red-wash); pointer-events: none;"></span>
+                          <span style="position: absolute; left: {{ bar.playPct }}; top: -1px; bottom: -1px; width: 1.5px; background: var(--red); z-index: 6; pointer-events: none;"></span>
+                        </sc-if>
+                        <sc-if value="{{ bar.showNumber }}" hint-placeholder-val="{{ true }}">
+                          <span style="position: absolute; left: 7px; top: 5px; font-size: 9.5px; font-weight: 600; color: var(--ink-3); letter-spacing: 0.04em; z-index: 3;">{{ bar.number }}</span>
+                        </sc-if>
+                        <sc-if value="{{ bar.showTools }}" hint-placeholder-val="{{ false }}">
+                          <span style="position: absolute; right: 5px; top: 5px; display: flex; gap: 3px; z-index: 4;">
+                            <button onClick="{{ bar.onAddChord }}" title="Split this bar in two" style="height: 21px; padding: 0 6px; border: 1px solid var(--rule-2); border-radius: 2px; background: var(--paper); color: var(--ink-3); cursor: pointer; font-size: 10px; font-weight: 600; line-height: 1; display: grid; place-items: center;" style-hover="border-color: var(--ink); color: var(--ink);">Split</button>
+                            <button onClick="{{ bar.onDelete }}" title="Delete this bar" style="width: 21px; height: 21px; border: 1px solid var(--rule-2); border-radius: 2px; background: var(--paper); color: var(--ink-3); cursor: pointer; font-size: 11px; line-height: 1; display: grid; place-items: center;" style-hover="border-color: var(--red); color: var(--red);">×</button>
+                          </span>
+                        </sc-if>
+
+                        <sc-for list="{{ bar.chords }}" as="ch" hint-placeholder-count="1">
+                          <div onClick="{{ ch.onSelect }}" onDoubleClick="{{ ch.onEdit }}" onPointerDown="{{ ch.onDown }}" ref="{{ ch.ref }}" style="position: relative; flex: 1 1 0; min-width: 0; cursor: grab; padding: {{ ch.pad }}; display: flex; flex-direction: column; justify-content: space-between; touch-action: none; user-select: none; -webkit-user-select: none;" style-hover="background: var(--hover);">
+                            <sc-if value="{{ ch.dragging }}" hint-placeholder-val="{{ false }}">
+                              <span style="position: absolute; inset: -1px; background: var(--field-2); border: 1px solid var(--rule-2); box-shadow: 0 14px 30px rgb(var(--sh) / 0.22), 0 2px 5px rgb(var(--sh) / 0.14); z-index: -1;"></span>
+                            </sc-if>
+                            <sc-if value="{{ ch.subdivided }}" hint-placeholder-val="{{ false }}">
+                              <span style="position: absolute; left: 0; top: 7px; bottom: 7px; width: 0; border-left: 1px dashed var(--rule-2);"></span>
+                            </sc-if>
+                            <sc-if value="{{ ch.showCut }}" hint-placeholder-val="{{ false }}">
+                              <button onClick="{{ ch.onCut }}" title="Separate into its own measure" aria-label="Separate into its own measure" style="position: absolute; left: -10px; top: 50%; margin-top: -10px; width: 20px; height: 20px; border: 1px solid var(--rule-2); border-radius: 99px; background: var(--paper); cursor: pointer; z-index: 6; padding: 0; display: grid; place-items: center;" style-hover="border-color: var(--red); background: var(--red);">
+                                <span style="position: relative; display: block; width: 10px; height: 10px;">
+                                  <span style="position: absolute; left: 2px; top: 0; width: 1.5px; height: 10px; background: var(--ink-3); transform: rotate(18deg);"></span>
+                                  <span style="position: absolute; left: 6px; top: 0; width: 1.5px; height: 10px; background: var(--ink-3); transform: rotate(18deg);"></span>
+                                </span>
+                              </button>
+                            </sc-if>
+                            <sc-if value="{{ ch.showJoin }}" hint-placeholder-val="{{ false }}">
+                              <button onClick="{{ ch.onJoin }}" title="Join with the next measure" aria-label="Join with the next measure" style="position: absolute; right: -11px; top: 50%; margin-top: -10px; width: 22px; height: 20px; border: 1px solid var(--rule-2); border-radius: 99px; background: var(--paper); cursor: pointer; z-index: 6; padding: 0; display: grid; place-items: center;" style-hover="border-color: var(--blue);">
+                                <span style="display: block; width: 12px; height: 6px; border: 1.5px solid var(--ink-3); border-top: 0; border-radius: 0 0 12px 12px;"></span>
+                              </button>
+                            </sc-if>
+                            <sc-if value="{{ ch.selected }}" hint-placeholder-val="{{ false }}">
+                              <span style="position: absolute; left: 8px; right: 8px; bottom: 6px; height: 2px; background: var(--blue); pointer-events: none;"></span>
+                            </sc-if>
+
+                            <sc-if value="{{ ch.editing }}" hint-placeholder-val="{{ false }}">
+                              <input value="{{ entryText }}" onInput="{{ onEntryText }}" onKeyDown="{{ onEntryKey }}" ref="{{ entryRef }}" spellcheck="false" aria-label="Chord symbol" style="width: 100%; min-width: 0; background: var(--field); border: 0; border-bottom: 2px solid var(--red); padding: 0 2px 2px; font-family: 'Literata', serif; font-size: {{ ch.size }}; font-weight: 600; letter-spacing: -0.02em; outline: none;" />
+                            </sc-if>
+
+                            <sc-if value="{{ ch.reading }}" hint-placeholder-val="{{ true }}">
+                              <div style="min-width: 0;">
+                                <div data-sym="1" style="font-family: 'Literata', serif; font-size: {{ ch.size }}; font-weight: 600; line-height: 1; letter-spacing: -0.02em; white-space: nowrap;">{{ ch.h1 }}<sc-if value="{{ ch.hasAcc }}" hint-placeholder-val="{{ false }}"><span style="font-size: 0.78em; margin: 0 -0.06em 0 -0.04em; display: inline-block; vertical-align: 0.05em;">{{ ch.acc }}</span></sc-if>{{ ch.h2 }}<span style="font-size: 0.52em; vertical-align: super; font-weight: 400; letter-spacing: 0;">{{ ch.sup }}</span></div>
+                                <sc-if value="{{ ch.showSlashes }}" hint-placeholder-val="{{ true }}">
+                                  <div style="display: flex; gap: 11px; margin-top: 11px; color: var(--slash); font-family: 'Literata', serif; font-size: 18px; line-height: 1;">
+                                    <sc-for list="{{ ch.slashes }}" as="s" hint-placeholder-count="4"><span>/</span></sc-for>
+                                  </div>
+                                </sc-if>
+                              </div>
+                            </sc-if>
+                            <sc-if value="{{ ch.showRoman }}" hint-placeholder-val="{{ true }}">
+                              <div style="font-family: 'Literata', serif; font-size: 13.5px; font-style: italic; color: var(--blue); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">{{ ch.roman }}</div>
+                            </sc-if>
+                          </div>
+                        </sc-for>
+                      </div>
+                    </sc-for>
+                  </div>
+
+                  <sc-if value="{{ sys.hasMarks }}" hint-placeholder-val="{{ true }}">
+                    <div style="display: grid; grid-template-columns: {{ markCols }}; row-gap: 7px; margin: 0 0 13px; padding: 0 2px;">
+                      <sc-for list="{{ sys.marks }}" as="m" hint-placeholder-count="1">
+                        <div style="grid-column: {{ m.col }}; grid-row: {{ m.row }}; padding: 0 7px;">
+                          <div style="height: 5px; border-top: 1px solid var(--blue); border-left: 1px solid var(--blue); border-right: 1px solid var(--blue); opacity: 0.5;"></div>
+                          <div style="margin-top: 3px; text-align: center; font-family: 'Literata', serif; font-size: 11.5px; font-style: italic; color: var(--blue); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ m.label }}</div>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ sys.noMarks }}" hint-placeholder-val="{{ false }}">
+                    <div style="height: 9px;"></div>
+                  </sc-if>
+                </sc-for>
+              </div>
+            </sc-for>
+
+            <button onClick="{{ addSection }}" style="display: block; width: 100%; background: transparent; border: 1px dashed var(--rule-2); border-radius: 3px; padding: 13px; cursor: pointer; color: var(--ink-3); font-size: 13px; font-weight: 600; letter-spacing: 0.02em;" style-hover="border-color: var(--ink); color: var(--ink);">+ Add a section</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isGridChart }}" hint-placeholder-val="{{ false }}">
+          <div style="padding-top: 26px;">
+            <sc-for list="{{ sections }}" as="sec" hint-placeholder-count="1">
+              <div style="margin-bottom: 26px;">
+                <div style="display: flex; align-items: center; gap: 11px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--rule);">
+                  <span style="width: 23px; height: 23px; border: 1.5px solid var(--ink); display: grid; place-items: center; font-family: 'Literata', serif; font-weight: 600; font-size: 12px;">{{ sec.letter }}</span>
+                  <span style="font-size: 14px; font-weight: 600;">{{ sec.name }}</span>
+                  <span style="font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ink-3);">{{ sec.meta }}</span>
+                </div>
+                <div style="display: grid; grid-template-columns: {{ editCols }}; gap: 0; border-top: 1px solid var(--line-1);">
+                  <sc-for list="{{ sec.flat }}" as="ch" hint-placeholder-count="6">
+                    <div onClick="{{ ch.onSelect }}" onPointerDown="{{ ch.onDown }}" ref="{{ ch.ref }}" style="position: relative; background: var(--paper); border-bottom: 1px solid var(--line-1); border-right: 1px solid var(--line-1); padding: 13px 14px 14px; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none;" style-hover="background: var(--hover);">
+                      <sc-if value="{{ ch.dragging }}" hint-placeholder-val="{{ false }}">
+                        <span style="position: absolute; inset: 0; background: var(--field-2); border: 1px solid var(--rule-2); box-shadow: 0 14px 30px rgb(var(--sh) / 0.22), 0 2px 5px rgb(var(--sh) / 0.14); z-index: -1;"></span>
+                      </sc-if>
+                      <sc-if value="{{ ch.selected }}" hint-placeholder-val="{{ false }}">
+                        <span style="position: absolute; left: 0; top: 0; bottom: 0; width: 2.5px; background: var(--blue);"></span>
+                      </sc-if>
+                      <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 7px;">
+                        <span style="font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3);">{{ ch.place }}</span>
+                        <span style="display: flex; gap: 3px;">
+                          <button onClick="{{ ch.onEdit }}" title="Edit symbol" style="width: 22px; height: 22px; border: 1px solid var(--rule); border-radius: 2px; background: transparent; color: var(--ink-3); cursor: pointer; font-size: 10px; display: grid; place-items: center;" style-hover="border-color: var(--ink); color: var(--ink);">✎</button>
+                          <button onClick="{{ ch.onDup }}" title="Duplicate" style="width: 22px; height: 22px; border: 1px solid var(--rule); border-radius: 2px; background: transparent; color: var(--ink-3); cursor: pointer; font-size: 11px; display: grid; place-items: center;" style-hover="border-color: var(--ink); color: var(--ink);">⧉</button>
+                          <sc-if value="{{ ch.inBundle }}" hint-placeholder-val="{{ false }}">
+                            <button onClick="{{ ch.onCut }}" title="Separate this measure's chords into their own bars" aria-label="Separate into its own measure" style="width: 22px; height: 22px; border: 1px solid var(--rule); border-radius: 2px; background: transparent; cursor: pointer; padding: 0; display: grid; place-items: center;" style-hover="border-color: var(--red);">
+                              <span style="position: relative; display: block; width: 10px; height: 11px;">
+                                <span style="position: absolute; left: 2px; top: 0; width: 1.5px; height: 11px; background: var(--ink-3); transform: rotate(18deg);"></span>
+                                <span style="position: absolute; left: 6px; top: 0; width: 1.5px; height: 11px; background: var(--ink-3); transform: rotate(18deg);"></span>
+                              </span>
+                            </button>
+                          </sc-if>
+                          <button onClick="{{ ch.onDelete }}" title="Delete" style="width: 22px; height: 22px; border: 1px solid var(--rule); border-radius: 2px; background: transparent; color: var(--ink-3); cursor: pointer; font-size: 11px; display: grid; place-items: center;" style-hover="border-color: var(--red); color: var(--red);">×</button>
+                        </span>
+                      </div>
+                      <sc-if value="{{ ch.editing }}" hint-placeholder-val="{{ false }}">
+                        <input value="{{ entryText }}" onInput="{{ onEntryText }}" onKeyDown="{{ onEntryKey }}" ref="{{ entryRef }}" spellcheck="false" aria-label="Chord symbol" style="width: 100%; background: var(--field); border: 0; border-bottom: 2px solid var(--red); padding: 0 2px 2px; font-family: 'Literata', serif; font-size: 27px; font-weight: 600; outline: none;" />
+                      </sc-if>
+                      <sc-if value="{{ ch.reading }}" hint-placeholder-val="{{ true }}">
+                        <div>
+                          <div style="font-family: 'Literata', serif; font-size: 30px; font-weight: 600; line-height: 1; letter-spacing: -0.025em;">{{ ch.h1 }}<sc-if value="{{ ch.hasAcc }}" hint-placeholder-val="{{ false }}"><span style="font-size: 0.78em; margin: 0 -0.06em 0 -0.04em; display: inline-block; vertical-align: 0.05em;">{{ ch.acc }}</span></sc-if>{{ ch.h2 }}<span style="font-size: 0.52em; vertical-align: super; font-weight: 400;">{{ ch.sup }}</span></div>
+                          <div style="margin-top: 9px; display: flex; align-items: baseline; gap: 9px;">
+                            <span style="font-family: 'Literata', serif; font-size: 14px; font-style: italic; color: var(--blue);">{{ ch.roman }}</span>
+                            <span style="font-size: 11.5px; color: var(--ink-3);">{{ ch.fn }}</span>
+                          </div>
+                          <div style="margin-top: 7px; font-family: 'Literata', serif; font-size: 14px; color: var(--ink-3); letter-spacing: 0.06em;">{{ ch.notes }}</div>
+                        </div>
+                      </sc-if>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+      </article>
+    </section>
+
+    <sc-if value="{{ inspectorInline }}" hint-placeholder-val="{{ false }}">
+      <aside style="flex: 0 0 {{ railW }}; width: {{ railW }}; min-width: 0; max-width: {{ railW }}; border-left: 1px solid var(--rule-2); background: var(--paper); overflow-y: auto; overflow-x: hidden;">
+        <dc-import name="Chord Detail" data="{{ insp }}" pinned="{{ rightRail }}" onclose="{{ closeInspector }}" onadd="{{ addSuggested }}" onnote="{{ playNote }}" hint-size="360px,100%"></dc-import>
+      </aside>
+    </sc-if>
+  </main>
+
+  <sc-if value="{{ entryOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="flex: 0 0 auto; background: var(--chrome); border-top: 1px solid var(--rule-2); padding: 10px 18px; animation: jz-rise 160ms ease;">
+      <div style="max-width: 1000px; margin: 0 auto; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+        <span style="flex: 0 0 auto; font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-3);">Root</span>
+        <div style="display: flex; gap: 2px; flex-wrap: wrap;">
+          <sc-for list="{{ roots }}" as="r" hint-placeholder-count="12">
+            <button onClick="{{ r.onPick }}" style="min-width: 33px; height: 31px; padding: 0 7px; border: 1px solid {{ r.border }}; border-radius: 2px; background: {{ r.bg }}; color: {{ r.ink }}; cursor: pointer; font-family: 'Literata', serif; font-size: 14px; font-weight: 600;" style-hover="border-color: var(--ink);">{{ r.label }}</button>
+          </sc-for>
+        </div>
+        <span style="width: 1px; height: 22px; background: var(--rule-2);"></span>
+        <div style="display: flex; gap: 2px; flex-wrap: wrap;">
+          <sc-for list="{{ qualities }}" as="q" hint-placeholder-count="12">
+            <button onClick="{{ q.onPick }}" style="height: 31px; padding: 0 9px; border: 1px solid var(--rule); border-radius: 2px; background: var(--paper); color: var(--ink); cursor: pointer; font-family: 'Literata', serif; font-size: 13.5px;" style-hover="border-color: var(--ink); background: var(--ink); color: var(--paper);">{{ q.label }}</button>
+          </sc-for>
+        </div>
+        <span style="flex: 1 1 auto;"></span>
+        <span style="flex: 0 0 auto; font-size: 11.5px; color: var(--ink-3);">{{ entryHint }}</span>
+        <button onClick="{{ closeEntry }}" style="flex: 0 0 auto; height: 31px; padding: 0 13px; border: 1px solid var(--ink); border-radius: 2px; background: transparent; color: var(--ink); cursor: pointer; font-size: 12px; font-weight: 600;" style-hover="background: var(--ink); color: var(--paper);">Done</button>
+      </div>
+    </div>
+  </sc-if>
+
+  <footer style="flex: 0 0 auto; background: var(--chrome); border-top: 1px solid var(--rule-2);">
+    <div onClick="{{ onScrub }}" style="position: relative; height: 22px; cursor: pointer; border-bottom: 1px solid var(--line-2);">
+      <span style="position: absolute; left: 0; right: 0; top: 10px; height: 1px; background: var(--rule);"></span>
+      <sc-if value="{{ loopOn }}" hint-placeholder-val="{{ false }}">
+        <span style="position: absolute; top: 4px; bottom: 4px; left: {{ loopLeft }}; width: {{ loopWidth }}; background: var(--blue-wash); border-left: 1.5px solid var(--blue); border-right: 1.5px solid var(--blue);"></span>
+      </sc-if>
+      <span style="position: absolute; top: 3px; bottom: 3px; left: {{ progressPct }}; width: 2px; background: var(--red); transform: translateX(-1px);"></span>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 16px; padding: 9px 18px;">
+      <div style="flex: 0 0 auto; display: flex; align-items: center; gap: 3px;">
+        <button onClick="{{ prev }}" aria-label="Previous chord" style="width: 36px; height: 38px; border: 1px solid var(--rule-2); border-radius: 3px 0 0 3px; border-right-width: 0; background: transparent; color: var(--ink-3); cursor: pointer; font-size: 12px; display: grid; place-items: center;" style-hover="color: var(--ink);">◀◀</button>
+        <button onClick="{{ togglePlay }}" aria-label="Play or pause" style="width: 52px; height: 38px; border: 1px solid var(--ink); background: var(--ink); color: var(--paper); cursor: pointer; font-size: 13px; display: grid; place-items: center; margin: 0 -1px;" style-hover="background: var(--red); border-color: var(--red);">{{ playGlyph }}</button>
+        <button onClick="{{ next }}" aria-label="Next chord" style="width: 36px; height: 38px; border: 1px solid var(--rule-2); border-radius: 0 3px 3px 0; border-left-width: 0; background: transparent; color: var(--ink-3); cursor: pointer; font-size: 12px; display: grid; place-items: center;" style-hover="color: var(--ink);">▶▶</button>
+        <button onClick="{{ toggleLoop }}" aria-label="Loop" title="Loop the current section" style="margin-left: 6px; width: 38px; height: 38px; border: 1px solid {{ loopBorder }}; border-radius: 3px; background: transparent; cursor: pointer; font-size: 14px; display: grid; place-items: center; color: {{ loopInk }};">↻</button>
+      </div>
+
+      <div style="flex: 0 0 auto; min-width: 140px;">
+        <div style="font-family: 'Literata', serif; font-size: 21px; font-weight: 600; line-height: 1.1; letter-spacing: -0.02em; color: {{ nowInk }};">{{ nowChord }}</div>
+        <div style="font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); margin-top: 1px;">{{ nowPlace }}</div>
+      </div>
+
+      <span style="flex: 1 1 auto;"></span>
+
+      <sc-if value="{{ showFullMeter }}" hint-placeholder-val="{{ true }}">
+        <div style="flex: 0 0 auto; display: flex; align-items: flex-end; gap: 8px; margin-right: 4px;">
+          <canvas ref="{{ meterRefA }}" aria-hidden="true" style="display: block; width: 128px; height: 30px;"></canvas>
+          <span style="font-size: 9.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); padding-bottom: 1px;">Hz</span>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ roomy }}" hint-placeholder-val="{{ true }}">
+        <div style="flex: 0 0 auto; display: flex; align-items: center; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 7px;">
+            <button onClick="{{ toggleMute }}" title="{{ volLabel }}" aria-label="Mute" style="width: 30px; height: 30px; display: grid; place-items: center; border: 0; background: transparent; cursor: pointer; color: {{ volInk }};">
+              <span style="position: relative; display: block; width: 16px; height: 14px;">
+                <span style="position: absolute; left: 0; top: 4px; width: 4px; height: 6px; background: currentColor;"></span>
+                <span style="position: absolute; left: 3px; top: 1px; width: 6px; height: 12px; background: currentColor; clip-path: polygon(0 26%, 100% 0, 100% 100%, 0 74%);"></span>
+                <sc-if value="{{ notMuted }}" hint-placeholder-val="{{ true }}">
+                  <span style="position: absolute; left: 10px; top: 3px; width: 4px; height: 8px; border-right: 1.5px solid currentColor; border-top: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; border-radius: 0 99px 99px 0;"></span>
+                </sc-if>
+                <sc-if value="{{ muted }}" hint-placeholder-val="{{ false }}">
+                  <span style="position: absolute; left: 1px; top: 6px; width: 15px; height: 1.5px; background: var(--red); transform: rotate(-34deg);"></span>
+                </sc-if>
+              </span>
+            </button>
+            <div onPointerDown="{{ onVolDown }}" ref="{{ volRef }}" role="slider" aria-label="Volume" title="{{ volLabel }}" style="position: relative; width: 74px; height: 24px; cursor: pointer; touch-action: none; display: flex; align-items: center;">
+              <span style="position: absolute; left: 0; right: 0; height: 3px; background: var(--rule);"></span>
+              <span style="position: absolute; left: 0; width: {{ volPct }}; height: 3px; background: {{ volInk }};"></span>
+              <span style="position: absolute; left: {{ volPct }}; width: 12px; height: 12px; border-radius: 99px; background: var(--paper); border: 1.5px solid {{ volInk }}; margin-left: -6px; box-shadow: 0 1px 2px rgb(var(--sh) / 0.18);"></span>
+            </div>
+          </div>
+          <span style="width: 1px; height: 22px; background: var(--rule-2);"></span>
+          <div style="display: flex; align-items: center; border: 1px solid var(--rule-2); border-radius: 3px; height: 34px;">
+            <button onClick="{{ slower }}" aria-label="Slower" style="width: 28px; height: 100%; border: 0; background: transparent; color: var(--ink-3); cursor: pointer; font-size: 15px;" style-hover="color: var(--ink);">−</button>
+            <span style="min-width: 66px; text-align: center; font-size: 12.5px; font-weight: 600; font-variant-numeric: tabular-nums;">{{ tempo }} <span style="color: var(--ink-3); font-weight: 400; font-size: 10px; letter-spacing: 0.06em;">BPM</span></span>
+            <button onClick="{{ faster }}" aria-label="Faster" style="width: 28px; height: 100%; border: 0; background: transparent; color: var(--ink-3); cursor: pointer; font-size: 15px;" style-hover="color: var(--ink);">+</button>
+          </div>
+          <select value="{{ groove }}" onChange="{{ setGroove }}" aria-label="Groove" style="height: 34px; background: transparent; border: 1px solid var(--rule-2); border-radius: 3px; padding: 0 7px; font-size: 12.5px; cursor: pointer;">
+            <sc-for list="{{ grooves }}" as="g" hint-placeholder-count="4"><option value="{{ g.id }}">{{ g.label }}</option></sc-for>
+          </select>
+          <select value="{{ instrument }}" onChange="{{ setInstrument }}" aria-label="Instrument" style="height: 34px; background: transparent; border: 1px solid var(--rule-2); border-radius: 3px; padding: 0 7px; font-size: 12.5px; cursor: pointer;">
+            <sc-for list="{{ instruments }}" as="i" hint-placeholder-count="3"><option value="{{ i.id }}">{{ i.label }}</option></sc-for>
+          </select>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ showMiniMeter }}" hint-placeholder-val="{{ false }}">
+        <div style="flex: 0 0 auto; display: flex; align-items: center; gap: 6px; margin-right: 2px;">
+          <canvas ref="{{ meterRefB }}" aria-hidden="true" style="display: block; width: 46px; height: 26px;"></canvas>
+          <button onClick="{{ toggleMute }}" title="{{ volLabel }}" aria-label="Mute" style="width: 34px; height: 38px; display: grid; place-items: center; border: 0; background: transparent; cursor: pointer; color: {{ volInk }};">
+            <span style="position: relative; display: block; width: 16px; height: 14px;">
+              <span style="position: absolute; left: 0; top: 4px; width: 4px; height: 6px; background: currentColor;"></span>
+              <span style="position: absolute; left: 3px; top: 1px; width: 6px; height: 12px; background: currentColor; clip-path: polygon(0 26%, 100% 0, 100% 100%, 0 74%);"></span>
+              <sc-if value="{{ notMuted }}" hint-placeholder-val="{{ true }}">
+                <span style="position: absolute; left: 10px; top: 3px; width: 4px; height: 8px; border-right: 1.5px solid currentColor; border-top: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; border-radius: 0 99px 99px 0;"></span>
+              </sc-if>
+              <sc-if value="{{ muted }}" hint-placeholder-val="{{ false }}">
+                <span style="position: absolute; left: 1px; top: 6px; width: 15px; height: 1.5px; background: var(--red); transform: rotate(-34deg);"></span>
+              </sc-if>
+            </span>
+          </button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ snug }}" hint-placeholder-val="{{ false }}">
+        <div style="flex: 0 0 auto; display: flex; align-items: center; gap: 8px;">
+          <div style="display: flex; align-items: center; border: 1px solid var(--rule-2); border-radius: 3px; height: 34px;">
+            <button onClick="{{ slower }}" aria-label="Slower" style="width: 28px; height: 100%; border: 0; background: transparent; color: var(--ink-3); cursor: pointer; font-size: 15px;" style-hover="color: var(--ink);">−</button>
+            <span style="min-width: 60px; text-align: center; font-size: 12.5px; font-weight: 600; font-variant-numeric: tabular-nums;">{{ tempo }}</span>
+            <button onClick="{{ faster }}" aria-label="Faster" style="width: 28px; height: 100%; border: 0; background: transparent; color: var(--ink-3); cursor: pointer; font-size: 15px;" style-hover="color: var(--ink);">+</button>
+          </div>
+          <button onClick="{{ openMix }}" style="height: 34px; padding: 0 12px; border: 1px solid var(--rule-2); border-radius: 3px; background: transparent; color: var(--ink); cursor: pointer; font-size: 12.5px; font-weight: 600;" style-hover="border-color: var(--ink);">Sound</button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ narrow }}" hint-placeholder-val="{{ false }}">
+        <div style="flex: 0 0 auto; display: flex; align-items: center; gap: 6px;">
+          <button onClick="{{ openMix }}" aria-label="Sound settings" style="height: 38px; padding: 0 11px; border: 1px solid var(--rule-2); border-radius: 3px; background: transparent; color: var(--ink); cursor: pointer; font-size: 12.5px; font-weight: 600; font-variant-numeric: tabular-nums;">{{ tempo }}</button>
+          <button onClick="{{ toggleInspector }}" aria-label="Chord detail" style="width: 38px; height: 38px; border: 1px solid {{ inspectorBorder }}; border-radius: 3px; background: transparent; color: {{ inspectorInk }}; cursor: pointer; font-size: 15px;">◑</button>
+        </div>
+      </sc-if>
+    </div>
+  </footer>
+
+  <sc-if value="{{ entrySheet }}" hint-placeholder-val="{{ false }}">
+    <div style="position: fixed; left: 0; right: 0; bottom: 0; z-index: 45; background: var(--chrome); border-top: 1.5px solid var(--ink); padding: 12px 14px 16px; box-shadow: 0 -10px 28px rgb(var(--sh) / 0.16); animation: jz-rise 180ms ease;">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 11px;">
+        <span style="flex: 0 0 auto; font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-3);">{{ entryPlace }}</span>
+        <input value="{{ entryText }}" onInput="{{ onEntryText }}" onKeyDown="{{ onEntryKey }}" ref="{{ entryRef }}" spellcheck="false" aria-label="Chord symbol" style="flex: 1 1 auto; min-width: 0; background: var(--field); border: 1px solid var(--rule-2); border-bottom: 2px solid var(--red); border-radius: 2px; padding: 7px 10px; font-family: 'Literata', serif; font-size: 22px; font-weight: 600; outline: none;" />
+        <button onClick="{{ closeEntry }}" style="flex: 0 0 auto; min-height: 44px; padding: 0 16px; border: 1px solid var(--ink); border-radius: 3px; background: var(--ink); color: var(--paper); font-size: 13px; font-weight: 600; cursor: pointer;">Done</button>
+      </div>
+      <div style="display: flex; gap: 3px; flex-wrap: wrap; margin-bottom: 6px;">
+        <sc-for list="{{ roots }}" as="r" hint-placeholder-count="12">
+          <button onClick="{{ r.onPick }}" style="flex: 1 1 0; min-width: 44px; min-height: 44px; border: 1px solid {{ r.border }}; border-radius: 2px; background: {{ r.bg }}; color: {{ r.ink }}; cursor: pointer; font-family: 'Literata', serif; font-size: 16px; font-weight: 600;">{{ r.label }}</button>
+        </sc-for>
+      </div>
+      <div style="display: flex; gap: 3px; flex-wrap: wrap;">
+        <sc-for list="{{ qualities }}" as="q" hint-placeholder-count="12">
+          <button onClick="{{ q.onPick }}" style="flex: 1 1 0; min-width: 58px; min-height: 44px; border: 1px solid var(--rule); border-radius: 2px; background: var(--paper); color: var(--ink); cursor: pointer; font-family: 'Literata', serif; font-size: 14.5px;">{{ q.label }}</button>
+        </sc-for>
+      </div>
+      <p style="margin: 10px 0 0; text-align: center; font-size: 11.5px; color: var(--ink-3);">Tap a root, then a quality — or type it. Enter moves to the next chord.</p>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ inspectorSheet }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeInspector }}" style="position: fixed; inset: 0; background: rgb(var(--sh) / 0.36); z-index: 40;"></div>
+    <div style="position: fixed; left: 0; right: 0; bottom: 0; max-height: 80vh; overflow-y: auto; background: var(--paper); border-top: 1.5px solid var(--ink); z-index: 41; animation: jz-rise 200ms ease;">
+      <dc-import name="Chord Detail" data="{{ insp }}" onclose="{{ closeInspector }}" onadd="{{ addSuggested }}" onnote="{{ playNote }}" hint-size="100%,440px"></dc-import>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ cmdOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeCmd }}" style="position: fixed; inset: 0; background: rgb(var(--sh) / 0.4); z-index: 50; display: flex; align-items: flex-start; justify-content: center; padding: 11vh 16px 16px;">
+      <div onClick="{{ stop }}" style="width: 100%; max-width: 580px; background: var(--paper); border: 1px solid var(--rule-3); box-shadow: 0 20px 50px rgb(var(--sh) / 0.28); animation: jz-rise 180ms ease;">
+        <input value="{{ cmdText }}" onInput="{{ onCmdText }}" onKeyDown="{{ onCmdKey }}" ref="{{ cmdRef }}" spellcheck="false" placeholder="| Dm7 G7 | Cmaj7 |" aria-label="Type changes" style="width: 100%; background: transparent; border: 0; border-bottom: 1px solid var(--rule); padding: 17px 19px; font-family: 'Literata', serif; font-size: 21px; outline: none;" />
+        <div style="padding: 14px 19px 18px;">
+          <p style="margin: 0 0 10px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-3);">{{ cmdKicker }}</p>
+          <div style="display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 16px; min-height: 30px; align-items: flex-end;">
+            <sc-for list="{{ cmdPreview }}" as="p" hint-placeholder-count="3">
+              <span style="display: flex; flex-direction: column; gap: 1px;">
+                <span style="font-family: 'Literata', serif; font-size: 19px; font-weight: 600; line-height: 1;">{{ p.sym }}</span>
+                <span style="font-family: 'Literata', serif; font-size: 11.5px; font-style: italic; color: var(--blue);">{{ p.roman }}</span>
+              </span>
+            </sc-for>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <button onClick="{{ cmdReplace }}" style="height: 36px; padding: 0 15px; border: 1px solid var(--ink); border-radius: 3px; background: var(--ink); color: var(--paper); font-weight: 600; font-size: 12.5px; cursor: pointer;" style-hover="background: var(--red); border-color: var(--red);">Replace chart</button>
+            <button onClick="{{ cmdAppend }}" style="height: 36px; padding: 0 15px; border: 1px solid var(--rule-2); border-radius: 3px; background: transparent; color: var(--ink); font-weight: 600; font-size: 12.5px; cursor: pointer;" style-hover="border-color: var(--ink);">Add as new section</button>
+            <span style="flex: 1 1 auto;"></span>
+            <span style="font-size: 11px; color: var(--ink-3);">↵ replace · esc close</span>
+          </div>
+          <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line-2); display: grid; gap: 6px;">
+            <sc-for list="{{ shortcuts }}" as="s" hint-placeholder-count="5">
+              <div style="display: flex; align-items: baseline; gap: 11px; font-size: 12.5px; color: var(--ink-2);">
+                <span style="font-family: ui-monospace, monospace; font-size: 10.5px; color: var(--ink); min-width: 44px; text-align: right; letter-spacing: 0.02em;">{{ s.k }}</span>
+                <span>{{ s.d }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ libraryOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeLibrary }}" style="position: fixed; inset: 0; background: rgb(var(--sh) / 0.4); z-index: 50; display: flex; align-items: center; justify-content: center; padding: 20px;">
+      <div onClick="{{ stop }}" style="width: 100%; max-width: 780px; max-height: 84vh; overflow-y: auto; background: var(--paper); border: 1px solid var(--rule-3); box-shadow: 0 20px 50px rgb(var(--sh) / 0.28); animation: jz-rise 180ms ease;">
+        <div style="position: sticky; top: 0; background: var(--paper); border-bottom: 1.5px solid var(--ink); padding: 18px 22px 14px; display: flex; align-items: flex-end; gap: 12px;">
+          <div style="flex: 1 1 auto;">
+            <p style="margin: 0 0 3px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-3);">Standard progressions</p>
+            <h2 style="margin: 0; font-family: 'Literata', serif; font-size: 24px; font-weight: 600; letter-spacing: -0.02em;">Load a set of changes</h2>
+          </div>
+          <button onClick="{{ closeLibrary }}" aria-label="Close" style="flex: 0 0 auto; width: 32px; height: 32px; border: 1px solid var(--rule); border-radius: 3px; background: transparent; color: var(--ink-3); cursor: pointer; font-size: 16px;" style-hover="border-color: var(--ink); color: var(--ink);">×</button>
+        </div>
+        <div>
+          <sc-for list="{{ presets }}" as="p" hint-placeholder-count="6">
+            <button onClick="{{ p.onLoad }}" style="display: block; width: 100%; text-align: left; background: transparent; border: 0; border-bottom: 1px solid var(--line-2); padding: 15px 22px 16px; cursor: pointer;" style-hover="background: var(--hover);">
+              <div style="display: flex; align-items: baseline; gap: 12px;">
+                <span style="font-size: 15px; font-weight: 600;">{{ p.title }}</span>
+                <span style="flex: 1 1 auto;"></span>
+                <span style="font-size: 10.5px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ink-3); white-space: nowrap;">{{ p.meta }}</span>
+              </div>
+              <div style="margin: 7px 0 6px; font-family: 'Literata', serif; font-size: 15.5px; color: var(--ink); line-height: 1.45; word-break: break-word;">{{ p.preview }}</div>
+              <div style="font-size: 13px; color: var(--ink-3); line-height: 1.5; max-width: 62ch; text-wrap: pretty;">{{ p.note }}</div>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ mixOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeMix }}" style="position: fixed; inset: 0; background: rgb(var(--sh) / 0.36); z-index: 50;"></div>
+    <div style="position: fixed; left: 0; right: 0; bottom: 0; background: var(--paper); border-top: 1.5px solid var(--ink); z-index: 51; padding: 18px 18px 24px; animation: jz-rise 200ms ease;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px;">
+        <h2 style="margin: 0; font-family: 'Literata', serif; font-size: 21px; font-weight: 600;">Sound</h2>
+        <button onClick="{{ closeMix }}" aria-label="Close" style="width: 34px; height: 34px; border: 1px solid var(--rule); border-radius: 3px; background: transparent; color: var(--ink-3); cursor: pointer; font-size: 16px;">×</button>
+      </div>
+      <div style="display: grid; gap: 20px;">
+        <div>
+          <p style="margin: 0 0 8px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-3);">Tempo</p>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <button onClick="{{ slower }}" style="width: 52px; height: 46px; border: 1px solid var(--rule-2); border-radius: 3px; background: transparent; color: var(--ink); font-size: 20px; cursor: pointer;">−</button>
+            <span style="flex: 1 1 auto; text-align: center; font-family: 'Literata', serif; font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums;">{{ tempo }}</span>
+            <button onClick="{{ faster }}" style="width: 52px; height: 46px; border: 1px solid var(--rule-2); border-radius: 3px; background: transparent; color: var(--ink); font-size: 20px; cursor: pointer;">+</button>
+          </div>
+        </div>
+        <div>
+          <p style="margin: 0 0 8px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-3);">Volume — {{ volLabel }}</p>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <button onClick="{{ toggleMute }}" aria-label="Mute" style="width: 52px; height: 46px; display: grid; place-items: center; border: 1px solid var(--rule-2); border-radius: 3px; background: transparent; cursor: pointer; color: {{ volInk }};">
+              <span style="position: relative; display: block; width: 20px; height: 17px;">
+                <span style="position: absolute; left: 0; top: 5px; width: 5px; height: 7px; background: currentColor;"></span>
+                <span style="position: absolute; left: 4px; top: 1px; width: 7px; height: 15px; background: currentColor; clip-path: polygon(0 26%, 100% 0, 100% 100%, 0 74%);"></span>
+                <sc-if value="{{ notMuted }}" hint-placeholder-val="{{ true }}">
+                  <span style="position: absolute; left: 12px; top: 4px; width: 5px; height: 9px; border-right: 1.5px solid currentColor; border-top: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; border-radius: 0 99px 99px 0;"></span>
+                </sc-if>
+                <sc-if value="{{ muted }}" hint-placeholder-val="{{ false }}">
+                  <span style="position: absolute; left: 1px; top: 8px; width: 19px; height: 1.5px; background: var(--red); transform: rotate(-34deg);"></span>
+                </sc-if>
+              </span>
+            </button>
+            <div onPointerDown="{{ onVolDown }}" ref="{{ volRef }}" role="slider" aria-label="Volume" style="position: relative; flex: 1 1 auto; height: 46px; cursor: pointer; touch-action: none; display: flex; align-items: center;">
+              <span style="position: absolute; left: 0; right: 0; height: 3px; background: var(--rule);"></span>
+              <span style="position: absolute; left: 0; width: {{ volPct }}; height: 3px; background: {{ volInk }};"></span>
+              <span style="position: absolute; left: {{ volPct }}; width: 20px; height: 20px; border-radius: 99px; background: var(--paper); border: 1.5px solid {{ volInk }}; margin-left: -10px; box-shadow: 0 1px 3px rgb(var(--sh) / 0.2);"></span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <p style="margin: 0 0 8px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-3);">Groove</p>
+          <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+            <sc-for list="{{ grooves }}" as="g" hint-placeholder-count="4">
+              <button onClick="{{ g.onPick }}" style="min-height: 46px; padding: 0 15px; border: 1px solid {{ g.border }}; border-radius: 3px; background: {{ g.bg }}; cursor: pointer; font-size: 13px; font-weight: 600; color: {{ g.ink }};">{{ g.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+        <div>
+          <p style="margin: 0 0 8px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-3);">Instrument</p>
+          <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+            <sc-for list="{{ instruments }}" as="i" hint-placeholder-count="3">
+              <button onClick="{{ i.onPick }}" style="min-height: 46px; padding: 0 15px; border: 1px solid {{ i.border }}; border-radius: 3px; background: {{ i.bg }}; cursor: pointer; font-size: 13px; font-weight: 600; color: {{ i.ink }};">{{ i.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ menuOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeMenu }}" style="position: fixed; inset: 0; background: rgb(var(--sh) / 0.36); z-index: 50;"></div>
+    <div style="position: fixed; left: 12px; right: 12px; top: 58px; background: var(--paper); border: 1px solid var(--rule-3); box-shadow: 0 14px 34px rgb(var(--sh) / 0.24); z-index: 51; animation: jz-fade 140ms ease;">
+      <button onClick="{{ openTour }}" style="width: 100%; text-align: left; background: transparent; border: 0; border-bottom: 1px solid var(--line-2); padding: 14px 15px; color: var(--ink); font-size: 14.5px; font-weight: 500; cursor: pointer; min-height: 48px;">How this works</button>
+      <button onClick="{{ toggleTheme }}" style="width: 100%; display: flex; justify-content: space-between; text-align: left; background: transparent; border: 0; border-bottom: 1px solid var(--line-2); padding: 14px 15px; color: var(--ink); font-size: 14.5px; font-weight: 500; cursor: pointer; min-height: 48px;"><span>{{ themeTitle }}</span></button>
+      <button onClick="{{ toggleAnalysis }}" style="width: 100%; display: flex; align-items: center; gap: 11px; text-align: left; background: transparent; border: 0; border-bottom: 1px solid var(--line-2); padding: 14px 15px; color: var(--ink); font-size: 14.5px; font-weight: 500; cursor: pointer; min-height: 48px;">
+        <span style="width: 9px; height: 9px; border-radius: 99px; background: {{ analysisDot }}; border: 1px solid {{ analysisDotBorder }};"></span>
+        <span>Roman numerals on the chart</span>
+      </button>
+      <button onClick="{{ openCmd }}" style="width: 100%; text-align: left; background: transparent; border: 0; border-bottom: 1px solid var(--line-2); padding: 14px 15px; color: var(--ink); font-size: 14.5px; font-weight: 500; cursor: pointer; min-height: 48px;">Type changes</button>
+      <button onClick="{{ openLibrary }}" style="width: 100%; text-align: left; background: transparent; border: 0; border-bottom: 1px solid var(--line-2); padding: 14px 15px; color: var(--ink); font-size: 14.5px; font-weight: 500; cursor: pointer; min-height: 48px;">Standard progressions</button>
+      <button onClick="{{ cycleKey }}" style="width: 100%; display: flex; justify-content: space-between; text-align: left; background: transparent; border: 0; border-bottom: 1px solid var(--line-2); padding: 14px 15px; color: var(--ink); font-size: 14.5px; font-weight: 500; cursor: pointer; min-height: 48px;"><span>Key</span><span style="font-family: 'Literata', serif; font-weight: 600;">{{ keyLabel }}</span></button>
+      <div style="display: flex;">
+        <button onClick="{{ undo }}" style="flex: 1 1 0; background: transparent; border: 0; border-right: 1px solid var(--line-2); padding: 14px; color: var(--ink-2); font-size: 13.5px; font-weight: 600; cursor: pointer; min-height: 48px;">↶ Undo</button>
+        <button onClick="{{ redo }}" style="flex: 1 1 0; background: transparent; border: 0; padding: 14px; color: var(--ink-2); font-size: 13.5px; font-weight: 600; cursor: pointer; min-height: 48px;">↷ Redo</button>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ tourOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position: fixed; inset: 0; background: rgb(var(--sh) / 0.5); z-index: 70; display: flex; align-items: center; justify-content: center; padding: 20px;">
+      <div style="width: 100%; max-width: 620px; max-height: 88vh; overflow-y: auto; background: var(--paper); border: 1px solid var(--rule-3); box-shadow: 0 24px 60px rgb(var(--sh) / 0.34); animation: jz-rise 200ms ease;">
+        <div style="padding: 26px 30px 6px; display: flex; align-items: baseline; gap: 14px;">
+          <span style="font-family: 'Literata', serif; font-size: 15px; font-style: italic; color: var(--red);">{{ tourStep }}</span>
+          <h2 style="margin: 0; flex: 1 1 auto; font-family: 'Literata', serif; font-size: 27px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.15;">{{ tourTitle }}</h2>
+          <button onClick="{{ closeTour }}" aria-label="Close" style="flex: 0 0 auto; width: 30px; height: 30px; border: 1px solid var(--rule); border-radius: 3px; background: transparent; color: var(--ink-3); cursor: pointer; font-size: 15px;" style-hover="border-color: var(--ink); color: var(--ink);">×</button>
+        </div>
+        <p style="margin: 12px 30px 20px; font-size: 15px; line-height: 1.6; color: var(--ink-2); max-width: 52ch; text-wrap: pretty;">{{ tourBody }}</p>
+
+        <div style="margin: 0 30px 24px; padding: 20px 18px; background: var(--paper-2); border: 1px solid var(--line-2);">
+          <sc-if value="{{ tourIsEntry }}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; border-left: 2.5px solid var(--ink); border-right: 2.5px solid var(--ink);">
+              <div style="flex: 1 1 0; padding: 12px 11px 10px; min-height: 74px;">
+                <div style="font-family: 'Literata', serif; font-size: 30px; font-weight: 600; line-height: 1;">Dm<span style="font-size: 0.52em; vertical-align: super; font-weight: 400;">7</span></div>
+                <div style="display: flex; gap: 9px; margin-top: 9px; color: var(--slash); font-family: 'Literata', serif; font-size: 15px;"><span>/</span><span>/</span><span>/</span><span>/</span></div>
+              </div>
+              <div style="position: relative; flex: 1 1 0; padding: 12px 11px 10px; border-left: 1px solid var(--rule-2);">
+                <span style="display: inline-block; font-family: 'Literata', serif; font-size: 26px; font-weight: 600; border-bottom: 2px solid var(--red); padding-bottom: 2px;">G7</span>
+                <span style="display: inline-block; width: 1.5px; height: 22px; background: var(--red); margin-left: 2px; animation: jz-blink 1s steps(2) infinite; vertical-align: middle;"></span>
+              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ tourIsDrag }}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; align-items: center; gap: 14px;">
+              <div style="flex: 1 1 0; display: flex; border-left: 2.5px solid var(--ink); border-right: 2.5px solid var(--ink);">
+                <div style="flex: 1 1 0; padding: 12px 10px; border-right: 1px solid var(--rule-2); font-family: 'Literata', serif; font-size: 24px; font-weight: 600;">G<span style="font-size: 0.52em; vertical-align: super; font-weight: 400;">7</span></div>
+                <div style="flex: 1 1 0; padding: 12px 10px; font-family: 'Literata', serif; font-size: 24px; font-weight: 600; color: var(--ink-3);">C<span style="font-size: 0.52em; vertical-align: super; font-weight: 400;">maj7</span></div>
+              </div>
+              <div style="flex: 0 0 auto; background: var(--field-2); border: 1px solid var(--rule-2); box-shadow: 0 10px 22px rgb(var(--sh) / 0.2); padding: 10px 14px; transform: rotate(-2.5deg) scale(1.05); font-family: 'Literata', serif; font-size: 24px; font-weight: 600;">Dm<span style="font-size: 0.52em; vertical-align: super; font-weight: 400;">7</span></div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ tourIsAnalysis }}" hint-placeholder-val="{{ false }}">
+            <div>
+              <div style="display: flex; border-left: 2.5px solid var(--ink); border-right: 2.5px solid var(--ink);">
+                <div style="flex: 1 1 0; padding: 10px 10px 8px;">
+                  <div style="font-family: 'Literata', serif; font-size: 23px; font-weight: 600; line-height: 1;">Dm<span style="font-size: 0.52em; vertical-align: super; font-weight: 400;">7</span></div>
+                  <div style="margin-top: 7px; font-family: 'Literata', serif; font-size: 12px; font-style: italic; color: var(--blue);">ii7</div>
+                </div>
+                <div style="flex: 1 1 0; padding: 10px 10px 8px; border-left: 1px solid var(--rule-2);">
+                  <div style="font-family: 'Literata', serif; font-size: 23px; font-weight: 600; line-height: 1;">G<span style="font-size: 0.52em; vertical-align: super; font-weight: 400;">7</span></div>
+                  <div style="margin-top: 7px; font-family: 'Literata', serif; font-size: 12px; font-style: italic; color: var(--blue);">V7</div>
+                </div>
+                <div style="flex: 1 1 0; padding: 10px 10px 8px; border-left: 1px solid var(--rule-2);">
+                  <div style="font-family: 'Literata', serif; font-size: 23px; font-weight: 600; line-height: 1;">C<span style="font-size: 0.52em; vertical-align: super; font-weight: 400;">maj7</span></div>
+                  <div style="margin-top: 7px; font-family: 'Literata', serif; font-size: 12px; font-style: italic; color: var(--blue);">Imaj7</div>
+                </div>
+              </div>
+              <div style="padding: 0 7px;">
+                <div style="height: 5px; border-top: 1px solid var(--blue); border-left: 1px solid var(--blue); border-right: 1px solid var(--blue); opacity: 0.5;"></div>
+                <div style="margin-top: 3px; text-align: center; font-family: 'Literata', serif; font-size: 11.5px; font-style: italic; color: var(--blue);">ii–V–I in C</div>
+              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ tourIsPlay }}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+              <div style="display: flex; align-items: center; gap: 3px;">
+                <span style="width: 34px; height: 34px; border: 1px solid var(--rule-2); border-right-width: 0; border-radius: 3px 0 0 3px; display: grid; place-items: center; color: var(--ink-3); font-size: 11px;">◀◀</span>
+                <span style="width: 48px; height: 34px; background: var(--ink); color: var(--paper); display: grid; place-items: center; font-size: 12px; margin: 0 -1px;">▶</span>
+                <span style="width: 34px; height: 34px; border: 1px solid var(--rule-2); border-left-width: 0; border-radius: 0 3px 3px 0; display: grid; place-items: center; color: var(--ink-3); font-size: 11px;">▶▶</span>
+              </div>
+              <span style="width: 34px; height: 34px; border: 1px solid var(--blue); border-radius: 3px; display: grid; place-items: center; color: var(--blue); font-size: 13px;">↻</span>
+              <span style="font-size: 12px; color: var(--ink-3);">loop a section</span>
+              <span style="flex: 1 1 auto;"></span>
+              <span style="display: flex; align-items: flex-end; gap: 2px; height: 26px;">
+                <span style="width: 4px; height: 30%; background: var(--ink-3);"></span>
+                <span style="width: 4px; height: 62%; background: var(--red);"></span>
+                <span style="width: 4px; height: 96%; background: var(--red);"></span>
+                <span style="width: 4px; height: 54%; background: var(--red);"></span>
+                <span style="width: 4px; height: 74%; background: var(--red);"></span>
+                <span style="width: 4px; height: 34%; background: var(--ink-3);"></span>
+                <span style="width: 4px; height: 18%; background: var(--ink-3);"></span>
+              </span>
+            </div>
+          </sc-if>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 12px; padding: 15px 30px 22px; border-top: 1px solid var(--line-2);">
+          <div style="display: flex; gap: 6px; flex: 0 0 auto;">
+            <sc-for list="{{ tourDots }}" as="d" hint-placeholder-count="4">
+              <button onClick="{{ d.onPick }}" aria-label="Step" style="width: 8px; height: 8px; border-radius: 99px; border: 0; padding: 0; background: {{ d.ink }}; cursor: pointer;"></button>
+            </sc-for>
+          </div>
+          <span style="flex: 1 1 auto;"></span>
+          <button onClick="{{ closeTour }}" style="height: 36px; padding: 0 12px; border: 0; background: transparent; color: var(--ink-3); font-size: 12.5px; font-weight: 600; cursor: pointer;" style-hover="color: var(--ink);">Skip</button>
+          <sc-if value="{{ tourHasBack }}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{ tourBack }}" style="height: 36px; padding: 0 15px; border: 1px solid var(--rule-2); border-radius: 3px; background: transparent; color: var(--ink); font-size: 12.5px; font-weight: 600; cursor: pointer;" style-hover="border-color: var(--ink);">Back</button>
+          </sc-if>
+          <button onClick="{{ tourNext }}" style="height: 36px; padding: 0 16px; border: 1px solid var(--ink); border-radius: 3px; background: var(--ink); color: var(--paper); font-size: 12.5px; font-weight: 600; cursor: pointer;" style-hover="background: var(--red); border-color: var(--red);">{{ tourNextLabel }}</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ toastOn }}" hint-placeholder-val="{{ false }}">
+    <div style="position: fixed; left: 50%; bottom: {{ toastBottom }}; transform: translateX(-50%); z-index: 60; display: flex; align-items: center; gap: 14px; background: var(--ink); padding: 10px 11px 10px 16px; box-shadow: 0 12px 30px rgb(var(--sh) / 0.34); animation: jz-rise 180ms ease; max-width: calc(100vw - 32px);">
+      <span style="font-size: 13px; color: var(--paper);">{{ toast }}</span>
+      <button onClick="{{ undo }}" style="flex: 0 0 auto; height: 28px; padding: 0 11px; border: 1px solid var(--ink-3); border-radius: 2px; background: transparent; color: var(--paper); font-size: 12px; font-weight: 600; cursor: pointer;" style-hover="border-color: var(--paper);">Undo</button>
+      <button onClick="{{ hideToast }}" aria-label="Dismiss" style="flex: 0 0 auto; width: 26px; height: 28px; border: 0; background: transparent; color: var(--ink-4); cursor: pointer; font-size: 15px;">×</button>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900},&quot;defaultView&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;sheet&quot;,&quot;grid&quot;],&quot;default&quot;:&quot;sheet&quot;,&quot;tsType&quot;:&quot;'sheet' | 'grid'&quot;},&quot;romanNumerals&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;slashMarks&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;sound&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const LET = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+const SHARPS = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const FLATS  = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+const KEYS = ['C','F','Bb','Eb','Ab','Db','G','D','A','E'];
+
+const QUAL = [
+  ['maj7#11',[0,4,7,11,18]],['maj9',[0,4,7,11,14]],['maj13',[0,4,7,11,14,21]],['maj7',[0,4,7,11]],
+  ['m11',[0,3,7,10,14,17]],['m13',[0,3,7,10,14,21]],['m9',[0,3,7,10,14]],['m7b5',[0,3,6,10]],
+  ['m7',[0,3,7,10]],['m6',[0,3,7,9]],['mmaj7',[0,3,7,11]],['min',[0,3,7]],['m',[0,3,7]],
+  ['dim7',[0,3,6,9]],['dim',[0,3,6]],['7sus4',[0,5,7,10]],['sus4',[0,5,7]],['sus2',[0,2,7]],['sus',[0,5,7]],
+  ['13',[0,4,7,10,14,21]],['11',[0,4,7,10,17]],['9',[0,4,7,10,14]],['7alt',[0,4,8,10,13]],['7',[0,4,7,10]],
+  ['6/9',[0,4,7,9,14]],['69',[0,4,7,9,14]],['6',[0,4,7,9]],['add9',[0,4,7,14]],
+  ['aug',[0,4,8]],['+',[0,4,8]],['maj',[0,4,7]],['',[0,4,7]],
+];
+const ALTS = { b5:[7,6], '#5':[7,8], b9:[null,13], '#9':[null,15], '#11':[null,18], b13:[null,20], add9:[null,14] };
+const ROMAN = ['I','bII','II','bIII','III','IV','#IV','V','bVI','VI','bVII','VII'];
+
+/* engraved accidentals for display only */
+const glyph = (s) => String(s).replace(/#/g, '\u266F').replace(/b(?=$|[0-9()\/,\s])/g, '\u266D').replace(/^b/, '\u266D');
+const prettyRoot = (s) => String(s).replace(/#/g, '\u266F').replace(/b/g, '\u266D');
+
+function parseChord(text) {
+  const raw = String(text || '').trim();
+  if (!raw) return null;
+  const m = /^([A-Ga-g])([#b\u266F\u266D]{0,2})(.*)$/.exec(raw);
+  if (!m) return null;
+  const letter = m[1].toUpperCase();
+  const acc = m[2].replace(/\u266F/g, '#').replace(/\u266D/g, 'b');
+  let rest = m[3];
+  let bass = null;
+  const slash = rest.lastIndexOf('/');
+  if (slash > -1 && /^[A-Ga-g][#b\u266F\u266D]{0,2}$/.test(rest.slice(slash + 1))) {
+    bass = rest.slice(slash + 1);
+    bass = bass[0].toUpperCase() + bass.slice(1).replace(/\u266F/g, '#').replace(/\u266D/g, 'b');
+    rest = rest.slice(0, slash);
+  }
+  const body = rest.replace(/[()\s]/g, '');
+  let qual = '', ivs = null, consumed = '';
+  for (const [name, arr] of QUAL) {
+    if (name && body.toLowerCase().startsWith(name.toLowerCase())) { qual = name; ivs = arr.slice(); consumed = name; break; }
+  }
+  if (ivs === null) { qual = ''; ivs = [0,4,7]; consumed = ''; }
+  const tail = body.slice(consumed.length);
+  const found = [];
+  let scan = tail;
+  for (const key of ['#11','b13','add9','#9','b9','#5','b5']) {
+    if (scan.toLowerCase().includes(key.toLowerCase())) {
+      found.push(key);
+      scan = scan.replace(new RegExp(key.replace('#','\\#'), 'i'), '');
+    }
+  }
+  for (const a of found) {
+    const rule = ALTS[a];
+    if (!rule) continue;
+    if (rule[0] !== null) { const i = ivs.indexOf(rule[0]); if (i > -1) ivs[i] = rule[1]; else ivs.push(rule[1]); }
+    else if (!ivs.includes(rule[1])) ivs.push(rule[1]);
+  }
+  let rootPc = (LET[letter] + (acc.split('').reduce((s, c) => s + (c === '#' ? 1 : -1), 0))) % 12;
+  if (rootPc < 0) rootPc += 12;
+  return { text: raw, letter, acc, root: letter + acc, rootPc, qual, ivs, alts: found, bass, tail: scan };
+}
+
+function spell(pc, flat) { return (flat ? FLATS : SHARPS)[((pc % 12) + 12) % 12]; }
+function chordNotes(c) {
+  const flat = c.acc === 'b' || ['F','Bb','Eb','Ab','Db','Gb'].includes(c.root);
+  return c.ivs.map(iv => prettyRoot(spell(c.rootPc + iv, flat)));
+}
+
+function splitSymbol(c) {
+  if (!c) return { head: '?', sup: '' };
+  let head = prettyRoot(c.root), sup = c.qual + (c.alts.length ? '(' + c.alts.join(',') + ')' : '') + (c.tail || '');
+  if (/^m(?!aj)/.test(c.qual)) {
+    head = prettyRoot(c.root) + (c.qual === 'min' ? 'min' : 'm');
+    sup = c.qual.replace(/^(min|m)/, '') + (c.alts.length ? '(' + c.alts.join(',') + ')' : '') + (c.tail || '');
+  }
+  if (['dim','dim7','aug','+'].includes(c.qual)) { head = prettyRoot(c.root); sup = c.qual; }
+  if (c.bass) sup += '/' + prettyRoot(c.bass);
+  const m = /^([A-G])([\u266F\u266D]?)(.*)$/.exec(head);
+  return { head, h1: m ? m[1] : head, acc: m ? m[2] : '', h2: m ? m[3] : '', sup: glyph(sup) };
+}
+
+function analyze(c, keyPc) {
+  if (!c) return { roman: '', fn: '', scale: '', kind: 'other' };
+  const deg = (c.rootPc - keyPc + 12) % 12;
+  const third = c.ivs.includes(3) ? 'min' : 'maj';
+  const hasB7 = c.ivs.includes(10);
+  const hasM7 = c.ivs.includes(11);
+  const dimTri = c.ivs.includes(6) && c.ivs.includes(3);
+  const isDom = third === 'maj' && hasB7;
+  let base = ROMAN[deg];
+  if (third === 'min' || dimTri) base = base.toLowerCase();
+  base = base.replace(/^b/, '\u266D').replace(/^#/, '\u266F');
+  let sup = '';
+  if (dimTri && c.ivs.includes(9)) sup = '\u00B07';
+  else if (dimTri && hasB7) sup = '\u00F87';
+  else if (hasM7) sup = 'maj7';
+  else if (hasB7) sup = '7';
+  else if (c.ivs.includes(9)) sup = '6';
+  let fn = 'Colour chord', kind = 'other', scale = '';
+  if (isDom) {
+    kind = 'dominant';
+    if (deg === 7) { fn = 'Dominant — pulls home to the tonic'; scale = prettyRoot(spell(c.rootPc, false)) + ' Mixolydian'; }
+    else if (deg === 1) { fn = 'Tritone substitute for the V7'; scale = prettyRoot(spell(c.rootPc, true)) + ' Lydian dominant'; }
+    else { const tgt = (c.rootPc + 5 - keyPc + 12) % 12; fn = 'Secondary dominant — the V7 of ' + ROMAN[tgt]; scale = prettyRoot(spell(c.rootPc, false)) + ' Mixolydian'; }
+    if (c.alts.some(a => ['b9','#9','#5','b13'].includes(a))) scale = prettyRoot(spell(c.rootPc, false)) + ' altered';
+  } else if (dimTri && hasB7) { kind = 'predominant'; fn = 'Half-diminished — usually the ii of a minor ii–V'; scale = prettyRoot(spell(c.rootPc, true)) + ' Locrian'; }
+  else if (dimTri) { fn = 'Diminished — passing chord or dominant substitute'; scale = prettyRoot(spell(c.rootPc, false)) + ' whole–half diminished'; }
+  else if (third === 'min') {
+    kind = deg === 2 ? 'predominant' : 'other';
+    fn = deg === 2 ? 'Predominant — the ii of a ii–V' : deg === 9 ? 'Relative minor — a softer tonic' : deg === 4 ? 'iii — tonic-adjacent colour' : 'Minor colour';
+    scale = prettyRoot(spell(c.rootPc, true)) + (deg === 2 || deg === 9 ? ' Dorian' : ' Aeolian');
+  } else if (hasM7 || c.ivs.includes(9)) {
+    kind = deg === 0 ? 'tonic' : 'other';
+    fn = deg === 0 ? 'Tonic — home' : deg === 5 ? 'Subdominant — lifts away from home' : [8,3,10].includes(deg) ? 'Borrowed from the parallel minor' : 'Major colour';
+    scale = prettyRoot(spell(c.rootPc, false)) + (c.alts.includes('#11') || deg === 5 ? ' Lydian' : ' Ionian');
+  } else if (c.ivs.includes(5)) { fn = 'Suspended — the third is withheld'; scale = prettyRoot(spell(c.rootPc, false)) + ' Mixolydian'; }
+  return { roman: base + sup, fn, scale, kind };
+}
+
+function nextOptions(c, keyPc) {
+  if (!c) return [];
+  const a = analyze(c, keyPc);
+  const t = (semis, q) => {
+    const pc = ((c.rootPc + semis) % 12 + 12) % 12;
+    return spell(pc, ['F','Bb','Eb','Ab','Db'].includes(spell(pc, true))) + q;
+  };
+  if (a.kind === 'dominant') return [
+    { sym: t(5, 'maj7'), why: 'Resolve down a fifth. The strongest landing there is.' },
+    { sym: t(5, 'm7'), why: 'Same resolution, but onto a minor tonic.' },
+    { sym: t(2, 'm7'), why: 'Deceptive: sidestep the tonic and keep moving.' },
+  ];
+  if (a.kind === 'predominant') return [
+    { sym: t(5, '7'), why: 'The V7 that completes the ii–V.' },
+    { sym: t(6, '7'), why: 'Tritone sub for that V7 — the bass walks down a half step.' },
+    { sym: t(5, '7b9'), why: 'Darker dominant. The ♭9 tightens the pull.' },
+  ];
+  if (a.kind === 'tonic') return [
+    { sym: t(9, 'm7'), why: 'Begin a turnaround on the vi.' },
+    { sym: t(2, 'm7'), why: 'Step to ii and set up another ii–V.' },
+    { sym: t(9, '7'), why: 'VI7 instead of vi — a secondary dominant turnaround.' },
+  ];
+  return [
+    { sym: t(5, 'maj7'), why: 'Up a fourth. The default gravity in this music.' },
+    { sym: t(2, 'm7'), why: 'Approach the next chord through its own ii.' },
+    { sym: t(-1, '7'), why: 'Chromatic dominant, leaning in from a half step above.' },
+  ];
+}
+
+/* Phrase detection — the markings a teacher pencils under a chart */
+function detectPhrases(evs, flat) {
+  const P = evs.map(e => parseChord(e.sym));
+  const m7 = (c) => c && c.ivs.includes(3) && c.ivs.includes(10) && !c.ivs.includes(6);
+  const m7b5 = (c) => c && c.ivs.includes(3) && c.ivs.includes(6) && c.ivs.includes(10);
+  const pre = (c) => m7(c) || m7b5(c);
+  const dom = (c) => c && c.ivs.includes(4) && c.ivs.includes(10);
+  const majT = (c) => c && c.ivs.includes(4) && (c.ivs.includes(11) || c.ivs.includes(9)) && !c.ivs.includes(10);
+  const minT = (c) => c && c.ivs.includes(3) && !c.ivs.includes(6);
+  const tonic = (c) => majT(c) || minT(c);
+  const up = (a, n) => ((a.rootPc + n) % 12);
+  const nm = (pc, minor) => prettyRoot(spell(pc, flat)) + (minor ? ' minor' : '');
+  const out = [];
+  let i = 0;
+  while (i < evs.length) {
+    const a = P[i], b = P[i + 1], c = P[i + 2], d = P[i + 3];
+    if (majT(a) && m7(b) && pre(c) && dom(d) && b.rootPc === up(a, 9) && c.rootPc === up(a, 2) && d.rootPc === up(a, 7)) {
+      out.push({ from: i, to: i + 3, label: 'turnaround in ' + nm(a.rootPc) }); i += 4; continue;
+    }
+    if (pre(a) && dom(b) && tonic(c) && b.rootPc === up(a, 5) && (c.rootPc === up(b, 5) || c.rootPc === up(b, 11))) {
+      out.push({ from: i, to: i + 2, label: 'ii–V–I in ' + nm(c.rootPc, minT(c)) }); i += 3; continue;
+    }
+    if (pre(a) && dom(b) && b.rootPc === up(a, 5)) {
+      out.push({ from: i, to: i + 1, label: 'ii–V of ' + nm(up(b, 5)) }); i += 2; continue;
+    }
+    if (dom(a) && tonic(b) && b.rootPc === up(a, 11)) {
+      out.push({ from: i, to: i + 1, label: 'tritone sub into ' + nm(b.rootPc, minT(b)) }); i += 2; continue;
+    }
+    if (dom(a) && tonic(b) && b.rootPc === up(a, 5)) {
+      out.push({ from: i, to: i + 1, label: 'V–I in ' + nm(b.rootPc, minT(b)) }); i += 2; continue;
+    }
+    if (dom(a) && dom(b) && b.rootPc === up(a, 5)) {
+      out.push({ from: i, to: i + 1, label: 'dominant chain' }); i += 2; continue;
+    }
+    i += 1;
+  }
+  return out;
+}
+
+/* Guide-tone motion into the following chord */
+function resolution(a, b, flat) {
+  if (!a || !b) return null;
+  const g = (c) => c.ivs.filter(iv => [3,4,10,11].includes(iv)).map(iv => (c.rootPc + iv) % 12);
+  const from = g(a), to = g(b);
+  if (!from.length || !to.length) return null;
+  const moves = from.map(pc => {
+    let best = to[0], dist = 99;
+    to.forEach(t => { const d = Math.min((t - pc + 12) % 12, (pc - t + 12) % 12); if (d < dist) { dist = d; best = t; } });
+    return { from: prettyRoot(spell(pc, flat)), to: prettyRoot(spell(best, flat)), dist };
+  });
+  const held = moves.filter(m => m.dist === 0).length;
+  const step = moves.filter(m => m.dist > 0 && m.dist <= 2).length;
+  let note = '';
+  if (step && held) note = held + ' held, ' + step + ' by step';
+  else if (step) note = 'both move by step';
+  else if (held === moves.length) note = 'both notes are common to each chord';
+  else note = 'the guide tones leap';
+  return { moves, note };
+}
+
+const PRESETS = [
+  { id: 'ii-v-i', title: 'ii–V–I in C', note: 'The sentence every other progression is built from.', tempo: 132, groove: 'swing', key: 'C', text: '| Dm7 | G7 | Cmaj7 | Cmaj7 |' },
+  { id: 'turnaround', title: 'I–vi–ii–V turnaround', note: 'Four bars that loop forever. The standard vamp for practice.', tempo: 144, groove: 'swing', key: 'C', text: '| Cmaj7 | Am7 | Dm7 | G7 |' },
+  { id: 'rhythm-a', title: 'Rhythm changes, A section', note: 'The eight-bar cycle behind hundreds of bebop heads.', tempo: 200, groove: 'swing', key: 'Bb', text: '| Bbmaj7 G7 | Cm7 F7 | Bbmaj7 Bb7 | Ebmaj7 Edim7 | Bbmaj7 | Cm7 F7 | Dm7 G7 | Cm7 F7 |' },
+  { id: 'minor-ii-v', title: 'Minor ii–V–i', note: 'Half-diminished into an altered dominant, landing minor.', tempo: 120, groove: 'ballad', key: 'C', text: '| Dm7b5 | G7b9 | Cm9 | Cm9 |' },
+  { id: 'coltrane', title: 'Major-thirds cycle', note: 'Three tonal centres a major third apart, each reached by its own V7.', tempo: 168, groove: 'swing', key: 'C', text: '| Cmaj7 Eb7 | Abmaj7 B7 | Emaj7 G7 | Cmaj7 |' },
+  { id: 'modal', title: 'Modal vamp in D Dorian', note: 'Two chords, no cadence. Room to hear a mode instead of a key.', tempo: 116, groove: 'even', key: 'C', text: '| Dm9 | Dm9 | Em9 | Dm9 |' },
+  { id: 'blues', title: 'Jazz blues in F', note: 'Twelve bars, with the quick IV in bar two and a ii–V turnaround.', tempo: 152, groove: 'swing', key: 'F', text: '| F7 | Bb7 | F7 | F7 | Bb7 | Bb7 | F7 | D7 | Gm7 | C7 | F7 D7 | Gm7 C7 |' },
+  { id: 'satin', title: 'Descending chromatic ii–Vs', note: 'Consecutive ii–Vs stepping down by whole tone.', tempo: 128, groove: 'ballad', key: 'C', text: '| Em7 A7 | Dm7 G7 | Dbm7 Gb7 | Cmaj7 |' },
+];
+
+/* ---------- MIDI import: standard MIDI file → bars of chords ---------- */
+function parseMidi(buf) {
+  const v = new Uint8Array(buf);
+  const s4 = (i) => String.fromCharCode(v[i], v[i + 1], v[i + 2], v[i + 3]);
+  const r32 = (i) => (v[i] << 24) | (v[i + 1] << 16) | (v[i + 2] << 8) | v[i + 3];
+  const r16 = (i) => (v[i] << 8) | v[i + 1];
+  if (v.length < 22 || s4(0) !== 'MThd') return null;
+  const division = r16(12) || 480;
+  let p = 8 + r32(4);
+  const notes = [];
+  const readVar = (st) => { let x = 0, b; do { b = v[st.i++]; x = (x << 7) | (b & 0x7f); } while (b & 0x80 && st.i < v.length); return x; };
+  while (p + 8 <= v.length && s4(p) === 'MTrk') {
+    const end = Math.min(v.length, p + 8 + r32(p + 4));
+    const st = { i: p + 8 };
+    let t = 0, running = 0;
+    while (st.i < end) {
+      t += readVar(st);
+      if (v[st.i] & 0x80) running = v[st.i++];
+      if (running === 0xff) { st.i++; st.i += readVar(st); continue; }
+      if (running === 0xf0 || running === 0xf7) { st.i += readVar(st); continue; }
+      const cmd = running & 0xf0;
+      if (cmd === 0x90) { const n = v[st.i++], vel = v[st.i++]; if (vel > 0) notes.push({ t, n }); }
+      else if (cmd === 0x80 || cmd === 0xa0 || cmd === 0xb0 || cmd === 0xe0) st.i += 2;
+      else if (cmd === 0xc0 || cmd === 0xd0) st.i += 1;
+      else break;
+    }
+    p = end;
+  }
+  notes.sort((a, b) => a.t - b.t);
+  return { division, notes };
+}
+
+const NAME_TRY = ['maj7','m7','7','m7b5','dim7','6','m6','maj9','m9','9','13','sus4','m11','maj','m'];
+function nameSet(pcs, bassPc) {
+  let best = null;
+  for (let root = 0; root < 12; root++) {
+    for (const q of NAME_TRY) {
+      const entry = QUAL.find(x => x[0] === q);
+      if (!entry) continue;
+      const set = new Set(entry[1].map(iv => (root + iv) % 12));
+      let hit = 0, extra = 0, absent = 0;
+      pcs.forEach(pc => { if (set.has(pc)) hit++; else extra++; });
+      set.forEach(pc => { if (!pcs.has(pc)) absent++; });
+      const score = hit * 3 - extra * 4 - absent * 1.6 + (root === bassPc ? 2.5 : 0) - NAME_TRY.indexOf(q) * 0.05;
+      if (!best || score > best.score) best = { score, root, q };
+    }
+  }
+  if (!best) return null;
+  return spell(best.root, [1,3,8,10].includes(best.root)) + best.q;
+}
+
+function midiToBars(parsed, limit) {
+  const barTicks = Math.max(1, parsed.division * 4);
+  const byBar = new Map();
+  parsed.notes.forEach(n => {
+    const b = Math.floor(n.t / barTicks);
+    if (!byBar.has(b)) byBar.set(b, []);
+    byBar.get(b).push(n);
+  });
+  if (!byBar.size) return [];
+  const last = Math.min(Math.max.apply(null, Array.from(byBar.keys())), (limit || 64) - 1);
+  const bars = [];
+  let prev = 'Cmaj7';
+  for (let b = 0; b <= last; b++) {
+    const ns = byBar.get(b) || [];
+    if (!ns.length) { bars.push({ id: nid('bar'), chords: [{ id: nid('ch'), sym: prev }] }); continue; }
+    const half = barTicks / 2;
+    const syms = [[], []].map((_, hi) => {
+      const g = ns.filter(n => (hi === 0) === ((n.t % barTicks) < half));
+      if (!g.length) return null;
+      const pcs = new Set(g.map(n => ((n.n % 12) + 12) % 12));
+      let low = 999;
+      g.forEach(n => { if (n.n < low) low = n.n; });
+      return nameSet(pcs, ((low % 12) + 12) % 12);
+    }).filter(Boolean);
+    const uniq = syms.filter((x, i) => i === 0 || x !== syms[i - 1]);
+    const use = uniq.length ? uniq : [prev];
+    prev = use[use.length - 1];
+    bars.push({ id: nid('bar'), chords: use.map(x => ({ id: nid('ch'), sym: x })) });
+  }
+  return bars;
+}
+
+const TOUR = [
+  { n: 'i', title: 'Put chords on the page', body: 'Double-click any bar and type the symbol — enter moves you to the next one. Or press ⌘K and write a whole chart: | Dm7 G7 | Cmaj7 |', kind: 'entry' },
+  { n: 'ii', title: 'Move measures by dragging', body: 'Drag anywhere in a bar and the whole measure travels — two chords sharing a bar stay together. The others slide out of the way and settle back into the bar lines. To break a pair apart, select the bar and click the cut mark on the dashed line between them.', kind: 'drag' },
+  { n: 'iii', title: 'Read the analysis', body: 'Numerals sit under each bar. Brackets mark the phrases — ii–V–I, tritone subs, turnarounds — with the key they point at. Open Chord detail for notes, scales and guide tones.', kind: 'analysis' },
+  { n: 'iv', title: 'Play it back', body: 'Space plays and pauses. Loop a section while you practise, drag the tempo, pick a groove, and watch the spectrum as it sounds.', kind: 'play' },
+];
+
+const GROOVES = [ { id: 'swing', label: 'Medium swing' }, { id: 'ballad', label: 'Ballad' }, { id: 'even', label: 'Even eighths' }, { id: 'bossa', label: 'Bossa' } ];
+const INSTRUMENTS = [ { id: 'piano', label: 'Piano' }, { id: 'rhodes', label: 'Rhodes' }, { id: 'guitar', label: 'Guitar' } ];
+const ROOT_CHIPS = [ ['C','C'],['Db','D\u266D'],['D','D'],['Eb','E\u266D'],['E','E'],['F','F'],['F#','F\u266F'],['G','G'],['Ab','A\u266D'],['A','A'],['Bb','B\u266D'],['B','B'] ];
+const QUAL_CHIPS = ['maj7','m7','7','6/9','m9','m7b5','dim7','sus4','13','7b9','maj7#11','m11'];
+const SHORTCUTS = [
+  { k: 'space', d: 'Play or pause' }, { k: '← →', d: 'Previous / next chord' }, { k: 'enter', d: 'Edit the selected chord' },
+  { k: 'tab', d: 'Commit and move to the next chord' }, { k: 'A', d: 'Roman numerals on the chart' },
+  { k: 'V', d: 'Switch between Sheet and Edit' }, { k: 'I', d: 'Chord detail' }, { k: '⌘Z', d: 'Undo' },
+  { k: 'drag', d: 'Move a chord — the others make room' }, { k: '?', d: 'How this works' },
+];
+
+let uid = 0;
+const nid = (p) => p + '-' + (++uid);
+
+function parseChartText(text) {
+  const bars = [];
+  String(text || '').split('|').forEach(seg => {
+    const syms = seg.trim().split(/\s+/).filter(Boolean);
+    if (syms.length) bars.push({ id: nid('bar'), chords: syms.map(s => ({ id: nid('ch'), sym: s })) });
+  });
+  return bars;
+}
+const chunk = (arr, n) => { const out = []; for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n)); return out; };
+
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const bars = parseChartText('| Dm7 | G7 | Cmaj7 | A7 | Dm7 | G7 | Cmaj7 | Cmaj7 |');
+    this.state = {
+      title: 'Untitled changes', keyName: 'C', tempo: 132, groove: 'swing', instrument: 'piano',
+      sections: [{ id: nid('sec'), name: 'Head', bars }],
+      selId: bars[0].chords[0].id,
+      entry: null, entryText: '', entryRoot: 'C',
+      view: props.defaultView || 'sheet',
+      analysisOn: props.romanNumerals !== false,
+      inspectorOpen: false, libraryOpen: false, cmdOpen: false, cmdText: '', mixOpen: false, menuOpen: false,
+      playing: false, playIdx: -1, elapsed: 0, loop: false, loopSection: null,
+      narrow: false, roomy: true, shareCopied: false, toast: null, past: [], future: [],
+      volume: 0.8, muted: false, dragId: null,
+      theme: 'light', tutorial: false, step: 0,
+      dragBarId: null, importNote: 'MIDI or MusicXML from your DAW.',
+    };
+    this._raf = 0; this._last = 0; this._toastTimer = 0;
+    this.slots = new Map();
+    this.spr = new Map();
+    this.pending = null;
+    this._fft = new Uint8Array(64);
+  }
+
+  componentDidMount() {
+    this._onResize = () => { this.setState({ narrow: window.innerWidth < 820, tight: window.innerWidth < 660, roomy: window.innerWidth >= 1180, wideDesk: window.innerWidth >= 1280 }); this.scheduleFit(); };
+    this._onResize();
+    window.addEventListener('resize', this._onResize);
+    this._onKey = (e) => this.handleKey(e);
+    window.addEventListener('keydown', this._onKey);
+    this.startMeter();
+    this.scheduleFit();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.fitSymbols());
+    let saved = null, seen = null;
+    try { saved = localStorage.getItem('jz.theme'); seen = localStorage.getItem('jz.tour'); } catch (e) {}
+    const theme = saved === 'dark' || saved === 'light' ? saved
+      : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', theme);
+    this.setState({ theme, tutorial: !seen });
+  }
+  componentDidUpdate() {
+    if (this._fitSig !== this._lastFitSig) { this._lastFitSig = this._fitSig; this.scheduleFit(); }
+  }
+  setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    try { localStorage.setItem('jz.theme', theme); } catch (e) {}
+    this.setState({ theme });
+  }
+  closeTour = () => {
+    try { localStorage.setItem('jz.tour', '1'); } catch (e) {}
+    this.setState({ tutorial: false, step: 0 });
+  };
+  componentWillUnmount() {
+    window.removeEventListener('resize', this._onResize);
+    window.removeEventListener('keydown', this._onKey);
+    if (this._raf) { cancelAnimationFrame(this._raf); this._raf = 0; }
+    if (this._sprRaf) { cancelAnimationFrame(this._sprRaf); this._sprRaf = 0; }
+    if (this._meterRaf) { cancelAnimationFrame(this._meterRaf); this._meterRaf = 0; }
+    if (this._toastTimer) clearTimeout(this._toastTimer);
+  }
+
+  keyPc() { const c = parseChord(this.state.keyName); return c ? c.rootPc : 0; }
+
+  events() {
+    const out = [];
+    this.state.sections.forEach((sec, si) => {
+      let bn = 1;
+      sec.bars.forEach((bar, bi) => {
+        const n = Math.max(1, bar.chords.length);
+        bar.chords.forEach((ch, ci) => {
+          out.push({ ...ch, secId: sec.id, secIdx: si, barId: bar.id, barIdx: bi, bar: bn, beats: 4 / n, idx: out.length, slot: ci, of: n });
+        });
+        bn += 1;
+      });
+    });
+    return out;
+  }
+
+  snapshot() { return JSON.stringify({ t: this.state.title, k: this.state.keyName, s: this.state.sections }); }
+  commit(label, mutate) {
+    const before = this.snapshot();
+    this.setState({ ...mutate(), past: [...this.state.past, before].slice(-60), future: [] }, () => this.flash(label));
+  }
+  flash(label) {
+    if (!label) return;
+    if (this._toastTimer) clearTimeout(this._toastTimer);
+    this.setState({ toast: label });
+    this._toastTimer = setTimeout(() => this.setState({ toast: null }), 4200);
+  }
+  restore(json) { const d = JSON.parse(json); return { title: d.t, keyName: d.k, sections: d.s }; }
+  undo = () => {
+    const past = this.state.past.slice();
+    const json = past.pop();
+    if (!json) return this.flash('Nothing left to undo');
+    this.setState({ ...this.restore(json), past, future: [...this.state.future, this.snapshot()], toast: null, entry: null });
+  };
+  redo = () => {
+    const future = this.state.future.slice();
+    const json = future.pop();
+    if (!json) return this.flash('Nothing to redo');
+    this.setState({ ...this.restore(json), future, past: [...this.state.past, this.snapshot()], toast: null, entry: null });
+  };
+  mapSections(fn) { return this.state.sections.map(fn); }
+
+  audio() {
+    if (this.props.sound === false) return null;
+    if (!this._ac) {
+      try { this._ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; }
+      this._bus = this._ac.createGain();
+      this._an = this._ac.createAnalyser();
+      this._an.fftSize = 2048;
+      this._an.smoothingTimeConstant = 0.68;
+      this._bus.connect(this._an);
+      this._an.connect(this._ac.destination);
+      this._fft = new Uint8Array(this._an.frequencyBinCount);
+      this.applyGain(true);
+    }
+    if (this._ac.state === 'suspended') this._ac.resume();
+    return this._ac;
+  }
+  applyGain(instant) {
+    if (!this._bus || !this._ac) return;
+    const g = this.state.muted ? 0 : this.state.volume;
+    if (instant) this._bus.gain.value = g;
+    else this._bus.gain.setTargetAtTime(g, this._ac.currentTime, 0.03);
+  }
+  tone(midi, dur, level) {
+    const ac = this.audio(); if (!ac) return;
+    const d = dur || 0.6;
+    const now = ac.currentTime;
+    const inst = this.state.instrument;
+    const o = ac.createOscillator(); const g = ac.createGain();
+    o.type = inst === 'rhodes' ? 'sine' : 'triangle';
+    o.frequency.value = 440 * Math.pow(2, (midi - 69) / 12);
+    g.gain.value = 0;
+    g.gain.setTargetAtTime(level == null ? 0.2 : level, now, 0.012);
+    g.gain.setTargetAtTime(0, now + d * 0.5, d * 0.34);
+    o.connect(g); g.connect(this._bus);
+    o.start(now); o.stop(now + d + 0.7);
+    setTimeout(() => { try { g.disconnect(); } catch (e) {} }, (d + 1.2) * 1000);
+  }
+  voicing(sym) {
+    const c = parseChord(sym); if (!c) return [];
+    const bassPc = c.bass ? parseChord(c.bass).rootPc : c.rootPc;
+    return [bassPc + 36, ...c.ivs.slice(1).map(iv => 60 + ((c.rootPc + iv) % 12))];
+  }
+  voice(sym) {
+    if (!this.audio()) return;
+    this.voicing(sym).forEach((midi, i) => {
+      setTimeout(() => this.tone(midi, 0.95, i === 0 ? 0.3 : 0.16), i * 12);
+    });
+  }
+  meterRef(slot) {
+    if (!this._meterRefs) this._meterRefs = {};
+    if (!this._meterRefs[slot]) this._meterRefs[slot] = (el) => {
+      this['_meter' + slot] = el;
+      if (el) { this.startMeter(); this.drawMeter(el); }
+    };
+    return this._meterRefs[slot];
+  }
+  startMeter() {
+    if (this._meterRaf) return;
+    const loop = () => {
+      this._meterRaf = requestAnimationFrame(loop);
+      if (this._an) this._an.getByteFrequencyData(this._fft);
+      if (this._meterA) this.drawMeter(this._meterA);
+      if (this._meterB) this.drawMeter(this._meterB);
+    };
+    this._meterRaf = requestAnimationFrame(loop);
+  }
+  drawMeter(cv) {
+    const w = cv.clientWidth, h = cv.clientHeight;
+    if (!w || !h) return;
+    const dpr = window.devicePixelRatio || 1;
+    if (cv.width !== Math.round(w * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+    const g = cv.getContext('2d');
+    if (!g) return;
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, w, h);
+    const n = Math.max(6, Math.min(26, Math.floor(w / 5.2)));
+    const bins = this._fft.length;
+    const gap = w > 80 ? 1.5 : 1.2;
+    const bw = (w - gap * (n - 1)) / n;
+    const dark = this.state.theme === 'dark';
+    const quiet = dark ? 'rgba(158,150,131,0.32)' : 'rgba(107,99,83,0.26)';
+    const hot = dark ? 'rgb(224,101,76)' : 'rgb(178,58,42)';
+    const mid = dark ? 'rgb(214,124,84)' : 'rgb(196,90,52)';
+    const low = dark ? 'rgb(172,142,90)' : 'rgb(138,106,62)';
+    for (let i = 0; i < n; i++) {
+      const lo = Math.floor(Math.pow(i / n, 2.2) * bins * 0.5);
+      const hi = Math.max(lo + 1, Math.floor(Math.pow((i + 1) / n, 2.2) * bins * 0.5));
+      let m = 0;
+      for (let k = lo; k < hi; k++) if (this._fft[k] > m) m = this._fft[k];
+      const v = Math.pow(m / 255, 0.82);
+      const live = v > 0.03 && !this.state.muted;
+      const bh = live ? Math.max(1.5, v * (h - 1)) : 1.5;
+      g.fillStyle = live ? (v > 0.72 ? hot : v > 0.4 ? mid : low) : quiet;
+      g.fillRect(i * (bw + gap), h - bh, bw, bh);
+    }
+  }
+
+  tick = (ts) => {
+    if (!this.state.playing) return;
+    const dt = this._last ? (ts - this._last) / 1000 : 0;
+    this._last = ts;
+    const evs = this.events();
+    if (!evs.length) { this.setState({ playing: false }); return; }
+    const range = this.playRange(evs);
+    let idx = this.state.playIdx < range[0] || this.state.playIdx > range[1] ? range[0] : this.state.playIdx;
+    let el = this.state.elapsed + dt;
+    const spb = 60 / this.state.tempo;
+    let dur = evs[idx].beats * spb;
+    let bumped = false;
+    while (el >= dur) {
+      el -= dur; idx += 1; bumped = true;
+      if (idx > range[1]) {
+        if (this.state.loop || range[1] < evs.length - 1) idx = range[0];
+        else { this.setState({ playing: false, playIdx: -1, elapsed: 0 }); return; }
+      }
+      dur = evs[idx].beats * spb;
+    }
+    if (bumped) this.voice(evs[idx].sym);
+    this.setState({ playIdx: idx, elapsed: el });
+    this._raf = requestAnimationFrame(this.tick);
+  };
+  playRange(evs) {
+    if (this.state.loop && this.state.loopSection) {
+      const inSec = evs.filter(e => e.secId === this.state.loopSection);
+      if (inSec.length) return [inSec[0].idx, inSec[inSec.length - 1].idx];
+    }
+    return [0, evs.length - 1];
+  }
+  start(from) {
+    const evs = this.events();
+    if (!evs.length) return;
+    const idx = from != null ? from : (this.state.playIdx >= 0 ? this.state.playIdx : 0);
+    this._last = 0;
+    this.setState({ playing: true, playIdx: idx, elapsed: 0, selId: evs[idx].id }, () => {
+      this.voice(evs[idx].sym);
+      this._raf = requestAnimationFrame(this.tick);
+    });
+  }
+  togglePlay = () => {
+    if (this.state.playing) { cancelAnimationFrame(this._raf); this.setState({ playing: false }); }
+    else this.start();
+  };
+  step(d) {
+    const evs = this.events();
+    if (!evs.length) return;
+    const cur = evs.findIndex(e => e.id === this.state.selId);
+    const idx = Math.max(0, Math.min(evs.length - 1, (cur < 0 ? 0 : cur) + d));
+    this.setState({ selId: evs[idx].id, playIdx: this.state.playing ? idx : this.state.playIdx, elapsed: 0 });
+    this.voice(evs[idx].sym);
+  }
+
+  select = (id) => { this.setState({ selId: id, entry: null }); const e = this.events().find(x => x.id === id); if (e) this.voice(e.sym); };
+  edit = (id) => {
+    const e = this.events().find(x => x.id === id);
+    if (!e) return;
+    const c = parseChord(e.sym);
+    this.setState({ selId: id, entry: id, entryText: e.sym, entryRoot: c ? c.root : 'C' });
+  };
+  setSym(id, sym) {
+    const clean = String(sym).trim();
+    if (!clean) return;
+    const cur = this.events().find(x => x.id === id);
+    if (!cur || cur.sym === clean) return;
+    this.commit(cur.sym + ' → ' + clean, () => ({
+      sections: this.mapSections(s => ({ ...s, bars: s.bars.map(b => ({ ...b, chords: b.chords.map(c => c.id === id ? { ...c, sym: clean } : c) })) })),
+    }));
+  }
+  commitEntry(advance) {
+    const id = this.state.entry;
+    if (!id) return;
+    this.setSym(id, this.state.entryText);
+    if (!advance) { this.setState({ entry: null }); return; }
+    const evs = this.events();
+    const nxt = evs[evs.findIndex(e => e.id === id) + 1];
+    if (nxt) { const c = parseChord(nxt.sym); this.setState({ entry: nxt.id, selId: nxt.id, entryText: nxt.sym, entryRoot: c ? c.root : 'C' }); }
+    else this.setState({ entry: null });
+  }
+
+  addChordToBar = (secId, barId) => {
+    const sel = this.events().find(e => e.barId === barId);
+    const sym = sel ? sel.sym : 'Cmaj7';
+    this.commit('Split the bar', () => ({
+      sections: this.mapSections(s => s.id !== secId ? s : ({ ...s, bars: s.bars.map(b => b.id !== barId ? b : ({ ...b, chords: b.chords.length >= 4 ? b.chords : [...b.chords, { id: nid('ch'), sym }] })) })),
+    }));
+  };
+  addBar = (secId) => {
+    const b = { id: nid('bar'), chords: [{ id: nid('ch'), sym: 'Cmaj7' }] };
+    this.commit('Added a bar', () => ({ sections: this.mapSections(s => s.id !== secId ? s : ({ ...s, bars: [...s.bars, b] })), selId: b.chords[0].id }));
+  };
+  delBar = (secId, barId) => {
+    this.commit('Deleted a bar', () => ({ sections: this.mapSections(s => s.id !== secId ? s : ({ ...s, bars: s.bars.filter(b => b.id !== barId) })) }));
+  };
+  addSection = () => {
+    const s = { id: nid('sec'), name: 'New section', bars: parseChartText('| Cmaj7 | Cmaj7 | Cmaj7 | Cmaj7 |') };
+    this.commit('Added a section', () => ({ sections: [...this.state.sections, s] }));
+  };
+  delSection = (secId) => {
+    if (this.state.sections.length <= 1) return this.flash('A chart keeps at least one section');
+    this.commit('Deleted a section', () => ({ sections: this.state.sections.filter(s => s.id !== secId) }));
+  };
+  renameSection(secId, name) { this.setState({ sections: this.mapSections(s => s.id === secId ? { ...s, name } : s) }); }
+  delChord = (id) => {
+    const e = this.events().find(x => x.id === id);
+    if (!e) return;
+    this.commit('Deleted ' + e.sym, () => ({
+      sections: this.mapSections(s => ({ ...s, bars: s.bars.map(b => ({ ...b, chords: b.chords.length > 1 ? b.chords.filter(c => c.id !== id) : b.chords })).filter(b => b.chords.length) })),
+      entry: null,
+    }));
+  };
+  dupChord = (id) => {
+    const e = this.events().find(x => x.id === id);
+    if (!e) return;
+    this.commit('Duplicated ' + e.sym, () => ({
+      sections: this.mapSections(s => ({ ...s, bars: s.bars.map(b => b.id !== e.barId ? b : ({ ...b, chords: b.chords.length >= 4 ? b.chords : b.chords.flatMap(c => c.id === id ? [c, { id: nid('ch'), sym: c.sym }] : [c]) })) })),
+    }));
+  };
+  appendQuality = (suffix) => {
+    const sym = this.state.entryRoot + suffix;
+    this.setState({ entryText: sym });
+    const target = this.state.entry || this.state.selId;
+    if (target) this.setSym(target, sym);
+    this.voice(sym);
+  };
+  loadPreset = (p) => {
+    this.commit('Loaded “' + p.title + '”', () => {
+      const bars = parseChartText(p.text);
+      return { title: p.title, keyName: p.key, tempo: p.tempo, groove: p.groove, sections: [{ id: nid('sec'), name: 'Head', bars }], selId: bars[0].chords[0].id, libraryOpen: false, playIdx: -1, elapsed: 0 };
+    });
+  };
+
+  handleKey(e) {
+    const tag = (e.target && e.target.tagName) || '';
+    const typing = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); this.setState({ cmdOpen: true, cmdText: '' }); return; }
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? this.redo() : this.undo(); return; }
+    if (e.key === 'Escape') {
+      if (this.state.tutorial) { this.closeTour(); return; }
+      this.setState({ cmdOpen: false, libraryOpen: false, mixOpen: false, menuOpen: false, entry: null }); return;
+    }
+    if (this.state.tutorial) {
+      if (e.key === 'ArrowRight' || e.key === 'Enter') { e.preventDefault(); this.state.step >= TOUR.length - 1 ? this.closeTour() : this.setState({ step: this.state.step + 1 }); return; }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); this.setState({ step: Math.max(0, this.state.step - 1) }); return; }
+      return;
+    }
+    if (e.key === '?' && !typing) { this.setState({ tutorial: true, step: 0 }); return; }
+    if (typing) return;
+    if (e.key === ' ') { e.preventDefault(); this.togglePlay(); return; }
+    if (e.key === 'ArrowRight') { e.preventDefault(); this.step(1); return; }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); this.step(-1); return; }
+    if (e.key === 'Enter' && this.state.selId) { e.preventDefault(); this.edit(this.state.selId); return; }
+    if (e.key === 'Backspace' || e.key === 'Delete') { e.preventDefault(); if (this.state.selId) this.delChord(this.state.selId); return; }
+    const k = e.key.toLowerCase();
+    if (k === 'a') this.setState({ analysisOn: !this.state.analysisOn });
+    if (k === 'v') this.setState({ view: this.state.view === 'sheet' ? 'grid' : 'sheet' });
+    if (k === 'i') this.setState({ inspectorOpen: !this.state.inspectorOpen });
+    if (k === 'l') this.setState({ libraryOpen: true });
+  }
+
+  cmdApply(append) {
+    const bars = parseChartText(this.state.cmdText);
+    if (!bars.length) { this.flash('Nothing to read — try | Dm7 G7 | Cmaj7 |'); return; }
+    const count = bars.reduce((s, b) => s + b.chords.length, 0);
+    this.commit(append ? 'Added ' + bars.length + ' bars as a new section' : 'Replaced the chart with ' + count + ' chords', () => ({
+      sections: append ? [...this.state.sections, { id: nid('sec'), name: 'Section ' + (this.state.sections.length + 1), bars }] : [{ id: nid('sec'), name: 'Head', bars }],
+      selId: bars[0].chords[0].id, cmdOpen: false, cmdText: '', playIdx: -1, elapsed: 0,
+    }));
+  }
+
+  /* ---------- fit chord symbols to their slot ---------- */
+  advance(text, px, weight) {
+    if (!text) return 0;
+    if (!this._mc) this._mc = document.createElement('canvas').getContext('2d');
+    this._mc.font = weight + ' ' + px + 'px Literata, Georgia, serif';
+    return this._mc.measureText(text).width;
+  }
+  fitSymbols() {
+    if (!this.symText) return;
+    this.symText.forEach((t, id) => {
+      const slot = this.slots.get(id);
+      if (!slot) return;
+      const el = slot.querySelector('[data-sym]');
+      if (!el) return;
+      const cs = getComputedStyle(slot);
+      const avail = slot.clientWidth - parseFloat(cs.paddingLeft || 0) - parseFloat(cs.paddingRight || 0);
+      if (!(avail > 4)) return;
+      const per = this.advance(t.h1 + t.h2, 100, 600) + this.advance(t.acc, 78, 600) * 0.9 + this.advance(t.sup, 52, 400);
+      if (!(per > 0)) return;
+      const size = Math.max(11, Math.min(t.base, Math.floor(avail / per * 98)));
+      if (el._fs !== size) { el._fs = size; el.style.fontSize = size + 'px'; }
+    });
+  }
+  scheduleFit() {
+    if (this._fitQ) return;
+    this._fitQ = requestAnimationFrame(() => { this._fitQ = 0; this.fitSymbols(); });
+  }
+
+  /* ---------- drag to reorder, with springs ---------- */
+  slotRef(id) {
+    if (!this._slotRefs) this._slotRefs = {};
+    if (!this._slotRefs[id]) this._slotRefs[id] = (el) => { if (el) this.slots.set(id, el); else this.slots.delete(id); };
+    return this._slotRefs[id];
+  }
+  scrollerOf(el) {
+    let n = el && el.parentElement;
+    while (n) {
+      const o = getComputedStyle(n).overflowY;
+      if (o === 'auto' || o === 'scroll') return n;
+      n = n.parentElement;
+    }
+    return null;
+  }
+  mapIndex(k, from, to) {
+    if (k === from) return to;
+    if (from < to) return (k > from && k <= to) ? k - 1 : k;
+    return (k >= to && k < from) ? k + 1 : k;
+  }
+  onSlotDown = (id, secId, e) => {
+    if (e.button != null && e.button !== 0) return;
+    if (this.state.entry) return;
+    if (e.target && e.target.closest && (e.target.closest('button') || e.target.closest('input'))) return;
+    const sec = this.state.sections.find(s => s.id === secId);
+    if (!sec || sec.bars.length < 2) return;
+    const barOrder = sec.bars.map(b => b.id);
+    const chordsOf = {};
+    const flat = [];
+    sec.bars.forEach(b => { chordsOf[b.id] = b.chords.map(c => c.id); b.chords.forEach(c => flat.push(c.id)); });
+    const rects = {};
+    for (const cid of flat) {
+      const el = this.slots.get(cid);
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      rects[cid] = { x: r.left, y: r.top, right: r.right, bottom: r.bottom };
+    }
+    const centre = {};
+    barOrder.forEach(bid => {
+      const cs = chordsOf[bid];
+      const a = rects[cs[0]], z = rects[cs[cs.length - 1]];
+      centre[bid] = { cx: (a.x + z.right) / 2, cy: (a.y + z.bottom) / 2 };
+    });
+    const barId = barOrder.find(bid => chordsOf[bid].indexOf(id) > -1);
+    if (!barId) return;
+    const scroller = this.scrollerOf(this.slots.get(id));
+    this.pending = {
+      secId, barId, barOrder, chordsOf, flat, rects, centre,
+      group: chordsOf[barId].slice(),
+      fromBar: barOrder.indexOf(barId), toBar: barOrder.indexOf(barId),
+      active: false, sx: e.clientX, sy: e.clientY,
+      scroller, scroll0: scroller ? scroller.scrollTop : 0,
+    };
+    window.addEventListener('pointermove', this.onSlotMove);
+    window.addEventListener('pointerup', this.onSlotUp);
+    window.addEventListener('pointercancel', this.onSlotUp);
+  };
+  onSlotMove = (e) => {
+    const p = this.pending;
+    if (!p) return;
+    const dx = e.clientX - p.sx, dy = e.clientY - p.sy;
+    if (!p.active) {
+      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+      p.active = true;
+      this._suppressClick = true;
+      p.group.forEach(cid => {
+        const el = this.slots.get(cid);
+        if (el) { el.style.zIndex = '30'; el.style.willChange = 'transform'; }
+      });
+      this.setState({ dragBarId: p.barId });
+      this.startSprings();
+    }
+    e.preventDefault();
+    const sc = p.scroller ? p.scroller.scrollTop - p.scroll0 : 0;
+    let best = p.fromBar, bd = Infinity;
+    p.barOrder.forEach((bid, k) => {
+      const c = p.centre[bid];
+      const d = Math.abs(e.clientX - c.cx) + Math.abs(e.clientY - (c.cy - sc)) * 1.35;
+      if (d < bd) { bd = d; best = k; }
+    });
+    if (best !== p.toBar) {
+      p.toBar = best;
+      this.layoutSprings(p);
+      if (navigator.vibrate) navigator.vibrate(6);
+    }
+    const t = 'translate(' + dx.toFixed(1) + 'px,' + dy.toFixed(1) + 'px)';
+    p.group.forEach(cid => {
+      const el = this.slots.get(cid);
+      if (el) el.style.transform = t;
+    });
+  };
+  layoutSprings(p) {
+    const nb = p.barOrder.slice();
+    const [moved] = nb.splice(p.fromBar, 1);
+    nb.splice(p.toBar, 0, moved);
+    const newFlat = [];
+    nb.forEach(bid => p.chordsOf[bid].forEach(cid => newFlat.push(cid)));
+    newFlat.forEach((cid, i) => {
+      if (p.group.indexOf(cid) > -1) return;
+      const seat = p.rects[p.flat[i]];
+      const home = p.rects[cid];
+      if (!seat || !home) return;
+      const s = this.spr.get(cid) || { x: 0, y: 0, vx: 0, vy: 0, tx: 0, ty: 0 };
+      s.tx = seat.x - home.x; s.ty = seat.y - home.y;
+      this.spr.set(cid, s);
+    });
+    this.startSprings();
+  }
+  startSprings() {
+    if (this._sprRaf) return;
+    let last = 0;
+    const step = (ts) => {
+      const dt = last ? Math.min(0.034, (ts - last) / 1000) : 0.016;
+      last = ts;
+      let moving = false;
+      this.spr.forEach((s, id) => {
+        const k = 640, d = 2 * Math.sqrt(k) * 0.72;
+        s.vx += (k * (s.tx - s.x) - d * s.vx) * dt;
+        s.vy += (k * (s.ty - s.y) - d * s.vy) * dt;
+        s.x += s.vx * dt; s.y += s.vy * dt;
+        if (Math.abs(s.x - s.tx) > 0.06 || Math.abs(s.y - s.ty) > 0.06 || Math.abs(s.vx) > 0.6 || Math.abs(s.vy) > 0.6) moving = true;
+        const el = this.slots.get(id);
+        if (el) el.style.transform = 'translate(' + s.x.toFixed(2) + 'px,' + s.y.toFixed(2) + 'px)';
+      });
+      if (moving || this.pending) this._sprRaf = requestAnimationFrame(step);
+      else {
+        this._sprRaf = 0;
+        this.spr.forEach((s, id) => { const el = this.slots.get(id); if (el) { el.style.transform = ''; el.style.willChange = ''; } });
+        this.spr.clear();
+      }
+    };
+    this._sprRaf = requestAnimationFrame(step);
+  }
+  clearSprings() {
+    this.spr.forEach((s, id) => { const el = this.slots.get(id); if (el) { el.style.transform = ''; el.style.willChange = ''; el.style.zIndex = ''; } });
+    this.spr.clear();
+  }
+  onSlotUp = () => {
+    window.removeEventListener('pointermove', this.onSlotMove);
+    window.removeEventListener('pointerup', this.onSlotUp);
+    window.removeEventListener('pointercancel', this.onSlotUp);
+    const p = this.pending;
+    this.pending = null;
+    if (!p || !p.active) return;
+    const lead = p.group[0];
+    const el = this.slots.get(lead);
+    const lifted = el ? el.getBoundingClientRect() : null;
+    this.clearSprings();
+    p.group.forEach(cid => {
+      const e2 = this.slots.get(cid);
+      if (e2) { e2.style.transform = ''; e2.style.zIndex = ''; e2.style.willChange = ''; }
+    });
+    const settle = () => requestAnimationFrame(() => {
+      const el2 = this.slots.get(lead);
+      if (!el2 || !lifted) return;
+      const r = el2.getBoundingClientRect();
+      const dx = lifted.left - r.left, dy = lifted.top - r.top;
+      if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return;
+      p.group.forEach(cid => this.spr.set(cid, { x: dx, y: dy, vx: 0, vy: 0, tx: 0, ty: 0 }));
+      this.startSprings();
+    });
+    if (p.toBar !== p.fromBar) this.reorderBars(p.secId, p.fromBar, p.toBar, settle);
+    else { this.setState({ dragBarId: null }); settle(); }
+  };
+  reorderBars(secId, from, to, done) {
+    const sec = this.state.sections.find(s => s.id === secId);
+    if (!sec) return;
+    const bars = sec.bars.slice();
+    const [moved] = bars.splice(from, 1);
+    bars.splice(to, 0, moved);
+    const what = moved.chords.map(c => { const s = splitSymbol(parseChord(c.sym)); return s.head + s.sup; }).join(' ');
+    this.setState({
+      sections: this.mapSections(s => s.id === secId ? { ...s, bars } : s),
+      selId: moved.chords[0].id, dragBarId: null,
+      past: [...this.state.past, this.snapshot()].slice(-60), future: [],
+    }, () => { this.flash('Moved ' + what + ' to bar ' + (to + 1)); if (done) done(); });
+  }
+  cutBar = (secId, barId) => {
+    const sec = this.state.sections.find(s => s.id === secId);
+    const bar = sec && sec.bars.find(b => b.id === barId);
+    if (!bar || bar.chords.length < 2) return;
+    const n = bar.chords.length;
+    this.commit('Separated one measure into ' + n, () => ({
+      sections: this.mapSections(s => s.id !== secId ? s : ({
+        ...s,
+        bars: s.bars.flatMap(b => b.id !== barId ? [b] : b.chords.map(c => ({ id: nid('bar'), chords: [c] }))),
+      })),
+    }));
+  };
+  joinNext = (secId, barId) => {
+    const sec = this.state.sections.find(s => s.id === secId);
+    if (!sec) return;
+    const i = sec.bars.findIndex(b => b.id === barId);
+    const a = sec.bars[i], b = sec.bars[i + 1];
+    if (!a || !b || a.chords.length + b.chords.length > 4) return;
+    const merged = { id: a.id, chords: [...a.chords, ...b.chords] };
+    const bars = sec.bars.slice(0, i).concat([merged], sec.bars.slice(i + 2));
+    this.commit('Joined two measures into one', () => ({
+      sections: this.mapSections(s => s.id === secId ? { ...s, bars } : s),
+    }));
+  };
+
+  onMidi = (e) => {
+    const input = e.target;
+    const f = input.files && input.files[0];
+    if (!f) return;
+    this.setState({ importNote: 'Reading ' + f.name + '…' });
+    const fr = new FileReader();
+    fr.onerror = () => this.setState({ importNote: 'Could not read that file.' });
+    fr.onload = () => {
+      input.value = '';
+      let parsed = null;
+      try { parsed = parseMidi(fr.result); } catch (err) { parsed = null; }
+      if (!parsed || !parsed.notes.length) {
+        this.setState({ importNote: 'No notes found — is that a MIDI file?' });
+        return;
+      }
+      const bars = midiToBars(parsed, 64);
+      if (!bars.length) { this.setState({ importNote: 'No bars found in that file.' }); return; }
+      const chords = bars.reduce((n, b) => n + b.chords.length, 0);
+      this.commit('Imported ' + bars.length + ' bars from ' + f.name, () => ({
+        title: f.name.replace(/\.(mid|midi|smf)$/i, ''),
+        sections: [{ id: nid('sec'), name: 'Imported', bars }],
+        selId: bars[0].chords[0].id, playIdx: -1, elapsed: 0,
+      }));
+      this.setState({ importNote: bars.length + ' bars, ' + chords + ' chords. Names are a best guess — correct any of them on the chart.' });
+    };
+    fr.readAsArrayBuffer(f);
+  };
+
+  /* ---------- volume ---------- */
+  volRefFn = (el) => { this._volEl = el; };
+  setVolFrom(clientX) {
+    const el = this._volEl;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const v = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
+    this.setState({ volume: v, muted: v === 0 ? true : false }, () => this.applyGain());
+  }
+  onVolDown = (e) => {
+    e.preventDefault();
+    this.setVolFrom(e.clientX);
+    const move = (ev) => this.setVolFrom(ev.clientX);
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
+
+  renderVals() {
+    const st = this.state;
+    const keyPc = this.keyPc();
+    const evs = this.events();
+    const selEv = evs.find(e => e.id === st.selId) || null;
+    const playEv = st.playIdx >= 0 ? evs[st.playIdx] : null;
+    const showRoman = st.analysisOn && this.props.romanNumerals !== false;
+    const showSlashes = this.props.slashMarks !== false;
+    const flat = ['F','Bb','Eb','Ab','Db'].includes(st.keyName);
+    const leftRail = !!st.wideDesk;
+    const rightRail = !st.narrow;
+    const vw = typeof window !== 'undefined' ? window.innerWidth : 1400;
+    const railW = vw >= 1100 ? 360 : 320;
+    const chartW = vw - (leftRail ? 292 : 0) - (rightRail ? railW : 0);
+    const twoUp = chartW < 700;
+    const perSystem = twoUp ? 2 : 4;
+    const selBarId = selEv ? selEv.barId : null;
+    const joinable = {};
+    st.sections.forEach(sec => sec.bars.forEach((b, i) => {
+      const nx = sec.bars[i + 1];
+      joinable[b.id] = !!nx && b.chords.length + nx.chords.length <= 4;
+    }));
+    this.symText = new Map();
+    this._fitSig = [st.view, st.narrow, st.tight, st.roomy, st.wideDesk, twoUp,
+      st.sections.map(s => s.bars.map(b => b.chords.map(c => c.sym).join(',')).join('|')).join('||')].join('~');
+
+    const decorate = (e) => {
+      const c = parseChord(e.sym);
+      const s = splitSymbol(c);
+      const a = analyze(c, keyPc);
+      const base = e.of >= 3 ? 20 : e.of === 2 ? 27 : (st.tight ? 28 : 40);
+      this.symText.set(e.id, { h1: s.h1, acc: s.acc, h2: s.h2, sup: s.sup, base });
+      return {
+        id: e.id, head: s.head, sup: s.sup, h1: s.h1, acc: s.acc, h2: s.h2, hasAcc: !!s.acc,
+        roman: a.roman, fn: a.fn.split('—')[0].trim(),
+        notes: c ? chordNotes(c).join('  ') : '—',
+        place: 'bar ' + e.bar + (e.of > 1 ? ' · ' + (e.slot + 1) + ' of ' + e.of : ''),
+        size: base + 'px',
+        pad: e.of >= 3 ? '24px 3px 14px 4px' : e.of === 2 ? '24px 5px 14px 6px' : '24px 10px 14px 11px',
+        subdivided: e.slot > 0,
+        slashes: Array.from({ length: Math.max(1, Math.round(e.beats)) }, (_, i) => i),
+        selected: e.id === st.selId, isPlaying: !!(playEv && playEv.id === e.id),
+        editing: st.entry === e.id && !st.narrow, reading: !(st.entry === e.id && !st.narrow),
+        showRoman, showSlashes: showSlashes && (e.of === 1 || e.of === 2 || e.of === 4),
+        ref: this.slotRef(e.id),
+        onDown: (ev) => this.onSlotDown(e.id, e.secId, ev),
+        dragging: st.dragBarId === e.barId,
+        showCut: e.barId === selBarId && e.slot > 0,
+        inBundle: e.of > 1,
+        onCut: (ev) => { if (ev && ev.stopPropagation) ev.stopPropagation(); this.cutBar(e.secId, e.barId); },
+        showJoin: e.barId === selBarId && e.slot === e.of - 1 && joinable[e.barId],
+        onJoin: (ev) => { if (ev && ev.stopPropagation) ev.stopPropagation(); this.joinNext(e.secId, e.barId); },
+        onSelect: () => { if (this._suppressClick) { this._suppressClick = false; return; } this.select(e.id); },
+        onEdit: (ev) => { if (ev && ev.stopPropagation) ev.stopPropagation(); this.edit(e.id); },
+        onDup: (ev) => { if (ev && ev.stopPropagation) ev.stopPropagation(); this.dupChord(e.id); },
+        onDelete: (ev) => { if (ev && ev.stopPropagation) ev.stopPropagation(); this.delChord(e.id); },
+      };
+    };
+
+    const sections = st.sections.map((sec, si) => {
+      const secEvs = evs.filter(e => e.secId === sec.id);
+      const decoratedBars = sec.bars.map((bar, bi) => {
+        const bevs = secEvs.filter(e => e.barId === bar.id);
+        return {
+          id: bar.id, number: bi + 1,
+          isPlaying: !!(playEv && playEv.barId === bar.id),
+          playPct: (() => {
+            if (!playEv || playEv.barId !== bar.id) return '0%';
+            const within = playEv.slot * playEv.beats + Math.min(playEv.beats, st.elapsed * st.tempo / 60);
+            return Math.max(0, Math.min(100, (within / 4) * 100)).toFixed(2) + '%';
+          })(),
+          showTools: bar.id === selBarId,
+          chords: bevs.map(decorate),
+          onAddChord: (ev) => { if (ev && ev.stopPropagation) ev.stopPropagation(); this.addChordToBar(sec.id, bar.id); },
+          onDelete: (ev) => { if (ev && ev.stopPropagation) ev.stopPropagation(); this.delBar(sec.id, bar.id); },
+        };
+      });
+      const phrases = showRoman ? detectPhrases(secEvs, flat) : [];
+      const spans = phrases.map(p => ({
+        fromBar: secEvs[p.from].barIdx, toBar: secEvs[p.to] ? secEvs[p.to].barIdx : secEvs[p.from].barIdx, label: p.label,
+      })).filter(s => s.toBar >= s.fromBar);
+      const chunks = chunk(decoratedBars, perSystem);
+      return {
+        id: sec.id, name: sec.name, letter: String.fromCharCode(65 + si),
+        meta: sec.bars.length + ' bars',
+        systems: chunks.map((bars, ci) => {
+          const base = ci * perSystem;
+          const last = base + bars.length - 1;
+          const lanes = [];
+          const marks = spans
+            .filter(s => s.toBar >= base && s.fromBar <= last)
+            .map(s => ({ a: Math.max(s.fromBar, base) - base, b: Math.min(s.toBar, last) - base, label: s.label }))
+            .sort((x, y) => x.a - y.a)
+            .map(s => {
+              let lane = 0;
+              while (lanes[lane] != null && lanes[lane] >= s.a) lane += 1;
+              lanes[lane] = s.b;
+              return { id: sec.id + ci + s.a, col: (s.a + 1) + ' / ' + (s.b + 2), row: String(lane + 1), label: s.label };
+            });
+          return {
+            bars: bars.map((b, i) => ({ ...b, divider: i > 0, showNumber: i === 0 })),
+            marks, hasMarks: marks.length > 0, noMarks: marks.length === 0,
+            isLast: ci === chunks.length - 1,
+          };
+        }),
+        flat: secEvs.map(decorate),
+        onName: (ev) => this.renameSection(sec.id, ev.target.value),
+        onAddBar: () => this.addBar(sec.id),
+        onDelete: () => this.delSection(sec.id),
+        onPlay: () => { this.setState({ loop: true, loopSection: sec.id }); this.start(secEvs.length ? secEvs[0].idx : 0); },
+      };
+    });
+
+    const totalBeats = evs.reduce((s, e) => s + e.beats, 0) || 1;
+    let before = 0;
+    for (let i = 0; i < st.playIdx && i < evs.length; i++) before += evs[i].beats;
+    const pct = st.playIdx >= 0 ? ((before + (st.elapsed * st.tempo / 60)) / totalBeats) * 100 : 0;
+    const loopEvs = st.loop && st.loopSection ? evs.filter(e => e.secId === st.loopSection) : [];
+    let loopStart = 0;
+    if (loopEvs.length) for (let i = 0; i < loopEvs[0].idx; i++) loopStart += evs[i].beats;
+    const loopBeats = loopEvs.reduce((s, e) => s + e.beats, 0);
+
+    const selC = selEv ? parseChord(selEv.sym) : null;
+    const selA = analyze(selC, keyPc);
+    const selS = splitSymbol(selC);
+    const litPcs = selC ? selC.ivs.map(iv => (selC.rootPc + iv) % 12) : [];
+    const ROLE = { 0:'root',1:'\u266D9',2:'9',3:'\u266D3',4:'3',5:'11',6:'\u266D5',7:'5',8:'\u266F5',9:'13',10:'\u266D7',11:'7',13:'\u266D9',14:'9',15:'\u266F9',17:'11',18:'\u266F11',20:'\u266D13',21:'13' };
+    const insp = selEv ? {
+      head: selS.head, sup: selS.sup,
+      place: 'bar ' + selEv.bar + ' · ' + (selEv.beats % 1 === 0 ? selEv.beats : selEv.beats.toFixed(2).replace(/0+$/, '')) + ' beats · key of ' + prettyRoot(st.keyName),
+      roman: selA.roman, fn: selA.fn, scale: selA.scale, kind: selA.kind,
+      tones: selC ? selC.ivs.map(iv => ({
+        name: prettyRoot(spell(selC.rootPc + iv, flat || selC.acc === 'b')),
+        role: ROLE[iv] || String(iv),
+        guide: [3,4,10,11].includes(iv),
+      })) : [],
+      guides: selC ? selC.ivs.filter(iv => [3,4,10,11].includes(iv)).map(iv => prettyRoot(spell(selC.rootPc + iv, flat))).join('  and  ') || '—' : '',
+      whites: (() => {
+        const out = [];
+        for (let o = 0; o < 2; o++) [0,2,4,5,7,9,11].forEach((pc, i) => {
+          out.push({ id: 'w' + o + i, label: prettyRoot(spell(pc, flat)), on: litPcs.includes(pc), midi: 60 + o * 12 + pc });
+        });
+        return out;
+      })(),
+      blacks: (() => {
+        const out = [];
+        const W = [0,2,4,5,7,9,11];
+        for (let o = 0; o < 2; o++) [0,1,3,4,5].forEach(i => {
+          const pc = W[i] + 1;
+          out.push({ id: 'b' + o + i, label: prettyRoot(spell(pc % 12, flat)), on: litPcs.includes(pc % 12), midi: 60 + o * 12 + pc, left: ((o * 7 + i + 1) / 14 * 100 - 2.3).toFixed(2) + '%' });
+        });
+        return out;
+      })(),
+      next: nextOptions(selC, keyPc).map(o => ({ sym: prettyRoot(o.sym), why: o.why, roman: analyze(parseChord(o.sym), keyPc).roman })),
+      voiced: (() => {
+        const mids = this.voicing(selEv.sym);
+        const ivs = selC ? selC.ivs : [];
+        return mids.map((midi, i) => ({
+          midi,
+          name: prettyRoot(spell(midi % 12, flat || (selC && selC.acc === 'b'))),
+          role: i === 0 ? 'bass' : (ROLE[ivs[i]] || ''),
+          guide: i > 0 && [3,4,10,11].includes(ivs[i]),
+        }));
+      })(),
+      res: (() => {
+        const nx = evs[evs.findIndex(e => e.id === selEv.id) + 1];
+        if (!nx) return null;
+        const r = resolution(selC, parseChord(nx.sym), flat);
+        if (!r) return null;
+        const s = splitSymbol(parseChord(nx.sym));
+        return { target: s.head + s.sup, moves: r.moves, note: r.note };
+      })(),
+    } : null;
+
+    const cmdPreview = parseChartText(st.cmdText).flatMap(b => b.chords).slice(0, 12).map(c => {
+      const p = parseChord(c.sym);
+      const s = splitSymbol(p);
+      return { sym: s.head + s.sup, roman: p ? analyze(p, keyPc).roman : '?' };
+    });
+
+    const chipInk = (on) => on ? 'var(--paper)' : 'var(--ink)';
+    const chipBg = (on) => on ? 'var(--ink)' : 'transparent';
+    const chipBorder = (on) => on ? 'var(--ink)' : 'var(--rule)';
+
+    return {
+      title: st.title, onTitle: (e) => this.setState({ title: e.target.value }),
+      titleSize: st.narrow ? '25px' : (chartW < 620 ? '24px' : chartW < 780 ? '29px' : '38px'),
+      railW: railW + 'px',
+      keyLabel: prettyRoot(st.keyName) + ' major',
+      cycleKey: () => { const i = KEYS.indexOf(st.keyName); this.setState({ keyName: KEYS[(i + 1) % KEYS.length], menuOpen: false }); },
+      chartMeta: st.sections.reduce((s, x) => s + x.bars.length, 0) + ' bars · ' + evs.length + ' chords · 4/4',
+      wide: !st.narrow, narrow: st.narrow, roomy: !!st.roomy, snug: !st.narrow && !st.roomy,
+      deskPad: st.narrow ? '0' : '26px 24px 44px',
+      sheetPad: st.narrow ? '22px 16px 30px' : '34px 40px 44px',
+      barHeight: st.tight ? '108px' : '126px',
+      markCols: twoUp ? 'repeat(2, minmax(0, 1fr))' : 'repeat(4, minmax(0, 1fr))',
+      editCols: st.narrow ? 'repeat(1, minmax(0, 1fr))' : 'repeat(3, minmax(0, 1fr))',
+      isSheet: st.view === 'sheet', isGrid: st.view === 'grid',
+      sheetInk: st.view === 'sheet' ? 'var(--ink)' : 'var(--ink-3)',
+      gridInk: st.view === 'grid' ? 'var(--ink)' : 'var(--ink-3)',
+      setSheet: () => this.setState({ view: 'sheet' }), setGrid: () => this.setState({ view: 'grid' }),
+      isEmpty: evs.length === 0,
+      isSheetChart: st.view === 'sheet' && evs.length > 0,
+      isGridChart: st.view === 'grid' && evs.length > 0,
+      analysisOn: st.analysisOn,
+      analysisDot: st.analysisOn ? 'var(--blue)' : 'transparent',
+      analysisDotBorder: st.analysisOn ? 'var(--blue)' : 'var(--rule-3)',
+      analysisInk: st.analysisOn ? 'var(--ink)' : 'var(--ink-3)',
+      analysisBorder: st.analysisOn ? 'var(--blue)' : 'var(--rule-2)',
+      toggleAnalysis: () => this.setState({ analysisOn: !st.analysisOn, menuOpen: false }),
+      sections, addSection: this.addSection,
+      startTypical: () => this.loadPreset(PRESETS[0]),
+
+      entryOpen: !!st.entry && !st.narrow,
+      entrySheet: !!st.entry && st.narrow,
+      entryPlace: (() => { const e = evs.find(x => x.id === st.entry); return e ? 'bar ' + e.bar : ''; })(),
+      entryText: st.entryText,
+      onEntryText: (e) => this.setState({ entryText: e.target.value }),
+      onEntryKey: (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); this.commitEntry(true); }
+        else if (e.key === 'Tab') { e.preventDefault(); this.commitEntry(true); }
+        else if (e.key === 'Escape') { e.preventDefault(); this.setState({ entry: null }); }
+      },
+      entryRef: (el) => { if (el && this._lastEntry !== st.entry) { this._lastEntry = st.entry; el.focus(); el.select(); } if (!st.entry) this._lastEntry = null; },
+      closeEntry: () => this.setState({ entry: null }),
+      entryHint: 'enter or tab moves to the next chord · esc closes',
+      roots: ROOT_CHIPS.map(([text, label]) => {
+        const on = st.entryRoot === text;
+        return { label, ink: chipInk(on), bg: chipBg(on), border: chipBorder(on), onPick: () => this.setState({ entryRoot: text }) };
+      }),
+      qualities: QUAL_CHIPS.map(q => ({ label: glyph(q), onPick: () => this.appendQuality(q) })),
+
+      playGlyph: st.playing ? '❙❙' : '▶',
+      togglePlay: this.togglePlay,
+      prev: () => this.step(-1), next: () => this.step(1),
+      loopOn: st.loop && loopEvs.length > 0,
+      loopInk: st.loop ? 'var(--blue)' : 'var(--ink-3)',
+      loopBorder: st.loop ? 'var(--blue)' : 'var(--rule-2)',
+      toggleLoop: () => this.setState({ loop: !st.loop, loopSection: st.loopSection || (selEv ? selEv.secId : st.sections[0] && st.sections[0].id) }),
+      loopLeft: ((loopStart / totalBeats) * 100).toFixed(2) + '%',
+      loopWidth: ((loopBeats / totalBeats) * 100).toFixed(2) + '%',
+      progressPct: Math.max(0, Math.min(100, pct)).toFixed(2) + '%',
+      onScrub: (e) => {
+        const r = e.currentTarget.getBoundingClientRect();
+        const target = ((e.clientX - r.left) / r.width) * totalBeats;
+        let acc = 0, idx = 0;
+        for (let i = 0; i < evs.length; i++) { idx = i; if (target >= acc && target < acc + evs[i].beats) break; acc += evs[i].beats; }
+        this.setState({ playIdx: idx, elapsed: 0, selId: evs[idx] ? evs[idx].id : st.selId });
+        if (evs[idx]) this.voice(evs[idx].sym);
+      },
+      nowChord: (() => { const e = playEv || selEv; if (!e) return '—'; const s = splitSymbol(parseChord(e.sym)); return s.head + s.sup; })(),
+      nowInk: playEv ? 'var(--red)' : 'var(--ink)',
+      nowPlace: playEv ? 'bar ' + playEv.bar + ' · playing' : selEv ? 'bar ' + selEv.bar + ' · selected' : 'nothing selected',
+      tempo: st.tempo,
+      slower: () => this.setState({ tempo: Math.max(40, st.tempo - 4) }),
+      faster: () => this.setState({ tempo: Math.min(320, st.tempo + 4) }),
+      groove: st.groove, setGroove: (e) => this.setState({ groove: e.target.value }),
+      grooves: GROOVES.map(g => {
+        const on = g.id === st.groove;
+        return { ...g, ink: chipInk(on), bg: chipBg(on), border: chipBorder(on), onPick: () => this.setState({ groove: g.id }) };
+      }),
+      instrument: st.instrument, setInstrument: (e) => this.setState({ instrument: e.target.value }),
+      instruments: INSTRUMENTS.map(i => {
+        const on = i.id === st.instrument;
+        return { ...i, ink: chipInk(on), bg: chipBg(on), border: chipBorder(on), onPick: () => this.setState({ instrument: i.id }) };
+      }),
+
+      volume: st.volume, muted: st.muted, notMuted: !st.muted,
+      volPct: (st.muted ? 0 : st.volume * 100).toFixed(1) + '%',
+      volInk: st.muted ? 'var(--ink-4)' : 'var(--ink)',
+      volLabel: st.muted ? 'Muted' : Math.round(st.volume * 100) + '%',
+      onVolDown: this.onVolDown,
+      volRef: this.volRefFn,
+      toggleMute: () => this.setState({ muted: !st.muted, volume: st.muted && st.volume === 0 ? 0.7 : st.volume }, () => this.applyGain()),
+      meterRefA: this.meterRef('A'),
+      meterRefB: this.meterRef('B'),
+      showFullMeter: !!st.roomy,
+      showMiniMeter: !st.roomy,
+
+      leftRail, rightRail, noLeftRail: !leftRail,
+      importNote: st.importNote,
+      onMidi: this.onMidi,
+      insp,
+      playNote: (midi) => this.tone(midi, 0.75, 0.24),
+      inspectorInline: rightRail && !!insp,
+      inspectorSheet: st.inspectorOpen && st.narrow && !!insp,
+      inspectorLabel: st.inspectorOpen ? 'Hide detail' : 'Chord detail',
+      inspectorInk: st.inspectorOpen ? 'var(--blue)' : 'var(--ink)',
+      inspectorBorder: st.inspectorOpen ? 'var(--blue)' : 'var(--rule-2)',
+      toggleInspector: () => this.setState({ inspectorOpen: !st.inspectorOpen }),
+      closeInspector: () => this.setState({ inspectorOpen: false }),
+      addSuggested: (sym) => {
+        if (!selEv) return;
+        const raw = String(sym).replace(/\u266F/g, '#').replace(/\u266D/g, 'b');
+        this.commit('Inserted ' + sym, () => ({
+          sections: this.mapSections(s => ({ ...s, bars: s.bars.map(b => b.id !== selEv.barId ? b : ({ ...b, chords: b.chords.length >= 4 ? b.chords : b.chords.flatMap(c => c.id === selEv.id ? [c, { id: nid('ch'), sym: raw }] : [c]) })) })),
+        }));
+        this.voice(raw);
+      },
+
+      libraryOpen: st.libraryOpen,
+      openLibrary: () => this.setState({ libraryOpen: true, menuOpen: false }),
+      closeLibrary: () => this.setState({ libraryOpen: false }),
+      presets: PRESETS.map(p => ({
+        title: p.title, note: p.note, meta: p.tempo + ' bpm · ' + prettyRoot(p.key),
+        preview: prettyRoot(p.text.replace(/\|/g, '\u2502').replace(/\s+/g, ' ').trim()),
+        onLoad: () => this.loadPreset(p),
+      })),
+
+      cmdOpen: st.cmdOpen, cmdText: st.cmdText,
+      openCmd: () => this.setState({ cmdOpen: true, cmdText: '', menuOpen: false }),
+      closeCmd: () => this.setState({ cmdOpen: false }),
+      onCmdText: (e) => this.setState({ cmdText: e.target.value }),
+      onCmdKey: (e) => { if (e.key === 'Enter') { e.preventDefault(); this.cmdApply(false); } },
+      cmdRef: (el) => { if (el && !this._cmdFocused) { this._cmdFocused = true; setTimeout(() => el.focus(), 20); } if (!st.cmdOpen) this._cmdFocused = false; },
+      cmdKicker: cmdPreview.length ? cmdPreview.length + ' chords read' : 'Bars sit between vertical bars',
+      cmdPreview,
+      cmdReplace: () => this.cmdApply(false),
+      cmdAppend: () => this.cmdApply(true),
+      shortcuts: SHORTCUTS,
+      stop: (e) => e.stopPropagation(),
+
+      mixOpen: st.mixOpen, openMix: () => this.setState({ mixOpen: true }), closeMix: () => this.setState({ mixOpen: false }),
+      menuOpen: st.menuOpen, openMenu: () => this.setState({ menuOpen: true }), closeMenu: () => this.setState({ menuOpen: false }),
+
+      share: () => {
+        const payload = st.sections.map(s => s.bars.map(b => b.chords.map(c => c.sym).join(' ')).join('|')).join('||');
+        const url = location.origin + location.pathname + '#chart=' + encodeURIComponent(payload) + '&key=' + st.keyName + '&bpm=' + st.tempo;
+        const done = () => { this.setState({ shareCopied: true }); this.flash('Link copied. The whole chart travels in the URL.'); setTimeout(() => this.setState({ shareCopied: false }), 2600); };
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, done);
+        else done();
+      },
+      shareLabel: st.shareCopied ? 'Copied' : 'Share',
+      undo: this.undo, redo: this.redo,
+      undoTitle: st.past.length ? 'Undo (' + st.past.length + ')' : 'Nothing to undo',
+      redoTitle: st.future.length ? 'Redo (' + st.future.length + ')' : 'Nothing to redo',
+      toastBottom: (!!st.entry && st.narrow) || st.mixOpen || (st.inspectorOpen && st.narrow) ? 'calc(100vh - 108px)' : '92px',
+      isDark: st.theme === 'dark', isLight: st.theme !== 'dark',
+      toggleTheme: () => this.setTheme(st.theme === 'dark' ? 'light' : 'dark'),
+      themeTitle: st.theme === 'dark' ? 'Switch to paper' : 'Switch to night',
+      openTour: () => this.setState({ tutorial: true, step: 0, menuOpen: false }),
+      tourOpen: st.tutorial,
+      closeTour: this.closeTour,
+      tourStep: TOUR[st.step] ? TOUR[st.step].n : '',
+      tourTitle: TOUR[st.step] ? TOUR[st.step].title : '',
+      tourBody: TOUR[st.step] ? TOUR[st.step].body : '',
+      tourIsEntry: TOUR[st.step] && TOUR[st.step].kind === 'entry',
+      tourIsDrag: TOUR[st.step] && TOUR[st.step].kind === 'drag',
+      tourIsAnalysis: TOUR[st.step] && TOUR[st.step].kind === 'analysis',
+      tourIsPlay: TOUR[st.step] && TOUR[st.step].kind === 'play',
+      tourCount: TOUR.length,
+      tourDots: TOUR.map((t, i) => ({ id: 'd' + i, on: i === st.step, ink: i === st.step ? 'var(--ink)' : 'var(--rule-2)', onPick: () => this.setState({ step: i }) })),
+      tourBack: () => this.setState({ step: Math.max(0, st.step - 1) }),
+      tourNext: () => (st.step >= TOUR.length - 1 ? this.closeTour() : this.setState({ step: st.step + 1 })),
+      tourNextLabel: st.step >= TOUR.length - 1 ? 'Start playing' : 'Next',
+      tourHasBack: st.step > 0,
+      toast: st.toast, toastOn: !!st.toast, hideToast: () => this.setState({ toast: null }),
+    };
+  }
+}
+</script>
+</body>
+</html>
