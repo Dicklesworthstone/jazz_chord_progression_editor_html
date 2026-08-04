@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 
 import { CommandLaneContent } from "./CommandLane";
+import { TourDialogContent } from "./TourDialog";
 
 import { ChartWorkspace } from "./ChartWorkspace";
 import { HarmonyLens, HarmonyLensContent } from "./HarmonyLens";
@@ -308,6 +309,35 @@ export function StudioShell({
    * application-owned load as the rail list.
    */
   const [standardsOpen, setStandardsOpen] = useState(false);
+  /*
+   * The tour (jcpe-v2r-tour-i504): auto-opens once per browser via the
+   * jz.tour marker (storage failures stay silent — file:// private modes),
+   * and reopens from the ? header button or the bare ? key.
+   */
+  const [tourOpen, setTourOpen] = useState<boolean>(() => {
+    try {
+      /*
+       * Automation contexts (navigator.webdriver) skip the auto-open: a
+       * modal over a pristine studio would front-run every pinned entry
+       * flow in the e2e matrix. The ? button and ? key stay the covered
+       * paths; first-visit auto-open is verified manually.
+       */
+      if (window.navigator.webdriver) return false;
+      return window.localStorage.getItem("jz.tour") === null;
+    } catch {
+      return false;
+    }
+  });
+  const [tourStep, setTourStep] = useState(0);
+  const closeTour = (): void => {
+    try {
+      window.localStorage.setItem("jz.tour", "1");
+    } catch {
+      /* Presentation marker only. */
+    }
+    setTourOpen(false);
+    setTourStep(0);
+  };
   const completionDialogOpen =
     view.chart.completionDialog.open && view.chart.editRefusal !== null;
   const onUndoRef = useRef(shellCallbacks.onUndo);
@@ -356,6 +386,12 @@ export function StudioShell({
       if (event.key.toLowerCase() === "l") {
         event.preventDefault();
         setStandardsOpen(true);
+        return;
+      }
+      if (event.key === "?") {
+        event.preventDefault();
+        setTourStep(0);
+        setTourOpen(true);
       }
     };
     window.addEventListener("keydown", onBareKey);
@@ -398,6 +434,10 @@ export function StudioShell({
             chartLayout={view.chart.layout}
             onOpenCommandLane={() => {
               setCommandLaneOpen(true);
+            }}
+            onOpenTour={() => {
+              setTourStep(0);
+              setTourOpen(true);
             }}
             onOpenStandards={() => {
               setStandardsOpen(true);
@@ -484,6 +524,7 @@ export function StudioShell({
               onRangeCancel={callbacks.onRangeCancel}
               onRangeClear={callbacks.onRangeClear}
               onViewModeChange={callbacks.onViewModeChange}
+              onCycleKey={callbacks.onCycleKey}
               view={view.chart}
             />
             <HarmonyLens
@@ -509,6 +550,38 @@ export function StudioShell({
       </div>
 
       <div id="dialog-host">
+        {tourOpen && !completionDialogOpen && !commandLaneOpen && !standardsOpen ? (
+          <Dialog
+            backgroundRootId="studio-shell-background"
+            busy={false}
+            closeLabel="Close the tour"
+            content={
+              <TourDialogContent
+                onClose={closeTour}
+                onStepChange={setTourStep}
+                step={tourStep}
+              />
+            }
+            density="comfortable"
+            describedBy={[]}
+            description="Four steps: enter chords, move measures, read the analysis, play it back."
+            disabled={false}
+            dismissibility={DISMISSIBLE}
+            focusTargets={{
+              triggerId: "studio-open-tour",
+              workflowTargetId: null,
+              workspaceId: "workspace",
+            }}
+            id="studio-tour-dialog"
+            initialFocus="heading"
+            initialFocusId={null}
+            invalid={false}
+            onContractRefusal={callbacks.onUiContractRefusal}
+            onDismiss={closeTour}
+            open
+            title="How this works"
+          />
+        ) : null}
         {standardsOpen && !completionDialogOpen && !commandLaneOpen ? (
           <Dialog
             backgroundRootId="studio-shell-background"

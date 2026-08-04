@@ -5,7 +5,9 @@ import {
   makeBeatDuration,
   makeBeatPosition,
   makeInstrumentId,
+  makeKeyMode,
   makeMidiPitch,
+  makeSpelledPitchClass,
   measureCapacity,
   subtractBeatValues,
   type BeatDuration,
@@ -14,6 +16,7 @@ import {
   type ChordEvent,
   type ChordEventId,
   type ChordSpec,
+  type KeyContext,
   type MeasureCompletion,
   type MidiPitch,
   type ParsedChordEvent,
@@ -166,6 +169,7 @@ export const STUDIO_EDIT_REFUSAL_CODES = Object.freeze([
   "u1.performance_style_unknown",
   "u1.instrument_unknown",
   "u1.master_volume_invalid",
+  "u1.key_unknown",
 ] as const);
 
 /** The reviewed tempo window, in beats per minute. */
@@ -222,7 +226,8 @@ export type StudioControllerAction =
   | "delete-measure"
   | "set-performance-style"
   | "set-instrument"
-  | "set-master-volume";
+  | "set-master-volume"
+  | "set-key";
 
 export type StudioControllerRefusal = Readonly<{
   action: StudioControllerAction;
@@ -459,6 +464,17 @@ export interface StudioController {
    */
   readonly setMasterVolume: (
     volume: number,
+  ) => StudioControllerActionResult;
+  /**
+   * Set or clear the document key (jcpe-v2r-tour-i504). The key is a
+   * document setting like tempo: one undoable Set-key command that travels
+   * with the chart through share links and recovery, and the signal every
+   * roman-numeral and phrase-bracket surface waits on. The tonic spelling
+   * and mode cross the same domain constructors every other key does;
+   * an unrepresentable request refuses, never guesses.
+   */
+  readonly setKey: (
+    key: Readonly<{ step: string; alter: number; mode: string }> | null,
   ) => StudioControllerActionResult;
   readonly undo: () => StudioControllerActionResult;
   readonly redo: () => StudioControllerActionResult;
@@ -738,6 +754,8 @@ const EDIT_RECOVERY_ACTIONS: Readonly<Record<StudioEditRefusalCode, string>> =
       "Pick one of the instruments the instrument picker lists.",
     "u1.master_volume_invalid":
       "Set the volume between 0 and 1.",
+    "u1.key_unknown":
+      "Pick one of the keys the key control offers, or clear the key.",
     "u1.selection_empty": "Select at least one chord before this action.",
     "u1.selection_limit": "Select at most 8,192 chords.",
     "u1.target_missing": "Choose a chord, measure, or boundary that still exists.",
@@ -1944,6 +1962,50 @@ function makeStudioComposition(
     });
     return apply("set-master-volume", (current) =>
       runDocumentCommand({ command, dependencies, state: current }),
+    );
+  };
+
+  const setKey = (
+    key: Readonly<{ step: string; alter: number; mode: string }> | null,
+  ): StudioControllerActionResult => {
+    let candidate: KeyContext | null = null;
+    if (key !== null) {
+      const tonic = makeSpelledPitchClass({ step: key.step, alter: key.alter });
+      const mode = makeKeyMode(key.mode);
+      if (!tonic.ok || !mode.ok) {
+        return editRefusal(
+          "set-key",
+          "u1.key_unknown",
+          "That key is not one this studio can spell.",
+          ["key"],
+        );
+      }
+      candidate = Object.freeze({ tonic: tonic.value, mode: mode.value });
+    }
+    const current = state.document.key;
+    const unchanged =
+      (candidate === null && current === null) ||
+      (candidate !== null &&
+        current !== null &&
+        current.tonic.step === candidate.tonic.step &&
+        current.tonic.alter === candidate.tonic.alter &&
+        current.mode === candidate.mode);
+    if (unchanged) {
+      return Object.freeze({
+        ok: true,
+        outcome: "ephemeral-updated",
+        snapshot,
+        effects: Object.freeze([]),
+      });
+    }
+    const command: SetDocumentSettingsCommand = Object.freeze({
+      ...commandEnvelope("studio-key", "Set key"),
+      completionUpdates: Object.freeze([]),
+      kind: "set-document-settings",
+      patch: Object.freeze({ key: candidate }),
+    });
+    return apply("set-key", (currentState) =>
+      runDocumentCommand({ command, dependencies, state: currentState }),
     );
   };
 
@@ -5317,6 +5379,7 @@ function makeStudioComposition(
     setPerformanceStyle,
     setInstrument,
     setMasterVolume,
+    setKey,
     setTitle,
     undo: () => apply("undo", (current) => undoDocumentCommand({ state: current })),
     redo: () => apply("redo", (current) => redoDocumentCommand({ state: current })),

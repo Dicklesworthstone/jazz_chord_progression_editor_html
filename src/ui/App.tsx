@@ -66,6 +66,9 @@ export type AppActions = Readonly<{
   setPerformanceStyle: (styleId: string) => StudioControllerActionResult;
   setInstrument: (instrumentId: string) => StudioControllerActionResult;
   setMasterVolume: (volume: number) => StudioControllerActionResult;
+  setKey: (
+    key: Readonly<{ step: string; alter: number; mode: string }> | null,
+  ) => StudioControllerActionResult;
   clearChart: () => StudioControllerActionResult;
   deleteMeasure: (measureId: string) => StudioControllerActionResult;
   splitAtBar: (
@@ -540,13 +543,18 @@ type PresentationState = Readonly<{
 /** Teaching labels restate stored facts; an absent fact is shown as absent. */
 function teachingNotes(
   event: StudioViewModel["sections"][number]["measures"][number]["events"][number],
+  roman: string | null,
 ): readonly string[] {
   return Object.freeze([
     `Starts at beat ${event.startBeatLabel}`,
     `Lasts ${event.durationBeatLabel} beats`,
     `Voicing mode: ${event.voicingMode}`,
     event.hasAnnotation ? "Carries a note" : "No note",
-    "Roman numeral: not analysed yet",
+    /* Analysed only when the document key gives the reading authority
+       (jcpe-v2r-tour-i504); absence stays stated, never filled in. */
+    roman === null
+      ? "Roman numeral: not analysed yet"
+      : `Roman numeral: ${roman}`,
   ]);
 }
 
@@ -1020,6 +1028,7 @@ function viewFromSnapshot(
   continuation: StudioContinuationView,
   detail: StudioDetailView | null,
   midiImport: StudioMidiImportView,
+  romanForEvent: (eventId: string) => string | null,
 ): StudioShellView {
   const {
     titleDraft,
@@ -1174,7 +1183,10 @@ function viewFromSnapshot(
                             ? null
                             : "Open the chord inspector to change a "
                               + `${event.voicingMode} voicing.`,
-                        teachingNotes: teachingNotes(event),
+                        teachingNotes: teachingNotes(
+                          event,
+                          romanForEvent(event.id),
+                        ),
                         menuItems: cardMenuItems(event, measure, eventIndex),
                       }),
                     ),
@@ -1848,7 +1860,7 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
     actions.midiImportAvailable,
     midiPreview,
     midiImportNotice,
-  ));
+  ), (eventId) => actions.readEventAnalysis(eventId)?.roman ?? null);
 
   /*
    * jcpe-7she: the independent ear compares what the tap heard with the
@@ -2652,6 +2664,25 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
         onViewModeChange: (mode) => {
           setViewMode(mode);
         },
+        onCycleKey: () => {
+          /* The prototype's reviewed ten-key ring; "No key" precedes C so a
+             fresh chart reaches a key in one press and can cycle back off
+             the ring only by undo. */
+          const ring: readonly (readonly [string, number])[] = [
+            ["C", 0], ["F", 0], ["B", -1], ["E", -1], ["A", -1],
+            ["D", -1], ["G", 0], ["D", 0], ["A", 0], ["E", 0],
+          ];
+          const label = snapshot.keyLabel;
+          const index = ring.findIndex(([step, alter]) => {
+            const accidental = alter === -1 ? "b" : "";
+            return label === `${step}${accidental} major`;
+          });
+          const next = ring[(index + 1) % ring.length];
+          if (next === undefined) return;
+          recordEditResult(
+            actions.setKey({ step: next[0], alter: next[1], mode: "major" }),
+          );
+        },
         onChartLayoutChange: (layout) => {
           setChartLayout(layout);
         },
@@ -2906,6 +2937,7 @@ export function StudioRoot({
         setTempo: controller.setTempo,
         setInstrument: controller.setInstrument,
         setMasterVolume: controller.setMasterVolume,
+        setKey: controller.setKey,
         setPerformanceStyle: controller.setPerformanceStyle,
         clearChart: controller.clearChart,
         deleteMeasure: controller.deleteMeasure,

@@ -78,6 +78,8 @@ export type ChartWorkspaceProps = Readonly<{
   onRangeCancel: () => void;
   onRangeClear: () => void;
   onViewModeChange: (mode: StudioViewMode) => void;
+  /** Cycles the reviewed key ring; one undoable Set-key step (V2R-11). */
+  onCycleKey: () => void;
 }>;
 
 /** Reviewed project threshold; a shorter movement stays a tap and a scroll. */
@@ -345,6 +347,7 @@ export function ChartWorkspace({
   onRangeCancel,
   onRangeClear,
   onViewModeChange,
+  onCycleKey,
 }: ChartWorkspaceProps) {
   /**
    * Raw inline text stays component-local. Escape restores the exact prior
@@ -1347,12 +1350,22 @@ export function ChartWorkspace({
         ids, same commit/refuse/reset flow — relocated and dressed down.
       */}
       <div class="studio-paper-head">
-        <div class="studio-paper-head__key">
+        {/*
+          The key is a document setting like tempo (jcpe-v2r-tour-i504):
+          each press cycles the reviewed ten-key ring as one undoable
+          Set-key command, and the roman/phrase surfaces light up with it.
+        */}
+        <button
+          class="studio-paper-head__key"
+          data-testid="chart-key-cycle"
+          id="studio-chart-key"
+          onClick={onCycleKey}
+          title="Change key"
+          type="button"
+        >
           <span class="studio-paper-head__kicker">Key</span>
-          {/* Read-only: no set-key command surface exists yet, so this block
-              states the stored fact rather than promising an edit. */}
           <span class="studio-paper-head__value">{view.keyLabel}</span>
-        </div>
+        </button>
         <div class="studio-paper-head__title">
           <Field
             controlId="studio-document-title"

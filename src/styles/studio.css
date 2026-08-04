@@ -1395,9 +1395,7 @@
   pointer-events: none;
   background: var(--field-2);
   border-color: var(--rule-2);
-  box-shadow:
-    0 14px 30px rgb(var(--sh) / 0.22),
-    0 2px 5px rgb(var(--sh) / 0.14);
+  box-shadow: var(--shadow-3);
   cursor: grabbing;
 }
 
@@ -3994,6 +3992,29 @@
   padding-block-end: var(--space-1);
 }
 
+/* The key block is a control (V2R-11): press to cycle the reviewed ring. */
+button.studio-paper-head__key {
+  align-items: flex-start;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  padding: var(--space-1);
+  margin: calc(-1 * var(--space-1));
+  margin-block-end: 0;
+  text-align: start;
+  cursor: pointer;
+  color: inherit;
+}
+
+button.studio-paper-head__key:hover {
+  background: var(--line-1);
+}
+
+button.studio-paper-head__key:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
 .studio-paper-head__tempo {
   text-align: end;
 }
@@ -4679,9 +4700,33 @@
   font-size: 0.625rem;
 }
 
-@media (min-width: 64rem) {
+/*
+ * Below 64rem the door stays open but compact (jcpe-v2r-tour-i504): the
+ * label hides and the kbd chip is the whole button, so the lane is always
+ * reachable without a keyboard.
+ */
+.studio-header__type-changes {
+  display: inline-flex;
+}
+
+@media (max-width: 63.999rem) {
+  .studio-header__type-changes span {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
   .studio-header__type-changes {
-    display: inline-flex;
+    padding: 0 var(--space-2);
+  }
+
+  .studio-header__type-changes kbd {
+    font-size: 0.6875rem;
+    color: var(--ink);
   }
 }
 
@@ -5086,4 +5131,338 @@
   [data-chart-layout="grid"] .studio-system {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+}
+
+/* ------------------------------------------------ tour (V2R-11) */
+
+/* The circled ? in the chrome bar. */
+.studio-tour-button {
+  display: grid;
+  place-items: center;
+  inline-size: 1.875rem;
+  block-size: 1.875rem;
+  border: var(--border-width) solid var(--rule-2);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-3);
+  font-family: var(--font-chord);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.studio-tour-button:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.studio-tour-button:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.studio-tour {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-inline-size: 34rem;
+}
+
+.studio-tour__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+}
+
+.studio-tour__numeral {
+  font-family: var(--font-chord);
+  font-style: italic;
+  font-size: var(--text-md);
+  color: var(--red);
+}
+
+.studio-tour__title {
+  font-family: var(--font-chord);
+  font-size: var(--text-xl);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.studio-tour__body {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+  line-height: var(--line-normal);
+  max-inline-size: 52ch;
+  text-wrap: pretty;
+}
+
+.studio-tour__stage {
+  padding: var(--space-5) var(--space-4);
+  background: var(--paper-2);
+  border: var(--border-width) solid var(--line-2);
+}
+
+.studio-tour__footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding-block-start: var(--space-3);
+  border-block-start: var(--border-width) solid var(--line-2);
+}
+
+.studio-tour__dots {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.studio-tour__dot {
+  inline-size: 0.5rem;
+  block-size: 0.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--rule-2);
+  cursor: pointer;
+}
+
+.studio-tour__dot[data-active="true"] {
+  background: var(--ink);
+}
+
+.studio-tour__dot:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.studio-tour__spacer {
+  flex: 1 1 auto;
+}
+
+.studio-tour__skip,
+.studio-tour__back,
+.studio-tour__next {
+  min-block-size: var(--control-min-block);
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.studio-tour__skip {
+  border: 0;
+  background: transparent;
+  color: var(--ink-3);
+}
+
+.studio-tour__skip:hover {
+  color: var(--ink);
+}
+
+.studio-tour__back {
+  border: var(--border-width) solid var(--rule-2);
+  background: transparent;
+  color: var(--ink);
+}
+
+.studio-tour__back:hover {
+  border-color: var(--ink);
+}
+
+.studio-tour__next {
+  border: var(--border-width) solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.studio-tour__next:hover {
+  background: var(--red);
+  border-color: var(--red);
+}
+
+.studio-tour__skip:focus-visible,
+.studio-tour__back:focus-visible,
+.studio-tour__next:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+/* Engraved illustration fragments: real chart tokens in miniature. */
+.studio-tour-figure {
+  position: relative;
+  display: flex;
+  border-inline: 2.5px solid var(--ink);
+  background: var(--paper-2);
+}
+
+.studio-tour-figure__bar {
+  position: relative;
+  flex: 1 1 0;
+  min-block-size: 4.25rem;
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.studio-tour-figure__bar--divided {
+  border-inline-start: var(--border-width) solid var(--rule-2);
+}
+
+.studio-tour-figure__bar--target {
+  background: var(--blue-wash);
+}
+
+.studio-tour-figure__symbol {
+  font-family: var(--font-chord);
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.studio-tour-figure__symbol sup {
+  font-size: 0.52em;
+  font-weight: 400;
+}
+
+.studio-tour-figure__symbol--editing {
+  border-block-end: 2px solid var(--red);
+  align-self: flex-start;
+  padding-block-end: 2px;
+}
+
+.studio-tour-figure__symbol--quiet {
+  color: var(--ink-3);
+}
+
+.studio-tour-figure__caret {
+  position: absolute;
+  inset-inline-start: 4.1rem;
+  inset-block-start: var(--space-3);
+  inline-size: 1.5px;
+  block-size: 1.375rem;
+  background: var(--red);
+}
+
+.studio-tour-figure__slashes {
+  color: var(--slash);
+  font-family: var(--font-chord);
+  font-size: var(--text-md);
+  letter-spacing: 0.4em;
+}
+
+.studio-tour-figure__ghost {
+  position: absolute;
+  inset-inline-end: -0.75rem;
+  inset-block-start: -0.875rem;
+  padding: var(--space-2) var(--space-3);
+  background: var(--field-2);
+  border: var(--border-width) solid var(--rule-2);
+  box-shadow: var(--shadow-2);
+  transform: rotate(-2.5deg);
+  font-family: var(--font-chord);
+  font-size: 1.375rem;
+  font-weight: 600;
+}
+
+.studio-tour-figure__ghost sup {
+  font-size: 0.52em;
+  font-weight: 400;
+}
+
+.studio-tour-figure--analysis {
+  flex-direction: column;
+  border-inline: 0;
+  background: transparent;
+}
+
+.studio-tour-figure__row {
+  display: flex;
+  border-inline: 2.5px solid var(--ink);
+  background: var(--paper-2);
+}
+
+.studio-tour-figure__cell {
+  flex: 1 1 0;
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.studio-tour-figure__cell + .studio-tour-figure__cell {
+  border-inline-start: var(--border-width) solid var(--rule-2);
+}
+
+.studio-tour-figure__roman {
+  font-family: var(--font-chord);
+  font-style: italic;
+  font-size: var(--text-xs);
+  color: var(--blue);
+}
+
+.studio-tour-figure__bracket {
+  padding: 0 var(--space-2);
+}
+
+.studio-tour-figure__bracket-line {
+  display: block;
+  block-size: 5px;
+  border-block-start: var(--border-width) solid var(--blue);
+  border-inline: var(--border-width) solid var(--blue);
+  opacity: 0.5;
+}
+
+.studio-tour-figure__bracket-label {
+  display: block;
+  margin-block-start: 3px;
+  text-align: center;
+  font-family: var(--font-chord);
+  font-style: italic;
+  font-size: var(--text-xs);
+  color: var(--blue);
+}
+
+.studio-tour-figure--play {
+  align-items: center;
+  gap: var(--space-3);
+  border-inline: 0;
+  background: transparent;
+}
+
+.studio-tour-figure__transport-key {
+  display: grid;
+  place-items: center;
+  inline-size: 3rem;
+  block-size: 2.25rem;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: var(--text-sm);
+}
+
+.studio-tour-figure__transport-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--ink-3);
+}
+
+.studio-tour-figure__meter {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 2px;
+  block-size: 1.75rem;
+}
+
+.studio-tour-figure__meter-bar {
+  inline-size: 0.25rem;
+  block-size: var(--tour-bar-height, 30%);
+  background: var(--ink-3);
+}
+
+.studio-tour-figure__meter-bar[data-hot="true"] {
+  background: var(--red);
 }

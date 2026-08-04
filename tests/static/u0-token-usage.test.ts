@@ -33,6 +33,8 @@ const LOCAL_CUSTOM_PROPERTY_OWNERS = Object.freeze({
   "--studio-collapsed-rail": "src/styles/studio.css",
   /* System column count set inline per system by the engraved chart (V2R-2). */
   "--studio-system-columns": "src/ui/studio/ChartWorkspace.tsx",
+  /* Meter-bar heights set inline by the tour illustration (V2R-11). */
+  "--tour-bar-height": "src/ui/studio/TourDialog.tsx",
   "--ui-tree-level": "src/ui/primitives/StructuredViews.tsx",
 } as const);
 /**

@@ -69,11 +69,14 @@ export function StudioHeader({
   chartLayout,
   onOpenCommandLane,
   onOpenStandards,
+  onOpenTour,
 }: StudioHeaderProps &
   Readonly<{
     onOpenCommandLane: () => void;
     /** Opens the Standards modal where the library rail is hidden (<80rem). */
     onOpenStandards: () => void;
+    /** Reopens the four-step tour (jcpe-v2r-tour-i504). */
+    onOpenTour: () => void;
   }>) {
   return (
     <header class="studio-header" id="app-header">
@@ -89,6 +92,16 @@ export function StudioHeader({
         </div>
         <span class="studio-brand__divider" aria-hidden="true" />
         <ThemeToggle />
+        <button
+          aria-label="How this works"
+          class="studio-tour-button"
+          id="studio-open-tour"
+          onClick={onOpenTour}
+          title="How this works (?)"
+          type="button"
+        >
+          ?
+        </button>
       </div>
 
       {/* V2R-2: the title editing surface moved onto the paper itself —
@@ -249,10 +262,10 @@ export function StudioHeader({
             disabled={false}
             id="studio-copy-share-link"
             invalid={false}
-            label={view.shareCopied ? "Copied ✓" : "Copy link"}
+            label={view.shareCopied ? "Copied ✓" : "Share"}
             onAction={callbacks.onCopyShareLink}
             type="button"
-            variant="secondary"
+            variant="primary"
           />
           <span
             aria-live="polite"
