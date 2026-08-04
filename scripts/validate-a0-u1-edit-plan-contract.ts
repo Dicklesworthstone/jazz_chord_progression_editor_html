@@ -47,6 +47,7 @@ import {
   A0_U1_ATOMIC_EDIT_WORK_COUNTER_MAXIMA,
   A0_U1_ATOMIC_EDIT_WORK_COUNTER_NAMES,
   A0_U1_FRAGMENT_SOURCE_REFUSAL_REACHABILITY,
+  A0_U1_STATIC_REFUSAL_REACHABILITY,
   A0_U1_NEW_EVENT_AUTO_VOICING,
   A0_U1_NEW_EVENT_POLICY_ID,
   A0_U1_PROPOSED_APPLICATION_COMMAND_KINDS,
@@ -54,10 +55,13 @@ import {
   A0_U1_RECOVERY_FIELD_COMPARISON_ORDER,
   A0_U1_RECOVERED_CHORD_LAYOUT_LOSS_ACKNOWLEDGEMENT,
   A0_U1_T0_NEW_MEASURE_COMPLETION_POLICY,
+  MAX_A0_U1_REACHABLE_FINAL_TIMELINE_QUARTER_NOTE_BEATS,
 } from "../src/application/application-edit-plan-contract";
 import {
   ALLOWED_BEAT_DENOMINATORS,
+  BEAT_UNITS,
   KEY_MODES,
+  MAX_BEATS_PER_BAR,
   MAX_DOCUMENT_CHORD_EVENTS,
   MAX_DOCUMENT_SECTIONS,
   MAX_LONG_TEXT_CODE_POINTS,
@@ -165,19 +169,19 @@ export const A0_U1_EDIT_PLAN_SPEC_BYTE_DIGESTS: Readonly<
   Record<SpecFilename, string>
 > = Object.freeze({
   "a0-u1-edit-plan-contract.json":
-    "cb23fac90ca33dd03e2d423825da16520c965bdb6185ea1b2682c5771fd7ea05",
+    "6fac18ba3c2f63fab593de4559dc5ed13a347749e35dfe7d0e6d57450b1da876",
   "edit-plan-cases.json":
-    "04aebe01fd33716b355907c64cde431cac1efa68730334afe2ae7c532ffc6754",
+    "4bbb67315c859122003cd7475d0d18d24aa5afd9823b02d5c7e078e970c90b63",
   "mutation-controls.json":
-    "34bae67af32efece64804aaa63e258329d47651630fc3f3672197e50d886f051",
+    "5279bc75145b91f149849047deb535a915013b435f3985dd5a44e1af503e8b9c",
   "provenance-ledger.json":
-    "f432b32c8eabd18afdbed298ab96dc6676f98451d69517c2d5502f413cf3b136",
+    "a35655f1e8bcda71f60562052288228987dbb9b6e1e9af2444cc8845abbe960e",
   "trace-ledger.json":
-    "1f2b0d08ea642e0f384ad7adac055473bff7b372f3ee0af3d2edf99b0408f02c",
+    "f3124118a427885f0bea517b34c2f559f5bee2ce44076b148888a9eb7a81b562",
 });
 
 export const A0_U1_EDIT_PLAN_SPEC_SEMANTIC_DIGEST =
-  "4ae4489a18fa2b4b0e039dc3603eeef10c9ad99fb9b2bb83c3a9761c375ffe21";
+  "94975f3f18bc141094270f5725f4f655264e6742380ca49d89c3b680791a0bc8";
 
 const EXPECTED_COUNTS = Object.freeze({
   files: 5,
@@ -297,7 +301,7 @@ const EXPECTED_OBLIGATION_ROWS = Object.freeze([
     category: "bounds",
     operation: "pipeline",
     semanticPredicate:
-      "reachable-limits-have-exact-witnesses-unreachable-limits-have-static-dominance-proof",
+      "reachable-limits-have-exact-witnesses-unreachable-timeline-and-composite-limits-have-static-dominance-proof",
   }),
   Object.freeze({
     id: "A0U1-OBL-008-LIMIT-PLUS-ONE",
@@ -5677,7 +5681,7 @@ function deriveCausalRefusal(
       ) ||
       !canonicalPlacementTargetMatches(before["document"], plan) ||
       (source["kind"] === "complete-draft" &&
-        !completeDraftIntoMeasureContractHolds(before["document"], plan))
+        !completeDraftIntoMeasureDestinationHolds(before["document"], plan))
     ) {
       return {
         refusal: {
@@ -6823,10 +6827,22 @@ function deriveExactNestedWork(
     code === null
       ? EXPECTED_NESTED_REFUSAL_PRECEDENCE.length
       : EXPECTED_NESTED_REFUSAL_PRECEDENCE.indexOf(code);
+  const expectedResult = isObject(expected["result"])
+    ? expected["result"]
+    : {};
+  const expectedNested = isObject(expectedResult["editPlanRefusal"])
+    ? expectedResult["editPlanRefusal"]
+    : {};
+  const retainedLiteralDiagnostics = recordsAt(
+    expectedNested["diagnostics"],
+  ).length;
   const retainDiagnostics = (count: number): void => {
     counters["peakDiagnosticRecords"] = Math.max(
       Number(counters["peakDiagnosticRecords"]),
-      Math.min(count, EXPECTED_ATOMIC_EDIT_LIMITS.retainedDiagnostics),
+      Math.min(
+        Math.max(count, retainedLiteralDiagnostics),
+        EXPECTED_ATOMIC_EDIT_LIMITS.retainedDiagnostics,
+      ),
     );
   };
   if (code === "edit-plan.command-shape-invalid") {
@@ -7033,7 +7049,7 @@ function deriveExactNestedWork(
     return { ...counters, termination: "input-refusal" };
   }
   if (code === "edit-plan.collection-limit-exceeded") {
-    retainDiagnostics(2);
+    retainDiagnostics(1);
     return { ...counters, termination: "input-refusal" };
   }
   const durations = finalTimelineDurations(
@@ -7370,6 +7386,8 @@ export function probeA0U1TransitionOracle(
             path: [...oracle.refusal.path],
           },
     candidateConstructed: oracle.candidate !== null,
+    candidateDocument:
+      oracle.candidate === null ? null : cloneJson(oracle.candidate.document),
     f2Ok: oracle.f2Ok,
     f3Ok: oracle.f3Ok,
     exactWork: isObject(command)
@@ -9792,19 +9810,36 @@ function completeDraftIntoMeasureContractHolds(
   ) {
     return true;
   }
+  const declarations = recordsAt(placement["completionDeclarations"]);
+  return (
+    completeDraftIntoMeasureDestinationHolds(document, plan) &&
+    declarations.length === 1 &&
+    declarations[0]?.["measureId"] === placement["measureId"] &&
+    jsonDeepEqual(declarations[0]?.["completion"], { kind: "complete" })
+  );
+}
+
+function completeDraftIntoMeasureDestinationHolds(
+  document: unknown,
+  plan: JsonObject,
+): boolean {
+  const source = isObject(plan["source"]) ? plan["source"] : null;
+  const placement = isObject(plan["placement"]) ? plan["placement"] : null;
+  if (
+    source?.["kind"] !== "complete-draft" ||
+    placement?.["kind"] !== "into-measure"
+  ) {
+    return true;
+  }
   const location = findMeasureLocation(document, placement["measureId"]);
   const target = insertPlanTarget(plan);
   if (location === null || target === null) return false;
-  const declarations = recordsAt(placement["completionDeclarations"]);
   return (
     placement["beforeEventId"] === null &&
     measureEvents(location.measure).length === 0 &&
     jsonDeepEqual(location.measure["completion"], { kind: "empty" }) &&
     (target["kind"] === "measure-start" || target["kind"] === "measure-end") &&
-    target["measureId"] === placement["measureId"] &&
-    declarations.length === 1 &&
-    declarations[0]?.["measureId"] === placement["measureId"] &&
-    jsonDeepEqual(declarations[0]?.["completion"], { kind: "complete" })
+    target["measureId"] === placement["measureId"]
   );
 }
 
@@ -12426,8 +12461,10 @@ function validateCases(
       );
     }
     const lawIds = stringsAt(row["lawIds"]);
+    const phase = row["phase"];
     if (
-      lawIds.length === 0 ||
+      (phase === "apply" && lawIds.length === 0) ||
+      ((phase === "undo" || phase === "redo") && lawIds.length !== 0) ||
       lawIds.some(
         (lawId) => !A0_U1_ATOMIC_EDIT_LAW_IDS.includes(lawId as never),
       )
@@ -12436,7 +12473,7 @@ function validateCases(
         findings,
         "EDIT_PLAN_TRANSITION_LAWS",
         `edit-plan-cases.json.literalCatalog.transitions.${transitionId}.lawIds`,
-        "Every transition must cite only declared laws and cite at least one.",
+        "Apply transitions must cite at least one declared law; state-only undo/redo transitions cite none and remain owned by the inverse-history obligation.",
       );
     }
     checkExactKeys(
@@ -13664,9 +13701,7 @@ function validateObligationSemantics(
         .map(nestedRefusalCode)
         .filter((code): code is string => code !== null),
     );
-    const unreachableCodes = Object.keys(
-      A0_U1_FRAGMENT_SOURCE_REFUSAL_REACHABILITY,
-    );
+    const unreachableCodes = Object.keys(A0_U1_STATIC_REFUSAL_REACHABILITY);
     const reachableCodes = A0_U1_ATOMIC_EDIT_REFUSAL_CODES.filter(
       (code) => !unreachableCodes.includes(code),
     );
@@ -13679,6 +13714,16 @@ function validateObligationSemantics(
         "edit-plan.source-utf8-bytes-exceeded":
           "static-dominated-by-accepted-quick-entry-invariants",
       }) &&
+      jsonDeepEqual(A0_U1_STATIC_REFUSAL_REACHABILITY, {
+        "edit-plan.source-code-points-exceeded":
+          "static-dominated-by-accepted-quick-entry-invariants",
+        "edit-plan.source-unicode-invalid":
+          "static-dominated-by-accepted-quick-entry-invariants",
+        "edit-plan.source-utf8-bytes-exceeded":
+          "static-dominated-by-accepted-quick-entry-invariants",
+        "edit-plan.timeline-limit-exceeded":
+          "static-dominated-by-final-event-and-meter-capacity-invariants",
+      }) &&
       jsonDeepEqual(
         A0_U1_ATOMIC_EDIT_LIMITS.fragmentSourceCodePoints,
         MAX_QUICK_ENTRY_CODE_POINTS,
@@ -13688,7 +13733,11 @@ function validateObligationSemantics(
       jsonDeepEqual(
         A0_U1_ATOMIC_EDIT_LIMITS.quickEntryIssueCodes,
         MAX_DRAFT_ISSUES,
-      );
+      ) &&
+      MAX_A0_U1_REACHABLE_FINAL_TIMELINE_QUARTER_NOTE_BEATS ===
+        (MAX_DOCUMENT_CHORD_EVENTS * MAX_BEATS_PER_BAR * 4) / BEAT_UNITS[0] &&
+      MAX_A0_U1_REACHABLE_FINAL_TIMELINE_QUARTER_NOTE_BEATS <
+        A0_U1_ATOMIC_EDIT_LIMITS.finalTimelineQuarterNoteBeats;
     requireObligation(
       jsonDeepEqual([...runtimeCodes], reachableCodes) &&
         !allTransitions.some((transition) =>
@@ -13696,7 +13745,7 @@ function validateObligationSemantics(
         ) &&
         staticDominance,
       id,
-      "The ledger must cite runtime witnesses for every reachable nested refusal in contract order, must not fabricate the three source-preflight branches, and must retain the accepted-QuickEntry source/issue dominance proof.",
+      "The ledger must cite runtime witnesses for every reachable nested refusal in contract order, must not fabricate the three source-preflight or defensive timeline branches, and must retain both static dominance proofs.",
       findings,
     );
   }
@@ -13890,7 +13939,9 @@ function validateObligationSemantics(
       A0_U1_ATOMIC_EDIT_LIMITS.planNodeRecords ===
         A0_U1_ATOMIC_EDIT_LIMITS.occupiedIdRecords &&
       A0_U1_ATOMIC_EDIT_LIMITS.occupiedIdRecords ===
-        A0_U1_ATOMIC_EDIT_LIMITS.idAllocationAttempts + 1;
+        A0_U1_ATOMIC_EDIT_LIMITS.idAllocationAttempts + 1 &&
+      MAX_A0_U1_REACHABLE_FINAL_TIMELINE_QUARTER_NOTE_BEATS <
+        A0_U1_ATOMIC_EDIT_LIMITS.finalTimelineQuarterNoteBeats;
     requireObligation(
       rows.length >= A0_U1_ATOMIC_EDIT_PLAN_KINDS.length &&
         exactOperationSet(rows) &&
@@ -13898,8 +13949,8 @@ function validateObligationSemantics(
         staticDominance,
       id,
       shouldSucceed
-        ? "Exact reachable caps need successful witnesses across all five operations, while composite unreachable caps remain proved by source-constant identities."
-        : "First-excess reachable caps need refusals across all five operations, while composite unreachable caps remain proved by source-constant identities.",
+        ? "Exact reachable caps need successful witnesses across all five operations, while composite and timeline-unreachable caps remain proved by source-constant identities."
+        : "First-excess reachable caps need refusals across all five operations, while composite and timeline-unreachable caps remain proved by source-constant identities.",
       findings,
     );
   }

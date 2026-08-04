@@ -66,6 +66,7 @@ import {
   A0_U1_ATOMIC_EDIT_OUTER_REFUSAL_CODES,
   A0_U1_ATOMIC_EDIT_PREPLAN_OUTER_REFUSAL_CODES,
   A0_U1_ATOMIC_EDIT_REFUSAL_CODES,
+  A0_U1_STATIC_REFUSAL_REACHABILITY,
   A0_U1_ATOMIC_EDIT_WORK_COUNTER_MAXIMA,
   A0_U1_ATOMIC_EDIT_WORK_COUNTER_NAMES,
   A0_U1_FINAL_COLLECTION_LIMIT_COMPARISON_ORDER,
@@ -77,6 +78,7 @@ import {
   A0_U1_QUICK_ENTRY_TARGET_MATCH_POLICY,
   A0_U1_RECOVERED_CHORD_LAYOUT_LOSS_ACKNOWLEDGEMENT,
   A0_U1_RECOVERY_FIELD_COMPARISON_ORDER,
+  MAX_A0_U1_REACHABLE_FINAL_TIMELINE_QUARTER_NOTE_BEATS,
 } from "../../src/application/application-edit-plan-contract";
 import type {
   AppState,
@@ -819,6 +821,36 @@ async function mutateCanonicalJsonField(
   return sha256(changedSource);
 }
 
+async function mutateCanonicalJsonFields(
+  temporaryRoot: string,
+  filename: (typeof A0_U1_EDIT_PLAN_SPEC_FILES)[number],
+  mutations: readonly Readonly<{
+    path: readonly JsonPathSegment[];
+    from: unknown;
+    to: unknown;
+  }>[],
+): Promise<string> {
+  const fixturePath = join(temporaryRoot, filename);
+  const original = JSON.parse(await readFile(fixturePath, "utf8")) as unknown;
+  const parsed = JSON.parse(JSON.stringify(original)) as unknown;
+  for (const mutation of mutations) {
+    replaceJsonField(parsed, mutation.path, (current) => {
+      if (JSON.stringify(current) !== JSON.stringify(mutation.from)) {
+        throw new Error(
+          `A0_U1_TEST_MULTI_MUTATION_BASELINE_DRIFT:${mutation.path.join("/")}`,
+        );
+      }
+      return mutation.to;
+    });
+  }
+  expect(collectJsonDifferencePaths(original, parsed).sort()).toEqual(
+    mutations.map((mutation) => mutation.path.join("/")).sort(),
+  );
+  const changedSource = `${JSON.stringify(parsed, null, 2)}\n`;
+  await writeFile(fixturePath, changedSource, "utf8");
+  return sha256(changedSource);
+}
+
 type SemanticFieldMutation = Readonly<{
   label: string;
   filename: (typeof A0_U1_EDIT_PLAN_SPEC_FILES)[number];
@@ -990,20 +1022,20 @@ const semanticFieldMutations = [
     path: [
       "literalCatalog",
       "results",
-      "a0u1-ins-009-collision",
+      "a0u1-ins-008-document-collision-0",
       "editPlanRefusal",
       "code",
     ],
     from: "edit-plan.id-collision",
     to: "edit-plan.duration-invalid",
     findingCode: "EDIT_PLAN_NESTED_OUTER_FAMILY",
-    findingPathIncludes: "A0U1-INS-009-COLLISION",
+    findingPathIncludes: "A0U1-INS-008-DOCUMENT-COLLISION-0",
   },
   {
     label: "transposition witness transition link",
     filename: "edit-plan-cases.json",
     path: ["transpositionWitnesses", 0, "baseTransitionId"],
-    from: "A0U1-INS-001-APPLY",
+    from: "A0U1-INS-009-BASE",
     to: "A0U1-MISSING-TRANSITION",
     findingCode: "EDIT_PLAN_TRANSPOSITION_TRANSITION_REF",
     findingPathIncludes: "A0U1-WIT-INSERT",
@@ -1126,7 +1158,8 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
         `${resultKey}.result.counters`,
       );
       const nestedRefusal =
-        result["editPlanRefusal"] === null
+        result["editPlanRefusal"] === null ||
+        result["editPlanRefusal"] === undefined
           ? null
           : jsonObject(
               result["editPlanRefusal"],
@@ -1146,6 +1179,7 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
       expect(resultCounters["validationCalls"]).toBe(expectedValidationCalls);
 
       if (!isApply) {
+        expect(transition["lawIds"]).toEqual([]);
         expect(expected["historyEstimatorEvidence"]).toBeNull();
         continue;
       }
@@ -1207,6 +1241,127 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
         });
       }
     }
+  });
+
+  test("complete-draft into-measure proves a lawful empty-measure commit", async () => {
+    const cases = jsonObject(
+      JSON.parse(
+        await readFile(join(fixtureRoot, "edit-plan-cases.json"), "utf8"),
+      ),
+      "edit-plan-cases.json",
+    );
+    const catalog = jsonObject(
+      cases["literalCatalog"],
+      "edit-plan-cases.json.literalCatalog",
+    );
+    const transitions = jsonObject(
+      catalog["transitions"],
+      "edit-plan-cases.json.literalCatalog.transitions",
+    );
+    const states = jsonObject(catalog["states"], "literalCatalog.states");
+    const commands = jsonObject(
+      catalog["commands"],
+      "literalCatalog.commands",
+    );
+    const results = jsonObject(catalog["results"], "literalCatalog.results");
+    const transition = jsonObject(
+      transitions["A0U1-INS-001-INTO-MEASURE"],
+      "A0U1-INS-001-INTO-MEASURE",
+    );
+    const expected = jsonObject(
+      transition["expected"],
+      "A0U1-INS-001-INTO-MEASURE.expected",
+    );
+    const before = jsonObject(
+      states[
+        literalReferenceKey(
+          transition["beforeState"],
+          "states",
+          "into-measure.beforeState",
+        )
+      ],
+      "into-measure.before",
+    );
+    const after = jsonObject(
+      states[
+        literalReferenceKey(
+          expected["afterState"],
+          "states",
+          "into-measure.afterState",
+        )
+      ],
+      "into-measure.after",
+    );
+    const command = jsonObject(
+      commands[
+        literalReferenceKey(
+          transition["command"],
+          "commands",
+          "into-measure.command",
+        )
+      ],
+      "into-measure.command",
+    );
+    const result = jsonObject(
+      results[
+        literalReferenceKey(
+          expected["result"],
+          "results",
+          "into-measure.result",
+        )
+      ],
+      "into-measure.result",
+    );
+    const measure = (state: JsonObject, label: string): JsonObject => {
+      const document = jsonObject(state["document"], `${label}.document`);
+      const sections = document["sections"];
+      if (!Array.isArray(sections)) {
+        throw new Error(`A0_U1_TEST_SECTIONS_NOT_ARRAY:${label}`);
+      }
+      for (const rawSection of sections) {
+        const section = jsonObject(rawSection, `${label}.section`);
+        const measures = section["measures"];
+        if (!Array.isArray(measures)) continue;
+        for (const rawMeasure of measures) {
+          const candidate = jsonObject(rawMeasure, `${label}.measure`);
+          if (candidate["id"] === "measure-e0-auto") return candidate;
+        }
+      }
+      throw new Error(`A0_U1_TEST_EMPTY_TARGET_MISSING:${label}`);
+    };
+    const beforeMeasure = measure(before, "before");
+    const afterMeasure = measure(after, "after");
+    const beforeEvents = beforeMeasure["events"];
+    const afterEvents = afterMeasure["events"];
+    const plan = jsonObject(command["plan"], "into-measure.command.plan");
+    const source = jsonObject(plan["source"], "into-measure.command.source");
+    const receipt = jsonObject(
+      result["editPlanReceipt"],
+      "into-measure.result.editPlanReceipt",
+    );
+
+    expect(beforeMeasure["completion"]).toEqual({ kind: "empty" });
+    expect(beforeEvents).toEqual([]);
+    expect(source["kind"]).toBe("complete-draft");
+    expect(
+      jsonObject(
+        source["quickEntrySnapshot"],
+        "into-measure.quickEntrySnapshot",
+      )["sourceText"],
+    ).toBe("| G7b9#5:4 |");
+    expect(afterMeasure["completion"]).toEqual({ kind: "complete" });
+    expect(Array.isArray(afterEvents) ? afterEvents : []).toHaveLength(1);
+    expect(receipt["completionMeasureIds"]).toEqual(["measure-e0-auto"]);
+    expect(receipt["allocatedIdentities"]).toEqual([
+      {
+        kind: "event",
+        id: "event-u1-complete-measure-1",
+        source: {
+          kind: "fragment-event",
+          sourceEventOrdinal: 0,
+        },
+      },
+    ]);
   });
 
   for (const filename of A0_U1_EDIT_PLAN_SPEC_FILES) {
@@ -1383,6 +1538,124 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
     { timeout: 300_000, retry: 0 },
   );
 
+  test(
+    "joint outer-counter mirror tamper is rejected by the independent exact oracle",
+    async () => {
+      await withPacketCopy(async (temporaryRoot) => {
+        const filename = "edit-plan-cases.json";
+        const changedDigest = await mutateCanonicalJsonFields(
+          temporaryRoot,
+          filename,
+          [
+            {
+              path: [
+                "literalCatalog",
+                "counters",
+                "a0u1-ins-001-apply",
+                "outer",
+                "eventsVisited",
+              ],
+              from: 7,
+              to: 8,
+            },
+            {
+              path: [
+                "literalCatalog",
+                "results",
+                "a0u1-ins-001-apply",
+                "counters",
+                "eventsVisited",
+              ],
+              from: 7,
+              to: 8,
+            },
+          ],
+        );
+        const report = await validateA0U1EditPlanContract(temporaryRoot, {
+          expectedByteDigests: {
+            ...A0_U1_EDIT_PLAN_SPEC_BYTE_DIGESTS,
+            [filename]: changedDigest,
+          },
+        });
+
+        expect(report.outcome).toBe("fail");
+        expect(findingCodes(report)).toContain(
+          "EDIT_PLAN_EXACT_OUTER_WORK_ORACLE",
+        );
+        expect(
+          findingsFor(report, "EDIT_PLAN_EXACT_OUTER_WORK_ORACLE").some(
+            (finding) => finding.path.includes("A0U1-INS-001-APPLY"),
+          ),
+        ).toBe(true);
+        expect(findingCodes(report)).toContain("EDIT_PLAN_SEMANTIC_DIGEST");
+        expect(
+          findingsFor(report, "EDIT_PLAN_BYTE_DIGEST").some(
+            (finding) => finding.path === filename,
+          ),
+        ).toBe(false);
+      });
+    },
+    { timeout: 300_000, retry: 0 },
+  );
+
+  test(
+    "joint history outer-code swap is rejected by the dependency-specific oracle",
+    async () => {
+      await withPacketCopy(async (temporaryRoot) => {
+        const filename = "edit-plan-cases.json";
+        const changedDigest = await mutateCanonicalJsonFields(
+          temporaryRoot,
+          filename,
+          [
+            {
+              path: [
+                "literalCatalog",
+                "results",
+                "a0u1-ins-009-collision",
+                "refusal",
+                "code",
+              ],
+              from: "history.byte_estimate_invalid",
+              to: "history.entry_too_large",
+            },
+            {
+              path: [
+                "literalCatalog",
+                "results",
+                "a0u1-ins-009-collision",
+                "editPlanRefusal",
+                "outerCode",
+              ],
+              from: "history.byte_estimate_invalid",
+              to: "history.entry_too_large",
+            },
+          ],
+        );
+        const report = await validateA0U1EditPlanContract(temporaryRoot, {
+          expectedByteDigests: {
+            ...A0_U1_EDIT_PLAN_SPEC_BYTE_DIGESTS,
+            [filename]: changedDigest,
+          },
+        });
+
+        expect(report.outcome).toBe("fail");
+        expect(findingCodes(report)).toContain(
+          "EDIT_PLAN_HISTORY_EXACT_OUTER_CODE",
+        );
+        expect(findingCodes(report)).toContain(
+          "EDIT_PLAN_HISTORY_EXACT_NESTED_OUTER_CODE",
+        );
+        expect(findingCodes(report)).toContain("EDIT_PLAN_SEMANTIC_DIGEST");
+        expect(
+          findingsFor(report, "EDIT_PLAN_BYTE_DIGEST").some(
+            (finding) => finding.path === filename,
+          ),
+        ).toBe(false);
+      });
+    },
+    { timeout: 300_000, retry: 0 },
+  );
+
   test("live A0 command tuple remains 15 and the proposal appends only apply-edit-plan", () => {
     const acceptedA0Kinds = [
       "insert",
@@ -1425,6 +1698,22 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
       "split-section",
       "join-sections",
     ]);
+    expect(
+      MAX_A0_U1_REACHABLE_FINAL_TIMELINE_QUARTER_NOTE_BEATS,
+    ).toBe(524_288);
+    expect(
+      MAX_A0_U1_REACHABLE_FINAL_TIMELINE_QUARTER_NOTE_BEATS,
+    ).toBeLessThan(A0_U1_ATOMIC_EDIT_LIMITS.finalTimelineQuarterNoteBeats);
+    expect(A0_U1_STATIC_REFUSAL_REACHABILITY).toEqual({
+      "edit-plan.source-code-points-exceeded":
+        "static-dominated-by-accepted-quick-entry-invariants",
+      "edit-plan.source-unicode-invalid":
+        "static-dominated-by-accepted-quick-entry-invariants",
+      "edit-plan.source-utf8-bytes-exceeded":
+        "static-dominated-by-accepted-quick-entry-invariants",
+      "edit-plan.timeline-limit-exceeded":
+        "static-dominated-by-final-event-and-meter-capacity-invariants",
+    });
     expect(A0_U1_INSERT_FRAGMENT_PLACEMENT_KINDS).toEqual([
       "into-measure",
       "into-section",
@@ -2090,7 +2379,8 @@ describe("A0/U1 atomic edit-plan golden packet", () => {
     const forwardingProxy = new Proxy(proxyTarget, {
       get(target, property, receiver) {
         proxyGetCalls += 1;
-        return Reflect.get(target, property, receiver);
+        const value: unknown = Reflect.get(target, property, receiver);
+        return value;
       },
       getOwnPropertyDescriptor(target, property) {
         return Reflect.getOwnPropertyDescriptor(target, property);

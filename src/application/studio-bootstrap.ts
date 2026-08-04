@@ -7,6 +7,8 @@ import {
   type DomainPath,
   type ValidatedDocument,
 } from "../domain";
+import { parseChartText } from "../theory";
+import type { AtomicEditPlanDependencies } from "./application-edit-plan-contract";
 import {
   applicationHistoryRetainedByteEstimator,
   createInitialAppState,
@@ -167,6 +169,20 @@ export function createStudioApplicationDependencies(): ApplicationCommandDepende
     copyDomain,
     stableIdFactory: createProductionStableIdFactory(),
     estimateHistoryRetainedBytes: applicationHistoryRetainedByteEstimator,
+  });
+}
+
+/**
+ * Compose the additive A0/U1 runner from the same production F2, F3, copy,
+ * stable-ID, and history policies as the live A0 command runner, plus the real
+ * public T0 fragment parser.
+ */
+export function createStudioAtomicEditPlanDependencies(): AtomicEditPlanDependencies {
+  return Object.freeze({
+    ...createStudioApplicationDependencies(),
+    estimateHistoryRetainedBytes:
+      applicationHistoryRetainedByteEstimator,
+    parseChartText,
   });
 }
 

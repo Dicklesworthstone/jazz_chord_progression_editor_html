@@ -668,6 +668,12 @@ implementation leaf must merge or genericize the live A0 history ports before
 claiming that today's `UndoDocumentCommand`/`RedoDocumentCommand` accept the
 new row; a cast is forbidden.
 
+Typed edit laws classify only `apply` transitions. Every apply row cites at
+least one declared law; state-only undo and redo rows cite `lawIds: []` and are
+owned instead by `A0U1-OBL-016-UNDO-REDO` plus the reciprocal history trace.
+This keeps replay evidence exhaustive without misclassifying replay as a
+successful or refused edit-plan application.
+
 A normal refusal follows existing A0 failure semantics: document, bookmarks,
 history, QuickEntry, and effects are unchanged; only the already-permitted
 notice and sequence bookkeeping may differ. The ID-entropy caveat in section
@@ -862,8 +868,16 @@ state already proves valid Unicode, at most 4,096 code points, and at most 64
 issue codes. Exact snapshot equality therefore makes source-code-point,
 source-Unicode, source-UTF-8, and QuickEntry-issue-count excess transitions
 unreachable for authoritative states. A 4,096-scalar valid string occupies at
-most 16,384 UTF-8 bytes. Those defensive branches remain specified but are
-covered by upstream/state-invariant proofs.
+most 16,384 UTF-8 bytes.
+
+The defensive 1,000,000-quarter-note timeline refusal is likewise
+static-dominated. A valid final document has at most 8,192 events, and the
+largest legal meter is 32/2, whose measure capacity is 64 quarter notes.
+Even assigning that full capacity to every event yields only 524,288 quarter
+notes. `A0_U1_STATIC_REFUSAL_REACHABILITY` freezes both dominance families;
+the packet must not fabricate an exact or first-excess timeline transition.
+All of these defensive branches remain specified but are covered by
+upstream/state-invariant proofs.
 
 ### 17.1 Exact counter accounting
 

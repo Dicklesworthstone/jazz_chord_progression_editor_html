@@ -337,7 +337,7 @@ export function boundaryTargetExists(
   }
 }
 
-function refusalMessage(code: ApplicationRefusalCode): string {
+export function applicationRefusalMessage(code: ApplicationRefusalCode): string {
   switch (code) {
     case "application.revision_exhausted":
       return "The document revision limit has been reached.";
@@ -392,13 +392,17 @@ function refusalMessage(code: ApplicationRefusalCode): string {
   }
 }
 
-export function appendApplicationNotice(
-  state: AppState,
+type ApplicationNoticeState = Readonly<
+  Omit<AppState, "history"> & { history: unknown }
+>;
+
+export function appendApplicationNotice<State extends ApplicationNoticeState>(
+  state: State,
   level: Notice["level"],
   code: string,
   rawMessage: string,
   dismissible = true,
-): Readonly<{ state: AppState; notice: Notice }> {
+): Readonly<{ state: State; notice: Notice }> {
   const sequence = Math.min(state.nextSequence, MAX_APPLICATION_SEQUENCE);
   const message = Array.from(rawMessage)
     .slice(0, MAX_NOTICE_MESSAGE_CODE_POINTS)
@@ -417,15 +421,13 @@ export function appendApplicationNotice(
     notices.splice(dismissibleIndex >= 0 ? dismissibleIndex : 0, 1);
   }
   notices.push(notice);
-  return {
-    state: Object.freeze({
+  const nextState: State = Object.freeze({
       ...state,
       notices: Object.freeze(notices),
       nextSequence:
         sequence < MAX_APPLICATION_SEQUENCE ? sequence + 1 : sequence,
-    }),
-    notice,
-  };
+    });
+  return { state: nextState, notice };
 }
 
 export function failureResult(
@@ -444,12 +446,12 @@ export function failureResult(
     state,
     "error",
     code,
-    refusalMessage(code),
+    applicationRefusalMessage(code),
   );
   const refusal: ApplicationRefusal = Object.freeze({
     code,
     path: Object.freeze([...path]),
-    message: refusalMessage(code),
+    message: applicationRefusalMessage(code),
     ...extras,
   });
   return Object.freeze({

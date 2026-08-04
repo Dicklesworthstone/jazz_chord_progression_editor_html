@@ -1,6 +1,8 @@
 import {
+  BEAT_UNITS,
   MAX_DOCUMENT_CHORD_EVENTS,
   MAX_DOCUMENT_SECTIONS,
+  MAX_BEATS_PER_BAR,
   MAX_LONG_TEXT_CODE_POINTS,
   MAX_SECTION_MEASURES,
   MAX_SHORT_TEXT_CODE_POINTS,
@@ -220,6 +222,20 @@ export const A0_U1_FRAGMENT_SOURCE_REFUSAL_REACHABILITY = Object.freeze({
     "static-dominated-by-accepted-quick-entry-invariants",
   "edit-plan.source-utf8-bytes-exceeded":
     "static-dominated-by-accepted-quick-entry-invariants",
+});
+
+export const MAX_A0_U1_REACHABLE_FINAL_TIMELINE_QUARTER_NOTE_BEATS =
+  (MAX_DOCUMENT_CHORD_EVENTS * MAX_BEATS_PER_BAR * 4) / BEAT_UNITS[0];
+
+/**
+ * The domain's final event cap and largest legal meter capacity dominate the
+ * looser defensive timeline ceiling. A valid document therefore cannot reach
+ * the timeline refusal, even though the bounded runner retains the check.
+ */
+export const A0_U1_STATIC_REFUSAL_REACHABILITY = Object.freeze({
+  ...A0_U1_FRAGMENT_SOURCE_REFUSAL_REACHABILITY,
+  "edit-plan.timeline-limit-exceeded":
+    "static-dominated-by-final-event-and-meter-capacity-invariants",
 });
 
 export const A0_U1_ATOMIC_EDIT_LIMITS = Object.freeze({
