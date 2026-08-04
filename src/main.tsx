@@ -12,7 +12,14 @@ import {
   createBrowserAudioPlatform,
   loadSmfWasmDecoder,
 } from "./audio/runtime";
-import { StudioRoot, StudioStartupFailure } from "./ui/runtime";
+import { initializeTheme, StudioRoot, StudioStartupFailure } from "./ui/runtime";
+
+/*
+ * The paper theme is the stylesheet base and the OS preference governs until
+ * the user chooses; a remembered explicit choice is pinned before the first
+ * paint so the page never flashes the wrong theme.
+ */
+initializeTheme();
 
 const mountPoint = document.querySelector<HTMLElement>("#app");
 
