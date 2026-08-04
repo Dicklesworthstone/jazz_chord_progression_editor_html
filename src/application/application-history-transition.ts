@@ -1,6 +1,5 @@
 import type { ValidatedDocument } from "../domain";
 import type {
-  ProposedAtomicEditPlanHistoryEntry,
   RedoAtomicEditPlanHistory,
   UndoAtomicEditPlanHistory,
 } from "./application-edit-plan-contract";
@@ -238,10 +237,8 @@ export function replayRetainedHistory<Entry extends RetainedHistoryEntry>(
 
 export const undoAtomicEditPlanHistory: UndoAtomicEditPlanHistory = ({
   state,
-}) =>
-  replayRetainedHistory<ProposedAtomicEditPlanHistoryEntry>(state, "undo");
+}) => replayRetainedHistory(state, "undo");
 
 export const redoAtomicEditPlanHistory: RedoAtomicEditPlanHistory = ({
   state,
-}) =>
-  replayRetainedHistory<ProposedAtomicEditPlanHistoryEntry>(state, "redo");
+}) => replayRetainedHistory(state, "redo");
