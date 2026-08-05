@@ -79,6 +79,7 @@ export type StudioEditGestureActions = Readonly<{
     beforeEventId?: string | null,
     incompleteReason?: string | null,
   ) => StudioControllerActionResult;
+  undo: () => StudioControllerActionResult;
 }>;
 
 /** Static proof the live controller satisfies the gesture surface. */
@@ -196,11 +197,26 @@ export function duplicateSelectionAutoResolving(
   const freshMeasure = freshSection?.measures.find(
     (measure) => !priorMeasureIds.has(measure.id),
   );
-  if (freshMeasure === undefined) return attempt;
-  return actions.duplicateSelection(
+  /*
+   * Unwind law (the share-unwind precedent): once the insert succeeded, a
+   * failed landing must not leave the stray empty bar behind while the
+   * caller reports the original refusal as "nothing happened". The undo is
+   * best-effort — a refused undo cannot make matters worse than stating the
+   * refusal over the already-undoable insert.
+   */
+  if (freshMeasure === undefined) {
+    actions.undo();
+    return attempt;
+  }
+  const landed = actions.duplicateSelection(
     freshMeasure.id,
     DUPLICATE_AUTO_COMPLETION_REASON,
   );
+  if (!landed.ok) {
+    actions.undo();
+    return attempt;
+  }
+  return landed;
 }
 
 /**
@@ -256,10 +272,20 @@ export function moveSelectionToAutoResolving(
   const freshMeasure = fresh.sections
     .find((section) => section.id === sectionId)
     ?.measures.find((measure) => !known.has(measure.id));
-  if (freshMeasure === undefined) return attempt;
-  return actions.moveSelectionTo(
+  /* Unwind law: see duplicateSelectionAutoResolving — a failed landing
+     undoes the insert instead of stranding an unexplained empty bar. */
+  if (freshMeasure === undefined) {
+    actions.undo();
+    return attempt;
+  }
+  const landed = actions.moveSelectionTo(
     freshMeasure.id,
     null,
     MOVE_AUTO_COMPLETION_REASON,
   );
+  if (!landed.ok) {
+    actions.undo();
+    return attempt;
+  }
+  return landed;
 }
