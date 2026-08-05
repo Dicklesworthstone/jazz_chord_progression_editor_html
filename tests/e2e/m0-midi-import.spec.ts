@@ -89,9 +89,17 @@ test.describe("M0 MIDI import over the real artifact", () => {
       fixtureBytes(requireGolden("M0-GLD-002").bytesHex),
     );
 
-    await expect(page.getByTestId("midi-import-summary")).toBeVisible();
+    /* The automatic result card states the whole gesture up front. */
+    await expect(page.getByTestId("midi-import-auto")).toBeVisible();
+    await expect(
+      page.getByTestId("midi-import-groove-evidence"),
+    ).not.toBeEmpty();
     /* Nothing has entered the document yet: the preview is a statement. */
     await expect(cards(page)).toHaveCount(0);
+
+    /* The forensic detail lives behind Advanced, collapsed by default. */
+    await page.getByTestId("midi-import-advanced").locator("summary").click();
+    await expect(page.getByTestId("midi-import-summary")).toBeVisible();
 
     const sonorities = page.getByTestId("midi-import-sonority");
     await expect(sonorities).toHaveCount(2);
@@ -105,7 +113,7 @@ test.describe("M0 MIDI import over the real artifact", () => {
     expectCleanDiagnostics(diagnostics);
   });
 
-  test("M0-E2E-002 committing is one undoable edit and Undo restores the chart", async ({
+  test("M0-E2E-002 committing states its undo count and exactly that many presses restore the chart", async ({
     page,
   }) => {
     const diagnostics = captureDiagnostics(page);
@@ -116,17 +124,31 @@ test.describe("M0 MIDI import over the real artifact", () => {
       "two-chords.mid",
       fixtureBytes(requireGolden("M0-GLD-002").bytesHex),
     );
-    await expect(page.getByTestId("midi-import-summary")).toBeVisible();
+    await expect(page.getByTestId("midi-import-auto")).toBeVisible();
 
     await page.locator("#studio-midi-import-commit-rail").click();
     await expect(cards(page)).toHaveCount(2);
     await expect(cards(page).nth(0)).toContainText("C");
     await expect(cards(page).nth(1)).toContainText("Dm7");
 
-    /* ONE press of Undo, and the chart is exactly as it was. */
+    /*
+     * The M1 envelope states its exact undo cost in the status line
+     * ("…was added as N edits. Press Undo N times…" or "…as one edit.").
+     * The law under test: the STATED count is the TRUE count.
+     */
+    const status = await page
+      .getByTestId("midi-import-status")
+      .first()
+      .textContent();
+    const match = /as (?:one|(\d+)) edit/.exec(status ?? "");
+    expect(match).not.toBeNull();
+    const statedCount =
+      match?.[1] === undefined ? 1 : Number.parseInt(match[1], 10);
     const undo = page.locator("#studio-undo");
-    await expect(undo).toBeEnabled();
-    await undo.click();
+    for (let press = 0; press < statedCount; press += 1) {
+      await expect(undo).toBeEnabled();
+      await undo.click();
+    }
     await expect(cards(page)).toHaveCount(0);
     await expect(undo).toBeDisabled();
     expectCleanDiagnostics(diagnostics);
@@ -144,6 +166,7 @@ test.describe("M0 MIDI import over the real artifact", () => {
       fixtureBytes(requireGolden("M0-GLD-005").bytesHex),
     );
 
+    await page.getByTestId("midi-import-advanced").locator("summary").click();
     await expect(page.getByTestId("midi-import-custom")).toBeVisible();
     await expect(page.getByTestId("midi-import-custom")).toContainText("Db");
     await expect(page.getByTestId("midi-import-custom")).toContainText("Gb");
@@ -198,7 +221,17 @@ test.describe("M0 MIDI import over the real artifact", () => {
       mimeType: "audio/midi",
       buffer: fixtureBytes(requireGolden("M0-GLD-002").bytesHex),
     });
-    await expect(page.getByTestId("midi-import-summary")).toBeVisible();
+    await expect(
+      page.getByTestId("midi-import-sheet").getByTestId("midi-import-auto"),
+    ).toBeVisible();
+    await page
+      .getByTestId("midi-import-sheet")
+      .getByTestId("midi-import-advanced")
+      .locator("summary")
+      .click();
+    await expect(
+      page.getByTestId("midi-import-sheet").getByTestId("midi-import-summary"),
+    ).toBeVisible();
 
     const overflow = await page.evaluate(
       () =>

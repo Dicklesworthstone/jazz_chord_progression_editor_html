@@ -28,14 +28,15 @@ describe("X1 transport contract authority", () => {
     const report = await validateX1Contract();
     expect(report.outcome).toBe("pass");
     expect(report.findings).toEqual([]);
-    expect(report.stateMatrixCases).toBe(112);
+    /* jcpe-7ftl set-performance: 7 matrix cells, 1 trace, 1 authority. */
+    expect(report.stateMatrixCases).toBe(119);
     expect(report.timingGoldens).toBe(14);
     expect(report.schedulerCases).toBe(14);
     expect(report.stopCases).toBe(12);
     expect(report.commandCases).toBe(20);
     expect(report.notificationCases).toBe(8);
-    expect(report.traces).toBe(22);
-    expect(report.authorities).toBe(8);
+    expect(report.traces).toBe(23);
+    expect(report.authorities).toBe(9);
     expect(report.mutationControls).toBe(30);
   });
 
