@@ -167,13 +167,19 @@ export const MIDI_IMPORT_REQUEST_ID_PATTERN_SOURCE = "^[A-Za-z0-9._-]{1,128}$";
 export const MIDI_IMPORT_SIMULTANEITY_WINDOW_MICROSECONDS = 40_000;
 
 /**
- * Onset-quantization grid law, exact rational integers only. Each meter
- * segment starting at tick T0 with beatUnit 2^dd divides its beats into
- * GRID divisions: with N = (t − T0)·beatUnit and D = ppq, the grid index
- * is floor((2N + D) / (2D)) — nearest cell, half-cell ties rounding up —
- * and the quantized tick is the exact rational
- * (T0·beatUnit + index·ppq) / beatUnit with error |t·beatUnit − numerator|
- * over beatUnit ticks.
+ * Onset-quantization law, exact rational integers only. Each meter segment
+ * starting at tick T0 with beatUnit 2^dd quantizes onsets to WHOLE BEATS:
+ * with N = (t − T0)·beatUnit and D = ppq, the grid index is
+ * floor((2N + D) / (2D)) — nearest beat, half-beat ties rounding up — and
+ * the quantized tick is the exact rational (T0·beatUnit + index·ppq) /
+ * beatUnit with error |t·beatUnit − numerator| over beatUnit ticks.
+ *
+ * The byte-pinned M0 fixtures are the authority for this beat-resolution
+ * behavior (jcpe-rnm6 arbitration, resolved by M1 law §3.4 in
+ * docs/M1_MIDI_IMPORT_AUTOMATION_CONTRACT.md): the constant below is a
+ * DISPLAY grid for preview surfaces, not the implemented quantization
+ * divisor. M1 spans never use this law at all — their boundaries are exact
+ * bar/half/quarter-bar ticks.
  */
 export const MIDI_IMPORT_GRID_DIVISIONS_PER_BEAT = 4;
 
