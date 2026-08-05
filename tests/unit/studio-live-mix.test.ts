@@ -38,7 +38,10 @@ const GESTURE = Object.freeze({
 });
 
 async function settle(done: () => boolean): Promise<void> {
-  for (let round = 0; round < 60; round += 1) {
+  /* Generous under full-suite load: the play path's engine-ready poll
+   * retries at 200ms and the whole file may share a starved event loop, so
+   * the cap is condition-driven headroom, never a musical cutoff. */
+  for (let round = 0; round < 400; round += 1) {
     if (done()) return;
     await new Promise<void>((resolve) => {
       setTimeout(resolve, 50);
