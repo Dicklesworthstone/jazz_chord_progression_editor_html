@@ -222,6 +222,8 @@ export type StudioControllerAction =
   | "stop-progression"
   | "seek-progression"
   | "toggle-loop"
+  | "preview-master-volume"
+  | "toggle-mute"
   | "transport-notification"
   | "insert-recovered-chord"
   | "acknowledge-focus"
@@ -462,13 +464,29 @@ export interface StudioController {
   ) => StudioControllerActionResult;
   /**
    * Commit the document's master volume (0..1). The document is the mix
-   * authority (jcpe-vy6w) and the engine reads the mix when the audio graph
-   * initializes, so the committed value governs playback from the next
-   * engine start; there is deliberately no live mix transport command yet.
+   * authority (jcpe-vy6w); since jcpe-v2r-live-mix-btb4 the commit also
+   * rides the serialized set-mix command to an already-initialized engine,
+   * so the change is audible immediately instead of waiting for a reload.
    */
   readonly setMasterVolume: (
     volume: number,
   ) => StudioControllerActionResult;
+  /**
+   * Ride the live mix during a fader drag (jcpe-v2r-live-mix-btb4):
+   * display-only session action — no document write, no history entry —
+   * so the drag is audible while the one undoable commit waits for release.
+   */
+  readonly previewMasterVolume: (
+    volume: number,
+  ) => StudioControllerActionResult;
+  /**
+   * Session mute (jcpe-v2r-live-mix-btb4): rides the gain to zero and back
+   * without touching the document's volume. Never a document write — the
+   * stored mix survives mute exactly, and readMixView tells the truth.
+   */
+  readonly toggleMute: () => StudioControllerActionResult;
+  /** Display-only session mute state. */
+  readonly readMixView: () => Readonly<{ muted: boolean }>;
   /**
    * Set or clear the document key (jcpe-v2r-tour-i504). The key is a
    * document setting like tempo: one undoable Set-key command that travels
@@ -1992,9 +2010,14 @@ function makeStudioComposition(
         playback: Object.freeze({ ...playback, masterVolume: volume }),
       }),
     });
-    return apply("set-master-volume", (current) =>
+    const result = apply("set-master-volume", (current) =>
       runDocumentCommand({ command, dependencies, state: current }),
     );
+    /* jcpe-v2r-live-mix-btb4: a committed volume also reaches a live engine
+     * through the ride; before this, only the first initialize ever read
+     * the document mix. A muted session keeps its silence. */
+    if (result.ok && !sessionMuted) rideLiveMix(volume);
+    return result;
   };
 
   const setKey = (
@@ -4486,6 +4509,87 @@ function makeStudioComposition(
         audioPort.inspect().transport.loop !== null,
     });
 
+  /*
+   * Live mix (jcpe-v2r-live-mix-btb4). The document stays the mix authority
+   * (jcpe-vy6w): the fader's release still commits one undoable Set-volume
+   * command. What is new is the ride — the serialized set-mix command lets
+   * the drag be HEARD while playing, and lets a committed volume reach an
+   * already-initialized engine (before this, a commit after the first Play
+   * never reached the graph until reload). Mute is session state, never a
+   * document write: it rides the gain to zero and back, and the display
+   * reader says exactly that.
+   */
+  let sessionMuted = false;
+
+  const rideLiveMix = (masterVolume: number): void => {
+    const port = audioPort;
+    if (port === null || !port.isInitialized()) return;
+    const commandRequestId = nextTransportRequestId();
+    void port.setMix(
+      commandRequestId,
+      Object.freeze({
+        masterVolume,
+        reverbAmount: state.document.playback.reverbAmount,
+      }),
+    );
+  };
+
+  const audibleVolume = (): number =>
+    sessionMuted ? 0 : state.document.playback.masterVolume;
+
+  const previewMasterVolume = (
+    volume: number,
+  ): StudioControllerActionResult => {
+    if (
+      typeof volume !== "number" ||
+      !Number.isFinite(volume) ||
+      volume < 0 ||
+      volume > 1
+    ) {
+      return editRefusal(
+        "preview-master-volume",
+        "u1.master_volume_invalid",
+        "Master volume is a number between 0 and 1.",
+        ["masterVolume"],
+      );
+    }
+    /* A drag while muted stays silent; the ride resumes on unmute. */
+    if (!sessionMuted) rideLiveMix(volume);
+    return Object.freeze({
+      ok: true,
+      outcome: "ephemeral-updated",
+      snapshot,
+      effects: Object.freeze([]),
+    });
+  };
+
+  const toggleMute = (): StudioControllerActionResult => {
+    sessionMuted = !sessionMuted;
+    rideLiveMixMuteAware();
+    return Object.freeze({
+      ok: true,
+      outcome: "ephemeral-updated",
+      snapshot,
+      effects: Object.freeze([]),
+    });
+  };
+
+  const rideLiveMixMuteAware = (): void => {
+    const port = audioPort;
+    if (port === null || !port.isInitialized()) return;
+    const commandRequestId = nextTransportRequestId();
+    void port.setMix(
+      commandRequestId,
+      Object.freeze({
+        masterVolume: audibleVolume(),
+        reverbAmount: state.document.playback.reverbAmount,
+      }),
+    );
+  };
+
+  const readMixView = (): Readonly<{ muted: boolean }> =>
+    Object.freeze({ muted: sessionMuted });
+
 
 
   /**
@@ -5557,6 +5661,9 @@ function makeStudioComposition(
     seekToFraction,
     toggleLoop,
     readLoopView,
+    previewMasterVolume,
+    toggleMute,
+    readMixView,
     setRangeEdge,
     setRangeEdgeBeat,
     insertRecoveredChord,

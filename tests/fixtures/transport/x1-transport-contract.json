@@ -29,6 +29,7 @@
     "set-tempo",
     "set-loop",
     "set-instrument",
+    "set-mix",
     "set-count-in",
     "set-metronome",
     "start-preview",
@@ -66,6 +67,7 @@
     "transport.tempo_out_of_range",
     "transport.loop_invalid",
     "transport.instrument_unknown",
+    "transport.mix_invalid",
     "transport.preview_invalid",
     "transport.count_in_invalid",
     "transport.metronome_invalid",
@@ -88,6 +90,7 @@
     "transport.tempo_out_of_range",
     "transport.loop_invalid",
     "transport.instrument_unknown",
+    "transport.mix_invalid",
     "transport.preview_invalid",
     "transport.count_in_invalid",
     "transport.metronome_invalid",
@@ -159,8 +162,8 @@
   "companions": [
     {
       "path": "state-machine-cases.json",
-      "bytes": 19461,
-      "sha256": "f695a504cfd9ca85934fc56aea21c006aa441b3f700b802c48df35283327088f"
+      "bytes": 20708,
+      "sha256": "32fec0dde999839d84aab2e05b43a3520d1e0491826055a4e03b2b297818a8a1"
     },
     {
       "path": "golden-timing.json",
@@ -194,8 +197,8 @@
     },
     {
       "path": "trace-ledger.json",
-      "bytes": 14729,
-      "sha256": "50b303f295bc35166ea7d8a707e0b59c52d3fbd4e73b4dd07b8cb8430e694561"
+      "bytes": 14876,
+      "sha256": "1b6dc217fff54d526496c35a7021fcd6fbac782a8803576fda15240efe6c557f"
     },
     {
       "path": "provenance-ledger.json",

@@ -15,11 +15,12 @@ import {
   type MidiPitch,
 } from "../domain";
 import type { PlaybackEvent, PlaybackPlan } from "../playback";
-import type {
-  AudioEngineResult,
-  AudioRetirementReceipt,
-  AudioVoiceOwner,
-  AudioVoiceSpec,
+import {
+  AUDIO_MIX_POLICY,
+  type AudioEngineResult,
+  type AudioRetirementReceipt,
+  type AudioVoiceOwner,
+  type AudioVoiceSpec,
 } from "./audio-engine-contract";
 import {
   MAX_TRANSPORT_IMMEDIATE_START_MARGIN_SECONDS,
@@ -1255,6 +1256,43 @@ export function createTransportService(
               );
             }
           }
+        }
+        return receipt(commandRequestId, kind, stateBefore, true);
+      }
+      case "set-mix": {
+        if (state !== "ready" && state !== "playing" && state !== "paused") {
+          return refuse(commandRequestId, kind, "transport.state_invalid");
+        }
+        /* jcpe-v2r-live-mix-btb4: a live mix ride. Basic shape refusal here;
+         * the engine's own ramped setAudioMix re-validates and applies with
+         * cancel-and-hold-then-linear-ramp, so nothing clicks. Not a
+         * generation boundary: the schedule is untouched. */
+        const candidate: unknown = payload.mix;
+        const masterVolume =
+          typeof candidate === "object" && candidate !== null
+            ? (candidate as { masterVolume?: unknown }).masterVolume
+            : undefined;
+        const reverbAmount =
+          typeof candidate === "object" && candidate !== null
+            ? (candidate as { reverbAmount?: unknown }).reverbAmount
+            : undefined;
+        if (
+          typeof masterVolume !== "number" ||
+          !Number.isFinite(masterVolume) ||
+          masterVolume < AUDIO_MIX_POLICY.minimumMasterVolume ||
+          masterVolume > AUDIO_MIX_POLICY.maximumMasterVolume ||
+          typeof reverbAmount !== "number" ||
+          !Number.isFinite(reverbAmount) ||
+          reverbAmount < AUDIO_MIX_POLICY.minimumReverbAmount ||
+          reverbAmount > AUDIO_MIX_POLICY.maximumReverbAmount
+        ) {
+          return refuse(commandRequestId, kind, "transport.mix_invalid");
+        }
+        const applied = platform.engine.setAudioMix(
+          Object.freeze({ masterVolume, reverbAmount }),
+        );
+        if (!applied.ok) {
+          return refuse(commandRequestId, kind, "transport.engine_refusal");
         }
         return receipt(commandRequestId, kind, stateBefore, true);
       }

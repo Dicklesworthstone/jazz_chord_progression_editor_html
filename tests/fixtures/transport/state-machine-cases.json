@@ -4,8 +4,8 @@
   "authorship": "Hand-authored outcome table over the docs/X1_TRANSPORT_CONTRACT.md state machine; no production transport code exists or was consulted.",
   "priorStableSentinel": "prior-stable resolves to the stable state recorded when the interruption was observed: ready, playing, or paused.",
   "stateCount": 7,
-  "commandCount": 15,
-  "caseCount": 105,
+  "commandCount": 16,
+  "caseCount": 112,
   "cases": [
     {
       "caseId": "X1-SM-001",
@@ -782,6 +782,58 @@
       "caseId": "X1-SM-105",
       "state": "disposed",
       "command": "dispose-transport",
+      "outcome": "refusal",
+      "refusalCode": "transport.disposed"
+    },
+    {
+      "caseId": "X1-SM-106",
+      "state": "locked",
+      "command": "set-mix",
+      "outcome": "refusal",
+      "refusalCode": "transport.locked"
+    },
+    {
+      "caseId": "X1-SM-107",
+      "state": "ready",
+      "command": "set-mix",
+      "outcome": "receipt",
+      "stateAfter": "ready",
+      "generationBoundary": false
+    },
+    {
+      "caseId": "X1-SM-108",
+      "state": "playing",
+      "command": "set-mix",
+      "outcome": "receipt",
+      "stateAfter": "playing",
+      "generationBoundary": false
+    },
+    {
+      "caseId": "X1-SM-109",
+      "state": "paused",
+      "command": "set-mix",
+      "outcome": "receipt",
+      "stateAfter": "paused",
+      "generationBoundary": false
+    },
+    {
+      "caseId": "X1-SM-110",
+      "state": "interrupted",
+      "command": "set-mix",
+      "outcome": "refusal",
+      "refusalCode": "transport.state_invalid"
+    },
+    {
+      "caseId": "X1-SM-111",
+      "state": "fault",
+      "command": "set-mix",
+      "outcome": "refusal",
+      "refusalCode": "transport.fault_requires_initialize"
+    },
+    {
+      "caseId": "X1-SM-112",
+      "state": "disposed",
+      "command": "set-mix",
       "outcome": "refusal",
       "refusalCode": "transport.disposed"
     }

@@ -202,6 +202,9 @@ export type AppActions = Readonly<{
   toggleLoop: () => StudioControllerActionResult;
   /** Display-only loop state: armed intent vs transport truth. */
   readLoopView: () => Readonly<{ enabled: boolean; engaged: boolean }>;
+  previewMasterVolume: (volume: number) => StudioControllerActionResult;
+  toggleMute: () => StudioControllerActionResult;
+  readMixView: () => Readonly<{ muted: boolean }>;
   /**
    * The one library-load gesture (jcpe-my0j), owned by the application layer
    * so a test can drive the real path: replace the chart, retitle, set
@@ -1479,6 +1482,8 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
   const [completionDialogOpen, setCompletionDialogOpen] = useState(false);
   const [completionReasonDraft, setCompletionReasonDraft] = useState("");
   const [viewMode, setViewMode] = useState<StudioViewMode>("compact");
+  /* jcpe-v2r-live-mix-btb4: repaint driver for the session mute button. */
+  const [, setMuteTick] = useState(0);
   /* V2R-4: sheet/grid layout, presentation-only like viewMode. */
   const [chartLayout, setChartLayout] = useState<StudioChartLayout>("sheet");
   const [rangeModeActive, setRangeModeActive] = useState(false);
@@ -2080,6 +2085,19 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
           recordEditResult(actions.toggleLoop());
         },
         readLoopState: actions.readLoopView,
+        onVolumePreview: (volume) => {
+          /* Display-only ride; a refusal (out-of-range) is impossible from
+           * the clamped range input, so the result is deliberately unread. */
+          void actions.previewMasterVolume(volume);
+        },
+        onMuteToggle: () => {
+          /* Session-ephemeral: the controller result reuses the unchanged
+           * snapshot, so the subscription alone never repaints — the tick
+           * forces the re-render that re-reads readMixView's truth. */
+          void actions.toggleMute();
+          setMuteTick((tick) => tick + 1);
+        },
+        readMixState: actions.readMixView,
       }}
       callbacks={{
         onCopyShareLink: () => {
@@ -2980,6 +2998,9 @@ export function StudioRoot({
         seekToFraction: controller.seekToFraction,
         toggleLoop: controller.toggleLoop,
         readLoopView: controller.readLoopView,
+        previewMasterVolume: controller.previewMasterVolume,
+        toggleMute: controller.toggleMute,
+        readMixView: controller.readMixView,
         setSectionBoundary: controller.setSectionBoundary,
         setEventDurationText: controller.setEventDurationText,
         getSnapshot: controller.getSnapshot,

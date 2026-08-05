@@ -21,37 +21,72 @@ export type TransportGestureSource = "pointer" | "keyboard";
  */
 function VolumeSlider({
   committedPercent,
+  muted,
   onVolumeCommit,
+  onVolumePreview,
+  onMuteToggle,
 }: Readonly<{
   committedPercent: number;
+  muted: boolean;
   onVolumeCommit: (volume: number) => void;
+  onVolumePreview: (volume: number) => void;
+  onMuteToggle: () => void;
 }>) {
   const [draftPercent, setDraftPercent] = useState<number | null>(null);
+  const muteLabel = muted
+    ? "Unmute — the stored volume is unchanged"
+    : "Mute — playback continues silently";
   return (
-    <label
-      class="studio-transport__volume"
-      title="Master volume — applies when playback next starts"
-    >
-      <span class="studio-visually-hidden">
-        Master volume. Applies when playback next starts.
-      </span>
-      <input
-        aria-label="Master volume"
-        id="studio-transport-volume"
-        max={100}
-        min={0}
-        onInput={(event) => {
-          setDraftPercent(Number(event.currentTarget.value));
-        }}
-        onChange={(event) => {
-          setDraftPercent(null);
-          onVolumeCommit(Number(event.currentTarget.value) / 100);
-        }}
-        step={5}
-        type="range"
-        value={draftPercent ?? committedPercent}
-      />
-    </label>
+    <div class="studio-transport__volume-group">
+      <button
+        aria-label={muteLabel}
+        aria-pressed={muted}
+        class="studio-transport__mute"
+        data-muted={muted ? "true" : "false"}
+        id="studio-transport-mute"
+        onClick={onMuteToggle}
+        title={muteLabel}
+        type="button"
+      >
+        <span aria-hidden="true" class="studio-transport__mute-glyph">
+          <span class="studio-transport__mute-body" />
+          <span class="studio-transport__mute-cone" />
+          {muted ? (
+            <span class="studio-transport__mute-slash" />
+          ) : (
+            <span class="studio-transport__mute-wave" />
+          )}
+        </span>
+      </button>
+      <label
+        class="studio-transport__volume"
+        title="Master volume — audible immediately, one undoable step per drag"
+      >
+        <span class="studio-visually-hidden">
+          Master volume. The drag is audible live; releasing commits one
+          undoable step.
+        </span>
+        <input
+          aria-label="Master volume"
+          id="studio-transport-volume"
+          max={100}
+          min={0}
+          onInput={(event) => {
+            const percent = Number(event.currentTarget.value);
+            setDraftPercent(percent);
+            /* jcpe-v2r-live-mix-btb4: the ride makes the drag audible. */
+            onVolumePreview(percent / 100);
+          }}
+          onChange={(event) => {
+            setDraftPercent(null);
+            onVolumeCommit(Number(event.currentTarget.value) / 100);
+          }}
+          step={5}
+          type="range"
+          value={draftPercent ?? committedPercent}
+        />
+      </label>
+    </div>
   );
 }
 
@@ -73,6 +108,9 @@ export type TransportBarProps = Readonly<{
     | "onSeekFraction"
     | "onLoopToggle"
     | "readLoopState"
+    | "onVolumePreview"
+    | "onMuteToggle"
+    | "readMixState"
   >;
 }>;
 
@@ -464,7 +502,10 @@ export function TransportBar({
 
           <VolumeSlider
             committedPercent={view.masterVolumePercent}
+            muted={callbacks.readMixState().muted}
             onVolumeCommit={callbacks.onVolumeCommit}
+            onVolumePreview={callbacks.onVolumePreview}
+            onMuteToggle={callbacks.onMuteToggle}
           />
         </div>
       </div>

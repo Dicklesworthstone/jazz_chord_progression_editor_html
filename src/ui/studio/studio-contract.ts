@@ -665,6 +665,15 @@ export type StudioTransportCallbacks = Readonly<{
   onLoopToggle: () => void;
   /** Display-only loop state: armed intent vs the transport's own truth. */
   readLoopState: () => Readonly<{ enabled: boolean; engaged: boolean }>;
+  /**
+   * Live fader ride (jcpe-v2r-live-mix-btb4): audible during the drag, no
+   * document write — the one undoable commit still lands on release.
+   */
+  onVolumePreview: (volume: number) => void;
+  /** Session mute: gain to zero and back; the stored volume is untouched. */
+  onMuteToggle: () => void;
+  /** Display-only session mute state. */
+  readMixState: () => Readonly<{ muted: boolean }>;
 }>;
 
 /**

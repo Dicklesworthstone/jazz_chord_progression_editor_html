@@ -4463,6 +4463,88 @@ button.studio-paper-head__key:focus-visible {
   align-items: center;
 }
 
+/* jcpe-v2r-live-mix-btb4: mute + fader travel together. */
+.studio-transport__volume-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.studio-transport__mute {
+  display: grid;
+  place-items: center;
+  inline-size: var(--control-min-block);
+  block-size: var(--control-min-block);
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink-3);
+  cursor: pointer;
+}
+
+.studio-transport__mute:hover {
+  border-color: var(--rule-2);
+  color: var(--ink);
+}
+
+.studio-transport__mute:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.studio-transport__mute[data-muted="true"] {
+  color: var(--red);
+}
+
+.studio-transport__mute-glyph {
+  position: relative;
+  display: block;
+  inline-size: 1rem;
+  block-size: 0.875rem;
+}
+
+.studio-transport__mute-body {
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block-start: 0.25rem;
+  inline-size: 0.25rem;
+  block-size: 0.375rem;
+  background: currentColor;
+}
+
+.studio-transport__mute-cone {
+  position: absolute;
+  inset-inline-start: 0.1875rem;
+  inset-block-start: 0.0625rem;
+  inline-size: 0.375rem;
+  block-size: 0.75rem;
+  background: currentColor;
+  clip-path: polygon(0 26%, 100% 0, 100% 100%, 0 74%);
+}
+
+.studio-transport__mute-wave {
+  position: absolute;
+  inset-inline-start: 0.625rem;
+  inset-block-start: 0.1875rem;
+  inline-size: 0.25rem;
+  block-size: 0.5rem;
+  border-inline-end: 0.09375rem solid currentColor;
+  border-block-start: 0.09375rem solid currentColor;
+  border-block-end: 0.09375rem solid currentColor;
+  border-start-end-radius: 62rem;
+  border-end-end-radius: 62rem;
+}
+
+.studio-transport__mute-slash {
+  position: absolute;
+  inset-inline-start: 0.0625rem;
+  inset-block-start: 0.375rem;
+  inline-size: 0.9375rem;
+  block-size: 0.09375rem;
+  background: currentColor;
+  transform: rotate(-34deg);
+}
+
 .studio-transport__volume input[type="range"] {
   inline-size: 4.625rem;
   accent-color: var(--ink);

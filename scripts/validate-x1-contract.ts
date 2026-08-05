@@ -71,6 +71,8 @@ const COMMAND_KINDS = Object.freeze([
   "set-tempo",
   "set-loop",
   "set-instrument",
+  /* jcpe-v2r-live-mix-btb4: the live mix ride joined the vocabulary. */
+  "set-mix",
   "set-count-in",
   "set-metronome",
   "start-preview",
@@ -110,6 +112,8 @@ const REFUSAL_CODES = Object.freeze([
   "transport.tempo_out_of_range",
   "transport.loop_invalid",
   "transport.instrument_unknown",
+  /* jcpe-v2r-live-mix-btb4 */
+  "transport.mix_invalid",
   "transport.preview_invalid",
   "transport.count_in_invalid",
   "transport.metronome_invalid",
@@ -133,6 +137,8 @@ const REFUSAL_PRECEDENCE = Object.freeze([
   "transport.tempo_out_of_range",
   "transport.loop_invalid",
   "transport.instrument_unknown",
+  /* jcpe-v2r-live-mix-btb4 */
+  "transport.mix_invalid",
   "transport.preview_invalid",
   "transport.count_in_invalid",
   "transport.metronome_invalid",
@@ -339,7 +345,9 @@ function expectedCell(command: string, state: string): Cell | null {
     case "set-loop":
       if (state === "interrupted") return refusal("transport.state_invalid");
       return receipt(state, state !== "ready");
+    /* jcpe-v2r-live-mix-btb4: mix rides like the toggles — no boundary. */
     case "set-instrument":
+    case "set-mix":
     case "set-count-in":
     case "set-metronome":
     case "start-preview":

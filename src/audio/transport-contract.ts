@@ -102,6 +102,7 @@ export const TRANSPORT_COMMAND_KINDS = Object.freeze([
   "set-tempo",
   "set-loop",
   "set-instrument",
+  "set-mix",
   "set-count-in",
   "set-metronome",
   "start-preview",
@@ -136,6 +137,7 @@ export const TRANSPORT_REFUSAL_CODES = Object.freeze([
   "transport.tempo_out_of_range",
   "transport.loop_invalid",
   "transport.instrument_unknown",
+  "transport.mix_invalid",
   "transport.preview_invalid",
   "transport.count_in_invalid",
   "transport.metronome_invalid",
@@ -166,6 +168,7 @@ export const TRANSPORT_REFUSAL_PRECEDENCE = Object.freeze([
   "transport.tempo_out_of_range",
   "transport.loop_invalid",
   "transport.instrument_unknown",
+  "transport.mix_invalid",
   "transport.preview_invalid",
   "transport.count_in_invalid",
   "transport.metronome_invalid",
@@ -344,6 +347,13 @@ export type TransportCommandPayload =
       loop: BeatRange | null;
     }>
   | Readonly<{ kind: "set-instrument"; instrumentId: InstrumentId }>
+  /**
+   * Live mix change (jcpe-v2r-live-mix-btb4): applies through the engine's
+   * ramped setAudioMix without touching the schedule, so it is NOT a
+   * generation boundary — like the count-in/metronome toggles, it adjusts
+   * how the current run sounds, never when anything sounds.
+   */
+  | Readonly<{ kind: "set-mix"; mix: AudioMix }>
   | Readonly<{ kind: "set-count-in"; enabled: boolean }>
   | Readonly<{ kind: "set-metronome"; enabled: boolean }>
   | Readonly<{

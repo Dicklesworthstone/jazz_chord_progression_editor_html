@@ -107,6 +107,16 @@ export type StudioAudioPort = Readonly<{
     binding: TransportPlanBinding,
     loop: BeatRange | null,
   ) => Promise<TransportCommandOutcome>;
+  /**
+   * Ride the live mix (jcpe-v2r-live-mix-btb4): the engine ramps its master
+   * gain without touching the schedule, so a fader drag is audible during
+   * playback. Not a generation boundary; refused whole when the transport
+   * cannot accept commands.
+   */
+  setMix: (
+    commandRequestId: number,
+    mix: AudioMix,
+  ) => Promise<TransportCommandOutcome>;
   /** Bind the document's instrument to the next run's scheduled attacks. */
   setInstrument: (
     commandRequestId: number,
@@ -398,6 +408,11 @@ export function createStudioAudio(
       submit(
         commandRequestId,
         Object.freeze({ kind: "set-loop" as const, binding, loop }),
+      ),
+    setMix: async (commandRequestId, mix) =>
+      submit(
+        commandRequestId,
+        Object.freeze({ kind: "set-mix" as const, mix }),
       ),
     startPreview: async (
       commandRequestId,
