@@ -25,3 +25,12 @@ Thumbs.db
 # never committed. Used locally to measure aggregate style statistics.
 *.mid
 *.midi
+
+# === multi-repo ephemeral patterns 2026-08-05 ===
+# Beads machine-local markers (canonical tracker is issues.jsonl)
+.beads/.local_version
+.beads/.migration-hint-ts
+# NTM swarm runtime state
+.ntm/
+# RCH virtual FS workload workspaces
+.rch-vfs-*/
