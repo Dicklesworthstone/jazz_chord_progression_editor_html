@@ -411,6 +411,8 @@ export function transportFailureDetail(code: string): string {
     case "transport.instrument_unknown":
     case "audio.instrument_id_invalid":
       return "That instrument is not available. Pick another instrument.";
+    case "transport.mix_invalid":
+      return "That volume was not a playable level. Move the fader and try again.";
     case "transport.preview_invalid":
       return "That preview could not be played. Click a chord and try again.";
     case "transport.count_in_invalid":
