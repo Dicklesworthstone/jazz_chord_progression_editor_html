@@ -344,9 +344,9 @@ function expectedCell(command: string, state: string): Cell | null {
     case "stop":
       if (state === "ready") return receipt("ready", false);
       return receipt("ready", true);
+    /* jcpe-7ftl: set-performance follows the set-tempo epoch law. */
     case "set-tempo":
     case "set-loop":
-    /* jcpe-7ftl: the live groove switch follows the set-tempo epoch law. */
     case "set-performance":
       if (state === "interrupted") return refusal("transport.state_invalid");
       return receipt(state, state !== "ready");

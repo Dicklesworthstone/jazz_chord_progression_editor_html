@@ -2265,7 +2265,7 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
           setTempoFeedback(
             result.ok
               ? runWasLive
-                ? "Groove applies on the next Play."
+                ? "The groove changes right away, from the next chord."
                 : null
               : `${result.refusal.message} ${result.refusal.recoveryAction}`,
           );

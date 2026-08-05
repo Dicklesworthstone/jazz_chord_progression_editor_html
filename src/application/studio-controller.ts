@@ -19,6 +19,7 @@ import {
   type ChordEvent,
   type ChordEventId,
   type ChordSpec,
+  type InstrumentId,
   type KeyContext,
   type MeasureCompletion,
   type MidiPitch,
@@ -1928,9 +1929,12 @@ function makeStudioComposition(
       kind: "set-document-settings",
       patch: Object.freeze({ playback: playbackPatch }),
     });
-    return apply("set-performance-style", (current) =>
+    const result = apply("set-performance-style", (current) =>
       runDocumentCommand({ command, dependencies, state: current }),
     );
+    /* jcpe-7ftl: a committed groove reaches a live run immediately. */
+    if (result.ok) rideLivePerformance(styleId as PerformanceStyleId);
+    return result;
   };
 
   const setTempo = (bpm: number): StudioControllerActionResult => {
@@ -2042,9 +2046,12 @@ function makeStudioComposition(
         playback: Object.freeze({ ...playback, instrumentId: made.value }),
       }),
     });
-    return apply("set-instrument", (current) =>
+    const result = apply("set-instrument", (current) =>
       runDocumentCommand({ command, dependencies, state: current }),
     );
+    /* jcpe-pd7g: a committed instrument reaches a live run immediately. */
+    if (result.ok) rideLiveInstrument(made.value);
+    return result;
   };
 
   const setMasterVolume = (volume: number): StudioControllerActionResult => {
@@ -4600,6 +4607,97 @@ function makeStudioComposition(
         reverbAmount: state.document.playback.reverbAmount,
       }),
     );
+  };
+
+  /**
+   * Ride a committed groove change into a live run (jcpe-7ftl): recompile,
+   * re-perform under the new style, and swap the running plan through the
+   * serialized set-performance command. The swap lands at the next
+   * unstarted event; sounding voices finish on the old groove. A compile
+   * refusal or transport refusal leaves the run exactly as it was — the
+   * document command has already committed, so the next Play hears the new
+   * groove regardless. Re-stamping activeRun keeps later seek/loop rebinds
+   * from refusing as stale.
+   */
+  const rideLivePerformance = (styleId: PerformanceStyleId): void => {
+    const port = audioPort;
+    const run = activeRun;
+    const status = state.transport.status;
+    if (
+      port === null ||
+      !port.isInitialized() ||
+      run === null ||
+      (status !== "playing" && status !== "paused") ||
+      run.documentId !== state.document.id
+    ) {
+      return;
+    }
+    const compiled = compileStudioPlaybackPlan(
+      state.document,
+      loopEnabled ? wholeChartLoop({ totalBeats: run.totalBeats }) : null,
+    );
+    if (!compiled.ok) return;
+    const performed = performStudioPlaybackPlan(compiled.plan, styleId);
+    void port.setPerformance(
+      nextTransportRequestId(),
+      Object.freeze({
+        plan: performed,
+        documentId: run.documentId,
+        planRevision: state.revision,
+      }),
+    );
+    activeRun = Object.freeze({ ...run, planRevision: state.revision });
+  };
+
+  /**
+   * Ride a committed instrument change into a live run (jcpe-pd7g). The
+   * transport's set-instrument already retires the unstarted lookahead and
+   * reschedules it on the new recipe at the original exact times; sounding
+   * voices keep their recipe through natural release. Prepare-first
+   * ordering warms rendered recipes before the swap so cold buffers never
+   * render inside the scheduler's horizon.
+   */
+  const rideLiveInstrument = (instrumentId: InstrumentId): void => {
+    const port = audioPort;
+    const run = activeRun;
+    const status = state.transport.status;
+    if (
+      port === null ||
+      !port.isInitialized() ||
+      run === null ||
+      (status !== "playing" && status !== "paused")
+    ) {
+      return;
+    }
+    const compiled = compileStudioPlaybackPlan(
+      state.document,
+      loopEnabled ? wholeChartLoop({ totalBeats: run.totalBeats }) : null,
+    );
+    const warmNotes: Readonly<{ midiPitch: MidiPitch; velocity: number }>[] =
+      [];
+    if (compiled.ok) {
+      const performed = performStudioPlaybackPlan(
+        compiled.plan,
+        activePerformanceStyleId(),
+      );
+      const seen = new Set<string>();
+      for (const event of performed.events) {
+        for (const midiPitch of event.midiPitches) {
+          const key = `${String(midiPitch)}:${String(event.velocity)}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          warmNotes.push(
+            Object.freeze({ midiPitch, velocity: event.velocity }),
+          );
+          if (warmNotes.length >= PREPARE_LEADING_NOTE_COUNT) break;
+        }
+        if (warmNotes.length >= PREPARE_LEADING_NOTE_COUNT) break;
+      }
+    }
+    void (async () => {
+      await port.prepareInstrument(instrumentId, Object.freeze(warmNotes));
+      await port.setInstrument(nextTransportRequestId(), instrumentId);
+    })();
   };
 
   const audibleVolume = (): number =>
