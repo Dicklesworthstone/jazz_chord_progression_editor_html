@@ -199,9 +199,9 @@ function payloadFor(command: string): TransportCommandPayload {
 }
 
 describe("TR-X1-STATE-MACHINE production transport state matrix", () => {
-  test("X1-SM-001..X1-SM-105 every cell matches the reviewed matrix", async () => {
+  test("X1-SM-001..X1-SM-112 every cell matches the reviewed matrix", async () => {
     const cells = await loadMatrix();
-    expect(cells).toHaveLength(105);
+    expect(cells).toHaveLength(112);
     const mismatches: string[] = [];
     for (const cell of cells) {
       const harness = createTransportHarness();

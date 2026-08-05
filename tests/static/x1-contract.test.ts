@@ -28,7 +28,7 @@ describe("X1 transport contract authority", () => {
     const report = await validateX1Contract();
     expect(report.outcome).toBe("pass");
     expect(report.findings).toEqual([]);
-    expect(report.stateMatrixCases).toBe(105);
+    expect(report.stateMatrixCases).toBe(112);
     expect(report.timingGoldens).toBe(14);
     expect(report.schedulerCases).toBe(14);
     expect(report.stopCases).toBe(12);

@@ -23,7 +23,7 @@ const KNOWN_CODES: readonly string[] = Object.freeze([
 ]);
 
 test("every known failure code has a curated cause with a next action", () => {
-  expect(KNOWN_CODES.length).toBe(20 + 28 + 1);
+  expect(KNOWN_CODES.length).toBe(21 + 28 + 1);
   for (const code of KNOWN_CODES) {
     const detail = transportFailureDetail(code);
     expect(detail.length, code).toBeGreaterThan(20);
