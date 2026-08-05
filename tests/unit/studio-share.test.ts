@@ -222,6 +222,28 @@ describe("applying a shared chart", () => {
     expect(controller.getSnapshot().revision).toBe(before);
   });
 
+  test("a full apply is exactly undoable back to pristine", () => {
+    /*
+     * Pins the unwind law from the outside: whatever command shape the
+     * pristine fill uses (one command or fill+append), undoing until the
+     * history empties must land back on the untouched blank studio.
+     */
+    const target = freshController();
+    const applied = applySharedStartup(target, REFERENCE_PAYLOAD);
+    expect(applied.applied).toBe(true);
+    let undos = 0;
+    while (target.getSnapshot().history.canUndo && undos < 8) {
+      expect(target.undo().ok).toBe(true);
+      undos += 1;
+    }
+    const snapshot = target.getSnapshot();
+    expect(snapshot.chordCount).toBe(0);
+    expect(snapshot.title).not.toBe(REFERENCE_PAYLOAD.title);
+    expect(snapshot.history.canUndo).toBe(false);
+    // Title + fill + append + tempo + groove for the two-bar reference.
+    expect(undos).toBeGreaterThanOrEqual(3);
+  });
+
   test("an unparseable shared chart unwinds the applied title", () => {
     const controller = freshController();
     const applied = applySharedStartup(controller, {

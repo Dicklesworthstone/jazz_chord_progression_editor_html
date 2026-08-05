@@ -300,9 +300,18 @@ export function applySharedStartup(
       reason: "The studio already has content; the shared chart was not applied.",
     });
   }
-  let undoDepth = 0;
+  /*
+   * The pristine gate above proved the history empty, so unwinding is
+   * assumption-free: undo until nothing undoable remains. No step count is
+   * inferred from the payload (the fill path's one-vs-two-command shape is
+   * that path's own business). The cap only guards a locked history from
+   * looping; it is far above any depth startup can create.
+   */
   const unwind = (): void => {
-    for (let step = 0; step < undoDepth; step += 1) void controller.undo();
+    for (let guard = 0; guard < 8; guard += 1) {
+      if (!controller.getSnapshot().history.canUndo) return;
+      if (!controller.undo().ok) return;
+    }
   };
   /*
    * A same-value command refuses rather than recording a no-op, so a share
@@ -318,7 +327,6 @@ export function applySharedStartup(
         reason: `${titled.refusal.message} ${titled.refusal.recoveryAction}`,
       });
     }
-    undoDepth += 1;
   }
   const sectionId = controller.getSnapshot().sections[0]?.id ?? "";
   const preview = controller.previewChartText(payload.chartText);
@@ -350,15 +358,6 @@ export function applySharedStartup(
       reason: `${inserted.refusal.message} ${inserted.refusal.recoveryAction}`,
     });
   }
-  /*
-   * The pristine fill applies multi-bar drafts as two commands (fill, then
-   * append); a single-bar draft is one. Read the real depth from history
-   * rather than assuming, so a refusal below unwinds exactly what landed.
-   */
-  undoDepth = payload.chartText.split("|").filter((bar) => bar.trim().length > 0)
-    .length > 1
-    ? undoDepth + 2
-    : undoDepth + 1;
   if (payload.tempoBpm !== snapshot.tempoBpm) {
     const tempoSet = controller.setTempo(payload.tempoBpm);
     if (!tempoSet.ok) {
@@ -377,9 +376,6 @@ export function applySharedStartup(
    * the applied chart standing — the default style plays — and cannot
    * happen for a payload the decoder accepted.
    */
-  const styled = controller.setPerformanceStyle(payload.grooveStyleId);
-  if (!styled.ok) {
-    return Object.freeze({ applied: true });
-  }
+  void controller.setPerformanceStyle(payload.grooveStyleId);
   return Object.freeze({ applied: true });
 }
