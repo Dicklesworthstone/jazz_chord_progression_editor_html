@@ -418,8 +418,17 @@ export function createTransportService(
     return result;
   }
 
+  /**
+   * Retires one progression generation's voices. `atTimeSeconds` defaults to
+   * now (Stop, pause, interruption — the sound must end immediately); the
+   * loop wrap passes the loop-end instant instead, because the wrap is
+   * detected up to a whole lookahead window before the boundary sounds and
+   * retiring at detection time would cut the loop's tail notes short on
+   * every pass (X1-SCHED-004b).
+   */
   function retireProgressionGeneration(
     retiredGeneration: number,
+    atTimeSeconds: number = platform.currentTimeSeconds(),
   ): AudioEngineResult<AudioRetirementReceipt> {
     const result = platform.engine.retireAudioVoices({
       selector: {
@@ -428,7 +437,7 @@ export function createTransportService(
         generation: retiredGeneration,
       },
       reason: "generation-retire",
-      atTimeSeconds: platform.currentTimeSeconds(),
+      atTimeSeconds,
     });
     work.generationsRetired += 1;
     return result;
@@ -677,7 +686,9 @@ export function createTransportService(
         const outgoing = generation;
         generation += 1;
         work.loopWraps += 1;
-        retireProgressionGeneration(outgoing);
+        /* The clock may have overshot the boundary between ticks; the engine
+         * refuses a retirement in the past, so clamp to now in that case. */
+        retireProgressionGeneration(outgoing, Math.max(now, loopEndSeconds));
         anchorTimeSeconds = loopEndSeconds;
         anchorBeat = loop.start;
         cursor = firstEventIndexAtOrAfter(plan, loop.start);

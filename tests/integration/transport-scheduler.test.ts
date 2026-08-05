@@ -156,6 +156,58 @@ describe("TR-X1-LOOKAHEAD-SCHEDULER production scheduler", () => {
     expect(wrapRetirement?.selectorKind).toBe("generation");
   });
 
+  test("X1-SCHED-004b the wrap retirement lands at the loop end, never inside the sounding tail", async () => {
+    /*
+     * The wrap is DETECTED up to the whole lookahead window before the loop
+     * boundary sounds. Retiring the outgoing generation at detection time
+     * would cut the loop's final notes short on every pass; the musical
+     * boundary for that retirement is the loop end itself.
+     */
+    const harness = createTransportHarness();
+    const plan = customPlan({
+      documentId: "doc-x1-sched-004b",
+      tempoBpm: 120,
+      durations: [
+        { numerator: 1, denominator: 1 },
+        { numerator: 1, denominator: 1 },
+      ],
+      loop: {
+        start: { numerator: 0, denominator: 1 },
+        end: { numerator: 2, denominator: 1 },
+      },
+    });
+    requireReceipt(await harness.submit(initializePayload(plan)));
+    requireReceipt(
+      await harness.submit({
+        kind: "play",
+        binding: planBinding(plan, 1),
+        startBeat: zeroBeat,
+        countIn: false,
+      }),
+    );
+    const loopEndSeconds = 1; // 2 beats at 120 BPM from a zero anchor.
+    const wrapsBefore = harness.service.inspectTransport().work.loopWraps;
+    let clock = 0;
+    let guard = 0;
+    while (
+      harness.service.inspectTransport().work.loopWraps === wrapsBefore
+    ) {
+      clock += 0.025;
+      harness.setClock(clock);
+      harness.timer.fire();
+      guard += 1;
+      if (guard > 200) throw new Error("loop wrap never happened");
+    }
+    /* The wrap must have been detected BEFORE the boundary sounded, or this
+     * case would not exercise the early-detection window at all. */
+    expect(clock).toBeLessThan(loopEndSeconds);
+    const wrapRetirement = harness.retirements.at(-1);
+    expect(wrapRetirement?.reason).toBe("generation-retire");
+    expect(wrapRetirement?.atTimeSeconds).toBeGreaterThanOrEqual(
+      loopEndSeconds,
+    );
+  });
+
   test("X1-SCHED-005 no attack ever leads the clock by more than the frozen lookahead ceiling", async () => {
     const harness = createTransportHarness();
     const plan = customPlan({
