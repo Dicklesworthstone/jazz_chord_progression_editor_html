@@ -395,4 +395,57 @@ describe("jcpe-v2r-measure-ux-wk3w a dropped chord lands", () => {
     );
     expect(studio.getSnapshot().revision).toBe(before.revision);
   });
+
+  /*
+   * Unwind law (fresh-eyes review after jcpe-v2r-measure-ux-wk3w): once the
+   * resolution's insert has landed, a failed landing step must undo the
+   * insert rather than strand an unexplained empty bar behind a refusal
+   * that claims nothing happened. The landing step cannot be made to fail
+   * through the real controller (the fresh bar is empty and the selection
+   * proved to fit), so the seam is pinned through the structural gesture
+   * surface with a wrapper that forces exactly that failure.
+   */
+  test("a failed landing after the insert unwinds the fresh bar", () => {
+    const studio = controller();
+    seedOneBar(studio, "Dm9:2 G13:2");
+    seedBars(studio, "| Cmaj7:4 |");
+    const before = studio.getSnapshot();
+    const target = before.sections[0]?.measures[1];
+    const moved = before.sections[0]?.measures[0]?.events[0]?.id;
+    if (target === undefined || moved === undefined) {
+      throw new Error("GESTURE_TEST_NO_TARGET");
+    }
+    expectOk(studio.selectEvent(moved));
+    const measuresBefore = studio.getSnapshot().sections[0]?.measures.length;
+    const knownIds = new Set(
+      studio.getSnapshot().sections[0]?.measures.map((m) => m.id) ?? [],
+    );
+
+    const wrapped = Object.freeze({
+      getSnapshot: studio.getSnapshot,
+      deleteSelection: studio.deleteSelection,
+      duplicateSelection: studio.duplicateSelection,
+      insertMeasure: studio.insertMeasure,
+      undo: studio.undo,
+      moveSelectionTo: (
+        measureId: string,
+        beforeEventId?: string | null,
+        incompleteReason?: string | null,
+      ): StudioControllerActionResult =>
+        knownIds.has(measureId)
+          ? studio.moveSelectionTo(measureId, beforeEventId, incompleteReason)
+          : studio.moveSelectionTo(
+              "no-such-bar",
+              beforeEventId,
+              incompleteReason,
+            ),
+    });
+
+    const result = moveSelectionToAutoResolving(wrapped, target.id);
+    expect(result.ok).toBe(false);
+    // The stray bar the insert created is gone again: same count, same ids.
+    const after = studio.getSnapshot().sections[0]?.measures;
+    expect(after?.length).toBe(measuresBefore);
+    expect(after?.every((m) => knownIds.has(m.id))).toBe(true);
+  });
 });
