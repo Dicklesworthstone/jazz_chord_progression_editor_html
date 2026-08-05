@@ -118,15 +118,30 @@ test.describe("empty-measure removal", () => {
     await typeAndInsert(page, "| Cmaj7 |");
     await expect(cards(page)).toHaveCount(1);
 
-    // The sole bar is populated: no delete tool anywhere.
-    await expect(page.locator("[id^='studio-delete-measure-']")).toHaveCount(0);
+    // wk3w directive 1 (V2R-14, re-pinned by jcpe-7djg): every bar wears
+    // its trash, and a bar that cannot be deleted keeps the control
+    // VISIBLE but DISABLED, stating why. The sole bar is exactly that.
+    const soleTrash = page.locator("[id^='studio-delete-measure-']");
+    await expect(soleTrash).toHaveCount(1);
+    await expect(soleTrash).toBeDisabled();
+    await expect(soleTrash).toHaveAttribute(
+      "aria-label",
+      "The chart keeps its last measure",
+    );
 
-    // Insert an empty bar ahead of it; that bar can now remove itself.
+    // Insert an empty bar ahead of it. Under wk3w BOTH bars now wear an
+    // enabled trash — any bar may go while a sibling remains, arm-then-
+    // confirm plus Undo carry the safety — and only a sole survivor locks.
     await page.locator("[id^='studio-insert-before-']").first().click();
-    const remover = page.locator("[id^='studio-delete-measure-']");
-    await expect(remover).toHaveCount(1);
-    await expect(remover).toHaveText(/Remove empty measure 1/);
+    const removers = page.locator(
+      "[id^='studio-delete-measure-']:not([disabled])",
+    );
+    await expect(removers).toHaveCount(2);
+    const remover = removers.first();
+    await expect(remover).toHaveAttribute("aria-label", /Delete measure 1/);
 
+    // wk3w arm-then-delete: the first press arms, the second deletes.
+    await remover.click();
     await remover.click();
     await expect(page.locator("[data-measure-id]")).toHaveCount(1);
     await expect(cards(page)).toHaveCount(1);

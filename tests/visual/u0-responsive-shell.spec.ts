@@ -212,8 +212,10 @@ async function proveShellCase(
     }
 
     // Exactly the wired controls (jcpe-v2r-gates-xaib): V2R-8 wired the
-    // previous/next chord steppers, so they are real capability now; loop
-    // remains unwired and must stay absent rather than advertised dead.
+    // previous/next chord steppers, and V2R-15 (jcpe-v2r-loop-seek-ukk6)
+    // wired the whole-chart loop through the real X1 set-loop command, so
+    // the loop control is real capability with a complete name now
+    // (jcpe-7djg: this assertion previously froze the pre-V2R-15 surface).
     expect(observed.transportControlNames).toEqual(expect.arrayContaining([
       "Previous chord",
       "Play",
@@ -223,7 +225,7 @@ async function proveShellCase(
     ]));
     expect(
       observed.transportControlNames.filter((name) => /loop/iu.test(name)),
-    ).toEqual([]);
+    ).toEqual(["Loop the whole chart"]);
     // The V2R-8 footer replaced the dt fact list with labeled now-blocks.
     expect(observed.transportFactKeys).toEqual([]);
     expect(diagnostics.consoleErrors).toEqual([]);
