@@ -627,6 +627,12 @@ export type StudioShellCallbacks = Readonly<{
     boundary: "reset" | "continue",
   ) => void;
   onDropChordOnMeasure: (measureId: string) => void;
+  /**
+   * The keyboard move (U1-OP-012 Alt+M): unlike the drop lane, it never
+   * auto-declares a shortened source bar — the completion-reason dialog
+   * asks, because a keyboard move is a deliberate edit, not a landing.
+   */
+  onMoveSelectionToMeasure: (measureId: string) => void;
   /** Presentation-only: opens or closes one card's More menu. */
   onCardMenuOpenChange: (chordId: string | null) => void;
   onCardMenuAction: (chordId: string, action: StudioCardMenuAction) => void;

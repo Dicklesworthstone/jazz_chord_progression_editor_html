@@ -64,6 +64,7 @@ export type ChartWorkspaceProps = Readonly<{
     boundary: "reset" | "continue",
   ) => void;
   onDropChordOnMeasure: (measureId: string) => void;
+  onMoveSelectionToMeasure: (measureId: string) => void;
   onCardMenuOpenChange: (chordId: string | null) => void;
   onCardMenuAction: (chordId: string, action: StudioCardMenuAction) => void;
   onSplitDuration: (chordId: string, firstBeats: string) => void;
@@ -427,6 +428,7 @@ export function ChartWorkspace({
   onAnnotateSection,
   onSetSectionBoundary,
   onDropChordOnMeasure,
+  onMoveSelectionToMeasure,
   onCardMenuOpenChange,
   onCardMenuAction,
   onSplitDuration,
@@ -1426,12 +1428,15 @@ export function ChartWorkspace({
         case "M": {
           // U1-OP-012 move-to-boundary: the destination is the boundary the
           // insertion point already names, so the key never invents one.
+          // The keyboard lane never auto-declares a shortened source bar
+          // (jcpe-7djg): the completion-reason dialog asks, unlike the drop
+          // lane whose directive is that a dropped chord simply lands.
           event.preventDefault();
           const destination = view.sections
             .flatMap((entry) => entry.measures)
             .find((measure) => measure.isInsertionTarget);
           if (destination !== undefined) {
-            onDropChordOnMeasure(destination.id);
+            onMoveSelectionToMeasure(destination.id);
           }
           return;
         }

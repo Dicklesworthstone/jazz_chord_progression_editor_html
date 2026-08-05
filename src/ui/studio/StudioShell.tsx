@@ -251,6 +251,16 @@ export function StudioShell({
       );
       callbacks.onDropChordOnMeasure(measureId);
     },
+    onMoveSelectionToMeasure: (measureId: string) => {
+      const bar = measureBars.get(measureId);
+      const phrase = selectionPhrase();
+      stage(
+        phrase === null || bar === undefined
+          ? null
+          : `Moved ${phrase} to bar ${String(bar)}`,
+      );
+      callbacks.onMoveSelectionToMeasure(measureId);
+    },
     onDuplicateSelection: () => {
       const phrase = selectionPhrase();
       stage(phrase === null ? null : `Duplicated ${phrase}`);
@@ -521,6 +531,7 @@ export function StudioShell({
               onSetSectionBoundary={callbacks.onSetSectionBoundary}
               onDeleteSelection={shellCallbacks.onDeleteSelection}
               onDropChordOnMeasure={shellCallbacks.onDropChordOnMeasure}
+              onMoveSelectionToMeasure={shellCallbacks.onMoveSelectionToMeasure}
               onDuplicateSelection={shellCallbacks.onDuplicateSelection}
               onInsertMeasure={callbacks.onInsertMeasure}
               onInsertSection={callbacks.onInsertSection}

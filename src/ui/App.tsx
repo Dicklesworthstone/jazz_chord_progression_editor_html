@@ -2693,6 +2693,18 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
             measureId,
           });
         },
+        onMoveSelectionToMeasure: (measureId) => {
+          /*
+           * U1-OP-012 keyboard move (jcpe-7djg): a deliberate Alt+M never
+           * auto-declares the bar it shortens. The plain move refuses with
+           * u1.completion_reason_required, the dialog asks, and the resume
+           * path re-issues the move with the person's own reason.
+           */
+          recordEditResult(actions.moveSelectionTo(measureId, null, null), {
+            kind: "move-to",
+            measureId,
+          });
+        },
         onCardMenuOpenChange: (chordId) => {
           // Opening a menu selects its card, so every item afterwards acts on
           // a known selection and is itself exactly one command. The selection

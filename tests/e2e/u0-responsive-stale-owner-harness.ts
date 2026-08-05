@@ -272,6 +272,7 @@ function ResponsiveStaleOwnerHarness() {
     onAnnotateSection: () => undefined,
     onSetSectionBoundary: () => undefined,
     onDropChordOnMeasure: () => undefined,
+    onMoveSelectionToMeasure: () => undefined,
     onCardMenuOpenChange: () => undefined,
     onCardMenuAction: () => undefined,
     onSplitDuration: () => undefined,
