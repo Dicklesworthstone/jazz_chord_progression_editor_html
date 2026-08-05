@@ -3266,13 +3266,76 @@
   min-inline-size: 0;
 }
 
+/*
+ * The scrub surface (jcpe-v2r-loop-seek-ukk6): visually the same 2px line,
+ * but a real button with a taller invisible hit area so a fingertip can
+ * land on it. It only dispatches while a run is active; aria-disabled
+ * carries the honest state and the cursor follows it.
+ */
 .studio-transport__sweep {
   position: absolute;
-  inset-block-start: -1px;
+  inset-block-start: -6px;
+  inset-inline: 0;
+  block-size: 12px;
+  padding: 5px 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.studio-transport__sweep[aria-disabled="true"] {
+  cursor: default;
+}
+
+.studio-transport__sweep:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.studio-transport__sweep > .studio-transport__sweep-fill {
+  position: absolute;
+  inset-block-start: 5px;
+  inset-inline-start: 0;
+  block-size: 2px;
+  z-index: 1;
+  background-color: var(--red);
+}
+
+.studio-transport__sweep::before {
+  content: "";
+  position: absolute;
+  inset-block-start: 5px;
   inset-inline: 0;
   block-size: 2px;
   background: color-mix(in srgb, var(--text-primary) 8%, transparent);
-  pointer-events: none;
+}
+
+.studio-transport__loop {
+  display: grid;
+  place-items: center;
+  inline-size: var(--control-min-block);
+  block-size: var(--control-min-block);
+  margin-inline-start: var(--space-1);
+  border: var(--border-width) solid var(--rule-2);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink-3);
+  font-size: var(--text-md);
+  cursor: pointer;
+}
+
+.studio-transport__loop[aria-pressed="true"] {
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
+.studio-transport__loop[data-engaged="true"] {
+  background: var(--blue-wash);
+}
+
+.studio-transport__loop:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
 }
 
 .studio-transport__sweep-fill {

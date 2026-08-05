@@ -4,6 +4,7 @@ import {
   DEFAULT_GROOVE_STYLE_ID,
   makeBeatDuration,
   makeBeatPosition,
+  makeBeatRange,
   makeInstrumentId,
   makeKeyMode,
   makeMidiPitch,
@@ -12,6 +13,7 @@ import {
   subtractBeatValues,
   type BeatDuration,
   type BeatPosition,
+  type BeatRange,
   type BeatValue,
   type ChordEvent,
   type ChordEventId,
@@ -218,6 +220,8 @@ export type StudioControllerAction =
   | "preview-chord"
   | "pause-progression"
   | "stop-progression"
+  | "seek-progression"
+  | "toggle-loop"
   | "transport-notification"
   | "insert-recovered-chord"
   | "acknowledge-focus"
@@ -641,6 +645,34 @@ export interface StudioController {
   ) => StudioControllerActionResult;
   readonly pauseProgression: () => StudioControllerActionResult;
   readonly stopProgression: () => StudioControllerActionResult;
+  /**
+   * Move an active run's playhead to a fraction of the chart
+   * (jcpe-v2r-loop-seek-ukk6). Only playing/paused runs seek — the X1
+   * transport owns that law and this surface mirrors it honestly instead of
+   * pretending a stopped chart has a playhead to move. No optimistic
+   * expectation is installed: the genuine transport notification is the only
+   * thing that moves the visible playhead, so a refused seek moves nothing.
+   */
+  readonly seekToFraction: (
+    fraction: number,
+  ) => StudioControllerActionResult;
+  /**
+   * Toggle whole-chart looping (jcpe-v2r-loop-seek-ukk6). The flag is
+   * session presentation intent: the next Play compiles its plan WITH the
+   * loop (X1 law puts the loop inside the plan), and toggling during an
+   * active run re-binds the run through the serialized set-loop command.
+   * The loop plays the literal written pad — the band-sketch performance
+   * layer refuses looped plans by design, and that refusal falls back to
+   * the literal plan rather than faking a sketch against a rebased grid.
+   */
+  readonly toggleLoop: () => StudioControllerActionResult;
+  /**
+   * Display-only loop state: `enabled` is the session intent the toggle
+   * flips; `engaged` is the transport's own truth (a loop actually installed
+   * on the active run). The pair lets the UI show armed-but-not-yet-playing
+   * honestly instead of pretending the transport is looping.
+   */
+  readonly readLoopView: () => Readonly<{ enabled: boolean; engaged: boolean }>;
   /**
    * Sound one chord immediately (jcpe-gnyy). The first preview on a fresh
    * page performs the gesture-gated audio initialization exactly like Play;
@@ -4300,6 +4332,162 @@ function makeStudioComposition(
     );
   };
 
+  /*
+   * Loop + seek (jcpe-v2r-loop-seek-ukk6). `loopEnabled` is session
+   * presentation intent; `activeRun` retains the identity and exact length
+   * of the plan the transport is currently bound to, captured at Play, so a
+   * mid-run seek or loop re-bind can only ever address the run the user is
+   * hearing — a document edit changes the revision and the transport's own
+   * mismatch law refuses the stale re-bind.
+   */
+  let loopEnabled = false;
+  let activeRun: Readonly<{
+    documentId: AppState["document"]["id"];
+    planRevision: number;
+    totalBeats: BeatPosition;
+  }> | null = null;
+
+  const wholeChartLoop = (
+    plan: Readonly<{ totalBeats: BeatPosition }>,
+  ): BeatRange | null => {
+    const zero = makeBeatPosition({ numerator: 0, denominator: 1 });
+    if (!zero.ok) return null;
+    const range = makeBeatRange(zero.value, plan.totalBeats);
+    return range.ok ? range.value : null;
+  };
+
+  const seekToFraction = (
+    fraction: number,
+  ): StudioControllerActionResult => {
+    if (audioPort === null) {
+      return editRefusal(
+        "seek-progression",
+        "u1.playback_unavailable",
+        "This build has no audio output wired.",
+      );
+    }
+    const run = activeRun;
+    const status = state.transport.status;
+    if (run === null || (status !== "playing" && status !== "paused")) {
+      return editRefusal(
+        "seek-progression",
+        "u1.playback_refused",
+        "Seeking needs active playback. Press Play first.",
+      );
+    }
+    if (!Number.isFinite(fraction)) {
+      return editRefusal(
+        "seek-progression",
+        "u1.playback_refused",
+        "The seek position was not a readable number.",
+      );
+    }
+    const clamped = Math.min(1, Math.max(0, fraction));
+    /*
+     * Exact target: the fraction lands on the 1/960 grid (960 divides the
+     * PPQ, so the position is always representable) without ever exceeding
+     * the plan's exact total.
+     */
+    const totalNumeric =
+      run.totalBeats.numerator / run.totalBeats.denominator;
+    const target = makeBeatPosition({
+      numerator: Math.round(clamped * totalNumeric * 960),
+      denominator: 960,
+    });
+    if (!target.ok) {
+      return editRefusal(
+        "seek-progression",
+        "u1.playback_refused",
+        "The seek position could not be expressed exactly.",
+      );
+    }
+    const beat =
+      compareBeatValues(target.value, run.totalBeats) > 0
+        ? run.totalBeats
+        : target.value;
+    const port = audioPort;
+    void port.seek(nextTransportRequestId(), beat);
+    /* Session-scope success: no A0 state changes until the transport's own
+       notification moves the playhead through the acceptance law. */
+    return apply("seek-progression", (current) =>
+      Object.freeze({
+        ok: true as const,
+        state: current,
+        outcome: "ephemeral-updated" as const,
+        effects: Object.freeze([]),
+        counters: createWorkCounters(),
+      }),
+    );
+  };
+
+  const toggleLoop = (): StudioControllerActionResult => {
+    if (audioPort === null) {
+      return editRefusal(
+        "toggle-loop",
+        "u1.playback_unavailable",
+        "This build has no audio output wired.",
+      );
+    }
+    loopEnabled = !loopEnabled;
+    const run = activeRun;
+    const status = state.transport.status;
+    const port = audioPort;
+    if (
+      run !== null &&
+      (status === "playing" || status === "paused") &&
+      run.documentId === state.document.id &&
+      run.planRevision === state.revision
+    ) {
+      /*
+       * Re-bind the active run through the serialized command. The loop
+       * lives inside the compiled plan, so clearing compiles without one
+       * and installing compiles with the whole chart; a refusal (stale
+       * revision, engine trouble) leaves the run exactly as it was and the
+       * display read keeps telling the transport's truth.
+       */
+      const compiled = compileStudioPlaybackPlan(
+        state.document,
+        loopEnabled ? wholeChartLoop({ totalBeats: run.totalBeats }) : null,
+      );
+      if (compiled.ok) {
+        const performed = performStudioPlaybackPlan(
+          compiled.plan,
+          activePerformanceStyleId(),
+        );
+        void port.setLoop(
+          nextTransportRequestId(),
+          Object.freeze({
+            plan: performed,
+            documentId: run.documentId,
+            planRevision: run.planRevision,
+          }),
+          compiled.plan.loop,
+        );
+      }
+    }
+    /* Session-scope success: the flag is presentation intent, and the
+       transport's truth surfaces through readLoopView, never invented. */
+    return apply("toggle-loop", (current) =>
+      Object.freeze({
+        ok: true as const,
+        state: current,
+        outcome: "ephemeral-updated" as const,
+        effects: Object.freeze([]),
+        counters: createWorkCounters(),
+      }),
+    );
+  };
+
+  const readLoopView = (): Readonly<{ enabled: boolean; engaged: boolean }> =>
+    Object.freeze({
+      enabled: loopEnabled,
+      engaged:
+        audioPort !== null &&
+        audioPort.inspect().transport.loop !== null,
+    });
+
+
+
   /**
    * Play the chart from its start.
    *
@@ -4319,13 +4507,29 @@ function makeStudioComposition(
         "This build has no audio output wired.",
       );
     }
-    const compiled = compileStudioPlaybackPlan(state.document);
+    /*
+     * jcpe-v2r-loop-seek-ukk6: with looping armed the plan compiles WITH the
+     * whole-chart loop (X1 keeps the loop inside the plan). A looped plan
+     * plays the literal written pad: the band-sketch layer refuses looped
+     * plans by design and that refusal falls back to the literal plan.
+     * The loop range needs the chart's exact length, which only a compiled
+     * plan knows, so an armed loop compiles twice — bounded, and only on
+     * the Play press itself.
+     */
+    let compiled = compileStudioPlaybackPlan(state.document);
     if (!compiled.ok) {
       return editRefusal(
         "play-progression",
         "u1.playback_refused",
         compiled.refusal.message,
       );
+    }
+    if (loopEnabled) {
+      const loopRange = wholeChartLoop(compiled.plan);
+      if (loopRange !== null) {
+        const looped = compileStudioPlaybackPlan(state.document, loopRange);
+        if (looped.ok) compiled = looped;
+      }
     }
     if (!studioPlanIsPlayable(compiled.plan)) {
       return editRefusal(
@@ -4359,6 +4563,12 @@ function makeStudioComposition(
       plan: performance,
       documentId: state.document.id,
       planRevision: state.revision,
+    });
+    /* jcpe-v2r-loop-seek-ukk6: seek/loop may only address this exact run. */
+    activeRun = Object.freeze({
+      documentId: binding.documentId,
+      planRevision: binding.planRevision,
+      totalBeats: compiled.plan.totalBeats,
     });
     const port = audioPort;
     /*
@@ -5344,6 +5554,9 @@ function makeStudioComposition(
     splitEventDuration,
     splitSection,
     stopProgression,
+    seekToFraction,
+    toggleLoop,
+    readLoopView,
     setRangeEdge,
     setRangeEdgeBeat,
     insertRecoveredChord,

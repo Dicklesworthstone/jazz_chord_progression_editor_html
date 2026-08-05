@@ -655,6 +655,16 @@ export type StudioTransportCallbacks = Readonly<{
   onVolumeCommit: (volume: number) => void;
   /** Display-only spectral frame for the footer meter; null renders quiet. */
   readMeterFrame: () => TransportMeterFrame | null;
+  /**
+   * Seek the active run to a fraction of the chart (jcpe-v2r-loop-seek-ukk6).
+   * Only meaningful while playing/paused; the scrub line disables itself
+   * honestly outside that window.
+   */
+  onSeekFraction: (fraction: number) => void;
+  /** Toggle whole-chart looping; armed intent applies at the next Play. */
+  onLoopToggle: () => void;
+  /** Display-only loop state: armed intent vs the transport's own truth. */
+  readLoopState: () => Readonly<{ enabled: boolean; engaged: boolean }>;
 }>;
 
 /**

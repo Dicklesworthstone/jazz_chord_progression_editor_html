@@ -286,6 +286,16 @@ function bootHarness(): StudioAudibleEvidenceApi {
         ),
       stop: async (commandRequestId) =>
         journalCommand("stop", await realPort.stop(commandRequestId)),
+      seek: async (commandRequestId, targetBeat) =>
+        journalCommand(
+          "seek",
+          await realPort.seek(commandRequestId, targetBeat),
+        ),
+      setLoop: async (commandRequestId, binding, loop) =>
+        journalCommand(
+          "set-loop",
+          await realPort.setLoop(commandRequestId, binding, loop),
+        ),
       setInstrument: async (commandRequestId, instrumentId) =>
         journalCommand(
           "set-instrument",

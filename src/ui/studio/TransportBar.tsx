@@ -70,6 +70,9 @@ export type TransportBarProps = Readonly<{
     | "onInstrumentChange"
     | "onVolumeCommit"
     | "readMeterFrame"
+    | "onSeekFraction"
+    | "onLoopToggle"
+    | "readLoopState"
   >;
 }>;
 
@@ -187,13 +190,38 @@ export function TransportBar({
       </h2>
       {/*
         The sweep mirrors the exact playhead the status text already
-        announces, so it is presentation only and aria-hidden; screen
-        readers keep the Position fact as their source of truth. Click-to-
-        seek is deferred with the loop toggle: the audio port exposes no
-        seek surface yet (see the bead note), and a scrubber that silently
+        announces; the Position fact stays the screen reader's source of
+        truth. Since jcpe-v2r-loop-seek-ukk6 the line is also the scrub
+        surface: a click while playing or paused seeks the active run
+        through the real X1 seek command, and outside that window the
+        surface says so and dispatches nothing — a scrubber that silently
         restarted playback would be a lie about what it did.
       */}
-      <div class="studio-transport__sweep" aria-hidden="true">
+      <button
+        aria-label={
+          running || view.audioState === "paused"
+            ? "Seek within the chart"
+            : "Seek (available while playing)"
+        }
+        aria-disabled={!(running || view.audioState === "paused")}
+        class="studio-transport__sweep"
+        data-testid="transport-scrub"
+        id="studio-transport-scrub"
+        onClick={(event) => {
+          if (!(running || view.audioState === "paused")) return;
+          const bounds = event.currentTarget.getBoundingClientRect();
+          if (bounds.width <= 0) return;
+          callbacks.onSeekFraction(
+            (event.clientX - bounds.left) / bounds.width,
+          );
+        }}
+        title={
+          running || view.audioState === "paused"
+            ? "Click to seek"
+            : "Seeks while playing"
+        }
+        type="button"
+      >
         <span
           class="studio-transport__sweep-fill"
           style={
@@ -203,7 +231,7 @@ export function TransportBar({
           }
           data-active={String(view.progressPercent !== null)}
         />
-      </div>
+      </button>
 
       <div class="studio-transport__row">
         <div
@@ -294,6 +322,38 @@ export function TransportBar({
             type="button"
             variant="ghost"
           />
+          {(() => {
+            /*
+             * jcpe-v2r-loop-seek-ukk6: the toggle shows the pair of truths —
+             * armed intent (this press) vs the transport's own engaged loop.
+             * Armed-but-not-engaged renders as an outline so the UI never
+             * claims the transport is looping before it is.
+             */
+            const loop = callbacks.readLoopState();
+            return (
+              <button
+                aria-label="Loop the whole chart"
+                aria-pressed={loop.enabled}
+                class="studio-transport__loop"
+                data-engaged={String(loop.engaged)}
+                data-testid="transport-loop"
+                id="studio-transport-loop"
+                onClick={() => {
+                  callbacks.onLoopToggle();
+                }}
+                title={
+                  loop.engaged
+                    ? "Looping the whole chart"
+                    : loop.enabled
+                      ? "Loop armed — applies when playback starts"
+                      : "Loop the whole chart"
+                }
+                type="button"
+              >
+                ↻
+              </button>
+            );
+          })()}
         </div>
 
         {/*

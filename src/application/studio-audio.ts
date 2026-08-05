@@ -33,6 +33,7 @@ import {
 } from "../audio";
 import type {
   BeatPosition,
+  BeatRange,
   DocumentId,
   InstrumentId,
   MidiPitch,
@@ -82,6 +83,30 @@ export type StudioAudioPort = Readonly<{
     gesture: StudioAudioGesture | null,
   ) => Promise<TransportCommandOutcome>;
   stop: (commandRequestId: number) => Promise<TransportCommandOutcome>;
+  /**
+   * Move the playhead of an active run (jcpe-v2r-loop-seek-ukk6). The
+   * transport itself refuses outside playing/paused, past the plan's end,
+   * or across a stale generation; no optimistic expectation is installed —
+   * the genuine notification (playing) or receipt-published pause is the
+   * only thing that moves the visible playhead, so a refused seek moves
+   * nothing and lies about nothing.
+   */
+  seek: (
+    commandRequestId: number,
+    targetBeat: BeatPosition,
+  ) => Promise<TransportCommandOutcome>;
+  /**
+   * Install or clear the loop region of the active run. X1 law: the loop
+   * lives in the compiled plan, so the binding handed here must be a plan
+   * compiled WITH the declared loop (or without one when clearing), carrying
+   * the active run's document identity; anything else is refused as a
+   * mismatch rather than partially applied.
+   */
+  setLoop: (
+    commandRequestId: number,
+    binding: TransportPlanBinding,
+    loop: BeatRange | null,
+  ) => Promise<TransportCommandOutcome>;
   /** Bind the document's instrument to the next run's scheduled attacks. */
   setInstrument: (
     commandRequestId: number,
@@ -364,6 +389,16 @@ export function createStudioAudio(
       ),
     stop: async (commandRequestId) =>
       submit(commandRequestId, Object.freeze({ kind: "stop" as const })),
+    seek: async (commandRequestId, targetBeat) =>
+      submit(
+        commandRequestId,
+        Object.freeze({ kind: "seek" as const, targetBeat }),
+      ),
+    setLoop: async (commandRequestId, binding, loop) =>
+      submit(
+        commandRequestId,
+        Object.freeze({ kind: "set-loop" as const, binding, loop }),
+      ),
     startPreview: async (
       commandRequestId,
       previewId,

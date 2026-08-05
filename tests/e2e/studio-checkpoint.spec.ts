@@ -121,20 +121,29 @@ test.describe("interactive studio checkpoint", () => {
      * play from the first paint: Play is enabled while Pause and Stop stay
      * disabled at idle. The controls that exist are exactly the wired ones.
      * V2R-8 (jcpe-v2r-transport-k88n) wired Previous/Next chord as selection
-     * steppers, so they now render enabled on a seeded chart; loop remains
-     * unwired and must not render at all. The current seed is the Deacon
+     * steppers, so they now render enabled on a seeded chart. V2R-15
+     * (jcpe-v2r-loop-seek-ukk6) wired the whole-chart loop toggle onto the
+     * X1 set-loop command, so the toggle now renders unpressed at idle —
+     * armed intent, honestly not engaged. The current seed is the Deacon
      * Blues intro (jcpe-x0z9, 202ce66): ten chord events.
      */
-    await expect(page.getByRole("button", { name: "Play" })).toBeEnabled();
+    /* jcpe-v2r-loop-seek-ukk6: scope to the transport bar — concurrent
+     * surfaces (measure tools) may carry Play-prefixed names of their own. */
+    const transportBar = page.locator("#transport-bar");
+    await expect(
+      transportBar.getByRole("button", { name: "Play", exact: true }),
+    ).toBeEnabled();
     for (const name of ["Pause", "Stop"]) {
-      await expect(page.getByRole("button", { name })).toBeDisabled();
+      await expect(
+        transportBar.getByRole("button", { name, exact: true }),
+      ).toBeDisabled();
     }
     for (const name of ["Previous chord", "Next chord"]) {
-      await expect(page.getByRole("button", { name })).toBeEnabled();
+      await expect(transportBar.getByRole("button", { name })).toBeEnabled();
     }
     await expect(
-      page.getByRole("button", { name: "Loop progression" }),
-    ).toHaveCount(0);
+      page.getByRole("button", { name: "Loop the whole chart" }),
+    ).toHaveAttribute("aria-pressed", "false");
     await expect(page.locator(".studio-chord-card")).toHaveCount(10);
     /*
      * The pristine empty-measure statement remains reachable and honest:
@@ -152,7 +161,9 @@ test.describe("interactive studio checkpoint", () => {
     ).toBeVisible();
     await expect(page.locator(".studio-chord-card")).toHaveCount(0);
     for (const name of ["Play", "Pause", "Stop"]) {
-      await expect(page.getByRole("button", { name })).toBeDisabled();
+      await expect(
+        transportBar.getByRole("button", { name, exact: true }),
+      ).toBeDisabled();
     }
 
     expectCleanDiagnostics(diagnostics);
