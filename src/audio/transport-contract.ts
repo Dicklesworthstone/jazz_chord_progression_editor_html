@@ -101,6 +101,7 @@ export const TRANSPORT_COMMAND_KINDS = Object.freeze([
   "stop",
   "set-tempo",
   "set-loop",
+  "set-performance",
   "set-instrument",
   "set-mix",
   "set-count-in",
@@ -281,6 +282,7 @@ export const TRANSPORT_GENERATION_BOUNDARIES = Object.freeze([
   "stop",
   "set-tempo",
   "set-loop",
+  "set-performance",
   "loop-wrap",
   "replace-plan",
   "interruption",
@@ -346,6 +348,14 @@ export type TransportCommandPayload =
       binding: TransportPlanBinding;
       loop: BeatRange | null;
     }>
+  /**
+   * Live groove switch (jcpe-7ftl): rebind the run to a newly performed
+   * plan mid-flight. Same guard family as set-tempo — same documentId,
+   * strictly greater planRevision (a groove change is a document edit) —
+   * and the same epoch law: the swap takes effect at the next unstarted
+   * event; voices already sounding finish on the old groove.
+   */
+  | Readonly<{ kind: "set-performance"; binding: TransportPlanBinding }>
   | Readonly<{ kind: "set-instrument"; instrumentId: InstrumentId }>
   /**
    * Live mix change (jcpe-v2r-live-mix-btb4): applies through the engine's

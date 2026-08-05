@@ -1227,6 +1227,67 @@ export function createTransportService(
         }
         return receipt(commandRequestId, kind, stateBefore, true);
       }
+      case "set-performance": {
+        /*
+         * Live groove switch (jcpe-7ftl): the set-tempo epoch law with a
+         * newly performed plan. Guards mirror set-tempo exactly — a groove
+         * change is a document edit, so the binding must carry the same
+         * document and a strictly greater plan revision. The swap takes
+         * effect at the next unstarted event: the unattacked horizon is
+         * retired, the epoch re-anchors at the current exact beat, and
+         * voices already sounding finish on the old groove. Events of the
+         * new plan whose start lies before the swap beat are skipped by
+         * firstEventIndexAtOrAfter — stated in the contract, not hidden.
+         */
+        if (state !== "ready" && state !== "playing" && state !== "paused") {
+          return refuse(commandRequestId, kind, "transport.state_invalid");
+        }
+        if (
+          !bindingShapeValid(payload.binding) ||
+          !planStructurallyValid(payload.binding.plan)
+        ) {
+          return refuse(commandRequestId, kind, "transport.plan_invalid");
+        }
+        if (!planTempoInRange(payload.binding.plan)) {
+          return refuse(
+            commandRequestId,
+            kind,
+            "transport.tempo_out_of_range",
+          );
+        }
+        if (
+          binding === null ||
+          payload.binding.documentId !== binding.documentId ||
+          payload.binding.planRevision <= binding.planRevision ||
+          payload.binding.documentId !==
+            payload.binding.plan.sourceDocumentId
+        ) {
+          return refuse(commandRequestId, kind, "transport.plan_mismatch");
+        }
+        if (state === "playing") {
+          const beatNow = playheadNow();
+          retireUnattackedHorizon();
+          generation += 1;
+          binding = payload.binding;
+          viewPlanRevision = payload.binding.planRevision;
+          if (
+            !beginPlayingEpoch(payload.binding.plan, beatNow, commandRequestId)
+          ) {
+            return refuse(commandRequestId, kind, "transport.engine_refusal");
+          }
+        } else {
+          if (state === "paused") generation += 1;
+          binding = payload.binding;
+          viewPlanRevision = payload.binding.planRevision;
+          publish(
+            state === "paused" ? "paused" : "ready",
+            commandRequestId,
+            pausedBeat,
+            null,
+          );
+        }
+        return receipt(commandRequestId, kind, stateBefore, true);
+      }
       case "set-instrument": {
         if (state !== "ready" && state !== "playing" && state !== "paused") {
           return refuse(commandRequestId, kind, "transport.state_invalid");

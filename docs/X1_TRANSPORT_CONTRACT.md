@@ -68,7 +68,7 @@ increments `staleCallbacksIgnored` and does nothing else.
 
 A `TransportCommand` carries a positive safe-integer `commandRequestId`
 strictly greater than every previously submitted ID, plus one payload from
-the closed fifteen-kind union. Unknown kinds, malformed payloads, and
+the closed seventeen-kind union. Unknown kinds, malformed payloads, and
 non-monotonic IDs refuse before any state read. Validation follows
 `TRANSPORT_REFUSAL_PRECEDENCE` exactly; a refusal is total — it changes no
 state, retires no voice, publishes no notification, and appends only one
@@ -103,9 +103,9 @@ so a scheduled attack can never be refused for lateness by construction.
 
 ## 4. Plan binding and replacement
 
-`play`, `set-tempo`, `set-loop`, and `replace-plan` carry a
-`TransportPlanBinding{plan, documentId, planRevision}`. The binding is
-validated structurally (schema, compiler version, event ordering, exact
+`play`, `set-tempo`, `set-loop`, `set-performance`, and `replace-plan`
+carry a `TransportPlanBinding{plan, documentId, planRevision}`. The binding
+is validated structurally (schema, compiler version, event ordering, exact
 total beats) before any state change:
 
 - `play` requires `startBeat` in `[0, plan.totalBeats]` and binds the run's
@@ -120,6 +120,18 @@ total beats) before any state change:
   embedded `loop` equals the command's declared range. A null loop clears
   looping. The loop range must satisfy the P0 loop policy; a reversed,
   empty, or out-of-range loop refuses as `transport.loop_invalid`.
+- `set-performance` (additive amendment, 2026-08-05, jcpe-7ftl: the live
+  groove switch) requires the same `documentId` and a strictly greater
+  `planRevision` — a groove change is a document edit — and follows the
+  `set-tempo` epoch law exactly: while playing it retires only the
+  not-yet-attacked lookahead horizon, re-anchors a new epoch at the current
+  exact beat, and lets already sounding voices finish on the old groove;
+  the swap therefore takes effect at the next unstarted event. Events of
+  the newly performed plan whose `startBeat` lies before the swap beat are
+  skipped by the at-or-after cursor law — stated, never hidden. Paused and
+  ready runs store the binding for the next epoch. The plan's `tempoBpm`
+  is revalidated against the domain range; a mismatched binding refuses as
+  `transport.plan_mismatch` without touching the running epoch.
 - `replace-plan` (import, New, or a non-tempo document edit while playing,
   paused, or previewing) first retires the progression generation and every
   preview through X0, awaits the no-future-attack receipts, then publishes
@@ -287,7 +299,7 @@ laws:
 | Resource | Hard maximum |
 |---|---:|
 | queued commands | 32 |
-| command kinds | 15 |
+| command kinds | 17 |
 | tick interval | 10–100 ms |
 | lookahead horizon | 0.05–0.2 s |
 | attack lead over X0 window margin | 0.05 s |

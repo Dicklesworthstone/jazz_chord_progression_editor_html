@@ -1,465 +1,481 @@
 {
-  "schema": "changes.fixtures.x1-trace-ledger.v1",
-  "fixtureVersion": 1,
-  "authorship": "Hand-authored requirement traces over docs/X1_TRANSPORT_CONTRACT.md; the emitter only expands sequential case-ID ranges. No production transport code exists or was consulted.",
-  "reciprocityLaw": "Every trace names at least one existing case; every case and mutation control belongs to at least one trace; every evidence owner is a named future test file or the human listening directory.",
-  "traces": [
-    {
-      "id": "TR-X1-STATE-MACHINE",
-      "requirement": "Authoritative locked/ready/playing/paused/interrupted/fault/disposed machine with serialized, non-overlapping transitions and exhaustive cell outcomes.",
-      "parentSource": "X1 required implementation and REBUILD_PLAN 13.7",
-      "caseIds": [
-        "X1-SM-001",
-        "X1-SM-002",
-        "X1-SM-003",
-        "X1-SM-004",
-        "X1-SM-005",
-        "X1-SM-006",
-        "X1-SM-007",
-        "X1-SM-008",
-        "X1-SM-009",
-        "X1-SM-010",
-        "X1-SM-011",
-        "X1-SM-012",
-        "X1-SM-013",
-        "X1-SM-014",
-        "X1-SM-015",
-        "X1-SM-016",
-        "X1-SM-017",
-        "X1-SM-018",
-        "X1-SM-019",
-        "X1-SM-020",
-        "X1-SM-021",
-        "X1-SM-022",
-        "X1-SM-023",
-        "X1-SM-024",
-        "X1-SM-025",
-        "X1-SM-026",
-        "X1-SM-027",
-        "X1-SM-028",
-        "X1-SM-029",
-        "X1-SM-030",
-        "X1-SM-031",
-        "X1-SM-032",
-        "X1-SM-033",
-        "X1-SM-034",
-        "X1-SM-035",
-        "X1-SM-036",
-        "X1-SM-037",
-        "X1-SM-038",
-        "X1-SM-039",
-        "X1-SM-040",
-        "X1-SM-041",
-        "X1-SM-042",
-        "X1-SM-043",
-        "X1-SM-044",
-        "X1-SM-045",
-        "X1-SM-046",
-        "X1-SM-047",
-        "X1-SM-048",
-        "X1-SM-049",
-        "X1-SM-050",
-        "X1-SM-051",
-        "X1-SM-052",
-        "X1-SM-053",
-        "X1-SM-054",
-        "X1-SM-055",
-        "X1-SM-056",
-        "X1-SM-057",
-        "X1-SM-058",
-        "X1-SM-059",
-        "X1-SM-060",
-        "X1-SM-061",
-        "X1-SM-062",
-        "X1-SM-063",
-        "X1-SM-064",
-        "X1-SM-065",
-        "X1-SM-066",
-        "X1-SM-067",
-        "X1-SM-068",
-        "X1-SM-069",
-        "X1-SM-070",
-        "X1-SM-071",
-        "X1-SM-072",
-        "X1-SM-073",
-        "X1-SM-074",
-        "X1-SM-075",
-        "X1-SM-076",
-        "X1-SM-077",
-        "X1-SM-078",
-        "X1-SM-079",
-        "X1-SM-080",
-        "X1-SM-081",
-        "X1-SM-082",
-        "X1-SM-083",
-        "X1-SM-084",
-        "X1-SM-085",
-        "X1-SM-086",
-        "X1-SM-087",
-        "X1-SM-088",
-        "X1-SM-089",
-        "X1-SM-090",
-        "X1-SM-091",
-        "X1-SM-092",
-        "X1-SM-093",
-        "X1-SM-094",
-        "X1-SM-095",
-        "X1-SM-096",
-        "X1-SM-097",
-        "X1-SM-098",
-        "X1-SM-099",
-        "X1-SM-100",
-        "X1-SM-101",
-        "X1-SM-102",
-        "X1-SM-103",
-        "X1-SM-104",
-        "X1-SM-105",
-        "X1-SM-106",
-        "X1-SM-107",
-        "X1-SM-108",
-        "X1-SM-109",
-        "X1-SM-110",
-        "X1-SM-111",
-        "X1-SM-112"
-      ],
-      "controlIds": [
-        "X1-MUT-009",
-        "X1-MUT-010",
-        "X1-MUT-011"
-      ],
-      "evidenceOwner": "tests/integration/transport-state-machine.test.ts"
-    },
-    {
-      "id": "TR-X1-SERIALIZED-COMMANDS",
-      "requirement": "Strict FIFO command admission with monotonic request IDs, a 32-command queue bound, and total refusal precedence.",
-      "parentSource": "X1 required implementation and REBUILD_PLAN 13.7",
-      "caseIds": [
-        "X1-CMD-001",
-        "X1-CMD-002",
-        "X1-CMD-003",
-        "X1-CMD-020"
-      ],
-      "controlIds": [
-        "X1-MUT-002",
-        "X1-MUT-023",
-        "X1-MUT-030"
-      ],
-      "evidenceOwner": "tests/integration/audio-command-races.test.ts"
-    },
-    {
-      "id": "TR-X1-LOOKAHEAD-SCHEDULER",
-      "requirement": "Generation-checked 25 ms/100 ms lookahead scheduling against the audio clock with one schedule per event, bounded lead, and display-only animation frames.",
-      "parentSource": "X1 required implementation and REBUILD_PLAN 13.8",
-      "caseIds": [
-        "X1-SCHED-001",
-        "X1-SCHED-002",
-        "X1-SCHED-003",
-        "X1-SCHED-005",
-        "X1-SCHED-010",
-        "X1-SCHED-013",
-        "X1-SCHED-014"
-      ],
-      "controlIds": [
-        "X1-MUT-003",
-        "X1-MUT-016"
-      ],
-      "evidenceOwner": "tests/integration/transport-scheduler.test.ts"
-    },
-    {
-      "id": "TR-X1-EXACT-TIME",
-      "requirement": "Exact rational beat-to-second mapping, P0 gate law passthrough, the frozen audio-envelope floor, and tempo-change epoch beat preservation.",
-      "parentSource": "X1 required implementation and REBUILD_PLAN 13.8 and 13.10",
-      "caseIds": [
-        "X1-TIME-001",
-        "X1-TIME-002",
-        "X1-TIME-003",
-        "X1-TIME-004",
-        "X1-TIME-005",
-        "X1-TIME-006",
-        "X1-TIME-007",
-        "X1-TIME-008",
-        "X1-TIME-009",
-        "X1-TIME-010",
-        "X1-TIME-011",
-        "X1-TIME-012",
-        "X1-TIME-013",
-        "X1-TIME-014",
-        "X1-SCHED-012"
-      ],
-      "controlIds": [
-        "X1-MUT-012",
-        "X1-MUT-013",
-        "X1-MUT-014",
-        "X1-MUT-015"
-      ],
-      "evidenceOwner": "tests/integration/transport-time.test.ts"
-    },
-    {
-      "id": "TR-X1-STOP-GUARANTEE",
-      "requirement": "Stop awaits zero possible future attack in frozen eight-step order, returns to the run start beat, and survives one hundred rapid cycles on one graph.",
-      "parentSource": "X1 required implementation and REBUILD_PLAN 13.9",
-      "caseIds": [
-        "X1-STOP-001",
-        "X1-STOP-002",
-        "X1-STOP-003"
-      ],
-      "controlIds": [
-        "X1-MUT-019",
-        "X1-MUT-020"
-      ],
-      "evidenceOwner": "tests/integration/transport-stop-stress.test.ts"
-    },
-    {
-      "id": "TR-X1-PLAY-WHOLE-CHART",
-      "requirement": "Playing a chart schedules every plan event exactly once; silence is legal only for an exactly empty timeline.",
-      "parentSource": "X1 success criteria and REBUILD_PLAN 13.8",
-      "caseIds": [
-        "X1-SCHED-011",
-        "X1-CMD-006",
-        "X1-SCHED-001",
-        "X1-SCHED-002"
-      ],
-      "controlIds": [
-        "X1-MUT-017"
-      ],
-      "evidenceOwner": "tests/integration/transport-play.test.ts"
-    },
-    {
-      "id": "TR-X1-PAUSE-RESUME-SEEK",
-      "requirement": "Pause records the exact old-epoch beat, resume re-anchors there, and seek retires-then-republishes the prior status inside plan bounds.",
-      "parentSource": "X1 required implementation and REBUILD_PLAN 13.10",
-      "caseIds": [
-        "X1-CMD-007",
-        "X1-SM-024",
-        "X1-SM-030",
-        "X1-SM-031",
-        "X1-SM-038"
-      ],
-      "controlIds": [
-        "X1-MUT-009"
-      ],
-      "evidenceOwner": "tests/integration/transport-pause-seek.test.ts"
-    },
-    {
-      "id": "TR-X1-TEMPO-LOOP",
-      "requirement": "Tempo changes retire only the unsounded horizon at a new epoch with revision-checked bindings; loops validate ranges and wrap through a loop-wrap generation boundary.",
-      "parentSource": "X1 required implementation and REBUILD_PLAN 13.10",
-      "caseIds": [
-        "X1-CMD-008",
-        "X1-CMD-009",
-        "X1-CMD-010",
-        "X1-CMD-011",
-        "X1-SCHED-004",
-        "X1-SCHED-012"
-      ],
-      "controlIds": [
-        "X1-MUT-018",
-        "X1-MUT-024"
-      ],
-      "evidenceOwner": "tests/integration/transport-tempo-loop.test.ts"
-    },
-    {
-      "id": "TR-X1-INSTRUMENT",
-      "requirement": "Serialized instrument changes cancel and reschedule only not-yet-attacked horizon voices with exact validation of the five domain IDs.",
-      "parentSource": "X1 required implementation and REBUILD_PLAN 13.10",
-      "caseIds": [
-        "X1-CMD-012",
-        "X1-SCHED-006"
-      ],
-      "controlIds": [
-        "X1-MUT-025"
-      ],
-      "evidenceOwner": "tests/integration/transport-instrument.test.ts"
-    },
-    {
-      "id": "TR-X1-CLICKS",
-      "requirement": "Count-in and metronome clicks are generated transport events with the frozen click policy, reserved IDs, and the one persistent graph.",
-      "parentSource": "X1 required implementation, REBUILD_PLAN 13.10, and the reviewed X0 topology authority",
-      "caseIds": [
-        "X1-SCHED-007",
-        "X1-SCHED-008",
-        "X1-SCHED-009",
-        "X1-CMD-017"
-      ],
-      "controlIds": [
-        "X1-MUT-004",
-        "X1-MUT-021",
-        "X1-MUT-022"
-      ],
-      "evidenceOwner": "tests/integration/transport-clicks.test.ts"
-    },
-    {
-      "id": "TR-X1-PREVIEW",
-      "requirement": "Preview commands own X0 preview voices under reserved IDs, release predecessors first, and never touch progression transport state.",
-      "parentSource": "X1 required implementation and REBUILD_PLAN 13.11",
-      "caseIds": [
-        "X1-CMD-013",
-        "X1-CMD-014",
-        "X1-CMD-015",
-        "X1-STOP-004"
-      ],
-      "controlIds": [
-        "X1-MUT-026"
-      ],
-      "evidenceOwner": "tests/integration/transport-preview.test.ts"
-    },
-    {
-      "id": "TR-X1-NATURAL-END-REPLAY",
-      "requirement": "Natural end publishes ready at the run start beat with the eight-second tail deadline; replay during a residual tail retires the old generation first.",
-      "parentSource": "X1 required implementation and REBUILD_PLAN 13.10",
-      "caseIds": [
-        "X1-STOP-005",
-        "X1-STOP-006"
-      ],
-      "controlIds": [
-        "X1-MUT-020"
-      ],
-      "evidenceOwner": "tests/integration/transport-natural-end.test.ts"
-    },
-    {
-      "id": "TR-X1-INTERRUPTION",
-      "requirement": "Browser interruption freezes musical time, projects paused with the stable code, and recovery re-anchors at the stored beat via a trusted gesture.",
-      "parentSource": "X1 required implementation and REBUILD_PLAN 13.10",
-      "caseIds": [
-        "X1-STOP-007",
-        "X1-STOP-008",
-        "X1-SCHED-014",
-        "X1-VIEW-004"
-      ],
-      "controlIds": [
-        "X1-MUT-027"
-      ],
-      "evidenceOwner": "tests/integration/transport-interruption.test.ts"
-    },
-    {
-      "id": "TR-X1-REPLACEMENT",
-      "requirement": "Import/New replacement retires progression and preview voices before publishing the replacement binding; null bindings empty the transport.",
-      "parentSource": "X1 invariants and REBUILD_PLAN 14 replacement transaction",
-      "caseIds": [
-        "X1-STOP-009",
-        "X1-STOP-010",
-        "X1-CMD-018"
-      ],
-      "controlIds": [
-        "X1-MUT-028"
-      ],
-      "evidenceOwner": "tests/integration/transport-replacement.test.ts"
-    },
-    {
-      "id": "TR-X1-NOTIFICATIONS",
-      "requirement": "Monotonic (generation, sequence) notifications with the frozen state-status projection, silent states, and stale-view rejection at the application boundary.",
-      "parentSource": "X1 required implementation and the A0 transport-view acceptance law",
-      "caseIds": [
-        "X1-VIEW-001",
-        "X1-VIEW-002",
-        "X1-VIEW-003",
-        "X1-VIEW-004",
-        "X1-VIEW-005",
-        "X1-VIEW-006",
-        "X1-VIEW-007",
-        "X1-VIEW-008"
-      ],
-      "controlIds": [
-        "X1-MUT-006",
-        "X1-MUT-007",
-        "X1-MUT-029"
-      ],
-      "evidenceOwner": "tests/integration/transport-notifications.test.ts"
-    },
-    {
-      "id": "TR-X1-ENGINE-BOUNDARY",
-      "requirement": "Exact X0 boundary behavior: carried engine refusals, structural plan validation, gesture and timing validation, dispose terminality, and fault settlement.",
-      "parentSource": "X1 required implementation and the X0 engine contract",
-      "caseIds": [
-        "X1-CMD-004",
-        "X1-CMD-005",
-        "X1-CMD-016",
-        "X1-CMD-019",
-        "X1-STOP-011",
-        "X1-STOP-012"
-      ],
-      "controlIds": [
-        "X1-MUT-005",
-        "X1-MUT-023"
-      ],
-      "evidenceOwner": "tests/integration/transport-engine-boundary.test.ts"
-    },
-    {
-      "id": "TR-X1-BROWSER-MATRIX",
-      "requirement": "Mandatory real-browser matrix on Chromium, Firefox, and WebKit asserting transport state, node bookkeeping, and console cleanliness with real AudioContext semantics.",
-      "parentSource": "X1 test plan and REBUILD_PLAN 13.12",
-      "caseIds": [
-        "X1-STOP-001",
-        "X1-STOP-005",
-        "X1-VIEW-001"
-      ],
-      "controlIds": [
-        "X1-MUT-001"
-      ],
-      "evidenceOwner": "tests/integration/transport-browser-evidence.test.ts"
-    },
-    {
-      "id": "TR-X1-LISTENING",
-      "requirement": "Human listening for click feel, timbre under transport stress, tempo change, loop boundaries, and stuck-note perception, including the X0-deferred scenes 003-005; automation does not claim to hear.",
-      "parentSource": "REBUILD_PLAN 13.12 and the X0 listening deferral",
-      "caseIds": [
-        "X1-SCHED-007",
-        "X1-SCHED-008"
-      ],
-      "controlIds": [
-        "X1-MUT-008"
-      ],
-      "evidenceOwner": "release-evidence/audio/listening"
-    },
-    {
-      "id": "TR-LEGACY-RUNTIME-01",
-      "requirement": "The legacy whole-chart undefined-chord silence class cannot recur: every playable chart sounds, and silence requires an exactly empty timeline.",
-      "parentSource": "docs/LEGACY_AUDIT.md L-RUNTIME-01",
-      "caseIds": [
-        "X1-SCHED-011"
-      ],
-      "controlIds": [
-        "X1-MUT-017"
-      ],
-      "evidenceOwner": "tests/integration/transport-play.test.ts"
-    },
-    {
-      "id": "TR-LEGACY-AUDIO-01",
-      "requirement": "The legacy callbacks-attack-after-Stop class cannot recur: zero post-stop attacks across one hundred stress cycles.",
-      "parentSource": "docs/LEGACY_AUDIT.md L-AUDIO-01",
-      "caseIds": [
-        "X1-STOP-002"
-      ],
-      "controlIds": [
-        "X1-MUT-019"
-      ],
-      "evidenceOwner": "tests/integration/transport-stop-stress.test.ts"
-    },
-    {
-      "id": "TR-LEGACY-AUDIO-03",
-      "requirement": "The legacy inert BPM/scrubber/duration class cannot recur: tempo, seek, and loop changes have exact audible plan effects.",
-      "parentSource": "docs/LEGACY_AUDIT.md L-AUDIO-03",
-      "caseIds": [
-        "X1-SCHED-012",
-        "X1-CMD-007"
-      ],
-      "controlIds": [
-        "X1-MUT-018"
-      ],
-      "evidenceOwner": "tests/integration/transport-time.test.ts"
-    },
-    {
-      "id": "TR-LEGACY-AUDIO-04",
-      "requirement": "The legacy init and rapid-instrument race class cannot recur: serialized commands and horizon reschedules leave no stale attack or stuck voice.",
-      "parentSource": "docs/LEGACY_AUDIT.md L-AUDIO-04",
-      "caseIds": [
-        "X1-CMD-020",
-        "X1-SCHED-006"
-      ],
-      "controlIds": [
-        "X1-MUT-025"
-      ],
-      "evidenceOwner": "tests/integration/audio-command-races.test.ts"
-    }
-  ]
+ "schema": "changes.fixtures.x1-trace-ledger.v1",
+ "fixtureVersion": 1,
+ "authorship": "Hand-authored requirement traces over docs/X1_TRANSPORT_CONTRACT.md; the emitter only expands sequential case-ID ranges. No production transport code exists or was consulted.",
+ "reciprocityLaw": "Every trace names at least one existing case; every case and mutation control belongs to at least one trace; every evidence owner is a named future test file or the human listening directory.",
+ "traces": [
+  {
+   "id": "TR-X1-STATE-MACHINE",
+   "requirement": "Authoritative locked/ready/playing/paused/interrupted/fault/disposed machine with serialized, non-overlapping transitions and exhaustive cell outcomes.",
+   "parentSource": "X1 required implementation and REBUILD_PLAN 13.7",
+   "caseIds": [
+    "X1-SM-001",
+    "X1-SM-002",
+    "X1-SM-003",
+    "X1-SM-004",
+    "X1-SM-005",
+    "X1-SM-006",
+    "X1-SM-007",
+    "X1-SM-008",
+    "X1-SM-009",
+    "X1-SM-010",
+    "X1-SM-011",
+    "X1-SM-012",
+    "X1-SM-013",
+    "X1-SM-014",
+    "X1-SM-015",
+    "X1-SM-016",
+    "X1-SM-017",
+    "X1-SM-018",
+    "X1-SM-019",
+    "X1-SM-020",
+    "X1-SM-021",
+    "X1-SM-022",
+    "X1-SM-023",
+    "X1-SM-024",
+    "X1-SM-025",
+    "X1-SM-026",
+    "X1-SM-027",
+    "X1-SM-028",
+    "X1-SM-029",
+    "X1-SM-030",
+    "X1-SM-031",
+    "X1-SM-032",
+    "X1-SM-033",
+    "X1-SM-034",
+    "X1-SM-035",
+    "X1-SM-036",
+    "X1-SM-037",
+    "X1-SM-038",
+    "X1-SM-039",
+    "X1-SM-040",
+    "X1-SM-041",
+    "X1-SM-042",
+    "X1-SM-043",
+    "X1-SM-044",
+    "X1-SM-045",
+    "X1-SM-046",
+    "X1-SM-047",
+    "X1-SM-048",
+    "X1-SM-049",
+    "X1-SM-050",
+    "X1-SM-051",
+    "X1-SM-052",
+    "X1-SM-053",
+    "X1-SM-054",
+    "X1-SM-055",
+    "X1-SM-056",
+    "X1-SM-057",
+    "X1-SM-058",
+    "X1-SM-059",
+    "X1-SM-060",
+    "X1-SM-061",
+    "X1-SM-062",
+    "X1-SM-063",
+    "X1-SM-064",
+    "X1-SM-065",
+    "X1-SM-066",
+    "X1-SM-067",
+    "X1-SM-068",
+    "X1-SM-069",
+    "X1-SM-070",
+    "X1-SM-071",
+    "X1-SM-072",
+    "X1-SM-073",
+    "X1-SM-074",
+    "X1-SM-075",
+    "X1-SM-076",
+    "X1-SM-077",
+    "X1-SM-078",
+    "X1-SM-079",
+    "X1-SM-080",
+    "X1-SM-081",
+    "X1-SM-082",
+    "X1-SM-083",
+    "X1-SM-084",
+    "X1-SM-085",
+    "X1-SM-086",
+    "X1-SM-087",
+    "X1-SM-088",
+    "X1-SM-089",
+    "X1-SM-090",
+    "X1-SM-091",
+    "X1-SM-092",
+    "X1-SM-093",
+    "X1-SM-094",
+    "X1-SM-095",
+    "X1-SM-096",
+    "X1-SM-097",
+    "X1-SM-098",
+    "X1-SM-099",
+    "X1-SM-100",
+    "X1-SM-101",
+    "X1-SM-102",
+    "X1-SM-103",
+    "X1-SM-104",
+    "X1-SM-105",
+    "X1-SM-106",
+    "X1-SM-107",
+    "X1-SM-108",
+    "X1-SM-109",
+    "X1-SM-110",
+    "X1-SM-111",
+    "X1-SM-112"
+   ],
+   "controlIds": [
+    "X1-MUT-009",
+    "X1-MUT-010",
+    "X1-MUT-011"
+   ],
+   "evidenceOwner": "tests/integration/transport-state-machine.test.ts"
+  },
+  {
+   "id": "TR-X1-SERIALIZED-COMMANDS",
+   "requirement": "Strict FIFO command admission with monotonic request IDs, a 32-command queue bound, and total refusal precedence.",
+   "parentSource": "X1 required implementation and REBUILD_PLAN 13.7",
+   "caseIds": [
+    "X1-CMD-001",
+    "X1-CMD-002",
+    "X1-CMD-003",
+    "X1-CMD-020"
+   ],
+   "controlIds": [
+    "X1-MUT-002",
+    "X1-MUT-023",
+    "X1-MUT-030"
+   ],
+   "evidenceOwner": "tests/integration/audio-command-races.test.ts"
+  },
+  {
+   "id": "TR-X1-LOOKAHEAD-SCHEDULER",
+   "requirement": "Generation-checked 25 ms/100 ms lookahead scheduling against the audio clock with one schedule per event, bounded lead, and display-only animation frames.",
+   "parentSource": "X1 required implementation and REBUILD_PLAN 13.8",
+   "caseIds": [
+    "X1-SCHED-001",
+    "X1-SCHED-002",
+    "X1-SCHED-003",
+    "X1-SCHED-005",
+    "X1-SCHED-010",
+    "X1-SCHED-013",
+    "X1-SCHED-014"
+   ],
+   "controlIds": [
+    "X1-MUT-003",
+    "X1-MUT-016"
+   ],
+   "evidenceOwner": "tests/integration/transport-scheduler.test.ts"
+  },
+  {
+   "id": "TR-X1-EXACT-TIME",
+   "requirement": "Exact rational beat-to-second mapping, P0 gate law passthrough, the frozen audio-envelope floor, and tempo-change epoch beat preservation.",
+   "parentSource": "X1 required implementation and REBUILD_PLAN 13.8 and 13.10",
+   "caseIds": [
+    "X1-TIME-001",
+    "X1-TIME-002",
+    "X1-TIME-003",
+    "X1-TIME-004",
+    "X1-TIME-005",
+    "X1-TIME-006",
+    "X1-TIME-007",
+    "X1-TIME-008",
+    "X1-TIME-009",
+    "X1-TIME-010",
+    "X1-TIME-011",
+    "X1-TIME-012",
+    "X1-TIME-013",
+    "X1-TIME-014",
+    "X1-SCHED-012"
+   ],
+   "controlIds": [
+    "X1-MUT-012",
+    "X1-MUT-013",
+    "X1-MUT-014",
+    "X1-MUT-015"
+   ],
+   "evidenceOwner": "tests/integration/transport-time.test.ts"
+  },
+  {
+   "id": "TR-X1-STOP-GUARANTEE",
+   "requirement": "Stop awaits zero possible future attack in frozen eight-step order, returns to the run start beat, and survives one hundred rapid cycles on one graph.",
+   "parentSource": "X1 required implementation and REBUILD_PLAN 13.9",
+   "caseIds": [
+    "X1-STOP-001",
+    "X1-STOP-002",
+    "X1-STOP-003"
+   ],
+   "controlIds": [
+    "X1-MUT-019",
+    "X1-MUT-020"
+   ],
+   "evidenceOwner": "tests/integration/transport-stop-stress.test.ts"
+  },
+  {
+   "id": "TR-X1-PLAY-WHOLE-CHART",
+   "requirement": "Playing a chart schedules every plan event exactly once; silence is legal only for an exactly empty timeline.",
+   "parentSource": "X1 success criteria and REBUILD_PLAN 13.8",
+   "caseIds": [
+    "X1-SCHED-011",
+    "X1-CMD-006",
+    "X1-SCHED-001",
+    "X1-SCHED-002"
+   ],
+   "controlIds": [
+    "X1-MUT-017"
+   ],
+   "evidenceOwner": "tests/integration/transport-play.test.ts"
+  },
+  {
+   "id": "TR-X1-PAUSE-RESUME-SEEK",
+   "requirement": "Pause records the exact old-epoch beat, resume re-anchors there, and seek retires-then-republishes the prior status inside plan bounds.",
+   "parentSource": "X1 required implementation and REBUILD_PLAN 13.10",
+   "caseIds": [
+    "X1-CMD-007",
+    "X1-SM-024",
+    "X1-SM-030",
+    "X1-SM-031",
+    "X1-SM-038"
+   ],
+   "controlIds": [
+    "X1-MUT-009"
+   ],
+   "evidenceOwner": "tests/integration/transport-pause-seek.test.ts"
+  },
+  {
+   "id": "TR-X1-TEMPO-LOOP",
+   "requirement": "Tempo changes retire only the unsounded horizon at a new epoch with revision-checked bindings; loops validate ranges and wrap through a loop-wrap generation boundary.",
+   "parentSource": "X1 required implementation and REBUILD_PLAN 13.10",
+   "caseIds": [
+    "X1-CMD-008",
+    "X1-CMD-009",
+    "X1-CMD-010",
+    "X1-CMD-011",
+    "X1-SCHED-004",
+    "X1-SCHED-012"
+   ],
+   "controlIds": [
+    "X1-MUT-018",
+    "X1-MUT-024"
+   ],
+   "evidenceOwner": "tests/integration/transport-tempo-loop.test.ts"
+  },
+  {
+   "id": "TR-X1-INSTRUMENT",
+   "requirement": "Serialized instrument changes cancel and reschedule only not-yet-attacked horizon voices with exact validation of the five domain IDs.",
+   "parentSource": "X1 required implementation and REBUILD_PLAN 13.10",
+   "caseIds": [
+    "X1-CMD-012",
+    "X1-SCHED-006"
+   ],
+   "controlIds": [
+    "X1-MUT-025"
+   ],
+   "evidenceOwner": "tests/integration/transport-instrument.test.ts"
+  },
+  {
+   "id": "TR-X1-CLICKS",
+   "requirement": "Count-in and metronome clicks are generated transport events with the frozen click policy, reserved IDs, and the one persistent graph.",
+   "parentSource": "X1 required implementation, REBUILD_PLAN 13.10, and the reviewed X0 topology authority",
+   "caseIds": [
+    "X1-SCHED-007",
+    "X1-SCHED-008",
+    "X1-SCHED-009",
+    "X1-CMD-017"
+   ],
+   "controlIds": [
+    "X1-MUT-004",
+    "X1-MUT-021",
+    "X1-MUT-022"
+   ],
+   "evidenceOwner": "tests/integration/transport-clicks.test.ts"
+  },
+  {
+   "id": "TR-X1-PREVIEW",
+   "requirement": "Preview commands own X0 preview voices under reserved IDs, release predecessors first, and never touch progression transport state.",
+   "parentSource": "X1 required implementation and REBUILD_PLAN 13.11",
+   "caseIds": [
+    "X1-CMD-013",
+    "X1-CMD-014",
+    "X1-CMD-015",
+    "X1-STOP-004"
+   ],
+   "controlIds": [
+    "X1-MUT-026"
+   ],
+   "evidenceOwner": "tests/integration/transport-preview.test.ts"
+  },
+  {
+   "id": "TR-X1-NATURAL-END-REPLAY",
+   "requirement": "Natural end publishes ready at the run start beat with the eight-second tail deadline; replay during a residual tail retires the old generation first.",
+   "parentSource": "X1 required implementation and REBUILD_PLAN 13.10",
+   "caseIds": [
+    "X1-STOP-005",
+    "X1-STOP-006"
+   ],
+   "controlIds": [
+    "X1-MUT-020"
+   ],
+   "evidenceOwner": "tests/integration/transport-natural-end.test.ts"
+  },
+  {
+   "id": "TR-X1-INTERRUPTION",
+   "requirement": "Browser interruption freezes musical time, projects paused with the stable code, and recovery re-anchors at the stored beat via a trusted gesture.",
+   "parentSource": "X1 required implementation and REBUILD_PLAN 13.10",
+   "caseIds": [
+    "X1-STOP-007",
+    "X1-STOP-008",
+    "X1-SCHED-014",
+    "X1-VIEW-004"
+   ],
+   "controlIds": [
+    "X1-MUT-027"
+   ],
+   "evidenceOwner": "tests/integration/transport-interruption.test.ts"
+  },
+  {
+   "id": "TR-X1-REPLACEMENT",
+   "requirement": "Import/New replacement retires progression and preview voices before publishing the replacement binding; null bindings empty the transport.",
+   "parentSource": "X1 invariants and REBUILD_PLAN 14 replacement transaction",
+   "caseIds": [
+    "X1-STOP-009",
+    "X1-STOP-010",
+    "X1-CMD-018"
+   ],
+   "controlIds": [
+    "X1-MUT-028"
+   ],
+   "evidenceOwner": "tests/integration/transport-replacement.test.ts"
+  },
+  {
+   "id": "TR-X1-NOTIFICATIONS",
+   "requirement": "Monotonic (generation, sequence) notifications with the frozen state-status projection, silent states, and stale-view rejection at the application boundary.",
+   "parentSource": "X1 required implementation and the A0 transport-view acceptance law",
+   "caseIds": [
+    "X1-VIEW-001",
+    "X1-VIEW-002",
+    "X1-VIEW-003",
+    "X1-VIEW-004",
+    "X1-VIEW-005",
+    "X1-VIEW-006",
+    "X1-VIEW-007",
+    "X1-VIEW-008"
+   ],
+   "controlIds": [
+    "X1-MUT-006",
+    "X1-MUT-007",
+    "X1-MUT-029"
+   ],
+   "evidenceOwner": "tests/integration/transport-notifications.test.ts"
+  },
+  {
+   "id": "TR-X1-ENGINE-BOUNDARY",
+   "requirement": "Exact X0 boundary behavior: carried engine refusals, structural plan validation, gesture and timing validation, dispose terminality, and fault settlement.",
+   "parentSource": "X1 required implementation and the X0 engine contract",
+   "caseIds": [
+    "X1-CMD-004",
+    "X1-CMD-005",
+    "X1-CMD-016",
+    "X1-CMD-019",
+    "X1-STOP-011",
+    "X1-STOP-012"
+   ],
+   "controlIds": [
+    "X1-MUT-005",
+    "X1-MUT-023"
+   ],
+   "evidenceOwner": "tests/integration/transport-engine-boundary.test.ts"
+  },
+  {
+   "id": "TR-X1-BROWSER-MATRIX",
+   "requirement": "Mandatory real-browser matrix on Chromium, Firefox, and WebKit asserting transport state, node bookkeeping, and console cleanliness with real AudioContext semantics.",
+   "parentSource": "X1 test plan and REBUILD_PLAN 13.12",
+   "caseIds": [
+    "X1-STOP-001",
+    "X1-STOP-005",
+    "X1-VIEW-001"
+   ],
+   "controlIds": [
+    "X1-MUT-001"
+   ],
+   "evidenceOwner": "tests/integration/transport-browser-evidence.test.ts"
+  },
+  {
+   "id": "TR-X1-LISTENING",
+   "requirement": "Human listening for click feel, timbre under transport stress, tempo change, loop boundaries, and stuck-note perception, including the X0-deferred scenes 003-005; automation does not claim to hear.",
+   "parentSource": "REBUILD_PLAN 13.12 and the X0 listening deferral",
+   "caseIds": [
+    "X1-SCHED-007",
+    "X1-SCHED-008"
+   ],
+   "controlIds": [
+    "X1-MUT-008"
+   ],
+   "evidenceOwner": "release-evidence/audio/listening"
+  },
+  {
+   "id": "TR-LEGACY-RUNTIME-01",
+   "requirement": "The legacy whole-chart undefined-chord silence class cannot recur: every playable chart sounds, and silence requires an exactly empty timeline.",
+   "parentSource": "docs/LEGACY_AUDIT.md L-RUNTIME-01",
+   "caseIds": [
+    "X1-SCHED-011"
+   ],
+   "controlIds": [
+    "X1-MUT-017"
+   ],
+   "evidenceOwner": "tests/integration/transport-play.test.ts"
+  },
+  {
+   "id": "TR-LEGACY-AUDIO-01",
+   "requirement": "The legacy callbacks-attack-after-Stop class cannot recur: zero post-stop attacks across one hundred stress cycles.",
+   "parentSource": "docs/LEGACY_AUDIT.md L-AUDIO-01",
+   "caseIds": [
+    "X1-STOP-002"
+   ],
+   "controlIds": [
+    "X1-MUT-019"
+   ],
+   "evidenceOwner": "tests/integration/transport-stop-stress.test.ts"
+  },
+  {
+   "id": "TR-LEGACY-AUDIO-03",
+   "requirement": "The legacy inert BPM/scrubber/duration class cannot recur: tempo, seek, and loop changes have exact audible plan effects.",
+   "parentSource": "docs/LEGACY_AUDIT.md L-AUDIO-03",
+   "caseIds": [
+    "X1-SCHED-012",
+    "X1-CMD-007"
+   ],
+   "controlIds": [
+    "X1-MUT-018"
+   ],
+   "evidenceOwner": "tests/integration/transport-time.test.ts"
+  },
+  {
+   "id": "TR-LEGACY-AUDIO-04",
+   "requirement": "The legacy init and rapid-instrument race class cannot recur: serialized commands and horizon reschedules leave no stale attack or stuck voice.",
+   "parentSource": "docs/LEGACY_AUDIT.md L-AUDIO-04",
+   "caseIds": [
+    "X1-CMD-020",
+    "X1-SCHED-006"
+   ],
+   "controlIds": [
+    "X1-MUT-025"
+   ],
+   "evidenceOwner": "tests/integration/audio-command-races.test.ts"
+  },
+  {
+   "id": "TR-X1-LIVE-GROOVE",
+   "requirement": "A groove change during playback re-performs the running plan at the next unstarted event without stopping, losing the playhead, or touching sounding voices; a stale or mismatched binding refuses without touching the running epoch.",
+   "parentSource": "docs/X1_TRANSPORT_CONTRACT.md section 4 (set-performance amendment, jcpe-7ftl)",
+   "caseIds": [
+    "X1-SM-113",
+    "X1-SM-114",
+    "X1-SM-115",
+    "X1-SM-116",
+    "X1-SM-117",
+    "X1-SM-118",
+    "X1-SM-119"
+   ],
+   "controlIds": [],
+   "evidenceOwner": "tests/unit/transport-set-performance.test.ts"
+  }
+ ]
 }

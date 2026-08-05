@@ -296,6 +296,11 @@ function bootHarness(): StudioAudibleEvidenceApi {
           "set-loop",
           await realPort.setLoop(commandRequestId, binding, loop),
         ),
+      setPerformance: async (commandRequestId, binding) =>
+        journalCommand(
+          "set-performance",
+          await realPort.setPerformance(commandRequestId, binding),
+        ),
       setMix: async (commandRequestId, mix) =>
         journalCommand(
           "set-mix",

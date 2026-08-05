@@ -108,6 +108,16 @@ export type StudioAudioPort = Readonly<{
     loop: BeatRange | null,
   ) => Promise<TransportCommandOutcome>;
   /**
+   * Rebind the active run to a newly performed plan mid-flight
+   * (jcpe-7ftl live groove switch). X1 law mirrors set-tempo: same
+   * documentId, strictly greater planRevision; the swap lands at the next
+   * unstarted event and sounding voices finish on the old groove.
+   */
+  setPerformance: (
+    commandRequestId: number,
+    binding: TransportPlanBinding,
+  ) => Promise<TransportCommandOutcome>;
+  /**
    * Ride the live mix (jcpe-v2r-live-mix-btb4): the engine ramps its master
    * gain without touching the schedule, so a fader drag is audible during
    * playback. Not a generation boundary; refused whole when the transport
@@ -408,6 +418,11 @@ export function createStudioAudio(
       submit(
         commandRequestId,
         Object.freeze({ kind: "set-loop" as const, binding, loop }),
+      ),
+    setPerformance: async (commandRequestId, binding) =>
+      submit(
+        commandRequestId,
+        Object.freeze({ kind: "set-performance" as const, binding }),
       ),
     setMix: async (commandRequestId, mix) =>
       submit(

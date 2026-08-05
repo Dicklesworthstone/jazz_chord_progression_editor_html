@@ -167,6 +167,9 @@ function payloadFor(command: string): TransportCommandPayload {
       return { kind: "stop" };
     case "set-tempo":
       return { kind: "set-tempo", binding: planBinding(plan, 2) };
+    case "set-performance":
+      /* jcpe-7ftl: a groove change is a document edit — revision bumps. */
+      return { kind: "set-performance", binding: planBinding(plan, 2) };
     case "set-loop":
       return {
         kind: "set-loop",
@@ -202,9 +205,9 @@ function payloadFor(command: string): TransportCommandPayload {
 }
 
 describe("TR-X1-STATE-MACHINE production transport state matrix", () => {
-  test("X1-SM-001..X1-SM-112 every cell matches the reviewed matrix", async () => {
+  test("X1-SM-001..X1-SM-119 every cell matches the reviewed matrix", async () => {
     const cells = await loadMatrix();
-    expect(cells).toHaveLength(112);
+    expect(cells).toHaveLength(119);
     const mismatches: string[] = [];
     for (const cell of cells) {
       const harness = createTransportHarness();

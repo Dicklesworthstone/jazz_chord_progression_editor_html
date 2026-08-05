@@ -1,115 +1,129 @@
 {
-  "schema": "changes.fixtures.x1-provenance-ledger.v1",
-  "ledgerVersion": 1,
-  "authoringStatement": "X1 expectations were authored before production transport behavior existed. Mechanical values come from declared exact-time formulas and the frozen X0/P0/A0 contracts; timing feel and timbre judgments remain explicit human release work.",
-  "reviewState": "reviewed-for-x1-spec",
-  "expectedValuesGenerated": false,
-  "productionOutputUsed": false,
-  "classificationPolicy": {
-    "primary-standard": "A current normative or editor-draft Web platform standard.",
-    "reviewed-contract": "A normative repository architecture or package decision.",
-    "legacy-observation": "A reproduced legacy failure the replacement must not preserve.",
-    "mechanical-derivation": "A direct result of a declared formula, integer algorithm, or cap.",
-    "human-review": "A judgment that automation cannot honestly certify."
+ "schema": "changes.fixtures.x1-provenance-ledger.v1",
+ "ledgerVersion": 1,
+ "authoringStatement": "X1 expectations were authored before production transport behavior existed. Mechanical values come from declared exact-time formulas and the frozen X0/P0/A0 contracts; timing feel and timbre judgments remain explicit human release work.",
+ "reviewState": "reviewed-for-x1-spec",
+ "expectedValuesGenerated": false,
+ "productionOutputUsed": false,
+ "classificationPolicy": {
+  "primary-standard": "A current normative or editor-draft Web platform standard.",
+  "reviewed-contract": "A normative repository architecture or package decision.",
+  "legacy-observation": "A reproduced legacy failure the replacement must not preserve.",
+  "mechanical-derivation": "A direct result of a declared formula, integer algorithm, or cap.",
+  "human-review": "A judgment that automation cannot honestly certify."
+ },
+ "authorities": [
+  {
+   "id": "AUTH-WEB-AUDIO",
+   "class": "primary-standard",
+   "source": "Web Audio API 1.1 Editor's Draft, https://webaudio.github.io/web-audio-api/",
+   "supports": [
+    "AudioContext currentTime as the only musical clock",
+    "absolute-time source scheduling",
+    "suspended and interrupted context states",
+    "user-gesture resume requirements"
+   ]
   },
-  "authorities": [
-    {
-      "id": "AUTH-WEB-AUDIO",
-      "class": "primary-standard",
-      "source": "Web Audio API 1.1 Editor's Draft, https://webaudio.github.io/web-audio-api/",
-      "supports": [
-        "AudioContext currentTime as the only musical clock",
-        "absolute-time source scheduling",
-        "suspended and interrupted context states",
-        "user-gesture resume requirements"
-      ]
-    },
-    {
-      "id": "AUTH-PLAN-X1",
-      "class": "reviewed-contract",
-      "source": "docs/REBUILD_PLAN.md sections 13.7-13.12 plus package X1",
-      "supports": [
-        "state machine shape",
-        "serialized transitions",
-        "25 ms/100 ms lookahead defaults",
-        "stop guarantee order",
-        "pause/resume/seek/tempo/loop epochs",
-        "natural-end tail deadline",
-        "interruption recovery",
-        "preview channel isolation"
-      ]
-    },
-    {
-      "id": "AUTH-X0-CONTRACT",
-      "class": "reviewed-contract",
-      "source": "docs/X0_AUDIO_ENGINE_CONTRACT.md and src/audio/audio-engine-contract.ts",
-      "supports": [
-        "0.25 s attack admission window",
-        "0.005 s gate floor",
-        "0.012 s generation-retirement ramp",
-        "0.04 s preview release",
-        "eight-second natural cleanup ceiling",
-        "twelve-node/thirteen-edge persistent topology superseding the informal separate click bus",
-        "owner kinds and retirement selectors"
-      ]
-    },
-    {
-      "id": "AUTH-P0-CONTRACT",
-      "class": "reviewed-contract",
-      "source": "docs/P0_PLAYBACK_PLAN_CONTRACT.md and src/playback/playback-plan-contract.ts",
-      "supports": [
-        "exact rational beats with PPQ 960 tick mirrors",
-        "24-tick release gap and one-tick gate floor",
-        "loop policy and half-open projection",
-        "plan event ordering"
-      ]
-    },
-    {
-      "id": "AUTH-A0-CONTRACT",
-      "class": "reviewed-contract",
-      "source": "docs/A0_APPLICATION_CONTRACT.md section 9 and src/application/application-state-contract.ts",
-      "supports": [
-        "notification field shape",
-        "generation/sequence acceptance law",
-        "expect-transport starting/stopping expectations",
-        "stale-view rejection"
-      ]
-    },
-    {
-      "id": "AUTH-LEGACY-AUDIT",
-      "class": "legacy-observation",
-      "source": "docs/LEGACY_AUDIT.md L-RUNTIME-01, L-AUDIO-01, L-AUDIO-03, L-AUDIO-04",
-      "supports": [
-        "whole-chart silence regression",
-        "post-Stop attack regression",
-        "inert BPM/scrubber/duration regression",
-        "init and rapid-instrument race regression"
-      ]
-    },
-    {
-      "id": "AUTH-X1-DECISIONS",
-      "class": "reviewed-contract",
-      "source": "docs/X1_TRANSPORT_CONTRACT.md reviewed spec decisions",
-      "supports": [
-        "interrupted projects to paused with the stable transport.interrupted code because the frozen A0 status union has no interrupted member and failed would misreport a recoverable state",
-        "0.2 s lookahead ceiling leaves an explicit 0.05 s margin under the X0 admission window so lateness refusals are unreachable",
-        "queue bound of 32 commands refuses pathological bursts while holding every human-scale interaction",
-        "count-in is exactly one bar; clicks use the vibraphone recipe, accent MIDI 88 velocity 112, beat MIDI 81 velocity 84, 0.06 s gate, reserved x1:click: identifiers",
-        "the audio-envelope floor max(gateSeconds, 0.005) applies only to Web Audio release times and never to beats, ticks, or MIDI export",
-        "stop in ready is a vacuous receipt so global Stop is always safe after initialization",
-        "loop bindings keep the plan revision because loop is ephemeral transport state; tempo bindings require a strictly newer revision because tempo is document data"
-      ]
-    },
-    {
-      "id": "AUTH-HUMAN-LISTENING",
-      "class": "human-review",
-      "source": "release-evidence/audio/listening",
-      "supports": [
-        "click feel and accent audibility",
-        "tempo-change and loop-boundary perception",
-        "stuck-note and post-Stop silence perception",
-        "the X0-deferred listening scenes 003-005"
-      ]
-    }
-  ]
+  {
+   "id": "AUTH-PLAN-X1",
+   "class": "reviewed-contract",
+   "source": "docs/REBUILD_PLAN.md sections 13.7-13.12 plus package X1",
+   "supports": [
+    "state machine shape",
+    "serialized transitions",
+    "25 ms/100 ms lookahead defaults",
+    "stop guarantee order",
+    "pause/resume/seek/tempo/loop epochs",
+    "natural-end tail deadline",
+    "interruption recovery",
+    "preview channel isolation"
+   ]
+  },
+  {
+   "id": "AUTH-X0-CONTRACT",
+   "class": "reviewed-contract",
+   "source": "docs/X0_AUDIO_ENGINE_CONTRACT.md and src/audio/audio-engine-contract.ts",
+   "supports": [
+    "0.25 s attack admission window",
+    "0.005 s gate floor",
+    "0.012 s generation-retirement ramp",
+    "0.04 s preview release",
+    "eight-second natural cleanup ceiling",
+    "twelve-node/thirteen-edge persistent topology superseding the informal separate click bus",
+    "owner kinds and retirement selectors"
+   ]
+  },
+  {
+   "id": "AUTH-P0-CONTRACT",
+   "class": "reviewed-contract",
+   "source": "docs/P0_PLAYBACK_PLAN_CONTRACT.md and src/playback/playback-plan-contract.ts",
+   "supports": [
+    "exact rational beats with PPQ 960 tick mirrors",
+    "24-tick release gap and one-tick gate floor",
+    "loop policy and half-open projection",
+    "plan event ordering"
+   ]
+  },
+  {
+   "id": "AUTH-A0-CONTRACT",
+   "class": "reviewed-contract",
+   "source": "docs/A0_APPLICATION_CONTRACT.md section 9 and src/application/application-state-contract.ts",
+   "supports": [
+    "notification field shape",
+    "generation/sequence acceptance law",
+    "expect-transport starting/stopping expectations",
+    "stale-view rejection"
+   ]
+  },
+  {
+   "id": "AUTH-LEGACY-AUDIT",
+   "class": "legacy-observation",
+   "source": "docs/LEGACY_AUDIT.md L-RUNTIME-01, L-AUDIO-01, L-AUDIO-03, L-AUDIO-04",
+   "supports": [
+    "whole-chart silence regression",
+    "post-Stop attack regression",
+    "inert BPM/scrubber/duration regression",
+    "init and rapid-instrument race regression"
+   ]
+  },
+  {
+   "id": "AUTH-X1-DECISIONS",
+   "class": "reviewed-contract",
+   "source": "docs/X1_TRANSPORT_CONTRACT.md reviewed spec decisions",
+   "supports": [
+    "interrupted projects to paused with the stable transport.interrupted code because the frozen A0 status union has no interrupted member and failed would misreport a recoverable state",
+    "0.2 s lookahead ceiling leaves an explicit 0.05 s margin under the X0 admission window so lateness refusals are unreachable",
+    "queue bound of 32 commands refuses pathological bursts while holding every human-scale interaction",
+    "count-in is exactly one bar; clicks use the vibraphone recipe, accent MIDI 88 velocity 112, beat MIDI 81 velocity 84, 0.06 s gate, reserved x1:click: identifiers",
+    "the audio-envelope floor max(gateSeconds, 0.005) applies only to Web Audio release times and never to beats, ticks, or MIDI export",
+    "stop in ready is a vacuous receipt so global Stop is always safe after initialization",
+    "loop bindings keep the plan revision because loop is ephemeral transport state; tempo bindings require a strictly newer revision because tempo is document data"
+   ]
+  },
+  {
+   "id": "AUTH-HUMAN-LISTENING",
+   "class": "human-review",
+   "source": "release-evidence/audio/listening",
+   "supports": [
+    "click feel and accent audibility",
+    "tempo-change and loop-boundary perception",
+    "stuck-note and post-Stop silence perception",
+    "the X0-deferred listening scenes 003-005"
+   ]
+  },
+  {
+   "id": "X1-AUTH-LIVE-GROOVE",
+   "class": "reviewed-contract",
+   "source": "docs/X1_TRANSPORT_CONTRACT.md section 4, set-performance amendment (jcpe-7ftl), mirroring the accepted set-tempo epoch law",
+   "supports": [
+    "X1-SM-113",
+    "X1-SM-114",
+    "X1-SM-115",
+    "X1-SM-116",
+    "X1-SM-117",
+    "X1-SM-118",
+    "X1-SM-119"
+   ]
+  }
+ ]
 }

@@ -70,6 +70,8 @@ const COMMAND_KINDS = Object.freeze([
   "stop",
   "set-tempo",
   "set-loop",
+  /* jcpe-7ftl: the live groove switch joined the vocabulary. */
+  "set-performance",
   "set-instrument",
   /* jcpe-v2r-live-mix-btb4: the live mix ride joined the vocabulary. */
   "set-mix",
@@ -172,6 +174,7 @@ const GENERATION_BOUNDARIES = Object.freeze([
   "stop",
   "set-tempo",
   "set-loop",
+  "set-performance",
   "loop-wrap",
   "replace-plan",
   "interruption",
@@ -343,6 +346,8 @@ function expectedCell(command: string, state: string): Cell | null {
       return receipt("ready", true);
     case "set-tempo":
     case "set-loop":
+    /* jcpe-7ftl: the live groove switch follows the set-tempo epoch law. */
+    case "set-performance":
       if (state === "interrupted") return refusal("transport.state_invalid");
       return receipt(state, state !== "ready");
     /* jcpe-v2r-live-mix-btb4: mix rides like the toggles — no boundary. */
