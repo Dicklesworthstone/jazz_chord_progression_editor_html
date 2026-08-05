@@ -336,7 +336,12 @@ export function salvageMidiBytes(bytes: Uint8Array): MidiSalvageOutcome {
       (trackBytes.length >>> 8) & 0xff,
       trackBytes.length & 0xff,
     );
-    output.push(...trackBytes);
+    /*
+     * Byte-by-byte: a spread here overflows the call stack on a large
+     * track (each spread element becomes an argument), and readFile's
+     * never-throw-on-hostile-bytes contract forbids that escape.
+     */
+    for (const byte of trackBytes) output.push(byte);
     cursor = dataEnd;
   }
 

@@ -14,11 +14,9 @@ import {
   type MidiImportValue,
   type MidiSalvageReport,
   type SmfDecodeFrame,
-} from "../export";
-import {
   planAutomationImport,
   type M1AutomationPlan,
-} from "../export/midi-import-automation";
+} from "../export";
 import { DEFAULT_GROOVE_STYLE_ID } from "../domain";
 import type {
   StudioController,
@@ -359,12 +357,29 @@ export function createStudioMidiImport(
       });
     };
 
-    /* 1. Insert every chunk at document end, in order. */
-    for (const chunkText of automation.chunkTexts) {
+    /*
+     * 1. Insert every chunk in order. The first chunk carries the section
+     * header, so `document-end` lands it as one command. Later chunks are
+     * bare measures continuing that section: at `document-end` they would
+     * need a synthesized section and split into two commands, which the
+     * atomic runner rightly refuses, so each one aims at the LIVE last
+     * section's end — the append boundary of the section the previous
+     * chunk just extended (marker-derived sections included, because the
+     * snapshot is re-read after every chunk).
+     */
+    for (const [chunkIndex, chunkText] of automation.chunkTexts.entries()) {
+      const lastSection =
+        controller.getSnapshot().sections[
+          controller.getSnapshot().sections.length - 1
+        ];
+      const target =
+        chunkIndex === 0 || lastSection === undefined
+          ? ({ kind: "document-end" } as const)
+          : ({ kind: "section-end", sectionId: lastSection.id } as const);
       const previewStatus = controller.previewChartText(chunkText);
       const staged = controller.setQuickEntryDraft(
         chunkText,
-        { kind: "document-end" },
+        target,
         previewStatus.status,
         previewStatus.issueCodes,
       );
@@ -441,7 +456,12 @@ export function createStudioMidiImport(
             controller.setKey({
               step: keySpelled.step,
               alter: keySpelled.alter,
-              mode: key.mode,
+              /*
+               * The M1 inference speaks in plain major/minor; the domain key
+               * vocabulary spells minor as natural-minor, the mode the mass
+               * profile actually measured.
+               */
+              mode: key.mode === "minor" ? "natural-minor" : "major",
             }),
           )
         ) {

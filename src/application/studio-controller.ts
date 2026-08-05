@@ -2006,9 +2006,23 @@ function makeStudioComposition(
         ["meter"],
       );
     }
+    /*
+     * A meter change must re-declare every measure's completion (A0 law:
+     * the expected-update set is the whole measure order). Every measure is
+     * provably empty here — the occupancy guard above refused otherwise —
+     * so each declaration is the empty completion, restated explicitly.
+     */
+    const completionUpdates = state.document.sections.flatMap((section) =>
+      section.measures.map((measure) =>
+        Object.freeze({
+          measureId: measure.id,
+          completion: Object.freeze({ kind: "empty" as const }),
+        }),
+      ),
+    );
     const command: SetDocumentSettingsCommand = Object.freeze({
       ...commandEnvelope("studio-meter", "Set meter"),
-      completionUpdates: Object.freeze([]),
+      completionUpdates: Object.freeze(completionUpdates),
       kind: "set-document-settings",
       patch: Object.freeze({ meter: made.value }),
     });

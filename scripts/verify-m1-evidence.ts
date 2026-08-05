@@ -26,7 +26,7 @@ import { cpus, platform, release } from "node:os";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { planAutomationImport } from "../src/export/midi-import-automation";
+import { planAutomationImport } from "../src/export";
 import {
   GOLDEN_CASES,
   decodeGolden,
@@ -155,7 +155,7 @@ function canonicalJson(value: unknown): string {
       .map(([key, entry]) => `${JSON.stringify(key)}:${canonicalJson(entry)}`);
     return `{${entries.join(",")}}`;
   }
-  return JSON.stringify(value) ?? "null";
+  return value === undefined ? "null" : JSON.stringify(value);
 }
 
 type FamilyPinCheck = Readonly<{

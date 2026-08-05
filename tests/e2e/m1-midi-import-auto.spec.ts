@@ -121,7 +121,8 @@ async function checkedGroove(page: Page): Promise<string | null> {
     const picker = document.querySelector("#studio-groove-picker-rail");
     if (picker === null) return null;
     const checked = picker.querySelector('[role="radio"][aria-checked="true"]');
-    return checked?.textContent?.trim() ?? null;
+    if (checked === null) return null;
+    return checked.textContent.trim();
   });
 }
 
