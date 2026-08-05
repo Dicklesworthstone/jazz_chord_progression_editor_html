@@ -3287,6 +3287,40 @@
   cursor: default;
 }
 
+/*
+ * The 44px coarse-pointer law (U0-ENV-004) applies to the scrub like every
+ * primary action: the visible line stays 2px at the bar's top edge, the
+ * hit area grows to 44px downward INTO the transport bar (growing upward
+ * would put the button's own center under the chart workspace, where taps
+ * never reach it), and the raised stacking keeps the strip tappable above
+ * the transport's own background (jcpe-7djg, V2R-15 regression).
+ */
+@media (pointer: coarse) {
+  /*
+   * The finger strip grows DOWNWARD into the bar (the shell frame above
+   * paints over any upward overhang at z-index 2, so an up-biased strip
+   * could never receive its own taps). The controls row stacks above the
+   * strip so every button keeps its own taps, and the row's empty space
+   * is hit-transparent so the strip receives everything between them.
+   */
+  .studio-transport__sweep {
+    inset-block-start: -6px;
+    block-size: 44px;
+    padding: 5px 0 37px;
+    z-index: 1;
+  }
+
+  .studio-transport__row {
+    position: relative;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .studio-transport__row * {
+    pointer-events: auto;
+  }
+}
+
 .studio-transport__sweep:focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
   outline-offset: var(--focus-offset);
@@ -3322,6 +3356,17 @@
   color: var(--ink-3);
   font-size: var(--text-md);
   cursor: pointer;
+}
+
+/* The 44px coarse-pointer law (U0-ENV-004, jcpe-7djg): the loop toggle and
+ * the mute are primary transport actions and owe the same floor the icon
+ * buttons pay. Visual glyphs stay centered; only the hit boxes grow. */
+@media (pointer: coarse) {
+  .studio-transport__loop,
+  .studio-transport__mute {
+    min-inline-size: 44px;
+    min-block-size: 44px;
+  }
 }
 
 .studio-transport__loop[aria-pressed="true"] {
