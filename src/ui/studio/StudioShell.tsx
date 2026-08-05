@@ -277,6 +277,16 @@ export function StudioShell({
       forgetNotice();
       callbacks.onRedo();
     },
+    onResizeDuration: (chordId: string, beatText: string) => {
+      stage(
+        chordSentence(
+          chordId,
+          (place) =>
+            `Changed the length of ${place.symbol} in bar ${String(place.bar)}`,
+        ),
+      );
+      callbacks.onResizeDuration(chordId, beatText);
+    },
     onSplitDuration: (chordId: string, firstBeats: string) => {
       stage(
         chordSentence(
@@ -502,6 +512,7 @@ export function StudioShell({
               onNoticeDismiss={forgetNotice}
               onNoticeUndo={shellCallbacks.onUndo}
               onApplyDuration={shellCallbacks.onApplyDuration}
+              onResizeDuration={shellCallbacks.onResizeDuration}
               onApplyInlineSymbol={shellCallbacks.onApplyInlineSymbol}
               onCancelPendingEdit={callbacks.onCancelPendingEdit}
               onAnnotateSection={callbacks.onAnnotateSection}

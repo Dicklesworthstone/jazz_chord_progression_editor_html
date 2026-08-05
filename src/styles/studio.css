@@ -5494,3 +5494,250 @@ button.studio-paper-head__key:focus-visible {
     padding-block: calc((var(--touch-target) - 1rem) / 2);
   }
 }
+
+/* -------------------------------------------- measure manipulation (V2R-14) */
+
+/*
+ * jcpe-v2r-measure-ux-wk3w: the bar's own hands — corner trash, add/merge
+ * chord doors, the duration grip, and the taut link a pulled chord
+ * stretches until it parts. Red-pencil marks destructive edges; everything
+ * else stays quiet ink until engaged.
+ */
+
+.studio-measure__trash {
+  position: absolute;
+  inset-inline-end: var(--space-1);
+  inset-block-start: var(--space-1);
+  display: grid;
+  place-items: center;
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink-3);
+  opacity: 0.45;
+  cursor: pointer;
+}
+
+.studio-measure:hover .studio-measure__trash,
+.studio-measure:focus-within .studio-measure__trash {
+  opacity: 1;
+}
+
+.studio-measure__trash:hover:not(:disabled) {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+.studio-measure__trash:focus-visible {
+  opacity: 1;
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.studio-measure__trash:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+.studio-measure__trash[data-armed="true"] {
+  opacity: 1;
+  border-color: var(--red);
+  background: var(--red);
+  color: var(--paper);
+}
+
+.studio-measure__trash-glyph {
+  position: relative;
+  display: block;
+  inline-size: 0.75rem;
+  block-size: 0.8125rem;
+}
+
+.studio-measure__trash-lid {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: -0.125rem;
+  block-size: 0.125rem;
+  background: currentColor;
+}
+
+.studio-measure__trash-lid::before {
+  content: "";
+  position: absolute;
+  inset-block-start: -0.1875rem;
+  inset-inline: 0.25rem;
+  block-size: 0.125rem;
+  background: currentColor;
+}
+
+.studio-measure__trash-can {
+  position: absolute;
+  inset-block-start: 0.25rem;
+  inset-block-end: 0;
+  inset-inline: 0;
+  border: var(--border-width) solid currentColor;
+  border-block-start: none;
+  border-end-start-radius: 0.125rem;
+  border-end-end-radius: 0.125rem;
+}
+
+.studio-measure__trash-can::before,
+.studio-measure__trash-can::after {
+  content: "";
+  position: absolute;
+  inset-block: 0.125rem;
+  inline-size: var(--border-width);
+  background: currentColor;
+}
+
+.studio-measure__trash-can::before {
+  inset-inline-start: 0.1875rem;
+}
+
+.studio-measure__trash-can::after {
+  inset-inline-end: 0.1875rem;
+}
+
+.studio-measure__add-chord,
+.studio-measure__merge-chord {
+  position: absolute;
+  inset-block-end: var(--space-1);
+  display: grid;
+  place-items: center;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  border: var(--border-width) dashed var(--rule-2);
+  border-radius: var(--radius-sm);
+  background: var(--paper);
+  color: var(--ink-3);
+  font-size: var(--text-md);
+  line-height: 1;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 4;
+}
+
+.studio-measure__add-chord {
+  inset-inline-end: var(--space-1);
+}
+
+.studio-measure__merge-chord {
+  inset-inline-end: calc(var(--space-1) + 1.75rem);
+}
+
+.studio-measure:hover .studio-measure__add-chord,
+.studio-measure:hover .studio-measure__merge-chord,
+.studio-measure:focus-within .studio-measure__add-chord,
+.studio-measure:focus-within .studio-measure__merge-chord {
+  opacity: 1;
+}
+
+.studio-measure__add-chord:hover,
+.studio-measure__merge-chord:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.studio-measure__add-chord:focus-visible,
+.studio-measure__merge-chord:focus-visible {
+  opacity: 1;
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+/* Coarse pointers cannot hover: the doors stay open. */
+@media (pointer: coarse) {
+  .studio-measure__trash,
+  .studio-measure__add-chord,
+  .studio-measure__merge-chord {
+    opacity: 1;
+    inline-size: var(--touch-target);
+    block-size: var(--touch-target);
+  }
+
+  .studio-measure__merge-chord {
+    inset-inline-end: calc(var(--space-1) + var(--touch-target) + 0.25rem);
+  }
+}
+
+/*
+ * The grip sits inside the card's end edge and BELOW the vertical middle:
+ * the caesura mark owns the divider's centre, and two round targets in one
+ * spot means the pointer reaches whichever paints last, not the one aimed
+ * at (found by hit-testing the built page, jcpe-v2r-measure-ux-wk3w).
+ */
+.studio-chord-card__resize {
+  position: absolute;
+  inset-inline-end: 0.0625rem;
+  inset-block-start: 62%;
+  inset-block-end: var(--space-1);
+  inline-size: 0.75rem;
+  cursor: ew-resize;
+  touch-action: none;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+}
+
+.studio-chord-card__resize > span {
+  inline-size: 0.1875rem;
+  block-size: 60%;
+  border-radius: 0.09375rem;
+  background: var(--blue);
+  opacity: 0.65;
+}
+
+.studio-chord-card__resize:hover > span {
+  opacity: 1;
+}
+
+@media (pointer: coarse) {
+  .studio-chord-card__resize {
+    inline-size: 1.25rem;
+  }
+}
+
+/* The live width preview names its snapped value while the grip is held. */
+li[data-resize-preview] {
+  position: relative;
+}
+
+li[data-resize-preview]::after {
+  content: attr(data-resize-preview);
+  position: absolute;
+  inset-block-start: calc(-1 * var(--space-5));
+  inset-inline-end: 0;
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-xs);
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  z-index: 6;
+}
+
+/* The taut link: quiet blue while slack, red past the parting distance. */
+.studio-chord-link {
+  position: fixed;
+  inset: 0;
+  inline-size: 100vw;
+  block-size: 100vh;
+  pointer-events: none;
+  z-index: 40;
+}
+
+.studio-chord-link line {
+  stroke: var(--blue);
+  stroke-width: 2;
+  stroke-dasharray: none;
+  opacity: 0.75;
+}
+
+.studio-chord-link[data-parted="true"] line {
+  stroke: var(--red);
+  stroke-dasharray: 6 5;
+  opacity: 0.9;
+}

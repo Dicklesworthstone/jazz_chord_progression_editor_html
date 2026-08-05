@@ -8,6 +8,7 @@ import {
   Input,
   KeyValueList,
   Label,
+  VisuallyHidden,
 } from "../primitives";
 import type {
   StudioCardMenuAction,
@@ -53,6 +54,7 @@ export type ChartWorkspaceProps = Readonly<{
   onInsertSection: () => void;
   onApplyInlineSymbol: (chordId: string, symbolText: string) => void;
   onApplyDuration: (chordId: string, beatText: string) => void;
+  onResizeDuration: (chordId: string, beatText: string) => void;
   onCancelPendingEdit: () => void;
   onDeclareMeasureCompletion: (measureId: string) => void;
   onRenameSection: (sectionId: string, name: string) => void;
@@ -105,6 +107,62 @@ function chordBeatFlexGrow(durationLabel: string): number {
   }
   return Math.min(16, Math.max(0.5, numerator / denominator));
 }
+
+/**
+ * Presentation-side reading of a frozen duration label ("3 beats",
+ * "3/2 beats") as a decimal beat count, for gesture previews only — the
+ * committed value always travels as exact text through the duration command,
+ * and anything this misreads the command surface refuses.
+ */
+function beatsOfLabel(durationLabel: string): number | null {
+  const match = DURATION_BEATS_PATTERN.exec(durationLabel);
+  if (match === null) return null;
+  const numerator = Number(match[1]);
+  const denominator = match[2] === undefined ? 1 : Number(match[2]);
+  if (!Number.isFinite(numerator) || !Number.isFinite(denominator) || denominator === 0) {
+    return null;
+  }
+  return numerator / denominator;
+}
+
+/** Exact half of a duration label, as command text ("3" → "3/2"). */
+function halfOfLabel(durationLabel: string): string | null {
+  const match = DURATION_BEATS_PATTERN.exec(durationLabel);
+  if (match === null) return null;
+  const numerator = Number(match[1]);
+  const denominator = match[2] === undefined ? 1 : Number(match[2]);
+  if (!Number.isFinite(numerator) || !Number.isFinite(denominator) || denominator === 0) {
+    return null;
+  }
+  if (numerator % 2 === 0) {
+    const half = numerator / 2;
+    return denominator === 1 ? String(half) : `${String(half)}/${String(denominator)}`;
+  }
+  return `${String(numerator)}/${String(denominator * 2)}`;
+}
+
+/** Half-beat counts rendered as command text (3 halves → "3/2"). */
+function halvesToBeatText(halves: number): string {
+  return halves % 2 === 0 ? String(halves / 2) : `${String(halves)}/2`;
+}
+
+/**
+ * The measure's beat capacity from its meter label ("4/4" → 4, "6/8" → 3):
+ * gesture-preview arithmetic only, never a musical authority.
+ */
+function meterBeatsOf(meterLabel: string): number {
+  const match = /^(\d+)\/(\d+)$/u.exec(meterLabel);
+  if (match === null) return 4;
+  const numerator = Number(match[1]);
+  const denominator = Number(match[2]);
+  if (!Number.isFinite(numerator) || !Number.isFinite(denominator) || denominator === 0) {
+    return 4;
+  }
+  return (numerator * 4) / denominator;
+}
+
+/** Pull distance at which a shared bar's link visibly parts (directive 6). */
+const TAUT_BREAK_CSS_PX = 88;
 
 /**
  * The entry keypad's chip tables (jcpe-v2r-entry-5zz7). Labels wear engraved
@@ -325,6 +383,7 @@ export function ChartWorkspace({
   onInsertSection,
   onApplyInlineSymbol,
   onApplyDuration,
+  onResizeDuration,
   onCancelPendingEdit,
   onDeclareMeasureCompletion,
   onRenameSection,
@@ -383,6 +442,61 @@ export function ChartWorkspace({
   const [demoBannerDismissed, setDemoBannerDismissed] = useState(false);
   const [dragging, setDragging] = useState<string | null>(null);
   /**
+   * jcpe-v2r-measure-ux-wk3w directive 1: deleting a bar is an owned
+   * two-step — the corner trash arms, a second press within the window
+   * deletes, and inaction disarms. Never a native dialog.
+   */
+  const [armedDeleteMeasureId, setArmedDeleteMeasureId] = useState<
+    string | null
+  >(null);
+  const armedDeleteTimer = useRef<number | null>(null);
+  const armDeleteMeasure = (measureId: string): boolean => {
+    if (armedDeleteMeasureId === measureId) {
+      if (armedDeleteTimer.current !== null) {
+        window.clearTimeout(armedDeleteTimer.current);
+        armedDeleteTimer.current = null;
+      }
+      setArmedDeleteMeasureId(null);
+      return true;
+    }
+    if (armedDeleteTimer.current !== null) {
+      window.clearTimeout(armedDeleteTimer.current);
+    }
+    setArmedDeleteMeasureId(measureId);
+    armedDeleteTimer.current = window.setTimeout(() => {
+      armedDeleteTimer.current = null;
+      setArmedDeleteMeasureId(null);
+    }, 5000);
+    return false;
+  };
+  useEffect(
+    () => () => {
+      if (armedDeleteTimer.current !== null) {
+        window.clearTimeout(armedDeleteTimer.current);
+      }
+    },
+    [],
+  );
+  /**
+   * jcpe-v2r-measure-ux-wk3w directive 4: one duration-resize session at a
+   * time, the volume-fader law — the drag moves a local width preview and
+   * exactly one duration command commits on release. Transient listeners on
+   * the captured handle only.
+   */
+  const resizeSession = useRef<Readonly<{
+    chordId: string;
+    handle: HTMLElement;
+    slot: HTMLElement;
+    originX: number;
+    startHalves: number;
+    maxHalves: number;
+    previewHalves: number;
+    slotWidthPerBeat: number;
+    onMove: (event: PointerEvent) => void;
+    onEnd: (event: PointerEvent) => void;
+    onCancel: () => void;
+  }> | null>(null);
+  /**
    * A completed drag ends with a click on the captured handle. Without this the
    * drop and the handle's own keyboard-equivalent activation would both publish
    * a boundary, which is two edges from one gesture.
@@ -421,6 +535,16 @@ export function ChartWorkspace({
     elements: readonly HTMLElement[];
     chordIds: readonly string[];
     hovered: HTMLElement | null;
+    /**
+     * jcpe-v2r-measure-ux-wk3w directive 6: when the dragged chord shares
+     * its bar, the link to its bar-mates renders as a line that stretches
+     * with the pull and visibly parts past the break distance. Releasing a
+     * parted link still inside the home bar performs the caesura split.
+     */
+    sourceMeasureId: string | null;
+    sharesMeasure: boolean;
+    link: SVGSVGElement | null;
+    linkParted: boolean;
   } | null>(null);
 
   const prefersReducedMotion = (): boolean =>
@@ -434,6 +558,7 @@ export function ChartWorkspace({
       element.removeAttribute("data-drag-lifted");
     }
     visual.hovered?.removeAttribute("data-drop-hover");
+    visual.link?.remove();
     dragVisual.current = null;
   };
 
@@ -451,12 +576,34 @@ export function ChartWorkspace({
     for (const element of elements) {
       element.setAttribute("data-drag-lifted", "true");
     }
+    const sourceMeasure = dragged.closest<HTMLElement>("[data-measure-id]");
+    const sourceMeasureId = sourceMeasure?.dataset["measureId"] ?? null;
+    const sharesMeasure =
+      (sourceMeasure?.querySelectorAll("[data-chord-id]").length ?? 0) > 1 &&
+      elements.length === 1;
+    let link: SVGSVGElement | null = null;
+    if (sharesMeasure && !prefersReducedMotion()) {
+      link = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      link.setAttribute("class", "studio-chord-link");
+      link.setAttribute("aria-hidden", "true");
+      const rect = dragged.getBoundingClientRect();
+      link.dataset["x1"] = String(rect.left + rect.width / 2);
+      link.dataset["y1"] = String(rect.top + rect.height / 2);
+      link.append(
+        document.createElementNS("http://www.w3.org/2000/svg", "line"),
+      );
+      document.body.append(link);
+    }
     dragVisual.current = {
       chordIds: elements.map(
         (element) => element.dataset["chordId"] ?? "",
       ),
       elements,
       hovered: null,
+      link,
+      linkParted: false,
+      sharesMeasure,
+      sourceMeasureId,
     };
   };
 
@@ -482,6 +629,25 @@ export function ChartWorkspace({
       visual.hovered?.removeAttribute("data-drop-hover");
       next?.setAttribute("data-drop-hover", "true");
       dragVisual.current = { ...visual, hovered: next };
+    }
+    if (visual.link !== null) {
+      const x1 = Number(visual.link.dataset["x1"]);
+      const y1 = Number(visual.link.dataset["y1"]);
+      const line = visual.link.querySelector("line");
+      const pull = Math.hypot(event.clientX - x1, event.clientY - y1);
+      const parted = pull >= TAUT_BREAK_CSS_PX;
+      if (line !== null) {
+        line.setAttribute("x1", String(x1));
+        line.setAttribute("y1", String(y1));
+        line.setAttribute("x2", String(event.clientX));
+        line.setAttribute("y2", String(event.clientY));
+      }
+      visual.link.dataset["tension"] = Math.min(1, pull / TAUT_BREAK_CSS_PX)
+        .toFixed(2);
+      visual.link.dataset["parted"] = String(parted);
+      if (parted !== (dragVisual.current?.linkParted ?? false)) {
+        dragVisual.current = { ...(dragVisual.current ?? visual), linkParted: parted };
+      }
     }
   };
 
@@ -643,6 +809,8 @@ export function ChartWorkspace({
       // Snapshot the lifted bundle before the session teardown erases it;
       // the settle pass needs the ids after the commit re-renders them.
       const bundle = dragVisual.current?.chordIds ?? [];
+      const linkParted = dragVisual.current?.linkParted ?? false;
+      const sourceMeasureId = dragVisual.current?.sourceMeasureId ?? null;
       endDragSession();
       if (!started) return;
       if (sessionKind !== "card") {
@@ -660,6 +828,30 @@ export function ChartWorkspace({
       }
       if (chord === null) return;
       const measureId = measureIdAtPoint(endEvent.clientX, endEvent.clientY);
+      /*
+       * jcpe-v2r-measure-ux-wk3w directive 6: releasing a PARTED link while
+       * still over the home bar breaks the bond — the caesura split, as a
+       * direct gesture. Anywhere else, the ordinary move; the split never
+       * fires on a cross-bar drop.
+       */
+      if (
+        linkParted &&
+        sourceMeasureId !== null &&
+        (measureId === null || measureId === sourceMeasureId)
+      ) {
+        // The caesura falls before the pulled chord — except for the bar's
+        // first chord, which is already at a barline: pulling it away parts
+        // it from what follows, so the boundary is the second chord.
+        const barMates = [
+          ...document.querySelectorAll<HTMLElement>(
+            `[data-measure-id="${sourceMeasureId}"] [data-chord-id]`,
+          ),
+        ].map((element) => element.dataset["chordId"] ?? "");
+        const boundary =
+          barMates.indexOf(chord) > 0 ? chord : (barMates[1] ?? null);
+        if (boundary !== null) onSplitAtBar(boundary);
+        return;
+      }
       if (measureId !== null) {
         onDropChordOnMeasure(measureId);
         if (bundle.length > 0) settleDrop(bundle);
@@ -682,6 +874,92 @@ export function ChartWorkspace({
       originX: event.clientX,
       originY: event.clientY,
       started: false,
+    };
+  };
+
+  /**
+   * jcpe-v2r-measure-ux-wk3w directive 4: grab the chord's inline-end edge
+   * and drag. The preview writes only the slot's local flex-grow (the
+   * volume-fader draft law: the thumb never fights a re-render), snapping in
+   * half-beat steps within the bar's free capacity, and exactly one duration
+   * command commits on release. Transient listeners on the captured handle.
+   */
+  const beginResize = (
+    chordId: string,
+    startHalves: number,
+    maxHalves: number,
+    handle: HTMLElement,
+    event: PointerEvent,
+  ): void => {
+    if (resizeSession.current !== null || dragSession.current !== null) return;
+    const slot = handle.closest("li");
+    if (slot === null) return;
+    const slotRect = slot.getBoundingClientRect();
+    const slotWidthPerBeat = slotRect.width / Math.max(0.5, startHalves / 2);
+    try {
+      handle.setPointerCapture(event.pointerId);
+    } catch {
+      // An already-departed pointer cannot be captured; the session still
+      // installs and releases its transient listeners normally.
+    }
+    const onMove = (moveEvent: PointerEvent): void => {
+      const session = resizeSession.current;
+      if (session === null) return;
+      moveEvent.preventDefault();
+      const deltaBeats =
+        (moveEvent.clientX - session.originX) / session.slotWidthPerBeat;
+      const nextHalves = Math.min(
+        session.maxHalves,
+        Math.max(1, Math.round(session.startHalves + deltaBeats * 2)),
+      );
+      if (nextHalves !== session.previewHalves) {
+        resizeSession.current = { ...session, previewHalves: nextHalves };
+        session.slot.style.flexGrow = String(
+          Math.min(16, Math.max(0.5, nextHalves / 2)),
+        );
+        session.slot.setAttribute(
+          "data-resize-preview",
+          `${halvesToBeatText(nextHalves)} beats`,
+        );
+      }
+    };
+    const finish = (commit: boolean): void => {
+      const session = resizeSession.current;
+      if (session === null) return;
+      resizeSession.current = null;
+      session.handle.removeEventListener("pointermove", session.onMove);
+      session.handle.removeEventListener("pointerup", session.onEnd);
+      session.handle.removeEventListener("pointercancel", session.onCancel);
+      session.slot.style.flexGrow = "";
+      session.slot.removeAttribute("data-resize-preview");
+      if (commit && session.previewHalves !== session.startHalves) {
+        onResizeDuration(
+          session.chordId,
+          halvesToBeatText(session.previewHalves),
+        );
+      }
+    };
+    const onEnd = (): void => {
+      finish(true);
+    };
+    const onCancel = (): void => {
+      finish(false);
+    };
+    handle.addEventListener("pointermove", onMove);
+    handle.addEventListener("pointerup", onEnd);
+    handle.addEventListener("pointercancel", onCancel);
+    resizeSession.current = {
+      chordId,
+      handle,
+      maxHalves,
+      onCancel,
+      onEnd,
+      onMove,
+      originX: event.clientX,
+      previewHalves: startHalves,
+      slot,
+      slotWidthPerBeat,
+      startHalves,
     };
   };
 
@@ -2343,23 +2621,64 @@ export function ChartWorkspace({
                                   variant="ghost"
                                 />
                               ) : null}
-                              {measure.canDelete ? (
-                                <Button
-                                  busy={false}
-                                  density="comfortable"
-                                  describedBy={[]}
-                                  disabled={false}
-                                  id={`studio-delete-measure-${measure.id}`}
-                                  invalid={false}
-                                  label={measure.deleteLabel}
-                                  onAction={() => {
-                                    onDeleteMeasure(measure.id);
-                                  }}
-                                  type="button"
-                                  variant="ghost"
-                                />
-                              ) : null}
                               </div>
+                              {/*
+                                jcpe-v2r-measure-ux-wk3w directive 1: every
+                                bar wears its trash in the corner. First
+                                press arms, second within the window
+                                deletes through the existing command; the
+                                armed state announces itself politely and
+                                disarms on inaction. A bar that cannot be
+                                deleted keeps the control visible, disabled,
+                                stating why.
+                              */}
+                              <button
+                                class="studio-measure__trash"
+                                data-testid="measure-trash"
+                                data-armed={String(
+                                  armedDeleteMeasureId === measure.id,
+                                )}
+                                id={`studio-delete-measure-${measure.id}`}
+                                type="button"
+                                disabled={!measure.canDelete}
+                                aria-label={
+                                  measure.canDelete
+                                    ? armedDeleteMeasureId === measure.id
+                                      ? `Press again to delete measure ${String(measure.number)}. Undo restores it.`
+                                      : measure.deleteLabel
+                                    : "The chart keeps its last measure"
+                                }
+                                title={
+                                  measure.canDelete
+                                    ? armedDeleteMeasureId === measure.id
+                                      ? "Press again to delete — Undo restores it"
+                                      : measure.deleteLabel
+                                    : "The chart keeps its last measure"
+                                }
+                                onClick={() => {
+                                  if (armDeleteMeasure(measure.id)) {
+                                    onDeleteMeasure(measure.id);
+                                  }
+                                }}
+                              >
+                                <span
+                                  class="studio-measure__trash-glyph"
+                                  aria-hidden="true"
+                                >
+                                  <span class="studio-measure__trash-lid" />
+                                  <span class="studio-measure__trash-can" />
+                                </span>
+                              </button>
+                              <span aria-live="polite">
+                                <VisuallyHidden
+                                  content={
+                                    armedDeleteMeasureId === measure.id
+                                      ? `Press the trash again to delete measure ${String(measure.number)}. Undo restores it.`
+                                      : ""
+                                  }
+                                  focusableWhenSkippedTo={false}
+                                />
+                              </span>
                             </header>
 
                             <div class="studio-measure__canvas">
@@ -2819,11 +3138,112 @@ export function ChartWorkspace({
                                             ))}
                                           </ul>
                                         ) : null}
+                                        {/*
+                                          jcpe-v2r-measure-ux-wk3w directive
+                                          4: the selected chord's inline-end
+                                          edge is a duration grip. The drag
+                                          previews width locally in half-beat
+                                          snaps and commits ONE duration
+                                          command on release; the duration
+                                          editor stays the keyboard path.
+                                          Render-on-selection keeps the card
+                                          listener census flat.
+                                        */}
+                                        {chord.selected ? (
+                                          <span
+                                            class="studio-chord-card__resize"
+                                            data-card-action="resize"
+                                            data-testid="chord-resize-handle"
+                                            role="presentation"
+                                            title={`Drag to adjust — ${chord.durationLabel}`}
+                                            onPointerDown={(event) => {
+                                              event.stopPropagation();
+                                              const beats = beatsOfLabel(
+                                                chord.durationLabel,
+                                              );
+                                              const capacity = meterBeatsOf(
+                                                measure.meterLabel,
+                                              );
+                                              const others = measure.chords
+                                                .filter(
+                                                  (mate) =>
+                                                    mate.id !== chord.id,
+                                                )
+                                                .reduce(
+                                                  (sum, mate) =>
+                                                    sum +
+                                                    (beatsOfLabel(
+                                                      mate.durationLabel,
+                                                    ) ?? 0),
+                                                  0,
+                                                );
+                                              if (beats === null) return;
+                                              beginResize(
+                                                chord.id,
+                                                Math.round(beats * 2),
+                                                Math.max(
+                                                  1,
+                                                  Math.round(
+                                                    (capacity - others) * 2,
+                                                  ),
+                                                ),
+                                                event.currentTarget,
+                                                event,
+                                              );
+                                            }}
+                                          >
+                                            <span aria-hidden="true" />
+                                          </span>
+                                        ) : null}
                                       </article>
                                     </li>
                                   ))}
                                 </ol>
                               )}
+                              {/*
+                                jcpe-v2r-measure-ux-wk3w directives 2+3: the
+                                bar's own add-chord door. One press halves the
+                                last chord into a fresh editable slot through
+                                the existing split-duration command — press it
+                                until the bar holds K chords. Hidden at the
+                                four-chord cap and on empty bars (whose copy
+                                already invites typing).
+                              */}
+                              {measure.chords.length >= 1 &&
+                              measure.chords.length < 4 ? (
+                                <button
+                                  class="studio-measure__add-chord"
+                                  data-testid="measure-add-chord"
+                                  type="button"
+                                  aria-label={`Add a chord slot to measure ${String(measure.number)} — splits the last chord in two`}
+                                  title="Add a chord slot (splits the last chord)"
+                                  onClick={() => {
+                                    const last = measure.chords.at(-1);
+                                    if (last === undefined) return;
+                                    const half = halfOfLabel(last.durationLabel);
+                                    if (half === null) return;
+                                    onSplitDuration(last.id, half);
+                                  }}
+                                >
+                                  <span aria-hidden="true">+</span>
+                                </button>
+                              ) : null}
+                              {measure.chords.length >= 2 ? (
+                                <button
+                                  class="studio-measure__merge-chord"
+                                  data-testid="measure-merge-chord"
+                                  type="button"
+                                  aria-label={`Merge the last two chords of measure ${String(measure.number)} — the earlier one absorbs the duration`}
+                                  title="Merge the last two chords"
+                                  onClick={() => {
+                                    const left = measure.chords.at(-2);
+                                    if (left === undefined) return;
+                                    onCardMenuAction(left.id, "join-next");
+                                  }}
+                                >
+                                  <span aria-hidden="true">−</span>
+                                </button>
+                              ) : null}
                             </div>
 
                             <div class="studio-measure__facts">

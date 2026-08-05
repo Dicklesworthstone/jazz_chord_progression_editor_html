@@ -12,6 +12,7 @@ import {
   duplicateSelectionAutoResolving,
   encodeShareFragment,
   loadProgressionLibraryEntry,
+  RESIZE_AUTO_COMPLETION_REASON,
   STARTER_CHART,
   type LoadProgressionLibraryEntryResult,
   type MidiImportCommitResult,
@@ -1155,9 +1156,15 @@ function viewFromSnapshot(
                   completionLabel: measure.completionLabel,
                   completionReason: measure.completionReason,
                   canSplitSectionHere: measureIndex > 0,
-                  canDelete:
-                    measure.eventCount === 0 && snapshot.measureCount > 1,
-                  deleteLabel: `Remove empty measure ${String(measure.ordinal)}`,
+                  /*
+                   * jcpe-v2r-measure-ux-wk3w: any bar but the last may go —
+                   * the controller command handles populated bars as one
+                   * undoable step, and the corner trash's two-step arm is
+                   * the accidental-press guard. The old empty-only gate was
+                   * presentation conservatism, not a command law.
+                   */
+                  canDelete: snapshot.measureCount > 1,
+                  deleteLabel: `Delete measure ${String(measure.ordinal)}`,
                   isInsertionTarget: snapshot.quickEntry.targetId === measure.id,
                   targetLabel: `Aim quick entry at measure ${String(measure.ordinal)}`,
                   insertBeforeLabel: `Insert measure before measure ${String(measure.ordinal)}`,
@@ -2421,6 +2428,23 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
             chordId,
             kind: "duration",
           });
+        },
+        /*
+         * jcpe-v2r-measure-ux-wk3w directive 4: the dragged grip is a
+         * routine edit, so a bar it leaves short states its reviewed reason
+         * rather than interrupting the gesture with the dialog — the
+         * delete/duplicate auto-declaring precedent (jcpe-yvni). The typed
+         * duration editor above keeps the deliberate dialog path.
+         */
+        onResizeDuration: (chordId, beatText) => {
+          recordEditResult(
+            actions.setEventDurationText(
+              chordId,
+              beatText,
+              RESIZE_AUTO_COMPLETION_REASON,
+            ),
+            { beatText, chordId, kind: "duration" },
+          );
         },
         onConfirmIncompleteMeasure: (reason) => {
           // Re-run exactly the operation the refusal interrupted. Guessing an

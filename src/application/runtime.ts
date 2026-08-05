@@ -45,6 +45,7 @@ export { instrumentOptions } from "./studio-view-model";
 export {
   DELETE_AUTO_COMPLETION_REASON,
   DUPLICATE_AUTO_COMPLETION_REASON,
+  RESIZE_AUTO_COMPLETION_REASON,
   deleteSelectionAutoDeclaring,
   duplicateSelectionAutoResolving,
 } from "./studio-edit-gestures";

@@ -263,6 +263,7 @@ function ResponsiveStaleOwnerHarness() {
     onInsertSection: () => undefined,
     onApplyInlineSymbol: () => undefined,
     onApplyDuration: () => undefined,
+    onResizeDuration: () => undefined,
     onConfirmIncompleteMeasure: () => undefined,
     onCancelPendingEdit: () => undefined,
     onRenameSection: () => undefined,

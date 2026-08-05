@@ -588,6 +588,8 @@ export type StudioShellCallbacks = Readonly<{
   onInsertSection: () => void;
   onApplyInlineSymbol: (chordId: string, symbolText: string) => void;
   onApplyDuration: (chordId: string, beatText: string) => void;
+  /** The dragged duration grip; auto-declares a short bar (V2R-14). */
+  onResizeDuration: (chordId: string, beatText: string) => void;
   onConfirmIncompleteMeasure: (reason: string) => void;
   onCancelPendingEdit: () => void;
   /** Presentation-only: opens or closes the measure-completion dialog. */

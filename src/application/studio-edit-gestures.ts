@@ -43,6 +43,15 @@ export const DELETE_AUTO_COMPLETION_REASON = "Shortened by delete";
 export const DUPLICATE_AUTO_COMPLETION_REASON = "Shortened by duplicate";
 
 /**
+ * The reviewed reason a dragged duration grip writes into a bar it leaves
+ * short (jcpe-v2r-measure-ux-wk3w). Dragging an edge is the same routine
+ * edit as a delete: interrogating the user mid-gesture would make the
+ * grip unusable, so the reason is stated and stored rather than demanded.
+ * The typed duration editor keeps the deliberate dialog path.
+ */
+export const RESIZE_AUTO_COMPLETION_REASON = "Shortened by dragging the edge";
+
+/**
  * The controller surface the gestures compose. Structural, so the real
  * controller and the App's bound action map both satisfy it.
  */
