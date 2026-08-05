@@ -5663,6 +5663,16 @@ button.studio-paper-head__key:focus-visible {
 }
 
 /*
+ * The grip is a SIBLING of the card, not a child: the reviewed per-card
+ * listener census counts every listener inside [data-chord-id], and a
+ * render-on-selection handler there makes the selected card differ from its
+ * twenty peers (U1-INT-023). The li owns the positioning context.
+ */
+.studio-measure__chords > li {
+  position: relative;
+}
+
+/*
  * The grip sits inside the card's end edge and BELOW the vertical middle:
  * the caesura mark owns the divider's centre, and two round targets in one
  * spot means the pointer reaches whichever paints last, not the one aimed

@@ -155,8 +155,11 @@ export type {
 export {
   DELETE_AUTO_COMPLETION_REASON,
   DUPLICATE_AUTO_COMPLETION_REASON,
+  MOVE_AUTO_COMPLETION_REASON,
+  RESIZE_AUTO_COMPLETION_REASON,
   deleteSelectionAutoDeclaring,
   duplicateSelectionAutoResolving,
+  moveSelectionToAutoResolving,
 } from "./studio-edit-gestures";
 export type { StudioEditGestureActions } from "./studio-edit-gestures";
 

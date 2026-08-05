@@ -6,6 +6,8 @@ import {
   deleteSelectionAutoDeclaring,
   DUPLICATE_AUTO_COMPLETION_REASON,
   duplicateSelectionAutoResolving,
+  MOVE_AUTO_COMPLETION_REASON,
+  moveSelectionToAutoResolving,
   type StudioController,
   type StudioControllerActionResult,
   type StudioViewModel,
@@ -304,5 +306,93 @@ describe("jcpe-yvni the deliberate custom-reason path is intact", () => {
     const measure = declared.snapshot.sections[0]?.measures[0];
     expect(measure?.completion).toBe("incomplete");
     expect(measure?.completionReason).toBe("Pickup into the head");
+  });
+});
+
+describe("jcpe-v2r-measure-ux-wk3w a dropped chord lands", () => {
+  test("moving into a bar with room is one command that declares the emptied bar", () => {
+    const studio = controller();
+    seedOneBar(studio, "Dm9:2 G13:2");
+    seedBars(studio, "| Cmaj7:2 Fmaj7:2 |");
+    // Open two beats in the destination first, so the drop under test lands
+    // in a bar that genuinely has room.
+    const seeded = studio.getSnapshot();
+    const spare = seeded.sections[0]?.measures[1]?.events[1]?.id;
+    if (spare === undefined) throw new Error("GESTURE_TEST_NO_SPARE");
+    expectOk(studio.selectEvent(spare));
+    expectOk(deleteSelectionAutoDeclaring(studio));
+
+    const before = studio.getSnapshot();
+    const target = before.sections[0]?.measures[1];
+    const source = before.sections[0]?.measures[0];
+    if (target === undefined || source === undefined) {
+      throw new Error("GESTURE_TEST_NO_TARGET");
+    }
+    const moved = source.events[0]?.id;
+    if (moved === undefined) throw new Error("GESTURE_TEST_NO_CHORD");
+    expectOk(studio.selectEvent(moved));
+    // Measured after the selection intent: the claim is that the MOVE is one
+    // command, not that selecting is free of state.
+    const revisionBefore = studio.getSnapshot().revision;
+
+    const result = expectOk(moveSelectionToAutoResolving(studio, target.id));
+
+    // Exactly one command: the chord arrives, and the bar it left states why
+    // it is short with the reviewed constant rather than interrogating.
+    expect(result.snapshot.revision).toBe(revisionBefore + 1);
+    expect(result.snapshot.sections[0]?.measures).toHaveLength(2);
+    expect(
+      result.snapshot.sections[0]?.measures[1]?.events.map(
+        (event) => event.id,
+      ),
+    ).toContain(moved);
+    expect(result.snapshot.sections[0]?.measures[0]?.completionReason).toBe(
+      MOVE_AUTO_COMPLETION_REASON,
+    );
+  });
+
+  test("a full destination makes room instead of refusing the drop", () => {
+    const studio = controller();
+    seedOneBar(studio, "Dm9:2 G13:2");
+    seedBars(studio, "| Cmaj7:4 |");
+    const before = studio.getSnapshot();
+    const target = before.sections[0]?.measures[1];
+    const moved = before.sections[0]?.measures[0]?.events[0]?.id;
+    if (target === undefined || moved === undefined) {
+      throw new Error("GESTURE_TEST_NO_TARGET");
+    }
+    expectOk(studio.selectEvent(moved));
+
+    // Even with the departure declared, the plain intent refuses: a full bar
+    // has no room for the arrival. That refusal is what the gesture resolves.
+    expect(
+      refusalCode(
+        studio.moveSelectionTo(target.id, null, MOVE_AUTO_COMPLETION_REASON),
+      ),
+    ).toBe("u1.duration_overfills_measure");
+
+    const resolved = expectOk(moveSelectionToAutoResolving(studio, target.id));
+    // The reviewed resolution: a fresh bar after the destination receives it.
+    expect(resolved.snapshot.sections[0]?.measures).toHaveLength(3);
+    expect(
+      resolved.snapshot.sections[0]?.measures[2]?.events.map(
+        (event) => event.id,
+      ),
+    ).toEqual([moved]);
+    // Nothing already on the page was re-portioned.
+    expect(resolved.snapshot.sections[0]?.measures[1]?.events).toHaveLength(1);
+  });
+
+  test("an unknown destination refuses and changes nothing", () => {
+    const studio = controller();
+    seedOneBar(studio);
+    const [first] = chordIds(studio.getSnapshot());
+    if (first === undefined) throw new Error("GESTURE_TEST_NO_CHORD");
+    expectOk(studio.selectEvent(first));
+    const before = studio.getSnapshot();
+    expect(refusalCode(moveSelectionToAutoResolving(studio, "no-such-bar"))).toBe(
+      "u1.target_missing",
+    );
+    expect(studio.getSnapshot().revision).toBe(before.revision);
   });
 });

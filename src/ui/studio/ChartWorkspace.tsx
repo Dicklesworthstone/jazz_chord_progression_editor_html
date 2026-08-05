@@ -3138,64 +3138,64 @@ export function ChartWorkspace({
                                             ))}
                                           </ul>
                                         ) : null}
-                                        {/*
-                                          jcpe-v2r-measure-ux-wk3w directive
-                                          4: the selected chord's inline-end
-                                          edge is a duration grip. The drag
-                                          previews width locally in half-beat
-                                          snaps and commits ONE duration
-                                          command on release; the duration
-                                          editor stays the keyboard path.
-                                          Render-on-selection keeps the card
-                                          listener census flat.
-                                        */}
-                                        {chord.selected ? (
-                                          <span
-                                            class="studio-chord-card__resize"
-                                            data-card-action="resize"
-                                            data-testid="chord-resize-handle"
-                                            role="presentation"
-                                            title={`Drag to adjust — ${chord.durationLabel}`}
-                                            onPointerDown={(event) => {
-                                              event.stopPropagation();
-                                              const beats = beatsOfLabel(
-                                                chord.durationLabel,
-                                              );
-                                              const capacity = meterBeatsOf(
-                                                measure.meterLabel,
-                                              );
-                                              const others = measure.chords
-                                                .filter(
-                                                  (mate) =>
-                                                    mate.id !== chord.id,
-                                                )
-                                                .reduce(
-                                                  (sum, mate) =>
-                                                    sum +
-                                                    (beatsOfLabel(
-                                                      mate.durationLabel,
-                                                    ) ?? 0),
-                                                  0,
-                                                );
-                                              if (beats === null) return;
-                                              beginResize(
-                                                chord.id,
-                                                Math.round(beats * 2),
-                                                Math.max(
-                                                  1,
-                                                  Math.round(
-                                                    (capacity - others) * 2,
-                                                  ),
-                                                ),
-                                                event.currentTarget,
-                                                event,
-                                              );
-                                            }}
-                                          >
-                                            <span aria-hidden="true" />
-                                          </span>
-                                        ) : null}
                                       </article>
+                                      {/*
+                                        jcpe-v2r-measure-ux-wk3w directive
+                                        4: the selected chord's inline-end
+                                        edge is a duration grip. The drag
+                                        previews width locally in half-beat
+                                        snaps and commits ONE duration
+                                        command on release; the duration
+                                        editor stays the keyboard path.
+                                        Render-on-selection keeps the card
+                                        listener census flat.
+                                      */}
+                                      {chord.selected ? (
+                                        <span
+                                          class="studio-chord-card__resize"
+                                          data-card-action="resize"
+                                          data-testid="chord-resize-handle"
+                                          role="presentation"
+                                          title={`Drag to adjust — ${chord.durationLabel}`}
+                                          onPointerDown={(event) => {
+                                            event.stopPropagation();
+                                            const beats = beatsOfLabel(
+                                              chord.durationLabel,
+                                            );
+                                            const capacity = meterBeatsOf(
+                                              measure.meterLabel,
+                                            );
+                                            const others = measure.chords
+                                              .filter(
+                                                (mate) =>
+                                                  mate.id !== chord.id,
+                                              )
+                                              .reduce(
+                                                (sum, mate) =>
+                                                  sum +
+                                                  (beatsOfLabel(
+                                                    mate.durationLabel,
+                                                  ) ?? 0),
+                                                0,
+                                              );
+                                            if (beats === null) return;
+                                            beginResize(
+                                              chord.id,
+                                              Math.round(beats * 2),
+                                              Math.max(
+                                                1,
+                                                Math.round(
+                                                  (capacity - others) * 2,
+                                                ),
+                                              ),
+                                              event.currentTarget,
+                                              event,
+                                            );
+                                          }}
+                                        >
+                                          <span aria-hidden="true" />
+                                        </span>
+                                      ) : null}
                                     </li>
                                   ))}
                                 </ol>

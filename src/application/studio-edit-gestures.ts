@@ -52,6 +52,12 @@ export const DUPLICATE_AUTO_COMPLETION_REASON = "Shortened by duplicate";
 export const RESIZE_AUTO_COMPLETION_REASON = "Shortened by dragging the edge";
 
 /**
+ * The reviewed reason a dropped chord writes into the bar it leaves short.
+ * Dragging a chord out of a bar is as routine as deleting from it.
+ */
+export const MOVE_AUTO_COMPLETION_REASON = "Shortened by moving a chord out";
+
+/**
  * The controller surface the gestures compose. Structural, so the real
  * controller and the App's bound action map both satisfy it.
  */
@@ -67,6 +73,11 @@ export type StudioEditGestureActions = Readonly<{
   insertMeasure: (
     sectionId: string,
     beforeMeasureId: string | null,
+  ) => StudioControllerActionResult;
+  moveSelectionTo: (
+    measureId: string,
+    beforeEventId?: string | null,
+    incompleteReason?: string | null,
   ) => StudioControllerActionResult;
 }>;
 
@@ -189,5 +200,66 @@ export function duplicateSelectionAutoResolving(
   return actions.duplicateSelection(
     freshMeasure.id,
     DUPLICATE_AUTO_COMPLETION_REASON,
+  );
+}
+
+/**
+ * Drop a dragged selection into a bar so it LANDS (jcpe-v2r-measure-ux-wk3w
+ * directive 5: moving a chord into another existing measure should just
+ * work and make room for it).
+ *
+ * The plain move is attempted first, auto-declaring any bar the departure
+ * leaves short. When the destination refuses because the arrival overfills
+ * it, the gesture performs the same reviewed resolution the duplicate
+ * gesture uses for that identical refusal: the room is made at the
+ * destination's end — a fresh bar immediately after it receives the chord.
+ * Nothing already on the page is silently re-portioned, and the pinned
+ * command vocabulary gains no kind; with no composite move command the
+ * resolution costs two undoable steps, exactly as the duplicate path
+ * documents.
+ */
+export function moveSelectionToAutoResolving(
+  actions: StudioEditGestureActions,
+  measureId: string,
+): StudioControllerActionResult {
+  const attempt = actions.moveSelectionTo(
+    measureId,
+    null,
+    MOVE_AUTO_COMPLETION_REASON,
+  );
+  if (attempt.ok || attempt.refusal.code !== "u1.duration_overfills_measure") {
+    return attempt;
+  }
+  const snapshot = actions.getSnapshot();
+  if (!selectionFitsOneBar(snapshot)) return attempt;
+  let ownerSectionId: string | null = null;
+  let beforeMeasureId: string | null = null;
+  let knownMeasureIds: ReadonlySet<string> | null = null;
+  for (const section of snapshot.sections) {
+    for (const [index, measure] of section.measures.entries()) {
+      if (measure.id !== measureId) continue;
+      ownerSectionId = section.id;
+      beforeMeasureId = section.measures[index + 1]?.id ?? null;
+      knownMeasureIds = new Set(section.measures.map((entry) => entry.id));
+    }
+  }
+  if (ownerSectionId === null || knownMeasureIds === null) return attempt;
+  const known = knownMeasureIds;
+  const sectionId = ownerSectionId;
+  const inserted = actions.insertMeasure(sectionId, beforeMeasureId);
+  if (!inserted.ok) return attempt;
+  /*
+   * The fresh bar's id exists only in the LIVE snapshot, never the one the
+   * render captured — the law the library-load gesture learned the hard way.
+   */
+  const fresh = actions.getSnapshot();
+  const freshMeasure = fresh.sections
+    .find((section) => section.id === sectionId)
+    ?.measures.find((measure) => !known.has(measure.id));
+  if (freshMeasure === undefined) return attempt;
+  return actions.moveSelectionTo(
+    freshMeasure.id,
+    null,
+    MOVE_AUTO_COMPLETION_REASON,
   );
 }

@@ -12,6 +12,7 @@ import {
   duplicateSelectionAutoResolving,
   encodeShareFragment,
   loadProgressionLibraryEntry,
+  moveSelectionToAutoResolving,
   RESIZE_AUTO_COMPLETION_REASON,
   STARTER_CHART,
   type LoadProgressionLibraryEntryResult,
@@ -195,6 +196,12 @@ export type AppActions = Readonly<{
   ) => StudioControllerActionResult;
   pauseProgression: () => StudioControllerActionResult;
   stopProgression: () => StudioControllerActionResult;
+  /** Seek the active run to a fraction of the chart (jcpe-v2r-loop-seek-ukk6). */
+  seekToFraction: (fraction: number) => StudioControllerActionResult;
+  /** Toggle whole-chart looping; armed intent applies at the next Play. */
+  toggleLoop: () => StudioControllerActionResult;
+  /** Display-only loop state: armed intent vs transport truth. */
+  readLoopView: () => Readonly<{ enabled: boolean; engaged: boolean }>;
   /**
    * The one library-load gesture (jcpe-my0j), owned by the application layer
    * so a test can drive the real path: replace the chart, retitle, set
@@ -2061,6 +2068,18 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
           recordEditResult(actions.setMasterVolume(volume));
         },
         readMeterFrame: actions.readTransportAnalysisFrame,
+        onSeekFraction: (fraction) => {
+          /*
+           * jcpe-v2r-loop-seek-ukk6: outside playing/paused the scrub surface
+           * never dispatches, so a refusal here is a race (playback ended
+           * mid-click) and the honest response is the refusal notice.
+           */
+          recordEditResult(actions.seekToFraction(fraction));
+        },
+        onLoopToggle: () => {
+          recordEditResult(actions.toggleLoop());
+        },
+        readLoopState: actions.readLoopView,
       }}
       callbacks={{
         onCopyShareLink: () => {
@@ -2518,7 +2537,13 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
           recordEditResult(actions.annotateSection(sectionId, annotation));
         },
         onDropChordOnMeasure: (measureId) => {
-          recordEditResult(actions.moveSelectionTo(measureId), {
+          /*
+           * jcpe-v2r-measure-ux-wk3w directive 5: a dropped chord lands. The
+           * gesture auto-declares a bar the departure leaves short and, when
+           * the destination is already full, makes room at its end instead
+           * of refusing the drop outright.
+           */
+          recordEditResult(moveSelectionToAutoResolving(actions, measureId), {
             kind: "move-to",
             measureId,
           });
@@ -2952,6 +2977,9 @@ export function StudioRoot({
         splitEventDuration: controller.splitEventDuration,
         splitSection: controller.splitSection,
         stopProgression: controller.stopProgression,
+        seekToFraction: controller.seekToFraction,
+        toggleLoop: controller.toggleLoop,
+        readLoopView: controller.readLoopView,
         setSectionBoundary: controller.setSectionBoundary,
         setEventDurationText: controller.setEventDurationText,
         getSnapshot: controller.getSnapshot,
