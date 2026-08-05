@@ -189,6 +189,9 @@ function payloadFor(command: string): TransportCommandPayload {
       };
     case "release-preview":
       return { kind: "release-preview", previewId: "x1:preview:matrix" };
+    case "set-mix":
+      /* jcpe-v2r-live-mix-btb4 */
+      return { kind: "set-mix", mix: { masterVolume: 0.5, reverbAmount: 0 } };
     case "replace-plan":
       return { kind: "replace-plan", binding: planBinding(plan, 5) };
     case "dispose-transport":
