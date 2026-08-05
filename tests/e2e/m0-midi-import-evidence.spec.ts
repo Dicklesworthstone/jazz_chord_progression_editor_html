@@ -98,10 +98,12 @@ test.describe("M0 wasm boundary over the real artifact, independent corpus", () 
     expect(authored.traits).toContain("velocity-zero-note-off");
     await chooseFile(page, "authored-format-0.mid", authored.bytesHex);
 
-    await expect(page.getByTestId("midi-import-summary")).toBeVisible();
+    await expect(page.getByTestId("midi-import-auto")).toBeVisible();
     /* The preview is a statement: nothing has entered the document yet. */
     await expect(cards(page)).toHaveCount(0);
 
+    await page.getByTestId("midi-import-advanced").locator("summary").click();
+    await expect(page.getByTestId("midi-import-summary")).toBeVisible();
     const sonorities = page.getByTestId("midi-import-sonority");
     await expect(sonorities).toHaveCount(2);
     await expect(sonorities.nth(0)).toContainText("C");
@@ -111,7 +113,7 @@ test.describe("M0 wasm boundary over the real artifact, independent corpus", () 
     expectCleanDiagnostics(diagnostics);
   });
 
-  test("M0-VER-B02 committing an authored file is one undoable edit", async ({
+  test("M0-VER-B02 committing an authored file states its undo count truthfully", async ({
     page,
   }) => {
     const diagnostics = captureDiagnostics(page);
@@ -122,14 +124,24 @@ test.describe("M0 wasm boundary over the real artifact, independent corpus", () 
       "authored-format-0.mid",
       requireAccepted("M0-VER-A01").bytesHex,
     );
-    await expect(page.getByTestId("midi-import-summary")).toBeVisible();
+    await expect(page.getByTestId("midi-import-auto")).toBeVisible();
 
     await page.locator("#studio-midi-import-commit-rail").click();
     await expect(cards(page)).toHaveCount(2);
 
+    const status = await page
+      .getByTestId("midi-import-status")
+      .first()
+      .textContent();
+    const match = /as (?:one|(\d+)) edit/.exec(status ?? "");
+    expect(match).not.toBeNull();
+    const statedCount =
+      match?.[1] === undefined ? 1 : Number.parseInt(match[1], 10);
     const undo = page.locator("#studio-undo");
-    await expect(undo).toBeEnabled();
-    await undo.click();
+    for (let press = 0; press < statedCount; press += 1) {
+      await expect(undo).toBeEnabled();
+      await undo.click();
+    }
     await expect(cards(page)).toHaveCount(0);
     await expect(undo).toBeDisabled();
     expectCleanDiagnostics(diagnostics);
@@ -146,6 +158,8 @@ test.describe("M0 wasm boundary over the real artifact, independent corpus", () 
     expect(authored.traits).toContain("mid-track-meter");
     await chooseFile(page, "authored-tempo-change.mid", authored.bytesHex);
 
+    await expect(page.getByTestId("midi-import-auto")).toBeVisible();
+    await page.getByTestId("midi-import-advanced").locator("summary").click();
     await expect(page.getByTestId("midi-import-summary")).toBeVisible();
     const sonorities = page.getByTestId("midi-import-sonority");
     await expect(sonorities).toHaveCount(2);
@@ -166,6 +180,7 @@ test.describe("M0 wasm boundary over the real artifact, independent corpus", () 
       requireAccepted("M0-VER-A04").bytesHex,
     );
 
+    await page.getByTestId("midi-import-advanced").locator("summary").click();
     const custom = page.getByTestId("midi-import-custom");
     await expect(custom).toBeVisible();
     await expect(custom).toContainText("Db");
@@ -222,7 +237,7 @@ test.describe("M0 wasm boundary over the real artifact, independent corpus", () 
       "authored-format-0.mid",
       requireAccepted("M0-VER-A01").bytesHex,
     );
-    await expect(page.getByTestId("midi-import-summary")).toBeVisible();
+    await expect(page.getByTestId("midi-import-auto")).toBeVisible();
     await expect(page.getByTestId("midi-import-refusal")).toHaveCount(0);
     expectCleanDiagnostics(diagnostics);
   });
