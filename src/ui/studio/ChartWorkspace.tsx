@@ -99,6 +99,41 @@ const DRAG_THRESHOLD_CSS_PX = 8;
  */
 const DURATION_BEATS_PATTERN = /^(\d+)(?:\/(\d+))?/u;
 
+/**
+ * Whether joining the successor's chords into this bar fits its exact
+ * capacity (jcpe-v2r-measure-join-v3s6). Exact bigint cross-multiplication
+ * over the frozen labels — presentation ELIGIBILITY only: the move command
+ * re-verifies with the stored rationals and refuses anything this misreads.
+ */
+function joinFitsCapacity(
+  measure: Readonly<{
+    capacityLabel: string;
+    chords: readonly Readonly<{ durationLabel: string }>[];
+  }>,
+  next: Readonly<{
+    chords: readonly Readonly<{ durationLabel: string }>[];
+  }>,
+): boolean {
+  const exact = (label: string): readonly [bigint, bigint] | null => {
+    const match = /^(\d+)(?:\/(\d+))?/u.exec(label);
+    if (match?.[1] === undefined) return null;
+    const denominator = match[2] === undefined ? 1n : BigInt(match[2]);
+    if (denominator === 0n) return null;
+    return [BigInt(match[1]), denominator];
+  };
+  const capacity = exact(measure.capacityLabel);
+  if (capacity === null) return false;
+  let totalN = 0n;
+  let totalD = 1n;
+  for (const chord of [...measure.chords, ...next.chords]) {
+    const duration = exact(chord.durationLabel);
+    if (duration === null) return false;
+    totalN = totalN * duration[1] + duration[0] * totalD;
+    totalD *= duration[1];
+  }
+  return totalN * capacity[1] <= capacity[0] * totalD;
+}
+
 function chordBeatFlexGrow(durationLabel: string): number {
   const match = DURATION_BEATS_PATTERN.exec(durationLabel);
   if (match === null) return 1;
@@ -2700,11 +2735,16 @@ export function ChartWorkspace({
                                   (entry) => entry.id === measure.id,
                                 );
                                 const next = section.measures[at + 1];
+                                /* Exact-fit eligibility: the move preserves
+                                   every duration, so the tie only offers a
+                                   join whose combined beats fit this bar's
+                                   capacity — beat fractions compared with
+                                   the same numeric parse the width lanes
+                                   use, never floats over musical facts. */
                                 return (
                                   next !== undefined &&
                                   next.chords.length > 0 &&
-                                  measure.chords.length + next.chords.length <=
-                                    4
+                                  joinFitsCapacity(measure, next)
                                 );
                               })() ? (
                                 <button

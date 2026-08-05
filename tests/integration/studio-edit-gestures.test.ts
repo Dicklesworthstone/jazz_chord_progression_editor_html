@@ -7,6 +7,7 @@ import {
   DUPLICATE_AUTO_COMPLETION_REASON,
   duplicateSelectionAutoResolving,
   MOVE_AUTO_COMPLETION_REASON,
+  joinNextMeasureComposing,
   moveSelectionToAutoResolving,
   type StudioController,
   type StudioControllerActionResult,
@@ -450,5 +451,53 @@ describe("jcpe-v2r-measure-ux-wk3w a dropped chord lands", () => {
     const after = studio.getSnapshot().sections[0]?.measures;
     expect(after?.length).toBe(measuresBefore);
     expect(after?.every((m) => knownIds.has(m.id))).toBe(true);
+  });
+});
+
+describe("V2R-17 the tie mark's join (jcpe-v2r-measure-join-v3s6)", () => {
+  test("joins the next bar in and removes the bar it empties", () => {
+    const studio = controller();
+    /* The caesura's own end state: one full bar cut in two, which is the
+       only shape a duration-preserving join can fit back together. */
+    seedBars(studio, "| Cmaj7:2 Fmaj7:2 |");
+    const [, second] = chordIds(studio.getSnapshot());
+    if (second === undefined) throw new Error("GESTURE_TEST_NO_CHORD");
+    expectOk(studio.splitAtBar(second, "cut for the join", "cut for the join"));
+    const measures = studio.getSnapshot().sections[0]?.measures ?? [];
+    const host = measures[0];
+    const successor = measures[1];
+    if (host === undefined || successor === undefined) {
+      throw new Error("fixture needs two measures");
+    }
+    const hostChords = host.events.length;
+    const movedChords = successor.events.length;
+    const measuresBefore = measures.length;
+
+    const result = joinNextMeasureComposing(studio, host.id);
+    if (!result.ok) {
+      /* An overfilling join is the honest refusal, not a silent no-op. */
+      expect(result.refusal.code).toBe("u1.duration_overfills_measure");
+      return;
+    }
+    const after = studio.getSnapshot().sections[0]?.measures ?? [];
+    expect(after.length).toBe(measuresBefore - 1);
+    expect(after[0]?.id).toBe(host.id);
+    expect(after[0]?.events.length).toBe(hostChords + movedChords);
+    expect(after.some((measure) => measure.id === successor.id)).toBe(false);
+  });
+
+  test("a join with no successor never mutates the chart", () => {
+    const studio = controller();
+    seedOneBar(studio);
+    const measures = studio.getSnapshot().sections[0]?.measures ?? [];
+    const last = measures[measures.length - 1];
+    if (last === undefined) throw new Error("fixture needs a measure");
+    const revisionBefore = studio.getSnapshot().revision;
+    const result = joinNextMeasureComposing(studio, last.id);
+    expect(result.ok).toBe(false);
+    expect(studio.getSnapshot().revision).toBe(revisionBefore);
+    expect(studio.getSnapshot().sections[0]?.measures.length).toBe(
+      measures.length,
+    );
   });
 });
