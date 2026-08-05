@@ -277,6 +277,7 @@ function ResponsiveStaleOwnerHarness() {
     onJoinSections: () => undefined,
     onDeleteMeasure: () => undefined,
     onSplitAtBar: () => undefined,
+    onJoinNextMeasure: () => undefined,
     onSetInsertionPoint: () => undefined,
     onRangeModeChange: () => undefined,
     onRangeEdgeFromFocus: () => undefined,

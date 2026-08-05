@@ -71,6 +71,8 @@ export type ChartWorkspaceProps = Readonly<{
   onJoinSections: (sectionId: string) => void;
   onDeleteMeasure: (measureId: string) => void;
   onSplitAtBar: (beforeEventId: string) => void;
+  /* jcpe-v2r-measure-join-v3s6: the tie mark merges the next bar in. */
+  onJoinNextMeasure: (measureId: string) => void;
   onSetInsertionPoint: (measureId: string) => void;
   onRangeModeChange: (active: boolean) => void;
   onRangeEdgeFromFocus: (edge: "start" | "end") => void;
@@ -397,6 +399,7 @@ export function ChartWorkspace({
   onJoinSections,
   onDeleteMeasure,
   onSplitAtBar,
+  onJoinNextMeasure,
   onSetInsertionPoint,
   onRangeModeChange,
   onRangeEdgeFromFocus,
@@ -2679,6 +2682,48 @@ export function ChartWorkspace({
                                   focusableWhenSkippedTo={false}
                                 />
                               </span>
+                              {/*
+                                The tie mark (jcpe-v2r-measure-join-v3s6):
+                                on the SELECTED bar with a live successor
+                                whose chords fit alongside (the four-slot
+                                bar), one press composes the reviewed join —
+                                the next bar's chords move in, the emptied
+                                bar goes. Render-on-selection keeps the
+                                census flat; an overfilling join refuses at
+                                the move with its own named remedies.
+                              */}
+                              {measure.chords.some(
+                                (candidate) => candidate.selected,
+                              ) &&
+                              (() => {
+                                const at = section.measures.findIndex(
+                                  (entry) => entry.id === measure.id,
+                                );
+                                const next = section.measures[at + 1];
+                                return (
+                                  next !== undefined &&
+                                  next.chords.length > 0 &&
+                                  measure.chords.length + next.chords.length <=
+                                    4
+                                );
+                              })() ? (
+                                <button
+                                  class="studio-tie"
+                                  type="button"
+                                  data-testid="measure-tie-mark"
+                                  aria-label={`Join measure ${String(measure.number)} with the next measure`}
+                                  title="Join with the next measure"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    onJoinNextMeasure(measure.id);
+                                  }}
+                                >
+                                  <span
+                                    class="studio-tie__mark"
+                                    aria-hidden="true"
+                                  />
+                                </button>
+                              ) : null}
                             </header>
 
                             <div class="studio-measure__canvas">

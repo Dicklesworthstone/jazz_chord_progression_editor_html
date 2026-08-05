@@ -11,6 +11,7 @@ import {
   deleteSelectionAutoDeclaring,
   duplicateSelectionAutoResolving,
   encodeShareFragment,
+  joinNextMeasureComposing,
   loadProgressionLibraryEntry,
   moveSelectionToAutoResolving,
   RESIZE_AUTO_COMPLETION_REASON,
@@ -272,6 +273,7 @@ type PendingEdit =
   | Readonly<{ kind: "move-following" }>
   | Readonly<{ kind: "split-at-bar"; beforeEventId: string }>
   | Readonly<{ kind: "move-to"; measureId: string }>
+  | Readonly<{ kind: "join-next-measure"; measureId: string }>
   | Readonly<{ kind: "measure-completion"; measureId: string }>
   | Readonly<{
       kind: "recovered-chord";
@@ -2525,6 +2527,11 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
                 actions.moveSelectionTo(pendingEdit.measureId, null, reason),
               );
               return;
+            case "join-next-measure":
+              recordEditResult(
+                joinNextMeasureComposing(actions, pendingEdit.measureId),
+              );
+              return;
             case "measure-completion":
               recordEditResult(
                 actions.declareMeasureCompletion(pendingEdit.measureId, reason),
@@ -2664,6 +2671,18 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
           recordEditResult(actions.splitAtBar(beforeEventId), {
             kind: "split-at-bar",
             beforeEventId,
+          });
+        },
+        onJoinNextMeasure: (measureId) => {
+          /*
+           * jcpe-v2r-measure-join-v3s6: the tie composes select + move +
+           * delete through existing intents (the frozen plan vocabulary has
+           * no merge). Two undoable steps, exactly like the duplicate
+           * overfill resolution; the notice names the join.
+           */
+          recordEditResult(joinNextMeasureComposing(actions, measureId), {
+            kind: "join-next-measure",
+            measureId,
           });
         },
         onSetInsertionPoint: (measureId) => {

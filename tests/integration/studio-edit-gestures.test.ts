@@ -426,6 +426,9 @@ describe("jcpe-v2r-measure-ux-wk3w a dropped chord lands", () => {
       deleteSelection: studio.deleteSelection,
       duplicateSelection: studio.duplicateSelection,
       insertMeasure: studio.insertMeasure,
+      selectEvent: studio.selectEvent,
+      extendSelectionTo: studio.extendSelectionTo,
+      deleteMeasure: studio.deleteMeasure,
       undo: studio.undo,
       moveSelectionTo: (
         measureId: string,

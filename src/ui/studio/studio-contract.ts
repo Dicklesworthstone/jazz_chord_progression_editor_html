@@ -614,6 +614,8 @@ export type StudioShellCallbacks = Readonly<{
   onDeleteMeasure: (measureId: string) => void;
   /** Split the owning bar before this chord (the reviewed overfill fix). */
   onSplitAtBar: (beforeEventId: string) => void;
+  /* jcpe-v2r-measure-join-v3s6: the tie mark merges the next bar in. */
+  onJoinNextMeasure: (measureId: string) => void;
   /** Aim the quick-entry draft at a measure without publishing anything. */
   onSetInsertionPoint: (measureId: string) => void;
   /** Presentation-only: enters or leaves the explicit range mode. */

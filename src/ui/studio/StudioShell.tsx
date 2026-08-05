@@ -535,6 +535,7 @@ export function StudioShell({
               onJoinSections={callbacks.onJoinSections}
               onDeleteMeasure={shellCallbacks.onDeleteMeasure}
               onSplitAtBar={callbacks.onSplitAtBar}
+              onJoinNextMeasure={callbacks.onJoinNextMeasure}
               onSetInsertionPoint={callbacks.onSetInsertionPoint}
               onRangeModeChange={callbacks.onRangeModeChange}
               onRangeEdgeFromFocus={callbacks.onRangeEdgeFromFocus}

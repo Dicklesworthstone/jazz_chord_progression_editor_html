@@ -79,6 +79,11 @@ export type StudioEditGestureActions = Readonly<{
     beforeEventId?: string | null,
     incompleteReason?: string | null,
   ) => StudioControllerActionResult;
+  /* jcpe-v2r-measure-join-v3s6: the join composition selects the successor
+   * bar's chords and removes the bar it empties. */
+  selectEvent: (eventId: string) => StudioControllerActionResult;
+  extendSelectionTo: (eventId: string) => StudioControllerActionResult;
+  deleteMeasure: (measureId: string) => StudioControllerActionResult;
   undo: () => StudioControllerActionResult;
 }>;
 
@@ -288,4 +293,67 @@ export function moveSelectionToAutoResolving(
     return attempt;
   }
   return landed;
+}
+
+/** The join's auto-declared reason for the bar the departure empties. */
+export const JOIN_AUTO_COMPLETION_REASON = "Joined with the next bar";
+
+/**
+ * Join the NEXT measure into this one — the tie mark's gesture
+ * (jcpe-v2r-measure-join-v3s6).
+ *
+ * The pinned edit-plan vocabulary has no measure-merge command and the
+ * a0-u1 packet is frozen behind owner acceptance, so the join composes the
+ * reviewed intents that already exist: select every chord of the successor
+ * bar, move the selection into this bar, then remove the bar the move
+ * emptied. That is the same resolution family the cross-measure drop uses,
+ * and like the duplicate overfill it is the minimal sequence — two undoable
+ * steps (undo removes the empty bar's deletion, a second undo the move).
+ *
+ * A join whose combined chords overfill the destination refuses at the move
+ * with the overfill's own code and every named remedy; the surface renders
+ * the tie mark only while a live successor fits, so reaching a refusal here
+ * means the chart changed underneath the gesture and honesty is the answer.
+ * A failed cleanup unwinds the move rather than stranding a moved-but-
+ * undeleted arrangement.
+ */
+export function joinNextMeasureComposing(
+  actions: StudioEditGestureActions,
+  measureId: string,
+): StudioControllerActionResult {
+  const snapshot = actions.getSnapshot();
+  let successor: StudioViewModel["sections"][number]["measures"][number] | null =
+    null;
+  for (const section of snapshot.sections) {
+    for (const [index, measure] of section.measures.entries()) {
+      if (measure.id !== measureId) continue;
+      successor = section.measures[index + 1] ?? null;
+    }
+  }
+  const firstEvent = successor?.events[0] ?? null;
+  const lastEvent = successor?.events[successor.events.length - 1] ?? null;
+  if (successor === null || firstEvent === null || lastEvent === null) {
+    /* The tie only renders beside a live successor with chords; landing
+     * here is a race with a concurrent edit, and the selection probe
+     * refuses with the honest "that chord no longer exists" shape. */
+    return actions.selectEvent(measureId);
+  }
+  const selected = actions.selectEvent(firstEvent.id);
+  if (!selected.ok) return selected;
+  if (lastEvent.id !== firstEvent.id) {
+    const extended = actions.extendSelectionTo(lastEvent.id);
+    if (!extended.ok) return extended;
+  }
+  const moved = actions.moveSelectionTo(
+    measureId,
+    null,
+    JOIN_AUTO_COMPLETION_REASON,
+  );
+  if (!moved.ok) return moved;
+  const removed = actions.deleteMeasure(successor.id);
+  if (!removed.ok) {
+    actions.undo();
+    return removed;
+  }
+  return removed;
 }
