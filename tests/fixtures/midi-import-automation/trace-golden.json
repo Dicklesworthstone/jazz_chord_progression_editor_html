@@ -1,0 +1,151 @@
+{
+  "schema": "changes.import.automation-trace.v1",
+  "records": [
+    {
+      "stage": "decode",
+      "inputDigest": "800186866576cc6b",
+      "workCounters": {
+        "notes": 9,
+        "tracks": 2
+      },
+      "decisions": [
+        {
+          "subject": "decode",
+          "outcome": "fixture-model",
+          "reason": "spec golden starts from a decoded model, not bytes"
+        }
+      ],
+      "refusalCode": null
+    },
+    {
+      "stage": "salvage",
+      "inputDigest": "1c68674adacfb0a6",
+      "workCounters": {
+        "repairs": 0
+      },
+      "decisions": [
+        {
+          "subject": "salvage",
+          "outcome": "not-attempted",
+          "reason": "the decode succeeded without content repairs"
+        }
+      ],
+      "refusalCode": null
+    },
+    {
+      "stage": "classify",
+      "inputDigest": "3be080a44093456b",
+      "workCounters": {
+        "tracks": 2
+      },
+      "decisions": [
+        {
+          "subject": "track-0",
+          "outcome": "harmony",
+          "reason": "harmony-otherwise"
+        },
+        {
+          "subject": "track-1",
+          "outcome": "bass",
+          "reason": "bass-by-token"
+        }
+      ],
+      "refusalCode": null
+    },
+    {
+      "stage": "segment",
+      "inputDigest": "a7aed4bf0a26f38c",
+      "workCounters": {
+        "spans": 2
+      },
+      "decisions": [
+        {
+          "subject": "measure-0@0",
+          "outcome": "present:0+2+5+9",
+          "reason": "depth 1"
+        },
+        {
+          "subject": "measure-0@960",
+          "outcome": "present:5+7+11",
+          "reason": "depth 1"
+        }
+      ],
+      "refusalCode": null
+    },
+    {
+      "stage": "infer-key",
+      "inputDigest": "643ffdb07d603ae6",
+      "workCounters": {
+        "candidates": 24
+      },
+      "decisions": [
+        {
+          "subject": "key",
+          "outcome": "2/minor",
+          "reason": "highest frozen-profile score"
+        }
+      ],
+      "refusalCode": null
+    },
+    {
+      "stage": "resolve",
+      "inputDigest": "07a25a93fecd9c95",
+      "workCounters": {
+        "spans": 2
+      },
+      "decisions": [
+        {
+          "subject": "resolution",
+          "outcome": "m0-resolveSonority-plus-m1-rerank",
+          "reason": "resolution law is M0's, re-ranked under the inferred key"
+        }
+      ],
+      "refusalCode": null
+    },
+    {
+      "stage": "groove",
+      "inputDigest": "7337f46a083f0085",
+      "workCounters": {
+        "rows": 8
+      },
+      "decisions": [
+        {
+          "subject": "groove",
+          "outcome": "bossa-nova@1",
+          "reason": "decision row 4"
+        }
+      ],
+      "refusalCode": null
+    },
+    {
+      "stage": "plan",
+      "inputDigest": "78aafd9b132a553b",
+      "workCounters": {
+        "sections": 1
+      },
+      "decisions": [
+        {
+          "subject": "golden",
+          "outcome": "starts-at-measure-0",
+          "reason": "M1-FORM"
+        }
+      ],
+      "refusalCode": null
+    },
+    {
+      "stage": "envelope",
+      "inputDigest": "0555383111e606f8",
+      "workCounters": {
+        "commands": 3
+      },
+      "decisions": [
+        {
+          "subject": "envelope",
+          "outcome": "insert,settings,groove",
+          "reason": "frozen M1_IMPORT_COMMAND_ORDER on a starter destination"
+        }
+      ],
+      "refusalCode": null
+    }
+  ]
+}

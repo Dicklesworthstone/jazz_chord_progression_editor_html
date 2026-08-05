@@ -1,0 +1,266 @@
+{
+  "schema": "changes.import.midi-automation-fixtures.segmentation.v1",
+  "law": "M1-SEG",
+  "notes": "Independently authored. Roles are pre-assigned inputs (classification is proved by its own family). Note shape: [channel, key, onTick, offTick]. meterMap entries are {tick, numerator, denominatorPower}; an entry at tick 0 is required here unless the case states the prepended-default law. Expected spans are exact ticks; present pitch classes ascend; bass is a pitch class or null.",
+  "cases": [
+    {
+      "name": "pad-one-chord-per-bar",
+      "ppq": 480,
+      "meterMap": [{ "tick": 0, "numerator": 4, "denominatorPower": 2 }],
+      "tracks": [
+        { "role": "harmony", "notes": [[0, 60, 0, 1920], [0, 64, 0, 1920], [0, 67, 0, 1920]] }
+      ],
+      "expectedSpans": [
+        { "measureIndex": 0, "depth": 0, "startTick": 0, "endTick": 1920, "present": [0, 4, 7], "bass": 0, "silent": false }
+      ]
+    },
+    {
+      "name": "two-chords-split-at-half",
+      "ppq": 480,
+      "meterMap": [{ "tick": 0, "numerator": 4, "denominatorPower": 2 }],
+      "tracks": [
+        {
+          "role": "harmony",
+          "notes": [
+            [0, 62, 0, 960], [0, 65, 0, 960], [0, 69, 0, 960], [0, 72, 0, 960],
+            [0, 55, 960, 1920], [0, 59, 960, 1920], [0, 62, 960, 1920], [0, 65, 960, 1920]
+          ]
+        }
+      ],
+      "expectedSpans": [
+        { "measureIndex": 0, "depth": 1, "startTick": 0, "endTick": 960, "present": [0, 2, 5, 9], "bass": 2, "silent": false },
+        { "measureIndex": 0, "depth": 1, "startTick": 960, "endTick": 1920, "present": [2, 5, 7, 11], "bass": 7, "silent": false }
+      ]
+    },
+    {
+      "name": "arpeggio-coheres-into-one-span",
+      "ppq": 480,
+      "meterMap": [{ "tick": 0, "numerator": 4, "denominatorPower": 2 }],
+      "tracks": [
+        {
+          "role": "harmony",
+          "notes": [[0, 60, 0, 1920], [0, 64, 480, 1920], [0, 67, 960, 1920], [0, 72, 1440, 1920]]
+        }
+      ],
+      "expectedSpans": [
+        { "measureIndex": 0, "depth": 0, "startTick": 0, "endTick": 1920, "present": [0, 4, 7], "bass": 0, "silent": false }
+      ]
+    },
+    {
+      "name": "melody-passing-tones-stay-out",
+      "ppq": 480,
+      "meterMap": [{ "tick": 0, "numerator": 4, "denominatorPower": 2 }],
+      "tracks": [
+        { "role": "harmony", "notes": [[0, 60, 0, 1920], [0, 64, 0, 1920], [0, 67, 0, 1920], [0, 71, 0, 1920]] },
+        {
+          "role": "melody",
+          "notes": [
+            [1, 72, 0, 240], [1, 74, 240, 480], [1, 76, 480, 720], [1, 77, 720, 960],
+            [1, 79, 960, 1200], [1, 81, 1200, 1440], [1, 83, 1440, 1680], [1, 84, 1680, 1920]
+          ]
+        }
+      ],
+      "expectedSpans": [
+        { "measureIndex": 0, "depth": 0, "startTick": 0, "endTick": 1920, "present": [0, 4, 7, 11], "bass": 0, "silent": false }
+      ]
+    },
+    {
+      "name": "grace-note-excluded-mid-span",
+      "ppq": 480,
+      "meterMap": [{ "tick": 0, "numerator": 4, "denominatorPower": 2 }],
+      "tracks": [
+        { "role": "harmony", "notes": [[0, 60, 0, 1920], [0, 64, 0, 1920], [0, 67, 0, 1920], [0, 61, 900, 930]] }
+      ],
+      "expectedSpans": [
+        { "measureIndex": 0, "depth": 0, "startTick": 0, "endTick": 1920, "present": [0, 4, 7], "bass": 0, "silent": false }
+      ]
+    },
+    {
+      "name": "staccato-chord-attacked-at-span-start-counts",
+      "ppq": 480,
+      "meterMap": [{ "tick": 0, "numerator": 4, "denominatorPower": 2 }],
+      "tracks": [
+        { "role": "harmony", "notes": [[0, 60, 0, 30], [0, 64, 0, 30], [0, 67, 0, 30], [0, 70, 0, 30]] }
+      ],
+      "expectedSpans": [
+        { "measureIndex": 0, "depth": 2, "startTick": 0, "endTick": 480, "present": [0, 4, 7, 10], "bass": 0, "silent": false },
+        { "measureIndex": 0, "depth": 2, "startTick": 480, "endTick": 960, "present": [], "bass": null, "silent": true },
+        { "measureIndex": 0, "depth": 1, "startTick": 960, "endTick": 1920, "present": [], "bass": null, "silent": true }
+      ]
+    },
+    {
+      "name": "silent-bar-between-chords",
+      "ppq": 480,
+      "meterMap": [{ "tick": 0, "numerator": 4, "denominatorPower": 2 }],
+      "tracks": [
+        {
+          "role": "harmony",
+          "notes": [
+            [0, 60, 0, 1920], [0, 64, 0, 1920], [0, 67, 0, 1920],
+            [0, 62, 3840, 5760], [0, 65, 3840, 5760], [0, 69, 3840, 5760]
+          ]
+        }
+      ],
+      "expectedSpans": [
+        { "measureIndex": 0, "depth": 0, "startTick": 0, "endTick": 1920, "present": [0, 4, 7], "bass": 0, "silent": false },
+        { "measureIndex": 1, "depth": 0, "startTick": 1920, "endTick": 3840, "present": [], "bass": null, "silent": true },
+        { "measureIndex": 2, "depth": 0, "startTick": 3840, "endTick": 5760, "present": [2, 5, 9], "bass": 2, "silent": false }
+      ]
+    },
+    {
+      "name": "chord-in-second-half-splits-away-from-silence",
+      "ppq": 480,
+      "meterMap": [{ "tick": 0, "numerator": 4, "denominatorPower": 2 }],
+      "tracks": [
+        { "role": "harmony", "notes": [[0, 60, 960, 1920], [0, 64, 960, 1920], [0, 67, 960, 1920]] }
+      ],
+      "expectedSpans": [
+        { "measureIndex": 0, "depth": 1, "startTick": 0, "endTick": 960, "present": [], "bass": null, "silent": true },
+        { "measureIndex": 0, "depth": 1, "startTick": 960, "endTick": 1920, "present": [0, 4, 7], "bass": 0, "silent": false }
+      ]
+    },
+    {
+      "name": "two-chords-then-silence-split-not-merged",
+      "ppq": 480,
+      "meterMap": [{ "tick": 0, "numerator": 4, "denominatorPower": 2 }],
+      "tracks": [
+        {
+          "role": "harmony",
+          "notes": [
+            [0, 60, 0, 480], [0, 64, 0, 480], [0, 67, 0, 480],
+            [0, 62, 480, 960], [0, 65, 480, 960], [0, 69, 480, 960], [0, 72, 480, 960]
+          ]
+        }
+      ],
+      "expectedSpans": [
+        { "measureIndex": 0, "depth": 2, "startTick": 0, "endTick": 480, "present": [0, 4, 7], "bass": 0, "silent": false },
+        { "measureIndex": 0, "depth": 2, "startTick": 480, "endTick": 960, "present": [0, 2, 5, 9], "bass": 2, "silent": false },
+        { "measureIndex": 0, "depth": 1, "startTick": 960, "endTick": 1920, "present": [], "bass": null, "silent": true }
+      ]
+    },
+    {
+      "name": "odd-length-split-remainder-left",
+      "ppq": 1,
+      "meterMap": [{ "tick": 0, "numerator": 3, "denominatorPower": 2 }],
+      "tracks": [
+        {
+          "role": "harmony",
+          "notes": [
+            [0, 60, 0, 2], [0, 64, 0, 2], [0, 67, 0, 2],
+            [0, 62, 2, 3], [0, 65, 2, 3], [0, 69, 2, 3]
+          ]
+        }
+      ],
+      "expectedSpans": [
+        { "measureIndex": 0, "depth": 1, "startTick": 0, "endTick": 2, "present": [0, 4, 7], "bass": 0, "silent": false },
+        { "measureIndex": 0, "depth": 1, "startTick": 2, "endTick": 3, "present": [2, 5, 9], "bass": 2, "silent": false }
+      ]
+    },
+    {
+      "name": "four-chords-reach-depth-cap",
+      "ppq": 480,
+      "meterMap": [{ "tick": 0, "numerator": 4, "denominatorPower": 2 }],
+      "tracks": [
+        {
+          "role": "harmony",
+          "notes": [
+            [0, 60, 0, 480], [0, 64, 0, 480], [0, 67, 0, 480],
+            [0, 62, 480, 960], [0, 65, 480, 960], [0, 69, 480, 960],
+            [0, 64, 960, 1440], [0, 67, 960, 1440], [0, 71, 960, 1440],
+            [0, 65, 1440, 1920], [0, 69, 1440, 1920], [0, 72, 1440, 1920]
+          ]
+        }
+      ],
+      "expectedSpans": [
+        { "measureIndex": 0, "depth": 2, "startTick": 0, "endTick": 480, "present": [0, 4, 7], "bass": 0, "silent": false },
+        { "measureIndex": 0, "depth": 2, "startTick": 480, "endTick": 960, "present": [2, 5, 9], "bass": 2, "silent": false },
+        { "measureIndex": 0, "depth": 2, "startTick": 960, "endTick": 1440, "present": [4, 7, 11], "bass": 4, "silent": false },
+        { "measureIndex": 0, "depth": 2, "startTick": 1440, "endTick": 1920, "present": [0, 5, 9], "bass": 5, "silent": false }
+      ]
+    },
+    {
+      "name": "eighth-note-doubling-stops-at-quarter-bar-spans",
+      "ppq": 480,
+      "meterMap": [{ "tick": 0, "numerator": 4, "denominatorPower": 2 }],
+      "tracks": [
+        {
+          "role": "harmony",
+          "notes": [
+            [0, 60, 0, 240], [0, 64, 0, 240], [0, 67, 0, 240],
+            [0, 60, 240, 480], [0, 64, 240, 480], [0, 67, 240, 480],
+            [0, 62, 480, 720], [0, 65, 480, 720], [0, 69, 480, 720],
+            [0, 62, 720, 960], [0, 65, 720, 960], [0, 69, 720, 960],
+            [0, 64, 960, 1200], [0, 67, 960, 1200], [0, 71, 960, 1200],
+            [0, 64, 1200, 1440], [0, 67, 1200, 1440], [0, 71, 1200, 1440],
+            [0, 65, 1440, 1680], [0, 69, 1440, 1680], [0, 72, 1440, 1680],
+            [0, 65, 1680, 1920], [0, 69, 1680, 1920], [0, 72, 1680, 1920]
+          ]
+        }
+      ],
+      "expectedSpans": [
+        { "measureIndex": 0, "depth": 2, "startTick": 0, "endTick": 480, "present": [0, 4, 7], "bass": 0, "silent": false },
+        { "measureIndex": 0, "depth": 2, "startTick": 480, "endTick": 960, "present": [2, 5, 9], "bass": 2, "silent": false },
+        { "measureIndex": 0, "depth": 2, "startTick": 960, "endTick": 1440, "present": [4, 7, 11], "bass": 4, "silent": false },
+        { "measureIndex": 0, "depth": 2, "startTick": 1440, "endTick": 1920, "present": [0, 5, 9], "bass": 5, "silent": false }
+      ]
+    },
+    {
+      "name": "bass-role-owns-the-bass-pitch",
+      "ppq": 480,
+      "meterMap": [{ "tick": 0, "numerator": 4, "denominatorPower": 2 }],
+      "tracks": [
+        { "role": "harmony", "notes": [[0, 64, 0, 1920], [0, 67, 0, 1920], [0, 71, 0, 1920]] },
+        { "role": "bass", "notes": [[1, 48, 0, 1920]] }
+      ],
+      "expectedSpans": [
+        { "measureIndex": 0, "depth": 0, "startTick": 0, "endTick": 1920, "present": [0, 4, 7, 11], "bass": 0, "silent": false }
+      ]
+    },
+    {
+      "name": "percussion-and-channel-nine-never-contribute",
+      "ppq": 480,
+      "meterMap": [{ "tick": 0, "numerator": 4, "denominatorPower": 2 }],
+      "tracks": [
+        { "role": "harmony", "notes": [[0, 60, 0, 1920], [0, 64, 0, 1920], [0, 67, 0, 1920], [9, 38, 0, 1920]] },
+        { "role": "percussion", "notes": [[9, 36, 0, 1920], [9, 42, 960, 1920]] }
+      ],
+      "expectedSpans": [
+        { "measureIndex": 0, "depth": 0, "startTick": 0, "endTick": 1920, "present": [0, 4, 7], "bass": 0, "silent": false }
+      ]
+    },
+    {
+      "name": "meter-change-starts-new-measure-math",
+      "ppq": 480,
+      "meterMap": [
+        { "tick": 0, "numerator": 4, "denominatorPower": 2 },
+        { "tick": 1920, "numerator": 3, "denominatorPower": 2 }
+      ],
+      "tracks": [
+        {
+          "role": "harmony",
+          "notes": [
+            [0, 60, 0, 1920], [0, 64, 0, 1920], [0, 67, 0, 1920],
+            [0, 62, 1920, 3360], [0, 65, 1920, 3360], [0, 69, 1920, 3360]
+          ]
+        }
+      ],
+      "expectedSpans": [
+        { "measureIndex": 0, "depth": 0, "startTick": 0, "endTick": 1920, "present": [0, 4, 7], "bass": 0, "silent": false },
+        { "measureIndex": 1, "depth": 0, "startTick": 1920, "endTick": 3360, "present": [2, 5, 9], "bass": 2, "silent": false }
+      ]
+    },
+    {
+      "name": "prepended-default-segment-forms-short-pickup-bar",
+      "ppq": 480,
+      "meterMap": [{ "tick": 480, "numerator": 4, "denominatorPower": 2 }],
+      "tracks": [
+        { "role": "melody", "notes": [[0, 67, 0, 480]] },
+        { "role": "harmony", "notes": [[0, 60, 480, 2400], [0, 64, 480, 2400], [0, 67, 480, 2400]] }
+      ],
+      "expectedSpans": [
+        { "measureIndex": 0, "depth": 0, "startTick": 0, "endTick": 480, "present": [7], "bass": 7, "silent": false },
+        { "measureIndex": 1, "depth": 0, "startTick": 480, "endTick": 2400, "present": [0, 4, 7], "bass": 0, "silent": false }
+      ]
+    }
+  ]
+}

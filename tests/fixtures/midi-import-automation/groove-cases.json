@@ -1,0 +1,135 @@
+{
+  "schema": "changes.import.midi-automation-fixtures.groove.v1",
+  "law": "M1-GROOVE",
+  "notes": "Independently authored. decisionCases feed exact rational features straight into the frozen decision table; featureCases feed role-tagged note streams (ppq, tempo microseconds per quarter at tick 0, 4/4 meter, note shape [channel, key, onTick, offTick]) into the reference feature extractor. Rationals are [numerator, denominator].",
+  "decisionCases": [
+    {
+      "name": "row-1-slow-swing-is-ballad",
+      "features": { "tempoBpm": [80, 1], "swungShare": [3, 4], "sixteenthShare": [0, 1], "attacksPerBar": [2, 1], "melodyCoincidence": [0, 1], "bassTwoFeel": [0, 1] },
+      "expected": { "row": 1, "grooveStyleId": "ballad-comp@1" }
+    },
+    {
+      "name": "row-1-near-miss-tempo-96-goes-to-row-2",
+      "features": { "tempoBpm": [96, 1], "swungShare": [3, 4], "sixteenthShare": [0, 1], "attacksPerBar": [2, 1], "melodyCoincidence": [0, 1], "bassTwoFeel": [0, 1] },
+      "expected": { "row": 2, "grooveStyleId": "medium-swing@1" }
+    },
+    {
+      "name": "row-2-medium-swing",
+      "features": { "tempoBpm": [140, 1], "swungShare": [1, 2], "sixteenthShare": [0, 1], "attacksPerBar": [3, 1], "melodyCoincidence": [0, 1], "bassTwoFeel": [0, 1] },
+      "expected": { "row": 2, "grooveStyleId": "medium-swing@1" }
+    },
+    {
+      "name": "row-2-near-miss-swung-just-under-half-falls-through",
+      "features": { "tempoBpm": [140, 1], "swungShare": [49, 100], "sixteenthShare": [0, 1], "attacksPerBar": [1, 1], "melodyCoincidence": [0, 1], "bassTwoFeel": [0, 1] },
+      "expected": { "row": 8, "grooveStyleId": "medium-swing@1" }
+    },
+    {
+      "name": "row-3-sixteenth-groove",
+      "features": { "tempoBpm": [100, 1], "swungShare": [0, 1], "sixteenthShare": [1, 4], "attacksPerBar": [4, 1], "melodyCoincidence": [0, 1], "bassTwoFeel": [0, 1] },
+      "expected": { "row": 3, "grooveStyleId": "syncopated-sixteenths@1" }
+    },
+    {
+      "name": "row-3-wins-over-row-4-by-order",
+      "features": { "tempoBpm": [110, 1], "swungShare": [0, 1], "sixteenthShare": [1, 2], "attacksPerBar": [4, 1], "melodyCoincidence": [0, 1], "bassTwoFeel": [1, 1] },
+      "expected": { "row": 3, "grooveStyleId": "syncopated-sixteenths@1" }
+    },
+    {
+      "name": "row-4-bossa",
+      "features": { "tempoBpm": [112, 1], "swungShare": [0, 1], "sixteenthShare": [1, 8], "attacksPerBar": [2, 1], "melodyCoincidence": [0, 1], "bassTwoFeel": [2, 3] },
+      "expected": { "row": 4, "grooveStyleId": "bossa-nova@1" }
+    },
+    {
+      "name": "row-4-near-miss-tempo-133-falls-through",
+      "features": { "tempoBpm": [133, 1], "swungShare": [0, 1], "sixteenthShare": [1, 8], "attacksPerBar": [7, 4], "melodyCoincidence": [0, 1], "bassTwoFeel": [2, 3] },
+      "expected": { "row": 8, "grooveStyleId": "medium-swing@1" }
+    },
+    {
+      "name": "row-5-block-chords",
+      "features": { "tempoBpm": [120, 1], "swungShare": [0, 1], "sixteenthShare": [0, 1], "attacksPerBar": [2, 1], "melodyCoincidence": [4, 5], "bassTwoFeel": [0, 1] },
+      "expected": { "row": 5, "grooveStyleId": "block-chords@1" }
+    },
+    {
+      "name": "row-6-sparse-slow-ballad",
+      "features": { "tempoBpm": [72, 1], "swungShare": [0, 1], "sixteenthShare": [0, 1], "attacksPerBar": [1, 1], "melodyCoincidence": [0, 1], "bassTwoFeel": [0, 1] },
+      "expected": { "row": 6, "grooveStyleId": "ballad-comp@1" }
+    },
+    {
+      "name": "row-7-active-straight",
+      "features": { "tempoBpm": [120, 1], "swungShare": [1, 4], "sixteenthShare": [1, 8], "attacksPerBar": [7, 2], "melodyCoincidence": [1, 2], "bassTwoFeel": [0, 1] },
+      "expected": { "row": 7, "grooveStyleId": "straight-eighths@1" }
+    },
+    {
+      "name": "row-8-default",
+      "features": { "tempoBpm": [120, 1], "swungShare": [0, 1], "sixteenthShare": [0, 1], "attacksPerBar": [2, 1], "melodyCoincidence": [0, 1], "bassTwoFeel": [0, 1] },
+      "expected": { "row": 8, "grooveStyleId": "medium-swing@1" }
+    }
+  ],
+  "featureCases": [
+    {
+      "name": "swung-eighths-detected",
+      "ppq": 480,
+      "microsecondsPerQuarter": 500000,
+      "barCount": 1,
+      "tracks": [
+        {
+          "role": "harmony",
+          "notes": [
+            [0, 60, 0, 200], [0, 60, 320, 460],
+            [0, 62, 480, 680], [0, 62, 800, 940],
+            [0, 64, 960, 1160], [0, 64, 1280, 1420],
+            [0, 65, 1440, 1640], [0, 65, 1760, 1900]
+          ]
+        }
+      ],
+      "expectedFeatures": { "tempoBpm": [120, 1], "swungShare": [1, 1], "sixteenthShare": [0, 1] }
+    },
+    {
+      "name": "straight-eighths-not-swung",
+      "ppq": 480,
+      "microsecondsPerQuarter": 500000,
+      "barCount": 1,
+      "tracks": [
+        {
+          "role": "harmony",
+          "notes": [
+            [0, 60, 0, 200], [0, 60, 240, 440],
+            [0, 62, 480, 680], [0, 62, 720, 920]
+          ]
+        }
+      ],
+      "expectedFeatures": { "tempoBpm": [120, 1], "swungShare": [0, 1] }
+    },
+    {
+      "name": "no-offbeat-eighths-is-zero-not-undefined",
+      "ppq": 480,
+      "microsecondsPerQuarter": 600000,
+      "barCount": 1,
+      "tracks": [
+        { "role": "harmony", "notes": [[0, 60, 0, 480], [0, 62, 480, 960], [0, 64, 960, 1440], [0, 65, 1440, 1920]] }
+      ],
+      "expectedFeatures": { "tempoBpm": [100, 1], "swungShare": [0, 1] }
+    },
+    {
+      "name": "bass-two-feel-counted-per-bar",
+      "ppq": 480,
+      "microsecondsPerQuarter": 500000,
+      "barCount": 2,
+      "tracks": [
+        { "role": "bass", "notes": [[1, 43, 0, 900], [1, 50, 960, 1860], [1, 43, 1920, 2820], [1, 50, 2880, 3780]] },
+        { "role": "harmony", "notes": [[0, 60, 0, 1920], [0, 64, 0, 1920], [0, 67, 0, 1920], [0, 60, 1920, 3840], [0, 64, 1920, 3840], [0, 67, 1920, 3840]] }
+      ],
+      "expectedFeatures": { "bassTwoFeel": [1, 1], "attacksPerBar": [1, 1] }
+    },
+    {
+      "name": "melody-attacks-do-not-count-toward-chordal-density",
+      "ppq": 480,
+      "microsecondsPerQuarter": 500000,
+      "barCount": 1,
+      "tracks": [
+        { "role": "harmony", "notes": [[0, 60, 0, 1920], [0, 64, 0, 1920], [0, 67, 0, 1920]] },
+        { "role": "melody", "notes": [[1, 72, 0, 240], [1, 74, 240, 480], [1, 76, 480, 720], [1, 77, 720, 960], [1, 79, 960, 1200], [1, 81, 1200, 1440], [1, 83, 1440, 1680], [1, 84, 1680, 1920]] }
+      ],
+      "expectedFeatures": { "attacksPerBar": [1, 1], "melodyCoincidence": [1, 8] }
+    }
+  ]
+}

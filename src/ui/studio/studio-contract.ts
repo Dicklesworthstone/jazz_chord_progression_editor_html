@@ -507,12 +507,35 @@ export type StudioMidiImportSalvageView = Readonly<{
   repairLines: readonly string[];
 }>;
 
+/**
+ * The M1 automatic-import result card: what one press of Add will do, in
+ * user language — bars and chords, sections, the matched groove WITH its
+ * evidence sentence, which settings will change (or were kept, and why),
+ * and the exact undo cost. The forensic detail stays in Advanced.
+ */
+export type StudioMidiImportAutoView = Readonly<{
+  headline: string;
+  cardLines: readonly StudioFactView[];
+  /** The groove sentence, e.g. "Medium swing: swung eighths in 2/3 of beats at 132 BPM." */
+  grooveEvidence: string;
+  /** Withheld-settings and mid-file-change statements; empty when none. */
+  notes: readonly string[];
+  canCommit: boolean;
+}>;
+
 export type StudioMidiImportView = Readonly<{
   /** False when the composition root wired no decoder into this session. */
   available: boolean;
   statusLabel: string;
   refusal: StudioMidiImportRefusalView | null;
   salvage: StudioMidiImportSalvageView | null;
+  /**
+   * The salvage account when repair was attempted but the repaired bytes
+   * still refused: proof the studio tried, shown with the refusal.
+   */
+  salvageFailed: StudioMidiImportSalvageView | null;
+  /** The automatic result card; null when the file refused or nothing wrote. */
+  auto: StudioMidiImportAutoView | null;
   summary: StudioMidiImportSummaryView | null;
   sonorities: readonly StudioMidiImportSonorityView[];
   blockedReason: string | null;

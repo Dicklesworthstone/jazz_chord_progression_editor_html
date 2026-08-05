@@ -32,6 +32,8 @@ function RailFocusHarness() {
         statusLabel: "MIDI import is not available in this session.",
         refusal: null,
         salvage: null,
+        salvageFailed: null,
+        auto: null,
         summary: null,
         sonorities: Object.freeze([]),
         blockedReason: null,

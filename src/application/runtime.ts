@@ -114,7 +114,9 @@ export {
   createStudioMidiImport,
 } from "./studio-midi-import";
 export type {
+  MidiImportAutoCommitResult,
   MidiImportCommitResult,
+  MidiImportEnvelopeStep,
   MidiImportPreview,
   StudioMidiImportService,
 } from "./studio-midi-import";

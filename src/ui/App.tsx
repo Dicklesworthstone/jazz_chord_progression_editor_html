@@ -17,6 +17,7 @@ import {
   RESIZE_AUTO_COMPLETION_REASON,
   STARTER_CHART,
   type LoadProgressionLibraryEntryResult,
+  type MidiImportAutoCommitResult,
   type MidiImportCommitResult,
   type MidiImportPreview,
   type StudioMidiImportService,
@@ -226,6 +227,13 @@ export type AppActions = Readonly<{
   commitMidiImport: (
     preview: MidiImportPreview,
   ) => MidiImportCommitResult | null;
+  /**
+   * The M1 automatic envelope: chunked insert, settings transfer, groove —
+   * with a per-step ledger, the stated undo count, and rollback on refusal.
+   */
+  commitMidiImportAutomatic: (
+    preview: MidiImportPreview,
+  ) => MidiImportAutoCommitResult | null;
   /**
    * Display-only live playhead label the animation frame reads while playing.
    * Interpolation for the eye, never a second musical clock: committed
@@ -846,10 +854,9 @@ const SALVAGE_REPAIR_PROSE: Readonly<Record<string, readonly [string, string]>> 
     ],
   });
 
-function salvageView(
-  preview: MidiImportPreview,
+function salvageReportView(
+  report: MidiImportPreview["salvage"],
 ): StudioMidiImportView["salvage"] {
-  const report = preview.salvage;
   if (report === null) return null;
   return Object.freeze({
     note: report.note,
@@ -865,6 +872,81 @@ function salvageView(
         return `${String(repair.count)} ${noun}`;
       }),
     ),
+  });
+}
+
+function salvageView(
+  preview: MidiImportPreview,
+): StudioMidiImportView["salvage"] {
+  return salvageReportView(preview.salvage);
+}
+
+/**
+ * The automatic result card: everything one press of Add will do, stated in
+ * user language before it happens. Withheld settings say why they were kept.
+ */
+function midiImportAutoView(
+  preview: MidiImportPreview,
+): StudioMidiImportView["auto"] {
+  const automation = preview.automation;
+  if (automation === null) return null;
+  const sectionCount = automation.sections.length;
+  const headline = `${countLabel(automation.measureCount, "bar")} · ${countLabel(automation.writtenChordCount, "chord")}${
+    sectionCount > 1 ? ` · ${countLabel(sectionCount, "section")}` : ""
+  }`;
+  const tempoBpm = Math.round(60_000_000 / automation.initialTempoMicroseconds);
+  const cardLines: StudioFactView[] = [
+    Object.freeze({
+      id: "auto-tempo",
+      label: "Tempo",
+      value: `${String(tempoBpm)} BPM from the file`,
+    }),
+    Object.freeze({
+      id: "auto-meter",
+      label: "Meter",
+      value: `${String(automation.initialMeter.numerator)}/${String(automation.initialMeter.beatUnit)} from the file`,
+    }),
+  ];
+  const key = automation.key;
+  const keySpelled = automation.keySpelled;
+  if (key !== null && keySpelled !== null) {
+    const accidental =
+      keySpelled.alter === 0 ? "" : keySpelled.alter < 0 ? "b" : "#";
+    cardLines.push(
+      Object.freeze({
+        id: "auto-key",
+        label: "Key",
+        value: `${keySpelled.step}${accidental} ${key.mode}, heard across the whole file`,
+      }),
+    );
+  }
+  const notes: string[] = [];
+  if (automation.unwrittenSpanCount > 0) {
+    notes.push(
+      `${countLabel(automation.unwrittenSpanCount, "passage")} had no nameable chord and stays unwritten — the chord before each one keeps sounding. Advanced lists every one.`,
+    );
+  }
+  if (automation.tempoChangeCount > 0) {
+    notes.push(
+      `The file changes tempo ${countLabel(automation.tempoChangeCount, "time")} after the start; only the first tempo is applied.`,
+    );
+  }
+  if (automation.meterChangeCount > 0) {
+    notes.push(
+      `The file changes meter ${countLabel(automation.meterChangeCount, "time")} after the start; bars keep the file's own counts.`,
+    );
+  }
+  if (automation.chunkTexts.length > 1) {
+    notes.push(
+      `This is a long chart, so it lands as ${countLabel(automation.chunkTexts.length, "edit")} plus its settings.`,
+    );
+  }
+  return Object.freeze({
+    headline,
+    cardLines: Object.freeze(cardLines),
+    grooveEvidence: automation.groove.evidence,
+    notes: Object.freeze(notes),
+    canCommit: true,
   });
 }
 
@@ -884,6 +966,8 @@ function midiImportView(
       statusLabel: "MIDI import is not available in this session.",
       refusal: null,
       salvage: null,
+      salvageFailed: null,
+      auto: null,
       summary: null,
       sonorities: Object.freeze([]),
       blockedReason: null,
@@ -896,6 +980,8 @@ function midiImportView(
       statusLabel: notice ?? "No file chosen.",
       refusal: null,
       salvage: null,
+      salvageFailed: null,
+      auto: null,
       summary: null,
       sonorities: Object.freeze([]),
       blockedReason: null,
@@ -926,6 +1012,8 @@ function midiImportView(
         where,
       }),
       salvage: null,
+      salvageFailed: salvageReportView(preview.salvageFailed),
+      auto: null,
       summary: null,
       sonorities: Object.freeze([]),
       blockedReason: null,
@@ -940,6 +1028,8 @@ function midiImportView(
       statusLabel,
       refusal: null,
       salvage: salvageView(preview),
+      salvageFailed: null,
+      auto: null,
       summary: null,
       sonorities: Object.freeze([]),
       blockedReason: preview.blockedReason,
@@ -1016,6 +1106,8 @@ function midiImportView(
     statusLabel,
     refusal: null,
     salvage: salvageView(preview),
+    salvageFailed: null,
+    auto: midiImportAutoView(preview),
     summary:
       plan === null
         ? null
@@ -1028,7 +1120,9 @@ function midiImportView(
           }),
     sonorities: Object.freeze(sonorities),
     blockedReason: preview.blockedReason,
-    canCommit: plan !== null && preview.blockedReason === null,
+    canCommit:
+      preview.automation !== null ||
+      (plan !== null && preview.blockedReason === null),
   });
 }
 
@@ -2322,6 +2416,32 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
         },
         onMidiImportCommit: () => {
           if (midiPreview === null) return;
+          /*
+           * The automatic envelope is the default: chords, settings, and the
+           * matched groove in one gesture with a stated undo count. The M0
+           * single-insert path remains for previews with no automatic plan.
+           */
+          if (midiPreview.automation !== null) {
+            const auto = actions.commitMidiImportAutomatic(midiPreview);
+            if (auto === null) return;
+            if (auto.committed) {
+              quickEntryTargetIsExplicit.current = false;
+              setMidiPreview(null);
+              setMidiImportNotice(
+                auto.undoCount === 1
+                  ? `${midiPreview.fileName} was added as one edit. Undo returns the chart.`
+                  : `${midiPreview.fileName} was added as ${countLabel(auto.undoCount, "edit")}. Press Undo ${String(auto.undoCount)} times to return the chart.`,
+              );
+              return;
+            }
+            const failed = auto.steps[auto.steps.length - 1];
+            setMidiImportNotice(
+              auto.reason === "rolled-back"
+                ? `That import was not added${failed?.reason === null || failed === undefined ? "" : `: ${failed.reason}`} Everything it had changed was undone.`
+                : "That import was not added.",
+            );
+            return;
+          }
           const result = actions.commitMidiImport(midiPreview);
           if (result === null) return;
           if (result.committed) {
@@ -2991,6 +3111,9 @@ export function StudioRoot({
                   plan: null,
                   sonorities: Object.freeze([]),
                   salvage: null,
+                  salvageFailed: null,
+                  automation: null,
+                  automationRefusal: null,
                   blockedReason:
                     "MIDI import is not available in this session.",
                 }),
@@ -3000,6 +3123,10 @@ export function StudioRoot({
           midiImportService === null
             ? null
             : midiImportService.commit(controller, preview),
+        commitMidiImportAutomatic: (preview) =>
+          midiImportService === null
+            ? null
+            : midiImportService.commitAutomatic(controller, preview),
         pauseProgression: controller.pauseProgression,
         playProgression: controller.playProgression,
         previewChord: controller.previewChord,

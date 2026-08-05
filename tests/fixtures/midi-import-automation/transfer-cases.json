@@ -1,0 +1,145 @@
+{
+  "schema": "changes.import.midi-automation-fixtures.transfer.v1",
+  "law": "M1-XFER",
+  "notes": "Independently authored. truthTableCases pin the frozen 2-destination x 5-setting outcomes plus the groove-default nuance and the meter refusal prediction. markerCases pin the M1-FORM section-splitting, duplicate-suffix, and empty-text laws: markers are [tick, text], measures gives the total measure count, expected sections are {name, startMeasureIndex}.",
+  "truthTableCases": [
+    {
+      "name": "starter-applies-everything",
+      "destination": "starter",
+      "documentGroove": "absent-default",
+      "fragmentUsesExplicitDurations": false,
+      "expected": {
+        "tempo": "applied",
+        "meter": "applied",
+        "key": "applied",
+        "title": "applied",
+        "groove": "applied",
+        "meterRefusalPredicted": false
+      }
+    },
+    {
+      "name": "occupied-withholds-and-states",
+      "destination": "occupied",
+      "documentGroove": "absent-default",
+      "fragmentUsesExplicitDurations": false,
+      "expected": {
+        "tempo": "withheld-stated",
+        "meter": "withheld-stated",
+        "key": "withheld-stated",
+        "title": "withheld",
+        "groove": "applied",
+        "meterRefusalPredicted": false
+      }
+    },
+    {
+      "name": "occupied-explicit-groove-is-never-overridden",
+      "destination": "occupied",
+      "documentGroove": "explicit",
+      "fragmentUsesExplicitDurations": false,
+      "expected": {
+        "tempo": "withheld-stated",
+        "meter": "withheld-stated",
+        "key": "withheld-stated",
+        "title": "withheld",
+        "groove": "withheld-stated",
+        "meterRefusalPredicted": false
+      }
+    },
+    {
+      "name": "occupied-meter-mismatch-predicts-refusal-before-add",
+      "destination": "occupied",
+      "documentGroove": "absent-default",
+      "fragmentUsesExplicitDurations": true,
+      "fileMeterDiffersFromDocument": true,
+      "expected": {
+        "tempo": "withheld-stated",
+        "meter": "withheld-stated",
+        "key": "withheld-stated",
+        "title": "withheld",
+        "groove": "applied",
+        "meterRefusalPredicted": true
+      }
+    },
+    {
+      "name": "starter-explicit-groove-still-applies-import-choice",
+      "destination": "starter",
+      "documentGroove": "explicit",
+      "fragmentUsesExplicitDurations": false,
+      "expected": {
+        "tempo": "applied",
+        "meter": "applied",
+        "key": "applied",
+        "title": "applied",
+        "groove": "applied",
+        "meterRefusalPredicted": false
+      }
+    }
+  ],
+  "markerCases": [
+    {
+      "name": "no-markers-single-section-from-file-stem",
+      "fileName": "My Tune.mid",
+      "markers": [],
+      "measures": 8,
+      "expectedSections": [{ "name": "My Tune", "startMeasureIndex": 0 }]
+    },
+    {
+      "name": "markers-split-at-measure-boundaries",
+      "fileName": "form.mid",
+      "markers": [[0, "Intro"], [7680, "A"], [15360, "B"]],
+      "ppq": 480,
+      "measures": 12,
+      "expectedSections": [
+        { "name": "Intro", "startMeasureIndex": 0 },
+        { "name": "A", "startMeasureIndex": 4 },
+        { "name": "B", "startMeasureIndex": 8 }
+      ]
+    },
+    {
+      "name": "mid-measure-marker-names-the-measure-it-starts-in",
+      "fileName": "form.mid",
+      "markers": [[0, "Head"], [4000, "Bridge"]],
+      "ppq": 480,
+      "measures": 6,
+      "expectedSections": [
+        { "name": "Head", "startMeasureIndex": 0 },
+        { "name": "Bridge", "startMeasureIndex": 2 }
+      ]
+    },
+    {
+      "name": "duplicate-marker-text-gets-ordinal-suffix",
+      "fileName": "aaba.mid",
+      "markers": [[0, "A"], [3840, "A"], [7680, "B"], [11520, "A"]],
+      "ppq": 480,
+      "measures": 8,
+      "expectedSections": [
+        { "name": "A", "startMeasureIndex": 0 },
+        { "name": "A (2)", "startMeasureIndex": 2 },
+        { "name": "B", "startMeasureIndex": 4 },
+        { "name": "A (3)", "startMeasureIndex": 6 }
+      ]
+    },
+    {
+      "name": "empty-marker-text-becomes-part-ordinal",
+      "fileName": "untitled.mid",
+      "markers": [[0, ""], [3840, "  "]],
+      "ppq": 480,
+      "measures": 4,
+      "expectedSections": [
+        { "name": "Part 1", "startMeasureIndex": 0 },
+        { "name": "Part 2", "startMeasureIndex": 2 }
+      ]
+    },
+    {
+      "name": "first-marker-past-start-gets-leading-stem-section",
+      "fileName": "late-form.mid",
+      "markers": [[3840, "A"]],
+      "ppq": 480,
+      "measures": 4,
+      "expectedSections": [
+        { "name": "late-form", "startMeasureIndex": 0 },
+        { "name": "A", "startMeasureIndex": 2 }
+      ]
+    }
+  ]
+}

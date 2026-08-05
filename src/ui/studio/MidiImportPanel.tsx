@@ -117,6 +117,14 @@ export function MidiImportPanel({
           </p>
           <code class="studio-midi-import__code">{view.refusal.code}</code>
           <p class="studio-midi-import__refusal-where">{view.refusal.where}</p>
+          {view.salvageFailed === null ? null : (
+            <p
+              class="studio-midi-import__salvage-note"
+              data-testid="midi-import-salvage-failed"
+            >
+              {`Repair was tried — ${view.salvageFailed.note} — but the repaired file still could not be read.`}
+            </p>
+          )}
         </div>
       )}
 
@@ -142,61 +150,100 @@ export function MidiImportPanel({
         </div>
       )}
 
-      {view.summary === null ? null : (
-        <div class="studio-midi-import__summary" data-testid="midi-import-summary">
+      {/*
+        The automatic result card: what one press of Add will do, in user
+        language, before it happens. The forensic detail lives in Advanced.
+      */}
+      {view.auto === null ? null : (
+        <div class="studio-midi-import__summary" data-testid="midi-import-auto">
+          <p class="studio-midi-import__fact-value">{view.auto.headline}</p>
+          <p
+            class="studio-midi-import__law"
+            data-testid="midi-import-groove-evidence"
+          >
+            {view.auto.grooveEvidence}
+          </p>
           <ul class="studio-midi-import__facts">
-            {view.summary.facts.map((fact) => (
+            {view.auto.cardLines.map((fact) => (
               <li class="studio-midi-import__fact" key={fact.id}>
                 <span class="studio-midi-import__fact-key">{fact.label}</span>
                 <span class="studio-midi-import__fact-value">{fact.value}</span>
               </li>
             ))}
           </ul>
-          <p class="studio-midi-import__law">{view.summary.durationLawNote}</p>
-          <pre
-            class="studio-midi-import__chart"
-            data-testid="midi-import-chart-text"
-          >
-            {view.summary.chartText}
-          </pre>
+          {view.auto.notes.map((note) => (
+            <p class="studio-midi-import__law" key={note}>
+              {note}
+            </p>
+          ))}
         </div>
       )}
 
-      {view.sonorities.length === 0 ? null : (
-        <ol class="studio-midi-import__sonorities" data-testid="midi-import-sonorities">
-          {view.sonorities.map((row) => (
-            <li
-              class="studio-midi-import__sonority"
-              data-testid="midi-import-sonority"
-              data-written={row.written ? "true" : "false"}
-              key={row.id}
+      {view.summary === null && view.sonorities.length === 0 ? null : (
+        <details
+          class="studio-midi-import__advanced"
+          data-testid="midi-import-advanced"
+        >
+          <summary>Advanced: chart text, readings, and every sonority</summary>
+          {view.summary === null ? null : (
+            <div
+              class="studio-midi-import__summary"
+              data-testid="midi-import-summary"
             >
-              <span class="studio-midi-import__sonority-where">{row.where}</span>
-              <span class="studio-midi-import__sonority-symbol">
-                {row.symbolText ?? "no chord written"}
-              </span>
-              <span class="studio-midi-import__sonority-evidence">
-                {row.evidence}
-              </span>
-              {row.alternatives.length === 0 ? null : (
-                <span
-                  class="studio-midi-import__sonority-alternatives"
-                  data-testid="midi-import-alternatives"
+              <ul class="studio-midi-import__facts">
+                {view.summary.facts.map((fact) => (
+                  <li class="studio-midi-import__fact" key={fact.id}>
+                    <span class="studio-midi-import__fact-key">{fact.label}</span>
+                    <span class="studio-midi-import__fact-value">{fact.value}</span>
+                  </li>
+                ))}
+              </ul>
+              <p class="studio-midi-import__law">{view.summary.durationLawNote}</p>
+              <pre
+                class="studio-midi-import__chart"
+                data-testid="midi-import-chart-text"
+              >
+                {view.summary.chartText}
+              </pre>
+            </div>
+          )}
+          {view.sonorities.length === 0 ? null : (
+            <ol class="studio-midi-import__sonorities" data-testid="midi-import-sonorities">
+              {view.sonorities.map((row) => (
+                <li
+                  class="studio-midi-import__sonority"
+                  data-testid="midi-import-sonority"
+                  data-written={row.written ? "true" : "false"}
+                  key={row.id}
                 >
-                  {`Also reads as: ${row.alternatives.join(" · ")}`}
-                </span>
-              )}
-              {row.customNote === null ? null : (
-                <span
-                  class="studio-midi-import__sonority-custom"
-                  data-testid="midi-import-custom"
-                >
-                  {row.customNote}
-                </span>
-              )}
-            </li>
-          ))}
-        </ol>
+                  <span class="studio-midi-import__sonority-where">{row.where}</span>
+                  <span class="studio-midi-import__sonority-symbol">
+                    {row.symbolText ?? "no chord written"}
+                  </span>
+                  <span class="studio-midi-import__sonority-evidence">
+                    {row.evidence}
+                  </span>
+                  {row.alternatives.length === 0 ? null : (
+                    <span
+                      class="studio-midi-import__sonority-alternatives"
+                      data-testid="midi-import-alternatives"
+                    >
+                      {`Also reads as: ${row.alternatives.join(" · ")}`}
+                    </span>
+                  )}
+                  {row.customNote === null ? null : (
+                    <span
+                      class="studio-midi-import__sonority-custom"
+                      data-testid="midi-import-custom"
+                    >
+                      {row.customNote}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ol>
+          )}
+        </details>
       )}
 
       {view.blockedReason === null ? null : (
@@ -211,6 +258,7 @@ export function MidiImportPanel({
 
       {view.summary === null &&
       view.refusal === null &&
+      view.auto === null &&
       view.sonorities.length === 0 ? null : (
         <div class="studio-midi-import__actions">
           <Button

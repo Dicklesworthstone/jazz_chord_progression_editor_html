@@ -15,6 +15,11 @@ import {
   type MidiSalvageReport,
   type SmfDecodeFrame,
 } from "../export";
+import {
+  planAutomationImport,
+  type M1AutomationPlan,
+} from "../export/midi-import-automation";
+import { DEFAULT_GROOVE_STYLE_ID } from "../domain";
 import type {
   StudioController,
   StudioControllerActionResult,
@@ -62,6 +67,20 @@ export type MidiImportPreview = Readonly<{
    * for a clean decode — the overwhelmingly common path is untouched.
    */
   salvage: MidiSalvageReport | null;
+  /**
+   * The salvage ledger when repair was ATTEMPTED but the repaired bytes
+   * still refused. The refusal shown is the file's own first problem, and
+   * this report proves repair was tried rather than silently skipped.
+   */
+  salvageFailed: MidiSalvageReport | null;
+  /**
+   * The M1 automatic plan: roles, spans, key, groove choice with evidence,
+   * sections, chunked chart text, and settings-transfer facts. Null when the
+   * file refused or the automation found nothing to write.
+   */
+  automation: M1AutomationPlan | null;
+  /** The automation refusal code when automation could not plan; else null. */
+  automationRefusal: string | null;
 }>;
 
 export type MidiImportCommitResult = Readonly<{
@@ -76,14 +95,46 @@ export type MidiImportCommitResult = Readonly<{
   inserted: StudioControllerActionResult | null;
 }>;
 
+/** One issued envelope command, for the stated-count law and the ledger. */
+export type MidiImportEnvelopeStep = Readonly<{
+  step: "insert" | "tempo" | "meter" | "key" | "title" | "groove";
+  outcome: "applied" | "unchanged" | "withheld" | "refused";
+  /** Plain sentence when withheld or refused; null otherwise. */
+  reason: string | null;
+}>;
+
+export type MidiImportAutoCommitResult = Readonly<{
+  committed: boolean;
+  reason:
+    | "committed"
+    | "nothing-to-commit"
+    | "no-destination"
+    | "rolled-back";
+  /** Every step in issue order, including withheld ones, for the card. */
+  steps: readonly MidiImportEnvelopeStep[];
+  /** Exactly how many Undo presses return the chart. */
+  undoCount: number;
+  /** How many issued commands were undone after a mid-envelope refusal. */
+  rolledBackCount: number;
+}>;
+
 export type StudioMidiImportService = Readonly<{
   /** Decodes local file bytes into a preview. Never throws on hostile bytes. */
   readFile: (fileName: string, bytes: Uint8Array) => Promise<MidiImportPreview>;
-  /** Lands a preview as one undoable edit. */
+  /** Lands a preview as one undoable edit (the M0 manual path, retained). */
   commit: (
     controller: StudioController,
     preview: MidiImportPreview,
   ) => MidiImportCommitResult;
+  /**
+   * Lands the automatic plan: chunked insert, then settings transfer per the
+   * M1-XFER truth table, then the groove — with the stated undo count, and
+   * rollback of every issued command if any envelope command refuses.
+   */
+  commitAutomatic: (
+    controller: StudioController,
+    preview: MidiImportPreview,
+  ) => MidiImportAutoCommitResult;
 }>;
 
 /**
@@ -134,6 +185,7 @@ export function createStudioMidiImport(
 
     let result = strict;
     let salvage: MidiSalvageReport | null = null;
+    let salvageFailed: MidiSalvageReport | null = null;
     if (!strict.ok && isSalvageableRefusalCode(strict.refusal.code)) {
       /*
        * A content-level refusal gets one salvage attempt: repair the note
@@ -141,7 +193,8 @@ export function createStudioMidiImport(
        * repaired bytes so every structural guarantee still comes from the
        * one reviewed reader. If the repaired bytes still refuse — a second
        * defect beyond the note stream — the ORIGINAL refusal stands, so the
-       * person sees the file's own first problem, not the repair's.
+       * person sees the file's own first problem, not the repair's; the
+       * attempt itself is still reported, never silently dropped.
        */
       const attempt = salvageMidiBytes(bytes);
       if (attempt.salvaged) {
@@ -151,6 +204,8 @@ export function createStudioMidiImport(
         if (reread.ok) {
           result = reread;
           salvage = attempt.report;
+        } else {
+          salvageFailed = attempt.report;
         }
       }
     }
@@ -165,9 +220,13 @@ export function createStudioMidiImport(
         sonorities: Object.freeze([]),
         blockedReason: null,
         salvage: null,
+        salvageFailed,
+        automation: null,
+        automationRefusal: null,
       });
     }
     const plan = planMidiImportChart(result.value, sectionNameFor(fileName));
+    const automationResult = planAutomationImport(result.value, fileName);
     return Object.freeze({
       fileName,
       byteLength: bytes.byteLength,
@@ -178,6 +237,11 @@ export function createStudioMidiImport(
         plan === null ? describeMidiImportSonorities(result.value) : plan.sonorities,
       blockedReason: blockedReasonFor(plan),
       salvage,
+      salvageFailed: null,
+      automation: automationResult.ok ? automationResult.plan : null,
+      automationRefusal: automationResult.ok
+        ? null
+        : automationResult.refusal.code,
     });
   };
 
@@ -235,5 +299,215 @@ export function createStudioMidiImport(
     });
   };
 
-  return Object.freeze({ readFile, commit });
+  const commitAutomatic = (
+    controller: StudioController,
+    preview: MidiImportPreview,
+  ): MidiImportAutoCommitResult => {
+    const automation = preview.automation;
+    if (automation === null || automation.chunkTexts.length === 0) {
+      return Object.freeze({
+        committed: false,
+        reason: "nothing-to-commit" as const,
+        steps: Object.freeze([]),
+        undoCount: 0,
+        rolledBackCount: 0,
+      });
+    }
+    const before = controller.getSnapshot();
+    if (before.sections.length === 0) {
+      return Object.freeze({
+        committed: false,
+        reason: "no-destination" as const,
+        steps: Object.freeze([]),
+        undoCount: 0,
+        rolledBackCount: 0,
+      });
+    }
+    /*
+     * Destination facts are read once, before any command: the M1-XFER
+     * truth table keys off the destination as the user saw it, not off the
+     * half-imported chart.
+     */
+    const starter = before.chordCount === 0;
+    const documentGrooveIsDefault =
+      before.performance.styleId === DEFAULT_GROOVE_STYLE_ID;
+
+    const steps: MidiImportEnvelopeStep[] = [];
+    let issuedCount = 0;
+
+    const rollBack = (
+      failed: MidiImportEnvelopeStep,
+    ): MidiImportAutoCommitResult => {
+      /*
+       * Failure atomicity (law M1-ENV): a refusal mid-envelope undoes every
+       * command this gesture issued, so a failed import never leaves a
+       * half-landed chart. Undo runs newest-first, exactly the commands
+       * counted in issuedCount.
+       */
+      let rolledBack = 0;
+      for (let index = 0; index < issuedCount; index += 1) {
+        const undone = controller.undo();
+        if (!undone.ok) break;
+        rolledBack += 1;
+      }
+      return Object.freeze({
+        committed: false,
+        reason: "rolled-back" as const,
+        steps: Object.freeze([...steps, failed]),
+        undoCount: 0,
+        rolledBackCount: rolledBack,
+      });
+    };
+
+    /* 1. Insert every chunk at document end, in order. */
+    for (const chunkText of automation.chunkTexts) {
+      const previewStatus = controller.previewChartText(chunkText);
+      const staged = controller.setQuickEntryDraft(
+        chunkText,
+        { kind: "document-end" },
+        previewStatus.status,
+        previewStatus.issueCodes,
+      );
+      const inserted = staged.ok ? controller.applyQuickEntryPreview() : staged;
+      if (!staged.ok || !inserted.ok) {
+        return rollBack({
+          step: "insert",
+          outcome: "refused",
+          reason: staged.ok
+            ? "The chart refused this piece of the import."
+            : "The import text could not be staged.",
+        });
+      }
+      issuedCount += 1;
+      steps.push({ step: "insert", outcome: "applied", reason: null });
+    }
+
+    /* 2. Settings transfer per the frozen truth table. */
+    const withheld = (
+      step: MidiImportEnvelopeStep["step"],
+      reason: string,
+    ): void => {
+      steps.push({ step, outcome: "withheld", reason });
+    };
+    const issue = (
+      step: MidiImportEnvelopeStep["step"],
+      run: () => StudioControllerActionResult,
+    ): boolean => {
+      const result = run();
+      if (!result.ok) {
+        return false;
+      }
+      if (result.outcome === "ephemeral-updated") {
+        steps.push({ step, outcome: "unchanged", reason: null });
+        return true;
+      }
+      issuedCount += 1;
+      steps.push({ step, outcome: "applied", reason: null });
+      return true;
+    };
+
+    const tempoBpm = Math.round(
+      60_000_000 / automation.initialTempoMicroseconds,
+    );
+    if (starter) {
+      if (before.tempoBpm === tempoBpm) {
+        steps.push({ step: "tempo", outcome: "unchanged", reason: null });
+      } else if (!issue("tempo", () => controller.setTempo(tempoBpm))) {
+        return rollBack({
+          step: "tempo",
+          outcome: "refused",
+          reason: "The file's tempo could not be applied.",
+        });
+      }
+      if (
+        !issue("meter", () =>
+          controller.setMeter(
+            automation.initialMeter.numerator,
+            automation.initialMeter.beatUnit,
+          ),
+        )
+      ) {
+        return rollBack({
+          step: "meter",
+          outcome: "refused",
+          reason: "The file's meter could not be applied.",
+        });
+      }
+      const keySpelled = automation.keySpelled;
+      const key = automation.key;
+      if (key !== null && keySpelled !== null) {
+        if (
+          !issue("key", () =>
+            controller.setKey({
+              step: keySpelled.step,
+              alter: keySpelled.alter,
+              mode: key.mode,
+            }),
+          )
+        ) {
+          return rollBack({
+            step: "key",
+            outcome: "refused",
+            reason: "The inferred key could not be applied.",
+          });
+        }
+      } else {
+        withheld("key", "No key could be inferred from this file.");
+      }
+      const title = sectionNameFor(preview.fileName);
+      if (before.title === title) {
+        steps.push({ step: "title", outcome: "unchanged", reason: null });
+      } else if (!issue("title", () => controller.setTitle(title))) {
+        return rollBack({
+          step: "title",
+          outcome: "refused",
+          reason: "The file's name could not become the title.",
+        });
+      }
+    } else {
+      withheld(
+        "tempo",
+        "This chart already has content, so its tempo was kept.",
+      );
+      withheld(
+        "meter",
+        "This chart already has content, so its meter was kept.",
+      );
+      withheld("key", "This chart already has content, so its key was kept.");
+      withheld(
+        "title",
+        "This chart already has content, so its title was kept.",
+      );
+    }
+
+    /* 3. Groove: never override an explicit choice on an occupied chart. */
+    if (starter || documentGrooveIsDefault) {
+      if (
+        !issue("groove", () =>
+          controller.setPerformanceStyle(automation.groove.grooveStyleId),
+        )
+      ) {
+        return rollBack({
+          step: "groove",
+          outcome: "refused",
+          reason: "The matched groove could not be applied.",
+        });
+      }
+    } else {
+      withheld(
+        "groove",
+        "You chose this chart's groove yourself, so it was kept.",
+      );
+    }
+
+    return Object.freeze({
+      committed: true,
+      reason: "committed" as const,
+      steps: Object.freeze(steps),
+      undoCount: issuedCount,
+      rolledBackCount: 0,
+    });
+  };
+
+  return Object.freeze({ readFile, commit, commitAutomatic });
 }

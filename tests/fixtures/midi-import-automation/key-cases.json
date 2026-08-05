@@ -1,0 +1,55 @@
+{
+  "schema": "changes.import.midi-automation-fixtures.key.v1",
+  "law": "M1-KEY",
+  "notes": "Independently authored. masses is the 12-entry total eligible pitch-class mass vector (index = pitch class). The validator recomputes all 24 key scores with the frozen integer profiles and checks winner, tie-break path, and tonic spelling. equivariance cases are additionally re-scored under all 12 transpositions.",
+  "cases": [
+    {
+      "name": "plain-c-major-cadence-mass",
+      "masses": [8, 0, 4, 0, 6, 5, 0, 7, 0, 4, 0, 3],
+      "equivariance": true,
+      "expected": { "tonicPitchClass": 0, "mode": "major", "spelling": { "step": "C", "alter": 0 } }
+    },
+    {
+      "name": "c-minor-flat-three-heavy",
+      "masses": [8, 0, 3, 7, 0, 5, 0, 7, 2, 0, 5, 0],
+      "equivariance": true,
+      "expected": { "tonicPitchClass": 0, "mode": "minor", "spelling": { "step": "C", "alter": 0 } }
+    },
+    {
+      "name": "single-pitch-class-ties-break-major-before-minor",
+      "masses": [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      "equivariance": false,
+      "expected": { "tonicPitchClass": 0, "mode": "major", "spelling": { "step": "C", "alter": 0 } }
+    },
+    {
+      "name": "f-sharp-major-spells-sharp-side",
+      "masses": [0, 7, 0, 4, 0, 3, 8, 0, 4, 0, 6, 5],
+      "equivariance": false,
+      "expected": { "tonicPitchClass": 6, "mode": "major", "spelling": { "step": "F", "alter": 1 } }
+    },
+    {
+      "name": "e-flat-major-spells-flat-side",
+      "masses": [4, 0, 5, 8, 0, 3, 0, 6, 5, 0, 7, 0],
+      "equivariance": false,
+      "expected": { "tonicPitchClass": 3, "mode": "major", "spelling": { "step": "E", "alter": -1 } }
+    },
+    {
+      "name": "a-minor-dorian-tolerant-natural-six",
+      "masses": [5, 0, 4, 0, 6, 3, 1, 5, 0, 8, 2, 5],
+      "equivariance": true,
+      "expected": { "tonicPitchClass": 9, "mode": "minor", "spelling": { "step": "A", "alter": 0 } }
+    },
+    {
+      "name": "zero-mass-yields-no-key",
+      "masses": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      "equivariance": false,
+      "expected": null
+    },
+    {
+      "name": "dominant-heavy-f-major",
+      "masses": [7, 0, 3, 0, 4, 8, 0, 5, 0, 5, 4, 0],
+      "equivariance": true,
+      "expected": { "tonicPitchClass": 5, "mode": "major", "spelling": { "step": "F", "alter": 0 } }
+    }
+  ]
+}

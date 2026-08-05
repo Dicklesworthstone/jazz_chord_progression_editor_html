@@ -7,6 +7,7 @@ import {
   makeBeatRange,
   makeInstrumentId,
   makeKeyMode,
+  makeMeter,
   makeMidiPitch,
   makeSpelledPitchClass,
   measureCapacity,
@@ -172,6 +173,8 @@ export const STUDIO_EDIT_REFUSAL_CODES = Object.freeze([
   "u1.instrument_unknown",
   "u1.master_volume_invalid",
   "u1.key_unknown",
+  "u1.meter_invalid",
+  "u1.meter_locked_by_content",
 ] as const);
 
 /** The reviewed tempo window, in beats per minute. */
@@ -233,7 +236,8 @@ export type StudioControllerAction =
   | "set-performance-style"
   | "set-instrument"
   | "set-master-volume"
-  | "set-key";
+  | "set-key"
+  | "set-meter";
 
 export type StudioControllerRefusal = Readonly<{
   action: StudioControllerAction;
@@ -442,6 +446,15 @@ export interface StudioController {
   readonly subscribe: (listener: StudioControllerListener) => () => void;
   readonly setTitle: (value: string) => StudioControllerActionResult;
   readonly setTempo: (bpm: number) => StudioControllerActionResult;
+  /**
+   * Change the chart meter. Legal only while every measure is empty: exact
+   * durations are never silently rebalanced, so a chart holding content
+   * refuses with the reason stated (M1-XFER starter law).
+   */
+  readonly setMeter: (
+    beatsPerBar: number,
+    beatUnit: number,
+  ) => StudioControllerActionResult;
   readonly clearChart: () => StudioControllerActionResult;
   readonly deleteMeasure: (measureId: string) => StudioControllerActionResult;
   /**
@@ -806,6 +819,9 @@ const EDIT_RECOVERY_ACTIONS: Readonly<Record<StudioEditRefusalCode, string>> =
       "Set the volume between 0 and 1.",
     "u1.key_unknown":
       "Pick one of the keys the key control offers, or clear the key.",
+    "u1.meter_invalid": "Pick a meter this studio can count, like 4/4 or 3/4.",
+    "u1.meter_locked_by_content":
+      "Clear the chart first, or start a new chart in the meter you want.",
     "u1.selection_empty": "Select at least one chord before this action.",
     "u1.selection_limit": "Select at most 8,192 chords.",
     "u1.target_missing": "Choose a chord, measure, or boundary that still exists.",
@@ -1942,6 +1958,58 @@ function makeStudioComposition(
     });
     return apply("set-tempo", (current) =>
       runDocumentCommand({ command, dependencies, state: current }),
+    );
+  };
+
+  const setMeter = (
+    beatsPerBar: number,
+    beatUnit: number,
+  ): StudioControllerActionResult => {
+    const made = makeMeter({ beatsPerBar, beatUnit });
+    if (!made.ok) {
+      return editRefusal(
+        "set-meter",
+        "u1.meter_invalid",
+        "That meter is not one this studio can count.",
+        ["meter"],
+      );
+    }
+    const current = state.document.meter;
+    if (
+      current.beatsPerBar === made.value.beatsPerBar &&
+      current.beatUnit === made.value.beatUnit
+    ) {
+      return Object.freeze({
+        ok: true,
+        outcome: "ephemeral-updated",
+        snapshot,
+        effects: Object.freeze([]),
+      });
+    }
+    /*
+     * Exact durations are never silently rebalanced: a meter change is legal
+     * only while every measure is empty (the M1-XFER starter law). A chart
+     * holding any chord refuses with the reason stated.
+     */
+    const occupied = state.document.sections.some((section) =>
+      section.measures.some((measure) => measure.events.length > 0),
+    );
+    if (occupied) {
+      return editRefusal(
+        "set-meter",
+        "u1.meter_locked_by_content",
+        "The meter can only change while the chart is empty; this chart already holds chords.",
+        ["meter"],
+      );
+    }
+    const command: SetDocumentSettingsCommand = Object.freeze({
+      ...commandEnvelope("studio-meter", "Set meter"),
+      completionUpdates: Object.freeze([]),
+      kind: "set-document-settings",
+      patch: Object.freeze({ meter: made.value }),
+    });
+    return apply("set-meter", (currentState) =>
+      runDocumentCommand({ command, dependencies, state: currentState }),
     );
   };
 
@@ -5696,6 +5764,7 @@ function makeStudioComposition(
     clearChart,
     deleteMeasure,
     setTempo,
+    setMeter,
     setPerformanceStyle,
     setInstrument,
     setMasterVolume,

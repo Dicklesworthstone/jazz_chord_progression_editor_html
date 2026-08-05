@@ -194,13 +194,17 @@ function specShapeFor(
  */
 export function symbolTextForAlternative(
   alternative: MidiImportChordAlternative,
+  spellingOverrides?: Readonly<{
+    root?: SpelledPitchClass;
+    bass?: SpelledPitchClass;
+  }>,
 ): string | null {
   const shape = specShapeFor(alternative);
   if (shape === null) return null;
   const spec: ChordSpec = Object.freeze({
     kind: "parsed" as const,
     sourceText: "",
-    root: alternative.rootSpelled,
+    root: spellingOverrides?.root ?? alternative.rootSpelled,
     triad: shape.triad,
     sixth: shape.sixth ? Object.freeze({ number: 6 as const, alter: 0 as const }) : null,
     seventh: shape.seventh,
@@ -212,7 +216,8 @@ export function symbolTextForAlternative(
     ),
     bass:
       alternative.inversion === "slash"
-        ? canonicalSpellingOf(alternative.bassPitchClass)
+        ? (spellingOverrides?.bass ??
+          canonicalSpellingOf(alternative.bassPitchClass))
         : null,
     colorPolicy: "none" as const,
   });
@@ -242,7 +247,7 @@ export function pitchClassText(spelled: SpelledPitchClass): string {
  * ------------------------------------------------------------------ */
 
 /** Unicode scalar count: what the Quick Entry cap actually measures. */
-function countCodePoints(text: string): number {
+export function countCodePoints(text: string): number {
   let count = 0;
   const scalars = text[Symbol.iterator]();
   while (!scalars.next().done) count += 1;
@@ -260,7 +265,7 @@ function greatestCommonDivisor(left: number, right: number): number {
   return a === 0 ? 1 : a;
 }
 
-function durationText(numerator: number, denominator: number): string {
+export function durationText(numerator: number, denominator: number): string {
   const divisor = greatestCommonDivisor(numerator, denominator);
   const reducedNumerator = numerator / divisor;
   const reducedDenominator = denominator / divisor;
@@ -270,7 +275,7 @@ function durationText(numerator: number, denominator: number): string {
 }
 
 /** Escapes a section name for the T0 section marker. */
-function escapeSectionName(name: string): string {
+export function escapeSectionName(name: string): string {
   return name.replace(/\\/gu, "\\\\").replace(/\]/gu, "\\]");
 }
 

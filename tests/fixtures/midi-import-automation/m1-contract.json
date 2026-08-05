@@ -1,0 +1,54 @@
+{
+  "schema": "changes.import.midi-automation-contract.v1",
+  "packet": "jcpe-ionn",
+  "document": "docs/M1_MIDI_IMPORT_AUTOMATION_CONTRACT.md",
+  "traceStages": [
+    "decode",
+    "salvage",
+    "classify",
+    "segment",
+    "infer-key",
+    "resolve",
+    "groove",
+    "plan",
+    "envelope"
+  ],
+  "families": [
+    {
+      "file": "classification-cases.json",
+      "sha256": "d92389b15ed23d9199b1ebe5d0e14cb83e96a6ef0e7a43b33bdcaf907d38501f"
+    },
+    {
+      "file": "segmentation-cases.json",
+      "sha256": "05cf6db2fae2e86197afa99e83ca38536919b58017122921f644f4fb78948115"
+    },
+    {
+      "file": "key-cases.json",
+      "sha256": "60ab44679ffdd26a7a536243ff59bb0a952c45cec35c13e21f63747ae5a62961"
+    },
+    {
+      "file": "rerank-cases.json",
+      "sha256": "5de0aec3195962d6341601a64909266d14eeb5a020435187b42a7fae88cf144f"
+    },
+    {
+      "file": "groove-cases.json",
+      "sha256": "7f4c25324a3e87225f48929ecd9f02437204a6d04034f2cb6ed59620627fef90"
+    },
+    {
+      "file": "transfer-cases.json",
+      "sha256": "276776a063c95ee701162325e1ba86ec7a8aae5ff1e8234bc036a34eb5f80e79"
+    },
+    {
+      "file": "envelope-cases.json",
+      "sha256": "5ee9a948811160df670a948641e98f6a9e304677943bdd8b6710174dc01b6759"
+    },
+    {
+      "file": "mutation-controls.json",
+      "sha256": "bf9437abc8f4b2e38a11ac750553d7c20c336464751cf7df9ff1558125715332"
+    }
+  ],
+  "traceGolden": {
+    "file": "trace-golden.json",
+    "sha256": "e5815e4788dcf46b2e6d2973a46696126638c053dc4412fcd1dabeaec1466ecf"
+  }
+}

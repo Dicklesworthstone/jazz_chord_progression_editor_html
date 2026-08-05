@@ -1,0 +1,49 @@
+{
+  "schema": "changes.import.midi-automation-fixtures.rerank.v1",
+  "law": "M1-KEY-4.2",
+  "notes": "Independently authored. alternatives are abstract M0 outcomes in their original M0 rank order: [rootPitchClass, inversion]. key is the inferred context or null. expectedOrder lists indices into alternatives after the frozen M1 comparator (diatonic-root-first, bass-is-root-first, then M0 order). The validator recomputes the sort, which must be stable.",
+  "cases": [
+    {
+      "name": "diatonic-root-beats-chromatic-root",
+      "key": { "tonicPitchClass": 0, "mode": "major" },
+      "alternatives": [[1, "root"], [7, "root"]],
+      "expectedOrder": [1, 0]
+    },
+    {
+      "name": "bass-is-root-beats-slash-among-diatonic",
+      "key": { "tonicPitchClass": 0, "mode": "major" },
+      "alternatives": [[4, "slash"], [9, "root"]],
+      "expectedOrder": [1, 0]
+    },
+    {
+      "name": "m0-order-settles-equal-classes",
+      "key": { "tonicPitchClass": 0, "mode": "major" },
+      "alternatives": [[7, "root"], [0, "root"]],
+      "expectedOrder": [0, 1]
+    },
+    {
+      "name": "no-key-keeps-m0-order-verbatim",
+      "key": null,
+      "alternatives": [[1, "slash"], [6, "root"], [0, "root"]],
+      "expectedOrder": [0, 1, 2]
+    },
+    {
+      "name": "minor-key-dorian-set-admits-natural-six-root",
+      "key": { "tonicPitchClass": 9, "mode": "minor" },
+      "alternatives": [[10, "root"], [6, "root"]],
+      "expectedOrder": [1, 0]
+    },
+    {
+      "name": "diatonic-slash-still-beats-chromatic-root-on-rule-one",
+      "key": { "tonicPitchClass": 0, "mode": "major" },
+      "alternatives": [[1, "root"], [5, "slash"]],
+      "expectedOrder": [1, 0]
+    },
+    {
+      "name": "stability-three-way",
+      "key": { "tonicPitchClass": 0, "mode": "major" },
+      "alternatives": [[2, "root"], [1, "root"], [4, "root"]],
+      "expectedOrder": [0, 2, 1]
+    }
+  ]
+}
