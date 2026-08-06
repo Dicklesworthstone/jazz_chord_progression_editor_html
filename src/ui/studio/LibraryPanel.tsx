@@ -160,6 +160,7 @@ export type LibraryPanelContentProps = Readonly<{
   onMidiImportChooseFile: (file: File) => void;
   onMidiImportCommit: () => void;
   onMidiImportDiscard: () => void;
+  onMidiImportAudition: () => void;
   onQuickEntryDraftChange: (value: string) => void;
   onQuickEntryInsert: () => void;
   onQuickEntryClear: () => void;
@@ -753,6 +754,7 @@ export function LibraryPanelContent({
   onMidiImportChooseFile,
   onMidiImportCommit,
   onMidiImportDiscard,
+  onMidiImportAudition,
   onQuickEntryDraftChange,
   onQuickEntryInsert,
   onQuickEntryClear,
@@ -797,6 +799,7 @@ export function LibraryPanelContent({
           onChooseFile={onMidiImportChooseFile}
           onCommit={onMidiImportCommit}
           onDiscard={onMidiImportDiscard}
+          onAudition={onMidiImportAudition}
           onOpenCommandLane={onOpenCommandLane}
           view={midiImport}
         />
@@ -961,6 +964,7 @@ export type LibraryPanelProps = Readonly<{
   onMidiImportChooseFile: (file: File) => void;
   onMidiImportCommit: () => void;
   onMidiImportDiscard: () => void;
+  onMidiImportAudition: () => void;
   onQuickEntryDraftChange: (value: string) => void;
   onQuickEntryInsert: () => void;
   onQuickEntryClear: () => void;
@@ -985,6 +989,7 @@ export function LibraryPanel({
   onMidiImportChooseFile,
   onMidiImportCommit,
   onMidiImportDiscard,
+  onMidiImportAudition,
   onQuickEntryDraftChange,
   onQuickEntryInsert,
   onQuickEntryClear,

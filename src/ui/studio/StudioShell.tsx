@@ -481,6 +481,7 @@ export function StudioShell({
               onMidiImportChooseFile={callbacks.onMidiImportChooseFile}
               onMidiImportCommit={shellCallbacks.onMidiImportCommit}
               onMidiImportDiscard={callbacks.onMidiImportDiscard}
+              onMidiImportAudition={callbacks.onMidiImportAudition}
               onInsertRecoveredChord={callbacks.onInsertRecoveredChord}
               onRecoveryAcknowledgeChange={callbacks.onRecoveryAcknowledgeChange}
               onRecoveryDurationDraftChange={
@@ -747,6 +748,7 @@ export function StudioShell({
                   onMidiImportChooseFile={callbacks.onMidiImportChooseFile}
                   onMidiImportCommit={shellCallbacks.onMidiImportCommit}
                   onMidiImportDiscard={callbacks.onMidiImportDiscard}
+                  onMidiImportAudition={callbacks.onMidiImportAudition}
                   onInsertRecoveredChord={callbacks.onInsertRecoveredChord}
                   onRecoveryAcknowledgeChange={
                     callbacks.onRecoveryAcknowledgeChange

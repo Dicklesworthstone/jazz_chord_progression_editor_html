@@ -546,6 +546,8 @@ export type StudioMidiImportView = Readonly<{
    * file is pending.
    */
   traceJson: string | null;
+  /** True while the pre-Add audition is sounding; the button shows Stop. */
+  auditioning: boolean;
 }>;
 
 export type StudioShellView = Readonly<{
@@ -602,6 +604,11 @@ export type StudioShellCallbacks = Readonly<{
   onMidiImportCommit: () => void;
   /** Drop the preview without touching the document. */
   onMidiImportDiscard: () => void;
+  /**
+   * Toggle the pre-Add audition (jcpe-qyyn): a bounded, cancelable series
+   * of click-previews sounding the file's own first bars at its tempo.
+   */
+  onMidiImportAudition: () => void;
   /** Presentation-only: records that the caller accepted the layout loss. */
   onRecoveryAcknowledgeChange: (acknowledged: boolean) => void;
   /** Presentation-only draft for a duration T0 could not resolve. */

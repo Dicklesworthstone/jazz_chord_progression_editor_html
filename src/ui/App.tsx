@@ -17,6 +17,7 @@ import {
   RESIZE_AUTO_COMPLETION_REASON,
   STARTER_CHART,
   type LoadProgressionLibraryEntryResult,
+  auditionMidiImportPreview,
   type MidiImportAutoCommitResult,
   type MidiImportCommitResult,
   type MidiImportPreview,
@@ -249,6 +250,11 @@ export type AppActions = Readonly<{
   /** Sound one pitch from the detail keyboard (jcpe-v2r-detail-yimm). */
   previewPitch: (
     midiPitch: number,
+    gesture: StudioAudioGesture,
+  ) => StudioControllerActionResult;
+  /** Sound one voiced pitch set through the same lane (M1 audition). */
+  previewPitches: (
+    midiPitches: readonly number[],
     gesture: StudioAudioGesture,
   ) => StudioControllerActionResult;
   /** Display-only analyzer reads (jcpe-7she); never a command path. */
@@ -960,6 +966,7 @@ function midiImportView(
   available: boolean,
   preview: MidiImportPreview | null,
   notice: string | null,
+  auditioning: boolean,
 ): StudioMidiImportView {
   if (!available) {
     return Object.freeze({
@@ -974,6 +981,7 @@ function midiImportView(
       blockedReason: null,
       canCommit: false,
       traceJson: null,
+      auditioning: false,
     });
   }
   if (preview === null) {
@@ -989,6 +997,7 @@ function midiImportView(
       blockedReason: null,
       canCommit: false,
       traceJson: null,
+      auditioning: false,
     });
   }
   const statusLabel =
@@ -1022,6 +1031,7 @@ function midiImportView(
       blockedReason: null,
       canCommit: false,
       traceJson: JSON.stringify(preview.trace, null, 1),
+      auditioning,
     });
   }
   const decoded = preview.decoded;
@@ -1039,6 +1049,7 @@ function midiImportView(
       blockedReason: preview.blockedReason,
       canCommit: false,
       traceJson: JSON.stringify(preview.trace, null, 1),
+      auditioning,
     });
   }
   const counters = decoded.model.counters;
@@ -1129,6 +1140,7 @@ function midiImportView(
       preview.automation !== null ||
       (plan !== null && preview.blockedReason === null),
     traceJson: JSON.stringify(preview.trace, null, 1),
+    auditioning,
   });
 }
 
@@ -1485,6 +1497,20 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
     null,
   );
   const [midiImportNotice, setMidiImportNotice] = useState<string | null>(null);
+  /*
+   * jcpe-qyyn audition: presentation-only. The timers fire the same
+   * click-preview action a pointer press fires; cancelling clears them
+   * before the next step sounds. Any commit, discard, or new file cancels.
+   */
+  const [midiAuditioning, setMidiAuditioning] = useState(false);
+  const midiAuditionTimers = useRef<number[]>([]);
+  const cancelMidiAudition = (): void => {
+    for (const timer of midiAuditionTimers.current) {
+      window.clearTimeout(timer);
+    }
+    midiAuditionTimers.current = [];
+    setMidiAuditioning(false);
+  };
   const [rovingFocusId, setRovingFocusId] = useState<string | null>(null);
   const [editRefusal, setEditRefusal] = useState<
     StudioShellView["chart"]["editRefusal"]
@@ -1981,6 +2007,7 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
     actions.midiImportAvailable,
     midiPreview,
     midiImportNotice,
+    midiAuditioning,
   ), (eventId) => actions.readEventAnalysis(eventId)?.roman ?? null);
 
   /*
@@ -2390,6 +2417,7 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
          * service that owns the decoder.
          */
         onMidiImportChooseFile: (file) => {
+          cancelMidiAudition();
           setMidiPreview(null);
           setMidiImportNotice(`Reading ${file.name}…`);
           const reader = new FileReader();
@@ -2422,6 +2450,7 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
         },
         onMidiImportCommit: () => {
           if (midiPreview === null) return;
+          cancelMidiAudition();
           /*
            * The automatic envelope is the default: chords, settings, and the
            * matched groove in one gesture with a stated undo count. The M0
@@ -2471,8 +2500,41 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
           );
         },
         onMidiImportDiscard: () => {
+          cancelMidiAudition();
           setMidiPreview(null);
           setMidiImportNotice(null);
+        },
+        onMidiImportAudition: () => {
+          if (midiAuditioning) {
+            cancelMidiAudition();
+            return;
+          }
+          if (midiPreview === null) return;
+          const steps = auditionMidiImportPreview(midiPreview);
+          if (steps.length === 0) return;
+          const gesture = {
+            kind: "trusted-pointer",
+            trusted: true,
+            sequence: 1,
+          } as const;
+          for (const step of steps) {
+            midiAuditionTimers.current.push(
+              window.setTimeout(() => {
+                actions.previewPitches(step.midiPitches, gesture);
+              }, step.atMs),
+            );
+          }
+          const last = steps[steps.length - 1];
+          midiAuditionTimers.current.push(
+            window.setTimeout(
+              () => {
+                midiAuditionTimers.current = [];
+                setMidiAuditioning(false);
+              },
+              (last?.atMs ?? 0) + 1_400,
+            ),
+          );
+          setMidiAuditioning(true);
         },
         onQuickEntryClear: () => {
           // A refusal here is surfaced, never presented as a success. The
@@ -3136,6 +3198,7 @@ export function StudioRoot({
         playProgression: controller.playProgression,
         previewChord: controller.previewChord,
         previewPitch: controller.previewPitch,
+        previewPitches: controller.previewPitches,
         readTransportPlayheadLabel: controller.readTransportPlayheadLabel,
         readTransportAnalysisFrame: controller.readTransportAnalysisFrame,
         readEventPitchClasses: controller.readEventPitchClasses,

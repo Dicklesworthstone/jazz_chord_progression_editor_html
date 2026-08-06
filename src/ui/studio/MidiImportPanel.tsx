@@ -27,6 +27,8 @@ export type MidiImportPanelProps = Readonly<{
   onChooseFile: (file: File) => void;
   onCommit: () => void;
   onDiscard: () => void;
+  /** Toggle the bounded pre-Add audition of the file's own first bars. */
+  onAudition: () => void;
   /** Opens the ⌘K command lane — the paste-chart-text route lives there. */
   onOpenCommandLane?: (() => void) | undefined;
 }>;
@@ -37,6 +39,7 @@ export function MidiImportPanel({
   onChooseFile,
   onCommit,
   onDiscard,
+  onAudition,
   onOpenCommandLane,
 }: MidiImportPanelProps) {
   const headingId = `studio-midi-import-heading-${context}`;
@@ -157,6 +160,25 @@ export function MidiImportPanel({
       {view.auto === null ? null : (
         <div class="studio-midi-import__summary" data-testid="midi-import-auto">
           <p class="studio-midi-import__fact-value">{view.auto.headline}</p>
+          {/*
+            Hear before shipping (jcpe-qyyn): a bounded, cancelable series
+            of click-previews sounding the file's OWN first bars at its own
+            tempo — the harmony and rhythm skeleton, on this document's
+            instrument. The groove performance plays after Add, through the
+            real transport; the copy promises exactly what this plays.
+          */}
+          <button
+            aria-pressed={view.auditioning}
+            class="studio-midi-import__audition"
+            data-testid="midi-import-audition"
+            id={`studio-midi-import-audition-${context}`}
+            onClick={onAudition}
+            type="button"
+          >
+            {view.auditioning
+              ? "Stop the audition"
+              : "Audition the first bars"}
+          </button>
           <p
             class="studio-midi-import__law"
             data-testid="midi-import-groove-evidence"
