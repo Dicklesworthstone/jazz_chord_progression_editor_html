@@ -938,7 +938,8 @@ test("jcpe-pd7g: a mid-run instrument change moves the spectrum with no dropout 
         version: browser.version(),
       },
       scenario: {
-        chartText: SWAP_CHART_TEXT,
+        chartText: "| Cmaj7 |",
+        loopedSingleBar: true,
         swapTo: "vibraphone",
         preSwapMs: PRE_SWAP_MS,
         postSwapMs: POST_SWAP_MS,
