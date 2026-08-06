@@ -227,7 +227,7 @@ const EXPECTED_REVIEWED_DIGESTS = {
 const EXPECTED_SEMANTIC_SNAPSHOT_DIGESTS = {
   json: {
     "f2-decoder-contract.json":
-      "7778f4ad4bdadfeb2e736a4925f840f357f68f40d6e4e036c69cf851c7a94bb1",
+      "2d46aea5025871d2514629bd747feb1670fd82c11cc4dfac65137328999bd8e6",
     "adversarial-cases.json":
       "4a321bf2437b7a4ee37861f7dd387ab50b3d2b11bc51e553ed791752047f2f69",
     "provenance-ledger.json":
