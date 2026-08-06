@@ -303,6 +303,220 @@ export function isExpressiveVoiceGesture(
   return totalPoints <= PHYSICAL_RENDER_LIMITS.maximumPointsPerGesture;
 }
 
+export type PhysicalGestureValidationResult =
+  | Readonly<{ ok: true; value: ExpressiveVoiceGesture }>
+  | Readonly<{
+      ok: false;
+      refusal: Readonly<{ code: PhysicalRenderRefusal["code"]; path: string }>;
+    }>;
+
+function gestureInvalid(
+  code: PhysicalRenderRefusal["code"],
+  path: string,
+): PhysicalGestureValidationResult {
+  return Object.freeze({ ok: false, refusal: Object.freeze({ code, path }) });
+}
+
+export type PhysicalPartitionCandidate = Readonly<{
+  family: PhysicalInstrumentFamily;
+  events: readonly Readonly<{
+    eventId: string;
+    voiceId: string;
+    startTick: number;
+    durationTicks: number;
+    articulation: PhysicalArticulationId;
+  }>[];
+  declaredEventCount?: number;
+  declaredCoupledVoiceCount?: number;
+  handoffBytes?: number;
+  sharedResonance?: boolean;
+  pedalHeld?: boolean;
+  loopRestart?: boolean;
+}>;
+
+export type PhysicalPartitionClassification = Readonly<{
+  mode: PhysicalRenderMode;
+  segments: number;
+  stateContinues: boolean;
+  canonicalResetReason: "loop-restart" | null;
+  leakedPriorPassState: false;
+}>;
+
+export type PhysicalPartitionClassificationResult =
+  | Readonly<{ ok: true; value: PhysicalPartitionClassification }>
+  | Readonly<{ ok: false; refusal: Readonly<{ code: PhysicalRenderRefusal["code"] }> }>;
+
+/** Classify an independently supplied phrase/stem before any PCM work. */
+export function classifyPhysicalPartition(
+  candidate: PhysicalPartitionCandidate,
+): PhysicalPartitionClassificationResult {
+  const declaredEvents = candidate.declaredEventCount ?? candidate.events.length;
+  if (declaredEvents > PHYSICAL_RENDER_LIMITS.maximumEventsPerPhrase) {
+    return Object.freeze({
+      ok: false,
+      refusal: Object.freeze({ code: "limit.physical_events_exceeded" }),
+    });
+  }
+  const declaredVoices = candidate.declaredCoupledVoiceCount ??
+    new Set(candidate.events.map(({ voiceId }) => voiceId)).size;
+  if (declaredVoices > PHYSICAL_RENDER_LIMITS.maximumCoupledVoices) {
+    return Object.freeze({
+      ok: false,
+      refusal: Object.freeze({ code: "limit.physical_voices_exceeded" }),
+    });
+  }
+  if (
+    (candidate.handoffBytes ?? 0) >
+    PHYSICAL_RENDER_LIMITS.maximumStateHandoffBytes
+  ) {
+    return Object.freeze({
+      ok: false,
+      refusal: Object.freeze({ code: "physical.state_handoff_invalid" }),
+    });
+  }
+  let priorStart = -1;
+  for (const event of candidate.events) {
+    if (
+      !Number.isSafeInteger(event.startTick) ||
+      !Number.isSafeInteger(event.durationTicks) ||
+      event.startTick < priorStart ||
+      event.durationTicks <= 0
+    ) {
+      return Object.freeze({
+        ok: false,
+        refusal: Object.freeze({ code: "physical.partition_invalid" }),
+      });
+    }
+    priorStart = event.startTick;
+  }
+  const independent =
+    candidate.family === "guitar" &&
+    candidate.sharedResonance === false &&
+    candidate.events.every(({ articulation }) => articulation === "palm-muted");
+  const mode: PhysicalRenderMode = independent
+    ? "independent-note"
+    : candidate.family === "guitar" || candidate.family === "vibraphone"
+      ? "coupled-stem"
+      : "stateful-phrase";
+  return Object.freeze({
+    ok: true,
+    value: Object.freeze({
+      mode,
+      segments: candidate.events.length === 0 ? 0 : 1,
+      stateContinues: mode !== "independent-note",
+      canonicalResetReason: candidate.loopRestart === true ? "loop-restart" : null,
+      leakedPriorPassState: false,
+    }),
+  });
+}
+
+/** Exact, ordered diagnostic surface for hostile serialized gestures. */
+export function validateExpressiveVoiceGesture(
+  value: unknown,
+  path = "/gestures/0",
+): PhysicalGestureValidationResult {
+  if (!isRecord(value)) return gestureInvalid("physical.gesture_invalid", path);
+  const family = value["instrumentFamily"];
+  const articulation = value["articulation"];
+  if (
+    !PHYSICAL_INSTRUMENT_FAMILIES.some((candidate) => candidate === family) ||
+    !PHYSICAL_ARTICULATION_IDS.some((candidate) => candidate === articulation)
+  ) {
+    return gestureInvalid("physical.gesture_invalid", path);
+  }
+  const declaredCurves = value["declaredCurveCount"];
+  if (
+    typeof declaredCurves === "number" &&
+    declaredCurves > PHYSICAL_RENDER_LIMITS.maximumCurvesPerGesture
+  ) {
+    return gestureInvalid("limit.physical_curves_exceeded", `${path}/curves`);
+  }
+  const declaredPoints = value["declaredPointCount"];
+  if (
+    typeof declaredPoints === "number" &&
+    declaredPoints > PHYSICAL_RENDER_LIMITS.maximumPointsPerGesture
+  ) {
+    return gestureInvalid(
+      "limit.physical_control_points_exceeded",
+      `${path}/curves`,
+    );
+  }
+  const curves = value["curves"];
+  if (!Array.isArray(curves) || curves.length === 0) {
+    return gestureInvalid("physical.gesture_invalid", `${path}/curves`);
+  }
+  if (curves.length > PHYSICAL_RENDER_LIMITS.maximumCurvesPerGesture) {
+    return gestureInvalid("limit.physical_curves_exceeded", `${path}/curves`);
+  }
+  const owned = CONTROL_OWNERSHIP[family as PhysicalInstrumentFamily];
+  let totalPoints = 0;
+  for (const [curveIndex, candidate] of curves.entries()) {
+    const curvePath = `${path}/curves/${String(curveIndex)}`;
+    if (!isRecord(candidate)) {
+      return gestureInvalid("physical.gesture_invalid", curvePath);
+    }
+    const controlId = candidate["controlId"];
+    if (!owned.some((ownedId) => ownedId === controlId)) {
+      return gestureInvalid(
+        "physical.control_unsupported",
+        `${curvePath}/controlId`,
+      );
+    }
+    const points = candidate["points"];
+    if (!Array.isArray(points) || points.length === 0) {
+      return gestureInvalid("physical.gesture_invalid", `${curvePath}/points`);
+    }
+    totalPoints += points.length;
+    if (totalPoints > PHYSICAL_RENDER_LIMITS.maximumPointsPerGesture) {
+      return gestureInvalid(
+        "limit.physical_control_points_exceeded",
+        `${path}/curves`,
+      );
+    }
+    let priorOffset = -1;
+    for (const [pointIndex, candidatePoint] of points.entries()) {
+      const pointPath = `${curvePath}/points/${String(pointIndex)}`;
+      if (!isRecord(candidatePoint)) {
+        return gestureInvalid("physical.gesture_invalid", pointPath);
+      }
+      const offset = candidatePoint["offsetTicks"];
+      const controlValue = candidatePoint["valueQ16_16"];
+      if (
+        typeof offset !== "number" ||
+        !Number.isSafeInteger(offset) ||
+        offset < 0 ||
+        offset > PHYSICAL_RENDER_LIMITS.maximumControlOffsetTicks ||
+        typeof controlValue !== "number" ||
+        !Number.isInteger(controlValue) ||
+        controlValue < -0x8000_0000 ||
+        controlValue > 0x7fff_ffff
+      ) {
+        return gestureInvalid(
+          "physical.control_value_out_of_range",
+          `${pointPath}/offsetTicks`,
+        );
+      }
+      if (offset === priorOffset) {
+        return gestureInvalid(
+          "physical.control_points_duplicate",
+          `${pointPath}/offsetTicks`,
+        );
+      }
+      if (offset < priorOffset) {
+        return gestureInvalid(
+          "physical.control_points_unsorted",
+          `${pointPath}/offsetTicks`,
+        );
+      }
+      priorOffset = offset;
+    }
+  }
+  if (!isExpressiveVoiceGesture(value)) {
+    return gestureInvalid("physical.gesture_invalid", path);
+  }
+  return Object.freeze({ ok: true, value });
+}
+
 function attackTicks(event: PlaybackEvent): number {
   return Math.max(1, Math.min(96, Math.floor(event.gateDurationTicks / 8)));
 }
