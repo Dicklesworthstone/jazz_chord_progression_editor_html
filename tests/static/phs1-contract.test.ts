@@ -5,7 +5,8 @@ import { join } from "node:path";
 
 import { validatePhs1Contract } from "../../scripts/validate-phs1-contract";
 
-type Obj = Record<string, unknown>;
+type Property = "controls" | "expectedFindingCode" | "pointer" | "target" | "value";
+type Obj = Record<string, unknown> & Partial<Record<Property, unknown>>;
 const root = new URL("../fixtures/physical-foundry", import.meta.url).pathname;
 function obj(value: unknown): Obj { if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error("PHS1_TEST_OBJECT"); return value as Obj; }
 async function readObj(path: string): Promise<Obj> { return obj(JSON.parse(await readFile(path, "utf8")) as unknown); }

@@ -2,7 +2,20 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
-type Obj = Record<string, unknown>;
+type Property =
+  | "authorities" | "cases" | "centroidHz" | "commit" | "controls"
+  | "distributionClass" | "distributionClasses" | "expected"
+  | "expectedValuesGenerated" | "family" | "fixtures"
+  | "foundryRuntimeBoundary" | "frankensimSurveyCommit"
+  | "generatedTableIsDataOnly" | "id" | "independence" | "limits"
+  | "normalizedResidual" | "packSchema"
+  | "placeholderDigestMayClaimContentAddressing" | "productionImportsForbidden"
+  | "productionOutputUsed" | "rawBytesMayEnterRepository"
+  | "requiredMetricFamilies" | "reviewedCompanionSha256"
+  | "runtimeGenerationPermitted" | "runtimeNetworkPermitted"
+  | "runtimeOptimizerPermitted" | "runtimeSourceParserPermitted"
+  | "runtimeTableSchema" | "schema" | "traces";
+type Obj = Record<string, unknown> & Partial<Record<Property, unknown>>;
 export type Phs1Finding = Readonly<{ code: string; path: string; message: string }>;
 export type Phs1Report = Readonly<{
   schema: "changes.validation.phs1-foundry-contract.v1";
