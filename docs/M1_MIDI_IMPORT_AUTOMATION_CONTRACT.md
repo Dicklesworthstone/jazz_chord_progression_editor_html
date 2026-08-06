@@ -378,6 +378,8 @@ deterministic outcome — never a throw.
 - `groove-cases.json` — M1-GROOVE per-row positives, near-misses, order.
 - `transfer-cases.json` — M1-XFER truth table + prediction + markers.
 - `envelope-cases.json` — M1-ENV order, chunking, stated counts, rollback.
+- `override-cases.json` — M1-OVR exclusion span sets, alternative-choice
+  selection and stale-drop, groove-override short-circuit (amendment #2).
 - `trace-golden.json` — one full ImportTrace golden for a small band case.
 - `mutation-controls.json` — named single-field mutations that each named
   law must reject (validator applies them and requires the stated failure).
@@ -388,3 +390,69 @@ importing production pipeline code), checks the packet digests, and fails on
 any drift, missing family, or surviving mutation. It registers as
 `bun run validate:m1-contract` and joins `scripts/verify.ts` after the M0
 rows.
+
+## 12. Advanced overrides (law M1-OVR, amendment #2, jcpe-qyyn, 2026-08-06)
+
+The Advanced disclosure may override three — and exactly three — automatic
+decisions. Every override re-runs the pipeline **on the retained decoded
+model** (never on re-read bytes, never on the emitted chart text), and the
+re-planned preview replaces the pending one atomically: the result card,
+the chart text, the chunk plan, and the trace all restate the overridden
+world. Overrides never touch the document; the commit envelope (§7) lands
+whatever the pending plan says, exactly as before. The quantization-grid
+and destination/section-name overrides remain deferred (recorded here so
+they are not lost).
+
+The frozen override set:
+
+```
+M1ImportOverrides = {
+  excludedTrackIndices: readonly number[],   // sorted, unique, in range
+  alternativeChoices: readonly {
+    span: { measureIndex: number, startTick: number },
+    alternativeOrdinal: number,              // 0 = the automatic choice
+  }[],                                       // ≤ M1_MAX_ALTERNATIVE_CHOICES
+  grooveStyleId: GrooveStyleId | null,       // null = the automatic match
+}
+```
+
+**Track exclusion.** An excluded track keeps its §2 classification — the
+display states what the file contains — but participates in nothing
+downstream: for segmentation, key mass, resolution, and groove features it
+is treated exactly as role `silent`. Excluding every contributing track
+yields the ordinary `import.automation_nothing_to_write` refusal, never a
+special case. An out-of-range index is dropped, with a trace decision. The
+classify trace record carries one `excluded` decision per applied index
+(`reason: "user override"`).
+
+**Alternative choice.** A choice names a span by its exact
+`(measureIndex, startTick)` identity in the RE-PLANNED span set and an
+ordinal into that span's §4.2-ranked alternative list; ordinal 0 is the
+automatic choice, and the chosen alternative's symbol replaces the span's
+`symbolText` everywhere downstream (chart text, sonority list, card
+counts). A choice whose span no longer exists after re-planning — track
+exclusion can redraw the span set — or whose ordinal exceeds the ranked
+list is **dropped, never clamped or repaired**, with a trace decision
+naming the dropped key (`outcome: "dropped-stale"`). Applied choices are
+recorded on the resolve trace record (`outcome: "alternative-<ordinal>"`).
+
+**Groove override.** A non-null `grooveStyleId` must be one of the six
+reviewed ids and replaces the matched groove in the plan: `row` becomes
+`M1_GROOVE_OVERRIDE_ROW = 0`, the evidence sentence becomes the frozen
+`M1_GROOVE_OVERRIDE_EVIDENCE = "You chose this groove yourself."`, and the
+choice wins everywhere the match would have applied — the card, the §5
+transfer, the §7 envelope. Features are still extracted and recorded in
+the trace (the measurement is a fact about the file; the override is a
+fact about the user).
+
+**Determinism (extends M1-DET).** Identical `(decoded model, overrides)`
+yield identical plans and traces. Override application adds no unbounded
+work: exclusion is `O(tracks)`, choice application `O(choices · spans)`
+with `M1_MAX_ALTERNATIVE_CHOICES = 512`, groove override `O(1)`.
+
+Proof obligations (`override-cases.json`): exclusion cases pinning the
+surviving span-key sets (including the all-silent refusal and the
+out-of-range drop); alternative cases pinning applied ordinals, the
+stale-key drop, and the over-range drop; groove cases pinning the
+short-circuit over every decision row it can shadow; a determinism
+double-run; and mutation controls for each law.
