@@ -4,6 +4,12 @@ import {
   compilePhysicalRealization,
   physicalGestureExcitationVelocity,
 } from "../../src/audio";
+import {
+  WAVEGUIDE_GUITAR_CLEAN_ALGORITHM_ID,
+  loadConcertGrandRenderer,
+  loadWaveguideRenderers,
+} from "../../src/audio/dsp-renderer";
+import { velocityGainForVelocity } from "../../src/audio/synth-voice";
 import { compilePlaybackPlan } from "../../src/playback";
 import {
   attackRequest,
@@ -12,6 +18,27 @@ import {
   requireSuccess,
 } from "../support/audio-engine-test-kit";
 import { materializeP0TimelineCase } from "../support/p0-playback-fixtures";
+
+function rms(samples: Float32Array): number {
+  let energy = 0;
+  for (const sample of samples) energy += sample * sample;
+  return Math.sqrt(energy / Math.max(1, samples.length));
+}
+
+function spectralCentroid(
+  magnitudes: Float32Array,
+  sampleRateHz: number,
+  fftSize: number,
+): number {
+  let weighted = 0;
+  let total = 0;
+  for (let bin = 1; bin < magnitudes.length; bin += 1) {
+    const magnitude = magnitudes[bin] ?? 0;
+    weighted += magnitude * bin * sampleRateHz / fftSize;
+    total += magnitude;
+  }
+  return weighted / Math.max(Number.EPSILON, total);
+}
 
 test("the production audio engine renders physical excitation instead of the legacy velocity-only cache entry", async () => {
   const playback = compilePlaybackPlan(
@@ -33,7 +60,9 @@ test("the production audio engine renders physical excitation instead of the leg
   if (gesture === undefined || event === undefined || midiPitch === undefined) {
     throw new Error("PHYSICAL_AUDIO_FIXTURE_EMPTY");
   }
-  expect(physicalGestureExcitationVelocity(gesture, event.velocity)).toBe(107);
+  expect(physicalGestureExcitationVelocity(gesture, event.velocity)).toBe(
+    event.velocity,
+  );
 
   const { engine, context } = await readyEngine();
   requireSuccess(
@@ -81,7 +110,37 @@ test("the production audio engine renders physical excitation instead of the leg
   expect(absoluteDifference).toBeGreaterThan(1);
 });
 
-test("physical preparation warms the exact gesture fingerprint consumed by attack", async () => {
+test("soft and loud physical excitation retain the unquantized dynamic and spectral contrast", async () => {
+  const [analyzer, renderers] = await Promise.all([
+    loadConcertGrandRenderer(),
+    loadWaveguideRenderers(),
+  ]);
+  const instrument = renderers.get(WAVEGUIDE_GUITAR_CLEAN_ALGORITHM_ID);
+  if (instrument === undefined) throw new Error("PHYSICAL_DYNAMICS_RENDERER_MISSING");
+  const render = (renderVelocity: number, sourceVelocity: number) => {
+    const pcm = instrument.renderNote(60, renderVelocity, 48_000, 1);
+    if (pcm === null) throw new Error("PHYSICAL_DYNAMICS_RENDER_REFUSED");
+    const frame = analyzer.analyzeWindow(pcm.left.slice(4_096, 12_288), 48_000);
+    if (frame === null) throw new Error("PHYSICAL_DYNAMICS_ANALYSIS_REFUSED");
+    const outputGain = velocityGainForVelocity(sourceVelocity);
+    return {
+      rms: rms(pcm.left) * outputGain,
+      centroidHz: spectralCentroid(frame.magnitudes, 48_000, frame.fftSize),
+    };
+  };
+  const soft = render(20, 20);
+  const loud = render(110, 110);
+  const legacySoftBand = render(22, 20);
+  const legacyLoudBand = render(106, 110);
+  expect(Math.abs(loud.rms - soft.rms)).toBeGreaterThanOrEqual(
+    Math.abs(legacyLoudBand.rms - legacySoftBand.rms),
+  );
+  expect(Math.abs(loud.centroidHz - soft.centroidHz)).toBeGreaterThanOrEqual(
+    Math.abs(legacyLoudBand.centroidHz - legacySoftBand.centroidHz),
+  );
+});
+
+test("physical preparation warms the exact v1 render identity consumed by attack", async () => {
   const playback = compilePlaybackPlan(
     materializeP0TimelineCase("P0-TIME-001").request,
   );
@@ -137,7 +196,7 @@ test("physical preparation warms the exact gesture fingerprint consumed by attac
   expect(repeated.renderedCount).toBe(0);
 });
 
-test("gesture fingerprints cannot collide with one another and physical cache eviction is deterministic LRU", async () => {
+test("v1 excludes ignored gesture metadata while exact-velocity cache eviction stays deterministic LRU", async () => {
   const playback = compilePlaybackPlan(
     materializeP0TimelineCase("P0-TIME-001").request,
   );
@@ -154,15 +213,18 @@ test("gesture fingerprints cannot collide with one another and physical cache ev
   const base = realized.value.expressivePlan.gestures[1];
   const midiPitch = playback.plan.events[0]?.midiPitches[1];
   if (base === undefined || midiPitch === undefined) throw new Error("PHYSICAL_CACHE_FIXTURE");
-  const gestures = Object.freeze(Array.from({ length: 65 }, (_, index) =>
-    Object.freeze({
-      ...base,
-      eventId: `physical-cache-event-${String(index)}`,
-      deterministicSeedUint32: (base.deterministicSeedUint32 + index) >>> 0,
-    }))));
-  const { engine } = await readyEngine();
-  const initial = requireSuccess(
-    await engine.prepareRenderedAudioVoices({
+  const gestures = Object.freeze(
+    Array.from({ length: 65 }, (_, index) =>
+      Object.freeze({
+        ...base,
+        eventId: `physical-cache-event-${String(index)}`,
+        deterministicSeedUint32: (base.deterministicSeedUint32 + index) >>> 0,
+      }),
+    ),
+  );
+  const firstHarness = await readyEngine();
+  const collapsed = requireSuccess(
+    await firstHarness.engine.prepareRenderedAudioVoices({
       instrumentId: "clarinet",
       notes: gestures.map((physicalGesture) => ({
         midiPitch: midi(midiPitch),
@@ -171,18 +233,26 @@ test("gesture fingerprints cannot collide with one another and physical cache ev
       })),
     }),
   );
-  expect(initial.renderedCount).toBe(65);
-  expect(initial.cachedCount).toBe(0);
-  const newestGesture = gestures[64];
-  const oldestGesture = gestures[0];
-  if (newestGesture === undefined || oldestGesture === undefined) {
-    throw new Error("PHYSICAL_CACHE_GESTURE_MISSING");
-  }
+  expect(collapsed.renderedCount).toBe(1);
+  expect(collapsed.cachedCount).toBe(64);
 
+  const { engine } = await readyEngine();
+  const exactVelocities = requireSuccess(
+    await engine.prepareRenderedAudioVoices({
+      instrumentId: "clarinet",
+      notes: Array.from({ length: 65 }, (_, index) => ({
+        midiPitch: midi(midiPitch),
+        velocity: index + 1,
+        physicalGesture: base,
+      })),
+    }),
+  );
+  expect(exactVelocities.renderedCount).toBe(65);
+  expect(exactVelocities.cachedCount).toBe(0);
   const newest = requireSuccess(
     await engine.prepareRenderedAudioVoices({
       instrumentId: "clarinet",
-      notes: [{ midiPitch: midi(midiPitch), velocity: 96, physicalGesture: newestGesture }],
+      notes: [{ midiPitch: midi(midiPitch), velocity: 65, physicalGesture: base }],
     }),
   );
   expect(newest.cachedCount).toBe(1);
@@ -190,9 +260,54 @@ test("gesture fingerprints cannot collide with one another and physical cache ev
   const oldest = requireSuccess(
     await engine.prepareRenderedAudioVoices({
       instrumentId: "clarinet",
-      notes: [{ midiPitch: midi(midiPitch), velocity: 96, physicalGesture: oldestGesture }],
+      notes: [{ midiPitch: midi(midiPitch), velocity: 1, physicalGesture: base }],
     }),
   );
   expect(oldest.cachedCount).toBe(0);
   expect(oldest.renderedCount).toBe(1);
+});
+
+test("sixteen repeated comp attacks reduce to four honest v1 PCM renders", async () => {
+  const playback = compilePlaybackPlan(
+    materializeP0TimelineCase("P0-TIME-001").request,
+  );
+  if (!playback.ok) throw new Error("PHYSICAL_COMP_CACHE_PLAN");
+  const realized = compilePhysicalRealization({
+    plan: playback.plan,
+    sourcePlanRevision: 4,
+    instrumentFamily: "guitar",
+    instrumentVersionId: "changes.physical.guitar.v2",
+    parameterPackSha256: "f".repeat(64),
+    sampleRateHz: 48_000,
+  });
+  if (!realized.ok) throw new Error("PHYSICAL_COMP_CACHE_REALIZE");
+  const base = realized.value.expressivePlan.gestures[0];
+  if (base === undefined) throw new Error("PHYSICAL_COMP_CACHE_GESTURE");
+  const pairs = [
+    { midiPitch: midi(48), velocity: 72 },
+    { midiPitch: midi(55), velocity: 72 },
+    { midiPitch: midi(60), velocity: 88 },
+    { midiPitch: midi(64), velocity: 88 },
+  ] as const;
+  const { engine } = await readyEngine();
+  const result = requireSuccess(
+    await engine.prepareRenderedAudioVoices({
+      instrumentId: "guitar",
+      notes: Array.from({ length: 16 }, (_, index) => {
+        const pair = pairs[index % pairs.length];
+        if (pair === undefined) throw new Error("PHYSICAL_COMP_CACHE_PAIR");
+        return {
+          ...pair,
+          physicalGesture: Object.freeze({
+            ...base,
+            eventId: `physical-comp-event-${String(index)}`,
+            deterministicSeedUint32:
+              (base.deterministicSeedUint32 + index) >>> 0,
+          }),
+        };
+      }),
+    }),
+  );
+  expect(result.renderedCount).toBe(4);
+  expect(result.cachedCount).toBe(12);
 });

@@ -58,6 +58,45 @@ describe("TR-X1-INSTRUMENT / TR-LEGACY-AUDIO-04 serialized instrument changes", 
     expect(attack?.physicalGestureCount).toBeGreaterThan(0);
   });
 
+  test("a stopped physical run can restart under a different physical family", async () => {
+    const harness = createTransportHarness();
+    const plan = customPlan({
+      documentId: "doc-x1-physical-family-restart",
+      tempoBpm: 105,
+      durations: [{ numerator: 1, denominator: 1 }],
+    });
+    requireReceipt(await harness.submit(initializePayload(plan)));
+    requireReceipt(
+      await harness.submit({ kind: "set-instrument", instrumentId: "flute" }),
+    );
+    requireReceipt(
+      await harness.submit({
+        kind: "play",
+        binding: planBinding(plan, 1),
+        startBeat: zeroBeat,
+        countIn: false,
+      }),
+    );
+    requireReceipt(await harness.submit({ kind: "stop" }));
+    requireReceipt(
+      await harness.submit({ kind: "set-instrument", instrumentId: "clarinet" }),
+    );
+    const restarted = await harness.submit({
+      kind: "play",
+      binding: planBinding(plan, 1),
+      startBeat: zeroBeat,
+      countIn: false,
+    });
+    if (restarted.termination === "refusal") {
+      const debug = harness.engine.inspectAudioEngine().debugEvents.at(-1);
+      throw new Error(
+        `PHYSICAL_RESTART_REFUSED:${String(restarted.engineRefusalCode)}:${String(debug?.detailCode)}`,
+      );
+    }
+    expect(harness.attacks.at(-1)?.instrumentId).toBe("clarinet");
+    expect(harness.attacks.at(-1)?.accepted).toBe(true);
+  });
+
   test("X1-CMD-012 only the five exact domain instrument IDs are accepted", async () => {
     const harness = createTransportHarness();
     const plan = customPlan({

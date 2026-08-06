@@ -111,6 +111,13 @@ export type StudioAudibleInspectionFacts = Readonly<{
   persistentEdgeCount: number;
   nonreleasingVoiceCount: number;
   retainedVoiceCount: number;
+  /** Stable engine detail codes retained so a failed browser run is causal. */
+  recentEngineDebug: readonly Readonly<{
+    kind: string;
+    detailCode: string;
+    eventId: string | null;
+    midiPitch: number | null;
+  }>[];
   transportState: string;
   queuedCommandCount: number;
   /** jcpe-nu6t probe: which side swallows a silent run. */
@@ -350,6 +357,16 @@ function bootHarness(): StudioAudibleEvidenceApi {
         persistentEdgeCount: inspection.engine.persistentEdgeCount,
         nonreleasingVoiceCount: inspection.engine.nonreleasingVoiceCount,
         retainedVoiceCount: inspection.engine.retainedVoiceCount,
+        recentEngineDebug: Object.freeze(
+          inspection.engine.debugEvents.slice(-24).map((event) =>
+            Object.freeze({
+              kind: event.kind,
+              detailCode: event.detailCode,
+              eventId: event.eventId,
+              midiPitch: event.midiPitch,
+            })
+          ),
+        ),
         transportState: inspection.transport.state,
         queuedCommandCount: inspection.transport.queuedCommandCount,
         schedulerTicks: inspection.transport.work.schedulerTicks,

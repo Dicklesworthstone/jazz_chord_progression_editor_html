@@ -913,13 +913,21 @@ test("jcpe-pd7g: a mid-run instrument change moves the spectrum with no dropout 
     }
   }
 
+  /*
+   * Always ask the live harness for its latest journal. `drive.record` is a
+   * deliberately earlier snapshot taken before the solo references, so using
+   * it on a reference failure erases the command that actually failed.
+   */
   const record =
-    (driveFailure === null || drive === null
-      ? await page.evaluate(() => {
-          const scope = globalThis as HarnessWindow;
-          return scope.__JCPE_STUDIO_AUDIBLE_EVIDENCE__?.report() ?? null;
-        })
-      : drive.record) ?? null;
+    (await page.evaluate(() => {
+      const scope = globalThis as HarnessWindow;
+      return scope.__JCPE_STUDIO_AUDIBLE_EVIDENCE__?.report() ?? null;
+    })) ?? drive?.record ?? null;
+  const referencesComplete =
+    record !== null &&
+    record.phases.some(({ name }) => name === "ref-vibraphone") &&
+    record.phases.some(({ name }) => name === "ref-grand") &&
+    record.phases.some(({ name }) => name === "ref-done");
   const preSliceFull =
     record === null
       ? []
@@ -958,7 +966,7 @@ test("jcpe-pd7g: a mid-run instrument change moves the spectrum with no dropout 
    * window the reverse.
    */
   const refVibSlice =
-    record === null
+    !referencesComplete
       ? []
       : timelineSlice(
           record.timeline,
@@ -966,7 +974,7 @@ test("jcpe-pd7g: a mid-run instrument change moves the spectrum with no dropout 
           phaseStart(record, "ref-grand"),
         );
   const refGrandSlice =
-    record === null
+    !referencesComplete
       ? []
       : timelineSlice(
           record.timeline,
@@ -1054,4 +1062,89 @@ test("jcpe-pd7g: a mid-run instrument change moves the spectrum with no dropout 
   expect(preToGrand).not.toBeNull();
   expect(postToVib ?? 1).toBeLessThan(postToGrand ?? 0);
   expect(preToGrand ?? 1).toBeLessThan(preToVib ?? 0);
+});
+
+test("PHS0 physical flute, clarinet, and guitar produce measured browser audio and Stop to silence", async ({
+  context,
+  page,
+}, testInfo) => {
+  const harnessPath = requireEnvironment(HARNESS_PATH_ENV);
+  const expectedHarnessSha = requireEnvironment(HARNESS_SHA256_ENV);
+  const runDirectory = resolve(harnessPath, "../..");
+  const bundleBytes = await readFile(harnessPath);
+  expect(createHash("sha256").update(bundleBytes).digest("hex")).toBe(
+    expectedHarnessSha,
+  );
+  const diagnostics: Diagnostics = {
+    console: [],
+    pageErrors: [],
+    blockedRequests: [],
+    allowedDocuments: 0,
+  };
+  await installDiagnostics(
+    context,
+    page,
+    diagnostics,
+    documentFor(bundleBytes.toString("utf8")),
+  );
+  await page.goto(HARNESS_DOCUMENT_URL, { waitUntil: "load" });
+  await page.waitForSelector("html[data-studio-audible-ready='true']", {
+    state: "attached",
+  });
+  await page.fill(
+    "#studio-quick-entry-field",
+    "| Cmaj7 | Fmaj7 | Dm7 G7 | Cmaj7 |",
+  );
+  await page.press("#studio-quick-entry-field", "Enter");
+
+  let driveFailure: Error | null = null;
+  try {
+    for (const instrumentId of ["flute", "clarinet", "guitar"] as const) {
+      await page.selectOption("#studio-transport-instrument", instrumentId);
+      await markPhase(page, `${instrumentId}-await-play`);
+      await page.click("#studio-transport-play");
+      await waitForTransportStatus(page, "playing");
+      await markPhase(page, `${instrumentId}-playing`);
+      await page.waitForTimeout(PLAYING_SAMPLE_MS);
+      await markPhase(page, `${instrumentId}-stopping`);
+      await page.click("#studio-transport-stop");
+      await waitForTransportStatus(page, "ready");
+      await page.waitForTimeout(900);
+    }
+    await markPhase(page, "physical-tail");
+    await page.waitForTimeout(POST_STOP_SETTLE_MS);
+    await markPhase(page, "physical-silence");
+    await page.waitForTimeout(SILENCE_WINDOW_MS);
+    await markPhase(page, "physical-done");
+  } catch (error) {
+    driveFailure = error instanceof Error ? error : new Error(String(error));
+  }
+
+  const report = await page.evaluate(() => {
+    const scope = globalThis as HarnessWindow;
+    const evidence = scope.__JCPE_STUDIO_AUDIBLE_EVIDENCE__;
+    if (evidence === undefined) throw new Error("PHS0_BROWSER_EVIDENCE_MISSING");
+    return evidence.report();
+  });
+  await writeSwapEvidence(
+    runDirectory,
+    "phs0-physical",
+    testInfo.project.name,
+    { report, driveFailure: driveFailure?.message ?? null, diagnostics },
+  );
+  if (driveFailure !== null) throw driveFailure;
+  for (const instrumentId of ["flute", "clarinet", "guitar"] as const) {
+    expect(phaseNamed(report, `${instrumentId}-playing`).maxPeak).toBeGreaterThan(
+      PLAYING_MIN_PEAK,
+    );
+  }
+  expect(phaseNamed(report, "physical-silence").maxPeak).toBeLessThanOrEqual(
+    SILENCE_MAX_PEAK,
+  );
+  expect(report.inspection?.nonreleasingVoiceCount).toBe(0);
+  expect(report.inspection?.queuedCommandCount).toBe(0);
+  expect(report.inspection?.transportState).toBe("ready");
+  expect(diagnostics.pageErrors).toEqual([]);
+  expect(diagnostics.console.filter(({ type }) => type === "error")).toEqual([]);
+  expect(diagnostics.blockedRequests).toEqual([]);
 });
