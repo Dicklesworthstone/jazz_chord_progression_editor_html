@@ -23,6 +23,7 @@ const NORMALIZATION_CASE_IDS = [
   "X0-RENDER-026",
   "X0-RENDER-029",
   "X0-RENDER-032",
+  "X0-RENDER-035",
 ] as const;
 
 const DENSE_CASES: readonly Readonly<{
@@ -38,12 +39,13 @@ const DENSE_CASES: readonly Readonly<{
   { caseId: "X0-RENDER-014", instrumentId: "analog-poly", outputLevel: 0.34, sourcesPerVoice: 3 },
   /* The rendered piano schedules one PCM buffer source per voice. */
   { caseId: "X0-RENDER-017", instrumentId: "concert-grand", outputLevel: 0.3, sourcesPerVoice: 1 },
-  { caseId: "X0-RENDER-020", instrumentId: "flute", outputLevel: 0.52, sourcesPerVoice: 6 },
+  { caseId: "X0-RENDER-020", instrumentId: "flute", outputLevel: 0.5, sourcesPerVoice: 1 },
   { caseId: "X0-RENDER-023", instrumentId: "organ", outputLevel: 0.44, sourcesPerVoice: 6 },
-  { caseId: "X0-RENDER-026", instrumentId: "guitar", outputLevel: 0.5, sourcesPerVoice: 3 },
+  { caseId: "X0-RENDER-026", instrumentId: "guitar", outputLevel: 0.5, sourcesPerVoice: 1 },
   /* The sampled instruments also schedule one PCM buffer source per voice. */
   { caseId: "X0-RENDER-029", instrumentId: "upright-bass", outputLevel: 0.5, sourcesPerVoice: 1 },
   { caseId: "X0-RENDER-032", instrumentId: "concert-vibes", outputLevel: 0.42, sourcesPerVoice: 1 },
+  { caseId: "X0-RENDER-035", instrumentId: "blues-guitar", outputLevel: 0.46, sourcesPerVoice: 1 },
 ];
 
 describe("TR-X0-NORMALIZATION audio normalization", () => {
@@ -84,7 +86,7 @@ describe("TR-X0-NORMALIZATION audio normalization", () => {
     ).toBe(true);
   });
 
-  test("X0-RENDER-002/X0-RENDER-005/X0-RENDER-008/X0-RENDER-011/X0-RENDER-014/X0-RENDER-017/X0-RENDER-020/X0-RENDER-023/X0-RENDER-026/X0-RENDER-029/X0-RENDER-032 applies conservative seven-note gain to every recipe", async () => {
+  test("X0-RENDER-002/X0-RENDER-005/X0-RENDER-008/X0-RENDER-011/X0-RENDER-014/X0-RENDER-017/X0-RENDER-020/X0-RENDER-023/X0-RENDER-026/X0-RENDER-029/X0-RENDER-032/X0-RENDER-035 applies conservative seven-note gain to every recipe", async () => {
     for (const expected of DENSE_CASES) {
       const { engine, context } = await readyEngine();
       const sourceCountBefore = context.sourceIds().length;
@@ -115,6 +117,6 @@ describe("TR-X0-NORMALIZATION audio normalization", () => {
         ),
       ).toBe(true);
     }
-    expect(NORMALIZATION_CASE_IDS).toHaveLength(13);
+    expect(NORMALIZATION_CASE_IDS).toHaveLength(14);
   });
 });

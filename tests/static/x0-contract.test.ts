@@ -237,24 +237,49 @@ function sourceCount(recipe: (typeof AUDIO_INSTRUMENT_RECIPES)[number]): number 
   if (recipe.synthesis === "fm-pair") return 2;
   if (recipe.synthesis === "rendered") {
     /* One AudioBufferSourceNode per rendered voice; renderer shape is exact. */
-    expect(recipe.renderer).toEqual(
-      recipe.id === "concert-grand"
-        ? {
-            algorithmId: "changes.dsp.concert-grand@1",
-            channels: 2,
-            maximumRenderSeconds: 8,
-            bufferCacheLimit: 96,
-          }
-        : {
-            algorithmId:
-              recipe.id === "upright-bass"
-                ? "changes.dsp.sampled-upright-bass@1"
-                : "changes.dsp.sampled-vibraphone@1",
-            channels: 2,
-            maximumRenderSeconds: 4,
-            bufferCacheLimit: 64,
-          },
-    );
+    const RENDERER_BY_ID: Record<string, object> = {
+      "concert-grand": {
+        algorithmId: "changes.dsp.concert-grand@1",
+        channels: 2,
+        maximumRenderSeconds: 8,
+        bufferCacheLimit: 96,
+      },
+      "upright-bass": {
+        algorithmId: "changes.dsp.sampled-upright-bass@1",
+        channels: 2,
+        maximumRenderSeconds: 4,
+        bufferCacheLimit: 64,
+      },
+      "concert-vibes": {
+        algorithmId: "changes.dsp.sampled-vibraphone@1",
+        channels: 2,
+        maximumRenderSeconds: 4,
+        bufferCacheLimit: 64,
+      },
+      flute: {
+        algorithmId: "changes.dsp.waveguide-flute@1",
+        channels: 2,
+        maximumRenderSeconds: 5,
+        bufferCacheLimit: 64,
+      },
+      guitar: {
+        algorithmId: "changes.dsp.waveguide-guitar-clean@1",
+        channels: 2,
+        maximumRenderSeconds: 6,
+        bufferCacheLimit: 64,
+      },
+      "blues-guitar": {
+        algorithmId: "changes.dsp.waveguide-guitar-drive@1",
+        channels: 2,
+        maximumRenderSeconds: 6,
+        bufferCacheLimit: 64,
+      },
+    };
+    const expectedRenderer = RENDERER_BY_ID[recipe.id];
+    if (expectedRenderer === undefined) {
+      throw new Error(`TEST_RENDERED_RECIPE_UNREVIEWED: ${recipe.id}`);
+    }
+    expect(recipe.renderer as object).toEqual(expectedRenderer);
     return 1;
   }
   return (

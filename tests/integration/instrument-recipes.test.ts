@@ -116,11 +116,11 @@ const RECIPE_CASES: readonly Readonly<{
     caseId: "X0-RENDER-019",
     instrumentId: "flute",
     label: "Flute",
-    outputLevel: 0.52,
+    outputLevel: 0.5,
     polyphonyLimit: 32,
-    scheduledSourceCount: 6,
-    attackSeconds: 0.05,
-    releaseSeconds: 0.35,
+    scheduledSourceCount: 1,
+    attackSeconds: 0.002,
+    releaseSeconds: 0.3,
   },
   {
     caseId: "X0-RENDER-022",
@@ -138,9 +138,9 @@ const RECIPE_CASES: readonly Readonly<{
     label: "Guitar",
     outputLevel: 0.5,
     polyphonyLimit: 48,
-    scheduledSourceCount: 3,
+    scheduledSourceCount: 1,
     attackSeconds: 0.002,
-    releaseSeconds: 0.5,
+    releaseSeconds: 0.35,
   },
   /* The 2026-08-06 sampled rendered amendment recipes (§5.3). */
   {
@@ -162,6 +162,17 @@ const RECIPE_CASES: readonly Readonly<{
     scheduledSourceCount: 1,
     attackSeconds: 0.002,
     releaseSeconds: 1.1,
+  },
+  /* The 2026-08-06 waveguide amendment second guitar (§5.4). */
+  {
+    caseId: "X0-RENDER-034",
+    instrumentId: "blues-guitar",
+    label: "Blues Guitar",
+    outputLevel: 0.46,
+    polyphonyLimit: 48,
+    scheduledSourceCount: 1,
+    attackSeconds: 0.002,
+    releaseSeconds: 0.35,
   },
 ];
 
@@ -253,9 +264,9 @@ function expectOscillatorComponent(
 }
 
 describe("TR-X0-RECIPES instrument recipes", () => {
-  test("X0-RENDER-001/X0-RENDER-004/X0-RENDER-007/X0-RENDER-010/X0-RENDER-013/X0-RENDER-016/X0-RENDER-019/X0-RENDER-022/X0-RENDER-025/X0-RENDER-028/X0-RENDER-031 schedules every exact source-owned recipe", async () => {
+  test("X0-RENDER-001/X0-RENDER-004/X0-RENDER-007/X0-RENDER-010/X0-RENDER-013/X0-RENDER-016/X0-RENDER-019/X0-RENDER-022/X0-RENDER-025/X0-RENDER-028/X0-RENDER-031/X0-RENDER-034 schedules every exact source-owned recipe", async () => {
     const { engine, fake, context } = await readyEngine();
-    expect(AUDIO_INSTRUMENT_RECIPES).toHaveLength(11);
+    expect(AUDIO_INSTRUMENT_RECIPES).toHaveLength(12);
 
     for (let index = 0; index < RECIPE_CASES.length; index += 1) {
       const expected = RECIPE_CASES[index];
@@ -594,24 +605,49 @@ describe("TR-X0-RECIPES instrument recipes", () => {
         if (renderer === undefined) {
           throw new Error("TEST_REVIEWED_RENDERED_RECIPE_MALFORMED");
         }
-        expect(renderer).toEqual(
-          reviewed.id === "concert-grand"
-            ? {
-                algorithmId: "changes.dsp.concert-grand@1",
-                channels: 2,
-                maximumRenderSeconds: 8,
-                bufferCacheLimit: 96,
-              }
-            : {
-                algorithmId:
-                  reviewed.id === "upright-bass"
-                    ? "changes.dsp.sampled-upright-bass@1"
-                    : "changes.dsp.sampled-vibraphone@1",
-                channels: 2,
-                maximumRenderSeconds: 4,
-                bufferCacheLimit: 64,
-              },
-        );
+        const RENDERER_BY_ID: Record<string, object> = {
+          "concert-grand": {
+            algorithmId: "changes.dsp.concert-grand@1",
+            channels: 2,
+            maximumRenderSeconds: 8,
+            bufferCacheLimit: 96,
+          },
+          "upright-bass": {
+            algorithmId: "changes.dsp.sampled-upright-bass@1",
+            channels: 2,
+            maximumRenderSeconds: 4,
+            bufferCacheLimit: 64,
+          },
+          "concert-vibes": {
+            algorithmId: "changes.dsp.sampled-vibraphone@1",
+            channels: 2,
+            maximumRenderSeconds: 4,
+            bufferCacheLimit: 64,
+          },
+          flute: {
+            algorithmId: "changes.dsp.waveguide-flute@1",
+            channels: 2,
+            maximumRenderSeconds: 5,
+            bufferCacheLimit: 64,
+          },
+          guitar: {
+            algorithmId: "changes.dsp.waveguide-guitar-clean@1",
+            channels: 2,
+            maximumRenderSeconds: 6,
+            bufferCacheLimit: 64,
+          },
+          "blues-guitar": {
+            algorithmId: "changes.dsp.waveguide-guitar-drive@1",
+            channels: 2,
+            maximumRenderSeconds: 6,
+            bufferCacheLimit: 64,
+          },
+        };
+        const expectedRenderer = RENDERER_BY_ID[reviewed.id];
+        if (expectedRenderer === undefined) {
+          throw new Error(`TEST_RENDERED_RECIPE_UNREVIEWED: ${reviewed.id}`);
+        }
+        expect(renderer as object).toEqual(expectedRenderer);
         expect(oscillatorIds).toHaveLength(0);
         const bufferSourceIds = nodeCreates
           .filter((event) => event.detail === "buffer-source")
@@ -656,6 +692,7 @@ describe("TR-X0-RECIPES instrument recipes", () => {
       "X0-RENDER-025",
       "X0-RENDER-028",
       "X0-RENDER-031",
+      "X0-RENDER-034",
     ]);
   });
 

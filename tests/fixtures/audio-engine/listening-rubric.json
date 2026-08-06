@@ -137,16 +137,16 @@
       "instrumentId": "flute",
       "label": "Flute",
       "requiredPerception": [
-        "soft breath-like onset without a click",
-        "clear mostly sine-like body with restrained upper partials",
-        "gentle vibrato that becomes audible only after its delay",
-        "clean compact release"
+        "breathy tongued onset that blooms into the tone",
+        "fundamental-dominant body that brightens as it is blown harder",
+        "audible air in the sustain and a vibrato that arrives after the onset",
+        "pitch holds within a few cents across the register"
       ],
       "rejectIf": [
-        "onset clicks like a piston",
-        "vibrato is present at full depth from the attack",
-        "harsh upper partials dominate the body",
-        "label claims a sampled flute recording"
+        "static organ-like sine stack with no breath",
+        "vibrato present from the first millisecond",
+        "locks an octave high or fails to speak in the written register",
+        "label claims a recorded or sampled flute"
       ]
     },
     {
@@ -171,16 +171,16 @@
       "instrumentId": "guitar",
       "label": "Guitar",
       "requiredPerception": [
-        "immediate pick-like onset without a harsh click",
-        "brightness audibly closes down as the note decays",
-        "plucked decay rather than an organ-like sustain",
-        "mild detune width without harsh beating"
+        "plucked attack with pick definition and no click",
+        "two-stage decay with slow polarization beating on held notes",
+        "woody archtop body color and a dark clean-amp top end",
+        "wound-string shimmer in the low register"
       ],
       "rejectIf": [
-        "note sustains flat like a synth pad",
-        "pick transient sounds like a separate click",
-        "decay is metallic or alias-like",
-        "label claims a sampled guitar"
+        "sawtooth-like buzz or a static sustain",
+        "energy grows after the pluck (an unstable loop)",
+        "release sticks or clicks",
+        "label claims a recorded or sampled guitar or a commercial amp"
       ]
     },
     {
@@ -215,6 +215,23 @@
         "alias-like harshness on upward transpositions",
         "release sticks or clicks",
         "label claims synthesis it does not perform or a commercial brand"
+      ]
+    },
+    {
+      "id": "X0-LISTEN-INST-012",
+      "instrumentId": "blues-guitar",
+      "label": "Blues Guitar",
+      "requiredPerception": [
+        "the same plucked string heard through a hotter amp: compression and drive grit",
+        "presence-peak bite absent from the clean profile",
+        "cab-voiced band-limited body, no fizz above the rolloff",
+        "single notes sustain with harmonic thickening, not fuzz collapse"
+      ],
+      "rejectIf": [
+        "identical timbre to the clean Guitar profile",
+        "fizzy aliasing or a gated buzz",
+        "release sticks or clicks",
+        "label claims a recorded or sampled guitar or a commercial amp"
       ]
     }
   ],

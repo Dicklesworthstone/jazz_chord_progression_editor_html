@@ -327,6 +327,7 @@ describe("F1 public domain type contract", () => {
       "guitar",
       "upright-bass",
       "concert-vibes",
+      "blues-guitar",
     ]);
     expect(BEAT_UNITS).toEqual([2, 4, 8]);
     expect(DEGREE_NUMBER_ORDER).toEqual([1, 2, 3, 4, 5, 6, 7, 9, 11, 13]);

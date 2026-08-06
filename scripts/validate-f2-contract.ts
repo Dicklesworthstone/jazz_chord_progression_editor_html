@@ -227,7 +227,7 @@ const EXPECTED_REVIEWED_DIGESTS = {
 const EXPECTED_SEMANTIC_SNAPSHOT_DIGESTS = {
   json: {
     "f2-decoder-contract.json":
-      "2d46aea5025871d2514629bd747feb1670fd82c11cc4dfac65137328999bd8e6",
+      "c61ea537b553935c605e4b2bb523a96dbee7041e0ec019991c8b5d5eaad7992b",
     "adversarial-cases.json":
       "4a321bf2437b7a4ee37861f7dd387ab50b3d2b11bc51e553ed791752047f2f69",
     "provenance-ledger.json":
@@ -313,6 +313,7 @@ const EXPECTED_INVENTORIES = {
     "guitar",
     "upright-bass",
     "concert-vibes",
+    "blues-guitar",
   ],
   completionKinds: ["empty", "complete", "pickup", "incomplete"],
   voiceLeadingBoundaries: ["continue", "reset"],

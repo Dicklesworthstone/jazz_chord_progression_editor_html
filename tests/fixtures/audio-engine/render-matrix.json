@@ -505,7 +505,7 @@
       "release": 0.6,
       "renderDuration": 3,
       "reverbAmount": 0.2,
-      "expectedSourceCount": 6,
+      "expectedSourceCount": 1,
       "assertions": [
         "finite",
         "non-silent",
@@ -533,7 +533,7 @@
       "release": 1.1,
       "renderDuration": 4,
       "reverbAmount": 0.28,
-      "expectedSourceCount": 42,
+      "expectedSourceCount": 7,
       "assertions": [
         "finite",
         "non-silent",
@@ -558,7 +558,7 @@
       "release": 0.8,
       "renderDuration": 4.5,
       "reverbAmount": 0.8,
-      "expectedSourceCount": 24,
+      "expectedSourceCount": 4,
       "assertions": [
         "finite",
         "tail-present",
@@ -655,7 +655,7 @@
       "release": 0.6,
       "renderDuration": 3,
       "reverbAmount": 0.2,
-      "expectedSourceCount": 3,
+      "expectedSourceCount": 1,
       "assertions": [
         "finite",
         "non-silent",
@@ -683,7 +683,7 @@
       "release": 1.1,
       "renderDuration": 4,
       "reverbAmount": 0.28,
-      "expectedSourceCount": 21,
+      "expectedSourceCount": 7,
       "assertions": [
         "finite",
         "non-silent",
@@ -708,7 +708,7 @@
       "release": 0.8,
       "renderDuration": 4.5,
       "reverbAmount": 0.8,
-      "expectedSourceCount": 12,
+      "expectedSourceCount": 4,
       "assertions": [
         "finite",
         "tail-present",
@@ -852,6 +852,81 @@
         64,
         67,
         71
+      ],
+      "velocity": 90,
+      "start": 0.1,
+      "release": 0.8,
+      "renderDuration": 4.5,
+      "reverbAmount": 0.8,
+      "expectedSourceCount": 4,
+      "assertions": [
+        "finite",
+        "tail-present",
+        "tail-decays",
+        "final-rms-bounded",
+        "voice-cleanup-before-eight-seconds"
+      ]
+    },
+    {
+      "id": "X0-RENDER-034",
+      "instrumentId": "blues-guitar",
+      "scenario": "single-note",
+      "sampleRate": 48000,
+      "midiPitches": [
+        52
+      ],
+      "velocity": 100,
+      "start": 0.1,
+      "release": 0.6,
+      "renderDuration": 3,
+      "reverbAmount": 0.2,
+      "expectedSourceCount": 1,
+      "assertions": [
+        "finite",
+        "non-silent",
+        "onset-window",
+        "bounded-peak",
+        "bounded-active-rms"
+      ]
+    },
+    {
+      "id": "X0-RENDER-035",
+      "instrumentId": "blues-guitar",
+      "scenario": "dense-seven",
+      "sampleRate": 44100,
+      "midiPitches": [
+        40,
+        45,
+        50,
+        55,
+        59,
+        64,
+        67
+      ],
+      "velocity": 110,
+      "start": 0.1,
+      "release": 1.1,
+      "renderDuration": 4,
+      "reverbAmount": 0.28,
+      "expectedSourceCount": 7,
+      "assertions": [
+        "finite",
+        "non-silent",
+        "bounded-peak",
+        "bounded-active-rms",
+        "no-unity-clipping"
+      ]
+    },
+    {
+      "id": "X0-RENDER-036",
+      "instrumentId": "blues-guitar",
+      "scenario": "release-tail",
+      "sampleRate": 96000,
+      "midiPitches": [
+        45,
+        52,
+        57,
+        62
       ],
       "velocity": 90,
       "start": 0.1,

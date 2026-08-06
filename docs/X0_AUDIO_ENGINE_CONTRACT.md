@@ -320,6 +320,45 @@ no instantiation step, so a load failure lane specific to them does not
 exist; a corrupt payload throws at first render and the engine's existing
 `audio.renderer_unavailable` refusal covers it.
 
+### 5.4 Waveguide Guitar, Blues Guitar, and Flute (physical-model amendment, 2026-08-06)
+
+Owner direction: the additive Guitar and Flute recipes did not meet the
+quality bar. Both are superseded by first-principles physical models in the
+embedded wasm DSP module (the same payload as Concert Grand), and a second
+guitar voicing joins the set, growing the reviewed recipes from eleven to
+twelve and the rendered set from three to six. The additive recipe rows in
+§5/§5.2 remain the historical record.
+
+| Recipe | Model | Level | Polyphony | Amplitude A/D/S/R |
+|---|---|---:|---:|---|
+| Guitar | plucked waveguide → clean archtop amp (`changes.dsp.waveguide-guitar-clean@1`) | .5 | 48 | .002/0/1/.35 |
+| Blues Guitar | the same waveguide → driven amp with cab voicing (`changes.dsp.waveguide-guitar-drive@1`) | .46 | 48 | .002/0/1/.35 |
+| Flute | jet-drive waveguide (`changes.dsp.waveguide-flute@1`) | .5 | 32 | .002/0/1/.3 |
+
+The guitar is an extended Karplus-Strong digital waveguide: velocity-shaped
+pluck excitation with a pick-position comb, two coupled string
+polarizations (energy-exchanging bridge coupling bounded by the loop's loss
+headroom — additive coupling measurably diverged), frequency-dependent
+damping, dispersion allpasses on wound-string registers, a fractional
+tuning allpass, and an eight-mode archtop body bank, rendered through one
+of two amp chains (a barely-driven dark clean chain; a pre-emphasized hot
+tanh stage into a cab bandpass with a presence peak). The flute is a
+jet-drive waveguide: a bore delay behind a lowpass end reflection, a
+half-period air jet through the offset cubic nonlinearity `x·(x²−1)`,
+breath pressure with turbulence noise and delayed vibrato, and a
+differentiated radiation output. Both models' tuning is verified by the
+render-and-measure harness (guitar within ±1 cent; flute within a few
+cents after its measured jet-participation calibration), both are
+deterministic per (pitch, velocity, rate, profile), and both carry their
+own musical envelopes so their recipes keep only the click-guard attack
+and release, the flat filter, and one buffer source per voice.
+
+The render matrix grows three Blues Guitar rows (X0-RENDER-034…036) and
+the existing Guitar/Flute rows re-pin their expected source counts to the
+rendered law (one buffer source per voice); the listening rubric rewrites
+the Guitar and Flute rows for the physical models and adds
+X0-LISTEN-INST-012 for Blues Guitar.
+
 ## 6. Parameter automation and normalization
 
 An accepted batch contains 1...16 generated voices. Its normalization gain is
