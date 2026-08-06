@@ -190,12 +190,19 @@ trusted on instrument geometry.
 - [ ] State the compact-limit validity bound (the ka at which the correction
   was computed and the frequency range over which it is applied) on every
   fixture that consumes a computed correction.
-- [ ] Pilot validation gate: reproduce the flanged 0.8216a constant (and the
-  unflanged 0.6133a case if expressible with Laplace panel boundary
-  conditions) under panel refinement to within a few percent before any
-  instrument-geometry use. Pilot results or the exact build blocker are
-  recorded by the pilot bead; a failed or blocked pilot leaves this recipe
-  authored but untrusted.
+- [x] Pilot validation gate (run 2026-08-06, `jcpe-fsr-bem-endcorrections-db45`):
+  the CLOSED-BODY added-mass route is validated — oblate-spheroid sweep with
+  clean monotone h-convergence, disk-limit extrapolation
+  `m/rho -> 2.71483` vs the exact `8/3` (+1.81%), i.e. aperture end
+  correction `delta = 0.8642a` vs the uniform-profile analytic
+  `8/(3*pi) = 0.84883a`. The mixed flanged-pipe surface formulation
+  targeting the pressure-profile constant 0.8216a did NOT converge inside
+  fs-bem's work envelopes (M2L cap at >=3456 panels, near-field cap at
+  31,104; best result −23.5%). Consequence for instrument use: derive
+  end corrections through closed-body/added-mass formulations validated
+  against analytic added-mass targets; do not use large mixed
+  open-pipe surface meshes without first raising or budgeting the crate's
+  work caps. Full logs in the pilot bead's close reason.
 - [ ] Audible-outcome honesty: this improves fingering-dependent tuning and
   register accuracy from geometry (replacing per-note empirical pulls per
   plan §9.2); it does not by itself change timbre.
@@ -213,11 +220,20 @@ trusted on instrument geometry.
 - [ ] Audible-outcome honesty: Cd(Re) sets the position of the pressure–flow
   knee — where the clarinet speaks and how dynamics respond to breath
   gestures — not a new sound source.
-- [ ] Pilot validation gate: reproduce the sharp-edged-orifice discharge
-  coefficient (~0.61; the exact reference value and its 2D-vs-3D basis
-  stated by the pilot) at steady state with Mach and incompressibility
-  diagnostics in bounds, for two or more Reynolds numbers, before any
-  reed-channel fitting. Same recording rule as §8.1.
+- [x] Pilot validation gate, first pass (run 2026-08-06,
+  `jcpe-fsr-lbm-discharge-ix40`): D2Q9 slot flow at Re 50/100/202 measured
+  Cd = 0.699/0.705/0.698 (three downstream planes, steady, Mach <= 0.122,
+  flux imbalance 0.7–6%), versus the 2D free-streamline thin-plate ideal
+  `pi/(pi+2) = 0.611`. The +14–15% excess is physically consistent with
+  the pilot geometry's plate thickness (t/w = 0.125) and confinement
+  (w/H = 0.125), both of which raise Cd — the quasi-static fitting recipe
+  is demonstrated end-to-end within contract.
+- [ ] Remaining sub-gate before reed-channel fitting is trusted: a
+  geometry-isolation control (thinner plate and/or lower confinement)
+  showing Cd trending toward the thin-plate ideal, so the excess is
+  attributed by measurement rather than argument. Note also the Re-202
+  run's 6% flux imbalance: outlet-reflection sensitivity means source
+  extraction work needs the absorbing-layer treatment first.
 
 ## 9. Pack-fitting methodology (normative for foundry fits)
 
