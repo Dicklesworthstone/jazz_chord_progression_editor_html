@@ -229,7 +229,13 @@ fn clr_render_inner(
      * linearly above MIDI 60 (−9 at 72 to −27 at 89); at 44.1 kHz the
      * same term is negligible. */
     let rate_term = -0.85 * (mc - 60.0).max(0.0) * (sr / 48_000.0 - 1.0);
-    let pull_cents = pull_fit + rate_term;
+    let dynamic_reed_pull = if dynamic_reed {
+        -40.0 * ((m - 52.0) / 12.0).clamp(0.0, 1.0)
+            - 54.0 * ((m - 76.0) / 8.0).clamp(0.0, 1.0)
+    } else {
+        0.0
+    };
+    let pull_cents = pull_fit + rate_term + dynamic_reed_pull;
     let corrected_half = half_period * pow(2.0, pull_cents / 1_200.0);
     let effective = (corrected_half - reflection_delay - 0.5).max(3.2);
     let bore_length = ((effective - 0.1) as usize).max(3);
@@ -371,7 +377,7 @@ fn clr_render_inner(
             reed_x = step[0];
             reed_velocity = step[1];
             let flow_drive = (step[2] / 0.00025).clamp(-1.5, 1.5);
-            0.55 * legacy_bore_in + 0.45 * flow_drive
+            0.8 * legacy_bore_in + 0.2 * flow_drive
         } else {
             legacy_bore_in
         };

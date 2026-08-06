@@ -68,6 +68,7 @@ import {
 } from "./physical-renderer-contract";
 import {
   CONCERT_GRAND_RENDERER_ALGORITHM_ID,
+  WAVEGUIDE_CLARINET_V2_ALGORITHM_ID,
   loadConcertGrandRenderer,
   loadWaveguideRenderers,
   type ConcertGrandRenderer,
@@ -993,7 +994,11 @@ function createAudioEngineInternal(
     const cache = recipeBufferCache(recipe.id);
     const cached = touchRenderedBufferEntry(cache, key);
     if (cached !== undefined) return cached.buffer;
-    const noteRenderer = rendererForAlgorithm(recipe.renderer.algorithmId);
+    const algorithmId = physicalGesture?.instrumentFamily === "clarinet" &&
+        physicalGesture.instrumentVersionId === "changes.physical.clarinet.v2"
+      ? WAVEGUIDE_CLARINET_V2_ALGORITHM_ID
+      : recipe.renderer.algorithmId;
+    const noteRenderer = rendererForAlgorithm(algorithmId);
     if (noteRenderer === null) return null;
     const excitationVelocity = physicalGesture === null
       ? quantizeRenderVelocity(velocity)

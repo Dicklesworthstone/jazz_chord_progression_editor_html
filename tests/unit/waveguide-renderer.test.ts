@@ -8,6 +8,7 @@ import { describe, expect, test } from "bun:test";
 
 import {
   WAVEGUIDE_CLARINET_ALGORITHM_ID,
+  WAVEGUIDE_CLARINET_V2_ALGORITHM_ID,
   WAVEGUIDE_FLUTE_ALGORITHM_ID,
   WAVEGUIDE_GUITAR_CLEAN_ALGORITHM_ID,
   WAVEGUIDE_GUITAR_DRIVE_ALGORITHM_ID,
@@ -97,11 +98,13 @@ const clean = renderer(WAVEGUIDE_GUITAR_CLEAN_ALGORITHM_ID);
 const drive = renderer(WAVEGUIDE_GUITAR_DRIVE_ALGORITHM_ID);
 const flute = renderer(WAVEGUIDE_FLUTE_ALGORITHM_ID);
 const clarinet = renderer(WAVEGUIDE_CLARINET_ALGORITHM_ID);
+const clarinetV2 = renderer(WAVEGUIDE_CLARINET_V2_ALGORITHM_ID);
 
 describe("waveguide renderer laws", () => {
   test("the map carries exactly the reviewed waveguide algorithms, pinned to the wasm payload", () => {
     expect([...renderers.keys()].sort()).toEqual([
       WAVEGUIDE_CLARINET_ALGORITHM_ID,
+      WAVEGUIDE_CLARINET_V2_ALGORITHM_ID,
       WAVEGUIDE_FLUTE_ALGORITHM_ID,
       WAVEGUIDE_GUITAR_CLEAN_ALGORITHM_ID,
       WAVEGUIDE_GUITAR_DRIVE_ALGORITHM_ID,
@@ -112,7 +115,7 @@ describe("waveguide renderer laws", () => {
   });
 
   test("out-of-contract requests return null, in-contract renders sound", () => {
-    for (const subject of [clean, drive, flute, clarinet]) {
+    for (const subject of [clean, drive, flute, clarinet, clarinetV2]) {
       expect(subject.renderNote(20, 64, OUTPUT_RATE_HZ)).toBeNull();
       expect(subject.renderNote(109, 64, OUTPUT_RATE_HZ)).toBeNull();
       expect(subject.renderNote(60, 0, OUTPUT_RATE_HZ)).toBeNull();
@@ -212,6 +215,29 @@ describe("waveguide renderer laws", () => {
       /* The closed-open bore's signature: the third harmonic outweighs
        * the second. */
       expect(h3).toBeGreaterThan(h2);
+    }
+  });
+
+  test("clarinet v2 dynamic reed remains tuned, finite, odd-dominant, and audibly distinct", () => {
+    for (const midiPitch of [52, 64, 76, 84]) {
+      const v2 = clarinetV2.renderNote(midiPitch, 96, OUTPUT_RATE_HZ, 2, 3, "tongued");
+      const legacy = clarinet.renderNote(midiPitch, 96, OUTPUT_RATE_HZ, 2, 3, "tongued");
+      expect(v2).not.toBeNull();
+      expect(legacy).not.toBeNull();
+      if (v2 === null || legacy === null) continue;
+      expect(v2.left.every(Number.isFinite)).toBe(true);
+      expect(v2.left).not.toEqual(legacy.left);
+      const start = Math.floor(0.8 * OUTPUT_RATE_HZ);
+      const cents = measuredCents(v2.left, start, midiPitch);
+      if (Math.abs(cents) > 20) {
+        throw new Error(`PHS2_V2_TUNING:${String(midiPitch)}:${String(cents)}`);
+      }
+      const f0 = midiFrequencyHz(midiPitch) * 2 ** (cents / 1_200);
+      expect(goertzelAmplitude(v2.left, start, 16_384, f0 * 3)).toBeGreaterThan(
+        goertzelAmplitude(v2.left, start, 16_384, f0 * 2),
+      );
+      const replay = clarinetV2.renderNote(midiPitch, 96, OUTPUT_RATE_HZ, 2, 3, "tongued");
+      expect(replay?.left).toEqual(v2.left);
     }
   });
 
