@@ -237,12 +237,24 @@ function sourceCount(recipe: (typeof AUDIO_INSTRUMENT_RECIPES)[number]): number 
   if (recipe.synthesis === "fm-pair") return 2;
   if (recipe.synthesis === "rendered") {
     /* One AudioBufferSourceNode per rendered voice; renderer shape is exact. */
-    expect(recipe.renderer).toEqual({
-      algorithmId: "changes.dsp.concert-grand@1",
-      channels: 2,
-      maximumRenderSeconds: 8,
-      bufferCacheLimit: 96,
-    });
+    expect(recipe.renderer).toEqual(
+      recipe.id === "concert-grand"
+        ? {
+            algorithmId: "changes.dsp.concert-grand@1",
+            channels: 2,
+            maximumRenderSeconds: 8,
+            bufferCacheLimit: 96,
+          }
+        : {
+            algorithmId:
+              recipe.id === "upright-bass"
+                ? "changes.dsp.sampled-upright-bass@1"
+                : "changes.dsp.sampled-vibraphone@1",
+            channels: 2,
+            maximumRenderSeconds: 4,
+            bufferCacheLimit: 64,
+          },
+    );
     return 1;
   }
   return (

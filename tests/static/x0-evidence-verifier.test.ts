@@ -90,12 +90,16 @@ function renderRecord(
       totalIndexReferences: 0,
     },
     impulse: {
-      /* The Concert Grand renders one attack buffer per note beside the
-         shared impulse; every synth pad owns the impulse alone. */
-      createdBufferCount:
-        fixture.instrumentId === "concert-grand"
-          ? 1 + fixture.midiPitches.length
-          : 1,
+      /* A rendered recipe (Concert Grand, Upright Bass, Concert Vibes)
+         renders one PCM buffer per note beside the shared impulse; every
+         synth pad owns the impulse alone. */
+      createdBufferCount: [
+        "concert-grand",
+        "upright-bass",
+        "concert-vibes",
+      ].includes(fixture.instrumentId)
+        ? 1 + fixture.midiPitches.length
+        : 1,
       convolverAssignmentCount: 1,
       assignedGeneratedBufferByIdentity: true,
       numberOfChannels: 2,
@@ -783,13 +787,13 @@ describe("X0 package evidence verifier", () => {
     });
   });
 
-  test("accepts exactly three hash-bound browsers, fifty-four renders, and three real probes", async () => {
+  test("accepts exactly three hash-bound browsers, ninety-nine renders, and three real probes", async () => {
     const automated = await validateX0AutomatedEvidence(await validInput());
     expect(automated.outcome).toBe("pass");
     expect(automated.observedBrowserRecords).toBe(3);
-    expect(automated.observedRenderCells).toBe(54);
+    expect(automated.observedRenderCells).toBe(99);
     expect(automated.passingRealContextCells).toBe(3);
-    expect(automated.producerKeys).toHaveLength(54);
+    expect(automated.producerKeys).toHaveLength(99);
     expect(automated.producerKeys.every((key) =>
       key.startsWith(
         `TR-X0-RENDER|${X0_PLAYWRIGHT_PRODUCER_FILE}|${X0_PLAYWRIGHT_TESTCASE}|`,

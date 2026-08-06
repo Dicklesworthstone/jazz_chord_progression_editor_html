@@ -168,7 +168,7 @@ export type X0AutomatedEvidenceReport = Readonly<{
   runId: string | null;
   expectedBrowserRecords: 3;
   observedBrowserRecords: number;
-  expectedRenderCells: 54;
+  expectedRenderCells: 99;
   observedRenderCells: number;
   passingRealContextCells: number;
   unsupportedRealContextCells: number;
@@ -1316,8 +1316,8 @@ export async function validateX0AutomatedEvidence(
     addFinding(findings, "X0_EVIDENCE_BROWSER_AUTHORITY", "renderMatrix", "Browser support and unsupported-capability policy must equal the reviewed authority.");
   }
   const fixtureCases = records(renderMatrix["cases"]);
-  if (fixtureCases.length !== 18) {
-    addFinding(findings, "X0_EVIDENCE_RENDER_AUTHORITY_COUNT", "renderMatrix.cases", "The reviewed render authority must contain exactly eighteen cases.");
+  if (fixtureCases.length !== 33) {
+    addFinding(findings, "X0_EVIDENCE_RENDER_AUTHORITY_COUNT", "renderMatrix.cases", "The reviewed render authority must contain exactly thirty-three cases.");
   }
   const fixtureById = new Map<string, JsonRecord>();
   for (const fixture of fixtureCases) {
@@ -1481,7 +1481,7 @@ export async function validateX0AutomatedEvidence(
     requireEqual(raw["listeningAssessment"], "not-performed-by-automation", "X0_EVIDENCE_BROWSER_LISTENING_CLAIM", `${path}.listeningAssessment`, findings);
     const renders = records(raw["offlineRenders"]);
     if (!Array.isArray(raw["offlineRenders"]) || renders.length !== fixtureCases.length) {
-      addFinding(findings, "X0_EVIDENCE_BROWSER_RENDER_COUNT", `${path}.offlineRenders`, "Each browser record must contain exactly eighteen render cells.");
+      addFinding(findings, "X0_EVIDENCE_BROWSER_RENDER_COUNT", `${path}.offlineRenders`, "Each browser record must contain exactly thirty-three render cells.");
     }
     const seenCases = new Set<string>();
     for (const [index, render] of renders.entries()) {
@@ -1582,7 +1582,7 @@ export async function validateX0AutomatedEvidence(
     runId: SAFE_RUN_ID.test(runId) ? runId : null,
     expectedBrowserRecords: 3,
     observedBrowserRecords: rawByProject.size,
-    expectedRenderCells: 54,
+    expectedRenderCells: 99,
     observedRenderCells,
     passingRealContextCells,
     unsupportedRealContextCells,

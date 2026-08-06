@@ -55,6 +55,21 @@ const EXPECTED_RENDER_IDS = Object.freeze([
   "X0-RENDER-016",
   "X0-RENDER-017",
   "X0-RENDER-018",
+  "X0-RENDER-019",
+  "X0-RENDER-020",
+  "X0-RENDER-021",
+  "X0-RENDER-022",
+  "X0-RENDER-023",
+  "X0-RENDER-024",
+  "X0-RENDER-025",
+  "X0-RENDER-026",
+  "X0-RENDER-027",
+  "X0-RENDER-028",
+  "X0-RENDER-029",
+  "X0-RENDER-030",
+  "X0-RENDER-031",
+  "X0-RENDER-032",
+  "X0-RENDER-033",
 ] as const);
 
 const WORK_COUNTER_NAMES = Object.freeze([
@@ -1169,7 +1184,7 @@ test(TEST_TITLE, async ({
       expect(renderMatrix.cases.map((item) => item.id)).toEqual(
         EXPECTED_RENDER_IDS,
       );
-      expect(renderMatrix.cases).toHaveLength(18);
+      expect(renderMatrix.cases).toHaveLength(33);
     });
     runAssertion(assertions, findings, "authority/frozen-analysis-policy", () => {
       expect(renderMatrix.numericPolicy).toMatchObject({
