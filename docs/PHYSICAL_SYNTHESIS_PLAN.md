@@ -408,6 +408,15 @@ interface QuantizedControlPoint {
 - [ ] Author attack-noise, HNR, octave transition, spectral-centroid, and dynamic
   fixtures.
 - [ ] Include transposition and fingering/tone-hole mutations.
+- [ ] Derive tone-hole and embouchure-hole inertance end corrections from
+  geometry via the compact-limit (ka ≪ 1) Laplace BEM recipe in the
+  extraction map ("Refined honest-use contracts"), validated against the
+  0.8216a flanged / 0.6133a unflanged analytic constants before use on
+  arbitrary geometry. Geometry-derived inertances supersede per-note
+  empirical pitch pulls wherever geometry supplies the resonance (the
+  section 9.2 law); only reviewed residual calibration remains. State the
+  compact-limit validity bound on every fixture that uses a computed
+  correction.
 
 ### 9.2 Production implementation
 
@@ -486,6 +495,31 @@ checkboxes below are unchanged.
   across strings and frets/positions, body-resonance placement, decay-slope
   versus frequency, and same-pitch A/B rows against the sampled bass for
   the listening rubric.
+- [ ] Derive each body's mode table (frequencies, Q, gains) from geometry with
+  the offline Kirchhoff–Love plate/box modal solver specified in the
+  extraction map ("Offline plate-mode solver recipe"): plate dimensions,
+  thickness, and orthotropic wood constants in; mode tables out; Q from
+  primary-literature loss factors because FrankenSim carries no damping
+  data. Validate the solver against analytic simply-supported plate modes
+  before any instrument table is accepted; the production port belongs to
+  the PHS1 build (`jcpe-mnsc.3.2`).
+- [ ] Specify CQC-style correlated summation for near-degenerate body-mode
+  pairs (modes closer than their bandwidths), with cross-correlation
+  coefficients in the pack rather than independent-resonator summation.
+  Author an analytic fixture: two near-degenerate modes driven by the same
+  bridge signal must show the closed-form beat/level behavior, and a
+  mutation that drops the correlation term must be caught.
+- [ ] Specify deterministic gesture-triggered stick-slip slide/fret squeak
+  transients on the Cattaneo–Mindlin partial-slip skeleton (extraction-map
+  reference `fs-tribo`): partial-slip states driven by slide
+  velocity/pressure curves, radiated through the existing string/body path,
+  seeded per gesture, bounded in duration and energy, and strictly additive
+  (no change to current renders before the PHS4 build). Slide events enter
+  only through the reviewed control registry. Fixtures: transient occurs
+  only on slide gestures, spectral signature inside the authored band,
+  deterministic repeat, and a dropped-friction-state mutation caught. Arco
+  bowing remains deferred as its own package; this transient model is not
+  a bowing model.
 
 ### 10.2 Production implementation
 
@@ -560,6 +594,11 @@ checkboxes below are unchanged.
 - [ ] Specify tuned fundamental/fourth partial and measured inharmonic modes.
 - [ ] Specify mallet mass/compliance/contact duration, hardness, velocity, and
   strike position.
+- [ ] Consider a fitted hysteretic wrap compliance (Stulov-class
+  loading/unloading paths over the Hertz/Hunt–Crossley core) as an
+  accepted-variant refinement for yarn-wrapped mallets, fitted offline via
+  the extraction-map fiber-hysteresis recipe with provenance-pinned
+  literature loop data; adopt only with its own measured evidence.
 - [ ] Specify resonator-tube coupling and radiation.
 - [ ] Specify rotating baffle phase/rate as time-varying radiation/directivity,
   not only global amplitude modulation.
@@ -616,6 +655,15 @@ pedal/damper/coupled-stem pattern rather than inventing a parallel one.
   at the E3/G3/C4 string-field modes after a dry note's damper would have
   silenced them; A/B dry-versus-pedal decay slopes; determinism; and the
   field obeying serialized Stop like every source.
+- [ ] Specify a Stulov-class hysteretic felt contact law for the hammer model:
+  loading and unloading follow different force–compression paths, which is
+  what makes attack brightness velocity-dependent. Fit the law offline from
+  provenance-pinned literature force–compression loops via the
+  extraction-map fiber-hysteresis recipe (`fs-material` machinery with the
+  `verify_gradient` gate). Sequencing is stated honestly: the current
+  production piano renders sampled attacks plus additive partials and does
+  not consume this law; it becomes live only with a future physical hammer
+  excitation path, and no checkbox here claims otherwise.
 - [ ] Create spec/build/verify children for this package only after PHS6
   closes, with the dependency recorded in the tracker.
 
