@@ -2550,8 +2550,11 @@
 
 .studio-standards__head {
   display: flex;
+  /* A rigid single line squeezed long titles to zero width against the
+   * fixed meta chip; wrapping drops the meta under the title instead. */
+  flex-wrap: wrap;
   align-items: baseline;
-  gap: var(--space-2);
+  gap: var(--space-1) var(--space-2);
 }
 
 .studio-standards__title {
@@ -2563,13 +2566,13 @@
 }
 
 .studio-standards__meta {
-  flex: 0 0 auto;
+  flex: 0 1 auto;
+  min-inline-size: 0;
   color: var(--text-subtle);
   font-size: 0.625rem;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  white-space: nowrap;
 }
 
 .studio-standards__preview {

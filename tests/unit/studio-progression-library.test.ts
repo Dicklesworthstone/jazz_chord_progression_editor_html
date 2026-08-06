@@ -131,13 +131,17 @@ describe("progression library", () => {
      * The allowlist is the review record's machine half: the 2026-07-31
      * What a Fool Believes direction and the 2026-08-05 direction that
      * added Giant Steps, Peg, Aja, and Hello, It's Me, each recorded
-     * verbatim beside its entry with its verification account.
+     * verbatim beside its entry with its verification account. Aja was
+     * removed on 2026-08-06 owner direction: its only 4/4-chartable slice
+     * is the one-chord B-pedal intro vamp (the suite's richer sections
+     * shift meter inside the phrase), and a single repeated chord is not
+     * useful library material. It may return if source material supports
+     * a faithful excerpt.
      */
     const ownerDirected = [
       "what-a-fool-believes",
       "giant-steps",
       "peg",
-      "aja",
       "hello-its-me",
     ];
     for (const entry of PROGRESSION_LIBRARY) {

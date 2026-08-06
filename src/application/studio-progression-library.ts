@@ -424,32 +424,6 @@ export const PROGRESSION_LIBRARY: readonly ProgressionLibraryEntry[] =
     }),
 
     /*
-     * VERIFICATION (Aja). The intro vamp was extracted bar-by-bar from a
-     * full 12-track ensemble MIDI transcription by Norma Williams
-     * (reviewer material, not committed): eight bars of B pedal at
-     * 110 BPM, 4/4, the riff's pitch content spelling Bmaj9 colors
-     * (B-D#-F#-A#-C# weighted through the set) over the pedal. The
-     * suite's later sections (the C/D/E pedal build, the meter changes,
-     * the soprano-solo vamp) were NOT charted: they shift meter inside
-     * the phrase and the studio's library loads entries into the
-     * document's 4/4, where a faithful chart is impossible. The entry is
-     * the intro vamp alone. Every symbol below is proven to parse AND
-     * reach sound through the real transport composition by
-     * tests/unit/studio-progression-library.test.ts.
-     */
-    Object.freeze({
-      id: "aja",
-      grooveStyleId: "straight-eighths@1",
-      tempoBpm: 110,
-      title: "Aja",
-      kicker: "Fagen & Becker, 1977",
-      note: "The title suite's intro vamp: eight bars over a B pedal while the riff spells maj9 colors against it — the calm before the longest, strangest journey in the band's book.",
-      provenance: "owner-directed",
-      chartText:
-        "| Bmaj9 | Bmaj9 | Bmaj9 | Bmaj9 | Bmaj9 | Bmaj9 | Bmaj9 | Bmaj9 |",
-    }),
-
-    /*
      * VERIFICATION (Hello, It's Me). Charted from a full 18-track
      * professional karaoke MIDI (reviewer material, not committed) whose
      * lyric track aligns the sections: Bb major, 4/4, 91 BPM — matching
