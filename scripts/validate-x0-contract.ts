@@ -190,7 +190,7 @@ const EXPECTED_SCHEMAS: Readonly<Record<ExpectedFilename, string>> = {
 };
 
 export const X0_REVIEWED_CONTRACT_BYTE_DIGEST =
-  "89d5df19c0187603f05f5c46ba1be3ff90136211b309fdb8b8901cb69850d056";
+  "0b40ea8602e81eaa26753443510e278a8a5f5e38ce48a169bd668a46e26a63da";
 
 export const X0_REVIEWED_BYTE_DIGESTS: Readonly<
   Record<CompanionFilename, string>
@@ -200,11 +200,11 @@ export const X0_REVIEWED_BYTE_DIGESTS: Readonly<
   "impulse-golden.json":
     "9330b747b85defb801b6456ad7d4ee519f78bdf83ea22a4b6ab47268b3b79888",
   "instrument-recipes.json":
-    "a170f0d076aafd00f67749dbdb3e0ce1c29252e202b09dc4763a1a77af14015c",
+    "099b41e6dc50bc25882d26bfbe0d8df50409c81f3dc92b63f20972ef29801881",
   "lifecycle-cases.json":
     "3ad712126fe22bf314ea76e41fb501ee549be2ef944a45aafbe1c1f2e8b8dcf5",
   "listening-rubric.json":
-    "d2111f1571cc044d9b19a77d64ec5e70f4d2a5de2c59ffd07369a875c7a1f491",
+    "167b1248d4ea048c7f36a22b440d18ecbc626422612733615f75447724252ff8",
   "mutation-controls.json":
     "12d896515143dcd978e7a8839692dfc6c4248e3569bf23f2268c8e2aa1466cad",
   "provenance-ledger.json":
@@ -214,7 +214,7 @@ export const X0_REVIEWED_BYTE_DIGESTS: Readonly<
   "render-matrix.json":
     "300ed448f53000fde7408929a556ed8c745382e6b39b53dd57950d8e032169b3",
   "trace-ledger.json":
-    "ccf7414cd10a081377776d66b93eea48c484189c446d4a0d743ab92968f861c6",
+    "e4e2cffd41d1eef9886d38a5883fe21ba0c9326cc021231e60fca34f6f5870ab",
 };
 
 export const X0_REVIEWED_OPERATION_ORDER = [
@@ -384,11 +384,20 @@ export const X0_REVIEWED_RECIPE_IDS = [
   "warm-pad",
   "analog-poly",
   "concert-grand",
+  "flute",
+  "organ",
+  "guitar",
 ] as const;
 
-export const X0_REVIEWED_RECIPE_LEVELS = [0.62, 0.48, 0.5, 0.3, 0.34, 0.3] as const;
-export const X0_REVIEWED_RECIPE_POLYPHONY = [64, 48, 48, 32, 48, 64] as const;
-export const X0_REVIEWED_RECIPE_SOURCE_COUNTS = [3, 2, 4, 3, 3, 1] as const;
+export const X0_REVIEWED_RECIPE_LEVELS = [
+  0.62, 0.48, 0.5, 0.3, 0.34, 0.3, 0.52, 0.44, 0.5,
+] as const;
+export const X0_REVIEWED_RECIPE_POLYPHONY = [
+  64, 48, 48, 32, 48, 64, 32, 48, 48,
+] as const;
+export const X0_REVIEWED_RECIPE_SOURCE_COUNTS = [
+  3, 2, 4, 3, 3, 1, 6, 6, 3,
+] as const;
 
 /**
  * The reviewed rendered recipe, checked literal-by-literal the same way the
@@ -499,12 +508,12 @@ export const X0_REVIEWED_RELEASE_SECONDS = {
 export const X0_REVIEWED_COUNTS = {
   companions: 10,
   routingCases: 14,
-  recipes: 6,
+  recipes: 9,
   impulseCheckpoints: 8,
   lifecycleCases: 46,
   registryCases: 32,
   renderCases: 18,
-  listeningInstrumentRows: 6,
+  listeningInstrumentRows: 9,
   listeningScenarioRows: 9,
   mutationControls: 31,
   traces: 18,
@@ -516,8 +525,8 @@ const REVIEWED_CANONICAL_DIGESTS = {
   graphEdges: "86f0e0d8307ab85e40d9ed1f1f1d7547f34018bf117a754521d3814ca4c526b0",
   graphSettings: "ed4816e5e4ea9fbcb1a941cddb2479db072453f54a44272f35717a6ebf9c53a5",
   routingCases: "cb78dae03ce88d9bc853f8c8a6339f6de64f53ad8d38d566d7b311191834b2cc",
-  recipes: "a113bd8a9f085a4295e95698cf6a90d7bf7c63230471d2d6a80adc3be2161019",
-  normalization: "f927955f137a6d4800b8845b3a472c92d22c662083e9de5d9ebaf47614b028bc",
+  recipes: "c4301e7f83b941ec1148bc08dbd6bcaf2886eebb32e812174cbb63970adf9061",
+  normalization: "8edf68d333ca77e8277741134e5ac422cb5a4aec299e27ce27ff1f0041a88a46",
   pulse: "e5bad32f09dbfe03ef87124d811125144145168bc8f07a48ef78b530b1c1e839",
   impulseCheckpoints: "29ffb97240f4a5f80f24812ff592df1a15413bf2a21d1b8f314ef0e2ee15c1d8",
   lifecycleCases: "2c62e2859e3b9f38f146d7ffd8d6546580f6ee43153c9be68b39330684760c2e",
@@ -525,12 +534,12 @@ const REVIEWED_CANONICAL_DIGESTS = {
   renderPolicy: "2f48761e269d258d5768c5a708b744c663897140871f9eeadef083ab594cd5db",
   renderCases: "85f86f1edc7e570d8c69f57185ce31d613c7b9a8eedeccea6b4f66b3523995f6",
   listeningInstruments:
-    "e676a634a33271eab7f4c2ed9d8cbda008248b3a4403afbe0fc6db4c31596906",
+    "c93ea247e0374c58b4416c7d9f911881bcaba408bcbb8fbd2504220263891a52",
   listeningScenarios:
     "ac4e15093fb990ec23eadb7c9470002442cafc732dbf3b7ac8457e3787424e31",
   authorities: "b964ac82a872c50a40454571225f1a033b25c08f1b25f7a18ca61947b5d52040",
   controls: "dfd0d0df78484042f29d7825c376219d5adf81c2d69f53194e7838f44c8bd2aa",
-  traces: "07699cf1ff56714749b89f2e5ff5d8ea6c9c21b1585eb16285f4f51c52e0e44b",
+  traces: "706f7c5ed59635e70ae81ef223fb050da44de6d09d8401fb324457c8cd1de70a",
 } as const;
 
 type ParsedFixture = Readonly<{
@@ -1269,7 +1278,7 @@ function validateListening(
     "X0_LISTENING_ROWS",
     "listening.instrumentRows",
     value.instrumentRows,
-    6,
+    9,
     "X0-LISTEN-INST-",
   );
   const scenarioIds = validateUniqueIds(

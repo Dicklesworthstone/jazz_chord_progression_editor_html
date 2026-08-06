@@ -267,6 +267,184 @@
         "q": 0.5,
         "decaySeconds": 0.1
       }
+    },
+    {
+      "id": "flute",
+      "label": "Flute",
+      "designClaim": "additive sine partials with a soft breath onset and delayed vibrato",
+      "synthesis": "additive",
+      "outputLevel": 0.52,
+      "polyphonyLimit": 32,
+      "scheduledSourceCount": 6,
+      "oscillators": [
+        {
+          "id": "fundamental",
+          "waveform": "sine",
+          "frequencyRatio": 1,
+          "detuneCents": 0,
+          "level": 0.78
+        },
+        {
+          "id": "second",
+          "waveform": "sine",
+          "frequencyRatio": 2,
+          "detuneCents": 0,
+          "level": 0.13
+        },
+        {
+          "id": "third",
+          "waveform": "sine",
+          "frequencyRatio": 3,
+          "detuneCents": 0,
+          "level": 0.06
+        },
+        {
+          "id": "fourth",
+          "waveform": "sine",
+          "frequencyRatio": 4,
+          "detuneCents": 0,
+          "level": 0.03
+        }
+      ],
+      "transient": {
+        "waveform": "sine",
+        "frequencyRatio": 6,
+        "level": 0.06,
+        "decaySeconds": 0.03
+      },
+      "tremolo": {
+        "waveform": "sine",
+        "rateHz": 5,
+        "depth": 0.09,
+        "delaySeconds": 0.28
+      },
+      "amplitude": {
+        "attackSeconds": 0.05,
+        "decaySeconds": 0.25,
+        "sustainLevel": 0.68,
+        "releaseSeconds": 0.35
+      },
+      "filter": {
+        "type": "lowpass",
+        "attackHz": 3200,
+        "peakHz": 5600,
+        "sustainHz": 3200,
+        "q": 0.5,
+        "decaySeconds": 0.3
+      }
+    },
+    {
+      "id": "organ",
+      "label": "Organ",
+      "designClaim": "additive drawbar sine partials with a shallow sustained vibrato",
+      "synthesis": "additive",
+      "outputLevel": 0.44,
+      "polyphonyLimit": 48,
+      "scheduledSourceCount": 6,
+      "oscillators": [
+        {
+          "id": "fundamental",
+          "waveform": "sine",
+          "frequencyRatio": 1,
+          "detuneCents": 0,
+          "level": 0.36
+        },
+        {
+          "id": "second",
+          "waveform": "sine",
+          "frequencyRatio": 2,
+          "detuneCents": 0,
+          "level": 0.24
+        },
+        {
+          "id": "third",
+          "waveform": "sine",
+          "frequencyRatio": 3,
+          "detuneCents": 0,
+          "level": 0.18
+        },
+        {
+          "id": "fourth",
+          "waveform": "sine",
+          "frequencyRatio": 4,
+          "detuneCents": 0,
+          "level": 0.13
+        },
+        {
+          "id": "sixth",
+          "waveform": "sine",
+          "frequencyRatio": 6,
+          "detuneCents": 0,
+          "level": 0.09
+        }
+      ],
+      "transient": null,
+      "tremolo": {
+        "waveform": "sine",
+        "rateHz": 6,
+        "depth": 0.07,
+        "delaySeconds": 0.08
+      },
+      "amplitude": {
+        "attackSeconds": 0.012,
+        "decaySeconds": 0.08,
+        "sustainLevel": 0.92,
+        "releaseSeconds": 0.14
+      },
+      "filter": {
+        "type": "lowpass",
+        "attackHz": 7500,
+        "peakHz": 9500,
+        "sustainHz": 7500,
+        "q": 0.4,
+        "decaySeconds": 0.1
+      }
+    },
+    {
+      "id": "guitar",
+      "label": "Guitar",
+      "designClaim": "plucked decay of two detuned saws through a closing lowpass, with a short pick transient",
+      "synthesis": "additive",
+      "outputLevel": 0.5,
+      "polyphonyLimit": 48,
+      "scheduledSourceCount": 3,
+      "oscillators": [
+        {
+          "id": "saw-a",
+          "waveform": "sawtooth",
+          "frequencyRatio": 1,
+          "detuneCents": -3,
+          "level": 0.6
+        },
+        {
+          "id": "saw-b",
+          "waveform": "sawtooth",
+          "frequencyRatio": 1,
+          "detuneCents": 3,
+          "level": 0.4
+        }
+      ],
+      "transient": {
+        "waveform": "sine",
+        "frequencyRatio": 5,
+        "level": 0.12,
+        "decaySeconds": 0.012
+      },
+      "tremolo": null,
+      "amplitude": {
+        "attackSeconds": 0.002,
+        "decaySeconds": 1.5,
+        "sustainLevel": 0.05,
+        "releaseSeconds": 0.5
+      },
+      "filter": {
+        "type": "lowpass",
+        "attackHz": 5200,
+        "peakHz": 7800,
+        "sustainHz": 1400,
+        "q": 1.1,
+        "decaySeconds": 1.0
+      }
     }
   ],
   "pulseWave": {
@@ -332,6 +510,24 @@
         0.212132034356,
         0.173205080757,
         0.15
+      ],
+      "flute": [
+        0.52,
+        0.26,
+        0.196541525965,
+        0.13
+      ],
+      "organ": [
+        0.44,
+        0.22,
+        0.166304368124,
+        0.11
+      ],
+      "guitar": [
+        0.5,
+        0.25,
+        0.188982236505,
+        0.125
       ]
     },
     "referenceVelocities": [

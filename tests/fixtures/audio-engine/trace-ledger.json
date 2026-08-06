@@ -31,8 +31,8 @@
     },
     {
       "id": "TR-X0-RECIPES",
-      "requirement": "Six honest source-owned recipes, five synth and one rendered, have exact oscillator or renderer, envelope, filter, level, and polyphony data.",
-      "parentSource": "REBUILD_PLAN 13.3 and the 2026-07-28 concert-grand amendment",
+      "requirement": "Nine honest source-owned recipes, eight synth and one rendered, have exact oscillator or renderer, envelope, filter, level, and polyphony data.",
+      "parentSource": "REBUILD_PLAN 13.3, the 2026-07-28 concert-grand amendment, and the 2026-08-05 additive flute/organ/guitar amendment",
       "caseIds": ["X0-RENDER-001", "X0-RENDER-004", "X0-RENDER-007", "X0-RENDER-010", "X0-RENDER-013", "X0-RENDER-016", "X0-LIFE-046"],
       "controlIds": ["X0-MUT-011", "X0-MUT-012", "X0-MUT-013", "X0-MUT-014", "X0-MUT-015", "X0-MUT-016", "X0-MUT-031"],
       "evidenceOwner": "tests/integration/instrument-recipes.test.ts"
@@ -127,9 +127,9 @@
     },
     {
       "id": "TR-X0-LISTENING",
-      "requirement": "Human release evidence honestly covers six timbres, clicks, stuck notes, dense passages, interruption, and routing on headphones and laptop speakers across supported browsers.",
-      "parentSource": "REBUILD_PLAN 13.3 and 13.12 and the 2026-07-28 concert-grand amendment",
-      "caseIds": ["X0-LISTEN-INST-001", "X0-LISTEN-INST-002", "X0-LISTEN-INST-003", "X0-LISTEN-INST-004", "X0-LISTEN-INST-005", "X0-LISTEN-INST-006", "X0-LISTEN-SCENE-001", "X0-LISTEN-SCENE-002", "X0-LISTEN-SCENE-006", "X0-LISTEN-SCENE-007", "X0-LISTEN-SCENE-008", "X0-LISTEN-SCENE-009"],
+      "requirement": "Human release evidence honestly covers nine timbres, clicks, stuck notes, dense passages, interruption, and routing on headphones and laptop speakers across supported browsers.",
+      "parentSource": "REBUILD_PLAN 13.3 and 13.12, the 2026-07-28 concert-grand amendment, and the 2026-08-05 additive flute/organ/guitar amendment",
+      "caseIds": ["X0-LISTEN-INST-001", "X0-LISTEN-INST-002", "X0-LISTEN-INST-003", "X0-LISTEN-INST-004", "X0-LISTEN-INST-005", "X0-LISTEN-INST-006", "X0-LISTEN-INST-007", "X0-LISTEN-INST-008", "X0-LISTEN-INST-009", "X0-LISTEN-SCENE-001", "X0-LISTEN-SCENE-002", "X0-LISTEN-SCENE-006", "X0-LISTEN-SCENE-007", "X0-LISTEN-SCENE-008", "X0-LISTEN-SCENE-009"],
       "deferredCaseIds": ["X0-LISTEN-SCENE-003", "X0-LISTEN-SCENE-004", "X0-LISTEN-SCENE-005"],
       "deferredUntilPackage": "X1",
       "deferredReason": "These transport continuity, seek, and natural-end scenes require the X1 scheduler; X0 still gates every instrument plus click, stuck-note, dense, interruption, and routing scenes.",

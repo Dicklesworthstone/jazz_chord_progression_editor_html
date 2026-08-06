@@ -19,14 +19,14 @@
   "reviewedFileSha256": {
     "graph-topology.json": "72a4c6aa8951186fcabd66d75cb9d4aec7404950a7c9dee7917c9be686e89290",
     "impulse-golden.json": "9330b747b85defb801b6456ad7d4ee519f78bdf83ea22a4b6ab47268b3b79888",
-    "instrument-recipes.json": "a170f0d076aafd00f67749dbdb3e0ce1c29252e202b09dc4763a1a77af14015c",
+    "instrument-recipes.json": "099b41e6dc50bc25882d26bfbe0d8df50409c81f3dc92b63f20972ef29801881",
     "lifecycle-cases.json": "3ad712126fe22bf314ea76e41fb501ee549be2ef944a45aafbe1c1f2e8b8dcf5",
-    "listening-rubric.json": "d2111f1571cc044d9b19a77d64ec5e70f4d2a5de2c59ffd07369a875c7a1f491",
+    "listening-rubric.json": "167b1248d4ea048c7f36a22b440d18ecbc626422612733615f75447724252ff8",
     "mutation-controls.json": "12d896515143dcd978e7a8839692dfc6c4248e3569bf23f2268c8e2aa1466cad",
     "provenance-ledger.json": "66f3fa709c6ce6522abc7e881dbd83b587e14860c9e4db870ba0887231f94e1b",
     "registry-cases.json": "2f373b5d3fb35e99dc9c7dddf6b324a33cf76f94d62bfb210453c74788e391c8",
     "render-matrix.json": "300ed448f53000fde7408929a556ed8c745382e6b39b53dd57950d8e032169b3",
-    "trace-ledger.json": "ccf7414cd10a081377776d66b93eea48c484189c446d4a0d743ab92968f861c6"
+    "trace-ledger.json": "e4e2cffd41d1eef9886d38a5883fe21ba0c9326cc021231e60fca34f6f5870ab"
   },
   "identities": {
     "enginePolicy": {
@@ -199,12 +199,12 @@
   "coverageSummary": {
     "companions": 10,
     "routingCases": 14,
-    "recipes": 6,
+    "recipes": 9,
     "impulseCheckpoints": 8,
     "lifecycleCases": 46,
     "registryCases": 32,
     "renderCases": 18,
-    "listeningInstrumentRows": 6,
+    "listeningInstrumentRows": 9,
     "listeningScenarioRows": 9,
     "mutationControls": 31,
     "traces": 18,

@@ -241,6 +241,9 @@ describe("X0 persistent production audio engine", () => {
       ["vibraphone", "vibes", 4],
       ["warm-pad", "pad", 3],
       ["analog-poly", "analog", 3],
+      ["flute", "flute", 6],
+      ["organ", "organ", 6],
+      ["guitar", "guitar", 3],
     ];
     for (let index = 0; index < cases.length; index += 1) {
       const entry = cases[index];

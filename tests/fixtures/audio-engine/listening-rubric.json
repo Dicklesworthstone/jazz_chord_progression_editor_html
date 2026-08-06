@@ -49,6 +49,27 @@
       "label": "Concert Grand",
       "requiredPerception": ["percussive hammer-like onset without a click", "inharmonic piano-like partials with audible unison shimmer", "fast early decay settling into a longer singing tail", "damper-style release that ends cleanly"],
       "rejectIf": ["sounds like a static organ-like sustain", "metallic alias-like harshness", "click at attack or release", "label claims a sampled or recorded acoustic piano"]
+    },
+    {
+      "id": "X0-LISTEN-INST-007",
+      "instrumentId": "flute",
+      "label": "Flute",
+      "requiredPerception": ["soft breath-like onset without a click", "clear mostly sine-like body with restrained upper partials", "gentle vibrato that becomes audible only after its delay", "clean compact release"],
+      "rejectIf": ["onset clicks like a piston", "vibrato is present at full depth from the attack", "harsh upper partials dominate the body", "label claims a sampled flute recording"]
+    },
+    {
+      "id": "X0-LISTEN-INST-008",
+      "instrumentId": "organ",
+      "label": "Organ",
+      "requiredPerception": ["fast click-free organ-like attack", "steady sustained drawbar-like sine body", "shallow continuous vibrato", "release ends cleanly without a click"],
+      "rejectIf": ["sustain decays like a piano", "vibrato surges in depth or sounds like a trill", "a percussive transient dominates the attack", "label claims a sampled or electromechanical organ"]
+    },
+    {
+      "id": "X0-LISTEN-INST-009",
+      "instrumentId": "guitar",
+      "label": "Guitar",
+      "requiredPerception": ["immediate pick-like onset without a harsh click", "brightness audibly closes down as the note decays", "plucked decay rather than an organ-like sustain", "mild detune width without harsh beating"],
+      "rejectIf": ["note sustains flat like a synth pad", "pick transient sounds like a separate click", "decay is metallic or alias-like", "label claims a sampled guitar"]
     }
   ],
   "scenarioRows": [

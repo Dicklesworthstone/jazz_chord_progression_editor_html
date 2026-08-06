@@ -185,7 +185,7 @@
   {
    "path": "command-cases.json",
    "bytes": 11002,
-   "sha256": "8f5a62633ac3e92e13009d049c4aac69bb0ed1066031550d998c760042a20d0b"
+   "sha256": "3fb3ffd714c165df85cc12a661520accbc3452a7f9b67c4f0e41af27be754102"
   },
   {
    "path": "notification-cases.json",

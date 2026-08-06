@@ -107,6 +107,41 @@ const RECIPE_CASES: readonly Readonly<{
     attackSeconds: 0.002,
     releaseSeconds: 0.2,
   },
+  /*
+   * The 2026-08-05 additive amendment recipes. Their caseIds anticipate the
+   * pending render-matrix single-note rows (X0-RENDER-019/022/025), which
+   * still await real-browser certification.
+   */
+  {
+    caseId: "X0-RENDER-019",
+    instrumentId: "flute",
+    label: "Flute",
+    outputLevel: 0.52,
+    polyphonyLimit: 32,
+    scheduledSourceCount: 6,
+    attackSeconds: 0.05,
+    releaseSeconds: 0.35,
+  },
+  {
+    caseId: "X0-RENDER-022",
+    instrumentId: "organ",
+    label: "Organ",
+    outputLevel: 0.44,
+    polyphonyLimit: 48,
+    scheduledSourceCount: 6,
+    attackSeconds: 0.012,
+    releaseSeconds: 0.14,
+  },
+  {
+    caseId: "X0-RENDER-025",
+    instrumentId: "guitar",
+    label: "Guitar",
+    outputLevel: 0.5,
+    polyphonyLimit: 48,
+    scheduledSourceCount: 3,
+    attackSeconds: 0.002,
+    releaseSeconds: 0.5,
+  },
 ];
 
 function oneEvent(
@@ -199,7 +234,7 @@ function expectOscillatorComponent(
 describe("TR-X0-RECIPES instrument recipes", () => {
   test("X0-RENDER-001/X0-RENDER-004/X0-RENDER-007/X0-RENDER-010/X0-RENDER-013/X0-RENDER-016 schedules every exact source-owned recipe", async () => {
     const { engine, fake, context } = await readyEngine();
-    expect(AUDIO_INSTRUMENT_RECIPES).toHaveLength(6);
+    expect(AUDIO_INSTRUMENT_RECIPES).toHaveLength(9);
 
     for (let index = 0; index < RECIPE_CASES.length; index += 1) {
       const expected = RECIPE_CASES[index];
@@ -583,6 +618,9 @@ describe("TR-X0-RECIPES instrument recipes", () => {
       "X0-RENDER-010",
       "X0-RENDER-013",
       "X0-RENDER-016",
+      "X0-RENDER-019",
+      "X0-RENDER-022",
+      "X0-RENDER-025",
     ]);
   });
 

@@ -157,7 +157,7 @@
       "expected": {
         "outcome": "refusal",
         "refusalCode": "transport.instrument_unknown",
-        "law": "Only the five exact domain instrument IDs are accepted; case variants and legacy sample names refuse."
+        "law": "Only the nine exact domain instrument IDs are accepted; case variants and legacy sample names refuse."
       }
     },
     {
