@@ -434,6 +434,7 @@ export const PERFORMANCE_STYLE_IDS = Object.freeze([
   "bossa-nova@1",
   "straight-eighths@1",
   "syncopated-sixteenths@1",
+  "uptempo-swing@1",
   "block-chords@1",
 ] as const);
 export type PerformanceStyleId = (typeof PERFORMANCE_STYLE_IDS)[number];
@@ -1466,6 +1467,108 @@ const SYNCOPATED_SIXTEENTHS_V1: PerformanceStyle = Object.freeze({
 });
 
 /**
+ * uptempo-swing@1 — the fast-swing sketch: a two-feel bass under sparse stabs.
+ *
+ * WHY THIS STYLE EXISTS. The owner-directed "Giant Steps" library entry
+ * (studio-progression-library.ts, 2026-08-06) is a fast swing (the recording
+ * runs ~290 quarter BPM; the published Hal Leonard marking is "Fast swing"),
+ * and none of the other styles can state that tempo honestly. medium-swing@1
+ * walks four quarter notes to the bar: past ~240 BPM a relentless walk turns
+ * to mud and the comping Charleston figures crowd the only two beats a fast
+ * chart gives each chord. The style is named for the idiom, never for any
+ * song.
+ *
+ * THE FAST-TEMPO DIVISION OF LABOUR, authored from the idiom's documented
+ * practice (a measurement campaign was not run; the reference recordings of
+ * this idiom are protected works and the table is an honest sketch of how a
+ * rhythm section behaves when the tempo doubles):
+ *
+ *  - BASS, TWO-FEEL: the anchors are half notes — the root on beat 1 and the
+ *    fifth on beat 3, each 19/10 of a beat so every note releases a tenth of
+ *    a beat before the next anchor attacks (the same release gap discipline
+ *    as the ballad's pair). At fast tempos the bassist owns the time with
+ *    the pulse, not with motion. In the SECOND bar of the cycle only, a
+ *    third-tone pickup on the and-of-4 (1/4 beat, swung by the ratio below)
+ *    leans into the next downbeat — one gesture per two bars, so it reads as
+ *    a push, not a metronome.
+ *  - COMP, SPARSE: fast piano comping stays out of the bass's way. One stab
+ *    on the and-of-2 in EVERY bar (3/2, swung), and in the answer bar only a
+ *    second, softer stab on beat 4 — the statement/answer shape in the
+ *    fewest attacks that still breathe. Both are `upper-voices`: a fast comp
+ *    states the top of the chord, never the whole stack.
+ *  - SWING RATIO 3/5: fast swing eighths lighten toward straight — a triplet
+ *    2/3 at 290 BPM is a slog, and dead straight is a pop feel. 3/5 is the
+ *    published sketch's compromise and the ONLY ratio in the package that is
+ *    neither straight (1/2) nor full triplet (2/3).
+ *  - `compRegister` 62..85 (ceiling 90): a right hand a minor third above
+ *    the swing stabs, clear of a two-feel bass that rings through each half
+ *    bar. `bassRegister` stays the package-wide jazz window: an acoustic
+ *    bass at these tempos sits exactly where the ballad's and the walk's do.
+ *  - Velocities keep every comp under every bass anchor, and
+ *    `barCycleVelocityOffsets` eases the answer bar by 3.
+ */
+const UPTERMO_SWING_V1: PerformanceStyle = Object.freeze({
+  id: "uptempo-swing@1",
+  kind: "band-sketch",
+  meter: Object.freeze({ beatsPerBar: 4, beatUnit: 4 }),
+  bassSlots: Object.freeze([
+    Object.freeze({
+      offsetBeats: Object.freeze({ numerator: 0, denominator: 1 }),
+      durationBeats: Object.freeze({ numerator: 19, denominator: 10 }),
+      tone: "root",
+      placement: "nearest",
+      velocity: 94,
+      cyclePhases: Object.freeze([0, 1] as const),
+    }),
+    Object.freeze({
+      offsetBeats: Object.freeze({ numerator: 2, denominator: 1 }),
+      durationBeats: Object.freeze({ numerator: 19, denominator: 10 }),
+      tone: "fifth",
+      placement: "nearest",
+      velocity: 86,
+      cyclePhases: Object.freeze([0, 1] as const),
+    }),
+    Object.freeze({
+      offsetBeats: Object.freeze({ numerator: 7, denominator: 2 }),
+      durationBeats: Object.freeze({ numerator: 1, denominator: 4 }),
+      tone: "third",
+      placement: "nearest",
+      velocity: 78,
+      cyclePhases: Object.freeze([1] as const),
+    }),
+  ] as const),
+  compSlots: Object.freeze([
+    Object.freeze({
+      offsetBeats: Object.freeze({ numerator: 3, denominator: 2 }),
+      durationBeats: Object.freeze({ numerator: 9, denominator: 20 }),
+      voicing: "upper-voices",
+      velocity: 78,
+      cyclePhases: Object.freeze([0, 1] as const),
+    }),
+    Object.freeze({
+      offsetBeats: Object.freeze({ numerator: 3, denominator: 1 }),
+      durationBeats: Object.freeze({ numerator: 9, denominator: 20 }),
+      voicing: "upper-voices",
+      velocity: 70,
+      cyclePhases: Object.freeze([1] as const),
+    }),
+  ] as const),
+  compRegister: Object.freeze({
+    lowMidi: 62,
+    highMidi: 85,
+    ceilingMidi: 90,
+  }),
+  bassRegister: null,
+  barCycleLength: 2,
+  barCycleVelocityOffsets: Object.freeze([0, -3] as const),
+  swingRatio: Object.freeze({ numerator: 3, denominator: 5 }),
+  description:
+    "Uptempo swing: two-feel bass in half notes with a swung pickup into the "
+    + "answer bar, under sparse upper-voices stabs — the and-of-2 in every "
+    + "bar, a beat-4 answer in the second bar only.",
+});
+
+/**
  * block-chords@1 — the identity style.
  *
  * It declares no slots and the compiler returns the input plan itself, so the
@@ -1499,6 +1602,7 @@ export const PERFORMANCE_STYLES: Readonly<
   "bossa-nova@1": BOSSA_NOVA_V1,
   "straight-eighths@1": STRAIGHT_EIGHTHS_V1,
   "syncopated-sixteenths@1": SYNCOPATED_SIXTEENTHS_V1,
+  "uptempo-swing@1": UPTERMO_SWING_V1,
   "block-chords@1": BLOCK_CHORDS_V1,
 });
 

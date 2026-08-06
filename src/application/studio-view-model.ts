@@ -298,6 +298,8 @@ export function performanceStyleLabel(styleId: PerformanceStyleId): string {
       return "Straight eighths";
     case "syncopated-sixteenths@1":
       return "Syncopated sixteenths";
+    case "uptempo-swing@1":
+      return "Uptempo swing";
     case "block-chords@1":
       return "Block chords";
   }
@@ -327,6 +329,12 @@ function instrumentLabel(instrumentId: InstrumentId): string {
       return "Analog Poly";
     case "concert-grand":
       return "Concert Grand";
+    case "flute":
+      return "Flute";
+    case "organ":
+      return "Organ";
+    case "guitar":
+      return "Guitar";
   }
 }
 

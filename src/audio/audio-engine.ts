@@ -568,6 +568,12 @@ function recipeForInstrument(instrumentId: InstrumentId): AudioInstrumentRecipe 
       return AUDIO_INSTRUMENT_RECIPES[4];
     case "concert-grand":
       return AUDIO_INSTRUMENT_RECIPES[5];
+    case "flute":
+      return AUDIO_INSTRUMENT_RECIPES[6];
+    case "organ":
+      return AUDIO_INSTRUMENT_RECIPES[7];
+    case "guitar":
+      return AUDIO_INSTRUMENT_RECIPES[8];
   }
 }
 
