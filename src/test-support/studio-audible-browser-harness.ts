@@ -52,6 +52,26 @@ export type StudioAudiblePhaseRecord = Readonly<{
   contextTimeEnd: number | null;
 }>;
 
+/**
+ * One 25 ms tap observation (jcpe-7ftl/jcpe-pd7g live-swap evidence): the
+ * window peak proves continuity across a mid-run swap — a dropout is a run
+ * of near-zero peaks while the transport claims to be playing — and the
+ * spectral centroid of the same analyser frame is the automation-readable
+ * face of "it sounds like a different instrument now".
+ */
+export type StudioAudibleTimelineSample = Readonly<{
+  atMs: number;
+  peak: number;
+  centroidHz: number | null;
+  /**
+   * Eight octave-band energies (normalized to their own sum) from the same
+   * analyser frame. A single centroid collapses under a bass-and-reverb-
+   * heavy mix; the band vector keeps enough shape that a comp-voice change
+   * moves it measurably farther than same-instrument jitter does.
+   */
+  bands: readonly number[] | null;
+}>;
+
 export type StudioAudibleSnapshotFacts = Readonly<{
   chordCount: number;
   transportStatus: string;
@@ -76,6 +96,8 @@ export type StudioAudibleReport = Readonly<{
   sampleRate: number | null;
   samplingIntervalMs: number;
   phases: readonly StudioAudiblePhaseRecord[];
+  /** Bounded rolling tap timeline; live-swap specs read it, others may ignore. */
+  timeline: readonly StudioAudibleTimelineSample[];
   snapshot: StudioAudibleSnapshotFacts | null;
   inspection: StudioAudibleInspectionFacts | null;
   journal: readonly StudioAudibleJournalEntry[];
@@ -361,6 +383,9 @@ function bootHarness(): StudioAudibleEvidenceApi {
   }
 
   const sampleBuffer = new Float32Array(2048);
+  const frequencyBuffer = new Uint8Array(1024);
+  const timeline: StudioAudibleTimelineSample[] = [];
+  const TIMELINE_SAMPLE_LIMIT = 8_192;
   globalThis.setInterval(() => {
     const analyser = tap.observedAnalyser();
     const phase = phases[phases.length - 1];
@@ -380,6 +405,45 @@ function bootHarness(): StudioAudibleEvidenceApi {
     if (peak > phase.maxPeak) phase.maxPeak = peak;
     /* NaN poisoning reads as exact silence without this witness. */
     phase.nonFiniteSamples = (phase.nonFiniteSamples ?? 0) + nonFinite;
+    /*
+     * The live-swap timeline (jcpe-7ftl/jcpe-pd7g): the same analyser
+     * frame's magnitude spectrum reduces to a centroid so a mid-run
+     * instrument change is measurable, and the per-tick peak makes any
+     * dropout a visible run of near-zero entries. Bounded so a long or
+     * wedged run can never grow the report without limit.
+     */
+    if (timeline.length < TIMELINE_SAMPLE_LIMIT) {
+      const context = tap.observedContext();
+      let centroidHz: number | null = null;
+      let bands: readonly number[] | null = null;
+      if (context !== null) {
+        analyser.getByteFrequencyData(frequencyBuffer);
+        const binHz = context.sampleRate / analyser.fftSize;
+        let weighted = 0;
+        let total = 0;
+        const bandEnergy = [0, 0, 0, 0, 0, 0, 0, 0];
+        for (let bin = 0; bin < frequencyBuffer.length; bin += 1) {
+          const magnitude = frequencyBuffer[bin] ?? 0;
+          const hz = bin * binHz;
+          weighted += magnitude * hz;
+          total += magnitude;
+          /* Octave bands from 62.5 Hz: [0,125), [125,250) … [8000,∞). */
+          const band = Math.min(
+            7,
+            Math.max(0, Math.floor(Math.log2(Math.max(hz, 1) / 62.5))),
+          );
+          bandEnergy[band] = (bandEnergy[band] ?? 0) + magnitude;
+        }
+        centroidHz = total === 0 ? null : weighted / total;
+        bands =
+          total === 0
+            ? null
+            : Object.freeze(bandEnergy.map((energy) => energy / total));
+      }
+      timeline.push(
+        Object.freeze({ atMs: performance.now(), peak, centroidHz, bands }),
+      );
+    }
   }, SAMPLING_INTERVAL_MS);
 
   return Object.freeze({
@@ -415,6 +479,7 @@ function bootHarness(): StudioAudibleEvidenceApi {
         sampleRate: context === null ? null : context.sampleRate,
         samplingIntervalMs: SAMPLING_INTERVAL_MS,
         phases: phases.map((phase) => Object.freeze({ ...phase })),
+        timeline: [...timeline],
         snapshot: snapshotReader === null ? null : snapshotReader(),
         inspection: inspectionReader === null ? null : inspectionReader(),
         journal: [...journal],
