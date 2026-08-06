@@ -351,3 +351,48 @@ test.describe("M1 automatic import: the one-gesture default path", () => {
     }
   });
 });
+
+test("M1-E2E-004 the pre-Add audition toggles, sounds nothing after Stop, and cancels on Discard", async ({
+  page,
+}, testInfo) => {
+  const ledger = makeLedger("m1-e2e-004-audition", testInfo);
+  const diagnostics = captureDiagnostics(page);
+  try {
+    await openStudio(page);
+    await chooseFile(
+      page,
+      "session-take.mid",
+      requireGolden("M0-GLD-002").bytesHex,
+    );
+    await expect(page.getByTestId("midi-import-auto")).toBeVisible();
+
+    /* Hear-before-shipping: the audition control rides the result card. */
+    const audition = page.getByTestId("midi-import-audition");
+    await expect(audition).toBeVisible();
+    await expect(audition).toHaveAttribute("aria-pressed", "false");
+    await expect(audition).toContainText("Audition the first bars");
+
+    await audition.click();
+    await expect(audition).toHaveAttribute("aria-pressed", "true");
+    await expect(audition).toContainText("Stop the audition");
+    ledger.log("started", {});
+
+    /* A second press cancels immediately. */
+    await audition.click();
+    await expect(audition).toHaveAttribute("aria-pressed", "false");
+    ledger.log("stopped", {});
+
+    /* Discard cancels a running audition and drops the card with it. */
+    await audition.click();
+    await expect(audition).toHaveAttribute("aria-pressed", "true");
+    await page.locator("#studio-midi-import-discard-rail").click();
+    await expect(page.getByTestId("midi-import-auto")).toHaveCount(0);
+    ledger.log("discard-cancelled", {});
+
+    expectCleanDiagnostics(diagnostics);
+    await ledger.flush("passed", diagnostics);
+  } catch (error) {
+    await ledger.flush("failed", diagnostics);
+    throw error;
+  }
+});
