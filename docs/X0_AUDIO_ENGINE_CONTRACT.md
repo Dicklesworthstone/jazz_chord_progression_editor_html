@@ -237,6 +237,39 @@ succeeds by rendering synchronously. An engine whose renderer module failed
 to load refuses rendered work with `audio.renderer_unavailable` while every
 oscillator recipe keeps working.
 
+### 5.2 Flute, Organ, and Guitar additive recipes (additive amendment, 2026-08-05)
+
+The reviewed recipe set grows from six to nine recipes. The §5 table remains
+the historical record of the original six and is not rewritten; the three
+additive recipes below are appended to the reviewed recipe authority after
+Concert Grand. Every additive law keeps holding: each recipe's oscillator
+component levels sum to exactly 1, every release is at most 1.8 seconds, and
+each voice schedules at most seven sources. Every label claims only its
+declared synthetic design.
+
+| Recipe | Sources | Level | Polyphony | Amplitude A/D/S/R | Filter start/peak/sustain, Q, decay |
+|---|---|---:|---:|---|---|
+| Flute | sine 1x .78; sine 2x .13; sine 3x .06; sine 4x .03; sine transient 6x .06; tremolo LFO | .52 | 32 | .05/.25/.68/.35 | 3200/5600/3200 Hz, .5, .3 s |
+| Organ | sine 1x .36; sine 2x .24; sine 3x .18; sine 4x .13; sine 6x .09; tremolo LFO | .44 | 48 | .012/.08/.92/.14 | 7500/9500/7500 Hz, .4, .1 s |
+| Guitar | saw -3 cents .6; saw +3 cents .4; sine transient 5x .12 | .5 | 48 | .002/1.5/.05/.5 | 5200/7800/1400 Hz, 1.1, 1 s |
+
+Flute is additive sine partials with a soft breath onset and delayed vibrato:
+its transient decays over .03 seconds and its nonboosting tremolo is 5 Hz,
+depth .09, delayed .28 seconds. Organ is additive drawbar sine partials with
+a shallow sustained vibrato: no transient, tremolo 6 Hz, depth .07, delayed
+.08 seconds. Guitar is the plucked decay of two detuned saws through a
+closing lowpass, with a short pick transient that decays over .012 seconds
+and no tremolo.
+
+The independently authored recipe fixture carries the same literals plus
+normalization reference gains for each new recipe at voice counts 1, 4, 7,
+and 16, and the listening rubric grows three human rows,
+X0-LISTEN-INST-007 through X0-LISTEN-INST-009. At this amendment date the
+reviewed render matrix retains its eighteen rows: the three new recipes do
+not yet own real-browser offline render rows, so their browser certification
+is pending the next X0 evidence run, and until those rows are reviewed the
+X0 contract validator reports the missing three render rows per new recipe.
+
 ## 6. Parameter automation and normalization
 
 An accepted batch contains 1...16 generated voices. Its normalization gain is
