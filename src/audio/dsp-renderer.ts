@@ -35,6 +35,10 @@ import {
   PIANO_ATTACK_SLICE_INDEX,
   type PianoAttackSlice,
 } from "./wasm/piano-attack-samples";
+import type {
+  PhysicalRenderAbiRequestV2,
+  PhysicalRenderRefusalCode,
+} from "./physical-renderer-contract";
 
 export const CONCERT_GRAND_RENDERER_ALGORITHM_ID =
   "changes.dsp.concert-grand@1";
@@ -137,6 +141,25 @@ export type AnalysisFrame = Readonly<{
   chroma: Float32Array<ArrayBuffer>;
 }>;
 
+export type PhysicalModalState = Readonly<{ x: number; y: number }>;
+export type PhysicalEnergyLedger = Readonly<{
+  initialEnergy: number;
+  excitationWork: number;
+  finalEnergy: number;
+  residual: number;
+}>;
+export type PhysicalModalRenderResult = RenderedNotePcm & Readonly<{
+  state: PhysicalModalState;
+  energy: PhysicalEnergyLedger;
+  limiterEngagements: number;
+}>;
+export type PhysicalReedSolveResult = Readonly<{
+  junctionPressure: number;
+  volumeFlow: number;
+  nonlinearIterations: number;
+  fallbackBisections: number;
+}>;
+
 export type ConcertGrandRenderer = Readonly<{
   algorithmId: typeof CONCERT_GRAND_RENDERER_ALGORITHM_ID;
   wasmSha256: string;
@@ -188,6 +211,27 @@ export type ConcertGrandRenderer = Readonly<{
     samples: Float32Array,
     sampleRateHz: number,
   ) => AnalysisFrame | null;
+  /** Validate an ABI-v2 layout inside the Rust/WASM safety boundary. */
+  validatePhysicalAbiV2: (
+    request: PhysicalRenderAbiRequestV2,
+    linearMemoryBytes: number,
+  ) => PhysicalRenderRefusalCode | null;
+  /** Render a passive shared mode with explicit state handoff and energy. */
+  renderPhysicalModalV2: (request: Readonly<{
+    sampleRateHz: 44_100 | 48_000 | 96_000;
+    frequencyHz: number;
+    dampingPerSecond: number;
+    excitation: number;
+    initialState: PhysicalModalState;
+    frameCount: number;
+  }>) => PhysicalModalRenderResult | null;
+  solvePhysicalReedV2: (request: Readonly<{
+    mouthPressure: number;
+    borePressure: number;
+    opening: number;
+    stiffness: number;
+    boreImpedance: number;
+  }>) => PhysicalReedSolveResult | null;
 }>;
 
 type ConcertGrandExports = Readonly<{
@@ -245,6 +289,43 @@ type ConcertGrandExports = Readonly<{
     left: number,
     right: number,
     maxFrames: number,
+  ) => number;
+  phs_validate_v2: (
+    abiVersion: number,
+    requestByteLength: number,
+    descriptorOffset: number,
+    descriptorCount: number,
+    controlPointOffset: number,
+    controlPointCount: number,
+    outputLeftOffset: number,
+    outputRightOffset: number,
+    outputCapacityFrames: number,
+    stateInputOffset: number,
+    stateInputByteLength: number,
+    stateOutputOffset: number,
+    stateOutputCapacityBytes: number,
+    linearMemoryBytes: number,
+  ) => number;
+  phs_modal_render_v2: (
+    sampleRate: number,
+    frequencyHz: number,
+    dampingPerSecond: number,
+    excitation: number,
+    initialX: number,
+    initialY: number,
+    left: number,
+    right: number,
+    frames: number,
+    stateOutput: number,
+    energyOutput: number,
+  ) => number;
+  phs_reed_solve_v2: (
+    mouthPressure: number,
+    borePressure: number,
+    opening: number,
+    stiffness: number,
+    boreImpedance: number,
+    output: number,
   ) => number;
 }>;
 
@@ -759,6 +840,18 @@ async function instantiate(): Promise<DspCore> {
       rawExports,
       "clr_render",
     ) as ConcertGrandExports["clr_render"],
+    phs_validate_v2: requireExportedFunction(
+      instance.exports,
+      "phs_validate_v2",
+    ) as ConcertGrandExports["phs_validate_v2"],
+    phs_modal_render_v2: requireExportedFunction(
+      instance.exports,
+      "phs_modal_render_v2",
+    ) as ConcertGrandExports["phs_modal_render_v2"],
+    phs_reed_solve_v2: requireExportedFunction(
+      instance.exports,
+      "phs_reed_solve_v2",
+    ) as ConcertGrandExports["phs_reed_solve_v2"],
   };
   const memory = exports.memory;
   /* Scratch region starts past the module's own data and shadow stack. */
@@ -851,6 +944,107 @@ async function instantiate(): Promise<DspCore> {
   };
 
   const MAX_DETECTED_NOTES = 12;
+
+  const validatePhysicalAbiV2 = (
+    request: PhysicalRenderAbiRequestV2,
+    linearMemoryBytes: number,
+  ): PhysicalRenderRefusalCode | null => {
+    const outcome = exports.phs_validate_v2(
+      request.abiVersion,
+      request.requestByteLength,
+      request.descriptorOffset,
+      request.descriptorCount,
+      request.controlPointOffset,
+      request.controlPointCount,
+      request.outputLeftOffset,
+      request.outputRightOffset,
+      request.outputCapacityFrames,
+      request.stateInputOffset,
+      request.stateInputByteLength,
+      request.stateOutputOffset,
+      request.stateOutputCapacityBytes,
+      linearMemoryBytes,
+    );
+    if (outcome === 0) return null;
+    if (outcome === 1) return "physical.schema_unsupported";
+    if (outcome === 3) return "limit.physical_frames_exceeded";
+    if (outcome === 4) return "limit.physical_control_points_exceeded";
+    if (outcome === 5) return "physical.state_handoff_invalid";
+    return "physical.abi_bounds_invalid";
+  };
+
+  const renderPhysicalModalV2: ConcertGrandRenderer["renderPhysicalModalV2"] =
+    (request) => {
+      if (
+        !Number.isSafeInteger(request.frameCount) ||
+        request.frameCount <= 0 ||
+        request.frameCount > 2_880_000
+      ) {
+        return null;
+      }
+      const channelBytes = request.frameCount * 4;
+      const leftPointer = scratchBase;
+      const rightPointer = leftPointer + channelBytes;
+      const statePointer = rightPointer + channelBytes;
+      const energyPointer = Math.ceil((statePointer + 16) / 8) * 8;
+      ensureCapacity(memory, scratchBase, energyPointer + 40 - scratchBase);
+      const written = exports.phs_modal_render_v2(
+        request.sampleRateHz,
+        request.frequencyHz,
+        request.dampingPerSecond,
+        request.excitation,
+        request.initialState.x,
+        request.initialState.y,
+        leftPointer,
+        rightPointer,
+        request.frameCount,
+        statePointer,
+        energyPointer,
+      );
+      if (written !== request.frameCount) return null;
+      const left = new Float32Array(written);
+      const right = new Float32Array(written);
+      left.set(new Float32Array(memory.buffer, leftPointer, written));
+      right.set(new Float32Array(memory.buffer, rightPointer, written));
+      const state = new Float64Array(memory.buffer, statePointer, 2);
+      const energy = new Float64Array(memory.buffer, energyPointer, 5);
+      return Object.freeze({
+        sampleRateHz: request.sampleRateHz,
+        frameCount: written,
+        left,
+        right,
+        state: Object.freeze({ x: state[0] ?? 0, y: state[1] ?? 0 }),
+        energy: Object.freeze({
+          initialEnergy: energy[0] ?? 0,
+          excitationWork: energy[1] ?? 0,
+          finalEnergy: energy[2] ?? 0,
+          residual: energy[3] ?? 0,
+        }),
+        limiterEngagements: energy[4] ?? 0,
+      });
+    };
+
+  const solvePhysicalReedV2: ConcertGrandRenderer["solvePhysicalReedV2"] =
+    (request) => {
+      const outputPointer = Math.ceil(scratchBase / 8) * 8;
+      ensureCapacity(memory, scratchBase, outputPointer + 32 - scratchBase);
+      const outcome = exports.phs_reed_solve_v2(
+        request.mouthPressure,
+        request.borePressure,
+        request.opening,
+        request.stiffness,
+        request.boreImpedance,
+        outputPointer,
+      );
+      if (outcome !== 1) return null;
+      const values = new Float64Array(memory.buffer, outputPointer, 4);
+      return Object.freeze({
+        junctionPressure: values[0] ?? 0,
+        volumeFlow: values[1] ?? 0,
+        nonlinearIterations: values[2] ?? 0,
+        fallbackBisections: values[3] ?? 0,
+      });
+    };
 
   const analyzeWindow = (
     samples: Float32Array,
@@ -1029,6 +1223,9 @@ async function instantiate(): Promise<DspCore> {
       renderSynthesizedNote,
       attackSliceFor: selectAttackSlice,
       analyzeWindow,
+      validatePhysicalAbiV2,
+      renderPhysicalModalV2,
+      solvePhysicalReedV2,
     }),
     waveguide,
   });

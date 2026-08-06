@@ -28,6 +28,7 @@
 
 use libm::{atan2, cos, exp, pow, sin};
 
+use crate::physical::{DcBlocker, DelayLine, OnePoleLoss, RadiationFilter};
 use crate::{midi_frequency_hz, XorShift32, TAU};
 
 /// Longest supported bore: MIDI 21 at 192 kHz is ~6 982 samples.
@@ -133,17 +134,15 @@ pub extern "C" fn flt_render(
 
     let bore = unsafe { &mut *core::ptr::addr_of_mut!(FLT_BORE) };
     let jet = unsafe { &mut *core::ptr::addr_of_mut!(FLT_JET) };
-    for slot in bore.iter_mut().take(FLT_MAX_DELAY) {
-        *slot = 0.0;
-    }
-    for slot in jet.iter_mut().take(FLT_MAX_DELAY) {
-        *slot = 0.0;
-    }
-    let mut bore_write = 0usize;
-    let mut jet_write = 0usize;
+    let Some(mut bore_delay) = DelayLine::new(bore, bore_length) else {
+        return 0;
+    };
+    let Some(mut jet_delay) = DelayLine::new(jet, jet_length) else {
+        return 0;
+    };
 
     /* Reflection: dark one-pole at the open end, computed above. */
-    let mut reflection_state = 0.0f64;
+    let mut reflection_loss = OnePoleLoss::new(reflection_alpha);
     let end_reflection = 0.48f64;
     let jet_reflection = 0.5f64;
 
@@ -155,8 +154,7 @@ pub extern "C" fn flt_render(
      * the loop by tens of cents (measured: -26 at MIDI 48, +44 at 55).
      */
     let dc_pole = exp(-TAU * 38.3 / sr);
-    let mut dc_x1 = 0.0f64;
-    let mut dc_y1 = 0.0f64;
+    let mut dc_blocker = DcBlocker::new(dc_pole);
 
     /*
      * Breath. Pressure rises over ~55 ms (a tongued attack), holds, and the
@@ -199,8 +197,7 @@ pub extern "C" fn flt_render(
      * is what makes radiated treble, but unchecked it turns loop
      * turbulence into broadband hiss. */
     let radiation_alpha = 1.0 - exp(-TAU * 5_500.0 / sr);
-    let mut radiation_lp = 0.0f64;
-    let mut previous_bore = 0.0f64;
+    let mut radiation = RadiationFilter::new(radiation_alpha, 8.0);
     let direct_breath = 0.01f64;
 
     /* Fixed near-center pan: one instrument, one seat. */
@@ -223,22 +220,14 @@ pub extern "C" fn flt_render(
         let breath = pressure * vibrato * (1.0 + noise_level * noise_lp);
 
         /* Bore end: reflect through the dark lowpass, block DC. */
-        let bore_out = bore[bore_write];
-        reflection_state += reflection_alpha * (bore_out - reflection_state);
-        let reflected = {
-            let x = reflection_state;
-            let y = x - dc_x1 + dc_pole * dc_y1;
-            dc_x1 = x;
-            dc_y1 = y;
-            y
-        };
+        let bore_out = bore_delay.output();
+        let reflected = dc_blocker.process(reflection_loss.process(bore_out));
 
         /* Jet: pressure difference travels the jet, then saturates with
          * the labium offset breaking the cubic's symmetry. */
         let pressure_diff = breath - jet_reflection * reflected;
-        let jet_out = jet[jet_write];
-        jet[jet_write] = pressure_diff;
-        jet_write = (jet_write + 1) % jet_length;
+        let jet_out = jet_delay.output();
+        jet_delay.push(pressure_diff);
         let deflection = (jet_out + jet_offset).clamp(-1.0, 1.0);
         let jet_drive = deflection * (deflection * deflection - 1.0);
 
@@ -248,15 +237,11 @@ pub extern "C" fn flt_render(
         let tuned = tuning_a * bore_in + tuning_x1 - tuning_a * tuning_y1;
         tuning_x1 = bore_in;
         tuning_y1 = tuned;
-        bore[bore_write] = tuned;
-        bore_write = (bore_write + 1) % bore_length;
+        bore_delay.push(tuned);
 
         /* Radiated field: differentiated, band-limited, plus a whisper of
          * direct turbulence. */
-        let differentiated = (bore_out - previous_bore) * 8.0;
-        previous_bore = bore_out;
-        radiation_lp += radiation_alpha * (differentiated - radiation_lp);
-        let radiated = radiation_lp + direct_breath * noise_lp * pressure;
+        let radiated = radiation.process(bore_out) + direct_breath * noise_lp * pressure;
 
         let mut sample = radiated;
         if frames - frame <= end_fade_frames {

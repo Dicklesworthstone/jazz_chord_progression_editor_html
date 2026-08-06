@@ -25,6 +25,7 @@
 
 use libm::{atan2, cos, exp, pow, sin};
 
+use crate::physical::{DcBlocker, DelayLine, OnePoleLoss, RadiationFilter};
 use crate::{midi_frequency_hz, XorShift32, TAU};
 
 /// Longest supported half-period bore: MIDI 21 at 192 kHz is ~3 491 samples.
@@ -124,17 +125,15 @@ pub extern "C" fn clr_render(
     let mut tuning_y1 = 0.0f64;
 
     let bore = unsafe { &mut *core::ptr::addr_of_mut!(CLR_BORE) };
-    for slot in bore.iter_mut().take(CLR_MAX_DELAY) {
-        *slot = 0.0;
-    }
-    let mut bore_write = 0usize;
+    let Some(mut bore_delay) = DelayLine::new(bore, bore_length) else {
+        return 0;
+    };
 
-    let mut reflection_state = 0.0f64;
+    let mut reflection_loss = OnePoleLoss::new(reflection_alpha);
 
     /* Rate-compensated DC blocker (the flute's 96 kHz lesson). */
     let dc_pole = exp(-TAU * 38.3 / sr);
-    let mut dc_x1 = 0.0f64;
-    let mut dc_y1 = 0.0f64;
+    let mut dc_blocker = DcBlocker::new(dc_pole);
 
     /*
      * Reed table: reflection coefficient of the mouthpiece as a function
@@ -162,8 +161,7 @@ pub extern "C" fn clr_render(
 
     /* Band-limit the differentiated radiation (the flute's hiss lesson). */
     let radiation_alpha = 1.0 - exp(-TAU * 5_500.0 / sr);
-    let mut radiation_lp = 0.0f64;
-    let mut previous_bore = 0.0f64;
+    let mut radiation = RadiationFilter::new(radiation_alpha, 6.0);
     let pan = ((m - 60.0) / 48.0).clamp(-1.0, 1.0) * 0.06;
     let angle = (pan + 1.0) * core::f64::consts::PI / 4.0;
     let (pan_left, pan_right) = (cos(angle), sin(angle));
@@ -183,15 +181,8 @@ pub extern "C" fn clr_render(
         let breath = pressure * vibrato * (1.0 + noise_level * noise_lp);
 
         /* Open end: dark inverting reflection behind the DC blocker. */
-        let bore_out = bore[bore_write];
-        reflection_state += reflection_alpha * (bore_out - reflection_state);
-        let reflected = {
-            let x = -0.95 * reflection_state;
-            let y = x - dc_x1 + dc_pole * dc_y1;
-            dc_x1 = x;
-            dc_y1 = y;
-            y
-        };
+        let bore_out = bore_delay.output();
+        let reflected = dc_blocker.process(-0.95 * reflection_loss.process(bore_out));
 
         /* Reed junction: pressure difference sets the reed's reflection. */
         let pressure_diff = reflected - breath;
@@ -201,15 +192,11 @@ pub extern "C" fn clr_render(
         let tuned = tuning_a * bore_in + tuning_x1 - tuning_a * tuning_y1;
         tuning_x1 = bore_in;
         tuning_y1 = tuned;
-        bore[bore_write] = tuned;
-        bore_write = (bore_write + 1) % bore_length;
+        bore_delay.push(tuned);
 
         /* Radiated field: gentle differentiation, band-limited, near-dry
          * breath. */
-        let differentiated = (bore_out - previous_bore) * 6.0;
-        previous_bore = bore_out;
-        radiation_lp += radiation_alpha * (differentiated - radiation_lp);
-        let radiated = radiation_lp + 0.012 * noise_lp * pressure;
+        let radiated = radiation.process(bore_out) + 0.012 * noise_lp * pressure;
 
         let mut sample = radiated;
         if frames - frame <= end_fade_frames {
