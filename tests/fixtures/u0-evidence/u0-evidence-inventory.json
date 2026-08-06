@@ -23,7 +23,7 @@
  "expectedCounts": {
   "browserCells": 84,
   "browserCellTemplates": 28,
-  "bunCases": 118,
+  "bunCases": 120,
   "playwrightSpecifications": 30,
   "playwrightTests": 90,
   "reviewedSources": 26,
@@ -96,7 +96,7 @@
   },
   {
    "path": "tests/static/u0-evidence-inventory.test.ts",
-   "sha256": "42546a8121eea34052d0c8d5051ceb6376e89de8e9fa58f6c994d2ec0c62e4e2"
+   "sha256": "87a40e1ed56e6965f5879aa571b3af86a9a38885220c9a62b88e851b4da865a4"
   },
   {
    "path": "tests/static/u0-evidence.test.ts",

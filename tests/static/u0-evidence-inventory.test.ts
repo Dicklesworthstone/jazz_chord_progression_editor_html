@@ -79,7 +79,7 @@ function required<T>(value: T | undefined, label: string): T {
 describe("U0 independently reviewed evidence inventory", () => {
   test("loads the exact current inventories and verifies every reviewed source hash", async () => {
     const inventory = await reviewedInventory();
-    expect(expectedU0BunCases(inventory)).toHaveLength(118);
+    expect(expectedU0BunCases(inventory)).toHaveLength(120);
     expect(expectedU0PlaywrightTests(inventory)).toHaveLength(90);
     expect(expectedU0BrowserCells(inventory)).toHaveLength(84);
     expect(await verifyU0EvidenceInventorySourceHashes(inventory)).toEqual([]);
