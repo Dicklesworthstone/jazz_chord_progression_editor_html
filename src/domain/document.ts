@@ -33,6 +33,14 @@ export const SECTION_VOICE_LEADING_BOUNDARIES = ["continue", "reset"] as const;
  * still canonically means the default, and the F2 fixture oracles for the
  * original four storable ids remain byte-identical. The F2 contract doc's
  * groove amendment carries the matching recorded expansion.
+ *
+ * 2026-08-06 (owner-directed Giant Steps entry):
+ * "uptempo-swing@1" joins before "block-chords@1" under the same purely
+ * additive law: every previously valid document decodes unchanged, absence
+ * still canonically means the default, and the frozen F2/E0 fixture oracles
+ * for the earlier ids stay byte-identical. The new id's acceptance law lives
+ * with its declaring vocabulary (tests/unit/performance-style-uptempo-swing
+ * .test.ts sweeps the whole tuple through the decoder).
  */
 export const GROOVE_STYLE_IDS = [
   "ballad-comp@1",
@@ -40,6 +48,7 @@ export const GROOVE_STYLE_IDS = [
   "bossa-nova@1",
   "straight-eighths@1",
   "syncopated-sixteenths@1",
+  "uptempo-swing@1",
   "block-chords@1",
 ] as const;
 export const DEFAULT_GROOVE_STYLE_ID = "ballad-comp@1";
