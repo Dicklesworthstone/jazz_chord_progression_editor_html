@@ -85,17 +85,6 @@ function rms(samples: Float32Array, start: number, length: number): number {
   return Math.sqrt(energy / Math.max(1, end - start));
 }
 
-function centroidHz(samples: Float32Array, start: number): number {
-  let numerator = 0;
-  let denominator = 0;
-  for (let frequency = 80; frequency < 10_000; frequency *= 1.26) {
-    const amplitude = goertzelAmplitude(samples, start, 8_192, frequency);
-    numerator += amplitude * frequency;
-    denominator += amplitude;
-  }
-  return denominator > 0 ? numerator / denominator : 0;
-}
-
 const renderers = await loadWaveguideRenderers();
 
 function renderer(algorithmId: string): WaveguideRenderer {
