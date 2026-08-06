@@ -1,7 +1,7 @@
 {
   "schema": "changes.import.midi-automation-fixtures.envelope.v1",
   "law": "M1-ENV",
-  "notes": "Independently authored. chunkingCases: measureTexts are the emitted per-measure chart-text pieces (code-point lengths matter, not bytes); the reference chunker packs greedily at measure boundaries, each chunk <= 4096 code points including the section header carried by the first chunk only. envelopeCases pin the frozen command order, skip law, stated undo count, and rollback-on-refusal.",
+  "notes": "Independently authored. chunkingCases: measureTexts are the emitted per-measure chart-text pieces (code-point lengths matter, not bytes); the reference chunker packs greedily at measure boundaries, each chunk <= 4096 code points including the section header carried by the first chunk only. envelopeCases pin the frozen command order, skip law, stated undo count, and rollback-on-refusal. AMENDMENT #1 (jcpe-9m5q, 2026-08-05): the order is destination-dependent — when settings are applicable (a starter destination) they are issued BEFORE the insert, because the A0 meter law locks the meter once any chord exists and insert-first made every non-4/4 starter import roll back; groove stays last. Occupied destinations (settings inapplicable) keep insert-first.",
   "chunkingCases": [
     {
       "name": "small-fragment-single-chunk",
@@ -39,7 +39,7 @@
       "name": "starter-full-envelope-order-and-count",
       "commandsApplicable": { "insertChunks": 1, "settings": true, "groove": true },
       "refusalAtIndex": null,
-      "expected": { "issuedOrder": ["insert", "settings", "groove"], "statedUndoCount": 3, "rolledBackCount": 0 }
+      "expected": { "issuedOrder": ["settings", "insert", "groove"], "statedUndoCount": 3, "rolledBackCount": 0 }
     },
     {
       "name": "occupied-no-settings-skips-cleanly",
@@ -51,13 +51,13 @@
       "name": "chunked-insert-counts-each-chunk",
       "commandsApplicable": { "insertChunks": 3, "settings": true, "groove": true },
       "refusalAtIndex": null,
-      "expected": { "issuedOrder": ["insert", "insert", "insert", "settings", "groove"], "statedUndoCount": 5, "rolledBackCount": 0 }
+      "expected": { "issuedOrder": ["settings", "insert", "insert", "insert", "groove"], "statedUndoCount": 5, "rolledBackCount": 0 }
     },
     {
       "name": "refusal-mid-envelope-rolls-back-issued-commands",
       "commandsApplicable": { "insertChunks": 2, "settings": true, "groove": true },
       "refusalAtIndex": 2,
-      "expected": { "issuedOrder": ["insert", "insert"], "statedUndoCount": 0, "rolledBackCount": 2, "refusal": "import.automation_envelope_rolled_back" }
+      "expected": { "issuedOrder": ["settings", "insert"], "statedUndoCount": 0, "rolledBackCount": 2, "refusal": "import.automation_envelope_rolled_back" }
     },
     {
       "name": "refusal-on-first-command-rolls-back-nothing",
