@@ -184,7 +184,9 @@ export function MidiImportPanel({
           class="studio-midi-import__advanced"
           data-testid="midi-import-advanced"
         >
-          <summary>Advanced: chart text, readings, and every sonority</summary>
+          <summary data-testid="midi-import-advanced-summary">
+            Advanced: chart text, readings, and every sonority
+          </summary>
           {view.summary === null ? null : (
             <div
               class="studio-midi-import__summary"
@@ -206,6 +208,20 @@ export function MidiImportPanel({
                 {view.summary.chartText}
               </pre>
             </div>
+          )}
+          {/*
+            The M1-TRACE ledger (jcpe-qyyn): every stage's input digest,
+            work counters, and decisions, machine-readable, collapsed twice
+            deep so it costs nothing until a person or a spec wants it.
+          */}
+          {view.traceJson === null ? null : (
+            <details
+              class="studio-midi-import__trace"
+              data-testid="midi-import-trace"
+            >
+              <summary>Import trace (machine-readable)</summary>
+              <pre>{view.traceJson}</pre>
+            </details>
           )}
           {view.sonorities.length === 0 ? null : (
             <ol class="studio-midi-import__sonorities" data-testid="midi-import-sonorities">

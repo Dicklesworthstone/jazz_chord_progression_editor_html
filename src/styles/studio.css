@@ -4011,6 +4011,26 @@
   line-height: var(--line-normal);
 }
 
+/* The M1-TRACE ledger: bounded box, scrolls inside itself (jcpe-qyyn). */
+.studio-midi-import__trace pre {
+  max-width: 100%;
+  max-block-size: 16rem;
+  margin: 0;
+  padding: var(--space-2);
+  overflow: auto;
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  color: var(--text-subtle);
+  font-size: var(--text-xs);
+}
+
+.studio-midi-import__trace summary {
+  color: var(--text-subtle);
+  font-size: var(--text-xs);
+  cursor: pointer;
+}
+
 .studio-midi-import__chart {
   max-width: 100%;
   margin: 0;

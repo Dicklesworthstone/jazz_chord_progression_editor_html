@@ -20,6 +20,7 @@ import {
   type MidiImportAutoCommitResult,
   type MidiImportCommitResult,
   type MidiImportPreview,
+  unavailableMidiImportPreview,
   type StudioMidiImportService,
   type StudioAudioGesture,
   type StudioChordDetailView,
@@ -972,6 +973,7 @@ function midiImportView(
       sonorities: Object.freeze([]),
       blockedReason: null,
       canCommit: false,
+      traceJson: null,
     });
   }
   if (preview === null) {
@@ -986,6 +988,7 @@ function midiImportView(
       sonorities: Object.freeze([]),
       blockedReason: null,
       canCommit: false,
+      traceJson: null,
     });
   }
   const statusLabel =
@@ -1018,6 +1021,7 @@ function midiImportView(
       sonorities: Object.freeze([]),
       blockedReason: null,
       canCommit: false,
+      traceJson: JSON.stringify(preview.trace, null, 1),
     });
   }
   const decoded = preview.decoded;
@@ -1034,6 +1038,7 @@ function midiImportView(
       sonorities: Object.freeze([]),
       blockedReason: preview.blockedReason,
       canCommit: false,
+      traceJson: JSON.stringify(preview.trace, null, 1),
     });
   }
   const counters = decoded.model.counters;
@@ -1123,6 +1128,7 @@ function midiImportView(
     canCommit:
       preview.automation !== null ||
       (plan !== null && preview.blockedReason === null),
+    traceJson: JSON.stringify(preview.trace, null, 1),
   });
 }
 
@@ -3115,20 +3121,7 @@ export function StudioRoot({
         readMidiFile: (fileName, bytes) =>
           midiImportService === null
             ? Promise.resolve(
-                Object.freeze({
-                  fileName,
-                  byteLength: bytes.byteLength,
-                  decoded: null,
-                  refusal: null,
-                  plan: null,
-                  sonorities: Object.freeze([]),
-                  salvage: null,
-                  salvageFailed: null,
-                  automation: null,
-                  automationRefusal: null,
-                  blockedReason:
-                    "MIDI import is not available in this session.",
-                }),
+                unavailableMidiImportPreview(fileName, bytes.byteLength),
               )
             : midiImportService.readFile(fileName, bytes),
         commitMidiImport: (preview) =>
