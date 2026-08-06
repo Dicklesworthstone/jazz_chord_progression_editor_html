@@ -102,7 +102,7 @@ test.describe("M0 wasm boundary over the real artifact, independent corpus", () 
     /* The preview is a statement: nothing has entered the document yet. */
     await expect(cards(page)).toHaveCount(0);
 
-    await page.getByTestId("midi-import-advanced").locator("summary").click();
+    await page.getByTestId("midi-import-advanced-summary").click();
     await expect(page.getByTestId("midi-import-summary")).toBeVisible();
     const sonorities = page.getByTestId("midi-import-sonority");
     await expect(sonorities).toHaveCount(2);
@@ -159,7 +159,7 @@ test.describe("M0 wasm boundary over the real artifact, independent corpus", () 
     await chooseFile(page, "authored-tempo-change.mid", authored.bytesHex);
 
     await expect(page.getByTestId("midi-import-auto")).toBeVisible();
-    await page.getByTestId("midi-import-advanced").locator("summary").click();
+    await page.getByTestId("midi-import-advanced-summary").click();
     await expect(page.getByTestId("midi-import-summary")).toBeVisible();
     const sonorities = page.getByTestId("midi-import-sonority");
     await expect(sonorities).toHaveCount(2);
@@ -180,7 +180,7 @@ test.describe("M0 wasm boundary over the real artifact, independent corpus", () 
       requireAccepted("M0-VER-A04").bytesHex,
     );
 
-    await page.getByTestId("midi-import-advanced").locator("summary").click();
+    await page.getByTestId("midi-import-advanced-summary").click();
     const custom = page.getByTestId("midi-import-custom");
     await expect(custom).toBeVisible();
     await expect(custom).toContainText("Db");

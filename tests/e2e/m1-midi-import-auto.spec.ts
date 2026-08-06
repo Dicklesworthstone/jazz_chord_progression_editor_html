@@ -253,8 +253,7 @@ test.describe("M1 automatic import: the one-gesture default path", () => {
       ).toBeDisabled();
       /* Advanced still shows every literal pitch set: a next action. */
       await page
-        .getByTestId("midi-import-advanced")
-        .locator("summary")
+        .getByTestId("midi-import-advanced-summary")
         .click();
       await expect(page.getByTestId("midi-import-custom").first()).toBeVisible();
       const customNote = await page

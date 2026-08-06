@@ -98,7 +98,7 @@ test.describe("M0 MIDI import over the real artifact", () => {
     await expect(cards(page)).toHaveCount(0);
 
     /* The forensic detail lives behind Advanced, collapsed by default. */
-    await page.getByTestId("midi-import-advanced").locator("summary").click();
+    await page.getByTestId("midi-import-advanced-summary").click();
     await expect(page.getByTestId("midi-import-summary")).toBeVisible();
 
     const sonorities = page.getByTestId("midi-import-sonority");
@@ -166,7 +166,7 @@ test.describe("M0 MIDI import over the real artifact", () => {
       fixtureBytes(requireGolden("M0-GLD-005").bytesHex),
     );
 
-    await page.getByTestId("midi-import-advanced").locator("summary").click();
+    await page.getByTestId("midi-import-advanced-summary").click();
     await expect(page.getByTestId("midi-import-custom")).toBeVisible();
     await expect(page.getByTestId("midi-import-custom")).toContainText("Db");
     await expect(page.getByTestId("midi-import-custom")).toContainText("Gb");
@@ -226,8 +226,7 @@ test.describe("M0 MIDI import over the real artifact", () => {
     ).toBeVisible();
     await page
       .getByTestId("midi-import-sheet")
-      .getByTestId("midi-import-advanced")
-      .locator("summary")
+      .getByTestId("midi-import-advanced-summary")
       .click();
     await expect(
       page.getByTestId("midi-import-sheet").getByTestId("midi-import-summary"),
