@@ -127,7 +127,12 @@ describe("progression library", () => {
    * transcription always changes this test and shows up in review.
    */
   test("declares a reviewed provenance for every entry", () => {
-    const ownerDirected = ["what-a-fool-believes"];
+    /*
+     * The allowlist is the review record's machine half: the 2026-07-31
+     * What a Fool Believes direction and the 2026-08-05 Giant Steps
+     * direction, each recorded verbatim beside its entry.
+     */
+    const ownerDirected = ["what-a-fool-believes", "giant-steps"];
     for (const entry of PROGRESSION_LIBRARY) {
       expect(["public-domain", "device", "study", "owner-directed"]).toContain(
         entry.provenance,

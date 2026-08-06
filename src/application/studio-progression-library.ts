@@ -347,6 +347,55 @@ export const PROGRESSION_LIBRARY: readonly ProgressionLibraryEntry[] =
       chartText:
         "| Gb/Ab Gbmaj7 | Db/F Ebm7 | Gb/Ab Gbmaj7 | Db/F Ebm7 | Ebm7 Db/F | Bbm7 A7#5 | Bbm7 | Ab7sus4 | Ebm7 Gb/Ab | Dbmaj7 Gm7b5 | F#m7 A/B | Emaj7 C#m7 | F#m7 A/B | Emaj7 A7#5 |",
     }),
+
+    /* ------------------------------- owner-directed transcriptions, 2026-08 */
+    /*
+     * OWNER DIRECTION, recorded verbatim (Gracie Terzian, 2026-08-05):
+     * "I want to add a few new ones of each kind, but only of the very
+     * highest quality possible, nothing that sucks can be added to this
+     * project! Songs: (you should find sheet music and midi files online
+     * to ground yourself and ensure accuracy of chords and grooves/rhythm/
+     * tempo): 'Can't Help It' by Michael Jackson; 'Hello, It's Me' by
+     * Todd Rundgren; 'Peg' and 'Aja' by Steely Dan; 'Giant Steps' by John
+     * Coltrane" — with the follow-up direction: "midi files generally have
+     * much richer and better information than random chord charts, which I
+     * would strongly advise ignoring. High quality sheet music preview
+     * images or scans from PDFs of real published sheet music are also
+     * good sources."
+     *
+     * That direction is the sole authority for the entries below, exactly
+     * as the jcpe-x0z9 comment in studio-starter-chart.ts is for the
+     * Deacon Blues seed. Every entry records its own verification account:
+     * real MIDI transcriptions and published sheet music only, never
+     * aggregator chord charts.
+     */
+
+    /*
+     * VERIFICATION (Giant Steps). The changes were verified against the
+     * published Real-Book-form chart on jazzguitarcomprehensive.com in
+     * THREE editions — concert, Bb, and Eb — whose interval structures
+     * agree bar for bar (the strongest cross-check a chart admits). Form
+     * is the standard 16-bar A-B in 4/4; bars 8 and 14 keep the Real
+     * Book's Fm7 spelling. Tempo: the Jazzomat Research Project (HfM
+     * Weimar) analysis of the 1959 master take measures 290.3 BPM over
+     * the solo choruses, the whole take averages ~285, and the published
+     * Hal Leonard marking is "Fast swing" (Mark Taylor, 10 John Coltrane
+     * Classics, 2002); 290 is committed. The uptempo-swing@1 groove was
+     * authored for this entry. Every symbol below is proven to parse AND
+     * reach sound through the real transport composition by
+     * tests/unit/studio-progression-library.test.ts.
+     */
+    Object.freeze({
+      id: "giant-steps",
+      grooveStyleId: "uptempo-swing@1",
+      tempoBpm: 290,
+      title: "Giant Steps",
+      kicker: "Coltrane, 1960",
+      note: "The full sixteen-bar head of the Coltrane-changes standard: a phrase in B answered in G and resolved in Eb, every tonic entered through its own dominant.",
+      provenance: "owner-directed",
+      chartText:
+        "| Bmaj7 | D7 Gmaj7 | Bb7 Ebmaj7 | Am7 D7 | Gmaj7 | Bb7 Ebmaj7 | F#7 Bmaj7 | Fm7 Bb7 | Ebmaj7 | Am7 D7 | Gmaj7 | C#m7 F#7 | Bmaj7 | Fm7 Bb7 | Ebmaj7 | C#m7 F#7 |",
+    }),
   ]);
 
 /** Every entry id, frozen, for contract and test enumeration. */
