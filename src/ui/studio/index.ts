@@ -39,6 +39,7 @@ export type {
   StudioMidiImportRefusalView,
   StudioMidiImportSonorityView,
   StudioMidiImportSummaryView,
+  StudioMidiImportOverridesView,
   StudioMidiImportView,
   StudioPanelSide,
   StudioQuickEntryTokenView,

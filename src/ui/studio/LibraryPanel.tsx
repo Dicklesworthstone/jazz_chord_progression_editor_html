@@ -161,6 +161,9 @@ export type LibraryPanelContentProps = Readonly<{
   onMidiImportCommit: () => void;
   onMidiImportDiscard: () => void;
   onMidiImportAudition: () => void;
+  onMidiImportOverridesChange: Parameters<
+    typeof MidiImportPanel
+  >[0]["onOverridesChange"];
   onQuickEntryDraftChange: (value: string) => void;
   onQuickEntryInsert: () => void;
   onQuickEntryClear: () => void;
@@ -755,6 +758,7 @@ export function LibraryPanelContent({
   onMidiImportCommit,
   onMidiImportDiscard,
   onMidiImportAudition,
+  onMidiImportOverridesChange,
   onQuickEntryDraftChange,
   onQuickEntryInsert,
   onQuickEntryClear,
@@ -800,6 +804,7 @@ export function LibraryPanelContent({
           onCommit={onMidiImportCommit}
           onDiscard={onMidiImportDiscard}
           onAudition={onMidiImportAudition}
+          onOverridesChange={onMidiImportOverridesChange}
           onOpenCommandLane={onOpenCommandLane}
           view={midiImport}
         />
@@ -965,6 +970,9 @@ export type LibraryPanelProps = Readonly<{
   onMidiImportCommit: () => void;
   onMidiImportDiscard: () => void;
   onMidiImportAudition: () => void;
+  onMidiImportOverridesChange: Parameters<
+    typeof MidiImportPanel
+  >[0]["onOverridesChange"];
   onQuickEntryDraftChange: (value: string) => void;
   onQuickEntryInsert: () => void;
   onQuickEntryClear: () => void;
@@ -990,6 +998,7 @@ export function LibraryPanel({
   onMidiImportCommit,
   onMidiImportDiscard,
   onMidiImportAudition,
+  onMidiImportOverridesChange,
   onQuickEntryDraftChange,
   onQuickEntryInsert,
   onQuickEntryClear,
@@ -1028,6 +1037,7 @@ export function LibraryPanel({
             onMidiImportCommit={onMidiImportCommit}
             onMidiImportDiscard={onMidiImportDiscard}
             onMidiImportAudition={onMidiImportAudition}
+            onMidiImportOverridesChange={onMidiImportOverridesChange}
             onInsertRecoveredChord={onInsertRecoveredChord}
             onOpenCommandLane={onOpenCommandLane}
             onQuickEntryClear={onQuickEntryClear}

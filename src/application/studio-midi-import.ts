@@ -48,6 +48,9 @@ import type {
 
 export const MAX_MIDI_IMPORT_DRAFT_CODE_POINTS = 4_096;
 
+/* Re-exported so runtime consumers stay off the export-layer deep path. */
+export type { M1ImportOverrides } from "../export";
+
 export type MidiImportPreview = Readonly<{
   fileName: string;
   byteLength: number;

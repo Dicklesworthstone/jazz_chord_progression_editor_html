@@ -548,6 +548,31 @@ export type StudioMidiImportView = Readonly<{
   traceJson: string | null;
   /** True while the pre-Add audition is sounding; the button shows Stop. */
   auditioning: boolean;
+  /**
+   * M1-OVR (amendment #2): the Advanced override controls' data — every
+   * track with its classification and exclusion state, every written span
+   * offering more than one reading, and the groove override. Null when no
+   * automatic plan is pending.
+   */
+  overrides: StudioMidiImportOverridesView | null;
+}>;
+
+export type StudioMidiImportOverridesView = Readonly<{
+  tracks: readonly Readonly<{
+    index: number;
+    label: string;
+    role: string;
+    excluded: boolean;
+  }>[];
+  spans: readonly Readonly<{
+    measureIndex: number;
+    startTick: number;
+    label: string;
+    options: readonly string[];
+    chosenOrdinal: number;
+  }>[];
+  grooveOptions: readonly Readonly<{ id: string; label: string }>[];
+  grooveOverrideId: string | null;
 }>;
 
 export type StudioShellView = Readonly<{
@@ -609,6 +634,19 @@ export type StudioShellCallbacks = Readonly<{
    * of click-previews sounding the file's own first bars at its tempo.
    */
   onMidiImportAudition: () => void;
+  /**
+   * Replace the pending import's M1-OVR override set (absolute, never a
+   * delta): the application re-plans on the retained bytes and swaps the
+   * preview atomically. The panel computes the next set from its view.
+   */
+  onMidiImportOverridesChange: (next: Readonly<{
+    excludedTrackIndices: readonly number[];
+    alternativeChoices: readonly Readonly<{
+      span: Readonly<{ measureIndex: number; startTick: number }>;
+      alternativeOrdinal: number;
+    }>[];
+    grooveStyleId: string | null;
+  }>) => void;
   /** Presentation-only: records that the caller accepted the layout loss. */
   onRecoveryAcknowledgeChange: (acknowledged: boolean) => void;
   /** Presentation-only draft for a duration T0 could not resolve. */

@@ -368,3 +368,66 @@ test.describe("M1 Advanced disclosure", () => {
     }
   });
 });
+
+test("M1-ADV-005 the Advanced overrides re-plan the pending import: picker changes one symbol, groove override wins, exclusion recovers", async ({
+  page,
+}, testInfo) => {
+  const ledger = makeLedger("m1-adv-005-overrides", testInfo);
+  const diagnostics = captureDiagnostics(page);
+  try {
+    await openStudio(page);
+    await chooseFile(
+      page,
+      "two-chords.mid",
+      requireGolden("M0-GLD-002").bytesHex,
+    );
+    await expect(page.getByTestId("midi-import-auto")).toBeVisible();
+    await page.getByTestId("midi-import-advanced-summary").click();
+    const chartText = page.getByTestId("midi-import-chart-text");
+    await expect(chartText).toContainText("Dm7");
+    const before = await chartText.textContent();
+    ledger.log("before", { before });
+
+    /* Alternative picker: choosing F6/D changes exactly that symbol. */
+    const picker = page.getByTestId("midi-import-alternative-picker").first();
+    await expect(picker).toBeVisible();
+    await picker.selectOption({ label: "F6/D" });
+    await expect(chartText).toContainText("F6/D");
+    await expect(chartText).not.toContainText("Dm7");
+    await expect(chartText).toContainText("C");
+    ledger.log("alternative", { after: await chartText.textContent() });
+    /* Choosing the automatic reading back restates the original text. */
+    await picker.selectOption({ index: 0 });
+    await expect(chartText).toContainText("Dm7");
+    expect(await chartText.textContent()).toBe(before);
+
+    /* Groove override wins over the match, with the frozen sentence. */
+    await page
+      .getByTestId("midi-import-groove-override")
+      .selectOption("bossa-nova@1");
+    await expect(page.getByTestId("midi-import-groove-evidence")).toHaveText(
+      "You chose this groove yourself.",
+    );
+    ledger.log("groove", {});
+    await page.getByTestId("midi-import-groove-override").selectOption("");
+    await expect(
+      page.getByTestId("midi-import-groove-evidence"),
+    ).not.toHaveText("You chose this groove yourself.");
+
+    /* Exclusion: unchecking the only track refuses honestly and recovers. */
+    const include = page.getByTestId("midi-import-track-include").first();
+    await include.uncheck();
+    await expect(page.getByTestId("midi-import-auto")).toHaveCount(0);
+    await expect(include).toBeVisible();
+    await include.check();
+    await expect(page.getByTestId("midi-import-auto")).toBeVisible();
+    expect(await chartText.textContent()).toBe(before);
+    ledger.log("exclusion-recovered", {});
+
+    expectCleanDiagnostics(diagnostics);
+    await ledger.flush("passed", diagnostics);
+  } catch (error) {
+    await ledger.flush("failed", diagnostics);
+    throw error;
+  }
+});

@@ -29,6 +29,15 @@ export type MidiImportPanelProps = Readonly<{
   onDiscard: () => void;
   /** Toggle the bounded pre-Add audition of the file's own first bars. */
   onAudition: () => void;
+  /** Replace the absolute M1-OVR override set; the app re-plans atomically. */
+  onOverridesChange: (next: Readonly<{
+    excludedTrackIndices: readonly number[];
+    alternativeChoices: readonly Readonly<{
+      span: Readonly<{ measureIndex: number; startTick: number }>;
+      alternativeOrdinal: number;
+    }>[];
+    grooveStyleId: string | null;
+  }>) => void;
   /** Opens the ⌘K command lane — the paste-chart-text route lives there. */
   onOpenCommandLane?: (() => void) | undefined;
 }>;
@@ -40,8 +49,36 @@ export function MidiImportPanel({
   onCommit,
   onDiscard,
   onAudition,
+  onOverridesChange,
   onOpenCommandLane,
 }: MidiImportPanelProps) {
+  /*
+   * M1-OVR: the panel translates one control gesture into the ABSOLUTE
+   * next override set from its own view state; the application re-plans
+   * on the retained bytes and swaps the preview atomically (doc §12).
+   */
+  const overrides = view.overrides;
+  const currentOverrides = () => ({
+    excludedTrackIndices:
+      overrides === null
+        ? []
+        : overrides.tracks
+            .filter((track) => track.excluded)
+            .map((track) => track.index),
+    alternativeChoices:
+      overrides === null
+        ? []
+        : overrides.spans
+            .filter((span) => span.chosenOrdinal !== 0)
+            .map((span) => ({
+              span: {
+                measureIndex: span.measureIndex,
+                startTick: span.startTick,
+              },
+              alternativeOrdinal: span.chosenOrdinal,
+            })),
+    grooveStyleId: overrides === null ? null : overrides.grooveOverrideId,
+  });
   const headingId = `studio-midi-import-heading-${context}`;
   const fieldId = `studio-midi-import-file-${context}`;
   const statusId = `studio-midi-import-status-${context}`;
@@ -244,6 +281,115 @@ export function MidiImportPanel({
               <summary>Import trace (machine-readable)</summary>
               <pre>{view.traceJson}</pre>
             </details>
+          )}
+          {overrides === null ? null : (
+            <div
+              class="studio-midi-import__overrides"
+              data-testid="midi-import-overrides"
+            >
+              <p class="studio-midi-import__label">Overrides</p>
+              <ul class="studio-midi-import__override-tracks">
+                {overrides.tracks.map((track) => (
+                  <li key={`track-${String(track.index)}`}>
+                    <label>
+                      <input
+                        checked={!track.excluded}
+                        data-testid="midi-import-track-include"
+                        id={`studio-midi-import-track-${String(track.index)}-${context}`}
+                        onChange={() => {
+                          const next = currentOverrides();
+                          onOverridesChange({
+                            ...next,
+                            excludedTrackIndices: track.excluded
+                              ? next.excludedTrackIndices.filter(
+                                  (index) => index !== track.index,
+                                )
+                              : [...next.excludedTrackIndices, track.index].sort(
+                                  (left, right) => left - right,
+                                ),
+                          });
+                        }}
+                        type="checkbox"
+                      />
+                      <span>{`${track.label} — ${track.role}`}</span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+              {overrides.spans.length === 0 ? null : (
+                <ul class="studio-midi-import__override-spans">
+                  {overrides.spans.map((span) => (
+                    <li key={`span-${String(span.measureIndex)}-${String(span.startTick)}`}>
+                      <label>
+                        <span>{span.label}</span>
+                        <select
+                          data-testid="midi-import-alternative-picker"
+                          id={`studio-midi-import-alt-${String(span.measureIndex)}-${String(span.startTick)}-${context}`}
+                          onChange={(event) => {
+                            const ordinal = Number.parseInt(
+                              event.currentTarget.value,
+                              10,
+                            );
+                            const next = currentOverrides();
+                            onOverridesChange({
+                              ...next,
+                              alternativeChoices: [
+                                ...next.alternativeChoices.filter(
+                                  (choice) =>
+                                    choice.span.measureIndex !==
+                                      span.measureIndex ||
+                                    choice.span.startTick !== span.startTick,
+                                ),
+                                ...(ordinal === 0
+                                  ? []
+                                  : [
+                                      {
+                                        span: {
+                                          measureIndex: span.measureIndex,
+                                          startTick: span.startTick,
+                                        },
+                                        alternativeOrdinal: ordinal,
+                                      },
+                                    ]),
+                              ],
+                            });
+                          }}
+                          value={String(span.chosenOrdinal)}
+                        >
+                          {span.options.map((option, ordinal) => (
+                            <option key={option} value={String(ordinal)}>
+                              {option}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <label class="studio-midi-import__override-groove">
+                <span>Groove</span>
+                <select
+                  data-testid="midi-import-groove-override"
+                  id={`studio-midi-import-groove-override-${context}`}
+                  onChange={(event) => {
+                    const value = event.currentTarget.value;
+                    onOverridesChange({
+                      ...currentOverrides(),
+                      grooveStyleId: value === "" ? null : value,
+                    });
+                  }}
+                  value={overrides.grooveOverrideId ?? ""}
+                >
+                  <option value="">Matched automatically</option>
+                  {overrides.grooveOptions.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
           )}
           {view.sonorities.length === 0 ? null : (
             <ol class="studio-midi-import__sonorities" data-testid="midi-import-sonorities">

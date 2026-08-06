@@ -24,6 +24,7 @@ const BASE_VIEW: Omit<StudioShellView, "layout"> = Object.freeze({
     canCommit: false,
     traceJson: null,
     auditioning: false,
+    overrides: null,
   }),
   document: Object.freeze({
     committedTitle: "Responsive ownership proof",
@@ -218,6 +219,7 @@ function ResponsiveStaleOwnerHarness() {
     onMidiImportCommit: () => undefined,
     onMidiImportDiscard: () => undefined,
   onMidiImportAudition: () => undefined,
+  onMidiImportOverridesChange: () => undefined,
     onTitleDraftChange: () => undefined,
     onCommitTitle: () => undefined,
     onResetTitleDraft: () => undefined,

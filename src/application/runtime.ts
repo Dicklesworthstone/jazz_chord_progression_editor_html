@@ -117,6 +117,7 @@ export {
   unavailableMidiImportPreview,
 } from "./studio-midi-import";
 export type {
+  M1ImportOverrides,
   MidiImportAuditionStep,
   MidiImportAutoCommitResult,
   MidiImportCommitResult,

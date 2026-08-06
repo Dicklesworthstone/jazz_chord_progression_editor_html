@@ -4035,6 +4035,40 @@
   outline-offset: var(--focus-offset);
 }
 
+/* M1-OVR controls (jcpe-qyyn): quiet forensic-lane forms. */
+.studio-midi-import__overrides {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  border: var(--border-width) dashed var(--border-default);
+  border-radius: var(--radius-sm);
+}
+
+.studio-midi-import__overrides ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.studio-midi-import__overrides label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: var(--control-min-block);
+  font-size: var(--text-xs);
+  color: var(--text-primary);
+}
+
+.studio-midi-import__overrides select {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  min-block-size: var(--control-min-block);
+}
+
 /* The M1-TRACE ledger: bounded box, scrolls inside itself (jcpe-qyyn). */
 .studio-midi-import__trace pre {
   max-width: 100%;

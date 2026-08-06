@@ -18,6 +18,7 @@ import {
   STARTER_CHART,
   type LoadProgressionLibraryEntryResult,
   auditionMidiImportPreview,
+  type M1ImportOverrides,
   type MidiImportAutoCommitResult,
   type MidiImportCommitResult,
   type MidiImportPreview,
@@ -39,7 +40,7 @@ import {
   type StudioAnalyzerExpectation,
   instrumentOptions,
 } from "../application/runtime";
-import { MAX_SHORT_TEXT_CODE_POINTS } from "../domain";
+import { GROOVE_STYLE_IDS, MAX_SHORT_TEXT_CODE_POINTS } from "../domain";
 
 /** The reviewed tempo window the controller enforces (20–300 BPM). */
 const MIN_STUDIO_TEMPO_BPM = 20;
@@ -49,6 +50,7 @@ import {
   StudioShell,
   type StudioCardMenuItemView,
   type StudioFactView,
+  type StudioMidiImportOverridesView,
   type StudioMidiImportView,
   type StudioPanelSide,
   type StudioShareFeedback,
@@ -236,6 +238,11 @@ export type AppActions = Readonly<{
   commitMidiImportAutomatic: (
     preview: MidiImportPreview,
   ) => MidiImportAutoCommitResult | null;
+  /** M1-OVR: re-plan the pending preview on the retained bytes. */
+  replanMidiImport: (
+    preview: MidiImportPreview,
+    overrides: M1ImportOverrides,
+  ) => MidiImportPreview | null;
   /**
    * Display-only live playhead label the animation frame reads while playing.
    * Interpolation for the eye, never a second musical clock: committed
@@ -962,11 +969,81 @@ function midiImportAutoView(
  * what the decoder and the reverse-T1 resolver already found, including the
  * readings that were NOT chosen and the sonorities nothing could name.
  */
+/** M1-OVR: the Advanced override controls' data, from plan + state. */
+function midiImportOverridesView(
+  preview: MidiImportPreview,
+  overridesState: M1ImportOverrides,
+  grooveOptions: readonly Readonly<{ id: string; label: string }>[],
+): StudioMidiImportOverridesView | null {
+  const automation = preview.automation;
+  const decoded = preview.decoded;
+  if (decoded === null) return null;
+  /*
+   * The controls must survive an automation refusal (for example when the
+   * user excluded every contributing track): otherwise the exclusion that
+   * caused the refusal could never be undone. Roles come from the plan
+   * when one exists and read as unknown when it does not.
+   */
+  if (
+    automation === null &&
+    overridesState.excludedTrackIndices.length === 0 &&
+    overridesState.grooveStyleId === null
+  ) {
+    return null;
+  }
+  const excluded = new Set(overridesState.excludedTrackIndices);
+  return Object.freeze({
+    tracks: Object.freeze(
+      (automation === null
+        ? decoded.model.tracks.map((_, index) => ({
+            trackIndex: index,
+            role: "—",
+          }))
+        : automation.classifications
+      ).map((entry) =>
+        Object.freeze({
+          index: entry.trackIndex,
+          label:
+            decoded.model.tracks[entry.trackIndex]?.name ??
+            `Track ${String(entry.trackIndex + 1)}`,
+          role: entry.role,
+          excluded: excluded.has(entry.trackIndex),
+        }),
+      ),
+    ),
+    spans: Object.freeze(
+      (automation?.readings ?? [])
+        .filter(
+          (reading) => reading.written && reading.alternativeTexts.length > 1,
+        )
+        .slice(0, 64)
+        .map((reading) => {
+          const chosen = overridesState.alternativeChoices.find(
+            (choice) =>
+              choice.span.measureIndex === reading.span.measureIndex &&
+              choice.span.startTick === reading.span.startTick,
+          );
+          return Object.freeze({
+            measureIndex: reading.span.measureIndex,
+            startTick: reading.span.startTick,
+            label: `Bar ${String(reading.span.measureIndex + 1)}`,
+            options: reading.alternativeTexts,
+            chosenOrdinal: chosen?.alternativeOrdinal ?? 0,
+          });
+        }),
+    ),
+    grooveOptions: Object.freeze(grooveOptions.map((o) => Object.freeze({ ...o }))),
+    grooveOverrideId: overridesState.grooveStyleId,
+  });
+}
+
 function midiImportView(
   available: boolean,
   preview: MidiImportPreview | null,
   notice: string | null,
   auditioning: boolean,
+  overridesState: M1ImportOverrides,
+  grooveOptions: readonly Readonly<{ id: string; label: string }>[],
 ): StudioMidiImportView {
   if (!available) {
     return Object.freeze({
@@ -982,6 +1059,7 @@ function midiImportView(
       canCommit: false,
       traceJson: null,
       auditioning: false,
+      overrides: null,
     });
   }
   if (preview === null) {
@@ -998,6 +1076,7 @@ function midiImportView(
       canCommit: false,
       traceJson: null,
       auditioning: false,
+      overrides: null,
     });
   }
   const statusLabel =
@@ -1032,6 +1111,7 @@ function midiImportView(
       canCommit: false,
       traceJson: JSON.stringify(preview.trace, null, 1),
       auditioning,
+      overrides: null,
     });
   }
   const decoded = preview.decoded;
@@ -1050,6 +1130,7 @@ function midiImportView(
       canCommit: false,
       traceJson: JSON.stringify(preview.trace, null, 1),
       auditioning,
+      overrides: null,
     });
   }
   const counters = decoded.model.counters;
@@ -1132,7 +1213,13 @@ function midiImportView(
             durationLawNote: plan.usesExplicitDurations
               ? "Each bar's chords run from one quantized onset to the next. At least one bar carries exact beats measured in this file's own meter, so it refuses rather than rebalances if the chart's meter differs."
               : "Each bar's chords run from one quantized onset to the next, and every bar divides evenly, so no explicit beats are written and the bars fit this chart's meter.",
-            chartText: plan.chartText,
+            /*
+             * The PENDING text: what one press of Add actually writes. With
+             * an automatic plan that is the automation's sectioned, possibly
+             * overridden chart (M1-OVR live-updates it); only a preview with
+             * no automatic plan falls back to the manual M0 text.
+             */
+            chartText: preview.automation?.chartText ?? plan.chartText,
           }),
     sonorities: Object.freeze(sonorities),
     blockedReason: preview.blockedReason,
@@ -1141,6 +1228,7 @@ function midiImportView(
       (plan !== null && preview.blockedReason === null),
     traceJson: JSON.stringify(preview.trace, null, 1),
     auditioning,
+    overrides: midiImportOverridesView(preview, overridesState, grooveOptions),
   });
 }
 
@@ -1503,6 +1591,19 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
    * before the next step sounds. Any commit, discard, or new file cancels.
    */
   const [midiAuditioning, setMidiAuditioning] = useState(false);
+  /* M1-OVR: the absolute override set for the pending preview. */
+  const [midiOverrides, setMidiOverrides] = useState<M1ImportOverrides>({
+    excludedTrackIndices: Object.freeze([]),
+    alternativeChoices: Object.freeze([]),
+    grooveStyleId: null,
+  });
+  const clearMidiOverrides = (): void => {
+    setMidiOverrides({
+      excludedTrackIndices: Object.freeze([]),
+      alternativeChoices: Object.freeze([]),
+      grooveStyleId: null,
+    });
+  };
   const midiAuditionTimers = useRef<number[]>([]);
   const cancelMidiAudition = (): void => {
     for (const timer of midiAuditionTimers.current) {
@@ -2008,6 +2109,8 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
     midiPreview,
     midiImportNotice,
     midiAuditioning,
+    midiOverrides,
+    snapshot.performance.options,
   ), (eventId) => actions.readEventAnalysis(eventId)?.roman ?? null);
 
   /*
@@ -2418,6 +2521,7 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
          */
         onMidiImportChooseFile: (file) => {
           cancelMidiAudition();
+          clearMidiOverrides();
           setMidiPreview(null);
           setMidiImportNotice(`Reading ${file.name}…`);
           const reader = new FileReader();
@@ -2501,8 +2605,33 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
         },
         onMidiImportDiscard: () => {
           cancelMidiAudition();
+          clearMidiOverrides();
           setMidiPreview(null);
           setMidiImportNotice(null);
+        },
+        onMidiImportOverridesChange: (next) => {
+          if (midiPreview === null) return;
+          cancelMidiAudition();
+          const absolute: M1ImportOverrides = Object.freeze({
+            excludedTrackIndices: Object.freeze([...next.excludedTrackIndices]),
+            alternativeChoices: Object.freeze(
+              next.alternativeChoices.map((choice) =>
+                Object.freeze({
+                  span: Object.freeze({ ...choice.span }),
+                  alternativeOrdinal: choice.alternativeOrdinal,
+                }),
+              ),
+            ),
+            grooveStyleId:
+              next.grooveStyleId !== null &&
+              GROOVE_STYLE_IDS.some((id) => id === next.grooveStyleId)
+                ? (next.grooveStyleId as (typeof GROOVE_STYLE_IDS)[number])
+                : null,
+          });
+          const replanned = actions.replanMidiImport(midiPreview, absolute);
+          if (replanned === null) return;
+          setMidiOverrides(absolute);
+          setMidiPreview(replanned);
         },
         onMidiImportAudition: () => {
           if (midiAuditioning) {
@@ -3194,6 +3323,10 @@ export function StudioRoot({
           midiImportService === null
             ? null
             : midiImportService.commitAutomatic(controller, preview),
+        replanMidiImport: (preview, overrides) =>
+          midiImportService === null
+            ? null
+            : midiImportService.replanWithOverrides(preview, overrides),
         pauseProgression: controller.pauseProgression,
         playProgression: controller.playProgression,
         previewChord: controller.previewChord,
