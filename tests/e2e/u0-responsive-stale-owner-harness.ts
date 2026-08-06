@@ -22,6 +22,7 @@ const BASE_VIEW: Omit<StudioShellView, "layout"> = Object.freeze({
     sonorities: Object.freeze([]),
     blockedReason: null,
     canCommit: false,
+    traceJson: null,
   }),
   document: Object.freeze({
     committedTitle: "Responsive ownership proof",

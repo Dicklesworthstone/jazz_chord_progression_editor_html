@@ -1267,8 +1267,9 @@ const buildGoldenTrace = (): unknown => {
     [
       {
         subject: "envelope",
-        outcome: "insert,settings,groove",
-        reason: "frozen M1_IMPORT_COMMAND_ORDER on a starter destination",
+        outcome: "settings,insert,groove",
+        reason:
+          "destination-dependent frozen order on a starter destination (amendment #1, jcpe-9m5q)",
       },
     ],
   );

@@ -38,6 +38,7 @@ function RailFocusHarness() {
         sonorities: Object.freeze([]),
         blockedReason: null,
         canCommit: false,
+        traceJson: null,
       }),
       onMidiImportChooseFile: () => undefined,
       onMidiImportCommit: () => undefined,

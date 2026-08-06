@@ -49,6 +49,6 @@
   ],
   "traceGolden": {
     "file": "trace-golden.json",
-    "sha256": "16f289b015af0a50ca044f50ab7576dd5759a9c2fdc218b73643a44932930932"
+    "sha256": "15585e46406c4c1dcc9eac91d62e9fa4b87b832da070082be4d724d878b13a57"
   }
 }

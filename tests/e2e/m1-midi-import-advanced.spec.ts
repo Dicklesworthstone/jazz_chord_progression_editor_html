@@ -154,6 +154,37 @@ test.describe("M1 Advanced disclosure", () => {
       await expect(
         page.getByTestId("midi-import-alternatives").first(),
       ).toContainText("Also reads as:");
+
+      /*
+       * The M1-TRACE ledger (jcpe-qyyn): Advanced carries the full
+       * machine-readable trace — nine frozen stages with input digests —
+       * and this spec dumps it into the per-test ledger so a failure
+       * carries the complete forensic record.
+       */
+      const traceDetails = page.getByTestId("midi-import-trace");
+      await expect(traceDetails).toBeVisible();
+      await traceDetails.locator("summary").click();
+      const traceText = await traceDetails.locator("pre").textContent();
+      const trace = JSON.parse(traceText ?? "null") as {
+        schema: string;
+        records: readonly { stage: string; inputDigest: string }[];
+      } | null;
+      ledger.log("import-trace", trace);
+      expect(trace?.schema).toBe("changes.import.automation-trace.v1");
+      expect(trace?.records.map((record) => record.stage)).toEqual([
+        "decode",
+        "salvage",
+        "classify",
+        "segment",
+        "infer-key",
+        "resolve",
+        "groove",
+        "plan",
+        "envelope",
+      ]);
+      for (const record of trace?.records ?? []) {
+        expect(record.inputDigest).toMatch(/^[0-9a-f]{16}$/u);
+      }
       expectCleanDiagnostics(diagnostics);
       await ledger.flush("passed", diagnostics);
     } catch (error) {
@@ -182,7 +213,7 @@ test.describe("M1 Advanced disclosure", () => {
         .locator(".studio-midi-import__fact-value")
         .first()
         .textContent();
-      await rail.getByTestId("midi-import-advanced").locator("summary").click();
+      await rail.getByTestId("midi-import-advanced-summary").click();
       const railChart = await rail
         .getByTestId("midi-import-chart-text")
         .textContent();
@@ -203,7 +234,7 @@ test.describe("M1 Advanced disclosure", () => {
         .locator(".studio-midi-import__fact-value")
         .first()
         .textContent();
-      await sheet.getByTestId("midi-import-advanced").locator("summary").click();
+      await sheet.getByTestId("midi-import-advanced-summary").click();
       const sheetChart = await sheet
         .getByTestId("midi-import-chart-text")
         .textContent();
@@ -236,7 +267,7 @@ test.describe("M1 Advanced disclosure", () => {
         requireGolden("M0-GLD-002").bytesHex,
       );
       await expect(sheet.getByTestId("midi-import-auto")).toBeVisible();
-      await sheet.getByTestId("midi-import-advanced").locator("summary").click();
+      await sheet.getByTestId("midi-import-advanced-summary").click();
       await expect(sheet.getByTestId("midi-import-summary")).toBeVisible();
 
       const overflow = await page.evaluate(
@@ -316,7 +347,7 @@ test.describe("M1 Advanced disclosure", () => {
       ).toBeEnabled();
 
       /* Axe over the whole import section, card and Advanced open. */
-      await rail.getByTestId("midi-import-advanced").locator("summary").click();
+      await rail.getByTestId("midi-import-advanced-summary").click();
       const axe = await new AxeBuilder({ page })
         .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
         .include('[data-testid="midi-import-rail"]')
