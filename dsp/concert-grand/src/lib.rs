@@ -1,6 +1,6 @@
 //! Deterministic DSP core for the Changes studio.
 //!
-//! Three independent capabilities share this module so the standalone artifact
+//! Five independent capabilities share this module so the standalone artifact
 //! embeds exactly one wasm payload:
 //!
 //! - `cg_*`: the Concert Grand note renderer. Modal/additive synthesis of a
@@ -8,6 +8,10 @@
 //!   detuning with beating, dual-rate decay, velocity-dependent hammer
 //!   spectrum, hammer/action noise, equal-power key panning — rendered as
 //!   stereo PCM the audio engine plays through ordinary buffer sources.
+//! - `gtr_*`: the physically modeled guitar — an extended Karplus-Strong
+//!   waveguide behind two amp profiles. See `guitar.rs`.
+//! - `flt_*`: the physically modeled flute — a jet-drive waveguide. See
+//!   `flute.rs`.
 //! - `an_*`: the spectrum analyzer. Windowed radix-2 FFT, spectral peaks with
 //!   parabolic refinement, harmonic grouping into fundamentals, and a
 //!   pitch-class chroma fold. This is the independent empirical check that
@@ -30,33 +34,35 @@ fn panic(_info: &core::panic::PanicInfo) -> ! {
     core::arch::wasm32::unreachable()
 }
 
+mod flute;
+mod guitar;
 mod smf;
 
 use libm::{cos, exp, log2, pow, sin, sqrt};
 
-const TAU: f64 = 6.283185307179586476925286766559;
+pub(crate) const TAU: f64 = 6.283185307179586476925286766559;
 
 /// Frequency of a MIDI note in 12-TET at A4 = 440 Hz. The renderer stays on
 /// the exact temperament the chart's theory uses so the analyzer's cents
 /// readings measure the system, not a stylistic stretch curve.
-fn midi_frequency_hz(midi: f64) -> f64 {
+pub(crate) fn midi_frequency_hz(midi: f64) -> f64 {
     440.0 * pow(2.0, (midi - 69.0) / 12.0)
 }
 
 /// Deterministic 32-bit xorshift. Seeded per note so every render of the same
 /// (pitch, velocity, sample rate) is bit-identical.
-struct XorShift32 {
-    state: u32,
+pub(crate) struct XorShift32 {
+    pub(crate) state: u32,
 }
 
 impl XorShift32 {
-    fn new(seed: u32) -> Self {
+    pub(crate) fn new(seed: u32) -> Self {
         Self {
             state: if seed == 0 { 0x9e3779b9 } else { seed },
         }
     }
 
-    fn next(&mut self) -> u32 {
+    pub(crate) fn next(&mut self) -> u32 {
         let mut x = self.state;
         x ^= x << 13;
         x ^= x >> 17;
@@ -66,7 +72,7 @@ impl XorShift32 {
     }
 
     /// Uniform in [-1, 1).
-    fn bipolar(&mut self) -> f64 {
+    pub(crate) fn bipolar(&mut self) -> f64 {
         (self.next() >> 8) as f64 / 8_388_608.0 - 1.0
     }
 }
@@ -388,6 +394,61 @@ pub extern "C" fn cg_render(
     }
 
     /* Trim trailing silence in 256-frame blocks; keep a short fade pad. */
+    let threshold = 1.0e-4f32;
+    let mut last = frames;
+    'trim: while last > 256 {
+        let block = &out_left[last - 256..last];
+        let block_right = &out_right[last - 256..last];
+        for index in 0..256 {
+            if block[index].abs() > threshold || block_right[index].abs() > threshold {
+                break 'trim;
+            }
+        }
+        last -= 256;
+    }
+    last.min(frames) as i32
+}
+
+/// Shared post-processing for the waveguide renderers (`gtr_*`, `flt_*`):
+/// the same loudness law the Concert Grand applies inline. Early-RMS
+/// normalization to 0.22 keeps the engine's velocity/batch gain the only
+/// loudness authority, the 0.95 peak guard protects the soft-clip stage,
+/// and trailing silence is trimmed in 256-frame blocks.
+pub(crate) fn finalize_stereo(out_left: &mut [f32], out_right: &mut [f32], sr: f64) -> i32 {
+    let frames = out_left.len().min(out_right.len());
+    if frames == 0 {
+        return 0;
+    }
+    let early = ((0.2 * sr) as usize).min(frames).max(1);
+    let mut energy = 0.0f64;
+    for frame in 0..early {
+        let l = out_left[frame] as f64;
+        let r = out_right[frame] as f64;
+        energy += l * l + r * r;
+    }
+    let rms = sqrt(energy / (2.0 * early as f64));
+    if rms <= 0.0 {
+        return 0;
+    }
+    let mut scale = 0.22 / rms;
+    let mut peak = 0.0f64;
+    for frame in 0..frames {
+        let l = (out_left[frame] as f64 * scale).abs();
+        let r = (out_right[frame] as f64 * scale).abs();
+        if l > peak {
+            peak = l;
+        }
+        if r > peak {
+            peak = r;
+        }
+    }
+    if peak > 0.95 {
+        scale *= 0.95 / peak;
+    }
+    for frame in 0..frames {
+        out_left[frame] = (out_left[frame] as f64 * scale) as f32;
+        out_right[frame] = (out_right[frame] as f64 * scale) as f32;
+    }
     let threshold = 1.0e-4f32;
     let mut last = frames;
     'trim: while last > 256 {
