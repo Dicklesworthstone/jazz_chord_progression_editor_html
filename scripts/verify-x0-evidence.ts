@@ -793,12 +793,17 @@ function validateRenderRecord(
 
   const impulse = isRecord(raw["impulse"]) ? raw["impulse"] : {};
   /*
-   * Synth pads create exactly the shared impulse buffer; the Concert
-   * Grand additionally renders one attack-sample buffer per sounding
-   * note. Same per-instrument law the evidence spec asserts.
+   * Synth pads create exactly the shared impulse buffer; a rendered
+   * recipe (Concert Grand, Upright Bass, Concert Vibes) additionally
+   * renders one PCM buffer per sounding note. Same per-instrument law
+   * the evidence spec asserts.
    */
-  const expectedCreatedBuffers =
-    fixture["instrumentId"] === "concert-grand" ? 1 + pitches.length : 1;
+  const renderedInstrumentIds = ["concert-grand", "upright-bass", "concert-vibes"];
+  const expectedCreatedBuffers = renderedInstrumentIds.includes(
+    String(fixture["instrumentId"]),
+  )
+    ? 1 + pitches.length
+    : 1;
   requireEqual(impulse["createdBufferCount"], expectedCreatedBuffers, "X0_EVIDENCE_RENDER_IMPULSE_COUNT", `${path}.impulse.createdBufferCount`, findings);
   requireEqual(impulse["convolverAssignmentCount"], 1, "X0_EVIDENCE_RENDER_IMPULSE_ASSIGNMENT", `${path}.impulse.convolverAssignmentCount`, findings);
   requireEqual(impulse["assignedGeneratedBufferByIdentity"], true, "X0_EVIDENCE_RENDER_IMPULSE_IDENTITY", `${path}.impulse.assignedGeneratedBufferByIdentity`, findings);

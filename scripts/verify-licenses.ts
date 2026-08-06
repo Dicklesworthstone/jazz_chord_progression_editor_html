@@ -9,6 +9,20 @@ import {
   PIANO_ATTACK_SAMPLES_SHA256,
   PIANO_ATTACK_SAMPLE_RATE_HZ,
 } from "../src/audio/wasm/piano-attack-samples";
+import {
+  UPRIGHT_BASS_SAMPLES_ATTRIBUTION,
+  UPRIGHT_BASS_SAMPLES_BYTE_LENGTH,
+  UPRIGHT_BASS_SAMPLES_LICENSE,
+  UPRIGHT_BASS_SAMPLES_RATE_HZ,
+  UPRIGHT_BASS_SAMPLES_SHA256,
+} from "../src/audio/wasm/upright-bass-samples";
+import {
+  VIBRAPHONE_SAMPLES_ATTRIBUTION,
+  VIBRAPHONE_SAMPLES_BYTE_LENGTH,
+  VIBRAPHONE_SAMPLES_LICENSE,
+  VIBRAPHONE_SAMPLES_RATE_HZ,
+  VIBRAPHONE_SAMPLES_SHA256,
+} from "../src/audio/wasm/vibraphone-samples";
 import { sha256Hex } from "./foundation-io";
 
 type Ledger = {
@@ -89,6 +103,36 @@ const expectedPianoAsset = {
   attribution: PIANO_ATTACK_SAMPLES_ATTRIBUTION,
 };
 
+/*
+ * The sampled-instrument payloads are CC0 public-domain dedications, so no
+ * credit is legally required; the inventory carries the credit lines anyway,
+ * pinned to the generated modules exactly like the Salamander entry.
+ */
+const expectedSampledAssets = [
+  {
+    id: "vsco2-contrabass-pizz-pcm",
+    mime: `audio/L16;rate=${String(UPRIGHT_BASS_SAMPLES_RATE_HZ)};channels=1`,
+    source: "VSCO-2-CE/Strings/Contrabass/pizz",
+    generator: "scripts/build-instrument-samples.ts",
+    license: UPRIGHT_BASS_SAMPLES_LICENSE,
+    embedding: "inline-script-base64",
+    attribution: UPRIGHT_BASS_SAMPLES_ATTRIBUTION,
+    bytes: UPRIGHT_BASS_SAMPLES_BYTE_LENGTH,
+    sha256: UPRIGHT_BASS_SAMPLES_SHA256,
+  },
+  {
+    id: "vcsl-vibraphone-soft-pcm",
+    mime: `audio/L16;rate=${String(VIBRAPHONE_SAMPLES_RATE_HZ)};channels=1`,
+    source: "VCSL/Idiophones/Struck Idiophones/Vibraphone - Soft Mallets",
+    generator: "scripts/build-instrument-samples.ts",
+    license: VIBRAPHONE_SAMPLES_LICENSE,
+    embedding: "inline-script-base64",
+    attribution: VIBRAPHONE_SAMPLES_ATTRIBUTION,
+    bytes: VIBRAPHONE_SAMPLES_BYTE_LENGTH,
+    sha256: VIBRAPHONE_SAMPLES_SHA256,
+  },
+] as const;
+
 export async function verifyLicenses(): Promise<{
   schema: "jcpe.verify-licenses.v1";
   outcome: "pass";
@@ -150,10 +194,11 @@ export async function verifyLicenses(): Promise<{
     }
   }
 
-  if (report.assets.length !== 3) {
+  if (report.assets.length !== 5) {
     throw new Error(
       "LICENSE_ASSET_COUNT: expected the source-owned favicon, the " +
-        "concert-grand wasm payload, and the recorded piano attack payload.",
+        "concert-grand wasm payload, the recorded piano attack payload, " +
+        "and the two CC0 sampled-instrument payloads.",
     );
   }
   const asset = report.assets.find((item) => item.id === expectedOwnedAsset.id);
@@ -218,6 +263,33 @@ export async function verifyLicenses(): Promise<{
     throw new Error(
       "LICENSE_ASSET_ATTRIBUTION: the recorded piano payload must carry its CC-BY credit.",
     );
+  }
+
+  for (const expectedSampled of expectedSampledAssets) {
+    const sampledAsset = report.assets.find(
+      (item) => item.id === expectedSampled.id,
+    );
+    if (sampledAsset === undefined) {
+      throw new Error(
+        `LICENSE_ASSET_MISSING: ${expectedSampled.id} provenance is absent.`,
+      );
+    }
+    if (
+      sampledAsset.mime !== expectedSampled.mime ||
+      sampledAsset.source !== expectedSampled.source ||
+      sampledAsset.generator !== expectedSampled.generator ||
+      sampledAsset.license !== expectedSampled.license ||
+      sampledAsset.embedding !== expectedSampled.embedding ||
+      sampledAsset.attribution !== expectedSampled.attribution ||
+      sampledAsset.bytes !== expectedSampled.bytes ||
+      sampledAsset.sha256 !== expectedSampled.sha256
+    ) {
+      throw new Error(
+        `LICENSE_ASSET_MISMATCH: ${expectedSampled.id} provenance does not match the generated module pins.`,
+      );
+    }
+    /* The license mismatch check above pins each entry to its generated
+     * module constant, and both constants are the CC0-1.0 dedication. */
   }
 
   return {

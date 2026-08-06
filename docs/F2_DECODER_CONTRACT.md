@@ -337,8 +337,10 @@ then prefixes every F1 operation-relative path exactly once.
 - Meter is 1-32 beats per bar with beat unit 2, 4, or 8. Tempo is a finite
   integer 20-400.
 - Playback instrument is one of `mellow-keys`, `fm-electric-piano`,
-  `vibraphone`, `warm-pad`, or `analog-poly`; levels are finite `0..1`; count-in
-  bars is 0, 1, or 2.
+  `vibraphone`, `warm-pad`, `analog-poly`, `concert-grand`, `flute`, `organ`,
+  `guitar`, `upright-bass`, or `concert-vibes` (the last six added by later
+  instrument amendments); levels are finite `0..1`; count-in bars is 0, 1,
+  or 2.
 - A present `playback.grooveStyleId` is one of `medium-swing@1`,
   `bossa-nova@1`, `straight-eighths@1`, or `block-chords@1`
   (`playback.groove_style_invalid` otherwise). The default `ballad-comp@1` is
@@ -677,6 +679,36 @@ amendment froze is unchanged:
   `tests/unit/performance-style-syncopated-sixteenths.test.ts` sweeps every
   `GROOVE_STYLE_IDS` member through the production decoder, refuses the
   explicit default, and refuses a near-miss unknown id.
+- The normative inventory pointer is unchanged: `GROOVE_STYLE_IDS` in
+  `src/domain/document.ts`, kept identical to the playback layer's
+  performance-style ids by the pinned vocabulary law.
+
+### Groove vocabulary expansion (additive amendment, 2026-08-06)
+
+The owner-directed Giant Steps landing adds a seventh declared groove id,
+`uptempo-swing@1`, to the domain inventory. Where the 2026-07-31
+amendment above says "one of the five", read "one of the six": the
+storable set is now `medium-swing@1`, `bossa-nova@1`,
+`straight-eighths@1`, `syncopated-sixteenths@1`, `uptempo-swing@1`, and
+`block-chords@1`. Everything else that amendment froze is unchanged:
+
+- The default remains `ballad-comp@1`, expressed only by absence; a stored
+  explicit default still reports `playback.groove_style_not_canonical`,
+  and ids outside the expanded set still report
+  `playback.groove_style_invalid`.
+- The addition is purely additive: every previously accepted document,
+  byte golden, and fixture oracle decodes byte-for-byte unchanged, so the
+  `shape-cases.json` F2-VALUE-002 cells for the earlier storable ids
+  remain the pinned oracles and are not re-authored. The new id's
+  acceptance law lives with its declaring vocabulary:
+  `tests/unit/performance-style-uptempo-swing.test.ts` sweeps every
+  `GROOVE_STYLE_IDS` member through the production decoder, refuses the
+  explicit default, and refuses a near-miss unknown id
+  (`uptempo-swing@2`).
+- The E0 v2 interchange witness rule is unchanged: its independently
+  authored storable list names the original four non-default ids, and the
+  witness still stores `bossa-nova@1`. The new id is storable under F2
+  but is not owed an E0 v2 witness of its own.
 - The normative inventory pointer is unchanged: `GROOVE_STYLE_IDS` in
   `src/domain/document.ts`, kept identical to the playback layer's
   performance-style ids by the pinned vocabulary law.

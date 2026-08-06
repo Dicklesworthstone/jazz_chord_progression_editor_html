@@ -462,6 +462,43 @@ same rules as the wasm payload, plus attribution:
   corrupt payload demotes the whole instrument to synthesis rather than
   refusing to play.
 
+### Embedded CC0 instrument sample payloads (additive amendment, 2026-08-06)
+
+The Upright Bass and Concert Vibes are fully sampled instruments: their
+sound is deterministic PCM read from embedded recordings, with no synthesis
+layer. The recordings are further embedded assets under the same rules as
+the piano attack payload:
+
+- The payloads are checked in as generated TypeScript at
+  `src/audio/wasm/upright-bass-samples.ts` (raw mono 16-bit PCM at
+  22,050 Hz) and `src/audio/wasm/vibraphone-samples.ts` (32,000 Hz), each
+  base64 with exported SHA-256/byte-length pins and a frozen slice index
+  keyed by concert MIDI pitch with a measured cents deviation per slice.
+  They are regenerated — and drift against the recorded corpora is
+  detected — with `bun scripts/build-instrument-samples.ts [--check]`; the
+  corpus root comes from `INSTRUMENT_SAMPLE_SOURCE_DIR`, and `bun run build`
+  never reads a wav file.
+- Every slice is pitch-verified at generation time: a harmonic-comb cents
+  scan around the expected fundamental must resolve, the fundamental must be
+  present, and (at and above 55 Hz) the expected pitch must outscore both
+  octave-mislabeling hypotheses. A mislabeled or octave-shifted recording is
+  a generator failure, never a payload defect.
+- The sources are public-domain dedications (CC0-1.0): the VSCO 2 Community
+  Edition solo contrabass pizzicato and the Versilian Community Sample
+  Library vibraphone (soft mallets), both by Versilian Studios / Sam
+  Gossner. No attribution is required; the credit lines are embedded and
+  inventoried anyway, exactly like the Salamander credit, and
+  `bun run verify:licenses` fails if a credit, digest, or byte count drifts
+  from the generated modules.
+- The runtime renderer (`src/audio/sampled-renderer.ts`) is synchronous,
+  pure TypeScript: base64 decode on first use, nearest-recorded-key
+  selection with ties to the higher key, Catmull-Rom interpolation at the
+  ratio that folds in the slice's measured tuning deviation, and a
+  raised-cosine guard on truncated renders. Never-fail law: a pitch outside
+  the recorded span transposes from the nearest edge key, so every
+  in-contract request renders; there is no fallback synthesis layer to
+  demote to and none is needed.
+
 ## Reproducibility and reports
 
 One build invocation produces:

@@ -3,85 +3,267 @@
   "rubricVersion": 1,
   "automatedListeningClaim": false,
   "releaseStatus": "unexecuted-until-release-checklist",
-  "requiredBrowsers": ["chromium", "firefox", "webkit-or-safari"],
-  "requiredOutputs": ["headphones", "laptop-speakers"],
-  "requiredRecordFields": ["date", "browserName", "browserVersion", "operatingSystem", "outputCategory", "reviewer", "caseId", "result", "notes", "knownLimitations"],
-  "resultVocabulary": ["pass", "fail", "not-supported-with-recorded-reason"],
+  "requiredBrowsers": [
+    "chromium",
+    "firefox",
+    "webkit-or-safari"
+  ],
+  "requiredOutputs": [
+    "headphones",
+    "laptop-speakers"
+  ],
+  "requiredRecordFields": [
+    "date",
+    "browserName",
+    "browserVersion",
+    "operatingSystem",
+    "outputCategory",
+    "reviewer",
+    "caseId",
+    "result",
+    "notes",
+    "knownLimitations"
+  ],
+  "resultVocabulary": [
+    "pass",
+    "fail",
+    "not-supported-with-recorded-reason"
+  ],
   "instrumentRows": [
     {
       "id": "X0-LISTEN-INST-001",
       "instrumentId": "mellow-keys",
       "label": "Mellow Keys",
-      "requiredPerception": ["immediate but click-free onset", "soft triangle-led body", "audible but restrained upper partials", "short musical decay"],
-      "rejectIf": ["sounds like a plain sine", "harsh high partials", "click at attack or release", "label implies an acoustic piano sample"]
+      "requiredPerception": [
+        "immediate but click-free onset",
+        "soft triangle-led body",
+        "audible but restrained upper partials",
+        "short musical decay"
+      ],
+      "rejectIf": [
+        "sounds like a plain sine",
+        "harsh high partials",
+        "click at attack or release",
+        "label implies an acoustic piano sample"
+      ]
     },
     {
       "id": "X0-LISTEN-INST-002",
       "instrumentId": "fm-electric-piano",
       "label": "FM Electric Piano",
-      "requiredPerception": ["tine-like bright onset", "brightness responds audibly to velocity", "decay settles toward a softer sine body", "click-free release"],
-      "rejectIf": ["velocity changes loudness only", "metallic alias-like harshness", "stuck modulator tone", "label claims a sampled brand instrument"]
+      "requiredPerception": [
+        "tine-like bright onset",
+        "brightness responds audibly to velocity",
+        "decay settles toward a softer sine body",
+        "click-free release"
+      ],
+      "rejectIf": [
+        "velocity changes loudness only",
+        "metallic alias-like harshness",
+        "stuck modulator tone",
+        "label claims a sampled brand instrument"
+      ]
     },
     {
       "id": "X0-LISTEN-INST-003",
       "instrumentId": "vibraphone",
       "label": "Vibraphone",
-      "requiredPerception": ["clear mallet-like onset", "mostly sine-like sustained body", "slow audible tremolo after its delay", "long clean release"],
-      "rejectIf": ["tremolo begins as a click", "transient dominates as a separate pitch", "release sticks", "label claims physical modeling"]
+      "requiredPerception": [
+        "clear mallet-like onset",
+        "mostly sine-like sustained body",
+        "slow audible tremolo after its delay",
+        "long clean release"
+      ],
+      "rejectIf": [
+        "tremolo begins as a click",
+        "transient dominates as a separate pitch",
+        "release sticks",
+        "label claims physical modeling"
+      ]
     },
     {
       "id": "X0-LISTEN-INST-004",
       "instrumentId": "warm-pad",
       "label": "Warm Pad",
-      "requiredPerception": ["slow click-free bloom", "mild detune width without beating nausea", "dark filtered sustain", "long smooth release"],
-      "rejectIf": ["onset is percussive", "dense chord pumps distractingly", "release cuts abruptly", "low notes obscure all harmony"]
+      "requiredPerception": [
+        "slow click-free bloom",
+        "mild detune width without beating nausea",
+        "dark filtered sustain",
+        "long smooth release"
+      ],
+      "rejectIf": [
+        "onset is percussive",
+        "dense chord pumps distractingly",
+        "release cuts abruptly",
+        "low notes obscure all harmony"
+      ]
     },
     {
       "id": "X0-LISTEN-INST-005",
       "instrumentId": "analog-poly",
       "label": "Analog Poly",
-      "requiredPerception": ["distinct saw and pulse color", "audible quiet sub foundation", "resonant filter motion without whistle", "compact synth release"],
-      "rejectIf": ["pulse is indistinguishable from saw", "resonance rings painfully", "sub dominates voicing", "label claims analog circuitry"]
+      "requiredPerception": [
+        "distinct saw and pulse color",
+        "audible quiet sub foundation",
+        "resonant filter motion without whistle",
+        "compact synth release"
+      ],
+      "rejectIf": [
+        "pulse is indistinguishable from saw",
+        "resonance rings painfully",
+        "sub dominates voicing",
+        "label claims analog circuitry"
+      ]
     },
     {
       "id": "X0-LISTEN-INST-006",
       "instrumentId": "concert-grand",
       "label": "Concert Grand",
-      "requiredPerception": ["percussive hammer-like onset without a click", "inharmonic piano-like partials with audible unison shimmer", "fast early decay settling into a longer singing tail", "damper-style release that ends cleanly"],
-      "rejectIf": ["sounds like a static organ-like sustain", "metallic alias-like harshness", "click at attack or release", "label claims a sampled or recorded acoustic piano"]
+      "requiredPerception": [
+        "percussive hammer-like onset without a click",
+        "inharmonic piano-like partials with audible unison shimmer",
+        "fast early decay settling into a longer singing tail",
+        "damper-style release that ends cleanly"
+      ],
+      "rejectIf": [
+        "sounds like a static organ-like sustain",
+        "metallic alias-like harshness",
+        "click at attack or release",
+        "label claims a sampled or recorded acoustic piano"
+      ]
     },
     {
       "id": "X0-LISTEN-INST-007",
       "instrumentId": "flute",
       "label": "Flute",
-      "requiredPerception": ["soft breath-like onset without a click", "clear mostly sine-like body with restrained upper partials", "gentle vibrato that becomes audible only after its delay", "clean compact release"],
-      "rejectIf": ["onset clicks like a piston", "vibrato is present at full depth from the attack", "harsh upper partials dominate the body", "label claims a sampled flute recording"]
+      "requiredPerception": [
+        "soft breath-like onset without a click",
+        "clear mostly sine-like body with restrained upper partials",
+        "gentle vibrato that becomes audible only after its delay",
+        "clean compact release"
+      ],
+      "rejectIf": [
+        "onset clicks like a piston",
+        "vibrato is present at full depth from the attack",
+        "harsh upper partials dominate the body",
+        "label claims a sampled flute recording"
+      ]
     },
     {
       "id": "X0-LISTEN-INST-008",
       "instrumentId": "organ",
       "label": "Organ",
-      "requiredPerception": ["fast click-free organ-like attack", "steady sustained drawbar-like sine body", "shallow continuous vibrato", "release ends cleanly without a click"],
-      "rejectIf": ["sustain decays like a piano", "vibrato surges in depth or sounds like a trill", "a percussive transient dominates the attack", "label claims a sampled or electromechanical organ"]
+      "requiredPerception": [
+        "fast click-free organ-like attack",
+        "steady sustained drawbar-like sine body",
+        "shallow continuous vibrato",
+        "release ends cleanly without a click"
+      ],
+      "rejectIf": [
+        "sustain decays like a piano",
+        "vibrato surges in depth or sounds like a trill",
+        "a percussive transient dominates the attack",
+        "label claims a sampled or electromechanical organ"
+      ]
     },
     {
       "id": "X0-LISTEN-INST-009",
       "instrumentId": "guitar",
       "label": "Guitar",
-      "requiredPerception": ["immediate pick-like onset without a harsh click", "brightness audibly closes down as the note decays", "plucked decay rather than an organ-like sustain", "mild detune width without harsh beating"],
-      "rejectIf": ["note sustains flat like a synth pad", "pick transient sounds like a separate click", "decay is metallic or alias-like", "label claims a sampled guitar"]
+      "requiredPerception": [
+        "immediate pick-like onset without a harsh click",
+        "brightness audibly closes down as the note decays",
+        "plucked decay rather than an organ-like sustain",
+        "mild detune width without harsh beating"
+      ],
+      "rejectIf": [
+        "note sustains flat like a synth pad",
+        "pick transient sounds like a separate click",
+        "decay is metallic or alias-like",
+        "label claims a sampled guitar"
+      ]
+    },
+    {
+      "id": "X0-LISTEN-INST-010",
+      "instrumentId": "upright-bass",
+      "label": "Upright Bass",
+      "requiredPerception": [
+        "plucked woody pizzicato attack without a click",
+        "deep fundamental-forward body true to a double bass",
+        "natural fast decay into a short damped release",
+        "recorded timbre stays on pitch across the playing range"
+      ],
+      "rejectIf": [
+        "synthetic buzz or a static organ-like sustain",
+        "chipmunk or smeared artifact on transposed keys",
+        "click at attack or release",
+        "label claims synthesis it does not perform or a commercial brand"
+      ]
+    },
+    {
+      "id": "X0-LISTEN-INST-011",
+      "instrumentId": "concert-vibes",
+      "label": "Concert Vibes",
+      "requiredPerception": [
+        "soft mallet onset without a click",
+        "bell-like ringing body with the bar's double-octave shimmer",
+        "long metallic sustain that decays smoothly into the release",
+        "recorded timbre stays on pitch across the playing range"
+      ],
+      "rejectIf": [
+        "an added synthesized tremolo (the recording has none)",
+        "alias-like harshness on upward transpositions",
+        "release sticks or clicks",
+        "label claims synthesis it does not perform or a commercial brand"
+      ]
     }
   ],
   "scenarioRows": [
-    { "id": "X0-LISTEN-SCENE-001", "scenario": "dense-seven-note-passages", "pass": "chord remains intelligible with no obvious clipping, severe pumping, or painful resonance" },
-    { "id": "X0-LISTEN-SCENE-002", "scenario": "rapid-stop-then-replay", "pass": "no click, old attack, stuck note, doubled voice, or missing first replay attack" },
-    { "id": "X0-LISTEN-SCENE-003", "scenario": "tempo-change-boundary", "pass": "already sounding release stays smooth and no X0 voice artifact appears" },
-    { "id": "X0-LISTEN-SCENE-004", "scenario": "loop-boundary-rearticulation", "pass": "release precedes attack without click, flam, or swallowed onset" },
-    { "id": "X0-LISTEN-SCENE-005", "scenario": "long-warm-pad-release", "pass": "tail decays smoothly and is fully gone by the declared voice deadline" },
-    { "id": "X0-LISTEN-SCENE-006", "scenario": "browser-or-os-interruption", "pass": "no stale sound on interruption; gesture recovery does not replay retired voices" },
-    { "id": "X0-LISTEN-SCENE-007", "scenario": "section-play-versus-whole-progression", "pass": "same recipe and effects are perceptually identical for the same chord and settings" },
-    { "id": "X0-LISTEN-SCENE-008", "scenario": "preview-over-progression-and-preview-release", "pass": "both use the same effects; releasing preview does not interrupt progression" },
-    { "id": "X0-LISTEN-SCENE-009", "scenario": "rapid-instrument-selection", "pass": "old voices release in their original timbre; new attacks use the selected recipe; no graph dropout" }
+    {
+      "id": "X0-LISTEN-SCENE-001",
+      "scenario": "dense-seven-note-passages",
+      "pass": "chord remains intelligible with no obvious clipping, severe pumping, or painful resonance"
+    },
+    {
+      "id": "X0-LISTEN-SCENE-002",
+      "scenario": "rapid-stop-then-replay",
+      "pass": "no click, old attack, stuck note, doubled voice, or missing first replay attack"
+    },
+    {
+      "id": "X0-LISTEN-SCENE-003",
+      "scenario": "tempo-change-boundary",
+      "pass": "already sounding release stays smooth and no X0 voice artifact appears"
+    },
+    {
+      "id": "X0-LISTEN-SCENE-004",
+      "scenario": "loop-boundary-rearticulation",
+      "pass": "release precedes attack without click, flam, or swallowed onset"
+    },
+    {
+      "id": "X0-LISTEN-SCENE-005",
+      "scenario": "long-warm-pad-release",
+      "pass": "tail decays smoothly and is fully gone by the declared voice deadline"
+    },
+    {
+      "id": "X0-LISTEN-SCENE-006",
+      "scenario": "browser-or-os-interruption",
+      "pass": "no stale sound on interruption; gesture recovery does not replay retired voices"
+    },
+    {
+      "id": "X0-LISTEN-SCENE-007",
+      "scenario": "section-play-versus-whole-progression",
+      "pass": "same recipe and effects are perceptually identical for the same chord and settings"
+    },
+    {
+      "id": "X0-LISTEN-SCENE-008",
+      "scenario": "preview-over-progression-and-preview-release",
+      "pass": "both use the same effects; releasing preview does not interrupt progression"
+    },
+    {
+      "id": "X0-LISTEN-SCENE-009",
+      "scenario": "rapid-instrument-selection",
+      "pass": "old voices release in their original timbre; new attacks use the selected recipe; no graph dropout"
+    }
   ],
   "prohibitions": [
     "automation-marked-as-human-listening",

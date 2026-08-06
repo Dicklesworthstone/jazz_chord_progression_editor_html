@@ -78,7 +78,7 @@
     "beatDenominators": [1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 16, 20, 24, 30, 32, 40, 48, 60, 64, 80, 96, 120, 160, 192, 240, 320, 480, 960],
     "beatUnits": [2, 4, 8],
     "keyModes": ["major", "natural-minor", "harmonic-minor", "melodic-minor"],
-    "instrumentIds": ["mellow-keys", "fm-electric-piano", "vibraphone", "warm-pad", "analog-poly", "concert-grand", "flute", "organ", "guitar"],
+    "instrumentIds": ["mellow-keys", "fm-electric-piano", "vibraphone", "warm-pad", "analog-poly", "concert-grand", "flute", "organ", "guitar", "upright-bass", "concert-vibes"],
     "completionKinds": ["empty", "complete", "pickup", "incomplete"],
     "voiceLeadingBoundaries": ["continue", "reset"],
     "chordKinds": ["parsed", "custom"],
@@ -144,7 +144,7 @@
     {"path": "provenance-ledger.json", "schema": "changes.fixtures.f2-provenance-ledger.v1", "recordCollections": ["authorities"]}
   ],
   "reviewedDigests": {
-    "contractDocumentSha256": "1d489d5fee8dc9ef060391ce01cd3bdd1826ce761a4e38ba3fc5423c5c8b8bc8",
+    "contractDocumentSha256": "d5a2a4306c927cd0018737c31f863f18799450510b8a4faf7ba150c366091d54",
     "companionsSha256": {
       "adversarial-cases.json": "a6a8573e53b11e044e22a267d82ddf57f930913f966d157ed4e4e0d96ded5243",
       "provenance-ledger.json": "e9a24fdb862292cc774e5866c704160d33110f270aa43fe058cc55d390daef99",

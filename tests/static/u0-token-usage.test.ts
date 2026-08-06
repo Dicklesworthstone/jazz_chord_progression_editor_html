@@ -169,12 +169,14 @@ function analyzeCss(sources: Readonly<Record<string, string>>): CssAnalysis {
         ) {
           return false;
         }
+        if (!Object.hasOwn(RESPONSIVE_TOKEN_OVERRIDES, name)) {
+          return true;
+        }
         const overrideOwner =
           RESPONSIVE_TOKEN_OVERRIDES[
             name as keyof typeof RESPONSIVE_TOKEN_OVERRIDES
           ];
         return !(
-          overrideOwner !== undefined &&
           owners.length === 2 &&
           owners.includes("src/styles/tokens.css#base") &&
           owners.includes(`${overrideOwner}#base`)

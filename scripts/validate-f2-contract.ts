@@ -204,7 +204,7 @@ const EXPECTED_TERMINATION = {
 
 const EXPECTED_REVIEWED_DIGESTS = {
   contractDocumentSha256:
-    "1d489d5fee8dc9ef060391ce01cd3bdd1826ce761a4e38ba3fc5423c5c8b8bc8",
+    "d5a2a4306c927cd0018737c31f863f18799450510b8a4faf7ba150c366091d54",
   companionsSha256: {
     "adversarial-cases.json":
       "a6a8573e53b11e044e22a267d82ddf57f930913f966d157ed4e4e0d96ded5243",
@@ -238,7 +238,7 @@ const EXPECTED_SEMANTIC_SNAPSHOT_DIGESTS = {
       "bf61e11d067bbcf466fa8e9a376dbf23007f1eb7f28705010679ac0760100199",
   },
   contractDocumentNormalizedSha256:
-    "1d489d5fee8dc9ef060391ce01cd3bdd1826ce761a4e38ba3fc5423c5c8b8bc8",
+    "d5a2a4306c927cd0018737c31f863f18799450510b8a4faf7ba150c366091d54",
 } as const;
 
 const EXPECTED_MATERIALIZATION_PROTOCOL_SHA256 =
@@ -311,6 +311,8 @@ const EXPECTED_INVENTORIES = {
     "flute",
     "organ",
     "guitar",
+    "upright-bass",
+    "concert-vibes",
   ],
   completionKinds: ["empty", "complete", "pickup", "incomplete"],
   voiceLeadingBoundaries: ["continue", "reset"],

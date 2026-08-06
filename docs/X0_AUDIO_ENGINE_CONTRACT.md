@@ -270,6 +270,56 @@ not yet own real-browser offline render rows, so their browser certification
 is pending the next X0 evidence run, and until those rows are reviewed the
 X0 contract validator reports the missing three render rows per new recipe.
 
+### 5.3 Upright Bass and Concert Vibes sampled rendered recipes (additive amendment, 2026-08-06)
+
+The reviewed recipe set grows from nine to eleven recipes, and the reviewed
+rendered set grows from one to three. The §5 table and the §5.1/§5.2
+amendments remain the historical record and are not rewritten. The two
+recipes below are appended to the reviewed recipe authority after Guitar.
+
+| Recipe | Sources | Level | Polyphony | Amplitude A/D/S/R | Filter start/peak/sustain, Q, decay |
+|---|---|---:|---:|---|---|
+| Upright Bass | one rendered PCM buffer source (embedded recorded pizzicato) | .5 | 32 | .002/0/1/.25 | 16000/16000/16000 Hz, .5, .1 s |
+| Concert Vibes | one rendered PCM buffer source (embedded recorded vibraphone) | .42 | 48 | .002/0/1/1.1 | 16000/16000/16000 Hz, .5, .1 s |
+
+Both are sampled rendered instruments: deterministic PCM read from embedded,
+pitch-verified CC0 recordings (VSCO 2 CE solo contrabass pizzicato;
+Versilian Community Sample Library vibraphone, soft mallets) through the
+pure synchronous Catmull-Rom renderer `src/audio/sampled-renderer.ts`
+(`changes.dsp.sampled-upright-bass@1`, `changes.dsp.sampled-vibraphone@1`,
+two channels, at most 4 render seconds per note, cache bound 64). Nearest
+recorded key wins with ties to the higher key; the recorded tuning deviation
+is folded into the playback ratio so output lands exactly on 12-TET; a pitch
+outside the recorded span transposes from the nearest edge key, so every
+in-contract request renders. Velocity shapes level only, at the voice gain,
+exactly as for oscillator recipes — identical PCM per velocity band is what
+lets the render cache share buffers. Like Concert Grand, a rendered voice
+schedules exactly one `AudioBufferSourceNode`, keeps the uniform
+source → filter → gain → bus topology, and carries only a click-guard
+attack and the instrument's release in its recipe amplitude.
+
+The honesty law is refined, not weakened, for sampled recipes: a label and
+design claim must state what the sound actually is. A sampled recipe's claim
+says "recorded"; it does not claim synthesis it does not perform, a
+commercial brand, or mastering behavior. (Concert Grand's claim remains
+"deterministic rendered piano" for its synthesized sustain; its recorded
+attack layer is declared in the §5.1 amendment and the architecture
+document.) The §5 rule that exactly one reviewed rendered recipe exists is
+superseded: the rendered recipes are reviewed as a list, each pinned
+literal-by-literal against the recipe fixture.
+
+The independently authored recipe fixture carries the same literals plus
+normalization reference gains for both new recipes at voice counts 1, 4, 7,
+and 16; the listening rubric grows two human rows, X0-LISTEN-INST-010 and
+X0-LISTEN-INST-011; and the reviewed render matrix grows six rows,
+X0-RENDER-028 through X0-RENDER-033, following the Concert Grand
+single-note / dense-seven / release-tail pattern. `X0-LIFE-046`'s
+failed-renderer law is unchanged and remains stated against the wasm
+renderer: the sampled renderers are synchronous checked-in TypeScript with
+no instantiation step, so a load failure lane specific to them does not
+exist; a corrupt payload throws at first render and the engine's existing
+`audio.renderer_unavailable` refusal covers it.
+
 ## 6. Parameter automation and normalization
 
 An accepted batch contains 1...16 generated voices. Its normalization gain is

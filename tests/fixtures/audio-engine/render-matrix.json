@@ -8,7 +8,11 @@
     "realAudioContext": "supported browser state, graph bookkeeping, gesture resume, and console cleanliness",
     "mockOnlyReleaseProof": false
   },
-  "supportedBrowserMatrix": ["chromium", "firefox", "webkit-or-safari"],
+  "supportedBrowserMatrix": [
+    "chromium",
+    "firefox",
+    "webkit-or-safari"
+  ],
   "unsupportedCapabilityPolicy": "record the exact browser version and unsupported automation method; exercise the declared fallback and complete the matching manual row; never skip the case silently",
   "numericPolicy": {
     "analysisPolicyVersion": 1,
@@ -18,16 +22,16 @@
     "scalarAggregation": "all channels per frame in ascending channel order",
     "absolutePeakMaximumExclusive": 0.99,
     "nonSilentAbsolutePeakMinimum": 0.0005,
-    "activeRmsMinimum": 0.00005,
+    "activeRmsMinimum": 5e-05,
     "activeRmsMaximumExclusive": 0.5,
-    "onsetThreshold": 0.0000001,
+    "onsetThreshold": 1e-07,
     "onsetComparison": "first frame where any channel absolute sample is strictly greater than onsetThreshold",
     "onsetToleranceSeconds": 0.02,
     "activeRmsWindow": "[start,release)",
     "tailRmsWindowSeconds": 0.5,
     "earlyTailRmsWindow": "[release,min(release+tailRmsWindowSeconds,renderDuration))",
     "finalTailRmsWindow": "[max(release,renderDuration-tailRmsWindowSeconds),renderDuration)",
-    "tailPresentRmsMinimum": 0.00005,
+    "tailPresentRmsMinimum": 5e-05,
     "tailFinalRmsMaximum": 0.01,
     "tailDecayMinimumRatio": 2,
     "tailDecayComparison": "earlyTailRms>=tailDecayMinimumRatio*finalTailRms",
@@ -38,32 +42,830 @@
     "crossBrowserPcmHashEqualityRequired": false
   },
   "cases": [
-    { "id": "X0-RENDER-001", "instrumentId": "mellow-keys", "scenario": "single-note", "sampleRate": 48000, "midiPitches": [69], "velocity": 100, "start": 0.1, "release": 0.6, "renderDuration": 3, "reverbAmount": 0.2, "expectedSourceCount": 3, "assertions": ["finite", "non-silent", "onset-window", "bounded-peak", "bounded-active-rms"] },
-    { "id": "X0-RENDER-002", "instrumentId": "mellow-keys", "scenario": "dense-seven", "sampleRate": 44100, "midiPitches": [48, 52, 55, 59, 62, 65, 69], "velocity": 110, "start": 0.1, "release": 1.1, "renderDuration": 4, "reverbAmount": 0.28, "expectedSourceCount": 21, "assertions": ["finite", "non-silent", "bounded-peak", "bounded-active-rms", "no-unity-clipping"] },
-    { "id": "X0-RENDER-003", "instrumentId": "mellow-keys", "scenario": "release-tail", "sampleRate": 96000, "midiPitches": [60, 64, 67, 71], "velocity": 90, "start": 0.1, "release": 0.8, "renderDuration": 4.5, "reverbAmount": 0.8, "expectedSourceCount": 12, "assertions": ["finite", "tail-present", "tail-decays", "final-rms-bounded", "voice-cleanup-before-eight-seconds"] },
-    { "id": "X0-RENDER-004", "instrumentId": "fm-electric-piano", "scenario": "single-note", "sampleRate": 48000, "midiPitches": [69], "velocity": 100, "start": 0.1, "release": 0.6, "renderDuration": 3, "reverbAmount": 0.2, "expectedSourceCount": 2, "assertions": ["finite", "non-silent", "onset-window", "bounded-peak", "bounded-active-rms"] },
-    { "id": "X0-RENDER-005", "instrumentId": "fm-electric-piano", "scenario": "dense-seven", "sampleRate": 44100, "midiPitches": [48, 52, 55, 59, 62, 65, 69], "velocity": 110, "start": 0.1, "release": 1.1, "renderDuration": 4, "reverbAmount": 0.28, "expectedSourceCount": 14, "assertions": ["finite", "non-silent", "bounded-peak", "bounded-active-rms", "no-unity-clipping"] },
-    { "id": "X0-RENDER-006", "instrumentId": "fm-electric-piano", "scenario": "release-tail", "sampleRate": 96000, "midiPitches": [60, 64, 67, 71], "velocity": 90, "start": 0.1, "release": 0.8, "renderDuration": 4.5, "reverbAmount": 0.8, "expectedSourceCount": 8, "assertions": ["finite", "tail-present", "tail-decays", "final-rms-bounded", "voice-cleanup-before-eight-seconds"] },
-    { "id": "X0-RENDER-007", "instrumentId": "vibraphone", "scenario": "single-note", "sampleRate": 48000, "midiPitches": [69], "velocity": 100, "start": 0.1, "release": 0.6, "renderDuration": 3, "reverbAmount": 0.2, "expectedSourceCount": 4, "assertions": ["finite", "non-silent", "onset-window", "bounded-peak", "bounded-active-rms"] },
-    { "id": "X0-RENDER-008", "instrumentId": "vibraphone", "scenario": "dense-seven", "sampleRate": 44100, "midiPitches": [48, 52, 55, 59, 62, 65, 69], "velocity": 110, "start": 0.1, "release": 1.1, "renderDuration": 4, "reverbAmount": 0.28, "expectedSourceCount": 28, "assertions": ["finite", "non-silent", "bounded-peak", "bounded-active-rms", "no-unity-clipping"] },
-    { "id": "X0-RENDER-009", "instrumentId": "vibraphone", "scenario": "release-tail", "sampleRate": 96000, "midiPitches": [60, 64, 67, 71], "velocity": 90, "start": 0.1, "release": 0.8, "renderDuration": 4.5, "reverbAmount": 0.8, "expectedSourceCount": 16, "assertions": ["finite", "tail-present", "tail-decays", "final-rms-bounded", "voice-cleanup-before-eight-seconds"] },
-    { "id": "X0-RENDER-010", "instrumentId": "warm-pad", "scenario": "single-note", "sampleRate": 48000, "midiPitches": [69], "velocity": 100, "start": 0.1, "release": 0.6, "renderDuration": 4, "reverbAmount": 0.2, "expectedSourceCount": 3, "assertions": ["finite", "non-silent", "onset-window", "bounded-peak", "bounded-active-rms"] },
-    { "id": "X0-RENDER-011", "instrumentId": "warm-pad", "scenario": "dense-seven", "sampleRate": 44100, "midiPitches": [48, 52, 55, 59, 62, 65, 69], "velocity": 110, "start": 0.1, "release": 1.1, "renderDuration": 5, "reverbAmount": 0.28, "expectedSourceCount": 21, "assertions": ["finite", "non-silent", "bounded-peak", "bounded-active-rms", "no-unity-clipping"] },
-    { "id": "X0-RENDER-012", "instrumentId": "warm-pad", "scenario": "release-tail", "sampleRate": 96000, "midiPitches": [60, 64, 67, 71], "velocity": 90, "start": 0.1, "release": 0.8, "renderDuration": 5.5, "reverbAmount": 0.8, "expectedSourceCount": 12, "assertions": ["finite", "tail-present", "tail-decays", "final-rms-bounded", "voice-cleanup-before-eight-seconds"] },
-    { "id": "X0-RENDER-013", "instrumentId": "analog-poly", "scenario": "single-note", "sampleRate": 48000, "midiPitches": [69], "velocity": 100, "start": 0.1, "release": 0.6, "renderDuration": 3, "reverbAmount": 0.2, "expectedSourceCount": 3, "assertions": ["finite", "non-silent", "onset-window", "bounded-peak", "bounded-active-rms"] },
-    { "id": "X0-RENDER-014", "instrumentId": "analog-poly", "scenario": "dense-seven", "sampleRate": 44100, "midiPitches": [48, 52, 55, 59, 62, 65, 69], "velocity": 110, "start": 0.1, "release": 1.1, "renderDuration": 4, "reverbAmount": 0.28, "expectedSourceCount": 21, "assertions": ["finite", "non-silent", "bounded-peak", "bounded-active-rms", "no-unity-clipping"] },
-    { "id": "X0-RENDER-015", "instrumentId": "analog-poly", "scenario": "release-tail", "sampleRate": 96000, "midiPitches": [60, 64, 67, 71], "velocity": 90, "start": 0.1, "release": 0.8, "renderDuration": 4.5, "reverbAmount": 0.8, "expectedSourceCount": 12, "assertions": ["finite", "tail-present", "tail-decays", "final-rms-bounded", "voice-cleanup-before-eight-seconds"] },
-    { "id": "X0-RENDER-016", "instrumentId": "concert-grand", "scenario": "single-note", "sampleRate": 48000, "midiPitches": [69], "velocity": 100, "start": 0.1, "release": 0.6, "renderDuration": 3, "reverbAmount": 0.2, "expectedSourceCount": 1, "assertions": ["finite", "non-silent", "onset-window", "bounded-peak", "bounded-active-rms"] },
-    { "id": "X0-RENDER-017", "instrumentId": "concert-grand", "scenario": "dense-seven", "sampleRate": 44100, "midiPitches": [48, 52, 55, 59, 62, 65, 69], "velocity": 110, "start": 0.1, "release": 1.1, "renderDuration": 4, "reverbAmount": 0.28, "expectedSourceCount": 7, "assertions": ["finite", "non-silent", "bounded-peak", "bounded-active-rms", "no-unity-clipping"] },
-    { "id": "X0-RENDER-018", "instrumentId": "concert-grand", "scenario": "release-tail", "sampleRate": 96000, "midiPitches": [60, 64, 67, 71], "velocity": 90, "start": 0.1, "release": 0.8, "renderDuration": 4.5, "reverbAmount": 0.8, "expectedSourceCount": 4, "assertions": ["finite", "tail-present", "tail-decays", "final-rms-bounded", "voice-cleanup-before-eight-seconds"] },
-    { "id": "X0-RENDER-019", "instrumentId": "flute", "scenario": "single-note", "sampleRate": 48000, "midiPitches": [69], "velocity": 100, "start": 0.1, "release": 0.6, "renderDuration": 3, "reverbAmount": 0.2, "expectedSourceCount": 6, "assertions": ["finite", "non-silent", "onset-window", "bounded-peak", "bounded-active-rms"] },
-    { "id": "X0-RENDER-020", "instrumentId": "flute", "scenario": "dense-seven", "sampleRate": 44100, "midiPitches": [48, 52, 55, 59, 62, 65, 69], "velocity": 110, "start": 0.1, "release": 1.1, "renderDuration": 4, "reverbAmount": 0.28, "expectedSourceCount": 42, "assertions": ["finite", "non-silent", "bounded-peak", "bounded-active-rms", "no-unity-clipping"] },
-    { "id": "X0-RENDER-021", "instrumentId": "flute", "scenario": "release-tail", "sampleRate": 96000, "midiPitches": [60, 64, 67, 71], "velocity": 90, "start": 0.1, "release": 0.8, "renderDuration": 4.5, "reverbAmount": 0.8, "expectedSourceCount": 24, "assertions": ["finite", "tail-present", "tail-decays", "final-rms-bounded", "voice-cleanup-before-eight-seconds"] },
-    { "id": "X0-RENDER-022", "instrumentId": "organ", "scenario": "single-note", "sampleRate": 48000, "midiPitches": [69], "velocity": 100, "start": 0.1, "release": 0.6, "renderDuration": 3, "reverbAmount": 0.2, "expectedSourceCount": 6, "assertions": ["finite", "non-silent", "onset-window", "bounded-peak", "bounded-active-rms"] },
-    { "id": "X0-RENDER-023", "instrumentId": "organ", "scenario": "dense-seven", "sampleRate": 44100, "midiPitches": [48, 52, 55, 59, 62, 65, 69], "velocity": 110, "start": 0.1, "release": 1.1, "renderDuration": 4, "reverbAmount": 0.28, "expectedSourceCount": 42, "assertions": ["finite", "non-silent", "bounded-peak", "bounded-active-rms", "no-unity-clipping"] },
-    { "id": "X0-RENDER-024", "instrumentId": "organ", "scenario": "release-tail", "sampleRate": 96000, "midiPitches": [60, 64, 67, 71], "velocity": 90, "start": 0.1, "release": 0.8, "renderDuration": 4.5, "reverbAmount": 0.8, "expectedSourceCount": 24, "assertions": ["finite", "tail-present", "tail-decays", "final-rms-bounded", "voice-cleanup-before-eight-seconds"] },
-    { "id": "X0-RENDER-025", "instrumentId": "guitar", "scenario": "single-note", "sampleRate": 48000, "midiPitches": [69], "velocity": 100, "start": 0.1, "release": 0.6, "renderDuration": 3, "reverbAmount": 0.2, "expectedSourceCount": 3, "assertions": ["finite", "non-silent", "onset-window", "bounded-peak", "bounded-active-rms"] },
-    { "id": "X0-RENDER-026", "instrumentId": "guitar", "scenario": "dense-seven", "sampleRate": 44100, "midiPitches": [48, 52, 55, 59, 62, 65, 69], "velocity": 110, "start": 0.1, "release": 1.1, "renderDuration": 4, "reverbAmount": 0.28, "expectedSourceCount": 21, "assertions": ["finite", "non-silent", "bounded-peak", "bounded-active-rms", "no-unity-clipping"] },
-    { "id": "X0-RENDER-027", "instrumentId": "guitar", "scenario": "release-tail", "sampleRate": 96000, "midiPitches": [60, 64, 67, 71], "velocity": 90, "start": 0.1, "release": 0.8, "renderDuration": 4.5, "reverbAmount": 0.8, "expectedSourceCount": 12, "assertions": ["finite", "tail-present", "tail-decays", "final-rms-bounded", "voice-cleanup-before-eight-seconds"] }
+    {
+      "id": "X0-RENDER-001",
+      "instrumentId": "mellow-keys",
+      "scenario": "single-note",
+      "sampleRate": 48000,
+      "midiPitches": [
+        69
+      ],
+      "velocity": 100,
+      "start": 0.1,
+      "release": 0.6,
+      "renderDuration": 3,
+      "reverbAmount": 0.2,
+      "expectedSourceCount": 3,
+      "assertions": [
+        "finite",
+        "non-silent",
+        "onset-window",
+        "bounded-peak",
+        "bounded-active-rms"
+      ]
+    },
+    {
+      "id": "X0-RENDER-002",
+      "instrumentId": "mellow-keys",
+      "scenario": "dense-seven",
+      "sampleRate": 44100,
+      "midiPitches": [
+        48,
+        52,
+        55,
+        59,
+        62,
+        65,
+        69
+      ],
+      "velocity": 110,
+      "start": 0.1,
+      "release": 1.1,
+      "renderDuration": 4,
+      "reverbAmount": 0.28,
+      "expectedSourceCount": 21,
+      "assertions": [
+        "finite",
+        "non-silent",
+        "bounded-peak",
+        "bounded-active-rms",
+        "no-unity-clipping"
+      ]
+    },
+    {
+      "id": "X0-RENDER-003",
+      "instrumentId": "mellow-keys",
+      "scenario": "release-tail",
+      "sampleRate": 96000,
+      "midiPitches": [
+        60,
+        64,
+        67,
+        71
+      ],
+      "velocity": 90,
+      "start": 0.1,
+      "release": 0.8,
+      "renderDuration": 4.5,
+      "reverbAmount": 0.8,
+      "expectedSourceCount": 12,
+      "assertions": [
+        "finite",
+        "tail-present",
+        "tail-decays",
+        "final-rms-bounded",
+        "voice-cleanup-before-eight-seconds"
+      ]
+    },
+    {
+      "id": "X0-RENDER-004",
+      "instrumentId": "fm-electric-piano",
+      "scenario": "single-note",
+      "sampleRate": 48000,
+      "midiPitches": [
+        69
+      ],
+      "velocity": 100,
+      "start": 0.1,
+      "release": 0.6,
+      "renderDuration": 3,
+      "reverbAmount": 0.2,
+      "expectedSourceCount": 2,
+      "assertions": [
+        "finite",
+        "non-silent",
+        "onset-window",
+        "bounded-peak",
+        "bounded-active-rms"
+      ]
+    },
+    {
+      "id": "X0-RENDER-005",
+      "instrumentId": "fm-electric-piano",
+      "scenario": "dense-seven",
+      "sampleRate": 44100,
+      "midiPitches": [
+        48,
+        52,
+        55,
+        59,
+        62,
+        65,
+        69
+      ],
+      "velocity": 110,
+      "start": 0.1,
+      "release": 1.1,
+      "renderDuration": 4,
+      "reverbAmount": 0.28,
+      "expectedSourceCount": 14,
+      "assertions": [
+        "finite",
+        "non-silent",
+        "bounded-peak",
+        "bounded-active-rms",
+        "no-unity-clipping"
+      ]
+    },
+    {
+      "id": "X0-RENDER-006",
+      "instrumentId": "fm-electric-piano",
+      "scenario": "release-tail",
+      "sampleRate": 96000,
+      "midiPitches": [
+        60,
+        64,
+        67,
+        71
+      ],
+      "velocity": 90,
+      "start": 0.1,
+      "release": 0.8,
+      "renderDuration": 4.5,
+      "reverbAmount": 0.8,
+      "expectedSourceCount": 8,
+      "assertions": [
+        "finite",
+        "tail-present",
+        "tail-decays",
+        "final-rms-bounded",
+        "voice-cleanup-before-eight-seconds"
+      ]
+    },
+    {
+      "id": "X0-RENDER-007",
+      "instrumentId": "vibraphone",
+      "scenario": "single-note",
+      "sampleRate": 48000,
+      "midiPitches": [
+        69
+      ],
+      "velocity": 100,
+      "start": 0.1,
+      "release": 0.6,
+      "renderDuration": 3,
+      "reverbAmount": 0.2,
+      "expectedSourceCount": 4,
+      "assertions": [
+        "finite",
+        "non-silent",
+        "onset-window",
+        "bounded-peak",
+        "bounded-active-rms"
+      ]
+    },
+    {
+      "id": "X0-RENDER-008",
+      "instrumentId": "vibraphone",
+      "scenario": "dense-seven",
+      "sampleRate": 44100,
+      "midiPitches": [
+        48,
+        52,
+        55,
+        59,
+        62,
+        65,
+        69
+      ],
+      "velocity": 110,
+      "start": 0.1,
+      "release": 1.1,
+      "renderDuration": 4,
+      "reverbAmount": 0.28,
+      "expectedSourceCount": 28,
+      "assertions": [
+        "finite",
+        "non-silent",
+        "bounded-peak",
+        "bounded-active-rms",
+        "no-unity-clipping"
+      ]
+    },
+    {
+      "id": "X0-RENDER-009",
+      "instrumentId": "vibraphone",
+      "scenario": "release-tail",
+      "sampleRate": 96000,
+      "midiPitches": [
+        60,
+        64,
+        67,
+        71
+      ],
+      "velocity": 90,
+      "start": 0.1,
+      "release": 0.8,
+      "renderDuration": 4.5,
+      "reverbAmount": 0.8,
+      "expectedSourceCount": 16,
+      "assertions": [
+        "finite",
+        "tail-present",
+        "tail-decays",
+        "final-rms-bounded",
+        "voice-cleanup-before-eight-seconds"
+      ]
+    },
+    {
+      "id": "X0-RENDER-010",
+      "instrumentId": "warm-pad",
+      "scenario": "single-note",
+      "sampleRate": 48000,
+      "midiPitches": [
+        69
+      ],
+      "velocity": 100,
+      "start": 0.1,
+      "release": 0.6,
+      "renderDuration": 4,
+      "reverbAmount": 0.2,
+      "expectedSourceCount": 3,
+      "assertions": [
+        "finite",
+        "non-silent",
+        "onset-window",
+        "bounded-peak",
+        "bounded-active-rms"
+      ]
+    },
+    {
+      "id": "X0-RENDER-011",
+      "instrumentId": "warm-pad",
+      "scenario": "dense-seven",
+      "sampleRate": 44100,
+      "midiPitches": [
+        48,
+        52,
+        55,
+        59,
+        62,
+        65,
+        69
+      ],
+      "velocity": 110,
+      "start": 0.1,
+      "release": 1.1,
+      "renderDuration": 5,
+      "reverbAmount": 0.28,
+      "expectedSourceCount": 21,
+      "assertions": [
+        "finite",
+        "non-silent",
+        "bounded-peak",
+        "bounded-active-rms",
+        "no-unity-clipping"
+      ]
+    },
+    {
+      "id": "X0-RENDER-012",
+      "instrumentId": "warm-pad",
+      "scenario": "release-tail",
+      "sampleRate": 96000,
+      "midiPitches": [
+        60,
+        64,
+        67,
+        71
+      ],
+      "velocity": 90,
+      "start": 0.1,
+      "release": 0.8,
+      "renderDuration": 5.5,
+      "reverbAmount": 0.8,
+      "expectedSourceCount": 12,
+      "assertions": [
+        "finite",
+        "tail-present",
+        "tail-decays",
+        "final-rms-bounded",
+        "voice-cleanup-before-eight-seconds"
+      ]
+    },
+    {
+      "id": "X0-RENDER-013",
+      "instrumentId": "analog-poly",
+      "scenario": "single-note",
+      "sampleRate": 48000,
+      "midiPitches": [
+        69
+      ],
+      "velocity": 100,
+      "start": 0.1,
+      "release": 0.6,
+      "renderDuration": 3,
+      "reverbAmount": 0.2,
+      "expectedSourceCount": 3,
+      "assertions": [
+        "finite",
+        "non-silent",
+        "onset-window",
+        "bounded-peak",
+        "bounded-active-rms"
+      ]
+    },
+    {
+      "id": "X0-RENDER-014",
+      "instrumentId": "analog-poly",
+      "scenario": "dense-seven",
+      "sampleRate": 44100,
+      "midiPitches": [
+        48,
+        52,
+        55,
+        59,
+        62,
+        65,
+        69
+      ],
+      "velocity": 110,
+      "start": 0.1,
+      "release": 1.1,
+      "renderDuration": 4,
+      "reverbAmount": 0.28,
+      "expectedSourceCount": 21,
+      "assertions": [
+        "finite",
+        "non-silent",
+        "bounded-peak",
+        "bounded-active-rms",
+        "no-unity-clipping"
+      ]
+    },
+    {
+      "id": "X0-RENDER-015",
+      "instrumentId": "analog-poly",
+      "scenario": "release-tail",
+      "sampleRate": 96000,
+      "midiPitches": [
+        60,
+        64,
+        67,
+        71
+      ],
+      "velocity": 90,
+      "start": 0.1,
+      "release": 0.8,
+      "renderDuration": 4.5,
+      "reverbAmount": 0.8,
+      "expectedSourceCount": 12,
+      "assertions": [
+        "finite",
+        "tail-present",
+        "tail-decays",
+        "final-rms-bounded",
+        "voice-cleanup-before-eight-seconds"
+      ]
+    },
+    {
+      "id": "X0-RENDER-016",
+      "instrumentId": "concert-grand",
+      "scenario": "single-note",
+      "sampleRate": 48000,
+      "midiPitches": [
+        69
+      ],
+      "velocity": 100,
+      "start": 0.1,
+      "release": 0.6,
+      "renderDuration": 3,
+      "reverbAmount": 0.2,
+      "expectedSourceCount": 1,
+      "assertions": [
+        "finite",
+        "non-silent",
+        "onset-window",
+        "bounded-peak",
+        "bounded-active-rms"
+      ]
+    },
+    {
+      "id": "X0-RENDER-017",
+      "instrumentId": "concert-grand",
+      "scenario": "dense-seven",
+      "sampleRate": 44100,
+      "midiPitches": [
+        48,
+        52,
+        55,
+        59,
+        62,
+        65,
+        69
+      ],
+      "velocity": 110,
+      "start": 0.1,
+      "release": 1.1,
+      "renderDuration": 4,
+      "reverbAmount": 0.28,
+      "expectedSourceCount": 7,
+      "assertions": [
+        "finite",
+        "non-silent",
+        "bounded-peak",
+        "bounded-active-rms",
+        "no-unity-clipping"
+      ]
+    },
+    {
+      "id": "X0-RENDER-018",
+      "instrumentId": "concert-grand",
+      "scenario": "release-tail",
+      "sampleRate": 96000,
+      "midiPitches": [
+        60,
+        64,
+        67,
+        71
+      ],
+      "velocity": 90,
+      "start": 0.1,
+      "release": 0.8,
+      "renderDuration": 4.5,
+      "reverbAmount": 0.8,
+      "expectedSourceCount": 4,
+      "assertions": [
+        "finite",
+        "tail-present",
+        "tail-decays",
+        "final-rms-bounded",
+        "voice-cleanup-before-eight-seconds"
+      ]
+    },
+    {
+      "id": "X0-RENDER-019",
+      "instrumentId": "flute",
+      "scenario": "single-note",
+      "sampleRate": 48000,
+      "midiPitches": [
+        69
+      ],
+      "velocity": 100,
+      "start": 0.1,
+      "release": 0.6,
+      "renderDuration": 3,
+      "reverbAmount": 0.2,
+      "expectedSourceCount": 6,
+      "assertions": [
+        "finite",
+        "non-silent",
+        "onset-window",
+        "bounded-peak",
+        "bounded-active-rms"
+      ]
+    },
+    {
+      "id": "X0-RENDER-020",
+      "instrumentId": "flute",
+      "scenario": "dense-seven",
+      "sampleRate": 44100,
+      "midiPitches": [
+        48,
+        52,
+        55,
+        59,
+        62,
+        65,
+        69
+      ],
+      "velocity": 110,
+      "start": 0.1,
+      "release": 1.1,
+      "renderDuration": 4,
+      "reverbAmount": 0.28,
+      "expectedSourceCount": 42,
+      "assertions": [
+        "finite",
+        "non-silent",
+        "bounded-peak",
+        "bounded-active-rms",
+        "no-unity-clipping"
+      ]
+    },
+    {
+      "id": "X0-RENDER-021",
+      "instrumentId": "flute",
+      "scenario": "release-tail",
+      "sampleRate": 96000,
+      "midiPitches": [
+        60,
+        64,
+        67,
+        71
+      ],
+      "velocity": 90,
+      "start": 0.1,
+      "release": 0.8,
+      "renderDuration": 4.5,
+      "reverbAmount": 0.8,
+      "expectedSourceCount": 24,
+      "assertions": [
+        "finite",
+        "tail-present",
+        "tail-decays",
+        "final-rms-bounded",
+        "voice-cleanup-before-eight-seconds"
+      ]
+    },
+    {
+      "id": "X0-RENDER-022",
+      "instrumentId": "organ",
+      "scenario": "single-note",
+      "sampleRate": 48000,
+      "midiPitches": [
+        69
+      ],
+      "velocity": 100,
+      "start": 0.1,
+      "release": 0.6,
+      "renderDuration": 3,
+      "reverbAmount": 0.2,
+      "expectedSourceCount": 6,
+      "assertions": [
+        "finite",
+        "non-silent",
+        "onset-window",
+        "bounded-peak",
+        "bounded-active-rms"
+      ]
+    },
+    {
+      "id": "X0-RENDER-023",
+      "instrumentId": "organ",
+      "scenario": "dense-seven",
+      "sampleRate": 44100,
+      "midiPitches": [
+        48,
+        52,
+        55,
+        59,
+        62,
+        65,
+        69
+      ],
+      "velocity": 110,
+      "start": 0.1,
+      "release": 1.1,
+      "renderDuration": 4,
+      "reverbAmount": 0.28,
+      "expectedSourceCount": 42,
+      "assertions": [
+        "finite",
+        "non-silent",
+        "bounded-peak",
+        "bounded-active-rms",
+        "no-unity-clipping"
+      ]
+    },
+    {
+      "id": "X0-RENDER-024",
+      "instrumentId": "organ",
+      "scenario": "release-tail",
+      "sampleRate": 96000,
+      "midiPitches": [
+        60,
+        64,
+        67,
+        71
+      ],
+      "velocity": 90,
+      "start": 0.1,
+      "release": 0.8,
+      "renderDuration": 4.5,
+      "reverbAmount": 0.8,
+      "expectedSourceCount": 24,
+      "assertions": [
+        "finite",
+        "tail-present",
+        "tail-decays",
+        "final-rms-bounded",
+        "voice-cleanup-before-eight-seconds"
+      ]
+    },
+    {
+      "id": "X0-RENDER-025",
+      "instrumentId": "guitar",
+      "scenario": "single-note",
+      "sampleRate": 48000,
+      "midiPitches": [
+        69
+      ],
+      "velocity": 100,
+      "start": 0.1,
+      "release": 0.6,
+      "renderDuration": 3,
+      "reverbAmount": 0.2,
+      "expectedSourceCount": 3,
+      "assertions": [
+        "finite",
+        "non-silent",
+        "onset-window",
+        "bounded-peak",
+        "bounded-active-rms"
+      ]
+    },
+    {
+      "id": "X0-RENDER-026",
+      "instrumentId": "guitar",
+      "scenario": "dense-seven",
+      "sampleRate": 44100,
+      "midiPitches": [
+        48,
+        52,
+        55,
+        59,
+        62,
+        65,
+        69
+      ],
+      "velocity": 110,
+      "start": 0.1,
+      "release": 1.1,
+      "renderDuration": 4,
+      "reverbAmount": 0.28,
+      "expectedSourceCount": 21,
+      "assertions": [
+        "finite",
+        "non-silent",
+        "bounded-peak",
+        "bounded-active-rms",
+        "no-unity-clipping"
+      ]
+    },
+    {
+      "id": "X0-RENDER-027",
+      "instrumentId": "guitar",
+      "scenario": "release-tail",
+      "sampleRate": 96000,
+      "midiPitches": [
+        60,
+        64,
+        67,
+        71
+      ],
+      "velocity": 90,
+      "start": 0.1,
+      "release": 0.8,
+      "renderDuration": 4.5,
+      "reverbAmount": 0.8,
+      "expectedSourceCount": 12,
+      "assertions": [
+        "finite",
+        "tail-present",
+        "tail-decays",
+        "final-rms-bounded",
+        "voice-cleanup-before-eight-seconds"
+      ]
+    },
+    {
+      "id": "X0-RENDER-028",
+      "instrumentId": "upright-bass",
+      "scenario": "single-note",
+      "sampleRate": 48000,
+      "midiPitches": [
+        33
+      ],
+      "velocity": 100,
+      "start": 0.1,
+      "release": 0.6,
+      "renderDuration": 3,
+      "reverbAmount": 0.2,
+      "expectedSourceCount": 1,
+      "assertions": [
+        "finite",
+        "non-silent",
+        "onset-window",
+        "bounded-peak",
+        "bounded-active-rms"
+      ]
+    },
+    {
+      "id": "X0-RENDER-029",
+      "instrumentId": "upright-bass",
+      "scenario": "dense-seven",
+      "sampleRate": 44100,
+      "midiPitches": [
+        28,
+        33,
+        36,
+        40,
+        43,
+        45,
+        50
+      ],
+      "velocity": 110,
+      "start": 0.1,
+      "release": 1.1,
+      "renderDuration": 4,
+      "reverbAmount": 0.28,
+      "expectedSourceCount": 7,
+      "assertions": [
+        "finite",
+        "non-silent",
+        "bounded-peak",
+        "bounded-active-rms",
+        "no-unity-clipping"
+      ]
+    },
+    {
+      "id": "X0-RENDER-030",
+      "instrumentId": "upright-bass",
+      "scenario": "release-tail",
+      "sampleRate": 96000,
+      "midiPitches": [
+        31,
+        38,
+        45,
+        50
+      ],
+      "velocity": 90,
+      "start": 0.1,
+      "release": 0.8,
+      "renderDuration": 4.5,
+      "reverbAmount": 0.8,
+      "expectedSourceCount": 4,
+      "assertions": [
+        "finite",
+        "tail-present",
+        "tail-decays",
+        "final-rms-bounded",
+        "voice-cleanup-before-eight-seconds"
+      ]
+    },
+    {
+      "id": "X0-RENDER-031",
+      "instrumentId": "concert-vibes",
+      "scenario": "single-note",
+      "sampleRate": 48000,
+      "midiPitches": [
+        69
+      ],
+      "velocity": 100,
+      "start": 0.1,
+      "release": 0.6,
+      "renderDuration": 3,
+      "reverbAmount": 0.2,
+      "expectedSourceCount": 1,
+      "assertions": [
+        "finite",
+        "non-silent",
+        "onset-window",
+        "bounded-peak",
+        "bounded-active-rms"
+      ]
+    },
+    {
+      "id": "X0-RENDER-032",
+      "instrumentId": "concert-vibes",
+      "scenario": "dense-seven",
+      "sampleRate": 44100,
+      "midiPitches": [
+        53,
+        57,
+        60,
+        64,
+        67,
+        72,
+        76
+      ],
+      "velocity": 110,
+      "start": 0.1,
+      "release": 1.1,
+      "renderDuration": 4,
+      "reverbAmount": 0.28,
+      "expectedSourceCount": 7,
+      "assertions": [
+        "finite",
+        "non-silent",
+        "bounded-peak",
+        "bounded-active-rms",
+        "no-unity-clipping"
+      ]
+    },
+    {
+      "id": "X0-RENDER-033",
+      "instrumentId": "concert-vibes",
+      "scenario": "release-tail",
+      "sampleRate": 96000,
+      "midiPitches": [
+        60,
+        64,
+        67,
+        71
+      ],
+      "velocity": 90,
+      "start": 0.1,
+      "release": 0.8,
+      "renderDuration": 4.5,
+      "reverbAmount": 0.8,
+      "expectedSourceCount": 4,
+      "assertions": [
+        "finite",
+        "tail-present",
+        "tail-decays",
+        "final-rms-bounded",
+        "voice-cleanup-before-eight-seconds"
+      ]
+    }
   ]
 }

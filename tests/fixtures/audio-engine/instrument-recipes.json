@@ -445,6 +445,64 @@
         "q": 1.1,
         "decaySeconds": 1.0
       }
+    },
+    {
+      "id": "upright-bass",
+      "label": "Upright Bass",
+      "designClaim": "recorded solo contrabass pizzicato, nearest recorded key transposed onto pitch",
+      "synthesis": "rendered",
+      "outputLevel": 0.5,
+      "polyphonyLimit": 32,
+      "scheduledSourceCount": 1,
+      "renderer": {
+        "algorithmId": "changes.dsp.sampled-upright-bass@1",
+        "channels": 2,
+        "maximumRenderSeconds": 4,
+        "bufferCacheLimit": 64
+      },
+      "amplitude": {
+        "attackSeconds": 0.002,
+        "decaySeconds": 0,
+        "sustainLevel": 1,
+        "releaseSeconds": 0.25
+      },
+      "filter": {
+        "type": "lowpass",
+        "attackHz": 16000,
+        "peakHz": 16000,
+        "sustainHz": 16000,
+        "q": 0.5,
+        "decaySeconds": 0.1
+      }
+    },
+    {
+      "id": "concert-vibes",
+      "label": "Concert Vibes",
+      "designClaim": "recorded vibraphone, soft mallets, nearest recorded key transposed onto pitch",
+      "synthesis": "rendered",
+      "outputLevel": 0.42,
+      "polyphonyLimit": 48,
+      "scheduledSourceCount": 1,
+      "renderer": {
+        "algorithmId": "changes.dsp.sampled-vibraphone@1",
+        "channels": 2,
+        "maximumRenderSeconds": 4,
+        "bufferCacheLimit": 64
+      },
+      "amplitude": {
+        "attackSeconds": 0.002,
+        "decaySeconds": 0,
+        "sustainLevel": 1,
+        "releaseSeconds": 1.1
+      },
+      "filter": {
+        "type": "lowpass",
+        "attackHz": 16000,
+        "peakHz": 16000,
+        "sustainHz": 16000,
+        "q": 0.5,
+        "decaySeconds": 0.1
+      }
     }
   ],
   "pulseWave": {
@@ -528,6 +586,18 @@
         0.25,
         0.188982236505,
         0.125
+      ],
+      "upright-bass": [
+        0.5,
+        0.25,
+        0.188982236505,
+        0.125
+      ],
+      "concert-vibes": [
+        0.42,
+        0.21,
+        0.158745078664,
+        0.105
       ]
     },
     "referenceVelocities": [
