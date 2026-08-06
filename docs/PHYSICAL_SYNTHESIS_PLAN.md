@@ -319,6 +319,9 @@ interface QuantizedControlPoint {
 
 ### 7.2 Reusable concepts and kernels
 
+- [ ] Follow `docs/PHS1_FRANKENSIM_EXTRACTION_MAP.md` (surveyed 2026-08-06 at
+  the pinned commit) as the normative extraction map, no-go list, and license
+  arbitration record for every FrankenSim reuse decision below.
 - [ ] Evaluate the `fs-time` symplectic integrator for free reed/lip/bar states.
 - [ ] Evaluate collision behavior separately; do not assume a free-oscillator
   symplectic method remains correct through unilateral contact.
@@ -427,7 +430,18 @@ interface QuantizedControlPoint {
 - [ ] Prove tongued attacks remain perceptually and measurably distinct.
 - [ ] Run browser, Stop, mutation, transposition, and owner-listening gates.
 
-## 10. Guitar family package
+## 10. Plucked-string family package (guitars, ukulele, upright bass)
+
+Amended 2026-08-06 (`jcpe-plan-uke-upright-bass-scgi`): scope widened from
+"guitar family" to the plucked-string family. The owner's stated goal is
+modeling the physical size and shape differences between instruments — a
+ukulele versus a Martin-dreadnought-style acoustic versus a huge upright
+bass. The differentiation mechanism is one shared string/bridge/body
+architecture with per-instrument parameter packs (scale length, string set
+density/tension/stiffness, body mode table derived from body volume and
+plate size, bridge admittance scaling); per-body mode tables are cheap and
+high-impact even before bridge feedback lands. All pre-amendment guitar
+checkboxes below are unchanged.
 
 ### 10.1 Specification and fixtures
 
@@ -448,6 +462,30 @@ interface QuantizedControlPoint {
   whether wave-digital stages or fitted nonlinear blocks are used.
 - [ ] Author independent string pitch/inharmonicity, decay-slope, bridge/body
   admittance, pluck cancellation, pickup comb, and amp transfer fixtures.
+- [ ] Specify the ukulele target: ~0.33–0.38 m scale, four nylon strings with
+  the re-entrant/linear G4–C4–E4–A4 decision recorded, small body with a high
+  Helmholtz resonance (~500–700 Hz region), low modal density, fast decay,
+  and a bright low-sustain character; no amplifier path.
+- [ ] Specify the upright-bass target: ~1.04–1.06 m scale, four thick
+  steel/gut-hybrid strings (E1–A1–D2–G2), large body with a low Helmholtz
+  resonance (~60–100 Hz), long sustain, strong low-mode radiation, and
+  pizzicato-first articulation; arco is explicitly deferred because bowing
+  is a different exciter class (sustained friction, not a pluck) and must
+  arrive as its own reviewed package, never as a pluck variant.
+- [ ] Specify per-body parameter packs (scale length, string set, body mode
+  table from body volume/plate size, bridge admittance scaling) as the sole
+  mechanism differentiating archtop, dreadnought, ukulele, and upright bass.
+- [ ] Route new ukulele/upright-bass instrument IDs through the reviewed
+  domain/audio registry amendment path (same law as the trumpet ID in
+  section 11.1).
+- [ ] Record the interplay with the existing sampled upright-bass recipe:
+  the physical model is additive, and the CC0 sampled bass remains a named
+  comparator in proof and listening (mirroring the vibraphone dual-track
+  precedent in section 12).
+- [ ] Author independent ukulele/upright-bass fixtures: pitch/inharmonicity
+  across strings and frets/positions, body-resonance placement, decay-slope
+  versus frequency, and same-pitch A/B rows against the sampled bass for
+  the listening rubric.
 
 ### 10.2 Production implementation
 
@@ -469,6 +507,9 @@ interface QuantizedControlPoint {
   response with independent expectations.
 - [ ] Prove clean/twang/drive recipe names match measured and owner-heard targets.
 - [ ] Prove amp oversampling/alias bounds, limiter incidence, and finite output.
+- [ ] Prove ukulele and upright-bass body-resonance placement, register-correct
+  decay character, and audible body-size distinction from the guitars with
+  independent expectations (not production-derived).
 - [ ] Run browser, polyphony, Stop, mutation, transposition, and listening gates.
 
 ## 11. Trumpet package
@@ -547,6 +588,71 @@ interface QuantizedControlPoint {
 - [ ] Prove fan phase/rate produces the expected bounded sidebands.
 - [ ] Prove polyphony/state/memory/work termination.
 - [ ] Run browser, Stop, mutation, transposition, and owner-listening gates.
+
+## Piano sustain-pedal sympathetic resonance package (planned, after PHS6)
+
+Added 2026-08-06 (`jcpe-plan-piano-pedal-resonance-rn6b`). The concert grand
+is the studio's flagship instrument, yet nothing shares energy across piano
+notes: pedaled jazz comping renders dry and disconnected. The coupled-stem
+machinery of PHS0 section 4.3 is being proven on guitar and vibraphone; the
+piano is its third and musically most important customer. This package is
+additive and deliberately sequenced after PHS6 so it inherits a proven
+pedal/damper/coupled-stem pattern rather than inventing a parallel one.
+
+- [ ] Specify a shared string-field stem: with sustain-pedal state down,
+  struck-note energy excites one bounded modal field representing the
+  undamped strings (a compact reviewed mode set, not 88 full string
+  models), fed by a fraction of each note's bridge energy; released notes
+  decay into the field.
+- [ ] Specify the per-note damper model: pedal up preserves current behavior
+  (fast per-note release); pedal down transitions the note tail into the
+  shared field.
+- [ ] Specify the pedal-state source as deterministic realization policy: the
+  playback plan has no pedal events, so derive an auto-pedal policy from
+  legato/overlap context in the expressive realization layer (the layer
+  that already derives articulation). No domain, document, or MIDI change;
+  physical performance data stays additive per section 2.
+- [ ] Author fixtures: strike C3 under pedal-down policy and measure energy
+  at the E3/G3/C4 string-field modes after a dry note's damper would have
+  silenced them; A/B dry-versus-pedal decay slopes; determinism; and the
+  field obeying serialized Stop like every source.
+- [ ] Create spec/build/verify children for this package only after PHS6
+  closes, with the dependency recorded in the tracker.
+
+## Stage image and shared air (cross-cutting)
+
+Added 2026-08-06 (`jcpe-plan-stereo-space-anhi`). This section is production
+and mix realism, not physics: it complements the physical models and never
+substitutes for them, and describing it otherwise falls under the section 17
+law against equating more effects with realism. It exists because the models
+are judged on headphones, where a bone-dry mono point source reads as
+synthetic regardless of model quality. Everything here is deterministic,
+offline, and cheap. It feeds PHS7 acceptance and requires an X0 contract
+amendment for the one master-path graph change.
+
+- [ ] Specify per-instrument static stage placement: reviewed azimuth, width,
+  and distance constants in the recipe registry (for example piano wide,
+  bass slightly left of center, winds center-right), user-visible only as a
+  natural default image; no new UI surface.
+- [ ] Specify source width via decorrelated dual-channel rendering where the
+  model already computes stereo (`finalize_stereo`): replace identical-
+  channel duplication with deterministic per-channel allpass chains using
+  instrument-seeded coefficients, with bounded inter-channel coherence
+  targets per instrument.
+- [ ] Specify one shared early-reflection block for the whole mix, never per
+  note: four to eight deterministic taps plus a gentle air-absorption
+  lowpass, one instance on the existing persistent-graph master path,
+  reviewed fixed coefficients, total tail under 80 ms so the X1 Stop
+  guarantee is untouched. Route the addition through a reviewed X0 contract
+  amendment (one persistent graph law).
+- [ ] Record the explicit non-goals: no reverb tail, no HRTF, no
+  user-adjustable room, no per-note graph nodes.
+- [ ] Author fixtures: inter-channel coherence per instrument within
+  independently authored bounds; mono-sum coloration bounded by an authored
+  dB deviation envelope (no comb disasters); bit-identical renders across
+  runs; Stop-to-silence timing unchanged against the X1 law.
+- [ ] Add owner listening rubric rows with level-matched with/without A/B
+  comparisons before acceptance.
 
 ## 13. Measurement and evidence system
 
@@ -668,14 +774,14 @@ specification/fixtures, production build, and independent proof children close.
 
 ### Phase B — specifications and independent fixtures
 
-- [ ] B001 Baseline current recipes, artifacts, performance, PCM, and evidence.
-- [ ] B002 Specify expressive realization types, bounds, refusals, and fixtures.
-- [ ] B003 Specify note/phrase/stem partitioning and exact sample timing.
-- [ ] B004 Specify cache identity, preparation, limits, and fixtures.
-- [ ] B005 Specify v2 WASM ABI, memory safety, diagnostics, and fixtures.
-- [ ] B006 Specify energy ports, passive components, nonlinear solves, and
+- [x] B001 Baseline current recipes, artifacts, performance, PCM, and evidence.
+- [x] B002 Specify expressive realization types, bounds, refusals, and fixtures.
+- [x] B003 Specify note/phrase/stem partitioning and exact sample timing.
+- [x] B004 Specify cache identity, preparation, limits, and fixtures.
+- [x] B005 Specify v2 WASM ABI, memory safety, diagnostics, and fixtures.
+- [x] B006 Specify energy ports, passive components, nonlinear solves, and
   normalization.
-- [ ] B007 Specify deterministic PRNG/numerics and cross-host evidence.
+- [x] B007 Specify deterministic PRNG/numerics and cross-host evidence.
 - [ ] B008 Specify parameter-pack/provenance format and foundry workflow.
 - [ ] B009 Build independent metric extractors and their known-answer fixtures.
 - [ ] B010 Specify clarinet v2 and independent corpus.
@@ -688,18 +794,18 @@ specification/fixtures, production build, and independent proof children close.
 
 ### Phase C — shared production foundation
 
-- [ ] C001 Implement expressive realization compilation.
-- [ ] C002 Implement immutable validation/refusal and curve interpolation.
-- [ ] C003 Implement deterministic note/phrase/stem partitioning.
-- [ ] C004 Implement canonical render fingerprints and bounded caches.
-- [ ] C005 Implement v2 WASM request/response ABI and host validation.
-- [ ] C006 Implement shared delay/scattering/loss/radiation components.
-- [ ] C007 Implement shared oscillator/contact/nonlinear-solve components.
-- [ ] C008 Implement energy audit hooks and structured diagnostics.
-- [ ] C009 Separate physical energy, safety limiting, and output-level mixing.
+- [x] C001 Implement expressive realization compilation.
+- [x] C002 Implement immutable validation/refusal and curve interpolation.
+- [x] C003 Implement deterministic note/phrase/stem partitioning.
+- [x] C004 Implement canonical render fingerprints and bounded caches.
+- [x] C005 Implement v2 WASM request/response ABI and host validation.
+- [x] C006 Implement shared delay/scattering/loss/radiation components.
+- [x] C007 Implement shared oscillator/contact/nonlinear-solve components.
+- [x] C008 Implement energy audit hooks and structured diagnostics.
+- [x] C009 Separate physical energy, safety limiting, and output-level mixing.
 - [ ] C010 Implement parameter-pack validation and generated-table checks.
-- [ ] C011 Integrate bounded future preparation with persistent transport.
-- [ ] C012 Independently prove the shared foundation before instrument migration.
+- [x] C011 Integrate bounded future preparation with persistent transport.
+- [x] C012 Independently prove the shared foundation before instrument migration.
 
 ### Phase D — instruments
 
@@ -719,6 +825,13 @@ specification/fixtures, production build, and independent proof children close.
 - [ ] D014 Implement physical/hybrid vibraphone.
 - [ ] D015 Independently prove vibraphone.
 - [ ] D016 Complete vibraphone owner listening.
+- [ ] D017 Implement ukulele (plucked-string family pack; 2026-08-06 amendment).
+- [ ] D018 Independently prove ukulele.
+- [ ] D019 Complete ukulele owner listening.
+- [ ] D020 Implement physical upright bass (plucked-string family pack;
+  sampled bass retained as comparator).
+- [ ] D021 Independently prove upright bass.
+- [ ] D022 Complete upright-bass owner listening.
 
 ### Phase E — whole-system acceptance
 

@@ -1,0 +1,48 @@
+{
+  "schema": "changes.fixtures.phs1-foundry-contract.v1",
+  "packSchema": "changes.physical.parameter-pack.v1",
+  "runtimeTableSchema": "changes.physical.parameter-table.v1",
+  "frankensimSurveyCommit": "b47259187a31b704f8f0faf6abdf49b32919b96a",
+  "foundryRuntimeBoundary": {
+    "runtimeNetworkPermitted": false,
+    "runtimeOptimizerPermitted": false,
+    "runtimeSourceParserPermitted": false,
+    "generatedTableIsDataOnly": true,
+    "placeholderDigestMayClaimContentAddressing": false
+  },
+  "distributionClasses": ["distributable", "local-evidence-only", "forbidden-runtime"],
+  "requiredMetricFamilies": [
+    "fundamental-pitch", "partials", "impedance-peaks", "attack-release",
+    "spectral-centroid", "harmonic-to-noise", "odd-even-balance",
+    "partial-trajectories", "decay-slopes", "regime-classification",
+    "modulation-sidebands", "alias-energy", "boundary-continuity",
+    "energy-residual", "limiter-activation"
+  ],
+  "limits": {
+    "maximumParameters": 64,
+    "maximumSourceObservations": 512,
+    "maximumModes": 256,
+    "maximumObjectives": 16,
+    "maximumRegimes": 32,
+    "maximumOptimizerEvaluations": 4096,
+    "maximumGradientChecks": 64,
+    "maximumSensitivityPerturbations": 256,
+    "maximumScratchBytes": 2147483648
+  },
+  "validationOrder": [
+    "schema", "provenance", "distribution", "digests", "units", "ranges",
+    "work-bounds", "solver-certificates", "metrics", "sensitivity", "generation"
+  ],
+  "independence": {
+    "productionImportsForbidden": true,
+    "productionOutputUsed": false,
+    "expectedValuesGenerated": false
+  },
+  "reviewedCompanionSha256": {
+    "parameter-pack-cases.json": "6083923481780a8f83f90b4dc07ab5e7826efc5d5b75ee655731ed7c41eb1d5b",
+    "metric-cases.json": "ab9be669668fa95451547ee27d2609d7b08c2a19f3aa14a1f5d119d8a31f5f16",
+    "provenance-ledger.json": "f0c7a90d13be1451a0784239a115d93a10536f34b865140bd43e427d3019a443",
+    "trace-ledger.json": "c723cf692b567f8e71cfc40f15395f9d7381fc187b696004cd430603b47b9880",
+    "mutation-controls.json": "cf666268315f2680ede2981779a63ca44da9ddbd42cdecc55b066c76a8823ae2"
+  }
+}

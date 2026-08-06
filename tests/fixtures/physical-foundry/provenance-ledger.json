@@ -1,0 +1,11 @@
+{
+  "schema": "changes.fixtures.phs1-provenance-ledger.v1",
+  "authorities": [
+    {"id":"authority-primary-measurement","kind":"measurement","distributionClass":"distributable","sourceDigestRequired":true,"licenseGrantRequired":true},
+    {"id":"authority-reviewed-literature","kind":"literature","distributionClass":"distributable","sourceDigestRequired":true,"licenseGrantRequired":true},
+    {"id":"authority-local-corpus","kind":"measurement","distributionClass":"local-evidence-only","rawBytesMayEnterRepository":false,"runtimeGenerationPermitted":false},
+    {"id":"authority-frankensim-pin","kind":"algorithm-source","sourcePath":"/dp/frankensim","commit":"b47259187a31b704f8f0faf6abdf49b32919b96a","distributionClass":"forbidden-runtime","blocker":"jcpe-frankensim-license-arbitration-rbru","runtimeGenerationPermitted":false}
+  ],
+  "requiredPackFields": ["schema","packVersion","family","contentSha256","parameters","sourceDigests","solver","objectives","residuals","sensitivity","review","distributionClass"],
+  "requiredParameterFields": ["id","unit","value","minimum","maximum","sourceAuthorityId","method","licenseGrant","sensitivity"]
+}

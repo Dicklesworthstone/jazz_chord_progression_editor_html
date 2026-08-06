@@ -156,7 +156,13 @@ fallback. Silent coefficient clamping, NaN propagation, infinite loops, and
 wall-time cancellation are forbidden.
 
 Physical excitation energy is distinct from recipe output level. V2 does not
-use the legacy fixed early-RMS normalization. A deterministic safety limiter is
+use the legacy fixed early-RMS normalization. The safety limiter is
+output-only: when it engages it rescales the published PCM block, never the
+handed-off physical state or the energy ledger, so a continuation render
+resumes from true physical amplitude. Stitching a limited block directly
+against its continuation is therefore invalid; the receipt's engagement count
+is the evidence a host must consult before treating adjacent blocks as one
+continuous signal. A deterministic safety limiter is
 allowed only as protection; engagement is counted and cannot be used as musical
 normalization. Independently reviewed calibration sets inter-instrument mix.
 

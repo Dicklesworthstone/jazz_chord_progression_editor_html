@@ -1,0 +1,16 @@
+{
+  "schema": "changes.fixtures.phs1-mutation-controls.v1",
+  "controls": [
+    {"id":"mutation-schema","target":"phs1-contract.json","pointer":"/schema","value":"changes.fixtures.phs1-foundry-contract.v0","expectedFindingCode":"PHS1_SCHEMA"},
+    {"id":"mutation-runtime-network","target":"phs1-contract.json","pointer":"/foundryRuntimeBoundary/runtimeNetworkPermitted","value":true,"expectedFindingCode":"PHS1_RUNTIME_BOUNDARY"},
+    {"id":"mutation-placeholder-hash","target":"phs1-contract.json","pointer":"/foundryRuntimeBoundary/placeholderDigestMayClaimContentAddressing","value":true,"expectedFindingCode":"PHS1_PLACEHOLDER_DIGEST"},
+    {"id":"mutation-survey-pin","target":"phs1-contract.json","pointer":"/frankensimSurveyCommit","value":"main","expectedFindingCode":"PHS1_FRANKENSIM_PIN"},
+    {"id":"mutation-metric-family","target":"phs1-contract.json","pointer":"/requiredMetricFamilies/14","value":"loudness-only","expectedFindingCode":"PHS1_METRIC_FAMILIES"},
+    {"id":"mutation-work-bound","target":"phs1-contract.json","pointer":"/limits/maximumOptimizerEvaluations","value":0,"expectedFindingCode":"PHS1_LIMITS"},
+    {"id":"mutation-independence","target":"phs1-contract.json","pointer":"/independence/productionOutputUsed","value":true,"expectedFindingCode":"PHS1_INDEPENDENCE"},
+    {"id":"mutation-pack-plus-one","target":"parameter-pack-cases.json","pointer":"/cases/6/expected","value":"accept","expectedFindingCode":"PHS1_PACK_CASES"},
+    {"id":"mutation-analytic-centroid","target":"metric-cases.json","pointer":"/cases/4/expected/centroidHz","value":200,"expectedFindingCode":"PHS1_METRIC_KNOWN_ANSWER"},
+    {"id":"mutation-provenance-runtime","target":"provenance-ledger.json","pointer":"/authorities/3/runtimeGenerationPermitted","value":true,"expectedFindingCode":"PHS1_PROVENANCE"},
+    {"id":"mutation-trace-coverage","target":"trace-ledger.json","pointer":"/traces/4/fixtures","value":[],"expectedFindingCode":"PHS1_TRACE_COVERAGE"}
+  ]
+}

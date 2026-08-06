@@ -1,0 +1,22 @@
+{
+  "schema": "changes.fixtures.phs1-parameter-pack-cases.v1",
+  "cases": [
+    {
+      "id": "pack-positive-si-certified",
+      "expected": "accept",
+      "family": "clarinet",
+      "distributionClass": "distributable",
+      "parameter": {"id": "reed.stiffness", "unit": "N/m", "value": 1700, "minimum": 800, "maximum": 3000, "sourceAuthorityId": "authority-primary-measurement", "method": "static-load-fit", "licenseGrant": "CC-BY-4.0", "sensitivity": "high"},
+      "solver": {"name": "bounded-lbfgs", "version": 1, "commit": "foundry-spec-v1", "seed": 193, "evaluations": 312, "maximumEvaluations": 4096, "residual": 0.0008, "maximumResidual": 0.001},
+      "modeCertificate": {"estimateHz": 146.83, "lowerHz": 146.81, "upperHz": 146.85, "residual": 0.00002},
+      "review": {"reviewer": "independent-domain-reviewer", "date": "2026-08-06"}
+    },
+    {"id": "pack-near-miss-outside-range", "expected": "refuse", "finding": "PHS1_PARAMETER_RANGE", "value": 3000.0001, "minimum": 800, "maximum": 3000},
+    {"id": "pack-negative-unit-unknown", "expected": "refuse", "finding": "PHS1_PARAMETER_UNIT", "unit": "clarinet-units"},
+    {"id": "pack-negative-mode-uncertified", "expected": "refuse", "finding": "PHS1_MODE_CERTIFICATE", "estimateHz": 440, "lowerHz": 440.1, "upperHz": 440.2},
+    {"id": "pack-invariance-octave-frequency-ratio", "expected": "accept", "baseHz": 220, "transposedHz": 440, "semitones": 12, "expectedRatio": 2},
+    {"id": "pack-boundary-max-evaluations", "expected": "accept", "evaluations": 4096, "maximumEvaluations": 4096},
+    {"id": "pack-plus-one-evaluations", "expected": "refuse", "finding": "PHS1_WORK_BOUND", "evaluations": 4097, "maximumEvaluations": 4096},
+    {"id": "pack-negative-nonfinite-token", "expected": "refuse", "finding": "PHS1_FINITE_NUMBER", "encodedValue": "NaN"}
+  ]
+}

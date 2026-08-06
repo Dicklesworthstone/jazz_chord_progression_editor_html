@@ -1,0 +1,11 @@
+{
+  "schema": "changes.fixtures.phs1-trace-ledger.v1",
+  "traces": [
+    {"id":"trace-pack-shape","requirement":"canonical-pack","fixtures":["pack-positive-si-certified","pack-negative-unit-unknown","pack-near-miss-outside-range"]},
+    {"id":"trace-certification","requirement":"certified-modes-and-residuals","fixtures":["pack-positive-si-certified","pack-negative-mode-uncertified"]},
+    {"id":"trace-work-bounds","requirement":"deterministic-termination","fixtures":["pack-boundary-max-evaluations","pack-plus-one-evaluations"]},
+    {"id":"trace-transposition","requirement":"dimensionless-invariance","fixtures":["pack-invariance-octave-frequency-ratio"]},
+    {"id":"trace-metrics","requirement":"all-independent-metric-families","fixtures":["metric-fundamental","metric-partials","metric-impedance","metric-envelope","metric-centroid","metric-hnr","metric-odd-even","metric-trajectories","metric-decay","metric-regime","metric-sidebands","metric-alias","metric-continuity","metric-energy","metric-limiter","metric-near-miss-alias"]},
+    {"id":"trace-provenance","requirement":"distribution-and-license-boundary","fixtures":["authority-primary-measurement","authority-local-corpus","authority-frankensim-pin"]}
+  ]
+}

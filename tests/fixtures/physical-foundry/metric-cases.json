@@ -1,0 +1,21 @@
+{
+  "schema": "changes.fixtures.phs1-metric-cases.v1",
+  "cases": [
+    {"id":"metric-fundamental","family":"fundamental-pitch","signal":{"kind":"sine","sampleRateHz":48000,"frequencyHz":440,"seconds":1},"expected":{"frequencyHz":440,"toleranceCents":0.1}},
+    {"id":"metric-partials","family":"partials","signal":{"kind":"harmonic-series","fundamentalHz":200,"amplitudes":[1,0.5,0.25]},"expected":{"frequenciesHz":[200,400,600],"amplitudes":[1,0.5,0.25],"relativeTolerance":0.001}},
+    {"id":"metric-impedance","family":"impedance-peaks","signal":{"kind":"lorentzian","centerHz":1000,"q":25},"expected":{"peakHz":1000,"q":25,"relativeTolerance":0.01}},
+    {"id":"metric-envelope","family":"attack-release","signal":{"kind":"linear-envelope","attackSeconds":0.02,"releaseSeconds":0.08},"expected":{"attackSeconds":0.02,"releaseSeconds":0.08,"toleranceSeconds":0.001}},
+    {"id":"metric-centroid","family":"spectral-centroid","signal":{"kind":"two-bin","frequenciesHz":[100,300],"magnitudes":[1,3]},"expected":{"centroidHz":250,"toleranceHz":0.01}},
+    {"id":"metric-hnr","family":"harmonic-to-noise","signal":{"kind":"separated-energy","harmonicEnergy":100,"noiseEnergy":1},"expected":{"hnrDb":20,"toleranceDb":0.01}},
+    {"id":"metric-odd-even","family":"odd-even-balance","signal":{"kind":"harmonic-energy","oddEnergy":4,"evenEnergy":1},"expected":{"oddEvenDb":6.020599913,"toleranceDb":0.000001}},
+    {"id":"metric-trajectories","family":"partial-trajectories","signal":{"kind":"linear-gliss-partial","startHz":400,"endHz":404,"seconds":1},"expected":{"slopeHzPerSecond":4,"toleranceHzPerSecond":0.01}},
+    {"id":"metric-decay","family":"decay-slopes","signal":{"kind":"exponential-amplitude","start":1,"end":0.1,"seconds":2},"expected":{"slopeDbPerSecond":-10,"toleranceDbPerSecond":0.01}},
+    {"id":"metric-regime","family":"regime-classification","signal":{"kind":"feature-vector","attackSeconds":0.005,"oddEvenDb":8},"expected":{"regime":"hard-attack-odd-dominant"}},
+    {"id":"metric-sidebands","family":"modulation-sidebands","signal":{"kind":"am-tone","carrierHz":1000,"modulationHz":5},"expected":{"frequenciesHz":[995,1000,1005],"toleranceHz":0.1}},
+    {"id":"metric-alias","family":"alias-energy","signal":{"kind":"band-energy","totalEnergy":1000,"aliasBandEnergy":0.1},"expected":{"aliasDb":-40,"maximumDb":-36}},
+    {"id":"metric-continuity","family":"boundary-continuity","signal":{"kind":"boundary-samples","leftValue":0.125,"rightValue":0.12501,"leftSlope":0.01,"rightSlope":0.01002},"expected":{"maximumValueJump":0.00002,"maximumSlopeJump":0.00003}},
+    {"id":"metric-energy","family":"energy-residual","signal":{"kind":"energy-ledger","initial":10,"injected":2,"dissipated":3,"final":9.0005},"expected":{"normalizedResidual":0.00005,"maximum":0.0001}},
+    {"id":"metric-limiter","family":"limiter-activation","signal":{"kind":"peak-series","threshold":0.98,"peaks":[0.5,0.99,1.2]},"expected":{"activationCount":2,"maximumPermitted":2}},
+    {"id":"metric-near-miss-alias","family":"alias-energy","signal":{"kind":"band-energy","totalEnergy":1000,"aliasBandEnergy":0.2511886432},"expected":{"outcome":"refuse","aliasDb":-36,"maximumDb":-36.01}}
+  ]
+}
