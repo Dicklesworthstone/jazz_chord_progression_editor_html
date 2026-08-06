@@ -540,6 +540,12 @@ export type StudioMidiImportView = Readonly<{
   sonorities: readonly StudioMidiImportSonorityView[];
   blockedReason: string | null;
   canCommit: boolean;
+  /**
+   * The M1-TRACE ledger, serialized, for the Advanced disclosure — one
+   * record per frozen stage with input digests and decisions. Null when no
+   * file is pending.
+   */
+  traceJson: string | null;
 }>;
 
 export type StudioShellView = Readonly<{

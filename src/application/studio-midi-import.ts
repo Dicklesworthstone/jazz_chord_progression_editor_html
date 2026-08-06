@@ -15,7 +15,11 @@ import {
   type MidiSalvageReport,
   type SmfDecodeFrame,
   planAutomationImport,
+  completeImportTrace,
+  traceRecord,
   type M1AutomationPlan,
+  type M1ImportTrace,
+  type M1TraceRecord,
 } from "../export";
 import { DEFAULT_GROOVE_STYLE_ID } from "../domain";
 import type {
@@ -79,6 +83,11 @@ export type MidiImportPreview = Readonly<{
   automation: M1AutomationPlan | null;
   /** The automation refusal code when automation could not plan; else null. */
   automationRefusal: string | null;
+  /**
+   * The M1-TRACE ledger: one record per frozen stage, decode and salvage
+   * included, unreached stages stated explicitly. Every preview carries it.
+   */
+  trace: M1ImportTrace;
 }>;
 
 export type MidiImportCommitResult = Readonly<{
@@ -159,6 +168,40 @@ function blockedReasonFor(plan: MidiImportChartPlan | null): string | null {
   return null;
 }
 
+/**
+ * The preview a session without a decoder returns: nothing decoded, the
+ * statement carried in blockedReason, and a trace whose decode stage says
+ * exactly why nothing ran. UI composes this instead of hand-building the
+ * preview shape (the trace type lives below the UI's import boundary).
+ */
+export function unavailableMidiImportPreview(
+  fileName: string,
+  byteLength: number,
+): MidiImportPreview {
+  return Object.freeze({
+    fileName,
+    byteLength,
+    decoded: null,
+    refusal: null,
+    plan: null,
+    sonorities: Object.freeze([]),
+    salvage: null,
+    salvageFailed: null,
+    automation: null,
+    automationRefusal: null,
+    blockedReason: "MIDI import is not available in this session.",
+    trace: completeImportTrace([
+      traceRecord("decode", { fileName, byteLength }, {}, [
+        {
+          subject: "decode",
+          outcome: "unavailable",
+          reason: "no decoder is composed into this session",
+        },
+      ]),
+    ]),
+  });
+}
+
 export function createStudioMidiImport(
   loadDecodeFrame: () => Promise<SmfDecodeFrame>,
 ): StudioMidiImportService {
@@ -208,6 +251,60 @@ export function createStudioMidiImport(
       }
     }
 
+    /*
+     * M1-TRACE, service-owned stages: the decode outcome and the salvage
+     * account — present whenever salvage RAN, including when the repaired
+     * bytes still refused (the jcpe-a5uq information-loss law).
+     */
+    const decodeRecord = (outcome: string, code: string | null): M1TraceRecord =>
+      traceRecord(
+        "decode",
+        { fileName, byteLength: bytes.byteLength },
+        result.ok
+          ? {
+              tracks: result.value.model.tracks.length,
+              notesPaired: result.value.model.counters.notesPaired,
+            }
+          : {},
+        [
+          {
+            subject: "decode",
+            outcome,
+            reason:
+              code ??
+              `${MIDI_IMPORT_READER_ID}@${String(MIDI_IMPORT_READER_VERSION)}`,
+          },
+        ],
+        code,
+      );
+    const salvageRecord = (): M1TraceRecord => {
+      const attempt = salvage ?? salvageFailed;
+      if (attempt === null) {
+        return traceRecord("salvage", { attempted: false }, { repairs: 0 }, [
+          {
+            subject: "salvage",
+            outcome: strict.ok ? "not-attempted" : "not-salvageable",
+            reason: strict.ok
+              ? "the decode succeeded without content repairs"
+              : "the refusal is structural, not a note-stream defect",
+          },
+        ]);
+      }
+      return traceRecord(
+        "salvage",
+        { attempted: true },
+        { repairs: attempt.totalRepairs },
+        [
+          {
+            subject: "salvage",
+            outcome:
+              salvage !== null ? "repaired-clean" : "repaired-still-refused",
+            reason: attempt.note,
+          },
+        ],
+      );
+    };
+
     if (!result.ok) {
       return Object.freeze({
         fileName,
@@ -221,6 +318,10 @@ export function createStudioMidiImport(
         salvageFailed,
         automation: null,
         automationRefusal: null,
+        trace: completeImportTrace([
+          decodeRecord("refused", result.refusal.code),
+          salvageRecord(),
+        ]),
       });
     }
     const plan = planMidiImportChart(result.value, sectionNameFor(fileName));
@@ -240,6 +341,13 @@ export function createStudioMidiImport(
       automationRefusal: automationResult.ok
         ? null
         : automationResult.refusal.code,
+      trace: completeImportTrace([
+        decodeRecord("decoded", null),
+        salvageRecord(),
+        ...(automationResult.ok
+          ? automationResult.plan.trace
+          : (automationResult.trace ?? [])),
+      ]),
     });
   };
 

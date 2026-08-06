@@ -41,8 +41,22 @@ import {
   M1_PERCUSSION_CHANNEL,
   M1_PERCUSSION_NAME_TOKENS,
   M1_SEGMENT_SPLIT_MIN_DIFFERENCE,
+  M1_AUTOMATION_TRACE_SCHEMA,
+  M1_TRACE_STAGES,
+  type M1ImportTrace,
+  type M1TraceDecision,
+  type M1TraceRecord,
+  type M1TraceStage,
 } from "./midi-import-automation-contract";
 import type { PitchClass, SpelledPitchClass } from "../domain";
+
+/* Type-only re-exports so trace consumers stay on the public entry. */
+export type {
+  M1ImportTrace,
+  M1TraceDecision,
+  M1TraceRecord,
+  M1TraceStage,
+} from "./midi-import-automation-contract";
 
 /**
  * M1 automated-import pipeline: the production implementation of the laws
@@ -880,6 +894,8 @@ export type M1AutomationPlan = Readonly<{
   initialMeter: Readonly<{ numerator: number; beatUnit: number }>;
   tempoChangeCount: number;
   meterChangeCount: number;
+  /** M1-TRACE records for the stages this pipeline owns (classify…envelope). */
+  trace: readonly M1TraceRecord[];
 }>;
 
 export type M1AutomationPlanResult =
@@ -890,6 +906,8 @@ export type M1AutomationPlanResult =
         | M1MeasureLawRefusal
         | Readonly<{ code: "import.automation_nothing_to_write" }>
         | Readonly<{ code: "import.automation_chart_too_large" }>;
+      /** The stages that DID run before the refusal (M1-TRACE). */
+      trace?: readonly M1TraceRecord[];
     }>;
 
 function boundContaining(
@@ -901,6 +919,81 @@ function boundContaining(
   }
   const last = bounds[bounds.length - 1];
   return last ?? null;
+}
+
+/* ------------------------------------------------------------------ *
+ * M1-TRACE: production trace emission                                  *
+ * ------------------------------------------------------------------ */
+
+/** Key-sorted JSON so a digest is a function of structure, not key order. */
+function traceCanonicalJson(value: unknown): string {
+  if (Array.isArray(value)) {
+    return `[${value.map(traceCanonicalJson).join(",")}]`;
+  }
+  if (value !== null && typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>)
+      .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
+      .map(
+        ([key, entry]) => `${JSON.stringify(key)}:${traceCanonicalJson(entry)}`,
+      );
+    return `{${entries.join(",")}}`;
+  }
+  return value === undefined ? "null" : JSON.stringify(value);
+}
+
+/** FNV-1a 64 over UTF-16 code units, 16 hex digits (the frozen digest). */
+function traceFnv1a64(text: string): string {
+  let hash = 0xcbf29ce484222325n;
+  const prime = 0x100000001b3n;
+  const mask = 0xffffffffffffffffn;
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= BigInt(text.charCodeAt(index));
+    hash = (hash * prime) & mask;
+  }
+  return hash.toString(16).padStart(16, "0");
+}
+
+export function traceRecord(
+  stage: M1TraceStage,
+  input: unknown,
+  workCounters: Readonly<Record<string, number>>,
+  decisions: readonly M1TraceDecision[],
+  refusalCode: string | null = null,
+): M1TraceRecord {
+  return Object.freeze({
+    stage,
+    inputDigest: traceFnv1a64(traceCanonicalJson(input)),
+    workCounters: Object.freeze({ ...workCounters }),
+    decisions: Object.freeze(decisions.map((entry) => Object.freeze(entry))),
+    refusalCode,
+  });
+}
+
+/**
+ * Totalizes a partial trace: every stage in the frozen order gets exactly
+ * one record, unreached stages carrying an explicit not-reached decision,
+ * so a refused preview still states which stages never ran (M1-TRACE).
+ */
+export function completeImportTrace(
+  records: readonly M1TraceRecord[],
+): M1ImportTrace {
+  const byStage = new Map(records.map((record) => [record.stage, record]));
+  return Object.freeze({
+    schema: M1_AUTOMATION_TRACE_SCHEMA,
+    records: Object.freeze(
+      M1_TRACE_STAGES.map(
+        (stage) =>
+          byStage.get(stage) ??
+          traceRecord(stage, null, {}, [
+            Object.freeze({
+              subject: stage,
+              outcome: "not-reached",
+              reason: "an earlier stage refused before this one ran",
+            }),
+          ]),
+      ),
+    ),
+  });
 }
 
 /**
@@ -924,7 +1017,41 @@ export function planAutomationImport(
   fileName: string,
 ): M1AutomationPlanResult {
   const ppq = value.model.header.division;
+  const trace: M1TraceRecord[] = [];
+  /* M1-DET: every per-item decision list is bounded, deterministically. */
+  const DECISION_BOUND = 2_048;
+  const bounded = (
+    decisions: readonly M1TraceDecision[],
+  ): readonly M1TraceDecision[] =>
+    decisions.length <= DECISION_BOUND
+      ? decisions
+      : [
+          ...decisions.slice(0, DECISION_BOUND),
+          {
+            subject: "decision-bound",
+            outcome: "truncated",
+            reason: `${String(decisions.length - DECISION_BOUND)} further decisions elided by the ${String(DECISION_BOUND)}-per-stage bound`,
+          },
+        ];
   const classifications = classifyTracks(value.model.tracks);
+  trace.push(
+    traceRecord(
+      "classify",
+      value.model.tracks.map((track) => ({
+        name: track.name,
+        instrumentName: track.instrumentName,
+        notes: track.notes,
+      })),
+      { tracks: value.model.tracks.length },
+      bounded(
+        classifications.map((entry) => ({
+          subject: `track-${String(entry.trackIndex)}`,
+          outcome: entry.role,
+          reason: entry.ruleFired,
+        })),
+      ),
+    ),
+  );
   const roleTracks: readonly M1RoleTrack[] = value.model.tracks.map(
     (track, index) => ({
       role: classifications[index]?.role ?? "harmony",
@@ -936,11 +1063,54 @@ export function planAutomationImport(
     value.model.meterMap,
     roleTracks,
   );
-  if (!spansResult.ok) return spansResult;
+  if (!spansResult.ok) {
+    trace.push(
+      traceRecord(
+        "segment",
+        { ppq, meterMap: value.model.meterMap },
+        {},
+        [
+          {
+            subject: "segment",
+            outcome: "refused",
+            reason: spansResult.refusal.code,
+          },
+        ],
+        spansResult.refusal.code,
+      ),
+    );
+    return { ok: false, refusal: spansResult.refusal, trace };
+  }
   const spans = spansResult.spans;
+  trace.push(
+    traceRecord(
+      "segment",
+      spans,
+      { spans: spans.length },
+      bounded(
+        spans.map((span) => ({
+          subject: `measure-${String(span.measureIndex)}@${String(span.startTick)}`,
+          outcome: span.silent
+            ? "silent"
+            : `present:${span.presentPitchClasses.map(String).join("+")}`,
+          reason: `depth ${String(span.depth)}`,
+        })),
+      ),
+    ),
+  );
 
   const masses = totalPitchClassMass(ppq, value.model.meterMap, roleTracks);
   const key = inferAutomationKey(masses);
+  trace.push(
+    traceRecord("infer-key", masses, { candidates: 24 }, [
+      {
+        subject: "key",
+        outcome:
+          key === null ? "none" : `${String(key.tonicPitchClass)}/${key.mode}`,
+        reason: "highest frozen-profile score",
+      },
+    ]),
+  );
   const keyForSpelling =
     key === null
       ? null
@@ -1017,6 +1187,21 @@ export function planAutomationImport(
     );
   }
 
+  trace.push(
+    traceRecord(
+      "resolve",
+      spans.map((span) => span.presentPitchClasses),
+      { spans: spans.length },
+      [
+        {
+          subject: "resolution",
+          outcome: "m0-resolveSonority-plus-m1-rerank",
+          reason: "resolution law is M0's, re-ranked under the inferred key",
+        },
+      ],
+    ),
+  );
+
   let horizon = 0;
   for (const track of roleTracks) {
     for (const note of track.notes) {
@@ -1028,7 +1213,24 @@ export function planAutomationImport(
     ppq,
     horizon,
   );
-  if (!boundsResult.ok) return boundsResult;
+  if (!boundsResult.ok) {
+    trace.push(
+      traceRecord(
+        "plan",
+        { horizon },
+        {},
+        [
+          {
+            subject: "measure-bounds",
+            outcome: "refused",
+            reason: boundsResult.refusal.code,
+          },
+        ],
+        boundsResult.refusal.code,
+      ),
+    );
+    return { ok: false, refusal: boundsResult.refusal, trace };
+  }
   const bounds = boundsResult.bounds;
 
   const markers: { tick: number; text: string }[] = [];
@@ -1052,16 +1254,47 @@ export function planAutomationImport(
     barCount: Math.max(1, bounds.length),
     tracks: roleTracks,
   };
-  const groove = selectGroove(extractFeelFeatures(grooveInput));
+  const grooveFeatures = extractFeelFeatures(grooveInput);
+  const groove = selectGroove(grooveFeatures);
+  trace.push(
+    traceRecord(
+      "groove",
+      grooveFeatures,
+      { rows: M1_GROOVE_DECISION_TABLE.length },
+      [
+        {
+          subject: "groove",
+          outcome: groove.grooveStyleId,
+          reason: `decision row ${String(groove.row)}`,
+        },
+      ],
+    ),
+  );
 
   /* Bar emission mirrors the M0 durationLaw over spans. */
   const writtenReadings = readings.filter(
     (reading) => reading.symbolText !== null,
   );
   if (writtenReadings.length === 0) {
+    trace.push(
+      traceRecord(
+        "plan",
+        { writtenReadings: 0 },
+        { spans: readings.length },
+        [
+          {
+            subject: "plan",
+            outcome: "refused",
+            reason: "no sonority produced a writable symbol",
+          },
+        ],
+        "import.automation_nothing_to_write",
+      ),
+    );
     return {
       ok: false,
       refusal: { code: "import.automation_nothing_to_write" },
+      trace,
     };
   }
 
@@ -1206,13 +1439,66 @@ export function planAutomationImport(
   flushChunk();
 
   if (chunkTexts.length > M1_MAX_IMPORT_CHUNKS) {
+    trace.push(
+      traceRecord(
+        "plan",
+        { chunkCount: chunkTexts.length },
+        { chunks: chunkTexts.length },
+        [
+          {
+            subject: "plan",
+            outcome: "refused",
+            reason: `${String(chunkTexts.length)} chunks exceed the ${String(M1_MAX_IMPORT_CHUNKS)}-chunk bound`,
+          },
+        ],
+        "import.automation_chart_too_large",
+      ),
+    );
     return {
       ok: false,
       refusal: { code: "import.automation_chart_too_large" },
+      trace,
     };
   }
 
   const chartText = sectionTexts.join("");
+  trace.push(
+    traceRecord(
+      "plan",
+      sectionRanges.map((range) => ({
+        name: range.name,
+        startMeasureIndex: range.start,
+      })),
+      {
+        sections: sectionRanges.length,
+        measures: bounds.length,
+        chunks: chunkTexts.length,
+        writtenChords: writtenChordCount,
+      },
+      bounded(
+        sectionRanges.map((range) => ({
+          subject: range.name,
+          outcome: `starts-at-measure-${String(range.start)}`,
+          reason: "M1-FORM",
+        })),
+      ),
+    ),
+  );
+  trace.push(
+    traceRecord(
+      "envelope",
+      { insertChunks: chunkTexts.length },
+      { chunks: chunkTexts.length },
+      [
+        {
+          subject: "envelope",
+          outcome: `planned:${String(chunkTexts.length)}-chunk-insert`,
+          reason:
+            "destination-dependent order resolves at commit (amendment #1: a starter issues settings before the insert; groove last)",
+        },
+      ],
+    ),
+  );
   const frozenReadings = Object.freeze(
     readings.map((reading) =>
       Object.freeze({ ...reading, written: mutableWritten.has(reading) }),
@@ -1262,6 +1548,7 @@ export function planAutomationImport(
       }),
       tempoChangeCount: Math.max(0, value.model.tempoMap.length - 1),
       meterChangeCount: Math.max(0, value.model.meterMap.length - 1),
+      trace: Object.freeze([...trace]),
     }),
   };
 }

@@ -112,6 +112,7 @@ export type {
 export {
   MAX_MIDI_IMPORT_DRAFT_CODE_POINTS,
   createStudioMidiImport,
+  unavailableMidiImportPreview,
 } from "./studio-midi-import";
 export type {
   MidiImportAutoCommitResult,
