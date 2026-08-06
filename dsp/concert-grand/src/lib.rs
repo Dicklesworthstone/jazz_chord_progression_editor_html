@@ -37,6 +37,7 @@ fn panic(_info: &core::panic::PanicInfo) -> ! {
 }
 
 mod clarinet;
+mod clarinet_v2_parameters;
 mod flute;
 mod guitar;
 mod physical;

@@ -227,15 +227,43 @@ const CLR_FINGERING_MASKS: [u8; 12] = [
  * radii/chimneys are bounded representative values, not a claimed scan of a
  * particular instrument. End correction uses the analytic uniform-profile
  * circular-aperture value 8/(3*pi), not the license-blocked FrankenSim fit. */
-const CLR_BORE_RADIUS_M: f64 = 0.007;
-const CLR_APERTURE_END_CORRECTION_RADII: f64 = 0.848_826_363_156_775_2;
-const CLR_HOLE_AXIAL_M: [f64; 6] = [0.355, 0.397, 0.438, 0.477, 0.515, 0.551];
-const CLR_HOLE_RADIUS_M: [f64; 6] = [0.0030, 0.0032, 0.00345, 0.0037, 0.0040, 0.0043];
-const CLR_HOLE_CHIMNEY_M: [f64; 6] = [0.0060, 0.0058, 0.0056, 0.0053, 0.0050, 0.0048];
-const CLR_REFERENCE_LENGTH_M: f64 = 0.5839;
-const CLR_REGISTER_AXIAL_M: f64 = 0.165;
-const CLR_REGISTER_RADIUS_M: f64 = 0.00145;
-const CLR_REGISTER_CHIMNEY_M: f64 = 0.0055;
+const CLR_BORE_RADIUS_M: f64 = crate::clarinet_v2_parameters::PARAMETERS[2].2;
+const CLR_REFERENCE_LENGTH_M: f64 = crate::clarinet_v2_parameters::PARAMETERS[3].2;
+const CLR_HOLE_AXIAL_M: [f64; 6] = [
+    crate::clarinet_v2_parameters::PARAMETERS[4].2,
+    crate::clarinet_v2_parameters::PARAMETERS[7].2,
+    crate::clarinet_v2_parameters::PARAMETERS[10].2,
+    crate::clarinet_v2_parameters::PARAMETERS[13].2,
+    crate::clarinet_v2_parameters::PARAMETERS[16].2,
+    crate::clarinet_v2_parameters::PARAMETERS[19].2,
+];
+const CLR_HOLE_CHIMNEY_M: [f64; 6] = [
+    crate::clarinet_v2_parameters::PARAMETERS[5].2,
+    crate::clarinet_v2_parameters::PARAMETERS[8].2,
+    crate::clarinet_v2_parameters::PARAMETERS[11].2,
+    crate::clarinet_v2_parameters::PARAMETERS[14].2,
+    crate::clarinet_v2_parameters::PARAMETERS[17].2,
+    crate::clarinet_v2_parameters::PARAMETERS[20].2,
+];
+const CLR_HOLE_RADIUS_M: [f64; 6] = [
+    crate::clarinet_v2_parameters::PARAMETERS[6].2,
+    crate::clarinet_v2_parameters::PARAMETERS[9].2,
+    crate::clarinet_v2_parameters::PARAMETERS[12].2,
+    crate::clarinet_v2_parameters::PARAMETERS[15].2,
+    crate::clarinet_v2_parameters::PARAMETERS[18].2,
+    crate::clarinet_v2_parameters::PARAMETERS[21].2,
+];
+const CLR_APERTURE_END_CORRECTION_RADII: f64 =
+    crate::clarinet_v2_parameters::PARAMETERS[22].2;
+const CLR_REED_CHANNEL_WIDTH_M: f64 = crate::clarinet_v2_parameters::PARAMETERS[23].2;
+const CLR_REED_DAMPING_NS_PER_M: f64 = crate::clarinet_v2_parameters::PARAMETERS[24].2;
+const CLR_REED_EFFECTIVE_AREA_M2: f64 = crate::clarinet_v2_parameters::PARAMETERS[25].2;
+const CLR_REED_EQUILIBRIUM_OPENING_M: f64 = crate::clarinet_v2_parameters::PARAMETERS[26].2;
+const CLR_REED_MASS_KG: f64 = crate::clarinet_v2_parameters::PARAMETERS[27].2;
+const CLR_REED_STIFFNESS_N_PER_M: f64 = crate::clarinet_v2_parameters::PARAMETERS[28].2;
+const CLR_REGISTER_AXIAL_M: f64 = crate::clarinet_v2_parameters::PARAMETERS[29].2;
+const CLR_REGISTER_CHIMNEY_M: f64 = crate::clarinet_v2_parameters::PARAMETERS[30].2;
+const CLR_REGISTER_RADIUS_M: f64 = crate::clarinet_v2_parameters::PARAMETERS[31].2;
 
 fn fingering_mask(midi: i32) -> u8 {
     CLR_FINGERING_MASKS[midi.rem_euclid(12) as usize]
