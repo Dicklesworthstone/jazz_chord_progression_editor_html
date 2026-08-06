@@ -227,7 +227,7 @@ const condition = (
 
 /**
  * The frozen decision table: the first row whose conditions all hold wins;
- * row 8 is the total default. Every comparison is rational and exact.
+ * row 9 is the total default. Every comparison is rational and exact.
  */
 export const M1_GROOVE_DECISION_TABLE = Object.freeze([
   Object.freeze({
@@ -288,8 +288,32 @@ export const M1_GROOVE_DECISION_TABLE = Object.freeze([
     evidenceTemplate:
       "Ballad feel: long chords ({attacksPerBar} attacks per bar) at {tempoBpm} BPM.",
   }),
+  /*
+   * Row 7 (amendment #1, jcpe-gdyt, 2026-08-05): a dense unswung band
+   * arrangement at pop tempo is the measured signature of the
+   * sixteenth-feel idiom written large — including the double-time
+   * notation that writes its sixteenths as straight eighths, which row 3's
+   * sixteenthShare can never see. Both owner-graded reference recordings
+   * carry this signature (attacksPerBar 5.4 and 7.8, swungShare 0.06 and
+   * 0.002 at 105/120 BPM), and both render measurably closer to their
+   * source under syncopated-sixteenths than under the pop sketch the old
+   * table sent them to (0.046 vs 0.474 and 0.087 vs 0.515 on the rhythm
+   * profile in test-results/m1-local/). The 9/2 bound separates a full
+   * band arrangement from the moderately active charts row 8 serves.
+   */
   Object.freeze({
     row: 7,
+    grooveStyleId: "syncopated-sixteenths@1",
+    conditions: Object.freeze([
+      condition("swungShare", "lt", rational(1, 8)),
+      condition("attacksPerBar", "gte", rational(9, 2)),
+      condition("tempoBpm", "gte", rational(96, 1)),
+    ]),
+    evidenceTemplate:
+      "Busy straight-feel band: {attacksPerBar} chord attacks per bar with almost no swing — the syncopated-sixteenth groove states that density.",
+  }),
+  Object.freeze({
+    row: 8,
     grooveStyleId: "straight-eighths@1",
     conditions: Object.freeze([
       condition("attacksPerBar", "gte", rational(3, 1)),
@@ -298,7 +322,7 @@ export const M1_GROOVE_DECISION_TABLE = Object.freeze([
       "Straight eighths: an active straight feel with {attacksPerBar} attacks per bar.",
   }),
   Object.freeze({
-    row: 8,
+    row: 9,
     grooveStyleId: "medium-swing@1",
     conditions: Object.freeze([]),
     evidenceTemplate:

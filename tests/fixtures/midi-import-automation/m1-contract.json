@@ -32,7 +32,7 @@
     },
     {
       "file": "groove-cases.json",
-      "sha256": "7f4c25324a3e87225f48929ecd9f02437204a6d04034f2cb6ed59620627fef90"
+      "sha256": "d4b1766ba7cdce65a90a56e9b1937577f4ca07d2ea2557e5f59273a4f7da4049"
     },
     {
       "file": "transfer-cases.json",
@@ -49,6 +49,6 @@
   ],
   "traceGolden": {
     "file": "trace-golden.json",
-    "sha256": "e5815e4788dcf46b2e6d2973a46696126638c053dc4412fcd1dabeaec1466ecf"
+    "sha256": "16f289b015af0a50ca044f50ab7576dd5759a9c2fdc218b73643a44932930932"
   }
 }

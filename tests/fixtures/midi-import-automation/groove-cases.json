@@ -1,7 +1,7 @@
 {
   "schema": "changes.import.midi-automation-fixtures.groove.v1",
   "law": "M1-GROOVE",
-  "notes": "Independently authored. decisionCases feed exact rational features straight into the frozen decision table; featureCases feed role-tagged note streams (ppq, tempo microseconds per quarter at tick 0, 4/4 meter, note shape [channel, key, onTick, offTick]) into the reference feature extractor. Rationals are [numerator, denominator].",
+  "notes": "Independently authored. decisionCases feed exact rational features straight into the frozen decision table; featureCases feed role-tagged note streams (ppq, tempo microseconds per quarter at tick 0, 4/4 meter, note shape [channel, key, onTick, offTick]) into the reference feature extractor. Rationals are [numerator, denominator]. AMENDMENT #1 (jcpe-gdyt, 2026-08-05): row 7 is the dense-unswung-pop row (swungShare < 1/8, attacksPerBar >= 9/2, tempo >= 96 -> syncopated-sixteenths@1) — the measured signature of the sixteenth idiom including its double-time straight-eighth notation, justified by both owner-graded reference recordings rendering closer under it; the active-straight row became 8 and the total default row 9.",
   "decisionCases": [
     {
       "name": "row-1-slow-swing-is-ballad",
@@ -21,7 +21,7 @@
     {
       "name": "row-2-near-miss-swung-just-under-half-falls-through",
       "features": { "tempoBpm": [140, 1], "swungShare": [49, 100], "sixteenthShare": [0, 1], "attacksPerBar": [1, 1], "melodyCoincidence": [0, 1], "bassTwoFeel": [0, 1] },
-      "expected": { "row": 8, "grooveStyleId": "medium-swing@1" }
+      "expected": { "row": 9, "grooveStyleId": "medium-swing@1" }
     },
     {
       "name": "row-3-sixteenth-groove",
@@ -41,7 +41,7 @@
     {
       "name": "row-4-near-miss-tempo-133-falls-through",
       "features": { "tempoBpm": [133, 1], "swungShare": [0, 1], "sixteenthShare": [1, 8], "attacksPerBar": [7, 4], "melodyCoincidence": [0, 1], "bassTwoFeel": [2, 3] },
-      "expected": { "row": 8, "grooveStyleId": "medium-swing@1" }
+      "expected": { "row": 9, "grooveStyleId": "medium-swing@1" }
     },
     {
       "name": "row-5-block-chords",
@@ -54,14 +54,34 @@
       "expected": { "row": 6, "grooveStyleId": "ballad-comp@1" }
     },
     {
-      "name": "row-7-active-straight",
-      "features": { "tempoBpm": [120, 1], "swungShare": [1, 4], "sixteenthShare": [1, 8], "attacksPerBar": [7, 2], "melodyCoincidence": [1, 2], "bassTwoFeel": [0, 1] },
-      "expected": { "row": 7, "grooveStyleId": "straight-eighths@1" }
+      "name": "row-7-busy-straight-band",
+      "features": { "tempoBpm": [120, 1], "swungShare": [1, 50], "sixteenthShare": [0, 1], "attacksPerBar": [11, 2], "melodyCoincidence": [1, 5], "bassTwoFeel": [1, 6] },
+      "expected": { "row": 7, "grooveStyleId": "syncopated-sixteenths@1" }
     },
     {
-      "name": "row-8-default",
+      "name": "row-7-near-miss-density-just-under-falls-to-row-8",
+      "features": { "tempoBpm": [120, 1], "swungShare": [1, 50], "sixteenthShare": [0, 1], "attacksPerBar": [22, 5], "melodyCoincidence": [1, 5], "bassTwoFeel": [1, 6] },
+      "expected": { "row": 8, "grooveStyleId": "straight-eighths@1" }
+    },
+    {
+      "name": "row-7-near-miss-swung-share-at-eighth-falls-to-row-8",
+      "features": { "tempoBpm": [120, 1], "swungShare": [1, 8], "sixteenthShare": [0, 1], "attacksPerBar": [11, 2], "melodyCoincidence": [1, 5], "bassTwoFeel": [1, 6] },
+      "expected": { "row": 8, "grooveStyleId": "straight-eighths@1" }
+    },
+    {
+      "name": "row-7-near-miss-slow-tempo-falls-to-row-8",
+      "features": { "tempoBpm": [90, 1], "swungShare": [0, 1], "sixteenthShare": [0, 1], "attacksPerBar": [11, 2], "melodyCoincidence": [1, 5], "bassTwoFeel": [1, 6] },
+      "expected": { "row": 8, "grooveStyleId": "straight-eighths@1" }
+    },
+    {
+      "name": "row-8-active-straight",
+      "features": { "tempoBpm": [120, 1], "swungShare": [1, 4], "sixteenthShare": [1, 8], "attacksPerBar": [7, 2], "melodyCoincidence": [1, 2], "bassTwoFeel": [0, 1] },
+      "expected": { "row": 8, "grooveStyleId": "straight-eighths@1" }
+    },
+    {
+      "name": "row-9-default",
       "features": { "tempoBpm": [120, 1], "swungShare": [0, 1], "sixteenthShare": [0, 1], "attacksPerBar": [2, 1], "melodyCoincidence": [0, 1], "bassTwoFeel": [0, 1] },
-      "expected": { "row": 8, "grooveStyleId": "medium-swing@1" }
+      "expected": { "row": 9, "grooveStyleId": "medium-swing@1" }
     }
   ],
   "featureCases": [

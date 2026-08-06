@@ -275,8 +275,19 @@ First row whose conditions all hold (rational comparisons) wins:
 | 4 | `bassTwoFeel ≥ 1/2` and `88 ≤ tempoBpm ≤ 132` | `bossa-nova@1` |
 | 5 | `melodyCoincidence ≥ 3/4` and `attacksPerBar ≥ 2` | `block-chords@1` |
 | 6 | `attacksPerBar ≤ 3/2` and `tempoBpm ≤ 92` | `ballad-comp@1` |
-| 7 | `attacksPerBar ≥ 3` | `straight-eighths@1` |
-| 8 | (default) | `medium-swing@1` |
+| 7 | `swungShare < 1/8` and `attacksPerBar ≥ 9/2` and `tempoBpm ≥ 96` | `syncopated-sixteenths@1` |
+| 8 | `attacksPerBar ≥ 3` | `straight-eighths@1` |
+| 9 | (default) | `medium-swing@1` |
+
+Row 7 is amendment #1 (jcpe-gdyt, 2026-08-05): a dense unswung band
+arrangement at pop tempo is the sixteenth idiom's measured signature —
+including the double-time notation that writes its sixteenths as straight
+eighths, which row 3's `sixteenthShare` can never see. Both owner-graded
+reference recordings carry this signature (attacksPerBar 5.4 and 7.8,
+swungShare 0.06 and 0.002 at 105/120 BPM) and both render measurably closer
+to their source under `syncopated-sixteenths@1` than under the pop sketch
+the original table sent them to (rhythm-profile distances 0.046 vs 0.474
+and 0.087 vs 0.515, ledger `test-results/m1-local/m1-local-evidence.json`).
 
 The chosen id, the row number, and every feature value are recorded in the
 trace, and the result card must state the choice with its evidence sentence
@@ -284,7 +295,7 @@ trace, and the result card must state the choice with its evidence sentence
 {swungShare} of beats at {tempoBpm} BPM."*). The choice is always
 user-overridable in Advanced; the override is recorded as such.
 
-Proof obligations: one positive fixture per row (8), near-miss fixtures at
+Proof obligations: one positive fixture per row (9), near-miss fixtures at
 every threshold, a 0/0 swing fixture, determinism double-run, and a
 row-order fixture proving an input satisfying rows 3 and 4 lands on 3.
 

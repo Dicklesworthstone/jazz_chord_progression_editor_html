@@ -149,7 +149,8 @@ describe("M1 automation contract statics", () => {
   });
 
   test("groove decision table is total, ordered, and names only reviewed grooves", () => {
-    expect(M1_GROOVE_DECISION_TABLE.length).toBe(8);
+    /* Nine rows since amendment #1 (jcpe-gdyt): the dense-unswung-pop row. */
+    expect(M1_GROOVE_DECISION_TABLE.length).toBe(9);
     M1_GROOVE_DECISION_TABLE.forEach((rule, index) => {
       expect<number>(rule.row).toBe(index + 1);
       expect([...GROOVE_STYLE_IDS]).toContain(rule.grooveStyleId);
