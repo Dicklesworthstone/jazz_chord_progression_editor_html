@@ -62,9 +62,56 @@
  * with the tool; reference files are reviewer material, not source.
  */
 
-import { chromium } from "playwright-core";
+import { createRequire } from "node:module";
 import { mkdirSync, writeFileSync, existsSync, readFileSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
+
+/*
+ * playwright-core is loaded through createRequire + structural types: its
+ * published .d.ts references DOM lib names (HTMLElement, SVGElement), and the
+ * tools tsconfig deliberately ships without the DOM lib, so a static import
+ * would fail `bun run typecheck` even though the runtime import is safe.
+ */
+type ResearchDownload = {
+  suggestedFilename(): string;
+  saveAs(path: string): Promise<void>;
+};
+type ResearchResponse = {
+  url(): string;
+  headers(): Record<string, string>;
+  body(): Promise<Uint8Array>;
+};
+type ResearchHandle = {
+  textContent(): Promise<string | null>;
+  getAttribute(name: string): Promise<string | null>;
+  click(options: { timeout: number }): Promise<void>;
+};
+type ResearchPage = {
+  goto(url: string, options: { waitUntil: string; timeout: number }): Promise<unknown>;
+  waitForTimeout(ms: number): Promise<void>;
+  waitForEvent(event: "download", options: { timeout: number }): Promise<ResearchDownload>;
+  $$(selector: string): Promise<ResearchHandle[]>;
+  on(event: "response", handler: (response: ResearchResponse) => void): void;
+  close(): Promise<void>;
+};
+type ResearchContext = {
+  newPage(): Promise<ResearchPage>;
+  close(): Promise<void>;
+};
+type ResearchBrowser = {
+  newContext(options: { acceptDownloads: boolean; userAgent: string }): Promise<ResearchContext>;
+  close(): Promise<void>;
+};
+type ResearchPlaywright = {
+  chromium: {
+    launch(options: { headless: boolean; args: readonly string[] }): Promise<ResearchBrowser>;
+  };
+};
+
+function loadPlaywright(): ResearchPlaywright {
+  const repoRequire = createRequire(new URL("../package.json", import.meta.url));
+  return repoRequire("playwright-core") as ResearchPlaywright;
+}
 
 const USER_AGENT =
   "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
@@ -176,7 +223,10 @@ function parseVarLen(bytes: Uint8Array, pos: number): [number, number] {
 }
 
 function parseSmf(bytes: Uint8Array): SmfParse | null {
-  const td = new TextDecoder("latin1");
+  /* SMF meta strings are arbitrary bytes; latin-1 maps them 1:1 to code points
+     so track names and headers survive decoding. WHATWG calls it by the
+     windows-1252 superset; Bun's TextDecoder type only lists that label. */
+  const td = new TextDecoder("windows-1252");
   let pos = 0;
   const readStr = (n: number): string => {
     const s = td.decode(bytes.subarray(pos, pos + n));
@@ -443,15 +493,16 @@ async function reportMidishow(pageUrl: string): Promise<void> {
  * (`pgrep -af '@playwright|playwright'` first) — two suites thrash.
  */
 async function browserDownload(pageUrl: string, dest: string): Promise<boolean> {
-  let browser: Awaited<ReturnType<typeof chromium.launch>> | null = null;
+  let browser: ResearchBrowser | null = null;
   try {
+    const { chromium } = loadPlaywright();
     browser = await chromium.launch({ headless: true, args: ["--no-sandbox"] });
     const context = await browser.newContext({
       acceptDownloads: true,
       userAgent: USER_AGENT,
     });
     const page = await context.newPage();
-    let captured: Uint8Array | null = null;
+    const captured: { bytes: Uint8Array | null } = { bytes: null };
     page.on("response", (response) => {
       const contentType = response.headers()["content-type"] ?? "";
       const url = response.url();
@@ -459,7 +510,7 @@ async function browserDownload(pageUrl: string, dest: string): Promise<boolean> 
         void response
           .body()
           .then((body) => {
-            if (looksLikeSmf(new Uint8Array(body))) captured = new Uint8Array(body);
+            if (looksLikeSmf(new Uint8Array(body))) captured.bytes = new Uint8Array(body);
           })
           .catch(() => undefined);
       }
@@ -487,8 +538,8 @@ async function browserDownload(pageUrl: string, dest: string): Promise<boolean> 
     }
     await page.waitForTimeout(4_000);
     await context.close();
-    if (captured !== null) {
-      writeFileSync(dest, captured);
+    if (captured.bytes !== null) {
+      writeFileSync(dest, captured.bytes);
       return true;
     }
     return false;
@@ -590,7 +641,7 @@ async function cmdFetch(args: Args): Promise<void> {
   }
 }
 
-async function cmdScore(args: Args): Promise<void> {
+function cmdScore(args: Args): void {
   const rows: SmfScore[] = [];
   for (const file of args.positional) {
     const path = resolve(file);
@@ -627,7 +678,7 @@ async function cmdGrab(args: Args): Promise<void> {
     console.log("nothing downloaded; use fetch <url> manually (see search notes).");
     return;
   }
-  await cmdScore({ ...args, positional: files });
+  cmdScore({ ...args, positional: files });
 }
 
 async function main(): Promise<void> {
@@ -640,7 +691,7 @@ async function main(): Promise<void> {
       await cmdFetch(args);
       break;
     case "score":
-      await cmdScore(args);
+      cmdScore(args);
       break;
     case "grab":
       await cmdGrab(args);
