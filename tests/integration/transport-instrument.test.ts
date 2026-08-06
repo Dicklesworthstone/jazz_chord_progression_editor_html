@@ -1,6 +1,10 @@
 import { describe, expect, setDefaultTimeout, test } from "bun:test";
 
-import { makeBeatPosition, type BeatPosition } from "../../src/domain";
+import {
+  makeBeatPosition,
+  makeMidiPitch,
+  type BeatPosition,
+} from "../../src/domain";
 import {
   createTransportHarness,
   customPlan,
@@ -19,6 +23,41 @@ const zeroBeat: BeatPosition = (() => {
 })();
 
 describe("TR-X1-INSTRUMENT / TR-LEGACY-AUDIO-04 serialized instrument changes", () => {
+  test("physical instruments carry one immutable compiled gesture per sounding voice", async () => {
+    const harness = createTransportHarness();
+    const plan = customPlan({
+      documentId: "doc-x1-physical-gesture",
+      tempoBpm: 120,
+      durations: [{ numerator: 1, denominator: 1 }],
+    });
+    requireReceipt(await harness.submit(initializePayload(plan)));
+    requireReceipt(
+      await harness.submit({ kind: "set-instrument", instrumentId: "flute" }),
+    );
+    const midiPitch = makeMidiPitch(60);
+    if (!midiPitch.ok) throw new Error("PHYSICAL_TEST_MIDI");
+    const prepared = await harness.engine.prepareRenderedAudioVoices({
+      instrumentId: "flute",
+      notes: [{ midiPitch: midiPitch.value, velocity: 96 }],
+    });
+    if (!prepared.ok) throw new Error(`PHYSICAL_PREPARE:${prepared.refusal.code}`);
+
+    requireReceipt(
+      await harness.submit({
+        kind: "play",
+        binding: planBinding(plan, 1),
+        startBeat: zeroBeat,
+        countIn: false,
+      }),
+    );
+    const attack = harness.attacks.find(
+      ({ ownerKind }) => ownerKind === "progression",
+    );
+    expect(attack?.accepted).toBe(true);
+    expect(attack?.physicalGestureCount).toBe(attack?.voiceCount);
+    expect(attack?.physicalGestureCount).toBeGreaterThan(0);
+  });
+
   test("X1-CMD-012 only the five exact domain instrument IDs are accepted", async () => {
     const harness = createTransportHarness();
     const plan = customPlan({

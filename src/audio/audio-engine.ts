@@ -59,6 +59,15 @@ import {
   type PrepareRenderedVoicesRequest,
 } from "./audio-engine-contract";
 import {
+  isExpressiveVoiceGesture,
+  physicalGestureExcitationVelocity,
+  physicalGestureFingerprint,
+} from "./physical-realization";
+import {
+  PHYSICAL_RENDER_LIMITS,
+  type ExpressiveVoiceGesture,
+} from "./physical-renderer-contract";
+import {
   CONCERT_GRAND_RENDERER_ALGORITHM_ID,
   loadConcertGrandRenderer,
   loadWaveguideRenderers,
@@ -127,6 +136,7 @@ type ValidatedVoiceSpec = Readonly<{
   voiceId: string;
   midiPitch: MidiPitch;
   velocity: number;
+  physicalGesture: ExpressiveVoiceGesture | null;
 }>;
 
 type ValidatedAttack = Readonly<{
@@ -277,6 +287,18 @@ function validateGesture(
   );
 }
 
+function expectedPhysicalFamily(
+  instrumentId: InstrumentId,
+): ExpressiveVoiceGesture["instrumentFamily"] | null {
+  if (instrumentId === "clarinet") return "clarinet";
+  if (instrumentId === "flute") return "flute";
+  if (instrumentId === "guitar" || instrumentId === "blues-guitar") {
+    return "guitar";
+  }
+  if (instrumentId === "vibraphone") return "vibraphone";
+  return null;
+}
+
 function validateOwner(value: unknown): ValidationResult<AudioVoiceOwner> {
   if (!isRecord(value)) return invalid("audio.owner_invalid", ["owner"]);
   const kind = value["kind"];
@@ -401,15 +423,48 @@ function validateAttack(
     velocities.push(velocity);
   }
 
+  const physicalGestures: Array<ExpressiveVoiceGesture | null> = [];
+  const expectedFamily = expectedPhysicalFamily(instrument.value);
+  for (let index = 0; index < records.length; index += 1) {
+    const gesture = records[index]?.["physicalGesture"];
+    if (gesture === undefined) {
+      physicalGestures.push(null);
+      continue;
+    }
+    if (
+      !isExpressiveVoiceGesture(gesture) ||
+      gesture.eventId !== eventId ||
+      gesture.instrumentFamily !== expectedFamily
+    ) {
+      return invalid("audio.voice_id_invalid", [
+        "voices",
+        index,
+        "physicalGesture",
+      ]);
+    }
+    physicalGestures.push(gesture);
+  }
+
   const voices: ValidatedVoiceSpec[] = [];
   for (let index = 0; index < records.length; index += 1) {
     const voiceId = voiceIds[index];
     const midiPitch = midiPitches[index];
     const velocity = velocities[index];
-    if (voiceId === undefined || midiPitch === undefined || velocity === undefined) {
+    const physicalGesture = physicalGestures[index];
+    if (
+      voiceId === undefined ||
+      midiPitch === undefined ||
+      velocity === undefined ||
+      physicalGesture === undefined
+    ) {
       throw new Error("AUDIO_VALIDATION_PARALLEL_ARRAY_MISMATCH");
     }
-    voices.push(Object.freeze({ voiceId, midiPitch, velocity }));
+    voices.push(Object.freeze({
+      voiceId,
+      midiPitch,
+      velocity,
+      physicalGesture,
+    }));
   }
 
   return valid(
@@ -706,7 +761,11 @@ function createAudioEngineInternal(
     sampledRenderers.set(algorithmId, loaded);
     return loaded;
   }
-  const renderedBufferCache = new Map<string, AudioBufferPort>();
+  const renderedBufferCache = new Map<
+    string,
+    Readonly<{ buffer: AudioBufferPort; byteLength: number }>
+  >();
+  let renderedBufferCacheBytes = 0;
   /**
    * Display-only spectral tap (jcpe-7she). Created lazily on the first
    * analysis read as a DYNAMIC node — the persistent graph stays exactly
@@ -754,8 +813,12 @@ function createAudioEngineInternal(
     midiPitch: number,
     velocity: number,
     seconds: number,
+    physicalGesture: ExpressiveVoiceGesture | null = null,
   ): string {
-    return `${instrumentId}:${String(midiPitch)}:${String(quantizeRenderVelocity(velocity))}:${String(seconds)}`;
+    const gestureIdentity = physicalGesture === null
+      ? "legacy"
+      : physicalGestureFingerprint(physicalGesture);
+    return `${instrumentId}:${String(midiPitch)}:${String(quantizeRenderVelocity(velocity))}:${String(seconds)}:${gestureIdentity}`;
   }
 
   /**
@@ -769,21 +832,31 @@ function createAudioEngineInternal(
     midiPitch: number,
     velocity: number,
     requestedSeconds = 8,
+    physicalGesture: ExpressiveVoiceGesture | null = null,
   ): AudioBufferPort | null {
     const seconds = bucketRenderSeconds(requestedSeconds);
-    const key = renderedBufferKey(recipe.id, midiPitch, velocity, seconds);
+    const key = renderedBufferKey(
+      recipe.id,
+      midiPitch,
+      velocity,
+      seconds,
+      physicalGesture,
+    );
     const cached = renderedBufferCache.get(key);
     if (cached !== undefined) {
       /* Refresh recency: Map iteration order is the eviction order. */
       renderedBufferCache.delete(key);
       renderedBufferCache.set(key, cached);
-      return cached;
+      return cached.buffer;
     }
     const noteRenderer = rendererForAlgorithm(recipe.renderer.algorithmId);
     if (noteRenderer === null) return null;
+    const excitationVelocity = physicalGesture === null
+      ? quantizeRenderVelocity(velocity)
+      : physicalGestureExcitationVelocity(physicalGesture, velocity);
     const pcm = noteRenderer.renderNote(
       midiPitch,
-      quantizeRenderVelocity(velocity),
+      excitationVelocity,
       context.sampleRate,
       seconds,
     );
@@ -795,11 +868,22 @@ function createAudioEngineInternal(
     );
     buffer.getChannelData(0).set(pcm.left);
     buffer.getChannelData(1).set(pcm.right);
-    renderedBufferCache.set(key, buffer);
-    while (renderedBufferCache.size > recipe.renderer.bufferCacheLimit) {
+    const byteLength = recipe.renderer.channels * pcm.frameCount * 4;
+    renderedBufferCache.set(key, Object.freeze({ buffer, byteLength }));
+    renderedBufferCacheBytes += byteLength;
+    const maximumEntries = Math.min(
+      recipe.renderer.bufferCacheLimit,
+      PHYSICAL_RENDER_LIMITS.maximumCacheEntries,
+    );
+    while (
+      renderedBufferCache.size > maximumEntries ||
+      renderedBufferCacheBytes > PHYSICAL_RENDER_LIMITS.maximumCachePcmBytes
+    ) {
       const oldest = renderedBufferCache.keys().next().value;
       if (oldest === undefined) break;
+      const evicted = renderedBufferCache.get(oldest);
       renderedBufferCache.delete(oldest);
+      renderedBufferCacheBytes -= evicted?.byteLength ?? 0;
     }
     return buffer;
   }
@@ -1275,6 +1359,7 @@ function createAudioEngineInternal(
     currentGraph = null;
     currentContext = null;
     renderedBufferCache.clear();
+    renderedBufferCacheBytes = 0;
     analysisTap = null;
     analysisWindow = null;
     reportedContextState = observedState ?? "absent";
@@ -2136,6 +2221,7 @@ function createAudioEngineInternal(
               validated.value.startTimeSeconds +
               recipe.amplitude.releaseSeconds +
               0.25,
+            voiceSpec.physicalGesture,
           );
           if (buffer === null) {
             return refuse({
@@ -2587,11 +2673,27 @@ function createAudioEngineInternal(
           path: ["notes", index, "velocity"],
         });
       }
+      const physicalGestureValue = noteValue["physicalGesture"];
+      let physicalGesture: ExpressiveVoiceGesture | null = null;
+      if (physicalGestureValue !== undefined) {
+        if (
+          !isExpressiveVoiceGesture(physicalGestureValue) ||
+          physicalGestureValue.instrumentFamily !==
+            expectedPhysicalFamily(instrumentId.value)
+        ) {
+          return refuse({
+            code: "audio.voice_id_invalid",
+            path: ["notes", index, "physicalGesture"],
+          });
+        }
+        physicalGesture = physicalGestureValue;
+      }
       const key = renderedBufferKey(
         recipe.id,
         midiPitch.value,
         velocity,
         bucketRenderSeconds(PREPARE_RENDER_SECONDS),
+        physicalGesture,
       );
       if (renderedBufferCache.has(key)) {
         cachedCount += 1;
@@ -2603,6 +2705,7 @@ function createAudioEngineInternal(
         midiPitch.value,
         velocity,
         PREPARE_RENDER_SECONDS,
+        physicalGesture,
       );
       if (buffer === null) {
         return refuse({

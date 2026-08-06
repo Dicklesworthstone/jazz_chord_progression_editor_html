@@ -51,6 +51,7 @@ export type FakeAudioContextController = Readonly<{
   finishAllSources(): void;
   finishSource(sourceId: string): void;
   sourceIds(): readonly string[];
+  sourceBuffer(sourceId: string): AudioBufferPort | null;
   nodeIds(): readonly string[];
   disconnectCount(nodeId: string): number;
   closeCount(): number;
@@ -631,6 +632,10 @@ function createFakeContext(
     finishSource,
     sourceIds() {
       return Object.freeze([...sources.keys()]);
+    },
+    sourceBuffer(sourceId) {
+      const source = sources.get(sourceId)?.port;
+      return source !== undefined && "buffer" in source ? source.buffer : null;
     },
     nodeIds() {
       return Object.freeze([...nodeStatesById.keys()]);

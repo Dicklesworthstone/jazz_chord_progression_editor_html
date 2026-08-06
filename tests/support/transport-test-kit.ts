@@ -74,6 +74,7 @@ export type RecordedAttack = Readonly<{
   startTimeSeconds: number;
   releaseTimeSeconds: number;
   voiceCount: number;
+  physicalGestureCount: number;
   accepted: boolean;
 }>;
 
@@ -85,6 +86,7 @@ export type RecordedRetirement = Readonly<{
 
 export type TransportHarness = Readonly<{
   service: TransportService;
+  engine: ReturnType<typeof createAudioEngine>;
   fake: FakeAudioPlatformHarness;
   timer: FakeTransportTimer;
   notifications: readonly TransportServiceNotification[];
@@ -117,6 +119,9 @@ export function createTransportHarness(): TransportHarness {
           startTimeSeconds: request.startTimeSeconds,
           releaseTimeSeconds: request.releaseTimeSeconds,
           voiceCount: request.voices.length,
+          physicalGestureCount: request.voices.filter(
+            ({ physicalGesture }) => physicalGesture !== undefined,
+          ).length,
           accepted: result.ok,
         }),
       );
@@ -152,6 +157,7 @@ export function createTransportHarness(): TransportHarness {
   }
   return Object.freeze({
     service,
+    engine,
     fake,
     timer,
     notifications,

@@ -354,6 +354,8 @@ export type AudioVoiceSpec = Readonly<{
   voiceId: string;
   midiPitch: MidiPitch;
   velocity: number;
+  /** Immutable physical excitation owned by the compiled playback event. */
+  physicalGesture?: import("./physical-renderer-contract").ExpressiveVoiceGesture;
 }>;
 
 export type AudioAttackBatchRequest = Readonly<{
@@ -569,7 +571,11 @@ export type AudioEngine = Readonly<{
 
 export type PrepareRenderedVoicesRequest = Readonly<{
   instrumentId: InstrumentId;
-  notes: readonly Readonly<{ midiPitch: MidiPitch; velocity: number }>[];
+  notes: readonly Readonly<{
+    midiPitch: MidiPitch;
+    velocity: number;
+    physicalGesture?: import("./physical-renderer-contract").ExpressiveVoiceGesture;
+  }>[];
 }>;
 
 export type PrepareRenderedVoicesReceipt = Readonly<{

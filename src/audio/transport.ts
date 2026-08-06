@@ -16,6 +16,12 @@ import {
 } from "../domain";
 import type { PlaybackEvent, PlaybackPlan } from "../playback";
 import {
+  compilePhysicalRealization,
+  physicalFamilyForInstrumentId,
+} from "./physical-realization";
+import { sha256Hex } from "./deterministic-sha256";
+import type { ExpressiveVoiceGesture } from "./physical-renderer-contract";
+import {
   AUDIO_MIX_POLICY,
   type AudioEngineResult,
   type AudioRetirementReceipt,
@@ -347,6 +353,9 @@ export function createTransportService(
   let countInEnabled = false;
   let metronomeEnabled = false;
   let instrumentId: InstrumentId = "mellow-keys";
+  let physicalLookupPlan: PlaybackPlan | null = null;
+  let physicalLookupInstrument: InstrumentId | null = null;
+  let physicalLookup = new Map<string, readonly ExpressiveVoiceGesture[]>();
   let timing: TransportTimingPolicy = Object.freeze({
     tickIntervalMs: 25,
     lookaheadSeconds: 0.1,
@@ -462,6 +471,48 @@ export function createTransportService(
     return plan === null ? 120 : plan.tempoBpm;
   }
 
+  function physicalGesturesForEvent(
+    plan: PlaybackPlan,
+    eventId: string,
+  ): readonly ExpressiveVoiceGesture[] {
+    const family = physicalFamilyForInstrumentId(instrumentId);
+    if (family === null) return Object.freeze([]);
+    if (
+      physicalLookupPlan !== plan ||
+      physicalLookupInstrument !== instrumentId
+    ) {
+      physicalLookupPlan = plan;
+      physicalLookupInstrument = instrumentId;
+      physicalLookup = new Map();
+      const revision = binding?.planRevision;
+      if (revision === undefined) return Object.freeze([]);
+      const compiled = compilePhysicalRealization({
+        plan,
+        sourcePlanRevision: revision,
+        instrumentFamily: family,
+        instrumentVersionId: `changes.physical.${instrumentId}.v2`,
+        parameterPackSha256: sha256Hex(
+          `changes.physical.parameter-pack.${instrumentId}.v1`,
+        ),
+        // Gesture curves are tick-domain data. Segment frames are not consumed
+        // by X1; the engine renders at its actual AudioContext sample rate.
+        sampleRateHz: 48_000,
+      });
+      if (compiled.ok) {
+        const mutable = new Map<string, ExpressiveVoiceGesture[]>();
+        for (const gesture of compiled.value.expressivePlan.gestures) {
+          const owned = mutable.get(gesture.eventId) ?? [];
+          owned.push(gesture);
+          mutable.set(gesture.eventId, owned);
+        }
+        for (const [ownedEventId, gestures] of mutable) {
+          physicalLookup.set(ownedEventId, Object.freeze(gestures));
+        }
+      }
+    }
+    return physicalLookup.get(eventId) ?? Object.freeze([]);
+  }
+
   function playheadNow(): BeatPosition {
     if (state === "playing") {
       const plan = currentPlan();
@@ -499,12 +550,19 @@ export function createTransportService(
       TRANSPORT_MIN_AUDIO_GATE_SECONDS,
     );
     const owner: AudioVoiceOwner = { kind: "progression", generation };
+    const plan = currentPlan();
+    if (plan === null) return false;
+    const physicalGestures = physicalGesturesForEvent(plan, event.eventId);
     const voices = nonEmptyVoiceSpecs(
-      event.midiPitches.map((midiPitch, index) => ({
-        voiceId: `${event.eventId}:g${String(generation)}:v${String(index)}`,
-        midiPitch,
-        velocity: event.velocity,
-      })),
+      event.midiPitches.map((midiPitch, index) => {
+        const physicalGesture = physicalGestures[index];
+        return {
+          voiceId: `${event.eventId}:g${String(generation)}:v${String(index)}`,
+          midiPitch,
+          velocity: event.velocity,
+          ...(physicalGesture === undefined ? {} : { physicalGesture }),
+        };
+      }),
     );
     if (voices === null) return false;
     const startTime = Math.max(startSeconds, now + startMarginSeconds);

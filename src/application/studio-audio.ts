@@ -16,13 +16,17 @@
  * playback plans and serialized transport commands — it never sees UI state.
  */
 import {
+  compilePhysicalRealization,
   createAudioEngine,
   createTransportService,
+  physicalFamilyForInstrumentId,
+  sha256Hex,
   type AudioAnalysisFrame,
   type AudioEngineSnapshot,
   type AudioMix,
   type AudioPlatform,
   type AudioUserGestureReceipt,
+  type ExpressiveVoiceGesture,
   type TransportCommandOutcome,
   type TransportPlanBinding,
   type TransportService,
@@ -152,7 +156,13 @@ export type StudioAudioPort = Readonly<{
    */
   prepareInstrument: (
     instrumentId: InstrumentId,
-    notes: readonly Readonly<{ midiPitch: MidiPitch; velocity: number }>[],
+    notes: readonly Readonly<{
+      midiPitch: MidiPitch;
+      velocity: number;
+      eventId?: string;
+      voiceOrdinal?: number;
+    }>[],
+    binding?: TransportPlanBinding,
   ) => Promise<boolean>;
   /** Every transport notification, in the order the service published them. */
   subscribe: (
@@ -451,10 +461,44 @@ export function createStudioAudio(
         commandRequestId,
         Object.freeze({ kind: "set-instrument" as const, instrumentId }),
       ),
-    prepareInstrument: async (instrumentId, notes) => {
+    prepareInstrument: async (instrumentId, notes, binding) => {
+      const family = physicalFamilyForInstrumentId(instrumentId);
+      const physical = family === null || binding === undefined
+        ? null
+        : compilePhysicalRealization({
+            plan: binding.plan,
+            sourcePlanRevision: binding.planRevision,
+            instrumentFamily: family,
+            instrumentVersionId: `changes.physical.${instrumentId}.v2`,
+            parameterPackSha256: sha256Hex(
+              `changes.physical.parameter-pack.${instrumentId}.v1`,
+            ),
+            sampleRateHz: 48_000,
+          });
+      const gesturesByEvent = new Map<string, readonly ExpressiveVoiceGesture[]>();
+      if (physical?.ok === true) {
+        const mutable = new Map<string, ExpressiveVoiceGesture[]>();
+        for (const gesture of physical.value.expressivePlan.gestures) {
+          const gestures = mutable.get(gesture.eventId) ?? [];
+          gestures.push(gesture);
+          mutable.set(gesture.eventId, gestures);
+        }
+        for (const [eventId, gestures] of mutable) {
+          gesturesByEvent.set(eventId, Object.freeze(gestures));
+        }
+      }
       const outcome = await engine.prepareRenderedAudioVoices({
         instrumentId,
-        notes,
+        notes: notes.map((note) => {
+          const physicalGesture = note.eventId === undefined || note.voiceOrdinal === undefined
+            ? undefined
+            : gesturesByEvent.get(note.eventId)?.[note.voiceOrdinal];
+          return Object.freeze({
+            midiPitch: note.midiPitch,
+            velocity: note.velocity,
+            ...(physicalGesture === undefined ? {} : { physicalGesture }),
+          });
+        }),
       });
       /*
        * One extra macrotask before the caller submits transport commands:

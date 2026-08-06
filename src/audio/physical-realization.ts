@@ -1,7 +1,12 @@
 import type { PlaybackEvent, PlaybackPlan } from "../playback";
+import type { InstrumentId } from "../domain";
 import { sha256Hex, sha256LowUint32 } from "./deterministic-sha256";
 import {
   EXPRESSIVE_REALIZATION_PLAN_SCHEMA,
+  PHYSICAL_ARTICULATION_IDS,
+  PHYSICAL_CONTROL_IDS,
+  PHYSICAL_CURVE_INTERPOLATIONS,
+  PHYSICAL_INSTRUMENT_FAMILIES,
   PHYSICAL_RENDER_LIMITS,
   PHYSICAL_RENDER_PLAN_SCHEMA,
   PHYSICAL_RENDER_WORK_COUNTER_NAMES,
@@ -153,6 +158,149 @@ function curve(
 
 function pressureForVelocity(velocity: number): number {
   return 0.35 + (velocity / 127) * 0.65;
+}
+
+function stableGestureText(gesture: ExpressiveVoiceGesture): string {
+  return [
+    gesture.eventId,
+    gesture.voiceId,
+    gesture.instrumentFamily,
+    gesture.instrumentVersionId,
+    gesture.articulation,
+    String(gesture.deterministicSeedUint32),
+    ...gesture.curves.flatMap((controlCurve) => [
+      controlCurve.controlId,
+      controlCurve.interpolation,
+      ...controlCurve.points.flatMap(({ offsetTicks, valueQ16_16 }) => [
+        String(offsetTicks),
+        String(valueQ16_16),
+      ]),
+    ]),
+  ].join("\u001f");
+}
+
+/** Exact cache identity for the immutable render-affecting gesture bytes. */
+export function physicalGestureFingerprint(
+  gesture: ExpressiveVoiceGesture,
+): string {
+  return sha256Hex(stableGestureText(gesture));
+}
+
+/**
+ * Map the gesture's physical excitation onto the legacy renderer's 1..127
+ * excitation inlet. This is an explicit v1 compatibility bridge: it makes
+ * the production renderer consume gesture dynamics while the v2 ABI grows
+ * native curve and state inputs.
+ */
+export function physicalGestureExcitationVelocity(
+  gesture: ExpressiveVoiceGesture,
+  fallbackVelocity: number,
+): number {
+  const inlet = gesture.instrumentFamily === "guitar"
+    ? "pick.hardness"
+    : gesture.instrumentFamily === "vibraphone"
+      ? "mallet.hardness"
+      : "air.pressure";
+  const values = gesture.curves
+    .find(({ controlId }) => controlId === inlet)
+    ?.points.map(({ valueQ16_16 }) => valueQ16_16 / 65_536) ?? [];
+  if (values.length === 0) return fallbackVelocity;
+  const peak = Math.max(...values);
+  return Math.max(1, Math.min(127, Math.round(peak * 127)));
+}
+
+export function physicalFamilyForInstrumentId(
+  instrumentId: InstrumentId,
+): PhysicalInstrumentFamily | null {
+  if (instrumentId === "clarinet") return "clarinet";
+  if (instrumentId === "flute") return "flute";
+  if (instrumentId === "guitar" || instrumentId === "blues-guitar") {
+    return "guitar";
+  }
+  if (instrumentId === "vibraphone") return "vibraphone";
+  return null;
+}
+
+function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/** Defensive X0 boundary check for an optional gesture carried by a voice. */
+export function isExpressiveVoiceGesture(
+  value: unknown,
+): value is ExpressiveVoiceGesture {
+  if (!isRecord(value)) return false;
+  const family = value["instrumentFamily"];
+  if (
+    typeof value["eventId"] !== "string" ||
+    !ID_PATTERN.test(value["eventId"]) ||
+    typeof value["voiceId"] !== "string" ||
+    !ID_PATTERN.test(value["voiceId"]) ||
+    typeof value["instrumentVersionId"] !== "string" ||
+    !ID_PATTERN.test(value["instrumentVersionId"]) ||
+    !PHYSICAL_INSTRUMENT_FAMILIES.some((candidate) => candidate === family) ||
+    !PHYSICAL_ARTICULATION_IDS.some((candidate) => candidate === value["articulation"]) ||
+    !Number.isInteger(value["deterministicSeedUint32"]) ||
+    (value["deterministicSeedUint32"] as number) < 0 ||
+    (value["deterministicSeedUint32"] as number) > 0xffff_ffff
+  ) {
+    return false;
+  }
+  const curves = value["curves"];
+  if (
+    !Array.isArray(curves) ||
+    curves.length === 0 ||
+    curves.length > PHYSICAL_RENDER_LIMITS.maximumCurvesPerGesture
+  ) {
+    return false;
+  }
+  const owned = CONTROL_OWNERSHIP[family as PhysicalInstrumentFamily];
+  const seen = new Set<string>();
+  let totalPoints = 0;
+  for (const candidate of curves) {
+    if (!isRecord(candidate)) return false;
+    const controlId = candidate["controlId"];
+    if (
+      !PHYSICAL_CONTROL_IDS.some((control) => control === controlId) ||
+      !owned.some((control) => control === controlId) ||
+      seen.has(controlId as string) ||
+      !PHYSICAL_CURVE_INTERPOLATIONS.some(
+        (interpolation) => interpolation === candidate["interpolation"],
+      )
+    ) {
+      return false;
+    }
+    seen.add(controlId as string);
+    const points = candidate["points"];
+    if (
+      !Array.isArray(points) ||
+      points.length === 0 ||
+      points.length > PHYSICAL_RENDER_LIMITS.maximumPointsPerCurve
+    ) {
+      return false;
+    }
+    totalPoints += points.length;
+    let priorOffset = -1;
+    for (const candidatePoint of points) {
+      if (!isRecord(candidatePoint)) return false;
+      const offset = candidatePoint["offsetTicks"];
+      const controlValue = candidatePoint["valueQ16_16"];
+      if (
+        typeof offset !== "number" ||
+        !Number.isSafeInteger(offset) ||
+        offset <= priorOffset ||
+        offset > PHYSICAL_RENDER_LIMITS.maximumControlOffsetTicks ||
+        typeof controlValue !== "number" ||
+        !Number.isInteger(controlValue) ||
+        controlValue < -0x8000_0000 ||
+        controlValue > 0x7fff_ffff
+      ) {
+        return false;
+      }
+      priorOffset = offset;
+    }
+  }
+  return totalPoints <= PHYSICAL_RENDER_LIMITS.maximumPointsPerGesture;
 }
 
 function attackTicks(event: PlaybackEvent): number {
@@ -309,11 +457,21 @@ function renderEvent(
   });
 }
 
+function gestureFingerprintAt(
+  gestures: readonly ExpressiveVoiceGesture[],
+  index: number,
+): string {
+  const gesture = gestures[index];
+  if (gesture === undefined) throw new Error("PHYSICAL_GESTURE_INDEX_INVALID");
+  return physicalGestureFingerprint(gesture);
+}
+
 function makeSegment(
   request: CompilePhysicalRealizationRequest,
   mode: PhysicalRenderMode,
   ordinal: number,
   events: readonly ExpandedVoiceEvent[],
+  gestures: readonly ExpressiveVoiceGesture[],
   previousSegmentId: string | null,
 ): PhysicalRenderSegment {
   const timelineStartFrame = Math.min(...events.map((event) => event.startFrame));
@@ -335,6 +493,7 @@ function makeSegment(
       String(event.startFrame),
       String(event.durationFrames),
       String(event.gestureIndex),
+      gestureFingerprintAt(gestures, event.gestureIndex),
     ]),
   ].join("\u001f");
   const cacheFingerprint = sha256Hex(identity);
@@ -358,12 +517,17 @@ function makeSegment(
 function partition(
   request: CompilePhysicalRealizationRequest,
   expanded: readonly ExpandedVoiceEvent[],
+  gestures: readonly ExpressiveVoiceGesture[],
   work: MutableWork,
 ): readonly PhysicalRenderSegment[] {
   const mode = segmentMode(request.instrumentFamily);
   const maximumFrames = Math.min(
     PHYSICAL_RENDER_LIMITS.maximumOutputFrames,
-    request.sampleRateHz * PHYSICAL_RENDER_LIMITS.maximumPhraseSeconds,
+    request.sampleRateHz * (
+      mode === "stateful-phrase"
+        ? PHYSICAL_RENDER_LIMITS.maximumPhraseSeconds
+        : PHYSICAL_RENDER_LIMITS.maximumStemSeconds
+    ),
   );
   const groups = new Map<string, ExpandedVoiceEvent[]>();
   if (mode === "stateful-phrase") {
@@ -398,7 +562,14 @@ function partition(
         event.endFrame - chunkStart > maximumFrames ||
         disconnected
       ) {
-        const segment = makeSegment(request, mode, segments.length, chunk, previousSegmentId);
+        const segment = makeSegment(
+          request,
+          mode,
+          segments.length,
+          chunk,
+          gestures,
+          previousSegmentId,
+        );
         segments.push(segment);
         previousSegmentId = segment.segmentId;
         chunk = [];
@@ -406,7 +577,14 @@ function partition(
       chunk.push(event);
     }
     if (chunk.length > 0) {
-      const segment = makeSegment(request, mode, segments.length, chunk, previousSegmentId);
+      const segment = makeSegment(
+        request,
+        mode,
+        segments.length,
+        chunk,
+        gestures,
+        previousSegmentId,
+      );
       segments.push(segment);
       previousSegmentId = segment.segmentId;
     }
@@ -514,7 +692,15 @@ export function compilePhysicalRealization(
     }
   }
   work.voicesAllocated = new Set(expanded.map((event) => event.voiceId)).size;
-  const segments = partition(request, expanded, work);
+  if (work.voicesAllocated > PHYSICAL_RENDER_LIMITS.maximumCoupledVoices) {
+    return refuse(
+      work,
+      "limit.physical_voices_exceeded",
+      "/plan/events/*/midiPitches",
+      "Physical voice allocation exceeds the shared v2 bound",
+    );
+  }
+  const segments = partition(request, expanded, gestures, work);
   // Compilation schedules work but does not render PCM. The renderer alone may
   // increment this counter; reporting planned frames here would manufacture
   // execution evidence that did not happen.

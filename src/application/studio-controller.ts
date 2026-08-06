@@ -86,7 +86,11 @@ import {
   type ChartTextDraft,
   type ContinuationSuggestion,
 } from "../theory";
-import type { TransportCommandOutcome, TransportState } from "../audio";
+import type {
+  TransportCommandOutcome,
+  TransportPlanBinding,
+  TransportState,
+} from "../audio";
 import type { StudioAudioGesture, StudioAudioPort } from "./studio-audio";
 import {
   compileStudioPlaybackPlan,
@@ -4696,21 +4700,36 @@ function makeStudioComposition(
       state.document,
       loopEnabled ? wholeChartLoop({ totalBeats: run.totalBeats }) : null,
     );
-    const warmNotes: Readonly<{ midiPitch: MidiPitch; velocity: number }>[] =
-      [];
+    const warmNotes: Readonly<{
+      midiPitch: MidiPitch;
+      velocity: number;
+      eventId: string;
+      voiceOrdinal: number;
+    }>[] = [];
+    let warmBinding: TransportPlanBinding | undefined;
     if (compiled.ok) {
       const performed = performStudioPlaybackPlan(
         compiled.plan,
         activePerformanceStyleId(),
       );
+      warmBinding = Object.freeze({
+        plan: performed,
+        documentId: performed.sourceDocumentId,
+        planRevision: run.planRevision,
+      });
       const seen = new Set<string>();
       for (const event of performed.events) {
-        for (const midiPitch of event.midiPitches) {
-          const key = `${String(midiPitch)}:${String(event.velocity)}`;
+        for (const [voiceOrdinal, midiPitch] of event.midiPitches.entries()) {
+          const key = `${event.eventId}:${String(voiceOrdinal)}`;
           if (seen.has(key)) continue;
           seen.add(key);
           warmNotes.push(
-            Object.freeze({ midiPitch, velocity: event.velocity }),
+            Object.freeze({
+              midiPitch,
+              velocity: event.velocity,
+              eventId: event.eventId,
+              voiceOrdinal,
+            }),
           );
           if (warmNotes.length >= PREPARE_LEADING_NOTE_COUNT) break;
         }
@@ -4718,7 +4737,11 @@ function makeStudioComposition(
       }
     }
     void (async () => {
-      await port.prepareInstrument(instrumentId, Object.freeze(warmNotes));
+      await port.prepareInstrument(
+        instrumentId,
+        Object.freeze(warmNotes),
+        warmBinding,
+      );
       await port.setInstrument(nextTransportRequestId(), instrumentId);
     })();
   };
@@ -4883,15 +4906,25 @@ function makeStudioComposition(
     );
     const distinctNotes = new Map<
       string,
-      Readonly<{ midiPitch: MidiPitch; velocity: number }>
+      Readonly<{
+        midiPitch: MidiPitch;
+        velocity: number;
+        eventId: string;
+        voiceOrdinal: number;
+      }>
     >();
     for (const event of performance.events) {
-      for (const midiPitch of event.midiPitches) {
-        const key = `${String(midiPitch)}:${String(event.velocity)}`;
+      for (const [voiceOrdinal, midiPitch] of event.midiPitches.entries()) {
+        const key = `${event.eventId}:${String(voiceOrdinal)}`;
         if (!distinctNotes.has(key)) {
           distinctNotes.set(
             key,
-            Object.freeze({ midiPitch, velocity: event.velocity }),
+            Object.freeze({
+              midiPitch,
+              velocity: event.velocity,
+              eventId: event.eventId,
+              voiceOrdinal,
+            }),
           );
         }
       }
@@ -4944,7 +4977,7 @@ function makeStudioComposition(
           );
           return;
         }
-        await port.prepareInstrument(instrumentId, preparedNotes);
+        await port.prepareInstrument(instrumentId, preparedNotes, binding);
         await port.setInstrument(nextTransportRequestId(), instrumentId);
         const playRequestId = nextTransportRequestId();
         expectTransport("play-progression", playRequestId, "starting", startBeat);
@@ -4957,7 +4990,7 @@ function makeStudioComposition(
         );
         return;
       }
-      await port.prepareInstrument(instrumentId, preparedNotes);
+      await port.prepareInstrument(instrumentId, preparedNotes, binding);
       await port.setInstrument(nextTransportRequestId(), instrumentId);
       const playRequestId = nextTransportRequestId();
       expectTransport("play-progression", playRequestId, "starting", startBeat);
