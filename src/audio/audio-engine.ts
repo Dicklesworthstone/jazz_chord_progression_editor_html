@@ -61,7 +61,9 @@ import {
 import {
   CONCERT_GRAND_RENDERER_ALGORITHM_ID,
   loadConcertGrandRenderer,
+  loadWaveguideRenderers,
   type ConcertGrandRenderer,
+  type WaveguideRenderer,
 } from "./dsp-renderer";
 import {
   loadSampledInstrumentRenderer,
@@ -583,6 +585,8 @@ function recipeForInstrument(instrumentId: InstrumentId): AudioInstrumentRecipe 
       return AUDIO_INSTRUMENT_RECIPES[9];
     case "concert-vibes":
       return AUDIO_INSTRUMENT_RECIPES[10];
+    case "blues-guitar":
+      return AUDIO_INSTRUMENT_RECIPES[11];
   }
 }
 
@@ -672,6 +676,13 @@ function createAudioEngineInternal(
    * dedicated field because it additionally owns `analyzeWindow`.
    */
   const sampledRenderers = new Map<string, SampledInstrumentRenderer | null>();
+  /**
+   * Waveguide renderers (physically modeled guitar/flute) share the wasm
+   * instance with the concert grand and load with it; the map stays null
+   * until that load succeeds, and rendered attacks for those recipes
+   * refuse with `audio.renderer_unavailable` in the meantime.
+   */
+  let waveguideRenderers: ReadonlyMap<string, WaveguideRenderer> | null = null;
   function rendererForAlgorithm(
     algorithmId: string,
   ): Readonly<{
@@ -679,6 +690,8 @@ function createAudioEngineInternal(
     renderNote: ConcertGrandRenderer["renderNote"];
   }> | null {
     if (algorithmId === CONCERT_GRAND_RENDERER_ALGORITHM_ID) return renderer;
+    const waveguide = waveguideRenderers?.get(algorithmId);
+    if (waveguide !== undefined) return waveguide;
     if (sampledRenderers.has(algorithmId)) {
       return sampledRenderers.get(algorithmId) ?? null;
     }
@@ -1486,8 +1499,10 @@ function createAudioEngineInternal(
     if (renderer === null) {
       try {
         renderer = await loadConcertGrandRenderer();
+        waveguideRenderers = await loadWaveguideRenderers();
       } catch {
         renderer = null;
+        waveguideRenderers = null;
       }
     }
     try {
@@ -2513,11 +2528,13 @@ function createAudioEngineInternal(
       );
     }
     if (
-      recipe.renderer.algorithmId === CONCERT_GRAND_RENDERER_ALGORITHM_ID &&
-      renderer === null
+      renderer === null &&
+      (recipe.renderer.algorithmId === CONCERT_GRAND_RENDERER_ALGORITHM_ID ||
+        recipe.renderer.algorithmId.startsWith("changes.dsp.waveguide-"))
     ) {
       try {
         renderer = await loadConcertGrandRenderer();
+        waveguideRenderers = await loadWaveguideRenderers();
       } catch {
         return refuse({
           code: "audio.renderer_unavailable",

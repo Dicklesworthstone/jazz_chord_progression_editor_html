@@ -310,20 +310,20 @@ export const AUDIO_INSTRUMENT_RECIPES = Object.freeze([
   Object.freeze({
     id: "flute",
     label: "Flute",
-    designClaim: "additive sine partials with a soft breath onset and delayed vibrato",
-    synthesis: "additive",
-    outputLevel: 0.52,
+    designClaim:
+      "physically modeled flute: jet-drive waveguide with breath turbulence and delayed vibrato",
+    synthesis: "rendered",
+    outputLevel: 0.5,
     polyphonyLimit: 32,
-    oscillators: Object.freeze([
-      Object.freeze({ id: "fundamental", waveform: "sine", frequencyRatio: 1, detuneCents: 0, level: 0.78 }),
-      Object.freeze({ id: "second", waveform: "sine", frequencyRatio: 2, detuneCents: 0, level: 0.13 }),
-      Object.freeze({ id: "third", waveform: "sine", frequencyRatio: 3, detuneCents: 0, level: 0.06 }),
-      Object.freeze({ id: "fourth", waveform: "sine", frequencyRatio: 4, detuneCents: 0, level: 0.03 }),
-    ]),
-    transient: Object.freeze({ waveform: "sine", frequencyRatio: 6, level: 0.06, decaySeconds: 0.03 }),
-    tremolo: Object.freeze({ waveform: "sine", rateHz: 5, depth: 0.09, delaySeconds: 0.28 }),
-    amplitude: Object.freeze({ attackSeconds: 0.05, decaySeconds: 0.25, sustainLevel: 0.68, releaseSeconds: 0.35 }),
-    filter: Object.freeze({ type: "lowpass", attackHz: 3_200, peakHz: 5_600, sustainHz: 3_200, q: 0.5, decaySeconds: 0.3 }),
+    renderer: Object.freeze({
+      algorithmId: "changes.dsp.waveguide-flute@1",
+      channels: 2,
+      maximumRenderSeconds: 5,
+      bufferCacheLimit: 64,
+    }),
+    /* Click guard and breath release: the model breathes its own envelope. */
+    amplitude: Object.freeze({ attackSeconds: 0.002, decaySeconds: 0, sustainLevel: 1, releaseSeconds: 0.3 }),
+    filter: Object.freeze({ type: "lowpass", attackHz: 16_000, peakHz: 16_000, sustainHz: 16_000, q: 0.5, decaySeconds: 0.1 }),
   }),
   Object.freeze({
     id: "organ",
@@ -348,18 +348,19 @@ export const AUDIO_INSTRUMENT_RECIPES = Object.freeze([
     id: "guitar",
     label: "Guitar",
     designClaim:
-      "plucked decay of two detuned saws through a closing lowpass, with a short pick transient",
-    synthesis: "additive",
+      "physically modeled archtop: dual-polarization plucked waveguide, body modes, clean amp",
+    synthesis: "rendered",
     outputLevel: 0.5,
     polyphonyLimit: 48,
-    oscillators: Object.freeze([
-      Object.freeze({ id: "saw-a", waveform: "sawtooth", frequencyRatio: 1, detuneCents: -3, level: 0.6 }),
-      Object.freeze({ id: "saw-b", waveform: "sawtooth", frequencyRatio: 1, detuneCents: 3, level: 0.4 }),
-    ]),
-    transient: Object.freeze({ waveform: "sine", frequencyRatio: 5, level: 0.12, decaySeconds: 0.012 }),
-    tremolo: null,
-    amplitude: Object.freeze({ attackSeconds: 0.002, decaySeconds: 1.5, sustainLevel: 0.05, releaseSeconds: 0.5 }),
-    filter: Object.freeze({ type: "lowpass", attackHz: 5_200, peakHz: 7_800, sustainHz: 1_400, q: 1.1, decaySeconds: 1.0 }),
+    renderer: Object.freeze({
+      algorithmId: "changes.dsp.waveguide-guitar-clean@1",
+      channels: 2,
+      maximumRenderSeconds: 6,
+      bufferCacheLimit: 64,
+    }),
+    /* Click guard and string damp: the waveguide's decay is the envelope. */
+    amplitude: Object.freeze({ attackSeconds: 0.002, decaySeconds: 0, sustainLevel: 1, releaseSeconds: 0.35 }),
+    filter: Object.freeze({ type: "lowpass", attackHz: 16_000, peakHz: 16_000, sustainHz: 16_000, q: 0.5, decaySeconds: 0.1 }),
   }),
   Object.freeze({
     id: "upright-bass",
@@ -395,6 +396,24 @@ export const AUDIO_INSTRUMENT_RECIPES = Object.freeze([
     }),
     /* Click guard and a ringing damp: the recorded PCM is the envelope. */
     amplitude: Object.freeze({ attackSeconds: 0.002, decaySeconds: 0, sustainLevel: 1, releaseSeconds: 1.1 }),
+    filter: Object.freeze({ type: "lowpass", attackHz: 16_000, peakHz: 16_000, sustainHz: 16_000, q: 0.5, decaySeconds: 0.1 }),
+  }),
+  Object.freeze({
+    id: "blues-guitar",
+    label: "Blues Guitar",
+    designClaim:
+      "physically modeled electric: the same plucked waveguide through a driven amp with cab voicing",
+    synthesis: "rendered",
+    outputLevel: 0.46,
+    polyphonyLimit: 48,
+    renderer: Object.freeze({
+      algorithmId: "changes.dsp.waveguide-guitar-drive@1",
+      channels: 2,
+      maximumRenderSeconds: 6,
+      bufferCacheLimit: 64,
+    }),
+    /* Click guard and string damp: the waveguide's decay is the envelope. */
+    amplitude: Object.freeze({ attackSeconds: 0.002, decaySeconds: 0, sustainLevel: 1, releaseSeconds: 0.35 }),
     filter: Object.freeze({ type: "lowpass", attackHz: 16_000, peakHz: 16_000, sustainHz: 16_000, q: 0.5, decaySeconds: 0.1 }),
   }),
 ] as const satisfies readonly AudioInstrumentRecipe[]);

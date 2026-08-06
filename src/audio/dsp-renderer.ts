@@ -39,6 +39,33 @@ import {
 export const CONCERT_GRAND_RENDERER_ALGORITHM_ID =
   "changes.dsp.concert-grand@1";
 
+/*
+ * Physically modeled waveguide instruments (jcpe-1miv follow-up, owner
+ * direction 2026-08-06): the same embedded wasm module carries an extended
+ * Karplus-Strong guitar (dual-polarization strings, dispersion, archtop
+ * body modes) behind two amp voicings, and a jet-drive waveguide flute.
+ */
+export const WAVEGUIDE_GUITAR_CLEAN_ALGORITHM_ID =
+  "changes.dsp.waveguide-guitar-clean@1";
+export const WAVEGUIDE_GUITAR_DRIVE_ALGORITHM_ID =
+  "changes.dsp.waveguide-guitar-drive@1";
+export const WAVEGUIDE_FLUTE_ALGORITHM_ID = "changes.dsp.waveguide-flute@1";
+
+export type WaveguideRenderer = Readonly<{
+  algorithmId: string;
+  wasmSha256: string;
+  /**
+   * Render one note; same contract shape as the Concert Grand's
+   * `renderNote`. Null only for an out-of-contract request.
+   */
+  renderNote: (
+    midiPitch: number,
+    velocity: number,
+    sampleRateHz: number,
+    maxSeconds?: number,
+  ) => RenderedNotePcm | null;
+}>;
+
 /**
  * The reviewed crossfade design. The sampled attack owns the note outright
  * until `sampleOnlySeconds`; a cosine/sine crossfade then hands the note to
@@ -188,6 +215,25 @@ type ConcertGrandExports = Readonly<{
     sampleRate: number,
     fftSize: number,
     out: number,
+  ) => number;
+  gtr_note_frames: (midi: number, sampleRate: number) => number;
+  gtr_render: (
+    midi: number,
+    velocity: number,
+    sampleRate: number,
+    profile: number,
+    left: number,
+    right: number,
+    maxFrames: number,
+  ) => number;
+  flt_note_frames: (midi: number, sampleRate: number) => number;
+  flt_render: (
+    midi: number,
+    velocity: number,
+    sampleRate: number,
+    left: number,
+    right: number,
+    maxFrames: number,
   ) => number;
 }>;
 
@@ -622,7 +668,12 @@ function ensureCapacity(
   }
 }
 
-let rendererPromise: Promise<ConcertGrandRenderer> | null = null;
+type DspCore = Readonly<{
+  concertGrand: ConcertGrandRenderer;
+  waveguide: ReadonlyMap<string, WaveguideRenderer>;
+}>;
+
+let rendererPromise: Promise<DspCore> | null = null;
 
 function requireExportedFunction(
   exports: Readonly<Record<string, unknown>>,
@@ -635,7 +686,7 @@ function requireExportedFunction(
   return candidate;
 }
 
-async function instantiate(): Promise<ConcertGrandRenderer> {
+async function instantiate(): Promise<DspCore> {
   const bytes = decodeWasmBytes();
   const { instance } = await WebAssembly.instantiate(bytes, {});
   const rawExports: Readonly<Record<string, unknown>> = instance.exports;
@@ -673,6 +724,22 @@ async function instantiate(): Promise<ConcertGrandRenderer> {
       rawExports,
       "an_chroma",
     ) as ConcertGrandExports["an_chroma"],
+    gtr_note_frames: requireExportedFunction(
+      rawExports,
+      "gtr_note_frames",
+    ) as ConcertGrandExports["gtr_note_frames"],
+    gtr_render: requireExportedFunction(
+      rawExports,
+      "gtr_render",
+    ) as ConcertGrandExports["gtr_render"],
+    flt_note_frames: requireExportedFunction(
+      rawExports,
+      "flt_note_frames",
+    ) as ConcertGrandExports["flt_note_frames"],
+    flt_render: requireExportedFunction(
+      rawExports,
+      "flt_render",
+    ) as ConcertGrandExports["flt_render"],
   };
   const memory = exports.memory;
   /* Scratch region starts past the module's own data and shadow stack. */
@@ -833,14 +900,112 @@ async function instantiate(): Promise<ConcertGrandRenderer> {
     });
   };
 
+  /*
+   * Waveguide renderers (physically modeled guitar and flute) live in the
+   * same wasm instance and share the scratch region. Each is the same
+   * render-copy-truncate shape as the piano's synthesized path; the models
+   * bake their own musical envelopes, so the only post-processing is the
+   * click-guard fade on an explicit truncation.
+   */
+  const makeWaveguideRenderNote = (
+    noteFrames: (midi: number, rate: number) => number,
+    renderInto: (
+      midi: number,
+      velocity: number,
+      rate: number,
+      left: number,
+      right: number,
+      maxFrames: number,
+    ) => number,
+  ): WaveguideRenderer["renderNote"] => {
+    return (midiPitch, velocity, sampleRateHz, maxSeconds) => {
+      const natural = noteFrames(midiPitch, sampleRateHz);
+      if (natural <= 0) return null;
+      const capacity =
+        maxSeconds === undefined || !Number.isFinite(maxSeconds)
+          ? natural
+          : Math.min(
+              natural,
+              Math.max(1, Math.round(maxSeconds * sampleRateHz)),
+            );
+      const channelBytes = capacity * 4;
+      const leftPointer = scratchBase;
+      const rightPointer = scratchBase + channelBytes;
+      ensureCapacity(memory, scratchBase, channelBytes * 2);
+      const written = renderInto(
+        midiPitch,
+        velocity,
+        sampleRateHz,
+        leftPointer,
+        rightPointer,
+        capacity,
+      );
+      if (written <= 0) return null;
+      const left = new Float32Array(written);
+      const right = new Float32Array(written);
+      left.set(new Float32Array(memory.buffer, leftPointer, written));
+      right.set(new Float32Array(memory.buffer, rightPointer, written));
+      if (written === capacity && capacity < natural) {
+        /* Truncated by the caller: fade ~15 ms so the cut cannot click. */
+        const fade = Math.min(Math.round(0.015 * sampleRateHz), written);
+        for (let index = 0; index < fade; index += 1) {
+          const gain = (fade - index) / fade;
+          const at = written - fade + index;
+          left[at] = (left[at] ?? 0) * gain;
+          right[at] = (right[at] ?? 0) * gain;
+        }
+      }
+      return Object.freeze({
+        sampleRateHz,
+        frameCount: written,
+        left,
+        right,
+      });
+    };
+  };
+
+  const waveguide = new Map<string, WaveguideRenderer>();
+  for (const [algorithmId, renderNoteFor] of [
+    [
+      WAVEGUIDE_GUITAR_CLEAN_ALGORITHM_ID,
+      makeWaveguideRenderNote(exports.gtr_note_frames, (m, v, r, l, rt, mx) =>
+        exports.gtr_render(m, v, r, 0, l, rt, mx),
+      ),
+    ],
+    [
+      WAVEGUIDE_GUITAR_DRIVE_ALGORITHM_ID,
+      makeWaveguideRenderNote(exports.gtr_note_frames, (m, v, r, l, rt, mx) =>
+        exports.gtr_render(m, v, r, 1, l, rt, mx),
+      ),
+    ],
+    [
+      WAVEGUIDE_FLUTE_ALGORITHM_ID,
+      makeWaveguideRenderNote(exports.flt_note_frames, (m, v, r, l, rt, mx) =>
+        exports.flt_render(m, v, r, l, rt, mx),
+      ),
+    ],
+  ] as const) {
+    waveguide.set(
+      algorithmId,
+      Object.freeze({
+        algorithmId,
+        wasmSha256: CONCERT_GRAND_WASM_SHA256,
+        renderNote: renderNoteFor,
+      }),
+    );
+  }
+
   return Object.freeze({
-    algorithmId: CONCERT_GRAND_RENDERER_ALGORITHM_ID,
-    wasmSha256: CONCERT_GRAND_WASM_SHA256,
-    attackSamplesSha256: PIANO_ATTACK_SAMPLES_SHA256,
-    renderNote,
-    renderSynthesizedNote,
-    attackSliceFor: selectAttackSlice,
-    analyzeWindow,
+    concertGrand: Object.freeze({
+      algorithmId: CONCERT_GRAND_RENDERER_ALGORITHM_ID,
+      wasmSha256: CONCERT_GRAND_WASM_SHA256,
+      attackSamplesSha256: PIANO_ATTACK_SAMPLES_SHA256,
+      renderNote,
+      renderSynthesizedNote,
+      attackSliceFor: selectAttackSlice,
+      analyzeWindow,
+    }),
+    waveguide,
   });
 }
 
@@ -850,6 +1015,20 @@ async function instantiate(): Promise<ConcertGrandRenderer> {
  * refusal `audio.renderer_unavailable` in the meantime.
  */
 export function loadConcertGrandRenderer(): Promise<ConcertGrandRenderer> {
+  return loadDspCore().then((core) => core.concertGrand);
+}
+
+/**
+ * The waveguide renderer map, keyed by algorithm id — same instantiation,
+ * same retry semantics.
+ */
+export function loadWaveguideRenderers(): Promise<
+  ReadonlyMap<string, WaveguideRenderer>
+> {
+  return loadDspCore().then((core) => core.waveguide);
+}
+
+function loadDspCore(): Promise<DspCore> {
   rendererPromise ??= instantiate().catch((error: unknown) => {
     rendererPromise = null;
     throw error instanceof Error ? error : new Error(String(error));
