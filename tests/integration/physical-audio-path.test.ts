@@ -267,6 +267,42 @@ test("wind variation is bounded to eight cache slots while exact-velocity evicti
   expect(oldest.renderedCount).toBe(1);
 });
 
+test("legato and tongued winds own distinct bounded cache entries", async () => {
+  const playback = compilePlaybackPlan(
+    materializeP0TimelineCase("P0-TIME-001").request,
+  );
+  if (!playback.ok) throw new Error("PHYSICAL_ARTICULATION_CACHE_PLAN");
+  const realized = compilePhysicalRealization({
+    plan: playback.plan,
+    sourcePlanRevision: 31,
+    instrumentFamily: "clarinet",
+    instrumentVersionId: "changes.physical.clarinet.v2",
+    parameterPackSha256: "a".repeat(64),
+    sampleRateHz: 48_000,
+  });
+  if (!realized.ok) throw new Error("PHYSICAL_ARTICULATION_CACHE_REALIZE");
+  const base = realized.value.expressivePlan.gestures[1];
+  const midiPitch = playback.plan.events[0]?.midiPitches[1];
+  if (base === undefined || midiPitch === undefined) {
+    throw new Error("PHYSICAL_ARTICULATION_CACHE_FIXTURE");
+  }
+  const tongued = Object.freeze({ ...base, articulation: "tongued" as const });
+  const legato = Object.freeze({ ...base, articulation: "legato" as const });
+  const { engine } = await readyEngine();
+  const first = requireSuccess(
+    await engine.prepareRenderedAudioVoices({
+      instrumentId: "clarinet",
+      notes: [
+        { midiPitch: midi(midiPitch), velocity: 96, physicalGesture: tongued },
+        { midiPitch: midi(midiPitch), velocity: 96, physicalGesture: legato },
+        { midiPitch: midi(midiPitch), velocity: 96, physicalGesture: tongued },
+      ],
+    }),
+  );
+  expect(first.renderedCount).toBe(2);
+  expect(first.cachedCount).toBe(1);
+});
+
 test("sixteen repeated comp attacks reduce to four honest v1 PCM renders", async () => {
   const playback = compilePlaybackPlan(
     materializeP0TimelineCase("P0-TIME-001").request,

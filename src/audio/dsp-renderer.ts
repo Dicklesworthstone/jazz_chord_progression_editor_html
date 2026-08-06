@@ -57,6 +57,8 @@ export const WAVEGUIDE_FLUTE_ALGORITHM_ID = "changes.dsp.waveguide-flute@1";
 export const WAVEGUIDE_CLARINET_ALGORITHM_ID =
   "changes.dsp.waveguide-clarinet@1";
 
+export type WindAttackArticulation = "legato" | "tongued";
+
 export type WaveguideRenderer = Readonly<{
   algorithmId: string;
   wasmSha256: string;
@@ -70,6 +72,7 @@ export type WaveguideRenderer = Readonly<{
     sampleRateHz: number,
     maxSeconds?: number,
     variationSlot?: number,
+    windArticulation?: WindAttackArticulation,
   ) => RenderedNotePcm | null;
 }>;
 
@@ -294,6 +297,16 @@ type ConcertGrandExports = Readonly<{
     right: number,
     maxFrames: number,
   ) => number;
+  flt_render_expressive: (
+    midi: number,
+    velocity: number,
+    sampleRate: number,
+    variationSlot: number,
+    articulation: number,
+    left: number,
+    right: number,
+    maxFrames: number,
+  ) => number;
   clr_note_frames: (midi: number, sampleRate: number) => number;
   clr_render: (
     midi: number,
@@ -308,6 +321,16 @@ type ConcertGrandExports = Readonly<{
     velocity: number,
     sampleRate: number,
     variationSlot: number,
+    left: number,
+    right: number,
+    maxFrames: number,
+  ) => number;
+  clr_render_expressive: (
+    midi: number,
+    velocity: number,
+    sampleRate: number,
+    variationSlot: number,
+    articulation: number,
     left: number,
     right: number,
     maxFrames: number,
@@ -858,6 +881,10 @@ async function instantiate(): Promise<DspCore> {
       rawExports,
       "flt_render_seeded",
     ) as ConcertGrandExports["flt_render_seeded"],
+    flt_render_expressive: requireExportedFunction(
+      rawExports,
+      "flt_render_expressive",
+    ) as ConcertGrandExports["flt_render_expressive"],
     clr_note_frames: requireExportedFunction(
       rawExports,
       "clr_note_frames",
@@ -870,6 +897,10 @@ async function instantiate(): Promise<DspCore> {
       rawExports,
       "clr_render_seeded",
     ) as ConcertGrandExports["clr_render_seeded"],
+    clr_render_expressive: requireExportedFunction(
+      rawExports,
+      "clr_render_expressive",
+    ) as ConcertGrandExports["clr_render_expressive"],
     phs_validate_v2: requireExportedFunction(
       instance.exports,
       "phs_validate_v2",
@@ -1173,8 +1204,32 @@ async function instantiate(): Promise<DspCore> {
       right: number,
       maxFrames: number,
     ) => number,
+    renderExpressiveInto?: (
+      midi: number,
+      velocity: number,
+      rate: number,
+      variationSlot: number,
+      articulation: number,
+      left: number,
+      right: number,
+      maxFrames: number,
+    ) => number,
   ): WaveguideRenderer["renderNote"] => {
-    return (midiPitch, velocity, sampleRateHz, maxSeconds, variationSlot) => {
+    return (
+      midiPitch,
+      velocity,
+      sampleRateHz,
+      maxSeconds,
+      variationSlot,
+      windArticulation,
+    ) => {
+      if (
+        windArticulation !== undefined &&
+        windArticulation !== "legato" &&
+        windArticulation !== "tongued"
+      ) {
+        return null;
+      }
       const natural = noteFrames(midiPitch, sampleRateHz);
       if (natural <= 0) return null;
       const capacity =
@@ -1188,9 +1243,38 @@ async function instantiate(): Promise<DspCore> {
       const leftPointer = scratchBase;
       const rightPointer = scratchBase + channelBytes;
       ensureCapacity(memory, scratchBase, channelBytes * 2);
-      const written = variationSlot === undefined || renderSeededInto === undefined
-        ? renderInto(midiPitch, velocity, sampleRateHz, leftPointer, rightPointer, capacity)
-        : renderSeededInto(midiPitch, velocity, sampleRateHz, variationSlot, leftPointer, rightPointer, capacity);
+      const articulationCode = windArticulation === "legato" ? 0 : 1;
+      const written = variationSlot !== undefined &&
+          windArticulation !== undefined &&
+          renderExpressiveInto !== undefined
+        ? renderExpressiveInto(
+            midiPitch,
+            velocity,
+            sampleRateHz,
+            variationSlot,
+            articulationCode,
+            leftPointer,
+            rightPointer,
+            capacity,
+          )
+        : variationSlot !== undefined && renderSeededInto !== undefined
+        ? renderSeededInto(
+            midiPitch,
+            velocity,
+            sampleRateHz,
+            variationSlot,
+            leftPointer,
+            rightPointer,
+            capacity,
+          )
+        : renderInto(
+            midiPitch,
+            velocity,
+            sampleRateHz,
+            leftPointer,
+            rightPointer,
+            capacity,
+          );
       if (written <= 0) return null;
       const left = new Float32Array(written);
       const right = new Float32Array(written);
@@ -1236,6 +1320,17 @@ async function instantiate(): Promise<DspCore> {
         (m, v, r, l, rt, mx) => exports.flt_render(m, v, r, l, rt, mx),
         (m, v, r, slot, l, rt, mx) =>
           exports.flt_render_seeded(m, v, r, slot, l, rt, mx),
+        (m, v, r, slot, articulation, l, rt, mx) =>
+          exports.flt_render_expressive(
+            m,
+            v,
+            r,
+            slot,
+            articulation,
+            l,
+            rt,
+            mx,
+          ),
       ),
     ],
     [
@@ -1245,6 +1340,17 @@ async function instantiate(): Promise<DspCore> {
         (m, v, r, l, rt, mx) => exports.clr_render(m, v, r, l, rt, mx),
         (m, v, r, slot, l, rt, mx) =>
           exports.clr_render_seeded(m, v, r, slot, l, rt, mx),
+        (m, v, r, slot, articulation, l, rt, mx) =>
+          exports.clr_render_expressive(
+            m,
+            v,
+            r,
+            slot,
+            articulation,
+            l,
+            rt,
+            mx,
+          ),
       ),
     ],
   ] as const) {

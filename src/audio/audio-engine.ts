@@ -786,6 +786,7 @@ function createAudioEngineInternal(
       sampleRateHz: number,
       maxSeconds?: number,
       variationSlot?: number,
+      windArticulation?: "legato" | "tongued",
     ) => ReturnType<ConcertGrandRenderer["renderNote"]>;
   }> | null {
     if (algorithmId === CONCERT_GRAND_RENDERER_ALGORITHM_ID) return renderer;
@@ -920,6 +921,22 @@ function createAudioEngineInternal(
     return RENDER_SECONDS_BUCKETS[RENDER_SECONDS_BUCKETS.length - 1] ?? 8;
   }
 
+  /*
+   * The one authority for which seeded-variation slot a v1 render consumes.
+   * The cache key and the render call must always agree on this value: a
+   * slot consumed but not keyed (or keyed but not consumed) yields
+   * wrong-audio cache hits, so both sites call this helper.
+   */
+  function windVariationSlot(
+    physicalGesture: ExpressiveVoiceGesture | null,
+  ): number | null {
+    return physicalGesture !== null &&
+      (physicalGesture.instrumentFamily === "flute" ||
+        physicalGesture.instrumentFamily === "clarinet")
+      ? physicalGesture.deterministicSeedUint32 % 8
+      : null;
+  }
+
   function renderedBufferKey(
     instrumentId: InstrumentId,
     midiPitch: number,
@@ -930,20 +947,22 @@ function createAudioEngineInternal(
     /*
      * ABI-v1 rendered instruments consume pitch, duration bucket, sample
      * rate (one cache per context), and excitation velocity. They do not yet
-     * consume gesture curves, event identity, or deterministic seed. Hashing
+     * consume full gesture curves or event identity. Winds consume only the
+     * bounded variation slot and the two-state attack articulation. Hashing
      * ignored fields made every chart event a cold render and falsely called
-     * them PCM-affecting. Keep a family/version discriminator; each PHS
-     * native renderer must replace it with its quantized curve identity when
-     * it actually begins consuming those curves.
+     * them PCM-affecting. Keep a family/version discriminator; each PHS native
+     * renderer must replace it with its quantized curve identity when it
+     * actually begins consuming those curves.
      */
-    const variationSlot = physicalGesture !== null &&
-      (physicalGesture.instrumentFamily === "flute" ||
-        physicalGesture.instrumentFamily === "clarinet")
-      ? physicalGesture.deterministicSeedUint32 % 8
-      : null;
+    const variationSlot = windVariationSlot(physicalGesture);
+    const windArticulation = variationSlot === null
+      ? null
+      : physicalGesture?.articulation === "legato"
+      ? "legato"
+      : "tongued";
     const gestureIdentity = physicalGesture === null
       ? "legacy"
-      : `physical-v1:${physicalGesture.instrumentFamily}:${physicalGesture.instrumentVersionId}${variationSlot === null ? "" : `:variation-${String(variationSlot)}`}`;
+      : `physical-v1:${physicalGesture.instrumentFamily}:${physicalGesture.instrumentVersionId}${variationSlot === null ? "" : `:variation-${String(variationSlot)}:attack-${windArticulation ?? "none"}`}`;
     const renderVelocity = physicalGesture === null
       ? quantizeRenderVelocity(velocity)
       : velocity;
@@ -979,16 +998,19 @@ function createAudioEngineInternal(
     const excitationVelocity = physicalGesture === null
       ? quantizeRenderVelocity(velocity)
       : physicalGestureExcitationVelocity(physicalGesture, velocity);
+    const variationSlot = windVariationSlot(physicalGesture);
+    const windArticulation = variationSlot === null
+      ? undefined
+      : physicalGesture?.articulation === "legato"
+      ? "legato"
+      : "tongued";
     const pcm = noteRenderer.renderNote(
       midiPitch,
       excitationVelocity,
       context.sampleRate,
       seconds,
-      physicalGesture !== null &&
-        (physicalGesture.instrumentFamily === "flute" ||
-          physicalGesture.instrumentFamily === "clarinet")
-        ? physicalGesture.deterministicSeedUint32 % 8
-        : undefined,
+      variationSlot ?? undefined,
+      windArticulation,
     );
     if (pcm === null) return null;
     const buffer = context.createBuffer(
