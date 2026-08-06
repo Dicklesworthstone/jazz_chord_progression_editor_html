@@ -166,3 +166,170 @@ packs exist, PHS1 must rename or mark that field so it cannot be mistaken
 for a content hash (e.g. `parameterPackPlaceholderId`), and the real pack
 format must carry a true content hash plus the commit pin from §1. This is a
 named PHS1 spec/build item; do not silently reinterpret the existing field.
+
+## 8. Refined honest-use contracts (additive to §4; the no-go list stands)
+
+Added 2026-08-06 (`jcpe-fsr-bem-endcorrections-db45`,
+`jcpe-fsr-lbm-discharge-ix40`). The §4 no-go list remains true as written:
+no acoustic wave propagation, ever. These two contracts carve out the
+narrow regimes in which the same solvers are exactly the right tool, and
+each carries a pilot validation gate that must pass before the recipe is
+trusted on instrument geometry.
+
+### 8.1 fs-bem: compact-limit inertance end corrections
+
+- [ ] Contract: in the compact limit (ka ≪ 1, aperture radius acoustically
+  small), the acoustic inertance end correction of an aperture is a Laplace
+  added-mass problem — the classic 0.6133a unflanged and 0.8216a flanged
+  circular-aperture corrections are potential-flow results. `fs-bem` may
+  therefore compute geometry-accurate end corrections for arbitrary
+  tone-hole shapes, chimney heights, undercut holes, and the flute
+  embouchure hole. It remains forbidden to describe this as radiation or
+  Helmholtz solving; radiation damping still comes from reviewed reduced
+  models and literature.
+- [ ] State the compact-limit validity bound (the ka at which the correction
+  was computed and the frequency range over which it is applied) on every
+  fixture that consumes a computed correction.
+- [ ] Pilot validation gate: reproduce the flanged 0.8216a constant (and the
+  unflanged 0.6133a case if expressible with Laplace panel boundary
+  conditions) under panel refinement to within a few percent before any
+  instrument-geometry use. Pilot results or the exact build blocker are
+  recorded by the pilot bead; a failed or blocked pilot leaves this recipe
+  authored but untrusted.
+- [ ] Audible-outcome honesty: this improves fingering-dependent tuning and
+  register accuracy from geometry (replacing per-note empirical pulls per
+  plan §9.2); it does not by itself change timbre.
+
+### 8.2 fs-lbm: quasi-static discharge coefficients
+
+- [ ] Contract: steady/quasi-static viscous flow through a reed channel or
+  tone hole at low Mach is incompressible low-Mach flow — exactly what
+  `fs-lbm` solves (its `MACH_LIMIT = 0.3` stands). Use it offline to fit
+  Reynolds-dependent discharge/vena-contracta coefficients Cd(Re) that are
+  currently fixed literature constants inside the reed and jet flow
+  equations. It remains forbidden to describe this as jet, turbulence, or
+  acoustic simulation; the coefficients enter the reduced models as fitted
+  tables with provenance.
+- [ ] Audible-outcome honesty: Cd(Re) sets the position of the pressure–flow
+  knee — where the clarinet speaks and how dynamics respond to breath
+  gestures — not a new sound source.
+- [ ] Pilot validation gate: reproduce the sharp-edged-orifice discharge
+  coefficient (~0.61; the exact reference value and its 2D-vs-3D basis
+  stated by the pilot) at steady state with Mach and incompressibility
+  diagnostics in bounds, for two or more Reynolds numbers, before any
+  reed-channel fitting. Same recording rule as §8.1.
+
+## 9. Pack-fitting methodology (normative for foundry fits)
+
+Added 2026-08-06 (`jcpe-fsr-fitting-methodology-2kw9`). Pack fitting is
+multi-objective and render-expensive; scalar weighted sums are how models
+end up metrically green and audibly wrong. Every foundry fit binds these
+four practices, all deterministic, seeded, offline, and pinned to the §1
+commit:
+
+- [ ] Multi-objective fronts, not weighted sums: fit competing spectral
+  objectives (attack fidelity, decay slopes, tuning residual, HNR,
+  brightness) with `fs-dfo` NSGA-II Pareto fronts, and put knee candidates
+  in front of the owner's ears. The listening gate chooses among honest
+  trade-offs; it never ratifies a hidden weighting.
+- [ ] Multi-fidelity loops: use `fs-bo` co-kriging with short/coarse renders
+  as the cheap arm and full 96 kHz renders with the complete metric battery
+  as the expensive arm. Per-component fits stay at or below 10 dimensions —
+  `fs-bo::minimize` panics above the Sobol ceiling (§6) — and the dimension
+  guard is asserted, not assumed.
+- [ ] Goodhart guard: reimplement the `fs-opt` guard concept as perturbation
+  checks around every accepted optimum, demonstrating the fit is not
+  exploiting the metric (a perfect magnitude match with the wrong sound
+  must be detectable). A fit without its guard evidence is not acceptable.
+- [ ] Conformal certify-or-escalate: when a surrogate's `ConformalBand` error
+  band is too wide to certify a candidate, re-render the real thing; never
+  accept a surrogate-only optimum.
+
+## 10. Evidence methodology: oracles and certified passivity
+
+Added 2026-08-06 (`jcpe-fsr-oracle-fixtures-twyn`,
+`jcpe-fsr-passivity-cert-zrqk`). Converts "sounds plausible" into "provably
+tracks the reference physics" — the same measure-don't-assume law that
+caught the +24-cent flute detune.
+
+- [ ] Oracle-versus-reduced fixtures: every reduced component with a
+  closed-form reference (the v2 modal kernel against the exact discrete
+  damped-oscillator solution; reed roots against an independently
+  re-implemented residual) carries an independent oracle fixture with an
+  authored tolerance and a mutation control that must fail. For future
+  stateful exciters without closed forms, the offline oracle is
+  `crates/fs-time/src/rk45.rs` (RK45 with PI step control) run at tight
+  tolerance, vendored under the §5 MIT-with-Rider decision with provenance
+  headers; the fixture then bounds reduced-versus-oracle residuals.
+- [ ] Certified passivity over parameter boxes: sample-point passivity checks
+  are necessary but not sufficient. Where a filter has a closed-form
+  |H| supremum (one-pole loss, DC blocker, tuning allpass), certify
+  sup |H| ≤ 1 analytically over the entire legal coefficient range with
+  conservative epsilon inflation, in the test suite, now. For filters
+  without closed forms, the production path is the `fs-ivl`
+  outward-rounded interval + Krawczyk port in the PHS1 build, certifying
+  each pack's coefficient box per version. JS float evaluation is never
+  claimed to be rounding-rigorous; the epsilon inflation and its rationale
+  are stated where used.
+
+## 11. Contact, hysteresis, and correlated-mode references
+
+Added 2026-08-06 (`jcpe-fsr-felt-hysteresis-21sx`, `jcpe-fsr-cqc-modes-iguq`,
+`jcpe-fsr-squeak-34v5`).
+
+- [ ] Felt and mallet-wrap hysteresis: piano hammer felt is the canonical
+  hysteretic nonlinear spring (Stulov generalization of Hertz) — loading
+  and unloading follow different force–compression paths, which is what
+  makes attack brightness velocity-dependent. Fit Stulov-class laws offline
+  from provenance-pinned literature force–compression loops using
+  `fs-material`'s fiber-hysteresis machinery with `fs-ad` exact tangents
+  and the `verify_gradient` gate (§2). Consumers: the piano
+  sustain-pedal package's hammer-law spec item (live only with a future
+  physical hammer path — stated there) and the PHS6 mallet-wrap
+  accepted-variant note. Composes with the Hertz/Hunt–Crossley core in §2.
+- [ ] CQC correlated-mode summation: near-degenerate body-mode pairs summed
+  as independent resonators produce phasing artifacts; their correlation is
+  part of the dreadnought "breathing" sound. Port the CONCEPT of
+  `crates/fs-uq/src/seismic.rs` (complete quadratic combination over SDOF
+  banks) into the PHS4 body-bank spec — cross-correlation coefficients for
+  mode pairs closer than their bandwidths. Concept port, not a code path;
+  the fixture is analytic (closed-form beat/level behavior), never
+  production-derived.
+- [ ] Stick-slip transients: `crates/fs-tribo/src/partial_slip.rs`
+  (Cattaneo–Mindlin partial-slip return map, zero-dep, `forbid(unsafe)`)
+  is the port source for the PHS4 deterministic slide/fret squeak
+  transient model, under the §5 provenance rule. It is also the long-term
+  skeleton for arco upright bass, which stays deferred as its own package.
+
+## 12. Offline plate-mode solver recipe (per-body mode tables)
+
+Added 2026-08-06 (`jcpe-fsr-plate-modes-sleq`). The plucked-string family's
+body-size differentiation (ukulele versus dreadnought versus archtop versus
+upright bass, plan §10) requires per-body mode tables derived from geometry,
+not hand-tuning. FrankenSim has no plate eigenproblem (§4 stands); we author
+the discretization and drive it with the §3 eigensolver recipes.
+
+- [ ] Discretize the Kirchhoff–Love thin-plate biharmonic eigenproblem
+  D∇⁴w = ρh ω²w over the plate outline (finite differences or 1D-tensor
+  FEM from `crates/fs-feec/src/highorder/quad1d.rs` element matrices), with
+  boundary conditions stated per instrument (simply-supported for
+  validation; real edges are between clamped and supported and the choice
+  is recorded, never silently mixed).
+- [ ] Solve with the §3 real-symmetric recipe (Cholesky reduction + LOBPCG
+  from `fs-la`), each mode carrying a §3 certified-interval error bar.
+- [ ] Validate the solver against the analytic simply-supported rectangular
+  plate before any instrument use:
+  f_mn = (π/2)·√(D/(ρh))·((m/a)² + (n/b)²), with the discretization-error
+  trend under grid refinement recorded. A scratch prototype demonstrating
+  the validation and a two-geometry (ukulele-scale versus
+  dreadnought-scale) mode-table comparison is the pilot gate; production
+  port belongs to the PHS1 build (`jcpe-mnsc.3.2`).
+- [ ] Use orthotropic wood constants from provenance-pinned literature (the
+  isotropic constant is a validation-only convenience); couple the lowest
+  panel modes to the body's Helmholtz air resonance as a reviewed reduced
+  coupling, and take Q from primary-literature loss factors — FrankenSim
+  supplies no damping data (§4).
+- [ ] Output: a per-body mode table (frequencies, Q, gains referenced to the
+  bridge drive point) in the parameter-pack format with the §1 commit pin
+  and §5 provenance rule; bracing/ribs and drive-point weighting enter as
+  reviewed refinements with their own fixtures, never as silent tweaks.

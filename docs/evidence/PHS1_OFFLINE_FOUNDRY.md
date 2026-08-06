@@ -24,9 +24,9 @@ not copied.
 
 `bun run verify:physical-foundry` visits 16 independently authored analytic
 cases across 15 metric families. The expected near-miss alias refusal is a
-conforming result, not a skipped case. Its canonical 2,461-byte stdout receipt
+conforming result, not a skipped case. Its canonical 2,637-byte stdout receipt
 had SHA-256
-`36697900fe89f7fab8b4ff01afc3310b588f69aa0c1214f9384cf19940bed3ef`.
+`6a1f02ffb66fe4fb3581431d4a3a4e4cdfeeb64f1df659e02ca95bc646fa3299`.
 The receipt records the input and result digests, numeric profile, tool
 revision, seed, case count and maximum, ordered first diagnostic, and the fact
 that wall time does not affect output.
@@ -44,22 +44,26 @@ harmonic-oscillator energy error.
 
 - `bun run validate:phs1-contract`: pass; 8 pack cases, 16 metric cases, 15
   families, 4 authorities, 6 traces, and 11 mutation controls; zero findings.
-- `bun test tests/unit/physical-foundry.test.ts`: 33 pass, 0 fail, 83
+- `bun test tests/unit/physical-foundry.test.ts`: 35 pass, 0 fail, 88
   assertions, 1 file.
 - `bun run typecheck`: pass.
 - `bun run lint`: pass; source policy inspected 190 files with zero findings,
   and ESLint terminated with exit 0.
 - `bun run verify:physical-foundry`: pass; 16/16 cases conform, deterministic
   receipt emitted.
+- `bun test`: 3,516 pass, 0 fail, 566,774 assertions across 314 files in
+  959.81 s. A later receipt-field/bound-hardening edit was followed by the
+  focused 35-test package, typecheck, and lint gates above; the independent
+  verify leaf must run the final full gate again.
 
 Implementation SHA-256 values at the evidence point:
 
 - `scripts/physical-foundry.ts`:
-  `3790a4958b8b25e454e93ce66bfd20729560363ac1096b2e7167746cfd45ea1a`
+  `1f0826fca702978b28031f8af15da0714271a154925646154b9458d34b52a04b`
 - `scripts/physical-foundry-verlet.ts`:
   `6a98d725f9245c7410b86d7df800ddd87c81746158f26f588e61f0d52abbe22b`
 - `tests/unit/physical-foundry.test.ts`:
-  `cacad2da7ba0071dea89d45754537bddc952c4b5dfdf1c1bf053a79aa7ccf654`
+  `bd9ac5f38ac1b94254658e6f708d5fa14cae78374e244691926f2e4916992cb9`
 - `tests/fixtures/physical-foundry/frankensim-extraction.json`:
   `f6c925be547b3fb8de388fe1addf6fb10609368193ed93f92334a14769e938c3`
 
