@@ -126,7 +126,7 @@ test.describe("M1 Advanced disclosure", () => {
       );
       await expect(page.getByTestId("midi-import-summary")).not.toBeVisible();
 
-      await advanced.locator("summary").click();
+      await page.getByTestId("midi-import-advanced-summary").click();
       await expect(page.getByTestId("midi-import-summary")).toBeVisible();
       const chartText =
         (await page.getByTestId("midi-import-chart-text").textContent()) ?? "";
