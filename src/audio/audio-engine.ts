@@ -587,6 +587,8 @@ function recipeForInstrument(instrumentId: InstrumentId): AudioInstrumentRecipe 
       return AUDIO_INSTRUMENT_RECIPES[10];
     case "blues-guitar":
       return AUDIO_INSTRUMENT_RECIPES[11];
+    case "clarinet":
+      return AUDIO_INSTRUMENT_RECIPES[12];
   }
 }
 

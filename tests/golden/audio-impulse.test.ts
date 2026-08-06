@@ -25,6 +25,7 @@ const IMPULSE_CASE_IDS = [
   "X0-RENDER-030",
   "X0-RENDER-033",
   "X0-RENDER-036",
+  "X0-RENDER-039",
 ] as const;
 
 const CHECKPOINTS = [
@@ -98,7 +99,7 @@ describe("TR-X0-IMPULSE deterministic audio impulse golden", () => {
     expect(AUDIO_PERSISTENT_GRAPH_SETTINGS.createdNodeCount).toBe(12);
   });
 
-  test("X0-RENDER-003/X0-RENDER-006/X0-RENDER-009/X0-RENDER-012/X0-RENDER-015/X0-RENDER-018/X0-RENDER-021/X0-RENDER-024/X0-RENDER-027/X0-RENDER-030/X0-RENDER-033/X0-RENDER-036 matches the independent Q15 checkpoints and hashes", () => {
+  test("X0-RENDER-003/X0-RENDER-006/X0-RENDER-009/X0-RENDER-012/X0-RENDER-015/X0-RENDER-018/X0-RENDER-021/X0-RENDER-024/X0-RENDER-027/X0-RENDER-030/X0-RENDER-033/X0-RENDER-036/X0-RENDER-039 matches the independent Q15 checkpoints and hashes", () => {
     const channels = [new Float32Array(192_000), new Float32Array(192_000)] as const;
     const buffer: AudioBufferPort = {
       numberOfChannels: 2,
@@ -134,6 +135,6 @@ describe("TR-X0-IMPULSE deterministic audio impulse golden", () => {
     expect(AUDIO_IMPULSE_POLICY.algorithmId).toBe(
       "changes.audio.impulse.hall-quartic-q15.v2",
     );
-    expect(IMPULSE_CASE_IDS).toHaveLength(13);
+    expect(IMPULSE_CASE_IDS).toHaveLength(14);
   });
 });

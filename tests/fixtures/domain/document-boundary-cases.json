@@ -66,8 +66,8 @@
       "traceIds": ["F1-TRACE-DOCUMENT-TYPES"],
       "authorityIds": ["F1-AUTH-DOCUMENT"],
       "kind": "instrument-id-set",
-      "input": ["mellow-keys", "fm-electric-piano", "vibraphone", "warm-pad", "analog-poly", "concert-grand", "flute", "organ", "guitar", "upright-bass", "concert-vibes", "blues-guitar"],
-      "expected": {"allValid": true, "preservedOrder": ["mellow-keys", "fm-electric-piano", "vibraphone", "warm-pad", "analog-poly", "concert-grand", "flute", "organ", "guitar", "upright-bass", "concert-vibes", "blues-guitar"]}
+      "input": ["mellow-keys", "fm-electric-piano", "vibraphone", "warm-pad", "analog-poly", "concert-grand", "flute", "organ", "guitar", "upright-bass", "concert-vibes", "blues-guitar", "clarinet"],
+      "expected": {"allValid": true, "preservedOrder": ["mellow-keys", "fm-electric-piano", "vibraphone", "warm-pad", "analog-poly", "concert-grand", "flute", "organ", "guitar", "upright-bass", "concert-vibes", "blues-guitar", "clarinet"]}
     },
     {
       "id": "F1-DOC-004",

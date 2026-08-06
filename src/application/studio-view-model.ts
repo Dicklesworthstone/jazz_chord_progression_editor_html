@@ -341,6 +341,8 @@ function instrumentLabel(instrumentId: InstrumentId): string {
       return "Concert Vibes";
     case "blues-guitar":
       return "Blues Guitar";
+    case "clarinet":
+      return "Clarinet";
   }
 }
 

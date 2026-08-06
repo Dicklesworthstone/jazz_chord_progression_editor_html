@@ -75,9 +75,9 @@ describe("X0 human listening evidence honesty", () => {
   test("accepts exactly one attested physical-audition record per traced cell", () => {
     const actual = report(validEvidence());
     expect(actual.outcome).toBe("pass");
-    expect(actual.expectedRecords).toBe(108);
-    expect(actual.observedRecords).toBe(108);
-    expect(actual.passingRecords).toBe(108);
+    expect(actual.expectedRecords).toBe(114);
+    expect(actual.observedRecords).toBe(114);
+    expect(actual.passingRecords).toBe(114);
     expect(actual.findings).toEqual([]);
   });
 
@@ -89,7 +89,7 @@ describe("X0 human listening evidence honesty", () => {
     )).toBe(true);
     expect(absent.findings.filter(
       (finding) => finding.code === "X0_LISTENING_CELL_MISSING",
-    )).toHaveLength(108);
+    )).toHaveLength(114);
 
     const evidence = validEvidence();
     const records = evidence["records"];

@@ -492,7 +492,7 @@ const EXPECTED_ROOT_KEYS = new Map<string, readonly string[]>([
 const EXPECTED_REVIEWED_FILE_SHA256 = new Map<string, string>([
   ["beat-value-cases.json", "cb1e89b2cd756d02dbf8c385d751191dac8c52041a151f60dd67d9aa44dfae42"],
   ["chord-shape-cases.json", "f9b99efb4510ad36e21dd3719d90687af97d43b12adc612e42b83aa365e4ea48"],
-  ["document-boundary-cases.json", "7a07b574b570ea461bde3d01efe7c160a7c5a5786426d94504571e44284d62c0"],
+  ["document-boundary-cases.json", "d25c91fd15fd818bccde5bf5d3daf11bdc953c0a5b62b7d4bb6eb731f8f953fd"],
   ["f1-domain-contract.json", "be1b218cc095d692c7be13cff71cbdb8e3a6d63b48a39b4a44173a00ea58b62d"],
   ["identity-cases.json", "caa285efd879394c002af71de8c2ed0ab2d46cab040be5e3155dbd4952a165dc"],
   ["meter-measure-cases.json", "5e35c53ae5aebfe02115a907a3798f6efeb0d0b42a02902e901b2531387b9d1d"],

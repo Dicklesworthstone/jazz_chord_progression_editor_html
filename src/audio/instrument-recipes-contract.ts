@@ -416,6 +416,24 @@ export const AUDIO_INSTRUMENT_RECIPES = Object.freeze([
     amplitude: Object.freeze({ attackSeconds: 0.002, decaySeconds: 0, sustainLevel: 1, releaseSeconds: 0.35 }),
     filter: Object.freeze({ type: "lowpass", attackHz: 16_000, peakHz: 16_000, sustainHz: 16_000, q: 0.5, decaySeconds: 0.1 }),
   }),
+  Object.freeze({
+    id: "clarinet",
+    label: "Clarinet",
+    designClaim:
+      "physically modeled clarinet: reed-driven closed-open waveguide with breath dynamics",
+    synthesis: "rendered",
+    outputLevel: 0.48,
+    polyphonyLimit: 32,
+    renderer: Object.freeze({
+      algorithmId: "changes.dsp.waveguide-clarinet@1",
+      channels: 2,
+      maximumRenderSeconds: 5,
+      bufferCacheLimit: 64,
+    }),
+    /* Click guard and breath release: the model breathes its own envelope. */
+    amplitude: Object.freeze({ attackSeconds: 0.002, decaySeconds: 0, sustainLevel: 1, releaseSeconds: 0.3 }),
+    filter: Object.freeze({ type: "lowpass", attackHz: 16_000, peakHz: 16_000, sustainHz: 16_000, q: 0.5, decaySeconds: 0.1 }),
+  }),
 ] as const satisfies readonly AudioInstrumentRecipe[]);
 
 export const AUDIO_PULSE_WAVE_POLICY = Object.freeze({

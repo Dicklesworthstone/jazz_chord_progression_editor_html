@@ -73,6 +73,9 @@ const EXPECTED_RENDER_IDS = Object.freeze([
   "X0-RENDER-034",
   "X0-RENDER-035",
   "X0-RENDER-036",
+  "X0-RENDER-037",
+  "X0-RENDER-038",
+  "X0-RENDER-039",
 ] as const);
 
 const WORK_COUNTER_NAMES = Object.freeze([
@@ -715,6 +718,7 @@ function validateRenderRecord(
       "guitar",
       "flute",
       "blues-guitar",
+      "clarinet",
     ].includes(renderCase.instrumentId)
       ? 1 + renderCase.midiPitches.length
       : 1;
@@ -1190,7 +1194,7 @@ test(TEST_TITLE, async ({
       expect(renderMatrix.cases.map((item) => item.id)).toEqual(
         EXPECTED_RENDER_IDS,
       );
-      expect(renderMatrix.cases).toHaveLength(36);
+      expect(renderMatrix.cases).toHaveLength(39);
     });
     runAssertion(assertions, findings, "authority/frozen-analysis-policy", () => {
       expect(renderMatrix.numericPolicy).toMatchObject({

@@ -190,7 +190,7 @@ const EXPECTED_SCHEMAS: Readonly<Record<ExpectedFilename, string>> = {
 };
 
 export const X0_REVIEWED_CONTRACT_BYTE_DIGEST =
-  "75cd4d2b161a2d00a44a3926c5eb5e75b5da25b24624c3bcc0181850e245ae36";
+  "54cb50c3f70becc70a84e29b2f43f3af35ce1a42c51a18d976e29ae2f18e891a";
 
 export const X0_REVIEWED_BYTE_DIGESTS: Readonly<
   Record<CompanionFilename, string>
@@ -200,11 +200,11 @@ export const X0_REVIEWED_BYTE_DIGESTS: Readonly<
   "impulse-golden.json":
     "9330b747b85defb801b6456ad7d4ee519f78bdf83ea22a4b6ab47268b3b79888",
   "instrument-recipes.json":
-    "14a7936d4cf1dc4a3eaa6b591c8877094b30cd315fe3edebcc37358e3ccc7a5f",
+    "ba1d6bce9d8ec212412e331e1d09ee8554d00a6859e22d165685a114f1a69eae",
   "lifecycle-cases.json":
     "3ad712126fe22bf314ea76e41fb501ee549be2ef944a45aafbe1c1f2e8b8dcf5",
   "listening-rubric.json":
-    "2bb3847afc4508428885488144ff565452578fbca12c6fe2be59df39f3b96267",
+    "7823cc571759721f7e7de225ffe9833751986de04dfae78b509dbba562e2d934",
   "mutation-controls.json":
     "12d896515143dcd978e7a8839692dfc6c4248e3569bf23f2268c8e2aa1466cad",
   "provenance-ledger.json":
@@ -212,9 +212,9 @@ export const X0_REVIEWED_BYTE_DIGESTS: Readonly<
   "registry-cases.json":
     "2f373b5d3fb35e99dc9c7dddf6b324a33cf76f94d62bfb210453c74788e391c8",
   "render-matrix.json":
-    "c855025af24834fc72eef367fe796fa53c62a2157990d2ab4fe8d5ece7466b9e",
+    "dc11d17efd7948a5515db0a291d83b30d46e78d745c7cd6c683d94d23b6a0fa6",
   "trace-ledger.json":
-    "0bc0dcd5c5e372206d7f88e8ac2ad76cbb726a3814f00aa81dfd1ed6cb9b03af",
+    "2fd8f4f03c8cb9d446cd15bcd6d73caae2eeec771be78b6998b2347160541b58",
 };
 
 export const X0_REVIEWED_OPERATION_ORDER = [
@@ -390,16 +390,17 @@ export const X0_REVIEWED_RECIPE_IDS = [
   "upright-bass",
   "concert-vibes",
   "blues-guitar",
+  "clarinet",
 ] as const;
 
 export const X0_REVIEWED_RECIPE_LEVELS = [
-  0.62, 0.48, 0.5, 0.3, 0.34, 0.3, 0.5, 0.44, 0.5, 0.5, 0.42, 0.46,
+  0.62, 0.48, 0.5, 0.3, 0.34, 0.3, 0.5, 0.44, 0.5, 0.5, 0.42, 0.46, 0.48,
 ] as const;
 export const X0_REVIEWED_RECIPE_POLYPHONY = [
-  64, 48, 48, 32, 48, 64, 32, 48, 48, 32, 48, 48,
+  64, 48, 48, 32, 48, 64, 32, 48, 48, 32, 48, 48, 32,
 ] as const;
 export const X0_REVIEWED_RECIPE_SOURCE_COUNTS = [
-  3, 2, 4, 3, 3, 1, 1, 6, 1, 1, 1, 1,
+  3, 2, 4, 3, 3, 1, 1, 6, 1, 1, 1, 1, 1,
 ] as const;
 
 /**
@@ -593,6 +594,36 @@ export const X0_REVIEWED_RENDERED_RECIPES = [
     decaySeconds: 0.1,
   },
 },
+{
+  id: "clarinet",
+  label: "Clarinet",
+  designClaim:
+    "physically modeled clarinet: reed-driven closed-open waveguide with breath dynamics",
+  synthesis: "rendered",
+  outputLevel: 0.48,
+  polyphonyLimit: 32,
+  scheduledSourceCount: 1,
+  renderer: {
+    algorithmId: "changes.dsp.waveguide-clarinet@1",
+    channels: 2,
+    maximumRenderSeconds: 5,
+    bufferCacheLimit: 64,
+  },
+  amplitude: {
+    attackSeconds: 0.002,
+    decaySeconds: 0,
+    sustainLevel: 1,
+    releaseSeconds: 0.3,
+  },
+  filter: {
+    type: "lowpass",
+    attackHz: 16_000,
+    peakHz: 16_000,
+    sustainHz: 16_000,
+    q: 0.5,
+    decaySeconds: 0.1,
+  },
+},
 ] as const;
 
 export const X0_REVIEWED_IMPULSE = {
@@ -665,12 +696,12 @@ export const X0_REVIEWED_RELEASE_SECONDS = {
 export const X0_REVIEWED_COUNTS = {
   companions: 10,
   routingCases: 14,
-  recipes: 12,
+  recipes: 13,
   impulseCheckpoints: 8,
   lifecycleCases: 46,
   registryCases: 32,
-  renderCases: 36,
-  listeningInstrumentRows: 12,
+  renderCases: 39,
+  listeningInstrumentRows: 13,
   listeningScenarioRows: 9,
   mutationControls: 31,
   traces: 18,
@@ -682,21 +713,21 @@ const REVIEWED_CANONICAL_DIGESTS = {
   graphEdges: "86f0e0d8307ab85e40d9ed1f1f1d7547f34018bf117a754521d3814ca4c526b0",
   graphSettings: "ed4816e5e4ea9fbcb1a941cddb2479db072453f54a44272f35717a6ebf9c53a5",
   routingCases: "cb78dae03ce88d9bc853f8c8a6339f6de64f53ad8d38d566d7b311191834b2cc",
-  recipes: "692c592340237e6e266c7855a40c46e85ec60b186de9007cb924bc306f65a88a",
-  normalization: "c7526375d32c662ef285d4285040f4ec4a6356d80af9b6acaeb08dd47ead1a86",
+  recipes: "129b9173878af046973e1658a16e43e7aa5ab92742eae49d959933f5b74db9a6",
+  normalization: "d537249f026a0c1ad1717e18eed49021747d3c5457559879e701a4c6acef0d08",
   pulse: "e5bad32f09dbfe03ef87124d811125144145168bc8f07a48ef78b530b1c1e839",
   impulseCheckpoints: "29ffb97240f4a5f80f24812ff592df1a15413bf2a21d1b8f314ef0e2ee15c1d8",
   lifecycleCases: "2c62e2859e3b9f38f146d7ffd8d6546580f6ee43153c9be68b39330684760c2e",
   registryCases: "97191f50abef6e929f508244f2c5e260d4c9a3616380cb87477a841f02d598f1",
   renderPolicy: "2f48761e269d258d5768c5a708b744c663897140871f9eeadef083ab594cd5db",
-  renderCases: "11b87778641ca9d0e8d0352e1f8dcda48b8c4f738b0c40f2554c07a166a65d00",
+  renderCases: "24ecad23b5aa1bf9427491f4cf6471effb8b0ac86c6e48efa2cfdf2d7087396f",
   listeningInstruments:
-    "451896ed61e2b9cc65ada46ab94b52fa451fc6235c6a45888d8466a43893cd4a",
+    "4c8f46bada773c2e85ff4a4cdbfec555dd0d821e13baaf3e9d0d8c65872551bc",
   listeningScenarios:
     "ac4e15093fb990ec23eadb7c9470002442cafc732dbf3b7ac8457e3787424e31",
   authorities: "b964ac82a872c50a40454571225f1a033b25c08f1b25f7a18ca61947b5d52040",
   controls: "dfd0d0df78484042f29d7825c376219d5adf81c2d69f53194e7838f44c8bd2aa",
-  traces: "ab54e68d433afccc8073b69b8794287d1a9985e16a41548f657ba27382ccf6f1",
+  traces: "0b0eda34f79f9fa9a22600690e0f55b1aa8beeedd2f2b4421dbd6f355ed3f5da",
 } as const;
 
 type ParsedFixture = Readonly<{
@@ -1380,7 +1411,7 @@ function validateRender(value: JsonObject | undefined, findings: X0ContractFindi
     "X0_RENDER_CASES",
     "render.cases",
     value.cases,
-    36,
+    39,
     "X0-RENDER-",
   );
   const recipeCounts = new Map<string, number>();
@@ -1437,7 +1468,7 @@ function validateListening(
     "X0_LISTENING_ROWS",
     "listening.instrumentRows",
     value.instrumentRows,
-    12,
+    13,
     "X0-LISTEN-INST-",
   );
   const scenarioIds = validateUniqueIds(

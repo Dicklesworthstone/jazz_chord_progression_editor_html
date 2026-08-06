@@ -100,6 +100,7 @@ function renderRecord(
         "guitar",
         "flute",
         "blues-guitar",
+        "clarinet",
       ].includes(fixture.instrumentId)
         ? 1 + fixture.midiPitches.length
         : 1,
@@ -790,13 +791,13 @@ describe("X0 package evidence verifier", () => {
     });
   });
 
-  test("accepts exactly three hash-bound browsers, one hundred eight renders, and three real probes", async () => {
+  test("accepts exactly three hash-bound browsers, one hundred seventeen renders, and three real probes", async () => {
     const automated = await validateX0AutomatedEvidence(await validInput());
     expect(automated.outcome).toBe("pass");
     expect(automated.observedBrowserRecords).toBe(3);
-    expect(automated.observedRenderCells).toBe(108);
+    expect(automated.observedRenderCells).toBe(117);
     expect(automated.passingRealContextCells).toBe(3);
-    expect(automated.producerKeys).toHaveLength(108);
+    expect(automated.producerKeys).toHaveLength(117);
     expect(automated.producerKeys.every((key) =>
       key.startsWith(
         `TR-X0-RENDER|${X0_PLAYWRIGHT_PRODUCER_FILE}|${X0_PLAYWRIGHT_TESTCASE}|`,

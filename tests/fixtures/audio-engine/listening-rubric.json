@@ -233,6 +233,23 @@
         "release sticks or clicks",
         "label claims a recorded or sampled guitar or a commercial amp"
       ]
+    },
+    {
+      "id": "X0-LISTEN-INST-013",
+      "instrumentId": "clarinet",
+      "label": "Clarinet",
+      "requiredPerception": [
+        "reedy tongued onset without a click",
+        "hollow odd-harmonic-dominant body, unmistakably clarinet not flute",
+        "brightens with harder playing as the reed saturates",
+        "pitch holds within a few cents across the written register"
+      ],
+      "rejectIf": [
+        "even harmonics rival the odd (a generic buzz, not a clarinet)",
+        "vibrato present from the first millisecond",
+        "fails to speak or locks the wrong mode in the written register",
+        "label claims a recorded or sampled clarinet"
+      ]
     }
   ],
   "scenarioRows": [

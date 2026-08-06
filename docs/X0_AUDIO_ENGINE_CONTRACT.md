@@ -359,6 +359,28 @@ rendered law (one buffer source per voice); the listening rubric rewrites
 the Guitar and Flute rows for the physical models and adds
 X0-LISTEN-INST-012 for Blues Guitar.
 
+### 5.5 Clarinet (physical-model amendment, 2026-08-06)
+
+The waveguide machinery generalizes: the clarinet reuses the flute's
+delay-line architecture with the two physical substitutions that define the
+instrument — a **closed-open bore** (the delay is half a period with an
+inverting open-end reflection, which is why the spectrum is
+odd-harmonic-dominant and the instrument sounds an octave below a flute of
+its length) and a **reed valve** (the STK-family reed table
+`r = clamp(0.7 − 0.3·Δp)` in place of the air jet; its saturation is the
+harmonic source and brightens with breath exactly as a harder-blown
+clarinet does). Breath dynamics, turbulence, delayed vibrato, the
+rate-compensated in-loop DC blocker, the analytic reflection phase
+compensation, and a measured loop-participation calibration (cubic fit,
+in-register residuals within ±9 cents at 44.1/48/96 kHz) all carry over.
+An oboe was considered and deferred: its conical bore is not honestly
+approximated by cylindrical machinery.
+
+The reviewed recipe set grows to thirteen (`clarinet`, rendered,
+`changes.dsp.waveguide-clarinet@1`, level .48, polyphony 32, amplitude
+.002/0/1/.3, flat filter), the render matrix to thirty-nine
+(X0-RENDER-037…039), and the listening rubric gains X0-LISTEN-INST-013.
+
 ## 6. Parameter automation and normalization
 
 An accepted batch contains 1...16 generated voices. Its normalization gain is

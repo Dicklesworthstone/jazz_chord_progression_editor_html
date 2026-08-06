@@ -247,6 +247,7 @@ describe("X0 persistent production audio engine", () => {
       ["organ", "organ", 6],
       ["guitar", "guitar", 1],
       ["blues-guitar", "blues", 1],
+      ["clarinet", "clarinet", 1],
     ];
     for (let index = 0; index < cases.length; index += 1) {
       const entry = cases[index];

@@ -24,6 +24,7 @@ const NORMALIZATION_CASE_IDS = [
   "X0-RENDER-029",
   "X0-RENDER-032",
   "X0-RENDER-035",
+  "X0-RENDER-038",
 ] as const;
 
 const DENSE_CASES: readonly Readonly<{
@@ -46,6 +47,7 @@ const DENSE_CASES: readonly Readonly<{
   { caseId: "X0-RENDER-029", instrumentId: "upright-bass", outputLevel: 0.5, sourcesPerVoice: 1 },
   { caseId: "X0-RENDER-032", instrumentId: "concert-vibes", outputLevel: 0.42, sourcesPerVoice: 1 },
   { caseId: "X0-RENDER-035", instrumentId: "blues-guitar", outputLevel: 0.46, sourcesPerVoice: 1 },
+  { caseId: "X0-RENDER-038", instrumentId: "clarinet", outputLevel: 0.48, sourcesPerVoice: 1 },
 ];
 
 describe("TR-X0-NORMALIZATION audio normalization", () => {
@@ -86,7 +88,7 @@ describe("TR-X0-NORMALIZATION audio normalization", () => {
     ).toBe(true);
   });
 
-  test("X0-RENDER-002/X0-RENDER-005/X0-RENDER-008/X0-RENDER-011/X0-RENDER-014/X0-RENDER-017/X0-RENDER-020/X0-RENDER-023/X0-RENDER-026/X0-RENDER-029/X0-RENDER-032/X0-RENDER-035 applies conservative seven-note gain to every recipe", async () => {
+  test("X0-RENDER-002/X0-RENDER-005/X0-RENDER-008/X0-RENDER-011/X0-RENDER-014/X0-RENDER-017/X0-RENDER-020/X0-RENDER-023/X0-RENDER-026/X0-RENDER-029/X0-RENDER-032/X0-RENDER-035/X0-RENDER-038 applies conservative seven-note gain to every recipe", async () => {
     for (const expected of DENSE_CASES) {
       const { engine, context } = await readyEngine();
       const sourceCountBefore = context.sourceIds().length;
@@ -117,6 +119,6 @@ describe("TR-X0-NORMALIZATION audio normalization", () => {
         ),
       ).toBe(true);
     }
-    expect(NORMALIZATION_CASE_IDS).toHaveLength(14);
+    expect(NORMALIZATION_CASE_IDS).toHaveLength(15);
   });
 });

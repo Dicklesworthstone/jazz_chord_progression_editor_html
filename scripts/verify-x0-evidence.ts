@@ -168,7 +168,7 @@ export type X0AutomatedEvidenceReport = Readonly<{
   runId: string | null;
   expectedBrowserRecords: 3;
   observedBrowserRecords: number;
-  expectedRenderCells: 108;
+  expectedRenderCells: 117;
   observedRenderCells: number;
   passingRealContextCells: number;
   unsupportedRealContextCells: number;
@@ -798,7 +798,7 @@ function validateRenderRecord(
    * renders one PCM buffer per sounding note. Same per-instrument law
    * the evidence spec asserts.
    */
-  const renderedInstrumentIds = ["concert-grand", "upright-bass", "concert-vibes", "guitar", "flute", "blues-guitar"];
+  const renderedInstrumentIds = ["concert-grand", "upright-bass", "concert-vibes", "guitar", "flute", "blues-guitar", "clarinet"];
   const expectedCreatedBuffers = renderedInstrumentIds.includes(
     String(fixture["instrumentId"]),
   )
@@ -1316,8 +1316,8 @@ export async function validateX0AutomatedEvidence(
     addFinding(findings, "X0_EVIDENCE_BROWSER_AUTHORITY", "renderMatrix", "Browser support and unsupported-capability policy must equal the reviewed authority.");
   }
   const fixtureCases = records(renderMatrix["cases"]);
-  if (fixtureCases.length !== 36) {
-    addFinding(findings, "X0_EVIDENCE_RENDER_AUTHORITY_COUNT", "renderMatrix.cases", "The reviewed render authority must contain exactly thirty-six cases.");
+  if (fixtureCases.length !== 39) {
+    addFinding(findings, "X0_EVIDENCE_RENDER_AUTHORITY_COUNT", "renderMatrix.cases", "The reviewed render authority must contain exactly thirty-nine cases.");
   }
   const fixtureById = new Map<string, JsonRecord>();
   for (const fixture of fixtureCases) {
@@ -1481,7 +1481,7 @@ export async function validateX0AutomatedEvidence(
     requireEqual(raw["listeningAssessment"], "not-performed-by-automation", "X0_EVIDENCE_BROWSER_LISTENING_CLAIM", `${path}.listeningAssessment`, findings);
     const renders = records(raw["offlineRenders"]);
     if (!Array.isArray(raw["offlineRenders"]) || renders.length !== fixtureCases.length) {
-      addFinding(findings, "X0_EVIDENCE_BROWSER_RENDER_COUNT", `${path}.offlineRenders`, "Each browser record must contain exactly thirty-six render cells.");
+      addFinding(findings, "X0_EVIDENCE_BROWSER_RENDER_COUNT", `${path}.offlineRenders`, "Each browser record must contain exactly thirty-nine render cells.");
     }
     const seenCases = new Set<string>();
     for (const [index, render] of renders.entries()) {
@@ -1582,7 +1582,7 @@ export async function validateX0AutomatedEvidence(
     runId: SAFE_RUN_ID.test(runId) ? runId : null,
     expectedBrowserRecords: 3,
     observedBrowserRecords: rawByProject.size,
-    expectedRenderCells: 108,
+    expectedRenderCells: 117,
     observedRenderCells,
     passingRealContextCells,
     unsupportedRealContextCells,

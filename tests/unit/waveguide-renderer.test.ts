@@ -7,6 +7,7 @@
 import { describe, expect, test } from "bun:test";
 
 import {
+  WAVEGUIDE_CLARINET_ALGORITHM_ID,
   WAVEGUIDE_FLUTE_ALGORITHM_ID,
   WAVEGUIDE_GUITAR_CLEAN_ALGORITHM_ID,
   WAVEGUIDE_GUITAR_DRIVE_ALGORITHM_ID,
@@ -106,10 +107,12 @@ function renderer(algorithmId: string): WaveguideRenderer {
 const clean = renderer(WAVEGUIDE_GUITAR_CLEAN_ALGORITHM_ID);
 const drive = renderer(WAVEGUIDE_GUITAR_DRIVE_ALGORITHM_ID);
 const flute = renderer(WAVEGUIDE_FLUTE_ALGORITHM_ID);
+const clarinet = renderer(WAVEGUIDE_CLARINET_ALGORITHM_ID);
 
 describe("waveguide renderer laws", () => {
-  test("the map carries exactly the three §5.4 algorithms, pinned to the wasm payload", () => {
+  test("the map carries exactly the reviewed waveguide algorithms, pinned to the wasm payload", () => {
     expect([...renderers.keys()].sort()).toEqual([
+      WAVEGUIDE_CLARINET_ALGORITHM_ID,
       WAVEGUIDE_FLUTE_ALGORITHM_ID,
       WAVEGUIDE_GUITAR_CLEAN_ALGORITHM_ID,
       WAVEGUIDE_GUITAR_DRIVE_ALGORITHM_ID,
@@ -120,7 +123,7 @@ describe("waveguide renderer laws", () => {
   });
 
   test("out-of-contract requests return null, in-contract renders sound", () => {
-    for (const subject of [clean, drive, flute]) {
+    for (const subject of [clean, drive, flute, clarinet]) {
       expect(subject.renderNote(20, 64, OUTPUT_RATE_HZ)).toBeNull();
       expect(subject.renderNote(109, 64, OUTPUT_RATE_HZ)).toBeNull();
       expect(subject.renderNote(60, 0, OUTPUT_RATE_HZ)).toBeNull();
@@ -192,6 +195,23 @@ describe("waveguide renderer laws", () => {
       }
     }
     expect(brighter).toBeGreaterThanOrEqual(2);
+  });
+
+  test("clarinet lands within fifteen cents in its written register and is odd-harmonic dominant", () => {
+    for (const midiPitch of [52, 58, 64, 70, 76, 84]) {
+      const pcm = clarinet.renderNote(midiPitch, 96, OUTPUT_RATE_HZ, 2);
+      expect(pcm).not.toBeNull();
+      if (pcm === null) continue;
+      const start = Math.floor(0.8 * OUTPUT_RATE_HZ);
+      const cents = measuredCents(pcm.left, start, midiPitch);
+      expect(Math.abs(cents)).toBeLessThanOrEqual(15);
+      const f0 = midiFrequencyHz(midiPitch) * 2 ** (cents / 1_200);
+      const h2 = goertzelAmplitude(pcm.left, start, 16_384, f0 * 2);
+      const h3 = goertzelAmplitude(pcm.left, start, 16_384, f0 * 3);
+      /* The closed-open bore's signature: the third harmonic outweighs
+       * the second. */
+      expect(h3).toBeGreaterThan(h2);
+    }
   });
 
   test("flute brightens as it is blown harder", () => {

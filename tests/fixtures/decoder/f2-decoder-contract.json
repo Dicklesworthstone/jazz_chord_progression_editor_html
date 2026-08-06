@@ -78,7 +78,7 @@
     "beatDenominators": [1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 16, 20, 24, 30, 32, 40, 48, 60, 64, 80, 96, 120, 160, 192, 240, 320, 480, 960],
     "beatUnits": [2, 4, 8],
     "keyModes": ["major", "natural-minor", "harmonic-minor", "melodic-minor"],
-    "instrumentIds": ["mellow-keys", "fm-electric-piano", "vibraphone", "warm-pad", "analog-poly", "concert-grand", "flute", "organ", "guitar", "upright-bass", "concert-vibes", "blues-guitar"],
+    "instrumentIds": ["mellow-keys", "fm-electric-piano", "vibraphone", "warm-pad", "analog-poly", "concert-grand", "flute", "organ", "guitar", "upright-bass", "concert-vibes", "blues-guitar", "clarinet"],
     "completionKinds": ["empty", "complete", "pickup", "incomplete"],
     "voiceLeadingBoundaries": ["continue", "reset"],
     "chordKinds": ["parsed", "custom"],

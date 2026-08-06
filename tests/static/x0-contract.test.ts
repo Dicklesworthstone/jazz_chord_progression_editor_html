@@ -274,6 +274,12 @@ function sourceCount(recipe: (typeof AUDIO_INSTRUMENT_RECIPES)[number]): number 
         maximumRenderSeconds: 6,
         bufferCacheLimit: 64,
       },
+      clarinet: {
+        algorithmId: "changes.dsp.waveguide-clarinet@1",
+        channels: 2,
+        maximumRenderSeconds: 5,
+        bufferCacheLimit: 64,
+      },
     };
     const expectedRenderer = RENDERER_BY_ID[recipe.id];
     if (expectedRenderer === undefined) {

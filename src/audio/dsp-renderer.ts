@@ -50,6 +50,8 @@ export const WAVEGUIDE_GUITAR_CLEAN_ALGORITHM_ID =
 export const WAVEGUIDE_GUITAR_DRIVE_ALGORITHM_ID =
   "changes.dsp.waveguide-guitar-drive@1";
 export const WAVEGUIDE_FLUTE_ALGORITHM_ID = "changes.dsp.waveguide-flute@1";
+export const WAVEGUIDE_CLARINET_ALGORITHM_ID =
+  "changes.dsp.waveguide-clarinet@1";
 
 export type WaveguideRenderer = Readonly<{
   algorithmId: string;
@@ -228,6 +230,15 @@ type ConcertGrandExports = Readonly<{
   ) => number;
   flt_note_frames: (midi: number, sampleRate: number) => number;
   flt_render: (
+    midi: number,
+    velocity: number,
+    sampleRate: number,
+    left: number,
+    right: number,
+    maxFrames: number,
+  ) => number;
+  clr_note_frames: (midi: number, sampleRate: number) => number;
+  clr_render: (
     midi: number,
     velocity: number,
     sampleRate: number,
@@ -740,6 +751,14 @@ async function instantiate(): Promise<DspCore> {
       rawExports,
       "flt_render",
     ) as ConcertGrandExports["flt_render"],
+    clr_note_frames: requireExportedFunction(
+      rawExports,
+      "clr_note_frames",
+    ) as ConcertGrandExports["clr_note_frames"],
+    clr_render: requireExportedFunction(
+      rawExports,
+      "clr_render",
+    ) as ConcertGrandExports["clr_render"],
   };
   const memory = exports.memory;
   /* Scratch region starts past the module's own data and shadow stack. */
@@ -982,6 +1001,12 @@ async function instantiate(): Promise<DspCore> {
       WAVEGUIDE_FLUTE_ALGORITHM_ID,
       makeWaveguideRenderNote(exports.flt_note_frames, (m, v, r, l, rt, mx) =>
         exports.flt_render(m, v, r, l, rt, mx),
+      ),
+    ],
+    [
+      WAVEGUIDE_CLARINET_ALGORITHM_ID,
+      makeWaveguideRenderNote(exports.clr_note_frames, (m, v, r, l, rt, mx) =>
+        exports.clr_render(m, v, r, l, rt, mx),
       ),
     ],
   ] as const) {
