@@ -917,7 +917,14 @@ const chunkFragment = (kase: ChunkingCase): JsonObject => {
 };
 
 const envelopeRun = (kase: EnvelopeRunCase): JsonObject => {
+  /*
+   * Amendment #1 (jcpe-9m5q): settings applicable means a starter
+   * destination, and a starter issues its settings BEFORE the insert —
+   * the meter law locks the meter once any chord exists, so insert-first
+   * made every non-4/4 starter import roll back. Groove stays last.
+   */
   const planned: string[] = [];
+  if (kase.commandsApplicable.settings) planned.push("settings");
   for (
     let index = 0;
     index < kase.commandsApplicable.insertChunks;
@@ -925,7 +932,6 @@ const envelopeRun = (kase: EnvelopeRunCase): JsonObject => {
   ) {
     planned.push("insert");
   }
-  if (kase.commandsApplicable.settings) planned.push("settings");
   if (kase.commandsApplicable.groove) planned.push("groove");
   if (kase.refusalAtIndex === null) {
     return {

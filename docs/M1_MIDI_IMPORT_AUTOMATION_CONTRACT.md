@@ -290,9 +290,19 @@ row-order fixture proving an input satisfying rows 3 and 4 lands on 3.
 
 ## 7. Automation envelope (law M1-ENV)
 
-The commit gesture issues commands in the frozen order
-`M1_IMPORT_COMMAND_ORDER = [insert (one plan or chunked), settings
-(tempo/meter/key/title per §5), groove]`, skipping inapplicable entries, and
+The commit gesture issues commands in a frozen, destination-dependent
+order (amendment #1, jcpe-9m5q, 2026-08-05): a STARTER destination issues
+`[settings (tempo/meter/key/title per §5), insert (one plan or chunked),
+groove]`, and an OCCUPIED destination issues `[insert, groove]` with every
+setting withheld-with-statement per §5. Settings must precede the insert on
+a starter because the A0 exact-duration law locks the meter the moment any
+chord exists: the original `[insert, settings, groove]` order made the §5
+promise "starter: meter applied" unsatisfiable for any file whose meter
+differs from the blank document's 4/4 — the meter step refused
+`u1.meter_locked_by_content` and the whole gesture rolled back, a dead end
+this contract forbids. Settings-first also means the inserted fragment
+parses under the file's own meter, which is what its bars measure. The
+envelope skips inapplicable entries, and
 **must state the exact undo count** in the post-commit status line ("Added as
 N edits; Undo N times returns the chart."). If a composite/labelled command
 lands via `jcpe-h2v6`, the envelope collapses to one undo step and the law's

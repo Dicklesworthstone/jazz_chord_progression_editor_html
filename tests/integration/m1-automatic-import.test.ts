@@ -130,13 +130,12 @@ const SETTINGS_FILE = smf([[
 ]]);
 
 /**
- * The same four bars in 3/4. Under the frozen M1-ENV order the insert lands
- * first, the chart is then occupied, and setMeter refuses by the
- * meter-locked-by-content law — so the whole gesture must roll back to the
- * exact pre-import document. Failure atomicity is the law THIS fixture
- * proves; the M1-XFER/M1-ENV contradiction it exposes (a non-4/4 file can
- * never land on a starter document) is recorded for owner arbitration on
- * the follow-up bead named in jcpe-qbvz's notes.
+ * The same four bars in 3/4. Under M1-ENV amendment #1 (jcpe-9m5q) a
+ * starter destination issues settings BEFORE the insert, so the file's
+ * meter lands on the still-empty document and the fragment then parses
+ * under that meter — the path the original insert-first order made
+ * impossible (setMeter refused meter-locked-by-content and every non-4/4
+ * starter import rolled back).
  */
 const THREE_FOUR_FILE = smf([[
   ...tempoMeta(0, 500_000),
@@ -366,8 +365,8 @@ describe("the salvage lanes through the automatic path", () => {
   });
 });
 
-describe("M1-ENV failure atomicity", () => {
-  test("a mid-envelope refusal undoes every issued command and reports rolled-back", async () => {
+describe("M1-ENV destination-dependent order (amendment #1, jcpe-9m5q)", () => {
+  test("a 3/4 file lands on a starter document with the file's meter applied before the insert", async () => {
     const studio = controller();
     const before = canonical(documentFacts(studio));
     const preview = await readPreview(THREE_FOUR_FILE, "waltz.mid");
@@ -375,13 +374,50 @@ describe("M1-ENV failure atomicity", () => {
     expect(preview.automation).not.toBeNull();
 
     const result = service().commitAutomatic(studio, preview);
+    expect(result.committed).toBe(true);
+    const meterStep = result.steps.find((step) => step.step === "meter");
+    expect(meterStep?.outcome).toBe("applied");
+    /* Settings precede the insert in the issued ledger. */
+    const order = result.steps
+      .filter((step) => step.outcome === "applied")
+      .map((step) => step.step);
+    expect(order.indexOf("meter")).toBeLessThan(order.indexOf("insert"));
+    const after = studio.getSnapshot();
+    expect(after.meterLabel).toBe("3/4");
+    expect(after.chordCount).toBeGreaterThan(0);
+
+    /* The stated count still returns the exact starter document. */
+    for (let press = 0; press < result.undoCount; press += 1) {
+      expect(studio.undo().ok).toBe(true);
+    }
+    expect(canonical(documentFacts(studio))).toBe(before);
+    expect(studio.undo().ok).toBe(false);
+  });
+
+  test("a mid-envelope refusal still undoes every issued command and reports rolled-back", async () => {
+    const studio = controller();
+    const before = canonical(documentFacts(studio));
+    const preview = await readPreview(THREE_FOUR_FILE, "waltz.mid");
+    const automation = preview.automation;
+    expect(automation).not.toBeNull();
+    if (automation === null) return;
+
+    /* A doctored trailing chunk the grammar must refuse mid-envelope. */
+    const sabotaged: MidiImportPreview = Object.freeze({
+      ...preview,
+      automation: Object.freeze({
+        ...automation,
+        chunkTexts: Object.freeze([...automation.chunkTexts, "| Zzz9!! |\n"]),
+      }),
+    });
+    const result = service().commitAutomatic(studio, sabotaged);
     expect(result.committed).toBe(false);
     expect(result.reason).toBe("rolled-back");
     const failed = result.steps[result.steps.length - 1];
-    expect(failed?.step).toBe("meter");
+    expect(failed?.step).toBe("insert");
     expect(failed?.outcome).toBe("refused");
-    expect(result.rolledBackCount).toBeGreaterThan(0);
-    /* The document is exactly what it was before the gesture. */
+    /* Settings issued before the failing insert were rolled back too. */
+    expect(result.rolledBackCount).toBeGreaterThan(1);
     expect(canonical(documentFacts(studio))).toBe(before);
     expect(studio.undo().ok).toBe(false);
   });
