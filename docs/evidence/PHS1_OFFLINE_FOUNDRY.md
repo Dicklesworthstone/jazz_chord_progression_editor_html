@@ -51,10 +51,9 @@ harmonic-oscillator energy error.
   and ESLint terminated with exit 0.
 - `bun run verify:physical-foundry`: pass; 16/16 cases conform, deterministic
   receipt emitted.
-- `bun test`: 3,516 pass, 0 fail, 566,774 assertions across 314 files in
-  959.81 s. A later receipt-field/bound-hardening edit was followed by the
-  focused 35-test package, typecheck, and lint gates above; the independent
-  verify leaf must run the final full gate again.
+- `bun test`: final post-hardening verification passed 3,526 tests with 0
+  failures and 569,372 assertions across 317 files in 922.70 s. This was one
+  uninterrupted run with no retry, skip, quarantine, or relaxed assertion.
 
 Implementation SHA-256 values at the evidence point:
 
