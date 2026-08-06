@@ -335,6 +335,10 @@ function instrumentLabel(instrumentId: InstrumentId): string {
       return "Organ";
     case "guitar":
       return "Guitar";
+    case "upright-bass":
+      return "Upright Bass";
+    case "concert-vibes":
+      return "Concert Vibes";
   }
 }
 

@@ -142,6 +142,27 @@ const RECIPE_CASES: readonly Readonly<{
     attackSeconds: 0.002,
     releaseSeconds: 0.5,
   },
+  /* The 2026-08-06 sampled rendered amendment recipes (§5.3). */
+  {
+    caseId: "X0-RENDER-028",
+    instrumentId: "upright-bass",
+    label: "Upright Bass",
+    outputLevel: 0.5,
+    polyphonyLimit: 32,
+    scheduledSourceCount: 1,
+    attackSeconds: 0.002,
+    releaseSeconds: 0.25,
+  },
+  {
+    caseId: "X0-RENDER-031",
+    instrumentId: "concert-vibes",
+    label: "Concert Vibes",
+    outputLevel: 0.42,
+    polyphonyLimit: 48,
+    scheduledSourceCount: 1,
+    attackSeconds: 0.002,
+    releaseSeconds: 1.1,
+  },
 ];
 
 function oneEvent(
@@ -234,7 +255,7 @@ function expectOscillatorComponent(
 describe("TR-X0-RECIPES instrument recipes", () => {
   test("X0-RENDER-001/X0-RENDER-004/X0-RENDER-007/X0-RENDER-010/X0-RENDER-013/X0-RENDER-016 schedules every exact source-owned recipe", async () => {
     const { engine, fake, context } = await readyEngine();
-    expect(AUDIO_INSTRUMENT_RECIPES).toHaveLength(9);
+    expect(AUDIO_INSTRUMENT_RECIPES).toHaveLength(11);
 
     for (let index = 0; index < RECIPE_CASES.length; index += 1) {
       const expected = RECIPE_CASES[index];
@@ -573,12 +594,24 @@ describe("TR-X0-RECIPES instrument recipes", () => {
         if (renderer === undefined) {
           throw new Error("TEST_REVIEWED_RENDERED_RECIPE_MALFORMED");
         }
-        expect(renderer).toEqual({
-          algorithmId: "changes.dsp.concert-grand@1",
-          channels: 2,
-          maximumRenderSeconds: 8,
-          bufferCacheLimit: 96,
-        });
+        expect(renderer).toEqual(
+          reviewed.id === "concert-grand"
+            ? {
+                algorithmId: "changes.dsp.concert-grand@1",
+                channels: 2,
+                maximumRenderSeconds: 8,
+                bufferCacheLimit: 96,
+              }
+            : {
+                algorithmId:
+                  reviewed.id === "upright-bass"
+                    ? "changes.dsp.sampled-upright-bass@1"
+                    : "changes.dsp.sampled-vibraphone@1",
+                channels: 2,
+                maximumRenderSeconds: 4,
+                bufferCacheLimit: 64,
+              },
+        );
         expect(oscillatorIds).toHaveLength(0);
         const bufferSourceIds = nodeCreates
           .filter((event) => event.detail === "buffer-source")
@@ -621,6 +654,8 @@ describe("TR-X0-RECIPES instrument recipes", () => {
       "X0-RENDER-019",
       "X0-RENDER-022",
       "X0-RENDER-025",
+      "X0-RENDER-028",
+      "X0-RENDER-031",
     ]);
   });
 

@@ -684,15 +684,19 @@ function validateRenderRecord(
       renderCase.sampleRate * impulseAuthority.durationSeconds,
     );
     /*
-     * The synth pads own exactly the shared impulse buffer. The Concert
-     * Grand additionally renders one attack-sample buffer per sounding
-     * note (cache-missed per pitch/velocity/duration), so its count is
-     * the impulse plus the case's note list.
+     * The synth pads own exactly the shared impulse buffer. A rendered
+     * recipe (Concert Grand, Upright Bass, Concert Vibes) additionally
+     * renders one PCM buffer per sounding note (cache-missed per
+     * pitch/velocity/duration), so its count is the impulse plus the
+     * case's note list.
      */
-    const expectedCreatedBuffers =
-      renderCase.instrumentId === "concert-grand"
-        ? 1 + renderCase.midiPitches.length
-        : 1;
+    const expectedCreatedBuffers = [
+      "concert-grand",
+      "upright-bass",
+      "concert-vibes",
+    ].includes(renderCase.instrumentId)
+      ? 1 + renderCase.midiPitches.length
+      : 1;
     expect(value.impulse.createdBufferCount).toBe(expectedCreatedBuffers);
     expect(value.impulse.convolverAssignmentCount).toBe(1);
     expect(value.impulse.assignedGeneratedBufferByIdentity).toBe(true);

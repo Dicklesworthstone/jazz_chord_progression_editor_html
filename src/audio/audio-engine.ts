@@ -59,9 +59,14 @@ import {
   type PrepareRenderedVoicesRequest,
 } from "./audio-engine-contract";
 import {
+  CONCERT_GRAND_RENDERER_ALGORITHM_ID,
   loadConcertGrandRenderer,
   type ConcertGrandRenderer,
 } from "./dsp-renderer";
+import {
+  loadSampledInstrumentRenderer,
+  type SampledInstrumentRenderer,
+} from "./sampled-renderer";
 import type {
   AnalyserNodePort,
   AudioBufferPort,
@@ -574,6 +579,10 @@ function recipeForInstrument(instrumentId: InstrumentId): AudioInstrumentRecipe 
       return AUDIO_INSTRUMENT_RECIPES[7];
     case "guitar":
       return AUDIO_INSTRUMENT_RECIPES[8];
+    case "upright-bass":
+      return AUDIO_INSTRUMENT_RECIPES[9];
+    case "concert-vibes":
+      return AUDIO_INSTRUMENT_RECIPES[10];
   }
 }
 
@@ -653,6 +662,35 @@ function createAudioEngineInternal(
   /** Prepare warms the short bucket the performance layer actually uses. */
   const PREPARE_RENDER_SECONDS = 2;
   let renderer: ConcertGrandRenderer | null = null;
+  /**
+   * Sampled renderers (jcpe-1miv) resolve lazily and synchronously by the
+   * recipe's algorithm id: their payloads are checked-in TypeScript with no
+   * instantiation step, so first use decodes the payload and a corrupt
+   * payload registers as permanently unavailable — the same
+   * `audio.renderer_unavailable` refusal lane the wasm renderer uses,
+   * while every other recipe keeps working. The wasm renderer stays a
+   * dedicated field because it additionally owns `analyzeWindow`.
+   */
+  const sampledRenderers = new Map<string, SampledInstrumentRenderer | null>();
+  function rendererForAlgorithm(
+    algorithmId: string,
+  ): Readonly<{
+    algorithmId: string;
+    renderNote: ConcertGrandRenderer["renderNote"];
+  }> | null {
+    if (algorithmId === CONCERT_GRAND_RENDERER_ALGORITHM_ID) return renderer;
+    if (sampledRenderers.has(algorithmId)) {
+      return sampledRenderers.get(algorithmId) ?? null;
+    }
+    let loaded: SampledInstrumentRenderer | null;
+    try {
+      loaded = loadSampledInstrumentRenderer(algorithmId);
+    } catch {
+      loaded = null;
+    }
+    sampledRenderers.set(algorithmId, loaded);
+    return loaded;
+  }
   const renderedBufferCache = new Map<string, AudioBufferPort>();
   /**
    * Display-only spectral tap (jcpe-7she). Created lazily on the first
@@ -726,10 +764,9 @@ function createAudioEngineInternal(
       renderedBufferCache.set(key, cached);
       return cached;
     }
-    if (renderer === null || renderer.algorithmId !== recipe.renderer.algorithmId) {
-      return null;
-    }
-    const pcm = renderer.renderNote(
+    const noteRenderer = rendererForAlgorithm(recipe.renderer.algorithmId);
+    if (noteRenderer === null) return null;
+    const pcm = noteRenderer.renderNote(
       midiPitch,
       quantizeRenderVelocity(velocity),
       context.sampleRate,
@@ -2475,7 +2512,10 @@ function createAudioEngineInternal(
         }),
       );
     }
-    if (renderer === null) {
+    if (
+      recipe.renderer.algorithmId === CONCERT_GRAND_RENDERER_ALGORITHM_ID &&
+      renderer === null
+    ) {
       try {
         renderer = await loadConcertGrandRenderer();
       } catch {
@@ -2484,6 +2524,12 @@ function createAudioEngineInternal(
           path: ["instrumentId"],
         });
       }
+    }
+    if (rendererForAlgorithm(recipe.renderer.algorithmId) === null) {
+      return refuse({
+        code: "audio.renderer_unavailable",
+        path: ["instrumentId"],
+      });
     }
     const notesValue = requestValue["notes"];
     if (!Array.isArray(notesValue)) {

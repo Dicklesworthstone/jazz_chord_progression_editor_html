@@ -361,6 +361,42 @@ export const AUDIO_INSTRUMENT_RECIPES = Object.freeze([
     amplitude: Object.freeze({ attackSeconds: 0.002, decaySeconds: 1.5, sustainLevel: 0.05, releaseSeconds: 0.5 }),
     filter: Object.freeze({ type: "lowpass", attackHz: 5_200, peakHz: 7_800, sustainHz: 1_400, q: 1.1, decaySeconds: 1.0 }),
   }),
+  Object.freeze({
+    id: "upright-bass",
+    label: "Upright Bass",
+    designClaim:
+      "recorded solo contrabass pizzicato, nearest recorded key transposed onto pitch",
+    synthesis: "rendered",
+    outputLevel: 0.5,
+    polyphonyLimit: 32,
+    renderer: Object.freeze({
+      algorithmId: "changes.dsp.sampled-upright-bass@1",
+      channels: 2,
+      maximumRenderSeconds: 4,
+      bufferCacheLimit: 64,
+    }),
+    /* Click guard and pizzicato damp: the recorded PCM is the envelope. */
+    amplitude: Object.freeze({ attackSeconds: 0.002, decaySeconds: 0, sustainLevel: 1, releaseSeconds: 0.25 }),
+    filter: Object.freeze({ type: "lowpass", attackHz: 16_000, peakHz: 16_000, sustainHz: 16_000, q: 0.5, decaySeconds: 0.1 }),
+  }),
+  Object.freeze({
+    id: "concert-vibes",
+    label: "Concert Vibes",
+    designClaim:
+      "recorded vibraphone, soft mallets, nearest recorded key transposed onto pitch",
+    synthesis: "rendered",
+    outputLevel: 0.42,
+    polyphonyLimit: 48,
+    renderer: Object.freeze({
+      algorithmId: "changes.dsp.sampled-vibraphone@1",
+      channels: 2,
+      maximumRenderSeconds: 4,
+      bufferCacheLimit: 64,
+    }),
+    /* Click guard and a ringing damp: the recorded PCM is the envelope. */
+    amplitude: Object.freeze({ attackSeconds: 0.002, decaySeconds: 0, sustainLevel: 1, releaseSeconds: 1.1 }),
+    filter: Object.freeze({ type: "lowpass", attackHz: 16_000, peakHz: 16_000, sustainHz: 16_000, q: 0.5, decaySeconds: 0.1 }),
+  }),
 ] as const satisfies readonly AudioInstrumentRecipe[]);
 
 export const AUDIO_PULSE_WAVE_POLICY = Object.freeze({

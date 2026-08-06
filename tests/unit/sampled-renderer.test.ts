@@ -130,11 +130,16 @@ describe("renderer laws", () => {
     expect(bass.renderNote(40, 128, OUTPUT_RATE_HZ)).toBeNull();
     expect(bass.renderNote(40, 64, 7_999)).toBeNull();
     expect(bass.renderNote(40, 64, OUTPUT_RATE_HZ, 0)).toBeNull();
-    for (
-      let midiPitch = SAMPLED_RENDERER_POLICY.minimumMidiPitch;
-      midiPitch <= SAMPLED_RENDERER_POLICY.maximumMidiPitch;
-      midiPitch += 1
-    ) {
+    const contractPitches = Array.from(
+      {
+        length:
+          SAMPLED_RENDERER_POLICY.maximumMidiPitch -
+          SAMPLED_RENDERER_POLICY.minimumMidiPitch +
+          1,
+      },
+      (_, offset) => SAMPLED_RENDERER_POLICY.minimumMidiPitch + offset,
+    );
+    for (const midiPitch of contractPitches) {
       expect(bass.renderNote(midiPitch, 64, OUTPUT_RATE_HZ, 0.25)).not.toBeNull();
       expect(vibes.renderNote(midiPitch, 64, OUTPUT_RATE_HZ, 0.25)).not.toBeNull();
     }
