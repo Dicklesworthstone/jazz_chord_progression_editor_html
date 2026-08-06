@@ -978,6 +978,164 @@ const checkEnvelope = (data: EnvelopeFamily, label = "envelope"): void => {
 
 type FamilyChecker = (data: never, label?: string) => void;
 
+/* ------------------------------------------------------------------ *
+ * M1-OVR reference (amendment #2, jcpe-qyyn)                          *
+ * ------------------------------------------------------------------ */
+
+type OverrideSpanKey = Readonly<{ measureIndex: number; startTick: number }>;
+type OverrideExclusionCase = Readonly<{
+  name: string;
+  ppq: number;
+  meterMap: readonly MeterEntry[];
+  tracks: readonly RoleTrack[];
+  excludedTrackIndices: readonly number[];
+  expected: Readonly<{
+    spanKeys: readonly OverrideSpanKey[];
+    droppedIndices: readonly number[];
+    allSilent: boolean;
+  }>;
+}>;
+type OverrideAlternativeCase = Readonly<{
+  name: string;
+  spans: readonly Readonly<{ key: OverrideSpanKey; rankedLength: number }>[];
+  choices: readonly Readonly<{
+    span: OverrideSpanKey;
+    alternativeOrdinal: number;
+  }>[];
+  expected: Readonly<{
+    applied: readonly Readonly<{
+      measureIndex: number;
+      startTick: number;
+      alternativeOrdinal: number;
+    }>[];
+    dropped: readonly Readonly<{
+      measureIndex: number;
+      startTick: number;
+      alternativeOrdinal: number;
+    }>[];
+  }>;
+}>;
+type OverrideGrooveCase = Readonly<{
+  name: string;
+  features: Features;
+  override: string | null;
+  expected: Readonly<{
+    grooveStyleId: string;
+    row: number;
+    evidence: string | null;
+  }>;
+}>;
+type OverrideFamily = Readonly<{
+  exclusionCases: readonly OverrideExclusionCase[];
+  alternativeCases: readonly OverrideAlternativeCase[];
+  grooveCases: readonly OverrideGrooveCase[];
+}>;
+
+/* Restated per validator independence — never imported from production. */
+const OVERRIDE_GROOVE_ROW = 0;
+const OVERRIDE_GROOVE_EVIDENCE = "You chose this groove yourself.";
+
+const checkOverrides = (data: OverrideFamily, label = "override"): void => {
+  for (const kase of data.exclusionCases) {
+    const dropped = kase.excludedTrackIndices.filter(
+      (index) =>
+        !Number.isInteger(index) || index < 0 || index >= kase.tracks.length,
+    );
+    const applied = new Set(
+      kase.excludedTrackIndices.filter((index) => !dropped.includes(index)),
+    );
+    /*
+     * The exclusion law: an excluded track keeps its classification for
+     * DISPLAY but participates downstream exactly as role `silent` — its
+     * notes still bound the horizon, they just carry no mass.
+     */
+    const effectiveTracks = kase.tracks.map((track, index) =>
+      applied.has(index) ? { ...track, role: "silent" } : track,
+    );
+    const spans = segmentSpans(kase.ppq, kase.meterMap, effectiveTracks);
+    const gotKeys = spans.map((span) => ({
+      measureIndex: span.measureIndex,
+      startTick: span.startTick,
+    }));
+    const gotAllSilent = spans.every((span) => span.silent);
+    if (
+      canonicalJson(gotKeys) !== canonicalJson(kase.expected.spanKeys) ||
+      canonicalJson([...dropped]) !==
+        canonicalJson(kase.expected.droppedIndices) ||
+      gotAllSilent !== kase.expected.allSilent
+    ) {
+      fail(
+        "override-exclusion",
+        `${label}:${kase.name}`,
+        `exclusion diverges; recomputed keys ${canonicalJson(gotKeys)} dropped ${canonicalJson(dropped)} allSilent ${String(gotAllSilent)} vs fixture ${canonicalJson(kase.expected)}`,
+      );
+    }
+  }
+  for (const kase of data.alternativeCases) {
+    const applied: unknown[] = [];
+    const dropped: unknown[] = [];
+    for (const choice of kase.choices) {
+      const span = kase.spans.find(
+        (candidate) =>
+          candidate.key.measureIndex === choice.span.measureIndex &&
+          candidate.key.startTick === choice.span.startTick,
+      );
+      const record = {
+        measureIndex: choice.span.measureIndex,
+        startTick: choice.span.startTick,
+        alternativeOrdinal: choice.alternativeOrdinal,
+      };
+      if (
+        span === undefined ||
+        !Number.isInteger(choice.alternativeOrdinal) ||
+        choice.alternativeOrdinal < 0 ||
+        choice.alternativeOrdinal >= span.rankedLength
+      ) {
+        dropped.push(record);
+      } else {
+        applied.push(record);
+      }
+    }
+    if (
+      canonicalJson(applied) !== canonicalJson(kase.expected.applied) ||
+      canonicalJson(dropped) !== canonicalJson(kase.expected.dropped)
+    ) {
+      fail(
+        "override-alternative",
+        `${label}:${kase.name}`,
+        `choice selection diverges; recomputed applied ${canonicalJson(applied)} dropped ${canonicalJson(dropped)} vs fixture ${canonicalJson(kase.expected)}`,
+      );
+    }
+  }
+  for (const kase of data.grooveCases) {
+    if (kase.override === null) {
+      const got = decideGroove(kase.features);
+      if (
+        got.grooveStyleId !== kase.expected.grooveStyleId ||
+        got.row !== kase.expected.row
+      ) {
+        fail(
+          "override-groove",
+          `${label}:${kase.name}`,
+          `null override must delegate to the match; recomputed row ${String(got.row)} (${got.grooveStyleId}) vs fixture row ${String(kase.expected.row)} (${kase.expected.grooveStyleId})`,
+        );
+      }
+      continue;
+    }
+    if (
+      kase.expected.grooveStyleId !== kase.override ||
+      kase.expected.row !== OVERRIDE_GROOVE_ROW ||
+      kase.expected.evidence !== OVERRIDE_GROOVE_EVIDENCE
+    ) {
+      fail(
+        "override-groove",
+        `${label}:${kase.name}`,
+        `an override short-circuits to row ${String(OVERRIDE_GROOVE_ROW)} with the frozen evidence sentence; fixture says row ${String(kase.expected.row)} (${kase.expected.grooveStyleId}) evidence ${canonicalJson(kase.expected.evidence)}`,
+      );
+    }
+  }
+};
+
 const FAMILY_CHECKERS: Readonly<Record<string, FamilyChecker>> = {
   "classification-cases": checkClassification,
   "segmentation-cases": checkSegmentation,
@@ -986,6 +1144,7 @@ const FAMILY_CHECKERS: Readonly<Record<string, FamilyChecker>> = {
   "groove-cases": checkGroove,
   "transfer-cases": checkTransfer,
   "envelope-cases": checkEnvelope,
+  "override-cases": checkOverrides,
 };
 
 const setPath = (target: unknown, path: string, value: unknown): boolean => {
@@ -1029,6 +1188,9 @@ const caseListsOf = (family: unknown): readonly unknown[][] => {
     "markerCases",
     "chunkingCases",
     "envelopeCases",
+    "exclusionCases",
+    "alternativeCases",
+    "grooveCases",
   ]) {
     const list = record[key];
     if (Array.isArray(list)) lists.push(list);
@@ -1284,6 +1446,7 @@ const FAMILY_FILES = [
   "groove-cases.json",
   "transfer-cases.json",
   "envelope-cases.json",
+  "override-cases.json",
   "mutation-controls.json",
 ] as const;
 
@@ -1318,6 +1481,7 @@ checkRerank(families["rerank-cases"] as RerankFamily);
 checkGroove(families["groove-cases"] as GrooveFamily);
 checkTransfer(families["transfer-cases"] as TransferFamily);
 checkEnvelope(families["envelope-cases"] as EnvelopeFamily);
+checkOverrides(families["override-cases"] as OverrideFamily);
 runMutations(families);
 
 if (emitPending) {

@@ -43,8 +43,12 @@
       "sha256": "51007da5491e71310203daf81336443d6d174f51d818e4e7aa24a964a25b41fd"
     },
     {
+      "file": "override-cases.json",
+      "sha256": "4fa6659e1363da0c1dfad5ed21681865c834392d52d2b84f84a974223832c9d6"
+    },
+    {
       "file": "mutation-controls.json",
-      "sha256": "bf9437abc8f4b2e38a11ac750553d7c20c336464751cf7df9ff1558125715332"
+      "sha256": "2d9f57fa744633ccbb2bcb037a2003aaea4c542a34a3ef850318c408348ac891"
     }
   ],
   "traceGolden": {

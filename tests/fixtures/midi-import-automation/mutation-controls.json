@@ -1,151 +1,201 @@
 {
-  "schema": "changes.import.midi-automation-fixtures.mutation.v1",
-  "law": "M1-DET",
-  "notes": "Independently authored mutation controls. The validator applies each mutation to an in-memory copy of the named fixture case and requires its recomputation to FAIL with a finding mentioning the named check; a mutation that survives green is a validator defect. Paths are dot/bracket JSON paths inside the named case object.",
-  "mutations": [
+ "schema": "changes.import.midi-automation-fixtures.mutation.v1",
+ "law": "M1-DET",
+ "notes": "Independently authored mutation controls. The validator applies each mutation to an in-memory copy of the named fixture case and requires its recomputation to FAIL with a finding mentioning the named check; a mutation that survives green is a validator defect. Paths are dot/bracket JSON paths inside the named case object.",
+ "mutations": [
+  {
+   "name": "role-flip-must-be-caught",
+   "family": "classification-cases",
+   "caseName": "bass-by-register-monophonic",
+   "path": "expected.role",
+   "value": "harmony",
+   "expectedCheck": "classification-role"
+  },
+  {
+   "name": "rule-fired-flip-must-be-caught",
+   "family": "classification-cases",
+   "caseName": "percussion-by-channel",
+   "path": "expected.ruleFired",
+   "value": "harmony-otherwise",
+   "expectedCheck": "classification-rule"
+  },
+  {
+   "name": "span-boundary-shift-must-be-caught",
+   "family": "segmentation-cases",
+   "caseName": "two-chords-split-at-half",
+   "path": "expectedSpans[0].endTick",
+   "value": 970,
+   "expectedCheck": "segmentation-span"
+  },
+  {
+   "name": "present-set-extra-class-must-be-caught",
+   "family": "segmentation-cases",
+   "caseName": "melody-passing-tones-stay-out",
+   "path": "expectedSpans[0].present",
+   "value": [
+    0,
+    2,
+    4,
+    7,
+    11
+   ],
+   "expectedCheck": "segmentation-span"
+  },
+  {
+   "name": "silent-flag-flip-must-be-caught",
+   "family": "segmentation-cases",
+   "caseName": "silent-bar-between-chords",
+   "path": "expectedSpans[1].silent",
+   "value": false,
+   "expectedCheck": "segmentation-span"
+  },
+  {
+   "name": "key-winner-flip-must-be-caught",
+   "family": "key-cases",
+   "caseName": "plain-c-major-cadence-mass",
+   "path": "expected.tonicPitchClass",
+   "value": 7,
+   "expectedCheck": "key-winner"
+  },
+  {
+   "name": "key-mode-flip-must-be-caught",
+   "family": "key-cases",
+   "caseName": "single-pitch-class-ties-break-major-before-minor",
+   "path": "expected.mode",
+   "value": "minor",
+   "expectedCheck": "key-winner"
+  },
+  {
+   "name": "tonic-spelling-flip-must-be-caught",
+   "family": "key-cases",
+   "caseName": "f-sharp-major-spells-sharp-side",
+   "path": "expected.spelling.alter",
+   "value": -1,
+   "expectedCheck": "key-spelling"
+  },
+  {
+   "name": "rerank-order-swap-must-be-caught",
+   "family": "rerank-cases",
+   "caseName": "diatonic-root-beats-chromatic-root",
+   "path": "expectedOrder",
+   "value": [
+    0,
+    1
+   ],
+   "expectedCheck": "rerank-order"
+  },
+  {
+   "name": "groove-row-flip-must-be-caught",
+   "family": "groove-cases",
+   "caseName": "row-4-bossa",
+   "path": "expected.row",
+   "value": 2,
+   "expectedCheck": "groove-decision"
+  },
+  {
+   "name": "groove-id-flip-must-be-caught",
+   "family": "groove-cases",
+   "caseName": "row-1-slow-swing-is-ballad",
+   "path": "expected.grooveStyleId",
+   "value": "medium-swing@1",
+   "expectedCheck": "groove-decision"
+  },
+  {
+   "name": "swung-share-feature-flip-must-be-caught",
+   "family": "groove-cases",
+   "caseName": "swung-eighths-detected",
+   "path": "expectedFeatures.swungShare",
+   "value": [
+    1,
+    2
+   ],
+   "expectedCheck": "groove-feature"
+  },
+  {
+   "name": "transfer-outcome-flip-must-be-caught",
+   "family": "transfer-cases",
+   "caseName": "occupied-explicit-groove-is-never-overridden",
+   "path": "expected.groove",
+   "value": "applied",
+   "expectedCheck": "transfer-truth-table"
+  },
+  {
+   "name": "refusal-prediction-flip-must-be-caught",
+   "family": "transfer-cases",
+   "caseName": "occupied-meter-mismatch-predicts-refusal-before-add",
+   "path": "expected.meterRefusalPredicted",
+   "value": false,
+   "expectedCheck": "transfer-truth-table"
+  },
+  {
+   "name": "duplicate-suffix-flip-must-be-caught",
+   "family": "transfer-cases",
+   "caseName": "duplicate-marker-text-gets-ordinal-suffix",
+   "path": "expectedSections[3].name",
+   "value": "A (2)",
+   "expectedCheck": "form-sections"
+  },
+  {
+   "name": "chunk-count-flip-must-be-caught",
+   "family": "envelope-cases",
+   "caseName": "greedy-packing-minimizes-chunks",
+   "path": "expected.chunkCount",
+   "value": 2,
+   "expectedCheck": "envelope-chunking"
+  },
+  {
+   "name": "undo-count-flip-must-be-caught",
+   "family": "envelope-cases",
+   "caseName": "chunked-insert-counts-each-chunk",
+   "path": "expected.statedUndoCount",
+   "value": 1,
+   "expectedCheck": "envelope-order"
+  },
+  {
+   "name": "rollback-count-flip-must-be-caught",
+   "family": "envelope-cases",
+   "caseName": "refusal-mid-envelope-rolls-back-issued-commands",
+   "path": "expected.rolledBackCount",
+   "value": 0,
+   "expectedCheck": "envelope-order"
+  },
+  {
+   "name": "override-exclusion-span-key-shift-must-be-caught",
+   "family": "override-cases",
+   "caseName": "excluding-the-harmony-merges-the-bar-back-to-one-span",
+   "path": "expected.spanKeys[0].startTick",
+   "value": 960,
+   "expectedCheck": "override-exclusion"
+  },
+  {
+   "name": "override-alternative-ordinal-flip-must-be-caught",
+   "family": "override-cases",
+   "caseName": "choice-within-range-applies",
+   "path": "expected.applied[0].alternativeOrdinal",
+   "value": 1,
+   "expectedCheck": "override-alternative"
+  },
+  {
+   "name": "override-stale-drop-repair-must-be-caught",
+   "family": "override-cases",
+   "caseName": "a-stale-span-key-is-dropped-never-repaired",
+   "path": "expected.applied",
+   "value": [
     {
-      "name": "role-flip-must-be-caught",
-      "family": "classification-cases",
-      "caseName": "bass-by-register-monophonic",
-      "path": "expected.role",
-      "value": "harmony",
-      "expectedCheck": "classification-role"
-    },
-    {
-      "name": "rule-fired-flip-must-be-caught",
-      "family": "classification-cases",
-      "caseName": "percussion-by-channel",
-      "path": "expected.ruleFired",
-      "value": "harmony-otherwise",
-      "expectedCheck": "classification-rule"
-    },
-    {
-      "name": "span-boundary-shift-must-be-caught",
-      "family": "segmentation-cases",
-      "caseName": "two-chords-split-at-half",
-      "path": "expectedSpans[0].endTick",
-      "value": 970,
-      "expectedCheck": "segmentation-span"
-    },
-    {
-      "name": "present-set-extra-class-must-be-caught",
-      "family": "segmentation-cases",
-      "caseName": "melody-passing-tones-stay-out",
-      "path": "expectedSpans[0].present",
-      "value": [0, 2, 4, 7, 11],
-      "expectedCheck": "segmentation-span"
-    },
-    {
-      "name": "silent-flag-flip-must-be-caught",
-      "family": "segmentation-cases",
-      "caseName": "silent-bar-between-chords",
-      "path": "expectedSpans[1].silent",
-      "value": false,
-      "expectedCheck": "segmentation-span"
-    },
-    {
-      "name": "key-winner-flip-must-be-caught",
-      "family": "key-cases",
-      "caseName": "plain-c-major-cadence-mass",
-      "path": "expected.tonicPitchClass",
-      "value": 7,
-      "expectedCheck": "key-winner"
-    },
-    {
-      "name": "key-mode-flip-must-be-caught",
-      "family": "key-cases",
-      "caseName": "single-pitch-class-ties-break-major-before-minor",
-      "path": "expected.mode",
-      "value": "minor",
-      "expectedCheck": "key-winner"
-    },
-    {
-      "name": "tonic-spelling-flip-must-be-caught",
-      "family": "key-cases",
-      "caseName": "f-sharp-major-spells-sharp-side",
-      "path": "expected.spelling.alter",
-      "value": -1,
-      "expectedCheck": "key-spelling"
-    },
-    {
-      "name": "rerank-order-swap-must-be-caught",
-      "family": "rerank-cases",
-      "caseName": "diatonic-root-beats-chromatic-root",
-      "path": "expectedOrder",
-      "value": [0, 1],
-      "expectedCheck": "rerank-order"
-    },
-    {
-      "name": "groove-row-flip-must-be-caught",
-      "family": "groove-cases",
-      "caseName": "row-4-bossa",
-      "path": "expected.row",
-      "value": 2,
-      "expectedCheck": "groove-decision"
-    },
-    {
-      "name": "groove-id-flip-must-be-caught",
-      "family": "groove-cases",
-      "caseName": "row-1-slow-swing-is-ballad",
-      "path": "expected.grooveStyleId",
-      "value": "medium-swing@1",
-      "expectedCheck": "groove-decision"
-    },
-    {
-      "name": "swung-share-feature-flip-must-be-caught",
-      "family": "groove-cases",
-      "caseName": "swung-eighths-detected",
-      "path": "expectedFeatures.swungShare",
-      "value": [1, 2],
-      "expectedCheck": "groove-feature"
-    },
-    {
-      "name": "transfer-outcome-flip-must-be-caught",
-      "family": "transfer-cases",
-      "caseName": "occupied-explicit-groove-is-never-overridden",
-      "path": "expected.groove",
-      "value": "applied",
-      "expectedCheck": "transfer-truth-table"
-    },
-    {
-      "name": "refusal-prediction-flip-must-be-caught",
-      "family": "transfer-cases",
-      "caseName": "occupied-meter-mismatch-predicts-refusal-before-add",
-      "path": "expected.meterRefusalPredicted",
-      "value": false,
-      "expectedCheck": "transfer-truth-table"
-    },
-    {
-      "name": "duplicate-suffix-flip-must-be-caught",
-      "family": "transfer-cases",
-      "caseName": "duplicate-marker-text-gets-ordinal-suffix",
-      "path": "expectedSections[3].name",
-      "value": "A (2)",
-      "expectedCheck": "form-sections"
-    },
-    {
-      "name": "chunk-count-flip-must-be-caught",
-      "family": "envelope-cases",
-      "caseName": "greedy-packing-minimizes-chunks",
-      "path": "expected.chunkCount",
-      "value": 2,
-      "expectedCheck": "envelope-chunking"
-    },
-    {
-      "name": "undo-count-flip-must-be-caught",
-      "family": "envelope-cases",
-      "caseName": "chunked-insert-counts-each-chunk",
-      "path": "expected.statedUndoCount",
-      "value": 1,
-      "expectedCheck": "envelope-order"
-    },
-    {
-      "name": "rollback-count-flip-must-be-caught",
-      "family": "envelope-cases",
-      "caseName": "refusal-mid-envelope-rolls-back-issued-commands",
-      "path": "expected.rolledBackCount",
-      "value": 0,
-      "expectedCheck": "envelope-order"
+     "measureIndex": 0,
+     "startTick": 960,
+     "alternativeOrdinal": 1
     }
-  ]
+   ],
+   "expectedCheck": "override-alternative"
+  },
+  {
+   "name": "override-groove-row-flip-must-be-caught",
+   "family": "override-cases",
+   "caseName": "override-shadows-a-swing-match",
+   "path": "expected.row",
+   "value": 2,
+   "expectedCheck": "override-groove"
+  }
+ ]
 }

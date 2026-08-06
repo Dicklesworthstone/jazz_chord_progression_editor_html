@@ -1,0 +1,159 @@
+{
+  "schema": "changes.import.midi-automation-fixtures.override.v1",
+  "law": "M1-OVR",
+  "notes": "Independently authored (amendment #2, jcpe-qyyn). exclusionCases reuse the segmentation input grammar plus excludedTrackIndices; expected pins the SURVIVING span keys after exclusion (and droppedIndices for out-of-range entries, allSilent when nothing contributes). alternativeCases pin the pure selection law over abstract ranked lists: exact-key match applies the ordinal, a stale key or over-range ordinal is dropped, never clamped. grooveCases pin the override short-circuit: a non-null override yields row 0 with the frozen evidence sentence whatever the features say; a null override delegates to the decision table.",
+  "exclusionCases": [
+    {
+      "name": "excluding-the-harmony-merges-the-bar-back-to-one-span",
+      "ppq": 480,
+      "meterMap": [{ "tick": 0, "numerator": 4, "denominatorPower": 2 }],
+      "tracks": [
+        {
+          "role": "harmony",
+          "notes": [[0, 62, 960, 1920], [0, 65, 960, 1920], [0, 69, 960, 1920]]
+        },
+        { "role": "bass", "notes": [[0, 36, 0, 1920]] }
+      ],
+      "excludedTrackIndices": [0],
+      "expected": {
+        "spanKeys": [{ "measureIndex": 0, "startTick": 0 }],
+        "droppedIndices": [],
+        "allSilent": false
+      }
+    },
+    {
+      "name": "excluding-every-contributing-track-goes-all-silent",
+      "ppq": 480,
+      "meterMap": [{ "tick": 0, "numerator": 4, "denominatorPower": 2 }],
+      "tracks": [
+        {
+          "role": "harmony",
+          "notes": [[0, 60, 0, 1920], [0, 64, 0, 1920], [0, 67, 0, 1920]]
+        }
+      ],
+      "excludedTrackIndices": [0],
+      "expected": {
+        "spanKeys": [{ "measureIndex": 0, "startTick": 0 }],
+        "droppedIndices": [],
+        "allSilent": true
+      }
+    },
+    {
+      "name": "an-out-of-range-index-is-dropped-and-changes-nothing",
+      "ppq": 480,
+      "meterMap": [{ "tick": 0, "numerator": 4, "denominatorPower": 2 }],
+      "tracks": [
+        {
+          "role": "harmony",
+          "notes": [[0, 60, 0, 1920], [0, 64, 0, 1920], [0, 67, 0, 1920]]
+        }
+      ],
+      "excludedTrackIndices": [5],
+      "expected": {
+        "spanKeys": [{ "measureIndex": 0, "startTick": 0 }],
+        "droppedIndices": [5],
+        "allSilent": false
+      }
+    }
+  ],
+  "alternativeCases": [
+    {
+      "name": "choice-within-range-applies",
+      "spans": [
+        { "key": { "measureIndex": 0, "startTick": 0 }, "rankedLength": 3 }
+      ],
+      "choices": [
+        { "span": { "measureIndex": 0, "startTick": 0 }, "alternativeOrdinal": 2 }
+      ],
+      "expected": {
+        "applied": [
+          { "measureIndex": 0, "startTick": 0, "alternativeOrdinal": 2 }
+        ],
+        "dropped": []
+      }
+    },
+    {
+      "name": "ordinal-zero-is-the-automatic-choice",
+      "spans": [
+        { "key": { "measureIndex": 0, "startTick": 0 }, "rankedLength": 2 }
+      ],
+      "choices": [
+        { "span": { "measureIndex": 0, "startTick": 0 }, "alternativeOrdinal": 0 }
+      ],
+      "expected": {
+        "applied": [
+          { "measureIndex": 0, "startTick": 0, "alternativeOrdinal": 0 }
+        ],
+        "dropped": []
+      }
+    },
+    {
+      "name": "a-stale-span-key-is-dropped-never-repaired",
+      "spans": [
+        { "key": { "measureIndex": 0, "startTick": 0 }, "rankedLength": 3 }
+      ],
+      "choices": [
+        {
+          "span": { "measureIndex": 0, "startTick": 960 },
+          "alternativeOrdinal": 1
+        }
+      ],
+      "expected": {
+        "applied": [],
+        "dropped": [
+          { "measureIndex": 0, "startTick": 960, "alternativeOrdinal": 1 }
+        ]
+      }
+    },
+    {
+      "name": "an-over-range-ordinal-is-dropped-never-clamped",
+      "spans": [
+        { "key": { "measureIndex": 1, "startTick": 1920 }, "rankedLength": 2 }
+      ],
+      "choices": [
+        {
+          "span": { "measureIndex": 1, "startTick": 1920 },
+          "alternativeOrdinal": 5
+        }
+      ],
+      "expected": {
+        "applied": [],
+        "dropped": [
+          { "measureIndex": 1, "startTick": 1920, "alternativeOrdinal": 5 }
+        ]
+      }
+    }
+  ],
+  "grooveCases": [
+    {
+      "name": "override-shadows-a-swing-match",
+      "features": { "tempoBpm": [132, 1], "swungShare": [2, 3], "sixteenthShare": [0, 1], "attacksPerBar": [2, 1], "melodyCoincidence": [0, 1], "bassTwoFeel": [0, 1] },
+      "override": "bossa-nova@1",
+      "expected": {
+        "grooveStyleId": "bossa-nova@1",
+        "row": 0,
+        "evidence": "You chose this groove yourself."
+      }
+    },
+    {
+      "name": "override-shadows-the-default-row",
+      "features": { "tempoBpm": [120, 1], "swungShare": [0, 1], "sixteenthShare": [0, 1], "attacksPerBar": [2, 1], "melodyCoincidence": [0, 1], "bassTwoFeel": [0, 1] },
+      "override": "block-chords@1",
+      "expected": {
+        "grooveStyleId": "block-chords@1",
+        "row": 0,
+        "evidence": "You chose this groove yourself."
+      }
+    },
+    {
+      "name": "a-null-override-delegates-to-the-match",
+      "features": { "tempoBpm": [132, 1], "swungShare": [2, 3], "sixteenthShare": [0, 1], "attacksPerBar": [2, 1], "melodyCoincidence": [0, 1], "bassTwoFeel": [0, 1] },
+      "override": null,
+      "expected": {
+        "grooveStyleId": "medium-swing@1",
+        "row": 2,
+        "evidence": null
+      }
+    }
+  ]
+}

@@ -457,3 +457,50 @@ export type M1GrooveChoice = Readonly<{
   features: Readonly<Record<M1GrooveFeatureName, M1Rational>>;
   evidence: string;
 }>;
+
+/* ------------------------------------------------------------------ *
+ * M1-OVR: Advanced overrides (amendment #2, jcpe-qyyn)                *
+ * ------------------------------------------------------------------ */
+
+/** A span's stable identity across re-plans: its exact placement. */
+export type M1SpanKey = Readonly<{
+  measureIndex: number;
+  startTick: number;
+}>;
+
+/**
+ * One user-chosen alternative reading: ordinal 0 is the automatic choice
+ * and higher ordinals index the §4.2-ranked list of the re-planned span. A
+ * key that no longer exists or an ordinal past the list is DROPPED with a
+ * trace decision, never clamped or repaired.
+ */
+export type M1AlternativeChoice = Readonly<{
+  span: M1SpanKey;
+  alternativeOrdinal: number;
+}>;
+
+/**
+ * The frozen three-override set (doc §12). Overrides re-run the pipeline
+ * on the retained decoded model and never touch the document; quantization
+ * grid and destination/section-name overrides are deferred, not lost.
+ */
+export type M1ImportOverrides = Readonly<{
+  excludedTrackIndices: readonly number[];
+  alternativeChoices: readonly M1AlternativeChoice[];
+  grooveStyleId: GrooveStyleId | null;
+}>;
+
+export const M1_EMPTY_IMPORT_OVERRIDES: M1ImportOverrides = Object.freeze({
+  excludedTrackIndices: Object.freeze([]),
+  alternativeChoices: Object.freeze([]),
+  grooveStyleId: null,
+});
+
+/** Bound on stored alternative choices; matches the document event cap era. */
+export const M1_MAX_ALTERNATIVE_CHOICES = 512;
+
+/** The distinguished row a groove override reports instead of a match row. */
+export const M1_GROOVE_OVERRIDE_ROW = 0;
+
+/** The frozen evidence sentence a groove override carries on the card. */
+export const M1_GROOVE_OVERRIDE_EVIDENCE = "You chose this groove yourself.";
