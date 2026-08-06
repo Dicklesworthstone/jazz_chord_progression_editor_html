@@ -12,7 +12,10 @@ export const FOUNDRY_LIMITS = Object.freeze({
   maximumScratchBytes: 2_147_483_648,
 });
 
-const UNITS = new Set(["1", "Hz", "kg", "m", "m/s", "N/m", "Pa", "s"]);
+const UNITS = new Set([
+  "1", "Hz", "kg", "kg/m3", "m", "m2", "m3/s", "m/s", "N/m", "N*s/m",
+  "Pa", "s",
+]);
 const DISTRIBUTIONS = new Set([
   "distributable",
   "local-evidence-only",
