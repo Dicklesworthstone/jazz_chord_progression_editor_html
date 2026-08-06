@@ -65,8 +65,7 @@ impl DcBlocker {
     }
 
     pub(crate) fn process(&mut self, input: f64) -> f64 {
-        let output =
-            flush_denormal(input - self.prior_input + self.pole * self.prior_output);
+        let output = flush_denormal(input - self.prior_input + self.pole * self.prior_output);
         self.prior_input = input;
         self.prior_output = output;
         output
@@ -250,19 +249,31 @@ pub extern "C" fn phs_validate_v2(
     ) else {
         return PHS_ABI_BOUNDS_INVALID;
     };
-    let Some(left) =
-        ByteRange::checked(output_left_offset, output_capacity_frames, 4, 4, memory_bytes)
-    else {
+    let Some(left) = ByteRange::checked(
+        output_left_offset,
+        output_capacity_frames,
+        4,
+        4,
+        memory_bytes,
+    ) else {
         return PHS_ABI_BOUNDS_INVALID;
     };
-    let Some(right) =
-        ByteRange::checked(output_right_offset, output_capacity_frames, 4, 4, memory_bytes)
-    else {
+    let Some(right) = ByteRange::checked(
+        output_right_offset,
+        output_capacity_frames,
+        4,
+        4,
+        memory_bytes,
+    ) else {
         return PHS_ABI_BOUNDS_INVALID;
     };
-    let Some(state_input) =
-        ByteRange::checked(state_input_offset, state_input_byte_length, 1, 8, memory_bytes)
-    else {
+    let Some(state_input) = ByteRange::checked(
+        state_input_offset,
+        state_input_byte_length,
+        1,
+        8,
+        memory_bytes,
+    ) else {
         return PHS_ABI_BOUNDS_INVALID;
     };
     let Some(state_output) = ByteRange::checked(
@@ -623,10 +634,7 @@ pub extern "C" fn phs_reed_solve_v2(
             bore_impedance,
         );
     }
-    while fallback_bisections < 16
-        && value.abs() > tolerance
-        && (high - low) > width_tolerance
-    {
+    while fallback_bisections < 16 && value.abs() > tolerance && (high - low) > width_tolerance {
         fallback_bisections += 1;
         if value < 0.0 {
             low = pressure;
@@ -654,9 +662,191 @@ pub extern "C" fn phs_reed_solve_v2(
     1
 }
 
+/// Advance the PHS2 inward-striking reed by one bounded SI-unit step.
+///
+/// This is deliberately a state transition, unlike `phs_reed_solve_v2`'s
+/// memoryless junction oracle.  Semi-implicit Euler is used because it is
+/// dissipative at impact and symplectic for the undamped free reed.  A step
+/// that crosses the lay projects to x=0 and removes only inward kinetic
+/// energy; it can therefore never manufacture collision energy.
+/// Output: x, velocity, signed volume flow, dissipated collision energy,
+/// mechanical energy before, mechanical energy after, tongue force, contact.
+#[no_mangle]
+#[allow(clippy::too_many_arguments)]
+pub extern "C" fn phs_clarinet_reed_step_v2(
+    dt_seconds: f64,
+    displacement_m: f64,
+    velocity_m_per_s: f64,
+    mouth_pressure_pa: f64,
+    mouthpiece_pressure_pa: f64,
+    mass_kg: f64,
+    damping_n_s_per_m: f64,
+    stiffness_n_per_m: f64,
+    equilibrium_opening_m: f64,
+    effective_area_m2: f64,
+    channel_width_m: f64,
+    air_density_kg_per_m3: f64,
+    tongue_contact: f64,
+    output: *mut f64,
+) -> i32 {
+    let values = [
+        dt_seconds,
+        displacement_m,
+        velocity_m_per_s,
+        mouth_pressure_pa,
+        mouthpiece_pressure_pa,
+        mass_kg,
+        damping_n_s_per_m,
+        stiffness_n_per_m,
+        equilibrium_opening_m,
+        effective_area_m2,
+        channel_width_m,
+        air_density_kg_per_m3,
+        tongue_contact,
+    ];
+    if values.iter().any(|value| !value.is_finite())
+        || output.is_null()
+        || output as usize % 8 != 0
+        || !(0.0 < dt_seconds && dt_seconds <= 1.0 / 8_000.0)
+        || !(0.0 < mass_kg && mass_kg <= 0.01)
+        || damping_n_s_per_m < 0.0
+        || !(0.0 < stiffness_n_per_m && stiffness_n_per_m <= 100_000.0)
+        || !(0.0 < equilibrium_opening_m && equilibrium_opening_m <= 0.005)
+        || !(0.0 < effective_area_m2 && effective_area_m2 <= 0.001)
+        || !(0.0 < channel_width_m && channel_width_m <= 0.05)
+        || !(0.5 <= air_density_kg_per_m3 && air_density_kg_per_m3 <= 2.0)
+        || !(0.0..=1.0).contains(&tongue_contact)
+    {
+        return 0;
+    }
+    let spring_energy = |x: f64| {
+        let extension = x - equilibrium_opening_m;
+        0.5 * stiffness_n_per_m * extension * extension
+    };
+    let energy_before = 0.5 * mass_kg * velocity_m_per_s * velocity_m_per_s
+        + spring_energy(displacement_m.max(0.0));
+    let delta_pressure = mouth_pressure_pa - mouthpiece_pressure_pa;
+    let tongue_force = tongue_contact * stiffness_n_per_m * equilibrium_opening_m;
+    let force = -stiffness_n_per_m * (displacement_m - equilibrium_opening_m)
+        - damping_n_s_per_m * velocity_m_per_s
+        - effective_area_m2 * delta_pressure
+        - tongue_force;
+    let mut velocity = velocity_m_per_s + dt_seconds * force / mass_kg;
+    let mut displacement = displacement_m + dt_seconds * velocity;
+    let mut collision_loss = 0.0;
+    let mut contact = 0.0;
+    if displacement < 0.0 {
+        contact = 1.0;
+        let inward_velocity = velocity.min(0.0);
+        collision_loss = 0.5 * mass_kg * inward_velocity * inward_velocity;
+        displacement = 0.0;
+        velocity = velocity.max(0.0);
+    }
+    let pressure_magnitude = sqrt(2.0 * delta_pressure.abs() / air_density_kg_per_m3);
+    let flow = channel_width_m * displacement * pressure_magnitude * delta_pressure.signum();
+    let energy_after = 0.5 * mass_kg * velocity * velocity + spring_energy(displacement);
+    if !flow.is_finite() || !energy_after.is_finite() || collision_loss < 0.0 {
+        return 0;
+    }
+    let result = unsafe { core::slice::from_raw_parts_mut(output, 8) };
+    result.copy_from_slice(&[
+        displacement,
+        velocity,
+        flow,
+        collision_loss,
+        energy_before,
+        energy_after,
+        tongue_force,
+        contact,
+    ]);
+    1
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn clarinet_reed_step_is_stateful_signed_and_passive_at_the_lay() {
+        let mut output = [0.0; 8];
+        assert_eq!(
+            phs_clarinet_reed_step_v2(
+                1.0 / 96_000.0,
+                0.0004,
+                0.0,
+                3_000.0,
+                0.0,
+                0.000_03,
+                0.02,
+                1_500.0,
+                0.0004,
+                0.0001,
+                0.012,
+                1.2,
+                0.0,
+                output.as_mut_ptr()
+            ),
+            1
+        );
+        assert!(
+            output[0] < 0.0004,
+            "pressure must drive an inward reed toward the lay"
+        );
+        assert!(
+            output[2] > 0.0,
+            "positive mouth-to-bore pressure gives positive flow"
+        );
+
+        let mut reverse = [0.0; 8];
+        assert_eq!(
+            phs_clarinet_reed_step_v2(
+                1.0 / 96_000.0,
+                0.0002,
+                0.0,
+                0.0,
+                10.0,
+                0.000_03,
+                0.02,
+                1_500.0,
+                0.0004,
+                0.0001,
+                0.012,
+                1.2,
+                0.0,
+                reverse.as_mut_ptr()
+            ),
+            1
+        );
+        assert!(
+            reverse[2] < 0.0,
+            "reverse pressure must not be hidden by abs"
+        );
+
+        let mut impact = [0.0; 8];
+        assert_eq!(
+            phs_clarinet_reed_step_v2(
+                1.0 / 48_000.0,
+                0.000_001,
+                -1.0,
+                0.0,
+                0.0,
+                0.000_03,
+                0.02,
+                1_500.0,
+                0.0004,
+                0.0001,
+                0.012,
+                1.2,
+                0.0,
+                impact.as_mut_ptr()
+            ),
+            1
+        );
+        assert_eq!(impact[0], 0.0);
+        assert_eq!(impact[1], 0.0);
+        assert_eq!(impact[7], 1.0);
+        assert!(impact[3] > 0.0 && impact[3].is_finite());
+    }
 
     /// jcpe-dsp-denormals-onp5: decaying filter states must flush to exact
     /// zero instead of walking through the f64 subnormal range (WASM has no
@@ -834,12 +1024,23 @@ mod tests {
         // went negative, so the residual reports the unexplained creation.
         assert!(ledger[2] > ledger[0] + ledger[1]);
         assert!(ledger[4].abs() < 1.0e-12, "closure itself still holds");
-        assert!(ledger[3] < 0.0, "active coefficient visible as negative loss");
+        assert!(
+            ledger[3] < 0.0,
+            "active coefficient visible as negative loss"
+        );
 
         // A passive run of the same shape keeps the loss term positive.
         let loss = exp(-2.0 / 48_000.0);
-        let (_, passive, _) =
-            modal_core(cos(phase), sin(phase), loss, 0.5, 0.0, 0.0, &mut left, &mut right);
+        let (_, passive, _) = modal_core(
+            cos(phase),
+            sin(phase),
+            loss,
+            0.5,
+            0.0,
+            0.0,
+            &mut left,
+            &mut right,
+        );
         assert!(passive[3] > 0.0);
     }
 
@@ -855,9 +1056,7 @@ mod tests {
             "state input offset 16388 must refuse",
         );
         assert_eq!(
-            phs_validate_v2(
-                2, 256, 256, 2, 512, 4, 4096, 8192, 512, 0, 0, 12292, 256, 1_048_576,
-            ),
+            phs_validate_v2(2, 256, 256, 2, 512, 4, 4096, 8192, 512, 0, 0, 12292, 256, 1_048_576,),
             PHS_ABI_BOUNDS_INVALID,
             "state output offset 12292 must refuse",
         );
@@ -886,9 +1085,17 @@ mod tests {
         // excitation 2.0 -> peak amplitude ~2/sqrt(2) = 1.414 > 0.98.
         assert_eq!(
             phs_modal_render_v2(
-                48_000.0, 440.0, 2.0, 2.0, 0.0, 0.0,
-                whole_left.as_mut_ptr(), whole_right.as_mut_ptr(), 512,
-                state.as_mut_ptr(), ledger.as_mut_ptr(),
+                48_000.0,
+                440.0,
+                2.0,
+                2.0,
+                0.0,
+                0.0,
+                whole_left.as_mut_ptr(),
+                whole_right.as_mut_ptr(),
+                512,
+                state.as_mut_ptr(),
+                ledger.as_mut_ptr(),
             ),
             512,
         );
@@ -898,9 +1105,17 @@ mod tests {
         let mut first_right = [0.0f32; 256];
         assert_eq!(
             phs_modal_render_v2(
-                48_000.0, 440.0, 2.0, 2.0, 0.0, 0.0,
-                first_left.as_mut_ptr(), first_right.as_mut_ptr(), 256,
-                state.as_mut_ptr(), ledger.as_mut_ptr(),
+                48_000.0,
+                440.0,
+                2.0,
+                2.0,
+                0.0,
+                0.0,
+                first_left.as_mut_ptr(),
+                first_right.as_mut_ptr(),
+                256,
+                state.as_mut_ptr(),
+                ledger.as_mut_ptr(),
             ),
             256,
         );
@@ -918,9 +1133,17 @@ mod tests {
         let mut second_ledger = [0.0f64; 6];
         assert_eq!(
             phs_modal_render_v2(
-                48_000.0, 440.0, 2.0, 0.0, state[0], state[1],
-                second_left.as_mut_ptr(), second_right.as_mut_ptr(), 256,
-                second_state.as_mut_ptr(), second_ledger.as_mut_ptr(),
+                48_000.0,
+                440.0,
+                2.0,
+                0.0,
+                state[0],
+                state[1],
+                second_left.as_mut_ptr(),
+                second_right.as_mut_ptr(),
+                256,
+                second_state.as_mut_ptr(),
+                second_ledger.as_mut_ptr(),
             ),
             256,
         );

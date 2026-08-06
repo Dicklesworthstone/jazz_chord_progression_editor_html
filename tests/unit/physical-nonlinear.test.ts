@@ -59,3 +59,75 @@ test("reed opening has a physical positive capability and invalid brackets refus
     }),
   ).toBeNull();
 });
+
+test("clarinet v2 advances real reed state through the embedded wasm and dissipates lay impact", async () => {
+  const renderer = await loadConcertGrandRenderer();
+  const common = {
+    dtSeconds: 1 / 96_000,
+    massKg: 0.000_03,
+    dampingNsPerM: 0.02,
+    stiffnessNPerM: 1_500,
+    equilibriumOpeningM: 0.0004,
+    effectiveAreaM2: 0.0001,
+    channelWidthM: 0.012,
+    airDensityKgPerM3: 1.2,
+    tongueContact: 0,
+  } as const;
+  const first = renderer.stepPhysicalClarinetReedV2({
+    ...common,
+    state: { displacementM: 0.0004, velocityMPerS: 0 },
+    mouthPressurePa: 3_000,
+    mouthpiecePressurePa: 0,
+  });
+  if (first === null) throw new Error("PHS2_REED_STEP_REFUSED");
+  expect(first.state.displacementM).toBeLessThan(0.0004);
+  expect(first.state.velocityMPerS).toBeLessThan(0);
+  expect(first.signedVolumeFlowM3PerS).toBeGreaterThan(0);
+
+  const repeated = renderer.stepPhysicalClarinetReedV2({
+    ...common,
+    state: first.state,
+    mouthPressurePa: 3_000,
+    mouthpiecePressurePa: 0,
+  });
+  expect(repeated?.state.displacementM).toBeLessThan(first.state.displacementM);
+
+  const reverse = renderer.stepPhysicalClarinetReedV2({
+    ...common,
+    state: { displacementM: 0.0002, velocityMPerS: 0 },
+    mouthPressurePa: 0,
+    mouthpiecePressurePa: 10,
+  });
+  expect(reverse?.signedVolumeFlowM3PerS).toBeLessThan(0);
+
+  const tongued = renderer.stepPhysicalClarinetReedV2({
+    ...common,
+    state: { displacementM: 0.0004, velocityMPerS: 0 },
+    mouthPressurePa: 0,
+    mouthpiecePressurePa: 0,
+    tongueContact: 1,
+  });
+  expect(tongued?.tongueForceN).toBeCloseTo(0.6, 12);
+  expect(tongued?.state.displacementM).toBeLessThan(0.0004);
+
+  const impact = renderer.stepPhysicalClarinetReedV2({
+    ...common,
+    dtSeconds: 1 / 48_000,
+    state: { displacementM: 0.000_001, velocityMPerS: -1 },
+    mouthPressurePa: 0,
+    mouthpiecePressurePa: 0,
+  });
+  expect(impact?.contact).toBe(true);
+  expect(impact?.state).toEqual({ displacementM: 0, velocityMPerS: 0 });
+  expect(impact?.collisionLossJ).toBeGreaterThan(0);
+  expect(impact?.mechanicalEnergyAfterJ).toBeLessThan(
+    impact?.mechanicalEnergyBeforeJ ?? 0,
+  );
+
+  expect(renderer.stepPhysicalClarinetReedV2({
+    ...common,
+    state: { displacementM: 0.0004, velocityMPerS: 0 },
+    mouthPressurePa: Number.NaN,
+    mouthpiecePressurePa: 0,
+  })).toBeNull();
+});

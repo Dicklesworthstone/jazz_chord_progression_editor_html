@@ -69,6 +69,7 @@ pub extern "C" fn clr_render(
         max_frames,
         None,
         None,
+        false,
     )
 }
 
@@ -94,6 +95,7 @@ pub extern "C" fn clr_render_seeded(
         max_frames,
         Some(variation),
         None,
+        false,
     )
 }
 
@@ -127,7 +129,28 @@ pub extern "C" fn clr_render_expressive(
         max_frames,
         Some(variation),
         Some(tongued),
+        false,
     )
+}
+
+/// PHS2 audible comparator: the same reviewed bore while the excitation is
+/// driven by the stateful SI-unit reed. The legacy exports above remain
+/// unchanged until the complete v2 phrase/bore package passes its proof gate.
+#[no_mangle]
+pub extern "C" fn clr_render_v2(
+    midi: i32,
+    velocity: i32,
+    sample_rate: f32,
+    variation_slot: u32,
+    articulation: u32,
+    left: *mut f32,
+    right: *mut f32,
+    max_frames: i32,
+) -> i32 {
+    let Some(variation) = vibrato_variation(variation_slot) else { return 0; };
+    let tongued = match articulation { 0 => false, 1 => true, _ => return 0 };
+    clr_render_inner(midi, velocity, sample_rate, left, right, max_frames,
+        Some(variation), Some(tongued), true)
 }
 
 fn clr_render_inner(
@@ -139,6 +162,7 @@ fn clr_render_inner(
     max_frames: i32,
     variation: Option<crate::VibratoVariation>,
     attack_articulation: Option<bool>,
+    dynamic_reed: bool,
 ) -> i32 {
     let capacity = clr_note_frames(midi, sample_rate);
     if capacity == 0
@@ -279,6 +303,9 @@ fn clr_render_inner(
     let mut chiff_envelope = 1.0f64;
     let mut overshoot_envelope = 1.0f64;
     let mut pressure = 0.0f64;
+    let reed_h0 = 0.0004;
+    let mut reed_x = reed_h0;
+    let mut reed_velocity = 0.0;
 
     /* Band-limit the differentiated radiation (the flute's hiss lesson). */
     let radiation_alpha = 1.0 - exp(-TAU * 5_500.0 / sr);
@@ -327,10 +354,27 @@ fn clr_render_inner(
         let bore_out = bore_delay.output();
         let reflected = dc_blocker.process(-0.95 * reflection_loss.process(bore_out));
 
-        /* Reed junction: pressure difference sets the reed's reflection. */
+        /* Reed junction. V2 advances the mass-spring reed itself and mixes
+         * its signed Bernoulli flow into the established passive bore. */
         let pressure_diff = reflected - breath;
         let reed = (reed_offset + reed_slope * pressure_diff).clamp(-1.0, 1.0);
-        let bore_in = breath + pressure_diff * reed;
+        let legacy_bore_in = breath + pressure_diff * reed;
+        let bore_in = if dynamic_reed {
+            let tongue_contact = if frame < tongue_hold_frames { 1.0 } else { 0.0 };
+            let mut step = [0.0; 8];
+            if crate::physical::phs_clarinet_reed_step_v2(
+                1.0 / sr, reed_x, reed_velocity, breath * 7_000.0,
+                reflected * 2_500.0, 0.000_03, 0.02, 1_500.0, reed_h0,
+                0.0001, 0.012, 1.2, tongue_contact, step.as_mut_ptr()) != 1 {
+                return 0;
+            }
+            reed_x = step[0];
+            reed_velocity = step[1];
+            let flow_drive = (step[2] / 0.00025).clamp(-1.5, 1.5);
+            0.55 * legacy_bore_in + 0.45 * flow_drive
+        } else {
+            legacy_bore_in
+        };
 
         let tuned = tuning_a * bore_in + tuning_x1 - tuning_a * tuning_y1;
         tuning_x1 = bore_in;

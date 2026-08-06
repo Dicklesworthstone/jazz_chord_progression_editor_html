@@ -56,6 +56,8 @@ export const WAVEGUIDE_GUITAR_DRIVE_ALGORITHM_ID =
 export const WAVEGUIDE_FLUTE_ALGORITHM_ID = "changes.dsp.waveguide-flute@1";
 export const WAVEGUIDE_CLARINET_ALGORITHM_ID =
   "changes.dsp.waveguide-clarinet@1";
+export const WAVEGUIDE_CLARINET_V2_ALGORITHM_ID =
+  "changes.dsp.waveguide-clarinet@2";
 
 export type WindAttackArticulation = "legato" | "tongued";
 
@@ -166,6 +168,19 @@ export type PhysicalReedSolveResult = Readonly<{
   nonlinearIterations: number;
   fallbackBisections: number;
 }>;
+export type PhysicalClarinetReedState = Readonly<{
+  displacementM: number;
+  velocityMPerS: number;
+}>;
+export type PhysicalClarinetReedStepResult = Readonly<{
+  state: PhysicalClarinetReedState;
+  signedVolumeFlowM3PerS: number;
+  collisionLossJ: number;
+  mechanicalEnergyBeforeJ: number;
+  mechanicalEnergyAfterJ: number;
+  tongueForceN: number;
+  contact: boolean;
+}>;
 
 export type ConcertGrandRenderer = Readonly<{
   algorithmId: typeof CONCERT_GRAND_RENDERER_ALGORITHM_ID;
@@ -239,6 +254,20 @@ export type ConcertGrandRenderer = Readonly<{
     stiffness: number;
     boreImpedance: number;
   }>) => PhysicalReedSolveResult | null;
+  stepPhysicalClarinetReedV2: (request: Readonly<{
+    dtSeconds: number;
+    state: PhysicalClarinetReedState;
+    mouthPressurePa: number;
+    mouthpiecePressurePa: number;
+    massKg: number;
+    dampingNsPerM: number;
+    stiffnessNPerM: number;
+    equilibriumOpeningM: number;
+    effectiveAreaM2: number;
+    channelWidthM: number;
+    airDensityKgPerM3: number;
+    tongueContact: number;
+  }>) => PhysicalClarinetReedStepResult | null;
 }>;
 
 type ConcertGrandExports = Readonly<{
@@ -335,6 +364,10 @@ type ConcertGrandExports = Readonly<{
     right: number,
     maxFrames: number,
   ) => number;
+  clr_render_v2: (
+    midi: number, velocity: number, sampleRate: number, variationSlot: number,
+    articulation: number, left: number, right: number, maxFrames: number,
+  ) => number;
   phs_validate_v2: (
     abiVersion: number,
     requestByteLength: number,
@@ -371,6 +404,13 @@ type ConcertGrandExports = Readonly<{
     stiffness: number,
     boreImpedance: number,
     output: number,
+  ) => number;
+  phs_clarinet_reed_step_v2: (
+    dtSeconds: number, displacementM: number, velocityMPerS: number,
+    mouthPressurePa: number, mouthpiecePressurePa: number, massKg: number,
+    dampingNsPerM: number, stiffnessNPerM: number, equilibriumOpeningM: number,
+    effectiveAreaM2: number, channelWidthM: number, airDensityKgPerM3: number,
+    tongueContact: number, output: number,
   ) => number;
 }>;
 
@@ -901,6 +941,10 @@ async function instantiate(): Promise<DspCore> {
       rawExports,
       "clr_render_expressive",
     ) as ConcertGrandExports["clr_render_expressive"],
+    clr_render_v2: requireExportedFunction(
+      rawExports,
+      "clr_render_v2",
+    ) as ConcertGrandExports["clr_render_v2"],
     phs_validate_v2: requireExportedFunction(
       instance.exports,
       "phs_validate_v2",
@@ -913,6 +957,10 @@ async function instantiate(): Promise<DspCore> {
       instance.exports,
       "phs_reed_solve_v2",
     ) as ConcertGrandExports["phs_reed_solve_v2"],
+    phs_clarinet_reed_step_v2: requireExportedFunction(
+      instance.exports,
+      "phs_clarinet_reed_step_v2",
+    ) as ConcertGrandExports["phs_clarinet_reed_step_v2"],
   };
   const memory = exports.memory;
   /* Scratch region starts past the module's own data and shadow stack. */
@@ -1108,6 +1156,30 @@ async function instantiate(): Promise<DspCore> {
         volumeFlow: values[1] ?? 0,
         nonlinearIterations: values[2] ?? 0,
         fallbackBisections: values[3] ?? 0,
+      });
+    };
+
+  const stepPhysicalClarinetReedV2: ConcertGrandRenderer["stepPhysicalClarinetReedV2"] =
+    (request) => {
+      const outputPointer = Math.ceil(scratchBase / 8) * 8;
+      ensureCapacity(memory, scratchBase, outputPointer + 64 - scratchBase);
+      const outcome = exports.phs_clarinet_reed_step_v2(
+        request.dtSeconds, request.state.displacementM, request.state.velocityMPerS,
+        request.mouthPressurePa, request.mouthpiecePressurePa, request.massKg,
+        request.dampingNsPerM, request.stiffnessNPerM, request.equilibriumOpeningM,
+        request.effectiveAreaM2, request.channelWidthM, request.airDensityKgPerM3,
+        request.tongueContact, outputPointer,
+      );
+      if (outcome !== 1) return null;
+      const value = new Float64Array(memory.buffer, outputPointer, 8);
+      return Object.freeze({
+        state: Object.freeze({ displacementM: value[0] ?? 0, velocityMPerS: value[1] ?? 0 }),
+        signedVolumeFlowM3PerS: value[2] ?? 0,
+        collisionLossJ: value[3] ?? 0,
+        mechanicalEnergyBeforeJ: value[4] ?? 0,
+        mechanicalEnergyAfterJ: value[5] ?? 0,
+        tongueForceN: value[6] ?? 0,
+        contact: value[7] === 1,
       });
     };
 
@@ -1353,6 +1425,16 @@ async function instantiate(): Promise<DspCore> {
           ),
       ),
     ],
+    [
+      WAVEGUIDE_CLARINET_V2_ALGORITHM_ID,
+      makeWaveguideRenderNote(
+        exports.clr_note_frames,
+        (m, v, r, l, rt, mx) => exports.clr_render_v2(m, v, r, 0, 1, l, rt, mx),
+        (m, v, r, slot, l, rt, mx) => exports.clr_render_v2(m, v, r, slot, 1, l, rt, mx),
+        (m, v, r, slot, articulation, l, rt, mx) =>
+          exports.clr_render_v2(m, v, r, slot, articulation, l, rt, mx),
+      ),
+    ],
   ] as const) {
     waveguide.set(
       algorithmId,
@@ -1376,6 +1458,7 @@ async function instantiate(): Promise<DspCore> {
       validatePhysicalAbiV2,
       renderPhysicalModalV2,
       solvePhysicalReedV2,
+      stepPhysicalClarinetReedV2,
     }),
     waveguide,
   });
