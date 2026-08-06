@@ -190,7 +190,7 @@ const EXPECTED_SCHEMAS: Readonly<Record<ExpectedFilename, string>> = {
 };
 
 export const X0_REVIEWED_CONTRACT_BYTE_DIGEST =
-  "0b40ea8602e81eaa26753443510e278a8a5f5e38ce48a169bd668a46e26a63da";
+  "46ad054031c940f5e2c6f16eab69a20427899757261d33c360a053b20ea5fed3";
 
 export const X0_REVIEWED_BYTE_DIGESTS: Readonly<
   Record<CompanionFilename, string>
@@ -212,9 +212,9 @@ export const X0_REVIEWED_BYTE_DIGESTS: Readonly<
   "registry-cases.json":
     "2f373b5d3fb35e99dc9c7dddf6b324a33cf76f94d62bfb210453c74788e391c8",
   "render-matrix.json":
-    "300ed448f53000fde7408929a556ed8c745382e6b39b53dd57950d8e032169b3",
+    "e31e8083bf1304648c96d477a8f68e86b91b30614dc6c842a4eae44c5aa0521f",
   "trace-ledger.json":
-    "e4e2cffd41d1eef9886d38a5883fe21ba0c9326cc021231e60fca34f6f5870ab",
+    "c1b43b6f75f2304da0d2dde22ad44753650451079a04098b2088803b4ff3761a",
 };
 
 export const X0_REVIEWED_OPERATION_ORDER = [
@@ -512,7 +512,7 @@ export const X0_REVIEWED_COUNTS = {
   impulseCheckpoints: 8,
   lifecycleCases: 46,
   registryCases: 32,
-  renderCases: 18,
+  renderCases: 27,
   listeningInstrumentRows: 9,
   listeningScenarioRows: 9,
   mutationControls: 31,
@@ -532,14 +532,14 @@ const REVIEWED_CANONICAL_DIGESTS = {
   lifecycleCases: "2c62e2859e3b9f38f146d7ffd8d6546580f6ee43153c9be68b39330684760c2e",
   registryCases: "97191f50abef6e929f508244f2c5e260d4c9a3616380cb87477a841f02d598f1",
   renderPolicy: "2f48761e269d258d5768c5a708b744c663897140871f9eeadef083ab594cd5db",
-  renderCases: "85f86f1edc7e570d8c69f57185ce31d613c7b9a8eedeccea6b4f66b3523995f6",
+  renderCases: "16d880f72b13f932b3edb4937680a2788532d4f074d30fb5959528207f3f9b03",
   listeningInstruments:
     "c93ea247e0374c58b4416c7d9f911881bcaba408bcbb8fbd2504220263891a52",
   listeningScenarios:
     "ac4e15093fb990ec23eadb7c9470002442cafc732dbf3b7ac8457e3787424e31",
   authorities: "b964ac82a872c50a40454571225f1a033b25c08f1b25f7a18ca61947b5d52040",
   controls: "dfd0d0df78484042f29d7825c376219d5adf81c2d69f53194e7838f44c8bd2aa",
-  traces: "706f7c5ed59635e70ae81ef223fb050da44de6d09d8401fb324457c8cd1de70a",
+  traces: "f9e64edc49f2fe7862480f2762f0dd304cf968df89dda2a47eb21bb53c31bcd6",
 } as const;
 
 type ParsedFixture = Readonly<{
@@ -1221,7 +1221,7 @@ function validateRender(value: JsonObject | undefined, findings: X0ContractFindi
     "X0_RENDER_CASES",
     "render.cases",
     value.cases,
-    18,
+    27,
     "X0-RENDER-",
   );
   const recipeCounts = new Map<string, number>();

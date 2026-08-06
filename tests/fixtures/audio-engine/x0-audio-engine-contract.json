@@ -25,8 +25,8 @@
     "mutation-controls.json": "12d896515143dcd978e7a8839692dfc6c4248e3569bf23f2268c8e2aa1466cad",
     "provenance-ledger.json": "66f3fa709c6ce6522abc7e881dbd83b587e14860c9e4db870ba0887231f94e1b",
     "registry-cases.json": "2f373b5d3fb35e99dc9c7dddf6b324a33cf76f94d62bfb210453c74788e391c8",
-    "render-matrix.json": "300ed448f53000fde7408929a556ed8c745382e6b39b53dd57950d8e032169b3",
-    "trace-ledger.json": "e4e2cffd41d1eef9886d38a5883fe21ba0c9326cc021231e60fca34f6f5870ab"
+    "render-matrix.json": "e31e8083bf1304648c96d477a8f68e86b91b30614dc6c842a4eae44c5aa0521f",
+    "trace-ledger.json": "c1b43b6f75f2304da0d2dde22ad44753650451079a04098b2088803b4ff3761a"
   },
   "identities": {
     "enginePolicy": {
@@ -203,7 +203,7 @@
     "impulseCheckpoints": 8,
     "lifecycleCases": 46,
     "registryCases": 32,
-    "renderCases": 18,
+    "renderCases": 27,
     "listeningInstrumentRows": 9,
     "listeningScenarioRows": 9,
     "mutationControls": 31,

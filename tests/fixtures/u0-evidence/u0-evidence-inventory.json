@@ -116,7 +116,7 @@
   },
   {
    "path": "tests/static/u0-token-usage.test.ts",
-   "sha256": "d033839f387bfae081611443503ba7bf90587a7d9825456d37d67d887162de7e"
+   "sha256": "888ab7ba7a30c13fbcd91be53b3242b14da9ac823be08c5ae531f1997ce5ab08"
   },
   {
    "path": "tests/visual/u0-component-gallery.spec.ts",
