@@ -129,10 +129,17 @@ describe("progression library", () => {
   test("declares a reviewed provenance for every entry", () => {
     /*
      * The allowlist is the review record's machine half: the 2026-07-31
-     * What a Fool Believes direction and the 2026-08-05 Giant Steps
-     * direction, each recorded verbatim beside its entry.
+     * What a Fool Believes direction and the 2026-08-05 direction that
+     * added Giant Steps, Peg, Aja, and Hello, It's Me, each recorded
+     * verbatim beside its entry with its verification account.
      */
-    const ownerDirected = ["what-a-fool-believes", "giant-steps"];
+    const ownerDirected = [
+      "what-a-fool-believes",
+      "giant-steps",
+      "peg",
+      "aja",
+      "hello-its-me",
+    ];
     for (const entry of PROGRESSION_LIBRARY) {
       expect(["public-domain", "device", "study", "owner-directed"]).toContain(
         entry.provenance,

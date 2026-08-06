@@ -396,6 +396,85 @@ export const PROGRESSION_LIBRARY: readonly ProgressionLibraryEntry[] =
       chartText:
         "| Bmaj7 | D7 Gmaj7 | Bb7 Ebmaj7 | Am7 D7 | Gmaj7 | Bb7 Ebmaj7 | F#7 Bmaj7 | Fm7 Bb7 | Ebmaj7 | Am7 D7 | Gmaj7 | C#m7 F#7 | Bmaj7 | Fm7 Bb7 | Ebmaj7 | C#m7 F#7 |",
     }),
+
+    /*
+     * VERIFICATION (Peg). The five-chord intro descent was extracted
+     * bar-by-bar from a full 11-track ensemble MIDI transcription
+     * (reviewer material, not committed): Gmaj9 | F#7#9 | F6/9 | E7#9 |
+     * Eb6/9, 119 BPM, 4/4, G major — each descent chord entering on beat
+     * four of the preceding bar, which the chart flattens to one chord per
+     * bar honestly. The verse and chorus were NOT charted: no published
+     * sheet-music content for them was reachable inside the source law,
+     * and a MIDI-only guess at Fagen's inner voicings would be exactly the
+     * low-quality addition the direction forbids. The entry is the intro
+     * alone — the same excerpt discipline as the Deacon Blues seed.
+     * Every symbol below is proven to parse AND reach sound through the
+     * real transport composition by
+     * tests/unit/studio-progression-library.test.ts.
+     */
+    Object.freeze({
+      id: "peg",
+      grooveStyleId: "syncopated-sixteenths@1",
+      tempoBpm: 119,
+      title: "Peg",
+      kicker: "Fagen & Becker, 1977",
+      note: "The intro descent in five chromatically falling colors — maj9, sharp-nine dominant, six-nine, sharp-nine dominant, six-nine again — the doorway into the Aja album's most famous solo vehicle.",
+      provenance: "owner-directed",
+      chartText: "| Gmaj9 | F#7#9 | F6/9 | E7#9 | Eb6/9 |",
+    }),
+
+    /*
+     * VERIFICATION (Aja). The intro vamp was extracted bar-by-bar from a
+     * full 12-track ensemble MIDI transcription by Norma Williams
+     * (reviewer material, not committed): eight bars of B pedal at
+     * 110 BPM, 4/4, the riff's pitch content spelling Bmaj9 colors
+     * (B-D#-F#-A#-C# weighted through the set) over the pedal. The
+     * suite's later sections (the C/D/E pedal build, the meter changes,
+     * the soprano-solo vamp) were NOT charted: they shift meter inside
+     * the phrase and the studio's library loads entries into the
+     * document's 4/4, where a faithful chart is impossible. The entry is
+     * the intro vamp alone. Every symbol below is proven to parse AND
+     * reach sound through the real transport composition by
+     * tests/unit/studio-progression-library.test.ts.
+     */
+    Object.freeze({
+      id: "aja",
+      grooveStyleId: "straight-eighths@1",
+      tempoBpm: 110,
+      title: "Aja",
+      kicker: "Fagen & Becker, 1977",
+      note: "The title suite's intro vamp: eight bars over a B pedal while the riff spells maj9 colors against it — the calm before the longest, strangest journey in the band's book.",
+      provenance: "owner-directed",
+      chartText:
+        "| Bmaj9 | Bmaj9 | Bmaj9 | Bmaj9 | Bmaj9 | Bmaj9 | Bmaj9 | Bmaj9 |",
+    }),
+
+    /*
+     * VERIFICATION (Hello, It's Me). Charted from a full 18-track
+     * professional karaoke MIDI (reviewer material, not committed) whose
+     * lyric track aligns the sections: Bb major, 4/4, 91 BPM — matching
+     * the Something/Anything? recording's 3:31 single-edit duration
+     * cross-checked against the bar count. The intro vamp is Gm7 against
+     * Fmaj7; the verse descends the Bb diatonic ladder (Ebmaj7 - Dm7 -
+     * Cm7 - Gm7) and settles on the tonic before the F turnaround. The
+     * form fact behind the note — Rundgren adapted the chord structure
+     * from the eight-bar intro of a Jimmy Smith recording of "When
+     * Johnny Comes Marching Home" — is documented in the song's
+     * encyclopedic account. Every symbol below is proven to parse AND
+     * reach sound through the real transport composition by
+     * tests/unit/studio-progression-library.test.ts.
+     */
+    Object.freeze({
+      id: "hello-its-me",
+      grooveStyleId: "ballad-comp@1",
+      tempoBpm: 91,
+      title: "Hello, It's Me",
+      kicker: "Rundgren, 1972",
+      note: "Written at eighteen and re-cut as the mid-tempo classic of Something/Anything?: a Gm7-Fmaj7 vamp that descends the whole diatonic ladder of Bb before it ever lets the tonic land.",
+      provenance: "owner-directed",
+      chartText:
+        "| Gm7 | Fmaj7 | Gm7 | Fmaj7 | Gm7 | Fmaj7 | Gm7 | Fmaj7 | Ebmaj7 | Dm7 | Cm7 | Gm7 | Bb | Bb | Bb | F |",
+    }),
   ]);
 
 /** Every entry id, frozen, for contract and test enumeration. */
