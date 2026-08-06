@@ -41,8 +41,13 @@ import {
   M1_PERCUSSION_CHANNEL,
   M1_PERCUSSION_NAME_TOKENS,
   M1_SEGMENT_SPLIT_MIN_DIFFERENCE,
+  M1_EMPTY_IMPORT_OVERRIDES,
+  M1_GROOVE_OVERRIDE_EVIDENCE,
+  M1_GROOVE_OVERRIDE_ROW,
+  M1_MAX_ALTERNATIVE_CHOICES,
   M1_AUTOMATION_TRACE_SCHEMA,
   M1_TRACE_STAGES,
+  type M1ImportOverrides,
   type M1ImportTrace,
   type M1TraceDecision,
   type M1TraceRecord,
@@ -52,10 +57,19 @@ import type { PitchClass, SpelledPitchClass } from "../domain";
 
 /* Type-only re-exports so trace consumers stay on the public entry. */
 export type {
+  M1AlternativeChoice,
+  M1ImportOverrides,
   M1ImportTrace,
+  M1SpanKey,
   M1TraceDecision,
   M1TraceRecord,
   M1TraceStage,
+} from "./midi-import-automation-contract";
+export {
+  M1_EMPTY_IMPORT_OVERRIDES,
+  M1_GROOVE_OVERRIDE_EVIDENCE,
+  M1_GROOVE_OVERRIDE_ROW,
+  M1_MAX_ALTERNATIVE_CHOICES,
 } from "./midi-import-automation-contract";
 
 /**
@@ -1015,9 +1029,25 @@ export function planAutomationImport(
     }>;
   }>,
   fileName: string,
+  overrides: M1ImportOverrides = M1_EMPTY_IMPORT_OVERRIDES,
 ): M1AutomationPlanResult {
   const ppq = value.model.header.division;
   const trace: M1TraceRecord[] = [];
+  /*
+   * M1-OVR sanitation: out-of-range exclusion indices are dropped with a
+   * trace decision, never repaired; the applied set feeds every stage.
+   */
+  const droppedExclusions = overrides.excludedTrackIndices.filter(
+    (index) =>
+      !Number.isInteger(index) ||
+      index < 0 ||
+      index >= value.model.tracks.length,
+  );
+  const excludedTracks = new Set(
+    overrides.excludedTrackIndices.filter(
+      (index) => !droppedExclusions.includes(index),
+    ),
+  );
   /* M1-DET: every per-item decision list is bounded, deterministically. */
   const DECISION_BOUND = 2_048;
   const bounded = (
@@ -1043,18 +1073,36 @@ export function planAutomationImport(
         notes: track.notes,
       })),
       { tracks: value.model.tracks.length },
-      bounded(
-        classifications.map((entry) => ({
+      bounded([
+        ...classifications.map((entry) => ({
           subject: `track-${String(entry.trackIndex)}`,
           outcome: entry.role,
           reason: entry.ruleFired,
         })),
-      ),
+        ...[...excludedTracks]
+          .sort((left, right) => left - right)
+          .map((index) => ({
+            subject: `track-${String(index)}`,
+            outcome: "excluded",
+            reason: "user override",
+          })),
+        ...droppedExclusions.map((index) => ({
+          subject: `track-${String(index)}`,
+          outcome: "dropped-stale",
+          reason: "exclusion index out of range",
+        })),
+      ]),
     ),
   );
+  /*
+   * M1-OVR: an excluded track keeps its classification for display but
+   * participates downstream exactly as role silent.
+   */
   const roleTracks: readonly M1RoleTrack[] = value.model.tracks.map(
     (track, index) => ({
-      role: classifications[index]?.role ?? "harmony",
+      role: excludedTracks.has(index)
+        ? "silent"
+        : (classifications[index]?.role ?? "harmony"),
       notes: track.notes,
     }),
   );
@@ -1187,18 +1235,70 @@ export function planAutomationImport(
     );
   }
 
+  /*
+   * M1-OVR alternative choices: exact span-key match against the
+   * re-planned span set, ordinal into the ranked list; anything stale is
+   * dropped with a decision, never clamped or repaired.
+   */
+  const choiceDecisions: M1TraceDecision[] = [];
+  const boundedChoices = overrides.alternativeChoices.slice(
+    0,
+    M1_MAX_ALTERNATIVE_CHOICES,
+  );
+  for (const dropped of overrides.alternativeChoices.slice(
+    M1_MAX_ALTERNATIVE_CHOICES,
+  )) {
+    choiceDecisions.push({
+      subject: `measure-${String(dropped.span.measureIndex)}@${String(dropped.span.startTick)}`,
+      outcome: "dropped-stale",
+      reason: `past the ${String(M1_MAX_ALTERNATIVE_CHOICES)}-choice bound`,
+    });
+  }
+  for (const choice of boundedChoices) {
+    const subject = `measure-${String(choice.span.measureIndex)}@${String(choice.span.startTick)}`;
+    const index = readings.findIndex(
+      (reading) =>
+        reading.span.measureIndex === choice.span.measureIndex &&
+        reading.span.startTick === choice.span.startTick,
+    );
+    const reading = index === -1 ? undefined : readings[index];
+    const chosen =
+      reading === undefined ||
+      !Number.isInteger(choice.alternativeOrdinal) ||
+      choice.alternativeOrdinal < 0
+        ? undefined
+        : reading.alternativeTexts[choice.alternativeOrdinal];
+    if (reading === undefined || chosen === undefined) {
+      choiceDecisions.push({
+        subject,
+        outcome: "dropped-stale",
+        reason:
+          reading === undefined
+            ? "no span with this key exists after re-planning"
+            : "ordinal past the ranked alternative list",
+      });
+      continue;
+    }
+    readings[index] = Object.freeze({ ...reading, symbolText: chosen });
+    choiceDecisions.push({
+      subject,
+      outcome: `alternative-${String(choice.alternativeOrdinal)}`,
+      reason: "user override",
+    });
+  }
   trace.push(
     traceRecord(
       "resolve",
       spans.map((span) => span.presentPitchClasses),
-      { spans: spans.length },
-      [
+      { spans: spans.length, choices: boundedChoices.length },
+      bounded([
         {
           subject: "resolution",
           outcome: "m0-resolveSonority-plus-m1-rerank",
           reason: "resolution law is M0's, re-ranked under the inferred key",
         },
-      ],
+        ...choiceDecisions,
+      ]),
     ),
   );
 
@@ -1255,7 +1355,22 @@ export function planAutomationImport(
     tracks: roleTracks,
   };
   const grooveFeatures = extractFeelFeatures(grooveInput);
-  const groove = selectGroove(grooveFeatures);
+  const matchedGroove = selectGroove(grooveFeatures);
+  /*
+   * M1-OVR: a groove override wins everywhere the match would have
+   * applied — frozen row 0 and the frozen evidence sentence — while the
+   * measured features stay recorded: the measurement is a fact about the
+   * file, the override a fact about the user.
+   */
+  const groove: M1GrooveChoice =
+    overrides.grooveStyleId === null
+      ? matchedGroove
+      : Object.freeze({
+          grooveStyleId: overrides.grooveStyleId,
+          row: M1_GROOVE_OVERRIDE_ROW,
+          features: grooveFeatures,
+          evidence: M1_GROOVE_OVERRIDE_EVIDENCE,
+        });
   trace.push(
     traceRecord(
       "groove",
@@ -1265,7 +1380,10 @@ export function planAutomationImport(
         {
           subject: "groove",
           outcome: groove.grooveStyleId,
-          reason: `decision row ${String(groove.row)}`,
+          reason:
+            overrides.grooveStyleId === null
+              ? `decision row ${String(groove.row)}`
+              : "user override (row 0)",
         },
       ],
     ),

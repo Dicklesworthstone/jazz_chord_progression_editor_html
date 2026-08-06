@@ -18,6 +18,7 @@ import {
   completeImportTrace,
   traceRecord,
   type M1AutomationPlan,
+  type M1ImportOverrides,
   type M1ImportTrace,
   type M1TraceRecord,
 } from "../export";
@@ -142,6 +143,17 @@ export type StudioMidiImportService = Readonly<{
     controller: StudioController,
     preview: MidiImportPreview,
   ) => MidiImportAutoCommitResult;
+  /**
+   * Re-plans the pending preview under M1-OVR overrides on the RETAINED
+   * decoded model — no re-read, no document change. The returned preview
+   * replaces the pending one atomically: automation, chart text, chunk
+   * plan, and trace all restate the overridden world. A preview with no
+   * decoded model returns unchanged.
+   */
+  replanWithOverrides: (
+    preview: MidiImportPreview,
+    overrides: M1ImportOverrides,
+  ) => MidiImportPreview;
 }>;
 
 /**
@@ -729,5 +741,44 @@ export function createStudioMidiImport(
     });
   };
 
-  return Object.freeze({ readFile, commit, commitAutomatic });
+  const replanWithOverrides = (
+    preview: MidiImportPreview,
+    overrides: M1ImportOverrides,
+  ): MidiImportPreview => {
+    const decoded = preview.decoded;
+    if (decoded === null) return preview;
+    const automationResult = planAutomationImport(
+      decoded,
+      preview.fileName,
+      overrides,
+    );
+    /*
+     * The decode and salvage stages describe the retained bytes and are
+     * carried forward verbatim; every later stage restates the overridden
+     * pipeline run.
+     */
+    const serviceRecords = preview.trace.records.filter(
+      (record) => record.stage === "decode" || record.stage === "salvage",
+    );
+    return Object.freeze({
+      ...preview,
+      automation: automationResult.ok ? automationResult.plan : null,
+      automationRefusal: automationResult.ok
+        ? null
+        : automationResult.refusal.code,
+      trace: completeImportTrace([
+        ...serviceRecords,
+        ...(automationResult.ok
+          ? automationResult.plan.trace
+          : (automationResult.trace ?? [])),
+      ]),
+    });
+  };
+
+  return Object.freeze({
+    readFile,
+    commit,
+    commitAutomatic,
+    replanWithOverrides,
+  });
 }
