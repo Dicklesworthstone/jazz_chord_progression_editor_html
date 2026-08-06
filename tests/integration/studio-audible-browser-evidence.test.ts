@@ -595,17 +595,9 @@ async function driveSwapScenario(
   scenario: Readonly<{
     chartText: string;
     expectedChordCount: number;
-    /**
-     * The instrument comparison loops ONE bar so the pre and post windows
-     * hold identical musical material and their band-vector difference is
-     * the instrument alone — across an 8-bar form, bar-to-bar material
-     * variance measured as large as the instrument shift itself.
-     */
-    loop: boolean;
   }> = {
     chartText: SWAP_CHART_TEXT,
     expectedChordCount: SWAP_CHART_CHORDS,
-    loop: false,
   },
 ): Promise<SwapDriveResult> {
   await page.fill("#studio-quick-entry-field", scenario.chartText);
@@ -613,9 +605,6 @@ async function driveSwapScenario(
   const afterInsert = await readSnapshot(page);
   expect(afterInsert?.chordCount).toBe(scenario.expectedChordCount);
 
-  if (scenario.loop) {
-    await page.click("#studio-transport-loop");
-  }
   await markPhase(page, "await-play");
   await page.click("#studio-transport-play");
   await waitForTransportStatus(page, "playing");
@@ -871,25 +860,66 @@ test("jcpe-pd7g: a mid-run instrument change moves the spectrum with no dropout 
   let driveFailure: Error | null = null;
   let drive: SwapDriveResult | null = null;
   try {
+    /*
+     * Twelve identical bars: the spectral comparison needs STATIONARY
+     * musical material, because across a changing form the bar-to-bar
+     * spectral variance measured as large as the instrument shift itself.
+     * With every bar the same chord, the pre-window halves are the
+     * same-instrument jitter floor and the pre-vs-post distance is the
+     * instrument change alone. No loop: a loop wrap re-binds the plan and
+     * bumps the transport generation, which would falsify the
+     * no-generation-boundary law this test also pins.
+     */
     drive = await driveSwapScenario(
       page,
       async () => {
         /* The REAL transport-bar control: concert grand -> vibraphone. */
         await page.selectOption("#studio-transport-instrument", "vibraphone");
       },
-      { chartText: "| Cmaj7 |", expectedChordCount: 1, loop: true },
+      {
+        chartText:
+          "| Cmaj7 | Cmaj7 | Cmaj7 | Cmaj7 | Cmaj7 | Cmaj7 | Cmaj7 | Cmaj7 | Cmaj7 | Cmaj7 | Cmaj7 | Cmaj7 |",
+        expectedChordCount: 12,
+      },
     );
   } catch (error) {
     driveFailure = error instanceof Error ? error : new Error(String(error));
   }
 
+  /*
+   * Reference captures for the nearest-reference classification below:
+   * the SAME page, chart, groove, and output chain plays a short solo
+   * window under each instrument, so every browser calibrates the swap
+   * verdict against its own rendering of both voices.
+   */
+  if (driveFailure === null) {
+    try {
+      await markPhase(page, "ref-vibraphone");
+      await page.click("#studio-transport-play");
+      await waitForTransportStatus(page, "playing");
+      await page.waitForTimeout(2_400);
+      await page.click("#studio-transport-stop");
+      await waitForTransportStatus(page, "ready");
+      await page.selectOption("#studio-transport-instrument", "concert-grand");
+      await markPhase(page, "ref-grand");
+      await page.click("#studio-transport-play");
+      await waitForTransportStatus(page, "playing");
+      await page.waitForTimeout(2_400);
+      await page.click("#studio-transport-stop");
+      await waitForTransportStatus(page, "ready");
+      await markPhase(page, "ref-done");
+    } catch (error) {
+      driveFailure = error instanceof Error ? error : new Error(String(error));
+    }
+  }
+
   const record =
-    drive?.record ??
-    (await page.evaluate(() => {
-      const scope = globalThis as HarnessWindow;
-      return scope.__JCPE_STUDIO_AUDIBLE_EVIDENCE__?.report() ?? null;
-    })) ??
-    null;
+    (driveFailure === null || drive === null
+      ? await page.evaluate(() => {
+          const scope = globalThis as HarnessWindow;
+          return scope.__JCPE_STUDIO_AUDIBLE_EVIDENCE__?.report() ?? null;
+        })
+      : drive.record) ?? null;
   const preSliceFull =
     record === null
       ? []
@@ -908,13 +938,7 @@ test("jcpe-pd7g: a mid-run instrument change moves the spectrum with no dropout 
         );
   const preCentroid = medianCentroidHz(preSliceFull);
   const postCentroid = medianCentroidHz(postSliceFull);
-  /*
-   * Self-calibrating spectral law: the two halves of the pre-swap window
-   * measure the SAME instrument, so their band-vector distance is the
-   * run's own jitter floor; the pre-vs-post distance must clear it by a
-   * wide margin. No absolute threshold survives three browsers' output
-   * chains — a control does.
-   */
+  /* Recorded for the trail; the verdict below never uses magnitudes. */
   const preHalfA = preSliceFull.slice(0, Math.floor(preSliceFull.length / 2));
   const preHalfB = preSliceFull.slice(Math.floor(preSliceFull.length / 2));
   const controlDistance = bandDistance(
@@ -925,6 +949,38 @@ test("jcpe-pd7g: a mid-run instrument change moves the spectrum with no dropout 
     meanBandVector(preSliceFull),
     meanBandVector(postSliceFull),
   );
+  /*
+   * Nearest-reference classification: rather than thresholding a distance
+   * (no magnitude survived three browsers' output chains and startup
+   * envelopes), the run's own solo reference windows say which voice each
+   * window sounds like. The post-swap window must sit nearer the
+   * vibraphone reference than the grand reference, and the pre-swap
+   * window the reverse.
+   */
+  const refVibSlice =
+    record === null
+      ? []
+      : timelineSlice(
+          record.timeline,
+          phaseStart(record, "ref-vibraphone") + 1_000,
+          phaseStart(record, "ref-grand"),
+        );
+  const refGrandSlice =
+    record === null
+      ? []
+      : timelineSlice(
+          record.timeline,
+          phaseStart(record, "ref-grand") + 1_000,
+          phaseStart(record, "ref-done"),
+        );
+  const refVib = meanBandVector(refVibSlice);
+  const refGrand = meanBandVector(refGrandSlice);
+  const preVector = meanBandVector(preSliceFull);
+  const postVector = meanBandVector(postSliceFull);
+  const postToVib = bandDistance(postVector, refVib);
+  const postToGrand = bandDistance(postVector, refGrand);
+  const preToVib = bandDistance(preVector, refVib);
+  const preToGrand = bandDistance(preVector, refGrand);
   await writeSwapEvidence(
     runDirectory,
     "instrument-swap",
@@ -938,8 +994,7 @@ test("jcpe-pd7g: a mid-run instrument change moves the spectrum with no dropout 
         version: browser.version(),
       },
       scenario: {
-        chartText: "| Cmaj7 |",
-        loopedSingleBar: true,
+        chartText: "twelve identical Cmaj7 bars (stationary material)",
         swapTo: "vibraphone",
         preSwapMs: PRE_SWAP_MS,
         postSwapMs: POST_SWAP_MS,
@@ -950,6 +1005,10 @@ test("jcpe-pd7g: a mid-run instrument change moves the spectrum with no dropout 
         postCentroidHz: postCentroid,
         controlBandDistance: controlDistance,
         swapBandDistance: swapDistance,
+        postToVibraphoneReference: postToVib,
+        postToGrandReference: postToGrand,
+        preToVibraphoneReference: preToVib,
+        preToGrandReference: preToGrand,
         generationBefore: drive?.generationBefore ?? null,
         generationAfter: drive?.generationAfter ?? null,
         persistentNodesBefore: drive?.persistentNodesBefore ?? null,
@@ -984,27 +1043,15 @@ test("jcpe-pd7g: a mid-run instrument change moves the spectrum with no dropout 
    * distance (two halves of the pre window) versus the pre-vs-post swap
    * distance. A genuine voice change must at least double the floor.
    */
-  expect(controlDistance).not.toBeNull();
-  expect(swapDistance).not.toBeNull();
   /*
-   * The spectral-shift law runs where the analyser output is spectrally
-   * stable. On this headless host Firefox renders through the pulseaudio
-   * null sink with within-run band jitter that measured 0.003–0.005
-   * across repeated runs — an order of magnitude above Chromium/WebKit
-   * (≤ 0.0003) and larger than the genuine swap shift itself, so a
-   * spectral assertion there gates on sink noise, not on the product.
-   * Firefox still proves the serialized set-instrument receipt, the
-   * no-generation-boundary law, dropout-free continuity, voice/graph
-   * stability, and post-stop silence above, and its spectral metrics are
-   * recorded in this run's ledger for the trail. Chromium and WebKit
-   * carry the spectral gate: the swap must at least double their
-   * same-instrument control floor and clear an absolute distance floor
-   * (measured swaps 0.0007–0.0009 vs controls ≤ 0.0003).
+   * The classification verdict: each window sits nearer its own voice's
+   * reference than the other voice's, measured through this browser's own
+   * output chain in this very run.
    */
-  if (testInfo.project.name !== "firefox") {
-    expect(swapDistance ?? 0).toBeGreaterThanOrEqual(
-      (controlDistance ?? 1) * 2,
-    );
-    expect(swapDistance ?? 0).toBeGreaterThanOrEqual(0.0004);
-  }
+  expect(postToVib).not.toBeNull();
+  expect(postToGrand).not.toBeNull();
+  expect(preToVib).not.toBeNull();
+  expect(preToGrand).not.toBeNull();
+  expect(postToVib ?? 1).toBeLessThan(postToGrand ?? 0);
+  expect(preToGrand ?? 1).toBeLessThan(preToVib ?? 0);
 });
