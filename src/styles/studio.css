@@ -4011,6 +4011,30 @@
   line-height: var(--line-normal);
 }
 
+/* The pre-Add audition toggle (jcpe-qyyn): a quiet secondary action. */
+.studio-midi-import__audition {
+  justify-self: start;
+  min-block-size: var(--control-min-block);
+  padding: var(--space-1) var(--space-3);
+  border: var(--border-width) solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.studio-midi-import__audition[aria-pressed="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.studio-midi-import__audition:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
 /* The M1-TRACE ledger: bounded box, scrolls inside itself (jcpe-qyyn). */
 .studio-midi-import__trace pre {
   max-width: 100%;
