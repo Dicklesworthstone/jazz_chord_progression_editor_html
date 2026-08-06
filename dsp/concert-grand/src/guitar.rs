@@ -252,7 +252,7 @@ pub extern "C" fn gtr_render(
      * pick-position comb. Position ~0.13 of the string near the bridge for
      * the blues profile, ~0.28 (over the end of the fingerboard) for jazz.
      */
-    let pick_position = if profile == 0 { 0.28 } else { 0.13 };
+    let pick_position = if profile == 0 { 0.28 } else { 0.16 };
     let pick_corner_hz = 900.0 + 5_600.0 * pow(v_norm, 1.4);
     let pick_alpha = 1.0 - exp(-TAU * pick_corner_hz / sr);
     let string_v = unsafe { &mut *core::ptr::addr_of_mut!(GTR_STRING_V) };
@@ -307,10 +307,23 @@ pub extern "C" fn gtr_render(
      * Driven blues: pre-emphasis highpass into a hot stage, cab highpass,
      * presence peak, two cab rolloffs a little over 4 kHz.
      */
-    let (drive, pre_hp_hz, cab_lp_hz, presence) = if profile == 0 {
-        (1.15, 55.0, 3_350.0, None)
+    /*
+     * Owner rejection of the first chain ("not remotely realistic; the
+     * blues guitar should sound clear, like a nicely recorded Chet
+     * Atkins record"): the 3.9x tanh stage was a fuzz, not an amp, and
+     * both cabs were too dark. The rework models what a clean tube amp
+     * actually does to a guitar: a LIGHTLY driven asymmetric stage (the
+     * x^2 term is the tube's even-harmonic warmth; the tanh only rounds
+     * peaks), supply SAG (an envelope follower dips the gain under load
+     * - the compression 'feel' of a recorded amp), a single-pole cab
+     * rolloff high enough to keep chime, and a mild presence peak.
+     * Profile 0 stays the dark jazz archtop; profile 1 is the bright
+     * clear twang chain.
+     */
+    let (drive, asymmetry, pre_hp_hz, cab_lp_hz, presence, sag_depth) = if profile == 0 {
+        (1.25, 0.12, 55.0, 4_200.0, None, 0.22)
     } else {
-        (3.9, 320.0, 4_250.0, Some(Mode::new(2_480.0, 3.2, 1.15, sr)))
+        (1.55, 0.18, 70.0, 6_500.0, Some(Mode::new(3_200.0, 2.4, 0.5, sr)), 0.3)
     };
     let mut presence_mode = presence;
     let pre_hp_alpha = 1.0 - exp(-TAU * pre_hp_hz / sr);
@@ -318,9 +331,12 @@ pub extern "C" fn gtr_render(
     let cab_hp_alpha = 1.0 - exp(-TAU * 88.0 / sr);
     let mut pre_hp_state = 0.0f64;
     let mut cab_lp1 = 0.0f64;
-    let mut cab_lp2 = 0.0f64;
     let mut cab_hp_state = 0.0f64;
     let drive_norm = tanh(drive);
+    /* Sag follower: fast attack, slow recovery, like a rectifier supply. */
+    let sag_attack = 1.0 - exp(-1.0 / (0.006 * sr));
+    let sag_release = 1.0 - exp(-1.0 / (0.18 * sr));
+    let mut sag_env = 0.0f64;
 
     /*
      * A guitar amp is one speaker: the render is mono through an
@@ -382,18 +398,22 @@ pub extern "C" fn gtr_render(
         click_env *= click_decay;
         let instrument = string_out * 0.55 + body_out * 0.45 + click;
 
-        /* Amp chain. */
+        /* Amp chain: sag -> asymmetric light drive -> cab voicing. */
         pre_hp_state += pre_hp_alpha * (instrument - pre_hp_state);
         let pre = instrument - pre_hp_state;
-        let shaped = tanh(pre * drive) / drive_norm;
+        let magnitude = if pre >= 0.0 { pre } else { -pre };
+        let sag_step = if magnitude > sag_env { sag_attack } else { sag_release };
+        sag_env += sag_step * (magnitude - sag_env);
+        let sagged = pre / (1.0 + sag_depth * sag_env);
+        let asym = sagged + asymmetry * sagged * sagged;
+        let shaped = tanh(asym * drive) / drive_norm;
         cab_hp_state += cab_hp_alpha * (shaped - cab_hp_state);
         let mut post = shaped - cab_hp_state;
         if let Some(mode) = presence_mode.as_mut() {
             post += mode.tick(post);
         }
         cab_lp1 += cab_lp_alpha * (post - cab_lp1);
-        cab_lp2 += cab_lp_alpha * (cab_lp1 - cab_lp2);
-        let amped = cab_lp2;
+        let amped = cab_lp1;
 
         out_left[frame] = (amped * pan_left) as f32;
         out_right[frame] = (amped * pan_right) as f32;

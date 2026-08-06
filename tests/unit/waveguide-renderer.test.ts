@@ -180,19 +180,31 @@ describe("waveguide renderer laws", () => {
     }
   });
 
-  test("the driven amp is measurably brighter than the clean amp on the same pluck", () => {
+  test("the twang chain passes measurably more top end than the dark archtop chain", () => {
+    /* The two amp voicings differ in their cab rolloffs (6.5 kHz vs
+     * 4.2 kHz): on the same pluck, the second profile must transmit more
+     * 4-6 kHz relative to its low-mid body than the first. */
     let brighter = 0;
     const probes = [45, 57, 69];
     for (const midiPitch of probes) {
       const cleanPcm = clean.renderNote(midiPitch, 96, OUTPUT_RATE_HZ, 1);
-      const drivePcm = drive.renderNote(midiPitch, 96, OUTPUT_RATE_HZ, 1);
+      const twangPcm = drive.renderNote(midiPitch, 96, OUTPUT_RATE_HZ, 1);
       expect(cleanPcm).not.toBeNull();
-      expect(drivePcm).not.toBeNull();
-      if (cleanPcm === null || drivePcm === null) continue;
+      expect(twangPcm).not.toBeNull();
+      if (cleanPcm === null || twangPcm === null) continue;
       const start = Math.floor(0.02 * OUTPUT_RATE_HZ);
-      if (centroidHz(drivePcm.left, start) > centroidHz(cleanPcm.left, start)) {
-        brighter += 1;
-      }
+      const ratio = (pcm: Float32Array): number => {
+        let top = 0;
+        let body = 0;
+        for (let f = 4_000; f < 6_000; f += 400) {
+          top += goertzelAmplitude(pcm, start, 8_192, f);
+        }
+        for (let f = 200; f < 800; f += 120) {
+          body += goertzelAmplitude(pcm, start, 8_192, f);
+        }
+        return top / Math.max(body, 1e-9);
+      };
+      if (ratio(twangPcm.left) > ratio(cleanPcm.left)) brighter += 1;
     }
     expect(brighter).toBeGreaterThanOrEqual(2);
   });
