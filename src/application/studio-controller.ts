@@ -726,6 +726,15 @@ export interface StudioController {
     gesture: StudioAudioGesture,
   ) => StudioControllerActionResult;
   /**
+   * Preview an arbitrary one-to-ten-pitch voiced set through the same
+   * click-preview lane (jcpe-qyyn: the M1 audition is a timed series of
+   * these). Application state is untouched; invalid pitches refuse.
+   */
+  readonly previewPitches: (
+    midiPitches: readonly number[],
+    gesture: StudioAudioGesture,
+  ) => StudioControllerActionResult;
+  /**
    * Display-only live playhead label in the exact-beat format the transport
    * view already uses. The UI's animation frame reads this while the transport
    * status says `playing`; it is interpolation for display, never state — the
@@ -5187,6 +5196,99 @@ function makeStudioComposition(
     );
   };
 
+  /**
+   * Preview an arbitrary voiced pitch set through the same click-preview
+   * lane a chart chord uses (jcpe-qyyn audition): validate every pitch,
+   * cap the set at the preview polyphony bound, and issue the identical
+   * prepare → setInstrument → startPreview port sequence. No new audio
+   * path exists: the port command surface is unchanged, and the M1
+   * audition is exactly a timed series of these single-sonority previews.
+   */
+  const previewPitches = (
+    midiPitches: readonly number[],
+    gesture: StudioAudioGesture,
+  ): StudioControllerActionResult => {
+    if (audioPort === null) {
+      return editRefusal(
+        "preview-chord",
+        "u1.playback_unavailable",
+        "This build has no audio output wired.",
+      );
+    }
+    if (midiPitches.length === 0 || midiPitches.length > 10) {
+      return editRefusal(
+        "preview-chord",
+        "u1.playback_refused",
+        "A preview sounds one to ten pitches.",
+      );
+    }
+    const validated: MidiPitch[] = [];
+    for (const candidate of midiPitches) {
+      const made = makeMidiPitch(candidate);
+      if (!made.ok) {
+        return editRefusal(
+          "preview-chord",
+          "u1.playback_refused",
+          "That pitch is outside the MIDI range this studio speaks.",
+        );
+      }
+      validated.push(made.value);
+    }
+    const [firstPitch, ...restPitches] = validated;
+    if (firstPitch === undefined) {
+      return editRefusal(
+        "preview-chord",
+        "u1.playback_refused",
+        "A preview sounds one to ten pitches.",
+      );
+    }
+    const pitches: readonly [MidiPitch, ...MidiPitch[]] = [
+      firstPitch,
+      ...restPitches,
+    ];
+    const instrumentId = state.document.playback.instrumentId;
+    previewOrdinal += 1;
+    const previewId = `x1:preview:audition-${String(previewOrdinal)}`;
+    const port = audioPort;
+    const documentId = state.document.id;
+    const planRevision = state.revision;
+    const mix = Object.freeze({
+      masterVolume: state.document.playback.masterVolume,
+      reverbAmount: state.document.playback.reverbAmount,
+    });
+    void (async () => {
+      if (!port.isInitialized()) {
+        await port.initialize(
+          nextTransportRequestId(),
+          gesture,
+          documentId,
+          planRevision,
+          mix,
+        );
+      }
+      await port.prepareInstrument(
+        instrumentId,
+        pitches.map((pitch) =>
+          Object.freeze({
+            midiPitch: pitch,
+            velocity: PLAYBACK_PLAN_FIXED_VELOCITY,
+          }),
+        ),
+      );
+      await port.setInstrument(nextTransportRequestId(), instrumentId);
+      await port.startPreview(
+        nextTransportRequestId(),
+        previewId,
+        instrumentId,
+        pitches,
+        PREVIEW_GATE_SECONDS,
+      );
+    })();
+    return apply("preview-chord", (current) =>
+      successResult(current, createWorkCounters(), "ephemeral-updated"),
+    );
+  };
+
   const readTransportAnalysisFrame = (): StudioAnalysisFrame | null =>
     audioPort === null ? null : audioPort.readAnalysisFrame();
 
@@ -5827,6 +5929,7 @@ function makeStudioComposition(
     playProgression,
     previewChord,
     previewPitch,
+    previewPitches,
     readTransportPlayheadLabel,
     readTransportAnalysisFrame,
     readEventPitchClasses,

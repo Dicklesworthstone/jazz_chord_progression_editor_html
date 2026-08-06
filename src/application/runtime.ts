@@ -111,10 +111,13 @@ export type {
  */
 export {
   MAX_MIDI_IMPORT_DRAFT_CODE_POINTS,
+  MAX_MIDI_IMPORT_AUDITION_STEPS,
+  auditionMidiImportPreview,
   createStudioMidiImport,
   unavailableMidiImportPreview,
 } from "./studio-midi-import";
 export type {
+  MidiImportAuditionStep,
   MidiImportAutoCommitResult,
   MidiImportCommitResult,
   MidiImportEnvelopeStep,

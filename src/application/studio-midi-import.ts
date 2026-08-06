@@ -168,6 +168,72 @@ function blockedReasonFor(plan: MidiImportChartPlan | null): string | null {
   return null;
 }
 
+/* ------------------------------------------------------------------ *
+ * Audition (jcpe-qyyn): hear the imported bars BEFORE pressing Add     *
+ * ------------------------------------------------------------------ */
+
+export type MidiImportAuditionStep = Readonly<{
+  /** Milliseconds after the audition starts, at the FILE's own tempo. */
+  atMs: number;
+  /** The file's own sounding pitches for this span, capped and sorted. */
+  midiPitches: readonly number[];
+}>;
+
+export const MAX_MIDI_IMPORT_AUDITION_STEPS = 12;
+const MAX_AUDITION_PITCHES_PER_STEP = 10;
+
+/**
+ * Derives the audition timeline from a preview: the first written spans'
+ * OWN sounding pitches (straight from the decoded note stream — nothing is
+ * invented and no voicing is synthesized), timed at the file's initial
+ * tempo. The audition is deliberately a bounded series of click-previews:
+ * it reuses the existing preview lane and adds no audio path, so it states
+ * the imported harmony and rhythm skeleton, not the groove performance —
+ * that plays after Add, through the real transport. Pure and total: a
+ * preview with no automation plan auditions nothing.
+ */
+export function auditionMidiImportPreview(
+  preview: MidiImportPreview,
+): readonly MidiImportAuditionStep[] {
+  const automation = preview.automation;
+  const decoded = preview.decoded;
+  if (automation === null || decoded === null) return Object.freeze([]);
+  const ppq = decoded.model.header.division;
+  if (ppq <= 0) return Object.freeze([]);
+  const msPerTick = automation.initialTempoMicroseconds / (1_000 * ppq);
+  const eligibleTracks = decoded.model.tracks.filter((_, index) => {
+    const role = automation.classifications[index]?.role;
+    return role !== "percussion" && role !== "silent";
+  });
+  const steps: MidiImportAuditionStep[] = [];
+  let firstTick: number | null = null;
+  for (const reading of automation.readings) {
+    if (!reading.written) continue;
+    const span = reading.span;
+    const sounding = new Set<number>();
+    for (const track of eligibleTracks) {
+      for (const note of track.notes) {
+        if (note.onTick < span.endTick && note.offTick > span.startTick) {
+          sounding.add(note.key);
+        }
+      }
+    }
+    if (sounding.size === 0) continue;
+    firstTick = firstTick ?? span.startTick;
+    const midiPitches = [...sounding]
+      .sort((left, right) => left - right)
+      .slice(0, MAX_AUDITION_PITCHES_PER_STEP);
+    steps.push(
+      Object.freeze({
+        atMs: Math.round((span.startTick - firstTick) * msPerTick),
+        midiPitches: Object.freeze(midiPitches),
+      }),
+    );
+    if (steps.length >= MAX_MIDI_IMPORT_AUDITION_STEPS) break;
+  }
+  return Object.freeze(steps);
+}
+
 /**
  * The preview a session without a decoder returns: nothing decoded, the
  * statement carried in blockedReason, and a trace whose decode stage says
