@@ -291,7 +291,9 @@
     "U0-CONTRAST-001 semantic counterfactual detects a low-contrast production token",
     "U0-PRIM-012 U0-PRIM-013 U0-VIEW-005 component CSS uses declared semantic tokens without copied color literals",
     "U0-PRIM-013 mutation controls detect copied literals, undefined references, and duplicate declarations",
-    "every light-theme override names a token the base theme declares"
+    "a dark map missing from either scope is reported as drift",
+    "every dark-theme override names a token the base theme declares",
+    "the explicit dark pin never drifts from the OS-preference dark map"
    ]
   }
  ],
