@@ -76,6 +76,16 @@ export type WaveguideRenderer = Readonly<{
     variationSlot?: number,
     windArticulation?: WindAttackArticulation,
   ) => RenderedNotePcm | null;
+  /** Stateful physical phrase path, present only on clarinet v2. */
+  renderPhraseSegment?: (
+    midiPitch: number,
+    velocity: number,
+    sampleRateHz: number,
+    frameCount: number,
+    stateInput: Uint8Array | null,
+    variationSlot: number,
+    windArticulation: WindAttackArticulation,
+  ) => PhysicalClarinetPhraseRenderResult | null;
 }>;
 
 /**
@@ -180,6 +190,9 @@ export type PhysicalClarinetReedStepResult = Readonly<{
   mechanicalEnergyAfterJ: number;
   tongueForceN: number;
   contact: boolean;
+}>;
+export type PhysicalClarinetPhraseRenderResult = RenderedNotePcm & Readonly<{
+  stateOutput: Uint8Array<ArrayBuffer>;
 }>;
 
 export type ConcertGrandRenderer = Readonly<{
@@ -367,6 +380,14 @@ type ConcertGrandExports = Readonly<{
   clr_render_v2: (
     midi: number, velocity: number, sampleRate: number, variationSlot: number,
     articulation: number, left: number, right: number, maxFrames: number,
+  ) => number;
+  clr_state_max_bytes_v2: () => number;
+  clr_state_fixed_bytes_v2: () => number;
+  clr_render_phrase_v2: (
+    midi: number, velocity: number, sampleRate: number, variationSlot: number,
+    articulation: number, left: number, right: number, maxFrames: number,
+    stateInput: number, stateInputBytes: number, stateOutput: number,
+    stateOutputCapacity: number,
   ) => number;
   phs_validate_v2: (
     abiVersion: number,
@@ -945,6 +966,18 @@ async function instantiate(): Promise<DspCore> {
       rawExports,
       "clr_render_v2",
     ) as ConcertGrandExports["clr_render_v2"],
+    clr_state_max_bytes_v2: requireExportedFunction(
+      rawExports,
+      "clr_state_max_bytes_v2",
+    ) as ConcertGrandExports["clr_state_max_bytes_v2"],
+    clr_state_fixed_bytes_v2: requireExportedFunction(
+      rawExports,
+      "clr_state_fixed_bytes_v2",
+    ) as ConcertGrandExports["clr_state_fixed_bytes_v2"],
+    clr_render_phrase_v2: requireExportedFunction(
+      rawExports,
+      "clr_render_phrase_v2",
+    ) as ConcertGrandExports["clr_render_phrase_v2"],
     phs_validate_v2: requireExportedFunction(
       instance.exports,
       "phs_validate_v2",
@@ -1295,13 +1328,6 @@ async function instantiate(): Promise<DspCore> {
       variationSlot,
       windArticulation,
     ) => {
-      if (
-        windArticulation !== undefined &&
-        windArticulation !== "legato" &&
-        windArticulation !== "tongued"
-      ) {
-        return null;
-      }
       const natural = noteFrames(midiPitch, sampleRateHz);
       if (natural <= 0) return null;
       const capacity =
@@ -1369,6 +1395,79 @@ async function instantiate(): Promise<DspCore> {
         right,
       });
     };
+  };
+
+  const renderClarinetPhraseSegment: NonNullable<
+    WaveguideRenderer["renderPhraseSegment"]
+  > = (
+    midiPitch,
+    velocity,
+    sampleRateHz,
+    frameCount,
+    stateInput,
+    variationSlot,
+    windArticulation,
+  ) => {
+    if (
+      !Number.isSafeInteger(frameCount) || frameCount <= 0 ||
+      !Number.isSafeInteger(variationSlot) || variationSlot < 0
+    ) return null;
+    const natural = exports.clr_note_frames(midiPitch, sampleRateHz);
+    const stateCapacity = exports.clr_state_max_bytes_v2();
+    const stateFixedBytes = exports.clr_state_fixed_bytes_v2();
+    if (
+      natural <= 0 || frameCount > natural || stateCapacity <= 0 ||
+      stateFixedBytes <= 0 || stateFixedBytes > stateCapacity ||
+      (stateInput !== null && stateInput.byteLength > stateCapacity)
+    ) return null;
+    const channelBytes = frameCount * 4;
+    const leftPointer = scratchBase;
+    const rightPointer = leftPointer + channelBytes;
+    const stateInputPointer = Math.ceil((rightPointer + channelBytes) / 8) * 8;
+    const stateInputBytes = stateInput?.byteLength ?? 0;
+    const stateOutputPointer = Math.ceil(
+      (stateInputPointer + stateInputBytes) / 8,
+    ) * 8;
+    ensureCapacity(
+      memory,
+      scratchBase,
+      stateOutputPointer + stateCapacity - scratchBase,
+    );
+    if (stateInput !== null) {
+      new Uint8Array(memory.buffer, stateInputPointer, stateInputBytes).set(stateInput);
+    }
+    const written = exports.clr_render_phrase_v2(
+      midiPitch,
+      velocity,
+      sampleRateHz,
+      variationSlot,
+      windArticulation === "legato" ? 0 : 1,
+      leftPointer,
+      rightPointer,
+      frameCount,
+      stateInputBytes === 0 ? 0 : stateInputPointer,
+      stateInputBytes,
+      stateOutputPointer,
+      stateCapacity,
+    );
+    if (written <= 0 || written > frameCount) return null;
+    const stateView = new DataView(memory.buffer, stateOutputPointer, stateCapacity);
+    const boreLength = stateView.getUint32(16, true);
+    const stateBytes = stateFixedBytes + boreLength * 8;
+    if (boreLength < 3 || stateBytes > stateCapacity) return null;
+    const left = new Float32Array(written);
+    const right = new Float32Array(written);
+    left.set(new Float32Array(memory.buffer, leftPointer, written));
+    right.set(new Float32Array(memory.buffer, rightPointer, written));
+    const stateOutput = new Uint8Array(stateBytes);
+    stateOutput.set(new Uint8Array(memory.buffer, stateOutputPointer, stateBytes));
+    return Object.freeze({
+      sampleRateHz,
+      frameCount: written,
+      left,
+      right,
+      stateOutput,
+    });
   };
 
   const waveguide = new Map<string, WaveguideRenderer>();
@@ -1445,6 +1544,12 @@ async function instantiate(): Promise<DspCore> {
       }),
     );
   }
+  const clarinetV2 = waveguide.get(WAVEGUIDE_CLARINET_V2_ALGORITHM_ID);
+  if (clarinetV2 === undefined) throw new Error("DSP_CLARINET_V2_MISSING");
+  waveguide.set(
+    WAVEGUIDE_CLARINET_V2_ALGORITHM_ID,
+    Object.freeze({ ...clarinetV2, renderPhraseSegment: renderClarinetPhraseSegment }),
+  );
 
   return Object.freeze({
     concertGrand: Object.freeze({

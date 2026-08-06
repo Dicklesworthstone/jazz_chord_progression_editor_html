@@ -241,6 +241,53 @@ describe("waveguide renderer laws", () => {
     }
   });
 
+  test("clarinet v2 hands off complete bounded phrase state and rejects incompatible state", () => {
+    const renderPhrase = clarinetV2.renderPhraseSegment;
+    expect(renderPhrase).toBeDefined();
+    if (renderPhrase === undefined) return;
+    const first = renderPhrase(64, 92, OUTPUT_RATE_HZ, 2_400, null, 0, "tongued");
+    expect(first).not.toBeNull();
+    if (first === null) return;
+    expect(first.stateOutput.byteLength).toBeGreaterThan(176);
+    expect(first.stateOutput.byteLength).toBeLessThanOrEqual(262_144);
+
+    const continued = renderPhrase(
+      67, 92, OUTPUT_RATE_HZ, 2_400, first.stateOutput, 0, "legato",
+    );
+    const replayed = renderPhrase(
+      67, 92, OUTPUT_RATE_HZ, 2_400, first.stateOutput, 0, "legato",
+    );
+    const reset = renderPhrase(67, 92, OUTPUT_RATE_HZ, 2_400, null, 0, "legato");
+    expect(continued).not.toBeNull();
+    expect(replayed).not.toBeNull();
+    expect(reset).not.toBeNull();
+    if (continued === null || replayed === null || reset === null) return;
+    expect(continued.left.every(Number.isFinite)).toBe(true);
+    expect(continued.left).toEqual(replayed.left);
+    expect(continued.stateOutput).toEqual(replayed.stateOutput);
+    expect(continued.left).not.toEqual(reset.left);
+
+    /* MIDI 67 leaves hole zero closed and hole one open. Scalar slot eight is
+     * that independently retained open-hole radiation filter; a finite state
+     * mutation must be consumed rather than ignored. */
+    const holeStateMutation = first.stateOutput.slice();
+    new DataView(holeStateMutation.buffer).setFloat64(32 + 8 * 8, 0.5, true);
+    const changedHoleState = renderPhrase(
+      67, 92, OUTPUT_RATE_HZ, 2_400, holeStateMutation, 0, "legato",
+    );
+    expect(changedHoleState).not.toBeNull();
+    expect(changedHoleState?.left).not.toEqual(continued.left);
+
+    expect(
+      renderPhrase(67, 92, 44_100, 2_400, first.stateOutput, 0, "legato"),
+    ).toBeNull();
+    const mutated = first.stateOutput.slice();
+    mutated[0] = (mutated[0] ?? 0) ^ 0xff;
+    expect(
+      renderPhrase(67, 92, OUTPUT_RATE_HZ, 2_400, mutated, 0, "legato"),
+    ).toBeNull();
+  });
+
   test("flute brightens as it is blown harder", () => {
     const soft = flute.renderNote(72, 30, OUTPUT_RATE_HZ, 2);
     const hard = flute.renderNote(72, 120, OUTPUT_RATE_HZ, 2);

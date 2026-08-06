@@ -47,6 +47,18 @@ impl OnePoleLoss {
         self.state = flush_denormal(self.state + self.alpha * (input - self.state));
         self.state
     }
+
+    pub(crate) fn state(&self) -> f64 {
+        self.state
+    }
+
+    pub(crate) fn restore(&mut self, state: f64) -> bool {
+        if !state.is_finite() {
+            return false;
+        }
+        self.state = state;
+        true
+    }
 }
 
 pub(crate) struct DcBlocker {
@@ -69,6 +81,19 @@ impl DcBlocker {
         self.prior_input = input;
         self.prior_output = output;
         output
+    }
+
+    pub(crate) fn state(&self) -> (f64, f64) {
+        (self.prior_input, self.prior_output)
+    }
+
+    pub(crate) fn restore(&mut self, prior_input: f64, prior_output: f64) -> bool {
+        if !prior_input.is_finite() || !prior_output.is_finite() {
+            return false;
+        }
+        self.prior_input = prior_input;
+        self.prior_output = prior_output;
+        true
     }
 }
 
@@ -101,8 +126,35 @@ impl<'a> DelayLine<'a> {
         })
     }
 
+    pub(crate) fn new_preserving(
+        storage: &'a mut [f64],
+        length: usize,
+        write_index: usize,
+    ) -> Option<Self> {
+        if length == 0 || length > storage.len() || write_index >= length {
+            return None;
+        }
+        Some(Self {
+            storage,
+            length,
+            write_index,
+        })
+    }
+
+    pub(crate) fn write_index(&self) -> usize {
+        self.write_index
+    }
+
+    pub(crate) fn storage(&self) -> &[f64] {
+        &self.storage[..self.length]
+    }
+
     pub(crate) fn output(&self) -> f64 {
         self.storage[self.write_index]
+    }
+
+    pub(crate) fn tap_from_output(&self, offset: usize) -> f64 {
+        self.storage[(self.write_index + offset.min(self.length - 1)) % self.length]
     }
 
     pub(crate) fn push(&mut self, input: f64) {
@@ -129,6 +181,18 @@ impl RadiationFilter {
         let differentiated = (input - self.prior_input) * self.differentiation_gain;
         self.prior_input = input;
         self.loss.process(differentiated)
+    }
+
+    pub(crate) fn state(&self) -> (f64, f64) {
+        (self.loss.state(), self.prior_input)
+    }
+
+    pub(crate) fn restore(&mut self, loss_state: f64, prior_input: f64) -> bool {
+        if !prior_input.is_finite() || !self.loss.restore(loss_state) {
+            return false;
+        }
+        self.prior_input = prior_input;
+        true
     }
 }
 
