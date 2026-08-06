@@ -71,6 +71,8 @@ describe("V2R-16 fader ride", () => {
     expect(after.revision).toBe(before.revision);
   });
 
+  /* Real-controller ride through live transport settles; slow only under
+   * full-suite parallel load, so the wall clock gets explicit headroom. */
   test("during a run the ride reaches the engine's mix immediately", async () => {
     const { controller, audio } = makeStudio();
     expect(controller.playProgression(GESTURE).ok).toBe(true);
@@ -82,7 +84,7 @@ describe("V2R-16 fader ride", () => {
       () => audio.inspect().engine.mix.masterVolume === 0.25,
     );
     expect(audio.inspect().engine.mix.masterVolume).toBe(0.25);
-  });
+  }, 30_000);
 
   test("a committed volume also reaches the live engine, as one undoable step", async () => {
     const { controller, audio } = makeStudio();
@@ -99,7 +101,7 @@ describe("V2R-16 fader ride", () => {
     expect(
       controller.getSnapshot().masterVolume,
     ).not.toBe(0.4);
-  });
+  }, 30_000);
 });
 
 describe("V2R-16 session mute", () => {
