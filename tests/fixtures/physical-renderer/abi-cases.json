@@ -1,0 +1,14 @@
+{
+  "schema": "changes.fixtures.phs0-abi-cases.v1",
+  "linearMemoryBytes": 1048576,
+  "cases": [
+    {"id":"PHS0-ABI-001","kind":"positive","request":{"abiVersion":2,"requestByteLength":256,"descriptorOffset":256,"descriptorCount":2,"controlPointOffset":512,"controlPointCount":4,"outputLeftOffset":4096,"outputRightOffset":8192,"outputCapacityFrames":512,"stateInputOffset":0,"stateInputByteLength":0,"stateOutputOffset":12288,"stateOutputCapacityBytes":256},"expected":{"outcome":"accepted"}},
+    {"id":"PHS0-ABI-002","kind":"negative","request":{"abiVersion":3},"expected":{"outcome":"refused","code":"physical.schema_unsupported"}},
+    {"id":"PHS0-ABI-003","kind":"negative","request":{"abiVersion":2,"requestByteLength":65537},"expected":{"outcome":"refused","code":"physical.abi_bounds_invalid"}},
+    {"id":"PHS0-ABI-004","kind":"negative","request":{"abiVersion":2,"outputLeftOffset":1048572,"outputCapacityFrames":2},"expected":{"outcome":"refused","code":"physical.abi_bounds_invalid"}},
+    {"id":"PHS0-ABI-005","kind":"negative","request":{"abiVersion":2,"outputLeftOffset":4096,"outputRightOffset":4096,"outputCapacityFrames":512},"expected":{"outcome":"refused","code":"physical.abi_bounds_invalid"}},
+    {"id":"PHS0-ABI-006","kind":"limit","request":{"abiVersion":2,"outputCapacityFrames":2880001},"expected":{"outcome":"refused","code":"limit.physical_frames_exceeded"}},
+    {"id":"PHS0-ABI-007","kind":"negative","request":{"abiVersion":2,"stateInputOffset":1,"stateInputByteLength":8},"expected":{"outcome":"refused","code":"physical.abi_bounds_invalid"}},
+    {"id":"PHS0-ABI-008","kind":"negative","request":{"abiVersion":2,"controlPointCount":257},"expected":{"outcome":"refused","code":"limit.physical_control_points_exceeded"}}
+  ]
+}

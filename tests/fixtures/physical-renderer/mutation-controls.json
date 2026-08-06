@@ -1,0 +1,21 @@
+{
+  "schema": "changes.fixtures.phs0-mutation-controls.v1",
+  "controls": [
+    {"id":"PHS0-MUT-001","target":"phs0-contract.json","pointer":"/schema","value":"changes.fixtures.phs0-contract.v0","expectedFindingCode":"PHS0_SCHEMA"},
+    {"id":"PHS0-MUT-002","target":"phs0-contract.json","pointer":"/schemas/abiVersion","value":1,"expectedFindingCode":"PHS0_ABI_VERSION"},
+    {"id":"PHS0-MUT-003","target":"phs0-contract.json","pointer":"/limits/maximumCurvesPerGesture","value":13,"expectedFindingCode":"PHS0_LIMITS"},
+    {"id":"PHS0-MUT-004","target":"phs0-contract.json","pointer":"/limits/maximumNonlinearIterations","value":0,"expectedFindingCode":"PHS0_LIMITS"},
+    {"id":"PHS0-MUT-005","target":"phs0-contract.json","pointer":"/numericPolicy/wallTimeAffectsMusicalOutput","value":true,"expectedFindingCode":"PHS0_NUMERIC_POLICY"},
+    {"id":"PHS0-MUT-006","target":"phs0-contract.json","pointer":"/numericPolicy/legacyEarlyRmsNormalizationPermittedInV2","value":true,"expectedFindingCode":"PHS0_NUMERIC_POLICY"},
+    {"id":"PHS0-MUT-007","target":"phs0-contract.json","pointer":"/partitionPolicy/loopRestartsFromCanonicalState","value":false,"expectedFindingCode":"PHS0_PARTITION_POLICY"},
+    {"id":"PHS0-MUT-008","target":"phs0-contract.json","pointer":"/partitionPolicy/wallTimeFallbackPermitted","value":true,"expectedFindingCode":"PHS0_PARTITION_POLICY"},
+    {"id":"PHS0-MUT-009","target":"phs0-contract.json","pointer":"/renderModes/1","value":"independent-note","expectedFindingCode":"PHS0_RENDER_MODES"},
+    {"id":"PHS0-MUT-010","target":"phs0-contract.json","pointer":"/instrumentFamilies/3","value":"clarinet","expectedFindingCode":"PHS0_INSTRUMENT_FAMILIES"},
+    {"id":"PHS0-MUT-011","target":"gesture-cases.json","pointer":"/cases/6/expected/code","value":"physical.request_invalid","expectedFindingCode":"PHS0_GESTURE_EXPECTATION"},
+    {"id":"PHS0-MUT-012","target":"partition-cases.json","pointer":"/cases/0/expected/mode","value":"independent-note","expectedFindingCode":"PHS0_PARTITION_EXPECTATION"},
+    {"id":"PHS0-MUT-013","target":"abi-cases.json","pointer":"/cases/1/expected/code","value":"physical.request_invalid","expectedFindingCode":"PHS0_ABI_EXPECTATION"},
+    {"id":"PHS0-MUT-014","target":"baseline.json","pointer":"/rootArtifact/withinArchitectureFinalTarget","value":true,"expectedFindingCode":"PHS0_BASELINE_SIZE"},
+    {"id":"PHS0-MUT-015","target":"baseline.json","pointer":"/persistentGraph/rendererMayCreatePersistentGraph","value":true,"expectedFindingCode":"PHS0_BASELINE_GRAPH"},
+    {"id":"PHS0-MUT-016","target":"phs0-contract.json","pointer":"/independence/productionOutputUsed","value":true,"expectedFindingCode":"PHS0_INDEPENDENCE"}
+  ]
+}

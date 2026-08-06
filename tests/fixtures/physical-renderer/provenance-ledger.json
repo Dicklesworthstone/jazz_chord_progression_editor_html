@@ -1,0 +1,13 @@
+{
+  "schema": "changes.fixtures.phs0-provenance-ledger.v1",
+  "authorities": [
+    {"id":"PHS0-AUTH-001","kind":"repository-contract","title":"Repository Working Agreement","location":"AGENTS.md","governs":["offline-runtime","independent-fixtures","bounded-work","human-listening","peer-dirt"]},
+    {"id":"PHS0-AUTH-002","kind":"repository-contract","title":"Architecture","location":"docs/ARCHITECTURE.md","governs":["layer-boundaries","immutable-playback-plan","persistent-audio-graph","artifact-budget"]},
+    {"id":"PHS0-AUTH-003","kind":"repository-contract","title":"X0 Audio Engine Contract","location":"docs/X0_AUDIO_ENGINE_CONTRACT.md","governs":["audio-engine","recipes","rendering","listening"]},
+    {"id":"PHS0-AUTH-004","kind":"primary-research","title":"Real-time woodwind player-control physical model","location":"https://pub.dega-akustik.de/ISMA2019/data/articles/000034.pdf","governs":["dynamic-reed","tongue-contact","bounded-nonlinear-solve","energy"]},
+    {"id":"PHS0-AUTH-005","kind":"primary-research","title":"Reed and brass exciter-resonator model","location":"https://pub.dega-akustik.de/ISMA2019/data/articles/000057.pdf","governs":["inward-reed","outward-lips","modal-impedance"]},
+    {"id":"PHS0-AUTH-006","kind":"source-contract","title":"FrankenSim coupling ports","location":"/data/projects/frankensim/crates/fs-couple/src/lib.rs","governs":["power-conjugate-ports","interface-energy-audit"]},
+    {"id":"PHS0-AUTH-007","kind":"source-contract","title":"FrankenSim LBM limitations","location":"/data/projects/frankensim/crates/fs-lbm/CONTRACT.md","governs":["no-acoustic-lbm-claim"]},
+    {"id":"PHS0-AUTH-008","kind":"source-contract","title":"FrankenSim BEM limitations","location":"/data/projects/frankensim/crates/fs-bem/CONTRACT.md","governs":["no-helmholtz-bem-claim"]}
+  ]
+}

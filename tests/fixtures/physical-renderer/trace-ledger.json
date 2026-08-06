@@ -1,0 +1,23 @@
+{
+  "schema": "changes.fixtures.phs0-trace-ledger.v1",
+  "traces": [
+    {"requirement":"PHS0-REQ-001","statement":"Physical realization is additive and does not alter P0 or MIDI authority.","fixtures":["PHS0-GEST-011"],"futureProof":["tests/unit/expressive-realization.test.ts"]},
+    {"requirement":"PHS0-REQ-002","statement":"All render-affecting gestures are immutable, quantized, bounded, and versioned.","fixtures":["PHS0-GEST-001","PHS0-GEST-009","PHS0-GEST-010"],"futureProof":["tests/unit/physical-gesture-validation.test.ts"]},
+    {"requirement":"PHS0-REQ-003","statement":"Control ownership is instrument-family specific.","fixtures":["PHS0-GEST-006"],"futureProof":["tests/unit/physical-gesture-validation.test.ts"]},
+    {"requirement":"PHS0-REQ-004","statement":"Control points are strictly ordered and unique.","fixtures":["PHS0-GEST-007","PHS0-GEST-008"],"futureProof":["tests/unit/physical-curve-interpolation.test.ts"]},
+    {"requirement":"PHS0-REQ-005","statement":"Stable identities determine deterministic noise seeds.","fixtures":["PHS0-GEST-001","PHS0-GEST-011"],"futureProof":["tests/unit/physical-prng.test.ts"]},
+    {"requirement":"PHS0-REQ-006","statement":"Wind and brass legato preserves physical state across notes.","fixtures":["PHS0-PART-001","PHS0-PART-002"],"futureProof":["tests/integration/physical-phrase-renderer.test.ts"]},
+    {"requirement":"PHS0-REQ-007","statement":"Shared guitar and vibraphone resonance uses coupled stems.","fixtures":["PHS0-PART-003","PHS0-PART-004"],"futureProof":["tests/integration/physical-stem-renderer.test.ts"]},
+    {"requirement":"PHS0-REQ-008","statement":"Loops restart from canonical state and do not leak prior-pass state.","fixtures":["PHS0-PART-006"],"futureProof":["tests/integration/physical-loop-state.test.ts"]},
+    {"requirement":"PHS0-REQ-009","statement":"Phrase, stem, voice, state, frame, scratch, and diagnostic work is bounded.","fixtures":["PHS0-PART-007","PHS0-PART-008","PHS0-PART-010","PHS0-ABI-006"],"futureProof":["tests/unit/physical-limits.test.ts"]},
+    {"requirement":"PHS0-REQ-010","statement":"The v2 ABI validates version, byte ranges, alignment, aliasing, and counts before memory access.","fixtures":["PHS0-ABI-001","PHS0-ABI-002","PHS0-ABI-003","PHS0-ABI-004","PHS0-ABI-005","PHS0-ABI-007","PHS0-ABI-008"],"futureProof":["tests/unit/physical-wasm-abi.test.ts"]},
+    {"requirement":"PHS0-REQ-011","statement":"Wall time never selects musical output or a lower-quality fallback.","fixtures":["PHS0-PART-001"],"futureProof":["tests/integration/physical-determinism.test.ts"]},
+    {"requirement":"PHS0-REQ-012","statement":"Nonlinear solves have exact iteration and fallback bounds with named failure.","fixtures":["PHS0-ABI-001"],"futureProof":["tests/unit/physical-nonlinear-solve.test.ts"]},
+    {"requirement":"PHS0-REQ-013","statement":"Passive components and coupling cannot create unaccounted energy.","fixtures":["PHS0-PART-001","PHS0-PART-003"],"futureProof":["tests/unit/physical-energy-audit.test.ts"]},
+    {"requirement":"PHS0-REQ-014","statement":"Physical energy is not erased by legacy early-RMS normalization.","fixtures":["PHS0-GEST-001","PHS0-GEST-004"],"futureProof":["tests/integration/physical-dynamics.test.ts"]},
+    {"requirement":"PHS0-REQ-015","statement":"Cache identity contains every render-affecting field and bounded deterministic eviction.","fixtures":["PHS0-PART-001","PHS0-PART-003"],"futureProof":["tests/unit/physical-render-cache.test.ts"]},
+    {"requirement":"PHS0-REQ-016","statement":"Existing persistent graph and serialized Stop guarantees are preserved.","fixtures":["PHS0-PART-006"],"futureProof":["tests/integration/physical-transport.test.ts","tests/e2e/audio-playback.spec.ts"]},
+    {"requirement":"PHS0-REQ-017","statement":"Current over-budget artifact size is disclosed and future growth is measured.","fixtures":[],"futureProof":["scripts/verify-standalone.ts"]},
+    {"requirement":"PHS0-REQ-018","statement":"Human listening remains mandatory and cannot be inferred from automated output.","fixtures":[],"futureProof":["release-evidence/audio/listening/phs-physical-listening-v1.json"]}
+  ]
+}

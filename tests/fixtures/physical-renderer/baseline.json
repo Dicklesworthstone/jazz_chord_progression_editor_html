@@ -1,0 +1,55 @@
+{
+  "schema": "changes.fixtures.phs0-baseline.v1",
+  "observedAtCommit": "d3a7db6",
+  "measurementDate": "2026-08-06",
+  "rootArtifact": {
+    "path": "jazz_chord_progression_editor.html",
+    "gitBlobBytes": 7652006,
+    "sha256": "67b9ae08a40f45040a01e817e508106158c55cff85e9a2889806e4ed6b177042",
+    "architectureFinalTargetBytes": 1572864,
+    "withinArchitectureFinalTarget": false
+  },
+  "wasm": {
+    "typescriptSourceBytes": 49223,
+    "typescriptSourceSha256": "ac58c50083e434158392d293aae78803da0af0d2d0a1bb6ddcc629ac97da14b0",
+    "decodedBytes": 36359,
+    "decodedSha256": "ca9b02e778bceccf3c3f9651971059b25ddf958fe2d68c618b3a502a7aa2dc74"
+  },
+  "persistentGraph": {
+    "createdNodes": 12,
+    "edges": 13,
+    "stopGuaranteeOwner": "X1",
+    "rendererMayCreatePersistentGraph": false
+  },
+  "renderedRecipes": [
+    {"id":"concert-grand","algorithmId":"changes.dsp.concert-grand@1","outputLevel":0.3,"polyphonyLimit":64,"maximumRenderSeconds":8,"bufferCacheLimit":96},
+    {"id":"flute","algorithmId":"changes.dsp.waveguide-flute@1","outputLevel":0.5,"polyphonyLimit":32,"maximumRenderSeconds":5,"bufferCacheLimit":64},
+    {"id":"guitar","algorithmId":"changes.dsp.waveguide-guitar-clean@1","outputLevel":0.5,"polyphonyLimit":48,"maximumRenderSeconds":6,"bufferCacheLimit":64},
+    {"id":"upright-bass","algorithmId":"changes.dsp.sampled-upright-bass@1","outputLevel":0.5,"polyphonyLimit":32,"maximumRenderSeconds":4,"bufferCacheLimit":64},
+    {"id":"concert-vibes","algorithmId":"changes.dsp.sampled-vibraphone@1","outputLevel":0.42,"polyphonyLimit":48,"maximumRenderSeconds":4,"bufferCacheLimit":64},
+    {"id":"blues-guitar","algorithmId":"changes.dsp.waveguide-guitar-drive@1","outputLevel":0.46,"polyphonyLimit":48,"maximumRenderSeconds":6,"bufferCacheLimit":64},
+    {"id":"clarinet","algorithmId":"changes.dsp.waveguide-clarinet@1","outputLevel":0.48,"polyphonyLimit":32,"maximumRenderSeconds":5,"bufferCacheLimit":64}
+  ],
+  "referenceRender": {
+    "request": {"midiPitch":69,"velocity":96,"sampleRateHz":48000,"maximumSeconds":2,"repetitions":5},
+    "wallTimeIsInformationalOnly": true,
+    "rows": [
+      {"algorithmId":"changes.dsp.waveguide-guitar-clean@1","frames":96000,"interleavedChannelOrder":"left-then-right-f32-native","sha256":"2b05627feb1e5b6ee963c4c8f63bddae227dbb9f9b11b4a7513e831004aa7a8e","fiveRendersMs":71.136},
+      {"algorithmId":"changes.dsp.waveguide-guitar-drive@1","frames":96000,"interleavedChannelOrder":"left-then-right-f32-native","sha256":"7c6832455ac3d64e8a92aae26e5861ec39d49ad8d2cef6638057489b1f703952","fiveRendersMs":64.756},
+      {"algorithmId":"changes.dsp.waveguide-flute@1","frames":96000,"interleavedChannelOrder":"left-then-right-f32-native","sha256":"faa7599820b2773c2039999e123541fe544c475ee7411dbaa18ce05d21b7c042","fiveRendersMs":21.664},
+      {"algorithmId":"changes.dsp.waveguide-clarinet@1","frames":96000,"interleavedChannelOrder":"left-then-right-f32-native","sha256":"b157e874a7718a1101d6553db247a1e370a409f4637cf996eb85ea4899305c5c","fiveRendersMs":22.633}
+    ]
+  },
+  "knownLimitations": [
+    "pitch-velocity-duration-only-request",
+    "wind-state-reset-per-note",
+    "guitar-body-feed-forward-only",
+    "clarinet-memoryless-reed",
+    "flute-no-tone-hole-lattice",
+    "trumpet-absent",
+    "vibes-no-physical-pedal-or-fan",
+    "physical-notes-early-rms-normalized",
+    "human-listening-evidence-incomplete",
+    "root-artifact-over-original-size-target"
+  ]
+}

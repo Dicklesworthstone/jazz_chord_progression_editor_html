@@ -1,0 +1,118 @@
+{
+  "schema": "changes.fixtures.phs0-contract.v1",
+  "package": "PHS0",
+  "beadId": "jcpe-mnsc.2.1",
+  "contractVersion": 1,
+  "productionImplementationAvailableWhenAuthored": false,
+  "independence": {
+    "expectedValuesGenerated": false,
+    "productionImportsForbidden": true,
+    "productionOutputUsed": false
+  },
+  "schemas": {
+    "expressiveRealization": "changes.audio.expressive-realization-plan.v1",
+    "physicalRenderPlan": "changes.audio.physical-render-plan.v1",
+    "abiVersion": 2,
+    "parameterPackVersion": 1
+  },
+  "renderModes": ["independent-note", "stateful-phrase", "coupled-stem"],
+  "instrumentFamilies": ["clarinet", "flute", "guitar", "trumpet", "vibraphone"],
+  "limits": {
+    "supportedSampleRatesHz": [44100, 48000, 96000],
+    "playbackPpq": 960,
+    "maximumCurvesPerGesture": 12,
+    "maximumPointsPerCurve": 64,
+    "maximumPointsPerGesture": 256,
+    "maximumControlOffsetTicks": 230400,
+    "maximumEventsPerPhrase": 128,
+    "maximumEventsPerStem": 512,
+    "maximumPhraseSeconds": 30,
+    "maximumStemSeconds": 30,
+    "maximumCoupledVoices": 64,
+    "maximumOutputFrames": 2880000,
+    "maximumOutputBytes": 23040000,
+    "maximumScratchBytes": 67108864,
+    "maximumRequestBytes": 65536,
+    "maximumDiagnostics": 64,
+    "maximumCacheEntries": 256,
+    "maximumCachePcmBytes": 100663296,
+    "maximumNonlinearIterations": 8,
+    "maximumFallbackBisections": 16,
+    "maximumStateHandoffBytes": 262144
+  },
+  "numericPolicy": {
+    "controlRepresentation": "signed-q16.16",
+    "fractionalBits": 16,
+    "wallTimeAffectsMusicalOutput": false,
+    "nonFiniteOutputPermitted": false,
+    "silentCoefficientRepairPermitted": false,
+    "legacyEarlyRmsNormalizationPermittedInV2": false,
+    "safetyLimiterIsMusicalNormalizer": false
+  },
+  "partitionPolicy": {
+    "windAndBrassLegatoMode": "stateful-phrase",
+    "sharedResonanceMode": "coupled-stem",
+    "loopRestartsFromCanonicalState": true,
+    "wallTimeFallbackPermitted": false
+  },
+  "cacheIdentityFields": [
+    "renderMode",
+    "rendererVersionId",
+    "parameterPackSha256",
+    "gestureFingerprint",
+    "eventAndVoiceIds",
+    "midiPitches",
+    "sampleOffsetsAndDurations",
+    "sampleRateHz"
+  ],
+  "validationOrder": [
+    "request-shape",
+    "schema-version",
+    "instrument-version",
+    "sample-rate",
+    "stable-identities",
+    "gesture-counts",
+    "control-ownership",
+    "control-point-order",
+    "control-point-values",
+    "partition",
+    "parameter-pack",
+    "abi-memory",
+    "work-limits"
+  ],
+  "prng": {
+    "algorithmId": "pcg-xsh-rr-32@1",
+    "stateBits": 64,
+    "outputBits": 32,
+    "multiplierHex": "5851f42d4c957f2d",
+    "incrementHex": "14057b7ef767814f",
+    "seedHash": "sha256-low-64-le"
+  },
+  "companions": [
+    "abi-cases.json",
+    "baseline.json",
+    "gesture-cases.json",
+    "mutation-controls.json",
+    "partition-cases.json",
+    "provenance-ledger.json",
+    "trace-ledger.json"
+  ],
+  "reviewedCompanionSha256": {
+    "abi-cases.json": "f59b44a2a558e2a3270e7ead98050d8b391be0e290b3959e36dc9a037645235d",
+    "baseline.json": "918a80bdb0e0213158b3366933da9f0a7ee5b2339c7ab45addda0834869f0524",
+    "gesture-cases.json": "e774ef12f9ed0bbb390b4bc9a84b28f6486ed08d0eb39dbde32f050a38c0630f",
+    "mutation-controls.json": "7987c1323bf5f8ed8b19205df64f9a2f20e4472ab1bedd93bb1edae613cb767e",
+    "partition-cases.json": "70269b37406f65cc5a27e559f73ca2b056d15df00774439578b3a14444dab00c",
+    "provenance-ledger.json": "2067076195644e56735485afbe7296dde2de34a08d51bb6e2383cc9c0bc593f7",
+    "trace-ledger.json": "ba9c2062a350f34c088137a01fbff71d11e635224284747982b08f6af8915c4c"
+  },
+  "counts": {
+    "abiCases": 8,
+    "baselineRenderedRecipes": 7,
+    "gestureCases": 12,
+    "mutationControls": 16,
+    "partitionCases": 10,
+    "authorities": 8,
+    "traces": 18
+  }
+}

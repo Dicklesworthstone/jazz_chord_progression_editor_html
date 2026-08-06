@@ -1,0 +1,15 @@
+{
+  "schema": "changes.fixtures.phs0-partition-cases.v1",
+  "cases": [
+    {"id":"PHS0-PART-001","kind":"positive","family":"clarinet","events":[["e1","v1",0,960,"tongued"],["e2","v1",960,960,"legato"]],"expected":{"mode":"stateful-phrase","segments":1,"stateContinues":true}},
+    {"id":"PHS0-PART-002","kind":"positive","family":"flute","events":[["e1","v1",0,960,"breath-attack"],["e2","v1",960,960,"legato"]],"expected":{"mode":"stateful-phrase","segments":1,"stateContinues":true}},
+    {"id":"PHS0-PART-003","kind":"positive","family":"guitar","events":[["e1","s1",0,1920,"finger-pluck"],["e2","s2",480,1920,"finger-pluck"]],"sharedResonance":true,"expected":{"mode":"coupled-stem","segments":1,"stateContinues":true}},
+    {"id":"PHS0-PART-004","kind":"positive","family":"vibraphone","events":[["e1","b1",0,3840,"mallet-strike"],["e2","b2",960,3840,"mallet-strike"]],"pedalHeld":true,"expected":{"mode":"coupled-stem","segments":1,"stateContinues":true}},
+    {"id":"PHS0-PART-005","kind":"positive","family":"guitar","events":[["e1","s1",0,960,"palm-muted"]],"sharedResonance":false,"expected":{"mode":"independent-note","segments":1,"stateContinues":false}},
+    {"id":"PHS0-PART-006","kind":"loop","family":"trumpet","events":[["e1","v1",0,960,"tongued"]],"loopRestart":true,"expected":{"mode":"stateful-phrase","canonicalResetReason":"loop-restart","leakedPriorPassState":false}},
+    {"id":"PHS0-PART-007","kind":"limit","family":"clarinet","declaredEventCount":129,"events":[],"expected":{"outcome":"refused","code":"limit.physical_events_exceeded"}},
+    {"id":"PHS0-PART-008","kind":"limit","family":"vibraphone","declaredCoupledVoiceCount":65,"events":[],"expected":{"outcome":"refused","code":"limit.physical_voices_exceeded"}},
+    {"id":"PHS0-PART-009","kind":"negative","family":"flute","events":[["e2","v1",960,960,"legato"],["e1","v1",0,960,"breath-attack"]],"expected":{"outcome":"refused","code":"physical.partition_invalid"}},
+    {"id":"PHS0-PART-010","kind":"state-handoff","family":"clarinet","splitRequired":true,"handoffBytes":262145,"expected":{"outcome":"refused","code":"physical.state_handoff_invalid"}}
+  ]
+}
