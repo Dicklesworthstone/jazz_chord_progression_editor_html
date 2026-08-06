@@ -153,7 +153,17 @@ test("loading a library entry mid-play stops playback as part of the load gestur
   );
   const snapshot = controller.getSnapshot();
   expect(snapshot.transport.statusLabel).toBe("Audio ready");
-  expect(snapshot.transport.failureCode).toBe(SUPERSEDED_CODE);
+  /*
+   * jcpe-dtvm: since the jcpe-7ftl live-groove ride, a load whose entry
+   * carries a DIFFERENT groove re-performs the running transport under the
+   * new style and re-stamps the bound (documentId, planRevision) mid-load.
+   * The stop's genuine notification then echoes a live identity, A0
+   * accepts it, and the settle is CLEAN — no superseded cause, because
+   * nothing the transport reported was stale. The receipt-settlement lane
+   * this suite exists for is pinned by the mid-play-edit cases above and
+   * by the same-groove load below, where no ride fires.
+   */
+  expect(snapshot.transport.failureCode).toBeNull();
   expect(snapshot.title).toBe("Pachelbel cycle");
   expect(snapshot.chordCount).toBe(8);
 
@@ -165,6 +175,36 @@ test("loading a library entry mid-play stops playback as part of the load gestur
     (transport) => transport.status === "playing",
     "play after library load",
   );
+});
+
+test("loading a same-groove entry mid-play still settles by receipt with the superseded cause", async () => {
+  const controller = realController();
+  await playSeededChart(controller);
+
+  /*
+   * jcpe-dtvm: "tristan" carries the ballad default the seeded chart is
+   * already riding, so setPerformanceStyle lands ephemeral-updated, the
+   * jcpe-7ftl ride never fires, and the transport stays bound to the
+   * pre-load identity. The stop's genuine notification is rightly dropped
+   * as stale and the jcpe-my0j receipt settlement is the only lane left —
+   * this is the case that used to stick at "Stopping playback" forever.
+   */
+  const result = loadProgressionLibraryEntry(controller, "tristan");
+  expect(result.entry?.id).toBe("tristan");
+  expect(result.stopped?.ok).toBe(true);
+
+  await untilTransport(
+    controller,
+    (transport) => transport.status === "ready",
+    "same-groove library-load stop settlement",
+  );
+  const transport = controller.getSnapshot().transport;
+  expect(transport.statusLabel).toBe("Audio ready");
+  expect(transport.failureCode).toBe(SUPERSEDED_CODE);
+  expect(transport.failureDetail).toBe(SUPERSEDED_DETAIL);
+
+  expect(controller.playProgression(GESTURE).ok).toBe(true);
+  expect(controller.getSnapshot().transport.failureCode).toBeNull();
 });
 
 test("loading a library entry while stopped dispatches no stop at all", () => {
