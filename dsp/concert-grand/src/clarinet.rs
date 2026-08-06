@@ -231,7 +231,7 @@ fn clr_render_inner(
     let rate_term = -0.85 * (mc - 60.0).max(0.0) * (sr / 48_000.0 - 1.0);
     let dynamic_reed_pull = if dynamic_reed {
         -40.0 * ((m - 52.0) / 12.0).clamp(0.0, 1.0)
-            - 54.0 * ((m - 76.0) / 8.0).clamp(0.0, 1.0)
+            - 45.0 * ((m - 76.0) / 8.0).clamp(0.0, 1.0)
     } else {
         0.0
     };
@@ -377,7 +377,8 @@ fn clr_render_inner(
             reed_x = step[0];
             reed_velocity = step[1];
             let flow_drive = (step[2] / 0.00025).clamp(-1.5, 1.5);
-            0.8 * legacy_bore_in + 0.2 * flow_drive
+            let flow_mix = 0.2 - 0.17 * ((m - 76.0) / 8.0).clamp(0.0, 1.0);
+            (1.0 - flow_mix) * legacy_bore_in + flow_mix * flow_drive
         } else {
             legacy_bore_in
         };
