@@ -1,6 +1,6 @@
 //! Deterministic DSP core for the Changes studio.
 //!
-//! Five independent capabilities share this module so the standalone artifact
+//! Six independent capabilities share this module so the standalone artifact
 //! embeds exactly one wasm payload:
 //!
 //! - `cg_*`: the Concert Grand note renderer. Modal/additive synthesis of a
@@ -10,6 +10,8 @@
 //!   stereo PCM the audio engine plays through ordinary buffer sources.
 //! - `gtr_*`: the physically modeled guitar — an extended Karplus-Strong
 //!   waveguide behind two amp profiles. See `guitar.rs`.
+//! - `clr_*`: the physically modeled clarinet — a reed-driven closed-open
+//!   waveguide. See `clarinet.rs`.
 //! - `flt_*`: the physically modeled flute — a jet-drive waveguide. See
 //!   `flute.rs`.
 //! - `an_*`: the spectrum analyzer. Windowed radix-2 FFT, spectral peaks with
@@ -34,6 +36,7 @@ fn panic(_info: &core::panic::PanicInfo) -> ! {
     core::arch::wasm32::unreachable()
 }
 
+mod clarinet;
 mod flute;
 mod guitar;
 mod smf;
