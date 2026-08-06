@@ -106,9 +106,14 @@ pub extern "C" fn clr_render(
      * cent at 48 kHz): 165 cents sharp at MIDI 45 falling to ~56 around
      * MIDI 79 with a slight rise above.
      */
-    /* The fit's domain is the instrument's real register (the sweep ran
-     * MIDI 50..89; extrapolating the cubic below drove a below-range A2
-     * across a mode boundary). Outside, the endpoint value holds. */
+    /* Fit provenance: 48 kHz render-harness register sweep (2026-08-06
+     * campaign, model-measure comb scan), sweep domain MIDI 50..89,
+     * post-fit residuals within a cent at 48 kHz. The clamp domain 49..92
+     * deliberately extends one-to-three semitones past the sweep and holds
+     * the ENDPOINT value there instead of extrapolating the cubic
+     * (extrapolating below drove a below-range A2 across a mode boundary);
+     * notes outside 49..92 therefore carry the boundary correction, not a
+     * measured one. */
     let mc = m.clamp(49.0, 92.0);
     let pull_fit = ((-0.000927 * mc + 0.292118) * mc - 28.445028) * mc + 937.770853;
     /* Small measured rate term: at 96 kHz the fitted pull over-corrects

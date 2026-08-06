@@ -121,6 +121,11 @@ pub extern "C" fn flt_render(
      * measure-then-correct discipline the piano applies to its recorded
      * stretch. Residuals after this correction measure within a few
      * cents.
+     *
+     * Fit provenance: 48 kHz render-harness register sweep (2026-08-06
+     * campaign, model-measure comb scan) over the supported flute register;
+     * shallow-parabola fit centered at MIDI 75, post-fit residuals within a
+     * few cents. No clamp: the parabola is evaluated at the played pitch.
      */
     let pull_cents = 30.0 + 0.038 * (m - 75.0) * (m - 75.0);
     let corrected_period = period * pow(2.0, pull_cents / 1_200.0);

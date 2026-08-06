@@ -250,8 +250,8 @@ pub extern "C" fn gtr_render(
 
     /*
      * Pluck excitation: one period of pick-hardness lowpassed noise with a
-     * pick-position comb. Position ~0.13 of the string near the bridge for
-     * the blues profile, ~0.28 (over the end of the fingerboard) for jazz.
+     * pick-position comb. Position 0.28 of the string (over the end of the
+     * fingerboard) for the jazz profile, 0.16 (near the bridge) for blues.
      */
     let pick_position = if profile == 0 { 0.28 } else { 0.16 };
     let pick_corner_hz = 900.0 + 5_600.0 * pow(v_norm, 1.4);

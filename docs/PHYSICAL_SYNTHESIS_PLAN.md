@@ -782,7 +782,7 @@ specification/fixtures, production build, and independent proof children close.
 - [x] B006 Specify energy ports, passive components, nonlinear solves, and
   normalization.
 - [x] B007 Specify deterministic PRNG/numerics and cross-host evidence.
-- [ ] B008 Specify parameter-pack/provenance format and foundry workflow.
+- [x] B008 Specify parameter-pack/provenance format and foundry workflow.
 - [ ] B009 Build independent metric extractors and their known-answer fixtures.
 - [ ] B010 Specify clarinet v2 and independent corpus.
 - [ ] B011 Specify flute v2 and independent corpus.
