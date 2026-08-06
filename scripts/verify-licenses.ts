@@ -25,6 +25,8 @@ import {
 } from "../src/audio/wasm/vibraphone-samples";
 import { sha256Hex } from "./foundation-io";
 
+const SHA256_HEX = /^[0-9a-f]{64}$/u;
+
 type Ledger = {
   records: Array<{
     name: string;
@@ -194,12 +196,55 @@ export async function verifyLicenses(): Promise<{
     }
   }
 
-  if (report.assets.length !== 5) {
+  if (report.assets.length !== 8) {
     throw new Error(
       "LICENSE_ASSET_COUNT: expected the source-owned favicon, the " +
         "concert-grand wasm payload, the recorded piano attack payload, " +
-        "and the two CC0 sampled-instrument payloads.",
+        "the two CC0 sampled-instrument payloads, and the three OFL " +
+        "variable-font payloads.",
     );
+  }
+
+  /*
+   * The v2 identity's embedded OFL fonts (build-fonts.ts data-url payloads).
+   * Each must declare its OFL license with the checked-in license text path
+   * and carry a woff2 MIME and a css-data-url embedding; the digests are
+   * pinned by the build against the generated fonts.css, so here the
+   * inventory's shape and licensing claims are what is verified.
+   */
+  const expectedFontAssets = [
+    { id: "archivo-variable-latin", licenseText: "assets/fonts/OFL-archivo.txt" },
+    { id: "literata-variable-latin", licenseText: "assets/fonts/OFL-literata.txt" },
+    {
+      id: "literata-variable-latin-italic",
+      licenseText: "assets/fonts/OFL-literata.txt",
+    },
+  ];
+  for (const expectedFont of expectedFontAssets) {
+    const fontAsset = report.assets.find(
+      (item) => item.id === expectedFont.id,
+    );
+    if (fontAsset === undefined) {
+      throw new Error(
+        `LICENSE_ASSET_MISSING: ${expectedFont.id} provenance is absent.`,
+      );
+    }
+    if (
+      fontAsset.mime !== "font/woff2" ||
+      fontAsset.embedding !== "css-data-url" ||
+      fontAsset.license !== `OFL-1.1 (${expectedFont.licenseText})` ||
+      !SHA256_HEX.test(fontAsset.sha256) ||
+      fontAsset.bytes <= 0
+    ) {
+      throw new Error(
+        `LICENSE_ASSET_MISMATCH: ${expectedFont.id} provenance is malformed.`,
+      );
+    }
+    if (!(await Bun.file(expectedFont.licenseText).exists())) {
+      throw new Error(
+        `LICENSE_FILE_MISSING: ${expectedFont.licenseText}`,
+      );
+    }
   }
   const asset = report.assets.find((item) => item.id === expectedOwnedAsset.id);
   if (asset === undefined) {

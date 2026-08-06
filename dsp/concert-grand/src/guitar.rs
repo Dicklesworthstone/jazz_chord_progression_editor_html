@@ -30,7 +30,7 @@
 //! profile), no allocation, no host imports; the same request renders the
 //! same PCM everywhere.
 
-use libm::{cos, exp, fabs, pow, sin, sqrt, tanh};
+use libm::{cos, exp, pow, sin, tanh};
 
 use crate::{midi_frequency_hz, XorShift32, TAU};
 

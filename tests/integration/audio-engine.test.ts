@@ -241,9 +241,12 @@ describe("X0 persistent production audio engine", () => {
       ["vibraphone", "vibes", 4],
       ["warm-pad", "pad", 3],
       ["analog-poly", "analog", 3],
-      ["flute", "flute", 6],
+      /* Flute and guitar are rendered waveguides since §5.4: one buffer
+       * source per voice, like every rendered recipe. */
+      ["flute", "flute", 1],
       ["organ", "organ", 6],
-      ["guitar", "guitar", 3],
+      ["guitar", "guitar", 1],
+      ["blues-guitar", "blues", 1],
     ];
     for (let index = 0; index < cases.length; index += 1) {
       const entry = cases[index];

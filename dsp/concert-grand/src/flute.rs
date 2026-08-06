@@ -147,31 +147,30 @@ pub extern "C" fn flt_render(
     let end_reflection = 0.48f64;
     let jet_reflection = 0.5f64;
 
-    /* DC blocker inside the loop keeps the nonlinearity centered. */
+    /*
+     * DC blocker inside the loop keeps the nonlinearity centered. Its pole
+     * is rate-compensated to a fixed ~38 Hz corner: a hard-coded 0.995
+     * coefficient put the corner at 38 Hz only at 48 kHz — at 96 kHz it
+     * doubled to 76 Hz, and its phase at a low note's fundamental detuned
+     * the loop by tens of cents (measured: -26 at MIDI 48, +44 at 55).
+     */
+    let dc_pole = exp(-TAU * 38.3 / sr);
     let mut dc_x1 = 0.0f64;
     let mut dc_y1 = 0.0f64;
 
     /*
      * Breath. Pressure rises over ~55 ms (a tongued attack), holds, and the
-     * bake-in fade at the buffer end is the release. Vibrato onsets after
-     * ~0.32 s and modulates jet pressure at 5.1 Hz — pitch and brightness
+     * baked fade at the buffer end is the release. Vibrato onsets after
+     * ~0.32 s and modulates jet pressure at 5.1 Hz - pitch and brightness
      * together, as blowing does. Turbulence is lowpassed noise scaled by
      * the instantaneous pressure.
+     *
+     * The pressure range rides the MEASURED oscillation plateau of the
+     * cubic: below ~0.7 the jet never crosses threshold and the output
+     * stays at the noise floor; past ~0.93 full-deflection collapse sets
+     * in (f(+-1) = 0). Dynamics therefore ride the plateau and softness
+     * comes from the turbulence mix, not from starving the jet.
      */
-    /*
-     * Jet operating point. The cubic x·(x²−1) has its useful gain around
-     * the inflection at zero and dies at full deflection (f(±1)=0): the
-     * first measurement pass drove it with breath near 0.9 and the top of
-     * the range collapsed (weak everything at velocity 120), while breath
-     * near 0.6 at low velocity failed to lock the fundamental cleanly.
-     * The retuned range straddles the inflection: enough pressure to
-     * oscillate at pianissimo, still short of deflection collapse at
-     * fortissimo.
-     */
-    /* Measured lock plateau: below ~0.7 the jet never crosses oscillation
-     * threshold (output stays at the noise floor); past ~0.93 deflection
-     * collapse sets in. Dynamics ride the plateau; softness comes from the
-     * turbulence mix, not from starving the jet. */
     let pressure_target = 0.78 + 0.10 * pow(v_norm, 1.4);
     /* A real jet is offset from the labium: the asymmetry that gives a
      * flute its even harmonics, which a pure odd cubic cannot produce. */
@@ -214,7 +213,7 @@ pub extern "C" fn flt_render(
         reflection_state += reflection_alpha * (bore_out - reflection_state);
         let reflected = {
             let x = reflection_state;
-            let y = x - dc_x1 + 0.995 * dc_y1;
+            let y = x - dc_x1 + dc_pole * dc_y1;
             dc_x1 = x;
             dc_y1 = y;
             y
