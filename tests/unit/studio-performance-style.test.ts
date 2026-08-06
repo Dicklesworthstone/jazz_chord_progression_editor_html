@@ -88,6 +88,7 @@ describe("setPerformanceStyle", () => {
       "bossa-nova@1",
       "straight-eighths@1",
       "syncopated-sixteenths@1",
+      "uptempo-swing@1",
       "block-chords@1",
     ]);
   });

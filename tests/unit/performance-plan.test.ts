@@ -2357,11 +2357,15 @@ describe("the comp register", () => {
        * All of them, per style: twenty-four ballad comps — the measured
        * quarter-note grid over six bars — twenty-two Charleston stabs,
        * twenty-three bossa hits across the two-bar figure, twenty-four
-       * pop-eighths hits, and twenty-nine sixteenth-push hits (4+6+4+6 over
+       * pop-eighths hits, twenty-nine sixteenth-push hits (4+6+4+6 over
        * the four two-chord bars — the phase-1 bars gain the mid-bar arrival
        * their table does not declare — plus 4 and 5 for the whole-bar
-       * statement and answer). A style missing from this tally has not had
-       * its normalization law checked at all.
+       * statement and answer), and nineteen uptempo-swing stabs (3+4+3+4
+       * over the four two-chord bars — arrival statement, the swung
+       * and-of-2, and in phase-1 bars the beat-4 answer plus the mid-bar
+       * arrival — plus 2 and 3 for the whole-bar statement and answer).
+       * A style missing from this tally has not had its normalization law
+       * checked at all.
        */
       const CHECKED_COMPS: Record<string, number> = {
         "ballad-comp@1": 24,
@@ -2370,6 +2374,8 @@ describe("the comp register", () => {
         "straight-eighths@1": 24,
         /* Re-pinned for the transcribed answer-key table (2026-07-31). */
         "syncopated-sixteenths@1": 33,
+        /* Authored fast-swing sketch (2026-08-06). */
+        "uptempo-swing@1": 19,
       };
       expect(`${styleId}:${String(checked)}`).toBe(
         `${styleId}:${String(CHECKED_COMPS[styleId] ?? -1)}`,
