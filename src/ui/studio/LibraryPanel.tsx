@@ -1027,6 +1027,7 @@ export function LibraryPanel({
             onMidiImportChooseFile={onMidiImportChooseFile}
             onMidiImportCommit={onMidiImportCommit}
             onMidiImportDiscard={onMidiImportDiscard}
+            onMidiImportAudition={onMidiImportAudition}
             onInsertRecoveredChord={onInsertRecoveredChord}
             onOpenCommandLane={onOpenCommandLane}
             onQuickEntryClear={onQuickEntryClear}
