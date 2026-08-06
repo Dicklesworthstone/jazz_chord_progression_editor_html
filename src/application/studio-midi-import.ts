@@ -358,46 +358,51 @@ export function createStudioMidiImport(
     };
 
     /*
-     * 1. Insert every chunk in order. The first chunk carries the section
-     * header, so `document-end` lands it as one command. Later chunks are
-     * bare measures continuing that section: at `document-end` they would
-     * need a synthesized section and split into two commands, which the
-     * atomic runner rightly refuses, so each one aims at the LIVE last
-     * section's end — the append boundary of the section the previous
-     * chunk just extended (marker-derived sections included, because the
-     * snapshot is re-read after every chunk).
+     * The insert stage: every chunk in order. The first chunk carries the
+     * section header, so `document-end` lands it as one command. Later
+     * chunks are bare measures continuing that section: at `document-end`
+     * they would need a synthesized section and split into two commands,
+     * which the atomic runner rightly refuses, so each one aims at the
+     * LIVE last section's end — the append boundary of the section the
+     * previous chunk just extended (marker-derived sections included,
+     * because the snapshot is re-read after every chunk).
      */
-    for (const [chunkIndex, chunkText] of automation.chunkTexts.entries()) {
-      const lastSection =
-        controller.getSnapshot().sections[
-          controller.getSnapshot().sections.length - 1
-        ];
-      const target =
-        chunkIndex === 0 || lastSection === undefined
-          ? ({ kind: "document-end" } as const)
-          : ({ kind: "section-end", sectionId: lastSection.id } as const);
-      const previewStatus = controller.previewChartText(chunkText);
-      const staged = controller.setQuickEntryDraft(
-        chunkText,
-        target,
-        previewStatus.status,
-        previewStatus.issueCodes,
-      );
-      const inserted = staged.ok ? controller.applyQuickEntryPreview() : staged;
-      if (!staged.ok || !inserted.ok) {
-        return rollBack({
-          step: "insert",
-          outcome: "refused",
-          reason: staged.ok
-            ? "The chart refused this piece of the import."
-            : "The import text could not be staged.",
-        });
+    const insertChunks = (): MidiImportAutoCommitResult | null => {
+      for (const [chunkIndex, chunkText] of automation.chunkTexts.entries()) {
+        const lastSection =
+          controller.getSnapshot().sections[
+            controller.getSnapshot().sections.length - 1
+          ];
+        const target =
+          chunkIndex === 0 || lastSection === undefined
+            ? ({ kind: "document-end" } as const)
+            : ({ kind: "section-end", sectionId: lastSection.id } as const);
+        const previewStatus = controller.previewChartText(chunkText);
+        const staged = controller.setQuickEntryDraft(
+          chunkText,
+          target,
+          previewStatus.status,
+          previewStatus.issueCodes,
+        );
+        const inserted = staged.ok
+          ? controller.applyQuickEntryPreview()
+          : staged;
+        if (!staged.ok || !inserted.ok) {
+          return rollBack({
+            step: "insert",
+            outcome: "refused",
+            reason: staged.ok
+              ? "The chart refused this piece of the import."
+              : "The import text could not be staged.",
+          });
+        }
+        issuedCount += 1;
+        steps.push({ step: "insert", outcome: "applied", reason: null });
       }
-      issuedCount += 1;
-      steps.push({ step: "insert", outcome: "applied", reason: null });
-    }
+      return null;
+    };
 
-    /* 2. Settings transfer per the frozen truth table. */
+    /* Settings transfer per the frozen truth table. */
     const withheld = (
       step: MidiImportEnvelopeStep["step"],
       reason: string,
@@ -424,7 +429,7 @@ export function createStudioMidiImport(
     const tempoBpm = Math.round(
       60_000_000 / automation.initialTempoMicroseconds,
     );
-    if (starter) {
+    const applyStarterSettings = (): MidiImportAutoCommitResult | null => {
       if (before.tempoBpm === tempoBpm) {
         steps.push({ step: "tempo", outcome: "unchanged", reason: null });
       } else if (!issue("tempo", () => controller.setTempo(tempoBpm))) {
@@ -484,7 +489,28 @@ export function createStudioMidiImport(
           reason: "The file's name could not become the title.",
         });
       }
+      return null;
+    };
+
+    /*
+     * Destination-dependent order (M1-ENV amendment #1, jcpe-9m5q): a
+     * STARTER destination applies the file's settings BEFORE the insert —
+     * the meter law locks the meter the moment any chord exists, so the
+     * old insert-first order made every non-4/4 file roll back at the
+     * meter step, and the truth table's "starter: meter applied" promise
+     * was unsatisfiable. Settings-first also means the fragment parses
+     * under the file's own meter, which is what its bars measure. An
+     * occupied destination keeps insert-first: every setting is withheld
+     * there, so the order question does not arise.
+     */
+    if (starter) {
+      const settingsFailure = applyStarterSettings();
+      if (settingsFailure !== null) return settingsFailure;
+      const insertFailure = insertChunks();
+      if (insertFailure !== null) return insertFailure;
     } else {
+      const insertFailure = insertChunks();
+      if (insertFailure !== null) return insertFailure;
       withheld(
         "tempo",
         "This chart already has content, so its tempo was kept.",
@@ -500,7 +526,7 @@ export function createStudioMidiImport(
       );
     }
 
-    /* 3. Groove: never override an explicit choice on an occupied chart. */
+    /* Groove last: never override an explicit choice on an occupied chart. */
     if (starter || documentGrooveIsDefault) {
       if (
         !issue("groove", () =>
