@@ -65,7 +65,16 @@ pub extern "C" fn flt_render(
     right: *mut f32,
     max_frames: i32,
 ) -> i32 {
-    flt_render_inner(midi, velocity, sample_rate, left, right, max_frames, None)
+    flt_render_inner(
+        midi,
+        velocity,
+        sample_rate,
+        left,
+        right,
+        max_frames,
+        None,
+        None,
+    )
 }
 
 /// Gesture-aware variant. `variation_slot` is deliberately bounded to eight
@@ -91,6 +100,41 @@ pub extern "C" fn flt_render_seeded(
         right,
         max_frames,
         Some(variation),
+        None,
+    )
+}
+
+/// Gesture-aware attack model. `articulation` is 0 for a connected/legato
+/// inlet and 1 for a tongued breath attack. Keeping this as a new export
+/// leaves both older entry points byte-stable.
+#[no_mangle]
+pub extern "C" fn flt_render_expressive(
+    midi: i32,
+    velocity: i32,
+    sample_rate: f32,
+    variation_slot: u32,
+    articulation: u32,
+    left: *mut f32,
+    right: *mut f32,
+    max_frames: i32,
+) -> i32 {
+    let Some(variation) = vibrato_variation(variation_slot) else {
+        return 0;
+    };
+    let tongued = match articulation {
+        0 => false,
+        1 => true,
+        _ => return 0,
+    };
+    flt_render_inner(
+        midi,
+        velocity,
+        sample_rate,
+        left,
+        right,
+        max_frames,
+        Some(variation),
+        Some(tongued),
     )
 }
 
@@ -102,6 +146,7 @@ fn flt_render_inner(
     right: *mut f32,
     max_frames: i32,
     variation: Option<crate::VibratoVariation>,
+    attack_articulation: Option<bool>,
 ) -> i32 {
     let capacity = flt_note_frames(midi, sample_rate);
     if capacity == 0
@@ -310,6 +355,34 @@ fn flt_render_inner(
     let noise_level = 0.004 + 0.008 * v_norm;
     let noise_alpha = 1.0 - exp(-TAU * 3_800.0 / sr);
     let mut noise_lp = 0.0f64;
+    /* Two one-poles form a cheap, stable 1.0--3.0 kHz turbulence band.
+     * It is radiated only during the authored tongued transient. */
+    let chiff_low_alpha = 1.0 - exp(-TAU * 1_000.0 / sr);
+    let chiff_high_alpha = 1.0 - exp(-TAU * 3_000.0 / sr);
+    let mut chiff_low = 0.0f64;
+    let mut chiff_high = 0.0f64;
+    let chiff_seconds = 0.030 - 0.015 * v_norm;
+    let chiff_decay = exp(-1.0 / (chiff_seconds * sr));
+    let chiff_level = if attack_articulation == Some(true) {
+        0.000_8 + 0.009_2 * v_norm * v_norm
+    } else if attack_articulation == Some(false) {
+        0.000_15
+    } else {
+        0.0
+    };
+    let pressure_overshoot = if attack_articulation == Some(true) {
+        (pressure_target * (0.05 + 0.005 * v_norm)).min(0.925 - pressure_target)
+    } else {
+        0.0
+    };
+    let overshoot_decay = exp(-1.0 / ((0.018 + 0.008 * (1.0 - v_norm)) * sr));
+    let tongue_hold_frames = if attack_articulation == Some(true) {
+        ((0.008 - 0.003 * v_norm) * sr) as usize
+    } else {
+        0
+    };
+    let mut chiff_envelope = 1.0f64;
+    let mut overshoot_envelope = 1.0f64;
     let mut pressure = 0.0f64;
 
     /* Radiation differentiator and a touch of direct breath in the field.
@@ -328,7 +401,12 @@ fn flt_render_inner(
     let end_fade_frames = (FLT_END_FADE_SECONDS * sr) as usize;
 
     for frame in 0..frames {
-        pressure += (pressure_target - pressure) * attack_step;
+        let instantaneous_target = if frame < tongue_hold_frames {
+            0.0
+        } else {
+            pressure_target + pressure_overshoot * overshoot_envelope
+        };
+        pressure += (instantaneous_target - pressure) * attack_step;
         let vibrato_gate = if (frame as f64) < vibrato_onset {
             0.0
         } else {
@@ -345,7 +423,15 @@ fn flt_render_inner(
             vibrato_cos = vibrato_cos * vibrato_step_cos - vibrato_sin * vibrato_step_sin;
             vibrato_sin = next_sin;
         }
-        noise_lp += noise_alpha * (seed.bipolar() - noise_lp);
+        let turbulence = seed.bipolar();
+        noise_lp += noise_alpha * (turbulence - noise_lp);
+        chiff_low += chiff_low_alpha * (turbulence - chiff_low);
+        chiff_high += chiff_high_alpha * (turbulence - chiff_high);
+        let chiff = (chiff_high - chiff_low) * chiff_envelope * chiff_level;
+        chiff_envelope *= chiff_decay;
+        if frame >= tongue_hold_frames {
+            overshoot_envelope *= overshoot_decay;
+        }
         let breath = pressure * vibrato * (1.0 + noise_level * noise_lp);
 
         /* Bore end: reflect through the dark lowpass, block DC. */
@@ -374,7 +460,7 @@ fn flt_render_inner(
 
         /* Radiated field: differentiated, band-limited, plus a whisper of
          * direct turbulence. */
-        let radiated = radiation.process(bore_out) + direct_breath * noise_lp * pressure;
+        let radiated = radiation.process(bore_out) + direct_breath * noise_lp * pressure + chiff;
 
         let mut sample = radiated;
         if frames - frame <= end_fade_frames {

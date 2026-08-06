@@ -60,7 +60,16 @@ pub extern "C" fn clr_render(
     right: *mut f32,
     max_frames: i32,
 ) -> i32 {
-    clr_render_inner(midi, velocity, sample_rate, left, right, max_frames, None)
+    clr_render_inner(
+        midi,
+        velocity,
+        sample_rate,
+        left,
+        right,
+        max_frames,
+        None,
+        None,
+    )
 }
 
 #[no_mangle]
@@ -84,6 +93,40 @@ pub extern "C" fn clr_render_seeded(
         right,
         max_frames,
         Some(variation),
+        None,
+    )
+}
+
+/// Gesture-aware attack model. `articulation` is 0 for legato and 1 for a
+/// tongued reed attack. Older exports remain byte-stable.
+#[no_mangle]
+pub extern "C" fn clr_render_expressive(
+    midi: i32,
+    velocity: i32,
+    sample_rate: f32,
+    variation_slot: u32,
+    articulation: u32,
+    left: *mut f32,
+    right: *mut f32,
+    max_frames: i32,
+) -> i32 {
+    let Some(variation) = vibrato_variation(variation_slot) else {
+        return 0;
+    };
+    let tongued = match articulation {
+        0 => false,
+        1 => true,
+        _ => return 0,
+    };
+    clr_render_inner(
+        midi,
+        velocity,
+        sample_rate,
+        left,
+        right,
+        max_frames,
+        Some(variation),
+        Some(tongued),
     )
 }
 
@@ -95,6 +138,7 @@ fn clr_render_inner(
     right: *mut f32,
     max_frames: i32,
     variation: Option<crate::VibratoVariation>,
+    attack_articulation: Option<bool>,
 ) -> i32 {
     let capacity = clr_note_frames(midi, sample_rate);
     if capacity == 0
@@ -207,6 +251,33 @@ fn clr_render_inner(
     let noise_level = 0.005 + 0.009 * v_norm;
     let noise_alpha = 1.0 - exp(-TAU * 3_200.0 / sr);
     let mut noise_lp = 0.0f64;
+    /* Darker 0.65--2.0 kHz tongue turbulence than the flute jet chiff. */
+    let chiff_low_alpha = 1.0 - exp(-TAU * 650.0 / sr);
+    let chiff_high_alpha = 1.0 - exp(-TAU * 2_000.0 / sr);
+    let mut chiff_low = 0.0f64;
+    let mut chiff_high = 0.0f64;
+    let chiff_seconds = 0.026 - 0.012 * v_norm;
+    let chiff_decay = exp(-1.0 / (chiff_seconds * sr));
+    let chiff_level = if attack_articulation == Some(true) {
+        0.000_6 + 0.007_4 * v_norm * v_norm
+    } else if attack_articulation == Some(false) {
+        0.000_1
+    } else {
+        0.0
+    };
+    let pressure_overshoot = if attack_articulation == Some(true) {
+        (pressure_target * (0.05 + 0.025 * v_norm)).min(0.915 - pressure_target)
+    } else {
+        0.0
+    };
+    let overshoot_decay = exp(-1.0 / ((0.014 + 0.008 * (1.0 - v_norm)) * sr));
+    let tongue_hold_frames = if attack_articulation == Some(true) {
+        ((0.006 - 0.002 * v_norm) * sr) as usize
+    } else {
+        0
+    };
+    let mut chiff_envelope = 1.0f64;
+    let mut overshoot_envelope = 1.0f64;
     let mut pressure = 0.0f64;
 
     /* Band-limit the differentiated radiation (the flute's hiss lesson). */
@@ -219,7 +290,12 @@ fn clr_render_inner(
     let end_fade_frames = (CLR_END_FADE_SECONDS * sr) as usize;
 
     for frame in 0..frames {
-        pressure += (pressure_target - pressure) * attack_step;
+        let instantaneous_target = if frame < tongue_hold_frames {
+            0.0
+        } else {
+            pressure_target + pressure_overshoot * overshoot_envelope
+        };
+        pressure += (instantaneous_target - pressure) * attack_step;
         let vibrato_gate = if (frame as f64) < vibrato_onset {
             0.0
         } else {
@@ -236,7 +312,15 @@ fn clr_render_inner(
             vibrato_cos = vibrato_cos * vibrato_step_cos - vibrato_sin * vibrato_step_sin;
             vibrato_sin = next_sin;
         }
-        noise_lp += noise_alpha * (seed.bipolar() - noise_lp);
+        let turbulence = seed.bipolar();
+        noise_lp += noise_alpha * (turbulence - noise_lp);
+        chiff_low += chiff_low_alpha * (turbulence - chiff_low);
+        chiff_high += chiff_high_alpha * (turbulence - chiff_high);
+        let chiff = (chiff_high - chiff_low) * chiff_envelope * chiff_level;
+        chiff_envelope *= chiff_decay;
+        if frame >= tongue_hold_frames {
+            overshoot_envelope *= overshoot_decay;
+        }
         let breath = pressure * vibrato * (1.0 + noise_level * noise_lp);
 
         /* Open end: dark inverting reflection behind the DC blocker. */
@@ -255,7 +339,7 @@ fn clr_render_inner(
 
         /* Radiated field: gentle differentiation, band-limited, near-dry
          * breath. */
-        let radiated = radiation.process(bore_out) + 0.012 * noise_lp * pressure;
+        let radiated = radiation.process(bore_out) + 0.012 * noise_lp * pressure + chiff;
 
         let mut sample = radiated;
         if frames - frame <= end_fade_frames {

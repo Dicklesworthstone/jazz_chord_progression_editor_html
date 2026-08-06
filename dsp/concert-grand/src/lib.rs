@@ -827,6 +827,60 @@ mod tests {
         }
     }
 
+    #[test]
+    fn expressive_wind_attacks_replay_and_refuse_unknown_articulation() {
+        let sample_rate = 48_000.0f32;
+        let frames = 4_800usize;
+        for render in [
+            flute::flt_render_expressive
+                as extern "C" fn(i32, i32, f32, u32, u32, *mut f32, *mut f32, i32) -> i32,
+            clarinet::clr_render_expressive,
+        ] {
+            let mut left = vec![0.0f32; frames];
+            let mut right = vec![0.0f32; frames];
+            let written = render(
+                72,
+                110,
+                sample_rate,
+                0,
+                1,
+                left.as_mut_ptr(),
+                right.as_mut_ptr(),
+                frames as i32,
+            );
+            assert_eq!(written, frames as i32);
+            let mut replay_left = vec![0.0f32; frames];
+            let mut replay_right = vec![0.0f32; frames];
+            assert_eq!(
+                render(
+                    72,
+                    110,
+                    sample_rate,
+                    0,
+                    1,
+                    replay_left.as_mut_ptr(),
+                    replay_right.as_mut_ptr(),
+                    frames as i32,
+                ),
+                written,
+            );
+            assert_eq!(left, replay_left);
+            assert_eq!(
+                render(
+                    72,
+                    110,
+                    sample_rate,
+                    0,
+                    2,
+                    replay_left.as_mut_ptr(),
+                    replay_right.as_mut_ptr(),
+                    frames as i32,
+                ),
+                0,
+            );
+        }
+    }
+
     /// jcpe-dsp-denormals-onp5: an eight-second bass render must never emit a
     /// subnormal sample, and every sample stays finite. The envelope flush
     /// happens at the 256-frame checkpoint; the early-out zeroes any frames

@@ -1,0 +1,28 @@
+{
+  "schema": "changes.fixtures.wind-chiff-attack.v1",
+  "sampleRateHz": 48000,
+  "midiPitch": 72,
+  "analysisFrames": 1024,
+  "articulations": ["legato", "tongued"],
+  "velocityCases": [30, 110],
+  "flute": {
+    "bandHz": [1000, 3000],
+    "tonguedToLegatoBandRatioMinimumAtVelocity110": 1.2,
+    "sustainRmsRatio": [0.95, 1.05]
+  },
+  "clarinet": {
+    "bandHz": [650, 2000],
+    "tonguedToLegatoBandRatioMinimumAtVelocity110": 1.05,
+    "sustainRmsRatio": [0.95, 1.05]
+  },
+  "modelBounds": {
+    "chiffDurationSeconds": [0.01, 0.03],
+    "directInjectionMaximum": 0.01,
+    "flutePressureMaximum": 0.925,
+    "clarinetPressureMaximum": 0.915
+  },
+  "independence": {
+    "productionOutputUsedToAuthorThresholds": false,
+    "wallTimeAffectsOutput": false
+  }
+}
