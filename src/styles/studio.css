@@ -3297,6 +3297,23 @@
  */
 @media (pointer: coarse) {
   /*
+   * The pairwise-overlap law (U0-ENV-004, jcpe-7djg): the 44px finger
+   * strip must own its band EXCLUSIVELY — hit-transparency alone still
+   * leaves two touch targets sharing the same rectangle, which is exactly
+   * the ambiguity the law forbids. The transport grows on coarse pointers
+   * and its content flows below the strip. The token override sits on
+   * :root so every consumer that anchors to the transport height (mobile
+   * sheets, overlay insets) moves with it.
+   */
+  :root {
+    --transport-min-block: 6rem;
+  }
+
+  .studio-transport {
+    padding-block-start: 2.5rem;
+  }
+
+  /*
    * The finger strip grows DOWNWARD into the bar (the shell frame above
    * paints over any upward overhang at z-index 2, so an up-biased strip
    * could never receive its own taps). The controls row stacks above the
@@ -5837,7 +5854,16 @@ button.studio-paper-head__key:focus-visible {
   outline-offset: var(--focus-offset);
 }
 
-/* Coarse pointers cannot hover: the doors stay open. */
+/*
+ * Coarse pointers cannot hover: the doors stay open. And once every tool
+ * grows to the 44px floor, the corner tools can no longer float over their
+ * neighbours (jcpe-7djg, U0-ENV-004 pairwise overlap law): the trash sits
+ * at the li's top-right — the same band the full-width insert-before row
+ * occupies — and the add/merge pair floats over the last chord card's
+ * More-actions trigger. Each cluster gets its own reserved band instead:
+ * the insertion row ends before the trash column starts, and the measure
+ * reserves a bottom strip exactly one touch target tall for add/merge.
+ */
 @media (pointer: coarse) {
   .studio-measure__trash,
   .studio-measure__add-chord,
@@ -5849,6 +5875,19 @@ button.studio-paper-head__key:focus-visible {
 
   .studio-measure__merge-chord {
     inset-inline-end: calc(var(--space-1) + var(--touch-target) + 0.25rem);
+  }
+
+  .studio-insertion-target {
+    padding-inline-end: calc(var(--space-1) + var(--touch-target) + var(--space-2));
+  }
+
+  /*
+   * The add/merge doors anchor to the canvas's bottom edge; the reserved
+   * padding turns that edge into a strip of their own, below the chord
+   * cards (and their More-actions triggers) instead of on top of them.
+   */
+  .studio-measure__canvas {
+    padding-block-end: calc(var(--space-1) + var(--touch-target) + var(--space-1));
   }
 }
 
