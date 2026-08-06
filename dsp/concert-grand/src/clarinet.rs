@@ -155,11 +155,14 @@ pub extern "C" fn clr_render(
     let vibrato_onset = 0.35 * sr;
     let vibrato_ramp = 0.4 * sr;
     /* A clarinet is far less breathy than a flute. */
-    let noise_level = 0.012 + 0.02 * v_norm;
+    let noise_level = 0.005 + 0.009 * v_norm;
     let noise_alpha = 1.0 - exp(-TAU * 3_200.0 / sr);
     let mut noise_lp = 0.0f64;
     let mut pressure = 0.0f64;
 
+    /* Band-limit the differentiated radiation (the flute's hiss lesson). */
+    let radiation_alpha = 1.0 - exp(-TAU * 5_500.0 / sr);
+    let mut radiation_lp = 0.0f64;
     let mut previous_bore = 0.0f64;
     let pan = ((m - 60.0) / 48.0).clamp(-1.0, 1.0) * 0.06;
     let angle = (pan + 1.0) * core::f64::consts::PI / 4.0;
@@ -201,9 +204,12 @@ pub extern "C" fn clr_render(
         bore[bore_write] = tuned;
         bore_write = (bore_write + 1) % bore_length;
 
-        /* Radiated field: gentle differentiation, near-dry breath. */
-        let radiated = (bore_out - previous_bore) * 6.0 + 0.05 * noise_lp * pressure;
+        /* Radiated field: gentle differentiation, band-limited, near-dry
+         * breath. */
+        let differentiated = (bore_out - previous_bore) * 6.0;
         previous_bore = bore_out;
+        radiation_lp += radiation_alpha * (differentiated - radiation_lp);
+        let radiated = radiation_lp + 0.012 * noise_lp * pressure;
 
         let mut sample = radiated;
         if frames - frame <= end_fade_frames {

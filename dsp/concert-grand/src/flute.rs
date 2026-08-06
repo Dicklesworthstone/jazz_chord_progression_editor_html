@@ -180,14 +180,28 @@ pub extern "C" fn flt_render(
     let vibrato_depth = 0.028;
     let vibrato_onset = 0.32 * sr;
     let vibrato_ramp = 0.35 * sr;
-    let noise_level = 0.028 + 0.05 * v_norm;
+    /*
+     * Turbulence level. The first shipped values (0.028 + 0.05v) measured
+     * a harmonic-to-noise ratio of 0-4 dB in the radiated field - the
+     * tone barely cleared the hiss, exactly what the owner heard -
+     * because the radiation differentiator amplifies broadband noise by
+     * +6 dB/octave while the low harmonics gain far less. Breathiness now
+     * sits an order of magnitude lower and the radiated path is bandwidth
+     * -limited below.
+     */
+    let noise_level = 0.004 + 0.008 * v_norm;
     let noise_alpha = 1.0 - exp(-TAU * 3_800.0 / sr);
     let mut noise_lp = 0.0f64;
     let mut pressure = 0.0f64;
 
-    /* Radiation differentiator and a touch of direct breath in the field. */
+    /* Radiation differentiator and a touch of direct breath in the field.
+     * The differentiated field is lowpassed at ~5.5 kHz: differentiation
+     * is what makes radiated treble, but unchecked it turns loop
+     * turbulence into broadband hiss. */
+    let radiation_alpha = 1.0 - exp(-TAU * 5_500.0 / sr);
+    let mut radiation_lp = 0.0f64;
     let mut previous_bore = 0.0f64;
-    let direct_breath = 0.18f64;
+    let direct_breath = 0.01f64;
 
     /* Fixed near-center pan: one instrument, one seat. */
     let pan = ((m - 60.0) / 48.0).clamp(-1.0, 1.0) * 0.06;
@@ -237,9 +251,12 @@ pub extern "C" fn flt_render(
         bore[bore_write] = tuned;
         bore_write = (bore_write + 1) % bore_length;
 
-        /* Radiated field: differentiated bore plus direct turbulence. */
-        let radiated = (bore_out - previous_bore) * 8.0 + direct_breath * noise_lp * pressure;
+        /* Radiated field: differentiated, band-limited, plus a whisper of
+         * direct turbulence. */
+        let differentiated = (bore_out - previous_bore) * 8.0;
         previous_bore = bore_out;
+        radiation_lp += radiation_alpha * (differentiated - radiation_lp);
+        let radiated = radiation_lp + direct_breath * noise_lp * pressure;
 
         let mut sample = radiated;
         if frames - frame <= end_fade_frames {
