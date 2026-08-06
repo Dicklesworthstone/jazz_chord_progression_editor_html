@@ -53,8 +53,6 @@ const PEAK_TARGET = 0.985;
 const ONSET_THRESHOLD_RATIO = 0.005;
 const ONSET_SEARCH_FRAMES = 88_200;
 const ONSET_BACKOFF_FRAMES = 44;
-/** Channel choice is scored over the first 60 ms after the onset. */
-const CHANNEL_SCORE_FRAMES = 2_646;
 
 /** Tuning scan (source rate): +-80 cents around the expected fundamental. */
 const TUNING_SCAN_CENTS = 80;
@@ -64,16 +62,22 @@ const TUNING_WINDOW_START_FRAMES = 882;
 const TUNING_WINDOW_FRAMES = 26_460;
 const TUNING_MINIMUM_WINDOW_FRAMES = 8_820;
 /**
- * Pitch-identity guards. A recording that actually sounds an octave below
- * its expected pitch carries energy at the odd half-harmonics 1.5x and
- * 2.5x the expected fundamental (its own 3rd and 5th harmonics); a correct
- * recording has nothing there. The half-fundamental bin itself is NOT used:
- * on the lowest bass keys it sits inside broadband room rumble (~20 Hz) and
- * measures rumble, not pitch. A missing fundamental relative to the
- * strongest expected partial means the recording sounds an octave above.
- * Either is a mislabeled recording and a build failure.
+ * Pitch-identity guard: a likelihood test of the expected pitch against the
+ * octave-up and octave-down mislabel hypotheses, each scored by the same
+ * harmonic comb the tuning scan uses. Measured across both corpora a
+ * correctly labeled recording scores the shifted hypotheses at no more than
+ * 0.57x the expected score, while a mislabel would put its whole harmonic
+ * series under the shifted comb and push the ratio past one; the threshold
+ * sits between with margin. Below 55 Hz the test is not run: a low
+ * pizzicato fundamental is physically weaker than its even harmonics, so
+ * the octave-up comb legitimately outscores the expected one there
+ * (measured 1.62x on the low E) and the test would reject every honest
+ * recording. Those lowest keys are covered by the resolvable-tuning and
+ * fundamental-presence checks plus the convention anchored by every
+ * higher-pitched file in the same recording session.
  */
-const HALF_HARMONIC_MAX_RATIO = 0.5;
+const HYPOTHESIS_TEST_MIN_F0_HZ = 55;
+const OCTAVE_HYPOTHESIS_MAX_RATIO = 0.85;
 const FUNDAMENTAL_MIN_RATIO = 0.05;
 
 /** Windowed-sinc resampler: 48 zero crossings per side, Blackman window. */
@@ -263,16 +267,6 @@ function channelWindow(
   return out;
 }
 
-/** High-frequency energy proxy: energy of the first difference. */
-function firstDifferenceEnergy(window: Float64Array): number {
-  let total = 0;
-  for (let index = 1; index < window.length; index += 1) {
-    const delta = (window[index] ?? 0) - (window[index - 1] ?? 0);
-    total += delta * delta;
-  }
-  return total;
-}
-
 function midiFrequencyHz(midiPitch: number): number {
   return 440 * 2 ** ((midiPitch - 69) / 12);
 }
@@ -300,6 +294,41 @@ function goertzelPower(
     beforePrevious * beforePrevious -
     coefficient * previous * beforePrevious
   );
+}
+
+/**
+ * Best harmonic-comb score over a +-80 cent scan around a candidate
+ * fundamental: the shared measurement behind tuning, channel choice, and
+ * the octave-mislabel likelihood test.
+ */
+function combScan(
+  window: Float64Array,
+  length: number,
+  fundamentalHz: number,
+): { bestCents: number; bestScore: number } {
+  let bestCents = 0;
+  let bestScore = 0;
+  for (
+    let cents = -TUNING_SCAN_CENTS;
+    cents <= TUNING_SCAN_CENTS;
+    cents += TUNING_SCAN_STEP_CENTS
+  ) {
+    const ratio = 2 ** (cents / 1_200);
+    let score = 0;
+    for (const partial of TUNING_PARTIALS) {
+      const frequency = fundamentalHz * ratio * partial;
+      if (frequency > SOURCE_RATE_HZ / 2.5) break;
+      score +=
+        Math.sqrt(
+          goertzelPower(window, TUNING_WINDOW_START_FRAMES, length, frequency),
+        ) / partial;
+    }
+    if (score > bestScore) {
+      bestScore = score;
+      bestCents = cents;
+    }
+  }
+  return { bestCents, bestScore };
 }
 
 type PitchVerification = Readonly<{
@@ -330,28 +359,7 @@ function verifyPitch(
       `INSTRUMENT_SAMPLES_TUNING_WINDOW: ${label} has ${String(length)} frames`,
     );
   }
-  let bestCents = 0;
-  let bestScore = 0;
-  for (
-    let cents = -TUNING_SCAN_CENTS;
-    cents <= TUNING_SCAN_CENTS;
-    cents += TUNING_SCAN_STEP_CENTS
-  ) {
-    const ratio = 2 ** (cents / 1_200);
-    let score = 0;
-    for (const partial of TUNING_PARTIALS) {
-      const frequency = nominal * ratio * partial;
-      if (frequency > SOURCE_RATE_HZ / 2.5) break;
-      score +=
-        Math.sqrt(
-          goertzelPower(window, TUNING_WINDOW_START_FRAMES, length, frequency),
-        ) / partial;
-    }
-    if (score > bestScore) {
-      bestScore = score;
-      bestCents = cents;
-    }
-  }
+  const { bestCents, bestScore } = combScan(window, length, nominal);
   if (bestScore <= 0) {
     throw new Error(`INSTRUMENT_SAMPLES_TUNING_SILENT: ${label}`);
   }
@@ -373,23 +381,32 @@ function verifyPitch(
     const amplitude = amplitudeAt(frequency);
     if (amplitude > strongest) strongest = amplitude;
   }
-  const halfHarmonics = amplitudeAt(tuned * 1.5) + amplitudeAt(tuned * 2.5);
-  const wholeHarmonics = amplitudeAt(tuned) + amplitudeAt(tuned * 2);
   if (fundamental < FUNDAMENTAL_MIN_RATIO * strongest) {
     throw new Error(
-      `INSTRUMENT_SAMPLES_PITCH_OCTAVE_UP: ${label} fundamental ${fundamental.toExponential(3)} vs strongest partial ${strongest.toExponential(3)}`,
+      `INSTRUMENT_SAMPLES_PITCH_FUNDAMENTAL_MISSING: ${label} fundamental ${fundamental.toExponential(3)} vs strongest partial ${strongest.toExponential(3)}`,
     );
   }
-  if (halfHarmonics >= HALF_HARMONIC_MAX_RATIO * wholeHarmonics) {
-    throw new Error(
-      `INSTRUMENT_SAMPLES_PITCH_OCTAVE_DOWN: ${label} half-harmonics ${halfHarmonics.toExponential(3)} vs whole ${wholeHarmonics.toExponential(3)}`,
-    );
+  let octaveRatio = 0;
+  if (nominal >= HYPOTHESIS_TEST_MIN_F0_HZ) {
+    const down = combScan(window, length, nominal / 2).bestScore;
+    const up = combScan(window, length, nominal * 2).bestScore;
+    octaveRatio = Math.max(down, up) / bestScore;
+    if (down >= OCTAVE_HYPOTHESIS_MAX_RATIO * bestScore) {
+      throw new Error(
+        `INSTRUMENT_SAMPLES_PITCH_OCTAVE_DOWN: ${label} down-comb ${down.toExponential(3)} vs expected ${bestScore.toExponential(3)}`,
+      );
+    }
+    if (up >= OCTAVE_HYPOTHESIS_MAX_RATIO * bestScore) {
+      throw new Error(
+        `INSTRUMENT_SAMPLES_PITCH_OCTAVE_UP: ${label} up-comb ${up.toExponential(3)} vs expected ${bestScore.toExponential(3)}`,
+      );
+    }
   }
   return {
     tuningCents: Math.round(bestCents),
     fundamentalAmplitude: fundamental,
     strongestPartialAmplitude: strongest,
-    subharmonicAmplitude: halfHarmonics,
+    subharmonicAmplitude: octaveRatio,
   };
 }
 
@@ -496,30 +513,48 @@ async function sliceOne(
   }
   const start = Math.max(0, onset - ONSET_BACKOFF_FRAMES);
 
-  /* Channel choice: the one holding more transient energy. */
-  let sourceChannel = 0;
-  let bestScore = -1;
-  for (let channel = 0; channel < wav.channels; channel += 1) {
-    const score = firstDifferenceEnergy(
-      channelWindow(buffer, wav, channel, onset, CHANNEL_SCORE_FRAMES),
-    );
-    if (score > bestScore) {
-      bestScore = score;
-      sourceChannel = channel;
-    }
-  }
-
-  /* Source window: everything the slice plus resampler support can read. */
+  /*
+   * Channel choice: the one whose harmonic comb at the expected pitch is
+   * stronger. The obvious alternatives are both wrong here: summing a
+   * spaced pair combs the spectrum, and picking by transient energy (the
+   * piano generator's law, correct for an attack-only layer) selected a
+   * VCSL vibraphone channel whose microphone sat near a node of the bar's
+   * fundamental — 140x less fundamental than its partner while carrying
+   * more mallet click. These slices are the whole note, so the note's own
+   * harmonic series is the thing to maximize.
+   */
   const sourceFramesNeeded =
     Math.ceil((config.sliceFrames * SOURCE_RATE_HZ) / config.targetRateHz) +
     RESAMPLE_TAPS_PER_SIDE * 4;
-  const sourceWindow = channelWindow(
-    buffer,
-    wav,
-    sourceChannel,
-    start,
-    sourceFramesNeeded,
-  );
+  let sourceChannel = 0;
+  let sourceWindow: Float64Array | null = null;
+  let bestChannelScore = -1;
+  for (let channel = 0; channel < wav.channels; channel += 1) {
+    const candidate = channelWindow(
+      buffer,
+      wav,
+      channel,
+      start,
+      sourceFramesNeeded,
+    );
+    const scanLength = Math.min(
+      TUNING_WINDOW_FRAMES,
+      candidate.length - TUNING_WINDOW_START_FRAMES,
+    );
+    const score = combScan(
+      candidate,
+      scanLength,
+      midiFrequencyHz(source.midiPitch),
+    ).bestScore;
+    if (score > bestChannelScore) {
+      bestChannelScore = score;
+      sourceChannel = channel;
+      sourceWindow = candidate;
+    }
+  }
+  if (sourceWindow === null) {
+    throw new Error(`INSTRUMENT_SAMPLES_NO_CHANNEL: ${source.file}`);
+  }
 
   const verification = verifyPitch(sourceWindow, source.midiPitch, source.file);
 
