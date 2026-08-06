@@ -121,6 +121,10 @@ const gates: Gate[] = [
     command: [process.execPath, "scripts/validate-phs0-contract.ts"],
   },
   {
+    id: "phs1-offline-foundry-contract",
+    command: [process.execPath, "scripts/validate-phs1-contract.ts"],
+  },
+  {
     id: "x1-transport-contract",
     command: [process.execPath, "scripts/validate-x1-contract.ts"],
   },

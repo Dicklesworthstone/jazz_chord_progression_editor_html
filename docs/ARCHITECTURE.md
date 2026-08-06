@@ -171,6 +171,7 @@ The manifest exposes these stable commands:
 | `bun run validate:a0-e0-bridge-contract` | validate the independent A0 owner-port registry, identity, marker-CAS, literal applicability/provenance/trace/mutation packet, and immutable accepted-E0-v1 pins without claiming consumer compatibility |
 | `bun run validate:x0-contract` | validate the independent persistent-audio graph, recipe, impulse, voice-lifecycle, registry, render, listening, trace, provenance, and mutation authority package |
 | `bun run validate:phs0-contract` | validate the proposed gesture-driven physical-renderer plans, exact limits, stateful partitioning, v2 ABI, baseline, traces, provenance, and mutation controls without claiming production implementation |
+| `bun run validate:phs1-contract` | validate the offline foundry boundary, canonical parameter packs, deterministic work bounds, independent analytic audio/physics metrics, provenance classes, traces, and mutation controls without claiming calibrated packs or production implementation |
 | `bun run typecheck` | strict `tsc --noEmit` |
 | `bun run lint` | ESLint plus source-integrity and dependency-boundary checks |
 | `bun test` | Bun unit, property, golden, conformance, integration, and static tests |

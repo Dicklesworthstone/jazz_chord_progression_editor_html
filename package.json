@@ -38,6 +38,7 @@
     "validate:e0-v2-contract": "bun scripts/validate-e0-v2-contract.ts",
     "validate:x0-contract": "bun scripts/validate-x0-contract.ts",
     "validate:phs0-contract": "bun scripts/validate-phs0-contract.ts",
+    "validate:phs1-contract": "bun scripts/validate-phs1-contract.ts",
     "validate:x1-contract": "bun scripts/validate-x1-contract.ts",
     "typecheck": "bun scripts/typecheck.ts",
     "lint": "bun scripts/lint.ts",
