@@ -1,0 +1,13 @@
+{
+  "schema":"changes.fixtures.phs2-clarinet-v2.v1",
+  "modelSchema":"changes.dsp.clarinet-v2.v1",
+  "stateMode":"stateful-phrase",
+  "signs":{"pressure":"positive-compression","flow":"mouth-to-bore","reedOpening":"away-from-lay","deltaPressure":"mouth-minus-mouthpiece"},
+  "vocalTractImpedance":"explicitly-deferred",
+  "controls":{"mouthPressurePa":[0,8000],"lipForceN":[0,5],"reedStiffnessScale":[0.5,2],"equilibriumOpeningScale":[0.5,1.5],"tongueContact":[0,1],"tongueRelease":[0,1],"breathTurbulenceRelativeRms":[0,0.08],"vibratoRateHz":[0,8],"vibratoPressureDepth":[0,0.08]},
+  "articulationModes":["detached","legato","slur"],
+  "retainedLegatoState":["reed-displacement","reed-velocity","bore-waves","loss-filters","radiation"],
+  "limits":{"maximumEvents":128,"maximumPointsPerCurve":64,"maximumPointsPerGesture":256,"maximumBoreSections":24,"maximumToneHoles":24,"maximumNonlinearIterations":8,"maximumFallbackBisections":16,"maximumStateBytes":262144,"maximumPhraseSeconds":30,"maximumSampleRateHz":96000},
+  "requiredMetrics":["reed-equilibrium","reed-flow","impedance-peaks","fingering-pitch","attack-time","odd-even-balance","harmonic-to-noise","spectral-centroid","decay-slopes","register-transition","transposition-relations","legato-continuity","energy-residual"],
+  "independence":{"productionImportsForbidden":true,"productionOutputUsed":false,"expectedValuesGenerated":false}
+}

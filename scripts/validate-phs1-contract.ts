@@ -60,7 +60,7 @@ function add(findings: Phs1Finding[], code: string, path: string, message: strin
 function unique(findings: Phs1Finding[], values: Obj[], path: string): void {
   const seen = new Set<string>();
   values.forEach((row, index) => {
-    if (typeof row.id !== "string" || row.id.length === 0 || seen.has(row.id)) add(findings, "PHS1_IDS", `${path}/${index}/id`, "IDs must be non-empty and unique");
+    if (typeof row.id !== "string" || row.id.length === 0 || seen.has(row.id)) add(findings, "PHS1_IDS", `${path}/${String(index)}/id`, "IDs must be non-empty and unique");
     else seen.add(row.id);
   });
 }
@@ -105,9 +105,9 @@ export async function validatePhs1Contract(fixtureRoot = ROOT): Promise<Phs1Repo
   if (obj(metrics.find((row) => row.id === "metric-centroid")?.expected).centroidHz !== 250) add(findings, "PHS1_METRIC_KNOWN_ANSWER", "/metric-cases/cases/metric-centroid", "Two-bin centroid known answer changed");
   if (obj(metrics.find((row) => row.id === "metric-energy")?.expected).normalizedResidual !== 0.00005) add(findings, "PHS1_METRIC_KNOWN_ANSWER", "/metric-cases/cases/metric-energy", "Energy-ledger known answer changed");
   const frankensim = authorities.find((row) => row.id === "authority-frankensim-pin");
-  if (frankensim?.commit !== PIN || frankensim?.distributionClass !== "forbidden-runtime" || frankensim?.runtimeGenerationPermitted !== false) add(findings, "PHS1_PROVENANCE", "/provenance/authorities/authority-frankensim-pin", "Unresolved license must refuse runtime generation");
+  if (frankensim?.commit !== PIN || frankensim.distributionClass !== "forbidden-runtime" || frankensim.runtimeGenerationPermitted !== false) add(findings, "PHS1_PROVENANCE", "/provenance/authorities/authority-frankensim-pin", "Unresolved license must refuse runtime generation");
   const local = authorities.find((row) => row.id === "authority-local-corpus");
-  if (local?.rawBytesMayEnterRepository !== false || local?.runtimeGenerationPermitted !== false) add(findings, "PHS1_PROVENANCE", "/provenance/authorities/authority-local-corpus", "Local-only data boundary changed");
+  if (local?.rawBytesMayEnterRepository !== false || local.runtimeGenerationPermitted !== false) add(findings, "PHS1_PROVENANCE", "/provenance/authorities/authority-local-corpus", "Local-only data boundary changed");
   const metricTrace = traces.find((row) => row.id === "trace-metrics");
   if (!Array.isArray(metricTrace?.fixtures) || metricTrace.fixtures.length !== 16) add(findings, "PHS1_TRACE_COVERAGE", "/trace-ledger/traces/trace-metrics", "Metric trace must cover all authored cases");
   if (controls.length !== 11) add(findings, "PHS1_MUTATIONS", "/mutation-controls/controls", "Reviewed mutation count changed");

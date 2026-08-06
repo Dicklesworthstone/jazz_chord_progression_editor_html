@@ -1,0 +1,17 @@
+{
+  "schema":"changes.fixtures.phs2-clarinet-physics-cases.v1",
+  "cases":[
+    {"id":"reed-static-open","kind":"reed-equilibrium","input":{"stiffnessNPerM":1500,"equilibriumOpeningM":0.0004,"effectiveAreaM2":0.0001,"deltaPressurePa":3000},"expected":{"openingM":0.0002,"toleranceM":0.000001}},
+    {"id":"reed-lay-contact","kind":"reed-equilibrium","input":{"stiffnessNPerM":1500,"equilibriumOpeningM":0.0004,"effectiveAreaM2":0.0001,"deltaPressurePa":6000},"expected":{"openingM":0,"contact":true}},
+    {"id":"flow-positive","kind":"reed-flow","input":{"widthM":0.012,"openingM":0.0002,"deltaPressurePa":3000,"airDensityKgPerM3":1.2},"expected":{"flowM3PerS":0.000169705627,"toleranceM3PerS":0.000000001}},
+    {"id":"flow-zero-opening","kind":"reed-flow","input":{"widthM":0.012,"openingM":0,"deltaPressurePa":3000,"airDensityKgPerM3":1.2},"expected":{"flowM3PerS":0}},
+    {"id":"flow-reverse-pressure-near-miss","kind":"reed-flow","input":{"widthM":0.012,"openingM":0.0002,"deltaPressurePa":-0.001,"airDensityKgPerM3":1.2},"expected":{"outcome":"signed-or-refused","absoluteValueForbidden":true}},
+    {"id":"quarter-wave-cylinder","kind":"impedance-peaks","input":{"soundSpeedMPerS":343,"effectiveLengthM":0.5839},"expected":{"frequenciesHz":[146.86,440.58,734.3],"oddMultipliers":[1,3,5],"toleranceRelative":0.001}},
+    {"id":"passive-collision","kind":"energy-residual","input":{"preImpactEnergyJ":0.001,"postImpactEnergyJ":0.0008,"externalWorkJ":0},"expected":{"maximumInjectedEnergyJ":0}},
+    {"id":"active-collision-mutation","kind":"energy-residual","input":{"preImpactEnergyJ":0.001,"postImpactEnergyJ":0.00101,"externalWorkJ":0},"expected":{"outcome":"refuse","finding":"PHS2_COLLISION_ACTIVE"}},
+    {"id":"solver-boundary-eight","kind":"solver-budget","input":{"iterations":8,"maximum":8},"expected":{"outcome":"accept"}},
+    {"id":"solver-plus-one","kind":"solver-budget","input":{"iterations":9,"maximum":8},"expected":{"outcome":"refuse","finding":"PHS2_SOLVER_BOUND"}},
+    {"id":"legato-partition","kind":"legato-continuity","input":{"leftStateDigest":"9c27","rightInitialStateDigest":"9c27"},"expected":{"continuous":true,"resetForbidden":true}},
+    {"id":"detached-reset","kind":"legato-continuity","input":{"articulation":"detached","newPhrase":true},"expected":{"canonicalPhraseResetPermitted":true}}
+  ]
+}

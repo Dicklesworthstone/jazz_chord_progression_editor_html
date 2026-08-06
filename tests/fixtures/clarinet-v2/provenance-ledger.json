@@ -1,0 +1,8 @@
+{
+  "schema":"changes.fixtures.phs2-clarinet-provenance.v1",
+  "authorities":[
+    {"id":"clarinet-player-model","kind":"primary-research","location":"https://pub.dega-akustik.de/ISMA2019/data/articles/000034.pdf","governs":["dynamic-reed","tongue","collision","bounded-solve"]},
+    {"id":"exciter-resonator","kind":"primary-research","location":"https://pub.dega-akustik.de/ISMA2019/data/articles/000057.pdf","governs":["inward-reed","modal-impedance","energy"]},
+    {"id":"tone-hole-lattice","kind":"primary-research","location":"https://arxiv.org/abs/0901.1640","governs":["tone-holes","input-impedance"]}
+  ]
+}

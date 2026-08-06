@@ -39,8 +39,8 @@ describe("PHS1 offline foundry contract", () => {
         const path = join(temporary, target); const document = await readObj(path);
         replacePointer(document, pointer, control.value); await writeFile(path, `${JSON.stringify(document, null, 2)}\n`);
         const report = await validatePhs1Contract(temporary);
-        expect(report.outcome, String(control.id)).toBe("fail");
-        expect(report.findings.map((finding) => finding.code), String(control.id)).toContain(code);
+        expect(report.outcome, String(control['id'])).toBe("fail");
+        expect(report.findings.map((finding) => finding.code), String(control['id'])).toContain(code);
       } finally { await rm(temporary, { recursive: true, force: true }); }
     }
   });

@@ -1,0 +1,17 @@
+{
+  "schema":"changes.fixtures.phs2-clarinet-metric-cases.v1",
+  "cases":[
+    {"id":"pitch-chalumeau-d3","metric":"fingering-pitch","targetHz":146.832,"toleranceCents":8,"fingeringId":"bb-clarinet-concert-d3"},
+    {"id":"pitch-throat-a4","metric":"fingering-pitch","targetHz":440,"toleranceCents":8,"fingeringId":"bb-clarinet-concert-a4"},
+    {"id":"pitch-clarion-d5","metric":"fingering-pitch","targetHz":587.33,"toleranceCents":8,"fingeringId":"bb-clarinet-concert-d5"},
+    {"id":"pitch-altissimo-a5","metric":"fingering-pitch","targetHz":880,"toleranceCents":12,"fingeringId":"bb-clarinet-concert-a5"},
+    {"id":"odd-even-analytic","metric":"odd-even-balance","oddEnergy":9,"evenEnergy":1,"expectedDb":9.542425094,"toleranceDb":0.000001},
+    {"id":"hnr-analytic","metric":"harmonic-to-noise","harmonicEnergy":1000,"noiseEnergy":1,"expectedDb":30,"toleranceDb":0.000001},
+    {"id":"centroid-analytic","metric":"spectral-centroid","frequenciesHz":[200,600],"magnitudes":[3,1],"expectedHz":300,"toleranceHz":0.001},
+    {"id":"attack-analytic","metric":"attack-time","thresholdCrossingsSeconds":{"tenPercent":0.01,"ninetyPercent":0.05},"expectedSeconds":0.04,"toleranceSeconds":0.000001},
+    {"id":"decay-analytic","metric":"decay-slopes","startAmplitude":1,"endAmplitude":0.1,"seconds":1,"expectedDbPerSecond":-20,"toleranceDbPerSecond":0.000001},
+    {"id":"twelfth-relation","metric":"transposition-relations","baseHz":146.832,"upperHz":440.496,"expectedRatio":3,"toleranceRelative":0.000001},
+    {"id":"octave-transposition","metric":"transposition-relations","baseHz":220,"upperHz":440,"expectedRatio":2,"toleranceRelative":0.000001},
+    {"id":"register-transition","metric":"register-transition","lowerRegime":"chalumeau","upperRegime":"clarion","minimumPressurePa":2500,"maximumPressurePa":7000,"expected":"single-bounded-transition"}
+  ]
+}

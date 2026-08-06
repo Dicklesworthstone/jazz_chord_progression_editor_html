@@ -1,0 +1,16 @@
+{
+  "schema":"changes.fixtures.phs2-clarinet-mutations.v1",
+  "controls":[
+    {"id":"mutate-schema","target":"contract.json","pointer":"/schema","value":"v0","expectedFindingCode":"PHS2_SCHEMA"},
+    {"id":"mutate-flow-sign","target":"contract.json","pointer":"/signs/flow","value":"bore-to-mouth","expectedFindingCode":"PHS2_SIGNS"},
+    {"id":"mutate-vocal-tract-claim","target":"contract.json","pointer":"/vocalTractImpedance","value":"implemented","expectedFindingCode":"PHS2_SCOPE"},
+    {"id":"mutate-pressure-limit","target":"contract.json","pointer":"/controls/mouthPressurePa/1","value":80000,"expectedFindingCode":"PHS2_CONTROLS"},
+    {"id":"mutate-legato-reset","target":"contract.json","pointer":"/retainedLegatoState","value":[],"expectedFindingCode":"PHS2_STATE"},
+    {"id":"mutate-solver-limit","target":"contract.json","pointer":"/limits/maximumNonlinearIterations","value":9,"expectedFindingCode":"PHS2_LIMITS"},
+    {"id":"mutate-independence","target":"contract.json","pointer":"/independence/productionOutputUsed","value":true,"expectedFindingCode":"PHS2_INDEPENDENCE"},
+    {"id":"mutate-reed-opening-answer","target":"physics-cases.json","pointer":"/cases/0/expected/openingM","value":0.0003,"expectedFindingCode":"PHS2_KNOWN_ANSWER"},
+    {"id":"mutate-active-collision","target":"physics-cases.json","pointer":"/cases/7/expected/outcome","value":"accept","expectedFindingCode":"PHS2_COLLISION"},
+    {"id":"mutate-twelfth","target":"metric-cases.json","pointer":"/cases/9/expectedRatio","value":2,"expectedFindingCode":"PHS2_KNOWN_ANSWER"},
+    {"id":"mutate-authority","target":"provenance-ledger.json","pointer":"/authorities/2/location","value":"memory","expectedFindingCode":"PHS2_PROVENANCE"}
+  ]
+}

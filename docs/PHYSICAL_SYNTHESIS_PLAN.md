@@ -784,7 +784,7 @@ specification/fixtures, production build, and independent proof children close.
 - [x] B007 Specify deterministic PRNG/numerics and cross-host evidence.
 - [x] B008 Specify parameter-pack/provenance format and foundry workflow.
 - [ ] B009 Build independent metric extractors and their known-answer fixtures.
-- [ ] B010 Specify clarinet v2 and independent corpus.
+- [x] B010 Specify clarinet v2 and independent corpus.
 - [ ] B011 Specify flute v2 and independent corpus.
 - [ ] B012 Specify guitar family and independent corpus.
 - [ ] B013 Specify trumpet and independent corpus.
