@@ -136,3 +136,63 @@ test("physical preparation warms the exact gesture fingerprint consumed by attac
   expect(repeated.cachedCount).toBe(1);
   expect(repeated.renderedCount).toBe(0);
 });
+
+test("gesture fingerprints cannot collide with one another and physical cache eviction is deterministic LRU", async () => {
+  const playback = compilePlaybackPlan(
+    materializeP0TimelineCase("P0-TIME-001").request,
+  );
+  if (!playback.ok) throw new Error("PHYSICAL_CACHE_PLAN");
+  const realized = compilePhysicalRealization({
+    plan: playback.plan,
+    sourcePlanRevision: 3,
+    instrumentFamily: "clarinet",
+    instrumentVersionId: "changes.physical.clarinet.v2",
+    parameterPackSha256: "e".repeat(64),
+    sampleRateHz: 48_000,
+  });
+  if (!realized.ok) throw new Error("PHYSICAL_CACHE_REALIZE");
+  const base = realized.value.expressivePlan.gestures[1];
+  const midiPitch = playback.plan.events[0]?.midiPitches[1];
+  if (base === undefined || midiPitch === undefined) throw new Error("PHYSICAL_CACHE_FIXTURE");
+  const gestures = Object.freeze(Array.from({ length: 65 }, (_, index) =>
+    Object.freeze({
+      ...base,
+      eventId: `physical-cache-event-${String(index)}`,
+      deterministicSeedUint32: (base.deterministicSeedUint32 + index) >>> 0,
+    }))));
+  const { engine } = await readyEngine();
+  const initial = requireSuccess(
+    await engine.prepareRenderedAudioVoices({
+      instrumentId: "clarinet",
+      notes: gestures.map((physicalGesture) => ({
+        midiPitch: midi(midiPitch),
+        velocity: 96,
+        physicalGesture,
+      })),
+    }),
+  );
+  expect(initial.renderedCount).toBe(65);
+  expect(initial.cachedCount).toBe(0);
+  const newestGesture = gestures[64];
+  const oldestGesture = gestures[0];
+  if (newestGesture === undefined || oldestGesture === undefined) {
+    throw new Error("PHYSICAL_CACHE_GESTURE_MISSING");
+  }
+
+  const newest = requireSuccess(
+    await engine.prepareRenderedAudioVoices({
+      instrumentId: "clarinet",
+      notes: [{ midiPitch: midi(midiPitch), velocity: 96, physicalGesture: newestGesture }],
+    }),
+  );
+  expect(newest.cachedCount).toBe(1);
+  expect(newest.renderedCount).toBe(0);
+  const oldest = requireSuccess(
+    await engine.prepareRenderedAudioVoices({
+      instrumentId: "clarinet",
+      notes: [{ midiPitch: midi(midiPitch), velocity: 96, physicalGesture: oldestGesture }],
+    }),
+  );
+  expect(oldest.cachedCount).toBe(0);
+  expect(oldest.renderedCount).toBe(1);
+});
