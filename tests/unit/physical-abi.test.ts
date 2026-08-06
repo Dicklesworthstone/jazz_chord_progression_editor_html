@@ -34,8 +34,9 @@ test("the Rust ABI-v2 boundary executes every reviewed valid, hostile, and limit
     } as unknown as PhysicalRenderAbiRequestV2;
     const expected = record(row["expected"], `case.${String(index)}.expected`);
     const observed = renderer.validatePhysicalAbiV2(request, memoryBytes);
-    expect(observed, String(row["id"])).toBe(
-      expected["outcome"] === "accepted" ? null : expected["code"],
-    );
+    const expectedCode = expected["outcome"] === "accepted"
+      ? null
+      : String(expected["code"]);
+    expect(expectedCode, String(row["id"])).toBe(observed);
   }
 });

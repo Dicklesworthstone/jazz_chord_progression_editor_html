@@ -59,8 +59,8 @@ function materializeGesture(row: JsonRecord): unknown {
             throw new Error("PHS0_GESTURE_POINT");
           }
           return Object.freeze({
-            offsetTicks: pointValue[0],
-            valueQ16_16: pointValue[1],
+            offsetTicks: number(pointValue[0], "point.offsetTicks"),
+            valueQ16_16: number(pointValue[1], "point.valueQ16_16"),
           });
         }),
       });
@@ -82,8 +82,12 @@ describe("PHS0 independent fixture replay", () => {
       } else {
         expect(observed.ok).toBe(false);
         if (observed.ok) throw new Error("PHS0_GESTURE_ACCEPTED");
-        expect(observed.refusal.code).toBe(expected["code"]);
-        expect(observed.refusal.path).toBe(expected["path"]);
+        expect(string(expected["code"], "gesture.expected.code")).toBe(
+          observed.refusal.code,
+        );
+        expect(observed.refusal.path).toBe(
+          string(expected["path"], "gesture.expected.path"),
+        );
       }
     });
   }
@@ -107,7 +111,7 @@ describe("PHS0 independent fixture replay", () => {
             voiceId: string(tupleValue[1], "voice.id"),
             startTick: number(tupleValue[2], "event.start"),
             durationTicks: number(tupleValue[3], "event.duration"),
-            articulation: tupleValue[4],
+            articulation: string(tupleValue[4], "event.articulation"),
           });
         }),
         ...(row["declaredEventCount"] === undefined ? {} : { declaredEventCount: row["declaredEventCount"] }),
@@ -122,7 +126,9 @@ describe("PHS0 independent fixture replay", () => {
       if (expected["outcome"] === "refused") {
         expect(observed.ok).toBe(false);
         if (observed.ok) throw new Error("PHS0_PARTITION_ACCEPTED");
-        expect(observed.refusal.code).toBe(expected["code"]);
+        expect(string(expected["code"], "partition.expected.code")).toBe(
+          observed.refusal.code,
+        );
         return;
       }
       expect(observed.ok).toBe(true);
@@ -134,7 +140,11 @@ describe("PHS0 independent fixture replay", () => {
         "canonicalResetReason",
         "leakedPriorPassState",
       ] as const) {
-        if (field in expected) expect(observed.value[field]).toBe(expected[field]);
+        if (field in expected) {
+          expect(JSON.stringify(observed.value[field])).toBe(
+            JSON.stringify(expected[field]),
+          );
+        }
       }
     });
   }

@@ -1,7 +1,10 @@
 import { describe, expect, test } from "bun:test";
 
 import {
+  AUDIO_INSTRUMENT_RECIPES,
   compilePhysicalRealization,
+  physicalFamilyForInstrumentId,
+  physicalGestureExcitationVelocity,
   sha256Hex,
   sha256LowUint32,
 } from "../../src/audio";
@@ -120,6 +123,40 @@ describe("deterministic physical realization", () => {
       "fan.rate",
       "fan.phase",
     ]);
+  });
+
+  test("only production recipes that consume gestures advertise a physical family", () => {
+    expect(physicalFamilyForInstrumentId("vibraphone")).toBeNull();
+    expect(physicalFamilyForInstrumentId("concert-vibes")).toBeNull();
+    for (const recipe of AUDIO_INSTRUMENT_RECIPES) {
+      const family = physicalFamilyForInstrumentId(recipe.id);
+      if (family === null) continue;
+      expect(recipe.synthesis).toBe("rendered");
+      if (recipe.synthesis !== "rendered") {
+        throw new Error(`PHYSICAL_FAMILY_IGNORED:${recipe.id}`);
+      }
+      expect(recipe.renderer.algorithmId).toStartWith("changes.dsp.waveguide-");
+    }
+  });
+
+  test("the v1 bridge preserves all 127 source velocities for every physical family", () => {
+    for (const family of [
+      "clarinet",
+      "flute",
+      "guitar",
+      "trumpet",
+      "vibraphone",
+    ] as const) {
+      const result = compileFamily(family);
+      if (!result.ok) throw new Error(`PHYSICAL_${family.toUpperCase()}_REFUSED`);
+      const gesture = result.value.expressivePlan.gestures[0];
+      if (gesture === undefined) throw new Error("PHYSICAL_GESTURE_MISSING");
+      for (let sourceVelocity = 1; sourceVelocity <= 127; sourceVelocity += 1) {
+        expect(
+          physicalGestureExcitationVelocity(gesture, sourceVelocity),
+        ).toBe(sourceVelocity);
+      }
+    }
   });
 
   test("refuses invalid renderer identity before visiting musical events", () => {

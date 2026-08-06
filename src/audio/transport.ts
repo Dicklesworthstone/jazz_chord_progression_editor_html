@@ -544,7 +544,6 @@ export function createTransportService(
     eventIndex: number,
     startSeconds: number,
   ): boolean {
-    const now = platform.currentTimeSeconds();
     const gateSeconds = Math.max(
       beatToSeconds(event.gateDurationBeats, currentTempo()),
       TRANSPORT_MIN_AUDIO_GATE_SECONDS,
@@ -565,6 +564,13 @@ export function createTransportService(
       }),
     );
     if (voices === null) return false;
+    /*
+     * Physical-plan compilation hashes and validates every gesture in the
+     * phrase. Sample the live audio clock only after that bounded CPU work;
+     * otherwise a slow browser can spend the entire immediate-start margin
+     * compiling and hand X0 an attack timestamp that is already in the past.
+     */
+    const now = platform.currentTimeSeconds();
     const startTime = Math.max(startSeconds, now + startMarginSeconds);
     const result = platform.engine.attackAudioVoices({
       owner,

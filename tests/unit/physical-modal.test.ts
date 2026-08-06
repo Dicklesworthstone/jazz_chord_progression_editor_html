@@ -26,9 +26,17 @@ test("the shared Rust modal component preserves state exactly across partitions"
   expect(Array.from(whole.left.slice(0, 1_024))).toEqual(Array.from(first.left));
   expect(Array.from(whole.left.slice(1_024))).toEqual(Array.from(second.left));
   expect(whole.state).toEqual(second.state);
-  expect(Math.abs(whole.energy.residual)).toBeLessThan(1e-14);
-  expect(Math.abs(first.energy.residual)).toBeLessThan(1e-14);
-  expect(Math.abs(second.energy.residual)).toBeLessThan(1e-14);
+  // The residual is now a genuine closure over an independently accumulated
+  // damping term, so its floor is floating-point drift that scales with the
+  // frame count rather than an identically-zero subtraction.
+  for (const result of [whole, first, second]) {
+    const { initialEnergy, excitationWork, finalEnergy, dampingLoss, residual } =
+      result.energy;
+    expect(dampingLoss).toBeGreaterThan(0);
+    const recomputed = initialEnergy + excitationWork - finalEnergy - dampingLoss;
+    expect(Math.abs(residual - recomputed)).toBeLessThan(1e-15);
+    expect(Math.abs(residual)).toBeLessThan(1e-11 * result.frameCount);
+  }
   expect(second.energy.finalEnergy).toBeLessThan(second.energy.initialEnergy);
 });
 

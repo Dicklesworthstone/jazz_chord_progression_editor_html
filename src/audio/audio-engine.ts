@@ -61,7 +61,6 @@ import {
 import {
   isExpressiveVoiceGesture,
   physicalGestureExcitationVelocity,
-  physicalGestureFingerprint,
 } from "./physical-realization";
 import {
   PHYSICAL_RENDER_LIMITS,
@@ -299,6 +298,25 @@ function expectedPhysicalFamily(
   return null;
 }
 
+/*
+ * Compiled gesture voice identities are `physical.<family>.<24-hex>` (the hash
+ * binds document identity and pitch ordinal, which this boundary cannot
+ * re-derive). The format and family binding are still checkable here, and a
+ * duplicate within one attack batch always indicates a mis-attached gesture.
+ */
+const PHYSICAL_GESTURE_VOICE_ID_HASH = /^[0-9a-f]{24}$/;
+
+function isPhysicalGestureVoiceId(
+  voiceId: string,
+  family: ExpressiveVoiceGesture["instrumentFamily"],
+): boolean {
+  const prefix = `physical.${family}.`;
+  return (
+    voiceId.startsWith(prefix) &&
+    PHYSICAL_GESTURE_VOICE_ID_HASH.test(voiceId.slice(prefix.length))
+  );
+}
+
 function validateOwner(value: unknown): ValidationResult<AudioVoiceOwner> {
   if (!isRecord(value)) return invalid("audio.owner_invalid", ["owner"]);
   const kind = value["kind"];
@@ -425,6 +443,8 @@ function validateAttack(
 
   const physicalGestures: Array<ExpressiveVoiceGesture | null> = [];
   const expectedFamily = expectedPhysicalFamily(instrument.value);
+  const expectedVersionId = `changes.physical.${instrument.value}.v2`;
+  const seenGestureVoiceIds = new Set<string>();
   for (let index = 0; index < records.length; index += 1) {
     const gesture = records[index]?.["physicalGesture"];
     if (gesture === undefined) {
@@ -434,7 +454,10 @@ function validateAttack(
     if (
       !isExpressiveVoiceGesture(gesture) ||
       gesture.eventId !== eventId ||
-      gesture.instrumentFamily !== expectedFamily
+      gesture.instrumentFamily !== expectedFamily ||
+      gesture.instrumentVersionId !== expectedVersionId ||
+      !isPhysicalGestureVoiceId(gesture.voiceId, gesture.instrumentFamily) ||
+      seenGestureVoiceIds.has(gesture.voiceId)
     ) {
       return invalid("audio.voice_id_invalid", [
         "voices",
@@ -442,6 +465,7 @@ function validateAttack(
         "physicalGesture",
       ]);
     }
+    seenGestureVoiceIds.add(gesture.voiceId);
     physicalGestures.push(gesture);
   }
 
@@ -705,10 +729,22 @@ function isValidInternalSequenceSeed(value: unknown): value is number {
   );
 }
 
+export type AudioEngineRenderCacheLimitsForTest = Readonly<{
+  maximumCacheEntries?: number;
+  maximumCachePcmBytes?: number;
+}>;
+
 function createAudioEngineInternal(
   platform: AudioPlatform,
   sequenceSeed: AudioEngineSequenceSeedForTest,
+  renderCacheLimitsForTest: AudioEngineRenderCacheLimitsForTest = {},
 ): AudioEngine {
+  const maximumGlobalCacheEntries =
+    renderCacheLimitsForTest.maximumCacheEntries ??
+      PHYSICAL_RENDER_LIMITS.maximumCacheEntries;
+  const maximumGlobalCachePcmBytes =
+    renderCacheLimitsForTest.maximumCachePcmBytes ??
+      PHYSICAL_RENDER_LIMITS.maximumCachePcmBytes;
   let state: AudioEngineState = "uninitialized";
   let currentContext: AudioContextPort | null = null;
   let currentGraph: PersistentGraph | null = null;
@@ -761,11 +797,81 @@ function createAudioEngineInternal(
     sampledRenderers.set(algorithmId, loaded);
     return loaded;
   }
-  const renderedBufferCache = new Map<
-    string,
-    Readonly<{ buffer: AudioBufferPort; byteLength: number }>
-  >();
+  /*
+   * Rendered-PCM caches are held per recipe so one instrument's (smaller)
+   * entry limit can never evict another instrument's legitimately cached
+   * buffers. Recency lives in two places: Map iteration order inside each
+   * recipe cache, and a monotonic stamp for cross-recipe byte-pressure
+   * eviction, which removes the globally least-recently-used entry.
+   */
+  type RenderedBufferEntry = Readonly<{
+    buffer: AudioBufferPort;
+    byteLength: number;
+    stamp: number;
+  }>;
+  const renderedBufferCaches = new Map<string, Map<string, RenderedBufferEntry>>();
   let renderedBufferCacheBytes = 0;
+  let renderedBufferCacheEntries = 0;
+  let renderedBufferCacheStamp = 0;
+
+  function recipeBufferCache(instrumentId: string): Map<string, RenderedBufferEntry> {
+    const existing = renderedBufferCaches.get(instrumentId);
+    if (existing !== undefined) return existing;
+    const created = new Map<string, RenderedBufferEntry>();
+    renderedBufferCaches.set(instrumentId, created);
+    return created;
+  }
+
+  function clearRenderedBufferCaches(): void {
+    renderedBufferCaches.clear();
+    renderedBufferCacheBytes = 0;
+    renderedBufferCacheEntries = 0;
+  }
+
+  /*
+   * Refresh recency on a cache hit: Map iteration order is each recipe's
+   * eviction order, and the stamp is the cross-recipe eviction order. Every
+   * hit path must touch the entry or later evictions choose a wrong victim.
+   */
+  function touchRenderedBufferEntry(
+    cache: Map<string, RenderedBufferEntry>,
+    key: string,
+  ): RenderedBufferEntry | undefined {
+    const cached = cache.get(key);
+    if (cached === undefined) return undefined;
+    cache.delete(key);
+    renderedBufferCacheStamp += 1;
+    const touched = Object.freeze({ ...cached, stamp: renderedBufferCacheStamp });
+    cache.set(key, touched);
+    return touched;
+  }
+
+  /*
+   * Evict the globally least-recently-used entry. Stamps are unique
+   * monotonic integers, so the minimum is deterministic; each recipe map's
+   * first key is its own oldest entry.
+   */
+  function evictGlobalOldestRenderedBuffer(): boolean {
+    let victimCache: Map<string, RenderedBufferEntry> | null = null;
+    let victimKey: string | null = null;
+    let victimStamp = Number.POSITIVE_INFINITY;
+    for (const cache of renderedBufferCaches.values()) {
+      const first = cache.entries().next();
+      if (first.done === true) continue;
+      const [key, entry] = first.value;
+      if (entry.stamp < victimStamp) {
+        victimStamp = entry.stamp;
+        victimCache = cache;
+        victimKey = key;
+      }
+    }
+    if (victimCache === null || victimKey === null) return false;
+    const evicted = victimCache.get(victimKey);
+    victimCache.delete(victimKey);
+    renderedBufferCacheBytes -= evicted?.byteLength ?? 0;
+    renderedBufferCacheEntries -= 1;
+    return true;
+  }
   /**
    * Display-only spectral tap (jcpe-7she). Created lazily on the first
    * analysis read as a DYNAMIC node — the persistent graph stays exactly
@@ -815,10 +921,22 @@ function createAudioEngineInternal(
     seconds: number,
     physicalGesture: ExpressiveVoiceGesture | null = null,
   ): string {
+    /*
+     * ABI-v1 rendered instruments consume pitch, duration bucket, sample
+     * rate (one cache per context), and excitation velocity. They do not yet
+     * consume gesture curves, event identity, or deterministic seed. Hashing
+     * ignored fields made every chart event a cold render and falsely called
+     * them PCM-affecting. Keep a family/version discriminator; each PHS
+     * native renderer must replace it with its quantized curve identity when
+     * it actually begins consuming those curves.
+     */
     const gestureIdentity = physicalGesture === null
       ? "legacy"
-      : physicalGestureFingerprint(physicalGesture);
-    return `${instrumentId}:${String(midiPitch)}:${String(quantizeRenderVelocity(velocity))}:${String(seconds)}:${gestureIdentity}`;
+      : `physical-v1:${physicalGesture.instrumentFamily}:${physicalGesture.instrumentVersionId}`;
+    const renderVelocity = physicalGesture === null
+      ? quantizeRenderVelocity(velocity)
+      : velocity;
+    return `${instrumentId}:${String(midiPitch)}:${String(renderVelocity)}:${String(seconds)}:${gestureIdentity}`;
   }
 
   /**
@@ -842,13 +960,9 @@ function createAudioEngineInternal(
       seconds,
       physicalGesture,
     );
-    const cached = renderedBufferCache.get(key);
-    if (cached !== undefined) {
-      /* Refresh recency: Map iteration order is the eviction order. */
-      renderedBufferCache.delete(key);
-      renderedBufferCache.set(key, cached);
-      return cached.buffer;
-    }
+    const cache = recipeBufferCache(recipe.id);
+    const cached = touchRenderedBufferEntry(cache, key);
+    if (cached !== undefined) return cached.buffer;
     const noteRenderer = rendererForAlgorithm(recipe.renderer.algorithmId);
     if (noteRenderer === null) return null;
     const excitationVelocity = physicalGesture === null
@@ -869,21 +983,32 @@ function createAudioEngineInternal(
     buffer.getChannelData(0).set(pcm.left);
     buffer.getChannelData(1).set(pcm.right);
     const byteLength = recipe.renderer.channels * pcm.frameCount * 4;
-    renderedBufferCache.set(key, Object.freeze({ buffer, byteLength }));
+    renderedBufferCacheStamp += 1;
+    cache.set(
+      key,
+      Object.freeze({ buffer, byteLength, stamp: renderedBufferCacheStamp }),
+    );
     renderedBufferCacheBytes += byteLength;
+    renderedBufferCacheEntries += 1;
+    /* This recipe's own entry limit evicts only this recipe's entries. */
     const maximumEntries = Math.min(
       recipe.renderer.bufferCacheLimit,
       PHYSICAL_RENDER_LIMITS.maximumCacheEntries,
     );
-    while (
-      renderedBufferCache.size > maximumEntries ||
-      renderedBufferCacheBytes > PHYSICAL_RENDER_LIMITS.maximumCachePcmBytes
-    ) {
-      const oldest = renderedBufferCache.keys().next().value;
+    while (cache.size > maximumEntries) {
+      const oldest = cache.keys().next().value;
       if (oldest === undefined) break;
-      const evicted = renderedBufferCache.get(oldest);
-      renderedBufferCache.delete(oldest);
+      const evicted = cache.get(oldest);
+      cache.delete(oldest);
       renderedBufferCacheBytes -= evicted?.byteLength ?? 0;
+      renderedBufferCacheEntries -= 1;
+    }
+    /* Global ceilings evict the globally least-recently-used entry. */
+    while (
+      renderedBufferCacheEntries > maximumGlobalCacheEntries ||
+      renderedBufferCacheBytes > maximumGlobalCachePcmBytes
+    ) {
+      if (!evictGlobalOldestRenderedBuffer()) break;
     }
     return buffer;
   }
@@ -1358,8 +1483,7 @@ function createAudioEngineInternal(
     }
     currentGraph = null;
     currentContext = null;
-    renderedBufferCache.clear();
-    renderedBufferCacheBytes = 0;
+    clearRenderedBufferCaches();
     analysisTap = null;
     analysisWindow = null;
     reportedContextState = observedState ?? "absent";
@@ -2695,7 +2819,7 @@ function createAudioEngineInternal(
         bucketRenderSeconds(PREPARE_RENDER_SECONDS),
         physicalGesture,
       );
-      if (renderedBufferCache.has(key)) {
+      if (touchRenderedBufferEntry(recipeBufferCache(recipe.id), key) !== undefined) {
         cachedCount += 1;
         continue;
       }
@@ -2752,6 +2876,32 @@ function createAudioEngineInternal(
 
 export function createAudioEngine(platform: AudioPlatform): AudioEngine {
   return createAudioEngineInternal(platform, ZERO_AUDIO_ENGINE_SEQUENCE_SEED);
+}
+
+/**
+ * Deep-module-only cache-pressure seam. It is intentionally absent from the
+ * audio barrel so production composition cannot shrink the reviewed cache
+ * ceilings; tests use it to prove global eviction without rendering ~100 MiB
+ * of real PCM, whose per-note trailing trim makes byte totals nondeterministic.
+ */
+export function createAudioEngineWithRenderCacheLimitsForTest(
+  platform: AudioPlatform,
+  limits: AudioEngineRenderCacheLimitsForTest,
+): AudioEngine {
+  const entries = limits.maximumCacheEntries;
+  const bytes = limits.maximumCachePcmBytes;
+  if (
+    (entries !== undefined &&
+      (!Number.isSafeInteger(entries) || entries < 1)) ||
+    (bytes !== undefined && (!Number.isSafeInteger(bytes) || bytes < 1))
+  ) {
+    throw new Error("AUDIO_TEST_RENDER_CACHE_LIMITS_INVALID");
+  }
+  return createAudioEngineInternal(
+    platform,
+    ZERO_AUDIO_ENGINE_SEQUENCE_SEED,
+    limits,
+  );
 }
 
 /**

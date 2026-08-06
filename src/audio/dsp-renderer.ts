@@ -146,6 +146,9 @@ export type PhysicalEnergyLedger = Readonly<{
   initialEnergy: number;
   excitationWork: number;
   finalEnergy: number;
+  /** Independently accumulated per-sample loss-coefficient absorption. */
+  dampingLoss: number;
+  /** initial + work - final - dampingLoss; a genuine closure check. */
   residual: number;
 }>;
 export type PhysicalModalRenderResult = RenderedNotePcm & Readonly<{
@@ -985,9 +988,12 @@ async function instantiate(): Promise<DspCore> {
       const channelBytes = request.frameCount * 4;
       const leftPointer = scratchBase;
       const rightPointer = leftPointer + channelBytes;
-      const statePointer = rightPointer + channelBytes;
+      // The f64 state view requires 8-byte alignment; an odd frame count
+      // leaves rightPointer + channelBytes at 4 mod 8, which the wasm-side
+      // validator now refuses and a Float64Array view would throw on.
+      const statePointer = Math.ceil((rightPointer + channelBytes) / 8) * 8;
       const energyPointer = Math.ceil((statePointer + 16) / 8) * 8;
-      ensureCapacity(memory, scratchBase, energyPointer + 40 - scratchBase);
+      ensureCapacity(memory, scratchBase, energyPointer + 48 - scratchBase);
       const written = exports.phs_modal_render_v2(
         request.sampleRateHz,
         request.frequencyHz,
@@ -1007,7 +1013,7 @@ async function instantiate(): Promise<DspCore> {
       left.set(new Float32Array(memory.buffer, leftPointer, written));
       right.set(new Float32Array(memory.buffer, rightPointer, written));
       const state = new Float64Array(memory.buffer, statePointer, 2);
-      const energy = new Float64Array(memory.buffer, energyPointer, 5);
+      const energy = new Float64Array(memory.buffer, energyPointer, 6);
       return Object.freeze({
         sampleRateHz: request.sampleRateHz,
         frameCount: written,
@@ -1018,9 +1024,10 @@ async function instantiate(): Promise<DspCore> {
           initialEnergy: energy[0] ?? 0,
           excitationWork: energy[1] ?? 0,
           finalEnergy: energy[2] ?? 0,
-          residual: energy[3] ?? 0,
+          dampingLoss: energy[3] ?? 0,
+          residual: energy[4] ?? 0,
         }),
-        limiterEngagements: energy[4] ?? 0,
+        limiterEngagements: energy[5] ?? 0,
       });
     };
 

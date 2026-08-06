@@ -187,26 +187,18 @@ export function physicalGestureFingerprint(
 }
 
 /**
- * Map the gesture's physical excitation onto the legacy renderer's 1..127
- * excitation inlet. This is an explicit v1 compatibility bridge: it makes
- * the production renderer consume gesture dynamics while the v2 ABI grows
- * native curve and state inputs.
+ * Preserve the score's full 1..127 excitation range at the legacy renderer
+ * inlet. The Q16.16 pressure/hardness curves describe the future v2 physical
+ * operating point; treating their non-zero physical floor as MIDI velocity
+ * used to turn velocity 1 into roughly 45 and erased the softest third of the
+ * instrument. Until the v2 renderers consume the curves natively, the source
+ * velocity is the only honest v1 excitation value.
  */
 export function physicalGestureExcitationVelocity(
-  gesture: ExpressiveVoiceGesture,
-  fallbackVelocity: number,
+  _gesture: ExpressiveVoiceGesture,
+  sourceVelocity: number,
 ): number {
-  const inlet = gesture.instrumentFamily === "guitar"
-    ? "pick.hardness"
-    : gesture.instrumentFamily === "vibraphone"
-      ? "mallet.hardness"
-      : "air.pressure";
-  const values = gesture.curves
-    .find(({ controlId }) => controlId === inlet)
-    ?.points.map(({ valueQ16_16 }) => valueQ16_16 / 65_536) ?? [];
-  if (values.length === 0) return fallbackVelocity;
-  const peak = Math.max(...values);
-  return Math.max(1, Math.min(127, Math.round(peak * 127)));
+  return sourceVelocity;
 }
 
 export function physicalFamilyForInstrumentId(
@@ -217,7 +209,13 @@ export function physicalFamilyForInstrumentId(
   if (instrumentId === "guitar" || instrumentId === "blues-guitar") {
     return "guitar";
   }
-  if (instrumentId === "vibraphone") return "vibraphone";
+  /*
+   * The current `vibraphone` recipe is additive and `concert-vibes` is a
+   * fixed sampled renderer; neither consumes gestures. PHS6 will attach the
+   * family when its pedal/fan/mallet renderer exists. Compiling ignored
+   * gestures now would only fragment cache identity and falsely imply an
+   * audible physical control path.
+   */
   return null;
 }
 
@@ -800,7 +798,6 @@ function partition(
         previousSegmentId,
       );
       segments.push(segment);
-      previousSegmentId = segment.segmentId;
     }
     previousSegmentId = null;
   }
