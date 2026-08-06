@@ -196,7 +196,7 @@ test("physical preparation warms the exact v1 render identity consumed by attack
   expect(repeated.renderedCount).toBe(0);
 });
 
-test("v1 excludes ignored gesture metadata while exact-velocity cache eviction stays deterministic LRU", async () => {
+test("wind variation is bounded to eight cache slots while exact-velocity eviction stays deterministic LRU", async () => {
   const playback = compilePlaybackPlan(
     materializeP0TimelineCase("P0-TIME-001").request,
   );
@@ -233,8 +233,8 @@ test("v1 excludes ignored gesture metadata while exact-velocity cache eviction s
       })),
     }),
   );
-  expect(collapsed.renderedCount).toBe(1);
-  expect(collapsed.cachedCount).toBe(64);
+  expect(collapsed.renderedCount).toBe(8);
+  expect(collapsed.cachedCount).toBe(57);
 
   const { engine } = await readyEngine();
   const exactVelocities = requireSuccess(

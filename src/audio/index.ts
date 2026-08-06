@@ -6,6 +6,7 @@ export * from "./instrument-recipes-contract";
 export * from "./physical-renderer-contract";
 export {
   compilePhysicalRealization,
+  memoizedPhysicalRealization,
   classifyPhysicalPartition,
   isExpressiveVoiceGesture,
   PHYSICAL_CONTROL_OWNERSHIP,

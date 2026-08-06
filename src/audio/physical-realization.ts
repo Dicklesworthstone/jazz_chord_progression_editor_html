@@ -160,23 +160,51 @@ function pressureForVelocity(velocity: number): number {
   return 0.35 + (velocity / 127) * 0.65;
 }
 
+/**
+ * Canonical fingerprint framing. Every leaf is length-prefixed
+ * (`<length>:<bytes>;`) and every list is count-prefixed (`#<count>;`), so the
+ * encoding is prefix-decodable and therefore injective on the encoded
+ * structure: curve and point boundaries are explicit bytes, never inferred
+ * from token shapes. The previous flat U+001F join left list boundaries
+ * implied by enum tokens, which is one control-ID or number-format change away
+ * from a cross-structure collision.
+ */
+const FINGERPRINT_SCHEMA = "phs0.fingerprint.v2";
+
+function framedField(text: string): string {
+  return `${String(text.length)}:${text};`;
+}
+
+function framedList(encodedItems: readonly string[]): string {
+  return `#${String(encodedItems.length)};${encodedItems.join("")}`;
+}
+
 function stableGestureText(gesture: ExpressiveVoiceGesture): string {
-  return [
-    gesture.eventId,
-    gesture.voiceId,
-    gesture.instrumentFamily,
-    gesture.instrumentVersionId,
-    gesture.articulation,
-    String(gesture.deterministicSeedUint32),
-    ...gesture.curves.flatMap((controlCurve) => [
-      controlCurve.controlId,
-      controlCurve.interpolation,
-      ...controlCurve.points.flatMap(({ offsetTicks, valueQ16_16 }) => [
-        String(offsetTicks),
-        String(valueQ16_16),
-      ]),
-    ]),
-  ].join("\u001f");
+  return framedList([
+    framedField(FINGERPRINT_SCHEMA),
+    framedField(gesture.eventId),
+    framedField(gesture.voiceId),
+    framedField(gesture.instrumentFamily),
+    framedField(gesture.instrumentVersionId),
+    framedField(gesture.articulation),
+    framedField(String(gesture.deterministicSeedUint32)),
+    framedList(
+      gesture.curves.map((controlCurve) =>
+        framedList([
+          framedField(controlCurve.controlId),
+          framedField(controlCurve.interpolation),
+          framedList(
+            controlCurve.points.map(({ offsetTicks, valueQ16_16 }) =>
+              framedList([
+                framedField(String(offsetTicks)),
+                framedField(String(valueQ16_16)),
+              ]),
+            ),
+          ),
+        ]),
+      ),
+    ),
+  ]);
 }
 
 /** Exact cache identity for the immutable render-affecting gesture bytes. */
@@ -691,23 +719,28 @@ function makeSegment(
   const renderedEvents = Object.freeze(
     events.map((event) => renderEvent(event, timelineStartFrame)),
   );
-  const identity = [
-    mode,
-    request.instrumentVersionId,
-    request.parameterPackSha256,
-    String(request.sampleRateHz),
-    String(timelineStartFrame),
-    ...renderedEvents.flatMap((event) => [
-      event.eventId,
-      event.voiceId,
-      String(event.midiPitch),
-      String(event.velocity),
-      String(event.startFrame),
-      String(event.durationFrames),
-      String(event.gestureIndex),
-      gestureFingerprintAt(gestures, event.gestureIndex),
-    ]),
-  ].join("\u001f");
+  const identity = framedList([
+    framedField(FINGERPRINT_SCHEMA),
+    framedField(mode),
+    framedField(request.instrumentVersionId),
+    framedField(request.parameterPackSha256),
+    framedField(String(request.sampleRateHz)),
+    framedField(String(timelineStartFrame)),
+    framedList(
+      renderedEvents.map((event) =>
+        framedList([
+          framedField(event.eventId),
+          framedField(event.voiceId),
+          framedField(String(event.midiPitch)),
+          framedField(String(event.velocity)),
+          framedField(String(event.startFrame)),
+          framedField(String(event.durationFrames)),
+          framedField(String(event.gestureIndex)),
+          framedField(gestureFingerprintAt(gestures, event.gestureIndex)),
+        ]),
+      ),
+    ),
+  ]);
   const cacheFingerprint = sha256Hex(identity);
   const segmentId = `physical.segment.${String(ordinal)}.${cacheFingerprint.slice(0, 20)}`;
   return Object.freeze({
@@ -803,6 +836,42 @@ function partition(
   }
   work.segmentsCreated = segments.length;
   return Object.freeze(segments);
+}
+
+/**
+ * Play-path memo over `compilePhysicalRealization`. Preparation and the
+ * transport previously each ran a full compile (every gesture and segment
+ * hashed twice per play). Identity is the immutable plan OBJECT plus every
+ * other render-affecting request field; a replaced document produces a new
+ * plan object, so entries fall away with their plans (WeakMap) and no
+ * invalidation hook is needed. Results are the same frozen objects, so
+ * sharing them cannot leak mutable state.
+ */
+const memoizedRealizations = new WeakMap<
+  PlaybackPlan,
+  Map<string, PhysicalRenderResult<CompiledPhysicalRealization>>
+>();
+
+export function memoizedPhysicalRealization(
+  request: CompilePhysicalRealizationRequest,
+): PhysicalRenderResult<CompiledPhysicalRealization> {
+  const key = [
+    String(request.sourcePlanRevision),
+    request.instrumentFamily,
+    request.instrumentVersionId,
+    request.parameterPackSha256,
+    String(request.sampleRateHz),
+  ].join("|");
+  let perPlan = memoizedRealizations.get(request.plan);
+  if (perPlan === undefined) {
+    perPlan = new Map();
+    memoizedRealizations.set(request.plan, perPlan);
+  }
+  const cached = perPlan.get(key);
+  if (cached !== undefined) return cached;
+  const compiled = compilePhysicalRealization(request);
+  perPlan.set(key, compiled);
+  return compiled;
 }
 
 export function compilePhysicalRealization(

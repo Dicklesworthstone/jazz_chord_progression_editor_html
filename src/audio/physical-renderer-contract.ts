@@ -88,6 +88,17 @@ export const PHYSICAL_CONTROL_VALUE_FORMAT = Object.freeze({
   maximum: 2_147_483_647,
 } as const);
 
+export type PhysicalSupportedSampleRateHz = 44_100 | 48_000 | 96_000;
+
+/** Narrow an arbitrary context rate to the contract's closed supported set. */
+export function isPhysicalSupportedSampleRateHz(
+  sampleRateHz: number,
+): sampleRateHz is PhysicalSupportedSampleRateHz {
+  return (
+    sampleRateHz === 44_100 || sampleRateHz === 48_000 || sampleRateHz === 96_000
+  );
+}
+
 export const PHYSICAL_RENDER_LIMITS = Object.freeze({
   supportedSampleRatesHz: Object.freeze([44_100, 48_000, 96_000] as const),
   playbackPpq: 960,

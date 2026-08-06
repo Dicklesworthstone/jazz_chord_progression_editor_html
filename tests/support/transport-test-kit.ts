@@ -99,8 +99,12 @@ export type TransportHarness = Readonly<{
   submit: (payload: TransportCommandPayload) => Promise<TransportCommandOutcome>;
 }>;
 
-export function createTransportHarness(): TransportHarness {
-  const fake = createFakeAudioPlatform();
+export function createTransportHarness(
+  options: Readonly<{ sampleRate?: number }> = {},
+): TransportHarness {
+  const fake = createFakeAudioPlatform(
+    options.sampleRate === undefined ? {} : { sampleRate: options.sampleRate },
+  );
   const engine = createAudioEngine(fake.platform);
   const timer = createFakeTransportTimer();
   const notifications: TransportServiceNotification[] = [];

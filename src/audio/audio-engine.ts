@@ -780,7 +780,13 @@ function createAudioEngineInternal(
     algorithmId: string,
   ): Readonly<{
     algorithmId: string;
-    renderNote: ConcertGrandRenderer["renderNote"];
+    renderNote: (
+      midiPitch: number,
+      velocity: number,
+      sampleRateHz: number,
+      maxSeconds?: number,
+      variationSlot?: number,
+    ) => ReturnType<ConcertGrandRenderer["renderNote"]>;
   }> | null {
     if (algorithmId === CONCERT_GRAND_RENDERER_ALGORITHM_ID) return renderer;
     const waveguide = waveguideRenderers?.get(algorithmId);
@@ -930,9 +936,14 @@ function createAudioEngineInternal(
      * native renderer must replace it with its quantized curve identity when
      * it actually begins consuming those curves.
      */
+    const variationSlot = physicalGesture !== null &&
+      (physicalGesture.instrumentFamily === "flute" ||
+        physicalGesture.instrumentFamily === "clarinet")
+      ? physicalGesture.deterministicSeedUint32 % 8
+      : null;
     const gestureIdentity = physicalGesture === null
       ? "legacy"
-      : `physical-v1:${physicalGesture.instrumentFamily}:${physicalGesture.instrumentVersionId}`;
+      : `physical-v1:${physicalGesture.instrumentFamily}:${physicalGesture.instrumentVersionId}${variationSlot === null ? "" : `:variation-${String(variationSlot)}`}`;
     const renderVelocity = physicalGesture === null
       ? quantizeRenderVelocity(velocity)
       : velocity;
@@ -973,6 +984,11 @@ function createAudioEngineInternal(
       excitationVelocity,
       context.sampleRate,
       seconds,
+      physicalGesture !== null &&
+        (physicalGesture.instrumentFamily === "flute" ||
+          physicalGesture.instrumentFamily === "clarinet")
+        ? physicalGesture.deterministicSeedUint32 % 8
+        : undefined,
     );
     if (pcm === null) return null;
     const buffer = context.createBuffer(

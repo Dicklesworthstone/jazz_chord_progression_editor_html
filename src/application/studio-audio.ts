@@ -16,9 +16,10 @@
  * playback plans and serialized transport commands — it never sees UI state.
  */
 import {
-  compilePhysicalRealization,
+  memoizedPhysicalRealization,
   createAudioEngine,
   createTransportService,
+  isPhysicalSupportedSampleRateHz,
   physicalFamilyForInstrumentId,
   sha256Hex,
   type AudioAnalysisFrame,
@@ -463,18 +464,25 @@ export function createStudioAudio(
       ),
     prepareInstrument: async (instrumentId, notes, binding) => {
       const family = physicalFamilyForInstrumentId(instrumentId);
-      const physical = family === null || binding === undefined
-        ? null
-        : compilePhysicalRealization({
-            plan: binding.plan,
-            sourcePlanRevision: binding.planRevision,
-            instrumentFamily: family,
-            instrumentVersionId: `changes.physical.${instrumentId}.v2`,
-            parameterPackSha256: sha256Hex(
-              `changes.physical.parameter-pack.${instrumentId}.v1`,
-            ),
-            sampleRateHz: 48_000,
-          });
+      // Compile only at the rate the engine will actually render; a plan
+      // compiled at a fictional rate carries wrong frames and fingerprints.
+      const contextSampleRateHz = engine.inspectAudioEngine().contextSampleRate;
+      const physical =
+        family === null ||
+        binding === undefined ||
+        contextSampleRateHz === null ||
+        !isPhysicalSupportedSampleRateHz(contextSampleRateHz)
+          ? null
+          : memoizedPhysicalRealization({
+              plan: binding.plan,
+              sourcePlanRevision: binding.planRevision,
+              instrumentFamily: family,
+              instrumentVersionId: `changes.physical.${instrumentId}.v2`,
+              parameterPackSha256: sha256Hex(
+                `changes.physical.parameter-pack.${instrumentId}.v1`,
+              ),
+              sampleRateHz: contextSampleRateHz,
+            });
       const gesturesByEvent = new Map<string, readonly ExpressiveVoiceGesture[]>();
       if (physical?.ok === true) {
         const mutable = new Map<string, ExpressiveVoiceGesture[]>();

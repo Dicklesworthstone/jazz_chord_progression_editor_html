@@ -69,6 +69,7 @@ export type WaveguideRenderer = Readonly<{
     velocity: number,
     sampleRateHz: number,
     maxSeconds?: number,
+    variationSlot?: number,
   ) => RenderedNotePcm | null;
 }>;
 
@@ -284,11 +285,29 @@ type ConcertGrandExports = Readonly<{
     right: number,
     maxFrames: number,
   ) => number;
+  flt_render_seeded: (
+    midi: number,
+    velocity: number,
+    sampleRate: number,
+    variationSlot: number,
+    left: number,
+    right: number,
+    maxFrames: number,
+  ) => number;
   clr_note_frames: (midi: number, sampleRate: number) => number;
   clr_render: (
     midi: number,
     velocity: number,
     sampleRate: number,
+    left: number,
+    right: number,
+    maxFrames: number,
+  ) => number;
+  clr_render_seeded: (
+    midi: number,
+    velocity: number,
+    sampleRate: number,
+    variationSlot: number,
     left: number,
     right: number,
     maxFrames: number,
@@ -835,6 +854,10 @@ async function instantiate(): Promise<DspCore> {
       rawExports,
       "flt_render",
     ) as ConcertGrandExports["flt_render"],
+    flt_render_seeded: requireExportedFunction(
+      rawExports,
+      "flt_render_seeded",
+    ) as ConcertGrandExports["flt_render_seeded"],
     clr_note_frames: requireExportedFunction(
       rawExports,
       "clr_note_frames",
@@ -843,6 +866,10 @@ async function instantiate(): Promise<DspCore> {
       rawExports,
       "clr_render",
     ) as ConcertGrandExports["clr_render"],
+    clr_render_seeded: requireExportedFunction(
+      rawExports,
+      "clr_render_seeded",
+    ) as ConcertGrandExports["clr_render_seeded"],
     phs_validate_v2: requireExportedFunction(
       instance.exports,
       "phs_validate_v2",
@@ -1137,8 +1164,17 @@ async function instantiate(): Promise<DspCore> {
       right: number,
       maxFrames: number,
     ) => number,
+    renderSeededInto?: (
+      midi: number,
+      velocity: number,
+      rate: number,
+      variationSlot: number,
+      left: number,
+      right: number,
+      maxFrames: number,
+    ) => number,
   ): WaveguideRenderer["renderNote"] => {
-    return (midiPitch, velocity, sampleRateHz, maxSeconds) => {
+    return (midiPitch, velocity, sampleRateHz, maxSeconds, variationSlot) => {
       const natural = noteFrames(midiPitch, sampleRateHz);
       if (natural <= 0) return null;
       const capacity =
@@ -1152,14 +1188,9 @@ async function instantiate(): Promise<DspCore> {
       const leftPointer = scratchBase;
       const rightPointer = scratchBase + channelBytes;
       ensureCapacity(memory, scratchBase, channelBytes * 2);
-      const written = renderInto(
-        midiPitch,
-        velocity,
-        sampleRateHz,
-        leftPointer,
-        rightPointer,
-        capacity,
-      );
+      const written = variationSlot === undefined || renderSeededInto === undefined
+        ? renderInto(midiPitch, velocity, sampleRateHz, leftPointer, rightPointer, capacity)
+        : renderSeededInto(midiPitch, velocity, sampleRateHz, variationSlot, leftPointer, rightPointer, capacity);
       if (written <= 0) return null;
       const left = new Float32Array(written);
       const right = new Float32Array(written);
@@ -1200,14 +1231,20 @@ async function instantiate(): Promise<DspCore> {
     ],
     [
       WAVEGUIDE_FLUTE_ALGORITHM_ID,
-      makeWaveguideRenderNote(exports.flt_note_frames, (m, v, r, l, rt, mx) =>
-        exports.flt_render(m, v, r, l, rt, mx),
+      makeWaveguideRenderNote(
+        exports.flt_note_frames,
+        (m, v, r, l, rt, mx) => exports.flt_render(m, v, r, l, rt, mx),
+        (m, v, r, slot, l, rt, mx) =>
+          exports.flt_render_seeded(m, v, r, slot, l, rt, mx),
       ),
     ],
     [
       WAVEGUIDE_CLARINET_ALGORITHM_ID,
-      makeWaveguideRenderNote(exports.clr_note_frames, (m, v, r, l, rt, mx) =>
-        exports.clr_render(m, v, r, l, rt, mx),
+      makeWaveguideRenderNote(
+        exports.clr_note_frames,
+        (m, v, r, l, rt, mx) => exports.clr_render(m, v, r, l, rt, mx),
+        (m, v, r, slot, l, rt, mx) =>
+          exports.clr_render_seeded(m, v, r, slot, l, rt, mx),
       ),
     ],
   ] as const) {

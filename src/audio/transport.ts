@@ -16,11 +16,14 @@ import {
 } from "../domain";
 import type { PlaybackEvent, PlaybackPlan } from "../playback";
 import {
-  compilePhysicalRealization,
+  memoizedPhysicalRealization,
   physicalFamilyForInstrumentId,
 } from "./physical-realization";
 import { sha256Hex } from "./deterministic-sha256";
-import type { ExpressiveVoiceGesture } from "./physical-renderer-contract";
+import {
+  isPhysicalSupportedSampleRateHz,
+  type ExpressiveVoiceGesture,
+} from "./physical-renderer-contract";
 import {
   AUDIO_MIX_POLICY,
   type AudioEngineResult,
@@ -355,6 +358,7 @@ export function createTransportService(
   let instrumentId: InstrumentId = "mellow-keys";
   let physicalLookupPlan: PlaybackPlan | null = null;
   let physicalLookupInstrument: InstrumentId | null = null;
+  let physicalLookupSampleRateHz: number | null = null;
   let physicalLookup = new Map<string, readonly ExpressiveVoiceGesture[]>();
   let timing: TransportTimingPolicy = Object.freeze({
     tickIntervalMs: 25,
@@ -477,16 +481,29 @@ export function createTransportService(
   ): readonly ExpressiveVoiceGesture[] {
     const family = physicalFamilyForInstrumentId(instrumentId);
     if (family === null) return Object.freeze([]);
+    // Segment frame positions and fingerprints are only truthful at the rate
+    // the engine actually renders. Before the engine context exists there is
+    // no honest rate, so no plan is compiled rather than compiling a lie.
+    const contextSampleRateHz =
+      platform.engine.inspectAudioEngine().contextSampleRate;
+    if (
+      contextSampleRateHz === null ||
+      !isPhysicalSupportedSampleRateHz(contextSampleRateHz)
+    ) {
+      return Object.freeze([]);
+    }
     if (
       physicalLookupPlan !== plan ||
-      physicalLookupInstrument !== instrumentId
+      physicalLookupInstrument !== instrumentId ||
+      physicalLookupSampleRateHz !== contextSampleRateHz
     ) {
       physicalLookupPlan = plan;
       physicalLookupInstrument = instrumentId;
+      physicalLookupSampleRateHz = contextSampleRateHz;
       physicalLookup = new Map();
       const revision = binding?.planRevision;
       if (revision === undefined) return Object.freeze([]);
-      const compiled = compilePhysicalRealization({
+      const compiled = memoizedPhysicalRealization({
         plan,
         sourcePlanRevision: revision,
         instrumentFamily: family,
@@ -494,9 +511,7 @@ export function createTransportService(
         parameterPackSha256: sha256Hex(
           `changes.physical.parameter-pack.${instrumentId}.v1`,
         ),
-        // Gesture curves are tick-domain data. Segment frames are not consumed
-        // by X1; the engine renders at its actual AudioContext sample rate.
-        sampleRateHz: 48_000,
+        sampleRateHz: contextSampleRateHz,
       });
       if (compiled.ok) {
         const mutable = new Map<string, ExpressiveVoiceGesture[]>();
