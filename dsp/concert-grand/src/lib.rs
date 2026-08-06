@@ -332,6 +332,18 @@ pub extern "C" fn cg_render(
     let attack_step = 1.0 - exp(-1.0 / (attack_seconds * sr));
     let mut attack = 0.0f64;
 
+    /*
+     * Subnormal/early-out checkpoint cadence. The fast noise/thump envelopes
+     * decay through the f64 subnormal range within a fraction of a second,
+     * and WASM has no flush-to-zero mode, so every 256 frames the decaying
+     * states are deterministically flushed (physical::flush_denormal law).
+     * The same sweep computes a monotone upper bound on all future output —
+     * every term decays multiplicatively — and once the bound is far below
+     * the 1e-4 trailing-trim threshold the tail is silence by construction:
+     * the remaining frames are zeroed instead of computed.
+     */
+    let early_guard = (0.2 * sr) as usize;
+    let mut checkpoint_countdown = 256u32;
     for frame in 0..frames {
         let mut sum_left = 0.0f64;
         let mut sum_right = 0.0f64;
@@ -359,6 +371,32 @@ pub extern "C" fn cg_render(
 
         out_left[frame] = ((sum_left * attack) + strike_left + thump) as f32;
         out_right[frame] = ((sum_right * attack) + strike_right + thump) as f32;
+
+        checkpoint_countdown -= 1;
+        if checkpoint_countdown == 0 {
+            checkpoint_countdown = 256;
+            noise_env = physical::flush_denormal(noise_env);
+            thump_env = physical::flush_denormal(thump_env);
+            let mut oscillator_bound = 0.0f64;
+            for state in states[..oscillators].iter_mut() {
+                state.env_fast = physical::flush_denormal(state.env_fast);
+                state.env_slow = physical::flush_denormal(state.env_slow);
+                let magnitude = state.re.abs() + state.im.abs();
+                oscillator_bound += magnitude * (state.env_fast + state.env_slow);
+            }
+            /* |lp|,|thump_state| <= 1 (lowpassed unit noise), so these terms
+             * bound the strike/thump contributions for every later frame. */
+            let bound = oscillator_bound
+                + noise_env * noise_level
+                + thump_env * thump_level;
+            if frame + 1 >= early_guard && bound < 1.0e-9 {
+                for silent in frame + 1..frames {
+                    out_left[silent] = 0.0;
+                    out_right[silent] = 0.0;
+                }
+                break;
+            }
+        }
     }
 
     /*
@@ -735,6 +773,34 @@ pub extern "C" fn an_chroma(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// jcpe-dsp-denormals-onp5: an eight-second bass render must never emit a
+    /// subnormal sample, and every sample stays finite. The envelope flush
+    /// happens at the 256-frame checkpoint; the early-out zeroes any frames
+    /// after the output bound falls below audibility, so trailing content is
+    /// exact zero rather than subnormal residue.
+    #[test]
+    fn long_bass_render_contains_no_subnormal_or_nonfinite_samples() {
+        let sample_rate = 48_000.0f32;
+        let frames = cg_note_frames(24, sample_rate) as usize;
+        assert!(frames > 7 * 48_000, "bass cap should exceed seven seconds");
+        let mut left = vec![0.0f32; frames];
+        let mut right = vec![0.0f32; frames];
+        let written = cg_render(
+            24,
+            96,
+            sample_rate,
+            left.as_mut_ptr(),
+            right.as_mut_ptr(),
+            frames as i32,
+        );
+        assert!(written > 0);
+        for (l, r) in left.iter().zip(right.iter()) {
+            assert!(l.is_finite() && r.is_finite());
+            assert!(!l.is_subnormal(), "left sample subnormal");
+            assert!(!r.is_subnormal(), "right sample subnormal");
+        }
+    }
 
     #[test]
     fn renders_a4_with_partials_at_the_expected_places() {

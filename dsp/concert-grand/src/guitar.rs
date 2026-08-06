@@ -32,6 +32,7 @@
 
 use libm::{cos, exp, pow, sin, tanh};
 
+use crate::physical::flush_denormal;
 use crate::{midi_frequency_hz, XorShift32, TAU};
 
 /// Longest supported waveguide: MIDI 21 at 192 kHz is ~6 982 samples.
@@ -77,7 +78,7 @@ impl Allpass {
 
     #[inline]
     fn tick(&mut self, x: f64) -> f64 {
-        let y = self.a * x + self.x1 - self.a * self.y1;
+        let y = flush_denormal(self.a * x + self.x1 - self.a * self.y1);
         self.x1 = x;
         self.y1 = y;
         y
@@ -114,7 +115,7 @@ impl Mode {
 
     #[inline]
     fn tick(&mut self, x: f64) -> f64 {
-        let y = self.b0 * x + self.a1 * self.y1 + self.a2 * self.y2;
+        let y = flush_denormal(self.b0 * x + self.a1 * self.y1 + self.a2 * self.y2);
         self.y2 = self.y1;
         self.y1 = y;
         y
@@ -370,19 +371,23 @@ pub extern "C" fn gtr_render(
             /* Damping average with S samples of delay built into layout. */
             let damped = (1.0 - pol.damp_s) * raw + pol.damp_s * pol.damp_prev;
             pol.damp_prev = raw;
-            let mut signal = damped * pol.loss;
+            /* Loss point doubles as the loop's subnormal flush. */
+            let mut signal = flush_denormal(damped * pol.loss);
             for stage in 0..pol.dispersion_stages {
                 signal = pol.dispersion[stage].tick(signal);
             }
             signal = pol.tuning.tick(signal);
             outs[which] = signal;
             line[read] = signal;
-            pol.write = (pol.write + 1) % pol.length;
+            pol.write += 1;
+            if pol.write == pol.length {
+                pol.write = 0;
+            }
         }
         /* Bridge coupling: the planes exchange, never create, energy. */
         {
-            let v_slot = (vertical.write + vertical.length - 1) % vertical.length;
-            let h_slot = (horizontal.write + horizontal.length - 1) % horizontal.length;
+            let v_slot = if vertical.write == 0 { vertical.length - 1 } else { vertical.write - 1 };
+            let h_slot = if horizontal.write == 0 { horizontal.length - 1 } else { horizontal.write - 1 };
             let exchange = coupling * (outs[1] - outs[0]);
             string_v[v_slot] += exchange;
             string_h[h_slot] -= exchange;
@@ -395,19 +400,19 @@ pub extern "C" fn gtr_render(
             body_out += mode.tick(string_out);
         }
         let click = click_noise.bipolar() * click_env * click_level;
-        click_env *= click_decay;
+        click_env = flush_denormal(click_env * click_decay);
         let instrument = string_out * 0.55 + body_out * 0.45 + click;
 
         /* Amp chain: sag -> asymmetric light drive -> cab voicing. */
-        pre_hp_state += pre_hp_alpha * (instrument - pre_hp_state);
+        pre_hp_state = flush_denormal(pre_hp_state + pre_hp_alpha * (instrument - pre_hp_state));
         let pre = instrument - pre_hp_state;
         let magnitude = if pre >= 0.0 { pre } else { -pre };
         let sag_step = if magnitude > sag_env { sag_attack } else { sag_release };
-        sag_env += sag_step * (magnitude - sag_env);
+        sag_env = flush_denormal(sag_env + sag_step * (magnitude - sag_env));
         let sagged = pre / (1.0 + sag_depth * sag_env);
         let asym = sagged + asymmetry * sagged * sagged;
         let shaped = tanh(asym * drive) / drive_norm;
-        cab_hp_state += cab_hp_alpha * (shaped - cab_hp_state);
+        cab_hp_state = flush_denormal(cab_hp_state + cab_hp_alpha * (shaped - cab_hp_state));
         let mut post = shaped - cab_hp_state;
         if let Some(mode) = presence_mode.as_mut() {
             post += mode.tick(post);
