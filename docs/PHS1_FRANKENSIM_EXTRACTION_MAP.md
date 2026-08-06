@@ -125,8 +125,19 @@ WASM crate), which license grant applies — the repository-level MIT-with-
 Rider, or the per-crate `MIT OR Apache-2.0` declared in the workspace
 manifest — and what provenance text must each vendored file carry?
 
-Tracked as its own question bead; `jcpe-mnsc.3.2` (PHS1 build) must not
-vendor files before the answer is recorded here.
+**Owner decision (2026-08-06):** the repository-level MIT License with
+OpenAI/Anthropic Rider governs. This repository's `LICENSE`,
+`/dp/frankensim/LICENSE`, and `/dp/asupersync/LICENSE` are byte-identical
+MIT-with-Rider texts, and the owner has directed that this repository's
+license match them; the per-crate `MIT OR Apache-2.0` line in the frankensim
+workspace manifest does not extend a rider-free grant to extracted files.
+Each vendored file must carry a provenance header naming the source
+repository, source path, the pinned commit
+`b47259187a31b704f8f0faf6abdf49b32919b96a`, the retrieval date, and the
+statement that the file is distributed under this repository's MIT License
+with OpenAI/Anthropic Rider. Vendoring for `jcpe-mnsc.3.2` is unblocked;
+tracked question bead `jcpe-frankensim-license-arbitration-rbru` is closed
+with this answer.
 
 ## 6. Practical gotchas for the foundry
 

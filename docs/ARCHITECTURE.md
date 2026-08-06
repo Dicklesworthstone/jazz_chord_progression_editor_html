@@ -172,6 +172,7 @@ The manifest exposes these stable commands:
 | `bun run validate:x0-contract` | validate the independent persistent-audio graph, recipe, impulse, voice-lifecycle, registry, render, listening, trace, provenance, and mutation authority package |
 | `bun run validate:phs0-contract` | validate the proposed gesture-driven physical-renderer plans, exact limits, stateful partitioning, v2 ABI, baseline, traces, provenance, and mutation controls without claiming production implementation |
 | `bun run validate:phs1-contract` | validate the offline foundry boundary, canonical parameter packs, deterministic work bounds, independent analytic audio/physics metrics, provenance classes, traces, and mutation controls without claiming calibrated packs or production implementation |
+| `bun run verify:physical-foundry` | run the production PHS1 analytic metric corpus and emit its deterministic bounded receipt |
 | `bun run validate:phs2-contract` | validate clarinet-v2 reed, tongue, bore/tone-hole, gesture, state, work-bound, analytic metric, provenance, and mutation laws without claiming production implementation |
 | `bun run typecheck` | strict `tsc --noEmit` |
 | `bun run lint` | ESLint plus source-integrity and dependency-boundary checks |

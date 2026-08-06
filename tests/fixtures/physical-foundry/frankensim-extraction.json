@@ -1,0 +1,12 @@
+{
+  "schema": "changes.physical.frankensim-extraction.v1",
+  "sourceRepository": "/dp/frankensim",
+  "sourcePath": "crates/fs-time/src/symplectic.rs",
+  "sourceCommit": "b47259187a31b704f8f0faf6abdf49b32919b96a",
+  "sourceSha256": "bdf6f36d4679c9f5be1789952a3b738a070debbaf4eb8a8770fe7fba94102277",
+  "retrievedDate": "2026-08-06",
+  "licenseGrant": "repository MIT License with OpenAI/Anthropic Rider",
+  "extractedSymbol": "verlet_step",
+  "localFile": "scripts/physical-foundry-verlet.ts",
+  "localModifications": ["TypeScript callback and scratch API", "explicit shape and step refusal"]
+}
