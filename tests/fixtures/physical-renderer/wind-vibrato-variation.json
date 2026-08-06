@@ -1,0 +1,12 @@
+{
+  "schema": "changes.fixtures.wind-vibrato-variation.v1",
+  "slotCount": 8,
+  "seedToSlot": "seed-uint32-modulo-slot-count",
+  "rateMultiplier": {"minimum": 0.96, "maximum": 1.04},
+  "depthMultiplier": {"minimum": 0.9, "maximum": 1.1},
+  "onsetMultiplier": {"minimum": 0.85, "maximum": 1.15},
+  "phaseRadians": {"minimumInclusive": 0, "maximumExclusive": 6.283185307179586},
+  "cacheLaw": "only flute and clarinet gestures add the bounded slot to ABI-v1 render identity",
+  "legacyLaw": "an absent variation slot calls the legacy render export",
+  "independence": {"productionOutputUsed": false, "wallTimeAffectsOutput": false}
+}

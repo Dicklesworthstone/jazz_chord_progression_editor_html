@@ -29,7 +29,7 @@
 use libm::{atan2, cos, exp, pow, sin};
 
 use crate::physical::{DcBlocker, DelayLine, OnePoleLoss, RadiationFilter};
-use crate::{midi_frequency_hz, XorShift32, TAU};
+use crate::{midi_frequency_hz, vibrato_variation, XorShift32, TAU};
 
 /// Longest supported bore: MIDI 21 at 192 kHz is ~6 982 samples.
 const FLT_MAX_DELAY: usize = 8_192;
@@ -64,6 +64,44 @@ pub extern "C" fn flt_render(
     left: *mut f32,
     right: *mut f32,
     max_frames: i32,
+) -> i32 {
+    flt_render_inner(midi, velocity, sample_rate, left, right, max_frames, None)
+}
+
+/// Gesture-aware variant. `variation_slot` is deliberately bounded to eight
+/// cacheable performances; the legacy entry point above remains unchanged.
+#[no_mangle]
+pub extern "C" fn flt_render_seeded(
+    midi: i32,
+    velocity: i32,
+    sample_rate: f32,
+    variation_slot: u32,
+    left: *mut f32,
+    right: *mut f32,
+    max_frames: i32,
+) -> i32 {
+    let Some(variation) = vibrato_variation(variation_slot) else {
+        return 0;
+    };
+    flt_render_inner(
+        midi,
+        velocity,
+        sample_rate,
+        left,
+        right,
+        max_frames,
+        Some(variation),
+    )
+}
+
+fn flt_render_inner(
+    midi: i32,
+    velocity: i32,
+    sample_rate: f32,
+    left: *mut f32,
+    right: *mut f32,
+    max_frames: i32,
+    variation: Option<crate::VibratoVariation>,
 ) -> i32 {
     let capacity = flt_note_frames(midi, sample_rate);
     if capacity == 0
@@ -124,10 +162,85 @@ pub extern "C" fn flt_render(
      *
      * Fit provenance: 48 kHz render-harness register sweep (2026-08-06
      * campaign, model-measure comb scan) over the supported flute register;
-     * shallow-parabola fit centered at MIDI 75, post-fit residuals within a
-     * few cents. No clamp: the parabola is evaluated at the played pitch.
+     * shallow-parabola fit centered at MIDI 75. No clamp: the parabola is
+     * evaluated at the played pitch.
+     *
+     * Jet-quantization term (2026-08-06 independent autocorrelation
+     * fixture, tests/unit/physical-tuning-independent.test.ts): the jet
+     * delay is an INTEGER truncation of period/2, so each note runs its
+     * jet short by the deficit d in [0,1) samples and locks sharp by
+     * ~692 * d / period cents (692/1731 = jet participation ~0.40 in the
+     * loop phase, regressed across 44.1/48 kHz sweeps; the parabola had
+     * absorbed only the register-average of this jag, leaving per-note
+     * residuals up to +24 cents). With the jag compensated, the 96 kHz
+     * rate term refit from the same fixture drops 0.85 to 0.50 per
+     * semitone above MIDI 60; post-fit residuals measure within about
+     * four cents at all three supported rates (known exception: MIDI 96
+     * at 44.1 kHz locks a different regime, tracked as its own bug).
      */
-    let pull_cents = 30.0 + 0.038 * (m - 75.0) * (m - 75.0);
+    let jet_nominal = (period * 0.5).max(2.0);
+    /* Fractional-delay allpass restores the truncated jet deficit inside
+     * the jet path itself (bore-side compensation crossed integer bore
+     * boundaries at short delays and hopped modes). Its low-frequency
+     * group delay is the deficit; the fraction is kept in [0.1, 1.1) by
+     * borrowing one sample from the integer line (allpass law from the
+     * shipped tuning discipline). */
+    /* Below ~14 jet samples the allpass coefficient the f0-exact solve
+     * needs distorts the jet's nonlinear dynamics instead of tuning it
+     * (measured: +-75..90-cent regime flips at MIDI 93/96 for 44.1/48 kHz).
+     * Those cells keep the shipped truncated jet and stay on the register
+     * pull alone; tracked as jcpe-dsp-flute-c7-44k1-regime-c4p1. */
+    let jet_fractional = jet_nominal >= 14.0;
+    let mut jet_length = jet_nominal as usize;
+    let mut jet_deficit = jet_nominal - jet_length as f64;
+    if !jet_fractional {
+        /* a = 0 turns the allpass into a pure one-sample delay, so the
+         * integer line gives that sample back: total delay is exactly the
+         * shipped truncated jet. */
+        jet_deficit = 0.0;
+        jet_length = jet_length.saturating_sub(1).max(2);
+    } else if jet_deficit < 0.1 && jet_length > 2 {
+        jet_length -= 1;
+        jet_deficit += 1.0;
+    }
+    /* The DC formula a = (1-d)/(1+d) is wrong by tens of cents once the
+     * jet is under ~16 samples (f0 phase != DC group delay), which is the
+     * same law the bore reflection obeys. Solve the coefficient so the
+     * allpass phase delay AT f0 equals the deficit: tau(w) =
+     * 1 - (2/w)*atan(a*sin w/(1 + a*cos w)) is monotone in a, so a
+     * fixed 48-step bisection is exact to ~3e-15 and runs once per note. */
+    let omega = TAU * f0 / sr;
+    let jet_tuning_a = if jet_fractional {
+        let target = jet_deficit;
+        let tau = |a: f64| 1.0 - (2.0 / omega) * atan2(a * sin(omega), 1.0 + a * cos(omega));
+        let mut low_a = -0.999;
+        let mut high_a = 0.9999;
+        for _ in 0..48 {
+            let mid = 0.5 * (low_a + high_a);
+            if tau(mid) > target {
+                low_a = mid;
+            } else {
+                high_a = mid;
+            }
+        }
+        0.5 * (low_a + high_a)
+    } else {
+        0.0
+    };
+    let mut jet_tuning_x1 = 0.0f64;
+    let mut jet_tuning_y1 = 0.0f64;
+    /* Rate term (2026-08-06 independent autocorrelation fixture): with the
+     * jet exact-at-f0, the 96 kHz sweep reads linearly flat above MIDI 60
+     * (-1.8 at 60 to -15.8 at 96); 0.40 cents per semitone per unit of
+     * sr/48k-1 centers all three rates within about two cents. Applied only
+     * with the fractional jet - the truncated-jet cells keep the shipped
+     * behavior. */
+    let rate_term = if jet_fractional {
+        -0.40 * (m - 60.0).max(0.0) * (sr / 48_000.0 - 1.0)
+    } else {
+        0.0
+    };
+    let pull_cents = 30.0 + 0.038 * (m - 75.0) * (m - 75.0) + rate_term;
     let corrected_period = period * pow(2.0, pull_cents / 1_200.0);
     let effective = (corrected_period - reflection_delay - 0.5).max(3.2);
     let bore_length = ((effective - 0.1) as usize).max(3);
@@ -135,8 +248,6 @@ pub extern "C" fn flt_render(
     let tuning_a = (1.0 - bore_fraction) / (1.0 + bore_fraction);
     let mut tuning_x1 = 0.0f64;
     let mut tuning_y1 = 0.0f64;
-    let jet_length = ((period * 0.5).max(2.0)) as usize;
-
     let bore = unsafe { &mut *core::ptr::addr_of_mut!(FLT_BORE) };
     let jet = unsafe { &mut *core::ptr::addr_of_mut!(FLT_JET) };
     let Some(mut bore_delay) = DelayLine::new(bore, bore_length) else {
@@ -179,10 +290,14 @@ pub extern "C" fn flt_render(
      * flute its even harmonics, which a pure odd cubic cannot produce. */
     let jet_offset = 0.11f64;
     let attack_step = 1.0 - exp(-1.0 / (0.055 * sr));
-    let vibrato_hz = 5.1;
-    let vibrato_depth = 0.028;
-    let vibrato_onset = 0.32 * sr;
+    let vibrato_hz = 5.1 * variation.map_or(1.0, |value| value.rate_multiplier);
+    let vibrato_depth = 0.028 * variation.map_or(1.0, |value| value.depth_multiplier);
+    let vibrato_onset = 0.32 * sr * variation.map_or(1.0, |value| value.onset_multiplier);
     let vibrato_ramp = 0.35 * sr;
+    let vibrato_step = TAU * vibrato_hz / sr;
+    let (vibrato_step_sin, vibrato_step_cos) = (sin(vibrato_step), cos(vibrato_step));
+    let mut vibrato_sin = variation.map_or(0.0, |value| sin(value.phase_radians));
+    let mut vibrato_cos = variation.map_or(1.0, |value| cos(value.phase_radians));
     /*
      * Turbulence level. The first shipped values (0.028 + 0.05v) measured
      * a harmonic-to-noise ratio of 0-4 dB in the radiated field - the
@@ -219,8 +334,17 @@ pub extern "C" fn flt_render(
         } else {
             (((frame as f64) - vibrato_onset) / vibrato_ramp).min(1.0)
         };
-        let vibrato =
-            1.0 + vibrato_depth * vibrato_gate * sin(TAU * vibrato_hz * frame as f64 / sr);
+        let lfo = if variation.is_some() {
+            vibrato_sin
+        } else {
+            sin(TAU * vibrato_hz * frame as f64 / sr)
+        };
+        let vibrato = 1.0 + vibrato_depth * vibrato_gate * lfo;
+        if variation.is_some() {
+            let next_sin = vibrato_sin * vibrato_step_cos + vibrato_cos * vibrato_step_sin;
+            vibrato_cos = vibrato_cos * vibrato_step_cos - vibrato_sin * vibrato_step_sin;
+            vibrato_sin = next_sin;
+        }
         noise_lp += noise_alpha * (seed.bipolar() - noise_lp);
         let breath = pressure * vibrato * (1.0 + noise_level * noise_lp);
 
@@ -231,7 +355,11 @@ pub extern "C" fn flt_render(
         /* Jet: pressure difference travels the jet, then saturates with
          * the labium offset breaking the cubic's symmetry. */
         let pressure_diff = breath - jet_reflection * reflected;
-        let jet_out = jet_delay.output();
+        let raw_jet = jet_delay.output();
+        /* Fractional jet delay: allpass adds the truncated deficit. */
+        let jet_out = jet_tuning_a * raw_jet + jet_tuning_x1 - jet_tuning_a * jet_tuning_y1;
+        jet_tuning_x1 = raw_jet;
+        jet_tuning_y1 = jet_out;
         jet_delay.push(pressure_diff);
         let deflection = (jet_out + jet_offset).clamp(-1.0, 1.0);
         let jet_drive = deflection * (deflection * deflection - 1.0);

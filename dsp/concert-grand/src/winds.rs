@@ -33,7 +33,7 @@
 
 use libm::{atan2, cos, exp, pow, sin};
 
-use crate::{midi_frequency_hz, XorShift32, TAU};
+use crate::{midi_frequency_hz, vibrato_variation, XorShift32, TAU};
 
 /// Longest supported full-period loop: MIDI 21 at 192 kHz is ~6 982.
 const WND_MAX_DELAY: usize = 8_192;
@@ -100,6 +100,45 @@ pub extern "C" fn wnd_render(
     left: *mut f32,
     right: *mut f32,
     max_frames: i32,
+) -> i32 {
+    wnd_render_inner(midi, velocity, sample_rate, model, left, right, max_frames, None)
+}
+
+#[no_mangle]
+pub extern "C" fn wnd_render_seeded(
+    midi: i32,
+    velocity: i32,
+    sample_rate: f32,
+    model: i32,
+    variation_slot: u32,
+    left: *mut f32,
+    right: *mut f32,
+    max_frames: i32,
+) -> i32 {
+    let Some(variation) = vibrato_variation(variation_slot) else {
+        return 0;
+    };
+    wnd_render_inner(
+        midi,
+        velocity,
+        sample_rate,
+        model,
+        left,
+        right,
+        max_frames,
+        Some(variation),
+    )
+}
+
+fn wnd_render_inner(
+    midi: i32,
+    velocity: i32,
+    sample_rate: f32,
+    model: i32,
+    left: *mut f32,
+    right: *mut f32,
+    max_frames: i32,
+    variation: Option<crate::VibratoVariation>,
 ) -> i32 {
     let capacity = wnd_note_frames(midi, sample_rate);
     if capacity == 0
@@ -192,13 +231,19 @@ pub extern "C" fn wnd_render(
     };
     let attack_seconds = if oboe { 0.035 } else { 0.05 };
     let attack_step = 1.0 - exp(-1.0 / (attack_seconds * sr));
-    let (vibrato_hz, vibrato_depth, vibrato_onset_s) = if oboe {
+    let (base_vibrato_hz, base_vibrato_depth, vibrato_onset_s) = if oboe {
         (5.4, 0.010, 0.4)
     } else {
         (5.2, 0.022, 0.3)
     };
-    let vibrato_onset = vibrato_onset_s * sr;
+    let vibrato_hz = base_vibrato_hz * variation.map_or(1.0, |value| value.rate_multiplier);
+    let vibrato_depth = base_vibrato_depth * variation.map_or(1.0, |value| value.depth_multiplier);
+    let vibrato_onset = vibrato_onset_s * sr * variation.map_or(1.0, |value| value.onset_multiplier);
     let vibrato_ramp = 0.4 * sr;
+    let vibrato_step = TAU * vibrato_hz / sr;
+    let (vibrato_step_sin, vibrato_step_cos) = (sin(vibrato_step), cos(vibrato_step));
+    let mut vibrato_sin = variation.map_or(0.0, |value| sin(value.phase_radians));
+    let mut vibrato_cos = variation.map_or(1.0, |value| cos(value.phase_radians));
     let noise_level = if oboe { 0.012 + 0.018 * v_norm } else { 0.02 + 0.04 * v_norm };
     let noise_alpha = 1.0 - exp(-TAU * 3_400.0 / sr);
     let mut noise_lp = 0.0f64;
@@ -237,8 +282,17 @@ pub extern "C" fn wnd_render(
         } else {
             (((frame as f64) - vibrato_onset) / vibrato_ramp).min(1.0)
         };
-        let vibrato =
-            1.0 + vibrato_depth * vibrato_gate * sin(TAU * vibrato_hz * frame as f64 / sr);
+        let lfo = if variation.is_some() {
+            vibrato_sin
+        } else {
+            sin(TAU * vibrato_hz * frame as f64 / sr)
+        };
+        let vibrato = 1.0 + vibrato_depth * vibrato_gate * lfo;
+        if variation.is_some() {
+            let next_sin = vibrato_sin * vibrato_step_cos + vibrato_cos * vibrato_step_sin;
+            vibrato_cos = vibrato_cos * vibrato_step_cos - vibrato_sin * vibrato_step_sin;
+            vibrato_sin = next_sin;
+        }
         noise_lp += noise_alpha * (seed.bipolar() - noise_lp);
         let breath = pressure * vibrato * (1.0 + noise_level * noise_lp);
 

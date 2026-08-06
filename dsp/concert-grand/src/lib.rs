@@ -81,6 +81,36 @@ impl XorShift32 {
     }
 }
 
+/// Eight deterministic performance-variation slots shared by blown models.
+/// The small, independently bounded changes keep a single note on-model while
+/// preventing every repeated note from sharing one mechanical LFO gesture.
+#[derive(Clone, Copy)]
+pub(crate) struct VibratoVariation {
+    pub(crate) phase_radians: f64,
+    pub(crate) rate_multiplier: f64,
+    pub(crate) depth_multiplier: f64,
+    pub(crate) onset_multiplier: f64,
+}
+
+pub(crate) fn vibrato_variation(slot: u32) -> Option<VibratoVariation> {
+    if slot >= 8 {
+        return None;
+    }
+    // Mutually prime permutations keep rate, depth, and onset from moving as
+    // one correlated "humanize" knob. Endpoints exactly attain the contract
+    // bounds: rate +/-4%, depth +/-10%, onset +/-15%.
+    const RATE: [i32; 8] = [-7, 1, 5, -3, 7, -1, 3, -5];
+    const DEPTH: [i32; 8] = [3, -7, 1, 7, -5, 5, -1, -3];
+    const ONSET: [i32; 8] = [7, -3, -7, 1, 5, -5, 3, -1];
+    let index = slot as usize;
+    Some(VibratoVariation {
+        phase_radians: TAU * slot as f64 / 8.0,
+        rate_multiplier: 1.0 + 0.04 * RATE[index] as f64 / 7.0,
+        depth_multiplier: 1.0 + 0.10 * DEPTH[index] as f64 / 7.0,
+        onset_multiplier: 1.0 + 0.15 * ONSET[index] as f64 / 7.0,
+    })
+}
+
 // ---------------------------------------------------------------------------
 // Concert Grand note renderer
 // ---------------------------------------------------------------------------
@@ -773,6 +803,29 @@ pub extern "C" fn an_chroma(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn vibrato_slots_are_bounded_distinct_and_deterministic() {
+        let mut phases = [0.0; 8];
+        for slot in 0..8 {
+            let first = vibrato_variation(slot).expect("reviewed slot");
+            let second = vibrato_variation(slot).expect("same reviewed slot");
+            assert_eq!(
+                first.phase_radians.to_bits(),
+                second.phase_radians.to_bits()
+            );
+            assert!((0.96..=1.04).contains(&first.rate_multiplier));
+            assert!((0.90..=1.10).contains(&first.depth_multiplier));
+            assert!((0.85..=1.15).contains(&first.onset_multiplier));
+            phases[slot as usize] = first.phase_radians;
+        }
+        assert!(vibrato_variation(8).is_none());
+        for left in 0..8 {
+            for right in left + 1..8 {
+                assert_ne!(phases[left], phases[right]);
+            }
+        }
+    }
 
     /// jcpe-dsp-denormals-onp5: an eight-second bass render must never emit a
     /// subnormal sample, and every sample stays finite. The envelope flush

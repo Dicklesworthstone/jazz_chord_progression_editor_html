@@ -26,7 +26,7 @@
 use libm::{atan2, cos, exp, pow, sin};
 
 use crate::physical::{DcBlocker, DelayLine, OnePoleLoss, RadiationFilter};
-use crate::{midi_frequency_hz, XorShift32, TAU};
+use crate::{midi_frequency_hz, vibrato_variation, XorShift32, TAU};
 
 /// Longest supported half-period bore: MIDI 21 at 192 kHz is ~3 491 samples.
 const CLR_MAX_DELAY: usize = 4_096;
@@ -59,6 +59,42 @@ pub extern "C" fn clr_render(
     left: *mut f32,
     right: *mut f32,
     max_frames: i32,
+) -> i32 {
+    clr_render_inner(midi, velocity, sample_rate, left, right, max_frames, None)
+}
+
+#[no_mangle]
+pub extern "C" fn clr_render_seeded(
+    midi: i32,
+    velocity: i32,
+    sample_rate: f32,
+    variation_slot: u32,
+    left: *mut f32,
+    right: *mut f32,
+    max_frames: i32,
+) -> i32 {
+    let Some(variation) = vibrato_variation(variation_slot) else {
+        return 0;
+    };
+    clr_render_inner(
+        midi,
+        velocity,
+        sample_rate,
+        left,
+        right,
+        max_frames,
+        Some(variation),
+    )
+}
+
+fn clr_render_inner(
+    midi: i32,
+    velocity: i32,
+    sample_rate: f32,
+    left: *mut f32,
+    right: *mut f32,
+    max_frames: i32,
+    variation: Option<crate::VibratoVariation>,
 ) -> i32 {
     let capacity = clr_note_frames(midi, sample_rate);
     if capacity == 0
@@ -115,7 +151,12 @@ pub extern "C" fn clr_render(
      * notes outside 49..92 therefore carry the boundary correction, not a
      * measured one. */
     let mc = m.clamp(49.0, 92.0);
-    let pull_fit = ((-0.000927 * mc + 0.292118) * mc - 28.445028) * mc + 937.770853;
+    /* Low-chalumeau correction (2026-08-06 independent autocorrelation
+     * fixture): below MIDI 62 the cubic under-pulls by a smooth slope
+     * reaching +8 cents sharp at MIDI 50, consistent at 44.1/48/96 kHz;
+     * post-correction residuals measure within about two cents. */
+    let pull_fit = ((-0.000927 * mc + 0.292118) * mc - 28.445028) * mc + 937.770853
+        + 0.58 * (62.0 - mc).max(0.0);
     /* Small measured rate term: at 96 kHz the fitted pull over-corrects
      * linearly above MIDI 60 (−9 at 72 to −27 at 89); at 44.1 kHz the
      * same term is negligible. */
@@ -154,10 +195,14 @@ pub extern "C" fn clr_render(
     let reed_slope = -0.3f64;
     let pressure_target = 0.68 + 0.20 * pow(v_norm, 1.3);
     let attack_step = 1.0 - exp(-1.0 / (0.03 * sr));
-    let vibrato_hz = 4.8;
-    let vibrato_depth = 0.012;
-    let vibrato_onset = 0.35 * sr;
+    let vibrato_hz = 4.8 * variation.map_or(1.0, |value| value.rate_multiplier);
+    let vibrato_depth = 0.012 * variation.map_or(1.0, |value| value.depth_multiplier);
+    let vibrato_onset = 0.35 * sr * variation.map_or(1.0, |value| value.onset_multiplier);
     let vibrato_ramp = 0.4 * sr;
+    let vibrato_step = TAU * vibrato_hz / sr;
+    let (vibrato_step_sin, vibrato_step_cos) = (sin(vibrato_step), cos(vibrato_step));
+    let mut vibrato_sin = variation.map_or(0.0, |value| sin(value.phase_radians));
+    let mut vibrato_cos = variation.map_or(1.0, |value| cos(value.phase_radians));
     /* A clarinet is far less breathy than a flute. */
     let noise_level = 0.005 + 0.009 * v_norm;
     let noise_alpha = 1.0 - exp(-TAU * 3_200.0 / sr);
@@ -180,8 +225,17 @@ pub extern "C" fn clr_render(
         } else {
             (((frame as f64) - vibrato_onset) / vibrato_ramp).min(1.0)
         };
-        let vibrato =
-            1.0 + vibrato_depth * vibrato_gate * sin(TAU * vibrato_hz * frame as f64 / sr);
+        let lfo = if variation.is_some() {
+            vibrato_sin
+        } else {
+            sin(TAU * vibrato_hz * frame as f64 / sr)
+        };
+        let vibrato = 1.0 + vibrato_depth * vibrato_gate * lfo;
+        if variation.is_some() {
+            let next_sin = vibrato_sin * vibrato_step_cos + vibrato_cos * vibrato_step_sin;
+            vibrato_cos = vibrato_cos * vibrato_step_cos - vibrato_sin * vibrato_step_sin;
+            vibrato_sin = next_sin;
+        }
         noise_lp += noise_alpha * (seed.bipolar() - noise_lp);
         let breath = pressure * vibrato * (1.0 + noise_level * noise_lp);
 
