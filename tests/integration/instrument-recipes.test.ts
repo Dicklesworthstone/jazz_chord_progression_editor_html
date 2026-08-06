@@ -253,7 +253,7 @@ function expectOscillatorComponent(
 }
 
 describe("TR-X0-RECIPES instrument recipes", () => {
-  test("X0-RENDER-001/X0-RENDER-004/X0-RENDER-007/X0-RENDER-010/X0-RENDER-013/X0-RENDER-016 schedules every exact source-owned recipe", async () => {
+  test("X0-RENDER-001/X0-RENDER-004/X0-RENDER-007/X0-RENDER-010/X0-RENDER-013/X0-RENDER-016/X0-RENDER-019/X0-RENDER-022/X0-RENDER-025/X0-RENDER-028/X0-RENDER-031 schedules every exact source-owned recipe", async () => {
     const { engine, fake, context } = await readyEngine();
     expect(AUDIO_INSTRUMENT_RECIPES).toHaveLength(11);
 
