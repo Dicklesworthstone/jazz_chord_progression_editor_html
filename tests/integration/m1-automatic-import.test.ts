@@ -197,6 +197,7 @@ function documentFacts(studio: StudioController): unknown {
   return {
     title: snapshot.title,
     tempoBpm: snapshot.tempoBpm,
+    meterLabel: snapshot.meterLabel,
     chordCount: snapshot.chordCount,
     styleId: snapshot.performance.styleId,
     sections: snapshot.sections,
