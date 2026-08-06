@@ -225,9 +225,10 @@ const CLR_FINGERING_MASKS: [u8; 12] = [
 /* Compact, distributable reduced-lattice geometry. Bore radius and nominal
  * 10 mm cell spacing follow Silva et al. (arXiv:0901.1640); individual hole
  * radii/chimneys are bounded representative values, not a claimed scan of a
- * particular instrument. The 1.7284*r length term is twice the validated
- * FrankenSim closed-body aperture correction 0.8642*r. */
+ * particular instrument. End correction uses the analytic uniform-profile
+ * circular-aperture value 8/(3*pi), not the license-blocked FrankenSim fit. */
 const CLR_BORE_RADIUS_M: f64 = 0.007;
+const CLR_APERTURE_END_CORRECTION_RADII: f64 = 0.848_826_363_156_775_2;
 const CLR_HOLE_AXIAL_M: [f64; 6] = [0.355, 0.397, 0.438, 0.477, 0.515, 0.551];
 const CLR_HOLE_RADIUS_M: [f64; 6] = [0.0030, 0.0032, 0.00345, 0.0037, 0.0040, 0.0043];
 const CLR_HOLE_CHIMNEY_M: [f64; 6] = [0.0060, 0.0058, 0.0056, 0.0053, 0.0050, 0.0048];
@@ -699,11 +700,13 @@ fn clr_render_inner(
     let radiation_alpha = 1.0 - exp(-TAU * 5_500.0 / sr);
     let mut radiation = RadiationFilter::new(radiation_alpha, 6.0);
     let mut hole_radiation: [OnePoleLoss; 6] = core::array::from_fn(|index| {
-        let effective_chimney = CLR_HOLE_CHIMNEY_M[index] + 1.7284 * CLR_HOLE_RADIUS_M[index];
+        let effective_chimney = CLR_HOLE_CHIMNEY_M[index]
+            + 2.0 * CLR_APERTURE_END_CORRECTION_RADII * CLR_HOLE_RADIUS_M[index];
         let corner_hz = (343.0 / (4.0 * effective_chimney)).clamp(2_000.0, 7_000.0);
         OnePoleLoss::new(1.0 - exp(-TAU * corner_hz / sr))
     });
-    let register_effective_chimney = CLR_REGISTER_CHIMNEY_M + 1.7284 * CLR_REGISTER_RADIUS_M;
+    let register_effective_chimney =
+        CLR_REGISTER_CHIMNEY_M + 2.0 * CLR_APERTURE_END_CORRECTION_RADII * CLR_REGISTER_RADIUS_M;
     let register_corner_hz = (343.0 / (4.0 * register_effective_chimney)).clamp(2_000.0, 7_000.0);
     let mut register_radiation = OnePoleLoss::new(1.0 - exp(-TAU * register_corner_hz / sr));
     let mask = fingering_mask(midi);
@@ -714,7 +717,8 @@ fn clr_render_inner(
         }
         let radius = CLR_HOLE_RADIUS_M[index];
         let area_ratio_sqrt = radius / CLR_BORE_RADIUS_M;
-        let inertance_fraction = radius / (CLR_HOLE_CHIMNEY_M[index] + 1.7284 * radius);
+        let inertance_fraction =
+            radius / (CLR_HOLE_CHIMNEY_M[index] + 2.0 * CLR_APERTURE_END_CORRECTION_RADII * radius);
         0.12 * area_ratio_sqrt * inertance_fraction
     });
     let register_gain = if register_vent_open {
@@ -961,8 +965,17 @@ mod tests {
         let mut right = [0.0f32; 8];
         assert_eq!(
             clr_render_phrase_v2(
-                64, 92, 48_000.0, 0, 1, left.as_mut_ptr(), right.as_mut_ptr(),
-                8, core::ptr::null(), 0, left.as_mut_ptr().cast::<u8>(),
+                64,
+                92,
+                48_000.0,
+                0,
+                1,
+                left.as_mut_ptr(),
+                right.as_mut_ptr(),
+                8,
+                core::ptr::null(),
+                0,
+                left.as_mut_ptr().cast::<u8>(),
                 CLR_STATE_MAX_BYTES as i32,
             ),
             0,
@@ -970,8 +983,17 @@ mod tests {
         );
         assert_eq!(
             clr_render_phrase_v2(
-                64, 92, 48_000.0, 0, 1, left.as_mut_ptr(), right.as_mut_ptr(),
-                8, core::ptr::null(), 0, bytes.as_mut_ptr(),
+                64,
+                92,
+                48_000.0,
+                0,
+                1,
+                left.as_mut_ptr(),
+                right.as_mut_ptr(),
+                8,
+                core::ptr::null(),
+                0,
+                bytes.as_mut_ptr(),
                 (CLR_STATE_FIXED_BYTES - 1) as i32,
             ),
             0,
