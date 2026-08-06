@@ -62,7 +62,7 @@
  * with the tool; reference files are reviewer material, not source.
  */
 
-import { createRequire } from "node:module";
+import { chromium } from "playwright-core";
 import { mkdirSync, writeFileSync, existsSync, readFileSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 
@@ -436,25 +436,94 @@ async function reportMidishow(pageUrl: string): Promise<void> {
   }
 }
 
+/*
+ * Cloudflare-gated pages (freemidis.net, midisfree.net at times): a plain
+ * fetch returns an HTML challenge. A real headless Chromium passes it.
+ * SAFETY: never run this while another Playwright suite is executing
+ * (`pgrep -af '@playwright|playwright'` first) — two suites thrash.
+ */
+async function browserDownload(pageUrl: string, dest: string): Promise<boolean> {
+  let browser: Awaited<ReturnType<typeof chromium.launch>> | null = null;
+  try {
+    browser = await chromium.launch({ headless: true, args: ["--no-sandbox"] });
+    const context = await browser.newContext({
+      acceptDownloads: true,
+      userAgent: USER_AGENT,
+    });
+    const page = await context.newPage();
+    let captured: Uint8Array | null = null;
+    page.on("response", (response) => {
+      const contentType = response.headers()["content-type"] ?? "";
+      const url = response.url();
+      if (contentType.includes("midi") || contentType.includes("octet-stream") || url.endsWith(".mid")) {
+        void response
+          .body()
+          .then((body) => {
+            if (looksLikeSmf(new Uint8Array(body))) captured = new Uint8Array(body);
+          })
+          .catch(() => undefined);
+      }
+    });
+    await page.goto(pageUrl, { waitUntil: "domcontentloaded", timeout: 90_000 });
+    await page.waitForTimeout(6_000);
+    const handles = await page.$$("a,button");
+    for (const handle of handles) {
+      const text = ((await handle.textContent().catch(() => "")) ?? "").trim().toLowerCase();
+      const href = (await handle.getAttribute("href").catch(() => null)) ?? "";
+      const onclick = (await handle.getAttribute("onclick").catch(() => null)) ?? "";
+      if (!/download/iu.test(`${text} ${href} ${onclick}`)) continue;
+      const pending = page.waitForEvent("download", { timeout: 40_000 }).catch(() => null);
+      await handle.click({ timeout: 5_000 }).catch(() => undefined);
+      const download = await pending;
+      if (download !== null) {
+        await download.saveAs(dest);
+        const saved = readFileSync(dest);
+        if (looksLikeSmf(saved)) {
+          await context.close();
+          return true;
+        }
+      }
+      await page.waitForTimeout(1_500);
+    }
+    await page.waitForTimeout(4_000);
+    await context.close();
+    if (captured !== null) {
+      writeFileSync(dest, captured);
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.log(`  browser fallback failed for ${pageUrl}: ${String(error)}`);
+    return false;
+  } finally {
+    if (browser !== null) await browser.close().catch(() => undefined);
+  }
+}
+
 /* --------------------------------------------------------------- commands */
 
 async function downloadCandidate(
   candidate: Candidate,
   outDir: string,
   nameOverride: string | null,
+  useBrowser: boolean,
 ): Promise<string | null> {
   if (candidate.fileUrl === null) return null;
   const name = nameOverride ?? `${sanitizeName(candidate.title)}.mid`;
   const dest = join(outDir, name);
   const referer = candidate.site === "bitmidi" ? candidate.pageUrl : null;
   const bytes = await httpGetBytes(candidate.fileUrl, referer);
-  if (bytes === null) return null;
-  if (!looksLikeSmf(bytes)) {
-    console.log(`  ${name}: downloaded ${String(bytes.length)} bytes but it is not SMF (HTML gate?)`);
-    return null;
+  if (bytes !== null && looksLikeSmf(bytes)) {
+    writeFileSync(dest, bytes);
+    return dest;
   }
-  writeFileSync(dest, bytes);
-  return dest;
+  if (bytes !== null) {
+    console.log(`  ${name}: downloaded ${String(bytes.length)} bytes but it is not SMF (HTML gate?)`);
+  }
+  if (useBrowser && (await browserDownload(candidate.pageUrl, dest))) {
+    return dest;
+  }
+  return null;
 }
 
 async function cmdSearch(args: Args): Promise<void> {
@@ -479,22 +548,46 @@ async function cmdSearch(args: Args): Promise<void> {
 async function cmdFetch(args: Args): Promise<void> {
   const url = args.positional[0];
   if (url === undefined) {
-    console.log("usage: fetch <url> [--name <file>]");
+    console.log("usage: fetch <url> [--name <file>] [--browser]");
     return;
   }
   mkdirSync(args.out, { recursive: true });
-  const name = args.name ?? `${sanitizeName(basename(url))}.mid`;
-  const dest = join(args.out, name.endsWith(".mid") ? name : `${name}.mid`);
-  const bytes = await httpGetBytes(url, null);
-  if (bytes === null) return;
-  if (!looksLikeSmf(bytes)) {
-    console.log(`downloaded ${String(bytes.length)} bytes but not SMF; saved anyway for inspection: ${dest}`);
-    writeFileSync(dest, bytes);
+  if (url.includes("midishow.com")) {
+    await reportMidishow(url);
     return;
   }
-  writeFileSync(dest, bytes);
-  const scored = scoreSmf(dest, bytes);
-  console.log(`saved ${dest} — score ${String(scored.score)}: ${scored.verdicts.join("; ")}`);
+  let target = url;
+  if (url.includes("midisfree.com")) {
+    const wpdm = await fetchMidisfreePage(url);
+    if (wpdm === null) {
+      console.log("no wpdmdl link found; retry with --browser");
+      if (!args.browser) return;
+    } else {
+      target = wpdm;
+    }
+  }
+  const name = args.name ?? `${sanitizeName(basename(url))}.mid`;
+  const dest = join(args.out, name.endsWith(".mid") ? name : `${name}.mid`);
+  const bytes = await httpGetBytes(target, url);
+  if (bytes !== null && looksLikeSmf(bytes)) {
+    writeFileSync(dest, bytes);
+    const scored = scoreSmf(dest, bytes);
+    console.log(`saved ${dest} — score ${String(scored.score)}: ${scored.verdicts.join("; ")}`);
+    return;
+  }
+  if (bytes !== null) {
+    console.log(`direct fetch returned ${String(bytes.length)} non-SMF bytes (challenge page?)`);
+  }
+  if (!args.browser) {
+    console.log("retry with --browser to pass the Cloudflare challenge in headless Chromium.");
+    return;
+  }
+  if (await browserDownload(url, dest)) {
+    const scored = scoreSmf(dest, readFileSync(dest));
+    console.log(`saved ${dest} — score ${String(scored.score)}: ${scored.verdicts.join("; ")}`);
+  } else {
+    console.log("browser fallback did not produce an SMF file.");
+  }
 }
 
 async function cmdScore(args: Args): Promise<void> {
@@ -527,7 +620,7 @@ async function cmdGrab(args: Args): Promise<void> {
   for (const c of candidates) await resolveBitmidi(c);
   const files: string[] = [];
   for (const c of candidates) {
-    const dest = await downloadCandidate(c, args.out, null);
+    const dest = await downloadCandidate(c, args.out, null, args.browser);
     if (dest !== null) files.push(dest);
   }
   if (files.length === 0) {
