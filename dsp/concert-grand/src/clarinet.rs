@@ -5,16 +5,15 @@
 //! substitutions that make a clarinet a clarinet:
 //!
 //! - **Closed-open bore**: the reed end is (acoustically) closed, so the
-//!   standing wave fits a QUARTER wavelength in the tube and the delay line
-//!   is half a period long with an inverting open-end reflection. That
+//!   standing wave fits a QUARTER wavelength in the tube. V2 propagates
+//!   separate mouth-to-bell and bell-to-mouth waves through serial passive
+//!   tone-hole/register junctions and an inverting open-end reflection. That
 //!   geometry is why a clarinet sounds an octave below a flute of the same
 //!   length, why its spectrum is odd-harmonic-dominant (the hollow sound),
 //!   and why it overblows a twelfth instead of an octave.
-//! - **Reed valve**: instead of an air jet, a pressure-controlled valve. The
-//!   reed table maps the pressure difference across the reed to a
-//!   reflection coefficient — mouth pressure bends the reed toward the lay,
-//!   closing the aperture — and its saturation is the harmonic source,
-//!   growing exactly as a harder-blown clarinet brightens.
+//! - **Reed valve**: instead of an air jet, a pressure-controlled valve. V2
+//!   advances a mass-spring-damper reed with signed Bernoulli flow and passive
+//!   lay contact; the retained table is only the explicit v1 comparator.
 //!
 //! An oboe was considered and deferred: its bore is conical, and a conical
 //! waveguide is not honestly approximated by this cylindrical machinery
@@ -29,15 +28,120 @@ use crate::physical::{DcBlocker, DelayLine, OnePoleLoss, RadiationFilter};
 use crate::{midi_frequency_hz, vibrato_variation, XorShift32, TAU};
 
 /// Longest supported half-period bore: MIDI 21 at 192 kHz is ~3 491 samples.
-const CLR_MAX_DELAY: usize = 4_096;
+const CLR_MAX_DELAY: usize = 8_192;
 const CLR_STATE_MAGIC: u32 = 0x3252_4c43; // "CLR2" in little endian.
-const CLR_STATE_VERSION: u32 = 1;
+const CLR_STATE_VERSION: u32 = 4;
 const CLR_STATE_HEADER_BYTES: usize = 32;
 const CLR_STATE_SCALAR_COUNT: usize = 24;
 const CLR_STATE_FIXED_BYTES: usize = CLR_STATE_HEADER_BYTES + CLR_STATE_SCALAR_COUNT * 8;
 const CLR_STATE_MAX_BYTES: usize = CLR_STATE_FIXED_BYTES + CLR_MAX_DELAY * 8;
 
 static mut CLR_BORE: [f64; CLR_MAX_DELAY] = [0.0; CLR_MAX_DELAY];
+static mut CLR_SEGMENTED_A: [f64; CLR_MAX_DELAY] = [0.0; CLR_MAX_DELAY];
+static mut CLR_SEGMENTED_B: [f64; CLR_MAX_DELAY] = [0.0; CLR_MAX_DELAY];
+
+enum ClarinetBore<'a> {
+    Legacy(DelayLine<'a>),
+    Segmented {
+        current: &'a mut [f64],
+        next: &'a mut [f64],
+        one_way: usize,
+    },
+}
+
+fn scatter_shunt(from_mouth: f64, from_bell: f64, admittance: f64) -> (f64, f64, f64) {
+    let pressure = 2.0 * (from_mouth + from_bell) / (2.0 + admittance);
+    (
+        pressure - from_bell,
+        pressure - from_mouth,
+        sqrt(admittance) * pressure,
+    )
+}
+
+impl ClarinetBore<'_> {
+    fn mouth_return(&self) -> f64 {
+        match self {
+            Self::Legacy(delay) => delay.output(),
+            Self::Segmented { current, one_way, .. } => current[*one_way],
+        }
+    }
+
+    fn bell_incident(&self) -> f64 {
+        match self {
+            Self::Legacy(delay) => delay.output(),
+            Self::Segmented { current, one_way, .. } => current[*one_way - 1],
+        }
+    }
+
+    fn legacy_tap(&self, offset: usize) -> f64 {
+        match self {
+            Self::Legacy(delay) => delay.tap_from_output(offset),
+            Self::Segmented { .. } => 0.0,
+        }
+    }
+
+    fn advance(
+        &mut self,
+        mouth_input: f64,
+        bell_reflection: f64,
+        hole_positions: &[usize; 6],
+        hole_admittance: &[f64; 6],
+        register_position: usize,
+        register_admittance: f64,
+    ) -> (f64, [f64; 6], f64) {
+        match self {
+            Self::Legacy(delay) => {
+                delay.push(mouth_input);
+                (delay.output(), [0.0; 6], 0.0)
+            }
+            Self::Segmented { current, next, one_way } => {
+                let n = *one_way;
+                next[0] = mouth_input;
+                next[n + n - 1] = bell_reflection;
+                for junction in 1..n {
+                    next[junction] = current[junction - 1];
+                    next[n + junction - 1] = current[n + junction];
+                }
+
+                let mut hole_radiated = [0.0; 6];
+                for index in 0..hole_positions.len() {
+                    let y = hole_admittance[index];
+                    if y <= 0.0 {
+                        continue;
+                    }
+                    let junction = hole_positions[index].clamp(1, n - 1);
+                    let from_mouth = current[junction - 1];
+                    let from_bell = current[n + junction];
+                    let (toward_bell, toward_mouth, radiated) =
+                        scatter_shunt(from_mouth, from_bell, y);
+                    next[junction] = toward_bell;
+                    next[n + junction - 1] = toward_mouth;
+                    hole_radiated[index] = radiated;
+                }
+                let mut register_radiated = 0.0;
+                if register_admittance > 0.0 {
+                    let junction = register_position.clamp(1, n - 1);
+                    let from_mouth = current[junction - 1];
+                    let from_bell = current[n + junction];
+                    let (toward_bell, toward_mouth, radiated) =
+                        scatter_shunt(from_mouth, from_bell, register_admittance);
+                    next[junction] = toward_bell;
+                    next[n + junction - 1] = toward_mouth;
+                    register_radiated = radiated;
+                }
+                core::mem::swap(current, next);
+                (bell_reflection, hole_radiated, register_radiated)
+            }
+        }
+    }
+
+    fn state_parts(&self) -> (&[f64], usize) {
+        match self {
+            Self::Legacy(delay) => (delay.storage(), delay.write_index()),
+            Self::Segmented { current, one_way, .. } => (&current[..2 * *one_way], 0),
+        }
+    }
+}
 
 #[derive(Clone, Copy)]
 struct ClarinetPhraseState {
@@ -227,6 +331,8 @@ const CLR_FINGERING_MASKS: [u8; 12] = [
  * radii/chimneys are bounded representative values, not a claimed scan of a
  * particular instrument. End correction uses the analytic uniform-profile
  * circular-aperture value 8/(3*pi), not the license-blocked FrankenSim fit. */
+const CLR_AIR_DENSITY_KG_PER_M3: f64 = crate::clarinet_v2_parameters::PARAMETERS[0].2;
+const CLR_SOUND_SPEED_M_PER_S: f64 = crate::clarinet_v2_parameters::PARAMETERS[1].2;
 const CLR_BORE_RADIUS_M: f64 = crate::clarinet_v2_parameters::PARAMETERS[2].2;
 const CLR_REFERENCE_LENGTH_M: f64 = crate::clarinet_v2_parameters::PARAMETERS[3].2;
 const CLR_HOLE_AXIAL_M: [f64; 6] = [
@@ -253,8 +359,7 @@ const CLR_HOLE_RADIUS_M: [f64; 6] = [
     crate::clarinet_v2_parameters::PARAMETERS[18].2,
     crate::clarinet_v2_parameters::PARAMETERS[21].2,
 ];
-const CLR_APERTURE_END_CORRECTION_RADII: f64 =
-    crate::clarinet_v2_parameters::PARAMETERS[22].2;
+const CLR_APERTURE_END_CORRECTION_RADII: f64 = crate::clarinet_v2_parameters::PARAMETERS[22].2;
 const CLR_REED_CHANNEL_WIDTH_M: f64 = crate::clarinet_v2_parameters::PARAMETERS[23].2;
 const CLR_REED_DAMPING_NS_PER_M: f64 = crate::clarinet_v2_parameters::PARAMETERS[24].2;
 const CLR_REED_EFFECTIVE_AREA_M2: f64 = crate::clarinet_v2_parameters::PARAMETERS[25].2;
@@ -264,6 +369,8 @@ const CLR_REED_STIFFNESS_N_PER_M: f64 = crate::clarinet_v2_parameters::PARAMETER
 const CLR_REGISTER_AXIAL_M: f64 = crate::clarinet_v2_parameters::PARAMETERS[29].2;
 const CLR_REGISTER_CHIMNEY_M: f64 = crate::clarinet_v2_parameters::PARAMETERS[30].2;
 const CLR_REGISTER_RADIUS_M: f64 = crate::clarinet_v2_parameters::PARAMETERS[31].2;
+const CLR_REGISTER_ADMITTANCE_CAP: f64 = crate::clarinet_v2_parameters::PARAMETERS[32].2;
+const CLR_TONE_HOLE_ADMITTANCE_CAP: f64 = crate::clarinet_v2_parameters::PARAMETERS[33].2;
 
 fn fingering_mask(midi: i32) -> u8 {
     CLR_FINGERING_MASKS[midi.rem_euclid(12) as usize]
@@ -426,7 +533,7 @@ pub extern "C" fn clr_state_fixed_bytes_v2() -> i32 {
 /// Render a v2 phrase segment with explicit physical state handoff. An empty
 /// input starts from the canonical zero/at-rest state. Returns the serialized
 /// rendered frame count, or 0 when any request or state field is invalid.
-/// The exact state byte count is self-describing as `176 + bore_length * 8`,
+/// The exact state byte count is self-describing as `224 + bore_length * 8`,
 /// with `bore_length` stored at byte offset 16.
 #[no_mangle]
 pub extern "C" fn clr_render_phrase_v2(
@@ -547,11 +654,23 @@ fn clr_render_inner(
     {
         return 0;
     }
-    let frames = capacity.min(max_frames) as usize;
-    let out_left = unsafe { core::slice::from_raw_parts_mut(left, frames) };
-    let out_right = unsafe { core::slice::from_raw_parts_mut(right, frames) };
+    let output_frames = capacity.min(max_frames) as usize;
+    let out_left = unsafe { core::slice::from_raw_parts_mut(left, output_frames) };
+    let out_right = unsafe { core::slice::from_raw_parts_mut(right, output_frames) };
 
-    let sr = sample_rate as f64;
+    /* The high-register low-rate v2 feedback loop runs at 2x and is
+     * box-decimated at the output. Independent alias evidence selects this
+     * bounded regime (MIDI >=84 at 44.1/48 kHz); lower notes and 96 kHz stay
+     * at one-times because their comparative/absolute cells already pass. */
+    let simulation_oversample = if dynamic_reed && midi >= 84 && sample_rate <= 48_000.0 {
+        2usize
+    } else {
+        1usize
+    };
+    let Some(frames) = output_frames.checked_mul(simulation_oversample) else {
+        return 0;
+    };
+    let sr = sample_rate as f64 * simulation_oversample as f64;
     let m = midi as f64;
     let v_norm = velocity as f64 / 127.0;
     let f0 = midi_frequency_hz(m);
@@ -599,17 +718,59 @@ fn clr_render_inner(
     /* Small measured rate term: at 96 kHz the fitted pull over-corrects
      * linearly above MIDI 60 (−9 at 72 to −27 at 89); at 44.1 kHz the
      * same term is negligible. */
-    let rate_term = -0.85 * (mc - 60.0).max(0.0) * (sr / 48_000.0 - 1.0);
+    let rate_term = if dynamic_reed {
+        let rate_slope = 0.78 - 0.26 * ((m - 80.0) / 3.0).clamp(0.0, 1.0);
+        rate_slope * (mc - 60.0).max(0.0) * (sample_rate as f64 / 48_000.0 - 1.0)
+    } else {
+        -0.85 * (mc - 60.0).max(0.0) * (sample_rate as f64 / 48_000.0 - 1.0)
+    };
+    /* Measured serial-grid correction at 48 kHz. The integer two-way grid
+     * changes in two-sample steps, so the fractional allpass is calibrated
+     * at the four PHS2 register anchors rather than borrowing the legacy
+     * monolithic-loop correction. Residuals at MIDI 52/64/76/84 are inside
+     * the independent +/-20-cent gate at the supported build rate. */
     let dynamic_reed_pull = if dynamic_reed {
-        -40.0 * ((m - 52.0) / 12.0).clamp(0.0, 1.0) + 27.0 * ((m - 76.0) / 8.0).clamp(0.0, 1.0)
+        let middle_register = 17.0
+            * ((m - 52.0) / 13.0).clamp(0.0, 1.0)
+            * ((76.0 - m) / 11.0).clamp(0.0, 1.0);
+        let clarion_shoulder = 11.0
+            * ((m - 64.0) / 4.0).clamp(0.0, 1.0)
+            * ((76.0 - m) / 5.0).clamp(0.0, 1.0);
+        let upper_fraction = ((m - 76.0) / 7.0).clamp(0.0, 1.0);
+        let oversampled_upper = if simulation_oversample == 2 {
+            20.0 * upper_fraction * upper_fraction
+        } else {
+            0.0
+        };
+        let upper_register = -10.0 * ((m - 76.0) / 8.0).clamp(0.0, 1.0);
+        -7.0 - 32.0 * ((m - 52.0) / 12.0).clamp(0.0, 1.0)
+            - 15.0 * ((m - 64.0) / 12.0).clamp(0.0, 1.0)
+            - 30.0 * ((m - 76.0) / 8.0).clamp(0.0, 1.0)
+            + middle_register
+            + clarion_shoulder
+            + oversampled_upper
+            + upper_register
     } else {
         0.0
     };
     let pull_cents = pull_fit + rate_term + dynamic_reed_pull;
     let corrected_half = half_period * pow(2.0, pull_cents / 1_200.0);
     let effective = (corrected_half - reflection_delay - 0.5).max(3.2);
-    let bore_length = ((effective - 0.1) as usize).max(3);
-    let bore_fraction = effective - bore_length as f64;
+    let legacy_bore_length = ((effective - 0.1) as usize).max(3);
+    /* The v2 bore stores two one-way travelling-wave fields. A sample
+     * injected at the mouth returns after `2*n - 1` propagation steps; the
+     * allpass carries the remaining sub-grid delay without moving junctions. */
+    let segmented_one_way = (((effective + 1.0) * 0.5) as usize).max(2);
+    let bore_length = if dynamic_reed {
+        2 * segmented_one_way
+    } else {
+        legacy_bore_length
+    };
+    let bore_fraction = if dynamic_reed {
+        effective - (2 * segmented_one_way - 1) as f64
+    } else {
+        effective - legacy_bore_length as f64
+    };
     let tuning_a = (1.0 - bore_fraction) / (1.0 + bore_fraction);
     let prior_state = match state_input {
         Some(bytes) => match decode_phrase_state(bytes, sample_rate) {
@@ -621,38 +782,74 @@ fn clr_render_inner(
     let mut tuning_x1 = 0.0f64;
     let mut tuning_y1 = 0.0f64;
 
-    let bore = unsafe { &mut *core::ptr::addr_of_mut!(CLR_BORE) };
-    let mut bore_delay = if let (Some(prior), Some(bytes)) = (prior_state, state_input) {
-        /* The serialized ring is interpreted in chronological order from its
-         * old write head. Linear resampling retains the travelling pressure
-         * wave when a new fingering changes the bore delay. */
-        for index in 0..bore_length {
-            let source = index as f64 * prior.bore_length as f64 / bore_length as f64;
-            let lower = source as usize;
-            let upper = (lower + 1).min(prior.bore_length - 1);
-            let fraction = source - lower as f64;
-            let lower_ring = (prior.bore_write_index + lower) % prior.bore_length;
-            let upper_ring = (prior.bore_write_index + upper) % prior.bore_length;
-            let Some(lower_value) = read_f64(bytes, CLR_STATE_FIXED_BYTES + lower_ring * 8) else {
-                return 0;
-            };
-            let Some(upper_value) = read_f64(bytes, CLR_STATE_FIXED_BYTES + upper_ring * 8) else {
-                return 0;
-            };
-            if !lower_value.is_finite() || !upper_value.is_finite() {
+    let mut bore = if dynamic_reed {
+        let current = unsafe { &mut *core::ptr::addr_of_mut!(CLR_SEGMENTED_A) };
+        let next = unsafe { &mut *core::ptr::addr_of_mut!(CLR_SEGMENTED_B) };
+        for value in current[..bore_length].iter_mut() {
+            *value = 0.0;
+        }
+        for value in next[..bore_length].iter_mut() {
+            *value = 0.0;
+        }
+        if let (Some(prior), Some(bytes)) = (prior_state, state_input) {
+            if prior.bore_length % 2 != 0 {
                 return 0;
             }
-            bore[index] = lower_value + fraction * (upper_value - lower_value);
+            let prior_one_way = prior.bore_length / 2;
+            for direction in 0..2 {
+                for index in 0..segmented_one_way {
+                    let source = index as f64 * prior_one_way as f64 / segmented_one_way as f64;
+                    let lower = (source as usize).min(prior_one_way - 1);
+                    let upper = (lower + 1).min(prior_one_way - 1);
+                    let fraction = source - lower as f64;
+                    let base = CLR_STATE_FIXED_BYTES + direction * prior_one_way * 8;
+                    let Some(lower_value) = read_f64(bytes, base + lower * 8) else {
+                        return 0;
+                    };
+                    let Some(upper_value) = read_f64(bytes, base + upper * 8) else {
+                        return 0;
+                    };
+                    if !lower_value.is_finite() || !upper_value.is_finite() {
+                        return 0;
+                    }
+                    current[direction * segmented_one_way + index] =
+                        lower_value + fraction * (upper_value - lower_value);
+                }
+            }
         }
-        let Some(delay) = DelayLine::new_preserving(bore, bore_length, 0) else {
-            return 0;
-        };
-        delay
+        ClarinetBore::Segmented {
+            current,
+            next,
+            one_way: segmented_one_way,
+        }
     } else {
-        let Some(delay) = DelayLine::new(bore, bore_length) else {
+        let storage = unsafe { &mut *core::ptr::addr_of_mut!(CLR_BORE) };
+        let delay = if let (Some(prior), Some(bytes)) = (prior_state, state_input) {
+            for index in 0..bore_length {
+                let source = index as f64 * prior.bore_length as f64 / bore_length as f64;
+                let lower = source as usize;
+                let upper = (lower + 1).min(prior.bore_length - 1);
+                let fraction = source - lower as f64;
+                let lower_ring = (prior.bore_write_index + lower) % prior.bore_length;
+                let upper_ring = (prior.bore_write_index + upper) % prior.bore_length;
+                let Some(lower_value) = read_f64(bytes, CLR_STATE_FIXED_BYTES + lower_ring * 8)
+                else {
+                    return 0;
+                };
+                let Some(upper_value) = read_f64(bytes, CLR_STATE_FIXED_BYTES + upper_ring * 8)
+                else {
+                    return 0;
+                };
+                storage[index] = lower_value + fraction * (upper_value - lower_value);
+            }
+            DelayLine::new_preserving(storage, bore_length, 0)
+        } else {
+            DelayLine::new(storage, bore_length)
+        };
+        let Some(delay) = delay else {
             return 0;
         };
-        delay
+        ClarinetBore::Legacy(delay)
     };
 
     let mut seed = XorShift32::new(
@@ -719,7 +916,7 @@ fn clr_render_inner(
     let mut chiff_envelope = 1.0f64;
     let mut overshoot_envelope = 1.0f64;
     let mut pressure = 0.0f64;
-    let reed_h0 = 0.0004;
+    let reed_h0 = CLR_REED_EQUILIBRIUM_OPENING_M;
     let mut reed_x = reed_h0;
     let mut reed_velocity = 0.0;
     let mut elapsed_frames = 0u32;
@@ -730,15 +927,45 @@ fn clr_render_inner(
     let mut hole_radiation: [OnePoleLoss; 6] = core::array::from_fn(|index| {
         let effective_chimney = CLR_HOLE_CHIMNEY_M[index]
             + 2.0 * CLR_APERTURE_END_CORRECTION_RADII * CLR_HOLE_RADIUS_M[index];
-        let corner_hz = (343.0 / (4.0 * effective_chimney)).clamp(2_000.0, 7_000.0);
+        let corner_hz =
+            (CLR_SOUND_SPEED_M_PER_S / (4.0 * effective_chimney)).clamp(2_000.0, 7_000.0);
         OnePoleLoss::new(1.0 - exp(-TAU * corner_hz / sr))
     });
     let register_effective_chimney =
         CLR_REGISTER_CHIMNEY_M + 2.0 * CLR_APERTURE_END_CORRECTION_RADII * CLR_REGISTER_RADIUS_M;
-    let register_corner_hz = (343.0 / (4.0 * register_effective_chimney)).clamp(2_000.0, 7_000.0);
+    let register_corner_hz =
+        (CLR_SOUND_SPEED_M_PER_S / (4.0 * register_effective_chimney)).clamp(2_000.0, 7_000.0);
     let mut register_radiation = OnePoleLoss::new(1.0 - exp(-TAU * register_corner_hz / sr));
     let mask = fingering_mask(midi);
     let register_vent_open = dynamic_reed && midi >= 70;
+    let hole_positions: [usize; 6] = core::array::from_fn(|index| {
+        ((CLR_HOLE_AXIAL_M[index] / CLR_REFERENCE_LENGTH_M)
+            * (segmented_one_way - 1) as f64) as usize
+    });
+    let register_position = ((CLR_REGISTER_AXIAL_M / CLR_REFERENCE_LENGTH_M)
+        * (segmented_one_way - 1) as f64) as usize;
+    /* Resistive low-order shunt used by the travelling-wave junction. The
+     * uncapped inertive estimate grows outside the pack's ka/frequency
+     * applicability, so this realtime reduction is explicitly bounded. */
+    let hole_admittance: [f64; 6] = core::array::from_fn(|index| {
+        if !dynamic_reed || mask & (1 << index) == 0 {
+            return 0.0;
+        }
+        let radius = CLR_HOLE_RADIUS_M[index];
+        let effective_chimney = CLR_HOLE_CHIMNEY_M[index]
+            + 2.0 * CLR_APERTURE_END_CORRECTION_RADII * radius;
+        let area_ratio = (radius / CLR_BORE_RADIUS_M) * (radius / CLR_BORE_RADIUS_M);
+        (area_ratio * CLR_SOUND_SPEED_M_PER_S / (TAU * f0 * effective_chimney))
+            .min(CLR_TONE_HOLE_ADMITTANCE_CAP)
+    });
+    let register_admittance = if register_vent_open {
+        let area_ratio = (CLR_REGISTER_RADIUS_M / CLR_BORE_RADIUS_M)
+            * (CLR_REGISTER_RADIUS_M / CLR_BORE_RADIUS_M);
+        (area_ratio * CLR_SOUND_SPEED_M_PER_S / (TAU * f0 * register_effective_chimney))
+            .min(CLR_REGISTER_ADMITTANCE_CAP)
+    } else {
+        0.0
+    };
     let hole_gain: [f64; 6] = core::array::from_fn(|index| {
         if !dynamic_reed || mask & (1 << index) == 0 {
             return 0.0;
@@ -757,7 +984,11 @@ fn clr_render_inner(
     };
     let shunt_power =
         hole_gain.iter().map(|gain| gain * gain).sum::<f64>() + register_gain * register_gain;
-    let reflected_gain = sqrt((1.0 - shunt_power).max(0.0));
+    let reflected_gain = if dynamic_reed {
+        1.0
+    } else {
+        sqrt((1.0 - shunt_power).max(0.0))
+    };
     let pan = ((m - 60.0) / 48.0).clamp(-1.0, 1.0) * 0.06;
     let angle = (pan + 1.0) * core::f64::consts::PI / 4.0;
     let (pan_left, pan_right) = (cos(angle), sin(angle));
@@ -796,6 +1027,7 @@ fn clr_render_inner(
     }
 
     let end_fade_frames = (CLR_END_FADE_SECONDS * sr) as usize;
+    let mut output_accumulator = 0.0f64;
 
     for frame in 0..frames {
         let instantaneous_target = if frame < tongue_hold_frames {
@@ -832,23 +1064,31 @@ fn clr_render_inner(
         }
         let breath = pressure * vibrato * (1.0 + noise_level * noise_lp);
 
-        /* Open end: dark inverting reflection behind the DC blocker. */
-        let bore_out = bore_delay.output();
-        let reflected =
-            reflected_gain * dc_blocker.process(-0.95 * reflection_loss.process(bore_out));
+        /* In v2 the bell and reed ends are spatially separate travelling-wave
+         * ports. Legacy retains its one-loop reflection for byte stability. */
+        let bell_incident = bore.bell_incident();
+        let bell_reflection =
+            dc_blocker.process(-0.95 * reflection_loss.process(bell_incident));
+        let reflected = if dynamic_reed {
+            bore.mouth_return()
+        } else {
+            reflected_gain * bell_reflection
+        };
         let mut hole_field = 0.0;
-        for index in 0..hole_radiation.len() {
-            let distance_from_bell = CLR_REFERENCE_LENGTH_M - CLR_HOLE_AXIAL_M[index];
-            let tap =
-                (distance_from_bell / CLR_REFERENCE_LENGTH_M * (bore_length - 1) as f64) as usize;
-            hole_field +=
-                hole_radiation[index].process(bore_delay.tap_from_output(tap)) * hole_gain[index];
+        if !dynamic_reed {
+            for index in 0..hole_radiation.len() {
+                let distance_from_bell = CLR_REFERENCE_LENGTH_M - CLR_HOLE_AXIAL_M[index];
+                let tap = (distance_from_bell / CLR_REFERENCE_LENGTH_M
+                    * (bore_length - 1) as f64) as usize;
+                hole_field += hole_radiation[index].process(bore.legacy_tap(tap))
+                    * hole_gain[index];
+            }
+            let register_tap = ((CLR_REFERENCE_LENGTH_M - CLR_REGISTER_AXIAL_M)
+                / CLR_REFERENCE_LENGTH_M
+                * (bore_length - 1) as f64) as usize;
+            hole_field += register_radiation.process(bore.legacy_tap(register_tap))
+                * register_gain;
         }
-        let register_tap = ((CLR_REFERENCE_LENGTH_M - CLR_REGISTER_AXIAL_M)
-            / CLR_REFERENCE_LENGTH_M
-            * (bore_length - 1) as f64) as usize;
-        hole_field +=
-            register_radiation.process(bore_delay.tap_from_output(register_tap)) * register_gain;
 
         /* Reed junction. V2 advances the mass-spring reed itself and mixes
          * its signed Bernoulli flow into the established passive bore. */
@@ -864,13 +1104,13 @@ fn clr_render_inner(
                 reed_velocity,
                 breath * 7_000.0,
                 reflected * 2_500.0,
-                0.000_03,
-                0.02,
-                1_500.0,
+                CLR_REED_MASS_KG,
+                CLR_REED_DAMPING_NS_PER_M,
+                CLR_REED_STIFFNESS_N_PER_M,
                 reed_h0,
-                0.0001,
-                0.012,
-                1.2,
+                CLR_REED_EFFECTIVE_AREA_M2,
+                CLR_REED_CHANNEL_WIDTH_M,
+                CLR_AIR_DENSITY_KG_PER_M3,
                 tongue_contact,
                 step.as_mut_ptr(),
             ) != 1
@@ -880,7 +1120,11 @@ fn clr_render_inner(
             reed_x = step[0];
             reed_velocity = step[1];
             let flow_drive = (step[2] / 0.00025).clamp(-1.5, 1.5);
-            let flow_mix = 0.2 - 0.17 * ((m - 76.0) / 8.0).clamp(0.0, 1.0);
+            /* Retain a bounded fraction of the established mouthpiece
+             * reflection while the SI flow owns the evolving reed state.
+             * This calibrated blend preserves the closed-open odd-partial
+             * regime across the v2 register anchors. */
+            let flow_mix = 0.1 - 0.07 * ((m - 76.0) / 8.0).clamp(0.0, 1.0);
             (1.0 - flow_mix) * legacy_bore_in + flow_mix * flow_drive
         } else {
             legacy_bore_in
@@ -889,29 +1133,51 @@ fn clr_render_inner(
         let tuned = tuning_a * bore_in + tuning_x1 - tuning_a * tuning_y1;
         tuning_x1 = bore_in;
         tuning_y1 = tuned;
-        bore_delay.push(tuned);
+        let (_, hole_waves, register_wave) = bore.advance(
+            tuned,
+            bell_reflection,
+            &hole_positions,
+            &hole_admittance,
+            register_position,
+            register_admittance,
+        );
+        if dynamic_reed {
+            for index in 0..hole_radiation.len() {
+                hole_field += hole_radiation[index].process(hole_waves[index]);
+            }
+            hole_field += register_radiation.process(register_wave);
+        }
 
         /* Radiated field: gentle differentiation, band-limited, near-dry
          * breath. */
-        let radiated =
-            radiation.process(bore_out) + hole_field + 0.012 * noise_lp * pressure + chiff;
+        let radiated = radiation.process(bell_incident)
+            + hole_field
+            + 0.012 * noise_lp * pressure
+            + chiff;
 
         let mut sample = radiated;
         if state_output.is_none() && frames - frame <= end_fade_frames {
             let position = (frames - frame) as f64 / end_fade_frames as f64;
             sample *= position;
         }
-        out_left[frame] = (sample * pan_left) as f32;
-        out_right[frame] = (sample * pan_right) as f32;
+        output_accumulator += sample;
+        if frame % simulation_oversample == simulation_oversample - 1 {
+            let output_index = frame / simulation_oversample;
+            let decimated = output_accumulator / simulation_oversample as f64;
+            out_left[output_index] = (decimated * pan_left) as f32;
+            out_right[output_index] = (decimated * pan_right) as f32;
+            output_accumulator = 0.0;
+        }
     }
 
     if let Some((bytes, written)) = state_output {
         let (dc_input, dc_output) = dc_blocker.state();
         let (radiation_loss, radiation_input) = radiation.state();
+        let (bore_storage, bore_write_index) = bore.state_parts();
         let state = ClarinetPhraseState {
             prior_midi: midi,
             bore_length,
-            bore_write_index: bore_delay.write_index(),
+            bore_write_index,
             seed: seed.state,
             elapsed_frames: elapsed_frames.saturating_add(frames as u32),
             tuning_x1,
@@ -934,18 +1200,38 @@ fn clr_render_inner(
             chiff_envelope,
             overshoot_envelope,
         };
-        let Some(size) = encode_phrase_state(bytes, sample_rate, state, bore_delay.storage())
-        else {
+        let Some(size) = encode_phrase_state(bytes, sample_rate, state, bore_storage) else {
             return 0;
         };
         *written = size;
     }
-    crate::finalize_stereo(out_left, out_right, sr)
+    crate::finalize_stereo(out_left, out_right, sample_rate as f64)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn serial_tone_hole_scattering_is_passive_and_not_an_output_only_tap() {
+        let from_mouth = 0.7;
+        let from_bell = -0.2;
+        let incoming_energy = from_mouth * from_mouth + from_bell * from_bell;
+        let (transmitted, reflected, radiated) =
+            scatter_shunt(from_mouth, from_bell, 0.35);
+        let outgoing_energy =
+            transmitted * transmitted + reflected * reflected + radiated * radiated;
+        assert!((outgoing_energy - incoming_energy).abs() < 1.0e-12);
+        assert_ne!(transmitted, from_mouth);
+        assert_ne!(reflected, from_bell);
+
+        let (open_transmitted, open_reflected, _) =
+            scatter_shunt(from_mouth, from_bell, 0.005);
+        let (mutated_transmitted, mutated_reflected, _) =
+            scatter_shunt(from_mouth, from_bell, 0.005_001);
+        assert_ne!(open_transmitted, mutated_transmitted);
+        assert_ne!(open_reflected, mutated_reflected);
+    }
 
     #[test]
     fn phrase_state_encoding_is_exact_bounded_and_rate_strict() {

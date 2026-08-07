@@ -21,6 +21,7 @@ import { describe, expect, test } from "bun:test";
 
 import {
   WAVEGUIDE_CLARINET_ALGORITHM_ID,
+  WAVEGUIDE_CLARINET_V2_ALGORITHM_ID,
   WAVEGUIDE_FLUTE_ALGORITHM_ID,
   WAVEGUIDE_GUITAR_CLEAN_ALGORITHM_ID,
   WAVEGUIDE_GUITAR_DRIVE_ALGORITHM_ID,
@@ -133,6 +134,7 @@ describe("independent register tuning fixture (+-8 cents of 12TET)", () => {
     [WAVEGUIDE_GUITAR_DRIVE_ALGORITHM_ID, 40, 84],
     [WAVEGUIDE_FLUTE_ALGORITHM_ID, 60, 96],
     [WAVEGUIDE_CLARINET_ALGORITHM_ID, 50, 89],
+    [WAVEGUIDE_CLARINET_V2_ALGORITHM_ID, 50, 84],
   ];
 
   for (const [algorithmId, lowest, highest] of registers) {

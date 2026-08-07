@@ -52,6 +52,7 @@ import { describe, expect, test } from "bun:test";
 
 import {
   WAVEGUIDE_CLARINET_ALGORITHM_ID,
+  WAVEGUIDE_CLARINET_V2_ALGORITHM_ID,
   WAVEGUIDE_FLUTE_ALGORITHM_ID,
   WAVEGUIDE_GUITAR_CLEAN_ALGORITHM_ID,
   WAVEGUIDE_GUITAR_DRIVE_ALGORITHM_ID,
@@ -285,6 +286,7 @@ describe("rendered alias energy: absolute -50 dBc or noise-consistent vs 96 kHz"
     [WAVEGUIDE_GUITAR_DRIVE_ALGORITHM_ID, [64, 84]],
     [WAVEGUIDE_FLUTE_ALGORITHM_ID, [72, 89]],
     [WAVEGUIDE_CLARINET_ALGORITHM_ID, [66, 87]],
+    [WAVEGUIDE_CLARINET_V2_ALGORITHM_ID, [66, 87]],
   ];
   const COMPARATIVE_MARGIN_DB = 3;
 
@@ -308,6 +310,7 @@ describe("rendered alias energy: absolute -50 dBc or noise-consistent vs 96 kHz"
         }
         const baseline = byRate.get(96_000);
         const rows: string[] = [];
+        const failures: string[] = [];
         for (const rate of SAMPLE_RATES) {
           const measured = byRate.get(rate);
           if (measured === undefined) {
@@ -331,11 +334,14 @@ describe("rendered alias energy: absolute -50 dBc or noise-consistent vs 96 kHz"
             baseline !== undefined &&
             measured.meanExcessDbc <=
               baseline.meanExcessDbc + COMPARATIVE_MARGIN_DB;
-          expect(absolutePass || comparativePass).toBe(true);
+          if (!absolutePass && !comparativePass) {
+            failures.push(`${String(rate)} Hz exceeds both alias gates`);
+          }
         }
         console.log(
           `[alias-evidence] ${algorithmId} midi ${String(midi)} -> ${rows.join("; ")}`,
         );
+        expect(failures).toEqual([]);
       });
     }
   }
