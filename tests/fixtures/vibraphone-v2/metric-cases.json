@@ -1,0 +1,10 @@
+{"schema":"changes.fixtures.phs6-vibraphone-metrics.v1","cases":[
+  {"id":"pitch-f3","metric":"pitch","targetHz":174.614116,"toleranceCents":5,"bar":"f3"},{"id":"pitch-c4","metric":"pitch","targetHz":261.625565,"toleranceCents":5,"bar":"c4"},{"id":"pitch-c5","metric":"pitch","targetHz":523.251131,"toleranceCents":5,"bar":"c5"},{"id":"pitch-f6","metric":"pitch","targetHz":1396.912926,"toleranceCents":8,"bar":"f6"},
+  {"id":"fourth-mode","metric":"modal-ratio","expectedRatio":4,"tolerance":0.03},{"id":"third-mode","metric":"modal-ratio","expectedRatio":9.91,"tolerance":0.12},
+  {"id":"soft-hard-attack","metric":"attack-spectrum","softCentroidHz":1800,"hardCentroidHz":4200,"minimumIncreaseHz":1500},
+  {"id":"strike-position","metric":"strike-position","minimumSuppressionDb":12,"targetModeFamily":"odd-antisymmetric"},
+  {"id":"pedal-release","metric":"pedal-release","maximumT60Seconds":0.8,"pedal":0},
+  {"id":"resonator-gain","metric":"resonator","minimumFundamentalGainDb":3,"maximumDetuningCents":15},
+  {"id":"fan-sideband","metric":"fan-sideband","fanRateHz":6,"toleranceHz":0.1,"carrierDriftCents":0},
+  {"id":"octave","metric":"transposition-relations","baseHz":261.625565,"upperHz":523.25113,"expectedRatio":2,"toleranceRelative":0.000001}
+]}

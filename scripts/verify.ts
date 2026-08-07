@@ -137,6 +137,22 @@ const gates: Gate[] = [
     command: [process.execPath, "scripts/validate-phs3-contract.ts"],
   },
   {
+    id: "phs4-plucked-string-v2-contract",
+    command: [process.execPath, "scripts/validate-phs4-contract.ts"],
+  },
+  {
+    id: "phs5-trumpet-v1-contract",
+    command: [process.execPath, "scripts/validate-phs5-contract.ts"],
+  },
+  {
+    id: "phs6-vibraphone-v2-contract",
+    command: [process.execPath, "scripts/validate-phs6-contract.ts"],
+  },
+  {
+    id: "phs7-physical-system-contract",
+    command: [process.execPath, "scripts/validate-phs7-contract.ts"],
+  },
+  {
     id: "x1-transport-contract",
     command: [process.execPath, "scripts/validate-x1-contract.ts"],
   },

@@ -1,0 +1,10 @@
+{
+  "schema":"changes.fixtures.phs4-plucked-string-provenance.v1",
+  "authorities":[
+    {"id":"string-body-coupling","kind":"primary-research","location":"https://hal.science/tel-01078150","governs":["stiff-string","bridge-coupling","decay","inharmonicity"]},
+    {"id":"sympathetic-strings","kind":"primary-research","location":"https://hal.science/hal-00474982","governs":["sympathetic-modes","shared-bridge"]},
+    {"id":"string-contact","kind":"primary-research","location":"https://hal.science/hal-01806133","governs":["fret-contact","bounded-nonsmooth-dynamics"]},
+    {"id":"frankensim-solid-contact-concepts","kind":"local-research-tool","location":"/data/projects/frankensim/crates/fs-solid","governs":["offline-contact-and-modal-crosscheck"],"runtimeAuthority":false,"licenseCodeImported":false},
+    {"id":"repository-plate-solver","kind":"independently-validated-local-tool","location":"scripts/physical-foundry-plate-modes.ts","governs":["geometry-derived-mode-tables"],"runtimeAuthority":false}
+  ]
+}

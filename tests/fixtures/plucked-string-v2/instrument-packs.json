@@ -1,0 +1,20 @@
+{
+  "schema":"changes.fixtures.phs4-plucked-string-packs.v1",
+  "stringSets":[
+    {"id":"steel-archtop-12s","material":{"densityKgPerM3":7850,"youngModulusPa":200000000000},"strings":[["e2",0.00132,73.2,0.00643],["a2",0.00107,70.1,0.00432],["d3",0.00084,67.5,0.00261],["g3",0.00061,64.8,0.00143],["b3",0.00041,58.2,0.00071],["e4",0.0003,56.4,0.00048]],"dampingT60SecondsAt100And1000Hz":[5.2,1.8]},
+    {"id":"steel-dreadnought-13s","material":{"densityKgPerM3":7850,"youngModulusPa":200000000000},"strings":[["e2",0.00142,82,0.0072],["a2",0.00112,78,0.0048],["d3",0.00089,75,0.0029],["g3",0.00064,72,0.00155],["b3",0.00043,65,0.00076],["e4",0.00033,63,0.00053]],"dampingT60SecondsAt100And1000Hz":[6.4,2.2]},
+    {"id":"electric-10s","material":{"densityKgPerM3":7850,"youngModulusPa":200000000000},"strings":[["e2",0.00117,66,0.0057],["a2",0.00091,62,0.0036],["d3",0.00066,59,0.0019],["g3",0.00043,54,0.00086],["b3",0.00033,48,0.0005],["e4",0.00025,46,0.00035]],"dampingT60SecondsAt100And1000Hz":[7.5,2.7]},
+    {"id":"nylon-reentrant-uke","material":{"densityKgPerM3":1150,"youngModulusPa":2500000000},"strings":[["g4",0.00066,45,0.00044],["c4",0.00091,43,0.00078],["e4",0.00075,42,0.00057],["a4",0.00061,40,0.00039]],"dampingT60SecondsAt100And1000Hz":[2.6,0.9]},
+    {"id":"upright-pizz-hybrid","material":{"densityKgPerM3":5200,"youngModulusPa":95000000000},"strings":[["e1",0.00275,250,0.0278],["a1",0.00225,235,0.0189],["d2",0.0018,220,0.0124],["g2",0.00145,205,0.0081]],"dampingT60SecondsAt100And1000Hz":[9.5,3.2]}
+  ],
+  "bodies":[
+    {"id":"archtop","scaleLengthM":0.648,"bodyVolumeM3":0.073,"plateSizeM":[0.49,0.38,0.004],"helmholtzHz":112,"bridgeAdmittanceScale":0.72,"modeTableAuthority":"foundry-plate-mode-v1"},
+    {"id":"dreadnought","scaleLengthM":0.645,"bodyVolumeM3":0.105,"plateSizeM":[0.51,0.4,0.0032],"helmholtzHz":98,"bridgeAdmittanceScale":1,"modeTableAuthority":"foundry-plate-mode-v1"},
+    {"id":"solid-electric","scaleLengthM":0.648,"bodyVolumeM3":0,"plateSizeM":[0.47,0.33,0.045],"helmholtzHz":null,"bridgeAdmittanceScale":0.12,"modeTableAuthority":"foundry-plate-mode-v1"},
+    {"id":"ukulele","scaleLengthM":0.38,"bodyVolumeM3":0.012,"plateSizeM":[0.28,0.2,0.0022],"helmholtzHz":610,"bridgeAdmittanceScale":0.54,"modeTableAuthority":"foundry-plate-mode-v1"},
+    {"id":"upright-bass","scaleLengthM":1.05,"bodyVolumeM3":0.45,"plateSizeM":[1.08,0.66,0.006],"helmholtzHz":75,"bridgeAdmittanceScale":1.35,"modeTableAuthority":"foundry-plate-mode-v1"}
+  ],
+  "pickups":[{"id":"neck","positionOverScale":0.24,"apertureM":0.018},{"id":"bridge","positionOverScale":0.09,"apertureM":0.012},{"id":"parallel","components":["neck","bridge"],"gain":0.5}],
+  "amps":[{"id":"clean-compact","nonlinearity":"bounded-asymmetric-polynomial","oversampleFactor":2,"cabinetLowpassHz":6200,"drive":0.18},{"id":"light-drive-compact","nonlinearity":"bounded-asymmetric-polynomial","oversampleFactor":4,"cabinetLowpassHz":5400,"drive":0.52}],
+  "differentiationLaw":"only reviewed scale, string set, geometry-derived body modes, bridge admittance, pickup, and amp packs differentiate targets"
+}

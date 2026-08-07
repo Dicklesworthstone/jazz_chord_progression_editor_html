@@ -1,0 +1,14 @@
+{"schema":"changes.fixtures.phs7-compatibility.v1","rows":[
+  {"case":"saved-document-instrument-id-only","behavior":"bind-current-accepted-version-after-explicit-migration-policy-review","silent-musical-data-repair":false},
+  {"case":"saved-document-explicit-legacy-version","behavior":"render-exact-legacy-comparator","fallback":false},
+  {"case":"unknown-instrument-id","behavior":"typed-refusal","code":"physical.instrument_unknown"},
+  {"case":"unknown-model-version","behavior":"typed-refusal","code":"physical.version_unknown"},
+  {"case":"unsupported-sample-rate","behavior":"typed-refusal","code":"physical.sample_rate_unsupported"},
+  {"case":"state-size-over-limit","behavior":"typed-refusal","code":"physical.state_handoff_invalid"},
+  {"case":"wall-time-slow","behavior":"continue-deterministically-and-report-performance","fallback":false},
+  {"case":"loop-reentry","behavior":"restore-exact-loop-boundary-state-or-canonical-reviewed-reset"},
+  {"case":"stop","behavior":"serialized-stop-to-silence-and-discard-active-run-state"},
+  {"case":"stale-plan","behavior":"typed-refusal-before-audio-mutation","code":"audio.plan_stale"},
+  {"case":"physical-upright-bass","behavior":"additive-id; sampled-upright-bass-remains-explicit-comparator"},
+  {"case":"vibraphone","behavior":"physical-v2-and-cc0-concert-vibes-remain-explicit-separate-recipes"}
+]}

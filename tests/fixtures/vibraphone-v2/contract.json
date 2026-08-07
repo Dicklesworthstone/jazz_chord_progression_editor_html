@@ -1,0 +1,13 @@
+{
+  "schema":"changes.fixtures.phs6-vibraphone-v2.v1","modelSchema":"changes.dsp.vibraphone-v2.v1","stateMode":"stateful-instrument",
+  "recipe":{"instrumentId":"vibraphone","label":"Physical Vibraphone","legacyComparator":"legacy-synthetic-vibraphone","sampledComparator":"changes.dsp.sampled-vibraphone@1","hybridAttack":"forbidden-in-v2","reason":"no independently accepted multi-dynamic licensed attack corpus"},
+  "barLaw":"geometry-derived-modal-free-free-bar-with-tuned-undercut-and-reviewed-inharmonic-mode-table",
+  "malletLaw":"finite-mass-compliant-hertz-power-contact-with-energy-consistent-release",
+  "resonatorLaw":"passive-quarter-wave-tube-per-bar-coupled-bidirectionally-to-bar-and-shared-frame",
+  "fanLaw":"continuous-phase-rotating-baffle-amplitude-and-radiation-modulation-never-pitch-modulation",
+  "pedalLaw":"shared-continuous-damper-contact; pedal-up-dissipates-bar-energy, pedal-down-retains-cross-note-state",
+  "controls":{"malletMassKg":[0.005,0.08],"malletHardness":[0,1],"strikeVelocityMPerS":[0,8],"strikePositionOverLength":[0.05,0.95],"pedal":[0,1],"damperForceN":[0,30],"fanRateHz":[0,12],"fanDepth":[0,1]},
+  "retainedState":["all-active-bar-modes","mallet-contact","resonator-tubes","shared-frame-modes","damper-contact","fan-phase","radiation-filters"],
+  "limits":{"maximumEvents":128,"maximumBars":61,"maximumModesPerBar":12,"maximumActiveBars":48,"maximumFrameModes":16,"maximumContactIterations":8,"maximumFanRateHz":12,"maximumStateBytes":1048576,"maximumPhraseSeconds":30,"maximumSampleRateHz":96000},
+  "independence":{"productionImportsForbidden":true,"productionOutputUsed":false,"expectedValuesGenerated":false,"sampleAttackUsed":false,"frankensimRuntimeImported":false}
+}

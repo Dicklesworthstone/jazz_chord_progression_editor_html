@@ -1,0 +1,12 @@
+{
+  "schema":"changes.fixtures.phs4-plucked-string-trace.v1",
+  "requirements":[
+    {"id":"PHS4-REQ-TARGETS","fixtures":["contract.json","instrument-packs.json"],"futureOwner":"src/audio/instrument-recipes-contract.ts"},
+    {"id":"PHS4-REQ-STRING","fixtures":["ideal-string-e2","stiff-string-b","fret-twelve"],"futureOwner":"dsp/concert-grand/src/guitar.rs"},
+    {"id":"PHS4-REQ-BRIDGE","fixtures":["passive-bridge","active-bridge-mutation","body-feedback-decay"],"futureOwner":"dsp/concert-grand/src/guitar.rs"},
+    {"id":"PHS4-REQ-BODY","fixtures":["cqc-correlated-pair","cqc-dropped-correlation","archtop-body","uke-body","bass-body"],"futureOwner":"physical/parameter-packs/plucked-string-v2.json"},
+    {"id":"PHS4-REQ-EXCITER","fixtures":["pluck-one-fifth-null","slide-seed-replay"],"futureOwner":"src/audio/physical-realization.ts"},
+    {"id":"PHS4-REQ-PICKUP-AMP","fixtures":["pickup-quarter-null","amp-alias"],"futureOwner":"dsp/concert-grand/src/guitar.rs"},
+    {"id":"PHS4-REQ-SHARED-STATE","fixtures":["sympathetic-transfer","state-handoff","detached-stem-reset"],"futureOwner":"src/audio/audio-engine.ts"}
+  ]
+}

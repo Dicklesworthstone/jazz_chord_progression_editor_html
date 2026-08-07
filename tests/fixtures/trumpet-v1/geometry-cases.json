@@ -1,0 +1,8 @@
+{
+  "schema":"changes.fixtures.phs5-trumpet-geometry.v1","temperatureC":20,"effectiveOpenLengthM":1.47,
+  "sections":[[0.08,0.0055,"leadpipe"],[0.19,0.006,"leadpipe"],[0.56,0.00585,"cylindrical"],[0.88,0.0065,"tuning-slide"],[1.08,0.008,"bell-tail"],[1.25,0.014,"bell"],[1.38,0.032,"bell"],[1.47,0.062,"bell"]],
+  "valves":[{"id":"v1","semitones":2,"addedLengthM":0.18},{"id":"v2","semitones":1,"addedLengthM":0.087},{"id":"v3","semitones":3,"addedLengthM":0.278}],
+  "combinationCompensationM":{"0":0,"1":0,"2":0,"3":0.004,"4":0.006,"5":0.012,"6":0.018,"7":0.027},
+  "states":[[0,0,0,0],[1,0,0,2],[0,1,0,1],[0,0,1,3],[1,1,0,3],[0,1,1,4],[1,0,1,5],[1,1,1,6]],
+  "bell":{"radiation":"frequency-dependent-passive","maximumReflectionMagnitude":0.995}
+}

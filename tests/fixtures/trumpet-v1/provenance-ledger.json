@@ -1,0 +1,5 @@
+{"schema":"changes.fixtures.phs5-trumpet-provenance.v1","authorities":[
+  {"id":"outward-lip-threshold","kind":"primary-research","location":"https://arxiv.org/abs/0705.4242","governs":["outward-sign","threshold","regime"]},
+  {"id":"time-domain-brass","kind":"primary-research","location":"https://arxiv.org/abs/1511.04247","governs":["lip-mass","variable-area-bore","viscothermal-loss","nonlinear-propagation"]},
+  {"id":"trumpet-shank-geometry","kind":"primary-research","location":"https://arxiv.org/abs/1611.01025","governs":["mouthpiece-shank","bell","brassiness"]}
+]}

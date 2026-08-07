@@ -1,0 +1,21 @@
+{
+  "schema":"changes.fixtures.phs4-plucked-string-physics.v1",
+  "cases":[
+    {"id":"ideal-string-e2","kind":"string-pitch","input":{"lengthM":0.648,"tensionN":73.2,"linearDensityKgPerM":0.00643},"expected":{"frequencyHz":82.327523683,"toleranceHz":0.000001}},
+    {"id":"stiff-string-b","kind":"inharmonicity","input":{"lengthM":0.648,"tensionN":73.2,"youngModulusPa":200000000000,"coreDiameterM":0.00046},"expected":{"B":0.000141146422,"secondPartialHz":164.70152175,"toleranceRelative":0.000001}},
+    {"id":"fret-twelve","kind":"fret-pitch","input":{"openHz":82.406889,"fret":12},"expected":{"frequencyHz":164.813778,"ratio":2,"toleranceRelative":0.000001}},
+    {"id":"pluck-one-fifth-null","kind":"pluck-null","input":{"positionOverScale":0.2},"expected":{"firstCancelledHarmonic":5}},
+    {"id":"pickup-quarter-null","kind":"pickup-comb","input":{"positionOverScale":0.25,"apertureM":0},"expected":{"firstCancelledHarmonic":4}},
+    {"id":"passive-bridge","kind":"energy-residual","input":{"incomingStringEnergyJ":0.01,"reflectedStringEnergyJ":0.006,"bodyEnergyJ":0.0025,"radiatedAndLostEnergyJ":0.0015},"expected":{"residualJ":0,"toleranceJ":0.000000000001}},
+    {"id":"active-bridge-mutation","kind":"energy-residual","input":{"incomingStringEnergyJ":0.01,"reflectedStringEnergyJ":0.008,"bodyEnergyJ":0.0025,"radiatedAndLostEnergyJ":0.001},"expected":{"outcome":"refuse","finding":"PHS4_BRIDGE_ACTIVE"}},
+    {"id":"body-feedback-decay","kind":"bridge-body-admittance","input":{"uncoupledT60Seconds":8,"coupledT60Seconds":4.5},"expected":{"couplingShortensDecay":true,"postOnlyColorForbidden":true}},
+    {"id":"sympathetic-transfer","kind":"sympathetic-response","input":{"sourceEnergyJ":0.01,"recipientEnergyJ":0.0004,"bridgeLossJ":0.0096},"expected":{"passive":true,"recipientAudible":true}},
+    {"id":"cqc-correlated-pair","kind":"cqc-body-modes","input":{"firstEnergy":1,"secondEnergy":1,"correlation":0.5},"expected":{"combinedEnergy":3,"independentSumForbidden":true}},
+    {"id":"cqc-dropped-correlation","kind":"cqc-body-modes","input":{"firstEnergy":1,"secondEnergy":1,"correlation":0},"expected":{"outcome":"mutation","combinedEnergy":2}},
+    {"id":"slide-seed-replay","kind":"stick-slip-slide","input":{"seed":51966,"frames":2400,"slideVelocityMPerS":0.8,"normalForceN":3},"expected":{"sameSeedBitExact":true,"zeroWithoutSlideGesture":true,"boundedAdditiveEnergy":true}},
+    {"id":"contact-boundary-eight","kind":"contact-budget","input":{"iterations":8,"maximum":8},"expected":{"outcome":"accept"}},
+    {"id":"contact-plus-one","kind":"contact-budget","input":{"iterations":9,"maximum":8},"expected":{"outcome":"refuse","finding":"PHS4_CONTACT_BOUND"}},
+    {"id":"state-handoff","kind":"stem-continuity","input":{"leftStateDigest":"c482","rightInitialStateDigest":"c482"},"expected":{"continuous":true,"bodyAndSympatheticResetForbidden":true}},
+    {"id":"detached-stem-reset","kind":"stem-continuity","input":{"newStem":true},"expected":{"canonicalStemResetPermitted":true}}
+  ]
+}

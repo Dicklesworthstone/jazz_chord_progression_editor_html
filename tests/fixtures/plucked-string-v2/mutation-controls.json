@@ -1,0 +1,20 @@
+{
+  "schema":"changes.fixtures.phs4-plucked-string-mutations.v1",
+  "controls":[
+    {"id":"mutate-schema","target":"contract.json","pointer":"/schema","value":"v0","expectedFindingCode":"PHS4_SCHEMA"},
+    {"id":"mutate-recipe-name","target":"contract.json","pointer":"/recipeTargets/1/publicLabel","value":"Blues Guitar","expectedFindingCode":"PHS4_TARGETS"},
+    {"id":"mutate-wave-direction","target":"contract.json","pointer":"/waveLaw","value":"one-way","expectedFindingCode":"PHS4_WAVES"},
+    {"id":"mutate-post-body","target":"contract.json","pointer":"/bridgeLaw","value":"post-filter","expectedFindingCode":"PHS4_BRIDGE"},
+    {"id":"mutate-pick-force","target":"contract.json","pointer":"/controls/pluckForceN/1","value":120,"expectedFindingCode":"PHS4_CONTROLS"},
+    {"id":"mutate-state","target":"contract.json","pointer":"/retainedState","value":[],"expectedFindingCode":"PHS4_STATE"},
+    {"id":"mutate-limit","target":"contract.json","pointer":"/limits/maximumBodyModes","value":65,"expectedFindingCode":"PHS4_LIMITS"},
+    {"id":"mutate-independence","target":"contract.json","pointer":"/independence/frankensimRuntimeImported","value":true,"expectedFindingCode":"PHS4_INDEPENDENCE"},
+    {"id":"mutate-uke-tuning","target":"instrument-packs.json","pointer":"/stringSets/3/strings/0/0","value":"g3","expectedFindingCode":"PHS4_PACKS"},
+    {"id":"mutate-bass-helmholtz","target":"instrument-packs.json","pointer":"/bodies/4/helmholtzHz","value":750,"expectedFindingCode":"PHS4_PACKS"},
+    {"id":"mutate-string-answer","target":"physics-cases.json","pointer":"/cases/0/expected/frequencyHz","value":80,"expectedFindingCode":"PHS4_KNOWN_ANSWER"},
+    {"id":"mutate-active-bridge","target":"physics-cases.json","pointer":"/cases/6/expected/outcome","value":"accept","expectedFindingCode":"PHS4_PASSIVITY"},
+    {"id":"mutate-cqc","target":"physics-cases.json","pointer":"/cases/9/expected/combinedEnergy","value":2,"expectedFindingCode":"PHS4_CQC"},
+    {"id":"mutate-octave","target":"metric-cases.json","pointer":"/cases/13/expectedRatio","value":3,"expectedFindingCode":"PHS4_KNOWN_ANSWER"},
+    {"id":"mutate-authority","target":"provenance-ledger.json","pointer":"/authorities/0/location","value":"memory","expectedFindingCode":"PHS4_PROVENANCE"}
+  ]
+}

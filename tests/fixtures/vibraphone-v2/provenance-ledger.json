@@ -1,0 +1,6 @@
+{"schema":"changes.fixtures.phs6-vibraphone-provenance.v1","authorities":[
+  {"id":"three-dimensional-bar-tuning","kind":"primary-research","location":"https://doi.org/10.1121/10.0005062","governs":["undercut","modal-ratios","3d-bar-fit"]},
+  {"id":"energy-consistent-collision","kind":"primary-research","location":"https://arxiv.org/abs/1405.2589","governs":["mallet-contact","passivity","penetration"]},
+  {"id":"local-contact-crosscheck","kind":"independently-validated-local-tool","location":"scripts/physical-foundry-contact.ts","governs":["offline-contact-known-answers"],"runtimeAuthority":false},
+  {"id":"cc0-sampled-comparator","kind":"checked-in-licensed-corpus","location":"src/audio/wasm/vibraphone-samples.ts","governs":["listening-comparator-only"],"productionExpectationAuthority":false}
+]}

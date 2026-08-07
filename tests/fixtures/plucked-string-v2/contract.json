@@ -1,0 +1,21 @@
+{
+  "schema":"changes.fixtures.phs4-plucked-string-v2.v1",
+  "modelSchema":"changes.dsp.plucked-string-family-v2.v1",
+  "stateMode":"stateful-stem",
+  "recipeTargets":[
+    {"instrumentId":"guitar","publicLabel":"Clean Archtop","target":"steel-string archtop with clean compact amp/cabinet","legacyComparator":"changes.dsp.waveguide-guitar-clean@1"},
+    {"instrumentId":"blues-guitar","publicLabel":"Lightly Driven Electric","target":"solid-body electric with lightly driven asymmetric amp and band-limited cabinet","legacyComparator":"changes.dsp.waveguide-guitar-drive@1"},
+    {"instrumentId":"dreadnought-guitar","publicLabel":"Steel Dreadnought","target":"large steel-string flat-top acoustic","registryAction":"additive-reviewed-id-required"},
+    {"instrumentId":"ukulele","publicLabel":"Re-entrant Ukulele","target":"four-nylon-string soprano/concert body, g4-c4-e4-a4","registryAction":"additive-reviewed-id-required"},
+    {"instrumentId":"physical-upright-bass","publicLabel":"Physical Upright Bass","target":"four-string pizzicato contrabass e1-a1-d2-g2","sampledComparator":"changes.dsp.sampled-upright-bass@1","arco":"explicitly-deferred"}
+  ],
+  "waveLaw":"two-polarization-bidirectional-stiff-string-with-frequency-dependent-loss",
+  "bridgeLaw":"passive-multiport-scattering-loaded-by-body-mechanical-admittance",
+  "bodyLaw":"geometry-derived-modal-admittance-with-cqc-near-degenerate-pairs-and-feedback-to-all-strings",
+  "exciterLaw":"finite-width-compliant-pick-or-finger-release-plus-bounded-additive-stick-slip-slide-transient",
+  "pickupLaw":"string-velocity-aperture-integral-at-reviewed-location-before-amp",
+  "controls":{"pluckPosition":[0.02,0.9],"pluckWidthM":[0.001,0.03],"pickHardness":[0,1],"pickAngleDegrees":[-60,60],"pluckDirection":[-1,1],"pluckForceN":[0,12],"palmMute":[0,1],"fretRelease":[0,1],"slideVelocityMPerS":[-4,4],"slideNormalForceN":[0,20],"sympatheticAmount":[0,1],"pickupSelector":[0,2]},
+  "retainedState":["left-and-right-string-waves","dispersion-filters","loss-filters","bridge-velocity","body-modes","cqc-pair-state","sympathetic-strings","contact-partial-slip","pickup-filters","amp-and-cabinet-filters"],
+  "limits":{"maximumStemEvents":128,"maximumStrings":12,"maximumFrets":36,"maximumStringDelaySamples":65536,"maximumBodyModes":64,"maximumCqcPairs":32,"maximumSympatheticStrings":12,"maximumContactIterations":8,"maximumSlideTransientFrames":24000,"maximumAmpOversampleFactor":4,"maximumStateBytes":1048576,"maximumStemSeconds":30,"maximumSampleRateHz":96000},
+  "independence":{"productionImportsForbidden":true,"productionOutputUsed":false,"expectedValuesGenerated":false,"frankensimRuntimeImported":false}
+}

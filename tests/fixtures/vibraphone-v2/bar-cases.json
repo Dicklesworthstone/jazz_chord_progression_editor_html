@@ -1,0 +1,11 @@
+{
+  "schema":"changes.fixtures.phs6-vibraphone-bars.v1","material":{"densityKgPerM3":2700,"youngModulusPa":69000000000,"poissonRatio":0.33},
+  "bars":[
+    {"id":"f3","midi":53,"fundamentalHz":174.614116,"lengthM":0.49,"widthM":0.057,"thicknessM":0.013,"modeRatios":[1,4,9.88,18.1],"t60Seconds":[7.5,4.2,2.3,1.4],"resonatorLengthM":0.4911},
+    {"id":"c4","midi":60,"fundamentalHz":261.625565,"lengthM":0.407,"widthM":0.052,"thicknessM":0.011,"modeRatios":[1,4,9.91,18.2],"t60Seconds":[6.8,3.8,2.1,1.2],"resonatorLengthM":0.3278},
+    {"id":"c5","midi":72,"fundamentalHz":523.251131,"lengthM":0.292,"widthM":0.045,"thicknessM":0.009,"modeRatios":[1,4,9.95,18.3],"t60Seconds":[5.4,3,1.7,1],"resonatorLengthM":0.1639},
+    {"id":"f6","midi":89,"fundamentalHz":1396.912926,"lengthM":0.185,"widthM":0.036,"thicknessM":0.007,"modeRatios":[1,4,10.05,18.6],"t60Seconds":[3.6,2.1,1.2,0.7],"resonatorLengthM":0.0614}
+  ],
+  "strikeNodes":{"centerSuppressesOddAntisymmetricModes":true,"quarterLengthSuppressesModeWithNodeAtQuarter":true},
+  "modeTableAuthority":"reviewed-offline-3d-bar-fit-never-runtime-fem"
+}

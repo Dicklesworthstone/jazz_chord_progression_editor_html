@@ -175,6 +175,11 @@ The manifest exposes these stable commands:
 | `bun run verify:physical-foundry` | run the production PHS1 analytic metric corpus and emit its deterministic bounded receipt |
 | `bun run validate:phs2-contract` | validate clarinet-v2 reed, tongue, bore/tone-hole, gesture, state, work-bound, analytic metric, provenance, and mutation laws without claiming production implementation |
 | `bun run validate:phs3-contract` | validate flute-v2 jet drive, embouchure, geometry-derived fingering, passive tone-hole lattice, continuous state, work-bound, analytic metric, provenance, trace, and mutation laws without claiming production implementation |
+| `bun run validate:phs4-contract` | validate the coupled plucked-string family targets, reviewed string/body/pickup/amp packs, passive bridge/body feedback, sympathetic state, contact, CQC, analytic metrics, traces, provenance, and mutation laws without claiming production implementation |
+| `bun run validate:phs5-contract` | validate the additive trumpet registry, outward-striking lip signs, valve/bore/bell geometry, bounded nonlinear propagation, continuous state, analytic metrics, traces, provenance, and mutation laws without claiming production implementation |
+| `bun run validate:phs6-contract` | validate physical vibraphone bar modes, energy-consistent mallet contact, passive resonators, shared pedal/damper state, continuous fan radiation, sample-comparator boundaries, metrics, traces, provenance, and mutations without claiming production implementation |
+| `bun run validate:phs7-contract` | validate the whole physical-instrument measurement/listening/compatibility/browser matrix, deterministic global limits, artifact and reference-hardware budgets, evidence diagnostics, and owner-controlled committed-HEAD release chronology without claiming implementation or human acceptance |
+| `bun run evidence:phs2-listening` | render deterministic, level-matched legacy/v2 clarinet WAV pairs and a hash ledger under `test-results/`; an optional second path imports reviewed CC0 FreePats acoustic clips, while generation explicitly does not claim the required owner listening verdict |
 | `bun run typecheck` | strict `tsc --noEmit` |
 | `bun run lint` | ESLint plus source-integrity and dependency-boundary checks |
 | `bun test` | Bun unit, property, golden, conformance, integration, and static tests |

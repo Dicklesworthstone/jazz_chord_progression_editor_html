@@ -1,0 +1,16 @@
+{
+  "schema":"changes.fixtures.phs5-trumpet-metrics.v1","cases":[
+    {"id":"open-bb2","metric":"pitch","targetHz":116.54094,"toleranceCents":10,"valves":0,"partial":2},
+    {"id":"open-f3","metric":"pitch","targetHz":174.614116,"toleranceCents":10,"valves":0,"partial":3},
+    {"id":"valve2-a2","metric":"pitch","targetHz":110,"toleranceCents":12,"valves":2,"partial":2},
+    {"id":"all-valves-e2","metric":"pitch","targetHz":82.406889,"toleranceCents":16,"valves":7,"partial":2},
+    {"id":"impedance-open","metric":"impedance-peaks","minimumPeakCount":5,"minimumHz":100,"maximumHz":1400},
+    {"id":"regime-selection","metric":"lip-regime","lipResonanceHz":440,"minimumPlayingHz":440,"maximumPlayingHz":762.102355},
+    {"id":"brightness","metric":"dynamic-brightness","softCentroidHz":1400,"loudCentroidHz":2600,"minimumIncreaseHz":800},
+    {"id":"attack","metric":"attack-time","tenPercentSeconds":0.015,"ninetyPercentSeconds":0.075,"expectedSeconds":0.06},
+    {"id":"valve-monotonicity","metric":"valve-state","openHz":116.54094,"valve2Hz":110,"allValvesHz":82.406889,"expected":"added-length-lowers-resonance"},
+    {"id":"alias","metric":"nonlinear-alias","maximumAliasDbc":-50,"oversampleFactor":4,"ratesHz":[44100,48000,96000]},
+    {"id":"octave","metric":"transposition-relations","baseHz":116.54094,"upperHz":233.08188,"expectedRatio":2,"toleranceRelative":0.000001},
+    {"id":"tongue-slur","metric":"articulation-distinction","maximumWaveformCorrelation":0.999,"continuousBoreState":true}
+  ]
+}

@@ -1,0 +1,15 @@
+{"schema":"changes.fixtures.phs5-trumpet-mutations.v1","controls":[
+  {"id":"schema","target":"contract.json","pointer":"/schema","value":"v0","expectedFindingCode":"PHS5_SCHEMA"},
+  {"id":"registry","target":"contract.json","pointer":"/registryAmendment/mode","value":"replacement","expectedFindingCode":"PHS5_REGISTRY"},
+  {"id":"lip-sign","target":"contract.json","pointer":"/signs/pressureForce","value":"decreases-opening","expectedFindingCode":"PHS5_SIGNS"},
+  {"id":"clarinet-reuse","target":"contract.json","pointer":"/independence/clarinetExciterReused","value":true,"expectedFindingCode":"PHS5_INDEPENDENCE"},
+  {"id":"pressure","target":"contract.json","pointer":"/controls/mouthPressurePa/1","value":120000,"expectedFindingCode":"PHS5_CONTROLS"},
+  {"id":"propagation","target":"contract.json","pointer":"/propagationLaw","value":"linear-only","expectedFindingCode":"PHS5_PROPAGATION"},
+  {"id":"limit","target":"contract.json","pointer":"/limits/maximumLipIterations","value":9,"expectedFindingCode":"PHS5_LIMITS"},
+  {"id":"valve-length","target":"geometry-cases.json","pointer":"/valves/1/addedLengthM","value":0.87,"expectedFindingCode":"PHS5_GEOMETRY"},
+  {"id":"lip-answer","target":"physics-cases.json","pointer":"/cases/0/expected/openingM","value":0.0001,"expectedFindingCode":"PHS5_KNOWN_ANSWER"},
+  {"id":"inward-accepted","target":"physics-cases.json","pointer":"/cases/1/expected/outcome","value":"accept","expectedFindingCode":"PHS5_OUTWARD"},
+  {"id":"active-bell","target":"physics-cases.json","pointer":"/cases/8/expected/outcome","value":"accept","expectedFindingCode":"PHS5_PASSIVITY"},
+  {"id":"octave","target":"metric-cases.json","pointer":"/cases/10/expectedRatio","value":3,"expectedFindingCode":"PHS5_KNOWN_ANSWER"},
+  {"id":"authority","target":"provenance-ledger.json","pointer":"/authorities/0/location","value":"memory","expectedFindingCode":"PHS5_PROVENANCE"}
+]}

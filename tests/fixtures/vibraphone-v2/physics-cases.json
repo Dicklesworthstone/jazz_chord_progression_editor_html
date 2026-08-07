@@ -1,0 +1,15 @@
+{"schema":"changes.fixtures.phs6-vibraphone-physics.v1","cases":[
+  {"id":"c4-mode-ratios","kind":"bar-modes","input":{"fundamentalHz":261.625565,"ratios":[1,4,9.91]},"expected":{"frequenciesHz":[261.625565,1046.50226,2592.708349],"toleranceRelative":0.000001}},
+  {"id":"quarter-wave-c4","kind":"resonator","input":{"soundSpeedMPerS":343,"lengthM":0.3278},"expected":{"frequencyHz":261.592434,"toleranceHz":0.1}},
+  {"id":"hertz-contact","kind":"mallet-contact","input":{"stiffnessNPerM32":1000000,"compressionM":0.0001},"expected":{"forceN":1,"nonnegative":true}},
+  {"id":"contact-release","kind":"mallet-contact","input":{"compressionM":-0.000000001},"expected":{"forceN":0,"adhesionForbidden":true}},
+  {"id":"passive-contact","kind":"energy-residual","input":{"preImpactEnergyJ":0.02,"postImpactEnergyJ":0.012,"barEnergyJ":0.006,"lostEnergyJ":0.002},"expected":{"residualJ":0,"toleranceJ":0.000000000001}},
+  {"id":"active-contact-mutation","kind":"energy-residual","input":{"preImpactEnergyJ":0.02,"postImpactEnergyJ":0.015,"barEnergyJ":0.006,"lostEnergyJ":0},"expected":{"outcome":"refuse","finding":"PHS6_CONTACT_ACTIVE"}},
+  {"id":"strike-center-shape","kind":"strike-position","input":{"positionOverLength":0.5},"expected":{"suppressedFamily":"odd-antisymmetric","fundamentalRetained":true}},
+  {"id":"pedal-up-decay","kind":"damper","input":{"beforeEnergyJ":0.01,"afterEnergyJ":0.003,"externalWorkJ":0},"expected":{"dissipative":true}},
+  {"id":"pedal-down-state","kind":"pedal-continuity","input":{"leftStateDigest":"8b12","rightInitialStateDigest":"8b12"},"expected":{"continuous":true,"crossNoteResonanceRetained":true}},
+  {"id":"fan-sidebands","kind":"fan-radiation","input":{"carrierHz":523.251131,"fanRateHz":6},"expected":{"sidebandsHz":[517.251131,529.251131],"carrierPitchUnchanged":true}},
+  {"id":"fan-phase-handoff","kind":"fan-continuity","input":{"leftPhase":1.25,"rightInitialPhase":1.25},"expected":{"continuous":true}},
+  {"id":"contact-boundary-eight","kind":"solver-budget","input":{"iterations":8,"maximum":8},"expected":{"outcome":"accept"}},
+  {"id":"contact-plus-one","kind":"solver-budget","input":{"iterations":9,"maximum":8},"expected":{"outcome":"refuse","finding":"PHS6_CONTACT_BOUND"}}
+]}

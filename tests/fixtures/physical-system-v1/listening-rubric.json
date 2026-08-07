@@ -1,0 +1,8 @@
+{"schema":"changes.fixtures.phs7-listening-rubric.v1","environmentFields":["listenerIdentity","date","artifactSha256","wasmSha256","parameterPackVersions","browser","os","audioDevice","sampleRateHz","transducer","listeningLevel","levelMatchingMethod"],"rows":[
+  {"id":"clarinet","compare":["legacy-clarinet","legal-reference"],"gestures":["legato","tongued-repeat","staccato","soft-loud","register-crossing"]},
+  {"id":"flute","compare":["legacy-flute","legal-reference"],"gestures":["breath-attack","legato-fingering","octave-transition","soft-loud","vibrato"]},
+  {"id":"plucked-family","compare":["legacy-guitars","sampled-upright-bass","legal-reference"],"gestures":["pick-finger","palm-mute","string-body-decay","pickup-amp","sympathetic","slide","body-size"]},
+  {"id":"trumpet","compare":["legal-reference"],"gestures":["tongued-slurred","valve-combinations","registers","soft-loud-brassiness","no-reed-sign-error"]},
+  {"id":"vibraphone","compare":["legacy-synthetic-vibraphone","cc0-concert-vibes","legal-reference"],"gestures":["mallet-hardness","strike-position","pedal","fan","decay","polyphony"]},
+  {"id":"charts","compare":["accepted-legacy-mix"],"gestures":["slow-chart","medium-chart","fast-chart","held-intervals","repeated-notes","register-crossings"]}
+],"decisionLaw":"owner-authored-pass-or-fail-per-row; failure-remains-red-until-new-artifact-is-auditioned","agentInferenceForbidden":true}

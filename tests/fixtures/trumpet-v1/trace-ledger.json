@@ -1,0 +1,8 @@
+{"schema":"changes.fixtures.phs5-trumpet-trace.v1","requirements":[
+  {"id":"PHS5-REQ-REGISTRY","fixtures":["contract.json"],"futureOwner":"src/domain/instrument.ts"},
+  {"id":"PHS5-REQ-LIPS","fixtures":["outward-static-open","inward-sign-near-miss","lip-flow","threshold-frequency-bound"],"futureOwner":"dsp/concert-grand/src/trumpet.rs"},
+  {"id":"PHS5-REQ-BORE","fixtures":["geometry-cases.json","open-half-wave","passive-bell"],"futureOwner":"physical/parameter-packs/trumpet-v1.json"},
+  {"id":"PHS5-REQ-VALVES","fixtures":["second-valve-length","all-valves-compensated","valve-monotonicity"],"futureOwner":"dsp/concert-grand/src/trumpet.rs"},
+  {"id":"PHS5-REQ-NONLINEAR","fixtures":["nonlinear-brightening","alias"],"futureOwner":"dsp/concert-grand/src/trumpet.rs"},
+  {"id":"PHS5-REQ-STATE","fixtures":["legato-handoff","tongue-slur"],"futureOwner":"src/audio/audio-engine.ts"}
+]}

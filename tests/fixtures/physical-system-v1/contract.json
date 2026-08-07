@@ -1,0 +1,10 @@
+{
+  "schema":"changes.fixtures.phs7-physical-system-v1.v1","evidenceSchema":"changes.evidence.physical-system-v1.v1",
+  "acceptedModelTargets":["changes.dsp.clarinet-v2.v1","changes.dsp.flute-v2.v1","changes.dsp.plucked-string-family-v2.v1","changes.dsp.trumpet-v1.v1","changes.dsp.vibraphone-v2.v1"],
+  "sampleRatesHz":[44100,48000,96000],"renderModes":["note","stateful-phrase","stateful-stem","stateful-instrument"],
+  "globalLimits":{"maximumEventsPerPlan":128,"maximumGesturePoints":256,"maximumPhysicalStateBytes":1048576,"maximumPcmCacheBytes":268435456,"maximumConcurrentRenderedVoices":64,"maximumRenderSeconds":30,"maximumSampleRateHz":96000},
+  "budgets":{"standaloneArtifactMaximumBytes":9437184,"embeddedWasmMaximumBytes":262144,"coldSingleNoteReferenceMs":1500,"warmSingleNoteReferenceMs":150,"maximumStemReferenceMs":15000,"referenceHardwareRequired":true,"wallTimeAffectsMusicalOutput":false},
+  "browserMatrix":{"projects":["chromium","firefox","webkit"],"viewports":[[320,568],[1440,900]],"workers":1,"retries":0,"nodeMajors":[22,24,26],"oneSupportedNodeRequired":true},
+  "releaseAuthority":{"commit":"explicit-owner-only","push":"explicit-owner-only","release":"explicit-owner-only","deploy":"explicit-owner-only","deploymentExpectedBytes":"git-show-HEAD-root-artifact","workingTreeBuildForbiddenForDeploy":true},
+  "independence":{"productionOutputUsedForExpectedValues":false,"humanResultsAgentAuthored":false,"skipsRetriesQuarantineAllowed":false}
+}
