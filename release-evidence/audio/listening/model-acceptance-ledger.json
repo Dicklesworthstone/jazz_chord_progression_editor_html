@@ -12,7 +12,7 @@
     {
       "algorithmId": "changes.dsp.waveguide-flute@1",
       "status": "approved",
-      "evidence": "owner-approved artifact 67b9ae08 (commit 031c667); tamed-turbulence HNR 19-24 dB accepted 2026-08-06 | 2026-08-07 machine reference-gate re-verified after flute purity/turbulence fix (bd20f10): every cell improved-or-equal vs shipped, forte hnr-delta -21.4->-13.8 dB, all cells inside same-instrument scatter (test-results/winds-reference-evidence/)",
+      "evidence": "owner-approved artifact 67b9ae08 (commit 031c667); tamed-turbulence HNR 19-24 dB accepted 2026-08-06",
       "decidedBy": "owner",
       "date": "2026-08-06"
     },
@@ -60,8 +60,8 @@
     },
     {
       "algorithmId": "changes.dsp.waveguide-clarinet@2",
-      "status": "machine-delegated",
-      "evidence": "test-results/winds-reference-evidence/ reference-similarity matrices + screened pack 5c800e2ca448306f (48 wavs, 0 screen failures), commit bd20f10: all cells inside same-instrument scatter, clarion h2 -37->-8 dB vs reference -0 dB, harmonic distance 15->10 dB; permanent gate tests/unit/reference-similarity.test.ts 13/13",
+      "status": "open",
+      "evidence": "screened listening pack test-results/clarinet-v2-listening/533abbdd277b2911 awaiting the reference-similarity gate; reached production un-auditioned 2026-08-06 (rolled back 2026-08-07). Reachable via engine gesture routing (audio-engine.ts clarinet v2 override), NOT via the recipe pointer - the predeploy source scan covers this path.",
       "decidedBy": "owner-delegated-machine-gate",
       "date": "2026-08-07"
     }
