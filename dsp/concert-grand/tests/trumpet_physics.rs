@@ -741,10 +741,10 @@ fn diagnostic_hardening_scale_map() {
 
 #[test]
 fn diagnostic_first_regime_control_map() {
-    for lip_hz in [140.0] {
-        for damping in [0.02, 0.05] {
-            for opening in [0.00005, 0.00015, 0.0003] {
-                for pressure_pa in [5_500.0, 12_000.0] {
+    for lip_hz in [80.0] {
+        for damping in [0.12, 0.16, 0.24] {
+            for opening in [0.0, 0.00005] {
+                for pressure_pa in [8_500.0, 12_000.0] {
                     let mut model =
                         TrumpetModel::new(48_000.0, TrumpetParameters::canonical()).unwrap();
                     let mut controls = TrumpetControls {

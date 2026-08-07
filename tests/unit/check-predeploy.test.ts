@@ -26,6 +26,7 @@ import {
   type GateEvidenceV1,
   type SignalFeatures,
 } from "../../scripts/reference-similarity";
+import { runPluckedV2ReleaseGate } from "../../scripts/run-plucked-v2-release-gate";
 
 const root = resolve(import.meta.dir, "../..");
 
@@ -212,6 +213,24 @@ describe("ledger evaluation fails closed", () => {
       { ...approvedRow("changes.dsp.experimental@9"), status: "red" },
     ];
     expect(evaluateGate(ship, rows, () => undefined)).toEqual([]);
+  });
+
+  test("one exact plucked-family report can prove each of its four named algorithms", async () => {
+    const evidence = await runPluckedV2ReleaseGate();
+    expect(evidence.summary.outcome).toBe("pass");
+    for (const algorithmId of evidence.algorithmIds) {
+      const row: LedgerRow = {
+        ...approvedRow(algorithmId),
+        status: "machine-delegated",
+        evidence: "release-evidence/audio/listening/plucked-v2.json",
+      };
+      expect(evaluateGate(
+        [algorithmId],
+        [row],
+        () => evidence,
+        evidence.wasmSha256,
+      )).toEqual([]);
+    }
   });
 });
 

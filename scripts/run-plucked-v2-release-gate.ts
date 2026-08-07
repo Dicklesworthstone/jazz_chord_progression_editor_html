@@ -6,7 +6,7 @@
  * failure that reached the UI in August 2026: a valid ABI render that was
  * nearly a pure sine, died tens of decibels too quickly, or refused outright.
  */
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import {
@@ -626,6 +626,14 @@ export function pluckedEvidenceIncludesAlgorithm(
 
 if (import.meta.main) {
   const result = await runPluckedV2ReleaseGate();
-  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+  const arguments_ = process.argv.slice(2);
+  const outputIndex = arguments_.indexOf("--output");
+  const outputPath = outputIndex < 0 ? null : arguments_[outputIndex + 1] ?? null;
+  const serialized = `${JSON.stringify(result, null, 2)}\n`;
+  if (outputIndex >= 0 && outputPath === null) {
+    throw new Error("usage: bun scripts/run-plucked-v2-release-gate.ts [--output <path>]");
+  }
+  if (outputPath === null) process.stdout.write(serialized);
+  else await writeFile(resolve(process.cwd(), outputPath), serialized);
   process.exitCode = result.summary.outcome === "pass" ? 0 : 1;
 }

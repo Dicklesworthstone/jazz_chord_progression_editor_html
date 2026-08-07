@@ -51,7 +51,17 @@ const SECTION_END_M: [f64; SEGMENTS] = [
 const SECTION_RADIUS_M: [f64; SEGMENTS] = [
     0.00940, 0.00945, 0.00950, 0.00950, 0.00955, 0.00955, 0.00960, 0.00965, 0.00970,
 ];
-const HOLE_POSITION_M: [f64; HOLES] = [0.246, 0.278, 0.316, 0.357, 0.397, 0.438, 0.492, 0.548];
+const TONE_HOLE_BANK_OFFSET_M: f64 = 0.000_036;
+const HOLE_POSITION_M: [f64; HOLES] = [
+    0.246 + TONE_HOLE_BANK_OFFSET_M,
+    0.278 + TONE_HOLE_BANK_OFFSET_M,
+    0.316 + TONE_HOLE_BANK_OFFSET_M,
+    0.357 + TONE_HOLE_BANK_OFFSET_M,
+    0.397 + TONE_HOLE_BANK_OFFSET_M,
+    0.438 + TONE_HOLE_BANK_OFFSET_M,
+    0.492 + TONE_HOLE_BANK_OFFSET_M,
+    0.548 + TONE_HOLE_BANK_OFFSET_M,
+];
 const HOLE_RADIUS_M: [f64; HOLES] = [
     0.0042, 0.0045, 0.0048, 0.0049, 0.0050, 0.0051, 0.0052, 0.0053,
 ];
@@ -60,8 +70,8 @@ const HOLE_CHIMNEY_M: [f64; HOLES] = [
 ];
 // A partially lifted key cup adds a short, fixed geometric path between its
 // chimney and the exterior pressure node. The E key's shallow cup contributes
-// 0.12 mm at its half-open fingering and vanishes once the key is fully open.
-const HOLE_KEY_CUP_PATH_M: [f64; HOLES] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.00024, 0.0];
+// 0.04 mm at its half-open fingering and vanishes once the key is fully open.
+const HOLE_KEY_CUP_PATH_M: [f64; HOLES] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.00008, 0.0];
 
 // Bore propagation endpoints are the eight tone-hole centers plus the foot.
 const PATH_END_M: [f64; SEGMENTS] = [
@@ -1344,7 +1354,7 @@ mod tests {
         assert!((quarter_pressure_delay / delay - 2.0).abs() < 1.0e-12);
         let half_open_e_key = hole_effective_length_m(6, 0.50);
         let fully_open_e_key = hole_effective_length_m(6, 1.0);
-        assert!((half_open_e_key - fully_open_e_key - 0.00012).abs() < 1.0e-15);
+        assert!((half_open_e_key - fully_open_e_key - 0.00004).abs() < 1.0e-15);
 
         // Planted negative: a pressure-linear delay law has the wrong scaling
         // and must not be able to satisfy the physical square-root relation.
