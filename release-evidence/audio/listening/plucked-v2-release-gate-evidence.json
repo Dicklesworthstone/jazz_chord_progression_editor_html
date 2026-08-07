@@ -1,0 +1,580 @@
+{
+  "schema": "changes.evidence.phs4-plucked-shipping-output.v1",
+  "policy": {
+    "schema": "changes.policy.phs4-plucked-shipping-output.v1",
+    "sampleRateHz": 48000,
+    "velocity": 100,
+    "renderSeconds": 1.2,
+    "onsetThresholdOfPeak": 0.01,
+    "maximumOnsetMs": 20,
+    "earlyWindowStartAfterOnsetMs": 45,
+    "earlyWindowLengthMs": 170,
+    "tailWindowStartAfterOnsetMs": 820,
+    "tailWindowLengthMs": 250,
+    "partialCount": 10,
+    "audiblePartialFloorDb": -55,
+    "maximumPeak": 0.99,
+    "minimumEarlyRms": 0.000001,
+    "minimumPairwiseProfileDistanceDb": 3.5,
+    "families": {
+      "archtop": {
+        "packIndex": 0,
+        "algorithmId": "changes.dsp.plucked-archtop@2",
+        "midi": [
+          48,
+          60,
+          72
+        ],
+        "maximumPitchCents": 5,
+        "minimumSecondPartialDb": -24,
+        "minimumThirdPartialDb": -38,
+        "minimumAudiblePartialCount": 5,
+        "minimumHigherHarmonicMassDb": -18,
+        "minimumTailDb": -38,
+        "maximumTailDb": 1
+      },
+      "electric": {
+        "packIndex": 1,
+        "algorithmId": "changes.dsp.plucked-electric@2",
+        "midi": [
+          48,
+          60,
+          72
+        ],
+        "maximumPitchCents": 5,
+        "minimumSecondPartialDb": -20,
+        "minimumThirdPartialDb": -26,
+        "minimumAudiblePartialCount": 7,
+        "minimumHigherHarmonicMassDb": -12,
+        "minimumTailDb": -20,
+        "maximumTailDb": 3
+      },
+      "dreadnought": {
+        "packIndex": 2,
+        "algorithmId": "changes.dsp.plucked-dreadnought@1",
+        "midi": [
+          48,
+          60,
+          72
+        ],
+        "maximumPitchCents": 5,
+        "minimumSecondPartialDb": -18,
+        "minimumThirdPartialDb": -35,
+        "minimumAudiblePartialCount": 5,
+        "minimumHigherHarmonicMassDb": -15,
+        "minimumTailDb": -34,
+        "maximumTailDb": 1
+      },
+      "ukulele": {
+        "packIndex": 3,
+        "algorithmId": "changes.dsp.plucked-ukulele@1",
+        "midi": [
+          60,
+          67,
+          72
+        ],
+        "maximumPitchCents": 6,
+        "minimumSecondPartialDb": -28,
+        "minimumThirdPartialDb": -38,
+        "minimumAudiblePartialCount": 4,
+        "minimumHigherHarmonicMassDb": -20,
+        "minimumTailDb": -44,
+        "maximumTailDb": 1
+      }
+    },
+    "referenceBasis": {
+      "steelStringDiagnostic": "FSS SteelStringGuitar GPL diagnostic only: C4 h2=-4.8dB, h3=-22.7dB, 0.82-1.07s tail=-13.2dB",
+      "electricCc0": "Freesound/Versilian CC0 bridge clean+dist: register cells retain 6-10 strong partials; clean tail=-2.1..-11.5dB; dist tail=-0.5..-0.9dB",
+      "authorityBoundary": "thresholds are conservative lower bounds, not copied audio and not a measured Marshall fit"
+    }
+  },
+  "algorithmIds": [
+    "changes.dsp.plucked-archtop@2",
+    "changes.dsp.plucked-dreadnought@1",
+    "changes.dsp.plucked-electric@2",
+    "changes.dsp.plucked-ukulele@1"
+  ],
+  "wasmSha256": "e73483a0f23101562fc7614336d8a3eec564ad1bef8a3d41a01b79a82312b141",
+  "sourceBindings": [
+    {
+      "path": "dsp/concert-grand/src/plucked_v2.rs",
+      "sha256": "1747f7b168f39124dbbe3e57dd527faacb004dc3cdfc4948344332b1a0b55f0a"
+    },
+    {
+      "path": "dsp/concert-grand/src/lib.rs",
+      "sha256": "605c64f0c56ba25ace284908cc9e4a4eaa6be1c74b61c5cf0b59b5c345c2db76"
+    },
+    {
+      "path": "src/audio/dsp-renderer.ts",
+      "sha256": "3eca3fb60a2909ded18b11516aa84fb1b191a925463ac38f6e117c2caee867e9"
+    },
+    {
+      "path": "src/audio/instrument-recipes-contract.ts",
+      "sha256": "d4d4823aa760739ab54eb9df438f2cff627072756eda6ba6093e23b2aa1fb044"
+    },
+    {
+      "path": "tests/fixtures/plucked-string-v2/instrument-packs.json",
+      "sha256": "e666f42d41d303fd77061fb5b193b8d6a908fc088e46ec8110d858bdf9fc4b82"
+    },
+    {
+      "path": "tests/fixtures/plucked-string-v2/metric-cases.json",
+      "sha256": "7d73ea0d05de7b422c667e5b79a79eb8ba65cc471fdffdd6d6cd18a1622c04a2"
+    },
+    {
+      "path": "scripts/run-plucked-v2-release-gate.ts",
+      "sha256": "86e1f947b03de51e6d9683251d9858dff409fe8b83dac4ea308ce497325d9614"
+    }
+  ],
+  "sourceClosureSha256": "02d9bbcd2af81a296f2d7958c3d6848e6870ac912424d25d8cc2b7a9086a4e5e",
+  "cells": [
+    {
+      "id": "archtop-m48",
+      "family": "archtop",
+      "algorithmId": "changes.dsp.plucked-archtop@2",
+      "midi": 48,
+      "velocity": 100,
+      "sampleRateHz": 48000,
+      "pcmSha256": "79c37b66744a721310fbad850b87add3181cf4845c66488f3b55ed4e49591a7e",
+      "features": {
+        "peak": 0.00002028677408816293,
+        "earlyRms": 0.000007301625487977519,
+        "onsetMs": 2.1875,
+        "pitchCents": -3,
+        "partialsDb": [
+          0,
+          19.894968191998352,
+          5.463904815567883,
+          -22.709136866262543,
+          -1.9199407007022509,
+          0.6594021519206359,
+          -18.429942498409627,
+          -13.512292581837615,
+          -23.29852273949852,
+          -23.923607739051693
+        ],
+        "audiblePartialCount": 10,
+        "higherHarmonicMassDb": 20.128750836809285,
+        "tailDb": -7.77051078303168
+      },
+      "outcome": "pass",
+      "findings": []
+    },
+    {
+      "id": "archtop-m60",
+      "family": "archtop",
+      "algorithmId": "changes.dsp.plucked-archtop@2",
+      "midi": 60,
+      "velocity": 100,
+      "sampleRateHz": 48000,
+      "pcmSha256": "047a34966708499301dd0a73b815a1b4f45647aca111eb262527f4675b0540fc",
+      "features": {
+        "peak": 0.00003154725709464401,
+        "earlyRms": 0.000013045695359060323,
+        "onsetMs": 0.14583333333333334,
+        "pitchCents": -2.5,
+        "partialsDb": [
+          0,
+          -21.040295583115658,
+          -16.63131491755221,
+          -28.383397664291586,
+          -11.845651573900842,
+          -27.48648230176923,
+          -33.59415902265883,
+          -63.915519367728365,
+          -63.51136835910404,
+          -69.93483188053972
+        ],
+        "audiblePartialCount": 7,
+        "higherHarmonicMassDb": -10.059394712599289,
+        "tailDb": -7.437368375481745
+      },
+      "outcome": "pass",
+      "findings": []
+    },
+    {
+      "id": "archtop-m72",
+      "family": "archtop",
+      "algorithmId": "changes.dsp.plucked-archtop@2",
+      "midi": 72,
+      "velocity": 100,
+      "sampleRateHz": 48000,
+      "pcmSha256": "4fd61338fff6b1bfb94189b62f9210c6006896b38e7211274aadc975970cca49",
+      "features": {
+        "peak": 0.000020737526938319206,
+        "earlyRms": 0.000005095058213150921,
+        "onsetMs": 0.041666666666666664,
+        "pitchCents": 0.25,
+        "partialsDb": [
+          0,
+          15.0711969143581,
+          0.20196908273558734,
+          -18.385738685637875,
+          -5.88183951976861,
+          -3.6091574276606138,
+          -9.944392690104692,
+          -31.46012187238493,
+          -41.64053718121021,
+          -47.72193719554319
+        ],
+        "audiblePartialCount": 10,
+        "higherHarmonicMassDb": 15.31521966295394,
+        "tailDb": -12.719640866638722
+      },
+      "outcome": "pass",
+      "findings": []
+    },
+    {
+      "id": "electric-m48",
+      "family": "electric",
+      "algorithmId": "changes.dsp.plucked-electric@2",
+      "midi": 48,
+      "velocity": 100,
+      "sampleRateHz": 48000,
+      "pcmSha256": "f9cbcade773ae96271767bf29c3001dc5e1a7bce292ed7a621dd000f2c170196",
+      "features": {
+        "peak": 0.00517091853544116,
+        "earlyRms": 0.000880271710969793,
+        "onsetMs": 0.041666666666666664,
+        "pitchCents": 1.25,
+        "partialsDb": [
+          0,
+          -9.576293251212025,
+          -8.898635504775939,
+          -11.129700853229323,
+          -17.156370172886014,
+          -17.33181549347252,
+          -23.03875198014289,
+          -21.882409776872024,
+          -22.226723562089802,
+          -39.95235386807443
+        ],
+        "audiblePartialCount": 10,
+        "higherHarmonicMassDb": -4.30063547302699,
+        "tailDb": 0.8006776438910023
+      },
+      "outcome": "pass",
+      "findings": []
+    },
+    {
+      "id": "electric-m60",
+      "family": "electric",
+      "algorithmId": "changes.dsp.plucked-electric@2",
+      "midi": 60,
+      "velocity": 100,
+      "sampleRateHz": 48000,
+      "pcmSha256": "43be0b80603a19b147fa458c6ad6f8dfe40e14a4108e9a083edd5badb54aaf09",
+      "features": {
+        "peak": 0.0030932642985135317,
+        "earlyRms": 0.00040659518426919023,
+        "onsetMs": 0,
+        "pitchCents": 0.5,
+        "partialsDb": [
+          0,
+          0.03682593320789465,
+          -3.4247675341584918,
+          -10.146174920265366,
+          -12.712749016517126,
+          -12.588993813591951,
+          -18.268946000064762,
+          -16.245319320502055,
+          -18.02255715505781,
+          -30.978793046741202
+        ],
+        "audiblePartialCount": 10,
+        "higherHarmonicMassDb": 2.364202288882737,
+        "tailDb": 1.0072105163988634
+      },
+      "outcome": "pass",
+      "findings": []
+    },
+    {
+      "id": "electric-m72",
+      "family": "electric",
+      "algorithmId": "changes.dsp.plucked-electric@2",
+      "midi": 72,
+      "velocity": 100,
+      "sampleRateHz": 48000,
+      "pcmSha256": "c1baca5bb7266a93a2f727844e4109de67e638791d281c476b158492db81c2f2",
+      "features": {
+        "peak": 0.002541986061260104,
+        "earlyRms": 0.00036407001688003283,
+        "onsetMs": 0,
+        "pitchCents": 0.25,
+        "partialsDb": [
+          0,
+          -8.654145613731716,
+          -9.907920561687911,
+          -15.260548403220524,
+          -18.72993203010695,
+          -20.314879781406784,
+          -27.527042126991738,
+          -23.866664267240736,
+          -29.001156893344906,
+          -36.49299825896783
+        ],
+        "audiblePartialCount": 10,
+        "higherHarmonicMassDb": -5.253391450817741,
+        "tailDb": -1.1705465305292397
+      },
+      "outcome": "pass",
+      "findings": []
+    },
+    {
+      "id": "dreadnought-m48",
+      "family": "dreadnought",
+      "algorithmId": "changes.dsp.plucked-dreadnought@1",
+      "midi": 48,
+      "velocity": 100,
+      "sampleRateHz": 48000,
+      "pcmSha256": "61e2cb5f4e3693b98c3691fa73b66036fab7230f15ed8b9c66496dfa6abfc9c3",
+      "features": {
+        "peak": 0.000033976386475842446,
+        "earlyRms": 0.000008337927680355165,
+        "onsetMs": 0.3333333333333333,
+        "pitchCents": 0.75,
+        "partialsDb": [
+          0,
+          -2.414397976582335,
+          7.6558093432043615,
+          -8.810011466493252,
+          -4.410436441285037,
+          -32.218375597695974,
+          -6.288936601508701,
+          0.600916826584349,
+          -7.086207953616811,
+          -25.673285730220478
+        ],
+        "audiblePartialCount": 10,
+        "higherHarmonicMassDb": 9.283148071046746,
+        "tailDb": -8.679920279128083
+      },
+      "outcome": "pass",
+      "findings": []
+    },
+    {
+      "id": "dreadnought-m60",
+      "family": "dreadnought",
+      "algorithmId": "changes.dsp.plucked-dreadnought@1",
+      "midi": 60,
+      "velocity": 100,
+      "sampleRateHz": 48000,
+      "pcmSha256": "a5ba44e73e3e721b3352fc47a605e59bfbc570277df7ca22795166d70d8b49fc",
+      "features": {
+        "peak": 0.00007837756857043132,
+        "earlyRms": 0.000010338807431338227,
+        "onsetMs": 0.08333333333333333,
+        "pitchCents": 1.25,
+        "partialsDb": [
+          0,
+          -0.6282061613616163,
+          -11.772340728115346,
+          8.636282285298178,
+          -6.977082704472956,
+          -15.908213513975888,
+          -3.7063662536594406,
+          -6.173497358957327,
+          -17.354681306071704,
+          -36.372957017751084
+        ],
+        "audiblePartialCount": 10,
+        "higherHarmonicMassDb": 9.613790122621527,
+        "tailDb": -13.656485091270591
+      },
+      "outcome": "pass",
+      "findings": []
+    },
+    {
+      "id": "dreadnought-m72",
+      "family": "dreadnought",
+      "algorithmId": "changes.dsp.plucked-dreadnought@1",
+      "midi": 72,
+      "velocity": 100,
+      "sampleRateHz": 48000,
+      "pcmSha256": "1a2b18c4337ef330829a1420fba88aca1f24d328e56c0afe00684d157878b7e1",
+      "features": {
+        "peak": 0.00007018088217591867,
+        "earlyRms": 0.000010901817299190154,
+        "onsetMs": 0.041666666666666664,
+        "pitchCents": 0.5,
+        "partialsDb": [
+          0,
+          15.42850384134525,
+          3.2286590006129554,
+          4.483895670874597,
+          -4.394173355657054,
+          -8.7507827088157,
+          -4.331343487909397,
+          -12.013937791748518,
+          -31.383143574985674,
+          -46.60030187061723
+        ],
+        "audiblePartialCount": 10,
+        "higherHarmonicMassDb": 16.100475209097866,
+        "tailDb": -14.03580469896928
+      },
+      "outcome": "pass",
+      "findings": []
+    },
+    {
+      "id": "ukulele-m60",
+      "family": "ukulele",
+      "algorithmId": "changes.dsp.plucked-ukulele@1",
+      "midi": 60,
+      "velocity": 100,
+      "sampleRateHz": 48000,
+      "pcmSha256": "9fb1fd89ec48fda4975496d92e0759dba1f71acd516c9e0b67556bc57fee00ea",
+      "features": {
+        "peak": 0.00003197132173227146,
+        "earlyRms": 0.00000618333469962384,
+        "onsetMs": 0.8541666666666666,
+        "pitchCents": 0.75,
+        "partialsDb": [
+          0,
+          -5.817018852639797,
+          -10.276338162540997,
+          -22.347653995873426,
+          -20.8218587314524,
+          -7.3155598137987905,
+          -26.95612861696212,
+          -62.74165327541529,
+          -65.32294345348043,
+          -78.1633075804059
+        ],
+        "audiblePartialCount": 7,
+        "higherHarmonicMassDb": -2.537609320215979,
+        "tailDb": -15.738610136918641
+      },
+      "outcome": "pass",
+      "findings": []
+    },
+    {
+      "id": "ukulele-m67",
+      "family": "ukulele",
+      "algorithmId": "changes.dsp.plucked-ukulele@1",
+      "midi": 67,
+      "velocity": 100,
+      "sampleRateHz": 48000,
+      "pcmSha256": "db5abcde84f14ae249925970ebccbaa23b64caa0765768a042c2ece467daa403",
+      "features": {
+        "peak": 0.00005403701652539894,
+        "earlyRms": 0.000007551783147333924,
+        "onsetMs": 0.7083333333333334,
+        "pitchCents": 0.25,
+        "partialsDb": [
+          0,
+          0.5144213707018964,
+          7.084105131849946,
+          -11.17800757411278,
+          2.915684778607854,
+          -29.969364530993857,
+          -30.877162102334633,
+          -32.88387173222628,
+          -11.580464254576565,
+          -15.36146172065134
+        ],
+        "audiblePartialCount": 10,
+        "higherHarmonicMassDb": 9.227099834991016,
+        "tailDb": -25.17271719190692
+      },
+      "outcome": "pass",
+      "findings": []
+    },
+    {
+      "id": "ukulele-m72",
+      "family": "ukulele",
+      "algorithmId": "changes.dsp.plucked-ukulele@1",
+      "midi": 72,
+      "velocity": 100,
+      "sampleRateHz": 48000,
+      "pcmSha256": "142a09636d6a21d3f872c0340fdb05ac9a6dbe53078d3130bd56cc0db969517d",
+      "features": {
+        "peak": 0.0000241423422266962,
+        "earlyRms": 0.000004297347908239157,
+        "onsetMs": 0.4166666666666667,
+        "pitchCents": 0.25,
+        "partialsDb": [
+          0,
+          4.588252649637157,
+          6.072368110836383,
+          -23.89471155652152,
+          -20.866225041083805,
+          -20.362747755998896,
+          -13.248863110657698,
+          -16.29675392907862,
+          -19.93672688631582,
+          -31.63319647876729
+        ],
+        "audiblePartialCount": 10,
+        "higherHarmonicMassDb": 8.467882708819088,
+        "tailDb": -25.748443802669513
+      },
+      "outcome": "pass",
+      "findings": []
+    }
+  ],
+  "pairwiseCells": [
+    {
+      "id": "archtop-vs-electric-m60",
+      "leftFamily": "archtop",
+      "rightFamily": "electric",
+      "midi": 60,
+      "profileDistanceDb": 28.417632032395208,
+      "outcome": "pass"
+    },
+    {
+      "id": "archtop-vs-dreadnought-m60",
+      "leftFamily": "archtop",
+      "rightFamily": "dreadnought",
+      "midi": 60,
+      "profileDistanceDb": 32.40839991515438,
+      "outcome": "pass"
+    },
+    {
+      "id": "archtop-vs-ukulele-m60",
+      "leftFamily": "archtop",
+      "rightFamily": "ukulele",
+      "midi": 60,
+      "profileDistanceDb": 10.068838179070179,
+      "outcome": "pass"
+    },
+    {
+      "id": "electric-vs-dreadnought-m60",
+      "leftFamily": "electric",
+      "rightFamily": "dreadnought",
+      "midi": 60,
+      "profileDistanceDb": 9.48609169988653,
+      "outcome": "pass"
+    },
+    {
+      "id": "electric-vs-ukulele-m60",
+      "leftFamily": "electric",
+      "rightFamily": "ukulele",
+      "midi": 60,
+      "profileDistanceDb": 27.93789848500859,
+      "outcome": "pass"
+    },
+    {
+      "id": "dreadnought-vs-ukulele-m60",
+      "leftFamily": "dreadnought",
+      "rightFamily": "ukulele",
+      "midi": 60,
+      "profileDistanceDb": 31.697481351882274,
+      "outcome": "pass"
+    }
+  ],
+  "controls": {
+    "pureSineRejected": true,
+    "wrongPitchRejected": true,
+    "collapsedFamiliesRejected": true
+  },
+  "summary": {
+    "outcome": "pass",
+    "expectedCellCount": 12,
+    "passedCellCount": 12,
+    "failedCellCount": 0,
+    "expectedPairwiseCellCount": 6,
+    "passedPairwiseCellCount": 6,
+    "failedPairwiseCellCount": 0
+  },
+  "evidenceSha256": "fa625db01a282af1270f4a9d9c7d994c087cc1d7ba4655924f977a5b39a0e5da"
+}
