@@ -5,6 +5,7 @@ import {
   CLARINET_REFERENCE_RUNNER_POLICY,
   runUiowaClarinetReference,
   summarizeClarinetReferenceCells,
+  verifyClarinetReferenceRunEvidence,
   type ClarinetReferenceMatrixCell,
 } from "../../scripts/run-uiowa-clarinet-reference";
 import {
@@ -55,26 +56,37 @@ function report(expectedHz: number, failing = false): SimilarityReport {
   });
 }
 
-function evidence(midi: number, outcome: "pass" | "fail" = "pass"): GateEvidenceV1 {
+function evidence(
+  midi: number,
+  outcome: "pass" | "fail" = "pass",
+  bindings: Readonly<{
+    rendererSourceSha256?: string;
+    wasmSha256?: string;
+    parameterPackSha256?: string;
+    corpusManifestSha256?: string;
+  }> = {},
+): GateEvidenceV1 {
   const expectedHz = 440 * 2 ** ((midi - 69) / 12);
   return buildGateEvidence({
     outcome,
     rendererAlgorithmId: "changes.dsp.waveguide-clarinet@2",
     corpusId: "university-of-iowa-musical-instrument-samples-winds@2026-08-07",
     referencePath: `BbClar.mf.C5B5.aiff#midi-${String(midi)}`,
+    alternativeReferencePath: `Flute.mf.C5B5.aiff#midi-${String(midi)}`,
     referenceLicenseId: "University-of-Iowa-MIS-unrestricted-project-use",
     expectedMidi: midi,
     expectedHz,
     digests: {
       analyzerImplementationSha256: digest("analyzer"),
       policySha256: windReferencePolicySha256(),
-      rendererSourceSha256: digest("renderer"),
-      wasmSha256: digest("wasm"),
-      parameterPackSha256: digest("pack"),
+      rendererSourceSha256: bindings.rendererSourceSha256 ?? digest("renderer"),
+      wasmSha256: bindings.wasmSha256 ?? digest("wasm"),
+      parameterPackSha256: bindings.parameterPackSha256 ?? digest("pack"),
       renderRequestSha256: digest(`request-${String(midi)}`),
       pcmSha256: digest(`pcm-${String(midi)}`),
-      corpusManifestSha256: digest("manifest"),
+      corpusManifestSha256: bindings.corpusManifestSha256 ?? digest("manifest"),
       referenceFileSha256: digest(`reference-${String(midi)}`),
+      alternativeReferenceFileSha256: digest(`alternative-${String(midi)}`),
     },
     controls: {
       self: true,
@@ -84,15 +96,21 @@ function evidence(midi: number, outcome: "pass" | "fail" = "pass"): GateEvidence
       crossInstrumentRejected: true,
     },
     report: report(expectedHz, outcome === "fail"),
+    identityComparison: {
+      targetTimbreDistanceDb: 0,
+      alternativeTimbreDistanceDb: 10,
+      targetAdvantageDb: 10,
+    },
     findings: outcome === "fail"
-      ? [{ code: "ENVELOPE_DISTANCE", message: "planted threshold failure" }]
+      ? [{ code: "ENVELOPE_DISTANCE", message: "99 exceeds 18" }]
       : [],
   });
 }
 
-function passingCells(): readonly ClarinetReferenceMatrixCell[] {
+function passingCells(bindings: Parameters<typeof evidence>[2] = {}):
+readonly ClarinetReferenceMatrixCell[] {
   return Object.freeze(MATRIX.map((cell) => {
-    const receipt = evidence(cell.midi);
+    const receipt = evidence(cell.midi, "pass", bindings);
     return Object.freeze({
       ...cell,
       outcome: "pass" as const,
@@ -103,6 +121,9 @@ function passingCells(): readonly ClarinetReferenceMatrixCell[] {
         path: receipt.reference.filePath,
         fileSha256: receipt.reference.fileSha256,
         segmentSha256: digest(`segment-${cell.id}`),
+        alternativePath: receipt.reference.alternativeFilePath,
+        alternativeFileSha256: receipt.reference.alternativeFileSha256,
+        alternativeSegmentSha256: digest(`alternative-segment-${cell.id}`),
       }),
     });
   }));
@@ -141,6 +162,38 @@ describe("PHS2 Iowa clarinet reference matrix", () => {
       unavailableCellCount: 0,
     });
     expect(summary.findings).toEqual([]);
+  });
+
+  test("release evidence verifies the entire bound matrix, not one cherry-picked cell", () => {
+    const candidateSourceBindings = Object.freeze([
+      Object.freeze({ path: "dsp/concert-grand/src/clarinet.rs", sha256: digest("source") }),
+    ]);
+    const candidateSourceClosureSha256 = sha256Hex(JSON.stringify(candidateSourceBindings));
+    const wasmSha256 = digest("matrix-wasm");
+    const parameterPackSha256 = digest("matrix-pack");
+    const corpusManifestSha256 = digest("matrix-manifest");
+    const cells = passingCells({
+      rendererSourceSha256: candidateSourceClosureSha256,
+      wasmSha256,
+      parameterPackSha256,
+      corpusManifestSha256,
+    });
+    const matrix = {
+      schema: "changes.evidence.phs2-uiowa-clarinet-reference.v1",
+      policy: CLARINET_REFERENCE_RUNNER_POLICY,
+      identityControl: { outcome: "pass", exitCode: 0, findings: [], measurements: [] },
+      candidateSourceBindings,
+      candidateSourceClosureSha256,
+      wasmSha256,
+      parameterPackSha256,
+      corpusManifestSha256,
+      cells,
+      summary: summarizeClarinetReferenceCells(cells),
+    };
+    expect(verifyClarinetReferenceRunEvidence(matrix)).toBe(true);
+    expect(verifyClarinetReferenceRunEvidence({ ...matrix, wasmSha256: digest("stale") }))
+      .toBe(false);
+    expect(verifyClarinetReferenceRunEvidence({ ...matrix, cells: cells.slice(1) })).toBe(false);
   });
 
   test("one planted acoustic-distance failure makes the whole matrix fail", () => {

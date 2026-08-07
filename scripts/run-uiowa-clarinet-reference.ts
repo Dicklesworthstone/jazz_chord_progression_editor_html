@@ -9,10 +9,14 @@ import {
 } from "../src/audio/dsp-renderer";
 import {
   analyzeSignal,
+  admitIdentityAlternativeSignal,
   admitReferenceSignal,
   buildGateEvidence,
+  compareAdmittedSignals,
+  compareCandidateIdentity,
   compareToReference,
   evaluateSimilarityReport,
+  evaluateTargetedSimilarityReport,
   readAiffMono,
   sha256Hex,
   splitChromaticScale,
@@ -22,6 +26,8 @@ import {
   type GateFinding,
   type GateOutcome,
   type MonoPcm,
+  type CandidateIdentityComparison,
+  type SimilarityReport,
   type WindIdentityControlResult,
 } from "./reference-similarity";
 import { runUiowaWindIdentityCorpus } from "./run-uiowa-wind-identity-control";
@@ -91,6 +97,9 @@ export type ClarinetReferenceMatrixCell = Readonly<{
     path: string;
     fileSha256: string;
     segmentSha256: string;
+    alternativePath: string;
+    alternativeFileSha256: string;
+    alternativeSegmentSha256: string;
   }> | null;
 }>;
 
@@ -117,6 +126,62 @@ export type ClarinetReferenceRunResult = Readonly<{
   cells: readonly ClarinetReferenceMatrixCell[];
   summary: ClarinetReferenceMatrixSummary;
 }>;
+
+/**
+ * Verify a checked-in matrix as release evidence without re-running audio.
+ * Every cell's self-hashed evidence remains authoritative, while this layer
+ * proves exact matrix cardinality and binds all cells to one source closure,
+ * WASM payload, parameter pack, and corpus manifest.
+ */
+export function verifyClarinetReferenceRunEvidence(
+  value: unknown,
+): value is ClarinetReferenceRunResult {
+  if (!isRecord(value) ||
+    value["schema"] !== "changes.evidence.phs2-uiowa-clarinet-reference.v1" ||
+    !isRecord(value["policy"]) ||
+    canonicalJson(value["policy"]) !== canonicalJson(CLARINET_REFERENCE_RUNNER_POLICY) ||
+    !isRecord(value["identityControl"]) ||
+    value["identityControl"]["outcome"] !== "pass" ||
+    value["identityControl"]["exitCode"] !== 0 ||
+    !Array.isArray(value["candidateSourceBindings"]) ||
+    value["candidateSourceBindings"].length === 0 ||
+    typeof value["candidateSourceClosureSha256"] !== "string" ||
+    typeof value["wasmSha256"] !== "string" ||
+    typeof value["parameterPackSha256"] !== "string" ||
+    typeof value["corpusManifestSha256"] !== "string" ||
+    !Array.isArray(value["cells"]) ||
+    !isRecord(value["summary"])) return false;
+
+  const sourceBindings = value["candidateSourceBindings"];
+  if (!sourceBindings.every((binding) => isRecord(binding) &&
+    typeof binding["path"] === "string" && binding["path"] !== "" &&
+    typeof binding["sha256"] === "string" && isSha256(binding["sha256"]))) return false;
+  const sourceClosure = value["candidateSourceClosureSha256"];
+  const wasmSha256 = value["wasmSha256"];
+  const parameterPackSha256 = value["parameterPackSha256"];
+  const corpusManifestSha256 = value["corpusManifestSha256"];
+  if (!isSha256(sourceClosure) || !isSha256(wasmSha256) ||
+    !isSha256(parameterPackSha256) || !isSha256(corpusManifestSha256) ||
+    sha256Hex(canonicalJson(sourceBindings)) !== sourceClosure) return false;
+
+  const cells = value["cells"] as unknown as readonly ClarinetReferenceMatrixCell[];
+  const summary = summarizeClarinetReferenceCells(cells);
+  if (canonicalJson(summary) !== canonicalJson(value["summary"]) ||
+    summary.outcome !== "pass" || summary.exitCode !== 0 ||
+    summary.completedCellCount !== 12 || summary.passedCellCount !== 12 ||
+    summary.failedCellCount !== 0 || summary.unavailableCellCount !== 0) return false;
+  for (const cell of cells) {
+    const evidence = cell.evidence;
+    if (cell.outcome !== "pass" || cell.exitCode !== 0 || evidence === null ||
+      !verifyGateEvidence(evidence) || evidence.outcome !== "pass" ||
+      evidence.candidate.rendererAlgorithmId !== WAVEGUIDE_CLARINET_V2_ALGORITHM_ID ||
+      evidence.candidate.rendererSourceSha256 !== sourceClosure ||
+      evidence.candidate.wasmSha256 !== wasmSha256 ||
+      evidence.candidate.parameterPackSha256 !== parameterPackSha256 ||
+      evidence.reference.corpusManifestSha256 !== corpusManifestSha256) return false;
+  }
+  return true;
+}
 
 const MATRIX = Object.freeze(
   CLARINET_REFERENCE_RUNNER_POLICY.selectedMidi.flatMap((midi) =>
@@ -284,7 +349,11 @@ export function summarizeClarinetReferenceCells(
       }
       if (cell.reference === null || cell.reference.path !== cell.evidence.reference.filePath ||
         cell.reference.fileSha256 !== cell.evidence.reference.fileSha256 ||
-        !isSha256(cell.reference.segmentSha256)) {
+        !isSha256(cell.reference.segmentSha256) ||
+        cell.reference.alternativePath !== cell.evidence.reference.alternativeFilePath ||
+        cell.reference.alternativeFileSha256 !==
+          cell.evidence.reference.alternativeFileSha256 ||
+        !isSha256(cell.reference.alternativeSegmentSha256)) {
         findings.push(finding("MATRIX_CELL_REFERENCE_BINDING_MISMATCH", cell.id));
       }
     } else if (cell.outcome === "pass" || cell.outcome === "fail") {
@@ -456,7 +525,8 @@ function controlTone(frequencyHz: number, sampleRateHz: number,
   return Object.freeze({ samples, sampleRateHz });
 }
 
-function plantedControlVerdicts(identityControl: WindIdentityControlResult):
+function plantedControlVerdicts(identityControl: WindIdentityControlResult,
+  crossInstrumentRejected: boolean):
 GateEvidenceV1["controls"] {
   const expectedHz = 440;
   const sampleRateHz = CLARINET_REFERENCE_RUNNER_POLICY.sampleRateHz;
@@ -472,7 +542,7 @@ GateEvidenceV1["controls"] {
     wrongPitchRejected: analyzeSignal(
       pureTone(expectedHz * 2, sampleRateHz), expectedHz,
     ).outcome === "unavailable",
-    crossInstrumentRejected: identityControl.outcome === "pass",
+    crossInstrumentRejected,
   });
 }
 
@@ -480,7 +550,8 @@ function controlsPass(controls: GateEvidenceV1["controls"]): boolean {
   return Object.values(controls).every((value) => value);
 }
 
-function referenceAdmissionFindings(items: readonly GateFinding[]): readonly GateFinding[] {
+function referenceAdmissionFindings(items: readonly GateFinding[],
+  role: "reference" | "alternative" = "reference"): readonly GateFinding[] {
   const grouped = new Map<string, string[]>();
   for (const item of items) {
     const messages = grouped.get(item.code) ?? [];
@@ -488,8 +559,8 @@ function referenceAdmissionFindings(items: readonly GateFinding[]): readonly Gat
     grouped.set(item.code, messages);
   }
   return Object.freeze([...grouped.entries()].map(([code, messages]) => finding(
-    `REFERENCE_POLICY_${code}`,
-    `reference self-admission failed: ${messages.join("; ")}`,
+    `${role === "reference" ? "REFERENCE" : "ALTERNATIVE"}_POLICY_${code}`,
+    `${role} self-admission failed: ${messages.join("; ")}`,
   )));
 }
 
@@ -560,11 +631,11 @@ Promise<ClarinetReferenceRunResult> {
   }
 
   const cells: ClarinetReferenceMatrixCell[] = [];
-  const controls = plantedControlVerdicts(identityControl);
   for (const matrixCell of MATRIX) {
     try {
       const expectedHz = midiHz(matrixCell.midi);
       const clarinet = corpusNote(scales, "clarinet", matrixCell.dynamic, matrixCell.midi);
+      const flute = corpusNote(scales, "flute", matrixCell.dynamic, matrixCell.midi);
       const request = Object.freeze({
         midiPitch: matrixCell.midi,
         velocity: matrixCell.velocity,
@@ -585,14 +656,43 @@ Promise<ClarinetReferenceRunResult> {
       const candidate = monoFromRendered(rendered);
       const comparison = compareToReference(candidate, clarinet.note, expectedHz);
       const referenceAdmission = admitReferenceSignal(clarinet.note, expectedHz);
+      const alternativeAdmission = admitIdentityAlternativeSignal(flute.note, expectedHz);
+      let crossInstrumentRejected = false;
+      if (referenceAdmission.outcome === "accept" && alternativeAdmission.outcome === "accept") {
+        const plantedCrossReport = compareAdmittedSignals(
+          alternativeAdmission.features,
+          referenceAdmission.features,
+        );
+        const plantedCrossIdentity = compareCandidateIdentity(
+          alternativeAdmission.features,
+          referenceAdmission.features,
+          alternativeAdmission.features,
+        );
+        const plantedCrossVerdict = evaluateTargetedSimilarityReport(
+          plantedCrossReport,
+          identityControl,
+          plantedCrossIdentity,
+        );
+        crossInstrumentRejected = plantedCrossVerdict.outcome === "fail" &&
+          plantedCrossVerdict.findings.some((item) =>
+            item.code === "CANDIDATE_TARGET_IDENTITY_MARGIN");
+      }
+      const controls = plantedControlVerdicts(identityControl, crossInstrumentRejected);
       let outcome: GateOutcome;
       let exitCode: 0 | 1 | 2;
-      let report = null;
+      let report: SimilarityReport | null = null;
+      let identityComparison: CandidateIdentityComparison | null = null;
       let findings: readonly GateFinding[];
-      if (referenceAdmission.outcome === "unavailable") {
+      if (referenceAdmission.outcome === "unavailable" ||
+        alternativeAdmission.outcome === "unavailable") {
         outcome = "unavailable";
         exitCode = 2;
-        findings = referenceAdmissionFindings(referenceAdmission.findings);
+        findings = Object.freeze([
+          ...(referenceAdmission.outcome === "unavailable"
+            ? referenceAdmissionFindings(referenceAdmission.findings) : []),
+          ...(alternativeAdmission.outcome === "unavailable"
+            ? referenceAdmissionFindings(alternativeAdmission.findings, "alternative") : []),
+        ]);
         if (comparison.outcome === "accept") report = comparison.report;
       } else if (!controlsPass(controls)) {
         outcome = "unavailable";
@@ -606,7 +706,16 @@ Promise<ClarinetReferenceRunResult> {
         findings = comparison.findings;
       } else {
         report = comparison.report;
-        const verdict = evaluateSimilarityReport(report, identityControl);
+        identityComparison = compareCandidateIdentity(
+          report.candidate,
+          report.reference,
+          alternativeAdmission.features,
+        );
+        const verdict = evaluateTargetedSimilarityReport(
+          report,
+          identityControl,
+          identityComparison,
+        );
         outcome = verdict.outcome;
         exitCode = verdict.exitCode;
         findings = verdict.findings;
@@ -617,6 +726,7 @@ Promise<ClarinetReferenceRunResult> {
         rendererAlgorithmId: WAVEGUIDE_CLARINET_V2_ALGORITHM_ID,
         corpusId: CORPUS_ID,
         referencePath: `${CORPUS_DIRECTORY}/${clarinet.file.fileName}#midi-${String(matrixCell.midi)}`,
+        alternativeReferencePath: `${CORPUS_DIRECTORY}/${flute.file.fileName}#midi-${String(matrixCell.midi)}`,
         referenceLicenseId: REFERENCE_LICENSE_ID,
         expectedMidi: matrixCell.midi,
         expectedHz,
@@ -630,9 +740,11 @@ Promise<ClarinetReferenceRunResult> {
           pcmSha256: candidateSha256,
           corpusManifestSha256: decoded.sha256,
           referenceFileSha256: clarinet.file.sha256,
+          alternativeReferenceFileSha256: flute.file.sha256,
         },
         controls,
         report,
+        identityComparison,
         findings,
       });
       cells.push(Object.freeze({
@@ -645,6 +757,9 @@ Promise<ClarinetReferenceRunResult> {
           path: evidence.reference.filePath,
           fileSha256: clarinet.file.sha256,
           segmentSha256: floatPcmSha256(clarinet.note),
+          alternativePath: evidence.reference.alternativeFilePath,
+          alternativeFileSha256: flute.file.sha256,
+          alternativeSegmentSha256: floatPcmSha256(flute.note),
         }),
       }));
     } catch (error) {

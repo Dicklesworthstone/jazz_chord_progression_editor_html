@@ -56,6 +56,7 @@ function passingEvidence(rendererAlgorithmId: string): GateEvidenceV1 {
     rendererAlgorithmId,
     corpusId: "independent-winds@1",
     referencePath: "clarinet/a4.wav",
+    alternativeReferencePath: "flute/a4.wav",
     referenceLicenseId: "CC0-1.0",
     expectedMidi: 69,
     expectedHz: 440,
@@ -69,6 +70,7 @@ function passingEvidence(rendererAlgorithmId: string): GateEvidenceV1 {
       pcmSha256: digest("pcm"),
       corpusManifestSha256: digest("corpus"),
       referenceFileSha256: digest("reference"),
+      alternativeReferenceFileSha256: digest("alternative-reference"),
     },
     controls: {
       self: true,
@@ -86,6 +88,11 @@ function passingEvidence(rendererAlgorithmId: string): GateEvidenceV1 {
       attackLog2: 0,
       hnrAbsoluteDeltaDb: 0,
       highBandAbsoluteDeltaDb: 0,
+    },
+    identityComparison: {
+      targetTimbreDistanceDb: 0,
+      alternativeTimbreDistanceDb: 10,
+      targetAdvantageDb: 10,
     },
     findings: [],
   });
@@ -168,6 +175,10 @@ describe("ledger evaluation fails closed", () => {
     expect(evaluateGate(ship, rows, () => passingEvidence("changes.dsp.model-b@1"))
       .map((finding) => finding.code)).toEqual(["MODEL_DELEGATED_ALGORITHM_MISMATCH"]);
     expect(evaluateGate(ship, rows, () => passingEvidence("changes.dsp.model-a@1"))).toEqual([]);
+    const current = passingEvidence("changes.dsp.model-a@1");
+    expect(evaluateGate(ship, rows, () => current, sha256Hex("different-wasm"))
+      .map((finding) => finding.code)).toEqual(["MODEL_DELEGATED_WASM_MISMATCH"]);
+    expect(evaluateGate(ship, rows, () => current, current.candidate.wasmSha256)).toEqual([]);
   });
 
   test("prose, directories, untracked result paths, and tampered controls cannot delegate", () => {

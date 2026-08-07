@@ -29,10 +29,19 @@ import {
   AUDIO_IMPULSE_ALGORITHM_ID,
   AUDIO_INSTRUMENT_RECIPES,
 } from "../src/audio/instrument-recipes-contract";
+import { CONCERT_GRAND_WASM_SHA256 } from "../src/audio/wasm/concert-grand-wasm";
 import {
   verifyGateEvidence,
   type GateEvidenceV1,
 } from "./reference-similarity";
+import {
+  verifyClarinetReferenceRunEvidence,
+  type ClarinetReferenceRunResult,
+} from "./run-uiowa-clarinet-reference";
+import {
+  verifyPluckedV2ReleaseEvidence,
+  type PluckedV2ReleaseEvidence,
+} from "./run-plucked-v2-release-gate";
 
 export const LEDGER_PATH =
   "release-evidence/audio/listening/model-acceptance-ledger.json";
@@ -157,6 +166,7 @@ export function evaluateGate(
   shippingIds: readonly string[],
   rows: readonly LedgerRow[],
   loadEvidence: (path: string) => unknown | undefined,
+  currentWasmSha256?: string,
 ): readonly GateFinding[] {
   const findings: GateFinding[] = [];
   const byId = new Map(rows.map((row) => [row.algorithmId, row]));
@@ -189,8 +199,27 @@ export function evaluateGate(
         continue;
       }
       let semanticPass = false;
+      let evidencedAlgorithmIds: readonly string[] = [];
+      let evidencedWasmSha256: string | null = null;
       try {
-        semanticPass = verifyGateEvidence(evidence as GateEvidenceV1);
+        if (verifyClarinetReferenceRunEvidence(evidence)) {
+          const matrix = evidence as ClarinetReferenceRunResult;
+          semanticPass = true;
+          evidencedAlgorithmIds = [matrix.policy.rendererAlgorithmId];
+          evidencedWasmSha256 = matrix.wasmSha256;
+        } else if (verifyPluckedV2ReleaseEvidence(evidence)) {
+          const matrix = evidence as PluckedV2ReleaseEvidence;
+          semanticPass = true;
+          evidencedAlgorithmIds = matrix.algorithmIds;
+          evidencedWasmSha256 = matrix.wasmSha256;
+        } else {
+          const cell = evidence as GateEvidenceV1;
+          semanticPass = verifyGateEvidence(cell);
+          if (semanticPass) {
+            evidencedAlgorithmIds = [cell.candidate.rendererAlgorithmId];
+            evidencedWasmSha256 = cell.candidate.wasmSha256;
+          }
+        }
       } catch {
         semanticPass = false;
       }
@@ -201,11 +230,16 @@ export function evaluateGate(
         });
         continue;
       }
-      const candidate = (evidence as GateEvidenceV1).candidate;
-      if (candidate.rendererAlgorithmId !== id) {
+      if (!evidencedAlgorithmIds.includes(id)) {
         findings.push({
           code: "MODEL_DELEGATED_ALGORITHM_MISMATCH",
-          detail: `${id} is machine-delegated but ${evidencePath} proves ${candidate.rendererAlgorithmId}`,
+          detail: `${id} is machine-delegated but ${evidencePath} proves ${evidencedAlgorithmIds.join(", ") || "<none>"}`,
+        });
+      }
+      if (currentWasmSha256 !== undefined && evidencedWasmSha256 !== currentWasmSha256) {
+        findings.push({
+          code: "MODEL_DELEGATED_WASM_MISMATCH",
+          detail: `${id} is machine-delegated but ${evidencePath} proves WASM ${evidencedWasmSha256 ?? "<none>"}, not shipping ${currentWasmSha256}`,
         });
       }
       continue;
@@ -255,7 +289,7 @@ function main(): number {
     } catch {
       return undefined;
     }
-  });
+  }, CONCERT_GRAND_WASM_SHA256);
   if (findings.length > 0) {
     for (const finding of findings) {
       console.error(`FAIL ${finding.code} ${finding.detail}`);

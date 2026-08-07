@@ -38,6 +38,34 @@
       "date": "2026-08-06"
     },
     {
+      "algorithmId": "changes.dsp.plucked-archtop@2",
+      "status": "open",
+      "evidence": "replacement archtop renderer is reachable in the working tree but remains blocked on the independent plucked-family reference gate",
+      "decidedBy": "owner-delegated-machine-gate",
+      "date": "2026-08-07"
+    },
+    {
+      "algorithmId": "changes.dsp.plucked-electric@2",
+      "status": "open",
+      "evidence": "Marshall-class electric renderer is reachable in the working tree but remains blocked on the independent clean/driven reference and planted-negative gate",
+      "decidedBy": "owner-delegated-machine-gate",
+      "date": "2026-08-07"
+    },
+    {
+      "algorithmId": "changes.dsp.plucked-dreadnought@1",
+      "status": "open",
+      "evidence": "dreadnought renderer is reachable in the working tree but remains blocked on the independent steel-string reference and body-identity gate",
+      "decidedBy": "owner-delegated-machine-gate",
+      "date": "2026-08-07"
+    },
+    {
+      "algorithmId": "changes.dsp.plucked-ukulele@1",
+      "status": "open",
+      "evidence": "re-entrant ukulele renderer is reachable in the working tree but remains blocked on the independent pitch, spectral, body, and cross-family gate",
+      "decidedBy": "owner-delegated-machine-gate",
+      "date": "2026-08-07"
+    },
+    {
       "algorithmId": "changes.dsp.sampled-upright-bass@1",
       "status": "approved",
       "evidence": "owner-approved artifact 67b9ae08 (commit 031c667); CC0 sampled recipe live on all hosts 2026-08-06",

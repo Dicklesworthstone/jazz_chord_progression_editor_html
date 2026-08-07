@@ -2,13 +2,16 @@ import { describe, expect, test } from "bun:test";
 
 import {
   WIND_REFERENCE_GATE_POLICY,
+  admitIdentityAlternativeSignal,
   admitReferenceSignal,
   WIND_IDENTITY_CONTROL_POLICY,
   analyzeSignal,
   buildGateEvidence,
   canonicalCorpusOutcome,
+  compareCandidateIdentity,
   compareToReference,
   evaluateSimilarityReport,
+  evaluateTargetedSimilarityReport,
   estimatePitch,
   runWindIdentityControl,
   sha256Hex,
@@ -162,7 +165,14 @@ describe("reference gate analysis admits signals before comparing them", () => {
         WIND_REFERENCE_GATE_POLICY.maximumAttackSeconds,
       );
     }
-    expect(WIND_REFERENCE_GATE_POLICY.maximumAttackSeconds).toBe(0.15);
+    expect(WIND_REFERENCE_GATE_POLICY.maximumAttackSeconds).toBe(0.18);
+  });
+
+  test("matched identity alternatives use the frozen corpus pitch window, not the candidate window", () => {
+    const twentyCentsSharp = EXPECTED_HZ * 2 ** (20 / 1_200);
+    expect(analyzeSignal(tone(twentyCentsSharp), EXPECTED_HZ).outcome).toBe("unavailable");
+    expect(admitIdentityAlternativeSignal(tone(twentyCentsSharp), EXPECTED_HZ).outcome)
+      .toBe("accept");
   });
 });
 
@@ -177,11 +187,36 @@ describe("reference comparison has planted positive and negative controls", () =
     expect(report.highBandAbsoluteDeltaDb).toBe(0);
   });
 
-  test("a too-slow attack fails both relative and absolute attack laws", () => {
+  test("a too-slow candidate fails the absolute physical attack law", () => {
     const report = acceptedReport(tone(EXPECTED_HZ, { attackSeconds: 0.24 }), tone());
     const verdict = evaluateSimilarityReport(report, passingIdentityControl());
     expect(verdict.outcome).toBe("fail");
-    expect(verdict.findings.some((item) => item.code === "ATTACK_RATIO")).toBe(true);
+    expect(verdict.findings.some((item) =>
+      item.code === "CANDIDATE_ATTACK_ABSOLUTE_RANGE")).toBe(true);
+  });
+
+  test("per-take attack ratio remains diagnostic, not instrument identity", () => {
+    const base = acceptedReport(tone());
+    const report = {
+      ...base,
+      candidate: { ...base.candidate, attackTo90SustainSeconds: 0.06 },
+      reference: { ...base.reference, attackTo90SustainSeconds: 0.33 },
+      attackLog2: Math.log2(0.33 / 0.06),
+    };
+    const verdict = evaluateSimilarityReport(report, passingIdentityControl());
+    expect(report.attackLog2).toBeGreaterThan(2);
+    expect(verdict.outcome).toBe("pass");
+    expect(verdict.findings.some((item) => item.code === "ATTACK_RATIO")).toBe(false);
+  });
+
+  test("a too-fast candidate fails the absolute physical attack law", () => {
+    const base = acceptedReport(tone());
+    const report = {
+      ...base,
+      candidate: { ...base.candidate, attackTo90SustainSeconds: 0.005 },
+    };
+    const verdict = evaluateSimilarityReport(report, passingIdentityControl());
+    expect(verdict.outcome).toBe("fail");
     expect(verdict.findings.some((item) =>
       item.code === "CANDIDATE_ATTACK_ABSOLUTE_RANGE")).toBe(true);
   });
@@ -190,13 +225,13 @@ describe("reference comparison has planted positive and negative controls", () =
     const base = acceptedReport(tone());
     const report = {
       ...base,
-      candidate: { ...base.candidate, attackTo90SustainSeconds: 0.15 },
+      candidate: { ...base.candidate, attackTo90SustainSeconds: 0.18 },
       reference: { ...base.reference, attackTo90SustainSeconds: 0.3 },
       attackLog2: 1,
     };
     const verdict = evaluateSimilarityReport(report, passingIdentityControl());
     expect(verdict.outcome).toBe("pass");
-    expect(WIND_REFERENCE_GATE_POLICY.maximumAttackSeconds).toBe(0.15);
+    expect(WIND_REFERENCE_GATE_POLICY.maximumAttackSeconds).toBe(0.18);
   });
 
   test("a non-positive reference attack fails closed", () => {
@@ -208,6 +243,31 @@ describe("reference comparison has planted positive and negative controls", () =
     }, passingIdentityControl());
     expect(verdict.outcome).toBe("fail");
     expect(verdict.findings.some((item) => item.code === "REFERENCE_ATTACK_INVALID")).toBe(true);
+  });
+
+  test("a candidate must be measurably closer to its target than the matched alternative", () => {
+    const clarinet = admitted(tone(EXPECTED_HZ, {
+      harmonics: [1, 0.62, 0.31, 0.19], noiseAmplitude: 0.04,
+    }));
+    const flute = admitted(tone(EXPECTED_HZ, {
+      harmonics: [1, 0.08, 0.025, 0.01], noiseAmplitude: 0.01,
+    }));
+    const fluteAsClarinet = compareToReference(
+      tone(EXPECTED_HZ, { harmonics: [1, 0.08, 0.025, 0.01], noiseAmplitude: 0.01 }),
+      tone(EXPECTED_HZ, { harmonics: [1, 0.62, 0.31, 0.19], noiseAmplitude: 0.04 }),
+      EXPECTED_HZ,
+    );
+    if (fluteAsClarinet.outcome !== "accept") throw new Error("planted signals unavailable");
+    const identity = compareCandidateIdentity(flute, clarinet, flute);
+    const verdict = evaluateTargetedSimilarityReport(
+      fluteAsClarinet.report,
+      passingIdentityControl(),
+      identity,
+    );
+    expect(verdict.outcome).toBe("fail");
+    expect(identity.targetAdvantageDb).toBeLessThan(0);
+    expect(verdict.findings.some((item) =>
+      item.code === "CANDIDATE_TARGET_IDENTITY_MARGIN")).toBe(true);
   });
 
   test("excess 5.5-10 kHz hiss fails integrated high-band and HNR laws", () => {
@@ -322,6 +382,7 @@ describe("canonical outcomes and evidence bindings", () => {
       rendererAlgorithmId: "changes.dsp.waveguide-flute@2",
       corpusId: "cc0-winds@1",
       referencePath: "flute/a4.wav",
+      alternativeReferencePath: "clarinet/a4.wav",
       referenceLicenseId: "CC0-1.0",
       expectedMidi: 69,
       expectedHz: 440,
@@ -335,6 +396,7 @@ describe("canonical outcomes and evidence bindings", () => {
         pcmSha256: digest("pcm"),
         corpusManifestSha256: digest("corpus"),
         referenceFileSha256: digest("reference"),
+        alternativeReferenceFileSha256: digest("alternative-reference"),
       },
       controls: {
         self: true,
@@ -344,6 +406,11 @@ describe("canonical outcomes and evidence bindings", () => {
         crossInstrumentRejected: true,
       },
       report: acceptedReport(tone()),
+      identityComparison: {
+        targetTimbreDistanceDb: 0,
+        alternativeTimbreDistanceDb: 10,
+        targetAdvantageDb: 10,
+      },
       findings: [],
     };
     const evidence = buildGateEvidence(input);

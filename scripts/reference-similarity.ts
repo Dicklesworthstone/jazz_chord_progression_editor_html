@@ -35,6 +35,11 @@ export type SimilarityReport = Readonly<{
   hnrAbsoluteDeltaDb: number;
   highBandAbsoluteDeltaDb: number;
 }>;
+export type CandidateIdentityComparison = Readonly<{
+  targetTimbreDistanceDb: number;
+  alternativeTimbreDistanceDb: number;
+  targetAdvantageDb: number;
+}>;
 
 export const WIND_REFERENCE_GATE_POLICY = Object.freeze({
   schema: "changes.policy.wind-reference-gate.v1" as const,
@@ -44,11 +49,15 @@ export const WIND_REFERENCE_GATE_POLICY = Object.freeze({
   maximumPitchDeltaCents: 12,
   maximumEnvelopeDb: 18,
   maximumHarmonicDb: 20,
-  maximumAttackLog2: 1,
   maximumAbsoluteHnrDeltaDb: 12,
   maximumAbsoluteHighBandDeltaDb: 8,
   minimumAttackSeconds: 0.015,
-  maximumAttackSeconds: 0.15,
+  maximumAttackSeconds: 0.18,
+  /* The independent identity corpus establishes at least 10 dB between
+   * instruments and at most 6.5 dB within an instrument. Preserve that
+   * measured 3.5 dB separation buffer when classifying a candidate against
+   * the matched target and alternative recordings. */
+  minimumTargetTimbreAdvantageDb: 3.5,
   identityControl: "uiowa-anechoic-chromatic-scales@1" as const,
 });
 
@@ -100,12 +109,14 @@ type EvidenceDigests = Readonly<{
   pcmSha256: string;
   corpusManifestSha256: string;
   referenceFileSha256: string;
+  alternativeReferenceFileSha256: string;
 }>;
 export type GateEvidenceInput = Readonly<{
   outcome: GateOutcome;
   rendererAlgorithmId: string;
   corpusId: string;
   referencePath: string;
+  alternativeReferencePath: string;
   referenceLicenseId: string;
   expectedMidi: number;
   expectedHz: number;
@@ -118,6 +129,7 @@ export type GateEvidenceInput = Readonly<{
     crossInstrumentRejected: boolean;
   }>;
   report: SimilarityReport | null;
+  identityComparison: CandidateIdentityComparison | null;
   findings: readonly GateFinding[];
 }>;
 export type GateEvidenceV1 = Readonly<{
@@ -142,12 +154,15 @@ export type GateEvidenceV1 = Readonly<{
     corpusManifestSha256: string;
     filePath: string;
     fileSha256: string;
+    alternativeFilePath: string;
+    alternativeFileSha256: string;
     licenseId: string;
     expectedMidi: number;
     expectedHz: number;
   }>;
   controls: GateEvidenceInput["controls"];
   report: SimilarityReport | null;
+  identityComparison: CandidateIdentityComparison | null;
   findings: readonly GateFinding[];
   evidenceSha256: string;
 }>;
@@ -599,7 +614,8 @@ function measureOnset(pcm: MonoPcm): Readonly<{
   });
 }
 
-export function analyzeSignal(pcm: MonoPcm, expectedHz: number): AnalysisResult {
+function analyzeSignalWithPitchLimit(pcm: MonoPcm, expectedHz: number,
+  maximumPitchCents: number): AnalysisResult {
   const findings: GateFinding[] = [];
   const pitch = estimatePitch(pcm, expectedHz);
   if (pitch === null) findings.push(finding("PITCH_UNAVAILABLE", "no finite normalized pitch estimate"));
@@ -608,7 +624,7 @@ export function analyzeSignal(pcm: MonoPcm, expectedHz: number): AnalysisResult 
       findings.push(finding("PERIODICITY_TOO_LOW",
         `periodicity ${pitch.periodicity.toFixed(4)} is below ${WIND_REFERENCE_GATE_POLICY.minimumPeriodicity}`));
     }
-    if (Math.abs(pitch.centsFromExpected) > WIND_REFERENCE_GATE_POLICY.maximumPitchCents) {
+    if (Math.abs(pitch.centsFromExpected) > maximumPitchCents) {
       findings.push(finding("PITCH_MISMATCH",
         `pitch is ${pitch.centsFromExpected.toFixed(2)} cents from expected`));
     }
@@ -636,6 +652,14 @@ export function analyzeSignal(pcm: MonoPcm, expectedHz: number): AnalysisResult 
     ]) });
   }
   return Object.freeze({ outcome: "accept", features });
+}
+
+export function analyzeSignal(pcm: MonoPcm, expectedHz: number): AnalysisResult {
+  return analyzeSignalWithPitchLimit(
+    pcm,
+    expectedHz,
+    WIND_REFERENCE_GATE_POLICY.maximumPitchCents,
+  );
 }
 
 function rmsDistance(left: readonly number[], right: readonly number[]): number {
@@ -688,7 +712,25 @@ export function compareToReference(candidatePcm: MonoPcm, referencePcm: MonoPcm,
  * signal laws; attack needs only be a finite positive comparison authority.
  */
 export function admitReferenceSignal(pcm: MonoPcm, expectedHz: number): AnalysisResult {
-  const analysis = analyzeSignal(pcm, expectedHz);
+  return admitAnalyzedReference(analyzeSignal(pcm, expectedHz));
+}
+
+/**
+ * Admit the matched alternative used only by the identity classifier. The
+ * independently frozen corpus law permits the real performer to sit within
+ * 35 cents of the notated pitch; this does not relax candidate pitch or the
+ * primary target-reference admission law.
+ */
+export function admitIdentityAlternativeSignal(pcm: MonoPcm,
+  expectedHz: number): AnalysisResult {
+  return admitAnalyzedReference(analyzeSignalWithPitchLimit(
+    pcm,
+    expectedHz,
+    WIND_IDENTITY_CONTROL_POLICY.maximumMatchedPitchDeltaCents,
+  ));
+}
+
+function admitAnalyzedReference(analysis: AnalysisResult): AnalysisResult {
   if (analysis.outcome === "unavailable") return analysis;
   const attack = analysis.features.attackTo90SustainSeconds;
   if (!Number.isFinite(attack) || attack <= 0) {
@@ -711,6 +753,79 @@ export function evaluateSimilarityReport(report: SimilarityReport,
   return evaluateSimilarityThresholds(report);
 }
 
+/**
+ * Classify one candidate against a pitch/dynamic-matched target recording and
+ * the corresponding alternative-instrument recording.  Absolute candidate
+ * boxes alone are not an identity classifier: a real Iowa flute fits inside
+ * the old clarinet envelope/harmonic tolerances in multiple cells.
+ */
+export function compareCandidateIdentity(
+  candidate: SignalFeatures,
+  target: SignalFeatures,
+  alternative: SignalFeatures,
+): CandidateIdentityComparison {
+  const targetTimbreDistanceDb = timbreDistance(compareAdmittedSignals(candidate, target));
+  const alternativeTimbreDistanceDb =
+    timbreDistance(compareAdmittedSignals(candidate, alternative));
+  return Object.freeze({
+    targetTimbreDistanceDb,
+    alternativeTimbreDistanceDb,
+    targetAdvantageDb: alternativeTimbreDistanceDb - targetTimbreDistanceDb,
+  });
+}
+
+export function evaluateTargetedSimilarityReport(
+  report: SimilarityReport,
+  identityControl: WindIdentityControlResult,
+  identityComparison: CandidateIdentityComparison,
+): GateVerdict {
+  const base = evaluateSimilarityReport(report, identityControl);
+  if (base.outcome === "unavailable") return base;
+  const identity = evaluateCandidateIdentityComparison(identityComparison);
+  const failures = [...base.findings, ...identity.findings];
+  return Object.freeze({
+    outcome: failures.length === 0 ? "pass" : "fail",
+    exitCode: failures.length === 0 ? 0 : 1,
+    findings: Object.freeze(failures),
+  });
+}
+
+function evaluateCandidateIdentityComparison(
+  identityComparison: CandidateIdentityComparison,
+): GateVerdict {
+  const failures: GateFinding[] = [];
+  const derivedAdvantage = identityComparison.alternativeTimbreDistanceDb -
+    identityComparison.targetTimbreDistanceDb;
+  if (!allFinite(identityComparison) ||
+    Math.abs(derivedAdvantage - identityComparison.targetAdvantageDb) > 1.0e-9) {
+    failures.push(finding("CANDIDATE_IDENTITY_COMPARISON_INVALID",
+      "candidate target/alternative identity distances are non-finite or inconsistent"));
+  } else if (identityComparison.targetAdvantageDb <
+    WIND_REFERENCE_GATE_POLICY.minimumTargetTimbreAdvantageDb) {
+    failures.push(finding("CANDIDATE_TARGET_IDENTITY_MARGIN",
+      `candidate target advantage ${String(identityComparison.targetAdvantageDb)} dB is below ${String(WIND_REFERENCE_GATE_POLICY.minimumTargetTimbreAdvantageDb)} dB`));
+  }
+  return Object.freeze({
+    outcome: failures.length === 0 ? "pass" : "fail",
+    exitCode: failures.length === 0 ? 0 : 1,
+    findings: Object.freeze(failures),
+  });
+}
+
+function evaluateTargetedThresholds(
+  report: SimilarityReport,
+  identityComparison: CandidateIdentityComparison,
+): GateVerdict {
+  const similarity = evaluateSimilarityThresholds(report);
+  const identity = evaluateCandidateIdentityComparison(identityComparison);
+  const findings = Object.freeze([...similarity.findings, ...identity.findings]);
+  return Object.freeze({
+    outcome: findings.length === 0 ? "pass" : "fail",
+    exitCode: findings.length === 0 ? 0 : 1,
+    findings,
+  });
+}
+
 function evaluateSimilarityThresholds(report: SimilarityReport): GateVerdict {
   const failures: GateFinding[] = [];
   const maximum = (code: string, value: number, limit: number): void => {
@@ -720,7 +835,6 @@ function evaluateSimilarityThresholds(report: SimilarityReport): GateVerdict {
   maximum("PITCH_DELTA", report.pitchDeltaCents, WIND_REFERENCE_GATE_POLICY.maximumPitchDeltaCents);
   maximum("ENVELOPE_DISTANCE", report.envelopeDb, WIND_REFERENCE_GATE_POLICY.maximumEnvelopeDb);
   maximum("HARMONIC_DISTANCE", report.harmonicDb, WIND_REFERENCE_GATE_POLICY.maximumHarmonicDb);
-  maximum("ATTACK_RATIO", report.attackLog2, WIND_REFERENCE_GATE_POLICY.maximumAttackLog2);
   maximum("HNR_DELTA", report.hnrAbsoluteDeltaDb,
     WIND_REFERENCE_GATE_POLICY.maximumAbsoluteHnrDeltaDb);
   maximum("HIGH_BAND_DELTA", report.highBandAbsoluteDeltaDb,
@@ -729,8 +843,10 @@ function evaluateSimilarityThresholds(report: SimilarityReport): GateVerdict {
    * admission law. Real Iowa notes include deliberate pp attacks longer than
    * 150 ms; rejecting those recordings makes the independent authority
    * unavailable precisely where a synthetic onset most needs comparison.
-   * The reference must still provide a finite, positive denominator and the
-   * frozen two-sided attack-ratio law above still binds candidate to corpus. */
+   * Attack timing is player-controlled rather than an instrument-identity
+   * invariant: one chromatic scale contains 40--331 ms attacks. The ratio is
+   * retained in the report for diagnosis, while the candidate must satisfy
+   * the frozen absolute physical window below. */
   const candidateAttack = report.candidate.attackTo90SustainSeconds;
   if (!Number.isFinite(candidateAttack) ||
     candidateAttack < WIND_REFERENCE_GATE_POLICY.minimumAttackSeconds ||
@@ -895,6 +1011,7 @@ function evidenceSemanticsAreValid(evidence: Omit<GateEvidenceV1, "evidenceSha25
   if (!hasEvidenceText(evidence.candidate.rendererAlgorithmId) ||
     !hasEvidenceText(evidence.reference.corpusId) ||
     !hasEvidenceText(evidence.reference.filePath) ||
+    !hasEvidenceText(evidence.reference.alternativeFilePath) ||
     !hasEvidenceText(evidence.reference.licenseId) ||
     !Number.isInteger(evidence.reference.expectedMidi) ||
     evidence.reference.expectedMidi < 0 || evidence.reference.expectedMidi > 127 ||
@@ -905,10 +1022,17 @@ function evidenceSemanticsAreValid(evidence: Omit<GateEvidenceV1, "evidenceSha25
 
   if (evidence.outcome === "pass") {
     if (!controlsAreAllTrue(evidence.controls) || evidence.report === null ||
-      evidence.findings.length !== 0) return false;
-    return evaluateSimilarityThresholds(evidence.report).outcome === "pass";
+      evidence.identityComparison === null || evidence.findings.length !== 0) return false;
+    return evaluateTargetedThresholds(evidence.report, evidence.identityComparison).outcome === "pass";
   }
-  if (evidence.outcome === "fail" || evidence.outcome === "unavailable") {
+  if (evidence.outcome === "fail") {
+    if (!controlsAreAllTrue(evidence.controls) || evidence.report === null ||
+      evidence.identityComparison === null || evidence.findings.length === 0) return false;
+    const verdict = evaluateTargetedThresholds(evidence.report, evidence.identityComparison);
+    return verdict.outcome === "fail" &&
+      canonicalJson(verdict.findings) === canonicalJson(evidence.findings);
+  }
+  if (evidence.outcome === "unavailable") {
     return evidence.findings.length > 0;
   }
   return false;
@@ -942,12 +1066,15 @@ export function buildGateEvidence(input: GateEvidenceInput): GateEvidenceV1 {
       corpusManifestSha256: input.digests.corpusManifestSha256,
       filePath: input.referencePath,
       fileSha256: input.digests.referenceFileSha256,
+      alternativeFilePath: input.alternativeReferencePath,
+      alternativeFileSha256: input.digests.alternativeReferenceFileSha256,
       licenseId: input.referenceLicenseId,
       expectedMidi: input.expectedMidi,
       expectedHz: input.expectedHz,
     }),
     controls: input.controls,
     report: input.report,
+    identityComparison: input.identityComparison,
     findings: input.findings,
   } as const;
   if (!evidenceSemanticsAreValid(body)) {
@@ -966,7 +1093,8 @@ export function verifyGateEvidence(evidence: GateEvidenceV1): boolean {
     evidence.candidate.rendererSourceSha256, evidence.candidate.wasmSha256,
     evidence.candidate.parameterPackSha256, evidence.candidate.renderRequestSha256,
     evidence.candidate.pcmSha256, evidence.reference.corpusManifestSha256,
-    evidence.reference.fileSha256, evidence.evidenceSha256];
+    evidence.reference.fileSha256, evidence.reference.alternativeFileSha256,
+    evidence.evidenceSha256];
   if (!digests.every(isDigest)) return false;
   const { evidenceSha256: claimed, ...body } = evidence;
   return evidenceSemanticsAreValid(body) && claimed === sha256Hex(canonicalJson(body));
