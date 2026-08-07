@@ -1,7 +1,7 @@
 {
-  "schema": "changes.evidence.phs4-plucked-shipping-output.v1",
+  "schema": "changes.evidence.phs4-plucked-shipping-output.v2",
   "policy": {
-    "schema": "changes.policy.phs4-plucked-shipping-output.v1",
+    "schema": "changes.policy.phs4-plucked-shipping-output.v2",
     "sampleRateHz": 48000,
     "velocity": 100,
     "renderSeconds": 1.2,
@@ -91,11 +91,31 @@
         "minimumHigherHarmonicMassDb": -20,
         "minimumTailDb": -44,
         "maximumTailDb": 1
+      },
+      "upright-bass": {
+        "packIndex": 4,
+        "algorithmId": "changes.dsp.plucked-upright-bass@1",
+        "midi": [
+          28,
+          40,
+          60
+        ],
+        "maximumPitchCents": 5,
+        "minimumPeak": 0.02,
+        "minimumEarlyRms": 0.02,
+        "maximumEarlyRms": 0.3,
+        "minimumSecondPartialDb": -12,
+        "minimumThirdPartialDb": -16,
+        "minimumAudiblePartialCount": 7,
+        "minimumHigherHarmonicMassDb": -5,
+        "minimumTailDb": -18,
+        "maximumTailDb": 1
       }
     },
     "referenceBasis": {
       "steelStringDiagnostic": "FSS SteelStringGuitar GPL diagnostic only: C4 h2=-4.8dB, h3=-22.7dB, 0.82-1.07s tail=-13.2dB",
       "electricCc0": "Freesound/Versilian CC0 bridge clean+dist: register cells retain 6-10 strong partials; clean tail=-2.1..-11.5dB; dist tail=-0.5..-0.9dB",
+      "uprightBassCc0": "Versilian Community Sample Library CC0 contrabass pizzicato is the checked-in A/B comparator; thresholds retain pitch, broad harmonic excitation, and a multi-hundred-ms body tail without requiring copied PCM",
       "authorityBoundary": "thresholds are conservative lower bounds, not copied audio and not a measured Marshall fit"
     }
   },
@@ -103,13 +123,18 @@
     "changes.dsp.plucked-archtop@2",
     "changes.dsp.plucked-dreadnought@1",
     "changes.dsp.plucked-electric@2",
-    "changes.dsp.plucked-ukulele@1"
+    "changes.dsp.plucked-ukulele@1",
+    "changes.dsp.plucked-upright-bass@1"
   ],
-  "wasmSha256": "cba20e361eb54d3fa0fa16ed104a1171cd1482b0347eddffd8a152245fd48e25",
+  "wasmSha256": "a39dc2640715d034f145afe9b35331ef4b48dd49d8cc4075dc54fc058e210446",
   "sourceBindings": [
     {
       "path": "dsp/concert-grand/src/plucked_v2.rs",
-      "sha256": "003a1911823e6a0ffeda0758550e43677136d6c17e014c8ea7c0e6dc4754ead8"
+      "sha256": "fccb0305f4f30ab299cd03c8185fb343f2b077acb1739bb47aecaa2dc13f4de3"
+    },
+    {
+      "path": "dsp/concert-grand/src/upright_bass_body.rs",
+      "sha256": "084eb110fa7c5d217f47554d00cd6ee4e63d1dacf5fd6d4d352e05b6e4bb45aa"
     },
     {
       "path": "dsp/concert-grand/src/lib.rs",
@@ -117,7 +142,7 @@
     },
     {
       "path": "src/audio/dsp-renderer.ts",
-      "sha256": "c8d837d693173e9b28ed7c4ab2da7eddf740371c3cb52577c336131c0cacbf73"
+      "sha256": "b815f4883ce20d4003632297697172b5182c8acb37843d62775c44abe44d2207"
     },
     {
       "path": "src/audio/instrument-recipes-contract.ts",
@@ -125,7 +150,7 @@
     },
     {
       "path": "tests/fixtures/plucked-string-v2/instrument-packs.json",
-      "sha256": "e666f42d41d303fd77061fb5b193b8d6a908fc088e46ec8110d858bdf9fc4b82"
+      "sha256": "d60f2b77f0e5892bc6188534d7c33fb752d336781d81494ca75659eed2a9e8b6"
     },
     {
       "path": "tests/fixtures/plucked-string-v2/metric-cases.json",
@@ -133,10 +158,10 @@
     },
     {
       "path": "scripts/run-plucked-v2-release-gate.ts",
-      "sha256": "b429884cae5e916f2f69a7876f33913b9a780b5e0037b0f59e852ea2c06bd0d5"
+      "sha256": "0ae0cb27df4870c52e3a80de325e29e525b20bab16b71659d6534ffaee09f098"
     }
   ],
-  "sourceClosureSha256": "88b41ea29e927bfd1916c5653318c2a077fce123e0e18985b8c3f8ce10f84e66",
+  "sourceClosureSha256": "d8d665d4e5f6fcced3a318b5a1f8dda04aec0115ba83362c6c9d97564efdc11c",
   "cells": [
     {
       "id": "archtop-m48",
@@ -145,27 +170,27 @@
       "midi": 48,
       "velocity": 100,
       "sampleRateHz": 48000,
-      "pcmSha256": "67037c7c3203b022c71a6643d8cb43b58144f3e879f03a0fee08109d9cdb3759",
+      "pcmSha256": "2fe551bdb2a702abb90e17ff3bf183ee953d95b70d665e922f68b9323eb5231b",
       "features": {
-        "peak": 0.20286771655082703,
-        "earlyRms": 0.07301625480299602,
-        "onsetMs": 2.1875,
+        "peak": 0.20859801769256592,
+        "earlyRms": 0.07824102973350873,
+        "onsetMs": 2.1041666666666665,
         "pitchCents": -3,
         "partialsDb": [
           0,
-          19.89496828506462,
-          5.463904920642499,
-          -22.70913849369469,
-          -1.9199405063024664,
-          0.6594024988344961,
-          -18.429942388856638,
-          -13.512291890211554,
-          -23.29852281223132,
-          -23.923609463442112
+          19.92019612369073,
+          5.400323927255474,
+          -22.785352060240093,
+          -2.042432791369419,
+          0.6654081898329295,
+          -18.197211238157898,
+          -12.598241782380004,
+          -20.73893084770351,
+          -19.64332969867456
         ],
         "audiblePartialCount": 10,
-        "higherHarmonicMassDb": 20.12875093387899,
-        "tailDb": -7.770510774457575
+        "higherHarmonicMassDb": 20.15074322801202,
+        "tailDb": -8.982619118657734
       },
       "outcome": "pass",
       "findings": []
@@ -177,27 +202,27 @@
       "midi": 60,
       "velocity": 100,
       "sampleRateHz": 48000,
-      "pcmSha256": "6b4e79e64b53e603072f59b8ad1960d7ee2d0e0c0e4834f82fc9f18e0f7135a9",
+      "pcmSha256": "2b4a3e4aca081b969fdbba857e9090d0c06a90a70de97755ca5f009e6fe576eb",
       "features": {
-        "peak": 0.3154725730419159,
-        "earlyRms": 0.13045695367755356,
+        "peak": 0.32107096910476685,
+        "earlyRms": 0.13618185916835393,
         "onsetMs": 0.14583333333333334,
         "pitchCents": -2.5,
         "partialsDb": [
           0,
-          -21.04029562039841,
-          -16.631314867992774,
-          -28.383397478602348,
-          -11.845651564267305,
-          -27.486481936841678,
-          -33.59415880935694,
-          -63.91550313798801,
-          -63.51138316504847,
-          -69.93473754109534
+          -21.159907730122363,
+          -16.81511524140662,
+          -28.55294470657015,
+          -11.92365546060059,
+          -27.007746250961027,
+          -31.874763914809776,
+          -57.16552472615746,
+          -64.74796045098181,
+          -68.0817742780669
         ],
         "audiblePartialCount": 7,
-        "higherHarmonicMassDb": -10.059394687903179,
-        "tailDb": -7.437368380608361
+        "higherHarmonicMassDb": -10.144381096589834,
+        "tailDb": -8.680639247808333
       },
       "outcome": "pass",
       "findings": []
@@ -209,27 +234,27 @@
       "midi": 72,
       "velocity": 100,
       "sampleRateHz": 48000,
-      "pcmSha256": "86636154eff07466a5932999eff2e9a8bc763ca2142d1767c5cd0a9a2bde2bb6",
+      "pcmSha256": "21b8f0f2c99489e2133689195d0273a912d0ec6ba0f17ded8104f1d7e6436eec",
       "features": {
-        "peak": 0.20737525820732117,
-        "earlyRms": 0.0509505821971968,
+        "peak": 0.21567930281162262,
+        "earlyRms": 0.05323273631347169,
         "onsetMs": 0.041666666666666664,
         "pitchCents": 0.25,
         "partialsDb": [
           0,
-          15.071196876849363,
-          0.20196909953942202,
-          -18.385738782041077,
-          -5.881839552967778,
-          -3.6091575883711475,
-          -9.944392846317607,
-          -31.460123240756424,
-          -41.64053278838958,
-          -47.72193513056726
+          14.898336103751454,
+          -0.04327703323827553,
+          -18.65534618597585,
+          -5.9896457135622665,
+          -3.0372823561406284,
+          -7.43630223585823,
+          -23.478712808665403,
+          -28.713851902998485,
+          -35.15285689449638
         ],
         "audiblePartialCount": 10,
-        "higherHarmonicMassDb": 15.31521962517626,
-        "tailDb": -12.719640873791427
+        "higherHarmonicMassDb": 15.162724169798462,
+        "tailDb": -15.188424172634175
       },
       "outcome": "pass",
       "findings": []
@@ -241,27 +266,27 @@
       "midi": 48,
       "velocity": 100,
       "sampleRateHz": 48000,
-      "pcmSha256": "f9c104d944d443375b1e9fec4db34cf1c4bbfd759b49538d4088d50530d8ac1f",
+      "pcmSha256": "03cf6865bd3c8f6680365bdecfe3871a2285b7113a44c71e9b9cd24ba7adae49",
       "features": {
-        "peak": 0.2895274758338928,
-        "earlyRms": 0.06595338230860026,
+        "peak": 0.2895275354385376,
+        "earlyRms": 0.06595341784381441,
         "onsetMs": 0.14583333333333334,
         "pitchCents": 1.5,
         "partialsDb": [
           0,
-          -7.06028686114911,
-          -6.375573238253928,
-          -6.879482890684383,
-          -13.001631890932913,
-          -16.853879611929457,
-          -22.103350703972428,
-          -23.830204427700675,
-          -21.464126084301046,
-          -29.533774677563844
+          -7.060247614993644,
+          -6.375532616690864,
+          -6.8794393749555365,
+          -13.0015736320683,
+          -16.853833449084163,
+          -22.10333652082433,
+          -23.830237143339453,
+          -21.464134980501445,
+          -29.533826289633282
         ],
         "audiblePartialCount": 10,
-        "higherHarmonicMassDb": -1.4171375771967738,
-        "tailDb": 2.198174464171681
+        "higherHarmonicMassDb": -1.4170964035150417,
+        "tailDb": 2.198169875057639
       },
       "outcome": "pass",
       "findings": []
@@ -273,27 +298,27 @@
       "midi": 60,
       "velocity": 100,
       "sampleRateHz": 48000,
-      "pcmSha256": "760157a8c6478633d5997b252fecdea1f2a469da85b40a3c0e726bf2767fd426",
+      "pcmSha256": "0ef7432f6fa96010384e005c9abef10ebb2bda2b893ff4208bfff58b9c970a00",
       "features": {
-        "peak": 0.25921115279197693,
-        "earlyRms": 0.03842040540208043,
+        "peak": 0.25921139121055603,
+        "earlyRms": 0.03842086997389362,
         "onsetMs": 0,
         "pitchCents": 0.25,
         "partialsDb": [
           0,
-          1.442399729673404,
-          -2.691535492783485,
-          -8.600399980067069,
-          -10.701181502038452,
-          -11.399294571229373,
-          -17.642762562557962,
-          -15.746338140796015,
-          -17.659665045638565,
-          -29.854771602021657
+          1.4426522460586804,
+          -2.6912751795332417,
+          -8.600071746420806,
+          -10.700873600494226,
+          -11.399129982535339,
+          -17.642720759782517,
+          -15.74638269315819,
+          -17.659666807771124,
+          -29.854783657101834
         ],
         "audiblePartialCount": 10,
-        "higherHarmonicMassDb": 3.597577921085514,
-        "tailDb": 1.8869507622045743
+        "higherHarmonicMassDb": 3.5978290485708193,
+        "tailDb": 1.88689659015802
       },
       "outcome": "pass",
       "findings": []
@@ -305,27 +330,27 @@
       "midi": 72,
       "velocity": 100,
       "sampleRateHz": 48000,
-      "pcmSha256": "e5ba9ea10421a2139782d127f57bbfe209f4dac18366796f689ae62dc18a13c3",
+      "pcmSha256": "441b392f2580e7e5bfc44e3b621a77ae29f7d3670180a1178cfb426768243e2c",
       "features": {
-        "peak": 0.1562729924917221,
-        "earlyRms": 0.028922797671550517,
+        "peak": 0.15627315640449524,
+        "earlyRms": 0.02892285787939264,
         "onsetMs": 0,
         "pitchCents": 0.25,
         "partialsDb": [
           0,
-          -7.825551262541407,
-          -9.357967396196305,
-          -14.346557801716685,
-          -16.80907802641922,
-          -19.546330263950466,
-          -26.15712463385673,
-          -23.29957285591386,
-          -28.51299824918476,
-          -35.13836552336972
+          -7.825385993746416,
+          -9.35779678018507,
+          -14.34635983607543,
+          -16.80894665374377,
+          -19.546273477737742,
+          -26.15726886272656,
+          -23.299609639441563,
+          -28.512924458700635,
+          -35.13832152748725
         ],
         "audiblePartialCount": 10,
-        "higherHarmonicMassDb": -4.455835050995175,
-        "tailDb": 1.1278259769440746
+        "higherHarmonicMassDb": -4.455675222705135,
+        "tailDb": 1.127823707198522
       },
       "outcome": "pass",
       "findings": []
@@ -521,6 +546,115 @@
       },
       "outcome": "pass",
       "findings": []
+    },
+    {
+      "id": "upright-bass-m28",
+      "family": "upright-bass",
+      "algorithmId": "changes.dsp.plucked-upright-bass@1",
+      "midi": 28,
+      "velocity": 100,
+      "sampleRateHz": 48000,
+      "pcmSha256": "cda0a655e0c1cfeb6969567c593ec37fa60834d20a45adba0afecb96ad5c7f4e",
+      "features": {
+        "peak": 0.19832386076450348,
+        "earlyRms": 0.08767789961446304,
+        "onsetMs": 0.4375,
+        "pitchCents": -12,
+        "partialsDb": [
+          0,
+          -9.63860923968882,
+          -28.90239928353686,
+          -24.86640456818749,
+          -84.43662536484024,
+          -24.6881329464171,
+          -20.896899654187045,
+          -21.507760501731052,
+          -26.562991513610683,
+          -82.74246042610643
+        ],
+        "audiblePartialCount": 8,
+        "higherHarmonicMassDb": -8.727944256825023,
+        "tailDb": -5.660802170662999
+      },
+      "outcome": "fail",
+      "findings": [
+        {
+          "code": "PLUCKED_PITCH",
+          "message": "pitch error -12 cents"
+        },
+        {
+          "code": "PLUCKED_THIRD_PARTIAL",
+          "message": "h3 -28.90239928353686dB is too weak"
+        },
+        {
+          "code": "PLUCKED_HARMONIC_MASS",
+          "message": "higher-harmonic mass -8.727944256825023dB is too low"
+        }
+      ]
+    },
+    {
+      "id": "upright-bass-m40",
+      "family": "upright-bass",
+      "algorithmId": "changes.dsp.plucked-upright-bass@1",
+      "midi": 40,
+      "velocity": 100,
+      "sampleRateHz": 48000,
+      "pcmSha256": "bb1ef8b3de14c211e5c05dc5d27e86465ad15aed822696b8c3d725c865181bf3",
+      "features": {
+        "peak": 0.20223867893218994,
+        "earlyRms": 0.0390522941021838,
+        "onsetMs": 0.4375,
+        "pitchCents": 0.75,
+        "partialsDb": [
+          0,
+          -6.632485682740969,
+          -5.918401903936607,
+          -10.028191526955885,
+          -90.27452276859924,
+          -10.218920356203611,
+          -6.223639422531192,
+          -6.475865159171733,
+          -10.99912731331669,
+          -79.15187585230686
+        ],
+        "audiblePartialCount": 8,
+        "higherHarmonicMassDb": 0.8303124758241607,
+        "tailDb": -5.009271976498923
+      },
+      "outcome": "pass",
+      "findings": []
+    },
+    {
+      "id": "upright-bass-m60",
+      "family": "upright-bass",
+      "algorithmId": "changes.dsp.plucked-upright-bass@1",
+      "midi": 60,
+      "velocity": 100,
+      "sampleRateHz": 48000,
+      "pcmSha256": "3c77c49a19182d32e9563ad30f08595db22f71bb4a10e0a854ea9c55828beb5a",
+      "features": {
+        "peak": 0.07537791132926941,
+        "earlyRms": 0.021450957422824782,
+        "onsetMs": 0.4791666666666667,
+        "pitchCents": 1,
+        "partialsDb": [
+          0,
+          3.9897424068403042,
+          3.197885684696002,
+          -2.390013978569171,
+          -81.75177228719569,
+          -7.7608761301189695,
+          -8.835789108100677,
+          -19.89973729868027,
+          -40.90674116204971,
+          -126.5031596309698
+        ],
+        "audiblePartialCount": 8,
+        "higherHarmonicMassDb": 7.387427903817558,
+        "tailDb": -6.222954689838024
+      },
+      "outcome": "pass",
+      "findings": []
     }
   ],
   "pairwiseCells": [
@@ -529,7 +663,7 @@
       "leftFamily": "archtop",
       "rightFamily": "electric",
       "midi": 60,
-      "profileDistanceDb": 29.125709645619867,
+      "profileDistanceDb": 27.789499218844394,
       "outcome": "pass"
     },
     {
@@ -537,7 +671,7 @@
       "leftFamily": "archtop",
       "rightFamily": "dreadnought",
       "midi": 60,
-      "profileDistanceDb": 32.408388403213735,
+      "profileDistanceDb": 30.953199060664762,
       "outcome": "pass"
     },
     {
@@ -545,7 +679,15 @@
       "leftFamily": "archtop",
       "rightFamily": "ukulele",
       "midi": 60,
-      "profileDistanceDb": 10.068844814016074,
+      "profileDistanceDb": 10.224587708820385,
+      "outcome": "pass"
+    },
+    {
+      "id": "archtop-vs-upright-bass-m60",
+      "leftFamily": "archtop",
+      "rightFamily": "upright-bass",
+      "midi": 60,
+      "profileDistanceDb": 37.807887533665344,
       "outcome": "pass"
     },
     {
@@ -553,7 +695,7 @@
       "leftFamily": "electric",
       "rightFamily": "dreadnought",
       "midi": 60,
-      "profileDistanceDb": 9.10734167604913,
+      "profileDistanceDb": 9.107300080372887,
       "outcome": "pass"
     },
     {
@@ -561,7 +703,15 @@
       "leftFamily": "electric",
       "rightFamily": "ukulele",
       "midi": 60,
-      "profileDistanceDb": 28.517284045786134,
+      "profileDistanceDb": 28.51731674833581,
+      "outcome": "pass"
+    },
+    {
+      "id": "electric-vs-upright-bass-m60",
+      "leftFamily": "electric",
+      "rightFamily": "upright-bass",
+      "midi": 60,
+      "profileDistanceDb": 40.9842100228187,
       "outcome": "pass"
     },
     {
@@ -571,6 +721,22 @@
       "midi": 60,
       "profileDistanceDb": 31.697478424077485,
       "outcome": "pass"
+    },
+    {
+      "id": "dreadnought-vs-upright-bass-m60",
+      "leftFamily": "dreadnought",
+      "rightFamily": "upright-bass",
+      "midi": 60,
+      "profileDistanceDb": 40.712432869637226,
+      "outcome": "pass"
+    },
+    {
+      "id": "ukulele-vs-upright-bass-m60",
+      "leftFamily": "ukulele",
+      "rightFamily": "upright-bass",
+      "midi": 60,
+      "profileDistanceDb": 32.46426484245468,
+      "outcome": "pass"
     }
   ],
   "controls": {
@@ -579,13 +745,13 @@
     "collapsedFamiliesRejected": true
   },
   "summary": {
-    "outcome": "pass",
-    "expectedCellCount": 12,
-    "passedCellCount": 12,
-    "failedCellCount": 0,
-    "expectedPairwiseCellCount": 6,
-    "passedPairwiseCellCount": 6,
+    "outcome": "fail",
+    "expectedCellCount": 15,
+    "passedCellCount": 14,
+    "failedCellCount": 1,
+    "expectedPairwiseCellCount": 10,
+    "passedPairwiseCellCount": 10,
     "failedPairwiseCellCount": 0
   },
-  "evidenceSha256": "a109f85b1b466937dd8b78b6c653175c923a56bf291d217fbe4bf049f0b3cc86"
+  "evidenceSha256": "a3b5bfaea4f474684887e7540e242429d5988d6a33c12c3a67a4604ae3e3b8a6"
 }
