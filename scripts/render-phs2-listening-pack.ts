@@ -7,7 +7,6 @@ import {
   WAVEGUIDE_CLARINET_ALGORITHM_ID,
   WAVEGUIDE_CLARINET_V2_ALGORITHM_ID,
   type RenderedNotePcm,
-  type WindAttackArticulation,
 } from "../src/audio/dsp-renderer";
 import { screenListeningCandidate } from "./listening-screen";
 
@@ -21,7 +20,7 @@ const CASES = Object.freeze(
   ([50, 62, 74] as const).flatMap((midiPitch, registerIndex) =>
     ([36, 108] as const).flatMap((velocity) =>
       (["tongued", "legato"] as const).map((articulation) => Object.freeze({
-        id: `${["low", "middle", "high"][registerIndex]}-${velocity === 36 ? "soft" : "loud"}-${articulation}`,
+        id: `${["low", "middle", "high"][registerIndex] ?? "register"}-${velocity === 36 ? "soft" : "loud"}-${articulation}`,
         midiPitch,
         velocity,
         articulation,

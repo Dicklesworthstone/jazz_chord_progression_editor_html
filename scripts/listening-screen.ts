@@ -64,7 +64,7 @@ function autocorrelationF0(
   for (let lag = minLag; lag <= maxLag; lag += 1) {
     let sum = 0;
     for (let index = 0; index + lag < length; index += 1) {
-      sum += segment[index]! * segment[index + lag]!;
+      sum += (segment[index] ?? 0) * (segment[index + lag] ?? 0);
     }
     const score = sum / norm;
     scores[lag] = score;
