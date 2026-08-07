@@ -86,6 +86,40 @@ function rms(samples: Float32Array, start: number, length: number): number {
   return Math.sqrt(energy / Math.max(1, end - start));
 }
 
+function attackToSustainSeconds(samples: Float32Array, sampleRateHz: number): number | null {
+  const hop = Math.max(1, Math.round(sampleRateHz * 0.005));
+  const window = Math.max(hop, Math.round(sampleRateHz * 0.010));
+  const envelope: number[] = [];
+  for (let start = 0; start + window <= samples.length; start += hop) {
+    envelope.push(rms(samples, start, window));
+  }
+  const sustainStart = Math.floor(0.4 / 0.005);
+  const sustainEnd = Math.min(envelope.length, Math.ceil(1.0 / 0.005));
+  const sustain = envelope
+    .slice(sustainStart, sustainEnd)
+    .sort((left, right) => left - right);
+  if (sustain.length === 0) return null;
+  const sustainLevel = sustain[Math.floor(sustain.length / 2)] ?? 0;
+  if (!(sustainLevel > 0)) return null;
+  const persistentCrossing = (threshold: number, from: number): number | null => {
+    for (let index = from; index + 2 < envelope.length; index += 1) {
+      if (
+        (envelope[index] ?? 0) >= threshold &&
+        (envelope[index + 1] ?? 0) >= threshold &&
+        (envelope[index + 2] ?? 0) >= threshold
+      ) {
+        return index;
+      }
+    }
+    return null;
+  };
+  const onset = persistentCrossing(0.05 * sustainLevel, 0);
+  if (onset === null) return null;
+  const atNinety = persistentCrossing(0.90 * sustainLevel, onset);
+  if (atNinety === null) return null;
+  return ((atNinety - onset) * hop) / sampleRateHz;
+}
+
 const renderers = await loadWaveguideRenderers();
 
 function renderer(algorithmId: string): WaveguideRenderer {
@@ -103,6 +137,11 @@ const clarinetV2 = renderer(WAVEGUIDE_CLARINET_V2_ALGORITHM_ID);
 describe("waveguide renderer laws", () => {
   test("the map carries exactly the reviewed waveguide algorithms, pinned to the wasm payload", () => {
     expect([...renderers.keys()].sort()).toEqual([
+      /* PHS4 plucked family (jcpe-mnsc.6.2, reviewed registry amendment). */
+      "changes.dsp.plucked-archtop@2",
+      "changes.dsp.plucked-dreadnought@1",
+      "changes.dsp.plucked-electric@2",
+      "changes.dsp.plucked-ukulele@1",
       WAVEGUIDE_CLARINET_ALGORITHM_ID,
       WAVEGUIDE_CLARINET_V2_ALGORITHM_ID,
       WAVEGUIDE_FLUTE_ALGORITHM_ID,
@@ -239,6 +278,63 @@ describe("waveguide renderer laws", () => {
       const replay = clarinetV2.renderNote(midiPitch, 96, OUTPUT_RATE_HZ, 2, 3, "tongued");
       expect(replay?.left).toEqual(v2.left);
     }
+  });
+
+  test("clarinet v2 launches inside the acoustic-reference attack interval", () => {
+    const failures: string[] = [];
+    for (const sampleRateHz of [44_100, 48_000, 96_000]) {
+      for (const midiPitch of [50, 62, 66, 74, 84, 89]) {
+        for (const velocity of [1, 64, 127]) {
+          const pcm = clarinetV2.renderNote(
+            midiPitch,
+            velocity,
+            sampleRateHz,
+            2,
+            3,
+            "tongued",
+          );
+          expect(pcm).not.toBeNull();
+          if (pcm === null) continue;
+          const attack = attackToSustainSeconds(pcm.left, sampleRateHz);
+          expect(attack).not.toBeNull();
+          if (attack === null) continue;
+          if (attack < 0.035 || attack > 0.090) {
+            failures.push(
+              `${String(sampleRateHz)}/${String(midiPitch)}/${String(velocity)}=${attack.toFixed(3)}s`,
+            );
+          }
+        }
+      }
+    }
+    expect(failures).toEqual([]);
+  });
+
+  test("clarinet v2 articulation changes the onset without selecting a different sustain attractor", () => {
+    const failures: string[] = [];
+    for (const midiPitch of [50, 62, 74]) {
+      for (const velocity of [36, 108]) {
+        const tongued = clarinetV2.renderNote(
+          midiPitch, velocity, OUTPUT_RATE_HZ, 1.75, 0, "tongued",
+        );
+        const legato = clarinetV2.renderNote(
+          midiPitch, velocity, OUTPUT_RATE_HZ, 1.75, 0, "legato",
+        );
+        expect(tongued).not.toBeNull();
+        expect(legato).not.toBeNull();
+        if (tongued === null || legato === null) continue;
+        const window = Math.round(0.5 * OUTPUT_RATE_HZ);
+        const start = Math.round(1.0 * OUTPUT_RATE_HZ);
+        const tonguedSustain = rms(tongued.left, start, window);
+        const legatoSustain = rms(legato.left, start, window);
+        const ratio = tonguedSustain / legatoSustain;
+        if (ratio < 0.75 || ratio > 1.333_334) {
+          failures.push(
+            `${String(midiPitch)}/${String(velocity)} ratio=${ratio.toFixed(3)}`,
+          );
+        }
+      }
+    }
+    expect(failures).toEqual([]);
   });
 
   test("clarinet v2 hands off complete bounded phrase state and rejects incompatible state", () => {

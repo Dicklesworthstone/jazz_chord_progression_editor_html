@@ -209,6 +209,68 @@ fn disjoint_ranges(left: usize, left_bytes: usize, right: usize, right_bytes: us
     left_end <= right || right_end <= left
 }
 
+fn tongue_contact_at(frame: usize, hold_frames: usize, release_frames: usize) -> f64 {
+    if frame < hold_frames {
+        return 1.0;
+    }
+    if release_frames == 0 || frame >= hold_frames.saturating_add(release_frames) {
+        return 0.0;
+    }
+    let phase = (frame - hold_frames) as f64 / release_frames as f64;
+    let smooth = phase * phase * (3.0 - 2.0 * phase);
+    1.0 - smooth
+}
+
+fn finalize_v2_sustain(out_left: &mut [f32], out_right: &mut [f32], sr: f64) -> i32 {
+    let frames = out_left.len().min(out_right.len());
+    if frames == 0 {
+        return 0;
+    }
+    /* Blown notes are levelled from settled oscillation, not their first
+     * 200 ms. The shared waveguide finalizer measures the attack and then
+     * globally peak-scales the whole block; a realistic tongue transient can
+     * therefore make the identical sustain 3--5x quieter than legato. */
+    let sustain_start = ((0.4 * sr) as usize).min(frames.saturating_sub(1));
+    let sustain_end = ((1.0 * sr) as usize).min(frames).max(sustain_start + 1);
+    let mut energy = 0.0;
+    for frame in sustain_start..sustain_end {
+        let left = out_left[frame] as f64;
+        let right = out_right[frame] as f64;
+        energy += left * left + right * right;
+    }
+    let rms = sqrt(energy / (2.0 * (sustain_end - sustain_start) as f64));
+    if !(rms > 0.0) {
+        return 0;
+    }
+    let scale = 0.22 / rms;
+    let knee = 0.85;
+    let ceiling = 0.95;
+    for frame in 0..frames {
+        for output in [&mut out_left[frame], &mut out_right[frame]] {
+            let sample = *output as f64 * scale;
+            let magnitude = sample.abs();
+            let limited = if magnitude <= knee {
+                magnitude
+            } else {
+                knee + (ceiling - knee)
+                    * (1.0 - exp(-(magnitude - knee) / (ceiling - knee)))
+            };
+            *output = limited.min(ceiling).copysign(sample) as f32;
+        }
+    }
+    let threshold = 1.0e-4f32;
+    let mut last = frames;
+    'trim: while last > 256 {
+        for index in last - 256..last {
+            if out_left[index].abs() > threshold || out_right[index].abs() > threshold {
+                break 'trim;
+            }
+        }
+        last -= 256;
+    }
+    last.min(frames) as i32
+}
+
 fn decode_phrase_state(bytes: &[u8], sample_rate: f32) -> Option<ClarinetPhraseState> {
     if read_u32(bytes, 0)? != CLR_STATE_MAGIC
         || read_u32(bytes, 4)? != CLR_STATE_VERSION
@@ -936,7 +998,7 @@ fn clr_render_inner(
         (84.0, 0.692, 0.872),
         (89.0, 0.856, 0.874),
     ];
-    let pressure_target = if dynamic_reed {
+    let (pressure_band_lo, pressure_band_hi) = if dynamic_reed {
         let mb = m.clamp(
             CLR_V2_SPEAKING_BAND_ANCHORS[0].0,
             CLR_V2_SPEAKING_BAND_ANCHORS[CLR_V2_SPEAKING_BAND_ANCHORS.len() - 1].0,
@@ -953,17 +1015,38 @@ fn clr_render_inner(
                 break;
             }
         }
+        (band_lo, band_hi)
+    } else {
+        (0.0, 1.0)
+    };
+    let pressure_target = if dynamic_reed {
         /* Pianissimo sits a quarter of the band above the measured lower
          * edge: the anchors are linear interpolations of a threshold that
          * bulges between fingerings, and the verification sweep showed the
          * raw edge leaves vel-1 cells flat or unlocked between anchors.
          * The remaining three quarters of the band carry the dynamics. */
-        let band_floor = band_lo + 0.25 * (band_hi - band_lo);
-        band_floor + (band_hi - band_floor) * pow(v_norm, 1.3)
+        let band_floor = pressure_band_lo + 0.25 * (pressure_band_hi - pressure_band_lo);
+        band_floor + (pressure_band_hi - band_floor) * pow(v_norm, 1.3)
     } else {
         0.68 + 0.20 * pow(v_norm, 1.3)
     };
-    let attack_step = 1.0 - exp(-1.0 / (0.03 * sr));
+    /* A player establishes mouth pressure behind the tongue before release.
+     * Starting pressure at zero made v2 spend 0.11--0.16 s below the measured
+     * Hopf threshold, after which its tiny supercritical margin needed several
+     * more tenths of a second to grow. Launch from a bounded point inside the
+     * measured speaking interval, then settle toward the dynamic target. */
+    let launch_fraction = 0.35 - 0.15 * ((m - 80.0) / 9.0).clamp(0.0, 1.0);
+    let pressure_launch =
+        pressure_band_lo + launch_fraction * (pressure_band_hi - pressure_band_lo);
+    let legacy_attack_step = 1.0 - exp(-1.0 / (0.03 * sr));
+    let cold_launch_step = 1.0 - exp(-1.0 / (0.006 * sr));
+    let pressure_settle_seconds = 0.025
+        + if (82.0..=86.0).contains(&m) {
+            0.050 * pow(v_norm, 4.0)
+        } else {
+            0.0
+        };
+    let pressure_settle_step = 1.0 - exp(-1.0 / (pressure_settle_seconds * sr));
     let vibrato_hz = 4.8 * variation.map_or(1.0, |value| value.rate_multiplier);
     let vibrato_depth = 0.012 * variation.map_or(1.0, |value| value.depth_multiplier);
     let vibrato_onset = 0.35 * sr * variation.map_or(1.0, |value| value.onset_multiplier);
@@ -979,7 +1062,7 @@ fn clr_render_inner(
      * 2026-08-06 flagged "background noise hiss" on the loud v2 cells,
      * measured as ~2 dB HNR deficit against v1 per cell. */
     let noise_level = if dynamic_reed {
-        0.004 + 0.005 * v_norm
+        0.002_5 + 0.003 * v_norm
     } else {
         0.005 + 0.009 * v_norm
     };
@@ -999,7 +1082,7 @@ fn clr_render_inner(
     } else {
         0.0
     };
-    let pressure_overshoot = if attack_articulation == Some(true) {
+    let pressure_overshoot = if !dynamic_reed && attack_articulation == Some(true) {
         (pressure_target * (0.05 + 0.025 * v_norm)).min(0.915 - pressure_target)
     } else {
         0.0
@@ -1010,6 +1093,29 @@ fn clr_render_inner(
     } else {
         0
     };
+    let tongue_release_frames = if dynamic_reed && attack_articulation == Some(true) {
+        let base_release_seconds = if (82.0..=86.0).contains(&m) {
+            0.007
+        } else {
+            0.002
+        };
+        let loud_release_extension = if (60.0..=64.0).contains(&m)
+            || (82.0..=86.0).contains(&m)
+        {
+            0.005 * pow(v_norm, 4.0)
+        } else {
+            0.0
+        };
+        let release_seconds = base_release_seconds + loud_release_extension;
+        ((release_seconds * sr + 0.5) as usize).max(1)
+    } else {
+        0
+    };
+    let cold_launch_frames = if dynamic_reed && attack_articulation == Some(false) {
+        ((0.030 * sr + 0.5) as usize).max(1)
+    } else {
+        0
+    };
     let mut chiff_envelope = 1.0f64;
     let mut overshoot_envelope = 1.0f64;
     let mut pressure = 0.0f64;
@@ -1017,6 +1123,11 @@ fn clr_render_inner(
     let mut reed_x = reed_h0;
     let mut reed_velocity = 0.0;
     let mut elapsed_frames = 0u32;
+    let mut prior_tongue_contact = if dynamic_reed && attack_articulation == Some(true) {
+        1.0
+    } else {
+        0.0
+    };
 
     /* Band-limit the differentiated radiation (the flute's hiss lesson).
      * The v2 hole/vent radiation corners obey the same 5.5 kHz radiated-
@@ -1126,18 +1237,51 @@ fn clr_render_inner(
         chiff_high = prior.chiff_high;
         chiff_envelope = prior.chiff_envelope;
         overshoot_envelope = prior.overshoot_envelope;
+    } else if dynamic_reed && attack_articulation == Some(true) {
+        /* Breath is already charged behind the closed reed on a tongued
+         * attack. The tongue contact below, rather than zero mouth pressure,
+         * keeps the instrument silent until release. */
+        pressure = pressure_launch;
     }
 
     let end_fade_frames = (CLR_END_FADE_SECONDS * sr) as usize;
     let mut output_accumulator = 0.0f64;
 
     for frame in 0..frames {
-        let instantaneous_target = if frame < tongue_hold_frames {
-            0.0
+        let (instantaneous_target, pressure_step) = if dynamic_reed {
+            let launch_phase = if attack_articulation == Some(true) {
+                frame < tongue_hold_frames.saturating_add(tongue_release_frames)
+            } else {
+                frame < cold_launch_frames
+            };
+            if launch_phase {
+                (pressure_launch, cold_launch_step)
+            } else {
+                (pressure_target, pressure_settle_step)
+            }
+        } else if frame < tongue_hold_frames {
+            (0.0, legacy_attack_step)
         } else {
-            pressure_target + pressure_overshoot * overshoot_envelope
+            (
+                pressure_target + pressure_overshoot * overshoot_envelope,
+                legacy_attack_step,
+            )
         };
-        pressure += (instantaneous_target - pressure) * attack_step;
+        pressure += (instantaneous_target - pressure) * pressure_step;
+        let tongue_contact = if dynamic_reed {
+            tongue_contact_at(frame, tongue_hold_frames, tongue_release_frames)
+        } else {
+            0.0
+        };
+        /* Releasing a tongue stores and returns mechanical energy through a
+         * short reed-flow transient. The reduced steady-state blend otherwise
+         * waits for turbulence to seed the bore. Couple the positive loss of
+         * tongue contact into the bore as a bounded two-millisecond impulse;
+         * its integrated magnitude is capped by mouth pressure and it is zero
+         * for legato, steady contact, and every sustain frame. */
+        let tongue_release_impulse =
+            0.35 * pressure * (prior_tongue_contact - tongue_contact).max(0.0);
+        prior_tongue_contact = tongue_contact;
         let phrase_frame = elapsed_frames as f64 + frame as f64;
         let vibrato_gate = if phrase_frame < vibrato_onset {
             0.0
@@ -1198,7 +1342,6 @@ fn clr_render_inner(
         let reed = (reed_offset + reed_slope * pressure_diff).clamp(-1.0, 1.0);
         let legacy_bore_in = breath + pressure_diff * reed;
         let bore_in = if dynamic_reed {
-            let tongue_contact = if frame < tongue_hold_frames { 1.0 } else { 0.0 };
             let mut step = [0.0; 8];
             if crate::physical::phs_clarinet_reed_step_v2(
                 1.0 / sr,
@@ -1226,8 +1369,37 @@ fn clr_render_inner(
              * reflection while the SI flow owns the evolving reed state.
              * This calibrated blend preserves the closed-open odd-partial
              * regime across the v2 register anchors. */
+            /* Stronger blowing closes the reed further and makes the signed
+             * Bernoulli flow, rather than the linear comparator path, own
+             * more of the junction. This is the physical source of the much
+             * richer upper-partial structure in anechoic ff recordings. */
             let flow_mix = 0.1 - 0.07 * ((m - 76.0) / 8.0).clamp(0.0, 1.0);
-            (1.0 - flow_mix) * legacy_bore_in + flow_mix * flow_drive
+            let gated_legacy_bore_in = legacy_bore_in * (1.0 - tongue_contact);
+            let articulation_depth = if m <= 56.0 {
+                0.30
+            } else if m <= 68.0 {
+                0.30 - 0.26 * ((m - 56.0) / 12.0)
+            } else if m <= 80.0 {
+                0.14 - 0.04 * ((m - 68.0) / 12.0)
+            } else if m <= 86.0 {
+                0.015 * (1.0 - 0.50 * v_norm)
+            } else {
+                0.05 - 0.02 * v_norm
+            };
+            let articulation_gain = if attack_articulation == Some(true)
+                && frame >= tongue_hold_frames
+            {
+                1.0
+                    + articulation_depth
+                        * exp(
+                            -((frame - tongue_hold_frames) as f64) / (0.030 * sr),
+                        )
+            } else {
+                1.0
+            };
+            articulation_gain
+                * ((1.0 - flow_mix) * gated_legacy_bore_in + flow_mix * flow_drive)
+                + tongue_release_impulse
         } else {
             legacy_bore_in
         };
@@ -1255,10 +1427,17 @@ fn clr_render_inner(
         /* Direct breath bleed obeys the <=0.01 direct-injection law in v2
          * (0.012 * pressure ~ 0.0102 sat marginally over it); legacy keeps
          * its shipped constant for byte stability. */
-        let breath_bleed = if dynamic_reed { 0.009 } else { 0.012 };
+        /* The anechoic FreePats references put 5.5--10 kHz energy 10--21 dB
+         * below the earlier v2 output. Most of that excess was the microphone
+         * path below, not reed/bore turbulence: a clarinet's reed is inside
+         * the mouth and the bell/tone-hole field dominates its radiation.
+         * Keep a small direct turbulent component without bypassing the
+         * physical bore radiation. */
+        let breath_bleed = if dynamic_reed { 0.000_2 } else { 0.012 };
+        let direct_turbulence = noise_lp;
         let radiated = radiation.process(bell_incident)
             + hole_field
-            + breath_bleed * noise_lp * pressure
+            + breath_bleed * direct_turbulence * pressure
             + chiff;
 
         let mut sample = radiated;
@@ -1311,12 +1490,34 @@ fn clr_render_inner(
         };
         *written = size;
     }
-    crate::finalize_stereo(out_left, out_right, sample_rate as f64)
+    if dynamic_reed {
+        finalize_v2_sustain(out_left, out_right, sample_rate as f64)
+    } else {
+        crate::finalize_stereo(out_left, out_right, sample_rate as f64)
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn tongue_release_is_bounded_smooth_and_monotone() {
+        let hold = 240;
+        let release = 96;
+        assert_eq!(tongue_contact_at(0, hold, release), 1.0);
+        assert_eq!(tongue_contact_at(hold - 1, hold, release), 1.0);
+        assert_eq!(tongue_contact_at(hold + release, hold, release), 0.0);
+        let mut previous = 1.0;
+        for frame in hold..hold + release {
+            let contact = tongue_contact_at(frame, hold, release);
+            assert!((0.0..=1.0).contains(&contact));
+            assert!(contact <= previous);
+            previous = contact;
+        }
+        assert!(previous > 0.0);
+        assert_eq!(tongue_contact_at(hold + release, hold, release), 0.0);
+    }
 
     #[test]
     fn serial_tone_hole_scattering_is_passive_and_not_an_output_only_tap() {
