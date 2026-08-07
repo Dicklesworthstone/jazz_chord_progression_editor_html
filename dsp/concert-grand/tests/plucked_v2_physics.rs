@@ -6,16 +6,70 @@ mod plucked_v2;
 
 use plucked_v2::{
     archtop_pack, circular_sound_hole_helmholtz_hz, dreadnought_pack, inharmonicity_coefficient,
-    marshall_electric_pack, midi_frequency_hz, plk2_note_frames, plk2_render, plk2_render_path,
-    plk2_render_slices, plk2_stem_init, plk2_stem_init_slice, plk2_stem_render,
-    plk2_stem_render_max_frames, plk2_stem_render_slices, plk2_stem_state_max_bytes,
-    plk2_stem_state_string_energy_j, plk2_string_fret, ukulele_pack, upright_bass_pack,
-    BodyModeKind, PluckGesture, PluckedError, PluckedRenderPath, PluckedStem, PLK2_ARCHTOP_PACK,
+    marshall_electric_pack, midi_frequency_hz, plk2_chord_string_frets, plk2_cubic_reconstruct,
+    plk2_note_frames, plk2_render, plk2_render_chord, plk2_render_chord_slices,
+    plk2_render_chord_slices_full_rate_reference, plk2_render_path, plk2_render_slices,
+    plk2_stem_init, plk2_stem_init_slice, plk2_stem_render, plk2_stem_render_max_frames,
+    plk2_stem_render_slices, plk2_stem_state_max_bytes, plk2_stem_state_string_energy_j,
+    plk2_string_fret, plk2_triode_tanh, ukulele_pack, upright_bass_pack, BodyModeKind,
+    PluckGesture, PluckedError, PluckedRenderPath, PluckedStem, PLK2_ARCHTOP_PACK,
     PLK2_DREADNOUGHT_PACK, PLK2_MARSHALL_ELECTRIC_PACK, PLK2_STEM_EVENT_PLUCK,
     PLK2_STEM_EVENT_RESET, PLK2_UKULELE_PACK, PLK2_UPRIGHT_BASS_PACK,
 };
 
 const SAMPLE_RATE: f64 = 48_000.0;
+
+#[test]
+fn bounded_triode_reduction_tracks_the_analytic_transfer() {
+    let mut maximum_error = 0.0_f64;
+    for step in -8_000..=8_000 {
+        let input = step as f64 / 1_000.0;
+        maximum_error = maximum_error.max((plk2_triode_tanh(input) - libm::tanh(input)).abs());
+    }
+    assert!(
+        maximum_error < 1.0e-4,
+        "triode reduction error {maximum_error}"
+    );
+    assert_eq!(plk2_triode_tanh(f64::INFINITY), 1.0);
+    assert_eq!(plk2_triode_tanh(f64::NEG_INFINITY), -1.0);
+}
+
+#[test]
+fn chord_reconstruction_keeps_source_lookahead_immutable() {
+    const DIVISOR: usize = 3;
+    let source = [0.0_f32, 1.0, -0.5, 0.25, 0.75];
+    let mut reconstructed = [0.0_f32; 9];
+    assert!(plk2_cubic_reconstruct(&source, &mut reconstructed, DIVISOR));
+
+    fn sample(values: &[f32], center: usize, phase: usize) -> f32 {
+        let x0 = values[center.saturating_sub(1)] as f64;
+        let x1 = values[center] as f64;
+        let x2 = values[(center + 1).min(values.len() - 1)] as f64;
+        let x3 = values[(center + 2).min(values.len() - 1)] as f64;
+        let t = phase as f64 / DIVISOR as f64;
+        let t2 = t * t;
+        let t3 = t2 * t;
+        (0.5 * (2.0 * x1
+            + (-x0 + x2) * t
+            + (2.0 * x0 - 5.0 * x1 + 4.0 * x2 - x3) * t2
+            + (-x0 + 3.0 * x1 - 3.0 * x2 + x3) * t3)) as f32
+    }
+
+    /* Planted former implementation: expanding backward in the same buffer
+     * overwrites source[2] at output frame 2 before frame 1 reads it. */
+    let mut invalid_in_place = [0.0_f32; 9];
+    invalid_in_place[..source.len()].copy_from_slice(&source);
+    for frame in (0..invalid_in_place.len()).rev() {
+        invalid_in_place[frame] = sample(
+            &invalid_in_place[..source.len()],
+            frame / DIVISOR,
+            frame % DIVISOR,
+        );
+    }
+    assert_ne!(invalid_in_place, reconstructed);
+    assert_ne!(invalid_in_place[1], reconstructed[1]);
+    assert_eq!(source, [0.0, 1.0, -0.5, 0.25, 0.75]);
+}
 
 fn relative_error(actual: f64, expected: f64) -> f64 {
     (actual - expected).abs() / expected.abs().max(1.0e-30)
@@ -1559,4 +1613,365 @@ fn retained_stem_abi_refuses_tamper_overlap_and_excess_work_then_recovers() {
     assert!(left
         .iter()
         .any(|sample| sample.is_finite() && *sample != 7.0));
+}
+
+#[test]
+fn simultaneous_chords_use_distinct_physical_courses_and_refuse_impossible_shapes() {
+    let guitar_midis = [48, 52, 55, 60];
+    let guitar = plk2_chord_string_frets(PLK2_DREADNOUGHT_PACK, &guitar_midis)
+        .expect("reviewed C chord must fit one six-course guitar");
+    let mut used = 0_u8;
+    for (index, (course, fret)) in guitar.iter().take(guitar_midis.len()).enumerate() {
+        assert_eq!(
+            used & (1 << course),
+            0,
+            "course {course} was assigned twice"
+        );
+        used |= 1 << course;
+        let open_midi = dreadnought_pack().strings[*course].open_midi;
+        assert_eq!(open_midi + *fret as i32, guitar_midis[index]);
+        assert!(*fret <= 24);
+    }
+
+    let uke_midis = [60, 64, 67, 69];
+    let uke = plk2_chord_string_frets(PLK2_UKULELE_PACK, &uke_midis)
+        .expect("open re-entrant ukulele chord must fit all four courses");
+    let uke_pack = ukulele_pack();
+    for (index, (course, fret)) in uke.iter().take(uke_midis.len()).enumerate() {
+        assert_eq!(
+            uke_pack.strings[*course].open_midi + *fret as i32,
+            uke_midis[index]
+        );
+    }
+
+    let unison = plk2_chord_string_frets(PLK2_DREADNOUGHT_PACK, &[60, 60])
+        .expect("two C4 notes fit distinct guitar courses");
+    assert_ne!(unison[0].0, unison[1].0);
+    for (index, (course, fret)) in unison.iter().take(2).enumerate() {
+        assert_eq!(
+            dreadnought_pack().strings[*course].open_midi + *fret as i32,
+            [60, 60][index]
+        );
+    }
+    assert!(
+        plk2_chord_string_frets(PLK2_DREADNOUGHT_PACK, &[60, 60, 60, 60, 60, 60, 60]).is_none()
+    );
+    assert!(plk2_chord_string_frets(PLK2_DREADNOUGHT_PACK, &[80, 81, 82, 83, 84, 85]).is_none());
+    assert!(plk2_chord_string_frets(PLK2_UKULELE_PACK, &[60, 64, 67, 69, 72]).is_none());
+}
+
+#[test]
+fn shared_dreadnought_and_marshall_chords_are_finite_pitched_and_not_independent_guitars() {
+    const FRAMES: usize = 24_000;
+    let midis = [48, 52, 55, 60];
+    let velocities = [100, 96, 92, 88];
+    for pack_index in [PLK2_DREADNOUGHT_PACK, PLK2_MARSHALL_ELECTRIC_PACK] {
+        let mut shared_left = vec![0.0f32; FRAMES];
+        let mut shared_right = vec![0.0f32; FRAMES];
+        assert_eq!(
+            plk2_render_chord_slices(
+                pack_index,
+                &midis,
+                &velocities,
+                SAMPLE_RATE as f32,
+                &mut shared_left,
+                &mut shared_right,
+                FRAMES as i32,
+            ),
+            FRAMES as i32
+        );
+        let peak = shared_left
+            .iter()
+            .chain(&shared_right)
+            .fold(0.0_f32, |maximum, sample| maximum.max(sample.abs()));
+        assert!(peak > 1.0e-3 && peak <= 1.0);
+        assert!(shared_left
+            .iter()
+            .chain(&shared_right)
+            .all(|sample| sample.is_finite()));
+        let mut reordered_left = vec![0.0f32; FRAMES];
+        let mut reordered_right = vec![0.0f32; FRAMES];
+        assert_eq!(
+            plk2_render_chord_slices(
+                pack_index,
+                &[60, 55, 52, 48],
+                &[88, 92, 96, 100],
+                SAMPLE_RATE as f32,
+                &mut reordered_left,
+                &mut reordered_right,
+                FRAMES as i32,
+            ),
+            FRAMES as i32
+        );
+        assert_eq!(reordered_left, shared_left);
+        assert_eq!(reordered_right, shared_right);
+        for midi in midis {
+            let amplitude = windowed_tone_amplitude(
+                &shared_left[2_400..FRAMES],
+                SAMPLE_RATE,
+                midi_frequency_hz(midi),
+            );
+            assert!(
+                amplitude > 1.0e-5,
+                "pack {pack_index} lost chord member MIDI {midi}: {amplitude}"
+            );
+        }
+
+        let mut independent_sum = vec![0.0_f64; FRAMES];
+        for (midi, velocity) in midis.into_iter().zip(velocities) {
+            let mut left = vec![0.0f32; FRAMES];
+            let mut right = vec![0.0f32; FRAMES];
+            assert_eq!(
+                plk2_render_slices(
+                    pack_index,
+                    midi,
+                    velocity,
+                    SAMPLE_RATE as f32,
+                    &mut left,
+                    &mut right,
+                    FRAMES as i32,
+                ),
+                FRAMES as i32
+            );
+            for index in 0..FRAMES {
+                independent_sum[index] += left[index] as f64;
+            }
+        }
+        let difference_rms = (shared_left
+            .iter()
+            .zip(&independent_sum)
+            .map(|(shared, independent)| {
+                let difference = *shared as f64 - *independent;
+                difference * difference
+            })
+            .sum::<f64>()
+            / FRAMES as f64)
+            .sqrt();
+        assert!(
+            difference_rms > 1.0e-4,
+            "shared body/amp collapsed to independent instrument summation"
+        );
+    }
+}
+
+#[test]
+fn shared_chord_rate_conversion_preserves_pitch_and_rejects_first_images() {
+    let midi = 60;
+    let target_hz = midi_frequency_hz(midi);
+    for sample_rate in [44_100.0, 48_000.0, 96_000.0] {
+        let frames = (0.5 * sample_rate) as usize;
+        let start = (0.05 * sample_rate) as usize;
+        for pack_index in [PLK2_DREADNOUGHT_PACK, PLK2_MARSHALL_ELECTRIC_PACK] {
+            let divisor = if pack_index == PLK2_MARSHALL_ELECTRIC_PACK {
+                if sample_rate >= 88_000.0 {
+                    6.0
+                } else {
+                    3.0
+                }
+            } else if sample_rate >= 88_000.0 {
+                4.0
+            } else {
+                2.0
+            };
+            let first_image_hz = sample_rate / divisor - target_hz;
+            let mut left = vec![0.0f32; frames];
+            let mut right = vec![0.0f32; frames];
+            assert_eq!(
+                plk2_render_chord_slices(
+                    pack_index,
+                    &[midi],
+                    &[100],
+                    sample_rate as f32,
+                    &mut left,
+                    &mut right,
+                    frames as i32,
+                ),
+                frames as i32
+            );
+            let target = windowed_tone_amplitude(&left[start..], sample_rate, target_hz);
+            let image = windowed_tone_amplitude(&left[start..], sample_rate, first_image_hz);
+            assert!(
+                target > 1.0e-5,
+                "pack {pack_index} rate {sample_rate} lost the played pitch: {target}"
+            );
+            assert!(
+                image < 0.25 * target,
+                "pack {pack_index} rate {sample_rate} first image {image} exceeds -12 dB of target {target}"
+            );
+        }
+    }
+}
+
+#[test]
+fn bounded_chord_rate_retains_full_rate_attack_and_upper_partial_mass() {
+    const FRAMES: usize = 12_000;
+    const MIDI: i32 = 60;
+    let fundamental = midi_frequency_hz(MIDI);
+    for pack_index in [PLK2_DREADNOUGHT_PACK, PLK2_MARSHALL_ELECTRIC_PACK] {
+        let mut bounded_left = vec![0.0f32; FRAMES];
+        let mut bounded_right = vec![0.0f32; FRAMES];
+        let mut full_left = vec![0.0f32; FRAMES];
+        let mut full_right = vec![0.0f32; FRAMES];
+        assert_eq!(
+            plk2_render_chord_slices(
+                pack_index,
+                &[MIDI],
+                &[100],
+                SAMPLE_RATE as f32,
+                &mut bounded_left,
+                &mut bounded_right,
+                FRAMES as i32,
+            ),
+            FRAMES as i32
+        );
+        assert_eq!(
+            plk2_render_chord_slices_full_rate_reference(
+                pack_index,
+                &[MIDI],
+                &[100],
+                SAMPLE_RATE as f32,
+                &mut full_left,
+                &mut full_right,
+                FRAMES as i32,
+            ),
+            FRAMES as i32
+        );
+
+        let window = 256..10_240;
+        let mut bounded_profile = [0.0_f64; 32];
+        let mut full_profile = [0.0_f64; 32];
+        for harmonic in 1..=32 {
+            bounded_profile[harmonic - 1] = windowed_tone_amplitude(
+                &bounded_left[window.clone()],
+                SAMPLE_RATE,
+                fundamental * harmonic as f64,
+            );
+            full_profile[harmonic - 1] = windowed_tone_amplitude(
+                &full_left[window.clone()],
+                SAMPLE_RATE,
+                fundamental * harmonic as f64,
+            );
+        }
+        let bounded_sum = bounded_profile.iter().sum::<f64>().max(1.0e-30);
+        let full_sum = full_profile.iter().sum::<f64>().max(1.0e-30);
+        let distance = bounded_profile
+            .iter()
+            .zip(full_profile)
+            .map(|(bounded, full)| (bounded / bounded_sum - full / full_sum).abs())
+            .sum::<f64>();
+        assert!(
+            distance < 0.45,
+            "pack {pack_index} bounded/full-rate partial distance {distance}"
+        );
+        let full_upper_mass = full_profile[1..].iter().sum::<f64>() / full_sum;
+        assert!(
+            full_upper_mass > 0.10,
+            "pack {pack_index} full-rate planted pure-tone control would be indistinguishable"
+        );
+
+        let attack_frames = (0.010 * SAMPLE_RATE) as usize;
+        let attack_rms = |samples: &[f32]| {
+            (samples
+                .iter()
+                .map(|sample| *sample as f64 * *sample as f64)
+                .sum::<f64>()
+                / samples.len() as f64)
+                .sqrt()
+        };
+        let bounded_attack = attack_rms(&bounded_left[..attack_frames]);
+        let full_attack = attack_rms(&full_left[..attack_frames]);
+        let attack_ratio = bounded_attack / full_attack.max(1.0e-30);
+        assert!(
+            (0.5..=2.0).contains(&attack_ratio),
+            "pack {pack_index} attack ratio {attack_ratio}"
+        );
+    }
+}
+
+#[test]
+fn raw_chord_abi_matches_safe_render_and_refuses_aliasing_then_recovers() {
+    const FRAMES: usize = 8_192;
+    let midis = [48_i32, 52, 55, 60];
+    let velocities = [100_i32, 96, 92, 88];
+    let mut safe_left = vec![0.0f32; FRAMES];
+    let mut safe_right = vec![0.0f32; FRAMES];
+    assert_eq!(
+        plk2_render_chord_slices(
+            PLK2_DREADNOUGHT_PACK,
+            &midis,
+            &velocities,
+            SAMPLE_RATE as f32,
+            &mut safe_left,
+            &mut safe_right,
+            FRAMES as i32,
+        ),
+        FRAMES as i32
+    );
+
+    let mut raw_left = vec![0.0f32; FRAMES];
+    let mut raw_right = vec![0.0f32; FRAMES];
+    assert_eq!(
+        plk2_render_chord(
+            PLK2_DREADNOUGHT_PACK,
+            midis.as_ptr(),
+            velocities.as_ptr(),
+            midis.len() as i32,
+            SAMPLE_RATE as f32,
+            raw_left.as_mut_ptr(),
+            raw_right.as_mut_ptr(),
+            FRAMES as i32,
+        ),
+        FRAMES as i32
+    );
+    assert_eq!(raw_left, safe_left);
+    assert_eq!(raw_right, safe_right);
+
+    for tiny_frames in 1..=3 {
+        let mut tiny_left = [0.0f32; 3];
+        let mut tiny_right = [0.0f32; 3];
+        assert_eq!(
+            plk2_render_chord_slices(
+                PLK2_DREADNOUGHT_PACK,
+                &midis,
+                &velocities,
+                SAMPLE_RATE as f32,
+                &mut tiny_left[..tiny_frames],
+                &mut tiny_right[..tiny_frames],
+                tiny_frames as i32,
+            ),
+            tiny_frames as i32
+        );
+        assert!(tiny_left[..tiny_frames]
+            .iter()
+            .chain(&tiny_right[..tiny_frames])
+            .all(|sample| sample.is_finite()));
+    }
+
+    assert_eq!(
+        plk2_render_chord(
+            PLK2_DREADNOUGHT_PACK,
+            midis.as_ptr(),
+            velocities.as_ptr(),
+            midis.len() as i32,
+            SAMPLE_RATE as f32,
+            midis.as_ptr().cast_mut().cast::<f32>(),
+            raw_right.as_mut_ptr(),
+            FRAMES as i32,
+        ),
+        0
+    );
+    assert_eq!(midis, [48, 52, 55, 60]);
+    assert_eq!(
+        plk2_render_chord(
+            PLK2_DREADNOUGHT_PACK,
+            midis.as_ptr(),
+            velocities.as_ptr(),
+            midis.len() as i32,
+            SAMPLE_RATE as f32,
+            raw_left.as_mut_ptr(),
+            raw_right.as_mut_ptr(),
+            FRAMES as i32,
+        ),
+        FRAMES as i32
+    );
 }
