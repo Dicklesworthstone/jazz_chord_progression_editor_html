@@ -1016,6 +1016,156 @@
         "final-rms-bounded",
         "voice-cleanup-before-eight-seconds"
       ]
+    },
+    {
+      "id": "X0-RENDER-040",
+      "instrumentId": "dreadnought-guitar",
+      "scenario": "single-note",
+      "sampleRate": 48000,
+      "midiPitches": [
+        52
+      ],
+      "velocity": 100,
+      "start": 0.1,
+      "release": 0.6,
+      "renderDuration": 3,
+      "reverbAmount": 0.2,
+      "expectedSourceCount": 1,
+      "assertions": [
+        "finite",
+        "non-silent",
+        "onset-window",
+        "bounded-peak",
+        "bounded-active-rms"
+      ]
+    },
+    {
+      "id": "X0-RENDER-041",
+      "instrumentId": "dreadnought-guitar",
+      "scenario": "dense-seven",
+      "sampleRate": 44100,
+      "midiPitches": [
+        40,
+        45,
+        50,
+        55,
+        59,
+        64,
+        67
+      ],
+      "velocity": 110,
+      "start": 0.1,
+      "release": 1.1,
+      "renderDuration": 4,
+      "reverbAmount": 0.28,
+      "expectedSourceCount": 7,
+      "assertions": [
+        "finite",
+        "non-silent",
+        "bounded-peak",
+        "bounded-active-rms",
+        "no-unity-clipping"
+      ]
+    },
+    {
+      "id": "X0-RENDER-042",
+      "instrumentId": "dreadnought-guitar",
+      "scenario": "release-tail",
+      "sampleRate": 96000,
+      "midiPitches": [
+        45,
+        52,
+        57,
+        62
+      ],
+      "velocity": 90,
+      "start": 0.1,
+      "release": 0.8,
+      "renderDuration": 4.5,
+      "reverbAmount": 0.8,
+      "expectedSourceCount": 4,
+      "assertions": [
+        "finite",
+        "tail-present",
+        "tail-decays",
+        "final-rms-bounded",
+        "voice-cleanup-before-eight-seconds"
+      ]
+    },
+    {
+      "id": "X0-RENDER-043",
+      "instrumentId": "ukulele",
+      "scenario": "single-note",
+      "sampleRate": 48000,
+      "midiPitches": [
+        67
+      ],
+      "velocity": 100,
+      "start": 0.1,
+      "release": 0.6,
+      "renderDuration": 3,
+      "reverbAmount": 0.2,
+      "expectedSourceCount": 1,
+      "assertions": [
+        "finite",
+        "non-silent",
+        "onset-window",
+        "bounded-peak",
+        "bounded-active-rms"
+      ]
+    },
+    {
+      "id": "X0-RENDER-044",
+      "instrumentId": "ukulele",
+      "scenario": "dense-seven",
+      "sampleRate": 44100,
+      "midiPitches": [
+        60,
+        64,
+        67,
+        69,
+        72,
+        76,
+        79
+      ],
+      "velocity": 110,
+      "start": 0.1,
+      "release": 1.1,
+      "renderDuration": 4,
+      "reverbAmount": 0.28,
+      "expectedSourceCount": 7,
+      "assertions": [
+        "finite",
+        "non-silent",
+        "bounded-peak",
+        "bounded-active-rms",
+        "no-unity-clipping"
+      ]
+    },
+    {
+      "id": "X0-RENDER-045",
+      "instrumentId": "ukulele",
+      "scenario": "release-tail",
+      "sampleRate": 96000,
+      "midiPitches": [
+        60,
+        67,
+        72,
+        79
+      ],
+      "velocity": 90,
+      "start": 0.1,
+      "release": 0.8,
+      "renderDuration": 4.5,
+      "reverbAmount": 0.8,
+      "expectedSourceCount": 4,
+      "assertions": [
+        "finite",
+        "tail-present",
+        "tail-decays",
+        "final-rms-bounded",
+        "voice-cleanup-before-eight-seconds"
+      ]
     }
   ]
 }

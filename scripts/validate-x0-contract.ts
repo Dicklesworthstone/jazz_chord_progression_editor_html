@@ -190,7 +190,7 @@ const EXPECTED_SCHEMAS: Readonly<Record<ExpectedFilename, string>> = {
 };
 
 export const X0_REVIEWED_CONTRACT_BYTE_DIGEST =
-  "54cb50c3f70becc70a84e29b2f43f3af35ce1a42c51a18d976e29ae2f18e891a";
+  "0d618deed951d999ea8f17723dca9b57cd16898179f0113dfe0d42c1453db606";
 
 export const X0_REVIEWED_BYTE_DIGESTS: Readonly<
   Record<CompanionFilename, string>
@@ -200,7 +200,7 @@ export const X0_REVIEWED_BYTE_DIGESTS: Readonly<
   "impulse-golden.json":
     "9330b747b85defb801b6456ad7d4ee519f78bdf83ea22a4b6ab47268b3b79888",
   "instrument-recipes.json":
-    "ba1d6bce9d8ec212412e331e1d09ee8554d00a6859e22d165685a114f1a69eae",
+    "e85f31cccd7e4c1037055c1525783c8e847b0680e9260551debe38705d280dde",
   "lifecycle-cases.json":
     "3ad712126fe22bf314ea76e41fb501ee549be2ef944a45aafbe1c1f2e8b8dcf5",
   "listening-rubric.json":
@@ -212,9 +212,9 @@ export const X0_REVIEWED_BYTE_DIGESTS: Readonly<
   "registry-cases.json":
     "2f373b5d3fb35e99dc9c7dddf6b324a33cf76f94d62bfb210453c74788e391c8",
   "render-matrix.json":
-    "dc11d17efd7948a5515db0a291d83b30d46e78d745c7cd6c683d94d23b6a0fa6",
+    "e440cb2ebbb1b6bb6521b990c546a56c9f5810edd12d503224bebef8f7228d7d",
   "trace-ledger.json":
-    "2fd8f4f03c8cb9d446cd15bcd6d73caae2eeec771be78b6998b2347160541b58",
+    "bd9e9f6b3d3236468f6f0874fda9b287fc31b1026fe4d61b6cfe6384823bed2a",
 };
 
 export const X0_REVIEWED_OPERATION_ORDER = [
@@ -391,16 +391,19 @@ export const X0_REVIEWED_RECIPE_IDS = [
   "concert-vibes",
   "blues-guitar",
   "clarinet",
+  "dreadnought-guitar",
+  "ukulele",
 ] as const;
 
 export const X0_REVIEWED_RECIPE_LEVELS = [
   0.62, 0.48, 0.5, 0.3, 0.34, 0.3, 0.5, 0.44, 0.5, 0.5, 0.42, 0.46, 0.48,
+  0.5, 0.54,
 ] as const;
 export const X0_REVIEWED_RECIPE_POLYPHONY = [
-  64, 48, 48, 32, 48, 64, 32, 48, 48, 32, 48, 48, 32,
+  64, 48, 48, 32, 48, 64, 32, 48, 48, 32, 48, 48, 32, 48, 32,
 ] as const;
 export const X0_REVIEWED_RECIPE_SOURCE_COUNTS = [
-  3, 2, 4, 3, 3, 1, 1, 6, 1, 1, 1, 1, 1,
+  3, 2, 4, 3, 3, 1, 1, 6, 1, 1, 1, 1, 1, 1, 1,
 ] as const;
 
 /**
@@ -454,7 +457,7 @@ export const X0_REVIEWED_RENDERED_RECIPES = [
   polyphonyLimit: 32,
   scheduledSourceCount: 1,
   renderer: {
-    algorithmId: "changes.dsp.waveguide-flute@1",
+    algorithmId: "changes.dsp.waveguide-flute@2",
     channels: 2,
     maximumRenderSeconds: 5,
     bufferCacheLimit: 64,
@@ -484,7 +487,7 @@ export const X0_REVIEWED_RENDERED_RECIPES = [
   polyphonyLimit: 48,
   scheduledSourceCount: 1,
   renderer: {
-    algorithmId: "changes.dsp.waveguide-guitar-clean@1",
+    algorithmId: "changes.dsp.plucked-archtop@2",
     channels: 2,
     maximumRenderSeconds: 6,
     bufferCacheLimit: 64,
@@ -574,7 +577,7 @@ export const X0_REVIEWED_RENDERED_RECIPES = [
   polyphonyLimit: 48,
   scheduledSourceCount: 1,
   renderer: {
-    algorithmId: "changes.dsp.waveguide-guitar-drive@1",
+    algorithmId: "changes.dsp.plucked-electric@2",
     channels: 2,
     maximumRenderSeconds: 6,
     bufferCacheLimit: 64,
@@ -614,6 +617,66 @@ export const X0_REVIEWED_RENDERED_RECIPES = [
     decaySeconds: 0,
     sustainLevel: 1,
     releaseSeconds: 0.3,
+  },
+  filter: {
+    type: "lowpass",
+    attackHz: 16_000,
+    peakHz: 16_000,
+    sustainHz: 16_000,
+    q: 0.5,
+    decaySeconds: 0.1,
+  },
+},
+{
+  id: "dreadnought-guitar",
+  label: "Steel Dreadnought",
+  designClaim:
+    "physically modeled Martin-style steel-string dreadnought: stiff strings, finite pick contact, braced spruce plate, and Helmholtz body radiation",
+  synthesis: "rendered",
+  outputLevel: 0.5,
+  polyphonyLimit: 48,
+  scheduledSourceCount: 1,
+  renderer: {
+    algorithmId: "changes.dsp.plucked-dreadnought@1",
+    channels: 2,
+    maximumRenderSeconds: 5,
+    bufferCacheLimit: 64,
+  },
+  amplitude: {
+    attackSeconds: 0.002,
+    decaySeconds: 0,
+    sustainLevel: 1,
+    releaseSeconds: 0.35,
+  },
+  filter: {
+    type: "lowpass",
+    attackHz: 16_000,
+    peakHz: 16_000,
+    sustainHz: 16_000,
+    q: 0.5,
+    decaySeconds: 0.1,
+  },
+},
+{
+  id: "ukulele",
+  label: "Re-entrant Ukulele",
+  designClaim:
+    "physically modeled re-entrant nylon ukulele: g4-c4-e4-a4 courses, finite finger contact, compact braced plate, and geometry-derived air resonance",
+  synthesis: "rendered",
+  outputLevel: 0.54,
+  polyphonyLimit: 32,
+  scheduledSourceCount: 1,
+  renderer: {
+    algorithmId: "changes.dsp.plucked-ukulele@1",
+    channels: 2,
+    maximumRenderSeconds: 3,
+    bufferCacheLimit: 64,
+  },
+  amplitude: {
+    attackSeconds: 0.002,
+    decaySeconds: 0,
+    sustainLevel: 1,
+    releaseSeconds: 0.24,
   },
   filter: {
     type: "lowpass",
@@ -696,11 +759,11 @@ export const X0_REVIEWED_RELEASE_SECONDS = {
 export const X0_REVIEWED_COUNTS = {
   companions: 10,
   routingCases: 14,
-  recipes: 13,
+  recipes: 15,
   impulseCheckpoints: 8,
   lifecycleCases: 46,
   registryCases: 32,
-  renderCases: 39,
+  renderCases: 45,
   listeningInstrumentRows: 13,
   listeningScenarioRows: 9,
   mutationControls: 31,
@@ -713,21 +776,21 @@ const REVIEWED_CANONICAL_DIGESTS = {
   graphEdges: "86f0e0d8307ab85e40d9ed1f1f1d7547f34018bf117a754521d3814ca4c526b0",
   graphSettings: "ed4816e5e4ea9fbcb1a941cddb2479db072453f54a44272f35717a6ebf9c53a5",
   routingCases: "cb78dae03ce88d9bc853f8c8a6339f6de64f53ad8d38d566d7b311191834b2cc",
-  recipes: "129b9173878af046973e1658a16e43e7aa5ab92742eae49d959933f5b74db9a6",
-  normalization: "d537249f026a0c1ad1717e18eed49021747d3c5457559879e701a4c6acef0d08",
+  recipes: "7e9fdd52ea73683576d786096a2f59a57cc46cc7dcc22606af35eb132b190138",
+  normalization: "8e7ef43050fda93f9ab646b72a51f96da666385a812172df1a8c2cbded7534bc",
   pulse: "e5bad32f09dbfe03ef87124d811125144145168bc8f07a48ef78b530b1c1e839",
   impulseCheckpoints: "29ffb97240f4a5f80f24812ff592df1a15413bf2a21d1b8f314ef0e2ee15c1d8",
   lifecycleCases: "2c62e2859e3b9f38f146d7ffd8d6546580f6ee43153c9be68b39330684760c2e",
   registryCases: "97191f50abef6e929f508244f2c5e260d4c9a3616380cb87477a841f02d598f1",
   renderPolicy: "2f48761e269d258d5768c5a708b744c663897140871f9eeadef083ab594cd5db",
-  renderCases: "24ecad23b5aa1bf9427491f4cf6471effb8b0ac86c6e48efa2cfdf2d7087396f",
+  renderCases: "ce7d9bc8d9a9109f231c72a84652ca86a0e69c39f5b9de4ac97e2fa08221e3e3",
   listeningInstruments:
     "4c8f46bada773c2e85ff4a4cdbfec555dd0d821e13baaf3e9d0d8c65872551bc",
   listeningScenarios:
     "ac4e15093fb990ec23eadb7c9470002442cafc732dbf3b7ac8457e3787424e31",
   authorities: "b964ac82a872c50a40454571225f1a033b25c08f1b25f7a18ca61947b5d52040",
   controls: "dfd0d0df78484042f29d7825c376219d5adf81c2d69f53194e7838f44c8bd2aa",
-  traces: "0b0eda34f79f9fa9a22600690e0f55b1aa8beeedd2f2b4421dbd6f355ed3f5da",
+  traces: "3a4a16253b0df83f63a7560ac5b63c091970806c825280c8bb0fc1873a16e4b4",
 } as const;
 
 type ParsedFixture = Readonly<{
@@ -1411,7 +1474,7 @@ function validateRender(value: JsonObject | undefined, findings: X0ContractFindi
     "X0_RENDER_CASES",
     "render.cases",
     value.cases,
-    39,
+    X0_REVIEWED_COUNTS.renderCases,
     "X0-RENDER-",
   );
   const recipeCounts = new Map<string, number>();

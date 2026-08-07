@@ -257,19 +257,19 @@ function sourceCount(recipe: (typeof AUDIO_INSTRUMENT_RECIPES)[number]): number 
         bufferCacheLimit: 64,
       },
       flute: {
-        algorithmId: "changes.dsp.waveguide-flute@1",
+        algorithmId: "changes.dsp.waveguide-flute@2",
         channels: 2,
         maximumRenderSeconds: 5,
         bufferCacheLimit: 64,
       },
       guitar: {
-        algorithmId: "changes.dsp.waveguide-guitar-clean@1",
+        algorithmId: "changes.dsp.plucked-archtop@2",
         channels: 2,
         maximumRenderSeconds: 6,
         bufferCacheLimit: 64,
       },
       "blues-guitar": {
-        algorithmId: "changes.dsp.waveguide-guitar-drive@1",
+        algorithmId: "changes.dsp.plucked-electric@2",
         channels: 2,
         maximumRenderSeconds: 6,
         bufferCacheLimit: 64,
@@ -278,6 +278,18 @@ function sourceCount(recipe: (typeof AUDIO_INSTRUMENT_RECIPES)[number]): number 
         algorithmId: "changes.dsp.waveguide-clarinet@1",
         channels: 2,
         maximumRenderSeconds: 5,
+        bufferCacheLimit: 64,
+      },
+      "dreadnought-guitar": {
+        algorithmId: "changes.dsp.plucked-dreadnought@1",
+        channels: 2,
+        maximumRenderSeconds: 5,
+        bufferCacheLimit: 64,
+      },
+      ukulele: {
+        algorithmId: "changes.dsp.plucked-ukulele@1",
+        channels: 2,
+        maximumRenderSeconds: 3,
         bufferCacheLimit: 64,
       },
     };
