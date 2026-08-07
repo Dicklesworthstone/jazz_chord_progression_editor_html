@@ -329,6 +329,20 @@ export function createStudioAudio(
       currentTimeSeconds: clock,
       timer: browserTimerPort(),
       publishNotification: (notification) => {
+        /*
+         * A "failed" notification is published exactly once per transport
+         * fault (X1: any engine refusal or platform error mid-run latches the
+         * fault state, and recovery is the contracted
+         * `fault --initialize-transport (trusted gesture)--> ready` edge).
+         * Clearing the initialized flag here is what makes that edge
+         * reachable from the UI: callers gate initialization on
+         * `isInitialized()`, so a stale `true` after a fault made every
+         * later Play refuse `transport.fault_requires_initialize` until
+         * reload (2026-08-07 live incident, jcpe-engine-refusal-fault-
+         * cascade-vg8h). The transport's own fault latch is untouched — a
+         * bare play without re-initializing still refuses.
+         */
+        if (notification.status === "failed") initialized = false;
         for (const listener of listeners) listener(notification);
       },
     }),
