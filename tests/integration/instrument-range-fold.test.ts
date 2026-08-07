@@ -51,18 +51,75 @@ const INSTRUMENTS: readonly (keyof typeof AUDIO_PLAYABLE_MIDI_WINDOWS
   "concert-grand",
 ] as const;
 
+const PLUCKED_INSTRUMENTS = new Set<InstrumentId>([
+  "guitar",
+  "blues-guitar",
+  "dreadnought-guitar",
+  "ukulele",
+]);
+
+function pairs<Value>(values: readonly Value[]): readonly (readonly Value[])[] {
+  const result: Value[][] = [];
+  for (let index = 0; index < values.length; index += 2) {
+    result.push(values.slice(index, index + 2));
+  }
+  return Object.freeze(result.map((group) => Object.freeze(group)));
+}
+
 describe("attack intake folds every chart pitch into the instrument window", () => {
   for (const instrumentId of INSTRUMENTS) {
     test(`${instrumentId}: hostile chart voicing attacks without refusal, in-window`, async () => {
-      const { engine } = await readyEngine();
+      const { engine, fake } = await readyEngine();
       const window = AUDIO_PLAYABLE_MIDI_WINDOWS[instrumentId];
-      const request = attackRequest(
-        HOSTILE_PITCHES.map((pitch, index) =>
-          voice(`hostile-${String(index)}`, pitch, 100),
-        ),
-        { instrumentId, startTimeSeconds: 0.05, releaseTimeSeconds: 0.6 },
-      );
-      requireSuccess(engine.attackAudioVoices(request));
+      const physicalGroups = PLUCKED_INSTRUMENTS.has(instrumentId)
+        ? pairs(HOSTILE_PITCHES)
+        : [HOSTILE_PITCHES];
+      if (PLUCKED_INSTRUMENTS.has(instrumentId)) {
+        for (const group of physicalGroups) {
+          requireSuccess(await engine.prepareRenderedAudioVoices({
+            instrumentId,
+            notes: group.map((pitch) => ({
+              midiPitch: midi(pitch),
+              velocity: 100,
+              gateSeconds: 0.55,
+            })),
+          }));
+        }
+      }
+      const buffersAfterPrepare = fake.events.filter(
+        ({ kind }) => kind === "buffer-create",
+      ).length;
+      const startsAfterPrepare = fake.events.filter(
+        ({ kind }) => kind === "source-start",
+      ).length;
+      let voiceOrdinal = 0;
+      for (let groupIndex = 0; groupIndex < physicalGroups.length; groupIndex += 1) {
+        const group = physicalGroups[groupIndex];
+        if (group === undefined) continue;
+        const request = attackRequest(
+          group.map((pitch) => {
+            const spec = voice(`hostile-${String(voiceOrdinal)}`, pitch, 100);
+            voiceOrdinal += 1;
+            return spec;
+          }),
+          {
+            eventId: `range-fold-${instrumentId}-${String(groupIndex)}`,
+            instrumentId,
+            startTimeSeconds: 0.05,
+            releaseTimeSeconds: 0.6,
+          },
+        );
+        requireSuccess(engine.attackAudioVoices(request));
+      }
+      if (PLUCKED_INSTRUMENTS.has(instrumentId)) {
+        expect(fake.events.filter(
+          ({ kind }) => kind === "buffer-create",
+        )).toHaveLength(buffersAfterPrepare);
+        expect(
+          fake.events.filter(({ kind }) => kind === "source-start").length -
+            startsAfterPrepare,
+        ).toBe(physicalGroups.length);
+      }
       const snapshot = engine.inspectAudioEngine();
       const active = snapshot.activeVoices.filter(
         (voiceSnapshot) => voiceSnapshot.instrumentId === instrumentId,
