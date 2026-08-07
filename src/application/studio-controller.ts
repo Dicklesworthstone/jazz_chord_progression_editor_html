@@ -101,6 +101,7 @@ import {
 import {
   PERFORMANCE_STYLE_IDS,
   PLAYBACK_PLAN_FIXED_VELOCITY,
+  PLAYBACK_PLAN_MIDI_PPQ,
   type PerformanceStyleId,
 } from "../playback";
 import {
@@ -4472,6 +4473,15 @@ function makeStudioComposition(
     totalBeats: BeatPosition;
   }> | null = null;
 
+  /*
+   * The tail of the last play's note set, warmed only once its run reports
+   * `ready`. Warming behind a RUNNING transport starves the scheduler, so
+   * the run itself defers this work; leaving it unwired instead (as the
+   * original `void warmRemaining;` did) meant the tail never warmed at all
+   * and every replay cold-rendered inside the lookahead deadline.
+   */
+  let pendingDeferredWarmup: (() => void) | null = null;
+
   const wholeChartLoop = (
     plan: Readonly<{ totalBeats: BeatPosition }>,
   ): BeatRange | null => {
@@ -4909,11 +4919,30 @@ function makeStudioComposition(
       Readonly<{
         midiPitch: MidiPitch;
         velocity: number;
+        gateSeconds: number;
         eventId: string;
         voiceOrdinal: number;
       }>
     >();
+    /*
+     * Each note warms the seconds bucket its own scheduled gate will
+     * request at attack time. Sustained chords otherwise warm the fixed
+     * preparation bucket and then re-render a longer bucket inside the
+     * scheduler's lookahead deadline (measured: 454 ms of attack-time piano
+     * renders on an already-warmed chart of 1.8 s gates).
+     */
     for (const event of performance.events) {
+      /*
+       * Same association order as the transport's tick-to-seconds lowering
+       * (`((ticks / PPQ) * 60) / bpm`, src/audio/transport.ts): a different
+       * grouping differs in the last ULP, and a gate whose render window
+       * lands exactly on a bucket boundary would then warm one bucket while
+       * the attack requests the other — the mismatch this field exists to
+       * prevent.
+       */
+      const gateSeconds =
+        ((event.gateDurationTicks / PLAYBACK_PLAN_MIDI_PPQ) * 60) /
+        performance.tempoBpm;
       for (const [voiceOrdinal, midiPitch] of event.midiPitches.entries()) {
         const key = `${event.eventId}:${String(voiceOrdinal)}`;
         if (!distinctNotes.has(key)) {
@@ -4922,6 +4951,7 @@ function makeStudioComposition(
             Object.freeze({
               midiPitch,
               velocity: event.velocity,
+              gateSeconds,
               eventId: event.eventId,
               voiceOrdinal,
             }),
@@ -4952,9 +4982,11 @@ function makeStudioComposition(
      */
     const warmRemaining = (): void => {
       if (deferredNotes.length === 0) return;
-      void port.prepareInstrument(instrumentId, deferredNotes);
+      /* The binding rides along so physical instruments warm the gesture-
+       * keyed buffers their attacks actually request, not gestureless ones. */
+      void port.prepareInstrument(instrumentId, deferredNotes, binding);
     };
-    void warmRemaining;
+    pendingDeferredWarmup = deferredNotes.length === 0 ? null : warmRemaining;
     void (async () => {
       if (!port.isInitialized()) {
         const initializeOutcome = await port.initialize(
@@ -5527,6 +5559,16 @@ function makeStudioComposition(
           }),
         }),
       );
+      /*
+       * The run is over and the main thread is free: warm the deferred tail
+       * now so a replay attacks a fully warm cache. Never during `playing`
+       * (render bursts starve the scheduler), and at most once per play.
+       */
+      if (notification.status === "ready" && pendingDeferredWarmup !== null) {
+        const warm = pendingDeferredWarmup;
+        pendingDeferredWarmup = null;
+        warm();
+      }
     });
   }
 

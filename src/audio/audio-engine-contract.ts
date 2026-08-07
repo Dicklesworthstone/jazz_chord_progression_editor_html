@@ -574,6 +574,14 @@ export type PrepareRenderedVoicesRequest = Readonly<{
   notes: readonly Readonly<{
     midiPitch: MidiPitch;
     velocity: number;
+    /**
+     * The note's scheduled gate length in seconds. Preparation renders the
+     * same seconds bucket the attack path will later request
+     * (gate + recipe release + tail), so a warmed sustained chord is a cache
+     * hit at attack time instead of a longer second render inside the
+     * lookahead deadline. Omitted: the historical fixed preparation bucket.
+     */
+    gateSeconds?: number;
     physicalGesture?: import("./physical-renderer-contract").ExpressiveVoiceGesture;
     /** Exact immutable phrase-event render length; clarinet-v2 only. */
     physicalFrameCount?: number;

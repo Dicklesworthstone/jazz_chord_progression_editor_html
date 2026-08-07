@@ -161,6 +161,8 @@ export type StudioAudioPort = Readonly<{
     notes: readonly Readonly<{
       midiPitch: MidiPitch;
       velocity: number;
+      /** Scheduled gate seconds; warms the exact attack-time bucket. */
+      gateSeconds?: number;
       eventId?: string;
       voiceOrdinal?: number;
     }>[],
@@ -501,6 +503,7 @@ export function createStudioAudio(
           return Object.freeze({
             midiPitch: note.midiPitch,
             velocity: note.velocity,
+            ...(note.gateSeconds === undefined ? {} : { gateSeconds: note.gateSeconds }),
             ...(physicalGesture === undefined ? {} : { physicalGesture }),
           });
         });

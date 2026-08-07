@@ -927,6 +927,20 @@ function createAudioEngineInternal(
   }
 
   /*
+   * The one authority for how many seconds of audio a gated note renders:
+   * the gate plus the recipe release and a short tail. The attack path and
+   * gate-aware preparation must compute this identically — any drift between
+   * two copies recreates the warmed-wrong-bucket re-render this formula was
+   * introduced to fix.
+   */
+  function gatedRenderWindowSeconds(
+    gateSeconds: number,
+    recipe: Readonly<{ amplitude: Readonly<{ releaseSeconds: number }> }>,
+  ): number {
+    return gateSeconds + recipe.amplitude.releaseSeconds + 0.25;
+  }
+
+  /*
    * The one authority for which seeded-variation slot a v1 render consumes.
    * The cache key and the render call must always agree on this value: a
    * slot consumed but not keyed (or keyed but not consumed) yields
@@ -2408,10 +2422,11 @@ function createAudioEngineInternal(
             context,
             voiceSpec.midiPitch,
             voiceSpec.velocity,
-            validated.value.releaseTimeSeconds -
-              validated.value.startTimeSeconds +
-              recipe.amplitude.releaseSeconds +
-              0.25,
+            gatedRenderWindowSeconds(
+              validated.value.releaseTimeSeconds -
+                validated.value.startTimeSeconds,
+              recipe,
+            ),
             voiceSpec.physicalGesture,
           );
           if (buffer === null) {
@@ -2954,11 +2969,37 @@ function createAudioEngineInternal(
         });
         continue;
       }
+      const gateSecondsValue = noteValue["gateSeconds"];
+      if (
+        gateSecondsValue !== undefined &&
+        (typeof gateSecondsValue !== "number" ||
+          !Number.isFinite(gateSecondsValue) ||
+          gateSecondsValue <= 0 ||
+          gateSecondsValue > MAX_AUDIO_GATE_SECONDS)
+      ) {
+        return refuse({
+          code: "audio.start_time_invalid",
+          path: ["notes", index, "gateSeconds"],
+        });
+      }
+      /*
+       * Render the seconds bucket the attack path will request for this
+       * gate. Without this a sustained chord warms the historical fixed
+       * bucket, then the attack computes a longer window, lands in the next
+       * bucket, and re-renders the whole note inside the lookahead deadline
+       * (measured: 454 ms of attack-time piano renders after a 324 ms
+       * warmup). The gate ceiling mirrors the attack path's
+       * MAX_AUDIO_GATE_SECONDS exactly: a stricter preparation ceiling would
+       * refuse warmup for charts the attack path is contracted to play.
+       */
+      const prepareSeconds = gateSecondsValue === undefined
+        ? PREPARE_RENDER_SECONDS
+        : gatedRenderWindowSeconds(gateSecondsValue, recipe);
       const key = renderedBufferKey(
         recipe.id,
         midiPitch.value,
         velocity,
-        bucketRenderSeconds(PREPARE_RENDER_SECONDS),
+        bucketRenderSeconds(prepareSeconds),
         physicalGesture,
       );
       if (touchRenderedBufferEntry(recipeBufferCache(recipe.id), key) !== undefined) {
@@ -2970,7 +3011,7 @@ function createAudioEngineInternal(
         context,
         midiPitch.value,
         velocity,
-        PREPARE_RENDER_SECONDS,
+        prepareSeconds,
         physicalGesture,
       );
       if (buffer === null) {
