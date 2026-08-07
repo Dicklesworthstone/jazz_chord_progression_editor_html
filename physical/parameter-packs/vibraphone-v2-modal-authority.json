@@ -1,5 +1,5 @@
 {
-  "schema": "changes.physical-authority.vibraphone-v2-modal-design.v1",
+  "schema": "changes.physical-authority.vibraphone-v2-modal-design.v2",
   "status": "reviewed-offline-design-authority",
   "sources": [
     {
@@ -26,6 +26,21 @@
       "reviewedDownloadSha256": "696b9d9b850ba554b8d774f39e2d480c2718e28904da1705c05ccd16f32e8f50",
       "availability": "external-url-metadata-with-reviewed-download-sha",
       "role": "corroborating 37-bar manufacturing envelope only; not a per-key measurement authority"
+    },
+    {
+      "id": "nist-6061-t6-thermophysical-fits",
+      "title": "Aluminum 6061-T6 (UNS AA96061)",
+      "url": "https://www.nist.gov/mml/acmd/aluminum-6061-t6-uns-aa96061",
+      "availability": "external-url-metadata-reviewed-2026-08-07",
+      "role": "published 4 K to 300 K curve-fit coefficients for thermal conductivity, specific heat, Young modulus, and linear expansion; evaluated at the authority-owned temperature for thermoelastic damping only"
+    },
+    {
+      "id": "lifshitz-roukes-exact-thermoelastic-beam-loss",
+      "title": "Thermoelastic damping in micro- and nanomechanical systems",
+      "doi": "10.1103/PhysRevB.61.5600",
+      "url": "https://authors.library.caltech.edu/records/h4cqh-5sf09",
+      "availability": "external-url-metadata-reviewed-2026-08-07",
+      "role": "primary exact thin-beam thermoelastic loss law; Eq. 29 replaces the single-relaxation Zener approximation as the generated loss component"
     }
   ],
   "material": {
@@ -33,6 +48,12 @@
     "densityKgPerM3": 2700,
     "youngModulusPa": 68900000000,
     "poissonRatio": 0.33
+  },
+  "acoustics": {
+    "referenceTemperatureK": 293.15,
+    "soundSpeedMPerS": 343.21,
+    "airDensityKgPerM3": 1.2041,
+    "convention": "Exact offline resonator and compact-radiation design constants for dry air at 20 C; not a weather-dependent runtime atmosphere model."
   },
   "manufacturing": {
     "measuredYamahaC4M": {
@@ -51,30 +72,106 @@
       "claim": "C4 is measured; other keys are deterministic physical designs inside the corroborating envelope, not measured per-key replicas",
       "outerThicknessM": 0.013,
       "widthFromC4FrequencyExponent": -0.24,
-      "nominalLengthFromC4FrequencyExponent": -0.36
+      "nominalLengthFromC4FrequencyExponent": -0.36,
+      "measuredC4MonotonicLengthPolicy": {
+        "lowerMidiMinimumLengthM": 0.333,
+        "higherMidiMaximumLengthM": 0.333,
+        "law": "The measured C4 length is a hard monotonic anchor: lower-pitched designs cannot be shorter and higher-pitched designs cannot be longer."
+      }
     }
   },
   "verticalFlexuralTargets": {
     "ratios": [1, 4, 10],
     "generationToleranceCents": 2,
     "hierarchy": {
-      "mandatoryTunedModeCount": 1,
-      "admissionOrder": [3, 2, 1],
-      "law": "Request the first three vertical-flexural targets only when the constrained geometry solve admits them; otherwise request the first two, then the fundamental alone.",
+      "mandatoryTunedModeCount": 2,
+      "requiredThreeModeMidi": [53, 60],
+      "admissionOrder": [3, 2],
+      "law": "Every key must admit f1 and f2/f1 approximately 4. MIDI 53 and the measured Yamaha C4 at MIDI 60 must additionally admit f3/f1 approximately 10; other keys retain f3 as a causal prediction only when that third target is infeasible.",
       "untunedStatus": "causal-prediction-not-reviewed-target"
     },
     "mode4AndHigher": "causal-solver-predictions-not-reviewed-targets"
   },
-  "dampingAnchors": [
-    { "midi": 53, "t60Seconds": [7.5, 4.2, 2.3, 1.4] },
-    { "midi": 60, "t60Seconds": [6.8, 3.8, 2.1, 1.2] },
-    { "midi": 72, "t60Seconds": [5.4, 3, 1.7, 1] },
-    { "midi": 89, "t60Seconds": [3.6, 2.1, 1.2, 0.7] }
-  ],
+  "lossModel": {
+    "schema": "changes.physical-authority.vibraphone-v2-composite-loss.v1",
+    "evaluationTemperatureK": 293,
+    "thermoelasticBeam": {
+      "sourceId": "nist-6061-t6-thermophysical-fits",
+      "exactLawSourceId": "lifshitz-roukes-exact-thermoelastic-beam-loss",
+      "exactLaw": {
+        "delta": "E*alphaT^2*T/(rho*cp)",
+        "xi": "h*sqrt(omega*rho*cp/(2*thermalConductivity))",
+        "eta": "delta*(6/xi^2-6*(sinh(xi)+sin(xi))/(xi^3*(cosh(xi)+cos(xi))))",
+        "zeta": "eta/2"
+      },
+      "zenerDiagnostic": {
+        "transferLawSource": "frankensim/fs-material ThermoelasticZener at commit 6f76589023ebd77941db678cc8c86de63b691ae5",
+        "tau": "h^2*rho*cp/(pi^2*thermalConductivity)",
+        "eta": "delta*omega*tau/(1+(omega*tau)^2)",
+        "status": "near-miss-diagnostic-not-generated-loss-authority"
+      },
+      "nist6061T6CurveFits": {
+        "log10Polynomial": {
+          "equation": "property=10^(sum_i coefficient[i]*(log10(T))^i)",
+          "thermalConductivityWPerMK": [0.07918, 1.0957, -0.07277, 0.08084, 0.02803, -0.09464, 0.04179, -0.00571, 0],
+          "specificHeatJPerKgK": [46.6467, -314.292, 866.662, -1298.3, 1162.27, -637.795, 210.351, -38.3094, 2.96344]
+        },
+        "temperaturePolynomial": {
+          "equation": "property=sum_i coefficient[i]*T^i",
+          "youngModulusGPa": [77.71221, 0.01030646, -0.00029241, 8.9936e-7, -1.0709e-9],
+          "linearExpansionTimes1e5": [-412.77, -0.30389, 0.0087696, -0.0000099821, 0]
+        },
+        "linearExpansionDerivativeScale": 0.00001,
+        "validTemperatureRangeK": [4, 295],
+        "reviewedExpectedAtEvaluationTemperature": {
+          "thermalConductivityWPerMK": 154.3452056507204,
+          "specificHeatJPerKgK": 942.9112359906792,
+          "youngModulusGPa": 70.35859218272911,
+          "linearThermalExpansionPerK": 0.000022642356913
+        }
+      },
+      "uniformBeamKnownAnswer": {
+        "thicknessM": 0.013,
+        "frequencyHz": 608.754,
+        "expectedExactEta": 0.00000460825,
+        "expectedExactT60Seconds": 783.81,
+        "expectedZenerEta": 0.00000384276,
+        "expectedZenerT60Seconds": 939.94,
+        "minimumExactOverZenerRatio": 1.15
+      },
+      "steppedBeamComposition": "For every mode n, eta_TED[n]=sum_e strainEnergyFraction[n,e]*eta_exact(omega_n,h_e); fractions are nonnegative and sum to one.",
+      "structuralYoungModulusPolicy": "The beam solve retains the Beaton-Scavone 68.9 GPa design datum. The independently evaluated NIST modulus is used inside Delta only; the two authorities are not silently conflated."
+    },
+    "support": {
+      "kind": "two-point-viscous-support-coupling",
+      "normalizedPositions": [0.224, 0.776],
+      "dashpotNsPerMPerSupport": 3,
+      "fieldInterpolation": "cubic-Hermite element field from M-normalized displacement and rotation DOFs",
+      "law": "c_mode=c_support*sum(phi(x_support)^2); eta_support=c_mode/omega for M-normalized modes",
+      "status": "explicit-reviewed-design-parameter-not-a-measured-vibraphone-identification"
+    },
+    "radiation": {
+      "kind": "finite-separation-normal-dipole-radiation",
+      "modeIntegralQuadrature": "four-point Gauss-Legendre per stepped beam element over the cubic-Hermite M-normalized displacement field",
+      "dipoleSeparationH": "outerThicknessM, the top-to-bottom separation of the uncut bar envelope",
+      "law": "R_ac=rho_air*omega^2/(4*pi*c); c_mode=R_ac*4*sin(k*h/2)^2*(width*integral(phi dx))^2; eta_radiation=c_mode/omega. The finite-separation factor is bounded and tends to (k*h)^2 at low k*h.",
+      "status": "causal-finite-separation-approximation-not-a-baffled-3d-boundary-element-solve"
+    },
+    "damper": {
+      "kind": "runtime-contact-viscous-coupling",
+      "dashpotNsPerM": 80,
+      "excludedFromFreeDecayPack": true,
+      "law": "When engaged at runtime, c_mode=c_damper*phi(x_contact)^2 and is added to the free-decay modal damping; it is never baked into generated free T60 values."
+    },
+    "freeDecayComposition": "eta_total=eta_Lifshitz-Roukes-exact+eta_support+eta_radiation; T60=ln(1000)/(0.5*eta_total*omega)"
+  },
   "noClaim": [
     "Only the Yamaha C4 geometry is a measured per-key design anchor.",
     "The one-dimensional solver does not identify lateral or torsional three-dimensional modes.",
     "The fourth and higher flexural frequencies are predictions, not reviewed tuning targets.",
-    "Geometry causality and eigen residuals do not establish corpus similarity or listening acceptance."
+    "Geometry causality and eigen residuals do not establish corpus similarity or listening acceptance.",
+    "The composite free-decay model is not a measured per-key T60 identification; its support coefficient and compact radiation approximation require independent acoustic validation.",
+    "The runtime damper coefficient is a declared contact-model design parameter and is excluded from the generated free-decay T60 values.",
+    "The exact Lifshitz-Roukes thermoelastic component is still orders too weak to identify seconds-scale vibraphone decay by itself; no total-T60 claim is inferred from it."
   ]
 }

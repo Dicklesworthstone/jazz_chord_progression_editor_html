@@ -85,7 +85,16 @@ interface GateBrowser {
   close(): Promise<void>;
 }
 interface GateChromium {
-  launch(options: { args: string[] }): Promise<GateBrowser>;
+  launch(options: {
+    args?: string[];
+    firefoxUserPrefs?: Record<string, number | boolean>;
+  }): Promise<GateBrowser>;
+}
+
+type GateBrowserName = "chromium" | "firefox" | "webkit";
+
+function isGateBrowserName(value: string): value is GateBrowserName {
+  return value === "chromium" || value === "firefox" || value === "webkit";
 }
 
 const PLAY_LISTEN_MS = 4_500;
@@ -445,8 +454,18 @@ async function main(): Promise<number> {
   const enforceRecovery = args.includes("--enforce-recovery");
   const jsonIndex = args.indexOf("--json");
   const jsonPath = jsonIndex >= 0 ? args[jsonIndex + 1] : undefined;
+  const browserIndex = args.indexOf("--browser");
+  const browserRaw = browserIndex >= 0 ? (args[browserIndex + 1] ?? "") : "chromium";
+  if (!isGateBrowserName(browserRaw)) {
+    process.stderr.write(`unknown --browser "${browserRaw}" (chromium|firefox|webkit)\n`);
+    process.exit(2);
+  }
+  const browserName: GateBrowserName = browserRaw;
   const positional = args.filter(
-    (value, index) => !value.startsWith("--") && (jsonIndex < 0 || index !== jsonIndex + 1),
+    (value, index) =>
+      !value.startsWith("--") &&
+      (jsonIndex < 0 || index !== jsonIndex + 1) &&
+      (browserIndex < 0 || index !== browserIndex + 1),
   );
   const artifactPath = resolve(positional[0] ?? "dist/index.html");
   const artifactBytes = readFileSync(artifactPath);
@@ -467,10 +486,19 @@ async function main(): Promise<number> {
   // interface above is the typed surface.
   const { createRequire } = await import("node:module");
   const nodeRequire = createRequire(import.meta.url);
-  const { chromium } = nodeRequire("playwright") as { chromium: GateChromium };
-  const browser = await chromium.launch({
-    args: ["--autoplay-policy=no-user-gesture-required"],
-  });
+  const playwright = nodeRequire("playwright") as Record<GateBrowserName, GateChromium>;
+  // Engine-specific autoplay handling: Chromium takes a flag, Firefox takes
+  // prefs, WebKit relies on the gate's real Play click (a trusted gesture).
+  const browser = await (browserName === "chromium"
+    ? playwright.chromium.launch({ args: ["--autoplay-policy=no-user-gesture-required"] })
+    : browserName === "firefox"
+      ? playwright.firefox.launch({
+          firefoxUserPrefs: {
+            "media.autoplay.default": 0,
+            "media.autoplay.blocking_policy": 0,
+          },
+        })
+      : playwright.webkit.launch({}));
 
   const probe = await openArtifactPage(browser, url);
   const options = (await probe.page.evaluate(
@@ -507,13 +535,14 @@ async function main(): Promise<number> {
   const gatePass = failing.length === 0 && recovery.outcome !== "fail";
   const report = {
     artifactPath,
+    browser: browserName,
     instrumentCount: options.length,
     gatePass,
     failingInstruments: failing.map((result) => result.id),
     recovery,
     results,
     noClaim:
-      "Green proves error-free audible pitch-locked starter-chart playback in Chromium only; it proves nothing about sound quality or register coverage.",
+      `Green proves error-free audible pitch-locked starter-chart playback in ${browserName} only; it proves nothing about sound quality or register coverage.`,
   };
   const serialized = JSON.stringify(report, null, 2);
   if (jsonPath !== undefined) writeFileSync(jsonPath, serialized);
