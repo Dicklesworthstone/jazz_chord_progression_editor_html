@@ -18,7 +18,7 @@
 //!   transition cannot create stored energy;
 //! - a positive-real high-pass radiation impedance at the bell;
 //! - a conservative TVD/Godunov weak-nonlinearity flux in the bore, advanced
-//!   at exactly four times the output sample rate; and
+//!   at exactly eight times the output sample rate; and
 //! - a twelfth-order Butterworth anti-alias filter before decimation.
 //!
 //! This is production DSP, not acceptance evidence.  Its local tests establish
@@ -27,7 +27,7 @@
 //! similarity, browser integration, recipe reachability, owner listening, or
 //! deployment readiness.
 
-use libm::{cos, exp, fabs, sqrt, tan};
+use libm::{cos, exp, fabs, sin, sqrt, tan};
 
 const PI: f64 = core::f64::consts::PI;
 
@@ -48,7 +48,7 @@ const SOUND_SPEED_M_S: f64 = 343.0;
 const OPEN_LENGTH_M: f64 = 1.47;
 const MOUTHPIECE_BACKBORE_ENTRY_RADIUS_M: f64 = 0.0025;
 const LIP_CONTACT_SCALE_M: f64 = 2.5e-4;
-const LIP_DAMPING_VELOCITY_SCALE_M_S: f64 = 2.0;
+const LIP_DAMPING_VELOCITY_SCALE_M_S: f64 = 0.25;
 const DIGITAL_FULL_SCALE_PRESSURE_PA: f64 = 200.0;
 
 /// The eight reviewed trumpet-bore station endpoints: axial position (m) and
@@ -188,7 +188,7 @@ impl TrumpetParameters {
             throat_resistance_pa_s_m3: 3.0e5,
             // Effective quadratic loss after pressure recovery through the
             // distributed backbore; it remains strictly dissipative.
-            throat_nonlinear_resistance_pa_s2_m6: 5.0e8,
+            throat_nonlinear_resistance_pa_s2_m6: 8.0e8,
             bore_loss_per_second: 2.4,
             // beta=(gamma+1)/2 for air with gamma=1.403.
             nonlinear_coefficient: 1.2015,
@@ -406,8 +406,8 @@ impl Biquad {
 }
 
 /// The actual anti-alias boundary used by the physical core.  It accepts one
-/// sample at the four-times rate and emits exactly one filtered output for
-/// every four inputs.  Construction with a bypass factor fails.
+/// sample at the eight-times rate and emits exactly one filtered output for
+/// every eight inputs.  Construction with a bypass factor fails.
 pub struct OversampledOutput {
     sections: [Biquad; ANTI_ALIAS_SECTIONS],
     phase: usize,
@@ -615,7 +615,7 @@ impl TrumpetModel {
         energy
     }
 
-    /// One output-rate sample.  Four physical substeps and four anti-alias
+    /// One output-rate sample.  Eight physical substeps and eight anti-alias
     /// inputs are mandatory; no fast/bypass branch exists.
     pub fn process_sample(&mut self, controls: TrumpetControls) -> Result<f64, TrumpetError> {
         let controls = controls.validate()?;
@@ -676,7 +676,7 @@ impl TrumpetModel {
         // above, so it includes the real trumpet bell's frequency-dependent
         // radiation/directivity instead of assuming frequency-independent
         // hemispherical spreading. The derivative is inside the mandatory
-        // four-times-rate antialias boundary.
+        // eight-times-rate antialias boundary.
         let far_field_pressure_pa = AIR_DENSITY_KG_M3 * bell_flow_derivative_m3_s2 / (2.0 * PI);
         Ok(far_field_pressure_pa / DIGITAL_FULL_SCALE_PRESSURE_PA)
     }
@@ -1076,10 +1076,9 @@ impl TrumpetModel {
         let mut position_m = 0.0;
         for cell in 0..BORE_CELLS {
             position_m += 0.5 * self.cell_length_m[cell];
-            self.pressure_pa[cell] += peak_pressure_pa * cos(PI * position_m / total_length_m);
+            self.pressure_pa[cell] += peak_pressure_pa * sin(PI * position_m / total_length_m);
             position_m += 0.5 * self.cell_length_m[cell];
         }
-        self.cup_pressure_pa += peak_pressure_pa;
         Ok(())
     }
 }

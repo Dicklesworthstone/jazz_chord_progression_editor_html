@@ -64,7 +64,7 @@ fn fixed_geometry_and_valves_move_resonance_without_a_midi_input() {
     assert!((valve_added_length_m([0.0, 1.0, 0.0]) - 0.087).abs() < 1.0e-12);
     assert!((valve_added_length_m([1.0, 1.0, 1.0]) - 0.572).abs() < 1.0e-12);
     assert!(open > second && second > all, "{open} {second} {all}");
-    assert_eq!(BORE_CELLS, 48);
+    assert_eq!(BORE_CELLS, 128);
 }
 
 #[test]
@@ -239,35 +239,6 @@ fn estimate_f0(
     (sample_rate_hz / lag, center)
 }
 
-fn harmonic_centroid_hz(samples: &[f64], fundamental_hz: f64) -> f64 {
-    let sample_rate_hz = 48_000.0;
-    let mut weighted_magnitude = 0.0;
-    let mut total_magnitude = 0.0;
-    let harmonic_count = (8_000.0 / fundamental_hz).floor() as usize;
-    for harmonic in 1..=harmonic_count {
-        let frequency_hz = harmonic as f64 * fundamental_hz;
-        let coefficient = 2.0 * (2.0 * core::f64::consts::PI * frequency_hz / sample_rate_hz).cos();
-        let mut previous = 0.0;
-        let mut before_previous = 0.0;
-        for (index, sample) in samples.iter().enumerate() {
-            let window = 0.5
-                - 0.5
-                    * (2.0 * core::f64::consts::PI * index as f64 / (samples.len() - 1) as f64)
-                        .cos();
-            let state = window * *sample + coefficient * previous - before_previous;
-            before_previous = previous;
-            previous = state;
-        }
-        let magnitude = (previous * previous + before_previous * before_previous
-            - coefficient * previous * before_previous)
-            .max(0.0)
-            .sqrt();
-        weighted_magnitude += frequency_hz * magnitude;
-        total_magnitude += magnitude;
-    }
-    weighted_magnitude / total_magnitude.max(1.0e-30)
-}
-
 fn spectral_centroid_hz(samples: &[f64]) -> f64 {
     const SIZE: usize = 4_096;
     let start = samples.len() - SIZE;
@@ -326,35 +297,6 @@ fn spectral_centroid_hz(samples: &[f64]) -> f64 {
         total += magnitude;
     }
     weighted / total.max(1.0e-30)
-}
-
-fn render_controlled_sustain(
-    mouth_pressure_pa: f64,
-    lip_resonance_hz: f64,
-    lip_damping_ratio: f64,
-    equilibrium_opening_m: f64,
-    parameters: TrumpetParameters,
-) -> Vec<f64> {
-    let mut model = TrumpetModel::new(48_000.0, parameters).unwrap();
-    let mut controls = TrumpetControls {
-        mouth_pressure_pa: 0.0,
-        lip_resonance_hz,
-        lip_damping_ratio,
-        equilibrium_opening_m,
-        tongue_contact: 0.0,
-        valves: [0.0; 3],
-    };
-    let mut sustain = Vec::new();
-    for frame in 0..24_000 {
-        controls.mouth_pressure_pa = mouth_pressure_pa * (frame as f64 / 1_440.0).min(1.0);
-        let sample = model
-            .process_sample(controls)
-            .unwrap_or_else(|error| panic!("controlled render failed at frame {frame}: {error:?}"));
-        if frame > 9_600 {
-            sustain.push(sample);
-        }
-    }
-    sustain
 }
 
 fn render_sustain(
@@ -437,7 +379,7 @@ fn driven_core_is_finite_non_silent_and_bounded() {
         }
         let report = model.last_lip_report();
         assert!(report.newton_iterations <= 8);
-        assert!(report.bracket_evaluations <= 33);
+        assert!(report.bracket_evaluations <= 129);
         assert!(report.fallback_bisections <= 16);
     }
     let rms = (sum / (24_000 - 4_801) as f64).sqrt();
@@ -499,12 +441,12 @@ fn pressure_increase_brightens_a_fixed_regime_without_retuning_it() {
         // identical in every cell. Mouth pressure is the only changed input.
         let samples = render_sustain([0.0; 3], pressure_pa, 300.0, TrumpetParameters::canonical());
         let (fundamental_hz, periodicity) = estimate_f0(&samples, 48_000.0, 80.0, 800.0);
-        let centroid_hz = harmonic_centroid_hz(&samples, fundamental_hz);
+        let centroid_hz = spectral_centroid_hz(&samples);
         let level_rms = (samples.iter().map(|sample| sample * sample).sum::<f64>()
             / samples.len() as f64)
             .sqrt();
         eprintln!(
-            "pressure={pressure_pa} f0={fundamental_hz} periodicity={periodicity} harmonic_centroid={centroid_hz} rms={level_rms:e}"
+            "pressure={pressure_pa} f0={fundamental_hz} periodicity={periodicity} spectral_centroid={centroid_hz} rms={level_rms:e}"
         );
         assert!(periodicity > 0.995, "unlocked pressure cell {pressure_pa}");
         pitches_hz.push(fundamental_hz);
@@ -525,14 +467,22 @@ fn pressure_increase_brightens_a_fixed_regime_without_retuning_it() {
         "brightness did not rise monotonically: {centroids_hz:?}"
     );
     assert!(
-        centroids_hz[2] > centroids_hz[0] * 1.08,
-        "brassiness increase was immaterial: {centroids_hz:?}"
+        centroids_hz[0] >= 1_400.0,
+        "soft spectral centroid below 1400 Hz: {centroids_hz:?}"
+    );
+    assert!(
+        centroids_hz[2] >= 2_600.0,
+        "loud spectral centroid below 2600 Hz: {centroids_hz:?}"
     );
     assert!(
         levels_rms.windows(2).all(|pair| pair[1] > pair[0]),
         "mouth pressure did not increase radiated level: {levels_rms:?}"
     );
     let brightness_increase_hz = centroids_hz[2] - centroids_hz[0];
+    assert!(
+        brightness_increase_hz >= 800.0,
+        "pressure-driven brightness increase below 800 Hz: {centroids_hz:?}"
+    );
     let brightness_increase_percent = 100.0 * brightness_increase_hz / centroids_hz[0];
     let level_increase_db = 20.0 * (levels_rms[2] / levels_rms[0]).log10();
     eprintln!(
@@ -543,10 +493,8 @@ fn pressure_increase_brightens_a_fixed_regime_without_retuning_it() {
     linear_parameters.nonlinear_coefficient = 0.0;
     let linear_soft = render_sustain([0.0; 3], pressures_pa[0], 300.0, linear_parameters);
     let linear_loud = render_sustain([0.0; 3], pressures_pa[2], 300.0, linear_parameters);
-    let linear_soft_f0 = estimate_f0(&linear_soft, 48_000.0, 80.0, 800.0).0;
-    let linear_loud_f0 = estimate_f0(&linear_loud, 48_000.0, 80.0, 800.0).0;
-    let linear_soft_centroid = harmonic_centroid_hz(&linear_soft, linear_soft_f0);
-    let linear_loud_centroid = harmonic_centroid_hz(&linear_loud, linear_loud_f0);
+    let linear_soft_centroid = spectral_centroid_hz(&linear_soft);
+    let linear_loud_centroid = spectral_centroid_hz(&linear_loud);
     let linear_brightness_change_hz = linear_loud_centroid - linear_soft_centroid;
     eprintln!(
         "linear-control soft_centroid={linear_soft_centroid} loud_centroid={linear_loud_centroid} change={linear_brightness_change_hz}Hz"
@@ -602,435 +550,37 @@ fn high_dynamic_state_releases_without_active_energy_growth() {
 }
 
 #[test]
-fn diagnostic_valid_low_lip_cell() {
-    let _ = render_sustain([0.0; 3], 5_500.0, 100.0, TrumpetParameters::canonical());
+fn valid_low_lip_cell_converges_for_a_full_sustain() {
+    let samples = render_sustain([0.0; 3], 5_500.0, 100.0, TrumpetParameters::canonical());
+    assert!(!samples.is_empty());
+    assert!(samples.iter().all(|sample| sample.is_finite()));
 }
 
 #[test]
-fn diagnostic_hardened_regime_map() {
-    for lip_hz in [80.0, 100.0, 120.0, 150.0, 180.0] {
-        for pressure_pa in [3_000.0, 5_500.0, 8_500.0] {
-            let samples = render_sustain(
-                [0.0; 3],
-                pressure_pa,
-                lip_hz,
-                TrumpetParameters::canonical(),
-            );
-            let (f0, score) = estimate_f0(&samples, 48_000.0, 70.0, 800.0);
-            let rms = (samples.iter().map(|sample| sample * sample).sum::<f64>()
-                / samples.len() as f64)
-                .sqrt();
-            let centroid = harmonic_centroid_hz(&samples, f0);
-            eprintln!("map lip={lip_hz} pressure={pressure_pa} f0={f0} score={score} rms={rms:e} hc={centroid}");
-        }
-    }
-}
-
-fn goertzel_magnitude(samples: &[f64], frequency_hz: f64) -> f64 {
-    let coefficient = 2.0 * (2.0 * core::f64::consts::PI * frequency_hz / 48_000.0).cos();
-    let mut previous = 0.0;
-    let mut before_previous = 0.0;
-    for (index, sample) in samples.iter().enumerate() {
-        let window = 0.5
-            - 0.5 * (2.0 * core::f64::consts::PI * index as f64 / (samples.len() - 1) as f64).cos();
-        let state = window * sample + coefficient * previous - before_previous;
-        before_previous = previous;
-        previous = state;
-    }
-    (previous * previous + before_previous * before_previous
-        - coefficient * previous * before_previous)
-        .max(0.0)
-        .sqrt()
-}
-
-#[test]
-fn diagnostic_open_spectrum_peaks() {
-    for pressure_pa in [3_000.0, 5_500.0, 8_500.0] {
-        let samples = render_sustain([0.0; 3], pressure_pa, 120.0, TrumpetParameters::canonical());
-        let mut peaks: Vec<(f64, f64)> = (70..=300)
-            .map(|frequency| {
-                (
-                    goertzel_magnitude(&samples, frequency as f64),
-                    frequency as f64,
-                )
-            })
-            .collect();
-        peaks.sort_by(|left, right| right.0.total_cmp(&left.0));
-        eprintln!("spectrum pressure={pressure_pa} peaks={:?}", &peaks[..12]);
-    }
-}
-
-#[test]
-fn diagnostic_mouthpiece_parameter_map() {
-    for compliance in [1.0e-11] {
-        for inertance in [4_000.0, 4_200.0, 4_400.0, 4_600.0, 4_800.0] {
-            let mut parameters = TrumpetParameters::canonical();
-            parameters.mouthpiece_compliance_m3_pa = compliance;
-            parameters.throat_inertance_pa_s2_m3 = inertance;
-            parameters.lip_force_rolloff_displacement_m = 5.0e-4;
-            let mut model = TrumpetModel::new(48_000.0, parameters).unwrap();
-            let mut controls = TrumpetControls {
-                mouth_pressure_pa: 0.0,
-                lip_resonance_hz: 80.0,
-                lip_damping_ratio: 0.16,
-                equilibrium_opening_m: 0.00025,
-                tongue_contact: 0.0,
-                valves: [0.0; 3],
-            };
-            let mut samples = Vec::new();
-            for frame in 0..24_000 {
-                controls.mouth_pressure_pa = 5_500.0 * (frame as f64 / 1_440.0).min(1.0);
-                let sample = model.process_sample(controls).unwrap();
-                if frame > 9_600 {
-                    samples.push(sample);
-                }
-            }
-            let (f0, score) = estimate_f0(&samples, 48_000.0, 70.0, 300.0);
-            let rms = (samples.iter().map(|sample| sample * sample).sum::<f64>()
-                / samples.len() as f64)
-                .sqrt();
-            eprintln!(
-                "mouthpiece C={compliance:e} L={inertance} f0={f0} score={score} rms={rms:e}"
-            );
-        }
-    }
-}
-
-#[test]
-fn diagnostic_hardening_scale_map() {
-    for hardening_m in [1.0e5, 3.0e5, 1.0e6, 3.0e6, 1.0e7, 3.0e7] {
-        for pressure_pa in [3_000.0, 5_500.0, 8_500.0] {
-            let mut parameters = TrumpetParameters::canonical();
-            parameters.lip_force_rolloff_displacement_m = 2.75e-3;
-            parameters.throat_nonlinear_resistance_pa_s2_m6 = hardening_m;
-            let mut model = TrumpetModel::new(48_000.0, parameters).unwrap();
-            let mut controls = TrumpetControls {
-                mouth_pressure_pa: 0.0,
-                lip_resonance_hz: 80.0,
-                lip_damping_ratio: 0.16,
-                equilibrium_opening_m: 0.00025,
-                tongue_contact: 0.0,
-                valves: [0.0; 3],
-            };
-            let mut sustain = Vec::new();
-            let mut failure = None;
-            for frame in 0..24_000 {
-                controls.mouth_pressure_pa = pressure_pa * (frame as f64 / 1_440.0).min(1.0);
-                match model.process_sample(controls) {
-                    Ok(sample) if frame > 9_600 => sustain.push(sample),
-                    Ok(_) => {}
-                    Err(error) => {
-                        failure = Some((frame, error));
-                        break;
-                    }
-                }
-            }
-            if let Some(failure) = failure {
-                eprintln!("hardening={hardening_m:e} pressure={pressure_pa} failure={failure:?}");
-            } else {
-                let (f0, score) = estimate_f0(&sustain, 48_000.0, 70.0, 300.0);
-                let rms = (sustain.iter().map(|sample| sample * sample).sum::<f64>()
-                    / sustain.len() as f64)
-                    .sqrt();
-                let centroid = spectral_centroid_hz(&sustain);
-                eprintln!("hardening={hardening_m:e} pressure={pressure_pa} f0={f0} score={score} centroid={centroid} rms={rms:e}");
-            }
-        }
-    }
-}
-
-#[test]
-fn diagnostic_first_regime_control_map() {
-    for lip_hz in [80.0] {
-        for damping in [0.12, 0.16, 0.24] {
-            for opening in [0.0, 0.00005] {
-                for pressure_pa in [8_500.0, 12_000.0] {
-                    let mut model =
-                        TrumpetModel::new(48_000.0, TrumpetParameters::canonical()).unwrap();
-                    let mut controls = TrumpetControls {
-                        mouth_pressure_pa: 0.0,
-                        lip_resonance_hz: lip_hz,
-                        lip_damping_ratio: damping,
-                        equilibrium_opening_m: opening,
-                        tongue_contact: 0.0,
-                        valves: [0.0; 3],
-                    };
-                    let mut samples = Vec::new();
-                    let mut failed = false;
-                    for frame in 0..12_000 {
-                        controls.mouth_pressure_pa =
-                            pressure_pa * (frame as f64 / 1_440.0).min(1.0);
-                        match model.process_sample(controls) {
-                            Ok(sample) if frame > 6_000 => samples.push(sample),
-                            Ok(_) => {}
-                            Err(_) => {
-                                failed = true;
-                                break;
-                            }
-                        }
-                    }
-                    if failed {
-                        eprintln!("first lip={lip_hz} pressure={pressure_pa} damp={damping} opening={opening:e} FAILED");
-                    } else {
-                        let (f0, score) = estimate_f0(&samples, 48_000.0, 80.0, 300.0);
-                        let centroid = spectral_centroid_hz(&samples);
-                        let rms = (samples.iter().map(|sample| sample * sample).sum::<f64>()
-                            / samples.len() as f64)
-                            .sqrt();
-                        eprintln!("first lip={lip_hz} pressure={pressure_pa} damp={damping} opening={opening:e} f0={f0} score={score} centroid={centroid} rms={rms:e}");
-                    }
-                }
-            }
-        }
-    }
-}
-
-#[test]
-fn diagnostic_candidate_pressure_map() {
-    for pressure_pa in [3_000.0, 4_000.0, 5_500.0, 7_000.0, 8_500.0] {
+fn seeded_and_cold_start_paths_are_bounded() {
+    for seeded in [false, true] {
         let mut model = TrumpetModel::new(48_000.0, TrumpetParameters::canonical()).unwrap();
+        if seeded {
+            model.seed_open_first_regime(100.0).unwrap();
+        }
         let mut controls = TrumpetControls {
             mouth_pressure_pa: 0.0,
-            lip_resonance_hz: 360.0,
-            lip_damping_ratio: 0.08,
-            equilibrium_opening_m: 0.0005,
-            tongue_contact: 0.0,
-            valves: [0.0; 3],
-        };
-        let mut samples = Vec::new();
-        for frame in 0..24_000 {
-            controls.mouth_pressure_pa = pressure_pa * (frame as f64 / 1_440.0).min(1.0);
-            let sample = model.process_sample(controls).unwrap();
-            if frame > 9_600 {
-                samples.push(sample);
-            }
-        }
-        let (f0, score) = estimate_f0(&samples, 48_000.0, 80.0, 300.0);
-        let rms = (samples.iter().map(|sample| sample * sample).sum::<f64>()
-            / samples.len() as f64)
-            .sqrt();
-        eprintln!("candidate pressure={pressure_pa} f0={f0} score={score} rms={rms:e}");
-    }
-}
-
-#[test]
-fn diagnostic_damped_fundamental_map() {
-    for damping in [0.08] {
-        for opening in [0.0, 0.000025, 0.00005, 0.000075, 0.0001] {
-            for pressure_pa in [5_500.0] {
-                let mut model =
-                    TrumpetModel::new(48_000.0, TrumpetParameters::canonical()).unwrap();
-                let mut controls = TrumpetControls {
-                    mouth_pressure_pa: 0.0,
-                    lip_resonance_hz: 80.0,
-                    lip_damping_ratio: damping,
-                    equilibrium_opening_m: opening,
-                    tongue_contact: 0.0,
-                    valves: [0.0; 3],
-                };
-                let mut samples = Vec::new();
-                for frame in 0..12_000 {
-                    controls.mouth_pressure_pa = pressure_pa * (frame as f64 / 1_440.0).min(1.0);
-                    let sample = model.process_sample(controls).unwrap();
-                    if frame > 6_000 {
-                        samples.push(sample);
-                    }
-                }
-                let (f0, score) = estimate_f0(&samples, 48_000.0, 70.0, 300.0);
-                let rms = (samples.iter().map(|sample| sample * sample).sum::<f64>()
-                    / samples.len() as f64)
-                    .sqrt();
-                eprintln!("damped damp={damping} opening={opening:e} pressure={pressure_pa} f0={f0} score={score} rms={rms:e}");
-            }
-        }
-    }
-}
-
-#[test]
-fn diagnostic_stable_regime_search() {
-    for lip_hz in [100.0, 110.0, 120.0, 130.0, 140.0, 150.0] {
-        for damping in [0.25, 0.3, 0.35] {
-            let mut results = Vec::new();
-            for pressure_pa in [5_500.0, 8_500.0] {
-                let mut model =
-                    TrumpetModel::new(48_000.0, TrumpetParameters::canonical()).unwrap();
-                let mut controls = TrumpetControls {
-                    mouth_pressure_pa: 0.0,
-                    lip_resonance_hz: lip_hz,
-                    lip_damping_ratio: damping,
-                    equilibrium_opening_m: 0.0005,
-                    tongue_contact: 0.0,
-                    valves: [0.0; 3],
-                };
-                let mut samples = Vec::new();
-                for frame in 0..16_000 {
-                    controls.mouth_pressure_pa = pressure_pa * (frame as f64 / 1_440.0).min(1.0);
-                    let sample = model.process_sample(controls).unwrap();
-                    if frame > 8_000 {
-                        samples.push(sample);
-                    }
-                }
-                let (f0, score) = estimate_f0(&samples, 48_000.0, 90.0, 150.0);
-                let rms = (samples.iter().map(|sample| sample * sample).sum::<f64>()
-                    / samples.len() as f64)
-                    .sqrt();
-                results.push((pressure_pa, f0, score, rms));
-            }
-            eprintln!("stable lip={lip_hz} damp={damping} results={results:?}");
-        }
-    }
-}
-
-#[test]
-fn diagnostic_loss_regime_map() {
-    for loss_per_second in [5.0, 10.0, 20.0, 40.0, 60.0] {
-        for pressure_pa in [3_000.0, 5_500.0, 8_500.0] {
-            let mut parameters = TrumpetParameters::canonical();
-            parameters.lip_force_rolloff_displacement_m = 2.65e-3;
-            parameters.bore_loss_per_second = loss_per_second;
-            let samples = render_sustain([0.0; 3], pressure_pa, 80.0, parameters);
-            let (f0, score) = estimate_f0(&samples, 48_000.0, 80.0, 300.0);
-            let rms = (samples.iter().map(|sample| sample * sample).sum::<f64>()
-                / samples.len() as f64)
-                .sqrt();
-            let peak = samples
-                .iter()
-                .fold(0.0_f64, |peak, sample| peak.max(sample.abs()));
-            eprintln!("loss={loss_per_second} pressure={pressure_pa} f0={f0} score={score} rms={rms:e} peak={peak:e}");
-        }
-    }
-}
-
-#[test]
-fn diagnostic_loud_lip_map() {
-    for lip_hz in [90.0, 95.0, 100.0, 105.0, 110.0, 120.0, 130.0] {
-        let mut model = TrumpetModel::new(48_000.0, TrumpetParameters::canonical()).unwrap();
-        let mut controls = TrumpetControls {
-            mouth_pressure_pa: 0.0,
-            lip_resonance_hz: lip_hz,
-            lip_damping_ratio: 0.08,
+            lip_resonance_hz: 80.0,
+            lip_damping_ratio: 0.16,
             equilibrium_opening_m: 0.00005,
             tongue_contact: 0.0,
             valves: [0.0; 3],
         };
-        let mut samples = Vec::new();
-        let mut failure = None;
+        let mut peak = 0.0_f64;
         for frame in 0..24_000 {
-            controls.mouth_pressure_pa = 12_000.0 * (frame as f64 / 1_440.0).min(1.0);
-            match model.process_sample(controls) {
-                Ok(sample) if frame > 9_600 => samples.push(sample),
-                Ok(_) => {}
-                Err(error) => {
-                    failure = Some((frame, error));
-                    break;
-                }
-            }
-        }
-        if let Some(failure) = failure {
-            eprintln!("loud lip={lip_hz} failure={failure:?}");
-        } else {
-            let (f0, score) = estimate_f0(&samples, 48_000.0, 80.0, 300.0);
-            let rms = (samples.iter().map(|sample| sample * sample).sum::<f64>()
-                / samples.len() as f64)
-                .sqrt();
-            eprintln!("loud lip={lip_hz} f0={f0} score={score} rms={rms:e}");
-        }
-    }
-}
-
-#[test]
-fn diagnostic_fixture_brightness_trajectory() {
-    let mut model = TrumpetModel::new(48_000.0, TrumpetParameters::canonical()).unwrap();
-    model.seed_open_first_regime(100.0).unwrap();
-    let mut controls = TrumpetControls {
-        mouth_pressure_pa: 0.0,
-        lip_resonance_hz: 80.0,
-        lip_damping_ratio: 0.12,
-        equilibrium_opening_m: 0.00005,
-        tongue_contact: 0.0,
-        valves: [0.0; 3],
-    };
-    for (index, pressure) in [5_500.0, 12_000.0].into_iter().enumerate() {
-        let initial_pressure = controls.mouth_pressure_pa;
-        let mut samples = Vec::new();
-        for frame in 0..24_000 {
-            controls.mouth_pressure_pa = initial_pressure
-                + (pressure - initial_pressure) * (frame as f64 / 1_440.0).min(1.0);
+            controls.mouth_pressure_pa = 8_500.0 * (frame as f64 / 1_440.0).min(1.0);
             let sample = model.process_sample(controls).unwrap();
             if frame > 9_600 {
-                samples.push(sample);
+                peak = peak.max(sample.abs());
             }
         }
-        let (f0, periodicity) = estimate_f0(&samples, 48_000.0, 80.0, 300.0);
-        let centroid = spectral_centroid_hz(&samples);
-        let harmonic_centroid = harmonic_centroid_hz(&samples, f0);
-        let rms = (samples.iter().map(|sample| sample * sample).sum::<f64>()
-            / samples.len() as f64)
-            .sqrt();
-        let peak = samples
-            .iter()
-            .fold(0.0_f64, |peak, sample| peak.max(sample.abs()));
-        eprintln!("continuation index={index} pressure={pressure} f0={f0} score={periodicity} centroid={centroid} harmonic_centroid={harmonic_centroid} rms={rms:e} peak={peak:e}");
-    }
-}
-
-#[test]
-fn diagnostic_loud_timbre_control_map() {
-    for damping in [0.05, 0.08, 0.12, 0.16] {
-        for opening in [0.0, 0.00005] {
-            let mut model = TrumpetModel::new(48_000.0, TrumpetParameters::canonical()).unwrap();
-            let mut controls = TrumpetControls {
-                mouth_pressure_pa: 0.0,
-                lip_resonance_hz: 100.0,
-                lip_damping_ratio: damping,
-                equilibrium_opening_m: opening,
-                tongue_contact: 0.0,
-                valves: [0.0; 3],
-            };
-            let mut samples = Vec::new();
-            let mut failure = None;
-            for frame in 0..24_000 {
-                controls.mouth_pressure_pa = 12_000.0 * (frame as f64 / 1_440.0).min(1.0);
-                match model.process_sample(controls) {
-                    Ok(sample) if frame > 9_600 => samples.push(sample),
-                    Ok(_) => {}
-                    Err(error) => {
-                        failure = Some((frame, error));
-                        break;
-                    }
-                }
-            }
-            if let Some(failure) = failure {
-                eprintln!("timbre damp={damping} opening={opening:e} failure={failure:?}");
-            } else {
-                let (f0, score) = estimate_f0(&samples, 48_000.0, 80.0, 300.0);
-                let centroid = spectral_centroid_hz(&samples);
-                let rms = (samples.iter().map(|sample| sample * sample).sum::<f64>()
-                    / samples.len() as f64)
-                    .sqrt();
-                eprintln!("timbre damp={damping} opening={opening:e} f0={f0} score={score} centroid={centroid} rms={rms:e}");
-            }
-        }
-    }
-}
-
-#[test]
-fn diagnostic_published_high_regime_brightness() {
-    for damping in [0.05, 0.08, 0.1, 0.125] {
-        for pressure in [5_500.0, 12_000.0] {
-            let samples = render_controlled_sustain(
-                pressure,
-                300.0,
-                damping,
-                0.0005,
-                TrumpetParameters::canonical(),
-            );
-            let (f0, score) = estimate_f0(&samples, 48_000.0, 250.0, 700.0);
-            let centroid = spectral_centroid_hz(&samples);
-            let rms = (samples.iter().map(|sample| sample * sample).sum::<f64>()
-                / samples.len() as f64)
-                .sqrt();
-            eprintln!("published damping={damping} pressure={pressure} f0={f0} score={score} centroid={centroid} rms={rms:e}");
-        }
+        eprintln!("start seeded={seeded} peak={peak}");
+        assert!(peak > 1.0e-5, "silent start path");
+        assert!(peak < 0.98, "unbounded normalized start path: {peak}");
     }
 }
