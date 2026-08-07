@@ -1,6 +1,6 @@
 /** Execute flute@2 against the pinned Iowa flute/clarinet identity matrix. */
 import { existsSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import {
@@ -130,7 +130,14 @@ export type FluteV2ReferenceRunResult = Readonly<{
   summary: FluteV2ReferenceMatrixSummary;
 }>;
 
-type RunOptions = Readonly<{ root?: string; wasmPath: string }>;
+export type FluteV2ReferenceRunOptions =
+  | Readonly<{ root?: string; wasmPath: string; wasmBytes?: never }>
+  | Readonly<{ root?: string; wasmBytes: Uint8Array; wasmPath?: never }>;
+
+type RuntimeFluteV2ReferenceRunOptions = Readonly<{
+  wasmPath?: unknown;
+  wasmBytes?: unknown;
+}>;
 
 type FluteWasm = Readonly<{
   memory: WebAssembly.Memory;
@@ -142,7 +149,7 @@ type FluteWasm = Readonly<{
 type FluteWasmExports = Readonly<Record<string, unknown>>;
 
 type CapturedInput = Readonly<{
-  path: string;
+  path: string | null;
   bytes: Uint8Array;
   sha256: string;
 }>;
@@ -244,18 +251,34 @@ async function capture(path: string): Promise<CapturedInput> {
   return Object.freeze({ path, bytes, sha256: sha256Hex(bytes) });
 }
 
-async function captureInputSnapshot(root: string, wasmPath: string): Promise<InputSnapshot> {
+function captureImmutableBytes(bytes: Uint8Array): CapturedInput {
+  const copy = new Uint8Array(bytes);
+  return Object.freeze({ path: null, bytes: copy, sha256: sha256Hex(copy) });
+}
+
+async function captureInputSnapshot(
+  root: string,
+  options: FluteV2ReferenceRunOptions,
+): Promise<InputSnapshot> {
   const manifest = await capture(join(root, MANIFEST_PATH));
   if (manifest.sha256 !== EXPECTED_MANIFEST_SHA256) {
     throw new Error("FLUTE_V2_MANIFEST_DIGEST_MISMATCH");
   }
   const parsed: unknown = JSON.parse(new TextDecoder().decode(manifest.bytes));
   assertManifest(parsed);
-  const [source, analyzer, wasm] = await Promise.all([
+  const [source, analyzer] = await Promise.all([
     capture(join(root, RENDERER_SOURCE_PATH)),
     capture(join(root, ANALYZER_SOURCE_PATH)),
-    capture(wasmPath),
   ]);
+  const runtimeOptions: RuntimeFluteV2ReferenceRunOptions = options;
+  let wasm: CapturedInput;
+  if (typeof runtimeOptions.wasmPath === "string") {
+    wasm = await capture(runtimeOptions.wasmPath);
+  } else if (runtimeOptions.wasmBytes instanceof Uint8Array) {
+    wasm = captureImmutableBytes(runtimeOptions.wasmBytes);
+  } else {
+    throw new Error("FLUTE_V2_WASM_INPUT_AMBIGUOUS");
+  }
   const corpus = new Map<string, CapturedInput>();
   for (const file of parsed.files) {
     const input = await capture(join(root, CORPUS_DIRECTORY, file.fileName));
@@ -292,13 +315,28 @@ function snapshotDigestInputs(snapshot: InputSnapshot): readonly Readonly<{
   path: string;
   sha256: string;
 }>[] {
-  return Object.freeze([
+  const captured = [
     snapshot.manifest,
     snapshot.source,
     snapshot.analyzer,
-    snapshot.wasm,
+    ...(snapshot.wasm.path === null ? [] : [snapshot.wasm]),
     ...snapshot.corpus.values(),
-  ].map((input) => Object.freeze({ path: input.path, sha256: input.sha256 })));
+  ];
+  return Object.freeze(captured.map((input) => {
+    if (input.path === null) throw new Error("byte input cannot enter the path digest set");
+    return Object.freeze({ path: input.path, sha256: input.sha256 });
+  }));
+}
+
+async function inputSnapshotIsStable(
+  snapshot: InputSnapshot,
+  options: FluteV2ReferenceRunOptions,
+): Promise<boolean> {
+  if (!await verifyFluteV2InputDigests(snapshotDigestInputs(snapshot))) return false;
+  const runtimeOptions: RuntimeFluteV2ReferenceRunOptions = options;
+  return runtimeOptions.wasmBytes instanceof Uint8Array
+    ? sha256Hex(runtimeOptions.wasmBytes) === snapshot.wasm.sha256
+    : true;
 }
 
 function assertManifest(value: unknown): asserts value is CorpusManifest {
@@ -405,6 +443,31 @@ function isExpectedReferenceUnavailable(cell: FluteV2ReferenceMatrixCell): boole
     cell.findings.length === 1 && cell.findings[0]?.code === "REFERENCE_PITCH_MISMATCH";
 }
 
+function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function isFluteV2ReferenceMatrixCell(value: unknown): value is FluteV2ReferenceMatrixCell {
+  if (!isRecord(value)) return false;
+  const findings = value["findings"];
+  const outcome = value["outcome"];
+  const report = value["report"];
+  const identityComparison = value["identityComparison"];
+  const bindings = value["bindings"];
+  return typeof value["id"] === "string" &&
+    typeof value["midi"] === "number" && Number.isFinite(value["midi"]) &&
+    (value["dynamic"] === "pp" || value["dynamic"] === "mf" || value["dynamic"] === "ff") &&
+    typeof value["velocity"] === "number" && Number.isFinite(value["velocity"]) &&
+    (outcome === "pass" || outcome === "fail" || outcome === "reference-unavailable" ||
+      outcome === "unavailable") &&
+    Array.isArray(findings) && findings.every((item: unknown) =>
+      isRecord(item) && typeof item["code"] === "string" && typeof item["message"] === "string") &&
+    (report === null || isRecord(report)) &&
+    (identityComparison === null || isRecord(identityComparison)) &&
+    (bindings === null || isRecord(bindings)) &&
+    isDigest(value["evidenceSha256"]);
+}
+
 export function summarizeFluteV2ReferenceCells(
   cells: readonly FluteV2ReferenceMatrixCell[],
 ): FluteV2ReferenceMatrixSummary {
@@ -474,24 +537,30 @@ export function summarizeFluteV2ReferenceCells(
 
 function isStructurallyValidPassEvidence(value: unknown): value is FluteV2ReferenceRunResult {
   if (value === null || typeof value !== "object") return false;
+  const unknownRecord = value as Readonly<Record<string, unknown>>;
+  const cells = unknownRecord["cells"];
+  if (!Array.isArray(cells) || !cells.every((cell: unknown) =>
+    isFluteV2ReferenceMatrixCell(cell))) return false;
   const record = value as Partial<FluteV2ReferenceRunResult>;
+  const identityControl = record.identityControl;
   if (record.schema !== "changes.evidence.phs3-uiowa-flute-v2-reference.v1" ||
     canonicalJson(record.policy) !== canonicalJson(FLUTE_V2_REFERENCE_RUNNER_POLICY) ||
-    record.identityControl?.outcome !== "pass" || record.identityControl.exitCode !== 0 ||
+    identityControl === undefined || identityControl.outcome !== "pass" ||
+    identityControl.exitCode !== 0 ||
     typeof record.rendererSourceSha256 !== "string" ||
     typeof record.wasmSha256 !== "string" ||
     record.corpusManifestSha256 !== EXPECTED_MANIFEST_SHA256 ||
     typeof record.analyzerImplementationSha256 !== "string" ||
     record.referenceGatePolicySha256 !== windReferencePolicySha256() ||
     record.runnerPolicySha256 !== fluteV2RunnerPolicySha256() ||
-    !Array.isArray(record.cells) || record.summary === undefined) return false;
+    record.summary === undefined) return false;
   if (![record.rendererSourceSha256, record.wasmSha256,
     record.analyzerImplementationSha256, record.referenceGatePolicySha256,
     record.runnerPolicySha256].every(isDigest)) return false;
-  const summary = summarizeFluteV2ReferenceCells(record.cells);
+  const summary = summarizeFluteV2ReferenceCells(cells);
   if (summary.outcome !== "pass" || summary.exitCode !== 0 ||
     canonicalJson(summary) !== canonicalJson(record.summary)) return false;
-  return record.cells.every((cell) => {
+  return cells.every((cell) => {
     const bindings = cell.bindings;
     if (bindings === null || !Object.values(bindings)
       .filter((digest) => digest !== null).every(isDigest) ||
@@ -511,7 +580,7 @@ function isStructurallyValidPassEvidence(value: unknown): value is FluteV2Refere
       !isDigest(bindings.candidatePcmSha256)) return false;
     return evaluateTargetedSimilarityReport(
       cell.report,
-      record.identityControl as WindIdentityControlResult,
+      identityControl,
       cell.identityComparison,
     ).outcome === "pass";
   });
@@ -533,7 +602,7 @@ export function verifyFluteV2ReferenceRunEvidenceAgainstReplay(
 
 export async function verifyFluteV2ReferenceRunEvidence(
   value: unknown,
-  options: RunOptions,
+  options: FluteV2ReferenceRunOptions,
 ): Promise<boolean> {
   const replay = await runUiowaFluteV2Reference(options);
   return verifyFluteV2ReferenceRunEvidenceAgainstReplay(value, replay);
@@ -571,7 +640,7 @@ function unavailableRun(
 }
 
 export async function runUiowaFluteV2Reference(
-  options: RunOptions,
+  options: FluteV2ReferenceRunOptions,
 ): Promise<FluteV2ReferenceRunResult> {
   const root = options.root ?? process.cwd();
   const inputFailureControl: WindIdentityControlResult = Object.freeze({
@@ -583,19 +652,31 @@ export async function runUiowaFluteV2Reference(
     )]),
     measurements: Object.freeze([]),
   });
-  if (!existsSync(options.wasmPath)) {
-    return unavailableRun(inputFailureControl, "FLUTE_V2_WASM_ABSENT", options.wasmPath);
+  const runtimeOptions: RuntimeFluteV2ReferenceRunOptions = options;
+  const hasWasmPath = typeof runtimeOptions.wasmPath === "string" &&
+    runtimeOptions.wasmPath.length > 0;
+  const hasWasmBytes = runtimeOptions.wasmBytes instanceof Uint8Array;
+  if (hasWasmPath === hasWasmBytes) {
+    return unavailableRun(
+      inputFailureControl,
+      "FLUTE_V2_WASM_INPUT_AMBIGUOUS",
+      "provide exactly one of wasmPath or wasmBytes",
+    );
+  }
+  if (typeof runtimeOptions.wasmPath === "string" &&
+    runtimeOptions.wasmPath.length > 0 && !existsSync(runtimeOptions.wasmPath)) {
+    return unavailableRun(inputFailureControl, "FLUTE_V2_WASM_ABSENT", runtimeOptions.wasmPath);
   }
   let snapshot: InputSnapshot;
   try {
-    snapshot = await captureInputSnapshot(root, options.wasmPath);
+    snapshot = await captureInputSnapshot(root, options);
   } catch (error) {
     return unavailableRun(inputFailureControl, "FLUTE_V2_RUNNER_INPUT_INVALID", String(error));
   }
 
   const identityControl = await runUiowaWindIdentityCorpus(root);
   if (identityControl.outcome !== "pass") {
-    if (!await verifyFluteV2InputDigests(snapshotDigestInputs(snapshot))) {
+    if (!await inputSnapshotIsStable(snapshot, options)) {
       return unavailableRun(identityControl, "FLUTE_V2_INPUT_DRIFT", "input digest changed during the run");
     }
     return unavailableRun(identityControl, "FLUTE_V2_IDENTITY_CONTROL_UNAVAILABLE", "identity control did not pass");
@@ -603,8 +684,11 @@ export async function runUiowaFluteV2Reference(
   let wasm: FluteWasm;
   try {
     const instantiated = await WebAssembly.instantiate(snapshot.wasm.bytes, {});
-    wasm = requireWasm(instantiated.instance.exports as unknown as FluteWasmExports);
+    wasm = requireWasm(instantiated.instance.exports);
   } catch (error) {
+    if (!await inputSnapshotIsStable(snapshot, options)) {
+      return unavailableRun(identityControl, "FLUTE_V2_INPUT_DRIFT", "input digest changed during the run");
+    }
     return unavailableRun(identityControl, "FLUTE_V2_RUNNER_INPUT_INVALID", String(error));
   }
 
@@ -621,6 +705,9 @@ export async function runUiowaFluteV2Reference(
       scales.set(`${file.instrument}:${file.dynamic}`, notes);
     }
   } catch (error) {
+    if (!await inputSnapshotIsStable(snapshot, options)) {
+      return unavailableRun(identityControl, "FLUTE_V2_INPUT_DRIFT", "input digest changed during the run");
+    }
     return unavailableRun(identityControl, "FLUTE_V2_CORPUS_INVALID", String(error));
   }
 
@@ -720,7 +807,7 @@ export async function runUiowaFluteV2Reference(
       }
     }
   }
-  if (!await verifyFluteV2InputDigests(snapshotDigestInputs(snapshot))) {
+  if (!await inputSnapshotIsStable(snapshot, options)) {
     return unavailableRun(identityControl, "FLUTE_V2_INPUT_DRIFT", "input digest changed during the run");
   }
   return Object.freeze({
@@ -738,19 +825,51 @@ export async function runUiowaFluteV2Reference(
   });
 }
 
-function cliWasmPath(arguments_: readonly string[]): string | null {
-  const index = arguments_.indexOf("--wasm");
-  return index >= 0 ? arguments_[index + 1] ?? null : null;
+export const FLUTE_V2_REFERENCE_CLI_USAGE =
+  "usage: bun scripts/run-uiowa-flute-v2-reference.ts --wasm <concert_grand.wasm> [--output <evidence.json>]";
+
+export type FluteV2ReferenceCliOptions = Readonly<{
+  wasmPath: string;
+  outputPath: string | null;
+}>;
+
+export function parseFluteV2ReferenceCliArguments(
+  arguments_: readonly string[],
+): FluteV2ReferenceCliOptions {
+  let wasmPath: string | null = null;
+  let outputPath: string | null = null;
+  for (let index = 0; index < arguments_.length; index += 1) {
+    const argument = arguments_[index];
+    if (argument !== "--wasm" && argument !== "--output") {
+      throw new Error(`unknown argument: ${String(argument)}`);
+    }
+    const value = arguments_[index + 1];
+    if (value === undefined || value.startsWith("--")) {
+      throw new Error(`missing value for ${argument}`);
+    }
+    if (argument === "--wasm") {
+      if (wasmPath !== null) throw new Error("duplicate --wasm");
+      wasmPath = value;
+    } else {
+      if (outputPath !== null) throw new Error("duplicate --output");
+      outputPath = value;
+    }
+    index += 1;
+  }
+  if (wasmPath === null) throw new Error("missing required --wasm");
+  return Object.freeze({ wasmPath, outputPath });
 }
 
 if (import.meta.main) {
-  const wasmPath = cliWasmPath(process.argv.slice(2));
-  if (wasmPath === null) {
-    process.stderr.write("usage: bun scripts/run-uiowa-flute-v2-reference.ts --wasm <concert_grand.wasm>\n");
-    process.exitCode = 2;
-  } else {
-    const result = await runUiowaFluteV2Reference({ wasmPath });
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+  try {
+    const options = parseFluteV2ReferenceCliArguments(process.argv.slice(2));
+    const result = await runUiowaFluteV2Reference({ wasmPath: options.wasmPath });
+    const serialized = `${JSON.stringify(result, null, 2)}\n`;
+    if (options.outputPath === null) process.stdout.write(serialized);
+    else await writeFile(options.outputPath, serialized, "utf8");
     process.exitCode = result.summary.exitCode;
+  } catch (error) {
+    process.stderr.write(`${String(error)}\n${FLUTE_V2_REFERENCE_CLI_USAGE}\n`);
+    process.exitCode = 2;
   }
 }

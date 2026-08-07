@@ -332,10 +332,19 @@ fn jet_speed_m_per_s(pressure_pa: f64) -> f64 {
 }
 
 fn jet_convection_seconds(jet_speed_m_per_s: f64) -> Option<f64> {
+    jet_convection_seconds_for_channel(EMB_CHANNEL_TO_EDGE_M, jet_speed_m_per_s)
+}
+
+fn jet_convection_seconds_for_channel(
+    channel_to_edge_m: f64,
+    jet_speed_m_per_s: f64,
+) -> Option<f64> {
     if !jet_speed_m_per_s.is_finite() || jet_speed_m_per_s <= 0.0 {
         None
+    } else if !channel_to_edge_m.is_finite() || channel_to_edge_m <= 0.0 {
+        None
     } else {
-        Some(EMB_CHANNEL_TO_EDGE_M / (0.4 * jet_speed_m_per_s))
+        Some(channel_to_edge_m / (0.4 * jet_speed_m_per_s))
     }
 }
 
@@ -753,18 +762,11 @@ fn render_with_storage(
     // pressure is weak. This is an embouchure gesture; bore geometry and all
     // propagation delays remain fixed.
     let across_labium = !has_open_hole || (velocity < 50 && has_partial_vent);
-    let mut jet_offset = if across_labium {
+    let jet_offset = if across_labium {
         0.90 + 0.06 * register
     } else {
         0.35 + 0.10 * register
     };
-    // The half-open E key weakens and delays its returning pressure, so a
-    // soft player rolls the jet slightly toward the near labium to preserve
-    // the stable edge phase. This is an embouchure gesture, not a MIDI-tuned
-    // acoustic delay.
-    if velocity < 50 && fingering.openness[6] > 0.0 && fingering.openness[6] < 0.95 {
-        jet_offset -= 0.004;
-    }
     let feedback_gain = (if has_open_hole {
         18.0 + register
     } else {
@@ -1349,6 +1351,9 @@ mod tests {
         let quarter_pressure_speed = jet_speed_m_per_s(240.82 / 4.0);
         let quarter_pressure_delay = jet_convection_seconds(quarter_pressure_speed).unwrap();
         assert!((quarter_pressure_delay / delay - 2.0).abs() < 1.0e-12);
+        let longer_channel_delay =
+            jet_convection_seconds_for_channel(EMB_CHANNEL_TO_EDGE_M * 1.0002, 20.0).unwrap();
+        assert!((longer_channel_delay / delay - 1.0002).abs() < 1.0e-12);
         let half_open_e_key = hole_effective_length_m(6, 0.50);
         let fully_open_e_key = hole_effective_length_m(6, 1.0);
         assert!((half_open_e_key - fully_open_e_key - 0.00004).abs() < 1.0e-15);

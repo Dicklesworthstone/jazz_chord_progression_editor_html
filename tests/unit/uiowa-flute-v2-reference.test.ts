@@ -4,9 +4,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import {
+  FLUTE_V2_REFERENCE_CLI_USAGE,
   FLUTE_V2_REFERENCE_RUNNER_POLICY,
   bindFluteV2ReferenceMatrixCell,
   fluteV2RunnerPolicySha256,
+  parseFluteV2ReferenceCliArguments,
   runUiowaFluteV2Reference,
   summarizeFluteV2ReferenceCells,
   verifyFluteV2InputDigests,
@@ -110,6 +112,36 @@ function passEvidence(cells = matrix()): FluteV2ReferenceRunResult {
   });
 }
 
+function unbindCell(
+  cell: FluteV2ReferenceMatrixCell,
+): Omit<FluteV2ReferenceMatrixCell, "evidenceSha256"> {
+  const { evidenceSha256, ...body } = cell;
+  void evidenceSha256;
+  return body;
+}
+
+async function runCli(arguments_: readonly string[]): Promise<Readonly<{
+  exitCode: number;
+  stdout: string;
+  stderr: string;
+}>> {
+  const child = Bun.spawn([
+    process.execPath,
+    join(process.cwd(), "scripts/run-uiowa-flute-v2-reference.ts"),
+    ...arguments_,
+  ], {
+    cwd: process.cwd(),
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  const [exitCode, stdout, stderr] = await Promise.all([
+    child.exited,
+    new Response(child.stdout).text(),
+    new Response(child.stderr).text(),
+  ]);
+  return Object.freeze({ exitCode, stdout, stderr });
+}
+
 describe("PHS3 Iowa flute-v2 target/alternative matrix", () => {
   test("freezes eight admitted cells and the four independently invalid references", () => {
     expect(FLUTE_V2_REFERENCE_RUNNER_POLICY.selectedMidi).toEqual([72, 76, 79, 82]);
@@ -144,9 +176,8 @@ describe("PHS3 Iowa flute-v2 target/alternative matrix", () => {
   test("a planted admitted acoustic failure makes the matrix fail", () => {
     const cells = matrix().map((cell) => {
       if (cell.id !== "m76-pp") return cell;
-      const { evidenceSha256: _, ...body } = cell;
       return bindFluteV2ReferenceMatrixCell({
-        ...body,
+        ...unbindCell(cell),
         outcome: "fail" as const,
         findings: Object.freeze([{ code: "PITCH_DELTA", message: "planted" }]),
       });
@@ -166,9 +197,8 @@ describe("PHS3 Iowa flute-v2 target/alternative matrix", () => {
 
     const wrongReason = matrix().map((cell) => {
       if (cell.id !== "m82-mf") return cell;
-      const { evidenceSha256: _, ...body } = cell;
       return bindFluteV2ReferenceMatrixCell({
-        ...body,
+        ...unbindCell(cell),
         findings: Object.freeze([{ code: "REFERENCE_DECODE_FAILED", message: "planted" }]),
       });
     });
@@ -191,9 +221,8 @@ describe("PHS3 Iowa flute-v2 target/alternative matrix", () => {
     const replay = passEvidence();
     const cells = replay.cells.map((cell) => {
       if (cell.id !== "m72-pp" || cell.report === null) return cell;
-      const { evidenceSha256: _, ...body } = cell;
       return bindFluteV2ReferenceMatrixCell({
-        ...body,
+        ...unbindCell(cell),
         report: Object.freeze({ ...cell.report, envelopeDb: 0.125 }),
       });
     });
@@ -206,9 +235,8 @@ describe("PHS3 Iowa flute-v2 target/alternative matrix", () => {
     const replay = passEvidence();
     const synthetic = replay.cells.map((cell) => {
       if (cell.id !== "m76-mf" || cell.bindings === null) return cell;
-      const { evidenceSha256: _, ...body } = cell;
       return bindFluteV2ReferenceMatrixCell({
-        ...body,
+        ...unbindCell(cell),
         bindings: Object.freeze({ ...cell.bindings, candidatePcmSha256: "a".repeat(64) }),
       });
     });
@@ -216,8 +244,7 @@ describe("PHS3 Iowa flute-v2 target/alternative matrix", () => {
 
     const wrongCoordinates = replay.cells.map((cell) => {
       if (cell.id !== "m76-mf") return cell;
-      const { evidenceSha256: _, ...body } = cell;
-      return bindFluteV2ReferenceMatrixCell({ ...body, velocity: 71 });
+      return bindFluteV2ReferenceMatrixCell({ ...unbindCell(cell), velocity: 71 });
     });
     expect(summarizeFluteV2ReferenceCells(wrongCoordinates).findings
       .map((item) => item.code)).toContain("FLUTE_V2_CELL_COORDINATES");
@@ -246,5 +273,82 @@ describe("PHS3 Iowa flute-v2 target/alternative matrix", () => {
     });
     expect(result.summary.outcome).toBe("unavailable");
     expect(result.cells[0]?.findings[0]?.code).toBe("FLUTE_V2_WASM_ABSENT");
+  });
+
+  test("embedded WASM bytes are accepted as an immutable replay input", async () => {
+    const result = await runUiowaFluteV2Reference({
+      wasmBytes: new Uint8Array([0x00, 0x61, 0x73, 0x6d]),
+    });
+    expect(result.summary.outcome).toBe("unavailable");
+    expect(result.cells[0]?.findings[0]?.code).toBe("FLUTE_V2_RUNNER_INPUT_INVALID");
+    expect(result.cells[0]?.findings[0]?.code).not.toBe("FLUTE_V2_WASM_ABSENT");
+  });
+
+  test("path and embedded-byte modes are mutually exclusive at runtime", async () => {
+    const result = await runUiowaFluteV2Reference({
+      wasmPath: "/data/tmp/not-used.wasm",
+      wasmBytes: new Uint8Array([0]),
+    } as never);
+    expect(result.cells[0]?.findings[0]?.code).toBe("FLUTE_V2_WASM_INPUT_AMBIGUOUS");
+  });
+
+  test("CLI arguments accept one output path and refuse duplicate or missing values", () => {
+    expect(parseFluteV2ReferenceCliArguments([
+      "--wasm", "/tmp/input.wasm", "--output", "/tmp/evidence.json",
+    ])).toEqual({
+      wasmPath: "/tmp/input.wasm",
+      outputPath: "/tmp/evidence.json",
+    });
+    expect(parseFluteV2ReferenceCliArguments(["--wasm", "/tmp/input.wasm"]))
+      .toEqual({ wasmPath: "/tmp/input.wasm", outputPath: null });
+    expect(() => parseFluteV2ReferenceCliArguments([
+      "--wasm", "one.wasm", "--wasm", "two.wasm",
+    ])).toThrow("duplicate --wasm");
+    expect(() => parseFluteV2ReferenceCliArguments([
+      "--wasm", "one.wasm", "--output", "one.json", "--output", "two.json",
+    ])).toThrow("duplicate --output");
+    expect(() => parseFluteV2ReferenceCliArguments(["--wasm"]))
+      .toThrow("missing value for --wasm");
+    expect(() => parseFluteV2ReferenceCliArguments(["--wasm", "one.wasm", "--output"]))
+      .toThrow("missing value for --output");
+    expect(FLUTE_V2_REFERENCE_CLI_USAGE).toContain("[--output <evidence.json>]");
+  });
+
+  test("CLI writes evidence with --output and otherwise keeps JSON on stdout", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "flute-v2-cli-output-"));
+    const absentWasm = join(directory, "absent.wasm");
+    const outputPath = join(directory, "evidence.json");
+    try {
+      const written = await runCli(["--wasm", absentWasm, "--output", outputPath]);
+      expect(written.exitCode).toBe(2);
+      expect(written.stdout).toBe("");
+      expect(written.stderr).toBe("");
+      const writtenEvidence: unknown = JSON.parse(await readFile(outputPath, "utf8"));
+      expect(writtenEvidence).toMatchObject({
+        cells: [{ findings: [{ code: "FLUTE_V2_WASM_ABSENT" }] }],
+      });
+
+      const streamed = await runCli(["--wasm", absentWasm]);
+      expect(streamed.exitCode).toBe(2);
+      expect(streamed.stderr).toBe("");
+      const streamedEvidence: unknown = JSON.parse(streamed.stdout);
+      expect(streamedEvidence).toEqual(writtenEvidence);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  test("CLI refusal prints the usage without starting a run", async () => {
+    const duplicate = await runCli(["--wasm", "one.wasm", "--wasm", "two.wasm"]);
+    expect(duplicate.exitCode).toBe(2);
+    expect(duplicate.stdout).toBe("");
+    expect(duplicate.stderr).toContain("duplicate --wasm");
+    expect(duplicate.stderr).toContain(FLUTE_V2_REFERENCE_CLI_USAGE);
+
+    const missing = await runCli(["--wasm"]);
+    expect(missing.exitCode).toBe(2);
+    expect(missing.stdout).toBe("");
+    expect(missing.stderr).toContain("missing value for --wasm");
+    expect(missing.stderr).toContain(FLUTE_V2_REFERENCE_CLI_USAGE);
   });
 });
