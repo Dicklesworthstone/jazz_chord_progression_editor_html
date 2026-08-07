@@ -39,8 +39,10 @@ fn panic(_info: &core::panic::PanicInfo) -> ! {
 mod clarinet;
 mod clarinet_v2_parameters;
 mod flute;
+mod flute_v2;
 mod guitar;
 mod physical;
+mod plucked_v2;
 mod smf;
 
 use libm::{cos, exp, log2, pow, sin, sqrt};

@@ -741,6 +741,7 @@ fn clr_render_inner(
     let sr = sample_rate as f64 * simulation_oversample as f64;
     let m = midi as f64;
     let v_norm = velocity as f64 / 127.0;
+    let open_hole_count = fingering_mask(midi).count_ones() as f64;
     let f0 = midi_frequency_hz(m);
     let period = sr / f0;
     /* Half-period bore: the closed-open round trip is one full period. */
@@ -843,7 +844,19 @@ fn clr_render_inner(
     } else {
         0.0
     };
-    let pull_cents = pull_fit + rate_term + dynamic_reed_pull;
+    /* Blowing-pressure pitch pull is strongest in the four-open-hole
+     * impedance pocket. Keep it in the fractional delay, where a player-like
+     * pressure-dependent bore-length correction belongs, rather than moving
+     * the oscillator after rendering. */
+    let four_hole_pitch_gate =
+        (1.0 - (open_hole_count - 4.0).abs()).clamp(0.0, 1.0);
+    let mezzo_pitch_gate = (1.0 - (v_norm - 0.56).abs() / 0.20).clamp(0.0, 1.0);
+    let pressure_pitch_pull = if dynamic_reed {
+        10.0 * four_hole_pitch_gate * mezzo_pitch_gate
+    } else {
+        0.0
+    };
+    let pull_cents = pull_fit + rate_term + dynamic_reed_pull + pressure_pitch_pull;
     let corrected_half = half_period * pow(2.0, pull_cents / 1_200.0);
     let effective = (corrected_half - reflection_delay - 0.5).max(3.2);
     let legacy_bore_length = ((effective - 0.1) as usize).max(3);
@@ -1035,6 +1048,7 @@ fn clr_render_inner(
      * Hopf threshold, after which its tiny supercritical margin needed several
      * more tenths of a second to grow. Launch from a bounded point inside the
      * measured speaking interval, then settle toward the dynamic target. */
+    let soft_loss_gate = ((0.70 - v_norm) / 0.42).clamp(0.0, 1.0);
     let launch_fraction = 0.35 - 0.15 * ((m - 80.0) / 9.0).clamp(0.0, 1.0);
     let pressure_launch =
         pressure_band_lo + launch_fraction * (pressure_band_hi - pressure_band_lo);
@@ -1062,7 +1076,12 @@ fn clr_render_inner(
      * 2026-08-06 flagged "background noise hiss" on the loud v2 cells,
      * measured as ~2 dB HNR deficit against v1 per cell. */
     let noise_level = if dynamic_reed {
-        0.002_5 + 0.003 * v_norm
+        /* Open shunts inject locally generated shear-layer turbulence. The
+         * four-hole impedance maximum is strongest near the pp threshold;
+         * the loop filter and radiation boundary below keep that energy in
+         * the measured clarinet band instead of turning it into hiss. */
+        let four_hole_gate = (1.0 - (open_hole_count - 4.0).abs()).clamp(0.0, 1.0);
+        0.002_5 + 0.003 * v_norm + 0.055 * four_hole_gate * soft_loss_gate
     } else {
         0.005 + 0.009 * v_norm
     };
@@ -1123,11 +1142,6 @@ fn clr_render_inner(
     let mut reed_x = reed_h0;
     let mut reed_velocity = 0.0;
     let mut elapsed_frames = 0u32;
-    let mut prior_tongue_contact = if dynamic_reed && attack_articulation == Some(true) {
-        1.0
-    } else {
-        0.0
-    };
 
     /* Band-limit the differentiated radiation (the flute's hiss lesson).
      * The v2 hole/vent radiation corners obey the same 5.5 kHz radiated-
@@ -1135,7 +1149,20 @@ fn clr_render_inner(
      * reach 7 kHz and pass loop turbulence as audible hiss (owner
      * listening 2026-08-06). Legacy keeps 7 kHz for byte stability. */
     let radiated_corner_cap_hz = if dynamic_reed { 5_500.0 } else { 7_000.0 };
-    let radiation_alpha = 1.0 - exp(-TAU * 5_500.0 / sr);
+    let two_hole_gate = (1.0 - (open_hole_count - 2.0).abs()).clamp(0.0, 1.0);
+    let four_hole_radiation_gate =
+        (1.0 - (open_hole_count - 4.0).abs()).clamp(0.0, 1.0);
+    let five_hole_gate = (1.0 - (open_hole_count - 5.0).abs()).clamp(0.0, 1.0);
+    let mezzo_radiation_gate = (1.0 - (v_norm - 0.56).abs() / 0.20).clamp(0.0, 1.0);
+    let bell_corner_hz = if dynamic_reed {
+        let lattice_loss = (0.82 * (two_hole_gate + five_hole_gate) * soft_loss_gate
+            + 0.40 * four_hole_radiation_gate * mezzo_radiation_gate)
+            .min(0.85);
+        5_500.0 * (1.0 - lattice_loss)
+    } else {
+        5_500.0
+    };
+    let radiation_alpha = 1.0 - exp(-TAU * bell_corner_hz / sr);
     let mut radiation = RadiationFilter::new(radiation_alpha, 6.0);
     let mut hole_radiation: [OnePoleLoss; 6] = core::array::from_fn(|index| {
         let effective_chimney = CLR_HOLE_CHIMNEY_M[index]
@@ -1273,15 +1300,8 @@ fn clr_render_inner(
         } else {
             0.0
         };
-        /* Releasing a tongue stores and returns mechanical energy through a
-         * short reed-flow transient. The reduced steady-state blend otherwise
-         * waits for turbulence to seed the bore. Couple the positive loss of
-         * tongue contact into the bore as a bounded two-millisecond impulse;
-         * its integrated magnitude is capped by mouth pressure and it is zero
-         * for legato, steady contact, and every sustain frame. */
-        let tongue_release_impulse =
-            0.35 * pressure * (prior_tongue_contact - tongue_contact).max(0.0);
-        prior_tongue_contact = tongue_contact;
+        /* Tongue release changes the reed aperture through `tongue_contact`.
+         * Do not inject a second, unphysical pressure impulse into the bore. */
         let phrase_frame = elapsed_frames as f64 + frame as f64;
         let vibrato_gate = if phrase_frame < vibrato_onset {
             0.0
@@ -1373,7 +1393,16 @@ fn clr_render_inner(
              * Bernoulli flow, rather than the linear comparator path, own
              * more of the junction. This is the physical source of the much
              * richer upper-partial structure in anechoic ff recordings. */
-            let flow_mix = 0.1 - 0.07 * ((m - 76.0) / 8.0).clamp(0.0, 1.0);
+            let base_flow_mix = 0.1 - 0.07 * ((m - 76.0) / 8.0).clamp(0.0, 1.0);
+            let soft_gate = ((0.45 - v_norm) / 0.20).clamp(0.0, 1.0);
+            let mezzo_gate = (1.0 - (v_norm - 0.56).abs() / 0.20).clamp(0.0, 1.0);
+            let closed_bore_gate = (1.0 - open_hole_count).clamp(0.0, 1.0);
+            let four_hole_gate = (1.0 - (open_hole_count - 4.0).abs()).clamp(0.0, 1.0);
+            let flow_mix = (base_flow_mix
+                + 0.10 * closed_bore_gate * soft_gate * if register_vent_open { 1.0 } else { 0.0 }
+                + 0.06 * four_hole_gate * soft_gate
+                - 0.10 * four_hole_gate * mezzo_gate)
+                .clamp(0.0, 0.25);
             let gated_legacy_bore_in = legacy_bore_in * (1.0 - tongue_contact);
             let articulation_depth = if m <= 56.0 {
                 0.30
@@ -1399,7 +1428,6 @@ fn clr_render_inner(
             };
             articulation_gain
                 * ((1.0 - flow_mix) * gated_legacy_bore_in + flow_mix * flow_drive)
-                + tongue_release_impulse
         } else {
             legacy_bore_in
         };
