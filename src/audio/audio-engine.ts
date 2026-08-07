@@ -674,6 +674,8 @@ function recipeForInstrument(instrumentId: InstrumentId): AudioInstrumentRecipe 
       return AUDIO_INSTRUMENT_RECIPES[13];
     case "clarinet":
       return AUDIO_INSTRUMENT_RECIPES[14];
+    case "physical-upright-bass":
+      return AUDIO_INSTRUMENT_RECIPES[15];
   }
 }
 
