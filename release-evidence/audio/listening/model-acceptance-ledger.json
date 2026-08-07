@@ -1,0 +1,69 @@
+{
+  "_comment": "Machine-readable model-acceptance ledger (bead jcpe-deploy-listening-gate-rw2n). One row per shipping DSP algorithm id. status: 'approved' (owner listened and accepted), 'open' (no verdict yet - BLOCKS deploy), 'red' (owner rejected - BLOCKS deploy), 'machine-delegated' (owner delegated the verdict to the machine reference gate on 2026-08-07; shippable ONLY when 'evidence' names an existing passing reference-similarity report). A shipping algorithm id missing from this ledger fails the predeploy check closed. Rows are edited by hand with evidence; never generated.",
+  "schemaVersion": 1,
+  "rows": [
+    {
+      "algorithmId": "changes.dsp.concert-grand@1",
+      "status": "approved",
+      "evidence": "owner-approved artifact 67b9ae08a40f45040a01e817e508106158c55cff85e9a2889806e4ed6b177042 (commit 031c667), live on all hosts 2026-08-06",
+      "decidedBy": "owner",
+      "date": "2026-08-06"
+    },
+    {
+      "algorithmId": "changes.dsp.waveguide-flute@1",
+      "status": "approved",
+      "evidence": "owner-approved artifact 67b9ae08 (commit 031c667); tamed-turbulence HNR 19-24 dB accepted 2026-08-06",
+      "decidedBy": "owner",
+      "date": "2026-08-06"
+    },
+    {
+      "algorithmId": "changes.dsp.waveguide-clarinet@1",
+      "status": "approved",
+      "evidence": "owner-approved artifact 67b9ae08 (commit 031c667); HNR 31-37 dB accepted 2026-08-06",
+      "decidedBy": "owner",
+      "date": "2026-08-06"
+    },
+    {
+      "algorithmId": "changes.dsp.waveguide-guitar-clean@1",
+      "status": "approved",
+      "evidence": "owner-approved artifact 67b9ae08 (commit 031c667); NOTE 2026-08-07: owner re-rejected on fresh ears ('horrible and fake') - replacement tracked in jcpe-guitar-family-owner-direction-wdt9; remains shippable as the least-bad current state until the replacement passes its gate",
+      "decidedBy": "owner",
+      "date": "2026-08-06"
+    },
+    {
+      "algorithmId": "changes.dsp.waveguide-guitar-drive@1",
+      "status": "approved",
+      "evidence": "owner-approved artifact 67b9ae08 (commit 031c667); NOTE 2026-08-07: owner re-rejected direction ('nothing like an electric guitar hooked up to a jazz amp') - replacement tracked in jcpe-guitar-family-owner-direction-wdt9; remains shippable as the least-bad current state until the replacement passes its gate",
+      "decidedBy": "owner",
+      "date": "2026-08-06"
+    },
+    {
+      "algorithmId": "changes.dsp.sampled-upright-bass@1",
+      "status": "approved",
+      "evidence": "owner-approved artifact 67b9ae08 (commit 031c667); CC0 sampled recipe live on all hosts 2026-08-06",
+      "decidedBy": "owner",
+      "date": "2026-08-06"
+    },
+    {
+      "algorithmId": "changes.dsp.sampled-vibraphone@1",
+      "status": "approved",
+      "evidence": "owner-approved artifact 67b9ae08 (commit 031c667); CC0 sampled recipe live on all hosts 2026-08-06",
+      "decidedBy": "owner",
+      "date": "2026-08-06"
+    },
+    {
+      "algorithmId": "changes.audio.impulse.hall-quartic-q15.v2",
+      "status": "approved",
+      "evidence": "deterministic reverb impulse shipped in every owner-approved artifact through 67b9ae08",
+      "decidedBy": "owner",
+      "date": "2026-08-06"
+    },
+    {
+      "algorithmId": "changes.dsp.waveguide-clarinet@2",
+      "status": "open",
+      "evidence": "screened listening pack test-results/clarinet-v2-listening/533abbdd277b2911 awaiting the reference-similarity gate; reached production un-auditioned 2026-08-06 (rolled back 2026-08-07). Reachable via engine gesture routing (audio-engine.ts clarinet v2 override), NOT via the recipe pointer - the predeploy source scan covers this path.",
+      "decidedBy": "owner-delegated-machine-gate",
+      "date": "2026-08-07"
+    }
+  ]
+}
