@@ -14,6 +14,8 @@ export const INSTRUMENT_IDS = [
   "concert-vibes",
   "blues-guitar",
   "clarinet",
+  "dreadnought-guitar",
+  "ukulele",
 ] as const;
 
 export type InstrumentId = (typeof INSTRUMENT_IDS)[number];
@@ -41,7 +43,9 @@ function isInstrumentId(received: string): received is InstrumentId {
     received === "upright-bass" ||
     received === "concert-vibes" ||
     received === "blues-guitar" ||
-    received === "clarinet"
+    received === "clarinet" ||
+    received === "dreadnought-guitar" ||
+    received === "ukulele"
   );
 }
 

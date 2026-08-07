@@ -59,6 +59,18 @@ export const WAVEGUIDE_CLARINET_ALGORITHM_ID =
 export const WAVEGUIDE_CLARINET_V2_ALGORITHM_ID =
   "changes.dsp.waveguide-clarinet@2";
 
+/*
+ * PHS4 plucked-string family v2 (spec bbd3e2a, jcpe-mnsc.6.2): pack-driven
+ * string sets, foundry plate-mode bodies with bridge/radiation residues,
+ * pickup + amp packs. One wasm entry (`plk_render`) selected by instrument
+ * index; each public target is its own algorithm id.
+ */
+export const PLUCKED_ARCHTOP_ALGORITHM_ID = "changes.dsp.plucked-archtop@2";
+export const PLUCKED_ELECTRIC_ALGORITHM_ID = "changes.dsp.plucked-electric@2";
+export const PLUCKED_DREADNOUGHT_ALGORITHM_ID =
+  "changes.dsp.plucked-dreadnought@1";
+export const PLUCKED_UKULELE_ALGORITHM_ID = "changes.dsp.plucked-ukulele@1";
+
 export type WindAttackArticulation = "legato" | "tongued";
 
 export type WaveguideRenderer = Readonly<{
@@ -310,6 +322,20 @@ type ConcertGrandExports = Readonly<{
     sampleRate: number,
     fftSize: number,
     out: number,
+  ) => number;
+  plk_note_frames: (
+    instrument: number,
+    midi: number,
+    sampleRate: number,
+  ) => number;
+  plk_render: (
+    instrument: number,
+    midi: number,
+    velocity: number,
+    sampleRate: number,
+    left: number,
+    right: number,
+    maxFrames: number,
   ) => number;
   gtr_note_frames: (midi: number, sampleRate: number) => number;
   gtr_render: (
@@ -922,6 +948,14 @@ async function instantiate(): Promise<DspCore> {
       rawExports,
       "an_chroma",
     ) as ConcertGrandExports["an_chroma"],
+    plk_note_frames: requireExportedFunction(
+      rawExports,
+      "plk_note_frames",
+    ) as ConcertGrandExports["plk_note_frames"],
+    plk_render: requireExportedFunction(
+      rawExports,
+      "plk_render",
+    ) as ConcertGrandExports["plk_render"],
     gtr_note_frames: requireExportedFunction(
       rawExports,
       "gtr_note_frames",
@@ -1488,6 +1522,34 @@ async function instantiate(): Promise<DspCore> {
       WAVEGUIDE_GUITAR_DRIVE_ALGORITHM_ID,
       makeWaveguideRenderNote(exports.gtr_note_frames, (m, v, r, l, rt, mx) =>
         exports.gtr_render(m, v, r, 1, l, rt, mx),
+      ),
+    ],
+    [
+      PLUCKED_ARCHTOP_ALGORITHM_ID,
+      makeWaveguideRenderNote(
+        (m, r) => exports.plk_note_frames(0, m, r),
+        (m, v, r, l, rt, mx) => exports.plk_render(0, m, v, r, l, rt, mx),
+      ),
+    ],
+    [
+      PLUCKED_ELECTRIC_ALGORITHM_ID,
+      makeWaveguideRenderNote(
+        (m, r) => exports.plk_note_frames(1, m, r),
+        (m, v, r, l, rt, mx) => exports.plk_render(1, m, v, r, l, rt, mx),
+      ),
+    ],
+    [
+      PLUCKED_DREADNOUGHT_ALGORITHM_ID,
+      makeWaveguideRenderNote(
+        (m, r) => exports.plk_note_frames(2, m, r),
+        (m, v, r, l, rt, mx) => exports.plk_render(2, m, v, r, l, rt, mx),
+      ),
+    ],
+    [
+      PLUCKED_UKULELE_ALGORITHM_ID,
+      makeWaveguideRenderNote(
+        (m, r) => exports.plk_note_frames(3, m, r),
+        (m, v, r, l, rt, mx) => exports.plk_render(3, m, v, r, l, rt, mx),
       ),
     ],
     [
