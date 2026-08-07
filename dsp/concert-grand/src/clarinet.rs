@@ -901,6 +901,12 @@ fn clr_render_inner(
      * speak at pianissimo, short of a closed-reed squeeze at fortissimo.
      */
     let reed_offset = 0.7f64;
+    /* Chalumeau h3 note (reference-similarity sweep 2026-08-07): the real
+     * D3 h3 sits near -2 dB rel h1 vs -23 dB here, but both available
+     * levers measurably fail — a steeper low-register valve slope causes
+     * wrong-mode locks (C1: depth 0.13 locked at 137 Hz) and a larger SI
+     * flow share adds noise without adding h3 (C2/C3). The gap is a real
+     * model limitation recorded for PHS2 verify; the shipped slope stays. */
     let reed_slope = -0.3f64;
     /*
      * V2 breath rides the MEASURED speaking band of the segmented lattice,
@@ -1038,6 +1044,9 @@ fn clr_render_inner(
     let register_corner_hz = (CLR_SOUND_SPEED_M_PER_S / (4.0 * register_effective_chimney))
         .clamp(2_000.0, radiated_corner_cap_hz);
     let mut register_radiation = OnePoleLoss::new(1.0 - exp(-TAU * register_corner_hz / sr));
+    /* DC tracker for the vent's quadratic even-harmonic term. */
+    let vent_dc_alpha = 1.0 - exp(-TAU * 40.0 / sr);
+    let mut vent_dc = 0.0f64;
     let mask = fingering_mask(midi);
     let register_vent_open = dynamic_reed && midi >= 70;
     let hole_positions: [usize; 6] = core::array::from_fn(|index| {
@@ -1247,7 +1256,25 @@ fn clr_render_inner(
             for index in 0..hole_radiation.len() {
                 hole_field += hole_radiation[index].process(hole_waves[index]);
             }
-            hole_field += register_radiation.process(register_wave);
+            /* Clarion even-harmonic radiation (reference-similarity sweep
+             * 2026-08-07, FreePats D5): the open register vent is what
+             * breaks the bore's odd-only symmetry, and the real clarion h2
+             * measures near 0 dB rel h1 where the shipped mix left it at
+             * -36 dB. The vent's radiated share rises with the clarion
+             * regime; loop physics is untouched (output-side mix only). */
+            let clarion_vent_boost = 1.0 + 2.4 * ((m - 68.0) / 8.0).clamp(0.0, 1.0);
+            hole_field += register_radiation.process(register_wave) * clarion_vent_boost;
+            /* The open vent is a small orifice driven at bore pressure, and
+             * orifice flow is quadratic in pressure: the classic source of
+             * the clarion's strong SECOND harmonic (real D5 h2 ~ 0 dB rel
+             * h1; the linear lattice alone leaves it at -37 dB). A bounded
+             * squared term with its DC removed by the shared blocker adds
+             * exactly that even content, gated to the open-vent regime.
+             * Calibrated against the FreePats D5 profile 2026-08-07. */
+            let vent_quadratic = (bell_incident * bell_incident - vent_dc) * 5.0
+                * ((m - 68.0) / 8.0).clamp(0.0, 1.0);
+            vent_dc += vent_dc_alpha * (bell_incident * bell_incident - vent_dc);
+            hole_field += vent_quadratic;
         }
 
         /* Radiated field: gentle differentiation, band-limited, near-dry
