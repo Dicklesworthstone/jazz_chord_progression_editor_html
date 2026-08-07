@@ -21,6 +21,7 @@ import {
   AUDIO_ENGINE_SNAPSHOT_SCHEMA,
   AUDIO_ID_PATTERN_SOURCE,
   AUDIO_MIX_POLICY,
+  AUDIO_SOURCE_STOP_PADDING_SECONDS,
   MAX_AUDIO_DEBUG_EVENTS,
   MAX_AUDIO_GATE_SECONDS,
   MAX_AUDIO_GENERATION,
@@ -67,6 +68,7 @@ import {
   PHYSICAL_RENDER_LIMITS,
   type ExpressiveVoiceGesture,
 } from "./physical-renderer-contract";
+import { physicalParameterPackSha256 } from "./physical-parameter-packs";
 import {
   CONCERT_GRAND_RENDERER_ALGORITHM_ID,
   WAVEGUIDE_CLARINET_V2_ALGORITHM_ID,
@@ -747,10 +749,15 @@ export type AudioEngineRenderCacheLimitsForTest = Readonly<{
   maximumCachePcmBytes?: number;
 }>;
 
+export type AudioEngineRendererOverridesForTest = Readonly<{
+  waveguide: ReadonlyMap<string, WaveguideRenderer>;
+}>;
+
 function createAudioEngineInternal(
   platform: AudioPlatform,
   sequenceSeed: AudioEngineSequenceSeedForTest,
   renderCacheLimitsForTest: AudioEngineRenderCacheLimitsForTest = {},
+  rendererOverridesForTest: AudioEngineRendererOverridesForTest | null = null,
 ): AudioEngine {
   const maximumGlobalCacheEntries =
     renderCacheLimitsForTest.maximumCacheEntries ??
@@ -793,6 +800,7 @@ function createAudioEngineInternal(
     algorithmId: string,
   ): Readonly<{
     algorithmId: string;
+    wasmSha256?: string;
     renderNote: (
       midiPitch: number,
       velocity: number,
@@ -801,6 +809,7 @@ function createAudioEngineInternal(
       variationSlot?: number,
       windArticulation?: "legato" | "tongued",
     ) => ReturnType<ConcertGrandRenderer["renderNote"]>;
+    renderChord?: WaveguideRenderer["renderChord"];
   }> | null {
     if (algorithmId === CONCERT_GRAND_RENDERER_ALGORITHM_ID) return renderer;
     const waveguide = waveguideRenderers?.get(algorithmId);
@@ -1039,6 +1048,87 @@ function createAudioEngineInternal(
     return `${instrumentId}:${String(midiPitch)}:${String(renderVelocity)}:${String(seconds)}:${gestureIdentity}`;
   }
 
+  type RenderedChordVoice = Readonly<{
+    midiPitch: MidiPitch;
+    velocity: number;
+    physicalGesture: ExpressiveVoiceGesture | null;
+  }>;
+
+  type RenderedChordPair = Readonly<{
+    midiPitch: MidiPitch;
+    velocity: number;
+  }>;
+
+  function canonicalRenderedChordPairs(
+    voices: readonly RenderedChordVoice[],
+  ): readonly RenderedChordPair[] {
+    return Object.freeze(
+      voices
+        .map((voice) => Object.freeze({
+          midiPitch: voice.midiPitch,
+          velocity: quantizeRenderVelocity(
+            voice.physicalGesture === null
+              ? voice.velocity
+              : physicalGestureExcitationVelocity(
+                  voice.physicalGesture,
+                  voice.velocity,
+                ),
+          ),
+        }))
+        .sort((left, right) =>
+          left.midiPitch - right.midiPitch || left.velocity - right.velocity
+        ),
+    );
+  }
+
+  function isSharedPluckedChordRecipe(
+    recipe: AudioRenderedInstrumentRecipe,
+  ): boolean {
+    return recipe.renderer.algorithmId.startsWith("changes.dsp.plucked-");
+  }
+
+  /*
+   * A simultaneous plucked chord is one physical render: its strings share
+   * the same body and (for electric) amplifier state.  The cache identity
+   * therefore binds the whole canonical pitch/velocity set, not caller order.
+   * Keep the algorithm, exact embedded-WASM identity, reviewed parameter
+   * pack, folded pitches, quantized excitation velocities, render bucket,
+   * and physical family/version explicit so no model revision can reuse PCM
+   * produced by a different physical system.
+   */
+  function renderedChordBufferKey(
+    recipe: AudioRenderedInstrumentRecipe,
+    chordRenderer: NonNullable<ReturnType<typeof rendererForAlgorithm>>,
+    voices: readonly RenderedChordVoice[],
+    seconds: number,
+  ): string {
+    const family = expectedPhysicalFamily(recipe.id) ?? "none";
+    const versions = [
+      ...new Set(
+        voices.map(
+          (voice) =>
+            voice.physicalGesture?.instrumentVersionId ??
+            `changes.physical.${recipe.id}.v2`,
+        ),
+      ),
+    ].sort();
+    const pairs = canonicalRenderedChordPairs(voices);
+    const pitchVelocities = pairs.map((pair) =>
+      `${String(pair.midiPitch)}@${String(pair.velocity)}`
+    ).join(",");
+    return [
+      recipe.id,
+      "physical-chord-v1",
+      `algorithm=${chordRenderer.algorithmId}`,
+      `wasm=${chordRenderer.wasmSha256 ?? "non-wasm"}`,
+      `pack=${physicalParameterPackSha256(recipe.id)}`,
+      `family=${family}`,
+      `versions=${versions.join(",")}`,
+      `pitch-velocities=${pitchVelocities}`,
+      `seconds=${String(seconds)}`,
+    ].join(":");
+  }
+
   function storeRenderedPcm(
     recipe: AudioRenderedInstrumentRecipe,
     context: AudioContextPort,
@@ -1138,6 +1228,52 @@ function createAudioEngineInternal(
     if (pcm === null) return null;
     return storeRenderedPcm(recipe, context, key, pcm);
   }
+
+  /** Resolve one shared-body/shared-amplifier buffer for a plucked chord. */
+  function renderedChordBufferFor(
+    recipe: AudioRenderedInstrumentRecipe,
+    context: AudioContextPort,
+    voices: readonly RenderedChordVoice[],
+    requestedSeconds: number,
+  ): AudioBufferPort | null {
+    if (voices.length < 2) return null;
+    const chordRenderer = rendererForAlgorithm(recipe.renderer.algorithmId);
+    if (chordRenderer?.renderChord === undefined) return null;
+    const seconds = bucketRenderSeconds(requestedSeconds);
+    const key = renderedChordBufferKey(recipe, chordRenderer, voices, seconds);
+    const cache = recipeBufferCache(recipe.id);
+    const cached = touchRenderedBufferEntry(cache, key);
+    if (cached !== undefined) return cached.buffer;
+    const pairs = canonicalRenderedChordPairs(voices);
+    const pcm = chordRenderer.renderChord(
+      pairs.map((pair) => pair.midiPitch),
+      pairs.map((pair) => pair.velocity),
+      context.sampleRate,
+      seconds,
+    );
+    if (pcm === null) return null;
+    return storeRenderedPcm(recipe, context, key, pcm);
+  }
+
+  /** Attack-time lookup is deliberately cache-only: physical rendering is
+   * admitted by preparation, never synchronously on the audio scheduler. */
+  function cachedRenderedChordBufferFor(
+    recipe: AudioRenderedInstrumentRecipe,
+    voices: readonly RenderedChordVoice[],
+    requestedSeconds: number,
+  ): AudioBufferPort | null {
+    if (voices.length < 2) return null;
+    const chordRenderer = rendererForAlgorithm(recipe.renderer.algorithmId);
+    if (chordRenderer?.renderChord === undefined) return null;
+    const key = renderedChordBufferKey(
+      recipe,
+      chordRenderer,
+      voices,
+      bucketRenderSeconds(requestedSeconds),
+    );
+    return touchRenderedBufferEntry(recipeBufferCache(recipe.id), key)?.buffer ??
+      null;
+  }
   let reportedContextState: AudioContextStatePort | "absent" = "absent";
   let mix: AudioMix = Object.freeze({ masterVolume: 1, reverbAmount: 0 });
   let lastAcceptedGestureSequence = 0;
@@ -1149,14 +1285,22 @@ function createAudioEngineInternal(
   let initializationPromise: Promise<
     AudioEngineResult<AudioInitializationReceipt>
   > | null = null;
-  let resumePromise: Promise<AudioEngineResult<AudioInitializationReceipt>> | null =
+  let resumePromise: Promise<
+    AudioEngineResult<AudioInitializationReceipt>
+  > | null = null;
+  let disposePromise: Promise<AudioEngineResult<AudioDisposeReceipt>> | null =
     null;
-  let disposePromise: Promise<AudioEngineResult<AudioDisposeReceipt>> | null = null;
+  let renderedPreparationGeneration = 0;
 
-  function incrementWork(
-    name: keyof MutableWorkCounters,
-    count = 1,
-  ): void {
+  function nextRenderedPreparationGeneration(): number {
+    renderedPreparationGeneration =
+      renderedPreparationGeneration >= MAX_AUDIO_INTERNAL_SEQUENCE
+        ? 1
+        : renderedPreparationGeneration + 1;
+    return renderedPreparationGeneration;
+  }
+
+  function incrementWork(name: keyof MutableWorkCounters, count = 1): void {
     const next = work[name] + count;
     if (!Number.isSafeInteger(next) || next > MAX_AUDIO_INTERNAL_SEQUENCE) {
       throw new InternalSequenceExhausted("AUDIO_WORK_COUNTER_EXHAUSTED");
@@ -1168,6 +1312,96 @@ function createAudioEngineInternal(
     (count) => { incrementWork("registryReads", count); },
     (count) => { incrementWork("registryWrites", count); },
   );
+
+  /*
+   * A rendered plucked chord owns one physical source but retains one logical
+   * registry voice per requested pitch.  These two indexes make that
+   * ownership explicit: source completion removes the entire logical chord,
+   * and selecting any member for retirement can stop the composite owner.
+   */
+  const renderedChordOwnerByMember = new Map<number, number>();
+  const renderedChordMembersByOwner = new Map<number, readonly number[]>();
+
+  function registerRenderedChordOwnership(voices: readonly SynthVoice[]): void {
+    const owner = voices[0];
+    if (owner === undefined || voices.length < 2) return;
+    const members = Object.freeze(voices.map((voice) => voice.instanceToken));
+    renderedChordMembersByOwner.set(owner.instanceToken, members);
+    for (const member of members) {
+      renderedChordOwnerByMember.set(member, owner.instanceToken);
+    }
+  }
+
+  function forgetRenderedChordOwnership(ownerToken: number): void {
+    const members = renderedChordMembersByOwner.get(ownerToken);
+    if (members === undefined) return;
+    renderedChordMembersByOwner.delete(ownerToken);
+    for (const member of members) renderedChordOwnerByMember.delete(member);
+  }
+
+  function clearRenderedChordOwnership(): void {
+    renderedChordOwnerByMember.clear();
+    renderedChordMembersByOwner.clear();
+  }
+
+  function prepareRenderedChordLogicalVoice(
+    request: Readonly<{
+      context: AudioContextPort;
+      graphInstanceId: number;
+      instanceToken: number;
+      voiceSpec: ValidatedVoiceSpec;
+      owner: AudioVoiceOwner;
+      eventId: string;
+      instrumentId: InstrumentId;
+      originalBatchVoiceCount: number;
+      normalizationGain: number;
+      velocityGain: number;
+      recipe: AudioRenderedInstrumentRecipe;
+      startTimeSeconds: number;
+      releaseTimeSeconds: number;
+    }>,
+  ): SynthVoice {
+    /* No PCM source and no graph edge: this record owns identity/lifecycle
+     * only. The first chord voice is the named composite source owner. */
+    const amplitudeGain = request.context.createGain();
+    amplitudeGain.gain.value = 0;
+    const peakGain = request.normalizationGain * request.velocityGain;
+    const sourceStopTimeSeconds =
+      request.releaseTimeSeconds +
+      request.recipe.amplitude.releaseSeconds +
+      AUDIO_SOURCE_STOP_PADDING_SECONDS;
+    return {
+      graphInstanceId: request.graphInstanceId,
+      instanceToken: request.instanceToken,
+      voiceId: request.voiceSpec.voiceId,
+      owner: copyAudioOwner(request.owner),
+      eventId: request.eventId,
+      instrumentId: request.instrumentId,
+      midiPitch: request.voiceSpec.midiPitch,
+      velocity: request.voiceSpec.velocity,
+      originalBatchVoiceCount: request.originalBatchVoiceCount,
+      normalizationGain: request.normalizationGain,
+      velocityGain: request.velocityGain,
+      peakGain,
+      attackTimeSeconds: request.startTimeSeconds,
+      naturalReleaseTimeSeconds: request.releaseTimeSeconds,
+      amplitudeAttackSeconds: request.recipe.amplitude.attackSeconds,
+      amplitudeDecaySeconds: request.recipe.amplitude.decaySeconds,
+      sustainLevel: request.recipe.amplitude.sustainLevel,
+      amplitudeGain,
+      sources: Object.freeze([]),
+      ownedNodes: Object.freeze([amplitudeGain]),
+      endedSourceOrdinals: new Set<number>(),
+      effectiveReleaseTimeSeconds: request.releaseTimeSeconds,
+      releaseDurationSeconds: request.recipe.amplitude.releaseSeconds,
+      heldGainAtRelease: peakGain * request.recipe.amplitude.sustainLevel,
+      sourceStopTimeSeconds,
+      cleanupDeadlineSeconds: sourceStopTimeSeconds,
+      forcedReason: null,
+      started: false,
+      cleaned: false,
+    };
+  }
 
   function nextSequence(kind: SequenceKind): number {
     const current =
@@ -1542,6 +1776,7 @@ function createAudioEngineInternal(
         cleanupSynthVoice(voice);
       }
     }
+    clearRenderedChordOwnership();
     return voices.length;
   }
 
@@ -1593,6 +1828,7 @@ function createAudioEngineInternal(
       }
       cleanupSynthVoice(voice);
     }
+    clearRenderedChordOwnership();
   }
 
   function teardownFatalResources(): void {
@@ -1711,9 +1947,26 @@ function createAudioEngineInternal(
         });
         return;
       }
-      registry.remove(instanceToken);
-      const clean = cleanupSynthVoice(voice);
-      recordDebug("voice-cleanup", "audio.voice.cleanup.completed", { voice });
+      const chordMembers = renderedChordMembersByOwner.get(instanceToken);
+      if (chordMembers === undefined) {
+        registry.remove(instanceToken);
+        const clean = cleanupSynthVoice(voice);
+        recordDebug("voice-cleanup", "audio.voice.cleanup.completed", {
+          voice,
+        });
+        if (!clean) enterFatalFault("audio.voice.cleanup.disconnect_failed");
+        return;
+      }
+      forgetRenderedChordOwnership(instanceToken);
+      let clean = true;
+      for (const memberToken of chordMembers) {
+        const member = registry.remove(memberToken);
+        if (member === undefined) continue;
+        clean = cleanupSynthVoice(member) && clean;
+        recordDebug("voice-cleanup", "audio.voice.cleanup.completed", {
+          voice: member,
+        });
+      }
       if (!clean) enterFatalFault("audio.voice.cleanup.disconnect_failed");
     } catch (error) {
       if (error instanceof InternalSequenceExhausted) {
@@ -1836,7 +2089,8 @@ function createAudioEngineInternal(
     if (renderer === null) {
       try {
         renderer = await loadConcertGrandRenderer();
-        waveguideRenderers = await loadWaveguideRenderers();
+        waveguideRenderers = rendererOverridesForTest?.waveguide ??
+          await loadWaveguideRenderers();
       } catch {
         renderer = null;
         waveguideRenderers = null;
@@ -2401,6 +2655,39 @@ function createAudioEngineInternal(
     reason: ForcedAudioRetirementReason,
     atTimeSeconds: number,
   ): boolean {
+    const compositeOwnerToken = renderedChordOwnerByMember.get(
+      voice.instanceToken,
+    );
+    const chordMembers = compositeOwnerToken === undefined
+      ? null
+      : renderedChordMembersByOwner.get(compositeOwnerToken) ?? null;
+    if (chordMembers !== null) {
+      let requestedReleased = false;
+      for (const memberToken of chordMembers) {
+        const member = registry.get(memberToken);
+        if (member === undefined) continue;
+        const released = forceReleaseSynthVoice(
+          member,
+          reason,
+          atTimeSeconds,
+          (count) => { incrementWork("parameterEventsScheduled", count); },
+        );
+        if (memberToken === voice.instanceToken) requestedReleased = released;
+        if (released) {
+          const kind: AudioDebugEventKind =
+            reason === "note-retrigger"
+              ? "voice-retrigger-retire"
+              : reason === "voice-steal"
+              ? "voice-steal"
+              : "voice-release";
+          recordDebug(kind, `audio.voice.release.${reason}`, {
+            voice: member,
+            scheduledTimeSeconds: atTimeSeconds,
+          });
+        }
+      }
+      return requestedReleased;
+    }
     const released = forceReleaseSynthVoice(
       voice,
       reason,
@@ -2458,47 +2745,79 @@ function createAudioEngineInternal(
       /*
        * Rendered recipes resolve every buffer before any node, registry, or
        * retirement mutation so the batch refusal stays atomic. The prepare
-       * operation keeps this a cache hit; a miss renders synchronously.
+       * operation keeps this a cache hit. Shared plucked chords refuse on a
+       * miss rather than running a physical render on the audio scheduler.
        */
       let renderedBuffers: readonly AudioBufferPort[] | null = null;
+      let renderedChordBuffer: AudioBufferPort | null = null;
       if (recipe.synthesis === "rendered") {
-        const resolved: AudioBufferPort[] = [];
-        for (const voiceSpec of attack.voices) {
-          /*
-           * Only as much audio as this voice can sound: the gate plus the
-           * recipe release and a short tail. A performance gates most notes
-           * far short of their natural decay, and rendering the untouched
-           * remainder is the dominant cost on a slow engine.
-           */
-          const buffer = renderedBufferFor(
-            recipe,
-            context,
-            voiceSpec.midiPitch,
-            voiceSpec.velocity,
-            gatedRenderWindowSeconds(
-              attack.releaseTimeSeconds -
-                attack.startTimeSeconds,
-              recipe,
-            ),
-            voiceSpec.physicalGesture,
-          );
-          if (buffer === null) {
+        const requestedSeconds = gatedRenderWindowSeconds(
+          attack.releaseTimeSeconds - attack.startTimeSeconds,
+          recipe,
+        );
+        const requiresSharedChord =
+          attack.voices.length > 1 && isSharedPluckedChordRecipe(recipe);
+        if (requiresSharedChord) {
+          if (
+            rendererForAlgorithm(recipe.renderer.algorithmId)?.renderChord ===
+            undefined
+          ) {
             return refuse({
               code: "audio.renderer_unavailable",
               path: ["instrumentId"],
             });
           }
-          resolved.push(buffer);
+          renderedChordBuffer = cachedRenderedChordBufferFor(
+            recipe,
+            attack.voices,
+            requestedSeconds,
+          );
+          if (renderedChordBuffer === null) {
+            return refuse({
+              code: "audio.renderer_unavailable",
+              path: ["instrumentId"],
+            });
+          }
+        } else {
+          const resolved: AudioBufferPort[] = [];
+          for (const voiceSpec of attack.voices) {
+            /*
+             * Only as much audio as this voice can sound: the gate plus the
+             * recipe release and a short tail. A performance gates most notes
+             * far short of their natural decay, and rendering the untouched
+             * remainder is the dominant cost on a slow engine.
+             */
+            const buffer = renderedBufferFor(
+              recipe,
+              context,
+              voiceSpec.midiPitch,
+              voiceSpec.velocity,
+              requestedSeconds,
+              voiceSpec.physicalGesture,
+            );
+            if (buffer === null) {
+              return refuse({
+                code: "audio.renderer_unavailable",
+                path: ["instrumentId"],
+              });
+            }
+            resolved.push(buffer);
+          }
+          renderedBuffers = resolved;
         }
-        renderedBuffers = resolved;
       }
       const normalizationGain = normalizationGainForVoiceCount(
         recipe.outputLevel,
         attack.voices.length,
       );
-      const velocityGains = attack.voices.map((voiceSpec) =>
-        velocityGainForVelocity(voiceSpec.velocity),
-      );
+      /* Shared chord PCM already contains every string's excitation
+       * velocity. Applying the first logical voice's envelope velocity to
+       * the whole buffer would double-scale and make request order audible. */
+      const velocityGains = renderedChordBuffer === null
+        ? attack.voices.map((voiceSpec) =>
+            velocityGainForVelocity(voiceSpec.velocity),
+          )
+        : attack.voices.map(() => 1);
       const instanceTokens = attack.voices.map(() =>
         nextSequence("voice"),
       );
@@ -2525,29 +2844,50 @@ function createAudioEngineInternal(
           ) {
             throw new Error("AUDIO_PREPARED_VOICE_PLAN_MISMATCH");
           }
-          const voice = prepareSynthVoice({
-            context,
-            instrumentBus: graph.instrumentBus,
-            pulseWave: graph.pulseWave,
-            graphInstanceId: graph.instanceId,
-            instanceToken,
-            voiceId: voiceSpec.voiceId,
-            owner: attack.owner,
-            eventId: attack.eventId,
-            instrumentId: attack.instrumentId,
-            midiPitch: voiceSpec.midiPitch,
-            velocity: voiceSpec.velocity,
-            originalBatchVoiceCount: attack.voices.length,
-            normalizationGain,
-            velocityGain,
-            recipe,
-            renderedBuffer: renderedBuffers?.[index] ?? null,
-            startTimeSeconds: attack.startTimeSeconds,
-            releaseTimeSeconds: attack.releaseTimeSeconds,
-            onSourceEnded: handleSourceEnded,
-            recordParameterEvents: (count) =>
-              { incrementWork("parameterEventsScheduled", count); },
-          });
+          const voice =
+            renderedChordBuffer !== null &&
+            index > 0 &&
+            recipe.synthesis === "rendered"
+              ? prepareRenderedChordLogicalVoice({
+                  context,
+                  graphInstanceId: graph.instanceId,
+                  instanceToken,
+                  voiceSpec,
+                  owner: attack.owner,
+                  eventId: attack.eventId,
+                  instrumentId: attack.instrumentId,
+                  originalBatchVoiceCount: attack.voices.length,
+                  normalizationGain,
+                  velocityGain,
+                  recipe,
+                  startTimeSeconds: attack.startTimeSeconds,
+                  releaseTimeSeconds: attack.releaseTimeSeconds,
+                })
+              : prepareSynthVoice({
+                  context,
+                  instrumentBus: graph.instrumentBus,
+                  pulseWave: graph.pulseWave,
+                  graphInstanceId: graph.instanceId,
+                  instanceToken,
+                  voiceId: voiceSpec.voiceId,
+                  owner: attack.owner,
+                  eventId: attack.eventId,
+                  instrumentId: attack.instrumentId,
+                  midiPitch: voiceSpec.midiPitch,
+                  velocity: voiceSpec.velocity,
+                  originalBatchVoiceCount: attack.voices.length,
+                  normalizationGain,
+                  velocityGain,
+                  recipe,
+                  renderedBuffer:
+                    renderedChordBuffer ?? renderedBuffers?.[index] ?? null,
+                  startTimeSeconds: attack.startTimeSeconds,
+                  releaseTimeSeconds: attack.releaseTimeSeconds,
+                  onSourceEnded: handleSourceEnded,
+                  recordParameterEvents: (count) => {
+                    incrementWork("parameterEventsScheduled", count);
+                  },
+                });
           prepared.push(voice);
           incrementWork("voicesCreated", 1);
           incrementWork("scheduledSourcesCreated", voice.sources.length);
@@ -2568,6 +2908,9 @@ function createAudioEngineInternal(
         releaseVoice(voice, "voice-steal", atTimeSeconds);
       }
       for (const voice of prepared) registry.add(voice);
+      if (renderedChordBuffer !== null) {
+        registerRenderedChordOwnership(prepared);
+      }
       for (const voice of prepared) {
         startSynthVoice(voice);
         recordDebug("voice-attack", "audio.voice.attack", {
@@ -2840,6 +3183,8 @@ function createAudioEngineInternal(
   async function prepareRenderedAudioVoices(
     request: PrepareRenderedVoicesRequest,
   ): Promise<AudioEngineResult<PrepareRenderedVoicesReceipt>> {
+    /* A newer preparation supersedes older cache-warm work at every yield. */
+    const preparationGeneration = nextRenderedPreparationGeneration();
     const started = beginOperation();
     if (started !== null) return refuse(started);
     if (state === "closed") {
@@ -2881,12 +3226,22 @@ function createAudioEngineInternal(
     ) {
       try {
         renderer = await loadConcertGrandRenderer();
-        waveguideRenderers = await loadWaveguideRenderers();
+        waveguideRenderers = rendererOverridesForTest?.waveguide ??
+          await loadWaveguideRenderers();
       } catch {
         return refuse({
           code: "audio.renderer_unavailable",
           path: ["instrumentId"],
         });
+      }
+      if (preparationGeneration !== renderedPreparationGeneration) {
+        return success(
+          Object.freeze({
+            instrumentId: instrumentId.value,
+            renderedCount: 0,
+            cachedCount: 0,
+          }),
+        );
       }
     }
     if (rendererForAlgorithm(recipe.renderer.algorithmId) === null) {
@@ -2898,6 +3253,217 @@ function createAudioEngineInternal(
     const notesValue = requestValue["notes"];
     if (!Array.isArray(notesValue)) {
       return refuse({ code: "audio.midi_pitch_invalid", path: ["notes"] });
+    }
+
+    const pluckedRenderer = rendererForAlgorithm(recipe.renderer.algorithmId);
+    if (
+      isSharedPluckedChordRecipe(recipe) &&
+      notesValue.length > 1 &&
+      pluckedRenderer?.renderChord === undefined
+    ) {
+      return refuse({
+        code: "audio.renderer_unavailable",
+        path: ["instrumentId"],
+      });
+    }
+    if (pluckedRenderer?.renderChord !== undefined && notesValue.length > 1) {
+      type PreparedPluckedNote = RenderedChordVoice &
+        Readonly<{
+          seconds: number;
+          bucket: number;
+          eventId: string | null;
+        }>;
+      const pluckedNotes: PreparedPluckedNote[] = [];
+      let eligible = true;
+      for (let index = 0; index < notesValue.length; index += 1) {
+        const noteValue: unknown = notesValue[index];
+        if (!isRecord(noteValue)) {
+          return refuse({
+            code: "audio.midi_pitch_invalid",
+            path: ["notes", index],
+          });
+        }
+        const midiPitchRaw = makeMidiPitch(
+          typeof noteValue["midiPitch"] === "number"
+            ? noteValue["midiPitch"]
+            : -1,
+        );
+        if (!midiPitchRaw.ok) {
+          return refuse({
+            code: "audio.midi_pitch_invalid",
+            path: ["notes", index, "midiPitch"],
+          });
+        }
+        const velocity = noteValue["velocity"];
+        if (
+          typeof velocity !== "number" ||
+          !Number.isInteger(velocity) ||
+          velocity < 1 ||
+          velocity > 127
+        ) {
+          return refuse({
+            code: "audio.velocity_invalid",
+            path: ["notes", index, "velocity"],
+          });
+        }
+        const physicalGestureValue = noteValue["physicalGesture"];
+        let physicalGesture: ExpressiveVoiceGesture | null = null;
+        if (physicalGestureValue !== undefined) {
+          if (
+            !isExpressiveVoiceGesture(physicalGestureValue) ||
+            physicalGestureValue.instrumentFamily !==
+              expectedPhysicalFamily(instrumentId.value)
+          ) {
+            return refuse({
+              code: "audio.voice_id_invalid",
+              path: ["notes", index, "physicalGesture"],
+            });
+          }
+          physicalGesture = physicalGestureValue;
+        }
+        /* Phrase/state metadata belongs to the clarinet path, never PLK2. */
+        if (
+          noteValue["physicalFrameCount"] !== undefined ||
+          noteValue["physicalCacheFingerprint"] !== undefined ||
+          noteValue["physicalStateReset"] !== undefined
+        ) {
+          eligible = false;
+          break;
+        }
+        const gateSecondsValue = noteValue["gateSeconds"];
+        if (
+          gateSecondsValue !== undefined &&
+          (typeof gateSecondsValue !== "number" ||
+            !Number.isFinite(gateSecondsValue) ||
+            gateSecondsValue <= 0 ||
+            gateSecondsValue > MAX_AUDIO_GATE_SECONDS)
+        ) {
+          return refuse({
+            code: "audio.start_time_invalid",
+            path: ["notes", index, "gateSeconds"],
+          });
+        }
+        const seconds =
+          gateSecondsValue === undefined
+            ? PREPARE_RENDER_SECONDS
+            : gatedRenderWindowSeconds(gateSecondsValue, recipe);
+        pluckedNotes.push(
+          Object.freeze({
+            midiPitch: foldPitchForRecipe(recipe.id, midiPitchRaw.value),
+            velocity,
+            physicalGesture,
+            seconds,
+            bucket: bucketRenderSeconds(seconds),
+            eventId: physicalGesture?.eventId ?? null,
+          }),
+        );
+      }
+
+      if (eligible) {
+        /* Gestured performance notes group by immutable event identity. A
+         * preview has no gesture/event metadata, so its one bounded request
+         * is the explicit chord identity. Gate bucket remains part of the
+         * grouping and of the composite cache key. */
+        const groups = new Map<string, PreparedPluckedNote[]>();
+        for (const note of pluckedNotes) {
+          const groupKey = `${note.eventId ?? "request"}:${String(note.bucket)}`;
+          const group = groups.get(groupKey) ?? [];
+          group.push(note);
+          groups.set(groupKey, group);
+        }
+        if ([...groups.values()].some((group) => group.length > 6)) {
+          return refuse({
+            code: "audio.renderer_unavailable",
+            path: ["instrumentId"],
+          });
+        }
+        {
+          let renderedCount = 0;
+          let cachedCount = 0;
+          for (const group of groups.values()) {
+            if (group.length === 1) {
+              const note = group[0];
+              if (note === undefined) continue;
+              const key = renderedBufferKey(
+                recipe.id,
+                note.midiPitch,
+                note.velocity,
+                note.bucket,
+                note.physicalGesture,
+              );
+              if (
+                touchRenderedBufferEntry(recipeBufferCache(recipe.id), key) !==
+                undefined
+              ) {
+                cachedCount += 1;
+                continue;
+              }
+              if (
+                renderedBufferFor(
+                  recipe,
+                  context,
+                  note.midiPitch,
+                  note.velocity,
+                  note.seconds,
+                  note.physicalGesture,
+                ) === null
+              ) {
+                return refuse({
+                  code: "audio.renderer_unavailable",
+                  path: ["instrumentId"],
+                });
+              }
+            } else {
+              const key = renderedChordBufferKey(
+                recipe,
+                pluckedRenderer,
+                group,
+                group[0]?.bucket ?? PREPARE_RENDER_SECONDS,
+              );
+              if (
+                touchRenderedBufferEntry(recipeBufferCache(recipe.id), key) !==
+                undefined
+              ) {
+                cachedCount += 1;
+                continue;
+              }
+              if (
+                renderedChordBufferFor(
+                  recipe,
+                  context,
+                  group,
+                  group[0]?.seconds ?? PREPARE_RENDER_SECONDS,
+                ) === null
+              ) {
+                return refuse({
+                  code: "audio.renderer_unavailable",
+                  path: ["instrumentId"],
+                });
+              }
+            }
+            renderedCount += 1;
+            await new Promise<void>((resolve) => {
+              setTimeout(resolve, 0);
+            });
+            if (preparationGeneration !== renderedPreparationGeneration) {
+              return success(
+                Object.freeze({
+                  instrumentId: instrumentId.value,
+                  renderedCount,
+                  cachedCount,
+                }),
+              );
+            }
+          }
+          return success(
+            Object.freeze({
+              instrumentId: instrumentId.value,
+              renderedCount,
+              cachedCount,
+            }),
+          );
+        }
+      }
     }
     let renderedCount = 0;
     let cachedCount = 0;
@@ -3029,6 +3595,15 @@ function createAudioEngineInternal(
         await new Promise<void>((resolve) => {
           setTimeout(resolve, 0);
         });
+        if (preparationGeneration !== renderedPreparationGeneration) {
+          return success(
+            Object.freeze({
+              instrumentId: instrumentId.value,
+              renderedCount,
+              cachedCount,
+            }),
+          );
+        }
         continue;
       }
       const gateSecondsValue = noteValue["gateSeconds"];
@@ -3096,6 +3671,15 @@ function createAudioEngineInternal(
       await new Promise<void>((resolve) => {
         setTimeout(resolve, 0);
       });
+      if (preparationGeneration !== renderedPreparationGeneration) {
+        return success(
+          Object.freeze({
+            instrumentId: instrumentId.value,
+            renderedCount,
+            cachedCount,
+          }),
+        );
+      }
     }
     return success(
       Object.freeze({
@@ -3146,6 +3730,22 @@ export function createAudioEngineWithRenderCacheLimitsForTest(
     platform,
     ZERO_AUDIO_ENGINE_SEQUENCE_SEED,
     limits,
+  );
+}
+
+/**
+ * Deep-module-only renderer seam for deterministic engine scheduling tests.
+ * Production construction always loads the hash-checked embedded WASM map.
+ */
+export function createAudioEngineWithWaveguideRenderersForTest(
+  platform: AudioPlatform,
+  waveguide: ReadonlyMap<string, WaveguideRenderer>,
+): AudioEngine {
+  return createAudioEngineInternal(
+    platform,
+    ZERO_AUDIO_ENGINE_SEQUENCE_SEED,
+    {},
+    Object.freeze({ waveguide }),
   );
 }
 

@@ -97,6 +97,16 @@ export type WaveguideRenderer = Readonly<{
     variationSlot?: number,
     windArticulation?: WindAttackArticulation,
   ) => RenderedNotePcm | null;
+  /**
+   * One simultaneous plucked-instrument chord through one shared body and
+   * amplifier. Present only when the embedded WASM carries the chord ABI.
+   */
+  renderChord?: (
+    midiPitches: readonly number[],
+    velocities: readonly number[],
+    sampleRateHz: number,
+    maxSeconds?: number,
+  ) => RenderedNotePcm | null;
   /** Stateful physical phrase path, present only on clarinet v2. */
   renderPhraseSegment?: (
     midiPitch: number,
@@ -360,6 +370,16 @@ type ConcertGrandExports = Readonly<{
     pack: number,
     midi: number,
     velocity: number,
+    sampleRate: number,
+    left: number,
+    right: number,
+    maxFrames: number,
+  ) => number;
+  plk2_render_chord?: (
+    pack: number,
+    midis: number,
+    velocities: number,
+    noteCount: number,
     sampleRate: number,
     left: number,
     right: number,
@@ -998,6 +1018,18 @@ function optionalPluckedStemExports(
   });
 }
 
+function optionalPluckedChordExport(
+  rawExports: Readonly<Record<string, unknown>>,
+): Pick<ConcertGrandExports, "plk2_render_chord"> {
+  if (rawExports["plk2_render_chord"] === undefined) return Object.freeze({});
+  return Object.freeze({
+    plk2_render_chord: requireExportedFunction(
+      rawExports,
+      "plk2_render_chord",
+    ) as NonNullable<ConcertGrandExports["plk2_render_chord"]>,
+  });
+}
+
 async function instantiate(): Promise<DspCore> {
   const bytes = decodeWasmBytes();
   const { instance } = await WebAssembly.instantiate(bytes, {});
@@ -1052,6 +1084,7 @@ async function instantiate(): Promise<DspCore> {
       rawExports,
       "plk2_render",
     ) as ConcertGrandExports["plk2_render"],
+    ...optionalPluckedChordExport(rawExports),
     ...optionalPluckedStemExports(rawExports),
     flt_note_frames: requireExportedFunction(
       rawExports,
@@ -1534,6 +1567,73 @@ async function instantiate(): Promise<DspCore> {
     };
   };
 
+  const makePluckedChordRender = (
+    packIndex: number,
+  ): WaveguideRenderer["renderChord"] | undefined => {
+    const renderChordInto = exports.plk2_render_chord;
+    if (renderChordInto === undefined) return undefined;
+    return (midiPitches, velocities, sampleRateHz, maxSeconds) => {
+      if (
+        midiPitches.length === 0 || midiPitches.length > 6 ||
+        midiPitches.length !== velocities.length ||
+        midiPitches.some((midi) => !Number.isSafeInteger(midi)) ||
+        velocities.some((velocity) =>
+          !Number.isSafeInteger(velocity) || velocity < 1 || velocity > 127
+        )
+      ) return null;
+      const firstMidi = midiPitches[0];
+      if (firstMidi === undefined) return null;
+      const natural = exports.plk2_note_frames(packIndex, firstMidi, sampleRateHz);
+      if (natural <= 0) return null;
+      const capacity =
+        maxSeconds === undefined || !Number.isFinite(maxSeconds)
+          ? natural
+          : Math.min(
+              natural,
+              Math.max(1, Math.round(maxSeconds * sampleRateHz)),
+            );
+      const channelBytes = capacity * 4;
+      const leftPointer = scratchBase;
+      const rightPointer = leftPointer + channelBytes;
+      const midiPointer = rightPointer + channelBytes;
+      const velocityPointer = midiPointer + midiPitches.length * 4;
+      const totalBytes = velocityPointer + velocities.length * 4 - scratchBase;
+      ensureCapacity(memory, scratchBase, totalBytes);
+      new Int32Array(memory.buffer, midiPointer, midiPitches.length).set(midiPitches);
+      new Int32Array(memory.buffer, velocityPointer, velocities.length).set(velocities);
+      const written = renderChordInto(
+        packIndex,
+        midiPointer,
+        velocityPointer,
+        midiPitches.length,
+        sampleRateHz,
+        leftPointer,
+        rightPointer,
+        capacity,
+      );
+      if (written <= 0 || written > capacity) return null;
+      const left = new Float32Array(written);
+      const right = new Float32Array(written);
+      left.set(new Float32Array(memory.buffer, leftPointer, written));
+      right.set(new Float32Array(memory.buffer, rightPointer, written));
+      if (written === capacity && capacity < natural) {
+        const fade = Math.min(Math.round(0.015 * sampleRateHz), written);
+        for (let index = 0; index < fade; index += 1) {
+          const gain = (fade - index) / fade;
+          const at = written - fade + index;
+          left[at] = (left[at] ?? 0) * gain;
+          right[at] = (right[at] ?? 0) * gain;
+        }
+      }
+      return Object.freeze({
+        sampleRateHz,
+        frameCount: written,
+        left,
+        right,
+      });
+    };
+  };
+
   const renderClarinetPhraseSegment: NonNullable<
     WaveguideRenderer["renderPhraseSegment"]
   > = (
@@ -1817,6 +1917,23 @@ async function instantiate(): Promise<DspCore> {
         renderNote: renderNoteFor,
       }),
     );
+  }
+  for (const [algorithmId, packIndex] of [
+    [PLUCKED_ARCHTOP_V2_ALGORITHM_ID, 0],
+    [PLUCKED_ELECTRIC_V2_ALGORITHM_ID, 1],
+    [PLUCKED_DREADNOUGHT_ALGORITHM_ID, 2],
+    [PLUCKED_UKULELE_ALGORITHM_ID, 3],
+    [PLUCKED_UPRIGHT_BASS_ALGORITHM_ID, PLK2_UPRIGHT_BASS_PACK_INDEX],
+  ] as const) {
+    const subject = waveguide.get(algorithmId);
+    if (subject === undefined) throw new Error(`DSP_PLUCKED_RENDERER_MISSING:${algorithmId}`);
+    const renderChord = makePluckedChordRender(packIndex);
+    if (renderChord !== undefined) {
+      waveguide.set(
+        algorithmId,
+        Object.freeze({ ...subject, renderChord }),
+      );
+    }
   }
   const uprightBass = waveguide.get(PLUCKED_UPRIGHT_BASS_ALGORITHM_ID);
   if (uprightBass === undefined) throw new Error("DSP_UPRIGHT_BASS_MISSING");
