@@ -12,6 +12,10 @@ import { resolve } from "node:path";
 import { describe, expect, test } from "bun:test";
 
 import {
+  CONCERT_GRAND_WASM_BASE64,
+  CONCERT_GRAND_WASM_SHA256,
+} from "../../src/audio/wasm/concert-grand-wasm";
+import {
   LEDGER_PATH,
   collectEngineRoutedAlgorithmIds,
   collectRecipeAlgorithmIds,
@@ -27,6 +31,14 @@ import {
   type SignalFeatures,
 } from "../../scripts/reference-similarity";
 import { runPluckedV2ReleaseGate } from "../../scripts/run-plucked-v2-release-gate";
+import {
+  FLUTE_V2_REFERENCE_RUNNER_POLICY,
+  bindFluteV2ReferenceMatrixCell,
+  runUiowaFluteV2Reference,
+  summarizeFluteV2ReferenceCells,
+  verifyFluteV2ReferenceRunEvidenceAgainstReplay,
+  type FluteV2ReferenceRunResult,
+} from "../../scripts/run-uiowa-flute-v2-reference";
 
 const root = resolve(import.meta.dir, "../..");
 
@@ -231,6 +243,80 @@ describe("ledger evaluation fails closed", () => {
         evidence.wasmSha256,
       )).toEqual([]);
     }
+  });
+
+  test("flute@2 requires exact replay of the evidence against embedded shipping WASM", async () => {
+    const algorithmId = FLUTE_V2_REFERENCE_RUNNER_POLICY.rendererAlgorithmId;
+    const row: LedgerRow = {
+      ...approvedRow(algorithmId),
+      status: "machine-delegated",
+      evidence: "release-evidence/audio/listening/flute-v2.json",
+    };
+    const replay = await runUiowaFluteV2Reference({
+      root,
+      wasmBytes: new Uint8Array(Buffer.from(CONCERT_GRAND_WASM_BASE64, "base64")),
+    });
+    expect(replay.summary.outcome).toBe("pass");
+    expect(replay.wasmSha256).toBe(CONCERT_GRAND_WASM_SHA256);
+    expect(evaluateGate(
+      [algorithmId],
+      [row],
+      () => replay,
+      CONCERT_GRAND_WASM_SHA256,
+      { fluteV2: replay },
+    )).toEqual([]);
+
+    expect(evaluateGate(
+      [algorithmId],
+      [row],
+      () => replay,
+      CONCERT_GRAND_WASM_SHA256,
+    ).map((finding) => finding.code)).toEqual(["MODEL_DELEGATED_REPLAY_REQUIRED"]);
+
+    const staleSourceSha256 = sha256Hex("stale-flute-renderer-source");
+    const staleCells = replay.cells.map((cell) => {
+      return bindFluteV2ReferenceMatrixCell({
+        id: cell.id,
+        midi: cell.midi,
+        dynamic: cell.dynamic,
+        velocity: cell.velocity,
+        outcome: cell.outcome,
+        findings: cell.findings,
+        report: cell.report,
+        identityComparison: cell.identityComparison,
+        bindings: cell.bindings === null
+          ? null
+          : { ...cell.bindings, rendererSourceSha256: staleSourceSha256 },
+      });
+    });
+    const stale: FluteV2ReferenceRunResult = {
+      ...replay,
+      rendererSourceSha256: staleSourceSha256,
+      cells: staleCells,
+      summary: summarizeFluteV2ReferenceCells(staleCells),
+    };
+    expect(verifyFluteV2ReferenceRunEvidenceAgainstReplay(stale, stale)).toBe(true);
+    expect(evaluateGate(
+      [algorithmId],
+      [row],
+      () => stale,
+      CONCERT_GRAND_WASM_SHA256,
+      { fluteV2: replay },
+    ).map((finding) => finding.code)).toEqual(["MODEL_DELEGATED_INVALID_EVIDENCE"]);
+
+    const tampered: FluteV2ReferenceRunResult = {
+      ...replay,
+      cells: replay.cells.map((cell, index) => index === 0
+        ? { ...cell, evidenceSha256: sha256Hex("tampered-cell-evidence") }
+        : cell),
+    };
+    expect(evaluateGate(
+      [algorithmId],
+      [row],
+      () => tampered,
+      CONCERT_GRAND_WASM_SHA256,
+      { fluteV2: replay },
+    ).map((finding) => finding.code)).toEqual(["MODEL_DELEGATED_INVALID_EVIDENCE"]);
   });
 });
 

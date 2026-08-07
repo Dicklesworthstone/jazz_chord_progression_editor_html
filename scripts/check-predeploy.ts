@@ -22,6 +22,7 @@
  *
  * Exit codes: 0 = PASS, 1 = gate failure, 2 = usage/internal error.
  */
+import { Buffer } from "node:buffer";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -29,18 +30,25 @@ import {
   AUDIO_IMPULSE_ALGORITHM_ID,
   AUDIO_INSTRUMENT_RECIPES,
 } from "../src/audio/instrument-recipes-contract";
-import { CONCERT_GRAND_WASM_SHA256 } from "../src/audio/wasm/concert-grand-wasm";
+import {
+  CONCERT_GRAND_WASM_BASE64,
+  CONCERT_GRAND_WASM_SHA256,
+} from "../src/audio/wasm/concert-grand-wasm";
 import {
   verifyGateEvidence,
   type GateEvidenceV1,
 } from "./reference-similarity";
 import {
   verifyClarinetReferenceRunEvidence,
-  type ClarinetReferenceRunResult,
 } from "./run-uiowa-clarinet-reference";
 import {
+  FLUTE_V2_REFERENCE_RUNNER_POLICY,
+  runUiowaFluteV2Reference,
+  verifyFluteV2ReferenceRunEvidenceAgainstReplay,
+  type FluteV2ReferenceRunResult,
+} from "./run-uiowa-flute-v2-reference";
+import {
   verifyPluckedV2ReleaseEvidence,
-  type PluckedV2ReleaseEvidence,
 } from "./run-plucked-v2-release-gate";
 
 export const LEDGER_PATH =
@@ -61,6 +69,10 @@ export type LedgerRow = Readonly<{
 }>;
 
 export type GateFinding = Readonly<{ code: string; detail: string }>;
+
+export type GateReplayResults = Readonly<{
+  fluteV2?: FluteV2ReferenceRunResult;
+}>;
 
 export function collectRecipeAlgorithmIds(): readonly string[] {
   const ids = new Set<string>([AUDIO_IMPULSE_ALGORITHM_ID]);
@@ -165,8 +177,9 @@ export function parseLedger(value: unknown): readonly LedgerRow[] | GateFinding 
 export function evaluateGate(
   shippingIds: readonly string[],
   rows: readonly LedgerRow[],
-  loadEvidence: (path: string) => unknown | undefined,
+  loadEvidence: (path: string) => unknown,
   currentWasmSha256?: string,
+  replays: GateReplayResults = {},
 ): readonly GateFinding[] {
   const findings: GateFinding[] = [];
   const byId = new Map(rows.map((row) => [row.algorithmId, row]));
@@ -198,17 +211,34 @@ export function evaluateGate(
         });
         continue;
       }
-      let semanticPass = false;
+      let semanticPass: boolean;
       let evidencedAlgorithmIds: readonly string[] = [];
       let evidencedWasmSha256: string | null = null;
       try {
-        if (verifyClarinetReferenceRunEvidence(evidence)) {
-          const matrix = evidence as ClarinetReferenceRunResult;
+        if (id === FLUTE_V2_REFERENCE_RUNNER_POLICY.rendererAlgorithmId) {
+          if (replays.fluteV2 === undefined) {
+            findings.push({
+              code: "MODEL_DELEGATED_REPLAY_REQUIRED",
+              detail: `${id} is machine-delegated but no exact shipping-WASM replay was provided`,
+            });
+            continue;
+          }
+          semanticPass = verifyFluteV2ReferenceRunEvidenceAgainstReplay(
+            evidence,
+            replays.fluteV2,
+          );
+          if (semanticPass) {
+            const matrix = evidence as FluteV2ReferenceRunResult;
+            evidencedAlgorithmIds = [matrix.policy.rendererAlgorithmId];
+            evidencedWasmSha256 = matrix.wasmSha256;
+          }
+        } else if (verifyClarinetReferenceRunEvidence(evidence)) {
+          const matrix = evidence;
           semanticPass = true;
           evidencedAlgorithmIds = [matrix.policy.rendererAlgorithmId];
           evidencedWasmSha256 = matrix.wasmSha256;
         } else if (verifyPluckedV2ReleaseEvidence(evidence)) {
-          const matrix = evidence as PluckedV2ReleaseEvidence;
+          const matrix = evidence;
           semanticPass = true;
           evidencedAlgorithmIds = matrix.algorithmIds;
           evidencedWasmSha256 = matrix.wasmSha256;
@@ -252,7 +282,7 @@ export function evaluateGate(
   return findings;
 }
 
-function main(): number {
+async function main(): Promise<number> {
   const root = resolve(import.meta.dir, "..");
   const ledgerRaw = readFileSync(resolve(root, LEDGER_PATH), "utf8");
   let ledgerValue: unknown;
@@ -268,6 +298,7 @@ function main(): number {
     console.error(`FAIL ${finding.code} ${finding.detail}`);
     return 1;
   }
+  const ledgerRows = rows as readonly LedgerRow[];
   const dspRendererSource = readFileSync(
     resolve(root, "src/audio/dsp-renderer.ts"),
     "utf8",
@@ -282,14 +313,28 @@ function main(): number {
       ...collectEngineRoutedAlgorithmIds(dspRendererSource, audioEngineSource),
     ]),
   ].sort();
-  const findings = evaluateGate(shippingIds, rows, (path) => {
+  const needsFluteV2Replay = shippingIds.includes(
+    FLUTE_V2_REFERENCE_RUNNER_POLICY.rendererAlgorithmId,
+  ) && ledgerRows.some((row) =>
+    row.algorithmId === FLUTE_V2_REFERENCE_RUNNER_POLICY.rendererAlgorithmId &&
+    row.status === "machine-delegated",
+  );
+  const replays: GateReplayResults = needsFluteV2Replay
+    ? {
+      fluteV2: await runUiowaFluteV2Reference({
+        root,
+        wasmBytes: new Uint8Array(Buffer.from(CONCERT_GRAND_WASM_BASE64, "base64")),
+      }),
+    }
+    : {};
+  const findings = evaluateGate(shippingIds, ledgerRows, (path) => {
     try {
       const value: unknown = JSON.parse(readFileSync(resolve(root, path), "utf8"));
       return value;
     } catch {
       return undefined;
     }
-  }, CONCERT_GRAND_WASM_SHA256);
+  }, CONCERT_GRAND_WASM_SHA256, replays);
   if (findings.length > 0) {
     for (const finding of findings) {
       console.error(`FAIL ${finding.code} ${finding.detail}`);
@@ -306,5 +351,5 @@ function main(): number {
 }
 
 if (import.meta.main) {
-  process.exit(main());
+  process.exitCode = await main();
 }
