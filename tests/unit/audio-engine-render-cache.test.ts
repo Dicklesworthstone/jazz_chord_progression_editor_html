@@ -59,17 +59,26 @@ test("one recipe's entry limit evicts only its own entries, and an LRU refresh p
   await prepareNotes(ready, "concert-grand", [60]);
   const pianoWarm = bufferCreates(fake);
 
-  const guitarKeys = range(36, 64);
+  /*
+   * Re-pinned for the instrument-range fold policy
+   * (jcpe-instrument-range-fold-policy-s1uz): guitar realizes only pitches
+   * inside its 40-88 window, capping distinct pitch entries at 49, so the
+   * 64 distinct cache entries come from 49 in-window pitches at one
+   * velocity band plus 15 more at a second band. The eviction and LRU
+   * assertions below are unchanged.
+   */
+  const guitarKeys = range(40, 49);
   await prepareNotes(ready, "guitar", guitarKeys);
+  await prepareNotes(ready, "guitar", range(40, 15), 30);
   const guitarFull = bufferCreates(fake);
   expect(guitarFull - pianoWarm).toBe(64);
 
   /* Refresh guitar key #1 so the next eviction must choose key #2. */
-  await prepareNotes(ready, "guitar", [36]);
+  await prepareNotes(ready, "guitar", [40]);
   expect(bufferCreates(fake)).toBe(guitarFull);
 
   /* The 65th distinct guitar key evicts exactly one guitar entry. */
-  await prepareNotes(ready, "guitar", [101]);
+  await prepareNotes(ready, "guitar", [55], 30);
   const afterOverflow = bufferCreates(fake);
   expect(afterOverflow).toBe(guitarFull + 1);
 
@@ -78,9 +87,9 @@ test("one recipe's entry limit evicts only its own entries, and an LRU refresh p
   expect(bufferCreates(fake)).toBe(afterOverflow);
 
   /* The refreshed guitar key survived; the unrefreshed oldest did not. */
-  await prepareNotes(ready, "guitar", [36]);
+  await prepareNotes(ready, "guitar", [40]);
   expect(bufferCreates(fake)).toBe(afterOverflow);
-  await prepareNotes(ready, "guitar", [37]);
+  await prepareNotes(ready, "guitar", [41]);
   expect(bufferCreates(fake)).toBe(afterOverflow + 1);
 }, 120_000);
 

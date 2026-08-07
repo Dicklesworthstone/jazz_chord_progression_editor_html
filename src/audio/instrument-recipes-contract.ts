@@ -455,3 +455,77 @@ export const AUDIO_NORMALIZATION_POLICY = Object.freeze({
   minimumVelocity: 1,
   maximumVelocity: 127,
 } as const);
+
+/**
+ * Playable MIDI window per recipe id and the octave-fold realization policy
+ * (bead jcpe-instrument-range-fold-policy-s1uz, RC1+RC3 remediation).
+ *
+ * Charts are instrument-agnostic: the shared immutable playback plan may hand
+ * any instrument any pitch. Each instrument declares the window it can render
+ * faithfully — real-instrument range intersected with the model's measured
+ * domain — and the engine folds out-of-window pitches by the MINIMAL number
+ * of whole octaves into the window at voice intake (attack and prepare), so
+ * cache keys, renders, gestures, and collision checks all see one pitch.
+ *
+ * This is a documented realization policy, not a document repair: stored
+ * document pitches and MIDI export never consume it. Every window spans at
+ * least MINIMUM_FOLD_WINDOW_SEMITONES so the minimal-octave fold target is
+ * unique and total (statically tested).
+ *
+ * Window rationale: acoustic models use the measured/real ranges named in
+ * their design claims (flute C4-C7 covers RC3 — charts reaching MIDI 45-53
+ * fold up to the register the reference gate actually measured; clarinet is
+ * its measured fit domain; guitars E2-E6; sampled bass E1-G4; vibes F3-F6).
+ * Synth recipes accept the full keyboard: their oscillators are range-safe.
+ * When physical plucked models re-land with Rust-side windows, those windows
+ * must assert-equal these rows (one source of truth; see the re-land bead).
+ */
+export const MINIMUM_FOLD_WINDOW_SEMITONES = 12;
+
+export const AUDIO_PLAYABLE_MIDI_WINDOWS = Object.freeze({
+  "mellow-keys": Object.freeze({ low: 21, high: 108 }),
+  "fm-electric-piano": Object.freeze({ low: 21, high: 108 }),
+  vibraphone: Object.freeze({ low: 53, high: 89 }),
+  "warm-pad": Object.freeze({ low: 21, high: 108 }),
+  "analog-poly": Object.freeze({ low: 21, high: 108 }),
+  "concert-grand": Object.freeze({ low: 21, high: 108 }),
+  flute: Object.freeze({ low: 60, high: 96 }),
+  organ: Object.freeze({ low: 21, high: 108 }),
+  guitar: Object.freeze({ low: 40, high: 88 }),
+  "upright-bass": Object.freeze({ low: 28, high: 67 }),
+  "concert-vibes": Object.freeze({ low: 53, high: 89 }),
+  "blues-guitar": Object.freeze({ low: 40, high: 88 }),
+  clarinet: Object.freeze({ low: 50, high: 89 }),
+} as const satisfies Readonly<Record<string, Readonly<{ low: number; high: number }>>>);
+
+export type PlayableMidiWindow = Readonly<{ low: number; high: number }>;
+
+export function playableMidiWindowForRecipeId(
+  recipeId: string,
+): PlayableMidiWindow | null {
+  const window = (AUDIO_PLAYABLE_MIDI_WINDOWS as Readonly<Record<string, PlayableMidiWindow>>)[recipeId];
+  return window ?? null;
+}
+
+/**
+ * Minimal whole-octave transposition of `midiPitch` into `window`.
+ *
+ * In-window pitches return unchanged. A pitch below the window rises, and a
+ * pitch above falls, by the fewest octaves that land inside; the result is
+ * unique because every registered window spans >= 12 semitones. Returns the
+ * input unchanged (never throws) for degenerate windows narrower than an
+ * octave — the static registry test forbids registering one.
+ */
+export function foldMidiPitchIntoWindow(
+  midiPitch: number,
+  window: PlayableMidiWindow,
+): number {
+  if (window.high - window.low < MINIMUM_FOLD_WINDOW_SEMITONES) return midiPitch;
+  if (midiPitch >= window.low && midiPitch <= window.high) return midiPitch;
+  if (midiPitch < window.low) {
+    const octaves = Math.ceil((window.low - midiPitch) / 12);
+    return midiPitch + 12 * octaves;
+  }
+  const octaves = Math.ceil((midiPitch - window.high) / 12);
+  return midiPitch - 12 * octaves;
+}

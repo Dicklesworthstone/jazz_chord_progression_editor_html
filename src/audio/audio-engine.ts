@@ -100,6 +100,8 @@ import {
   AUDIO_PERSISTENT_GRAPH_SETTINGS,
   type AudioInstrumentRecipe,
   type AudioRenderedInstrumentRecipe,
+  foldMidiPitchIntoWindow,
+  playableMidiWindowForRecipeId,
 } from "./instrument-recipes-contract";
 import {
   cleanupSynthVoice,
@@ -938,6 +940,40 @@ function createAudioEngineInternal(
     recipe: Readonly<{ amplitude: Readonly<{ releaseSeconds: number }> }>,
   ): number {
     return gateSeconds + recipe.amplitude.releaseSeconds + 0.25;
+  }
+
+  /*
+   * Single fold authority for voice intake (attack and prepare): every voice
+   * pitch is folded into the recipe's playable window exactly once, before
+   * any cache key, render, gesture, or collision decision reads it. See
+   * foldMidiPitchIntoWindow in the recipes contract for the policy law.
+   */
+  function foldPitchForRecipe(recipeId: string, midiPitch: MidiPitch): MidiPitch {
+    const window = playableMidiWindowForRecipeId(recipeId);
+    if (window === null) return midiPitch;
+    const folded = foldMidiPitchIntoWindow(midiPitch, window);
+    if (folded === midiPitch) return midiPitch;
+    /*
+     * The fold target always sits inside a validated 0..127 window, so the
+     * re-brand cannot fail; makeMidiPitch keeps the branded type honest.
+     */
+    const remade = makeMidiPitch(folded);
+    if (!remade.ok) return midiPitch;
+    return remade.value;
+  }
+
+  function foldAttackRequestVoices(
+    attack: ValidatedAttack,
+    recipeId: string,
+  ): ValidatedAttack {
+    const voices = attack.voices.map((voice) => {
+      const folded = foldPitchForRecipe(recipeId, voice.midiPitch);
+      if (folded === voice.midiPitch) return voice;
+      return Object.freeze({ ...voice, midiPitch: folded });
+    });
+    const changed = voices.some((voice, index) => voice !== attack.voices[index]);
+    if (!changed) return attack;
+    return Object.freeze({ ...attack, voices: Object.freeze(voices) });
   }
 
   /*
@@ -2400,7 +2436,15 @@ function createAudioEngineInternal(
       );
       if (!validated.ok) return refuse(validated.failure);
       const recipe = recipeForInstrument(validated.value.instrumentId);
-      const plan = planAttack(validated.value, recipe, atTimeSeconds);
+      /*
+       * Instrument-range octave fold (jcpe-instrument-range-fold-policy-s1uz):
+       * fold every voice pitch into the recipe's playable window BEFORE the
+       * attack plan, so collision checks, cache keys, renders, and gestures
+       * all see the same realized pitch. Documented realization policy; the
+       * stored document and MIDI export never consume it.
+       */
+      const attack = foldAttackRequestVoices(validated.value, recipe.id);
+      const plan = planAttack(attack, recipe, atTimeSeconds);
       if (!plan.ok) return refuse(plan.failure);
       /*
        * Rendered recipes resolve every buffer before any node, registry, or
@@ -2410,7 +2454,7 @@ function createAudioEngineInternal(
       let renderedBuffers: readonly AudioBufferPort[] | null = null;
       if (recipe.synthesis === "rendered") {
         const resolved: AudioBufferPort[] = [];
-        for (const voiceSpec of validated.value.voices) {
+        for (const voiceSpec of attack.voices) {
           /*
            * Only as much audio as this voice can sound: the gate plus the
            * recipe release and a short tail. A performance gates most notes
@@ -2423,8 +2467,8 @@ function createAudioEngineInternal(
             voiceSpec.midiPitch,
             voiceSpec.velocity,
             gatedRenderWindowSeconds(
-              validated.value.releaseTimeSeconds -
-                validated.value.startTimeSeconds,
+              attack.releaseTimeSeconds -
+                attack.startTimeSeconds,
               recipe,
             ),
             voiceSpec.physicalGesture,
@@ -2441,16 +2485,16 @@ function createAudioEngineInternal(
       }
       const normalizationGain = normalizationGainForVoiceCount(
         recipe.outputLevel,
-        validated.value.voices.length,
+        attack.voices.length,
       );
-      const velocityGains = validated.value.voices.map((voiceSpec) =>
+      const velocityGains = attack.voices.map((voiceSpec) =>
         velocityGainForVelocity(voiceSpec.velocity),
       );
-      const instanceTokens = validated.value.voices.map(() =>
+      const instanceTokens = attack.voices.map(() =>
         nextSequence("voice"),
       );
       const attackedVoiceIds = Object.freeze(
-        validated.value.voices.map((voiceSpec) => voiceSpec.voiceId),
+        attack.voices.map((voiceSpec) => voiceSpec.voiceId),
       );
       const retriggeredVoiceIds = Object.freeze(
         plan.retriggers.map((voice) => voice.voiceId),
@@ -2461,8 +2505,8 @@ function createAudioEngineInternal(
       const prepared: SynthVoice[] = [];
       preparedForRollback = prepared;
       try {
-        for (let index = 0; index < validated.value.voices.length; index += 1) {
-          const voiceSpec = validated.value.voices[index];
+        for (let index = 0; index < attack.voices.length; index += 1) {
+          const voiceSpec = attack.voices[index];
           const velocityGain = velocityGains[index];
           const instanceToken = instanceTokens[index];
           if (
@@ -2479,18 +2523,18 @@ function createAudioEngineInternal(
             graphInstanceId: graph.instanceId,
             instanceToken,
             voiceId: voiceSpec.voiceId,
-            owner: validated.value.owner,
-            eventId: validated.value.eventId,
-            instrumentId: validated.value.instrumentId,
+            owner: attack.owner,
+            eventId: attack.eventId,
+            instrumentId: attack.instrumentId,
             midiPitch: voiceSpec.midiPitch,
             velocity: voiceSpec.velocity,
-            originalBatchVoiceCount: validated.value.voices.length,
+            originalBatchVoiceCount: attack.voices.length,
             normalizationGain,
             velocityGain,
             recipe,
             renderedBuffer: renderedBuffers?.[index] ?? null,
-            startTimeSeconds: validated.value.startTimeSeconds,
-            releaseTimeSeconds: validated.value.releaseTimeSeconds,
+            startTimeSeconds: attack.startTimeSeconds,
+            releaseTimeSeconds: attack.releaseTimeSeconds,
             onSourceEnded: handleSourceEnded,
             recordParameterEvents: (count) =>
               { incrementWork("parameterEventsScheduled", count); },
@@ -2508,7 +2552,7 @@ function createAudioEngineInternal(
         releaseVoice(
           voice,
           "note-retrigger",
-          validated.value.startTimeSeconds,
+          attack.startTimeSeconds,
         );
       }
       for (const voice of plan.steals) {
@@ -2525,9 +2569,9 @@ function createAudioEngineInternal(
 
       return success(
         Object.freeze({
-          owner: copyAudioOwner(validated.value.owner),
-          eventId: validated.value.eventId,
-          instrumentId: validated.value.instrumentId,
+          owner: copyAudioOwner(attack.owner),
+          eventId: attack.eventId,
+          instrumentId: attack.instrumentId,
           attackedVoiceIds,
           retriggeredVoiceIds,
           stolenVoiceIds,
@@ -2857,17 +2901,26 @@ function createAudioEngineInternal(
           path: ["notes", index],
         });
       }
-      const midiPitch = makeMidiPitch(
+      const midiPitchRaw = makeMidiPitch(
         typeof noteValue["midiPitch"] === "number"
           ? noteValue["midiPitch"]
           : -1,
       );
-      if (!midiPitch.ok) {
+      if (!midiPitchRaw.ok) {
         return refuse({
           code: "audio.midi_pitch_invalid",
           path: ["notes", index, "midiPitch"],
         });
       }
+      /*
+       * Same fold authority as the attack path: prepare must warm exactly
+       * the pitches attacks will render, or the cache warms dead entries
+       * (the 2026-08-07 RC1 class).
+       */
+      const midiPitch = Object.freeze({
+        ok: true as const,
+        value: foldPitchForRecipe(recipe.id, midiPitchRaw.value),
+      });
       const velocity = noteValue["velocity"];
       if (
         typeof velocity !== "number" ||
