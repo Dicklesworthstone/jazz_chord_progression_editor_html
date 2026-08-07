@@ -9,6 +9,7 @@ import {
   type RenderedNotePcm,
   type WindAttackArticulation,
 } from "../src/audio/dsp-renderer";
+import { screenListeningCandidate } from "./listening-screen";
 
 const SAMPLE_RATE_HZ = 48_000;
 const NOTE_SECONDS = 1.75;
@@ -131,11 +132,29 @@ export async function renderClarinetListeningPack(
   const root = resolve(outputDirectory, runId);
   await mkdir(root, { recursive: true });
   const clips: Record<string, unknown>[] = [];
+  /*
+   * Pre-listening screen: owner listening 2026-08-06 was spent discovering
+   * machine-detectable "pure noise" cells. Every candidate is screened
+   * (pitch lock, HNR floor + comparator margin, high-band ceiling) before
+   * the pack ships; failing cells still write their WAVs but are marked
+   * SCREEN-FAILED in the manifest and the command exits nonzero.
+   */
+  const screenFailures: string[] = [];
   for (const testCase of CASES) {
     const args = [testCase.midiPitch, testCase.velocity, SAMPLE_RATE_HZ, NOTE_SECONDS, testCase.variationSlot, testCase.articulation] as const;
     const legacyPcm = legacy.renderNote(...args);
     const candidatePcm = candidate.renderNote(...args);
     if (legacyPcm === null || candidatePcm === null) throw new Error(`PHS2_LISTENING_RENDER_REFUSED:${testCase.id}`);
+    const expectedHz = 440 * 2 ** ((testCase.midiPitch - 69) / 12);
+    const screen = screenListeningCandidate(
+      candidatePcm.left,
+      SAMPLE_RATE_HZ,
+      expectedHz,
+      legacyPcm.left,
+    );
+    if (!screen.pass) {
+      screenFailures.push(`${testCase.id}: ${screen.reasons.join("; ")}`);
+    }
     const legacyGain = levelGain(legacyPcm);
     const candidateGain = levelGain(candidatePcm);
     const files = [
@@ -149,6 +168,9 @@ export async function renderClarinetListeningPack(
       ...testCase,
       legacy: { algorithmId: legacy.algorithmId, unscaledRms: rmsAfterAttack(legacyPcm), gain: legacyGain, peak: peak(legacyPcm), file: files[0][0], sha256: sha256(files[0][1]) },
       candidate: { algorithmId: candidate.algorithmId, unscaledRms: rmsAfterAttack(candidatePcm), gain: candidateGain, peak: peak(candidatePcm), file: files[1][0], sha256: sha256(files[1][1]) },
+      preListeningScreen: screen.pass
+        ? { outcome: "passed", ...screen }
+        : { outcome: "SCREEN-FAILED", ...screen },
       comparisons: [
         { order: ["legacy", "candidate"], file: files[2][0], sha256: sha256(files[2][1]) },
         { order: ["candidate", "legacy"], file: files[3][0], sha256: sha256(files[3][1]) },
@@ -183,6 +205,12 @@ export async function renderClarinetListeningPack(
     noteSeconds: NOTE_SECONDS,
     comparisonGapSeconds: GAP_SECONDS,
     levelMatching: { metric: "stereo-rms-after-first-100ms", targetDbfs: -20, maximumGain: MAX_GAIN, peakCeiling: 0.98 },
+    preListeningScreen: {
+      screened: true,
+      failedCaseCount: screenFailures.length,
+      failures: screenFailures,
+      policy: "A SCREEN-FAILED cell ships its WAV for auditability but the command exits nonzero; do not hand the owner a pack with screen failures.",
+    },
     clips,
     manualListening: { performed: false, outcome: "not-assessed", reason: "This command renders evidence; only the owner can record the required listening judgment." },
     legalReferenceRecording,
@@ -200,4 +228,13 @@ if (import.meta.main) {
     process.argv[3],
   );
   console.log(JSON.stringify(report, null, 2));
+  const manifest = report["manifest"] as Record<string, unknown>;
+  const screen = manifest["preListeningScreen"] as { failedCaseCount: number; failures: string[] };
+  if (screen.failedCaseCount > 0) {
+    console.error(
+      `\nPRE-LISTENING SCREEN FAILED (${String(screen.failedCaseCount)} cell(s)) — do NOT audition this pack:\n` +
+        screen.failures.map((line) => `  - ${line}`).join("\n"),
+    );
+    process.exit(1);
+  }
 }

@@ -662,7 +662,13 @@ fn clr_render_inner(
      * box-decimated at the output. Independent alias evidence selects this
      * bounded regime (MIDI >=84 at 44.1/48 kHz); lower notes and 96 kHz stay
      * at one-times because their comparative/absolute cells already pass. */
-    let simulation_oversample = if dynamic_reed && midi >= 84 && sample_rate <= 48_000.0 {
+    /* The fork-fingering pocket (66..67) joins the oversampled regime:
+     * its shunt-lattice drive at full band pressure folds measurably at
+     * 44.1 kHz (alias fixture, 2026-08-07) just like the top register. */
+    let simulation_oversample = if dynamic_reed
+        && (midi >= 84 || (66..=67).contains(&midi))
+        && sample_rate <= 48_000.0
+    {
         2usize
     } else {
         1usize
@@ -720,7 +726,17 @@ fn clr_render_inner(
      * same term is negligible. */
     let rate_term = if dynamic_reed {
         let rate_slope = 0.78 - 0.26 * ((m - 80.0) / 3.0).clamp(0.0, 1.0);
-        rate_slope * (mc - 60.0).max(0.0) * (sample_rate as f64 / 48_000.0 - 1.0)
+        /* Post speaking-band recalibration (2026-08-06 residual sweep at
+         * vel 100): the new operating pressures leave MIDI 83-86 running
+         * +7..+9 cents sharp at 96 kHz only (48/44.1 kHz stay inside the
+         * gate), so the clarion-top slope regains part of what the base
+         * shape removes there. Measured, not derived. */
+        let clarion_top_96k = 0.16
+            * ((m - 79.0) / 4.0).clamp(0.0, 1.0)
+            * ((89.0 - m) / 3.0).clamp(0.0, 1.0);
+        (rate_slope + clarion_top_96k)
+            * (mc - 60.0).max(0.0)
+            * (sample_rate as f64 / 48_000.0 - 1.0)
     } else {
         -0.85 * (mc - 60.0).max(0.0) * (sample_rate as f64 / 48_000.0 - 1.0)
     };
@@ -743,6 +759,16 @@ fn clr_render_inner(
             0.0
         };
         let upper_register = -10.0 * ((m - 76.0) / 8.0).clamp(0.0, 1.0);
+        /* Post speaking-band recalibration (2026-08-06 residual sweep at
+         * vel 100, all three rates): the higher operating pressures leave
+         * a rate-independent flat pocket across MIDI 68-77 (-5.5..-8.4
+         * cents) and a flat altissimo top at 89 (44.1/48 kHz). Both are
+         * corrected here where the other register terms live; the shapes
+         * plateau over the measured pocket and vanish outside it. */
+        let band_pocket = -6.0
+            * ((m - 66.0) / 3.0).clamp(0.0, 1.0)
+            * ((79.0 - m) / 3.0).clamp(0.0, 1.0);
+        let altissimo_top = -5.0 * ((m - 86.0) / 3.0).clamp(0.0, 1.0);
         -7.0 - 32.0 * ((m - 52.0) / 12.0).clamp(0.0, 1.0)
             - 15.0 * ((m - 64.0) / 12.0).clamp(0.0, 1.0)
             - 30.0 * ((m - 76.0) / 8.0).clamp(0.0, 1.0)
@@ -750,6 +776,8 @@ fn clr_render_inner(
             + clarion_shoulder
             + oversampled_upper
             + upper_register
+            + band_pocket
+            + altissimo_top
     } else {
         0.0
     };
@@ -874,7 +902,67 @@ fn clr_render_inner(
      */
     let reed_offset = 0.7f64;
     let reed_slope = -0.3f64;
-    let pressure_target = 0.68 + 0.20 * pow(v_norm, 1.3);
+    /*
+     * V2 breath rides the MEASURED speaking band of the segmented lattice,
+     * not the legacy plateau. The tone-hole/vent shunts radiate energy on
+     * every pass, so the v2 oscillation threshold sits well above the
+     * legacy 0.68 floor and varies with fingering; blowing past the upper
+     * edge closes the reed (phonation is an interval, not a half-line).
+     * Owner listening 2026-08-06 caught the failure (soft cells rendered
+     * as pure noise); the band below was measured by an independent
+     * autocorrelation pitch-lock scan over velocity 1..127 at each anchor
+     * (legato, slot 0, 48 kHz, post noise-law calibration), with margins
+     * of +0.012 above the measured lower edge and -0.008 under the upper.
+     * Dynamics map INTO the band: soft = just above threshold, loud =
+     * short of the squeeze, timbre and level carry the rest. Anchors are
+     * (midi, band_lo, band_hi); linear interpolation between, endpoints
+     * held outside 50..89 (same clamp discipline as the tuning pull).
+     */
+    /* MIDI 66-67 carry a locally harder threshold pocket (fork-fingering
+     * shunt losses peak there): the finer 2026-08-06 verification sweep
+     * caught wrong-mode locks and near-threshold flatness that linear
+     * interpolation across 62..68 missed, and the local re-scan measured
+     * contiguous phonation only from the pressures anchored below. The
+     * dynamic range at those two fingerings is deliberately narrow. */
+    const CLR_V2_SPEAKING_BAND_ANCHORS: [(f64, f64, f64); 10] = [
+        (50.0, 0.780, 0.854),
+        (56.0, 0.760, 0.870),
+        (62.0, 0.760, 0.854),
+        (66.0, 0.828, 0.852),
+        (67.0, 0.836, 0.850),
+        (68.0, 0.794, 0.848),
+        (74.0, 0.790, 0.848),
+        (80.0, 0.712, 0.872),
+        (84.0, 0.692, 0.872),
+        (89.0, 0.856, 0.874),
+    ];
+    let pressure_target = if dynamic_reed {
+        let mb = m.clamp(
+            CLR_V2_SPEAKING_BAND_ANCHORS[0].0,
+            CLR_V2_SPEAKING_BAND_ANCHORS[CLR_V2_SPEAKING_BAND_ANCHORS.len() - 1].0,
+        );
+        let mut band_lo = CLR_V2_SPEAKING_BAND_ANCHORS[0].1;
+        let mut band_hi = CLR_V2_SPEAKING_BAND_ANCHORS[0].2;
+        for window in CLR_V2_SPEAKING_BAND_ANCHORS.windows(2) {
+            let (m0, lo0, hi0) = window[0];
+            let (m1, lo1, hi1) = window[1];
+            if mb >= m0 && mb <= m1 {
+                let t = if m1 > m0 { (mb - m0) / (m1 - m0) } else { 0.0 };
+                band_lo = lo0 + t * (lo1 - lo0);
+                band_hi = hi0 + t * (hi1 - hi0);
+                break;
+            }
+        }
+        /* Pianissimo sits a quarter of the band above the measured lower
+         * edge: the anchors are linear interpolations of a threshold that
+         * bulges between fingerings, and the verification sweep showed the
+         * raw edge leaves vel-1 cells flat or unlocked between anchors.
+         * The remaining three quarters of the band carry the dynamics. */
+        let band_floor = band_lo + 0.25 * (band_hi - band_lo);
+        band_floor + (band_hi - band_floor) * pow(v_norm, 1.3)
+    } else {
+        0.68 + 0.20 * pow(v_norm, 1.3)
+    };
     let attack_step = 1.0 - exp(-1.0 / (0.03 * sr));
     let vibrato_hz = 4.8 * variation.map_or(1.0, |value| value.rate_multiplier);
     let vibrato_depth = 0.012 * variation.map_or(1.0, |value| value.depth_multiplier);
@@ -884,8 +972,17 @@ fn clr_render_inner(
     let (vibrato_step_sin, vibrato_step_cos) = (sin(vibrato_step), cos(vibrato_step));
     let mut vibrato_sin = variation.map_or(0.0, |value| sin(value.phase_radians));
     let mut vibrato_cos = variation.map_or(1.0, |value| cos(value.phase_radians));
-    /* A clarinet is far less breathy than a flute. */
-    let noise_level = 0.005 + 0.009 * v_norm;
+    /* A clarinet is far less breathy than a flute. The v2 lattice also
+     * radiates loop turbulence through the tone-hole/vent paths that the
+     * monolithic v1 loop never exposed, so v2 takes the lower half of the
+     * measured in-loop turbulence band (0.004..0.009); owner listening
+     * 2026-08-06 flagged "background noise hiss" on the loud v2 cells,
+     * measured as ~2 dB HNR deficit against v1 per cell. */
+    let noise_level = if dynamic_reed {
+        0.004 + 0.005 * v_norm
+    } else {
+        0.005 + 0.009 * v_norm
+    };
     let noise_alpha = 1.0 - exp(-TAU * 3_200.0 / sr);
     let mut noise_lp = 0.0f64;
     /* Darker 0.65--2.0 kHz tongue turbulence than the flute jet chiff. */
@@ -921,20 +1018,25 @@ fn clr_render_inner(
     let mut reed_velocity = 0.0;
     let mut elapsed_frames = 0u32;
 
-    /* Band-limit the differentiated radiation (the flute's hiss lesson). */
+    /* Band-limit the differentiated radiation (the flute's hiss lesson).
+     * The v2 hole/vent radiation corners obey the same 5.5 kHz radiated-
+     * field ceiling as the bell: their chimney-derived corners otherwise
+     * reach 7 kHz and pass loop turbulence as audible hiss (owner
+     * listening 2026-08-06). Legacy keeps 7 kHz for byte stability. */
+    let radiated_corner_cap_hz = if dynamic_reed { 5_500.0 } else { 7_000.0 };
     let radiation_alpha = 1.0 - exp(-TAU * 5_500.0 / sr);
     let mut radiation = RadiationFilter::new(radiation_alpha, 6.0);
     let mut hole_radiation: [OnePoleLoss; 6] = core::array::from_fn(|index| {
         let effective_chimney = CLR_HOLE_CHIMNEY_M[index]
             + 2.0 * CLR_APERTURE_END_CORRECTION_RADII * CLR_HOLE_RADIUS_M[index];
-        let corner_hz =
-            (CLR_SOUND_SPEED_M_PER_S / (4.0 * effective_chimney)).clamp(2_000.0, 7_000.0);
+        let corner_hz = (CLR_SOUND_SPEED_M_PER_S / (4.0 * effective_chimney))
+            .clamp(2_000.0, radiated_corner_cap_hz);
         OnePoleLoss::new(1.0 - exp(-TAU * corner_hz / sr))
     });
     let register_effective_chimney =
         CLR_REGISTER_CHIMNEY_M + 2.0 * CLR_APERTURE_END_CORRECTION_RADII * CLR_REGISTER_RADIUS_M;
-    let register_corner_hz =
-        (CLR_SOUND_SPEED_M_PER_S / (4.0 * register_effective_chimney)).clamp(2_000.0, 7_000.0);
+    let register_corner_hz = (CLR_SOUND_SPEED_M_PER_S / (4.0 * register_effective_chimney))
+        .clamp(2_000.0, radiated_corner_cap_hz);
     let mut register_radiation = OnePoleLoss::new(1.0 - exp(-TAU * register_corner_hz / sr));
     let mask = fingering_mask(midi);
     let register_vent_open = dynamic_reed && midi >= 70;
@@ -1150,9 +1252,13 @@ fn clr_render_inner(
 
         /* Radiated field: gentle differentiation, band-limited, near-dry
          * breath. */
+        /* Direct breath bleed obeys the <=0.01 direct-injection law in v2
+         * (0.012 * pressure ~ 0.0102 sat marginally over it); legacy keeps
+         * its shipped constant for byte stability. */
+        let breath_bleed = if dynamic_reed { 0.009 } else { 0.012 };
         let radiated = radiation.process(bell_incident)
             + hole_field
-            + 0.012 * noise_lp * pressure
+            + breath_bleed * noise_lp * pressure
             + chiff;
 
         let mut sample = radiated;
