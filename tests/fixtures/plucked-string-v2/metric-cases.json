@@ -13,7 +13,8 @@
     {"id":"pluck-null","metric":"pluck-null","positionOverScale":0.2,"firstCancelledHarmonic":5},
     {"id":"pickup-null","metric":"pickup-comb","positionOverScale":0.25,"firstCancelledHarmonic":4},
     {"id":"sympathetic","metric":"sympathetic-response","minimumTransferDb":-40,"maximumTransferDb":-10},
-    {"id":"amp-alias","metric":"amp-alias","maximumAliasDbc":-50,"ratesHz":[44100,48000,96000],"oversampleFactors":[4,4,1]},
+    {"id":"amp-alias","metric":"amp-alias","ampId":"marshall-class-drive","defaultOperatingPoint":"crunch","targetDrive":2.2,"requiredStages":["asymmetric-triode","sag","tone-stack","power-stage","closed-back-cabinet"],"maximumAliasDbc":-50,"ratesHz":[44100,48000,96000],"oversampleFactors":[4,4,1],"native96kException":"single-rate-at-96khz-only"},
+    {"id":"amp-transfer-envelope","metric":"amp-transfer","ampId":"marshall-class-drive","authorityId":"pickup-amp-authored-design-targets","referenceStatus":"authored-bounded-design-target-not-measured-marshall-fit","frequencyEnvelopeDb":[[80,-14,-8],[120,-6,1],[720,-1,5],[3200,-4,2],[5200,-12,-5],[8000,-30,-18]],"thdPercentByOperatingPoint":{"clean":[0.5,5],"edge":[3,15],"crunch":[8,30]},"crunchSagGainReductionDb":[1.5,5.5],"pickupElectricalResonanceHz":[2200,5200]},
     {"id":"octave-transposition","metric":"transposition-relations","baseHz":82.406889,"upperHz":164.813778,"expectedRatio":2,"toleranceRelative":0.000001}
   ]
 }
