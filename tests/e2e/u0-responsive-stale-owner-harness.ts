@@ -4,7 +4,7 @@ import { useState } from "preact/hooks";
 import { StudioShell } from "../../src/ui/studio/StudioShell";
 import type {
   StudioLayoutView,
-  StudioPanelSide,
+  StudioSheetId,
   StudioShellCallbacks,
   StudioShellView,
 } from "../../src/ui/studio/studio-contract";
@@ -198,7 +198,7 @@ const BASE_VIEW: Omit<StudioShellView, "layout"> = Object.freeze({
 });
 
 function ResponsiveStaleOwnerHarness() {
-  const [activeSheet, setActiveSheet] = useState<StudioPanelSide | null>(null);
+  const [activeSheet, setActiveSheet] = useState<StudioSheetId | null>(null);
   const [dismissalCount, setDismissalCount] = useState(0);
   const [refusalCount, setRefusalCount] = useState(0);
   const [uiRefusal, setUiRefusal] = useState<

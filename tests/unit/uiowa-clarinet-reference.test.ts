@@ -1,8 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import { readFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 import {
+  CLARINET_REFERENCE_CLI_USAGE,
   CLARINET_REFERENCE_RUNNER_POLICY,
+  parseClarinetReferenceCliArguments,
   runUiowaClarinetReference,
   summarizeClarinetReferenceCells,
   verifyClarinetReferenceRunEvidence,
@@ -129,6 +133,28 @@ readonly ClarinetReferenceMatrixCell[] {
   }));
 }
 
+async function runCli(arguments_: readonly string[]): Promise<Readonly<{
+  exitCode: number;
+  stdout: string;
+  stderr: string;
+}>> {
+  const child = Bun.spawn([
+    process.execPath,
+    join(process.cwd(), "scripts/run-uiowa-clarinet-reference.ts"),
+    ...arguments_,
+  ], {
+    cwd: process.cwd(),
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  const [exitCode, stdout, stderr] = await Promise.all([
+    child.exited,
+    new Response(child.stdout).text(),
+    new Response(child.stderr).text(),
+  ]);
+  return Object.freeze({ exitCode, stdout, stderr });
+}
+
 describe("PHS2 Iowa clarinet reference matrix", () => {
   test("freezes the exact four-pitch, three-dynamic request policy", () => {
     expect(CLARINET_REFERENCE_RUNNER_POLICY.selectedMidi).toEqual([72, 76, 79, 82]);
@@ -235,16 +261,19 @@ describe("PHS2 Iowa clarinet reference matrix", () => {
 
   test("missing, duplicate, or hash-tampered receipts are unavailable", () => {
     const passing = passingCells();
+    const first = passing[0];
+    if (first === undefined || first.evidence === null) {
+      throw new Error("passing matrix fixture did not contain its first evidence cell");
+    }
     expect(summarizeClarinetReferenceCells(passing.slice(0, 11)).outcome).toBe("unavailable");
-    expect(summarizeClarinetReferenceCells([...passing.slice(0, 11), passing[0]!]).findings
+    expect(summarizeClarinetReferenceCells([...passing.slice(0, 11), first]).findings
       .some((item) => item.code === "MATRIX_CELL_DUPLICATE")).toBe(true);
-    const first = passing[0]!;
     const tampered = Object.freeze({
       ...first,
       evidence: Object.freeze({
-        ...first.evidence!,
+        ...first.evidence,
         candidate: Object.freeze({
-          ...first.evidence!.candidate,
+          ...first.evidence.candidate,
           wasmSha256: digest("tampered-wasm"),
         }),
       }),
@@ -272,6 +301,57 @@ describe("PHS2 Iowa clarinet reference matrix", () => {
       );
       expect(result.cells.every((cell) => cell.outcome !== "pass" ||
         (cell.evidence !== null && cell.evidence.outcome === "pass"))).toBe(true);
+    }
+  }, 60_000);
+
+  test("CLI accepts one optional output path and refuses malformed arguments", () => {
+    expect(parseClarinetReferenceCliArguments([])).toEqual({ outputPath: null });
+    expect(parseClarinetReferenceCliArguments(["--output", "/tmp/evidence.json"]))
+      .toEqual({ outputPath: "/tmp/evidence.json" });
+    expect(() => parseClarinetReferenceCliArguments(["--output"]))
+      .toThrow("missing value for --output");
+    expect(() => parseClarinetReferenceCliArguments(["--output", "--output"]))
+      .toThrow("missing value for --output");
+    expect(() => parseClarinetReferenceCliArguments([
+      "--output", "one.json", "--output", "two.json",
+    ])).toThrow("duplicate --output");
+    expect(() => parseClarinetReferenceCliArguments(["--unknown", "value"]))
+      .toThrow("unknown argument");
+    expect(CLARINET_REFERENCE_CLI_USAGE).toContain("[--output <evidence.json>]");
+  });
+
+  test("CLI writes complete evidence and malformed arguments cannot overwrite a target", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "clarinet-v2-cli-output-"));
+    const outputPath = join(directory, "evidence.json");
+    const protectedPath = join(directory, "protected.json");
+    try {
+      const written = await runCli(["--output", outputPath]);
+      expect(written.exitCode).toBe(0);
+      expect(written.stdout).toBe("");
+      expect(written.stderr).toBe("");
+      const writtenEvidence: unknown = JSON.parse(await readFile(outputPath, "utf8"));
+      expect(verifyClarinetReferenceRunEvidence(writtenEvidence)).toBe(true);
+      expect(writtenEvidence).toMatchObject({
+        summary: {
+          outcome: "pass",
+          completedCellCount: 12,
+          passedCellCount: 12,
+          failedCellCount: 0,
+          unavailableCellCount: 0,
+        },
+      });
+
+      await writeFile(protectedPath, "do-not-overwrite", "utf8");
+      const refused = await runCli([
+        "--output", protectedPath, "--output", join(directory, "other.json"),
+      ]);
+      expect(refused.exitCode).toBe(2);
+      expect(refused.stdout).toBe("");
+      expect(refused.stderr).toContain("duplicate --output");
+      expect(refused.stderr).toContain(CLARINET_REFERENCE_CLI_USAGE);
+      expect(await readFile(protectedPath, "utf8")).toBe("do-not-overwrite");
+    } finally {
+      await rm(directory, { recursive: true, force: true });
     }
   }, 60_000);
 });

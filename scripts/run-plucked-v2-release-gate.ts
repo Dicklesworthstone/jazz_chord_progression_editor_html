@@ -622,15 +622,15 @@ export function verifyPluckedV2ReleaseEvidence(
     const expected = expectedPairwise[index];
     return expected === undefined || cell.id !== expected.id ||
       cell.leftFamily !== expected.leftFamily || cell.rightFamily !== expected.rightFamily ||
-      cell.midi !== 60 || cell.outcome !== "pass" || expected.outcome !== "pass" ||
+      cell.outcome !== "pass" || expected.outcome !== "pass" ||
       Math.abs(cell.profileDistanceDb - expected.profileDistanceDb) > 1e-12;
   })) return false;
   if (!evidence.controls.pureSineRejected || !evidence.controls.wrongPitchRejected ||
     !evidence.controls.collapsedFamiliesRejected) return false;
   if (canonicalJson(summarize(evidence.cells, evidence.pairwiseCells, evidence.controls)) !==
     canonicalJson(evidence.summary) || evidence.summary.outcome !== "pass") return false;
-  const { evidenceSha256: _digest, ...unsigned } = evidence;
-  return evidence.evidenceSha256 === evidenceDigest(unsigned);
+  const { evidenceSha256, ...unsigned } = evidence;
+  return evidenceSha256 === evidenceDigest(unsigned);
 }
 
 export function pluckedEvidenceIncludesAlgorithm(

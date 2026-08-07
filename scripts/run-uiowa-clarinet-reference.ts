@@ -1,5 +1,5 @@
 /** Fail-closed clarinet@2 comparison against the pinned Iowa anechoic corpus. */
-import { readdir, readFile } from "node:fs/promises";
+import { readdir, readFile, writeFile } from "node:fs/promises";
 import { join, relative } from "node:path";
 
 import {
@@ -798,8 +798,43 @@ Promise<ClarinetReferenceRunResult> {
   });
 }
 
+export const CLARINET_REFERENCE_CLI_USAGE =
+  "usage: bun scripts/run-uiowa-clarinet-reference.ts [--output <evidence.json>]";
+
+export type ClarinetReferenceCliOptions = Readonly<{
+  outputPath: string | null;
+}>;
+
+export function parseClarinetReferenceCliArguments(
+  arguments_: readonly string[],
+): ClarinetReferenceCliOptions {
+  let outputPath: string | null = null;
+  for (let index = 0; index < arguments_.length; index += 1) {
+    const argument = arguments_[index];
+    if (argument !== "--output") {
+      throw new Error(`unknown argument: ${String(argument)}`);
+    }
+    const value = arguments_[index + 1];
+    if (value === undefined || value.startsWith("--")) {
+      throw new Error("missing value for --output");
+    }
+    if (outputPath !== null) throw new Error("duplicate --output");
+    outputPath = value;
+    index += 1;
+  }
+  return Object.freeze({ outputPath });
+}
+
 if (import.meta.main) {
-  const result = await runUiowaClarinetReference();
-  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-  process.exitCode = result.summary.exitCode;
+  try {
+    const options = parseClarinetReferenceCliArguments(process.argv.slice(2));
+    const result = await runUiowaClarinetReference();
+    const serialized = `${JSON.stringify(result, null, 2)}\n`;
+    if (options.outputPath === null) process.stdout.write(serialized);
+    else await writeFile(options.outputPath, serialized, "utf8");
+    process.exitCode = result.summary.exitCode;
+  } catch (error) {
+    process.stderr.write(`${String(error)}\n${CLARINET_REFERENCE_CLI_USAGE}\n`);
+    process.exitCode = 2;
+  }
 }

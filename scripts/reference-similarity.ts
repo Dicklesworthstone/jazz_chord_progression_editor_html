@@ -621,7 +621,7 @@ function analyzeSignalWithPitchLimit(pcm: MonoPcm, expectedHz: number,
   else {
     if (pitch.periodicity < WIND_REFERENCE_GATE_POLICY.minimumPeriodicity) {
       findings.push(finding("PERIODICITY_TOO_LOW",
-        `periodicity ${pitch.periodicity.toFixed(4)} is below ${WIND_REFERENCE_GATE_POLICY.minimumPeriodicity}`));
+        `periodicity ${pitch.periodicity.toFixed(4)} is below ${String(WIND_REFERENCE_GATE_POLICY.minimumPeriodicity)}`));
     }
     if (Math.abs(pitch.centsFromExpected) > maximumPitchCents) {
       findings.push(finding("PITCH_MISMATCH",
@@ -1049,22 +1049,26 @@ function evidenceSemanticsAreValid(evidence: Omit<GateEvidenceV1, "evidenceSha25
          evidence.reference.expectedHz)) ||
     !findingsAreWellFormed(evidence.findings)) return false;
 
-  if (evidence.outcome === "pass") {
-    if (!controlsAreAllTrue(evidence.controls) || evidence.report === null ||
-      evidence.identityComparison === null || evidence.findings.length !== 0) return false;
-    return evaluateTargetedThresholds(evidence.report, evidence.identityComparison).outcome === "pass";
+  switch (evidence.outcome) {
+    case "pass": {
+      if (!controlsAreAllTrue(evidence.controls) || evidence.report === null ||
+        evidence.identityComparison === null || evidence.findings.length !== 0) return false;
+      return evaluateTargetedThresholds(evidence.report, evidence.identityComparison).outcome === "pass";
+    }
+    case "fail": {
+      if (!controlsAreAllTrue(evidence.controls) || evidence.report === null ||
+        evidence.identityComparison === null || evidence.findings.length === 0) return false;
+      const verdict = evaluateTargetedThresholds(evidence.report, evidence.identityComparison);
+      return verdict.outcome === "fail" &&
+        canonicalJson(verdict.findings) === canonicalJson(evidence.findings);
+    }
+    case "unavailable": {
+      return evidence.findings.length > 0;
+    }
+    default: {
+      return false;
+    }
   }
-  if (evidence.outcome === "fail") {
-    if (!controlsAreAllTrue(evidence.controls) || evidence.report === null ||
-      evidence.identityComparison === null || evidence.findings.length === 0) return false;
-    const verdict = evaluateTargetedThresholds(evidence.report, evidence.identityComparison);
-    return verdict.outcome === "fail" &&
-      canonicalJson(verdict.findings) === canonicalJson(evidence.findings);
-  }
-  if (evidence.outcome === "unavailable") {
-    return evidence.findings.length > 0;
-  }
-  return false;
 }
 
 export function buildGateEvidence(input: GateEvidenceInput): GateEvidenceV1 {
@@ -1112,19 +1116,28 @@ export function buildGateEvidence(input: GateEvidenceInput): GateEvidenceV1 {
   return Object.freeze({ ...body, evidenceSha256: sha256Hex(canonicalJson(body)) });
 }
 
-export function verifyGateEvidence(evidence: GateEvidenceV1): boolean {
-  if (evidence === null || typeof evidence !== "object" || !allFinite(evidence)) return false;
-  if (evidence.schema !== REFERENCE_GATE_EVIDENCE_SCHEMA ||
-    evidence.gate?.algorithmId !== REFERENCE_SIMILARITY_ALGORITHM_ID ||
-    evidence.gate.policyId !== WIND_REFERENCE_GATE_POLICY.id ||
-    evidence.gate.policySha256 !== windReferencePolicySha256()) return false;
-  const digests = [evidence.gate.implementationSha256, evidence.gate.policySha256,
-    evidence.candidate.rendererSourceSha256, evidence.candidate.wasmSha256,
-    evidence.candidate.parameterPackSha256, evidence.candidate.renderRequestSha256,
-    evidence.candidate.pcmSha256, evidence.reference.corpusManifestSha256,
-    evidence.reference.fileSha256, evidence.reference.alternativeFileSha256,
-    evidence.evidenceSha256];
-  if (!digests.every(isDigest)) return false;
-  const { evidenceSha256: claimed, ...body } = evidence;
-  return evidenceSemanticsAreValid(body) && claimed === sha256Hex(canonicalJson(body));
+export function verifyGateEvidence(value: unknown): value is GateEvidenceV1 {
+  if (value === null || typeof value !== "object" || !allFinite(value)) return false;
+  const record = value as Record<string, unknown>;
+  const gateValue = record["gate"];
+  if (gateValue === null || typeof gateValue !== "object" || Array.isArray(gateValue)) return false;
+  const gate = gateValue as Record<string, unknown>;
+  if (record["schema"] !== REFERENCE_GATE_EVIDENCE_SCHEMA ||
+    gate["algorithmId"] !== REFERENCE_SIMILARITY_ALGORITHM_ID ||
+    gate["policyId"] !== WIND_REFERENCE_GATE_POLICY.id ||
+    gate["policySha256"] !== windReferencePolicySha256()) return false;
+  try {
+    const evidence = value as GateEvidenceV1;
+    const digests = [evidence.gate.implementationSha256, evidence.gate.policySha256,
+      evidence.candidate.rendererSourceSha256, evidence.candidate.wasmSha256,
+      evidence.candidate.parameterPackSha256, evidence.candidate.renderRequestSha256,
+      evidence.candidate.pcmSha256, evidence.reference.corpusManifestSha256,
+      evidence.reference.fileSha256, evidence.reference.alternativeFileSha256,
+      evidence.evidenceSha256];
+    if (!digests.every(isDigest)) return false;
+    const { evidenceSha256: claimed, ...body } = evidence;
+    return evidenceSemanticsAreValid(body) && claimed === sha256Hex(canonicalJson(body));
+  } catch {
+    return false;
+  }
 }
