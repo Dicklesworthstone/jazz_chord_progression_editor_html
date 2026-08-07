@@ -431,6 +431,34 @@ export function StudioShell({
     };
   }, []);
 
+  /*
+   * In the short-viewport window the sticky panel dock retires and the
+   * transport bar carries the Library/Harmony triggers instead
+   * (jcpe-ui-nits-320-triggers-undo-audit-s9r2). Sheet close restores
+   * focus to its declared trigger and REFUSES a hidden one
+   * (ui.stale_owner), so the declared trigger must track which mechanism
+   * is actually visible.
+   */
+  const [shortViewportDock, setShortViewportDock] = useState(() =>
+    typeof window === "undefined"
+      ? false
+      : window.matchMedia(
+          "(max-width: 39.999rem) and (max-height: 37.49rem)",
+        ).matches,
+  );
+  useEffect(() => {
+    const query = window.matchMedia(
+      "(max-width: 39.999rem) and (max-height: 37.49rem)",
+    );
+    const onChange = () => {
+      setShortViewportDock(query.matches);
+    };
+    query.addEventListener("change", onChange);
+    return () => {
+      query.removeEventListener("change", onChange);
+    };
+  }, []);
+
   const activeSheet = view.layout.activeSheet;
   const sheetId =
     activeSheet === null ? null : `studio-${activeSheet}-sheet`;
@@ -448,10 +476,14 @@ export function StudioShell({
         : "Literal document facts and the current chord analysis surface.";
   const sheetTriggerId =
     activeSheet === "library"
-      ? "studio-open-library-sheet"
+      ? shortViewportDock
+        ? "studio-transport-open-library"
+        : "studio-open-library-sheet"
       : activeSheet === "sound"
         ? "studio-open-sound-sheet"
-        : "studio-open-harmony-sheet";
+        : shortViewportDock
+          ? "studio-transport-open-harmony"
+          : "studio-open-harmony-sheet";
 
   return (
     <div
@@ -586,6 +618,12 @@ export function StudioShell({
           canPlay={transport.canPlay}
           onOpenSoundSheet={() => {
             callbacks.onRequestPanelSheet("sound");
+          }}
+          onOpenLibrarySheet={() => {
+            callbacks.onRequestPanelSheet("library");
+          }}
+          onOpenHarmonySheet={() => {
+            callbacks.onRequestPanelSheet("harmony");
           }}
           onPause={transport.onPause}
           onPlay={transport.onPlay}

@@ -228,6 +228,15 @@ export type TransportBarProps = Readonly<{
    * at widths where the inline settings cluster is visible).
    */
   onOpenSoundSheet?: () => void;
+  /**
+   * When provided, the footer shows Library/Harmony triggers in the exact
+   * short-viewport window where the sticky panel dock returns to static
+   * flow and would otherwise sit buried inside the chart scrollport
+   * (jcpe-ui-nits-320-triggers-undo-audit-s9r2). Hidden by CSS everywhere
+   * else; the sticky dock remains the tall-phone mechanism.
+   */
+  onOpenLibrarySheet?: () => void;
+  onOpenHarmonySheet?: () => void;
   callbacks: Pick<
     StudioTransportCallbacks,
     | "onStepChord"
@@ -342,6 +351,8 @@ export function TransportBar({
   onPause,
   onStop,
   onOpenSoundSheet,
+  onOpenLibrarySheet,
+  onOpenHarmonySheet,
   callbacks,
 }: TransportBarProps) {
   const running = view.audioState === "playing";
@@ -559,6 +570,36 @@ export function TransportBar({
 
         <TransportSettings callbacks={callbacks} idSuffix="" view={view} />
 
+        {onOpenLibrarySheet === undefined ? null : (
+          <IconButton
+            accessibleName="Library panel"
+            busy={false}
+            density="comfortable"
+            describedBy={[]}
+            disabled={false}
+            iconId="library"
+            id="studio-transport-open-library"
+            invalid={false}
+            onAction={onOpenLibrarySheet}
+            type="button"
+            variant="secondary"
+          />
+        )}
+        {onOpenHarmonySheet === undefined ? null : (
+          <IconButton
+            accessibleName="Harmony Lens panel"
+            busy={false}
+            density="comfortable"
+            describedBy={[]}
+            disabled={false}
+            iconId="harmony"
+            id="studio-transport-open-harmony"
+            invalid={false}
+            onAction={onOpenHarmonySheet}
+            type="button"
+            variant="secondary"
+          />
+        )}
         {onOpenSoundSheet === undefined ? null : (
           <IconButton
             accessibleName="Sound settings — instrument, groove, tempo, volume"

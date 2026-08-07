@@ -3015,16 +3015,16 @@
  * On short viewports the sticky dock's flow slot sits below the chart's
  * scrollport before the user ever scrolls, so the dock gets pulled up and
  * floats over the view toolbar — translucent buttons on top of buttons.
- * There, the triggers return to normal flow: reachable by the same scroll
- * that reaches everything else, occluding nothing.
+ * Returning it to static flow (the first fix) buried the triggers inside
+ * the chart scrollport instead: top=571 in a 568px viewport, unreachable
+ * without an inner scroll (measured, jcpe-ui-nits-320-triggers-undo-audit-
+ * s9r2 — the jcpe-osxq trap in its worst form). In this window the
+ * always-visible transport bar carries Library/Harmony icon triggers
+ * (the Sound-trigger precedent) and the dock retires entirely.
  */
 @media (max-width: 39.999rem) and (max-height: 37.49rem) {
   .studio-mobile-panel-actions {
-    position: static;
-    margin: 0;
-    padding: 0;
-    background: none;
-    backdrop-filter: none;
+    display: none;
   }
 }
 
@@ -4710,6 +4710,49 @@ button.studio-paper-head__key:focus-visible {
  */
 #studio-open-sound-sheet {
   display: none;
+}
+
+/*
+ * Library/Harmony transport triggers exist only for the short-viewport
+ * window where the panel dock retires (see the dock's short-viewport rule);
+ * everywhere else the dock or the rails carry these panels. The override
+ * must follow the default in source order — equal #id specificity.
+ */
+#studio-transport-open-library,
+#studio-transport-open-harmony {
+  display: none;
+}
+
+@media (max-width: 39.999rem) and (max-height: 37.49rem) {
+  #studio-transport-open-library,
+  #studio-transport-open-harmony {
+    display: inline-flex;
+    flex: none;
+  }
+
+  /*
+   * Three icon triggers join a row sized for one: recover their width from
+   * chrome, not from capability. Tighter row gap and padding, dense icon
+   * buttons, and the status icon retires (the status TEXT stays — it is
+   * the accessible surface; the glyph is decoration).
+   */
+  .studio-transport {
+    padding-inline: var(--space-2);
+  }
+
+  .studio-transport__row {
+    gap: var(--space-2);
+  }
+
+  .studio-transport .ui-icon-button {
+    min-inline-size: 2rem;
+    padding: var(--space-1);
+  }
+
+  .studio-transport__status-icon,
+  .studio-transport__now {
+    display: none;
+  }
 }
 
 @media (max-width: 71.874rem) {
