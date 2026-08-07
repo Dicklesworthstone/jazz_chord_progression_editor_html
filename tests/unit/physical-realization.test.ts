@@ -128,6 +128,7 @@ describe("deterministic physical realization", () => {
   test("only production recipes that consume gestures advertise a physical family", () => {
     expect(physicalFamilyForInstrumentId("vibraphone")).toBeNull();
     expect(physicalFamilyForInstrumentId("concert-vibes")).toBeNull();
+    const gestureConsumers: Array<readonly [string, string]> = [];
     for (const recipe of AUDIO_INSTRUMENT_RECIPES) {
       const family = physicalFamilyForInstrumentId(recipe.id);
       if (family === null) continue;
@@ -135,8 +136,16 @@ describe("deterministic physical realization", () => {
       if (recipe.synthesis !== "rendered") {
         throw new Error(`PHYSICAL_FAMILY_IGNORED:${recipe.id}`);
       }
-      expect(recipe.renderer.algorithmId).toStartWith("changes.dsp.waveguide-");
+      gestureConsumers.push([recipe.id, recipe.renderer.algorithmId]);
     }
+    expect(gestureConsumers).toEqual([
+      ["flute", "changes.dsp.waveguide-flute@2"],
+      ["guitar", "changes.dsp.plucked-archtop@2"],
+      ["blues-guitar", "changes.dsp.plucked-electric@2"],
+      ["clarinet", "changes.dsp.waveguide-clarinet@1"],
+      ["dreadnought-guitar", "changes.dsp.plucked-dreadnought@1"],
+      ["ukulele", "changes.dsp.plucked-ukulele@1"],
+    ]);
   });
 
   test("the v1 bridge preserves all 127 source velocities for every physical family", () => {
