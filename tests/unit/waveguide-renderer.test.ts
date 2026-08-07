@@ -233,20 +233,9 @@ describe("waveguide renderer laws", () => {
         throw new Error(`PHS2_V2_TUNING:${String(midiPitch)}:${String(cents)}`);
       }
       const f0 = midiFrequencyHz(midiPitch) * 2 ** (cents / 1_200);
-      /* Register-correct harmonic law (re-pinned 2026-08-07, reference-
-       * similarity sweep): the closed-open odd-dominance h3 > h2 holds only
-       * while the register vent is closed (chalumeau/throat; FreePats D3
-       * measures h2 -28 dB vs h3 -2 dB). In the clarion the OPEN vent
-       * breaks the odd symmetry and the real instrument's h2 rises to ~0 dB
-       * rel h1 (FreePats D5: h2 -0 dB, h3 -16 dB), so there the law
-       * inverts: h2 > h3. The v2 vent quadratic implements exactly that. */
-      const h2 = goertzelAmplitude(v2.left, start, 16_384, f0 * 2);
-      const h3 = goertzelAmplitude(v2.left, start, 16_384, f0 * 3);
-      if (midiPitch < 70) {
-        expect(h3).toBeGreaterThan(h2);
-      } else {
-        expect(h2).toBeGreaterThan(h3);
-      }
+      expect(goertzelAmplitude(v2.left, start, 16_384, f0 * 3)).toBeGreaterThan(
+        goertzelAmplitude(v2.left, start, 16_384, f0 * 2),
+      );
       const replay = clarinetV2.renderNote(midiPitch, 96, OUTPUT_RATE_HZ, 2, 3, "tongued");
       expect(replay?.left).toEqual(v2.left);
     }

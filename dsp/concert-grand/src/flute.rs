@@ -330,19 +330,7 @@ fn flt_render_inner(
      * in (f(+-1) = 0). Dynamics therefore ride the plateau and softness
      * comes from the turbulence mix, not from starving the jet.
      */
-    /* Mid-register purity trim (reference-similarity sweep, 2026-08-07,
-     * VSCO LDFlute refs): at C5-region pitches the shipped drive sat deep
-     * enough in the cubic's plateau that h3 measured ~10 dB above the real
-     * instrument's profile. Real mid-register flute tone is closer to the
-     * oscillation threshold; a bounded Gaussian dip centred near MIDI 72
-     * moves the operating point toward the pure end without leaving the
-     * measured speaking plateau. Scaled by velocity: the soft cells were
-     * already reference-consistent and a fixed trim starved them below the
-     * local threshold (iteration 1 measured hnr collapse at v48). */
-    let mid_register_trim = 0.035
-        * v_norm
-        * exp(-((m - 72.0) * (m - 72.0)) / (2.0 * 7.0 * 7.0));
-    let pressure_target = 0.78 - mid_register_trim + 0.10 * pow(v_norm, 1.4);
+    let pressure_target = 0.78 + 0.10 * pow(v_norm, 1.4);
     /* A real jet is offset from the labium: the asymmetry that gives a
      * flute its even harmonics, which a pure odd cubic cannot produce. */
     let jet_offset = 0.11f64;
@@ -364,12 +352,7 @@ fn flt_render_inner(
      * sits an order of magnitude lower and the radiated path is bandwidth
      * -limited below.
      */
-    /* Loud playing is CLEANER relative to its harmonics, not breathier:
-     * the VSCO references measure HNR rising with dynamics while the
-     * shipped 0.004+0.008v slope made forte the noisiest cell (hnr delta
-     * -21 dB vs reference at C5, reference-similarity sweep 2026-08-07).
-     * Keep a gentle floor and a much flatter slope. */
-    let noise_level = 0.004_5 + 0.001_2 * v_norm;
+    let noise_level = 0.004 + 0.008 * v_norm;
     let noise_alpha = 1.0 - exp(-TAU * 3_800.0 / sr);
     let mut noise_lp = 0.0f64;
     /* Two one-poles form a cheap, stable 1.0--3.0 kHz turbulence band.
