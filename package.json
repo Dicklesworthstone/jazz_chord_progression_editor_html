@@ -54,6 +54,7 @@
     "test:e2e": "bun scripts/run-playwright.ts test",
     "build": "bun scripts/build.ts",
     "predeploy:check": "bun scripts/check-predeploy.ts",
+    "predeploy:playback": "node scripts/check-predeploy-playback.ts",
     "verify:standalone": "bun scripts/verify-standalone.ts",
     "verify:reproducible": "bun scripts/verify-reproducible.ts",
     "verify:licenses": "bun scripts/verify-licenses.ts",
