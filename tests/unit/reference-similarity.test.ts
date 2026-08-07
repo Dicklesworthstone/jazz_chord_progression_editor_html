@@ -477,6 +477,8 @@ describe("canonical outcomes and evidence bindings", () => {
       findings: [],
     };
     const evidence = buildGateEvidence(input);
+    const evidenceReport = evidence.report;
+    if (evidenceReport === null) throw new Error("passing evidence omitted its report");
     expect(verifyGateEvidence(evidence)).toBe(true);
     expect(verifyGateEvidence({
       ...evidence,
@@ -489,20 +491,20 @@ describe("canonical outcomes and evidence bindings", () => {
     expect(verifyGateEvidence({
       ...evidence,
       report: {
-        ...evidence.report,
+        ...evidenceReport,
         candidate: {
-          ...evidence.report?.candidate,
-          pitch: { ...evidence.report?.candidate.pitch, centsFromExpected: 0.25 },
+          ...evidenceReport.candidate,
+          pitch: { ...evidenceReport.candidate.pitch, centsFromExpected: 0.25 },
         },
       },
     })).toBe(false);
     expect(verifyGateEvidence({
       ...evidence,
       report: {
-        ...evidence.report,
+        ...evidenceReport,
         reference: {
-          ...evidence.report?.reference,
-          pitch: { ...evidence.report?.reference.pitch, f0Hz: 441 },
+          ...evidenceReport.reference,
+          pitch: { ...evidenceReport.reference.pitch, f0Hz: 441 },
         },
       },
     })).toBe(false);
