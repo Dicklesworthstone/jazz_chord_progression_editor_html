@@ -9,8 +9,9 @@
 //! The runtime model is a deliberately compact version of the time-domain
 //! brass formulation used by Berjamin et al. (2016):
 //!
-//! - one outward-striking lip degree of freedom, integrated with average-
-//!   acceleration Newmark inside a bounded implicit lip/cup/throat solve;
+//! - coupled outward and transverse lip degrees of freedom, integrated with
+//!   average-acceleration Newmark inside one bounded implicit lip/cup/throat
+//!   solve;
 //! - a 48-cell conservative Webster finite-volume bore with the reviewed
 //!   leadpipe, cylindrical section, tuning slide, flare, and bell geometry;
 //! - continuous valve travel represented as a positive acoustic metric change.
@@ -18,7 +19,7 @@
 //!   transition cannot create stored energy;
 //! - a positive-real high-pass radiation impedance at the bell;
 //! - a conservative TVD/Godunov weak-nonlinearity flux in the bore, advanced
-//!   at exactly eight times the output sample rate; and
+//!   at exactly four times the output sample rate; and
 //! - a twelfth-order Butterworth anti-alias filter before decimation.
 //!
 //! This is production DSP, not acceptance evidence.  Its local tests establish
@@ -27,28 +28,62 @@
 //! similarity, browser integration, recipe reachability, owner listening, or
 //! deployment readiness.
 
-use libm::{cos, exp, fabs, sin, sqrt, tan};
+use libm::{cos, exp, fabs, pow, sin, sqrt, tan};
 
 const PI: f64 = core::f64::consts::PI;
 
-/// Frozen PHS5 work bound.  At 1.47 m, 128 cells resolve travelling-wave
-/// content through roughly 15 kHz; the former 48-cell grid imposed a spatial
-/// Nyquist ceiling near 5.6 kHz and could not represent the specified loud-
-/// brass spectral centroid regardless of solver quality.
-pub const BORE_CELLS: usize = 128;
+/// Frozen PHS5 spatial work bound. At 1.47 m, 48 conservative sections retain
+/// a spatial Nyquist limit near 5.6 kHz: sufficient for the checked 2.6 kHz
+/// centroid while keeping the reviewed deterministic state bound.
+pub const BORE_CELLS: usize = 48;
 /// The nonlinear propagation and lip/bore coupling run at this factor.
-pub const OVERSAMPLE_FACTOR: usize = 8;
+pub const OVERSAMPLE_FACTOR: usize = 4;
 const ANTI_ALIAS_SECTIONS: usize = 6;
 const MAX_LIP_NEWTON_ITERATIONS: usize = 8;
-const MAX_LIP_BRACKET_INTERVALS: usize = 128;
-const MAX_LIP_BISECTIONS: usize = 16;
+const MAX_LIP_LINE_SEARCH_EVALUATIONS: usize = 4;
+const MAX_LIP_RESIDUAL_EVALUATIONS: usize =
+    1 + MAX_LIP_NEWTON_ITERATIONS * (4 + MAX_LIP_LINE_SEARCH_EVALUATIONS);
+// This corresponds to 1.2 mPa in the cup and sub-nanometre mechanical
+// residuals. Tighter scaled tolerances resolve only finite-difference noise.
+const LIP_SOLVE_RESIDUAL_TOLERANCE: f64 = 1.0e-7;
 
 const AIR_DENSITY_KG_M3: f64 = 1.2;
 const SOUND_SPEED_M_S: f64 = 343.0;
 const OPEN_LENGTH_M: f64 = 1.47;
 const MOUTHPIECE_BACKBORE_ENTRY_RADIUS_M: f64 = 0.0025;
+// Adachi-Sato table I mouthpiece entry area. This is the cup-facing expansion
+// area at the lip, not the much smaller distributed backbore entry used by the
+// Webster tube below.
+const MOUTHPIECE_CUP_ENTRY_AREA_M2: f64 = 2.3e-4;
 const LIP_CONTACT_SCALE_M: f64 = 2.5e-4;
-const LIP_DAMPING_VELOCITY_SCALE_M_S: f64 = 0.25;
+const LIP_STREAMWISE_MASS_RATIO: f64 = 0.75;
+// Newton/Campbell/Gilbert measured a representative artificial-lip pair at
+// 136/184 Hz (ratio 1.35); 1.4 keeps the weaker inward mode close enough to
+// bracket the played frequency without collapsing the modes numerically.
+const LIP_SECOND_MODE_FREQUENCY_RATIO: f64 = 1.4;
+// With positive streamwise displacement defined as aperture-closing, negative
+// symmetric coupling makes the upper tissue eigenmode opposite-phase. That
+// mode changes the aperture strongly and brackets the 116 Hz geometry mode;
+// the opposite coupling sign nearly cancels its aperture participation and
+// leaves the intended register linearly stable.
+const LIP_STIFFNESS_COUPLING: f64 = -0.20;
+// The normal-regime embouchure rejects the quasi-static tissue displacement
+// driven by the pressure vector [1,-4] while retaining the resonant relative
+// motion of both lip coordinates. For the fixed passive stiffness ratios
+// below, K^-1[1,-4]=[0.355,-2.664] in normalized coordinates, hence the
+// aperture gradient [1,-g] is orthogonal at g=-0.133. This analytic
+// participation condition prevents the non-playing first bore peak from
+// winning merely because it sees the largest DC lip compliance.
+const LIP_APERTURE_STREAMWISE_GAIN: f64 = -0.133;
+const LIP_STREAMWISE_PRESSURE_AREA_RATIO: f64 = 4.0;
+const LIP_CONTACT_DAMPING_RATIO: f64 = 0.8;
+const LIP_CONTACT_STIFFNESS_RATIO: f64 = 8.0;
+// Adachi-Sato's lip thickness is 2 mm; this is a conservative anatomical
+// travel barrier, not an operating-point clamp.
+const LIP_MAX_STREAMWISE_DISPLACEMENT_M: f64 = 2.0e-3;
+const LIP_SOLVE_DISPLACEMENT_SCALE_M: f64 = 1.0e-3;
+const LIP_SOLVE_PRESSURE_SCALE_PA: f64 = 12_000.0;
+const LIP_SOLVE_FLOW_SCALE_M3_S: f64 = 1.0e-3;
 const DIGITAL_FULL_SCALE_PRESSURE_PA: f64 = 200.0;
 
 /// The eight reviewed trumpet-bore station endpoints: axial position (m) and
@@ -145,11 +180,6 @@ pub struct TrumpetParameters {
     pub lip_mass_kg: f64,
     pub lip_effective_area_m2: f64,
     pub lip_width_m: f64,
-    /// Finite-rotation scale for pressure-force projected area. As the lip
-    /// rotates outward it presents less area to the pressure difference,
-    /// bounding ordinary-pressure opening without retuning the mechanical
-    /// resonance after the fact.
-    pub lip_force_rolloff_displacement_m: f64,
     /// Anatomical upper aperture. Contact with this finite excursion is
     /// dissipative, just like the existing closed-lip contact.
     pub maximum_lip_opening_m: f64,
@@ -170,15 +200,13 @@ impl TrumpetParameters {
             // Effective one-mass lip plate from the validated time-domain
             // brass configuration (Berjamin et al., table 2).
             lip_mass_kg: 1.78e-4,
-            lip_effective_area_m2: 1.0e-4,
-            lip_width_m: 0.012,
-            // A 2.75 mm roll radius is on the scale of the engaged lip tissue
-            // depth; quadratic throat loss and finite contact bound the jet.
-            lip_force_rolloff_displacement_m: 2.75e-3,
-            // A two-millimetre effective upper aperture keeps the vibrating
-            // lip pair inside the engaged embouchure; larger control openings
-            // remain valid but begin against this dissipative contact.
-            maximum_lip_opening_m: 2.0e-3,
+            // Adachi-Sato's 7 mm lip width and 1 mm streamwise rest position
+            // give this aperture-normal projected area.
+            lip_effective_area_m2: 7.0e-6,
+            lip_width_m: 0.007,
+            // Human playing apertures are sub-millimetre. Both closure and
+            // this upper tissue barrier use passive unilateral contact.
+            maximum_lip_opening_m: 6.0e-4,
             // A roughly 1.4 cm3 cup: C=V/(rho*c^2).
             mouthpiece_compliance_m3_pa: 1.0e-11,
             // A 36 mm effective throat at the standard 3.6 mm diameter:
@@ -211,7 +239,6 @@ impl TrumpetParameters {
             self.lip_mass_kg,
             self.lip_effective_area_m2,
             self.lip_width_m,
-            self.lip_force_rolloff_displacement_m,
             self.maximum_lip_opening_m,
             self.mouthpiece_compliance_m3_pa,
             self.throat_inertance_pa_s2_m3,
@@ -353,9 +380,118 @@ pub fn positive_real_radiation_balance(
     })
 }
 
+/// Passive unilateral Hertz/Hunt-Crossley contact evaluated from penetration
+/// and penetration rate. The elastic term is the derivative of the reported
+/// potential; the rate term acts only while contact is closing, so its
+/// dissipation is non-negative and it cannot pull the lips together.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct LipContactBalance {
+    pub force_n: f64,
+    pub potential_energy_j: f64,
+    pub dissipation_w: f64,
+}
+
+pub fn unilateral_lip_contact_balance(
+    hertz_stiffness_n_m32: f64,
+    hunt_crossley_damping_n_s_m32: f64,
+    penetration_m: f64,
+    penetration_velocity_m_s: f64,
+) -> Result<LipContactBalance, TrumpetError> {
+    if !hertz_stiffness_n_m32.is_finite()
+        || hertz_stiffness_n_m32 <= 0.0
+        || !hunt_crossley_damping_n_s_m32.is_finite()
+        || hunt_crossley_damping_n_s_m32 < 0.0
+        || !penetration_m.is_finite()
+        || penetration_m < 0.0
+        || !penetration_velocity_m_s.is_finite()
+    {
+        return Err(TrumpetError::NonFiniteState);
+    }
+    let closing_velocity_m_s = penetration_velocity_m_s.max(0.0);
+    let root_penetration_m = sqrt(penetration_m);
+    let elastic_force_n = hertz_stiffness_n_m32 * penetration_m * root_penetration_m;
+    let damping_force_n = hunt_crossley_damping_n_s_m32 * root_penetration_m * closing_velocity_m_s;
+    Ok(LipContactBalance {
+        force_n: elastic_force_n + damping_force_n,
+        potential_energy_j: 0.4 * hertz_stiffness_n_m32 * pow(penetration_m, 2.5),
+        dissipation_w: damping_force_n * closing_velocity_m_s,
+    })
+}
+
+/// Work-conjugate Adachi-Sato pressure port for the two-dimensional lip.
+/// The projected areas which turn mouth-minus-cup pressure into normal and
+/// streamwise forces also define the lip-swept volume flow. Consequently the
+/// mouth-source power is exactly cup acoustic power plus lip mechanical power.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct LipPressurePortBalance {
+    pub swept_volume_m3: f64,
+    pub normal_force_n: f64,
+    pub streamwise_force_n: f64,
+    pub swept_flow_m3_s: f64,
+    pub mouth_power_w: f64,
+    pub cup_power_w: f64,
+    pub mechanical_power_w: f64,
+}
+
+pub fn two_dimensional_lip_pressure_port_balance(
+    normal_equilibrium_area_m2: f64,
+    lip_width_m: f64,
+    normal_displacement_m: f64,
+    streamwise_displacement_m: f64,
+    normal_velocity_m_s: f64,
+    streamwise_velocity_m_s: f64,
+    mouth_pressure_pa: f64,
+    cup_pressure_pa: f64,
+) -> Result<LipPressurePortBalance, TrumpetError> {
+    let values = [
+        normal_equilibrium_area_m2,
+        lip_width_m,
+        normal_displacement_m,
+        streamwise_displacement_m,
+        normal_velocity_m_s,
+        streamwise_velocity_m_s,
+        mouth_pressure_pa,
+        cup_pressure_pa,
+    ];
+    if values.iter().any(|value| !value.is_finite())
+        || normal_equilibrium_area_m2 <= 0.0
+        || lip_width_m <= 0.0
+    {
+        return Err(TrumpetError::NonFiniteState);
+    }
+    // Local, integrable linearization of the Adachi-Sato projected areas. With
+    // their 7 mm lip width, 1 mm streamwise rest position, and 4 mm joint arm,
+    // pressure sees approximately 7 mm^2 in the aperture-normal direction and
+    // -28 mm^2 in our aperture-closing streamwise coordinate. Both forces are
+    // the exact gradient of V=A*(x-4y), and the same geometry supplies swept
+    // flow. This predominantly drives the opposite-phase upper tissue mode
+    // that brackets the open-bore pedal register without a large DC opening.
+    let swept_volume_m3 = normal_equilibrium_area_m2
+        * (normal_displacement_m - LIP_STREAMWISE_PRESSURE_AREA_RATIO * streamwise_displacement_m);
+    let normal_area_m2 = normal_equilibrium_area_m2;
+    let streamwise_area_m2 = -LIP_STREAMWISE_PRESSURE_AREA_RATIO * normal_equilibrium_area_m2;
+    let pressure_difference_pa = mouth_pressure_pa - cup_pressure_pa;
+    let normal_force_n = normal_area_m2 * pressure_difference_pa;
+    let streamwise_force_n = streamwise_area_m2 * pressure_difference_pa;
+    let swept_flow_m3_s =
+        normal_area_m2 * normal_velocity_m_s + streamwise_area_m2 * streamwise_velocity_m_s;
+    Ok(LipPressurePortBalance {
+        swept_volume_m3,
+        normal_force_n,
+        streamwise_force_n,
+        swept_flow_m3_s,
+        mouth_power_w: mouth_pressure_pa * swept_flow_m3_s,
+        cup_power_w: cup_pressure_pa * swept_flow_m3_s,
+        mechanical_power_w: normal_force_n * normal_velocity_m_s
+            + streamwise_force_n * streamwise_velocity_m_s,
+    })
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct LipSolveReport {
     pub newton_iterations: usize,
+    pub residual_evaluations: usize,
+    pub line_search_evaluations: usize,
     pub bracket_evaluations: usize,
     pub fallback_bisections: usize,
 }
@@ -406,8 +542,8 @@ impl Biquad {
 }
 
 /// The actual anti-alias boundary used by the physical core.  It accepts one
-/// sample at the eight-times rate and emits exactly one filtered output for
-/// every eight inputs.  Construction with a bypass factor fails.
+/// sample at the four-times rate and emits exactly one filtered output for
+/// every four inputs.  Construction with a bypass factor fails.
 pub struct OversampledOutput {
     sections: [Biquad; ANTI_ALIAS_SECTIONS],
     phase: usize,
@@ -465,10 +601,15 @@ pub struct TrumpetModel {
     face_area_m2: [f64; BORE_CELLS + 1],
     valve_weights: [f64; BORE_CELLS],
     valve_position: [f64; 3],
+    previous_mouth_pressure_pa: f64,
     cup_pressure_pa: f64,
     lip_displacement_m: f64,
     lip_velocity_m_s: f64,
     lip_acceleration_m_s2: f64,
+    lip_streamwise_displacement_m: f64,
+    lip_streamwise_velocity_m_s: f64,
+    lip_streamwise_acceleration_m_s2: f64,
+    lip_jet_flow_m3_s: f64,
     throat_flow_m3_s: f64,
     bell_memory_flow_m3_s: f64,
     previous_bell_flow_m3_s: f64,
@@ -539,10 +680,15 @@ impl TrumpetModel {
             face_area_m2,
             valve_weights,
             valve_position: [0.0; 3],
+            previous_mouth_pressure_pa: 0.0,
             cup_pressure_pa: 0.0,
             lip_displacement_m: 0.0,
             lip_velocity_m_s: 0.0,
             lip_acceleration_m_s2: 0.0,
+            lip_streamwise_displacement_m: 0.0,
+            lip_streamwise_velocity_m_s: 0.0,
+            lip_streamwise_acceleration_m_s2: 0.0,
+            lip_jet_flow_m3_s: 0.0,
             throat_flow_m3_s: 0.0,
             bell_memory_flow_m3_s: 0.0,
             previous_bell_flow_m3_s: 0.0,
@@ -551,6 +697,8 @@ impl TrumpetModel {
             decimator,
             last_lip_report: LipSolveReport {
                 newton_iterations: 0,
+                residual_evaluations: 0,
+                line_search_evaluations: 0,
                 bracket_evaluations: 0,
                 fallback_bisections: 0,
             },
@@ -577,20 +725,58 @@ impl TrumpetModel {
         self.last_lip_report
     }
 
+    #[cfg(test)]
+    #[must_use]
+    pub fn diagnostic_operating_state(&self, controls: TrumpetControls) -> [f64; 10] {
+        [
+            self.cup_pressure_pa,
+            self.lip_displacement_m,
+            self.lip_streamwise_displacement_m,
+            self.lip_aperture_m(
+                controls,
+                self.lip_displacement_m,
+                self.lip_streamwise_displacement_m,
+            ),
+            self.lip_jet_flow_m3_s,
+            self.throat_flow_m3_s,
+            self.pressure_pa[0],
+            self.pressure_pa[BORE_CELLS - 1],
+            self.volume_flow_m3_s[BORE_CELLS],
+            self.stored_energy_j(controls),
+        ]
+    }
+
     /// Total represented storage.  Radiation and viscothermal terms dissipate
     /// energy and therefore are intentionally absent from this storage sum.
     #[must_use]
     pub fn stored_energy_j(&self, controls: TrumpetControls) -> f64 {
-        let omega = 2.0 * PI * controls.lip_resonance_hz;
-        let lip_stiffness = self.parameters.lip_mass_kg * omega * omega;
-        let upper_penetration_m = (controls.equilibrium_opening_m + self.lip_displacement_m
-            - self.parameters.maximum_lip_opening_m)
-            .max(0.0);
-        let lip_contact_stiffness = lip_stiffness / (LIP_CONTACT_SCALE_M * LIP_CONTACT_SCALE_M);
+        let mechanics = self.lip_mechanics(controls);
+        let contact = self.lip_contact(
+            controls,
+            mechanics,
+            self.lip_displacement_m,
+            self.lip_streamwise_displacement_m,
+            self.lip_velocity_m_s,
+            self.lip_streamwise_velocity_m_s,
+        );
         let mut energy =
-            0.5 * self.parameters.lip_mass_kg * self.lip_velocity_m_s * self.lip_velocity_m_s
-                + 0.5 * lip_stiffness * self.lip_displacement_m * self.lip_displacement_m
-                + 0.25 * lip_contact_stiffness * upper_penetration_m.powi(4)
+            0.5 * mechanics.normal_mass_kg * self.lip_velocity_m_s * self.lip_velocity_m_s
+                + 0.5
+                    * mechanics.streamwise_mass_kg
+                    * self.lip_streamwise_velocity_m_s
+                    * self.lip_streamwise_velocity_m_s
+                + 0.5
+                    * mechanics.normal_stiffness_n_m
+                    * self.lip_displacement_m
+                    * self.lip_displacement_m
+                + mechanics.coupling_stiffness_n_m
+                    * self.lip_displacement_m
+                    * self.lip_streamwise_displacement_m
+                + 0.5
+                    * mechanics.streamwise_stiffness_n_m
+                    * self.lip_streamwise_displacement_m
+                    * self.lip_streamwise_displacement_m
+                + contact.potential_energy_j
                 + 0.5
                     * self.parameters.mouthpiece_compliance_m3_pa
                     * self.cup_pressure_pa
@@ -615,7 +801,7 @@ impl TrumpetModel {
         energy
     }
 
-    /// One output-rate sample.  Eight physical substeps and eight anti-alias
+    /// One output-rate sample.  Four physical substeps and four anti-alias
     /// inputs are mandatory; no fast/bypass branch exists.
     pub fn process_sample(&mut self, controls: TrumpetControls) -> Result<f64, TrumpetError> {
         let controls = controls.validate()?;
@@ -676,7 +862,7 @@ impl TrumpetModel {
         // above, so it includes the real trumpet bell's frequency-dependent
         // radiation/directivity instead of assuming frequency-independent
         // hemispherical spreading. The derivative is inside the mandatory
-        // eight-times-rate antialias boundary.
+        // four-times-rate antialias boundary.
         let far_field_pressure_pa = AIR_DENSITY_KG_M3 * bell_flow_derivative_m3_s2 / (2.0 * PI);
         Ok(far_field_pressure_pa / DIGITAL_FULL_SCALE_PRESSURE_PA)
     }
@@ -708,13 +894,110 @@ impl TrumpetModel {
     }
 
     fn solve_lip_cup(&mut self, controls: TrumpetControls, dt: f64) -> Result<(), TrumpetError> {
+        // This report belongs to this substep even when a residual evaluation
+        // or Newton update fails. Never expose a previous sample's work as the
+        // diagnostics for a failed solve.
+        self.last_lip_report = LipSolveReport {
+            newton_iterations: 0,
+            residual_evaluations: 0,
+            line_search_evaluations: 0,
+            bracket_evaluations: 0,
+            fallback_bisections: 0,
+        };
+        let beta = 0.25;
+        let gamma = 0.5;
+        let mechanics = self.lip_mechanics(controls);
         let old_pressure = self.cup_pressure_pa;
-        let old_lip_flow =
-            self.lip_flow_for_state(controls, old_pressure, self.lip_displacement_m)?;
-        let residual = |candidate_pressure: f64| -> Result<(f64, LipCandidate), TrumpetError> {
-            let candidate = self.lip_candidate(controls, candidate_pressure, dt)?;
-            let lip_flow =
-                self.lip_flow_for_state(controls, candidate_pressure, candidate.displacement_m)?;
+        let pressure_predictor =
+            old_pressure + controls.mouth_pressure_pa - self.previous_mouth_pressure_pa;
+        let normal_displacement_predictor = self.lip_displacement_m
+            + dt * self.lip_velocity_m_s
+            + dt * dt * (0.5 - beta) * self.lip_acceleration_m_s2;
+        let normal_velocity_predictor =
+            self.lip_velocity_m_s + dt * (1.0 - gamma) * self.lip_acceleration_m_s2;
+        let streamwise_displacement_predictor = self.lip_streamwise_displacement_m
+            + dt * self.lip_streamwise_velocity_m_s
+            + dt * dt * (0.5 - beta) * self.lip_streamwise_acceleration_m_s2;
+        let streamwise_velocity_predictor = self.lip_streamwise_velocity_m_s
+            + dt * (1.0 - gamma) * self.lip_streamwise_acceleration_m_s2;
+        let old_pressure_port = two_dimensional_lip_pressure_port_balance(
+            self.parameters.lip_effective_area_m2,
+            self.parameters.lip_width_m,
+            self.lip_displacement_m,
+            self.lip_streamwise_displacement_m,
+            self.lip_velocity_m_s,
+            self.lip_streamwise_velocity_m_s,
+            controls.mouth_pressure_pa,
+            old_pressure,
+        )?;
+        let old_lip_flow = self.lip_jet_flow_m3_s + old_pressure_port.swept_flow_m3_s;
+        let evaluate = |scaled_state: [f64; 4]| -> Result<([f64; 4], LipCandidate), TrumpetError> {
+            let candidate_pressure = scaled_state[0] * LIP_SOLVE_PRESSURE_SCALE_PA;
+            let normal_displacement_m = scaled_state[1] * LIP_SOLVE_DISPLACEMENT_SCALE_M;
+            let streamwise_displacement_m = scaled_state[2] * LIP_SOLVE_DISPLACEMENT_SCALE_M;
+            let jet_flow_m3_s = scaled_state[3] * LIP_SOLVE_FLOW_SCALE_M3_S;
+            let normal_acceleration_m_s2 =
+                (normal_displacement_m - normal_displacement_predictor) / (beta * dt * dt);
+            let normal_velocity_m_s =
+                normal_velocity_predictor + gamma * dt * normal_acceleration_m_s2;
+            let streamwise_acceleration_m_s2 =
+                (streamwise_displacement_m - streamwise_displacement_predictor) / (beta * dt * dt);
+            let streamwise_velocity_m_s =
+                streamwise_velocity_predictor + gamma * dt * streamwise_acceleration_m_s2;
+            let contact = self.lip_contact(
+                controls,
+                mechanics,
+                normal_displacement_m,
+                streamwise_displacement_m,
+                normal_velocity_m_s,
+                streamwise_velocity_m_s,
+            );
+            let pressure_port = two_dimensional_lip_pressure_port_balance(
+                self.parameters.lip_effective_area_m2,
+                self.parameters.lip_width_m,
+                normal_displacement_m,
+                streamwise_displacement_m,
+                normal_velocity_m_s,
+                streamwise_velocity_m_s,
+                controls.mouth_pressure_pa,
+                candidate_pressure,
+            )?;
+            let normal_force_residual_n = mechanics.normal_mass_kg * normal_acceleration_m_s2
+                + mechanics.normal_damping_n_s_m * normal_velocity_m_s
+                + mechanics.normal_stiffness_n_m * normal_displacement_m
+                + mechanics.coupling_stiffness_n_m * streamwise_displacement_m
+                - pressure_port.normal_force_n
+                - contact.normal_force_n;
+            let streamwise_force_residual_n = mechanics.streamwise_mass_kg
+                * streamwise_acceleration_m_s2
+                + mechanics.streamwise_damping_n_s_m * streamwise_velocity_m_s
+                + mechanics.coupling_stiffness_n_m * normal_displacement_m
+                + mechanics.streamwise_stiffness_n_m * streamwise_displacement_m
+                - pressure_port.streamwise_force_n
+                - contact.streamwise_force_n;
+
+            let opening_m = self
+                .lip_aperture_m(controls, normal_displacement_m, streamwise_displacement_m)
+                .max(0.0);
+            let tongue_open_fraction = (1.0 - controls.tongue_contact).powi(2);
+            let jet_area_m2 = self.parameters.lip_width_m * opening_m * tongue_open_fraction;
+            let jet_residual_pa = if jet_area_m2 > 0.0 {
+                // Adachi-Sato equations (7)-(8): contraction into the lip
+                // channel conserves energy; separated expansion into the cup
+                // conserves momentum. Their sum gives a smooth signed
+                // pressure/flow residual.
+                let inverse_effective_area = 1.0 / jet_area_m2 - 1.0 / MOUTHPIECE_CUP_ENTRY_AREA_M2;
+                let signed_flow_squared = jet_flow_m3_s * fabs(jet_flow_m3_s);
+                let pressure_drop_pa = 0.5
+                    * AIR_DENSITY_KG_M3
+                    * signed_flow_squared
+                    * inverse_effective_area
+                    * inverse_effective_area;
+                controls.mouth_pressure_pa - candidate_pressure - pressure_drop_pa
+            } else {
+                jet_flow_m3_s / LIP_SOLVE_FLOW_SCALE_M3_S * LIP_SOLVE_PRESSURE_SCALE_PA
+            };
+            let lip_flow = jet_flow_m3_s + pressure_port.swept_flow_m3_s;
             let r = self.parameters.throat_resistance_pa_s_m3;
             let r2 = self.parameters.throat_nonlinear_resistance_pa_s2_m6;
             let l = self.parameters.throat_inertance_pa_s2_m3;
@@ -723,7 +1006,7 @@ impl TrumpetModel {
             let throat_right_hand_side = (1.0 - 0.5 * dt * r / l) * self.throat_flow_m3_s
                 - throat_quadratic * fabs(self.throat_flow_m3_s) * self.throat_flow_m3_s
                 + dt / l * (0.5 * (old_pressure + candidate_pressure) - self.pressure_pa[0]);
-            let throat_flow = if throat_quadratic > 0.0 {
+            let throat_flow_m3_s = if throat_quadratic > 0.0 {
                 let magnitude = (sqrt(
                     throat_linear * throat_linear
                         + 4.0 * throat_quadratic * fabs(throat_right_hand_side),
@@ -733,259 +1016,282 @@ impl TrumpetModel {
             } else {
                 throat_right_hand_side / throat_linear
             };
-            let cup_residual = candidate_pressure
+            let cup_residual_pa = candidate_pressure
                 - old_pressure
                 - 0.5 * dt / self.parameters.mouthpiece_compliance_m3_pa
-                    * ((old_lip_flow - self.throat_flow_m3_s) + (lip_flow - throat_flow));
+                    * ((old_lip_flow - self.throat_flow_m3_s) + (lip_flow - throat_flow_m3_s));
+            let scaled_residual = [
+                cup_residual_pa / LIP_SOLVE_PRESSURE_SCALE_PA,
+                normal_force_residual_n
+                    / (mechanics.normal_stiffness_n_m * LIP_SOLVE_DISPLACEMENT_SCALE_M),
+                streamwise_force_residual_n
+                    / (mechanics.streamwise_stiffness_n_m * LIP_SOLVE_DISPLACEMENT_SCALE_M),
+                jet_residual_pa / LIP_SOLVE_PRESSURE_SCALE_PA,
+            ];
+            if scaled_residual.iter().any(|value| !value.is_finite()) {
+                return Err(TrumpetError::NonFiniteState);
+            }
             Ok((
-                cup_residual,
+                scaled_residual,
                 LipCandidate {
-                    throat_flow_m3_s: throat_flow,
-                    ..candidate
+                    cup_pressure_pa: candidate_pressure,
+                    displacement_m: normal_displacement_m,
+                    velocity_m_s: normal_velocity_m_s,
+                    acceleration_m_s2: normal_acceleration_m_s2,
+                    streamwise_displacement_m,
+                    streamwise_velocity_m_s,
+                    streamwise_acceleration_m_s2,
+                    jet_flow_m3_s,
+                    throat_flow_m3_s,
                 },
             ))
         };
 
-        let mut pressure = old_pressure;
-        let mut accepted = None;
+        let mut scaled_state = [
+            pressure_predictor / LIP_SOLVE_PRESSURE_SCALE_PA,
+            self.lip_displacement_m / LIP_SOLVE_DISPLACEMENT_SCALE_M,
+            self.lip_streamwise_displacement_m / LIP_SOLVE_DISPLACEMENT_SCALE_M,
+            self.lip_jet_flow_m3_s / LIP_SOLVE_FLOW_SCALE_M3_S,
+        ];
+        let mut residual_evaluations = 1;
+        let mut line_search_evaluations = 0;
         let mut newton_iterations = 0;
+        let (mut residual, mut candidate) = match evaluate(scaled_state) {
+            Ok(result) => result,
+            Err(error) => {
+                self.last_lip_report.residual_evaluations = residual_evaluations;
+                return Err(error);
+            }
+        };
+        let mut converged = max_abs_four(residual) <= LIP_SOLVE_RESIDUAL_TOLERANCE;
         for iteration in 0..MAX_LIP_NEWTON_ITERATIONS {
+            if converged {
+                break;
+            }
             newton_iterations = iteration + 1;
-            let (value, candidate) = residual(pressure)?;
-            let tolerance = 1.0e-8 * (1.0 + fabs(pressure));
-            if fabs(value) <= tolerance {
-                accepted = Some(candidate);
-                break;
-            }
-            let epsilon = 1.0e-4 * (1.0 + fabs(pressure));
-            let derivative = (residual(pressure + epsilon)?.0 - value) / epsilon;
-            if !derivative.is_finite() || fabs(derivative) < 1.0e-10 {
-                break;
-            }
-            let next = pressure - value / derivative;
-            if !next.is_finite() || next < old_pressure - 48_000.0 || next > old_pressure + 48_000.0
-            {
-                break;
-            }
-            pressure = next;
-        }
-
-        let mut fallback_bisections = 0;
-        let mut bracket_evaluations = 0;
-        if accepted.is_none() {
-            // Strong resonances can drive the cup pressure beyond the mouth
-            // pressure for a fraction of a cycle.  The trapezoidal update's
-            // physically continuous root remains near the preceding cup
-            // state, so bracket that state rather than an absolute pressure
-            // interval.  This avoids rejecting a valid loud-cell root while
-            // retaining a frozen, deterministic amount of work.
-            let search_low = old_pressure - 48_000.0;
-            let search_high = old_pressure + 48_000.0;
-            let search_step = (search_high - search_low) / MAX_LIP_BRACKET_INTERVALS as f64;
-            let mut previous_pressure = search_low;
-            let mut previous_value = residual(previous_pressure)?.0;
-            bracket_evaluations = 1;
-            let mut bracket = None;
-            let mut bracket_distance = f64::INFINITY;
-            for interval in 1..=MAX_LIP_BRACKET_INTERVALS {
-                let candidate_pressure = search_low + interval as f64 * search_step;
-                let candidate_value = residual(candidate_pressure)?.0;
-                bracket_evaluations += 1;
-                if previous_value.signum() != candidate_value.signum()
-                    || previous_value == 0.0
-                    || candidate_value == 0.0
-                {
-                    let distance =
-                        fabs(0.5 * (previous_pressure + candidate_pressure) - old_pressure);
-                    if distance < bracket_distance {
-                        bracket = Some((previous_pressure, candidate_pressure, previous_value));
-                        bracket_distance = distance;
+            let mut jacobian = [[0.0; 4]; 4];
+            for column in 0..4 {
+                let epsilon = 1.0e-6 * (1.0 + fabs(scaled_state[column]));
+                let mut perturbed = scaled_state;
+                perturbed[column] += epsilon;
+                residual_evaluations += 1;
+                let perturbed_residual = match evaluate(perturbed) {
+                    Ok(result) => result.0,
+                    Err(error) => {
+                        self.last_lip_report = LipSolveReport {
+                            newton_iterations,
+                            residual_evaluations,
+                            line_search_evaluations,
+                            bracket_evaluations: 0,
+                            fallback_bisections: 0,
+                        };
+                        return Err(error);
                     }
-                }
-                previous_pressure = candidate_pressure;
-                previous_value = candidate_value;
-            }
-            let (mut low, mut high, mut low_value) =
-                bracket.ok_or(TrumpetError::LipSolveDidNotConverge)?;
-            let mut candidate = None;
-            for iteration in 0..MAX_LIP_BISECTIONS {
-                fallback_bisections = iteration + 1;
-                let mid = 0.5 * (low + high);
-                let (value, state) = residual(mid)?;
-                candidate = Some(state);
-                if value.signum() == low_value.signum() {
-                    low = mid;
-                    low_value = value;
-                } else {
-                    high = mid;
+                };
+                for row in 0..4 {
+                    jacobian[row][column] = (perturbed_residual[row] - residual[row]) / epsilon;
                 }
             }
-            accepted = candidate;
+            let Some(mut correction) = solve_four_by_four(
+                jacobian,
+                [-residual[0], -residual[1], -residual[2], -residual[3]],
+            ) else {
+                self.last_lip_report = LipSolveReport {
+                    newton_iterations,
+                    residual_evaluations,
+                    line_search_evaluations,
+                    bracket_evaluations: 0,
+                    fallback_bisections: 0,
+                };
+                return Err(TrumpetError::LipSolveDidNotConverge);
+            };
+            correction[0] = correction[0].clamp(-4.0, 4.0);
+            correction[1] = correction[1].clamp(-0.5, 0.5);
+            correction[2] = correction[2].clamp(-0.5, 0.5);
+            correction[3] = correction[3].clamp(-0.5, 0.5);
+            let current_norm = max_abs_four(residual);
+            let mut step = 1.0;
+            let mut accepted = None;
+            for _ in 0..MAX_LIP_LINE_SEARCH_EVALUATIONS {
+                let trial_state = [
+                    scaled_state[0] + step * correction[0],
+                    scaled_state[1] + step * correction[1],
+                    scaled_state[2] + step * correction[2],
+                    scaled_state[3] + step * correction[3],
+                ];
+                residual_evaluations += 1;
+                line_search_evaluations += 1;
+                let trial = match evaluate(trial_state) {
+                    Ok(result) => result,
+                    Err(error) => {
+                        self.last_lip_report = LipSolveReport {
+                            newton_iterations,
+                            residual_evaluations,
+                            line_search_evaluations,
+                            bracket_evaluations: 0,
+                            fallback_bisections: 0,
+                        };
+                        return Err(error);
+                    }
+                };
+                if max_abs_four(trial.0) < current_norm {
+                    accepted = Some((trial_state, trial.0, trial.1));
+                    break;
+                }
+                step *= 0.5;
+            }
+            let Some((next_state, next_residual, next_candidate)) = accepted else {
+                break;
+            };
+            scaled_state = next_state;
+            residual = next_residual;
+            candidate = next_candidate;
+            converged = max_abs_four(residual) <= LIP_SOLVE_RESIDUAL_TOLERANCE;
         }
-
-        let candidate = accepted.ok_or(TrumpetError::LipSolveDidNotConverge)?;
+        if !converged || residual_evaluations > MAX_LIP_RESIDUAL_EVALUATIONS {
+            #[cfg(test)]
+            eprintln!(
+                "lip solve red residual={residual:?} state={scaled_state:?} iterations={newton_iterations} evaluations={residual_evaluations} line={line_search_evaluations}"
+            );
+            self.last_lip_report = LipSolveReport {
+                newton_iterations,
+                residual_evaluations,
+                line_search_evaluations,
+                bracket_evaluations: 0,
+                fallback_bisections: 0,
+            };
+            return Err(TrumpetError::LipSolveDidNotConverge);
+        }
         self.cup_pressure_pa = candidate.cup_pressure_pa;
+        self.previous_mouth_pressure_pa = controls.mouth_pressure_pa;
         self.lip_displacement_m = candidate.displacement_m;
         self.lip_velocity_m_s = candidate.velocity_m_s;
         self.lip_acceleration_m_s2 = candidate.acceleration_m_s2;
+        self.lip_streamwise_displacement_m = candidate.streamwise_displacement_m;
+        self.lip_streamwise_velocity_m_s = candidate.streamwise_velocity_m_s;
+        self.lip_streamwise_acceleration_m_s2 = candidate.streamwise_acceleration_m_s2;
+        self.lip_jet_flow_m3_s = candidate.jet_flow_m3_s;
         self.throat_flow_m3_s = candidate.throat_flow_m3_s;
         self.last_lip_report = LipSolveReport {
             newton_iterations,
-            bracket_evaluations,
-            fallback_bisections,
+            residual_evaluations,
+            line_search_evaluations,
+            bracket_evaluations: 0,
+            fallback_bisections: 0,
         };
         Ok(())
     }
 
-    fn lip_candidate(
-        &self,
-        controls: TrumpetControls,
-        cup_pressure_pa: f64,
-        dt: f64,
-    ) -> Result<LipCandidate, TrumpetError> {
-        let beta = 0.25;
-        let gamma = 0.5;
-        let omega = 2.0 * PI * controls.lip_resonance_hz;
-        let mass = self.parameters.lip_mass_kg;
-        let stiffness = mass * omega * omega;
-        let damping = 2.0 * controls.lip_damping_ratio * mass * omega;
-        if damping <= 0.0 {
-            return Err(TrumpetError::NonPositiveLipDamping);
+    fn lip_mechanics(&self, controls: TrumpetControls) -> LipMechanics {
+        // Elliott-Bowsher's measured mean-flow law, used by Adachi-Sato,
+        // makes engaged lip mass inversely proportional to eigenfrequency.
+        // The fixed parameter is the validated 300 Hz reference mass; lower
+        // embouchure settings engage more tissue rather than unrealistically
+        // softening one unchanged mass.
+        let normal_mass_kg = self.parameters.lip_mass_kg * 300.0 / controls.lip_resonance_hz;
+        let streamwise_mass_kg = normal_mass_kg * LIP_STREAMWISE_MASS_RATIO;
+        let normal_omega_rad_s = 2.0 * PI * controls.lip_resonance_hz;
+        let streamwise_omega_rad_s = normal_omega_rad_s * LIP_SECOND_MODE_FREQUENCY_RATIO;
+        let normal_stiffness_n_m = normal_mass_kg * normal_omega_rad_s * normal_omega_rad_s;
+        let streamwise_stiffness_n_m =
+            streamwise_mass_kg * streamwise_omega_rad_s * streamwise_omega_rad_s;
+        LipMechanics {
+            normal_mass_kg,
+            streamwise_mass_kg,
+            normal_stiffness_n_m,
+            streamwise_stiffness_n_m,
+            coupling_stiffness_n_m: LIP_STIFFNESS_COUPLING
+                * sqrt(normal_stiffness_n_m * streamwise_stiffness_n_m),
+            normal_damping_n_s_m: 2.0
+                * controls.lip_damping_ratio
+                * normal_mass_kg
+                * normal_omega_rad_s,
+            streamwise_damping_n_s_m: 2.0
+                * controls.lip_damping_ratio
+                * streamwise_mass_kg
+                * streamwise_omega_rad_s,
         }
-        let displacement_predictor = self.lip_displacement_m
-            + dt * self.lip_velocity_m_s
-            + dt * dt * (0.5 - beta) * self.lip_acceleration_m_s2;
-        let velocity_predictor =
-            self.lip_velocity_m_s + dt * (1.0 - gamma) * self.lip_acceleration_m_s2;
-        // Outward sign: positive mouth-minus-cup pressure opens the channel.
-        // Finite rotation and upper-aperture contact are displacement-
-        // dependent restoring forces, so they belong inside (not one step
-        // behind) the average-acceleration Newmark solve.  Their combined
-        // residual is monotone for positive blowing pressure: projected area
-        // falls with opening while the cubic tissue contact rises.  A bounded
-        // Newton solve therefore resolves hard lip collisions without the
-        // explicit-contact energy burst that previously destroyed loud cells.
-        let pressure_difference_pa = controls.mouth_pressure_pa - cup_pressure_pa;
-        let denominator = mass + gamma * dt * damping + beta * dt * dt * stiffness;
-        let newmark_compliance = beta * dt * dt / denominator;
-        let constant_force = -damping * velocity_predictor - stiffness * displacement_predictor;
-        let contact_stiffness = stiffness / (LIP_CONTACT_SCALE_M * LIP_CONTACT_SCALE_M);
-        let evaluate_displacement = |displacement: f64| {
-            let positive_displacement_m = displacement.max(0.0);
-            let rotation =
-                positive_displacement_m / self.parameters.lip_force_rolloff_displacement_m;
-            let rotation_denominator = 1.0 + rotation * rotation;
-            let projected_area_m2 = self.parameters.lip_effective_area_m2 / rotation_denominator;
-            let projected_area_slope_m = if displacement > 0.0 {
-                -2.0 * self.parameters.lip_effective_area_m2 * displacement
-                    / (self.parameters.lip_force_rolloff_displacement_m
-                        * self.parameters.lip_force_rolloff_displacement_m
-                        * rotation_denominator
-                        * rotation_denominator)
-            } else {
-                0.0
-            };
-            let upper_penetration_m = (controls.equilibrium_opening_m + displacement
-                - self.parameters.maximum_lip_opening_m)
-                .max(0.0);
-            let contact_force = contact_stiffness * upper_penetration_m.powi(3);
-            let contact_slope_n_m = 3.0 * contact_stiffness * upper_penetration_m.powi(2);
-            let candidate_velocity_m_s =
-                velocity_predictor + gamma / (beta * dt) * (displacement - displacement_predictor);
-            // Lip tissue becomes more dissipative at large strain rates.  The
-            // quadratic drag is passive for either velocity sign because its
-            // mechanical power is -c*v^2*|v|/v_scale.
-            let nonlinear_damping_force = damping / LIP_DAMPING_VELOCITY_SCALE_M_S
-                * candidate_velocity_m_s
-                * fabs(candidate_velocity_m_s);
-            let nonlinear_damping_slope_n_m = damping / LIP_DAMPING_VELOCITY_SCALE_M_S
-                * 2.0
-                * fabs(candidate_velocity_m_s)
-                * gamma
-                / (beta * dt);
-            let force = projected_area_m2 * pressure_difference_pa
-                - contact_force
-                - nonlinear_damping_force;
-            let force_slope_n_m = projected_area_slope_m * pressure_difference_pa
-                - contact_slope_n_m
-                - nonlinear_damping_slope_n_m;
-            let residual = displacement
-                - displacement_predictor
-                - newmark_compliance * (force + constant_force);
-            let residual_slope = 1.0 - newmark_compliance * force_slope_n_m;
-            (residual, residual_slope)
-        };
-        let mut displacement = self.lip_displacement_m;
-        let mut lip_displacement_converged = false;
-        for _ in 0..12 {
-            let (residual, residual_slope) = evaluate_displacement(displacement);
-            let correction = (residual / residual_slope).clamp(-5.0e-4, 5.0e-4);
-            displacement = (displacement - correction).clamp(
-                -controls.equilibrium_opening_m,
-                self.parameters.maximum_lip_opening_m - controls.equilibrium_opening_m
-                    + 10.0 * LIP_CONTACT_SCALE_M,
-            );
-            if fabs(correction) <= 1.0e-12 {
-                lip_displacement_converged = true;
-                break;
-            }
-        }
-        if !lip_displacement_converged {
-            let mut low = -controls.equilibrium_opening_m;
-            let mut high = self.parameters.maximum_lip_opening_m - controls.equilibrium_opening_m
-                + 10.0 * LIP_CONTACT_SCALE_M;
-            let low_value = evaluate_displacement(low).0;
-            let high_value = evaluate_displacement(high).0;
-            if low_value > 0.0 {
-                displacement = low;
-                lip_displacement_converged = true;
-            } else if high_value >= 0.0 {
-                for _ in 0..24 {
-                    let mid = 0.5 * (low + high);
-                    let value = evaluate_displacement(mid).0;
-                    if value <= 0.0 {
-                        low = mid;
-                    } else {
-                        high = mid;
-                    }
-                }
-                displacement = 0.5 * (low + high);
-                lip_displacement_converged = true;
-            }
-        }
-        if !lip_displacement_converged {
-            return Err(TrumpetError::LipSolveDidNotConverge);
-        }
-        let mut final_acceleration = (displacement - displacement_predictor) / (beta * dt * dt);
-        let mut velocity = velocity_predictor + gamma * dt * final_acceleration;
-        if displacement < -controls.equilibrium_opening_m {
-            displacement = -controls.equilibrium_opening_m;
-            velocity = 0.0;
-            final_acceleration = 0.0;
-        }
-        Ok(LipCandidate {
-            cup_pressure_pa,
-            displacement_m: displacement,
-            velocity_m_s: velocity,
-            acceleration_m_s2: final_acceleration,
-            throat_flow_m3_s: self.throat_flow_m3_s,
-        })
     }
 
-    fn lip_flow_for_state(
+    fn lip_aperture_m(
         &self,
         controls: TrumpetControls,
-        cup_pressure_pa: f64,
-        displacement_m: f64,
-    ) -> Result<f64, TrumpetError> {
-        let opening = (controls.equilibrium_opening_m + displacement_m).max(0.0);
-        let tongue_open_fraction = (1.0 - controls.tongue_contact).powi(2);
-        Ok(tongue_open_fraction
-            * lip_flow_m3_s(
-                self.parameters.lip_width_m,
-                opening,
-                controls.mouth_pressure_pa - cup_pressure_pa,
-            )?)
+        normal_displacement_m: f64,
+        streamwise_displacement_m: f64,
+    ) -> f64 {
+        controls.equilibrium_opening_m + normal_displacement_m
+            - LIP_APERTURE_STREAMWISE_GAIN * streamwise_displacement_m
+    }
+
+    fn lip_contact(
+        &self,
+        controls: TrumpetControls,
+        mechanics: LipMechanics,
+        normal_displacement_m: f64,
+        streamwise_displacement_m: f64,
+        normal_velocity_m_s: f64,
+        streamwise_velocity_m_s: f64,
+    ) -> LipContact {
+        let aperture_m =
+            self.lip_aperture_m(controls, normal_displacement_m, streamwise_displacement_m);
+        let aperture_velocity_m_s =
+            normal_velocity_m_s - LIP_APERTURE_STREAMWISE_GAIN * streamwise_velocity_m_s;
+        let inverse_effective_mass = 1.0 / mechanics.normal_mass_kg
+            + LIP_APERTURE_STREAMWISE_GAIN * LIP_APERTURE_STREAMWISE_GAIN
+                / mechanics.streamwise_mass_kg;
+        let effective_mass_kg = 1.0 / inverse_effective_mass;
+        let hertz_stiffness_n_m32 = LIP_CONTACT_STIFFNESS_RATIO * mechanics.normal_stiffness_n_m
+            / sqrt(LIP_CONTACT_SCALE_M);
+        let hunt_crossley_damping_n_s_m32 = 2.0
+            * LIP_CONTACT_DAMPING_RATIO
+            * sqrt(effective_mass_kg * mechanics.normal_stiffness_n_m)
+            / sqrt(LIP_CONTACT_SCALE_M);
+        let lower = unilateral_lip_contact_balance(
+            hertz_stiffness_n_m32,
+            hunt_crossley_damping_n_s_m32,
+            (-aperture_m).max(0.0),
+            -aperture_velocity_m_s,
+        )
+        .expect("canonical lower contact parameters");
+        let upper = unilateral_lip_contact_balance(
+            hertz_stiffness_n_m32,
+            hunt_crossley_damping_n_s_m32,
+            (aperture_m - self.parameters.maximum_lip_opening_m).max(0.0),
+            aperture_velocity_m_s,
+        )
+        .expect("canonical upper contact parameters");
+        let streamwise_hertz_stiffness_n_m32 = LIP_CONTACT_STIFFNESS_RATIO
+            * mechanics.streamwise_stiffness_n_m
+            / sqrt(LIP_CONTACT_SCALE_M);
+        let streamwise_hunt_crossley_damping_n_s_m32 = 2.0
+            * LIP_CONTACT_DAMPING_RATIO
+            * sqrt(mechanics.streamwise_mass_kg * mechanics.streamwise_stiffness_n_m)
+            / sqrt(LIP_CONTACT_SCALE_M);
+        let streamwise_lower = unilateral_lip_contact_balance(
+            streamwise_hertz_stiffness_n_m32,
+            streamwise_hunt_crossley_damping_n_s_m32,
+            (-LIP_MAX_STREAMWISE_DISPLACEMENT_M - streamwise_displacement_m).max(0.0),
+            -streamwise_velocity_m_s,
+        )
+        .expect("canonical streamwise lower contact parameters");
+        let streamwise_upper = unilateral_lip_contact_balance(
+            streamwise_hertz_stiffness_n_m32,
+            streamwise_hunt_crossley_damping_n_s_m32,
+            (streamwise_displacement_m - LIP_MAX_STREAMWISE_DISPLACEMENT_M).max(0.0),
+            streamwise_velocity_m_s,
+        )
+        .expect("canonical streamwise upper contact parameters");
+        let aperture_force_n = lower.force_n - upper.force_n;
+        LipContact {
+            normal_force_n: aperture_force_n,
+            streamwise_force_n: -LIP_APERTURE_STREAMWISE_GAIN * aperture_force_n
+                + streamwise_lower.force_n
+                - streamwise_upper.force_n,
+            potential_energy_j: lower.potential_energy_j
+                + upper.potential_energy_j
+                + streamwise_lower.potential_energy_j
+                + streamwise_upper.potential_energy_j,
+        }
     }
 
     fn apply_tvd_nonlinearity(&mut self, pressure: &mut [f64; BORE_CELLS], dt: f64) {
@@ -1045,9 +1351,14 @@ impl TrumpetModel {
         self.pressure_pa.iter().all(|value| value.is_finite())
             && self.volume_flow_m3_s.iter().all(|value| value.is_finite())
             && self.cup_pressure_pa.is_finite()
+            && self.previous_mouth_pressure_pa.is_finite()
             && self.lip_displacement_m.is_finite()
             && self.lip_velocity_m_s.is_finite()
             && self.lip_acceleration_m_s2.is_finite()
+            && self.lip_streamwise_displacement_m.is_finite()
+            && self.lip_streamwise_velocity_m_s.is_finite()
+            && self.lip_streamwise_acceleration_m_s2.is_finite()
+            && self.lip_jet_flow_m3_s.is_finite()
             && self.throat_flow_m3_s.is_finite()
             && self.bell_memory_flow_m3_s.is_finite()
             && self.previous_bell_flow_m3_s.is_finite()
@@ -1064,11 +1375,26 @@ impl TrumpetModel {
     }
 
     /// Seed the open bore's geometry-derived first half-wave without changing
-    /// its length, lip controls, or any requested pitch.  This models the
-    /// finite acoustic state left by a player's preparatory tongue release and
-    /// gives continuation tests a deterministic way to select the intended
-    /// basin rather than whichever nonlinear register wins from exact zeros.
+    /// its length, lip controls, or any requested pitch. This is the pedal
+    /// basin, not the normal Bb3 playing regime; it remains explicit for future
+    /// nonlinear/subharmonic work and must not certify normal playability.
     pub fn seed_open_first_regime(&mut self, peak_pressure_pa: f64) -> Result<(), TrumpetError> {
+        self.seed_open_mode(1, peak_pressure_pa)
+    }
+
+    /// Seed the second open-bore standing wave selected by a preparatory tongue
+    /// release. This is the normal Bb3-series regime supported by the first
+    /// strong playable impedance peak; the geometry, valves, and lip controls
+    /// remain unchanged.
+    pub fn seed_open_normal_regime(&mut self, peak_pressure_pa: f64) -> Result<(), TrumpetError> {
+        self.seed_open_mode(2, peak_pressure_pa)
+    }
+
+    fn seed_open_mode(
+        &mut self,
+        half_waves: usize,
+        peak_pressure_pa: f64,
+    ) -> Result<(), TrumpetError> {
         if !peak_pressure_pa.is_finite() || !(0.0..=100.0).contains(&peak_pressure_pa) {
             return Err(TrumpetError::NonFiniteState);
         }
@@ -1076,7 +1402,8 @@ impl TrumpetModel {
         let mut position_m = 0.0;
         for cell in 0..BORE_CELLS {
             position_m += 0.5 * self.cell_length_m[cell];
-            self.pressure_pa[cell] += peak_pressure_pa * sin(PI * position_m / total_length_m);
+            self.pressure_pa[cell] +=
+                peak_pressure_pa * sin(half_waves as f64 * PI * position_m / total_length_m);
             position_m += 0.5 * self.cell_length_m[cell];
         }
         Ok(())
@@ -1089,7 +1416,80 @@ struct LipCandidate {
     displacement_m: f64,
     velocity_m_s: f64,
     acceleration_m_s2: f64,
+    streamwise_displacement_m: f64,
+    streamwise_velocity_m_s: f64,
+    streamwise_acceleration_m_s2: f64,
+    jet_flow_m3_s: f64,
     throat_flow_m3_s: f64,
+}
+
+#[derive(Clone, Copy)]
+struct LipMechanics {
+    normal_mass_kg: f64,
+    streamwise_mass_kg: f64,
+    normal_stiffness_n_m: f64,
+    streamwise_stiffness_n_m: f64,
+    coupling_stiffness_n_m: f64,
+    normal_damping_n_s_m: f64,
+    streamwise_damping_n_s_m: f64,
+}
+
+#[derive(Clone, Copy)]
+struct LipContact {
+    normal_force_n: f64,
+    streamwise_force_n: f64,
+    potential_energy_j: f64,
+}
+
+fn max_abs_four(values: [f64; 4]) -> f64 {
+    values.into_iter().map(fabs).fold(0.0, f64::max)
+}
+
+fn solve_four_by_four(matrix: [[f64; 4]; 4], right_hand_side: [f64; 4]) -> Option<[f64; 4]> {
+    let mut augmented = [[0.0; 5]; 4];
+    for row in 0..4 {
+        for column in 0..4 {
+            augmented[row][column] = matrix[row][column];
+        }
+        augmented[row][4] = right_hand_side[row];
+    }
+    for pivot_column in 0..4 {
+        let mut pivot_row = pivot_column;
+        for row in pivot_column + 1..4 {
+            if fabs(augmented[row][pivot_column]) > fabs(augmented[pivot_row][pivot_column]) {
+                pivot_row = row;
+            }
+        }
+        if !augmented[pivot_row][pivot_column].is_finite()
+            || fabs(augmented[pivot_row][pivot_column]) < 1.0e-12
+        {
+            return None;
+        }
+        augmented.swap(pivot_column, pivot_row);
+        let pivot = augmented[pivot_column][pivot_column];
+        for column in pivot_column..5 {
+            augmented[pivot_column][column] /= pivot;
+        }
+        for row in 0..4 {
+            if row == pivot_column {
+                continue;
+            }
+            let factor = augmented[row][pivot_column];
+            for column in pivot_column..5 {
+                augmented[row][column] -= factor * augmented[pivot_column][column];
+            }
+        }
+    }
+    let solution = [
+        augmented[0][4],
+        augmented[1][4],
+        augmented[2][4],
+        augmented[3][4],
+    ];
+    solution
+        .iter()
+        .all(|value| value.is_finite())
+        .then_some(solution)
 }
 
 fn bore_radius_m(position_m: f64) -> f64 {

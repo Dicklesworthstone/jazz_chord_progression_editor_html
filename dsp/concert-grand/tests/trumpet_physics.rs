@@ -3,8 +3,9 @@ mod trumpet;
 
 use trumpet::{
     geometry_half_wave_hz, lip_flow_m3_s, outward_equilibrium_opening_m,
-    positive_real_radiation_balance, valve_added_length_m, OversampledOutput, TrumpetControls,
-    TrumpetError, TrumpetModel, TrumpetParameters, BORE_CELLS, OVERSAMPLE_FACTOR,
+    positive_real_radiation_balance, two_dimensional_lip_pressure_port_balance,
+    unilateral_lip_contact_balance, valve_added_length_m, LipSolveReport, OversampledOutput,
+    TrumpetControls, TrumpetError, TrumpetModel, TrumpetParameters, BORE_CELLS, OVERSAMPLE_FACTOR,
 };
 
 fn silent_controls() -> TrumpetControls {
@@ -64,7 +65,7 @@ fn fixed_geometry_and_valves_move_resonance_without_a_midi_input() {
     assert!((valve_added_length_m([0.0, 1.0, 0.0]) - 0.087).abs() < 1.0e-12);
     assert!((valve_added_length_m([1.0, 1.0, 1.0]) - 0.572).abs() < 1.0e-12);
     assert!(open > second && second > all, "{open} {second} {all}");
-    assert_eq!(BORE_CELLS, 128);
+    assert_eq!(BORE_CELLS, 48);
 }
 
 #[test]
@@ -99,7 +100,7 @@ fn identical_instances_are_sample_exact_and_keep_independent_state() {
     let mut controls = TrumpetControls {
         mouth_pressure_pa: 0.0,
         lip_resonance_hz: 180.0,
-        lip_damping_ratio: 0.16,
+        lip_damping_ratio: 0.28,
         equilibrium_opening_m: 0.00025,
         tongue_contact: 0.0,
         valves: [0.35, 0.8, 0.0],
@@ -131,8 +132,13 @@ fn unforced_bore_and_positive_real_bell_do_not_create_energy() {
     model.diagnostic_pressure_pulse(50.0).unwrap();
     let initial = model.stored_energy_j(controls);
     let mut maximum = initial;
-    for _ in 0..4_800 {
-        let output = model.process_sample(controls).unwrap();
+    for frame in 0..4_800 {
+        let output = model.process_sample(controls).unwrap_or_else(|error| {
+            panic!(
+                "passive pulse failed frame={frame} report={:?}: {error:?}",
+                model.last_lip_report()
+            )
+        });
         assert!(output.is_finite());
         maximum = maximum.max(model.stored_energy_j(controls));
     }
@@ -158,6 +164,87 @@ fn positive_real_radiation_obeys_its_instantaneous_power_identity() {
     assert!(
         residual.abs() < 1.0e-15,
         "radiation power residual {residual:e}"
+    );
+}
+
+#[test]
+fn unilateral_lip_contact_has_reversible_energy_and_nonnegative_dissipation() {
+    let stiffness = 4.0e6;
+    let damping = 1.2e4;
+    let penetration = 8.0e-5;
+    let closing = unilateral_lip_contact_balance(stiffness, damping, penetration, 0.12).unwrap();
+    let opening = unilateral_lip_contact_balance(stiffness, damping, penetration, -0.12).unwrap();
+    assert!(closing.force_n > opening.force_n);
+    assert!(closing.dissipation_w > 0.0);
+    assert_eq!(opening.dissipation_w, 0.0);
+    assert_eq!(closing.potential_energy_j, opening.potential_energy_j);
+    let epsilon = 1.0e-9;
+    let above =
+        unilateral_lip_contact_balance(stiffness, damping, penetration + epsilon, -0.12).unwrap();
+    let below =
+        unilateral_lip_contact_balance(stiffness, damping, penetration - epsilon, -0.12).unwrap();
+    let potential_slope = (above.potential_energy_j - below.potential_energy_j) / (2.0 * epsilon);
+    assert!((potential_slope - opening.force_n).abs() < opening.force_n * 1.0e-6);
+    assert_eq!(
+        unilateral_lip_contact_balance(-stiffness, damping, penetration, 0.12),
+        Err(TrumpetError::NonFiniteState)
+    );
+}
+
+#[test]
+fn two_dimensional_lip_pressure_force_and_swept_flow_are_power_conjugates() {
+    let port = two_dimensional_lip_pressure_port_balance(
+        7.0e-6, 0.007, 0.0003, 0.0001, 0.18, -0.04, 5_500.0, 2_400.0,
+    )
+    .unwrap();
+    assert!(port.mechanical_power_w > 0.0);
+    assert!((port.mouth_power_w - port.cup_power_w - port.mechanical_power_w).abs() < 1.0e-18);
+    let normal_span = 0.0002;
+    let streamwise_span = 0.0003;
+    let loop_edges = [
+        (0.5 * normal_span, 0.0, normal_span, 0.0),
+        (normal_span, 0.5 * streamwise_span, 0.0, streamwise_span),
+        (0.5 * normal_span, streamwise_span, -normal_span, 0.0),
+        (0.0, 0.5 * streamwise_span, 0.0, -streamwise_span),
+    ];
+    let closed_loop_swept_volume = loop_edges
+        .into_iter()
+        .map(
+            |(normal, streamwise, normal_velocity, streamwise_velocity)| {
+                two_dimensional_lip_pressure_port_balance(
+                    7.0e-6,
+                    0.007,
+                    normal,
+                    streamwise,
+                    normal_velocity,
+                    streamwise_velocity,
+                    5_500.0,
+                    2_400.0,
+                )
+                .unwrap()
+                .swept_flow_m3_s
+            },
+        )
+        .sum::<f64>();
+    assert!(closed_loop_swept_volume.abs() < 1.0e-20);
+    // Planted non-integrable near-miss: its mismatched cross derivatives
+    // create volume around the same closed coordinate loop and must not pass.
+    let non_integrable_loop_volume = loop_edges
+        .into_iter()
+        .map(
+            |(normal, streamwise, normal_velocity, streamwise_velocity)| {
+                let normal_area = 7.0e-6 * (1.0 + streamwise / 0.001);
+                let streamwise_area = 0.007 * 0.004 - 0.5 * 0.007 * normal;
+                normal_area * normal_velocity + streamwise_area * streamwise_velocity
+            },
+        )
+        .sum::<f64>();
+    assert!(non_integrable_loop_volume.abs() > 5.0e-10);
+    assert_eq!(
+        two_dimensional_lip_pressure_port_balance(
+            -7.0e-6, 0.007, 0.0003, 0.0001, 0.18, -0.04, 5_500.0, 2_400.0,
+        ),
+        Err(TrumpetError::NonFiniteState)
     );
 }
 
@@ -309,14 +396,18 @@ fn render_sustain(
     let mut controls = TrumpetControls {
         mouth_pressure_pa: 0.0,
         lip_resonance_hz,
-        lip_damping_ratio: 0.16,
+        lip_damping_ratio: 0.28,
         equilibrium_opening_m: 0.00025,
-        tongue_contact: 0.0,
+        tongue_contact: 1.0,
         valves,
     };
     let mut sustain = Vec::new();
     for frame in 0..24_000 {
         controls.mouth_pressure_pa = mouth_pressure_pa * (frame as f64 / 1_440.0).min(1.0);
+        if frame == 1_440 {
+            model.seed_open_normal_regime(100.0).unwrap();
+            controls.tongue_contact = 0.0;
+        }
         let sample = model.process_sample(controls).unwrap_or_else(|error| {
             panic!(
                 "render failed at frame {frame}, pressure {}: {error:?}",
@@ -331,8 +422,54 @@ fn render_sustain(
 }
 
 fn render_regime(valves: [f64; 3]) -> (f64, f64) {
-    let sustain = render_sustain(valves, 5_500.0, 300.0, TrumpetParameters::canonical());
-    estimate_f0(&sustain, 48_000.0, 80.0, 300.0)
+    let sustain = render_sustain(valves, 5_500.0, 80.0, TrumpetParameters::canonical());
+    estimate_f0(&sustain, 48_000.0, 180.0, 280.0)
+}
+
+#[test]
+fn diagnostic_normal_regime_operating_state() {
+    let mut model = TrumpetModel::new(48_000.0, TrumpetParameters::canonical()).unwrap();
+    model.seed_open_normal_regime(100.0).unwrap();
+    let mut controls = TrumpetControls {
+        mouth_pressure_pa: 0.0,
+        lip_resonance_hz: 220.0,
+        lip_damping_ratio: 0.28,
+        equilibrium_opening_m: 0.00025,
+        tongue_contact: 0.0,
+        valves: [0.0; 3],
+    };
+    let mut minima = [f64::INFINITY; 10];
+    let mut maxima = [f64::NEG_INFINITY; 10];
+    let mut max_report = LipSolveReport {
+        newton_iterations: 0,
+        residual_evaluations: 0,
+        line_search_evaluations: 0,
+        bracket_evaluations: 0,
+        fallback_bisections: 0,
+    };
+    for frame in 0..24_000 {
+        controls.mouth_pressure_pa = 8_500.0 * (frame as f64 / 1_440.0).min(1.0);
+        model.process_sample(controls).unwrap();
+        let report = model.last_lip_report();
+        max_report.newton_iterations = max_report.newton_iterations.max(report.newton_iterations);
+        max_report.residual_evaluations = max_report
+            .residual_evaluations
+            .max(report.residual_evaluations);
+        max_report.line_search_evaluations = max_report
+            .line_search_evaluations
+            .max(report.line_search_evaluations);
+        if frame > 9_600 {
+            for (index, value) in model
+                .diagnostic_operating_state(controls)
+                .into_iter()
+                .enumerate()
+            {
+                minima[index] = minima[index].min(value);
+                maxima[index] = maxima[index].max(value);
+            }
+        }
+    }
+    eprintln!("operating minima={minima:?} maxima={maxima:?} max_report={max_report:?}");
 }
 
 #[test]
@@ -352,8 +489,8 @@ fn driven_core_is_finite_non_silent_and_bounded() {
     let mut model = TrumpetModel::new(48_000.0, TrumpetParameters::canonical()).unwrap();
     let mut controls = TrumpetControls {
         mouth_pressure_pa: 3_000.0,
-        lip_resonance_hz: 300.0,
-        lip_damping_ratio: 0.16,
+        lip_resonance_hz: 80.0,
+        lip_damping_ratio: 0.28,
         equilibrium_opening_m: 0.00025,
         tongue_contact: 0.0,
         valves: [0.0; 3],
@@ -367,8 +504,9 @@ fn driven_core_is_finite_non_silent_and_bounded() {
         }
         let sample = model.process_sample(controls).unwrap_or_else(|error| {
             panic!(
-                "driven core failed at frame {frame}, pressure {}: {error:?}",
-                controls.mouth_pressure_pa
+                "driven core failed at frame {frame}, pressure {} report={:?}: {error:?}",
+                controls.mouth_pressure_pa,
+                model.last_lip_report()
             )
         });
         assert!(sample.is_finite());
@@ -379,18 +517,20 @@ fn driven_core_is_finite_non_silent_and_bounded() {
         }
         let report = model.last_lip_report();
         assert!(report.newton_iterations <= 8);
-        assert!(report.bracket_evaluations <= 129);
-        assert!(report.fallback_bisections <= 16);
+        assert!(report.residual_evaluations <= 65);
+        assert!(report.line_search_evaluations <= 32);
+        assert_eq!(report.bracket_evaluations, 0);
+        assert_eq!(report.fallback_bisections, 0);
     }
     let rms = (sum / (24_000 - 4_801) as f64).sqrt();
-    let (f0, periodicity) = estimate_f0(&sustain, 48_000.0, 100.0, 800.0);
+    let (f0, periodicity) = estimate_f0(&sustain, 48_000.0, 180.0, 280.0);
     eprintln!("driven trumpet diagnostic rms={rms:e} peak={peak:e} f0={f0} score={periodicity}",);
     assert!(rms > 2.0e-5, "silent physical output {rms:e}");
     assert!(peak < 1.0, "unbounded physical output {peak}");
     assert!(periodicity > 0.9, "unlocked regime score {periodicity}");
     assert!(
-        (300.0..=300.0 * 3.0_f64.sqrt()).contains(&f0),
-        "outward regime {f0}"
+        (220.0..=240.0).contains(&f0),
+        "normal Bb3-series regime {f0}"
     );
 }
 
@@ -410,8 +550,8 @@ fn rendered_regime_moves_down_when_second_valve_length_is_inserted() {
 fn nonlinear_bore_path_materially_changes_the_bounded_output() {
     let mut linear_parameters = TrumpetParameters::canonical();
     linear_parameters.nonlinear_coefficient = 0.0;
-    let linear = render_sustain([0.0; 3], 3_000.0, 260.0, linear_parameters);
-    let nonlinear = render_sustain([0.0; 3], 3_000.0, 260.0, TrumpetParameters::canonical());
+    let linear = render_sustain([0.0; 3], 3_000.0, 80.0, linear_parameters);
+    let nonlinear = render_sustain([0.0; 3], 3_000.0, 80.0, TrumpetParameters::canonical());
     assert_eq!(linear.len(), nonlinear.len());
     assert!(linear
         .iter()
@@ -432,32 +572,43 @@ fn nonlinear_bore_path_materially_changes_the_bounded_output() {
 
 #[test]
 fn pressure_increase_brightens_a_fixed_regime_without_retuning_it() {
-    let pressures_pa = [5_500.0, 7_000.0, 8_500.0];
+    let pressures_pa = [5_500.0, 7_000.0, 8_500.0, 12_000.0];
     let mut pitches_hz = Vec::new();
+    let mut periodicities = Vec::new();
     let mut centroids_hz = Vec::new();
     let mut levels_rms = Vec::new();
+    let mut peaks = Vec::new();
     for pressure_pa in pressures_pa {
         // Lip resonance, damping, rest opening, bore geometry, and valves are
         // identical in every cell. Mouth pressure is the only changed input.
-        let samples = render_sustain([0.0; 3], pressure_pa, 300.0, TrumpetParameters::canonical());
+        let samples = render_sustain([0.0; 3], pressure_pa, 220.0, TrumpetParameters::canonical());
         let (fundamental_hz, periodicity) = estimate_f0(&samples, 48_000.0, 80.0, 800.0);
         let centroid_hz = spectral_centroid_hz(&samples);
         let level_rms = (samples.iter().map(|sample| sample * sample).sum::<f64>()
             / samples.len() as f64)
             .sqrt();
+        let peak = samples
+            .iter()
+            .fold(0.0_f64, |current, sample| current.max(sample.abs()));
         eprintln!(
-            "pressure={pressure_pa} f0={fundamental_hz} periodicity={periodicity} spectral_centroid={centroid_hz} rms={level_rms:e}"
+            "pressure={pressure_pa} f0={fundamental_hz} periodicity={periodicity} spectral_centroid={centroid_hz} rms={level_rms:e} peak={peak:e}"
         );
-        assert!(periodicity > 0.995, "unlocked pressure cell {pressure_pa}");
         pitches_hz.push(fundamental_hz);
+        periodicities.push(periodicity);
         centroids_hz.push(centroid_hz);
         levels_rms.push(level_rms);
+        peaks.push(peak);
     }
+    assert!(
+        periodicities.iter().all(|periodicity| *periodicity > 0.995),
+        "unlocked pressure cells: {periodicities:?}"
+    );
     assert!(
         pitches_hz.windows(2).all(|pair| pair[1] >= pair[0]),
         "unexpected pitch reversal: {pitches_hz:?}"
     );
-    let pitch_drift_cents = 1_200.0 * (pitches_hz[2] / pitches_hz[0]).log2();
+    let loud_index = pressures_pa.len() - 1;
+    let pitch_drift_cents = 1_200.0 * (pitches_hz[loud_index] / pitches_hz[0]).log2();
     assert!(
         pitch_drift_cents < 20.0,
         "pressure retuned the fixed geometry by {pitch_drift_cents} cents"
@@ -471,28 +622,36 @@ fn pressure_increase_brightens_a_fixed_regime_without_retuning_it() {
         "soft spectral centroid below 1400 Hz: {centroids_hz:?}"
     );
     assert!(
-        centroids_hz[2] >= 2_600.0,
+        centroids_hz[loud_index] >= 2_600.0,
         "loud spectral centroid below 2600 Hz: {centroids_hz:?}"
     );
     assert!(
         levels_rms.windows(2).all(|pair| pair[1] > pair[0]),
         "mouth pressure did not increase radiated level: {levels_rms:?}"
     );
-    let brightness_increase_hz = centroids_hz[2] - centroids_hz[0];
+    assert!(
+        levels_rms.iter().all(|level| *level > 2.0e-5),
+        "inaudible normal-regime pressure cells: {levels_rms:?}"
+    );
+    assert!(
+        peaks.iter().all(|peak| *peak < 0.98),
+        "unbounded normalized pressure cells: {peaks:?}"
+    );
+    let brightness_increase_hz = centroids_hz[loud_index] - centroids_hz[0];
     assert!(
         brightness_increase_hz >= 800.0,
         "pressure-driven brightness increase below 800 Hz: {centroids_hz:?}"
     );
     let brightness_increase_percent = 100.0 * brightness_increase_hz / centroids_hz[0];
-    let level_increase_db = 20.0 * (levels_rms[2] / levels_rms[0]).log10();
+    let level_increase_db = 20.0 * (levels_rms[loud_index] / levels_rms[0]).log10();
     eprintln!(
         "pressure-law pitch_drift={pitch_drift_cents}c brightness_increase={brightness_increase_hz}Hz ({brightness_increase_percent}%) level_increase={level_increase_db}dB"
     );
 
     let mut linear_parameters = TrumpetParameters::canonical();
     linear_parameters.nonlinear_coefficient = 0.0;
-    let linear_soft = render_sustain([0.0; 3], pressures_pa[0], 300.0, linear_parameters);
-    let linear_loud = render_sustain([0.0; 3], pressures_pa[2], 300.0, linear_parameters);
+    let linear_soft = render_sustain([0.0; 3], pressures_pa[0], 220.0, linear_parameters);
+    let linear_loud = render_sustain([0.0; 3], pressures_pa[loud_index], 220.0, linear_parameters);
     let linear_soft_centroid = spectral_centroid_hz(&linear_soft);
     let linear_loud_centroid = spectral_centroid_hz(&linear_loud);
     let linear_brightness_change_hz = linear_loud_centroid - linear_soft_centroid;
@@ -514,19 +673,29 @@ fn high_dynamic_state_releases_without_active_energy_growth() {
     let mut model = TrumpetModel::new(48_000.0, TrumpetParameters::canonical()).unwrap();
     let mut controls = TrumpetControls {
         mouth_pressure_pa: 0.0,
-        lip_resonance_hz: 300.0,
-        lip_damping_ratio: 0.16,
+        lip_resonance_hz: 80.0,
+        lip_damping_ratio: 0.28,
         equilibrium_opening_m: 0.00025,
         tongue_contact: 0.0,
         valves: [0.0; 3],
     };
     for frame in 0..24_000 {
         controls.mouth_pressure_pa = 8_500.0 * (frame as f64 / 1_440.0).min(1.0);
-        model.process_sample(controls).unwrap();
+        model.process_sample(controls).unwrap_or_else(|error| {
+            panic!(
+                "high dynamic drive failed frame={frame} report={:?}: {error:?}",
+                model.last_lip_report()
+            )
+        });
     }
     for release_frame in 0..1_440 {
         controls.mouth_pressure_pa = 8_500.0 * (1.0 - release_frame as f64 / 1_440.0);
-        model.process_sample(controls).unwrap();
+        model.process_sample(controls).unwrap_or_else(|error| {
+            panic!(
+                "high dynamic release failed frame={release_frame} report={:?}: {error:?}",
+                model.last_lip_report()
+            )
+        });
     }
     controls.mouth_pressure_pa = 0.0;
     let initial = model.stored_energy_j(controls);
@@ -561,20 +730,26 @@ fn seeded_and_cold_start_paths_are_bounded() {
     for seeded in [false, true] {
         let mut model = TrumpetModel::new(48_000.0, TrumpetParameters::canonical()).unwrap();
         if seeded {
-            model.seed_open_first_regime(100.0).unwrap();
+            model.seed_open_normal_regime(100.0).unwrap();
         }
         let mut controls = TrumpetControls {
             mouth_pressure_pa: 0.0,
             lip_resonance_hz: 80.0,
-            lip_damping_ratio: 0.16,
-            equilibrium_opening_m: 0.00005,
+            lip_damping_ratio: 0.28,
+            equilibrium_opening_m: 0.00025,
             tongue_contact: 0.0,
             valves: [0.0; 3],
         };
         let mut peak = 0.0_f64;
         for frame in 0..24_000 {
             controls.mouth_pressure_pa = 8_500.0 * (frame as f64 / 1_440.0).min(1.0);
-            let sample = model.process_sample(controls).unwrap();
+            let sample = model.process_sample(controls).unwrap_or_else(|error| {
+                panic!(
+                    "start failed seeded={seeded} frame={frame} pressure={} report={:?}: {error:?}",
+                    controls.mouth_pressure_pa,
+                    model.last_lip_report()
+                )
+            });
             if frame > 9_600 {
                 peak = peak.max(sample.abs());
             }
