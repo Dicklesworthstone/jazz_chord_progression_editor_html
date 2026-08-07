@@ -1,0 +1,144 @@
+{
+  "schema": "changes.evidence.wind-reference-similarity.v1",
+  "outcome": "pass",
+  "gate": {
+    "algorithmId": "changes.analysis.reference-similarity@1",
+    "implementationSha256": "878aa33bcf2a0ddd7c0adc5d198c9ca2cc91894c191c4221bef0aa17c22e490c",
+    "policyId": "plucked-reference-policy@1",
+    "policySha256": "83d9352b719c0f2553f65d9c72539787a8d587f0337f16b95b184706cde06fd4"
+  },
+  "candidate": {
+    "rendererAlgorithmId": "changes.dsp.plucked-dreadnought@1",
+    "rendererSourceSha256": "f90ec2b169b67e2dc2fe23979f49ebdb1473e8b52e3b74eff9019abccea50005",
+    "wasmSha256": "572f51b9084b5f3b8d5b2028e28852caff44c26e949cd0d24c62c4c307155457",
+    "parameterPackSha256": "b5e07ef22b4c5c2422903ca7688c4578a761ac8d2b2481cc0bc11390e9839776",
+    "renderRequestSha256": "d59cb2f4d863d4874d0755c1845eb854c6a175984dd7380dc76de89c2d97d90f",
+    "pcmSha256": "6dbafe46722ccbaf2419d78f1e4a3fd20e22dce399bb762f3280cb75829f204f"
+  },
+  "reference": {
+    "corpusId": "plucked-reference-corpus@1",
+    "corpusManifestSha256": "1904a8272ffd3593e8a7f7beacd814b960bb7693de52b01c82bb30d393b9875d",
+    "filePath": "test-results/plucked-reference-source/FSS-SteelStringGuitar-small-SFZ-20200521/samples/A2.wav",
+    "fileSha256": "304d4285d31130061d1e326a28777d57c826c410ffdd6aee3d9a08307d647e41",
+    "licenseId": "CC0-1.0",
+    "expectedMidi": 45,
+    "expectedHz": 110
+  },
+  "controls": {
+    "self": true,
+    "whiteNoiseRejected": true,
+    "overlyPureRejected": true,
+    "wrongPitchRejected": true,
+    "crossInstrumentRejected": true
+  },
+  "report": {
+    "candidate": {
+      "pitch": {
+        "f0Hz": 110.01256604665762,
+        "centsFromExpected": 0.19775932120982173,
+        "periodicity": 0.9999734452608551
+      },
+      "integratedBandDb": [
+        -1.3883117267961698,
+        -21.50558452642761,
+        -44.641140425857145,
+        -12.001148615685356,
+        -8.29825217799126,
+        -48.82916329797817,
+        -14.060627446153271,
+        -21.33867761146657,
+        -26.492157513370994,
+        -23.313105492890106,
+        -35.33309658142143,
+        -30.048857120584948,
+        -44.039836384304564,
+        -37.105205228886334,
+        -35.95087269512778,
+        -45.72463639993033,
+        -40.307891734540746,
+        -45.0689328939997,
+        -50.49704116832264,
+        -56.787707664558,
+        -65.66441278530006,
+        -84.78788946637843,
+        -91.11440618323512,
+        -119.53220960888984
+      ],
+      "harmonicProfileDb": [
+        -5.570545219118036,
+        -12.873104693101016,
+        -20.152649050352885,
+        -24.67934779794531,
+        -22.467642214331583,
+        -34.16139092084305,
+        -30.908658028235735,
+        -33.04370798268144,
+        -44.94559016348483,
+        -47.674578200037445,
+        -44.92953590347013
+      ],
+      "hnrDb": 30.250167122768264,
+      "highBandShareDb": -82.33326123692765,
+      "onsetSeconds": 0,
+      "attackTo90SustainSeconds": 0.005
+    },
+    "reference": {
+      "pitch": {
+        "f0Hz": 110.23469706991746,
+        "centsFromExpected": 3.689842861944104,
+        "periodicity": 0.9997816011035658
+      },
+      "integratedBandDb": [
+        -2.429547709248099,
+        -28.03584677919778,
+        -46.969626246718654,
+        -9.890769324209195,
+        -10.185815521608646,
+        -30.125293332441707,
+        -6.843539725354289,
+        -21.453201626250916,
+        -25.316176106567273,
+        -33.34411577831599,
+        -21.2204694803056,
+        -27.091865028722033,
+        -32.90364607525432,
+        -46.31261109193635,
+        -41.98179005874814,
+        -46.020507755967216,
+        -56.80018264266092,
+        -56.39625569057975,
+        -59.99379645565831,
+        -60.19818975679953,
+        -65.289185790765,
+        -67.93944147931226,
+        -69.44606119297501,
+        -72.2356997942802
+      ],
+      "harmonicProfileDb": [
+        -4.929867800985967,
+        -4.726447307691596,
+        -19.358559700300393,
+        -23.213276950782088,
+        -31.327871522631302,
+        -19.124952078771933,
+        -26.655246316585888,
+        -27.66157586707824,
+        -39.73908715606348,
+        -45.30314445570109,
+        -49.27732465562353
+      ],
+      "hnrDb": 32.529474099330656,
+      "highBandShareDb": -64.4417435390617,
+      "onsetSeconds": 0,
+      "attackTo90SustainSeconds": 0.005011337868480726
+    },
+    "pitchDeltaCents": 3.4920835407342823,
+    "envelopeDb": 13.703523770893472,
+    "harmonicDb": 6.556399289543148,
+    "attackLog2": 0.003267713833910979,
+    "hnrAbsoluteDeltaDb": 2.279306976562392,
+    "highBandAbsoluteDeltaDb": 17.89151769786595
+  },
+  "findings": [],
+  "evidenceSha256": "1a9948835c22f2248959c48c11ab939afbbfd6d1a9c582291fd2a6d6fcb21739"
+}

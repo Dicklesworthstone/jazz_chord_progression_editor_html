@@ -1,0 +1,58 @@
+{
+  "schema": "changes.fixture.plucked-reference-corpus.v1",
+  "corpusId": "plucked-reference-corpus@1",
+  "publisher": "FreePats project",
+  "landingPage": "https://freepats.zenvoid.org/",
+  "useTerms": "Creative Commons CC0 1.0 public domain dedication per the source pages; dev-time reference use only, audio never shipped in the artifact.",
+  "provenance": "test-results/plucked-reference-source/PROVENANCE.md",
+  "fetchedUtc": "2026-08-07",
+  "pitchVerification": "Every labeled pitch below was verified by normalized-autocorrelation measurement on 2026-08-07 (measured offsets +0.9 to +5.3 cents from 12-TET); the VSCO octave-mislabel trap does not apply to these files but verification is mandatory for any addition.",
+  "ukuleleNote": "No CC0 ukulele reference exists in FreePats, VSCO-2-CE, or VCSL (re-verified 2026-08-07). The ukulele row certifies under plucked-separation-policy@1 against the steel-string reference: clean matched-pitch phonation plus measured cross-class separation, never same-class proximity.",
+  "files": [
+    {
+      "role": "steel-low",
+      "fileName": "FSS-SteelStringGuitar-small-SFZ-20200521/samples/A2.wav",
+      "sourceArchive": "FSS-SteelStringGuitar-small-SFZ-20200521.tar.xz",
+      "sha256": "304d4285d31130061d1e326a28777d57c826c410ffdd6aee3d9a08307d647e41",
+      "verifiedMidi": 45,
+      "measuredCentsFrom12Tet": 3.7,
+      "licenseId": "CC0-1.0"
+    },
+    {
+      "role": "steel-high",
+      "fileName": "FSS-SteelStringGuitar-small-SFZ-20200521/samples/A4.wav",
+      "sourceArchive": "FSS-SteelStringGuitar-small-SFZ-20200521.tar.xz",
+      "sha256": "d0bc223a16dfc1b9e6db1e169c86e59a6da29c53226bddfd46fa56efe3ac9ab3",
+      "verifiedMidi": 69,
+      "measuredCentsFrom12Tet": 4.6,
+      "licenseId": "CC0-1.0"
+    },
+    {
+      "role": "steel-mid",
+      "fileName": "FSS-SteelStringGuitar-small-SFZ-20200521/samples/G#3.wav",
+      "sourceArchive": "FSS-SteelStringGuitar-small-SFZ-20200521.tar.xz",
+      "sha256": "7d4cf1982c40ee24946e85b0fd7e244d9e286815ecbe16c3eeab25d1f1e6f27a",
+      "verifiedMidi": 56,
+      "measuredCentsFrom12Tet": 6.7,
+      "licenseId": "CC0-1.0"
+    },
+    {
+      "role": "electric-di-low",
+      "fileName": "EGuitarFSBS-bridge-clean-small-SFZ-20220911/samples/E3_s3_01.wav",
+      "sourceArchive": "EGuitarFSBS-bridge-clean-small-SFZ-20220911.7z",
+      "sha256": "d2eb2ec77e87e45ce967e80c124ac367256dbe35388368e16cacda6a0562767d",
+      "verifiedMidi": 52,
+      "measuredCentsFrom12Tet": 5.3,
+      "licenseId": "CC0-1.0"
+    },
+    {
+      "role": "electric-di-mid",
+      "fileName": "EGuitarFSBS-bridge-clean-small-SFZ-20220911/samples/B3_s5_01.wav",
+      "sourceArchive": "EGuitarFSBS-bridge-clean-small-SFZ-20220911.7z",
+      "sha256": "1b8eab0f3cf2fcc538c15bc92634da255f93e82d79b14f33026b0fb976f52a0c",
+      "verifiedMidi": 59,
+      "measuredCentsFrom12Tet": 0.9,
+      "licenseId": "CC0-1.0"
+    }
+  ]
+}

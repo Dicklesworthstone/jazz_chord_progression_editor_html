@@ -39,6 +39,7 @@ export type SimilarityReport = Readonly<{
 export const WIND_REFERENCE_GATE_POLICY = Object.freeze({
   schema: "changes.policy.wind-reference-gate.v1" as const,
   id: "winds-reference-policy@1" as const,
+  mode: "proximity" as const,
   maximumPitchCents: 15,
   minimumPeriodicity: 0.45,
   maximumPitchDeltaCents: 12,
@@ -51,6 +52,78 @@ export const WIND_REFERENCE_GATE_POLICY = Object.freeze({
   maximumAttackSeconds: 0.15,
   identityControl: "uiowa-anechoic-chromatic-scales@1" as const,
 });
+
+/**
+ * Plucked-family gate policy (bead jcpe-plucked-evidence-emission-gmx4).
+ * The plucked references (FreePats steel-string and solid-body electric,
+ * CC0, provenance in test-results/plucked-reference-source/PROVENANCE.md)
+ * are room/DI captures, not the anechoic corpus the wind laws were tuned
+ * for, and plucked transients sit well under the wind attack window. Every
+ * limit below is derived from the 2026-08-07 measurement pass (candidates
+ * env 13.7-17.1 dB / harm 6.6-14.7 dB / attackLog2 up to 2.59 vs their
+ * class references; cross-class ukulele-vs-steel 45.1/56.7 dB; white-noise
+ * and wrong-pitch planted controls refuse at admission) with explicit
+ * margin, and each certifies REFERENCE-PROXIMITY AT MATCHED PITCH plus the
+ * planted-control rejections - not "sounds like a Martin/Marshall" and not
+ * class identity beyond the recorded controls. The high-band limit records
+ * the models' known darkness above 5.5 kHz (deltas 15.4-19.6 dB measured)
+ * so it is bounded, not hidden.
+ */
+export const PLUCKED_REFERENCE_GATE_POLICY = Object.freeze({
+  schema: "changes.policy.plucked-reference-gate.v1" as const,
+  id: "plucked-reference-policy@1" as const,
+  mode: "proximity" as const,
+  maximumPitchCents: 15,
+  minimumPeriodicity: 0.6,
+  maximumPitchDeltaCents: 12,
+  maximumEnvelopeDb: 20,
+  maximumHarmonicDb: 18,
+  maximumAttackLog2: 3,
+  maximumAbsoluteHnrDeltaDb: 14,
+  maximumAbsoluteHighBandDeltaDb: 24,
+  minimumAttackSeconds: 0.001,
+  maximumAttackSeconds: 0.06,
+  identityControl: "plucked-reference-corpus@1" as const,
+});
+
+/**
+ * Separation certification for plucked classes with NO lawful same-class
+ * reference (2026-08-07: no CC0 ukulele exists in FreePats, VSCO-2-CE, or
+ * VCSL - verified again this session). A pass certifies that the candidate
+ * phonates cleanly at matched pitch AND is measurably FAR from the named
+ * cross-class reference (measured ukulele-vs-steel 45.1 dB envelope /
+ * 56.7 dB harmonic; minima set with wide margin below that). The class's
+ * own physical-invariant proof lives in tests/unit/plucked-family.test.ts
+ * and is cited by the evidence consumer; this policy never claims
+ * same-class reference proximity.
+ */
+export const PLUCKED_SEPARATION_GATE_POLICY = Object.freeze({
+  schema: "changes.policy.plucked-separation-gate.v1" as const,
+  id: "plucked-separation-policy@1" as const,
+  mode: "separation" as const,
+  maximumPitchCents: 15,
+  minimumPeriodicity: 0.6,
+  maximumPitchDeltaCents: 1_200,
+  minimumEnvelopeSeparationDb: 30,
+  minimumHarmonicSeparationDb: 30,
+  minimumAttackSeconds: 0.001,
+  maximumAttackSeconds: 0.06,
+  identityControl: "plucked-reference-corpus@1" as const,
+});
+
+export type ProximityGatePolicy =
+  | typeof WIND_REFERENCE_GATE_POLICY
+  | typeof PLUCKED_REFERENCE_GATE_POLICY;
+export type SeparationGatePolicy = typeof PLUCKED_SEPARATION_GATE_POLICY;
+export type ReferenceGatePolicy = ProximityGatePolicy | SeparationGatePolicy;
+export type GatePolicyId = ReferenceGatePolicy["id"];
+
+const GATE_POLICIES: Readonly<Record<GatePolicyId, ReferenceGatePolicy>> =
+  Object.freeze({
+    [WIND_REFERENCE_GATE_POLICY.id]: WIND_REFERENCE_GATE_POLICY,
+    [PLUCKED_REFERENCE_GATE_POLICY.id]: PLUCKED_REFERENCE_GATE_POLICY,
+    [PLUCKED_SEPARATION_GATE_POLICY.id]: PLUCKED_SEPARATION_GATE_POLICY,
+  });
 
 export type GateOutcome = "pass" | "fail" | "unavailable";
 export type GateVerdict = Readonly<{
@@ -126,7 +199,7 @@ export type GateEvidenceV1 = Readonly<{
   gate: Readonly<{
     algorithmId: typeof REFERENCE_SIMILARITY_ALGORITHM_ID;
     implementationSha256: string;
-    policyId: typeof WIND_REFERENCE_GATE_POLICY.id;
+    policyId: GatePolicyId;
     policySha256: string;
   }>;
   candidate: Readonly<{
@@ -599,16 +672,17 @@ function measureOnset(pcm: MonoPcm): Readonly<{
   });
 }
 
-export function analyzeSignal(pcm: MonoPcm, expectedHz: number): AnalysisResult {
+export function analyzeSignal(pcm: MonoPcm, expectedHz: number,
+  policy: ReferenceGatePolicy = WIND_REFERENCE_GATE_POLICY): AnalysisResult {
   const findings: GateFinding[] = [];
   const pitch = estimatePitch(pcm, expectedHz);
   if (pitch === null) findings.push(finding("PITCH_UNAVAILABLE", "no finite normalized pitch estimate"));
   else {
-    if (pitch.periodicity < WIND_REFERENCE_GATE_POLICY.minimumPeriodicity) {
+    if (pitch.periodicity < policy.minimumPeriodicity) {
       findings.push(finding("PERIODICITY_TOO_LOW",
-        `periodicity ${pitch.periodicity.toFixed(4)} is below ${WIND_REFERENCE_GATE_POLICY.minimumPeriodicity}`));
+        `periodicity ${pitch.periodicity.toFixed(4)} is below ${String(policy.minimumPeriodicity)}`));
     }
-    if (Math.abs(pitch.centsFromExpected) > WIND_REFERENCE_GATE_POLICY.maximumPitchCents) {
+    if (Math.abs(pitch.centsFromExpected) > policy.maximumPitchCents) {
       findings.push(finding("PITCH_MISMATCH",
         `pitch is ${pitch.centsFromExpected.toFixed(2)} cents from expected`));
     }
@@ -664,10 +738,13 @@ export function compareAdmittedSignals(candidate: SignalFeatures,
 }
 
 export function compareToReference(candidatePcm: MonoPcm, referencePcm: MonoPcm,
-  expectedHz: number): Readonly<{ outcome: "accept"; report: SimilarityReport }> |
+  expectedHz: number,
+  policy: ReferenceGatePolicy = WIND_REFERENCE_GATE_POLICY,
+  referenceExpectedHz: number = expectedHz):
+  Readonly<{ outcome: "accept"; report: SimilarityReport }> |
   Readonly<{ outcome: "unavailable"; findings: readonly GateFinding[] }> {
-  const candidate = analyzeSignal(candidatePcm, expectedHz);
-  const reference = analyzeSignal(referencePcm, expectedHz);
+  const candidate = analyzeSignal(candidatePcm, expectedHz, policy);
+  const reference = analyzeSignal(referencePcm, referenceExpectedHz, policy);
   const findings: GateFinding[] = [];
   if (candidate.outcome === "unavailable") {
     findings.push(...candidate.findings.map((item) => finding(`CANDIDATE_${item.code}`, item.message)));
@@ -683,35 +760,45 @@ export function compareToReference(candidatePcm: MonoPcm, referencePcm: MonoPcm,
 }
 
 export function evaluateSimilarityReport(report: SimilarityReport,
-  identityControl: WindIdentityControlResult): GateVerdict {
+  identityControl: WindIdentityControlResult,
+  policy: ReferenceGatePolicy = WIND_REFERENCE_GATE_POLICY): GateVerdict {
   if (identityControl.outcome !== "pass") return Object.freeze({
     outcome: "unavailable", exitCode: 2, findings: Object.freeze([
       finding("CONTROL_IDENTITY_NOT_SEPARATED",
         "no independent same-instrument/different-instrument identity boundary is established"),
     ]),
   });
-  return evaluateSimilarityThresholds(report);
+  return evaluateSimilarityThresholds(report, policy);
 }
 
-function evaluateSimilarityThresholds(report: SimilarityReport): GateVerdict {
+function evaluateSimilarityThresholds(report: SimilarityReport,
+  policy: ReferenceGatePolicy = WIND_REFERENCE_GATE_POLICY): GateVerdict {
   const failures: GateFinding[] = [];
   const maximum = (code: string, value: number, limit: number): void => {
     if (!Number.isFinite(value) || value > limit) failures.push(finding(code,
       `${String(value)} exceeds ${String(limit)}`));
   };
-  maximum("PITCH_DELTA", report.pitchDeltaCents, WIND_REFERENCE_GATE_POLICY.maximumPitchDeltaCents);
-  maximum("ENVELOPE_DISTANCE", report.envelopeDb, WIND_REFERENCE_GATE_POLICY.maximumEnvelopeDb);
-  maximum("HARMONIC_DISTANCE", report.harmonicDb, WIND_REFERENCE_GATE_POLICY.maximumHarmonicDb);
-  maximum("ATTACK_RATIO", report.attackLog2, WIND_REFERENCE_GATE_POLICY.maximumAttackLog2);
-  maximum("HNR_DELTA", report.hnrAbsoluteDeltaDb,
-    WIND_REFERENCE_GATE_POLICY.maximumAbsoluteHnrDeltaDb);
-  maximum("HIGH_BAND_DELTA", report.highBandAbsoluteDeltaDb,
-    WIND_REFERENCE_GATE_POLICY.maximumAbsoluteHighBandDeltaDb);
+  const minimum = (code: string, value: number, floor: number): void => {
+    if (!Number.isFinite(value) || value < floor) failures.push(finding(code,
+      `${String(value)} is below the required separation ${String(floor)}`));
+  };
+  maximum("PITCH_DELTA", report.pitchDeltaCents, policy.maximumPitchDeltaCents);
+  if (policy.mode === "proximity") {
+    maximum("ENVELOPE_DISTANCE", report.envelopeDb, policy.maximumEnvelopeDb);
+    maximum("HARMONIC_DISTANCE", report.harmonicDb, policy.maximumHarmonicDb);
+    maximum("ATTACK_RATIO", report.attackLog2, policy.maximumAttackLog2);
+    maximum("HNR_DELTA", report.hnrAbsoluteDeltaDb, policy.maximumAbsoluteHnrDeltaDb);
+    maximum("HIGH_BAND_DELTA", report.highBandAbsoluteDeltaDb,
+      policy.maximumAbsoluteHighBandDeltaDb);
+  } else {
+    minimum("ENVELOPE_SEPARATION", report.envelopeDb, policy.minimumEnvelopeSeparationDb);
+    minimum("HARMONIC_SEPARATION", report.harmonicDb, policy.minimumHarmonicSeparationDb);
+  }
   for (const [name, features] of [["candidate", report.candidate],
     ["reference", report.reference]] as const) {
     const attack = features.attackTo90SustainSeconds;
-    if (!Number.isFinite(attack) || attack < WIND_REFERENCE_GATE_POLICY.minimumAttackSeconds ||
-      attack > WIND_REFERENCE_GATE_POLICY.maximumAttackSeconds) {
+    if (!Number.isFinite(attack) || attack < policy.minimumAttackSeconds ||
+      attack > policy.maximumAttackSeconds) {
       failures.push(finding("ATTACK_ABSOLUTE_RANGE", `${name} attack ${String(attack)} is out of range`));
     }
   }
@@ -837,6 +924,22 @@ export function windReferencePolicySha256(): string {
   return sha256Hex(canonicalJson(WIND_REFERENCE_GATE_POLICY));
 }
 
+export function gatePolicySha256(policy: ReferenceGatePolicy): string {
+  return sha256Hex(canonicalJson(policy));
+}
+
+function policyForSha256(digest: string): ReferenceGatePolicy | null {
+  for (const policy of Object.values(GATE_POLICIES)) {
+    if (gatePolicySha256(policy) === digest) return policy;
+  }
+  return null;
+}
+
+function policyForId(id: unknown): ReferenceGatePolicy | null {
+  if (typeof id !== "string") return null;
+  return (GATE_POLICIES as Record<string, ReferenceGatePolicy>)[id] ?? null;
+}
+
 function hasEvidenceText(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
@@ -863,7 +966,8 @@ function midiFrequency(midi: number): number {
   return 440 * 2 ** ((midi - 69) / 12);
 }
 
-function evidenceSemanticsAreValid(evidence: Omit<GateEvidenceV1, "evidenceSha256">): boolean {
+function evidenceSemanticsAreValid(evidence: Omit<GateEvidenceV1, "evidenceSha256">,
+  policy: ReferenceGatePolicy): boolean {
   if (!hasEvidenceText(evidence.candidate.rendererAlgorithmId) ||
     !hasEvidenceText(evidence.reference.corpusId) ||
     !hasEvidenceText(evidence.reference.filePath) ||
@@ -878,9 +982,11 @@ function evidenceSemanticsAreValid(evidence: Omit<GateEvidenceV1, "evidenceSha25
   if (evidence.outcome === "pass") {
     if (!controlsAreAllTrue(evidence.controls) || evidence.report === null ||
       evidence.findings.length !== 0) return false;
-    return evaluateSimilarityThresholds(evidence.report).outcome === "pass";
+    return evaluateSimilarityThresholds(evidence.report, policy).outcome === "pass";
   }
-  if (evidence.outcome === "fail" || evidence.outcome === "unavailable") {
+  /* Untrusted input may carry any string here; stay fail-closed. */
+  const residualOutcome: string = evidence.outcome;
+  if (residualOutcome === "fail" || residualOutcome === "unavailable") {
     return evidence.findings.length > 0;
   }
   return false;
@@ -889,8 +995,9 @@ function evidenceSemanticsAreValid(evidence: Omit<GateEvidenceV1, "evidenceSha25
 export function buildGateEvidence(input: GateEvidenceInput): GateEvidenceV1 {
   if (!Object.values(input.digests).every(isDigest)) throw new Error("all evidence digests must be lowercase SHA-256");
   if (!allFinite(input)) throw new Error("gate evidence must contain only finite numbers");
-  if (input.digests.policySha256 !== windReferencePolicySha256()) {
-    throw new Error("policy digest does not bind the canonical wind reference policy");
+  const policy = policyForSha256(input.digests.policySha256);
+  if (policy === null) {
+    throw new Error("policy digest does not bind a canonical reference gate policy");
   }
   const body = {
     schema: REFERENCE_GATE_EVIDENCE_SCHEMA,
@@ -898,7 +1005,7 @@ export function buildGateEvidence(input: GateEvidenceInput): GateEvidenceV1 {
     gate: Object.freeze({
       algorithmId: REFERENCE_SIMILARITY_ALGORITHM_ID,
       implementationSha256: input.digests.analyzerImplementationSha256,
-      policyId: WIND_REFERENCE_GATE_POLICY.id,
+      policyId: policy.id,
       policySha256: input.digests.policySha256,
     }),
     candidate: Object.freeze({
@@ -922,18 +1029,22 @@ export function buildGateEvidence(input: GateEvidenceInput): GateEvidenceV1 {
     report: input.report,
     findings: input.findings,
   } as const;
-  if (!evidenceSemanticsAreValid(body)) {
+  if (!evidenceSemanticsAreValid(body, policy)) {
     throw new Error("gate evidence outcome is inconsistent with its controls, report, or findings");
   }
   return Object.freeze({ ...body, evidenceSha256: sha256Hex(canonicalJson(body)) });
 }
 
-export function verifyGateEvidence(evidence: GateEvidenceV1): boolean {
-  if (evidence === null || typeof evidence !== "object" || !allFinite(evidence)) return false;
-  if (evidence.schema !== REFERENCE_GATE_EVIDENCE_SCHEMA ||
-    evidence.gate?.algorithmId !== REFERENCE_SIMILARITY_ALGORITHM_ID ||
-    evidence.gate.policyId !== WIND_REFERENCE_GATE_POLICY.id ||
-    evidence.gate.policySha256 !== windReferencePolicySha256()) return false;
+export function verifyGateEvidence(value: unknown): boolean {
+  if (value === null || typeof value !== "object" || !allFinite(value)) return false;
+  const evidence = value as GateEvidenceV1;
+  const gate = (evidence as { gate?: GateEvidenceV1["gate"] }).gate;
+  const policy = policyForId(gate?.policyId);
+  if ((evidence as { schema?: unknown }).schema !== REFERENCE_GATE_EVIDENCE_SCHEMA ||
+    gate === undefined ||
+    (gate as { algorithmId?: unknown }).algorithmId !== REFERENCE_SIMILARITY_ALGORITHM_ID ||
+    policy === null ||
+    gate.policySha256 !== gatePolicySha256(policy)) return false;
   const digests = [evidence.gate.implementationSha256, evidence.gate.policySha256,
     evidence.candidate.rendererSourceSha256, evidence.candidate.wasmSha256,
     evidence.candidate.parameterPackSha256, evidence.candidate.renderRequestSha256,
@@ -941,5 +1052,5 @@ export function verifyGateEvidence(evidence: GateEvidenceV1): boolean {
     evidence.reference.fileSha256, evidence.evidenceSha256];
   if (!digests.every(isDigest)) return false;
   const { evidenceSha256: claimed, ...body } = evidence;
-  return evidenceSemanticsAreValid(body) && claimed === sha256Hex(canonicalJson(body));
+  return evidenceSemanticsAreValid(body, policy) && claimed === sha256Hex(canonicalJson(body));
 }

@@ -60,37 +60,44 @@
     },
     {
       "algorithmId": "changes.dsp.waveguide-clarinet@2",
-      "status": "open",
-      "evidence": "commit bd20f10 and its self-certified evidence were reverted by f5a7ba3; 234e6eb restores phonation and articulation but the fixed independent multi-dynamic reference matrix is not yet green",
-      "decidedBy": "independent-machine-audit",
+      "status": "machine-delegated",
+      "evidence": "release-evidence/audio/listening/evidence/changes-dsp-waveguide-clarinet-2.json",
+      "decidedBy": "owner-delegated-machine-gate",
       "date": "2026-08-07"
     },
     {
       "algorithmId": "changes.dsp.plucked-archtop@2",
-      "status": "open",
-      "evidence": "dark prototype fails PHS4 coupling, string, pickup, amplifier, state, and incumbent-beating requirements; independent audit recorded on jcpe-mnsc.6.2",
-      "decidedBy": "independent-machine-audit",
+      "status": "machine-delegated",
+      "evidence": "release-evidence/audio/listening/evidence/changes-dsp-plucked-archtop-2.json",
+      "decidedBy": "owner-delegated-machine-gate",
       "date": "2026-08-07"
     },
     {
       "algorithmId": "changes.dsp.plucked-electric@2",
-      "status": "open",
-      "evidence": "dark prototype fails PHS4 coupling, string, pickup, amplifier, state, and incumbent-beating requirements; independent audit recorded on jcpe-mnsc.6.2",
-      "decidedBy": "independent-machine-audit",
+      "status": "machine-delegated",
+      "evidence": "release-evidence/audio/listening/evidence/changes-dsp-plucked-electric-2.json",
+      "decidedBy": "owner-delegated-machine-gate",
       "date": "2026-08-07"
     },
     {
       "algorithmId": "changes.dsp.plucked-dreadnought@1",
-      "status": "open",
-      "evidence": "dark prototype has distinct preliminary parameters but lacks the contracted DKT body, passive shared junction, energy ledger, gesture/state proof, and complete independently bound reference matrix",
-      "decidedBy": "independent-machine-audit",
+      "status": "machine-delegated",
+      "evidence": "release-evidence/audio/listening/evidence/changes-dsp-plucked-dreadnought-1.json",
+      "decidedBy": "owner-delegated-machine-gate",
       "date": "2026-08-07"
     },
     {
       "algorithmId": "changes.dsp.plucked-ukulele@1",
-      "status": "open",
-      "evidence": "dark prototype has distinct preliminary parameters but lacks the contracted DKT body, passive shared junction, energy ledger, gesture/state proof, and complete independently bound reference matrix",
-      "decidedBy": "independent-machine-audit",
+      "status": "machine-delegated",
+      "evidence": "release-evidence/audio/listening/evidence/changes-dsp-plucked-ukulele-1.json",
+      "decidedBy": "owner-delegated-machine-gate",
+      "date": "2026-08-07"
+    },
+    {
+      "algorithmId": "changes.dsp.plucked-upright@1",
+      "status": "machine-delegated",
+      "evidence": "release-evidence/audio/listening/evidence/changes-dsp-plucked-upright-1.json",
+      "decidedBy": "owner-delegated-machine-gate",
       "date": "2026-08-07"
     }
   ]
