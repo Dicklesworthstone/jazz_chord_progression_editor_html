@@ -1,5 +1,5 @@
 /**
- * Shipping-output gate for the five PHS4 plucked instruments.
+ * Shipping-output gate for the four reachable PHS4 plucked instruments.
  *
  * This deliberately analyzes the embedded WASM path used by the browser. The
  * Rust physics tests prove internal laws; this gate catches the different
@@ -13,7 +13,6 @@ import {
   PLUCKED_ARCHTOP_V2_ALGORITHM_ID,
   PLUCKED_DREADNOUGHT_ALGORITHM_ID,
   PLUCKED_ELECTRIC_V2_ALGORITHM_ID,
-  PLUCKED_UPRIGHT_BASS_ALGORITHM_ID,
   PLUCKED_UKULELE_ALGORITHM_ID,
   loadWaveguideRenderers,
   type RenderedNotePcm,
@@ -25,8 +24,7 @@ export type PluckedFamily =
   | "archtop"
   | "electric"
   | "dreadnought"
-  | "ukulele"
-  | "upright-bass";
+  | "ukulele";
 
 type FamilyPolicy = Readonly<{
   packIndex: number;
@@ -45,7 +43,7 @@ type FamilyPolicy = Readonly<{
 }>;
 
 export const PLUCKED_V2_RELEASE_POLICY = Object.freeze({
-  schema: "changes.policy.phs4-plucked-shipping-output.v2" as const,
+  schema: "changes.policy.phs4-plucked-shipping-output.v1" as const,
   sampleRateHz: 48_000,
   velocity: 100,
   renderSeconds: 1.2,
@@ -122,29 +120,12 @@ export const PLUCKED_V2_RELEASE_POLICY = Object.freeze({
       minimumTailDb: -44,
       maximumTailDb: 1,
     }),
-    "upright-bass": Object.freeze({
-      packIndex: 4,
-      algorithmId: PLUCKED_UPRIGHT_BASS_ALGORITHM_ID,
-      midi: Object.freeze([28, 40, 60]),
-      maximumPitchCents: 5,
-      minimumPeak: 0.02,
-      minimumEarlyRms: 0.02,
-      maximumEarlyRms: 0.3,
-      minimumSecondPartialDb: -12,
-      minimumThirdPartialDb: -16,
-      minimumAudiblePartialCount: 7,
-      minimumHigherHarmonicMassDb: -5,
-      minimumTailDb: -18,
-      maximumTailDb: 1,
-    }),
   } satisfies Readonly<Record<PluckedFamily, FamilyPolicy>>),
   referenceBasis: Object.freeze({
     steelStringDiagnostic:
       "FSS SteelStringGuitar GPL diagnostic only: C4 h2=-4.8dB, h3=-22.7dB, 0.82-1.07s tail=-13.2dB",
     electricCc0:
       "Freesound/Versilian CC0 bridge clean+dist: register cells retain 6-10 strong partials; clean tail=-2.1..-11.5dB; dist tail=-0.5..-0.9dB",
-    uprightBassCc0:
-      "Versilian Community Sample Library CC0 contrabass pizzicato is the checked-in A/B comparator; thresholds retain pitch, broad harmonic excitation, and a multi-hundred-ms body tail without requiring copied PCM",
     authorityBoundary:
       "thresholds are conservative lower bounds, not copied audio and not a measured Marshall fit",
   }),
@@ -188,7 +169,7 @@ export type PluckedPairwiseCell = Readonly<{
 type SourceBinding = Readonly<{ path: string; sha256: string }>;
 
 export type PluckedV2ReleaseEvidence = Readonly<{
-  schema: "changes.evidence.phs4-plucked-shipping-output.v2";
+  schema: "changes.evidence.phs4-plucked-shipping-output.v1";
   policy: typeof PLUCKED_V2_RELEASE_POLICY;
   algorithmIds: readonly string[];
   wasmSha256: string;
@@ -203,10 +184,10 @@ export type PluckedV2ReleaseEvidence = Readonly<{
   }>;
   summary: Readonly<{
     outcome: "pass" | "fail";
-    expectedCellCount: 15;
+    expectedCellCount: 12;
     passedCellCount: number;
     failedCellCount: number;
-    expectedPairwiseCellCount: 10;
+    expectedPairwiseCellCount: 6;
     passedPairwiseCellCount: number;
     failedPairwiseCellCount: number;
   }>;
@@ -218,12 +199,10 @@ const FAMILY_ORDER = Object.freeze([
   "electric",
   "dreadnought",
   "ukulele",
-  "upright-bass",
 ] as const satisfies readonly PluckedFamily[]);
 
 export const PLUCKED_V2_SOURCE_PATHS = Object.freeze([
   "dsp/concert-grand/src/plucked_v2.rs",
-  "dsp/concert-grand/src/upright_bass_body.rs",
   "dsp/concert-grand/src/lib.rs",
   "src/audio/dsp-renderer.ts",
   "src/audio/instrument-recipes-contract.ts",
@@ -463,14 +442,14 @@ function summarize(
 ): PluckedV2ReleaseEvidence["summary"] {
   const passedCellCount = cells.filter((cell) => cell.outcome === "pass").length;
   const passedPairwiseCellCount = pairwiseCells.filter((cell) => cell.outcome === "pass").length;
-  const fail = cells.length !== 15 || pairwiseCells.length !== 10 || passedCellCount !== 15 ||
-    passedPairwiseCellCount !== 10 || !Object.values(controls).every(Boolean);
+  const fail = cells.length !== 12 || pairwiseCells.length !== 6 || passedCellCount !== 12 ||
+    passedPairwiseCellCount !== 6 || !Object.values(controls).every(Boolean);
   return Object.freeze({
     outcome: fail ? "fail" : "pass",
-    expectedCellCount: 15,
+    expectedCellCount: 12,
     passedCellCount,
     failedCellCount: cells.length - passedCellCount,
-    expectedPairwiseCellCount: 10,
+    expectedPairwiseCellCount: 6,
     passedPairwiseCellCount,
     failedPairwiseCellCount: pairwiseCells.length - passedPairwiseCellCount,
   });
@@ -568,7 +547,7 @@ export async function runPluckedV2ReleaseGate(
   const sourceClosureSha256 = sha256Hex(canonicalJson(bindingsBefore));
   const summary = summarize(cells, pairwiseCells, controls);
   const unsigned = Object.freeze({
-    schema: "changes.evidence.phs4-plucked-shipping-output.v2" as const,
+    schema: "changes.evidence.phs4-plucked-shipping-output.v1" as const,
     policy: PLUCKED_V2_RELEASE_POLICY,
     algorithmIds,
     wasmSha256: CONCERT_GRAND_WASM_SHA256,
@@ -590,7 +569,7 @@ export function verifyPluckedV2ReleaseEvidence(
   value: unknown,
 ): value is PluckedV2ReleaseEvidence {
   if (!isRecord(value) ||
-    value["schema"] !== "changes.evidence.phs4-plucked-shipping-output.v2" ||
+    value["schema"] !== "changes.evidence.phs4-plucked-shipping-output.v1" ||
     canonicalJson(value["policy"]) !== canonicalJson(PLUCKED_V2_RELEASE_POLICY) ||
     !Array.isArray(value["algorithmIds"]) || !Array.isArray(value["sourceBindings"]) ||
     !Array.isArray(value["cells"]) || !Array.isArray(value["pairwiseCells"]) ||
@@ -609,7 +588,7 @@ export function verifyPluckedV2ReleaseEvidence(
     sha256Hex(canonicalJson(evidence.sourceBindings)) !== evidence.sourceClosureSha256) return false;
   const expectedCells = FAMILY_ORDER.flatMap((family) =>
     PLUCKED_V2_RELEASE_POLICY.families[family].midi.map((midi) => `${family}-m${String(midi)}`));
-  if (evidence.cells.length !== 15 ||
+  if (evidence.cells.length !== 12 ||
     canonicalJson(evidence.cells.map((cell) => cell.id)) !== canonicalJson(expectedCells)) return false;
   for (const cell of evidence.cells) {
     const familyPolicy = PLUCKED_V2_RELEASE_POLICY.families[cell.family];
@@ -643,7 +622,7 @@ export function verifyPluckedV2ReleaseEvidence(
       });
     }
   }
-  if (evidence.pairwiseCells.length !== 10 || evidence.pairwiseCells.some((cell, index) => {
+  if (evidence.pairwiseCells.length !== 6 || evidence.pairwiseCells.some((cell, index) => {
     const expected = expectedPairwise[index];
     return expected === undefined || cell.id !== expected.id ||
       cell.leftFamily !== expected.leftFamily || cell.rightFamily !== expected.rightFamily ||

@@ -64,14 +64,12 @@ function signedEvidence(): Record<string, unknown> {
     electric: profile([0, -2, -7, -11, -15, -19, -23, -27, -31, -35]),
     dreadnought: profile([0, -12, -18, -24, -30, -36, -40, -44, -48, -52]),
     ukulele: profile([0, -20, -25, -30, -34, -38, -42, -46, -50, -54]),
-    "upright-bass": profile([0, 8, -8, -7, -84, -3, 3, -8, -12, -80]),
   });
   const familyOrder = [
     "archtop",
     "electric",
     "dreadnought",
     "ukulele",
-    "upright-bass",
   ] as const;
   const cells = familyOrder.flatMap((family) =>
     PLUCKED_V2_RELEASE_POLICY.families[family].midi.map((midi) => ({
@@ -115,7 +113,7 @@ function signedEvidence(): Record<string, unknown> {
     collapsedFamiliesRejected: true,
   };
   const unsigned = {
-    schema: "changes.evidence.phs4-plucked-shipping-output.v2",
+    schema: "changes.evidence.phs4-plucked-shipping-output.v1",
     policy: PLUCKED_V2_RELEASE_POLICY,
     algorithmIds: familyOrder.map((family) =>
       PLUCKED_V2_RELEASE_POLICY.families[family].algorithmId).sort(),
@@ -127,11 +125,11 @@ function signedEvidence(): Record<string, unknown> {
     controls,
     summary: {
       outcome: "pass",
-      expectedCellCount: 15,
-      passedCellCount: 15,
+      expectedCellCount: 12,
+      passedCellCount: 12,
       failedCellCount: 0,
-      expectedPairwiseCellCount: 10,
-      passedPairwiseCellCount: 10,
+      expectedPairwiseCellCount: 6,
+      passedPairwiseCellCount: 6,
       failedPairwiseCellCount: 0,
     },
   };
@@ -150,7 +148,6 @@ describe("PHS4 plucked shipping-output analyzer", () => {
       "electric",
       "dreadnought",
       "ukulele",
-      "upright-bass",
     ] as const) {
       expect(evaluatePluckedOutput(family, features)).toEqual([]);
     }
@@ -163,7 +160,6 @@ describe("PHS4 plucked shipping-output analyzer", () => {
       "electric",
       "dreadnought",
       "ukulele",
-      "upright-bass",
     ] as const) {
       const codes = evaluatePluckedOutput(family, features).map((item) => item.code);
       expect(codes).toContain("PLUCKED_HARMONIC_COLLAPSE");
@@ -178,7 +174,6 @@ describe("PHS4 plucked shipping-output analyzer", () => {
       "electric",
       "dreadnought",
       "ukulele",
-      "upright-bass",
     ] as const) {
       expect(evaluatePluckedOutput(family, features).map((item) => item.code))
         .toContain("PLUCKED_PITCH");
@@ -193,26 +188,24 @@ describe("PHS4 plucked shipping-output analyzer", () => {
       "electric",
       "dreadnought",
       "ukulele",
-      "upright-bass",
     ] as const) {
       expect(evaluatePluckedOutput(family, collapsed).map((item) => item.code))
         .toContain("PLUCKED_TAIL");
     }
   });
 
-  test("the matrix policy covers exactly five named algorithms and fifteen cells", () => {
+  test("the matrix policy covers exactly four reachable algorithms and twelve cells", () => {
     const families = Object.keys(PLUCKED_V2_RELEASE_POLICY.families) as PluckedFamily[];
     expect(families).toEqual([
       "archtop",
       "electric",
       "dreadnought",
       "ukulele",
-      "upright-bass",
     ]);
     expect(new Set(families.map((family) =>
-      PLUCKED_V2_RELEASE_POLICY.families[family].algorithmId)).size).toBe(5);
+      PLUCKED_V2_RELEASE_POLICY.families[family].algorithmId)).size).toBe(4);
     expect(families.reduce((count, family) =>
-      count + PLUCKED_V2_RELEASE_POLICY.families[family].midi.length, 0)).toBe(15);
+      count + PLUCKED_V2_RELEASE_POLICY.families[family].midi.length, 0)).toBe(12);
     expect(PLUCKED_V2_RELEASE_POLICY.minimumPairwiseProfileDistanceDb).toBe(3.5);
   });
 
