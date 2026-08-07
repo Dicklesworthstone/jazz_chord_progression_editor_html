@@ -1077,8 +1077,10 @@ fn render_with_storage(
         // returning field is governed mainly by the jet-instability band.
         0.85
     } else if fingering.register_harmonic == 2 {
-        // Preserve the broadband, breath-coupled lower-register spectrum.
-        0.01
+        // The ordinary second register already selects its bore mode through
+        // the embouchure inertance.  Preserve its broadband, breath-coupled
+        // return instead of imposing an upper-register instability band.
+        0.0
     } else {
         1.0
     };
