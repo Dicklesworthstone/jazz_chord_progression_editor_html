@@ -17,7 +17,7 @@
 //! This module is intentionally dark: it is compiled and tested as Rust but is
 //! not present in the checked-in WASM payload or any recipe/registry pointer.
 
-use libm::{cos, exp, log2, sin, sqrt, tanh};
+use libm::{cos, exp, log2, sin, sqrt, tan, tanh};
 
 use crate::{XorShift32, TAU};
 
@@ -38,7 +38,7 @@ const MAX_JET_HISTORY: usize = 256;
 const MAX_SAMPLE_RATE_HZ: f64 = 96_000.0;
 const CAP_SECONDS: f64 = 3.0;
 const STATE_MAGIC: u32 = 0x3254_4c46; // "FLT2" little endian.
-const STATE_VERSION: u32 = 3;
+const STATE_VERSION: u32 = 4;
 const STATE_HEADER_BYTES: usize = 48;
 const STATE_SCALAR_COUNT: usize = 73;
 const STATE_SCALAR_BYTES: usize = STATE_SCALAR_COUNT * 8;
@@ -62,6 +62,30 @@ const HOLE_CHIMNEY_M: [f64; HOLES] = [
 // chimney and the exterior pressure node. The E key's shallow cup contributes
 // 0.04 mm at its half-open fingering and vanishes once the key is fully open.
 const HOLE_KEY_CUP_PATH_M: [f64; HOLES] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.00008, 0.0];
+
+// Full-hole fork fingerings for the third octave.  A concert flute does not
+// obtain these notes by blindly overblowing its first-octave key states: the
+// upper-joint keys create a different passive lattice whose selected mode is
+// recorded alongside each fingering.  Rows are C6..B6; columns run from the
+// head-joint-side hole to the foot-joint-side hole.
+const THIRD_OCTAVE_FINGERINGS: [[f64; HOLES]; 12] = [
+    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+    [0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0],
+    [0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0],
+    [0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0],
+    [1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0],
+    [1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0],
+    [0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0],
+    [0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0],
+    [1.0, 0.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0],
+    [0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0],
+    [0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0, 1.0],
+    [1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 1.0],
+];
+const THIRD_OCTAVE_MODE_INDEX: [usize; 12] = [4, 2, 4, 4, 4, 4, 4, 6, 4, 5, 4, 6];
+const MODE_SCAN_START_HZ: f64 = 100.0;
+const MODE_SCAN_STEP_HZ: f64 = 2.0;
+const MODE_SCAN_STEPS: usize = 1_200;
 
 // Bore propagation endpoints are the eight tone-hole centers plus the foot.
 const PATH_END_M: [f64; SEGMENTS] = [
@@ -96,34 +120,46 @@ struct SegmentLayout {
 struct Fingering {
     openness: [f64; HOLES],
     register_harmonic: usize,
-    /// Measured per-fingering chimney/undercut calibration (dimensionless
-    /// scale on every open hole's effective shunt length). The physical
-    /// analogue is a maker undercutting or lengthening a tone hole; the
-    /// values were measured 2026-08-07 by the full-window wrong-tone matrix
-    /// (render -> autocorrelate -> bisect until the bore lock lands on the
-    /// requested pitch), never derived from the model's own expectations.
-    chimney_scale: f64,
+    resonance_index: usize,
 }
 
-/// Calibration probe: when positive, overrides the fingering table's
-/// chimney scale for every render. Only the offline calibration driver
-/// (scripts-side bisection) calls the setter; production hosts never do,
-/// and the default 0.0 disables it. This keeps calibration one build.
-static mut FLT2_CHIMNEY_PROBE: f64 = 0.0;
-
-#[no_mangle]
-pub extern "C" fn flt2_set_chimney_probe(scale: f64) {
-    unsafe { FLT2_CHIMNEY_PROBE = scale };
+#[derive(Clone, Copy)]
+struct Complex64 {
+    re: f64,
+    im: f64,
 }
 
-/// Rows: register octave 0..=3 (MIDI 60 + 12*octave); columns: pitch class.
-/// 1.0 = uncalibrated geometry. See `Fingering::chimney_scale`.
-static FINGERING_CHIMNEY_SCALE: [[f64; 12]; 4] = [
-    [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
-    [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
-    [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
-    [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
-];
+impl Complex64 {
+    fn add(self, other: Self) -> Self {
+        Self {
+            re: self.re + other.re,
+            im: self.im + other.im,
+        }
+    }
+
+    fn mul(self, other: Self) -> Self {
+        Self {
+            re: self.re * other.re - self.im * other.im,
+            im: self.re * other.im + self.im * other.re,
+        }
+    }
+
+    fn div(self, other: Self) -> Self {
+        let denominator = other.re * other.re + other.im * other.im;
+        Self {
+            re: (self.re * other.re + self.im * other.im) / denominator,
+            im: (self.im * other.re - self.re * other.im) / denominator,
+        }
+    }
+
+    fn reciprocal(self) -> Self {
+        Self { re: 1.0, im: 0.0 }.div(self)
+    }
+
+    fn magnitude(self) -> f64 {
+        sqrt(self.re * self.re + self.im * self.im)
+    }
+}
 
 #[derive(Clone, Copy)]
 struct PhraseState {
@@ -151,8 +187,8 @@ struct PhraseState {
     dc_output: f64,
     feedback_dc_input: f64,
     feedback_dc_output: f64,
-    feedback_dc_input2: f64,
-    feedback_dc_output2: f64,
+    jet_instability_s1: f64,
+    jet_instability_s2: f64,
     forward_fractional_input: [f64; SEGMENTS],
     forward_fractional_output: [f64; SEGMENTS],
     backward_fractional_input: [f64; SEGMENTS],
@@ -189,8 +225,8 @@ impl PhraseState {
             dc_output: 0.0,
             feedback_dc_input: 0.0,
             feedback_dc_output: 0.0,
-            feedback_dc_input2: 0.0,
-            feedback_dc_output2: 0.0,
+            jet_instability_s1: 0.0,
+            jet_instability_s2: 0.0,
             forward_fractional_input: [0.0; SEGMENTS],
             forward_fractional_output: [0.0; SEGMENTS],
             backward_fractional_input: [0.0; SEGMENTS],
@@ -273,7 +309,7 @@ fn fingering_for_midi(midi: i32) -> Option<Fingering> {
     let pitch_class = (midi - 60).rem_euclid(12);
     // A fixed keywork table.  Partial vents are physical key apertures; they
     // scale shunt inertance and never interpolate a target delay or frequency.
-    let openness = match pitch_class {
+    let base_openness = match pitch_class {
         0 => [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
         1 => [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.38],
         2 => [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.72],
@@ -289,17 +325,18 @@ fn fingering_for_midi(midi: i32) -> Option<Fingering> {
         11 => [0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0],
         _ => return None,
     };
+    let (openness, resonance_index) = if register_harmonic == 4 {
+        (
+            THIRD_OCTAVE_FINGERINGS[pitch_class as usize],
+            THIRD_OCTAVE_MODE_INDEX[pitch_class as usize],
+        )
+    } else {
+        (base_openness, register_harmonic)
+    };
     Some(Fingering {
         openness,
         register_harmonic,
-        chimney_scale: {
-            let probe = unsafe { FLT2_CHIMNEY_PROBE };
-            if probe > 0.0 {
-                probe
-            } else {
-                FINGERING_CHIMNEY_SCALE[octave][pitch_class as usize]
-            }
-        },
+        resonance_index,
     })
 }
 
@@ -327,18 +364,150 @@ fn geometry_fundamental_hz(fingering: Fingering) -> f64 {
     SOUND_SPEED_M_PER_S / (2.0 * (effective_length + EMB_END_CORRECTION_M))
 }
 
-fn target_mouth_pressure_pa(velocity: i32, fingering: Fingering) -> f64 {
+fn bore_input_impedance_magnitude(fingering: Fingering, frequency_hz: f64) -> Option<f64> {
+    if !frequency_hz.is_finite() || frequency_hz <= 0.0 {
+        return None;
+    }
+    let omega = TAU * frequency_hz;
+    let wave_number = omega / SOUND_SPEED_M_PER_S;
+    let foot_radius = bore_radius_at(0.5 * (PATH_END_M[SEGMENTS - 2] + BORE_LENGTH_M));
+    let foot_area = core::f64::consts::PI * foot_radius * foot_radius;
+    let foot_characteristic = AIR_DENSITY_KG_PER_M3 * SOUND_SPEED_M_PER_S / foot_area;
+    // The runtime foot reflection is -0.94 at low frequency.  Converting the
+    // pressure reflection coefficient to a positive-real terminal load gives
+    // Z/Zc=(1+r)/(1-r), which keeps this offline-size mode solve consistent
+    // with the time-domain termination without simulating it.
+    let foot_load_ratio = (1.0 - 0.94) / (1.0 + 0.94);
+    let mut load = Complex64 {
+        re: foot_load_ratio * foot_characteristic,
+        im: 0.0,
+    };
+
+    for segment in (0..SEGMENTS).rev() {
+        let start = if segment == 0 {
+            0.0
+        } else {
+            PATH_END_M[segment - 1]
+        };
+        let end = PATH_END_M[segment];
+        let midpoint = 0.5 * (start + end);
+        let radius = bore_radius_at(midpoint);
+        let area = core::f64::consts::PI * radius * radius;
+        let characteristic = AIR_DENSITY_KG_PER_M3 * SOUND_SPEED_M_PER_S / area;
+        let tangent = tan(wave_number * (end - start));
+        let numerator = load.add(Complex64 {
+            re: 0.0,
+            im: characteristic * tangent,
+        });
+        let denominator = Complex64 {
+            re: characteristic,
+            im: 0.0,
+        }
+        .add(
+            Complex64 {
+                re: 0.0,
+                im: tangent,
+            }
+            .mul(load),
+        );
+        load = Complex64 {
+            re: characteristic,
+            im: 0.0,
+        }
+        .mul(numerator.div(denominator));
+
+        if segment > 0 {
+            let hole = segment - 1;
+            let openness = fingering.openness[hole];
+            if openness > 0.0 {
+                let radius = HOLE_RADIUS_M[hole];
+                let area = core::f64::consts::PI * radius * radius;
+                let aperture = openness * openness;
+                let effective_length = hole_effective_length_m(hole, openness);
+                let branch = Complex64 {
+                    re: 0.018 * AIR_DENSITY_KG_PER_M3 * SOUND_SPEED_M_PER_S / (area * aperture),
+                    im: omega * AIR_DENSITY_KG_PER_M3 * effective_length / (area * aperture),
+                };
+                load = load.reciprocal().add(branch.reciprocal()).reciprocal();
+            }
+        }
+    }
+    let magnitude = load.magnitude();
+    magnitude.is_finite().then_some(magnitude)
+}
+
+fn solved_register_center_hz(fingering: Fingering) -> Option<f64> {
+    let mut previous = bore_input_impedance_magnitude(fingering, MODE_SCAN_START_HZ)?;
+    let mut current_frequency = MODE_SCAN_START_HZ + MODE_SCAN_STEP_HZ;
+    let mut current = bore_input_impedance_magnitude(fingering, current_frequency)?;
+    let mut found = 0usize;
+    for _ in 2..=MODE_SCAN_STEPS {
+        let next_frequency = current_frequency + MODE_SCAN_STEP_HZ;
+        let next = bore_input_impedance_magnitude(fingering, next_frequency)?;
+        if current < previous && current < next {
+            found += 1;
+            if found == fingering.resonance_index {
+                let curvature = previous - 2.0 * current + next;
+                let offset = if curvature.abs() > 1.0e-18 {
+                    (0.5 * (previous - next) / curvature).clamp(-0.5, 0.5)
+                } else {
+                    0.0
+                };
+                return Some(current_frequency + offset * MODE_SCAN_STEP_HZ);
+            }
+        }
+        previous = current;
+        current_frequency = next_frequency;
+        current = next;
+    }
+    None
+}
+
+fn register_center_hz(fingering: Fingering) -> f64 {
+    if fingering.register_harmonic >= 4 {
+        solved_register_center_hz(fingering).unwrap_or_else(|| {
+            geometry_fundamental_hz(fingering) * fingering.register_harmonic as f64
+        })
+    } else {
+        geometry_fundamental_hz(fingering) * fingering.register_harmonic as f64
+    }
+}
+
+fn embouchure_channel_to_edge_m(fingering: Fingering) -> f64 {
+    // Flutists shorten the free jet with the lower lip as they ascend.  This
+    // is a geometric register gesture, not a delay retune: the physical
+    // channel remains 10 mm through the first octave, then contracts with
+    // the square root of the requested bore-resonance order.  The law keeps
+    // high-register jet speed and mouth pressure finite while preserving the
+    // convective phase W/(0.4 Uj) that selects the air-column resonance.
+    let register = fingering.register_harmonic as f64;
+    EMB_CHANNEL_TO_EDGE_M * sqrt(2.0 / register.max(2.0))
+}
+
+fn target_mouth_pressure_pa_for_center(
+    velocity: i32,
+    fingering: Fingering,
+    register_center_hz: f64,
+) -> f64 {
     let velocity_norm = velocity as f64 / 127.0;
     // A half-period hydrodynamic phase is the stable fundamental speaking
     // regime of this edge source.  The required speed is derived from the
     // first open aperture and register gesture, never from requested MIDI.
-    let geometry_hz = geometry_fundamental_hz(fingering) * fingering.register_harmonic as f64;
     let has_open_hole = fingering.openness.iter().any(|openness| *openness >= 0.95);
+    let has_partial_vent = fingering
+        .openness
+        .iter()
+        .any(|openness| *openness > 0.0 && *openness < 0.95);
     let convection_phase = if fingering.register_harmonic == 2
         && fingering.openness[4] > 0.0
         && fingering.openness[4] < 0.2
     {
         5.84
+    } else if fingering.register_harmonic == 4 && has_partial_vent {
+        // The third octave uses a shorter lip-to-edge path below.  Keeping
+        // the same convective phase for its closed/foot-key fingerings avoids
+        // starving those weakly vented columns of jet momentum.
+        5.9
     } else if has_open_hole {
         5.9
     } else if fingering.register_harmonic >= 4 {
@@ -348,7 +517,8 @@ fn target_mouth_pressure_pa(velocity: i32, fingering: Fingering) -> f64 {
     } else {
         5.0
     };
-    let nominal_speed = convection_phase * EMB_CHANNEL_TO_EDGE_M * geometry_hz;
+    let nominal_speed =
+        convection_phase * embouchure_channel_to_edge_m(fingering) * register_center_hz;
     // Players compensate steady blowing-pressure changes with the lips. Note
     // velocity therefore changes aperture, transient, radiation corner, and
     // turbulence below, while the settled convective register stays fixed.
@@ -362,6 +532,11 @@ fn target_mouth_pressure_pa(velocity: i32, fingering: Fingering) -> f64 {
     (0.5 * AIR_DENSITY_KG_PER_M3 * expressive_speed * expressive_speed).min(1_950.0)
 }
 
+#[cfg(test)]
+fn target_mouth_pressure_pa(velocity: i32, fingering: Fingering) -> f64 {
+    target_mouth_pressure_pa_for_center(velocity, fingering, register_center_hz(fingering))
+}
+
 fn jet_speed_m_per_s(pressure_pa: f64) -> f64 {
     if pressure_pa <= 0.0 {
         0.0
@@ -370,6 +545,7 @@ fn jet_speed_m_per_s(pressure_pa: f64) -> f64 {
     }
 }
 
+#[cfg(test)]
 fn jet_convection_seconds(jet_speed_m_per_s: f64) -> Option<f64> {
     jet_convection_seconds_for_channel(EMB_CHANNEL_TO_EDGE_M, jet_speed_m_per_s)
 }
@@ -461,20 +637,19 @@ fn passive_junction(
     (pressure - from_right, pressure - from_left, pressure)
 }
 
-fn hole_effective_length_m(hole: usize, openness: f64, chimney_scale: f64) -> f64 {
+fn hole_effective_length_m(hole: usize, openness: f64) -> f64 {
     let radius = HOLE_RADIUS_M[hole];
     let partial_key_path = if openness > 0.0 && openness < 0.95 {
         (1.0 - openness) * HOLE_KEY_CUP_PATH_M[hole]
     } else {
         0.0
     };
-    chimney_scale * (HOLE_CHIMNEY_M[hole] + 0.6133 * radius + partial_key_path)
+    HOLE_CHIMNEY_M[hole] + 0.6133 * radius + partial_key_path
 }
 
 fn hole_branch_step(
     hole: usize,
     openness: f64,
-    chimney_scale: f64,
     pressure: f64,
     prior_flow: f64,
     sample_rate: f64,
@@ -487,7 +662,7 @@ fn hole_branch_step(
     // Compact-limit, unflanged aperture correction.  FrankenSim's fs-bem
     // closed-body pilot independently recovered the same added-mass regime;
     // it is an offline authority, not a runtime dependency.
-    let effective_length = hole_effective_length_m(hole, openness, chimney_scale);
+    let effective_length = hole_effective_length_m(hole, openness);
     let aperture = openness * openness;
     let mass = AIR_DENSITY_KG_PER_M3 * effective_length / (area * aperture);
     let resistance = 0.018 * AIR_DENSITY_KG_PER_M3 * SOUND_SPEED_M_PER_S / (area * aperture);
@@ -603,8 +778,8 @@ fn encode_state(
     scalars[68] = state.noise_meander_high;
     scalars[69] = state.radiation_tilt_input;
     scalars[70] = state.radiation_tilt_output;
-    scalars[71] = state.feedback_dc_input2;
-    scalars[72] = state.feedback_dc_output2;
+    scalars[71] = state.jet_instability_s1;
+    scalars[72] = state.jet_instability_s2;
     for (index, value) in scalars.iter().enumerate() {
         if !write_f64(bytes, STATE_HEADER_BYTES + index * 8, *value) {
             return None;
@@ -704,8 +879,8 @@ fn decode_state(
         dc_output: scalars[26],
         feedback_dc_input: scalars[28],
         feedback_dc_output: scalars[29],
-        feedback_dc_input2: scalars[71],
-        feedback_dc_output2: scalars[72],
+        jet_instability_s1: scalars[71],
+        jet_instability_s2: scalars[72],
         forward_fractional_input: [0.0; SEGMENTS],
         forward_fractional_output: [0.0; SEGMENTS],
         backward_fractional_input: [0.0; SEGMENTS],
@@ -779,7 +954,9 @@ fn render_with_storage(
     let mut writes = [0usize; SEGMENTS];
     let mut next_writes = [0usize; SEGMENTS];
     let sr = sample_rate as f64;
-    let target_pressure = target_mouth_pressure_pa(velocity, fingering);
+    let register_center_hz = register_center_hz(fingering);
+    let target_pressure =
+        target_mouth_pressure_pa_for_center(velocity, fingering, register_center_hz);
     let attack_seconds = if state_input.is_some() {
         0.018
     } else if articulation == 1 {
@@ -871,25 +1048,39 @@ fn render_with_storage(
         geometry_fundamental_hz(fingering) * (fingering.register_harmonic as f64 - 0.75)
     };
     let feedback_dc_pole = exp(-TAU * feedback_highpass_hz / sr);
-    // Jet spatial-growth selectivity (Rayleigh instability): the jet's
-    // convective amplification is band-limited around the operating
-    // Strouhal point, falling toward both DC and high frequency. The model
-    // previously amplified every frequency equally, so the bore's strongest
-    // resonance (always the fundamental) captured the regime and overblown
-    // registers locked one or two octaves low regardless of return-path
-    // filtering (measured 2026-08-07, calibration passes 1-3). A unity-peak
-    // resonant band-pass on the jet perturbation, centred on the fixed
-    // geometry/register target (never the requested MIDI), realises the
-    // measured selectivity. Register 1 bypasses it bit-identically.
-    let (jet_bp_b0, jet_bp_a1, jet_bp_a2) = if fingering.register_harmonic >= 2 {
-        let f_target = geometry_fundamental_hz(fingering) * fingering.register_harmonic as f64;
-        let omega = (TAU * f_target / sr).min(3.0);
-        let quality = 1.3;
-        let alpha = sin(omega) / (2.0 * quality);
-        let a0 = 1.0 + alpha;
-        (alpha / a0, -2.0 * cos(omega) / a0, (1.0 - alpha) / a0)
+    // A free jet does not amplify every acoustic perturbation equally.  Its
+    // sinuous Kelvin-Helmholtz mode occupies a finite Strouhal band, and the
+    // lip/register gesture moves that band onto a particular air-column
+    // resonance.  The unity-peak resonator below is the compact, causal
+    // second-order form of that spatial-growth envelope.  It filters only
+    // returning perturbations before convection to the labium; it never
+    // filters the radiated output or injects a target-frequency oscillator.
+    let register_log2 = log2(fingering.register_harmonic as f64).max(0.0);
+    let soft_band_narrowing = 1.0 + 0.25 * ((72 - velocity) as f64 / 36.0).clamp(0.0, 1.0);
+    let weak_vent_narrowing =
+        if fingering.register_harmonic >= 4 && has_partial_vent && !has_open_hole {
+            2.0
+        } else {
+            1.0
+        };
+    let instability_q = (7.00 + 1.50 * register_log2) * soft_band_narrowing * weak_vent_narrowing;
+    let instability_omega = (TAU * register_center_hz / sr).min(3.0);
+    let instability_alpha = sin(instability_omega) / (2.0 * instability_q);
+    let instability_a0 = 1.0 + instability_alpha;
+    let instability_b0 = instability_alpha / instability_a0;
+    let instability_a1 = -2.0 * cos(instability_omega) / instability_a0;
+    let instability_a2 = (1.0 - instability_alpha) / instability_a0;
+    let instability_blend = if fingering.register_harmonic == 1 {
+        0.0
+    } else if fingering.register_harmonic == 2 && has_partial_vent && !has_open_hole {
+        // The C-sharp/D foot keys are narrow, partial vents: their weak
+        // returning field is governed mainly by the jet-instability band.
+        0.85
+    } else if fingering.register_harmonic == 2 {
+        // Preserve the broadband, breath-coupled lower-register spectrum.
+        0.01
     } else {
-        (0.0, 0.0, 0.0)
+        1.0
     };
     let mut rng = XorShift32::new(state.seed);
 
@@ -955,20 +1146,27 @@ fn render_with_storage(
         let band_noise = state.noise_highpass - state.noise_lowpass;
         let jet_meander = state.noise_meander_high - state.noise_lowpass;
         let turbulence = 0.003 * band_noise;
-        jet_history[state.jet_write] = feedback_gain * acoustic_return + turbulence;
-        let delay_samples =
-            jet_convection_seconds(jet_speed.max(1.0)).unwrap_or(0.0) * sr * law.jet_delay_scale;
-        let raw_delayed_jet = variable_jet_read(jet_history, state.jet_write, delay_samples);
-        let delayed_jet = if fingering.register_harmonic >= 2 {
-            // Constant-peak-gain band-pass, transposed direct form II.
-            let y = jet_bp_b0 * raw_delayed_jet + state.feedback_dc_input2;
-            state.feedback_dc_input2 =
-                -jet_bp_a1 * y + state.feedback_dc_output2;
-            state.feedback_dc_output2 = -jet_bp_b0 * raw_delayed_jet - jet_bp_a2 * y;
-            y
+        let instability_input = feedback_gain * acoustic_return;
+        let instability_return = if fingering.register_harmonic == 1 {
+            instability_input
         } else {
-            raw_delayed_jet
+            // Constant-peak band-pass, transposed direct form II.  The two
+            // stored delays are serialized as part of phrase continuity.
+            let filtered = instability_b0 * instability_input + state.jet_instability_s1;
+            state.jet_instability_s1 = -instability_a1 * filtered + state.jet_instability_s2;
+            state.jet_instability_s2 =
+                -instability_b0 * instability_input - instability_a2 * filtered;
+            instability_input + instability_blend * (filtered - instability_input)
         };
+        jet_history[state.jet_write] = instability_return + turbulence;
+        let delay_samples = jet_convection_seconds_for_channel(
+            embouchure_channel_to_edge_m(fingering),
+            jet_speed.max(1.0),
+        )
+        .unwrap_or(0.0)
+            * sr
+            * law.jet_delay_scale;
+        let delayed_jet = variable_jet_read(jet_history, state.jet_write, delay_samples);
         state.jet_write += 1;
         if state.jet_write == MAX_JET_HISTORY {
             state.jet_write = 0;
@@ -1002,11 +1200,11 @@ fn render_with_storage(
             let left_y = layout.admittances[hole];
             let right_y = layout.admittances[hole + 1];
             let openness = fingering.openness[hole];
-            let (probe_g, _, _) = hole_branch_step(hole, openness, fingering.chimney_scale, 0.0, state.hole_flow[hole], sr);
+            let (probe_g, _, _) = hole_branch_step(hole, openness, 0.0, state.hole_flow[hole], sr);
             let aperture = openness * openness;
             let radius = HOLE_RADIUS_M[hole];
             let area = core::f64::consts::PI * radius * radius;
-            let effective_length = hole_effective_length_m(hole, openness, fingering.chimney_scale);
+            let effective_length = hole_effective_length_m(hole, openness);
             let mass = if aperture > 0.0 {
                 AIR_DENSITY_KG_PER_M3 * effective_length / (area * aperture)
             } else {
@@ -1032,7 +1230,7 @@ fn render_with_storage(
                 history,
             );
             let (_, flow, radiated) =
-                hole_branch_step(hole, openness, fingering.chimney_scale, pressure_at_hole, state.hole_flow[hole], sr);
+                hole_branch_step(hole, openness, pressure_at_hole, state.hole_flow[hole], sr);
             state.hole_flow[hole] = flow;
             state.hole_radiation[hole] += radiation_alpha * (radiated - state.hole_radiation[hole]);
             forward_next[layout.offsets[hole + 1] + next_writes[hole + 1]] = toward_right;
@@ -1321,7 +1519,13 @@ pub extern "C" fn flt2_render_phrase(
 mod tests {
     use super::*;
 
-    fn render_test(midi: i32, velocity: i32, frames: usize, law: RenderLaw) -> (Vec<f32>, Vec<u8>) {
+    fn render_test_at_rate(
+        midi: i32,
+        velocity: i32,
+        sample_rate: f32,
+        frames: usize,
+        law: RenderLaw,
+    ) -> (Vec<f32>, Vec<u8>) {
         let mut left = vec![0.0f32; frames];
         let mut right = vec![0.0f32; frames];
         let mut state = vec![0u8; STATE_MAX_BYTES];
@@ -1334,7 +1538,7 @@ mod tests {
         let rendered = render_with_storage(
             midi,
             velocity,
-            48_000.0,
+            sample_rate,
             0,
             1,
             &mut left,
@@ -1351,6 +1555,10 @@ mod tests {
         assert_eq!(rendered, frames);
         state.truncate(state_bytes);
         (left, state)
+    }
+
+    fn render_test(midi: i32, velocity: i32, frames: usize, law: RenderLaw) -> (Vec<f32>, Vec<u8>) {
+        render_test_at_rate(midi, velocity, 48_000.0, frames, law)
     }
 
     fn normalized_autocorrelation(signal: &[f32], lag: usize) -> f64 {
@@ -1414,6 +1622,34 @@ mod tests {
         )
     }
 
+    fn sinusoid_amplitude(signal: &[f32], sample_rate: f64, frequency_hz: f64) -> f64 {
+        let phase_step = TAU * frequency_hz / sample_rate;
+        let step_sin = sin(phase_step);
+        let step_cos = cos(phase_step);
+        let mut phase_sin = 0.0;
+        let mut phase_cos = 1.0;
+        let mut in_phase = 0.0;
+        let mut quadrature = 0.0;
+        for sample in signal {
+            let value = *sample as f64;
+            in_phase += value * phase_cos;
+            quadrature -= value * phase_sin;
+            let next_sin = phase_sin * step_cos + phase_cos * step_sin;
+            phase_cos = phase_cos * step_cos - phase_sin * step_sin;
+            phase_sin = next_sin;
+        }
+        sqrt(in_phase * in_phase + quadrature * quadrature)
+    }
+
+    fn pitch_band_amplitude(signal: &[f32], sample_rate: f64, center_hz: f64) -> f64 {
+        [-18.0, -12.0, -6.0, 0.0, 6.0, 12.0, 18.0]
+            .into_iter()
+            .map(|cents| {
+                sinusoid_amplitude(signal, sample_rate, center_hz * libm::exp2(cents / 1_200.0))
+            })
+            .fold(0.0, f64::max)
+    }
+
     #[test]
     fn jet_and_aperture_known_answers_use_si_geometry() {
         let speed = jet_speed_m_per_s(240.82);
@@ -1428,9 +1664,33 @@ mod tests {
         let longer_channel_delay =
             jet_convection_seconds_for_channel(EMB_CHANNEL_TO_EDGE_M * 1.0002, 20.0).unwrap();
         assert!((longer_channel_delay / delay - 1.0002).abs() < 1.0e-12);
-        let half_open_e_key = hole_effective_length_m(6, 0.50, 1.0);
-        let fully_open_e_key = hole_effective_length_m(6, 1.0, 1.0);
+        let half_open_e_key = hole_effective_length_m(6, 0.50);
+        let fully_open_e_key = hole_effective_length_m(6, 1.0);
         assert!((half_open_e_key - fully_open_e_key - 0.00004).abs() < 1.0e-15);
+
+        let second_register = fingering_for_midi(72).unwrap();
+        let third_register = fingering_for_midi(84).unwrap();
+        let fourth_register = fingering_for_midi(96).unwrap();
+        assert_eq!(embouchure_channel_to_edge_m(second_register), 0.010);
+        assert!((embouchure_channel_to_edge_m(third_register) - 0.010 / sqrt(2.0)).abs() < 1.0e-15);
+        assert!((embouchure_channel_to_edge_m(fourth_register) - 0.005).abs() < 1.0e-15);
+        assert!(target_mouth_pressure_pa(108, fourth_register) < 1_950.0);
+
+        // The bounded passive-impedance search must select the intended
+        // geometry mode at both third-octave boundaries and at the closed
+        // fourth-octave boundary.  This pins the physical mode selection
+        // independently of the time-domain pitch estimator, which can fold
+        // a subharmonic onto the requested note.
+        for midi in [84, 86, 96] {
+            let fingering = fingering_for_midi(midi).unwrap();
+            let solved = solved_register_center_hz(fingering).unwrap();
+            let expected = midi_frequency_hz(midi as f64);
+            let cents = 1_200.0 * log2(solved / expected);
+            assert!(
+                cents.abs() < 15.0,
+                "midi {midi}: passive-bore mode {solved} Hz ({cents} cents)"
+            );
+        }
 
         // Planted negative: a pressure-linear delay law has the wrong scaling
         // and must not be able to satisfy the physical square-root relation.
@@ -1455,6 +1715,52 @@ mod tests {
         let active_outgoing = yr * toward_right * toward_right + yl * toward_left * toward_left
             - yh * pressure * pressure;
         assert!((incoming - active_outgoing).abs() > 1.0e-3);
+    }
+
+    #[test]
+    fn register_capture_rejects_subharmonic_attractors_at_browser_rates() {
+        // These cells cover both formerly discontinuous foot-key notes and
+        // every upper-register boundary implicated by the wide-range probe.
+        // The detector is not constrained to an expected-lag neighborhood:
+        // it compares the intended geometry mode directly with its one- and
+        // two-octave-lower attractors.
+        for sample_rate in [44_100.0f32, 48_000.0] {
+            let frames = sample_rate as usize;
+            for midi in [73, 74, 83, 84, 85, 86, 88, 92, 94, 95, 96] {
+                for velocity in [36, 72, 108] {
+                    let (samples, _) = render_test_at_rate(
+                        midi,
+                        velocity,
+                        sample_rate,
+                        frames,
+                        PHYSICAL_RENDER_LAW,
+                    );
+                    let settled = &samples[(sample_rate as usize * 9 / 20)..];
+                    let target_hz = midi_frequency_hz(midi as f64);
+                    let target = pitch_band_amplitude(settled, sample_rate as f64, target_hz);
+                    let octave_low =
+                        pitch_band_amplitude(settled, sample_rate as f64, target_hz * 0.5);
+                    let two_octaves_low =
+                        pitch_band_amplitude(settled, sample_rate as f64, target_hz * 0.25);
+                    let wrong_register = octave_low.max(two_octaves_low);
+                    assert!(
+                        target > 1.0e-6 && wrong_register < 0.70 * target,
+                        "midi {midi} velocity {velocity} rate {sample_rate}: target {target}, wrong-register {wrong_register}"
+                    );
+                }
+            }
+        }
+
+        // Planted negative: a pure one-octave-low attractor must be rejected
+        // by the exact same observable rather than folded to the target.
+        let sample_rate = 48_000.0;
+        let target_hz = midi_frequency_hz(86.0);
+        let wrong = (0..24_000)
+            .map(|frame| sin(TAU * (target_hz * 0.5) * frame as f64 / sample_rate) as f32)
+            .collect::<Vec<_>>();
+        let target = pitch_band_amplitude(&wrong, sample_rate, target_hz);
+        let octave_low = pitch_band_amplitude(&wrong, sample_rate, target_hz * 0.5);
+        assert!(octave_low > 20.0 * target);
     }
 
     #[test]
