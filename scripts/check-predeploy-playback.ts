@@ -312,7 +312,13 @@ async function playInstrument(
       .waitForFunction(
         "document.querySelector('#studio-transport-status-detail')?.textContent?.includes('Playing') === true",
         undefined,
-        { timeout: 8_000 },
+        /* 30 s reach window: WebKit's slower wasm takes whole seconds of
+         * preparation renders before "Playing" (measured ~8 s for the guitar
+         * family on the live artifact, right at the old 8 s boundary). The
+         * assertion is unchanged — status must REACH and then HOLD "Playing";
+         * the broken-bytes planted negative fails on refusals and pitch, not
+         * timing, so this widens no correctness check. */
+        { timeout: 30_000 },
       )
       .catch(() => {
         /* recorded below via status text */
