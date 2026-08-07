@@ -52,7 +52,7 @@ import {
   type StudioFactView,
   type StudioMidiImportOverridesView,
   type StudioMidiImportView,
-  type StudioPanelSide,
+  type StudioSheetId,
   type StudioShareFeedback,
   type StudioDetailView,
   type StudioShellView,
@@ -547,7 +547,7 @@ function quickEntryStatusLabel(
 type PresentationState = Readonly<{
   titleDraft: string;
   titleFeedback: StudioTitleFeedback;
-  activeSheet: StudioPanelSide | null;
+  activeSheet: StudioSheetId | null;
   uiRefusal: StudioShellView["layout"]["uiRefusal"];
   rovingFocusId: string | null;
   editRefusal: StudioShellView["chart"]["editRefusal"];
@@ -1561,7 +1561,7 @@ function feedbackFromRefusal(
 export function App({ snapshot, actions, startupNotice }: AppProps) {
   const [titleDraft, setTitleDraft] = useState(snapshot.title);
   const previousCommittedTitle = useRef(snapshot.title);
-  const [activeSheet, setActiveSheet] = useState<StudioPanelSide | null>(null);
+  const [activeSheet, setActiveSheet] = useState<StudioSheetId | null>(null);
   const [uiRefusal, setUiRefusal] = useState<
     StudioShellView["layout"]["uiRefusal"]
   >(

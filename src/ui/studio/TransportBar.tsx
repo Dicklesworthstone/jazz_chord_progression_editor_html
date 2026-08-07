@@ -25,12 +25,15 @@ function VolumeSlider({
   onVolumeCommit,
   onVolumePreview,
   onMuteToggle,
+  idSuffix = "",
 }: Readonly<{
   committedPercent: number;
   muted: boolean;
   onVolumeCommit: (volume: number) => void;
   onVolumePreview: (volume: number) => void;
   onMuteToggle: () => void;
+  /** jcpe-ph6d: the sound sheet renders a second copy of these controls. */
+  idSuffix?: string;
 }>) {
   const [draftPercent, setDraftPercent] = useState<number | null>(null);
   const muteLabel = muted
@@ -43,7 +46,7 @@ function VolumeSlider({
         aria-pressed={muted}
         class="studio-transport__mute"
         data-muted={muted ? "true" : "false"}
-        id="studio-transport-mute"
+        id={`studio-transport-mute${idSuffix}`}
         onClick={onMuteToggle}
         title={muteLabel}
         type="button"
@@ -68,7 +71,7 @@ function VolumeSlider({
         </span>
         <input
           aria-label="Master volume"
-          id="studio-transport-volume"
+          id={`studio-transport-volume${idSuffix}`}
           max={100}
           min={0}
           onInput={(event) => {
@@ -90,6 +93,129 @@ function VolumeSlider({
   );
 }
 
+export type TransportSettingsCallbacks = Pick<
+  StudioTransportCallbacks,
+  | "onTempoStep"
+  | "onGrooveChange"
+  | "onInstrumentChange"
+  | "onVolumeCommit"
+  | "onVolumePreview"
+  | "onMuteToggle"
+  | "readMixState"
+>;
+
+/**
+ * The playback-settings cluster: tempo stepper, groove picker, instrument
+ * picker, and the master volume/mute group. Shared by the transport footer
+ * (desktop widths) and the mobile Sound sheet, because below 71.875rem the
+ * footer has no room and these controls previously vanished entirely on
+ * phones (owner report, 2026-08-07: "you can't select the instrument or
+ * groove at all from the mobile interface"). Ids are suffixed per context
+ * (jcpe-ph6d) so the sheet copy never duplicates the footer's ids.
+ */
+export function TransportSettings({
+  callbacks,
+  idSuffix,
+  view,
+}: Readonly<{
+  callbacks: TransportSettingsCallbacks;
+  idSuffix: "" | "-sheet";
+  view: StudioTransportView;
+}>) {
+  return (
+    <div
+      class={
+        idSuffix === ""
+          ? "studio-transport__settings"
+          : "studio-transport__settings studio-sound-settings"
+      }
+    >
+      <div
+        class="studio-transport__tempo"
+        role="group"
+        aria-label="Tempo"
+      >
+        <button
+          aria-label="Slower"
+          class="studio-transport__tempo-step"
+          disabled={!view.canTempoDown}
+          id={`studio-transport-tempo-down${idSuffix}`}
+          onClick={() => {
+            callbacks.onTempoStep(-4);
+          }}
+          type="button"
+        >
+          −
+        </button>
+        <span
+          class="studio-transport__tempo-value"
+          data-testid={`transport-tempo-value${idSuffix}`}
+        >
+          {view.tempoBpm}
+          <span class="studio-transport__tempo-unit"> BPM</span>
+        </span>
+        <button
+          aria-label="Faster"
+          class="studio-transport__tempo-step"
+          disabled={!view.canTempoUp}
+          id={`studio-transport-tempo-up${idSuffix}`}
+          onClick={() => {
+            callbacks.onTempoStep(4);
+          }}
+          type="button"
+        >
+          +
+        </button>
+      </div>
+
+      <label class="studio-transport__select">
+        <span class="studio-visually-hidden">Groove</span>
+        <select
+          aria-label="Groove"
+          id={`studio-transport-groove${idSuffix}`}
+          onChange={(event) => {
+            callbacks.onGrooveChange(event.currentTarget.value);
+          }}
+          value={view.grooveStyleId}
+        >
+          {view.grooveOptions.map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label class="studio-transport__select">
+        <span class="studio-visually-hidden">Instrument</span>
+        <select
+          aria-label="Instrument"
+          id={`studio-transport-instrument${idSuffix}`}
+          onChange={(event) => {
+            callbacks.onInstrumentChange(event.currentTarget.value);
+          }}
+          value={view.instrumentId}
+        >
+          {view.instrumentOptions.map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <VolumeSlider
+        committedPercent={view.masterVolumePercent}
+        idSuffix={idSuffix}
+        muted={callbacks.readMixState().muted}
+        onVolumeCommit={callbacks.onVolumeCommit}
+        onVolumePreview={callbacks.onVolumePreview}
+        onMuteToggle={callbacks.onMuteToggle}
+      />
+    </div>
+  );
+}
+
 export type TransportBarProps = Readonly<{
   view: StudioTransportView;
   /** False when the chart has no chord to play; Play then says why. */
@@ -97,6 +223,11 @@ export type TransportBarProps = Readonly<{
   onPlay: (source: TransportGestureSource) => void;
   onPause: () => void;
   onStop: () => void;
+  /**
+   * When provided, the footer shows the mobile Sound trigger (hidden by CSS
+   * at widths where the inline settings cluster is visible).
+   */
+  onOpenSoundSheet?: () => void;
   callbacks: Pick<
     StudioTransportCallbacks,
     | "onStepChord"
@@ -210,6 +341,7 @@ export function TransportBar({
   onPlay,
   onPause,
   onStop,
+  onOpenSoundSheet,
   callbacks,
 }: TransportBarProps) {
   const running = view.audioState === "playing";
@@ -425,89 +557,23 @@ export function TransportBar({
 
         <MeterStrip readFrame={callbacks.readMeterFrame} />
 
-        <div class="studio-transport__settings">
-          <div
-            class="studio-transport__tempo"
-            role="group"
-            aria-label="Tempo"
-          >
-            <button
-              aria-label="Slower"
-              class="studio-transport__tempo-step"
-              disabled={!view.canTempoDown}
-              id="studio-transport-tempo-down"
-              onClick={() => {
-                callbacks.onTempoStep(-4);
-              }}
-              type="button"
-            >
-              −
-            </button>
-            <span
-              class="studio-transport__tempo-value"
-              data-testid="transport-tempo-value"
-            >
-              {view.tempoBpm}
-              <span class="studio-transport__tempo-unit"> BPM</span>
-            </span>
-            <button
-              aria-label="Faster"
-              class="studio-transport__tempo-step"
-              disabled={!view.canTempoUp}
-              id="studio-transport-tempo-up"
-              onClick={() => {
-                callbacks.onTempoStep(4);
-              }}
-              type="button"
-            >
-              +
-            </button>
-          </div>
+        <TransportSettings callbacks={callbacks} idSuffix="" view={view} />
 
-          <label class="studio-transport__select">
-            <span class="studio-visually-hidden">Groove</span>
-            <select
-              aria-label="Groove"
-              id="studio-transport-groove"
-              onChange={(event) => {
-                callbacks.onGrooveChange(event.currentTarget.value);
-              }}
-              value={view.grooveStyleId}
-            >
-              {view.grooveOptions.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label class="studio-transport__select">
-            <span class="studio-visually-hidden">Instrument</span>
-            <select
-              aria-label="Instrument"
-              id="studio-transport-instrument"
-              onChange={(event) => {
-                callbacks.onInstrumentChange(event.currentTarget.value);
-              }}
-              value={view.instrumentId}
-            >
-              {view.instrumentOptions.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <VolumeSlider
-            committedPercent={view.masterVolumePercent}
-            muted={callbacks.readMixState().muted}
-            onVolumeCommit={callbacks.onVolumeCommit}
-            onVolumePreview={callbacks.onVolumePreview}
-            onMuteToggle={callbacks.onMuteToggle}
+        {onOpenSoundSheet === undefined ? null : (
+          <IconButton
+            accessibleName="Sound settings — instrument, groove, tempo, volume"
+            busy={false}
+            density="comfortable"
+            describedBy={[]}
+            disabled={false}
+            iconId="menu"
+            id="studio-open-sound-sheet"
+            invalid={false}
+            onAction={onOpenSoundSheet}
+            type="button"
+            variant="secondary"
           />
-        </div>
+        )}
       </div>
     </section>
   );

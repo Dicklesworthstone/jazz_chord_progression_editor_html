@@ -12,7 +12,7 @@ import {
 } from "./LibraryPanel";
 import { StudioHeader } from "./StudioHeader";
 import { StudioShellNotice } from "./StudioShellNotice";
-import { TransportBar } from "./TransportBar";
+import { TransportBar, TransportSettings } from "./TransportBar";
 import { Dialog, SheetDrawer } from "../overlays";
 import { Button } from "../primitives";
 import type {
@@ -434,15 +434,24 @@ export function StudioShell({
   const activeSheet = view.layout.activeSheet;
   const sheetId =
     activeSheet === null ? null : `studio-${activeSheet}-sheet`;
-  const sheetTitle = activeSheet === "library" ? "Library" : "Harmony Lens";
+  const sheetTitle =
+    activeSheet === "library"
+      ? "Library"
+      : activeSheet === "sound"
+        ? "Sound"
+        : "Harmony Lens";
   const sheetDescription =
     activeSheet === "library"
       ? "Staged entry, palette, and lesson surfaces for this chart."
-      : "Literal document facts and the current chord analysis surface.";
+      : activeSheet === "sound"
+        ? "Instrument, groove, tempo, and volume for this session."
+        : "Literal document facts and the current chord analysis surface.";
   const sheetTriggerId =
     activeSheet === "library"
       ? "studio-open-library-sheet"
-      : "studio-open-harmony-sheet";
+      : activeSheet === "sound"
+        ? "studio-open-sound-sheet"
+        : "studio-open-harmony-sheet";
 
   return (
     <div
@@ -575,6 +584,9 @@ export function StudioShell({
         </div>
         <TransportBar
           canPlay={transport.canPlay}
+          onOpenSoundSheet={() => {
+            callbacks.onRequestPanelSheet("sound");
+          }}
           onPause={transport.onPause}
           onPlay={transport.onPlay}
           onStop={transport.onStop}
@@ -741,7 +753,20 @@ export function StudioShell({
             busy={false}
             closeLabel={`Close ${sheetTitle}`}
             content={
-              activeSheet === "library" ? (
+              activeSheet === "sound" ? (
+                <section
+                  aria-labelledby={`${sheetId}-title`}
+                  class="studio-panel-content studio-sound-content"
+                  data-panel-context="sheet"
+                >
+                  <p class="studio-kicker">Session playback</p>
+                  <TransportSettings
+                    callbacks={transport}
+                    idSuffix="-sheet"
+                    view={view.transport}
+                  />
+                </section>
+              ) : activeSheet === "library" ? (
                 <LibraryPanelContent
                   context="sheet"
                   headingId={`${sheetId}-title`}

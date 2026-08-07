@@ -4701,15 +4701,61 @@ button.studio-paper-head__key:focus-visible {
 
 /*
  * Footer density ladder. Below 71.875rem the mix settings retire from the
- * footer — tempo and groove stay reachable through the Library panel's
- * playback settings, so no capability is lost, and no dead control ships.
- * Below 40rem the meter and now-place line retire too; the status line and
- * the five playback keys always remain.
+ * footer and the Sound trigger takes their place: every retired control
+ * (instrument, groove, tempo, volume, mute) reopens inside the Sound sheet,
+ * so no capability is lost at any width (owner report, 2026-08-07 — the
+ * Library-panel fallback buried groove ~3.5k px deep and carried no
+ * instrument or volume control at all). Below 40rem the meter and
+ * now-place line retire too; the status line and playback keys remain.
  */
+#studio-open-sound-sheet {
+  display: none;
+}
+
 @media (max-width: 71.874rem) {
-  .studio-transport__settings {
+  .studio-transport__settings:not(.studio-sound-settings) {
     display: none;
   }
+
+  #studio-open-sound-sheet {
+    display: inline-flex;
+    flex: none;
+  }
+}
+
+/*
+ * The Sound sheet's copy of the settings cluster: a block-end drawer at
+ * phone widths, so the row layout becomes a column of full-width touch
+ * targets. The inner control classes are shared with the footer cluster;
+ * only the container context differs (jcpe-ph6d id-suffix law).
+ */
+.studio-sound-settings {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-4);
+  padding-block-start: var(--space-3);
+}
+
+.studio-sound-settings .studio-transport__tempo {
+  justify-content: space-between;
+}
+
+.studio-sound-settings .studio-transport__select select {
+  inline-size: 100%;
+  min-block-size: var(--control-min-block);
+}
+
+.studio-sound-settings .studio-transport__volume-group {
+  inline-size: 100%;
+}
+
+.studio-sound-settings .studio-transport__volume {
+  flex: 1;
+}
+
+.studio-sound-settings .studio-transport__volume input {
+  inline-size: 100%;
 }
 
 @media (max-width: 55.999rem) {

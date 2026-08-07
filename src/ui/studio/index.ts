@@ -42,6 +42,7 @@ export type {
   StudioMidiImportOverridesView,
   StudioMidiImportView,
   StudioPanelSide,
+  StudioSheetId,
   StudioQuickEntryTokenView,
   StudioQuickEntryView,
   StudioRangeView,

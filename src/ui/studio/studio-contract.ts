@@ -2,6 +2,15 @@ import type { UiDiagnostic } from "../ui-contract";
 
 export type StudioPanelSide = "library" | "harmony";
 
+/**
+ * Every drawer the studio can open at narrow widths. The rails stay a
+ * two-side concept; "sound" exists only as a sheet because the transport
+ * footer retires its settings cluster below 71.875rem and phones would
+ * otherwise lose instrument/groove/tempo/volume entirely (owner report,
+ * 2026-08-07).
+ */
+export type StudioSheetId = StudioPanelSide | "sound";
+
 export type StudioTitleFeedback = Readonly<{
   kind: "idle" | "dirty" | "committed" | "refused";
   message: string;
@@ -432,7 +441,7 @@ export type TransportMeterFrame = Readonly<{
 export type StudioLayoutView = Readonly<{
   libraryCollapsed: boolean;
   harmonyCollapsed: boolean;
-  activeSheet: StudioPanelSide | null;
+  activeSheet: StudioSheetId | null;
   uiRefusal: Readonly<{
     message: string;
     recoveryAction: string | null;
@@ -597,7 +606,7 @@ export type StudioShellCallbacks = Readonly<{
     side: StudioPanelSide,
     collapsed: boolean,
   ) => void;
-  onRequestPanelSheet: (side: StudioPanelSide) => void;
+  onRequestPanelSheet: (side: StudioSheetId) => void;
   onDismissPanelSheet: () => void;
   onUiContractRefusal: (diagnostic: UiDiagnostic) => void;
   onDismissUiRefusal: () => void;
