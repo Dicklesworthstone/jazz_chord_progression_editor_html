@@ -209,6 +209,69 @@ describe("reference comparison has planted positive and negative controls", () =
     expect(verdict.findings.some((item) => item.code === "ATTACK_RATIO")).toBe(false);
   });
 
+  test("pitch is judged against notation rather than copied performer intonation", () => {
+    const base = acceptedReport(tone());
+    const report = {
+      ...base,
+      candidate: {
+        ...base.candidate,
+        pitch: { ...base.candidate.pitch, centsFromExpected: -2.730751765431744 },
+      },
+      reference: {
+        ...base.reference,
+        pitch: { ...base.reference.pitch, centsFromExpected: -14.824753147844808 },
+      },
+      pitchDeltaCents: 12.094001382413063,
+    };
+    const verdict = evaluateSimilarityReport(report, passingIdentityControl());
+    expect(verdict.outcome).toBe("pass");
+    expect(report.pitchDeltaCents).toBeGreaterThan(12);
+    expect(verdict.findings.some((item) => item.code.includes("PITCH"))).toBe(false);
+  });
+
+  test("absolute pitch admission fails even when candidate and reference share the error", () => {
+    const base = acceptedReport(tone());
+    const report = {
+      ...base,
+      candidate: {
+        ...base.candidate,
+        pitch: { ...base.candidate.pitch, centsFromExpected: 15.1 },
+      },
+      reference: {
+        ...base.reference,
+        pitch: { ...base.reference.pitch, centsFromExpected: 15.1 },
+      },
+      pitchDeltaCents: 0,
+    };
+    const verdict = evaluateSimilarityReport(report, passingIdentityControl());
+    expect(verdict.outcome).toBe("fail");
+    expect(verdict.findings.map((item) => item.code)).toEqual([
+      "CANDIDATE_PITCH_ABSOLUTE",
+      "REFERENCE_PITCH_ABSOLUTE",
+    ]);
+  });
+
+  test("opposite admitted pitch edges pass while a forged diagnostic delta fails", () => {
+    const base = acceptedReport(tone());
+    const report = {
+      ...base,
+      candidate: {
+        ...base.candidate,
+        pitch: { ...base.candidate.pitch, centsFromExpected: 14.9 },
+      },
+      reference: {
+        ...base.reference,
+        pitch: { ...base.reference.pitch, centsFromExpected: -14.9 },
+      },
+      pitchDeltaCents: 29.8,
+    };
+    expect(evaluateSimilarityReport(report, passingIdentityControl()).outcome).toBe("pass");
+    const forged = evaluateSimilarityReport({ ...report, pitchDeltaCents: 0 },
+      passingIdentityControl());
+    expect(forged.outcome).toBe("fail");
+    expect(forged.findings.some((item) => item.code === "PITCH_DELTA_INVALID")).toBe(true);
+  });
+
   test("a too-fast candidate fails the absolute physical attack law", () => {
     const base = acceptedReport(tone());
     const report = {
@@ -422,6 +485,26 @@ describe("canonical outcomes and evidence bindings", () => {
     expect(verifyGateEvidence({
       ...evidence,
       controls: { ...evidence.controls, crossInstrumentRejected: false },
+    })).toBe(false);
+    expect(verifyGateEvidence({
+      ...evidence,
+      report: {
+        ...evidence.report,
+        candidate: {
+          ...evidence.report?.candidate,
+          pitch: { ...evidence.report?.candidate.pitch, centsFromExpected: 0.25 },
+        },
+      },
+    })).toBe(false);
+    expect(verifyGateEvidence({
+      ...evidence,
+      report: {
+        ...evidence.report,
+        reference: {
+          ...evidence.report?.reference,
+          pitch: { ...evidence.report?.reference.pitch, f0Hz: 441 },
+        },
+      },
     })).toBe(false);
     expect(verifyGateEvidence({ ...evidence, outcome: "unavailable" })).toBe(false);
     expect(() => buildGateEvidence({

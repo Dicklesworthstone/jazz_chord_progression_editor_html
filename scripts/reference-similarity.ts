@@ -2,7 +2,7 @@
 import { createHash } from "node:crypto";
 
 export const REFERENCE_SIMILARITY_ALGORITHM_ID =
-  "changes.analysis.reference-similarity@1" as const;
+  "changes.analysis.reference-similarity@2" as const;
 export const REFERENCE_GATE_EVIDENCE_SCHEMA =
   "changes.evidence.wind-reference-similarity.v1" as const;
 
@@ -43,10 +43,9 @@ export type CandidateIdentityComparison = Readonly<{
 
 export const WIND_REFERENCE_GATE_POLICY = Object.freeze({
   schema: "changes.policy.wind-reference-gate.v1" as const,
-  id: "winds-reference-policy@1" as const,
+  id: "winds-reference-policy@2" as const,
   maximumPitchCents: 15,
   minimumPeriodicity: 0.45,
-  maximumPitchDeltaCents: 12,
   maximumEnvelopeDb: 18,
   maximumHarmonicDb: 20,
   maximumAbsoluteHnrDeltaDb: 12,
@@ -832,7 +831,24 @@ function evaluateSimilarityThresholds(report: SimilarityReport): GateVerdict {
     if (!Number.isFinite(value) || value > limit) failures.push(finding(code,
       `${String(value)} exceeds ${String(limit)}`));
   };
-  maximum("PITCH_DELTA", report.pitchDeltaCents, WIND_REFERENCE_GATE_POLICY.maximumPitchDeltaCents);
+  /* Pitch is a relation to the notated note, not to one performer's
+   * intonation. Requiring two independently admitted signals to sit within a
+   * smaller take-to-take window rewards a candidate for copying reference
+   * detuning. Keep the delta as a checked diagnostic, while both signals must
+   * independently satisfy the frozen absolute notated-pitch law. */
+  const derivedPitchDelta = Math.abs(report.candidate.pitch.centsFromExpected -
+    report.reference.pitch.centsFromExpected);
+  if (!Number.isFinite(report.pitchDeltaCents) ||
+    Math.abs(report.pitchDeltaCents - derivedPitchDelta) > 1.0e-9) {
+    failures.push(finding("PITCH_DELTA_INVALID",
+      `reported pitch delta ${String(report.pitchDeltaCents)} does not match derived ${String(derivedPitchDelta)}`));
+  }
+  maximum("CANDIDATE_PITCH_ABSOLUTE",
+    Math.abs(report.candidate.pitch.centsFromExpected),
+    WIND_REFERENCE_GATE_POLICY.maximumPitchCents);
+  maximum("REFERENCE_PITCH_ABSOLUTE",
+    Math.abs(report.reference.pitch.centsFromExpected),
+    WIND_REFERENCE_GATE_POLICY.maximumPitchCents);
   maximum("ENVELOPE_DISTANCE", report.envelopeDb, WIND_REFERENCE_GATE_POLICY.maximumEnvelopeDb);
   maximum("HARMONIC_DISTANCE", report.harmonicDb, WIND_REFERENCE_GATE_POLICY.maximumHarmonicDb);
   maximum("HNR_DELTA", report.hnrAbsoluteDeltaDb,
@@ -1007,6 +1023,14 @@ function midiFrequency(midi: number): number {
   return 440 * 2 ** ((midi - 69) / 12);
 }
 
+function pitchEstimateMatchesExpectedHz(pitch: PitchEstimate, expectedHz: number): boolean {
+  if (!Number.isFinite(pitch.f0Hz) || pitch.f0Hz <= 0 ||
+    !Number.isFinite(pitch.centsFromExpected) ||
+    !Number.isFinite(expectedHz) || expectedHz <= 0) return false;
+  const derivedCents = 1_200 * Math.log2(pitch.f0Hz / expectedHz);
+  return Math.abs(derivedCents - pitch.centsFromExpected) <= 1.0e-6;
+}
+
 function evidenceSemanticsAreValid(evidence: Omit<GateEvidenceV1, "evidenceSha256">): boolean {
   if (!hasEvidenceText(evidence.candidate.rendererAlgorithmId) ||
     !hasEvidenceText(evidence.reference.corpusId) ||
@@ -1018,6 +1042,11 @@ function evidenceSemanticsAreValid(evidence: Omit<GateEvidenceV1, "evidenceSha25
     evidence.reference.expectedHz <= 0 ||
     Math.abs(1_200 * Math.log2(evidence.reference.expectedHz /
       midiFrequency(evidence.reference.expectedMidi))) > 0.01 ||
+    evidence.report !== null &&
+      (!pitchEstimateMatchesExpectedHz(evidence.report.candidate.pitch,
+        evidence.reference.expectedHz) ||
+       !pitchEstimateMatchesExpectedHz(evidence.report.reference.pitch,
+         evidence.reference.expectedHz)) ||
     !findingsAreWellFormed(evidence.findings)) return false;
 
   if (evidence.outcome === "pass") {
