@@ -126,6 +126,12 @@ a byte-identical Vercel mirror. Both serve the tracked root artifact as
   desktop and phone widths and confirm it boots with no console or page
   errors. Confirm the specific behaviour the change claims, too: a deploy that
   serves the right bytes can still be broken for users.
+- Run `bun run predeploy:check` before every deploy. A recipe pointer or
+  engine-routing override that makes a new model version reachable is a ship
+  decision, not an implementation detail. New models stay dark until their
+  acceptance-ledger row is approved or has checked-in, semantic PASS evidence
+  bound to the exact algorithm/source/WASM/pack/corpus inputs. Never weaken,
+  bypass, or replace this gate with file-existence or prose evidence.
 - Shipping ahead of a named gate is the owner's call, never yours to assume.
   When they ask for it, say plainly which gate is outstanding, treat it as a
   live liability, and land the fix the moment it reports. A serious

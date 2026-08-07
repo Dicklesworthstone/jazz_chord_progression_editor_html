@@ -153,6 +153,10 @@ const gates: Gate[] = [
     command: [process.execPath, "scripts/validate-phs7-contract.ts"],
   },
   {
+    id: "predeploy-model-acceptance",
+    command: [process.execPath, "scripts/check-predeploy.ts"],
+  },
+  {
     id: "x1-transport-contract",
     command: [process.execPath, "scripts/validate-x1-contract.ts"],
   },

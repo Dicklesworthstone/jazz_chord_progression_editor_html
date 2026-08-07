@@ -15,20 +15,24 @@
  *      plus any such literal appearing directly in audio-engine.ts.
  * Over-inclusion fails closed; that is the point.
  *
- * Shippable statuses: "approved", or "machine-delegated" with an evidence
- * string naming an existing file path (the owner's 2026-08-07 delegation:
- * machine reference gates may accept a model, but only with on-disk
- * evidence). "open"/"red"/missing/malformed all fail.
+ * Shippable statuses: "approved", or "machine-delegated" with a checked-in,
+ * semantic PASS evidence object bound to the exact shipping algorithm id.
+ * File existence and prose are not evidence. "open"/"red"/missing/malformed,
+ * a failed control, a stale hash, or a report for another model all fail.
  *
  * Exit codes: 0 = PASS, 1 = gate failure, 2 = usage/internal error.
  */
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import {
   AUDIO_IMPULSE_ALGORITHM_ID,
   AUDIO_INSTRUMENT_RECIPES,
 } from "../src/audio/instrument-recipes-contract";
+import {
+  verifyGateEvidence,
+  type GateEvidenceV1,
+} from "./reference-similarity";
 
 export const LEDGER_PATH =
   "release-evidence/audio/listening/model-acceptance-ledger.json";
@@ -144,15 +148,15 @@ export function parseLedger(value: unknown): readonly LedgerRow[] | GateFinding 
 }
 
 /**
- * Core gate decision, pure over injected inputs. `evidenceFileExists`
- * receives the first whitespace-delimited token of a machine-delegated
- * row's evidence string (the convention: evidence for machine-delegated
- * rows begins with the on-disk report path).
+ * Core gate decision, pure over injected inputs. Machine evidence must be one
+ * repository-relative JSON path under the tracked release-evidence tree.
+ * The injected loader keeps filesystem I/O out of this decision and lets
+ * tests plant missing, malformed, stale, and cross-model reports.
  */
 export function evaluateGate(
   shippingIds: readonly string[],
   rows: readonly LedgerRow[],
-  evidenceFileExists: (path: string) => boolean,
+  loadEvidence: (path: string) => unknown | undefined,
 ): readonly GateFinding[] {
   const findings: GateFinding[] = [];
   const byId = new Map(rows.map((row) => [row.algorithmId, row]));
@@ -167,11 +171,41 @@ export function evaluateGate(
     }
     if (row.status === "approved") continue;
     if (row.status === "machine-delegated") {
-      const evidencePath = row.evidence.split(/\s/)[0] ?? "";
-      if (evidencePath === "" || !evidenceFileExists(evidencePath)) {
+      const evidencePath = row.evidence;
+      if (!/^release-evidence\/audio\/listening\/[a-zA-Z0-9._/-]+\.json$/.test(evidencePath) ||
+        evidencePath.includes("..")) {
+        findings.push({
+          code: "MODEL_DELEGATED_EVIDENCE_PATH",
+          detail: `${id} is machine-delegated but evidence must be one checked-in repository-relative JSON path`,
+        });
+        continue;
+      }
+      const evidence = loadEvidence(evidencePath);
+      if (evidence === undefined) {
         findings.push({
           code: "MODEL_DELEGATED_NO_EVIDENCE",
-          detail: `${id} is machine-delegated but its evidence path "${evidencePath}" does not exist`,
+          detail: `${id} is machine-delegated but ${evidencePath} is absent or unreadable`,
+        });
+        continue;
+      }
+      let semanticPass = false;
+      try {
+        semanticPass = verifyGateEvidence(evidence as GateEvidenceV1);
+      } catch {
+        semanticPass = false;
+      }
+      if (!semanticPass) {
+        findings.push({
+          code: "MODEL_DELEGATED_INVALID_EVIDENCE",
+          detail: `${id} is machine-delegated but ${evidencePath} is not a semantic, hash-valid PASS report`,
+        });
+        continue;
+      }
+      const candidate = (evidence as GateEvidenceV1).candidate;
+      if (candidate.rendererAlgorithmId !== id) {
+        findings.push({
+          code: "MODEL_DELEGATED_ALGORITHM_MISMATCH",
+          detail: `${id} is machine-delegated but ${evidencePath} proves ${candidate.rendererAlgorithmId}`,
         });
       }
       continue;
@@ -214,9 +248,14 @@ function main(): number {
       ...collectEngineRoutedAlgorithmIds(dspRendererSource, audioEngineSource),
     ]),
   ].sort();
-  const findings = evaluateGate(shippingIds, rows, (path) =>
-    existsSync(resolve(root, path)),
-  );
+  const findings = evaluateGate(shippingIds, rows, (path) => {
+    try {
+      const value: unknown = JSON.parse(readFileSync(resolve(root, path), "utf8"));
+      return value;
+    } catch {
+      return undefined;
+    }
+  });
   if (findings.length > 0) {
     for (const finding of findings) {
       console.error(`FAIL ${finding.code} ${finding.detail}`);

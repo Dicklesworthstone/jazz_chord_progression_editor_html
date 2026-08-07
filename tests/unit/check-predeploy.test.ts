@@ -19,6 +19,13 @@ import {
   parseLedger,
   type LedgerRow,
 } from "../../scripts/check-predeploy";
+import {
+  buildGateEvidence,
+  sha256Hex,
+  windReferencePolicySha256,
+  type GateEvidenceV1,
+  type SignalFeatures,
+} from "../../scripts/reference-similarity";
 
 const root = resolve(import.meta.dir, "../..");
 
@@ -30,6 +37,58 @@ function approvedRow(algorithmId: string): LedgerRow {
     decidedBy: "owner",
     date: "2026-08-06",
   };
+}
+
+const passingFeatures: SignalFeatures = {
+  pitch: { f0Hz: 440, centsFromExpected: 0, periodicity: 0.9 },
+  integratedBandDb: [-12, -18],
+  harmonicProfileDb: [0, -6, -12],
+  hnrDb: 24,
+  highBandShareDb: -36,
+  onsetSeconds: 0.02,
+  attackTo90SustainSeconds: 0.08,
+};
+
+function passingEvidence(rendererAlgorithmId: string): GateEvidenceV1 {
+  const digest = (label: string): string => sha256Hex(label);
+  return buildGateEvidence({
+    outcome: "pass",
+    rendererAlgorithmId,
+    corpusId: "independent-winds@1",
+    referencePath: "clarinet/a4.wav",
+    referenceLicenseId: "CC0-1.0",
+    expectedMidi: 69,
+    expectedHz: 440,
+    digests: {
+      analyzerImplementationSha256: digest("analyzer"),
+      policySha256: windReferencePolicySha256(),
+      rendererSourceSha256: digest("renderer"),
+      wasmSha256: digest("wasm"),
+      parameterPackSha256: digest("pack"),
+      renderRequestSha256: digest("request"),
+      pcmSha256: digest("pcm"),
+      corpusManifestSha256: digest("corpus"),
+      referenceFileSha256: digest("reference"),
+    },
+    controls: {
+      self: true,
+      whiteNoiseRejected: true,
+      overlyPureRejected: true,
+      wrongPitchRejected: true,
+      crossInstrumentRejected: true,
+    },
+    report: {
+      candidate: passingFeatures,
+      reference: passingFeatures,
+      pitchDeltaCents: 0,
+      envelopeDb: 0,
+      harmonicDb: 0,
+      attackLog2: 0,
+      hnrAbsoluteDeltaDb: 0,
+      highBandAbsoluteDeltaDb: 0,
+    },
+    findings: [],
+  });
 }
 
 describe("shipping-id collection", () => {
@@ -70,40 +129,70 @@ describe("ledger evaluation fails closed", () => {
   const ship = ["changes.dsp.model-a@1"];
 
   test("green ledger passes", () => {
-    expect(evaluateGate(ship, [approvedRow("changes.dsp.model-a@1")], () => true)).toEqual([]);
+    expect(evaluateGate(ship, [approvedRow("changes.dsp.model-a@1")], () => undefined)).toEqual([]);
   });
 
   test("open row on a shipping id fails with a named finding", () => {
     const rows: LedgerRow[] = [{ ...approvedRow("changes.dsp.model-a@1"), status: "open" }];
-    const findings = evaluateGate(ship, rows, () => true);
+    const findings = evaluateGate(ship, rows, () => undefined);
     expect(findings.map((finding) => finding.code)).toEqual(["MODEL_OPEN"]);
   });
 
   test("red row fails with a named finding", () => {
     const rows: LedgerRow[] = [{ ...approvedRow("changes.dsp.model-a@1"), status: "red" }];
-    expect(evaluateGate(ship, rows, () => true).map((finding) => finding.code)).toEqual([
+    expect(evaluateGate(ship, rows, () => undefined).map((finding) => finding.code)).toEqual([
       "MODEL_RED",
     ]);
   });
 
   test("a shipping id missing from the ledger fails closed", () => {
-    expect(evaluateGate(ship, [], () => true).map((finding) => finding.code)).toEqual([
+    expect(evaluateGate(ship, [], () => undefined).map((finding) => finding.code)).toEqual([
       "MODEL_UNLISTED",
     ]);
   });
 
-  test("machine-delegated without an existing evidence file fails; with one, passes", () => {
+  test("machine delegation requires one checked-in semantic PASS bound to the exact model", () => {
     const rows: LedgerRow[] = [
       {
         ...approvedRow("changes.dsp.model-a@1"),
         status: "machine-delegated",
-        evidence: "test-results/reference-report.json screened 2026-08-07",
+        evidence: "release-evidence/audio/listening/model-a.json",
       },
     ];
-    expect(evaluateGate(ship, rows, () => false).map((finding) => finding.code)).toEqual([
+    expect(evaluateGate(ship, rows, () => undefined).map((finding) => finding.code)).toEqual([
       "MODEL_DELEGATED_NO_EVIDENCE",
     ]);
-    expect(evaluateGate(ship, rows, (path) => path === "test-results/reference-report.json")).toEqual([]);
+    expect(evaluateGate(ship, rows, () => ({ nope: true })).map((finding) => finding.code)).toEqual([
+      "MODEL_DELEGATED_INVALID_EVIDENCE",
+    ]);
+    expect(evaluateGate(ship, rows, () => passingEvidence("changes.dsp.model-b@1"))
+      .map((finding) => finding.code)).toEqual(["MODEL_DELEGATED_ALGORITHM_MISMATCH"]);
+    expect(evaluateGate(ship, rows, () => passingEvidence("changes.dsp.model-a@1"))).toEqual([]);
+  });
+
+  test("prose, directories, untracked result paths, and tampered controls cannot delegate", () => {
+    const base: LedgerRow = {
+      ...approvedRow("changes.dsp.model-a@1"),
+      status: "machine-delegated",
+      evidence: "release-evidence/audio/listening/model-a.json",
+    };
+    for (const evidence of [
+      "test-results/report.json",
+      "release-evidence/audio/listening/",
+      "release-evidence/audio/listening/report.json passed",
+      "release-evidence/audio/listening/../report.json",
+    ]) {
+      expect(evaluateGate(ship, [{ ...base, evidence }], () => undefined)
+        .map((finding) => finding.code)).toEqual(["MODEL_DELEGATED_EVIDENCE_PATH"]);
+    }
+    const valid = passingEvidence("changes.dsp.model-a@1");
+    const tampered = {
+      ...valid,
+      controls: { ...valid.controls, whiteNoiseRejected: false },
+    };
+    expect(evaluateGate(ship, [base], () => tampered).map((finding) => finding.code)).toEqual([
+      "MODEL_DELEGATED_INVALID_EVIDENCE",
+    ]);
   });
 
   test("a non-shipping experimental id does not block", () => {
@@ -111,7 +200,7 @@ describe("ledger evaluation fails closed", () => {
       approvedRow("changes.dsp.model-a@1"),
       { ...approvedRow("changes.dsp.experimental@9"), status: "red" },
     ];
-    expect(evaluateGate(ship, rows, () => true)).toEqual([]);
+    expect(evaluateGate(ship, rows, () => undefined)).toEqual([]);
   });
 });
 
