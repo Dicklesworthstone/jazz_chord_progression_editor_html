@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import {
   WIND_REFERENCE_GATE_POLICY,
+  admitReferenceSignal,
   WIND_IDENTITY_CONTROL_POLICY,
   analyzeSignal,
   buildGateEvidence,
@@ -152,6 +153,17 @@ describe("reference gate analysis admits signals before comparing them", () => {
     expect(fast.attackTo90SustainSeconds).toBeGreaterThan(0.015);
     expect(slow.attackTo90SustainSeconds).toBeGreaterThan(fast.attackTo90SustainSeconds * 2);
   });
+
+  test("corpus admission accepts a slow real attack without changing candidate limits", () => {
+    const reference = admitReferenceSignal(tone(EXPECTED_HZ, { attackSeconds: 0.3 }), EXPECTED_HZ);
+    expect(reference.outcome).toBe("accept");
+    if (reference.outcome === "accept") {
+      expect(reference.features.attackTo90SustainSeconds).toBeGreaterThan(
+        WIND_REFERENCE_GATE_POLICY.maximumAttackSeconds,
+      );
+    }
+    expect(WIND_REFERENCE_GATE_POLICY.maximumAttackSeconds).toBe(0.15);
+  });
 });
 
 describe("reference comparison has planted positive and negative controls", () => {
@@ -170,7 +182,32 @@ describe("reference comparison has planted positive and negative controls", () =
     const verdict = evaluateSimilarityReport(report, passingIdentityControl());
     expect(verdict.outcome).toBe("fail");
     expect(verdict.findings.some((item) => item.code === "ATTACK_RATIO")).toBe(true);
-    expect(verdict.findings.some((item) => item.code === "ATTACK_ABSOLUTE_RANGE")).toBe(true);
+    expect(verdict.findings.some((item) =>
+      item.code === "CANDIDATE_ATTACK_ABSOLUTE_RANGE")).toBe(true);
+  });
+
+  test("a slow real reference remains authoritative while the candidate window stays frozen", () => {
+    const base = acceptedReport(tone());
+    const report = {
+      ...base,
+      candidate: { ...base.candidate, attackTo90SustainSeconds: 0.15 },
+      reference: { ...base.reference, attackTo90SustainSeconds: 0.3 },
+      attackLog2: 1,
+    };
+    const verdict = evaluateSimilarityReport(report, passingIdentityControl());
+    expect(verdict.outcome).toBe("pass");
+    expect(WIND_REFERENCE_GATE_POLICY.maximumAttackSeconds).toBe(0.15);
+  });
+
+  test("a non-positive reference attack fails closed", () => {
+    const base = acceptedReport(tone());
+    const verdict = evaluateSimilarityReport({
+      ...base,
+      reference: { ...base.reference, attackTo90SustainSeconds: 0 },
+      attackLog2: Number.POSITIVE_INFINITY,
+    }, passingIdentityControl());
+    expect(verdict.outcome).toBe("fail");
+    expect(verdict.findings.some((item) => item.code === "REFERENCE_ATTACK_INVALID")).toBe(true);
   });
 
   test("excess 5.5-10 kHz hiss fails integrated high-band and HNR laws", () => {

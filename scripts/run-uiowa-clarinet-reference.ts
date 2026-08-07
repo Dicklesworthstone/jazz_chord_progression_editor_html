@@ -9,6 +9,7 @@ import {
 } from "../src/audio/dsp-renderer";
 import {
   analyzeSignal,
+  admitReferenceSignal,
   buildGateEvidence,
   compareToReference,
   evaluateSimilarityReport,
@@ -583,19 +584,15 @@ Promise<ClarinetReferenceRunResult> {
       if (rendered === null) throw new Error("CANDIDATE_RENDER_REFUSED");
       const candidate = monoFromRendered(rendered);
       const comparison = compareToReference(candidate, clarinet.note, expectedHz);
-      const referenceSelf = compareToReference(clarinet.note, clarinet.note, expectedHz);
-      const referenceVerdict = referenceSelf.outcome === "accept"
-        ? evaluateSimilarityReport(referenceSelf.report, identityControl) : null;
+      const referenceAdmission = admitReferenceSignal(clarinet.note, expectedHz);
       let outcome: GateOutcome;
       let exitCode: 0 | 1 | 2;
       let report = null;
       let findings: readonly GateFinding[];
-      if (referenceSelf.outcome === "unavailable" || referenceVerdict?.outcome !== "pass") {
+      if (referenceAdmission.outcome === "unavailable") {
         outcome = "unavailable";
         exitCode = 2;
-        const sourceFindings = referenceSelf.outcome === "unavailable"
-          ? referenceSelf.findings : referenceVerdict?.findings ?? [];
-        findings = referenceAdmissionFindings(sourceFindings);
+        findings = referenceAdmissionFindings(referenceAdmission.findings);
         if (comparison.outcome === "accept") report = comparison.report;
       } else if (!controlsPass(controls)) {
         outcome = "unavailable";

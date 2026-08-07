@@ -667,7 +667,7 @@ export function compareToReference(candidatePcm: MonoPcm, referencePcm: MonoPcm,
   expectedHz: number): Readonly<{ outcome: "accept"; report: SimilarityReport }> |
   Readonly<{ outcome: "unavailable"; findings: readonly GateFinding[] }> {
   const candidate = analyzeSignal(candidatePcm, expectedHz);
-  const reference = analyzeSignal(referencePcm, expectedHz);
+  const reference = admitReferenceSignal(referencePcm, expectedHz);
   const findings: GateFinding[] = [];
   if (candidate.outcome === "unavailable") {
     findings.push(...candidate.findings.map((item) => finding(`CANDIDATE_${item.code}`, item.message)));
@@ -680,6 +680,24 @@ export function compareToReference(candidatePcm: MonoPcm, referencePcm: MonoPcm,
   }
   return Object.freeze({ outcome: "accept",
     report: compareAdmittedSignals(candidate.features, reference.features) });
+}
+
+/**
+ * Admit an independent corpus recording without applying synthetic-candidate
+ * acceptance limits to it. Pitch and periodicity retain the same objective
+ * signal laws; attack needs only be a finite positive comparison authority.
+ */
+export function admitReferenceSignal(pcm: MonoPcm, expectedHz: number): AnalysisResult {
+  const analysis = analyzeSignal(pcm, expectedHz);
+  if (analysis.outcome === "unavailable") return analysis;
+  const attack = analysis.features.attackTo90SustainSeconds;
+  if (!Number.isFinite(attack) || attack <= 0) {
+    return Object.freeze({ outcome: "unavailable", findings: Object.freeze([
+      finding("REFERENCE_ATTACK_INVALID",
+        `reference attack ${String(attack)} is not finite and positive`),
+    ]) });
+  }
+  return analysis;
 }
 
 export function evaluateSimilarityReport(report: SimilarityReport,
@@ -707,13 +725,23 @@ function evaluateSimilarityThresholds(report: SimilarityReport): GateVerdict {
     WIND_REFERENCE_GATE_POLICY.maximumAbsoluteHnrDeltaDb);
   maximum("HIGH_BAND_DELTA", report.highBandAbsoluteDeltaDb,
     WIND_REFERENCE_GATE_POLICY.maximumAbsoluteHighBandDeltaDb);
-  for (const [name, features] of [["candidate", report.candidate],
-    ["reference", report.reference]] as const) {
-    const attack = features.attackTo90SustainSeconds;
-    if (!Number.isFinite(attack) || attack < WIND_REFERENCE_GATE_POLICY.minimumAttackSeconds ||
-      attack > WIND_REFERENCE_GATE_POLICY.maximumAttackSeconds) {
-      failures.push(finding("ATTACK_ABSOLUTE_RANGE", `${name} attack ${String(attack)} is out of range`));
-    }
+  /* The absolute attack window is a candidate acceptance law, not a corpus
+   * admission law. Real Iowa notes include deliberate pp attacks longer than
+   * 150 ms; rejecting those recordings makes the independent authority
+   * unavailable precisely where a synthetic onset most needs comparison.
+   * The reference must still provide a finite, positive denominator and the
+   * frozen two-sided attack-ratio law above still binds candidate to corpus. */
+  const candidateAttack = report.candidate.attackTo90SustainSeconds;
+  if (!Number.isFinite(candidateAttack) ||
+    candidateAttack < WIND_REFERENCE_GATE_POLICY.minimumAttackSeconds ||
+    candidateAttack > WIND_REFERENCE_GATE_POLICY.maximumAttackSeconds) {
+    failures.push(finding("CANDIDATE_ATTACK_ABSOLUTE_RANGE",
+      `candidate attack ${String(candidateAttack)} is out of range`));
+  }
+  const referenceAttack = report.reference.attackTo90SustainSeconds;
+  if (!Number.isFinite(referenceAttack) || referenceAttack <= 0) {
+    failures.push(finding("REFERENCE_ATTACK_INVALID",
+      `reference attack ${String(referenceAttack)} is not finite and positive`));
   }
   return Object.freeze({
     outcome: failures.length === 0 ? "pass" : "fail",
