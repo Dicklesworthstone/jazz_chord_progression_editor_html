@@ -221,54 +221,17 @@ fn tongue_contact_at(frame: usize, hold_frames: usize, release_frames: usize) ->
     1.0 - smooth
 }
 
-fn finalize_v2_sustain(out_left: &mut [f32], out_right: &mut [f32], sr: f64) -> i32 {
+fn finalize_v2_output(out_left: &[f32], out_right: &[f32]) -> i32 {
     let frames = out_left.len().min(out_right.len());
-    if frames == 0 {
-        return 0;
-    }
-    /* Blown notes are levelled from settled oscillation, not their first
-     * 200 ms. The shared waveguide finalizer measures the attack and then
-     * globally peak-scales the whole block; a realistic tongue transient can
-     * therefore make the identical sustain 3--5x quieter than legato. */
-    let sustain_start = ((0.4 * sr) as usize).min(frames.saturating_sub(1));
-    let sustain_end = ((1.0 * sr) as usize).min(frames).max(sustain_start + 1);
-    let mut energy = 0.0;
-    for frame in sustain_start..sustain_end {
-        let left = out_left[frame] as f64;
-        let right = out_right[frame] as f64;
-        energy += left * left + right * right;
-    }
-    let rms = sqrt(energy / (2.0 * (sustain_end - sustain_start) as f64));
-    if !(rms > 0.0) {
-        return 0;
-    }
-    let scale = 0.22 / rms;
-    let knee = 0.85;
-    let ceiling = 0.95;
-    for frame in 0..frames {
-        for output in [&mut out_left[frame], &mut out_right[frame]] {
-            let sample = *output as f64 * scale;
-            let magnitude = sample.abs();
-            let limited = if magnitude <= knee {
-                magnitude
-            } else {
-                knee + (ceiling - knee)
-                    * (1.0 - exp(-(magnitude - knee) / (ceiling - knee)))
-            };
-            *output = limited.min(ceiling).copysign(sample) as f32;
-        }
-    }
-    let threshold = 1.0e-4f32;
-    let mut last = frames;
-    'trim: while last > 256 {
-        for index in last - 256..last {
-            if out_left[index].abs() > threshold || out_right[index].abs() > threshold {
-                break 'trim;
-            }
-        }
-        last -= 256;
-    }
-    last.min(frames) as i32
+    /* The v2 bore produces its radiated-pressure wave directly in the
+     * engine's PCM convention. Its level must not depend on the caller's
+     * segment boundary:
+     * phrase chunks can be shorter than the 0.4 s settling interval, and a
+     * block-relative RMS normalizer made those chunks use one arbitrary end
+     * sample as their gain authority, driving up to half the block into an
+     * output limiter. The physical reed/bore dynamics own level and timbre;
+     * returning its complete output unchanged preserves both. */
+    frames as i32
 }
 
 fn decode_phrase_state(bytes: &[u8], sample_rate: f32) -> Option<ClarinetPhraseState> {
@@ -1275,18 +1238,23 @@ fn clr_render_inner(
     let mut output_accumulator = 0.0f64;
 
     for frame in 0..frames {
+        /* Every attack/control clock is phrase-relative. A serialized state
+         * means this block continues the same physical trajectory; restarting
+         * tongue, pressure launch, or articulation from local frame zero
+         * would inject energy at an arbitrary scheduler boundary. */
+        let phrase_frame = (elapsed_frames as usize).saturating_add(frame);
         let (instantaneous_target, pressure_step) = if dynamic_reed {
             let launch_phase = if attack_articulation == Some(true) {
-                frame < tongue_hold_frames.saturating_add(tongue_release_frames)
+                phrase_frame < tongue_hold_frames.saturating_add(tongue_release_frames)
             } else {
-                frame < cold_launch_frames
+                phrase_frame < cold_launch_frames
             };
             if launch_phase {
                 (pressure_launch, cold_launch_step)
             } else {
                 (pressure_target, pressure_settle_step)
             }
-        } else if frame < tongue_hold_frames {
+        } else if phrase_frame < tongue_hold_frames {
             (0.0, legacy_attack_step)
         } else {
             (
@@ -1296,22 +1264,22 @@ fn clr_render_inner(
         };
         pressure += (instantaneous_target - pressure) * pressure_step;
         let tongue_contact = if dynamic_reed {
-            tongue_contact_at(frame, tongue_hold_frames, tongue_release_frames)
+            tongue_contact_at(phrase_frame, tongue_hold_frames, tongue_release_frames)
         } else {
             0.0
         };
         /* Tongue release changes the reed aperture through `tongue_contact`.
          * Do not inject a second, unphysical pressure impulse into the bore. */
-        let phrase_frame = elapsed_frames as f64 + frame as f64;
-        let vibrato_gate = if phrase_frame < vibrato_onset {
+        let phrase_frame_f64 = phrase_frame as f64;
+        let vibrato_gate = if phrase_frame_f64 < vibrato_onset {
             0.0
         } else {
-            ((phrase_frame - vibrato_onset) / vibrato_ramp).min(1.0)
+            ((phrase_frame_f64 - vibrato_onset) / vibrato_ramp).min(1.0)
         };
         let lfo = if variation.is_some() {
             vibrato_sin
         } else {
-            sin(TAU * vibrato_hz * phrase_frame / sr)
+            sin(TAU * vibrato_hz * phrase_frame_f64 / sr)
         };
         let vibrato = 1.0 + vibrato_depth * vibrato_gate * lfo;
         if variation.is_some() {
@@ -1325,7 +1293,7 @@ fn clr_render_inner(
         chiff_high += chiff_high_alpha * (turbulence - chiff_high);
         let chiff = (chiff_high - chiff_low) * chiff_envelope * chiff_level;
         chiff_envelope *= chiff_decay;
-        if frame >= tongue_hold_frames {
+        if phrase_frame >= tongue_hold_frames {
             overshoot_envelope *= overshoot_decay;
         }
         let breath = pressure * vibrato * (1.0 + noise_level * noise_lp);
@@ -1416,12 +1384,12 @@ fn clr_render_inner(
                 0.05 - 0.02 * v_norm
             };
             let articulation_gain = if attack_articulation == Some(true)
-                && frame >= tongue_hold_frames
+                && phrase_frame >= tongue_hold_frames
             {
                 1.0
                     + articulation_depth
                         * exp(
-                            -((frame - tongue_hold_frames) as f64) / (0.030 * sr),
+                            -((phrase_frame - tongue_hold_frames) as f64) / (0.030 * sr),
                         )
             } else {
                 1.0
@@ -1519,7 +1487,7 @@ fn clr_render_inner(
         *written = size;
     }
     if dynamic_reed {
-        finalize_v2_sustain(out_left, out_right, sample_rate as f64)
+        finalize_v2_output(out_left, out_right)
     } else {
         crate::finalize_stereo(out_left, out_right, sample_rate as f64)
     }
@@ -1528,6 +1496,76 @@ fn clr_render_inner(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn render_phrase_for_test(
+        midi: i32,
+        velocity: i32,
+        sample_rate: f32,
+        frames: usize,
+    ) -> (Vec<f32>, Vec<f32>) {
+        let mut left = vec![0.0f32; frames];
+        let mut right = vec![0.0f32; frames];
+        let mut state = vec![0u8; CLR_STATE_MAX_BYTES];
+        let written = clr_render_phrase_v2(
+            midi,
+            velocity,
+            sample_rate,
+            0,
+            1,
+            left.as_mut_ptr(),
+            right.as_mut_ptr(),
+            frames as i32,
+            core::ptr::null(),
+            0,
+            state.as_mut_ptr(),
+            state.len() as i32,
+        );
+        assert_eq!(written, frames as i32);
+        (left, right)
+    }
+
+    #[test]
+    fn phrase_output_is_partition_invariant_audible_and_bounded() {
+        let sample_rate = 48_000.0f32;
+        let short_frames = (0.25 * sample_rate) as usize;
+        let long_frames = (0.50 * sample_rate) as usize;
+        for midi in [50, 62, 74, 82] {
+            for velocity in [36, 72, 108] {
+                let (short_left, short_right) =
+                    render_phrase_for_test(midi, velocity, sample_rate, short_frames);
+                let (long_left, long_right) =
+                    render_phrase_for_test(midi, velocity, sample_rate, long_frames);
+
+                /* A caller's chunk boundary is not an acoustic input. This
+                 * exact prefix law directly kills the former block-relative
+                 * RMS normalization and its output soft limiter. */
+                assert_eq!(short_left, long_left[..short_frames]);
+                assert_eq!(short_right, long_right[..short_frames]);
+
+                let mut energy = 0.0f64;
+                let mut peak = 0.0f64;
+                for (&left, &right) in short_left.iter().zip(&short_right) {
+                    energy += left as f64 * left as f64 + right as f64 * right as f64;
+                    peak = peak.max((left as f64).abs()).max((right as f64).abs());
+                }
+                let rms = sqrt(energy / (2.0 * short_frames as f64));
+                /* Frozen X0 browser-audio acceptance laws, not measurements
+                 * selected from this candidate. */
+                assert!(
+                    rms >= 0.000_05,
+                    "midi {midi} velocity {velocity}: inaudible RMS {rms}"
+                );
+                assert!(
+                    rms < 0.5,
+                    "midi {midi} velocity {velocity}: excessive RMS {rms}"
+                );
+                assert!(
+                    peak >= 0.000_5 && peak < 0.99,
+                    "midi {midi} velocity {velocity}: unbounded peak {peak}"
+                );
+            }
+        }
+    }
 
     #[test]
     fn tongue_release_is_bounded_smooth_and_monotone() {
