@@ -940,20 +940,26 @@ fn diagnostic_loud_lip_map() {
 
 #[test]
 fn diagnostic_fixture_brightness_trajectory() {
-    let cells = [
-        (3_000.0, 80.0, 0.08, 0.00005),
-        (5_500.0, 80.0, 0.08, 0.00005),
-        (8_500.0, 80.0, 0.08, 0.00005),
-        (12_000.0, 80.0, 0.08, 0.00005),
-    ];
-    for (pressure, lip_hz, damping, opening) in cells {
-        let samples = render_controlled_sustain(
-            pressure,
-            lip_hz,
-            damping,
-            opening,
-            TrumpetParameters::canonical(),
-        );
+    let mut model = TrumpetModel::new(48_000.0, TrumpetParameters::canonical()).unwrap();
+    let mut controls = TrumpetControls {
+        mouth_pressure_pa: 0.0,
+        lip_resonance_hz: 80.0,
+        lip_damping_ratio: 0.12,
+        equilibrium_opening_m: 0.00005,
+        tongue_contact: 0.0,
+        valves: [0.0; 3],
+    };
+    for (index, pressure) in [8_500.0, 12_000.0].into_iter().enumerate() {
+        let initial_pressure = controls.mouth_pressure_pa;
+        let mut samples = Vec::new();
+        for frame in 0..24_000 {
+            controls.mouth_pressure_pa = initial_pressure
+                + (pressure - initial_pressure) * (frame as f64 / 1_440.0).min(1.0);
+            let sample = model.process_sample(controls).unwrap();
+            if frame > 9_600 {
+                samples.push(sample);
+            }
+        }
         let (f0, periodicity) = estimate_f0(&samples, 48_000.0, 80.0, 300.0);
         let centroid = spectral_centroid_hz(&samples);
         let harmonic_centroid = harmonic_centroid_hz(&samples, f0);
@@ -963,7 +969,7 @@ fn diagnostic_fixture_brightness_trajectory() {
         let peak = samples
             .iter()
             .fold(0.0_f64, |peak, sample| peak.max(sample.abs()));
-        eprintln!("fixture pressure={pressure} lip={lip_hz} f0={f0} score={periodicity} centroid={centroid} harmonic_centroid={harmonic_centroid} rms={rms:e} peak={peak:e}");
+        eprintln!("continuation index={index} pressure={pressure} f0={f0} score={periodicity} centroid={centroid} harmonic_centroid={harmonic_centroid} rms={rms:e} peak={peak:e}");
     }
 }
 

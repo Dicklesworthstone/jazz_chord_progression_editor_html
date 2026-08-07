@@ -51,17 +51,7 @@ const SECTION_END_M: [f64; SEGMENTS] = [
 const SECTION_RADIUS_M: [f64; SEGMENTS] = [
     0.00940, 0.00945, 0.00950, 0.00950, 0.00955, 0.00955, 0.00960, 0.00965, 0.00970,
 ];
-const TONE_HOLE_BANK_OFFSET_M: f64 = 0.000_036;
-const HOLE_POSITION_M: [f64; HOLES] = [
-    0.246 + TONE_HOLE_BANK_OFFSET_M,
-    0.278 + TONE_HOLE_BANK_OFFSET_M,
-    0.316 + TONE_HOLE_BANK_OFFSET_M,
-    0.357 + TONE_HOLE_BANK_OFFSET_M,
-    0.397 + TONE_HOLE_BANK_OFFSET_M,
-    0.438 + TONE_HOLE_BANK_OFFSET_M,
-    0.492 + TONE_HOLE_BANK_OFFSET_M,
-    0.548 + TONE_HOLE_BANK_OFFSET_M,
-];
+const HOLE_POSITION_M: [f64; HOLES] = [0.246, 0.278, 0.316, 0.357, 0.397, 0.438, 0.492, 0.548];
 const HOLE_RADIUS_M: [f64; HOLES] = [
     0.0042, 0.0045, 0.0048, 0.0049, 0.0050, 0.0051, 0.0052, 0.0053,
 ];
@@ -323,12 +313,17 @@ fn target_mouth_pressure_pa(velocity: i32, fingering: Fingering) -> f64 {
     // Players compensate steady blowing-pressure changes with the lips. Note
     // velocity therefore changes aperture, transient, radiation corner, and
     // turbulence below, while the settled convective register stays fixed.
-    let speed_factor = if fingering.register_harmonic == 1 {
+    let mut speed_factor = if fingering.register_harmonic == 1 {
         0.995
     } else {
         let dynamic_lift = ((velocity_norm - 36.0 / 127.0) / (36.0 / 127.0)).clamp(0.0, 1.0);
         0.993 + 0.045 * dynamic_lift
     };
+    if velocity < 50 && fingering.openness[6] > 0.0 && fingering.openness[6] < 0.95 {
+        // A soft half-hole speaks flatter under the lower lip pressure that a
+        // player uses to stabilize its weak returning wave.
+        speed_factor *= 0.9995;
+    }
     let expressive_speed = nominal_speed * speed_factor;
     (0.5 * AIR_DENSITY_KG_PER_M3 * expressive_speed * expressive_speed).min(1_950.0)
 }

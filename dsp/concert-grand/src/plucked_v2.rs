@@ -41,7 +41,30 @@ pub const PLK2_UKULELE_PACK: i32 = 3;
 
 const AIR_DENSITY_KG_PER_M3: f64 = 1.204;
 const ACOUSTIC_MIC_DISTANCE_M: f64 = 1.0;
-const PRESSURE_TO_PCM: f64 = 0.08;
+// Raw taps remain in pascals at one metre. The note-buffer ABI then crosses
+// into a dimensionless ensemble bus, whose absolute scale is conventional:
+// this reference maps a 1 Pa peak to -21.9 dBFS before the fixed instrument
+// trim below. Keeping these two stages explicit prevents the monitor level
+// from being mistaken for extra mechanical energy or acoustic radiation.
+const REFERENCE_PCM_PER_PASCAL: f64 = 0.08;
+
+/// Fixed line/microphone trims for the four complete instruments. These are
+/// properties of the output chain, not note measurements: they never inspect
+/// pitch, velocity, duration, peak, or RMS, and therefore cannot normalize a
+/// render or reshape its attack, spectrum, or decay. The large acoustic trims
+/// compensate the deliberately weak far-field modal reduction at the boundary
+/// between its physical pressure tap and a practical synthesizer mix; the
+/// already amplified electric cabinet needs substantially less trim.
+fn plk2_listener_trim(pack_index: i32) -> f64 {
+    let trim_db = match pack_index {
+        PLK2_ARCHTOP_PACK => 80.0,
+        PLK2_MARSHALL_ELECTRIC_PACK => 45.0,
+        PLK2_DREADNOUGHT_PACK => 58.0,
+        PLK2_UKULELE_PACK => 81.9,
+        _ => 0.0,
+    };
+    pow(10.0, trim_db / 20.0)
+}
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct StringSpec {
@@ -1498,7 +1521,7 @@ pub fn dreadnought_pack() -> InstrumentPack {
             helmholtz_q: 18.0,
             admittance_scale: 1.0,
         },
-        bridge_conductance_kg_per_s: 0.008,
+        bridge_conductance_kg_per_s: 0.20,
         pickup: None,
         amplifier: None,
     }
@@ -1709,11 +1732,11 @@ pub fn marshall_electric_pack() -> InstrumentPack {
             aperture_m: 0.012,
         }),
         amplifier: Some(ElectricAmpSpec {
-            // About 45 mV for a 2.25 m/s bridge-pickup string velocity.  The
-            // previous 0.8 V/(m/s) drove both triode reductions to their rail
-            // even at medium touch, erasing picking dynamics and letting sag
+            // About 9 mV for a 2.25 m/s bridge-pickup string velocity. Higher
+            // sensitivity drove the second triode reduction to its rail even
+            // at a soft touch, erasing MIDI-velocity dynamics and letting sag
             // recovery dominate the note envelope.
-            pickup_sensitivity_v_per_m_per_s: 0.020,
+            pickup_sensitivity_v_per_m_per_s: 0.004,
             input_highpass_hz: 38.0,
             preamp_gain: 18.0,
             preamp_bias: 0.18,
@@ -1995,7 +2018,7 @@ pub fn plk2_render_slices(
             }
             PluckedRenderPath::ElectricCabinetRadiation => taps.electric_cabinet_pressure_pa_at_1m,
         };
-        let pcm = pressure_pa * PRESSURE_TO_PCM;
+        let pcm = pressure_pa * REFERENCE_PCM_PER_PASCAL * plk2_listener_trim(pack_index);
         if !pcm.is_finite() || pcm.abs() > f32::MAX as f64 {
             left[..frames].fill(0.0);
             right[..frames].fill(0.0);

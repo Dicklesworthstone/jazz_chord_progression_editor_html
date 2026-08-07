@@ -48,6 +48,8 @@ const SOUND_SPEED_M_S: f64 = 343.0;
 const OPEN_LENGTH_M: f64 = 1.47;
 const MOUTHPIECE_BACKBORE_ENTRY_RADIUS_M: f64 = 0.0025;
 const LIP_CONTACT_SCALE_M: f64 = 2.5e-4;
+const LIP_DAMPING_VELOCITY_SCALE_M_S: f64 = 0.5;
+const DIGITAL_FULL_SCALE_PRESSURE_PA: f64 = 200.0;
 
 /// The eight reviewed trumpet-bore station endpoints: axial position (m) and
 /// radius (m), at 20 C.
@@ -676,7 +678,7 @@ impl TrumpetModel {
         // hemispherical spreading. The derivative is inside the mandatory
         // four-times-rate antialias boundary.
         let far_field_pressure_pa = AIR_DENSITY_KG_M3 * bell_flow_derivative_m3_s2 / (2.0 * PI);
-        Ok(far_field_pressure_pa / 20.0)
+        Ok(far_field_pressure_pa / DIGITAL_FULL_SCALE_PRESSURE_PA)
     }
 
     fn advance_valves(&mut self, target: [f64; 3], dt: f64) {
@@ -868,8 +870,7 @@ impl TrumpetModel {
         let newmark_compliance = beta * dt * dt / denominator;
         let constant_force = -damping * velocity_predictor - stiffness * displacement_predictor;
         let contact_stiffness = stiffness / (LIP_CONTACT_SCALE_M * LIP_CONTACT_SCALE_M);
-        let mut displacement = self.lip_displacement_m;
-        for _ in 0..8 {
+        let evaluate_displacement = |displacement: f64| {
             let positive_displacement_m = displacement.max(0.0);
             let rotation =
                 positive_displacement_m / self.parameters.lip_force_rolloff_displacement_m;
@@ -889,18 +890,71 @@ impl TrumpetModel {
                 .max(0.0);
             let contact_force = contact_stiffness * upper_penetration_m.powi(3);
             let contact_slope_n_m = 3.0 * contact_stiffness * upper_penetration_m.powi(2);
-            let force = projected_area_m2 * pressure_difference_pa - contact_force;
-            let force_slope_n_m =
-                projected_area_slope_m * pressure_difference_pa - contact_slope_n_m;
+            let candidate_velocity_m_s =
+                velocity_predictor + gamma / (beta * dt) * (displacement - displacement_predictor);
+            // Lip tissue becomes more dissipative at large strain rates.  The
+            // quadratic drag is passive for either velocity sign because its
+            // mechanical power is -c*v^2*|v|/v_scale.
+            let nonlinear_damping_force = damping / LIP_DAMPING_VELOCITY_SCALE_M_S
+                * candidate_velocity_m_s
+                * fabs(candidate_velocity_m_s);
+            let nonlinear_damping_slope_n_m = damping / LIP_DAMPING_VELOCITY_SCALE_M_S
+                * 2.0
+                * fabs(candidate_velocity_m_s)
+                * gamma
+                / (beta * dt);
+            let force = projected_area_m2 * pressure_difference_pa
+                - contact_force
+                - nonlinear_damping_force;
+            let force_slope_n_m = projected_area_slope_m * pressure_difference_pa
+                - contact_slope_n_m
+                - nonlinear_damping_slope_n_m;
             let residual = displacement
                 - displacement_predictor
                 - newmark_compliance * (force + constant_force);
             let residual_slope = 1.0 - newmark_compliance * force_slope_n_m;
-            let correction = residual / residual_slope;
-            displacement -= correction;
+            (residual, residual_slope)
+        };
+        let mut displacement = self.lip_displacement_m;
+        let mut lip_displacement_converged = false;
+        for _ in 0..12 {
+            let (residual, residual_slope) = evaluate_displacement(displacement);
+            let correction = (residual / residual_slope).clamp(-5.0e-4, 5.0e-4);
+            displacement = (displacement - correction).clamp(
+                -controls.equilibrium_opening_m,
+                self.parameters.maximum_lip_opening_m - controls.equilibrium_opening_m
+                    + 2.0 * LIP_CONTACT_SCALE_M,
+            );
             if fabs(correction) <= 1.0e-12 {
+                lip_displacement_converged = true;
                 break;
             }
+        }
+        if !lip_displacement_converged {
+            let mut low = -controls.equilibrium_opening_m;
+            let mut high = self.parameters.maximum_lip_opening_m - controls.equilibrium_opening_m
+                + 2.0 * LIP_CONTACT_SCALE_M;
+            let low_value = evaluate_displacement(low).0;
+            let high_value = evaluate_displacement(high).0;
+            if low_value > 0.0 {
+                displacement = low;
+                lip_displacement_converged = true;
+            } else if high_value >= 0.0 {
+                for _ in 0..24 {
+                    let mid = 0.5 * (low + high);
+                    let value = evaluate_displacement(mid).0;
+                    if value <= 0.0 {
+                        low = mid;
+                    } else {
+                        high = mid;
+                    }
+                }
+                displacement = 0.5 * (low + high);
+                lip_displacement_converged = true;
+            }
+        }
+        if !lip_displacement_converged {
+            return Err(TrumpetError::LipSolveDidNotConverge);
         }
         let mut final_acceleration = (displacement - displacement_predictor) / (beta * dt * dt);
         let mut velocity = velocity_predictor + gamma * dt * final_acceleration;
@@ -1006,6 +1060,26 @@ impl TrumpetModel {
             return Err(TrumpetError::NonFiniteState);
         }
         self.pressure_pa[0] += pressure_pa;
+        Ok(())
+    }
+
+    /// Seed the open bore's geometry-derived first half-wave without changing
+    /// its length, lip controls, or any requested pitch.  This models the
+    /// finite acoustic state left by a player's preparatory tongue release and
+    /// gives continuation tests a deterministic way to select the intended
+    /// basin rather than whichever nonlinear register wins from exact zeros.
+    pub fn seed_open_first_regime(&mut self, peak_pressure_pa: f64) -> Result<(), TrumpetError> {
+        if !peak_pressure_pa.is_finite() || !(0.0..=100.0).contains(&peak_pressure_pa) {
+            return Err(TrumpetError::NonFiniteState);
+        }
+        let total_length_m = self.effective_length_m();
+        let mut position_m = 0.0;
+        for cell in 0..BORE_CELLS {
+            position_m += 0.5 * self.cell_length_m[cell];
+            self.pressure_pa[cell] += peak_pressure_pa * cos(PI * position_m / total_length_m);
+            position_m += 0.5 * self.cell_length_m[cell];
+        }
+        self.cup_pressure_pa += peak_pressure_pa;
         Ok(())
     }
 }

@@ -135,6 +135,33 @@ fn windowed_rms(samples: &[f32]) -> f64 {
         .sqrt()
 }
 
+fn stereo_rms(left: &[f32], right: &[f32]) -> f64 {
+    assert_eq!(left.len(), right.len());
+    (left
+        .iter()
+        .zip(right)
+        .map(|(left, right)| {
+            let left = *left as f64;
+            let right = *right as f64;
+            left * left + right * right
+        })
+        .sum::<f64>()
+        / left.len().max(1) as f64)
+        .sqrt()
+}
+
+fn stereo_peak(left: &[f32], right: &[f32]) -> f64 {
+    assert_eq!(left.len(), right.len());
+    left.iter()
+        .zip(right)
+        .map(|(left, right)| {
+            let left = *left as f64;
+            let right = *right as f64;
+            (left * left + right * right).sqrt()
+        })
+        .fold(0.0, f64::max)
+}
+
 fn render_spectrum(pack: i32, midi: i32, velocity: i32) -> RadiatedSpectrum {
     let frames = (1.80 * SAMPLE_RATE) as usize;
     let mut left = vec![0.0f32; frames];
@@ -826,6 +853,120 @@ fn plk2_all_four_packs_render_finite_nonzero_stereo_at_all_supported_rates() {
             assert!(peak > 1.0e-9, "silent pack {pack} at {sample_rate} Hz");
             assert!(peak < 0.999, "pack {pack} clipped at {sample_rate} Hz");
             assert_ne!(left, right, "course panning collapsed to dual mono");
+        }
+    }
+}
+
+#[test]
+fn plk2_fixed_listener_calibration_is_usable_and_velocity_monotonic() {
+    let cases = [
+        (PLK2_ARCHTOP_PACK, 60, "archtop-C4"),
+        (PLK2_MARSHALL_ELECTRIC_PACK, 60, "electric-C4"),
+        (PLK2_UKULELE_PACK, 67, "ukulele-G4"),
+        (PLK2_DREADNOUGHT_PACK, 60, "dreadnought-C4"),
+    ];
+    for (pack, midi, label) in cases {
+        let frames = plk2_note_frames(pack, midi, SAMPLE_RATE as f32) as usize;
+        let mut left = vec![0.0f32; frames];
+        let mut right = vec![0.0f32; frames];
+        assert_eq!(
+            plk2_render_slices(
+                pack,
+                midi,
+                100,
+                SAMPLE_RATE as f32,
+                &mut left,
+                &mut right,
+                frames as i32,
+            ),
+            frames as i32
+        );
+        let rms = stereo_rms(&left, &right);
+        let peak = stereo_peak(&left, &right);
+        eprintln!(
+            "PLK2_LISTENER_LEVEL {label}: rms={rms:.6}, rms_dbfs={:.2}, peak={peak:.6}, peak_dbfs={:.2}",
+            db_ratio(rms, 1.0),
+            db_ratio(peak, 1.0),
+        );
+        assert!(
+            (0.045..=0.32).contains(&rms),
+            "{label} velocity-100 RMS escaped the usable ensemble window: {rms}"
+        );
+        assert!(
+            (0.12..0.98).contains(&peak),
+            "{label} velocity-100 peak escaped the usable unclipped window: {peak}"
+        );
+
+        let analysis_frames = (0.75 * SAMPLE_RATE) as usize;
+        let mut previous_rms = 0.0;
+        for velocity in [24, 48, 72, 100, 127] {
+            let mut left = vec![0.0f32; analysis_frames];
+            let mut right = vec![0.0f32; analysis_frames];
+            assert_eq!(
+                plk2_render_slices(
+                    pack,
+                    midi,
+                    velocity,
+                    SAMPLE_RATE as f32,
+                    &mut left,
+                    &mut right,
+                    analysis_frames as i32,
+                ),
+                analysis_frames as i32
+            );
+            let current_rms = stereo_rms(&left, &right);
+            eprintln!("PLK2_VELOCITY_LEVEL {label} velocity={velocity}: rms={current_rms:.6}");
+            assert!(
+                current_rms > previous_rms,
+                "{label} loudness was not strictly monotonic at velocity {velocity}: {previous_rms} -> {current_rms}"
+            );
+            previous_rms = current_rms;
+        }
+    }
+}
+
+#[test]
+fn plk2_fixed_listener_calibration_does_not_clip_across_registers_or_rates() {
+    let guitar_midis = [40, 52, 64, 76, 88];
+    let ukulele_midis = [60, 67, 79, 93];
+    for sample_rate in [44_100.0f32, 48_000.0, 96_000.0] {
+        for pack in [
+            PLK2_ARCHTOP_PACK,
+            PLK2_MARSHALL_ELECTRIC_PACK,
+            PLK2_UKULELE_PACK,
+            PLK2_DREADNOUGHT_PACK,
+        ] {
+            let midis: &[i32] = if pack == PLK2_UKULELE_PACK {
+                &ukulele_midis
+            } else {
+                &guitar_midis
+            };
+            for &midi in midis {
+                let frames = (0.40 * sample_rate) as usize;
+                let mut left = vec![0.0f32; frames];
+                let mut right = vec![0.0f32; frames];
+                assert_eq!(
+                    plk2_render_slices(
+                        pack,
+                        midi,
+                        127,
+                        sample_rate,
+                        &mut left,
+                        &mut right,
+                        frames as i32,
+                    ),
+                    frames as i32
+                );
+                assert!(left.iter().chain(&right).all(|sample| sample.is_finite()));
+                let peak = stereo_peak(&left, &right);
+                eprintln!(
+                    "PLK2_REGISTER_PEAK pack={pack} midi={midi} rate={sample_rate}: {peak:.6}"
+                );
+                assert!(
+                    peak < 0.98,
+                    "fixed listener trim clipped pack {pack}, MIDI {midi} at {sample_rate} Hz: {peak}"
+                );
+            }
         }
     }
 }
