@@ -18,11 +18,16 @@
 //!   taps, plus a retained pickup/preamp/power-supply/tone-stack/speaker path
 //!   for the solid-electric Marshall-class pack.
 //!
-//! The body reduction is a simply-supported orthotropic plate approximation,
-//! not the complete accepted DKT foundry path.  It uses the same rigidity and
-//! mass-normalization laws as the `fs-plate` implementation surveyed in
-//! `/dp/frankensim`, but makes no measured-body, perceptual-similarity, browser,
-//! recipe-reachability, acceptance-ledger, or deployment claim.
+//! Guitar-family bodies retain the bounded analytic orthotropic reduction.
+//! Upright bass instead consumes the independently tested 40-triangle DKT
+//! authority in `upright_bass_body`: ten geometry-solved, mass-normalized modes
+//! with coherent bridge/radiation residues and sealed-cavity compliance.  The
+//! missing carved-shell, f-hole, and primary loss authorities remain explicit;
+//! none of these dark cores claims perceptual similarity, browser reachability,
+//! acceptance-ledger approval, or deployment.
+
+#[path = "upright_bass_body.rs"]
+mod upright_bass_body;
 
 use libm::{cos, exp, pow, round, sin, sqrt, tanh};
 
@@ -38,6 +43,20 @@ pub const PLK2_ARCHTOP_PACK: i32 = 0;
 pub const PLK2_MARSHALL_ELECTRIC_PACK: i32 = 1;
 pub const PLK2_DREADNOUGHT_PACK: i32 = 2;
 pub const PLK2_UKULELE_PACK: i32 = 3;
+pub const PLK2_UPRIGHT_BASS_PACK: i32 = 4;
+
+/// Explicit retained-stem ABI controls. The segmented renderer is separate
+/// from the cache-oriented one-note ABI below: its caller owns the complete
+/// multi-string/body/amplifier state and can therefore preserve sympathetic
+/// vibration across note events without a hidden global singleton.
+pub const PLK2_STEM_EVENT_PLUCK: u32 = 1;
+pub const PLK2_STEM_EVENT_RESET: u32 = 2;
+const PLK2_STEM_EVENT_MASK: u32 = PLK2_STEM_EVENT_PLUCK | PLK2_STEM_EVENT_RESET;
+const PLK2_STEM_STATE_MAGIC: u32 = 0x324b_4c50; // "PLK2" in little endian.
+const PLK2_STEM_STATE_VERSION: u32 = 1;
+const PLK2_STEM_STATE_MAX_BYTES: usize = 8_192;
+const PLK2_STEM_RENDER_MAX_FRAMES: usize = 8_192;
+const PLK2_STEM_MAX_ENERGY_J: f64 = 100.0;
 
 const AIR_DENSITY_KG_PER_M3: f64 = 1.204;
 const ACOUSTIC_MIC_DISTANCE_M: f64 = 1.0;
@@ -48,7 +67,7 @@ const ACOUSTIC_MIC_DISTANCE_M: f64 = 1.0;
 // from being mistaken for extra mechanical energy or acoustic radiation.
 const REFERENCE_PCM_PER_PASCAL: f64 = 0.08;
 
-/// Fixed line/microphone trims for the four complete instruments. These are
+/// Fixed line/microphone trims for the five complete instruments. These are
 /// properties of the output chain, not note measurements: they never inspect
 /// pitch, velocity, duration, peak, or RMS, and therefore cannot normalize a
 /// render or reshape its attack, spectrum, or decay. The large acoustic trims
@@ -61,6 +80,7 @@ fn plk2_listener_trim(pack_index: i32) -> f64 {
         PLK2_MARSHALL_ELECTRIC_PACK => 40.0,
         PLK2_DREADNOUGHT_PACK => 73.0,
         PLK2_UKULELE_PACK => 80.5,
+        PLK2_UPRIGHT_BASS_PACK => 82.0,
         _ => 0.0,
     };
     pow(10.0, trim_db / 20.0)
@@ -468,6 +488,7 @@ impl StringState {
 pub enum BodyModeKind {
     HelmholtzAir,
     StructuralPlate { longitudinal: u8, radial: u8 },
+    GeometrySolvedDkt { ordinal: u8 },
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -716,6 +737,25 @@ pub struct PluckedStem {
     cumulative_bridge_loss_j: f64,
 }
 
+#[derive(Clone, Debug)]
+struct PluckedStemSession {
+    pack_index: i32,
+    previous_body_flow_m3_per_s: f64,
+    stem: PluckedStem,
+}
+
+impl PluckedStemSession {
+    fn new(pack_index: i32, sample_rate_hz: f64) -> Option<Self> {
+        let pack = plk2_pack(pack_index)?;
+        let stem = PluckedStem::new(pack, sample_rate_hz).ok()?;
+        Some(Self {
+            pack_index,
+            previous_body_flow_m3_per_s: 0.0,
+            stem,
+        })
+    }
+}
+
 impl PluckedStem {
     pub fn new(pack: InstrumentPack, sample_rate_hz: f64) -> Result<Self, PluckedError> {
         validate_pack(pack, sample_rate_hz)?;
@@ -726,7 +766,7 @@ impl PluckedStem {
         for (index, slot) in strings.iter_mut().take(pack.string_count).enumerate() {
             *slot = StringState::new(pack.strings[index], sample_rate_hz, bridge_x);
         }
-        let (body_modes, body_mode_count) = derive_body_modes(pack.body, sample_rate_hz);
+        let (body_modes, body_mode_count) = derive_body_modes(pack, sample_rate_hz)?;
         let amplifier = pack
             .amplifier
             .map(|spec| AmplifierState::new(spec, sample_rate_hz));
@@ -1119,6 +1159,329 @@ impl PluckedStem {
     }
 }
 
+struct StemStateWriter<'a> {
+    bytes: &'a mut [u8],
+    offset: usize,
+}
+
+impl<'a> StemStateWriter<'a> {
+    fn new(bytes: &'a mut [u8]) -> Self {
+        Self { bytes, offset: 0 }
+    }
+
+    fn write_bytes(&mut self, value: &[u8]) -> Option<()> {
+        let end = self.offset.checked_add(value.len())?;
+        self.bytes.get_mut(self.offset..end)?.copy_from_slice(value);
+        self.offset = end;
+        Some(())
+    }
+
+    fn write_u8(&mut self, value: u8) -> Option<()> {
+        self.write_bytes(&[value])
+    }
+
+    fn write_u32(&mut self, value: u32) -> Option<()> {
+        self.write_bytes(&value.to_le_bytes())
+    }
+
+    fn write_u64(&mut self, value: u64) -> Option<()> {
+        self.write_bytes(&value.to_le_bytes())
+    }
+
+    fn write_i32(&mut self, value: i32) -> Option<()> {
+        self.write_bytes(&value.to_le_bytes())
+    }
+
+    fn write_f64(&mut self, value: f64) -> Option<()> {
+        self.write_bytes(&value.to_bits().to_le_bytes())
+    }
+}
+
+struct StemStateReader<'a> {
+    bytes: &'a [u8],
+    offset: usize,
+}
+
+impl<'a> StemStateReader<'a> {
+    fn new(bytes: &'a [u8]) -> Self {
+        Self { bytes, offset: 0 }
+    }
+
+    fn read_bytes<const N: usize>(&mut self) -> Option<[u8; N]> {
+        let end = self.offset.checked_add(N)?;
+        let mut value = [0u8; N];
+        value.copy_from_slice(self.bytes.get(self.offset..end)?);
+        self.offset = end;
+        Some(value)
+    }
+
+    fn read_u8(&mut self) -> Option<u8> {
+        Some(self.read_bytes::<1>()?[0])
+    }
+
+    fn read_u32(&mut self) -> Option<u32> {
+        Some(u32::from_le_bytes(self.read_bytes()?))
+    }
+
+    fn read_i32(&mut self) -> Option<i32> {
+        Some(i32::from_le_bytes(self.read_bytes()?))
+    }
+
+    fn read_f64(&mut self) -> Option<f64> {
+        Some(f64::from_bits(u64::from_le_bytes(self.read_bytes()?)))
+    }
+}
+
+fn stem_state_scalar_is_bounded(value: f64) -> bool {
+    value.is_finite() && value.abs() <= 1.0e9
+}
+
+fn stem_state_checksum(bytes: &[u8]) -> u64 {
+    // FNV-1a is not a security boundary; it is a small no_std corruption and
+    // stale-handoff detector. The host never accepts caller-authored physical
+    // state, and release evidence separately binds the complete WASM bytes.
+    let mut hash = 0xcbf2_9ce4_8422_2325u64;
+    for byte in bytes {
+        hash ^= u64::from(*byte);
+        hash = hash.wrapping_mul(0x0000_0100_0000_01b3);
+    }
+    hash
+}
+
+fn encode_stem_session(session: &PluckedStemSession, bytes: &mut [u8]) -> Option<usize> {
+    let mut writer = StemStateWriter::new(bytes);
+    writer.write_u32(PLK2_STEM_STATE_MAGIC)?;
+    writer.write_u32(PLK2_STEM_STATE_VERSION)?;
+    writer.write_i32(session.pack_index)?;
+    writer.write_f64(session.stem.sample_rate_hz)?;
+    writer.write_f64(session.previous_body_flow_m3_per_s)?;
+    writer.write_f64(session.stem.cumulative_source_work_j)?;
+    writer.write_f64(session.stem.cumulative_intrinsic_loss_j)?;
+    writer.write_f64(session.stem.cumulative_bridge_loss_j)?;
+
+    for string in &session.stem.strings {
+        writer.write_u8(string.fret)?;
+        writer.write_u32(u32::try_from(string.mode_count).ok()?)?;
+        for mode in &string.modes {
+            writer.write_f64(mode.position)?;
+            writer.write_f64(mode.velocity)?;
+        }
+    }
+
+    writer.write_u32(u32::try_from(session.stem.body_mode_count).ok()?)?;
+    for mode in &session.stem.body_modes {
+        writer.write_f64(mode.position)?;
+        writer.write_f64(mode.velocity)?;
+    }
+
+    let contact = session.stem.contact;
+    writer.write_u8(u8::from(contact.active))?;
+    writer.write_u32(u32::try_from(contact.gesture.string_index).ok()?)?;
+    writer.write_u8(contact.gesture.fret)?;
+    writer.write_f64(contact.gesture.position_over_scale)?;
+    writer.write_f64(contact.gesture.width_m)?;
+    writer.write_f64(contact.gesture.force_n)?;
+    writer.write_i32(contact.gesture.direction as i32)?;
+    writer.write_f64(contact.gesture.contact_duration_seconds)?;
+    writer.write_f64(contact.gesture.contact_stiffness_n_per_m_pow_3_over_2)?;
+    writer.write_f64(contact.gesture.contact_damping_seconds_per_m)?;
+    writer.write_u32(contact.elapsed_frames)?;
+    writer.write_u32(contact.total_frames)?;
+    writer.write_f64(contact.peak_indentation_m)?;
+    writer.write_f64(contact.support_displacement_m)?;
+
+    match session.stem.amplifier {
+        None => writer.write_u8(0)?,
+        Some(amplifier) => {
+            writer.write_u8(1)?;
+            writer.write_f64(amplifier.input_dc_lowpass)?;
+            writer.write_f64(amplifier.interstage_dc_lowpass)?;
+            writer.write_f64(amplifier.bass_lowpass)?;
+            writer.write_f64(amplifier.below_treble_lowpass)?;
+            writer.write_f64(amplifier.supply_fraction)?;
+            for mode in amplifier.cabinet_modes {
+                writer.write_f64(mode.position)?;
+                writer.write_f64(mode.velocity)?;
+            }
+        }
+    }
+    let payload_bytes = writer.offset;
+    let checksum = stem_state_checksum(&writer.bytes[..payload_bytes]);
+    writer.write_u64(checksum)?;
+    Some(writer.offset)
+}
+
+fn decode_stem_session(bytes: &[u8]) -> Option<PluckedStemSession> {
+    let payload_bytes = bytes.len().checked_sub(core::mem::size_of::<u64>())?;
+    let encoded_checksum = u64::from_le_bytes(bytes.get(payload_bytes..)?.try_into().ok()?);
+    let payload = bytes.get(..payload_bytes)?;
+    if stem_state_checksum(payload) != encoded_checksum {
+        return None;
+    }
+    let mut reader = StemStateReader::new(payload);
+    if reader.read_u32()? != PLK2_STEM_STATE_MAGIC || reader.read_u32()? != PLK2_STEM_STATE_VERSION
+    {
+        return None;
+    }
+    let pack_index = reader.read_i32()?;
+    let sample_rate_hz = reader.read_f64()?;
+    let mut session = PluckedStemSession::new(pack_index, sample_rate_hz)?;
+    session.previous_body_flow_m3_per_s = reader.read_f64()?;
+    session.stem.cumulative_source_work_j = reader.read_f64()?;
+    session.stem.cumulative_intrinsic_loss_j = reader.read_f64()?;
+    session.stem.cumulative_bridge_loss_j = reader.read_f64()?;
+    if !stem_state_scalar_is_bounded(session.previous_body_flow_m3_per_s)
+        || !stem_state_scalar_is_bounded(session.stem.cumulative_source_work_j)
+        || !stem_state_scalar_is_bounded(session.stem.cumulative_intrinsic_loss_j)
+        || !stem_state_scalar_is_bounded(session.stem.cumulative_bridge_loss_j)
+        || session.stem.cumulative_intrinsic_loss_j < 0.0
+        || session.stem.cumulative_bridge_loss_j < 0.0
+    {
+        return None;
+    }
+
+    for string_index in 0..MAX_STRINGS {
+        let fret = reader.read_u8()?;
+        let encoded_mode_count = usize::try_from(reader.read_u32()?).ok()?;
+        let active = string_index < session.stem.pack.string_count;
+        if active {
+            if fret > 36 {
+                return None;
+            }
+            session.stem.strings[string_index].rebuild_modes(fret, sample_rate_hz, 0.985, false);
+        } else if fret != 0 {
+            return None;
+        }
+        let expected_mode_count = if active {
+            session.stem.strings[string_index].mode_count
+        } else {
+            0
+        };
+        if encoded_mode_count != expected_mode_count || encoded_mode_count > MAX_STRING_MODES {
+            return None;
+        }
+        for mode_index in 0..MAX_STRING_MODES {
+            let position = reader.read_f64()?;
+            let velocity = reader.read_f64()?;
+            if !stem_state_scalar_is_bounded(position) || !stem_state_scalar_is_bounded(velocity) {
+                return None;
+            }
+            if mode_index < expected_mode_count {
+                session.stem.strings[string_index].modes[mode_index].position = position;
+                session.stem.strings[string_index].modes[mode_index].velocity = velocity;
+            } else if position != 0.0 || velocity != 0.0 {
+                return None;
+            }
+        }
+    }
+
+    let encoded_body_mode_count = usize::try_from(reader.read_u32()?).ok()?;
+    if encoded_body_mode_count != session.stem.body_mode_count
+        || encoded_body_mode_count > MAX_BODY_MODES
+    {
+        return None;
+    }
+    for mode_index in 0..MAX_BODY_MODES {
+        let position = reader.read_f64()?;
+        let velocity = reader.read_f64()?;
+        if !stem_state_scalar_is_bounded(position) || !stem_state_scalar_is_bounded(velocity) {
+            return None;
+        }
+        if mode_index < session.stem.body_mode_count {
+            session.stem.body_modes[mode_index].position = position;
+            session.stem.body_modes[mode_index].velocity = velocity;
+        } else if position != 0.0 || velocity != 0.0 {
+            return None;
+        }
+    }
+
+    let active = match reader.read_u8()? {
+        0 => false,
+        1 => true,
+        _ => return None,
+    };
+    let string_index = usize::try_from(reader.read_u32()?).ok()?;
+    let fret = reader.read_u8()?;
+    let position_over_scale = reader.read_f64()?;
+    let width_m = reader.read_f64()?;
+    let force_n = reader.read_f64()?;
+    let direction = i8::try_from(reader.read_i32()?).ok()?;
+    let contact_duration_seconds = reader.read_f64()?;
+    let contact_stiffness_n_per_m_pow_3_over_2 = reader.read_f64()?;
+    let contact_damping_seconds_per_m = reader.read_f64()?;
+    let elapsed_frames = reader.read_u32()?;
+    let total_frames = reader.read_u32()?;
+    let peak_indentation_m = reader.read_f64()?;
+    let support_displacement_m = reader.read_f64()?;
+    let gesture = PluckGesture {
+        string_index,
+        fret,
+        position_over_scale,
+        width_m,
+        force_n,
+        direction,
+        contact_duration_seconds,
+        contact_stiffness_n_per_m_pow_3_over_2,
+        contact_damping_seconds_per_m,
+    };
+    if session.stem.validate_gesture(gesture).is_err()
+        || (active && (total_frames == 0 || elapsed_frames >= total_frames))
+        || !stem_state_scalar_is_bounded(peak_indentation_m)
+        || !stem_state_scalar_is_bounded(support_displacement_m)
+    {
+        return None;
+    }
+    session.stem.contact = ContactState {
+        active,
+        gesture,
+        elapsed_frames,
+        total_frames,
+        peak_indentation_m,
+        support_displacement_m,
+    };
+
+    let amplifier_present = reader.read_u8()?;
+    match (&mut session.stem.amplifier, amplifier_present) {
+        (None, 0) => {}
+        (Some(amplifier), 1) => {
+            amplifier.input_dc_lowpass = reader.read_f64()?;
+            amplifier.interstage_dc_lowpass = reader.read_f64()?;
+            amplifier.bass_lowpass = reader.read_f64()?;
+            amplifier.below_treble_lowpass = reader.read_f64()?;
+            amplifier.supply_fraction = reader.read_f64()?;
+            if !stem_state_scalar_is_bounded(amplifier.input_dc_lowpass)
+                || !stem_state_scalar_is_bounded(amplifier.interstage_dc_lowpass)
+                || !stem_state_scalar_is_bounded(amplifier.bass_lowpass)
+                || !stem_state_scalar_is_bounded(amplifier.below_treble_lowpass)
+                || !amplifier.supply_fraction.is_finite()
+                || amplifier.supply_fraction < 1.0 - amplifier.spec.sag_depth
+                || amplifier.supply_fraction > 1.0
+            {
+                return None;
+            }
+            for mode in &mut amplifier.cabinet_modes {
+                mode.position = reader.read_f64()?;
+                mode.velocity = reader.read_f64()?;
+                if !stem_state_scalar_is_bounded(mode.position)
+                    || !stem_state_scalar_is_bounded(mode.velocity)
+                {
+                    return None;
+                }
+            }
+        }
+        _ => return None,
+    }
+
+    if reader.offset != payload.len() {
+        return None;
+    }
+    let energy = session.stem.total_energy_j();
+    if !energy.is_finite() || !(0.0..=PLK2_STEM_MAX_ENERGY_J).contains(&energy) {
+        return None;
+    }
+    Some(session)
+}
+
 pub fn inharmonicity_coefficient(
     young_modulus_pa: f64,
     core_diameter_m: f64,
@@ -1194,6 +1557,11 @@ fn validate_pack(pack: InstrumentPack, sample_rate_hz: f64) -> Result<(), Plucke
             && string.t60_seconds_at_1000_hz.is_finite()
             && string.t60_seconds_at_1000_hz > 0.0;
         if !valid {
+            return Err(PluckedError::InvalidString { index });
+        }
+        let tuned_wave_speed = 2.0 * string.scale_length_m * midi_frequency_hz(string.open_midi);
+        let tuned_tension = string.linear_density_kg_per_m * tuned_wave_speed * tuned_wave_speed;
+        if ((string.reference_tension_n - tuned_tension) / tuned_tension).abs() > 1.0e-9 {
             return Err(PluckedError::InvalidString { index });
         }
     }
@@ -1290,11 +1658,57 @@ fn validate_pack(pack: InstrumentPack, sample_rate_hz: f64) -> Result<(), Plucke
 }
 
 fn derive_body_modes(
-    geometry: BodyGeometry,
+    pack: InstrumentPack,
     sample_rate_hz: f64,
-) -> ([BodyMode; MAX_BODY_MODES], usize) {
+) -> Result<([BodyMode; MAX_BODY_MODES], usize), PluckedError> {
+    let geometry = pack.body;
     let mut modes = [BodyMode::ZERO; MAX_BODY_MODES];
     let mut count = 0usize;
+    if pack.id == "pizzicato-upright-bass" {
+        let authority = upright_bass_body::derive_reviewed_upright_bass_body()
+            .map_err(|_| PluckedError::InvalidBody)?;
+        let reviewed = authority.input;
+        if geometry.length_m != reviewed.length_m
+            || geometry.width_m != reviewed.width_m
+            || geometry.thickness_m != reviewed.thickness_m
+            || geometry.density_kg_per_m3 != reviewed.density_kg_per_m3
+            || geometry.young_longitudinal_pa != reviewed.young_longitudinal_pa
+            || geometry.young_radial_pa != reviewed.young_radial_pa
+            || geometry.shear_lr_pa != reviewed.shear_lr_pa
+            || geometry.poisson_lr != reviewed.poisson_lr
+            || geometry.brace_rigidity_x_n_m != reviewed.brace_rigidity_x_n_m
+            || geometry.brace_rigidity_y_n_m != reviewed.brace_rigidity_y_n_m
+            || geometry.bridge_x_over_length != reviewed.bridge_x_over_length
+            || geometry.bridge_y_over_width != reviewed.bridge_y_over_width
+            || geometry.body_volume_m3 != reviewed.cavity_volume_m3
+            || geometry.plate_q != reviewed.provisional_plate_q
+            || geometry.helmholtz_hz != 0.0
+        {
+            return Err(PluckedError::InvalidBody);
+        }
+        for (ordinal, body_mode) in authority.modes.into_iter().enumerate() {
+            if body_mode.frequency_hz >= 0.42 * sample_rate_hz {
+                continue;
+            }
+            insert_body_mode(
+                &mut modes,
+                &mut count,
+                make_body_mode(
+                    BodyModeKind::GeometrySolvedDkt {
+                        ordinal: ordinal as u8,
+                    },
+                    body_mode.frequency_hz,
+                    body_mode.q,
+                    body_mode.bridge_residue_per_sqrt_kg,
+                    body_mode.radiation_residue_m2_per_sqrt_kg,
+                    sample_rate_hz,
+                ),
+            );
+        }
+        return (count == upright_bass_body::BODY_MODE_COUNT)
+            .then_some((modes, count))
+            .ok_or(PluckedError::InvalidBody);
+    }
     if geometry.helmholtz_hz > 0.0 && geometry.helmholtz_hz < 0.42 * sample_rate_hz {
         let effective_air_mass_kg = 8.0 * 1.204 * geometry.body_volume_m3;
         let norm = geometry.admittance_scale / sqrt(effective_air_mass_kg);
@@ -1365,7 +1779,7 @@ fn derive_body_modes(
             );
         }
     }
-    (modes, count)
+    Ok((modes, count))
 }
 
 fn make_body_mode(
@@ -1416,11 +1830,12 @@ fn string(
     scale_length_m: f64,
     outer_diameter_m: f64,
     core_diameter_m: f64,
-    reference_tension_n: f64,
     linear_density_kg_per_m: f64,
     young_modulus_pa: f64,
     t60: [f64; 2],
 ) -> StringSpec {
+    let wave_speed_m_per_s = 2.0 * scale_length_m * midi_frequency_hz(open_midi);
+    let reference_tension_n = linear_density_kg_per_m * wave_speed_m_per_s * wave_speed_m_per_s;
     StringSpec {
         open_midi,
         scale_length_m,
@@ -1438,66 +1853,12 @@ pub fn dreadnought_pack() -> InstrumentPack {
     let scale = 0.645;
     let young = 200.0e9;
     let mut strings = [StringSpec::EMPTY; MAX_STRINGS];
-    strings[0] = string(
-        40,
-        scale,
-        0.001_42,
-        0.000_48,
-        82.0,
-        0.007_2,
-        young,
-        [6.4, 2.2],
-    );
-    strings[1] = string(
-        45,
-        scale,
-        0.001_12,
-        0.000_46,
-        78.0,
-        0.004_8,
-        young,
-        [6.4, 2.2],
-    );
-    strings[2] = string(
-        50,
-        scale,
-        0.000_89,
-        0.000_43,
-        75.0,
-        0.002_9,
-        young,
-        [6.4, 2.2],
-    );
-    strings[3] = string(
-        55,
-        scale,
-        0.000_64,
-        0.000_39,
-        72.0,
-        0.001_55,
-        young,
-        [6.4, 2.2],
-    );
-    strings[4] = string(
-        59,
-        scale,
-        0.000_43,
-        0.000_43,
-        65.0,
-        0.000_76,
-        young,
-        [6.4, 2.2],
-    );
-    strings[5] = string(
-        64,
-        scale,
-        0.000_33,
-        0.000_33,
-        63.0,
-        0.000_53,
-        young,
-        [6.4, 2.2],
-    );
+    strings[0] = string(40, scale, 0.001_42, 0.000_48, 0.007_2, young, [6.4, 2.2]);
+    strings[1] = string(45, scale, 0.001_12, 0.000_46, 0.004_8, young, [6.4, 2.2]);
+    strings[2] = string(50, scale, 0.000_89, 0.000_43, 0.002_9, young, [6.4, 2.2]);
+    strings[3] = string(55, scale, 0.000_64, 0.000_39, 0.001_55, young, [6.4, 2.2]);
+    strings[4] = string(59, scale, 0.000_43, 0.000_43, 0.000_76, young, [6.4, 2.2]);
+    strings[5] = string(64, scale, 0.000_33, 0.000_33, 0.000_53, young, [6.4, 2.2]);
     InstrumentPack {
         id: "steel-dreadnought",
         strings,
@@ -1540,46 +1901,10 @@ pub fn ukulele_pack() -> InstrumentPack {
     let sound_hole_radius_m = 0.022;
     let mut strings = [StringSpec::EMPTY; MAX_STRINGS];
     // Re-entrant g4-c4-e4-a4: array order is physical course order, not pitch order.
-    strings[0] = string(
-        67,
-        scale,
-        0.000_66,
-        0.000_66,
-        45.0,
-        0.000_44,
-        young,
-        [2.6, 0.9],
-    );
-    strings[1] = string(
-        60,
-        scale,
-        0.000_91,
-        0.000_91,
-        43.0,
-        0.000_78,
-        young,
-        [2.6, 0.9],
-    );
-    strings[2] = string(
-        64,
-        scale,
-        0.000_75,
-        0.000_75,
-        42.0,
-        0.000_57,
-        young,
-        [2.6, 0.9],
-    );
-    strings[3] = string(
-        69,
-        scale,
-        0.000_61,
-        0.000_61,
-        40.0,
-        0.000_39,
-        young,
-        [2.6, 0.9],
-    );
+    strings[0] = string(67, scale, 0.000_66, 0.000_66, 0.000_44, young, [2.6, 0.9]);
+    strings[1] = string(60, scale, 0.000_91, 0.000_91, 0.000_78, young, [2.6, 0.9]);
+    strings[2] = string(64, scale, 0.000_75, 0.000_75, 0.000_57, young, [2.6, 0.9]);
+    strings[3] = string(69, scale, 0.000_61, 0.000_61, 0.000_39, young, [2.6, 0.9]);
     InstrumentPack {
         id: "reentrant-ukulele",
         strings,
@@ -1615,7 +1940,15 @@ pub fn ukulele_pack() -> InstrumentPack {
 
 pub fn archtop_pack() -> InstrumentPack {
     let mut pack = dreadnought_pack();
+    let scale = 0.648;
+    let young = 200.0e9;
     pack.id = "clean-archtop";
+    pack.strings[0] = string(40, scale, 0.001_32, 0.000_46, 0.006_43, young, [5.2, 1.8]);
+    pack.strings[1] = string(45, scale, 0.001_07, 0.000_44, 0.004_32, young, [5.2, 1.8]);
+    pack.strings[2] = string(50, scale, 0.000_84, 0.000_41, 0.002_61, young, [5.2, 1.8]);
+    pack.strings[3] = string(55, scale, 0.000_61, 0.000_36, 0.001_43, young, [5.2, 1.8]);
+    pack.strings[4] = string(59, scale, 0.000_41, 0.000_41, 0.000_71, young, [5.2, 1.8]);
+    pack.strings[5] = string(64, scale, 0.000_30, 0.000_30, 0.000_48, young, [5.2, 1.8]);
     pack.body.length_m = 0.49;
     pack.body.width_m = 0.38;
     pack.body.thickness_m = 0.004;
@@ -1640,66 +1973,12 @@ pub fn marshall_electric_pack() -> InstrumentPack {
     let scale = 0.648;
     let young = 200.0e9;
     let mut strings = [StringSpec::EMPTY; MAX_STRINGS];
-    strings[0] = string(
-        40,
-        scale,
-        0.001_17,
-        0.000_43,
-        66.0,
-        0.005_7,
-        young,
-        [7.5, 2.7],
-    );
-    strings[1] = string(
-        45,
-        scale,
-        0.000_91,
-        0.000_41,
-        62.0,
-        0.003_6,
-        young,
-        [7.5, 2.7],
-    );
-    strings[2] = string(
-        50,
-        scale,
-        0.000_66,
-        0.000_38,
-        59.0,
-        0.001_9,
-        young,
-        [7.5, 2.7],
-    );
-    strings[3] = string(
-        55,
-        scale,
-        0.000_43,
-        0.000_43,
-        54.0,
-        0.000_86,
-        young,
-        [7.5, 2.7],
-    );
-    strings[4] = string(
-        59,
-        scale,
-        0.000_33,
-        0.000_33,
-        48.0,
-        0.000_50,
-        young,
-        [7.5, 2.7],
-    );
-    strings[5] = string(
-        64,
-        scale,
-        0.000_25,
-        0.000_25,
-        46.0,
-        0.000_35,
-        young,
-        [7.5, 2.7],
-    );
+    strings[0] = string(40, scale, 0.001_17, 0.000_43, 0.005_7, young, [7.5, 2.7]);
+    strings[1] = string(45, scale, 0.000_91, 0.000_41, 0.003_6, young, [7.5, 2.7]);
+    strings[2] = string(50, scale, 0.000_66, 0.000_38, 0.001_9, young, [7.5, 2.7]);
+    strings[3] = string(55, scale, 0.000_43, 0.000_43, 0.000_86, young, [7.5, 2.7]);
+    strings[4] = string(59, scale, 0.000_33, 0.000_33, 0.000_50, young, [7.5, 2.7]);
+    strings[5] = string(64, scale, 0.000_25, 0.000_25, 0.000_35, young, [7.5, 2.7]);
     InstrumentPack {
         id: "marshall-class-electric-source",
         strings,
@@ -1761,46 +2040,10 @@ pub fn upright_bass_pack() -> InstrumentPack {
     let scale = 1.05;
     let young = 95.0e9;
     let mut strings = [StringSpec::EMPTY; MAX_STRINGS];
-    strings[0] = string(
-        28,
-        scale,
-        0.002_75,
-        0.000_80,
-        250.0,
-        0.027_8,
-        young,
-        [9.5, 3.2],
-    );
-    strings[1] = string(
-        33,
-        scale,
-        0.002_25,
-        0.000_75,
-        235.0,
-        0.018_9,
-        young,
-        [9.5, 3.2],
-    );
-    strings[2] = string(
-        38,
-        scale,
-        0.001_80,
-        0.000_70,
-        220.0,
-        0.012_4,
-        young,
-        [9.5, 3.2],
-    );
-    strings[3] = string(
-        43,
-        scale,
-        0.001_45,
-        0.000_65,
-        205.0,
-        0.008_1,
-        young,
-        [9.5, 3.2],
-    );
+    strings[0] = string(28, scale, 0.002_75, 0.000_80, 0.027_8, young, [9.5, 3.2]);
+    strings[1] = string(33, scale, 0.002_25, 0.000_75, 0.018_9, young, [9.5, 3.2]);
+    strings[2] = string(38, scale, 0.001_80, 0.000_70, 0.012_4, young, [9.5, 3.2]);
+    strings[3] = string(43, scale, 0.001_45, 0.000_65, 0.008_1, young, [9.5, 3.2]);
     InstrumentPack {
         id: "pizzicato-upright-bass",
         strings,
@@ -1819,7 +2062,10 @@ pub fn upright_bass_pack() -> InstrumentPack {
             bridge_x_over_length: 0.58,
             bridge_y_over_width: 0.50,
             body_volume_m3: 0.45,
-            helmholtz_hz: 75.0,
+            // The repository has no reviewed aggregate f-hole area or
+            // effective neck length.  A fabricated 75 Hz Helmholtz oscillator
+            // would contradict the DKT body's explicit sealed-cavity boundary.
+            helmholtz_hz: 0.0,
             plate_q: 42.0,
             helmholtz_q: 20.0,
             admittance_scale: 1.35,
@@ -1836,6 +2082,7 @@ fn plk2_pack(pack_index: i32) -> Option<InstrumentPack> {
         PLK2_MARSHALL_ELECTRIC_PACK => Some(marshall_electric_pack()),
         PLK2_DREADNOUGHT_PACK => Some(dreadnought_pack()),
         PLK2_UKULELE_PACK => Some(ukulele_pack()),
+        PLK2_UPRIGHT_BASS_PACK => Some(upright_bass_pack()),
         _ => None,
     }
 }
@@ -1846,6 +2093,7 @@ fn plk2_midi_in_range(pack_index: i32, midi: i32) -> bool {
             (40..=88).contains(&midi)
         }
         PLK2_UKULELE_PACK => (60..=93).contains(&midi),
+        PLK2_UPRIGHT_BASS_PACK => (28..=67).contains(&midi),
         _ => false,
     }
 }
@@ -1885,6 +2133,7 @@ fn plk2_decay_seconds(pack_index: i32) -> Option<f64> {
         PLK2_MARSHALL_ELECTRIC_PACK => Some(3.5),
         PLK2_DREADNOUGHT_PACK => Some(5.0),
         PLK2_UKULELE_PACK => Some(3.0),
+        PLK2_UPRIGHT_BASS_PACK => Some(6.0),
         _ => None,
     }
 }
@@ -1906,7 +2155,7 @@ pub extern "C" fn plk2_note_frames(pack_index: i32, midi: i32, sample_rate: f32)
 
 fn plk2_gesture(pack_index: i32, string_index: usize, fret: u8, velocity: i32) -> PluckGesture {
     let normalized = velocity as f64 / 127.0;
-    let mut gesture = if pack_index == PLK2_UKULELE_PACK {
+    let mut gesture = if matches!(pack_index, PLK2_UKULELE_PACK | PLK2_UPRIGHT_BASS_PACK) {
         PluckGesture::soft_finger(string_index, fret, 1)
     } else {
         PluckGesture::medium_pick(string_index, fret, 1)
@@ -1938,6 +2187,19 @@ fn plk2_gesture(pack_index: i32, string_index: usize, fret: u8, velocity: i32) -
             gesture.width_m = 0.007;
             gesture.force_n = 0.18 + 1.25 * velocity_curve;
             gesture.contact_duration_seconds *= 1.05 - 0.18 * normalized;
+        }
+        PLK2_UPRIGHT_BASS_PACK => {
+            // A jazz pizzicato fingertip prepares a far more massive string
+            // than the guitar/uke contacts.  The broad patch and millisecond
+            // rolloff suppress only the spatially unresolved high modes; the
+            // retained stiff-string dispersion, long scale and 450 L body
+            // produce the audible growl and bloom without a bass EQ surrogate.
+            gesture.position_over_scale = 0.20;
+            gesture.width_m = 0.015;
+            gesture.force_n = 0.75 + 4.50 * velocity_curve;
+            gesture.contact_duration_seconds *= 1.22 - 0.20 * normalized;
+            gesture.contact_stiffness_n_per_m_pow_3_over_2 = 1.2e6;
+            gesture.contact_damping_seconds_per_m = 0.32;
         }
         _ => {}
     }
@@ -2031,6 +2293,228 @@ pub fn plk2_render_slices(
     frames as i32
 }
 
+/// Fixed upper bound for the explicit retained-stem state buffer. The encoded
+/// byte count returned by [`plk2_stem_init`] is smaller and must be passed back
+/// exactly; the upper bound lets a no-allocation host reserve caller-owned
+/// scratch before it knows which instrument pack is selected.
+#[no_mangle]
+pub extern "C" fn plk2_stem_state_max_bytes() -> i32 {
+    PLK2_STEM_STATE_MAX_BYTES as i32
+}
+
+/// Fixed work bound for one segmented retained-stem call.
+#[no_mangle]
+pub extern "C" fn plk2_stem_render_max_frames() -> i32 {
+    PLK2_STEM_RENDER_MAX_FRAMES as i32
+}
+
+/// Safe initialization seam used by the raw WASM ABI and exact-source tests.
+/// The returned prefix is a canonical little-endian state image; unused tail
+/// capacity is zeroed so previous instruments cannot leak into a new stem.
+pub fn plk2_stem_init_slice(pack_index: i32, sample_rate: f32, state: &mut [u8]) -> i32 {
+    if state.len() < PLK2_STEM_STATE_MAX_BYTES || !sample_rate.is_finite() {
+        return 0;
+    }
+    let Some(session) = PluckedStemSession::new(pack_index, sample_rate as f64) else {
+        return 0;
+    };
+    state[..PLK2_STEM_STATE_MAX_BYTES].fill(0);
+    encode_stem_session(&session, &mut state[..PLK2_STEM_STATE_MAX_BYTES])
+        .and_then(|bytes| i32::try_from(bytes).ok())
+        .unwrap_or(0)
+}
+
+/// Initialize a caller-owned retained physical stem. The pointer may be byte
+/// aligned and must be writable for at least `plk2_stem_state_max_bytes()`.
+#[no_mangle]
+pub extern "C" fn plk2_stem_init(
+    pack_index: i32,
+    sample_rate: f32,
+    state: *mut u8,
+    state_capacity: i32,
+) -> i32 {
+    if state.is_null() || state_capacity < PLK2_STEM_STATE_MAX_BYTES as i32 {
+        return 0;
+    }
+    let state = unsafe { core::slice::from_raw_parts_mut(state, PLK2_STEM_STATE_MAX_BYTES) };
+    plk2_stem_init_slice(pack_index, sample_rate, state)
+}
+
+/// Read-only diagnostic for independent phrase tests. It decodes the same
+/// canonical bytes consumed by the WASM call rather than reaching around the
+/// ABI into a separately constructed production stem.
+pub fn plk2_stem_state_string_energy_j(state: &[u8], string_index: usize) -> Option<f64> {
+    decode_stem_session(state)?
+        .stem
+        .string_energy_j(string_index)
+}
+
+/// Render one bounded segment while retaining all strings, body modes,
+/// contact, amplifier, and radiation-history state in the caller-owned byte
+/// image. `PLUCK` begins one physical gesture; `RESET` first clears the stem
+/// and may be combined with `PLUCK`. Calls without `PLUCK` must pass midi=-1
+/// and velocity=0, preventing stale host arguments from becoming hidden events.
+pub fn plk2_stem_render_slices(
+    state: &mut [u8],
+    midi: i32,
+    velocity: i32,
+    event_flags: u32,
+    left: &mut [f32],
+    right: &mut [f32],
+    max_frames: i32,
+) -> i32 {
+    if event_flags & !PLK2_STEM_EVENT_MASK != 0
+        || max_frames <= 0
+        || max_frames as usize > PLK2_STEM_RENDER_MAX_FRAMES
+    {
+        return 0;
+    }
+    let frames = max_frames as usize;
+    if left.len() < frames || right.len() < frames {
+        return 0;
+    }
+    let Some(mut session) = decode_stem_session(state) else {
+        return 0;
+    };
+    if event_flags & PLK2_STEM_EVENT_RESET != 0 {
+        let Some(reset) = PluckedStemSession::new(session.pack_index, session.stem.sample_rate_hz)
+        else {
+            return 0;
+        };
+        session = reset;
+    }
+    if event_flags & PLK2_STEM_EVENT_PLUCK != 0 {
+        if !(1..=127).contains(&velocity) {
+            return 0;
+        }
+        let Some((string_index, fret)) = plk2_string_fret(session.pack_index, midi) else {
+            return 0;
+        };
+        if session
+            .stem
+            .begin_pluck(plk2_gesture(
+                session.pack_index,
+                string_index,
+                fret,
+                velocity,
+            ))
+            .is_err()
+        {
+            return 0;
+        }
+    } else if midi != -1 || velocity != 0 {
+        return 0;
+    }
+
+    let Some(path) = plk2_render_path(session.pack_index) else {
+        return 0;
+    };
+    let body_pressure_scale =
+        AIR_DENSITY_KG_PER_M3 * session.stem.sample_rate_hz / (4.0 * PI * ACOUSTIC_MIC_DISTANCE_M);
+    let stereo_gain = sqrt(0.5);
+    for frame in 0..frames {
+        let taps = session.stem.step();
+        let pressure_pa = match path {
+            PluckedRenderPath::AcousticBodyRadiation => {
+                let flow = taps.acoustic_body_volume_velocity_m3_per_s;
+                let pressure = body_pressure_scale * (flow - session.previous_body_flow_m3_per_s);
+                session.previous_body_flow_m3_per_s = flow;
+                pressure
+            }
+            PluckedRenderPath::ElectricCabinetRadiation => taps.electric_cabinet_pressure_pa_at_1m,
+        };
+        let pcm = pressure_pa * REFERENCE_PCM_PER_PASCAL * plk2_listener_trim(session.pack_index);
+        if !pcm.is_finite() || pcm.abs() > f32::MAX as f64 {
+            left[..frames].fill(0.0);
+            right[..frames].fill(0.0);
+            return 0;
+        }
+        let sample = pcm.clamp(-1.0, 1.0) * stereo_gain;
+        left[frame] = sample as f32;
+        right[frame] = sample as f32;
+    }
+    let Some(encoded_bytes) = encode_stem_session(&session, state) else {
+        left[..frames].fill(0.0);
+        right[..frames].fill(0.0);
+        return 0;
+    };
+    if encoded_bytes != state.len() {
+        left[..frames].fill(0.0);
+        right[..frames].fill(0.0);
+        return 0;
+    }
+    max_frames
+}
+
+fn plk2_byte_ranges_are_disjoint(
+    first_start: usize,
+    first_bytes: usize,
+    second_start: usize,
+    second_bytes: usize,
+) -> bool {
+    let Some(first_end) = first_start.checked_add(first_bytes) else {
+        return false;
+    };
+    let Some(second_end) = second_start.checked_add(second_bytes) else {
+        return false;
+    };
+    first_end <= second_start || second_end <= first_start
+}
+
+/// Raw retained-stem WASM call. State and stereo buffers must be mutually
+/// disjoint; a refused call leaves the canonical state bytes unchanged.
+#[no_mangle]
+pub extern "C" fn plk2_stem_render(
+    state: *mut u8,
+    state_bytes: i32,
+    midi: i32,
+    velocity: i32,
+    event_flags: i32,
+    left: *mut f32,
+    right: *mut f32,
+    max_frames: i32,
+) -> i32 {
+    if state.is_null()
+        || state_bytes <= 0
+        || state_bytes as usize > PLK2_STEM_STATE_MAX_BYTES
+        || event_flags < 0
+        || max_frames <= 0
+        || max_frames as usize > PLK2_STEM_RENDER_MAX_FRAMES
+        || left.is_null()
+        || right.is_null()
+        || !(left as usize).is_multiple_of(core::mem::align_of::<f32>())
+        || !(right as usize).is_multiple_of(core::mem::align_of::<f32>())
+    {
+        return 0;
+    }
+    let frames = max_frames as usize;
+    let Some(pcm_bytes) = frames.checked_mul(core::mem::size_of::<f32>()) else {
+        return 0;
+    };
+    let state_start = state as usize;
+    let state_len = state_bytes as usize;
+    let left_start = left as usize;
+    let right_start = right as usize;
+    if !plk2_byte_ranges_are_disjoint(state_start, state_len, left_start, pcm_bytes)
+        || !plk2_byte_ranges_are_disjoint(state_start, state_len, right_start, pcm_bytes)
+        || !plk2_byte_ranges_are_disjoint(left_start, pcm_bytes, right_start, pcm_bytes)
+    {
+        return 0;
+    }
+    let state = unsafe { core::slice::from_raw_parts_mut(state, state_len) };
+    let left = unsafe { core::slice::from_raw_parts_mut(left, frames) };
+    let right = unsafe { core::slice::from_raw_parts_mut(right, frames) };
+    plk2_stem_render_slices(
+        state,
+        midi,
+        velocity,
+        event_flags as u32,
+        left,
+        right,
+        max_frames,
+    )
+}
+
 fn plk2_buffers_are_disjoint(left: *mut f32, right: *mut f32, frames: usize) -> bool {
     let Some(bytes) = frames.checked_mul(core::mem::size_of::<f32>()) else {
         return false;
@@ -2067,8 +2551,8 @@ pub extern "C" fn plk2_render(
     let frames = capacity.min(max_frames) as usize;
     if left.is_null()
         || right.is_null()
-        || (left as usize) % core::mem::align_of::<f32>() != 0
-        || (right as usize) % core::mem::align_of::<f32>() != 0
+        || !(left as usize).is_multiple_of(core::mem::align_of::<f32>())
+        || !(right as usize).is_multiple_of(core::mem::align_of::<f32>())
         || !plk2_buffers_are_disjoint(left, right, frames)
     {
         return 0;

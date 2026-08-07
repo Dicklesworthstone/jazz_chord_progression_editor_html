@@ -64,8 +64,15 @@ function signedEvidence(): Record<string, unknown> {
     electric: profile([0, -2, -7, -11, -15, -19, -23, -27, -31, -35]),
     dreadnought: profile([0, -12, -18, -24, -30, -36, -40, -44, -48, -52]),
     ukulele: profile([0, -20, -25, -30, -34, -38, -42, -46, -50, -54]),
+    "upright-bass": profile([0, 8, -8, -7, -84, -3, 3, -8, -12, -80]),
   });
-  const familyOrder = ["archtop", "electric", "dreadnought", "ukulele"] as const;
+  const familyOrder = [
+    "archtop",
+    "electric",
+    "dreadnought",
+    "ukulele",
+    "upright-bass",
+  ] as const;
   const cells = familyOrder.flatMap((family) =>
     PLUCKED_V2_RELEASE_POLICY.families[family].midi.map((midi) => ({
       id: `${family}-m${String(midi)}`,
@@ -108,7 +115,7 @@ function signedEvidence(): Record<string, unknown> {
     collapsedFamiliesRejected: true,
   };
   const unsigned = {
-    schema: "changes.evidence.phs4-plucked-shipping-output.v1",
+    schema: "changes.evidence.phs4-plucked-shipping-output.v2",
     policy: PLUCKED_V2_RELEASE_POLICY,
     algorithmIds: familyOrder.map((family) =>
       PLUCKED_V2_RELEASE_POLICY.families[family].algorithmId).sort(),
@@ -120,11 +127,11 @@ function signedEvidence(): Record<string, unknown> {
     controls,
     summary: {
       outcome: "pass",
-      expectedCellCount: 12,
-      passedCellCount: 12,
+      expectedCellCount: 15,
+      passedCellCount: 15,
       failedCellCount: 0,
-      expectedPairwiseCellCount: 6,
-      passedPairwiseCellCount: 6,
+      expectedPairwiseCellCount: 10,
+      passedPairwiseCellCount: 10,
       failedPairwiseCellCount: 0,
     },
   };
@@ -138,14 +145,26 @@ describe("PHS4 plucked shipping-output analyzer", () => {
     expect(features.audiblePartialCount).toBe(10);
     expect(features.partialsDb[1]).toBeGreaterThan(-10);
     expect(features.tailDb).toBeGreaterThan(-10);
-    for (const family of ["archtop", "electric", "dreadnought", "ukulele"] as const) {
+    for (const family of [
+      "archtop",
+      "electric",
+      "dreadnought",
+      "ukulele",
+      "upright-bass",
+    ] as const) {
       expect(evaluatePluckedOutput(family, features)).toEqual([]);
     }
   });
 
   test("a tuned decaying sine is rejected as the exact production failure mode", () => {
     const features = analyzePluckedOutput(decayingSignal([1]), SAMPLE_RATE, MIDI);
-    for (const family of ["archtop", "electric", "dreadnought", "ukulele"] as const) {
+    for (const family of [
+      "archtop",
+      "electric",
+      "dreadnought",
+      "ukulele",
+      "upright-bass",
+    ] as const) {
       const codes = evaluatePluckedOutput(family, features).map((item) => item.code);
       expect(codes).toContain("PLUCKED_HARMONIC_COLLAPSE");
       expect(codes).toContain("PLUCKED_HARMONIC_MASS");
@@ -154,7 +173,13 @@ describe("PHS4 plucked shipping-output analyzer", () => {
 
   test("wrong pitch fails every family without hiding behind a rich spectrum", () => {
     const features = analyzePluckedOutput(decayingSignal(rich, 10), SAMPLE_RATE, MIDI);
-    for (const family of ["archtop", "electric", "dreadnought", "ukulele"] as const) {
+    for (const family of [
+      "archtop",
+      "electric",
+      "dreadnought",
+      "ukulele",
+      "upright-bass",
+    ] as const) {
       expect(evaluatePluckedOutput(family, features).map((item) => item.code))
         .toContain("PLUCKED_PITCH");
     }
@@ -163,19 +188,31 @@ describe("PHS4 plucked shipping-output analyzer", () => {
   test("a realistic spectrum with a catastrophically short tail still fails", () => {
     const features = analyzePluckedOutput(decayingSignal(rich), SAMPLE_RATE, MIDI);
     const collapsed = Object.freeze({ ...features, tailDb: -80 });
-    for (const family of ["archtop", "electric", "dreadnought", "ukulele"] as const) {
+    for (const family of [
+      "archtop",
+      "electric",
+      "dreadnought",
+      "ukulele",
+      "upright-bass",
+    ] as const) {
       expect(evaluatePluckedOutput(family, collapsed).map((item) => item.code))
         .toContain("PLUCKED_TAIL");
     }
   });
 
-  test("the matrix policy covers exactly four named algorithms and twelve cells", () => {
+  test("the matrix policy covers exactly five named algorithms and fifteen cells", () => {
     const families = Object.keys(PLUCKED_V2_RELEASE_POLICY.families) as PluckedFamily[];
-    expect(families).toEqual(["archtop", "electric", "dreadnought", "ukulele"]);
+    expect(families).toEqual([
+      "archtop",
+      "electric",
+      "dreadnought",
+      "ukulele",
+      "upright-bass",
+    ]);
     expect(new Set(families.map((family) =>
-      PLUCKED_V2_RELEASE_POLICY.families[family].algorithmId)).size).toBe(4);
+      PLUCKED_V2_RELEASE_POLICY.families[family].algorithmId)).size).toBe(5);
     expect(families.reduce((count, family) =>
-      count + PLUCKED_V2_RELEASE_POLICY.families[family].midi.length, 0)).toBe(12);
+      count + PLUCKED_V2_RELEASE_POLICY.families[family].midi.length, 0)).toBe(15);
     expect(PLUCKED_V2_RELEASE_POLICY.minimumPairwiseProfileDistanceDb).toBe(3.5);
   });
 

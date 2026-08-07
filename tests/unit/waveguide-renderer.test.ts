@@ -7,6 +7,7 @@
 import { describe, expect, test } from "bun:test";
 
 import {
+  PLUCKED_UPRIGHT_BASS_ALGORITHM_ID,
   WAVEGUIDE_CLARINET_ALGORITHM_ID,
   WAVEGUIDE_CLARINET_V2_ALGORITHM_ID,
   WAVEGUIDE_FLUTE_ALGORITHM_ID,
@@ -135,6 +136,7 @@ const flute = renderer(WAVEGUIDE_FLUTE_ALGORITHM_ID);
 const clarinet = renderer(WAVEGUIDE_CLARINET_ALGORITHM_ID);
 const clarinetV2 = renderer(WAVEGUIDE_CLARINET_V2_ALGORITHM_ID);
 const fluteV2 = renderer(WAVEGUIDE_FLUTE_V2_ALGORITHM_ID);
+const uprightBass = renderer(PLUCKED_UPRIGHT_BASS_ALGORITHM_ID);
 
 describe("waveguide renderer laws", () => {
   test("the map carries exactly the reviewed waveguide algorithms, pinned to the wasm payload", () => {
@@ -144,6 +146,7 @@ describe("waveguide renderer laws", () => {
       "changes.dsp.plucked-dreadnought@1",
       "changes.dsp.plucked-electric@2",
       "changes.dsp.plucked-ukulele@1",
+      "changes.dsp.plucked-upright-bass@1",
       WAVEGUIDE_CLARINET_ALGORITHM_ID,
       WAVEGUIDE_CLARINET_V2_ALGORITHM_ID,
       WAVEGUIDE_FLUTE_ALGORITHM_ID,
@@ -179,6 +182,19 @@ describe("waveguide renderer laws", () => {
     if (pcm === null) return;
     expect(pcm.frameCount).toBe(24_000);
     expect(rms(pcm.left, 0, pcm.frameCount)).toBeGreaterThan(1e-4);
+  });
+
+  test("upright-bass host ABI routes the physical pack across its reviewed range", () => {
+    expect(uprightBass.renderNote(27, 100, OUTPUT_RATE_HZ, 0.5)).toBeNull();
+    expect(uprightBass.renderNote(68, 100, OUTPUT_RATE_HZ, 0.5)).toBeNull();
+    for (const midiPitch of [28, 40, 52, 67]) {
+      const pcm = uprightBass.renderNote(midiPitch, 100, OUTPUT_RATE_HZ, 0.75);
+      expect(pcm).not.toBeNull();
+      if (pcm === null) continue;
+      expect(pcm.frameCount).toBe(36_000);
+      expect(rms(pcm.left, 0, pcm.frameCount)).toBeGreaterThan(1e-3);
+      expect(Math.abs(measuredCents(pcm.left, 2_400, midiPitch))).toBeLessThanOrEqual(5);
+    }
   });
 
   test("guitar lands on 12-TET within two cents through both amps", () => {

@@ -7,9 +7,12 @@ mod plucked_v2;
 use plucked_v2::{
     archtop_pack, circular_sound_hole_helmholtz_hz, dreadnought_pack, inharmonicity_coefficient,
     marshall_electric_pack, midi_frequency_hz, plk2_note_frames, plk2_render, plk2_render_path,
-    plk2_render_slices, plk2_string_fret, ukulele_pack, upright_bass_pack, BodyModeKind,
-    PluckGesture, PluckedError, PluckedRenderPath, PluckedStem, PLK2_ARCHTOP_PACK,
-    PLK2_DREADNOUGHT_PACK, PLK2_MARSHALL_ELECTRIC_PACK, PLK2_UKULELE_PACK,
+    plk2_render_slices, plk2_stem_init, plk2_stem_init_slice, plk2_stem_render,
+    plk2_stem_render_max_frames, plk2_stem_render_slices, plk2_stem_state_max_bytes,
+    plk2_stem_state_string_energy_j, plk2_string_fret, ukulele_pack, upright_bass_pack,
+    BodyModeKind, PluckGesture, PluckedError, PluckedRenderPath, PluckedStem, PLK2_ARCHTOP_PACK,
+    PLK2_DREADNOUGHT_PACK, PLK2_MARSHALL_ELECTRIC_PACK, PLK2_STEM_EVENT_PLUCK,
+    PLK2_STEM_EVENT_RESET, PLK2_UKULELE_PACK, PLK2_UPRIGHT_BASS_PACK,
 };
 
 const SAMPLE_RATE: f64 = 48_000.0;
@@ -343,6 +346,88 @@ fn stiff_string_dispersion_and_frequency_dependent_loss_are_observable() {
 }
 
 #[test]
+fn upright_all_four_courses_bind_pitch_tension_dispersion_and_stopped_length() {
+    // Independently calculated from the reviewed scale, mu, core diameter,
+    // material modulus, and 12-TET boundary. These are not copied from a
+    // production output table.
+    let expected = [
+        (28, 208.137_548_325_431_74, 0.000_082_153_139_465_012_97),
+        (33, 252.130_725, 0.000_052_388_254_928_533_924),
+        (38, 294.743_328_291_857_1, 0.000_034_006_569_844_096_78),
+        (43, 343.056_495_513_004_17, 0.000_021_722_131_128_539_365),
+    ];
+    let pack = upright_bass_pack();
+    let mut open_b = [0.0; 4];
+    for (index, (open_midi, expected_tension, expected_b)) in expected.into_iter().enumerate() {
+        assert_eq!(pack.strings[index].open_midi, open_midi);
+        let open = PluckedStem::new(pack, SAMPLE_RATE).expect("upright open course");
+        assert!(
+            relative_error(
+                open.string_tuned_tension_n(index).expect("open tension"),
+                expected_tension,
+            ) < 1.0e-12
+        );
+        open_b[index] = open
+            .string_inharmonicity_b(index)
+            .expect("open inharmonicity");
+        assert!(relative_error(open_b[index], expected_b) < 1.0e-12);
+        assert!(
+            relative_error(
+                open.string_mode_frequency_hz(index, 1)
+                    .expect("open fundamental"),
+                midi_frequency_hz(open_midi),
+            ) < 1.0e-12
+        );
+
+        let mut stopped = PluckedStem::new(pack, SAMPLE_RATE).expect("upright stopped course");
+        let mut gesture = PluckGesture::soft_finger(index, 12, 1);
+        gesture.width_m = 0.015;
+        stopped.begin_pluck(gesture).expect("octave stop");
+        assert!(
+            relative_error(
+                stopped
+                    .string_mode_frequency_hz(index, 1)
+                    .expect("stopped fundamental"),
+                midi_frequency_hz(open_midi + 12),
+            ) < 1.0e-12
+        );
+        assert!(
+            relative_error(
+                stopped
+                    .string_tuned_tension_n(index)
+                    .expect("stopped tension"),
+                expected_tension,
+            ) < 1.0e-12,
+            "fretting changed physical string tension on course {index}"
+        );
+        assert!(
+            relative_error(
+                stopped
+                    .string_inharmonicity_b(index)
+                    .expect("stopped inharmonicity"),
+                4.0 * expected_b,
+            ) < 1.0e-12,
+            "shortening did not raise B by the L^-2 law on course {index}"
+        );
+        assert!(
+            stopped
+                .string_mode_t60_seconds(index, 8)
+                .expect("upper stopped decay")
+                < stopped
+                    .string_mode_t60_seconds(index, 1)
+                    .expect("fundamental stopped decay")
+        );
+    }
+    assert!(open_b.windows(2).all(|pair| pair[0] > pair[1]));
+
+    // Planted near-miss: collapsing the A/D/G stiffness to the E course can
+    // still leave every fundamental perfectly tuned, but destroys the
+    // independently required four-course dispersion signature.
+    let collapsed = [open_b[0]; 4];
+    assert_ne!(collapsed, open_b);
+}
+
+#[test]
 fn finite_contact_respects_position_width_direction_and_release() {
     let mut positive = PluckedStem::new(dreadnought_pack(), SAMPLE_RATE).expect("positive stem");
     let mut negative = PluckedStem::new(dreadnought_pack(), SAMPLE_RATE).expect("negative stem");
@@ -447,6 +532,22 @@ fn negative_bridge_or_zero_duration_cannot_emit_a_fake_success() {
         PluckedError::NonPassiveBridge
     );
 
+    let mut false_tension_pack = upright_bass_pack();
+    false_tension_pack.strings[0].reference_tension_n = 1.0;
+    assert_eq!(
+        PluckedStem::new(false_tension_pack, SAMPLE_RATE).unwrap_err(),
+        PluckedError::InvalidString { index: 0 },
+        "declared tension must remain causally bound to pitch, scale, and linear density"
+    );
+
+    let mut retuned_template_body = upright_bass_pack();
+    retuned_template_body.body.length_m = dreadnought_pack().body.length_m;
+    assert_eq!(
+        PluckedStem::new(retuned_template_body, SAMPLE_RATE).unwrap_err(),
+        PluckedError::InvalidBody,
+        "the upright identifier must not accept a copied or retuned guitar body"
+    );
+
     let mut stem = PluckedStem::new(dreadnought_pack(), SAMPLE_RATE).expect("valid stem");
     let mut zero_duration = PluckGesture::medium_pick(0, 0, 1);
     zero_duration.contact_duration_seconds = 0.0;
@@ -475,6 +576,7 @@ fn negative_bridge_or_zero_duration_cannot_emit_a_fake_success() {
 fn geometry_and_material_packs_create_distinct_body_and_string_families() {
     let dread_pack = dreadnought_pack();
     let uke_pack = ukulele_pack();
+    let upright_pack = upright_bass_pack();
     assert!(uke_pack.body.length_m < dread_pack.body.length_m);
     assert!(uke_pack.body.body_volume_m3 < dread_pack.body.body_volume_m3);
     assert_eq!(uke_pack.body.body_volume_m3, 0.003_2);
@@ -486,9 +588,24 @@ fn geometry_and_material_packs_create_distinct_body_and_string_families() {
     );
     assert_eq!(uke_pack.strings[0].open_midi, 67); // re-entrant g4
     assert_eq!(uke_pack.strings[1].open_midi, 60); // c4 below the first course
+    assert!(upright_pack.strings[0].scale_length_m > dread_pack.strings[0].scale_length_m);
+    assert!(
+        upright_pack.strings[0].outer_diameter_m > 1.8 * dread_pack.strings[0].outer_diameter_m
+    );
+    assert!(
+        upright_pack.strings[0].linear_density_kg_per_m
+            > 3.5 * dread_pack.strings[0].linear_density_kg_per_m
+    );
+    assert!(upright_pack.body.body_volume_m3 > 4.0 * dread_pack.body.body_volume_m3);
+    assert_eq!(
+        upright_pack.body.helmholtz_hz, 0.0,
+        "an f-hole resonance needs reviewed opening area and effective neck geometry"
+    );
+    assert!(upright_pack.pickup.is_none() && upright_pack.amplifier.is_none());
 
     let dread = PluckedStem::new(dread_pack, SAMPLE_RATE).expect("dreadnought modes");
     let uke = PluckedStem::new(uke_pack, SAMPLE_RATE).expect("ukulele modes");
+    let upright = PluckedStem::new(upright_pack, SAMPLE_RATE).expect("upright modes");
     assert!(dread.body_mode_count() > 8);
     assert!(uke.body_mode_count() > 8);
     // Air and plate modes carry explicit identities. The braced (1,1) plate
@@ -510,6 +627,38 @@ fn geometry_and_material_packs_create_distinct_body_and_string_families() {
     );
     assert!(uke_plate - uke_air > 20.0, "air and plate modes collapsed");
     assert!(!body_contains_mode(&uke, 610.0));
+    let expected_upright_dkt_hz = [
+        37.836, 47.833, 48.565, 68.599, 96.753, 97.851, 103.153, 109.948, 127.943, 149.331,
+    ];
+    assert_eq!(upright.body_mode_count(), expected_upright_dkt_hz.len());
+    for (ordinal, expected_hz) in expected_upright_dkt_hz.into_iter().enumerate() {
+        assert_eq!(
+            upright.body_mode_kind(ordinal),
+            Some(BodyModeKind::GeometrySolvedDkt {
+                ordinal: ordinal as u8,
+            })
+        );
+        let actual = upright
+            .body_mode_frequency_hz(ordinal)
+            .expect("geometry-solved upright mode");
+        assert!(
+            (actual - expected_hz).abs() < 0.001,
+            "upright DKT mode {ordinal}: {actual} vs {expected_hz}"
+        );
+    }
+    assert_eq!(
+        body_mode_frequency(&upright, BodyModeKind::HelmholtzAir),
+        None
+    );
+    assert!(!body_contains_mode(&upright, 75.0));
+    assert!(
+        upright
+            .string_inharmonicity_b(0)
+            .expect("upright E1 stiffness")
+            > 0.0,
+        "thick upright string must retain stiff-string dispersion"
+    );
+    assert!(upright.amplifier_supply_fraction().is_none());
     assert_ne!(
         dread
             .body_mode_frequency_hz(0)
@@ -522,7 +671,6 @@ fn geometry_and_material_packs_create_distinct_body_and_string_families() {
     // core. This is constructor/physics coverage, not a sound-quality claim.
     PluckedStem::new(archtop_pack(), SAMPLE_RATE).expect("archtop pack");
     PluckedStem::new(marshall_electric_pack(), SAMPLE_RATE).expect("electric pack");
-    PluckedStem::new(upright_bass_pack(), SAMPLE_RATE).expect("upright pack");
 }
 
 #[test]
@@ -704,6 +852,16 @@ fn plk2_abi_maps_every_supported_pitch_to_a_physical_course_and_fret() {
     assert_eq!(plk2_string_fret(PLK2_UKULELE_PACK, 67), Some((0, 0)));
     assert_eq!(plk2_string_fret(PLK2_UKULELE_PACK, 69), Some((3, 0)));
     assert_eq!(plk2_string_fret(PLK2_UKULELE_PACK, 93), Some((3, 24)));
+    for midi in 28..=67 {
+        let (string, fret) =
+            plk2_string_fret(PLK2_UPRIGHT_BASS_PACK, midi).expect("upright-bass mapping");
+        assert!(string < 4 && fret <= 24, "upright MIDI {midi}");
+    }
+    assert_eq!(plk2_string_fret(PLK2_UPRIGHT_BASS_PACK, 28), Some((0, 0)));
+    assert_eq!(plk2_string_fret(PLK2_UPRIGHT_BASS_PACK, 33), Some((1, 0)));
+    assert_eq!(plk2_string_fret(PLK2_UPRIGHT_BASS_PACK, 38), Some((2, 0)));
+    assert_eq!(plk2_string_fret(PLK2_UPRIGHT_BASS_PACK, 43), Some((3, 0)));
+    assert_eq!(plk2_string_fret(PLK2_UPRIGHT_BASS_PACK, 67), Some((3, 24)));
 
     assert_eq!(plk2_string_fret(PLK2_DREADNOUGHT_PACK, 39), None);
     assert_eq!(plk2_string_fret(PLK2_UKULELE_PACK, 59), None);
@@ -719,10 +877,19 @@ fn plk2_abi_maps_every_supported_pitch_to_a_physical_course_and_fret() {
     );
     assert_eq!(plk2_note_frames(PLK2_UKULELE_PACK, 60, 48_000.0), 144_000);
     assert_eq!(
+        plk2_note_frames(PLK2_UPRIGHT_BASS_PACK, 28, 48_000.0),
+        288_000
+    );
+    assert_eq!(
         plk2_render_path(PLK2_MARSHALL_ELECTRIC_PACK),
         Some(PluckedRenderPath::ElectricCabinetRadiation)
     );
-    for pack in [PLK2_ARCHTOP_PACK, PLK2_DREADNOUGHT_PACK, PLK2_UKULELE_PACK] {
+    for pack in [
+        PLK2_ARCHTOP_PACK,
+        PLK2_DREADNOUGHT_PACK,
+        PLK2_UKULELE_PACK,
+        PLK2_UPRIGHT_BASS_PACK,
+    ] {
         assert_eq!(
             plk2_render_path(pack),
             Some(PluckedRenderPath::AcousticBodyRadiation)
@@ -819,12 +986,13 @@ fn plk2_raw_abi_matches_the_safe_caller_scratch_path_bit_for_bit() {
 }
 
 #[test]
-fn plk2_all_four_packs_render_finite_nonzero_stereo_at_all_supported_rates() {
+fn plk2_all_five_packs_render_finite_nonzero_stereo_at_all_supported_rates() {
     let cases = [
         (PLK2_ARCHTOP_PACK, 52),
         (PLK2_MARSHALL_ELECTRIC_PACK, 52),
         (PLK2_DREADNOUGHT_PACK, 52),
         (PLK2_UKULELE_PACK, 67),
+        (PLK2_UPRIGHT_BASS_PACK, 40),
     ];
     for sample_rate in [44_100.0f32, 48_000.0, 96_000.0] {
         for (pack, midi) in cases {
@@ -865,6 +1033,7 @@ fn plk2_fixed_listener_calibration_is_usable_and_velocity_monotonic() {
         (PLK2_MARSHALL_ELECTRIC_PACK, 60, "electric-C4"),
         (PLK2_UKULELE_PACK, 67, "ukulele-G4"),
         (PLK2_DREADNOUGHT_PACK, 60, "dreadnought-C4"),
+        (PLK2_UPRIGHT_BASS_PACK, 40, "upright-bass-E2"),
     ];
     for (pack, midi, label) in cases {
         let frames = plk2_note_frames(pack, midi, SAMPLE_RATE as f32) as usize;
@@ -889,13 +1058,14 @@ fn plk2_fixed_listener_calibration_is_usable_and_velocity_monotonic() {
             db_ratio(rms, 1.0),
             db_ratio(peak, 1.0),
         );
-        // A complete note buffer includes 3--5 seconds of deterministic tail,
+        // A complete note buffer includes 3--6 seconds of deterministic tail,
         // so its whole-buffer RMS is lower than the sounding part. Keep a
         // family-specific floor here, then require the common active-note mix
         // window below without changing the render duration to game the RMS.
         let full_buffer_rms_floor = match pack {
             PLK2_DREADNOUGHT_PACK => 0.018,
             PLK2_UKULELE_PACK => 0.040,
+            PLK2_UPRIGHT_BASS_PACK => 0.012,
             _ => 0.045,
         };
         assert!(
@@ -933,7 +1103,12 @@ fn plk2_fixed_listener_calibration_is_usable_and_velocity_monotonic() {
             previous_rms = current_rms;
             if velocity == 100 {
                 assert!(
-                    (0.045..=0.32).contains(&current_rms),
+                    ((if pack == PLK2_UPRIGHT_BASS_PACK {
+                        0.030
+                    } else {
+                        0.045
+                    })..=0.32)
+                        .contains(&current_rms),
                     "{label} active velocity-100 RMS escaped -26.9..-9.9 dBFS: {current_rms}"
                 );
             }
@@ -945,15 +1120,19 @@ fn plk2_fixed_listener_calibration_is_usable_and_velocity_monotonic() {
 fn plk2_fixed_listener_calibration_does_not_clip_across_registers_or_rates() {
     let guitar_midis = [40, 52, 64, 76, 88];
     let ukulele_midis = [60, 67, 79, 93];
+    let upright_midis = [28, 40, 52, 67];
     for sample_rate in [44_100.0f32, 48_000.0, 96_000.0] {
         for pack in [
             PLK2_ARCHTOP_PACK,
             PLK2_MARSHALL_ELECTRIC_PACK,
             PLK2_UKULELE_PACK,
             PLK2_DREADNOUGHT_PACK,
+            PLK2_UPRIGHT_BASS_PACK,
         ] {
             let midis: &[i32] = if pack == PLK2_UKULELE_PACK {
                 &ukulele_midis
+            } else if pack == PLK2_UPRIGHT_BASS_PACK {
+                &upright_midis
             } else {
                 &guitar_midis
             };
@@ -998,6 +1177,7 @@ fn plk2_radiated_pitch_meets_the_independent_fixture_tolerances() {
         (PLK2_MARSHALL_ELECTRIC_PACK, 52, 164.813_778, 4.0),
         (PLK2_DREADNOUGHT_PACK, 76, 659.255_114, 4.0),
         (PLK2_UKULELE_PACK, 67, 391.995_436, 5.0),
+        (PLK2_UPRIGHT_BASS_PACK, 28, 41.203_445, 5.0),
     ];
     for sample_rate in [44_100.0f32, 48_000.0, 96_000.0] {
         let frames = (0.80 * sample_rate) as usize;
@@ -1041,8 +1221,8 @@ fn plk2_pack_spectra_are_distinct_and_electric_uses_the_cabinet_path() {
     let frames = 8_192usize;
     let midi = 67;
     let target_hz = 391.995_436;
-    let mut profiles = [[0.0; 8]; 4];
-    for pack in 0..=3 {
+    let mut profiles = [[0.0; 8]; 5];
+    for pack in 0..=4 {
         let mut left = vec![0.0f32; frames];
         let mut right = vec![0.0f32; frames];
         assert_eq!(
@@ -1160,4 +1340,223 @@ fn plk2_radiation_retains_audible_string_partials_and_a_decaying_tail() {
     };
     assert!(!spectrum_has_a_plucked_string_comb(harmonic_explosion));
     assert!(failures.is_empty(), "radiation failures: {failures:?}");
+}
+
+#[test]
+fn retained_stem_abi_is_split_render_identical_and_preserves_sympathetic_courses() {
+    let state_capacity = plk2_stem_state_max_bytes() as usize;
+    assert!((1..=64 * 1_024).contains(&state_capacity));
+    assert_eq!(plk2_stem_render_max_frames(), 8_192);
+
+    let mut initial = vec![0u8; state_capacity];
+    let state_bytes =
+        plk2_stem_init_slice(PLK2_UPRIGHT_BASS_PACK, SAMPLE_RATE as f32, &mut initial);
+    assert!(state_bytes > 0 && state_bytes as usize <= state_capacity);
+    initial.truncate(state_bytes as usize);
+
+    let mut monolithic_state = initial.clone();
+    let mut monolithic_left = vec![0.0f32; 4_096];
+    let mut monolithic_right = vec![0.0f32; 4_096];
+    assert_eq!(
+        plk2_stem_render_slices(
+            &mut monolithic_state,
+            28,
+            104,
+            PLK2_STEM_EVENT_PLUCK,
+            &mut monolithic_left,
+            &mut monolithic_right,
+            4_096,
+        ),
+        4_096
+    );
+
+    let mut split_state = initial;
+    let mut split_left = vec![0.0f32; 4_096];
+    let mut split_right = vec![0.0f32; 4_096];
+    assert_eq!(
+        plk2_stem_render_slices(
+            &mut split_state,
+            28,
+            104,
+            PLK2_STEM_EVENT_PLUCK,
+            &mut split_left[..2_048],
+            &mut split_right[..2_048],
+            2_048,
+        ),
+        2_048
+    );
+    assert_eq!(
+        plk2_stem_render_slices(
+            &mut split_state,
+            -1,
+            0,
+            0,
+            &mut split_left[2_048..],
+            &mut split_right[2_048..],
+            2_048,
+        ),
+        2_048
+    );
+
+    assert_eq!(split_left, monolithic_left);
+    assert_eq!(split_right, monolithic_right);
+    assert_eq!(split_state, monolithic_state);
+    assert!(
+        plk2_stem_state_string_energy_j(&split_state, 1).unwrap() > 0.0,
+        "the unplucked A course received no passive bridge/body energy"
+    );
+    assert!(
+        plk2_stem_state_string_energy_j(&split_state, 2).unwrap() > 0.0,
+        "the unplucked D course received no passive bridge/body energy"
+    );
+}
+
+#[test]
+fn retained_stem_reset_is_a_deterministic_silent_stop() {
+    let mut state = vec![0u8; plk2_stem_state_max_bytes() as usize];
+    let state_bytes = plk2_stem_init_slice(PLK2_UPRIGHT_BASS_PACK, 48_000.0, &mut state);
+    assert!(state_bytes > 0);
+    state.truncate(state_bytes as usize);
+    let mut left = vec![0.0f32; 1_024];
+    let mut right = vec![0.0f32; 1_024];
+    assert_eq!(
+        plk2_stem_render_slices(
+            &mut state,
+            40,
+            112,
+            PLK2_STEM_EVENT_PLUCK,
+            &mut left,
+            &mut right,
+            1_024,
+        ),
+        1_024
+    );
+    assert!(left.iter().any(|sample| *sample != 0.0));
+
+    left.fill(f32::NAN);
+    right.fill(f32::NAN);
+    assert_eq!(
+        plk2_stem_render_slices(
+            &mut state,
+            -1,
+            0,
+            PLK2_STEM_EVENT_RESET,
+            &mut left,
+            &mut right,
+            1_024,
+        ),
+        1_024
+    );
+    assert!(left.iter().all(|sample| *sample == 0.0));
+    assert!(right.iter().all(|sample| *sample == 0.0));
+    for string_index in 0..4 {
+        assert_eq!(
+            plk2_stem_state_string_energy_j(&state, string_index),
+            Some(0.0)
+        );
+    }
+}
+
+#[test]
+fn retained_stem_abi_refuses_tamper_overlap_and_excess_work_then_recovers() {
+    let state_capacity = plk2_stem_state_max_bytes() as usize;
+    let mut storage = vec![0.0f32; state_capacity.div_ceil(4)];
+    let state_bytes = plk2_stem_init(
+        PLK2_UPRIGHT_BASS_PACK,
+        48_000.0,
+        storage.as_mut_ptr().cast::<u8>(),
+        state_capacity as i32,
+    );
+    assert!(state_bytes > 0);
+    let original = unsafe {
+        core::slice::from_raw_parts(storage.as_ptr().cast::<u8>(), state_bytes as usize).to_vec()
+    };
+    let mut right = vec![0.0f32; 256];
+
+    // The PCM output intentionally aliases the state allocation. The raw ABI
+    // refuses before decoding or writing either region.
+    assert_eq!(
+        plk2_stem_render(
+            storage.as_mut_ptr().cast::<u8>(),
+            state_bytes,
+            28,
+            100,
+            PLK2_STEM_EVENT_PLUCK as i32,
+            storage.as_mut_ptr(),
+            right.as_mut_ptr(),
+            256,
+        ),
+        0
+    );
+    let after_overlap =
+        unsafe { core::slice::from_raw_parts(storage.as_ptr().cast::<u8>(), state_bytes as usize) };
+    assert_eq!(after_overlap, original);
+
+    let state = unsafe {
+        core::slice::from_raw_parts_mut(storage.as_mut_ptr().cast::<u8>(), state_bytes as usize)
+    };
+    // Corrupt a plausible modal payload byte rather than the obvious magic;
+    // the trailing no_std state checksum must catch silent handoff damage.
+    state[100] ^= 0x80;
+    let tampered = state.to_vec();
+    let mut left = vec![7.0f32; 256];
+    right.fill(7.0);
+    assert_eq!(
+        plk2_stem_render_slices(
+            state,
+            28,
+            100,
+            PLK2_STEM_EVENT_PLUCK,
+            &mut left,
+            &mut right,
+            256,
+        ),
+        0
+    );
+    assert_eq!(state, tampered);
+    assert!(left.iter().all(|sample| *sample == 7.0));
+    state.copy_from_slice(&original);
+
+    assert_eq!(
+        plk2_stem_render_slices(
+            state,
+            28,
+            100,
+            PLK2_STEM_EVENT_PLUCK | 4,
+            &mut left,
+            &mut right,
+            256,
+        ),
+        0
+    );
+    assert_eq!(state, original);
+    assert_eq!(
+        plk2_stem_render_slices(
+            state,
+            28,
+            100,
+            PLK2_STEM_EVENT_PLUCK,
+            &mut left,
+            &mut right,
+            plk2_stem_render_max_frames() + 1,
+        ),
+        0
+    );
+    assert_eq!(state, original);
+
+    assert_eq!(
+        plk2_stem_render_slices(
+            state,
+            28,
+            100,
+            PLK2_STEM_EVENT_PLUCK,
+            &mut left,
+            &mut right,
+            256,
+        ),
+        256
+    );
+    assert!(left
+        .iter()
+        .any(|sample| sample.is_finite() && *sample != 7.0));
 }

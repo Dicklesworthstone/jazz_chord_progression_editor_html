@@ -40,7 +40,7 @@ const CAP_SECONDS: f64 = 3.0;
 const STATE_MAGIC: u32 = 0x3254_4c46; // "FLT2" little endian.
 const STATE_VERSION: u32 = 3;
 const STATE_HEADER_BYTES: usize = 48;
-const STATE_SCALAR_COUNT: usize = 71;
+const STATE_SCALAR_COUNT: usize = 73;
 const STATE_SCALAR_BYTES: usize = STATE_SCALAR_COUNT * 8;
 const STATE_MAX_BYTES: usize =
     STATE_HEADER_BYTES + STATE_SCALAR_BYTES + 2 * MAX_WAVE_SAMPLES * 8 + MAX_JET_HISTORY * 8;
@@ -96,7 +96,34 @@ struct SegmentLayout {
 struct Fingering {
     openness: [f64; HOLES],
     register_harmonic: usize,
+    /// Measured per-fingering chimney/undercut calibration (dimensionless
+    /// scale on every open hole's effective shunt length). The physical
+    /// analogue is a maker undercutting or lengthening a tone hole; the
+    /// values were measured 2026-08-07 by the full-window wrong-tone matrix
+    /// (render -> autocorrelate -> bisect until the bore lock lands on the
+    /// requested pitch), never derived from the model's own expectations.
+    chimney_scale: f64,
 }
+
+/// Calibration probe: when positive, overrides the fingering table's
+/// chimney scale for every render. Only the offline calibration driver
+/// (scripts-side bisection) calls the setter; production hosts never do,
+/// and the default 0.0 disables it. This keeps calibration one build.
+static mut FLT2_CHIMNEY_PROBE: f64 = 0.0;
+
+#[no_mangle]
+pub extern "C" fn flt2_set_chimney_probe(scale: f64) {
+    unsafe { FLT2_CHIMNEY_PROBE = scale };
+}
+
+/// Rows: register octave 0..=3 (MIDI 60 + 12*octave); columns: pitch class.
+/// 1.0 = uncalibrated geometry. See `Fingering::chimney_scale`.
+static FINGERING_CHIMNEY_SCALE: [[f64; 12]; 4] = [
+    [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+    [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+    [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+    [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+];
 
 #[derive(Clone, Copy)]
 struct PhraseState {
@@ -124,6 +151,8 @@ struct PhraseState {
     dc_output: f64,
     feedback_dc_input: f64,
     feedback_dc_output: f64,
+    feedback_dc_input2: f64,
+    feedback_dc_output2: f64,
     forward_fractional_input: [f64; SEGMENTS],
     forward_fractional_output: [f64; SEGMENTS],
     backward_fractional_input: [f64; SEGMENTS],
@@ -160,6 +189,8 @@ impl PhraseState {
             dc_output: 0.0,
             feedback_dc_input: 0.0,
             feedback_dc_output: 0.0,
+            feedback_dc_input2: 0.0,
+            feedback_dc_output2: 0.0,
             forward_fractional_input: [0.0; SEGMENTS],
             forward_fractional_output: [0.0; SEGMENTS],
             backward_fractional_input: [0.0; SEGMENTS],
@@ -261,6 +292,14 @@ fn fingering_for_midi(midi: i32) -> Option<Fingering> {
     Some(Fingering {
         openness,
         register_harmonic,
+        chimney_scale: {
+            let probe = unsafe { FLT2_CHIMNEY_PROBE };
+            if probe > 0.0 {
+                probe
+            } else {
+                FINGERING_CHIMNEY_SCALE[octave][pitch_class as usize]
+            }
+        },
     })
 }
 
@@ -422,19 +461,20 @@ fn passive_junction(
     (pressure - from_right, pressure - from_left, pressure)
 }
 
-fn hole_effective_length_m(hole: usize, openness: f64) -> f64 {
+fn hole_effective_length_m(hole: usize, openness: f64, chimney_scale: f64) -> f64 {
     let radius = HOLE_RADIUS_M[hole];
     let partial_key_path = if openness > 0.0 && openness < 0.95 {
         (1.0 - openness) * HOLE_KEY_CUP_PATH_M[hole]
     } else {
         0.0
     };
-    HOLE_CHIMNEY_M[hole] + 0.6133 * radius + partial_key_path
+    chimney_scale * (HOLE_CHIMNEY_M[hole] + 0.6133 * radius + partial_key_path)
 }
 
 fn hole_branch_step(
     hole: usize,
     openness: f64,
+    chimney_scale: f64,
     pressure: f64,
     prior_flow: f64,
     sample_rate: f64,
@@ -447,7 +487,7 @@ fn hole_branch_step(
     // Compact-limit, unflanged aperture correction.  FrankenSim's fs-bem
     // closed-body pilot independently recovered the same added-mass regime;
     // it is an offline authority, not a runtime dependency.
-    let effective_length = hole_effective_length_m(hole, openness);
+    let effective_length = hole_effective_length_m(hole, openness, chimney_scale);
     let aperture = openness * openness;
     let mass = AIR_DENSITY_KG_PER_M3 * effective_length / (area * aperture);
     let resistance = 0.018 * AIR_DENSITY_KG_PER_M3 * SOUND_SPEED_M_PER_S / (area * aperture);
@@ -563,6 +603,8 @@ fn encode_state(
     scalars[68] = state.noise_meander_high;
     scalars[69] = state.radiation_tilt_input;
     scalars[70] = state.radiation_tilt_output;
+    scalars[71] = state.feedback_dc_input2;
+    scalars[72] = state.feedback_dc_output2;
     for (index, value) in scalars.iter().enumerate() {
         if !write_f64(bytes, STATE_HEADER_BYTES + index * 8, *value) {
             return None;
@@ -662,6 +704,8 @@ fn decode_state(
         dc_output: scalars[26],
         feedback_dc_input: scalars[28],
         feedback_dc_output: scalars[29],
+        feedback_dc_input2: scalars[71],
+        feedback_dc_output2: scalars[72],
         forward_fractional_input: [0.0; SEGMENTS],
         forward_fractional_output: [0.0; SEGMENTS],
         backward_fractional_input: [0.0; SEGMENTS],
@@ -827,6 +871,26 @@ fn render_with_storage(
         geometry_fundamental_hz(fingering) * (fingering.register_harmonic as f64 - 0.75)
     };
     let feedback_dc_pole = exp(-TAU * feedback_highpass_hz / sr);
+    // Jet spatial-growth selectivity (Rayleigh instability): the jet's
+    // convective amplification is band-limited around the operating
+    // Strouhal point, falling toward both DC and high frequency. The model
+    // previously amplified every frequency equally, so the bore's strongest
+    // resonance (always the fundamental) captured the regime and overblown
+    // registers locked one or two octaves low regardless of return-path
+    // filtering (measured 2026-08-07, calibration passes 1-3). A unity-peak
+    // resonant band-pass on the jet perturbation, centred on the fixed
+    // geometry/register target (never the requested MIDI), realises the
+    // measured selectivity. Register 1 bypasses it bit-identically.
+    let (jet_bp_b0, jet_bp_a1, jet_bp_a2) = if fingering.register_harmonic >= 2 {
+        let f_target = geometry_fundamental_hz(fingering) * fingering.register_harmonic as f64;
+        let omega = (TAU * f_target / sr).min(3.0);
+        let quality = 1.3;
+        let alpha = sin(omega) / (2.0 * quality);
+        let a0 = 1.0 + alpha;
+        (alpha / a0, -2.0 * cos(omega) / a0, (1.0 - alpha) / a0)
+    } else {
+        (0.0, 0.0, 0.0)
+    };
     let mut rng = XorShift32::new(state.seed);
 
     for frame in 0..out_left.len() {
@@ -894,7 +958,17 @@ fn render_with_storage(
         jet_history[state.jet_write] = feedback_gain * acoustic_return + turbulence;
         let delay_samples =
             jet_convection_seconds(jet_speed.max(1.0)).unwrap_or(0.0) * sr * law.jet_delay_scale;
-        let delayed_jet = variable_jet_read(jet_history, state.jet_write, delay_samples);
+        let raw_delayed_jet = variable_jet_read(jet_history, state.jet_write, delay_samples);
+        let delayed_jet = if fingering.register_harmonic >= 2 {
+            // Constant-peak-gain band-pass, transposed direct form II.
+            let y = jet_bp_b0 * raw_delayed_jet + state.feedback_dc_input2;
+            state.feedback_dc_input2 =
+                -jet_bp_a1 * y + state.feedback_dc_output2;
+            state.feedback_dc_output2 = -jet_bp_b0 * raw_delayed_jet - jet_bp_a2 * y;
+            y
+        } else {
+            raw_delayed_jet
+        };
         state.jet_write += 1;
         if state.jet_write == MAX_JET_HISTORY {
             state.jet_write = 0;
@@ -928,11 +1002,11 @@ fn render_with_storage(
             let left_y = layout.admittances[hole];
             let right_y = layout.admittances[hole + 1];
             let openness = fingering.openness[hole];
-            let (probe_g, _, _) = hole_branch_step(hole, openness, 0.0, state.hole_flow[hole], sr);
+            let (probe_g, _, _) = hole_branch_step(hole, openness, fingering.chimney_scale, 0.0, state.hole_flow[hole], sr);
             let aperture = openness * openness;
             let radius = HOLE_RADIUS_M[hole];
             let area = core::f64::consts::PI * radius * radius;
-            let effective_length = hole_effective_length_m(hole, openness);
+            let effective_length = hole_effective_length_m(hole, openness, fingering.chimney_scale);
             let mass = if aperture > 0.0 {
                 AIR_DENSITY_KG_PER_M3 * effective_length / (area * aperture)
             } else {
@@ -958,7 +1032,7 @@ fn render_with_storage(
                 history,
             );
             let (_, flow, radiated) =
-                hole_branch_step(hole, openness, pressure_at_hole, state.hole_flow[hole], sr);
+                hole_branch_step(hole, openness, fingering.chimney_scale, pressure_at_hole, state.hole_flow[hole], sr);
             state.hole_flow[hole] = flow;
             state.hole_radiation[hole] += radiation_alpha * (radiated - state.hole_radiation[hole]);
             forward_next[layout.offsets[hole + 1] + next_writes[hole + 1]] = toward_right;
@@ -1354,8 +1428,8 @@ mod tests {
         let longer_channel_delay =
             jet_convection_seconds_for_channel(EMB_CHANNEL_TO_EDGE_M * 1.0002, 20.0).unwrap();
         assert!((longer_channel_delay / delay - 1.0002).abs() < 1.0e-12);
-        let half_open_e_key = hole_effective_length_m(6, 0.50);
-        let fully_open_e_key = hole_effective_length_m(6, 1.0);
+        let half_open_e_key = hole_effective_length_m(6, 0.50, 1.0);
+        let fully_open_e_key = hole_effective_length_m(6, 1.0, 1.0);
         assert!((half_open_e_key - fully_open_e_key - 0.00004).abs() < 1.0e-15);
 
         // Planted negative: a pressure-linear delay law has the wrong scaling

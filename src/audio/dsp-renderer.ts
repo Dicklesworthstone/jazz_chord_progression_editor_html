@@ -68,8 +68,19 @@ export const PLUCKED_DREADNOUGHT_ALGORITHM_ID =
   "changes.dsp.plucked-dreadnought@1";
 export const PLUCKED_UKULELE_ALGORITHM_ID =
   "changes.dsp.plucked-ukulele@1";
+export const PLUCKED_UPRIGHT_BASS_ALGORITHM_ID =
+  "changes.dsp.plucked-upright-bass@1";
+const PLK2_UPRIGHT_BASS_PACK_INDEX = 4;
 
 export type WindAttackArticulation = "legato" | "tongued";
+
+export type PhysicalPluckedStemRenderResult = Readonly<{
+  sampleRateHz: number;
+  frameCount: number;
+  left: Float32Array;
+  right: Float32Array;
+  stateOutput: Uint8Array;
+}>;
 
 export type WaveguideRenderer = Readonly<{
   algorithmId: string;
@@ -96,6 +107,19 @@ export type WaveguideRenderer = Readonly<{
     variationSlot: number,
     windArticulation: WindAttackArticulation,
   ) => PhysicalClarinetPhraseRenderResult | null;
+  /**
+   * Explicit retained plucked-instrument stem. Unlike `renderNote`, this path
+   * carries all strings, body modes, contact, amp, and radiation history
+   * between bounded segments; `reset` is the deterministic Stop operation.
+   */
+  renderPluckedStemSegment?: (
+    midiPitch: number | null,
+    velocity: number,
+    sampleRateHz: number,
+    frameCount: number,
+    stateInput: Uint8Array | null,
+    reset: boolean,
+  ) => PhysicalPluckedStemRenderResult | null;
 }>;
 
 /**
@@ -337,6 +361,24 @@ type ConcertGrandExports = Readonly<{
     midi: number,
     velocity: number,
     sampleRate: number,
+    left: number,
+    right: number,
+    maxFrames: number,
+  ) => number;
+  plk2_stem_state_max_bytes?: () => number;
+  plk2_stem_render_max_frames?: () => number;
+  plk2_stem_init?: (
+    pack: number,
+    sampleRate: number,
+    state: number,
+    stateCapacity: number,
+  ) => number;
+  plk2_stem_render?: (
+    state: number,
+    stateBytes: number,
+    midi: number,
+    velocity: number,
+    eventFlags: number,
     left: number,
     right: number,
     maxFrames: number,
@@ -915,6 +957,47 @@ function requireExportedFunction(
   return candidate;
 }
 
+function optionalPluckedStemExports(
+  rawExports: Readonly<Record<string, unknown>>,
+): Pick<
+  ConcertGrandExports,
+  | "plk2_stem_state_max_bytes"
+  | "plk2_stem_render_max_frames"
+  | "plk2_stem_init"
+  | "plk2_stem_render"
+> {
+  const names = [
+    "plk2_stem_state_max_bytes",
+    "plk2_stem_render_max_frames",
+    "plk2_stem_init",
+    "plk2_stem_render",
+  ] as const;
+  const present = names.filter((name) => rawExports[name] !== undefined);
+  if (present.length === 0) return Object.freeze({});
+  if (present.length !== names.length) {
+    const missing = names.find((name) => rawExports[name] === undefined);
+    throw new Error(`DSP_WASM_EXPORT_MISSING:${missing ?? "plk2_stem"}`);
+  }
+  return Object.freeze({
+    plk2_stem_state_max_bytes: requireExportedFunction(
+      rawExports,
+      "plk2_stem_state_max_bytes",
+    ) as NonNullable<ConcertGrandExports["plk2_stem_state_max_bytes"]>,
+    plk2_stem_render_max_frames: requireExportedFunction(
+      rawExports,
+      "plk2_stem_render_max_frames",
+    ) as NonNullable<ConcertGrandExports["plk2_stem_render_max_frames"]>,
+    plk2_stem_init: requireExportedFunction(
+      rawExports,
+      "plk2_stem_init",
+    ) as NonNullable<ConcertGrandExports["plk2_stem_init"]>,
+    plk2_stem_render: requireExportedFunction(
+      rawExports,
+      "plk2_stem_render",
+    ) as NonNullable<ConcertGrandExports["plk2_stem_render"]>,
+  });
+}
+
 async function instantiate(): Promise<DspCore> {
   const bytes = decodeWasmBytes();
   const { instance } = await WebAssembly.instantiate(bytes, {});
@@ -969,6 +1052,7 @@ async function instantiate(): Promise<DspCore> {
       rawExports,
       "plk2_render",
     ) as ConcertGrandExports["plk2_render"],
+    ...optionalPluckedStemExports(rawExports),
     flt_note_frames: requireExportedFunction(
       rawExports,
       "flt_note_frames",
@@ -1526,6 +1610,98 @@ async function instantiate(): Promise<DspCore> {
     });
   };
 
+  const makePluckedStemSegment = (
+    packIndex: number,
+  ): NonNullable<WaveguideRenderer["renderPluckedStemSegment"]> | undefined => {
+    const stateMaxBytesFor = exports.plk2_stem_state_max_bytes;
+    const renderMaxFramesFor = exports.plk2_stem_render_max_frames;
+    const initialize = exports.plk2_stem_init;
+    const render = exports.plk2_stem_render;
+    if (
+      stateMaxBytesFor === undefined || renderMaxFramesFor === undefined ||
+      initialize === undefined || render === undefined
+    ) return undefined;
+    return (
+      midiPitch,
+      velocity,
+      sampleRateHz,
+      frameCount,
+      stateInput,
+      reset,
+    ) => {
+      if (
+        !Number.isSafeInteger(packIndex) || packIndex < 0 ||
+        !Number.isSafeInteger(frameCount) || frameCount <= 0 ||
+        !Number.isFinite(sampleRateHz) ||
+        (midiPitch === null
+          ? velocity !== 0
+          : !Number.isSafeInteger(midiPitch) ||
+            !Number.isSafeInteger(velocity) || velocity < 1 || velocity > 127)
+      ) return null;
+      const stateCapacity = stateMaxBytesFor();
+      const maximumFrames = renderMaxFramesFor();
+      if (
+        !Number.isSafeInteger(stateCapacity) || stateCapacity <= 0 ||
+        stateCapacity > 64 * 1_024 ||
+        !Number.isSafeInteger(maximumFrames) || maximumFrames <= 0 ||
+        frameCount > maximumFrames ||
+        (stateInput !== null &&
+          (stateInput.byteLength <= 0 || stateInput.byteLength > stateCapacity))
+      ) return null;
+      const statePointer = scratchBase;
+      const leftPointer = Math.ceil((statePointer + stateCapacity) / 4) * 4;
+      const channelBytes = frameCount * 4;
+      const rightPointer = leftPointer + channelBytes;
+      ensureCapacity(
+        memory,
+        scratchBase,
+        rightPointer + channelBytes - scratchBase,
+      );
+      let stateBytes: number;
+      if (stateInput === null) {
+        stateBytes = initialize(
+          packIndex,
+          sampleRateHz,
+          statePointer,
+          stateCapacity,
+        );
+      } else {
+        stateBytes = stateInput.byteLength;
+        new Uint8Array(memory.buffer, statePointer, stateBytes).set(stateInput);
+      }
+      if (stateBytes <= 0 || stateBytes > stateCapacity) return null;
+      const eventFlags = (midiPitch === null ? 0 : 1) | (reset ? 2 : 0);
+      const written = render(
+        statePointer,
+        stateBytes,
+        midiPitch ?? -1,
+        midiPitch === null ? 0 : velocity,
+        eventFlags,
+        leftPointer,
+        rightPointer,
+        frameCount,
+      );
+      if (written !== frameCount) return null;
+      const left = new Float32Array(written);
+      const right = new Float32Array(written);
+      left.set(new Float32Array(memory.buffer, leftPointer, written));
+      right.set(new Float32Array(memory.buffer, rightPointer, written));
+      const stateOutput = new Uint8Array(stateBytes);
+      stateOutput.set(new Uint8Array(memory.buffer, statePointer, stateBytes));
+      return Object.freeze({
+        sampleRateHz,
+        frameCount: written,
+        left,
+        right,
+        stateOutput,
+      });
+    };
+  };
+
+  const renderUprightBassStemSegment = makePluckedStemSegment(
+    PLK2_UPRIGHT_BASS_PACK_INDEX,
+  );
+
   const waveguide = new Map<string, WaveguideRenderer>();
   for (const [algorithmId, renderNoteFor] of [
     [
@@ -1554,6 +1730,13 @@ async function instantiate(): Promise<DspCore> {
       makeWaveguideRenderNote(
         (m, r) => exports.plk2_note_frames(3, m, r),
         (m, v, r, l, rt, mx) => exports.plk2_render(3, m, v, r, l, rt, mx),
+      ),
+    ],
+    [
+      PLUCKED_UPRIGHT_BASS_ALGORITHM_ID,
+      makeWaveguideRenderNote(
+        (m, r) => exports.plk2_note_frames(4, m, r),
+        (m, v, r, l, rt, mx) => exports.plk2_render(4, m, v, r, l, rt, mx),
       ),
     ],
     [
@@ -1632,6 +1815,17 @@ async function instantiate(): Promise<DspCore> {
         algorithmId,
         wasmSha256: CONCERT_GRAND_WASM_SHA256,
         renderNote: renderNoteFor,
+      }),
+    );
+  }
+  const uprightBass = waveguide.get(PLUCKED_UPRIGHT_BASS_ALGORITHM_ID);
+  if (uprightBass === undefined) throw new Error("DSP_UPRIGHT_BASS_MISSING");
+  if (renderUprightBassStemSegment !== undefined) {
+    waveguide.set(
+      PLUCKED_UPRIGHT_BASS_ALGORITHM_ID,
+      Object.freeze({
+        ...uprightBass,
+        renderPluckedStemSegment: renderUprightBassStemSegment,
       }),
     );
   }
