@@ -38,7 +38,7 @@ describe("playable-window coverage law", () => {
   });
 
   test("every window row names a current recipe id (no orphans)", () => {
-    const recipeIds = new Set(AUDIO_INSTRUMENT_RECIPES.map((r) => r.id));
+    const recipeIds = new Set<string>(AUDIO_INSTRUMENT_RECIPES.map((r) => r.id));
     const orphans = Object.keys(AUDIO_PLAYABLE_MIDI_WINDOWS).filter(
       (id) => !recipeIds.has(id),
     );
@@ -46,7 +46,9 @@ describe("playable-window coverage law", () => {
   });
 
   test("every window spans at least the fold-uniqueness minimum (12)", () => {
-    for (const [id, window] of Object.entries(AUDIO_PLAYABLE_MIDI_WINDOWS)) {
+    for (const [id, window] of Object.entries(
+      AUDIO_PLAYABLE_MIDI_WINDOWS as Readonly<Record<string, Readonly<{ low: number; high: number }>>>,
+    )) {
       expect(window.high - window.low, id).toBeGreaterThanOrEqual(12);
     }
   });
@@ -75,15 +77,19 @@ describe("Rust plucked windows assert-equal the TS windows", () => {
     const rust = rustRange(
       /PLK2_ARCHTOP_PACK \| PLK2_MARSHALL_ELECTRIC_PACK \| PLK2_DREADNOUGHT_PACK => \{\s*\((\d+)\.\.=(\d+)\)\.contains/u,
     );
+    const windows = AUDIO_PLAYABLE_MIDI_WINDOWS as Readonly<
+      Record<string, Readonly<{ low: number; high: number }>>
+    >;
     for (const id of ["guitar", "blues-guitar", "dreadnought-guitar"]) {
-      expect(AUDIO_PLAYABLE_MIDI_WINDOWS[id as keyof typeof AUDIO_PLAYABLE_MIDI_WINDOWS], id).toEqual(
-        Object.freeze(rust),
-      );
+      expect(windows[id], id).toEqual(rust);
     }
   });
 
   test("ukulele window matches Rust", () => {
     const rust = rustRange(/PLK2_UKULELE_PACK => \((\d+)\.\.=(\d+)\)\.contains/u);
-    expect(AUDIO_PLAYABLE_MIDI_WINDOWS.ukulele).toEqual(Object.freeze(rust));
+    const windows = AUDIO_PLAYABLE_MIDI_WINDOWS as Readonly<
+      Record<string, Readonly<{ low: number; high: number }>>
+    >;
+    expect(windows["ukulele"], "ukulele").toEqual(rust);
   });
 });
