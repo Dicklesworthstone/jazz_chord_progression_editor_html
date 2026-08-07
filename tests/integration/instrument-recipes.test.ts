@@ -656,7 +656,7 @@ describe("TR-X0-RECIPES instrument recipes", () => {
             bufferCacheLimit: 64,
           },
           flute: {
-            algorithmId: "changes.dsp.waveguide-flute@1",
+            algorithmId: "changes.dsp.waveguide-flute@2",
             channels: 2,
             maximumRenderSeconds: 5,
             bufferCacheLimit: 64,

@@ -277,7 +277,7 @@
       "polyphonyLimit": 32,
       "scheduledSourceCount": 1,
       "renderer": {
-        "algorithmId": "changes.dsp.waveguide-flute@1",
+        "algorithmId": "changes.dsp.waveguide-flute@2",
         "channels": 2,
         "maximumRenderSeconds": 5,
         "bufferCacheLimit": 64

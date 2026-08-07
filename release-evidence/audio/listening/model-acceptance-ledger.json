@@ -17,6 +17,13 @@
       "date": "2026-08-06"
     },
     {
+      "algorithmId": "changes.dsp.waveguide-flute@2",
+      "status": "machine-delegated",
+      "evidence": "release-evidence/audio/listening/flute-v2.json",
+      "decidedBy": "owner-delegated-machine-gate",
+      "date": "2026-08-07"
+    },
+    {
       "algorithmId": "changes.dsp.waveguide-clarinet@1",
       "status": "approved",
       "evidence": "owner-approved artifact 67b9ae08 (commit 031c667); HNR 31-37 dB accepted 2026-08-06",

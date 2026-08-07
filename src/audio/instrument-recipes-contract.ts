@@ -316,7 +316,7 @@ export const AUDIO_INSTRUMENT_RECIPES = Object.freeze([
     outputLevel: 0.5,
     polyphonyLimit: 32,
     renderer: Object.freeze({
-      algorithmId: "changes.dsp.waveguide-flute@1",
+      algorithmId: "changes.dsp.waveguide-flute@2",
       channels: 2,
       maximumRenderSeconds: 5,
       bufferCacheLimit: 64,
