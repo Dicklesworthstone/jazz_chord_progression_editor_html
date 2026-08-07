@@ -95,6 +95,10 @@ const SOLVER = Object.freeze({
     "SPD-mass-Cholesky-reduction-cyclic-Jacobi-backtransform-M-normalization",
   maximumJacobiSweeps: 80,
   jacobiRelativeTolerance: 1e-16,
+  gaussNewtonMaximumIterations: 24,
+  gaussNewtonLineSearchScales: [1, 0.5, 0.25, 0.125, 0.0625],
+  evolutionaryPopulation: 36,
+  evolutionaryGenerations: 48,
   tuningMaximumPasses: 28,
   tuningMinimumStep: 2e-4,
   frankensimModalPatternCommit:
@@ -120,6 +124,13 @@ type Mode = Readonly<{
 type SolvedBeam = Readonly<{
   massKg: number;
   modes: readonly Mode[];
+  proof: Readonly<{
+    rigidModeCount: number;
+    translationStiffnessRelativeResidual: number;
+    rotationStiffnessRelativeResidual: number;
+    maximumMassOrthogonalityDefect: number;
+    jacobiSweepsUsed: number;
+  }>;
 }>;
 
 type TuningTarget = Readonly<{
@@ -147,6 +158,7 @@ type PackRecord = Readonly<{
   solvedFrequenciesHz: readonly number[];
   solvedRatios: readonly number[];
   eigenRelativeResiduals: readonly number[];
+  solverProof: SolvedBeam["proof"];
   massNormalizedDisplacementShapes: readonly (readonly number[])[];
   t60Seconds: readonly number[];
   resonator: Readonly<{ physicalLengthM: number; radiusM: number }>;
@@ -380,13 +392,19 @@ function solveLowerTransposeInPlace(
 function jacobiEigen(
   input: readonly number[],
   n: number,
-): Readonly<{ values: readonly number[]; vectors: readonly number[] }> {
+): Readonly<{
+  values: readonly number[];
+  vectors: readonly number[];
+  sweepsUsed: number;
+}> {
   const matrix = [...input];
   const vectors = Array<number>(n * n).fill(0);
   for (let index = 0; index < n; index += 1) {
     vectors[index * n + index] = 1;
   }
+  let sweepsUsed = 0;
   for (let sweep = 0; sweep < SOLVER.maximumJacobiSweeps; sweep += 1) {
+    sweepsUsed = sweep + 1;
     let maximumOffDiagonal = 0;
     let rotated = false;
     for (let p = 0; p < n - 1; p += 1) {
@@ -442,6 +460,7 @@ function jacobiEigen(
     vectors: order.flatMap((column) =>
       Array.from({ length: n }, (_, row) => vectors[row * n + column] ?? 0),
     ),
+    sweepsUsed,
   };
 }
 
@@ -501,7 +520,36 @@ function solveBeam(design: BeamDesign): SolvedBeam {
   }
 
   const eigensystem = jacobiEigen(reduced, DOF_COUNT);
+  const rigidModeCount = eigensystem.values.filter(
+    (eigenvalue) => Math.abs(eigenvalue) <= 1,
+  ).length;
+  if (rigidModeCount !== 2) {
+    throw new Error(`PHS6_GENERATOR_RIGID_MODE_COUNT:${rigidModeCount}`);
+  }
+  const stiffnessScale = Math.max(1, ...assembled.stiffness.map(Math.abs));
+  const elementLength = design.lengthM / ELEMENT_COUNT;
+  const translation = Array.from(
+    { length: DOF_COUNT },
+    (_, dof) => (dof % 2 === 0 ? 1 : 0),
+  );
+  const rotation = Array.from({ length: DOF_COUNT }, (_, dof) =>
+    dof % 2 === 0 ? Math.floor(dof / 2) * elementLength : 1,
+  );
+  const stiffnessNullResidual = (vector: readonly number[]): number =>
+    Math.sqrt(dot(multiply(assembled.stiffness, vector, DOF_COUNT), multiply(assembled.stiffness, vector, DOF_COUNT))) /
+    (stiffnessScale * Math.max(1, Math.sqrt(dot(vector, vector))));
+  const translationStiffnessRelativeResidual = stiffnessNullResidual(translation);
+  const rotationStiffnessRelativeResidual = stiffnessNullResidual(rotation);
+  if (
+    translationStiffnessRelativeResidual > 1e-12 ||
+    rotationStiffnessRelativeResidual > 1e-12
+  ) {
+    throw new Error(
+      `PHS6_GENERATOR_RIGID_NULLSPACE:${translationStiffnessRelativeResidual}:${rotationStiffnessRelativeResidual}`,
+    );
+  }
   const modes: Mode[] = [];
+  const fullModeVectors: number[][] = [];
   // A free-free beam has two rigid-body modes.  Select the first positive
   // flexural modes rather than assuming small roundoff preserves indices.
   for (let eigenIndex = 0; eigenIndex < DOF_COUNT && modes.length < MODE_COUNT; eigenIndex += 1) {
@@ -553,11 +601,42 @@ function solveBeam(design: BeamDesign): SolvedBeam {
       relativeResidual,
       shapeMNegHalfKg: displacement,
     });
+    fullModeVectors.push(phi);
   }
   if (modes.length !== MODE_COUNT) {
     throw new Error(`PHS6_GENERATOR_MODE_COUNT:${modes.length}`);
   }
-  return { massKg: assembled.massKg, modes };
+  let maximumMassOrthogonalityDefect = 0;
+  for (let left = 0; left < fullModeVectors.length; left += 1) {
+    for (let right = 0; right < fullModeVectors.length; right += 1) {
+      const massRight = multiply(
+        assembled.mass,
+        fullModeVectors[right] ?? [],
+        DOF_COUNT,
+      );
+      const product = dot(fullModeVectors[left] ?? [], massRight);
+      maximumMassOrthogonalityDefect = Math.max(
+        maximumMassOrthogonalityDefect,
+        Math.abs(product - (left === right ? 1 : 0)),
+      );
+    }
+  }
+  if (maximumMassOrthogonalityDefect > 1e-8) {
+    throw new Error(
+      `PHS6_GENERATOR_MASS_ORTHOGONALITY:${maximumMassOrthogonalityDefect}`,
+    );
+  }
+  return {
+    massKg: assembled.massKg,
+    modes,
+    proof: {
+      rigidModeCount,
+      translationStiffnessRelativeResidual,
+      rotationStiffnessRelativeResidual,
+      maximumMassOrthogonalityDefect,
+      jacobiSweepsUsed: eigensystem.sweepsUsed,
+    },
+  };
 }
 
 function variablesFromCoordinates(coordinates: readonly number[]): UndercutVariables {
@@ -698,7 +777,11 @@ function refineProfileGaussNewton(
   let coordinates = [...initial];
   let best = ratioObjective(midi, coordinates, tunedModeCount);
   let damping = 1e-2;
-  for (let iteration = 0; iteration < 24; iteration += 1) {
+  for (
+    let iteration = 0;
+    iteration < SOLVER.gaussNewtonMaximumIterations;
+    iteration += 1
+  ) {
     const parameterCount = coordinates.length;
     const residualCount = best.residualCents.length;
     const jacobian = Array<number>(residualCount * parameterCount).fill(0);
@@ -741,7 +824,7 @@ function refineProfileGaussNewton(
     }
     const step = solveDenseSystem(normal, right);
     let accepted = false;
-    for (const scale of [1, 0.5, 0.25, 0.125, 0.0625]) {
+    for (const scale of SOLVER.gaussNewtonLineSearchScales) {
       const candidate = coordinates.map((value, index) =>
         clampDesignCoordinate(value + scale * (step[index] ?? 0)),
       );
@@ -775,8 +858,8 @@ function tuneProfileEvolutionary(
   tunedModeCount = 3,
 ): Readonly<{ coordinates: readonly number[]; objective: ReturnType<typeof ratioObjective> }> {
   const parameterCount = ELEMENT_COUNT / 2 - 2;
-  const populationSize = 36;
-  const generations = 48;
+  const populationSize = SOLVER.evolutionaryPopulation;
+  const generations = SOLVER.evolutionaryGenerations;
   const random = deterministicUnit(0x51f15e ^ midi);
   const minimum = MINIMUM_THICKNESS_FRACTION;
   const population = Array.from({ length: populationSize }, (_, member) =>
@@ -1060,6 +1143,19 @@ function buildRecord(
     solvedFrequenciesHz: frequencies.map(round),
     solvedRatios: ratios.map(round),
     eigenRelativeResiduals: solved.modes.map((mode) => round(mode.relativeResidual)),
+    solverProof: {
+      rigidModeCount: solved.proof.rigidModeCount,
+      translationStiffnessRelativeResidual: round(
+        solved.proof.translationStiffnessRelativeResidual,
+      ),
+      rotationStiffnessRelativeResidual: round(
+        solved.proof.rotationStiffnessRelativeResidual,
+      ),
+      maximumMassOrthogonalityDefect: round(
+        solved.proof.maximumMassOrthogonalityDefect,
+      ),
+      jacobiSweepsUsed: solved.proof.jacobiSweepsUsed,
+    },
     massNormalizedDisplacementShapes: solved.modes.map((mode) =>
       mode.shapeMNegHalfKg.map(round),
     ),

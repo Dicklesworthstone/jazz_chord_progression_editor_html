@@ -55,27 +55,9 @@ const MOUTHPIECE_BACKBORE_ENTRY_RADIUS_M: f64 = 0.0025;
 // area at the lip, not the much smaller distributed backbore entry used by the
 // Webster tube below.
 const MOUTHPIECE_CUP_ENTRY_AREA_M2: f64 = 2.3e-4;
+const LIP_JOINT_NORMAL_POSITION_M: f64 = 4.0e-3;
+const LIP_THICKNESS_M: f64 = 2.0e-3;
 const LIP_CONTACT_SCALE_M: f64 = 2.5e-4;
-const LIP_STREAMWISE_MASS_RATIO: f64 = 0.75;
-// Newton/Campbell/Gilbert measured a representative artificial-lip pair at
-// 136/184 Hz (ratio 1.35); 1.4 keeps the weaker inward mode close enough to
-// bracket the played frequency without collapsing the modes numerically.
-const LIP_SECOND_MODE_FREQUENCY_RATIO: f64 = 1.4;
-// With positive streamwise displacement defined as aperture-closing, negative
-// symmetric coupling makes the upper tissue eigenmode opposite-phase. That
-// mode changes the aperture strongly and brackets the 116 Hz geometry mode;
-// the opposite coupling sign nearly cancels its aperture participation and
-// leaves the intended register linearly stable.
-const LIP_STIFFNESS_COUPLING: f64 = -0.20;
-// The normal-regime embouchure rejects the quasi-static tissue displacement
-// driven by the pressure vector [1,-4] while retaining the resonant relative
-// motion of both lip coordinates. For the fixed passive stiffness ratios
-// below, K^-1[1,-4]=[0.355,-2.664] in normalized coordinates, hence the
-// aperture gradient [1,-g] is orthogonal at g=-0.133. This analytic
-// participation condition prevents the non-playing first bore peak from
-// winning merely because it sees the largest DC lip compliance.
-const LIP_APERTURE_STREAMWISE_GAIN: f64 = -0.133;
-const LIP_STREAMWISE_PRESSURE_AREA_RATIO: f64 = 4.0;
 const LIP_CONTACT_DAMPING_RATIO: f64 = 0.8;
 const LIP_CONTACT_STIFFNESS_RATIO: f64 = 8.0;
 // Adachi-Sato's lip thickness is 2 mm; this is a conservative anatomical
@@ -197,9 +179,9 @@ impl TrumpetParameters {
     #[must_use]
     pub const fn canonical() -> Self {
         Self {
-            // Effective one-mass lip plate from the validated time-domain
-            // brass configuration (Berjamin et al., table 2).
-            lip_mass_kg: 1.78e-4,
+            // Effective half-mass at the 300 Hz reference. Adachi-Sato use
+            // m=1.5/((2*pi)^2*f_lip) and their tip equation carries m/2.
+            lip_mass_kg: 6.33e-5,
             // Adachi-Sato's 7 mm lip width and 1 mm streamwise rest position
             // give this aperture-normal projected area.
             lip_effective_area_m2: 7.0e-6,
@@ -418,70 +400,76 @@ pub fn unilateral_lip_contact_balance(
     })
 }
 
-/// Work-conjugate Adachi-Sato pressure port for the two-dimensional lip.
-/// The projected areas which turn mouth-minus-cup pressure into normal and
-/// streamwise forces also define the lip-swept volume flow. Consequently the
-/// mouth-source power is exactly cup acoustic power plus lip mechanical power.
+/// Work-conjugate Adachi-Sato pressure ports for the two-dimensional lip.
+/// The mouth/cup pressure difference acts normal to the moving lip side while
+/// the local Bernoulli pressure acts on its tip face. The side's swept-flow
+/// one-form is geometric but not an exact scalar differential: a closed
+/// swinging/stretching cycle can pump net volume between the reservoirs.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct LipPressurePortBalance {
-    pub swept_volume_m3: f64,
     pub normal_force_n: f64,
     pub streamwise_force_n: f64,
     pub swept_flow_m3_s: f64,
+    pub opening_face_flow_m3_s: f64,
     pub mouth_power_w: f64,
     pub cup_power_w: f64,
+    pub opening_pressure_power_w: f64,
     pub mechanical_power_w: f64,
 }
 
 pub fn two_dimensional_lip_pressure_port_balance(
     normal_equilibrium_area_m2: f64,
     lip_width_m: f64,
+    equilibrium_opening_m: f64,
     normal_displacement_m: f64,
     streamwise_displacement_m: f64,
     normal_velocity_m_s: f64,
     streamwise_velocity_m_s: f64,
     mouth_pressure_pa: f64,
     cup_pressure_pa: f64,
+    lip_opening_pressure_pa: f64,
 ) -> Result<LipPressurePortBalance, TrumpetError> {
     let values = [
         normal_equilibrium_area_m2,
         lip_width_m,
+        equilibrium_opening_m,
         normal_displacement_m,
         streamwise_displacement_m,
         normal_velocity_m_s,
         streamwise_velocity_m_s,
         mouth_pressure_pa,
         cup_pressure_pa,
+        lip_opening_pressure_pa,
     ];
     if values.iter().any(|value| !value.is_finite())
         || normal_equilibrium_area_m2 <= 0.0
         || lip_width_m <= 0.0
+        || equilibrium_opening_m < 0.0
     {
         return Err(TrumpetError::NonFiniteState);
     }
-    // Local, integrable linearization of the Adachi-Sato projected areas. With
-    // their 7 mm lip width, 1 mm streamwise rest position, and 4 mm joint arm,
-    // pressure sees approximately 7 mm^2 in the aperture-normal direction and
-    // -28 mm^2 in our aperture-closing streamwise coordinate. Both forces are
-    // the exact gradient of V=A*(x-4y), and the same geometry supplies swept
-    // flow. This predominantly drives the opposite-phase upper tissue mode
-    // that brackets the open-bore pedal register without a large DC opening.
-    let swept_volume_m3 = normal_equilibrium_area_m2
-        * (normal_displacement_m - LIP_STREAMWISE_PRESSURE_AREA_RATIO * streamwise_displacement_m);
-    let normal_area_m2 = normal_equilibrium_area_m2;
-    let streamwise_area_m2 = -LIP_STREAMWISE_PRESSURE_AREA_RATIO * normal_equilibrium_area_m2;
+    let streamwise_rest_position_m = normal_equilibrium_area_m2 / lip_width_m;
+    let streamwise_tip_position_m = streamwise_rest_position_m + streamwise_displacement_m;
+    let normal_tip_position_m = 0.5 * equilibrium_opening_m + normal_displacement_m;
+    let normal_area_m2 = lip_width_m * streamwise_tip_position_m;
+    let streamwise_area_m2 =
+        lip_width_m * (LIP_JOINT_NORMAL_POSITION_M - normal_tip_position_m);
     let pressure_difference_pa = mouth_pressure_pa - cup_pressure_pa;
-    let normal_force_n = normal_area_m2 * pressure_difference_pa;
+    let bernoulli_normal_force_n = lip_width_m * LIP_THICKNESS_M * lip_opening_pressure_pa;
+    let normal_force_n =
+        normal_area_m2 * pressure_difference_pa + bernoulli_normal_force_n;
     let streamwise_force_n = streamwise_area_m2 * pressure_difference_pa;
     let swept_flow_m3_s =
         normal_area_m2 * normal_velocity_m_s + streamwise_area_m2 * streamwise_velocity_m_s;
+    let opening_face_flow_m3_s = lip_width_m * LIP_THICKNESS_M * normal_velocity_m_s;
     Ok(LipPressurePortBalance {
-        swept_volume_m3,
         normal_force_n,
         streamwise_force_n,
         swept_flow_m3_s,
+        opening_face_flow_m3_s,
         mouth_power_w: mouth_pressure_pa * swept_flow_m3_s,
         cup_power_w: cup_pressure_pa * swept_flow_m3_s,
+        opening_pressure_power_w: lip_opening_pressure_pa * opening_face_flow_m3_s,
         mechanical_power_w: normal_force_n * normal_velocity_m_s
             + streamwise_force_n * streamwise_velocity_m_s,
     })
@@ -609,6 +597,7 @@ pub struct TrumpetModel {
     lip_streamwise_displacement_m: f64,
     lip_streamwise_velocity_m_s: f64,
     lip_streamwise_acceleration_m_s2: f64,
+    lip_opening_pressure_pa: f64,
     lip_jet_flow_m3_s: f64,
     throat_flow_m3_s: f64,
     bell_memory_flow_m3_s: f64,
@@ -688,6 +677,7 @@ impl TrumpetModel {
             lip_streamwise_displacement_m: 0.0,
             lip_streamwise_velocity_m_s: 0.0,
             lip_streamwise_acceleration_m_s2: 0.0,
+            lip_opening_pressure_pa: 0.0,
             lip_jet_flow_m3_s: 0.0,
             throat_flow_m3_s: 0.0,
             bell_memory_flow_m3_s: 0.0,
@@ -769,9 +759,6 @@ impl TrumpetModel {
                     * mechanics.normal_stiffness_n_m
                     * self.lip_displacement_m
                     * self.lip_displacement_m
-                + mechanics.coupling_stiffness_n_m
-                    * self.lip_displacement_m
-                    * self.lip_streamwise_displacement_m
                 + 0.5
                     * mechanics.streamwise_stiffness_n_m
                     * self.lip_streamwise_displacement_m
@@ -923,12 +910,14 @@ impl TrumpetModel {
         let old_pressure_port = two_dimensional_lip_pressure_port_balance(
             self.parameters.lip_effective_area_m2,
             self.parameters.lip_width_m,
+            controls.equilibrium_opening_m,
             self.lip_displacement_m,
             self.lip_streamwise_displacement_m,
             self.lip_velocity_m_s,
             self.lip_streamwise_velocity_m_s,
             controls.mouth_pressure_pa,
             old_pressure,
+            self.lip_opening_pressure_pa,
         )?;
         let old_lip_flow = self.lip_jet_flow_m3_s + old_pressure_port.swept_flow_m3_s;
         let evaluate = |scaled_state: [f64; 4]| -> Result<([f64; 4], LipCandidate), TrumpetError> {
@@ -952,36 +941,12 @@ impl TrumpetModel {
                 normal_velocity_m_s,
                 streamwise_velocity_m_s,
             );
-            let pressure_port = two_dimensional_lip_pressure_port_balance(
-                self.parameters.lip_effective_area_m2,
-                self.parameters.lip_width_m,
-                normal_displacement_m,
-                streamwise_displacement_m,
-                normal_velocity_m_s,
-                streamwise_velocity_m_s,
-                controls.mouth_pressure_pa,
-                candidate_pressure,
-            )?;
-            let normal_force_residual_n = mechanics.normal_mass_kg * normal_acceleration_m_s2
-                + mechanics.normal_damping_n_s_m * normal_velocity_m_s
-                + mechanics.normal_stiffness_n_m * normal_displacement_m
-                + mechanics.coupling_stiffness_n_m * streamwise_displacement_m
-                - pressure_port.normal_force_n
-                - contact.normal_force_n;
-            let streamwise_force_residual_n = mechanics.streamwise_mass_kg
-                * streamwise_acceleration_m_s2
-                + mechanics.streamwise_damping_n_s_m * streamwise_velocity_m_s
-                + mechanics.coupling_stiffness_n_m * normal_displacement_m
-                + mechanics.streamwise_stiffness_n_m * streamwise_displacement_m
-                - pressure_port.streamwise_force_n
-                - contact.streamwise_force_n;
-
             let opening_m = self
                 .lip_aperture_m(controls, normal_displacement_m, streamwise_displacement_m)
                 .max(0.0);
             let tongue_open_fraction = (1.0 - controls.tongue_contact).powi(2);
             let jet_area_m2 = self.parameters.lip_width_m * opening_m * tongue_open_fraction;
-            let jet_residual_pa = if jet_area_m2 > 0.0 {
+            let (jet_residual_pa, lip_opening_pressure_pa) = if jet_area_m2 > 0.0 {
                 // Adachi-Sato equations (7)-(8): contraction into the lip
                 // channel conserves energy; separated expansion into the cup
                 // conserves momentum. Their sum gives a smooth signed
@@ -993,10 +958,42 @@ impl TrumpetModel {
                     * signed_flow_squared
                     * inverse_effective_area
                     * inverse_effective_area;
-                controls.mouth_pressure_pa - candidate_pressure - pressure_drop_pa
+                let local_pressure_pa = controls.mouth_pressure_pa
+                    - 0.5 * AIR_DENSITY_KG_M3 * signed_flow_squared
+                        / (jet_area_m2 * jet_area_m2);
+                (
+                    controls.mouth_pressure_pa - candidate_pressure - pressure_drop_pa,
+                    local_pressure_pa,
+                )
             } else {
-                jet_flow_m3_s / LIP_SOLVE_FLOW_SCALE_M3_S * LIP_SOLVE_PRESSURE_SCALE_PA
+                (
+                    jet_flow_m3_s / LIP_SOLVE_FLOW_SCALE_M3_S * LIP_SOLVE_PRESSURE_SCALE_PA,
+                    candidate_pressure,
+                )
             };
+            let pressure_port = two_dimensional_lip_pressure_port_balance(
+                self.parameters.lip_effective_area_m2,
+                self.parameters.lip_width_m,
+                controls.equilibrium_opening_m,
+                normal_displacement_m,
+                streamwise_displacement_m,
+                normal_velocity_m_s,
+                streamwise_velocity_m_s,
+                controls.mouth_pressure_pa,
+                candidate_pressure,
+                lip_opening_pressure_pa,
+            )?;
+            let normal_force_residual_n = mechanics.normal_mass_kg * normal_acceleration_m_s2
+                + mechanics.normal_damping_n_s_m * normal_velocity_m_s
+                + mechanics.normal_stiffness_n_m * normal_displacement_m
+                - pressure_port.normal_force_n
+                - contact.normal_force_n;
+            let streamwise_force_residual_n = mechanics.streamwise_mass_kg
+                * streamwise_acceleration_m_s2
+                + mechanics.streamwise_damping_n_s_m * streamwise_velocity_m_s
+                + mechanics.streamwise_stiffness_n_m * streamwise_displacement_m
+                - pressure_port.streamwise_force_n
+                - contact.streamwise_force_n;
             let lip_flow = jet_flow_m3_s + pressure_port.swept_flow_m3_s;
             let r = self.parameters.throat_resistance_pa_s_m3;
             let r2 = self.parameters.throat_nonlinear_resistance_pa_s2_m6;
@@ -1041,6 +1038,7 @@ impl TrumpetModel {
                     streamwise_displacement_m,
                     streamwise_velocity_m_s,
                     streamwise_acceleration_m_s2,
+                    lip_opening_pressure_pa,
                     jet_flow_m3_s,
                     throat_flow_m3_s,
                 },
@@ -1170,6 +1168,7 @@ impl TrumpetModel {
         self.lip_streamwise_displacement_m = candidate.streamwise_displacement_m;
         self.lip_streamwise_velocity_m_s = candidate.streamwise_velocity_m_s;
         self.lip_streamwise_acceleration_m_s2 = candidate.streamwise_acceleration_m_s2;
+        self.lip_opening_pressure_pa = candidate.lip_opening_pressure_pa;
         self.lip_jet_flow_m3_s = candidate.jet_flow_m3_s;
         self.throat_flow_m3_s = candidate.throat_flow_m3_s;
         self.last_lip_report = LipSolveReport {
@@ -1189,9 +1188,9 @@ impl TrumpetModel {
         // embouchure settings engage more tissue rather than unrealistically
         // softening one unchanged mass.
         let normal_mass_kg = self.parameters.lip_mass_kg * 300.0 / controls.lip_resonance_hz;
-        let streamwise_mass_kg = normal_mass_kg * LIP_STREAMWISE_MASS_RATIO;
+        let streamwise_mass_kg = normal_mass_kg;
         let normal_omega_rad_s = 2.0 * PI * controls.lip_resonance_hz;
-        let streamwise_omega_rad_s = normal_omega_rad_s * LIP_SECOND_MODE_FREQUENCY_RATIO;
+        let streamwise_omega_rad_s = normal_omega_rad_s;
         let normal_stiffness_n_m = normal_mass_kg * normal_omega_rad_s * normal_omega_rad_s;
         let streamwise_stiffness_n_m =
             streamwise_mass_kg * streamwise_omega_rad_s * streamwise_omega_rad_s;
@@ -1200,8 +1199,6 @@ impl TrumpetModel {
             streamwise_mass_kg,
             normal_stiffness_n_m,
             streamwise_stiffness_n_m,
-            coupling_stiffness_n_m: LIP_STIFFNESS_COUPLING
-                * sqrt(normal_stiffness_n_m * streamwise_stiffness_n_m),
             normal_damping_n_s_m: 2.0
                 * controls.lip_damping_ratio
                 * normal_mass_kg
@@ -1217,10 +1214,9 @@ impl TrumpetModel {
         &self,
         controls: TrumpetControls,
         normal_displacement_m: f64,
-        streamwise_displacement_m: f64,
+        _streamwise_displacement_m: f64,
     ) -> f64 {
-        controls.equilibrium_opening_m + normal_displacement_m
-            - LIP_APERTURE_STREAMWISE_GAIN * streamwise_displacement_m
+        controls.equilibrium_opening_m + 2.0 * normal_displacement_m
     }
 
     fn lip_contact(
@@ -1234,12 +1230,8 @@ impl TrumpetModel {
     ) -> LipContact {
         let aperture_m =
             self.lip_aperture_m(controls, normal_displacement_m, streamwise_displacement_m);
-        let aperture_velocity_m_s =
-            normal_velocity_m_s - LIP_APERTURE_STREAMWISE_GAIN * streamwise_velocity_m_s;
-        let inverse_effective_mass = 1.0 / mechanics.normal_mass_kg
-            + LIP_APERTURE_STREAMWISE_GAIN * LIP_APERTURE_STREAMWISE_GAIN
-                / mechanics.streamwise_mass_kg;
-        let effective_mass_kg = 1.0 / inverse_effective_mass;
+        let aperture_velocity_m_s = 2.0 * normal_velocity_m_s;
+        let effective_mass_kg = mechanics.normal_mass_kg / 4.0;
         let hertz_stiffness_n_m32 = LIP_CONTACT_STIFFNESS_RATIO * mechanics.normal_stiffness_n_m
             / sqrt(LIP_CONTACT_SCALE_M);
         let hunt_crossley_damping_n_s_m32 = 2.0
@@ -1281,12 +1273,10 @@ impl TrumpetModel {
             streamwise_velocity_m_s,
         )
         .expect("canonical streamwise upper contact parameters");
-        let aperture_force_n = lower.force_n - upper.force_n;
+        let aperture_force_n = 2.0 * (lower.force_n - upper.force_n);
         LipContact {
             normal_force_n: aperture_force_n,
-            streamwise_force_n: -LIP_APERTURE_STREAMWISE_GAIN * aperture_force_n
-                + streamwise_lower.force_n
-                - streamwise_upper.force_n,
+            streamwise_force_n: streamwise_lower.force_n - streamwise_upper.force_n,
             potential_energy_j: lower.potential_energy_j
                 + upper.potential_energy_j
                 + streamwise_lower.potential_energy_j
@@ -1358,6 +1348,7 @@ impl TrumpetModel {
             && self.lip_streamwise_displacement_m.is_finite()
             && self.lip_streamwise_velocity_m_s.is_finite()
             && self.lip_streamwise_acceleration_m_s2.is_finite()
+            && self.lip_opening_pressure_pa.is_finite()
             && self.lip_jet_flow_m3_s.is_finite()
             && self.throat_flow_m3_s.is_finite()
             && self.bell_memory_flow_m3_s.is_finite()
@@ -1419,6 +1410,7 @@ struct LipCandidate {
     streamwise_displacement_m: f64,
     streamwise_velocity_m_s: f64,
     streamwise_acceleration_m_s2: f64,
+    lip_opening_pressure_pa: f64,
     jet_flow_m3_s: f64,
     throat_flow_m3_s: f64,
 }
@@ -1429,7 +1421,6 @@ struct LipMechanics {
     streamwise_mass_kg: f64,
     normal_stiffness_n_m: f64,
     streamwise_stiffness_n_m: f64,
-    coupling_stiffness_n_m: f64,
     normal_damping_n_s_m: f64,
     streamwise_damping_n_s_m: f64,
 }
