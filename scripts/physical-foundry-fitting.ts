@@ -29,24 +29,83 @@
  * floor-multiply reduction (documented bias is negligible at population
  * scale and irrelevant to determinism).
  */
+/** Low 64 bits of (aHi:aLo) * (bHi:bLo), via 16-bit limbs; returns [hi, lo]. */
+function mul64(
+  aHi: number,
+  aLo: number,
+  bHi: number,
+  bLo: number,
+): [number, number] {
+  const a0 = aLo & 0xffff;
+  const a1 = aLo >>> 16;
+  const a2 = aHi & 0xffff;
+  const a3 = aHi >>> 16;
+  const b0 = bLo & 0xffff;
+  const b1 = bLo >>> 16;
+  const b2 = bHi & 0xffff;
+  const b3 = bHi >>> 16;
+  // Carries can exceed 2^32, where `>>> 16` would first truncate mod 2^32;
+  // Math.floor division keeps them exact (all sums stay far below 2^53).
+  let c0 = a0 * b0;
+  let c1 = Math.floor(c0 / 65536) + a0 * b1 + a1 * b0;
+  c0 &= 0xffff;
+  let c2 = Math.floor(c1 / 65536) + a0 * b2 + a1 * b1 + a2 * b0;
+  c1 &= 0xffff;
+  let c3 = Math.floor(c2 / 65536) + a0 * b3 + a1 * b2 + a2 * b1 + a3 * b0;
+  c2 &= 0xffff;
+  c3 &= 0xffff;
+  return [((c3 << 16) | c2) >>> 0, ((c1 << 16) | c0) >>> 0];
+}
+
 export class FoundryStream {
-  private state: bigint;
+  /**
+   * splitmix64 state as two 32-bit words. The BigInt formulation this
+   * replaces allocated on every draw and dominated NSGA-II profiles
+   * (~16% self + GC); the limb arithmetic below produces bit-identical
+   * u64 outputs for every seed (same recurrence, same mixing constants,
+   * exact mod-2^64 multiplication via 16-bit limbs). BigInt remains only
+   * in the cold constructor to reproduce the original signed-seed law.
+   */
+  private hi: number;
+  private lo: number;
 
   constructor(seed: number) {
-    this.state = BigInt.asUintN(64, BigInt(Math.trunc(seed)) ^ 0x9e3779b97f4a7c15n);
+    const state = BigInt.asUintN(64, BigInt(Math.trunc(seed)) ^ 0x9e3779b97f4a7c15n);
+    this.hi = Number(state >> 32n) >>> 0;
+    this.lo = Number(state & 0xffffffffn) >>> 0;
+  }
+
+  /** One splitmix64 output as [hi32, lo32]. */
+  private nextPair(): [number, number] {
+    // state += 0x9e3779b97f4a7c15
+    let lo = (this.lo + 0x7f4a7c15) >>> 0;
+    let hi = (this.hi + 0x9e3779b9 + (lo < this.lo ? 1 : 0)) >>> 0;
+    this.hi = hi;
+    this.lo = lo;
+    // z ^= z >> 30; z *= 0xbf58476d1ce4e5b9
+    let xLo = (lo ^ ((hi << 2) | (lo >>> 30))) >>> 0;
+    let xHi = (hi ^ (hi >>> 30)) >>> 0;
+    [hi, lo] = mul64(xHi, xLo, 0xbf58476d, 0x1ce4e5b9);
+    // z ^= z >> 27; z *= 0x94d049bb133111eb
+    xLo = (lo ^ ((hi << 5) | (lo >>> 27))) >>> 0;
+    xHi = (hi ^ (hi >>> 27)) >>> 0;
+    [hi, lo] = mul64(xHi, xLo, 0x94d049bb, 0x133111eb);
+    // z ^= z >> 31
+    xLo = (lo ^ ((hi << 1) | (lo >>> 31))) >>> 0;
+    xHi = (hi ^ (hi >>> 31)) >>> 0;
+    return [xHi, xLo];
   }
 
   nextU64(): bigint {
-    this.state = BigInt.asUintN(64, this.state + 0x9e3779b97f4a7c15n);
-    let z = this.state;
-    z = BigInt.asUintN(64, (z ^ (z >> 30n)) * 0xbf58476d1ce4e5b9n);
-    z = BigInt.asUintN(64, (z ^ (z >> 27n)) * 0x94d049bb133111ebn);
-    return BigInt.asUintN(64, z ^ (z >> 31n));
+    const [hi, lo] = this.nextPair();
+    return (BigInt(hi) << 32n) | BigInt(lo);
   }
 
-  /** Uniform in [0, 1) with 53-bit resolution. */
+  /** Uniform in [0, 1) with 53-bit resolution (top 53 bits, exactly). */
   nextF64(): number {
-    return Number(this.nextU64() >> 11n) / 9007199254740992;
+    const [hi, lo] = this.nextPair();
+    // (u64 >> 11) / 2^53 == (hi * 2^21 + (lo >>> 11)) / 2^53, exactly.
+    return (hi * 2097152 + (lo >>> 11)) / 9007199254740992;
   }
 
   /** Uniform integer in [0, n). */
@@ -104,8 +163,14 @@ export function nelderMead(
   let evals = n + 1;
   const blend = (a: readonly number[], b: readonly number[], t: number): number[] =>
     a.map((p, i) => p + t * ((b[i] ?? 0) - p));
+  // Hoisted per-iteration scratch: the index array is re-sorted in place
+  // (identical comparator and tie-break) and the centroid is re-zeroed;
+  // pure allocation removal, values and ordering unchanged.
+  const idx = Array.from({ length: n + 1 }, (_, k) => k);
+  const centroid = new Array<number>(n).fill(0);
   while (evals < maxEvals) {
-    const idx = Array.from({ length: n + 1 }, (_, k) => k).sort((a, b) => {
+    for (let k = 0; k <= n; k += 1) idx[k] = k;
+    idx.sort((a, b) => {
       const fa = fs[a] ?? Number.POSITIVE_INFINITY;
       const fb = fs[b] ?? Number.POSITIVE_INFINITY;
       if (fa < fb) return -1;
@@ -116,7 +181,7 @@ export function nelderMead(
     const worst = idx[n] ?? 0;
     const secondWorst = idx[n - 1] ?? 0;
     if ((fs[best] ?? Number.POSITIVE_INFINITY) <= fTarget) break;
-    const centroid = new Array<number>(n).fill(0);
+    centroid.fill(0);
     for (let k = 0; k < n; k += 1) {
       const vertex = xs[idx[k] ?? 0] ?? [];
       for (let i = 0; i < n; i += 1) {
@@ -307,14 +372,19 @@ export function lbfgsMinimize(
   let iters = 0;
   let evals = 1;
   let reason: LbfgsReport["reason"] = "iteration-cap";
+  // Hoisted per-iteration scratch (q, alphas): identical copy/compute order
+  // each iteration, pure allocation removal (GC was ~11% of scenario self).
+  const q = new Array<number>(n).fill(0);
+  const d = new Array<number>(n).fill(0);
+  const alphas: number[] = [];
   for (let iter = 0; iter < options.maxIters; iter += 1) {
     if (infNorm(g) <= options.gradTol) {
       reason = "grad-norm";
       break;
     }
     // Two-loop recursion.
-    const q = [...g];
-    const alphas: number[] = [];
+    for (let i = 0; i < n; i += 1) q[i] = g[i] ?? 0;
+    alphas.length = 0;
     for (let k = pairs.length - 1; k >= 0; k -= 1) {
       const pair = pairs[k];
       if (pair === undefined) continue;
@@ -344,11 +414,11 @@ export function lbfgsMinimize(
       const a = alphas[pairs.length - 1 - k] ?? 0;
       for (let i = 0; i < n; i += 1) q[i] = (q[i] ?? 0) + (a - b) * (pair.s[i] ?? 0);
     }
-    let d = q.map((value) => -value);
+    for (let i = 0; i < n; i += 1) d[i] = -(q[i] ?? 0);
     let dphi0 = 0;
     for (let i = 0; i < n; i += 1) dphi0 += (d[i] ?? 0) * (g[i] ?? 0);
     if (dphi0 >= 0) {
-      d = g.map((value) => -value);
+      for (let i = 0; i < n; i += 1) d[i] = -(g[i] ?? 0);
       dphi0 = 0;
       for (const value of g) dphi0 -= value * value;
     }
@@ -662,15 +732,37 @@ export function nonDominatedSort(pop: readonly Individual[]): number[] | null {
   for (const individual of pop) {
     if (individual.f.length !== m || !allFinite(individual.f)) return null;
   }
+  // Hot path: the frozen readonly objective arrays are copied once into a
+  // flat Float64Array and the dominance comparison is inlined. Pure
+  // comparisons over identical values — verdicts, order, and tie-breaks are
+  // exactly those of `dominates` (JSC runs frozen-array element reads and
+  // the 2 n^2 indirect calls far slower; measured on the ZDT1 scenario).
+  const flat = new Float64Array(n * m);
+  for (let i = 0; i < n; i += 1) {
+    const f = pop[i]?.f ?? [];
+    for (let obj = 0; obj < m; obj += 1) flat[i * m + obj] = f[obj] ?? 0;
+  }
   const dominatesList: number[][] = Array.from({ length: n }, () => []);
   const dominatedBy = new Array<number>(n).fill(0);
   for (let i = 0; i < n; i += 1) {
+    const base = i * m;
+    const row = dominatesList[i];
     for (let j = 0; j < n; j += 1) {
       if (i === j) continue;
-      const verdict = dominates(pop[i]?.f ?? [], pop[j]?.f ?? []);
-      if (verdict === null) return null;
-      if (verdict) {
-        dominatesList[i]?.push(j);
+      const other = j * m;
+      let strictly = false;
+      let dominated = true;
+      for (let obj = 0; obj < m; obj += 1) {
+        const ai = flat[base + obj] as number;
+        const bi = flat[other + obj] as number;
+        if (ai > bi) {
+          dominated = false;
+          break;
+        }
+        if (ai < bi) strictly = true;
+      }
+      if (dominated && strictly) {
+        row?.push(j);
         dominatedBy[j] = (dominatedBy[j] ?? 0) + 1;
       }
     }
@@ -702,25 +794,31 @@ export function crowdingDistance(front: readonly Individual[]): number[] {
   if (n === 0) return [];
   const m = front[0]?.f.length ?? 0;
   const dist = new Array<number>(n).fill(0);
+  // Objective column copied out of the frozen readonly arrays once per
+  // objective; the sort comparator and neighbor reads then hit a plain
+  // Float64Array. Identical values, identical comparator semantics and
+  // index tie-break — results are bit-for-bit those of the direct reads.
+  const column = new Float64Array(n);
   for (let obj = 0; obj < m; obj += 1) {
+    for (let k = 0; k < n; k += 1) column[k] = front[k]?.f[obj] ?? 0;
     const order = Array.from({ length: n }, (_, k) => k).sort((a, b) => {
-      const fa = front[a]?.f[obj] ?? 0;
-      const fb = front[b]?.f[obj] ?? 0;
+      const fa = column[a] as number;
+      const fb = column[b] as number;
       if (fa < fb) return -1;
       if (fa > fb) return 1;
       return a - b;
     });
     const first = order[0] ?? 0;
     const lastIdx = order[n - 1] ?? 0;
-    const lo = front[first]?.f[obj] ?? 0;
-    const hi = front[lastIdx]?.f[obj] ?? 0;
+    const lo = column[first] as number;
+    const hi = column[lastIdx] as number;
     const span = Math.max(hi - lo, 1e-30);
     dist[first] = Number.POSITIVE_INFINITY;
     dist[lastIdx] = Number.POSITIVE_INFINITY;
     for (let w = 1; w < n - 1; w += 1) {
       const here = order[w] ?? 0;
-      const above = front[order[w + 1] ?? 0]?.f[obj] ?? 0;
-      const below = front[order[w - 1] ?? 0]?.f[obj] ?? 0;
+      const above = column[order[w + 1] ?? 0] as number;
+      const below = column[order[w - 1] ?? 0] as number;
       dist[here] = (dist[here] ?? 0) + (above - below) / span;
     }
   }
@@ -833,6 +931,10 @@ export function nsga2(
     if (f === null) return null;
     pop.push(Object.freeze({ x: Object.freeze(x), f: Object.freeze([...f]) }));
   }
+  // Environmental-selection index buffer, re-filled and re-sorted in place
+  // each generation (identical comparator and tie-breaks; allocation removal
+  // only).
+  const order = new Array<number>(2 * params.pop).fill(0);
   for (let generation = 0; generation < params.generations; generation += 1) {
     const fronts = nonDominatedSort(pop);
     if (fronts === null) return null;
@@ -873,7 +975,9 @@ export function nsga2(
     const mergedFronts = nonDominatedSort(merged);
     if (mergedFronts === null) return null;
     const mergedCrowd = crowdingForPopulation(merged, mergedFronts);
-    const order = Array.from({ length: merged.length }, (_, k) => k).sort((a, b) => {
+    order.length = merged.length;
+    for (let k = 0; k < merged.length; k += 1) order[k] = k;
+    order.sort((a, b) => {
       const frontDelta = (mergedFronts[a] ?? 0) - (mergedFronts[b] ?? 0);
       if (frontDelta !== 0) return frontDelta;
       const crowdA = mergedCrowd[a] ?? 0;

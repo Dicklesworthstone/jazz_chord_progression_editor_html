@@ -1328,6 +1328,11 @@ async function instantiate(): Promise<DspCore> {
       variationSlot,
       windArticulation,
     ) => {
+      if (
+        windArticulation !== undefined &&
+        windArticulation !== "legato" &&
+        windArticulation !== "tongued"
+      ) return null;
       const natural = noteFrames(midiPitch, sampleRateHz);
       if (natural <= 0) return null;
       const capacity =
@@ -1410,7 +1415,8 @@ async function instantiate(): Promise<DspCore> {
   ) => {
     if (
       !Number.isSafeInteger(frameCount) || frameCount <= 0 ||
-      !Number.isSafeInteger(variationSlot) || variationSlot < 0
+      !Number.isSafeInteger(variationSlot) || variationSlot < 0 ||
+      (windArticulation !== "legato" && windArticulation !== "tongued")
     ) return null;
     const natural = exports.clr_note_frames(midiPitch, sampleRateHz);
     const stateCapacity = exports.clr_state_max_bytes_v2();

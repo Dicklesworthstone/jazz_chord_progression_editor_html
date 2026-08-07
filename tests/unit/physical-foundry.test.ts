@@ -68,7 +68,7 @@ describe("PHS1 production parameter packs", () => {
     const pack = reviewedPack();
     const digest = pack["contentSha256"];
     pack["contentSha256"] = "f".repeat(64);
-    expect(parameterPackContentSha256(pack)).toBe(digest);
+    expect(parameterPackContentSha256(pack)).toBe(String(digest));
     expect(() => canonicalJson({ value: Number.NaN })).toThrow("FOUNDRY_NON_FINITE_NUMBER");
     expect(() => canonicalJson({ value: undefined })).toThrow("FOUNDRY_NON_JSON_VALUE");
   });
@@ -127,32 +127,33 @@ describe("PHS1 independent analytic metrics and bounded receipts", () => {
   for (const fixtureCase of metricFixture.cases) {
     test(`${fixtureCase.id} reproduces its independent known answer`, () => {
       const metric = evaluateAnalyticMetricCase(fixtureCase);
-      expect(metric.outcome).toBe("accept");
-      const expectedOutcome = "outcome" in fixtureCase.expected ? fixtureCase.expected.outcome : "accept";
+      expect(metric["outcome"]).toBe("accept");
+      const expectedOutcome = ("outcome" in fixtureCase.expected ? fixtureCase.expected.outcome : "accept") as "accept" | "refuse";
       expect(assessMetricExpectation(fixtureCase, metric)).toBe(expectedOutcome);
     });
   }
 
   test("a single-variable oracle mutation cannot certify the same centroid", () => {
     const fixtureCase = structuredClone(metricFixture.cases[4]);
-    fixtureCase.expected.centroidHz = 200;
+    if (fixtureCase === undefined) throw new Error("PHS1_CENTROID_FIXTURE_MISSING");
+    (fixtureCase.expected as MutableRecord)["centroidHz"] = 200;
     const metric = evaluateAnalyticMetricCase(fixtureCase);
-    expect(metric.centroidHz).toBe(250);
+    expect(metric["centroidHz"]).toBe(250);
     expect(assessMetricExpectation(fixtureCase, metric)).toBe("refuse");
   });
 
   test("octave transposition preserves the analytic frequency ratio", () => {
     const lower = evaluateAnalyticMetricCase({ family: "fundamental-pitch", signal: { frequencyHz: 220 } });
     const upper = evaluateAnalyticMetricCase({ family: "fundamental-pitch", signal: { frequencyHz: 440 } });
-    expect(Number(upper.frequencyHz) / Number(lower.frequencyHz)).toBe(2);
+    expect(Number(upper["frequencyHz"]) / Number(lower["frequencyHz"])).toBe(2);
   });
 
   test("receipt replay is deterministic and the plus-one corpus refuses before work", () => {
     const receipt = runFoundryCorpus(metricFixture.cases);
-    expect(receipt.outcome).toBe("accept");
-    expect(receipt.firstDiagnostic).toBeNull();
-    expect(receipt.casesVisited).toBe(16);
-    expect(receipt.wallTimeAffectsOutput).toBe(false);
+    expect(receipt["outcome"]).toBe("accept");
+    expect(receipt["firstDiagnostic"]).toBeNull();
+    expect(receipt["casesVisited"]).toBe(16);
+    expect(receipt["wallTimeAffectsOutput"]).toBe(false);
     expect(receipt).toMatchObject({
       solverRevisions: [],
       workCounters: { casesVisited: 16 },
@@ -162,7 +163,7 @@ describe("PHS1 independent analytic metrics and bounded receipts", () => {
     });
     expect(runFoundryCorpus(structuredClone(metricFixture.cases))).toEqual(receipt);
     const boundary = Array.from({ length: FOUNDRY_LIMITS.maximumSourceObservations }, () => metricFixture.cases[0]);
-    expect(runFoundryCorpus(boundary).casesVisited).toBe(FOUNDRY_LIMITS.maximumSourceObservations);
+    expect(runFoundryCorpus(boundary)["casesVisited"]).toBe(FOUNDRY_LIMITS.maximumSourceObservations);
     expect(runFoundryCorpus([...boundary, metricFixture.cases[0]])).toEqual({
       schema: "changes.physical.foundry-receipt.v1",
       outcome: "refuse",

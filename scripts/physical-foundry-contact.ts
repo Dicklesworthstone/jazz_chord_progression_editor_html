@@ -793,8 +793,16 @@ export function fitHuntCrossley(
     const n = p[1] ?? 1.5;
     const lambda = p[2] ?? 0;
     if (n <= 0.5 || n >= 3 || lambda < 0) return Number.POSITIVE_INFINITY;
+    // k hoisted out of the sample loop (residualForce recomputes it per
+    // sample); same value, same per-sample arithmetic and summation order.
+    const k = Math.exp(p[0] ?? 0);
     let sum = 0;
-    for (const sample of samples) sum += residualForce(p, sample) ** 2;
+    for (const sample of samples) {
+      const residual =
+        k * sample.indentationM ** n * (1 + lambda * sample.indentationRateMPerS) -
+        sample.forceN;
+      sum += residual ** 2;
+    }
     return sum / samples.length;
   };
   const lossGradient = (p: readonly number[]): readonly [number, readonly number[]] => {

@@ -78,7 +78,9 @@ describe("expressive wind chiff attack", () => {
       const bandEnergy = (samples: Float32Array): number => {
         const frame = analyzer.analyzeWindow(samples.slice(0, contract.analysisFrames), 48_000);
         if (frame === null) throw new Error("CHIFF_ANALYSIS_REFUSED");
-        const [lowHz, highHz] = instrument.bandHz;
+        const lowHz = instrument.bandHz[0];
+        const highHz = instrument.bandHz[1];
+        if (lowHz === undefined || highHz === undefined) throw new Error("CHIFF_BAND_INVALID");
         let band = 0;
         let total = 0;
         for (let bin = 1; bin < frame.magnitudes.length; bin += 1) {
@@ -96,14 +98,19 @@ describe("expressive wind chiff attack", () => {
       const sustainEnd = sustainStart + 1_440;
       const sustainRatio = rms(tongued.left, sustainStart, sustainEnd) /
         rms(legato.left, sustainStart, sustainEnd);
-      expect(sustainRatio).toBeGreaterThan(instrument.sustainRmsRatio[0]);
-      expect(sustainRatio).toBeLessThan(instrument.sustainRmsRatio[1]);
+      const sustainMinimum = instrument.sustainRmsRatio[0];
+      const sustainMaximum = instrument.sustainRmsRatio[1];
+      if (sustainMinimum === undefined || sustainMaximum === undefined) throw new Error("CHIFF_SUSTAIN_BOUNDS_INVALID");
+      expect(sustainRatio).toBeGreaterThan(sustainMinimum);
+      expect(sustainRatio).toBeLessThan(sustainMaximum);
     });
 
     test(`${algorithmId} has greater high-velocity tongue excess than its soft endpoint`, async () => {
       const renderer = (await loadWaveguideRenderers()).get(algorithmId);
       const analyzer = await loadConcertGrandRenderer();
-      const [lowHz, highHz] = instrument.bandHz;
+      const lowHz = instrument.bandHz[0];
+      const highHz = instrument.bandHz[1];
+      if (lowHz === undefined || highHz === undefined) throw new Error("CHIFF_BAND_INVALID");
       const excess = (velocity: number): number => {
         const tongued = renderer?.renderNote(72, velocity, 48_000, 1, 0, "tongued");
         const legato = renderer?.renderNote(72, velocity, 48_000, 1, 0, "legato");
