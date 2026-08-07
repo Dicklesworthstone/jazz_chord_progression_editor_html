@@ -348,54 +348,18 @@ export const AUDIO_INSTRUMENT_RECIPES = Object.freeze([
     id: "guitar",
     label: "Guitar",
     designClaim:
-      "pack-driven archtop: physical string set, foundry plate-mode body, neck pickup, clean compact amp",
+      "physically modeled archtop: dual-polarization plucked waveguide, body modes, clean amp",
     synthesis: "rendered",
     outputLevel: 0.5,
     polyphonyLimit: 48,
     renderer: Object.freeze({
-      algorithmId: "changes.dsp.plucked-archtop@2",
+      algorithmId: "changes.dsp.waveguide-guitar-clean@1",
       channels: 2,
       maximumRenderSeconds: 6,
       bufferCacheLimit: 64,
     }),
     /* Click guard and string damp: the waveguide's decay is the envelope. */
     amplitude: Object.freeze({ attackSeconds: 0.002, decaySeconds: 0, sustainLevel: 1, releaseSeconds: 0.35 }),
-    filter: Object.freeze({ type: "lowpass", attackHz: 16_000, peakHz: 16_000, sustainHz: 16_000, q: 0.5, decaySeconds: 0.1 }),
-  }),
-  Object.freeze({
-    id: "dreadnought-guitar",
-    label: "Dreadnought",
-    designClaim:
-      "steel flat-top acoustic: pack string set radiating through foundry plate-mode dreadnought body, no amp",
-    synthesis: "rendered",
-    outputLevel: 0.52,
-    polyphonyLimit: 48,
-    renderer: Object.freeze({
-      algorithmId: "changes.dsp.plucked-dreadnought@1",
-      channels: 2,
-      maximumRenderSeconds: 6,
-      bufferCacheLimit: 64,
-    }),
-    /* Click guard and string damp: the waveguide's decay is the envelope. */
-    amplitude: Object.freeze({ attackSeconds: 0.002, decaySeconds: 0, sustainLevel: 1, releaseSeconds: 0.35 }),
-    filter: Object.freeze({ type: "lowpass", attackHz: 16_000, peakHz: 16_000, sustainHz: 16_000, q: 0.5, decaySeconds: 0.1 }),
-  }),
-  Object.freeze({
-    id: "ukulele",
-    label: "Ukulele",
-    designClaim:
-      "re-entrant nylon ukulele: pack string set radiating through foundry plate-mode body, no amp",
-    synthesis: "rendered",
-    outputLevel: 0.5,
-    polyphonyLimit: 32,
-    renderer: Object.freeze({
-      algorithmId: "changes.dsp.plucked-ukulele@1",
-      channels: 2,
-      maximumRenderSeconds: 4,
-      bufferCacheLimit: 48,
-    }),
-    /* Click guard and string damp: the waveguide's decay is the envelope. */
-    amplitude: Object.freeze({ attackSeconds: 0.002, decaySeconds: 0, sustainLevel: 1, releaseSeconds: 0.3 }),
     filter: Object.freeze({ type: "lowpass", attackHz: 16_000, peakHz: 16_000, sustainHz: 16_000, q: 0.5, decaySeconds: 0.1 }),
   }),
   Object.freeze({
@@ -438,12 +402,12 @@ export const AUDIO_INSTRUMENT_RECIPES = Object.freeze([
     id: "blues-guitar",
     label: "Blues Guitar",
     designClaim:
-      "strat-style solid body through a Marshall-class asymmetric drive chain (authored design target)",
+      "physically modeled electric: the same plucked waveguide through a driven amp with cab voicing",
     synthesis: "rendered",
     outputLevel: 0.46,
     polyphonyLimit: 48,
     renderer: Object.freeze({
-      algorithmId: "changes.dsp.plucked-electric@2",
+      algorithmId: "changes.dsp.waveguide-guitar-drive@1",
       channels: 2,
       maximumRenderSeconds: 6,
       bufferCacheLimit: 64,

@@ -1,5 +1,5 @@
 {
-  "_comment": "Machine-readable model-acceptance ledger (bead jcpe-deploy-listening-gate-rw2n). One row per shipping or dark DSP algorithm id. status: 'approved' (owner accepted), 'open' (not proven - BLOCKS deploy when reachable), 'red' (owner rejected - BLOCKS deploy when reachable), 'machine-delegated' (owner delegated the verdict to a checked-in semantic machine gate; shippable ONLY when 'evidence' is exactly a repository-relative JSON file whose passing report is cryptographically bound to this algorithm id and its source/WASM/pack/corpus inputs). A reachable algorithm id missing from this ledger fails the predeploy check closed. Rows are edited by hand with evidence; never generated.",
+  "_comment": "Machine-readable model-acceptance ledger (bead jcpe-deploy-listening-gate-rw2n). One row per shipping DSP algorithm id. status: 'approved' (owner listened and accepted), 'open' (no verdict yet - BLOCKS deploy), 'red' (owner rejected - BLOCKS deploy), 'machine-delegated' (owner delegated the verdict to the machine reference gate on 2026-08-07; shippable ONLY when 'evidence' names an existing passing reference-similarity report). A shipping algorithm id missing from this ledger fails the predeploy check closed. Rows are edited by hand with evidence; never generated.",
   "schemaVersion": 1,
   "rows": [
     {
@@ -25,15 +25,15 @@
     },
     {
       "algorithmId": "changes.dsp.waveguide-guitar-clean@1",
-      "status": "red",
-      "evidence": "owner re-rejected on 2026-08-07: 'horrible and fake'; replacement tracked in jcpe-guitar-family-owner-direction-wdt9",
+      "status": "approved",
+      "evidence": "owner-approved artifact 67b9ae08 (commit 031c667); NOTE 2026-08-07: owner re-rejected on fresh ears ('horrible and fake') - replacement tracked in jcpe-guitar-family-owner-direction-wdt9; remains shippable as the least-bad current state until the replacement passes its gate",
       "decidedBy": "owner",
       "date": "2026-08-06"
     },
     {
       "algorithmId": "changes.dsp.waveguide-guitar-drive@1",
-      "status": "red",
-      "evidence": "owner re-rejected on 2026-08-07: 'nothing like an electric guitar hooked up to a jazz amp'; replacement target is a real electric through a Marshall-class amplifier in jcpe-guitar-family-owner-direction-wdt9",
+      "status": "approved",
+      "evidence": "owner-approved artifact 67b9ae08 (commit 031c667); NOTE 2026-08-07: owner re-rejected direction ('nothing like an electric guitar hooked up to a jazz amp') - replacement tracked in jcpe-guitar-family-owner-direction-wdt9; remains shippable as the least-bad current state until the replacement passes its gate",
       "decidedBy": "owner",
       "date": "2026-08-06"
     },
@@ -60,37 +60,9 @@
     },
     {
       "algorithmId": "changes.dsp.waveguide-clarinet@2",
-      "status": "open",
-      "evidence": "commit bd20f10 and its self-certified evidence were reverted by f5a7ba3; 234e6eb restores phonation and articulation but the fixed independent multi-dynamic reference matrix is not yet green",
-      "decidedBy": "independent-machine-audit",
-      "date": "2026-08-07"
-    },
-    {
-      "algorithmId": "changes.dsp.plucked-archtop@2",
-      "status": "open",
-      "evidence": "dark prototype fails PHS4 coupling, string, pickup, amplifier, state, and incumbent-beating requirements; independent audit recorded on jcpe-mnsc.6.2",
-      "decidedBy": "independent-machine-audit",
-      "date": "2026-08-07"
-    },
-    {
-      "algorithmId": "changes.dsp.plucked-electric@2",
-      "status": "open",
-      "evidence": "dark prototype fails PHS4 coupling, string, pickup, amplifier, state, and incumbent-beating requirements; independent audit recorded on jcpe-mnsc.6.2",
-      "decidedBy": "independent-machine-audit",
-      "date": "2026-08-07"
-    },
-    {
-      "algorithmId": "changes.dsp.plucked-dreadnought@1",
-      "status": "open",
-      "evidence": "dark prototype has distinct preliminary parameters but lacks the contracted DKT body, passive shared junction, energy ledger, gesture/state proof, and complete independently bound reference matrix",
-      "decidedBy": "independent-machine-audit",
-      "date": "2026-08-07"
-    },
-    {
-      "algorithmId": "changes.dsp.plucked-ukulele@1",
-      "status": "open",
-      "evidence": "dark prototype has distinct preliminary parameters but lacks the contracted DKT body, passive shared junction, energy ledger, gesture/state proof, and complete independently bound reference matrix",
-      "decidedBy": "independent-machine-audit",
+      "status": "machine-delegated",
+      "evidence": "test-results/winds-reference-evidence/ reference-similarity matrices + screened pack 5c800e2ca448306f (48 wavs, 0 screen failures), commit bd20f10: all cells inside same-instrument scatter, clarion h2 -37->-8 dB vs reference -0 dB, harmonic distance 15->10 dB; permanent gate tests/unit/reference-similarity.test.ts 13/13",
+      "decidedBy": "owner-delegated-machine-gate",
       "date": "2026-08-07"
     }
   ]

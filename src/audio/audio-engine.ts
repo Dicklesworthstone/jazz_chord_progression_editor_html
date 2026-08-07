@@ -662,18 +662,14 @@ function recipeForInstrument(instrumentId: InstrumentId): AudioInstrumentRecipe 
       return AUDIO_INSTRUMENT_RECIPES[7];
     case "guitar":
       return AUDIO_INSTRUMENT_RECIPES[8];
-    case "dreadnought-guitar":
-      return AUDIO_INSTRUMENT_RECIPES[9];
-    case "ukulele":
-      return AUDIO_INSTRUMENT_RECIPES[10];
     case "upright-bass":
-      return AUDIO_INSTRUMENT_RECIPES[11];
+      return AUDIO_INSTRUMENT_RECIPES[9];
     case "concert-vibes":
-      return AUDIO_INSTRUMENT_RECIPES[12];
+      return AUDIO_INSTRUMENT_RECIPES[10];
     case "blues-guitar":
-      return AUDIO_INSTRUMENT_RECIPES[13];
+      return AUDIO_INSTRUMENT_RECIPES[11];
     case "clarinet":
-      return AUDIO_INSTRUMENT_RECIPES[14];
+      return AUDIO_INSTRUMENT_RECIPES[12];
   }
 }
 
