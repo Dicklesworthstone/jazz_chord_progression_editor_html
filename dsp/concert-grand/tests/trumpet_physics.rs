@@ -941,6 +941,7 @@ fn diagnostic_loud_lip_map() {
 #[test]
 fn diagnostic_fixture_brightness_trajectory() {
     let mut model = TrumpetModel::new(48_000.0, TrumpetParameters::canonical()).unwrap();
+    model.seed_open_first_regime(100.0).unwrap();
     let mut controls = TrumpetControls {
         mouth_pressure_pa: 0.0,
         lip_resonance_hz: 80.0,
@@ -949,7 +950,7 @@ fn diagnostic_fixture_brightness_trajectory() {
         tongue_contact: 0.0,
         valves: [0.0; 3],
     };
-    for (index, pressure) in [8_500.0, 12_000.0].into_iter().enumerate() {
+    for (index, pressure) in [5_500.0, 12_000.0].into_iter().enumerate() {
         let initial_pressure = controls.mouth_pressure_pa;
         let mut samples = Vec::new();
         for frame in 0..24_000 {

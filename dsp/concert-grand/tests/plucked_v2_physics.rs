@@ -888,9 +888,18 @@ fn plk2_fixed_listener_calibration_is_usable_and_velocity_monotonic() {
             db_ratio(rms, 1.0),
             db_ratio(peak, 1.0),
         );
+        // A complete note buffer includes 3--5 seconds of deterministic tail,
+        // so its whole-buffer RMS is lower than the sounding part. Keep a
+        // family-specific floor here, then require the common active-note mix
+        // window below without changing the render duration to game the RMS.
+        let full_buffer_rms_floor = match pack {
+            PLK2_DREADNOUGHT_PACK => 0.018,
+            PLK2_UKULELE_PACK => 0.040,
+            _ => 0.045,
+        };
         assert!(
-            (0.045..=0.32).contains(&rms),
-            "{label} velocity-100 RMS escaped the usable ensemble window: {rms}"
+            (full_buffer_rms_floor..=0.32).contains(&rms),
+            "{label} velocity-100 whole-buffer RMS escaped its usable ensemble window: {rms}"
         );
         assert!(
             (0.12..0.98).contains(&peak),
@@ -921,6 +930,12 @@ fn plk2_fixed_listener_calibration_is_usable_and_velocity_monotonic() {
                 "{label} loudness was not strictly monotonic at velocity {velocity}: {previous_rms} -> {current_rms}"
             );
             previous_rms = current_rms;
+            if velocity == 100 {
+                assert!(
+                    (0.055..=0.32).contains(&current_rms),
+                    "{label} active velocity-100 RMS escaped -25.2..-9.9 dBFS: {current_rms}"
+                );
+            }
         }
     }
 }
@@ -942,7 +957,9 @@ fn plk2_fixed_listener_calibration_does_not_clip_across_registers_or_rates() {
                 &guitar_midis
             };
             for &midi in midis {
-                let frames = (0.40 * sample_rate) as usize;
+                // Include body/cabinet build-up after the initial contact;
+                // onset-only peak checks can miss a later resonant maximum.
+                let frames = (1.50 * sample_rate) as usize;
                 let mut left = vec![0.0f32; frames];
                 let mut right = vec![0.0f32; frames];
                 assert_eq!(

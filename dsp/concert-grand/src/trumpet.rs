@@ -48,7 +48,7 @@ const SOUND_SPEED_M_S: f64 = 343.0;
 const OPEN_LENGTH_M: f64 = 1.47;
 const MOUTHPIECE_BACKBORE_ENTRY_RADIUS_M: f64 = 0.0025;
 const LIP_CONTACT_SCALE_M: f64 = 2.5e-4;
-const LIP_DAMPING_VELOCITY_SCALE_M_S: f64 = 0.5;
+const LIP_DAMPING_VELOCITY_SCALE_M_S: f64 = 2.0;
 const DIGITAL_FULL_SCALE_PRESSURE_PA: f64 = 200.0;
 
 /// The eight reviewed trumpet-bore station endpoints: axial position (m) and
@@ -923,7 +923,7 @@ impl TrumpetModel {
             displacement = (displacement - correction).clamp(
                 -controls.equilibrium_opening_m,
                 self.parameters.maximum_lip_opening_m - controls.equilibrium_opening_m
-                    + 2.0 * LIP_CONTACT_SCALE_M,
+                    + 10.0 * LIP_CONTACT_SCALE_M,
             );
             if fabs(correction) <= 1.0e-12 {
                 lip_displacement_converged = true;
@@ -933,7 +933,7 @@ impl TrumpetModel {
         if !lip_displacement_converged {
             let mut low = -controls.equilibrium_opening_m;
             let mut high = self.parameters.maximum_lip_opening_m - controls.equilibrium_opening_m
-                + 2.0 * LIP_CONTACT_SCALE_M;
+                + 10.0 * LIP_CONTACT_SCALE_M;
             let low_value = evaluate_displacement(low).0;
             let high_value = evaluate_displacement(high).0;
             if low_value > 0.0 {

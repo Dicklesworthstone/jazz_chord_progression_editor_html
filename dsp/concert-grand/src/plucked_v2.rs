@@ -58,9 +58,9 @@ const REFERENCE_PCM_PER_PASCAL: f64 = 0.08;
 fn plk2_listener_trim(pack_index: i32) -> f64 {
     let trim_db = match pack_index {
         PLK2_ARCHTOP_PACK => 80.0,
-        PLK2_MARSHALL_ELECTRIC_PACK => 45.0,
-        PLK2_DREADNOUGHT_PACK => 58.0,
-        PLK2_UKULELE_PACK => 81.9,
+        PLK2_MARSHALL_ELECTRIC_PACK => 40.0,
+        PLK2_DREADNOUGHT_PACK => 73.0,
+        PLK2_UKULELE_PACK => 80.5,
         _ => 0.0,
     };
     pow(10.0, trim_db / 20.0)
@@ -1521,7 +1521,7 @@ pub fn dreadnought_pack() -> InstrumentPack {
             helmholtz_q: 18.0,
             admittance_scale: 1.0,
         },
-        bridge_conductance_kg_per_s: 0.20,
+        bridge_conductance_kg_per_s: 0.008,
         pickup: None,
         amplifier: None,
     }

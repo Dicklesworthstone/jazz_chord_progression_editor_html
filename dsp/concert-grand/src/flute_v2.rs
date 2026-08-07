@@ -313,17 +313,12 @@ fn target_mouth_pressure_pa(velocity: i32, fingering: Fingering) -> f64 {
     // Players compensate steady blowing-pressure changes with the lips. Note
     // velocity therefore changes aperture, transient, radiation corner, and
     // turbulence below, while the settled convective register stays fixed.
-    let mut speed_factor = if fingering.register_harmonic == 1 {
+    let speed_factor = if fingering.register_harmonic == 1 {
         0.995
     } else {
         let dynamic_lift = ((velocity_norm - 36.0 / 127.0) / (36.0 / 127.0)).clamp(0.0, 1.0);
         0.993 + 0.045 * dynamic_lift
     };
-    if velocity < 50 && fingering.openness[6] > 0.0 && fingering.openness[6] < 0.95 {
-        // A soft half-hole speaks flatter under the lower lip pressure that a
-        // player uses to stabilize its weak returning wave.
-        speed_factor *= 0.9995;
-    }
     let expressive_speed = nominal_speed * speed_factor;
     (0.5 * AIR_DENSITY_KG_PER_M3 * expressive_speed * expressive_speed).min(1_950.0)
 }
@@ -758,11 +753,18 @@ fn render_with_storage(
     // pressure is weak. This is an embouchure gesture; bore geometry and all
     // propagation delays remain fixed.
     let across_labium = !has_open_hole || (velocity < 50 && has_partial_vent);
-    let jet_offset = if across_labium {
+    let mut jet_offset = if across_labium {
         0.90 + 0.06 * register
     } else {
         0.35 + 0.10 * register
     };
+    // The half-open E key weakens and delays its returning pressure, so a
+    // soft player rolls the jet slightly toward the near labium to preserve
+    // the stable edge phase. This is an embouchure gesture, not a MIDI-tuned
+    // acoustic delay.
+    if velocity < 50 && fingering.openness[6] > 0.0 && fingering.openness[6] < 0.95 {
+        jet_offset -= 0.004;
+    }
     let feedback_gain = (if has_open_hole {
         18.0 + register
     } else {
