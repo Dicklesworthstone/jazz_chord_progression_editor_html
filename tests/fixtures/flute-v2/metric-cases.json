@@ -1,0 +1,17 @@
+{
+  "schema":"changes.fixtures.phs3-flute-metric-cases.v1",
+  "cases":[
+    {"id":"pitch-c4","metric":"fingering-pitch","targetHz":261.626,"toleranceCents":8,"fingeringId":"concert-flute-c4"},
+    {"id":"pitch-g4","metric":"fingering-pitch","targetHz":391.995,"toleranceCents":8,"fingeringId":"concert-flute-g4"},
+    {"id":"pitch-c5","metric":"fingering-pitch","targetHz":523.251,"toleranceCents":8,"fingeringId":"concert-flute-c5"},
+    {"id":"pitch-c6","metric":"fingering-pitch","targetHz":1046.502,"toleranceCents":12,"fingeringId":"concert-flute-c6"},
+    {"id":"jet-delay-analytic","metric":"jet-convection-delay","channelToEdgeM":0.01,"jetSpeedMPerS":20,"convectionRatio":0.4,"expectedSeconds":0.00125,"toleranceSeconds":0.000000001},
+    {"id":"hnr-analytic","metric":"harmonic-to-noise","harmonicEnergy":100,"noiseEnergy":1,"expectedDb":20,"toleranceDb":0.000001},
+    {"id":"centroid-analytic","metric":"spectral-centroid","frequenciesHz":[500,1500],"magnitudes":[3,1],"expectedHz":750,"toleranceHz":0.001},
+    {"id":"attack-analytic","metric":"attack-time","thresholdCrossingsSeconds":{"tenPercent":0.012,"ninetyPercent":0.072},"expectedSeconds":0.06,"toleranceSeconds":0.000001},
+    {"id":"decay-analytic","metric":"decay-slopes","startAmplitude":1,"endAmplitude":0.1,"seconds":0.5,"expectedDbPerSecond":-40,"toleranceDbPerSecond":0.000001},
+    {"id":"octave-transition","metric":"octave-transition","lowerHz":523.251,"upperHz":1046.502,"minimumJetSpeedMPerS":18,"maximumJetSpeedMPerS":50,"expected":"single-bounded-transition"},
+    {"id":"dynamic-brightness","metric":"dynamic-brightness","softCentroidHz":900,"loudCentroidHz":1500,"expectedMinimumIncreaseHz":300},
+    {"id":"octave-transposition","metric":"transposition-relations","baseHz":261.626,"upperHz":523.252,"expectedRatio":2,"toleranceRelative":0.000001}
+  ]
+}

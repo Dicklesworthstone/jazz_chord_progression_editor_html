@@ -1,0 +1,18 @@
+{
+  "schema":"changes.fixtures.phs3-flute-mutations.v1",
+  "controls":[
+    {"id":"mutate-schema","target":"contract.json","pointer":"/schema","value":"v0","expectedFindingCode":"PHS3_SCHEMA"},
+    {"id":"mutate-flow-sign","target":"contract.json","pointer":"/signs/acousticFlow","value":"bore-to-embouchure","expectedFindingCode":"PHS3_SIGNS"},
+    {"id":"mutate-navier-stokes-claim","target":"contract.json","pointer":"/scope/fullNavierStokes","value":"runtime","expectedFindingCode":"PHS3_SCOPE"},
+    {"id":"mutate-pressure-limit","target":"contract.json","pointer":"/controls/mouthPressurePa/1","value":20000,"expectedFindingCode":"PHS3_CONTROLS"},
+    {"id":"mutate-frequency-target-law","target":"contract.json","pointer":"/fingeringLaw","value":"target-frequency-delay","expectedFindingCode":"PHS3_GEOMETRY"},
+    {"id":"mutate-legato-reset","target":"contract.json","pointer":"/retainedLegatoState","value":[],"expectedFindingCode":"PHS3_STATE"},
+    {"id":"mutate-jet-delay-limit","target":"contract.json","pointer":"/limits/maximumJetDelaySamples","value":8193,"expectedFindingCode":"PHS3_LIMITS"},
+    {"id":"mutate-independence","target":"contract.json","pointer":"/independence/frankensimRuntimeImported","value":true,"expectedFindingCode":"PHS3_INDEPENDENCE"},
+    {"id":"mutate-jet-answer","target":"physics-cases.json","pointer":"/cases/1/expected/seconds","value":0.0125,"expectedFindingCode":"PHS3_KNOWN_ANSWER"},
+    {"id":"mutate-active-scatter","target":"physics-cases.json","pointer":"/cases/7/expected/outcome","value":"accept","expectedFindingCode":"PHS3_PASSIVITY"},
+    {"id":"mutate-octave","target":"metric-cases.json","pointer":"/cases/11/expectedRatio","value":3,"expectedFindingCode":"PHS3_KNOWN_ANSWER"},
+    {"id":"mutate-authority","target":"provenance-ledger.json","pointer":"/authorities/0/location","value":"memory","expectedFindingCode":"PHS3_PROVENANCE"},
+    {"id":"mutate-hole-position","target":"geometry-cases.json","pointer":"/toneHoles/5/positionM","value":0.5,"expectedFindingCode":"PHS3_GEOMETRY_CASES"}
+  ]
+}

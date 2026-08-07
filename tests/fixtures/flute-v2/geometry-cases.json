@@ -1,0 +1,27 @@
+{
+  "schema":"changes.fixtures.phs3-flute-geometry.v1",
+  "air":{"temperatureC":20,"densityKgPerM3":1.2041,"soundSpeedMPerS":343.21,"dynamicViscosityPaS":0.00001825},
+  "embouchure":{"positionM":0,"holeRadiusM":0.006,"chimneyLengthM":0.003,"channelToEdgeM":0.01,"jetHalfWidthM":0.0005},
+  "boreSections":[
+    {"endM":0.075,"radiusM":0.0094},{"endM":0.145,"radiusM":0.00945},{"endM":0.215,"radiusM":0.0095},
+    {"endM":0.285,"radiusM":0.0095},{"endM":0.355,"radiusM":0.00955},{"endM":0.425,"radiusM":0.00955},
+    {"endM":0.495,"radiusM":0.0096},{"endM":0.565,"radiusM":0.00965},{"endM":0.655,"radiusM":0.0097}
+  ],
+  "toneHoles":[
+    {"id":"h1","positionM":0.246,"radiusM":0.0042,"chimneyLengthM":0.0032},
+    {"id":"h2","positionM":0.278,"radiusM":0.0045,"chimneyLengthM":0.0032},
+    {"id":"h3","positionM":0.316,"radiusM":0.0048,"chimneyLengthM":0.0034},
+    {"id":"h4","positionM":0.357,"radiusM":0.0049,"chimneyLengthM":0.0034},
+    {"id":"h5","positionM":0.397,"radiusM":0.005,"chimneyLengthM":0.0035},
+    {"id":"h6","positionM":0.438,"radiusM":0.0051,"chimneyLengthM":0.0035},
+    {"id":"h7","positionM":0.492,"radiusM":0.0052,"chimneyLengthM":0.0037},
+    {"id":"h8","positionM":0.548,"radiusM":0.0053,"chimneyLengthM":0.0038}
+  ],
+  "fingerings":[
+    {"id":"concert-flute-c4","register":1,"holeOpenness":[0,0,0,0,0,0,0,0],"expectedFirstRadiator":"foot"},
+    {"id":"concert-flute-g4","register":1,"holeOpenness":[0,0,0,0,0,1,1,1],"expectedFirstRadiator":"h6"},
+    {"id":"concert-flute-c5","register":2,"holeOpenness":[0,0,0,0,0,0,0,0],"expectedFirstRadiator":"foot"},
+    {"id":"concert-flute-c6","register":3,"holeOpenness":[0,0,0,0,0,0,0,0],"expectedFirstRadiator":"foot"}
+  ],
+  "interpolationLaw":"each hole openness continuously scales a passive shunt admittance; it never interpolates target pitch"
+}

@@ -1,0 +1,19 @@
+{
+  "schema":"changes.fixtures.phs3-flute-physics-cases.v1",
+  "cases":[
+    {"id":"open-cylinder-half-wave","kind":"impedance-peaks","input":{"soundSpeedMPerS":343,"effectiveLengthM":0.66},"expected":{"frequenciesHz":[259.848485,519.69697,779.545455],"integerMultipliers":[1,2,3],"toleranceRelative":0.000001}},
+    {"id":"jet-convection-delay","kind":"jet-convection-delay","input":{"channelToEdgeM":0.01,"jetSpeedMPerS":20,"convectionRatio":0.4},"expected":{"seconds":0.00125,"toleranceSeconds":0.000000001}},
+    {"id":"jet-gain-known-answer","kind":"jet-gain","input":{"initialDisplacementM":0.0001,"spatialGrowthPerM":80,"channelToEdgeM":0.01},"expected":{"edgeDisplacementM":0.000222554093,"toleranceM":0.000000001}},
+    {"id":"embouchure-unflanged-correction","kind":"embouchure-end-correction","input":{"radiusM":0.006},"expected":{"correctionM":0.005092958,"coefficient":"8/(3*pi)","toleranceM":0.000000001}},
+    {"id":"closed-hole-zero-shunt","kind":"tone-hole-admittance","input":{"openness":0,"openAdmittance":0.2},"expected":{"effectiveAdmittance":0}},
+    {"id":"half-vent-monotone","kind":"tone-hole-admittance","input":{"openness":0.5,"openAdmittance":0.2},"expected":{"effectiveAdmittance":0.1,"boundedByClosedAndOpen":true}},
+    {"id":"passive-three-port","kind":"energy-residual","input":{"incomingEnergyJ":0.001,"transmittedEnergyJ":0.00055,"reflectedEnergyJ":0.00025,"radiatedEnergyJ":0.0002},"expected":{"residualJ":0,"toleranceJ":0.000000000001}},
+    {"id":"active-three-port-mutation","kind":"energy-residual","input":{"incomingEnergyJ":0.001,"transmittedEnergyJ":0.0007,"reflectedEnergyJ":0.00025,"radiatedEnergyJ":0.0001},"expected":{"outcome":"refuse","finding":"PHS3_SCATTER_ACTIVE"}},
+    {"id":"solver-boundary-eight","kind":"solver-budget","input":{"iterations":8,"maximum":8},"expected":{"outcome":"accept"}},
+    {"id":"solver-plus-one","kind":"solver-budget","input":{"iterations":9,"maximum":8},"expected":{"outcome":"refuse","finding":"PHS3_SOLVER_BOUND"}},
+    {"id":"legato-state-handoff","kind":"legato-continuity","input":{"leftStateDigest":"f193","rightInitialStateDigest":"f193"},"expected":{"continuous":true,"resetForbidden":true}},
+    {"id":"detached-phrase-reset","kind":"legato-continuity","input":{"articulation":"detached","newPhrase":true},"expected":{"canonicalPhraseResetPermitted":true}},
+    {"id":"seed-replay","kind":"turbulence-determinism","input":{"seed":419903,"frames":4096},"expected":{"sameSeedBitExact":true,"differentSeedDistinct":true}},
+    {"id":"fingering-not-frequency-target","kind":"fingering-geometry","input":{"fingeringId":"concert-flute-c5"},"expected":{"requiredInputs":["section-lengths","section-areas","hole-positions","hole-radii","chimney-lengths","hole-openness"],"forbiddenInputs":["target-frequency-delay"]}}
+  ]
+}

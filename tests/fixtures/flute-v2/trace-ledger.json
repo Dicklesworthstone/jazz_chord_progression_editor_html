@@ -1,0 +1,10 @@
+{
+  "schema":"changes.fixtures.phs3-flute-trace.v1",
+  "requirements":[
+    {"id":"PHS3-REQ-EXCITER","fixtures":["jet-convection-delay","jet-gain-known-answer"],"futureOwner":"dsp/concert-grand/src/flute.rs"},
+    {"id":"PHS3-REQ-GEOMETRY","fixtures":["geometry-cases.json","fingering-not-frequency-target","open-cylinder-half-wave"],"futureOwner":"physical/parameter-packs/flute-v2.json"},
+    {"id":"PHS3-REQ-PASSIVITY","fixtures":["passive-three-port","active-three-port-mutation"],"futureOwner":"dsp/concert-grand/src/flute.rs"},
+    {"id":"PHS3-REQ-STATE","fixtures":["legato-state-handoff","detached-phrase-reset","seed-replay"],"futureOwner":"src/audio/wasm/concert-grand-wasm.ts"},
+    {"id":"PHS3-REQ-METRICS","fixtures":["pitch-c4","pitch-g4","pitch-c5","pitch-c6","octave-transition","dynamic-brightness"],"futureOwner":"tests/unit/physical-tuning-independent.test.ts"}
+  ]
+}

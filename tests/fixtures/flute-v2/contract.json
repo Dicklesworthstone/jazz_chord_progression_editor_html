@@ -1,0 +1,15 @@
+{
+  "schema":"changes.fixtures.phs3-flute-v2.v1",
+  "modelSchema":"changes.dsp.flute-v2.v1",
+  "stateMode":"stateful-phrase",
+  "signs":{"pressure":"positive-compression","acousticFlow":"embouchure-to-bore","jetDisplacement":"toward-outside-of-edge","edgeSource":"jet-flow-derivative-dipole"},
+  "scope":{"vocalTractImpedance":"explicitly-deferred","fullNavierStokes":"offline-reference-only","runtimeSolver":"reduced-order-passive-waveguide"},
+  "controls":{"mouthPressurePa":[0,2000],"jetSpeedMPerS":[0,60],"jetOffsetOverHalfWidth":[-2,2],"embouchureOpening":[0,1],"tongueContact":[0,1],"holeOpenness":[0,1],"breathTurbulenceRelativeRms":[0,0.12],"vibratoRateHz":[0,8],"vibratoJetSpeedDepth":[0,0.12]},
+  "articulationModes":["detached","legato","slur","overblown"],
+  "retainedLegatoState":["bore-waves","jet-convection-history","loss-filters","embouchure-radiation","tone-hole-radiation","turbulence-filters"],
+  "fingeringLaw":"geometry-selects-hole-admittances-never-target-frequency-delay",
+  "junctionLaw":"serial-bidirectional-passive-scattering",
+  "limits":{"maximumEvents":128,"maximumPointsPerCurve":64,"maximumPointsPerGesture":256,"maximumBoreSections":32,"maximumToneHoles":20,"maximumJetDelaySamples":8192,"maximumNonlinearIterations":8,"maximumFallbackBisections":16,"maximumStateBytes":262144,"maximumPhraseSeconds":30,"maximumSampleRateHz":96000},
+  "requiredMetrics":["jet-convection-delay","jet-gain","embouchure-end-correction","impedance-peaks","fingering-pitch","attack-time","harmonic-to-noise","spectral-centroid","decay-slopes","octave-transition","dynamic-brightness","transposition-relations","legato-continuity","energy-residual"],
+  "independence":{"productionImportsForbidden":true,"productionOutputUsed":false,"expectedValuesGenerated":false,"frankensimRuntimeImported":false}
+}

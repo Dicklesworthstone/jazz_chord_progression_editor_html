@@ -1,0 +1,9 @@
+{
+  "schema":"changes.fixtures.phs3-flute-provenance.v1",
+  "authorities":[
+    {"id":"jet-drive-time-domain","kind":"primary-research","location":"https://hal.science/hal-01426971","governs":["jet-convection","jet-amplification","edge-source","time-domain-coupling"]},
+    {"id":"jet-drive-nonlinear-regimes","kind":"primary-research","location":"https://arxiv.org/abs/1402.3143","governs":["nonlinear-regimes","modulation","bifurcation-bounds"]},
+    {"id":"tone-hole-lattice","kind":"primary-research","location":"https://arxiv.org/abs/0901.1640","governs":["tone-holes","input-impedance","cutoff"]},
+    {"id":"frankensim-compact-bem-crosscheck","kind":"local-research-tool","location":"/data/projects/frankensim/crates/fs-bem","governs":["offline-compact-limit-crosscheck"],"runtimeAuthority":false,"licenseCodeImported":false}
+  ]
+}
