@@ -4,8 +4,7 @@ mod trumpet;
 use trumpet::{
     adachi_lip_jet_balance, geometry_half_wave_hz, lip_flow_m3_s,
     lip_streamwise_joint_penetration_m, outward_equilibrium_opening_m,
-    passive_two_mode_lip_matrices, passive_wall_loss_balance,
-    positive_real_player_air_column_mode_step, positive_real_radiation_balance,
+    passive_two_mode_lip_matrices, passive_wall_loss_balance, positive_real_radiation_balance,
     two_dimensional_lip_pressure_port_balance, unilateral_lip_contact_balance,
     valve_added_length_m, OversampledOutput, TrumpetControls, TrumpetError, TrumpetModel,
     TrumpetParameters, BORE_CELLS, OVERSAMPLE_FACTOR,
@@ -187,37 +186,6 @@ fn positive_real_radiation_obeys_its_instantaneous_power_identity() {
         residual.abs() < 1.0e-15,
         "radiation power residual {residual:e}"
     );
-}
-
-#[test]
-fn measured_player_air_column_mode_is_passive_and_an_ideal_reservoir_bypass_fails() {
-    let balance = positive_real_player_air_column_mode_step(
-        329.440,
-        9.8473e6,
-        3.293,
-        1.2e-9,
-        -2.0e-6,
-        1.5e-5,
-        2.5e-5,
-        1.0 / 192_000.0,
-    )
-    .unwrap();
-    assert!(balance.dissipation_w >= 0.0);
-    let power_residual = balance.input_power_w - balance.storage_rate_w - balance.dissipation_w;
-    assert!(
-        power_residual.abs() < 1.0e-10,
-        "upstream power residual {power_residual:e}"
-    );
-    assert!(balance.pressure_pa.is_finite());
-
-    // Kaburagi et al. Fig. 3 gives 98.473 cgs acoustic ohm at 329.440 Hz,
-    // or 9.8473 MPa s m^-3. An ideal pressure-reservoir bypass has Z=0 and
-    // therefore cannot satisfy even the lower edge of that measured peak.
-    let measured_peak_impedance_pa_s_m3 = 9.8473e6;
-    let digitization_lower_bound_pa_s_m3 = 0.9 * measured_peak_impedance_pa_s_m3;
-    let ideal_pressure_reservoir_impedance_pa_s_m3 = 0.0;
-    assert!(measured_peak_impedance_pa_s_m3 >= digitization_lower_bound_pa_s_m3);
-    assert!(ideal_pressure_reservoir_impedance_pa_s_m3 < digitization_lower_bound_pa_s_m3);
 }
 
 #[test]
