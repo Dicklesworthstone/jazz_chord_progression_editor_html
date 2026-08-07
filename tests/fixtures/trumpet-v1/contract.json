@@ -1,13 +1,15 @@
 {
   "schema":"changes.fixtures.phs5-trumpet-v1.v1","modelSchema":"changes.dsp.trumpet-v1.v1","stateMode":"stateful-phrase",
   "registryAmendment":{"instrumentId":"trumpet","label":"Trumpet","mode":"additive","olderDocuments":"decode-unchanged","unknownIds":"retain-existing-refusal","midiProgram":56},
-  "signs":{"pressure":"positive-compression","flow":"mouth-to-mouthpiece","lipOpening":"outward-away-from-closed-channel","deltaPressure":"mouth-minus-mouthpiece","pressureForce":"increases-opening"},
+  "signs":{"pressure":"positive-compression","flow":"mouth-to-mouthpiece","lipOpening":"outward-away-from-closed-channel","deltaPressure":"mouth-minus-mouthpiece","pressureForce":"increases-swinging-opening","localBernoulliForce":"drives-streamwise-retraction"},
   "controls":{"mouthPressurePa":[0,12000],"lipResonanceHz":[80,1600],"lipDampingRatio":[0.05,1],"equilibriumApertureM":[0,0.002],"tongueContact":[0,1],"valve1":[0,1],"valve2":[0,1],"valve3":[0,1],"vibratoRateHz":[0,8],"vibratoLipTensionDepth":[0,0.08]},
+  "lipModelLaw":"adachi-sato-two-dimensional-swinging-and-stretching-lip-with-power-conjugate-pressure-ports-and-dynamic-channel-inertance",
+  "normalRegimeLaw":"normal-lowest-open-note-is-the-second-impedance-regime-near-sounding-bb3;the-approximately-116-hz-missing-fundamental-is-pedal-only-and-cannot-certify-normal-register-acceptance",
   "resonatorLaw":"bidirectional-variable-area-leadpipe-cylindrical-conical-bell-waveguide-with-viscothermal-loss",
   "valveLaw":"three-continuous-passive-length-insertion-junctions-with-reviewed-combination-compensation",
   "propagationLaw":"bounded-weakly-nonlinear-wave-steepening-at-high-dynamic-with-4x-oversampling-and-antialias-filter",
-  "retainedLegatoState":["lip-displacement","lip-velocity","mouthpiece-cup","bore-waves","loss-memory","valve-junctions","nonlinear-propagation-memory","bell-radiation"],
-  "limits":{"maximumEvents":128,"maximumPointsPerCurve":64,"maximumBoreSections":48,"maximumValveJunctions":3,"maximumLipIterations":8,"maximumFallbackBisections":16,"maximumOversampleFactor":4,"maximumStateBytes":524288,"maximumPhraseSeconds":30,"maximumSampleRateHz":96000},
-  "scope":{"vocalTractImpedance":"explicitly-deferred","fullCompressibleEuler":"offline-reference-only","runtimeApproximation":"reduced-weak-nonlinearity"},
+  "retainedLegatoState":["lip-normal-motion","lip-streamwise-motion","lip-channel-flow-and-acceleration","mouthpiece-cup-pressure","bore-waves","loss-memory","valve-junctions","nonlinear-propagation-memory","bell-radiation"],
+  "limits":{"maximumEvents":128,"maximumPointsPerCurve":64,"maximumBoreSections":48,"maximumValveJunctions":3,"maximumLipIterations":8,"maximumLipLineSearchEvaluationsPerIteration":4,"maximumLipResidualEvaluations":65,"maximumFallbackBisections":0,"maximumOversampleFactor":4,"maximumStateBytes":524288,"maximumPhraseSeconds":30,"maximumSampleRateHz":96000},
+  "scope":{"vocalTractImpedance":"explicitly-deferred","fullCompressibleEuler":"offline-reference-only","runtimeApproximation":"reduced-weak-nonlinearity","pedalRegime":"diagnostic-no-claim-until-separately-proven"},
   "independence":{"productionImportsForbidden":true,"productionOutputUsed":false,"expectedValuesGenerated":false,"clarinetExciterReused":false}
 }

@@ -2,10 +2,12 @@
 mod trumpet;
 
 use trumpet::{
-    geometry_half_wave_hz, lip_flow_m3_s, outward_equilibrium_opening_m,
-    positive_real_radiation_balance, two_dimensional_lip_pressure_port_balance,
-    unilateral_lip_contact_balance, valve_added_length_m, LipSolveReport, OversampledOutput,
-    TrumpetControls, TrumpetError, TrumpetModel, TrumpetParameters, BORE_CELLS, OVERSAMPLE_FACTOR,
+    adachi_lip_jet_balance, geometry_half_wave_hz, lip_flow_m3_s,
+    lip_streamwise_joint_penetration_m, outward_equilibrium_opening_m,
+    passive_two_mode_lip_matrices, passive_wall_loss_balance, positive_real_radiation_balance,
+    two_dimensional_lip_pressure_port_balance, unilateral_lip_contact_balance,
+    valve_added_length_m, OversampledOutput, TrumpetControls, TrumpetError, TrumpetModel,
+    TrumpetParameters, BORE_CELLS, OVERSAMPLE_FACTOR,
 };
 
 fn silent_controls() -> TrumpetControls {
@@ -58,13 +60,30 @@ fn non_passive_valve_transition_is_a_constructor_failure() {
 
 #[test]
 fn fixed_geometry_and_valves_move_resonance_without_a_midi_input() {
-    let open = geometry_half_wave_hz([0.0, 0.0, 0.0]);
-    let second = geometry_half_wave_hz([0.0, 1.0, 0.0]);
-    let all = geometry_half_wave_hz([1.0, 1.0, 1.0]);
-    assert!((open - 116.666_666_7).abs() < 1.0e-5);
-    assert!((valve_added_length_m([0.0, 1.0, 0.0]) - 0.087).abs() < 1.0e-12);
-    assert!((valve_added_length_m([1.0, 1.0, 1.0]) - 0.572).abs() < 1.0e-12);
-    assert!(open > second && second > all, "{open} {second} {all}");
+    let open_normal = 2.0 * geometry_half_wave_hz([0.0, 0.0, 0.0]);
+    let mut previous_pitch = open_normal;
+    for mask in 0..8 {
+        let valves = [
+            if mask & 1 != 0 { 1.0 } else { 0.0 },
+            if mask & 2 != 0 { 1.0 } else { 0.0 },
+            if mask & 4 != 0 { 1.0 } else { 0.0 },
+        ];
+        let semitones = (if mask & 1 != 0 { 2 } else { 0 })
+            + (if mask & 2 != 0 { 1 } else { 0 })
+            + (if mask & 4 != 0 { 3 } else { 0 });
+        let expected_hz = open_normal / 2.0_f64.powf(semitones as f64 / 12.0);
+        let actual_hz = 2.0 * geometry_half_wave_hz(valves);
+        let cents = 1_200.0 * (actual_hz / expected_hz).log2();
+        assert!(cents.abs() < 1.0e-8, "mask={mask} cents={cents}");
+        if mask == 2 {
+            previous_pitch = actual_hz;
+        }
+    }
+    let all = 2.0 * geometry_half_wave_hz([1.0, 1.0, 1.0]);
+    assert!((open_normal - 233.333_333_333_333_34).abs() < 1.0e-12);
+    assert!((valve_added_length_m([0.0, 1.0, 0.0]) - 0.087_410_748_708_164_11).abs() < 1.0e-15);
+    assert!((valve_added_length_m([1.0, 1.0, 1.0]) - 0.608_893_936_688_449_8).abs() < 1.0e-15);
+    assert!(open_normal > previous_pitch && previous_pitch > all);
     assert_eq!(BORE_CELLS, 48);
 }
 
@@ -100,8 +119,8 @@ fn identical_instances_are_sample_exact_and_keep_independent_state() {
     let mut controls = TrumpetControls {
         mouth_pressure_pa: 0.0,
         lip_resonance_hz: 180.0,
-        lip_damping_ratio: 0.28,
-        equilibrium_opening_m: 0.00025,
+        lip_damping_ratio: 1.0 / 3.0,
+        equilibrium_opening_m: 0.0,
         tongue_contact: 0.0,
         valves: [0.35, 0.8, 0.0],
     };
@@ -129,7 +148,9 @@ fn identical_instances_are_sample_exact_and_keep_independent_state() {
 fn unforced_bore_and_positive_real_bell_do_not_create_energy() {
     let mut model = TrumpetModel::new(48_000.0, TrumpetParameters::canonical()).unwrap();
     let controls = silent_controls();
-    model.diagnostic_pressure_pulse(50.0).unwrap();
+    // The pedal-basin seed is only a bounded passive-state control. This test
+    // deliberately makes no normal-regime or pedal-playability claim.
+    model.seed_open_first_regime(50.0).unwrap();
     let initial = model.stored_energy_j(controls);
     let mut maximum = initial;
     for frame in 0..4_800 {
@@ -168,6 +189,59 @@ fn positive_real_radiation_obeys_its_instantaneous_power_identity() {
 }
 
 #[test]
+fn viscothermal_wall_memory_is_positive_real_and_frequency_dependent() {
+    let balance =
+        passive_wall_loss_balance(6.8, 2.0 * core::f64::consts::PI * 150.0, 2.0, 0.4).unwrap();
+    assert!(balance.dissipation > 0.0);
+    assert!((balance.removed_power - balance.storage_rate - balance.dissipation).abs() < 1.0e-14);
+    assert_eq!(
+        passive_wall_loss_balance(-6.8, 2.0 * core::f64::consts::PI * 150.0, 2.0, 0.4),
+        Err(TrumpetError::NonFiniteState)
+    );
+
+    let parameters = TrumpetParameters::canonical();
+    let corner = parameters.wall_loss_relaxation_hz;
+    let effective_loss = |frequency_hz: f64| {
+        parameters.bore_loss_per_second
+            + parameters.wall_loss_strength_per_second * frequency_hz * frequency_hz
+                / (corner * corner + frequency_hz * frequency_hz)
+    };
+    assert!(effective_loss(232.0) > effective_loss(87.0));
+}
+
+#[test]
+fn rotated_two_mode_lip_tissue_is_symmetric_and_passive() {
+    let matrices = passive_two_mode_lip_matrices(6.33e-5, 300.0, 1.0 / 3.0).unwrap();
+    assert!((matrices.lower_resonance_hz - 221.739_130_434_782_6).abs() < 1.0e-12);
+    assert_eq!(matrices.upper_resonance_hz, 300.0);
+    assert!(matrices.normal_stiffness_n_m > 0.0);
+    assert!(
+        matrices.normal_stiffness_n_m * matrices.streamwise_stiffness_n_m
+            > matrices.cross_stiffness_n_m * matrices.cross_stiffness_n_m
+    );
+    assert!(matrices.normal_damping_n_s_m > 0.0);
+    assert!(
+        matrices.normal_damping_n_s_m * matrices.streamwise_damping_n_s_m
+            > matrices.cross_damping_n_s_m * matrices.cross_damping_n_s_m
+    );
+    for (normal, streamwise) in [(1.0, 0.0), (0.0, 1.0), (1.0, -1.0), (1.0, 1.0)] {
+        let potential = 0.5
+            * (matrices.normal_stiffness_n_m * normal * normal
+                + matrices.streamwise_stiffness_n_m * streamwise * streamwise)
+            + matrices.cross_stiffness_n_m * normal * streamwise;
+        let dissipation = matrices.normal_damping_n_s_m * normal * normal
+            + matrices.streamwise_damping_n_s_m * streamwise * streamwise
+            + 2.0 * matrices.cross_damping_n_s_m * normal * streamwise;
+        assert!(potential > 0.0);
+        assert!(dissipation > 0.0);
+    }
+    assert_eq!(
+        passive_two_mode_lip_matrices(6.33e-5, 300.0, -1.0 / 3.0),
+        Err(TrumpetError::NonFiniteState)
+    );
+}
+
+#[test]
 fn unilateral_lip_contact_has_reversible_energy_and_nonnegative_dissipation() {
     let stiffness = 4.0e6;
     let damping = 1.2e4;
@@ -192,13 +266,134 @@ fn unilateral_lip_contact_has_reversible_energy_and_nonnegative_dissipation() {
 }
 
 #[test]
+fn adachi_jet_step_obeys_equations_seven_and_eight_with_real_inertance() {
+    let area_m2 = 4.0e-6;
+    let old_flow_m3_s = 1.1e-4;
+    let old_acceleration_m3_s2 = 0.03;
+    let candidate_flow_m3_s = 1.2e-4;
+    let mouth_pressure_pa = 5_500.0;
+    let cup_pressure_pa = 1_200.0;
+    let dt = 1.0 / 192_000.0;
+    let balance = adachi_lip_jet_balance(
+        area_m2,
+        old_flow_m3_s,
+        old_acceleration_m3_s2,
+        candidate_flow_m3_s,
+        mouth_pressure_pa,
+        cup_pressure_pa,
+        dt,
+    )
+    .unwrap();
+    let equation_seven_residual = mouth_pressure_pa
+        - balance.lip_opening_pressure_pa
+        - balance.inertance_pa_s2_m3 * balance.flow_acceleration_m3_s2
+        - balance.contraction_pressure_drop_pa;
+    let equation_eight_residual =
+        balance.lip_opening_pressure_pa - cup_pressure_pa - balance.expansion_pressure_change_pa;
+    assert!(equation_seven_residual.abs() < 1.0e-10);
+    assert!(equation_eight_residual.abs() < 1.0e-10);
+    assert!((balance.reconstructed_cup_pressure_pa - cup_pressure_pa).abs() < 1.0e-10);
+    assert!(balance.dissipation_w >= 0.0);
+    let expected_flow_residual = candidate_flow_m3_s
+        - old_flow_m3_s
+        - 0.5 * dt * (old_acceleration_m3_s2 + balance.flow_acceleration_m3_s2);
+    assert!((balance.flow_residual_m3_s - expected_flow_residual).abs() < 1.0e-18);
+    let inertial_drop_pa = balance.inertance_pa_s2_m3 * balance.flow_acceleration_m3_s2;
+    assert!(
+        inertial_drop_pa.abs() > 100.0,
+        "quasi-steady near-miss would bypass {inertial_drop_pa} Pa of lip-channel inertia"
+    );
+
+    let reverse = adachi_lip_jet_balance(
+        area_m2,
+        -old_flow_m3_s,
+        -old_acceleration_m3_s2,
+        -candidate_flow_m3_s,
+        -mouth_pressure_pa,
+        -cup_pressure_pa,
+        dt,
+    )
+    .unwrap();
+    assert!(reverse.dissipation_w >= 0.0);
+    assert_eq!(
+        adachi_lip_jet_balance(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, dt),
+        Err(TrumpetError::NonFiniteState)
+    );
+}
+
+#[test]
+fn frozen_adachi_dynamic_jet_and_pressure_power_cells_match() {
+    let area_m2 = 3.5e-6;
+    let flow_m3_s = 1.0e-4;
+    let target_acceleration_m3_s2 = 0.25;
+    let inertance = 1.2 * 0.002 / area_m2;
+    let inverse_area = 1.0 / area_m2 - 1.0 / 2.3e-4;
+    let resistive_drop = 0.5 * 1.2 * flow_m3_s * flow_m3_s * inverse_area * inverse_area;
+    let mouth_pressure_pa = resistive_drop + inertance * target_acceleration_m3_s2;
+    let jet = adachi_lip_jet_balance(
+        area_m2,
+        flow_m3_s - target_acceleration_m3_s2 / 192_000.0,
+        target_acceleration_m3_s2,
+        flow_m3_s,
+        mouth_pressure_pa,
+        0.0,
+        1.0 / 192_000.0,
+    )
+    .unwrap();
+    assert!((jet.inertance_pa_s2_m3 - 685.714_285_714_285_7).abs() < 1.0e-10);
+    assert!((jet.contraction_pressure_drop_pa - 489.795_918_367_347).abs() < 1.0e-9);
+    assert!(
+        (jet.inertance_pa_s2_m3 * target_acceleration_m3_s2 + jet.contraction_pressure_drop_pa
+            - 661.224_489_795_918_4)
+            .abs()
+            < 1.0e-9
+    );
+
+    let port = two_dimensional_lip_pressure_port_balance(
+        7.0e-6, 0.007, 0.0, 0.00025, 0.0, 0.01, 0.02, 4_000.0, 0.0, 1_000.0,
+    )
+    .unwrap();
+    assert!((port.swept_flow_m3_s - 5.95e-7).abs() < 1.0e-18);
+    assert!((port.opening_face_flow_m3_s - 1.4e-7).abs() < 1.0e-18);
+    // The frozen force vector is ordered [streamwise x, normal y].
+    assert!((port.streamwise_force_n - 0.105).abs() < 1.0e-15);
+    assert!((port.normal_force_n - 0.042).abs() < 1.0e-15);
+    assert!((port.mechanical_power_w - 0.00252).abs() < 1.0e-15);
+    assert!(
+        (port.mouth_power_w - port.cup_power_w + port.opening_pressure_power_w
+            - port.mechanical_power_w)
+            .abs()
+            < 1.0e-18
+    );
+}
+
+#[test]
+fn streamwise_contact_uses_the_actual_one_millimetre_joint_boundary() {
+    assert_eq!(
+        lip_streamwise_joint_penetration_m(7.0e-6, 0.007, -0.0009).unwrap(),
+        0.0
+    );
+    let penetration = lip_streamwise_joint_penetration_m(7.0e-6, 0.007, -0.0011).unwrap();
+    assert!((penetration - 0.0001).abs() < 1.0e-15);
+    // Planted old near-miss: a generic -2 mm travel barrier would leave this
+    // crossed-joint state unopposed and permit a negative projected area.
+    let old_barrier_penetration = (-0.002_f64 - -0.0011_f64).max(0.0);
+    assert_eq!(old_barrier_penetration, 0.0);
+}
+
+#[test]
 fn two_dimensional_lip_pressure_force_and_swept_flow_are_power_conjugates() {
     let port = two_dimensional_lip_pressure_port_balance(
-        7.0e-6, 0.007, 0.0003, 0.0001, 0.18, -0.04, 5_500.0, 2_400.0,
+        7.0e-6, 0.007, 0.00025, 0.00003, 0.0001, 0.18, -0.04, 5_500.0, 2_400.0, -120.0,
     )
     .unwrap();
     assert!(port.mechanical_power_w > 0.0);
-    assert!((port.mouth_power_w - port.cup_power_w - port.mechanical_power_w).abs() < 1.0e-18);
+    assert!(
+        (port.mouth_power_w - port.cup_power_w + port.opening_pressure_power_w
+            - port.mechanical_power_w)
+            .abs()
+            < 1.0e-18
+    );
     let normal_span = 0.0002;
     let streamwise_span = 0.0003;
     let loop_edges = [
@@ -214,35 +409,39 @@ fn two_dimensional_lip_pressure_force_and_swept_flow_are_power_conjugates() {
                 two_dimensional_lip_pressure_port_balance(
                     7.0e-6,
                     0.007,
+                    0.00025,
                     normal,
                     streamwise,
                     normal_velocity,
                     streamwise_velocity,
                     5_500.0,
                     2_400.0,
+                    -120.0,
                 )
                 .unwrap()
                 .swept_flow_m3_s
             },
         )
         .sum::<f64>();
-    assert!(closed_loop_swept_volume.abs() < 1.0e-20);
-    // Planted non-integrable near-miss: its mismatched cross derivatives
-    // create volume around the same closed coordinate loop and must not pass.
-    let non_integrable_loop_volume = loop_edges
+    let expected_pumped_volume = -2.0 * 0.007 * normal_span * streamwise_span;
+    assert!(
+        (closed_loop_swept_volume - expected_pumped_volume).abs() < 1.0e-20,
+        "Adachi shape pump {closed_loop_swept_volume:e}, expected {expected_pumped_volume:e}"
+    );
+    // Planted scalar-potential near-miss: constant areas force the loop volume
+    // to zero and erase the actual swinging/stretching pump geometry.
+    let scalar_potential_loop_volume = loop_edges
         .into_iter()
         .map(
-            |(normal, streamwise, normal_velocity, streamwise_velocity)| {
-                let normal_area = 7.0e-6 * (1.0 + streamwise / 0.001);
-                let streamwise_area = 0.007 * 0.004 - 0.5 * 0.007 * normal;
-                normal_area * normal_velocity + streamwise_area * streamwise_velocity
+            |(_normal, _streamwise, normal_velocity, streamwise_velocity)| {
+                7.0e-6 * normal_velocity + 28.0e-6 * streamwise_velocity
             },
         )
         .sum::<f64>();
-    assert!(non_integrable_loop_volume.abs() > 5.0e-10);
+    assert!(scalar_potential_loop_volume.abs() < 1.0e-20);
     assert_eq!(
         two_dimensional_lip_pressure_port_balance(
-            -7.0e-6, 0.007, 0.0003, 0.0001, 0.18, -0.04, 5_500.0, 2_400.0,
+            -7.0e-6, 0.007, 0.00025, 0.00003, 0.0001, 0.18, -0.04, 5_500.0, 2_400.0, -120.0,
         ),
         Err(TrumpetError::NonFiniteState)
     );
@@ -266,6 +465,47 @@ fn filtered_sine_rms(frequency_hz: f64) -> f64 {
         }
     }
     (sum / (count - 4_801) as f64).sqrt()
+}
+
+fn impedance_peak(model: &TrumpetModel, low_hz: f64, high_hz: f64) -> (f64, f64, f64) {
+    let mut best = (low_hz, 0.0_f64, 0.0_f64);
+    let steps = ((high_hz - low_hz) * 4.0).round() as usize;
+    for index in 0..=steps {
+        let frequency_hz = low_hz + index as f64 * 0.25;
+        let impedance = model.diagnostic_input_impedance(frequency_hz).unwrap();
+        if impedance.normalized_magnitude > best.1 {
+            best = (
+                frequency_hz,
+                impedance.normalized_magnitude,
+                impedance.phase_degrees,
+            );
+        }
+    }
+    best
+}
+
+#[test]
+fn fixed_bore_reproduces_the_first_two_measured_trumpet_impedance_peaks() {
+    let model = TrumpetModel::new(48_000.0, TrumpetParameters::canonical()).unwrap();
+    let first = impedance_peak(&model, 60.0, 130.0);
+    let second = impedance_peak(&model, 180.0, 280.0);
+    eprintln!("Table-II impedance first={first:?} second={second:?}");
+    assert!(
+        ((first.0 - 87.0) / 87.0).abs() <= 0.04,
+        "first peak {first:?}"
+    );
+    assert!(
+        ((second.0 - 232.0) / 232.0).abs() <= 0.04,
+        "second peak {second:?}"
+    );
+    assert!(
+        ((first.1 / second.1) - (43.7 / 35.2)).abs() <= 0.25,
+        "measured peak ratio missing: {first:?} {second:?}"
+    );
+    assert!(
+        (first.1 - 43.7).abs() <= 10.0 && (second.1 - 35.2).abs() <= 10.0,
+        "normalized peak magnitudes differ from Table II: {first:?} {second:?}"
+    );
 }
 
 fn estimate_f0(
@@ -396,8 +636,8 @@ fn render_sustain(
     let mut controls = TrumpetControls {
         mouth_pressure_pa: 0.0,
         lip_resonance_hz,
-        lip_damping_ratio: 0.28,
-        equilibrium_opening_m: 0.00025,
+        lip_damping_ratio: 1.0 / 3.0,
+        equilibrium_opening_m: 0.0,
         tongue_contact: 1.0,
         valves,
     };
@@ -422,54 +662,52 @@ fn render_sustain(
 }
 
 fn render_regime(valves: [f64; 3]) -> (f64, f64) {
-    let sustain = render_sustain(valves, 5_500.0, 80.0, TrumpetParameters::canonical());
+    let sustain = render_sustain(valves, 5_500.0, 250.0, TrumpetParameters::canonical());
     estimate_f0(&sustain, 48_000.0, 180.0, 280.0)
 }
 
-#[test]
-fn diagnostic_normal_regime_operating_state() {
+fn render_pressure_continuation(pressures_pa: &[f64]) -> Vec<Vec<f64>> {
     let mut model = TrumpetModel::new(48_000.0, TrumpetParameters::canonical()).unwrap();
-    model.seed_open_normal_regime(100.0).unwrap();
     let mut controls = TrumpetControls {
         mouth_pressure_pa: 0.0,
-        lip_resonance_hz: 220.0,
-        lip_damping_ratio: 0.28,
-        equilibrium_opening_m: 0.00025,
-        tongue_contact: 0.0,
+        // The reviewed upper lip resonance remains fixed at 250 Hz while the
+        // measured 136/184 split places the lower outward mode below the
+        // 232 Hz bore regime.
+        lip_resonance_hz: 250.0,
+        // Newton et al.'s human Q range is 1.2..1.8. Q=1.5 is the
+        // independently reviewed midpoint, hence zeta=1/(2Q)=1/3.
+        lip_damping_ratio: 1.0 / 3.0,
+        equilibrium_opening_m: 0.0,
+        tongue_contact: 1.0,
         valves: [0.0; 3],
     };
-    let mut minima = [f64::INFINITY; 10];
-    let mut maxima = [f64::NEG_INFINITY; 10];
-    let mut max_report = LipSolveReport {
-        newton_iterations: 0,
-        residual_evaluations: 0,
-        line_search_evaluations: 0,
-        bracket_evaluations: 0,
-        fallback_bisections: 0,
-    };
-    for frame in 0..24_000 {
-        controls.mouth_pressure_pa = 8_500.0 * (frame as f64 / 1_440.0).min(1.0);
-        model.process_sample(controls).unwrap();
-        let report = model.last_lip_report();
-        max_report.newton_iterations = max_report.newton_iterations.max(report.newton_iterations);
-        max_report.residual_evaluations = max_report
-            .residual_evaluations
-            .max(report.residual_evaluations);
-        max_report.line_search_evaluations = max_report
-            .line_search_evaluations
-            .max(report.line_search_evaluations);
-        if frame > 9_600 {
-            for (index, value) in model
-                .diagnostic_operating_state(controls)
-                .into_iter()
-                .enumerate()
-            {
-                minima[index] = minima[index].min(value);
-                maxima[index] = maxima[index].max(value);
+    let mut previous_pressure_pa = 0.0;
+    let mut cells = Vec::with_capacity(pressures_pa.len());
+    for (cell_index, target_pressure_pa) in pressures_pa.iter().copied().enumerate() {
+        let mut sustain = Vec::new();
+        for frame in 0..24_000 {
+            let ramp = (frame as f64 / 1_440.0).min(1.0);
+            controls.mouth_pressure_pa =
+                previous_pressure_pa + ramp * (target_pressure_pa - previous_pressure_pa);
+            if cell_index == 0 && frame == 1_440 {
+                model.seed_open_normal_regime(100.0).unwrap();
+                controls.tongue_contact = 0.0;
+            }
+            let sample = model.process_sample(controls).unwrap_or_else(|error| {
+                panic!(
+                    "continuation failed cell={cell_index} frame={frame} pressure={} report={:?}: {error:?}",
+                    controls.mouth_pressure_pa,
+                    model.last_lip_report()
+                )
+            });
+            if frame > 9_600 {
+                sustain.push(sample);
             }
         }
+        cells.push(sustain);
+        previous_pressure_pa = target_pressure_pa;
     }
-    eprintln!("operating minima={minima:?} maxima={maxima:?} max_report={max_report:?}");
+    cells
 }
 
 #[test]
@@ -488,19 +726,24 @@ fn real_antialias_filter_preserves_band_and_rejects_first_image() {
 fn driven_core_is_finite_non_silent_and_bounded() {
     let mut model = TrumpetModel::new(48_000.0, TrumpetParameters::canonical()).unwrap();
     let mut controls = TrumpetControls {
-        mouth_pressure_pa: 3_000.0,
-        lip_resonance_hz: 80.0,
-        lip_damping_ratio: 0.28,
-        equilibrium_opening_m: 0.00025,
-        tongue_contact: 0.0,
+        mouth_pressure_pa: 0.0,
+        lip_resonance_hz: 250.0,
+        lip_damping_ratio: 1.0 / 3.0,
+        equilibrium_opening_m: 0.0,
+        tongue_contact: 1.0,
         valves: [0.0; 3],
     };
     let mut sum = 0.0;
     let mut peak = 0.0f64;
     let mut sustain = Vec::new();
+    let mut maximum_newton_iterations = 0;
+    let mut maximum_residual_evaluations = 0;
+    let mut maximum_line_search_evaluations = 0;
     for frame in 0..24_000 {
-        if frame < 1_440 {
-            controls.mouth_pressure_pa = 3_000.0 * frame as f64 / 1_440.0;
+        controls.mouth_pressure_pa = 5_500.0 * (frame as f64 / 1_440.0).min(1.0);
+        if frame == 1_440 {
+            model.seed_open_normal_regime(100.0).unwrap();
+            controls.tongue_contact = 0.0;
         }
         let sample = model.process_sample(controls).unwrap_or_else(|error| {
             panic!(
@@ -516,6 +759,11 @@ fn driven_core_is_finite_non_silent_and_bounded() {
             sustain.push(sample);
         }
         let report = model.last_lip_report();
+        maximum_newton_iterations = maximum_newton_iterations.max(report.newton_iterations);
+        maximum_residual_evaluations =
+            maximum_residual_evaluations.max(report.residual_evaluations);
+        maximum_line_search_evaluations =
+            maximum_line_search_evaluations.max(report.line_search_evaluations);
         assert!(report.newton_iterations <= 8);
         assert!(report.residual_evaluations <= 65);
         assert!(report.line_search_evaluations <= 32);
@@ -524,7 +772,9 @@ fn driven_core_is_finite_non_silent_and_bounded() {
     }
     let rms = (sum / (24_000 - 4_801) as f64).sqrt();
     let (f0, periodicity) = estimate_f0(&sustain, 48_000.0, 180.0, 280.0);
-    eprintln!("driven trumpet diagnostic rms={rms:e} peak={peak:e} f0={f0} score={periodicity}",);
+    eprintln!(
+        "driven trumpet diagnostic rms={rms:e} peak={peak:e} f0={f0} score={periodicity} max_newton={maximum_newton_iterations} max_residual={maximum_residual_evaluations} max_line_search={maximum_line_search_evaluations}",
+    );
     assert!(rms > 2.0e-5, "silent physical output {rms:e}");
     assert!(peak < 1.0, "unbounded physical output {peak}");
     assert!(periodicity > 0.9, "unlocked regime score {periodicity}");
@@ -578,10 +828,10 @@ fn pressure_increase_brightens_a_fixed_regime_without_retuning_it() {
     let mut centroids_hz = Vec::new();
     let mut levels_rms = Vec::new();
     let mut peaks = Vec::new();
-    for pressure_pa in pressures_pa {
+    let rendered_cells = render_pressure_continuation(&pressures_pa);
+    for (pressure_pa, samples) in pressures_pa.into_iter().zip(&rendered_cells) {
         // Lip resonance, damping, rest opening, bore geometry, and valves are
         // identical in every cell. Mouth pressure is the only changed input.
-        let samples = render_sustain([0.0; 3], pressure_pa, 220.0, TrumpetParameters::canonical());
         let (fundamental_hz, periodicity) = estimate_f0(&samples, 48_000.0, 80.0, 800.0);
         let centroid_hz = spectral_centroid_hz(&samples);
         let level_rms = (samples.iter().map(|sample| sample * sample).sum::<f64>()
@@ -650,8 +900,8 @@ fn pressure_increase_brightens_a_fixed_regime_without_retuning_it() {
 
     let mut linear_parameters = TrumpetParameters::canonical();
     linear_parameters.nonlinear_coefficient = 0.0;
-    let linear_soft = render_sustain([0.0; 3], pressures_pa[0], 220.0, linear_parameters);
-    let linear_loud = render_sustain([0.0; 3], pressures_pa[loud_index], 220.0, linear_parameters);
+    let linear_soft = render_sustain([0.0; 3], pressures_pa[0], 250.0, linear_parameters);
+    let linear_loud = render_sustain([0.0; 3], pressures_pa[loud_index], 250.0, linear_parameters);
     let linear_soft_centroid = spectral_centroid_hz(&linear_soft);
     let linear_loud_centroid = spectral_centroid_hz(&linear_loud);
     let linear_brightness_change_hz = linear_loud_centroid - linear_soft_centroid;
@@ -729,20 +979,23 @@ fn valid_low_lip_cell_converges_for_a_full_sustain() {
 fn seeded_and_cold_start_paths_are_bounded() {
     for seeded in [false, true] {
         let mut model = TrumpetModel::new(48_000.0, TrumpetParameters::canonical()).unwrap();
-        if seeded {
-            model.seed_open_normal_regime(100.0).unwrap();
-        }
         let mut controls = TrumpetControls {
             mouth_pressure_pa: 0.0,
-            lip_resonance_hz: 80.0,
-            lip_damping_ratio: 0.28,
-            equilibrium_opening_m: 0.00025,
-            tongue_contact: 0.0,
+            lip_resonance_hz: 250.0,
+            lip_damping_ratio: 1.0 / 3.0,
+            equilibrium_opening_m: 0.0,
+            tongue_contact: 1.0,
             valves: [0.0; 3],
         };
         let mut peak = 0.0_f64;
         for frame in 0..24_000 {
             controls.mouth_pressure_pa = 8_500.0 * (frame as f64 / 1_440.0).min(1.0);
+            if frame == 1_440 {
+                if seeded {
+                    model.seed_open_normal_regime(100.0).unwrap();
+                }
+                controls.tongue_contact = 0.0;
+            }
             let sample = model.process_sample(controls).unwrap_or_else(|error| {
                 panic!(
                     "start failed seeded={seeded} frame={frame} pressure={} report={:?}: {error:?}",

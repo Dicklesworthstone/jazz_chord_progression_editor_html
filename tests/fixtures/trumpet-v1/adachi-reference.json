@@ -1,0 +1,67 @@
+{
+  "schema": "changes.fixtures.phs5-adachi-sato-reference.v1",
+  "authority": {
+    "title": "Trumpet sound simulation using a two-dimensional lip vibration model",
+    "authors": ["S. Adachi", "M. Sato"],
+    "journal": "Journal of the Acoustical Society of America 99(2), 1200-1209 (1996)",
+    "doi": "10.1121/1.414677",
+    "reviewedUrl": "https://materias.df.uba.ar/fyma2023c2/files/2012/07/adachi1996.pdf",
+    "reviewedPdfSha256": "e2e5b78d68912f2146b9026f1057fe2143f3a9c2830ffa2ee57ce1f475aa7a66"
+  },
+  "tableI": {
+    "soundSpeedMPerS": 343,
+    "airDensityKgPerM3": 1.2,
+    "mouthpieceEntryAreaM2": 0.00023,
+    "lipWidthM": 0.007,
+    "lipThicknessM": 0.002,
+    "lipJointPositionM": [0, 0.004],
+    "lipEquilibriumStreamwiseM": 0.001,
+    "openLipQualityFactor": 3,
+    "closedLipQualityFactor": 0.5
+  },
+  "tableII": {
+    "normalLowestRegime": "II",
+    "peaks": [
+      {"mode":"I","label":"pedal-resonance","normalizedImpedanceMagnitude":43.7,"frequencyHz":87},
+      {"mode":"II","label":"Bb3","normalizedImpedanceMagnitude":35.2,"frequencyHz":232},
+      {"mode":"III","label":"F4","normalizedImpedanceMagnitude":46.4,"frequencyHz":341},
+      {"mode":"IV","label":"Bb4","normalizedImpedanceMagnitude":55.7,"frequencyHz":457},
+      {"mode":"V","label":"D5","normalizedImpedanceMagnitude":48.1,"frequencyHz":572},
+      {"mode":"VI","label":"F5","normalizedImpedanceMagnitude":51.6,"frequencyHz":686},
+      {"mode":"VII","label":"Ab5","normalizedImpedanceMagnitude":44.5,"frequencyHz":800},
+      {"mode":"VIII","label":"Bb5","normalizedImpedanceMagnitude":28.5,"frequencyHz":913}
+    ]
+  },
+  "tableIII": {
+    "normalSecondRegime": {
+      "label": "Bb3",
+      "impedancePeakHz": 232,
+      "lipEigenfrequencyHz": 250,
+      "soundingFrequencyHz": 236,
+      "pressureMinusFlowPhaseDegrees": -25.6,
+      "openingAreaMinusPressurePhaseDegrees": 18.1
+    },
+    "looseLipping": {
+      "label": "F3",
+      "associatedImpedancePeakHz": 232,
+      "lipEigenfrequencyHz": 160,
+      "soundingFrequencyHz": 166,
+      "normalRegisterAcceptanceAuthority": false
+    }
+  },
+  "equations": {
+    "lipOpeningArea": "S_lip=max(2*b*j_y,0)",
+    "lipSweptFlow": "U_lip=b*((j_x-j_joint_x)*j_y_dot-(j_y-j_joint_y)*j_x_dot)",
+    "channelInertance": "M=rho*d/S_lip",
+    "contractionPressureDrop": "rho*U*abs(U)/(2*S_lip^2)+M*dU_dt",
+    "expansionPressureChange": "-rho*U*abs(U)*(1/(S_cup*S_lip)-1/(2*S_cup^2))",
+    "combinedResistiveDrop": "rho*U*abs(U)*(1/S_lip-1/S_cup)^2/2"
+  },
+  "admission": {
+    "normalConcertPitchHz": 233.081880759,
+    "pedalConcertPitchHz": 116.5409403795,
+    "pedalMayCertifyNormalRegister": false,
+    "referenceFrequencyToleranceRelative": 0.04,
+    "referencePhaseToleranceDegrees": 8
+  }
+}

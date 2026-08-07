@@ -1,16 +1,16 @@
 {
   "schema":"changes.fixtures.phs5-trumpet-metrics.v1","cases":[
-    {"id":"open-bb2","metric":"pitch","targetHz":116.54094,"toleranceCents":10,"valves":0,"partial":2},
-    {"id":"open-f3","metric":"pitch","targetHz":174.614116,"toleranceCents":10,"valves":0,"partial":3},
-    {"id":"valve2-a2","metric":"pitch","targetHz":110,"toleranceCents":12,"valves":2,"partial":2},
-    {"id":"all-valves-e2","metric":"pitch","targetHz":82.406889,"toleranceCents":16,"valves":7,"partial":2},
-    {"id":"impedance-open","metric":"impedance-peaks","minimumPeakCount":5,"minimumHz":100,"maximumHz":1400},
-    {"id":"regime-selection","metric":"lip-regime","lipResonanceHz":440,"minimumPlayingHz":440,"maximumPlayingHz":762.102355},
+    {"id":"open-bb3","metric":"pitch","targetHz":233.081880759,"toleranceCents":10,"valves":0,"boreResonanceIndex":2,"normalRegister":true},
+    {"id":"open-f4","metric":"pitch","targetHz":349.228231433,"toleranceCents":10,"valves":0,"boreResonanceIndex":3,"normalRegister":true},
+    {"id":"valve2-a3","metric":"pitch","targetHz":220,"toleranceCents":12,"valves":2,"boreResonanceIndex":2,"normalRegister":true},
+    {"id":"all-valves-e3","metric":"pitch","targetHz":164.813778456,"toleranceCents":16,"valves":7,"boreResonanceIndex":2,"normalRegister":true},
+    {"id":"impedance-open","metric":"impedance-peaks","minimumPeakCount":8,"minimumHz":80,"maximumHz":1000,"tableIIReferenceHz":[87,232,341,457,572,686,800,913]},
+    {"id":"regime-selection","metric":"lip-regime","lipResonanceHz":250,"impedancePeakHz":232,"referenceSoundingHz":236,"normalConcertTargetHz":233.081880759,"pedalFrequencyHz":116.5409403795,"pedalMayPass":false},
     {"id":"brightness","metric":"dynamic-brightness","softCentroidHz":1400,"loudCentroidHz":2600,"minimumIncreaseHz":800},
     {"id":"attack","metric":"attack-time","tenPercentSeconds":0.015,"ninetyPercentSeconds":0.075,"expectedSeconds":0.06},
-    {"id":"valve-monotonicity","metric":"valve-state","openHz":116.54094,"valve2Hz":110,"allValvesHz":82.406889,"expected":"added-length-lowers-resonance"},
+    {"id":"valve-monotonicity","metric":"valve-state","openHz":233.081880759,"valve2Hz":220,"allValvesHz":164.813778456,"expected":"added-length-lowers-normal-playing-regime"},
     {"id":"alias","metric":"nonlinear-alias","maximumAliasDbc":-50,"oversampleFactor":4,"ratesHz":[44100,48000,96000]},
-    {"id":"octave","metric":"transposition-relations","baseHz":116.54094,"upperHz":233.08188,"expectedRatio":2,"toleranceRelative":0.000001},
+    {"id":"octave","metric":"transposition-relations","baseHz":233.081880759,"upperHz":466.163761518,"expectedRatio":2,"toleranceRelative":0.000001},
     {"id":"tongue-slur","metric":"articulation-distinction","maximumWaveformCorrelation":0.999,"continuousBoreState":true}
   ]
 }

@@ -1,8 +1,11 @@
 {
-  "schema":"changes.fixtures.phs5-trumpet-geometry.v1","temperatureC":20,"effectiveOpenLengthM":1.47,
+  "schema":"changes.fixtures.phs5-trumpet-geometry.v1","temperatureC":20,"soundSpeedMPerS":343,"effectiveOpenLengthM":1.47,
   "sections":[[0.08,0.0055,"leadpipe"],[0.19,0.006,"leadpipe"],[0.56,0.00585,"cylindrical"],[0.88,0.0065,"tuning-slide"],[1.08,0.008,"bell-tail"],[1.25,0.014,"bell"],[1.38,0.032,"bell"],[1.47,0.062,"bell"]],
   "valves":[{"id":"v1","semitones":2,"addedLengthM":0.18},{"id":"v2","semitones":1,"addedLengthM":0.087},{"id":"v3","semitones":3,"addedLengthM":0.278}],
-  "combinationCompensationM":{"0":0,"1":0,"2":0,"3":0.004,"4":0.006,"5":0.012,"6":0.018,"7":0.027},
+  "valveCompensationLaw":"open-length-times-two-to-the-semitones-over-twelve-minus-open-length-minus-selected-individual-valve-lengths",
+  "combinationCompensationM":{"0":0,"1":0.00001921101477833642,"2":0.00041074870816411313,"3":0.011134459053999901,"4":0.00013445905399989133,"5":0.0342145856299505,"6":0.017083943345463593,"7":0.06389393668844978},
   "states":[[0,0,0,0],[1,0,0,2],[0,1,0,1],[0,0,1,3],[1,1,0,3],[0,1,1,4],[1,0,1,5],[1,1,1,6]],
+  "normalPlayingRegime":{"openLabel":"sounding-Bb3","concertPitchHz":233.081880759,"boreResonanceIndex":2,"pedalMissingFundamentalHz":116.5409403795,"pedalMayCertifyNormalRegister":false},
+  "halfWaveGeometryDiagnostics":{"openHz":233.33333333333334,"secondValveHz":220.23733962572848,"allValvesHz":164.99158227686112},
   "bell":{"radiation":"frequency-dependent-passive","maximumReflectionMagnitude":0.995}
 }

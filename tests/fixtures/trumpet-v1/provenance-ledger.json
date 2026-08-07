@@ -1,4 +1,5 @@
 {"schema":"changes.fixtures.phs5-trumpet-provenance.v1","authorities":[
+  {"id":"adachi-sato-two-dimensional-lip","kind":"primary-research","location":"https://doi.org/10.1121/1.414677","reviewedUrl":"https://materias.df.uba.ar/fyma2023c2/files/2012/07/adachi1996.pdf","reviewedPdfSha256":"e2e5b78d68912f2146b9026f1057fe2143f3a9c2830ffa2ee57ce1f475aa7a66","governs":["two-dimensional-lip-geometry","pressure-force-ports","lip-swept-flow","dynamic-lip-channel-flow","normal-playing-regime","impedance-and-phase-reference"]},
   {"id":"outward-lip-threshold","kind":"primary-research","location":"https://arxiv.org/abs/0705.4242","governs":["outward-sign","threshold","regime"]},
   {"id":"time-domain-brass","kind":"primary-research","location":"https://arxiv.org/abs/1511.04247","governs":["lip-mass","variable-area-bore","viscothermal-loss","nonlinear-propagation"]},
   {"id":"trumpet-shank-geometry","kind":"primary-research","location":"https://arxiv.org/abs/1611.01025","governs":["mouthpiece-shank","bell","brassiness"]}
