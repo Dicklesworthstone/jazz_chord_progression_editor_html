@@ -299,7 +299,8 @@ export function lbfgsMinimize(
   if (!Number.isSafeInteger(options.maxIters) || options.maxIters < 0) return null;
   if (!Number.isFinite(options.gradTol) || options.gradTol < 0) return null;
   let x = [...x0];
-  let [f, g0] = fg(x);
+  const [f0Value, g0] = fg(x);
+  let f = f0Value;
   let g = [...g0];
   if (!Number.isFinite(f) || !allFinite(g) || g.length !== n) return null;
   const pairs: { s: number[]; y: number[]; rho: number }[] = [];
@@ -357,23 +358,27 @@ export function lbfgsMinimize(
     }
     const xBase = [...x];
     const fBase = f;
-    let lastProbe: { f: number; g: number[]; x: number[] } | null = null;
-    let poisoned = false;
+    // Probe state lives in an object so control-flow analysis correctly
+    // widens it across the strongWolfe call that drives the closure.
+    const probeBox: { last: { f: number; g: number[]; x: number[] } | null; poisoned: boolean } = {
+      last: null,
+      poisoned: false,
+    };
     const phi = (alpha: number): readonly [number, number] => {
       const xt = xBase.map((xi, i) => xi + alpha * (d[i] ?? 0));
       const [ft, gt] = fg(xt);
       evals += 1;
       if (gt.length !== n || !allFinite(gt) || Number.isNaN(ft)) {
-        poisoned = true;
+        probeBox.poisoned = true;
         return [Number.NaN, Number.NaN];
       }
       let dphi = 0;
       for (let i = 0; i < n; i += 1) dphi += (gt[i] ?? 0) * (d[i] ?? 0);
-      lastProbe = { f: ft, g: [...gt], x: xt };
+      probeBox.last = { f: ft, g: [...gt], x: xt };
       return [ft, dphi];
     };
     const outcome = strongWolfe(phi, fBase, dphi0, 1.0, 1e-4, 0.9, Number.MAX_SAFE_INTEGER);
-    if (poisoned || outcome === null) {
+    if (probeBox.poisoned || outcome === null) {
       reason = "refused-callback";
       break;
     }
@@ -381,7 +386,7 @@ export function lbfgsMinimize(
       reason = "stall";
       break;
     }
-    const accepted: { f: number; g: number[]; x: number[] } | null = lastProbe;
+    const accepted = probeBox.last;
     if (accepted === null) {
       reason = "stall";
       break;
@@ -631,7 +636,9 @@ export function certifyOrEscalate(
  * splitmix64 stream instead of fs-rand Philox (determinism per seed is the
  * contract, not cross-language bit parity); refusal (null) replaces panics
  * on invalid populations/bounds/indices; objective vectors are validated
- * finite at intake.
+ * finite at intake; hypervolume2d REFUSES (null) when any front point fails
+ * to strictly dominate the reference, where the source's hypervolume()
+ * silently FILTERS such points — fail-closed is the foundry law.
  */
 export type Individual = Readonly<{ x: readonly number[]; f: readonly number[] }>;
 

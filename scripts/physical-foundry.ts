@@ -24,7 +24,6 @@ const DISTRIBUTIONS = new Set([
 const SENSITIVITIES = new Set(["low", "medium", "high"]);
 const SHA256 = /^[0-9a-f]{64}$/;
 
-type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
 type RecordValue = Record<string, unknown>;
 
 export type FoundryFinding = Readonly<{
@@ -179,7 +178,7 @@ export function validateParameterPack(value: unknown, ledgerValue: unknown): Pac
   if (solver === null || !nonempty(solver["name"]) || !nonempty(solver["commit"]) || !finite(solver["version"]) || !boundedInteger(solver["seed"], Number.MAX_SAFE_INTEGER) || record(solver["config"]) === null) {
     return refusal("PHS1_SOLVER_PROVENANCE", "/solver", "Solver identity, revision, seed, or configuration is incomplete.");
   }
-  if (!boundedInteger(solver["evaluations"], FOUNDRY_LIMITS.maximumOptimizerEvaluations) || !boundedInteger(solver["maximumEvaluations"], FOUNDRY_LIMITS.maximumOptimizerEvaluations) || Number(solver["evaluations"]) > Number(solver["maximumEvaluations"])) {
+  if (!boundedInteger(solver["evaluations"], FOUNDRY_LIMITS.maximumOptimizerEvaluations) || !boundedInteger(solver["maximumEvaluations"], FOUNDRY_LIMITS.maximumOptimizerEvaluations) || solver["evaluations"] > solver["maximumEvaluations"]) {
     return refusal("PHS1_WORK_BOUND", "/solver/evaluations", "Solver evaluation bound was exceeded.");
   }
   if (!boundedInteger(solver["gradientChecks"], FOUNDRY_LIMITS.maximumGradientChecks) || !boundedInteger(solver["scratchBytes"], FOUNDRY_LIMITS.maximumScratchBytes)) {
@@ -189,16 +188,16 @@ export function validateParameterPack(value: unknown, ledgerValue: unknown): Pac
   const objectiveIds = new Set<string>();
   if (objectives.length === 0 || objectives.length > FOUNDRY_LIMITS.maximumObjectives || objectives.some((item) => {
     const objective = record(item);
-    if (objective === null || !nonempty(objective["id"]) || objectiveIds.has(objective["id"]) || !finite(objective["weight"]) || Number(objective["weight"]) <= 0) return true;
+    if (objective === null || !nonempty(objective["id"]) || objectiveIds.has(objective["id"]) || !finite(objective["weight"]) || objective["weight"] <= 0) return true;
     objectiveIds.add(objective["id"]);
     return false;
   })) return refusal("PHS1_OBJECTIVES", "/objectives", "Objectives must be bounded, named, and positively weighted.");
   const residuals = record(pack["residuals"]);
-  if (residuals === null || !finite(residuals["terminal"]) || !finite(residuals["maximum"]) || Number(residuals["terminal"]) < 0 || Number(residuals["terminal"]) > Number(residuals["maximum"])) {
+  if (residuals === null || !finite(residuals["terminal"]) || !finite(residuals["maximum"]) || residuals["terminal"] < 0 || residuals["terminal"] > residuals["maximum"]) {
     return refusal("PHS1_RESIDUAL", "/residuals", "Terminal residual exceeds the reviewed nonnegative maximum.");
   }
   const sensitivity = record(pack["sensitivity"]);
-  if (sensitivity === null || !boundedInteger(sensitivity["perturbations"], FOUNDRY_LIMITS.maximumSensitivityPerturbations) || !finite(sensitivity["maximumNormalizedChange"]) || !finite(sensitivity["reviewedMaximum"]) || Number(sensitivity["maximumNormalizedChange"]) < 0 || Number(sensitivity["reviewedMaximum"]) < 0 || Number(sensitivity["maximumNormalizedChange"]) > Number(sensitivity["reviewedMaximum"])) {
+  if (sensitivity === null || !boundedInteger(sensitivity["perturbations"], FOUNDRY_LIMITS.maximumSensitivityPerturbations) || !finite(sensitivity["maximumNormalizedChange"]) || !finite(sensitivity["reviewedMaximum"]) || sensitivity["maximumNormalizedChange"] < 0 || sensitivity["reviewedMaximum"] < 0 || sensitivity["maximumNormalizedChange"] > sensitivity["reviewedMaximum"]) {
     return refusal("PHS1_SENSITIVITY", "/sensitivity", "Sensitivity evidence is absent, excessive, or outside its reviewed envelope.");
   }
   const regimes = pack["regimes"] === undefined ? [] : Array.isArray(pack["regimes"]) ? pack["regimes"] : null;
@@ -217,7 +216,7 @@ export function validateParameterPack(value: unknown, ledgerValue: unknown): Pac
   if (modes.length > FOUNDRY_LIMITS.maximumModes) return refusal("PHS1_WORK_BOUND", "/modes", "Mode count exceeds its bound.");
   for (let index = 0; index < modes.length; index += 1) {
     const mode = record(modes[index]);
-    if (mode === null || !finite(mode["estimateHz"]) || !finite(mode["lowerHz"]) || !finite(mode["upperHz"]) || !finite(mode["residual"]) || Number(mode["residual"]) < 0 || Number(mode["lowerHz"]) > Number(mode["estimateHz"]) || Number(mode["estimateHz"]) > Number(mode["upperHz"])) {
+    if (mode === null || !finite(mode["estimateHz"]) || !finite(mode["lowerHz"]) || !finite(mode["upperHz"]) || !finite(mode["residual"]) || mode["residual"] < 0 || mode["lowerHz"] > mode["estimateHz"] || mode["estimateHz"] > mode["upperHz"]) {
       return refusal("PHS1_MODE_CERTIFICATE", `/modes/${String(index)}`, "Mode estimate is not enclosed by a finite residual certificate.");
     }
   }
@@ -236,7 +235,7 @@ function rustString(value: unknown): string {
     else if (codePoint < 0x20 || codePoint === 0x7f) encoded += `\\u{${codePoint.toString(16)}}`;
     else encoded += character;
   }
-  return `${encoded}\"`;
+  return `${encoded}"`;
 }
 
 function compareCodeUnits(left: string, right: string): number {

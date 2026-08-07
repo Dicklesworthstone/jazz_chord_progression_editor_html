@@ -347,7 +347,7 @@ export function computePlateModeTable(
     ),
   );
   const body = {
-    schema: "changes.foundry.plate-mode-table.v1",
+    schema: "changes.foundry.plate-mode-table.v1" as const,
     geometry,
     material,
     gridPointsX,
