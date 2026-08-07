@@ -1,0 +1,80 @@
+{
+  "schema": "changes.fixture.uiowa-wind-identity-corpus.v1",
+  "corpusId": "university-of-iowa-musical-instrument-samples-winds@2026-08-07",
+  "publisher": "University of Iowa Electronic Music Studios",
+  "creator": "Lawrence Fritts",
+  "landingPage": "https://theremin.music.uiowa.edu/MIS.html",
+  "flutePage": "https://theremin.music.uiowa.edu/MISflute.html",
+  "clarinetPage": "https://theremin.music.uiowa.edu/misbbclarinet.html",
+  "useTerms": "The publisher states that the recordings may be downloaded and used for any projects without restrictions.",
+  "recording": {
+    "location": "University of Iowa anechoic chamber",
+    "format": "16-bit 44.1 kHz mono AIFF",
+    "microphone": "Neumann KM 84 cardioid"
+  },
+  "fetchedUtc": "2026-08-07",
+  "selectedMidi": [72, 76, 79, 82],
+  "requiredDynamics": ["pp", "mf", "ff"],
+  "files": [
+    {
+      "instrument": "flute",
+      "dynamic": "pp",
+      "fileName": "Flute.nonvib.pp.B4Bb5.aiff",
+      "url": "https://theremin.music.uiowa.edu/sound%20files/MIS/Woodwinds/flute/Flute.nonvib.pp.B4Bb5.aiff",
+      "sha256": "c0090e167a4480a0782c1891691bcf9619b5af659cedd1199dc0947381213b17",
+      "bytes": 2642492,
+      "firstMidi": 71,
+      "noteCount": 12
+    },
+    {
+      "instrument": "flute",
+      "dynamic": "mf",
+      "fileName": "Flute.nonvib.mf.C5B5.aiff",
+      "url": "https://theremin.music.uiowa.edu/sound%20files/MIS/Woodwinds/flute/Flute.nonvib.mf.C5B5.aiff",
+      "sha256": "43d8d6c620fe9c508c30b568b023e54fc226960adcb8455467e511a22866066c",
+      "bytes": 2919180,
+      "firstMidi": 72,
+      "noteCount": 12
+    },
+    {
+      "instrument": "flute",
+      "dynamic": "ff",
+      "fileName": "Flute.nonvib.ff.C5B5.aiff",
+      "url": "https://theremin.music.uiowa.edu/sound%20files/MIS/Woodwinds/flute/Flute.nonvib.ff.C5B5.aiff",
+      "sha256": "6f93ab76ea67466de6b1a4d4152e4178b62131e79f726bfb6948951cf62bb5a2",
+      "bytes": 2974224,
+      "firstMidi": 72,
+      "noteCount": 12
+    },
+    {
+      "instrument": "clarinet",
+      "dynamic": "pp",
+      "fileName": "BbClar.pp.C5B5.aiff",
+      "url": "https://theremin.music.uiowa.edu/sound%20files/MIS/Woodwinds/Bbclarinet/BbClar.pp.C5B5.aiff",
+      "sha256": "2023e770df3eb807a5c4ebf930d936f81db09671f67b37a76b1669c2510f1187",
+      "bytes": 5280478,
+      "firstMidi": 72,
+      "noteCount": 12
+    },
+    {
+      "instrument": "clarinet",
+      "dynamic": "mf",
+      "fileName": "BbClar.mf.C5B5.aiff",
+      "url": "https://theremin.music.uiowa.edu/sound%20files/MIS/Woodwinds/Bbclarinet/BbClar.mf.C5B5.aiff",
+      "sha256": "62980b85c250db3dde3b6786b09efc1c4c3373e36130478c6e01471a6a1640a6",
+      "bytes": 5318512,
+      "firstMidi": 72,
+      "noteCount": 12
+    },
+    {
+      "instrument": "clarinet",
+      "dynamic": "ff",
+      "fileName": "BbClar.ff.C5B5.aiff",
+      "url": "https://theremin.music.uiowa.edu/sound%20files/MIS/Woodwinds/Bbclarinet/BbClar.ff.C5B5.aiff",
+      "sha256": "559ce196d2b59b4b0291ff189210ff2dad105fdb0b3feb4cf1d9a4e6258e8b77",
+      "bytes": 5382084,
+      "firstMidi": 72,
+      "noteCount": 12
+    }
+  ]
+}
