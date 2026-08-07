@@ -54,10 +54,20 @@ export const WAVEGUIDE_GUITAR_CLEAN_ALGORITHM_ID =
 export const WAVEGUIDE_GUITAR_DRIVE_ALGORITHM_ID =
   "changes.dsp.waveguide-guitar-drive@1";
 export const WAVEGUIDE_FLUTE_ALGORITHM_ID = "changes.dsp.waveguide-flute@1";
+export const WAVEGUIDE_FLUTE_V2_ALGORITHM_ID =
+  "changes.dsp.waveguide-flute@2";
 export const WAVEGUIDE_CLARINET_ALGORITHM_ID =
   "changes.dsp.waveguide-clarinet@1";
 export const WAVEGUIDE_CLARINET_V2_ALGORITHM_ID =
   "changes.dsp.waveguide-clarinet@2";
+export const PLUCKED_ARCHTOP_V2_ALGORITHM_ID =
+  "changes.dsp.plucked-archtop@2";
+export const PLUCKED_ELECTRIC_V2_ALGORITHM_ID =
+  "changes.dsp.plucked-electric@2";
+export const PLUCKED_DREADNOUGHT_ALGORITHM_ID =
+  "changes.dsp.plucked-dreadnought@1";
+export const PLUCKED_UKULELE_ALGORITHM_ID =
+  "changes.dsp.plucked-ukulele@1";
 
 export type WindAttackArticulation = "legato" | "tongued";
 
@@ -321,6 +331,16 @@ type ConcertGrandExports = Readonly<{
     right: number,
     maxFrames: number,
   ) => number;
+  plk2_note_frames: (pack: number, midi: number, sampleRate: number) => number;
+  plk2_render: (
+    pack: number,
+    midi: number,
+    velocity: number,
+    sampleRate: number,
+    left: number,
+    right: number,
+    maxFrames: number,
+  ) => number;
   flt_note_frames: (midi: number, sampleRate: number) => number;
   flt_render: (
     midi: number,
@@ -340,6 +360,17 @@ type ConcertGrandExports = Readonly<{
     maxFrames: number,
   ) => number;
   flt_render_expressive: (
+    midi: number,
+    velocity: number,
+    sampleRate: number,
+    variationSlot: number,
+    articulation: number,
+    left: number,
+    right: number,
+    maxFrames: number,
+  ) => number;
+  flt2_note_frames: (midi: number, sampleRate: number) => number;
+  flt2_render: (
     midi: number,
     velocity: number,
     sampleRate: number,
@@ -930,6 +961,14 @@ async function instantiate(): Promise<DspCore> {
       rawExports,
       "gtr_render",
     ) as ConcertGrandExports["gtr_render"],
+    plk2_note_frames: requireExportedFunction(
+      rawExports,
+      "plk2_note_frames",
+    ) as ConcertGrandExports["plk2_note_frames"],
+    plk2_render: requireExportedFunction(
+      rawExports,
+      "plk2_render",
+    ) as ConcertGrandExports["plk2_render"],
     flt_note_frames: requireExportedFunction(
       rawExports,
       "flt_note_frames",
@@ -946,6 +985,14 @@ async function instantiate(): Promise<DspCore> {
       rawExports,
       "flt_render_expressive",
     ) as ConcertGrandExports["flt_render_expressive"],
+    flt2_note_frames: requireExportedFunction(
+      rawExports,
+      "flt2_note_frames",
+    ) as ConcertGrandExports["flt2_note_frames"],
+    flt2_render: requireExportedFunction(
+      rawExports,
+      "flt2_render",
+    ) as ConcertGrandExports["flt2_render"],
     clr_note_frames: requireExportedFunction(
       rawExports,
       "clr_note_frames",
@@ -1479,6 +1526,34 @@ async function instantiate(): Promise<DspCore> {
   const waveguide = new Map<string, WaveguideRenderer>();
   for (const [algorithmId, renderNoteFor] of [
     [
+      PLUCKED_ARCHTOP_V2_ALGORITHM_ID,
+      makeWaveguideRenderNote(
+        (m, r) => exports.plk2_note_frames(0, m, r),
+        (m, v, r, l, rt, mx) => exports.plk2_render(0, m, v, r, l, rt, mx),
+      ),
+    ],
+    [
+      PLUCKED_ELECTRIC_V2_ALGORITHM_ID,
+      makeWaveguideRenderNote(
+        (m, r) => exports.plk2_note_frames(1, m, r),
+        (m, v, r, l, rt, mx) => exports.plk2_render(1, m, v, r, l, rt, mx),
+      ),
+    ],
+    [
+      PLUCKED_DREADNOUGHT_ALGORITHM_ID,
+      makeWaveguideRenderNote(
+        (m, r) => exports.plk2_note_frames(2, m, r),
+        (m, v, r, l, rt, mx) => exports.plk2_render(2, m, v, r, l, rt, mx),
+      ),
+    ],
+    [
+      PLUCKED_UKULELE_ALGORITHM_ID,
+      makeWaveguideRenderNote(
+        (m, r) => exports.plk2_note_frames(3, m, r),
+        (m, v, r, l, rt, mx) => exports.plk2_render(3, m, v, r, l, rt, mx),
+      ),
+    ],
+    [
       WAVEGUIDE_GUITAR_CLEAN_ALGORITHM_ID,
       makeWaveguideRenderNote(exports.gtr_note_frames, (m, v, r, l, rt, mx) =>
         exports.gtr_render(m, v, r, 0, l, rt, mx),
@@ -1508,6 +1583,13 @@ async function instantiate(): Promise<DspCore> {
             rt,
             mx,
           ),
+      ),
+    ],
+    [
+      WAVEGUIDE_FLUTE_V2_ALGORITHM_ID,
+      makeWaveguideRenderNote(
+        exports.flt2_note_frames,
+        (m, v, r, l, rt, mx) => exports.flt2_render(m, v, r, 0, 1, l, rt, mx),
       ),
     ],
     [

@@ -472,9 +472,12 @@ checkboxes below are unchanged.
 - [ ] Author independent string pitch/inharmonicity, decay-slope, bridge/body
   admittance, pluck cancellation, pickup comb, and amp transfer fixtures.
 - [ ] Specify the ukulele target: ~0.33–0.38 m scale, four nylon strings with
-  the re-entrant/linear G4–C4–E4–A4 decision recorded, small body with a high
-  Helmholtz resonance (~500–700 Hz region), low modal density, fast decay,
-  and a bright low-sustain character; no amplifier path.
+  the re-entrant/linear G4–C4–E4–A4 decision recorded, and a small concert body
+  whose air mode is derived from its cavity and sound-hole geometry (about
+  189 Hz for the reviewed 3.2 L / 44 mm-hole pack). Keep that cavity mode
+  distinct from the braced top-plate (1,1) mode near 216 Hz; neither may be
+  relabeled as a 500–700 Hz Helmholtz resonance. Target low modal density,
+  fast decay, and a bright low-sustain character with no amplifier path.
 - [ ] Specify the upright-bass target: ~1.04–1.06 m scale, four thick
   steel/gut-hybrid strings (E1–A1–D2–G2), large body with a low Helmholtz
   resonance (~60–100 Hz), long sustain, strong low-mode radiation, and

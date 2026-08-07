@@ -295,7 +295,12 @@ function expectedPhysicalFamily(
 ): ExpressiveVoiceGesture["instrumentFamily"] | null {
   if (instrumentId === "clarinet") return "clarinet";
   if (instrumentId === "flute") return "flute";
-  if (instrumentId === "guitar" || instrumentId === "blues-guitar") {
+  if (
+    instrumentId === "guitar" ||
+    instrumentId === "blues-guitar" ||
+    instrumentId === "dreadnought-guitar" ||
+    instrumentId === "ukulele"
+  ) {
     return "guitar";
   }
   if (instrumentId === "vibraphone") return "vibraphone";
@@ -672,6 +677,10 @@ function recipeForInstrument(instrumentId: InstrumentId): AudioInstrumentRecipe 
       return AUDIO_INSTRUMENT_RECIPES[11];
     case "clarinet":
       return AUDIO_INSTRUMENT_RECIPES[12];
+    case "dreadnought-guitar":
+      return AUDIO_INSTRUMENT_RECIPES[13];
+    case "ukulele":
+      return AUDIO_INSTRUMENT_RECIPES[14];
   }
 }
 

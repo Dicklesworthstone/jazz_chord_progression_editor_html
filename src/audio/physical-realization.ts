@@ -234,7 +234,12 @@ export function physicalFamilyForInstrumentId(
 ): PhysicalInstrumentFamily | null {
   if (instrumentId === "clarinet") return "clarinet";
   if (instrumentId === "flute") return "flute";
-  if (instrumentId === "guitar" || instrumentId === "blues-guitar") {
+  if (
+    instrumentId === "guitar" ||
+    instrumentId === "blues-guitar" ||
+    instrumentId === "dreadnought-guitar" ||
+    instrumentId === "ukulele"
+  ) {
     return "guitar";
   }
   /*

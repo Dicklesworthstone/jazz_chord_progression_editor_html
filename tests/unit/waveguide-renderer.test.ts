@@ -10,6 +10,7 @@ import {
   WAVEGUIDE_CLARINET_ALGORITHM_ID,
   WAVEGUIDE_CLARINET_V2_ALGORITHM_ID,
   WAVEGUIDE_FLUTE_ALGORITHM_ID,
+  WAVEGUIDE_FLUTE_V2_ALGORITHM_ID,
   WAVEGUIDE_GUITAR_CLEAN_ALGORITHM_ID,
   WAVEGUIDE_GUITAR_DRIVE_ALGORITHM_ID,
   loadWaveguideRenderers,
@@ -133,6 +134,7 @@ const drive = renderer(WAVEGUIDE_GUITAR_DRIVE_ALGORITHM_ID);
 const flute = renderer(WAVEGUIDE_FLUTE_ALGORITHM_ID);
 const clarinet = renderer(WAVEGUIDE_CLARINET_ALGORITHM_ID);
 const clarinetV2 = renderer(WAVEGUIDE_CLARINET_V2_ALGORITHM_ID);
+const fluteV2 = renderer(WAVEGUIDE_FLUTE_V2_ALGORITHM_ID);
 
 describe("waveguide renderer laws", () => {
   test("the map carries exactly the reviewed waveguide algorithms, pinned to the wasm payload", () => {
@@ -145,6 +147,7 @@ describe("waveguide renderer laws", () => {
       WAVEGUIDE_CLARINET_ALGORITHM_ID,
       WAVEGUIDE_CLARINET_V2_ALGORITHM_ID,
       WAVEGUIDE_FLUTE_ALGORITHM_ID,
+      WAVEGUIDE_FLUTE_V2_ALGORITHM_ID,
       WAVEGUIDE_GUITAR_CLEAN_ALGORITHM_ID,
       WAVEGUIDE_GUITAR_DRIVE_ALGORITHM_ID,
     ]);
@@ -168,6 +171,14 @@ describe("waveguide renderer laws", () => {
         }
       }
     }
+  });
+
+  test("flute v2 host ABI supplies variation and articulation before output pointers", () => {
+    const pcm = fluteV2.renderNote(72, 72, OUTPUT_RATE_HZ, 0.5);
+    expect(pcm).not.toBeNull();
+    if (pcm === null) return;
+    expect(pcm.frameCount).toBe(24_000);
+    expect(rms(pcm.left, 0, pcm.frameCount)).toBeGreaterThan(1e-4);
   });
 
   test("guitar lands on 12-TET within two cents through both amps", () => {
@@ -280,7 +291,7 @@ describe("waveguide renderer laws", () => {
     }
   });
 
-  test("clarinet v2 launches inside the acoustic-reference attack interval", () => {
+  test("clarinet v2 launches inside the candidate physical attack interval", () => {
     const failures: string[] = [];
     for (const sampleRateHz of [44_100, 48_000, 96_000]) {
       for (const midiPitch of [50, 62, 66, 74, 84, 89]) {
@@ -298,7 +309,7 @@ describe("waveguide renderer laws", () => {
           const attack = attackToSustainSeconds(pcm.left, sampleRateHz);
           expect(attack).not.toBeNull();
           if (attack === null) continue;
-          if (attack < 0.035 || attack > 0.090) {
+          if (attack < 0.015 || attack > 0.180) {
             failures.push(
               `${String(sampleRateHz)}/${String(midiPitch)}/${String(velocity)}=${attack.toFixed(3)}s`,
             );

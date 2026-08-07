@@ -353,7 +353,7 @@ export const AUDIO_INSTRUMENT_RECIPES = Object.freeze([
     outputLevel: 0.5,
     polyphonyLimit: 48,
     renderer: Object.freeze({
-      algorithmId: "changes.dsp.waveguide-guitar-clean@1",
+      algorithmId: "changes.dsp.plucked-archtop@2",
       channels: 2,
       maximumRenderSeconds: 6,
       bufferCacheLimit: 64,
@@ -407,7 +407,7 @@ export const AUDIO_INSTRUMENT_RECIPES = Object.freeze([
     outputLevel: 0.46,
     polyphonyLimit: 48,
     renderer: Object.freeze({
-      algorithmId: "changes.dsp.waveguide-guitar-drive@1",
+      algorithmId: "changes.dsp.plucked-electric@2",
       channels: 2,
       maximumRenderSeconds: 6,
       bufferCacheLimit: 64,
@@ -432,6 +432,40 @@ export const AUDIO_INSTRUMENT_RECIPES = Object.freeze([
     }),
     /* Click guard and breath release: the model breathes its own envelope. */
     amplitude: Object.freeze({ attackSeconds: 0.002, decaySeconds: 0, sustainLevel: 1, releaseSeconds: 0.3 }),
+    filter: Object.freeze({ type: "lowpass", attackHz: 16_000, peakHz: 16_000, sustainHz: 16_000, q: 0.5, decaySeconds: 0.1 }),
+  }),
+  Object.freeze({
+    id: "dreadnought-guitar",
+    label: "Steel Dreadnought",
+    designClaim:
+      "physically modeled Martin-style steel-string dreadnought: stiff strings, finite pick contact, braced spruce plate, and Helmholtz body radiation",
+    synthesis: "rendered",
+    outputLevel: 0.5,
+    polyphonyLimit: 48,
+    renderer: Object.freeze({
+      algorithmId: "changes.dsp.plucked-dreadnought@1",
+      channels: 2,
+      maximumRenderSeconds: 5,
+      bufferCacheLimit: 64,
+    }),
+    amplitude: Object.freeze({ attackSeconds: 0.002, decaySeconds: 0, sustainLevel: 1, releaseSeconds: 0.35 }),
+    filter: Object.freeze({ type: "lowpass", attackHz: 16_000, peakHz: 16_000, sustainHz: 16_000, q: 0.5, decaySeconds: 0.1 }),
+  }),
+  Object.freeze({
+    id: "ukulele",
+    label: "Re-entrant Ukulele",
+    designClaim:
+      "physically modeled re-entrant nylon ukulele: g4-c4-e4-a4 courses, finite finger contact, compact braced plate, and geometry-derived air resonance",
+    synthesis: "rendered",
+    outputLevel: 0.54,
+    polyphonyLimit: 32,
+    renderer: Object.freeze({
+      algorithmId: "changes.dsp.plucked-ukulele@1",
+      channels: 2,
+      maximumRenderSeconds: 3,
+      bufferCacheLimit: 64,
+    }),
+    amplitude: Object.freeze({ attackSeconds: 0.002, decaySeconds: 0, sustainLevel: 1, releaseSeconds: 0.24 }),
     filter: Object.freeze({ type: "lowpass", attackHz: 16_000, peakHz: 16_000, sustainHz: 16_000, q: 0.5, decaySeconds: 0.1 }),
   }),
 ] as const satisfies readonly AudioInstrumentRecipe[]);
@@ -496,6 +530,8 @@ export const AUDIO_PLAYABLE_MIDI_WINDOWS = Object.freeze({
   "concert-vibes": Object.freeze({ low: 53, high: 89 }),
   "blues-guitar": Object.freeze({ low: 40, high: 88 }),
   clarinet: Object.freeze({ low: 50, high: 89 }),
+  "dreadnought-guitar": Object.freeze({ low: 40, high: 88 }),
+  ukulele: Object.freeze({ low: 60, high: 93 }),
 } as const satisfies Readonly<Record<string, Readonly<{ low: number; high: number }>>>);
 
 export type PlayableMidiWindow = Readonly<{ low: number; high: number }>;

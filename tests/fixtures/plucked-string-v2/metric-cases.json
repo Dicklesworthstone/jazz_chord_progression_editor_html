@@ -8,7 +8,7 @@
     {"id":"inharmonicity-known","metric":"inharmonicity","expectedB":0.000141146422,"toleranceRelative":0.000001},
     {"id":"decay-coupling","metric":"decay-slope","weakCouplingDbPerSecond":-7.5,"strongCouplingDbPerSecond":-13.333333,"minimumDifferenceDbPerSecond":4},
     {"id":"archtop-body","metric":"body-admittance","helmholtzHz":112,"toleranceHz":8},
-    {"id":"uke-body","metric":"body-admittance","helmholtzHz":610,"toleranceHz":60},
+    {"id":"uke-body","metric":"body-admittance","helmholtzHz":189.099024,"toleranceHz":2,"bracedPlate11Hz":216.096,"minimumAirPlateSeparationHz":20},
     {"id":"bass-body","metric":"body-admittance","helmholtzHz":75,"toleranceHz":12},
     {"id":"pluck-null","metric":"pluck-null","positionOverScale":0.2,"firstCancelledHarmonic":5},
     {"id":"pickup-null","metric":"pickup-comb","positionOverScale":0.25,"firstCancelledHarmonic":4},

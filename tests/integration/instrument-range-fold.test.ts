@@ -43,6 +43,8 @@ const INSTRUMENTS: readonly (keyof typeof AUDIO_PLAYABLE_MIDI_WINDOWS
   "flute",
   "guitar",
   "blues-guitar",
+  "dreadnought-guitar",
+  "ukulele",
   "clarinet",
   "upright-bass",
   "concert-vibes",
@@ -75,7 +77,7 @@ describe("attack intake folds every chart pitch into the instrument window", () 
         .sort((a, b) => a.voiceId.localeCompare(b.voiceId))
         .map((voiceSnapshot) => voiceSnapshot.midiPitch);
       const expected = HOSTILE_PITCHES.map((pitch) =>
-        foldMidiPitchIntoWindow(pitch, window),
+        midi(foldMidiPitchIntoWindow(pitch, window)),
       );
       expect(realized).toEqual(expected);
     });

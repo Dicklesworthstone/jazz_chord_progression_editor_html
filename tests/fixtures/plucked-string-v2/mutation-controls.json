@@ -12,6 +12,7 @@
     {"id":"mutate-independence","target":"contract.json","pointer":"/independence/frankensimRuntimeImported","value":true,"expectedFindingCode":"PHS4_INDEPENDENCE"},
     {"id":"mutate-uke-tuning","target":"instrument-packs.json","pointer":"/stringSets/3/strings/0/0","value":"g3","expectedFindingCode":"PHS4_PACKS"},
     {"id":"mutate-bass-helmholtz","target":"instrument-packs.json","pointer":"/bodies/4/helmholtzHz","value":750,"expectedFindingCode":"PHS4_PACKS"},
+    {"id":"mutate-uke-helmholtz","target":"instrument-packs.json","pointer":"/bodies/3/helmholtzHz","value":610,"expectedFindingCode":"PHS4_PACKS"},
     {"id":"mutate-recipe-binding","target":"instrument-packs.json","pointer":"/recipeBindings/1/ampId","value":null,"expectedFindingCode":"PHS4_PACKS"},
     {"id":"mutate-body-differentiation","target":"instrument-packs.json","pointer":"/differentiationLaw","value":"bridgeAdmittanceScale-only","expectedFindingCode":"PHS4_PACKS"},
     {"id":"mutate-pickup-position","target":"instrument-packs.json","pointer":"/pickups/1/positionOverScale","value":0.24,"expectedFindingCode":"PHS4_PACKS"},
