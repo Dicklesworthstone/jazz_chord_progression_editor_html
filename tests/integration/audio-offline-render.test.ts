@@ -76,6 +76,12 @@ const EXPECTED_RENDER_IDS = Object.freeze([
   "X0-RENDER-037",
   "X0-RENDER-038",
   "X0-RENDER-039",
+  "X0-RENDER-040",
+  "X0-RENDER-041",
+  "X0-RENDER-042",
+  "X0-RENDER-043",
+  "X0-RENDER-044",
+  "X0-RENDER-045",
 ] as const);
 
 const WORK_COUNTER_NAMES = Object.freeze([
@@ -705,11 +711,10 @@ function validateRenderRecord(
       renderCase.sampleRate * impulseAuthority.durationSeconds,
     );
     /*
-     * The synth pads own exactly the shared impulse buffer. A rendered
-     * recipe (Concert Grand, Upright Bass, Concert Vibes) additionally
-     * renders one PCM buffer per sounding note (cache-missed per
-     * pitch/velocity/duration), so its count is the impulse plus the
-     * case's note list.
+     * Additive/FM recipes own exactly the shared impulse buffer. Every
+     * rendered recipe additionally creates one PCM buffer per sounding note
+     * (cache-missed per pitch/velocity/duration), so its count is the impulse
+     * plus the case's note list.
      */
     const expectedCreatedBuffers = [
       "concert-grand",
@@ -719,6 +724,8 @@ function validateRenderRecord(
       "flute",
       "blues-guitar",
       "clarinet",
+      "dreadnought-guitar",
+      "ukulele",
     ].includes(renderCase.instrumentId)
       ? 1 + renderCase.midiPitches.length
       : 1;
@@ -1194,7 +1201,7 @@ test(TEST_TITLE, async ({
       expect(renderMatrix.cases.map((item) => item.id)).toEqual(
         EXPECTED_RENDER_IDS,
       );
-      expect(renderMatrix.cases).toHaveLength(39);
+      expect(renderMatrix.cases).toHaveLength(45);
     });
     runAssertion(assertions, findings, "authority/frozen-analysis-policy", () => {
       expect(renderMatrix.numericPolicy).toMatchObject({

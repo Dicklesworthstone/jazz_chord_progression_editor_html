@@ -39,7 +39,7 @@ if (harnessPath !== expectedHarnessPath) {
 requireEnvironment(HARNESS_SHA256_ENV, SHA256);
 requireEnvironment(INPUT_DIGEST_ENV, SHA256);
 
-export const X0_AUDIO_TEST_TIMEOUT_MS = 300_000;
+export const X0_AUDIO_TEST_TIMEOUT_MS = 420_000;
 export const X0_AUDIO_GLOBAL_TIMEOUT_MS = 1_200_000;
 
 export default defineConfig({
