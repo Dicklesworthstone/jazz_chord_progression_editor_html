@@ -27,6 +27,9 @@ type FamilyPolicy = Readonly<{
   algorithmId: string;
   midi: readonly number[];
   maximumPitchCents: number;
+  minimumPeak: number;
+  minimumEarlyRms: number;
+  maximumEarlyRms: number;
   minimumSecondPartialDb: number;
   minimumThirdPartialDb: number;
   minimumAudiblePartialCount: number;
@@ -49,7 +52,6 @@ export const PLUCKED_V2_RELEASE_POLICY = Object.freeze({
   partialCount: 10,
   audiblePartialFloorDb: -55,
   maximumPeak: 0.99,
-  minimumEarlyRms: 1e-6,
   minimumPairwiseProfileDistanceDb: 3.5,
   families: Object.freeze({
     archtop: Object.freeze({
@@ -57,6 +59,9 @@ export const PLUCKED_V2_RELEASE_POLICY = Object.freeze({
       algorithmId: PLUCKED_ARCHTOP_V2_ALGORITHM_ID,
       midi: Object.freeze([48, 60, 72]),
       maximumPitchCents: 5,
+      minimumPeak: 0.1,
+      minimumEarlyRms: 0.02,
+      maximumEarlyRms: 0.3,
       minimumSecondPartialDb: -24,
       minimumThirdPartialDb: -38,
       minimumAudiblePartialCount: 5,
@@ -69,6 +74,9 @@ export const PLUCKED_V2_RELEASE_POLICY = Object.freeze({
       algorithmId: PLUCKED_ELECTRIC_V2_ALGORITHM_ID,
       midi: Object.freeze([48, 60, 72]),
       maximumPitchCents: 5,
+      minimumPeak: 0.1,
+      minimumEarlyRms: 0.01,
+      maximumEarlyRms: 0.3,
       minimumSecondPartialDb: -20,
       minimumThirdPartialDb: -26,
       minimumAudiblePartialCount: 7,
@@ -83,6 +91,9 @@ export const PLUCKED_V2_RELEASE_POLICY = Object.freeze({
       algorithmId: PLUCKED_DREADNOUGHT_ALGORITHM_ID,
       midi: Object.freeze([48, 60, 72]),
       maximumPitchCents: 5,
+      minimumPeak: 0.1,
+      minimumEarlyRms: 0.02,
+      maximumEarlyRms: 0.3,
       minimumSecondPartialDb: -18,
       minimumThirdPartialDb: -35,
       minimumAudiblePartialCount: 5,
@@ -95,6 +106,9 @@ export const PLUCKED_V2_RELEASE_POLICY = Object.freeze({
       algorithmId: PLUCKED_UKULELE_ALGORITHM_ID,
       midi: Object.freeze([60, 67, 72]),
       maximumPitchCents: 6,
+      minimumPeak: 0.1,
+      minimumEarlyRms: 0.02,
+      maximumEarlyRms: 0.3,
       minimumSecondPartialDb: -28,
       minimumThirdPartialDb: -38,
       minimumAudiblePartialCount: 4,
@@ -366,11 +380,13 @@ export function evaluatePluckedOutput(
     features.partialsDb.some((item) => !Number.isFinite(item))) {
     add("PLUCKED_NONFINITE", "all output measurements must be finite");
   }
-  if (features.peak <= 0 || features.peak > PLUCKED_V2_RELEASE_POLICY.maximumPeak) {
-    add("PLUCKED_PEAK", `peak ${String(features.peak)} is silent or clipped`);
+  if (features.peak < policy.minimumPeak ||
+    features.peak > PLUCKED_V2_RELEASE_POLICY.maximumPeak) {
+    add("PLUCKED_PEAK", `peak ${String(features.peak)} is inaudible or clipped`);
   }
-  if (features.earlyRms < PLUCKED_V2_RELEASE_POLICY.minimumEarlyRms) {
-    add("PLUCKED_EARLY_RMS", `early RMS ${String(features.earlyRms)} is silent`);
+  if (features.earlyRms < policy.minimumEarlyRms ||
+    features.earlyRms > policy.maximumEarlyRms) {
+    add("PLUCKED_EARLY_RMS", `early RMS ${String(features.earlyRms)} is outside the mix window`);
   }
   if (features.onsetMs > PLUCKED_V2_RELEASE_POLICY.maximumOnsetMs) {
     add("PLUCKED_ONSET", `onset ${String(features.onsetMs)}ms is late`);
