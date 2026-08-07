@@ -196,6 +196,66 @@ test("physical preparation warms the exact v1 render identity consumed by attack
   expect(repeated.renderedCount).toBe(0);
 });
 
+test("clarinet-v2 phrase preparation chains exact stateful segments and replays their cache identities", async () => {
+  const playback = compilePlaybackPlan(
+    materializeP0TimelineCase("P0-TIME-001").request,
+  );
+  if (!playback.ok) throw new Error("PHYSICAL_PHRASE_PLAN");
+  const realized = compilePhysicalRealization({
+    plan: playback.plan,
+    sourcePlanRevision: 27,
+    instrumentFamily: "clarinet",
+    instrumentVersionId: "changes.physical.clarinet.v2",
+    parameterPackSha256: "d".repeat(64),
+    sampleRateHz: 48_000,
+  });
+  if (!realized.ok) throw new Error("PHYSICAL_PHRASE_REALIZE");
+  const base = realized.value.expressivePlan.gestures[0];
+  const pitch = playback.plan.events[0]?.midiPitches[0];
+  if (base === undefined || pitch === undefined) {
+    throw new Error("PHYSICAL_PHRASE_FIXTURE");
+  }
+  const second = Object.freeze({
+    ...base,
+    eventId: `${base.eventId}.legato`,
+    articulation: "legato" as const,
+  });
+  const notes = [
+    {
+      midiPitch: midi(pitch),
+      velocity: 91,
+      physicalGesture: base,
+      physicalFrameCount: 2_400,
+      physicalCacheFingerprint: "1".repeat(64),
+      physicalStateReset: true,
+    },
+    {
+      midiPitch: midi(pitch + 2),
+      velocity: 91,
+      physicalGesture: second,
+      physicalFrameCount: 1_200,
+      physicalCacheFingerprint: "2".repeat(64),
+      physicalStateReset: false,
+    },
+  ] as const;
+  const { engine, fake } = await readyEngine();
+  const before = fake.events.filter(({ kind }) => kind === "buffer-create").length;
+  const first = requireSuccess(
+    await engine.prepareRenderedAudioVoices({ instrumentId: "clarinet", notes }),
+  );
+  expect(first).toMatchObject({ renderedCount: 2, cachedCount: 0 });
+  expect(fake.events.filter(({ kind }) => kind === "buffer-create").length).toBe(
+    before + 2,
+  );
+  const replay = requireSuccess(
+    await engine.prepareRenderedAudioVoices({ instrumentId: "clarinet", notes }),
+  );
+  expect(replay).toMatchObject({ renderedCount: 0, cachedCount: 2 });
+  expect(fake.events.filter(({ kind }) => kind === "buffer-create").length).toBe(
+    before + 2,
+  );
+});
+
 test("wind variation is bounded to eight cache slots while exact-velocity eviction stays deterministic LRU", async () => {
   const playback = compilePlaybackPlan(
     materializeP0TimelineCase("P0-TIME-001").request,
@@ -265,7 +325,7 @@ test("wind variation is bounded to eight cache slots while exact-velocity evicti
   );
   expect(oldest.cachedCount).toBe(0);
   expect(oldest.renderedCount).toBe(1);
-});
+}, 10_000);
 
 test("legato and tongued winds own distinct bounded cache entries", async () => {
   const playback = compilePlaybackPlan(

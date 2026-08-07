@@ -4,6 +4,7 @@ export * from "./audio-platform-contract";
 export * from "./deterministic-sha256";
 export * from "./instrument-recipes-contract";
 export * from "./physical-renderer-contract";
+export * from "./physical-parameter-packs";
 export {
   compilePhysicalRealization,
   memoizedPhysicalRealization,

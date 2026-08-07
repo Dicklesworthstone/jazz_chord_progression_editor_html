@@ -19,7 +19,7 @@ import {
   memoizedPhysicalRealization,
   physicalFamilyForInstrumentId,
 } from "./physical-realization";
-import { sha256Hex } from "./deterministic-sha256";
+import { physicalParameterPackSha256 } from "./physical-parameter-packs";
 import {
   isPhysicalSupportedSampleRateHz,
   type ExpressiveVoiceGesture,
@@ -508,9 +508,7 @@ export function createTransportService(
         sourcePlanRevision: revision,
         instrumentFamily: family,
         instrumentVersionId: `changes.physical.${instrumentId}.v2`,
-        parameterPackSha256: sha256Hex(
-          `changes.physical.parameter-pack.${instrumentId}.v1`,
-        ),
+        parameterPackSha256: physicalParameterPackSha256(instrumentId),
         sampleRateHz: contextSampleRateHz,
       });
       if (compiled.ok) {

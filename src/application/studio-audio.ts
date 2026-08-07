@@ -21,6 +21,7 @@ import {
   createTransportService,
   isPhysicalSupportedSampleRateHz,
   physicalFamilyForInstrumentId,
+  physicalParameterPackSha256,
   sha256Hex,
   type AudioAnalysisFrame,
   type AudioEngineSnapshot,
@@ -478,9 +479,7 @@ export function createStudioAudio(
               sourcePlanRevision: binding.planRevision,
               instrumentFamily: family,
               instrumentVersionId: `changes.physical.${instrumentId}.v2`,
-              parameterPackSha256: sha256Hex(
-                `changes.physical.parameter-pack.${instrumentId}.v1`,
-              ),
+              parameterPackSha256: physicalParameterPackSha256(instrumentId),
               sampleRateHz: contextSampleRateHz,
             });
       const gesturesByEvent = new Map<string, readonly ExpressiveVoiceGesture[]>();
@@ -495,9 +494,7 @@ export function createStudioAudio(
           gesturesByEvent.set(eventId, Object.freeze(gestures));
         }
       }
-      const outcome = await engine.prepareRenderedAudioVoices({
-        instrumentId,
-        notes: notes.map((note) => {
+      const ordinaryNotes = notes.map((note) => {
           const physicalGesture = note.eventId === undefined || note.voiceOrdinal === undefined
             ? undefined
             : gesturesByEvent.get(note.eventId)?.[note.voiceOrdinal];
@@ -506,7 +503,64 @@ export function createStudioAudio(
             velocity: note.velocity,
             ...(physicalGesture === undefined ? {} : { physicalGesture }),
           });
-        }),
+        });
+      const physicalPhraseNotes = family === "clarinet" && physical?.ok === true
+        ? (() => {
+            const result: Array<Readonly<{
+              midiPitch: MidiPitch;
+              velocity: number;
+              physicalGesture: ExpressiveVoiceGesture;
+              physicalFrameCount: number;
+              physicalCacheFingerprint: string;
+              physicalStateReset: boolean;
+            }>> = [];
+            const lastRequestedByVoice = new Map<string, number>();
+            const seenByVoice = new Map<string, number>();
+            for (const segment of physical.value.renderPlan.segments) {
+              for (const event of segment.events) {
+                const position = seenByVoice.get(event.voiceId) ?? 0;
+                seenByVoice.set(event.voiceId, position + 1);
+                lastRequestedByVoice.set(event.voiceId, position);
+              }
+            }
+            const priorIdentityByVoice = new Map<string, string>();
+            seenByVoice.clear();
+            for (const segment of physical.value.renderPlan.segments) {
+              for (const event of segment.events) {
+                const position = seenByVoice.get(event.voiceId) ?? 0;
+                seenByVoice.set(event.voiceId, position + 1);
+                const lastRequested = lastRequestedByVoice.get(event.voiceId);
+                if (lastRequested === undefined || position > lastRequested) continue;
+                const gesture = physical.value.expressivePlan.gestures[event.gestureIndex];
+                if (gesture === undefined) continue;
+                const priorIdentity = priorIdentityByVoice.get(event.voiceId);
+                const physicalStateReset = gesture.articulation !== "legato" ||
+                  priorIdentity === undefined;
+                const physicalCacheFingerprint = sha256Hex([
+                  segment.cacheFingerprint,
+                  event.eventId,
+                  event.voiceId,
+                  String(event.startFrame),
+                  String(event.durationFrames),
+                  physicalStateReset ? "reset" : priorIdentity,
+                ].join("\u001f"));
+                priorIdentityByVoice.set(event.voiceId, physicalCacheFingerprint);
+                result.push(Object.freeze({
+                  midiPitch: event.midiPitch as MidiPitch,
+                  velocity: event.velocity,
+                  physicalGesture: gesture,
+                  physicalFrameCount: event.durationFrames,
+                  physicalCacheFingerprint,
+                  physicalStateReset,
+                }));
+              }
+            }
+            return Object.freeze(result);
+          })()
+        : ordinaryNotes;
+      const outcome = await engine.prepareRenderedAudioVoices({
+        instrumentId,
+        notes: physicalPhraseNotes,
       });
       /*
        * One extra macrotask before the caller submits transport commands:

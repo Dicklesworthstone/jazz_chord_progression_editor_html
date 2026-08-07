@@ -61,6 +61,7 @@ import {
 import {
   isExpressiveVoiceGesture,
   physicalGestureExcitationVelocity,
+  physicalGestureFingerprint,
 } from "./physical-realization";
 import {
   PHYSICAL_RENDER_LIMITS,
@@ -816,8 +817,10 @@ function createAudioEngineInternal(
     buffer: AudioBufferPort;
     byteLength: number;
     stamp: number;
+    phraseStateOutput?: Uint8Array;
   }>;
   const renderedBufferCaches = new Map<string, Map<string, RenderedBufferEntry>>();
+  const preparedPhysicalKeys = new Map<string, string>();
   let renderedBufferCacheBytes = 0;
   let renderedBufferCacheEntries = 0;
   let renderedBufferCacheStamp = 0;
@@ -832,6 +835,7 @@ function createAudioEngineInternal(
 
   function clearRenderedBufferCaches(): void {
     renderedBufferCaches.clear();
+    preparedPhysicalKeys.clear();
     renderedBufferCacheBytes = 0;
     renderedBufferCacheEntries = 0;
   }
@@ -945,6 +949,12 @@ function createAudioEngineInternal(
     seconds: number,
     physicalGesture: ExpressiveVoiceGesture | null = null,
   ): string {
+    if (physicalGesture !== null) {
+      const prepared = preparedPhysicalKeys.get(
+        physicalGestureFingerprint(physicalGesture),
+      );
+      if (prepared !== undefined) return prepared;
+    }
     /*
      * ABI-v1 rendered instruments consume pitch, duration bucket, sample
      * rate (one cache per context), and excitation velocity. They do not yet
@@ -968,6 +978,55 @@ function createAudioEngineInternal(
       ? quantizeRenderVelocity(velocity)
       : velocity;
     return `${instrumentId}:${String(midiPitch)}:${String(renderVelocity)}:${String(seconds)}:${gestureIdentity}`;
+  }
+
+  function storeRenderedPcm(
+    recipe: AudioRenderedInstrumentRecipe,
+    context: AudioContextPort,
+    key: string,
+    pcm: Readonly<{ frameCount: number; left: Float32Array; right: Float32Array }>,
+    phraseStateOutput?: Uint8Array,
+  ): AudioBufferPort {
+    const buffer = context.createBuffer(
+      recipe.renderer.channels,
+      pcm.frameCount,
+      context.sampleRate,
+    );
+    buffer.getChannelData(0).set(pcm.left);
+    buffer.getChannelData(1).set(pcm.right);
+    const byteLength = recipe.renderer.channels * pcm.frameCount * 4;
+    const cache = recipeBufferCache(recipe.id);
+    renderedBufferCacheStamp += 1;
+    cache.set(
+      key,
+      Object.freeze({
+        buffer,
+        byteLength,
+        stamp: renderedBufferCacheStamp,
+        ...(phraseStateOutput === undefined ? {} : { phraseStateOutput }),
+      }),
+    );
+    renderedBufferCacheBytes += byteLength;
+    renderedBufferCacheEntries += 1;
+    const maximumEntries = Math.min(
+      recipe.renderer.bufferCacheLimit,
+      PHYSICAL_RENDER_LIMITS.maximumCacheEntries,
+    );
+    while (cache.size > maximumEntries) {
+      const oldest = cache.keys().next().value;
+      if (oldest === undefined) break;
+      const evicted = cache.get(oldest);
+      cache.delete(oldest);
+      renderedBufferCacheBytes -= evicted?.byteLength ?? 0;
+      renderedBufferCacheEntries -= 1;
+    }
+    while (
+      renderedBufferCacheEntries > maximumGlobalCacheEntries ||
+      renderedBufferCacheBytes > maximumGlobalCachePcmBytes
+    ) {
+      if (!evictGlobalOldestRenderedBuffer()) break;
+    }
+    return buffer;
   }
 
   /**
@@ -1018,42 +1077,7 @@ function createAudioEngineInternal(
       windArticulation,
     );
     if (pcm === null) return null;
-    const buffer = context.createBuffer(
-      recipe.renderer.channels,
-      pcm.frameCount,
-      context.sampleRate,
-    );
-    buffer.getChannelData(0).set(pcm.left);
-    buffer.getChannelData(1).set(pcm.right);
-    const byteLength = recipe.renderer.channels * pcm.frameCount * 4;
-    renderedBufferCacheStamp += 1;
-    cache.set(
-      key,
-      Object.freeze({ buffer, byteLength, stamp: renderedBufferCacheStamp }),
-    );
-    renderedBufferCacheBytes += byteLength;
-    renderedBufferCacheEntries += 1;
-    /* This recipe's own entry limit evicts only this recipe's entries. */
-    const maximumEntries = Math.min(
-      recipe.renderer.bufferCacheLimit,
-      PHYSICAL_RENDER_LIMITS.maximumCacheEntries,
-    );
-    while (cache.size > maximumEntries) {
-      const oldest = cache.keys().next().value;
-      if (oldest === undefined) break;
-      const evicted = cache.get(oldest);
-      cache.delete(oldest);
-      renderedBufferCacheBytes -= evicted?.byteLength ?? 0;
-      renderedBufferCacheEntries -= 1;
-    }
-    /* Global ceilings evict the globally least-recently-used entry. */
-    while (
-      renderedBufferCacheEntries > maximumGlobalCacheEntries ||
-      renderedBufferCacheBytes > maximumGlobalCachePcmBytes
-    ) {
-      if (!evictGlobalOldestRenderedBuffer()) break;
-    }
-    return buffer;
+    return storeRenderedPcm(recipe, context, key, pcm);
   }
   let reportedContextState: AudioContextStatePort | "absent" = "absent";
   let mix: AudioMix = Object.freeze({ masterVolume: 1, reverbAmount: 0 });
@@ -2809,6 +2833,7 @@ function createAudioEngineInternal(
     }
     let renderedCount = 0;
     let cachedCount = 0;
+    const phraseStateByVoice = new Map<string, Uint8Array>();
     for (let index = 0; index < notesValue.length; index += 1) {
       const noteValue: unknown = notesValue[index];
       if (!isRecord(noteValue)) {
@@ -2854,6 +2879,80 @@ function createAudioEngineInternal(
           });
         }
         physicalGesture = physicalGestureValue;
+      }
+      const physicalFrameCount = noteValue["physicalFrameCount"];
+      const physicalCacheFingerprint = noteValue["physicalCacheFingerprint"];
+      const physicalStateReset = noteValue["physicalStateReset"];
+      const hasPhraseMetadata = physicalFrameCount !== undefined ||
+        physicalCacheFingerprint !== undefined || physicalStateReset !== undefined;
+      if (hasPhraseMetadata) {
+        if (
+          physicalGesture === null ||
+          physicalGesture.instrumentFamily !== "clarinet" ||
+          typeof physicalFrameCount !== "number" ||
+          !Number.isSafeInteger(physicalFrameCount) ||
+          physicalFrameCount <= 0 ||
+          physicalFrameCount > PHYSICAL_RENDER_LIMITS.maximumOutputFrames ||
+          typeof physicalCacheFingerprint !== "string" ||
+          !/^[0-9a-f]{64}$/.test(physicalCacheFingerprint) ||
+          typeof physicalStateReset !== "boolean"
+        ) {
+          return refuse({
+            code: "audio.voice_id_invalid",
+            path: ["notes", index, "physicalCacheFingerprint"],
+          });
+        }
+        const phraseRenderer = waveguideRenderers?.get(
+          WAVEGUIDE_CLARINET_V2_ALGORITHM_ID,
+        )?.renderPhraseSegment;
+        if (phraseRenderer === undefined) {
+          return refuse({
+            code: "audio.renderer_unavailable",
+            path: ["notes", index],
+          });
+        }
+        const key = `${recipe.id}:physical-segment:${physicalCacheFingerprint}`;
+        const gestureFingerprint = physicalGestureFingerprint(physicalGesture);
+        preparedPhysicalKeys.set(gestureFingerprint, key);
+        const cached = touchRenderedBufferEntry(recipeBufferCache(recipe.id), key);
+        if (cached !== undefined) {
+          if (cached.phraseStateOutput === undefined) {
+            return refuse({
+              code: "audio.renderer_unavailable",
+              path: ["notes", index],
+            });
+          }
+          phraseStateByVoice.set(physicalGesture.voiceId, cached.phraseStateOutput);
+          cachedCount += 1;
+          continue;
+        }
+        const stateInput = physicalStateReset
+          ? null
+          : phraseStateByVoice.get(physicalGesture.voiceId) ?? null;
+        const variationSlot = windVariationSlot(physicalGesture) ?? 0;
+        const pcm = phraseRenderer(
+          midiPitch.value,
+          physicalGestureExcitationVelocity(physicalGesture, velocity),
+          context.sampleRate,
+          physicalFrameCount,
+          stateInput,
+          variationSlot,
+          physicalGesture.articulation === "legato" ? "legato" : "tongued",
+        );
+        if (pcm === null) {
+          return refuse({
+            code: "audio.renderer_unavailable",
+            path: ["notes", index],
+          });
+        }
+        const stateOutput = pcm.stateOutput.slice();
+        phraseStateByVoice.set(physicalGesture.voiceId, stateOutput);
+        storeRenderedPcm(recipe, context, key, pcm, stateOutput);
+        renderedCount += 1;
+        await new Promise<void>((resolve) => {
+          setTimeout(resolve, 0);
+        });
+        continue;
       }
       const key = renderedBufferKey(
         recipe.id,

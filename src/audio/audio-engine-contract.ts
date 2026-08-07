@@ -575,6 +575,12 @@ export type PrepareRenderedVoicesRequest = Readonly<{
     midiPitch: MidiPitch;
     velocity: number;
     physicalGesture?: import("./physical-renderer-contract").ExpressiveVoiceGesture;
+    /** Exact immutable phrase-event render length; clarinet-v2 only. */
+    physicalFrameCount?: number;
+    /** Render-plan identity including event, voice, duration, and pack. */
+    physicalCacheFingerprint?: string;
+    /** Start this event from canonical at-rest state. */
+    physicalStateReset?: boolean;
   }>[];
 }>;
 
