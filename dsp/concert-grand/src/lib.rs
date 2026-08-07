@@ -36,7 +36,6 @@ fn panic(_info: &core::panic::PanicInfo) -> ! {
     core::arch::wasm32::unreachable()
 }
 
-mod brass;
 mod clarinet;
 mod clarinet_v2_parameters;
 mod flute;

@@ -347,8 +347,6 @@ function instrumentLabel(instrumentId: InstrumentId): string {
       return "Dreadnought";
     case "ukulele":
       return "Ukulele";
-    case "physical-upright-bass":
-      return "Upright Bass (Physical)";
   }
 }
 

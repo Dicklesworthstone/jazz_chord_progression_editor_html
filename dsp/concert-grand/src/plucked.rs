@@ -42,7 +42,7 @@ use libm::{cos, exp, log, pow, sin, tanh};
 
 use crate::physical::flush_denormal;
 use crate::plucked_body_tables::{
-    BODY_ARCHTOP, BODY_DREADNOUGHT, BODY_SOLID_ELECTRIC, BODY_UKULELE, BODY_UPRIGHT_BASS,
+    BODY_ARCHTOP, BODY_DREADNOUGHT, BODY_SOLID_ELECTRIC, BODY_UKULELE,
 };
 use crate::{midi_frequency_hz, XorShift32, TAU};
 
@@ -96,15 +96,6 @@ const UKULELE_STRINGS: [StringRow; 4] = [
     [69.0, 0.00061, 40.0, 0.00039],
 ];
 
-/// Pack `upright-pizz-hybrid`: E1 A1 D2 G2, wound hybrid-core orchestral
-/// gauges (rows [open_midi, diameter_m, tension_N, mass_per_length_kg_m]).
-const UPRIGHT_STRINGS: [StringRow; 4] = [
-    [28.0, 0.00275, 250.0, 0.0278],
-    [33.0, 0.00225, 235.0, 0.0189],
-    [38.0, 0.0018, 220.0, 0.0124],
-    [43.0, 0.00145, 205.0, 0.0081],
-];
-
 fn string_set(instrument: i32) -> StringSet {
     match instrument {
         0 => StringSet {
@@ -125,20 +116,11 @@ fn string_set(instrument: i32) -> StringSet {
             t60_pair: [6.4, 2.2],
             scale_m: 0.645,
         },
-        3 => StringSet {
+        _ => StringSet {
             rows: &UKULELE_STRINGS,
             young_pa: 2.5e9,
             t60_pair: [2.6, 0.9],
             scale_m: 0.38,
-        },
-        /* Pack upright-pizz-hybrid: rope-core wound strings read a lower
-         * effective Young's modulus than solid steel; T60 pair from the
-         * pack (9.5 s at 100 Hz, 3.2 s at 1 kHz). */
-        _ => StringSet {
-            rows: &UPRIGHT_STRINGS,
-            young_pa: 95.0e9,
-            t60_pair: [9.5, 3.2],
-            scale_m: 1.05,
         },
     }
 }
@@ -148,8 +130,7 @@ fn body_table(instrument: i32) -> &'static [[f64; 4]] {
         0 => &BODY_ARCHTOP,
         1 => &BODY_SOLID_ELECTRIC,
         2 => &BODY_DREADNOUGHT,
-        3 => &BODY_UKULELE,
-        _ => &BODY_UPRIGHT_BASS,
+        _ => &BODY_UKULELE,
     }
 }
 
@@ -159,19 +140,17 @@ fn bridge_admittance_scale(instrument: i32) -> f64 {
         0 => 0.72,
         1 => 0.12,
         2 => 1.0,
-        3 => 0.54,
-        _ => 1.35,
+        _ => 0.54,
     }
 }
 
 fn instrument_valid(instrument: i32) -> bool {
-    (0..=4).contains(&instrument)
+    (0..=3).contains(&instrument)
 }
 
 fn midi_range(instrument: i32) -> (i32, i32) {
     match instrument {
         3 => (60, 93),
-        4 => (28, 62),
         _ => (40, 88),
     }
 }
@@ -721,13 +700,7 @@ pub extern "C" fn plk_render(
         0 => 0.66 - 0.10 * ((m - 40.0) / 48.0).clamp(0.0, 1.0),
         1 => 0.42 - 0.10 * ((m - 40.0) / 48.0).clamp(0.0, 1.0),
         2 => 0.32 - 0.08 * ((m - 40.0) / 48.0).clamp(0.0, 1.0),
-        3 => 0.34 - 0.08 * ((m - 60.0) / 33.0).clamp(0.0, 1.0),
-        /* Pizzicato upright: measured against the shipped VSCO pizz
-         * recordings the first (0.72) loop damping buried the mid
-         * harmonics 22 dB and the high band 31 dB below the real
-         * instrument — real pizz keeps finger-attack brightness and
-         * string buzz. */
-        _ => 0.48 - 0.10 * ((m - 28.0) / 34.0).clamp(0.0, 1.0),
+        _ => 0.34 - 0.08 * ((m - 60.0) / 33.0).clamp(0.0, 1.0),
     };
 
     let mut seed = XorShift32::new(
@@ -756,13 +729,7 @@ pub extern "C" fn plk_render(
         0 => (0.26, 0.006, 850.0),
         1 => (0.14, 0.004, 1_050.0),
         2 => (0.22, 0.007, 900.0),
-        3 => (0.30, 0.012, 520.0),
-        /* Jazz pizzicato: flesh of one-or-two fingers near the end of the
-         * fingerboard (~1/7 of the speaking length), wide soft contact.
-         * Corner measured against the shipped VSCO pizz: 340 Hz starved
-         * harmonics 6-12 (22 dB harmonic distance); the real attack is
-         * broad before the string filters it. */
-        _ => (0.14, 0.024, 260.0),
+        _ => (0.30, 0.012, 520.0),
     };
     let width_fraction = (width_m / sounding_length).clamp(0.002, 0.12);
     let width_corner_hz = (f0 / width_fraction / 8.0).clamp(400.0, 9_000.0);
@@ -809,29 +776,18 @@ pub extern "C" fn plk_render(
     let mut body: [BodyMode; PLK_MAX_MODES] =
         [BodyMode::new(&[100.0, 10.0, 0.0, 0.0], sr); PLK_MAX_MODES];
     let mode_count = table.len().min(PLK_MAX_MODES);
-    let mut body_tilt_hz = [0.0f64; PLK_MAX_MODES];
-    for (index, (slot, row)) in body.iter_mut().zip(table.iter()).enumerate() {
+    for (slot, row) in body.iter_mut().zip(table.iter()) {
         *slot = BodyMode::new(row, sr);
-        body_tilt_hz[index] = row[0];
     }
 
     /* Pick/finger click. */
     let click_decay = exp(-1.0 / (0.0016 * sr));
     let click_level = match instrument {
         3 => 0.035 * pow(v_norm, 1.6),
-        /* Upright pizz "thump": fingerboard slap energy, stronger and
-         * darker than a pick click (shaped below by the finger corner). */
-        4 => 0.085 * pow(v_norm, 1.5),
         _ => 0.055 * pow(v_norm, 1.6),
     };
     let mut click_env = 1.0f64;
     let mut click_noise = XorShift32::new(seed.next());
-    /* Upright buzz: decays with the note (roughly T60/2.2), band 2.5k+. */
-    let buzz_level = 0.045 * pow(v_norm, 1.2);
-    let buzz_decay = exp(-2.2 / (t60 * sr));
-    let buzz_alpha = 1.0 - exp(-TAU * 2_500.0 / sr);
-    let mut buzz_lp = 0.0f64;
-    let mut buzz_env = 1.0f64;
 
     /* Electric path: finite-aperture velocity taps + RLC loading. */
     let is_electric = instrument == 1 || instrument == 0;
@@ -868,9 +824,6 @@ pub extern "C" fn plk_render(
     let continuum_corner_hz = match instrument {
         2 => 1_500.0,
         3 => 2_400.0,
-        /* Upright table ends near 1 kHz; pizz radiation above it carries
-         * the real instrument's finger-noise and string-buzz band. */
-        4 => 750.0,
         _ => 1_800.0,
     };
     let continuum_alpha = 1.0 - exp(-TAU * continuum_corner_hz / sr);
@@ -931,24 +884,9 @@ pub extern "C" fn plk_render(
          * without energy creation.
          */
         let mut radiated = 0.0f64;
-        for (mode_index, mode) in body.iter_mut().take(mode_count).enumerate() {
+        for mode in body.iter_mut().take(mode_count) {
             let velocity_k = mode.tick(string_out * admittance);
-            /* Upright radiation tilt: the reference pizz recordings are
-             * fundamental-dominant (h2 -34 dB, h3 -53 dB) — the big body
-             * radiates the lowest modes efficiently while upper partials
-             * beam away from the close mic. Measured, not assumed. */
-            let tilt = if instrument == 4 {
-                /* Second-order tilt, corner 60 Hz: calibrated against the
-                 * reference's measured h1/h2/h3 ladder (0 / -34 / -53 dB);
-                 * a 220 Hz first-order corner measured only ~1 dB of
-                 * h1-vs-h2 separation. */
-                let f_mode = body_tilt_hz[mode_index];
-                let x = 1.0 + (f_mode / 60.0) * (f_mode / 60.0);
-                1.0 / (x * x)
-            } else {
-                1.0
-            };
-            radiated += mode.radiation_residue * velocity_k * tilt;
+            radiated += mode.radiation_residue * velocity_k;
         }
         {
             let v_slot = if vertical.write == 0 { vertical.length - 1 } else { vertical.write - 1 };
@@ -957,22 +895,6 @@ pub extern "C" fn plk_render(
 
         let click = click_noise.bipolar() * click_env * click_level;
         click_env = flush_denormal(click_env * click_decay);
-        /*
-         * Upright pizz string buzz: the reference recordings keep a
-         * 5.5-10 kHz band ~30 dB under the low band through the sustain
-         * (finger noise and string-on-fingerboard buzz); without it the
-         * model measured 34 dB darker than the real instrument up there.
-         * Seeded noise, highpassed, riding the note's own decay.
-         */
-        let buzz = if instrument == 4 {
-            let raw = click_noise.bipolar();
-            buzz_lp += buzz_alpha * (raw - buzz_lp);
-            buzz_lp = flush_denormal(buzz_lp);
-            (raw - buzz_lp) * buzz_env * buzz_level
-        } else {
-            0.0
-        };
-        buzz_env = flush_denormal(buzz_env * buzz_decay);
 
         let voiced = if is_electric {
             /*
@@ -1009,14 +931,7 @@ pub extern "C" fn plk_render(
                 continuum_lp + continuum_alpha * (string_out - continuum_lp),
             );
             let continuum = (string_out - continuum_lp) * continuum_gain;
-            if instrument == 4 {
-                /* Upright: the direct-string and continuum bypasses skip
-                 * the body's radiation tilt, so they stay small; buzz
-                 * carries the measured 5.5-10 kHz sustain band. */
-                radiated * 2.4 + continuum * 0.25 + string_out * 0.018 + click + buzz
-            } else {
-                radiated * 0.85 + continuum + string_out * 0.16 + click
-            }
+            radiated * 0.85 + continuum + string_out * 0.16 + click
         };
 
         out_left[frame] = (voiced * pan_left) as f32;
@@ -1024,27 +939,4 @@ pub extern "C" fn plk_render(
     }
 
     crate::finalize_stereo(out_left, out_right, sr)
-}
-
-#[cfg(test)]
-mod upright_tests {
-    use super::*;
-
-    #[test]
-    fn upright_renders_native() {
-        let cap = plk_note_frames(4, 40, 48_000.0);
-        assert!(cap > 0, "note_frames {cap}");
-        let mut left = vec![0.0f32; cap as usize];
-        let mut right = vec![0.0f32; cap as usize];
-        let written = plk_render(
-            4,
-            40,
-            100,
-            48_000.0,
-            left.as_mut_ptr(),
-            right.as_mut_ptr(),
-            cap,
-        );
-        assert!(written > 0, "render returned {written}");
-    }
 }

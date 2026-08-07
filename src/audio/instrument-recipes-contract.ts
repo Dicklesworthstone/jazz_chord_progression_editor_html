@@ -470,24 +470,6 @@ export const AUDIO_INSTRUMENT_RECIPES = Object.freeze([
     amplitude: Object.freeze({ attackSeconds: 0.002, decaySeconds: 0, sustainLevel: 1, releaseSeconds: 0.3 }),
     filter: Object.freeze({ type: "lowpass", attackHz: 16_000, peakHz: 16_000, sustainHz: 16_000, q: 0.5, decaySeconds: 0.1 }),
   }),
-  Object.freeze({
-    id: "physical-upright-bass",
-    label: "Upright Bass (Physical)",
-    designClaim:
-      "pizzicato double bass: pack upright-pizz-hybrid string set with finger pluck and fingerboard thump radiating through the foundry upright-bass plate-mode body (75 Hz Helmholtz row), no amp; additive to the sampled upright-bass recipe",
-    synthesis: "rendered",
-    outputLevel: 0.58,
-    polyphonyLimit: 24,
-    renderer: Object.freeze({
-      algorithmId: "changes.dsp.plucked-upright@1",
-      channels: 2,
-      maximumRenderSeconds: 8,
-      bufferCacheLimit: 48,
-    }),
-    /* Click guard and string damp: the waveguide's decay is the envelope. */
-    amplitude: Object.freeze({ attackSeconds: 0.002, decaySeconds: 0, sustainLevel: 1, releaseSeconds: 0.45 }),
-    filter: Object.freeze({ type: "lowpass", attackHz: 16_000, peakHz: 16_000, sustainHz: 16_000, q: 0.5, decaySeconds: 0.1 }),
-  }),
 ] as const satisfies readonly AudioInstrumentRecipe[]);
 
 export const AUDIO_PULSE_WAVE_POLICY = Object.freeze({

@@ -70,7 +70,6 @@ export const PLUCKED_ELECTRIC_ALGORITHM_ID = "changes.dsp.plucked-electric@2";
 export const PLUCKED_DREADNOUGHT_ALGORITHM_ID =
   "changes.dsp.plucked-dreadnought@1";
 export const PLUCKED_UKULELE_ALGORITHM_ID = "changes.dsp.plucked-ukulele@1";
-export const PLUCKED_UPRIGHT_ALGORITHM_ID = "changes.dsp.plucked-upright@1";
 
 export type WindAttackArticulation = "legato" | "tongued";
 
@@ -1363,13 +1362,10 @@ async function instantiate(): Promise<DspCore> {
       variationSlot,
       windArticulation,
     ) => {
-      /* Runtime trust-boundary guard: the parameter is typed as the
-       * two-value union, but render requests can cross from untyped
-       * callers; widen for the check so the guard survives the types. */
       if (
         windArticulation !== undefined &&
-        (windArticulation as string) !== "legato" &&
-        (windArticulation as string) !== "tongued"
+        windArticulation !== "legato" &&
+        windArticulation !== "tongued"
       ) return null;
       const natural = noteFrames(midiPitch, sampleRateHz);
       if (natural <= 0) return null;
@@ -1454,9 +1450,7 @@ async function instantiate(): Promise<DspCore> {
     if (
       !Number.isSafeInteger(frameCount) || frameCount <= 0 ||
       !Number.isSafeInteger(variationSlot) || variationSlot < 0 ||
-      /* Runtime trust-boundary guard past the two-value union type. */
-      ((windArticulation as string) !== "legato" &&
-        (windArticulation as string) !== "tongued")
+      (windArticulation !== "legato" && windArticulation !== "tongued")
     ) return null;
     const natural = exports.clr_note_frames(midiPitch, sampleRateHz);
     const stateCapacity = exports.clr_state_max_bytes_v2();
@@ -1556,13 +1550,6 @@ async function instantiate(): Promise<DspCore> {
       makeWaveguideRenderNote(
         (m, r) => exports.plk_note_frames(3, m, r),
         (m, v, r, l, rt, mx) => exports.plk_render(3, m, v, r, l, rt, mx),
-      ),
-    ],
-    [
-      PLUCKED_UPRIGHT_ALGORITHM_ID,
-      makeWaveguideRenderNote(
-        (m, r) => exports.plk_note_frames(4, m, r),
-        (m, v, r, l, rt, mx) => exports.plk_render(4, m, v, r, l, rt, mx),
       ),
     ],
     [

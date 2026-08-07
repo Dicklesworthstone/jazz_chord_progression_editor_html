@@ -137,14 +137,11 @@ const clarinetV2 = renderer(WAVEGUIDE_CLARINET_V2_ALGORITHM_ID);
 describe("waveguide renderer laws", () => {
   test("the map carries exactly the reviewed waveguide algorithms, pinned to the wasm payload", () => {
     expect([...renderers.keys()].sort()).toEqual([
-      /* PHS4 plucked family (jcpe-mnsc.6.2, reviewed registry amendment;
-       * plucked-upright added by the Wave-3 physical upright bass with the
-       * same amendment path and its own machine-gate evidence). */
+      /* PHS4 plucked family (jcpe-mnsc.6.2, reviewed registry amendment). */
       "changes.dsp.plucked-archtop@2",
       "changes.dsp.plucked-dreadnought@1",
       "changes.dsp.plucked-electric@2",
       "changes.dsp.plucked-ukulele@1",
-      "changes.dsp.plucked-upright@1",
       WAVEGUIDE_CLARINET_ALGORITHM_ID,
       WAVEGUIDE_CLARINET_V2_ALGORITHM_ID,
       WAVEGUIDE_FLUTE_ALGORITHM_ID,
