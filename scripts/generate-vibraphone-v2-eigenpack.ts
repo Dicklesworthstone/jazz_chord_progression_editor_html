@@ -161,7 +161,12 @@ type PackRecord = Readonly<{
   solverProof: SolvedBeam["proof"];
   massNormalizedDisplacementShapes: readonly (readonly number[])[];
   t60Seconds: readonly number[];
-  resonator: Readonly<{ physicalLengthM: number; radiusM: number }>;
+  resonator: Readonly<{
+    effectiveAcousticLengthM: number;
+    physicalTubeLengthM: number;
+    endCorrectionM: number;
+    radiusM: number;
+  }>;
   tuning: Readonly<{
     tunedModeCount: number;
     modeStatus: readonly string[];
@@ -1126,7 +1131,12 @@ function buildRecord(
     (index) => 1200 * Math.log2((ratios[index] ?? 1) / (targetVector[index] ?? 1)),
   );
   const radiusM = 0.031 - (0.01 * (midi - MIN_MIDI)) / (MAX_MIDI - MIN_MIDI);
-  const resonatorLengthM = 343 / (4 * midiFrequencyHz(midi));
+  const effectiveAcousticLengthM = 343 / (4 * midiFrequencyHz(midi));
+  const endCorrectionM = 0.6133 * radiusM;
+  const physicalTubeLengthM = effectiveAcousticLengthM - endCorrectionM;
+  if (!(physicalTubeLengthM > 0)) {
+    throw new Error(`PHS6_GENERATOR_RESONATOR_LENGTH:midi=${midi}`);
+  }
   const record: PackRecord = {
     midi,
     intendedFrequencyHz: round(midiFrequencyHz(midi)),
@@ -1161,7 +1171,9 @@ function buildRecord(
     ),
     t60Seconds: t60ForMidi(midi).map(round),
     resonator: {
-      physicalLengthM: round(resonatorLengthM),
+      effectiveAcousticLengthM: round(effectiveAcousticLengthM),
+      physicalTubeLengthM: round(physicalTubeLengthM),
+      endCorrectionM: round(endCorrectionM),
       radiusM: round(radiusM),
     },
     tuning: {
@@ -1232,7 +1244,8 @@ ${record.massNormalizedDisplacementShapes
   .join("\n")}
         ],
         t60_seconds: ${rustArray(record.t60Seconds)},
-        resonator_length_m: ${rustFloat(record.resonator.physicalLengthM)},
+        resonator_effective_length_m: ${rustFloat(record.resonator.effectiveAcousticLengthM)},
+        resonator_physical_length_m: ${rustFloat(record.resonator.physicalTubeLengthM)},
         resonator_radius_m: ${rustFloat(record.resonator.radiusM)},
     },`,
     )
