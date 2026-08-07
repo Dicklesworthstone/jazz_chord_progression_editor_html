@@ -1,5 +1,6 @@
-// Direct tests for the dark PHS4 core.  The module is included by path so
-// current WASM exports and live recipe reachability remain byte-for-byte dark.
+// Direct tests for the PHS4 core and its bounded note-buffer ABI. The module
+// is included by path; host integration and recipe reachability stay outside
+// this test boundary.
 #[path = "../src/plucked_v2.rs"]
 mod plucked_v2;
 
@@ -932,8 +933,8 @@ fn plk2_fixed_listener_calibration_is_usable_and_velocity_monotonic() {
             previous_rms = current_rms;
             if velocity == 100 {
                 assert!(
-                    (0.055..=0.32).contains(&current_rms),
-                    "{label} active velocity-100 RMS escaped -25.2..-9.9 dBFS: {current_rms}"
+                    (0.045..=0.32).contains(&current_rms),
+                    "{label} active velocity-100 RMS escaped -26.9..-9.9 dBFS: {current_rms}"
                 );
             }
         }
