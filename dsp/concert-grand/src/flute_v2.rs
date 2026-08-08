@@ -1078,7 +1078,7 @@ fn render_with_storage(
     // The boost applies with dynamic_lift so pp keeps its reference-matched
     // HNR while mf/ff gain the identity margin the UIowa cells demand.
     let nonlinear_drive = if vented_area > 0.0 {
-        1.61 + 0.44 * dynamic_lift * (2.0 - vented_area).clamp(0.0, 1.0)
+        1.63 + 0.44 * dynamic_lift * (2.0 - vented_area).clamp(0.0, 1.0)
     } else {
         1.87
     };
@@ -1087,7 +1087,11 @@ fn render_with_storage(
         / (1.0 + lattice_nonlinear_loss * vented_area * vented_area * vented_area * vented_area);
     let growth = exp(80.0 * EMB_CHANNEL_TO_EDGE_M);
     let vibrato_hz = 5.0 * (0.97 + 0.01 * variation_slot as f64);
-    let vibrato_depth = 0.012 + 0.002 * variation_slot as f64 / 7.0;
+    // Softness-weighted vibrato depth (2026-08-08): pp flute vibrato is
+    // physically shallower; sidebands otherwise read as inharmonicity in
+    // the pp HNR window (UIowa m72-pp).
+    let vibrato_depth =
+        (0.012 + 0.002 * variation_slot as f64 / 7.0) * (0.70 + 0.30 * breath_scale);
     let vibrato_step = TAU * vibrato_hz / sr;
     let vibrato_step_sin = sin(vibrato_step);
     let vibrato_step_cos = cos(vibrato_step);
