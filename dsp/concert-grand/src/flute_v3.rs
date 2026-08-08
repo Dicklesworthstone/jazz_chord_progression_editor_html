@@ -192,9 +192,25 @@ fn lerp_anchors(anchors: &[f32; 3], velocity_norm: f32) -> f32 {
 const SAT_HALF_WIDTH_R1_ANCHORS: [f32; 3] = [1.9459, 1.6310, 0.8123];
 fn jet_saturation_half_width_for(midi: i32, velocity_norm: f32) -> f32 {
     if (72..=83).contains(&midi) {
-        lerp_anchors(&SAT_HALF_WIDTH_R1_ANCHORS, velocity_norm)
+        let base = lerp_anchors(&SAT_HALF_WIDTH_R1_ANCHORS, velocity_norm);
+        // ff-side per-note trim ramps in above mf (velocity_norm 0.5) so
+        // pp/mf sustain spectra keep their round-3 calibration untouched.
+        let index = (midi - 72) as usize;
+        let ff_blend = ((velocity_norm - 0.5) * 2.0).clamp(0.0, 1.0);
+        base * (1.0 + ff_blend * (FF_SATURATION_TRIM_BY_NOTE_R1[index] - 1.0))
     } else {
         jet_saturation_half_widths(midi)
+    }
+}
+
+/// Round-7 pp onset hold (see PP_ONSET_HOLD_SECONDS_BY_NOTE_R1); ramps out
+/// by mf so louder dynamics keep the plain exponential settle.
+fn pp_onset_hold_seconds_for(midi: i32, velocity_norm: f32) -> f32 {
+    if (72..=83).contains(&midi) {
+        let pp_blend = (1.0 - velocity_norm * 2.0).clamp(0.0, 1.0);
+        PP_ONSET_HOLD_SECONDS_BY_NOTE_R1[(midi - 72) as usize] * pp_blend
+    } else {
+        0.0
     }
 }
 
@@ -214,7 +230,7 @@ const GROWTH_SETTLE_SECONDS: f32 = 0.070;
 /// pp 2.4 -> m72 locks 2x mode, m82 drops a register; pp 3.0 -> all lock).
 /// Values sweep-derived; the v2 per-note pull table is the precedent.
 const PP_GROWTH_CAP_BY_NOTE_R1: [f32; 12] = [
-    3.5572, 3.05, 3.00, 2.90, 2.9214, 2.80, 2.90, 3.0021, 3.00, 3.10, 3.5223, 3.30,
+        3.5572, 3.05, 3.00, 2.90, 2.5000, 2.80, 2.90, 2.8500, 3.00, 3.10, 3.3500, 3.30,
 ];
 
 /// Per-note ff growth-cap multiplier for register-1. The all-closed C5
@@ -224,7 +240,30 @@ const PP_GROWTH_CAP_BY_NOTE_R1: [f32; 12] = [
 /// path is structurally suppressed, so the loud drive itself must carry the
 /// dynamic. Neutral 1.0 elsewhere.
 const FF_GROWTH_CAP_MUL_BY_NOTE_R1: [f32; 12] = [
-    1.00, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+        1.00, 1.0, 1.0, 1.0, 0.8000, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+];
+/// Per-note MF growth-cap multiplier (round 7): m76's jet ladder fails the
+/// harmonic/high-band laws at mf where neither the pp table nor the ff
+/// multiplier reaches; neutral 1.0 elsewhere.
+const MF_GROWTH_CAP_MUL_BY_NOTE_R1: [f32; 12] = [
+        1.0, 1.0, 1.0, 1.0, 0.7500, 1.0, 1.0, 0.8300, 1.0, 1.0, 1.0, 1.0,
+];
+/// Round-7 per-note pp onset-hold seconds: sustain caps near the phonation
+/// floor grow their limit cycle slowly, pushing attack-to-90%-sustain past
+/// the 0.18 s law. A flutist speaks a soft note by tonguing at full drive
+/// then relaxing (the articulation practice); holding the scheduled cap at
+/// its onset value for this long before the exponential settle restores a
+/// fast, articulate attack without touching the sustain spectrum. 0.0 is
+/// bit-neutral.
+const PP_ONSET_HOLD_SECONDS_BY_NOTE_R1: [f32; 12] = [
+        0.0, 0.0, 0.0, 0.0, 0.3000, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1200, 0.0,
+];
+/// Round-7 per-note ff saturation trim for register 1: m76's forte cell is
+/// growth-cap-insensitive (measured flat across mul 0.7-0.85) because its
+/// ladder comes from the register-wide saturation half-width railing at ff;
+/// a per-note trim de-rails just that cell. 1.0 is bit-neutral.
+const FF_SATURATION_TRIM_BY_NOTE_R1: [f32; 12] = [
+    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
 ];
 
 fn jet_growth_cap_for(midi: i32, velocity_norm: f32) -> f32 {
@@ -232,8 +271,9 @@ fn jet_growth_cap_for(midi: i32, velocity_norm: f32) -> f32 {
         let anchors = JET_GROWTH_CAP_R1_ANCHORS;
         let index = (midi - 72) as usize;
         let pp = PP_GROWTH_CAP_BY_NOTE_R1[index];
+        let mf = anchors[1] * MF_GROWTH_CAP_MUL_BY_NOTE_R1[index];
         let ff = anchors[2] * FF_GROWTH_CAP_MUL_BY_NOTE_R1[index];
-        lerp_anchors(&[pp, anchors[1], ff], velocity_norm)
+        lerp_anchors(&[pp, mf, ff], velocity_norm)
     } else {
         4.15
     }
@@ -288,6 +328,14 @@ fn dynamic_column(velocity_norm: f32) -> (usize, usize, f32) {
         (1, 2, t.clamp(0.0, 1.0))
     }
 }
+fn note_trim_scalar(table: &[f32; 12], midi: i32) -> f32 {
+    if (72..=83).contains(&midi) {
+        table[(midi - 72) as usize]
+    } else {
+        1.0
+    }
+}
+
 fn note_trim(table: &[[f32; 3]; 12], midi: i32, velocity_norm: f32) -> f32 {
     if !(72..=83).contains(&midi) {
         return 1.0;
@@ -375,6 +423,47 @@ fn bright_weight_for(midi: i32, velocity_norm: f32) -> f32 {
 fn radiation_corner_hz_for(midi: i32, velocity_norm: f32) -> f32 {
     lerp_anchors(&RADIATION_CORNER_TABLE[dynamics_row_index(midi)], velocity_norm)
 }
+
+/// Round-7 direct breath-noise radiation (bead jcpe-flute-v3-integration).
+///
+/// Band-by-band envelope autopsy of m72-pp against the UIowa reference
+/// measured the true "envelope wall": the reference carries a broadband
+/// breath-noise floor near -52 dB in every one of the 24 metric bands,
+/// while the synthesis rendered -75..-93 dB between harmonics -- 20-40 dB
+/// too clean. The in-loop turbulence cannot supply this floor: the bore
+/// filters it into harmonically-correlated noise. Physically the turbulent
+/// jet component radiates DIRECTLY from the embouchure aperture with a
+/// broadly flat spectrum (Coltman; Verge) -- the same direct-radiation path
+/// round 6 opened for the coherent jet, here for its incoherent part.
+/// Per-dynamic anchors (pp/mf/ff at velocities 36/72/108); 0.0 is
+/// bit-neutral. The gentle first-order rolloff uses the shared radiation
+/// corner so rate compensation is inherited.
+const BREATH_NOISE_RADIATION_ANCHORS: [f32; 3] = [0.000_3, 0.000_2, 0.000_12];
+/// The breath floor needs its own band-limit: the metric's log-spaced bands
+/// tilt a white floor upward (+3 dB/oct per band) while the measured UIowa
+/// floor is flat across bands, so the shared radiation corner leaves a
+/// high-band excess. A lower dedicated corner shapes the radiated breath
+/// spectrum to the measured floor; rate compensation via internal_rate.
+const BREATH_NOISE_CORNER_HZ: f32 = 2_000.0;
+/// Per-note breath-level trim (register 1): the identity law wants m72's
+/// floor breathier (the flute-vs-clarinet discriminator rewards the real
+/// instrument's breath signature) while m79's high-band budget wants less;
+/// one scalar per note across dynamics. 1.0 neutral.
+const BREATH_NOISE_NOTE_TRIM_R1: [f32; 12] = [
+        1.6000, 1.0, 1.0, 1.0, 1.1000, 1.0, 1.0, 0.8500, 1.0, 1.0, 1.0, 1.0,
+];
+
+/// Round-7 foot-field corner scale (bead jcpe-flute-v3-integration-dw1q).
+///
+/// The four radiated groups shared one band-limit corner through round 6,
+/// yet the round-6 flat-mix ladder measured the residual all-closed high
+/// band entering via the FOOT field specifically: for all-closed fingerings
+/// every wavefront reaches the open end, and the foot's flow-derivative
+/// dipole then carries the +6 dB/oct tilt straight to the microphone. A
+/// dedicated foot corner (scale x the shared per-(register x dynamic)
+/// corner) is the physical knob: it models the end's radiation-efficiency
+/// rolloff independently of the tone-hole lattice. 1.0 is bit-neutral.
+const FOOT_RADIATION_CORNER_SCALE: f32 = 1.0;
 
 fn jet_saturation_half_widths(midi: i32) -> f32 {
     match midi {
@@ -669,6 +758,7 @@ struct PhraseState {
     feedback_velocity: f32,
     emb_radiation_lp: f32,
     foot_radiation_lp: f32,
+    breath_noise_lp: f32,
     feedback_hp_input: f32,
     feedback_hp_output: f32,
     jet_band_s1: f32,
@@ -724,6 +814,7 @@ impl PhraseState {
             feedback_velocity: 0.0,
             emb_radiation_lp: 0.0,
             foot_radiation_lp: 0.0,
+            breath_noise_lp: 0.0,
             feedback_hp_input: 0.0,
             feedback_hp_output: 0.0,
             jet_band_s1: 0.0,
@@ -1823,6 +1914,7 @@ fn render_with_storage(
     // tail in sustain. tau = GROWTH_SETTLE_SECONDS. Sweep provenance: r3.
     let growth_cap_sustain = jet_growth_cap_for(midi, velocity_norm);
     let growth_settle_alpha = expf(-1.0 / (GROWTH_SETTLE_SECONDS * internal_rate));
+    let onset_hold_seconds = pp_onset_hold_seconds_for(midi, velocity_norm);
     let mut growth_cap_now = 4.15f32;
     let base_growth_exponent = 0.33 * channel_to_edge / JET_HALF_WIDTH_M;
     // CAL-SWEEP: offset scale. Near-railed operation turns the split
@@ -1863,6 +1955,11 @@ fn render_with_storage(
     // differentiation amplifies +6 dB/oct; v1/v2 band-limit near 5.5 kHz).
     let hole_radiation_alpha =
         1.0 - expf(-TAU * radiation_corner_hz_for(midi, velocity_norm) / internal_rate);
+    let foot_radiation_alpha = 1.0
+        - expf(
+            -TAU * FOOT_RADIATION_CORNER_SCALE * radiation_corner_hz_for(midi, velocity_norm)
+                / internal_rate,
+        );
     let dc_pole = expf(-TAU * 18.0 / sample_rate);
     let head_delay = delay_from_thiran(layout.head_delay_integer, layout.head_thiran_a);
     let foot_delay = delay_from_thiran(layout.foot_delay_integer, layout.foot_thiran_a);
@@ -2020,8 +2117,10 @@ fn render_with_storage(
             // phonation onset; steady state limited to ~the jet width so the
             // labium split works on the tanh shoulder (harmonically rich,
             // dynamics-responsive) instead of rail-to-rail square.
-            growth_cap_now = growth_cap_sustain
-                + (growth_cap_now - growth_cap_sustain) * growth_settle_alpha;
+            if elapsed_seconds >= onset_hold_seconds {
+                growth_cap_now = growth_cap_sustain
+                    + (growth_cap_now - growth_cap_sustain) * growth_settle_alpha;
+            }
             let jet_growth = expf(base_growth_exponent.min(growth_cap_now));
             let linear_half_widths = jet_growth * delayed_jet;
             let saturation = jet_saturation_half_width_for(midi, velocity_norm);
@@ -2215,7 +2314,21 @@ fn render_with_storage(
                     + emb_jet_weight * jet_source_pressure;
             state.emb_radiation_lp +=
                 hole_radiation_alpha * (embouchure_raw - state.emb_radiation_lp);
-            let embouchure_field = state.emb_radiation_lp;
+            // Round-7 breath-noise floor: the jet's incoherent component
+            // radiates directly from the aperture, scaled by the same
+            // pressure envelope as the coherent jet so onset/release track
+            // the player's air (no gate steps). One-pole via the shared
+            // radiation corner keeps it deterministic and rate-compensated.
+            let breath_gain =
+                lerp_anchors(&BREATH_NOISE_RADIATION_ANCHORS, velocity_norm)
+                    * note_trim_scalar(&BREATH_NOISE_NOTE_TRIM_R1, midi);
+            let breath_raw =
+                breath_gain * jet_speed * (rng.bipolar() as f32);
+            let breath_alpha =
+                1.0 - expf(-TAU * BREATH_NOISE_CORNER_HZ / internal_rate);
+            state.breath_noise_lp +=
+                breath_alpha * (breath_raw - state.breath_noise_lp);
+            let embouchure_field = state.emb_radiation_lp + state.breath_noise_lp;
             let foot_volume_flow = layout.admittance[SEGMENTS - 1]
                 * (foot_incident - foot_reflection);
             let foot_flow_derivative =
@@ -2223,7 +2336,7 @@ fn render_with_storage(
             state.foot_flow = foot_volume_flow;
             let foot_raw = acoustics.radiation_scale * foot_flow_derivative;
             state.foot_radiation_lp +=
-                hole_radiation_alpha * (foot_raw - state.foot_radiation_lp);
+                foot_radiation_alpha * (foot_raw - state.foot_radiation_lp);
             let foot_field = state.foot_radiation_lp;
             let groups = [
                 embouchure_field,
