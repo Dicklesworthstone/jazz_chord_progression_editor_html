@@ -5203,6 +5203,13 @@ function makeStudioComposition(
           );
           return;
         }
+        /* Start the deferred render-ahead NOW, concurrent with transport
+         * startup: waiting for the play receipt loses the race to the
+         * scheduler on fast charts (measured: first post-warm attack at
+         * ~1.2 s while the receipt-gated start began ~1.1 s later), and the
+         * engine attack path's stateless fallback is the safety net, not the
+         * plan. The token guards keep a superseding play honest. */
+        activateRenderAhead();
         const instrumentOutcome = await port.setInstrument(
           setInstrumentRequestId,
           instrumentId,
@@ -5268,6 +5275,13 @@ function makeStudioComposition(
         );
         return;
       }
+      /* Start the deferred render-ahead NOW, concurrent with transport
+       * startup: waiting for the play receipt loses the race to the
+       * scheduler on fast charts (measured: first post-warm attack at
+       * ~1.2 s while the receipt-gated start began ~1.1 s later), and the
+       * engine attack path's stateless fallback is the safety net, not the
+       * plan. The token guards keep a superseding play honest. */
+      activateRenderAhead();
       const instrumentOutcome = await port.setInstrument(
         setInstrumentRequestId,
         instrumentId,

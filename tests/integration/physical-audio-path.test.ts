@@ -79,7 +79,15 @@ test("the production audio engine requires the prepared stateful clarinet segmen
     ? null
     : context.sourceBuffer(legacySourceId);
 
-  requireFailure(
+  /*
+   * jcpe-clarinet-phrase-continuation-refusal-9m39: an unprepared phrase
+   * attack no longer refuses (the shipped mid-chart transport fault). It
+   * falls through to the stateless v2 note render — a documented one-note
+   * re-attack — so a lost render-ahead race degrades one articulation
+   * instead of killing the run. Preparation stays the primary path and its
+   * own refusal law is asserted immediately below, unchanged.
+   */
+  requireSuccess(
     engine.attackAudioVoices(
       attackRequest(
         [{
@@ -91,8 +99,12 @@ test("the production audio engine requires the prepared stateful clarinet segmen
         { eventId: event.eventId, instrumentId: "clarinet" },
       ),
     ),
-    "audio.renderer_unavailable",
   );
+  const fallbackSourceId = context.sourceIds().at(-1);
+  const fallbackBuffer = fallbackSourceId === undefined
+    ? null
+    : context.sourceBuffer(fallbackSourceId);
+  expect(fallbackBuffer).not.toBeNull();
   requireFailure(await engine.prepareRenderedAudioVoices({
     instrumentId: "clarinet",
     notes: [{
@@ -231,7 +243,7 @@ test("physical preparation warms the exact v1 render identity consumed by attack
   expect(repeated.renderedCount).toBe(0);
 });
 
-test("clarinet-v2 phrase preparation chains exact stateful segments and replays their cache identities", async () => {
+test("clarinet-v2 retains the complete 128-event phrase bound and evicts exactly at 129", async () => {
   const playback = compilePlaybackPlan(
     materializeP0TimelineCase("P0-TIME-001").request,
   );
@@ -290,7 +302,7 @@ test("clarinet-v2 phrase preparation chains exact stateful segments and replays 
     before + 2,
   );
 
-  const fillers = Array.from({ length: 64 }, (_, index) => {
+  const fillers = Array.from({ length: 126 }, (_, index) => {
     const physicalGesture = Object.freeze({
       ...base,
       eventId: `phrase-cache-filler-${String(index)}`,
@@ -309,20 +321,60 @@ test("clarinet-v2 phrase preparation chains exact stateful segments and replays 
     instrumentId: "clarinet",
     notes: fillers,
   }));
-  const beforeRefusal = fake.events.filter(
+  const beforeAttack = fake.events.filter(
     ({ kind }) => kind === "buffer-create",
   ).length;
-  requireFailure(engine.attackAudioVoices(attackRequest([{
-    voiceId: "evicted-physical-clarinet",
+  requireSuccess(engine.attackAudioVoices(attackRequest([{
+    voiceId: "retained-physical-clarinet",
     midiPitch: midi(pitch),
     velocity: 91,
     physicalGesture: base,
   }], {
     eventId: base.eventId,
     instrumentId: "clarinet",
-  })), "audio.renderer_unavailable");
+  })));
   expect(fake.events.filter(({ kind }) => kind === "buffer-create")).toHaveLength(
-    beforeRefusal,
+    beforeAttack,
+  );
+
+  const overflowGesture = Object.freeze({
+    ...base,
+    eventId: "phrase-cache-overflow",
+    deterministicSeedUint32: (base.deterministicSeedUint32 + 127) >>> 0,
+  });
+  requireSuccess(await engine.prepareRenderedAudioVoices({
+    instrumentId: "clarinet",
+    notes: [Object.freeze({
+      midiPitch: midi(pitch),
+      velocity: 91,
+      physicalGesture: overflowGesture,
+      physicalFrameCount: 1,
+      physicalCacheFingerprint: "f".repeat(64),
+      physicalStateReset: true,
+    })],
+  }));
+  const beforeFallback = fake.events.filter(
+    ({ kind }) => kind === "buffer-create",
+  ).length;
+  /*
+   * jcpe-clarinet-phrase-continuation-refusal-9m39: the evicted-segment
+   * attack no longer refuses. The stale phrase alias is dropped (the
+   * original integrity concern — stale bytes under a stateful key — still
+   * holds) and the attack renders a FRESH stateless buffer instead:
+   * exactly one new buffer-create, never a served stale entry, never a
+   * faulted run.
+   */
+  requireSuccess(engine.attackAudioVoices(attackRequest([{
+    voiceId: "evicted-physical-clarinet",
+    midiPitch: midi(pitch + 2),
+    velocity: 91,
+    physicalGesture: second,
+  }], {
+    eventId: second.eventId,
+    instrumentId: "clarinet",
+  })));
+  expect(fake.events.filter(({ kind }) => kind === "buffer-create")).toHaveLength(
+    beforeFallback + 1,
   );
 });
 

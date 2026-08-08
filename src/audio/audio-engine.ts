@@ -1238,20 +1238,26 @@ function createAudioEngineInternal(
     ) {
       const gestureFingerprint = physicalGestureFingerprint(physicalGesture);
       const preparedKey = preparedPhysicalKeys.get(gestureFingerprint);
-      if (preparedKey === undefined) return null;
-      const prepared = touchRenderedBufferEntry(
-        recipeBufferCache(recipe.id),
-        preparedKey,
-      );
-      if (prepared === undefined) {
-        /* The PCM entry may have been evicted after preparation. Keeping the
-         * stale alias would make a later attack render a stateless note under
-         * a stateful-segment key, silently replacing phrase continuity with
-         * unrelated audio. */
+      if (preparedKey !== undefined) {
+        const prepared = touchRenderedBufferEntry(
+          recipeBufferCache(recipe.id),
+          preparedKey,
+        );
+        if (prepared !== undefined) return prepared.buffer;
+        /* The PCM entry was evicted after preparation; drop the stale alias
+         * so the fallback below cannot masquerade under a stateful key. */
         preparedPhysicalKeys.delete(gestureFingerprint);
-        return null;
       }
-      return prepared.buffer;
+      /*
+       * Phrase render-ahead lost the race to the playhead (or the entry was
+       * evicted). Refusing here used to fault the whole transport run — the
+       * shipped mid-chart "engine refused the command". Fall through to the
+       * stateless v2 note render instead: the same bytes a stateReset phrase
+       * start produces for this gesture, so the degradation under a slow
+       * device is a documented re-attack of one note, never a dead session.
+       * Preparation correctness is untouched — prepare still refuses
+       * metadata-less clarinet-v2 requests at its own seam.
+       */
     }
     const seconds = bucketRenderSecondsForRecipe(requestedSeconds, recipe);
     const key = renderedBufferKey(
