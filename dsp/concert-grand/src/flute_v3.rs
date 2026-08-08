@@ -266,6 +266,72 @@ const FF_SATURATION_TRIM_BY_NOTE_R1: [f32; 12] = [
     1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
 ];
 
+/// Round-8 forte jet-offset boost (bead jcpe-flute-v3-integration-dw1q).
+///
+/// The m76-ff deficit autopsy read the reference cell's harmonic profile at
+/// h2 = +16.1 dB ABOVE the fundamental (the near-overblow forte regime)
+/// while the candidate rendered h2 at -32.5 dB: a ~48 dB even-harmonic
+/// miss. Drive cannot supply it -- the round-8 growth-cap ladder measured
+/// h2 FALLING with drive (-32.5 at mul 0.8 to -50 at mul >= 1.4: symmetric
+/// saturation cancels evens, exactly the round-4 note). Even harmonics come
+/// from operating-point ASYMMETRY, and the base offset law reduces offset
+/// with velocity (-0.085 slope), so forte is the model's most symmetric
+/// regime -- backwards for this cell. This per-note boost multiplies the
+/// jet offset with the shared ff_blend ramp (pp/mf untouched at 1.0),
+/// modelling the player covering more of the embouchure at forte. 1.0 is
+/// bit-neutral. m76 = 3.5 from the round-8 ladder (boost 1.3/1.7/2.1/2.5/3.5
+/// measured monotone: harm 22.7 -> 19.2 PASS, hb 12.0 -> 7.0 PASS, h2
+/// -32.5 -> -23.3; the 0.48 offset clamp binds near 3.5 so larger values
+/// are no-ops). REMAINING WALL, measured to the limit of every calibration
+/// mechanism: the identity advantage stays at -7.4 dB vs the +3.5 law
+/// because the reference's h2-DOMINANT (+16.1 dB) near-overblow regime is
+/// unreachable -- drive lowers h2 (symmetric saturation), offset clamps at
+/// h2 ~ -23 dB, saturation trims are marginal, and the convective stage
+/// shift detunes f0 before transferring energy to mode 2 (shift ladder
+/// 0.04-0.16: hb 5.9 -> 0.7 but adv -8.0 -> -11.1 and harm rising). The
+/// honest fix is a two-mode loop (partial overblow coexistence), recorded
+/// as the round-9 order on bead jcpe-flute-v3-integration-dw1q.
+const JET_OFFSET_FF_BOOST_BY_NOTE_R1: [f32; 12] = [
+    1.0, 1.0, 1.0, 1.0, 3.5000, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+];
+fn jet_offset_ff_boost_for(midi: i32, velocity_norm: f32) -> f32 {
+    if (72..=83).contains(&midi) {
+        let index = (midi - 72) as usize;
+        let ff_blend = ((velocity_norm - 0.5) * 2.0).clamp(0.0, 1.0);
+        1.0 + ff_blend * (JET_OFFSET_FF_BOOST_BY_NOTE_R1[index] - 1.0)
+    } else {
+        1.0
+    }
+}
+
+/// Round-8 forte convective-phase shift (bead jcpe-flute-v3-integration-dw1q).
+///
+/// The reference m76-ff harmonic profile is h2-dominant (+16.1 dB over h1):
+/// the near-overblow forte regime. The jet-offset boost above recovers even
+/// harmonics only to h2 ~ -23 dB before the physical offset clamp binds --
+/// waveform asymmetry alone cannot reach mode-2 dominance. The bore route
+/// can: CONVECTIVE_PHASE_CYCLES is the documented jet-stage selector
+/// ("values above one cycle select a higher jet oscillation stage"), and a
+/// flutist shifts lip cover and hydrodynamic stage with dynamics. This
+/// per-note shift ramps in with the shared ff_blend, moving the jet transit
+/// phase toward the second passive bore mode at forte while pp/mf keep
+/// their calibrated stage. 0.0 is bit-neutral.
+const CONVECTIVE_PHASE_FF_SHIFT_BY_NOTE_R1: [f32; 12] = [
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+];
+fn convective_phase_ff_shift_for(midi: i32, velocity_norm: f32) -> f32 {
+    if (72..=83).contains(&midi) {
+        let index = (midi - 72) as usize;
+        // Sharpened forte-only ramp: the matrix mf velocity (72/127 = 0.567)
+        // must see zero shift — the shared ff_blend leaks 13% there, which
+        // measurably broke the m76-mf cell in the round-8 shift ladder.
+        let ff_blend = ((velocity_norm - 0.75) * 4.0).clamp(0.0, 1.0);
+        ff_blend * CONVECTIVE_PHASE_FF_SHIFT_BY_NOTE_R1[index]
+    } else {
+        0.0
+    }
+}
+
 fn jet_growth_cap_for(midi: i32, velocity_norm: f32) -> f32 {
     if (72..=83).contains(&midi) {
         let anchors = JET_GROWTH_CAP_R1_ANCHORS;
@@ -1922,9 +1988,10 @@ fn render_with_storage(
     // (even-dominant ladder, starved h1). Centering the operating window
     // keeps the cycle inside the transition band: h1-dominant with the
     // reference's mild h2 asymmetry restored by the residual offset.
-    let jet_offset_ratio = (JET_OFFSET_SCALE * (0.16 + 0.060 * register_level
+    let jet_offset_ratio = ((JET_OFFSET_SCALE * (0.16 + 0.060 * register_level
         - 0.085 * (velocity_norm - 0.50))
         + 0.006 * (variation_slot as f32 - 3.5))
+        * jet_offset_ff_boost_for(midi, velocity_norm))
         .clamp(-0.05, 0.48);
     let feedback_gain = (1.8 + 0.55 * register_level) * gesture.feedback_scale;
 
@@ -2090,13 +2157,13 @@ fn render_with_storage(
             // atan(bright_weight) at f0; keep total loop phase fixed by
             // adding that lead back as convective transit.
             let flow_form_active = SOURCE_FORM == 1 && register_level < 2.5;
-            let effective_phase_cycles = if flow_form_active {
+            let effective_phase_cycles = (if flow_form_active {
                 let bright_weight = bright_weight_for(midi, velocity_norm);
                 gesture.convective_phase_cycles - 0.25
                     + atanf(bright_weight) / TAU
             } else {
                 gesture.convective_phase_cycles
-            };
+            }) + convective_phase_ff_shift_for(midi, velocity_norm);
             let jet_delay = (effective_phase_cycles * internal_rate
                 / (mode_center_hz * pitch_vibrato))
                 .clamp(1.0, (MAX_JET_HISTORY - 2) as f32)
