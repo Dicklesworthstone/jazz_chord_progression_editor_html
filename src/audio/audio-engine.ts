@@ -938,7 +938,7 @@ function createAudioEngineInternal(
    * the cache. Buckets grow geometrically so a short comp chord costs a short
    * render while a held bass note still gets its tail.
    */
-  const RENDER_SECONDS_BUCKETS = Object.freeze([1, 1.5, 2, 4, 8] as const);
+  const RENDER_SECONDS_BUCKETS = Object.freeze([1.125, 1.5, 2, 4, 8] as const);
 
   function bucketRenderSeconds(seconds: number): number {
     for (const bucket of RENDER_SECONDS_BUCKETS) {
@@ -956,9 +956,15 @@ function createAudioEngineInternal(
    */
   function gatedRenderWindowSeconds(
     gateSeconds: number,
-    recipe: Readonly<{ amplitude: Readonly<{ releaseSeconds: number }> }>,
+    recipe: AudioRenderedInstrumentRecipe,
   ): number {
-    return gateSeconds + recipe.amplitude.releaseSeconds + 0.25;
+    /* PLK2 output is already a freely decaying physical body/string response;
+     * its reviewed recipe release is the complete post-gate tail. The generic
+     * extra quarter-second was making each 105 BPM comp event cross from the
+     * 1.0 s bucket into 1.5 s, adding 50% work without adding an audible law.
+     * Other rendered families retain their historical safety tail. */
+    return gateSeconds + recipe.amplitude.releaseSeconds +
+      (isSharedPluckedChordRecipe(recipe) ? 0 : 0.25);
   }
 
   /*
@@ -1134,13 +1140,18 @@ function createAudioEngineInternal(
     recipe: AudioRenderedInstrumentRecipe,
     context: AudioContextPort,
     key: string,
-    pcm: Readonly<{ frameCount: number; left: Float32Array; right: Float32Array }>,
+    pcm: Readonly<{
+      sampleRateHz: number;
+      frameCount: number;
+      left: Float32Array;
+      right: Float32Array;
+    }>,
     phraseStateOutput?: Uint8Array,
   ): AudioBufferPort {
     const buffer = context.createBuffer(
       recipe.renderer.channels,
       pcm.frameCount,
-      context.sampleRate,
+      pcm.sampleRateHz,
     );
     buffer.getChannelData(0).set(pcm.left);
     buffer.getChannelData(1).set(pcm.right);

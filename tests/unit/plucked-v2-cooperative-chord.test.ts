@@ -146,6 +146,8 @@ describe("PLK2 cooperative chord host", () => {
         expect(sync).not.toBeNull();
         expect(cooperative).not.toBeNull();
         expect(cooperative?.frameCount).toBe(sync?.frameCount);
+        expect(sync?.sampleRateHz).toBe(8_000);
+        expect(cooperative?.sampleRateHz).toBe(8_000);
         expect(cooperative?.left).toEqual(sync?.left);
         expect(cooperative?.right).toEqual(sync?.right);
         expect(controls.yields).toBe(2);

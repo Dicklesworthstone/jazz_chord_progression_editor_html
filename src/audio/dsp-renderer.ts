@@ -423,6 +423,7 @@ type ConcertGrandExports = Readonly<{
     sampleRate: number,
     maxFrames: number,
   ) => number;
+  plk2_chord_runtime_max_steps?: (outputCapacity: number) => number;
   plk2_chord_runtime_step?: (
     handle: number,
     left: number,
@@ -1049,6 +1050,7 @@ type PluckedChordRenderAbi = Readonly<{
     sampleRate: number,
     maxFrames: number,
   ) => number;
+  runtimeMaxSteps?: (outputCapacity: number) => number;
   runtimeStep?: (
     handle: number,
     left: number,
@@ -1072,6 +1074,24 @@ type PluckedChordRenderFactoryOptions = Readonly<{
   yieldToMacrotask?: () => Promise<void>;
   runExclusive?: <T>(task: () => Promise<T>) => Promise<T>;
 }>;
+
+/*
+ * PLK2's reviewed physical chord core is band-limited and admitted at 8 kHz.
+ * WebAudio buffer sources already resample a buffer whose sample rate differs
+ * from the AudioContext, using the browser's native audio thread. Returning
+ * that physical-rate buffer avoids reconstructing and copying six redundant
+ * 48 kHz frames for every simulated frame on the browser's main thread.
+ */
+const PLK2_PHYSICAL_BUFFER_SAMPLE_RATE_HZ = 8_000;
+
+function pluckedChordPhysicalSampleRate(
+  outputSampleRateHz: number,
+): number | null {
+  return Number.isFinite(outputSampleRateHz) &&
+      outputSampleRateHz >= 8_000 && outputSampleRateHz <= 96_000
+    ? PLK2_PHYSICAL_BUFFER_SAMPLE_RATE_HZ
+    : null;
+}
 
 function validatePluckedChordRequest(
   abi: PluckedChordRenderAbi,
@@ -1129,8 +1149,29 @@ function finishPluckedChordPcm(
   return Object.freeze({ sampleRateHz, frameCount: written, left, right });
 }
 
+let chordYieldChannel: MessageChannel | null = null;
+const chordYieldQueue: Array<() => void> = [];
+let chordYieldCount = 0;
+
 function browserMacrotask(): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, 0));
+  if (typeof MessageChannel === "undefined") {
+    return new Promise((resolve) => setTimeout(resolve, 0));
+  }
+  chordYieldCount += 1;
+  /* MessageChannel avoids Firefox's per-step timer clamp, but an unbroken
+   * stream from one task source can outrun the transport's timer queue. Give
+   * timers an explicit turn every four bounded physical quanta. */
+  if (chordYieldCount % 4 === 0) {
+    return new Promise((resolve) => setTimeout(resolve, 0));
+  }
+  chordYieldChannel ??= new MessageChannel();
+  chordYieldChannel.port1.onmessage ??= () => {
+    chordYieldQueue.shift()?.();
+  };
+  return new Promise((resolve) => {
+    chordYieldQueue.push(resolve);
+    chordYieldChannel?.port2.postMessage(0);
+  });
 }
 
 /** Production/test seam for the sync and cooperative views of one PLK2 ABI. */
@@ -1141,12 +1182,14 @@ export function createPluckedChordRenderFunctions(
   let renderChord: WaveguideRenderer["renderChord"];
   if (abi.renderChordInto !== undefined) {
     renderChord = (midiPitches, velocities, sampleRateHz, maxSeconds) => {
+      const physicalSampleRateHz = pluckedChordPhysicalSampleRate(sampleRateHz);
+      if (physicalSampleRateHz === null) return null;
       const request = validatePluckedChordRequest(
         abi,
         packIndex,
         midiPitches,
         velocities,
-        sampleRateHz,
+        physicalSampleRateHz,
         maxSeconds,
       );
       if (request === null) return null;
@@ -1164,7 +1207,7 @@ export function createPluckedChordRenderFunctions(
         midiPointer,
         velocityPointer,
         midiPitches.length,
-        sampleRateHz,
+        physicalSampleRateHz,
         leftPointer,
         rightPointer,
         request.capacity,
@@ -1176,7 +1219,7 @@ export function createPluckedChordRenderFunctions(
         written,
         request.capacity,
         request.natural,
-        sampleRateHz,
+        physicalSampleRateHz,
       );
     };
   }
@@ -1188,8 +1231,8 @@ export function createPluckedChordRenderFunctions(
     abi.sessionStep,
   ];
   const runtimeCooperative = [
-    abi.sessionMaxSteps,
     abi.runtimeInit,
+    abi.runtimeMaxSteps,
     abi.runtimeStep,
     abi.runtimeReset,
   ];
@@ -1205,16 +1248,20 @@ export function createPluckedChordRenderFunctions(
       maxSeconds,
     ) => {
       const task = async (): Promise<RenderedNotePcm | null> => {
+      const physicalSampleRateHz = pluckedChordPhysicalSampleRate(sampleRateHz);
+      if (physicalSampleRateHz === null) return null;
       const request = validatePluckedChordRequest(
         abi,
         packIndex,
         midiPitches,
         velocities,
-        sampleRateHz,
+        physicalSampleRateHz,
         maxSeconds,
       );
       if (request === null) return null;
-      const maxSteps = abi.sessionMaxSteps?.(request.capacity) ?? 0;
+      const maxSteps = useRuntime
+        ? abi.runtimeMaxSteps?.(request.capacity) ?? 0
+        : abi.sessionMaxSteps?.(request.capacity) ?? 0;
       if (
         !Number.isSafeInteger(maxSteps) || maxSteps <= 0 ||
         maxSteps > MAX_COOPERATIVE_CHORD_STEPS
@@ -1242,7 +1289,7 @@ export function createPluckedChordRenderFunctions(
           midiPointer,
           velocityPointer,
           midiPitches.length,
-          sampleRateHz,
+          physicalSampleRateHz,
           request.capacity,
         ) ?? 0;
         if (!Number.isSafeInteger(handle) || handle <= 0) return null;
@@ -1264,7 +1311,7 @@ export function createPluckedChordRenderFunctions(
                 request.capacity,
                 request.capacity,
                 request.natural,
-                sampleRateHz,
+                physicalSampleRateHz,
               );
             }
             if (status !== PLK2_CHORD_STEP_PROGRESS) return null;
@@ -1280,7 +1327,7 @@ export function createPluckedChordRenderFunctions(
         midiPointer,
         velocityPointer,
         midiPitches.length,
-        sampleRateHz,
+        physicalSampleRateHz,
         request.capacity,
         statePointer,
         stateCapacity,
@@ -1302,7 +1349,7 @@ export function createPluckedChordRenderFunctions(
             request.capacity,
             request.capacity,
             request.natural,
-            sampleRateHz,
+            physicalSampleRateHz,
           );
         }
         if (status !== PLK2_CHORD_STEP_PROGRESS) return null;
@@ -1392,6 +1439,7 @@ function optionalPluckedChordExports(
   | "plk2_chord_session_init"
   | "plk2_chord_session_step"
   | "plk2_chord_runtime_init"
+  | "plk2_chord_runtime_max_steps"
   | "plk2_chord_runtime_step"
   | "plk2_chord_runtime_reset"
 > {
@@ -1434,6 +1482,7 @@ function optionalPluckedChordExports(
     : {};
   const runtimeNames = [
     "plk2_chord_runtime_init",
+    "plk2_chord_runtime_max_steps",
     "plk2_chord_runtime_step",
     "plk2_chord_runtime_reset",
   ] as const;
@@ -1448,6 +1497,10 @@ function optionalPluckedChordExports(
         rawExports,
         "plk2_chord_runtime_init",
       ) as NonNullable<ConcertGrandExports["plk2_chord_runtime_init"]>,
+      plk2_chord_runtime_max_steps: requireExportedFunction(
+        rawExports,
+        "plk2_chord_runtime_max_steps",
+      ) as NonNullable<ConcertGrandExports["plk2_chord_runtime_max_steps"]>,
       plk2_chord_runtime_step: requireExportedFunction(
         rawExports,
         "plk2_chord_runtime_step",
@@ -2045,6 +2098,9 @@ async function instantiate(): Promise<DspCore> {
       ...(exports.plk2_chord_runtime_init === undefined
         ? {}
         : { runtimeInit: exports.plk2_chord_runtime_init }),
+      ...(exports.plk2_chord_runtime_max_steps === undefined
+        ? {}
+        : { runtimeMaxSteps: exports.plk2_chord_runtime_max_steps }),
       ...(exports.plk2_chord_runtime_step === undefined
         ? {}
         : { runtimeStep: exports.plk2_chord_runtime_step }),
