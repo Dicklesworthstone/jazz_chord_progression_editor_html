@@ -1,0 +1,281 @@
+{
+  "schema": "changes.fixtures.u7-midi-export-workflow-contract.v1",
+  "fixtureVersion": "1.0.0",
+  "package": "U7",
+  "beadId": "jcpe-milestone-advanced-craft-ulj.11.1",
+  "contractDocument": "docs/U7_MIDI_EXPORT_WORKFLOW_CONTRACT.md",
+  "contractModule": "src/application/u7-midi-export-workflow-contract.ts",
+  "reviewState": "proposed-independent-spec",
+  "pinState": "reviewed-byte-and-semantic-pinned",
+  "expectedValuesGenerated": false,
+  "productionOutputUsedAsOracle": false,
+  "productionImplementationClaim": false,
+  "uiCompletionClaim": false,
+  "humanAcceptanceClaim": false,
+  "expertReviewClaim": false,
+  "contract": {
+    "schema": "changes.application.u7-midi-export-workflow-contract.v1",
+    "policyId": "changes.u7-midi-export-workflow",
+    "policyVersion": 1,
+    "implementationStatus": "specified-not-implemented"
+  },
+  "upstreamPins": {
+    "e1WriterId": "changes.midi-export",
+    "e1WriterVersion": 1,
+    "e1WriterVersionTag": "changes.midi-export.v1",
+    "midiPpq": 960,
+    "midiTrackCount": 2,
+    "maxMarkerTextUtf8Bytes": 96,
+    "filenamePrefix": "changes-",
+    "filenameSuffix": ".mid",
+    "filenameMaxCharacters": 64,
+    "maxDocumentChordEvents": 8192,
+    "maxDocumentSections": 64,
+    "maxMarkers": 8256,
+    "maxArtifactBytes": 4194304,
+    "compactBreakpointCssPx": 640,
+    "existingApplicationDialogKinds": [
+      "new-document",
+      "lesson-load",
+      "import-confirm",
+      "discard-changes",
+      "history-limit",
+      "error-details"
+    ],
+    "proposedDialogKind": "midi-export"
+  },
+  "workflowStates": [
+    "idle",
+    "preview-open",
+    "generating",
+    "ready",
+    "delivering",
+    "delivered"
+  ],
+  "workflowActions": [
+    "open",
+    "close",
+    "cancel",
+    "generate",
+    "download",
+    "re-preview",
+    "dismiss-delivered"
+  ],
+  "cancelableStates": [
+    "preview-open",
+    "generating",
+    "ready"
+  ],
+  "registryStates": [
+    "empty",
+    "preparing",
+    "ready",
+    "delivering"
+  ],
+  "refusalCodes": [
+    "u7.request_invalid",
+    "u7.document_unavailable",
+    "u7.hash_unavailable",
+    "u7.preparation_conflict",
+    "u7.preparation_missing",
+    "u7.delivery_cleanup_failed",
+    "limit.u7_preview_work_exceeded"
+  ],
+  "staleOutcomeCode": "u7.revision_stale",
+  "previewBlockerKinds": [
+    "realization",
+    "plan",
+    "export",
+    "empty-chart"
+  ],
+  "markerOmissionReasons": [
+    "text-control-chars",
+    "text-over-limit",
+    "text-empty",
+    "format-refused"
+  ],
+  "titleNoticeKinds": [
+    "title-control-chars-substituted",
+    "title-truncated"
+  ],
+  "deliveryOutcomes": [
+    "handed-off",
+    "failed",
+    "cleanup-failed"
+  ],
+  "deliveryChannel": "object-url-download",
+  "deliveryBindingKind": "standard-midi-file",
+  "announcementKeys": [
+    "u7.announce.preview_ready",
+    "u7.announce.preview_blocked",
+    "u7.announce.generating",
+    "u7.announce.ready",
+    "u7.announce.stale",
+    "u7.announce.delivering",
+    "u7.announce.handed_off",
+    "u7.announce.delivery_failed",
+    "u7.announce.cleanup_failed",
+    "u7.announce.cancelled",
+    "u7.announce.closed"
+  ],
+  "derivationPins": {
+    "markerAccidentalStyle": "unicode",
+    "titleFallback": "Untitled",
+    "voicingTrackName": "Voicings",
+    "instrumentName": "Changes",
+    "requestIdPrefix": "u7-midi-export-",
+    "requestIdMaxAsciiLength": 128,
+    "artifactSha256Pattern": "^[0-9a-f]{64}$",
+    "customChordPlanCode": "playback.custom_voicing_missing",
+    "loopAlwaysNull": true
+  },
+  "limits": {
+    "maxChordEvents": 8192,
+    "maxSections": 64,
+    "maxMarkers": 8256,
+    "maxMarkerTextUtf8Bytes": 96,
+    "maxArtifactBytes": 4194304,
+    "maxFilenameCharacters": 64,
+    "maxRequestIdAsciiLength": 128,
+    "minPreparationId": 1,
+    "maxPreparationId": 9007199254740991,
+    "compactBreakpointCssPx": 640
+  },
+  "workCounters": {
+    "names": [
+      "events-visited",
+      "markers-derived",
+      "bytes-hashed"
+    ],
+    "maxima": {
+      "events-visited": 8192,
+      "markers-derived": 8256,
+      "bytes-hashed": 4194304
+    }
+  },
+  "components": [
+    {
+      "id": "U7-CMP-001",
+      "name": "MidiExportTrigger",
+      "surface": "header"
+    },
+    {
+      "id": "U7-CMP-002",
+      "name": "MidiExportDialog",
+      "surface": "dialog"
+    },
+    {
+      "id": "U7-CMP-003",
+      "name": "MidiExportSheet",
+      "surface": "sheet"
+    },
+    {
+      "id": "U7-CMP-004",
+      "name": "MidiExportReadinessSummary",
+      "surface": "shared"
+    },
+    {
+      "id": "U7-CMP-005",
+      "name": "MidiExportDisclosureList",
+      "surface": "shared"
+    },
+    {
+      "id": "U7-CMP-006",
+      "name": "MidiExportBlockedList",
+      "surface": "shared"
+    },
+    {
+      "id": "U7-CMP-007",
+      "name": "MidiExportBlockedEventLink",
+      "surface": "shared"
+    },
+    {
+      "id": "U7-CMP-008",
+      "name": "MidiExportArtifactSummary",
+      "surface": "shared"
+    },
+    {
+      "id": "U7-CMP-009",
+      "name": "MidiExportGenerateButton",
+      "surface": "shared"
+    },
+    {
+      "id": "U7-CMP-010",
+      "name": "MidiExportDownloadButton",
+      "surface": "shared"
+    },
+    {
+      "id": "U7-CMP-011",
+      "name": "MidiExportCancelButton",
+      "surface": "shared"
+    },
+    {
+      "id": "U7-CMP-012",
+      "name": "MidiExportStatusRegion",
+      "surface": "shared"
+    }
+  ],
+  "lawIds": [
+    "U7-LAW-PREVIEW-BINDING",
+    "U7-LAW-DERIVATION-MARKER",
+    "U7-LAW-DERIVATION-TITLE",
+    "U7-LAW-DERIVATION-REQUEST-ID",
+    "U7-LAW-REALIZATION-SUMMARY",
+    "U7-LAW-BLOCKED-ENUMERATION",
+    "U7-LAW-LOSS-MIRROR",
+    "U7-LAW-ARTIFACT-HASH",
+    "U7-LAW-DETERMINISTIC-BYTES",
+    "U7-LAW-STATE-MACHINE",
+    "U7-LAW-REGISTRY-DISCIPLINE",
+    "U7-LAW-DELIVERY-CLEANUP",
+    "U7-LAW-NO-EXPORT-MARKER",
+    "U7-LAW-NO-RECOVERY-SAVE",
+    "U7-LAW-NO-VOICING-REPAIR",
+    "U7-LAW-ACCESSIBILITY-MATRIX",
+    "U7-LAW-WORK-BOUND"
+  ],
+  "channelDiscipline": {
+    "authorizedCommandKinds": [],
+    "authorizedEphemeralIntentKinds": [
+      "push-dialog",
+      "pop-dialog"
+    ],
+    "forbiddenEphemeralIntentKinds": [
+      "mark-exported",
+      "set-recovery"
+    ]
+  },
+  "counts": {
+    "previewCases": 10,
+    "stateCases": 24,
+    "accessibilityMatrixRows": 12,
+    "limitCases": 10,
+    "traces": 16,
+    "authorities": 11,
+    "mutationControls": 16,
+    "components": 12,
+    "laws": 17,
+    "refusalCodes": 7,
+    "announcementKeys": 11
+  },
+  "companions": [
+    "preview-cases.json",
+    "state-cases.json",
+    "limit-cases.json",
+    "trace-ledger.json",
+    "provenance-ledger.json",
+    "mutation-controls.json"
+  ],
+  "companionSha256": {
+    "preview-cases.json": "d666c733aed6a9316e1c915a4df00fba735253885deba41f9f460fa0e3237dac",
+    "state-cases.json": "8a61316b520f862cea857c3cb5c1727d04784f56bee70c2e9cc174d6625b01e3",
+    "limit-cases.json": "aaaee0bb3bcdbfe7dc163c2128a432d435a86beb5f54b696081e6bba1666c8bc",
+    "trace-ledger.json": "5bd74f3cffdf950413dd541237658b11fdb149f52149cefc130a6d17e03a083f",
+    "provenance-ledger.json": "8f1c31991b97478faea0ea237e81425be8eb113fd67c41c2cf96445f43103848",
+    "mutation-controls.json": "6688ac81c434ceeb764e3dca25662727d0466f5225ef0c9cb6af633c3ada9ddf"
+  },
+  "notes": [
+    "pinState stays pending-validator-freeze during authoring; the freeze commit flips it to reviewed-byte-and-semantic-pinned and fills companionSha256.",
+    "This packet specifies a proposed surface. It claims no production implementation, no UI completion, no human acceptance, and no expert review."
+  ]
+}

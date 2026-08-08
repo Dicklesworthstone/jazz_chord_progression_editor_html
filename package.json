@@ -32,6 +32,7 @@
     "validate:c0-contract": "bun scripts/validate-c0-contract.ts",
     "validate:e0-contract": "bun scripts/validate-e0-contract.ts",
     "validate:e1-contract": "bun scripts/validate-e1-contract.ts",
+    "validate:u7-contract": "bun scripts/validate-u7-contract.ts",
     "validate:m0-contract": "bun scripts/validate-m0-contract.ts",
     "validate:m1-contract": "bun scripts/validate-m1-contract.ts",
     "validate:a0-e0-bridge-contract": "bun scripts/validate-a0-e0-bridge-contract.ts",

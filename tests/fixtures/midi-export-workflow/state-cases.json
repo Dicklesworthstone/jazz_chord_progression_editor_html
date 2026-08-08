@@ -1,0 +1,232 @@
+{
+  "schema": "changes.fixtures.u7-midi-export-workflow-state-cases.v1",
+  "fixtureVersion": "1.0.0",
+  "reviewState": "proposed-independent-spec",
+  "expectedValuesGenerated": false,
+  "productionOutputUsedAsOracle": false,
+  "notes": [
+    "Each row materializes one transition of the U7 workflow state machine (docs/U7_MIDI_EXPORT_WORKFLOW_CONTRACT.md section 3). registryAfter is the capacity-one preparation registry state after the transition settles. cleanup is the exact object-URL accounting the completion must report. announcementKey is the live-region key the transition must emit; politeness follows U7_ANNOUNCEMENT_POLITENESS (status rows polite, refusal/failure rows assertive).",
+    "Cancel and close affordances exist exactly in U7_CANCELABLE_STATES (preview-open, generating, ready); delivering offers no cancel affordance because the browser activation is already committed, and delivered offers only dismiss-delivered and re-preview.",
+    "Delivery outcomes follow the accepted E0 v1 idiom: outcomes, not refusals, with the single ok:false cleanup-failure carrying u7.delivery_cleanup_failed. handed-off never claims disk persistence."
+  ],
+  "states": ["idle", "preview-open", "generating", "ready", "delivering", "delivered"],
+  "actions": ["open", "close", "cancel", "generate", "download", "re-preview", "dismiss-delivered"],
+  "registryStates": ["empty", "preparing", "ready", "delivering"],
+  "cases": [
+    {
+      "id": "U7-STA-001",
+      "summary": "Happy path open: document available, compute succeeds, artifact prepared.",
+      "from": "idle", "action": "open", "condition": "document-available+compute-ok",
+      "to": "preview-open", "outcome": { "kind": "preview", "readiness": "ready" },
+      "registryAfter": "ready", "cleanup": null,
+      "announcementKey": "u7.announce.preview_ready", "politeness": "polite"
+    },
+    {
+      "id": "U7-STA-002",
+      "summary": "Open with blockers: the dialog still opens and enumerates every blocker; no artifact is prepared.",
+      "from": "idle", "action": "open", "condition": "blockers-found",
+      "to": "preview-open", "outcome": { "kind": "preview", "readiness": "blocked" },
+      "registryAfter": "empty", "cleanup": null,
+      "announcementKey": "u7.announce.preview_blocked", "politeness": "polite"
+    },
+    {
+      "id": "U7-STA-003",
+      "summary": "Open without a current validated document refuses; the dialog never appears.",
+      "from": "idle", "action": "open", "condition": "no-current-document",
+      "to": "idle", "outcome": { "kind": "refusal", "code": "u7.document_unavailable" },
+      "registryAfter": "empty", "cleanup": null,
+      "announcementKey": "u7.announce.preview_blocked", "politeness": "assertive"
+    },
+    {
+      "id": "U7-STA-004",
+      "summary": "Open while the registry is busy refuses; the in-flight preparation is untouched.",
+      "from": "idle", "action": "open", "condition": "registry-busy",
+      "to": "idle", "outcome": { "kind": "refusal", "code": "u7.preparation_conflict" },
+      "registryAfter": "unchanged", "cleanup": null,
+      "announcementKey": "u7.announce.preview_blocked", "politeness": "assertive"
+    },
+    {
+      "id": "U7-STA-005",
+      "summary": "Open with a failing hash port refuses; no partial preview is shown.",
+      "from": "idle", "action": "open", "condition": "hash-port-failure",
+      "to": "idle", "outcome": { "kind": "refusal", "code": "u7.hash_unavailable" },
+      "registryAfter": "empty", "cleanup": null,
+      "announcementKey": "u7.announce.preview_blocked", "politeness": "assertive"
+    },
+    {
+      "id": "U7-STA-006",
+      "summary": "Generate with a fresh binding adopts the prepared artifact.",
+      "from": "preview-open", "action": "generate", "condition": "binding-fresh",
+      "to": "ready", "outcome": { "kind": "generated" },
+      "registryAfter": "ready", "cleanup": null,
+      "announcementKey": "u7.announce.ready", "politeness": "polite"
+    },
+    {
+      "id": "U7-STA-007",
+      "summary": "Generate after the chart changed: stale outcome, prepared artifact abandoned, re-preview offered; never a silent re-read.",
+      "from": "preview-open", "action": "generate", "condition": "binding-stale",
+      "to": "preview-open", "outcome": { "kind": "stale", "code": "u7.revision_stale" },
+      "registryAfter": "empty", "cleanup": null,
+      "announcementKey": "u7.announce.stale", "politeness": "assertive"
+    },
+    {
+      "id": "U7-STA-008",
+      "summary": "Generate with no prepared artifact (blocked preview) refuses; the user must resolve blockers first.",
+      "from": "preview-open", "action": "generate", "condition": "artifact-missing",
+      "to": "preview-open", "outcome": { "kind": "refusal", "code": "u7.preparation_missing" },
+      "registryAfter": "empty", "cleanup": null,
+      "announcementKey": "u7.announce.preview_blocked", "politeness": "assertive"
+    },
+    {
+      "id": "U7-STA-009",
+      "summary": "Download with a fresh binding: delivering settles to delivered, handed-off, with exactly one created and one revoked object URL.",
+      "from": "ready", "action": "download", "condition": "binding-fresh+activation-ok",
+      "to": "delivered", "outcome": { "kind": "delivery", "delivery": "handed-off" },
+      "registryAfter": "empty",
+      "cleanup": { "cleanup": "complete", "objectUrlsCreated": 1, "objectUrlsRevoked": 1, "outstandingOwnedResources": 0 },
+      "announcementKey": "u7.announce.handed_off", "politeness": "polite"
+    },
+    {
+      "id": "U7-STA-010",
+      "summary": "Download after the chart changed between generate and download: take is discarded-stale, artifact abandoned, back to preview with the stale outcome.",
+      "from": "ready", "action": "download", "condition": "binding-stale",
+      "to": "preview-open", "outcome": { "kind": "stale", "code": "u7.revision_stale" },
+      "registryAfter": "empty", "cleanup": null,
+      "announcementKey": "u7.announce.stale", "politeness": "assertive"
+    },
+    {
+      "id": "U7-STA-011",
+      "summary": "A second download after delivery finds the single-use registry empty and refuses; re-preview is the recovery.",
+      "from": "delivered", "action": "download", "condition": "second-take",
+      "to": "delivered", "outcome": { "kind": "refusal", "code": "u7.preparation_missing" },
+      "registryAfter": "empty", "cleanup": null,
+      "announcementKey": "u7.announce.delivery_failed", "politeness": "assertive"
+    },
+    {
+      "id": "U7-STA-012",
+      "summary": "Cancel at preview: registry abandoned, zero resources exist to clean, focus returns to the header trigger.",
+      "from": "preview-open", "action": "cancel", "condition": "always",
+      "to": "idle", "outcome": { "kind": "cancelled" },
+      "registryAfter": "empty",
+      "cleanup": { "cleanup": "complete", "objectUrlsCreated": 0, "objectUrlsRevoked": 0, "outstandingOwnedResources": 0 },
+      "announcementKey": "u7.announce.cancelled", "politeness": "polite"
+    },
+    {
+      "id": "U7-STA-013",
+      "summary": "Cancel during the (synchronous, busy-surfaced) generate transition abandons the preparation.",
+      "from": "generating", "action": "cancel", "condition": "always",
+      "to": "idle", "outcome": { "kind": "cancelled" },
+      "registryAfter": "empty",
+      "cleanup": { "cleanup": "complete", "objectUrlsCreated": 0, "objectUrlsRevoked": 0, "outstandingOwnedResources": 0 },
+      "announcementKey": "u7.announce.cancelled", "politeness": "polite"
+    },
+    {
+      "id": "U7-STA-014",
+      "summary": "Cancel at ready: the prepared artifact is abandoned before any object URL exists, so cleanup is trivially complete.",
+      "from": "ready", "action": "cancel", "condition": "always",
+      "to": "idle", "outcome": { "kind": "cancelled" },
+      "registryAfter": "empty",
+      "cleanup": { "cleanup": "complete", "objectUrlsCreated": 0, "objectUrlsRevoked": 0, "outstandingOwnedResources": 0 },
+      "announcementKey": "u7.announce.cancelled", "politeness": "polite"
+    },
+    {
+      "id": "U7-STA-015",
+      "summary": "Close at preview (Escape or the close control) behaves exactly like cancel.",
+      "from": "preview-open", "action": "close", "condition": "always",
+      "to": "idle", "outcome": { "kind": "closed" },
+      "registryAfter": "empty",
+      "cleanup": { "cleanup": "complete", "objectUrlsCreated": 0, "objectUrlsRevoked": 0, "outstandingOwnedResources": 0 },
+      "announcementKey": "u7.announce.closed", "politeness": "polite"
+    },
+    {
+      "id": "U7-STA-016",
+      "summary": "Close at ready abandons the prepared artifact and cleans up.",
+      "from": "ready", "action": "close", "condition": "always",
+      "to": "idle", "outcome": { "kind": "closed" },
+      "registryAfter": "empty",
+      "cleanup": { "cleanup": "complete", "objectUrlsCreated": 0, "objectUrlsRevoked": 0, "outstandingOwnedResources": 0 },
+      "announcementKey": "u7.announce.closed", "politeness": "polite"
+    },
+    {
+      "id": "U7-STA-017",
+      "summary": "Re-preview after a stale outcome recomputes against the current revision and repins the binding.",
+      "from": "preview-open", "action": "re-preview", "condition": "after-stale",
+      "to": "preview-open", "outcome": { "kind": "preview", "readiness": "ready" },
+      "registryAfter": "ready", "cleanup": null,
+      "announcementKey": "u7.announce.preview_ready", "politeness": "polite"
+    },
+    {
+      "id": "U7-STA-018",
+      "summary": "Re-preview from delivered starts a fresh preparation against the current revision.",
+      "from": "delivered", "action": "re-preview", "condition": "always",
+      "to": "preview-open", "outcome": { "kind": "preview", "readiness": "ready" },
+      "registryAfter": "ready", "cleanup": null,
+      "announcementKey": "u7.announce.preview_ready", "politeness": "polite"
+    },
+    {
+      "id": "U7-STA-019",
+      "summary": "Dismiss from delivered closes the dialog; focus returns to the header trigger.",
+      "from": "delivered", "action": "dismiss-delivered", "condition": "always",
+      "to": "idle", "outcome": { "kind": "closed" },
+      "registryAfter": "empty", "cleanup": null,
+      "announcementKey": "u7.announce.closed", "politeness": "polite"
+    },
+    {
+      "id": "U7-STA-020",
+      "summary": "Delivery completion after a successful activation start: handed-off with total cleanup; the dialog never claims disk persistence.",
+      "from": "delivering", "action": "download", "condition": "activation-started",
+      "to": "delivered", "outcome": { "kind": "delivery", "delivery": "handed-off" },
+      "registryAfter": "empty",
+      "cleanup": { "cleanup": "complete", "objectUrlsCreated": 1, "objectUrlsRevoked": 1, "outstandingOwnedResources": 0 },
+      "announcementKey": "u7.announce.handed_off", "politeness": "polite"
+    },
+    {
+      "id": "U7-STA-021",
+      "summary": "Activation start throws: outcome failed (not a refusal), zero resources were created, the prepared artifact survives for a retry.",
+      "from": "delivering", "action": "download", "condition": "activation-threw",
+      "to": "ready", "outcome": { "kind": "delivery", "delivery": "failed" },
+      "registryAfter": "ready",
+      "cleanup": { "cleanup": "complete", "objectUrlsCreated": 0, "objectUrlsRevoked": 0, "outstandingOwnedResources": 0 },
+      "announcementKey": "u7.announce.delivery_failed", "politeness": "assertive"
+    },
+    {
+      "id": "U7-STA-022",
+      "summary": "Revocation throws after a successful handoff: the single ok:false delivery result, cleanup reconciliation-required; the bytes are already with the browser, so the state is delivered.",
+      "from": "delivering", "action": "download", "condition": "revoke-threw",
+      "to": "delivered", "outcome": { "kind": "refusal", "code": "u7.delivery_cleanup_failed", "cleanup": "reconciliation-required" },
+      "registryAfter": "empty",
+      "cleanup": { "cleanup": "reconciliation-required", "objectUrlsCreated": 1, "objectUrlsRevoked": 0, "outstandingOwnedResources": 1 },
+      "announcementKey": "u7.announce.cleanup_failed", "politeness": "assertive"
+    },
+    {
+      "id": "U7-STA-023",
+      "summary": "Negative affordance row: while delivering, cancel and close are not offered and a rogue dispatch is ignored (the transition set has no delivering/cancel row).",
+      "from": "delivering", "action": "cancel", "condition": "affordance-absent",
+      "to": "delivering", "outcome": { "kind": "ignored" },
+      "registryAfter": "delivering", "cleanup": null,
+      "announcementKey": null, "politeness": null
+    },
+    {
+      "id": "U7-STA-024",
+      "summary": "Work-bound near-miss: a preview whose events-visited counter would exceed the cap refuses with the limit code; unreachable while the domain caps hold.",
+      "from": "idle", "action": "open", "condition": "work-counter-exceeded",
+      "to": "idle", "outcome": { "kind": "refusal", "code": "limit.u7_preview_work_exceeded" },
+      "registryAfter": "empty", "cleanup": null,
+      "announcementKey": "u7.announce.preview_blocked", "politeness": "assertive"
+    }
+  ],
+  "accessibilityMatrix": [
+    { "state": "idle", "surface": "dialog", "overlay": null, "initialFocus": null, "allowedActions": ["open"], "focusReturn": null, "announcementKey": null },
+    { "state": "idle", "surface": "sheet", "overlay": null, "initialFocus": null, "allowedActions": ["open"], "focusReturn": null, "announcementKey": null },
+    { "state": "preview-open", "surface": "dialog", "overlay": "Dialog", "initialFocus": "heading", "allowedActions": ["generate", "cancel", "close", "re-preview"], "focusReturn": "studio-export-midi", "announcementKey": "u7.announce.preview_ready" },
+    { "state": "preview-open", "surface": "sheet", "overlay": "SheetDrawer", "initialFocus": "heading", "allowedActions": ["generate", "cancel", "close", "re-preview"], "focusReturn": "studio-export-midi", "announcementKey": "u7.announce.preview_ready" },
+    { "state": "generating", "surface": "dialog", "overlay": "Dialog", "initialFocus": null, "allowedActions": ["cancel"], "focusReturn": null, "announcementKey": "u7.announce.generating" },
+    { "state": "generating", "surface": "sheet", "overlay": "SheetDrawer", "initialFocus": null, "allowedActions": ["cancel"], "focusReturn": null, "announcementKey": "u7.announce.generating" },
+    { "state": "ready", "surface": "dialog", "overlay": "Dialog", "initialFocus": "first-control", "allowedActions": ["download", "cancel", "close"], "focusReturn": "studio-export-midi", "announcementKey": "u7.announce.ready" },
+    { "state": "ready", "surface": "sheet", "overlay": "SheetDrawer", "initialFocus": "first-control", "allowedActions": ["download", "cancel", "close"], "focusReturn": "studio-export-midi", "announcementKey": "u7.announce.ready" },
+    { "state": "delivering", "surface": "dialog", "overlay": "Dialog", "initialFocus": null, "allowedActions": [], "focusReturn": null, "announcementKey": "u7.announce.delivering" },
+    { "state": "delivering", "surface": "sheet", "overlay": "SheetDrawer", "initialFocus": null, "allowedActions": [], "focusReturn": null, "announcementKey": "u7.announce.delivering" },
+    { "state": "delivered", "surface": "dialog", "overlay": "Dialog", "initialFocus": "first-control", "allowedActions": ["dismiss-delivered", "re-preview"], "focusReturn": "studio-export-midi", "announcementKey": "u7.announce.handed_off" },
+    { "state": "delivered", "surface": "sheet", "overlay": "SheetDrawer", "initialFocus": "first-control", "allowedActions": ["dismiss-delivered", "re-preview"], "focusReturn": "studio-export-midi", "announcementKey": "u7.announce.handed_off" }
+  ]
+}

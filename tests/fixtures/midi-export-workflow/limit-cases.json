@@ -1,0 +1,171 @@
+{
+  "schema": "changes.fixtures.u7-midi-export-workflow-limit-cases.v1",
+  "fixtureVersion": "1.0.0",
+  "reviewState": "proposed-independent-spec",
+  "expectedValuesGenerated": false,
+  "productionOutputUsedAsOracle": false,
+  "notes": [
+    "Boundary edges for every numeric law the workflow owns. Text byte counts are UTF-8 byte counts, never code-unit or code-point counts.",
+    "LIM-005 pins the arithmetic relation that makes marker overflow unreachable by construction: the E1 marker cap equals the domain chord-event cap plus the domain section cap.",
+    "LIM-007 pins the accessibility matrix completeness obligation: every workflow state crossed with every overlay surface has exactly one row carrying initial focus, allowed actions, focus return, and announcement key."
+  ],
+  "cases": [
+    {
+      "id": "U7-LIM-001",
+      "summary": "A marker text of exactly 96 UTF-8 bytes is kept.",
+      "kind": "marker-text",
+      "input": {
+        "text": "MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM",
+        "utf8ByteLength": 96
+      },
+      "expected": {
+        "disposition": "kept"
+      }
+    },
+    {
+      "id": "U7-LIM-002",
+      "summary": "A marker text of 97 UTF-8 bytes is omitted with text-over-limit; a marker is never truncated.",
+      "kind": "marker-text",
+      "input": {
+        "text": "MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM",
+        "utf8ByteLength": 97
+      },
+      "expected": {
+        "disposition": "omitted",
+        "reason": "text-over-limit"
+      }
+    },
+    {
+      "id": "U7-LIM-003",
+      "summary": "A marker text containing one ASCII control character is omitted with text-control-chars regardless of length.",
+      "kind": "marker-text",
+      "input": {
+        "text": "Turnaround\tA",
+        "utf8ByteLength": 12
+      },
+      "expected": {
+        "disposition": "omitted",
+        "reason": "text-control-chars"
+      }
+    },
+    {
+      "id": "U7-LIM-004",
+      "summary": "A title of exactly 96 UTF-8 bytes is exported verbatim with no notice.",
+      "kind": "title",
+      "input": {
+        "text": "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "utf8ByteLength": 96
+      },
+      "expected": {
+        "disposition": "verbatim",
+        "derivedTitle": "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "titleNotice": null
+      }
+    },
+    {
+      "id": "U7-LIM-005",
+      "summary": "A 97-byte title of thirty-two sharp signs plus one ASCII letter truncates to exactly the thirty-two sharps (96 bytes): truncation never splits a code point and never exceeds the byte cap.",
+      "kind": "title",
+      "input": {
+        "text": "♯♯♯♯♯♯♯♯♯♯♯♯♯♯♯♯♯♯♯♯♯♯♯♯♯♯♯♯♯♯♯♯x",
+        "utf8ByteLength": 97
+      },
+      "expected": {
+        "disposition": "truncated",
+        "derivedTitle": "♯♯♯♯♯♯♯♯♯♯♯♯♯♯♯♯♯♯♯♯♯♯♯♯♯♯♯♯♯♯♯♯",
+        "derivedUtf8ByteLength": 96,
+        "titleNotice": {
+          "kind": "title-truncated",
+          "originalUtf8ByteLength": 97
+        }
+      }
+    },
+    {
+      "id": "U7-LIM-006",
+      "summary": "A title with any ASCII control character is replaced by the pinned fallback with the substitution notice; user text is never repaired character-by-character.",
+      "kind": "title",
+      "input": {
+        "text": "My\nChart",
+        "utf8ByteLength": 8
+      },
+      "expected": {
+        "disposition": "substituted",
+        "derivedTitle": "Untitled",
+        "titleNotice": {
+          "kind": "title-control-chars-substituted",
+          "originalUtf8ByteLength": null
+        }
+      }
+    },
+    {
+      "id": "U7-LIM-007",
+      "summary": "Marker-cap arithmetic: maxChordEvents + maxSections equals maxMarkers exactly, so derivation overflow is unreachable by construction.",
+      "kind": "arithmetic-relation",
+      "input": {
+        "maxChordEvents": 8192,
+        "maxSections": 64,
+        "maxMarkers": 8256
+      },
+      "expected": {
+        "relation": "maxChordEvents + maxSections === maxMarkers",
+        "holds": true
+      }
+    },
+    {
+      "id": "U7-LIM-008",
+      "summary": "Preparation-id brand bounds: 1 and 2^53-1 are constructible; 0, 2^53, negatives, and non-integers are not.",
+      "kind": "preparation-id",
+      "input": {
+        "minimum": 1,
+        "maximum": 9007199254740991
+      },
+      "expected": {
+        "accepted": [
+          1,
+          9007199254740991
+        ],
+        "refused": [
+          0,
+          9007199254740992,
+          -1,
+          1.5
+        ]
+      }
+    },
+    {
+      "id": "U7-LIM-009",
+      "summary": "Accessibility matrix completeness: 6 workflow states × 2 overlay surfaces = 12 rows, each carrying the frozen row vocabulary.",
+      "kind": "matrix-completeness",
+      "input": {
+        "states": 6,
+        "surfaces": 2,
+        "expectedRows": 12
+      },
+      "expected": {
+        "rowsPresent": 12,
+        "rowKeys": [
+          "state",
+          "surface",
+          "overlay",
+          "initialFocus",
+          "allowedActions",
+          "focusReturn",
+          "announcementKey"
+        ]
+      }
+    },
+    {
+      "id": "U7-LIM-010",
+      "summary": "Filename truncation edge from the E1 law: a document id that would push the name past 64 characters is truncated so the whole name, including .mid, fits.",
+      "kind": "filename",
+      "input": {
+        "documentId": "doc-with-a-name-that-runs-and-runs-and-runs-and-runs-and-runs-past",
+        "maxCharacters": 64
+      },
+      "expected": {
+        "filename": "changes-doc-with-a-name-that-runs-and-runs-and-runs-and-runs.mid",
+        "characters": 64
+      }
+    }
+  ]
+}

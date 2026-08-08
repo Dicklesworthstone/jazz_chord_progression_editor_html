@@ -111,6 +111,24 @@ what the release artifact is, and how those claims are proved.
   instrument-recipe, impulse, voice-lifecycle, registry, render, listening,
   provenance, trace, limit, and mutation authority. Production audio behavior
   may be compared with them but may never generate their expectations.
+- `docs/E1_MIDI_EXPORT_CONTRACT.md`, `src/export/midi-export-contract.ts`,
+  and the seven companions under `tests/fixtures/midi-export/` are the
+  independently authored E1 deterministic MIDI-export byte-model, refusal,
+  loss, filename, limit, trace, provenance, and mutation authority.
+  Production export output may be compared with them but may never generate
+  their expectations.
+- `docs/U7_MIDI_EXPORT_WORKFLOW_CONTRACT.md`,
+  `src/application/u7-midi-export-workflow-contract.ts`, and the seven
+  companions under `tests/fixtures/midi-export-workflow/` are the proposed
+  independent U7 MIDI-export-workflow authority: the preview model and
+  derivation laws, blocked-event enumeration with chart links, the dialog
+  state machine and capacity-one preparation registry, object-URL delivery
+  and cleanup accounting, the accessibility matrix, exact limits, work
+  counters, traces, provenance, and replayed mutation controls. No U7
+  production component exists yet, and the packet makes no implementation,
+  UI-completion, human-acceptance, or expert-review claim. Production
+  workflow behavior may be compared with the fixtures but may never generate
+  their expectations.
 - The legacy HTML remains evidence until the replacement has passed the release
   gate. New production code must not import or evaluate it.
 
@@ -168,6 +186,8 @@ The manifest exposes these stable commands:
 | `bun run validate:u1-contract` | validate the proposed independent U1 quick-entry classification, operation-to-channel binding, interaction states, bounds, traces, provenance, and replayed mutation controls without claiming any U1 implementation |
 | `bun run validate:c0-contract` | validate the independent legacy corpus, precedence, hostile-input, report, work-bound, trace, provenance, and mutation authority package |
 | `bun run validate:e0-contract` | validate the independent E0 JSON/text interchange, transactional import, exact limits, reciprocal traces, provenance, accepted byte goldens, and mutation authority package |
+| `bun run validate:e1-contract` | validate the independent E1 MIDI-export byte goldens (independent SMF parser and derivation), refusal precedence, limits, filename law, trace, provenance, and mutation authority |
+| `bun run validate:u7-contract` | validate the proposed independent U7 MIDI-export-workflow preview model, marker/title derivation laws, dialog state machine and registry discipline, accessibility matrix, limits, traces, provenance, and replayed mutation controls without claiming any U7 implementation |
 | `bun run validate:a0-e0-bridge-contract` | validate the independent A0 owner-port registry, identity, marker-CAS, literal applicability/provenance/trace/mutation packet, and immutable accepted-E0-v1 pins without claiming consumer compatibility |
 | `bun run validate:x0-contract` | validate the independent persistent-audio graph, recipe, impulse, voice-lifecycle, registry, render, listening, trace, provenance, and mutation authority package |
 | `bun run validate:phs0-contract` | validate the proposed gesture-driven physical-renderer plans, exact limits, stateful partitioning, v2 ABI, baseline, traces, provenance, and mutation controls without claiming production implementation |

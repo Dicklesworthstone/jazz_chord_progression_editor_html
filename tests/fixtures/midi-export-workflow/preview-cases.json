@@ -1,0 +1,1325 @@
+{
+  "schema": "changes.fixtures.u7-midi-export-workflow-preview-cases.v1",
+  "fixtureVersion": "1.0.0",
+  "reviewState": "proposed-independent-spec",
+  "expectedValuesGenerated": false,
+  "productionOutputUsedAsOracle": false,
+  "notes": [
+    "Every expected preview model is independently authored. canonicalMarkerText literals are the author's expectation of the T0 canonical unicode formatting; the static contract test re-checks them against the accepted T0 formatter as an authority-linkage drift guard, never as the oracle for this packet.",
+    "expectedArtifactSha256 values were hand-computed at authoring time by an independent Python re-implementation of the E1 byte model (method recorded in the provenance ledger); scripts/validate-u7-contract.ts re-derives every hash with its own TypeScript SMF emitter and diffs.",
+    "upstreamScenario declares outcomes owned by upstream packages (T1 resolution, V0 realization, P0 plan compile, E1 export) as scenario inputs, the same idiom as the U1 quick-entry packet's declared t0Result inputs. The validator judges U7's derivation from those inputs; the static test cross-checks the declared upstream codes against the live upstream vocabularies.",
+    "planSpec follows the E1 golden planSpec encoding: documentId, tempoBpm, meter, totalTicks, loop, events with eventId/ordinal/startTick/durationTicks/gateDurationTicks/pitches (step, alter, octave, midi in stored order)."
+  ],
+  "cases": [
+    {
+      "id": "U7-PRE-001",
+      "summary": "Clean one-event 4/4 chart: ready preview with section and chord markers, manual voicing, no losses.",
+      "scenario": {
+        "documentId": "doc-u7-pre-001",
+        "revision": 3,
+        "title": "Blues in F",
+        "tempoBpm": 120,
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        },
+        "sections": [
+          {
+            "name": "A",
+            "events": [
+              {
+                "eventId": "event-0000",
+                "chord": {
+                  "kind": "parsed",
+                  "sourceText": "C7",
+                  "canonicalMarkerText": "C7"
+                },
+                "voicing": {
+                  "mode": "manual",
+                  "bassPolicy": null
+                },
+                "durationBeats": 4
+              }
+            ]
+          }
+        ]
+      },
+      "upstreamScenario": {
+        "realization": "ok",
+        "planCompile": "ok",
+        "export": "ok"
+      },
+      "planSpec": {
+        "documentId": "doc-u7-pre-001",
+        "tempoBpm": 120,
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        },
+        "totalTicks": 960,
+        "loop": null,
+        "events": [
+          {
+            "eventId": "event-0000",
+            "ordinal": 0,
+            "startTick": 0,
+            "durationTicks": 960,
+            "gateDurationTicks": 936,
+            "pitches": [
+              {
+                "step": "C",
+                "alter": 0,
+                "octave": 4,
+                "midi": 60
+              },
+              {
+                "step": "E",
+                "alter": 0,
+                "octave": 4,
+                "midi": 64
+              },
+              {
+                "step": "G",
+                "alter": 0,
+                "octave": 4,
+                "midi": 67
+              },
+              {
+                "step": "B",
+                "alter": -1,
+                "octave": 4,
+                "midi": 70
+              }
+            ]
+          }
+        ]
+      },
+      "expectedPreview": {
+        "readiness": "ready",
+        "blockers": [],
+        "realization": {
+          "storedManualCount": 1,
+          "storedFrozenCount": 0,
+          "generatedCount": 0,
+          "externalBassEventIds": []
+        },
+        "ppq": 960,
+        "trackCount": 2,
+        "tempoBpm": 120,
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        },
+        "derivedMarkers": [
+          {
+            "kind": "section",
+            "eventId": "event-0000",
+            "text": "A"
+          },
+          {
+            "kind": "chord",
+            "eventId": "event-0000",
+            "text": "C7"
+          }
+        ],
+        "losses": [
+          {
+            "kind": "enharmonic-spelling",
+            "eventIds": [
+              "event-0000"
+            ]
+          }
+        ],
+        "markerOmissions": [],
+        "titleNotice": null,
+        "derivedTitle": "Blues in F",
+        "artifact": {
+          "filename": "changes-doc-u7-pre-001.mid",
+          "byteLength": 129,
+          "sha256": "c8f86c7395865d8da99edd01f652ffa70a8a4e04080f288e1181973eb8014dea",
+          "tempo": {
+            "requestedBpm": 120,
+            "encodedMicrosecondsPerQuarter": 500000,
+            "roundingErrorNumerator": 0,
+            "roundingErrorDenominator": 120
+          },
+          "noteCount": 4,
+          "markerCount": 2
+        }
+      },
+      "traceIds": [
+        "U7-TRACE-PREVIEW",
+        "U7-TRACE-MARKERS",
+        "U7-TRACE-HASH",
+        "U7-TRACE-LOSSES"
+      ],
+      "authorityIds": [
+        "U7-AUTH-E1",
+        "U7-AUTH-P0",
+        "U7-AUTH-DERIVED"
+      ]
+    },
+    {
+      "id": "U7-PRE-002",
+      "summary": "Two-event 6/8 chart at 90 bpm: nonzero tempo rounding disclosed exactly; markers reorder section-before-chord at the shared tick.",
+      "scenario": {
+        "documentId": "doc-u7-pre-002",
+        "revision": 11,
+        "title": "Two Five One",
+        "tempoBpm": 90,
+        "meter": {
+          "beatsPerBar": 6,
+          "beatUnit": 8
+        },
+        "sections": [
+          {
+            "name": "A",
+            "events": [
+              {
+                "eventId": "event-0000",
+                "chord": {
+                  "kind": "parsed",
+                  "sourceText": "Dm7",
+                  "canonicalMarkerText": "Dm7"
+                },
+                "voicing": {
+                  "mode": "frozen",
+                  "bassPolicy": null
+                },
+                "durationBeats": 1.5
+              },
+              {
+                "eventId": "event-0001",
+                "chord": {
+                  "kind": "parsed",
+                  "sourceText": "G7",
+                  "canonicalMarkerText": "G7"
+                },
+                "voicing": {
+                  "mode": "frozen",
+                  "bassPolicy": null
+                },
+                "durationBeats": 1.5
+              }
+            ]
+          }
+        ]
+      },
+      "upstreamScenario": {
+        "realization": "ok",
+        "planCompile": "ok",
+        "export": "ok"
+      },
+      "planSpec": {
+        "documentId": "doc-u7-pre-002",
+        "tempoBpm": 90,
+        "meter": {
+          "beatsPerBar": 6,
+          "beatUnit": 8
+        },
+        "totalTicks": 720,
+        "loop": null,
+        "events": [
+          {
+            "eventId": "event-0000",
+            "ordinal": 0,
+            "startTick": 0,
+            "durationTicks": 360,
+            "gateDurationTicks": 342,
+            "pitches": [
+              {
+                "step": "D",
+                "alter": 0,
+                "octave": 4,
+                "midi": 62
+              },
+              {
+                "step": "F",
+                "alter": 0,
+                "octave": 4,
+                "midi": 65
+              },
+              {
+                "step": "A",
+                "alter": 0,
+                "octave": 4,
+                "midi": 69
+              },
+              {
+                "step": "C",
+                "alter": 0,
+                "octave": 5,
+                "midi": 72
+              }
+            ]
+          },
+          {
+            "eventId": "event-0001",
+            "ordinal": 1,
+            "startTick": 360,
+            "durationTicks": 360,
+            "gateDurationTicks": 342,
+            "pitches": [
+              {
+                "step": "G",
+                "alter": 0,
+                "octave": 3,
+                "midi": 55
+              },
+              {
+                "step": "B",
+                "alter": 0,
+                "octave": 3,
+                "midi": 59
+              },
+              {
+                "step": "D",
+                "alter": 0,
+                "octave": 4,
+                "midi": 62
+              },
+              {
+                "step": "F",
+                "alter": 0,
+                "octave": 4,
+                "midi": 65
+              }
+            ]
+          }
+        ]
+      },
+      "expectedPreview": {
+        "readiness": "ready",
+        "blockers": [],
+        "realization": {
+          "storedManualCount": 0,
+          "storedFrozenCount": 2,
+          "generatedCount": 0,
+          "externalBassEventIds": []
+        },
+        "ppq": 960,
+        "trackCount": 2,
+        "tempoBpm": 90,
+        "meter": {
+          "beatsPerBar": 6,
+          "beatUnit": 8
+        },
+        "derivedMarkers": [
+          {
+            "kind": "section",
+            "eventId": "event-0000",
+            "text": "A"
+          },
+          {
+            "kind": "chord",
+            "eventId": "event-0000",
+            "text": "Dm7"
+          },
+          {
+            "kind": "chord",
+            "eventId": "event-0001",
+            "text": "G7"
+          }
+        ],
+        "losses": [],
+        "markerOmissions": [],
+        "titleNotice": null,
+        "derivedTitle": "Two Five One",
+        "artifact": {
+          "filename": "changes-doc-u7-pre-002.mid",
+          "byteLength": 166,
+          "sha256": "487bce72a4e79fd313b1c8d0f4dbf127f18f37b1fd4615b5a01c2ffbd3b27450",
+          "tempo": {
+            "requestedBpm": 90,
+            "encodedMicrosecondsPerQuarter": 666667,
+            "roundingErrorNumerator": 30,
+            "roundingErrorDenominator": 90
+          },
+          "noteCount": 8,
+          "markerCount": 3
+        }
+      },
+      "traceIds": [
+        "U7-TRACE-PREVIEW",
+        "U7-TRACE-MARKERS",
+        "U7-TRACE-TEMPO",
+        "U7-TRACE-HASH"
+      ],
+      "authorityIds": [
+        "U7-AUTH-E1",
+        "U7-AUTH-P0",
+        "U7-AUTH-DERIVED"
+      ]
+    },
+    {
+      "id": "U7-PRE-003",
+      "summary": "Generated voicing with sharped spellings: enharmonic-spelling loss names the event; the canonical unicode chord marker keeps the spelling.",
+      "scenario": {
+        "documentId": "doc-u7-pre-003",
+        "revision": 5,
+        "title": "Sharp Study",
+        "tempoBpm": 140,
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        },
+        "sections": [
+          {
+            "name": "A",
+            "events": [
+              {
+                "eventId": "event-0000",
+                "chord": {
+                  "kind": "parsed",
+                  "sourceText": "F#7",
+                  "canonicalMarkerText": "F♯7"
+                },
+                "voicing": {
+                  "mode": "auto",
+                  "bassPolicy": "generated"
+                },
+                "durationBeats": 4
+              }
+            ]
+          }
+        ]
+      },
+      "upstreamScenario": {
+        "realization": "ok",
+        "planCompile": "ok",
+        "export": "ok"
+      },
+      "planSpec": {
+        "documentId": "doc-u7-pre-003",
+        "tempoBpm": 140,
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        },
+        "totalTicks": 960,
+        "loop": null,
+        "events": [
+          {
+            "eventId": "event-0000",
+            "ordinal": 0,
+            "startTick": 0,
+            "durationTicks": 960,
+            "gateDurationTicks": 936,
+            "pitches": [
+              {
+                "step": "F",
+                "alter": 1,
+                "octave": 3,
+                "midi": 54
+              },
+              {
+                "step": "A",
+                "alter": 1,
+                "octave": 3,
+                "midi": 58
+              },
+              {
+                "step": "C",
+                "alter": 1,
+                "octave": 4,
+                "midi": 61
+              },
+              {
+                "step": "E",
+                "alter": 0,
+                "octave": 4,
+                "midi": 64
+              }
+            ]
+          }
+        ]
+      },
+      "expectedPreview": {
+        "readiness": "ready",
+        "blockers": [],
+        "realization": {
+          "storedManualCount": 0,
+          "storedFrozenCount": 0,
+          "generatedCount": 1,
+          "externalBassEventIds": []
+        },
+        "ppq": 960,
+        "trackCount": 2,
+        "tempoBpm": 140,
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        },
+        "derivedMarkers": [
+          {
+            "kind": "section",
+            "eventId": "event-0000",
+            "text": "A"
+          },
+          {
+            "kind": "chord",
+            "eventId": "event-0000",
+            "text": "F♯7"
+          }
+        ],
+        "losses": [
+          {
+            "kind": "enharmonic-spelling",
+            "eventIds": [
+              "event-0000"
+            ]
+          }
+        ],
+        "markerOmissions": [],
+        "titleNotice": null,
+        "derivedTitle": "Sharp Study",
+        "artifact": {
+          "filename": "changes-doc-u7-pre-003.mid",
+          "byteLength": 133,
+          "sha256": "ca79eaf8041da942ac6cb5ebbad3236feb8e02acb399db4ee66b833359346bf0",
+          "tempo": {
+            "requestedBpm": 140,
+            "encodedMicrosecondsPerQuarter": 428571,
+            "roundingErrorNumerator": 60,
+            "roundingErrorDenominator": 140
+          },
+          "noteCount": 4,
+          "markerCount": 2
+        }
+      },
+      "traceIds": [
+        "U7-TRACE-PREVIEW",
+        "U7-TRACE-LOSSES",
+        "U7-TRACE-MARKERS",
+        "U7-TRACE-HASH"
+      ],
+      "authorityIds": [
+        "U7-AUTH-E1",
+        "U7-AUTH-P0",
+        "U7-AUTH-T0",
+        "U7-AUTH-DERIVED"
+      ]
+    },
+    {
+      "id": "U7-PRE-004",
+      "summary": "Blocked: the chord resolves but no generated voicing satisfies the event's constraints; the preview names the event and carries the V0 code verbatim.",
+      "scenario": {
+        "documentId": "doc-u7-pre-004",
+        "revision": 2,
+        "title": "Broken Change",
+        "tempoBpm": 120,
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        },
+        "sections": [
+          {
+            "name": "A",
+            "events": [
+              {
+                "eventId": "event-0000",
+                "chord": {
+                  "kind": "parsed",
+                  "sourceText": "C13#11",
+                  "canonicalMarkerText": "C13♯11"
+                },
+                "voicing": {
+                  "mode": "auto",
+                  "bassPolicy": "generated"
+                },
+                "durationBeats": 4
+              }
+            ]
+          }
+        ]
+      },
+      "upstreamScenario": {
+        "realization": "refused",
+        "realizationRefusals": [
+          {
+            "eventId": "event-0000",
+            "code": "voicing.constraints_unsatisfied",
+            "message": "“C13♯11” in bar 1 has no voicing that fits its constraints, so the progression cannot be exported yet."
+          }
+        ],
+        "planCompile": "not-reached",
+        "export": "not-reached"
+      },
+      "planSpec": null,
+      "expectedPreview": {
+        "readiness": "blocked",
+        "blockers": [
+          {
+            "kind": "realization",
+            "code": "voicing.constraints_unsatisfied",
+            "eventId": "event-0000",
+            "message": "“C13♯11” in bar 1 has no voicing that fits its constraints, so the progression cannot be exported yet."
+          }
+        ],
+        "realization": {
+          "storedManualCount": 0,
+          "storedFrozenCount": 0,
+          "generatedCount": 0,
+          "externalBassEventIds": []
+        },
+        "ppq": 960,
+        "trackCount": 2,
+        "tempoBpm": 120,
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        },
+        "derivedMarkers": [],
+        "losses": [],
+        "markerOmissions": [],
+        "titleNotice": null,
+        "derivedTitle": "Broken Change",
+        "artifact": null
+      },
+      "traceIds": [
+        "U7-TRACE-BLOCKED",
+        "U7-TRACE-PREVIEW"
+      ],
+      "authorityIds": [
+        "U7-AUTH-V0",
+        "U7-AUTH-DERIVED"
+      ]
+    },
+    {
+      "id": "U7-PRE-005",
+      "summary": "Blocked: an auto-voiced custom chord has no resolvable symbol, so no binding exists and P0's playback.custom_voicing_missing is named before plan compile.",
+      "scenario": {
+        "documentId": "doc-u7-pre-005",
+        "revision": 4,
+        "title": "Cluster Bar",
+        "tempoBpm": 120,
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        },
+        "sections": [
+          {
+            "name": "A",
+            "events": [
+              {
+                "eventId": "event-0000",
+                "chord": {
+                  "kind": "custom",
+                  "label": "My cluster",
+                  "canonicalMarkerText": "My cluster"
+                },
+                "voicing": {
+                  "mode": "auto",
+                  "bassPolicy": "generated"
+                },
+                "durationBeats": 4
+              }
+            ]
+          }
+        ]
+      },
+      "upstreamScenario": {
+        "realization": "ok-with-unbound-custom",
+        "planCompile": "refused",
+        "planRefusals": [
+          {
+            "eventId": "event-0000",
+            "code": "playback.custom_voicing_missing",
+            "message": "“My cluster” in bar 1 is a custom chord with no voicing to play."
+          }
+        ],
+        "export": "not-reached"
+      },
+      "planSpec": null,
+      "expectedPreview": {
+        "readiness": "blocked",
+        "blockers": [
+          {
+            "kind": "plan",
+            "code": "playback.custom_voicing_missing",
+            "eventId": "event-0000",
+            "message": "“My cluster” in bar 1 is a custom chord with no voicing to play."
+          }
+        ],
+        "realization": {
+          "storedManualCount": 0,
+          "storedFrozenCount": 0,
+          "generatedCount": 0,
+          "externalBassEventIds": []
+        },
+        "ppq": 960,
+        "trackCount": 2,
+        "tempoBpm": 120,
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        },
+        "derivedMarkers": [],
+        "losses": [],
+        "markerOmissions": [],
+        "titleNotice": null,
+        "derivedTitle": "Cluster Bar",
+        "artifact": null
+      },
+      "traceIds": [
+        "U7-TRACE-BLOCKED",
+        "U7-TRACE-PREVIEW"
+      ],
+      "authorityIds": [
+        "U7-AUTH-P0",
+        "U7-AUTH-DERIVED"
+      ]
+    },
+    {
+      "id": "U7-PRE-006",
+      "summary": "Blocked at export: a Manual voicing doubles a unison (legal, never repaired) and E1's duplicate-note law refuses the whole chart with midi.plan_invalid at /plan/events/0/midiPitches — the jcpe-u0mc tension surfaced honestly.",
+      "scenario": {
+        "documentId": "doc-u7-pre-006",
+        "revision": 6,
+        "title": "Doubled Unison",
+        "tempoBpm": 120,
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        },
+        "sections": [
+          {
+            "name": "A",
+            "events": [
+              {
+                "eventId": "event-0000",
+                "chord": {
+                  "kind": "parsed",
+                  "sourceText": "C",
+                  "canonicalMarkerText": "C"
+                },
+                "voicing": {
+                  "mode": "manual",
+                  "bassPolicy": null
+                },
+                "durationBeats": 4
+              }
+            ]
+          }
+        ]
+      },
+      "upstreamScenario": {
+        "realization": "ok",
+        "planCompile": "ok",
+        "export": "refused",
+        "exportRefusal": {
+          "code": "midi.plan_invalid",
+          "path": "/plan/events/0/midiPitches"
+        }
+      },
+      "planSpec": {
+        "documentId": "doc-u7-pre-006",
+        "tempoBpm": 120,
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        },
+        "totalTicks": 960,
+        "loop": null,
+        "events": [
+          {
+            "eventId": "event-0000",
+            "ordinal": 0,
+            "startTick": 0,
+            "durationTicks": 960,
+            "gateDurationTicks": 936,
+            "pitches": [
+              {
+                "step": "E",
+                "alter": 0,
+                "octave": 4,
+                "midi": 64
+              },
+              {
+                "step": "C",
+                "alter": 0,
+                "octave": 4,
+                "midi": 60
+              },
+              {
+                "step": "G",
+                "alter": 0,
+                "octave": 4,
+                "midi": 67
+              },
+              {
+                "step": "E",
+                "alter": 0,
+                "octave": 4,
+                "midi": 64
+              }
+            ]
+          }
+        ]
+      },
+      "expectedPreview": {
+        "readiness": "blocked",
+        "blockers": [
+          {
+            "kind": "export",
+            "code": "midi.plan_invalid",
+            "eventId": "event-0000",
+            "message": "The voicing in bar 1 doubles a unison, and this file format cannot hold two copies of one note in one chord."
+          }
+        ],
+        "realization": {
+          "storedManualCount": 1,
+          "storedFrozenCount": 0,
+          "generatedCount": 0,
+          "externalBassEventIds": []
+        },
+        "ppq": 960,
+        "trackCount": 2,
+        "tempoBpm": 120,
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        },
+        "derivedMarkers": [
+          {
+            "kind": "section",
+            "eventId": "event-0000",
+            "text": "A"
+          },
+          {
+            "kind": "chord",
+            "eventId": "event-0000",
+            "text": "C"
+          }
+        ],
+        "losses": [],
+        "markerOmissions": [],
+        "titleNotice": null,
+        "derivedTitle": "Doubled Unison",
+        "artifact": null
+      },
+      "traceIds": [
+        "U7-TRACE-BLOCKED",
+        "U7-TRACE-EXPORT-REFUSAL",
+        "U7-TRACE-PREVIEW"
+      ],
+      "authorityIds": [
+        "U7-AUTH-E1",
+        "U7-AUTH-DERIVED"
+      ]
+    },
+    {
+      "id": "U7-PRE-007",
+      "summary": "Marker omissions disclosed: a 100-byte section name and a 108-byte custom-chord label are omitted (never truncated); the omitted chord marker surfaces E1's annotation-text loss for that event.",
+      "scenario": {
+        "documentId": "doc-u7-pre-007",
+        "revision": 8,
+        "title": "Long Names",
+        "tempoBpm": 120,
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        },
+        "sections": [
+          {
+            "name": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+            "events": [
+              {
+                "eventId": "event-0000",
+                "chord": {
+                  "kind": "parsed",
+                  "sourceText": "C7",
+                  "canonicalMarkerText": "C7"
+                },
+                "voicing": {
+                  "mode": "manual",
+                  "bassPolicy": null
+                },
+                "durationBeats": 2
+              },
+              {
+                "eventId": "event-0001",
+                "chord": {
+                  "kind": "custom",
+                  "label": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+                  "canonicalMarkerText": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
+                },
+                "voicing": {
+                  "mode": "manual",
+                  "bassPolicy": null
+                },
+                "durationBeats": 2
+              }
+            ]
+          }
+        ]
+      },
+      "upstreamScenario": {
+        "realization": "ok",
+        "planCompile": "ok",
+        "export": "ok"
+      },
+      "planSpec": {
+        "documentId": "doc-u7-pre-007",
+        "tempoBpm": 120,
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        },
+        "totalTicks": 960,
+        "loop": null,
+        "events": [
+          {
+            "eventId": "event-0000",
+            "ordinal": 0,
+            "startTick": 0,
+            "durationTicks": 480,
+            "gateDurationTicks": 468,
+            "pitches": [
+              {
+                "step": "C",
+                "alter": 0,
+                "octave": 4,
+                "midi": 60
+              },
+              {
+                "step": "E",
+                "alter": 0,
+                "octave": 4,
+                "midi": 64
+              }
+            ]
+          },
+          {
+            "eventId": "event-0001",
+            "ordinal": 1,
+            "startTick": 480,
+            "durationTicks": 480,
+            "gateDurationTicks": 468,
+            "pitches": [
+              {
+                "step": "D",
+                "alter": 0,
+                "octave": 4,
+                "midi": 62
+              },
+              {
+                "step": "F",
+                "alter": 0,
+                "octave": 4,
+                "midi": 65
+              }
+            ]
+          }
+        ]
+      },
+      "expectedPreview": {
+        "readiness": "ready",
+        "blockers": [],
+        "realization": {
+          "storedManualCount": 2,
+          "storedFrozenCount": 0,
+          "generatedCount": 0,
+          "externalBassEventIds": []
+        },
+        "ppq": 960,
+        "trackCount": 2,
+        "tempoBpm": 120,
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        },
+        "derivedMarkers": [
+          {
+            "kind": "chord",
+            "eventId": "event-0000",
+            "text": "C7"
+          }
+        ],
+        "losses": [
+          {
+            "kind": "annotation-text",
+            "eventIds": [
+              "event-0001"
+            ]
+          }
+        ],
+        "markerOmissions": [
+          {
+            "eventId": "event-0000",
+            "markerKind": "section",
+            "reason": "text-over-limit",
+            "utf8ByteLength": 100
+          },
+          {
+            "eventId": "event-0001",
+            "markerKind": "chord",
+            "reason": "text-over-limit",
+            "utf8ByteLength": 108
+          }
+        ],
+        "titleNotice": null,
+        "derivedTitle": "Long Names",
+        "artifact": {
+          "filename": "changes-doc-u7-pre-007.mid",
+          "byteLength": 127,
+          "sha256": "ce65f461711aed47238c8fb5bef1cdd3843b00e935e746fc93e816fc776e405c",
+          "tempo": {
+            "requestedBpm": 120,
+            "encodedMicrosecondsPerQuarter": 500000,
+            "roundingErrorNumerator": 0,
+            "roundingErrorDenominator": 120
+          },
+          "noteCount": 4,
+          "markerCount": 1
+        }
+      },
+      "traceIds": [
+        "U7-TRACE-MARKERS",
+        "U7-TRACE-LOSSES",
+        "U7-TRACE-PREVIEW",
+        "U7-TRACE-HASH"
+      ],
+      "authorityIds": [
+        "U7-AUTH-E1",
+        "U7-AUTH-DERIVED"
+      ]
+    },
+    {
+      "id": "U7-PRE-008",
+      "summary": "Title truncation disclosed: a 120-byte title is truncated at a code-point boundary to 96 bytes for the track-name metadata, with the notice carrying the original length.",
+      "scenario": {
+        "documentId": "doc-u7-pre-008",
+        "revision": 9,
+        "title": "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "tempoBpm": 120,
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        },
+        "sections": [
+          {
+            "name": "A",
+            "events": [
+              {
+                "eventId": "event-0000",
+                "chord": {
+                  "kind": "parsed",
+                  "sourceText": "F7",
+                  "canonicalMarkerText": "F7"
+                },
+                "voicing": {
+                  "mode": "manual",
+                  "bassPolicy": null
+                },
+                "durationBeats": 4
+              }
+            ]
+          }
+        ]
+      },
+      "upstreamScenario": {
+        "realization": "ok",
+        "planCompile": "ok",
+        "export": "ok"
+      },
+      "planSpec": {
+        "documentId": "doc-u7-pre-008",
+        "tempoBpm": 120,
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        },
+        "totalTicks": 960,
+        "loop": null,
+        "events": [
+          {
+            "eventId": "event-0000",
+            "ordinal": 0,
+            "startTick": 0,
+            "durationTicks": 960,
+            "gateDurationTicks": 936,
+            "pitches": [
+              {
+                "step": "F",
+                "alter": 0,
+                "octave": 4,
+                "midi": 65
+              },
+              {
+                "step": "A",
+                "alter": 0,
+                "octave": 4,
+                "midi": 69
+              }
+            ]
+          }
+        ]
+      },
+      "expectedPreview": {
+        "readiness": "ready",
+        "blockers": [],
+        "realization": {
+          "storedManualCount": 1,
+          "storedFrozenCount": 0,
+          "generatedCount": 0,
+          "externalBassEventIds": []
+        },
+        "ppq": 960,
+        "trackCount": 2,
+        "tempoBpm": 120,
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        },
+        "derivedMarkers": [
+          {
+            "kind": "section",
+            "eventId": "event-0000",
+            "text": "A"
+          },
+          {
+            "kind": "chord",
+            "eventId": "event-0000",
+            "text": "F7"
+          }
+        ],
+        "losses": [],
+        "markerOmissions": [],
+        "titleNotice": {
+          "kind": "title-truncated",
+          "originalUtf8ByteLength": 120
+        },
+        "derivedTitle": "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "artifact": {
+          "filename": "changes-doc-u7-pre-008.mid",
+          "byteLength": 203,
+          "sha256": "fc6ad08f5c83214be62ff317f439233405543396b6f60ded516b6e3f8b634545",
+          "tempo": {
+            "requestedBpm": 120,
+            "encodedMicrosecondsPerQuarter": 500000,
+            "roundingErrorNumerator": 0,
+            "roundingErrorDenominator": 120
+          },
+          "noteCount": 2,
+          "markerCount": 2
+        }
+      },
+      "traceIds": [
+        "U7-TRACE-TITLE",
+        "U7-TRACE-PREVIEW",
+        "U7-TRACE-HASH"
+      ],
+      "authorityIds": [
+        "U7-AUTH-E1",
+        "U7-AUTH-DERIVED"
+      ]
+    },
+    {
+      "id": "U7-PRE-009",
+      "summary": "External bass disclosed: a rootless auto voicing is realized without a bass note by policy, and the preview names the event so the missing bass line is never a surprise.",
+      "scenario": {
+        "documentId": "doc-u7-pre-009",
+        "revision": 12,
+        "title": "Rootless",
+        "tempoBpm": 120,
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        },
+        "sections": [
+          {
+            "name": "A",
+            "events": [
+              {
+                "eventId": "event-0000",
+                "chord": {
+                  "kind": "parsed",
+                  "sourceText": "C9",
+                  "canonicalMarkerText": "C9"
+                },
+                "voicing": {
+                  "mode": "auto",
+                  "bassPolicy": "external"
+                },
+                "durationBeats": 4
+              }
+            ]
+          }
+        ]
+      },
+      "upstreamScenario": {
+        "realization": "ok",
+        "planCompile": "ok",
+        "export": "ok"
+      },
+      "planSpec": {
+        "documentId": "doc-u7-pre-009",
+        "tempoBpm": 120,
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        },
+        "totalTicks": 960,
+        "loop": null,
+        "events": [
+          {
+            "eventId": "event-0000",
+            "ordinal": 0,
+            "startTick": 0,
+            "durationTicks": 960,
+            "gateDurationTicks": 936,
+            "pitches": [
+              {
+                "step": "E",
+                "alter": 0,
+                "octave": 4,
+                "midi": 64
+              },
+              {
+                "step": "B",
+                "alter": -1,
+                "octave": 4,
+                "midi": 70
+              },
+              {
+                "step": "D",
+                "alter": 0,
+                "octave": 5,
+                "midi": 74
+              }
+            ]
+          }
+        ]
+      },
+      "expectedPreview": {
+        "readiness": "ready",
+        "blockers": [],
+        "realization": {
+          "storedManualCount": 0,
+          "storedFrozenCount": 0,
+          "generatedCount": 1,
+          "externalBassEventIds": [
+            "event-0000"
+          ]
+        },
+        "ppq": 960,
+        "trackCount": 2,
+        "tempoBpm": 120,
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        },
+        "derivedMarkers": [
+          {
+            "kind": "section",
+            "eventId": "event-0000",
+            "text": "A"
+          },
+          {
+            "kind": "chord",
+            "eventId": "event-0000",
+            "text": "C9"
+          }
+        ],
+        "losses": [
+          {
+            "kind": "enharmonic-spelling",
+            "eventIds": [
+              "event-0000"
+            ]
+          }
+        ],
+        "markerOmissions": [],
+        "titleNotice": null,
+        "derivedTitle": "Rootless",
+        "artifact": {
+          "filename": "changes-doc-u7-pre-009.mid",
+          "byteLength": 121,
+          "sha256": "64037a5322435a9f26c7c9c1d00376564d5ce6d75d07d0c59e940cf0c8a3b541",
+          "tempo": {
+            "requestedBpm": 120,
+            "encodedMicrosecondsPerQuarter": 500000,
+            "roundingErrorNumerator": 0,
+            "roundingErrorDenominator": 120
+          },
+          "noteCount": 3,
+          "markerCount": 2
+        }
+      },
+      "traceIds": [
+        "U7-TRACE-BASS",
+        "U7-TRACE-PREVIEW",
+        "U7-TRACE-HASH"
+      ],
+      "authorityIds": [
+        "U7-AUTH-E1",
+        "U7-AUTH-V0",
+        "U7-AUTH-DERIVED"
+      ]
+    },
+    {
+      "id": "U7-PRE-010",
+      "summary": "Blocked: an empty chart has nothing to export; the preview says so plainly instead of producing an empty file.",
+      "scenario": {
+        "documentId": "doc-u7-pre-010",
+        "revision": 1,
+        "title": "Empty Chart",
+        "tempoBpm": 120,
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        },
+        "sections": [
+          {
+            "name": "A",
+            "events": []
+          }
+        ]
+      },
+      "upstreamScenario": {
+        "realization": "ok",
+        "planCompile": "not-reached",
+        "export": "not-reached"
+      },
+      "planSpec": null,
+      "expectedPreview": {
+        "readiness": "blocked",
+        "blockers": [
+          {
+            "kind": "empty-chart",
+            "code": null,
+            "eventId": null,
+            "message": "There are no chords to export yet."
+          }
+        ],
+        "realization": {
+          "storedManualCount": 0,
+          "storedFrozenCount": 0,
+          "generatedCount": 0,
+          "externalBassEventIds": []
+        },
+        "ppq": 960,
+        "trackCount": 2,
+        "tempoBpm": 120,
+        "meter": {
+          "beatsPerBar": 4,
+          "beatUnit": 4
+        },
+        "derivedMarkers": [],
+        "losses": [],
+        "markerOmissions": [],
+        "titleNotice": null,
+        "derivedTitle": "Empty Chart",
+        "artifact": null
+      },
+      "traceIds": [
+        "U7-TRACE-BLOCKED",
+        "U7-TRACE-PREVIEW"
+      ],
+      "authorityIds": [
+        "U7-AUTH-DERIVED"
+      ]
+    }
+  ]
+}

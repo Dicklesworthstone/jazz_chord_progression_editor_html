@@ -1,0 +1,90 @@
+{
+  "schema": "changes.fixtures.u7-midi-export-workflow-provenance-ledger.v1",
+  "fixtureVersion": "1.0.0",
+  "reviewState": "proposed-independent-spec",
+  "expectedValuesGenerated": false,
+  "productionOutputUsedAsOracle": false,
+  "notes": [
+    "Every judgment-bearing expectation in this packet descends from one of these authorities. No expected value was produced by running the production export writer, the production plan compiler, or any future U7 implementation.",
+    "expectedArtifactSha256 method: hand-computed at authoring time (2026-08-08) by an independent Python re-implementation of the E1 byte model that first reproduced all six accepted E1 golden byte strings exactly (E1-GLD-001 through E1-GLD-006), then emitted the U7 case artifacts from the independently authored planSpec and derivation-law inputs. The in-repo validator re-derives every hash a second time with its own TypeScript SMF emitter; agreement of two independent implementations, never production output, is the hash authority."
+  ],
+  "authorities": [
+    {
+      "id": "U7-AUTH-E1",
+      "kind": "accepted-contract",
+      "ref": "docs/E1_MIDI_EXPORT_CONTRACT.md + src/export/midi-export-contract.ts + tests/fixtures/midi-export/ (E1 package, closed)",
+      "scope": "byte model, request/result law, refusal codes and precedence, loss kinds, filename law, text law, limits, object-URL ownership assignment",
+      "judgmentBearing": true
+    },
+    {
+      "id": "U7-AUTH-P0",
+      "kind": "accepted-contract",
+      "ref": "docs/P0_PLAYBACK_PLAN_CONTRACT.md + src/playback/playback-plan-contract.ts (P0 package, closed)",
+      "scope": "plan/event shape, tick arithmetic, realization-binding pins, playback.custom_voicing_missing ownership",
+      "judgmentBearing": true
+    },
+    {
+      "id": "U7-AUTH-T0",
+      "kind": "accepted-contract",
+      "ref": "docs/T0_SYNTAX_CONTRACT.md + src/theory/chord-symbol.ts formatChordSymbol (T0 package, closed)",
+      "scope": "canonical chord-symbol formatting with the unicode accidental style, pinned per event as literal expectations",
+      "judgmentBearing": true
+    },
+    {
+      "id": "U7-AUTH-T1",
+      "kind": "accepted-contract",
+      "ref": "docs/T1_RESOLUTION_CONTRACT.md (T1 package, closed)",
+      "scope": "resolution refusal vocabulary surfaced verbatim in blocked previews",
+      "judgmentBearing": true
+    },
+    {
+      "id": "U7-AUTH-V0",
+      "kind": "accepted-contract",
+      "ref": "docs/V0_VOICING_CONTRACT.md + src/domain/chord.ts AutoBassPolicy (V0 package, closed)",
+      "scope": "bass-policy vocabulary; rootless families require an external bass, so the file carries no bass note for those events",
+      "judgmentBearing": true
+    },
+    {
+      "id": "U7-AUTH-E0",
+      "kind": "accepted-contract",
+      "ref": "docs/E0_INTERCHANGE_CONTRACT.md + src/application/e0-interchange-contract.ts (accepted E0 v1, owner-accepted 2026-07-21)",
+      "scope": "capacity-one preparation registry discipline, delivery outcome idiom, cleanup accounting vocabulary, object-URL ownership",
+      "judgmentBearing": true
+    },
+    {
+      "id": "U7-AUTH-A1",
+      "kind": "accepted-contract",
+      "ref": "src/persistence/recovery-contract.ts RecoveryExportBinding.artifactSha256 (A1 package, closed)",
+      "scope": "raw-bytes SHA-256 lowercase-hex artifact digest precedent",
+      "judgmentBearing": true
+    },
+    {
+      "id": "U7-AUTH-U0",
+      "kind": "accepted-contract",
+      "ref": "docs/ARCHITECTURE.md U0 row + src/ui/ui-contract.ts + src/ui/overlays/ (U0 package, closed)",
+      "scope": "Dialog/SheetDrawer overlay legality, 640px compact breakpoint, focus trap and return, live-region politeness discipline",
+      "judgmentBearing": true
+    },
+    {
+      "id": "U7-AUTH-PLAN",
+      "kind": "reviewed-plan",
+      "ref": "docs/REBUILD_PLAN.md section 16.3 + U7 package bead jcpe-milestone-advanced-craft-ulj.11.1",
+      "scope": "product-level MIDI export requirements: preview identifies unsatisfied voicings and permits cancellation; exact manual/frozen timing at PPQ 960; spelling loss disclosure",
+      "judgmentBearing": true
+    },
+    {
+      "id": "U7-AUTH-DERIVED",
+      "kind": "author-derivation",
+      "ref": "hand derivation with independent literal copies restated inside scripts/validate-u7-contract.ts",
+      "scope": "every derived marker, title, filename, tempo-encoding, loss, blocker, and state-transition expectation in this packet",
+      "judgmentBearing": true
+    },
+    {
+      "id": "U7-AUTH-INDEPENDENCE",
+      "kind": "independence-statement",
+      "ref": "this ledger",
+      "scope": "expectedValuesGenerated false; productionOutputUsedAsOracle false; no production source, test, or build output was consulted for any expected value",
+      "judgmentBearing": false
+    }
+  ]
+}

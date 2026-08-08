@@ -1,0 +1,144 @@
+{
+  "schema": "changes.fixtures.u7-midi-export-workflow-trace-ledger.v1",
+  "fixtureVersion": "1.0.0",
+  "reviewState": "proposed-independent-spec",
+  "expectedValuesGenerated": false,
+  "productionOutputUsedAsOracle": false,
+  "notes": [
+    "Every parent requirement, invariant, and success criterion of the U7 package bead (jcpe-milestone-advanced-craft-ulj.11.1, carrying the reviewed U7 package contract) traces to fixture cases and to the named future U7/build evidence owners. Evidence-owner files are named, not yet written; U7/build must create exactly them.",
+    "lawCoverage links every U7 law to at least one positive and one negative/near-miss case, per the foundation verification discipline."
+  ],
+  "traces": [
+    {
+      "id": "U7-TRACE-PREVIEW",
+      "requirement": "Accessible dialog/sheet with readiness, selected realization, PPQ/tempo/meter/tracks, bass policy, spelling/annotation losses, blocked events, safe filename, deterministic hash, Generate/Download/Cancel and links to unresolved voicings.",
+      "caseIds": ["U7-PRE-001", "U7-PRE-002", "U7-PRE-003", "U7-PRE-004", "U7-PRE-005", "U7-PRE-006", "U7-PRE-007", "U7-PRE-008", "U7-PRE-009", "U7-PRE-010"],
+      "lawIds": ["U7-LAW-PREVIEW-BINDING", "U7-LAW-REALIZATION-SUMMARY", "U7-LAW-BLOCKED-ENUMERATION"],
+      "evidenceOwners": ["tests/unit/u7-midi-export-preview.test.ts", "tests/static/u7-contract.test.ts"]
+    },
+    {
+      "id": "U7-TRACE-MARKERS",
+      "requirement": "Marker derivation: canonical chord symbols and section names, omission-with-disclosure for over-limit/control-character/empty text, never truncation, never blocking.",
+      "caseIds": ["U7-PRE-001", "U7-PRE-002", "U7-PRE-003", "U7-PRE-007", "U7-LIM-001", "U7-LIM-002", "U7-LIM-003", "U7-LIM-007"],
+      "lawIds": ["U7-LAW-DERIVATION-MARKER"],
+      "evidenceOwners": ["tests/unit/u7-midi-export-markers.test.ts", "tests/static/u7-contract.test.ts"]
+    },
+    {
+      "id": "U7-TRACE-TITLE",
+      "requirement": "Title derivation: pinned fallback on control characters, code-point-safe truncation with disclosure over the byte limit, no silent repair.",
+      "caseIds": ["U7-PRE-008", "U7-LIM-004", "U7-LIM-005", "U7-LIM-006"],
+      "lawIds": ["U7-LAW-DERIVATION-TITLE"],
+      "evidenceOwners": ["tests/unit/u7-midi-export-markers.test.ts", "tests/static/u7-contract.test.ts"]
+    },
+    {
+      "id": "U7-TRACE-HASH",
+      "requirement": "Deterministic hash: lowercase-hex SHA-256 of the exact SMF bytes disclosed at preview and identical at download; hash-port failure refuses with u7.hash_unavailable.",
+      "caseIds": ["U7-PRE-001", "U7-PRE-002", "U7-PRE-003", "U7-PRE-007", "U7-PRE-008", "U7-PRE-009", "U7-STA-005"],
+      "lawIds": ["U7-LAW-ARTIFACT-HASH", "U7-LAW-DETERMINISTIC-BYTES"],
+      "evidenceOwners": ["tests/unit/u7-midi-export-artifact.test.ts", "tests/static/u7-contract.test.ts"]
+    },
+    {
+      "id": "U7-TRACE-TEMPO",
+      "requirement": "Exact tempo disclosure: requested BPM, encoded microseconds per quarter, and the rational rounding-error pair mirrored from the E1 report.",
+      "caseIds": ["U7-PRE-002", "U7-PRE-003"],
+      "lawIds": ["U7-LAW-LOSS-MIRROR"],
+      "evidenceOwners": ["tests/unit/u7-midi-export-artifact.test.ts"]
+    },
+    {
+      "id": "U7-TRACE-LOSSES",
+      "requirement": "Loss mirroring: enharmonic-spelling and annotation-text rows with event links; the loop-range loss can never appear because U7 exports loop=null (whole chart), pinned as a stated invariant.",
+      "caseIds": ["U7-PRE-001", "U7-PRE-003", "U7-PRE-007", "U7-PRE-009"],
+      "lawIds": ["U7-LAW-LOSS-MIRROR"],
+      "evidenceOwners": ["tests/unit/u7-midi-export-preview.test.ts"]
+    },
+    {
+      "id": "U7-TRACE-BASS",
+      "requirement": "External-bass disclosure: events whose bass policy is external carry no bass note in the file; the preview names them (the external-bass E2E row).",
+      "caseIds": ["U7-PRE-009"],
+      "lawIds": ["U7-LAW-REALIZATION-SUMMARY"],
+      "evidenceOwners": ["tests/unit/u7-midi-export-preview.test.ts", "tests/e2e/u7-midi-export-workflow.spec.ts"]
+    },
+    {
+      "id": "U7-TRACE-BLOCKED",
+      "requirement": "Blocked enumeration: every unresolved voicing, plan refusal, export refusal, and the empty chart named with a chart link; Generate refuses while blocked.",
+      "caseIds": ["U7-PRE-004", "U7-PRE-005", "U7-PRE-006", "U7-PRE-010", "U7-STA-002", "U7-STA-008"],
+      "lawIds": ["U7-LAW-BLOCKED-ENUMERATION"],
+      "evidenceOwners": ["tests/unit/u7-midi-export-preview.test.ts", "tests/e2e/u7-midi-export-workflow.spec.ts"]
+    },
+    {
+      "id": "U7-TRACE-EXPORT-REFUSAL",
+      "requirement": "The Manual unison-doubling tension (jcpe-u0mc) surfaces as a blocked preview carrying midi.plan_invalid with the event link recovered from the E1 refusal path; the file is never partially written.",
+      "caseIds": ["U7-PRE-006"],
+      "lawIds": ["U7-LAW-BLOCKED-ENUMERATION"],
+      "evidenceOwners": ["tests/unit/u7-midi-export-preview.test.ts"]
+    },
+    {
+      "id": "U7-TRACE-STATE",
+      "requirement": "Dialog state machine: idle/preview-open/generating/ready/delivering/delivered with cancel or close from every non-delivering open state and no affordance while delivering.",
+      "caseIds": ["U7-STA-001", "U7-STA-006", "U7-STA-009", "U7-STA-012", "U7-STA-013", "U7-STA-014", "U7-STA-015", "U7-STA-016", "U7-STA-019", "U7-STA-023"],
+      "lawIds": ["U7-LAW-STATE-MACHINE"],
+      "evidenceOwners": ["tests/unit/u7-midi-export-state.test.ts", "tests/e2e/u7-midi-export-workflow.spec.ts"]
+    },
+    {
+      "id": "U7-TRACE-STALE",
+      "requirement": "Generate only the current validated revision: staleness detected at generate and at take is the u7.revision_stale outcome with the artifact abandoned, never a silent re-read.",
+      "caseIds": ["U7-STA-007", "U7-STA-010", "U7-STA-017", "U7-STA-018"],
+      "lawIds": ["U7-LAW-PREVIEW-BINDING", "U7-LAW-STATE-MACHINE"],
+      "evidenceOwners": ["tests/unit/u7-midi-export-state.test.ts", "tests/e2e/u7-midi-export-workflow.spec.ts"]
+    },
+    {
+      "id": "U7-TRACE-REGISTRY",
+      "requirement": "Capacity-one single-use preparation registry mirroring accepted E0 v1 discipline: conflict, missing, second-take, and abandonment semantics exact.",
+      "caseIds": ["U7-STA-004", "U7-STA-008", "U7-STA-011", "U7-LIM-008"],
+      "lawIds": ["U7-LAW-REGISTRY-DISCIPLINE"],
+      "evidenceOwners": ["tests/unit/u7-midi-export-state.test.ts"]
+    },
+    {
+      "id": "U7-TRACE-DELIVERY",
+      "requirement": "Object-URL download under a user gesture with total cleanup accounting: handed-off never claims disk persistence; activation failure and cleanup failure are typed outcomes.",
+      "caseIds": ["U7-STA-009", "U7-STA-020", "U7-STA-021", "U7-STA-022"],
+      "lawIds": ["U7-LAW-DELIVERY-CLEANUP"],
+      "evidenceOwners": ["tests/unit/u7-midi-export-delivery.test.ts", "tests/e2e/u7-midi-export-workflow.spec.ts"]
+    },
+    {
+      "id": "U7-TRACE-NONCLAIMS",
+      "requirement": "Invariants: never advance the canonical export marker, never call recovery Save, never auto-fix voicings, never download stale bytes, never require a pointer; cancellation/failure updates no document or export marker.",
+      "caseIds": ["U7-STA-012", "U7-STA-013", "U7-STA-014", "U7-STA-021", "U7-STA-022"],
+      "lawIds": ["U7-LAW-NO-EXPORT-MARKER", "U7-LAW-NO-RECOVERY-SAVE", "U7-LAW-NO-VOICING-REPAIR"],
+      "evidenceOwners": ["tests/static/u7-contract.test.ts", "tests/e2e/u7-midi-export-workflow.spec.ts"]
+    },
+    {
+      "id": "U7-TRACE-A11Y",
+      "requirement": "Accessibility: dialog at/above the 640px compact breakpoint, sheet below; keyboard, screen-reader announcements, focus trap and return; 320px, 200% zoom, forced-colors evidence in the E2E matrix.",
+      "caseIds": ["U7-LIM-009"],
+      "lawIds": ["U7-LAW-ACCESSIBILITY-MATRIX"],
+      "evidenceOwners": ["tests/e2e/u7-midi-export-workflow.spec.ts", "tests/static/u7-contract.test.ts"]
+    },
+    {
+      "id": "U7-TRACE-WORK",
+      "requirement": "Deterministic work bounds: events-visited, markers-derived, and bytes-hashed counters inherited from upstream caps; the excess refusal is a failsafe, never a musical cutoff.",
+      "caseIds": ["U7-STA-024", "U7-LIM-007"],
+      "lawIds": ["U7-LAW-WORK-BOUND"],
+      "evidenceOwners": ["tests/unit/u7-midi-export-preview.test.ts"]
+    }
+  ],
+  "lawCoverage": [
+    { "lawId": "U7-LAW-PREVIEW-BINDING", "positive": ["U7-PRE-001", "U7-STA-006"], "negative": ["U7-STA-007", "U7-STA-010"] },
+    { "lawId": "U7-LAW-DERIVATION-MARKER", "positive": ["U7-PRE-001", "U7-PRE-002"], "negative": ["U7-PRE-007", "U7-LIM-002", "U7-LIM-003"] },
+    { "lawId": "U7-LAW-DERIVATION-TITLE", "positive": ["U7-PRE-001", "U7-LIM-004"], "negative": ["U7-PRE-008", "U7-LIM-005", "U7-LIM-006"] },
+    { "lawId": "U7-LAW-DERIVATION-REQUEST-ID", "positive": ["U7-PRE-001"], "negative": ["U7-LIM-008"] },
+    { "lawId": "U7-LAW-REALIZATION-SUMMARY", "positive": ["U7-PRE-001", "U7-PRE-009"], "negative": ["U7-PRE-004"] },
+    { "lawId": "U7-LAW-BLOCKED-ENUMERATION", "positive": ["U7-PRE-001"], "negative": ["U7-PRE-004", "U7-PRE-005", "U7-PRE-006", "U7-PRE-010"] },
+    { "lawId": "U7-LAW-LOSS-MIRROR", "positive": ["U7-PRE-003", "U7-PRE-007"], "negative": ["U7-PRE-002"] },
+    { "lawId": "U7-LAW-ARTIFACT-HASH", "positive": ["U7-PRE-001"], "negative": ["U7-STA-005"] },
+    { "lawId": "U7-LAW-DETERMINISTIC-BYTES", "positive": ["U7-PRE-001", "U7-PRE-002"], "negative": ["U7-STA-007"] },
+    { "lawId": "U7-LAW-STATE-MACHINE", "positive": ["U7-STA-001", "U7-STA-009"], "negative": ["U7-STA-023"] },
+    { "lawId": "U7-LAW-REGISTRY-DISCIPLINE", "positive": ["U7-STA-001", "U7-STA-009"], "negative": ["U7-STA-004", "U7-STA-011"] },
+    { "lawId": "U7-LAW-DELIVERY-CLEANUP", "positive": ["U7-STA-009", "U7-STA-020"], "negative": ["U7-STA-021", "U7-STA-022"] },
+    { "lawId": "U7-LAW-NO-EXPORT-MARKER", "positive": ["U7-STA-009"], "negative": ["U7-STA-022"] },
+    { "lawId": "U7-LAW-NO-RECOVERY-SAVE", "positive": ["U7-STA-009"], "negative": ["U7-STA-021"] },
+    { "lawId": "U7-LAW-NO-VOICING-REPAIR", "positive": ["U7-PRE-001"], "negative": ["U7-PRE-006"] },
+    { "lawId": "U7-LAW-ACCESSIBILITY-MATRIX", "positive": ["U7-LIM-009"], "negative": ["U7-STA-023"] },
+    { "lawId": "U7-LAW-WORK-BOUND", "positive": ["U7-PRE-001"], "negative": ["U7-STA-024"] }
+  ]
+}
