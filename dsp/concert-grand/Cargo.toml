@@ -15,7 +15,11 @@ crate-type = ["cdylib", "rlib"]
 libm = "0.2"
 
 [profile.release]
-opt-level = 3
+# O2 is both smaller and faster for this export-heavy no_std WASM after the
+# pinned Binaryen -Oz pass. O3 over-inlines the physical renderers: on the
+# four-note PLK2 browser chord it produced 158842 bytes / 39.05 ms versus
+# 147002 bytes / 28.55 ms at O2, with byte-identical PCM.
+opt-level = 2
 lto = "fat"
 codegen-units = 1
 panic = "abort"
