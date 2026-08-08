@@ -246,12 +246,19 @@ pub struct TrumpetParameters {
     pub wall_loss_relaxation_hz: f64,
     pub nonlinear_coefficient: f64,
     pub valve_transition_energy_gain: f64,
-    /// Round-5 pressure schedule: the embouchure knee tightens as mouth
-    /// pressure rises above the mp reference, so the servo's allowed mean
-    /// opening SHRINKS with dynamics (real embouchure: louder playing drives
-    /// the lips deeper into closure). Exponent on (p/p_ref); 0 = legacy
-    /// pressure-blind knee.
-    pub servo_pressure_knee_exponent: f64,
+    /// Round-5 pressure-compensated embouchure: fraction [0,3] of the
+    /// EXCESS static blow-open force (area x (p - p_ref)+) canceled by a
+    /// constant closing bias, modeling the player firming the embouchure as
+    /// dynamics rise. Fractions above one deliberately overshoot: the rest
+    /// point is driven INTO closure as pressure rises, so the oscillation
+    /// clips against lip contact and the source becomes the bright pulse
+    /// train a real ff embouchure produces (measured: with fraction <= 1 the
+    /// lips never close at any dynamic and modulation depth collapses). Acts at the force-balance root so the mean opening —
+    /// and with it the flow-modulation depth — no longer collapses toward a
+    /// sinusoidal source at forte. 0 = legacy pressure-blind embouchure.
+    /// (The measured knee-exponent schedule was inert at every swept value
+    /// and was replaced by this form; sweep evidence on the bead.)
+    pub embouchure_pressure_compensation: f64,
     /// Round-5 pressure schedule for the closure-grazing ride point: the
     /// grazing target scales by (p/p_ref)^-exponent so the closure fraction
     /// RISES with dynamics instead of being clamped flat. 0 = legacy.
@@ -296,7 +303,7 @@ impl TrumpetParameters {
             nonlinear_coefficient: 1.2015,
             valve_transition_energy_gain: 1.0,
             // Neutral until the round-5 sweep freezes measured values.
-            servo_pressure_knee_exponent: 0.0,
+            embouchure_pressure_compensation: 0.0,
             servo_pressure_closure_exponent: 0.0,
             oversample_factor: OVERSAMPLE_FACTOR,
         }
@@ -336,9 +343,9 @@ impl TrumpetParameters {
             || self.wall_loss_relaxation_hz <= 0.0
             || !self.nonlinear_coefficient.is_finite()
             || self.nonlinear_coefficient < 0.0
-            || !self.servo_pressure_knee_exponent.is_finite()
-            || self.servo_pressure_knee_exponent < 0.0
-            || self.servo_pressure_knee_exponent > 2.0
+            || !self.embouchure_pressure_compensation.is_finite()
+            || self.embouchure_pressure_compensation < 0.0
+            || self.embouchure_pressure_compensation > 3.0
             || !self.servo_pressure_closure_exponent.is_finite()
             || self.servo_pressure_closure_exponent < 0.0
             || self.servo_pressure_closure_exponent > 2.0
@@ -1387,6 +1394,18 @@ impl TrumpetModel {
     }
 
     #[must_use]
+    /// Round-5 measurement probe: (normal displacement, tracked displacement
+    /// mean, tracked oscillation mean). Diagnostic-only; the aperture is
+    /// `controls.equilibrium_opening_m + 2 * normal displacement`.
+    #[must_use]
+    pub fn lip_probe_m(&self) -> (f64, f64, f64) {
+        (
+            self.lip_displacement_m,
+            self.lip_displacement_mean_m,
+            self.lip_oscillation_mean_m,
+        )
+    }
+
     pub fn last_lip_report(&self) -> LipSolveReport {
         self.last_lip_report
     }
@@ -1972,11 +1991,21 @@ impl TrumpetModel {
          */
         let pressure_factor =
             (controls.mouth_pressure_pa / LIP_SERVO_PRESSURE_REF_PA).max(1.0);
-        let knee_m = LIP_EMBOUCHURE_KNEE_M
-            * pow(pressure_factor, -self.parameters.servo_pressure_knee_exponent);
-        let excess_m = (self.lip_displacement_mean_m - knee_m).max(0.0);
+        let excess_m = (self.lip_displacement_mean_m - LIP_EMBOUCHURE_KNEE_M).max(0.0);
         let knee_force_n =
             mechanics.normal_stiffness_n_m * LIP_EMBOUCHURE_SERVO_GAIN * excess_m;
+        /*
+         * Pressure-compensated embouchure: cancel a frozen fraction of the
+         * EXCESS static blow-open force with a constant closing bias. This
+         * is the player's firming embouchure — it holds the mean opening
+         * (and therefore the flow-modulation depth) as dynamics rise,
+         * instead of letting the source collapse toward a sinusoid. It is
+         * control-constant within the sample so the Newton solve sees a
+         * fixed offset, not a new state coupling.
+         */
+        let embouchure_compensation_force_n = self.parameters.lip_effective_area_m2
+            * (controls.mouth_pressure_pa - LIP_SERVO_PRESSURE_REF_PA).max(0.0)
+            * self.parameters.embouchure_pressure_compensation;
         let grazing_target_m = LIP_CLOSURE_GRAZING_RATIO
             * pow(pressure_factor, -self.parameters.servo_pressure_closure_exponent)
             * ((PI / 2.0) * self.lip_oscillation_mean_m
@@ -1987,7 +2016,8 @@ impl TrumpetModel {
             * LIP_CLOSURE_GRAZING_GAIN
             * engagement
             * grazing_excess_m;
-        let embouchure_servo_force_n = knee_force_n + grazing_force_n;
+        let embouchure_servo_force_n =
+            knee_force_n + grazing_force_n + embouchure_compensation_force_n;
         let normal_displacement_predictor_m = self.lip_displacement_m
             + dt * self.lip_velocity_m_s
             + dt * dt * (0.5 - beta) * self.lip_acceleration_m_s2;
