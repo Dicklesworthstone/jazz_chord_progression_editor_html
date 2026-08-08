@@ -156,7 +156,7 @@ pub fn plk2_cubic_reconstruct(source: &[f32], destination: &mut [f32], divisor: 
 fn plk2_bridge_patch_area_m2(pack_index: i32) -> f64 {
     match pack_index {
         PLK2_ARCHTOP_PACK => 1.2e-3,
-        PLK2_DREADNOUGHT_PACK => 1.5e-3,
+        PLK2_DREADNOUGHT_PACK => 0.75e-3,
         /* The reviewed ukulele analytic body already carries its compact
          * bridge field; it does not need the guitar DKT patch. */
         PLK2_UKULELE_PACK => 0.0,
@@ -178,7 +178,7 @@ fn plk2_listener_trim(pack_index: i32) -> f64 {
         PLK2_ARCHTOP_PACK => 80.0,
         PLK2_MARSHALL_ELECTRIC_PACK => 40.0,
         PLK2_DREADNOUGHT_PACK => 73.0,
-        PLK2_UKULELE_PACK => 80.5,
+        PLK2_UKULELE_PACK => 81.6,
         PLK2_UPRIGHT_BASS_PACK => 82.0,
         _ => 0.0,
     };
