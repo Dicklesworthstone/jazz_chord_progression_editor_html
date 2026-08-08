@@ -91,6 +91,9 @@ const LIP_EMBOUCHURE_KNEE_M: f64 = 1.2e-3;
 const LIP_CLOSURE_GRAZING_RATIO: f64 = 0.985;
 const LIP_CLOSURE_GRAZING_GAIN: f64 = 1.7;
 const LIP_GRAZING_ENGAGE_M: f64 = 1.0e-4;
+/// The mp mouth-pressure reference for the round-5 embouchure schedule; the
+/// schedule is inert at or below this pressure.
+const LIP_SERVO_PRESSURE_REF_PA: f64 = 5_500.0;
 const LIP_CONTINUATION_SUBSTEPS: usize = 4;
 const LIP_TIME_SUBDIVISION_TIERS: [usize; 3] = [2, 4, 8];
 

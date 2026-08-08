@@ -334,7 +334,7 @@ describe("U7 reviewed MIDI-export-workflow contract", () => {
 
   test("the proposed packet is sealed: no production consumer exists", () => {
     const importPattern =
-      /(?:import|export)\s[^"']*["'][^"']*u7-midi-export-workflow-contract["']|require\([^"']*u7-midi-export-workflow-contract/;
+      /(?:from\s+|import\s*\(\s*|require\s*\(\s*)["'][^"']*u7-midi-export-workflow-contract(?:\.ts)?["']/;
     for (const path of srcFiles) {
       if (path.endsWith("u7-midi-export-workflow-contract.ts")) continue;
       const source = readFileSync(path, "utf8");
