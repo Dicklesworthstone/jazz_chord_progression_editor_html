@@ -35,7 +35,7 @@ const PI: f64 = core::f64::consts::PI;
 /// Frozen PHS5 spatial work bound. At 1.47 m, 48 conservative sections retain
 /// a spatial Nyquist limit near 5.6 kHz: sufficient for the checked 2.6 kHz
 /// centroid while keeping the reviewed deterministic state bound.
-pub const BORE_CELLS: usize = 48;
+pub const BORE_CELLS: usize = 96;
 /// The nonlinear propagation and lip/bore coupling run at this factor.
 pub const OVERSAMPLE_FACTOR: usize = 4;
 const ANTI_ALIAS_SECTIONS: usize = 6;
@@ -114,6 +114,20 @@ const LIP_GRAZING_ENGAGE_M: f64 = 1.0e-4;
 // In-sample continuation budget for the lip Newton solve; see
 // `solve_lip_cup_with_continuation`.
 const LIP_CONTINUATION_SUBSTEPS: u32 = 4;
+
+/// Three-band viscothermal wall-loss memory, hybridized 2026-08-08 from the
+/// staged external model (trumpet_v3_staging.rs) per the round-8 order: the
+/// single-relaxation pole under-damps exactly the high-frequency band where
+/// MC-limited steepening fronts live, which is why minmod's numerical
+/// dissipation had to stand in for missing physics (round-3/4 diagnosis).
+/// Ratios span the boundary-layer sqrt(f) family log-spaced about the
+/// canonical relaxation; normalized strengths were calibrated on the staging
+/// bore against the Table-II measured peak magnitudes and are re-verified by
+/// this bore's fixture test after the port.
+const WALL_LOSS_POLES: usize = 3;
+const WALL_LOSS_FREQUENCY_RATIOS: [f64; WALL_LOSS_POLES] = [0.06, 1.0, 16.0];
+const WALL_LOSS_NORMALIZED_STRENGTHS: [f64; WALL_LOSS_POLES] = [0.55, 0.62, 3.16];
+const WALL_LOSS_REFERENCE_RADIUS_M: f64 = 6.0e-3;
 
 /// The eight reviewed trumpet-bore station endpoints: axial position (m) and
 /// radius (m), at 20 C.
@@ -267,8 +281,8 @@ impl TrumpetParameters {
             // residual broadband loss. The pair is calibrated once against
             // Adachi-Sato Table II, not against a rendered output spectrum.
             bore_loss_per_second: 14.3,
-            wall_loss_strength_per_second: 6.8,
-            wall_loss_relaxation_hz: 150.0,
+            wall_loss_strength_per_second: 34.0,
+            wall_loss_relaxation_hz: 500.0,
             // beta=(gamma+1)/2 for air with gamma=1.403.
             nonlinear_coefficient: 1.2015,
             valve_transition_energy_gain: 1.0,
@@ -863,11 +877,20 @@ pub struct TrumpetModel {
     internal_sample_rate_hz: f64,
     parameters: TrumpetParameters,
     pressure_pa: [f64; BORE_CELLS],
-    pressure_wall_memory_pa: [f64; BORE_CELLS],
+    pressure_wall_memory_pa: [[f64; WALL_LOSS_POLES]; BORE_CELLS],
     outgoing_characteristic_mean_pa: [f64; BORE_CELLS],
     incoming_characteristic_mean_pa: [f64; BORE_CELLS],
     volume_flow_m3_s: [f64; BORE_CELLS + 1],
-    flow_wall_memory_m3_s: [f64; BORE_CELLS + 1],
+    flow_wall_memory_m3_s: [[f64; WALL_LOSS_POLES]; BORE_CELLS + 1],
+    cell_wall_strength_per_second: [[f64; WALL_LOSS_POLES]; BORE_CELLS],
+    face_wall_strength_per_second: [[f64; WALL_LOSS_POLES]; BORE_CELLS + 1],
+    cell_wall_coordinate_decay: [f64; BORE_CELLS],
+    cell_wall_memory_drive: [[f64; WALL_LOSS_POLES]; BORE_CELLS],
+    face_wall_coordinate_decay: [f64; BORE_CELLS + 1],
+    face_wall_memory_drive: [[f64; WALL_LOSS_POLES]; BORE_CELLS + 1],
+    wall_pole_omega_rad_s: [f64; WALL_LOSS_POLES],
+    wall_pole_state_multiplier: [f64; WALL_LOSS_POLES],
+    wall_pole_coordinate_multiplier: [f64; WALL_LOSS_POLES],
     base_cell_length_m: [f64; BORE_CELLS],
     cell_length_m: [f64; BORE_CELLS],
     cell_area_m2: [f64; BORE_CELLS],
@@ -951,16 +974,86 @@ impl TrumpetModel {
         base_cell_length_m[BORE_CELLS - 1] = OPEN_LENGTH_M * AXIAL_END_CORRECTION_SCALE
             - base_cell_length_m[..BORE_CELLS - 1].iter().sum::<f64>();
         let cell_length_m = base_cell_length_m;
+        // Three-band wall-loss precomputation (fixed internal dt): per-pole
+        // trapezoidal integrator coefficients plus boundary-layer radius
+        // scaling (loss ~ 1/r) referenced to the 6 mm canonical radius.
+        let internal_step_seconds = 1.0 / internal_sample_rate_hz;
+        let mut wall_pole_omega_rad_s = [0.0; WALL_LOSS_POLES];
+        let mut wall_pole_denominator_inverse = [0.0; WALL_LOSS_POLES];
+        let mut wall_pole_state_multiplier = [0.0; WALL_LOSS_POLES];
+        let mut wall_pole_coordinate_multiplier = [0.0; WALL_LOSS_POLES];
+        for pole in 0..WALL_LOSS_POLES {
+            let omega = 2.0
+                * PI
+                * parameters.wall_loss_relaxation_hz
+                * WALL_LOSS_FREQUENCY_RATIOS[pole];
+            let half_step_omega = 0.5 * internal_step_seconds * omega;
+            wall_pole_omega_rad_s[pole] = omega;
+            wall_pole_denominator_inverse[pole] = 1.0 / (1.0 + half_step_omega);
+            wall_pole_state_multiplier[pole] =
+                (1.0 - half_step_omega) * wall_pole_denominator_inverse[pole];
+            wall_pole_coordinate_multiplier[pole] =
+                half_step_omega * wall_pole_denominator_inverse[pole];
+        }
+        let mut cell_wall_strength_per_second = [[0.0; WALL_LOSS_POLES]; BORE_CELLS];
+        let mut cell_wall_coordinate_decay = [1.0; BORE_CELLS];
+        let mut cell_wall_memory_drive = [[0.0; WALL_LOSS_POLES]; BORE_CELLS];
+        for cell in 0..BORE_CELLS {
+            let radius_m = sqrt(cell_area_m2[cell] / PI);
+            let scale = WALL_LOSS_REFERENCE_RADIUS_M / radius_m;
+            for pole in 0..WALL_LOSS_POLES {
+                cell_wall_strength_per_second[cell][pole] = parameters
+                    .wall_loss_strength_per_second
+                    * WALL_LOSS_NORMALIZED_STRENGTHS[pole]
+                    * scale;
+            }
+            let (decay, drive) = discrete_wall_loss_coefficients(
+                cell_wall_strength_per_second[cell],
+                wall_pole_denominator_inverse,
+                internal_step_seconds,
+            );
+            cell_wall_coordinate_decay[cell] = decay;
+            cell_wall_memory_drive[cell] = drive;
+        }
+        let mut face_wall_strength_per_second = [[0.0; WALL_LOSS_POLES]; BORE_CELLS + 1];
+        let mut face_wall_coordinate_decay = [1.0; BORE_CELLS + 1];
+        let mut face_wall_memory_drive = [[0.0; WALL_LOSS_POLES]; BORE_CELLS + 1];
+        for face in 1..BORE_CELLS {
+            let radius_m = sqrt(face_area_m2[face] / PI);
+            let scale = WALL_LOSS_REFERENCE_RADIUS_M / radius_m;
+            for pole in 0..WALL_LOSS_POLES {
+                face_wall_strength_per_second[face][pole] = parameters
+                    .wall_loss_strength_per_second
+                    * WALL_LOSS_NORMALIZED_STRENGTHS[pole]
+                    * scale;
+            }
+            let (decay, drive) = discrete_wall_loss_coefficients(
+                face_wall_strength_per_second[face],
+                wall_pole_denominator_inverse,
+                internal_step_seconds,
+            );
+            face_wall_coordinate_decay[face] = decay;
+            face_wall_memory_drive[face] = drive;
+        }
         Ok(Self {
             output_sample_rate_hz,
             internal_sample_rate_hz,
             parameters,
             pressure_pa: [0.0; BORE_CELLS],
-            pressure_wall_memory_pa: [0.0; BORE_CELLS],
+            pressure_wall_memory_pa: [[0.0; WALL_LOSS_POLES]; BORE_CELLS],
             outgoing_characteristic_mean_pa: [0.0; BORE_CELLS],
             incoming_characteristic_mean_pa: [0.0; BORE_CELLS],
             volume_flow_m3_s: [0.0; BORE_CELLS + 1],
-            flow_wall_memory_m3_s: [0.0; BORE_CELLS + 1],
+            flow_wall_memory_m3_s: [[0.0; WALL_LOSS_POLES]; BORE_CELLS + 1],
+            cell_wall_strength_per_second,
+            face_wall_strength_per_second,
+            cell_wall_coordinate_decay,
+            cell_wall_memory_drive,
+            face_wall_coordinate_decay,
+            face_wall_memory_drive,
+            wall_pole_omega_rad_s,
+            wall_pole_state_multiplier,
+            wall_pole_coordinate_multiplier,
             base_cell_length_m,
             cell_length_m,
             cell_area_m2,
@@ -1145,19 +1238,25 @@ impl TrumpetModel {
             let volume = self.cell_area_m2[cell] * self.cell_length_m[cell];
             let compliance = volume / (AIR_DENSITY_KG_M3 * SOUND_SPEED_M_S * SOUND_SPEED_M_S);
             energy += 0.5 * compliance * self.pressure_pa[cell] * self.pressure_pa[cell];
-            energy += 0.5 * compliance * self.parameters.wall_loss_strength_per_second
-                / (2.0 * PI * self.parameters.wall_loss_relaxation_hz)
-                * self.pressure_wall_memory_pa[cell]
-                * self.pressure_wall_memory_pa[cell];
+            for pole in 0..WALL_LOSS_POLES {
+                energy += 0.5 * compliance
+                    * self.cell_wall_strength_per_second[cell][pole]
+                    / self.wall_pole_omega_rad_s[pole]
+                    * self.pressure_wall_memory_pa[cell][pole]
+                    * self.pressure_wall_memory_pa[cell][pole];
+            }
         }
         for face in 1..BORE_CELLS {
             let dx = 0.5 * (self.cell_length_m[face - 1] + self.cell_length_m[face]);
             let inertance = AIR_DENSITY_KG_M3 * dx / self.face_area_m2[face];
             energy += 0.5 * inertance * self.volume_flow_m3_s[face].powi(2);
-            energy += 0.5 * inertance * self.parameters.wall_loss_strength_per_second
-                / (2.0 * PI * self.parameters.wall_loss_relaxation_hz)
-                * self.flow_wall_memory_m3_s[face]
-                * self.flow_wall_memory_m3_s[face];
+            for pole in 0..WALL_LOSS_POLES {
+                energy += 0.5 * inertance
+                    * self.face_wall_strength_per_second[face][pole]
+                    / self.wall_pole_omega_rad_s[pole]
+                    * self.flow_wall_memory_m3_s[face][pole]
+                    * self.flow_wall_memory_m3_s[face][pole];
+            }
         }
         // Storage for Z(s)=R*s/(s+w): E=R*q^2/(2w).
         energy += self.bell_resistance_pa_s_m3 * self.bell_memory_flow_m3_s.powi(2)
@@ -1190,12 +1289,13 @@ impl TrumpetModel {
                 -self.face_area_m2[face] * pressure_gradient / (AIR_DENSITY_KG_M3 * dx);
             self.volume_flow_m3_s[face] =
                 damping * (self.volume_flow_m3_s[face] + dt * acceleration);
-            apply_exact_wall_loss_step(
+            apply_coupled_wall_loss_step(
                 &mut self.volume_flow_m3_s[face],
                 &mut self.flow_wall_memory_m3_s[face],
-                self.parameters.wall_loss_strength_per_second,
-                2.0 * PI * self.parameters.wall_loss_relaxation_hz,
-                dt,
+                self.face_wall_coordinate_decay[face],
+                self.face_wall_memory_drive[face],
+                self.wall_pole_state_multiplier,
+                self.wall_pole_coordinate_multiplier,
             );
         }
         self.volume_flow_m3_s[0] = self.throat_flow_m3_s;
@@ -1223,16 +1323,18 @@ impl TrumpetModel {
             *next = damping * self.pressure_pa[cell] - dt * compliance_inverse * divergence;
         }
         self.apply_tvd_nonlinearity(&mut next_pressure, dt);
-        for (pressure, memory) in next_pressure
+        for (cell, (pressure, memory)) in next_pressure
             .iter_mut()
             .zip(self.pressure_wall_memory_pa.iter_mut())
+            .enumerate()
         {
-            apply_exact_wall_loss_step(
+            apply_coupled_wall_loss_step(
                 pressure,
                 memory,
-                self.parameters.wall_loss_strength_per_second,
-                2.0 * PI * self.parameters.wall_loss_relaxation_hz,
-                dt,
+                self.cell_wall_coordinate_decay[cell],
+                self.cell_wall_memory_drive[cell],
+                self.wall_pole_state_multiplier,
+                self.wall_pole_coordinate_multiplier,
             );
         }
         self.pressure_pa = next_pressure;
@@ -1267,7 +1369,9 @@ impl TrumpetModel {
                     * self.parameters.valve_transition_energy_gain,
             );
             self.pressure_pa[cell] *= scale;
-            self.pressure_wall_memory_pa[cell] *= scale;
+            for pole in 0..WALL_LOSS_POLES {
+                self.pressure_wall_memory_pa[cell][pole] *= scale;
+            }
             self.outgoing_characteristic_mean_pa[cell] *= scale;
             self.incoming_characteristic_mean_pa[cell] *= scale;
         }
@@ -1276,7 +1380,9 @@ impl TrumpetModel {
             let new_dx = 0.5 * (self.cell_length_m[face - 1] + self.cell_length_m[face]);
             let scale = sqrt(old_dx / new_dx * self.parameters.valve_transition_energy_gain);
             self.volume_flow_m3_s[face] *= scale;
-            self.flow_wall_memory_m3_s[face] *= scale;
+            for pole in 0..WALL_LOSS_POLES {
+                self.flow_wall_memory_m3_s[face][pole] *= scale;
+            }
         }
     }
 
@@ -1867,7 +1973,7 @@ impl TrumpetModel {
             && self
                 .pressure_wall_memory_pa
                 .iter()
-                .all(|value| value.is_finite())
+                .all(|poles| poles.iter().all(|value| value.is_finite()))
             && self
                 .outgoing_characteristic_mean_pa
                 .iter()
@@ -1880,7 +1986,7 @@ impl TrumpetModel {
             && self
                 .flow_wall_memory_m3_s
                 .iter()
-                .all(|value| value.is_finite())
+                .all(|poles| poles.iter().all(|value| value.is_finite()))
             && self.cup_pressure_pa.is_finite()
             && self.previous_mouth_pressure_pa.is_finite()
             && self.previous_equilibrium_opening_m.is_finite()
@@ -1986,21 +2092,50 @@ struct ComplexValue {
     imaginary: f64,
 }
 
-fn apply_exact_wall_loss_step(
-    coordinate: &mut f64,
-    memory: &mut f64,
-    strength_per_second: f64,
-    relaxation_rad_s: f64,
+/// Trapezoidal (Tustin) discretization of the coupled three-band relaxation.
+/// Each pole individually satisfies the passive single-relaxation law proven
+/// by `passive_wall_loss_balance`; the aggregate coordinate decay couples the
+/// bands so the implicit step stays unconditionally stable at any strength.
+/// Ported from the staged external model (round-8 hybridization).
+fn discrete_wall_loss_coefficients(
+    strengths_per_second: [f64; WALL_LOSS_POLES],
+    pole_denominator_inverse: [f64; WALL_LOSS_POLES],
     step_seconds: f64,
-) {
-    if strength_per_second == 0.0 {
-        return;
+) -> (f64, [f64; WALL_LOSS_POLES]) {
+    let mut effective_strength = [0.0; WALL_LOSS_POLES];
+    let mut aggregate_strength = 0.0;
+    for pole in 0..WALL_LOSS_POLES {
+        effective_strength[pole] = strengths_per_second[pole] * pole_denominator_inverse[pole];
+        aggregate_strength += effective_strength[pole];
     }
-    let sum = strength_per_second + relaxation_rad_s;
-    let invariant = relaxation_rad_s * *coordinate + strength_per_second * *memory;
-    let difference = (*coordinate - *memory) * exp(-sum * step_seconds);
-    *coordinate = (invariant + strength_per_second * difference) / sum;
-    *memory = (invariant - relaxation_rad_s * difference) / sum;
+    let denominator_inverse = 1.0 / (1.0 + 0.5 * step_seconds * aggregate_strength);
+    let coordinate_decay = (1.0 - 0.5 * step_seconds * aggregate_strength) * denominator_inverse;
+    let mut memory_drive = [0.0; WALL_LOSS_POLES];
+    for pole in 0..WALL_LOSS_POLES {
+        memory_drive[pole] = step_seconds * effective_strength[pole] * denominator_inverse;
+    }
+    (coordinate_decay, memory_drive)
+}
+
+fn apply_coupled_wall_loss_step(
+    coordinate: &mut f64,
+    memory: &mut [f64; WALL_LOSS_POLES],
+    coordinate_decay: f64,
+    memory_drive: [f64; WALL_LOSS_POLES],
+    pole_state_multiplier: [f64; WALL_LOSS_POLES],
+    pole_coordinate_multiplier: [f64; WALL_LOSS_POLES],
+) {
+    let old_coordinate = *coordinate;
+    let mut new_coordinate = coordinate_decay * old_coordinate;
+    for pole in 0..WALL_LOSS_POLES {
+        new_coordinate += memory_drive[pole] * memory[pole];
+    }
+    let coordinate_sum = old_coordinate + new_coordinate;
+    for pole in 0..WALL_LOSS_POLES {
+        memory[pole] = pole_state_multiplier[pole] * memory[pole]
+            + pole_coordinate_multiplier[pole] * coordinate_sum;
+    }
+    *coordinate = new_coordinate;
 }
 
 impl ComplexValue {
@@ -2189,7 +2324,8 @@ fn nonlinear_characteristic_euler(
         // limiter without that loss physics trades a centroid gain for a
         // solver wall at 12 kPa (measured: LipSolveDidNotConverge frame 14915
         // even with time-subdivided continuation).
-        slopes[cell] = minmod(state[cell] - state[cell - 1], state[cell + 1] - state[cell]);
+        slopes[cell] =
+            monotonized_central(state[cell] - state[cell - 1], state[cell + 1] - state[cell]);
     }
     let positive_flux = |value: f64| positive_coefficient * value * value;
     let godunov_flux = |left: f64, right: f64| {
