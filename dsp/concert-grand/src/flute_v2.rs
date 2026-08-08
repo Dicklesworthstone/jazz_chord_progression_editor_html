@@ -579,6 +579,17 @@ fn target_mouth_pressure_pa_for_center(
         5.9
     } else if fingering.register_harmonic >= 4 {
         4.82
+    } else if fingering.register_harmonic == 2
+        && fingering.openness.iter().all(|openness| *openness == 0.0)
+    {
+        // All-closed second register (C5/m72 only): the fully sealed column
+        // gives the jet the least shunt support of any register-2 fingering,
+        // and the measured regime sits on a bistable boundary (pp HNR at the
+        // gate edge, mf flipping to the sub-octave; dossier on bead
+        // jcpe-winds-quality-triangulation-drga). Entering the speaking
+        // region from above with a stronger convective phase keeps the
+        // second-register attractor dominant across dynamics.
+        5.05 /* sweep */
     } else if fingering.register_harmonic == 2 {
         4.96
     } else {
