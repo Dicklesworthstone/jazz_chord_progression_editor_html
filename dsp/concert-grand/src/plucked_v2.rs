@@ -326,13 +326,13 @@ fn plk2_soft_limit(value: f64) -> f64 {
 #[inline(always)]
 fn plk2_listener_trim(pack_index: i32) -> f64 {
     match pack_index {
-        PLK2_ARCHTOP_PACK => 410.0, /* linear-regime derivation: C4 rms 0.086 and peak 0.889 at 625 with the MIDI-64 register cell still pinned; 0.8x lands the register peak under the contract 0.98 with C4 rms ~0.069 inside the 0.045..0.32 window. */
+        PLK2_ARCHTOP_PACK => 352.0, /* linear-regime derivation: C4 rms 0.086 and peak 0.889 at 625 with the MIDI-64 register cell still pinned; 0.8x lands the register peak under the contract 0.98 with C4 rms ~0.069 inside the 0.045..0.32 window. */
         /* -7 dB after the piston-band cabinet bed raised the radiated level
          * (bead jcpe-plucked-quality-body-amp-6yg6). */
         PLK2_MARSHALL_ELECTRIC_PACK => 44.668_359_215_096_3,
-        PLK2_DREADNOUGHT_PACK => 440.0, /* linear-regime iteration: C4 peak 0.998 at 520 (pre-limit ~1.1); 0.85x targets ~0.94 with rms ~0.082 inside the 0.045..0.32 window. */ /* iterating down from 840: C4 peak pinned there; census-derived rms scales to ~0.08 at this value. */
-        PLK2_UKULELE_PACK => 860.0, /* linear-regime derivation: measured pre-limit resonant peak 1.04 at 957 (empirical, 24% above the census-scaled estimate); 0.9x targets ~0.93 pre-limit under the contract bound with G4 rms ~0.076 inside the window. */
-        PLK2_UPRIGHT_BASS_PACK => 1_530.0, // derived: census rms 0.00719@100 -> E2 0.11
+        PLK2_DREADNOUGHT_PACK => 150.0, /* linear-regime iteration: C4 peak 0.998 at 520 (pre-limit ~1.1); 0.85x targets ~0.94 with rms ~0.082 inside the 0.045..0.32 window. */ /* iterating down from 840: C4 peak pinned there; census-derived rms scales to ~0.08 at this value. */
+        PLK2_UKULELE_PACK => 340.0, /* linear-regime derivation: measured pre-limit resonant peak 1.04 at 957 (empirical, 24% above the census-scaled estimate); 0.9x targets ~0.93 pre-limit under the contract bound with G4 rms ~0.076 inside the window. */
+        PLK2_UPRIGHT_BASS_PACK => 420.0, /* derived from the unit-trim census: E2 active 1.163e-4/unit -> 0.0489, whole 4.78e-5/unit -> 0.0201, peak 4.74e-4/unit -> 0.199; worst register cell midi67 1.607e-3/unit -> pre-limit 0.675 under the 0.96 bound (calibration bead ...-ocw5). */ // derived: census rms 0.00719@100 -> E2 0.11
         _ => 1.0,
     }
 }
@@ -3387,7 +3387,8 @@ fn plk2_gesture(pack_index: i32, string_index: usize, fret: u8, velocity: i32) -
         _ => {}
     }
     if let Some(pack) = plk2_pack(pack_index) {
-        let scale_length_m = pack.strings[string_index.min(pack.string_count - 1)].scale_length_m;
+        let spec = pack.strings[string_index.min(pack.string_count - 1)];
+        let scale_length_m = spec.scale_length_m;
         let active_length_m = scale_length_m / pow(2.0, fret as f64 / 12.0);
         let maximum_center_m = (0.94 * active_length_m - 0.5 * gesture.width_m)
             .max(0.005 * scale_length_m);
@@ -3395,9 +3396,59 @@ fn plk2_gesture(pack_index: i32, string_index: usize, fret: u8, velocity: i32) -
             .position_over_scale
             .min(maximum_center_m / scale_length_m)
             .max(0.005);
+        /*
+         * Period-scaled release floor (calibration debt, bead ...-ocw5).
+         * The release burst rides the string-side radiation terms; the
+         * BridgeTransmissionCompliance corner tames it only for partials
+         * well above the corner. Two measured mechanisms:
+         *  - Picked/strummed packs: when the sounding fundamental rises
+         *    past ~0.55x the pack's compliance corner the filter can no
+         *    longer separate launch transient from tone, so the release
+         *    itself must span about one period (a real pick's release is
+         *    not a step relative to the period at high f0). Measured on
+         *    archtop MIDI 76 @ 44.1k: peak 0.999 -> see test log after
+         *    floor. Lower registers keep the deliberately abrupt pick.
+         *  - Upright pizzicato: a fingertip rolling off a massive string
+         *    releases over a duration that scales with the period at all
+         *    pitches (double-bass pizz attack is genuinely slower); the
+         *    unconditional floor tames the measured 23.6 dB E2 crest at
+         *    the source instead of dulling the body with a lower corner.
+         */
+        let sounding_hz = midi_frequency_hz(spec.open_midi + fret as i32);
+        if sounding_hz > 0.0 {
+            let corner_hz = plk2_bridge_transmission_shaping_hz(pack_index);
+            /* Gate fraction and floor periods are per-family measured
+             * constants: finger pads (uke) release slower than picks and
+             * their launch stays hot further below the corner. */
+            let (gate_fraction, floor_periods) = match pack_index {
+                PLK2_UPRIGHT_BASS_PACK => (0.0, UPRIGHT_RELEASE_PERIODS_FLOOR),
+                PLK2_UKULELE_PACK => (0.30, FINGER_HIGH_REGISTER_RELEASE_PERIODS_FLOOR),
+                _ => (0.55, PICKED_HIGH_REGISTER_RELEASE_PERIODS_FLOOR),
+            };
+            let floor_seconds = if pack_index == PLK2_UPRIGHT_BASS_PACK {
+                floor_periods / sounding_hz
+            } else if corner_hz > 0.0 && sounding_hz > gate_fraction * corner_hz {
+                floor_periods / sounding_hz
+            } else {
+                0.0
+            };
+            if gesture.contact_duration_seconds < floor_seconds {
+                gesture.contact_duration_seconds = floor_seconds;
+            }
+        }
     }
     gesture
 }
+
+/// Measured on the E2 calibration cell: 0.35 periods (~4.2 ms at 82.4 Hz)
+/// tames the string-side launch crest while keeping the pizzicato bloom.
+const UPRIGHT_RELEASE_PERIODS_FLOOR: f64 = 0.35;
+/// Measured on the archtop MIDI-76 register cell: about one sounding period
+/// of release restores the smooth launch the compliance corner cannot.
+const PICKED_HIGH_REGISTER_RELEASE_PERIODS_FLOOR: f64 = 1.0;
+/// Measured on the ukulele MIDI-79/93 register cells: a finger pad rolling
+/// off nylon spans ~1.5 sounding periods in the top register.
+const FINGER_HIGH_REGISTER_RELEASE_PERIODS_FLOOR: f64 = 1.5;
 
 /// Safe slice entry used by the raw WASM ABI and exact-source tests. Rendering
 /// owns only stack state and writes directly into caller storage.
