@@ -26,6 +26,21 @@ use crate::midi_frequency_hz;
 
 const AIR_DENSITY_KG_PER_M3: f64 = 1.2041;
 const SOUND_SPEED_M_PER_S: f64 = 343.21;
+
+/// Measured residual intonation calibration (2026-08-07, bead
+/// jcpe-winds-quality-triangulation-drga). Per-note cents by which the pure
+/// geometric model rendered sharp(+)/flat(-) at mf, measured end-to-end with
+/// the triangulation harness against 12TET (fit domain exactly MIDI 60..=96,
+/// clamped outside). Physically this is the player lipping each note into
+/// tune; numerically the pull scales one effective sound speed per note so
+/// bore delays, mode targets, and the impedance scan all move together and
+/// cannot disagree. Zeros mean "geometry already true for that note".
+const RESIDUAL_PULL_CENTS: [f64; 37] = [0.0; 37];
+
+fn tuned_sound_speed(midi: i32) -> f64 {
+    let index = (midi - 60).clamp(0, 36) as usize;
+    SOUND_SPEED_M_PER_S * libm::exp2(-RESIDUAL_PULL_CENTS[index] / 1_200.0)
+}
 const EMB_CHANNEL_TO_EDGE_M: f64 = 0.010;
 const EMB_JET_HALF_WIDTH_M: f64 = 0.0005;
 const EMB_HOLE_RADIUS_M: f64 = 0.006;
@@ -255,7 +270,7 @@ fn bore_radius_at(position_m: f64) -> f64 {
     SECTION_RADIUS_M[SEGMENTS - 1]
 }
 
-fn segment_layout(sample_rate: f64) -> Option<SegmentLayout> {
+fn segment_layout(sample_rate: f64, speed_m_per_s: f64) -> Option<SegmentLayout> {
     if !(8_000.0..=MAX_SAMPLE_RATE_HZ).contains(&sample_rate) {
         return None;
     }
@@ -268,7 +283,7 @@ fn segment_layout(sample_rate: f64) -> Option<SegmentLayout> {
     let mut total = 0usize;
     for segment in 0..SEGMENTS {
         let distance_m = PATH_END_M[segment] - start_m;
-        let delay = distance_m * sample_rate / SOUND_SPEED_M_PER_S;
+        let delay = distance_m * sample_rate / speed_m_per_s;
         if !delay.is_finite() || delay < 1.0 {
             return None;
         }
@@ -286,7 +301,7 @@ fn segment_layout(sample_rate: f64) -> Option<SegmentLayout> {
         let midpoint = 0.5 * (start_m + PATH_END_M[segment]);
         let radius = bore_radius_at(midpoint);
         let area = core::f64::consts::PI * radius * radius;
-        admittances[segment] = area / (AIR_DENSITY_KG_PER_M3 * SOUND_SPEED_M_PER_S);
+        admittances[segment] = area / (AIR_DENSITY_KG_PER_M3 * speed_m_per_s);
         total = next_total;
         start_m = PATH_END_M[segment];
     }
@@ -340,7 +355,7 @@ fn fingering_for_midi(midi: i32) -> Option<Fingering> {
     })
 }
 
-fn geometry_fundamental_hz(fingering: Fingering) -> f64 {
+fn geometry_fundamental_hz(fingering: Fingering, speed_m_per_s: f64) -> f64 {
     let first_vent = fingering
         .openness
         .iter()
@@ -361,15 +376,15 @@ fn geometry_fundamental_hz(fingering: Fingering) -> f64 {
             downstream - openness * (downstream - position)
         }
     });
-    SOUND_SPEED_M_PER_S / (2.0 * (effective_length + EMB_END_CORRECTION_M))
+    speed_m_per_s / (2.0 * (effective_length + EMB_END_CORRECTION_M))
 }
 
-fn bore_input_impedance_magnitude(fingering: Fingering, frequency_hz: f64) -> Option<f64> {
+fn bore_input_impedance_magnitude(fingering: Fingering, frequency_hz: f64, speed_m_per_s: f64) -> Option<f64> {
     if !frequency_hz.is_finite() || frequency_hz <= 0.0 {
         return None;
     }
     let omega = TAU * frequency_hz;
-    let wave_number = omega / SOUND_SPEED_M_PER_S;
+    let wave_number = omega / speed_m_per_s;
     let foot_radius = bore_radius_at(0.5 * (PATH_END_M[SEGMENTS - 2] + BORE_LENGTH_M));
     let foot_area = core::f64::consts::PI * foot_radius * foot_radius;
     let foot_characteristic = AIR_DENSITY_KG_PER_M3 * SOUND_SPEED_M_PER_S / foot_area;
@@ -436,14 +451,14 @@ fn bore_input_impedance_magnitude(fingering: Fingering, frequency_hz: f64) -> Op
     magnitude.is_finite().then_some(magnitude)
 }
 
-fn solved_register_center_hz(fingering: Fingering) -> Option<f64> {
-    let mut previous = bore_input_impedance_magnitude(fingering, MODE_SCAN_START_HZ)?;
+fn solved_register_center_hz(fingering: Fingering, speed_m_per_s: f64) -> Option<f64> {
+    let mut previous = bore_input_impedance_magnitude(fingering, MODE_SCAN_START_HZ, speed_m_per_s)?;
     let mut current_frequency = MODE_SCAN_START_HZ + MODE_SCAN_STEP_HZ;
-    let mut current = bore_input_impedance_magnitude(fingering, current_frequency)?;
+    let mut current = bore_input_impedance_magnitude(fingering, current_frequency, speed_m_per_s)?;
     let mut found = 0usize;
     for _ in 2..=MODE_SCAN_STEPS {
         let next_frequency = current_frequency + MODE_SCAN_STEP_HZ;
-        let next = bore_input_impedance_magnitude(fingering, next_frequency)?;
+        let next = bore_input_impedance_magnitude(fingering, next_frequency, speed_m_per_s)?;
         if current < previous && current < next {
             found += 1;
             if found == fingering.resonance_index {
@@ -463,13 +478,13 @@ fn solved_register_center_hz(fingering: Fingering) -> Option<f64> {
     None
 }
 
-fn register_center_hz(fingering: Fingering) -> f64 {
+fn register_center_hz(fingering: Fingering, speed_m_per_s: f64) -> f64 {
     if fingering.register_harmonic >= 4 {
-        solved_register_center_hz(fingering).unwrap_or_else(|| {
-            geometry_fundamental_hz(fingering) * fingering.register_harmonic as f64
+        solved_register_center_hz(fingering, speed_m_per_s).unwrap_or_else(|| {
+            geometry_fundamental_hz(fingering, speed_m_per_s) * fingering.register_harmonic as f64
         })
     } else {
-        geometry_fundamental_hz(fingering) * fingering.register_harmonic as f64
+        geometry_fundamental_hz(fingering, speed_m_per_s) * fingering.register_harmonic as f64
     }
 }
 
@@ -931,7 +946,8 @@ fn render_with_storage(
     {
         return 0;
     }
-    let Some(layout) = segment_layout(sample_rate as f64) else {
+    let speed_m_per_s = tuned_sound_speed(midi);
+    let Some(layout) = segment_layout(sample_rate as f64, speed_m_per_s) else {
         return 0;
     };
     let Some(fingering) = fingering_for_midi(midi) else {
@@ -954,7 +970,7 @@ fn render_with_storage(
     let mut writes = [0usize; SEGMENTS];
     let mut next_writes = [0usize; SEGMENTS];
     let sr = sample_rate as f64;
-    let register_center_hz = register_center_hz(fingering);
+    let register_center_hz = register_center_hz(fingering, speed_m_per_s);
     let target_pressure =
         target_mouth_pressure_pa_for_center(velocity, fingering, register_center_hz);
     let attack_seconds = if state_input.is_some() {
@@ -1045,7 +1061,7 @@ fn render_with_storage(
     let feedback_highpass_hz = if fingering.register_harmonic == 1 {
         70.0
     } else {
-        geometry_fundamental_hz(fingering) * (fingering.register_harmonic as f64 - 0.75)
+        geometry_fundamental_hz(fingering, speed_m_per_s) * (fingering.register_harmonic as f64 - 0.75)
     };
     let feedback_dc_pole = exp(-TAU * feedback_highpass_hz / sr);
     // A free jet does not amplify every acoustic perturbation equally.  Its
@@ -1359,7 +1375,9 @@ fn render_with_storage(
 
 #[no_mangle]
 pub extern "C" fn flt2_note_frames(midi: i32, sample_rate: f32) -> i32 {
-    if fingering_for_midi(midi).is_none() || segment_layout(sample_rate as f64).is_none() {
+    if fingering_for_midi(midi).is_none()
+        || segment_layout(sample_rate as f64, tuned_sound_speed(midi)).is_none()
+    {
         return 0;
     }
     (CAP_SECONDS * sample_rate as f64) as i32
