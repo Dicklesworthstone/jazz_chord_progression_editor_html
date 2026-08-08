@@ -62,14 +62,18 @@ impl ClarinetBore<'_> {
     fn mouth_return(&self) -> f64 {
         match self {
             Self::Legacy(delay) => delay.output(),
-            Self::Segmented { current, one_way, .. } => current[*one_way],
+            Self::Segmented {
+                current, one_way, ..
+            } => current[*one_way],
         }
     }
 
     fn bell_incident(&self) -> f64 {
         match self {
             Self::Legacy(delay) => delay.output(),
-            Self::Segmented { current, one_way, .. } => current[*one_way - 1],
+            Self::Segmented {
+                current, one_way, ..
+            } => current[*one_way - 1],
         }
     }
 
@@ -94,7 +98,11 @@ impl ClarinetBore<'_> {
                 delay.push(mouth_input);
                 (delay.output(), [0.0; 6], 0.0)
             }
-            Self::Segmented { current, next, one_way } => {
+            Self::Segmented {
+                current,
+                next,
+                one_way,
+            } => {
                 let n = *one_way;
                 next[0] = mouth_input;
                 next[n + n - 1] = bell_reflection;
@@ -138,7 +146,9 @@ impl ClarinetBore<'_> {
     fn state_parts(&self) -> (&[f64], usize) {
         match self {
             Self::Legacy(delay) => (delay.storage(), delay.write_index()),
-            Self::Segmented { current, one_way, .. } => (&current[..2 * *one_way], 0),
+            Self::Segmented {
+                current, one_way, ..
+            } => (&current[..2 * *one_way], 0),
         }
     }
 }
@@ -370,98 +380,98 @@ const CLR_SOUND_SPEED_M_PER_S: f64 = crate::clarinet_v2_parameters::PARAMETERS[1
 /// outside). Applied as a scale on the note's target f0 - the single seam
 /// every v2 delay and corner derives from.
 const CLR_RESIDUAL_PULL_CENTS: [f64; 40] = [
-        -0.1, // m50
-        -0.7, // m51
-        -7.9, // m52
-        -0.9, // m53
-        -0.3, // m54
-        -0.2, // m55
-        -6.5, // m56
-        0.1, // m57
-        0.4, // m58
-        0.7, // m59
-        0.9, // m60
-        1.4, // m61
-        1.7, // m62
-        1.5, // m63
-        -4.0, // m64
-        -2.2, // m65
-        2.8, // m66
-        3.5, // m67
-        -8.9, // m68
-        -0.4, // m69
-        -0.1, // m70
-        -1.1, // m71
-        -0.7, // m72
-        0.1, // m73
-        0.5, // m74
-        0.5, // m75
-        1.7, // m76
-        -1.9, // m77
-        2.2, // m78
-        -5.6, // m79
-        1.3, // m80
-        -3.7, // m81
-        -1.7, // m82
-        0.8, // m83
-        3.0, // m84
-        0.3, // m85
-        -1.9, // m86
-        -2.1, // m87
-        -0.1, // m88
-        -1.4, // m89
+    -0.1, // m50
+    -0.7, // m51
+    -7.9, // m52
+    -0.9, // m53
+    -0.3, // m54
+    -0.2, // m55
+    -6.5, // m56
+    0.1,  // m57
+    0.4,  // m58
+    0.7,  // m59
+    0.9,  // m60
+    1.4,  // m61
+    1.7,  // m62
+    1.5,  // m63
+    -4.0, // m64
+    -2.2, // m65
+    2.8,  // m66
+    3.5,  // m67
+    -8.9, // m68
+    -0.4, // m69
+    -0.1, // m70
+    -1.1, // m71
+    -0.7, // m72
+    0.1,  // m73
+    0.5,  // m74
+    0.5,  // m75
+    1.7,  // m76
+    -1.9, // m77
+    2.2,  // m78
+    -5.6, // m79
+    1.3,  // m80
+    -3.7, // m81
+    -1.7, // m82
+    0.8,  // m83
+    3.0,  // m84
+    0.3,  // m85
+    -1.9, // m86
+    -2.1, // m87
+    -0.1, // m88
+    -1.4, // m89
 ];
 
 /// Per-note rate slope of the residual (cents per log2 of rate/48k),
 /// fitted from tri-rate measurement alongside the 48 kHz table.
 const CLR_RESIDUAL_RATE_SLOPE_CENTS: [f64; 40] = [
-        2.1, // m50
-        2.3, // m51
-        2.6, // m52
-        2.6, // m53
-        2.8, // m54
-        3.0, // m55
-        3.4, // m56
-        3.4, // m57
-        3.6, // m58
-        3.8, // m59
-        4.1, // m60
-        3.6, // m61
-        3.1, // m62
-        2.7, // m63
-        2.6, // m64
-        1.9, // m65
-        -4.2, // m66
-        -4.9, // m67
-        1.1, // m68
-        0.1, // m69
-        -0.2, // m70
-        -0.5, // m71
-        -0.8, // m72
-        -1.0, // m73
-        -1.3, // m74
-        -1.6, // m75
-        -0.6, // m76
-        -1.9, // m77
-        -1.6, // m78
-        -1.4, // m79
-        -0.4, // m80
-        -0.6, // m81
-        0.6, // m82
-        2.2, // m83
-        3.5, // m84
-        2.9, // m85
-        2.3, // m86
-        3.2, // m87
-        4.1, // m88
-        5.1, // m89
+    2.1,  // m50
+    2.3,  // m51
+    2.6,  // m52
+    2.6,  // m53
+    2.8,  // m54
+    3.0,  // m55
+    3.4,  // m56
+    3.4,  // m57
+    3.6,  // m58
+    3.8,  // m59
+    4.1,  // m60
+    3.6,  // m61
+    3.1,  // m62
+    2.7,  // m63
+    2.6,  // m64
+    1.9,  // m65
+    -4.2, // m66
+    -4.9, // m67
+    1.1,  // m68
+    0.1,  // m69
+    -0.2, // m70
+    -0.5, // m71
+    -0.8, // m72
+    -1.0, // m73
+    -1.3, // m74
+    -1.6, // m75
+    -0.6, // m76
+    -1.9, // m77
+    -1.6, // m78
+    -1.4, // m79
+    -0.4, // m80
+    -0.6, // m81
+    0.6,  // m82
+    2.2,  // m83
+    3.5,  // m84
+    2.9,  // m85
+    2.3,  // m86
+    3.2,  // m87
+    4.1,  // m88
+    5.1,  // m89
 ];
 
 fn clr_residual_pull_scale(midi: i32, sample_rate: f32) -> f64 {
     let index = (midi - 50).clamp(0, 39) as usize;
     let rate_octaves = libm::log2(sample_rate as f64 / 48_000.0);
-    let cents = CLR_RESIDUAL_PULL_CENTS[index]
-        + CLR_RESIDUAL_RATE_SLOPE_CENTS[index] * rate_octaves;
+    let cents =
+        CLR_RESIDUAL_PULL_CENTS[index] + CLR_RESIDUAL_RATE_SLOPE_CENTS[index] * rate_octaves;
     libm::exp2(-cents / 1_200.0)
 }
 const CLR_BORE_RADIUS_M: f64 = crate::clarinet_v2_parameters::PARAMETERS[2].2;
@@ -796,14 +806,12 @@ fn clr_render_inner(
     /* The fork-fingering pocket (66..67) joins the oversampled regime:
      * its shunt-lattice drive at full band pressure folds measurably at
      * 44.1 kHz (alias fixture, 2026-08-07) just like the top register. */
-    let simulation_oversample = if dynamic_reed
-        && (midi >= 84 || (66..=67).contains(&midi))
-        && sample_rate <= 48_000.0
-    {
-        2usize
-    } else {
-        1usize
-    };
+    let simulation_oversample =
+        if dynamic_reed && (midi >= 84 || (66..=67).contains(&midi)) && sample_rate <= 48_000.0 {
+            2usize
+        } else {
+            1usize
+        };
     let Some(frames) = output_frames.checked_mul(simulation_oversample) else {
         return 0;
     };
@@ -867,9 +875,8 @@ fn clr_render_inner(
          * +7..+9 cents sharp at 96 kHz only (48/44.1 kHz stay inside the
          * gate), so the clarion-top slope regains part of what the base
          * shape removes there. Measured, not derived. */
-        let clarion_top_96k = 0.16
-            * ((m - 79.0) / 4.0).clamp(0.0, 1.0)
-            * ((89.0 - m) / 3.0).clamp(0.0, 1.0);
+        let clarion_top_96k =
+            0.16 * ((m - 79.0) / 4.0).clamp(0.0, 1.0) * ((89.0 - m) / 3.0).clamp(0.0, 1.0);
         (rate_slope + clarion_top_96k)
             * (mc - 60.0).max(0.0)
             * (sample_rate as f64 / 48_000.0 - 1.0)
@@ -882,12 +889,10 @@ fn clr_render_inner(
      * monolithic-loop correction. Residuals at MIDI 52/64/76/84 are inside
      * the independent +/-20-cent gate at the supported build rate. */
     let dynamic_reed_pull = if dynamic_reed {
-        let middle_register = 17.0
-            * ((m - 52.0) / 13.0).clamp(0.0, 1.0)
-            * ((76.0 - m) / 11.0).clamp(0.0, 1.0);
-        let clarion_shoulder = 11.0
-            * ((m - 64.0) / 4.0).clamp(0.0, 1.0)
-            * ((76.0 - m) / 5.0).clamp(0.0, 1.0);
+        let middle_register =
+            17.0 * ((m - 52.0) / 13.0).clamp(0.0, 1.0) * ((76.0 - m) / 11.0).clamp(0.0, 1.0);
+        let clarion_shoulder =
+            11.0 * ((m - 64.0) / 4.0).clamp(0.0, 1.0) * ((76.0 - m) / 5.0).clamp(0.0, 1.0);
         let upper_fraction = ((m - 76.0) / 7.0).clamp(0.0, 1.0);
         let oversampled_upper = if simulation_oversample == 2 {
             20.0 * upper_fraction * upper_fraction
@@ -901,9 +906,8 @@ fn clr_render_inner(
          * cents) and a flat altissimo top at 89 (44.1/48 kHz). Both are
          * corrected here where the other register terms live; the shapes
          * plateau over the measured pocket and vanish outside it. */
-        let band_pocket = -6.0
-            * ((m - 66.0) / 3.0).clamp(0.0, 1.0)
-            * ((79.0 - m) / 3.0).clamp(0.0, 1.0);
+        let band_pocket =
+            -6.0 * ((m - 66.0) / 3.0).clamp(0.0, 1.0) * ((79.0 - m) / 3.0).clamp(0.0, 1.0);
         let altissimo_top = -5.0 * ((m - 86.0) / 3.0).clamp(0.0, 1.0);
         -7.0 - 32.0 * ((m - 52.0) / 12.0).clamp(0.0, 1.0)
             - 15.0 * ((m - 64.0) / 12.0).clamp(0.0, 1.0)
@@ -921,8 +925,7 @@ fn clr_render_inner(
      * impedance pocket. Keep it in the fractional delay, where a player-like
      * pressure-dependent bore-length correction belongs, rather than moving
      * the oscillator after rendering. */
-    let four_hole_pitch_gate =
-        (1.0 - (open_hole_count - 4.0).abs()).clamp(0.0, 1.0);
+    let four_hole_pitch_gate = (1.0 - (open_hole_count - 4.0).abs()).clamp(0.0, 1.0);
     let mezzo_pitch_gate = (1.0 - (v_norm - 0.56).abs() / 0.20).clamp(0.0, 1.0);
     let pressure_pitch_pull = if dynamic_reed {
         10.0 * four_hole_pitch_gate * mezzo_pitch_gate
@@ -1191,9 +1194,7 @@ fn clr_render_inner(
         } else {
             0.002
         };
-        let loud_release_extension = if (60.0..=64.0).contains(&m)
-            || (82.0..=86.0).contains(&m)
-        {
+        let loud_release_extension = if (60.0..=64.0).contains(&m) || (82.0..=86.0).contains(&m) {
             0.005 * pow(v_norm, 4.0)
         } else {
             0.0
@@ -1229,8 +1230,7 @@ fn clr_render_inner(
      * listening 2026-08-06). Legacy keeps 7 kHz for byte stability. */
     let radiated_corner_cap_hz = if dynamic_reed { 5_500.0 } else { 7_000.0 };
     let two_hole_gate = (1.0 - (open_hole_count - 2.0).abs()).clamp(0.0, 1.0);
-    let four_hole_radiation_gate =
-        (1.0 - (open_hole_count - 4.0).abs()).clamp(0.0, 1.0);
+    let four_hole_radiation_gate = (1.0 - (open_hole_count - 4.0).abs()).clamp(0.0, 1.0);
     let five_hole_gate = (1.0 - (open_hole_count - 5.0).abs()).clamp(0.0, 1.0);
     let mezzo_radiation_gate = (1.0 - (v_norm - 0.56).abs() / 0.20).clamp(0.0, 1.0);
     let bell_corner_hz = if dynamic_reed {
@@ -1258,11 +1258,11 @@ fn clr_render_inner(
     let mask = fingering_mask(midi);
     let register_vent_open = dynamic_reed && midi >= 70;
     let hole_positions: [usize; 6] = core::array::from_fn(|index| {
-        ((CLR_HOLE_AXIAL_M[index] / CLR_REFERENCE_LENGTH_M)
-            * (segmented_one_way - 1) as f64) as usize
+        ((CLR_HOLE_AXIAL_M[index] / CLR_REFERENCE_LENGTH_M) * (segmented_one_way - 1) as f64)
+            as usize
     });
-    let register_position = ((CLR_REGISTER_AXIAL_M / CLR_REFERENCE_LENGTH_M)
-        * (segmented_one_way - 1) as f64) as usize;
+    let register_position =
+        ((CLR_REGISTER_AXIAL_M / CLR_REFERENCE_LENGTH_M) * (segmented_one_way - 1) as f64) as usize;
     /* Resistive low-order shunt used by the travelling-wave junction. The
      * uncapped inertive estimate grows outside the pack's ka/frequency
      * applicability, so this realtime reduction is explicitly bounded. */
@@ -1271,8 +1271,8 @@ fn clr_render_inner(
             return 0.0;
         }
         let radius = CLR_HOLE_RADIUS_M[index];
-        let effective_chimney = CLR_HOLE_CHIMNEY_M[index]
-            + 2.0 * CLR_APERTURE_END_CORRECTION_RADII * radius;
+        let effective_chimney =
+            CLR_HOLE_CHIMNEY_M[index] + 2.0 * CLR_APERTURE_END_CORRECTION_RADII * radius;
         let area_ratio = (radius / CLR_BORE_RADIUS_M) * (radius / CLR_BORE_RADIUS_M);
         (area_ratio * CLR_SOUND_SPEED_M_PER_S / (TAU * f0 * effective_chimney))
             .min(CLR_TONE_HOLE_ADMITTANCE_CAP)
@@ -1419,8 +1419,7 @@ fn clr_render_inner(
         /* In v2 the bell and reed ends are spatially separate travelling-wave
          * ports. Legacy retains its one-loop reflection for byte stability. */
         let bell_incident = bore.bell_incident();
-        let bell_reflection =
-            dc_blocker.process(-0.95 * reflection_loss.process(bell_incident));
+        let bell_reflection = dc_blocker.process(-0.95 * reflection_loss.process(bell_incident));
         let reflected = if dynamic_reed {
             bore.mouth_return()
         } else {
@@ -1430,16 +1429,15 @@ fn clr_render_inner(
         if !dynamic_reed {
             for index in 0..hole_radiation.len() {
                 let distance_from_bell = CLR_REFERENCE_LENGTH_M - CLR_HOLE_AXIAL_M[index];
-                let tap = (distance_from_bell / CLR_REFERENCE_LENGTH_M
-                    * (bore_length - 1) as f64) as usize;
-                hole_field += hole_radiation[index].process(bore.legacy_tap(tap))
-                    * hole_gain[index];
+                let tap = (distance_from_bell / CLR_REFERENCE_LENGTH_M * (bore_length - 1) as f64)
+                    as usize;
+                hole_field +=
+                    hole_radiation[index].process(bore.legacy_tap(tap)) * hole_gain[index];
             }
             let register_tap = ((CLR_REFERENCE_LENGTH_M - CLR_REGISTER_AXIAL_M)
                 / CLR_REFERENCE_LENGTH_M
                 * (bore_length - 1) as f64) as usize;
-            hole_field += register_radiation.process(bore.legacy_tap(register_tap))
-                * register_gain;
+            hole_field += register_radiation.process(bore.legacy_tap(register_tap)) * register_gain;
         }
 
         /* Reed junction. V2 advances the mass-spring reed itself and mixes
@@ -1506,19 +1504,19 @@ fn clr_render_inner(
             } else {
                 0.08 - 0.03 * ((m - 86.0) / 3.0).clamp(0.0, 1.0)
             };
-            let articulation_gain = if attack_articulation == Some(true)
-                && phrase_frame >= tongue_hold_frames
-            {
-                1.0
-                    + articulation_depth
-                        * exp(
-                            -((phrase_frame - tongue_hold_frames) as f64) / (0.030 * sr),
-                        )
-            } else {
-                1.0
-            };
-            articulation_gain
-                * ((1.0 - flow_mix) * gated_legacy_bore_in + flow_mix * flow_drive)
+            /* At high breath pressure the reed/bore loop already has ample
+             * startup energy.  Scaling the tongue seed down with pressure
+             * avoids an unphysical onset overshoot that reaches the later
+             * sustain level before the tongue has actually released. */
+            let articulation_seed = articulation_depth * (1.0 - 0.85 * v_norm * v_norm);
+            let articulation_gain =
+                if attack_articulation == Some(true) && phrase_frame >= tongue_hold_frames {
+                    1.0 + articulation_seed
+                        * exp(-((phrase_frame - tongue_hold_frames) as f64) / (0.030 * sr))
+                } else {
+                    1.0
+                };
+            articulation_gain * ((1.0 - flow_mix) * gated_legacy_bore_in + flow_mix * flow_drive)
         } else {
             legacy_bore_in
         };
@@ -1713,16 +1711,14 @@ mod tests {
         let from_mouth = 0.7;
         let from_bell = -0.2;
         let incoming_energy = from_mouth * from_mouth + from_bell * from_bell;
-        let (transmitted, reflected, radiated) =
-            scatter_shunt(from_mouth, from_bell, 0.35);
+        let (transmitted, reflected, radiated) = scatter_shunt(from_mouth, from_bell, 0.35);
         let outgoing_energy =
             transmitted * transmitted + reflected * reflected + radiated * radiated;
         assert!((outgoing_energy - incoming_energy).abs() < 1.0e-12);
         assert_ne!(transmitted, from_mouth);
         assert_ne!(reflected, from_bell);
 
-        let (open_transmitted, open_reflected, _) =
-            scatter_shunt(from_mouth, from_bell, 0.005);
+        let (open_transmitted, open_reflected, _) = scatter_shunt(from_mouth, from_bell, 0.005);
         let (mutated_transmitted, mutated_reflected, _) =
             scatter_shunt(from_mouth, from_bell, 0.005_001);
         assert_ne!(open_transmitted, mutated_transmitted);

@@ -315,8 +315,8 @@ describe("waveguide renderer laws", () => {
   test("clarinet v2 launches inside the candidate physical attack interval", () => {
     const failures: string[] = [];
     for (const sampleRateHz of [44_100, 48_000, 96_000]) {
-      for (const midiPitch of [50, 62, 66, 74, 84, 89]) {
-        for (const velocity of [1, 64, 127]) {
+      for (const midiPitch of [50, 62, 66, 72, 74, 76, 79, 82, 84, 89]) {
+        for (const velocity of [1, 36, 64, 72, 108, 127]) {
           const pcm = clarinetV2.renderNote(
             midiPitch,
             velocity,
@@ -339,7 +339,7 @@ describe("waveguide renderer laws", () => {
       }
     }
     expect(failures).toEqual([]);
-  });
+  }, 15_000);
 
   test("clarinet v2 articulation changes the onset without selecting a different sustain attractor", () => {
     const failures: string[] = [];
