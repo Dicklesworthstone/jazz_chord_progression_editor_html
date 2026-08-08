@@ -105,7 +105,7 @@
     "changes.dsp.plucked-electric@2",
     "changes.dsp.plucked-ukulele@1"
   ],
-  "wasmSha256": "0adf84ee788fc135bd2ab85830301b7819f91c47fddce1d15d2ebd21716564d1",
+  "wasmSha256": "9535af990b9d79009d55330b1381e12d272ceb6cf97effd2cc866b59caa0ede1",
   "sourceBindings": [
     {
       "path": "dsp/concert-grand/src/plucked_v2.rs",
@@ -117,7 +117,7 @@
     },
     {
       "path": "src/audio/dsp-renderer.ts",
-      "sha256": "0959bc2ce7f857420963363ccc9040d85fc380e58e14f0f55e7f852d6265137e"
+      "sha256": "622b1ea7282aba8718997a1ac80034938f0791207ce77901206e821769079099"
     },
     {
       "path": "src/audio/instrument-recipes-contract.ts",
@@ -136,7 +136,7 @@
       "sha256": "022090f23295f2948685ff8b3a954de8f8fc4db3f0d2da544334d6700f4f97bb"
     }
   ],
-  "sourceClosureSha256": "b11c309833f721aaab9e026830467a18e114eae6d391e1918cc188091526a227",
+  "sourceClosureSha256": "84e66b2a5e74b5f632043204c8ada1be367d5ea277af9b8be248bac015d49b83",
   "cells": [
     {
       "id": "archtop-m48",
@@ -587,5 +587,5 @@
     "passedPairwiseCellCount": 6,
     "failedPairwiseCellCount": 0
   },
-  "evidenceSha256": "5aba64e006b46ca05849877ceaacafb1f0e3e1d360167551dd35bce24e5c9846"
+  "evidenceSha256": "e609b2cfe7da469eaefea8c38a1390d0234597f8ea787652f56caa8082df7b11"
 }

@@ -30,7 +30,7 @@ use crate::{midi_frequency_hz, vibrato_variation, XorShift32, TAU};
 /// Longest supported half-period bore: MIDI 21 at 192 kHz is ~3 491 samples.
 const CLR_MAX_DELAY: usize = 8_192;
 const CLR_STATE_MAGIC: u32 = 0x3252_4c43; // "CLR2" in little endian.
-const CLR_STATE_VERSION: u32 = 4;
+const CLR_STATE_VERSION: u32 = 5;
 const CLR_STATE_HEADER_BYTES: usize = 32;
 const CLR_STATE_SCALAR_COUNT: usize = 24;
 const CLR_STATE_FIXED_BYTES: usize = CLR_STATE_HEADER_BYTES + CLR_STATE_SCALAR_COUNT * 8;
@@ -149,7 +149,11 @@ struct ClarinetPhraseState {
     bore_length: usize,
     bore_write_index: usize,
     seed: u32,
-    elapsed_frames: u32,
+    /* Phrase time is serialized in caller/output-rate frames. The internal
+     * solver may switch between 1x and 2x when a retained voice crosses a
+     * register; storing solver frames would reinterpret the entire phrase
+     * clock at that boundary. */
+    elapsed_output_frames: u32,
     tuning_x1: f64,
     tuning_y1: f64,
     reflection_loss: f64,
@@ -261,7 +265,7 @@ fn decode_phrase_state(bytes: &[u8], sample_rate: f32) -> Option<ClarinetPhraseS
         bore_length,
         bore_write_index,
         seed: read_u32(bytes, 24)?,
-        elapsed_frames: read_u32(bytes, 28)?,
+        elapsed_output_frames: read_u32(bytes, 28)?,
         tuning_x1: scalar[0],
         tuning_y1: scalar[1],
         reflection_loss: scalar[2],
@@ -303,7 +307,7 @@ fn encode_phrase_state(
     write_u32(bytes, 16, state.bore_length as u32);
     write_u32(bytes, 20, state.bore_write_index as u32);
     write_u32(bytes, 24, state.seed);
-    write_u32(bytes, 28, state.elapsed_frames);
+    write_u32(bytes, 28, state.elapsed_output_frames);
     let scalar = [
         state.tuning_x1,
         state.tuning_y1,
@@ -1216,7 +1220,7 @@ fn clr_render_inner(
     let reed_h0 = CLR_REED_EQUILIBRIUM_OPENING_M;
     let mut reed_x = reed_h0;
     let mut reed_velocity = 0.0;
-    let mut elapsed_frames = 0u32;
+    let mut elapsed_output_frames = 0u32;
 
     /* Band-limit the differentiated radiation (the flute's hiss lesson).
      * The v2 hole/vent radiation corners obey the same 5.5 kHz radiated-
@@ -1328,7 +1332,7 @@ fn clr_render_inner(
         } else {
             prior.seed
         };
-        elapsed_frames = prior.elapsed_frames;
+        elapsed_output_frames = prior.elapsed_output_frames;
         reed_x = prior.reed_x;
         reed_velocity = prior.reed_velocity;
         pressure = prior.pressure;
@@ -1354,7 +1358,9 @@ fn clr_render_inner(
          * means this block continues the same physical trajectory; restarting
          * tongue, pressure launch, or articulation from local frame zero
          * would inject energy at an arbitrary scheduler boundary. */
-        let phrase_frame = (elapsed_frames as usize).saturating_add(frame);
+        let phrase_frame = (elapsed_output_frames as usize)
+            .saturating_mul(simulation_oversample)
+            .saturating_add(frame);
         let (instantaneous_target, pressure_step) = if dynamic_reed {
             let launch_phase = if attack_articulation == Some(true) {
                 phrase_frame < tongue_hold_frames.saturating_add(tongue_release_frames)
@@ -1484,16 +1490,21 @@ fn clr_render_inner(
                 - 0.10 * four_hole_gate * mezzo_gate)
                 .clamp(0.0, 0.25);
             let gated_legacy_bore_in = legacy_bore_in * (1.0 - tongue_contact);
+            /* Tongue release briefly raises the reed-flow gain and seeds the
+             * self-oscillation.  Keep that impulse continuous across the
+             * fingering/register boundaries: the previous piecewise curve
+             * jumped at MIDI 68 and 80, leaving neighboring soft notes with
+             * radically different (and sometimes 0.4 s) startup times. */
             let articulation_depth = if m <= 56.0 {
-                0.30
+                0.75
             } else if m <= 68.0 {
-                0.30 - 0.26 * ((m - 56.0) / 12.0)
+                0.75 - 0.40 * ((m - 56.0) / 12.0)
             } else if m <= 80.0 {
-                0.14 - 0.04 * ((m - 68.0) / 12.0)
+                0.35 - 0.17 * ((m - 68.0) / 12.0)
             } else if m <= 86.0 {
-                0.015 * (1.0 - 0.50 * v_norm)
+                0.18 - 0.10 * ((m - 80.0) / 6.0)
             } else {
-                0.05 - 0.02 * v_norm
+                0.08 - 0.03 * ((m - 86.0) / 3.0).clamp(0.0, 1.0)
             };
             let articulation_gain = if attack_articulation == Some(true)
                 && phrase_frame >= tongue_hold_frames
@@ -1572,7 +1583,7 @@ fn clr_render_inner(
             bore_length,
             bore_write_index,
             seed: seed.state,
-            elapsed_frames: elapsed_frames.saturating_add(frames as u32),
+            elapsed_output_frames: elapsed_output_frames.saturating_add(output_frames as u32),
             tuning_x1,
             tuning_y1,
             reflection_loss: reflection_loss.state(),
@@ -1726,7 +1737,7 @@ mod tests {
             bore_length: bore.len(),
             bore_write_index: 1,
             seed: 42,
-            elapsed_frames: 2_400,
+            elapsed_output_frames: 2_400,
             tuning_x1: 0.1,
             tuning_y1: 0.2,
             reflection_loss: 0.3,
@@ -1755,6 +1766,7 @@ mod tests {
         assert_eq!(decoded.prior_midi, 64);
         assert_eq!(decoded.bore_length, 3);
         assert_eq!(decoded.bore_write_index, 1);
+        assert_eq!(decoded.elapsed_output_frames, 2_400);
         assert_eq!(decoded.reed_x, state.reed_x);
         assert!(decode_phrase_state(&bytes, 44_100.0).is_none());
         bytes[0] ^= 0xff;
