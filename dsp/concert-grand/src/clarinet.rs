@@ -1194,7 +1194,13 @@ fn clr_render_inner(
         } else {
             0.0
         };
-        let release_seconds = base_release_seconds + loud_release_extension;
+        // Soft attacks release the tongue more gently: quadratic-in-softness
+        // extension keeps ff snappy (+0.3 ms at v112) while pp gains ~10 ms,
+        // putting soft attack-to-90% inside the physical window the UIowa
+        // matrix enforces (m76-pp measured 10 ms vs the 15 ms floor).
+        let soft_release_extension = 0.020 * (1.0 - v_norm) * (1.0 - v_norm);
+        let release_seconds =
+            base_release_seconds + loud_release_extension + soft_release_extension;
         ((release_seconds * sr + 0.5) as usize).max(1)
     } else {
         0

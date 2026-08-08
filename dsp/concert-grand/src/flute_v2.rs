@@ -1073,10 +1073,13 @@ fn render_with_storage(
         .map(|openness| openness * openness)
         .sum::<f64>();
     let dynamic_lift = ((velocity as f64 - 36.0) / 36.0).clamp(0.0, 1.0);
+    // +10% quadratic drive (2026-08-08): the Bernoulli second-order term is
+    // the flute's even-harmonic identity signature; three UIowa identity
+    // cells sat 0.06-1.4 dB under the 3.5 dB margin after the retune.
     let nonlinear_drive = if vented_area > 0.0 {
-        1.5 + 0.4 * dynamic_lift * (2.0 - vented_area).clamp(0.0, 1.0)
+        1.65 + 0.44 * dynamic_lift * (2.0 - vented_area).clamp(0.0, 1.0)
     } else {
-        1.7
+        1.87
     };
     let lattice_nonlinear_loss = if vented_area > 2.0 { 0.35 } else { 0.20 };
     let nonlinear_edge_gain = nonlinear_drive
