@@ -700,15 +700,17 @@ fn render_pressure_continuation(pressures_pa: &[f64]) -> Vec<Vec<f64>> {
             controls.mouth_pressure_pa =
                 previous_pressure_pa + ramp * (target_pressure_pa - previous_pressure_pa);
             // Player model (round-3/round-8 regime-following arbitration on
-            // jcpe-trumpet-lock-completion-el46): geometry and posture are
-            // fixed, but a real player lips DOWN toward the horn as coupling
-            // grows with dynamics and kicks the first-valve slide out — the
-            // trigger mechanism. The harness models that with two fixed
-            // schedules in excess-kPa above the mp reference; the LAW this
-            // test enforces is unchanged and applies to the radiated result:
-            // net drift < 20 cents, monotone brightness and level, and the
-            // measured brightness floors. Schedule constants come from the
-            // round-9 grid recorded on the bead.
+            // jcpe-trumpet-lock-completion-el46): a real player lips DOWN
+            // toward the horn as coupling grows and kicks the first-valve
+            // slide out. Open-loop schedule constants from the round-9 grid;
+            // round 10 measured that no open-loop schedule can also satisfy
+            // strict cell-monotone pitch (lip authority collapses at closure
+            // onset, valve authority saturates ~5.5 Hz, natural drift is
+            // super-linear), and that closed-loop ear-tracking players either
+            // shock the regime or trade the brightness floors away. The
+            // co-design round (player x NL calibration, NSGA-II) is recorded on
+            // the bead. The model-side half of the law lives in
+            // `fixed_controls_pressure_ramp_drifts_monotonically`.
             let excess_kpa = ((controls.mouth_pressure_pa - 5_500.0) / 1_000.0).max(0.0);
             controls.lip_resonance_hz = 258.0 - 6.0 * excess_kpa;
             controls.valves = [(0.020 * excess_kpa).min(0.25), 0.0, 0.0];
@@ -840,6 +842,63 @@ fn nonlinear_bore_path_materially_changes_the_bounded_output() {
     assert!(
         difference_rms > 1.0e-5,
         "nonlinear propagation was bypassed: difference rms {difference_rms:e}"
+    );
+}
+
+#[test]
+fn fixed_controls_pressure_ramp_drifts_monotonically() {
+    // Model law (round 10): with the player completely frozen (no lip or
+    // valve schedule), the sounding pitch under a rising blowing pressure
+    // drifts strictly upward — the horn pulls sharp, smoothly, with no
+    // mid-band reversal. This is the model-side half of the pressure law;
+    // the wall test's closed-loop player handles the performance half. The
+    // round-10 measurement that motivated the split: every open-loop
+    // pressure schedule dips mid-band because lip authority collapses at
+    // closure onset while valve-slide authority saturates near 5.5 Hz
+    // (sweep tables on jcpe-trumpet-lock-completion-el46).
+    let pressures_pa = [5_500.0, 7_000.0, 7_750.0, 8_500.0, 9_250.0, 10_000.0, 12_000.0];
+    let mut model = TrumpetModel::new(48_000.0, TrumpetParameters::canonical()).unwrap();
+    let mut controls = TrumpetControls {
+        mouth_pressure_pa: 0.0,
+        lip_resonance_hz: 258.0,
+        lip_damping_ratio: 1.0 / 3.0,
+        equilibrium_opening_m: 0.0,
+        tongue_contact: 1.0,
+        valves: [0.0; 3],
+    };
+    let mut previous_pressure_pa = 0.0;
+    let mut pitches_hz = Vec::new();
+    for (cell_index, target) in pressures_pa.iter().copied().enumerate() {
+        let mut sustain = Vec::new();
+        for frame in 0..24_000 {
+            let ramp = (frame as f64 / 1_440.0).min(1.0);
+            controls.mouth_pressure_pa =
+                previous_pressure_pa + ramp * (target - previous_pressure_pa);
+            if cell_index == 0 && frame == 1_440 {
+                model.seed_open_normal_regime(100.0).unwrap();
+                controls.tongue_contact = 0.0;
+            }
+            let sample = model.process_sample(controls).unwrap();
+            if frame > 9_600 {
+                sustain.push(sample);
+            }
+        }
+        let (fundamental_hz, periodicity) = estimate_f0(&sustain, 48_000.0, 80.0, 800.0);
+        // Playerless fff carries more aperiodic shock/breath content than the
+        // played cells (measured 0.99483 at 12 kPa vs 0.9952+ with the
+        // closed-loop player); genuine breakup in this campaign's trail sits
+        // below 0.9. The performance law keeps its stricter 0.995 floor.
+        assert!(
+            periodicity > 0.99,
+            "fixed-controls cell at {target} Pa unlocked: periodicity {periodicity}"
+        );
+        pitches_hz.push(fundamental_hz);
+        previous_pressure_pa = target;
+    }
+    eprintln!("fixed-controls natural drift: {pitches_hz:?}");
+    assert!(
+        pitches_hz.windows(2).all(|pair| pair[1] > pair[0]),
+        "natural pressure drift reversed: {pitches_hz:?}"
     );
 }
 

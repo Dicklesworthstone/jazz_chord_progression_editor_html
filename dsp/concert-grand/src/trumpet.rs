@@ -1151,6 +1151,19 @@ impl TrumpetModel {
         self.last_lip_report
     }
 
+    /// Diagnostic snapshot of the embouchure-servo state: the frozen
+    /// characteristic displacement mean, the rectified oscillation mean, and
+    /// the grazing-term engagement fraction. Measurement-only; the renderer
+    /// never reads this.
+    pub fn diagnostic_servo_state(&self) -> (f64, f64, f64) {
+        let engagement = (self.lip_oscillation_mean_m / LIP_GRAZING_ENGAGE_M).min(1.0);
+        (
+            self.lip_displacement_mean_m,
+            self.lip_oscillation_mean_m,
+            engagement,
+        )
+    }
+
     /// Linear small-signal input impedance of the exact fixed cup, throat,
     /// 48-section bore, and positive-real bell used by this instance. This is
     /// a diagnostic of geometry and passive loads only; the live time-domain
