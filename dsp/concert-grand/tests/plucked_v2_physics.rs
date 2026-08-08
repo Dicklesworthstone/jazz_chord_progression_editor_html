@@ -6,16 +6,17 @@ mod plucked_v2;
 
 use plucked_v2::{
     archtop_pack, circular_sound_hole_helmholtz_hz, dreadnought_pack, inharmonicity_coefficient,
-    marshall_electric_pack, midi_frequency_hz, plk2_chord_session_init,
-    plk2_chord_session_init_slices, plk2_chord_session_max_steps,
-    plk2_chord_session_state_max_bytes, plk2_chord_session_step, plk2_chord_session_step_slices,
-    plk2_chord_string_frets, plk2_cubic_reconstruct, plk2_note_frames, plk2_render,
-    plk2_render_chord, plk2_render_chord_slices, plk2_render_chord_slices_full_rate_reference,
-    plk2_render_path, plk2_render_slices, plk2_stem_init, plk2_stem_init_slice, plk2_stem_render,
-    plk2_stem_render_max_frames, plk2_stem_render_slices, plk2_stem_state_max_bytes,
-    plk2_stem_state_string_energy_j, plk2_string_fret, plk2_triode_tanh, ukulele_pack,
-    upright_bass_pack, BodyModeKind, PluckGesture, PluckedError, PluckedRenderPath, PluckedStem,
-    PLK2_ARCHTOP_PACK, PLK2_CHORD_STEP_COMPLETE, PLK2_CHORD_STEP_PROGRESS, PLK2_DREADNOUGHT_PACK,
+    marshall_electric_pack, midi_frequency_hz, plk2_chord_runtime_init_slices,
+    plk2_chord_runtime_step_slices, plk2_chord_session_init, plk2_chord_session_init_slices,
+    plk2_chord_session_max_steps, plk2_chord_session_state_max_bytes, plk2_chord_session_step,
+    plk2_chord_session_step_slices, plk2_chord_string_frets, plk2_cubic_reconstruct,
+    plk2_note_frames, plk2_render, plk2_render_chord, plk2_render_chord_slices,
+    plk2_render_chord_slices_full_rate_reference, plk2_render_path, plk2_render_slices,
+    plk2_stem_init, plk2_stem_init_slice, plk2_stem_render, plk2_stem_render_max_frames,
+    plk2_stem_render_slices, plk2_stem_state_max_bytes, plk2_stem_state_string_energy_j,
+    plk2_string_fret, plk2_triode_tanh, ukulele_pack, upright_bass_pack, BodyModeKind,
+    PluckGesture, PluckedError, PluckedRenderPath, PluckedStem, PLK2_ARCHTOP_PACK,
+    PLK2_CHORD_STEP_COMPLETE, PLK2_CHORD_STEP_PROGRESS, PLK2_DREADNOUGHT_PACK,
     PLK2_MARSHALL_ELECTRIC_PACK, PLK2_STEM_EVENT_PLUCK, PLK2_STEM_EVENT_RESET, PLK2_UKULELE_PACK,
     PLK2_UPRIGHT_BASS_PACK,
 };
@@ -2046,6 +2047,48 @@ fn cooperative_chord_session_is_bit_exact_across_four_packs_and_browser_rates() 
             assert_eq!(
                 cooperative_right, synchronous_right,
                 "right mismatch for pack {pack_index} at {sample_rate} Hz"
+            );
+
+            let handle = plk2_chord_runtime_init_slices(
+                pack_index,
+                midis,
+                velocities,
+                sample_rate,
+                FRAMES as i32,
+            );
+            assert!(handle > 0);
+            let mut runtime_left = vec![0.0_f32; FRAMES];
+            let mut runtime_right = vec![0.0_f32; FRAMES];
+            let mut runtime_calls = 0_usize;
+            loop {
+                runtime_calls += 1;
+                let status = plk2_chord_runtime_step_slices(
+                    handle,
+                    &mut runtime_left,
+                    &mut runtime_right,
+                    FRAMES as i32,
+                );
+                if status == PLK2_CHORD_STEP_COMPLETE {
+                    break;
+                }
+                assert_eq!(status, PLK2_CHORD_STEP_PROGRESS);
+                assert!(
+                    runtime_calls < plk2_chord_session_max_steps(FRAMES as i32) as usize,
+                    "opaque runtime pack {pack_index} rate {sample_rate} did not terminate"
+                );
+            }
+            assert!(runtime_calls >= 4);
+            assert_eq!(runtime_left, synchronous_left);
+            assert_eq!(runtime_right, synchronous_right);
+            assert_eq!(
+                plk2_chord_runtime_step_slices(
+                    handle,
+                    &mut runtime_left,
+                    &mut runtime_right,
+                    FRAMES as i32,
+                ),
+                0,
+                "completed handle must be stale"
             );
         }
     }

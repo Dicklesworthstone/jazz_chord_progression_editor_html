@@ -415,6 +415,21 @@ type ConcertGrandExports = Readonly<{
     right: number,
     outputCapacity: number,
   ) => number;
+  plk2_chord_runtime_init?: (
+    pack: number,
+    midis: number,
+    velocities: number,
+    noteCount: number,
+    sampleRate: number,
+    maxFrames: number,
+  ) => number;
+  plk2_chord_runtime_step?: (
+    handle: number,
+    left: number,
+    right: number,
+    outputCapacity: number,
+  ) => number;
+  plk2_chord_runtime_reset?: (handle: number) => number;
   plk2_stem_state_max_bytes?: () => number;
   plk2_stem_render_max_frames?: () => number;
   plk2_stem_init?: (
@@ -1026,6 +1041,21 @@ type PluckedChordRenderAbi = Readonly<{
     right: number,
     outputCapacity: number,
   ) => number;
+  runtimeInit?: (
+    pack: number,
+    midis: number,
+    velocities: number,
+    noteCount: number,
+    sampleRate: number,
+    maxFrames: number,
+  ) => number;
+  runtimeStep?: (
+    handle: number,
+    left: number,
+    right: number,
+    outputCapacity: number,
+  ) => number;
+  runtimeReset?: (handle: number) => number;
 }>;
 
 type PluckedChordRenderFunctions = Pick<
@@ -1151,14 +1181,22 @@ export function createPluckedChordRenderFunctions(
     };
   }
 
-  const cooperative = [
+  const serializedCooperative = [
     abi.sessionStateMaxBytes,
     abi.sessionMaxSteps,
     abi.sessionInit,
     abi.sessionStep,
   ];
+  const runtimeCooperative = [
+    abi.sessionMaxSteps,
+    abi.runtimeInit,
+    abi.runtimeStep,
+    abi.runtimeReset,
+  ];
+  const useRuntime = runtimeCooperative.every((entry) => entry !== undefined);
+  const useSerialized = serializedCooperative.every((entry) => entry !== undefined);
   let renderChordCooperatively: WaveguideRenderer["renderChordCooperatively"];
-  if (cooperative.every((entry) => entry !== undefined)) {
+  if (useRuntime || useSerialized) {
     const yieldToMacrotask = options.yieldToMacrotask ?? browserMacrotask;
     renderChordCooperatively = async (
       midiPitches,
@@ -1176,13 +1214,17 @@ export function createPluckedChordRenderFunctions(
         maxSeconds,
       );
       if (request === null) return null;
-      const stateCapacity = abi.sessionStateMaxBytes?.() ?? 0;
       const maxSteps = abi.sessionMaxSteps?.(request.capacity) ?? 0;
       if (
-        !Number.isSafeInteger(stateCapacity) || stateCapacity <= 0 ||
-        stateCapacity > MAX_COOPERATIVE_CHORD_STATE_BYTES ||
         !Number.isSafeInteger(maxSteps) || maxSteps <= 0 ||
         maxSteps > MAX_COOPERATIVE_CHORD_STEPS
+      ) return null;
+      const stateCapacity = useRuntime ? 0 : abi.sessionStateMaxBytes?.() ?? 0;
+      if (
+        !useRuntime && (
+          !Number.isSafeInteger(stateCapacity) || stateCapacity <= 0 ||
+          stateCapacity > MAX_COOPERATIVE_CHORD_STATE_BYTES
+        )
       ) return null;
       const channelBytes = request.capacity * 4;
       const leftPointer = cooperativeScratchBase;
@@ -1194,6 +1236,45 @@ export function createPluckedChordRenderFunctions(
       ensureCapacity(memory, cooperativeScratchBase, totalBytes);
       new Int32Array(memory.buffer, midiPointer, midiPitches.length).set(midiPitches);
       new Int32Array(memory.buffer, velocityPointer, velocities.length).set(velocities);
+      if (useRuntime) {
+        const handle = abi.runtimeInit?.(
+          packIndex,
+          midiPointer,
+          velocityPointer,
+          midiPitches.length,
+          sampleRateHz,
+          request.capacity,
+        ) ?? 0;
+        if (!Number.isSafeInteger(handle) || handle <= 0) return null;
+        let completed = false;
+        try {
+          for (let step = 0; step < maxSteps; step += 1) {
+            const status = abi.runtimeStep?.(
+              handle,
+              leftPointer,
+              rightPointer,
+              request.capacity,
+            ) ?? 0;
+            if (status === PLK2_CHORD_STEP_COMPLETE) {
+              completed = true;
+              return finishPluckedChordPcm(
+                memory,
+                leftPointer,
+                rightPointer,
+                request.capacity,
+                request.capacity,
+                request.natural,
+                sampleRateHz,
+              );
+            }
+            if (status !== PLK2_CHORD_STEP_PROGRESS) return null;
+            await yieldToMacrotask();
+          }
+          return null;
+        } finally {
+          if (!completed) abi.runtimeReset?.(handle);
+        }
+      }
       const stateBytes = abi.sessionInit?.(
         packIndex,
         midiPointer,
@@ -1310,6 +1391,9 @@ function optionalPluckedChordExports(
   | "plk2_chord_session_max_steps"
   | "plk2_chord_session_init"
   | "plk2_chord_session_step"
+  | "plk2_chord_runtime_init"
+  | "plk2_chord_runtime_step"
+  | "plk2_chord_runtime_reset"
 > {
   const renderChord = rawExports["plk2_render_chord"] === undefined
     ? undefined
@@ -1348,9 +1432,36 @@ function optionalPluckedChordExports(
       ) as NonNullable<ConcertGrandExports["plk2_chord_session_step"]>,
     }
     : {};
+  const runtimeNames = [
+    "plk2_chord_runtime_init",
+    "plk2_chord_runtime_step",
+    "plk2_chord_runtime_reset",
+  ] as const;
+  const runtimePresent = runtimeNames.filter((name) => rawExports[name] !== undefined);
+  if (runtimePresent.length !== 0 && runtimePresent.length !== runtimeNames.length) {
+    const missing = runtimeNames.find((name) => rawExports[name] === undefined);
+    throw new Error(`DSP_WASM_EXPORT_MISSING:${missing ?? "plk2_chord_runtime"}`);
+  }
+  const runtime = runtimePresent.length === runtimeNames.length
+    ? {
+      plk2_chord_runtime_init: requireExportedFunction(
+        rawExports,
+        "plk2_chord_runtime_init",
+      ) as NonNullable<ConcertGrandExports["plk2_chord_runtime_init"]>,
+      plk2_chord_runtime_step: requireExportedFunction(
+        rawExports,
+        "plk2_chord_runtime_step",
+      ) as NonNullable<ConcertGrandExports["plk2_chord_runtime_step"]>,
+      plk2_chord_runtime_reset: requireExportedFunction(
+        rawExports,
+        "plk2_chord_runtime_reset",
+      ) as NonNullable<ConcertGrandExports["plk2_chord_runtime_reset"]>,
+    }
+    : {};
   return Object.freeze({
     ...(renderChord === undefined ? {} : { plk2_render_chord: renderChord }),
     ...cooperative,
+    ...runtime,
   });
 }
 
@@ -1931,6 +2042,15 @@ async function instantiate(): Promise<DspCore> {
       ...(exports.plk2_chord_session_step === undefined
         ? {}
         : { sessionStep: exports.plk2_chord_session_step }),
+      ...(exports.plk2_chord_runtime_init === undefined
+        ? {}
+        : { runtimeInit: exports.plk2_chord_runtime_init }),
+      ...(exports.plk2_chord_runtime_step === undefined
+        ? {}
+        : { runtimeStep: exports.plk2_chord_runtime_step }),
+      ...(exports.plk2_chord_runtime_reset === undefined
+        ? {}
+        : { runtimeReset: exports.plk2_chord_runtime_reset }),
     }),
     runExclusive: runCooperativeChordExclusive,
   });

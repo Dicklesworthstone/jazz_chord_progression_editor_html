@@ -2590,9 +2590,7 @@ static PLK2_CHORD_RUNTIME: PluckedChordRuntimeSlot =
         active: None,
     }));
 
-fn with_plk2_chord_runtime<T>(
-    operation: impl FnOnce(&mut PluckedChordRuntimeState) -> T,
-) -> T {
+fn with_plk2_chord_runtime<T>(operation: impl FnOnce(&mut PluckedChordRuntimeState) -> T) -> T {
     // SAFETY: see the slot's single-threaded, non-reentrant WASM invariant.
     unsafe { operation(&mut *PLK2_CHORD_RUNTIME.0.get()) }
 }
@@ -3010,7 +3008,7 @@ pub fn plk2_chord_session_step_slices(
     }
 }
 
-fn plk2_chord_runtime_init_slices(
+pub fn plk2_chord_runtime_init_slices(
     pack_index: i32,
     midis: &[i32],
     velocities: &[i32],
@@ -3034,7 +3032,7 @@ fn plk2_chord_runtime_init_slices(
     })
 }
 
-fn plk2_chord_runtime_step_slices(
+pub fn plk2_chord_runtime_step_slices(
     handle: i32,
     left: &mut [f32],
     right: &mut [f32],
@@ -3068,7 +3066,7 @@ fn plk2_chord_runtime_step_slices(
     })
 }
 
-fn plk2_chord_runtime_reset_handle(handle: i32) -> i32 {
+pub fn plk2_chord_runtime_reset_handle(handle: i32) -> i32 {
     if handle <= 0 {
         return 0;
     }
@@ -3560,6 +3558,81 @@ pub extern "C" fn plk2_chord_session_step(
     let left = unsafe { core::slice::from_raw_parts_mut(left, frames) };
     let right = unsafe { core::slice::from_raw_parts_mut(right, frames) };
     plk2_chord_session_step_slices(state, left, right, output_capacity)
+}
+
+/// Start one opaque cooperative runtime session. A subsequent successful init
+/// supersedes an abandoned handle; the shipping host serializes sessions and
+/// calls reset on exceptional exits. Invalid arguments leave the active
+/// session untouched and return zero.
+#[no_mangle]
+pub extern "C" fn plk2_chord_runtime_init(
+    pack_index: i32,
+    midis: *const i32,
+    velocities: *const i32,
+    note_count: i32,
+    sample_rate: f32,
+    max_frames: i32,
+) -> i32 {
+    if !(1..=MAX_STRINGS as i32).contains(&note_count)
+        || midis.is_null()
+        || velocities.is_null()
+        || !(midis as usize).is_multiple_of(core::mem::align_of::<i32>())
+        || !(velocities as usize).is_multiple_of(core::mem::align_of::<i32>())
+    {
+        return 0;
+    }
+    let note_count = note_count as usize;
+    let input_bytes = note_count * core::mem::size_of::<i32>();
+    if !plk2_byte_ranges_are_disjoint(
+        midis as usize,
+        input_bytes,
+        velocities as usize,
+        input_bytes,
+    ) {
+        return 0;
+    }
+    let midi_values = unsafe { core::slice::from_raw_parts(midis, note_count) };
+    let velocity_values = unsafe { core::slice::from_raw_parts(velocities, note_count) };
+    plk2_chord_runtime_init_slices(
+        pack_index,
+        midi_values,
+        velocity_values,
+        sample_rate,
+        max_frames,
+    )
+}
+
+/// Advance the active opaque session by one bounded work quantum. Only the
+/// exact positive handle returned by init is accepted; stale handles cannot
+/// mutate a newer session or either output buffer.
+#[no_mangle]
+pub extern "C" fn plk2_chord_runtime_step(
+    handle: i32,
+    left: *mut f32,
+    right: *mut f32,
+    output_capacity: i32,
+) -> i32 {
+    if handle <= 0
+        || left.is_null()
+        || right.is_null()
+        || output_capacity <= 0
+        || output_capacity as usize > PLK2_CHORD_MAX_OUTPUT_FRAMES
+        || !(left as usize).is_multiple_of(core::mem::align_of::<f32>())
+        || !(right as usize).is_multiple_of(core::mem::align_of::<f32>())
+        || !plk2_buffers_are_disjoint(left, right, output_capacity as usize)
+    {
+        return 0;
+    }
+    let left = unsafe { core::slice::from_raw_parts_mut(left, output_capacity as usize) };
+    let right = unsafe { core::slice::from_raw_parts_mut(right, output_capacity as usize) };
+    plk2_chord_runtime_step_slices(handle, left, right, output_capacity)
+}
+
+/// Abandon the exact active opaque session. This is idempotent only for the
+/// owning handle: zero and stale handles refuse without disturbing new work.
+#[no_mangle]
+pub extern "C" fn plk2_chord_runtime_reset(handle: i32) -> i32 {
+    plk2_chord_runtime_reset_handle(handle)
 }
 
 /// Render a bounded simultaneous chord through one physical instrument.
