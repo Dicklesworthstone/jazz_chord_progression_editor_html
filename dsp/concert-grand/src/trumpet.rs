@@ -108,12 +108,41 @@ const LIP_EMBOUCHURE_KNEE_M: f64 = 1.2e-3;
 // (min(1, rectified/LIP_GRAZING_ENGAGE_M)) so startup transients are not
 // clamped shut before the regime exists. Ratio just under 1 avoids hard
 // slamming; both terms stay frozen through the Newton solve.
+// Round-9 measurement: gain 1.2 (from round-6's 1.5) halves the mf-handoff
+// f0 sag (two sagging cells -> one), cuts net crescendo drift 19.7 -> 12.1
+// cents, and raises the ff centroid 2760 -> 2817 Hz with periodicity in
+// bounds; ratio 1.18 was probed and refuted (soft floor lost, ff regime
+// destabilized). Evidence on jcpe-trumpet-lock-completion-el46.
 const LIP_CLOSURE_GRAZING_RATIO: f64 = 1.10;
-const LIP_CLOSURE_GRAZING_GAIN: f64 = 1.5;
+const LIP_CLOSURE_GRAZING_GAIN: f64 = 1.2;
 const LIP_GRAZING_ENGAGE_M: f64 = 1.0e-4;
 // In-sample continuation budget for the lip Newton solve; see
 // `solve_lip_cup_with_continuation`.
 const LIP_CONTINUATION_SUBSTEPS: u32 = 4;
+/// Bisection budget for the contact-event step split (tier 2 of the lip
+/// fallback ladder). Six halvings certify the event location to dt/64 —
+/// finer than the Hunt–Crossley contact time constant at every supported
+/// rate — while keeping the ladder's worst case bounded.
+const CONTACT_SPLIT_BISECTIONS: u32 = 6;
+
+/// Every field the lip Newton solve commits; see `snapshot_lip_state`.
+#[derive(Clone, Copy)]
+struct LipStateSnapshot {
+    cup_pressure_pa: f64,
+    previous_mouth_pressure_pa: f64,
+    previous_equilibrium_opening_m: f64,
+    lip_displacement_m: f64,
+    lip_displacement_mean_m: f64,
+    lip_oscillation_mean_m: f64,
+    lip_velocity_m_s: f64,
+    lip_acceleration_m_s2: f64,
+    lip_streamwise_displacement_m: f64,
+    lip_streamwise_velocity_m_s: f64,
+    lip_streamwise_acceleration_m_s2: f64,
+    lip_opening_pressure_pa: f64,
+    lip_jet_flow_m3_s: f64,
+    lip_jet_acceleration_m3_s2: f64,
+}
 
 /// Three-band viscothermal wall-loss memory, hybridized 2026-08-08 from the
 /// staged external model (trumpet_v3_staging.rs) per the round-8 order: the
@@ -283,8 +312,20 @@ impl TrumpetParameters {
             bore_loss_per_second: 14.3,
             wall_loss_strength_per_second: 34.0,
             wall_loss_relaxation_hz: 500.0,
-            // beta=(gamma+1)/2 for air with gamma=1.403.
-            nonlinear_coefficient: 1.2015,
+            // The physical steepening coefficient beta=(gamma+1)/2 = 1.2015
+            // for air (gamma=1.403) describes free-space plane waves. In the
+            // reduced 96-cell bore the MC-limited flux and the discrete
+            // update dissipate part of every forming shock front, so the
+            // effective coefficient must be calibrated, not assumed. The
+            // round-9 grid (36 + 12 cells, tests/tmp evidence on
+            // jcpe-trumpet-lock-completion-el46) measured 2.3 as the minimal
+            // strength whose radiated spectrum satisfies the contract's
+            // measured brightness floors (1,400 Hz soft / 2,600 Hz loud —
+            // the Table-II-cited enrichment data) while keeping every
+            // pressure cell regime-locked above 0.995 periodicity. Higher
+            // values (2.6+) brighten further but destabilize the deep-closure
+            // forte cells.
+            nonlinear_coefficient: 2.3,
             valve_transition_energy_gain: 1.0,
             oversample_factor: OVERSAMPLE_FACTOR,
         }
@@ -1386,15 +1427,64 @@ impl TrumpetModel {
         }
     }
 
-    /// Bounded in-sample control continuation around the Newton solve. Large
-    /// per-sample control steps (the measured divergence: lip retuned to
-    /// 258 Hz at 12 kPa) can land outside the full-step convergence basin
-    /// while every intermediate operating point remains solvable. On a failed
-    /// full step, re-approach the same final controls through
-    /// `LIP_CONTINUATION_SUBSTEPS` linearly interpolated pressure/equilibrium
-    /// sub-steps, each warm-starting the next. Deterministic and bounded: at
-    /// most `1 + LIP_CONTINUATION_SUBSTEPS` solves per sample, counted in the
-    /// report's `fallback_bisections`; a sub-step failure is a real failure.
+    /// Snapshot of every field the lip Newton solve commits, so fallback
+    /// tiers can retry from the true pre-step state instead of whatever a
+    /// partially-failed tier left behind.
+    fn snapshot_lip_state(&self) -> LipStateSnapshot {
+        LipStateSnapshot {
+            cup_pressure_pa: self.cup_pressure_pa,
+            previous_mouth_pressure_pa: self.previous_mouth_pressure_pa,
+            previous_equilibrium_opening_m: self.previous_equilibrium_opening_m,
+            lip_displacement_m: self.lip_displacement_m,
+            lip_displacement_mean_m: self.lip_displacement_mean_m,
+            lip_oscillation_mean_m: self.lip_oscillation_mean_m,
+            lip_velocity_m_s: self.lip_velocity_m_s,
+            lip_acceleration_m_s2: self.lip_acceleration_m_s2,
+            lip_streamwise_displacement_m: self.lip_streamwise_displacement_m,
+            lip_streamwise_velocity_m_s: self.lip_streamwise_velocity_m_s,
+            lip_streamwise_acceleration_m_s2: self.lip_streamwise_acceleration_m_s2,
+            lip_opening_pressure_pa: self.lip_opening_pressure_pa,
+            lip_jet_flow_m3_s: self.lip_jet_flow_m3_s,
+            lip_jet_acceleration_m3_s2: self.lip_jet_acceleration_m3_s2,
+        }
+    }
+
+    fn restore_lip_state(&mut self, snapshot: &LipStateSnapshot) {
+        self.cup_pressure_pa = snapshot.cup_pressure_pa;
+        self.previous_mouth_pressure_pa = snapshot.previous_mouth_pressure_pa;
+        self.previous_equilibrium_opening_m = snapshot.previous_equilibrium_opening_m;
+        self.lip_displacement_m = snapshot.lip_displacement_m;
+        self.lip_displacement_mean_m = snapshot.lip_displacement_mean_m;
+        self.lip_oscillation_mean_m = snapshot.lip_oscillation_mean_m;
+        self.lip_velocity_m_s = snapshot.lip_velocity_m_s;
+        self.lip_acceleration_m_s2 = snapshot.lip_acceleration_m_s2;
+        self.lip_streamwise_displacement_m = snapshot.lip_streamwise_displacement_m;
+        self.lip_streamwise_velocity_m_s = snapshot.lip_streamwise_velocity_m_s;
+        self.lip_streamwise_acceleration_m_s2 = snapshot.lip_streamwise_acceleration_m_s2;
+        self.lip_opening_pressure_pa = snapshot.lip_opening_pressure_pa;
+        self.lip_jet_flow_m3_s = snapshot.lip_jet_flow_m3_s;
+        self.lip_jet_acceleration_m3_s2 = snapshot.lip_jet_acceleration_m3_s2;
+    }
+
+    /// Bounded in-sample fallback ladder around the lip Newton solve.
+    ///
+    /// Tier 1 (controls moved): re-approach the final controls through
+    /// `LIP_CONTINUATION_SUBSTEPS` interpolated sub-steps, warm-starting each.
+    /// Tier 2 (contact-event step split, the reed solver's kink-first pattern
+    /// generalized): when a deep-closure sample fails, the convergence-basin
+    /// edge coincides with the contact event — the Hunt-Crossley C¹ form
+    /// (round 7) makes the dynamics smooth on EACH side of the manifold, so
+    /// the largest converging prefix step lands the state at the boundary.
+    /// Find it by bounded bisection on the step fraction (convergence is the
+    /// event oracle; every trial restarts from the pre-step snapshot), commit
+    /// the prefix, then integrate the in-contact remainder in dt/2 then dt/4
+    /// pieces. Tier 3: plain time subdivision from the pre-step state.
+    ///
+    /// Every tier restarts from the snapshot (a partially-failed tier can no
+    /// longer leak half-advanced state into the next), every solve is counted
+    /// in `fallback_bisections`, and the whole ladder is bounded at
+    /// `1 + LIP_CONTINUATION_SUBSTEPS + (CONTACT_SPLIT_BISECTIONS + 1 + 6) + 6`
+    /// solves per sample. A ladder failure is a real failure.
     fn solve_lip_cup_with_continuation(
         &mut self,
         controls: TrumpetControls,
@@ -1405,8 +1495,9 @@ impl TrumpetModel {
             Err(TrumpetError::LipSolveDidNotConverge) => {}
             other => return other,
         }
-        let start_pressure_pa = self.previous_mouth_pressure_pa;
-        let start_equilibrium_m = self.previous_equilibrium_opening_m;
+        let snapshot = self.snapshot_lip_state();
+        let start_pressure_pa = snapshot.previous_mouth_pressure_pa;
+        let start_equilibrium_m = snapshot.previous_equilibrium_opening_m;
         let mut substeps_used = 0_usize;
         let pressure_delta_pa = fabs(controls.mouth_pressure_pa - start_pressure_pa);
         let equilibrium_delta_m = fabs(controls.equilibrium_opening_m - start_equilibrium_m);
@@ -1436,13 +1527,91 @@ impl TrumpetModel {
                 self.last_lip_report.fallback_bisections = substeps_used;
                 return Ok(());
             }
+            self.restore_lip_state(&snapshot);
         }
-        // Second tier: the controls did not move (an in-regime sample where a
-        // steepened bore-pressure spike pushed the residual outside the
-        // Newton basin) or the control path itself failed. Subdivide TIME at
-        // the same controls — dt/2 twice, then dt/4 four times — integrating
-        // the lip through the sharp transient in smaller certified steps.
-        // Bounded (2 + 4 additional solves), deterministic, counted.
+        // Tier 2: contact-event step split. Bisect for the largest prefix
+        // fraction that converges from the pre-step state; the prefix ends at
+        // the contact manifold because that is where the basin edge sits.
+        let mut best_fraction = 0.0_f64;
+        let mut fraction_low = 0.0_f64;
+        let mut fraction_high = 1.0_f64;
+        for _ in 0..CONTACT_SPLIT_BISECTIONS {
+            let trial_fraction = 0.5 * (fraction_low + fraction_high);
+            self.restore_lip_state(&snapshot);
+            let staged = TrumpetControls {
+                mouth_pressure_pa: start_pressure_pa
+                    + trial_fraction * (controls.mouth_pressure_pa - start_pressure_pa),
+                equilibrium_opening_m: start_equilibrium_m
+                    + trial_fraction * (controls.equilibrium_opening_m - start_equilibrium_m),
+                ..controls
+            };
+            substeps_used += 1;
+            match self.solve_lip_cup(staged, trial_fraction * dt) {
+                Ok(()) => {
+                    best_fraction = trial_fraction;
+                    fraction_low = trial_fraction;
+                }
+                Err(TrumpetError::LipSolveDidNotConverge) => {
+                    fraction_high = trial_fraction;
+                }
+                Err(other) => return Err(other),
+            }
+        }
+        if best_fraction > 0.0 {
+            // Re-solve and commit the certified prefix deterministically, then
+            // integrate the in-contact remainder in halves then quarters.
+            self.restore_lip_state(&snapshot);
+            let prefix = TrumpetControls {
+                mouth_pressure_pa: start_pressure_pa
+                    + best_fraction * (controls.mouth_pressure_pa - start_pressure_pa),
+                equilibrium_opening_m: start_equilibrium_m
+                    + best_fraction * (controls.equilibrium_opening_m - start_equilibrium_m),
+                ..controls
+            };
+            substeps_used += 1;
+            match self.solve_lip_cup(prefix, best_fraction * dt) {
+                Ok(()) => {
+                    let remainder_dt = (1.0 - best_fraction) * dt;
+                    if remainder_dt <= 0.0 {
+                        self.last_lip_report.fallback_bisections = substeps_used;
+                        return Ok(());
+                    }
+                    for divisions in [2_usize, 4] {
+                        let sub_dt = remainder_dt / divisions as f64;
+                        let mut tier_ok = true;
+                        for _ in 0..divisions {
+                            substeps_used += 1;
+                            match self.solve_lip_cup(controls, sub_dt) {
+                                Ok(()) => {}
+                                Err(TrumpetError::LipSolveDidNotConverge) => {
+                                    tier_ok = false;
+                                    break;
+                                }
+                                Err(other) => return Err(other),
+                            }
+                        }
+                        if tier_ok {
+                            self.last_lip_report.fallback_bisections = substeps_used;
+                            return Ok(());
+                        }
+                        // The remainder pieces mutated state; the next tier
+                        // must restart from the committed prefix, which means
+                        // replaying prefix from the snapshot.
+                        self.restore_lip_state(&snapshot);
+                        substeps_used += 1;
+                        match self.solve_lip_cup(prefix, best_fraction * dt) {
+                            Ok(()) => {}
+                            Err(TrumpetError::LipSolveDidNotConverge) => break,
+                            Err(other) => return Err(other),
+                        }
+                    }
+                }
+                Err(TrumpetError::LipSolveDidNotConverge) => {}
+                Err(other) => return Err(other),
+            }
+        }
+        // Tier 3: plain time subdivision from the pre-step state.
+        self.restore_lip_state(&snapshot);
         for divisions in [2_usize, 4] {
             let sub_dt = dt / divisions as f64;
             let mut tier_ok = true;
@@ -1461,6 +1630,7 @@ impl TrumpetModel {
                 self.last_lip_report.fallback_bisections = substeps_used;
                 return Ok(());
             }
+            self.restore_lip_state(&snapshot);
         }
         Err(TrumpetError::LipSolveDidNotConverge)
     }
