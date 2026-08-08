@@ -242,6 +242,15 @@ export const STUDIO_INITIAL_MIX: AudioMix = /* @__PURE__ */ Object.freeze({
 export const ENGINE_READY_RETRY_LIMIT = 20;
 export const ENGINE_READY_RETRY_INTERVAL_MS = 200;
 
+/**
+ * One genuine UI activation reserves its own sequence plus every bounded
+ * engine-resume retry that activation may issue. Advancing UI gestures by this
+ * stride prevents a later click from replaying a sequence consumed by an
+ * earlier activation's retry loop.
+ */
+export const STUDIO_AUDIO_GESTURE_SEQUENCE_STRIDE =
+  ENGINE_READY_RETRY_LIMIT + 1;
+
 type TimerRecord = Readonly<{ id: ReturnType<typeof setInterval> }>;
 
 /**

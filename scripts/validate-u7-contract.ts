@@ -205,7 +205,7 @@ export const U7_REVIEWED_COMPANION_SCHEMAS = Object.freeze({
 export const U7_REVIEWED_BYTE_DIGESTS: Readonly<Record<string, string>> =
   Object.freeze({
     "preview-cases.json":
-      "d666c733aed6a9316e1c915a4df00fba735253885deba41f9f460fa0e3237dac",
+      "479739d907774c2c4657b8c29bde6cc4c538fa8d15e235d4bea885177de3fd79",
     "state-cases.json":
       "8a61316b520f862cea857c3cb5c1727d04784f56bee70c2e9cc174d6625b01e3",
     "limit-cases.json":
@@ -213,13 +213,13 @@ export const U7_REVIEWED_BYTE_DIGESTS: Readonly<Record<string, string>> =
     "trace-ledger.json":
       "5bd74f3cffdf950413dd541237658b11fdb149f52149cefc130a6d17e03a083f",
     "provenance-ledger.json":
-      "8f1c31991b97478faea0ea237e81425be8eb113fd67c41c2cf96445f43103848",
+      "836a0d5c4d46362f6aec0191e64f21a21e865148eb2275d1777305d50b027dc6",
     "mutation-controls.json":
       "6688ac81c434ceeb764e3dca25662727d0466f5225ef0c9cb6af633c3ada9ddf",
   });
 
 export const U7_REVIEWED_SEMANTIC_DIGEST =
-  "1042e6ea5320672d9d99840baa24da88c214e9a4f6340a9efea8dcbc87004afe";
+  "095cb9711a5f70a12a312114bdf228952ac128fe668c6c448a5a80262076e1cb";
 
 /* -------------------------------------------------------------------------- */
 /* Generic helpers                                                            */

@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -15,6 +16,7 @@ import {
   loadProgressionLibraryEntry,
   moveSelectionToAutoResolving,
   RESIZE_AUTO_COMPLETION_REASON,
+  STUDIO_AUDIO_GESTURE_SEQUENCE_STRIDE,
   STARTER_CHART,
   type LoadProgressionLibraryEntryResult,
   auditionMidiImportPreview,
@@ -1561,6 +1563,18 @@ function feedbackFromRefusal(
 export function App({ snapshot, actions, startupNotice }: AppProps) {
   const [titleDraft, setTitleDraft] = useState(snapshot.title);
   const previousCommittedTitle = useRef(snapshot.title);
+  const audioGestureSequence = useRef(0);
+  const nextAudioGesture = useCallback(
+    (kind: StudioAudioGesture["kind"]): StudioAudioGesture => {
+      audioGestureSequence.current += STUDIO_AUDIO_GESTURE_SEQUENCE_STRIDE;
+      return Object.freeze({
+        kind,
+        trusted: true,
+        sequence: audioGestureSequence.current,
+      });
+    },
+    [],
+  );
   const [activeSheet, setActiveSheet] = useState<StudioSheetId | null>(null);
   const [uiRefusal, setUiRefusal] = useState<
     StudioShellView["layout"]["uiRefusal"]
@@ -2164,11 +2178,7 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
       }
       if (chordCountForKeys === 0) return;
       recordEditResult(
-        actions.playProgression({
-          kind: "trusted-keyboard",
-          trusted: true,
-          sequence: 1,
-        }),
+        actions.playProgression(nextAudioGesture("trusted-keyboard")),
         { kind: "delete" },
       );
     };
@@ -2176,7 +2186,13 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
     return () => {
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [transportStatus, chordCountForKeys, actions, recordEditResult]);
+  }, [
+    transportStatus,
+    chordCountForKeys,
+    actions,
+    nextAudioGesture,
+    recordEditResult,
+  ]);
 
   /*
    * A highlight nobody can see is not a highlight. On a phone the chart is
@@ -2245,12 +2261,13 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
            * and a scripted activation fails at the browser regardless.
            */
           recordEditResult(
-            actions.playProgression({
-              kind:
-                source === "pointer" ? "trusted-pointer" : "trusted-keyboard",
-              trusted: true,
-              sequence: 1,
-            }),
+            actions.playProgression(
+              nextAudioGesture(
+                source === "pointer"
+                  ? "trusted-pointer"
+                  : "trusted-keyboard",
+              ),
+            ),
             { kind: "delete" },
           );
         },
@@ -2506,11 +2523,10 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
            * audio port, out-of-range pitch) is silence, deliberately —
            * an exploration hover owes no error prose.
            */
-          actions.previewPitch(midiPitch, {
-            kind: "trusted-pointer",
-            trusted: true,
-            sequence: 1,
-          });
+          actions.previewPitch(
+            midiPitch,
+            nextAudioGesture("trusted-pointer"),
+          );
         },
         /*
          * A local file, read on a user gesture with FileReader. The runtime
@@ -2641,11 +2657,7 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
           if (midiPreview === null) return;
           const steps = auditionMidiImportPreview(midiPreview);
           if (steps.length === 0) return;
-          const gesture = {
-            kind: "trusted-pointer",
-            trusted: true,
-            sequence: 1,
-          } as const;
+          const gesture = nextAudioGesture("trusted-pointer");
           for (const step of steps) {
             midiAuditionTimers.current.push(
               window.setTimeout(() => {
@@ -2732,11 +2744,10 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
            * first preview needs to open the audio graph.
            */
           if (!extend) {
-            actions.previewChord(chordId, {
-              kind: "trusted-pointer",
-              trusted: true,
-              sequence: 1,
-            });
+            actions.previewChord(
+              chordId,
+              nextAudioGesture("trusted-pointer"),
+            );
           }
         },
         onRovingFocusChange: (chordId) => {

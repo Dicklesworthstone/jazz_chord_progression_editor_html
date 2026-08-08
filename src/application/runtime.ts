@@ -86,7 +86,10 @@ export type { LoadProgressionLibraryEntryResult } from "./studio-library-load";
  * the runtime entry rather than the headless barrel because only the
  * composition root builds one.
  */
-export { createStudioAudio } from "./studio-audio";
+export {
+  createStudioAudio,
+  STUDIO_AUDIO_GESTURE_SEQUENCE_STRIDE,
+} from "./studio-audio";
 export type {
   CreateStudioAudioOptions,
   StudioAudioGesture,

@@ -428,7 +428,8 @@ export const AUDIO_INSTRUMENT_RECIPES = Object.freeze([
       algorithmId: "changes.dsp.waveguide-clarinet@1",
       channels: 2,
       maximumRenderSeconds: 5,
-      bufferCacheLimit: 64,
+      /* One retained entry per event in the reviewed 128-event phrase bound. */
+      bufferCacheLimit: 128,
     }),
     /* Click guard and breath release: the model breathes its own envelope. */
     amplitude: Object.freeze({ attackSeconds: 0.002, decaySeconds: 0, sustainLevel: 1, releaseSeconds: 0.3 }),

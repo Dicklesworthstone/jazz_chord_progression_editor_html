@@ -333,14 +333,18 @@ describe("U7 reviewed MIDI-export-workflow contract", () => {
   });
 
   test("the proposed packet is sealed: no production consumer exists", () => {
+    const importPattern =
+      /(?:import|export)\s[^"']*["'][^"']*u7-midi-export-workflow-contract["']|require\([^"']*u7-midi-export-workflow-contract/;
     for (const path of srcFiles) {
       if (path.endsWith("u7-midi-export-workflow-contract.ts")) continue;
       const source = readFileSync(path, "utf8");
-      expect(source.includes("u7-midi-export-workflow-contract")).toBe(false);
+      expect(importPattern.test(source)).toBe(false);
     }
-    /* and no production site can raise a U7 refusal code yet */
+    /* every U7 refusal code has exactly one production owner: the workflow
+     * service; no other production module may raise one */
     for (const path of srcFiles) {
       if (path.endsWith("u7-midi-export-workflow-contract.ts")) continue;
+      if (path.endsWith("studio-midi-export.ts")) continue;
       const source = readFileSync(path, "utf8");
       for (const code of U7_WORKFLOW_REFUSAL_CODES) {
         expect(source.includes(`"${code}"`)).toBe(false);

@@ -56,15 +56,15 @@
           "beatsPerBar": 4,
           "beatUnit": 4
         },
-        "totalTicks": 960,
+        "totalTicks": 3840,
         "loop": null,
         "events": [
           {
             "eventId": "event-0000",
             "ordinal": 0,
             "startTick": 0,
-            "durationTicks": 960,
-            "gateDurationTicks": 936,
+            "durationTicks": 3840,
+            "gateDurationTicks": 3816,
             "pitches": [
               {
                 "step": "C",
@@ -136,7 +136,7 @@
         "artifact": {
           "filename": "changes-doc-u7-pre-001.mid",
           "byteLength": 129,
-          "sha256": "c8f86c7395865d8da99edd01f652ffa70a8a4e04080f288e1181973eb8014dea",
+          "sha256": "8c0563a1efd8ee7d36505a57e6e5e3d6371f1d06262ac9bba77d2fdbb1319896",
           "tempo": {
             "requestedBpm": 120,
             "encodedMicrosecondsPerQuarter": 500000,
@@ -217,15 +217,15 @@
           "beatsPerBar": 6,
           "beatUnit": 8
         },
-        "totalTicks": 720,
+        "totalTicks": 2880,
         "loop": null,
         "events": [
           {
             "eventId": "event-0000",
             "ordinal": 0,
             "startTick": 0,
-            "durationTicks": 360,
-            "gateDurationTicks": 342,
+            "durationTicks": 1440,
+            "gateDurationTicks": 1416,
             "pitches": [
               {
                 "step": "D",
@@ -256,9 +256,9 @@
           {
             "eventId": "event-0001",
             "ordinal": 1,
-            "startTick": 360,
-            "durationTicks": 360,
-            "gateDurationTicks": 342,
+            "startTick": 1440,
+            "durationTicks": 1440,
+            "gateDurationTicks": 1416,
             "pitches": [
               {
                 "step": "G",
@@ -328,7 +328,7 @@
         "artifact": {
           "filename": "changes-doc-u7-pre-002.mid",
           "byteLength": 166,
-          "sha256": "487bce72a4e79fd313b1c8d0f4dbf127f18f37b1fd4615b5a01c2ffbd3b27450",
+          "sha256": "ec56d0f268bffde5ce709a55cd6b185c4dfa80f88e45a56bf04a6a115f01e563",
           "tempo": {
             "requestedBpm": 90,
             "encodedMicrosecondsPerQuarter": 666667,
@@ -396,39 +396,39 @@
           "beatsPerBar": 4,
           "beatUnit": 4
         },
-        "totalTicks": 960,
+        "totalTicks": 3840,
         "loop": null,
         "events": [
           {
             "eventId": "event-0000",
             "ordinal": 0,
             "startTick": 0,
-            "durationTicks": 960,
-            "gateDurationTicks": 936,
+            "durationTicks": 3840,
+            "gateDurationTicks": 3816,
             "pitches": [
               {
                 "step": "F",
                 "alter": 1,
-                "octave": 3,
-                "midi": 54
+                "octave": 4,
+                "midi": 66
               },
               {
                 "step": "A",
                 "alter": 1,
-                "octave": 3,
-                "midi": 58
+                "octave": 4,
+                "midi": 70
               },
               {
                 "step": "C",
                 "alter": 1,
-                "octave": 4,
-                "midi": 61
+                "octave": 5,
+                "midi": 73
               },
               {
                 "step": "E",
                 "alter": 0,
-                "octave": 4,
-                "midi": 64
+                "octave": 5,
+                "midi": 76
               }
             ]
           }
@@ -476,7 +476,7 @@
         "artifact": {
           "filename": "changes-doc-u7-pre-003.mid",
           "byteLength": 133,
-          "sha256": "ca79eaf8041da942ac6cb5ebbad3236feb8e02acb399db4ee66b833359346bf0",
+          "sha256": "b996cb97ada236484d31825b69c7fc2ed0e7a1d285b1879f0112da452901ac09",
           "tempo": {
             "requestedBpm": 140,
             "encodedMicrosecondsPerQuarter": 428571,
@@ -719,15 +719,15 @@
           "beatsPerBar": 4,
           "beatUnit": 4
         },
-        "totalTicks": 960,
+        "totalTicks": 3840,
         "loop": null,
         "events": [
           {
             "eventId": "event-0000",
             "ordinal": 0,
             "startTick": 0,
-            "durationTicks": 960,
-            "gateDurationTicks": 936,
+            "durationTicks": 3840,
+            "gateDurationTicks": 3816,
             "pitches": [
               {
                 "step": "E",
@@ -866,15 +866,15 @@
           "beatsPerBar": 4,
           "beatUnit": 4
         },
-        "totalTicks": 960,
+        "totalTicks": 3840,
         "loop": null,
         "events": [
           {
             "eventId": "event-0000",
             "ordinal": 0,
             "startTick": 0,
-            "durationTicks": 480,
-            "gateDurationTicks": 468,
+            "durationTicks": 1920,
+            "gateDurationTicks": 1896,
             "pitches": [
               {
                 "step": "C",
@@ -893,9 +893,9 @@
           {
             "eventId": "event-0001",
             "ordinal": 1,
-            "startTick": 480,
-            "durationTicks": 480,
-            "gateDurationTicks": 468,
+            "startTick": 1920,
+            "durationTicks": 1920,
+            "gateDurationTicks": 1896,
             "pitches": [
               {
                 "step": "D",
@@ -963,7 +963,7 @@
         "artifact": {
           "filename": "changes-doc-u7-pre-007.mid",
           "byteLength": 127,
-          "sha256": "ce65f461711aed47238c8fb5bef1cdd3843b00e935e746fc93e816fc776e405c",
+          "sha256": "ae25c925644fe53df9bb832ef0d9a272ceb699f2b3575ac40743a699898d3d5e",
           "tempo": {
             "requestedBpm": 120,
             "encodedMicrosecondsPerQuarter": 500000,
@@ -1030,15 +1030,15 @@
           "beatsPerBar": 4,
           "beatUnit": 4
         },
-        "totalTicks": 960,
+        "totalTicks": 3840,
         "loop": null,
         "events": [
           {
             "eventId": "event-0000",
             "ordinal": 0,
             "startTick": 0,
-            "durationTicks": 960,
-            "gateDurationTicks": 936,
+            "durationTicks": 3840,
+            "gateDurationTicks": 3816,
             "pitches": [
               {
                 "step": "F",
@@ -1094,7 +1094,7 @@
         "artifact": {
           "filename": "changes-doc-u7-pre-008.mid",
           "byteLength": 203,
-          "sha256": "fc6ad08f5c83214be62ff317f439233405543396b6f60ded516b6e3f8b634545",
+          "sha256": "d5a6213e1b5782ced6108e40950ca6753791f95d3cc7338cf1b12c16eed7e61a",
           "tempo": {
             "requestedBpm": 120,
             "encodedMicrosecondsPerQuarter": 500000,
@@ -1117,7 +1117,7 @@
     },
     {
       "id": "U7-PRE-009",
-      "summary": "External bass disclosed: a rootless auto voicing is realized without a bass note by policy, and the preview names the event so the missing bass line is never a surprise.",
+      "summary": "External bass disclosed: a rootless-a voicing over Dm9/G is realized without the bass by policy (the G belongs to the bass player, not the file), and the preview names the event so the missing bass line is never a surprise.",
       "scenario": {
         "documentId": "doc-u7-pre-009",
         "revision": 12,
@@ -1135,8 +1135,8 @@
                 "eventId": "event-0000",
                 "chord": {
                   "kind": "parsed",
-                  "sourceText": "C9",
-                  "canonicalMarkerText": "C9"
+                  "sourceText": "Dm9/G",
+                  "canonicalMarkerText": "Dm9/G"
                 },
                 "voicing": {
                   "mode": "auto",
@@ -1160,16 +1160,28 @@
           "beatsPerBar": 4,
           "beatUnit": 4
         },
-        "totalTicks": 960,
+        "totalTicks": 3840,
         "loop": null,
         "events": [
           {
             "eventId": "event-0000",
             "ordinal": 0,
             "startTick": 0,
-            "durationTicks": 960,
-            "gateDurationTicks": 936,
+            "durationTicks": 3840,
+            "gateDurationTicks": 3816,
             "pitches": [
+              {
+                "step": "F",
+                "alter": 0,
+                "octave": 3,
+                "midi": 53
+              },
+              {
+                "step": "C",
+                "alter": 0,
+                "octave": 4,
+                "midi": 60
+              },
               {
                 "step": "E",
                 "alter": 0,
@@ -1177,16 +1189,10 @@
                 "midi": 64
               },
               {
-                "step": "B",
-                "alter": -1,
-                "octave": 4,
-                "midi": 70
-              },
-              {
-                "step": "D",
+                "step": "A",
                 "alter": 0,
-                "octave": 5,
-                "midi": 74
+                "octave": 4,
+                "midi": 69
               }
             ]
           }
@@ -1219,31 +1225,24 @@
           {
             "kind": "chord",
             "eventId": "event-0000",
-            "text": "C9"
+            "text": "Dm9/G"
           }
         ],
-        "losses": [
-          {
-            "kind": "enharmonic-spelling",
-            "eventIds": [
-              "event-0000"
-            ]
-          }
-        ],
+        "losses": [],
         "markerOmissions": [],
         "titleNotice": null,
         "derivedTitle": "Rootless",
         "artifact": {
           "filename": "changes-doc-u7-pre-009.mid",
-          "byteLength": 121,
-          "sha256": "64037a5322435a9f26c7c9c1d00376564d5ce6d75d07d0c59e940cf0c8a3b541",
+          "byteLength": 130,
+          "sha256": "674f01c1e8e1b9ef59511b964c3c30339b175acfdc77478bf3dce33e69ee6d08",
           "tempo": {
             "requestedBpm": 120,
             "encodedMicrosecondsPerQuarter": 500000,
             "roundingErrorNumerator": 0,
             "roundingErrorDenominator": 120
           },
-          "noteCount": 3,
+          "noteCount": 4,
           "markerCount": 2
         }
       },
