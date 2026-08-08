@@ -30,6 +30,7 @@
 mod upright_bass_body;
 
 use core::cell::UnsafeCell;
+use core::mem::MaybeUninit;
 use libm::{cos, exp, floor, pow, round, sin, sqrt};
 
 const PI: f64 = core::f64::consts::PI;
@@ -2570,29 +2571,43 @@ struct PluckedChordSession {
     stem_session: PluckedStemSession,
 }
 
-struct PluckedChordRuntimeState {
+struct PluckedChordRuntimeControl {
     next_handle: u32,
-    active: Option<(u32, PluckedChordSession)>,
+    active_handle: u32,
 }
 
-struct PluckedChordRuntimeSlot(UnsafeCell<PluckedChordRuntimeState>);
+struct PluckedChordRuntimeControlSlot(UnsafeCell<PluckedChordRuntimeControl>);
+struct PluckedChordRuntimeSessionSlot(UnsafeCell<MaybeUninit<PluckedChordSession>>);
 
 /* The shipping WASM is built without atomics or shared memory, and exported
  * calls are synchronous. The TypeScript host additionally serializes every
  * cooperative PLK2 render, so this slot can never be accessed concurrently or
  * re-entered. Keeping that exclusivity in the ABI avoids decoding and
  * reconstructing the complete instrument on every 256-sample browser yield. */
-unsafe impl Sync for PluckedChordRuntimeSlot {}
+unsafe impl Sync for PluckedChordRuntimeControlSlot {}
+unsafe impl Sync for PluckedChordRuntimeSessionSlot {}
 
-static PLK2_CHORD_RUNTIME: PluckedChordRuntimeSlot =
-    PluckedChordRuntimeSlot(UnsafeCell::new(PluckedChordRuntimeState {
+/* Keep the two nonzero control words separate from the large uninitialized
+ * session slot. The latter then lives in zero-cost WASM BSS instead of
+ * inflating the offline single-file artifact with tens of kilobytes of zeros. */
+static PLK2_CHORD_RUNTIME_CONTROL: PluckedChordRuntimeControlSlot =
+    PluckedChordRuntimeControlSlot(UnsafeCell::new(PluckedChordRuntimeControl {
         next_handle: 1,
-        active: None,
+        active_handle: 0,
     }));
+static PLK2_CHORD_RUNTIME_SESSION: PluckedChordRuntimeSessionSlot =
+    PluckedChordRuntimeSessionSlot(UnsafeCell::new(MaybeUninit::uninit()));
 
-fn with_plk2_chord_runtime<T>(operation: impl FnOnce(&mut PluckedChordRuntimeState) -> T) -> T {
+fn with_plk2_chord_runtime<T>(
+    operation: impl FnOnce(&mut PluckedChordRuntimeControl, &mut MaybeUninit<PluckedChordSession>) -> T,
+) -> T {
     // SAFETY: see the slot's single-threaded, non-reentrant WASM invariant.
-    unsafe { operation(&mut *PLK2_CHORD_RUNTIME.0.get()) }
+    unsafe {
+        operation(
+            &mut *PLK2_CHORD_RUNTIME_CONTROL.0.get(),
+            &mut *PLK2_CHORD_RUNTIME_SESSION.0.get(),
+        )
+    }
 }
 
 impl PluckedChordSession {
@@ -3020,14 +3035,19 @@ pub fn plk2_chord_runtime_init_slices(
     else {
         return 0;
     };
-    with_plk2_chord_runtime(|runtime| {
+    with_plk2_chord_runtime(|runtime, session_slot| {
         let handle = runtime.next_handle.max(1).min(i32::MAX as u32);
         runtime.next_handle = if handle == i32::MAX as u32 {
             1
         } else {
             handle + 1
         };
-        runtime.active = Some((handle, session));
+        if runtime.active_handle != 0 {
+            // SAFETY: a nonzero handle is the slot's initialization bit.
+            unsafe { session_slot.assume_init_drop() };
+        }
+        session_slot.write(session);
+        runtime.active_handle = handle;
         handle as i32
     })
 }
@@ -3041,12 +3061,13 @@ pub fn plk2_chord_runtime_step_slices(
     if handle <= 0 || output_capacity <= 0 {
         return 0;
     }
-    with_plk2_chord_runtime(|runtime| {
-        let Some((active_handle, session)) = runtime.active.as_mut() else {
+    with_plk2_chord_runtime(|runtime, session_slot| {
+        if runtime.active_handle != handle as u32 {
             return 0;
-        };
-        if *active_handle != handle as u32
-            || output_capacity as usize != session.frames
+        }
+        // SAFETY: the exact active handle proves init wrote the session.
+        let session = unsafe { session_slot.assume_init_mut() };
+        if output_capacity as usize != session.frames
             || left.len() < session.frames
             || right.len() < session.frames
         {
@@ -3055,11 +3076,15 @@ pub fn plk2_chord_runtime_step_slices(
         match session.advance(left, right) {
             PluckedChordAdvance::Progress => PLK2_CHORD_STEP_PROGRESS,
             PluckedChordAdvance::Complete => {
-                runtime.active = None;
+                // SAFETY: the exact active handle still owns this session.
+                unsafe { session_slot.assume_init_drop() };
+                runtime.active_handle = 0;
                 PLK2_CHORD_STEP_COMPLETE
             }
             PluckedChordAdvance::Invalid => {
-                runtime.active = None;
+                // SAFETY: the exact active handle still owns this session.
+                unsafe { session_slot.assume_init_drop() };
+                runtime.active_handle = 0;
                 0
             }
         }
@@ -3070,12 +3095,14 @@ pub fn plk2_chord_runtime_reset_handle(handle: i32) -> i32 {
     if handle <= 0 {
         return 0;
     }
-    with_plk2_chord_runtime(|runtime| match runtime.active.as_ref() {
-        Some((active_handle, _)) if *active_handle == handle as u32 => {
-            runtime.active = None;
-            1
+    with_plk2_chord_runtime(|runtime, session_slot| {
+        if runtime.active_handle != handle as u32 {
+            return 0;
         }
-        _ => 0,
+        // SAFETY: the exact active handle proves init wrote the session.
+        unsafe { session_slot.assume_init_drop() };
+        runtime.active_handle = 0;
+        1
     })
 }
 
@@ -3440,7 +3467,6 @@ pub extern "C" fn plk2_render(
 }
 
 /// Fixed caller-owned byte capacity for one cooperative chord session.
-#[no_mangle]
 pub extern "C" fn plk2_chord_session_state_max_bytes() -> i32 {
     PLK2_CHORD_STATE_MAX_BYTES as i32
 }
@@ -3448,7 +3474,6 @@ pub extern "C" fn plk2_chord_session_state_max_bytes() -> i32 {
 /// Host-side termination bound for a session of `output_capacity` frames.
 /// The physical phase can never exceed one simulation frame per output frame;
 /// reconstruction and stereo copy each cover the complete output once.
-#[no_mangle]
 pub extern "C" fn plk2_chord_session_max_steps(output_capacity: i32) -> i32 {
     if output_capacity <= 0 || output_capacity as usize > PLK2_CHORD_MAX_OUTPUT_FRAMES {
         return 0;
@@ -3459,10 +3484,17 @@ pub extern "C" fn plk2_chord_session_max_steps(output_capacity: i32) -> i32 {
     i32::try_from(simulation_steps + 2 * output_steps + 1).unwrap_or(0)
 }
 
+/// Shipping opaque-runtime termination bound. The caller-owned serialized ABI
+/// above remains available to native continuity/hostility tests but is not
+/// retained as a second browser implementation surface.
+#[no_mangle]
+pub extern "C" fn plk2_chord_runtime_max_steps(output_capacity: i32) -> i32 {
+    plk2_chord_session_max_steps(output_capacity)
+}
+
 /// Initialize a cooperative simultaneous chord without touching either output
 /// buffer. The returned prefix length must be passed back exactly to every
 /// step; the remaining caller capacity is cleared but is not session state.
-#[no_mangle]
 pub extern "C" fn plk2_chord_session_init(
     pack_index: i32,
     midis: *const i32,
@@ -3520,7 +3552,6 @@ pub extern "C" fn plk2_chord_session_init(
 /// Advance one fixed cooperative work quantum. Status 1 means the caller must
 /// yield and call again; status 2 means the complete stereo buffers are ready.
 /// Every pointer/capacity refusal occurs before state or output mutation.
-#[no_mangle]
 pub extern "C" fn plk2_chord_session_step(
     state: *mut u8,
     state_bytes: i32,
