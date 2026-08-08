@@ -58,6 +58,19 @@ const PLK2_STEM_STATE_MAX_BYTES: usize = 8_192;
 const PLK2_STEM_RENDER_MAX_FRAMES: usize = 8_192;
 const PLK2_STEM_MAX_ENERGY_J: f64 = 100.0;
 
+// The cooperative chord path keeps the complete physical session in a
+// caller-owned, checksummed byte image.  One call advances at most this many
+// expensive physical samples or this many cheap reconstruction/copy samples,
+// so the browser can yield between calls without changing the sound.
+const PLK2_CHORD_STATE_MAGIC: u32 = 0x3243_4c50; // "PLC2" in little endian.
+const PLK2_CHORD_STATE_VERSION: u32 = 1;
+const PLK2_CHORD_STATE_MAX_BYTES: usize = 12_288;
+const PLK2_CHORD_SIMULATION_CHUNK_FRAMES: usize = 2_048;
+const PLK2_CHORD_OUTPUT_CHUNK_FRAMES: usize = 16_384;
+const PLK2_CHORD_MAX_OUTPUT_FRAMES: usize = 6 * 96_000;
+pub const PLK2_CHORD_STEP_PROGRESS: i32 = 1;
+pub const PLK2_CHORD_STEP_COMPLETE: i32 = 2;
+
 const AIR_DENSITY_KG_PER_M3: f64 = 1.204;
 const ACOUSTIC_MIC_DISTANCE_M: f64 = 1.0;
 // Raw taps remain in pascals at one metre. The note-buffer ABI then crosses
@@ -1419,6 +1432,13 @@ fn encode_stem_session(session: &PluckedStemSession, bytes: &mut [u8]) -> Option
 }
 
 fn decode_stem_session(bytes: &[u8]) -> Option<PluckedStemSession> {
+    decode_stem_session_with_base(bytes, None)
+}
+
+fn decode_stem_session_with_base(
+    bytes: &[u8],
+    base: Option<PluckedStemSession>,
+) -> Option<PluckedStemSession> {
     let payload_bytes = bytes.len().checked_sub(core::mem::size_of::<u64>())?;
     let encoded_checksum = u64::from_le_bytes(bytes.get(payload_bytes..)?.try_into().ok()?);
     let payload = bytes.get(..payload_bytes)?;
@@ -1432,7 +1452,16 @@ fn decode_stem_session(bytes: &[u8]) -> Option<PluckedStemSession> {
     }
     let pack_index = reader.read_i32()?;
     let sample_rate_hz = reader.read_f64()?;
-    let mut session = PluckedStemSession::new(pack_index, sample_rate_hz)?;
+    let mut session = match base {
+        Some(session)
+            if session.pack_index == pack_index
+                && session.stem.sample_rate_hz.to_bits() == sample_rate_hz.to_bits() =>
+        {
+            session
+        }
+        Some(_) => return None,
+        None => PluckedStemSession::new(pack_index, sample_rate_hz)?,
+    };
     session.previous_body_flow_m3_per_s = reader.read_f64()?;
     session.stem.cumulative_source_work_j = reader.read_f64()?;
     session.stem.cumulative_intrinsic_loss_j = reader.read_f64()?;
@@ -2509,6 +2538,454 @@ pub fn plk2_render_slices(
     frames as i32
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum PluckedChordAdvance {
+    Progress,
+    Complete,
+    Invalid,
+}
+
+#[derive(Clone, Debug)]
+struct PluckedChordSession {
+    pack_index: i32,
+    output_sample_rate_hz: f64,
+    frames: usize,
+    rate_divisor: usize,
+    simulation_frames: usize,
+    simulated_frames: usize,
+    reconstructed_frames: usize,
+    copied_frames: usize,
+    filter_alpha: f64,
+    filter_one: f64,
+    filter_two: f64,
+    note_count: usize,
+    canonical_midis: [i32; MAX_STRINGS],
+    canonical_velocities: [i32; MAX_STRINGS],
+    contacts: [ContactState; MAX_STRINGS],
+    stem_session: PluckedStemSession,
+}
+
+impl PluckedChordSession {
+    fn new(
+        pack_index: i32,
+        midis: &[i32],
+        velocities: &[i32],
+        sample_rate: f32,
+        max_frames: i32,
+        forced_rate_divisor: Option<usize>,
+    ) -> Option<Self> {
+        if midis.len() != velocities.len()
+            || midis.is_empty()
+            || midis.len() > MAX_STRINGS
+            || velocities
+                .iter()
+                .any(|velocity| !(1..=127).contains(velocity))
+            || !sample_rate.is_finite()
+            || !(8_000.0..=96_000.0).contains(&sample_rate)
+            || max_frames <= 0
+        {
+            return None;
+        }
+
+        let note_count = midis.len();
+        let mut canonical_midis = [0_i32; MAX_STRINGS];
+        let mut canonical_velocities = [0_i32; MAX_STRINGS];
+        canonical_midis[..note_count].copy_from_slice(midis);
+        canonical_velocities[..note_count].copy_from_slice(velocities);
+        for index in 1..note_count {
+            let mut cursor = index;
+            while cursor > 0
+                && (canonical_midis[cursor], canonical_velocities[cursor])
+                    < (
+                        canonical_midis[cursor - 1],
+                        canonical_velocities[cursor - 1],
+                    )
+            {
+                canonical_midis.swap(cursor, cursor - 1);
+                canonical_velocities.swap(cursor, cursor - 1);
+                cursor -= 1;
+            }
+        }
+        let midis = &canonical_midis[..note_count];
+        let velocities = &canonical_velocities[..note_count];
+        let assignments = plk2_chord_string_frets(pack_index, midis)?;
+        let capacity = plk2_note_frames(pack_index, midis[0], sample_rate);
+        if capacity <= 0 {
+            return None;
+        }
+        let frames = capacity.min(max_frames) as usize;
+        let full_pack = plk2_pack(pack_index)?;
+        let mut pack = full_pack;
+        for note_index in 0..note_count {
+            pack.strings[note_index] = full_pack.strings[assignments[note_index].0];
+        }
+        for string in pack.strings.iter_mut().skip(note_count) {
+            *string = StringSpec::EMPTY;
+        }
+        pack.string_count = note_count;
+
+        let selected_rate_divisor = if frames < 3 {
+            1_usize
+        } else if full_pack.amplifier.is_some() {
+            if sample_rate >= 88_000.0 {
+                6_usize
+            } else if sample_rate >= 44_000.0 {
+                3_usize
+            } else if sample_rate >= 32_000.0 {
+                2_usize
+            } else {
+                1_usize
+            }
+        } else if sample_rate >= 88_000.0 {
+            4_usize
+        } else if sample_rate >= 32_000.0 {
+            2_usize
+        } else {
+            1_usize
+        };
+        let mut rate_divisor = forced_rate_divisor.unwrap_or(selected_rate_divisor);
+        if rate_divisor > 1 && (frames.saturating_sub(1) / rate_divisor).saturating_add(3) > frames
+        {
+            rate_divisor = 1;
+        }
+        if rate_divisor == 0 || sample_rate as f64 / (rate_divisor as f64) < 8_000.0 {
+            return None;
+        }
+        let simulation_rate = sample_rate as f64 / rate_divisor as f64;
+        let stem = PluckedStem::new(pack, simulation_rate).ok()?;
+        let mut stem_session = PluckedStemSession {
+            pack_index,
+            previous_body_flow_m3_per_s: 0.0,
+            stem,
+        };
+        let mut contacts = [ContactState::INACTIVE; MAX_STRINGS];
+        for note_index in 0..note_count {
+            let fret = assignments[note_index].1;
+            let gesture = plk2_gesture(pack_index, note_index, fret, velocities[note_index]);
+            contacts[note_index] = stem_session
+                .stem
+                .prepare_pluck_contact(gesture, false)
+                .ok()?;
+        }
+        let simulation_frames = if rate_divisor == 1 {
+            frames
+        } else {
+            (frames.saturating_sub(1) / rate_divisor + 3).min(frames)
+        };
+        let cutoff_hz = 0.42 * simulation_rate;
+        let filter_alpha = 1.0 - exp(-TAU * cutoff_hz / sample_rate as f64);
+        Some(Self {
+            pack_index,
+            output_sample_rate_hz: sample_rate as f64,
+            frames,
+            rate_divisor,
+            simulation_frames,
+            simulated_frames: 0,
+            reconstructed_frames: 0,
+            copied_frames: 0,
+            filter_alpha,
+            filter_one: 0.0,
+            filter_two: 0.0,
+            note_count,
+            canonical_midis,
+            canonical_velocities,
+            contacts,
+            stem_session,
+        })
+    }
+
+    fn advance(&mut self, left: &mut [f32], right: &mut [f32]) -> PluckedChordAdvance {
+        if left.len() < self.frames || right.len() < self.frames {
+            return PluckedChordAdvance::Invalid;
+        }
+        if self.simulated_frames < self.simulation_frames {
+            let stop = (self.simulated_frames + PLK2_CHORD_SIMULATION_CHUNK_FRAMES)
+                .min(self.simulation_frames);
+            let path = match plk2_render_path(self.pack_index) {
+                Some(path) => path,
+                None => return PluckedChordAdvance::Invalid,
+            };
+            let body_pressure_scale = AIR_DENSITY_KG_PER_M3 * self.stem_session.stem.sample_rate_hz
+                / (4.0 * PI * ACOUSTIC_MIC_DISTANCE_M);
+            let stereo_gain = core::f64::consts::FRAC_1_SQRT_2;
+            while self.simulated_frames < stop {
+                let frame = self.simulated_frames;
+                let taps = self
+                    .stem_session
+                    .stem
+                    .step_with_contacts(&mut self.contacts[..self.note_count]);
+                let pressure_pa = match path {
+                    PluckedRenderPath::AcousticBodyRadiation => {
+                        let flow = taps.acoustic_body_volume_velocity_m3_per_s;
+                        let pressure = body_pressure_scale
+                            * (flow - self.stem_session.previous_body_flow_m3_per_s);
+                        self.stem_session.previous_body_flow_m3_per_s = flow;
+                        pressure
+                    }
+                    PluckedRenderPath::ElectricCabinetRadiation => {
+                        taps.electric_cabinet_pressure_pa_at_1m
+                    }
+                };
+                let pcm =
+                    pressure_pa * REFERENCE_PCM_PER_PASCAL * plk2_listener_trim(self.pack_index);
+                if !pcm.is_finite() || pcm.abs() > f32::MAX as f64 {
+                    left[..self.frames].fill(0.0);
+                    right[..self.frames].fill(0.0);
+                    return PluckedChordAdvance::Invalid;
+                }
+                let sample = (pcm.clamp(-1.0, 1.0) * stereo_gain) as f32;
+                right[frame] = sample;
+                if self.rate_divisor == 1 {
+                    left[frame] = sample;
+                }
+                self.simulated_frames += 1;
+            }
+            if self.simulated_frames < self.simulation_frames {
+                return PluckedChordAdvance::Progress;
+            }
+            if self.rate_divisor == 1 {
+                self.reconstructed_frames = self.frames;
+                self.copied_frames = self.frames;
+                return PluckedChordAdvance::Complete;
+            }
+            return PluckedChordAdvance::Progress;
+        }
+
+        if self.reconstructed_frames < self.frames {
+            let stop =
+                (self.reconstructed_frames + PLK2_CHORD_OUTPUT_CHUNK_FRAMES).min(self.frames);
+            while self.reconstructed_frames < stop {
+                let frame = self.reconstructed_frames;
+                let sample = plk2_cubic_sample(
+                    &right[..self.simulation_frames],
+                    frame / self.rate_divisor,
+                    frame % self.rate_divisor,
+                    self.rate_divisor,
+                ) as f64;
+                self.filter_one += self.filter_alpha * (sample - self.filter_one);
+                self.filter_two += self.filter_alpha * (self.filter_one - self.filter_two);
+                left[frame] = self.filter_two as f32;
+                self.reconstructed_frames += 1;
+            }
+            return PluckedChordAdvance::Progress;
+        }
+
+        if self.copied_frames < self.frames {
+            let stop = (self.copied_frames + PLK2_CHORD_OUTPUT_CHUNK_FRAMES).min(self.frames);
+            right[self.copied_frames..stop].copy_from_slice(&left[self.copied_frames..stop]);
+            self.copied_frames = stop;
+        }
+        if self.copied_frames == self.frames {
+            PluckedChordAdvance::Complete
+        } else {
+            PluckedChordAdvance::Progress
+        }
+    }
+}
+
+fn encode_chord_session(session: &PluckedChordSession, bytes: &mut [u8]) -> Option<usize> {
+    let mut nested = [0_u8; PLK2_STEM_STATE_MAX_BYTES];
+    let nested_bytes = encode_stem_session(&session.stem_session, &mut nested)?;
+    let mut writer = StemStateWriter::new(bytes);
+    writer.write_u32(PLK2_CHORD_STATE_MAGIC)?;
+    writer.write_u32(PLK2_CHORD_STATE_VERSION)?;
+    writer.write_i32(session.pack_index)?;
+    writer.write_f64(session.output_sample_rate_hz)?;
+    writer.write_u32(u32::try_from(session.frames).ok()?)?;
+    writer.write_u32(u32::try_from(session.rate_divisor).ok()?)?;
+    writer.write_u32(u32::try_from(session.simulation_frames).ok()?)?;
+    writer.write_u32(u32::try_from(session.simulated_frames).ok()?)?;
+    writer.write_u32(u32::try_from(session.reconstructed_frames).ok()?)?;
+    writer.write_u32(u32::try_from(session.copied_frames).ok()?)?;
+    writer.write_f64(session.filter_one)?;
+    writer.write_f64(session.filter_two)?;
+    writer.write_u32(u32::try_from(session.note_count).ok()?)?;
+    for index in 0..MAX_STRINGS {
+        writer.write_i32(session.canonical_midis[index])?;
+        writer.write_i32(session.canonical_velocities[index])?;
+        writer.write_u8(u8::from(session.contacts[index].active))?;
+        writer.write_u32(session.contacts[index].elapsed_frames)?;
+    }
+    writer.write_u32(u32::try_from(nested_bytes).ok()?)?;
+    writer.write_bytes(&nested[..nested_bytes])?;
+    let payload_bytes = writer.offset;
+    let checksum = stem_state_checksum(&writer.bytes[..payload_bytes]);
+    writer.write_u64(checksum)?;
+    Some(writer.offset)
+}
+
+fn decode_chord_session(bytes: &[u8]) -> Option<PluckedChordSession> {
+    let payload_bytes = bytes.len().checked_sub(core::mem::size_of::<u64>())?;
+    let encoded_checksum = u64::from_le_bytes(bytes.get(payload_bytes..)?.try_into().ok()?);
+    let payload = bytes.get(..payload_bytes)?;
+    if stem_state_checksum(payload) != encoded_checksum {
+        return None;
+    }
+    let mut reader = StemStateReader::new(payload);
+    if reader.read_u32()? != PLK2_CHORD_STATE_MAGIC
+        || reader.read_u32()? != PLK2_CHORD_STATE_VERSION
+    {
+        return None;
+    }
+    let pack_index = reader.read_i32()?;
+    let output_sample_rate_hz = reader.read_f64()?;
+    if !output_sample_rate_hz.is_finite() || !(8_000.0..=96_000.0).contains(&output_sample_rate_hz)
+    {
+        return None;
+    }
+    let frames = usize::try_from(reader.read_u32()?).ok()?;
+    let rate_divisor = usize::try_from(reader.read_u32()?).ok()?;
+    let simulation_frames = usize::try_from(reader.read_u32()?).ok()?;
+    let simulated_frames = usize::try_from(reader.read_u32()?).ok()?;
+    let reconstructed_frames = usize::try_from(reader.read_u32()?).ok()?;
+    let copied_frames = usize::try_from(reader.read_u32()?).ok()?;
+    let filter_one = reader.read_f64()?;
+    let filter_two = reader.read_f64()?;
+    let note_count = usize::try_from(reader.read_u32()?).ok()?;
+    if note_count == 0
+        || note_count > MAX_STRINGS
+        || frames == 0
+        || simulated_frames > simulation_frames
+        || reconstructed_frames > frames
+        || copied_frames > frames
+        || (reconstructed_frames > 0 && simulated_frames != simulation_frames)
+        || (copied_frames > 0 && reconstructed_frames != frames)
+        || !stem_state_scalar_is_bounded(filter_one)
+        || !stem_state_scalar_is_bounded(filter_two)
+    {
+        return None;
+    }
+    let mut canonical_midis = [0_i32; MAX_STRINGS];
+    let mut canonical_velocities = [0_i32; MAX_STRINGS];
+    let mut encoded_contact_active = [false; MAX_STRINGS];
+    let mut encoded_contact_elapsed = [0_u32; MAX_STRINGS];
+    for index in 0..MAX_STRINGS {
+        canonical_midis[index] = reader.read_i32()?;
+        canonical_velocities[index] = reader.read_i32()?;
+        encoded_contact_active[index] = match reader.read_u8()? {
+            0 => false,
+            1 => true,
+            _ => return None,
+        };
+        encoded_contact_elapsed[index] = reader.read_u32()?;
+        if index >= note_count
+            && (canonical_midis[index] != 0
+                || canonical_velocities[index] != 0
+                || encoded_contact_active[index]
+                || encoded_contact_elapsed[index] != 0)
+        {
+            return None;
+        }
+    }
+    let nested_bytes = usize::try_from(reader.read_u32()?).ok()?;
+    let nested_end = reader.offset.checked_add(nested_bytes)?;
+    let nested = reader.bytes.get(reader.offset..nested_end)?;
+    reader.offset = nested_end;
+    if reader.offset != payload.len() {
+        return None;
+    }
+
+    let mut session = PluckedChordSession::new(
+        pack_index,
+        &canonical_midis[..note_count],
+        &canonical_velocities[..note_count],
+        output_sample_rate_hz as f32,
+        i32::try_from(frames).ok()?,
+        None,
+    )?;
+    if session.output_sample_rate_hz.to_bits() != output_sample_rate_hz.to_bits()
+        || session.frames != frames
+        || session.rate_divisor != rate_divisor
+        || session.simulation_frames != simulation_frames
+        || session.canonical_midis != canonical_midis
+        || session.canonical_velocities != canonical_velocities
+    {
+        return None;
+    }
+    session.stem_session = decode_stem_session_with_base(nested, Some(session.stem_session))?;
+    for index in 0..note_count {
+        let elapsed = encoded_contact_elapsed[index];
+        let total = session.contacts[index].total_frames;
+        if elapsed > total || (encoded_contact_active[index] && elapsed >= total) {
+            return None;
+        }
+        session.contacts[index].active = encoded_contact_active[index];
+        session.contacts[index].elapsed_frames = elapsed;
+    }
+    session.simulated_frames = simulated_frames;
+    session.reconstructed_frames = reconstructed_frames;
+    session.copied_frames = copied_frames;
+    session.filter_one = filter_one;
+    session.filter_two = filter_two;
+    Some(session)
+}
+
+pub fn plk2_chord_session_init_slices(
+    pack_index: i32,
+    midis: &[i32],
+    velocities: &[i32],
+    sample_rate: f32,
+    max_frames: i32,
+    state: &mut [u8],
+) -> i32 {
+    if state.len() < PLK2_CHORD_STATE_MAX_BYTES {
+        return 0;
+    }
+    let Some(session) =
+        PluckedChordSession::new(pack_index, midis, velocities, sample_rate, max_frames, None)
+    else {
+        return 0;
+    };
+    let mut encoded = [0_u8; PLK2_CHORD_STATE_MAX_BYTES];
+    let Some(encoded_bytes) = encode_chord_session(&session, &mut encoded) else {
+        return 0;
+    };
+    state[..PLK2_CHORD_STATE_MAX_BYTES].fill(0);
+    state[..encoded_bytes].copy_from_slice(&encoded[..encoded_bytes]);
+    i32::try_from(encoded_bytes).unwrap_or(0)
+}
+
+pub fn plk2_chord_session_step_slices(
+    state: &mut [u8],
+    left: &mut [f32],
+    right: &mut [f32],
+    output_capacity: i32,
+) -> i32 {
+    if output_capacity <= 0 {
+        return 0;
+    }
+    let Some(mut session) = decode_chord_session(state) else {
+        return 0;
+    };
+    if output_capacity as usize != session.frames
+        || left.len() < session.frames
+        || right.len() < session.frames
+    {
+        return 0;
+    }
+    let status = session.advance(left, right);
+    if status == PluckedChordAdvance::Invalid {
+        return 0;
+    }
+    let mut encoded = [0_u8; PLK2_CHORD_STATE_MAX_BYTES];
+    let Some(encoded_bytes) = encode_chord_session(&session, &mut encoded) else {
+        left[..session.frames].fill(0.0);
+        right[..session.frames].fill(0.0);
+        return 0;
+    };
+    if encoded_bytes != state.len() {
+        left[..session.frames].fill(0.0);
+        right[..session.frames].fill(0.0);
+        return 0;
+    }
+    state.copy_from_slice(&encoded[..encoded_bytes]);
+    match status {
+        PluckedChordAdvance::Progress => PLK2_CHORD_STEP_PROGRESS,
+        PluckedChordAdvance::Complete => PLK2_CHORD_STEP_COMPLETE,
+        PluckedChordAdvance::Invalid => 0,
+    }
+}
+
 /// Render one simultaneous plucked chord through one shared body and, for the
 /// electric pack, one shared nonlinear pickup/amp/cabinet chain.  This is the
 /// physical object the player actually strikes; summing independently rendered
@@ -2546,176 +3023,26 @@ fn plk2_render_chord_slices_inner(
     max_frames: i32,
     forced_rate_divisor: Option<usize>,
 ) -> i32 {
-    if midis.len() != velocities.len()
-        || midis.is_empty()
-        || midis.len() > MAX_STRINGS
-        || velocities
-            .iter()
-            .any(|velocity| !(1..=127).contains(velocity))
-        || !sample_rate.is_finite()
-        || !(8_000.0..=96_000.0).contains(&sample_rate)
-        || max_frames <= 0
-    {
-        return 0;
-    }
-    /* A simultaneous player's gesture is an unordered set of pitch/velocity
-     * pairs. Canonicalize it before course assignment so transport voice order
-     * cannot change bridge-splitting order, amplifier drive, or cache PCM. */
-    let note_count = midis.len();
-    let mut canonical_midis = [0_i32; MAX_STRINGS];
-    let mut canonical_velocities = [0_i32; MAX_STRINGS];
-    canonical_midis[..note_count].copy_from_slice(midis);
-    canonical_velocities[..note_count].copy_from_slice(velocities);
-    for index in 1..note_count {
-        let mut cursor = index;
-        while cursor > 0
-            && (canonical_midis[cursor], canonical_velocities[cursor])
-                < (
-                    canonical_midis[cursor - 1],
-                    canonical_velocities[cursor - 1],
-                )
-        {
-            canonical_midis.swap(cursor, cursor - 1);
-            canonical_velocities.swap(cursor, cursor - 1);
-            cursor -= 1;
-        }
-    }
-    let midis = &canonical_midis[..note_count];
-    let velocities = &canonical_velocities[..note_count];
-    let Some(assignments) = plk2_chord_string_frets(pack_index, midis) else {
+    let Some(mut session) = PluckedChordSession::new(
+        pack_index,
+        midis,
+        velocities,
+        sample_rate,
+        max_frames,
+        forced_rate_divisor,
+    ) else {
         return 0;
     };
-    let capacity = plk2_note_frames(pack_index, midis[0], sample_rate);
-    if capacity <= 0 {
+    if left.len() < session.frames || right.len() < session.frames {
         return 0;
     }
-    let frames = capacity.min(max_frames) as usize;
-    if left.len() < frames || right.len() < frames {
-        return 0;
-    }
-    let Some(full_pack) = plk2_pack(pack_index) else {
-        return 0;
-    };
-    let path = if full_pack.amplifier.is_some() {
-        PluckedRenderPath::ElectricCabinetRadiation
-    } else {
-        PluckedRenderPath::AcousticBodyRadiation
-    };
-    // Retain only the courses carrying this bounded chord.  They still share
-    // the complete reviewed body/pickup/amp pack.  The retained phrase ABI,
-    // not this one-shot cache path, owns unplayed-string sympathy.
-    let mut pack = full_pack;
-    for note_index in 0..midis.len() {
-        pack.strings[note_index] = full_pack.strings[assignments[note_index].0];
-    }
-    for string in pack.strings.iter_mut().skip(midis.len()) {
-        *string = StringSpec::EMPTY;
-    }
-    pack.string_count = midis.len();
-    // Evolving every shared state at the output rate wastes the main-thread
-    // budget which must prepare the whole chord before its source is
-    // scheduled. Acoustic packs retain 22.05/24 kHz simulation so steel-string
-    // attack partials through 9.3/10.1 kHz survive the modal anti-alias bound.
-    // The electric cabinet has no reviewed radiation above 6 kHz, so it uses
-    // 14.7/16 kHz. Fixed cubic reconstruction and a passive two-pole image
-    // filter preserve the output frame contract.
-    let selected_rate_divisor = if frames < 3 {
-        1_usize
-    } else if full_pack.amplifier.is_some() {
-        if sample_rate >= 88_000.0 {
-            6_usize
-        } else if sample_rate >= 44_000.0 {
-            3_usize
-        } else if sample_rate >= 32_000.0 {
-            2_usize
-        } else {
-            1_usize
-        }
-    } else if sample_rate >= 88_000.0 {
-        4_usize
-    } else if sample_rate >= 44_000.0 {
-        2_usize
-    } else if sample_rate >= 32_000.0 {
-        2_usize
-    } else {
-        1_usize
-    };
-    let mut rate_divisor = forced_rate_divisor.unwrap_or(selected_rate_divisor);
-    if rate_divisor > 1 && (frames.saturating_sub(1) / rate_divisor).saturating_add(3) > frames {
-        rate_divisor = 1;
-    }
-    if rate_divisor == 0 || sample_rate as f64 / (rate_divisor as f64) < 8_000.0 {
-        return 0;
-    }
-    let simulation_rate = sample_rate as f64 / rate_divisor as f64;
-    let Ok(mut stem) = PluckedStem::new(pack, simulation_rate) else {
-        return 0;
-    };
-    let mut contacts = [ContactState::INACTIVE; MAX_STRINGS];
-    for note_index in 0..midis.len() {
-        let fret = assignments[note_index].1;
-        let gesture = plk2_gesture(pack_index, note_index, fret, velocities[note_index]);
-        let Ok(contact) = stem.prepare_pluck_contact(gesture, false) else {
-            return 0;
-        };
-        contacts[note_index] = contact;
-    }
-
-    let stereo_gain = core::f64::consts::FRAC_1_SQRT_2;
-    let mut previous_body_flow = 0.0;
-    let body_pressure_scale =
-        AIR_DENSITY_KG_PER_M3 * simulation_rate / (4.0 * PI * ACOUSTIC_MIC_DISTANCE_M);
-    let simulation_frames = if rate_divisor == 1 {
-        frames
-    } else {
-        (frames.saturating_sub(1) / rate_divisor + 3).min(frames)
-    };
-    for frame in 0..simulation_frames {
-        let taps = stem.step_with_contacts(&mut contacts[..midis.len()]);
-        let pressure_pa = match path {
-            PluckedRenderPath::AcousticBodyRadiation => {
-                let flow = taps.acoustic_body_volume_velocity_m3_per_s;
-                let pressure = body_pressure_scale * (flow - previous_body_flow);
-                previous_body_flow = flow;
-                pressure
-            }
-            PluckedRenderPath::ElectricCabinetRadiation => taps.electric_cabinet_pressure_pa_at_1m,
-        };
-        let pcm = pressure_pa * REFERENCE_PCM_PER_PASCAL * plk2_listener_trim(pack_index);
-        if !pcm.is_finite() || pcm.abs() > f32::MAX as f64 {
-            left[..frames].fill(0.0);
-            right[..frames].fill(0.0);
-            return 0;
-        }
-        let sample = (pcm.clamp(-1.0, 1.0) * stereo_gain) as f32;
-        right[frame] = sample;
-        if rate_divisor == 1 {
-            left[frame] = sample;
+    loop {
+        match session.advance(left, right) {
+            PluckedChordAdvance::Progress => {}
+            PluckedChordAdvance::Complete => return session.frames as i32,
+            PluckedChordAdvance::Invalid => return 0,
         }
     }
-    if rate_divisor > 1 {
-        if !plk2_cubic_reconstruct(
-            &right[..simulation_frames],
-            &mut left[..frames],
-            rate_divisor,
-        ) {
-            left[..frames].fill(0.0);
-            right[..frames].fill(0.0);
-            return 0;
-        }
-        // Cubic reconstruction suppresses most images; two explicit passive
-        // RC sections remove the remainder above the physical simulation band.
-        let cutoff_hz = 0.42 * simulation_rate;
-        let alpha = 1.0 - exp(-TAU * cutoff_hz / sample_rate as f64);
-        let (mut left_one, mut left_two) = (0.0_f64, 0.0_f64);
-        for frame in 0..frames {
-            left_one += alpha * (left[frame] as f64 - left_one);
-            left_two += alpha * (left_one - left_two);
-            left[frame] = left_two as f32;
-        }
-        right[..frames].copy_from_slice(&left[..frames]);
-    }
-    frames as i32
 }
 
 /// Independent-test seam for comparing the bounded production-rate render to
@@ -3017,6 +3344,127 @@ pub extern "C" fn plk2_render(
         out_right,
         frames as i32,
     )
+}
+
+/// Fixed caller-owned byte capacity for one cooperative chord session.
+#[no_mangle]
+pub extern "C" fn plk2_chord_session_state_max_bytes() -> i32 {
+    PLK2_CHORD_STATE_MAX_BYTES as i32
+}
+
+/// Host-side termination bound for a session of `output_capacity` frames.
+/// The physical phase can never exceed one simulation frame per output frame;
+/// reconstruction and stereo copy each cover the complete output once.
+#[no_mangle]
+pub extern "C" fn plk2_chord_session_max_steps(output_capacity: i32) -> i32 {
+    if output_capacity <= 0 || output_capacity as usize > PLK2_CHORD_MAX_OUTPUT_FRAMES {
+        return 0;
+    }
+    let frames = output_capacity as usize;
+    let simulation_steps = frames.div_ceil(PLK2_CHORD_SIMULATION_CHUNK_FRAMES);
+    let output_steps = frames.div_ceil(PLK2_CHORD_OUTPUT_CHUNK_FRAMES);
+    i32::try_from(simulation_steps + 2 * output_steps + 1).unwrap_or(0)
+}
+
+/// Initialize a cooperative simultaneous chord without touching either output
+/// buffer. The returned prefix length must be passed back exactly to every
+/// step; the remaining caller capacity is cleared but is not session state.
+#[no_mangle]
+pub extern "C" fn plk2_chord_session_init(
+    pack_index: i32,
+    midis: *const i32,
+    velocities: *const i32,
+    note_count: i32,
+    sample_rate: f32,
+    max_frames: i32,
+    state: *mut u8,
+    state_capacity: i32,
+) -> i32 {
+    if !(1..=MAX_STRINGS as i32).contains(&note_count)
+        || midis.is_null()
+        || velocities.is_null()
+        || state.is_null()
+        || state_capacity < PLK2_CHORD_STATE_MAX_BYTES as i32
+        || !(midis as usize).is_multiple_of(core::mem::align_of::<i32>())
+        || !(velocities as usize).is_multiple_of(core::mem::align_of::<i32>())
+    {
+        return 0;
+    }
+    let note_count = note_count as usize;
+    let input_bytes = note_count * core::mem::size_of::<i32>();
+    let midi_start = midis as usize;
+    let velocity_start = velocities as usize;
+    let state_start = state as usize;
+    if !plk2_byte_ranges_are_disjoint(midi_start, input_bytes, velocity_start, input_bytes)
+        || !plk2_byte_ranges_are_disjoint(
+            midi_start,
+            input_bytes,
+            state_start,
+            PLK2_CHORD_STATE_MAX_BYTES,
+        )
+        || !plk2_byte_ranges_are_disjoint(
+            velocity_start,
+            input_bytes,
+            state_start,
+            PLK2_CHORD_STATE_MAX_BYTES,
+        )
+    {
+        return 0;
+    }
+    let midi_values = unsafe { core::slice::from_raw_parts(midis, note_count) };
+    let velocity_values = unsafe { core::slice::from_raw_parts(velocities, note_count) };
+    let state = unsafe { core::slice::from_raw_parts_mut(state, PLK2_CHORD_STATE_MAX_BYTES) };
+    plk2_chord_session_init_slices(
+        pack_index,
+        midi_values,
+        velocity_values,
+        sample_rate,
+        max_frames,
+        state,
+    )
+}
+
+/// Advance one fixed cooperative work quantum. Status 1 means the caller must
+/// yield and call again; status 2 means the complete stereo buffers are ready.
+/// Every pointer/capacity refusal occurs before state or output mutation.
+#[no_mangle]
+pub extern "C" fn plk2_chord_session_step(
+    state: *mut u8,
+    state_bytes: i32,
+    left: *mut f32,
+    right: *mut f32,
+    output_capacity: i32,
+) -> i32 {
+    if state.is_null()
+        || state_bytes <= 0
+        || state_bytes as usize > PLK2_CHORD_STATE_MAX_BYTES
+        || left.is_null()
+        || right.is_null()
+        || output_capacity <= 0
+        || output_capacity as usize > PLK2_CHORD_MAX_OUTPUT_FRAMES
+        || !(left as usize).is_multiple_of(core::mem::align_of::<f32>())
+        || !(right as usize).is_multiple_of(core::mem::align_of::<f32>())
+    {
+        return 0;
+    }
+    let state_start = state as usize;
+    let state_len = state_bytes as usize;
+    let frames = output_capacity as usize;
+    let Some(pcm_bytes) = frames.checked_mul(core::mem::size_of::<f32>()) else {
+        return 0;
+    };
+    let left_start = left as usize;
+    let right_start = right as usize;
+    if !plk2_byte_ranges_are_disjoint(state_start, state_len, left_start, pcm_bytes)
+        || !plk2_byte_ranges_are_disjoint(state_start, state_len, right_start, pcm_bytes)
+        || !plk2_byte_ranges_are_disjoint(left_start, pcm_bytes, right_start, pcm_bytes)
+    {
+        return 0;
+    }
+    let state = unsafe { core::slice::from_raw_parts_mut(state, state_len) };
+    let left = unsafe { core::slice::from_raw_parts_mut(left, frames) };
+    let right = unsafe { core::slice::from_raw_parts_mut(right, frames) };
+    plk2_chord_session_step_slices(state, left, right, output_capacity)
 }
 
 /// Render a bounded simultaneous chord through one physical instrument.

@@ -107,6 +107,17 @@ export type WaveguideRenderer = Readonly<{
     sampleRateHz: number,
     maxSeconds?: number,
   ) => RenderedNotePcm | null;
+  /**
+   * Bit-identical chord preparation through bounded WASM chunks. Each
+   * incomplete chunk yields one browser macrotask; physical state remains in
+   * a checksummed caller-owned linear-memory image rather than a singleton.
+   */
+  renderChordCooperatively?: (
+    midiPitches: readonly number[],
+    velocities: readonly number[],
+    sampleRateHz: number,
+    maxSeconds?: number,
+  ) => Promise<RenderedNotePcm | null>;
   /** Stateful physical phrase path, present only on clarinet v2. */
   renderPhraseSegment?: (
     midiPitch: number,
@@ -384,6 +395,25 @@ type ConcertGrandExports = Readonly<{
     left: number,
     right: number,
     maxFrames: number,
+  ) => number;
+  plk2_chord_session_state_max_bytes?: () => number;
+  plk2_chord_session_max_steps?: (outputCapacity: number) => number;
+  plk2_chord_session_init?: (
+    pack: number,
+    midis: number,
+    velocities: number,
+    noteCount: number,
+    sampleRate: number,
+    maxFrames: number,
+    state: number,
+    stateCapacity: number,
+  ) => number;
+  plk2_chord_session_step?: (
+    state: number,
+    stateBytes: number,
+    left: number,
+    right: number,
+    outputCapacity: number,
   ) => number;
   plk2_stem_state_max_bytes?: () => number;
   plk2_stem_render_max_frames?: () => number;
@@ -959,6 +989,259 @@ function ensureCapacity(
   }
 }
 
+const COOPERATIVE_CHORD_SCRATCH_OFFSET_BYTES = 16 * 1_024 * 1_024;
+const PLK2_CHORD_STEP_PROGRESS = 1;
+const PLK2_CHORD_STEP_COMPLETE = 2;
+const MAX_COOPERATIVE_CHORD_STATE_BYTES = 1_048_576;
+const MAX_COOPERATIVE_CHORD_STEPS = 1_000_000;
+
+type PluckedChordRenderAbi = Readonly<{
+  noteFrames: (pack: number, midi: number, sampleRate: number) => number;
+  renderChordInto?: (
+    pack: number,
+    midis: number,
+    velocities: number,
+    noteCount: number,
+    sampleRate: number,
+    left: number,
+    right: number,
+    maxFrames: number,
+  ) => number;
+  sessionStateMaxBytes?: () => number;
+  sessionMaxSteps?: (outputCapacity: number) => number;
+  sessionInit?: (
+    pack: number,
+    midis: number,
+    velocities: number,
+    noteCount: number,
+    sampleRate: number,
+    maxFrames: number,
+    state: number,
+    stateCapacity: number,
+  ) => number;
+  sessionStep?: (
+    state: number,
+    stateBytes: number,
+    left: number,
+    right: number,
+    outputCapacity: number,
+  ) => number;
+}>;
+
+type PluckedChordRenderFunctions = Pick<
+  WaveguideRenderer,
+  "renderChord" | "renderChordCooperatively"
+>;
+
+type PluckedChordRenderFactoryOptions = Readonly<{
+  packIndex: number;
+  memory: WebAssembly.Memory;
+  scratchBase: number;
+  cooperativeScratchBase: number;
+  abi: PluckedChordRenderAbi;
+  yieldToMacrotask?: () => Promise<void>;
+  runExclusive?: <T>(task: () => Promise<T>) => Promise<T>;
+}>;
+
+function validatePluckedChordRequest(
+  abi: PluckedChordRenderAbi,
+  packIndex: number,
+  midiPitches: readonly number[],
+  velocities: readonly number[],
+  sampleRateHz: number,
+  maxSeconds: number | undefined,
+): Readonly<{ natural: number; capacity: number }> | null {
+  if (
+    midiPitches.length === 0 || midiPitches.length > 6 ||
+    midiPitches.length !== velocities.length ||
+    midiPitches.some((midi) => !Number.isSafeInteger(midi)) ||
+    velocities.some((velocity) =>
+      !Number.isSafeInteger(velocity) || velocity < 1 || velocity > 127
+    )
+  ) return null;
+  const firstMidi = midiPitches[0];
+  if (firstMidi === undefined) return null;
+  const natural = abi.noteFrames(packIndex, firstMidi, sampleRateHz);
+  if (natural <= 0) return null;
+  const capacity =
+    maxSeconds === undefined || !Number.isFinite(maxSeconds)
+      ? natural
+      : Math.min(
+          natural,
+          Math.max(1, Math.round(maxSeconds * sampleRateHz)),
+        );
+  return Object.freeze({ natural, capacity });
+}
+
+function finishPluckedChordPcm(
+  memory: WebAssembly.Memory,
+  leftPointer: number,
+  rightPointer: number,
+  written: number,
+  capacity: number,
+  natural: number,
+  sampleRateHz: number,
+): RenderedNotePcm | null {
+  if (written <= 0 || written > capacity) return null;
+  const left = new Float32Array(written);
+  const right = new Float32Array(written);
+  left.set(new Float32Array(memory.buffer, leftPointer, written));
+  right.set(new Float32Array(memory.buffer, rightPointer, written));
+  if (written === capacity && capacity < natural) {
+    const fade = Math.min(Math.round(0.015 * sampleRateHz), written);
+    for (let index = 0; index < fade; index += 1) {
+      const gain = (fade - index) / fade;
+      const at = written - fade + index;
+      left[at] = (left[at] ?? 0) * gain;
+      right[at] = (right[at] ?? 0) * gain;
+    }
+  }
+  return Object.freeze({ sampleRateHz, frameCount: written, left, right });
+}
+
+function browserMacrotask(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+/** Production/test seam for the sync and cooperative views of one PLK2 ABI. */
+export function createPluckedChordRenderFunctions(
+  options: PluckedChordRenderFactoryOptions,
+): PluckedChordRenderFunctions {
+  const { packIndex, memory, scratchBase, cooperativeScratchBase, abi } = options;
+  let renderChord: WaveguideRenderer["renderChord"];
+  if (abi.renderChordInto !== undefined) {
+    renderChord = (midiPitches, velocities, sampleRateHz, maxSeconds) => {
+      const request = validatePluckedChordRequest(
+        abi,
+        packIndex,
+        midiPitches,
+        velocities,
+        sampleRateHz,
+        maxSeconds,
+      );
+      if (request === null) return null;
+      const channelBytes = request.capacity * 4;
+      const leftPointer = scratchBase;
+      const rightPointer = leftPointer + channelBytes;
+      const midiPointer = rightPointer + channelBytes;
+      const velocityPointer = midiPointer + midiPitches.length * 4;
+      const totalBytes = velocityPointer + velocities.length * 4 - scratchBase;
+      ensureCapacity(memory, scratchBase, totalBytes);
+      new Int32Array(memory.buffer, midiPointer, midiPitches.length).set(midiPitches);
+      new Int32Array(memory.buffer, velocityPointer, velocities.length).set(velocities);
+      const written = abi.renderChordInto?.(
+        packIndex,
+        midiPointer,
+        velocityPointer,
+        midiPitches.length,
+        sampleRateHz,
+        leftPointer,
+        rightPointer,
+        request.capacity,
+      ) ?? 0;
+      return finishPluckedChordPcm(
+        memory,
+        leftPointer,
+        rightPointer,
+        written,
+        request.capacity,
+        request.natural,
+        sampleRateHz,
+      );
+    };
+  }
+
+  const cooperative = [
+    abi.sessionStateMaxBytes,
+    abi.sessionMaxSteps,
+    abi.sessionInit,
+    abi.sessionStep,
+  ];
+  let renderChordCooperatively: WaveguideRenderer["renderChordCooperatively"];
+  if (cooperative.every((entry) => entry !== undefined)) {
+    const yieldToMacrotask = options.yieldToMacrotask ?? browserMacrotask;
+    renderChordCooperatively = async (
+      midiPitches,
+      velocities,
+      sampleRateHz,
+      maxSeconds,
+    ) => {
+      const task = async (): Promise<RenderedNotePcm | null> => {
+      const request = validatePluckedChordRequest(
+        abi,
+        packIndex,
+        midiPitches,
+        velocities,
+        sampleRateHz,
+        maxSeconds,
+      );
+      if (request === null) return null;
+      const stateCapacity = abi.sessionStateMaxBytes?.() ?? 0;
+      const maxSteps = abi.sessionMaxSteps?.(request.capacity) ?? 0;
+      if (
+        !Number.isSafeInteger(stateCapacity) || stateCapacity <= 0 ||
+        stateCapacity > MAX_COOPERATIVE_CHORD_STATE_BYTES ||
+        !Number.isSafeInteger(maxSteps) || maxSteps <= 0 ||
+        maxSteps > MAX_COOPERATIVE_CHORD_STEPS
+      ) return null;
+      const channelBytes = request.capacity * 4;
+      const leftPointer = cooperativeScratchBase;
+      const rightPointer = leftPointer + channelBytes;
+      const midiPointer = rightPointer + channelBytes;
+      const velocityPointer = midiPointer + midiPitches.length * 4;
+      const statePointer = velocityPointer + velocities.length * 4;
+      const totalBytes = statePointer + stateCapacity - cooperativeScratchBase;
+      ensureCapacity(memory, cooperativeScratchBase, totalBytes);
+      new Int32Array(memory.buffer, midiPointer, midiPitches.length).set(midiPitches);
+      new Int32Array(memory.buffer, velocityPointer, velocities.length).set(velocities);
+      const stateBytes = abi.sessionInit?.(
+        packIndex,
+        midiPointer,
+        velocityPointer,
+        midiPitches.length,
+        sampleRateHz,
+        request.capacity,
+        statePointer,
+        stateCapacity,
+      ) ?? 0;
+      if (stateBytes <= 0 || stateBytes > stateCapacity) return null;
+      for (let step = 0; step < maxSteps; step += 1) {
+        const status = abi.sessionStep?.(
+          statePointer,
+          stateBytes,
+          leftPointer,
+          rightPointer,
+          request.capacity,
+        ) ?? 0;
+        if (status === PLK2_CHORD_STEP_COMPLETE) {
+          return finishPluckedChordPcm(
+            memory,
+            leftPointer,
+            rightPointer,
+            request.capacity,
+            request.capacity,
+            request.natural,
+            sampleRateHz,
+          );
+        }
+        if (status !== PLK2_CHORD_STEP_PROGRESS) return null;
+        await yieldToMacrotask();
+      }
+      return null;
+      };
+      return options.runExclusive === undefined
+        ? await task()
+        : await options.runExclusive(task);
+    };
+  }
+  return Object.freeze({
+    ...(renderChord === undefined ? {} : { renderChord }),
+    ...(renderChordCooperatively === undefined
+      ? {}
+      : { renderChordCooperatively }),
+  });
+}
+
 type DspCore = Readonly<{
   concertGrand: ConcertGrandRenderer;
   waveguide: ReadonlyMap<string, WaveguideRenderer>;
@@ -1018,15 +1301,56 @@ function optionalPluckedStemExports(
   });
 }
 
-function optionalPluckedChordExport(
+function optionalPluckedChordExports(
   rawExports: Readonly<Record<string, unknown>>,
-): Pick<ConcertGrandExports, "plk2_render_chord"> {
-  if (rawExports["plk2_render_chord"] === undefined) return Object.freeze({});
-  return Object.freeze({
-    plk2_render_chord: requireExportedFunction(
+): Pick<
+  ConcertGrandExports,
+  | "plk2_render_chord"
+  | "plk2_chord_session_state_max_bytes"
+  | "plk2_chord_session_max_steps"
+  | "plk2_chord_session_init"
+  | "plk2_chord_session_step"
+> {
+  const renderChord = rawExports["plk2_render_chord"] === undefined
+    ? undefined
+    : requireExportedFunction(
       rawExports,
       "plk2_render_chord",
-    ) as NonNullable<ConcertGrandExports["plk2_render_chord"]>,
+    ) as NonNullable<ConcertGrandExports["plk2_render_chord"]>;
+  const cooperativeNames = [
+    "plk2_chord_session_state_max_bytes",
+    "plk2_chord_session_max_steps",
+    "plk2_chord_session_init",
+    "plk2_chord_session_step",
+  ] as const;
+  const present = cooperativeNames.filter((name) => rawExports[name] !== undefined);
+  if (present.length !== 0 && present.length !== cooperativeNames.length) {
+    const missing = cooperativeNames.find((name) => rawExports[name] === undefined);
+    throw new Error(`DSP_WASM_EXPORT_MISSING:${missing ?? "plk2_chord_session"}`);
+  }
+  const cooperative = present.length === cooperativeNames.length
+    ? {
+      plk2_chord_session_state_max_bytes: requireExportedFunction(
+        rawExports,
+        "plk2_chord_session_state_max_bytes",
+      ) as NonNullable<ConcertGrandExports["plk2_chord_session_state_max_bytes"]>,
+      plk2_chord_session_max_steps: requireExportedFunction(
+        rawExports,
+        "plk2_chord_session_max_steps",
+      ) as NonNullable<ConcertGrandExports["plk2_chord_session_max_steps"]>,
+      plk2_chord_session_init: requireExportedFunction(
+        rawExports,
+        "plk2_chord_session_init",
+      ) as NonNullable<ConcertGrandExports["plk2_chord_session_init"]>,
+      plk2_chord_session_step: requireExportedFunction(
+        rawExports,
+        "plk2_chord_session_step",
+      ) as NonNullable<ConcertGrandExports["plk2_chord_session_step"]>,
+    }
+    : {};
+  return Object.freeze({
+    ...(renderChord === undefined ? {} : { plk2_render_chord: renderChord }),
+    ...cooperative,
   });
 }
 
@@ -1084,7 +1408,7 @@ async function instantiate(): Promise<DspCore> {
       rawExports,
       "plk2_render",
     ) as ConcertGrandExports["plk2_render"],
-    ...optionalPluckedChordExport(rawExports),
+    ...optionalPluckedChordExports(rawExports),
     ...optionalPluckedStemExports(rawExports),
     flt_note_frames: requireExportedFunction(
       rawExports,
@@ -1166,6 +1490,17 @@ async function instantiate(): Promise<DspCore> {
       ? exports.__heap_base.value
       : memory.buffer.byteLength;
   const scratchBase = Math.ceil((heapBase + 1_024) / 16) * 16;
+  let cooperativeChordTail: Promise<void> = Promise.resolve();
+  const runCooperativeChordExclusive = <T>(
+    task: () => Promise<T>,
+  ): Promise<T> => {
+    const result = cooperativeChordTail.then(task, task);
+    cooperativeChordTail = result.then(
+      () => undefined,
+      () => undefined,
+    );
+    return result;
+  };
 
   const renderSynthesizedNote = (
     midiPitch: number,
@@ -1567,72 +1902,38 @@ async function instantiate(): Promise<DspCore> {
     };
   };
 
-  const makePluckedChordRender = (
+  const makePluckedChordRenders = (
     packIndex: number,
-  ): WaveguideRenderer["renderChord"] | undefined => {
-    const renderChordInto = exports.plk2_render_chord;
-    if (renderChordInto === undefined) return undefined;
-    return (midiPitches, velocities, sampleRateHz, maxSeconds) => {
-      if (
-        midiPitches.length === 0 || midiPitches.length > 6 ||
-        midiPitches.length !== velocities.length ||
-        midiPitches.some((midi) => !Number.isSafeInteger(midi)) ||
-        velocities.some((velocity) =>
-          !Number.isSafeInteger(velocity) || velocity < 1 || velocity > 127
-        )
-      ) return null;
-      const firstMidi = midiPitches[0];
-      if (firstMidi === undefined) return null;
-      const natural = exports.plk2_note_frames(packIndex, firstMidi, sampleRateHz);
-      if (natural <= 0) return null;
-      const capacity =
-        maxSeconds === undefined || !Number.isFinite(maxSeconds)
-          ? natural
-          : Math.min(
-              natural,
-              Math.max(1, Math.round(maxSeconds * sampleRateHz)),
-            );
-      const channelBytes = capacity * 4;
-      const leftPointer = scratchBase;
-      const rightPointer = leftPointer + channelBytes;
-      const midiPointer = rightPointer + channelBytes;
-      const velocityPointer = midiPointer + midiPitches.length * 4;
-      const totalBytes = velocityPointer + velocities.length * 4 - scratchBase;
-      ensureCapacity(memory, scratchBase, totalBytes);
-      new Int32Array(memory.buffer, midiPointer, midiPitches.length).set(midiPitches);
-      new Int32Array(memory.buffer, velocityPointer, velocities.length).set(velocities);
-      const written = renderChordInto(
-        packIndex,
-        midiPointer,
-        velocityPointer,
-        midiPitches.length,
-        sampleRateHz,
-        leftPointer,
-        rightPointer,
-        capacity,
-      );
-      if (written <= 0 || written > capacity) return null;
-      const left = new Float32Array(written);
-      const right = new Float32Array(written);
-      left.set(new Float32Array(memory.buffer, leftPointer, written));
-      right.set(new Float32Array(memory.buffer, rightPointer, written));
-      if (written === capacity && capacity < natural) {
-        const fade = Math.min(Math.round(0.015 * sampleRateHz), written);
-        for (let index = 0; index < fade; index += 1) {
-          const gain = (fade - index) / fade;
-          const at = written - fade + index;
-          left[at] = (left[at] ?? 0) * gain;
-          right[at] = (right[at] ?? 0) * gain;
-        }
-      }
-      return Object.freeze({
-        sampleRateHz,
-        frameCount: written,
-        left,
-        right,
-      });
-    };
-  };
+  ): PluckedChordRenderFunctions => createPluckedChordRenderFunctions({
+    packIndex,
+    memory,
+    scratchBase,
+    /*
+     * The cooperative session remains live across macrotask yields. Keep it
+     * above every synchronous scratch allocation, then serialize all packs
+     * because they deliberately share this bounded region.
+     */
+    cooperativeScratchBase: scratchBase + COOPERATIVE_CHORD_SCRATCH_OFFSET_BYTES,
+    abi: Object.freeze({
+      noteFrames: exports.plk2_note_frames,
+      ...(exports.plk2_render_chord === undefined
+        ? {}
+        : { renderChordInto: exports.plk2_render_chord }),
+      ...(exports.plk2_chord_session_state_max_bytes === undefined
+        ? {}
+        : { sessionStateMaxBytes: exports.plk2_chord_session_state_max_bytes }),
+      ...(exports.plk2_chord_session_max_steps === undefined
+        ? {}
+        : { sessionMaxSteps: exports.plk2_chord_session_max_steps }),
+      ...(exports.plk2_chord_session_init === undefined
+        ? {}
+        : { sessionInit: exports.plk2_chord_session_init }),
+      ...(exports.plk2_chord_session_step === undefined
+        ? {}
+        : { sessionStep: exports.plk2_chord_session_step }),
+    }),
+    runExclusive: runCooperativeChordExclusive,
+  });
 
   const renderClarinetPhraseSegment: NonNullable<
     WaveguideRenderer["renderPhraseSegment"]
@@ -1927,11 +2228,11 @@ async function instantiate(): Promise<DspCore> {
   ] as const) {
     const subject = waveguide.get(algorithmId);
     if (subject === undefined) throw new Error(`DSP_PLUCKED_RENDERER_MISSING:${algorithmId}`);
-    const renderChord = makePluckedChordRender(packIndex);
-    if (renderChord !== undefined) {
+    const chordRenders = makePluckedChordRenders(packIndex);
+    if (Object.keys(chordRenders).length !== 0) {
       waveguide.set(
         algorithmId,
-        Object.freeze({ ...subject, renderChord }),
+        Object.freeze({ ...subject, ...chordRenders }),
       );
     }
   }

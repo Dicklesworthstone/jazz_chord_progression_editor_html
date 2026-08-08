@@ -810,6 +810,7 @@ function createAudioEngineInternal(
       windArticulation?: "legato" | "tongued",
     ) => ReturnType<ConcertGrandRenderer["renderNote"]>;
     renderChord?: WaveguideRenderer["renderChord"];
+    renderChordCooperatively?: WaveguideRenderer["renderChordCooperatively"];
   }> | null {
     if (algorithmId === CONCERT_GRAND_RENDERER_ALGORITHM_ID) return renderer;
     const waveguide = waveguideRenderers?.get(algorithmId);
@@ -1229,23 +1230,25 @@ function createAudioEngineInternal(
     return storeRenderedPcm(recipe, context, key, pcm);
   }
 
-  /** Resolve one shared-body/shared-amplifier buffer for a plucked chord. */
-  function renderedChordBufferFor(
+  /** Prepare one shared physical chord without monopolizing the browser's
+   * scheduler thread. The WASM session advances by bounded deterministic
+   * quanta and the host yields one macrotask between incomplete steps. */
+  async function renderedChordBufferForCooperatively(
     recipe: AudioRenderedInstrumentRecipe,
     context: AudioContextPort,
     voices: readonly RenderedChordVoice[],
     requestedSeconds: number,
-  ): AudioBufferPort | null {
+  ): Promise<AudioBufferPort | null> {
     if (voices.length < 2) return null;
     const chordRenderer = rendererForAlgorithm(recipe.renderer.algorithmId);
-    if (chordRenderer?.renderChord === undefined) return null;
+    if (chordRenderer?.renderChordCooperatively === undefined) return null;
     const seconds = bucketRenderSeconds(requestedSeconds);
     const key = renderedChordBufferKey(recipe, chordRenderer, voices, seconds);
     const cache = recipeBufferCache(recipe.id);
     const cached = touchRenderedBufferEntry(cache, key);
     if (cached !== undefined) return cached.buffer;
     const pairs = canonicalRenderedChordPairs(voices);
-    const pcm = chordRenderer.renderChord(
+    const pcm = await chordRenderer.renderChordCooperatively(
       pairs.map((pair) => pair.midiPitch),
       pairs.map((pair) => pair.velocity),
       context.sampleRate,
@@ -1274,6 +1277,7 @@ function createAudioEngineInternal(
     return touchRenderedBufferEntry(recipeBufferCache(recipe.id), key)?.buffer ??
       null;
   }
+
   let reportedContextState: AudioContextStatePort | "absent" = "absent";
   let mix: AudioMix = Object.freeze({ masterVolume: 1, reverbAmount: 0 });
   let lastAcceptedGestureSequence = 0;
@@ -3259,14 +3263,17 @@ function createAudioEngineInternal(
     if (
       isSharedPluckedChordRecipe(recipe) &&
       notesValue.length > 1 &&
-      pluckedRenderer?.renderChord === undefined
+      pluckedRenderer?.renderChordCooperatively === undefined
     ) {
       return refuse({
         code: "audio.renderer_unavailable",
         path: ["instrumentId"],
       });
     }
-    if (pluckedRenderer?.renderChord !== undefined && notesValue.length > 1) {
+    if (
+      pluckedRenderer?.renderChordCooperatively !== undefined &&
+      notesValue.length > 1
+    ) {
       type PreparedPluckedNote = RenderedChordVoice &
         Readonly<{
           seconds: number;
@@ -3428,7 +3435,7 @@ function createAudioEngineInternal(
                 continue;
               }
               if (
-                renderedChordBufferFor(
+                await renderedChordBufferForCooperatively(
                   recipe,
                   context,
                   group,

@@ -105,11 +105,11 @@
     "changes.dsp.plucked-electric@2",
     "changes.dsp.plucked-ukulele@1"
   ],
-  "wasmSha256": "a39dc2640715d034f145afe9b35331ef4b48dd49d8cc4075dc54fc058e210446",
+  "wasmSha256": "67a0d8588a31314f5e6b0ea29a825dac297cb3f8aeac2241d1d034b02fa3b92d",
   "sourceBindings": [
     {
       "path": "dsp/concert-grand/src/plucked_v2.rs",
-      "sha256": "fccb0305f4f30ab299cd03c8185fb343f2b077acb1739bb47aecaa2dc13f4de3"
+      "sha256": "24419e6ce394f28e67f9a3181202b6bb79c2b30495c5d1ad64878690be22962f"
     },
     {
       "path": "dsp/concert-grand/src/lib.rs",
@@ -117,7 +117,7 @@
     },
     {
       "path": "src/audio/dsp-renderer.ts",
-      "sha256": "b815f4883ce20d4003632297697172b5182c8acb37843d62775c44abe44d2207"
+      "sha256": "f977b614327848a8873a4cfd6cc124872c779ccc9544c0093e8f77aaaada5b94"
     },
     {
       "path": "src/audio/instrument-recipes-contract.ts",
@@ -136,7 +136,7 @@
       "sha256": "022090f23295f2948685ff8b3a954de8f8fc4db3f0d2da544334d6700f4f97bb"
     }
   ],
-  "sourceClosureSha256": "4aebe34763bde523b93d32318cac831f07d11db81c679deee6025c0ab2a4caae",
+  "sourceClosureSha256": "765eed5bde1937f34b88c113a46d31fd407a7fc34bb0c30abf5d4a8250b4f006",
   "cells": [
     {
       "id": "archtop-m48",
@@ -587,5 +587,5 @@
     "passedPairwiseCellCount": 6,
     "failedPairwiseCellCount": 0
   },
-  "evidenceSha256": "3036cfa591a2cb5958686e516f09a300725c970839d20228cbbfe6c37b68f0e7"
+  "evidenceSha256": "d807faea51d9b0407c4bfad7ec5894d1ae0c897f73f69ff7a2ee36750059bd6e"
 }

@@ -92,6 +92,7 @@ import type {
   TransportState,
 } from "../audio";
 import type { StudioAudioGesture, StudioAudioPort } from "./studio-audio";
+import { buildPlaybackPreparationPlan } from "./playback-preparation-plan";
 import {
   compileStudioPlaybackPlan,
   performStudioPlaybackPlan,
@@ -127,6 +128,18 @@ import {
  * the opening bars; the rest warm behind the transport.
  */
 const PREPARE_LEADING_NOTE_COUNT = 8;
+
+function maximumPreparedVoicesPerEvent(instrumentId: InstrumentId): number {
+  if (instrumentId === "ukulele") return 4;
+  if (
+    instrumentId === "guitar" ||
+    instrumentId === "blues-guitar" ||
+    instrumentId === "dreadnought-guitar"
+  ) {
+    return 6;
+  }
+  return Number.MAX_SAFE_INTEGER;
+}
 
 const TITLE_COMMAND_INTERVAL_MS = 1_001;
 const MAX_TITLE_COMMAND_ORDINAL = Math.floor(
@@ -4473,14 +4486,8 @@ function makeStudioComposition(
     totalBeats: BeatPosition;
   }> | null = null;
 
-  /*
-   * The tail of the last play's note set, warmed only once its run reports
-   * `ready`. Warming behind a RUNNING transport starves the scheduler, so
-   * the run itself defers this work; leaving it unwired instead (as the
-   * original `void warmRemaining;` did) meant the tail never warmed at all
-   * and every replay cold-rendered inside the lookahead deadline.
-   */
-  let pendingDeferredWarmup: (() => void) | null = null;
+  /* A new play/stop supersedes cooperative render-ahead from the prior run. */
+  let renderAheadRunToken = 0;
 
   const wholeChartLoop = (
     plan: Readonly<{ totalBeats: BeatPosition }>,
@@ -4914,16 +4921,12 @@ function makeStudioComposition(
         ]),
       ]),
     );
-    const distinctNotes = new Map<
-      string,
-      Readonly<{
-        midiPitch: MidiPitch;
-        velocity: number;
-        gateSeconds: number;
-        eventId: string;
-        voiceOrdinal: number;
-      }>
-    >();
+    const preparationEvents: Array<Readonly<{
+      eventId: string;
+      midiPitches: readonly MidiPitch[];
+      velocity: number;
+      gateSeconds: number;
+    }>> = [];
     /*
      * Each note warms the seconds bucket its own scheduled gate will
      * request at attack time. Sustained chords otherwise warm the fixed
@@ -4943,50 +4946,51 @@ function makeStudioComposition(
       const gateSeconds =
         ((event.gateDurationTicks / PLAYBACK_PLAN_MIDI_PPQ) * 60) /
         performance.tempoBpm;
-      for (const [voiceOrdinal, midiPitch] of event.midiPitches.entries()) {
-        const key = `${event.eventId}:${String(voiceOrdinal)}`;
-        if (!distinctNotes.has(key)) {
-          distinctNotes.set(
-            key,
-            Object.freeze({
-              midiPitch,
-              velocity: event.velocity,
-              gateSeconds,
-              eventId: event.eventId,
-              voiceOrdinal,
-            }),
-          );
-        }
-      }
+      preparationEvents.push(Object.freeze({
+        eventId: event.eventId,
+        midiPitches: event.midiPitches,
+        velocity: event.velocity,
+        gateSeconds,
+      }));
     }
-    /*
-     * Warming every distinct note before the first sound costs real time on
-     * a slow renderer, and Play must not wait on notes the opening bars do
-     * not need. Split the set: the run waits only for the leading notes, and
-     * the remainder warms behind the transport. A note that is still cold
-     * when the scheduler reaches it renders on demand — slower, never silent.
-     */
-    const allPreparedNotes = [...distinctNotes.values()];
-    const preparedNotes = Object.freeze(
-      allPreparedNotes.slice(0, PREPARE_LEADING_NOTE_COUNT),
-    );
+    /* Warming every event before first audio is the old multi-second stall.
+     * Keep the bounded leading voice budget, but select a prefix of complete
+     * event groups: a composite chord cache entry can never be warmed as two
+     * unrelated partial slices. */
+    const preparation = buildPlaybackPreparationPlan(preparationEvents, {
+      leadingVoiceBudget: PREPARE_LEADING_NOTE_COUNT,
+      maximumVoicesPerEvent: maximumPreparedVoicesPerEvent(instrumentId),
+    });
+    if (!preparation.ok) {
+      return editRefusal(
+        "play-progression",
+        "u1.playback_refused",
+        `The ${instrumentId} physical renderer has ${String(
+          preparation.maximumVoicesPerEvent,
+        )} courses, but event ${preparation.eventId} requests ${String(
+          preparation.voiceCount,
+        )} simultaneous notes.`,
+      );
+    }
+    const preparedNotes = preparation.plan.leadingVoices;
     const deferredNotes = Object.freeze(
-      allPreparedNotes.slice(PREPARE_LEADING_NOTE_COUNT),
+      preparation.plan.deferredGroups.flatMap((group) => group.voices),
     );
-    /*
-     * Warming behind a running transport starves the scheduler on a slow
-     * engine — rendering holds the main thread, ticks stop, and attacks land
-     * in the past. The remainder is warmed only after the run ends; until
-     * then a cold note renders on demand inside the lookahead window, which
-     * the velocity-banded cache keeps to a handful of renders per chart.
-     */
-    const warmRemaining = (): void => {
-      if (deferredNotes.length === 0) return;
-      /* The binding rides along so physical instruments warm the gesture-
-       * keyed buffers their attacks actually request, not gestureless ones. */
+    const thisRenderAheadRun = ++renderAheadRunToken;
+    const startRenderAhead = (): void => {
+      if (
+        deferredNotes.length === 0 ||
+        thisRenderAheadRun !== renderAheadRunToken
+      ) {
+        return;
+      }
+      /* The cooperative PLK2 host yields after bounded simulation quanta, so
+       * scheduler callbacks retain their 100 ms horizon while the exact,
+       * chronological event groups fill the cache. A later play invalidates
+       * this run token and the engine's preparation generation at the next
+       * yield. */
       void port.prepareInstrument(instrumentId, deferredNotes, binding);
     };
-    pendingDeferredWarmup = deferredNotes.length === 0 ? null : warmRemaining;
     void (async () => {
       if (!port.isInitialized()) {
         const initializeOutcome = await port.initialize(
@@ -5009,10 +5013,18 @@ function makeStudioComposition(
           );
           return;
         }
-        await port.prepareInstrument(instrumentId, preparedNotes, binding);
-        await port.setInstrument(nextTransportRequestId(), instrumentId);
+        /* Publish the optimistic "starting" expectation BEFORE the render
+         * burst: on slow-wasm hosts (WebKit/Safari) preparation takes whole
+         * seconds, and until this expectation exists the transport status
+         * still reads idle — the owner-reported dead-looking Play button.
+         * Both ids are allocated here in submission order because X1 refuses
+         * any command whose id is not strictly increasing at submission.
+         * Play is always submitted below, so the expectation always settles. */
+        const setInstrumentRequestId = nextTransportRequestId();
         const playRequestId = nextTransportRequestId();
         expectTransport("play-progression", playRequestId, "starting", startBeat);
+        await port.prepareInstrument(instrumentId, preparedNotes, binding);
+        await port.setInstrument(setInstrumentRequestId, instrumentId);
         const playOutcome = await port.play(playRequestId, binding, startBeat);
         settleTransportOutcome(
           "play-progression",
@@ -5020,12 +5032,22 @@ function makeStudioComposition(
           binding.planRevision,
           playOutcome,
         );
+        if (
+          playOutcome.termination === "receipt" &&
+          playOutcome.stateAfter === "playing"
+        ) {
+          startRenderAhead();
+        }
         return;
       }
-      await port.prepareInstrument(instrumentId, preparedNotes, binding);
-      await port.setInstrument(nextTransportRequestId(), instrumentId);
+      /* Same pre-preparation optimistic expectation as the initialize branch:
+       * status must show life during multi-second WebKit render bursts; ids
+       * allocated in submission order per the X1 strictly-increasing law. */
+      const setInstrumentRequestId = nextTransportRequestId();
       const playRequestId = nextTransportRequestId();
       expectTransport("play-progression", playRequestId, "starting", startBeat);
+      await port.prepareInstrument(instrumentId, preparedNotes, binding);
+      await port.setInstrument(setInstrumentRequestId, instrumentId);
       const playOutcome = await port.play(playRequestId, binding, startBeat);
       settleTransportOutcome(
         "play-progression",
@@ -5033,6 +5055,12 @@ function makeStudioComposition(
         binding.planRevision,
         playOutcome,
       );
+      if (
+        playOutcome.termination === "receipt" &&
+        playOutcome.stateAfter === "playing"
+      ) {
+        startRenderAhead();
+      }
     })();
     return expectation;
   };
@@ -5075,6 +5103,7 @@ function makeStudioComposition(
         "This build has no audio output wired.",
       );
     }
+    renderAheadRunToken += 1;
     const commandRequestId = nextTransportRequestId();
     const expectation = expectTransport(
       "stop-progression",
@@ -5559,16 +5588,6 @@ function makeStudioComposition(
           }),
         }),
       );
-      /*
-       * The run is over and the main thread is free: warm the deferred tail
-       * now so a replay attacks a fully warm cache. Never during `playing`
-       * (render bursts starve the scheduler), and at most once per play.
-       */
-      if (notification.status === "ready" && pendingDeferredWarmup !== null) {
-        const warm = pendingDeferredWarmup;
-        pendingDeferredWarmup = null;
-        warm();
-      }
     });
   }
 

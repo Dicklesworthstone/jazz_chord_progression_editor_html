@@ -36,12 +36,14 @@ async function prepareNotes(
   midiPitches: readonly number[],
   velocity = 100,
 ): Promise<void> {
-  for (let start = 0; start < midiPitches.length; start += 32) {
-    const batch = midiPitches.slice(start, start + 32);
+  /* This suite measures the per-note cache. A multi-note physical guitar
+   * request is now intentionally one shared-body chord entry, so issue one
+   * preparation per pitch to keep the LRU population under test exact. */
+  for (const pitch of midiPitches) {
     requireSuccess(
       await ready.engine.prepareRenderedAudioVoices({
         instrumentId,
-        notes: batch.map((pitch) => ({ midiPitch: midi(pitch), velocity })),
+        notes: [{ midiPitch: midi(pitch), velocity }],
       }),
     );
   }

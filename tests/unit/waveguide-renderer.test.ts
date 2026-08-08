@@ -61,6 +61,11 @@ function measuredCents(
   midiPitch: number,
 ): number {
   const f0 = midiFrequencyHz(midiPitch);
+  /* A fixed 16,384-frame window spans only fourteen E1 cycles and can land
+   * inside the upright body's slow 38/48 Hz beat, reporting a transient
+   * seven-cent offset for an exactly tuned string. Preserve that minimum for
+   * the rest of the register, but require 24 fundamental cycles for bass. */
+  const analysisLength = Math.max(16_384, Math.ceil((24 * OUTPUT_RATE_HZ) / f0));
   let best = 0;
   let bestCents = 0;
   for (let cents = -90; cents <= 90; cents += 1) {
@@ -69,7 +74,7 @@ function measuredCents(
     for (const partial of [1, 2, 3, 4]) {
       const frequency = candidate * partial;
       if (frequency > OUTPUT_RATE_HZ / 2.5) break;
-      score += goertzelAmplitude(samples, start, 16_384, frequency) / partial;
+      score += goertzelAmplitude(samples, start, analysisLength, frequency) / partial;
     }
     if (score > best) {
       best = score;

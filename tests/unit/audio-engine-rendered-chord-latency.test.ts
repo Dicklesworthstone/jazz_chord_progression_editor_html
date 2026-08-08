@@ -50,6 +50,15 @@ function fakeDreadnoughtRenderer(calls: RenderCalls): WaveguideRenderer {
       calls.chord += 1;
       return deterministicPcm(midiPitches, sampleRateHz);
     },
+    renderChordCooperatively: async (
+      midiPitches,
+      _velocities,
+      sampleRateHz,
+    ) => {
+      calls.chord += 1;
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+      return deterministicPcm(midiPitches, sampleRateHz);
+    },
   });
 }
 

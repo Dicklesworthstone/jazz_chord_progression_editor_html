@@ -6,15 +6,18 @@ mod plucked_v2;
 
 use plucked_v2::{
     archtop_pack, circular_sound_hole_helmholtz_hz, dreadnought_pack, inharmonicity_coefficient,
-    marshall_electric_pack, midi_frequency_hz, plk2_chord_string_frets, plk2_cubic_reconstruct,
-    plk2_note_frames, plk2_render, plk2_render_chord, plk2_render_chord_slices,
-    plk2_render_chord_slices_full_rate_reference, plk2_render_path, plk2_render_slices,
-    plk2_stem_init, plk2_stem_init_slice, plk2_stem_render, plk2_stem_render_max_frames,
-    plk2_stem_render_slices, plk2_stem_state_max_bytes, plk2_stem_state_string_energy_j,
-    plk2_string_fret, plk2_triode_tanh, ukulele_pack, upright_bass_pack, BodyModeKind,
-    PluckGesture, PluckedError, PluckedRenderPath, PluckedStem, PLK2_ARCHTOP_PACK,
-    PLK2_DREADNOUGHT_PACK, PLK2_MARSHALL_ELECTRIC_PACK, PLK2_STEM_EVENT_PLUCK,
-    PLK2_STEM_EVENT_RESET, PLK2_UKULELE_PACK, PLK2_UPRIGHT_BASS_PACK,
+    marshall_electric_pack, midi_frequency_hz, plk2_chord_session_init,
+    plk2_chord_session_init_slices, plk2_chord_session_max_steps,
+    plk2_chord_session_state_max_bytes, plk2_chord_session_step, plk2_chord_session_step_slices,
+    plk2_chord_string_frets, plk2_cubic_reconstruct, plk2_note_frames, plk2_render,
+    plk2_render_chord, plk2_render_chord_slices, plk2_render_chord_slices_full_rate_reference,
+    plk2_render_path, plk2_render_slices, plk2_stem_init, plk2_stem_init_slice, plk2_stem_render,
+    plk2_stem_render_max_frames, plk2_stem_render_slices, plk2_stem_state_max_bytes,
+    plk2_stem_state_string_energy_j, plk2_string_fret, plk2_triode_tanh, ukulele_pack,
+    upright_bass_pack, BodyModeKind, PluckGesture, PluckedError, PluckedRenderPath, PluckedStem,
+    PLK2_ARCHTOP_PACK, PLK2_CHORD_STEP_COMPLETE, PLK2_CHORD_STEP_PROGRESS, PLK2_DREADNOUGHT_PACK,
+    PLK2_MARSHALL_ELECTRIC_PACK, PLK2_STEM_EVENT_PLUCK, PLK2_STEM_EVENT_RESET, PLK2_UKULELE_PACK,
+    PLK2_UPRIGHT_BASS_PACK,
 };
 
 const SAMPLE_RATE: f64 = 48_000.0;
@@ -1974,4 +1977,200 @@ fn raw_chord_abi_matches_safe_render_and_refuses_aliasing_then_recovers() {
         ),
         FRAMES as i32
     );
+}
+
+#[test]
+fn cooperative_chord_session_is_bit_exact_across_four_packs_and_browser_rates() {
+    const FRAMES: usize = 12_345;
+    let guitar_midis = [48_i32, 52, 55, 60];
+    let guitar_velocities = [100_i32, 96, 92, 88];
+    let uke_midis = [60_i32, 64, 67, 69];
+    let uke_velocities = [92_i32, 88, 84, 80];
+
+    for sample_rate in [44_100.0_f32, 48_000.0, 96_000.0] {
+        for pack_index in [
+            PLK2_ARCHTOP_PACK,
+            PLK2_MARSHALL_ELECTRIC_PACK,
+            PLK2_DREADNOUGHT_PACK,
+            PLK2_UKULELE_PACK,
+        ] {
+            let (midis, velocities): (&[i32], &[i32]) = if pack_index == PLK2_UKULELE_PACK {
+                (&uke_midis, &uke_velocities)
+            } else {
+                (&guitar_midis, &guitar_velocities)
+            };
+            let mut synchronous_left = vec![0.0_f32; FRAMES];
+            let mut synchronous_right = vec![0.0_f32; FRAMES];
+            assert_eq!(
+                plk2_render_chord_slices(
+                    pack_index,
+                    midis,
+                    velocities,
+                    sample_rate,
+                    &mut synchronous_left,
+                    &mut synchronous_right,
+                    FRAMES as i32,
+                ),
+                FRAMES as i32
+            );
+
+            let mut state = vec![0_u8; plk2_chord_session_state_max_bytes() as usize];
+            let state_bytes = plk2_chord_session_init_slices(
+                pack_index,
+                midis,
+                velocities,
+                sample_rate,
+                FRAMES as i32,
+                &mut state,
+            );
+            assert!(state_bytes > 0);
+            state.truncate(state_bytes as usize);
+            let mut cooperative_left = vec![0.0_f32; FRAMES];
+            let mut cooperative_right = vec![0.0_f32; FRAMES];
+            let mut calls = 0_usize;
+            loop {
+                calls += 1;
+                let status = plk2_chord_session_step_slices(
+                    &mut state,
+                    &mut cooperative_left,
+                    &mut cooperative_right,
+                    FRAMES as i32,
+                );
+                if status == PLK2_CHORD_STEP_COMPLETE {
+                    break;
+                }
+                assert_eq!(status, PLK2_CHORD_STEP_PROGRESS);
+                assert!(
+                    calls < plk2_chord_session_max_steps(FRAMES as i32) as usize,
+                    "pack {pack_index} rate {sample_rate} did not terminate"
+                );
+            }
+            assert!(
+                calls >= 4,
+                "the cooperative path collapsed back to one long call"
+            );
+            assert_eq!(
+                cooperative_left, synchronous_left,
+                "left mismatch for pack {pack_index} at {sample_rate} Hz"
+            );
+            assert_eq!(
+                cooperative_right, synchronous_right,
+                "right mismatch for pack {pack_index} at {sample_rate} Hz"
+            );
+        }
+    }
+}
+
+#[test]
+fn cooperative_raw_abi_refuses_hostile_state_alias_and_capacity_then_recovers() {
+    const FRAMES: usize = 8_193;
+    let midis = [48_i32, 52, 55, 60];
+    let velocities = [100_i32, 96, 92, 88];
+    let state_capacity = plk2_chord_session_state_max_bytes() as usize;
+    let mut state_words = vec![0_u32; state_capacity.div_ceil(4)];
+    let state_pointer = state_words.as_mut_ptr().cast::<u8>();
+    let state_bytes = plk2_chord_session_init(
+        PLK2_DREADNOUGHT_PACK,
+        midis.as_ptr(),
+        velocities.as_ptr(),
+        midis.len() as i32,
+        SAMPLE_RATE as f32,
+        FRAMES as i32,
+        state_pointer,
+        state_capacity as i32,
+    );
+    assert!(state_bytes > 0);
+    let canonical_state =
+        unsafe { core::slice::from_raw_parts(state_pointer, state_bytes as usize).to_vec() };
+    let mut left = vec![7.0_f32; FRAMES];
+    let mut right = vec![9.0_f32; FRAMES];
+
+    assert_eq!(
+        plk2_chord_session_step(
+            state_pointer,
+            state_bytes,
+            left.as_mut_ptr(),
+            right.as_mut_ptr(),
+            (FRAMES - 1) as i32,
+        ),
+        0
+    );
+    assert_eq!(
+        unsafe { core::slice::from_raw_parts(state_pointer, state_bytes as usize) },
+        canonical_state
+    );
+    assert!(left.iter().all(|sample| *sample == 7.0));
+    assert!(right.iter().all(|sample| *sample == 9.0));
+
+    assert_eq!(
+        plk2_chord_session_step(
+            state_pointer,
+            state_bytes,
+            state_pointer.cast::<f32>(),
+            right.as_mut_ptr(),
+            FRAMES as i32,
+        ),
+        0
+    );
+    assert_eq!(
+        unsafe { core::slice::from_raw_parts(state_pointer, state_bytes as usize) },
+        canonical_state
+    );
+
+    unsafe { *state_pointer.add(7) ^= 0x80 };
+    let tampered_state =
+        unsafe { core::slice::from_raw_parts(state_pointer, state_bytes as usize).to_vec() };
+    assert_eq!(
+        plk2_chord_session_step(
+            state_pointer,
+            state_bytes,
+            left.as_mut_ptr(),
+            right.as_mut_ptr(),
+            FRAMES as i32,
+        ),
+        0
+    );
+    assert_eq!(
+        unsafe { core::slice::from_raw_parts(state_pointer, state_bytes as usize) },
+        tampered_state
+    );
+    unsafe {
+        core::slice::from_raw_parts_mut(state_pointer, state_bytes as usize)
+            .copy_from_slice(&canonical_state)
+    };
+
+    left.fill(0.0);
+    right.fill(0.0);
+    let mut calls = 0;
+    loop {
+        calls += 1;
+        let status = plk2_chord_session_step(
+            state_pointer,
+            state_bytes,
+            left.as_mut_ptr(),
+            right.as_mut_ptr(),
+            FRAMES as i32,
+        );
+        if status == PLK2_CHORD_STEP_COMPLETE {
+            break;
+        }
+        assert_eq!(status, PLK2_CHORD_STEP_PROGRESS);
+        assert!(calls < 64);
+    }
+    let mut expected_left = vec![0.0_f32; FRAMES];
+    let mut expected_right = vec![0.0_f32; FRAMES];
+    assert_eq!(
+        plk2_render_chord_slices(
+            PLK2_DREADNOUGHT_PACK,
+            &midis,
+            &velocities,
+            SAMPLE_RATE as f32,
+            &mut expected_left,
+            &mut expected_right,
+            FRAMES as i32,
+        ),
+        FRAMES as i32
+    );
+    assert_eq!(left, expected_left);
+    assert_eq!(right, expected_right);
 }
