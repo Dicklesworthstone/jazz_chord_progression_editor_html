@@ -129,6 +129,99 @@ const BRIGHT_MIX: f32 = 0.30;
 const JET_OFFSET_SCALE: f32 = 1.0;
 const HOLE_RADIATION_CORNER_HZ: f32 = 5500.0;
 const JET_SATURATION_HALF_WIDTHS: [f32; 4] = [0.90, 0.90, 0.90, 0.90];
+
+/// Per-register (rows: 60-71 / 72-83 / 84+) x per-dynamic (cols: pp v=0,
+/// mf v=0.5, ff v=1) anchors, piecewise-linear in velocity_norm. Initial
+/// values reproduce the round-2 scalar laws exactly (bright = BRIGHT_MIX *
+/// (0.4+0.6v); corner = HOLE_RADIATION_CORNER_HZ) so the table introduction
+/// is behavior-neutral; round-3 per-cell sweeps then move register-row-1
+/// anchors only (the UIowa matrix exercises 72-83 exclusively). Sweep
+/// provenance: bead jcpe-flute-v3-integration-dw1q round 3.
+const BRIGHT_MIX_TABLE: [[f32; 3]; 3] = [
+    [0.120, 0.210, 0.300],
+    [0.120, 0.210, 0.300],
+    [0.120, 0.210, 0.300],
+];
+const RADIATION_CORNER_TABLE: [[f32; 3]; 3] = [
+    [5500.0, 5500.0, 5500.0],
+    [5500.0, 5500.0, 5500.0],
+    [5500.0, 5500.0, 5500.0],
+];
+fn dynamics_row_index(midi: i32) -> usize {
+    match midi {
+        60..=71 => 0,
+        72..=83 => 1,
+        _ => 2,
+    }
+}
+/// Anchor abscissae match the reference matrix dynamics (velocity 36/72/108
+/// -> norm 0.283/0.567/0.850) so a pp-cell render sits exactly on the pp
+/// anchor; outside the span the ends extend flat.
+fn lerp_anchors(anchors: &[f32; 3], velocity_norm: f32) -> f32 {
+    const V_PP: f32 = 36.0 / 127.0;
+    const V_MF: f32 = 72.0 / 127.0;
+    const V_FF: f32 = 108.0 / 127.0;
+    let v = if velocity_norm < 0.0 { 0.0 } else if velocity_norm > 1.0 { 1.0 } else { velocity_norm };
+    if v <= V_PP {
+        anchors[0]
+    } else if v <= V_MF {
+        anchors[0] + (anchors[1] - anchors[0]) * ((v - V_PP) / (V_MF - V_PP))
+    } else if v <= V_FF {
+        anchors[1] + (anchors[2] - anchors[1]) * ((v - V_MF) / (V_FF - V_MF))
+    } else {
+        anchors[2]
+    }
+}
+
+/// Row-1 (72-83) saturation half-width anchors (pp/mf/ff): larger half-width
+/// = more linear source map = steeper odd-harmonic rolloff. The pp reference
+/// ladder decays to -60 dB by h6; a fixed 0.90 half-width leaves the odd tail
+/// at -22 dB. Sweep provenance: round-3 (bead jcpe-flute-v3-integration-dw1q).
+const SAT_HALF_WIDTH_R1_ANCHORS: [f32; 3] = [0.90, 0.90, 0.90];
+fn jet_saturation_half_width_for(midi: i32, velocity_norm: f32) -> f32 {
+    if (72..=83).contains(&midi) {
+        lerp_anchors(&SAT_HALF_WIDTH_R1_ANCHORS, velocity_norm)
+    } else {
+        jet_saturation_half_widths(midi)
+    }
+}
+
+
+/// Row-1 (72-83) jet-growth-cap anchors (pp/mf/ff). The steady-state jet
+/// excursion is set by loop gain, not velocity: at cap 4.15 (gain 63x) every
+/// dynamic drives the labium split rail-to-rail, leaving the odd-harmonic
+/// tail at -22 dB where the pp reference sits at -60. pp just above the
+/// oscillation threshold keeps the split sinusoidal. The round-2 GLOBAL cap
+/// sweep (4.15->1.2, phonation death <=2.5) mapped the floor; per-dynamic
+/// anchors stay inside the speaking region. Sweep provenance: round 3.
+const JET_GROWTH_CAP_R1_ANCHORS: [f32; 3] = [3.0, 3.9, 4.15];
+const GROWTH_SETTLE_SECONDS: f32 = 0.070;
+/// Per-note pp sustain-cap overrides for row 1 (index = midi-72). The
+/// hysteresis floor is note-dependent: register-boundary notes (m72, m82)
+/// lose the regime below ~3.2 while mid-row notes hold to ~2.6 (sweep r3:
+/// pp 2.4 -> m72 locks 2x mode, m82 drops a register; pp 3.0 -> all lock).
+/// Values sweep-derived; the v2 per-note pull table is the precedent.
+const PP_GROWTH_CAP_BY_NOTE_R1: [f32; 12] = [
+    3.10, 3.05, 3.00, 2.90, 2.70, 2.80, 2.90, 2.80, 3.00, 3.10, 3.30, 3.30,
+];
+
+fn jet_growth_cap_for(midi: i32, velocity_norm: f32) -> f32 {
+    if (72..=83).contains(&midi) {
+        let anchors = JET_GROWTH_CAP_R1_ANCHORS;
+        let pp = PP_GROWTH_CAP_BY_NOTE_R1[(midi - 72) as usize];
+        lerp_anchors(&[pp, anchors[1], anchors[2]], velocity_norm)
+    } else {
+        4.15
+    }
+}
+
+fn bright_weight_for(midi: i32, velocity_norm: f32) -> f32 {
+    lerp_anchors(&BRIGHT_MIX_TABLE[dynamics_row_index(midi)], velocity_norm)
+}
+fn radiation_corner_hz_for(midi: i32, velocity_norm: f32) -> f32 {
+    lerp_anchors(&RADIATION_CORNER_TABLE[dynamics_row_index(midi)], velocity_norm)
+}
+
 fn jet_saturation_half_widths(midi: i32) -> f32 {
     match midi {
         60..=71 => JET_SATURATION_HALF_WIDTHS[0],
@@ -1570,7 +1663,14 @@ fn render_with_storage(
     let register_level = ((midi - MIN_MIDI) as f32 / 12.0).clamp(0.0, 3.0);
     let mode_center_hz = midi_frequency_hz_internal(midi);
     let channel_to_edge = jet_channel_to_edge_m(midi);
-    let jet_growth = expf((0.33 * channel_to_edge / JET_HALF_WIDTH_M).min(4.15));
+    // Time-scheduled growth cap: onset at full drive (fast, articulate
+    // buildup — the attack-range law), settling exponentially to the
+    // per-dynamic anchor whose lower pp value collapses the odd-harmonic
+    // tail in sustain. tau = GROWTH_SETTLE_SECONDS. Sweep provenance: r3.
+    let growth_cap_sustain = jet_growth_cap_for(midi, velocity_norm);
+    let growth_settle_alpha = expf(-1.0 / (GROWTH_SETTLE_SECONDS * internal_rate));
+    let mut growth_cap_now = 4.15f32;
+    let base_growth_exponent = 0.33 * channel_to_edge / JET_HALF_WIDTH_M;
     // CAL-SWEEP: offset scale. Near-railed operation turns the split
     // derivative into a close pulse pair whose fundamental cancels
     // (even-dominant ladder, starved h1). Centering the operating window
@@ -1606,7 +1706,8 @@ fn render_with_storage(
 
     // CAL-SWEEP: radiated-field band-limit corner (playbook law: radiation
     // differentiation amplifies +6 dB/oct; v1/v2 band-limit near 5.5 kHz).
-    let hole_radiation_alpha = 1.0 - expf(-TAU * HOLE_RADIATION_CORNER_HZ / internal_rate);
+    let hole_radiation_alpha =
+        1.0 - expf(-TAU * radiation_corner_hz_for(midi, velocity_norm) / internal_rate);
     let dc_pole = expf(-TAU * 18.0 / sample_rate);
     let head_delay = delay_from_thiran(layout.head_delay_integer, layout.head_thiran_a);
     let foot_delay = delay_from_thiran(layout.foot_delay_integer, layout.foot_thiran_a);
@@ -1738,7 +1839,7 @@ fn render_with_storage(
             // adding that lead back as convective transit.
             let flow_form_active = SOURCE_FORM == 1 && register_level < 2.5;
             let effective_phase_cycles = if flow_form_active {
-                let bright_weight = BRIGHT_MIX * (0.4 + 0.6 * velocity_norm);
+                let bright_weight = bright_weight_for(midi, velocity_norm);
                 gesture.convective_phase_cycles - 0.25
                     + atanf(bright_weight) / TAU
             } else {
@@ -1764,8 +1865,11 @@ fn render_with_storage(
             // phonation onset; steady state limited to ~the jet width so the
             // labium split works on the tanh shoulder (harmonically rich,
             // dynamics-responsive) instead of rail-to-rail square.
+            growth_cap_now = growth_cap_sustain
+                + (growth_cap_now - growth_cap_sustain) * growth_settle_alpha;
+            let jet_growth = expf(base_growth_exponent.min(growth_cap_now));
             let linear_half_widths = jet_growth * delayed_jet;
-            let saturation = jet_saturation_half_widths(midi);
+            let saturation = jet_saturation_half_width_for(midi, velocity_norm);
             let saturated_half_widths =
                 saturation * fast_tanh(linear_half_widths / saturation);
             let edge_displacement = JET_HALF_WIDTH_M * saturated_half_widths;
@@ -1796,8 +1900,7 @@ fn render_with_storage(
                 gesture.source_scale
                     * jet_source_coefficient
                     * (edge_split * (TAU * mode_center_hz)
-                        + BRIGHT_MIX
-                            * (0.4 + 0.6 * velocity_norm)
+                        + bright_weight_for(midi, velocity_norm)
                             * edge_split_derivative)
             } else {
                 gesture.source_scale
