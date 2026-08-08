@@ -18,13 +18,16 @@
 //!   taps, plus a retained pickup/preamp/power-supply/tone-stack/speaker path
 //!   for the solid-electric Marshall-class pack.
 //!
-//! Guitar-family bodies retain the bounded analytic orthotropic reduction.
-//! Upright bass instead consumes the independently tested 40-triangle DKT
-//! authority in `upright_bass_body`: ten geometry-solved, mass-normalized modes
-//! with coherent bridge/radiation residues and sealed-cavity compliance.  The
-//! missing carved-shell, f-hole, and primary loss authorities remain explicit;
-//! none of these dark cores claims perceptual similarity, browser reachability,
-//! acceptance-ledger approval, or deployment.
+//! The steel dreadnought and re-entrant ukulele tops now consume the same
+//! 40-triangle DKT authority as the upright bass (`upright_bass_body`):
+//! geometry-solved, mass-normalized modes with coherent bridge/radiation
+//! residues, one cached eigensolve per pack, plus the pack's reviewed
+//! Helmholtz air mode.  Structural damping across the family follows a
+//! fractional-Zener tonewood shape anchored at each pack's reviewed plate Q
+//! (see `tonewood_zener_q`).  The archtop keeps the bounded analytic
+//! orthotropic reduction: its carved arch is no better served by a flat DKT
+//! plate, and that missing arch authority stays explicit.  The missing
+//! f-hole and primary loss authorities likewise remain explicit.
 
 #[path = "upright_bass_body.rs"]
 mod upright_bass_body;
@@ -1799,6 +1802,124 @@ fn validate_pack(pack: InstrumentPack, sample_rate_hz: f64) -> Result<(), Plucke
     Ok(())
 }
 
+/// Frequency-dependent tonewood quality factor with a fractional-Zener
+/// shape, anchored at the pack's reviewed reference Q.
+///
+/// Wood loss is not flat: measured spruce/maple loss factors sit near their
+/// low-frequency plateau below ~1 kHz and rise (Q falls) toward the
+/// kilohertz range (Haines 1979; Brémaud 2012 tonewood surveys). A
+/// fractional Zener captures that decades-wide, nearly-constant-slope
+/// behavior with one relaxation ratio and one fractional exponent — the same
+/// tier the FrankenSim viscoelastic module (fs-material, commit c966d101)
+/// implements offline. The pack's reviewed `plate_q` remains the authority
+/// at the 250 Hz anchor; only the shape around it is added here, and the
+/// floor keeps every mode passively damped rather than inventing gain.
+/// One cached DKT solve per acoustic guitar pack. The eigenproblem depends
+/// only on geometry/material (never the sample rate), the shipping WASM is
+/// single-threaded without shared memory, and the host serializes exported
+/// calls, so the slot cannot be accessed concurrently or re-entered — the
+/// same exclusivity argument as the PLK2 chord-runtime slots below.
+struct DktBodySlot(UnsafeCell<Option<upright_bass_body::UprightBassBodyAuthority>>);
+unsafe impl Sync for DktBodySlot {}
+static DKT_DREADNOUGHT_BODY: DktBodySlot = DktBodySlot(UnsafeCell::new(None));
+static DKT_UKULELE_BODY: DktBodySlot = DktBodySlot(UnsafeCell::new(None));
+
+fn derive_dkt_guitar_body(
+    pack: InstrumentPack,
+    sample_rate_hz: f64,
+) -> Result<([BodyMode; MAX_BODY_MODES], usize), PluckedError> {
+    let geometry = pack.body;
+    let slot = match pack.id {
+        "steel-dreadnought" => &DKT_DREADNOUGHT_BODY,
+        "reentrant-ukulele" => &DKT_UKULELE_BODY,
+        _ => return Err(PluckedError::InvalidBody),
+    };
+    /* SAFETY: single-threaded WASM with host-serialized exports; see
+     * DktBodySlot. The write happens at most once per pack per instance. */
+    let cached = unsafe { &mut *slot.0.get() };
+    let authority = match cached {
+        Some(authority) => *authority,
+        None => {
+            let input = upright_bass_body::UprightBassBodyInput {
+                length_m: geometry.length_m,
+                width_m: geometry.width_m,
+                thickness_m: geometry.thickness_m,
+                density_kg_per_m3: geometry.density_kg_per_m3,
+                young_longitudinal_pa: geometry.young_longitudinal_pa,
+                young_radial_pa: geometry.young_radial_pa,
+                shear_lr_pa: geometry.shear_lr_pa,
+                poisson_lr: geometry.poisson_lr,
+                brace_rigidity_x_n_m: geometry.brace_rigidity_x_n_m,
+                brace_rigidity_y_n_m: geometry.brace_rigidity_y_n_m,
+                bridge_x_over_length: geometry.bridge_x_over_length,
+                bridge_y_over_width: geometry.bridge_y_over_width,
+                cavity_volume_m3: geometry.body_volume_m3,
+                provisional_plate_q: geometry.plate_q,
+            };
+            let derived = upright_bass_body::derive_upright_bass_body(input)
+                .map_err(|_| PluckedError::InvalidBody)?;
+            *cached = Some(derived);
+            derived
+        }
+    };
+    let mut modes = [BodyMode::ZERO; MAX_BODY_MODES];
+    let mut count = 0usize;
+    /* The reviewed guitar packs carry a measured air-resonance frequency, so
+     * the Helmholtz mode keeps its analytic form; only the structural plate
+     * family moves from the closed-form simply-supported reduction to the
+     * geometry-solved DKT authority. */
+    if geometry.helmholtz_hz > 0.0 && geometry.helmholtz_hz < 0.42 * sample_rate_hz {
+        let effective_air_mass_kg = 8.0 * 1.204 * geometry.body_volume_m3;
+        let norm = geometry.admittance_scale / sqrt(effective_air_mass_kg);
+        insert_body_mode(
+            &mut modes,
+            &mut count,
+            make_body_mode(
+                BodyModeKind::HelmholtzAir,
+                geometry.helmholtz_hz,
+                geometry.helmholtz_q,
+                0.16 * norm,
+                geometry.body_volume_m3 * norm,
+                sample_rate_hz,
+            ),
+        );
+    }
+    for (ordinal, body_mode) in authority.modes.into_iter().enumerate() {
+        if body_mode.frequency_hz >= 0.42 * sample_rate_hz {
+            continue;
+        }
+        insert_body_mode(
+            &mut modes,
+            &mut count,
+            make_body_mode(
+                BodyModeKind::GeometrySolvedDkt {
+                    ordinal: ordinal as u8,
+                },
+                body_mode.frequency_hz,
+                tonewood_zener_q(geometry.plate_q, body_mode.frequency_hz),
+                geometry.admittance_scale * body_mode.bridge_residue_per_sqrt_kg,
+                body_mode.radiation_residue_m2_per_sqrt_kg,
+                sample_rate_hz,
+            ),
+        );
+    }
+    if count == 0 {
+        return Err(PluckedError::InvalidBody);
+    }
+    Ok((modes, count))
+}
+
+fn tonewood_zener_q(reference_q: f64, frequency_hz: f64) -> f64 {
+    const ANCHOR_HZ: f64 = 250.0;
+    const FRACTIONAL_EXPONENT: f64 = 0.55;
+    const RELAXATION_RATIO_AT_ANCHOR: f64 = 0.35;
+    let ratio = RELAXATION_RATIO_AT_ANCHOR
+        * pow((frequency_hz / ANCHOR_HZ).max(1.0e-3), FRACTIONAL_EXPONENT);
+    let anchor_loss = 1.0 + RELAXATION_RATIO_AT_ANCHOR;
+    let q = reference_q * anchor_loss / (1.0 + ratio);
+    q.max(8.0)
+}
+
 fn derive_body_modes(
     pack: InstrumentPack,
     sample_rate_hz: f64,
@@ -1806,6 +1927,9 @@ fn derive_body_modes(
     let geometry = pack.body;
     let mut modes = [BodyMode::ZERO; MAX_BODY_MODES];
     let mut count = 0usize;
+    if pack.id == "steel-dreadnought" || pack.id == "reentrant-ukulele" {
+        return derive_dkt_guitar_body(pack, sample_rate_hz);
+    }
     if pack.id == "pizzicato-upright-bass" {
         let authority = upright_bass_body::derive_reviewed_upright_bass_body()
             .map_err(|_| PluckedError::InvalidBody)?;
@@ -1913,7 +2037,7 @@ fn derive_body_modes(
                         radial: n_index as u8,
                     },
                     frequency_hz,
-                    geometry.plate_q,
+                    tonewood_zener_q(geometry.plate_q, frequency_hz),
                     bridge_residue,
                     radiation_residue,
                     sample_rate_hz,

@@ -939,12 +939,34 @@ function createAudioEngineInternal(
    * render while a held bass note still gets its tail.
    */
   const RENDER_SECONDS_BUCKETS = Object.freeze([1.125, 1.5, 2, 4, 8] as const);
+  const PLUCKED_RENDER_SECONDS_BUCKETS = Object.freeze([
+    0.75,
+    0.875,
+    1.125,
+    1.5,
+    2,
+    4,
+    8,
+  ] as const);
 
   function bucketRenderSeconds(seconds: number): number {
     for (const bucket of RENDER_SECONDS_BUCKETS) {
       if (seconds <= bucket) return bucket;
     }
     return RENDER_SECONDS_BUCKETS[RENDER_SECONDS_BUCKETS.length - 1] ?? 8;
+  }
+
+  function bucketRenderSecondsForRecipe(
+    seconds: number,
+    recipe: AudioRenderedInstrumentRecipe,
+  ): number {
+    if (!isSharedPluckedChordRecipe(recipe)) return bucketRenderSeconds(seconds);
+    for (const bucket of PLUCKED_RENDER_SECONDS_BUCKETS) {
+      if (seconds <= bucket) return bucket;
+    }
+    return PLUCKED_RENDER_SECONDS_BUCKETS[
+      PLUCKED_RENDER_SECONDS_BUCKETS.length - 1
+    ] ?? 8;
   }
 
   /*
@@ -1216,7 +1238,7 @@ function createAudioEngineInternal(
     requestedSeconds = 8,
     physicalGesture: ExpressiveVoiceGesture | null = null,
   ): AudioBufferPort | null {
-    const seconds = bucketRenderSeconds(requestedSeconds);
+    const seconds = bucketRenderSecondsForRecipe(requestedSeconds, recipe);
     const key = renderedBufferKey(
       recipe.id,
       midiPitch,
@@ -1266,7 +1288,7 @@ function createAudioEngineInternal(
     if (voices.length < 2) return null;
     const chordRenderer = rendererForAlgorithm(recipe.renderer.algorithmId);
     if (chordRenderer?.renderChordCooperatively === undefined) return null;
-    const seconds = bucketRenderSeconds(requestedSeconds);
+    const seconds = bucketRenderSecondsForRecipe(requestedSeconds, recipe);
     const key = renderedChordBufferKey(recipe, chordRenderer, voices, seconds);
     const cache = recipeBufferCache(recipe.id);
     const cached = touchRenderedBufferEntry(cache, key);
@@ -1296,7 +1318,7 @@ function createAudioEngineInternal(
   ): Promise<AudioBufferPort | null> {
     const noteRenderer = rendererForAlgorithm(recipe.renderer.algorithmId);
     if (noteRenderer?.renderChordCooperatively === undefined) return null;
-    const seconds = bucketRenderSeconds(requestedSeconds);
+    const seconds = bucketRenderSecondsForRecipe(requestedSeconds, recipe);
     const key = renderedBufferKey(
       recipe.id,
       voice.midiPitch,
@@ -1331,7 +1353,7 @@ function createAudioEngineInternal(
     if (voices.length < 2) return null;
     const chordRenderer = rendererForAlgorithm(recipe.renderer.algorithmId);
     if (chordRenderer?.renderChord === undefined) return null;
-    const seconds = bucketRenderSeconds(requestedSeconds);
+    const seconds = bucketRenderSecondsForRecipe(requestedSeconds, recipe);
     const key = renderedChordBufferKey(recipe, chordRenderer, voices, seconds);
     const cached = touchRenderedBufferEntry(recipeBufferCache(recipe.id), key);
     return cached?.buffer ?? null;
@@ -3420,7 +3442,7 @@ function createAudioEngineInternal(
             velocity,
             physicalGesture,
             seconds,
-            bucket: bucketRenderSeconds(seconds),
+            bucket: bucketRenderSecondsForRecipe(seconds, recipe),
             eventId: physicalGesture?.eventId ?? null,
           }),
         );
