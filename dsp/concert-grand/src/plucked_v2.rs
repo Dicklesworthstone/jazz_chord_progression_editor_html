@@ -235,7 +235,7 @@ fn plk2_soft_limit(value: f64) -> f64 {
 #[inline(always)]
 fn plk2_listener_trim(pack_index: i32) -> f64 {
     match pack_index {
-        PLK2_ARCHTOP_PACK => 10_000.0,
+        PLK2_ARCHTOP_PACK => 625.0,
         /* -7 dB after the piston-band cabinet bed raised the radiated level
          * (bead jcpe-plucked-quality-body-amp-6yg6). */
         PLK2_MARSHALL_ELECTRIC_PACK => 44.668_359_215_096_3,
