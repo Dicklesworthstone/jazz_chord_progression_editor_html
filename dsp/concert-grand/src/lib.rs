@@ -40,6 +40,7 @@ mod clarinet;
 mod clarinet_v2_parameters;
 mod flute;
 mod flute_v2;
+mod flute_v3;
 mod guitar;
 mod physical;
 mod plucked_v2;
