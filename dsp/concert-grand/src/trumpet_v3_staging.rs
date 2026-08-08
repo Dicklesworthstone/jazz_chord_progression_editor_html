@@ -269,6 +269,18 @@ pub struct TrumpetParameters {
     /// Round-6: exponent scaling the embouchure knee-servo gain with
     /// (p/p_ref); models lip tension rising with dynamics. 0 = legacy.
     pub servo_pressure_gain_exponent: f64,
+    /// Round-7 (bead jcpe-trumpet-lock-completion-el46): state-scheduled
+    /// mechanism handoff gain in [0, 1]. The round-6 schedule released the
+    /// closure-grazing ride point on PRESSURE, which opened the measured mf
+    /// valley — grazing brightness left before the physical state reached
+    /// closure, so centroid dipped while source amplitude grew. With this
+    /// gain > 0 the grazing force releases on CLOSURE PROXIMITY instead
+    /// (smoothstep of 1 − displacement-mean/anchor — the variable that
+    /// actually drives the second mechanism), so the two sources crossfade
+    /// continuously, and the round-5 pressure shrink of the grazing target
+    /// is bypassed in favor of the state schedule. 0 = round-6 behavior
+    /// bit-exact (frozen pins).
+    pub servo_state_handoff: f64,
     pub oversample_factor: usize,
 }
 
@@ -312,6 +324,7 @@ impl TrumpetParameters {
             embouchure_pressure_compensation: 0.0,
             servo_pressure_closure_exponent: 0.0,
             servo_pressure_gain_exponent: 0.0,
+            servo_state_handoff: 0.0,
             oversample_factor: OVERSAMPLE_FACTOR,
         }
     }
@@ -359,6 +372,9 @@ impl TrumpetParameters {
             || !self.servo_pressure_gain_exponent.is_finite()
             || self.servo_pressure_gain_exponent < 0.0
             || self.servo_pressure_gain_exponent > 4.0
+            || !self.servo_state_handoff.is_finite()
+            || self.servo_state_handoff < 0.0
+            || self.servo_state_handoff > 1.0
         {
             return Err(TrumpetError::NonFiniteState);
         }
@@ -674,7 +690,24 @@ fn unilateral_lip_contact_unchecked(
     let closing_velocity_m_s = penetration_velocity_m_s.max(0.0);
     let root_penetration_m = sqrt(penetration_m);
     let elastic_force_n = hertz_stiffness_n_m32 * penetration_m * root_penetration_m;
-    let damping_force_n = hunt_crossley_damping_n_s_m32 * root_penetration_m * closing_velocity_m_s;
+    /*
+     * Round-7 solver-robustness form (bead jcpe-trumpet-lock-completion-el46):
+     * the previous damping factor sqrt(p)·v⁺ has an INFINITE penetration
+     * slope at the contact boundary (d/dp ~ 1/sqrt(p)), which is exactly
+     * where the 12 kPa deep-closure Newton solves diverged. Standard
+     * Hunt–Crossley damps proportionally to the SAME p^{3/2} kernel as the
+     * elastic term — F = k·p^{3/2}·(1 + λ·v⁺) — making the total force C¹
+     * in penetration at the boundary (slope → 0) while keeping dissipation
+     * non-negative and closing-only. λ is derived from the previous
+     * coefficient by continuity of dissipation at the contact length scale
+     * (λ = C_old/(k·p_ref) with p_ref = LIP_CONTACT_SCALE_M), so calibrated
+     * behavior at operating depth is preserved and only the boundary
+     * smoothness changes. Passivity: λ·v⁺ ≥ 0 term, dissipation
+     * F_d·v⁺ ≥ 0, unchanged energy accounting.
+     */
+    let lambda_s_m = hunt_crossley_damping_n_s_m32
+        / (hertz_stiffness_n_m32 * LIP_CONTACT_SCALE_M);
+    let damping_force_n = elastic_force_n * lambda_s_m * closing_velocity_m_s;
     LipContactBalance {
         force_n: elastic_force_n + damping_force_n,
         potential_energy_j: 0.4 * hertz_stiffness_n_m32 * pow(penetration_m, 2.5),
@@ -2058,8 +2091,34 @@ impl TrumpetModel {
         let embouchure_compensation_force_n = self.parameters.lip_effective_area_m2
             * (controls.mouth_pressure_pa - LIP_SERVO_PRESSURE_REF_PA).max(0.0)
             * self.parameters.embouchure_pressure_compensation;
+        /*
+         * Round-7 state-scheduled handoff (bead
+         * jcpe-trumpet-lock-completion-el46): the round-5 pressure shrink of
+         * the grazing target released grazing brightness before the state
+         * reached closure, opening the measured mf centroid valley (dip
+         * while acQ grows). With servo_state_handoff > 0 the grazing target
+         * keeps its mp form and the grazing FORCE crossfades out on closure
+         * proximity — smoothstep of (1 − displacement-mean/anchor), the
+         * physical variable that switches the source mechanism — so grazing
+         * carries the mid dynamics until pulse-train closure genuinely takes
+         * over. At handoff 0 the round-6 pressure-scheduled path is
+         * bit-exact.
+         */
+        let handoff = self.parameters.servo_state_handoff;
+        let closure_proximity = if handoff > 0.0 {
+            let raw = 1.0 - self.lip_displacement_mean_m / LIP_ROUND6_MEAN_TARGET_M;
+            let clamped = raw.max(0.0).min(1.0);
+            clamped * clamped * (3.0 - 2.0 * clamped)
+        } else {
+            0.0
+        };
+        let grazing_pressure_exponent = if handoff > 0.0 {
+            0.0
+        } else {
+            self.parameters.servo_pressure_closure_exponent
+        };
         let grazing_target_m = LIP_CLOSURE_GRAZING_RATIO
-            * pow(pressure_factor, -self.parameters.servo_pressure_closure_exponent)
+            * pow(pressure_factor, -grazing_pressure_exponent)
             * ((PI / 2.0) * self.lip_oscillation_mean_m
                 - 0.5 * controls.equilibrium_opening_m);
         let engagement = (self.lip_oscillation_mean_m / LIP_GRAZING_ENGAGE_M).min(1.0);
@@ -2067,6 +2126,7 @@ impl TrumpetModel {
         let grazing_force_n = mechanics.normal_stiffness_n_m
             * LIP_CLOSURE_GRAZING_GAIN
             * engagement
+            * (1.0 - handoff * closure_proximity)
             * grazing_excess_m;
         let embouchure_servo_force_n =
             knee_force_n + grazing_force_n + embouchure_compensation_force_n;

@@ -547,3 +547,171 @@ fn probe_round6_servo_schedule() {
         println!("ce={closure_exp} ge={gain_exp} comp={comp} || {}", summary.join(" | "));
     }
 }
+
+/// Round-7 state-scheduled handoff sweep (bead
+/// jcpe-trumpet-lock-completion-el46): on the round-6 best schedule
+/// (ce=0.2, ge=2.5, comp=2.5), sweep the mechanism-handoff gain over a fine
+/// pressure ramp including the mf valley cells. Success shape: centroid AND
+/// radiated RMS monotone rising mp->ff, closure onset visible, and — with
+/// the round-7 C1 contact form — the 12 kPa cell converging with
+/// periodicity > 0.999. Divergences report and continue so one cell cannot
+/// hide the rest of the map.
+#[test]
+fn probe_round7_state_handoff() {
+    let pressures_pa =
+        [5_500.0, 6_250.0, 7_000.0, 7_750.0, 8_500.0, 10_000.0, 12_000.0];
+    for handoff in [0.0, 0.5, 0.75, 1.0] {
+        let mut parameters = TrumpetParameters::canonical();
+        parameters.nonlinear_coefficient *= 5.0;
+        parameters.embouchure_pressure_compensation = 2.5;
+        parameters.servo_pressure_closure_exponent = 0.2;
+        parameters.servo_pressure_gain_exponent = 2.5;
+        parameters.servo_state_handoff = handoff;
+        let mut model = TrumpetModel::new(48_000.0, parameters).unwrap();
+        let mut controls = TrumpetControls {
+            mouth_pressure_pa: 0.0,
+            lip_resonance_hz: 258.0,
+            lip_damping_ratio: 1.0 / 3.0,
+            equilibrium_opening_m: 0.0,
+            tongue_contact: 1.0,
+            valves: [0.0; 3],
+        };
+        let mut previous = 0.0;
+        for (cell, target) in pressures_pa.into_iter().enumerate() {
+            let mut sustain = Vec::new();
+            let mut closed_frames = 0usize;
+            let mut counted = 0usize;
+            let mut diverged_frame = None;
+            for frame in 0..24_000 {
+                let ramp = (frame as f64 / 1_440.0).min(1.0);
+                controls.mouth_pressure_pa = previous + ramp * (target - previous);
+                if cell == 0 && frame == 1_440 {
+                    model.seed_open_normal_regime(100.0).unwrap();
+                    controls.tongue_contact = 0.0;
+                }
+                match model.process_sample(controls) {
+                    Ok(sample) => {
+                        if frame > 9_600 {
+                            sustain.push(sample);
+                            let (displacement, _, _) = model.lip_probe_m();
+                            let aperture = (controls.equilibrium_opening_m
+                                + 2.0 * displacement)
+                                .max(0.0);
+                            if aperture <= 1.0e-6 {
+                                closed_frames += 1;
+                            }
+                            counted += 1;
+                        }
+                    }
+                    Err(error) => {
+                        diverged_frame = Some((frame, error));
+                        break;
+                    }
+                }
+            }
+            if let Some((frame, error)) = diverged_frame {
+                eprintln!(
+                    "[r7 handoff={handoff}] pressure={target} DIVERGED frame={frame} {error:?}"
+                );
+                break;
+            }
+            let (f0, periodicity) = estimate_f0(&sustain, 48_000.0, 80.0, 800.0);
+            let centroid = spectral_centroid_hz(&sustain);
+            let rms = sqrt_mean_square(&sustain);
+            eprintln!(
+                "[r7 handoff={handoff}] pressure={target} f0={f0:.2} periodicity={periodicity:.4} centroid={centroid:.0} rms={rms:.3e} closed={:.3}",
+                closed_frames as f64 / counted.max(1) as f64
+            );
+            previous = target;
+        }
+    }
+}
+
+fn sqrt_mean_square(samples: &[f64]) -> f64 {
+    if samples.is_empty() {
+        return 0.0;
+    }
+    let sum: f64 = samples.iter().map(|value| value * value).sum();
+    (sum / samples.len() as f64).sqrt()
+}
+
+/// Round-7 lip-tension co-schedule experiment: real players raise lip
+/// tension with dynamics; every prior probe held lip_resonance_hz fixed at
+/// 258 through the whole ramp, and the finer round-7 ramp shows the
+/// consequence — within-regime anti-crescendo, then a mode escape at
+/// 8.5 kPa that masqueraded as the round-6 "crescendo" (f0 269 -> 367).
+/// Controls-level test: co-schedule lip resonance with pressure and measure
+/// whether the fundamental regime HOLDS with rising RMS/centroid.
+#[test]
+fn probe_round7_tension_coschedule() {
+    let pressures_pa =
+        [5_500.0, 6_250.0, 7_000.0, 7_750.0, 8_500.0, 10_000.0, 12_000.0];
+    for tension_slope in [0.15, 0.30, 0.45] {
+        let mut parameters = TrumpetParameters::canonical();
+        parameters.nonlinear_coefficient *= 5.0;
+        parameters.embouchure_pressure_compensation = 2.5;
+        parameters.servo_pressure_closure_exponent = 0.2;
+        parameters.servo_pressure_gain_exponent = 2.5;
+        let mut model = TrumpetModel::new(48_000.0, parameters).unwrap();
+        let mut controls = TrumpetControls {
+            mouth_pressure_pa: 0.0,
+            lip_resonance_hz: 258.0,
+            lip_damping_ratio: 1.0 / 3.0,
+            equilibrium_opening_m: 0.0,
+            tongue_contact: 1.0,
+            valves: [0.0; 3],
+        };
+        let mut previous = 0.0;
+        for (cell, target) in pressures_pa.into_iter().enumerate() {
+            let mut sustain = Vec::new();
+            let mut closed_frames = 0usize;
+            let mut counted = 0usize;
+            let mut diverged = None;
+            for frame in 0..24_000 {
+                let ramp = (frame as f64 / 1_440.0).min(1.0);
+                controls.mouth_pressure_pa = previous + ramp * (target - previous);
+                controls.lip_resonance_hz = 258.0
+                    * (1.0
+                        + tension_slope
+                            * ((controls.mouth_pressure_pa / 5_500.0) - 1.0).max(0.0));
+                if cell == 0 && frame == 1_440 {
+                    model.seed_open_normal_regime(100.0).unwrap();
+                    controls.tongue_contact = 0.0;
+                }
+                match model.process_sample(controls) {
+                    Ok(sample) => {
+                        if frame > 9_600 {
+                            sustain.push(sample);
+                            let (displacement, _, _) = model.lip_probe_m();
+                            let aperture = (controls.equilibrium_opening_m
+                                + 2.0 * displacement)
+                                .max(0.0);
+                            if aperture <= 1.0e-6 {
+                                closed_frames += 1;
+                            }
+                            counted += 1;
+                        }
+                    }
+                    Err(error) => {
+                        diverged = Some((frame, error));
+                        break;
+                    }
+                }
+            }
+            if let Some((frame, error)) = diverged {
+                eprintln!(
+                    "[r7t slope={tension_slope}] pressure={target} DIVERGED frame={frame} {error:?}"
+                );
+                break;
+            }
+            let (f0, periodicity) = estimate_f0(&sustain, 48_000.0, 80.0, 800.0);
+            let centroid = spectral_centroid_hz(&sustain);
+            let rms = sqrt_mean_square(&sustain);
+            eprintln!(
+                "[r7t slope={tension_slope}] pressure={target} f0={f0:.2} periodicity={periodicity:.4} centroid={centroid:.0} rms={rms:.3e} closed={:.3}",
+                closed_frames as f64 / counted.max(1) as f64
+            );
+            previous = target;
+        }
+    }
+}
