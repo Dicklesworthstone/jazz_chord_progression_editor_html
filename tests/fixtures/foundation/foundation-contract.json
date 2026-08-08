@@ -1,281 +1,281 @@
 {
- "schemaVersion": 1,
- "contractId": "F0",
- "product": {
-  "name": "JazzChords.org",
-  "subtitle": "Jazz Chord Progression Studio"
- },
- "toolchain": {
-  "packageManager": "bun@1.3.14",
-  "runtimeDependencies": {
-   "preact": "10.29.7"
+  "schemaVersion": 1,
+  "contractId": "F0",
+  "product": {
+    "name": "JazzChords.org",
+    "subtitle": "Jazz Chord Progression Studio"
   },
-  "wasmCompiledDependencies": {
-   "libm": "0.2.16"
+  "toolchain": {
+    "packageManager": "bun@1.3.14",
+    "runtimeDependencies": {
+      "preact": "10.29.7"
+    },
+    "wasmCompiledDependencies": {
+      "libm": "0.2.16"
+    },
+    "developmentDependencies": {
+      "@axe-core/playwright": "4.12.1",
+      "@eslint/js": "10.0.1",
+      "@playwright/test": "1.61.1",
+      "@types/bun": "1.3.14",
+      "@types/node": "26.1.1",
+      "eslint": "10.7.0",
+      "typescript": "6.0.3",
+      "typescript-eslint": "8.63.0"
+    },
+    "requiredScripts": [
+      "build",
+      "dev",
+      "doctor:toolchain",
+      "lint",
+      "test",
+      "test:e2e",
+      "typecheck",
+      "verify",
+      "verify:licenses",
+      "verify:reproducible",
+      "verify:standalone"
+    ],
+    "playwrightNodeMajors": [
+      22,
+      24,
+      26
+    ],
+    "preferredNodeVersion": "24.18.0",
+    "playwrightForbidsBunNodeShim": true
   },
-  "developmentDependencies": {
-   "@axe-core/playwright": "4.12.1",
-   "@eslint/js": "10.0.1",
-   "@playwright/test": "1.61.1",
-   "@types/bun": "1.3.14",
-   "@types/node": "26.1.1",
-   "eslint": "10.7.0",
-   "typescript": "6.0.3",
-   "typescript-eslint": "8.63.0"
+  "artifact": {
+    "source": "src/index.html",
+    "inspectionOutput": "dist/index.html",
+    "canonicalOutput": "jazz_chord_progression_editor.html",
+    "legacyCutoverBaseline": {
+      "commit": "c585871b638bea8b616a707e1a477b583c2cdf0d",
+      "sha256": "04d105634cab0ee064d42888b74bca8ca51feea7c82263e470004fb0b51c07e8",
+      "bytes": 419344
+    },
+    "outputsMustBeByteIdentical": true,
+    "generatedBanner": "<!-- @generated; edit src/, then run bun run build -->",
+    "compatMode": "CSS1Compat",
+    "maxUncompressedBytes": 8388608,
+    "foundationShellMaxBytes": 8388608,
+    "reservedAtlasBytes": 524288,
+    "requiredReports": [
+      "dist/licenses.json",
+      "dist/standalone-manifest.json"
+    ],
+    "browserEvidence": "test-results/standalone-browser-evidence.json",
+    "forbiddenCapabilities": [
+      "dynamic-import",
+      "event-source",
+      "external-font",
+      "external-image",
+      "external-manifest",
+      "external-media",
+      "external-script",
+      "external-stylesheet",
+      "fetch",
+      "model-client",
+      "send-beacon",
+      "service-worker",
+      "shared-worker",
+      "source-map-url",
+      "telemetry-client",
+      "web-socket",
+      "worker",
+      "worklet-module",
+      "xml-http-request"
+    ],
+    "permittedLocalSchemes": [
+      "blob",
+      "data",
+      "file",
+      "http-loopback"
+    ]
   },
-  "requiredScripts": [
-   "build",
-   "dev",
-   "doctor:toolchain",
-   "lint",
-   "test",
-   "test:e2e",
-   "typecheck",
-   "verify",
-   "verify:licenses",
-   "verify:reproducible",
-   "verify:standalone"
-  ],
-  "playwrightNodeMajors": [
-   22,
-   24,
-   26
-  ],
-  "preferredNodeVersion": "24.18.0",
-  "playwrightForbidsBunNodeShim": true
- },
- "artifact": {
-  "source": "src/index.html",
-  "inspectionOutput": "dist/index.html",
-  "canonicalOutput": "jazz_chord_progression_editor.html",
-  "legacyCutoverBaseline": {
-   "commit": "c585871b638bea8b616a707e1a477b583c2cdf0d",
-   "sha256": "04d105634cab0ee064d42888b74bca8ca51feea7c82263e470004fb0b51c07e8",
-   "bytes": 419344
+  "contentSecurityPolicy": {
+    "delivery": "meta",
+    "inlineAuthorization": "sha256",
+    "requiredNoneDirectives": [
+      "base-uri",
+      "connect-src",
+      "default-src",
+      "form-action",
+      "frame-src",
+      "manifest-src",
+      "object-src",
+      "worker-src"
+    ],
+    "negativeControlMustRunWithoutCsp": true
   },
-  "outputsMustBeByteIdentical": true,
-  "generatedBanner": "<!-- @generated; edit src/, then run bun run build -->",
-  "compatMode": "CSS1Compat",
-  "maxUncompressedBytes": 8388608,
-  "foundationShellMaxBytes": 7864320,
-  "reservedAtlasBytes": 524288,
-  "requiredReports": [
-   "dist/licenses.json",
-   "dist/standalone-manifest.json"
+  "layers": [
+    {
+      "name": "domain",
+      "mayImport": []
+    },
+    {
+      "name": "theory",
+      "mayImport": [
+        "domain"
+      ]
+    },
+    {
+      "name": "playback",
+      "mayImport": [
+        "domain",
+        "theory"
+      ]
+    },
+    {
+      "name": "audio",
+      "mayImport": [
+        "domain",
+        "playback"
+      ]
+    },
+    {
+      "name": "compatibility",
+      "mayImport": [
+        "domain",
+        "theory"
+      ]
+    },
+    {
+      "name": "persistence",
+      "mayImport": [
+        "domain"
+      ]
+    },
+    {
+      "name": "export",
+      "mayImport": [
+        "domain",
+        "playback",
+        "theory"
+      ]
+    },
+    {
+      "name": "content",
+      "mayImport": [
+        "domain",
+        "theory"
+      ]
+    },
+    {
+      "name": "application",
+      "mayImport": [
+        "audio",
+        "compatibility",
+        "content",
+        "domain",
+        "export",
+        "persistence",
+        "playback",
+        "theory"
+      ]
+    },
+    {
+      "name": "ui",
+      "mayImport": [
+        "application",
+        "domain"
+      ]
+    }
   ],
-  "browserEvidence": "test-results/standalone-browser-evidence.json",
-  "forbiddenCapabilities": [
-   "dynamic-import",
-   "event-source",
-   "external-font",
-   "external-image",
-   "external-manifest",
-   "external-media",
-   "external-script",
-   "external-stylesheet",
-   "fetch",
-   "model-client",
-   "send-beacon",
-   "service-worker",
-   "shared-worker",
-   "source-map-url",
-   "telemetry-client",
-   "web-socket",
-   "worker",
-   "worklet-module",
-   "xml-http-request"
+  "packageImportRules": {
+    "preactAllowedFrom": [
+      "src/main.tsx",
+      "src/ui"
+    ],
+    "testSupportAllowedFromProduction": false,
+    "theoryMayImportContent": false,
+    "uiMayImportAudio": false,
+    "uiMayImportPersistence": false
+  },
+  "browserModes": [
+    {
+      "id": "file",
+      "navigation": "file://",
+      "allowMainDocumentRequest": true,
+      "allowLoopbackRequests": false
+    },
+    {
+      "id": "http",
+      "navigation": "http://127.0.0.1",
+      "allowedMainDocumentRequests": 1,
+      "allowedLoopbackSubresourceRequests": 0,
+      "requiredMainDocumentStatus": 200
+    }
   ],
-  "permittedLocalSchemes": [
-   "blob",
-   "data",
-   "file",
-   "http-loopback"
+  "browserProjects": [
+    "chromium",
+    "firefox",
+    "webkit"
+  ],
+  "requiredReadyMarker": "[data-app-ready=\"true\"]",
+  "expectedHeading": "JazzChords \u2014 offline jazz studio",
+  "traceability": [
+    {
+      "id": "F0-TOOLCHAIN-01",
+      "kind": "toolchain"
+    },
+    {
+      "id": "F0-BOUNDARY-01",
+      "kind": "static"
+    },
+    {
+      "id": "F0-DUPLICATE-01",
+      "kind": "static"
+    },
+    {
+      "id": "F0-ARTIFACT-01",
+      "kind": "build"
+    },
+    {
+      "id": "F0-NETWORK-01",
+      "kind": "browser"
+    },
+    {
+      "id": "F0-NETWORK-02",
+      "kind": "mutation"
+    },
+    {
+      "id": "F0-REPRO-01",
+      "kind": "build"
+    },
+    {
+      "id": "F0-SIZE-01",
+      "kind": "boundary"
+    },
+    {
+      "id": "F0-LICENSE-01",
+      "kind": "provenance"
+    },
+    {
+      "id": "F0-CSP-01",
+      "kind": "security"
+    },
+    {
+      "id": "F0-NODE-01",
+      "kind": "toolchain"
+    },
+    {
+      "id": "L-OFFLINE-01",
+      "kind": "legacy-regression"
+    },
+    {
+      "id": "L-SOURCE-01",
+      "kind": "legacy-regression"
+    }
+  ],
+  "verificationLogFields": [
+    "artifactHash",
+    "browserVersion",
+    "findings",
+    "mode",
+    "outcome",
+    "schemaVersion",
+    "seed",
+    "toolVersion",
+    "traceId"
   ]
- },
- "contentSecurityPolicy": {
-  "delivery": "meta",
-  "inlineAuthorization": "sha256",
-  "requiredNoneDirectives": [
-   "base-uri",
-   "connect-src",
-   "default-src",
-   "form-action",
-   "frame-src",
-   "manifest-src",
-   "object-src",
-   "worker-src"
-  ],
-  "negativeControlMustRunWithoutCsp": true
- },
- "layers": [
-  {
-   "name": "domain",
-   "mayImport": []
-  },
-  {
-   "name": "theory",
-   "mayImport": [
-    "domain"
-   ]
-  },
-  {
-   "name": "playback",
-   "mayImport": [
-    "domain",
-    "theory"
-   ]
-  },
-  {
-   "name": "audio",
-   "mayImport": [
-    "domain",
-    "playback"
-   ]
-  },
-  {
-   "name": "compatibility",
-   "mayImport": [
-    "domain",
-    "theory"
-   ]
-  },
-  {
-   "name": "persistence",
-   "mayImport": [
-    "domain"
-   ]
-  },
-  {
-   "name": "export",
-   "mayImport": [
-    "domain",
-    "playback",
-    "theory"
-   ]
-  },
-  {
-   "name": "content",
-   "mayImport": [
-    "domain",
-    "theory"
-   ]
-  },
-  {
-   "name": "application",
-   "mayImport": [
-    "audio",
-    "compatibility",
-    "content",
-    "domain",
-    "export",
-    "persistence",
-    "playback",
-    "theory"
-   ]
-  },
-  {
-   "name": "ui",
-   "mayImport": [
-    "application",
-    "domain"
-   ]
-  }
- ],
- "packageImportRules": {
-  "preactAllowedFrom": [
-   "src/main.tsx",
-   "src/ui"
-  ],
-  "testSupportAllowedFromProduction": false,
-  "theoryMayImportContent": false,
-  "uiMayImportAudio": false,
-  "uiMayImportPersistence": false
- },
- "browserModes": [
-  {
-   "id": "file",
-   "navigation": "file://",
-   "allowMainDocumentRequest": true,
-   "allowLoopbackRequests": false
-  },
-  {
-   "id": "http",
-   "navigation": "http://127.0.0.1",
-   "allowedMainDocumentRequests": 1,
-   "allowedLoopbackSubresourceRequests": 0,
-   "requiredMainDocumentStatus": 200
-  }
- ],
- "browserProjects": [
-  "chromium",
-  "firefox",
-  "webkit"
- ],
- "requiredReadyMarker": "[data-app-ready=\"true\"]",
- "expectedHeading": "JazzChords \u2014 offline jazz studio",
- "traceability": [
-  {
-   "id": "F0-TOOLCHAIN-01",
-   "kind": "toolchain"
-  },
-  {
-   "id": "F0-BOUNDARY-01",
-   "kind": "static"
-  },
-  {
-   "id": "F0-DUPLICATE-01",
-   "kind": "static"
-  },
-  {
-   "id": "F0-ARTIFACT-01",
-   "kind": "build"
-  },
-  {
-   "id": "F0-NETWORK-01",
-   "kind": "browser"
-  },
-  {
-   "id": "F0-NETWORK-02",
-   "kind": "mutation"
-  },
-  {
-   "id": "F0-REPRO-01",
-   "kind": "build"
-  },
-  {
-   "id": "F0-SIZE-01",
-   "kind": "boundary"
-  },
-  {
-   "id": "F0-LICENSE-01",
-   "kind": "provenance"
-  },
-  {
-   "id": "F0-CSP-01",
-   "kind": "security"
-  },
-  {
-   "id": "F0-NODE-01",
-   "kind": "toolchain"
-  },
-  {
-   "id": "L-OFFLINE-01",
-   "kind": "legacy-regression"
-  },
-  {
-   "id": "L-SOURCE-01",
-   "kind": "legacy-regression"
-  }
- ],
- "verificationLogFields": [
-  "artifactHash",
-  "browserVersion",
-  "findings",
-  "mode",
-  "outcome",
-  "schemaVersion",
-  "seed",
-  "toolVersion",
-  "traceId"
- ]
 }

@@ -40,6 +40,11 @@ mod clarinet;
 mod clarinet_v2_parameters;
 mod flute;
 mod flute_v2;
+// Dark model: matrix-green offline (round 4-7 campaigns) but not yet wired to
+// any shipping recipe. Excluded from the release wasm so the artifact size
+// budget carries only shipping code; test builds and the dev feature keep it
+// compiled for the calibration campaigns.
+#[cfg(any(test, feature = "dark-models"))]
 mod flute_v3;
 mod guitar;
 mod physical;
