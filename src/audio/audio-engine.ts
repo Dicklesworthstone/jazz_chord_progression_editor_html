@@ -1258,24 +1258,70 @@ function createAudioEngineInternal(
     return storeRenderedPcm(recipe, context, key, pcm);
   }
 
-  /** Attack-time lookup is deliberately cache-only: physical rendering is
-   * admitted by preparation, never synchronously on the audio scheduler. */
+  /** Warm one plucked event through the same bounded session ABI as a chord.
+   * The attack path still consumes the ordinary one-note cache identity; only
+   * the expensive computation changes.  This matters during render-ahead:
+   * calling the synchronous note ABI for each walking-bass event can occupy
+   * the browser thread for hundreds of milliseconds and starve the transport
+   * before the following chord becomes eligible. */
+  async function renderedPluckedNoteBufferForCooperatively(
+    recipe: AudioRenderedInstrumentRecipe,
+    context: AudioContextPort,
+    voice: RenderedChordVoice,
+    requestedSeconds: number,
+  ): Promise<AudioBufferPort | null> {
+    const noteRenderer = rendererForAlgorithm(recipe.renderer.algorithmId);
+    if (noteRenderer?.renderChordCooperatively === undefined) return null;
+    const seconds = bucketRenderSeconds(requestedSeconds);
+    const key = renderedBufferKey(
+      recipe.id,
+      voice.midiPitch,
+      voice.velocity,
+      seconds,
+      voice.physicalGesture,
+    );
+    const cache = recipeBufferCache(recipe.id);
+    const cached = touchRenderedBufferEntry(cache, key);
+    if (cached !== undefined) return cached.buffer;
+    const pair = canonicalRenderedChordPairs([voice])[0];
+    if (pair === undefined) return null;
+    const pcm = await noteRenderer.renderChordCooperatively(
+      [pair.midiPitch],
+      [pair.velocity],
+      context.sampleRate,
+      seconds,
+    );
+    if (pcm === null) return null;
+    return storeRenderedPcm(recipe, context, key, pcm);
+  }
+
+  /** Attack-time chord lookup. Cooperative preparation is the fast path and
+   * keeps this a cache hit; when render-ahead loses the race to real time
+   * (slow engines, long charts) a miss renders the one chord synchronously —
+   * the same semantics the per-voice branch has always had. Wall time decides
+   * only when the buffer is computed, never its bytes. */
   function cachedRenderedChordBufferFor(
     recipe: AudioRenderedInstrumentRecipe,
+    context: AudioContextPort,
     voices: readonly RenderedChordVoice[],
     requestedSeconds: number,
   ): AudioBufferPort | null {
     if (voices.length < 2) return null;
     const chordRenderer = rendererForAlgorithm(recipe.renderer.algorithmId);
     if (chordRenderer?.renderChord === undefined) return null;
-    const key = renderedChordBufferKey(
-      recipe,
-      chordRenderer,
-      voices,
-      bucketRenderSeconds(requestedSeconds),
+    const seconds = bucketRenderSeconds(requestedSeconds);
+    const key = renderedChordBufferKey(recipe, chordRenderer, voices, seconds);
+    const cached = touchRenderedBufferEntry(recipeBufferCache(recipe.id), key);
+    if (cached !== undefined) return cached.buffer;
+    const pairs = canonicalRenderedChordPairs(voices);
+    const pcm = chordRenderer.renderChord(
+      pairs.map((pair) => pair.midiPitch),
+      pairs.map((pair) => pair.velocity),
+      context.sampleRate,
+      seconds,
     );
-    return touchRenderedBufferEntry(recipeBufferCache(recipe.id), key)?.buffer ??
-      null;
+    if (pcm === null) return null;
+    return storeRenderedPcm(recipe, context, key, pcm);
   }
 
   let reportedContextState: AudioContextStatePort | "absent" = "absent";
@@ -2773,6 +2819,7 @@ function createAudioEngineInternal(
           }
           renderedChordBuffer = cachedRenderedChordBufferFor(
             recipe,
+            context,
             attack.voices,
             requestedSeconds,
           );
@@ -3271,8 +3318,9 @@ function createAudioEngineInternal(
       });
     }
     if (
+      isSharedPluckedChordRecipe(recipe) &&
       pluckedRenderer?.renderChordCooperatively !== undefined &&
-      notesValue.length > 1
+      notesValue.length > 0
     ) {
       type PreparedPluckedNote = RenderedChordVoice &
         Readonly<{
@@ -3406,13 +3454,11 @@ function createAudioEngineInternal(
                 continue;
               }
               if (
-                renderedBufferFor(
+                await renderedPluckedNoteBufferForCooperatively(
                   recipe,
                   context,
-                  note.midiPitch,
-                  note.velocity,
+                  note,
                   note.seconds,
-                  note.physicalGesture,
                 ) === null
               ) {
                 return refuse({
