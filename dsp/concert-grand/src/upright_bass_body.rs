@@ -232,7 +232,10 @@ fn finite_positive(value: f64) -> bool {
     value.is_finite() && value > 0.0
 }
 
-fn validate(input: UprightBassBodyInput) -> Result<(), UprightBassBodyError> {
+fn validate(
+    input: UprightBassBodyInput,
+    bounds: PlateIdentityBounds,
+) -> Result<(), UprightBassBodyError> {
     for (field, value) in [
         ("length_m", input.length_m),
         ("width_m", input.width_m),
@@ -281,14 +284,29 @@ fn validate(input: UprightBassBodyInput) -> Result<(), UprightBassBodyError> {
         });
     }
 
-    // Instrument identity bounds come from the plan's 1.04--1.06 m string
-    // scale and the reviewed 1.08 x 0.66 m, 450 L body.  They intentionally
-    // reject a guitar-sized plate copied under an upright-bass label.
+    // Instrument identity bounds intentionally reject geometry copied under
+    // the wrong instrument label; each consumer supplies its own reviewed
+    // envelope (`PlateIdentityBounds`).
     for (field, value, low, high) in [
-        ("length_m", input.length_m, 1.0, 1.16),
-        ("width_m", input.width_m, 0.58, 0.76),
-        ("thickness_m", input.thickness_m, 0.004, 0.009),
-        ("cavity_volume_m3", input.cavity_volume_m3, 0.35, 0.56),
+        (
+            "length_m",
+            input.length_m,
+            bounds.length_m.0,
+            bounds.length_m.1,
+        ),
+        ("width_m", input.width_m, bounds.width_m.0, bounds.width_m.1),
+        (
+            "thickness_m",
+            input.thickness_m,
+            bounds.thickness_m.0,
+            bounds.thickness_m.1,
+        ),
+        (
+            "cavity_volume_m3",
+            input.cavity_volume_m3,
+            bounds.cavity_volume_m3.0,
+            bounds.cavity_volume_m3.1,
+        ),
     ] {
         if !(low..=high).contains(&value) {
             return Err(UprightBassBodyError::NotUprightGeometry { field });
@@ -296,6 +314,42 @@ fn validate(input: UprightBassBodyInput) -> Result<(), UprightBassBodyError> {
     }
     Ok(())
 }
+
+/// Reviewed per-instrument geometry envelope: (low, high) inclusive bounds.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct PlateIdentityBounds {
+    pub length_m: (f64, f64),
+    pub width_m: (f64, f64),
+    pub thickness_m: (f64, f64),
+    pub cavity_volume_m3: (f64, f64),
+}
+
+/// The plan's 1.04--1.06 m string scale and reviewed 1.08 x 0.66 m, 450 L
+/// upright-bass body.
+pub const UPRIGHT_BASS_IDENTITY: PlateIdentityBounds = PlateIdentityBounds {
+    length_m: (1.0, 1.16),
+    width_m: (0.58, 0.76),
+    thickness_m: (0.004, 0.009),
+    cavity_volume_m3: (0.35, 0.56),
+};
+
+/// Reviewed steel-dreadnought top envelope around the 0.51 x 0.40 m, 3.2 mm,
+/// 105 L pack literals.
+pub const DREADNOUGHT_IDENTITY: PlateIdentityBounds = PlateIdentityBounds {
+    length_m: (0.46, 0.56),
+    width_m: (0.35, 0.45),
+    thickness_m: (0.002_4, 0.004_2),
+    cavity_volume_m3: (0.080, 0.130),
+};
+
+/// Reviewed soprano/concert ukulele top envelope around the 0.28 x 0.20 m,
+/// 2.2 mm, 3.2 L pack literals.
+pub const UKULELE_IDENTITY: PlateIdentityBounds = PlateIdentityBounds {
+    length_m: (0.22, 0.34),
+    width_m: (0.15, 0.26),
+    thickness_m: (0.001_6, 0.003_0),
+    cavity_volume_m3: (0.002, 0.008),
+};
 
 fn bending_rigidity(input: UprightBassBodyInput) -> BendingRigidity {
     let nu_rl = input.poisson_lr * input.young_radial_pa / input.young_longitudinal_pa;
@@ -713,7 +767,17 @@ fn jacobi_eigen(
 pub fn derive_upright_bass_body(
     input: UprightBassBodyInput,
 ) -> Result<UprightBassBodyAuthority, UprightBassBodyError> {
-    validate(input)?;
+    derive_soundboard_body(input, UPRIGHT_BASS_IDENTITY)
+}
+
+/// Derive a simply-supported orthotropic soundboard authority for any
+/// reviewed instrument envelope.  Identical numerics to the upright-bass
+/// entry; only the identity gate is parameterized.
+pub fn derive_soundboard_body(
+    input: UprightBassBodyInput,
+    bounds: PlateIdentityBounds,
+) -> Result<UprightBassBodyAuthority, UprightBassBodyError> {
+    validate(input, bounds)?;
     let (stiffness, mass, bridge_load, radiation_load, assembly_work) = assemble(input)?;
     let matrix = generalized_symmetric_matrix(&stiffness, &mass);
     let (eigenvalues, mut eigenvectors, sweeps, pair_visits, rotations) = jacobi_eigen(matrix)?;

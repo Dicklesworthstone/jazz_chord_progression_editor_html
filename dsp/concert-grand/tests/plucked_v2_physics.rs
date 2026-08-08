@@ -6,17 +6,17 @@ mod plucked_v2;
 
 use plucked_v2::{
     archtop_pack, circular_sound_hole_helmholtz_hz, dreadnought_pack, inharmonicity_coefficient,
-    marshall_electric_pack, midi_frequency_hz, plk2_chord_runtime_init_slices,
-    plk2_chord_runtime_step_slices, plk2_chord_session_init, plk2_chord_session_init_slices,
-    plk2_chord_session_max_steps, plk2_chord_session_state_max_bytes, plk2_chord_session_step,
-    plk2_chord_session_step_slices, plk2_chord_string_frets, plk2_cubic_reconstruct,
-    plk2_note_frames, plk2_render, plk2_render_chord, plk2_render_chord_slices,
-    plk2_render_chord_slices_full_rate_reference, plk2_render_path, plk2_render_slices,
-    plk2_stem_init, plk2_stem_init_slice, plk2_stem_render, plk2_stem_render_max_frames,
-    plk2_stem_render_slices, plk2_stem_state_max_bytes, plk2_stem_state_string_energy_j,
-    plk2_string_fret, plk2_triode_tanh, ukulele_pack, upright_bass_pack, BodyModeKind,
-    PluckGesture, PluckedError, PluckedRenderPath, PluckedStem, PLK2_ARCHTOP_PACK,
-    PLK2_CHORD_STEP_COMPLETE, PLK2_CHORD_STEP_PROGRESS, PLK2_DREADNOUGHT_PACK,
+    marshall_electric_pack, midi_frequency_hz, plk2_chord_radiation_taps_match_full_reference,
+    plk2_chord_runtime_init_slices, plk2_chord_runtime_step_slices, plk2_chord_session_init,
+    plk2_chord_session_init_slices, plk2_chord_session_max_steps,
+    plk2_chord_session_state_max_bytes, plk2_chord_session_step, plk2_chord_session_step_slices,
+    plk2_chord_string_frets, plk2_cubic_reconstruct, plk2_note_frames, plk2_render,
+    plk2_render_chord, plk2_render_chord_slices, plk2_render_chord_slices_full_rate_reference,
+    plk2_render_path, plk2_render_slices, plk2_stem_init, plk2_stem_init_slice, plk2_stem_render,
+    plk2_stem_render_max_frames, plk2_stem_render_slices, plk2_stem_state_max_bytes,
+    plk2_stem_state_string_energy_j, plk2_string_fret, plk2_triode_tanh, ukulele_pack,
+    upright_bass_pack, BodyModeKind, PluckGesture, PluckedError, PluckedRenderPath, PluckedStem,
+    PLK2_ARCHTOP_PACK, PLK2_CHORD_STEP_COMPLETE, PLK2_CHORD_STEP_PROGRESS, PLK2_DREADNOUGHT_PACK,
     PLK2_MARSHALL_ELECTRIC_PACK, PLK2_STEM_EVENT_PLUCK, PLK2_STEM_EVENT_RESET, PLK2_UKULELE_PACK,
     PLK2_UPRIGHT_BASS_PACK,
 };
@@ -666,9 +666,19 @@ fn geometry_and_material_packs_create_distinct_body_and_string_families() {
     let upright = PluckedStem::new(upright_pack, SAMPLE_RATE).expect("upright modes");
     assert!(dread.body_mode_count() > 8);
     assert!(uke.body_mode_count() > 8);
-    // Air and plate modes carry explicit identities. The braced (1,1) plate
-    // target near 216 Hz is not substituted for the lower cavity resonance.
+    // The dreadnought consumes the geometry-solved DKT authority; its
+    // deterministic fundamental cross-checks the independent FD foundry table
+    // (68.9 Hz) within the mesh-coarseness margin. The ukulele retains its
+    // reviewed analytic air/plate distinction until a dedicated small-body
+    // mesh is independently admitted.
     assert!(body_contains_mode(&dread, 98.0));
+    let dread_dkt_fundamental =
+        body_mode_frequency(&dread, BodyModeKind::GeometrySolvedDkt { ordinal: 0 })
+            .expect("dreadnought DKT fundamental");
+    assert!(
+        (dread_dkt_fundamental - 68.512).abs() < 0.01,
+        "dreadnought DKT fundamental was {dread_dkt_fundamental}"
+    );
     let uke_air = body_mode_frequency(&uke, BodyModeKind::HelmholtzAir).expect("uke air mode");
     let uke_plate = body_mode_frequency(
         &uke,
@@ -2095,6 +2105,31 @@ fn cooperative_chord_session_is_bit_exact_across_four_packs_and_browser_rates() 
 }
 
 #[test]
+fn chord_radiation_hot_path_is_bit_exact_without_unused_diagnostic_taps() {
+    let guitar_midis = [48_i32, 52, 55, 60];
+    let guitar_velocities = [100_i32, 96, 92, 88];
+    let uke_midis = [60_i32, 64, 67, 69];
+    let uke_velocities = [92_i32, 88, 84, 80];
+
+    for pack_index in [
+        PLK2_ARCHTOP_PACK,
+        PLK2_MARSHALL_ELECTRIC_PACK,
+        PLK2_DREADNOUGHT_PACK,
+        PLK2_UKULELE_PACK,
+    ] {
+        let (midis, velocities): (&[i32], &[i32]) = if pack_index == PLK2_UKULELE_PACK {
+            (&uke_midis, &uke_velocities)
+        } else {
+            (&guitar_midis, &guitar_velocities)
+        };
+        plk2_chord_radiation_taps_match_full_reference(pack_index, midis, velocities, 2_048)
+            .unwrap_or_else(|reason| {
+                panic!("pack {pack_index} changed radiation or retained state: {reason}")
+            });
+    }
+}
+
+#[test]
 fn cooperative_raw_abi_refuses_hostile_state_alias_and_capacity_then_recovers() {
     const FRAMES: usize = 8_193;
     let midis = [48_i32, 52, 55, 60];
@@ -2206,4 +2241,22 @@ fn cooperative_raw_abi_refuses_hostile_state_alias_and_capacity_then_recovers() 
     );
     assert_eq!(left, expected_left);
     assert_eq!(right, expected_right);
+}
+
+#[test]
+#[ignore]
+fn print_dkt_guitar_mode_tables() {
+    for (label, pack) in [
+        ("dreadnought", dreadnought_pack()),
+        ("ukulele", ukulele_pack()),
+    ] {
+        let stem = PluckedStem::new(pack, SAMPLE_RATE).expect("modes");
+        for i in 0..stem.body_mode_count() {
+            println!(
+                "{label} {i} {:?} {:.3}",
+                stem.body_mode_kind(i).unwrap(),
+                stem.body_mode_frequency_hz(i).unwrap()
+            );
+        }
+    }
 }

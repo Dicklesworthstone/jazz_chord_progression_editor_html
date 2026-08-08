@@ -144,6 +144,35 @@ pub fn plk2_cubic_reconstruct(source: &[f32], destination: &mut [f32], divisor: 
 /// compensate the deliberately weak far-field modal reduction at the boundary
 /// between its physical pressure tap and a practical synthesizer mix; the
 /// already amplified electric cabinet needs substantially less trim.
+/// Effective radiating area of the near-bridge soundboard patch, in m².
+/// The bounded eigensolve keeps only the lowest global modes, whose area
+/// integrals under-represent the dense local motion around the bridge — the
+/// classic hollow comb of truncated modal radiators.  The bridge-point
+/// velocity is already computed for the coupling port in every render path,
+/// is spectrally dense, and multiplying it by a fixed patch area adds the
+/// missing local radiation through the same volume-flow differentiator.
+/// The constant is a property of bridge footprint and listener geometry and
+/// never inspects the rendered signal.
+fn plk2_bridge_patch_area_m2(pack_index: i32) -> f64 {
+    match pack_index {
+        PLK2_ARCHTOP_PACK => 1.2e-3,
+        PLK2_DREADNOUGHT_PACK => 1.5e-3,
+        /* The reviewed ukulele analytic body already carries its compact
+         * bridge field; it does not need the guitar DKT patch. */
+        PLK2_UKULELE_PACK => 0.0,
+        PLK2_UPRIGHT_BASS_PACK => 3.6e-3,
+        _ => 0.0,
+    }
+}
+
+fn plk2_effective_acoustic_flow_m3_per_s(
+    pack_index: i32,
+    body_flow_m3_per_s: f64,
+    bridge_velocity_m_per_s: f64,
+) -> f64 {
+    body_flow_m3_per_s + plk2_bridge_patch_area_m2(pack_index) * bridge_velocity_m_per_s
+}
+
 fn plk2_listener_trim(pack_index: i32) -> f64 {
     let trim_db = match pack_index {
         PLK2_ARCHTOP_PACK => 80.0,
@@ -337,6 +366,13 @@ pub struct OutputTaps {
     pub cumulative_source_work_j: f64,
     pub cumulative_intrinsic_loss_j: f64,
     pub cumulative_bridge_loss_j: f64,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+struct ChordRadiationTaps {
+    acoustic_body_volume_velocity_m3_per_s: f64,
+    bridge_velocity_m_per_s: f64,
+    electric_cabinet_pressure_pa_at_1m: f64,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -938,33 +974,75 @@ impl PluckedStem {
     /// Contacts are caller-owned because the one-shot chord ABI never exposes
     /// or serializes them; all resonant and nonlinear instrument state stays
     /// in this shared stem.
-    fn step_with_contacts(&mut self, contacts: &mut [ContactState]) -> OutputTaps {
+    fn step_with_contacts(&mut self, contacts: &mut [ContactState]) -> ChordRadiationTaps {
+        for contact in contacts {
+            if contact.active {
+                let _ = self.apply_contact_state(contact, false);
+            }
+        }
+
+        self.advance_after_contact(false);
+
+        /* A shared chord consumes exactly one of these two radiation ports.
+         * Do not evaluate the public diagnostic string and bridge taps here:
+         * `StringState::velocity_at` performs a modal aperture integration,
+         * and doing that for every acoustic string on every sample was pure
+         * main-thread work with no effect on the rendered PCM. */
+        let (acoustic_body_volume_velocity_m3_per_s, bridge_velocity_m_per_s) =
+            if self.pack.amplifier.is_none() {
+                (
+                    self.acoustic_body_volume_velocity_m3_per_s(),
+                    self.body_bridge_velocity(),
+                )
+            } else {
+                (0.0, 0.0)
+            };
+        let electric_cabinet_pressure_pa_at_1m = match self.pack.pickup {
+            Some(spec) => {
+                let mut pickup_velocity_m_per_s = 0.0;
+                for string in self.strings.iter().take(self.pack.string_count) {
+                    pickup_velocity_m_per_s +=
+                        string.velocity_at(spec.position_over_scale, spec.aperture_m);
+                }
+                self.process_electric_pickup_sample(pickup_velocity_m_per_s)
+            }
+            None => 0.0,
+        };
+        ChordRadiationTaps {
+            acoustic_body_volume_velocity_m3_per_s,
+            bridge_velocity_m_per_s,
+            electric_cabinet_pressure_pa_at_1m,
+        }
+    }
+
+    #[cfg(test)]
+    fn step_with_contacts_full_tap_reference(
+        &mut self,
+        contacts: &mut [ContactState],
+    ) -> ChordRadiationTaps {
         let mut contact_force = 0.0;
         for contact in contacts {
             if contact.active {
                 contact_force += self.apply_contact_state(contact, false);
             }
         }
-
-        self.step_after_contact(contact_force, false)
+        let taps = self.step_after_contact(contact_force, false);
+        ChordRadiationTaps {
+            acoustic_body_volume_velocity_m3_per_s: taps.acoustic_body_volume_velocity_m3_per_s,
+            bridge_velocity_m_per_s: taps.bridge_velocity_m_per_s,
+            electric_cabinet_pressure_pa_at_1m: taps.electric_cabinet_pressure_pa_at_1m,
+        }
     }
 
     fn step_after_contact(&mut self, contact_force: f64, track_energy_ledger: bool) -> OutputTaps {
-        self.apply_intrinsic_half_loss(track_energy_ledger);
-        self.apply_bridge_coupling(0.5 * self.dt, track_energy_ledger);
-        self.rotate_all_modes();
-        self.apply_bridge_coupling(0.5 * self.dt, track_energy_ledger);
-        self.apply_intrinsic_half_loss(track_energy_ledger);
+        self.advance_after_contact(track_energy_ledger);
 
         let mut direct = 0.0;
         for string in self.strings.iter().take(self.pack.string_count) {
             direct += string.velocity_at(0.36, 0.002);
         }
         let bridge_velocity = self.body_bridge_velocity();
-        let mut acoustic = 0.0;
-        for mode in self.body_modes.iter().take(self.body_mode_count) {
-            acoustic += mode.radiation_residue_m2_per_sqrt_kg * mode.velocity;
-        }
+        let acoustic = self.acoustic_body_volume_velocity_m3_per_s();
         let pickup = match self.pack.pickup {
             Some(spec) => {
                 let mut total = 0.0;
@@ -992,6 +1070,22 @@ impl PluckedStem {
             cumulative_intrinsic_loss_j: self.cumulative_intrinsic_loss_j,
             cumulative_bridge_loss_j: self.cumulative_bridge_loss_j,
         }
+    }
+
+    fn advance_after_contact(&mut self, track_energy_ledger: bool) {
+        self.apply_intrinsic_half_loss(track_energy_ledger);
+        self.apply_bridge_coupling(0.5 * self.dt, track_energy_ledger);
+        self.rotate_all_modes();
+        self.apply_bridge_coupling(0.5 * self.dt, track_energy_ledger);
+        self.apply_intrinsic_half_loss(track_energy_ledger);
+    }
+
+    fn acoustic_body_volume_velocity_m3_per_s(&self) -> f64 {
+        let mut acoustic = 0.0;
+        for mode in self.body_modes.iter().take(self.body_mode_count) {
+            acoustic += mode.radiation_residue_m2_per_sqrt_kg * mode.velocity;
+        }
+        acoustic
     }
 
     pub fn total_energy_j(&self) -> f64 {
@@ -1856,7 +1950,11 @@ fn derive_dkt_guitar_body(
                 cavity_volume_m3: geometry.body_volume_m3,
                 provisional_plate_q: geometry.plate_q,
             };
-            let derived = upright_bass_body::derive_upright_bass_body(input)
+            let identity = match pack.id {
+                "steel-dreadnought" => upright_bass_body::DREADNOUGHT_IDENTITY,
+                _ => upright_bass_body::UKULELE_IDENTITY,
+            };
+            let derived = upright_bass_body::derive_soundboard_body(input, identity)
                 .map_err(|_| PluckedError::InvalidBody)?;
             *cached = Some(derived);
             derived
@@ -1927,7 +2025,7 @@ fn derive_body_modes(
     let geometry = pack.body;
     let mut modes = [BodyMode::ZERO; MAX_BODY_MODES];
     let mut count = 0usize;
-    if pack.id == "steel-dreadnought" || pack.id == "reentrant-ukulele" {
+    if pack.id == "steel-dreadnought" {
         return derive_dkt_guitar_body(pack, sample_rate_hz);
     }
     if pack.id == "pizzicato-upright-bass" {
@@ -2648,7 +2746,11 @@ pub fn plk2_render_slices(
         let taps = stem.step();
         let pressure_pa = match path {
             PluckedRenderPath::AcousticBodyRadiation => {
-                let flow = taps.acoustic_body_volume_velocity_m3_per_s;
+                let flow = plk2_effective_acoustic_flow_m3_per_s(
+                    pack_index,
+                    taps.acoustic_body_volume_velocity_m3_per_s,
+                    taps.bridge_velocity_m_per_s,
+                );
                 let pressure = body_pressure_scale * (flow - previous_body_flow);
                 previous_body_flow = flow;
                 pressure
@@ -2877,7 +2979,11 @@ impl PluckedChordSession {
                     .step_with_contacts(&mut self.contacts[..self.note_count]);
                 let pressure_pa = match path {
                     PluckedRenderPath::AcousticBodyRadiation => {
-                        let flow = taps.acoustic_body_volume_velocity_m3_per_s;
+                        let flow = plk2_effective_acoustic_flow_m3_per_s(
+                            self.pack_index,
+                            taps.acoustic_body_volume_velocity_m3_per_s,
+                            taps.bridge_velocity_m_per_s,
+                        );
                         let pressure = body_pressure_scale
                             * (flow - self.stem_session.previous_body_flow_m3_per_s);
                         self.stem_session.previous_body_flow_m3_per_s = flow;
@@ -3313,6 +3419,86 @@ pub fn plk2_render_chord_slices_full_rate_reference(
     )
 }
 
+/// Test-only proof that omitting unused public diagnostic taps does not alter
+/// either radiation port or any retained physical state used by a later
+/// sample. The full-tap stem is the pre-optimization execution path.
+#[cfg(test)]
+pub fn plk2_chord_radiation_taps_match_full_reference(
+    pack_index: i32,
+    midis: &[i32],
+    velocities: &[i32],
+    frames: usize,
+) -> Result<(), &'static str> {
+    let Some(session) = PluckedChordSession::new(
+        pack_index,
+        midis,
+        velocities,
+        8_000.0,
+        i32::try_from(frames).unwrap_or(0),
+        Some(1),
+    ) else {
+        return Err("session-refused");
+    };
+    if frames == 0 || session.frames != frames {
+        return Err("frame-count");
+    }
+    let mut optimized = session.clone();
+    let mut full_reference = session;
+    let Some(render_path) = plk2_render_path(pack_index) else {
+        return Err("render-path");
+    };
+    for _ in 0..frames {
+        let optimized_taps = optimized
+            .stem_session
+            .stem
+            .step_with_contacts(&mut optimized.contacts[..optimized.note_count]);
+        let reference_taps = full_reference
+            .stem_session
+            .stem
+            .step_with_contacts_full_tap_reference(
+                &mut full_reference.contacts[..full_reference.note_count],
+            );
+        if render_path == PluckedRenderPath::AcousticBodyRadiation
+            && optimized_taps
+                .acoustic_body_volume_velocity_m3_per_s
+                .to_bits()
+                != reference_taps
+                    .acoustic_body_volume_velocity_m3_per_s
+                    .to_bits()
+        {
+            return Err("acoustic-radiation");
+        }
+        if render_path == PluckedRenderPath::AcousticBodyRadiation
+            && optimized_taps.bridge_velocity_m_per_s.to_bits()
+                != reference_taps.bridge_velocity_m_per_s.to_bits()
+        {
+            return Err("bridge-radiation");
+        }
+        if render_path == PluckedRenderPath::ElectricCabinetRadiation
+            && optimized_taps.electric_cabinet_pressure_pa_at_1m.to_bits()
+                != reference_taps.electric_cabinet_pressure_pa_at_1m.to_bits()
+        {
+            return Err("electric-radiation");
+        }
+    }
+
+    let mut optimized_bytes = [0_u8; PLK2_CHORD_STATE_MAX_BYTES];
+    let mut reference_bytes = [0_u8; PLK2_CHORD_STATE_MAX_BYTES];
+    let Some(optimized_len) = encode_chord_session(&optimized, &mut optimized_bytes) else {
+        return Err("optimized-encode");
+    };
+    let Some(reference_len) = encode_chord_session(&full_reference, &mut reference_bytes) else {
+        return Err("reference-encode");
+    };
+    if optimized_len != reference_len {
+        return Err("encoded-length");
+    }
+    if optimized_bytes[..optimized_len] != reference_bytes[..reference_len] {
+        return Err("retained-state");
+    }
+    Ok(())
+}
+
 /// Fixed upper bound for the explicit retained-stem state buffer. The encoded
 /// byte count returned by [`plk2_stem_init`] is smaller and must be passed back
 /// exactly; the upper bound lets a no-allocation host reserve caller-owned
@@ -3436,7 +3622,11 @@ pub fn plk2_stem_render_slices(
         let taps = session.stem.step();
         let pressure_pa = match path {
             PluckedRenderPath::AcousticBodyRadiation => {
-                let flow = taps.acoustic_body_volume_velocity_m3_per_s;
+                let flow = plk2_effective_acoustic_flow_m3_per_s(
+                    session.pack_index,
+                    taps.acoustic_body_volume_velocity_m3_per_s,
+                    taps.bridge_velocity_m_per_s,
+                );
                 let pressure = body_pressure_scale * (flow - session.previous_body_flow_m3_per_s);
                 session.previous_body_flow_m3_per_s = flow;
                 pressure
