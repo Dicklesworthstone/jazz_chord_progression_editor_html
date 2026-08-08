@@ -4474,6 +4474,34 @@ function makeStudioComposition(
     );
   };
 
+  /**
+   * Settle a Play expectation when an application-owned prerequisite refuses
+   * before the Play command itself is submitted. Preparation and instrument
+   * binding are deliberately outside X1, so they have no transport outcome
+   * whose request ID could settle the optimistic slot for us.
+   */
+  const settlePlayPrerequisiteRefusal = (
+    documentId: AppState["document"]["id"],
+    planRevision: number,
+    playRequestId: number,
+    failureCode: string,
+  ): void => {
+    const transportState = audioPort?.inspect().transport.state ?? "disposed";
+    apply("play-progression", (current) =>
+      reduceEphemeralIntent({
+        state: current,
+        intent: {
+          kind: "settle-transport-expectation",
+          commandRequestId: playRequestId,
+          documentId,
+          planRevision,
+          status: SETTLED_TRANSPORT_STATUS[transportState],
+          failureCode,
+        },
+      }),
+    );
+  };
+
   /*
    * Loop + seek (jcpe-v2r-loop-seek-ukk6). `loopEnabled` is session
    * presentation intent; `activeRun` retains the identity and exact length
@@ -4757,11 +4785,12 @@ function makeStudioComposition(
       }
     }
     void (async () => {
-      await port.prepareInstrument(
+      const prepared = await port.prepareInstrument(
         instrumentId,
         Object.freeze(warmNotes),
         warmBinding,
       );
+      if (!prepared) return;
       await port.setInstrument(nextTransportRequestId(), instrumentId);
     })();
   };
@@ -5026,8 +5055,33 @@ function makeStudioComposition(
         const setInstrumentRequestId = nextTransportRequestId();
         const playRequestId = nextTransportRequestId();
         expectTransport("play-progression", playRequestId, "starting", startBeat);
-        await port.prepareInstrument(instrumentId, preparedNotes, binding);
-        await port.setInstrument(setInstrumentRequestId, instrumentId);
+        const prepared = await port.prepareInstrument(
+          instrumentId,
+          preparedNotes,
+          binding,
+        );
+        if (!prepared) {
+          settlePlayPrerequisiteRefusal(
+            binding.documentId,
+            binding.planRevision,
+            playRequestId,
+            "audio.renderer_unavailable",
+          );
+          return;
+        }
+        const instrumentOutcome = await port.setInstrument(
+          setInstrumentRequestId,
+          instrumentId,
+        );
+        if (instrumentOutcome.termination === "refusal") {
+          settlePlayPrerequisiteRefusal(
+            binding.documentId,
+            binding.planRevision,
+            playRequestId,
+            instrumentOutcome.engineRefusalCode ?? instrumentOutcome.code,
+          );
+          return;
+        }
         const playOutcome = await port.play(playRequestId, binding, startBeat);
         settleTransportOutcome(
           "play-progression",
@@ -5049,8 +5103,33 @@ function makeStudioComposition(
       const setInstrumentRequestId = nextTransportRequestId();
       const playRequestId = nextTransportRequestId();
       expectTransport("play-progression", playRequestId, "starting", startBeat);
-      await port.prepareInstrument(instrumentId, preparedNotes, binding);
-      await port.setInstrument(setInstrumentRequestId, instrumentId);
+      const prepared = await port.prepareInstrument(
+        instrumentId,
+        preparedNotes,
+        binding,
+      );
+      if (!prepared) {
+        settlePlayPrerequisiteRefusal(
+          binding.documentId,
+          binding.planRevision,
+          playRequestId,
+          "audio.renderer_unavailable",
+        );
+        return;
+      }
+      const instrumentOutcome = await port.setInstrument(
+        setInstrumentRequestId,
+        instrumentId,
+      );
+      if (instrumentOutcome.termination === "refusal") {
+        settlePlayPrerequisiteRefusal(
+          binding.documentId,
+          binding.planRevision,
+          playRequestId,
+          instrumentOutcome.engineRefusalCode ?? instrumentOutcome.code,
+        );
+        return;
+      }
       const playOutcome = await port.play(playRequestId, binding, startBeat);
       settleTransportOutcome(
         "play-progression",
@@ -5143,6 +5222,49 @@ function makeStudioComposition(
 
   const PREVIEW_GATE_SECONDS = 1.2;
 
+  const startPreparedPreview = async (request: Readonly<{
+    port: StudioAudioPort;
+    gesture: StudioAudioGesture;
+    documentId: AppState["document"]["id"];
+    planRevision: number;
+    instrumentId: InstrumentId;
+    previewId: string;
+    midiPitches: readonly [MidiPitch, ...MidiPitch[]];
+    notes: Parameters<StudioAudioPort["prepareInstrument"]>[1];
+    mix: Readonly<{ masterVolume: number; reverbAmount: number }>;
+  }>): Promise<void> => {
+    if (!request.port.isInitialized()) {
+      const initialized = await request.port.initialize(
+        nextTransportRequestId(),
+        request.gesture,
+        request.documentId,
+        request.planRevision,
+        request.mix,
+      );
+      if (initialized.termination === "refusal") return;
+    }
+    if (
+      !await request.port.prepareInstrument(
+        request.instrumentId,
+        request.notes,
+      )
+    ) {
+      return;
+    }
+    const instrument = await request.port.setInstrument(
+      nextTransportRequestId(),
+      request.instrumentId,
+    );
+    if (instrument.termination === "refusal") return;
+    await request.port.startPreview(
+      nextTransportRequestId(),
+      request.previewId,
+      request.instrumentId,
+      request.midiPitches,
+      PREVIEW_GATE_SECONDS,
+    );
+  };
+
   const previewChord = (
     eventId: string,
     gesture: StudioAudioGesture,
@@ -5195,31 +5317,19 @@ function makeStudioComposition(
       masterVolume: state.document.playback.masterVolume,
       reverbAmount: state.document.playback.reverbAmount,
     });
-    void (async () => {
-      if (!port.isInitialized()) {
-        await port.initialize(
-          nextTransportRequestId(),
-          gesture,
-          documentId,
-          planRevision,
-          mix,
-        );
-      }
-      await port.prepareInstrument(
-        instrumentId,
-        midiPitches.map((midiPitch) =>
-          Object.freeze({ midiPitch, velocity: event.velocity }),
-        ),
-      );
-      await port.setInstrument(nextTransportRequestId(), instrumentId);
-      await port.startPreview(
-        nextTransportRequestId(),
-        previewId,
-        instrumentId,
-        midiPitches,
-        PREVIEW_GATE_SECONDS,
-      );
-    })();
+    void startPreparedPreview({
+      port,
+      gesture,
+      documentId,
+      planRevision,
+      mix,
+      instrumentId,
+      previewId,
+      midiPitches,
+      notes: midiPitches.map((midiPitch) =>
+        Object.freeze({ midiPitch, velocity: event.velocity }),
+      ),
+    });
     /*
      * A preview is an audio-only effect: application state is untouched, so
      * the success carries the current snapshot as an ephemeral no-change
@@ -5260,34 +5370,22 @@ function makeStudioComposition(
       masterVolume: state.document.playback.masterVolume,
       reverbAmount: state.document.playback.reverbAmount,
     });
-    void (async () => {
-      if (!port.isInitialized()) {
-        await port.initialize(
-          nextTransportRequestId(),
-          gesture,
-          documentId,
-          planRevision,
-          mix,
-        );
-      }
-      await port.prepareInstrument(
-        instrumentId,
-        pitches.map((pitch) =>
-          Object.freeze({
-            midiPitch: pitch,
-            velocity: PLAYBACK_PLAN_FIXED_VELOCITY,
-          }),
-        ),
-      );
-      await port.setInstrument(nextTransportRequestId(), instrumentId);
-      await port.startPreview(
-        nextTransportRequestId(),
-        previewId,
-        instrumentId,
-        pitches,
-        PREVIEW_GATE_SECONDS,
-      );
-    })();
+    void startPreparedPreview({
+      port,
+      gesture,
+      documentId,
+      planRevision,
+      mix,
+      instrumentId,
+      previewId,
+      midiPitches: pitches,
+      notes: pitches.map((pitch) =>
+        Object.freeze({
+          midiPitch: pitch,
+          velocity: PLAYBACK_PLAN_FIXED_VELOCITY,
+        }),
+      ),
+    });
     return apply("preview-chord", (current) =>
       successResult(current, createWorkCounters(), "ephemeral-updated"),
     );
@@ -5353,34 +5451,22 @@ function makeStudioComposition(
       masterVolume: state.document.playback.masterVolume,
       reverbAmount: state.document.playback.reverbAmount,
     });
-    void (async () => {
-      if (!port.isInitialized()) {
-        await port.initialize(
-          nextTransportRequestId(),
-          gesture,
-          documentId,
-          planRevision,
-          mix,
-        );
-      }
-      await port.prepareInstrument(
-        instrumentId,
-        pitches.map((pitch) =>
-          Object.freeze({
-            midiPitch: pitch,
-            velocity: PLAYBACK_PLAN_FIXED_VELOCITY,
-          }),
-        ),
-      );
-      await port.setInstrument(nextTransportRequestId(), instrumentId);
-      await port.startPreview(
-        nextTransportRequestId(),
-        previewId,
-        instrumentId,
-        pitches,
-        PREVIEW_GATE_SECONDS,
-      );
-    })();
+    void startPreparedPreview({
+      port,
+      gesture,
+      documentId,
+      planRevision,
+      mix,
+      instrumentId,
+      previewId,
+      midiPitches: pitches,
+      notes: pitches.map((pitch) =>
+        Object.freeze({
+          midiPitch: pitch,
+          velocity: PLAYBACK_PLAN_FIXED_VELOCITY,
+        }),
+      ),
+    });
     return apply("preview-chord", (current) =>
       successResult(current, createWorkCounters(), "ephemeral-updated"),
     );

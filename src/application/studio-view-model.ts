@@ -455,7 +455,7 @@ export function transportFailureDetail(code: string): string {
     case "audio.mix_invalid":
       return "The volume or reverb setting was rejected. Adjust them and try again.";
     case "audio.renderer_unavailable":
-      return "The piano renderer is unavailable. Playback falls back to synthesis; press Play again.";
+      return "The selected instrument could not prepare its audio. Try Play again or choose another instrument.";
     case "audio.owner_invalid":
     case "audio.event_id_invalid":
     case "audio.voice_batch_empty":

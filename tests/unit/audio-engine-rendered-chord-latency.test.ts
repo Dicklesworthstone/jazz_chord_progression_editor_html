@@ -293,6 +293,16 @@ test("render-ahead warms a single plucked event cooperatively and attack remains
     gateSeconds: 0.4,
   });
 
+  requireFailure(engine.attackAudioVoices(attackRequest([
+    voice("cold-cooperative-bass-note", 48, 96),
+  ], {
+    eventId: "event-cold-cooperative-bass-note",
+    instrumentId: "dreadnought-guitar",
+    startTimeSeconds: 0.05,
+    releaseTimeSeconds: 0.45,
+  })), "audio.renderer_unavailable");
+  expect(calls).toEqual({ note: 0, chord: 0 });
+
   expect(requireSuccess(await engine.prepareRenderedAudioVoices({
     instrumentId: "dreadnought-guitar",
     notes: [note],

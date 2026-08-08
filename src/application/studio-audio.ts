@@ -29,6 +29,8 @@ import {
   type AudioPlatform,
   type AudioUserGestureReceipt,
   type ExpressiveVoiceGesture,
+  type PhysicalRenderEvent,
+  type PhysicalRenderSegment,
   type TransportCommandOutcome,
   type TransportPlanBinding,
   type TransportService,
@@ -270,6 +272,76 @@ export type CreateStudioAudioOptions = Readonly<{
   /** Audio-clock seconds. Injected so a test can supply a deterministic clock. */
   currentTimeSeconds?: () => number;
 }>;
+
+type PhysicalPreparationNoteIdentity = Readonly<{
+  eventId?: string;
+  voiceOrdinal?: number;
+}>;
+
+export type PhysicalPhrasePreparationEntry = Readonly<{
+  segment: PhysicalRenderSegment;
+  event: PhysicalRenderEvent;
+}>;
+
+/**
+ * Select the smallest state-continuous phrase prefix needed by one warmup.
+ *
+ * A Play request deliberately warms only a bounded prefix of chart events.
+ * The old composition ignored that request for clarinet and rendered every
+ * segment in the entire bound plan before first audio.  Stateful wind work
+ * cannot simply filter to the named events, though: a later legato segment
+ * needs every earlier segment for the same retained voice.  This selector
+ * therefore finds the last requested position per physical voice and returns
+ * exactly that voice's prefix, in render-plan order.
+ */
+export function selectPhysicalPhrasePreparationEntries(
+  notes: readonly PhysicalPreparationNoteIdentity[],
+  gestures: readonly ExpressiveVoiceGesture[],
+  segments: readonly PhysicalRenderSegment[],
+): readonly PhysicalPhrasePreparationEntry[] {
+  const gesturesByEvent = new Map<string, ExpressiveVoiceGesture[]>();
+  for (const gesture of gestures) {
+    const eventGestures = gesturesByEvent.get(gesture.eventId) ?? [];
+    eventGestures.push(gesture);
+    gesturesByEvent.set(gesture.eventId, eventGestures);
+  }
+  const requestedGestureKeys = new Set<string>();
+  for (const note of notes) {
+    if (note.eventId === undefined || note.voiceOrdinal === undefined) continue;
+    const gesture = gesturesByEvent.get(note.eventId)?.[note.voiceOrdinal];
+    if (gesture === undefined) continue;
+    requestedGestureKeys.add(`${gesture.eventId}\u001f${gesture.voiceId}`);
+  }
+
+  const lastRequestedByVoice = new Map<string, number>();
+  const seenByVoice = new Map<string, number>();
+  for (const segment of segments) {
+    for (const event of segment.events) {
+      const position = seenByVoice.get(event.voiceId) ?? 0;
+      seenByVoice.set(event.voiceId, position + 1);
+      const gesture = gestures[event.gestureIndex];
+      if (
+        gesture !== undefined &&
+        requestedGestureKeys.has(`${gesture.eventId}\u001f${gesture.voiceId}`)
+      ) {
+        lastRequestedByVoice.set(event.voiceId, position);
+      }
+    }
+  }
+
+  const selected: PhysicalPhrasePreparationEntry[] = [];
+  seenByVoice.clear();
+  for (const segment of segments) {
+    for (const event of segment.events) {
+      const position = seenByVoice.get(event.voiceId) ?? 0;
+      seenByVoice.set(event.voiceId, position + 1);
+      const lastRequested = lastRequestedByVoice.get(event.voiceId);
+      if (lastRequested === undefined || position > lastRequested) continue;
+      selected.push(Object.freeze({ segment, event }));
+    }
+  }
+  return Object.freeze(selected);
+}
 
 /*
  * The platform is a parameter rather than something this module reaches for.
@@ -531,50 +603,47 @@ export function createStudioAudio(
               physicalCacheFingerprint: string;
               physicalStateReset: boolean;
             }>> = [];
-            const lastRequestedByVoice = new Map<string, number>();
-            const seenByVoice = new Map<string, number>();
-            for (const segment of physical.value.renderPlan.segments) {
-              for (const event of segment.events) {
-                const position = seenByVoice.get(event.voiceId) ?? 0;
-                seenByVoice.set(event.voiceId, position + 1);
-                lastRequestedByVoice.set(event.voiceId, position);
-              }
-            }
+            const selected = selectPhysicalPhrasePreparationEntries(
+              notes,
+              physical.value.expressivePlan.gestures,
+              physical.value.renderPlan.segments,
+            );
             const priorIdentityByVoice = new Map<string, string>();
-            seenByVoice.clear();
-            for (const segment of physical.value.renderPlan.segments) {
-              for (const event of segment.events) {
-                const position = seenByVoice.get(event.voiceId) ?? 0;
-                seenByVoice.set(event.voiceId, position + 1);
-                const lastRequested = lastRequestedByVoice.get(event.voiceId);
-                if (lastRequested === undefined || position > lastRequested) continue;
-                const gesture = physical.value.expressivePlan.gestures[event.gestureIndex];
-                if (gesture === undefined) continue;
-                const priorIdentity = priorIdentityByVoice.get(event.voiceId);
-                const physicalStateReset = gesture.articulation !== "legato" ||
-                  priorIdentity === undefined;
-                const physicalCacheFingerprint = sha256Hex([
-                  segment.cacheFingerprint,
-                  event.eventId,
-                  event.voiceId,
-                  String(event.startFrame),
-                  String(event.durationFrames),
-                  physicalStateReset ? "reset" : priorIdentity,
-                ].join("\u001f"));
-                priorIdentityByVoice.set(event.voiceId, physicalCacheFingerprint);
-                result.push(Object.freeze({
-                  midiPitch: event.midiPitch as MidiPitch,
-                  velocity: event.velocity,
-                  physicalGesture: gesture,
-                  physicalFrameCount: event.durationFrames,
-                  physicalCacheFingerprint,
-                  physicalStateReset,
-                }));
-              }
+            for (const { segment, event } of selected) {
+              const gesture = physical.value.expressivePlan.gestures[event.gestureIndex];
+              if (gesture === undefined) continue;
+              const priorIdentity = priorIdentityByVoice.get(event.voiceId);
+              const physicalStateReset = gesture.articulation !== "legato" ||
+                priorIdentity === undefined;
+              const physicalCacheFingerprint = sha256Hex([
+                segment.cacheFingerprint,
+                event.eventId,
+                event.voiceId,
+                String(event.startFrame),
+                String(event.durationFrames),
+                physicalStateReset ? "reset" : priorIdentity,
+              ].join("\u001f"));
+              priorIdentityByVoice.set(event.voiceId, physicalCacheFingerprint);
+              result.push(Object.freeze({
+                midiPitch: event.midiPitch as MidiPitch,
+                velocity: event.velocity,
+                physicalGesture: gesture,
+                physicalFrameCount: event.durationFrames,
+                physicalCacheFingerprint,
+                physicalStateReset,
+              }));
             }
             return Object.freeze(result);
           })()
         : ordinaryNotes;
+      if (
+        family === "clarinet" &&
+        physical?.ok === true &&
+        notes.length > 0 &&
+        physicalPhraseNotes.length === 0
+      ) {
+        return false;
+      }
       const outcome = await engine.prepareRenderedAudioVoices({
         instrumentId,
         notes: physicalPhraseNotes,

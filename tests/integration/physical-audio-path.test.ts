@@ -15,6 +15,7 @@ import {
   attackRequest,
   midi,
   readyEngine,
+  requireFailure,
   requireSuccess,
 } from "../support/audio-engine-test-kit";
 import { materializeP0TimelineCase } from "../support/p0-playback-fixtures";
@@ -40,7 +41,7 @@ function spectralCentroid(
   return weighted / Math.max(Number.EPSILON, total);
 }
 
-test("the production audio engine renders physical excitation instead of the legacy velocity-only cache entry", async () => {
+test("the production audio engine requires the prepared stateful clarinet segment instead of a stateless fallback", async () => {
   const playback = compilePlaybackPlan(
     materializeP0TimelineCase("P0-TIME-001").request,
   );
@@ -78,6 +79,31 @@ test("the production audio engine renders physical excitation instead of the leg
     ? null
     : context.sourceBuffer(legacySourceId);
 
+  requireFailure(
+    engine.attackAudioVoices(
+      attackRequest(
+        [{
+          voiceId: "unprepared-physical-clarinet",
+          midiPitch: midi(midiPitch),
+          velocity: event.velocity,
+          physicalGesture: gesture,
+        }],
+        { eventId: event.eventId, instrumentId: "clarinet" },
+      ),
+    ),
+    "audio.renderer_unavailable",
+  );
+  requireSuccess(await engine.prepareRenderedAudioVoices({
+    instrumentId: "clarinet",
+    notes: [{
+      midiPitch: midi(midiPitch),
+      velocity: event.velocity,
+      physicalGesture: gesture,
+      physicalFrameCount: 2_400,
+      physicalCacheFingerprint: "f".repeat(64),
+      physicalStateReset: true,
+    }],
+  }));
   requireSuccess(
     engine.attackAudioVoices(
       attackRequest(
@@ -253,6 +279,41 @@ test("clarinet-v2 phrase preparation chains exact stateful segments and replays 
   expect(replay).toMatchObject({ renderedCount: 0, cachedCount: 2 });
   expect(fake.events.filter(({ kind }) => kind === "buffer-create").length).toBe(
     before + 2,
+  );
+
+  const fillers = Array.from({ length: 64 }, (_, index) => {
+    const physicalGesture = Object.freeze({
+      ...base,
+      eventId: `phrase-cache-filler-${String(index)}`,
+      deterministicSeedUint32: (base.deterministicSeedUint32 + index + 1) >>> 0,
+    });
+    return Object.freeze({
+      midiPitch: midi(pitch),
+      velocity: 91,
+      physicalGesture,
+      physicalFrameCount: 1,
+      physicalCacheFingerprint: (index + 16).toString(16).padStart(64, "0"),
+      physicalStateReset: true,
+    });
+  });
+  requireSuccess(await engine.prepareRenderedAudioVoices({
+    instrumentId: "clarinet",
+    notes: fillers,
+  }));
+  const beforeRefusal = fake.events.filter(
+    ({ kind }) => kind === "buffer-create",
+  ).length;
+  requireFailure(engine.attackAudioVoices(attackRequest([{
+    voiceId: "evicted-physical-clarinet",
+    midiPitch: midi(pitch),
+    velocity: 91,
+    physicalGesture: base,
+  }], {
+    eventId: base.eventId,
+    instrumentId: "clarinet",
+  })), "audio.renderer_unavailable");
+  expect(fake.events.filter(({ kind }) => kind === "buffer-create")).toHaveLength(
+    beforeRefusal,
   );
 });
 

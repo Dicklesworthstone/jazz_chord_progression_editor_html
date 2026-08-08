@@ -1046,12 +1046,6 @@ function createAudioEngineInternal(
     seconds: number,
     physicalGesture: ExpressiveVoiceGesture | null = null,
   ): string {
-    if (physicalGesture !== null) {
-      const prepared = preparedPhysicalKeys.get(
-        physicalGestureFingerprint(physicalGesture),
-      );
-      if (prepared !== undefined) return prepared;
-    }
     /*
      * ABI-v1 rendered instruments consume pitch, duration bucket, sample
      * rate (one cache per context), and excitation velocity. They do not yet
@@ -1238,6 +1232,27 @@ function createAudioEngineInternal(
     requestedSeconds = 8,
     physicalGesture: ExpressiveVoiceGesture | null = null,
   ): AudioBufferPort | null {
+    if (
+      physicalGesture?.instrumentFamily === "clarinet" &&
+      physicalGesture.instrumentVersionId === "changes.physical.clarinet.v2"
+    ) {
+      const gestureFingerprint = physicalGestureFingerprint(physicalGesture);
+      const preparedKey = preparedPhysicalKeys.get(gestureFingerprint);
+      if (preparedKey === undefined) return null;
+      const prepared = touchRenderedBufferEntry(
+        recipeBufferCache(recipe.id),
+        preparedKey,
+      );
+      if (prepared === undefined) {
+        /* The PCM entry may have been evicted after preparation. Keeping the
+         * stale alias would make a later attack render a stateless note under
+         * a stateful-segment key, silently replacing phrase continuity with
+         * unrelated audio. */
+        preparedPhysicalKeys.delete(gestureFingerprint);
+        return null;
+      }
+      return prepared.buffer;
+    }
     const seconds = bucketRenderSecondsForRecipe(requestedSeconds, recipe);
     const key = renderedBufferKey(
       recipe.id,
@@ -1355,6 +1370,27 @@ function createAudioEngineInternal(
     if (chordRenderer?.renderChord === undefined) return null;
     const seconds = bucketRenderSecondsForRecipe(requestedSeconds, recipe);
     const key = renderedChordBufferKey(recipe, chordRenderer, voices, seconds);
+    const cached = touchRenderedBufferEntry(recipeBufferCache(recipe.id), key);
+    return cached?.buffer ?? null;
+  }
+
+  /** One-note PLK2 attacks obey the same cache-only deadline law as chords.
+   * The former fall-through called the synchronous note renderer on a miss,
+   * reintroducing the exact main-thread stall cooperative preparation exists
+   * to remove. */
+  function cachedRenderedPluckedNoteBufferFor(
+    recipe: AudioRenderedInstrumentRecipe,
+    voice: RenderedChordVoice,
+    requestedSeconds: number,
+  ): AudioBufferPort | null {
+    const seconds = bucketRenderSecondsForRecipe(requestedSeconds, recipe);
+    const key = renderedBufferKey(
+      recipe.id,
+      voice.midiPitch,
+      voice.velocity,
+      seconds,
+      voice.physicalGesture,
+    );
     const cached = touchRenderedBufferEntry(recipeBufferCache(recipe.id), key);
     return cached?.buffer ?? null;
   }
@@ -2840,9 +2876,8 @@ function createAudioEngineInternal(
           attack.releaseTimeSeconds - attack.startTimeSeconds,
           recipe,
         );
-        const requiresSharedChord =
-          attack.voices.length > 1 && isSharedPluckedChordRecipe(recipe);
-        if (requiresSharedChord) {
+        const requiresPreparedPlucked = isSharedPluckedChordRecipe(recipe);
+        if (requiresPreparedPlucked && attack.voices.length > 1) {
           if (
             rendererForAlgorithm(recipe.renderer.algorithmId)?.renderChord ===
             undefined
@@ -2863,6 +2898,22 @@ function createAudioEngineInternal(
               path: ["instrumentId"],
             });
           }
+        } else if (requiresPreparedPlucked) {
+          const voice = attack.voices[0];
+          const buffer = voice === undefined
+            ? null
+            : cachedRenderedPluckedNoteBufferFor(
+              recipe,
+              voice,
+              requestedSeconds,
+            );
+          if (buffer === null) {
+            return refuse({
+              code: "audio.renderer_unavailable",
+              path: ["instrumentId"],
+            });
+          }
+          renderedBuffers = Object.freeze([buffer]);
         } else {
           const resolved: AudioBufferPort[] = [];
           for (const voiceSpec of attack.voices) {

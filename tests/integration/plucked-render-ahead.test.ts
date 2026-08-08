@@ -116,3 +116,46 @@ test("initialization ready cannot dispatch the tail and render-ahead preserves c
 
   expect(controller.stopProgression().ok).toBe(true);
 });
+
+test("a refused leading preparation settles Play without submitting instrument or transport commands", async () => {
+  const inner = createStudioAudio(createFakeAudioPlatform().platform);
+  let prepareCalls = 0;
+  let instrumentCalls = 0;
+  let playCalls = 0;
+  const port: StudioAudioPort = Object.freeze({
+    ...inner,
+    prepareInstrument: () => {
+      prepareCalls += 1;
+      return Promise.resolve(false);
+    },
+    setInstrument: (commandRequestId, instrumentId) => {
+      instrumentCalls += 1;
+      return inner.setInstrument(commandRequestId, instrumentId);
+    },
+    play: (commandRequestId, binding, startBeat) => {
+      playCalls += 1;
+      return inner.play(commandRequestId, binding, startBeat);
+    },
+  });
+  const created = createStudioController({ audio: port });
+  if (!created.ok) throw new Error(created.refusal.code);
+  const controller = created.controller;
+  expect(seedStarterChart(controller)).toEqual({
+    seeded: true,
+    reason: "seeded",
+  });
+  expect(controller.setInstrument("dreadnought-guitar").ok).toBe(true);
+  expect(controller.playProgression(GESTURE).ok).toBe(true);
+
+  await until(() =>
+    controller.getSnapshot().transport.failureCode ===
+      "audio.renderer_unavailable"
+  );
+  expect(prepareCalls).toBe(1);
+  expect(instrumentCalls).toBe(0);
+  expect(playCalls).toBe(0);
+  expect(controller.getSnapshot().transport.statusLabel).toBe("Audio ready");
+  expect(controller.getSnapshot().transport.failureDetail).toContain(
+    "selected instrument",
+  );
+});
