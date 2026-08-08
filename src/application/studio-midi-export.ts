@@ -501,6 +501,7 @@ function walkEvents(document: ValidatedDocument): WalkOutcome {
     );
   }
   return Object.freeze({
+    ok: true as const,
     blockers: Object.freeze(blockers),
     realization: Object.freeze({
       storedManualCount,
@@ -579,6 +580,16 @@ export function createStudioMidiExport(ports: Readonly<{
       revision: liveBinding?.revision ?? 0,
     });
     const walk = walkEvents(document);
+    if (!walk.ok) {
+      abandonRegistry();
+      return Object.freeze({
+        ok: false as const,
+        refusal: Object.freeze({
+          code: "limit.u7_preview_work_exceeded" as const,
+          message: "Preview assembly exceeded its deterministic work bound; the chart is unchanged.",
+        }),
+      });
+    }
     const title = deriveTitle(document.title);
     const baseDisclosures = {
       realization: walk.realization,
