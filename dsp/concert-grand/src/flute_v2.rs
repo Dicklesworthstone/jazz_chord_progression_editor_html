@@ -549,7 +549,7 @@ fn target_mouth_pressure_pa_for_center(
 
 #[cfg(test)]
 fn target_mouth_pressure_pa(velocity: i32, fingering: Fingering) -> f64 {
-    target_mouth_pressure_pa_for_center(velocity, fingering, register_center_hz(fingering))
+    target_mouth_pressure_pa_for_center(velocity, fingering, register_center_hz(fingering, SOUND_SPEED_M_PER_S))
 }
 
 fn jet_speed_m_per_s(pressure_pa: f64) -> f64 {
@@ -1703,7 +1703,7 @@ mod tests {
         // a subharmonic onto the requested note.
         for midi in [84, 86, 96] {
             let fingering = fingering_for_midi(midi).unwrap();
-            let solved = solved_register_center_hz(fingering).unwrap();
+            let solved = solved_register_center_hz(fingering, SOUND_SPEED_M_PER_S).unwrap();
             let expected = midi_frequency_hz(midi as f64);
             let cents = 1_200.0 * log2(solved / expected);
             assert!(
