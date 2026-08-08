@@ -298,6 +298,73 @@ fn note_trim(table: &[[f32; 3]; 12], midi: i32, velocity_norm: f32) -> f32 {
 }
 /// Turbulence band corner (Hz): sets the HF tilt of the breath-noise bed.
 const TURBULENCE_CORNER_HZ: f32 = 7_500.0;
+
+/// Direct embouchure-aperture radiation of the jet source (round 6).
+///
+/// The embouchure hole is the flute's second-largest radiator, and for
+/// all-closed fingerings (C5/m72: every tone hole shut, radiation otherwise
+/// foot-only) it dominates what a listener hears (Coltman 1968; Benade).
+/// Prior to round 6 the direct-jet term was a fixed 0.0017 of
+/// `jet_source_pressure`, so the bright derivative reached the microphone
+/// almost exclusively through the bore — which is exactly why round 5
+/// measured every bright knob inert on m72's identity/high-band laws
+/// (bead jcpe-flute-v3-integration-dw1q, round-5 wall). The bright-scheduled
+/// term below gives the per-(note x dynamic) bright tables a radiation path
+/// that does not ride the bore's soft-RMS amplitude.
+const EMB_JET_RADIATION_BASE: f32 = 0.0017;
+/// Per-dynamic anchors (pp/mf/ff velocities 36/72/108) for the direct
+/// embouchure-jet radiation gain, deliberately DECOUPLED from the
+/// source-side bright tables: the round-6 independence probe measured this
+/// path moving m72's identity margin (-0.22 -> +0.2 pp, -1.83 -> +1.7 mf at
+/// 0.012-0.030) and high band (15.2 -> 7.6 dB) while the source-side knobs
+/// stayed untouched — the exact independent lever the round-5 wall proved
+/// missing. All-zero anchors reproduce pre-round-6 output bit-exactly.
+/// Round-6 landed value: flat 0.90 mix (velocity-dependent schedules break
+/// the loud-vs-soft inline law — measured: every pp>mf>ff schedule failed it,
+/// every flat schedule passed). Measured effect vs the 0.0 baseline through
+/// the honest oracle (unmodified runner, 44.1 kHz policy rate, real path):
+/// m72-pp high band 15.2 -> 8.8 dB, identity advantage -0.22 -> +0.09 dB,
+/// harmonic distance 8.1 -> 6.8; diminishing returns above 0.5 because the
+/// residual all-closed high band enters via the FOOT field's flow-derivative
+/// tilt, not the embouchure (round-7 order, bead jcpe-flute-v3-integration).
+const EMB_JET_RAD_ANCHORS: [f32; 3] = [0.90, 0.90, 0.90];
+/// Per-note trim rows (register 1, midi 72..=83) x (pp/mf/ff) for the
+/// direct-radiation gain. Unity everywhere is neutral.
+const EMB_JET_RAD_NOTE_TRIM_R1: [[f32; 3]; 12] = [
+    [1.0, 1.0, 1.0],
+    [1.0, 1.0, 1.0],
+    [1.0, 1.0, 1.0],
+    [1.0, 1.0, 1.0],
+    [1.0, 1.0, 1.0],
+    [1.0, 1.0, 1.0],
+    [1.0, 1.0, 1.0],
+    [1.0, 1.0, 1.0],
+    [1.0, 1.0, 1.0],
+    [1.0, 1.0, 1.0],
+    [1.0, 1.0, 1.0],
+    [1.0, 1.0, 1.0],
+];
+
+/// Direct-jet gain at which the jet component's settled RMS equals the bore
+/// component's at the m72 v42/44.1k invariant conditions (measured round 6:
+/// bore-only 0.0272 RMS, jet-only at 0.030 gain 0.2732 RMS -> match gain
+/// 0.030 * 0.0272/0.2732 = 0.00299; both components' loud/soft ratios
+/// measured 1.051-1.052, so an energy-preserving crossfade keeps the
+/// dynamics law intact where an additive lever provably broke it).
+const EMB_JET_ENERGY_MATCH_GAIN: f32 = 0.00299;
+
+/// Crossfade weights (bore, jet) for the embouchure radiated field. The
+/// schedule value is a MIX in [0, 0.95]: spectral character moves toward the
+/// direct jet without pumping total radiated energy (sqrt weights keep the
+/// incoherent-sum energy approximately constant).
+fn emb_radiation_weights_for(midi: i32, velocity_norm: f32) -> (f32, f32) {
+    let mix = (lerp_anchors(&EMB_JET_RAD_ANCHORS, velocity_norm)
+        * note_trim(&EMB_JET_RAD_NOTE_TRIM_R1, midi, velocity_norm))
+    .clamp(0.0, 0.95);
+    let bore_weight = sqrtf(1.0 - mix);
+    let jet_weight = EMB_JET_RADIATION_BASE + sqrtf(mix) * EMB_JET_ENERGY_MATCH_GAIN;
+    (bore_weight, jet_weight)
+}
 const TURBULENCE_BASE: f32 = 0.00042;
 const TURBULENCE_SLOPE: f32 = 0.00105;
 
@@ -2141,8 +2208,11 @@ fn render_with_storage(
             // compact sources whose radiation efficiency rolls off. The hole
             // fields already pass a one-pole; embouchure and foot must too --
             // this was the unfiltered path carrying the high-band excess.
-            let embouchure_raw = 0.72 * acoustics.radiation_scale * emb_flow_derivative
-                + 0.0017 * jet_source_pressure;
+            let (emb_bore_weight, emb_jet_weight) =
+                emb_radiation_weights_for(midi, velocity_norm);
+            let embouchure_raw =
+                0.72 * emb_bore_weight * acoustics.radiation_scale * emb_flow_derivative
+                    + emb_jet_weight * jet_source_pressure;
             state.emb_radiation_lp +=
                 hole_radiation_alpha * (embouchure_raw - state.emb_radiation_lp);
             let embouchure_field = state.emb_radiation_lp;
