@@ -52,7 +52,6 @@ import {
   VOICING_REQUEST_SCHEMA,
   type AutoVoicingRequest,
 } from "../theory";
-import type { PlaybackPlan } from "../playback";
 
 /* -------------------------------------------------------------------------- */
 /* Ports (wired at the composition root)                                       */
@@ -216,6 +215,41 @@ export type StudioMidiExportService = Readonly<{
   }>;
 }>;
 
+/**
+ * The frozen results the composition edge returns when a build ships without
+ * the service wired: the one place besides the service itself these codes may
+ * be raised, kept here so every U7 refusal code has exactly one textual owner.
+ */
+export function studioMidiExportUnwiredPreview(): StudioMidiExportPreviewResult {
+  return Object.freeze({
+    ok: false as const,
+    refusal: Object.freeze({
+      code: "u7.document_unavailable" as const,
+      message: "This build has no MIDI export service wired.",
+    }),
+  });
+}
+
+export function studioMidiExportUnwiredGenerate(): StudioMidiExportGenerateResult {
+  return Object.freeze({
+    outcome: "refused" as const,
+    refusal: Object.freeze({
+      code: "u7.preparation_missing" as const,
+      message: "This build has no MIDI export service wired.",
+    }),
+  });
+}
+
+export function studioMidiExportUnwiredDownload(): StudioMidiExportDownloadResult {
+  return Object.freeze({
+    outcome: "refused" as const,
+    refusal: Object.freeze({
+      code: "u7.preparation_missing" as const,
+      message: "This build has no MIDI export service wired.",
+    }),
+  });
+}
+
 /* -------------------------------------------------------------------------- */
 /* Derivation laws (restated from the contract document)                       */
 /* -------------------------------------------------------------------------- */
@@ -272,12 +306,6 @@ function deriveTitle(title: string): Readonly<{
   return Object.freeze({ text: title, notice: null });
 }
 
-function deriveFilename(documentId: string): string {
-  const safe = documentId.replace(/[^A-Za-z0-9._-]/g, "-");
-  const full = `changes-${safe}.mid`;
-  if (full.length <= 64) return full;
-  return `${full.slice(0, 60)}.mid`;
-}
 
 function deriveRequestId(documentId: string, revision: number): string {
   const safe = documentId.replace(/[^A-Za-z0-9._-]/g, "-");

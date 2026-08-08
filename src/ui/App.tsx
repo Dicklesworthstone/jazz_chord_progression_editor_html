@@ -41,14 +41,15 @@ import {
   type StudioAnalysisFrame,
   type StudioAnalyzerExpectation,
   instrumentOptions,
-} from "../application/runtime";
-import type {
-  StudioMidiExportDownloadResult,
-  StudioMidiExportGenerateResult,
-  StudioMidiExportPreparationId,
-  StudioMidiExportPreview,
-  StudioMidiExportPreviewResult,
-  StudioMidiExportService,
+  studioMidiExportUnwiredDownload,
+  studioMidiExportUnwiredGenerate,
+  studioMidiExportUnwiredPreview,
+  type StudioMidiExportDownloadResult,
+  type StudioMidiExportGenerateResult,
+  type StudioMidiExportPreparationId,
+  type StudioMidiExportPreview,
+  type StudioMidiExportPreviewResult,
+  type StudioMidiExportService,
 } from "../application/runtime";
 import { GROOVE_STYLE_IDS, MAX_SHORT_TEXT_CODE_POINTS } from "../domain";
 
@@ -3605,41 +3606,19 @@ export function StudioRoot({
         midiExportAvailable: midiExportService !== null,
         midiExportOpenPreview: () => {
           if (midiExportService === null) {
-            return Promise.resolve(
-              Object.freeze({
-                ok: false as const,
-                refusal: Object.freeze({
-                  code: "u7.document_unavailable" as const,
-                  message: "This build has no MIDI export service wired.",
-                }),
-              }),
-            );
+            return Promise.resolve(studioMidiExportUnwiredPreview());
           }
           return midiExportService.openPreview();
         },
         midiExportGenerate: (preparationId) => {
           if (midiExportService === null) {
-            return Object.freeze({
-              outcome: "refused" as const,
-              refusal: Object.freeze({
-                code: "u7.preparation_missing" as const,
-                message: "This build has no MIDI export service wired.",
-              }),
-            });
+            return studioMidiExportUnwiredGenerate();
           }
           return midiExportService.generate(preparationId);
         },
         midiExportDownload: (preparationId) => {
           if (midiExportService === null) {
-            return Promise.resolve(
-              Object.freeze({
-                outcome: "refused" as const,
-                refusal: Object.freeze({
-                  code: "u7.preparation_missing" as const,
-                  message: "This build has no MIDI export service wired.",
-                }),
-              }),
-            );
+            return Promise.resolve(studioMidiExportUnwiredDownload());
           }
           return midiExportService.download(preparationId);
         },

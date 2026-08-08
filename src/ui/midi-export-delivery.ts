@@ -1,4 +1,4 @@
-import type { StudioMidiExportDeliveryStart } from "../application/studio-midi-export";
+import type { StudioMidiExportDeliveryStart } from "../application/runtime";
 
 /**
  * The U7 browser download adapter: one object URL, one anchor, one click,
@@ -62,7 +62,12 @@ export function createMidiExportDownloadStart(
           outstandingOwnedResources: revoked ? 0 : 1,
           ...(cleanupError === null
             ? {}
-            : { error: String(cleanupError) }),
+            : {
+                error:
+                  cleanupError instanceof Error
+                    ? cleanupError.message
+                    : "unknown cleanup failure",
+              }),
         });
       }),
     });

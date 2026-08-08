@@ -5,7 +5,6 @@ import { describe, expect, test } from "bun:test";
 import {
   createStudioMidiExport,
   type StudioMidiExportPreview,
-  type StudioMidiExportPreparationId,
 } from "../../src/application/studio-midi-export";
 import type { ValidatedDocument } from "../../src/domain";
 import {
@@ -69,23 +68,23 @@ function previewShape(preview: StudioMidiExportPreview): JsonObject {
 function expectedShape(entry: U7PreviewCaseRecord): JsonObject {
   const expected = entry.expectedPreview;
   return {
-    readiness: expected.readiness,
-    blockers: ((expected.blockers as JsonObject[]) ?? []).map((blocker) => ({
-      kind: blocker.kind,
-      code: blocker.code ?? null,
-      eventId: blocker.eventId ?? null,
+    readiness: expected["readiness"],
+    blockers: (expected["blockers"] as JsonObject[]).map((blocker) => ({
+      kind: blocker["kind"],
+      code: blocker["code"] ?? null,
+      eventId: blocker["eventId"] ?? null,
     })),
-    realization: expected.realization,
-    ppq: expected.ppq,
-    trackCount: expected.trackCount,
-    tempoBpm: expected.tempoBpm,
-    meter: expected.meter,
-    derivedMarkers: expected.derivedMarkers ?? [],
-    losses: expected.losses ?? [],
-    markerOmissions: expected.markerOmissions ?? [],
-    titleNotice: expected.titleNotice ?? null,
-    derivedTitle: expected.derivedTitle,
-    artifact: expected.artifact ?? null,
+    realization: expected["realization"],
+    ppq: expected["ppq"],
+    trackCount: expected["trackCount"],
+    tempoBpm: expected["tempoBpm"],
+    meter: expected["meter"],
+    derivedMarkers: expected["derivedMarkers"] ?? [],
+    losses: expected["losses"] ?? [],
+    markerOmissions: expected["markerOmissions"] ?? [],
+    titleNotice: expected["titleNotice"] ?? null,
+    derivedTitle: expected["derivedTitle"],
+    artifact: expected["artifact"] ?? null,
   };
 }
 
@@ -116,7 +115,7 @@ describe("U7 MIDI export preview (production vs packet fixtures)", () => {
       if (result.preview.readiness === "ready") {
         expect(result.preparationId).not.toBeNull();
         expect(service.inspectRegistry().state).toBe("ready");
-        service.abandon(result.preparationId as StudioMidiExportPreparationId);
+        service.abandon(result.preparationId);
         expect(service.inspectRegistry().state).toBe("empty");
       } else {
         expect(service.inspectRegistry().state).toBe("empty");
@@ -174,14 +173,14 @@ describe("U7 MIDI export preview (production vs packet fixtures)", () => {
     );
     expect(entry).toBeDefined();
     if (entry === undefined) return;
-    const blockers = entry.expectedPreview.blockers as JsonObject[];
+    const blockers = entry.expectedPreview["blockers"] as JsonObject[];
     expect(blockers).toHaveLength(1);
     expect(blockers[0]).toMatchObject({
       kind: "realization",
       code: "voicing.constraints_unsatisfied",
       eventId: "event-0000",
     });
-    expect(entry.expectedPreview.readiness).toBe("blocked");
+    expect(entry.expectedPreview["readiness"]).toBe("blocked");
   });
 
   test("U7-PRE-005 declared custom-voicing blocker mirrors the packet row (defensive law)", () => {
@@ -190,7 +189,7 @@ describe("U7 MIDI export preview (production vs packet fixtures)", () => {
     );
     expect(entry).toBeDefined();
     if (entry === undefined) return;
-    const blockers = entry.expectedPreview.blockers as JsonObject[];
+    const blockers = entry.expectedPreview["blockers"] as JsonObject[];
     expect(blockers).toHaveLength(1);
     expect(blockers[0]).toMatchObject({
       kind: "plan",

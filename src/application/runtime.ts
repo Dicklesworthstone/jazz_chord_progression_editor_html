@@ -129,6 +129,11 @@ export type {
   StudioMidiImportService,
 } from "./studio-midi-import";
 export { createStudioMidiExport } from "./studio-midi-export";
+export {
+  studioMidiExportUnwiredDownload,
+  studioMidiExportUnwiredGenerate,
+  studioMidiExportUnwiredPreview,
+} from "./studio-midi-export";
 export type {
   StudioMidiExportBlocker,
   StudioMidiExportDeliveryBinding,

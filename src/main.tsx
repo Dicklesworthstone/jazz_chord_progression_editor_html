@@ -72,7 +72,10 @@ const creation = createStudioComposition({
    * never reaches for a browser API.
    */
   midiExportHashBytes: async (bytes) => {
-    const subtle = globalThis.crypto?.subtle;
+    const subtle =
+      typeof globalThis.crypto === "undefined"
+        ? undefined
+        : globalThis.crypto.subtle;
     if (subtle === undefined) {
       throw new Error("U7_HASH_PORT_UNAVAILABLE");
     }

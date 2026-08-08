@@ -85,9 +85,9 @@ export function u7DocumentForCase(
   const meter = scenario["meter"] as JsonObject;
   const capacity =
     (Number(meter["beatsPerBar"]) * 4) / Number(meter["beatUnit"]);
-  const sections = ((scenario["sections"] as JsonObject[]) ?? []).map(
+  const sections = (scenario["sections"] as JsonObject[]).map(
     (section, sectionIndex) => {
-      const events = (section["events"] as JsonObject[]) ?? [];
+      const events = section["events"] as JsonObject[];
       const measures: JsonObject[] = [];
       let cursor = 0;
       let measureOrdinal = 0;
@@ -102,7 +102,7 @@ export function u7DocumentForCase(
         }
         if (perMeasure.length === 0) break;
         measures.push({
-          id: `measure-${sectionIndex}-${measureOrdinal}`,
+          id: `measure-${String(sectionIndex)}-${String(measureOrdinal)}`,
           events: perMeasure.map((event) => {
             const chord = event["chord"] as JsonObject;
             const voicing = event["voicing"] as JsonObject;
@@ -179,13 +179,13 @@ export function u7DocumentForCase(
       }
       if (measures.length === 0) {
         measures.push({
-          id: `measure-${sectionIndex}-0`,
+          id: `measure-${String(sectionIndex)}-0`,
           events: [],
           completion: { kind: "empty" },
         });
       }
       return {
-        id: `section-${sectionIndex}`,
+        id: `section-${String(sectionIndex)}`,
         name: section["name"],
         annotation: "",
         keyOverride: null,
