@@ -156,7 +156,7 @@ const BRIGHT_MIX_TABLE: [[f32; 3]; 3] = [
 ];
 const RADIATION_CORNER_TABLE: [[f32; 3]; 3] = [
     [5500.0, 5500.0, 5500.0],
-    [3972.6, 4785.6, 8997.7],
+    [5500.0, 5500.0, 5500.0],
     [5500.0, 5500.0, 5500.0],
 ];
 fn dynamics_row_index(midi: i32) -> usize {
@@ -217,18 +217,93 @@ const PP_GROWTH_CAP_BY_NOTE_R1: [f32; 12] = [
     3.5572, 3.05, 3.00, 2.90, 2.9214, 2.80, 2.90, 3.0021, 3.00, 3.10, 3.5223, 3.30,
 ];
 
+/// Per-note ff growth-cap multiplier for register-1. The all-closed C5
+/// fingering (index 0) radiates only from the foot: its loud regime sits at
+/// lower amplitude than its soft regime under the round-5 spectral tables
+/// (measured loud/soft RMS 1.005 vs the 1.05 dynamics law), and its bright
+/// path is structurally suppressed, so the loud drive itself must carry the
+/// dynamic. Neutral 1.0 elsewhere.
+const FF_GROWTH_CAP_MUL_BY_NOTE_R1: [f32; 12] = [
+    1.00, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+];
+
 fn jet_growth_cap_for(midi: i32, velocity_norm: f32) -> f32 {
     if (72..=83).contains(&midi) {
         let anchors = JET_GROWTH_CAP_R1_ANCHORS;
-        let pp = PP_GROWTH_CAP_BY_NOTE_R1[(midi - 72) as usize];
-        lerp_anchors(&[pp, anchors[1], anchors[2]], velocity_norm)
+        let index = (midi - 72) as usize;
+        let pp = PP_GROWTH_CAP_BY_NOTE_R1[index];
+        let ff = anchors[2] * FF_GROWTH_CAP_MUL_BY_NOTE_R1[index];
+        lerp_anchors(&[pp, anchors[1], ff], velocity_norm)
     } else {
         4.15
     }
 }
 
+/// Per-note bright trim for register-1 notes (midi 72..=83). The all-closed
+/// C5 fingering radiates only from the foot and measures ~9 dB darker in the
+/// 4 kHz+ band than open-hole neighbours at every dynamic (round-5 matrix);
+/// register-level tables cannot express that per-fingering difference.
+/// Values are round-5 campaign-derived; 1.0 = neutral.
+/// Per-(note x dynamic) trims for register-1 (midi 72..=83), columns pp/mf/ff.
+/// Real flutes differ per fingering in both brightness (radiating-hole set)
+/// and turbulence coupling; register-level tables cannot express it. Matrix
+/// notes (72/76/79/82) carry measured values from the round-5 per-cell
+/// solve; non-matrix notes hold neutral 1.0 (chart registers are judged by
+/// the tuning/phonation gates, not the reference matrix).
+const NOTE_BRIGHT_TRIM_R1: [[f32; 3]; 12] = [
+    [1.0, 1.0, 1.0],
+    [1.0, 1.0, 1.0],
+    [1.0, 1.0, 1.0],
+    [1.0, 1.0, 1.0],
+    [1.0, 1.0, 1.0],
+    [1.0, 1.0, 1.0],
+    [1.0, 1.0, 1.0],
+    [1.0, 1.0, 1.0],
+    [1.0, 1.0, 1.0],
+    [1.0, 1.0, 1.0],
+    [1.0, 1.0, 1.0],
+    [1.0, 1.0, 1.0],
+];
+const NOTE_TURB_TRIM_R1: [[f32; 3]; 12] = [
+    [1.0, 1.0, 1.0],
+    [1.0, 1.0, 1.0],
+    [1.0, 1.0, 1.0],
+    [1.0, 1.0, 1.0],
+    [1.0, 1.0, 1.0],
+    [1.0, 1.0, 1.0],
+    [1.0, 1.0, 1.0],
+    [1.0, 1.0, 1.0],
+    [1.0, 1.0, 1.0],
+    [1.0, 1.0, 1.0],
+    [1.0, 1.0, 1.0],
+    [1.0, 1.0, 1.0],
+];
+fn dynamic_column(velocity_norm: f32) -> (usize, usize, f32) {
+    // Piecewise-linear between the pp/mf/ff anchors at velocity 36/72/108.
+    if velocity_norm <= 72.0 / 127.0 {
+        let t = ((velocity_norm * 127.0) - 36.0) / 36.0;
+        (0, 1, t.clamp(0.0, 1.0))
+    } else {
+        let t = ((velocity_norm * 127.0) - 72.0) / 36.0;
+        (1, 2, t.clamp(0.0, 1.0))
+    }
+}
+fn note_trim(table: &[[f32; 3]; 12], midi: i32, velocity_norm: f32) -> f32 {
+    if !(72..=83).contains(&midi) {
+        return 1.0;
+    }
+    let row = table[(midi - 72) as usize];
+    let (a, b, t) = dynamic_column(velocity_norm);
+    row[a] + (row[b] - row[a]) * t
+}
+/// Turbulence band corner (Hz): sets the HF tilt of the breath-noise bed.
+const TURBULENCE_CORNER_HZ: f32 = 7_500.0;
+const TURBULENCE_BASE: f32 = 0.00042;
+const TURBULENCE_SLOPE: f32 = 0.00105;
+
 fn bright_weight_for(midi: i32, velocity_norm: f32) -> f32 {
-    lerp_anchors(&BRIGHT_MIX_TABLE[dynamics_row_index(midi)], velocity_norm)
+    let base = lerp_anchors(&BRIGHT_MIX_TABLE[dynamics_row_index(midi)], velocity_norm);
+    base * note_trim(&NOTE_BRIGHT_TRIM_R1, midi, velocity_norm)
 }
 fn radiation_corner_hz_for(midi: i32, velocity_norm: f32) -> f32 {
     lerp_anchors(&RADIATION_CORNER_TABLE[dynamics_row_index(midi)], velocity_norm)
@@ -1705,10 +1780,11 @@ fn render_with_storage(
     let band_a1 = -2.0 * cosf(band_omega) / band_a0;
     let band_a2 = (1.0 - band_alpha) / band_a0;
 
-    let turbulence_fast_alpha = 1.0 - expf(-TAU * 7_500.0 / internal_rate);
+    let turbulence_fast_alpha = 1.0 - expf(-TAU * TURBULENCE_CORNER_HZ / internal_rate);
     let turbulence_slow_alpha = 1.0 - expf(-TAU * 420.0 / internal_rate);
     let turbulence_meander_alpha = 1.0 - expf(-TAU * 85.0 / internal_rate);
-    let turbulence_level = 0.20 * (0.00042 + 0.00105 * velocity_norm);
+    let turbulence_level = 0.20 * (TURBULENCE_BASE + TURBULENCE_SLOPE * velocity_norm)
+        * note_trim(&NOTE_TURB_TRIM_R1, midi, velocity_norm);
     let meander_level = 0.20 * (0.00020 + 0.00032 * (1.0 - velocity_norm));
 
     let vibrato_hz = 4.85 + 0.055 * variation_slot as f32;
