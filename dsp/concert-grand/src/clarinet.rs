@@ -1196,7 +1196,7 @@ fn clr_render_inner(
              * pressure differential keeps the reed coupled to the tongue for
              * longer.  The former fixed 2 ms release let loud middle-register
              * notes jump to sustain inside one 10 ms analysis window. */
-            0.002 + 0.010 * pow(v_norm, 4.0)
+            0.002 + 0.015 * pow(v_norm, 4.0)
         };
         let loud_release_extension = if (60.0..=64.0).contains(&m) || (82.0..=86.0).contains(&m) {
             0.005 * pow(v_norm, 4.0)
