@@ -51,6 +51,7 @@ function profile(partialsDb: readonly number[]): PluckedOutputFeatures {
     earlyRms: 0.1,
     onsetMs: 1,
     pitchCents: 0,
+    attackGlideCents: 0,
     partialsDb: Object.freeze(partialsDb),
     audiblePartialCount: partialsDb.filter((value) => value >= -55).length,
     higherHarmonicMassDb: 10 * Math.log10(higherEnergy),
@@ -225,5 +226,50 @@ describe("PHS4 plucked shipping-output analyzer", () => {
         ? { ...cell, profileDistanceDb: 100 }
         : cell),
     })).toBe(false);
+  });
+});
+
+describe("sustained-pitch law and glide cap (canonical 2026-08-08, bead ...-ocw5)", () => {
+  const SR = 48_000;
+  const MIDI = 60;
+  const expectedHz = 440 * 2 ** ((MIDI - 69) / 12);
+  /** Decaying sawtooth whose frequency glides from startCents to endCents
+   * over glideMs, then holds endCents — the tension-modulation shape the
+   * improved model produces physically. */
+  function glidingSaw(startCents: number, endCents: number, glideMs: number): Float32Array {
+    const seconds = 1.2;
+    const samples = new Float32Array(Math.round(SR * seconds));
+    let phase = 0;
+    for (let index = 0; index < samples.length; index += 1) {
+      const t = index / SR;
+      const blend = Math.min(1, (t * 1_000) / glideMs);
+      const cents = startCents + (endCents - startCents) * blend;
+      const hz = expectedHz * 2 ** (cents / 1_200);
+      phase = (phase + hz / SR) % 1;
+      const saw = 2 * phase - 1;
+      samples[index] = saw * 0.5 * Math.exp(-t * 2.5);
+    }
+    return samples;
+  }
+
+  test("physical attack glide passes: sharp attack, in-tune sustain", () => {
+    const features = analyzePluckedOutput(glidingSaw(10, 0.5, 300), SR, MIDI);
+    expect(Math.abs(features.pitchCents)).toBeLessThanOrEqual(5);
+    expect(Math.abs(features.attackGlideCents)).toBeLessThanOrEqual(30);
+    expect(evaluatePluckedOutput("electric", features)
+      .some((finding) => finding.code === "PLUCKED_PITCH" || finding.code === "PLUCKED_GLIDE"))
+      .toBe(false);
+  });
+
+  test("mutation control: a constant mistune still fails the tuning law", () => {
+    const features = analyzePluckedOutput(glidingSaw(8, 8, 1), SR, MIDI);
+    expect(evaluatePluckedOutput("electric", features)
+      .some((finding) => finding.code === "PLUCKED_PITCH")).toBe(true);
+  });
+
+  test("mutation control: pathological tension glide fails the glide cap", () => {
+    const features = analyzePluckedOutput(glidingSaw(90, 0.5, 800), SR, MIDI);
+    expect(evaluatePluckedOutput("electric", features)
+      .some((finding) => finding.code === "PLUCKED_GLIDE")).toBe(true);
   });
 });

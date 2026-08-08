@@ -51,6 +51,20 @@ export const PLUCKED_V2_RELEASE_POLICY = Object.freeze({
   maximumOnsetMs: 20,
   earlyWindowStartAfterOnsetMs: 45,
   earlyWindowLengthMs: 170,
+  /*
+   * String tuning is asserted on a sustain window, not the attack: the
+   * improved plucked model carries real tension-modulation pitch glide
+   * (canonical windowed measurement, 2026-08-08: electric m60 reads +10.3c
+   * in the first 150 ms decaying to +0.3c by 1.8 s; dreadnought m60
+   * +6.3c -> +0.3c). Measuring tuning inside the glide punished correct
+   * physics while the sustained pitch was within 1 cent. The 5-cent
+   * tuning bound is unchanged; a separate bounded glide law catches
+   * runaway tension modulation (cap = 3x the largest measured healthy
+   * glide). Mutation controls in tests/unit/plucked-v2-release-gate.test.ts
+   * prove a constant mistune still fails and a pathological glide fails.
+   */
+  sustainWindowStartAfterOnsetMs: 400,
+  maximumAttackGlideCents: 30,
   tailWindowStartAfterOnsetMs: 820,
   tailWindowLengthMs: 250,
   partialCount: 10,
@@ -135,7 +149,10 @@ export type PluckedOutputFeatures = Readonly<{
   peak: number;
   earlyRms: number;
   onsetMs: number;
+  /** Sustained string tuning (sustain window), the bound quantity. */
   pitchCents: number;
+  /** Attack-window pitch minus sustained pitch: tension-modulation glide. */
+  attackGlideCents: number;
   partialsDb: readonly number[];
   audiblePartialCount: number;
   higherHarmonicMassDb: number;
@@ -290,10 +307,20 @@ function estimateCents(
   start: number,
   length: number,
   expectedHz: number,
+  /*
+   * Sweep half-range. The sustain measurement keeps the precise +-12 cent
+   * grid; the attack measurement sweeps +-60 so tension-modulation glide
+   * beyond the tuning bound is MEASURABLE — with a +-12 grid both windows
+   * clamped at the edge and the glide law could never fire (a gate that
+   * cannot fail is not a gate; found via the pathological-glide mutation
+   * control, canonical 2026-08-08).
+   */
+  sweepCents = 12,
 ): number {
   let bestCents = 0;
   let bestScore = -1;
-  for (let quarterCents = -48; quarterCents <= 48; quarterCents += 1) {
+  const quarterRange = Math.round(sweepCents * 4);
+  for (let quarterCents = -quarterRange; quarterCents <= quarterRange; quarterCents += 1) {
     const cents = quarterCents * 0.25;
     const fundamental = expectedHz * 2 ** (cents / 1_200);
     let score = 0;
@@ -326,8 +353,14 @@ export function analyzePluckedOutput(
     PLUCKED_V2_RELEASE_POLICY.earlyWindowLengthMs * sampleRateHz / 1_000,
   );
   const expectedHz = midiHz(midi);
-  const pitchCents = estimateCents(samples, sampleRateHz, earlyStart, earlyLength, expectedHz);
-  const fittedHz = expectedHz * 2 ** (pitchCents / 1_200);
+  const attackCents = estimateCents(samples, sampleRateHz, earlyStart, earlyLength, expectedHz, 60);
+  const sustainStart = onset + Math.round(
+    PLUCKED_V2_RELEASE_POLICY.sustainWindowStartAfterOnsetMs * sampleRateHz / 1_000,
+  );
+  const pitchCents = estimateCents(samples, sampleRateHz, sustainStart, earlyLength, expectedHz);
+  const attackGlideCents = attackCents - pitchCents;
+  /* Partials characterize the attack, so they stay locked to the attack pitch. */
+  const fittedHz = expectedHz * 2 ** (attackCents / 1_200);
   const amplitudes = Array.from(
     { length: PLUCKED_V2_RELEASE_POLICY.partialCount },
     (_, index) => goertzel(samples, sampleRateHz, earlyStart, earlyLength,
@@ -353,6 +386,7 @@ export function analyzePluckedOutput(
     earlyRms,
     onsetMs: onset * 1_000 / sampleRateHz,
     pitchCents,
+    attackGlideCents,
     partialsDb,
     audiblePartialCount: partialsDb.filter((value) =>
       value >= PLUCKED_V2_RELEASE_POLICY.audiblePartialFloorDb).length,
@@ -397,6 +431,11 @@ export function evaluatePluckedOutput(
   }
   if (Math.abs(features.pitchCents) > policy.maximumPitchCents) {
     add("PLUCKED_PITCH", `pitch error ${String(features.pitchCents)} cents`);
+  }
+  if (Math.abs(features.attackGlideCents) >
+    PLUCKED_V2_RELEASE_POLICY.maximumAttackGlideCents) {
+    add("PLUCKED_GLIDE",
+      `attack glide ${String(features.attackGlideCents)} cents exceeds the tension-modulation cap`);
   }
   if ((features.partialsDb[1] ?? -Infinity) < policy.minimumSecondPartialDb) {
     add("PLUCKED_SECOND_PARTIAL", `h2 ${String(features.partialsDb[1])}dB is too weak`);
@@ -461,6 +500,7 @@ function pureSineFeatures(): PluckedOutputFeatures {
     earlyRms: 0.3,
     onsetMs: 0,
     pitchCents: 0,
+    attackGlideCents: 0,
     partialsDb: Object.freeze([0, ...Array.from({ length: 9 }, () => -120)]),
     audiblePartialCount: 1,
     higherHarmonicMassDb: -120,
@@ -649,6 +689,23 @@ if (import.meta.main) {
   const arguments_ = process.argv.slice(2);
   const outputIndex = arguments_.indexOf("--output");
   const outputPath = outputIndex < 0 ? null : arguments_[outputIndex + 1] ?? null;
+  /*
+   * Fail closed on unrecognized flags. This gate renders the COMMITTED
+   * embed (src/audio/wasm/concert-grand-wasm.ts) via loadWaveguideRenderers;
+   * a silently ignored `--wasm <path>` convinced two sessions in August 2026
+   * that they had measured scratch builds when they had measured the embed
+   * (bead jcpe-plucked-improved-calibration-debt-ocw5). Regenerate the embed
+   * first; the recorded wasmSha256 binds the evidence to it.
+   */
+  const recognized = new Set(outputIndex < 0 ? [] : [outputIndex, outputIndex + 1]);
+  const unknown = arguments_.filter((_, index) => !recognized.has(index));
+  if (unknown.length > 0) {
+    throw new Error(
+      `unrecognized argument(s) ${unknown.join(" ")}: this gate always renders the committed ` +
+      "embed (regenerate via `bun scripts/build-dsp.ts` first); usage: " +
+      "bun scripts/run-plucked-v2-release-gate.ts [--output <path>]",
+    );
+  }
   const serialized = `${JSON.stringify(result, null, 2)}\n`;
   if (outputIndex >= 0 && outputPath === null) {
     throw new Error("usage: bun scripts/run-plucked-v2-release-gate.ts [--output <path>]");

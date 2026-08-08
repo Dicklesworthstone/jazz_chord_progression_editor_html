@@ -59,8 +59,8 @@ pub const PLK2_STEM_EVENT_PLUCK: u32 = 1;
 pub const PLK2_STEM_EVENT_RESET: u32 = 2;
 const PLK2_STEM_EVENT_MASK: u32 = PLK2_STEM_EVENT_PLUCK | PLK2_STEM_EVENT_RESET;
 const PLK2_STEM_STATE_MAGIC: u32 = 0x324b_4c50; // "PLK2" in little endian.
-const PLK2_STEM_STATE_VERSION: u32 = 3;
-const PLK2_STEM_STATE_MAX_BYTES: usize = 8_192;
+const PLK2_STEM_STATE_VERSION: u32 = 4;
+const PLK2_STEM_STATE_MAX_BYTES: usize = 8_704;
 const PLK2_STEM_RENDER_MAX_FRAMES: usize = 8_192;
 const PLK2_STEM_MAX_ENERGY_J: f64 = 100.0;
 
@@ -69,8 +69,8 @@ const PLK2_STEM_MAX_ENERGY_J: f64 = 100.0;
 // expensive physical samples or this many cheap reconstruction/copy samples,
 // so the browser can yield between calls without changing the sound.
 const PLK2_CHORD_STATE_MAGIC: u32 = 0x3243_4c50; // "PLC2" in little endian.
-const PLK2_CHORD_STATE_VERSION: u32 = 3;
-const PLK2_CHORD_STATE_MAX_BYTES: usize = 12_288;
+const PLK2_CHORD_STATE_VERSION: u32 = 4;
+const PLK2_CHORD_STATE_MAX_BYTES: usize = 13_312;
 /* Keep each browser-thread quantum short even at the maximum 12:1 rate
  * divisor. The production opaque runtime retains the decoded physical state
  * between calls, so this responsiveness bound no longer pays a full
@@ -226,9 +226,30 @@ fn plk2_effective_acoustic_flow_m3_per_s(
 /// zero disables the section.
 fn plk2_bridge_transmission_shaping_hz(pack_index: i32) -> f64 {
     match pack_index {
-        PLK2_ARCHTOP_PACK => 900.0,
+        /* CANONICAL re-derivation 2026-08-08 (bead ...-ocw5): 700 Hz closes
+         * the trim corridor that 900 Hz left infeasible. The archtop's
+         * m76 register peak is a body-resonance ring-up (release-shaping
+         * proven bit-inert; pre-limit 1.25 at trim 450) while the m48
+         * audibility floor demanded trim >= 375 and the m76@vel-127
+         * no-clip law demanded trim < 364.5. Lowering the corner damps the
+         * 659 Hz fundamental 15% (|H| Butterworth-2 at 0.94 f/fc) while
+         * the m48 fundamental at 131 Hz moves under 1%, so both laws fit
+         * at trim 400 with ~6% margins each way. Physically the carved
+         * archtop top with a floating bridge transmits darker than the
+         * dreadnought's pinned flat top (900 was already below the
+         * dreadnought's 1300; 700 strengthens the same ordering). */
+        PLK2_ARCHTOP_PACK => 700.0,
         PLK2_DREADNOUGHT_PACK => 1_300.0,
-        PLK2_UKULELE_PACK => 2_400.0,
+        /* CANONICAL re-derivation 2026-08-08 (bead ...-ocw5): m93@vel-127
+         * is limiter-pinned (pre-limit 1.075 at 2400, release-shaping
+         * nearly inert — the same resonant ring-up class as the archtop
+         * m76 cell). 2000 Hz drops the 1760 Hz fundamental 21% (pre-limit
+         * ~0.965 under the 0.998 no-clip bound with 3% margin) while the
+         * gate cells' sustained harmonics (m60/67/72 fundamentals 262-523,
+         * h3 of m72 at 1570) move at most ~3%. The drastic corners the
+         * prior round measured and reverted were 900-1300; 2000 preserves
+         * the bright nylon character those runs lost. */
+        PLK2_UKULELE_PACK => 2_000.0,
         PLK2_UPRIGHT_BASS_PACK => 1_200.0,
         _ => 0.0,
     }
@@ -326,11 +347,11 @@ fn plk2_soft_limit(value: f64) -> f64 {
 #[inline(always)]
 fn plk2_listener_trim(pack_index: i32) -> f64 {
     match pack_index {
-        PLK2_ARCHTOP_PACK => 352.0, /* linear-regime derivation: C4 rms 0.086 and peak 0.889 at 625 with the MIDI-64 register cell still pinned; 0.8x lands the register peak under the contract 0.98 with C4 rms ~0.069 inside the 0.045..0.32 window. */
+        PLK2_ARCHTOP_PACK => 425.0, /* CANONICAL re-derivation 2026-08-08 (bead ...-ocw5): the prior 352 rationale was measured against a phantom embed (shared-target-dir race + inert --wasm flag). At 352 (corner 900) m48 read 0.0938 vs the 0.1 audibility floor while the m76@vel-127 register law capped the trim at 364.5 — an infeasible corridor. Resolved by three coupled canonical levers: corner 700, the register launch-energy normalization, and the 1.9 ms pick release-time floor; 425 then measures m48 0.1055, m60 0.357, m72 above floor, with the m76@127 register cell holding under the no-clip bound (31/31 physics incl. the register law). */
         /* -7 dB after the piston-band cabinet bed raised the radiated level
          * (bead jcpe-plucked-quality-body-amp-6yg6). */
         PLK2_MARSHALL_ELECTRIC_PACK => 44.668_359_215_096_3,
-        PLK2_DREADNOUGHT_PACK => 150.0, /* linear-regime iteration: C4 peak 0.998 at 520 (pre-limit ~1.1); 0.85x targets ~0.94 with rms ~0.082 inside the 0.045..0.32 window. */ /* iterating down from 840: C4 peak pinned there; census-derived rms scales to ~0.08 at this value. */
+        PLK2_DREADNOUGHT_PACK => 225.0, /* CANONICAL re-derivation 2026-08-08 (bead ...-ocw5): the prior 150 rationale was phantom-embed measurement. Canonical release-gate features at 150: m48 peak 0.0767 / earlyRms 0.0184 (both below floors 0.1 / 0.02), m60 0.2225, m72 peak 0.4396 / earlyRms 0.1307. 225 = 150 x 1.5 -> m48 peak ~0.115 / earlyRms ~0.028, m72 earlyRms ~0.196 (inside 0.02..0.3), peaks under 0.99. */
         PLK2_UKULELE_PACK => 340.0, /* linear-regime derivation: measured pre-limit resonant peak 1.04 at 957 (empirical, 24% above the census-scaled estimate); 0.9x targets ~0.93 pre-limit under the contract bound with G4 rms ~0.076 inside the window. */
         PLK2_UPRIGHT_BASS_PACK => 420.0, /* derived from the unit-trim census: E2 active 1.163e-4/unit -> 0.0489, whole 4.78e-5/unit -> 0.0201, peak 4.74e-4/unit -> 0.199; worst register cell midi67 1.607e-3/unit -> pre-limit 0.675 under the 0.96 bound (calibration bead ...-ocw5). */ // derived: census rms 0.00719@100 -> E2 0.11
         _ => 1.0,
@@ -1054,6 +1075,10 @@ struct BodyMode {
     damped_step: DampedStep,
     bridge_residue: f64,
     radiation_residue_m2_per_sqrt_kg: f64,
+    /// Pack-derived quality factor before any coupling correction.
+    base_q: f64,
+    /// Wolf-suppression scale (1.0 = uncoupled). See apply_wolf_damping.
+    q_scale: f64,
 }
 
 impl BodyMode {
@@ -1069,6 +1094,8 @@ impl BodyMode {
         damped_step: DampedStep::IDENTITY,
         bridge_residue: 0.0,
         radiation_residue_m2_per_sqrt_kg: 0.0,
+        base_q: 1.0,
+        q_scale: 1.0,
     };
 
     #[inline(always)]
@@ -1477,6 +1504,40 @@ impl PluckedStem {
         })
     }
 
+    /// Coupled string-body pole damping ("wolf" suppression). The model's
+    /// bridge is one-way (the reactive back-reaction is deferred with
+    /// measured evidence: the naive velocity-return created energy), so a
+    /// string whose fundamental lands inside a body mode's half-power
+    /// bandwidth rings that mode unbounded by the coupling that, in a real
+    /// instrument, splits and damps the aligned pole pair. Canonical
+    /// 2026-08-08 measurements (bead ...-ocw5): archtop m76 pre-limit 1.25
+    /// and dreadnought m76 pre-limit ~1.7 at vel 127 were release-shaping
+    /// inert, i.e. resonant ring-up, exactly this mechanism. The scale is a
+    /// documented approximation of the deferred two-way junction; it is
+    /// applied at pluck time from the sounding fundamental, is idempotent,
+    /// and is serialized per mode (state v4) so synchronous, cooperative,
+    /// and resumed renders stay bit-exact.
+    fn apply_wolf_damping(&mut self, sounding_hz: f64) {
+        if !(sounding_hz > 0.0) {
+            return;
+        }
+        let dt = self.dt;
+        for mode in self.body_modes.iter_mut().take(self.body_mode_count) {
+            let half_width_hz = mode.frequency_hz / (2.0 * mode.base_q);
+            let distance_hz = if sounding_hz >= mode.frequency_hz {
+                sounding_hz - mode.frequency_hz
+            } else {
+                mode.frequency_hz - sounding_hz
+            };
+            if distance_hz <= half_width_hz && mode.q_scale != WOLF_ALIGNED_Q_SCALE {
+                mode.q_scale = WOLF_ALIGNED_Q_SCALE;
+                let q = mode.base_q * mode.q_scale;
+                mode.damped_step =
+                    DampedStep::new(mode.omega, mode.omega / (2.0 * q), dt);
+            }
+        }
+    }
+
     pub fn begin_pluck(&mut self, gesture: PluckGesture) -> Result<(), PluckedError> {
         self.contact = self.prepare_pluck_contact(gesture, true)?;
         Ok(())
@@ -1489,6 +1550,11 @@ impl PluckedStem {
     ) -> Result<ContactState, PluckedError> {
         self.validate_gesture(gesture)?;
         let string_index = gesture.string_index;
+        {
+            let spec = self.pack.strings[gesture.string_index];
+            let sounding_hz = midi_frequency_hz(spec.open_midi + gesture.fret as i32);
+            self.apply_wolf_damping(sounding_hz);
+        }
         if self.strings[string_index].fret != gesture.fret {
             let before = track_energy_ledger.then(|| self.strings[string_index].energy_j());
             self.strings[string_index].rebuild_modes(
@@ -2100,6 +2166,7 @@ fn encode_stem_session(session: &PluckedStemSession, bytes: &mut [u8]) -> Option
     for mode in &session.stem.body_modes {
         writer.write_f64(mode.position)?;
         writer.write_f64(mode.velocity)?;
+        writer.write_f64(mode.q_scale)?;
     }
 
     let contact = session.stem.contact;
@@ -2252,13 +2319,27 @@ fn decode_stem_session_with_base(
     for mode_index in 0..MAX_BODY_MODES {
         let position = reader.read_f64()?;
         let velocity = reader.read_f64()?;
+        let q_scale = reader.read_f64()?;
         if !stem_state_scalar_is_bounded(position) || !stem_state_scalar_is_bounded(velocity) {
             return None;
         }
+        if !(q_scale == 1.0 || q_scale == WOLF_ALIGNED_Q_SCALE) {
+            return None;
+        }
         if mode_index < session.stem.body_mode_count {
-            session.stem.body_modes[mode_index].position = position;
-            session.stem.body_modes[mode_index].velocity = velocity;
-        } else if position != 0.0 || velocity != 0.0 {
+            let mode = &mut session.stem.body_modes[mode_index];
+            mode.position = position;
+            mode.velocity = velocity;
+            if mode.q_scale != q_scale {
+                mode.q_scale = q_scale;
+                let q = mode.base_q * q_scale;
+                mode.damped_step = DampedStep::new(
+                    mode.omega,
+                    mode.omega / (2.0 * q),
+                    1.0 / session.stem.sample_rate_hz,
+                );
+            }
+        } else if position != 0.0 || velocity != 0.0 || q_scale != 1.0 {
             return None;
         }
     }
@@ -2868,6 +2949,8 @@ fn make_body_mode(
         damped_step: DampedStep::new(omega, omega / (2.0 * q), 1.0 / sample_rate_hz),
         bridge_residue,
         radiation_residue_m2_per_sqrt_kg: radiation_residue,
+        base_q: q,
+        q_scale: 1.0,
     }
 }
 
@@ -3415,20 +3498,78 @@ fn plk2_gesture(pack_index: i32, string_index: usize, fret: u8, velocity: i32) -
          *    the source instead of dulling the body with a lower corner.
          */
         let sounding_hz = midi_frequency_hz(spec.open_midi + fret as i32);
+        /*
+         * Register launch-energy normalization (canonical 2026-08-08, bead
+         * ...-ocw5). With constant pluck force across frets, the launch
+         * peak through the differentiating radiator tilts ~+12 dB/octave
+         * (mode-launch velocity scales with f, radiation adds another f):
+         * measured m48->m76 spread ~23-26 dB on both steel-string bodies,
+         * leaving no listener trim that satisfies the m48 audibility floor
+         * and the m76 register no-clip law simultaneously (pre-limit 1.13
+         * at the OLD dreadnought trim: that cell was never canonically
+         * green, only masked by loop ordering). A real player's pluck
+         * displacement is roughly register-constant, which requires less
+         * launch energy on the shorter, stiffer speaking length; the
+         * exponent is fitted canonically to bring the register peak
+         * spread inside a real instrument's (<= ~8 dB).
+         */
+        if sounding_hz > LAUNCH_NORM_ANCHOR_HZ
+            && !matches!(pack_index, PLK2_MARSHALL_ELECTRIC_PACK | PLK2_UPRIGHT_BASS_PACK)
+        {
+            gesture.force_n *= pow(LAUNCH_NORM_ANCHOR_HZ / sounding_hz, LAUNCH_NORM_EXPONENT);
+        }
         if sounding_hz > 0.0 {
             let corner_hz = plk2_bridge_transmission_shaping_hz(pack_index);
             /* Gate fraction and floor periods are per-family measured
              * constants: finger pads (uke) release slower than picks and
              * their launch stays hot further below the corner. */
-            let (gate_fraction, floor_periods) = match pack_index {
-                PLK2_UPRIGHT_BASS_PACK => (0.0, UPRIGHT_RELEASE_PERIODS_FLOOR),
-                PLK2_UKULELE_PACK => (0.30, FINGER_HIGH_REGISTER_RELEASE_PERIODS_FLOOR),
-                _ => (0.55, PICKED_HIGH_REGISTER_RELEASE_PERIODS_FLOOR),
+            let (gate_fraction, floor_periods, time_floor_seconds) = match pack_index {
+                /* Constant-time component 4 ms (canonical 2026-08-08): a
+                 * fingertip rolling off a double-bass string takes ~4 ms
+                 * regardless of pitch; the 0.35-period floor alone shrinks
+                 * to 2.1 ms by MIDI 52, leaving that register cell
+                 * limiter-pinned at pre-limit ~1.31 (latent red previously
+                 * masked by earlier packs' panics in the same loop). At
+                 * MIDI 28 the period term (8.5 ms) still dominates. */
+                PLK2_UPRIGHT_BASS_PACK => (
+                    0.0,
+                    UPRIGHT_RELEASE_PERIODS_FLOOR,
+                    UPRIGHT_RELEASE_TIME_FLOOR_SECONDS,
+                ),
+                PLK2_UKULELE_PACK => (
+                    0.30,
+                    FINGER_HIGH_REGISTER_RELEASE_PERIODS_FLOOR,
+                    FINGER_RELEASE_TIME_FLOOR_SECONDS,
+                ),
+                /* Gate fraction 0.50 (was 0.55), canonical 2026-08-08: the
+                 * dreadnought m76 launch peak (1.7 ms, limiter-pinned at
+                 * pre-limit ~1.7, NO body mode within 450-900 Hz so not a
+                 * wolf/ring case) sat just under the old 715 Hz gate and
+                 * never received the physical pick-release floor. 650 Hz
+                 * admits it; the archtop gate moves 385 -> 350 Hz (one
+                 * extra semitone of coverage, harmless). */
+                _ => (
+                    0.50,
+                    PICKED_HIGH_REGISTER_RELEASE_PERIODS_FLOOR,
+                    PICK_RELEASE_TIME_FLOOR_SECONDS,
+                ),
             };
             let floor_seconds = if pack_index == PLK2_UPRIGHT_BASS_PACK {
-                floor_periods / sounding_hz
+                (floor_periods / sounding_hz).max(time_floor_seconds)
             } else if corner_hz > 0.0 && sounding_hz > gate_fraction * corner_hz {
-                floor_periods / sounding_hz
+                /*
+                 * A pick's release is a material/mechanical time, not a
+                 * period count: ~2 ms regardless of pitch. Above the gate
+                 * the one-period floor shrinks below that physical time
+                 * (archtop MIDI 76: one period = 1.52 ms), which left the
+                 * launch burst hot enough that no listener trim could fit
+                 * both the m48 audibility floor and the m76@vel-127
+                 * register bound (canonical corridor: trim < 364.5 vs
+                 * >= 375, bead ...-ocw5). The constant-time component only
+                 * engages where one period < 2.2 ms (f0 > ~455 Hz), so the
+                 * deliberately abrupt low-register pick is untouched.
+                 */
+                (floor_periods / sounding_hz).max(time_floor_seconds)
             } else {
                 0.0
             };
@@ -3446,6 +3587,32 @@ const UPRIGHT_RELEASE_PERIODS_FLOOR: f64 = 0.35;
 /// Measured on the archtop MIDI-76 register cell: about one sounding period
 /// of release restores the smooth launch the compliance corner cannot.
 const PICKED_HIGH_REGISTER_RELEASE_PERIODS_FLOOR: f64 = 1.0;
+/// Physical pick-release time floor for the gated high register (see the
+/// call-site derivation): a plectrum leaves the string in roughly constant
+/// milliseconds, so high notes span MORE periods of release than one.
+/// 1.9 ms places the engagement boundary between MIDI 72 (period 1.91 ms,
+/// stays on its natural one-period launch — a 2.2 ms floor crushed it to
+/// peak 0.069, a 14 dB register notch measured canonically 2026-08-08)
+/// and the limiter-pinned MIDI-76 cells (period 1.52 ms) it exists to fix.
+const PICK_RELEASE_TIME_FLOOR_SECONDS: f64 = 0.0019;
+/// Q multiplier for body modes whose center lies within one half-power
+/// half-width of a sounding fundamental (see apply_wolf_damping). Derived
+/// canonically on the dreadnought m76 register cell.
+const WOLF_ALIGNED_Q_SCALE: f64 = 0.5;
+/// Register launch normalization anchor: forces are authored at/below this
+/// sounding frequency and taper above it (see plk2_gesture derivation).
+const LAUNCH_NORM_ANCHOR_HZ: f64 = 261.63;
+/// Canonical fit target: register peak spread <= ~8 dB across m40..m88.
+const LAUNCH_NORM_EXPONENT: f64 = 0.5;
+/// A fingertip rolling off nylon spans ~3 ms regardless of pitch (slower
+/// than a plectrum). At ukulele MIDI 93 the 1.5-period floor is only
+/// 0.85 ms, which left the top-register launch limiter-pinned at 0.998
+/// (canonical 2026-08-08, latent red previously masked by the archtop
+/// panic earlier in the same loop). Gate cells (m60/67/72) sit below the
+/// 720 Hz gate and are untouched.
+const FINGER_RELEASE_TIME_FLOOR_SECONDS: f64 = 0.003;
+/// Double-bass pizzicato fingertip release floor (see the gesture builder).
+const UPRIGHT_RELEASE_TIME_FLOOR_SECONDS: f64 = 0.004;
 /// Measured on the ukulele MIDI-79/93 register cells: a finger pad rolling
 /// off nylon spans ~1.5 sounding periods in the top register.
 const FINGER_HIGH_REGISTER_RELEASE_PERIODS_FLOOR: f64 = 1.5;
@@ -3494,10 +3661,21 @@ pub fn plk2_render_slices(
     let Ok(mut stem) = PluckedStem::new(pack, sample_rate as f64) else {
         return 0;
     };
-    if stem
-        .begin_pluck(plk2_gesture(pack_index, 0, fret, velocity))
-        .is_err()
-    {
+    /*
+     * Build the gesture with the TRUE full-pack string index so the
+     * builder resolves the correct spec (scale, open_midi -> sounding_hz:
+     * the release-floor gate depends on it). Passing 0 here resolved
+     * string 0 of the full pack, so every high note computed its sounding
+     * frequency from the lowest string and the high-register release
+     * floors never engaged on this ABI — the mechanism behind three
+     * rounds of "release-shaping inert" measurements (bead ...-ocw5,
+     * canonical 2026-08-08). The stem below is the reduced one-string
+     * pack, so the gesture's string index is remapped to 0 after physics
+     * resolution.
+     */
+    let mut gesture = plk2_gesture(pack_index, string_index, fret, velocity);
+    gesture.string_index = 0;
+    if stem.begin_pluck(gesture).is_err() {
         return 0;
     }
 
