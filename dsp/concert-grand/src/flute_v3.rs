@@ -137,14 +137,26 @@ const JET_SATURATION_HALF_WIDTHS: [f32; 4] = [0.90, 0.90, 0.90, 0.90];
 /// is behavior-neutral; round-3 per-cell sweeps then move register-row-1
 /// anchors only (the UIowa matrix exercises 72-83 exclusively). Sweep
 /// provenance: bead jcpe-flute-v3-integration-dw1q round 3.
+/// Round-4 values: NSGA-II campaign over the 15 live table entries (pop 32,
+/// 40 generations, 1,282 oracle evaluations, seed 20260808; tools + full
+/// JSONL log under dsp/concert-grand/calibration/flute-v3-round4/). Landed
+/// candidate = the front member with monotone mf<ff growth (the raw leader
+/// violated the module's loud-vs-soft RMS invariant — an oracle blind spot
+/// the inline test caught). HONESTY NOTE: the campaign's oracle evaluated
+/// candidates against a sweep-mutilated working file inherited from the
+/// round-3 calibration worktree, so its absolute verdicts (fail=8, the
+/// "identity wall") were measured against the wrong baseline and are
+/// RETRACTED; its gradient information still steered to tables that pass.
+/// Ground truth on this committed module, verified twice (deterministic):
+/// UIowa flute matrix 8/8 cells PASS, exit 0, identity control green.
 const BRIGHT_MIX_TABLE: [[f32; 3]; 3] = [
     [0.120, 0.210, 0.300],
-    [0.120, 0.210, 0.300],
+    [0.3825, 0.3540, 0.3883],
     [0.120, 0.210, 0.300],
 ];
 const RADIATION_CORNER_TABLE: [[f32; 3]; 3] = [
     [5500.0, 5500.0, 5500.0],
-    [5500.0, 5500.0, 5500.0],
+    [3972.6, 4785.6, 8997.7],
     [5500.0, 5500.0, 5500.0],
 ];
 fn dynamics_row_index(midi: i32) -> usize {
@@ -177,7 +189,7 @@ fn lerp_anchors(anchors: &[f32; 3], velocity_norm: f32) -> f32 {
 /// = more linear source map = steeper odd-harmonic rolloff. The pp reference
 /// ladder decays to -60 dB by h6; a fixed 0.90 half-width leaves the odd tail
 /// at -22 dB. Sweep provenance: round-3 (bead jcpe-flute-v3-integration-dw1q).
-const SAT_HALF_WIDTH_R1_ANCHORS: [f32; 3] = [0.90, 0.90, 0.90];
+const SAT_HALF_WIDTH_R1_ANCHORS: [f32; 3] = [1.9459, 1.6310, 0.8123];
 fn jet_saturation_half_width_for(midi: i32, velocity_norm: f32) -> f32 {
     if (72..=83).contains(&midi) {
         lerp_anchors(&SAT_HALF_WIDTH_R1_ANCHORS, velocity_norm)
@@ -194,7 +206,7 @@ fn jet_saturation_half_width_for(midi: i32, velocity_norm: f32) -> f32 {
 /// oscillation threshold keeps the split sinusoidal. The round-2 GLOBAL cap
 /// sweep (4.15->1.2, phonation death <=2.5) mapped the floor; per-dynamic
 /// anchors stay inside the speaking region. Sweep provenance: round 3.
-const JET_GROWTH_CAP_R1_ANCHORS: [f32; 3] = [3.0, 3.9, 4.15];
+const JET_GROWTH_CAP_R1_ANCHORS: [f32; 3] = [3.0, 4.0526, 4.2191];
 const GROWTH_SETTLE_SECONDS: f32 = 0.070;
 /// Per-note pp sustain-cap overrides for row 1 (index = midi-72). The
 /// hysteresis floor is note-dependent: register-boundary notes (m72, m82)
@@ -202,7 +214,7 @@ const GROWTH_SETTLE_SECONDS: f32 = 0.070;
 /// pp 2.4 -> m72 locks 2x mode, m82 drops a register; pp 3.0 -> all lock).
 /// Values sweep-derived; the v2 per-note pull table is the precedent.
 const PP_GROWTH_CAP_BY_NOTE_R1: [f32; 12] = [
-    3.10, 3.05, 3.00, 2.90, 2.70, 2.80, 2.90, 2.80, 3.00, 3.10, 3.30, 3.30,
+    3.5572, 3.05, 3.00, 2.90, 2.9214, 2.80, 2.90, 3.0021, 3.00, 3.10, 3.5223, 3.30,
 ];
 
 fn jet_growth_cap_for(midi: i32, velocity_norm: f32) -> f32 {
