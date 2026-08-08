@@ -223,7 +223,7 @@ describe("U7 reviewed MIDI-export-workflow contract", () => {
     expect(U7_WORKFLOW_LIMITS.maxMarkerTextUtf8Bytes).toBe(
       MAX_MIDI_EXPORT_TEXT_UTF8_BYTES,
     );
-    expect(U7_WORKFLOW_LIMITS.maxMarkers).toBe(MAX_MIDI_EXPORT_MARKERS);
+    expect(MAX_MIDI_EXPORT_MARKERS).toBe(U7_WORKFLOW_LIMITS.maxMarkers);
     expect(U7_WORKFLOW_LIMITS.maxArtifactBytes).toBe(MAX_MIDI_EXPORT_BYTES);
     expect(U7_WORKFLOW_LIMITS.maxFilenameCharacters).toBe(
       MAX_MIDI_EXPORT_FILENAME_CHARS,
@@ -280,8 +280,8 @@ describe("U7 reviewed MIDI-export-workflow contract", () => {
     expect(U7_PREVIEW_WORK_COUNTER_MAXIMA["events-visited"]).toBe(
       MAX_DOCUMENT_CHORD_EVENTS,
     );
-    expect(U7_PREVIEW_WORK_COUNTER_MAXIMA["markers-derived"]).toBe(
-      MAX_MIDI_EXPORT_MARKERS,
+    expect(MAX_MIDI_EXPORT_MARKERS).toBe(
+      U7_PREVIEW_WORK_COUNTER_MAXIMA["markers-derived"],
     );
     expect(U7_PREVIEW_WORK_COUNTER_MAXIMA["bytes-hashed"]).toBe(
       MAX_MIDI_EXPORT_BYTES,
