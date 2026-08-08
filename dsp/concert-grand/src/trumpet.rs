@@ -95,6 +95,22 @@ const CHARACTERISTIC_MEAN_CORNER_HZ: f64 = 20.0;
 // brass harmonics).
 const LIP_EMBOUCHURE_SERVO_GAIN: f64 = 3.0;
 const LIP_EMBOUCHURE_KNEE_M: f64 = 1.2e-3;
+// Closure-grazing embouchure (Adachi & Sato): players regulate the mean lip
+// opening so the lips graze shut once per cycle at EVERY dynamic — the
+// closure pulse, not bore steepening alone, is the harmonic engine, and the
+// measured 0.48-0.81 mm minimum openings (lips never touching) are exactly
+// why soft cells centroid near the fundamental. For a near-sinusoidal
+// oscillation of amplitude a the 20 Hz rectified-deviation mean is 2a/pi, so
+// the grazing condition (minimum opening -> 0) is mean = (pi/2)*rectified.
+// The servo pulls the frozen characteristic mean toward
+// LIP_CLOSURE_GRAZING_RATIO of that target with the same slow-muscle law as
+// the knee guard, and fades in with oscillation development
+// (min(1, rectified/LIP_GRAZING_ENGAGE_M)) so startup transients are not
+// clamped shut before the regime exists. Ratio just under 1 avoids hard
+// slamming; both terms stay frozen through the Newton solve.
+const LIP_CLOSURE_GRAZING_RATIO: f64 = 1.10;
+const LIP_CLOSURE_GRAZING_GAIN: f64 = 1.5;
+const LIP_GRAZING_ENGAGE_M: f64 = 1.0e-4;
 // In-sample continuation budget for the lip Newton solve; see
 // `solve_lip_cup_with_continuation`.
 const LIP_CONTINUATION_SUBSTEPS: u32 = 4;
@@ -863,6 +879,7 @@ pub struct TrumpetModel {
     cup_pressure_pa: f64,
     lip_displacement_m: f64,
     lip_displacement_mean_m: f64,
+    lip_oscillation_mean_m: f64,
     lip_velocity_m_s: f64,
     lip_acceleration_m_s2: f64,
     lip_streamwise_displacement_m: f64,
@@ -955,6 +972,7 @@ impl TrumpetModel {
             cup_pressure_pa: 0.0,
             lip_displacement_m: 0.0,
             lip_displacement_mean_m: 0.0,
+            lip_oscillation_mean_m: 0.0,
             lip_velocity_m_s: 0.0,
             lip_acceleration_m_s2: 0.0,
             lip_streamwise_displacement_m: 0.0,
@@ -1284,20 +1302,61 @@ impl TrumpetModel {
         let start_pressure_pa = self.previous_mouth_pressure_pa;
         let start_equilibrium_m = self.previous_equilibrium_opening_m;
         let mut substeps_used = 0_usize;
-        for substep in 1..=LIP_CONTINUATION_SUBSTEPS {
-            let fraction = substep as f64 / LIP_CONTINUATION_SUBSTEPS as f64;
-            let staged = TrumpetControls {
-                mouth_pressure_pa: start_pressure_pa
-                    + fraction * (controls.mouth_pressure_pa - start_pressure_pa),
-                equilibrium_opening_m: start_equilibrium_m
-                    + fraction * (controls.equilibrium_opening_m - start_equilibrium_m),
-                ..controls
-            };
-            substeps_used += 1;
-            self.solve_lip_cup(staged, dt)?;
+        let pressure_delta_pa = fabs(controls.mouth_pressure_pa - start_pressure_pa);
+        let equilibrium_delta_m = fabs(controls.equilibrium_opening_m - start_equilibrium_m);
+        let controls_moved = pressure_delta_pa > 1.0e-9 || equilibrium_delta_m > 1.0e-12;
+        if controls_moved {
+            let mut control_path_failed = false;
+            for substep in 1..=LIP_CONTINUATION_SUBSTEPS {
+                let fraction = substep as f64 / LIP_CONTINUATION_SUBSTEPS as f64;
+                let staged = TrumpetControls {
+                    mouth_pressure_pa: start_pressure_pa
+                        + fraction * (controls.mouth_pressure_pa - start_pressure_pa),
+                    equilibrium_opening_m: start_equilibrium_m
+                        + fraction * (controls.equilibrium_opening_m - start_equilibrium_m),
+                    ..controls
+                };
+                substeps_used += 1;
+                match self.solve_lip_cup(staged, dt) {
+                    Ok(()) => {}
+                    Err(TrumpetError::LipSolveDidNotConverge) => {
+                        control_path_failed = true;
+                        break;
+                    }
+                    Err(other) => return Err(other),
+                }
+            }
+            if !control_path_failed {
+                self.last_lip_report.fallback_bisections = substeps_used;
+                return Ok(());
+            }
         }
-        self.last_lip_report.fallback_bisections = substeps_used;
-        Ok(())
+        // Second tier: the controls did not move (an in-regime sample where a
+        // steepened bore-pressure spike pushed the residual outside the
+        // Newton basin) or the control path itself failed. Subdivide TIME at
+        // the same controls — dt/2 twice, then dt/4 four times — integrating
+        // the lip through the sharp transient in smaller certified steps.
+        // Bounded (2 + 4 additional solves), deterministic, counted.
+        for divisions in [2_usize, 4] {
+            let sub_dt = dt / divisions as f64;
+            let mut tier_ok = true;
+            for _ in 0..divisions {
+                substeps_used += 1;
+                match self.solve_lip_cup(controls, sub_dt) {
+                    Ok(()) => {}
+                    Err(TrumpetError::LipSolveDidNotConverge) => {
+                        tier_ok = false;
+                        break;
+                    }
+                    Err(other) => return Err(other),
+                }
+            }
+            if tier_ok {
+                self.last_lip_report.fallback_bisections = substeps_used;
+                return Ok(());
+            }
+        }
+        Err(TrumpetError::LipSolveDidNotConverge)
     }
 
     fn solve_lip_cup(&mut self, controls: TrumpetControls, dt: f64) -> Result<(), TrumpetError> {
@@ -1321,7 +1380,20 @@ impl TrumpetModel {
             let excess_m = (self.lip_displacement_mean_m - LIP_EMBOUCHURE_KNEE_M).max(0.0);
             // Uses the previous sample's characteristic mean, so the value is
             // constant through this sample's Newton solve.
-            mechanics.normal_stiffness_n_m * LIP_EMBOUCHURE_SERVO_GAIN * excess_m
+            let knee_force_n = mechanics.normal_stiffness_n_m * LIP_EMBOUCHURE_SERVO_GAIN * excess_m;
+            // Closure-grazing term: pull the mean toward the grazing target
+            // derived from the developed oscillation amplitude (2a/pi
+            // rectified mean), fading in with oscillation so startup is
+            // never clamped. Frozen per-sample like the knee term.
+            let grazing_target_m =
+                LIP_CLOSURE_GRAZING_RATIO * (PI / 2.0) * self.lip_oscillation_mean_m;
+            let engagement = (self.lip_oscillation_mean_m / LIP_GRAZING_ENGAGE_M).min(1.0);
+            let grazing_excess_m = (self.lip_displacement_mean_m - grazing_target_m).max(0.0);
+            let grazing_force_n = mechanics.normal_stiffness_n_m
+                * LIP_CLOSURE_GRAZING_GAIN
+                * engagement
+                * grazing_excess_m;
+            knee_force_n + grazing_force_n
         };
         let normal_displacement_predictor = self.lip_displacement_m
             + dt * self.lip_velocity_m_s
@@ -1600,6 +1672,9 @@ impl TrumpetModel {
             let memory = exp(-2.0 * PI * CHARACTERISTIC_MEAN_CORNER_HZ * dt);
             self.lip_displacement_mean_m =
                 memory * self.lip_displacement_mean_m + (1.0 - memory) * self.lip_displacement_m;
+            let deviation_m = (self.lip_displacement_m - self.lip_displacement_mean_m).abs();
+            self.lip_oscillation_mean_m =
+                memory * self.lip_oscillation_mean_m + (1.0 - memory) * deviation_m;
         }
         self.lip_velocity_m_s = candidate.velocity_m_s;
         self.lip_acceleration_m_s2 = candidate.acceleration_m_s2;
@@ -1810,6 +1885,8 @@ impl TrumpetModel {
             && self.previous_mouth_pressure_pa.is_finite()
             && self.previous_equilibrium_opening_m.is_finite()
             && self.lip_displacement_m.is_finite()
+            && self.lip_displacement_mean_m.is_finite()
+            && self.lip_oscillation_mean_m.is_finite()
             && self.lip_velocity_m_s.is_finite()
             && self.lip_acceleration_m_s2.is_finite()
             && self.lip_streamwise_displacement_m.is_finite()
@@ -2061,6 +2138,24 @@ fn minmod(left: f64, right: f64) -> f64 {
     }
 }
 
+/// Monotonized-central (MC) slope limiter. Still TVD, but far less
+/// dissipative than minmod: on the 48-cell bore minmod smears exactly the
+/// high harmonics the cumulative steepening generates (measured 2x centroid
+/// deficit vs the contract's cited enrichment curves), while MC preserves
+/// them without introducing new extrema.
+fn monotonized_central(left: f64, right: f64) -> f64 {
+    if left * right <= 0.0 {
+        return 0.0;
+    }
+    let central = 0.5 * (left + right);
+    let bound = 2.0 * if fabs(left) < fabs(right) { left } else { right };
+    if fabs(central) < fabs(bound) {
+        central
+    } else {
+        bound
+    }
+}
+
 fn advance_nonlinear_characteristic(
     state: &mut [f64; BORE_CELLS],
     cell_length_m: &[f64; BORE_CELLS],
@@ -2086,6 +2181,14 @@ fn nonlinear_characteristic_euler(
     let positive_coefficient = beta / (2.0 * AIR_DENSITY_KG_M3 * SOUND_SPEED_M_S);
     let mut slopes = [0.0; BORE_CELLS];
     for cell in 1..BORE_CELLS - 1 {
+        // minmod for now: monotonized_central (above) measurably recovers the
+        // steepened harmonics this grid dissipates, but the sharper fronts it
+        // admits exceed the lip Newton basin at ff until the wall-loss model
+        // gains the high-frequency viscothermal rounding that physically
+        // limits shock sharpness (round-4 work, see bead trail). Swapping the
+        // limiter without that loss physics trades a centroid gain for a
+        // solver wall at 12 kPa (measured: LipSolveDidNotConverge frame 14915
+        // even with time-subdivided continuation).
         slopes[cell] = minmod(state[cell] - state[cell - 1], state[cell + 1] - state[cell]);
     }
     let positive_flux = |value: f64| positive_coefficient * value * value;
