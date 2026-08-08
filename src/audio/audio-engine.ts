@@ -938,7 +938,7 @@ function createAudioEngineInternal(
    * the cache. Buckets grow geometrically so a short comp chord costs a short
    * render while a held bass note still gets its tail.
    */
-  const RENDER_SECONDS_BUCKETS = Object.freeze([1.125, 1.5, 2, 4, 8] as const);
+  const RENDER_SECONDS_BUCKETS = Object.freeze([1, 2, 4, 8] as const);
   const PLUCKED_RENDER_SECONDS_BUCKETS = Object.freeze([
     0.75,
     0.875,
