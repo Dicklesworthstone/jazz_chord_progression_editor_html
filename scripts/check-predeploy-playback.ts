@@ -64,14 +64,14 @@ interface GatePage {
   goto(url: string, options: { waitUntil: "domcontentloaded"; timeout: number }): Promise<unknown>;
   waitForSelector(selector: string, options: { timeout: number }): Promise<unknown>;
   waitForFunction(
-    expression: string,
+    expression: () => unknown,
     argument: undefined,
     options: { timeout: number },
   ): Promise<unknown>;
   waitForTimeout(ms: number): Promise<void>;
   selectOption(selector: string, value: string): Promise<unknown>;
   locator(selector: string): GateLocator;
-  evaluate(expression: string): Promise<unknown>;
+  evaluate<Result>(expression: () => Result): Promise<Result>;
   on(event: "console", handler: (message: { type(): string; text(): string }) => void): void;
   on(event: "pageerror", handler: (error: unknown) => void): void;
   context(): { close(): Promise<void> };
@@ -287,9 +287,22 @@ async function openArtifactPage(
 async function readCaptures(
   page: GatePage,
 ): Promise<{ captures: BufferCapture[]; masterPeak: number }> {
-  return page.evaluate(
-    "({ captures: window.__caps.map((c) => ({ ch: c.ch, len: c.len, sr: c.sr, maxAbs: c.maxAbs, data: c.data })), masterPeak: window.__masterPeak })",
-  ) as Promise<{ captures: BufferCapture[]; masterPeak: number }>;
+  return page.evaluate(() => {
+    const runtime = globalThis as unknown as Readonly<{
+      __caps: BufferCapture[];
+      __masterPeak: number;
+    }>;
+    return {
+      captures: runtime.__caps.map((capture) => ({
+        ch: capture.ch,
+        len: capture.len,
+        sr: capture.sr,
+        maxAbs: capture.maxAbs,
+        data: capture.data,
+      })),
+      masterPeak: runtime.__masterPeak,
+    };
+  });
 }
 
 async function playInstrument(
@@ -310,7 +323,18 @@ async function playInstrument(
     await page.locator("#studio-transport-play").click();
     await page
       .waitForFunction(
-        "document.querySelector('#studio-transport-status-detail')?.textContent?.includes('Playing') === true",
+        () => {
+          const runtime = globalThis as unknown as Readonly<{
+            document: Readonly<{
+              querySelector(selector: string): Readonly<{
+                textContent: string | null;
+              }> | null;
+            }>;
+          }>;
+          return runtime.document.querySelector(
+            "#studio-transport-status-detail",
+          )?.textContent?.includes("Playing") === true;
+        },
         undefined,
         /* 30 s reach window: WebKit's slower wasm takes whole seconds of
          * preparation renders before "Playing" (measured ~8 s for the guitar
@@ -507,9 +531,24 @@ async function main(): Promise<number> {
       : playwright.webkit.launch({}));
 
   const probe = await openArtifactPage(browser, url);
-  const options = (await probe.page.evaluate(
-    "Array.from(document.querySelectorAll('#studio-transport-instrument option')).map((o) => ({ id: o.value, label: (o.textContent ?? '').trim() }))",
-  )) as { id: string; label: string }[];
+  const options = await probe.page.evaluate(() => {
+    const runtime = globalThis as unknown as Readonly<{
+      document: Readonly<{
+        querySelectorAll(selector: string): ArrayLike<Readonly<{
+          value: string;
+          textContent: string | null;
+        }>>;
+      }>;
+    }>;
+    return Array.from(
+      runtime.document.querySelectorAll(
+        "#studio-transport-instrument option",
+      ),
+    ).map((option) => ({
+      id: option.value,
+      label: (option.textContent ?? "").trim(),
+    }));
+  });
   await probe.page.context().close();
 
   const results: InstrumentResult[] = [];
