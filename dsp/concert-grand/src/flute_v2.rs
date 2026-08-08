@@ -589,7 +589,7 @@ fn target_mouth_pressure_pa_for_center(
         // jcpe-winds-quality-triangulation-drga). Entering the speaking
         // region from above with a stronger convective phase keeps the
         // second-register attractor dominant across dynamics.
-        5.05 /* sweep */
+        4.85 /* sweep */
     } else if fingering.register_harmonic == 2 {
         4.96
     } else {
@@ -1102,7 +1102,7 @@ fn render_with_storage(
     // physically shallower; sidebands otherwise read as inharmonicity in
     // the pp HNR window (UIowa m72-pp).
     let vibrato_depth =
-        (0.012 + 0.002 * variation_slot as f64 / 7.0) * (0.70 + 0.30 * breath_scale);
+        (0.012 + 0.002 * variation_slot as f64 / 7.0) * (0.70 + 0.30 * dynamic_lift);
     let vibrato_step = TAU * vibrato_hz / sr;
     let vibrato_step_sin = sin(vibrato_step);
     let vibrato_step_cos = cos(vibrato_step);
