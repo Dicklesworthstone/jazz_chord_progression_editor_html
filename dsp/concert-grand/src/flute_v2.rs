@@ -1,3 +1,7 @@
+//! 2026-08-08 ship-swap (bead jcpe-flute-v3-integration-dw1q): the geometric
+//! v3 model now owns the shipping `flt2_*` ABI after its UIowa matrix went
+//! 8/8 on NSGA-II-derived tables; this module keeps the empirical-pull v2
+//! model as the `flt2_legacy_*` comparator.
 //! Dark flute-v2 physical renderer.
 //!
 //! Unlike the live `flute` module, this model never retunes a delay from the
@@ -1459,7 +1463,7 @@ fn render_with_storage(
 }
 
 #[no_mangle]
-pub extern "C" fn flt2_note_frames(midi: i32, sample_rate: f32) -> i32 {
+pub extern "C" fn flt2_legacy_note_frames(midi: i32, sample_rate: f32) -> i32 {
     if fingering_for_midi(midi).is_none()
         || segment_layout(sample_rate as f64, tuned_sound_speed(midi)).is_none()
     {
@@ -1469,12 +1473,12 @@ pub extern "C" fn flt2_note_frames(midi: i32, sample_rate: f32) -> i32 {
 }
 
 #[no_mangle]
-pub extern "C" fn flt2_state_max_bytes() -> i32 {
+pub extern "C" fn flt2_legacy_state_max_bytes() -> i32 {
     STATE_MAX_BYTES as i32
 }
 
 #[no_mangle]
-pub extern "C" fn flt2_render(
+pub extern "C" fn flt2_legacy_render(
     midi: i32,
     velocity: i32,
     sample_rate: f32,
@@ -1484,7 +1488,7 @@ pub extern "C" fn flt2_render(
     right: *mut f32,
     max_frames: i32,
 ) -> i32 {
-    let natural = flt2_note_frames(midi, sample_rate);
+    let natural = flt2_legacy_note_frames(midi, sample_rate);
     if natural == 0 || max_frames <= 0 || left.is_null() || right.is_null() {
         return 0;
     }
@@ -1524,7 +1528,7 @@ pub extern "C" fn flt2_render(
 
 #[no_mangle]
 #[allow(clippy::too_many_arguments)]
-pub extern "C" fn flt2_render_phrase(
+pub extern "C" fn flt2_legacy_render_phrase(
     midi: i32,
     velocity: i32,
     sample_rate: f32,
@@ -1538,7 +1542,7 @@ pub extern "C" fn flt2_render_phrase(
     state_output: *mut u8,
     state_output_capacity: i32,
 ) -> i32 {
-    let natural = flt2_note_frames(midi, sample_rate);
+    let natural = flt2_legacy_note_frames(midi, sample_rate);
     if natural == 0
         || max_frames <= 0
         || left.is_null()
