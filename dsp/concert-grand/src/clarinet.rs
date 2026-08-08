@@ -366,51 +366,99 @@ const CLR_SOUND_SPEED_M_PER_S: f64 = crate::clarinet_v2_parameters::PARAMETERS[1
 /// outside). Applied as a scale on the note's target f0 - the single seam
 /// every v2 delay and corner derives from.
 const CLR_RESIDUAL_PULL_CENTS: [f64; 40] = [
-        -0.0, // m50
+        -0.1, // m50
         -0.7, // m51
         -7.9, // m52
-        -0.8, // m53
+        -0.9, // m53
         -0.3, // m54
-        -0.1, // m55
-        -6.4, // m56
-        0.2, // m57
-        0.5, // m58
-        0.8, // m59
-        1.1, // m60
-        1.5, // m61
-        1.9, // m62
-        1.7, // m63
-        -3.8, // m64
-        -1.9, // m65
-        3.2, // m66
-        3.8, // m67
-        -8.6, // m68
-        -0.1, // m69
-        0.1, // m70
-        -0.7, // m71
-        -0.2, // m72
-        0.6, // m73
-        1.0, // m74
-        1.1, // m75
-        2.3, // m76
-        -1.3, // m77
-        -2.9, // m78
-        -5.0, // m79
-        7.0, // m80
-        -2.9, // m81
-        -1.1, // m82
-        1.8, // m83
-        2.9, // m84
-        0.2, // m85
+        -0.2, // m55
+        -6.5, // m56
+        0.1, // m57
+        0.4, // m58
+        0.7, // m59
+        0.9, // m60
+        1.4, // m61
+        1.7, // m62
+        1.5, // m63
+        -4.0, // m64
+        -2.2, // m65
+        2.8, // m66
+        3.5, // m67
+        -8.9, // m68
+        -0.4, // m69
+        -0.1, // m70
+        -1.1, // m71
+        -0.7, // m72
+        0.1, // m73
+        0.5, // m74
+        0.5, // m75
+        1.7, // m76
+        -1.9, // m77
+        2.2, // m78
+        -5.6, // m79
+        1.3, // m80
+        -3.7, // m81
+        -1.7, // m82
+        0.8, // m83
+        3.0, // m84
+        0.3, // m85
         -1.9, // m86
-        -2.0, // m87
-        0.1, // m88
-        -1.2, // m89
+        -2.1, // m87
+        -0.1, // m88
+        -1.4, // m89
 ];
 
-fn clr_residual_pull_scale(midi: i32) -> f64 {
+/// Per-note rate slope of the residual (cents per log2 of rate/48k),
+/// fitted from tri-rate measurement alongside the 48 kHz table.
+const CLR_RESIDUAL_RATE_SLOPE_CENTS: [f64; 40] = [
+        2.1, // m50
+        2.3, // m51
+        2.6, // m52
+        2.6, // m53
+        2.8, // m54
+        3.0, // m55
+        3.4, // m56
+        3.4, // m57
+        3.6, // m58
+        3.8, // m59
+        4.1, // m60
+        3.6, // m61
+        3.1, // m62
+        2.7, // m63
+        2.6, // m64
+        1.9, // m65
+        -4.2, // m66
+        -4.9, // m67
+        1.1, // m68
+        0.1, // m69
+        -0.2, // m70
+        -0.5, // m71
+        -0.8, // m72
+        -1.0, // m73
+        -1.3, // m74
+        -1.6, // m75
+        -0.6, // m76
+        -1.9, // m77
+        -1.6, // m78
+        -1.4, // m79
+        -0.4, // m80
+        -0.6, // m81
+        0.6, // m82
+        2.2, // m83
+        3.5, // m84
+        2.9, // m85
+        2.3, // m86
+        3.2, // m87
+        4.1, // m88
+        5.1, // m89
+];
+
+fn clr_residual_pull_scale(midi: i32, sample_rate: f32) -> f64 {
     let index = (midi - 50).clamp(0, 39) as usize;
-    libm::exp2(-CLR_RESIDUAL_PULL_CENTS[index] / 1_200.0)
+    let rate_octaves = libm::log2(sample_rate as f64 / 48_000.0);
+    let cents = CLR_RESIDUAL_PULL_CENTS[index]
+        + CLR_RESIDUAL_RATE_SLOPE_CENTS[index] * rate_octaves;
+    libm::exp2(-cents / 1_200.0)
 }
 const CLR_BORE_RADIUS_M: f64 = crate::clarinet_v2_parameters::PARAMETERS[2].2;
 const CLR_REFERENCE_LENGTH_M: f64 = crate::clarinet_v2_parameters::PARAMETERS[3].2;
@@ -759,7 +807,11 @@ fn clr_render_inner(
     let m = midi as f64;
     let v_norm = velocity as f64 / 127.0;
     let open_hole_count = fingering_mask(midi).count_ones() as f64;
-    let f0 = midi_frequency_hz(m) * clr_residual_pull_scale(midi);
+    let f0 = if dynamic_reed {
+        midi_frequency_hz(m) * clr_residual_pull_scale(midi, sample_rate)
+    } else {
+        midi_frequency_hz(m)
+    };
     let period = sr / f0;
     /* Half-period bore: the closed-open round trip is one full period. */
     let half_period = period * 0.5;

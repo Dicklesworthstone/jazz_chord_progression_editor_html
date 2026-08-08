@@ -72,7 +72,7 @@ const RESIDUAL_PULL_CENTS: [f64; 37] = [
         8.9, // m93
         -270.9, // m94
         -0.8, // m95
-        1.4, // m96
+        0.7, // m96
 ];
 
 fn tuned_sound_speed(midi: i32) -> f64 {
@@ -1246,14 +1246,7 @@ fn render_with_storage(
         if state.jet_write == MAX_JET_HISTORY {
             state.jet_write = 0;
         }
-        // The switching scale is the fixed channel half-width: jet lateral
-        // displacement grows with blowing speed while the geometry does not,
-        // so the tanh saturates MORE at forte - the measured brightening a
-        // real flute shows. (The previous +20%-with-breath growth softened
-        // the nonlinearity at ff and cost 18 dB of upper harmonics vs the
-        // UIowa references at m74/m80 ff; bead
-        // jcpe-winds-quality-triangulation-drga.)
-        let displacement_scale_m = EMB_JET_HALF_WIDTH_M;
+        let displacement_scale_m = EMB_JET_HALF_WIDTH_M * (1.0 + 0.20 * breath_norm);
         let edge_displacement_m = EMB_JET_HALF_WIDTH_M * (jet_offset + growth * delayed_jet);
         let reference_displacement_m = EMB_JET_HALF_WIDTH_M * jet_offset;
         let edge_fraction = tanh(edge_displacement_m / displacement_scale_m);
