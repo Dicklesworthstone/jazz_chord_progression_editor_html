@@ -176,7 +176,9 @@ fn plk2_effective_acoustic_flow_m3_per_s(
 fn plk2_listener_trim(pack_index: i32) -> f64 {
     let trim_db = match pack_index {
         PLK2_ARCHTOP_PACK => 80.0,
-        PLK2_MARSHALL_ELECTRIC_PACK => 40.0,
+        /* -7 dB after the piston-band cabinet bed raised the radiated level
+         * (bead jcpe-plucked-quality-body-amp-6yg6). */
+        PLK2_MARSHALL_ELECTRIC_PACK => 33.0,
         PLK2_DREADNOUGHT_PACK => 73.0,
         PLK2_UKULELE_PACK => 81.6,
         PLK2_UPRIGHT_BASS_PACK => 82.0,
@@ -1549,6 +1551,8 @@ fn encode_stem_session(session: &PluckedStemSession, bytes: &mut [u8]) -> Option
             writer.write_f64(amplifier.interstage_dc_lowpass)?;
             writer.write_f64(amplifier.bass_lowpass)?;
             writer.write_f64(amplifier.below_treble_lowpass)?;
+            writer.write_f64(amplifier.piston_lowpass)?;
+            writer.write_f64(amplifier.piston_dc_lowpass)?;
             writer.write_f64(amplifier.supply_fraction)?;
             for mode in amplifier.cabinet_modes {
                 writer.write_f64(mode.position)?;
@@ -1715,11 +1719,15 @@ fn decode_stem_session_with_base(
             amplifier.interstage_dc_lowpass = reader.read_f64()?;
             amplifier.bass_lowpass = reader.read_f64()?;
             amplifier.below_treble_lowpass = reader.read_f64()?;
+            amplifier.piston_lowpass = reader.read_f64()?;
+            amplifier.piston_dc_lowpass = reader.read_f64()?;
             amplifier.supply_fraction = reader.read_f64()?;
             if !stem_state_scalar_is_bounded(amplifier.input_dc_lowpass)
                 || !stem_state_scalar_is_bounded(amplifier.interstage_dc_lowpass)
                 || !stem_state_scalar_is_bounded(amplifier.bass_lowpass)
                 || !stem_state_scalar_is_bounded(amplifier.below_treble_lowpass)
+                || !stem_state_scalar_is_bounded(amplifier.piston_lowpass)
+                || !stem_state_scalar_is_bounded(amplifier.piston_dc_lowpass)
                 || !amplifier.supply_fraction.is_finite()
                 || amplifier.supply_fraction < 1.0 - amplifier.spec.sag_depth
                 || amplifier.supply_fraction > 1.0

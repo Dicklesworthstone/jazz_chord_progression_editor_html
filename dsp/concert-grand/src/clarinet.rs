@@ -358,6 +358,60 @@ const CLR_FINGERING_MASKS: [u8; 12] = [
  * circular-aperture value 8/(3*pi), not the license-blocked FrankenSim fit. */
 const CLR_AIR_DENSITY_KG_PER_M3: f64 = crate::clarinet_v2_parameters::PARAMETERS[0].2;
 const CLR_SOUND_SPEED_M_PER_S: f64 = crate::clarinet_v2_parameters::PARAMETERS[1].2;
+
+/// Measured residual intonation pull (2026-08-08, bead
+/// jcpe-winds-quality-triangulation-drga): cents sharp(+)/flat(-) rendered
+/// by the v2 model per note at mf, measured end-to-end against 12TET with
+/// the triangulation harness (fit domain exactly MIDI 50..=89, clamped
+/// outside). Applied as a scale on the note's target f0 - the single seam
+/// every v2 delay and corner derives from.
+const CLR_RESIDUAL_PULL_CENTS: [f64; 40] = [
+        -0.0, // m50
+        -0.7, // m51
+        -7.9, // m52
+        -0.8, // m53
+        -0.3, // m54
+        -0.1, // m55
+        -6.4, // m56
+        0.2, // m57
+        0.5, // m58
+        0.8, // m59
+        1.1, // m60
+        1.5, // m61
+        1.9, // m62
+        1.7, // m63
+        -3.8, // m64
+        -1.9, // m65
+        3.2, // m66
+        3.8, // m67
+        -8.6, // m68
+        -0.1, // m69
+        0.1, // m70
+        -0.7, // m71
+        -0.2, // m72
+        0.6, // m73
+        1.0, // m74
+        1.1, // m75
+        2.3, // m76
+        -1.3, // m77
+        -2.9, // m78
+        -5.0, // m79
+        7.0, // m80
+        -2.9, // m81
+        -1.1, // m82
+        1.8, // m83
+        2.9, // m84
+        0.2, // m85
+        -1.9, // m86
+        -2.0, // m87
+        0.1, // m88
+        -1.2, // m89
+];
+
+fn clr_residual_pull_scale(midi: i32) -> f64 {
+    let index = (midi - 50).clamp(0, 39) as usize;
+    libm::exp2(-CLR_RESIDUAL_PULL_CENTS[index] / 1_200.0)
+}
 const CLR_BORE_RADIUS_M: f64 = crate::clarinet_v2_parameters::PARAMETERS[2].2;
 const CLR_REFERENCE_LENGTH_M: f64 = crate::clarinet_v2_parameters::PARAMETERS[3].2;
 const CLR_HOLE_AXIAL_M: [f64; 6] = [
@@ -705,7 +759,7 @@ fn clr_render_inner(
     let m = midi as f64;
     let v_norm = velocity as f64 / 127.0;
     let open_hole_count = fingering_mask(midi).count_ones() as f64;
-    let f0 = midi_frequency_hz(m);
+    let f0 = midi_frequency_hz(m) * clr_residual_pull_scale(midi);
     let period = sr / f0;
     /* Half-period bore: the closed-open round trip is one full period. */
     let half_period = period * 0.5;
