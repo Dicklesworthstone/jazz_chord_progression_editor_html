@@ -11,7 +11,10 @@ import {
   createStudioAudio,
   createStudioController,
 } from "../../src/application/runtime";
-import type { StudioController } from "../../src/application/runtime";
+import type {
+  StudioAudioPort,
+  StudioController,
+} from "../../src/application/runtime";
 import { createFakeAudioPlatform } from "../../src/test-support/fake-audio-platform";
 
 const GESTURE = Object.freeze({
@@ -27,6 +30,14 @@ function audibleController(): StudioController {
     throw new Error(`controller refused: ${creation.refusal.code}`);
   }
   return creation.controller;
+}
+
+async function until(predicate: () => boolean): Promise<void> {
+  for (let attempt = 0; attempt < 80; attempt += 1) {
+    if (predicate()) return;
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  }
+  throw new Error("PREVIEW_PITCH_TIMEOUT");
 }
 
 describe("previewPitch", () => {
@@ -67,5 +78,68 @@ describe("previewPitch", () => {
     const controller = audibleController();
     expect(controller.previewPitch(0, GESTURE).ok).toBe(true);
     expect(controller.previewPitch(127, GESTURE).ok).toBe(true);
+  });
+
+  test("a newer preview supersedes slow preparation without changing the progression instrument", async () => {
+    const inner = createStudioAudio(createFakeAudioPlatform().platform);
+    const previewPitches: number[][] = [];
+    let prepareCalls = 0;
+    let holdNextPreparation = false;
+    let releaseHeldPreparation = (): void => {
+      throw new Error("PREVIEW_PREPARATION_GATE_UNINITIALIZED");
+    };
+    let heldPreparation = Promise.resolve();
+    const resetGate = (): void => {
+      heldPreparation = new Promise<void>((resolve) => {
+        releaseHeldPreparation = resolve;
+      });
+    };
+    resetGate();
+    let instrumentCalls = 0;
+    const port: StudioAudioPort = Object.freeze({
+      ...inner,
+      prepareInstrument: async () => {
+        prepareCalls += 1;
+        if (holdNextPreparation) {
+          holdNextPreparation = false;
+          await heldPreparation;
+        }
+        return true;
+      },
+      setInstrument: (requestId, instrumentId) => {
+        instrumentCalls += 1;
+        return inner.setInstrument(requestId, instrumentId);
+      },
+      startPreview: (requestId, previewId, instrumentId, midiPitches, gateSeconds) => {
+        previewPitches.push([...midiPitches]);
+        return inner.startPreview(
+          requestId,
+          previewId,
+          instrumentId,
+          midiPitches,
+          gateSeconds,
+        );
+      },
+    });
+    const creation = createStudioController({ audio: port });
+    if (!creation.ok) throw new Error("controller refused");
+    const controller = creation.controller;
+
+    expect(controller.previewPitch(48, GESTURE).ok).toBe(true);
+    await until(() => previewPitches.length === 1);
+    previewPitches.length = 0;
+    prepareCalls = 0;
+    resetGate();
+    holdNextPreparation = true;
+
+    expect(controller.previewPitch(60, GESTURE).ok).toBe(true);
+    await until(() => prepareCalls === 1);
+    expect(controller.previewPitch(61, GESTURE).ok).toBe(true);
+    await until(() => previewPitches.length === 1);
+    releaseHeldPreparation();
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+    expect(previewPitches).toEqual([[61]]);
+    expect(instrumentCalls).toBe(0);
   });
 });

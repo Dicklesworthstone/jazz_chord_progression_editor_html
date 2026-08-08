@@ -5219,6 +5219,8 @@ function makeStudioComposition(
 
   let lastPlanPitchClasses: Map<string, readonly number[]> | null = null;
   let previewOrdinal = 0;
+  let previewInitialization: ReturnType<StudioAudioPort["initialize"]> | null =
+    null;
 
   const PREVIEW_GATE_SECONDS = 1.2;
 
@@ -5228,34 +5230,37 @@ function makeStudioComposition(
     documentId: AppState["document"]["id"];
     planRevision: number;
     instrumentId: InstrumentId;
+    generation: number;
     previewId: string;
     midiPitches: readonly [MidiPitch, ...MidiPitch[]];
     notes: Parameters<StudioAudioPort["prepareInstrument"]>[1];
     mix: Readonly<{ masterVolume: number; reverbAmount: number }>;
   }>): Promise<void> => {
+    if (request.generation !== previewOrdinal) return;
     if (!request.port.isInitialized()) {
-      const initialized = await request.port.initialize(
-        nextTransportRequestId(),
-        request.gesture,
-        request.documentId,
-        request.planRevision,
-        request.mix,
-      );
+      const initialization = previewInitialization ??=
+        request.port.initialize(
+          nextTransportRequestId(),
+          request.gesture,
+          request.documentId,
+          request.planRevision,
+          request.mix,
+        );
+      const initialized = await initialization;
+      if (previewInitialization === initialization) {
+        previewInitialization = null;
+      }
       if (initialized.termination === "refusal") return;
+      if (request.generation !== previewOrdinal) return;
     }
-    if (
-      !await request.port.prepareInstrument(
-        request.instrumentId,
-        request.notes,
-      )
-    ) {
-      return;
-    }
-    const instrument = await request.port.setInstrument(
-      nextTransportRequestId(),
+    const prepared = await request.port.prepareInstrument(
       request.instrumentId,
+      request.notes,
     );
-    if (instrument.termination === "refusal") return;
+    if (!prepared || request.generation !== previewOrdinal) return;
+    /* start-preview owns its instrument explicitly. Sending set-instrument
+     * here is redundant and, during playback, retires and reschedules the
+     * progression horizon even when the selected instrument is unchanged. */
     await request.port.startPreview(
       nextTransportRequestId(),
       request.previewId,
@@ -5309,7 +5314,8 @@ function makeStudioComposition(
     ];
     const instrumentId = state.document.playback.instrumentId;
     previewOrdinal += 1;
-    const previewId = `x1:preview:chord-${String(previewOrdinal)}`;
+    const generation = previewOrdinal;
+    const previewId = `x1:preview:chord-${String(generation)}`;
     const port = audioPort;
     const documentId = state.document.id;
     const planRevision = state.revision;
@@ -5324,6 +5330,7 @@ function makeStudioComposition(
       planRevision,
       mix,
       instrumentId,
+      generation,
       previewId,
       midiPitches,
       notes: midiPitches.map((midiPitch) =>
@@ -5362,7 +5369,8 @@ function makeStudioComposition(
     const pitches: readonly [MidiPitch, ...MidiPitch[]] = [made.value];
     const instrumentId = state.document.playback.instrumentId;
     previewOrdinal += 1;
-    const previewId = `x1:preview:pitch-${String(previewOrdinal)}`;
+    const generation = previewOrdinal;
+    const previewId = `x1:preview:pitch-${String(generation)}`;
     const port = audioPort;
     const documentId = state.document.id;
     const planRevision = state.revision;
@@ -5377,6 +5385,7 @@ function makeStudioComposition(
       planRevision,
       mix,
       instrumentId,
+      generation,
       previewId,
       midiPitches: pitches,
       notes: pitches.map((pitch) =>
@@ -5395,8 +5404,9 @@ function makeStudioComposition(
    * Preview an arbitrary voiced pitch set through the same click-preview
    * lane a chart chord uses (jcpe-qyyn audition): validate every pitch,
    * cap the set at the preview polyphony bound, and issue the identical
-   * prepare → setInstrument → startPreview port sequence. No new audio
-   * path exists: the port command surface is unchanged, and the M1
+   * prepare → startPreview port sequence. startPreview already carries the
+   * instrument, so previewing never mutates the progression's instrument or
+   * reschedules its horizon. No new audio path exists, and the M1
    * audition is exactly a timed series of these single-sonority previews.
    */
   const previewPitches = (
@@ -5443,7 +5453,8 @@ function makeStudioComposition(
     ];
     const instrumentId = state.document.playback.instrumentId;
     previewOrdinal += 1;
-    const previewId = `x1:preview:audition-${String(previewOrdinal)}`;
+    const generation = previewOrdinal;
+    const previewId = `x1:preview:audition-${String(generation)}`;
     const port = audioPort;
     const documentId = state.document.id;
     const planRevision = state.revision;
@@ -5458,6 +5469,7 @@ function makeStudioComposition(
       planRevision,
       mix,
       instrumentId,
+      generation,
       previewId,
       midiPitches: pitches,
       notes: pitches.map((pitch) =>
