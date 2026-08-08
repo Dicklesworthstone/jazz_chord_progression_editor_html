@@ -1,7 +1,10 @@
 import { expect, test } from "bun:test";
 
 import { compilePhysicalRealization } from "../../src/audio";
-import { selectPhysicalPhrasePreparationEntries } from "../../src/application/studio-audio";
+import {
+  buildPhysicalPhrasePreparationNotes,
+  selectPhysicalPhrasePreparationEntries,
+} from "../../src/application/studio-audio";
 import { compilePlaybackPlan } from "../../src/playback";
 import { materializeP0TimelineCase } from "../support/p0-playback-fixtures";
 
@@ -66,4 +69,39 @@ test("an unknown preparation identity cannot silently expand to the whole phrase
     physical.expressivePlan.gestures,
     physical.renderPlan.segments,
   )).toEqual([]);
+});
+
+test("tonguing a continued clarinet voice does not reset its retained bore state", () => {
+  const physical = clarinetRealization();
+  const firstGesture = physical.expressivePlan.gestures[0];
+  if (firstGesture === undefined) throw new Error("GESTURE_ABSENT");
+  const sameVoice = physical.expressivePlan.gestures.filter(
+    (gesture) => gesture.voiceId === firstGesture.voiceId,
+  );
+  const secondGesture = sameVoice[1];
+  if (secondGesture === undefined) throw new Error("SECOND_GESTURE_ABSENT");
+  const gestures = physical.expressivePlan.gestures.map((gesture) =>
+    gesture === secondGesture
+      ? Object.freeze({ ...gesture, articulation: "tongued" as const })
+      : gesture
+  );
+  const eventGestures = gestures.filter(
+    (gesture) => gesture.eventId === secondGesture.eventId,
+  );
+  const voiceOrdinal = eventGestures.findIndex(
+    (gesture) => gesture.voiceId === secondGesture.voiceId,
+  );
+  expect(voiceOrdinal).toBeGreaterThanOrEqual(0);
+
+  const prepared = buildPhysicalPhrasePreparationNotes(
+    [{ eventId: secondGesture.eventId, voiceOrdinal }],
+    gestures,
+    physical.renderPlan.segments,
+  );
+  expect(prepared).toHaveLength(2);
+  expect(prepared.map(({ physicalStateReset }) => physicalStateReset)).toEqual([
+    true,
+    false,
+  ]);
+  expect(prepared[1]?.physicalGesture.articulation).toBe("tongued");
 });

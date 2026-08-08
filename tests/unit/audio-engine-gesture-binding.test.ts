@@ -2,6 +2,10 @@ import { expect, test } from "bun:test";
 
 import { compilePhysicalRealization } from "../../src/audio";
 import type { ExpressiveVoiceGesture } from "../../src/audio";
+import {
+  buildPhysicalPhrasePreparationNotes,
+  type PhysicalPhrasePreparationNote,
+} from "../../src/application/studio-audio";
 import { compilePlaybackPlan } from "../../src/playback";
 import {
   attackRequest,
@@ -15,6 +19,7 @@ import { materializeP0TimelineCase } from "../support/p0-playback-fixtures";
 type Fixture = Readonly<{
   gestures: readonly ExpressiveVoiceGesture[];
   midiPitches: readonly number[];
+  preparationNotes: readonly PhysicalPhrasePreparationNote[];
   eventId: string;
   velocity: number;
 }>;
@@ -50,6 +55,14 @@ function clarinetFixture(instrumentVersionId: string): Fixture {
   return Object.freeze({
     gestures,
     midiPitches: event.midiPitches,
+    preparationNotes: buildPhysicalPhrasePreparationNotes(
+      gestures.map((_, voiceOrdinal) => ({
+        eventId: event.eventId,
+        voiceOrdinal,
+      })),
+      realized.value.expressivePlan.gestures,
+      realized.value.renderPlan.segments,
+    ),
     eventId: event.eventId,
     velocity: event.velocity,
   });
@@ -77,6 +90,12 @@ test("a compiled gesture with the active instrument version and canonical voice 
   const [first, second] = fixture.gestures;
   if (first === undefined || second === undefined) throw new Error("unreachable");
   const { engine } = await readyEngine();
+  requireSuccess(
+    await engine.prepareRenderedAudioVoices({
+      instrumentId: "clarinet",
+      notes: fixture.preparationNotes,
+    }),
+  );
   requireSuccess(
     engine.attackAudioVoices(
       attackRequest(

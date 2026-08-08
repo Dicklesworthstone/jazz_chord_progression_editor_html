@@ -83,6 +83,7 @@ describe("previewPitch", () => {
   test("a newer preview supersedes slow preparation without changing the progression instrument", async () => {
     const inner = createStudioAudio(createFakeAudioPlatform().platform);
     const previewPitches: number[][] = [];
+    const preparedGateSeconds: Array<readonly (number | undefined)[]> = [];
     let prepareCalls = 0;
     let holdNextPreparation = false;
     let releaseHeldPreparation = (): void => {
@@ -98,8 +99,9 @@ describe("previewPitch", () => {
     let instrumentCalls = 0;
     const port: StudioAudioPort = Object.freeze({
       ...inner,
-      prepareInstrument: async () => {
+      prepareInstrument: async (_instrumentId, notes) => {
         prepareCalls += 1;
+        preparedGateSeconds.push(notes.map((note) => note.gateSeconds));
         if (holdNextPreparation) {
           holdNextPreparation = false;
           await heldPreparation;
@@ -140,6 +142,48 @@ describe("previewPitch", () => {
     await new Promise<void>((resolve) => setTimeout(resolve, 0));
 
     expect(previewPitches).toEqual([[61]]);
+    expect(preparedGateSeconds).toEqual([[1.2], [1.2], [1.2]]);
     expect(instrumentCalls).toBe(0);
+  });
+
+  test("Stop invalidates a preview that is still waiting on preparation", async () => {
+    const inner = createStudioAudio(createFakeAudioPlatform().platform);
+    let releasePreparation = (): void => {
+      throw new Error("STOP_PREVIEW_GATE_UNINITIALIZED");
+    };
+    const preparationGate = new Promise<void>((resolve) => {
+      releasePreparation = resolve;
+    });
+    let prepareStarted = false;
+    const previewPitches: number[][] = [];
+    const port: StudioAudioPort = Object.freeze({
+      ...inner,
+      prepareInstrument: async () => {
+        prepareStarted = true;
+        await preparationGate;
+        return true;
+      },
+      startPreview: (requestId, previewId, instrumentId, midiPitches, gateSeconds) => {
+        previewPitches.push([...midiPitches]);
+        return inner.startPreview(
+          requestId,
+          previewId,
+          instrumentId,
+          midiPitches,
+          gateSeconds,
+        );
+      },
+    });
+    const creation = createStudioController({ audio: port });
+    if (!creation.ok) throw new Error("controller refused");
+    const controller = creation.controller;
+
+    expect(controller.previewPitch(60, GESTURE).ok).toBe(true);
+    await until(() => prepareStarted);
+    expect(controller.stopProgression().ok).toBe(true);
+    releasePreparation();
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+    expect(previewPitches).toEqual([]);
   });
 });

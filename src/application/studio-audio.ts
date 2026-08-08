@@ -283,6 +283,15 @@ export type PhysicalPhrasePreparationEntry = Readonly<{
   event: PhysicalRenderEvent;
 }>;
 
+export type PhysicalPhrasePreparationNote = Readonly<{
+  midiPitch: MidiPitch;
+  velocity: number;
+  physicalGesture: ExpressiveVoiceGesture;
+  physicalFrameCount: number;
+  physicalCacheFingerprint: string;
+  physicalStateReset: boolean;
+}>;
+
 /**
  * Select the smallest state-continuous phrase prefix needed by one warmup.
  *
@@ -341,6 +350,50 @@ export function selectPhysicalPhrasePreparationEntries(
     }
   }
   return Object.freeze(selected);
+}
+
+/**
+ * Turn a selected retained-voice prefix into the exact engine preparation
+ * requests. Only the first segment of a voice resets its state. Tonguing is
+ * already carried by the gesture and must not erase the bore history between
+ * notes.
+ */
+export function buildPhysicalPhrasePreparationNotes(
+  notes: readonly PhysicalPreparationNoteIdentity[],
+  gestures: readonly ExpressiveVoiceGesture[],
+  segments: readonly PhysicalRenderSegment[],
+): readonly PhysicalPhrasePreparationNote[] {
+  const result: PhysicalPhrasePreparationNote[] = [];
+  const selected = selectPhysicalPhrasePreparationEntries(
+    notes,
+    gestures,
+    segments,
+  );
+  const priorIdentityByVoice = new Map<string, string>();
+  for (const { segment, event } of selected) {
+    const gesture = gestures[event.gestureIndex];
+    if (gesture === undefined) continue;
+    const priorIdentity = priorIdentityByVoice.get(event.voiceId);
+    const physicalStateReset = priorIdentity === undefined;
+    const physicalCacheFingerprint = sha256Hex([
+      segment.cacheFingerprint,
+      event.eventId,
+      event.voiceId,
+      String(event.startFrame),
+      String(event.durationFrames),
+      physicalStateReset ? "reset" : priorIdentity,
+    ].join("\u001f"));
+    priorIdentityByVoice.set(event.voiceId, physicalCacheFingerprint);
+    result.push(Object.freeze({
+      midiPitch: event.midiPitch as MidiPitch,
+      velocity: event.velocity,
+      physicalGesture: gesture,
+      physicalFrameCount: event.durationFrames,
+      physicalCacheFingerprint,
+      physicalStateReset,
+    }));
+  }
+  return Object.freeze(result);
 }
 
 /*
@@ -439,7 +492,7 @@ export function createStudioAudio(
    */
   const awaitEngineReady = async (
     gesture: StudioAudioGesture,
-  ): Promise<void> => {
+  ): Promise<boolean> => {
     let sequence = gesture.sequence;
     for (
       let attempt = 0;
@@ -448,14 +501,16 @@ export function createStudioAudio(
       attempt += 1
     ) {
       sequence += 1;
-      await engine.resumeAudioEngine({
+      const resumed = await engine.resumeAudioEngine({
         gesture: Object.freeze({ ...gesture, sequence }),
       });
-      if (engine.inspectAudioEngine().state === "ready") return;
+      if (engine.inspectAudioEngine().state === "ready") return true;
+      if (!resumed.ok) return false;
       await new Promise((resolveWait) => {
         setTimeout(resolveWait, ENGINE_READY_RETRY_INTERVAL_MS);
       });
     }
+    return engine.inspectAudioEngine().state === "ready";
   };
 
   return Object.freeze({
@@ -485,8 +540,7 @@ export function createStudioAudio(
        * flag records what happened, not what was attempted.
        */
       if (outcome.termination === "receipt") {
-        await awaitEngineReady(gesture);
-        initialized = true;
+        initialized = await awaitEngineReady(gesture);
       }
       return outcome;
     },
@@ -594,47 +648,11 @@ export function createStudioAudio(
           });
         });
       const physicalPhraseNotes = family === "clarinet" && physical?.ok === true
-        ? (() => {
-            const result: Array<Readonly<{
-              midiPitch: MidiPitch;
-              velocity: number;
-              physicalGesture: ExpressiveVoiceGesture;
-              physicalFrameCount: number;
-              physicalCacheFingerprint: string;
-              physicalStateReset: boolean;
-            }>> = [];
-            const selected = selectPhysicalPhrasePreparationEntries(
-              notes,
-              physical.value.expressivePlan.gestures,
-              physical.value.renderPlan.segments,
-            );
-            const priorIdentityByVoice = new Map<string, string>();
-            for (const { segment, event } of selected) {
-              const gesture = physical.value.expressivePlan.gestures[event.gestureIndex];
-              if (gesture === undefined) continue;
-              const priorIdentity = priorIdentityByVoice.get(event.voiceId);
-              const physicalStateReset = gesture.articulation !== "legato" ||
-                priorIdentity === undefined;
-              const physicalCacheFingerprint = sha256Hex([
-                segment.cacheFingerprint,
-                event.eventId,
-                event.voiceId,
-                String(event.startFrame),
-                String(event.durationFrames),
-                physicalStateReset ? "reset" : priorIdentity,
-              ].join("\u001f"));
-              priorIdentityByVoice.set(event.voiceId, physicalCacheFingerprint);
-              result.push(Object.freeze({
-                midiPitch: event.midiPitch as MidiPitch,
-                velocity: event.velocity,
-                physicalGesture: gesture,
-                physicalFrameCount: event.durationFrames,
-                physicalCacheFingerprint,
-                physicalStateReset,
-              }));
-            }
-            return Object.freeze(result);
-          })()
+        ? buildPhysicalPhrasePreparationNotes(
+            notes,
+            physical.value.expressivePlan.gestures,
+            physical.value.renderPlan.segments,
+          )
         : ordinaryNotes;
       if (
         family === "clarinet" &&
@@ -656,7 +674,7 @@ export function createStudioAudio(
       await new Promise<void>((resolve) => {
         setTimeout(resolve, 0);
       });
-      return outcome.ok;
+      return outcome.ok && outcome.value.completed;
     },
     subscribe: (listener) => {
       listeners.add(listener);

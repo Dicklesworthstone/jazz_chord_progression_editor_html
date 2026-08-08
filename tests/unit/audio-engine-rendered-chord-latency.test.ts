@@ -11,6 +11,7 @@ import { createFakeAudioPlatform } from "../../src/test-support/fake-audio-platf
 import {
   attackRequest,
   midi,
+  progressionOwner,
   requireFailure,
   requireSuccess,
   voice,
@@ -188,6 +189,30 @@ test("a cold attack never runs the slow renderer and a prepared chord is one sam
   /* The composite source owns the whole chord's natural-end cleanup. */
   context.finishAllSources();
   expect(engine.inspectAudioEngine().retainedVoiceCount).toBe(0);
+
+  requireSuccess(engine.attackAudioVoices(attackRequest(
+    CHORD_PITCHES.map((pitch, index) =>
+      voice(`chord-voice-${String(index)}`, pitch, 96),
+    ),
+    {
+      eventId: "event-shared-dreadnought-chord",
+      instrumentId: "dreadnought-guitar",
+      startTimeSeconds: 0.25,
+      releaseTimeSeconds: 1.45,
+    },
+  )));
+  const eventRetirement = requireSuccess(engine.retireAudioVoices({
+    selector: {
+      kind: "event",
+      owner: progressionOwner(),
+      eventId: "event-shared-dreadnought-chord",
+    },
+    reason: "all-notes-off",
+    atTimeSeconds: 0.25,
+  }));
+  expect(eventRetirement.matchedVoiceIds).toHaveLength(4);
+  expect(eventRetirement.newlyRetiredVoiceIds).toHaveLength(4);
+  expect(eventRetirement.alreadyRetiringVoiceIds).toEqual([]);
 });
 
 test("the composite cache binds pitch order, quantized velocity, and gate bucket", async () => {
@@ -357,6 +382,52 @@ test("a newer preparation generation cancels the older multi-group pipeline", as
 
   /* First generation rendered only its first group; without the generation
    * check it resumes after the yield and renders a third, obsolete group. */
-  expect(superseded).toMatchObject({ renderedCount: 1, cachedCount: 0 });
+  expect(superseded).toMatchObject({
+    renderedCount: 1,
+    cachedCount: 0,
+    completed: false,
+  });
+  expect(calls).toEqual({ note: 0, chord: 2 });
+});
+
+test("an oscillator preparation cannot cancel physical render-ahead", async () => {
+  const calls: RenderCalls = { note: 0, chord: 0 };
+  const { engine } = await readyWithFakeRenderer(calls);
+  let resolveOscillator = (): void => {
+    throw new Error("OSCILLATOR_PREPARATION_GATE_UNINITIALIZED");
+  };
+  const oscillatorFinished = new Promise<void>((resolve) => {
+    resolveOscillator = resolve;
+  });
+  setTimeout(() => {
+    void engine.prepareRenderedAudioVoices({
+      instrumentId: "mellow-keys",
+      notes: [{ midiPitch: midi(72), velocity: 96 }],
+    }).then((result) => {
+      expect(requireSuccess(result)).toMatchObject({
+        renderedCount: 0,
+        cachedCount: 0,
+        completed: true,
+      });
+      resolveOscillator();
+    });
+  }, 0);
+
+  const physical = requireSuccess(await engine.prepareRenderedAudioVoices({
+    instrumentId: "dreadnought-guitar",
+    notes: [
+      { midiPitch: midi(48), velocity: 96, gateSeconds: 0.1 },
+      { midiPitch: midi(52), velocity: 96, gateSeconds: 0.1 },
+      { midiPitch: midi(55), velocity: 96, gateSeconds: 2 },
+      { midiPitch: midi(59), velocity: 96, gateSeconds: 2 },
+    ],
+  }));
+  await oscillatorFinished;
+
+  expect(physical).toMatchObject({
+    renderedCount: 2,
+    cachedCount: 0,
+    completed: true,
+  });
   expect(calls).toEqual({ note: 0, chord: 2 });
 });

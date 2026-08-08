@@ -255,14 +255,26 @@ describe("X0 persistent production audio engine", () => {
       const entry = cases[index];
       if (entry === undefined) continue;
       const [instrumentId, voiceId, sourceCount] = entry;
-      expectSuccess(
-        engine.attackAudioVoices(
-          attackRequest([voice(voiceId, 60 + index)], {
-            eventId: `event-${voiceId}`,
-            instrumentId,
-          }),
-        ),
+      const prepared = expectSuccess(await engine.prepareRenderedAudioVoices({
+        instrumentId,
+        notes: [{
+          midiPitch: midi(60 + index),
+          velocity: 100,
+          gateSeconds: 1,
+        }],
+      }));
+      expect(prepared.completed).toBe(true);
+      const attacked = engine.attackAudioVoices(
+        attackRequest([voice(voiceId, 60 + index)], {
+          eventId: `event-${voiceId}`,
+          instrumentId,
+        }),
       );
+      if (!attacked.ok) {
+        throw new Error(
+          `TEST_RECIPE_ATTACK_REFUSED:${instrumentId}:${attacked.refusal.code}`,
+        );
+      }
       const active = engine
         .inspectAudioEngine()
         .activeVoices.find((candidate) => candidate.voiceId === voiceId);

@@ -161,6 +161,13 @@ describe("PLK2 cooperative chord host", () => {
     expect(render).toBeDefined();
     if (render === undefined) throw new Error("TEST_COOPERATIVE_RENDER_MISSING");
 
+    for (const invalidSeconds of [-1, 0, Number.NaN, Number.POSITIVE_INFINITY]) {
+      expect(renders.renderChord?.(MIDI, VELOCITIES, 48_000, invalidSeconds)).toBeNull();
+      expect(await render(MIDI, VELOCITIES, 48_000, invalidSeconds)).toBeNull();
+    }
+    expect(renders.renderChord?.(MIDI, VELOCITIES, 48_000, 0.001)).not.toBeNull();
+    expect(await render(MIDI, VELOCITIES, 48_000, 0.001)).not.toBeNull();
+
     controls.failInitOnce = true;
     expect(await render(MIDI, VELOCITIES, 48_000)).toBeNull();
     expect(await render(MIDI, VELOCITIES, 48_000)).not.toBeNull();

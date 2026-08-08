@@ -3103,16 +3103,25 @@ function createAudioEngineInternal(
       const voices = registry.voicesForSelector(validated.value.selector);
       incrementWork("voicesExaminedForRetirement", voices.length);
       const matchedVoiceIds = voices.map((voice) => voice.voiceId);
+      const initiallyRetiringTokens = new Set(
+        voices
+          .filter((voice) =>
+            isSynthVoiceRetiringAt(voice, validated.value.atTimeSeconds)
+          )
+          .map((voice) => voice.instanceToken),
+      );
       const newlyRetiredVoiceIds: string[] = [];
       const alreadyRetiringVoiceIds: string[] = [];
       for (const voice of voices) {
-        if (
-          releaseVoice(
-            voice,
-            validated.value.reason,
-            validated.value.atTimeSeconds,
-          )
-        ) {
+        releaseVoice(
+          voice,
+          validated.value.reason,
+          validated.value.atTimeSeconds,
+        );
+        /* Releasing one composite-chord member releases every sibling. Judge
+         * the receipt against the pre-command phase snapshot, not the phase
+         * mutated by an earlier sibling in this same loop. */
+        if (!initiallyRetiringTokens.has(voice.instanceToken)) {
           newlyRetiredVoiceIds.push(voice.voiceId);
         } else {
           alreadyRetiringVoiceIds.push(voice.voiceId);
@@ -3319,8 +3328,6 @@ function createAudioEngineInternal(
   async function prepareRenderedAudioVoices(
     request: PrepareRenderedVoicesRequest,
   ): Promise<AudioEngineResult<PrepareRenderedVoicesReceipt>> {
-    /* A newer preparation supersedes older cache-warm work at every yield. */
-    const preparationGeneration = nextRenderedPreparationGeneration();
     const started = beginOperation();
     if (started !== null) return refuse(started);
     if (state === "closed") {
@@ -3352,9 +3359,14 @@ function createAudioEngineInternal(
           instrumentId: instrumentId.value,
           renderedCount: 0,
           cachedCount: 0,
+          completed: true,
         }),
       );
     }
+    /* Only a validated rendered-instrument request supersedes older cache
+     * warming. An oscillator preview has no render work and must not cancel
+     * a physical progression's cooperative preparation. */
+    const preparationGeneration = nextRenderedPreparationGeneration();
     if (
       renderer === null &&
       (recipe.renderer.algorithmId === CONCERT_GRAND_RENDERER_ALGORITHM_ID ||
@@ -3376,6 +3388,7 @@ function createAudioEngineInternal(
             instrumentId: instrumentId.value,
             renderedCount: 0,
             cachedCount: 0,
+            completed: false,
           }),
         );
       }
@@ -3589,6 +3602,7 @@ function createAudioEngineInternal(
                   instrumentId: instrumentId.value,
                   renderedCount,
                   cachedCount,
+                  completed: false,
                 }),
               );
             }
@@ -3598,6 +3612,7 @@ function createAudioEngineInternal(
               instrumentId: instrumentId.value,
               renderedCount,
               cachedCount,
+              completed: true,
             }),
           );
         }
@@ -3721,9 +3736,17 @@ function createAudioEngineInternal(
           cachedCount += 1;
           continue;
         }
-        const stateInput = physicalStateReset
-          ? null
-          : phraseStateByVoice.get(physicalGesture.voiceId) ?? null;
+        const retainedState = phraseStateByVoice.get(physicalGesture.voiceId);
+        if (!physicalStateReset && retainedState === undefined) {
+          /* A continuation without its predecessor is not a fresh attack.
+           * Silently substituting the at-rest state here creates an audible
+           * reattack while the fingerprint still claims state continuity. */
+          return refuse({
+            code: "audio.voice_id_invalid",
+            path: ["notes", index, "physicalStateReset"],
+          });
+        }
+        const stateInput = physicalStateReset ? null : retainedState ?? null;
         const variationSlot = windVariationSlot(physicalGesture) ?? 0;
         const pcm = phraseRenderer(
           midiPitch.value,
@@ -3753,6 +3776,7 @@ function createAudioEngineInternal(
               instrumentId: instrumentId.value,
               renderedCount,
               cachedCount,
+              completed: false,
             }),
           );
         }
@@ -3829,6 +3853,7 @@ function createAudioEngineInternal(
             instrumentId: instrumentId.value,
             renderedCount,
             cachedCount,
+            completed: false,
           }),
         );
       }
@@ -3838,6 +3863,7 @@ function createAudioEngineInternal(
         instrumentId: instrumentId.value,
         renderedCount,
         cachedCount,
+        completed: true,
       }),
     );
   }

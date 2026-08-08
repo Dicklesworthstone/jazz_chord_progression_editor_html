@@ -400,6 +400,40 @@ describe("clarinet v2 exact WASM shipping path", () => {
     }
   }, 30_000);
 
+  test("the retained phrase clock stays in output frames across 1x/2x register changes", () => {
+    const sampleRateHz = 48_000;
+    const segmentFrames = 2_400;
+    const elapsedOutputFrames = (state: Uint8Array): number =>
+      new DataView(state.buffer, state.byteOffset, state.byteLength).getUint32(
+        28,
+        true,
+      );
+
+    for (const [firstMidi, secondMidi] of [[83, 84], [84, 83]] as const) {
+      const first = runtime.render(
+        firstMidi,
+        72,
+        sampleRateHz,
+        segmentFrames,
+      );
+      expect(first).not.toBeNull();
+      if (first === null) continue;
+      expect(elapsedOutputFrames(first.state)).toBe(segmentFrames);
+
+      const second = runtime.render(
+        secondMidi,
+        72,
+        sampleRateHz,
+        segmentFrames,
+        first.state,
+        0,
+      );
+      expect(second).not.toBeNull();
+      if (second === null) continue;
+      expect(elapsedOutputFrames(second.state)).toBe(2 * segmentFrames);
+    }
+  });
+
   test("the phrase ABI matches the reference-qualified note ABI over its analysis window", () => {
     const sampleRateHz = 48_000;
     const frameCount = Math.round(1.4 * sampleRateHz);

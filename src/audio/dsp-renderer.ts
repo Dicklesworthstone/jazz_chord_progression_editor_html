@@ -109,8 +109,10 @@ export type WaveguideRenderer = Readonly<{
   ) => RenderedNotePcm | null;
   /**
    * Bit-identical chord preparation through bounded WASM chunks. Each
-   * incomplete chunk yields one browser macrotask; physical state remains in
-   * a checksummed caller-owned linear-memory image rather than a singleton.
+   * incomplete chunk yields one browser macrotask. The production ABI retains
+   * one opaque session in the single-threaded WASM instance and the host
+   * serializes access; the checksummed caller-owned ABI remains available for
+   * independent continuity and hostile-state tests.
    */
   renderChordCooperatively?: (
     midiPitches: readonly number[],
@@ -1107,19 +1109,20 @@ function validatePluckedChordRequest(
     midiPitches.some((midi) => !Number.isSafeInteger(midi)) ||
     velocities.some((velocity) =>
       !Number.isSafeInteger(velocity) || velocity < 1 || velocity > 127
-    )
+    ) ||
+    (maxSeconds !== undefined &&
+      (!Number.isFinite(maxSeconds) || maxSeconds <= 0))
   ) return null;
   const firstMidi = midiPitches[0];
   if (firstMidi === undefined) return null;
   const natural = abi.noteFrames(packIndex, firstMidi, sampleRateHz);
   if (natural <= 0) return null;
-  const capacity =
-    maxSeconds === undefined || !Number.isFinite(maxSeconds)
-      ? natural
-      : Math.min(
-          natural,
-          Math.max(1, Math.round(maxSeconds * sampleRateHz)),
-        );
+  const capacity = maxSeconds === undefined
+    ? natural
+    : Math.min(
+        natural,
+        Math.max(1, Math.round(maxSeconds * sampleRateHz)),
+      );
   return Object.freeze({ natural, capacity });
 }
 

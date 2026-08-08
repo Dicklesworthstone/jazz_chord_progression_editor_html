@@ -1,10 +1,16 @@
 import { describe, expect, setDefaultTimeout, test } from "bun:test";
 
 import {
+  compilePhysicalRealization,
+  isPhysicalSupportedSampleRateHz,
+  physicalParameterPackSha256,
+} from "../../src/audio";
+import {
   makeBeatPosition,
   makeMidiPitch,
   type BeatPosition,
 } from "../../src/domain";
+import { buildPhysicalPhrasePreparationNotes } from "../../src/application/studio-audio";
 import {
   createTransportHarness,
   customPlan,
@@ -69,6 +75,15 @@ describe("TR-X1-INSTRUMENT / TR-LEGACY-AUDIO-04 serialized instrument changes", 
     requireReceipt(
       await harness.submit({ kind: "set-instrument", instrumentId: "flute" }),
     );
+    const midiPitch = makeMidiPitch(60);
+    if (!midiPitch.ok) throw new Error("PHYSICAL_RESTART_MIDI");
+    const flutePrepared = await harness.engine.prepareRenderedAudioVoices({
+      instrumentId: "flute",
+      notes: [{ midiPitch: midiPitch.value, velocity: 96 }],
+    });
+    if (!flutePrepared.ok) {
+      throw new Error(`PHYSICAL_FLUTE_PREPARE:${flutePrepared.refusal.code}`);
+    }
     requireReceipt(
       await harness.submit({
         kind: "play",
@@ -81,6 +96,45 @@ describe("TR-X1-INSTRUMENT / TR-LEGACY-AUDIO-04 serialized instrument changes", 
     requireReceipt(
       await harness.submit({ kind: "set-instrument", instrumentId: "clarinet" }),
     );
+    const contextSampleRateHz = harness.engine.inspectAudioEngine().contextSampleRate;
+    if (
+      contextSampleRateHz === null ||
+      !isPhysicalSupportedSampleRateHz(contextSampleRateHz)
+    ) {
+      throw new Error("PHYSICAL_CLARINET_CONTEXT_RATE");
+    }
+    const realized = compilePhysicalRealization({
+      plan,
+      sourcePlanRevision: 1,
+      instrumentFamily: "clarinet",
+      instrumentVersionId: "changes.physical.clarinet.v2",
+      parameterPackSha256: physicalParameterPackSha256("clarinet"),
+      sampleRateHz: contextSampleRateHz,
+    });
+    if (!realized.ok) {
+      throw new Error(`PHYSICAL_CLARINET_REALIZE:${realized.refusal.code}`);
+    }
+    const firstEvent = plan.events[0];
+    if (firstEvent === undefined) {
+      throw new Error("PHYSICAL_CLARINET_EVENT");
+    }
+    const eventGestures = realized.value.expressivePlan.gestures.filter(
+      (gesture) => gesture.eventId === firstEvent.eventId,
+    );
+    const clarinetPrepared = await harness.engine.prepareRenderedAudioVoices({
+      instrumentId: "clarinet",
+      notes: buildPhysicalPhrasePreparationNotes(
+        eventGestures.map((_, voiceOrdinal) => ({
+          eventId: firstEvent.eventId,
+          voiceOrdinal,
+        })),
+        realized.value.expressivePlan.gestures,
+        realized.value.renderPlan.segments,
+      ),
+    });
+    if (!clarinetPrepared.ok) {
+      throw new Error(`PHYSICAL_CLARINET_PREPARE:${clarinetPrepared.refusal.code}`);
+    }
     const restarted = await harness.submit({
       kind: "play",
       binding: planBinding(plan, 1),

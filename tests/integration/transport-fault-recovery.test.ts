@@ -4,9 +4,10 @@ import * as realDspRenderer from "../../src/audio/dsp-renderer";
 
 /*
  * jcpe-engine-refusal-fault-cascade-vg8h fault injection: the incident's
- * genuine trigger was a rendered attack the engine refused mid-run. The one
- * public condition that reproduces that refusal deterministically is a failed
- * renderer module load (`audio.renderer_unavailable`, the X0-LIFE-046 lane).
+ * genuine trigger was a rendered attack the engine refused mid-run. Physical
+ * rendered attacks are now cache-only, so the public condition below — a
+ * failed renderer module load (`audio.renderer_unavailable`) — must be caught
+ * by preparation before Play rather than recreating that historical fault.
  * The wrap passes every call through to the real loader unless a test flips
  * the flag, so the refusal itself is the engine's own — nothing about the
  * refusal or the transport's reaction is mocked.
@@ -67,29 +68,43 @@ async function untilStatus(
   }
 }
 
-describe("jcpe-engine-refusal-fault-cascade-vg8h refusal-fault recovery", () => {
-  test("a mid-run render refusal faults the run once, and the next Play recovers", async () => {
+async function untilFailureCode(
+  controller: StudioController,
+  failureCode: string,
+  deadlineMs = 5_000,
+): Promise<boolean> {
+  const start = Date.now();
+  for (;;) {
+    if (controller.getSnapshot().transport.failureCode === failureCode) {
+      return true;
+    }
+    if (Date.now() - start > deadlineMs) return false;
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+}
+
+describe("jcpe-engine-refusal-fault-cascade-vg8h renderer preflight recovery", () => {
+  test("a renderer-load refusal stops before Play and the next press recovers", async () => {
     failConcertGrandRendererLoads = true;
     try {
       const { controller, audio, notifications } = studio();
       expect(seedStarterChart(controller).seeded).toBe(true);
 
-      /* Starter chart plays the rendered concert-grand: the first scheduled
-       * attack refuses (renderer unavailable) and the transport faults. */
+      /* Preparation owns the slow renderer load. A failure must settle the
+       * optimistic Play slot without submitting a cold attack. */
       const played = controller.playProgression(gesture());
       expect(played.ok).toBe(true);
-      expect(await untilStatus(notifications, "failed")).toBe(true);
+      expect(
+        await untilFailureCode(controller, "audio.renderer_unavailable"),
+      ).toBe(true);
+      expect(notifications.some((entry) => entry.status === "failed")).toBe(
+        false,
+      );
+      expect(audio.isInitialized()).toBe(true);
+      expect(audio.inspect().transport.state).toBe("ready");
 
-      /*
-       * THE FIX UNDER TEST: the fault notification must clear the port's
-       * initialized flag so the contracted fault->initialize->ready edge is
-       * reachable from the next user press. Before the fix this stayed true
-       * and every later Play refused transport.fault_requires_initialize
-       * until reload (the 2026-08-07 live incident).
-       */
-      expect(audio.isInitialized()).toBe(false);
-
-      /* The renderer loads fine on the retry press. */
+      /* The renderer loads fine on the retry press; no fault recovery or
+       * reload is needed because the failed run never entered transport. */
       failConcertGrandRendererLoads = false;
       notifications.length = 0;
       const retried = controller.playProgression(gesture());
@@ -101,44 +116,6 @@ describe("jcpe-engine-refusal-fault-cascade-vg8h refusal-fault recovery", () => 
       const inspection = audio.inspect();
       expect(inspection.transport.state).toBe("playing");
       expect(inspection.engine.state).toBe("ready");
-    } finally {
-      failConcertGrandRendererLoads = false;
-    }
-  });
-
-  test("no-claim companion: the transport fault latch itself is intact", async () => {
-    /*
-     * The fix must not relax X1: after a fault, a bare play command that
-     * skips re-initialization still refuses with
-     * transport.fault_requires_initialize. Recovery exists only through the
-     * contracted initialize edge.
-     */
-    failConcertGrandRendererLoads = true;
-    try {
-      const { controller, audio, notifications } = studio();
-      expect(seedStarterChart(controller).seeded).toBe(true);
-      expect(controller.playProgression(gesture()).ok).toBe(true);
-      expect(await untilStatus(notifications, "failed")).toBe(true);
-
-      const snapshot = audio.inspect();
-      expect(snapshot.transport.state).toBe("fault");
-
-      /* Submit play directly on the port, without the initialize edge. */
-      const bare = await audio.play(
-        999_001,
-        /* A structurally-plausible binding is irrelevant: the fault gate is
-         * checked before binding validation, per the X1 admission order. */
-        {
-          documentId: "doc-fault-latch",
-          planRevision: 1,
-          plan: null,
-        } as never,
-        null as never,
-      );
-      expect(bare.termination).toBe("refusal");
-      if (bare.termination === "refusal") {
-        expect(bare.code).toBe("transport.fault_requires_initialize");
-      }
     } finally {
       failConcertGrandRendererLoads = false;
     }

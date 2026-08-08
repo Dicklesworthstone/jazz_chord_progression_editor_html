@@ -367,6 +367,43 @@ test("stateful clarinet preparation refuses a stateless gesture batch before doi
   );
 }, 10_000);
 
+test("a clarinet continuation cannot silently restart without its retained predecessor", async () => {
+  const playback = compilePlaybackPlan(
+    materializeP0TimelineCase("P0-TIME-001").request,
+  );
+  if (!playback.ok) throw new Error("PHYSICAL_CONTINUATION_PLAN");
+  const realized = compilePhysicalRealization({
+    plan: playback.plan,
+    sourcePlanRevision: 32,
+    instrumentFamily: "clarinet",
+    instrumentVersionId: "changes.physical.clarinet.v2",
+    parameterPackSha256: "c".repeat(64),
+    sampleRateHz: 48_000,
+  });
+  if (!realized.ok) throw new Error("PHYSICAL_CONTINUATION_REALIZE");
+  const gesture = realized.value.expressivePlan.gestures[1];
+  const midiPitch = playback.plan.events[0]?.midiPitches[1];
+  if (gesture === undefined || midiPitch === undefined) {
+    throw new Error("PHYSICAL_CONTINUATION_FIXTURE");
+  }
+
+  const { engine } = await readyEngine();
+  requireFailure(await engine.prepareRenderedAudioVoices({
+    instrumentId: "clarinet",
+    notes: [{
+      midiPitch: midi(midiPitch),
+      velocity: 96,
+      physicalGesture: Object.freeze({
+        ...gesture,
+        articulation: "legato" as const,
+      }),
+      physicalFrameCount: 1_200,
+      physicalCacheFingerprint: "5".repeat(64),
+      physicalStateReset: false,
+    }],
+  }), "audio.voice_id_invalid");
+});
+
 test("legato and tongued winds own distinct bounded cache entries", async () => {
   const playback = compilePlaybackPlan(
     materializeP0TimelineCase("P0-TIME-001").request,

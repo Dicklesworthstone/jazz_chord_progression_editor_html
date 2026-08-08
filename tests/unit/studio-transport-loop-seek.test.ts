@@ -22,6 +22,13 @@ function makeController(): StudioController {
     throw new Error(`controller refused: ${creation.refusal.code}`);
   }
   seedStarterChart(creation.controller);
+  /* Loop/seek laws are independent of physical rendering. Keep this unit
+   * test on the bounded oscillator lane so a cold physical preparation does
+   * not consume the test's five-second lifecycle budget under suite load. */
+  const instrument = creation.controller.setInstrument("analog-poly");
+  if (!instrument.ok) {
+    throw new Error(`controller instrument refused: ${instrument.refusal.code}`);
+  }
   return creation.controller;
 }
 

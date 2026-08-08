@@ -4515,10 +4515,29 @@ function makeStudioComposition(
     documentId: AppState["document"]["id"];
     planRevision: number;
     totalBeats: BeatPosition;
+    runToken: number;
   }> | null = null;
+
+  const clearActiveRunIfMatches = (
+    documentId: AppState["document"]["id"],
+    planRevision: number,
+    runToken: number,
+  ): void => {
+    if (
+      activeRun?.documentId === documentId &&
+      activeRun.planRevision === planRevision &&
+      activeRun.runToken === runToken
+    ) {
+      activeRun = null;
+    }
+  };
 
   /* A new play/stop supersedes cooperative render-ahead from the prior run. */
   let renderAheadRunToken = 0;
+  let resumeRenderAheadAfterPreview: (() => void) | null = null;
+  let previewOrdinal = 0;
+  let previewInitialization: ReturnType<StudioAudioPort["initialize"]> | null =
+    null;
 
   const wholeChartLoop = (
     plan: Readonly<{ totalBeats: BeatPosition }>,
@@ -4748,12 +4767,11 @@ function makeStudioComposition(
       state.document,
       loopEnabled ? wholeChartLoop({ totalBeats: run.totalBeats }) : null,
     );
-    const warmNotes: Readonly<{
-      midiPitch: MidiPitch;
-      velocity: number;
-      eventId: string;
-      voiceOrdinal: number;
-    }>[] = [];
+    type PreparationNote = Parameters<
+      StudioAudioPort["prepareInstrument"]
+    >[1][number];
+    let warmNotes: readonly PreparationNote[] = Object.freeze([]);
+    let deferredNotes: readonly PreparationNote[] = Object.freeze([]);
     let warmBinding: TransportPlanBinding | undefined;
     if (compiled.ok) {
       const performed = performStudioPlaybackPlan(
@@ -4765,33 +4783,84 @@ function makeStudioComposition(
         documentId: performed.sourceDocumentId,
         planRevision: run.planRevision,
       });
-      const seen = new Set<string>();
-      for (const event of performed.events) {
-        for (const [voiceOrdinal, midiPitch] of event.midiPitches.entries()) {
-          const key = `${event.eventId}:${String(voiceOrdinal)}`;
-          if (seen.has(key)) continue;
-          seen.add(key);
-          warmNotes.push(
-            Object.freeze({
-              midiPitch,
-              velocity: event.velocity,
-              eventId: event.eventId,
-              voiceOrdinal,
-            }),
-          );
-          if (warmNotes.length >= PREPARE_LEADING_NOTE_COUNT) break;
-        }
-        if (warmNotes.length >= PREPARE_LEADING_NOTE_COUNT) break;
-      }
+      const playhead = port.readPlayheadBeat();
+      const preparation = buildPlaybackPreparationPlan(
+        performed.events
+          .filter((event) => compareBeatValues(event.startBeat, playhead) >= 0)
+          .map((event) => Object.freeze({
+            eventId: event.eventId,
+            midiPitches: event.midiPitches,
+            velocity: event.velocity,
+            gateSeconds:
+              ((event.gateDurationTicks / PLAYBACK_PLAN_MIDI_PPQ) * 60) /
+              performed.tempoBpm,
+          })),
+        {
+          leadingVoiceBudget: PREPARE_LEADING_NOTE_COUNT,
+          maximumVoicesPerEvent: maximumPreparedVoicesPerEvent(instrumentId),
+        },
+      );
+      if (!preparation.ok) return;
+      warmNotes = preparation.plan.leadingVoices;
+      deferredNotes = Object.freeze(
+        preparation.plan.deferredGroups.flatMap((group) => group.voices),
+      );
     }
+    const thisInstrumentRun = ++renderAheadRunToken;
+    resumeRenderAheadAfterPreview = null;
+    let renderAheadPromise: Promise<boolean> | null = null;
+    let renderAheadCompleted = deferredNotes.length === 0;
+    const startRenderAhead = (): void => {
+      if (
+        renderAheadCompleted ||
+        renderAheadPromise !== null ||
+        deferredNotes.length === 0 ||
+        thisInstrumentRun !== renderAheadRunToken
+      ) {
+        return;
+      }
+      const pending = port.prepareInstrument(
+        instrumentId,
+        deferredNotes,
+        warmBinding,
+      ).catch(() => false);
+      renderAheadPromise = pending;
+      void pending.then((completed) => {
+        if (completed && thisInstrumentRun === renderAheadRunToken) {
+          renderAheadCompleted = true;
+        }
+      }).finally(() => {
+        if (renderAheadPromise === pending) renderAheadPromise = null;
+      });
+    };
     void (async () => {
       const prepared = await port.prepareInstrument(
         instrumentId,
-        Object.freeze(warmNotes),
+        warmNotes,
         warmBinding,
       );
-      if (!prepared) return;
-      await port.setInstrument(nextTransportRequestId(), instrumentId);
+      if (!prepared || thisInstrumentRun !== renderAheadRunToken) return;
+      const outcome = await port.setInstrument(
+        nextTransportRequestId(),
+        instrumentId,
+      );
+      if (
+        outcome.termination === "refusal" ||
+        thisInstrumentRun !== renderAheadRunToken
+      ) {
+        return;
+      }
+      resumeRenderAheadAfterPreview = (): void => {
+        const pending = renderAheadPromise;
+        void (async () => {
+          if (pending !== null) {
+            await pending;
+            if (renderAheadPromise === pending) renderAheadPromise = null;
+          }
+          startRenderAhead();
+        })();
+      };
+      startRenderAhead();
     })();
   };
 
@@ -4903,16 +4972,6 @@ function makeStudioComposition(
         "Write at least one chord before playing.",
       );
     }
-    const commandRequestId = nextTransportRequestId();
-    const startBeat = state.transport.startBeat;
-    const expectation = expectTransport(
-      "play-progression",
-      commandRequestId,
-      "starting",
-      startBeat,
-    );
-    if (!expectation.ok) return expectation;
-
     /*
      * jcpe-1gao: the transport plays the band sketch, not the written pad.
      * The literal plan stays the chart's source of truth — the analyzer below
@@ -4924,16 +4983,13 @@ function makeStudioComposition(
       compiled.plan,
       activePerformanceStyleId(),
     );
+    /* A chart run supersedes any click-preview still waiting on initialization
+     * or physical preparation. It must never start over the newly played run. */
+    previewOrdinal += 1;
     const binding = Object.freeze({
       plan: performance,
       documentId: state.document.id,
       planRevision: state.revision,
-    });
-    /* jcpe-v2r-loop-seek-ukk6: seek/loop may only address this exact run. */
-    activeRun = Object.freeze({
-      documentId: binding.documentId,
-      planRevision: binding.planRevision,
-      totalBeats: compiled.plan.totalBeats,
     });
     const port = audioPort;
     /*
@@ -5004,13 +5060,35 @@ function makeStudioComposition(
         )} simultaneous notes.`,
       );
     }
+    const commandRequestId = nextTransportRequestId();
+    const startBeat = state.transport.startBeat;
+    const expectation = expectTransport(
+      "play-progression",
+      commandRequestId,
+      "starting",
+      startBeat,
+    );
+    if (!expectation.ok) return expectation;
     const preparedNotes = preparation.plan.leadingVoices;
     const deferredNotes = Object.freeze(
       preparation.plan.deferredGroups.flatMap((group) => group.voices),
     );
     const thisRenderAheadRun = ++renderAheadRunToken;
+    /* jcpe-v2r-loop-seek-ukk6: seek/loop may only address this exact Play,
+     * not merely another request for the same unchanged document revision. */
+    activeRun = Object.freeze({
+      documentId: binding.documentId,
+      planRevision: binding.planRevision,
+      totalBeats: compiled.plan.totalBeats,
+      runToken: thisRenderAheadRun,
+    });
+    resumeRenderAheadAfterPreview = null;
+    let renderAheadCompleted = deferredNotes.length === 0;
+    let renderAheadPromise: Promise<boolean> | null = null;
     const startRenderAhead = (): void => {
       if (
+        renderAheadCompleted ||
+        renderAheadPromise !== null ||
         deferredNotes.length === 0 ||
         thisRenderAheadRun !== renderAheadRunToken
       ) {
@@ -5021,7 +5099,32 @@ function makeStudioComposition(
        * chronological event groups fill the cache. A later play invalidates
        * this run token and the engine's preparation generation at the next
        * yield. */
-      void port.prepareInstrument(instrumentId, deferredNotes, binding);
+      const pending = port.prepareInstrument(
+        instrumentId,
+        deferredNotes,
+        binding,
+      ).catch(() => false);
+      renderAheadPromise = pending;
+      void pending.then((completed) => {
+        if (completed && thisRenderAheadRun === renderAheadRunToken) {
+          renderAheadCompleted = true;
+        }
+      }).finally(() => {
+        if (renderAheadPromise === pending) renderAheadPromise = null;
+      });
+    };
+    const activateRenderAhead = (): void => {
+      resumeRenderAheadAfterPreview = (): void => {
+        const pending = renderAheadPromise;
+        void (async () => {
+          if (pending !== null) {
+            await pending;
+            if (renderAheadPromise === pending) renderAheadPromise = null;
+          }
+          startRenderAhead();
+        })();
+      };
+      startRenderAhead();
     };
     void (async () => {
       if (!port.isInitialized()) {
@@ -5037,11 +5140,37 @@ function makeStudioComposition(
           }),
         );
         if (initializeOutcome.termination === "refusal") {
+          clearActiveRunIfMatches(
+            binding.documentId,
+            binding.planRevision,
+            thisRenderAheadRun,
+          );
           settleTransportOutcome(
             "play-progression",
             binding.documentId,
             binding.planRevision,
             initializeOutcome,
+          );
+          return;
+        }
+        if (!port.isInitialized()) {
+          clearActiveRunIfMatches(
+            binding.documentId,
+            binding.planRevision,
+            thisRenderAheadRun,
+          );
+          const failedPlayRequestId = nextTransportRequestId();
+          expectTransport(
+            "play-progression",
+            failedPlayRequestId,
+            "starting",
+            startBeat,
+          );
+          settlePlayPrerequisiteRefusal(
+            binding.documentId,
+            binding.planRevision,
+            failedPlayRequestId,
+            "audio.engine_not_ready",
           );
           return;
         }
@@ -5061,6 +5190,11 @@ function makeStudioComposition(
           binding,
         );
         if (!prepared) {
+          clearActiveRunIfMatches(
+            binding.documentId,
+            binding.planRevision,
+            thisRenderAheadRun,
+          );
           settlePlayPrerequisiteRefusal(
             binding.documentId,
             binding.planRevision,
@@ -5074,6 +5208,11 @@ function makeStudioComposition(
           instrumentId,
         );
         if (instrumentOutcome.termination === "refusal") {
+          clearActiveRunIfMatches(
+            binding.documentId,
+            binding.planRevision,
+            thisRenderAheadRun,
+          );
           settlePlayPrerequisiteRefusal(
             binding.documentId,
             binding.planRevision,
@@ -5089,11 +5228,18 @@ function makeStudioComposition(
           binding.planRevision,
           playOutcome,
         );
+        if (playOutcome.termination === "refusal") {
+          clearActiveRunIfMatches(
+            binding.documentId,
+            binding.planRevision,
+            thisRenderAheadRun,
+          );
+        }
         if (
           playOutcome.termination === "receipt" &&
           playOutcome.stateAfter === "playing"
         ) {
-          startRenderAhead();
+          activateRenderAhead();
         }
         return;
       }
@@ -5109,6 +5255,11 @@ function makeStudioComposition(
         binding,
       );
       if (!prepared) {
+        clearActiveRunIfMatches(
+          binding.documentId,
+          binding.planRevision,
+          thisRenderAheadRun,
+        );
         settlePlayPrerequisiteRefusal(
           binding.documentId,
           binding.planRevision,
@@ -5122,6 +5273,11 @@ function makeStudioComposition(
         instrumentId,
       );
       if (instrumentOutcome.termination === "refusal") {
+        clearActiveRunIfMatches(
+          binding.documentId,
+          binding.planRevision,
+          thisRenderAheadRun,
+        );
         settlePlayPrerequisiteRefusal(
           binding.documentId,
           binding.planRevision,
@@ -5137,11 +5293,18 @@ function makeStudioComposition(
         binding.planRevision,
         playOutcome,
       );
+      if (playOutcome.termination === "refusal") {
+        clearActiveRunIfMatches(
+          binding.documentId,
+          binding.planRevision,
+          thisRenderAheadRun,
+        );
+      }
       if (
         playOutcome.termination === "receipt" &&
         playOutcome.stateAfter === "playing"
       ) {
-        startRenderAhead();
+        activateRenderAhead();
       }
     })();
     return expectation;
@@ -5185,7 +5348,10 @@ function makeStudioComposition(
         "This build has no audio output wired.",
       );
     }
+    /* A pending preview must not become audible after the user's Stop. */
+    previewOrdinal += 1;
     renderAheadRunToken += 1;
+    resumeRenderAheadAfterPreview = null;
     const commandRequestId = nextTransportRequestId();
     const expectation = expectTransport(
       "stop-progression",
@@ -5218,10 +5384,6 @@ function makeStudioComposition(
       : formatExactBeatLabel(audioPort.readPlayheadBeat());
 
   let lastPlanPitchClasses: Map<string, readonly number[]> | null = null;
-  let previewOrdinal = 0;
-  let previewInitialization: ReturnType<StudioAudioPort["initialize"]> | null =
-    null;
-
   const PREVIEW_GATE_SECONDS = 1.2;
 
   const startPreparedPreview = async (request: Readonly<{
@@ -5237,6 +5399,11 @@ function makeStudioComposition(
     mix: Readonly<{ masterVolume: number; reverbAmount: number }>;
   }>): Promise<void> => {
     if (request.generation !== previewOrdinal) return;
+    const resumeRenderAhead = (): void => {
+      if (request.generation === previewOrdinal) {
+        resumeRenderAheadAfterPreview?.();
+      }
+    };
     if (!request.port.isInitialized()) {
       const initialization = previewInitialization ??=
         request.port.initialize(
@@ -5250,14 +5417,25 @@ function makeStudioComposition(
       if (previewInitialization === initialization) {
         previewInitialization = null;
       }
-      if (initialized.termination === "refusal") return;
+      if (initialized.termination === "refusal") {
+        resumeRenderAhead();
+        return;
+      }
       if (request.generation !== previewOrdinal) return;
+      if (!request.port.isInitialized()) {
+        resumeRenderAhead();
+        return;
+      }
     }
     const prepared = await request.port.prepareInstrument(
       request.instrumentId,
       request.notes,
     );
-    if (!prepared || request.generation !== previewOrdinal) return;
+    if (!prepared) {
+      resumeRenderAhead();
+      return;
+    }
+    if (request.generation !== previewOrdinal) return;
     /* start-preview owns its instrument explicitly. Sending set-instrument
      * here is redundant and, during playback, retires and reschedules the
      * progression horizon even when the selected instrument is unchanged. */
@@ -5268,6 +5446,7 @@ function makeStudioComposition(
       request.midiPitches,
       PREVIEW_GATE_SECONDS,
     );
+    resumeRenderAhead();
   };
 
   const previewChord = (
@@ -5334,7 +5513,11 @@ function makeStudioComposition(
       previewId,
       midiPitches,
       notes: midiPitches.map((midiPitch) =>
-        Object.freeze({ midiPitch, velocity: event.velocity }),
+        Object.freeze({
+          midiPitch,
+          velocity: event.velocity,
+          gateSeconds: PREVIEW_GATE_SECONDS,
+        }),
       ),
     });
     /*
@@ -5392,6 +5575,7 @@ function makeStudioComposition(
         Object.freeze({
           midiPitch: pitch,
           velocity: PLAYBACK_PLAN_FIXED_VELOCITY,
+          gateSeconds: PREVIEW_GATE_SECONDS,
         }),
       ),
     });
@@ -5476,6 +5660,7 @@ function makeStudioComposition(
         Object.freeze({
           midiPitch: pitch,
           velocity: PLAYBACK_PLAN_FIXED_VELOCITY,
+          gateSeconds: PREVIEW_GATE_SECONDS,
         }),
       ),
     });

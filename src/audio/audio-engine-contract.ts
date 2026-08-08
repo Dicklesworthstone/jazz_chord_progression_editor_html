@@ -552,11 +552,13 @@ export type AudioEngine = Readonly<{
     request: DisposeAudioEngineRequest,
   ): Promise<AudioEngineResult<AudioDisposeReceipt>>;
   /**
-   * Warm the rendered-instrument buffer cache for the given notes so the
-   * synchronous attack path finds every buffer ready. Idempotent per note;
-   * a non-rendered instrument resolves as an empty receipt. An attack that
-   * misses the cache still succeeds by rendering synchronously — this
-   * operation exists to keep that slow path off the scheduling deadline.
+   * Warm the rendered-instrument buffer cache for the given notes. Idempotent
+   * per note; a non-rendered instrument resolves as an empty receipt. Shared
+   * plucked renders and stateful phrase renders are cache-only at attack time
+   * and refuse a miss rather than blocking the scheduler. A newer preparation
+   * may supersede an older cooperative run; its receipt is explicitly
+   * incomplete so callers never mistake a partial warmup for attack-ready
+   * audio.
    */
   prepareRenderedAudioVoices(
     request: PrepareRenderedVoicesRequest,
@@ -596,6 +598,7 @@ export type PrepareRenderedVoicesReceipt = Readonly<{
   instrumentId: InstrumentId;
   renderedCount: number;
   cachedCount: number;
+  completed: boolean;
 }>;
 
 export type CreateAudioEngine = (platform: AudioPlatform) => AudioEngine;

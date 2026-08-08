@@ -31,6 +31,7 @@ import recipeFixture from "../fixtures/audio-engine/instrument-recipes.json";
 import type { FakeAudioEvent } from "../../src/test-support/fake-audio-platform";
 import {
   attackRequest,
+  midi,
   readyEngine,
   requireFailure,
   requireSuccess,
@@ -327,12 +328,19 @@ describe("TR-X0-RECIPES instrument recipes", () => {
       });
       expect(recipe.designClaim).not.toMatch(/sample|brand|acoustic model/i);
 
+      const renderedPitch = midi(60 + index);
+      requireSuccess(
+        await engine.prepareRenderedAudioVoices({
+          instrumentId: expected.instrumentId,
+          notes: [{ midiPitch: renderedPitch, velocity: 100, gateSeconds: 1 }],
+        }),
+      );
       const sourcesBefore = context.sourceIds().length;
       const eventOffset = fake.events.length;
       const workBefore = engine.inspectAudioEngine().work.parameterEventsScheduled;
       const attacked = requireSuccess(
         engine.attackAudioVoices(
-          attackRequest([voice(`recipe-${String(index)}`, 60 + index, 100)], {
+          attackRequest([voice(`recipe-${String(index)}`, renderedPitch, 100)], {
             eventId: `recipe-event-${String(index)}`,
             instrumentId: expected.instrumentId,
           }),

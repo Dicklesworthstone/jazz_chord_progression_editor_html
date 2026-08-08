@@ -233,8 +233,6 @@ export type U7ContractFinding = Readonly<{
   message: string;
 }>;
 
-type MutableFindings = U7ContractFinding[] & {};
-
 function finding(code: string, path: string, message: string): U7ContractFinding {
   return Object.freeze({ code, path, message });
 }
@@ -262,7 +260,8 @@ function stableJson(value: unknown): string {
       .map((key) => `${JSON.stringify(key)}:${stableJson(value[key])}`)
       .join(",")}}`;
   }
-  return JSON.stringify(value) ?? "null";
+  if (value === undefined) return "null";
+  return JSON.stringify(value);
 }
 
 /** Raw-text duplicate-key scan, including escaped-key attacks. */
@@ -301,7 +300,7 @@ function duplicateJsonKeys(raw: string): string[] {
         i += 1;
         return out;
       }
-      out += ch;
+      out += ch ?? "";
       i += 1;
     }
     return out;
@@ -1169,7 +1168,7 @@ function runPreviewOracle(docs: PacketDocs, add: AddFinding): void {
       } else {
         for (let i = 0; i < derivedBlockers.length; i += 1) {
           const derivedRow = derivedBlockers[i];
-          const expectedRow = expectedBlockers[i];
+          const expectedRow: unknown = expectedBlockers[i];
           if (!isObject(expectedRow) || derivedRow === undefined) continue;
           if (
             expectedRow["kind"] !== derivedRow["kind"] ||
@@ -1514,7 +1513,7 @@ function runLimitOracle(docs: PacketDocs, add: AddFinding): void {
       case "matrix-completeness": {
         const expectedRows = U7_REVIEWED_WORKFLOW_STATES.length * 2;
         if (input["expectedRows"] !== expectedRows || expected["rowsPresent"] !== matrix.length || matrix.length !== expectedRows) {
-          add("U7_CONTRACT_LIMIT_CASE", `${id}`, "matrix row count mismatch");
+          add("U7_CONTRACT_LIMIT_CASE", id, "matrix row count mismatch");
         }
         if (JSON.stringify(expected["rowKeys"]) !== JSON.stringify([...REQUIRED_MATRIX_ROW_KEYS])) {
           add("U7_CONTRACT_LIMIT_CASE", `${id}.expected.rowKeys`, "matrix row vocabulary mismatch");
@@ -1570,8 +1569,8 @@ function runTraceOracle(docs: PacketDocs, add: AddFinding): void {
       add("U7_CONTRACT_LAW_COVERAGE", lawId, "coverage row names an unknown law");
       continue;
     }
-    const positive = Array.isArray(row["positive"]) ? row["positive"] : [];
-    const negative = Array.isArray(row["negative"]) ? row["negative"] : [];
+    const positive: unknown[] = Array.isArray(row["positive"]) ? row["positive"] : [];
+    const negative: unknown[] = Array.isArray(row["negative"]) ? row["negative"] : [];
     if (positive.length === 0 || negative.length === 0) {
       add("U7_CONTRACT_LAW_COVERAGE", lawId, "a law needs at least one positive and one negative/near-miss case");
     }
@@ -1595,7 +1594,7 @@ function runTraceOracle(docs: PacketDocs, add: AddFinding): void {
           add("U7_CONTRACT_UNKNOWN_LINK", `${entry["id"]}.traceIds`, `unknown trace ${traceId}`);
           continue;
         }
-        const trace = traces.find((row) => isObject(row) && row["id"] === traceId);
+        const trace: unknown = traces.find((row) => isObject(row) && row["id"] === traceId);
         const linked = isObject(trace) && Array.isArray(trace["caseIds"]) ? trace["caseIds"] : [];
         if (!linked.includes(entry["id"])) {
           add("U7_CONTRACT_NONRECIPROCAL_LINK", `${entry["id"]}→${traceId}`, "case names a trace that does not name it back");
@@ -1882,7 +1881,7 @@ export async function validateU7Contract(
       if (operator === "remove") current.splice(Number(last), 1);
       else current[Number(last)] = to;
     } else if (isObject(current)) {
-      if (operator === "remove") delete current[last];
+      if (operator === "remove") Reflect.deleteProperty(current, last);
       else current[last] = to;
     }
   };
