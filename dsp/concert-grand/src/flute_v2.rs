@@ -35,7 +35,45 @@ const SOUND_SPEED_M_PER_S: f64 = 343.21;
 /// tune; numerically the pull scales one effective sound speed per note so
 /// bore delays, mode targets, and the impedance scan all move together and
 /// cannot disagree. Zeros mean "geometry already true for that note".
-const RESIDUAL_PULL_CENTS: [f64; 37] = [0.0; 37];
+const RESIDUAL_PULL_CENTS: [f64; 37] = [
+        0.3, // m60
+        23.8, // m61
+        24.8, // m62
+        30.8, // m63
+        13.4, // m64
+        8.7, // m65
+        2.6, // m66
+        7.6, // m67
+        -10.1, // m68
+        -40.7, // m69
+        1.5, // m70
+        -64.8, // m71
+        5.0, // m72
+        19.2, // m73
+        30.4, // m74
+        28.4, // m75
+        8.1, // m76
+        0.0, // m77
+        1.3, // m78
+        -4.7, // m79
+        -8.9, // m80
+        -36.7, // m81
+        1.6, // m82
+        -65.2, // m83
+        8.4, // m84
+        75.2, // m85
+        180.3, // m86
+        35.8, // m87
+        135.7, // m88
+        16.3, // m89
+        24.0, // m90
+        6.6, // m91
+        -221.0, // m92
+        8.9, // m93
+        -270.9, // m94
+        -0.8, // m95
+        1.4, // m96
+];
 
 fn tuned_sound_speed(midi: i32) -> f64 {
     let index = (midi - 60).clamp(0, 36) as usize;
@@ -319,6 +357,15 @@ fn fingering_for_midi(midi: i32) -> Option<Fingering> {
     if !(60..=96).contains(&midi) {
         return None;
     }
+    // Register-2 F-sharp (MIDI 77) fork gap, measured 2026-08-08: the bore
+    // has no lockable mode at the target under any pull (attractors at
+    // +626c, -1181c via F-borrow, +1244c under octave pull; invariant to
+    // vent openness and the instability band). Until the fork fingering is
+    // modeled properly, the note folds one octave down onto its true-toned
+    // first-register sibling - the same documented octave-fold philosophy
+    // the realization layer applies outside the window. Evidence: bead
+    // jcpe-winds-quality-triangulation-drga.
+    let midi = if midi == 77 { 65 } else { midi };
     let octave = ((midi - 60) / 12) as usize;
     let register_harmonic = 1usize.checked_shl(octave as u32)?;
     let pitch_class = (midi - 60).rem_euclid(12);

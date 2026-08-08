@@ -264,6 +264,13 @@ pub struct ElectricAmpSpec {
     pub cabinet_q: [f64; 4],
     pub cabinet_drive_residue: [f64; 4],
     pub cabinet_radiation_pa_per_velocity: [f64; 4],
+    /// Broadband piston-band radiation: a real driver radiates across its
+    /// whole piston regime (~90 Hz to cone breakup), not only at a few
+    /// mechanical resonances. Band corners in Hz, then Pa per volt of power
+    /// stage output inside that band. The four discrete modes above sit on
+    /// top of this bed as the breakup/box peaks.
+    pub piston_band_hz: [f64; 2],
+    pub piston_radiation_pa_per_volt: f64,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -742,6 +749,8 @@ struct AmplifierState {
     interstage_dc_lowpass: f64,
     bass_lowpass: f64,
     below_treble_lowpass: f64,
+    piston_lowpass: f64,
+    piston_dc_lowpass: f64,
     supply_fraction: f64,
     first_quiescent: f64,
     second_quiescent: f64,
@@ -766,6 +775,8 @@ impl AmplifierState {
             interstage_dc_lowpass: 0.0,
             bass_lowpass: 0.0,
             below_treble_lowpass: 0.0,
+            piston_lowpass: 0.0,
+            piston_dc_lowpass: 0.0,
             supply_fraction: 1.0,
             first_quiescent: plk2_triode_tanh(spec.preamp_bias),
             second_quiescent: plk2_triode_tanh(-0.55 * spec.preamp_bias),
@@ -830,6 +841,23 @@ impl AmplifierState {
             mode.step(power_voltage, dt);
             pressure_pa += mode.radiation_pa_per_velocity * mode.velocity;
         }
+        /* Piston-band bed: band-pass the power voltage between the driver's
+         * low corner and cone breakup and radiate it broadband. Without this
+         * bed the four discrete modes leave audible spectral holes between
+         * and above their skirts. */
+        let piston_low = one_pole_lowpass(
+            &mut self.piston_lowpass,
+            power_voltage,
+            self.spec.piston_band_hz[1],
+            dt,
+        );
+        let piston_dc = one_pole_lowpass(
+            &mut self.piston_dc_lowpass,
+            piston_low,
+            self.spec.piston_band_hz[0],
+            dt,
+        );
+        pressure_pa += self.spec.piston_radiation_pa_per_volt * (piston_low - piston_dc);
         pressure_pa
     }
 }
@@ -2387,15 +2415,24 @@ pub fn marshall_electric_pack() -> InstrumentPack {
             sag_depth: 0.24,
             sag_attack_seconds: 0.030,
             sag_recovery_seconds: 0.080,
-            bass_corner_hz: 180.0,
-            treble_corner_hz: 2_200.0,
-            bass_mix: 0.56,
-            mid_mix: 0.72,
-            treble_mix: 0.38,
-            cabinet_frequency_hz: [86.0, 420.0, 1_150.0, 2_850.0],
-            cabinet_q: [2.2, 1.1, 0.85, 1.2],
-            cabinet_drive_residue: [180.0, 120.0, 90.0, 45.0],
-            cabinet_radiation_pa_per_velocity: [0.18, 0.12, 0.08, 0.04],
+            /* Re-voiced against measured band balance (bead
+             * jcpe-plucked-quality-body-amp-6yg6): the previous stack carved
+             * an 11 dB low-mid scoop and buried 1.2-2.8 kHz presence 16-32 dB
+             * below the mids — the owner's "nothing like an electric through
+             * a Marshall". Marshall-class voicing is mid-forward with a
+             * prominent presence band and a steep rolloff only above the
+             * cabinet corner. */
+            bass_corner_hz: 140.0,
+            treble_corner_hz: 1_900.0,
+            bass_mix: 0.50,
+            mid_mix: 0.70,
+            treble_mix: 0.85,
+            cabinet_frequency_hz: [86.0, 420.0, 1_600.0, 2_850.0],
+            cabinet_q: [2.2, 1.1, 0.85, 1.0],
+            cabinet_drive_residue: [180.0, 85.0, 130.0, 170.0],
+            cabinet_radiation_pa_per_velocity: [0.18, 0.12, 0.18, 0.22],
+            piston_band_hz: [110.0, 4_200.0],
+            piston_radiation_pa_per_volt: 0.08,
         }),
     }
 }
