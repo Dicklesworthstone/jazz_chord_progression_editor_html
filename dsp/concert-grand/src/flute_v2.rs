@@ -55,7 +55,7 @@ const RESIDUAL_PULL_CENTS: [f64; 37] = [
         8.1, // m76
         9.0, // m77
         1.3, // m78
-        -4.7, // m79
+        -2.4, // m79
         -8.9, // m80
         -36.7, // m81
         1.6, // m82
@@ -379,7 +379,7 @@ fn fingering_for_midi(midi: i32) -> Option<Fingering> {
         4 => [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.50, 1.0],
         5 => [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0],
         6 => [0.0, 0.0, 0.0, 0.0, 0.0, 0.52, 1.0, 1.0],
-        7 if octave >= 1 => [0.0, 0.0, 0.0, 0.0, 0.10, 1.0, 1.0, 1.0],
+        7 if octave >= 1 => [0.0, 0.0, 0.0, 0.0, 0.05, 1.0, 1.0, 1.0],
         7 => [0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0],
         8 => [0.0, 0.0, 0.0, 0.0, 0.55, 1.0, 1.0, 1.0],
         9 => [0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0],
@@ -1073,13 +1073,14 @@ fn render_with_storage(
         .map(|openness| openness * openness)
         .sum::<f64>();
     let dynamic_lift = ((velocity as f64 - 36.0) / 36.0).clamp(0.0, 1.0);
-    // +10% quadratic drive (2026-08-08): the Bernoulli second-order term is
-    // the flute's even-harmonic identity signature; three UIowa identity
-    // cells sat 0.06-1.4 dB under the 3.5 dB margin after the retune.
+    // Dynamics-weighted quadratic drive (2026-08-08): the Bernoulli
+    // second-order term is the flute's even-harmonic identity signature.
+    // The boost applies with dynamic_lift so pp keeps its reference-matched
+    // HNR while mf/ff gain the identity margin the UIowa cells demand.
     let nonlinear_drive = if vented_area > 0.0 {
-        1.65 + 0.44 * dynamic_lift * (2.0 - vented_area).clamp(0.0, 1.0)
+        1.5 + 0.52 * dynamic_lift * (2.0 - vented_area).clamp(0.0, 1.0)
     } else {
-        1.87
+        1.7 + 0.17 * dynamic_lift
     };
     let lattice_nonlinear_loss = if vented_area > 2.0 { 0.35 } else { 0.20 };
     let nonlinear_edge_gain = nonlinear_drive
