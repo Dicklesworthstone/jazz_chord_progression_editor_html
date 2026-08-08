@@ -88,6 +88,9 @@ const LIP_MODE_FREQUENCY_RATIO: f64 = 184.0 / 136.0;
 const CHARACTERISTIC_MEAN_CORNER_HZ: f64 = 20.0;
 const LIP_EMBOUCHURE_SERVO_GAIN: f64 = 3.0;
 const LIP_EMBOUCHURE_KNEE_M: f64 = 1.2e-3;
+/// Round-6 servo anchor: the measured healthy mp operating mean displacement
+/// (aperture 5.585e-6 m2 at 5.5 kPa / lip width 7e-3 m / aperture factor 2).
+const LIP_ROUND6_MEAN_TARGET_M: f64 = 4.0e-4;
 const LIP_CLOSURE_GRAZING_RATIO: f64 = 0.985;
 const LIP_CLOSURE_GRAZING_GAIN: f64 = 1.7;
 const LIP_GRAZING_ENGAGE_M: f64 = 1.0e-4;
@@ -263,6 +266,9 @@ pub struct TrumpetParameters {
     /// grazing target scales by (p/p_ref)^-exponent so the closure fraction
     /// RISES with dynamics instead of being clamped flat. 0 = legacy.
     pub servo_pressure_closure_exponent: f64,
+    /// Round-6: exponent scaling the embouchure knee-servo gain with
+    /// (p/p_ref); models lip tension rising with dynamics. 0 = legacy.
+    pub servo_pressure_gain_exponent: f64,
     pub oversample_factor: usize,
 }
 
@@ -305,6 +311,7 @@ impl TrumpetParameters {
             // Neutral until the round-5 sweep freezes measured values.
             embouchure_pressure_compensation: 0.0,
             servo_pressure_closure_exponent: 0.0,
+            servo_pressure_gain_exponent: 0.0,
             oversample_factor: OVERSAMPLE_FACTOR,
         }
     }
@@ -349,6 +356,9 @@ impl TrumpetParameters {
             || !self.servo_pressure_closure_exponent.is_finite()
             || self.servo_pressure_closure_exponent < 0.0
             || self.servo_pressure_closure_exponent > 2.0
+            || !self.servo_pressure_gain_exponent.is_finite()
+            || self.servo_pressure_gain_exponent < 0.0
+            || self.servo_pressure_gain_exponent > 4.0
         {
             return Err(TrumpetError::NonFiniteState);
         }
@@ -1410,6 +1420,18 @@ impl TrumpetModel {
         self.last_lip_report
     }
 
+    /// Round-6 anti-crescendo probe: the flow/pressure path state a test needs
+    /// to attribute where blowing-pressure growth is eaten. Probe-only; never
+    /// consumed by rendering.
+    pub fn flow_probe(&self) -> (f64, f64, f64, f64) {
+        (
+            self.lip_jet_flow_m3_s,
+            self.cup_pressure_pa,
+            self.throat_flow_m3_s,
+            self.lip_jet_area_m2,
+        )
+    }
+
     /// Linear small-signal input impedance of the exact cup, throat, stepped
     /// finite-volume bore, radius-dependent wall memory, and passive bell load.
     pub fn diagnostic_input_impedance(
@@ -1991,9 +2013,39 @@ impl TrumpetModel {
          */
         let pressure_factor =
             (controls.mouth_pressure_pa / LIP_SERVO_PRESSURE_REF_PA).max(1.0);
-        let excess_m = (self.lip_displacement_mean_m - LIP_EMBOUCHURE_KNEE_M).max(0.0);
-        let knee_force_n =
-            mechanics.normal_stiffness_n_m * LIP_EMBOUCHURE_SERVO_GAIN * excess_m;
+        /*
+         * Round-6 (bead jcpe-trumpet-lock-completion-el46): the measured
+         * anti-crescendo eater is mean-aperture drift — rising blowing
+         * pressure out-muscles the fixed-gain knee servo, the DC leak grows,
+         * and the oscillatory flow (the sound source) starves (probe matrix:
+         * acQ 1.675e-4 -> 2.2e-6 at comp=0 while dcQ doubles; cup coupling
+         * and throat resistance both refuted, <=428 Pa of 8.5 kPa). A real
+         * embouchure firms with dynamics, so BOTH the knee (operating mean,
+         * deepens toward closure) and the servo gain (lip tension) are
+         * pressure-scheduled. At the mp reference (pressure_factor == 1)
+         * behavior is bit-exact legacy for zero exponents.
+         */
+        /*
+         * Anchor correction (round-6 probe): the legacy 1.2e-3 m knee sits
+         * ~3x ABOVE this model's actual operating displacement (measured mp
+         * mean 4.0e-4 m via aperture 5.585e-6 m2 / width 7e-3 / 2), so the
+         * knee servo never engaged and its gain was provably inert. With a
+         * nonzero gain exponent the servo re-anchors at the measured healthy
+         * mp operating mean and stays always-on above it; at gain exponent
+         * zero the legacy knee is preserved bit-exactly for the frozen pins.
+         */
+        let round6_active = self.parameters.servo_pressure_gain_exponent > 0.0;
+        let knee_anchor_m = if round6_active {
+            LIP_ROUND6_MEAN_TARGET_M
+        } else {
+            LIP_EMBOUCHURE_KNEE_M
+        };
+        let knee_m = knee_anchor_m
+            * pow(pressure_factor, -self.parameters.servo_pressure_closure_exponent);
+        let servo_gain = LIP_EMBOUCHURE_SERVO_GAIN
+            * pow(pressure_factor, self.parameters.servo_pressure_gain_exponent);
+        let excess_m = (self.lip_displacement_mean_m - knee_m).max(0.0);
+        let knee_force_n = mechanics.normal_stiffness_n_m * servo_gain * excess_m;
         /*
          * Pressure-compensated embouchure: cancel a frozen fraction of the
          * EXCESS static blow-open force with a constant closing bias. This

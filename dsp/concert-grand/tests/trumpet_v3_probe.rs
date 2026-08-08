@@ -381,3 +381,169 @@ fn probe_level_vs_pressure() {
         eprintln!("[level comp=2] pressure={pressure} rms={rms:.4e} centroid={centroid:.0}");
     }
 }
+
+/// Round-6 suspect matrix: attribute the anti-crescendo. For each
+/// (pressure, compensation) cell, settle 0.5 s then measure the flow path:
+/// mean aperture, aperture swing, closed fraction, DC/AC lip flow, DC cup
+/// pressure, DC lip delta-p, throat quadratic share, radiated RMS.
+#[test]
+fn probe_anti_crescendo_suspects() {
+    for compensation in [0.0_f64, 1.0, 2.0] {
+        let mut parameters = TrumpetParameters::canonical();
+        parameters.nonlinear_coefficient *= 5.0;
+        parameters.embouchure_pressure_compensation = compensation;
+        let mut model = TrumpetModel::new(48_000.0, parameters).unwrap();
+        let mut controls = TrumpetControls {
+            mouth_pressure_pa: 0.0,
+            lip_resonance_hz: 258.0,
+            lip_damping_ratio: 1.0 / 3.0,
+            equilibrium_opening_m: 0.0,
+            tongue_contact: 1.0,
+            valves: [0.0; 3],
+        };
+        let mut previous = 0.0_f64;
+        for target in [5_500.0_f64, 7_000.0, 8_500.0] {
+            let mut radiated = Vec::new();
+            let mut apertures = Vec::new();
+            let mut flows = Vec::new();
+            let mut cups = Vec::new();
+            let mut ok = true;
+            for frame in 0..24_000 {
+                let ramp = (frame as f64 / 1_440.0).min(1.0);
+                controls.mouth_pressure_pa = previous + ramp * (target - previous);
+                if previous == 0.0 && frame == 1_440 {
+                    model.seed_open_normal_regime(100.0).unwrap();
+                    controls.tongue_contact = 0.0;
+                }
+                match model.process_sample(controls) {
+                    Ok(sample) => {
+                        if frame > 12_000 {
+                            radiated.push(sample);
+                            let (flow, cup, _throat, area) = model.flow_probe();
+                            apertures.push(area);
+                            flows.push(flow);
+                            cups.push(cup);
+                        }
+                    }
+                    Err(error) => {
+                        println!(
+                            "cell comp={compensation} p={target}: DIVERGED {error:?} at frame {frame}"
+                        );
+                        ok = false;
+                        break;
+                    }
+                }
+            }
+            previous = target;
+            if !ok || radiated.is_empty() {
+                continue;
+            }
+            let n = radiated.len() as f64;
+            let rms = (radiated.iter().map(|s| s * s).sum::<f64>() / n).sqrt();
+            let mean_ap = apertures.iter().sum::<f64>() / n;
+            let min_ap = apertures.iter().cloned().fold(f64::MAX, f64::min);
+            let max_ap = apertures.iter().cloned().fold(f64::MIN, f64::max);
+            let closed = apertures.iter().filter(|a| **a <= 1.0e-9).count() as f64 / n;
+            let dc_flow = flows.iter().sum::<f64>() / n;
+            let ac_flow = (flows.iter().map(|f| (f - dc_flow) * (f - dc_flow)).sum::<f64>() / n)
+                .sqrt();
+            let dc_cup = cups.iter().sum::<f64>() / n;
+            let quad_dp = 8.0e8 * dc_flow * dc_flow;
+            println!(
+                "comp={compensation} p={target}: rms={rms:.3e} meanAp={mean_ap:.3e} span=[{min_ap:.2e},{max_ap:.2e}] closed={closed:.3} dcQ={dc_flow:.3e} acQ={ac_flow:.3e} dcCup={dc_cup:.1} dPlips={:.1} quadDp={quad_dp:.1}",
+                target - dc_cup,
+            );
+        }
+    }
+}
+
+/// Round-6 servo-schedule sweep: find (closure_exp, gain_exp, comp) giving
+/// monotone-rising RMS and centroid with nonzero forte closure.
+#[test]
+fn probe_round6_servo_schedule() {
+    for (closure_exp, gain_exp, comp) in [
+        (0.15_f64, 2.0_f64, 2.5_f64),
+        (0.2, 2.0, 2.5),
+        (0.2, 2.5, 2.5),
+        (0.3, 2.0, 2.5),
+        (0.3, 2.0, 3.0),
+        (0.2, 2.0, 3.0),
+        (0.15, 2.5, 3.0),
+        (0.3, 2.5, 2.0),
+    ] {
+        let mut parameters = TrumpetParameters::canonical();
+        parameters.nonlinear_coefficient *= 5.0;
+        parameters.embouchure_pressure_compensation = comp;
+        parameters.servo_pressure_closure_exponent = closure_exp;
+        parameters.servo_pressure_gain_exponent = gain_exp;
+        let mut model = TrumpetModel::new(48_000.0, parameters).unwrap();
+        let mut controls = TrumpetControls {
+            mouth_pressure_pa: 0.0,
+            lip_resonance_hz: 258.0,
+            lip_damping_ratio: 1.0 / 3.0,
+            equilibrium_opening_m: 0.0,
+            tongue_contact: 1.0,
+            valves: [0.0; 3],
+        };
+        let mut previous = 0.0_f64;
+        let mut summary = Vec::new();
+        for target in [5_500.0_f64, 7_000.0, 8_500.0, 12_000.0] {
+            let mut radiated = Vec::new();
+            let mut apertures = Vec::new();
+            let mut flows = Vec::new();
+            let mut ok = true;
+            for frame in 0..24_000 {
+                let ramp = (frame as f64 / 1_440.0).min(1.0);
+                controls.mouth_pressure_pa = previous + ramp * (target - previous);
+                if previous == 0.0 && frame == 1_440 {
+                    model.seed_open_normal_regime(100.0).unwrap();
+                    controls.tongue_contact = 0.0;
+                }
+                match model.process_sample(controls) {
+                    Ok(sample) => {
+                        if frame > 12_000 {
+                            radiated.push(sample);
+                            let (flow, _cup, _throat, area) = model.flow_probe();
+                            apertures.push(area);
+                            flows.push(flow);
+                        }
+                    }
+                    Err(_) => {
+                        ok = false;
+                        break;
+                    }
+                }
+            }
+            previous = target;
+            if !ok || radiated.is_empty() {
+                summary.push(format!("p={target}: DIVERGED"));
+                continue;
+            }
+            let n = radiated.len() as f64;
+            let rms = (radiated.iter().map(|s| s * s).sum::<f64>() / n).sqrt();
+            let mean = radiated.iter().sum::<f64>() / n;
+            let centered: Vec<f64> = radiated.iter().map(|s| s - mean).collect();
+            let mut num = 0.0;
+            let mut den = 0.0;
+            for k in 1..centered.len() {
+                let derivative = (centered[k] - centered[k - 1]) * 48_000.0;
+                num += derivative * derivative;
+                den += centered[k] * centered[k];
+            }
+            let centroid_hz = if den > 0.0 {
+                (num / den).sqrt() / (2.0 * core::f64::consts::PI)
+            } else {
+                0.0
+            };
+            let mean_ap = apertures.iter().sum::<f64>() / n;
+            let closed = apertures.iter().filter(|a| **a <= 1.0e-9).count() as f64 / n;
+            let dc_flow = flows.iter().sum::<f64>() / n;
+            let ac_flow =
+                (flows.iter().map(|f| (f - dc_flow) * (f - dc_flow)).sum::<f64>() / n).sqrt();
+            summary.push(format!(
+                "p={target}: rms={rms:.3e} cen={centroid_hz:.0} meanAp={mean_ap:.2e} closed={closed:.3} acQ={ac_flow:.2e}"
+            ));
+        }
+        println!("ce={closure_exp} ge={gain_exp} comp={comp} || {}", summary.join(" | "));
+    }
+}
