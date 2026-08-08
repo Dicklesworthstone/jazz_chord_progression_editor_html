@@ -1078,7 +1078,7 @@ fn render_with_storage(
     // The boost applies with dynamic_lift so pp keeps its reference-matched
     // HNR while mf/ff gain the identity margin the UIowa cells demand.
     let nonlinear_drive = if vented_area > 0.0 {
-        1.65 + 0.44 * dynamic_lift * (2.0 - vented_area).clamp(0.0, 1.0)
+        1.61 + 0.44 * dynamic_lift * (2.0 - vented_area).clamp(0.0, 1.0)
     } else {
         1.87
     };
