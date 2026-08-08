@@ -243,6 +243,16 @@ pub struct TrumpetParameters {
     pub wall_loss_relaxation_hz: f64,
     pub nonlinear_coefficient: f64,
     pub valve_transition_energy_gain: f64,
+    /// Round-5 pressure schedule: the embouchure knee tightens as mouth
+    /// pressure rises above the mp reference, so the servo's allowed mean
+    /// opening SHRINKS with dynamics (real embouchure: louder playing drives
+    /// the lips deeper into closure). Exponent on (p/p_ref); 0 = legacy
+    /// pressure-blind knee.
+    pub servo_pressure_knee_exponent: f64,
+    /// Round-5 pressure schedule for the closure-grazing ride point: the
+    /// grazing target scales by (p/p_ref)^-exponent so the closure fraction
+    /// RISES with dynamics instead of being clamped flat. 0 = legacy.
+    pub servo_pressure_closure_exponent: f64,
     pub oversample_factor: usize,
 }
 
@@ -282,6 +292,9 @@ impl TrumpetParameters {
             // beta=(gamma+1)/2 for air with gamma=1.403.
             nonlinear_coefficient: 1.2015,
             valve_transition_energy_gain: 1.0,
+            // Neutral until the round-5 sweep freezes measured values.
+            servo_pressure_knee_exponent: 0.0,
+            servo_pressure_closure_exponent: 0.0,
             oversample_factor: OVERSAMPLE_FACTOR,
         }
     }
@@ -320,6 +333,12 @@ impl TrumpetParameters {
             || self.wall_loss_relaxation_hz <= 0.0
             || !self.nonlinear_coefficient.is_finite()
             || self.nonlinear_coefficient < 0.0
+            || !self.servo_pressure_knee_exponent.is_finite()
+            || self.servo_pressure_knee_exponent < 0.0
+            || self.servo_pressure_knee_exponent > 2.0
+            || !self.servo_pressure_closure_exponent.is_finite()
+            || self.servo_pressure_closure_exponent < 0.0
+            || self.servo_pressure_closure_exponent > 2.0
         {
             return Err(TrumpetError::NonFiniteState);
         }
@@ -1936,10 +1955,27 @@ impl TrumpetModel {
         let old_pressure_pa = self.cup_pressure_pa;
         let pressure_predictor_pa = old_pressure_pa
             + 0.8 * (controls.mouth_pressure_pa - self.previous_mouth_pressure_pa);
-        let excess_m = (self.lip_displacement_mean_m - LIP_EMBOUCHURE_KNEE_M).max(0.0);
+        /*
+         * Round-5 pressure schedule (bead jcpe-trumpet-lock-completion-el46):
+         * the legacy pressure-blind knee/ride clamp made spectral centroid
+         * FALL with pressure (measured 2186->1328->577 Hz at nonlinear x5)
+         * because the servo removed source harmonics faster than cumulative
+         * steepening added them. Real embouchure closure DEEPENS with
+         * dynamics, so both the knee and the grazing ride point shrink as
+         * (p/p_ref)^-exponent. Exponents live in TrumpetParameters and are
+         * frozen from the measured sweep; the factor is clamped at unity
+         * below the mp reference so soft playing keeps the proven round-2/3
+         * behavior bit-exactly when the exponents are zero.
+         */
+        let pressure_factor =
+            (controls.mouth_pressure_pa / LIP_SERVO_PRESSURE_REF_PA).max(1.0);
+        let knee_m = LIP_EMBOUCHURE_KNEE_M
+            * pow(pressure_factor, -self.parameters.servo_pressure_knee_exponent);
+        let excess_m = (self.lip_displacement_mean_m - knee_m).max(0.0);
         let knee_force_n =
             mechanics.normal_stiffness_n_m * LIP_EMBOUCHURE_SERVO_GAIN * excess_m;
         let grazing_target_m = LIP_CLOSURE_GRAZING_RATIO
+            * pow(pressure_factor, -self.parameters.servo_pressure_closure_exponent)
             * ((PI / 2.0) * self.lip_oscillation_mean_m
                 - 0.5 * controls.equilibrium_opening_m);
         let engagement = (self.lip_oscillation_mean_m / LIP_GRAZING_ENGAGE_M).min(1.0);
