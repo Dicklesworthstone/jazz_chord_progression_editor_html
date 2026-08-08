@@ -116,6 +116,9 @@ describe("TR-X0-NORMALIZATION audio normalization", () => {
           notes: physicalPitches.map((pitch) => ({
             midiPitch: midi(pitch),
             velocity: 110,
+            /* Match the one-second attack below: the physical chord cache
+             * deliberately binds its render-duration bucket. */
+            gateSeconds: 1,
           })),
         }));
       }

@@ -35,79 +35,11 @@ const SOUND_SPEED_M_PER_S: f64 = 343.21;
 /// tune; numerically the pull scales one effective sound speed per note so
 /// bore delays, mode targets, and the impedance scan all move together and
 /// cannot disagree. Zeros mean "geometry already true for that note".
-const RESIDUAL_PULL_CENTS: [f64; 37] = [
-        0.2, // m60
-        23.1, // m61
-        24.1, // m62
-        30.1, // m63
-        13.1, // m64
-        8.4, // m65
-        2.4, // m66
-        7.3, // m67
-        -10.2, // m68
-        -40.4, // m69
-        1.3, // m70
-        -64.0, // m71
-        4.9, // m72
-        -88.5, // m73
-        0.0, // m74 (wrong-mode: pending center-trim search)
-        26.4, // m75
-        8.1, // m76
-        0.0, // m77 (wrong-mode: pending center-trim search)
-        0.9, // m78
-        -5.0, // m79
-        -8.7, // m80
-        -36.4, // m81
-        1.7, // m82
-        -58.4, // m83
-        0.0, // m84 (wrong-mode: pending center-trim search)
-        0.0, // m85 (wrong-mode: pending center-trim search)
-        0.0, // m86 (wrong-mode: pending center-trim search)
-        0.0, // m87 (wrong-mode: pending center-trim search)
-        0.0, // m88 (wrong-mode: pending center-trim search)
-        0.0, // m89 (wrong-mode: pending center-trim search)
-        107.1, // m90
-        0.0, // m91 (wrong-mode: pending center-trim search)
-        0.0, // m92 (wrong-mode: pending center-trim search)
-        0.0, // m93 (wrong-mode: pending center-trim search)
-        0.0, // m94 (wrong-mode: pending center-trim search)
-        0.0, // m95 (wrong-mode: pending center-trim search)
-        0.0, // m96 (wrong-mode: pending center-trim search)
-];
-
-/// Measured center-trim calibration: cents by which the jet/band register
-/// target must move relative to the (pulled) scan-model center so the jet
-/// locks the intended bore mode. Nonzero only where the scan model and the
-/// discrete-time bore disagree (high-register cells); fitted by the offline
-/// 2D calibration search. Applied at runtime center consumption only.
-const CENTER_TRIM_CENTS: [f64; 37] = [0.0; 37];
-
-/// Calibration overrides for the offline fitting harness (single-threaded
-/// wasm; zero when disabled). Baked tables absorb fitted values; production
-/// callers never set these.
-static mut CALIBRATION_PULL_OVERRIDE_CENTS: f64 = 0.0;
-static mut CALIBRATION_CENTER_TRIM_OVERRIDE_CENTS: f64 = 0.0;
-
-/// Diagnostic/calibration export: additive overrides on top of the baked
-/// tables, used only by the measurement harness while fitting.
-#[no_mangle]
-pub extern "C" fn flt2_set_calibration_override(pull_cents: f64, center_trim_cents: f64) {
-    unsafe {
-        CALIBRATION_PULL_OVERRIDE_CENTS = pull_cents;
-        CALIBRATION_CENTER_TRIM_OVERRIDE_CENTS = center_trim_cents;
-    }
-}
+const RESIDUAL_PULL_CENTS: [f64; 37] = [0.0; 37];
 
 fn tuned_sound_speed(midi: i32) -> f64 {
     let index = (midi - 60).clamp(0, 36) as usize;
-    let pull = RESIDUAL_PULL_CENTS[index] + unsafe { CALIBRATION_PULL_OVERRIDE_CENTS };
-    SOUND_SPEED_M_PER_S * libm::exp2(-pull / 1_200.0)
-}
-
-fn center_trim_scale(midi: i32) -> f64 {
-    let index = (midi - 60).clamp(0, 36) as usize;
-    let trim = CENTER_TRIM_CENTS[index] + unsafe { CALIBRATION_CENTER_TRIM_OVERRIDE_CENTS };
-    libm::exp2(trim / 1_200.0)
+    SOUND_SPEED_M_PER_S * libm::exp2(-RESIDUAL_PULL_CENTS[index] / 1_200.0)
 }
 const EMB_CHANNEL_TO_EDGE_M: f64 = 0.010;
 const EMB_JET_HALF_WIDTH_M: f64 = 0.0005;
@@ -447,7 +379,11 @@ fn geometry_fundamental_hz(fingering: Fingering, speed_m_per_s: f64) -> f64 {
     speed_m_per_s / (2.0 * (effective_length + EMB_END_CORRECTION_M))
 }
 
-fn bore_input_impedance_magnitude(fingering: Fingering, frequency_hz: f64, speed_m_per_s: f64) -> Option<f64> {
+fn bore_input_impedance_magnitude(
+    fingering: Fingering,
+    frequency_hz: f64,
+    speed_m_per_s: f64,
+) -> Option<f64> {
     if !frequency_hz.is_finite() || frequency_hz <= 0.0 {
         return None;
     }
@@ -520,7 +456,8 @@ fn bore_input_impedance_magnitude(fingering: Fingering, frequency_hz: f64, speed
 }
 
 fn solved_register_center_hz(fingering: Fingering, speed_m_per_s: f64) -> Option<f64> {
-    let mut previous = bore_input_impedance_magnitude(fingering, MODE_SCAN_START_HZ, speed_m_per_s)?;
+    let mut previous =
+        bore_input_impedance_magnitude(fingering, MODE_SCAN_START_HZ, speed_m_per_s)?;
     let mut current_frequency = MODE_SCAN_START_HZ + MODE_SCAN_STEP_HZ;
     let mut current = bore_input_impedance_magnitude(fingering, current_frequency, speed_m_per_s)?;
     let mut found = 0usize;
@@ -617,7 +554,11 @@ fn target_mouth_pressure_pa_for_center(
 
 #[cfg(test)]
 fn target_mouth_pressure_pa(velocity: i32, fingering: Fingering) -> f64 {
-    target_mouth_pressure_pa_for_center(velocity, fingering, register_center_hz(fingering, SOUND_SPEED_M_PER_S))
+    target_mouth_pressure_pa_for_center(
+        velocity,
+        fingering,
+        register_center_hz(fingering, SOUND_SPEED_M_PER_S),
+    )
 }
 
 fn jet_speed_m_per_s(pressure_pa: f64) -> f64 {
@@ -1038,7 +979,7 @@ fn render_with_storage(
     let mut writes = [0usize; SEGMENTS];
     let mut next_writes = [0usize; SEGMENTS];
     let sr = sample_rate as f64;
-    let register_center_hz = register_center_hz(fingering, speed_m_per_s) * center_trim_scale(midi);
+    let register_center_hz = register_center_hz(fingering, speed_m_per_s);
     let target_pressure =
         target_mouth_pressure_pa_for_center(velocity, fingering, register_center_hz);
     let attack_seconds = if state_input.is_some() {
@@ -1129,7 +1070,8 @@ fn render_with_storage(
     let feedback_highpass_hz = if fingering.register_harmonic == 1 {
         70.0
     } else {
-        geometry_fundamental_hz(fingering, speed_m_per_s) * (fingering.register_harmonic as f64 - 0.75)
+        geometry_fundamental_hz(fingering, speed_m_per_s)
+            * (fingering.register_harmonic as f64 - 0.75)
     };
     let feedback_dc_pole = exp(-TAU * feedback_highpass_hz / sr);
     // A free jet does not amplify every acoustic perturbation equally.  Its
@@ -1441,18 +1383,6 @@ fn render_with_storage(
     out_left.len()
 }
 
-/// Diagnostic export: the register-center frequency the jet targets for a
-/// note, after residual calibration. Test/measurement support only.
-#[no_mangle]
-pub extern "C" fn flt2_register_center_hz(midi: i32) -> f64 {
-    fingering_for_midi(midi)
-        .map(|fingering| register_center_hz(fingering, tuned_sound_speed(midi)))
-        .unwrap_or(0.0)
-}
-
-#[no_mangle]
-pub extern "C" fn flt2_probe_ping() -> i32 { 42 }
-
 #[no_mangle]
 pub extern "C" fn flt2_note_frames(midi: i32, sample_rate: f32) -> i32 {
     if fingering_for_midi(midi).is_none()
@@ -1617,27 +1547,6 @@ pub extern "C" fn flt2_render_phrase(
 
 #[cfg(test)]
 mod tests {
-    #[test]
-    fn register_center_probe_print() {
-        for midi in 60..=96 {
-            let Some(fingering) = fingering_for_midi(midi) else { continue };
-            let center = register_center_hz(fingering, tuned_sound_speed(midi));
-            let expected = crate::midi_frequency_hz(midi as f64);
-            let cents = 1_200.0 * libm::log2(center / expected);
-            let pressure = target_mouth_pressure_pa_for_center(80, fingering, center);
-            let tau = jet_convection_seconds_for_channel(
-                embouchure_channel_to_edge_m(fingering),
-                jet_speed_m_per_s(pressure).max(1.0),
-            )
-            .unwrap_or(0.0);
-            std::println!(
-                "CENTER m{midi}: {cents:.0}c (idx {}) tau_f={:.2}",
-                fingering.resonance_index,
-                tau * center
-            );
-        }
-    }
-
     use super::*;
 
     fn render_test_at_rate(
