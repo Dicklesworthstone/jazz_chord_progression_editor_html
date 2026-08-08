@@ -13,6 +13,32 @@
 //! measure-fix loop that calibrated v2). Exports renamed flt3_* to stay dark;
 //! shipping flute remains flute_v2 (8/8 UIowa PASS).
 //!
+//! RECALIBRATION CAMPAIGN ROUND 2 (2026-08-08, same bead):
+//! Mechanism map, all measured through the UIowa runner + internal taps:
+//! displacement at the labium is a CLEAN f0 sine (2f0 -78 dB) -- the
+//! oscillation regime was never the problem; the flat odd ladder came from
+//! the DIFFERENTIATED split source (impulse-pair ladder + radiation tilt).
+//! Beware the vibrato-FM measurement trap: single-bin Goertzel undercounts
+//! FM-smeared harmonics by tens of dB; only band-summed power (the runner's
+//! spectralFeatures) is a valid oracle here.
+//! LANDED MECHANISMS (all sweepable constants below): (1) saturating
+//! transverse displacement JET_SATURATION_HALF_WIDTHS (full small-signal
+//! gain for onset, shoulder operation in steady state); (2) one-pole
+//! band-limits on embouchure+foot radiated fields (the unfiltered
+//! flow-derivative paths carried the high-band excess; playbook law);
+//! (3) TWO-COMPONENT SOURCE (SOURCE_FORM 1): flow term (edge_split *
+//! TAU*f0) sets the reference-shaped ladder base + BRIGHT_MIX *
+//! (0.4+0.6*velocity) * derivative carries dynamics-scaled brightness;
+//! (4) analytic loop-phase law: the blend leads pure flow by
+//! atan(bright_weight); effective convective phase = gesture - 0.25 +
+//! atan(w)/TAU keeps tuning at native +-3c across the matrix.
+//! MATRIX STATE at (G=0.9, off=1.0, rad=5500, BM=0.30): HARMONIC law 6/8
+//! pass (was 0/8), tuning <=3.1c, remaining: per-dynamic calibration --
+//! pp cells (m76/m79) harm ~30 hb ~32; identity margin dark at m72-mf
+//! (-3.6) and m76-ff (-9.2). Next: per-dynamic (register x dynamic) tables
+//! for BRIGHT_MIX/ceiling/offset, then env residuals, then full gates and
+//! the flt2->v3 shipping swap.
+//!
 //! This renderer is a fixed-geometry, time-domain physical model of a modern
 //! C-foot concert flute.  Its bore dimensions, head-joint taper, cork cavity,
 //! embouchure hole, sixteen acoustic tone holes, key heights, and recommended
@@ -41,7 +67,7 @@
 //! canonicalized so malformed, truncated, non-finite, or incompatible state is
 //! rejected without exposing partially decoded state.
 
-use libm::{ceilf, cosf, exp2f, expf, floorf, sinf, sqrtf};
+use libm::{atanf, ceilf, cosf, exp2f, expf, floorf, sinf, sqrtf};
 
 use crate::XorShift32;
 
@@ -92,6 +118,26 @@ const EMB_LENGTH_M: f32 = 0.0044;
 const FACE_INERTANCE_LENGTH_M: f32 = 0.0050;
 const JET_HALF_WIDTH_M: f32 = 0.00058;
 const JET_DIPOLE_LENGTH_M: f32 = 0.0042;
+// CAL-SWEEP: transverse jet displacement saturation ceiling, in half-widths,
+// per register band (matches jet_channel_to_edge_m bands). The jet's linear
+// convective growth is a small-signal law; spatial growth saturates once the
+// displacement approaches the jet width (Verge/Fabre), which keeps the labium
+// split on the tanh shoulder instead of railed. Values below are the sweep
+// variable; final values carry the sweep provenance.
+const SOURCE_FORM: usize = 1;
+const BRIGHT_MIX: f32 = 0.30;
+const JET_OFFSET_SCALE: f32 = 1.0;
+const HOLE_RADIATION_CORNER_HZ: f32 = 5500.0;
+const JET_SATURATION_HALF_WIDTHS: [f32; 4] = [0.90, 0.90, 0.90, 0.90];
+fn jet_saturation_half_widths(midi: i32) -> f32 {
+    match midi {
+        60..=71 => JET_SATURATION_HALF_WIDTHS[0],
+        72..=83 => JET_SATURATION_HALF_WIDTHS[1],
+        84..=95 => JET_SATURATION_HALF_WIDTHS[2],
+        _ => JET_SATURATION_HALF_WIDTHS[3],
+    }
+}
+
 const DIGITAL_PER_PASCAL: f32 = 0.42;
 
 // Four cells approximate the measured 113.5 mm head-joint taper.  The other
@@ -374,6 +420,8 @@ struct PhraseState {
     emb_flow: f32,
     emb_pressure: f32,
     feedback_velocity: f32,
+    emb_radiation_lp: f32,
+    foot_radiation_lp: f32,
     feedback_hp_input: f32,
     feedback_hp_output: f32,
     jet_band_s1: f32,
@@ -427,6 +475,8 @@ impl PhraseState {
             emb_flow: 0.0,
             emb_pressure: 0.0,
             feedback_velocity: 0.0,
+            emb_radiation_lp: 0.0,
+            foot_radiation_lp: 0.0,
             feedback_hp_input: 0.0,
             feedback_hp_output: 0.0,
             jet_band_s1: 0.0,
@@ -1521,8 +1571,13 @@ fn render_with_storage(
     let mode_center_hz = midi_frequency_hz_internal(midi);
     let channel_to_edge = jet_channel_to_edge_m(midi);
     let jet_growth = expf((0.33 * channel_to_edge / JET_HALF_WIDTH_M).min(4.15));
-    let jet_offset_ratio = (0.16 + 0.060 * register_level
-        - 0.085 * (velocity_norm - 0.50)
+    // CAL-SWEEP: offset scale. Near-railed operation turns the split
+    // derivative into a close pulse pair whose fundamental cancels
+    // (even-dominant ladder, starved h1). Centering the operating window
+    // keeps the cycle inside the transition band: h1-dominant with the
+    // reference's mild h2 asymmetry restored by the residual offset.
+    let jet_offset_ratio = (JET_OFFSET_SCALE * (0.16 + 0.060 * register_level
+        - 0.085 * (velocity_norm - 0.50))
         + 0.006 * (variation_slot as f32 - 3.5))
         .clamp(-0.05, 0.48);
     let feedback_gain = (1.8 + 0.55 * register_level) * gesture.feedback_scale;
@@ -1549,7 +1604,9 @@ fn render_with_storage(
     let vibrato_step_sin = sinf(vibrato_step);
     let vibrato_step_cos = cosf(vibrato_step);
 
-    let hole_radiation_alpha = 1.0 - expf(-TAU * 7_200.0 / internal_rate);
+    // CAL-SWEEP: radiated-field band-limit corner (playbook law: radiation
+    // differentiation amplifies +6 dB/oct; v1/v2 band-limit near 5.5 kHz).
+    let hole_radiation_alpha = 1.0 - expf(-TAU * HOLE_RADIATION_CORNER_HZ / internal_rate);
     let dc_pole = expf(-TAU * 18.0 / sample_rate);
     let head_delay = delay_from_thiran(layout.head_delay_integer, layout.head_thiran_a);
     let foot_delay = delay_from_thiran(layout.foot_delay_integer, layout.foot_thiran_a);
@@ -1674,7 +1731,20 @@ fn render_with_storage(
             // vibrato; pressure vibrato remains independently present above.
             let pitch_vibrato =
                 1.0 + 0.0045 * vibrato_onset * state.vibrato_sin;
-            let jet_delay = (gesture.convective_phase_cycles * internal_rate
+            // Flow-form source removes the differentiator's +90 deg loop
+            // phase; restore it convectively (quarter cycle less transit).
+            // The two-component source leads the pure flow term by
+            // atan(bright_weight) at f0; keep total loop phase fixed by
+            // adding that lead back as convective transit.
+            let flow_form_active = SOURCE_FORM == 1 && register_level < 2.5;
+            let effective_phase_cycles = if flow_form_active {
+                let bright_weight = BRIGHT_MIX * (0.4 + 0.6 * velocity_norm);
+                gesture.convective_phase_cycles - 0.25
+                    + atanf(bright_weight) / TAU
+            } else {
+                gesture.convective_phase_cycles
+            };
+            let jet_delay = (effective_phase_cycles * internal_rate
                 / (mode_center_hz * pitch_vibrato))
                 .clamp(1.0, (MAX_JET_HISTORY - 2) as f32)
                 * law.jet_delay_scale;
@@ -1690,7 +1760,15 @@ fn render_with_storage(
                 state.jet_write = 0;
             }
 
-            let edge_displacement = JET_HALF_WIDTH_M * jet_growth * delayed_jet;
+            // Saturating transverse displacement: full small-signal gain for
+            // phonation onset; steady state limited to ~the jet width so the
+            // labium split works on the tanh shoulder (harmonically rich,
+            // dynamics-responsive) instead of rail-to-rail square.
+            let linear_half_widths = jet_growth * delayed_jet;
+            let saturation = jet_saturation_half_widths(midi);
+            let saturated_half_widths =
+                saturation * fast_tanh(linear_half_widths / saturation);
+            let edge_displacement = JET_HALF_WIDTH_M * saturated_half_widths;
             let offset = JET_HALF_WIDTH_M
                 * (jet_offset_ratio + 0.025 * vibrato_onset * state.vibrato_sin);
             let edge_split = fast_tanh((edge_displacement - offset) / JET_HALF_WIDTH_M);
@@ -1702,9 +1780,30 @@ fn render_with_storage(
                 * JET_HALF_WIDTH_M
                 * jet_speed
                 / channel_to_edge;
-            let unsaturated_jet_pressure = gesture.source_scale
-                * jet_source_coefficient
-                * edge_split_derivative;
+            // CAL-SWEEP: flow-form source. The differentiated split injects a
+            // flat odd ladder (each transition is an impulse pair); the
+            // canonical jet-drive alternative injects the split as volume
+            // flow and lets the bore impedance shape the ladder (-6 dB/oct
+            // relative tilt). SOURCE_FORM 0 = derivative, 1 = flow.
+            // Two-component source: the flow term sets the reference-shaped
+            // ladder base; the derivative fraction carries the brightness that
+            // grows with dynamics (vortex-shedding component).
+            // Register 3 (altissimo) keeps the derivative source: its higher
+            // jet stages phonate on that phase law (midi 92 loses mode
+            // capture under the blend); per-register source tables are the
+            // recorded follow-up.
+            let unsaturated_jet_pressure = if flow_form_active {
+                gesture.source_scale
+                    * jet_source_coefficient
+                    * (edge_split * (TAU * mode_center_hz)
+                        + BRIGHT_MIX
+                            * (0.4 + 0.6 * velocity_norm)
+                            * edge_split_derivative)
+            } else {
+                gesture.source_scale
+                    * jet_source_coefficient
+                    * edge_split_derivative
+            };
             let jet_source_pressure = unsaturated_jet_pressure
                 / (1.0 + unsaturated_jet_pressure.abs() / 1_200.0);
 
@@ -1846,14 +1945,25 @@ fn render_with_storage(
             state.feedback_velocity = body_volume_flow / acoustics.embouchure.area;
 
             let emb_flow_derivative = (emb_flow - prior_emb_flow) * internal_rate;
-            let embouchure_field = 0.72 * acoustics.radiation_scale * emb_flow_derivative
+            // Radiated-field band-limit (playbook law): flow-derivative dipole
+            // radiation is +6 dB/oct unbounded; the physical apertures are
+            // compact sources whose radiation efficiency rolls off. The hole
+            // fields already pass a one-pole; embouchure and foot must too --
+            // this was the unfiltered path carrying the high-band excess.
+            let embouchure_raw = 0.72 * acoustics.radiation_scale * emb_flow_derivative
                 + 0.0017 * jet_source_pressure;
+            state.emb_radiation_lp +=
+                hole_radiation_alpha * (embouchure_raw - state.emb_radiation_lp);
+            let embouchure_field = state.emb_radiation_lp;
             let foot_volume_flow = layout.admittance[SEGMENTS - 1]
                 * (foot_incident - foot_reflection);
             let foot_flow_derivative =
                 (foot_volume_flow - state.foot_flow) * internal_rate;
             state.foot_flow = foot_volume_flow;
-            let foot_field = acoustics.radiation_scale * foot_flow_derivative;
+            let foot_raw = acoustics.radiation_scale * foot_flow_derivative;
+            state.foot_radiation_lp +=
+                hole_radiation_alpha * (foot_raw - state.foot_radiation_lp);
+            let foot_field = state.foot_radiation_lp;
             let groups = [
                 embouchure_field,
                 upper_hole_field,
