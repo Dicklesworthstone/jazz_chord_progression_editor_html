@@ -93,6 +93,14 @@ test("the production audio engine requires the prepared stateful clarinet segmen
     ),
     "audio.renderer_unavailable",
   );
+  requireFailure(await engine.prepareRenderedAudioVoices({
+    instrumentId: "clarinet",
+    notes: [{
+      midiPitch: midi(midiPitch),
+      velocity: event.velocity,
+      physicalGesture: gesture,
+    }],
+  }), "audio.voice_id_invalid");
   requireSuccess(await engine.prepareRenderedAudioVoices({
     instrumentId: "clarinet",
     notes: [{
@@ -126,7 +134,8 @@ test("the production audio engine requires the prepared stateful clarinet segmen
   }
 
   expect(physicalBuffer).not.toBe(legacyBuffer);
-  expect(physicalBuffer.length).toBe(legacyBuffer.length);
+  expect(physicalBuffer.length).toBe(2_400);
+  expect(legacyBuffer.length).toBeGreaterThan(physicalBuffer.length);
   const legacy = legacyBuffer.getChannelData(0);
   const physical = physicalBuffer.getChannelData(0);
   let absoluteDifference = 0;
@@ -317,7 +326,7 @@ test("clarinet-v2 phrase preparation chains exact stateful segments and replays 
   );
 });
 
-test("wind variation is bounded to eight cache slots while exact-velocity eviction stays deterministic LRU", async () => {
+test("stateful clarinet preparation refuses a stateless gesture batch before doing cache work", async () => {
   const playback = compilePlaybackPlan(
     materializeP0TimelineCase("P0-TIME-001").request,
   );
@@ -343,49 +352,19 @@ test("wind variation is bounded to eight cache slots while exact-velocity evicti
       }),
     ),
   );
-  const firstHarness = await readyEngine();
-  const collapsed = requireSuccess(
-    await firstHarness.engine.prepareRenderedAudioVoices({
-      instrumentId: "clarinet",
-      notes: gestures.map((physicalGesture) => ({
-        midiPitch: midi(midiPitch),
-        velocity: 96,
-        physicalGesture,
-      })),
-    }),
+  const { engine, fake } = await readyEngine();
+  const before = fake.events.filter(({ kind }) => kind === "buffer-create").length;
+  requireFailure(await engine.prepareRenderedAudioVoices({
+    instrumentId: "clarinet",
+    notes: gestures.map((physicalGesture) => ({
+      midiPitch: midi(midiPitch),
+      velocity: 96,
+      physicalGesture,
+    })),
+  }), "audio.voice_id_invalid");
+  expect(fake.events.filter(({ kind }) => kind === "buffer-create")).toHaveLength(
+    before,
   );
-  expect(collapsed.renderedCount).toBe(8);
-  expect(collapsed.cachedCount).toBe(57);
-
-  const { engine } = await readyEngine();
-  const exactVelocities = requireSuccess(
-    await engine.prepareRenderedAudioVoices({
-      instrumentId: "clarinet",
-      notes: Array.from({ length: 65 }, (_, index) => ({
-        midiPitch: midi(midiPitch),
-        velocity: index + 1,
-        physicalGesture: base,
-      })),
-    }),
-  );
-  expect(exactVelocities.renderedCount).toBe(65);
-  expect(exactVelocities.cachedCount).toBe(0);
-  const newest = requireSuccess(
-    await engine.prepareRenderedAudioVoices({
-      instrumentId: "clarinet",
-      notes: [{ midiPitch: midi(midiPitch), velocity: 65, physicalGesture: base }],
-    }),
-  );
-  expect(newest.cachedCount).toBe(1);
-  expect(newest.renderedCount).toBe(0);
-  const oldest = requireSuccess(
-    await engine.prepareRenderedAudioVoices({
-      instrumentId: "clarinet",
-      notes: [{ midiPitch: midi(midiPitch), velocity: 1, physicalGesture: base }],
-    }),
-  );
-  expect(oldest.cachedCount).toBe(0);
-  expect(oldest.renderedCount).toBe(1);
 }, 10_000);
 
 test("legato and tongued winds own distinct bounded cache entries", async () => {
@@ -414,9 +393,30 @@ test("legato and tongued winds own distinct bounded cache entries", async () => 
     await engine.prepareRenderedAudioVoices({
       instrumentId: "clarinet",
       notes: [
-        { midiPitch: midi(midiPitch), velocity: 96, physicalGesture: tongued },
-        { midiPitch: midi(midiPitch), velocity: 96, physicalGesture: legato },
-        { midiPitch: midi(midiPitch), velocity: 96, physicalGesture: tongued },
+        {
+          midiPitch: midi(midiPitch),
+          velocity: 96,
+          physicalGesture: tongued,
+          physicalFrameCount: 1_200,
+          physicalCacheFingerprint: "3".repeat(64),
+          physicalStateReset: true,
+        },
+        {
+          midiPitch: midi(midiPitch),
+          velocity: 96,
+          physicalGesture: legato,
+          physicalFrameCount: 1_200,
+          physicalCacheFingerprint: "4".repeat(64),
+          physicalStateReset: true,
+        },
+        {
+          midiPitch: midi(midiPitch),
+          velocity: 96,
+          physicalGesture: tongued,
+          physicalFrameCount: 1_200,
+          physicalCacheFingerprint: "3".repeat(64),
+          physicalStateReset: true,
+        },
       ],
     }),
   );

@@ -3666,6 +3666,20 @@ function createAudioEngineInternal(
       const physicalStateReset = noteValue["physicalStateReset"];
       const hasPhraseMetadata = physicalFrameCount !== undefined ||
         physicalCacheFingerprint !== undefined || physicalStateReset !== undefined;
+      if (
+        physicalGesture?.instrumentFamily === "clarinet" &&
+        physicalGesture.instrumentVersionId === "changes.physical.clarinet.v2" &&
+        !hasPhraseMetadata
+      ) {
+        /* Clarinet v2 is a retained phrase renderer. Rendering it through the
+         * stateless note ABI during preparation creates PCM that the attack
+         * path must never consume and can mask a missing segment plan until
+         * playback. Refuse the incomplete request at its source instead. */
+        return refuse({
+          code: "audio.voice_id_invalid",
+          path: ["notes", index, "physicalFrameCount"],
+        });
+      }
       if (hasPhraseMetadata) {
         if (
           physicalGesture === null ||
