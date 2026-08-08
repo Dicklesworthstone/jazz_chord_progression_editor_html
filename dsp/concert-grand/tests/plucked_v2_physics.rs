@@ -668,9 +668,12 @@ fn geometry_and_material_packs_create_distinct_body_and_string_families() {
     assert!(uke.body_mode_count() > 8);
     // The dreadnought consumes the geometry-solved DKT authority; its
     // deterministic fundamental cross-checks the independent FD foundry table
-    // (68.9 Hz) within the mesh-coarseness margin. The ukulele retains its
-    // reviewed analytic air/plate distinction until a dedicated small-body
-    // mesh is independently admitted.
+    // (68.9 Hz) within the mesh-coarseness margin. The ukulele now consumes
+    // the same DKT authority (the small-body mesh was admitted with the
+    // improved plucked model): its clamped+braced fundamental sits at
+    // 287.552 Hz, deliberately above the old simply-supported analytic
+    // 216 Hz — clamped edges and brace rigidity raise the (1,1) mode, and
+    // the air resonance stays the separately derived Helmholtz value.
     assert!(body_contains_mode(&dread, 98.0));
     let dread_dkt_fundamental =
         body_mode_frequency(&dread, BodyModeKind::GeometrySolvedDkt { ordinal: 0 })
@@ -680,17 +683,11 @@ fn geometry_and_material_packs_create_distinct_body_and_string_families() {
         "dreadnought DKT fundamental was {dread_dkt_fundamental}"
     );
     let uke_air = body_mode_frequency(&uke, BodyModeKind::HelmholtzAir).expect("uke air mode");
-    let uke_plate = body_mode_frequency(
-        &uke,
-        BodyModeKind::StructuralPlate {
-            longitudinal: 1,
-            radial: 1,
-        },
-    )
-    .expect("uke (1,1) plate mode");
+    let uke_plate = body_mode_frequency(&uke, BodyModeKind::GeometrySolvedDkt { ordinal: 0 })
+        .expect("uke DKT fundamental");
     assert!(relative_error(uke_air, expected_uke_air) < 1.0e-12);
     assert!(
-        (uke_plate - 216.096).abs() < 0.01,
+        (uke_plate - 287.552).abs() < 0.01,
         "plate mode was {uke_plate}"
     );
     assert!(uke_plate - uke_air > 20.0, "air and plate modes collapsed");

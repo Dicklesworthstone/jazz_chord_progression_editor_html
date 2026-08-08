@@ -9,9 +9,9 @@
 //!   frequency-dependent T60 loss;
 //! - finite-duration compliant pick/finger contact with position, width, force,
 //!   direction, and a Hunt-Crossley-style velocity term;
-//! - a power-conjugate shared bridge/body port.  Its velocity update is the
-//!   exact solution of a positive mechanical conductance, so the coupling can
-//!   transfer or dissipate energy but cannot create it;
+//! - a power-conjugate shared bridge/body port.  Its symmetric implicit-
+//!   midpoint conductance solve is order-independent and passive, so the
+//!   coupling can transfer or dissipate energy but cannot create it;
 //! - retained body and unplayed-string state for sympathetic continuation;
 //! - geometry/material-derived orthotropic plate modes plus a Helmholtz mode;
 //! - separate body-radiation, direct-string, bridge, and finite-aperture pickup
@@ -34,6 +34,7 @@ mod upright_bass_body;
 
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
+use core::sync::atomic::{AtomicBool, Ordering};
 use libm::{cos, exp, floor, pow, round, sin, sqrt};
 
 const PI: f64 = core::f64::consts::PI;
@@ -58,7 +59,7 @@ pub const PLK2_STEM_EVENT_PLUCK: u32 = 1;
 pub const PLK2_STEM_EVENT_RESET: u32 = 2;
 const PLK2_STEM_EVENT_MASK: u32 = PLK2_STEM_EVENT_PLUCK | PLK2_STEM_EVENT_RESET;
 const PLK2_STEM_STATE_MAGIC: u32 = 0x324b_4c50; // "PLK2" in little endian.
-const PLK2_STEM_STATE_VERSION: u32 = 1;
+const PLK2_STEM_STATE_VERSION: u32 = 2;
 const PLK2_STEM_STATE_MAX_BYTES: usize = 8_192;
 const PLK2_STEM_RENDER_MAX_FRAMES: usize = 8_192;
 const PLK2_STEM_MAX_ENERGY_J: f64 = 100.0;
@@ -68,7 +69,7 @@ const PLK2_STEM_MAX_ENERGY_J: f64 = 100.0;
 // expensive physical samples or this many cheap reconstruction/copy samples,
 // so the browser can yield between calls without changing the sound.
 const PLK2_CHORD_STATE_MAGIC: u32 = 0x3243_4c50; // "PLC2" in little endian.
-const PLK2_CHORD_STATE_VERSION: u32 = 1;
+const PLK2_CHORD_STATE_VERSION: u32 = 2;
 const PLK2_CHORD_STATE_MAX_BYTES: usize = 12_288;
 /* Keep each browser-thread quantum short even at the maximum 12:1 rate
  * divisor. The production opaque runtime retains the decoded physical state
@@ -157,34 +158,92 @@ fn plk2_bridge_patch_area_m2(pack_index: i32) -> f64 {
     match pack_index {
         PLK2_ARCHTOP_PACK => 1.2e-3,
         PLK2_DREADNOUGHT_PACK => 0.75e-3,
-        /* The reviewed ukulele analytic body already carries its compact
-         * bridge field; it does not need the guitar DKT patch. */
+        /* The compact ukulele DKT authority already carries a dense local
+         * bridge/radiation field; it does not need the larger guitar patch. */
         PLK2_UKULELE_PACK => 0.0,
         PLK2_UPRIGHT_BASS_PACK => 3.6e-3,
         _ => 0.0,
     }
 }
 
+fn plk2_direct_string_effective_area_m2(pack_index: i32) -> f64 {
+    match pack_index {
+        PLK2_ARCHTOP_PACK => 1.4e-5,
+        PLK2_DREADNOUGHT_PACK => 1.8e-5,
+        PLK2_UKULELE_PACK => 0.7e-5,
+        PLK2_UPRIGHT_BASS_PACK => 6.0e-5,
+        _ => 0.0,
+    }
+}
+
+#[inline(always)]
 fn plk2_effective_acoustic_flow_m3_per_s(
     pack_index: i32,
     body_flow_m3_per_s: f64,
     bridge_velocity_m_per_s: f64,
+    direct_string_velocity_m_per_s: f64,
 ) -> f64 {
-    body_flow_m3_per_s + plk2_bridge_patch_area_m2(pack_index) * bridge_velocity_m_per_s
+    body_flow_m3_per_s
+        + plk2_bridge_patch_area_m2(pack_index) * bridge_velocity_m_per_s
+        + plk2_direct_string_effective_area_m2(pack_index) * direct_string_velocity_m_per_s
 }
 
+#[derive(Clone, Copy, Debug)]
+struct AcousticRadiator {
+    previous_flow_m3_per_s: f64,
+    derivative_m3_per_s2: f64,
+    feedback: f64,
+    difference_gain_per_second: f64,
+}
+
+impl AcousticRadiator {
+    fn new(sample_rate_hz: f64) -> Self {
+        let cutoff_hz = (0.32 * sample_rate_hz).min(14_000.0);
+        let omega = TAU * cutoff_hz;
+        let twice_rate = 2.0 * sample_rate_hz;
+        let denominator = twice_rate + omega;
+        Self {
+            previous_flow_m3_per_s: 0.0,
+            derivative_m3_per_s2: 0.0,
+            feedback: (twice_rate - omega) / denominator,
+            difference_gain_per_second: twice_rate * omega / denominator,
+        }
+    }
+
+    #[inline(always)]
+    fn pressure_pa_at_1m(&mut self, flow_m3_per_s: f64) -> f64 {
+        self.derivative_m3_per_s2 = self.feedback * self.derivative_m3_per_s2
+            + self.difference_gain_per_second
+                * (flow_m3_per_s - self.previous_flow_m3_per_s);
+        self.previous_flow_m3_per_s = flow_m3_per_s;
+        AIR_DENSITY_KG_PER_M3 * self.derivative_m3_per_s2
+            / (4.0 * PI * ACOUSTIC_MIC_DISTANCE_M)
+    }
+}
+
+#[inline(always)]
+fn plk2_soft_limit(value: f64) -> f64 {
+    const KNEE: f64 = 0.92;
+    let magnitude = value.abs();
+    if magnitude <= KNEE {
+        value
+    } else {
+        value.signum() * (KNEE + (1.0 - KNEE) * plk2_triode_tanh((magnitude - KNEE) / (1.0 - KNEE)))
+    }
+}
+
+#[inline(always)]
 fn plk2_listener_trim(pack_index: i32) -> f64 {
-    let trim_db = match pack_index {
-        PLK2_ARCHTOP_PACK => 80.0,
+    match pack_index {
+        PLK2_ARCHTOP_PACK => 10_000.0,
         /* -7 dB after the piston-band cabinet bed raised the radiated level
          * (bead jcpe-plucked-quality-body-amp-6yg6). */
-        PLK2_MARSHALL_ELECTRIC_PACK => 33.0,
-        PLK2_DREADNOUGHT_PACK => 73.0,
-        PLK2_UKULELE_PACK => 81.6,
-        PLK2_UPRIGHT_BASS_PACK => 82.0,
-        _ => 0.0,
-    };
-    pow(10.0, trim_db / 20.0)
+        PLK2_MARSHALL_ELECTRIC_PACK => 44.668_359_215_096_3,
+        PLK2_DREADNOUGHT_PACK => 4_466.835_921_509_631,
+        PLK2_UKULELE_PACK => 12_022.644_346_174_13,
+        PLK2_UPRIGHT_BASS_PACK => 12_589.254_117_941_662,
+        _ => 1.0,
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -381,7 +440,91 @@ pub struct OutputTaps {
 struct ChordRadiationTaps {
     acoustic_body_volume_velocity_m3_per_s: f64,
     bridge_velocity_m_per_s: f64,
+    direct_string_velocity_m_per_s: f64,
     electric_cabinet_pressure_pa_at_1m: f64,
+}
+
+#[derive(Clone, Copy, Debug)]
+struct DampedStep {
+    qq: f64,
+    qv: f64,
+    vq: f64,
+    vv: f64,
+}
+
+impl DampedStep {
+    const IDENTITY: Self = Self {
+        qq: 1.0,
+        qv: 0.0,
+        vq: 0.0,
+        vv: 1.0,
+    };
+
+    fn new(omega: f64, decay_rate_per_second: f64, dt: f64) -> Self {
+        if !omega.is_finite()
+            || !decay_rate_per_second.is_finite()
+            || !dt.is_finite()
+            || omega <= 0.0
+            || decay_rate_per_second < 0.0
+            || dt <= 0.0
+        {
+            return Self::IDENTITY;
+        }
+        let gamma = decay_rate_per_second;
+        let omega_squared = omega * omega;
+        let relative_separation = (gamma - omega).abs() / gamma.max(omega);
+        let envelope = exp(-gamma * dt);
+        if relative_separation <= 1.0e-10 {
+            return Self {
+                qq: envelope * (1.0 + gamma * dt),
+                qv: envelope * dt,
+                vq: -envelope * omega_squared * dt,
+                vv: envelope * (1.0 - gamma * dt),
+            };
+        }
+        if gamma < omega {
+            let damping_ratio = gamma / omega;
+            let damped_omega = omega * sqrt((1.0 - damping_ratio) * (1.0 + damping_ratio));
+            let phase = damped_omega * dt;
+            let sine_over_omega = sin(phase) / damped_omega;
+            let cosine = cos(phase);
+            return Self {
+                qq: envelope * (cosine + gamma * sine_over_omega),
+                qv: envelope * sine_over_omega,
+                vq: -envelope * omega_squared * sine_over_omega,
+                vv: envelope * (cosine - gamma * sine_over_omega),
+            };
+        }
+        // Evaluate the overdamped matrix from its two non-positive real roots.
+        // This form never constructs exp(+sqrt(gamma²-omega²) dt), avoiding the
+        // inf*0 cancellation that otherwise appears for heavily damped custom
+        // packs even though the exact state transition is perfectly bounded.
+        let frequency_ratio = omega / gamma;
+        let root_separation = gamma * sqrt((1.0 - frequency_ratio) * (1.0 + frequency_ratio));
+        let slow_root = -omega_squared / (gamma + root_separation);
+        let fast_root = -(gamma + root_separation);
+        let slow_exponential = exp(slow_root * dt);
+        let fast_exponential = exp(fast_root * dt);
+        let inverse_twice_separation = 0.5 / root_separation;
+        let fast_coefficient = 0.5 * (gamma / root_separation + 1.0);
+        let slow_coefficient = slow_root * inverse_twice_separation;
+        Self {
+            qq: fast_coefficient * slow_exponential + slow_coefficient * fast_exponential,
+            qv: inverse_twice_separation * (slow_exponential - fast_exponential),
+            vq: omega_squared
+                * inverse_twice_separation
+                * (fast_exponential - slow_exponential),
+            vv: slow_coefficient * slow_exponential + fast_coefficient * fast_exponential,
+        }
+    }
+
+    #[inline(always)]
+    fn advance(self, position: &mut f64, velocity: &mut f64) {
+        let old_position = *position;
+        let old_velocity = *velocity;
+        *position = self.qq * old_position + self.qv * old_velocity;
+        *velocity = self.vq * old_position + self.vv * old_velocity;
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -389,10 +532,11 @@ struct StringMode {
     position: f64,
     velocity: f64,
     omega: f64,
-    rotation_cos: f64,
-    rotation_sin: f64,
-    half_velocity_decay: f64,
+    damped_step: DampedStep,
     bridge_residue: f64,
+    direct_residue: f64,
+    pickup_residue: f64,
+    extension_weight_per_modal_position_squared: f64,
 }
 
 impl StringMode {
@@ -400,24 +544,17 @@ impl StringMode {
         position: 0.0,
         velocity: 0.0,
         omega: 1.0,
-        rotation_cos: 1.0,
-        rotation_sin: 0.0,
-        half_velocity_decay: 1.0,
+        damped_step: DampedStep::IDENTITY,
         bridge_residue: 0.0,
+        direct_residue: 0.0,
+        pickup_residue: 0.0,
+        extension_weight_per_modal_position_squared: 0.0,
     };
 
+    #[inline(always)]
     fn energy_j(self) -> f64 {
         0.5 * (self.velocity * self.velocity
             + self.omega * self.omega * self.position * self.position)
-    }
-
-    fn rotate_conservative(&mut self) {
-        let old_position = self.position;
-        let old_velocity = self.velocity;
-        self.position =
-            self.rotation_cos * old_position + self.rotation_sin * old_velocity / self.omega;
-        self.velocity =
-            -self.omega * self.rotation_sin * old_position + self.rotation_cos * old_velocity;
     }
 }
 
@@ -428,8 +565,24 @@ struct StringState {
     vibrating_length_m: f64,
     tuned_tension_n: f64,
     inharmonicity_b: f64,
+    axial_stiffness_n: f64,
+    nonlinear_extension_m: f64,
+    bridge_residue_norm_squared: f64,
     mode_count: usize,
     modes: [StringMode; MAX_STRING_MODES],
+    contact_residues: [f64; MAX_STRING_MODES],
+}
+
+#[inline(always)]
+fn sine_product_integral(first_wavenumber: f64, second_wavenumber: f64, length_m: f64) -> f64 {
+    let difference = first_wavenumber - second_wavenumber;
+    let sum = first_wavenumber + second_wavenumber;
+    let difference_term = if difference.abs() < 1.0e-10 {
+        0.5 * length_m
+    } else {
+        sin(difference * length_m) / (2.0 * difference)
+    };
+    difference_term - sin(sum * length_m) / (2.0 * sum)
 }
 
 impl StringState {
@@ -439,33 +592,70 @@ impl StringState {
         vibrating_length_m: 0.0,
         tuned_tension_n: 0.0,
         inharmonicity_b: 0.0,
+        axial_stiffness_n: 0.0,
+        nonlinear_extension_m: 0.0,
+        bridge_residue_norm_squared: 0.0,
         mode_count: 0,
         modes: [StringMode::ZERO; MAX_STRING_MODES],
+        contact_residues: [0.0; MAX_STRING_MODES],
     };
 
-    fn new(spec: StringSpec, sample_rate_hz: f64, bridge_x: f64) -> Self {
+    fn new(spec: StringSpec, sample_rate_hz: f64, pickup: Option<PickupSpec>) -> Self {
         let mut state = Self {
             spec,
             ..Self::EMPTY
         };
-        state.rebuild_modes(0, sample_rate_hz, bridge_x, false);
+        state.rebuild_modes(0, sample_rate_hz, pickup, false);
         state
+    }
+
+    #[inline(always)]
+    fn modal_center_from_bridge_fraction(&self, distance_over_open_scale: f64) -> f64 {
+        let distance_from_bridge_m = distance_over_open_scale * self.spec.scale_length_m;
+        (1.0 - distance_from_bridge_m / self.vibrating_length_m).clamp(1.0e-5, 1.0 - 1.0e-5)
+    }
+
+    #[inline(always)]
+    fn rectangular_modal_residue(
+        &self,
+        norm: f64,
+        harmonic: f64,
+        distance_over_open_scale: f64,
+        aperture_m: f64,
+    ) -> f64 {
+        let center = self.modal_center_from_bridge_fraction(distance_over_open_scale);
+        let spatial_frequency = harmonic * PI;
+        norm * sin(spatial_frequency * center)
+            * sinc(0.5 * spatial_frequency * aperture_m / self.vibrating_length_m)
+    }
+
+    #[inline(always)]
+    fn rectangular_modal_residue_active_fraction(
+        &self,
+        norm: f64,
+        harmonic: f64,
+        distance_from_bridge_over_active_length: f64,
+        aperture_m: f64,
+    ) -> f64 {
+        let center = (1.0 - distance_from_bridge_over_active_length).clamp(1.0e-5, 1.0 - 1.0e-5);
+        let spatial_frequency = harmonic * PI;
+        norm * sin(spatial_frequency * center)
+            * sinc(0.5 * spatial_frequency * aperture_m / self.vibrating_length_m)
     }
 
     fn rebuild_modes(
         &mut self,
         fret: u8,
         sample_rate_hz: f64,
-        bridge_x: f64,
+        pickup: Option<PickupSpec>,
         preserve_energy: bool,
     ) {
         let old = self.modes;
         let old_count = self.mode_count;
+        let old_length_m = self.vibrating_length_m;
+        let old_energy_j = preserve_energy.then(|| self.energy_j()).unwrap_or(0.0);
         let length = self.spec.scale_length_m / pow(2.0, fret as f64 / 12.0);
         let fundamental_hz = midi_frequency_hz(self.spec.open_midi + fret as i32);
-        // The named tuning is the boundary condition.  Tension is therefore
-        // derived from pitch, scale, and measured linear density rather than
-        // trusting mutually inconsistent nominal pack values silently.
         let tension = self.spec.linear_density_kg_per_m
             * (2.0 * length * fundamental_hz)
             * (2.0 * length * fundamental_hz);
@@ -475,46 +665,161 @@ impl StringState {
             tension,
             length,
         );
+        self.fret = fret;
+        self.vibrating_length_m = length;
+        self.tuned_tension_n = tension;
+        self.inharmonicity_b = b;
+        self.axial_stiffness_n = self.spec.young_modulus_pa
+            * PI
+            * self.spec.core_diameter_m
+            * self.spec.core_diameter_m
+            * 0.25;
         let norm = sqrt(2.0 / (self.spec.linear_density_kg_per_m * length));
         let dt = 1.0 / sample_rate_hz;
         let mut modes = [StringMode::ZERO; MAX_STRING_MODES];
+        let mut bridge_norm_squared = 0.0;
         let mut count = 0usize;
         for harmonic in 1..=MAX_STRING_MODES {
             let n = harmonic as f64;
-            // Divide by sqrt(1+B) so the played first partial remains exactly
-            // at the named fret pitch while higher partials carry stiffness.
             let frequency_hz = n * fundamental_hz * sqrt((1.0 + b * n * n) / (1.0 + b));
             if frequency_hz >= 0.42 * sample_rate_hz {
                 break;
             }
             let omega = TAU * frequency_hz;
             let t60 = interpolated_t60(self.spec, frequency_hz);
-            let half_velocity_decay = exp(-LN_1000 * 0.5 * dt / t60);
-            let bridge_residue = norm * sin(n * PI * bridge_x);
-            let mut mode = StringMode {
+            let decay_rate = LN_1000 / t60;
+            let bridge_residue = norm * sin(n * PI * 0.985);
+            let direct_residue =
+                self.rectangular_modal_residue_active_fraction(norm, n, 0.35, 0.002);
+            let pickup_residue = pickup.map_or(0.0, |spec| {
+                self.rectangular_modal_residue(
+                    norm,
+                    n,
+                    spec.position_over_scale,
+                    spec.aperture_m,
+                )
+            });
+            let mode = StringMode {
                 position: 0.0,
                 velocity: 0.0,
                 omega,
-                rotation_cos: cos(omega * dt),
-                rotation_sin: sin(omega * dt),
-                half_velocity_decay,
+                damped_step: DampedStep::new(omega, decay_rate, dt),
                 bridge_residue,
+                direct_residue,
+                pickup_residue,
+                extension_weight_per_modal_position_squared: n * n * PI * PI
+                    / (2.0 * self.spec.linear_density_kg_per_m * length * length),
             };
-            if preserve_energy && harmonic <= old_count {
-                let prior = old[harmonic - 1];
-                mode.velocity = prior.velocity;
-                // Preserve each mode's potential energy under a fret change.
-                mode.position = prior.position * prior.omega / omega;
-            }
+            bridge_norm_squared += bridge_residue * bridge_residue;
             modes[count] = mode;
             count += 1;
         }
-        self.fret = fret;
-        self.vibrating_length_m = length;
-        self.tuned_tension_n = tension;
-        self.inharmonicity_b = b;
+        if preserve_energy && old_count > 0 && old_length_m > 0.0 && count > 0 {
+            let overlap_length_m = old_length_m.min(length);
+            let normalization = 2.0 / sqrt(old_length_m * length);
+            for new_index in 0..count {
+                let new_harmonic = new_index + 1;
+                let new_wavenumber = new_harmonic as f64 * PI / length;
+                let mut projected_position = 0.0;
+                let mut projected_velocity = 0.0;
+                for (old_index, old_mode) in old.iter().take(old_count).enumerate() {
+                    let old_harmonic = old_index + 1;
+                    let old_wavenumber = old_harmonic as f64 * PI / old_length_m;
+                    let orientation = if (new_harmonic + old_harmonic) & 1 == 0 {
+                        1.0
+                    } else {
+                        -1.0
+                    };
+                    let overlap = orientation
+                        * normalization
+                        * sine_product_integral(
+                            new_wavenumber,
+                            old_wavenumber,
+                            overlap_length_m,
+                        );
+                    projected_position += overlap * old_mode.position;
+                    projected_velocity += overlap * old_mode.velocity;
+                }
+                modes[new_index].position = projected_position;
+                modes[new_index].velocity = projected_velocity;
+            }
+        }
         self.mode_count = count;
         self.modes = modes;
+        self.bridge_residue_norm_squared = bridge_norm_squared;
+        self.contact_residues.fill(0.0);
+        self.refresh_nonlinear_extension();
+        if preserve_energy && old_energy_j > 0.0 {
+            let projected_energy_j = self.energy_j();
+            if projected_energy_j > old_energy_j && projected_energy_j.is_finite() {
+                let scale = sqrt(old_energy_j / projected_energy_j);
+                for mode in self.modes.iter_mut().take(self.mode_count) {
+                    mode.position *= scale;
+                    mode.velocity *= scale;
+                }
+                self.refresh_nonlinear_extension();
+            }
+        }
+    }
+
+    #[inline(always)]
+    fn refresh_nonlinear_extension(&mut self) {
+        let mut extension = 0.0;
+        for mode in self.modes.iter().take(self.mode_count) {
+            extension += mode.extension_weight_per_modal_position_squared
+                * mode.position
+                * mode.position;
+        }
+        self.nonlinear_extension_m = extension.max(0.0);
+    }
+
+    #[inline(always)]
+    fn bounded_nonlinear_extension(&self, extension_m: f64) -> f64 {
+        const MAX_TENSION_MODULATION: f64 = 0.08;
+        if self.axial_stiffness_n <= 0.0 || self.vibrating_length_m <= 0.0 {
+            return 0.0;
+        }
+        let maximum_extension = MAX_TENSION_MODULATION
+            * self.tuned_tension_n
+            * self.vibrating_length_m
+            / self.axial_stiffness_n;
+        extension_m.clamp(0.0, maximum_extension.max(0.0))
+    }
+
+    fn advance_free(&mut self, dt: f64) {
+        if self.mode_count == 0 {
+            return;
+        }
+        let axial_over_length = self.axial_stiffness_n / self.vibrating_length_m;
+        let old_extension = self.bounded_nonlinear_extension(self.nonlinear_extension_m);
+        let first_kick_scale = dt * axial_over_length * old_extension;
+        let nonlinear = first_kick_scale > 1.0e-18;
+        let mut new_extension = 0.0;
+        for mode in self.modes.iter_mut().take(self.mode_count) {
+            if mode.position == 0.0 && mode.velocity == 0.0 {
+                continue;
+            }
+            if nonlinear {
+                mode.velocity -= first_kick_scale
+                    * mode.extension_weight_per_modal_position_squared
+                    * mode.position;
+            }
+            mode.damped_step
+                .advance(&mut mode.position, &mut mode.velocity);
+            new_extension += mode.extension_weight_per_modal_position_squared
+                * mode.position
+                * mode.position;
+        }
+        self.nonlinear_extension_m = new_extension.max(0.0);
+        let new_extension = self.bounded_nonlinear_extension(self.nonlinear_extension_m);
+        let second_kick_scale = dt * axial_over_length * new_extension;
+        if second_kick_scale > 1.0e-18 {
+            for mode in self.modes.iter_mut().take(self.mode_count) {
+                mode.velocity -= second_kick_scale
+                    * mode.extension_weight_per_modal_position_squared
+                    * mode.position;
+            }
+        }
     }
 
     fn energy_j(&self) -> f64 {
@@ -522,9 +827,15 @@ impl StringState {
         for mode in self.modes.iter().take(self.mode_count) {
             total += mode.energy_j();
         }
+        if self.vibrating_length_m > 0.0 {
+            total += 0.5 * self.axial_stiffness_n / self.vibrating_length_m
+                * self.nonlinear_extension_m
+                * self.nonlinear_extension_m;
+        }
         total
     }
 
+    #[inline(always)]
     fn port_velocity(&self) -> f64 {
         let mut velocity = 0.0;
         for mode in self.modes.iter().take(self.mode_count) {
@@ -533,70 +844,106 @@ impl StringState {
         velocity
     }
 
-    fn port_residue_norm_squared(&self) -> f64 {
-        let mut norm = 0.0;
+    #[inline(always)]
+    fn direct_velocity(&self) -> f64 {
+        let mut velocity = 0.0;
         for mode in self.modes.iter().take(self.mode_count) {
-            norm += mode.bridge_residue * mode.bridge_residue;
+            velocity += mode.direct_residue * mode.velocity;
         }
-        norm
+        velocity
     }
 
-    fn velocity_at(&self, position_over_scale: f64, aperture_m: f64) -> f64 {
+    #[inline(always)]
+    fn pickup_velocity(&self) -> f64 {
         let mut velocity = 0.0;
+        for mode in self.modes.iter().take(self.mode_count) {
+            velocity += mode.pickup_residue * mode.velocity;
+        }
+        velocity
+    }
+
+    #[inline(always)]
+    fn port_residue_norm_squared(&self) -> f64 {
+        self.bridge_residue_norm_squared
+    }
+
+    fn fill_window_residues(
+        &self,
+        distance_over_open_scale: f64,
+        aperture_m: f64,
+        destination: &mut [f64; MAX_STRING_MODES],
+    ) {
+        destination.fill(0.0);
         let norm = sqrt(2.0 / (self.spec.linear_density_kg_per_m * self.vibrating_length_m));
-        for (index, mode) in self.modes.iter().take(self.mode_count).enumerate() {
-            let harmonic = index as f64 + 1.0;
-            let residue = norm
-                * sin(harmonic * PI * position_over_scale)
-                * sinc(harmonic * PI * aperture_m / self.vibrating_length_m);
+        for (index, residue) in destination.iter_mut().take(self.mode_count).enumerate() {
+            *residue = self.rectangular_modal_residue(
+                norm,
+                index as f64 + 1.0,
+                distance_over_open_scale,
+                aperture_m,
+            );
+        }
+    }
+
+    fn set_contact_window(&mut self, distance_over_open_scale: f64, aperture_m: f64) {
+        let mut residues = [0.0; MAX_STRING_MODES];
+        self.fill_window_residues(distance_over_open_scale, aperture_m, &mut residues);
+        self.contact_residues = residues;
+    }
+
+    #[inline(always)]
+    fn contact_velocity(&self) -> f64 {
+        let mut velocity = 0.0;
+        for (mode, residue) in self
+            .modes
+            .iter()
+            .zip(self.contact_residues.iter())
+            .take(self.mode_count)
+        {
             velocity += residue * mode.velocity;
         }
         velocity
     }
 
-    fn displacement_at(&self, position_over_scale: f64, aperture_m: f64) -> f64 {
+    #[inline(always)]
+    fn contact_displacement(&self) -> f64 {
         let mut displacement = 0.0;
-        let norm = sqrt(2.0 / (self.spec.linear_density_kg_per_m * self.vibrating_length_m));
-        for (index, mode) in self.modes.iter().take(self.mode_count).enumerate() {
-            let harmonic = index as f64 + 1.0;
-            let residue = norm
-                * sin(harmonic * PI * position_over_scale)
-                * sinc(harmonic * PI * aperture_m / self.vibrating_length_m);
+        for (mode, residue) in self
+            .modes
+            .iter()
+            .zip(self.contact_residues.iter())
+            .take(self.mode_count)
+        {
             displacement += residue * mode.position;
         }
         displacement
     }
 
-    fn apply_point_impulse(&mut self, position_over_scale: f64, aperture_m: f64, impulse_n_s: f64) {
-        let norm = sqrt(2.0 / (self.spec.linear_density_kg_per_m * self.vibrating_length_m));
-        for (index, mode) in self.modes.iter_mut().take(self.mode_count).enumerate() {
-            let harmonic = index as f64 + 1.0;
-            let residue = norm
-                * sin(harmonic * PI * position_over_scale)
-                * sinc(harmonic * PI * aperture_m / self.vibrating_length_m);
+    #[inline(always)]
+    fn apply_contact_impulse(&mut self, impulse_n_s: f64) {
+        for (mode, residue) in self
+            .modes
+            .iter_mut()
+            .zip(self.contact_residues.iter())
+            .take(self.mode_count)
+        {
             mode.velocity += residue * impulse_n_s;
         }
     }
 
-    /// Add the exact retained-modal static deflection produced by a transverse
-    /// point force.  For mass-normalized mode `q_n`, static equilibrium is
-    /// `omega_n^2 q_n = residue_n F`.  This is the musician's pre-release work,
-    /// not an audio-rate force pulse or an output spectral shaper.
-    fn apply_static_point_force(
-        &mut self,
-        position_over_scale: f64,
-        aperture_m: f64,
-        force_n: f64,
-    ) {
-        let norm = sqrt(2.0 / (self.spec.linear_density_kg_per_m * self.vibrating_length_m));
-        for (index, mode) in self.modes.iter_mut().take(self.mode_count).enumerate() {
-            let harmonic = index as f64 + 1.0;
-            let residue = norm
-                * sin(harmonic * PI * position_over_scale)
-                * sinc(harmonic * PI * aperture_m / self.vibrating_length_m);
+    fn apply_static_contact_force(&mut self, force_n: f64) {
+        for (mode, residue) in self
+            .modes
+            .iter_mut()
+            .zip(self.contact_residues.iter())
+            .take(self.mode_count)
+        {
             mode.position += residue * force_n / (mode.omega * mode.omega);
         }
+        self.refresh_nonlinear_extension();
     }
+
+
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -613,9 +960,7 @@ struct BodyMode {
     velocity: f64,
     frequency_hz: f64,
     omega: f64,
-    rotation_cos: f64,
-    rotation_sin: f64,
-    half_velocity_decay: f64,
+    damped_step: DampedStep,
     bridge_residue: f64,
     radiation_residue_m2_per_sqrt_kg: f64,
 }
@@ -630,25 +975,23 @@ impl BodyMode {
         velocity: 0.0,
         frequency_hz: 0.0,
         omega: 1.0,
-        rotation_cos: 1.0,
-        rotation_sin: 0.0,
-        half_velocity_decay: 1.0,
+        damped_step: DampedStep::IDENTITY,
         bridge_residue: 0.0,
         radiation_residue_m2_per_sqrt_kg: 0.0,
     };
 
+    #[inline(always)]
     fn energy_j(self) -> f64 {
         0.5 * (self.velocity * self.velocity
             + self.omega * self.omega * self.position * self.position)
     }
 
-    fn rotate_conservative(&mut self) {
-        let old_position = self.position;
-        let old_velocity = self.velocity;
-        self.position =
-            self.rotation_cos * old_position + self.rotation_sin * old_velocity / self.omega;
-        self.velocity =
-            -self.omega * self.rotation_sin * old_position + self.rotation_cos * old_velocity;
+    #[inline(always)]
+    fn advance_free(&mut self) {
+        if self.position != 0.0 || self.velocity != 0.0 {
+            self.damped_step
+                .advance(&mut self.position, &mut self.velocity);
+        }
     }
 }
 
@@ -673,7 +1016,7 @@ impl ContactState {
             force_n: 0.0,
             direction: 1,
             contact_duration_seconds: 0.01,
-            contact_stiffness_n_per_m_pow_3_over_2: 1.0,
+            contact_stiffness_n_per_m_pow_3_over_2: 1.0e6,
             contact_damping_seconds_per_m: 0.0,
         },
         elapsed_frames: 0,
@@ -687,10 +1030,7 @@ impl ContactState {
 struct CabinetMode {
     position: f64,
     velocity: f64,
-    omega: f64,
-    rotation_cos: f64,
-    rotation_sin: f64,
-    half_velocity_decay: f64,
+    damped_step: DampedStep,
     drive_residue: f64,
     radiation_pa_per_velocity: f64,
 }
@@ -699,10 +1039,7 @@ impl CabinetMode {
     const ZERO: Self = Self {
         position: 0.0,
         velocity: 0.0,
-        omega: 1.0,
-        rotation_cos: 1.0,
-        rotation_sin: 0.0,
-        half_velocity_decay: 1.0,
+        damped_step: DampedStep::IDENTITY,
         drive_residue: 0.0,
         radiation_pa_per_velocity: 0.0,
     };
@@ -715,38 +1052,123 @@ impl CabinetMode {
         sample_rate_hz: f64,
     ) -> Self {
         let omega = TAU * frequency_hz;
-        let dt = 1.0 / sample_rate_hz;
         Self {
-            omega,
-            rotation_cos: cos(omega * dt),
-            rotation_sin: sin(omega * dt),
-            half_velocity_decay: exp(-omega * dt / (4.0 * q)),
+            damped_step: DampedStep::new(omega, omega / (2.0 * q), 1.0 / sample_rate_hz),
             drive_residue,
             radiation_pa_per_velocity,
             ..Self::ZERO
         }
     }
 
+    #[inline(always)]
     fn step(&mut self, drive_voltage: f64, dt: f64) {
-        // Trapezoidal force impulses around an exact conservative rotation,
-        // with symmetric passive damping. Bounded drive therefore cannot
-        // destabilize the retained speaker/cabinet state.
         self.velocity += 0.5 * self.drive_residue * drive_voltage * dt;
-        self.velocity *= self.half_velocity_decay;
-        let old_position = self.position;
-        let old_velocity = self.velocity;
-        self.position =
-            self.rotation_cos * old_position + self.rotation_sin * old_velocity / self.omega;
-        self.velocity =
-            -self.omega * self.rotation_sin * old_position + self.rotation_cos * old_velocity;
-        self.velocity *= self.half_velocity_decay;
+        self.damped_step
+            .advance(&mut self.position, &mut self.velocity);
         self.velocity += 0.5 * self.drive_residue * drive_voltage * dt;
     }
 }
 
 #[derive(Clone, Copy, Debug)]
+struct BiquadState {
+    b0: f64,
+    b1: f64,
+    b2: f64,
+    a1: f64,
+    a2: f64,
+    z1: f64,
+    z2: f64,
+}
+
+impl BiquadState {
+    fn resonant_lowpass(frequency_hz: f64, q: f64, sample_rate_hz: f64) -> Self {
+        let frequency_hz = frequency_hz.clamp(10.0, 0.45 * sample_rate_hz);
+        let phase = TAU * frequency_hz / sample_rate_hz;
+        let cosine = cos(phase);
+        let alpha = sin(phase) / (2.0 * q.max(0.51));
+        let a0 = 1.0 + alpha;
+        Self {
+            b0: 0.5 * (1.0 - cosine) / a0,
+            b1: (1.0 - cosine) / a0,
+            b2: 0.5 * (1.0 - cosine) / a0,
+            a1: -2.0 * cosine / a0,
+            a2: (1.0 - alpha) / a0,
+            z1: 0.0,
+            z2: 0.0,
+        }
+    }
+
+    #[inline(always)]
+    fn process(&mut self, input: f64) -> f64 {
+        let output = self.b0 * input + self.z1;
+        self.z1 = self.b1 * input - self.a1 * output + self.z2;
+        self.z2 = self.b2 * input - self.a2 * output;
+        output
+    }
+}
+
+const HALF_BAND_TAPS: usize = 11;
+
+#[derive(Clone, Copy, Debug)]
+struct HalfBandDecimator2 {
+    history: [f64; HALF_BAND_TAPS],
+    cursor: usize,
+}
+
+impl HalfBandDecimator2 {
+    const ZERO: Self = Self {
+        history: [0.0; HALF_BAND_TAPS],
+        cursor: 0,
+    };
+
+    #[inline(always)]
+    fn push(&mut self, sample: f64) {
+        self.cursor += 1;
+        if self.cursor == HALF_BAND_TAPS {
+            self.cursor = 0;
+        }
+        self.history[self.cursor] = sample;
+    }
+
+    #[inline(always)]
+    fn delayed(&self, delay: usize) -> f64 {
+        self.history[(self.cursor + HALF_BAND_TAPS - delay % HALF_BAND_TAPS) % HALF_BAND_TAPS]
+    }
+
+    #[inline(always)]
+    fn output(&self) -> f64 {
+        0.000_946_883_728_867_726 * (self.delayed(0) + self.delayed(10))
+            - 0.035_971_604_687_870_4 * (self.delayed(2) + self.delayed(8))
+            + 0.285_020_052_751_262 * (self.delayed(4) + self.delayed(6))
+            + 0.500_009_336_415_481 * self.delayed(5)
+    }
+}
+
+#[inline(always)]
+fn one_pole_alpha(cutoff_hz: f64, sample_rate_hz: f64) -> f64 {
+    1.0 - exp(-TAU * cutoff_hz / sample_rate_hz)
+}
+
+#[inline(always)]
+fn one_pole_lowpass_alpha(state: &mut f64, input: f64, alpha: f64) -> f64 {
+    *state += alpha * (input - *state);
+    *state
+}
+
+#[derive(Clone, Copy, Debug)]
 struct AmplifierState {
     spec: ElectricAmpSpec,
+    internal_dt: f64,
+    input_highpass_alpha: f64,
+    interstage_alpha: f64,
+    bass_alpha: f64,
+    treble_alpha: f64,
+    piston_upper_alpha: f64,
+    piston_lower_alpha: f64,
+    sag_attack_alpha: f64,
+    sag_recovery_alpha: f64,
+    pickup_filter: BiquadState,
+    previous_pickup_velocity: f64,
     input_dc_lowpass: f64,
     interstage_dc_lowpass: f64,
     bass_lowpass: f64,
@@ -757,10 +1179,13 @@ struct AmplifierState {
     first_quiescent: f64,
     second_quiescent: f64,
     cabinet_modes: [CabinetMode; 4],
+    decimator: HalfBandDecimator2,
 }
 
 impl AmplifierState {
     fn new(spec: ElectricAmpSpec, sample_rate_hz: f64) -> Self {
+        let internal_sample_rate_hz = 2.0 * sample_rate_hz;
+        let internal_dt = 1.0 / internal_sample_rate_hz;
         let mut cabinet_modes = [CabinetMode::ZERO; 4];
         for (index, mode) in cabinet_modes.iter_mut().enumerate() {
             *mode = CabinetMode::new(
@@ -768,11 +1193,28 @@ impl AmplifierState {
                 spec.cabinet_q[index],
                 spec.cabinet_drive_residue[index],
                 spec.cabinet_radiation_pa_per_velocity[index],
-                sample_rate_hz,
+                internal_sample_rate_hz,
             );
         }
+        let pickup_resonance_hz = (0.92 * spec.piston_band_hz[1])
+            .clamp(2_400.0, 0.42 * internal_sample_rate_hz);
         Self {
             spec,
+            internal_dt,
+            input_highpass_alpha: one_pole_alpha(spec.input_highpass_hz, internal_sample_rate_hz),
+            interstage_alpha: one_pole_alpha(9.0, internal_sample_rate_hz),
+            bass_alpha: one_pole_alpha(spec.bass_corner_hz, internal_sample_rate_hz),
+            treble_alpha: one_pole_alpha(spec.treble_corner_hz, internal_sample_rate_hz),
+            piston_upper_alpha: one_pole_alpha(spec.piston_band_hz[1], internal_sample_rate_hz),
+            piston_lower_alpha: one_pole_alpha(spec.piston_band_hz[0], internal_sample_rate_hz),
+            sag_attack_alpha: 1.0 - exp(-internal_dt / spec.sag_attack_seconds),
+            sag_recovery_alpha: 1.0 - exp(-internal_dt / spec.sag_recovery_seconds),
+            pickup_filter: BiquadState::resonant_lowpass(
+                pickup_resonance_hz,
+                1.15,
+                internal_sample_rate_hz,
+            ),
+            previous_pickup_velocity: 0.0,
             input_dc_lowpass: 0.0,
             interstage_dc_lowpass: 0.0,
             bass_lowpass: 0.0,
@@ -783,87 +1225,86 @@ impl AmplifierState {
             first_quiescent: plk2_triode_tanh(spec.preamp_bias),
             second_quiescent: plk2_triode_tanh(-0.55 * spec.preamp_bias),
             cabinet_modes,
+            decimator: HalfBandDecimator2::ZERO,
         }
     }
 
-    fn process(&mut self, pickup_velocity_m_per_s: f64, dt: f64) -> f64 {
-        let pickup_voltage = pickup_velocity_m_per_s * self.spec.pickup_sensitivity_v_per_m_per_s;
-        let input_dc = one_pole_lowpass(
+    #[inline(always)]
+    fn process_internal(&mut self, pickup_velocity_m_per_s: f64) -> f64 {
+        let raw_pickup_voltage =
+            pickup_velocity_m_per_s * self.spec.pickup_sensitivity_v_per_m_per_s;
+        let pickup_voltage = self.pickup_filter.process(raw_pickup_voltage);
+        let input_dc = one_pole_lowpass_alpha(
             &mut self.input_dc_lowpass,
             pickup_voltage,
-            self.spec.input_highpass_hz,
-            dt,
+            self.input_highpass_alpha,
         );
         let grid_voltage = pickup_voltage - input_dc;
-
-        // Two oppositely biased triode reductions. Subtracting the quiescent
-        // operating point makes silence exact while retaining the asymmetric
-        // transfer curvature that produces even and odd harmonics under drive.
-        let first_bias = self.spec.preamp_bias;
-        let first = plk2_triode_tanh(self.spec.preamp_gain * grid_voltage + first_bias)
-            - self.first_quiescent;
-        let interstage_dc = one_pole_lowpass(&mut self.interstage_dc_lowpass, first, 9.0, dt);
+        let first = plk2_triode_tanh(
+            self.spec.preamp_gain * grid_voltage + self.spec.preamp_bias,
+        ) - self.first_quiescent;
+        let interstage_dc = one_pole_lowpass_alpha(
+            &mut self.interstage_dc_lowpass,
+            first,
+            self.interstage_alpha,
+        );
         let coupled = first - interstage_dc;
         let second_bias = -0.55 * self.spec.preamp_bias;
-        let second = plk2_triode_tanh(0.58 * self.spec.preamp_gain * coupled + second_bias)
-            - self.second_quiescent;
-
-        // Passive three-path RC tone stack. The paths are complementary: low,
-        // mid = low-passed-minus-bass, and high = input-minus-low-passed.
-        let bass = one_pole_lowpass(&mut self.bass_lowpass, second, self.spec.bass_corner_hz, dt);
-        let below_treble = one_pole_lowpass(
+        let second = plk2_triode_tanh(
+            0.58 * self.spec.preamp_gain * coupled + second_bias,
+        ) - self.second_quiescent;
+        let bass = one_pole_lowpass_alpha(&mut self.bass_lowpass, second, self.bass_alpha);
+        let below_treble = one_pole_lowpass_alpha(
             &mut self.below_treble_lowpass,
             second,
-            self.spec.treble_corner_hz,
-            dt,
+            self.treble_alpha,
         );
         let mid = below_treble - bass;
         let treble = second - below_treble;
-        let tone_voltage =
-            self.spec.bass_mix * bass + self.spec.mid_mix * mid + self.spec.treble_mix * treble;
-
-        // A rectified load current discharges the virtual supply quickly and
-        // recovers slowly. Sag both lowers headroom and compresses sustained
-        // high drive; the state remains inside [1-depth, 1].
+        let tone_voltage = self.spec.bass_mix * bass
+            + self.spec.mid_mix * mid
+            + self.spec.treble_mix * treble;
         let load = second.abs().min(1.0);
         let supply_target = 1.0 - self.spec.sag_depth * load;
-        let time_constant = if supply_target < self.supply_fraction {
-            self.spec.sag_attack_seconds
+        let sag_alpha = if supply_target < self.supply_fraction {
+            self.sag_attack_alpha
         } else {
-            self.spec.sag_recovery_seconds
+            self.sag_recovery_alpha
         };
-        let sag_alpha = 1.0 - exp(-dt / time_constant);
         self.supply_fraction += sag_alpha * (supply_target - self.supply_fraction);
-        self.supply_fraction = self.supply_fraction.clamp(1.0 - self.spec.sag_depth, 1.0);
-
+        self.supply_fraction = self
+            .supply_fraction
+            .clamp(1.0 - self.spec.sag_depth, 1.0);
         let power_grid = self.spec.power_stage_gain * tone_voltage / self.supply_fraction;
         let power_voltage = self.supply_fraction * plk2_triode_tanh(power_grid);
         let mut pressure_pa = 0.0;
         for mode in &mut self.cabinet_modes {
-            mode.step(power_voltage, dt);
+            mode.step(power_voltage, self.internal_dt);
             pressure_pa += mode.radiation_pa_per_velocity * mode.velocity;
         }
-        /* Piston-band bed: band-pass the power voltage between the driver's
-         * low corner and cone breakup and radiate it broadband. Without this
-         * bed the four discrete modes leave audible spectral holes between
-         * and above their skirts. */
-        let piston_low = one_pole_lowpass(
+        let piston_low = one_pole_lowpass_alpha(
             &mut self.piston_lowpass,
             power_voltage,
-            self.spec.piston_band_hz[1],
-            dt,
+            self.piston_upper_alpha,
         );
-        let piston_dc = one_pole_lowpass(
+        let piston_dc = one_pole_lowpass_alpha(
             &mut self.piston_dc_lowpass,
             piston_low,
-            self.spec.piston_band_hz[0],
-            dt,
+            self.piston_lower_alpha,
         );
-        pressure_pa += self.spec.piston_radiation_pa_per_volt * (piston_low - piston_dc);
-        pressure_pa
+        pressure_pa + self.spec.piston_radiation_pa_per_volt * (piston_low - piston_dc)
+    }
+
+    fn process(&mut self, pickup_velocity_m_per_s: f64) -> f64 {
+        let midpoint = 0.5 * (self.previous_pickup_velocity + pickup_velocity_m_per_s);
+        let first = self.process_internal(midpoint);
+        self.decimator.push(first);
+        let second = self.process_internal(pickup_velocity_m_per_s);
+        self.decimator.push(second);
+        self.previous_pickup_velocity = pickup_velocity_m_per_s;
+        self.decimator.output()
     }
 }
-
 #[derive(Clone, Debug)]
 pub struct PluckedStem {
     sample_rate_hz: f64,
@@ -872,6 +1313,7 @@ pub struct PluckedStem {
     strings: [StringState; MAX_STRINGS],
     body_modes: [BodyMode; MAX_BODY_MODES],
     body_mode_count: usize,
+    body_bridge_residue_norm_squared: f64,
     contact: ContactState,
     amplifier: Option<AmplifierState>,
     cumulative_source_work_j: f64,
@@ -882,7 +1324,7 @@ pub struct PluckedStem {
 #[derive(Clone, Debug)]
 struct PluckedStemSession {
     pack_index: i32,
-    previous_body_flow_m3_per_s: f64,
+    radiator: AcousticRadiator,
     stem: PluckedStem,
 }
 
@@ -892,9 +1334,20 @@ impl PluckedStemSession {
         let stem = PluckedStem::new(pack, sample_rate_hz).ok()?;
         Some(Self {
             pack_index,
-            previous_body_flow_m3_per_s: 0.0,
+            radiator: AcousticRadiator::new(sample_rate_hz),
             stem,
         })
+    }
+
+    #[inline(always)]
+    fn acoustic_pressure_pa_at_1m(&mut self, taps: ChordRadiationTaps) -> f64 {
+        let flow = plk2_effective_acoustic_flow_m3_per_s(
+            self.pack_index,
+            taps.acoustic_body_volume_velocity_m3_per_s,
+            taps.bridge_velocity_m_per_s,
+            taps.direct_string_velocity_m_per_s,
+        );
+        self.radiator.pressure_pa_at_1m(flow)
     }
 }
 
@@ -902,13 +1355,15 @@ impl PluckedStem {
     pub fn new(pack: InstrumentPack, sample_rate_hz: f64) -> Result<Self, PluckedError> {
         validate_pack(pack, sample_rate_hz)?;
         let mut strings = [StringState::EMPTY; MAX_STRINGS];
-        // Sample the compliant termination just inside the nominal bridge.
-        // This is a Galerkin port coordinate, not a post-output coloration.
-        let bridge_x = 0.985;
         for (index, slot) in strings.iter_mut().take(pack.string_count).enumerate() {
-            *slot = StringState::new(pack.strings[index], sample_rate_hz, bridge_x);
+            *slot = StringState::new(pack.strings[index], sample_rate_hz, pack.pickup);
         }
         let (body_modes, body_mode_count) = derive_body_modes(pack, sample_rate_hz)?;
+        let body_bridge_residue_norm_squared = body_modes
+            .iter()
+            .take(body_mode_count)
+            .map(|mode| mode.bridge_residue * mode.bridge_residue)
+            .sum();
         let amplifier = pack
             .amplifier
             .map(|spec| AmplifierState::new(spec, sample_rate_hz));
@@ -919,6 +1374,7 @@ impl PluckedStem {
             strings,
             body_modes,
             body_mode_count,
+            body_bridge_residue_norm_squared,
             contact: ContactState::INACTIVE,
             amplifier,
             cumulative_source_work_j: 0.0,
@@ -932,24 +1388,32 @@ impl PluckedStem {
         Ok(())
     }
 
-    /// Prepare one independently retained contact for a simultaneous chord.
-    ///
-    /// The ordinary stateful stem owns one serialized contact because its
-    /// event ABI accepts one gesture at a time.  A chord attack, however, is
-    /// one player gesture on several strings and must not be synthesized as
-    /// several complete guitars (or several independent amplifier chains).
-    /// The bounded chord renderer keeps these short-lived contact states on
-    /// its own stack while every string shares this stem's body and amp.
     fn prepare_pluck_contact(
         &mut self,
         gesture: PluckGesture,
         track_energy_ledger: bool,
     ) -> Result<ContactState, PluckedError> {
         self.validate_gesture(gesture)?;
-        let string = &mut self.strings[gesture.string_index];
-        if string.fret != gesture.fret {
-            string.rebuild_modes(gesture.fret, self.sample_rate_hz, 0.985, true);
+        let string_index = gesture.string_index;
+        if self.strings[string_index].fret != gesture.fret {
+            let before = track_energy_ledger.then(|| self.strings[string_index].energy_j());
+            self.strings[string_index].rebuild_modes(
+                gesture.fret,
+                self.sample_rate_hz,
+                self.pack.pickup,
+                true,
+            );
+            if let Some(before) = before {
+                let after = self.strings[string_index].energy_j();
+                if after <= before {
+                    self.cumulative_intrinsic_loss_j += before - after;
+                } else {
+                    self.cumulative_source_work_j += after - before;
+                }
+            }
         }
+        self.strings[string_index]
+            .set_contact_window(gesture.position_over_scale, gesture.width_m);
         let frames = round(gesture.contact_duration_seconds * self.sample_rate_hz) as u32;
         if frames == 0 {
             return Err(PluckedError::InvalidContactDuration);
@@ -962,21 +1426,12 @@ impl PluckedStem {
                 2.0 / 3.0,
             )
         };
-        // The inaudible preparation phase leaves the taut string in its
-        // force-balanced deflected shape.  Starting there is essential: a
-        // half-sine force from an undeformed string is a low-pass excitation,
-        // whereas release of a triangular string shape has the observed
-        // 1/n^2 displacement spectrum before pickup/body radiation.
-        let before = track_energy_ledger.then(|| self.strings[gesture.string_index].energy_j());
-        self.strings[gesture.string_index].apply_static_point_force(
-            gesture.position_over_scale,
-            gesture.width_m,
-            gesture.direction as f64 * gesture.force_n,
-        );
-        let support_displacement_m = self.strings[gesture.string_index]
-            .displacement_at(gesture.position_over_scale, gesture.width_m);
+        let before = track_energy_ledger.then(|| self.strings[string_index].energy_j());
+        self.strings[string_index]
+            .apply_static_contact_force(gesture.direction as f64 * gesture.force_n);
+        let support_displacement_m = self.strings[string_index].contact_displacement();
         if let Some(before) = before {
-            let after = self.strings[gesture.string_index].energy_j();
+            let after = self.strings[string_index].energy_j();
             self.cumulative_source_work_j += after - before;
         }
         Ok(ContactState {
@@ -996,52 +1451,54 @@ impl PluckedStem {
             contact_force = self.apply_contact_state(&mut contact, true);
             self.contact = contact;
         }
-
         self.step_after_contact(contact_force, true)
     }
 
-    /// Advance one sample with several physically simultaneous contacts.
-    /// Contacts are caller-owned because the one-shot chord ABI never exposes
-    /// or serializes them; all resonant and nonlinear instrument state stays
-    /// in this shared stem.
+    #[inline(always)]
+    fn step_radiation(&mut self) -> ChordRadiationTaps {
+        if self.contact.active {
+            let mut contact = self.contact;
+            let _ = self.apply_contact_state(&mut contact, false);
+            self.contact = contact;
+        }
+        self.advance_after_contact(false);
+        self.current_radiation_taps()
+    }
+
     fn step_with_contacts(&mut self, contacts: &mut [ContactState]) -> ChordRadiationTaps {
         for contact in contacts {
             if contact.active {
                 let _ = self.apply_contact_state(contact, false);
             }
         }
-
         self.advance_after_contact(false);
+        self.current_radiation_taps()
+    }
 
-        /* A shared chord consumes exactly one of these two radiation ports.
-         * Do not evaluate the public diagnostic string and bridge taps here:
-         * `StringState::velocity_at` performs a modal aperture integration,
-         * and doing that for every acoustic string on every sample was pure
-         * main-thread work with no effect on the rendered PCM. */
-        let (acoustic_body_volume_velocity_m3_per_s, bridge_velocity_m_per_s) =
-            if self.pack.amplifier.is_none() {
-                (
-                    self.acoustic_body_volume_velocity_m3_per_s(),
-                    self.body_bridge_velocity(),
-                )
-            } else {
-                (0.0, 0.0)
-            };
-        let electric_cabinet_pressure_pa_at_1m = match self.pack.pickup {
-            Some(spec) => {
-                let mut pickup_velocity_m_per_s = 0.0;
-                for string in self.strings.iter().take(self.pack.string_count) {
-                    pickup_velocity_m_per_s +=
-                        string.velocity_at(spec.position_over_scale, spec.aperture_m);
-                }
-                self.process_electric_pickup_sample(pickup_velocity_m_per_s)
+    #[inline(always)]
+    fn current_radiation_taps(&mut self) -> ChordRadiationTaps {
+        if self.pack.amplifier.is_some() {
+            let mut pickup_velocity_m_per_s = 0.0;
+            for string in self.strings.iter().take(self.pack.string_count) {
+                pickup_velocity_m_per_s += string.pickup_velocity();
             }
-            None => 0.0,
-        };
-        ChordRadiationTaps {
-            acoustic_body_volume_velocity_m3_per_s,
-            bridge_velocity_m_per_s,
-            electric_cabinet_pressure_pa_at_1m,
+            ChordRadiationTaps {
+                electric_cabinet_pressure_pa_at_1m: self
+                    .process_electric_pickup_sample(pickup_velocity_m_per_s),
+                ..ChordRadiationTaps::default()
+            }
+        } else {
+            let mut direct_string_velocity_m_per_s = 0.0;
+            for string in self.strings.iter().take(self.pack.string_count) {
+                direct_string_velocity_m_per_s += string.direct_velocity();
+            }
+            ChordRadiationTaps {
+                acoustic_body_volume_velocity_m3_per_s: self
+                    .acoustic_body_volume_velocity_m3_per_s(),
+                bridge_velocity_m_per_s: self.body_bridge_velocity(),
+                direct_string_velocity_m_per_s,
+                electric_cabinet_pressure_pa_at_1m: 0.0,
+            }
         }
     }
 
@@ -1060,29 +1517,21 @@ impl PluckedStem {
         ChordRadiationTaps {
             acoustic_body_volume_velocity_m3_per_s: taps.acoustic_body_volume_velocity_m3_per_s,
             bridge_velocity_m_per_s: taps.bridge_velocity_m_per_s,
+            direct_string_velocity_m_per_s: taps.direct_string_velocity_m_per_s,
             electric_cabinet_pressure_pa_at_1m: taps.electric_cabinet_pressure_pa_at_1m,
         }
     }
 
     fn step_after_contact(&mut self, contact_force: f64, track_energy_ledger: bool) -> OutputTaps {
         self.advance_after_contact(track_energy_ledger);
-
         let mut direct = 0.0;
+        let mut pickup = 0.0;
         for string in self.strings.iter().take(self.pack.string_count) {
-            direct += string.velocity_at(0.36, 0.002);
+            direct += string.direct_velocity();
+            pickup += string.pickup_velocity();
         }
         let bridge_velocity = self.body_bridge_velocity();
         let acoustic = self.acoustic_body_volume_velocity_m3_per_s();
-        let pickup = match self.pack.pickup {
-            Some(spec) => {
-                let mut total = 0.0;
-                for string in self.strings.iter().take(self.pack.string_count) {
-                    total += string.velocity_at(spec.position_over_scale, spec.aperture_m);
-                }
-                total
-            }
-            None => 0.0,
-        };
         let cabinet_pressure = self.process_electric_pickup_sample(pickup);
         OutputTaps {
             direct_string_velocity_m_per_s: direct,
@@ -1102,14 +1551,14 @@ impl PluckedStem {
         }
     }
 
+    #[inline(always)]
     fn advance_after_contact(&mut self, track_energy_ledger: bool) {
-        self.apply_intrinsic_half_loss(track_energy_ledger);
         self.apply_bridge_coupling(0.5 * self.dt, track_energy_ledger);
-        self.rotate_all_modes();
+        self.advance_damped_modes(track_energy_ledger);
         self.apply_bridge_coupling(0.5 * self.dt, track_energy_ledger);
-        self.apply_intrinsic_half_loss(track_energy_ledger);
     }
 
+    #[inline(always)]
     fn acoustic_body_volume_velocity_m3_per_s(&self) -> f64 {
         let mut acoustic = 0.0;
         for mode in self.body_modes.iter().take(self.body_mode_count) {
@@ -1160,7 +1609,10 @@ impl PluckedStem {
             return None;
         }
         let frequency = self.string_mode_frequency_hz(string_index, harmonic)?;
-        Some(interpolated_t60(self.strings[string_index].spec, frequency))
+        Some(interpolated_t60(
+            self.strings[string_index].spec,
+            frequency,
+        ))
     }
 
     pub fn string_inharmonicity_b(&self, string_index: usize) -> Option<f64> {
@@ -1183,11 +1635,9 @@ impl PluckedStem {
         self.body_mode_count
     }
 
-    /// Feed the physical pickup tap through the retained amplifier circuit and
-    /// speaker/cabinet state. Acoustic packs return exact silence.
     pub fn process_electric_pickup_sample(&mut self, pickup_velocity_m_per_s: f64) -> f64 {
         match &mut self.amplifier {
-            Some(amplifier) => amplifier.process(pickup_velocity_m_per_s, self.dt),
+            Some(amplifier) => amplifier.process(pickup_velocity_m_per_s),
             None => 0.0,
         }
     }
@@ -1208,16 +1658,19 @@ impl PluckedStem {
         if string_index >= self.pack.string_count
             || harmonic == 0
             || harmonic > self.strings[string_index].mode_count
+            || !position_over_scale.is_finite()
+            || !width_m.is_finite()
         {
             return None;
         }
         let string = &self.strings[string_index];
-        let n = harmonic as f64;
         let norm = sqrt(2.0 / (string.spec.linear_density_kg_per_m * string.vibrating_length_m));
-        Some(
-            norm * sin(n * PI * position_over_scale)
-                * sinc(n * PI * width_m / string.vibrating_length_m),
-        )
+        Some(string.rectangular_modal_residue(
+            norm,
+            harmonic as f64,
+            position_over_scale,
+            width_m,
+        ))
     }
 
     pub fn pickup_modal_residue(&self, string_index: usize, harmonic: usize) -> Option<f64> {
@@ -1238,11 +1691,11 @@ impl PluckedStem {
             return Err(PluckedError::InvalidFret);
         }
         if !gesture.position_over_scale.is_finite()
-            || !(0.02..=0.9).contains(&gesture.position_over_scale)
+            || !(0.005..=0.9).contains(&gesture.position_over_scale)
         {
             return Err(PluckedError::InvalidPluckPosition);
         }
-        if !gesture.width_m.is_finite() || !(0.001..=0.03).contains(&gesture.width_m) {
+        if !gesture.width_m.is_finite() || !(0.000_2..=0.04).contains(&gesture.width_m) {
             return Err(PluckedError::InvalidPluckWidth);
         }
         if !gesture.force_n.is_finite() || !(0.0..=12.0).contains(&gesture.force_n) {
@@ -1257,12 +1710,24 @@ impl PluckedStem {
         {
             return Err(PluckedError::InvalidContactDuration);
         }
-        if !gesture.contact_stiffness_n_per_m_pow_3_over_2.is_finite()
-            || gesture.contact_stiffness_n_per_m_pow_3_over_2 <= 0.0
+        if !gesture
+            .contact_stiffness_n_per_m_pow_3_over_2
+            .is_finite()
+            || !(1.0e3..=1.0e10)
+                .contains(&gesture.contact_stiffness_n_per_m_pow_3_over_2)
             || !gesture.contact_damping_seconds_per_m.is_finite()
-            || gesture.contact_damping_seconds_per_m < 0.0
+            || !(0.0..=10.0).contains(&gesture.contact_damping_seconds_per_m)
         {
             return Err(PluckedError::InvalidContactLaw);
+        }
+        let spec = self.strings[gesture.string_index].spec;
+        let active_length_m = spec.scale_length_m / pow(2.0, gesture.fret as f64 / 12.0);
+        let center_from_bridge_m = gesture.position_over_scale * spec.scale_length_m;
+        let half_width_m = 0.5 * gesture.width_m;
+        if center_from_bridge_m <= half_width_m
+            || center_from_bridge_m + half_width_m >= 0.985 * active_length_m
+        {
+            return Err(PluckedError::InvalidPluckPosition);
         }
         Ok(())
     }
@@ -1272,91 +1737,78 @@ impl PluckedStem {
         contact: &mut ContactState,
         track_energy_ledger: bool,
     ) -> f64 {
-        let snapshot = *contact;
-        let gesture = snapshot.gesture;
+        let gesture = contact.gesture;
         let direction = gesture.direction as f64;
-        let fraction = (snapshot.elapsed_frames as f64 + 0.5) / snapshot.total_frames as f64;
-        // A raised-cosine retreat begins at the preloaded displacement plus
-        // the local Hertz indentation and reaches separation with zero edge
-        // velocity.  The one-sided law below naturally releases as soon as
-        // the string outruns the retreating pick/fingertip.
-        // The initial stick interval retains the force-balanced contact while
-        // the pick edge/finger pad rolls to its slip point.  It is followed by
-        // a smooth, fast retreat; neither phase is a zero-duration impulse.
-        const STICK_FRACTION: f64 = 0.32;
-        let (release, release_velocity) = if fraction < STICK_FRACTION {
+        let fraction = (contact.elapsed_frames as f64 + 0.5) / contact.total_frames as f64;
+        const STICK_FRACTION: f64 = 0.26;
+        let (release, release_velocity) = if fraction <= STICK_FRACTION {
             (1.0, 0.0)
         } else {
-            let slip_fraction = (fraction - STICK_FRACTION) / (1.0 - STICK_FRACTION);
-            let slip_phase = PI * slip_fraction;
+            let u = ((fraction - STICK_FRACTION) / (1.0 - STICK_FRACTION)).clamp(0.0, 1.0);
+            let u2 = u * u;
+            let u3 = u2 * u;
+            let smooth = u3 * (10.0 + u * (-15.0 + 6.0 * u));
+            let derivative = 30.0 * u2 * (1.0 - u) * (1.0 - u);
             (
-                0.5 * (1.0 + cos(slip_phase)),
-                -0.5 * PI * sin(slip_phase)
+                1.0 - smooth,
+                -derivative
                     / ((1.0 - STICK_FRACTION) * gesture.contact_duration_seconds),
             )
         };
         let initial_target =
-            snapshot.support_displacement_m + direction * snapshot.peak_indentation_m;
+            contact.support_displacement_m + direction * contact.peak_indentation_m;
         let target = initial_target * release;
         let target_velocity = initial_target * release_velocity;
         let string = &self.strings[gesture.string_index];
-        let displacement = string.displacement_at(gesture.position_over_scale, gesture.width_m);
-        let velocity = string.velocity_at(gesture.position_over_scale, gesture.width_m);
+        let displacement = string.contact_displacement();
+        let velocity = string.contact_velocity();
         let compression = (direction * (target - displacement)).max(0.0);
         let closing_velocity = direction * (target_velocity - velocity);
-        let hunt_crossley =
-            (1.0 + gesture.contact_damping_seconds_per_m * closing_velocity).max(0.0);
+        let hunt_crossley = (1.0
+            + gesture.contact_damping_seconds_per_m * closing_velocity)
+            .clamp(0.0, 4.0);
         let magnitude = (gesture.contact_stiffness_n_per_m_pow_3_over_2
-            * pow(compression, 1.5)
+            * compression
+            * sqrt(compression)
             * hunt_crossley)
-            .min(gesture.force_n);
+            .min(2.5 * gesture.force_n.max(1.0e-12));
         let force = direction * magnitude;
-
         let before = track_energy_ledger.then(|| self.strings[gesture.string_index].energy_j());
-        self.strings[gesture.string_index].apply_point_impulse(
-            gesture.position_over_scale,
-            gesture.width_m,
-            force * self.dt,
-        );
+        self.strings[gesture.string_index].apply_contact_impulse(force * self.dt);
         if let Some(before) = before {
             let after = self.strings[gesture.string_index].energy_j();
             self.cumulative_source_work_j += after - before;
         }
-
-        contact.elapsed_frames += 1;
-        if contact.elapsed_frames >= contact.total_frames {
+        contact.elapsed_frames = contact.elapsed_frames.saturating_add(1);
+        if contact.elapsed_frames >= contact.total_frames
+            || (compression == 0.0 && fraction > STICK_FRACTION)
+        {
             contact.active = false;
         }
         force
     }
 
-    fn apply_intrinsic_half_loss(&mut self, track_energy_ledger: bool) {
+    fn advance_damped_modes(&mut self, track_energy_ledger: bool) {
         let before = track_energy_ledger.then(|| self.total_energy_j());
         for string in self.strings.iter_mut().take(self.pack.string_count) {
-            for mode in string.modes.iter_mut().take(string.mode_count) {
-                mode.velocity *= mode.half_velocity_decay;
-            }
+            string.advance_free(self.dt);
         }
         for mode in self.body_modes.iter_mut().take(self.body_mode_count) {
-            mode.velocity *= mode.half_velocity_decay;
+            mode.advance_free();
         }
         if let Some(before) = before {
             let after = self.total_energy_j();
-            self.cumulative_intrinsic_loss_j += (before - after).max(0.0);
-        }
-    }
-
-    fn rotate_all_modes(&mut self) {
-        for string in self.strings.iter_mut().take(self.pack.string_count) {
-            for mode in string.modes.iter_mut().take(string.mode_count) {
-                mode.rotate_conservative();
+            if before.is_finite() && after.is_finite() {
+                /* Signed for ledger closure: exact damped steps can round a
+                 * ULP either way; clamping dropped the negative residues and
+                 * drifted `accounted` above `work`. Passivity is guarded by
+                 * the source-free monotone-energy assertion, not here. */
+                self.cumulative_intrinsic_loss_j += before - after;
             }
         }
-        for mode in self.body_modes.iter_mut().take(self.body_mode_count) {
-            mode.rotate_conservative();
-        }
     }
 
+    #[inline(always)]
     fn body_bridge_velocity(&self) -> f64 {
         let mut velocity = 0.0;
         for mode in self.body_modes.iter().take(self.body_mode_count) {
@@ -1365,48 +1817,74 @@ impl PluckedStem {
         velocity
     }
 
+    #[inline(always)]
     fn body_bridge_residue_norm_squared(&self) -> f64 {
-        let mut norm = 0.0;
-        for mode in self.body_modes.iter().take(self.body_mode_count) {
-            norm += mode.bridge_residue * mode.bridge_residue;
-        }
-        norm
+        self.body_bridge_residue_norm_squared
     }
 
-    /// Exact velocity update for a positive conductance interconnecting two
-    /// mass-normalized modal ports.  For `delta = a^T v_s - b^T v_b`,
-    /// `delta(t) = delta(0) exp(-g (||a||^2+||b||^2)t)`.  Applying its exact
-    /// impulse makes the kinetic-energy change non-positive by construction.
+    /// Order-independent implicit-midpoint solve for the complete star of
+    /// string ports coupled to one body port. The resulting Cayley transform
+    /// of a positive conductance is unconditionally passive.
     fn apply_bridge_coupling(&mut self, duration_seconds: f64, track_energy_ledger: bool) {
         let body_norm_squared = self.body_bridge_residue_norm_squared();
-        if body_norm_squared == 0.0 {
+        if body_norm_squared <= 0.0 || duration_seconds <= 0.0 {
             return;
         }
+        let conductance_time = self.pack.bridge_conductance_kg_per_s * duration_seconds;
+        if conductance_time <= 0.0 {
+            return;
+        }
+        let body_velocity = self.body_bridge_velocity();
+        let mut alpha = [0.0; MAX_STRINGS];
+        let mut beta = [0.0; MAX_STRINGS];
+        let mut alpha_sum = 0.0;
+        let mut beta_sum = 0.0;
         for string_index in 0..self.pack.string_count {
-            let string_norm_squared = self.strings[string_index].port_residue_norm_squared();
-            let string_mode_count = self.strings[string_index].mode_count;
-            let norm_squared = string_norm_squared + body_norm_squared;
-            if norm_squared == 0.0 {
+            let string = &self.strings[string_index];
+            let string_norm_squared = string.port_residue_norm_squared();
+            if string_norm_squared <= 0.0 {
                 continue;
             }
-            let delta = self.strings[string_index].port_velocity() - self.body_bridge_velocity();
-            let decay =
-                exp(-self.pack.bridge_conductance_kg_per_s * norm_squared * duration_seconds);
-            let impulse = delta * (1.0 - decay) / norm_squared;
-            let before = track_energy_ledger.then(|| self.total_energy_j());
+            let denominator = 1.0 + 0.5 * conductance_time * string_norm_squared;
+            let delta = string.port_velocity() - body_velocity;
+            alpha[string_index] = conductance_time * delta / denominator;
+            beta[string_index] =
+                0.5 * conductance_time * body_norm_squared / denominator;
+            alpha_sum += alpha[string_index];
+            beta_sum += beta[string_index];
+        }
+        let total_impulse = alpha_sum / (1.0 + beta_sum);
+        let before = track_energy_ledger.then(|| self.total_energy_j());
+        for string_index in 0..self.pack.string_count {
+            let impulse = alpha[string_index] - beta[string_index] * total_impulse;
+            if impulse == 0.0 {
+                continue;
+            }
+            let mode_count = self.strings[string_index].mode_count;
             for mode in self.strings[string_index]
                 .modes
                 .iter_mut()
-                .take(string_mode_count)
+                .take(mode_count)
             {
                 mode.velocity -= mode.bridge_residue * impulse;
             }
-            for mode in self.body_modes.iter_mut().take(self.body_mode_count) {
-                mode.velocity += mode.bridge_residue * impulse;
-            }
-            if let Some(before) = before {
-                let after = self.total_energy_j();
-                self.cumulative_bridge_loss_j += (before - after).max(0.0);
+        }
+        for mode in self.body_modes.iter_mut().take(self.body_mode_count) {
+            mode.velocity += mode.bridge_residue * total_impulse;
+        }
+        if let Some(before) = before {
+            let after = self.total_energy_j();
+            if before.is_finite() && after.is_finite() {
+                /*
+                 * Signed accumulation: the symmetric implicit-midpoint
+                 * conductance solve can round a step's exchange either way at
+                 * machine scale. Clamping at zero silently dropped those
+                 * negative rounding residues and broke ledger closure at the
+                 * 1e-7 level; passivity itself is guarded separately by the
+                 * source-free monotone-energy assertion, not by this ledger
+                 * term.
+                 */
+                self.cumulative_bridge_loss_j += before - after;
             }
         }
     }
@@ -1507,7 +1985,8 @@ fn encode_stem_session(session: &PluckedStemSession, bytes: &mut [u8]) -> Option
     writer.write_u32(PLK2_STEM_STATE_VERSION)?;
     writer.write_i32(session.pack_index)?;
     writer.write_f64(session.stem.sample_rate_hz)?;
-    writer.write_f64(session.previous_body_flow_m3_per_s)?;
+    writer.write_f64(session.radiator.previous_flow_m3_per_s)?;
+    writer.write_f64(session.radiator.derivative_m3_per_s2)?;
     writer.write_f64(session.stem.cumulative_source_work_j)?;
     writer.write_f64(session.stem.cumulative_intrinsic_loss_j)?;
     writer.write_f64(session.stem.cumulative_bridge_loss_j)?;
@@ -1547,6 +2026,9 @@ fn encode_stem_session(session: &PluckedStemSession, bytes: &mut [u8]) -> Option
         None => writer.write_u8(0)?,
         Some(amplifier) => {
             writer.write_u8(1)?;
+            writer.write_f64(amplifier.pickup_filter.z1)?;
+            writer.write_f64(amplifier.pickup_filter.z2)?;
+            writer.write_f64(amplifier.previous_pickup_velocity)?;
             writer.write_f64(amplifier.input_dc_lowpass)?;
             writer.write_f64(amplifier.interstage_dc_lowpass)?;
             writer.write_f64(amplifier.bass_lowpass)?;
@@ -1554,6 +2036,10 @@ fn encode_stem_session(session: &PluckedStemSession, bytes: &mut [u8]) -> Option
             writer.write_f64(amplifier.piston_lowpass)?;
             writer.write_f64(amplifier.piston_dc_lowpass)?;
             writer.write_f64(amplifier.supply_fraction)?;
+            writer.write_u32(u32::try_from(amplifier.decimator.cursor).ok()?)?;
+            for sample in amplifier.decimator.history {
+                writer.write_f64(sample)?;
+            }
             for mode in amplifier.cabinet_modes {
                 writer.write_f64(mode.position)?;
                 writer.write_f64(mode.velocity)?;
@@ -1581,7 +2067,8 @@ fn decode_stem_session_with_base(
         return None;
     }
     let mut reader = StemStateReader::new(payload);
-    if reader.read_u32()? != PLK2_STEM_STATE_MAGIC || reader.read_u32()? != PLK2_STEM_STATE_VERSION
+    if reader.read_u32()? != PLK2_STEM_STATE_MAGIC
+        || reader.read_u32()? != PLK2_STEM_STATE_VERSION
     {
         return None;
     }
@@ -1597,11 +2084,13 @@ fn decode_stem_session_with_base(
         Some(_) => return None,
         None => PluckedStemSession::new(pack_index, sample_rate_hz)?,
     };
-    session.previous_body_flow_m3_per_s = reader.read_f64()?;
+    session.radiator.previous_flow_m3_per_s = reader.read_f64()?;
+    session.radiator.derivative_m3_per_s2 = reader.read_f64()?;
     session.stem.cumulative_source_work_j = reader.read_f64()?;
     session.stem.cumulative_intrinsic_loss_j = reader.read_f64()?;
     session.stem.cumulative_bridge_loss_j = reader.read_f64()?;
-    if !stem_state_scalar_is_bounded(session.previous_body_flow_m3_per_s)
+    if !stem_state_scalar_is_bounded(session.radiator.previous_flow_m3_per_s)
+        || !stem_state_scalar_is_bounded(session.radiator.derivative_m3_per_s2)
         || !stem_state_scalar_is_bounded(session.stem.cumulative_source_work_j)
         || !stem_state_scalar_is_bounded(session.stem.cumulative_intrinsic_loss_j)
         || !stem_state_scalar_is_bounded(session.stem.cumulative_bridge_loss_j)
@@ -1619,7 +2108,12 @@ fn decode_stem_session_with_base(
             if fret > 36 {
                 return None;
             }
-            session.stem.strings[string_index].rebuild_modes(fret, sample_rate_hz, 0.985, false);
+            session.stem.strings[string_index].rebuild_modes(
+                fret,
+                sample_rate_hz,
+                session.stem.pack.pickup,
+                false,
+            );
         } else if fret != 0 {
             return None;
         }
@@ -1643,6 +2137,9 @@ fn decode_stem_session_with_base(
             } else if position != 0.0 || velocity != 0.0 {
                 return None;
             }
+        }
+        if active {
+            session.stem.strings[string_index].refresh_nonlinear_extension();
         }
     }
 
@@ -1697,6 +2194,7 @@ fn decode_stem_session_with_base(
     };
     if session.stem.validate_gesture(gesture).is_err()
         || (active && (total_frames == 0 || elapsed_frames >= total_frames))
+        || (!active && elapsed_frames > total_frames)
         || !stem_state_scalar_is_bounded(peak_indentation_m)
         || !stem_state_scalar_is_bounded(support_displacement_m)
     {
@@ -1710,11 +2208,18 @@ fn decode_stem_session_with_base(
         peak_indentation_m,
         support_displacement_m,
     };
+    if active {
+        session.stem.strings[string_index]
+            .set_contact_window(position_over_scale, width_m);
+    }
 
     let amplifier_present = reader.read_u8()?;
     match (&mut session.stem.amplifier, amplifier_present) {
         (None, 0) => {}
         (Some(amplifier), 1) => {
+            amplifier.pickup_filter.z1 = reader.read_f64()?;
+            amplifier.pickup_filter.z2 = reader.read_f64()?;
+            amplifier.previous_pickup_velocity = reader.read_f64()?;
             amplifier.input_dc_lowpass = reader.read_f64()?;
             amplifier.interstage_dc_lowpass = reader.read_f64()?;
             amplifier.bass_lowpass = reader.read_f64()?;
@@ -1722,12 +2227,30 @@ fn decode_stem_session_with_base(
             amplifier.piston_lowpass = reader.read_f64()?;
             amplifier.piston_dc_lowpass = reader.read_f64()?;
             amplifier.supply_fraction = reader.read_f64()?;
-            if !stem_state_scalar_is_bounded(amplifier.input_dc_lowpass)
-                || !stem_state_scalar_is_bounded(amplifier.interstage_dc_lowpass)
-                || !stem_state_scalar_is_bounded(amplifier.bass_lowpass)
-                || !stem_state_scalar_is_bounded(amplifier.below_treble_lowpass)
-                || !stem_state_scalar_is_bounded(amplifier.piston_lowpass)
-                || !stem_state_scalar_is_bounded(amplifier.piston_dc_lowpass)
+            amplifier.decimator.cursor = usize::try_from(reader.read_u32()?).ok()?;
+            if amplifier.decimator.cursor >= HALF_BAND_TAPS {
+                return None;
+            }
+            for sample in &mut amplifier.decimator.history {
+                *sample = reader.read_f64()?;
+            }
+            let scalar_states = [
+                amplifier.pickup_filter.z1,
+                amplifier.pickup_filter.z2,
+                amplifier.previous_pickup_velocity,
+                amplifier.input_dc_lowpass,
+                amplifier.interstage_dc_lowpass,
+                amplifier.bass_lowpass,
+                amplifier.below_treble_lowpass,
+                amplifier.piston_lowpass,
+                amplifier.piston_dc_lowpass,
+            ];
+            if scalar_states.iter().any(|value| !stem_state_scalar_is_bounded(*value))
+                || amplifier
+                    .decimator
+                    .history
+                    .iter()
+                    .any(|value| !stem_state_scalar_is_bounded(*value))
                 || !amplifier.supply_fraction.is_finite()
                 || amplifier.supply_fraction < 1.0 - amplifier.spec.sag_depth
                 || amplifier.supply_fraction > 1.0
@@ -1773,9 +2296,12 @@ pub fn midi_frequency_hz(midi: i32) -> f64 {
 }
 
 fn interpolated_t60(spec: StringSpec, frequency_hz: f64) -> f64 {
-    let octave_decades = (libm::log(frequency_hz / 100.0) / libm::log(10.0)).clamp(0.0, 1.0);
-    spec.t60_seconds_at_100_hz
-        + (spec.t60_seconds_at_1000_hz - spec.t60_seconds_at_100_hz) * octave_decades
+    let decade_ratio = (spec.t60_seconds_at_1000_hz / spec.t60_seconds_at_100_hz)
+        .max(1.0e-9);
+    let logarithmic_slope = libm::log(decade_ratio) / libm::log(10.0);
+    let normalized_frequency = (frequency_hz / 100.0).clamp(0.2, 200.0);
+    (spec.t60_seconds_at_100_hz * pow(normalized_frequency, logarithmic_slope))
+        .clamp(0.03, 120.0)
 }
 
 fn sinc(value: f64) -> f64 {
@@ -1784,12 +2310,6 @@ fn sinc(value: f64) -> f64 {
     } else {
         sin(value) / value
     }
-}
-
-fn one_pole_lowpass(state: &mut f64, input: f64, cutoff_hz: f64, dt: f64) -> f64 {
-    let alpha = 1.0 - exp(-TAU * cutoff_hz * dt);
-    *state += alpha * (input - *state);
-    *state
 }
 
 /// Lumped cavity resonance for one circular, unflanged sound hole. The
@@ -1880,9 +2400,9 @@ fn validate_pack(pack: InstrumentPack, sample_rate_hz: f64) -> Result<(), Plucke
     }
     if let Some(pickup) = pack.pickup {
         if !pickup.position_over_scale.is_finite()
-            || !(0.02..=0.9).contains(&pickup.position_over_scale)
+            || !(0.005..=0.9).contains(&pickup.position_over_scale)
             || !pickup.aperture_m.is_finite()
-            || !(0.001..=0.03).contains(&pickup.aperture_m)
+            || !(0.000_2..=0.04).contains(&pickup.aperture_m)
         {
             return Err(PluckedError::InvalidPickup);
         }
@@ -1901,7 +2421,7 @@ fn validate_pack(pack: InstrumentPack, sample_rate_hz: f64) -> Result<(), Plucke
         let invalid_modes = (0..4).any(|index| {
             !amplifier.cabinet_frequency_hz[index].is_finite()
                 || amplifier.cabinet_frequency_hz[index] <= 0.0
-                || amplifier.cabinet_frequency_hz[index] >= 0.42 * sample_rate_hz
+                || amplifier.cabinet_frequency_hz[index] >= 0.42 * (2.0 * sample_rate_hz)
                 || !amplifier.cabinet_q[index].is_finite()
                 || amplifier.cabinet_q[index] <= 0.5
                 || !amplifier.cabinet_drive_residue[index].is_finite()
@@ -1924,6 +2444,13 @@ fn validate_pack(pack: InstrumentPack, sample_rate_hz: f64) -> Result<(), Plucke
             || !amplifier.treble_mix.is_finite()
             || !(0.0..=1.0).contains(&amplifier.treble_mix)
             || amplifier.bass_corner_hz >= amplifier.treble_corner_hz
+            || !amplifier.piston_band_hz[0].is_finite()
+            || !amplifier.piston_band_hz[1].is_finite()
+            || amplifier.piston_band_hz[0] <= 0.0
+            || amplifier.piston_band_hz[0] >= amplifier.piston_band_hz[1]
+            || amplifier.piston_band_hz[1] >= 0.45 * (2.0 * sample_rate_hz)
+            || !amplifier.piston_radiation_pa_per_volt.is_finite()
+            || amplifier.piston_radiation_pa_per_volt <= 0.0
             || invalid_modes
         {
             return Err(PluckedError::InvalidAmplifier);
@@ -1937,22 +2464,67 @@ fn validate_pack(pack: InstrumentPack, sample_rate_hz: f64) -> Result<(), Plucke
 ///
 /// Wood loss is not flat: measured spruce/maple loss factors sit near their
 /// low-frequency plateau below ~1 kHz and rise (Q falls) toward the
-/// kilohertz range (Haines 1979; Brémaud 2012 tonewood surveys). A
-/// fractional Zener captures that decades-wide, nearly-constant-slope
-/// behavior with one relaxation ratio and one fractional exponent — the same
-/// tier the FrankenSim viscoelastic module (fs-material, commit c966d101)
-/// implements offline. The pack's reviewed `plate_q` remains the authority
-/// at the 250 Hz anchor; only the shape around it is added here, and the
-/// floor keeps every mode passively damped rather than inventing gain.
-/// One cached DKT solve per acoustic guitar pack. The eigenproblem depends
-/// only on geometry/material (never the sample rate), the shipping WASM is
-/// single-threaded without shared memory, and the host serializes exported
-/// calls, so the slot cannot be accessed concurrently or re-entered — the
-/// same exclusivity argument as the PLK2 chord-runtime slots below.
-struct DktBodySlot(UnsafeCell<Option<upright_bass_body::UprightBassBodyAuthority>>);
+/// kilohertz range. The pack's reviewed `plate_q` remains the authority at
+/// the 250 Hz anchor; only the passive frequency shape around it is added.
+struct DktBodyCache {
+    geometry: Option<BodyGeometry>,
+    authority: Option<upright_bass_body::UprightBassBodyAuthority>,
+}
+
+struct DktBodySlot {
+    busy: AtomicBool,
+    cache: UnsafeCell<DktBodyCache>,
+}
+
 unsafe impl Sync for DktBodySlot {}
-static DKT_DREADNOUGHT_BODY: DktBodySlot = DktBodySlot(UnsafeCell::new(None));
-static DKT_UKULELE_BODY: DktBodySlot = DktBodySlot(UnsafeCell::new(None));
+
+impl DktBodySlot {
+    const fn new() -> Self {
+        Self {
+            busy: AtomicBool::new(false),
+            cache: UnsafeCell::new(DktBodyCache {
+                geometry: None,
+                authority: None,
+            }),
+        }
+    }
+
+    fn get_or_derive(
+        &self,
+        geometry: BodyGeometry,
+        derive: impl FnOnce() -> Result<upright_bass_body::UprightBassBodyAuthority, PluckedError>,
+    ) -> Result<upright_bass_body::UprightBassBodyAuthority, PluckedError> {
+        if self
+            .busy
+            .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
+            .is_err()
+        {
+            return derive();
+        }
+        struct Release<'a>(&'a AtomicBool);
+        impl Drop for Release<'_> {
+            fn drop(&mut self) {
+                self.0.store(false, Ordering::Release);
+            }
+        }
+        let _release = Release(&self.busy);
+        // SAFETY: the atomic ownership flag admits exactly one cache accessor.
+        let cache = unsafe { &mut *self.cache.get() };
+        if cache.geometry == Some(geometry) {
+            if let Some(authority) = cache.authority {
+                return Ok(authority);
+            }
+        }
+        let authority = derive()?;
+        cache.geometry = Some(geometry);
+        cache.authority = Some(authority);
+        Ok(authority)
+    }
+}
+
+static DKT_DREADNOUGHT_BODY: DktBodySlot = DktBodySlot::new();
+static DKT_UKULELE_BODY: DktBodySlot = DktBodySlot::new();
+static DKT_UPRIGHT_BASS_BODY: DktBodySlot = DktBodySlot::new();
 
 fn derive_dkt_guitar_body(
     pack: InstrumentPack,
@@ -1964,38 +2536,30 @@ fn derive_dkt_guitar_body(
         "reentrant-ukulele" => &DKT_UKULELE_BODY,
         _ => return Err(PluckedError::InvalidBody),
     };
-    /* SAFETY: single-threaded WASM with host-serialized exports; see
-     * DktBodySlot. The write happens at most once per pack per instance. */
-    let cached = unsafe { &mut *slot.0.get() };
-    let authority = match cached {
-        Some(authority) => *authority,
-        None => {
-            let input = upright_bass_body::UprightBassBodyInput {
-                length_m: geometry.length_m,
-                width_m: geometry.width_m,
-                thickness_m: geometry.thickness_m,
-                density_kg_per_m3: geometry.density_kg_per_m3,
-                young_longitudinal_pa: geometry.young_longitudinal_pa,
-                young_radial_pa: geometry.young_radial_pa,
-                shear_lr_pa: geometry.shear_lr_pa,
-                poisson_lr: geometry.poisson_lr,
-                brace_rigidity_x_n_m: geometry.brace_rigidity_x_n_m,
-                brace_rigidity_y_n_m: geometry.brace_rigidity_y_n_m,
-                bridge_x_over_length: geometry.bridge_x_over_length,
-                bridge_y_over_width: geometry.bridge_y_over_width,
-                cavity_volume_m3: geometry.body_volume_m3,
-                provisional_plate_q: geometry.plate_q,
-            };
-            let identity = match pack.id {
-                "steel-dreadnought" => upright_bass_body::DREADNOUGHT_IDENTITY,
-                _ => upright_bass_body::UKULELE_IDENTITY,
-            };
-            let derived = upright_bass_body::derive_soundboard_body(input, identity)
-                .map_err(|_| PluckedError::InvalidBody)?;
-            *cached = Some(derived);
-            derived
-        }
+    let input = upright_bass_body::UprightBassBodyInput {
+        length_m: geometry.length_m,
+        width_m: geometry.width_m,
+        thickness_m: geometry.thickness_m,
+        density_kg_per_m3: geometry.density_kg_per_m3,
+        young_longitudinal_pa: geometry.young_longitudinal_pa,
+        young_radial_pa: geometry.young_radial_pa,
+        shear_lr_pa: geometry.shear_lr_pa,
+        poisson_lr: geometry.poisson_lr,
+        brace_rigidity_x_n_m: geometry.brace_rigidity_x_n_m,
+        brace_rigidity_y_n_m: geometry.brace_rigidity_y_n_m,
+        bridge_x_over_length: geometry.bridge_x_over_length,
+        bridge_y_over_width: geometry.bridge_y_over_width,
+        cavity_volume_m3: geometry.body_volume_m3,
+        provisional_plate_q: geometry.plate_q,
     };
+    let identity = match pack.id {
+        "steel-dreadnought" => upright_bass_body::DREADNOUGHT_IDENTITY,
+        _ => upright_bass_body::UKULELE_IDENTITY,
+    };
+    let authority = slot.get_or_derive(geometry, || {
+        upright_bass_body::derive_soundboard_body(input, identity)
+            .map_err(|_| PluckedError::InvalidBody)
+    })?;
     let mut modes = [BodyMode::ZERO; MAX_BODY_MODES];
     let mut count = 0usize;
     /* The reviewed guitar packs carry a measured air-resonance frequency, so
@@ -2061,12 +2625,14 @@ fn derive_body_modes(
     let geometry = pack.body;
     let mut modes = [BodyMode::ZERO; MAX_BODY_MODES];
     let mut count = 0usize;
-    if pack.id == "steel-dreadnought" {
+    if matches!(pack.id, "steel-dreadnought" | "reentrant-ukulele") {
         return derive_dkt_guitar_body(pack, sample_rate_hz);
     }
     if pack.id == "pizzicato-upright-bass" {
-        let authority = upright_bass_body::derive_reviewed_upright_bass_body()
-            .map_err(|_| PluckedError::InvalidBody)?;
+        let authority = DKT_UPRIGHT_BASS_BODY.get_or_derive(geometry, || {
+            upright_bass_body::derive_reviewed_upright_bass_body()
+                .map_err(|_| PluckedError::InvalidBody)
+        })?;
         let reviewed = authority.input;
         if geometry.length_m != reviewed.length_m
             || geometry.width_m != reviewed.width_m
@@ -2179,7 +2745,9 @@ fn derive_body_modes(
             );
         }
     }
-    Ok((modes, count))
+    (count > 0)
+        .then_some((modes, count))
+        .ok_or(PluckedError::InvalidBody)
 }
 
 fn make_body_mode(
@@ -2191,16 +2759,13 @@ fn make_body_mode(
     sample_rate_hz: f64,
 ) -> BodyMode {
     let omega = TAU * frequency_hz;
-    let dt = 1.0 / sample_rate_hz;
     BodyMode {
         kind,
         position: 0.0,
         velocity: 0.0,
         frequency_hz,
         omega,
-        rotation_cos: cos(omega * dt),
-        rotation_sin: sin(omega * dt),
-        half_velocity_decay: exp(-omega * dt / (4.0 * q)),
+        damped_step: DampedStep::new(omega, omega / (2.0 * q), 1.0 / sample_rate_hz),
         bridge_residue,
         radiation_residue_m2_per_sqrt_kg: radiation_residue,
     }
@@ -2554,7 +3119,7 @@ fn assign_chord_courses_recursive(
     pack: InstrumentPack,
     midis: &[i32],
     note_index: usize,
-    used_courses: u8,
+    used_courses: u16,
     score: u64,
     current: &mut [usize; MAX_STRINGS],
     best_score: &mut u64,
@@ -2572,7 +3137,7 @@ fn assign_chord_courses_recursive(
     }
     let midi = midis[note_index];
     for course in 0..pack.string_count {
-        let course_bit = 1_u8 << course;
+        let course_bit = 1_u16 << course;
         if used_courses & course_bit != 0 {
             continue;
         }
@@ -2721,6 +3286,16 @@ fn plk2_gesture(pack_index: i32, string_index: usize, fret: u8, velocity: i32) -
         }
         _ => {}
     }
+    if let Some(pack) = plk2_pack(pack_index) {
+        let scale_length_m = pack.strings[string_index.min(pack.string_count - 1)].scale_length_m;
+        let active_length_m = scale_length_m / pow(2.0, fret as f64 / 12.0);
+        let maximum_center_m = (0.94 * active_length_m - 0.5 * gesture.width_m)
+            .max(0.005 * scale_length_m);
+        gesture.position_over_scale = gesture
+            .position_over_scale
+            .min(maximum_center_m / scale_length_m)
+            .max(0.005);
+    }
     gesture
 }
 
@@ -2783,24 +3358,22 @@ pub fn plk2_render_slices(
     let pan_angle = PI * 0.25 + (course - 0.5) * 0.30;
     let gain_left = cos(pan_angle);
     let gain_right = sin(pan_angle);
-    let mut previous_body_flow = 0.0;
-    let body_pressure_scale =
-        AIR_DENSITY_KG_PER_M3 * sample_rate as f64 / (4.0 * PI * ACOUSTIC_MIC_DISTANCE_M);
-
+    let mut radiator = AcousticRadiator::new(sample_rate as f64);
     for frame in 0..frames {
-        let taps = stem.step();
+        let taps = stem.step_radiation();
         let pressure_pa = match path {
             PluckedRenderPath::AcousticBodyRadiation => {
                 let flow = plk2_effective_acoustic_flow_m3_per_s(
                     pack_index,
                     taps.acoustic_body_volume_velocity_m3_per_s,
                     taps.bridge_velocity_m_per_s,
+                    taps.direct_string_velocity_m_per_s,
                 );
-                let pressure = body_pressure_scale * (flow - previous_body_flow);
-                previous_body_flow = flow;
-                pressure
+                radiator.pressure_pa_at_1m(flow)
             }
-            PluckedRenderPath::ElectricCabinetRadiation => taps.electric_cabinet_pressure_pa_at_1m,
+            PluckedRenderPath::ElectricCabinetRadiation => {
+                taps.electric_cabinet_pressure_pa_at_1m
+            }
         };
         let pcm = pressure_pa * REFERENCE_PCM_PER_PASCAL * plk2_listener_trim(pack_index);
         if !pcm.is_finite() || pcm.abs() > f32::MAX as f64 {
@@ -2808,9 +3381,9 @@ pub fn plk2_render_slices(
             right[..frames].fill(0.0);
             return 0;
         }
-        let pcm = pcm.clamp(-1.0, 1.0) as f32;
-        left[frame] = (pcm as f64 * gain_left) as f32;
-        right[frame] = (pcm as f64 * gain_right) as f32;
+        let pcm = plk2_soft_limit(pcm);
+        left[frame] = (pcm * gain_left) as f32;
+        right[frame] = (pcm * gain_right) as f32;
     }
     frames as i32
 }
@@ -2822,9 +3395,78 @@ enum PluckedChordAdvance {
     Invalid,
 }
 
+const PLK2_RESAMPLER_TAPS: usize = 12;
+const PLK2_RESAMPLER_MAX_PHASES: usize = 12;
+const PLK2_RESAMPLER_LEFT_TAPS: isize = 5;
+const PLK2_RESAMPLER_RIGHT_TAPS: usize = 6;
+
+#[derive(Clone, Debug)]
+struct PolyphaseResampler {
+    weights: [[f64; PLK2_RESAMPLER_TAPS]; PLK2_RESAMPLER_MAX_PHASES],
+}
+
+impl PolyphaseResampler {
+    fn new(divisor: usize) -> Option<Self> {
+        if divisor == 0 || divisor > PLK2_RESAMPLER_MAX_PHASES {
+            return None;
+        }
+        let mut weights = [[0.0; PLK2_RESAMPLER_TAPS]; PLK2_RESAMPLER_MAX_PHASES];
+        const CUTOFF: f64 = 0.86;
+        const RADIUS: f64 = 6.0;
+        for phase in 0..divisor {
+            let fractional = phase as f64 / divisor as f64;
+            let mut sum = 0.0;
+            for tap in 0..PLK2_RESAMPLER_TAPS {
+                let source_offset = tap as f64 - PLK2_RESAMPLER_LEFT_TAPS as f64;
+                let x = fractional - source_offset;
+                let magnitude = x.abs();
+                if magnitude >= RADIUS {
+                    continue;
+                }
+                let window = 0.42
+                    + 0.5 * cos(PI * x / RADIUS)
+                    + 0.08 * cos(TAU * x / RADIUS);
+                let kernel = if magnitude < 1.0e-12 {
+                    CUTOFF
+                } else {
+                    sin(PI * CUTOFF * x) / (PI * x)
+                };
+                let weight = window * kernel;
+                weights[phase][tap] = weight;
+                sum += weight;
+            }
+            if !sum.is_finite() || sum.abs() < 1.0e-12 {
+                return None;
+            }
+            for weight in &mut weights[phase] {
+                *weight /= sum;
+            }
+        }
+        Some(Self { weights })
+    }
+
+    #[inline(always)]
+    fn sample(&self, source: &[f32], center: usize, phase: usize) -> f32 {
+        let mut sample = 0.0;
+        let last = source.len().saturating_sub(1) as isize;
+        for tap in 0..PLK2_RESAMPLER_TAPS {
+            let offset = tap as isize - PLK2_RESAMPLER_LEFT_TAPS;
+            let index = center as isize + offset;
+            let source_sample = if index < 0 {
+                0.0
+            } else {
+                source[index.min(last) as usize] as f64
+            };
+            sample += self.weights[phase][tap] * source_sample;
+        }
+        sample as f32
+    }
+}
+
 #[derive(Clone, Debug)]
 struct PluckedChordSession {
     pack_index: i32,
+    render_path: PluckedRenderPath,
     output_sample_rate_hz: f64,
     frames: usize,
     rate_divisor: usize,
@@ -2832,9 +3474,7 @@ struct PluckedChordSession {
     simulated_frames: usize,
     reconstructed_frames: usize,
     copied_frames: usize,
-    filter_alpha: f64,
-    filter_one: f64,
-    filter_two: f64,
+    resampler: PolyphaseResampler,
     note_count: usize,
     canonical_midis: [i32; MAX_STRINGS],
     canonical_velocities: [i32; MAX_STRINGS],
@@ -2850,17 +3490,10 @@ struct PluckedChordRuntimeControl {
 struct PluckedChordRuntimeControlSlot(UnsafeCell<PluckedChordRuntimeControl>);
 struct PluckedChordRuntimeSessionSlot(UnsafeCell<MaybeUninit<PluckedChordSession>>);
 
-/* The shipping WASM is built without atomics or shared memory, and exported
- * calls are synchronous. The TypeScript host additionally serializes every
- * cooperative PLK2 render, so this slot can never be accessed concurrently or
- * re-entered. Keeping that exclusivity in the ABI avoids decoding and
- * reconstructing the complete instrument on every 256-sample browser yield. */
 unsafe impl Sync for PluckedChordRuntimeControlSlot {}
 unsafe impl Sync for PluckedChordRuntimeSessionSlot {}
 
-/* Keep the two nonzero control words separate from the large uninitialized
- * session slot. The latter then lives in zero-cost WASM BSS instead of
- * inflating the offline single-file artifact with tens of kilobytes of zeros. */
+static PLK2_CHORD_RUNTIME_BUSY: AtomicBool = AtomicBool::new(false);
 static PLK2_CHORD_RUNTIME_CONTROL: PluckedChordRuntimeControlSlot =
     PluckedChordRuntimeControlSlot(UnsafeCell::new(PluckedChordRuntimeControl {
         next_handle: 1,
@@ -2870,14 +3503,40 @@ static PLK2_CHORD_RUNTIME_SESSION: PluckedChordRuntimeSessionSlot =
     PluckedChordRuntimeSessionSlot(UnsafeCell::new(MaybeUninit::uninit()));
 
 fn with_plk2_chord_runtime<T>(
-    operation: impl FnOnce(&mut PluckedChordRuntimeControl, &mut MaybeUninit<PluckedChordSession>) -> T,
-) -> T {
-    // SAFETY: see the slot's single-threaded, non-reentrant WASM invariant.
-    unsafe {
+    operation: impl FnOnce(
+        &mut PluckedChordRuntimeControl,
+        &mut MaybeUninit<PluckedChordSession>,
+    ) -> T,
+) -> Option<T> {
+    if PLK2_CHORD_RUNTIME_BUSY
+        .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
+        .is_err()
+    {
+        return None;
+    }
+    struct Release;
+    impl Drop for Release {
+        fn drop(&mut self) {
+            PLK2_CHORD_RUNTIME_BUSY.store(false, Ordering::Release);
+        }
+    }
+    let _release = Release;
+    // SAFETY: the atomic flag excludes concurrent and re-entrant access.
+    Some(unsafe {
         operation(
             &mut *PLK2_CHORD_RUNTIME_CONTROL.0.get(),
             &mut *PLK2_CHORD_RUNTIME_SESSION.0.get(),
         )
+    })
+}
+
+fn plk2_minimum_chord_simulation_rate_hz(pack_index: i32) -> Option<f64> {
+    match pack_index {
+        PLK2_MARSHALL_ELECTRIC_PACK => Some(24_000.0),
+        PLK2_ARCHTOP_PACK | PLK2_DREADNOUGHT_PACK => Some(16_000.0),
+        PLK2_UKULELE_PACK => Some(14_000.0),
+        PLK2_UPRIGHT_BASS_PACK => Some(12_000.0),
+        _ => None,
     }
 }
 
@@ -2899,6 +3558,7 @@ impl PluckedChordSession {
             || !sample_rate.is_finite()
             || !(8_000.0..=96_000.0).contains(&sample_rate)
             || max_frames <= 0
+            || max_frames as usize > PLK2_CHORD_MAX_OUTPUT_FRAMES
         {
             return None;
         }
@@ -2931,6 +3591,11 @@ impl PluckedChordSession {
         }
         let frames = capacity.min(max_frames) as usize;
         let full_pack = plk2_pack(pack_index)?;
+        let render_path = if full_pack.amplifier.is_some() {
+            PluckedRenderPath::ElectricCabinetRadiation
+        } else {
+            PluckedRenderPath::AcousticBodyRadiation
+        };
         let mut pack = full_pack;
         for note_index in 0..note_count {
             pack.strings[note_index] = full_pack.strings[assignments[note_index].0];
@@ -2940,30 +3605,42 @@ impl PluckedChordSession {
         }
         pack.string_count = note_count;
 
-        /* The retained string/body/amp system is admitted down to 8 kHz.
-         * Advance it at the highest integer-divided rate that preserves that
-         * bound, then reconstruct through the existing two-pole anti-image
-         * filter.  Running the chord core at 22--24 kHz made Firefox/Safari
-         * preparation slower than the 105 BPM event stream even though the
-         * discarded band lay above the model's resolved physical output. */
-        let selected_rate_divisor = if frames < 3 {
-            1_usize
+        let minimum_rate = plk2_minimum_chord_simulation_rate_hz(pack_index)?;
+        let selected_rate_divisor = if frames <= PLK2_RESAMPLER_RIGHT_TAPS + 1 {
+            1
         } else {
-            (floor(sample_rate as f64 / 8_000.0) as usize).max(1)
+            (floor(sample_rate as f64 / minimum_rate) as usize)
+                .clamp(1, PLK2_RESAMPLER_MAX_PHASES)
         };
         let mut rate_divisor = forced_rate_divisor.unwrap_or(selected_rate_divisor);
-        if rate_divisor > 1 && (frames.saturating_sub(1) / rate_divisor).saturating_add(3) > frames
-        {
-            rate_divisor = 1;
-        }
-        if rate_divisor == 0 || sample_rate as f64 / (rate_divisor as f64) < 8_000.0 {
+        if rate_divisor == 0 || rate_divisor > PLK2_RESAMPLER_MAX_PHASES {
             return None;
         }
+        let required_source_frames = if rate_divisor == 1 {
+            frames
+        } else {
+            (frames.saturating_sub(1) / rate_divisor)
+                .saturating_add(PLK2_RESAMPLER_RIGHT_TAPS + 1)
+        };
+        if required_source_frames > frames {
+            rate_divisor = 1;
+        }
         let simulation_rate = sample_rate as f64 / rate_divisor as f64;
+        if simulation_rate < 8_000.0 {
+            return None;
+        }
+        let simulation_frames = if rate_divisor == 1 {
+            frames
+        } else {
+            (frames.saturating_sub(1) / rate_divisor)
+                .saturating_add(PLK2_RESAMPLER_RIGHT_TAPS + 1)
+                .min(frames)
+        };
+        let resampler = PolyphaseResampler::new(rate_divisor)?;
         let stem = PluckedStem::new(pack, simulation_rate).ok()?;
         let mut stem_session = PluckedStemSession {
             pack_index,
-            previous_body_flow_m3_per_s: 0.0,
+            radiator: AcousticRadiator::new(simulation_rate),
             stem,
         };
         let mut contacts = [ContactState::INACTIVE; MAX_STRINGS];
@@ -2975,15 +3652,9 @@ impl PluckedChordSession {
                 .prepare_pluck_contact(gesture, false)
                 .ok()?;
         }
-        let simulation_frames = if rate_divisor == 1 {
-            frames
-        } else {
-            (frames.saturating_sub(1) / rate_divisor + 3).min(frames)
-        };
-        let cutoff_hz = 0.42 * simulation_rate;
-        let filter_alpha = 1.0 - exp(-TAU * cutoff_hz / sample_rate as f64);
         Some(Self {
             pack_index,
+            render_path,
             output_sample_rate_hz: sample_rate as f64,
             frames,
             rate_divisor,
@@ -2991,9 +3662,7 @@ impl PluckedChordSession {
             simulated_frames: 0,
             reconstructed_frames: 0,
             copied_frames: 0,
-            filter_alpha,
-            filter_one: 0.0,
-            filter_two: 0.0,
+            resampler,
             note_count,
             canonical_midis,
             canonical_velocities,
@@ -3009,12 +3678,6 @@ impl PluckedChordSession {
         if self.simulated_frames < self.simulation_frames {
             let stop = (self.simulated_frames + PLK2_CHORD_SIMULATION_CHUNK_FRAMES)
                 .min(self.simulation_frames);
-            let path = match plk2_render_path(self.pack_index) {
-                Some(path) => path,
-                None => return PluckedChordAdvance::Invalid,
-            };
-            let body_pressure_scale = AIR_DENSITY_KG_PER_M3 * self.stem_session.stem.sample_rate_hz
-                / (4.0 * PI * ACOUSTIC_MIC_DISTANCE_M);
             let stereo_gain = core::f64::consts::FRAC_1_SQRT_2;
             while self.simulated_frames < stop {
                 let frame = self.simulated_frames;
@@ -3022,33 +3685,29 @@ impl PluckedChordSession {
                     .stem_session
                     .stem
                     .step_with_contacts(&mut self.contacts[..self.note_count]);
-                let pressure_pa = match path {
+                let pressure_pa = match self.render_path {
                     PluckedRenderPath::AcousticBodyRadiation => {
-                        let flow = plk2_effective_acoustic_flow_m3_per_s(
-                            self.pack_index,
-                            taps.acoustic_body_volume_velocity_m3_per_s,
-                            taps.bridge_velocity_m_per_s,
-                        );
-                        let pressure = body_pressure_scale
-                            * (flow - self.stem_session.previous_body_flow_m3_per_s);
-                        self.stem_session.previous_body_flow_m3_per_s = flow;
-                        pressure
+                        self.stem_session.acoustic_pressure_pa_at_1m(taps)
                     }
                     PluckedRenderPath::ElectricCabinetRadiation => {
                         taps.electric_cabinet_pressure_pa_at_1m
                     }
                 };
-                let pcm =
-                    pressure_pa * REFERENCE_PCM_PER_PASCAL * plk2_listener_trim(self.pack_index);
+                let pcm = pressure_pa
+                    * REFERENCE_PCM_PER_PASCAL
+                    * plk2_listener_trim(self.pack_index)
+                    * stereo_gain;
                 if !pcm.is_finite() || pcm.abs() > f32::MAX as f64 {
                     left[..self.frames].fill(0.0);
                     right[..self.frames].fill(0.0);
                     return PluckedChordAdvance::Invalid;
                 }
-                let sample = (pcm.clamp(-1.0, 1.0) * stereo_gain) as f32;
-                right[frame] = sample;
                 if self.rate_divisor == 1 {
+                    let sample = plk2_soft_limit(pcm) as f32;
                     left[frame] = sample;
+                    right[frame] = sample;
+                } else {
+                    right[frame] = pcm as f32;
                 }
                 self.simulated_frames += 1;
             }
@@ -3068,15 +3727,12 @@ impl PluckedChordSession {
                 (self.reconstructed_frames + PLK2_CHORD_OUTPUT_CHUNK_FRAMES).min(self.frames);
             while self.reconstructed_frames < stop {
                 let frame = self.reconstructed_frames;
-                let sample = plk2_cubic_sample(
+                let sample = self.resampler.sample(
                     &right[..self.simulation_frames],
                     frame / self.rate_divisor,
                     frame % self.rate_divisor,
-                    self.rate_divisor,
-                ) as f64;
-                self.filter_one += self.filter_alpha * (sample - self.filter_one);
-                self.filter_two += self.filter_alpha * (self.filter_one - self.filter_two);
-                left[frame] = self.filter_two as f32;
+                );
+                left[frame] = plk2_soft_limit(sample as f64) as f32;
                 self.reconstructed_frames += 1;
             }
             return PluckedChordAdvance::Progress;
@@ -3109,8 +3765,6 @@ fn encode_chord_session(session: &PluckedChordSession, bytes: &mut [u8]) -> Opti
     writer.write_u32(u32::try_from(session.simulated_frames).ok()?)?;
     writer.write_u32(u32::try_from(session.reconstructed_frames).ok()?)?;
     writer.write_u32(u32::try_from(session.copied_frames).ok()?)?;
-    writer.write_f64(session.filter_one)?;
-    writer.write_f64(session.filter_two)?;
     writer.write_u32(u32::try_from(session.note_count).ok()?)?;
     for index in 0..MAX_STRINGS {
         writer.write_i32(session.canonical_midis[index])?;
@@ -3141,7 +3795,8 @@ fn decode_chord_session(bytes: &[u8]) -> Option<PluckedChordSession> {
     }
     let pack_index = reader.read_i32()?;
     let output_sample_rate_hz = reader.read_f64()?;
-    if !output_sample_rate_hz.is_finite() || !(8_000.0..=96_000.0).contains(&output_sample_rate_hz)
+    if !output_sample_rate_hz.is_finite()
+        || !(8_000.0..=96_000.0).contains(&output_sample_rate_hz)
     {
         return None;
     }
@@ -3151,19 +3806,20 @@ fn decode_chord_session(bytes: &[u8]) -> Option<PluckedChordSession> {
     let simulated_frames = usize::try_from(reader.read_u32()?).ok()?;
     let reconstructed_frames = usize::try_from(reader.read_u32()?).ok()?;
     let copied_frames = usize::try_from(reader.read_u32()?).ok()?;
-    let filter_one = reader.read_f64()?;
-    let filter_two = reader.read_f64()?;
     let note_count = usize::try_from(reader.read_u32()?).ok()?;
     if note_count == 0
         || note_count > MAX_STRINGS
         || frames == 0
+        || frames > PLK2_CHORD_MAX_OUTPUT_FRAMES
+        || rate_divisor == 0
+        || rate_divisor > PLK2_RESAMPLER_MAX_PHASES
+        || simulation_frames == 0
+        || simulation_frames > frames
         || simulated_frames > simulation_frames
         || reconstructed_frames > frames
         || copied_frames > frames
         || (reconstructed_frames > 0 && simulated_frames != simulation_frames)
         || (copied_frames > 0 && reconstructed_frames != frames)
-        || !stem_state_scalar_is_bounded(filter_one)
-        || !stem_state_scalar_is_bounded(filter_two)
     {
         return None;
     }
@@ -3190,6 +3846,9 @@ fn decode_chord_session(bytes: &[u8]) -> Option<PluckedChordSession> {
         }
     }
     let nested_bytes = usize::try_from(reader.read_u32()?).ok()?;
+    if nested_bytes == 0 || nested_bytes > PLK2_STEM_STATE_MAX_BYTES {
+        return None;
+    }
     let nested_end = reader.offset.checked_add(nested_bytes)?;
     let nested = reader.bytes.get(reader.offset..nested_end)?;
     reader.offset = nested_end;
@@ -3203,7 +3862,7 @@ fn decode_chord_session(bytes: &[u8]) -> Option<PluckedChordSession> {
         &canonical_velocities[..note_count],
         output_sample_rate_hz as f32,
         i32::try_from(frames).ok()?,
-        None,
+        Some(rate_divisor),
     )?;
     if session.output_sample_rate_hz.to_bits() != output_sample_rate_hz.to_bits()
         || session.frames != frames
@@ -3223,12 +3882,13 @@ fn decode_chord_session(bytes: &[u8]) -> Option<PluckedChordSession> {
         }
         session.contacts[index].active = encoded_contact_active[index];
         session.contacts[index].elapsed_frames = elapsed;
+        let gesture = session.contacts[index].gesture;
+        session.stem_session.stem.strings[index]
+            .set_contact_window(gesture.position_over_scale, gesture.width_m);
     }
     session.simulated_frames = simulated_frames;
     session.reconstructed_frames = reconstructed_frames;
     session.copied_frames = copied_frames;
-    session.filter_one = filter_one;
-    session.filter_two = filter_two;
     Some(session)
 }
 
@@ -3325,6 +3985,7 @@ pub fn plk2_chord_runtime_init_slices(
         runtime.active_handle = handle;
         handle as i32
     })
+    .unwrap_or(0)
 }
 
 pub fn plk2_chord_runtime_step_slices(
@@ -3364,6 +4025,7 @@ pub fn plk2_chord_runtime_step_slices(
             }
         }
     })
+    .unwrap_or(0)
 }
 
 pub fn plk2_chord_runtime_reset_handle(handle: i32) -> i32 {
@@ -3379,6 +4041,7 @@ pub fn plk2_chord_runtime_reset_handle(handle: i32) -> i32 {
         runtime.active_handle = 0;
         1
     })
+    .unwrap_or(0)
 }
 
 /// Render one simultaneous plucked chord through one shared body and, for the
@@ -3518,6 +4181,12 @@ pub fn plk2_chord_radiation_taps_match_full_reference(
                 != reference_taps.bridge_velocity_m_per_s.to_bits()
         {
             return Err("bridge-radiation");
+        }
+        if render_path == PluckedRenderPath::AcousticBodyRadiation
+            && optimized_taps.direct_string_velocity_m_per_s.to_bits()
+                != reference_taps.direct_string_velocity_m_per_s.to_bits()
+        {
+            return Err("direct-string-radiation");
         }
         if render_path == PluckedRenderPath::ElectricCabinetRadiation
             && optimized_taps.electric_cabinet_pressure_pa_at_1m.to_bits()
@@ -3660,23 +4329,16 @@ pub fn plk2_stem_render_slices(
     let Some(path) = plk2_render_path(session.pack_index) else {
         return 0;
     };
-    let body_pressure_scale =
-        AIR_DENSITY_KG_PER_M3 * session.stem.sample_rate_hz / (4.0 * PI * ACOUSTIC_MIC_DISTANCE_M);
-    let stereo_gain = sqrt(0.5);
+    let stereo_gain = core::f64::consts::FRAC_1_SQRT_2;
     for frame in 0..frames {
-        let taps = session.stem.step();
+        let taps = session.stem.step_radiation();
         let pressure_pa = match path {
             PluckedRenderPath::AcousticBodyRadiation => {
-                let flow = plk2_effective_acoustic_flow_m3_per_s(
-                    session.pack_index,
-                    taps.acoustic_body_volume_velocity_m3_per_s,
-                    taps.bridge_velocity_m_per_s,
-                );
-                let pressure = body_pressure_scale * (flow - session.previous_body_flow_m3_per_s);
-                session.previous_body_flow_m3_per_s = flow;
-                pressure
+                session.acoustic_pressure_pa_at_1m(taps)
             }
-            PluckedRenderPath::ElectricCabinetRadiation => taps.electric_cabinet_pressure_pa_at_1m,
+            PluckedRenderPath::ElectricCabinetRadiation => {
+                taps.electric_cabinet_pressure_pa_at_1m
+            }
         };
         let pcm = pressure_pa * REFERENCE_PCM_PER_PASCAL * plk2_listener_trim(session.pack_index);
         if !pcm.is_finite() || pcm.abs() > f32::MAX as f64 {
@@ -3684,11 +4346,12 @@ pub fn plk2_stem_render_slices(
             right[..frames].fill(0.0);
             return 0;
         }
-        let sample = pcm.clamp(-1.0, 1.0) * stereo_gain;
+        let sample = plk2_soft_limit(pcm) * stereo_gain;
         left[frame] = sample as f32;
         right[frame] = sample as f32;
     }
-    let Some(encoded_bytes) = encode_stem_session(&session, state) else {
+    let mut encoded = [0_u8; PLK2_STEM_STATE_MAX_BYTES];
+    let Some(encoded_bytes) = encode_stem_session(&session, &mut encoded) else {
         left[..frames].fill(0.0);
         right[..frames].fill(0.0);
         return 0;
@@ -3698,6 +4361,7 @@ pub fn plk2_stem_render_slices(
         right[..frames].fill(0.0);
         return 0;
     }
+    state.copy_from_slice(&encoded[..encoded_bytes]);
     max_frames
 }
 
