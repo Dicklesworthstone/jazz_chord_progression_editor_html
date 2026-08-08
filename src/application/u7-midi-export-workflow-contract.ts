@@ -31,7 +31,7 @@ import type { ChordEventId, DocumentId } from "../domain";
 import type {
   MidiExportLossKind,
   MidiExportRefusalCode,
-} from "../export/midi-export-contract";
+} from "../export";
 
 export const U7_MIDI_EXPORT_WORKFLOW_CONTRACT_SCHEMA =
   "changes.application.u7-midi-export-workflow-contract.v1";
