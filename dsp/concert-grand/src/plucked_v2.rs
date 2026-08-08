@@ -35,7 +35,7 @@ mod upright_bass_body;
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
 use core::sync::atomic::{AtomicBool, Ordering};
-use libm::{cos, exp, floor, pow, round, sin, sqrt};
+use libm::{cos, exp, floor, pow, round, sin, sqrt, tan};
 
 const PI: f64 = core::f64::consts::PI;
 const TAU: f64 = 2.0 * PI;
@@ -59,7 +59,7 @@ pub const PLK2_STEM_EVENT_PLUCK: u32 = 1;
 pub const PLK2_STEM_EVENT_RESET: u32 = 2;
 const PLK2_STEM_EVENT_MASK: u32 = PLK2_STEM_EVENT_PLUCK | PLK2_STEM_EVENT_RESET;
 const PLK2_STEM_STATE_MAGIC: u32 = 0x324b_4c50; // "PLK2" in little endian.
-const PLK2_STEM_STATE_VERSION: u32 = 2;
+const PLK2_STEM_STATE_VERSION: u32 = 3;
 const PLK2_STEM_STATE_MAX_BYTES: usize = 8_192;
 const PLK2_STEM_RENDER_MAX_FRAMES: usize = 8_192;
 const PLK2_STEM_MAX_ENERGY_J: f64 = 100.0;
@@ -69,7 +69,7 @@ const PLK2_STEM_MAX_ENERGY_J: f64 = 100.0;
 // expensive physical samples or this many cheap reconstruction/copy samples,
 // so the browser can yield between calls without changing the sound.
 const PLK2_CHORD_STATE_MAGIC: u32 = 0x3243_4c50; // "PLC2" in little endian.
-const PLK2_CHORD_STATE_VERSION: u32 = 2;
+const PLK2_CHORD_STATE_VERSION: u32 = 3;
 const PLK2_CHORD_STATE_MAX_BYTES: usize = 12_288;
 /* Keep each browser-thread quantum short even at the maximum 12:1 rate
  * divisor. The production opaque runtime retains the decoded physical state
@@ -176,6 +176,24 @@ fn plk2_direct_string_effective_area_m2(pack_index: i32) -> f64 {
     }
 }
 
+/// Radiated flow with the string-side terms passed through the bridge
+/// transmission compliance; the body term stays unfiltered.
+#[inline(always)]
+fn plk2_shaped_acoustic_flow_m3_per_s(
+    pack_index: i32,
+    compliance: &mut BridgeTransmissionCompliance,
+    body_flow_m3_per_s: f64,
+    bridge_velocity_m_per_s: f64,
+    direct_string_velocity_m_per_s: f64,
+) -> f64 {
+    body_flow_m3_per_s
+        + compliance.process(
+            plk2_bridge_patch_area_m2(pack_index) * bridge_velocity_m_per_s
+                + plk2_direct_string_effective_area_m2(pack_index)
+                    * direct_string_velocity_m_per_s,
+        )
+}
+
 #[inline(always)]
 fn plk2_effective_acoustic_flow_m3_per_s(
     pack_index: i32,
@@ -186,6 +204,79 @@ fn plk2_effective_acoustic_flow_m3_per_s(
     body_flow_m3_per_s
         + plk2_bridge_patch_area_m2(pack_index) * bridge_velocity_m_per_s
         + plk2_direct_string_effective_area_m2(pack_index) * direct_string_velocity_m_per_s
+}
+
+/// Corner of the bridge-transmission compliance shaping applied to the
+/// string-side radiation terms (bridge-patch velocity and direct string
+/// radiation) before the differentiating radiator. The body volume velocity
+/// passes unfiltered: its modal dynamics already shape it.
+///
+/// Measured mechanism (bead jcpe-plucked-improved-calibration-debt-ocw5,
+/// 2026-08-08, linear-regime census after the trim-saturation discovery):
+/// the deliberately abrupt pick release launches the string modes in phase;
+/// their coherent velocity spike reaches the radiator through the patch and
+/// direct terms and the derivative amplifies it, producing a 0.25-0.4 ms
+/// burst whose 4 kHz band measures 4-5 orders of magnitude above sustain
+/// (archtop C4: 5.5e-1 vs 5.2e-6). The soft limiter cannot pass any
+/// saturating peak below the 0.98 contract bound (its 3x-input response is
+/// 0.9996), so the spike must be tamed at the source. Physically the bridge
+/// patch and the string's direct field do not transmit a velocity step: the
+/// bridge-top compliance and the string's finite radiating aperture roll
+/// off in exactly this band. Corners are per-pack authored properties;
+/// zero disables the section.
+fn plk2_bridge_transmission_shaping_hz(pack_index: i32) -> f64 {
+    match pack_index {
+        PLK2_ARCHTOP_PACK => 900.0,
+        PLK2_DREADNOUGHT_PACK => 1_300.0,
+        PLK2_UKULELE_PACK => 2_400.0,
+        PLK2_UPRIGHT_BASS_PACK => 1_200.0,
+        _ => 0.0,
+    }
+}
+
+/// Second-order Butterworth low-pass (bilinear transform) on the body
+/// volume velocity. State is serialized in the stem state (and thereby in
+/// the nested chord state) so cooperative and synchronous renders stay
+/// bit-identical across splits.
+#[derive(Clone, Copy, Debug)]
+struct BridgeTransmissionCompliance {
+    b0: f64,
+    b1: f64,
+    b2: f64,
+    a1: f64,
+    a2: f64,
+    z1: f64,
+    z2: f64,
+}
+
+impl BridgeTransmissionCompliance {
+    fn new(pack_index: i32, sample_rate_hz: f64) -> Self {
+        let corner_hz = plk2_bridge_transmission_shaping_hz(pack_index);
+        if corner_hz <= 0.0 || corner_hz >= 0.45 * sample_rate_hz {
+            return Self { b0: 1.0, b1: 0.0, b2: 0.0, a1: 0.0, a2: 0.0, z1: 0.0, z2: 0.0 };
+        }
+        let warped = tan(PI * corner_hz / sample_rate_hz);
+        let sqrt2 = core::f64::consts::SQRT_2;
+        let denominator = warped * warped + sqrt2 * warped + 1.0;
+        Self {
+            b0: warped * warped / denominator,
+            b1: 2.0 * warped * warped / denominator,
+            b2: warped * warped / denominator,
+            a1: 2.0 * (warped * warped - 1.0) / denominator,
+            a2: (warped * warped - sqrt2 * warped + 1.0) / denominator,
+            z1: 0.0,
+            z2: 0.0,
+        }
+    }
+
+    /// Transposed direct-form II step.
+    #[inline(always)]
+    fn process(&mut self, input: f64) -> f64 {
+        let output = self.b0 * input + self.z1;
+        self.z1 = self.b1 * input - self.a1 * output + self.z2;
+        self.z2 = self.b2 * input - self.a2 * output;
+        output
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -235,13 +326,13 @@ fn plk2_soft_limit(value: f64) -> f64 {
 #[inline(always)]
 fn plk2_listener_trim(pack_index: i32) -> f64 {
     match pack_index {
-        PLK2_ARCHTOP_PACK => 625.0,
+        PLK2_ARCHTOP_PACK => 410.0, /* linear-regime derivation: C4 rms 0.086 and peak 0.889 at 625 with the MIDI-64 register cell still pinned; 0.8x lands the register peak under the contract 0.98 with C4 rms ~0.069 inside the 0.045..0.32 window. */
         /* -7 dB after the piston-band cabinet bed raised the radiated level
          * (bead jcpe-plucked-quality-body-amp-6yg6). */
         PLK2_MARSHALL_ELECTRIC_PACK => 44.668_359_215_096_3,
-        PLK2_DREADNOUGHT_PACK => 4_466.835_921_509_631,
-        PLK2_UKULELE_PACK => 12_022.644_346_174_13,
-        PLK2_UPRIGHT_BASS_PACK => 12_589.254_117_941_662,
+        PLK2_DREADNOUGHT_PACK => 440.0, /* linear-regime iteration: C4 peak 0.998 at 520 (pre-limit ~1.1); 0.85x targets ~0.94 with rms ~0.082 inside the 0.045..0.32 window. */ /* iterating down from 840: C4 peak pinned there; census-derived rms scales to ~0.08 at this value. */
+        PLK2_UKULELE_PACK => 860.0, /* linear-regime derivation: measured pre-limit resonant peak 1.04 at 957 (empirical, 24% above the census-scaled estimate); 0.9x targets ~0.93 pre-limit under the contract bound with G4 rms ~0.076 inside the window. */
+        PLK2_UPRIGHT_BASS_PACK => 1_530.0, // derived: census rms 0.00719@100 -> E2 0.11
         _ => 1.0,
     }
 }
@@ -1325,6 +1416,7 @@ pub struct PluckedStem {
 struct PluckedStemSession {
     pack_index: i32,
     radiator: AcousticRadiator,
+    compliance: BridgeTransmissionCompliance,
     stem: PluckedStem,
 }
 
@@ -1335,14 +1427,16 @@ impl PluckedStemSession {
         Some(Self {
             pack_index,
             radiator: AcousticRadiator::new(sample_rate_hz),
+            compliance: BridgeTransmissionCompliance::new(pack_index, sample_rate_hz),
             stem,
         })
     }
 
     #[inline(always)]
     fn acoustic_pressure_pa_at_1m(&mut self, taps: ChordRadiationTaps) -> f64 {
-        let flow = plk2_effective_acoustic_flow_m3_per_s(
+        let flow = plk2_shaped_acoustic_flow_m3_per_s(
             self.pack_index,
+            &mut self.compliance,
             taps.acoustic_body_volume_velocity_m3_per_s,
             taps.bridge_velocity_m_per_s,
             taps.direct_string_velocity_m_per_s,
@@ -1987,6 +2081,8 @@ fn encode_stem_session(session: &PluckedStemSession, bytes: &mut [u8]) -> Option
     writer.write_f64(session.stem.sample_rate_hz)?;
     writer.write_f64(session.radiator.previous_flow_m3_per_s)?;
     writer.write_f64(session.radiator.derivative_m3_per_s2)?;
+    writer.write_f64(session.compliance.z1)?;
+    writer.write_f64(session.compliance.z2)?;
     writer.write_f64(session.stem.cumulative_source_work_j)?;
     writer.write_f64(session.stem.cumulative_intrinsic_loss_j)?;
     writer.write_f64(session.stem.cumulative_bridge_loss_j)?;
@@ -2086,11 +2182,15 @@ fn decode_stem_session_with_base(
     };
     session.radiator.previous_flow_m3_per_s = reader.read_f64()?;
     session.radiator.derivative_m3_per_s2 = reader.read_f64()?;
+    session.compliance.z1 = reader.read_f64()?;
+    session.compliance.z2 = reader.read_f64()?;
     session.stem.cumulative_source_work_j = reader.read_f64()?;
     session.stem.cumulative_intrinsic_loss_j = reader.read_f64()?;
     session.stem.cumulative_bridge_loss_j = reader.read_f64()?;
     if !stem_state_scalar_is_bounded(session.radiator.previous_flow_m3_per_s)
         || !stem_state_scalar_is_bounded(session.radiator.derivative_m3_per_s2)
+        || !stem_state_scalar_is_bounded(session.compliance.z1)
+        || !stem_state_scalar_is_bounded(session.compliance.z2)
         || !stem_state_scalar_is_bounded(session.stem.cumulative_source_work_j)
         || !stem_state_scalar_is_bounded(session.stem.cumulative_intrinsic_loss_j)
         || !stem_state_scalar_is_bounded(session.stem.cumulative_bridge_loss_j)
@@ -3359,12 +3459,14 @@ pub fn plk2_render_slices(
     let gain_left = cos(pan_angle);
     let gain_right = sin(pan_angle);
     let mut radiator = AcousticRadiator::new(sample_rate as f64);
+    let mut compliance = BridgeTransmissionCompliance::new(pack_index, sample_rate as f64);
     for frame in 0..frames {
         let taps = stem.step_radiation();
         let pressure_pa = match path {
             PluckedRenderPath::AcousticBodyRadiation => {
-                let flow = plk2_effective_acoustic_flow_m3_per_s(
+                let flow = plk2_shaped_acoustic_flow_m3_per_s(
                     pack_index,
+                    &mut compliance,
                     taps.acoustic_body_volume_velocity_m3_per_s,
                     taps.bridge_velocity_m_per_s,
                     taps.direct_string_velocity_m_per_s,
@@ -3641,6 +3743,7 @@ impl PluckedChordSession {
         let mut stem_session = PluckedStemSession {
             pack_index,
             radiator: AcousticRadiator::new(simulation_rate),
+            compliance: BridgeTransmissionCompliance::new(pack_index, simulation_rate),
             stem,
         };
         let mut contacts = [ContactState::INACTIVE; MAX_STRINGS];
