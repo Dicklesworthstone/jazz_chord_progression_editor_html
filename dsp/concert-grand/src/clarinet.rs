@@ -1192,7 +1192,11 @@ fn clr_render_inner(
         let base_release_seconds = if (82.0..=86.0).contains(&m) {
             0.007
         } else {
-            0.002
+            /* A forceful tongue release is not instantaneous: the larger
+             * pressure differential keeps the reed coupled to the tongue for
+             * longer.  The former fixed 2 ms release let loud middle-register
+             * notes jump to sustain inside one 10 ms analysis window. */
+            0.002 + 0.010 * pow(v_norm, 4.0)
         };
         let loud_release_extension = if (60.0..=64.0).contains(&m) || (82.0..=86.0).contains(&m) {
             0.005 * pow(v_norm, 4.0)
@@ -1409,7 +1413,12 @@ fn clr_render_inner(
         noise_lp += noise_alpha * (turbulence - noise_lp);
         chiff_low += chiff_low_alpha * (turbulence - chiff_low);
         chiff_high += chiff_high_alpha * (turbulence - chiff_high);
-        let chiff = (chiff_high - chiff_low) * chiff_envelope * chiff_level;
+        /* Tongue turbulence is generated while the tongue leaves the reed,
+         * not while it is still sealing the reed.  Emitting it from frame zero
+         * created a pre-release noise burst that the onset detector mistook
+         * for an instantaneous note attack. */
+        let chiff =
+            (chiff_high - chiff_low) * chiff_envelope * chiff_level * (1.0 - tongue_contact);
         chiff_envelope *= chiff_decay;
         if phrase_frame >= tongue_hold_frames {
             overshoot_envelope *= overshoot_decay;
@@ -1504,14 +1513,9 @@ fn clr_render_inner(
             } else {
                 0.08 - 0.03 * ((m - 86.0) / 3.0).clamp(0.0, 1.0)
             };
-            /* At high breath pressure the reed/bore loop already has ample
-             * startup energy.  Scaling the tongue seed down with pressure
-             * avoids an unphysical onset overshoot that reaches the later
-             * sustain level before the tongue has actually released. */
-            let articulation_seed = articulation_depth * (1.0 - 0.85 * v_norm * v_norm);
             let articulation_gain =
                 if attack_articulation == Some(true) && phrase_frame >= tongue_hold_frames {
-                    1.0 + articulation_seed
+                    1.0 + articulation_depth
                         * exp(-((phrase_frame - tongue_hold_frames) as f64) / (0.030 * sr))
                 } else {
                     1.0
