@@ -105,7 +105,7 @@
     "changes.dsp.plucked-electric@2",
     "changes.dsp.plucked-ukulele@1"
   ],
-  "wasmSha256": "ce11b3a770df2f81d9dfc3bc162b2503c783a7deaf9f9cfdc876469a04d0cf45",
+  "wasmSha256": "0adf84ee788fc135bd2ab85830301b7819f91c47fddce1d15d2ebd21716564d1",
   "sourceBindings": [
     {
       "path": "dsp/concert-grand/src/plucked_v2.rs",
@@ -587,5 +587,5 @@
     "passedPairwiseCellCount": 6,
     "failedPairwiseCellCount": 0
   },
-  "evidenceSha256": "a18c31ab51555dd5b9560e155ddf7ecea275c86e09c6991c360f7b77bf6a4f07"
+  "evidenceSha256": "5aba64e006b46ca05849877ceaacafb1f0e3e1d360167551dd35bce24e5c9846"
 }

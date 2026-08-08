@@ -582,14 +582,16 @@ fn target_mouth_pressure_pa_for_center(
     } else if fingering.register_harmonic == 2
         && fingering.openness.iter().all(|openness| *openness == 0.0)
     {
-        // All-closed second register (C5/m72 only): the fully sealed column
-        // gives the jet the least shunt support of any register-2 fingering,
-        // and the measured regime sits on a bistable boundary (pp HNR at the
-        // gate edge, mf flipping to the sub-octave; dossier on bead
-        // jcpe-winds-quality-triangulation-drga). Entering the speaking
-        // region from above with a stronger convective phase keeps the
-        // second-register attractor dominant across dynamics.
-        4.85 /* sweep */
+        // All-closed second register (C5/m72 only). Measured bistability
+        // (bead jcpe-winds-quality-triangulation-drga): with the last-green
+        // vent-less drive (1.70) the mf second-register lock is stable at
+        // the plain 4.96 phase, but pp sits under the register-capture
+        // advantage floor. The pianissimo jet alone gets extra convective
+        // momentum; louder dynamics keep the proven baseline.
+        {
+            let softness = 1.0 - ((velocity as f64 - 36.0) / 36.0).clamp(0.0, 1.0);
+            4.96 + 0.12 * softness
+        }
     } else if fingering.register_harmonic == 2 {
         4.96
     } else {
@@ -1091,7 +1093,11 @@ fn render_with_storage(
     let nonlinear_drive = if vented_area > 0.0 {
         1.63 + 0.44 * dynamic_lift * (2.0 - vented_area).clamp(0.0, 1.0)
     } else {
-        1.87
+        // All-closed fingerings: 1.70 is the measured mf/ff ceiling (1.87
+        // pumps the C5 sub-octave attractor; matrix trail on bead
+        // jcpe-winds-quality-triangulation-drga). Pianissimo alone takes a
+        // quadratic-drive lift for the register-capture advantage floor.
+        1.70 + 0.075 * (1.0 - dynamic_lift)
     };
     let lattice_nonlinear_loss = if vented_area > 2.0 { 0.35 } else { 0.20 };
     let nonlinear_edge_gain = nonlinear_drive
