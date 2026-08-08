@@ -2192,7 +2192,7 @@ fn render_with_storage(
 }
 
 #[no_mangle]
-pub extern "C" fn flt2_note_frames(midi: i32, sample_rate: f32) -> i32 {
+pub extern "C" fn flt3_note_frames(midi: i32, sample_rate: f32) -> i32 {
     if fingering_for_midi(midi).is_none() || segment_layout(sample_rate, 0).is_none() {
         return 0;
     }
@@ -2200,12 +2200,12 @@ pub extern "C" fn flt2_note_frames(midi: i32, sample_rate: f32) -> i32 {
 }
 
 #[no_mangle]
-pub extern "C" fn flt2_state_max_bytes() -> i32 {
+pub extern "C" fn flt3_state_max_bytes() -> i32 {
     STATE_MAX_BYTES as i32
 }
 
 #[no_mangle]
-pub extern "C" fn flt2_render(
+pub extern "C" fn flt3_render(
     midi: i32,
     velocity: i32,
     sample_rate: f32,
@@ -2215,7 +2215,7 @@ pub extern "C" fn flt2_render(
     right: *mut f32,
     max_frames: i32,
 ) -> i32 {
-    let natural = flt2_note_frames(midi, sample_rate);
+    let natural = flt3_note_frames(midi, sample_rate);
     if natural == 0
         || max_frames <= 0
         || left.is_null()
@@ -2253,7 +2253,7 @@ pub extern "C" fn flt2_render(
 
 #[no_mangle]
 #[allow(clippy::too_many_arguments)]
-pub extern "C" fn flt2_render_phrase(
+pub extern "C" fn flt3_render_phrase(
     midi: i32,
     velocity: i32,
     sample_rate: f32,
@@ -2267,7 +2267,7 @@ pub extern "C" fn flt2_render_phrase(
     state_output: *mut u8,
     state_output_capacity: i32,
 ) -> i32 {
-    let natural = flt2_note_frames(midi, sample_rate);
+    let natural = flt3_note_frames(midi, sample_rate);
     if natural == 0
         || max_frames <= 0
         || left.is_null()
