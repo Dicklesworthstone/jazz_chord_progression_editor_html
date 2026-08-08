@@ -379,7 +379,7 @@ fn fingering_for_midi(midi: i32) -> Option<Fingering> {
         4 => [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.50, 1.0],
         5 => [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0],
         6 => [0.0, 0.0, 0.0, 0.0, 0.0, 0.52, 1.0, 1.0],
-        7 if octave >= 1 => [0.0, 0.0, 0.0, 0.0, 0.05, 1.0, 1.0, 1.0],
+        7 if octave >= 1 => [0.0, 0.0, 0.0, 0.0, 0.00, 1.0, 1.0, 1.0],
         7 => [0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0],
         8 => [0.0, 0.0, 0.0, 0.0, 0.55, 1.0, 1.0, 1.0],
         9 => [0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0],
@@ -1078,9 +1078,9 @@ fn render_with_storage(
     // The boost applies with dynamic_lift so pp keeps its reference-matched
     // HNR while mf/ff gain the identity margin the UIowa cells demand.
     let nonlinear_drive = if vented_area > 0.0 {
-        1.5 + 0.52 * dynamic_lift * (2.0 - vented_area).clamp(0.0, 1.0)
+        1.65 + 0.44 * dynamic_lift * (2.0 - vented_area).clamp(0.0, 1.0)
     } else {
-        1.7 + 0.17 * dynamic_lift
+        1.87
     };
     let lattice_nonlinear_loss = if vented_area > 2.0 { 0.35 } else { 0.20 };
     let nonlinear_edge_gain = nonlinear_drive
@@ -1224,7 +1224,10 @@ fn render_with_storage(
         state.noise_meander_high += noise_meander_alpha * (noise - state.noise_meander_high);
         let band_noise = state.noise_highpass - state.noise_lowpass;
         let jet_meander = state.noise_meander_high - state.noise_lowpass;
-        let turbulence = 0.003 * band_noise;
+        // pp trim (2026-08-08): the UIowa m72-pp identity cell measured the
+        // candidate 11 dB breathier than the flute reference; softness-
+        // weighted reduction keeps mf/ff turbulence untouched.
+        let turbulence = 0.003 * (0.70 + 0.30 * breath_norm) * band_noise;
         let instability_input = feedback_gain * acoustic_return;
         let instability_return = if fingering.register_harmonic == 1 {
             instability_input
