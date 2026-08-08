@@ -57,16 +57,20 @@ export type StudioHeaderProps = Readonly<{
     | "onRedo"
     | "onClearChart"
     | "onCopyShareLink"
+    | "onOpenMidiExport"
     | "onChartLayoutChange"
   >;
   /** The chart's active presentation layout, for the Sheet/Edit tabs. */
   chartLayout: StudioChartLayout;
+  /** The U7 export workflow is only offered when the composition wired it. */
+  midiExportAvailable: boolean;
 }>;
 
 export function StudioHeader({
   view,
   callbacks,
   chartLayout,
+  midiExportAvailable,
   onOpenCommandLane,
   onOpenStandards,
   onOpenTour,
@@ -267,6 +271,20 @@ export function StudioHeader({
             type="button"
             variant="primary"
           />
+          {midiExportAvailable ? (
+            <Button
+              busy={false}
+              density="comfortable"
+              describedBy={[]}
+              disabled={false}
+              id="studio-export-midi"
+              invalid={false}
+              label="Export MIDI"
+              onAction={callbacks.onOpenMidiExport}
+              type="button"
+              variant="outline"
+            />
+          ) : null}
           <span
             aria-live="polite"
             aria-atomic="true"

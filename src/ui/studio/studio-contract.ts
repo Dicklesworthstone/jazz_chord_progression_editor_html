@@ -9,7 +9,7 @@ export type StudioPanelSide = "library" | "harmony";
  * otherwise lose instrument/groove/tempo/volume entirely (owner report,
  * 2026-08-07).
  */
-export type StudioSheetId = StudioPanelSide | "sound";
+export type StudioSheetId = StudioPanelSide | "sound" | "export";
 
 export type StudioTitleFeedback = Readonly<{
   kind: "idle" | "dirty" | "committed" | "refused";
@@ -584,10 +584,79 @@ export type StudioMidiImportOverridesView = Readonly<{
   grooveOverrideId: string | null;
 }>;
 
+/**
+ * The U7 MIDI export workflow's view. Everything here is a statement the
+ * application service made: the dialog renders it and nothing else — no field
+ * is read live at render time (U7-LAW-PREVIEW-BINDING).
+ */
+export type StudioMidiExportBlockerView = Readonly<{
+  kind: "realization" | "plan" | "export" | "empty-chart";
+  code: string | null;
+  eventId: string | null;
+  message: string;
+}>;
+
+export type StudioMidiExportView = Readonly<{
+  /** Dialog session state; null while the dialog is closed. */
+  state:
+    | "preview"
+    | "generating"
+    | "ready"
+    | "delivering"
+    | "delivered"
+    | null;
+  readiness: "ready" | "blocked";
+  blockers: readonly StudioMidiExportBlockerView[];
+  realization: Readonly<{
+    storedManualCount: number;
+    storedFrozenCount: number;
+    generatedCount: number;
+    externalBassEventIds: readonly string[];
+  }>;
+  ppq: number;
+  trackCount: number;
+  tempoBpm: number;
+  meter: Readonly<{ beatsPerBar: number; beatUnit: number }>;
+  losses: readonly Readonly<{
+    kind: "enharmonic-spelling" | "annotation-text" | "loop-range";
+    eventIds: readonly string[];
+  }>[];
+  markerOmissions: readonly Readonly<{
+    eventId: string;
+    markerKind: "section" | "chord";
+    reason: string;
+    utf8ByteLength: number;
+  }>[];
+  titleNotice: Readonly<{
+    kind: "title-control-chars-substituted" | "title-truncated";
+    originalUtf8ByteLength: number | null;
+  }> | null;
+  derivedTitle: string;
+  artifact: Readonly<{
+    filename: string;
+    byteLength: number;
+    sha256: string;
+    tempo: Readonly<{
+      requestedBpm: number;
+      encodedMicrosecondsPerQuarter: number;
+      roundingErrorNumerator: number;
+      roundingErrorDenominator: number;
+    }>;
+    noteCount: number;
+    markerCount: number;
+  }> | null;
+  /** True after a stale outcome until the preview is refreshed. */
+  stale: boolean;
+  refusal: Readonly<{ code: string; message: string }> | null;
+  /** The live-region sentence for the current state. */
+  announcement: string | null;
+}>;
+
 export type StudioShellView = Readonly<{
   document: StudioDocumentView;
   quickEntry: StudioQuickEntryView;
   midiImport: StudioMidiImportView;
+  midiExport: StudioMidiExportView;
   chart: StudioChartView;
   harmony: StudioHarmonyView;
   transport: StudioTransportView;
@@ -656,6 +725,18 @@ export type StudioShellCallbacks = Readonly<{
     }>[];
     grooveStyleId: string | null;
   }>) => void;
+  /** Open the MIDI export preview for the current validated chart. */
+  onOpenMidiExport: () => void;
+  /** Adopt the prepared artifact (blocked preview: this control is absent). */
+  onMidiExportGenerate: () => void;
+  /** Download the prepared file once, under this gesture. */
+  onMidiExportDownload: () => void;
+  /** Cancel or close the export workflow and clean up the preparation. */
+  onMidiExportClose: () => void;
+  /** Recompute the preview against the current revision after a stale outcome. */
+  onMidiExportRepreview: () => void;
+  /** Focus a blocked event in the chart from a blocker link. */
+  onMidiExportBlockedEventActivate: (eventId: string) => void;
   /** Presentation-only: records that the caller accepted the layout loss. */
   onRecoveryAcknowledgeChange: (acknowledged: boolean) => void;
   /** Presentation-only draft for a duration T0 could not resolve. */
@@ -797,4 +878,6 @@ export type StudioShellProps = Readonly<{
   callbacks: StudioShellCallbacks;
   transport: StudioTransportCallbacks;
   annotations: StudioChartAnnotationPorts;
+  /** The U7 export workflow is only offered when the composition wired it. */
+  midiExportAvailable: boolean;
 }>;

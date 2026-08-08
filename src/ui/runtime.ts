@@ -7,6 +7,7 @@
  * barrel initialization.
  */
 export { App, StudioRoot, StudioStartupFailure } from "./App";
+export { createMidiExportDownloadStart } from "./midi-export-delivery";
 export { activeTheme, initializeTheme, setTheme, toggleTheme } from "./theme";
 export type { StudioTheme } from "./theme";
 export type {

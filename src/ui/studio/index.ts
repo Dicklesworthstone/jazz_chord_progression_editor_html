@@ -12,6 +12,8 @@ export type {
 } from "./LibraryPanel";
 export { MidiImportPanel } from "./MidiImportPanel";
 export type { MidiImportPanelProps } from "./MidiImportPanel";
+export { MidiExportPanel } from "./MidiExportPanel";
+export type { MidiExportPanelProps } from "./MidiExportPanel";
 export { StudioHeader } from "./StudioHeader";
 export type { StudioHeaderProps } from "./StudioHeader";
 export { StudioIcon } from "./StudioIcon";
@@ -41,6 +43,8 @@ export type {
   StudioMidiImportSummaryView,
   StudioMidiImportOverridesView,
   StudioMidiImportView,
+  StudioMidiExportBlockerView,
+  StudioMidiExportView,
   StudioPanelSide,
   StudioSheetId,
   StudioQuickEntryTokenView,

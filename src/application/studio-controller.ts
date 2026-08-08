@@ -114,6 +114,12 @@ import {
   createStudioInterchangeOwnerOperations,
   type StudioInterchangeOwnerDiagnostic,
 } from "./studio-interchange-owner";
+import {
+  createStudioMidiExport,
+  type StudioMidiExportDeliveryStart,
+  type StudioMidiExportHashPort,
+  type StudioMidiExportService,
+} from "./studio-midi-export";
 import type { StudioAnalysisFrame } from "./studio-analysis";
 import {
   formatExactBeatLabel,
@@ -1134,6 +1140,13 @@ export type StudioControllerOptions = Readonly<{
   interchangeDiagnostics?: (
     diagnostic: StudioInterchangeOwnerDiagnostic,
   ) => void;
+  /**
+   * The U7 MIDI export workflow's two composition-edge adapters. Both absent
+   * means the export surface is not offered at all — the composition returns
+   * `midiExport: null` and the UI hides the trigger honestly.
+   */
+  midiExportHashBytes?: StudioMidiExportHashPort;
+  midiExportDelivery?: StudioMidiExportDeliveryStart;
 }>;
 
 /**
@@ -1147,6 +1160,12 @@ export type StudioControllerOptions = Readonly<{
 export type StudioComposition = Readonly<{
   controller: StudioController;
   interchangeOwner: A0E0InterchangeOwnerOperations;
+  /**
+   * The U7 MIDI export workflow service, built in the controller closure and
+   * handed only to the composition root. Null when the composition wired no
+   * hash port or delivery adapter.
+   */
+  midiExport: StudioMidiExportService | null;
 }>;
 
 export type StudioCompositionCreationResult =
@@ -6297,8 +6316,7 @@ function makeStudioComposition(
         }
       : {
           dependencies,
-          readState: () => state,
-          installState: installOwnerState,
+          readState: () => state,          installState: installOwnerState,
           notifyListeners: notify,
           emitDiagnostic: options.interchangeDiagnostics,
         },
@@ -6391,7 +6409,29 @@ function makeStudioComposition(
       ),
   });
 
-  return Object.freeze({ controller, interchangeOwner });
+  /*
+   * The U7 MIDI export service (docs/U7_MIDI_EXPORT_WORKFLOW_CONTRACT.md)
+   * closes over the same private `state` cell as the controller: the current
+   * validated document and revision are its only binding authority, so it
+   * can never be handed a caller-supplied snapshot. Both adapters absent
+   * means the surface is not offered at all.
+   */
+  const midiExport: StudioMidiExportService | null =
+    options.midiExportHashBytes === undefined ||
+    options.midiExportDelivery === undefined
+      ? null
+      : createStudioMidiExport({
+          readDocument: () => state.document,
+          readBinding: () =>
+            Object.freeze({
+              documentId: state.document.id,
+              revision: state.revision,
+            }),
+          hashBytes: options.midiExportHashBytes,
+          startDelivery: options.midiExportDelivery,
+        });
+
+  return Object.freeze({ controller, interchangeOwner, midiExport });
 }
 
 /**

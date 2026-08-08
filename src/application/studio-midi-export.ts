@@ -287,19 +287,24 @@ function deriveRequestId(documentId: string, revision: number): string {
   );
 }
 
-type DerivedMarkers = Readonly<{
-  markers: readonly MidiExportMarker[];
-  omissions: readonly StudioMidiExportMarkerOmission[];
-}>;
+type DerivedMarkers =
+  | Readonly<{
+      ok: true;
+      markers: readonly MidiExportMarker[];
+      omissions: readonly StudioMidiExportMarkerOmission[];
+    }>
+  | Readonly<{ ok: false; counter: string }>;
 
 function deriveMarkers(document: ValidatedDocument): DerivedMarkers {
   const markers: MidiExportMarker[] = [];
   const omissions: StudioMidiExportMarkerOmission[] = [];
+  let candidates = 0;
   const consider = (
     eventId: ChordEventId,
     markerKind: MidiExportMarkerKind,
     text: string | null,
   ): void => {
+    candidates += 1;
     if (text === null) {
       omissions.push(
         Object.freeze({
@@ -373,10 +378,14 @@ function deriveMarkers(document: ValidatedDocument): DerivedMarkers {
           );
         }
         firstInSection = false;
+        if (candidates > MAX_WALK_MARKER_CANDIDATES) {
+          return Object.freeze({ ok: false as const, counter: "markers-derived" });
+        }
       }
     }
   }
   return Object.freeze({
+    ok: true as const,
     markers: Object.freeze(markers),
     omissions: Object.freeze(omissions),
   });
@@ -643,6 +652,16 @@ export function createStudioMidiExport(ports: Readonly<{
     const plan = compiled.plan;
     /* markers + export */
     const derived = deriveMarkers(document);
+    if (!derived.ok) {
+      abandonRegistry();
+      return Object.freeze({
+        ok: false as const,
+        refusal: Object.freeze({
+          code: "limit.u7_preview_work_exceeded" as const,
+          message: "Preview assembly exceeded its deterministic work bound; the chart is unchanged.",
+        }),
+      });
+    }
     const request: MidiExportRequest = Object.freeze({
       schema: MIDI_EXPORT_REQUEST_SCHEMA,
       requestId: deriveRequestId(document.id, binding.revision),

@@ -128,3 +128,16 @@ export type {
   MidiImportPreview,
   StudioMidiImportService,
 } from "./studio-midi-import";
+export { createStudioMidiExport } from "./studio-midi-export";
+export type {
+  StudioMidiExportBlocker,
+  StudioMidiExportDeliveryBinding,
+  StudioMidiExportDeliveryStart,
+  StudioMidiExportDownloadResult,
+  StudioMidiExportGenerateResult,
+  StudioMidiExportPreparationId,
+  StudioMidiExportPreview,
+  StudioMidiExportPreviewResult,
+  StudioMidiExportRefusal,
+  StudioMidiExportService,
+} from "./studio-midi-export";

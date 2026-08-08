@@ -12,7 +12,12 @@ import {
   createBrowserAudioPlatform,
   loadSmfWasmDecoder,
 } from "./audio/runtime";
-import { initializeTheme, StudioRoot, StudioStartupFailure } from "./ui/runtime";
+import {
+  createMidiExportDownloadStart,
+  initializeTheme,
+  StudioRoot,
+  StudioStartupFailure,
+} from "./ui/runtime";
 
 /*
  * The paper theme is the stylesheet base and the OS preference governs until
@@ -61,6 +66,33 @@ const midiImport = createStudioMidiImport(loadSmfWasmDecoder);
 const creation = createStudioComposition({
   audio,
   nowMs: () => performance.now(),
+  /*
+   * U7's two composition-edge adapters: Web Crypto for the artifact digest
+   * and the browser download adapter. Both live here so the application layer
+   * never reaches for a browser API.
+   */
+  midiExportHashBytes: async (bytes) => {
+    const subtle = globalThis.crypto?.subtle;
+    if (subtle === undefined) {
+      throw new Error("U7_HASH_PORT_UNAVAILABLE");
+    }
+    const digest = await subtle.digest("SHA-256", bytes as BufferSource);
+    return [...new Uint8Array(digest)]
+      .map((byte) => byte.toString(16).padStart(2, "0"))
+      .join("");
+  },
+  midiExportDelivery: createMidiExportDownloadStart({
+    createObjectUrl: (blob) => URL.createObjectURL(blob),
+    revokeObjectUrl: (url) => {
+      URL.revokeObjectURL(url);
+    },
+    createAnchor: () => document.createElement("a"),
+    attachToDocument: (anchor) => {
+      /* The shim is structural so tests can stub it; the real anchor is an
+       * HTMLAnchorElement and Firefox only downloads attached anchors. */
+      document.body.append(anchor as unknown as Node);
+    },
+  }),
 });
 
 if (creation.ok) {
@@ -73,7 +105,7 @@ if (creation.ok) {
    * Seeding happens before the first render so the opening paint already
    * shows a playable progression.
    */
-  const { controller } = creation.composition;
+  const { controller, midiExport } = creation.composition;
   let startupNotice: string | null = null;
   const shared = decodeShareFragment(window.location.hash);
   if (shared.ok) {
@@ -91,6 +123,7 @@ if (creation.ok) {
   render(
     <StudioRoot
       controller={controller}
+      midiExport={midiExport}
       midiImport={midiImport}
       startupNotice={startupNotice}
     />,

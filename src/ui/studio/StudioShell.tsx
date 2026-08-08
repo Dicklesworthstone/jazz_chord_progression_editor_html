@@ -5,6 +5,7 @@ import { TourDialogContent } from "./TourDialog";
 
 import { ChartWorkspace } from "./ChartWorkspace";
 import { HarmonyLens, HarmonyLensContent } from "./HarmonyLens";
+import { MidiExportPanel } from "./MidiExportPanel";
 import {
   LibraryPanel,
   LibraryPanelContent,
@@ -109,6 +110,7 @@ export function StudioShell({
   callbacks,
   transport,
   annotations,
+  midiExportAvailable,
 }: StudioShellProps) {
   /*
    * jcpe-disi.3 labeled undo. Every mutation path already flows through the
@@ -460,6 +462,9 @@ export function StudioShell({
   }, []);
 
   const activeSheet = view.layout.activeSheet;
+  /* The export workflow presents as a sheet below the compact breakpoint; the
+   * modal dialog owns it everywhere else (the frozen U7 accessibility matrix). */
+  const exportOpen = view.midiExport.state !== null && activeSheet !== "export";
   const sheetId =
     activeSheet === null ? null : `studio-${activeSheet}-sheet`;
   const sheetTitle =
@@ -467,13 +472,17 @@ export function StudioShell({
       ? "Library"
       : activeSheet === "sound"
         ? "Sound"
-        : "Harmony Lens";
+        : activeSheet === "export"
+          ? "MIDI export"
+          : "Harmony Lens";
   const sheetDescription =
     activeSheet === "library"
       ? "Staged entry, palette, and lesson surfaces for this chart."
       : activeSheet === "sound"
         ? "Instrument, groove, tempo, and volume for this session."
-        : "Literal document facts and the current chord analysis surface.";
+        : activeSheet === "export"
+          ? "Preview, generate, and download this chart as a MIDI file."
+          : "Literal document facts and the current chord analysis surface.";
   const sheetTriggerId =
     activeSheet === "library"
       ? shortViewportDock
@@ -481,9 +490,11 @@ export function StudioShell({
         : "studio-open-library-sheet"
       : activeSheet === "sound"
         ? "studio-open-sound-sheet"
-        : shortViewportDock
-          ? "studio-transport-open-harmony"
-          : "studio-open-harmony-sheet";
+        : activeSheet === "export"
+          ? "studio-export-midi"
+          : shortViewportDock
+            ? "studio-transport-open-harmony"
+            : "studio-open-harmony-sheet";
 
   return (
     <div
@@ -502,6 +513,7 @@ export function StudioShell({
             view={view.document}
             callbacks={shellCallbacks}
             chartLayout={view.chart.layout}
+            midiExportAvailable={midiExportAvailable}
             onOpenCommandLane={() => {
               setCommandLaneOpen(true);
             }}
@@ -634,6 +646,42 @@ export function StudioShell({
       </div>
 
       <div id="dialog-host">
+        {exportOpen && !completionDialogOpen && !commandLaneOpen && !standardsOpen && !tourOpen ? (
+          <Dialog
+            backgroundRootId="studio-shell-background"
+            busy={view.midiExport.state === "delivering"}
+            closeLabel="Close the MIDI export preview"
+            content={
+              <MidiExportPanel
+                context="dialog"
+                onBlockedEventActivate={callbacks.onMidiExportBlockedEventActivate}
+                onClose={callbacks.onMidiExportClose}
+                onDownload={callbacks.onMidiExportDownload}
+                onGenerate={callbacks.onMidiExportGenerate}
+                onRepreview={callbacks.onMidiExportRepreview}
+                view={view.midiExport}
+              />
+            }
+            density="comfortable"
+            describedBy={[]}
+            description="Inspect what the MIDI file will carry, then generate and download it."
+            disabled={false}
+            dismissibility={DISMISSIBLE}
+            focusTargets={{
+              triggerId: "studio-export-midi",
+              workflowTargetId: null,
+              workspaceId: "workspace",
+            }}
+            id="studio-midi-export-dialog"
+            initialFocus="heading"
+            initialFocusId={null}
+            invalid={false}
+            onContractRefusal={callbacks.onUiContractRefusal}
+            onDismiss={callbacks.onMidiExportClose}
+            open
+            title="Export this chart as MIDI"
+          />
+        ) : null}
         {tourOpen && !completionDialogOpen && !commandLaneOpen && !standardsOpen ? (
           <Dialog
             backgroundRootId="studio-shell-background"
@@ -791,7 +839,24 @@ export function StudioShell({
             busy={false}
             closeLabel={`Close ${sheetTitle}`}
             content={
-              activeSheet === "sound" ? (
+              activeSheet === "export" ? (
+                <section
+                  aria-labelledby={`${sheetId}-title`}
+                  class="studio-panel-content studio-export-content"
+                  data-panel-context="sheet"
+                >
+                  <p class="studio-kicker">MIDI export</p>
+                  <MidiExportPanel
+                    context="sheet"
+                    onBlockedEventActivate={callbacks.onMidiExportBlockedEventActivate}
+                    onClose={callbacks.onMidiExportClose}
+                    onDownload={callbacks.onMidiExportDownload}
+                    onGenerate={callbacks.onMidiExportGenerate}
+                    onRepreview={callbacks.onMidiExportRepreview}
+                    view={view.midiExport}
+                  />
+                </section>
+              ) : activeSheet === "sound" ? (
                 <section
                   aria-labelledby={`${sheetId}-title`}
                   class="studio-panel-content studio-sound-content"

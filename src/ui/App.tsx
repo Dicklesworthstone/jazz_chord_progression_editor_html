@@ -42,6 +42,14 @@ import {
   type StudioAnalyzerExpectation,
   instrumentOptions,
 } from "../application/runtime";
+import type {
+  StudioMidiExportDownloadResult,
+  StudioMidiExportGenerateResult,
+  StudioMidiExportPreparationId,
+  StudioMidiExportPreview,
+  StudioMidiExportPreviewResult,
+  StudioMidiExportService,
+} from "../application/runtime";
 import { GROOVE_STYLE_IDS, MAX_SHORT_TEXT_CODE_POINTS } from "../domain";
 
 /** The reviewed tempo window the controller enforces (20–300 BPM). */
@@ -54,6 +62,7 @@ import {
   type StudioFactView,
   type StudioMidiImportOverridesView,
   type StudioMidiImportView,
+  type StudioMidiExportView,
   type StudioSheetId,
   type StudioShareFeedback,
   type StudioDetailView,
@@ -245,6 +254,21 @@ export type AppActions = Readonly<{
     preview: MidiImportPreview,
     overrides: M1ImportOverrides,
   ) => MidiImportPreview | null;
+  /**
+   * The U7 MIDI export workflow service. A session whose composition wired
+   * none hides the surface rather than offering a control that cannot work.
+   */
+  midiExportAvailable: boolean;
+  midiExportOpenPreview: () => Promise<StudioMidiExportPreviewResult>;
+  midiExportGenerate: (
+    preparationId: StudioMidiExportPreparationId,
+  ) => StudioMidiExportGenerateResult;
+  midiExportDownload: (
+    preparationId: StudioMidiExportPreparationId,
+  ) => Promise<StudioMidiExportDownloadResult>;
+  midiExportAbandon: (
+    preparationId: StudioMidiExportPreparationId | null,
+  ) => void;
   /**
    * Display-only live playhead label the animation frame reads while playing.
    * Interpolation for the eye, never a second musical clock: committed
@@ -1234,6 +1258,72 @@ function midiImportView(
   });
 }
 
+function midiExportView(
+  session: Readonly<{
+    phase: "loading" | "preview" | "generating" | "ready" | "delivering" | "delivered";
+    preview: StudioMidiExportPreview | null;
+    preparationId: StudioMidiExportPreparationId | null;
+    stale: boolean;
+    refusal: Readonly<{ code: string; message: string }> | null;
+    announcement: string | null;
+  }> | null,
+): StudioMidiExportView {
+  if (session === null) {
+    return Object.freeze({
+      state: null,
+      readiness: "ready",
+      blockers: Object.freeze([]),
+      realization: Object.freeze({
+        storedManualCount: 0,
+        storedFrozenCount: 0,
+        generatedCount: 0,
+        externalBassEventIds: Object.freeze([]),
+      }),
+      ppq: 960,
+      trackCount: 2,
+      tempoBpm: 0,
+      meter: Object.freeze({ beatsPerBar: 4, beatUnit: 4 }),
+      losses: Object.freeze([]),
+      markerOmissions: Object.freeze([]),
+      titleNotice: null,
+      derivedTitle: "",
+      artifact: null,
+      stale: false,
+      refusal: null,
+      announcement: null,
+    });
+  }
+  const preview = session.preview;
+  return Object.freeze({
+    state:
+      session.phase === "loading"
+        ? "preview"
+        : (session.phase as StudioMidiExportView["state"]),
+    readiness: preview?.readiness ?? "ready",
+    blockers: preview?.blockers ?? Object.freeze([]),
+    realization:
+      preview?.realization ??
+      Object.freeze({
+        storedManualCount: 0,
+        storedFrozenCount: 0,
+        generatedCount: 0,
+        externalBassEventIds: Object.freeze([]),
+      }),
+    ppq: preview?.ppq ?? 960,
+    trackCount: preview?.trackCount ?? 2,
+    tempoBpm: preview?.tempoBpm ?? 0,
+    meter: preview?.meter ?? Object.freeze({ beatsPerBar: 4, beatUnit: 4 }),
+    losses: preview?.losses ?? Object.freeze([]),
+    markerOmissions: preview?.markerOmissions ?? Object.freeze([]),
+    titleNotice: preview?.titleNotice ?? null,
+    derivedTitle: preview?.derivedTitle ?? "",
+    artifact: preview?.artifact ?? null,
+    stale: session.stale,
+    refusal: session.refusal,
+    announcement: session.announcement,
+  });
+}
+
 function viewFromSnapshot(
   snapshot: StudioViewModel,
   presentation: PresentationState,
@@ -1243,6 +1333,7 @@ function viewFromSnapshot(
   continuation: StudioContinuationView,
   detail: StudioDetailView | null,
   midiImport: StudioMidiImportView,
+  midiExport: StudioMidiExportView,
   romanForEvent: (eventId: string) => string | null,
 ): StudioShellView {
   const {
@@ -1452,6 +1543,7 @@ function viewFromSnapshot(
       truncationNotice: draftPreview.truncation?.message ?? null,
     }),
     midiImport,
+    midiExport,
     harmony: Object.freeze({
       selectedChordLabel: null,
       selected: selectedChordView(snapshot),
@@ -1598,6 +1690,19 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
   const [midiPreview, setMidiPreview] = useState<MidiImportPreview | null>(
     null,
   );
+  /*
+   * The U7 MIDI export workflow session. The pinned preview model is the
+   * only thing the dialog renders; every phase transition re-checks the
+   * binding through the service — never a live field at render time.
+   */
+  const [midiExportSession, setMidiExportSession] = useState<Readonly<{
+    phase: "loading" | "preview" | "generating" | "ready" | "delivering" | "delivered";
+    preview: StudioMidiExportPreview | null;
+    preparationId: StudioMidiExportPreparationId | null;
+    stale: boolean;
+    refusal: Readonly<{ code: string; message: string }> | null;
+    announcement: string | null;
+  }> | null>(null);
   const [midiImportNotice, setMidiImportNotice] = useState<string | null>(null);
   /*
    * jcpe-qyyn audition: presentation-only. The timers fire the same
@@ -1639,6 +1744,144 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
    * user's decision.
    */
   const quickEntryTargetIsExplicit = useRef(false);
+
+  /*
+   * U7 workflow handlers. Every phase change is a service call whose result
+   * replaces the session atomically; the dialog never re-reads mid-flight.
+   */
+  const openMidiExport = (): void => {
+    if (!actions.midiExportAvailable) return;
+    /* The frozen U7 accessibility matrix: sheet below the U0 compact
+     * breakpoint (640px), modal dialog at and above it. */
+    const compact =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(max-width: 639px)").matches;
+    if (compact) setActiveSheet("export");
+    setMidiExportSession({
+      phase: "loading",
+      preview: null,
+      preparationId: null,
+      stale: false,
+      refusal: null,
+      announcement: "Preparing the export preview…",
+    });
+    void actions.midiExportOpenPreview().then((result) => {
+      if (!result.ok) {
+        setMidiExportSession(null);
+        setUiRefusal(
+          Object.freeze({
+            heading: "Export preview failed",
+            message: result.refusal.message,
+            recoveryAction: "Nothing was downloaded and the chart is unchanged.",
+          }),
+        );
+        return;
+      }
+      setMidiExportSession({
+        phase: "preview",
+        preview: result.preview,
+        preparationId: result.preparationId,
+        stale: false,
+        refusal: null,
+        announcement:
+          result.preview.readiness === "ready"
+            ? `Preview ready: ${result.preview.artifact?.filename ?? ""}, ${String(
+                result.preview.artifact?.byteLength ?? 0,
+              )} bytes.`
+            : "This chart cannot be exported yet; every blocker is listed.",
+      });
+    });
+  };
+  const generateMidiExport = (): void => {
+    setMidiExportSession((session) => {
+      if (session === null || session.preparationId === null) return session;
+      const outcome = actions.midiExportGenerate(session.preparationId);
+      if (outcome.outcome === "generated") {
+        return Object.freeze({
+          ...session,
+          phase: "ready" as const,
+          announcement: "Ready to download.",
+        });
+      }
+      if (outcome.outcome === "stale") {
+        return Object.freeze({
+          ...session,
+          phase: "preview" as const,
+          stale: true,
+          announcement:
+            "The chart changed since this preview was made. Preview again to export the current chart.",
+        });
+      }
+      return Object.freeze({
+        ...session,
+        refusal: outcome.refusal,
+        announcement: outcome.refusal.message,
+      });
+    });
+  };
+  const downloadMidiExport = (): void => {
+    const session = midiExportSession;
+    if (session === null || session.preparationId === null) return;
+    const preparationId = session.preparationId;
+    setMidiExportSession(
+      Object.freeze({ ...session, phase: "delivering" as const }),
+    );
+    void actions.midiExportDownload(preparationId).then((result) => {
+      setMidiExportSession((current) => {
+        if (current === null) return null;
+        if (result.outcome === "handed-off") {
+          return Object.freeze({
+            ...current,
+            phase: "delivered" as const,
+            preparationId: null,
+            announcement: `${current.preview?.artifact?.filename ?? "The file"} was handed to the browser's downloads.`,
+          });
+        }
+        if (result.outcome === "failed") {
+          return Object.freeze({
+            ...current,
+            phase: "ready" as const,
+            announcement:
+              "The browser did not take the file. The prepared file is still here — try the download again.",
+          });
+        }
+        if (result.outcome === "stale") {
+          return Object.freeze({
+            ...current,
+            phase: "preview" as const,
+            stale: true,
+            announcement:
+              "The chart changed since this preview was made. Preview again to export the current chart.",
+          });
+        }
+        return Object.freeze({
+          ...current,
+          refusal: result.refusal,
+          announcement: result.refusal.message,
+        });
+      });
+    });
+  };
+  const closeMidiExport = (): void => {
+    const session = midiExportSession;
+    if (session !== null) {
+      actions.midiExportAbandon(session.preparationId);
+    }
+    setMidiExportSession(null);
+    setActiveSheet((current) => (current === "export" ? null : current));
+  };
+  const repreviewMidiExport = (): void => {
+    const session = midiExportSession;
+    if (session !== null) {
+      actions.midiExportAbandon(session.preparationId);
+    }
+    openMidiExport();
+  };
+  const focusMidiExportBlocker = (eventId: string): void => {
+    setMidiExportSession(null);
+    setActiveSheet((current) => (current === "export" ? null : current));
+    actions.selectEvent(eventId);
+  };
 
   /*
    * The Clear confirmation is an owned two-step control, not a native
@@ -2125,7 +2368,7 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
     midiAuditioning,
     midiOverrides,
     snapshot.performance.options,
-  ), (eventId) => actions.readEventAnalysis(eventId)?.roman ?? null);
+  ), midiExportView(midiExportSession), (eventId) => actions.readEventAnalysis(eventId)?.roman ?? null);
 
   /*
    * jcpe-7she: the independent ear compares what the tap heard with the
@@ -2228,6 +2471,7 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
   return (
     <>
     <StudioShell
+      midiExportAvailable={actions.midiExportAvailable}
       view={view}
       annotations={{
         /* Display-only ports; a null result renders as absence. */
@@ -2649,6 +2893,12 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
           setMidiOverrides(absolute);
           setMidiPreview(replanned);
         },
+        onOpenMidiExport: openMidiExport,
+        onMidiExportGenerate: generateMidiExport,
+        onMidiExportDownload: downloadMidiExport,
+        onMidiExportClose: closeMidiExport,
+        onMidiExportRepreview: repreviewMidiExport,
+        onMidiExportBlockedEventActivate: focusMidiExportBlocker,
         onMidiImportAudition: () => {
           if (midiAuditioning) {
             cancelMidiAudition();
@@ -3200,6 +3450,12 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
           setActiveSheet(side);
         },
         onDismissPanelSheet: () => {
+          /* The export surface's dismiss is the workflow's cancel: abandon the
+           * preparation, not just the drawer. */
+          if (activeSheet === "export") {
+            closeMidiExport();
+            return;
+          }
           setActiveSheet(null);
         },
         onUiContractRefusal: (diagnostic) => {
@@ -3265,14 +3521,22 @@ export type StudioRootProps = Readonly<{
    * never reaches for a decoder itself.
    */
   midiImport?: StudioMidiImportService | null;
+  /**
+   * The U7 MIDI export workflow service the composition root built over the
+   * controller closure, Web Crypto, and the browser download adapter. Absent
+   * means the surface is not offered at all.
+   */
+  midiExport?: StudioMidiExportService | null;
 }>;
 
 export function StudioRoot({
   controller,
   startupNotice,
   midiImport,
+  midiExport,
 }: StudioRootProps) {
   const midiImportService = midiImport ?? null;
+  const midiExportService = midiExport ?? null;
   const [snapshot, setSnapshot] = useState(controller.getSnapshot());
 
   useEffect(() => {
@@ -3338,6 +3602,50 @@ export function StudioRoot({
           midiImportService === null
             ? null
             : midiImportService.replanWithOverrides(preview, overrides),
+        midiExportAvailable: midiExportService !== null,
+        midiExportOpenPreview: () => {
+          if (midiExportService === null) {
+            return Promise.resolve(
+              Object.freeze({
+                ok: false as const,
+                refusal: Object.freeze({
+                  code: "u7.document_unavailable" as const,
+                  message: "This build has no MIDI export service wired.",
+                }),
+              }),
+            );
+          }
+          return midiExportService.openPreview();
+        },
+        midiExportGenerate: (preparationId) => {
+          if (midiExportService === null) {
+            return Object.freeze({
+              outcome: "refused" as const,
+              refusal: Object.freeze({
+                code: "u7.preparation_missing" as const,
+                message: "This build has no MIDI export service wired.",
+              }),
+            });
+          }
+          return midiExportService.generate(preparationId);
+        },
+        midiExportDownload: (preparationId) => {
+          if (midiExportService === null) {
+            return Promise.resolve(
+              Object.freeze({
+                outcome: "refused" as const,
+                refusal: Object.freeze({
+                  code: "u7.preparation_missing" as const,
+                  message: "This build has no MIDI export service wired.",
+                }),
+              }),
+            );
+          }
+          return midiExportService.download(preparationId);
+        },
+        midiExportAbandon: (preparationId) => {
+          midiExportService?.abandon(preparationId);
+        },
         pauseProgression: controller.pauseProgression,
         playProgression: controller.playProgression,
         previewChord: controller.previewChord,
