@@ -96,9 +96,9 @@ test("initialization ready cannot dispatch the tail and render-ahead preserves c
     }
   };
   assertEventClosed(leading);
-  expect(leading.notes).toHaveLength(6);
+  expect(leading.notes).toHaveLength(10);
   expect([...new Set(leading.notes.map((note) => note.eventId))]).toEqual(
-    plan.events.slice(0, 3).map((event) => event.eventId),
+    plan.events.slice(0, 4).map((event) => event.eventId),
   );
 
   releaseLeading();
@@ -111,7 +111,7 @@ test("initialization ready cannot dispatch the tail and render-ahead preserves c
     !leadingEventIds.has(note.eventId)
   )).toBe(true);
   expect([...new Set(deferred.notes.map((note) => note.eventId))]).toEqual(
-    plan.events.slice(3).map((event) => event.eventId),
+    plan.events.slice(4).map((event) => event.eventId),
   );
 
   expect(controller.stopProgression().ok).toBe(true);

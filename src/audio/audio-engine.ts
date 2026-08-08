@@ -938,7 +938,7 @@ function createAudioEngineInternal(
    * the cache. Buckets grow geometrically so a short comp chord costs a short
    * render while a held bass note still gets its tail.
    */
-  const RENDER_SECONDS_BUCKETS = Object.freeze([1, 2, 4, 8] as const);
+  const RENDER_SECONDS_BUCKETS = Object.freeze([1, 1.5, 2, 4, 8] as const);
 
   function bucketRenderSeconds(seconds: number): number {
     for (const bucket of RENDER_SECONDS_BUCKETS) {
@@ -1146,6 +1146,19 @@ function createAudioEngineInternal(
     buffer.getChannelData(1).set(pcm.right);
     const byteLength = recipe.renderer.channels * pcm.frameCount * 4;
     const cache = recipeBufferCache(recipe.id);
+    /*
+     * An attack-time synchronous miss render can interleave with an
+     * in-flight cooperative preparation of the same chord, so the key may
+     * already be present. Delete first: Map.set on an existing key keeps the
+     * original insertion position (breaking LRU recency) and the counters
+     * would otherwise double-count the entry forever.
+     */
+    const previous = cache.get(key);
+    if (previous !== undefined) {
+      cache.delete(key);
+      renderedBufferCacheBytes -= previous.byteLength;
+      renderedBufferCacheEntries -= 1;
+    }
     renderedBufferCacheStamp += 1;
     cache.set(
       key,
@@ -1295,14 +1308,12 @@ function createAudioEngineInternal(
     return storeRenderedPcm(recipe, context, key, pcm);
   }
 
-  /** Attack-time chord lookup. Cooperative preparation is the fast path and
-   * keeps this a cache hit; when render-ahead loses the race to real time
-   * (slow engines, long charts) a miss renders the one chord synchronously —
-   * the same semantics the per-voice branch has always had. Wall time decides
-   * only when the buffer is computed, never its bytes. */
+  /** Attack-time lookup is deliberately cache-only. A cold physical render
+   * here blocks the scheduler and makes an already-late attack miss its own
+   * deadline; cooperative preparation is the only path allowed to compute
+   * the buffer. */
   function cachedRenderedChordBufferFor(
     recipe: AudioRenderedInstrumentRecipe,
-    context: AudioContextPort,
     voices: readonly RenderedChordVoice[],
     requestedSeconds: number,
   ): AudioBufferPort | null {
@@ -1312,16 +1323,7 @@ function createAudioEngineInternal(
     const seconds = bucketRenderSeconds(requestedSeconds);
     const key = renderedChordBufferKey(recipe, chordRenderer, voices, seconds);
     const cached = touchRenderedBufferEntry(recipeBufferCache(recipe.id), key);
-    if (cached !== undefined) return cached.buffer;
-    const pairs = canonicalRenderedChordPairs(voices);
-    const pcm = chordRenderer.renderChord(
-      pairs.map((pair) => pair.midiPitch),
-      pairs.map((pair) => pair.velocity),
-      context.sampleRate,
-      seconds,
-    );
-    if (pcm === null) return null;
-    return storeRenderedPcm(recipe, context, key, pcm);
+    return cached?.buffer ?? null;
   }
 
   let reportedContextState: AudioContextStatePort | "absent" = "absent";
@@ -2819,7 +2821,6 @@ function createAudioEngineInternal(
           }
           renderedChordBuffer = cachedRenderedChordBufferFor(
             recipe,
-            context,
             attack.voices,
             requestedSeconds,
           );

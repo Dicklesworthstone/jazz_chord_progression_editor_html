@@ -284,6 +284,32 @@ test("the composite cache binds pitch order, quantized velocity, and gate bucket
   expect(calls).toEqual(beforeOversized);
 });
 
+test("render-ahead warms a single plucked event cooperatively and attack remains cache-only", async () => {
+  const calls: RenderCalls = { note: 0, chord: 0 };
+  const { engine } = await readyWithFakeRenderer(calls);
+  const note = Object.freeze({
+    midiPitch: midi(48),
+    velocity: 96,
+    gateSeconds: 0.4,
+  });
+
+  expect(requireSuccess(await engine.prepareRenderedAudioVoices({
+    instrumentId: "dreadnought-guitar",
+    notes: [note],
+  }))).toMatchObject({ renderedCount: 1, cachedCount: 0 });
+  expect(calls).toEqual({ note: 0, chord: 1 });
+
+  requireSuccess(engine.attackAudioVoices(attackRequest([
+    voice("cooperative-bass-note", 48, 96),
+  ], {
+    eventId: "event-cooperative-bass-note",
+    instrumentId: "dreadnought-guitar",
+    startTimeSeconds: 0.05,
+    releaseTimeSeconds: 0.45,
+  })));
+  expect(calls).toEqual({ note: 0, chord: 1 });
+});
+
 test("a newer preparation generation cancels the older multi-group pipeline", async () => {
   const calls: RenderCalls = { note: 0, chord: 0 };
   const { engine } = await readyWithFakeRenderer(calls);

@@ -127,7 +127,10 @@ import {
  * How many distinct notes Play waits for before it starts. Enough to cover
  * the opening bars; the rest warm behind the transport.
  */
-const PREPARE_LEADING_NOTE_COUNT = 8;
+/* The ballad opens 1/4 voices at beat one and 1/4 at beat two.  Ten voices
+ * closes both complete onsets; eight closed the third event but deferred the
+ * chord sounding at the same beat, leaving only one beat of render-ahead. */
+const PREPARE_LEADING_NOTE_COUNT = 10;
 
 function maximumPreparedVoicesPerEvent(instrumentId: InstrumentId): number {
   if (instrumentId === "ukulele") return 4;
