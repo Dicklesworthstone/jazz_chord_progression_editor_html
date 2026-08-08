@@ -29,7 +29,8 @@
 #[path = "upright_bass_body.rs"]
 mod upright_bass_body;
 
-use libm::{cos, exp, pow, round, sin, sqrt};
+use core::cell::UnsafeCell;
+use libm::{cos, exp, floor, pow, round, sin, sqrt};
 
 const PI: f64 = core::f64::consts::PI;
 const TAU: f64 = 2.0 * PI;
@@ -65,7 +66,11 @@ const PLK2_STEM_MAX_ENERGY_J: f64 = 100.0;
 const PLK2_CHORD_STATE_MAGIC: u32 = 0x3243_4c50; // "PLC2" in little endian.
 const PLK2_CHORD_STATE_VERSION: u32 = 1;
 const PLK2_CHORD_STATE_MAX_BYTES: usize = 12_288;
-const PLK2_CHORD_SIMULATION_CHUNK_FRAMES: usize = 2_048;
+/* Keep each browser-thread quantum short even at the maximum 12:1 rate
+ * divisor. The production opaque runtime retains the decoded physical state
+ * between calls, so this responsiveness bound no longer pays a full
+ * instrument reconstruction/checksum cost at every yield. */
+const PLK2_CHORD_SIMULATION_CHUNK_FRAMES: usize = 256;
 const PLK2_CHORD_OUTPUT_CHUNK_FRAMES: usize = 16_384;
 const PLK2_CHORD_MAX_OUTPUT_FRAMES: usize = 6 * 96_000;
 pub const PLK2_CHORD_STEP_PROGRESS: i32 = 1;
@@ -2565,6 +2570,33 @@ struct PluckedChordSession {
     stem_session: PluckedStemSession,
 }
 
+struct PluckedChordRuntimeState {
+    next_handle: u32,
+    active: Option<(u32, PluckedChordSession)>,
+}
+
+struct PluckedChordRuntimeSlot(UnsafeCell<PluckedChordRuntimeState>);
+
+/* The shipping WASM is built without atomics or shared memory, and exported
+ * calls are synchronous. The TypeScript host additionally serializes every
+ * cooperative PLK2 render, so this slot can never be accessed concurrently or
+ * re-entered. Keeping that exclusivity in the ABI avoids decoding and
+ * reconstructing the complete instrument on every 256-sample browser yield. */
+unsafe impl Sync for PluckedChordRuntimeSlot {}
+
+static PLK2_CHORD_RUNTIME: PluckedChordRuntimeSlot =
+    PluckedChordRuntimeSlot(UnsafeCell::new(PluckedChordRuntimeState {
+        next_handle: 1,
+        active: None,
+    }));
+
+fn with_plk2_chord_runtime<T>(
+    operation: impl FnOnce(&mut PluckedChordRuntimeState) -> T,
+) -> T {
+    // SAFETY: see the slot's single-threaded, non-reentrant WASM invariant.
+    unsafe { operation(&mut *PLK2_CHORD_RUNTIME.0.get()) }
+}
+
 impl PluckedChordSession {
     fn new(
         pack_index: i32,
@@ -2624,24 +2656,16 @@ impl PluckedChordSession {
         }
         pack.string_count = note_count;
 
+        /* The retained string/body/amp system is admitted down to 8 kHz.
+         * Advance it at the highest integer-divided rate that preserves that
+         * bound, then reconstruct through the existing two-pole anti-image
+         * filter.  Running the chord core at 22--24 kHz made Firefox/Safari
+         * preparation slower than the 105 BPM event stream even though the
+         * discarded band lay above the model's resolved physical output. */
         let selected_rate_divisor = if frames < 3 {
             1_usize
-        } else if full_pack.amplifier.is_some() {
-            if sample_rate >= 88_000.0 {
-                6_usize
-            } else if sample_rate >= 44_000.0 {
-                3_usize
-            } else if sample_rate >= 32_000.0 {
-                2_usize
-            } else {
-                1_usize
-            }
-        } else if sample_rate >= 88_000.0 {
-            4_usize
-        } else if sample_rate >= 32_000.0 {
-            2_usize
         } else {
-            1_usize
+            (floor(sample_rate as f64 / 8_000.0) as usize).max(1)
         };
         let mut rate_divisor = forced_rate_divisor.unwrap_or(selected_rate_divisor);
         if rate_divisor > 1 && (frames.saturating_sub(1) / rate_divisor).saturating_add(3) > frames
@@ -2984,6 +3008,77 @@ pub fn plk2_chord_session_step_slices(
         PluckedChordAdvance::Complete => PLK2_CHORD_STEP_COMPLETE,
         PluckedChordAdvance::Invalid => 0,
     }
+}
+
+fn plk2_chord_runtime_init_slices(
+    pack_index: i32,
+    midis: &[i32],
+    velocities: &[i32],
+    sample_rate: f32,
+    max_frames: i32,
+) -> i32 {
+    let Some(session) =
+        PluckedChordSession::new(pack_index, midis, velocities, sample_rate, max_frames, None)
+    else {
+        return 0;
+    };
+    with_plk2_chord_runtime(|runtime| {
+        let handle = runtime.next_handle.max(1).min(i32::MAX as u32);
+        runtime.next_handle = if handle == i32::MAX as u32 {
+            1
+        } else {
+            handle + 1
+        };
+        runtime.active = Some((handle, session));
+        handle as i32
+    })
+}
+
+fn plk2_chord_runtime_step_slices(
+    handle: i32,
+    left: &mut [f32],
+    right: &mut [f32],
+    output_capacity: i32,
+) -> i32 {
+    if handle <= 0 || output_capacity <= 0 {
+        return 0;
+    }
+    with_plk2_chord_runtime(|runtime| {
+        let Some((active_handle, session)) = runtime.active.as_mut() else {
+            return 0;
+        };
+        if *active_handle != handle as u32
+            || output_capacity as usize != session.frames
+            || left.len() < session.frames
+            || right.len() < session.frames
+        {
+            return 0;
+        }
+        match session.advance(left, right) {
+            PluckedChordAdvance::Progress => PLK2_CHORD_STEP_PROGRESS,
+            PluckedChordAdvance::Complete => {
+                runtime.active = None;
+                PLK2_CHORD_STEP_COMPLETE
+            }
+            PluckedChordAdvance::Invalid => {
+                runtime.active = None;
+                0
+            }
+        }
+    })
+}
+
+fn plk2_chord_runtime_reset_handle(handle: i32) -> i32 {
+    if handle <= 0 {
+        return 0;
+    }
+    with_plk2_chord_runtime(|runtime| match runtime.active.as_ref() {
+        Some((active_handle, _)) if *active_handle == handle as u32 => {
+            runtime.active = None;
+            1
+        }
+        _ => 0,
+    })
 }
 
 /// Render one simultaneous plucked chord through one shared body and, for the

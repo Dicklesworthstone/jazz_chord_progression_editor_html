@@ -1765,17 +1765,7 @@ fn shared_chord_rate_conversion_preserves_pitch_and_rejects_first_images() {
         let frames = (0.5 * sample_rate) as usize;
         let start = (0.05 * sample_rate) as usize;
         for pack_index in [PLK2_DREADNOUGHT_PACK, PLK2_MARSHALL_ELECTRIC_PACK] {
-            let divisor = if pack_index == PLK2_MARSHALL_ELECTRIC_PACK {
-                if sample_rate >= 88_000.0 {
-                    6.0
-                } else {
-                    3.0
-                }
-            } else if sample_rate >= 88_000.0 {
-                4.0
-            } else {
-                2.0
-            };
+            let divisor = (sample_rate / 8_000.0_f64).floor().max(1.0);
             let first_image_hz = sample_rate / divisor - target_hz;
             let mut left = vec![0.0f32; frames];
             let mut right = vec![0.0f32; frames];
