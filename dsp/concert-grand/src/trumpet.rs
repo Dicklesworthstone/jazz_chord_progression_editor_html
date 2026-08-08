@@ -50,6 +50,16 @@ const LIP_SOLVE_RESIDUAL_TOLERANCE: f64 = 1.0e-7;
 const AIR_DENSITY_KG_M3: f64 = 1.2;
 const SOUND_SPEED_M_S: f64 = 343.0;
 const OPEN_LENGTH_M: f64 = 1.47;
+// Uniform axial end-correction calibration. The reviewed station table keeps
+// its published axial positions; the effective acoustic length is shorter
+// because the model does not resolve the bell's radiation end correction
+// (~0.61*r_bell = 3.8 cm of the 4.9 cm discrepancy) or Webster cell
+// quantization. The single scale is applied wherever an axial length is
+// consumed - open bore, valve added lengths, and cell realization - so every
+// derived ratio (the valve exact-semitone law above all) inherits it
+// unchanged. Calibrated against the Table-II measured impedance peaks:
+// 84.75/232.0 Hz vs targets 87/232 (both inside the +-4% law).
+const AXIAL_END_CORRECTION_SCALE: f64 = 0.9666;
 const MOUTHPIECE_BACKBORE_ENTRY_RADIUS_M: f64 = 0.0025;
 // Adachi-Sato table I mouthpiece entry area. This is the cup-facing expansion
 // area at the lip, not the much smaller distributed backbore entry used by the
@@ -74,6 +84,20 @@ const DIGITAL_FULL_SCALE_PRESSURE_PA: f64 = 200.0;
 // names the upper member and moves the pair without retuning the bore.
 const LIP_MODE_FREQUENCY_RATIO: f64 = 184.0 / 136.0;
 const CHARACTERISTIC_MEAN_CORNER_HZ: f64 = 20.0;
+// Embouchure servo: a player holds the MEAN lip position against the DC
+// blow-open with slow muscle action while the fast tissue dynamics stay
+// linear. The servo acts on the 20 Hz characteristic mean of displacement
+// only (frozen during each sample's Newton solve), so the small-signal lip
+// resonance, Q, and pitch are untouched at every dynamic. Knee/gain chosen
+// from the measured operating means (0.76/0.97/1.16/1.57 mm at
+// 5.5/7/8.5/12 kPa): zero below 1.2 mm, linear above, pulling the 12 kPa
+// mean back toward closure-capable territory (min opening is what makes
+// brass harmonics).
+const LIP_EMBOUCHURE_SERVO_GAIN: f64 = 3.0;
+const LIP_EMBOUCHURE_KNEE_M: f64 = 1.2e-3;
+// In-sample continuation budget for the lip Newton solve; see
+// `solve_lip_cup_with_continuation`.
+const LIP_CONTINUATION_SUBSTEPS: u32 = 4;
 
 /// The eight reviewed trumpet-bore station endpoints: axial position (m) and
 /// radius (m), at 20 C.
@@ -338,7 +362,7 @@ pub fn valve_added_length_m(valves: [f64; 3]) -> f64 {
         }
         compensation += weight * compensation_length_m;
     }
-    base + compensation
+    (base + compensation) * AXIAL_END_CORRECTION_SCALE
 }
 
 /// Half-wave estimate used only as a geometry diagnostic.  The live model
@@ -346,7 +370,8 @@ pub fn valve_added_length_m(valves: [f64; 3]) -> f64 {
 /// formula or alter it to match a MIDI pitch.
 #[must_use]
 pub fn geometry_half_wave_hz(valves: [f64; 3]) -> f64 {
-    SOUND_SPEED_M_S / (2.0 * (OPEN_LENGTH_M + valve_added_length_m(valves)))
+    SOUND_SPEED_M_S
+        / (2.0 * (OPEN_LENGTH_M * AXIAL_END_CORRECTION_SCALE + valve_added_length_m(valves)))
 }
 
 /// Instantaneous power balance for the live bell termination
@@ -837,6 +862,7 @@ pub struct TrumpetModel {
     previous_equilibrium_opening_m: f64,
     cup_pressure_pa: f64,
     lip_displacement_m: f64,
+    lip_displacement_mean_m: f64,
     lip_velocity_m_s: f64,
     lip_acceleration_m_s2: f64,
     lip_streamwise_displacement_m: f64,
@@ -865,7 +891,11 @@ impl TrumpetModel {
         {
             return Err(TrumpetError::InvalidSampleRate);
         }
-        let mut base_cell_length_m = [OPEN_LENGTH_M / BORE_CELLS as f64; BORE_CELLS];
+        // Cell lengths carry the end-correction scale; the radius/valve-window
+        // sampling below stays in the reviewed station coordinates so the
+        // taper shape and the physical valve span are untouched.
+        let mut base_cell_length_m =
+            [OPEN_LENGTH_M * AXIAL_END_CORRECTION_SCALE / BORE_CELLS as f64; BORE_CELLS];
         let mut cell_area_m2 = [0.0; BORE_CELLS];
         let mut valve_weights = [0.0; BORE_CELLS];
         let valve_begin = 0.19;
@@ -901,8 +931,8 @@ impl TrumpetModel {
         let decimator =
             OversampledOutput::new(output_sample_rate_hz, parameters.oversample_factor)?;
         // Keep the binding explicit even if later geometry becomes nonuniform.
-        base_cell_length_m[BORE_CELLS - 1] =
-            OPEN_LENGTH_M - base_cell_length_m[..BORE_CELLS - 1].iter().sum::<f64>();
+        base_cell_length_m[BORE_CELLS - 1] = OPEN_LENGTH_M * AXIAL_END_CORRECTION_SCALE
+            - base_cell_length_m[..BORE_CELLS - 1].iter().sum::<f64>();
         let cell_length_m = base_cell_length_m;
         Ok(Self {
             output_sample_rate_hz,
@@ -924,6 +954,7 @@ impl TrumpetModel {
             previous_equilibrium_opening_m: 0.0,
             cup_pressure_pa: 0.0,
             lip_displacement_m: 0.0,
+            lip_displacement_mean_m: 0.0,
             lip_velocity_m_s: 0.0,
             lip_acceleration_m_s2: 0.0,
             lip_streamwise_displacement_m: 0.0,
@@ -1037,6 +1068,11 @@ impl TrumpetModel {
     /// Total represented storage.  Radiation and viscothermal terms dissipate
     /// energy and therefore are intentionally absent from this storage sum.
     #[must_use]
+    /// TEMPORARY probe accessor (removed before landing).
+    pub fn diagnostic_lip_displacement_m(&self) -> f64 {
+        self.lip_displacement_m
+    }
+
     pub fn stored_energy_j(&self, controls: TrumpetControls) -> f64 {
         let mechanics = self.lip_mechanics(controls);
         let contact = self.lip_contact(
@@ -1126,7 +1162,7 @@ impl TrumpetModel {
     fn process_substep(&mut self, controls: TrumpetControls) -> Result<f64, TrumpetError> {
         let dt = 1.0 / self.internal_sample_rate_hz;
         self.advance_valves(controls.valves, dt);
-        self.solve_lip_cup(controls, dt)?;
+        self.solve_lip_cup_with_continuation(controls, dt)?;
 
         let damping = exp(-self.parameters.bore_loss_per_second * dt);
         for face in 1..BORE_CELLS {
@@ -1226,6 +1262,44 @@ impl TrumpetModel {
         }
     }
 
+    /// Bounded in-sample control continuation around the Newton solve. Large
+    /// per-sample control steps (the measured divergence: lip retuned to
+    /// 258 Hz at 12 kPa) can land outside the full-step convergence basin
+    /// while every intermediate operating point remains solvable. On a failed
+    /// full step, re-approach the same final controls through
+    /// `LIP_CONTINUATION_SUBSTEPS` linearly interpolated pressure/equilibrium
+    /// sub-steps, each warm-starting the next. Deterministic and bounded: at
+    /// most `1 + LIP_CONTINUATION_SUBSTEPS` solves per sample, counted in the
+    /// report's `fallback_bisections`; a sub-step failure is a real failure.
+    fn solve_lip_cup_with_continuation(
+        &mut self,
+        controls: TrumpetControls,
+        dt: f64,
+    ) -> Result<(), TrumpetError> {
+        let full = self.solve_lip_cup(controls, dt);
+        match full {
+            Err(TrumpetError::LipSolveDidNotConverge) => {}
+            other => return other,
+        }
+        let start_pressure_pa = self.previous_mouth_pressure_pa;
+        let start_equilibrium_m = self.previous_equilibrium_opening_m;
+        let mut substeps_used = 0_usize;
+        for substep in 1..=LIP_CONTINUATION_SUBSTEPS {
+            let fraction = substep as f64 / LIP_CONTINUATION_SUBSTEPS as f64;
+            let staged = TrumpetControls {
+                mouth_pressure_pa: start_pressure_pa
+                    + fraction * (controls.mouth_pressure_pa - start_pressure_pa),
+                equilibrium_opening_m: start_equilibrium_m
+                    + fraction * (controls.equilibrium_opening_m - start_equilibrium_m),
+                ..controls
+            };
+            substeps_used += 1;
+            self.solve_lip_cup(staged, dt)?;
+        }
+        self.last_lip_report.fallback_bisections = substeps_used;
+        Ok(())
+    }
+
     fn solve_lip_cup(&mut self, controls: TrumpetControls, dt: f64) -> Result<(), TrumpetError> {
         // This report belongs to this substep even when a residual evaluation
         // or Newton update fails. Never expose a previous sample's work as the
@@ -1243,6 +1317,12 @@ impl TrumpetModel {
         let old_pressure = self.cup_pressure_pa;
         let pressure_predictor =
             old_pressure + controls.mouth_pressure_pa - self.previous_mouth_pressure_pa;
+        let embouchure_servo_force_n = {
+            let excess_m = (self.lip_displacement_mean_m - LIP_EMBOUCHURE_KNEE_M).max(0.0);
+            // Uses the previous sample's characteristic mean, so the value is
+            // constant through this sample's Newton solve.
+            mechanics.normal_stiffness_n_m * LIP_EMBOUCHURE_SERVO_GAIN * excess_m
+        };
         let normal_displacement_predictor = self.lip_displacement_m
             + dt * self.lip_velocity_m_s
             + dt * dt * (0.5 - beta) * self.lip_acceleration_m_s2;
@@ -1323,10 +1403,20 @@ impl TrumpetModel {
                 candidate_pressure,
                 lip_opening_pressure_pa,
             )?;
+            /*
+             * Soft-tissue opening-side stiffening: lip tissue is hyperelastic
+             * and stiffens as the aperture is blown open, which is what keeps
+             * a fixed embouchure modulating at fortissimo instead of sagging
+             * into a blown-open static state. One-sided (opening direction
+             * only), conservative, and zero-slope at rest so the small-signal
+             * lip resonance and every low-pressure regime are untouched.
+             */
+            let opening_stiffening_n = embouchure_servo_force_n;
             let normal_force_residual_n = mechanics.normal_mass_kg * normal_acceleration_m_s2
                 + mechanics.normal_damping_n_s_m * normal_velocity_m_s
                 + mechanics.cross_damping_n_s_m * streamwise_velocity_m_s
                 + mechanics.normal_stiffness_n_m * normal_displacement_m
+                + opening_stiffening_n
                 + mechanics.cross_stiffness_n_m * streamwise_displacement_m
                 - pressure_port.normal_force_n
                 - contact.normal_force_n;
@@ -1505,6 +1595,12 @@ impl TrumpetModel {
         self.previous_mouth_pressure_pa = controls.mouth_pressure_pa;
         self.previous_equilibrium_opening_m = controls.equilibrium_opening_m;
         self.lip_displacement_m = candidate.displacement_m;
+        {
+            let dt = 1.0 / self.internal_sample_rate_hz;
+            let memory = exp(-2.0 * PI * CHARACTERISTIC_MEAN_CORNER_HZ * dt);
+            self.lip_displacement_mean_m =
+                memory * self.lip_displacement_mean_m + (1.0 - memory) * self.lip_displacement_m;
+        }
         self.lip_velocity_m_s = candidate.velocity_m_s;
         self.lip_acceleration_m_s2 = candidate.acceleration_m_s2;
         self.lip_streamwise_displacement_m = candidate.streamwise_displacement_m;

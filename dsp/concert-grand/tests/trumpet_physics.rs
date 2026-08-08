@@ -80,9 +80,13 @@ fn fixed_geometry_and_valves_move_resonance_without_a_midi_input() {
         }
     }
     let all = 2.0 * geometry_half_wave_hz([1.0, 1.0, 1.0]);
-    assert!((open_normal - 233.333_333_333_333_34).abs() < 1.0e-12);
-    assert!((valve_added_length_m([0.0, 1.0, 0.0]) - 0.087_410_748_708_164_11).abs() < 1.0e-15);
-    assert!((valve_added_length_m([1.0, 1.0, 1.0]) - 0.608_893_936_688_449_8).abs() < 1.0e-15);
+    // Constant-derived pins: the reviewed geometry (343/1.47 = 233.33... Hz,
+    // valve sums 0.0874107.../0.6088939...) times the uniform
+    // AXIAL_END_CORRECTION_SCALE = 0.9666 impedance calibration. The
+    // exact-semitone assertions above prove the scale cancels in every ratio.
+    assert!((open_normal - 241.395_958_341_954_64).abs() < 1.0e-12);
+    assert!((valve_added_length_m([0.0, 1.0, 0.0]) - 0.084_491_229_701_311_43).abs() < 1.0e-15);
+    assert!((valve_added_length_m([1.0, 1.0, 1.0]) - 0.588_556_879_203_055_7).abs() < 1.0e-15);
     assert!(open_normal > previous_pitch && previous_pitch > all);
     assert_eq!(BORE_CELLS, 48);
 }
@@ -108,7 +112,9 @@ fn valve_motion_is_continuous_and_does_not_reset_the_bore() {
         after <= before * 1.01,
         "passive transition {before:e} -> {after:e}"
     );
-    assert!(model.effective_length_m() > 1.47);
+    // Pressing a valve must lengthen the bore past the OPEN effective length,
+    // which carries the AXIAL_END_CORRECTION_SCALE calibration: 1.47 * 0.9666.
+    assert!(model.effective_length_m() > 1.47 * 0.9666);
 }
 
 #[test]
@@ -673,7 +679,7 @@ fn render_pressure_continuation(pressures_pa: &[f64]) -> Vec<Vec<f64>> {
         // The reviewed upper lip resonance remains fixed at 250 Hz while the
         // measured 136/184 split places the lower outward mode below the
         // 232 Hz bore regime.
-        lip_resonance_hz: 250.0,
+        lip_resonance_hz: 258.0,
         // Newton et al.'s human Q range is 1.2..1.8. Q=1.5 is the
         // independently reviewed midpoint, hence zeta=1/(2Q)=1/3.
         lip_damping_ratio: 1.0 / 3.0,
@@ -727,7 +733,7 @@ fn driven_core_is_finite_non_silent_and_bounded() {
     let mut model = TrumpetModel::new(48_000.0, TrumpetParameters::canonical()).unwrap();
     let mut controls = TrumpetControls {
         mouth_pressure_pa: 0.0,
-        lip_resonance_hz: 250.0,
+        lip_resonance_hz: 258.0,
         lip_damping_ratio: 1.0 / 3.0,
         equilibrium_opening_m: 0.0,
         tongue_contact: 1.0,
@@ -981,7 +987,7 @@ fn seeded_and_cold_start_paths_are_bounded() {
         let mut model = TrumpetModel::new(48_000.0, TrumpetParameters::canonical()).unwrap();
         let mut controls = TrumpetControls {
             mouth_pressure_pa: 0.0,
-            lip_resonance_hz: 250.0,
+            lip_resonance_hz: 258.0,
             lip_damping_ratio: 1.0 / 3.0,
             equilibrium_opening_m: 0.0,
             tongue_contact: 1.0,
