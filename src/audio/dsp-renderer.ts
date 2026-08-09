@@ -2429,7 +2429,7 @@ async function instantiate(): Promise<DspCore> {
        * Gesture renders deliberately fall back to the plain export. The
        * seeded/expressive flute paths are numerically broken in the shipped
        * wasm: measured 2026-08-08, slots 1-7 detune -171..+1062 cents
-       * (wrong-regime locks) and every slot's render goes NaN after ~1 s,
+       * (wrong-regime locks) and every slot render goes NaN after ~1 s,>>>>>>> origin/main
        * which browsers play as silence. The owner heard both ("out of
        * tune", "quiet"). The plain path measures +-2 cents at every chart
        * velocity and articulation. Re-enable seeded dispatch only after the

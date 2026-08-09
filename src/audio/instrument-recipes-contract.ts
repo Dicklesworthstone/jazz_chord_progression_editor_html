@@ -544,9 +544,9 @@ export const AUDIO_PLAYABLE_MIDI_WINDOWS = Object.freeze({
   /*
    * Narrowed 2026-08-08 to the measured all-dynamics-clean register of the
    * shipping flute@2 phrase renderer. The second register is octave-unstable
-   * outside the UIowa-certified pp/mf islands (m73/74@40, m77-79, m83
-   * -1902c, m84, m86-88 -- full sweep on the fix bead); folding charts into
-   * the working octave beats folding them onto broken cells. Widen only
+   * outside the UIowa-certified pp/mf islands (m73/74@40, m77-79,
+   * m83 -1902c, m84, m86-88 -- full sweep on the fix bead); folding charts
+   * into the working octave beats folding them onto broken cells. Widen only>>>>>>> origin/main
    * when the register-2 work certifies the full window at all dynamics.
    */
   flute: Object.freeze({ low: 60, high: 72 }),
