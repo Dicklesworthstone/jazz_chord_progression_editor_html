@@ -39,7 +39,10 @@ const AIR_SOUND_SPEED_M_PER_S: f64 = 343.21;
 const STEEL_DENSITY_KG_M3: f64 = 7_850.0;
 const STEEL_YOUNG_MODULUS_PA: f64 = 2.0e11;
 const RADIATION_DISTANCE_M: f64 = 1.0;
-const DIGITAL_REFERENCE_PRESSURE_PA: f64 = 20.0;
+// 25 Pa at the declared one-metre reference maps to digital full scale
+// (~122 dB SPL).  This is a fixed observer calibration, not a dynamics- or
+// note-dependent limiter.
+const DIGITAL_REFERENCE_PRESSURE_PA: f64 = 25.0;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PianoError {
