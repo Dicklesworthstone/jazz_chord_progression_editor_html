@@ -72,7 +72,7 @@ function validEvidenceFixture(): PianoV2ReferenceEvidence {
       for (let index = 0; index < slice.frameCount; index += 1) {
         pcm[index] = view.getInt16(slice.byteOffset + 2 * index, true) / 32_768;
       }
-      const expectedHz = 440 * 2 ** ((midi - 69) / 12) * 2 ** (slice.tuningCents / 1200);
+      const expectedHz = 440 * 2 ** ((midi - 69) / 12);
       const inharmonicity = reviewedPianoInharmonicityCoefficient(midi);
       references.set(`m${String(midi)}v${String(velocity)}`, Object.freeze({
         slice,

@@ -526,7 +526,13 @@ function pianoReferenceEntries(): ReadonlyMap<string, PianoReferenceEntry> {
     for (const velocity of PIANO_V2_REFERENCE_POLICY.velocities) {
       const slice = selectSlice(midi, velocity);
       const pcm = decodeReferenceSlice(corpus, slice);
-      const expected = midiHz(midi) * 2 ** (slice.tuningCents / 1200);
+      // Compare both candidate and reference on the same notated-pitch grid.
+      // The local partial search already follows the recorded slice within
+      // +/- harmonicSearchCents, so shifting the reference grid by its raw
+      // tuning offset would only change the number of analysable upper
+      // partials at Nyquist. That produced unequal profile cardinalities and
+      // a non-finite distance which JSON silently encoded as null.
+      const expected = midiHz(midi);
       const inharmonicity = reviewedPianoInharmonicityCoefficient(midi);
       entries.set(`m${String(midi)}v${String(velocity)}`, Object.freeze({
         slice,
