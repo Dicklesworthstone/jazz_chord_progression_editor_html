@@ -334,7 +334,6 @@ impl SoundboardMode {
 struct ContactState {
     active: bool,
     strike: PianoStrike,
-    hammer_position_m: f64,
     hammer_velocity_m_per_s: f64,
     compression_m: f64,
     elapsed_frames: u32,
@@ -357,7 +356,6 @@ impl ContactState {
             maximum_force_n: 0.0,
             maximum_contact_seconds: 0.001,
         },
-        hammer_position_m: 0.0,
         hammer_velocity_m_per_s: 0.0,
         compression_m: 0.0,
         elapsed_frames: 0,
@@ -497,7 +495,6 @@ impl PianoVoice {
         self.contact = ContactState {
             active: true,
             strike,
-            hammer_position_m: self.hammer_port_displacement(),
             hammer_velocity_m_per_s: strike.hammer_velocity_m_per_s,
             compression_m: 0.0,
             elapsed_frames: 0,
@@ -656,14 +653,6 @@ impl PianoVoice {
         self.string_energy_j() + self.soundboard_energy_j()
     }
 
-    fn hammer_port_displacement(&self) -> f64 {
-        self.strings
-            .iter()
-            .flat_map(|bank| bank.modes.iter())
-            .map(|mode| mode.contact_residue_m_neg_half_kg * mode.position)
-            .sum()
-    }
-
     fn hammer_port_velocity(&self) -> f64 {
         self.strings
             .iter()
@@ -675,7 +664,6 @@ impl PianoVoice {
     fn apply_hammer_contact(&mut self) {
         let strike = self.contact.strike;
         let compression = self.contact.compression_m.max(0.0);
-        let string_displacement = self.hammer_port_displacement();
         let relative_velocity = self.contact.hammer_velocity_m_per_s - self.hammer_port_velocity();
         let mut inverse_effective_mass = 1.0 / strike.hammer_mass_kg;
         for bank in &self.strings {
@@ -710,7 +698,6 @@ impl PianoVoice {
                 * self.contact.hammer_velocity_m_per_s;
             self.contact.dissipated_energy_j += potential_before;
             self.contact.compression_m = 0.0;
-            self.contact.hammer_position_m = string_displacement;
             self.contact.active = false;
             return;
         }
@@ -752,7 +739,6 @@ impl PianoVoice {
             + self.dt * (relative_velocity - 0.5 * impulse * inverse_effective_mass))
             .max(0.0);
         self.contact.compression_m = compression_after;
-        self.contact.hammer_position_m = string_displacement + compression_after;
         let system_after = self.modal_energy_j()
             + 0.5
                 * strike.hammer_mass_kg
@@ -777,7 +763,6 @@ impl PianoVoice {
                 * self.contact.hammer_velocity_m_per_s;
             self.contact.dissipated_energy_j += potential_before;
             self.contact.compression_m = 0.0;
-            self.contact.hammer_position_m = string_displacement;
             self.contact.active = false;
             return;
         }
