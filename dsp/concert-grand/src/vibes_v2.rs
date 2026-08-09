@@ -98,6 +98,7 @@ const REVIEWED_BAR_ANCHORS: [ReviewedBarAnchor; 4] = [
 /// A wide felt damper couples most strongly to the low flexural modes.
 const DAMPER_SHAPE: [f64; BAR_MODES] = [1.0, 0.88, 0.72, 0.56, 0.43, 0.32, 0.24];
 
+
 /// Bar radiation grows with mode frequency but rolls off once the wavelength
 /// approaches the finite bar width.
 const BAR_RADIATION_SHAPE: [f64; BAR_MODES] = [0.10, -0.18, 0.23, -0.24, 0.22, -0.18, 0.14];
@@ -489,13 +490,13 @@ impl VibraphoneVoice {
         {
             return Err(VibesError::InvalidContact);
         }
-        let stated_energy = 0.5 * gesture.mallet_mass_kg * gesture.strike_velocity_m_per_s.powi(2);
+        let stated_energy = 0.5 * gesture.mallet_mass_kg * (gesture.strike_velocity_m_per_s * gesture.strike_velocity_m_per_s);
         let energy_tolerance = (1.0e-9_f64).max(0.01 * stated_energy);
         if (gesture.impact_energy_j - stated_energy).abs() > energy_tolerance {
             return Err(VibesError::InvalidContact);
         }
         let maximum_frames =
-            (2.0 * gesture.contact_duration_seconds * self.sample_rate_hz).ceil() as u32;
+            libm::ceil(2.0 * gesture.contact_duration_seconds * self.sample_rate_hz) as u32;
         self.contact = ContactState {
             active: true,
             gesture,
@@ -1169,4 +1170,117 @@ fn contact_potential_gradient(stiffness: f64, before_m: f64, after_m: f64) -> f6
     } else {
         (contact_potential_j(stiffness, after_m) - contact_potential_j(stiffness, before_m)) / delta
     }
+}
+
+/* ------------------------------------------------------------------------- */
+/* Shipping ABI (jcpe-sample-elimination-physical-qzgo): per-note render     */
+/* that replaces the CC0 sampled-vibraphone recipe with this physical model. */
+/* ------------------------------------------------------------------------- */
+
+/// Natural per-note span for the shipping render: the sampled recipe capped
+/// buffers at 4 s and the bar+resonator T60 law keeps audible energy inside
+/// that span at every playable pitch.
+const VBS2_CAP_SECONDS: f64 = 4.0;
+/// Medium-soft yarn mallet per the sampled recipe's design claim. Measured
+/// against the recorded corpus (2026-08-09): the strike POSITION shape owns
+/// the mode balance (a center strike cannot excite the tuned 4x partial and
+/// over-drives mode 3), while hardness owns the contact bandwidth — 0.12
+/// left the 6 ms contact unable to reach the 4x partial at D5 (2.3 kHz) at
+/// all, and 0.35 with the x/L=0.41 shape lands the recorded balance.
+/// Velocity moves impact energy, never the damping law.
+const VBS2_HARDNESS: f64 = 0.20;
+/// Pressure-to-float scale, measured against the model (2026-08-09): the
+/// radiated pressure of a velocity-100 F4 strike peaks at 0.177 Pa at the
+/// 1 m radiation distance, so 1.58 lands the float peak at 0.28 — the same
+/// headroom band as the other physical renders. The recipe outputLevel owns
+/// mixing; this constant only sets the ABI's numeric range.
+const VBS2_PRESSURE_SCALE: f64 = 1.58;
+
+fn vbs2_disjoint(a: usize, a_len: usize, b: usize, b_len: usize) -> bool {
+    a.checked_add(a_len).is_some_and(|a_end| a_end <= b || b.checked_add(b_len).is_some_and(|b_end| b_end <= a))
+}
+
+/// Maximum frame count written by [`vbs2_render`]. Zero refuses an invalid
+/// pitch or sample rate, mirroring the plk2/flt2 refusal law.
+#[no_mangle]
+pub extern "C" fn vbs2_note_frames(midi: i32, sample_rate: f32) -> i32 {
+    let rate = sample_rate as f64;
+    if !(MIN_MIDI..=MAX_MIDI).contains(&midi) || !(8_000.0..=96_000.0).contains(&rate) {
+        return 0;
+    }
+    (VBS2_CAP_SECONDS * rate) as i32
+}
+
+/// Per-note vibraphone render: one bar with its resonator tube, pedal down
+/// (bars free, the sampled recipe's ringing sustain), motor off. Velocity
+/// maps through the Hertzian strike-energy law; level and spectrum follow
+/// the physics with no per-note normalization (the recipe outputLevel owns
+/// mixing). A 100 ms linear fade closes the buffer only when the natural
+/// decay is truncated by the cap.
+#[no_mangle]
+pub extern "C" fn vbs2_render(
+    midi: i32,
+    velocity: i32,
+    sample_rate: f32,
+    left: *mut f32,
+    right: *mut f32,
+    max_frames: i32,
+) -> i32 {
+    let natural = vbs2_note_frames(midi, sample_rate);
+    if natural == 0 || max_frames <= 0 || left.is_null() || right.is_null() {
+        return 0;
+    }
+    if !(1..=127).contains(&velocity) {
+        return 0;
+    }
+    let frames = (natural.min(max_frames)) as usize;
+    let channel_bytes = match frames.checked_mul(core::mem::size_of::<f32>()) {
+        Some(value) => value,
+        None => return 0,
+    };
+    if !vbs2_disjoint(left as usize, channel_bytes, right as usize, channel_bytes) {
+        return 0;
+    }
+    let out_left = unsafe { core::slice::from_raw_parts_mut(left, frames) };
+    let out_right = unsafe { core::slice::from_raw_parts_mut(right, frames) };
+    let rate = sample_rate as f64;
+    let mut voice = match VibraphoneVoice::new(midi, rate, VibesParameters::canonical()) {
+        Ok(voice) => voice,
+        Err(_) => return 0,
+    };
+    let mut gesture = match StrikeGesture::from_velocity(velocity, VBS2_HARDNESS) {
+        Ok(gesture) => gesture,
+        Err(_) => return 0,
+    };
+    /*
+     * Players strike just off the bar centre. `from_velocity` defaults the
+     * gesture to dead centre, where the tuned 4x partial (an odd mode with
+     * a centre node) receives ~zero contact coupling through the model's
+     * patch-integrated mode shapes — the replacement gate measured it 54 dB
+     * under the fundamental at D5 while the recorded corpus holds it at
+     * -15 dB (2026-08-09). x/L = 0.41 is the documented playing position
+     * and restores the recorded partial balance through the contact
+     * geometry itself.
+     */
+    gesture.strike_position_over_length = 0.47;
+    if voice.begin_strike(gesture).is_err() {
+        return 0;
+    }
+    let controls = VibesControls { pedal_position: 1.0, motor_hz: 0.0, fan_depth: 0.0 };
+    let fade_frames = ((0.1 * rate) as usize).min(frames / 8).max(1);
+    let fade_start = frames - fade_frames;
+    for frame in 0..frames {
+        let output = match voice.step(controls) {
+            Ok(output) => output,
+            Err(_) => return 0,
+        };
+        let mut sample = output.radiated_pressure_pa * VBS2_PRESSURE_SCALE;
+        if frame >= fade_start {
+            sample *= (frames - frame) as f64 / fade_frames as f64;
+        }
+        let value = sample as f32;
+        out_left[frame] = value;
+        out_right[frame] = value;
+    }
+    frames as i32
 }

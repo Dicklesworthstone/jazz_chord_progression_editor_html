@@ -70,6 +70,8 @@ export const PLUCKED_UKULELE_ALGORITHM_ID =
   "changes.dsp.plucked-ukulele@1";
 export const PLUCKED_UPRIGHT_BASS_ALGORITHM_ID =
   "changes.dsp.plucked-upright-bass@1";
+export const VIBES_V2_ALGORITHM_ID =
+  "changes.dsp.vibes@2";
 const PLK2_UPRIGHT_BASS_PACK_INDEX = 4;
 
 export type WindAttackArticulation = "legato" | "tongued";
@@ -480,6 +482,15 @@ type ConcertGrandExports = Readonly<{
     maxFrames: number,
   ) => number;
   flt2_note_frames: (midi: number, sampleRate: number) => number;
+  vbs2_note_frames: (midi: number, sampleRate: number) => number;
+  vbs2_render: (
+    midi: number,
+    velocity: number,
+    sampleRate: number,
+    left: number,
+    right: number,
+    maxFrames: number,
+  ) => number;
   flt2_state_max_bytes: () => number;
   flt2_render_phrase: (
     midi: number,
@@ -1612,6 +1623,14 @@ async function instantiate(): Promise<DspCore> {
       rawExports,
       "flt2_note_frames",
     ) as ConcertGrandExports["flt2_note_frames"],
+    vbs2_note_frames: requireExportedFunction(
+      rawExports,
+      "vbs2_note_frames",
+    ) as ConcertGrandExports["vbs2_note_frames"],
+    vbs2_render: requireExportedFunction(
+      rawExports,
+      "vbs2_render",
+    ) as ConcertGrandExports["vbs2_render"],
     flt2_state_max_bytes: requireExportedFunction(
       rawExports,
       "flt2_state_max_bytes",
@@ -2384,6 +2403,13 @@ async function instantiate(): Promise<DspCore> {
       makeWaveguideRenderNote(
         (m, r) => exports.plk2_note_frames(4, m, r),
         (m, v, r, l, rt, mx) => exports.plk2_render(4, m, v, r, l, rt, mx),
+      ),
+    ],
+    [
+      VIBES_V2_ALGORITHM_ID,
+      makeWaveguideRenderNote(
+        exports.vbs2_note_frames,
+        (m, v, r, l, rt, mx) => exports.vbs2_render(m, v, r, l, rt, mx),
       ),
     ],
     [

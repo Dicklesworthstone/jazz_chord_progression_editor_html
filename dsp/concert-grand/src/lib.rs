@@ -1031,3 +1031,13 @@ mod tests {
  */
 #[cfg(any(test, feature = "dark-models"))]
 mod trumpet;
+
+/*
+ * Physical vibraphone (declared at end-of-file like the dark trumpet so the
+ * module shifts no panic-location line numbers above it): modal bars with
+ * Hertzian mallet contact and quarter-wave resonators, replacing the CC0
+ * sampled-vibraphone recipe (jcpe-sample-elimination-physical-qzgo). Unlike
+ * the trumpet this model is a compact per-sample modal rotation (~7 modes +
+ * resonator) and renders far faster than realtime.
+ */
+mod vibes_v2;
