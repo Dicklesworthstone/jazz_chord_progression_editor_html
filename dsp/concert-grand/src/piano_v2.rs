@@ -372,10 +372,9 @@ fn accumulate_midpoint_contact_terms(
     )
 }
 
-fn finish_midpoint_contact_mode(
+fn finish_midpoint_generalized_contact_mode(
     mode: &mut Mode,
-    signed_residue_m_neg_half_kg: f64,
-    contact_coordinate_sum_m_sqrt_kg: f64,
+    signed_generalized_contact_coordinate_m_sqrt_kg: f64,
     half_dt: f64,
     contact_stiffness_n_per_m: f64,
 ) {
@@ -388,8 +387,7 @@ fn finish_midpoint_contact_mode(
     let correction = half_dt
         * half_dt
         * contact_stiffness_n_per_m
-        * signed_residue_m_neg_half_kg
-        * contact_coordinate_sum_m_sqrt_kg
+        * signed_generalized_contact_coordinate_m_sqrt_kg
         * midpoint_inverse_diagonal(*mode, half_dt);
     let next_position = free_position - correction;
     // This is the exact companion velocity relation of implicit midpoint:
@@ -397,6 +395,21 @@ fn finish_midpoint_contact_mode(
     let next_velocity = (next_position - old_position) / half_dt - old_velocity;
     mode.position = next_position;
     mode.velocity = next_velocity;
+}
+
+fn finish_midpoint_contact_mode(
+    mode: &mut Mode,
+    signed_residue_m_neg_half_kg: f64,
+    contact_coordinate_sum_m_sqrt_kg: f64,
+    half_dt: f64,
+    contact_stiffness_n_per_m: f64,
+) {
+    finish_midpoint_generalized_contact_mode(
+        mode,
+        signed_residue_m_neg_half_kg * contact_coordinate_sum_m_sqrt_kg,
+        half_dt,
+        contact_stiffness_n_per_m,
+    );
 }
 
 fn solve_bridge_contact_coordinates(
@@ -1659,10 +1672,13 @@ impl PianoStem {
                 coordinate_sum +=
                     self.soundboard_bridge_residues[key_index][mode_index] * coordinates[key_index];
             }
-            finish_midpoint_contact_mode(
+            // A positive bridge contact coordinate pulls the string modes toward
+            // the board and the board mode in the opposite generalized-force
+            // direction. Pass that generalized coordinate explicitly instead of
+            // disguising the sign as a dimensionally false modal residue.
+            finish_midpoint_generalized_contact_mode(
                 &mut body.mode,
-                -1.0,
-                coordinate_sum,
+                -coordinate_sum,
                 half_dt,
                 self.parameters.bridge_contact_stiffness_n_per_m,
             );
