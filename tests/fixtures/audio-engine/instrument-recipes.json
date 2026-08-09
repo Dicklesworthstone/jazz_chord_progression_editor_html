@@ -1,703 +1,703 @@
 {
-  "schema": "changes.fixtures.x0-instrument-recipes.v1",
-  "recipeSetId": "changes.audio.instrument-recipes",
-  "recipeSetVersion": 1,
-  "expectedValuesGenerated": false,
-  "recipes": [
+ "schema": "changes.fixtures.x0-instrument-recipes.v1",
+ "recipeSetId": "changes.audio.instrument-recipes",
+ "recipeSetVersion": 1,
+ "expectedValuesGenerated": false,
+ "recipes": [
+  {
+   "id": "mellow-keys",
+   "label": "Mellow Keys",
+   "designClaim": "triangle and sine partials with a short filtered body",
+   "synthesis": "additive",
+   "outputLevel": 0.62,
+   "polyphonyLimit": 64,
+   "scheduledSourceCount": 3,
+   "oscillators": [
     {
-      "id": "mellow-keys",
-      "label": "Mellow Keys",
-      "designClaim": "triangle and sine partials with a short filtered body",
-      "synthesis": "additive",
-      "outputLevel": 0.62,
-      "polyphonyLimit": 64,
-      "scheduledSourceCount": 3,
-      "oscillators": [
-        {
-          "id": "fundamental",
-          "waveform": "triangle",
-          "frequencyRatio": 1,
-          "detuneCents": 0,
-          "level": 0.78
-        },
-        {
-          "id": "second",
-          "waveform": "sine",
-          "frequencyRatio": 2,
-          "detuneCents": 0,
-          "level": 0.16
-        },
-        {
-          "id": "third",
-          "waveform": "sine",
-          "frequencyRatio": 3,
-          "detuneCents": 0,
-          "level": 0.06
-        }
-      ],
-      "transient": null,
-      "tremolo": null,
-      "amplitude": {
-        "attackSeconds": 0.008,
-        "decaySeconds": 0.42,
-        "sustainLevel": 0.22,
-        "releaseSeconds": 0.55
-      },
-      "filter": {
-        "type": "lowpass",
-        "attackHz": 2100,
-        "peakHz": 5200,
-        "sustainHz": 2100,
-        "q": 0.7,
-        "decaySeconds": 0.45
-      }
+     "id": "fundamental",
+     "waveform": "triangle",
+     "frequencyRatio": 1,
+     "detuneCents": 0,
+     "level": 0.78
     },
     {
-      "id": "fm-electric-piano",
-      "label": "FM Electric Piano",
-      "designClaim": "one sine carrier with a decaying two-to-one sine modulator",
-      "synthesis": "fm-pair",
-      "outputLevel": 0.48,
-      "polyphonyLimit": 48,
-      "scheduledSourceCount": 2,
-      "carrier": {
-        "id": "carrier",
-        "waveform": "sine",
-        "frequencyRatio": 1,
-        "detuneCents": 0,
-        "level": 1
-      },
-      "modulator": {
-        "waveform": "sine",
-        "frequencyRatio": 2,
-        "detuneCents": 3,
-        "peakIndex": 3.2,
-        "sustainIndex": 0.55,
-        "decaySeconds": 0.65,
-        "velocityIndexScaleMinimum": 0.55,
-        "velocityIndexScaleMaximum": 1
-      },
-      "amplitude": {
-        "attackSeconds": 0.003,
-        "decaySeconds": 0.85,
-        "sustainLevel": 0.14,
-        "releaseSeconds": 0.9
-      },
-      "filter": {
-        "type": "lowpass",
-        "attackHz": 4200,
-        "peakHz": 9000,
-        "sustainHz": 4200,
-        "q": 0.5,
-        "decaySeconds": 0.6
-      }
+     "id": "second",
+     "waveform": "sine",
+     "frequencyRatio": 2,
+     "detuneCents": 0,
+     "level": 0.16
     },
     {
-      "id": "vibraphone",
-      "label": "Vibraphone",
-      "designClaim": "sine partials, a short mallet partial, and slow amplitude tremolo",
-      "synthesis": "additive",
-      "outputLevel": 0.5,
-      "polyphonyLimit": 48,
-      "scheduledSourceCount": 4,
-      "oscillators": [
-        {
-          "id": "fundamental",
-          "waveform": "sine",
-          "frequencyRatio": 1,
-          "detuneCents": 0,
-          "level": 0.88
-        },
-        {
-          "id": "fourth-partial",
-          "waveform": "sine",
-          "frequencyRatio": 4,
-          "detuneCents": 0,
-          "level": 0.12
-        }
-      ],
-      "transient": {
-        "waveform": "sine",
-        "frequencyRatio": 7,
-        "level": 0.1,
-        "decaySeconds": 0.018
-      },
-      "tremolo": {
-        "waveform": "sine",
-        "rateHz": 5.8,
-        "depth": 0.16,
-        "delaySeconds": 0.12
-      },
-      "amplitude": {
-        "attackSeconds": 0.002,
-        "decaySeconds": 1.4,
-        "sustainLevel": 0.45,
-        "releaseSeconds": 1.1
-      },
-      "filter": {
-        "type": "lowpass",
-        "attackHz": 7000,
-        "peakHz": 12000,
-        "sustainHz": 7000,
-        "q": 0.3,
-        "decaySeconds": 0.25
-      }
-    },
-    {
-      "id": "warm-pad",
-      "label": "Warm Pad",
-      "designClaim": "two gently detuned saws blended with a centered triangle",
-      "synthesis": "additive",
-      "outputLevel": 0.3,
-      "polyphonyLimit": 32,
-      "scheduledSourceCount": 3,
-      "oscillators": [
-        {
-          "id": "saw-left",
-          "waveform": "sawtooth",
-          "frequencyRatio": 1,
-          "detuneCents": -7,
-          "level": 0.34
-        },
-        {
-          "id": "saw-right",
-          "waveform": "sawtooth",
-          "frequencyRatio": 1,
-          "detuneCents": 7,
-          "level": 0.34
-        },
-        {
-          "id": "triangle-center",
-          "waveform": "triangle",
-          "frequencyRatio": 1,
-          "detuneCents": 0,
-          "level": 0.32
-        }
-      ],
-      "transient": null,
-      "tremolo": null,
-      "amplitude": {
-        "attackSeconds": 0.32,
-        "decaySeconds": 1.2,
-        "sustainLevel": 0.72,
-        "releaseSeconds": 1.8
-      },
-      "filter": {
-        "type": "lowpass",
-        "attackHz": 900,
-        "peakHz": 2800,
-        "sustainHz": 1600,
-        "q": 0.8,
-        "decaySeconds": 1.4
-      }
-    },
-    {
-      "id": "analog-poly",
-      "label": "Analog Poly",
-      "designClaim": "detuned saw and 25-percent pulse with a quiet sine sub-oscillator",
-      "synthesis": "additive",
-      "outputLevel": 0.34,
-      "polyphonyLimit": 48,
-      "scheduledSourceCount": 3,
-      "oscillators": [
-        {
-          "id": "saw",
-          "waveform": "sawtooth",
-          "frequencyRatio": 1,
-          "detuneCents": -4,
-          "level": 0.48
-        },
-        {
-          "id": "pulse",
-          "waveform": "periodic-pulse-25",
-          "frequencyRatio": 1,
-          "detuneCents": 4,
-          "level": 0.36
-        },
-        {
-          "id": "sub",
-          "waveform": "sine",
-          "frequencyRatio": 0.5,
-          "detuneCents": 0,
-          "level": 0.16
-        }
-      ],
-      "transient": null,
-      "tremolo": null,
-      "amplitude": {
-        "attackSeconds": 0.012,
-        "decaySeconds": 0.3,
-        "sustainLevel": 0.52,
-        "releaseSeconds": 0.65
-      },
-      "filter": {
-        "type": "lowpass",
-        "attackHz": 700,
-        "peakHz": 4800,
-        "sustainHz": 1300,
-        "q": 4.2,
-        "decaySeconds": 0.32
-      }
-    },
-    {
-      "id": "concert-grand",
-      "label": "Concert Grand",
-      "designClaim": "deterministic rendered piano: inharmonic partials, unison detuning, dual-rate decay, hammer noise",
-      "synthesis": "rendered",
-      "outputLevel": 0.3,
-      "polyphonyLimit": 64,
-      "scheduledSourceCount": 1,
-      "renderer": {
-        "algorithmId": "changes.dsp.concert-grand@1",
-        "channels": 2,
-        "maximumRenderSeconds": 8,
-        "bufferCacheLimit": 96
-      },
-      "amplitude": {
-        "attackSeconds": 0.002,
-        "decaySeconds": 0,
-        "sustainLevel": 1,
-        "releaseSeconds": 0.2
-      },
-      "filter": {
-        "type": "lowpass",
-        "attackHz": 16000,
-        "peakHz": 16000,
-        "sustainHz": 16000,
-        "q": 0.5,
-        "decaySeconds": 0.1
-      }
-    },
-    {
-      "id": "flute",
-      "label": "Flute",
-      "designClaim": "physically modeled flute: jet-drive waveguide with breath turbulence and delayed vibrato",
-      "synthesis": "rendered",
-      "outputLevel": 2.8,
-      "polyphonyLimit": 32,
-      "scheduledSourceCount": 1,
-      "renderer": {
-        "algorithmId": "changes.dsp.waveguide-flute@2",
-        "channels": 2,
-        "maximumRenderSeconds": 5,
-        "bufferCacheLimit": 64
-      },
-      "amplitude": {
-        "attackSeconds": 0.002,
-        "decaySeconds": 0,
-        "sustainLevel": 1,
-        "releaseSeconds": 0.3
-      },
-      "filter": {
-        "type": "lowpass",
-        "attackHz": 16000,
-        "peakHz": 16000,
-        "sustainHz": 16000,
-        "q": 0.5,
-        "decaySeconds": 0.1
-      }
-    },
-    {
-      "id": "organ",
-      "label": "Organ",
-      "designClaim": "additive drawbar sine partials with a shallow sustained vibrato",
-      "synthesis": "additive",
-      "outputLevel": 0.44,
-      "polyphonyLimit": 48,
-      "scheduledSourceCount": 6,
-      "oscillators": [
-        {
-          "id": "fundamental",
-          "waveform": "sine",
-          "frequencyRatio": 1,
-          "detuneCents": 0,
-          "level": 0.36
-        },
-        {
-          "id": "second",
-          "waveform": "sine",
-          "frequencyRatio": 2,
-          "detuneCents": 0,
-          "level": 0.24
-        },
-        {
-          "id": "third",
-          "waveform": "sine",
-          "frequencyRatio": 3,
-          "detuneCents": 0,
-          "level": 0.18
-        },
-        {
-          "id": "fourth",
-          "waveform": "sine",
-          "frequencyRatio": 4,
-          "detuneCents": 0,
-          "level": 0.13
-        },
-        {
-          "id": "sixth",
-          "waveform": "sine",
-          "frequencyRatio": 6,
-          "detuneCents": 0,
-          "level": 0.09
-        }
-      ],
-      "transient": null,
-      "tremolo": {
-        "waveform": "sine",
-        "rateHz": 6,
-        "depth": 0.07,
-        "delaySeconds": 0.08
-      },
-      "amplitude": {
-        "attackSeconds": 0.012,
-        "decaySeconds": 0.08,
-        "sustainLevel": 0.92,
-        "releaseSeconds": 0.14
-      },
-      "filter": {
-        "type": "lowpass",
-        "attackHz": 7500,
-        "peakHz": 9500,
-        "sustainHz": 7500,
-        "q": 0.4,
-        "decaySeconds": 0.1
-      }
-    },
-    {
-      "id": "guitar",
-      "label": "Guitar",
-      "designClaim": "physically modeled archtop: dual-polarization plucked waveguide, body modes, clean amp",
-      "synthesis": "rendered",
-      "outputLevel": 0.5,
-      "polyphonyLimit": 48,
-      "scheduledSourceCount": 1,
-      "renderer": {
-        "algorithmId": "changes.dsp.plucked-archtop@2",
-        "channels": 2,
-        "maximumRenderSeconds": 6,
-        "bufferCacheLimit": 64
-      },
-      "amplitude": {
-        "attackSeconds": 0.002,
-        "decaySeconds": 0,
-        "sustainLevel": 1,
-        "releaseSeconds": 0.35
-      },
-      "filter": {
-        "type": "lowpass",
-        "attackHz": 16000,
-        "peakHz": 16000,
-        "sustainHz": 16000,
-        "q": 0.5,
-        "decaySeconds": 0.1
-      }
-    },
-    {
-      "id": "upright-bass",
-      "label": "Upright Bass",
-      "designClaim": "recorded solo contrabass pizzicato, nearest recorded key transposed onto pitch",
-      "synthesis": "rendered",
-      "outputLevel": 0.17,
-      "polyphonyLimit": 32,
-      "scheduledSourceCount": 1,
-      "renderer": {
-        "algorithmId": "changes.dsp.sampled-upright-bass@1",
-        "channels": 2,
-        "maximumRenderSeconds": 4,
-        "bufferCacheLimit": 64
-      },
-      "amplitude": {
-        "attackSeconds": 0.002,
-        "decaySeconds": 0,
-        "sustainLevel": 1,
-        "releaseSeconds": 0.25
-      },
-      "filter": {
-        "type": "lowpass",
-        "attackHz": 16000,
-        "peakHz": 16000,
-        "sustainHz": 16000,
-        "q": 0.5,
-        "decaySeconds": 0.1
-      }
-    },
-    {
-      "id": "concert-vibes",
-      "label": "Concert Vibes",
-      "designClaim": "recorded vibraphone, soft mallets, nearest recorded key transposed onto pitch",
-      "synthesis": "rendered",
-      "outputLevel": 0.1,
-      "polyphonyLimit": 48,
-      "scheduledSourceCount": 1,
-      "renderer": {
-        "algorithmId": "changes.dsp.sampled-vibraphone@1",
-        "channels": 2,
-        "maximumRenderSeconds": 4,
-        "bufferCacheLimit": 64
-      },
-      "amplitude": {
-        "attackSeconds": 0.002,
-        "decaySeconds": 0,
-        "sustainLevel": 1,
-        "releaseSeconds": 1.1
-      },
-      "filter": {
-        "type": "lowpass",
-        "attackHz": 16000,
-        "peakHz": 16000,
-        "sustainHz": 16000,
-        "q": 0.5,
-        "decaySeconds": 0.1
-      }
-    },
-    {
-      "id": "blues-guitar",
-      "label": "Blues Guitar",
-      "designClaim": "physically modeled electric: the same plucked waveguide through a driven amp with cab voicing",
-      "synthesis": "rendered",
-      "outputLevel": 0.46,
-      "polyphonyLimit": 48,
-      "scheduledSourceCount": 1,
-      "renderer": {
-        "algorithmId": "changes.dsp.plucked-electric@2",
-        "channels": 2,
-        "maximumRenderSeconds": 6,
-        "bufferCacheLimit": 64
-      },
-      "amplitude": {
-        "attackSeconds": 0.002,
-        "decaySeconds": 0,
-        "sustainLevel": 1,
-        "releaseSeconds": 0.35
-      },
-      "filter": {
-        "type": "lowpass",
-        "attackHz": 16000,
-        "peakHz": 16000,
-        "sustainHz": 16000,
-        "q": 0.5,
-        "decaySeconds": 0.1
-      }
-    },
-    {
-      "id": "clarinet",
-      "label": "Clarinet",
-      "designClaim": "physically modeled clarinet: reed-driven closed-open waveguide with breath dynamics",
-      "synthesis": "rendered",
-      "outputLevel": 1.1,
-      "polyphonyLimit": 32,
-      "scheduledSourceCount": 1,
-      "renderer": {
-        "algorithmId": "changes.dsp.waveguide-clarinet@1",
-        "channels": 2,
-        "maximumRenderSeconds": 5,
-        "bufferCacheLimit": 128
-      },
-      "amplitude": {
-        "attackSeconds": 0.002,
-        "decaySeconds": 0,
-        "sustainLevel": 1,
-        "releaseSeconds": 0.3
-      },
-      "filter": {
-        "type": "lowpass",
-        "attackHz": 16000,
-        "peakHz": 16000,
-        "sustainHz": 16000,
-        "q": 0.5,
-        "decaySeconds": 0.1
-      }
-    },
-    {
-      "id": "dreadnought-guitar",
-      "label": "Steel Dreadnought",
-      "designClaim": "physically modeled Martin-style steel-string dreadnought: stiff strings, finite pick contact, braced spruce plate, and Helmholtz body radiation",
-      "synthesis": "rendered",
-      "outputLevel": 0.5,
-      "polyphonyLimit": 48,
-      "scheduledSourceCount": 1,
-      "renderer": {
-        "algorithmId": "changes.dsp.plucked-dreadnought@1",
-        "channels": 2,
-        "maximumRenderSeconds": 5,
-        "bufferCacheLimit": 64
-      },
-      "amplitude": {
-        "attackSeconds": 0.002,
-        "decaySeconds": 0,
-        "sustainLevel": 1,
-        "releaseSeconds": 0.35
-      },
-      "filter": {
-        "type": "lowpass",
-        "attackHz": 16000,
-        "peakHz": 16000,
-        "sustainHz": 16000,
-        "q": 0.5,
-        "decaySeconds": 0.1
-      }
-    },
-    {
-      "id": "ukulele",
-      "label": "Re-entrant Ukulele",
-      "designClaim": "physically modeled re-entrant nylon ukulele: g4-c4-e4-a4 courses, finite finger contact, compact braced plate, and geometry-derived air resonance",
-      "synthesis": "rendered",
-      "outputLevel": 0.65,
-      "polyphonyLimit": 32,
-      "scheduledSourceCount": 1,
-      "renderer": {
-        "algorithmId": "changes.dsp.plucked-ukulele@1",
-        "channels": 2,
-        "maximumRenderSeconds": 3,
-        "bufferCacheLimit": 64
-      },
-      "amplitude": {
-        "attackSeconds": 0.002,
-        "decaySeconds": 0,
-        "sustainLevel": 1,
-        "releaseSeconds": 0.24
-      },
-      "filter": {
-        "type": "lowpass",
-        "attackHz": 16000,
-        "peakHz": 16000,
-        "sustainHz": 16000,
-        "q": 0.5,
-        "decaySeconds": 0.1
-      }
+     "id": "third",
+     "waveform": "sine",
+     "frequencyRatio": 3,
+     "detuneCents": 0,
+     "level": 0.06
     }
-  ],
-  "pulseWave": {
-    "id": "periodic-pulse-25",
-    "dutyCycle": 0.25,
-    "harmonicCount": 32,
-    "disableNormalization": false,
-    "dcCoefficient": 0,
-    "cosineCoefficient": "sin(2*pi*n*dutyCycle)/(pi*n)",
-    "sineCoefficient": "(1-cos(2*pi*n*dutyCycle))/(pi*n)"
+   ],
+   "transient": null,
+   "tremolo": null,
+   "amplitude": {
+    "attackSeconds": 0.008,
+    "decaySeconds": 0.42,
+    "sustainLevel": 0.22,
+    "releaseSeconds": 0.55
+   },
+   "filter": {
+    "type": "lowpass",
+    "attackHz": 2100,
+    "peakHz": 5200,
+    "sustainHz": 2100,
+    "q": 0.7,
+    "decaySeconds": 0.45
+   }
   },
-  "normalization": {
-    "id": "changes.audio.voice-normalization.v1",
-    "formula": "recipe.outputLevel/sqrt(totalGeneratedVoiceCount)",
-    "velocityFormula": "pow(velocity/127,1.5)",
-    "voiceCountRange": [
-      1,
-      16
-    ],
-    "velocityRange": [
-      1,
-      127
-    ],
-    "referenceVoiceCounts": [
-      1,
-      4,
-      7,
-      16
-    ],
-    "referenceGains": {
-      "mellow-keys": [
-        0.62,
-        0.31,
-        0.234337973266,
-        0.155
-      ],
-      "fm-electric-piano": [
-        0.48,
-        0.24,
-        0.181422947044,
-        0.12
-      ],
-      "vibraphone": [
-        0.5,
-        0.25,
-        0.188982236505,
-        0.125
-      ],
-      "warm-pad": [
-        0.3,
-        0.15,
-        0.113389341903,
-        0.075
-      ],
-      "analog-poly": [
-        0.34,
-        0.17,
-        0.128507920823,
-        0.085
-      ],
-      "concert-grand": [
-        0.3,
-        0.212132034356,
-        0.173205080757,
-        0.15
-      ],
-      "flute": [
-        0.5,
-        0.25,
-        0.188982236505,
-        0.125
-      ],
-      "organ": [
-        0.44,
-        0.22,
-        0.166304368124,
-        0.11
-      ],
-      "guitar": [
-        0.5,
-        0.25,
-        0.188982236505,
-        0.125
-      ],
-      "upright-bass": [
-        0.5,
-        0.25,
-        0.188982236505,
-        0.125
-      ],
-      "concert-vibes": [
-        0.42,
-        0.21,
-        0.158745078664,
-        0.105
-      ],
-      "blues-guitar": [
-        0.46,
-        0.23,
-        0.173863657584,
-        0.115
-      ],
-      "clarinet": [
-        0.48,
-        0.24,
-        0.181422947044,
-        0.12
-      ],
-      "dreadnought-guitar": [
-        0.5,
-        0.25,
-        0.188982236505,
-        0.125
-      ],
-      "ukulele": [
-        0.54,
-        0.27,
-        0.204100840959,
-        0.135
-      ]
+  {
+   "id": "fm-electric-piano",
+   "label": "FM Electric Piano",
+   "designClaim": "one sine carrier with a decaying two-to-one sine modulator",
+   "synthesis": "fm-pair",
+   "outputLevel": 0.48,
+   "polyphonyLimit": 48,
+   "scheduledSourceCount": 2,
+   "carrier": {
+    "id": "carrier",
+    "waveform": "sine",
+    "frequencyRatio": 1,
+    "detuneCents": 0,
+    "level": 1
+   },
+   "modulator": {
+    "waveform": "sine",
+    "frequencyRatio": 2,
+    "detuneCents": 3,
+    "peakIndex": 3.2,
+    "sustainIndex": 0.55,
+    "decaySeconds": 0.65,
+    "velocityIndexScaleMinimum": 0.55,
+    "velocityIndexScaleMaximum": 1
+   },
+   "amplitude": {
+    "attackSeconds": 0.003,
+    "decaySeconds": 0.85,
+    "sustainLevel": 0.14,
+    "releaseSeconds": 0.9
+   },
+   "filter": {
+    "type": "lowpass",
+    "attackHz": 4200,
+    "peakHz": 9000,
+    "sustainHz": 4200,
+    "q": 0.5,
+    "decaySeconds": 0.6
+   }
+  },
+  {
+   "id": "vibraphone",
+   "label": "Vibraphone",
+   "designClaim": "sine partials, a short mallet partial, and slow amplitude tremolo",
+   "synthesis": "additive",
+   "outputLevel": 0.5,
+   "polyphonyLimit": 48,
+   "scheduledSourceCount": 4,
+   "oscillators": [
+    {
+     "id": "fundamental",
+     "waveform": "sine",
+     "frequencyRatio": 1,
+     "detuneCents": 0,
+     "level": 0.88
     },
-    "referenceVelocities": [
-      1,
-      64,
-      100,
-      127
-    ],
-    "referenceVelocityGains": [
-      0.000698705913,
-      0.357737427418,
-      0.698705912926,
-      1
-    ]
+    {
+     "id": "fourth-partial",
+     "waveform": "sine",
+     "frequencyRatio": 4,
+     "detuneCents": 0,
+     "level": 0.12
+    }
+   ],
+   "transient": {
+    "waveform": "sine",
+    "frequencyRatio": 7,
+    "level": 0.1,
+    "decaySeconds": 0.018
+   },
+   "tremolo": {
+    "waveform": "sine",
+    "rateHz": 5.8,
+    "depth": 0.16,
+    "delaySeconds": 0.12
+   },
+   "amplitude": {
+    "attackSeconds": 0.002,
+    "decaySeconds": 1.4,
+    "sustainLevel": 0.45,
+    "releaseSeconds": 1.1
+   },
+   "filter": {
+    "type": "lowpass",
+    "attackHz": 7000,
+    "peakHz": 12000,
+    "sustainHz": 7000,
+    "q": 0.3,
+    "decaySeconds": 0.25
+   }
+  },
+  {
+   "id": "warm-pad",
+   "label": "Warm Pad",
+   "designClaim": "two gently detuned saws blended with a centered triangle",
+   "synthesis": "additive",
+   "outputLevel": 0.3,
+   "polyphonyLimit": 32,
+   "scheduledSourceCount": 3,
+   "oscillators": [
+    {
+     "id": "saw-left",
+     "waveform": "sawtooth",
+     "frequencyRatio": 1,
+     "detuneCents": -7,
+     "level": 0.34
+    },
+    {
+     "id": "saw-right",
+     "waveform": "sawtooth",
+     "frequencyRatio": 1,
+     "detuneCents": 7,
+     "level": 0.34
+    },
+    {
+     "id": "triangle-center",
+     "waveform": "triangle",
+     "frequencyRatio": 1,
+     "detuneCents": 0,
+     "level": 0.32
+    }
+   ],
+   "transient": null,
+   "tremolo": null,
+   "amplitude": {
+    "attackSeconds": 0.32,
+    "decaySeconds": 1.2,
+    "sustainLevel": 0.72,
+    "releaseSeconds": 1.8
+   },
+   "filter": {
+    "type": "lowpass",
+    "attackHz": 900,
+    "peakHz": 2800,
+    "sustainHz": 1600,
+    "q": 0.8,
+    "decaySeconds": 1.4
+   }
+  },
+  {
+   "id": "analog-poly",
+   "label": "Analog Poly",
+   "designClaim": "detuned saw and 25-percent pulse with a quiet sine sub-oscillator",
+   "synthesis": "additive",
+   "outputLevel": 0.34,
+   "polyphonyLimit": 48,
+   "scheduledSourceCount": 3,
+   "oscillators": [
+    {
+     "id": "saw",
+     "waveform": "sawtooth",
+     "frequencyRatio": 1,
+     "detuneCents": -4,
+     "level": 0.48
+    },
+    {
+     "id": "pulse",
+     "waveform": "periodic-pulse-25",
+     "frequencyRatio": 1,
+     "detuneCents": 4,
+     "level": 0.36
+    },
+    {
+     "id": "sub",
+     "waveform": "sine",
+     "frequencyRatio": 0.5,
+     "detuneCents": 0,
+     "level": 0.16
+    }
+   ],
+   "transient": null,
+   "tremolo": null,
+   "amplitude": {
+    "attackSeconds": 0.012,
+    "decaySeconds": 0.3,
+    "sustainLevel": 0.52,
+    "releaseSeconds": 0.65
+   },
+   "filter": {
+    "type": "lowpass",
+    "attackHz": 700,
+    "peakHz": 4800,
+    "sustainHz": 1300,
+    "q": 4.2,
+    "decaySeconds": 0.32
+   }
+  },
+  {
+   "id": "concert-grand",
+   "label": "Concert Grand",
+   "designClaim": "deterministic rendered piano: inharmonic partials, unison detuning, dual-rate decay, hammer noise",
+   "synthesis": "rendered",
+   "outputLevel": 0.3,
+   "polyphonyLimit": 64,
+   "scheduledSourceCount": 1,
+   "renderer": {
+    "algorithmId": "changes.dsp.concert-grand@1",
+    "channels": 2,
+    "maximumRenderSeconds": 8,
+    "bufferCacheLimit": 96
+   },
+   "amplitude": {
+    "attackSeconds": 0.002,
+    "decaySeconds": 0,
+    "sustainLevel": 1,
+    "releaseSeconds": 0.2
+   },
+   "filter": {
+    "type": "lowpass",
+    "attackHz": 16000,
+    "peakHz": 16000,
+    "sustainHz": 16000,
+    "q": 0.5,
+    "decaySeconds": 0.1
+   }
+  },
+  {
+   "id": "flute",
+   "label": "Flute",
+   "designClaim": "physically modeled flute: jet-drive waveguide with breath turbulence and delayed vibrato",
+   "synthesis": "rendered",
+   "outputLevel": 2.8,
+   "polyphonyLimit": 32,
+   "scheduledSourceCount": 1,
+   "renderer": {
+    "algorithmId": "changes.dsp.waveguide-flute@2",
+    "channels": 2,
+    "maximumRenderSeconds": 5,
+    "bufferCacheLimit": 64
+   },
+   "amplitude": {
+    "attackSeconds": 0.002,
+    "decaySeconds": 0,
+    "sustainLevel": 1,
+    "releaseSeconds": 0.3
+   },
+   "filter": {
+    "type": "lowpass",
+    "attackHz": 16000,
+    "peakHz": 16000,
+    "sustainHz": 16000,
+    "q": 0.5,
+    "decaySeconds": 0.1
+   }
+  },
+  {
+   "id": "organ",
+   "label": "Organ",
+   "designClaim": "additive drawbar sine partials with a shallow sustained vibrato",
+   "synthesis": "additive",
+   "outputLevel": 0.44,
+   "polyphonyLimit": 48,
+   "scheduledSourceCount": 6,
+   "oscillators": [
+    {
+     "id": "fundamental",
+     "waveform": "sine",
+     "frequencyRatio": 1,
+     "detuneCents": 0,
+     "level": 0.36
+    },
+    {
+     "id": "second",
+     "waveform": "sine",
+     "frequencyRatio": 2,
+     "detuneCents": 0,
+     "level": 0.24
+    },
+    {
+     "id": "third",
+     "waveform": "sine",
+     "frequencyRatio": 3,
+     "detuneCents": 0,
+     "level": 0.18
+    },
+    {
+     "id": "fourth",
+     "waveform": "sine",
+     "frequencyRatio": 4,
+     "detuneCents": 0,
+     "level": 0.13
+    },
+    {
+     "id": "sixth",
+     "waveform": "sine",
+     "frequencyRatio": 6,
+     "detuneCents": 0,
+     "level": 0.09
+    }
+   ],
+   "transient": null,
+   "tremolo": {
+    "waveform": "sine",
+    "rateHz": 6,
+    "depth": 0.07,
+    "delaySeconds": 0.08
+   },
+   "amplitude": {
+    "attackSeconds": 0.012,
+    "decaySeconds": 0.08,
+    "sustainLevel": 0.92,
+    "releaseSeconds": 0.14
+   },
+   "filter": {
+    "type": "lowpass",
+    "attackHz": 7500,
+    "peakHz": 9500,
+    "sustainHz": 7500,
+    "q": 0.4,
+    "decaySeconds": 0.1
+   }
+  },
+  {
+   "id": "guitar",
+   "label": "Guitar",
+   "designClaim": "physically modeled archtop: dual-polarization plucked waveguide, body modes, clean amp",
+   "synthesis": "rendered",
+   "outputLevel": 0.5,
+   "polyphonyLimit": 48,
+   "scheduledSourceCount": 1,
+   "renderer": {
+    "algorithmId": "changes.dsp.plucked-archtop@2",
+    "channels": 2,
+    "maximumRenderSeconds": 6,
+    "bufferCacheLimit": 64
+   },
+   "amplitude": {
+    "attackSeconds": 0.002,
+    "decaySeconds": 0,
+    "sustainLevel": 1,
+    "releaseSeconds": 0.35
+   },
+   "filter": {
+    "type": "lowpass",
+    "attackHz": 16000,
+    "peakHz": 16000,
+    "sustainHz": 16000,
+    "q": 0.5,
+    "decaySeconds": 0.1
+   }
+  },
+  {
+   "id": "upright-bass",
+   "label": "Upright Bass",
+   "designClaim": "physical pizzicato contrabass: bidirectional string waves into the DKT soundboard authority",
+   "synthesis": "rendered",
+   "outputLevel": 2.06,
+   "polyphonyLimit": 32,
+   "scheduledSourceCount": 1,
+   "renderer": {
+    "algorithmId": "changes.dsp.plucked-upright-bass@1",
+    "channels": 2,
+    "maximumRenderSeconds": 4,
+    "bufferCacheLimit": 64
+   },
+   "amplitude": {
+    "attackSeconds": 0.002,
+    "decaySeconds": 0,
+    "sustainLevel": 1,
+    "releaseSeconds": 0.25
+   },
+   "filter": {
+    "type": "lowpass",
+    "attackHz": 16000,
+    "peakHz": 16000,
+    "sustainHz": 16000,
+    "q": 0.5,
+    "decaySeconds": 0.1
+   }
+  },
+  {
+   "id": "concert-vibes",
+   "label": "Concert Vibes",
+   "designClaim": "recorded vibraphone, soft mallets, nearest recorded key transposed onto pitch",
+   "synthesis": "rendered",
+   "outputLevel": 0.1,
+   "polyphonyLimit": 48,
+   "scheduledSourceCount": 1,
+   "renderer": {
+    "algorithmId": "changes.dsp.sampled-vibraphone@1",
+    "channels": 2,
+    "maximumRenderSeconds": 4,
+    "bufferCacheLimit": 64
+   },
+   "amplitude": {
+    "attackSeconds": 0.002,
+    "decaySeconds": 0,
+    "sustainLevel": 1,
+    "releaseSeconds": 1.1
+   },
+   "filter": {
+    "type": "lowpass",
+    "attackHz": 16000,
+    "peakHz": 16000,
+    "sustainHz": 16000,
+    "q": 0.5,
+    "decaySeconds": 0.1
+   }
+  },
+  {
+   "id": "blues-guitar",
+   "label": "Blues Guitar",
+   "designClaim": "physically modeled electric: the same plucked waveguide through a driven amp with cab voicing",
+   "synthesis": "rendered",
+   "outputLevel": 0.46,
+   "polyphonyLimit": 48,
+   "scheduledSourceCount": 1,
+   "renderer": {
+    "algorithmId": "changes.dsp.plucked-electric@2",
+    "channels": 2,
+    "maximumRenderSeconds": 6,
+    "bufferCacheLimit": 64
+   },
+   "amplitude": {
+    "attackSeconds": 0.002,
+    "decaySeconds": 0,
+    "sustainLevel": 1,
+    "releaseSeconds": 0.35
+   },
+   "filter": {
+    "type": "lowpass",
+    "attackHz": 16000,
+    "peakHz": 16000,
+    "sustainHz": 16000,
+    "q": 0.5,
+    "decaySeconds": 0.1
+   }
+  },
+  {
+   "id": "clarinet",
+   "label": "Clarinet",
+   "designClaim": "physically modeled clarinet: reed-driven closed-open waveguide with breath dynamics",
+   "synthesis": "rendered",
+   "outputLevel": 1.1,
+   "polyphonyLimit": 32,
+   "scheduledSourceCount": 1,
+   "renderer": {
+    "algorithmId": "changes.dsp.waveguide-clarinet@1",
+    "channels": 2,
+    "maximumRenderSeconds": 5,
+    "bufferCacheLimit": 128
+   },
+   "amplitude": {
+    "attackSeconds": 0.002,
+    "decaySeconds": 0,
+    "sustainLevel": 1,
+    "releaseSeconds": 0.3
+   },
+   "filter": {
+    "type": "lowpass",
+    "attackHz": 16000,
+    "peakHz": 16000,
+    "sustainHz": 16000,
+    "q": 0.5,
+    "decaySeconds": 0.1
+   }
+  },
+  {
+   "id": "dreadnought-guitar",
+   "label": "Steel Dreadnought",
+   "designClaim": "physically modeled Martin-style steel-string dreadnought: stiff strings, finite pick contact, braced spruce plate, and Helmholtz body radiation",
+   "synthesis": "rendered",
+   "outputLevel": 0.5,
+   "polyphonyLimit": 48,
+   "scheduledSourceCount": 1,
+   "renderer": {
+    "algorithmId": "changes.dsp.plucked-dreadnought@1",
+    "channels": 2,
+    "maximumRenderSeconds": 5,
+    "bufferCacheLimit": 64
+   },
+   "amplitude": {
+    "attackSeconds": 0.002,
+    "decaySeconds": 0,
+    "sustainLevel": 1,
+    "releaseSeconds": 0.35
+   },
+   "filter": {
+    "type": "lowpass",
+    "attackHz": 16000,
+    "peakHz": 16000,
+    "sustainHz": 16000,
+    "q": 0.5,
+    "decaySeconds": 0.1
+   }
+  },
+  {
+   "id": "ukulele",
+   "label": "Re-entrant Ukulele",
+   "designClaim": "physically modeled re-entrant nylon ukulele: g4-c4-e4-a4 courses, finite finger contact, compact braced plate, and geometry-derived air resonance",
+   "synthesis": "rendered",
+   "outputLevel": 0.65,
+   "polyphonyLimit": 32,
+   "scheduledSourceCount": 1,
+   "renderer": {
+    "algorithmId": "changes.dsp.plucked-ukulele@1",
+    "channels": 2,
+    "maximumRenderSeconds": 3,
+    "bufferCacheLimit": 64
+   },
+   "amplitude": {
+    "attackSeconds": 0.002,
+    "decaySeconds": 0,
+    "sustainLevel": 1,
+    "releaseSeconds": 0.24
+   },
+   "filter": {
+    "type": "lowpass",
+    "attackHz": 16000,
+    "peakHz": 16000,
+    "sustainHz": 16000,
+    "q": 0.5,
+    "decaySeconds": 0.1
+   }
   }
+ ],
+ "pulseWave": {
+  "id": "periodic-pulse-25",
+  "dutyCycle": 0.25,
+  "harmonicCount": 32,
+  "disableNormalization": false,
+  "dcCoefficient": 0,
+  "cosineCoefficient": "sin(2*pi*n*dutyCycle)/(pi*n)",
+  "sineCoefficient": "(1-cos(2*pi*n*dutyCycle))/(pi*n)"
+ },
+ "normalization": {
+  "id": "changes.audio.voice-normalization.v1",
+  "formula": "recipe.outputLevel/sqrt(totalGeneratedVoiceCount)",
+  "velocityFormula": "pow(velocity/127,1.5)",
+  "voiceCountRange": [
+   1,
+   16
+  ],
+  "velocityRange": [
+   1,
+   127
+  ],
+  "referenceVoiceCounts": [
+   1,
+   4,
+   7,
+   16
+  ],
+  "referenceGains": {
+   "mellow-keys": [
+    0.62,
+    0.31,
+    0.234337973266,
+    0.155
+   ],
+   "fm-electric-piano": [
+    0.48,
+    0.24,
+    0.181422947044,
+    0.12
+   ],
+   "vibraphone": [
+    0.5,
+    0.25,
+    0.188982236505,
+    0.125
+   ],
+   "warm-pad": [
+    0.3,
+    0.15,
+    0.113389341903,
+    0.075
+   ],
+   "analog-poly": [
+    0.34,
+    0.17,
+    0.128507920823,
+    0.085
+   ],
+   "concert-grand": [
+    0.3,
+    0.212132034356,
+    0.173205080757,
+    0.15
+   ],
+   "flute": [
+    0.5,
+    0.25,
+    0.188982236505,
+    0.125
+   ],
+   "organ": [
+    0.44,
+    0.22,
+    0.166304368124,
+    0.11
+   ],
+   "guitar": [
+    0.5,
+    0.25,
+    0.188982236505,
+    0.125
+   ],
+   "upright-bass": [
+    0.5,
+    0.25,
+    0.188982236505,
+    0.125
+   ],
+   "concert-vibes": [
+    0.42,
+    0.21,
+    0.158745078664,
+    0.105
+   ],
+   "blues-guitar": [
+    0.46,
+    0.23,
+    0.173863657584,
+    0.115
+   ],
+   "clarinet": [
+    0.48,
+    0.24,
+    0.181422947044,
+    0.12
+   ],
+   "dreadnought-guitar": [
+    0.5,
+    0.25,
+    0.188982236505,
+    0.125
+   ],
+   "ukulele": [
+    0.54,
+    0.27,
+    0.204100840959,
+    0.135
+   ]
+  },
+  "referenceVelocities": [
+   1,
+   64,
+   100,
+   127
+  ],
+  "referenceVelocityGains": [
+   0.000698705913,
+   0.357737427418,
+   0.698705912926,
+   1
+  ]
+ }
 }

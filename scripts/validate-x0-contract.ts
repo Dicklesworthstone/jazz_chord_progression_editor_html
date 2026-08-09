@@ -190,7 +190,7 @@ const EXPECTED_SCHEMAS: Readonly<Record<ExpectedFilename, string>> = {
 };
 
 export const X0_REVIEWED_CONTRACT_BYTE_DIGEST =
-  "034b047676e267ade4c18ae9f049d1ec63f1bc54471cf6f66e770dffc9f154cc";
+  "19dc2916d19b8b3a3f4554f7b05eec38bbeb5e4042b025001e56f817a4b416c9";
 
 export const X0_REVIEWED_BYTE_DIGESTS: Readonly<
   Record<CompanionFilename, string>
@@ -200,7 +200,7 @@ export const X0_REVIEWED_BYTE_DIGESTS: Readonly<
   "impulse-golden.json":
     "9330b747b85defb801b6456ad7d4ee519f78bdf83ea22a4b6ab47268b3b79888",
   "instrument-recipes.json":
-    "75021eeb0f6c7896885dead79c3b408618be5dc300a3566f54cb8c6cc9ca75f3",
+    "21f48770e60097035c9a9b8b625060a428c563882d0148cf6a28c8f790048643",
   "lifecycle-cases.json":
     "3ad712126fe22bf314ea76e41fb501ee549be2ef944a45aafbe1c1f2e8b8dcf5",
   "listening-rubric.json":
@@ -527,13 +527,13 @@ export const X0_REVIEWED_RENDERED_RECIPES = [
   id: "upright-bass",
   label: "Upright Bass",
   designClaim:
-    "recorded solo contrabass pizzicato, nearest recorded key transposed onto pitch",
+    "physical pizzicato contrabass: bidirectional string waves into the DKT soundboard authority",
   synthesis: "rendered",
-  outputLevel: 0.17,
+  outputLevel: 2.06,
   polyphonyLimit: 32,
   scheduledSourceCount: 1,
   renderer: {
-    algorithmId: "changes.dsp.sampled-upright-bass@1",
+    algorithmId: "changes.dsp.plucked-upright-bass@1",
     channels: 2,
     maximumRenderSeconds: 4,
     bufferCacheLimit: 64,
@@ -792,7 +792,7 @@ const REVIEWED_CANONICAL_DIGESTS = {
   graphEdges: "86f0e0d8307ab85e40d9ed1f1f1d7547f34018bf117a754521d3814ca4c526b0",
   graphSettings: "ed4816e5e4ea9fbcb1a941cddb2479db072453f54a44272f35717a6ebf9c53a5",
   routingCases: "cb78dae03ce88d9bc853f8c8a6339f6de64f53ad8d38d566d7b311191834b2cc",
-  recipes: "6bf6232e019c0d133d106d9ac6ed4ae808dd3aca5c17d88210d4c4e2e2528352",
+  recipes: "9e024a2a695ff07ff01045c9d1479ca0291e39669158e9b5a088ac2b177613ef",
   normalization: "8e7ef43050fda93f9ab646b72a51f96da666385a812172df1a8c2cbded7534bc",
   pulse: "e5bad32f09dbfe03ef87124d811125144145168bc8f07a48ef78b530b1c1e839",
   impulseCheckpoints: "29ffb97240f4a5f80f24812ff592df1a15413bf2a21d1b8f314ef0e2ee15c1d8",
