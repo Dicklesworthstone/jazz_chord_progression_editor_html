@@ -30,11 +30,12 @@ pub const MIN_MIDI: i32 = 21;
 pub const MAX_MIDI: i32 = 108;
 pub const MAX_UNISON_STRINGS: usize = 3;
 pub const STRING_MODES: usize = 24;
-pub const SOUNDBOARD_MODES: usize = 12;
+pub const SOUNDBOARD_MODES: usize = 288;
 pub const CONTACT_SOLVE_STEPS: usize = 8;
 pub const MAXIMUM_STATE_BYTES: usize = 64 * 1024;
 
 const AIR_DENSITY_KG_M3: f64 = 1.2041;
+const AIR_SOUND_SPEED_M_PER_S: f64 = 343.21;
 const STEEL_DENSITY_KG_M3: f64 = 7_850.0;
 const STEEL_YOUNG_MODULUS_PA: f64 = 2.0e11;
 const RADIATION_DISTANCE_M: f64 = 1.0;
@@ -61,6 +62,11 @@ pub struct PianoParameters {
     pub soundboard_radial_modulus_pa: f64,
     pub soundboard_shear_modulus_pa: f64,
     pub soundboard_poisson_ratio: f64,
+    /// Number of transverse ribs represented by the smeared-rigidity model.
+    pub soundboard_rib_count: usize,
+    pub soundboard_rib_width_m: f64,
+    pub soundboard_rib_height_m: f64,
+    pub soundboard_rib_modulus_pa: f64,
     pub bridge_x_over_length: f64,
     pub bridge_y_over_width: f64,
     /// Angular rate of the lossless string/body velocity rotation.
@@ -81,6 +87,10 @@ impl PianoParameters {
             soundboard_radial_modulus_pa: 0.72e9,
             soundboard_shear_modulus_pa: 0.62e9,
             soundboard_poisson_ratio: 0.30,
+            soundboard_rib_count: 14,
+            soundboard_rib_width_m: 0.020,
+            soundboard_rib_height_m: 0.025,
+            soundboard_rib_modulus_pa: 11.0e9,
             bridge_x_over_length: 0.73,
             bridge_y_over_width: 0.37,
             bridge_coupling_rate_per_second: 1_350.0,
@@ -99,6 +109,9 @@ impl PianoParameters {
             self.soundboard_longitudinal_modulus_pa,
             self.soundboard_radial_modulus_pa,
             self.soundboard_shear_modulus_pa,
+            self.soundboard_rib_width_m,
+            self.soundboard_rib_height_m,
+            self.soundboard_rib_modulus_pa,
             self.bridge_coupling_rate_per_second,
             self.hammer_mass_kg,
             self.maximum_abs_pressure_pa,
@@ -117,7 +130,17 @@ impl PianoParameters {
             || !(0.5..=2.0).contains(&self.soundboard_width_m)
             || !(0.004..=0.020).contains(&self.soundboard_thickness_m)
             || !(250.0..=900.0).contains(&self.soundboard_density_kg_m3)
+            || !(5.0e9..=20.0e9).contains(&self.soundboard_longitudinal_modulus_pa)
+            || !(0.2e9..=3.0e9).contains(&self.soundboard_radial_modulus_pa)
+            || !(0.2e9..=3.0e9).contains(&self.soundboard_shear_modulus_pa)
+            || !(6..=24).contains(&self.soundboard_rib_count)
+            || !(0.008..=0.040).contains(&self.soundboard_rib_width_m)
+            || !(0.010..=0.050).contains(&self.soundboard_rib_height_m)
+            || !(5.0e9..=20.0e9).contains(&self.soundboard_rib_modulus_pa)
+            || !(50.0..=5_000.0).contains(&self.bridge_coupling_rate_per_second)
             || !(0.020..=0.090).contains(&self.hammer_mass_kg)
+            || !(1.0..=1_000.0).contains(&self.maximum_abs_pressure_pa)
+            || !(0.01..=5.0).contains(&self.maximum_total_energy_j)
         {
             return Err(PianoError::InvalidParameters);
         }
@@ -165,7 +188,12 @@ impl PianoStrike {
         let impact_energy_j =
             0.5 * hammer_mass_kg * hammer_velocity_m_per_s * hammer_velocity_m_per_s;
         let felt_exponent = 2.25 + 0.55 * hardness;
-        let felt_stiffness = 1.8e10 * (1.0 + 5.2 * hardness);
+        // Compressed piano felt hardens rapidly: the velocity-dependent
+        // coefficient must rise faster than impact speed or a loud blow has a
+        // longer force pulse and becomes darker than a soft blow.  The
+        // exponential is a bounded reduced law for that densification, not an
+        // output spectral control.
+        let felt_stiffness = 1.0e8 * exp(5.5 * hardness);
         let peak_indent = pow(
             (felt_exponent + 1.0) * impact_energy_j / felt_stiffness,
             1.0 / (felt_exponent + 1.0),
@@ -192,6 +220,7 @@ pub struct PianoOutput {
     pub string_energy_j: f64,
     pub soundboard_energy_j: f64,
     pub hammer_contact_energy_j: f64,
+    pub escaped_hammer_energy_j: f64,
     pub cumulative_loss_j: f64,
 }
 
@@ -276,8 +305,10 @@ struct SoundboardMode {
     mode: Mode,
     order_x: u8,
     order_y: u8,
-    left_volume_residue_m2_per_sqrt_kg: f64,
-    right_volume_residue_m2_per_sqrt_kg: f64,
+    left_pressure_per_velocity_re: f64,
+    left_pressure_per_velocity_im: f64,
+    right_pressure_per_velocity_re: f64,
+    right_pressure_per_velocity_im: f64,
 }
 
 impl SoundboardMode {
@@ -285,8 +316,10 @@ impl SoundboardMode {
         mode: Mode::ZERO,
         order_x: 0,
         order_y: 0,
-        left_volume_residue_m2_per_sqrt_kg: 0.0,
-        right_volume_residue_m2_per_sqrt_kg: 0.0,
+        left_pressure_per_velocity_re: 0.0,
+        left_pressure_per_velocity_im: 0.0,
+        right_pressure_per_velocity_re: 0.0,
+        right_pressure_per_velocity_im: 0.0,
     };
 }
 
@@ -336,6 +369,7 @@ pub struct PianoVoice {
     contact: ContactState,
     active_string_modes: usize,
     cumulative_loss_j: f64,
+    escaped_hammer_energy_j: f64,
     total_contact_iterations: u64,
     last_contact_iterations: usize,
 }
@@ -407,6 +441,7 @@ impl PianoVoice {
             contact: ContactState::INACTIVE,
             active_string_modes,
             cumulative_loss_j: 0.0,
+            escaped_hammer_energy_j: 0.0,
             total_contact_iterations: 0,
             last_contact_iterations: 0,
         };
@@ -417,7 +452,8 @@ impl PianoVoice {
     }
 
     pub fn begin_strike(&mut self, strike: PianoStrike) -> Result<(), PianoError> {
-        if !(1..=127).contains(&strike.velocity)
+        if self.contact.active
+            || !(1..=127).contains(&strike.velocity)
             || !strike.hardness.is_finite()
             || !(0.0..=1.0).contains(&strike.hardness)
             || !strike.hammer_mass_kg.is_finite()
@@ -427,7 +463,7 @@ impl PianoVoice {
             || !strike.impact_energy_j.is_finite()
             || !(0.0..=1.0).contains(&strike.impact_energy_j)
             || !strike.felt_stiffness_n_per_m_pow_exponent.is_finite()
-            || strike.felt_stiffness_n_per_m_pow_exponent <= 0.0
+            || !(1.0e6..=2.0e10).contains(&strike.felt_stiffness_n_per_m_pow_exponent)
             || !strike.felt_exponent.is_finite()
             || !(1.5..=4.0).contains(&strike.felt_exponent)
             || !strike.maximum_force_n.is_finite()
@@ -447,6 +483,7 @@ impl PianoVoice {
         }
         let maximum_frames =
             libm::ceil(strike.maximum_contact_seconds * self.sample_rate_hz) as u32;
+        self.cumulative_loss_j += self.contact.dissipated_energy_j;
         self.contact = ContactState {
             active: true,
             strike,
@@ -491,6 +528,7 @@ impl PianoVoice {
             string_energy_j: self.string_energy_j(),
             soundboard_energy_j: self.soundboard_energy_j(),
             hammer_contact_energy_j: self.hammer_contact_energy_j(),
+            escaped_hammer_energy_j: self.escaped_hammer_energy_j,
             cumulative_loss_j: self.cumulative_loss_j + self.contact.dissipated_energy_j,
         })
     }
@@ -519,6 +557,12 @@ impl PianoVoice {
             .and_then(|mode| mode.mode.active.then_some(mode.mode.frequency_hz))
     }
 
+    pub fn soundboard_mode_energy_j(&self, mode_index: usize) -> Option<f64> {
+        self.soundboard
+            .get(mode_index)
+            .and_then(|mode| mode.mode.active.then_some(mode.mode.energy_j()))
+    }
+
     pub fn soundboard_mode_orders(&self, mode_index: usize) -> Option<(u8, u8)> {
         self.soundboard
             .get(mode_index)
@@ -531,6 +575,16 @@ impl PianoVoice {
 
     pub fn represented_energy_j(&self) -> f64 {
         self.modal_energy_j() + self.hammer_contact_energy_j()
+    }
+
+    /// Energy still represented plus every explicitly exited or dissipated
+    /// joule since construction.  This is the conservation ledger; hammer
+    /// kinetic energy after separation is an outgoing port, not fake loss.
+    pub fn accounted_energy_j(&self) -> f64 {
+        self.represented_energy_j()
+            + self.escaped_hammer_energy_j
+            + self.cumulative_loss_j
+            + self.contact.dissipated_energy_j
     }
 
     pub fn string_energy_j(&self) -> f64 {
@@ -638,6 +692,10 @@ impl PianoVoice {
             upper_compression,
         );
         if upper < self.dt * upper_gradient {
+            self.escaped_hammer_energy_j += 0.5
+                * strike.hammer_mass_kg
+                * self.contact.hammer_velocity_m_per_s
+                * self.contact.hammer_velocity_m_per_s;
             self.contact.dissipated_energy_j += potential_before;
             self.contact.compression_m = 0.0;
             self.contact.hammer_position_m = string_displacement;
@@ -699,6 +757,10 @@ impl PianoVoice {
                 }
             }
             self.contact.hammer_velocity_m_per_s += impulse / strike.hammer_mass_kg;
+            self.escaped_hammer_energy_j += 0.5
+                * strike.hammer_mass_kg
+                * self.contact.hammer_velocity_m_per_s
+                * self.contact.hammer_velocity_m_per_s;
             self.contact.dissipated_energy_j += potential_before;
             self.contact.compression_m = 0.0;
             self.contact.hammer_position_m = string_displacement;
@@ -710,6 +772,10 @@ impl PianoVoice {
         let relative_after = relative_velocity - impulse * inverse_effective_mass;
         let separated = compression_after <= 1.0e-12 && relative_after <= 0.0;
         if separated || self.contact.elapsed_frames >= self.contact.maximum_frames {
+            self.escaped_hammer_energy_j += 0.5
+                * strike.hammer_mass_kg
+                * self.contact.hammer_velocity_m_per_s
+                * self.contact.hammer_velocity_m_per_s;
             self.contact.dissipated_energy_j += felt_potential_j(
                 strike.felt_stiffness_n_per_m_pow_exponent,
                 strike.felt_exponent,
@@ -721,60 +787,114 @@ impl PianoVoice {
     }
 
     fn apply_lossless_bridge_coupling(&mut self) {
-        let mut string_norm_squared = 0.0;
-        let mut string_port_velocity = 0.0;
-        for bank in &self.strings {
-            for mode in &bank.modes {
-                string_norm_squared +=
-                    mode.bridge_residue_m_neg_half_kg * mode.bridge_residue_m_neg_half_kg;
-                string_port_velocity += mode.bridge_residue_m_neg_half_kg * mode.velocity;
-            }
-        }
-        let mut body_norm_squared = 0.0;
-        let mut body_port_velocity = 0.0;
-        for body in &self.soundboard {
-            body_norm_squared +=
-                body.mode.bridge_residue_m_neg_half_kg * body.mode.bridge_residue_m_neg_half_kg;
-            body_port_velocity += body.mode.bridge_residue_m_neg_half_kg * body.mode.velocity;
-        }
-        if string_norm_squared <= 1.0e-30 || body_norm_squared <= 1.0e-30 {
-            return;
-        }
-        let string_norm = sqrt(string_norm_squared);
-        let body_norm = sqrt(body_norm_squared);
-        let string_coordinate = string_port_velocity / string_norm;
-        let body_coordinate = body_port_velocity / body_norm;
         let angle = (self.parameters.bridge_coupling_rate_per_second * self.dt).min(0.20);
         let cosine = cos(angle);
         let sine = sin(angle);
-        let next_string = cosine * string_coordinate - sine * body_coordinate;
-        let next_body = sine * string_coordinate + cosine * body_coordinate;
-        let string_delta = next_string - string_coordinate;
-        let body_delta = next_body - body_coordinate;
-        for bank in &mut self.strings {
-            for mode in &mut bank.modes {
-                mode.velocity += mode.bridge_residue_m_neg_half_kg / string_norm * string_delta;
+
+        // The bridge mobility is frequency dependent.  A single normalized
+        // rank-one port makes every string harmonic drive one fixed board
+        // mixture, erasing the hammer-hardness spectrum.  Four disjoint modal
+        // ports preserve that dependence without creating energy: each band
+        // is an orthogonal two-coordinate velocity rotation and every mode is
+        // owned by exactly one band.
+        for band in 0..8 {
+            let mut string_norm_squared = 0.0;
+            let mut string_port_velocity = 0.0;
+            for bank in &self.strings {
+                for mode in &bank.modes {
+                    if bridge_band(mode.frequency_hz) != band {
+                        continue;
+                    }
+                    string_norm_squared +=
+                        mode.bridge_residue_m_neg_half_kg * mode.bridge_residue_m_neg_half_kg;
+                    string_port_velocity += mode.bridge_residue_m_neg_half_kg * mode.velocity;
+                }
             }
-        }
-        for body in &mut self.soundboard {
-            body.mode.velocity += body.mode.bridge_residue_m_neg_half_kg / body_norm * body_delta;
+            let mut body_norm_squared = 0.0;
+            let mut body_port_velocity = 0.0;
+            for body in &self.soundboard {
+                if bridge_band(body.mode.frequency_hz) != band {
+                    continue;
+                }
+                body_norm_squared +=
+                    body.mode.bridge_residue_m_neg_half_kg * body.mode.bridge_residue_m_neg_half_kg;
+                body_port_velocity += body.mode.bridge_residue_m_neg_half_kg * body.mode.velocity;
+            }
+            if string_norm_squared <= 1.0e-30 || body_norm_squared <= 1.0e-30 {
+                continue;
+            }
+            let string_norm = sqrt(string_norm_squared);
+            let body_norm = sqrt(body_norm_squared);
+            let string_coordinate = string_port_velocity / string_norm;
+            let body_coordinate = body_port_velocity / body_norm;
+            let next_string = cosine * string_coordinate - sine * body_coordinate;
+            let next_body = sine * string_coordinate + cosine * body_coordinate;
+            let string_delta = next_string - string_coordinate;
+            let body_delta = next_body - body_coordinate;
+            for bank in &mut self.strings {
+                for mode in &mut bank.modes {
+                    if bridge_band(mode.frequency_hz) == band {
+                        mode.velocity +=
+                            mode.bridge_residue_m_neg_half_kg / string_norm * string_delta;
+                    }
+                }
+            }
+            for body in &mut self.soundboard {
+                if bridge_band(body.mode.frequency_hz) == band {
+                    body.mode.velocity +=
+                        body.mode.bridge_residue_m_neg_half_kg / body_norm * body_delta;
+                }
+            }
         }
     }
 
     fn observe_pressure_pa(&self) -> (f64, f64) {
-        let mut left_volume_acceleration = 0.0;
-        let mut right_volume_acceleration = 0.0;
+        let mut left_pressure_pa = 0.0;
+        let mut right_pressure_pa = 0.0;
         for body in &self.soundboard {
-            let modal_acceleration = -body.mode.omega * body.mode.omega * body.mode.position;
-            left_volume_acceleration +=
-                body.left_volume_residue_m2_per_sqrt_kg * modal_acceleration;
-            right_volume_acceleration +=
-                body.right_volume_residue_m2_per_sqrt_kg * modal_acceleration;
+            left_pressure_pa += body.left_pressure_per_velocity_re * body.mode.velocity
+                + body.left_pressure_per_velocity_im * body.mode.omega * body.mode.position;
+            right_pressure_pa += body.right_pressure_per_velocity_re * body.mode.velocity
+                + body.right_pressure_per_velocity_im * body.mode.omega * body.mode.position;
+        }
+        let mut left_string_volume_acceleration = 0.0;
+        let mut right_string_volume_acceleration = 0.0;
+        let string_modal_mass =
+            0.5 * self.geometry.linear_density_kg_m * self.geometry.speaking_length_m;
+        let string_modal_norm = 1.0 / sqrt(string_modal_mass);
+        for (string_index, bank) in self.strings.iter().enumerate() {
+            if !bank.active {
+                continue;
+            }
+            for (mode_index, mode) in bank.modes.iter().enumerate() {
+                if !mode.active || mode_index % 2 == 1 {
+                    continue;
+                }
+                let order = (mode_index + 1) as f64;
+                let integrated_mode_length_m = 2.0 * self.geometry.speaking_length_m / (PI * order);
+                let dipole_efficiency = (mode.omega * self.geometry.equivalent_diameter_m
+                    / AIR_SOUND_SPEED_M_PER_S)
+                    .min(0.25);
+                let volume_residue_m2_per_sqrt_kg = self.geometry.equivalent_diameter_m
+                    * integrated_mode_length_m
+                    * string_modal_norm
+                    * dipole_efficiency;
+                let modal_acceleration = -mode.omega * mode.omega * mode.position;
+                let string_pan = if self.geometry.string_count <= 1 {
+                    0.0
+                } else {
+                    string_index as f64 / (self.geometry.string_count - 1) as f64 - 0.5
+                };
+                left_string_volume_acceleration +=
+                    (1.0 - 0.18 * string_pan) * volume_residue_m2_per_sqrt_kg * modal_acceleration;
+                right_string_volume_acceleration +=
+                    (1.0 + 0.18 * string_pan) * volume_residue_m2_per_sqrt_kg * modal_acceleration;
+            }
         }
         let scale = AIR_DENSITY_KG_M3 / (4.0 * PI * RADIATION_DISTANCE_M);
         (
-            scale * left_volume_acceleration,
-            scale * right_volume_acceleration,
+            left_pressure_pa + scale * left_string_volume_acceleration,
+            right_pressure_pa + scale * right_string_volume_acceleration,
         )
     }
 }
@@ -857,14 +977,31 @@ pub fn soundboard_mode_frequency_hz(
         * parameters.soundboard_thickness_m;
     let denominator = 12.0 * (1.0 - nu * nu);
     let d_long = parameters.soundboard_longitudinal_modulus_pa * thickness_cubed / denominator;
-    let d_radial = parameters.soundboard_radial_modulus_pa * thickness_cubed / denominator;
-    let d_cross =
-        parameters.soundboard_shear_modulus_pa * thickness_cubed + nu * sqrt(d_long * d_radial);
+    let bare_d_radial = parameters.soundboard_radial_modulus_pa * thickness_cubed / denominator;
+    let d_cross = parameters.soundboard_shear_modulus_pa * thickness_cubed
+        + nu * sqrt(d_long * bare_d_radial);
+    // Smear the equally spaced transverse ribs into the bending direction
+    // they reinforce.  EI/spacing has the plate-rigidity unit N m; the same
+    // geometry contributes rho*A/spacing to areal mass.  This is the bounded
+    // no-std analogue of the explicit fs-plate stiffener assembly.
+    let rib_spacing_m =
+        parameters.soundboard_length_m / (parameters.soundboard_rib_count + 1) as f64;
+    let rib_second_moment_m4 = parameters.soundboard_rib_width_m
+        * parameters.soundboard_rib_height_m
+        * parameters.soundboard_rib_height_m
+        * parameters.soundboard_rib_height_m
+        / 12.0;
+    let d_ribs = parameters.soundboard_rib_modulus_pa * rib_second_moment_m4 / rib_spacing_m;
+    let d_radial = bare_d_radial + d_ribs;
+    let areal_density_kg_m2 = parameters.soundboard_density_kg_m3
+        * (parameters.soundboard_thickness_m
+            + parameters.soundboard_rib_width_m * parameters.soundboard_rib_height_m
+                / rib_spacing_m);
     let kx = order_x as f64 / parameters.soundboard_length_m;
     let ky = order_y as f64 / parameters.soundboard_width_m;
     let omega_squared = pow(PI, 4.0)
         * (d_long * pow(kx, 4.0) + 2.0 * d_cross * kx * kx * ky * ky + d_radial * pow(ky, 4.0))
-        / (parameters.soundboard_density_kg_m3 * parameters.soundboard_thickness_m);
+        / areal_density_kg_m2;
     Ok(sqrt(omega_squared) / TAU)
 }
 
@@ -897,58 +1034,76 @@ fn build_soundboard_modes(
     parameters: PianoParameters,
     sample_rate_hz: f64,
 ) -> Result<[SoundboardMode; SOUNDBOARD_MODES], PianoError> {
-    const ORDERS: [(u8, u8); SOUNDBOARD_MODES] = [
-        (1, 1),
-        (2, 1),
-        (1, 2),
-        (3, 1),
-        (2, 2),
-        (1, 3),
-        (4, 1),
-        (3, 2),
-        (2, 3),
-        (1, 4),
-        (5, 1),
-        (4, 2),
-    ];
-    let modal_mass = 0.25
-        * parameters.soundboard_density_kg_m3
-        * parameters.soundboard_thickness_m
-        * parameters.soundboard_length_m
-        * parameters.soundboard_width_m;
+    let rib_spacing_m =
+        parameters.soundboard_length_m / (parameters.soundboard_rib_count + 1) as f64;
+    let areal_density_kg_m2 = parameters.soundboard_density_kg_m3
+        * (parameters.soundboard_thickness_m
+            + parameters.soundboard_rib_width_m * parameters.soundboard_rib_height_m
+                / rib_spacing_m);
+    let modal_mass =
+        0.25 * areal_density_kg_m2 * parameters.soundboard_length_m * parameters.soundboard_width_m;
     let modal_norm = 1.0 / sqrt(modal_mass);
-    let patch_area_m2 = 0.12 * parameters.soundboard_length_m * parameters.soundboard_width_m;
     let mut modes = [SoundboardMode::ZERO; SOUNDBOARD_MODES];
-    for (index, (order_x, order_y)) in ORDERS.iter().copied().enumerate() {
-        let frequency_hz =
-            soundboard_mode_frequency_hz(parameters, order_x as usize, order_y as usize)?;
-        if frequency_hz >= 0.44 * sample_rate_hz {
-            continue;
+    let mut index = 0usize;
+    for order_y in 1_u8..=12 {
+        for order_x in 1_u8..=24 {
+            let frequency_hz =
+                soundboard_mode_frequency_hz(parameters, order_x as usize, order_y as usize)?;
+            if frequency_hz < 0.44 * sample_rate_hz {
+                let omega = TAU * frequency_hz;
+                let bridge_shape = sin(PI * order_x as f64 * parameters.bridge_x_over_length)
+                    * sin(PI * order_y as f64 * parameters.bridge_y_over_width);
+                // Far-field Rayleigh observer at this mode's natural
+                // frequency. `modal_plane_integral_m2` exactly integrates the
+                // sine mode against directional phase, retaining finite
+                // spatial cancellation while admitting real high-mode
+                // multipoles. The stored real/imaginary transfer follows the
+                // fs-couple narrow-band pressure-per-modal-velocity law.
+                let wave_number_per_m = omega / AIR_SOUND_SPEED_M_PER_S;
+                let (left_integral_re, left_integral_im) = modal_plane_integral_m2(
+                    order_x,
+                    order_y,
+                    parameters.soundboard_length_m,
+                    parameters.soundboard_width_m,
+                    wave_number_per_m,
+                    -0.35,
+                    0.12,
+                )?;
+                let (right_integral_re, right_integral_im) = modal_plane_integral_m2(
+                    order_x,
+                    order_y,
+                    parameters.soundboard_length_m,
+                    parameters.soundboard_width_m,
+                    wave_number_per_m,
+                    0.35,
+                    0.12,
+                )?;
+                let observer_scale =
+                    AIR_DENSITY_KG_M3 * omega * modal_norm / (4.0 * PI * RADIATION_DISTANCE_M);
+                let t60 = 1.65 / (1.0 + 0.0009 * frequency_hz) + 0.28;
+                modes[index] = SoundboardMode {
+                    mode: Mode {
+                        active: true,
+                        position: 0.0,
+                        velocity: 0.0,
+                        frequency_hz,
+                        omega,
+                        rotation_cos: cos(omega / sample_rate_hz),
+                        rotation_sin: sin(omega / sample_rate_hz),
+                        half_velocity_decay: exp(-LN_1000 / (sample_rate_hz * t60)),
+                        contact_residue_m_neg_half_kg: 0.0,
+                        bridge_residue_m_neg_half_kg: bridge_shape * modal_norm,
+                    },
+                    order_x,
+                    order_y,
+                    left_pressure_per_velocity_re: -observer_scale * left_integral_im,
+                    left_pressure_per_velocity_im: observer_scale * left_integral_re,
+                    right_pressure_per_velocity_re: -observer_scale * right_integral_im,
+                    right_pressure_per_velocity_im: observer_scale * right_integral_re,
+                };
+            }
+            index += 1;
         }
-        let omega = TAU * frequency_hz;
-        let bridge_shape = sin(PI * order_x as f64 * parameters.bridge_x_over_length)
-            * sin(PI * order_y as f64 * parameters.bridge_y_over_width);
-        let left_shape = sin(PI * order_x as f64 * 0.31) * sin(PI * order_y as f64 * 0.41);
-        let right_shape = sin(PI * order_x as f64 * 0.69) * sin(PI * order_y as f64 * 0.46);
-        let t60 = 1.65 / (1.0 + 0.0009 * frequency_hz) + 0.28;
-        modes[index] = SoundboardMode {
-            mode: Mode {
-                active: true,
-                position: 0.0,
-                velocity: 0.0,
-                frequency_hz,
-                omega,
-                rotation_cos: cos(omega / sample_rate_hz),
-                rotation_sin: sin(omega / sample_rate_hz),
-                half_velocity_decay: exp(-LN_1000 / (sample_rate_hz * t60)),
-                contact_residue_m_neg_half_kg: 0.0,
-                bridge_residue_m_neg_half_kg: bridge_shape * modal_norm,
-            },
-            order_x,
-            order_y,
-            left_volume_residue_m2_per_sqrt_kg: patch_area_m2 * left_shape * modal_norm,
-            right_volume_residue_m2_per_sqrt_kg: patch_area_m2 * right_shape * modal_norm,
-        };
     }
     for index in 1..SOUNDBOARD_MODES {
         let mut cursor = index;
@@ -958,6 +1113,60 @@ fn build_soundboard_modes(
         }
     }
     Ok(modes)
+}
+
+/// Exact integral of a simply-supported rectangular sine mode against a
+/// centered far-field plane-wave phase. The result is complex square metres
+/// as `(real, imaginary)`.
+pub fn modal_plane_integral_m2(
+    order_x: u8,
+    order_y: u8,
+    length_m: f64,
+    width_m: f64,
+    wave_number_per_m: f64,
+    direction_x: f64,
+    direction_y: f64,
+) -> Result<(f64, f64), PianoError> {
+    if order_x == 0
+        || order_y == 0
+        || !length_m.is_finite()
+        || length_m <= 0.0
+        || !width_m.is_finite()
+        || width_m <= 0.0
+        || !wave_number_per_m.is_finite()
+        || wave_number_per_m < 0.0
+        || !direction_x.is_finite()
+        || !direction_y.is_finite()
+        || direction_x * direction_x + direction_y * direction_y > 1.0 + 1.0e-12
+    {
+        return Err(PianoError::InvalidParameters);
+    }
+    let (x_re, x_im) =
+        modal_axis_plane_integral_m(order_x, length_m, wave_number_per_m * direction_x);
+    let (y_re, y_im) =
+        modal_axis_plane_integral_m(order_y, width_m, wave_number_per_m * direction_y);
+    Ok((x_re * y_re - x_im * y_im, x_re * y_im + x_im * y_re))
+}
+
+fn modal_axis_plane_integral_m(order: u8, length_m: f64, phase_gradient_per_m: f64) -> (f64, f64) {
+    let order_pi = order as f64 * PI;
+    let phase_across_axis = phase_gradient_per_m * length_m;
+    let minus = cardinal_sine(0.5 * (order_pi - phase_across_axis));
+    let plus = cardinal_sine(0.5 * (order_pi + phase_across_axis));
+    let theta = 0.5 * order_pi;
+    (
+        0.5 * length_m * sin(theta) * (minus + plus),
+        -0.5 * length_m * cos(theta) * (minus - plus),
+    )
+}
+
+fn cardinal_sine(value: f64) -> f64 {
+    if value.abs() <= 1.0e-8 {
+        let squared = value * value;
+        1.0 - squared / 6.0 + squared * squared / 120.0
+    } else {
+        sin(value) / value
+    }
 }
 
 fn felt_potential_j(stiffness: f64, exponent: f64, compression_m: f64) -> f64 {
@@ -978,4 +1187,24 @@ fn felt_potential_gradient(stiffness: f64, exponent: f64, before_m: f64, after_m
 fn smooth_step(value: f64) -> f64 {
     let x = value.clamp(0.0, 1.0);
     x * x * (3.0 - 2.0 * x)
+}
+
+fn bridge_band(frequency_hz: f64) -> usize {
+    if frequency_hz < 220.0 {
+        0
+    } else if frequency_hz < 440.0 {
+        1
+    } else if frequency_hz < 880.0 {
+        2
+    } else if frequency_hz < 1_320.0 {
+        3
+    } else if frequency_hz < 1_760.0 {
+        4
+    } else if frequency_hz < 2_200.0 {
+        5
+    } else if frequency_hz < 3_000.0 {
+        6
+    } else {
+        7
+    }
 }

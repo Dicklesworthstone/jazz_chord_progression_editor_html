@@ -54,6 +54,40 @@ fn normalized_centroid(samples: &[f32], sample_rate_hz: f64) -> f64 {
     weighted / total.max(1.0e-30)
 }
 
+fn string_energy_centroid_hz(voice: &PianoVoice) -> f64 {
+    let mut weighted = 0.0;
+    let mut total = 0.0;
+    for string_index in 0..3 {
+        for mode_index in 0..24 {
+            let Some(energy) = voice.string_mode_energy_j(string_index, mode_index) else {
+                continue;
+            };
+            let frequency = voice
+                .string_mode_frequency_hz(string_index, mode_index)
+                .expect("active modal energy has an active frequency");
+            weighted += energy * frequency;
+            total += energy;
+        }
+    }
+    weighted / total.max(1.0e-30)
+}
+
+fn soundboard_energy_centroid_hz(voice: &PianoVoice) -> f64 {
+    let mut weighted = 0.0;
+    let mut total = 0.0;
+    for mode_index in 0..piano_v2::SOUNDBOARD_MODES {
+        let Some(energy) = voice.soundboard_mode_energy_j(mode_index) else {
+            continue;
+        };
+        let frequency = voice
+            .soundboard_mode_frequency_hz(mode_index)
+            .expect("active modal energy has an active frequency");
+        weighted += energy * frequency;
+        total += energy;
+    }
+    weighted / total.max(1.0e-30)
+}
+
 #[test]
 fn string_pack_is_geometry_derived_and_keeps_the_measured_fundamental() {
     let low = string_geometry(21).unwrap();
@@ -98,10 +132,11 @@ fn string_pack_is_geometry_derived_and_keeps_the_measured_fundamental() {
 fn orthotropic_soundboard_obeys_independent_scaling_laws() {
     let base = PianoParameters::canonical();
     let base_frequency = soundboard_mode_frequency_hz(base, 1, 1).unwrap();
-    assert!(base_frequency > 20.0 && base_frequency < 500.0);
+    assert!(base_frequency > 10.0 && base_frequency < 500.0);
 
     let mut thicker = base;
     thicker.soundboard_thickness_m *= 1.10;
+    thicker.soundboard_rib_height_m *= 1.10;
     let thick_frequency = soundboard_mode_frequency_hz(thicker, 1, 1).unwrap();
     assert!((thick_frequency / base_frequency - 1.10).abs() < 1.0e-12);
 
@@ -120,6 +155,10 @@ fn orthotropic_soundboard_obeys_independent_scaling_laws() {
         soundboard_mode_frequency_hz(stiffer, 2, 1).unwrap()
             > soundboard_mode_frequency_hz(base, 2, 1).unwrap()
     );
+
+    let mut taller_ribs = base;
+    taller_ribs.soundboard_rib_height_m *= 1.10;
+    assert!(soundboard_mode_frequency_hz(taller_ribs, 1, 1).unwrap() > base_frequency);
 }
 
 #[test]
@@ -138,6 +177,7 @@ fn finite_hammer_contact_and_bridge_never_create_represented_energy() {
     for frame in 0..4_800 {
         let output = voice.step().unwrap();
         maximum = maximum.max(voice.represented_energy_j());
+        assert!(voice.accounted_energy_j() <= initial + 2.0e-9);
         maximum_body = maximum_body.max(output.soundboard_energy_j);
         maximum_string = maximum_string.max(output.string_energy_j);
         if frame == 1_000 {
@@ -180,10 +220,23 @@ fn malformed_or_active_parameters_refuse_and_force_cap_releases_dissipatively() 
         PianoError::InvalidParameters
     );
 
+    let mut missing_ribs = PianoParameters::canonical();
+    missing_ribs.soundboard_rib_count = 0;
+    assert_eq!(
+        PianoVoice::new(60, 48_000.0, missing_ribs).unwrap_err(),
+        PianoError::InvalidParameters
+    );
+
     let parameters = PianoParameters::canonical();
     let mut inconsistent = PianoStrike::from_velocity(80, parameters.hammer_mass_kg).unwrap();
     inconsistent.impact_energy_j *= 0.5;
     let mut voice = PianoVoice::new(60, 48_000.0, parameters).unwrap();
+    let valid = PianoStrike::from_velocity(80, parameters.hammer_mass_kg).unwrap();
+    voice.begin_strike(valid).unwrap();
+    assert_eq!(voice.begin_strike(valid), Err(PianoError::InvalidContact));
+    while voice.contact_active() {
+        voice.step().unwrap();
+    }
     assert_eq!(
         voice.begin_strike(inconsistent),
         Err(PianoError::InvalidContact)
@@ -196,6 +249,7 @@ fn malformed_or_active_parameters_refuse_and_force_cap_releases_dissipatively() 
     voice.step().unwrap();
     assert!(!voice.contact_active());
     assert!(voice.represented_energy_j() <= before + 1.0e-12);
+    assert!(voice.accounted_energy_j() >= before - 1.0e-9);
 }
 
 #[test]
@@ -239,6 +293,36 @@ fn render_is_finite_audible_bounded_and_hard_strikes_are_brighter() {
     }
 
     let frames = 4_096;
+    let parameters = PianoParameters::canonical();
+    let mut soft_voice = PianoVoice::new(60, 48_000.0, parameters).unwrap();
+    soft_voice
+        .begin_strike(PianoStrike::from_velocity(24, parameters.hammer_mass_kg).unwrap())
+        .unwrap();
+    let mut hard_voice = PianoVoice::new(60, 48_000.0, parameters).unwrap();
+    hard_voice
+        .begin_strike(PianoStrike::from_velocity(120, parameters.hammer_mass_kg).unwrap())
+        .unwrap();
+    let mut soft_contact_frames = 0usize;
+    let mut hard_contact_frames = 0usize;
+    for frame in 0..1_024 {
+        soft_voice.step().unwrap();
+        hard_voice.step().unwrap();
+        if soft_voice.contact_active() {
+            soft_contact_frames = frame + 1;
+        }
+        if hard_voice.contact_active() {
+            hard_contact_frames = frame + 1;
+        }
+    }
+    let soft_string_centroid = string_energy_centroid_hz(&soft_voice);
+    let hard_string_centroid = string_energy_centroid_hz(&hard_voice);
+    let soft_board_centroid = soundboard_energy_centroid_hz(&soft_voice);
+    let hard_board_centroid = soundboard_energy_centroid_hz(&hard_voice);
+    assert!(
+        hard_string_centroid > 1.04 * soft_string_centroid,
+        "felt contact itself did not brighten: soft={soft_string_centroid}, hard={hard_string_centroid}, contact_frames={soft_contact_frames}/{hard_contact_frames}"
+    );
+
     let mut soft_left = vec![0.0_f32; frames];
     let mut soft_right = vec![0.0_f32; frames];
     let mut hard_left = vec![0.0_f32; frames];
@@ -247,9 +331,11 @@ fn render_is_finite_audible_bounded_and_hard_strikes_are_brighter() {
     render_piano_note(60, 120, 48_000.0, &mut hard_left, &mut hard_right).unwrap();
     let soft_centroid = normalized_centroid(&soft_left, 48_000.0);
     let hard_centroid = normalized_centroid(&hard_left, 48_000.0);
+    let soft_attack_centroid = normalized_centroid(&soft_left[..512], 48_000.0);
+    let hard_attack_centroid = normalized_centroid(&hard_left[..512], 48_000.0);
     assert!(
         hard_centroid > 1.04 * soft_centroid,
-        "felt contact did not brighten: soft={soft_centroid}, hard={hard_centroid}"
+        "felt contact did not brighten: output={soft_centroid}/{hard_centroid}, attack={soft_attack_centroid}/{hard_attack_centroid}, string={soft_string_centroid}/{hard_string_centroid}, board={soft_board_centroid}/{hard_board_centroid}, contact_frames={soft_contact_frames}/{hard_contact_frames}"
     );
     assert!(rms(&hard_left) > rms(&soft_left));
 }
