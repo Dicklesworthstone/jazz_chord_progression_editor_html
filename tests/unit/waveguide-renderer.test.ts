@@ -341,7 +341,12 @@ describe("waveguide renderer laws", () => {
       }
     }
     expect(failures).toEqual([]);
-  }, 15_000);
+    /*
+     * 180 renders measure ~13s alone; the sampled-payload modules restored
+     * by jcpe-3q4c add module-parse seconds to the import graph, so the
+     * wall budget carries headroom. Wall time is never a musical law.
+     */
+  }, 30_000);
 
   test("clarinet v2 articulation changes the onset without selecting a different sustain attractor", () => {
     const failures: string[] = [];
