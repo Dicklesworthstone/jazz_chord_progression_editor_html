@@ -683,8 +683,6 @@ function recipeForInstrument(instrumentId: InstrumentId): AudioInstrumentRecipe 
       return AUDIO_INSTRUMENT_RECIPES[13];
     case "ukulele":
       return AUDIO_INSTRUMENT_RECIPES[14];
-    case "trumpet":
-      return AUDIO_INSTRUMENT_RECIPES[15];
   }
 }
 

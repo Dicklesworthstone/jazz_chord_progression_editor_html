@@ -70,8 +70,6 @@ export const PLUCKED_UKULELE_ALGORITHM_ID =
   "changes.dsp.plucked-ukulele@1";
 export const PLUCKED_UPRIGHT_BASS_ALGORITHM_ID =
   "changes.dsp.plucked-upright-bass@1";
-export const WAVEGUIDE_TRUMPET_ALGORITHM_ID =
-  "changes.dsp.waveguide-trumpet@1";
 const PLK2_UPRIGHT_BASS_PACK_INDEX = 4;
 
 export type WindAttackArticulation = "legato" | "tongued";
@@ -369,15 +367,6 @@ type ConcertGrandExports = Readonly<{
     sampleRate: number,
     fftSize: number,
     out: number,
-  ) => number;
-  tpt_note_frames: (midi: number, sampleRate: number) => number;
-  tpt_render: (
-    midi: number,
-    velocity: number,
-    sampleRate: number,
-    left: number,
-    right: number,
-    maxFrames: number,
   ) => number;
   gtr_note_frames: (midi: number, sampleRate: number) => number;
   gtr_render: (
@@ -1585,14 +1574,6 @@ async function instantiate(): Promise<DspCore> {
       rawExports,
       "an_chroma",
     ) as ConcertGrandExports["an_chroma"],
-    tpt_note_frames: requireExportedFunction(
-      rawExports,
-      "tpt_note_frames",
-    ) as ConcertGrandExports["tpt_note_frames"],
-    tpt_render: requireExportedFunction(
-      rawExports,
-      "tpt_render",
-    ) as ConcertGrandExports["tpt_render"],
     gtr_note_frames: requireExportedFunction(
       rawExports,
       "gtr_note_frames",
@@ -2406,12 +2387,6 @@ async function instantiate(): Promise<DspCore> {
       ),
     ],
     [
-      WAVEGUIDE_TRUMPET_ALGORITHM_ID,
-      makeWaveguideRenderNote(exports.tpt_note_frames, (m, v, r, l, rt, mx) =>
-        exports.tpt_render(m, v, r, l, rt, mx),
-      ),
-    ],
-    [
       WAVEGUIDE_GUITAR_CLEAN_ALGORITHM_ID,
       makeWaveguideRenderNote(exports.gtr_note_frames, (m, v, r, l, rt, mx) =>
         exports.gtr_render(m, v, r, 0, l, rt, mx),
@@ -2429,7 +2404,7 @@ async function instantiate(): Promise<DspCore> {
        * Gesture renders deliberately fall back to the plain export. The
        * seeded/expressive flute paths are numerically broken in the shipped
        * wasm: measured 2026-08-08, slots 1-7 detune -171..+1062 cents
-       * (wrong-regime locks) and every slot render goes NaN after ~1 s,>>>>>>> origin/main
+       * (wrong-regime locks) and every slot render goes NaN after ~1 s,
        * which browsers play as silence. The owner heard both ("out of
        * tune", "quiet"). The plain path measures +-2 cents at every chart
        * velocity and articulation. Re-enable seeded dispatch only after the

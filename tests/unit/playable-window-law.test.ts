@@ -85,28 +85,6 @@ describe("Rust plucked windows assert-equal the TS windows", () => {
     }
   });
 
-  test("trumpet window matches the Rust operating table", () => {
-    /*
-     * The trumpet window is the TRUMPET_NOTE_TABLE span (round-11 sweep,
-     * jcpe-trumpet-lock-completion-el46). Parsed from the committed
-     * trumpet.rs like the plucked windows above.
-     */
-    const trumpetSource = execFileSync(
-      "git",
-      ["show", "HEAD:dsp/concert-grand/src/trumpet.rs"],
-      { cwd: import.meta.dir + "/../..", encoding: "utf8", maxBuffer: 16 * 1024 * 1024 },
-    );
-    const rows = [...trumpetSource.matchAll(/^\s*\((\d+),\s*\[/gmu)].map((m) => Number(m[1]));
-    expect(rows.length).toBeGreaterThan(0);
-    const windows = AUDIO_PLAYABLE_MIDI_WINDOWS as Readonly<
-      Record<string, Readonly<{ low: number; high: number }>>
-    >;
-    expect(windows["trumpet"], "trumpet").toEqual({
-      low: Math.min(...rows),
-      high: Math.max(...rows),
-    });
-  });
-
   test("ukulele window matches Rust", () => {
     const rust = rustRange(/PLK2_UKULELE_PACK => \((\d+)\.\.=(\d+)\)\.contains/u);
     const windows = AUDIO_PLAYABLE_MIDI_WINDOWS as Readonly<
