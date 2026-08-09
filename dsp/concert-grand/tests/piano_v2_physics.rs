@@ -54,6 +54,41 @@ fn normalized_centroid(samples: &[f32], sample_rate_hz: f64) -> f64 {
     weighted / total.max(1.0e-30)
 }
 
+fn normalized_stereo_centroid(left: &[f32], right: &[f32], sample_rate_hz: f64) -> f64 {
+    let size = 2_048.min(left.len()).min(right.len());
+    let mut weighted = 0.0;
+    let mut total = 0.0;
+    for bin in 1..size / 2 {
+        let mut left_real = 0.0;
+        let mut left_imaginary = 0.0;
+        let mut right_real = 0.0;
+        let mut right_imaginary = 0.0;
+        for index in 0..size {
+            let window = 0.5
+                - 0.5
+                    * libm::cos(
+                        2.0 * core::f64::consts::PI * index as f64
+                            / (size.saturating_sub(1)) as f64,
+                    );
+            let angle = 2.0 * core::f64::consts::PI * bin as f64 * index as f64 / size as f64;
+            let left_sample = left[index] as f64 * window;
+            let right_sample = right[index] as f64 * window;
+            left_real += left_sample * libm::cos(angle);
+            left_imaginary -= left_sample * libm::sin(angle);
+            right_real += right_sample * libm::cos(angle);
+            right_imaginary -= right_sample * libm::sin(angle);
+        }
+        let power = left_real * left_real
+            + left_imaginary * left_imaginary
+            + right_real * right_real
+            + right_imaginary * right_imaginary;
+        let frequency = bin as f64 * sample_rate_hz / size as f64;
+        weighted += frequency * power;
+        total += power;
+    }
+    weighted / total.max(1.0e-30)
+}
+
 fn string_energy_centroid_hz(voice: &PianoVoice) -> f64 {
     let mut weighted = 0.0;
     let mut total = 0.0;
@@ -159,6 +194,62 @@ fn orthotropic_soundboard_obeys_independent_scaling_laws() {
     let mut taller_ribs = base;
     taller_ribs.soundboard_rib_height_m *= 1.10;
     assert!(soundboard_mode_frequency_hz(taller_ribs, 1, 1).unwrap() > base_frequency);
+}
+
+#[test]
+fn baffled_modal_observer_matches_independent_plane_integrals() {
+    let length = 1.90;
+    let width = 1.38;
+    let (uniform_re, uniform_im) =
+        piano_v2::modal_plane_integral_m2(1, 1, length, width, 0.0, 0.0, 0.0).unwrap();
+    let exact_uniform = 4.0 * length * width / (core::f64::consts::PI.powi(2));
+    assert!((uniform_re - exact_uniform).abs() < 1.0e-14);
+    assert!(uniform_im.abs() < 1.0e-14);
+
+    let (even_re, even_im) =
+        piano_v2::modal_plane_integral_m2(2, 1, length, width, 0.0, 0.0, 0.0).unwrap();
+    assert!(even_re.abs() < 1.0e-14);
+    assert!(even_im.abs() < 1.0e-14);
+
+    let wave_number = 13.7;
+    let direction_x = 0.31;
+    let direction_y = -0.17;
+    let (analytic_re, analytic_im) = piano_v2::modal_plane_integral_m2(
+        2,
+        3,
+        length,
+        width,
+        wave_number,
+        direction_x,
+        direction_y,
+    )
+    .unwrap();
+    let cells_x = 480usize;
+    let cells_y = 360usize;
+    let dx = length / cells_x as f64;
+    let dy = width / cells_y as f64;
+    let mut numeric_re = 0.0;
+    let mut numeric_im = 0.0;
+    for cell_y in 0..cells_y {
+        let y = (cell_y as f64 + 0.5) * dy;
+        let centered_y = y - 0.5 * width;
+        let shape_y = libm::sin(3.0 * core::f64::consts::PI * y / width);
+        for cell_x in 0..cells_x {
+            let x = (cell_x as f64 + 0.5) * dx;
+            let centered_x = x - 0.5 * length;
+            let shape = shape_y * libm::sin(2.0 * core::f64::consts::PI * x / length);
+            let phase = -wave_number * (direction_x * centered_x + direction_y * centered_y);
+            numeric_re += shape * libm::cos(phase) * dx * dy;
+            numeric_im += shape * libm::sin(phase) * dx * dy;
+        }
+    }
+    assert!((analytic_re - numeric_re).abs() < 2.0e-5);
+    assert!((analytic_im - numeric_im).abs() < 2.0e-5);
+
+    assert_eq!(
+        piano_v2::modal_plane_integral_m2(1, 1, length, width, 1.0, 1.0, 1.0),
+        Err(PianoError::InvalidParameters)
+    );
 }
 
 #[test]
@@ -322,6 +413,10 @@ fn render_is_finite_audible_bounded_and_hard_strikes_are_brighter() {
         hard_string_centroid > 1.04 * soft_string_centroid,
         "felt contact itself did not brighten: soft={soft_string_centroid}, hard={hard_string_centroid}, contact_frames={soft_contact_frames}/{hard_contact_frames}"
     );
+    assert!(
+        hard_board_centroid > 1.03 * soft_board_centroid,
+        "bridge erased felt brightness: board={soft_board_centroid}/{hard_board_centroid}, string={soft_string_centroid}/{hard_string_centroid}"
+    );
 
     let mut soft_left = vec![0.0_f32; frames];
     let mut soft_right = vec![0.0_f32; frames];
@@ -331,11 +426,15 @@ fn render_is_finite_audible_bounded_and_hard_strikes_are_brighter() {
     render_piano_note(60, 120, 48_000.0, &mut hard_left, &mut hard_right).unwrap();
     let soft_centroid = normalized_centroid(&soft_left, 48_000.0);
     let hard_centroid = normalized_centroid(&hard_left, 48_000.0);
+    let soft_right_centroid = normalized_centroid(&soft_right, 48_000.0);
+    let hard_right_centroid = normalized_centroid(&hard_right, 48_000.0);
+    let soft_stereo_centroid = normalized_stereo_centroid(&soft_left, &soft_right, 48_000.0);
+    let hard_stereo_centroid = normalized_stereo_centroid(&hard_left, &hard_right, 48_000.0);
     let soft_attack_centroid = normalized_centroid(&soft_left[..512], 48_000.0);
     let hard_attack_centroid = normalized_centroid(&hard_left[..512], 48_000.0);
     assert!(
-        hard_centroid > 1.04 * soft_centroid,
-        "felt contact did not brighten: output={soft_centroid}/{hard_centroid}, attack={soft_attack_centroid}/{hard_attack_centroid}, string={soft_string_centroid}/{hard_string_centroid}, board={soft_board_centroid}/{hard_board_centroid}, contact_frames={soft_contact_frames}/{hard_contact_frames}"
+        hard_stereo_centroid > 1.04 * soft_stereo_centroid,
+        "felt contact did not brighten: left={soft_centroid}/{hard_centroid}, right={soft_right_centroid}/{hard_right_centroid}, stereo={soft_stereo_centroid}/{hard_stereo_centroid}, attack={soft_attack_centroid}/{hard_attack_centroid}, string={soft_string_centroid}/{hard_string_centroid}, board={soft_board_centroid}/{hard_board_centroid}, contact_frames={soft_contact_frames}/{hard_contact_frames}"
     );
     assert!(rms(&hard_left) > rms(&soft_left));
 }

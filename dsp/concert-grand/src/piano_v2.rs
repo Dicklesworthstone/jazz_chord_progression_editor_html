@@ -9,9 +9,9 @@
 //! - mass-normalized stiff-string modes derived from speaking length,
 //!   tension, linear density, bending stiffness, and hammer/bridge position;
 //! - an energy-consistent unilateral power-port contact;
-//! - a lossless rank-one bridge interconnection into an orthotropic
-//!   soundboard modal reduction; and
-//! - a physical acoustic observer formed from modal volume acceleration.
+//! - eight disjoint lossless bridge ports into an orthotropic soundboard
+//!   modal reduction; and
+//! - a baffled Rayleigh far-field observer formed from modal velocity.
 //!
 //! The modal convention and observer realization follow the recent
 //! FrankenSim `fs-modal` / `fs-couple::modal_acoustic_time` work, but this
@@ -793,7 +793,7 @@ impl PianoVoice {
 
         // The bridge mobility is frequency dependent.  A single normalized
         // rank-one port makes every string harmonic drive one fixed board
-        // mixture, erasing the hammer-hardness spectrum.  Four disjoint modal
+        // mixture, erasing the hammer-hardness spectrum.  Eight disjoint modal
         // ports preserve that dependence without creating energy: each band
         // is an orthogonal two-coordinate velocity rotation and every mode is
         // owned by exactly one band.
@@ -1078,8 +1078,12 @@ fn build_soundboard_modes(
                     0.35,
                     0.12,
                 )?;
+                // Infinite-baffle Rayleigh radiation has `2*pi*r` in the
+                // denominator.  The earlier free-space `4*pi*r` factor was
+                // inconsistent with a piano soundboard mounted in its rim
+                // and with FrankenSim's baffled-plate observer contract.
                 let observer_scale =
-                    AIR_DENSITY_KG_M3 * omega * modal_norm / (4.0 * PI * RADIATION_DISTANCE_M);
+                    AIR_DENSITY_KG_M3 * omega * modal_norm / (2.0 * PI * RADIATION_DISTANCE_M);
                 let t60 = 1.65 / (1.0 + 0.0009 * frequency_hz) + 0.28;
                 modes[index] = SoundboardMode {
                     mode: Mode {
