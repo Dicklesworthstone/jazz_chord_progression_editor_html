@@ -48,8 +48,8 @@ const JSON_OUTPUT: &str = "physical/parameter-packs/piano-v2-soundboard.json";
 const RUST_OUTPUT: &str = "dsp/concert-grand/src/piano_v2_soundboard.rs";
 const PACK_SCHEMA: &str = "changes.piano-v2-soundboard-pack.v2";
 const SOLVER_ID: &str =
-    "frankensim-fs-plate-dkt-plus-fs-modal-certified-slices-inverse-refinement-v3";
-const FRANKENSIM_EXPECTED_HEAD: &str = "f630aaf8968f9c3ef52cee23ef4badfccfa54252";
+    "frankensim-fs-plate-dkt-conservative-nodal-ports-plus-fs-modal-certified-slices-inverse-refinement-v4";
+const FRANKENSIM_EXPECTED_HEAD: &str = "1346e1be67951ba0ba81f3e99f5eeca6efc42945";
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
