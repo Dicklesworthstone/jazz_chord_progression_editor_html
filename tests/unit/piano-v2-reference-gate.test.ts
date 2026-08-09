@@ -33,7 +33,7 @@ function healthyFeatures(): PianoReferenceFeatures {
     earlyRms: 0.05,
     peak: 0.4,
     harmonicProfileDb: Object.freeze([0, -6, -10, -15]),
-    envelopeProfileDb: Object.freeze([-20, -3, 0, -2, -8]),
+    envelopeProfileDb: Object.freeze([-20, -3, 0, -8]),
   });
 }
 
@@ -317,6 +317,16 @@ describe("piano-v2 exact-WASM Salamander reference gate", () => {
       .map((finding) => finding.code)).toContain("PIANO_REFERENCE_HARMONIC_PROFILE");
     expect(evaluate(healthy, 0, 4.01)
       .map((finding) => finding.code)).toContain("PIANO_REFERENCE_ATTACK_ENVELOPE");
+    expect(evaluate(Object.freeze({ ...healthy, peak: -0.1 }))
+      .map((finding) => finding.code)).toContain("PIANO_REFERENCE_FEATURES_INVALID");
+    expect(evaluate(Object.freeze({ ...healthy, harmonicProfileDb: Object.freeze([]) }))
+      .map((finding) => finding.code)).toContain("PIANO_REFERENCE_FEATURES_INVALID");
+    expect(evaluate(Object.freeze({
+      ...healthy,
+      envelopeProfileDb: Object.freeze([0, -1, 0.1, -3]),
+    })).map((finding) => finding.code)).toContain("PIANO_REFERENCE_FEATURES_INVALID");
+    expect(evaluatePianoReferenceCell(healthy, 0, 0, Number.POSITIVE_INFINITY, 4)
+      .map((finding) => finding.code)).toContain("PIANO_REFERENCE_FEATURES_INVALID");
   });
 
   test("stored evidence is semantic and the stale embedded payload refuses replay", async () => {

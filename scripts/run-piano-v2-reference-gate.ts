@@ -27,10 +27,11 @@ import {
 } from "../src/audio/wasm/piano-attack-samples";
 
 export const PIANO_V2_REFERENCE_EVIDENCE_SCHEMA =
-  "changes.evidence.piano-v2-reference.v2" as const;
+  "changes.evidence.piano-v2-reference.v3" as const;
 
 export const PIANO_V2_REFERENCE_POLICY = Object.freeze({
-  schema: "changes.policy.piano-v2-reference.v2" as const,
+  schema: "changes.policy.piano-v2-reference.v3" as const,
+  analyzerId: "changes.analysis.piano-reference.v3" as const,
   algorithmId: "changes.dsp.concert-grand@2" as const,
   sampleRateHz: PIANO_ATTACK_SAMPLE_RATE_HZ,
   renderSeconds: 0.32,
@@ -231,6 +232,34 @@ export function pianoV2CanonicalSha256(value: unknown): string {
 
 function finite(value: number): boolean {
   return Number.isFinite(value);
+}
+
+function normalizedDbProfileIsValid(
+  profile: readonly number[],
+  maximumLength: number,
+  exactLength?: number,
+): boolean {
+  if (profile.length === 0 || profile.length > maximumLength ||
+    (exactLength !== undefined && profile.length !== exactLength) ||
+    !profile.every((value) => finite(value))) return false;
+  const maximum = Math.max(...profile);
+  return Math.abs(maximum) <= 1.0e-9 &&
+    profile.every((value) => value <= 1.0e-9);
+}
+
+function pianoReferenceFeaturesAreValid(features: PianoReferenceFeatures): boolean {
+  return finite(features.harmonicCombOffsetCents) &&
+    finite(features.earlyRms) && features.earlyRms >= 0 &&
+    finite(features.peak) && features.peak >= 0 &&
+    normalizedDbProfileIsValid(
+      features.harmonicProfileDb,
+      PIANO_V2_REFERENCE_POLICY.maximumHarmonics,
+    ) &&
+    normalizedDbProfileIsValid(
+      features.envelopeProfileDb,
+      PIANO_V2_REFERENCE_POLICY.envelopeWindowsSeconds.length,
+      PIANO_V2_REFERENCE_POLICY.envelopeWindowsSeconds.length,
+    );
 }
 
 function midiHz(midi: number): number {
@@ -465,6 +494,14 @@ export function evaluatePianoReferenceCell(
   allowedEnvelopeDistanceDb: number,
 ): readonly Finding[] {
   const findings: Finding[] = [];
+  if (!pianoReferenceFeaturesAreValid(features) ||
+    !finite(allowedHarmonicDistanceDb) || allowedHarmonicDistanceDb < 0 ||
+    !finite(allowedEnvelopeDistanceDb) || allowedEnvelopeDistanceDb < 0) {
+    findings.push(Object.freeze({
+      code: "PIANO_REFERENCE_FEATURES_INVALID",
+      message: "feature profile or comparison threshold is malformed",
+    }));
+  }
   if (!finite(features.harmonicCombOffsetCents) ||
     Math.abs(features.harmonicCombOffsetCents) >
     PIANO_V2_REFERENCE_POLICY.maximumHarmonicCombOffsetCents) {
@@ -996,16 +1033,12 @@ function isFiniteNumberArray(value: unknown): value is readonly number[] {
 function isPianoReferenceFeatures(value: unknown): value is PianoReferenceFeatures {
   if (value === null || typeof value !== "object") return false;
   const record = value as Readonly<Record<string, unknown>>;
-  return typeof record["harmonicCombOffsetCents"] === "number" &&
-    finite(record["harmonicCombOffsetCents"]) &&
-    typeof record["earlyRms"] === "number" && finite(record["earlyRms"]) &&
-    typeof record["peak"] === "number" && finite(record["peak"]) &&
+  if (!(typeof record["harmonicCombOffsetCents"] === "number" &&
+    typeof record["earlyRms"] === "number" &&
+    typeof record["peak"] === "number" &&
     isFiniteNumberArray(record["harmonicProfileDb"]) &&
-    record["harmonicProfileDb"].length > 0 &&
-    record["harmonicProfileDb"].length <= PIANO_V2_REFERENCE_POLICY.maximumHarmonics &&
-    isFiniteNumberArray(record["envelopeProfileDb"]) &&
-    record["envelopeProfileDb"].length ===
-      PIANO_V2_REFERENCE_POLICY.envelopeWindowsSeconds.length;
+    isFiniteNumberArray(record["envelopeProfileDb"]))) return false;
+  return pianoReferenceFeaturesAreValid(record as PianoReferenceFeatures);
 }
 
 function isFinding(value: unknown): value is Finding {
