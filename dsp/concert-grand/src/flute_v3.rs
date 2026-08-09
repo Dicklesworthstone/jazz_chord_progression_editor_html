@@ -95,7 +95,7 @@ const MAX_FOOT_HISTORY: usize = 16;
 const MAX_RADIATION_HISTORY: usize = 128;
 
 const STATE_MAGIC: u32 = 0x3354_4c46; // "FLT3" little endian.
-const STATE_VERSION: u32 = 2;
+const STATE_VERSION: u32 = 3;
 const STATE_HEADER_BYTES: usize = 48;
 const STATE_MAX_BYTES: usize = 16_384;
 
@@ -319,6 +319,64 @@ fn jet_offset_ff_boost_for(midi: i32, velocity_norm: f32) -> f32 {
 const CONVECTIVE_PHASE_FF_SHIFT_BY_NOTE_R1: [f32; 12] = [
     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
 ];
+
+/// Round-9 two-mode coexistence gain (bead jcpe-flute-v3-integration-dw1q).
+/// The reference m76-ff spectrum is h2-dominant (+16.1 dB over h1): the
+/// near-overblow forte regime where the air column carries BOTH the first
+/// and second bore resonances, energy migrating upward while mode 1
+/// persists. Every single-mode calibration lever was measured to its
+/// physical limit in rounds 5-8 (offset boost passes harm/hb; the
+/// convective shift detunes before it overblows). This gain enables a
+/// second jet-instability branch — its own band-pass at 2*f0 and its own
+/// convective-phase read of the shared jet disturbance line — so the
+/// second resonance receives phase-matched drive without touching the
+/// mode-1 loop that sets pitch. Zero = branch fully disabled (bit-exact
+/// round-8 behavior); ramped by the sharpened forte-only ramp so matrix
+/// mf cells (velocity 0.567) see exactly zero.
+///
+/// ROUND-9 FRONTIER (measured, honest oracle at 44.1 kHz, m76-ff, index 4):
+/// the jet-superposition form trades identity advantage against high-band
+/// excess at ~1:2 dB along every (gain, phase) combination — adv/hb:
+/// 0/-: -7.36/7.0; 0.5@0.55: -4.98/9.9; 1.0@0.55: -3.07/12.5;
+/// 1.0@0.25: -1.52/15.7; 2.0@0.55: -0.70/16.6; 2.0@0.25: +0.75/20.0;
+/// 4.0@0.55: +1.09/21.8; 2.0@0.70: -3.69/11.2; 2.0@0.85 detunes -19.9c
+/// (refused at admission). Reaching the +3.5 dB advantage bound would cost
+/// ~17 dB of high-band violation (bound 8): the saturating split converts
+/// the two-tone input into a full intermodulation comb, so nonlinear h2
+/// generation cannot match the reference's passive h2 dominance. The
+/// resonator-side variant (a mode-2 partial reflection, candidate (b) of
+/// the round-9 order) is the recorded next mechanism; this table stays
+/// neutral until it exists.
+const MODE2_COEXIST_GAIN_BY_NOTE_R1: [f32; 12] = [
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+];
+/// Convective-phase cycles for the mode-2 branch read, in cycles of 2*f0.
+/// Independent of the mode-1 phase law: the branch supports the octave
+/// resonance at its own transit phase; swept per-note only where the
+/// coexistence gain is nonzero.
+const MODE2_PHASE_CYCLES_BY_NOTE_R1: [f32; 12] = [
+    0.55, 0.55, 0.55, 0.55, 0.55, 0.55, 0.55, 0.55, 0.55, 0.55, 0.55, 0.55,
+];
+
+fn mode2_coexist_gain_for(midi: i32, velocity_norm: f32) -> f32 {
+    if (72..=83).contains(&midi) {
+        let index = (midi - 72) as usize;
+        // Same sharpened forte-only ramp as the convective shift: zero at
+        // the matrix mf velocity, full at ff.
+        let ff_blend = ((velocity_norm - 0.75) * 4.0).clamp(0.0, 1.0);
+        ff_blend * MODE2_COEXIST_GAIN_BY_NOTE_R1[index]
+    } else {
+        0.0
+    }
+}
+
+fn mode2_phase_cycles_for(midi: i32) -> f32 {
+    if (72..=83).contains(&midi) {
+        MODE2_PHASE_CYCLES_BY_NOTE_R1[(midi - 72) as usize]
+    } else {
+        0.55
+    }
+}
 fn convective_phase_ff_shift_for(midi: i32, velocity_norm: f32) -> f32 {
     if (72..=83).contains(&midi) {
         let index = (midi - 72) as usize;
@@ -829,6 +887,8 @@ struct PhraseState {
     feedback_hp_output: f32,
     jet_band_s1: f32,
     jet_band_s2: f32,
+    jet_band2_s1: f32,
+    jet_band2_s2: f32,
     turbulence_fast: f32,
     turbulence_slow: f32,
     turbulence_meander: f32,
@@ -885,6 +945,8 @@ impl PhraseState {
             feedback_hp_output: 0.0,
             jet_band_s1: 0.0,
             jet_band_s2: 0.0,
+            jet_band2_s1: 0.0,
+            jet_band2_s2: 0.0,
             turbulence_fast: 0.0,
             turbulence_slow: 0.0,
             turbulence_meander: 0.0,
@@ -1582,7 +1644,7 @@ impl<'a> StateReader<'a> {
     }
 }
 
-const STATE_SCALAR_COUNT: usize = 25 + 5 * HOLES + 6 * SEGMENTS;
+const STATE_SCALAR_COUNT: usize = 27 + 5 * HOLES + 6 * SEGMENTS;
 const GEOMETRY_TAG: u32 = 0x661c_0004;
 
 fn state_required_bytes(layout: SegmentLayout) -> Option<usize> {
@@ -1621,6 +1683,8 @@ fn encode_state(
         state.feedback_hp_output,
         state.jet_band_s1,
         state.jet_band_s2,
+        state.jet_band2_s1,
+        state.jet_band2_s2,
         state.turbulence_fast,
         state.turbulence_slow,
         state.turbulence_meander,
@@ -1758,6 +1822,8 @@ fn decode_state(
     state.feedback_hp_output = reader.f32()?;
     state.jet_band_s1 = reader.f32()?;
     state.jet_band_s2 = reader.f32()?;
+    state.jet_band2_s1 = reader.f32()?;
+    state.jet_band2_s2 = reader.f32()?;
     state.turbulence_fast = reader.f32()?;
     state.turbulence_slow = reader.f32()?;
     state.turbulence_meander = reader.f32()?;
@@ -2005,6 +2071,18 @@ fn render_with_storage(
     let band_b2 = -band_b0;
     let band_a1 = -2.0 * cosf(band_omega) / band_a0;
     let band_a2 = (1.0 - band_alpha) / band_a0;
+    // Round-9 two-mode branch: a second jet-instability band-pass centered
+    // on the octave resonance. Same Q law (the instability bandwidth scales
+    // with the ride frequency); coefficients differ only in center.
+    let mode2_gain = mode2_coexist_gain_for(midi, velocity_norm);
+    let band2_omega = (TAU * 2.0 * mode_center_hz / internal_rate).min(0.92 * PI);
+    let band2_alpha = sinf(band2_omega) / (2.0 * band_q);
+    let band2_a0 = 1.0 + band2_alpha;
+    let band2_b0 = band2_alpha / band2_a0;
+    let band2_b2 = -band2_b0;
+    let band2_a1 = -2.0 * cosf(band2_omega) / band2_a0;
+    let band2_a2 = (1.0 - band2_alpha) / band2_a0;
+    let mode2_phase_cycles = mode2_phase_cycles_for(midi);
 
     let turbulence_fast_alpha = 1.0 - expf(-TAU * TURBULENCE_CORNER_HZ / internal_rate);
     let turbulence_slow_alpha = 1.0 - expf(-TAU * 420.0 / internal_rate);
@@ -2141,7 +2219,21 @@ fn render_with_storage(
             state.jet_band_s2 = band_b2 * resonator_input - band_a2 * band_feedback;
 
             let normalized_feedback = feedback_gain * band_feedback / jet_speed.max(8.0);
+            // Round-9 two-mode branch: the octave band-pass runs on the same
+            // bore feedback; its normalized disturbance co-propagates on the
+            // one physical jet (single storage write, superposed), gated to
+            // exact zero wherever the coexistence gain is zero.
+            let mode2_component = if mode2_gain > 0.0 {
+                let band2_feedback = band2_b0 * resonator_input + state.jet_band2_s1;
+                state.jet_band2_s1 = -band2_a1 * band2_feedback + state.jet_band2_s2;
+                state.jet_band2_s2 =
+                    band2_b2 * resonator_input - band2_a2 * band2_feedback;
+                mode2_gain * feedback_gain * band2_feedback / jet_speed.max(8.0)
+            } else {
+                0.0
+            };
             let jet_perturbation = normalized_feedback
+                + mode2_component
                 + turbulence_level * band_noise
                 + meander_level * state.turbulence_meander;
             storage.jet[state.jet_write] = jet_perturbation;
@@ -2175,6 +2267,27 @@ fn render_with_storage(
                 state.jet_write,
                 jet_delay,
             );
+            // Round-9: mode-2 read of the same co-propagating disturbance at
+            // the octave's own convective phase. Reading the shared line at a
+            // second delay is the discrete form of one jet carrying two
+            // instability waves; the mode-1 read and its phase law are
+            // untouched, so pitch is unaffected (the round-8 convective-shift
+            // failure mode).
+            let delayed_jet_mode2 = if mode2_gain > 0.0 {
+                let jet_delay_2 = (mode2_phase_cycles * internal_rate
+                    / (2.0 * mode_center_hz * pitch_vibrato))
+                    .clamp(1.0, (MAX_JET_HISTORY - 2) as f32)
+                    * law.jet_delay_scale;
+                read_current_delay(
+                    &storage.jet,
+                    0,
+                    MAX_JET_HISTORY,
+                    state.jet_write,
+                    jet_delay_2,
+                )
+            } else {
+                0.0
+            };
             state.jet_write += 1;
             if state.jet_write == MAX_JET_HISTORY {
                 state.jet_write = 0;
@@ -2189,7 +2302,13 @@ fn render_with_storage(
                     + (growth_cap_now - growth_cap_sustain) * growth_settle_alpha;
             }
             let jet_growth = expf(base_growth_exponent.min(growth_cap_now));
-            let linear_half_widths = jet_growth * delayed_jet;
+            // Both instability waves grow along the same jet and meet the
+            // one labium: a single saturating split of the summed
+            // displacement is the physical nonlinearity, and its
+            // two-frequency input is what generates the h2-dominant forte
+            // spectrum (round-9 mechanism).
+            let linear_half_widths =
+                jet_growth * (delayed_jet + mode2_gain * delayed_jet_mode2);
             let saturation = jet_saturation_half_width_for(midi, velocity_norm);
             let saturated_half_widths =
                 saturation * fast_tanh(linear_half_widths / saturation);
