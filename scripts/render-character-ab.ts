@@ -234,6 +234,11 @@ async function main(): Promise<void> {
   for (const recipe of AUDIO_INSTRUMENT_RECIPES) {
     if (recipe.synthesis !== "rendered") continue;
     const algorithmId = recipe.renderer?.algorithmId ?? "";
+    /* Constructed once per instrument: building a sampled renderer decodes
+     * its full PCM payload, which must never happen per note. */
+    const sampled = algorithmId.startsWith("changes.dsp.sampled-")
+      ? loadSampledInstrumentRenderer(algorithmId)
+      : null;
     const renderNote: NoteRenderFunction = (midiPitch, velocity, gateSeconds) => {
       const maxSeconds = Math.min(
         recipe.renderer?.maximumRenderSeconds ?? 4,
@@ -242,9 +247,8 @@ async function main(): Promise<void> {
       if (algorithmId === "changes.dsp.concert-grand@1") {
         return concertGrand.renderNote(midiPitch, velocity, SAMPLE_RATE_HZ, maxSeconds);
       }
-      if (algorithmId.startsWith("changes.dsp.sampled-")) {
-        const sampled = loadSampledInstrumentRenderer(algorithmId);
-        return sampled?.renderNote(midiPitch, velocity, SAMPLE_RATE_HZ, maxSeconds) ?? null;
+      if (sampled !== null) {
+        return sampled.renderNote(midiPitch, velocity, SAMPLE_RATE_HZ, maxSeconds);
       }
       return (
         waveguides

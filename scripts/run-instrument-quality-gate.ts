@@ -54,7 +54,15 @@ const CLIP_LEVEL = 0.999;
 const CLIP_FRACTION_LIMIT = 0.000_1;
 const DC_OFFSET_LIMIT = 0.02;
 const CLICK_ATTACK_SKIP_SECONDS = 0.02;
+/*
+ * A click fires on either an absolute near-half-scale jump or a jump that
+ * towers over the local signal level — the relative arm catches audible
+ * pops inside quiet renders that the absolute arm alone would miss.
+ */
 const CLICK_DELTA_LIMIT = 0.5;
+const CLICK_RELATIVE_FLOOR = 0.05;
+const CLICK_LOCAL_RMS_RATIO = 6;
+const CLICK_LOCAL_WINDOW = 256;
 const NOISE_PERIODICITY_FAIL = 0.55;
 const NOISE_PERIODICITY_WARN = 0.8;
 
@@ -123,11 +131,34 @@ function dbfs(value: number): number {
   return value <= 0 ? -Infinity : 20 * Math.log10(value);
 }
 
+function channelRms(samples: Float32Array): number {
+  let sumSquares = 0;
+  for (const value of samples) {
+    if (Number.isFinite(value)) sumSquares += value * value;
+  }
+  return Math.sqrt(sumSquares / Math.max(1, samples.length));
+}
+
+/**
+ * Analysis channel. The L+R average is preferred, but the engine's hybrid
+ * layering deliberately inverts a layer when it would cancel — so when the
+ * average loses more than half the louder channel's RMS to phase
+ * cancellation, analysis falls back to the left channel rather than
+ * measuring the cancelled residue.
+ */
 function mono(pcm: RenderedNotePcm): MonoPcm {
   const samples = new Float32Array(pcm.frameCount);
   for (let index = 0; index < pcm.frameCount; index += 1) {
     samples[index] =
       ((pcm.left[index] ?? 0) + (pcm.right[index] ?? 0)) / 2;
+  }
+  const averageRms = channelRms(samples);
+  const worstChannelRms = Math.max(channelRms(pcm.left), channelRms(pcm.right));
+  if (averageRms < 0.5 * worstChannelRms) {
+    return {
+      samples: new Float32Array(pcm.left.subarray(0, pcm.frameCount)),
+      sampleRateHz: pcm.sampleRateHz,
+    };
   }
   return { samples, sampleRateHz: pcm.sampleRateHz };
 }
@@ -165,18 +196,46 @@ function basicStats(samples: Float32Array): Readonly<{
   };
 }
 
-/** Largest |s[n]-s[n-1]| after the attack window: click/pop detector. */
-function maxInterSampleDelta(samples: Float32Array, sampleRateHz: number): number {
-  const start = Math.min(
-    samples.length,
-    Math.floor(CLICK_ATTACK_SKIP_SECONDS * sampleRateHz),
+/**
+ * Click/pop detector after the attack window. Returns the worst absolute
+ * inter-sample jump plus whether any jump fired the relative arm (a jump
+ * over CLICK_LOCAL_RMS_RATIO times the local RMS with an absolute floor),
+ * which catches audible pops inside otherwise-quiet renders.
+ */
+function detectClicks(
+  samples: Float32Array,
+  sampleRateHz: number,
+): Readonly<{ maxDelta: number; relativeClick: boolean }> {
+  const start = Math.max(
+    1,
+    Math.min(samples.length, Math.floor(CLICK_ATTACK_SKIP_SECONDS * sampleRateHz)),
   );
   let worst = 0;
-  for (let index = Math.max(1, start); index < samples.length; index += 1) {
-    const delta = Math.abs((samples[index] ?? 0) - (samples[index - 1] ?? 0));
+  let relativeClick = false;
+  let windowSumSquares = 0;
+  let windowCount = 0;
+  for (let index = start; index < samples.length; index += 1) {
+    const current = samples[index] ?? 0;
+    const delta = Math.abs(current - (samples[index - 1] ?? 0));
     if (delta > worst) worst = delta;
+    if (windowCount >= CLICK_LOCAL_WINDOW) {
+      const localRms = Math.sqrt(windowSumSquares / windowCount);
+      if (
+        delta > CLICK_RELATIVE_FLOOR &&
+        delta > CLICK_LOCAL_RMS_RATIO * localRms
+      ) {
+        relativeClick = true;
+      }
+    }
+    windowSumSquares += current * current;
+    windowCount += 1;
+    if (windowCount > CLICK_LOCAL_WINDOW) {
+      const leaving = samples[index - CLICK_LOCAL_WINDOW] ?? 0;
+      windowSumSquares = Math.max(0, windowSumSquares - leaving * leaving);
+      windowCount -= 1;
+    }
   }
-  return worst;
+  return { maxDelta: worst, relativeClick };
 }
 
 /** Goertzel amplitude of one frequency over [start, start+length). */
@@ -410,6 +469,10 @@ async function main(): Promise<void> {
     const monosByKey = new Map<string, MonoPcm>();
     let worstRenderRatio = 0;
 
+    /* One untimed warmup render so lazy per-instrument setup (module
+     * caches, payload decode) never inflates the measured ratio. */
+    renderNote(pitches[1] ?? 60, 72);
+
     for (const midiPitch of pitches) {
       for (const velocity of TEST_VELOCITIES) {
         const startedAt = performance.now();
@@ -427,7 +490,19 @@ async function main(): Promise<void> {
         }
         const monoPcm = mono(pcm);
         monosByKey.set(`${String(midiPitch)}:${String(velocity)}`, monoPcm);
-        const stats = basicStats(monoPcm.samples);
+        /* Peak/clip/finiteness are PER-CHANNEL laws — the mono average
+         * halves uncorrelated peaks and can hide a clipping channel. RMS
+         * and DC stay on the analysis channel. */
+        const leftStats = basicStats(pcm.left);
+        const rightStats = basicStats(pcm.right);
+        const monoStats = basicStats(monoPcm.samples);
+        const stats = {
+          peak: Math.max(leftStats.peak, rightStats.peak),
+          rms: monoStats.rms,
+          mean: monoStats.mean,
+          clipFraction: Math.max(leftStats.clipFraction, rightStats.clipFraction),
+          finite: leftStats.finite && rightStats.finite,
+        };
         const audioSeconds = pcm.frameCount / pcm.sampleRateHz;
         const renderRatio = renderSeconds / Math.max(0.001, audioSeconds);
         if (renderRatio > worstRenderRatio) worstRenderRatio = renderRatio;
@@ -444,6 +519,7 @@ async function main(): Promise<void> {
                   rawPitch.centsFromExpected,
                 ),
               };
+        const clicks = detectClicks(monoPcm.samples, monoPcm.sampleRateHz);
         const measurement: NoteMeasurement = {
           midiPitch,
           velocity,
@@ -451,10 +527,7 @@ async function main(): Promise<void> {
           rmsDbfs: dbfs(stats.rms),
           dcOffset: stats.mean,
           clipFraction: stats.clipFraction,
-          maxInterSampleDelta: maxInterSampleDelta(
-            monoPcm.samples,
-            monoPcm.sampleRateHz,
-          ),
+          maxInterSampleDelta: clicks.maxDelta,
           centsFromExpected: pitch?.centsFromExpected ?? null,
           periodicity: pitch?.periodicity ?? null,
           renderRatio,
@@ -506,13 +579,16 @@ async function main(): Promise<void> {
             detail: `${where}: mean ${measurement.dcOffset.toFixed(4)}`,
           });
         }
-        if (measurement.maxInterSampleDelta > CLICK_DELTA_LIMIT) {
+        if (
+          measurement.maxInterSampleDelta > CLICK_DELTA_LIMIT ||
+          clicks.relativeClick
+        ) {
           findings.push({
             tier: "fail",
             bucket: "pathology",
             code: "CLICK_DISCONTINUITY",
             instrumentId: recipe.id,
-            detail: `${where}: inter-sample jump ${measurement.maxInterSampleDelta.toFixed(3)} after attack`,
+            detail: `${where}: inter-sample jump ${measurement.maxInterSampleDelta.toFixed(3)} after attack${clicks.relativeClick ? " (towers over local RMS)" : ""}`,
           });
         }
         if (pitch === null) {
