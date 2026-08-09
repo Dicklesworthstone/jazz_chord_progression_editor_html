@@ -492,12 +492,14 @@ same rules as the wasm payload, plus attribution:
   corrupt payload demotes the whole instrument to synthesis rather than
   refusing to play.
 
-### Embedded CC0 instrument sample payloads (additive amendment, 2026-08-06)
+### Retired CC0 instrument sample payloads (amended 2026-08-09)
 
-The Upright Bass and Concert Vibes are fully sampled instruments: their
-sound is deterministic PCM read from embedded recordings, with no synthesis
-layer. The recordings are further embedded assets under the same rules as
-the piano attack payload:
+Upright Bass and Concert Vibes previously rendered deterministic PCM from the
+two CC0 payloads below. Their live recipes now use the sample-free physical
+renderers `changes.dsp.plucked-upright-bass@1` and `changes.dsp.vibes@2`.
+`src/audio/sampled-renderer.ts` consequently has an empty payload registry.
+The recordings remain checked in only as independent comparison corpora and
+corpus-integrity fixtures; they are not in the production module graph:
 
 - The payloads are checked in as generated TypeScript at
   `src/audio/wasm/upright-bass-samples.ts` (raw mono 16-bit PCM at
@@ -520,14 +522,11 @@ the piano attack payload:
   inventoried anyway, exactly like the Salamander credit, and
   `bun run verify:licenses` fails if a credit, digest, or byte count drifts
   from the generated modules.
-- The runtime renderer (`src/audio/sampled-renderer.ts`) is synchronous,
-  pure TypeScript: base64 decode on first use, nearest-recorded-key
-  selection with ties to the higher key, Catmull-Rom interpolation at the
-  ratio that folds in the slice's measured tuning deviation, and a
-  raised-cosine guard on truncated renders. Never-fail law: a pitch outside
-  the recorded span transposes from the nearest edge key, so every
-  in-contract request renders; there is no fallback synthesis layer to
-  demote to and none is needed.
+- The retained sampled-renderer machinery is synchronous, pure TypeScript,
+  but its payload registry is empty. It therefore cannot make either retired
+  sampled algorithm reachable. The physical renderers own the live note path;
+  the PCM modules are consumed only by the replacement gates and
+  corpus-integrity tests.
 
 ## Reproducibility and reports
 

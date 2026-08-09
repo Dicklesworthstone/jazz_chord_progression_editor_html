@@ -270,7 +270,7 @@ not yet own real-browser offline render rows, so their browser certification
 is pending the next X0 evidence run, and until those rows are reviewed the
 X0 contract validator reports the missing three render rows per new recipe.
 
-### 5.3 Upright Bass and Concert Vibes sampled rendered recipes (additive amendment, 2026-08-06)
+### 5.3 Upright Bass and Concert Vibes sampled rendered recipes (historical amendment, superseded 2026-08-09)
 
 The reviewed recipe set grows from nine to eleven recipes, and the reviewed
 rendered set grows from one to three. The §5 table and the §5.1/§5.2
@@ -282,7 +282,7 @@ recipes below are appended to the reviewed recipe authority after Guitar.
 | Upright Bass | one rendered PCM buffer source (embedded recorded pizzicato) | .5 | 32 | .002/0/1/.25 | 16000/16000/16000 Hz, .5, .1 s |
 | Concert Vibes | one rendered PCM buffer source (embedded recorded vibraphone) | .42 | 48 | .002/0/1/1.1 | 16000/16000/16000 Hz, .5, .1 s |
 
-Both are sampled rendered instruments: deterministic PCM read from embedded,
+Both were sampled rendered instruments: deterministic PCM read from embedded,
 pitch-verified CC0 recordings (VSCO 2 CE solo contrabass pizzicato;
 Versilian Community Sample Library vibraphone, soft mallets) through the
 pure synchronous Catmull-Rom renderer `src/audio/sampled-renderer.ts`
@@ -319,6 +319,17 @@ renderer: the sampled renderers are synchronous checked-in TypeScript with
 no instantiation step, so a load failure lane specific to them does not
 exist; a corrupt payload throws at first render and the engine's existing
 `audio.renderer_unavailable` refusal covers it.
+
+The 2026-08-09 physical replacement supersedes the runtime part of this
+historical amendment. Upright Bass now renders through
+`changes.dsp.plucked-upright-bass@1`; Concert Vibes renders through
+`changes.dsp.vibes@2`. The reviewed CC0 recordings remain checked-in only as
+independent comparison corpora and corpus-integrity inputs. They are absent
+from the production module graph, and `src/audio/sampled-renderer.ts` has an
+empty payload registry. This amendment does not affect Concert Grand: its
+Salamander attack layer remains live and attributed until the dark physical
+`changes.dsp.concert-grand@2` candidate passes its separate acoustic,
+exact-WASM, browser, and owner-listening gates.
 
 ### 5.4 Waveguide Guitar, Blues Guitar, and Flute (physical-model amendment, 2026-08-06)
 

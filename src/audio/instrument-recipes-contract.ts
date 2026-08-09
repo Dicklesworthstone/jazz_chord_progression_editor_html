@@ -195,78 +195,6 @@ export type AudioInstrumentRecipe =
   | AudioFmInstrumentRecipe
   | AudioRenderedInstrumentRecipe;
 
-/*
- * Physical course capacity per shared-plucked algorithm: how many distinct
- * strings the modeled instrument actually has (mirrors `string_count` in
- * dsp/concert-grand/src/plucked_v2.rs pack constructors; parity is frozen by
- * tests/unit/playable-window-law.test.ts). Chart chords wider than the
- * instrument's courses are VOICED FROM THE BOTTOM at the realization seam —
- * the same documented realization-policy charter as foldMidiPitchIntoWindow:
- * a four-string bassist plays the bottom of a six-note chart chord; the
- * document and MIDI export never change. The Rust chord ABI keeps refusing
- * over-capacity requests as the physical backstop.
- */
-/**
- * Open-string MIDI pitches per plucked algorithm, mirroring the pack
- * constructors in dsp/concert-grand/src/plucked_v2.rs (ukulele retains its
- * re-entrant course order). The Rust chord ABI assigns each simultaneous
- * note to a distinct course at fret 0..=24 (`plk2_chord_string_frets`) and
- * refuses otherwise; this table lets the realization seam prove
- * assignability BEFORE calling the renderer, so an unplayable chart cluster
- * is revoiced instead of refused mid-playback.
- */
-export const PLUCKED_OPEN_STRING_MIDIS: Readonly<
-  Record<string, readonly number[]>
-> = Object.freeze({
-  "changes.dsp.plucked-archtop@2": Object.freeze([40, 45, 50, 55, 59, 64]),
-  "changes.dsp.plucked-electric@2": Object.freeze([40, 45, 50, 55, 59, 64]),
-  "changes.dsp.plucked-dreadnought@1": Object.freeze([40, 45, 50, 55, 59, 64]),
-  "changes.dsp.plucked-ukulele@1": Object.freeze([67, 60, 64, 69]),
-  "changes.dsp.plucked-upright-bass@1": Object.freeze([28, 33, 38, 43]),
-});
-
-const PLUCKED_MAX_FRET = 24;
-
-/**
- * True when every pitch can occupy a distinct course at fret 0..=24 —
- * the exact feasibility law of `plk2_chord_string_frets`. Brute force is
- * fine: at most 6 notes over 6 courses.
- */
-export function pluckedChordAssignmentFeasible(
-  algorithmId: string,
-  midiPitches: readonly number[],
-): boolean {
-  const opens = PLUCKED_OPEN_STRING_MIDIS[algorithmId];
-  if (opens === undefined) return true;
-  if (midiPitches.length === 0 || midiPitches.length > opens.length) {
-    return false;
-  }
-  const assign = (noteIndex: number, usedCourses: number): boolean => {
-    if (noteIndex === midiPitches.length) return true;
-    const pitch = midiPitches[noteIndex];
-    if (pitch === undefined) return false;
-    for (let course = 0; course < opens.length; course += 1) {
-      if ((usedCourses & (1 << course)) !== 0) continue;
-      const open = opens[course];
-      if (open === undefined) continue;
-      const fret = pitch - open;
-      if (fret < 0 || fret > PLUCKED_MAX_FRET) continue;
-      if (assign(noteIndex + 1, usedCourses | (1 << course))) return true;
-    }
-    return false;
-  };
-  return assign(0, 0);
-}
-
-export const PLUCKED_CHORD_COURSE_CAPACITY: Readonly<Record<string, number>> =
-  Object.freeze({
-    "changes.dsp.plucked-archtop@2": 6,
-    "changes.dsp.plucked-electric@2": 6,
-    "changes.dsp.plucked-dreadnought@1": 6,
-    "changes.dsp.plucked-ukulele@1": 4,
-    "changes.dsp.plucked-upright-bass@1": 4,
-  });
-
 export const AUDIO_INSTRUMENT_RECIPES = Object.freeze([
   Object.freeze({
     id: "mellow-keys",
@@ -553,23 +481,6 @@ export const AUDIO_INSTRUMENT_RECIPES = Object.freeze([
     amplitude: Object.freeze({ attackSeconds: 0.002, decaySeconds: 0, sustainLevel: 1, releaseSeconds: 0.24 }),
     filter: Object.freeze({ type: "lowpass", attackHz: 16_000, peakHz: 16_000, sustainHz: 16_000, q: 0.5, decaySeconds: 0.1 }),
   }),
-  Object.freeze({
-    id: "trumpet",
-    label: "Trumpet",
-    designClaim:
-      "physically modeled Bb trumpet: outward-striking two-mode lip pair, measured valve table, three-band viscothermal bore with MC-limited Menguy-Gilbert steepening, and the round-11 co-designed embouchure dynamics",
-    synthesis: "rendered",
-    outputLevel: 0.55,
-    polyphonyLimit: 16,
-    renderer: Object.freeze({
-      algorithmId: "changes.dsp.waveguide-trumpet@1",
-      channels: 2,
-      maximumRenderSeconds: 3,
-      bufferCacheLimit: 48,
-    }),
-    amplitude: Object.freeze({ attackSeconds: 0.005, decaySeconds: 0, sustainLevel: 1, releaseSeconds: 0.16 }),
-    filter: Object.freeze({ type: "lowpass", attackHz: 16_000, peakHz: 16_000, sustainHz: 16_000, q: 0.5, decaySeconds: 0.1 }),
-  }),
 ] as const satisfies readonly AudioInstrumentRecipe[]);
 
 export const AUDIO_PULSE_WAVE_POLICY = Object.freeze({
@@ -611,7 +522,8 @@ export const AUDIO_NORMALIZATION_POLICY = Object.freeze({
  * Window rationale: acoustic models use the measured/real ranges named in
  * their design claims (flute C4-C7 covers RC3 — charts reaching MIDI 45-53
  * fold up to the register the reference gate actually measured; clarinet is
- * its measured fit domain; guitars E2-E6; sampled bass E1-G4; vibes F3-F6).
+ * its measured fit domain; guitars E2-E6; physical bass E1-G4; physical vibes
+ * F3-F6).
  * Synth recipes accept the full keyboard: their oscillators are range-safe.
  * When physical plucked models re-land with Rust-side windows, those windows
  * must assert-equal these rows (one source of truth; see the re-land bead).
@@ -630,7 +542,7 @@ export const AUDIO_PLAYABLE_MIDI_WINDOWS = Object.freeze({
    * shipping flute@2 phrase renderer. The second register is octave-unstable
    * outside the UIowa-certified pp/mf islands (m73/74@40, m77-79,
    * m83 -1902c, m84, m86-88 -- full sweep on the fix bead); folding charts
-   * into the working octave beats folding them onto broken cells. Widen only>>>>>>> origin/main
+   * into the working octave beats folding them onto broken cells. Widen only
    * when the register-2 work certifies the full window at all dynamics.
    */
   flute: Object.freeze({ low: 60, high: 72 }),
@@ -647,14 +559,6 @@ export const AUDIO_PLAYABLE_MIDI_WINDOWS = Object.freeze({
   clarinet: Object.freeze({ low: 50, high: 82 }),
   "dreadnought-guitar": Object.freeze({ low: 40, high: 88 }),
   ukulele: Object.freeze({ low: 60, high: 93 }),
-  /*
-   * Round-11 operating table (jcpe-trumpet-lock-completion-el46): every note
-   * MIDI 52..=70 measured locking the right bore regime within +-5.4 cents
-   * at periodicity >= 0.996 at 44.1 and 48 kHz (tests/trumpet_note_sweep.rs).
-   * Chart notes outside the window reach the model via the documented
-   * octave-fold realization policy like every other instrument.
-   */
-  trumpet: Object.freeze({ low: 52, high: 70 }),
 } as const satisfies Readonly<Record<string, Readonly<{ low: number; high: number }>>>);
 
 export type PlayableMidiWindow = Readonly<{ low: number; high: number }>;

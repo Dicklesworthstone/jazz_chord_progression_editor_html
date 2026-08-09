@@ -8,14 +8,12 @@
  * are bit-deterministic: the module imports nothing from the host — no clock,
  * no random device, no I/O — so the PCM goldens can pin exact hashes.
  *
- * The rendered note is a HYBRID. Synthesis alone cannot produce the hammer
- * strike of a real instrument, so the first third of a second comes from a
- * recorded Yamaha C5 (`./wasm/piano-attack-samples.ts`) and is crossfaded
- * into the synthesized sustain. The sampled layer is transposed from the
- * nearest recorded key, level- and balance-matched to the synth layer over
- * the crossfade window, and peak-limited; a pitch or velocity outside the
- * recorded set simply renders as pure synthesis. Everything here is a pure
- * function of `(midiPitch, velocity, sampleRateHz)`.
+ * The shipping `@1` note remains a HYBRID: its first third of a second comes
+ * from a recorded Yamaha C5 (`./wasm/piano-attack-samples.ts`). A separate,
+ * optional `@2` evidence surface cooperatively renders a finite-mass felt
+ * hammer, stiff unison strings, bridge, and orthotropic soundboard entirely
+ * inside WASM. It stays dark until its independent reference and owner
+ * listening gates pass; merely compiling that ABI is not a route decision.
  *
  * Layer position: audio-internal. The engine caches the PCM in Web Audio
  * buffers; no other layer sees this module or the wasm instance.
@@ -42,6 +40,8 @@ import type {
 
 export const CONCERT_GRAND_RENDERER_ALGORITHM_ID =
   "changes.dsp.concert-grand@1";
+export const CONCERT_GRAND_PHYSICAL_V2_ALGORITHM_ID =
+  "changes.dsp.concert-grand@2";
 
 /*
  * Physically modeled waveguide instruments (jcpe-1miv follow-up, owner
@@ -72,8 +72,6 @@ export const PLUCKED_UPRIGHT_BASS_ALGORITHM_ID =
   "changes.dsp.plucked-upright-bass@1";
 export const VIBES_V2_ALGORITHM_ID =
   "changes.dsp.vibes@2";
-export const WAVEGUIDE_TRUMPET_ALGORITHM_ID =
-  "changes.dsp.waveguide-trumpet@1";
 const PLK2_UPRIGHT_BASS_PACK_INDEX = 4;
 
 export type WindAttackArticulation = "legato" | "tongued";
@@ -194,6 +192,25 @@ export const PIANO_ATTACK_LAYER_POLICY = Object.freeze({
   interpolation: "catmull-rom",
 } as const);
 
+/**
+ * Sample-free handoff from the finite-hammer PNO2 attack to the existing
+ * deterministic long-decay string bank. The timing mirrors the reviewed @1
+ * handoff so an eventual @2 comparison changes the source, not the gesture.
+ */
+export const PHYSICAL_PIANO_ATTACK_LAYER_POLICY = Object.freeze({
+  id: "changes.dsp.piano-physical-attack-layer.v1",
+  physicalOnlySeconds: 0.18,
+  crossfadeEndSeconds: 0.32,
+  attackWindowStartSeconds: 0.02,
+  attackWindowEndSeconds: 0.18,
+  matchWindowStartSeconds: 0.24,
+  matchWindowEndSeconds: 0.32,
+  maximumDecayCorrectionRatio: 4,
+  peakCeiling: 0.945,
+  maximumPhysicalSampleMagnitude: 0.98,
+  peakGuardSlewDecibelsPerSecond: 60,
+} as const);
+
 export type RenderedNotePcm = Readonly<{
   sampleRateHz: number;
   frameCount: number;
@@ -260,6 +277,7 @@ export type ConcertGrandRenderer = Readonly<{
   algorithmId: typeof CONCERT_GRAND_RENDERER_ALGORITHM_ID;
   wasmSha256: string;
   attackSamplesSha256: string;
+  physicalAttackAlgorithmId?: typeof CONCERT_GRAND_PHYSICAL_V2_ALGORITHM_ID;
   /**
    * Render one note: the recorded attack crossfaded into the synthesized
    * sustain. Synchronous and pure after instantiation; returns null only for
@@ -290,6 +308,42 @@ export type ConcertGrandRenderer = Readonly<{
     velocity: number,
     sampleRateHz: number,
   ) => RenderedNotePcm | null;
+  /** Sample-free legacy sustain rendered in bounded yielded WASM steps. */
+  renderSynthesizedNoteCooperatively?: (
+    midiPitch: number,
+    velocity: number,
+    sampleRateHz: number,
+    maxSeconds?: number,
+  ) => Promise<RenderedNotePcm | null>;
+  /**
+   * Dark sample-free attack candidate. Each incomplete 256-frame WASM step
+   * yields a browser macrotask, and all retained-runtime access is serialized.
+   * This method is absent when the embedded module lacks the complete PNO2
+   * runtime ABI; callers must never fall back to a recorded attack silently.
+   */
+  renderPhysicalAttackCooperatively?: (
+    midiPitch: number,
+    velocity: number,
+    sampleRateHz: number,
+    maxSeconds?: number,
+  ) => Promise<RenderedNotePcm | null>;
+  /**
+   * Dark simultaneous-key onset. All keys share one retained physical
+   * soundboard; this is not a mixer of independently rendered note buffers.
+   */
+  renderPhysicalChordAttackCooperatively?: (
+    midiPitches: readonly number[],
+    velocities: readonly number[],
+    sampleRateHz: number,
+    maxSeconds?: number,
+  ) => Promise<RenderedNotePcm | null>;
+  /** Dark complete note using PNO2 for the onset and no recorded PCM. */
+  renderPhysicalNoteCooperatively?: (
+    midiPitch: number,
+    velocity: number,
+    sampleRateHz: number,
+    maxSeconds?: number,
+  ) => Promise<RenderedNotePcm | null>;
   /**
    * The recorded slice `renderNote` would use, or null when the request
    * falls outside the sampled set. Evidence surface only.
@@ -356,6 +410,51 @@ type ConcertGrandExports = Readonly<{
     right: number,
     maxFrames: number,
   ) => number;
+  cg_runtime_init?: (
+    midi: number,
+    velocity: number,
+    sampleRate: number,
+    maxFrames: number,
+  ) => number;
+  cg_runtime_max_steps?: (outputCapacity: number) => number;
+  cg_runtime_reset?: (handle: number) => number;
+  cg_runtime_step?: (
+    handle: number,
+    left: number,
+    right: number,
+    outputCapacity: number,
+  ) => number;
+  cg_runtime_written_frames?: (handle: number) => number;
+  pno2_note_frames?: (midi: number, sampleRate: number) => number;
+  pno2_runtime_init?: (
+    midi: number,
+    velocity: number,
+    sampleRate: number,
+    maxFrames: number,
+  ) => number;
+  pno2_runtime_max_steps?: (outputCapacity: number) => number;
+  pno2_runtime_step?: (
+    handle: number,
+    left: number,
+    right: number,
+    outputCapacity: number,
+  ) => number;
+  pno2_runtime_reset?: (handle: number) => number;
+  pno2_chord_runtime_init?: (
+    midis: number,
+    velocities: number,
+    noteCount: number,
+    sampleRate: number,
+    maxFrames: number,
+  ) => number;
+  pno2_chord_runtime_max_steps?: (outputCapacity: number) => number;
+  pno2_chord_runtime_step?: (
+    handle: number,
+    left: number,
+    right: number,
+    outputCapacity: number,
+  ) => number;
+  pno2_chord_runtime_reset?: (handle: number) => number;
   an_spectrum: (input: number, frames: number, magnitudes: number) => number;
   an_notes: (
     magnitudes: number,
@@ -371,15 +470,6 @@ type ConcertGrandExports = Readonly<{
     sampleRate: number,
     fftSize: number,
     out: number,
-  ) => number;
-  tpt_note_frames: (midi: number, sampleRate: number) => number;
-  tpt_render: (
-    midi: number,
-    velocity: number,
-    sampleRate: number,
-    left: number,
-    right: number,
-    maxFrames: number,
   ) => number;
   gtr_note_frames: (midi: number, sampleRate: number) => number;
   gtr_render: (
@@ -1026,6 +1116,219 @@ function applyAttackLayer(
   return true;
 }
 
+function stereoWindowRms(
+  left: Float32Array,
+  right: Float32Array,
+  start: number,
+  end: number,
+): number {
+  return Math.sqrt(
+    (windowRms(left, start, end) ** 2 +
+      windowRms(right, start, end) ** 2) /
+      2,
+  );
+}
+
+/**
+ * Fold a physical stereo PNO2 attack into a copied synthesized sustain.
+ * Failure is explicit: callers discard the copied note rather than silently
+ * substituting the recorded layer or the old synthetic onset.
+ */
+export function applyPhysicalPianoAttackLayer(
+  left: Float32Array,
+  right: Float32Array,
+  frameCount: number,
+  physical: RenderedNotePcm,
+  sampleRateHz: number,
+): boolean {
+  const policy = PHYSICAL_PIANO_ATTACK_LAYER_POLICY;
+  if (
+    !Number.isFinite(sampleRateHz) ||
+    sampleRateHz < 8_000 || sampleRateHz > 96_000 ||
+    !Number.isSafeInteger(frameCount) || frameCount <= 0 ||
+    left.length < frameCount || right.length < frameCount ||
+    left.subarray(0, frameCount).some((sample) => !Number.isFinite(sample)) ||
+    right.subarray(0, frameCount).some((sample) => !Number.isFinite(sample)) ||
+    physical.sampleRateHz !== sampleRateHz ||
+    !Number.isSafeInteger(physical.frameCount) ||
+    physical.frameCount <= 0 || physical.frameCount > frameCount ||
+    physical.left.length < physical.frameCount ||
+    physical.right.length < physical.frameCount ||
+    physical.left.subarray(0, physical.frameCount).some((sample) =>
+      !Number.isFinite(sample) ||
+      Math.abs(sample) >= policy.maximumPhysicalSampleMagnitude
+    ) ||
+    physical.right.subarray(0, physical.frameCount).some((sample) =>
+      !Number.isFinite(sample) ||
+      Math.abs(sample) >= policy.maximumPhysicalSampleMagnitude
+    )
+  ) return false;
+  const layerFrames = Math.min(
+    physical.frameCount,
+    Math.floor(policy.crossfadeEndSeconds * sampleRateHz),
+  );
+  if (layerFrames <= 0) return false;
+  const completeLayerFrames = Math.floor(
+    policy.crossfadeEndSeconds * sampleRateHz,
+  );
+  if (layerFrames < completeLayerFrames) {
+    // A deliberately shortened note can be entirely physical. A shortened
+    // layer in front of a longer sustain has no reviewed match window and
+    // would create an unchecked discontinuity, so refuse it unchanged.
+    if (physical.frameCount !== frameCount) return false;
+    left.set(physical.left.subarray(0, layerFrames), 0);
+    right.set(physical.right.subarray(0, layerFrames), 0);
+    return true;
+  }
+  const soloFrames = Math.min(
+    Math.round(policy.physicalOnlySeconds * sampleRateHz),
+    layerFrames,
+  );
+
+  const attackStart = Math.min(
+    Math.round(policy.attackWindowStartSeconds * sampleRateHz),
+    layerFrames,
+  );
+  const attackEnd = Math.min(
+    Math.round(policy.attackWindowEndSeconds * sampleRateHz),
+    layerFrames,
+  );
+  const matchStart = Math.min(
+    Math.round(policy.matchWindowStartSeconds * sampleRateHz),
+    layerFrames,
+  );
+  const matchEnd = Math.min(
+    Math.round(policy.matchWindowEndSeconds * sampleRateHz),
+    layerFrames,
+  );
+  if (attackEnd <= attackStart || matchEnd <= matchStart) return false;
+  const physicalAttackRms = stereoWindowRms(
+    physical.left,
+    physical.right,
+    attackStart,
+    attackEnd,
+  );
+  const physicalSeamRms = stereoWindowRms(
+    physical.left,
+    physical.right,
+    matchStart,
+    matchEnd,
+  );
+  const synthAttackRms = stereoWindowRms(
+    left,
+    right,
+    attackStart,
+    attackEnd,
+  );
+  const synthSeamRms = stereoWindowRms(
+    left,
+    right,
+    matchStart,
+    matchEnd,
+  );
+  if (
+    !(physicalAttackRms > 1e-9) || !(physicalSeamRms > 1e-9) ||
+    !(synthAttackRms > 1e-9) || !(synthSeamRms > 1e-9)
+  ) return false;
+  const seamGain = synthSeamRms / physicalSeamRms;
+  const rawAttackGain = synthAttackRms / physicalAttackRms;
+  const maximum = policy.maximumDecayCorrectionRatio;
+  const correction = Math.min(
+    maximum,
+    Math.max(1 / maximum, rawAttackGain / seamGain),
+  );
+
+  let crossEnergy = 0;
+  let physicalEnergy = 0;
+  let synthEnergy = 0;
+  for (let frame = matchStart; frame < matchEnd; frame += 1) {
+    const physicalLeft = physical.left[frame] ?? 0;
+    const physicalRight = physical.right[frame] ?? 0;
+    const synthLeft = left[frame] ?? 0;
+    const synthRight = right[frame] ?? 0;
+    crossEnergy += physicalLeft * synthLeft + physicalRight * synthRight;
+    physicalEnergy += physicalLeft * physicalLeft + physicalRight * physicalRight;
+    synthEnergy += synthLeft * synthLeft + synthRight * synthRight;
+  }
+  const coherence = physicalEnergy > 0 && synthEnergy > 0
+    ? crossEnergy / Math.sqrt(physicalEnergy * synthEnergy)
+    : 0;
+  const polarity = coherence < 0 ? -1 : 1;
+  const alignedCoherence = Math.min(Math.abs(coherence), 1);
+  const crossfadeFrames = layerFrames - soloFrames;
+  const correctionStart = (attackStart + attackEnd) / 2;
+  const correctionEnd = (matchStart + matchEnd) / 2;
+  const correctionSpan = Math.max(1, correctionEnd - correctionStart);
+  const synthGain = new Float64Array(layerFrames);
+  const physicalGain = new Float64Array(layerFrames);
+  for (let frame = 0; frame < layerFrames; frame += 1) {
+    const unwind = frame <= correctionStart
+      ? 1
+      : frame >= correctionEnd
+      ? 0
+      : 1 - (frame - correctionStart) / correctionSpan;
+    const level = seamGain * correction ** unwind;
+    if (frame < soloFrames) {
+      synthGain[frame] = 0;
+      physicalGain[frame] = level * polarity;
+      continue;
+    }
+    const phase = ((frame - soloFrames) / crossfadeFrames) * (Math.PI / 2);
+    const coherent =
+      1 / Math.sqrt(1 + alignedCoherence * Math.sin(2 * phase));
+    synthGain[frame] = Math.sin(phase) * coherent;
+    physicalGain[frame] = Math.cos(phase) * level * polarity * coherent;
+  }
+
+  let synthPeak = 0;
+  for (let frame = 0; frame < frameCount; frame += 1) {
+    synthPeak = Math.max(
+      synthPeak,
+      Math.abs(left[frame] ?? 0),
+      Math.abs(right[frame] ?? 0),
+    );
+  }
+  const ceiling = Math.max(policy.peakCeiling, synthPeak);
+  const guard = new Float64Array(layerFrames);
+  for (let frame = 0; frame < layerFrames; frame += 1) {
+    let allowed = 1;
+    const weight = physicalGain[frame] ?? 0;
+    const faded = synthGain[frame] ?? 0;
+    for (const [physicalChannel, synthChannel] of [
+      [physical.left, left],
+      [physical.right, right],
+    ] as const) {
+      const added = weight * (physicalChannel[frame] ?? 0);
+      if (added === 0) continue;
+      const carried = faded * (synthChannel[frame] ?? 0);
+      const bound = added > 0
+        ? (ceiling - carried) / added
+        : (-ceiling - carried) / added;
+      if (bound < allowed) allowed = bound;
+    }
+    guard[frame] = allowed > 0 ? allowed : 0;
+  }
+  const slew =
+    10 ** (policy.peakGuardSlewDecibelsPerSecond / (20 * sampleRateHz));
+  for (let frame = layerFrames - 2; frame >= 0; frame -= 1) {
+    const next = (guard[frame + 1] ?? 1) * slew;
+    if (next < (guard[frame] ?? 1)) guard[frame] = next;
+  }
+  for (let frame = 1; frame < layerFrames; frame += 1) {
+    const previous = (guard[frame - 1] ?? 1) * slew;
+    if (previous < (guard[frame] ?? 1)) guard[frame] = previous;
+  }
+  for (let frame = 0; frame < layerFrames; frame += 1) {
+    const faded = synthGain[frame] ?? 0;
+    const added = (physicalGain[frame] ?? 0) * (guard[frame] ?? 0);
+    left[frame] = faded * (left[frame] ?? 0) +
+      added * (physical.left[frame] ?? 0);
+    right[frame] = faded * (right[frame] ?? 0) +
+      added * (physical.right[frame] ?? 0);
+  }
+  return true;
+}
+
 const PAGE_BYTES = 65_536;
 
 /**
@@ -1045,10 +1348,401 @@ function ensureCapacity(
 }
 
 const COOPERATIVE_CHORD_SCRATCH_OFFSET_BYTES = 16 * 1_024 * 1_024;
+const CG_RUNTIME_STEP_PROGRESS = 1;
+const CG_RUNTIME_STEP_COMPLETE = 2;
+const MAX_COOPERATIVE_CONCERT_GRAND_STEPS = 1_024;
+const PNO2_RUNTIME_STEP_PROGRESS = 1;
+const PNO2_RUNTIME_STEP_COMPLETE = 2;
+const MAX_COOPERATIVE_PIANO_STEPS = 128;
 const PLK2_CHORD_STEP_PROGRESS = 1;
 const PLK2_CHORD_STEP_COMPLETE = 2;
 const MAX_COOPERATIVE_CHORD_STATE_BYTES = 1_048_576;
 const MAX_COOPERATIVE_CHORD_STEPS = 1_000_000;
+
+type ConcertGrandCooperativeAbi = Readonly<{
+  noteFrames: (midi: number, sampleRate: number) => number;
+  runtimeInit: (
+    midi: number,
+    velocity: number,
+    sampleRate: number,
+    maxFrames: number,
+  ) => number;
+  runtimeMaxSteps: (outputCapacity: number) => number;
+  runtimeReset: (handle: number) => number;
+  runtimeStep: (
+    handle: number,
+    left: number,
+    right: number,
+    outputCapacity: number,
+  ) => number;
+  runtimeWrittenFrames: (handle: number) => number;
+}>;
+
+type ConcertGrandCooperativeRenderFactoryOptions = Readonly<{
+  memory: WebAssembly.Memory;
+  scratchBase: number;
+  abi: ConcertGrandCooperativeAbi;
+  yieldToMacrotask?: () => Promise<void>;
+  runExclusive?: <T>(task: () => Promise<T>) => Promise<T>;
+}>;
+
+/** Production/test seam for the bounded sample-free CG sustain runtime. */
+export function createConcertGrandCooperativeRenderFunction(
+  options: ConcertGrandCooperativeRenderFactoryOptions,
+): NonNullable<ConcertGrandRenderer["renderSynthesizedNoteCooperatively"]> {
+  const { memory, scratchBase, abi } = options;
+  const yieldToMacrotask = options.yieldToMacrotask ?? browserMacrotask;
+  return async (midiPitch, velocity, sampleRateHz, maxSeconds) => {
+    const task = async (): Promise<RenderedNotePcm | null> => {
+      if (
+        !Number.isSafeInteger(midiPitch) || !Number.isSafeInteger(velocity) ||
+        velocity < 1 || velocity > 127 || !Number.isFinite(sampleRateHz) ||
+        (maxSeconds !== undefined &&
+          (!Number.isFinite(maxSeconds) || maxSeconds <= 0))
+      ) return null;
+      const natural = abi.noteFrames(midiPitch, sampleRateHz);
+      if (!Number.isSafeInteger(natural) || natural <= 0) return null;
+      const capacity = maxSeconds === undefined
+        ? natural
+        : Math.min(
+            natural,
+            Math.max(1, Math.round(maxSeconds * sampleRateHz)),
+          );
+      const maxSteps = abi.runtimeMaxSteps(capacity);
+      if (
+        !Number.isSafeInteger(maxSteps) || maxSteps <= 0 ||
+        maxSteps > MAX_COOPERATIVE_CONCERT_GRAND_STEPS
+      ) return null;
+      const channelBytes = capacity * 4;
+      const leftPointer = scratchBase;
+      const rightPointer = leftPointer + channelBytes;
+      ensureCapacity(memory, scratchBase, channelBytes * 2);
+      const handle = abi.runtimeInit(
+        midiPitch,
+        velocity,
+        sampleRateHz,
+        capacity,
+      );
+      if (!Number.isSafeInteger(handle) || handle <= 0) return null;
+      let liveHandle = true;
+      try {
+        for (let step = 0; step < maxSteps; step += 1) {
+          const status = abi.runtimeStep(
+            handle,
+            leftPointer,
+            rightPointer,
+            capacity,
+          );
+          if (status === CG_RUNTIME_STEP_COMPLETE) {
+            const written = abi.runtimeWrittenFrames(handle);
+            if (
+              !Number.isSafeInteger(written) || written <= 0 ||
+              written > capacity || abi.runtimeReset(handle) !== 1
+            ) return null;
+            liveHandle = false;
+            const left = new Float32Array(written);
+            const right = new Float32Array(written);
+            left.set(new Float32Array(memory.buffer, leftPointer, written));
+            right.set(new Float32Array(memory.buffer, rightPointer, written));
+            if (
+              left.some((sample) =>
+                !Number.isFinite(sample) ||
+                Math.abs(sample) >=
+                  PHYSICAL_PIANO_ATTACK_LAYER_POLICY.maximumPhysicalSampleMagnitude
+              ) ||
+              right.some((sample) =>
+                !Number.isFinite(sample) ||
+                Math.abs(sample) >=
+                  PHYSICAL_PIANO_ATTACK_LAYER_POLICY.maximumPhysicalSampleMagnitude
+              )
+            ) return null;
+            return Object.freeze({ sampleRateHz, frameCount: written, left, right });
+          }
+          if (status !== CG_RUNTIME_STEP_PROGRESS) return null;
+          await yieldToMacrotask();
+        }
+        return null;
+      } finally {
+        if (liveHandle) {
+          try {
+            abi.runtimeReset(handle);
+          } catch {
+            // Refusal remains null even if a hostile ABI throws on reset.
+          }
+        }
+      }
+    };
+    return options.runExclusive === undefined
+      ? await task()
+      : await options.runExclusive(task);
+  };
+}
+
+type PhysicalPianoAttackAbi = Readonly<{
+  noteFrames: (midi: number, sampleRate: number) => number;
+  runtimeInit: (
+    midi: number,
+    velocity: number,
+    sampleRate: number,
+    maxFrames: number,
+  ) => number;
+  runtimeMaxSteps: (outputCapacity: number) => number;
+  runtimeStep: (
+    handle: number,
+    left: number,
+    right: number,
+    outputCapacity: number,
+  ) => number;
+  runtimeReset: (handle: number) => number;
+}>;
+
+type PhysicalPianoAttackRenderFactoryOptions = Readonly<{
+  memory: WebAssembly.Memory;
+  scratchBase: number;
+  abi: PhysicalPianoAttackAbi;
+  yieldToMacrotask?: () => Promise<void>;
+  runExclusive?: <T>(task: () => Promise<T>) => Promise<T>;
+}>;
+
+/** Production/test seam for the bounded sample-free PNO2 attack runtime. */
+export function createPhysicalPianoAttackRenderFunction(
+  options: PhysicalPianoAttackRenderFactoryOptions,
+): NonNullable<ConcertGrandRenderer["renderPhysicalAttackCooperatively"]> {
+  const { memory, scratchBase, abi } = options;
+  const yieldToMacrotask = options.yieldToMacrotask ?? browserMacrotask;
+  return async (midiPitch, velocity, sampleRateHz, maxSeconds) => {
+    const task = async (): Promise<RenderedNotePcm | null> => {
+      if (
+        !Number.isSafeInteger(midiPitch) || !Number.isSafeInteger(velocity) ||
+        velocity < 1 || velocity > 127 || !Number.isFinite(sampleRateHz) ||
+        (maxSeconds !== undefined &&
+          (!Number.isFinite(maxSeconds) || maxSeconds <= 0))
+      ) return null;
+      const natural = abi.noteFrames(midiPitch, sampleRateHz);
+      if (!Number.isSafeInteger(natural) || natural <= 0) return null;
+      const capacity = maxSeconds === undefined
+        ? natural
+        : Math.min(
+            natural,
+            Math.max(1, Math.round(maxSeconds * sampleRateHz)),
+          );
+      const maxSteps = abi.runtimeMaxSteps(capacity);
+      if (
+        !Number.isSafeInteger(maxSteps) || maxSteps <= 0 ||
+        maxSteps > MAX_COOPERATIVE_PIANO_STEPS
+      ) return null;
+      const channelBytes = capacity * 4;
+      const leftPointer = scratchBase;
+      const rightPointer = leftPointer + channelBytes;
+      ensureCapacity(memory, scratchBase, channelBytes * 2);
+      const handle = abi.runtimeInit(
+        midiPitch,
+        velocity,
+        sampleRateHz,
+        capacity,
+      );
+      if (!Number.isSafeInteger(handle) || handle <= 0) return null;
+      let liveHandle = true;
+      try {
+        for (let step = 0; step < maxSteps; step += 1) {
+          const status = abi.runtimeStep(
+            handle,
+            leftPointer,
+            rightPointer,
+            capacity,
+          );
+          if (status === PNO2_RUNTIME_STEP_COMPLETE) {
+            if (abi.runtimeReset(handle) !== 1) return null;
+            liveHandle = false;
+            const left = new Float32Array(capacity);
+            const right = new Float32Array(capacity);
+            left.set(new Float32Array(memory.buffer, leftPointer, capacity));
+            right.set(new Float32Array(memory.buffer, rightPointer, capacity));
+            if (
+              left.some((sample) =>
+                !Number.isFinite(sample) ||
+                Math.abs(sample) >=
+                  PHYSICAL_PIANO_ATTACK_LAYER_POLICY.maximumPhysicalSampleMagnitude
+              ) ||
+              right.some((sample) =>
+                !Number.isFinite(sample) ||
+                Math.abs(sample) >=
+                  PHYSICAL_PIANO_ATTACK_LAYER_POLICY.maximumPhysicalSampleMagnitude
+              )
+            ) return null;
+            return Object.freeze({
+              sampleRateHz,
+              frameCount: capacity,
+              left,
+              right,
+            });
+          }
+          if (status !== PNO2_RUNTIME_STEP_PROGRESS) return null;
+          await yieldToMacrotask();
+        }
+        return null;
+      } finally {
+        if (liveHandle) {
+          try {
+            abi.runtimeReset(handle);
+          } catch {
+            // Refusal remains null even if a hostile ABI also throws on reset.
+          }
+        }
+      }
+    };
+    return options.runExclusive === undefined
+      ? await task()
+      : await options.runExclusive(task);
+  };
+}
+
+type PhysicalPianoChordAttackAbi = Readonly<{
+  noteFrames: (midi: number, sampleRate: number) => number;
+  runtimeInit: (
+    midis: number,
+    velocities: number,
+    noteCount: number,
+    sampleRate: number,
+    maxFrames: number,
+  ) => number;
+  runtimeMaxSteps: (outputCapacity: number) => number;
+  runtimeStep: (
+    handle: number,
+    left: number,
+    right: number,
+    outputCapacity: number,
+  ) => number;
+  runtimeReset: (handle: number) => number;
+}>;
+
+type PhysicalPianoChordAttackRenderFactoryOptions = Readonly<{
+  memory: WebAssembly.Memory;
+  scratchBase: number;
+  abi: PhysicalPianoChordAttackAbi;
+  yieldToMacrotask?: () => Promise<void>;
+  runExclusive?: <T>(task: () => Promise<T>) => Promise<T>;
+}>;
+
+/** Production/test seam for one shared-soundboard PNO2 chord attack. */
+export function createPhysicalPianoChordAttackRenderFunction(
+  options: PhysicalPianoChordAttackRenderFactoryOptions,
+): NonNullable<ConcertGrandRenderer["renderPhysicalChordAttackCooperatively"]> {
+  const { memory, scratchBase, abi } = options;
+  const yieldToMacrotask = options.yieldToMacrotask ?? browserMacrotask;
+  return async (midiPitches, velocities, sampleRateHz, maxSeconds) => {
+    const task = async (): Promise<RenderedNotePcm | null> => {
+      if (
+        midiPitches.length === 0 || midiPitches.length > 8 ||
+        midiPitches.length !== velocities.length ||
+        midiPitches.some((midi) => !Number.isSafeInteger(midi)) ||
+        velocities.some((velocity) =>
+          !Number.isSafeInteger(velocity) || velocity < 1 || velocity > 127
+        ) ||
+        !Number.isFinite(sampleRateHz) ||
+        (maxSeconds !== undefined &&
+          (!Number.isFinite(maxSeconds) || maxSeconds <= 0))
+      ) return null;
+      const pairs = midiPitches.map((midi, index) =>
+        Object.freeze({ midi, velocity: velocities[index] ?? 0 })
+      ).sort((left, right) => left.midi - right.midi);
+      if (pairs.some((pair, index) =>
+        index > 0 && pair.midi === pairs[index - 1]?.midi
+      )) return null;
+      const naturalFrames = pairs.map((pair) =>
+        abi.noteFrames(pair.midi, sampleRateHz)
+      );
+      if (naturalFrames.some((frames) =>
+        !Number.isSafeInteger(frames) || frames <= 0
+      )) return null;
+      const natural = Math.min(...naturalFrames);
+      const capacity = maxSeconds === undefined
+        ? natural
+        : Math.min(
+            natural,
+            Math.max(1, Math.round(maxSeconds * sampleRateHz)),
+          );
+      const maxSteps = abi.runtimeMaxSteps(capacity);
+      if (
+        !Number.isSafeInteger(maxSteps) || maxSteps <= 0 ||
+        maxSteps > MAX_COOPERATIVE_PIANO_STEPS
+      ) return null;
+
+      const valuesBytes = pairs.length * 4;
+      const midiPointer = scratchBase;
+      const velocityPointer = midiPointer + valuesBytes;
+      const leftPointer = Math.ceil((velocityPointer + valuesBytes) / 16) * 16;
+      const channelBytes = capacity * 4;
+      const rightPointer = leftPointer + channelBytes;
+      ensureCapacity(memory, scratchBase, rightPointer + channelBytes - scratchBase);
+      new Int32Array(memory.buffer, midiPointer, pairs.length).set(
+        pairs.map((pair) => pair.midi),
+      );
+      new Int32Array(memory.buffer, velocityPointer, pairs.length).set(
+        pairs.map((pair) => pair.velocity),
+      );
+      const handle = abi.runtimeInit(
+        midiPointer,
+        velocityPointer,
+        pairs.length,
+        sampleRateHz,
+        capacity,
+      );
+      if (!Number.isSafeInteger(handle) || handle <= 0) return null;
+      let liveHandle = true;
+      try {
+        for (let step = 0; step < maxSteps; step += 1) {
+          const status = abi.runtimeStep(
+            handle,
+            leftPointer,
+            rightPointer,
+            capacity,
+          );
+          if (status === PNO2_RUNTIME_STEP_COMPLETE) {
+            if (abi.runtimeReset(handle) !== 1) return null;
+            liveHandle = false;
+            const left = new Float32Array(capacity);
+            const right = new Float32Array(capacity);
+            left.set(new Float32Array(memory.buffer, leftPointer, capacity));
+            right.set(new Float32Array(memory.buffer, rightPointer, capacity));
+            if (
+              left.some((sample) =>
+                !Number.isFinite(sample) ||
+                Math.abs(sample) >=
+                  PHYSICAL_PIANO_ATTACK_LAYER_POLICY.maximumPhysicalSampleMagnitude
+              ) ||
+              right.some((sample) =>
+                !Number.isFinite(sample) ||
+                Math.abs(sample) >=
+                  PHYSICAL_PIANO_ATTACK_LAYER_POLICY.maximumPhysicalSampleMagnitude
+              )
+            ) return null;
+            return Object.freeze({
+              sampleRateHz,
+              frameCount: capacity,
+              left,
+              right,
+            });
+          }
+          if (status !== PNO2_RUNTIME_STEP_PROGRESS) return null;
+          await yieldToMacrotask();
+        }
+        return null;
+      } finally {
+        if (liveHandle) {
+          try {
+            abi.runtimeReset(handle);
+          } catch {
+            // Refusal remains null even if a hostile ABI throws on reset.
+          }
+        }
+      }
+    };
+    return options.runExclusive === undefined
+      ? await task()
+      : await options.runExclusive(task);
+  };
+}
 
 type PluckedChordRenderAbi = Readonly<{
   noteFrames: (pack: number, midi: number, sampleRate: number) => number;
@@ -1428,6 +2122,141 @@ function requireExportedFunction(
   return candidate;
 }
 
+function optionalConcertGrandRuntimeExports(
+  rawExports: Readonly<Record<string, unknown>>,
+): Pick<
+  ConcertGrandExports,
+  | "cg_runtime_init"
+  | "cg_runtime_max_steps"
+  | "cg_runtime_reset"
+  | "cg_runtime_step"
+  | "cg_runtime_written_frames"
+> {
+  const names = [
+    "cg_runtime_init",
+    "cg_runtime_max_steps",
+    "cg_runtime_reset",
+    "cg_runtime_step",
+    "cg_runtime_written_frames",
+  ] as const;
+  const present = names.filter((name) => rawExports[name] !== undefined);
+  if (present.length === 0) return Object.freeze({});
+  if (present.length !== names.length) {
+    const missing = names.find((name) => rawExports[name] === undefined);
+    throw new Error(`DSP_WASM_EXPORT_MISSING:${missing ?? "cg_runtime"}`);
+  }
+  return Object.freeze({
+    cg_runtime_init: requireExportedFunction(
+      rawExports,
+      "cg_runtime_init",
+    ) as NonNullable<ConcertGrandExports["cg_runtime_init"]>,
+    cg_runtime_max_steps: requireExportedFunction(
+      rawExports,
+      "cg_runtime_max_steps",
+    ) as NonNullable<ConcertGrandExports["cg_runtime_max_steps"]>,
+    cg_runtime_reset: requireExportedFunction(
+      rawExports,
+      "cg_runtime_reset",
+    ) as NonNullable<ConcertGrandExports["cg_runtime_reset"]>,
+    cg_runtime_step: requireExportedFunction(
+      rawExports,
+      "cg_runtime_step",
+    ) as NonNullable<ConcertGrandExports["cg_runtime_step"]>,
+    cg_runtime_written_frames: requireExportedFunction(
+      rawExports,
+      "cg_runtime_written_frames",
+    ) as NonNullable<ConcertGrandExports["cg_runtime_written_frames"]>,
+  });
+}
+
+function optionalPhysicalPianoExports(
+  rawExports: Readonly<Record<string, unknown>>,
+): Pick<
+  ConcertGrandExports,
+  | "pno2_note_frames"
+  | "pno2_runtime_init"
+  | "pno2_runtime_max_steps"
+  | "pno2_runtime_step"
+  | "pno2_runtime_reset"
+> {
+  const names = [
+    "pno2_note_frames",
+    "pno2_runtime_init",
+    "pno2_runtime_max_steps",
+    "pno2_runtime_step",
+    "pno2_runtime_reset",
+  ] as const;
+  const present = names.filter((name) => rawExports[name] !== undefined);
+  if (present.length === 0) return Object.freeze({});
+  if (present.length !== names.length) {
+    const missing = names.find((name) => rawExports[name] === undefined);
+    throw new Error(`DSP_WASM_EXPORT_MISSING:${missing ?? "pno2_runtime"}`);
+  }
+  return Object.freeze({
+    pno2_note_frames: requireExportedFunction(
+      rawExports,
+      "pno2_note_frames",
+    ) as NonNullable<ConcertGrandExports["pno2_note_frames"]>,
+    pno2_runtime_init: requireExportedFunction(
+      rawExports,
+      "pno2_runtime_init",
+    ) as NonNullable<ConcertGrandExports["pno2_runtime_init"]>,
+    pno2_runtime_max_steps: requireExportedFunction(
+      rawExports,
+      "pno2_runtime_max_steps",
+    ) as NonNullable<ConcertGrandExports["pno2_runtime_max_steps"]>,
+    pno2_runtime_step: requireExportedFunction(
+      rawExports,
+      "pno2_runtime_step",
+    ) as NonNullable<ConcertGrandExports["pno2_runtime_step"]>,
+    pno2_runtime_reset: requireExportedFunction(
+      rawExports,
+      "pno2_runtime_reset",
+    ) as NonNullable<ConcertGrandExports["pno2_runtime_reset"]>,
+  });
+}
+
+function optionalPhysicalPianoChordExports(
+  rawExports: Readonly<Record<string, unknown>>,
+): Pick<
+  ConcertGrandExports,
+  | "pno2_chord_runtime_init"
+  | "pno2_chord_runtime_max_steps"
+  | "pno2_chord_runtime_step"
+  | "pno2_chord_runtime_reset"
+> {
+  const names = [
+    "pno2_chord_runtime_init",
+    "pno2_chord_runtime_max_steps",
+    "pno2_chord_runtime_step",
+    "pno2_chord_runtime_reset",
+  ] as const;
+  const present = names.filter((name) => rawExports[name] !== undefined);
+  if (present.length === 0) return Object.freeze({});
+  if (present.length !== names.length) {
+    const missing = names.find((name) => rawExports[name] === undefined);
+    throw new Error(`DSP_WASM_EXPORT_MISSING:${missing ?? "pno2_chord_runtime"}`);
+  }
+  return Object.freeze({
+    pno2_chord_runtime_init: requireExportedFunction(
+      rawExports,
+      "pno2_chord_runtime_init",
+    ) as NonNullable<ConcertGrandExports["pno2_chord_runtime_init"]>,
+    pno2_chord_runtime_max_steps: requireExportedFunction(
+      rawExports,
+      "pno2_chord_runtime_max_steps",
+    ) as NonNullable<ConcertGrandExports["pno2_chord_runtime_max_steps"]>,
+    pno2_chord_runtime_step: requireExportedFunction(
+      rawExports,
+      "pno2_chord_runtime_step",
+    ) as NonNullable<ConcertGrandExports["pno2_chord_runtime_step"]>,
+    pno2_chord_runtime_reset: requireExportedFunction(
+      rawExports,
+      "pno2_chord_runtime_reset",
+    ) as NonNullable<ConcertGrandExports["pno2_chord_runtime_reset"]>,
+  });
+}
+
 function optionalPluckedStemExports(
   rawExports: Readonly<Record<string, unknown>>,
 ): Pick<
@@ -1584,6 +2413,9 @@ async function instantiate(): Promise<DspCore> {
       rawExports,
       "cg_render",
     ) as ConcertGrandExports["cg_render"],
+    ...optionalConcertGrandRuntimeExports(rawExports),
+    ...optionalPhysicalPianoExports(rawExports),
+    ...optionalPhysicalPianoChordExports(rawExports),
     an_spectrum: requireExportedFunction(
       rawExports,
       "an_spectrum",
@@ -1596,14 +2428,6 @@ async function instantiate(): Promise<DspCore> {
       rawExports,
       "an_chroma",
     ) as ConcertGrandExports["an_chroma"],
-    tpt_note_frames: requireExportedFunction(
-      rawExports,
-      "tpt_note_frames",
-    ) as ConcertGrandExports["tpt_note_frames"],
-    tpt_render: requireExportedFunction(
-      rawExports,
-      "tpt_render",
-    ) as ConcertGrandExports["tpt_render"],
     gtr_note_frames: requireExportedFunction(
       rawExports,
       "gtr_note_frames",
@@ -1718,17 +2542,92 @@ async function instantiate(): Promise<DspCore> {
       ? exports.__heap_base.value
       : memory.buffer.byteLength;
   const scratchBase = Math.ceil((heapBase + 1_024) / 16) * 16;
-  let cooperativeChordTail: Promise<void> = Promise.resolve();
-  const runCooperativeChordExclusive = <T>(
+  let cooperativeRuntimeTail: Promise<void> = Promise.resolve();
+  const runCooperativeRuntimeExclusive = <T>(
     task: () => Promise<T>,
   ): Promise<T> => {
-    const result = cooperativeChordTail.then(task, task);
-    cooperativeChordTail = result.then(
+    const result = cooperativeRuntimeTail.then(task, task);
+    cooperativeRuntimeTail = result.then(
       () => undefined,
       () => undefined,
     );
     return result;
   };
+
+  const cgRuntimeInit = exports.cg_runtime_init;
+  const cgRuntimeMaxSteps = exports.cg_runtime_max_steps;
+  const cgRuntimeReset = exports.cg_runtime_reset;
+  const cgRuntimeStep = exports.cg_runtime_step;
+  const cgRuntimeWrittenFrames = exports.cg_runtime_written_frames;
+  const renderSynthesizedNoteCooperatively =
+    cgRuntimeInit !== undefined &&
+      cgRuntimeMaxSteps !== undefined &&
+      cgRuntimeReset !== undefined &&
+      cgRuntimeStep !== undefined &&
+      cgRuntimeWrittenFrames !== undefined
+      ? createConcertGrandCooperativeRenderFunction({
+          memory,
+          scratchBase: scratchBase + COOPERATIVE_CHORD_SCRATCH_OFFSET_BYTES,
+          abi: Object.freeze({
+            noteFrames: exports.cg_note_frames,
+            runtimeInit: cgRuntimeInit,
+            runtimeMaxSteps: cgRuntimeMaxSteps,
+            runtimeReset: cgRuntimeReset,
+            runtimeStep: cgRuntimeStep,
+            runtimeWrittenFrames: cgRuntimeWrittenFrames,
+          }),
+          runExclusive: runCooperativeRuntimeExclusive,
+        })
+      : undefined;
+
+  const pno2NoteFrames = exports.pno2_note_frames;
+  const pno2RuntimeInit = exports.pno2_runtime_init;
+  const pno2RuntimeMaxSteps = exports.pno2_runtime_max_steps;
+  const pno2RuntimeStep = exports.pno2_runtime_step;
+  const pno2RuntimeReset = exports.pno2_runtime_reset;
+  const renderPhysicalAttackCooperatively =
+    pno2NoteFrames !== undefined &&
+      pno2RuntimeInit !== undefined &&
+      pno2RuntimeMaxSteps !== undefined &&
+      pno2RuntimeStep !== undefined &&
+      pno2RuntimeReset !== undefined
+      ? createPhysicalPianoAttackRenderFunction({
+          memory,
+          scratchBase: scratchBase + COOPERATIVE_CHORD_SCRATCH_OFFSET_BYTES,
+          abi: Object.freeze({
+            noteFrames: pno2NoteFrames,
+            runtimeInit: pno2RuntimeInit,
+            runtimeMaxSteps: pno2RuntimeMaxSteps,
+            runtimeStep: pno2RuntimeStep,
+            runtimeReset: pno2RuntimeReset,
+          }),
+          runExclusive: runCooperativeRuntimeExclusive,
+        })
+      : undefined;
+
+  const pno2ChordRuntimeInit = exports.pno2_chord_runtime_init;
+  const pno2ChordRuntimeMaxSteps = exports.pno2_chord_runtime_max_steps;
+  const pno2ChordRuntimeStep = exports.pno2_chord_runtime_step;
+  const pno2ChordRuntimeReset = exports.pno2_chord_runtime_reset;
+  const renderPhysicalChordAttackCooperatively =
+    pno2NoteFrames !== undefined &&
+      pno2ChordRuntimeInit !== undefined &&
+      pno2ChordRuntimeMaxSteps !== undefined &&
+      pno2ChordRuntimeStep !== undefined &&
+      pno2ChordRuntimeReset !== undefined
+      ? createPhysicalPianoChordAttackRenderFunction({
+          memory,
+          scratchBase: scratchBase + COOPERATIVE_CHORD_SCRATCH_OFFSET_BYTES,
+          abi: Object.freeze({
+            noteFrames: pno2NoteFrames,
+            runtimeInit: pno2ChordRuntimeInit,
+            runtimeMaxSteps: pno2ChordRuntimeMaxSteps,
+            runtimeStep: pno2ChordRuntimeStep,
+            runtimeReset: pno2ChordRuntimeReset,
+          }),
+          runExclusive: runCooperativeRuntimeExclusive,
+        })
+      : undefined;
 
   const renderSynthesizedNote = (
     midiPitch: number,
@@ -1811,6 +2710,42 @@ async function instantiate(): Promise<DspCore> {
       right,
     });
   };
+
+  const renderPhysicalNoteCooperatively =
+    renderPhysicalAttackCooperatively === undefined ||
+      renderSynthesizedNoteCooperatively === undefined
+      ? undefined
+      : async (
+          midiPitch: number,
+          velocity: number,
+          sampleRateHz: number,
+          maxSeconds?: number,
+        ): Promise<RenderedNotePcm | null> => {
+          const physical = await renderPhysicalAttackCooperatively(
+            midiPitch,
+            velocity,
+            sampleRateHz,
+            maxSeconds,
+          );
+          if (physical === null) return null;
+          const synthesized = await renderSynthesizedNoteCooperatively(
+            midiPitch,
+            velocity,
+            sampleRateHz,
+            maxSeconds,
+          );
+          if (
+            synthesized === null ||
+            !applyPhysicalPianoAttackLayer(
+              synthesized.left,
+              synthesized.right,
+              synthesized.frameCount,
+              physical,
+              sampleRateHz,
+            )
+          ) return null;
+          return synthesized;
+        };
 
   const MAX_DETECTED_NOTES = 12;
 
@@ -2151,7 +3086,7 @@ async function instantiate(): Promise<DspCore> {
      * cap only when the two-mode coexistence work certifies ff cells.
      */
     const velocity = Math.min(requestedVelocity, midi >= 72 ? 72 : 90);
-    const stateCapacity = Number(exports.flt2_state_max_bytes());
+    const stateCapacity = exports.flt2_state_max_bytes();
     const statePointer = (rightPointer + maxFrames * 4 + 7) & ~7;
     ensureCapacity(
       memory,
@@ -2182,8 +3117,9 @@ async function instantiate(): Promise<DspCore> {
     scratchBase,
     /*
      * The cooperative session remains live across macrotask yields. Keep it
-     * above every synchronous scratch allocation, then serialize all packs
-     * because they deliberately share this bounded region.
+     * above every synchronous scratch allocation, then serialize every PLK2
+     * pack and the dark PNO2 attack because they deliberately share this
+     * bounded region.
      */
     cooperativeScratchBase: scratchBase + COOPERATIVE_CHORD_SCRATCH_OFFSET_BYTES,
     abi: Object.freeze({
@@ -2216,7 +3152,7 @@ async function instantiate(): Promise<DspCore> {
         ? {}
         : { runtimeReset: exports.plk2_chord_runtime_reset }),
     }),
-    runExclusive: runCooperativeChordExclusive,
+    runExclusive: runCooperativeRuntimeExclusive,
   });
 
   const renderClarinetPhraseSegment: NonNullable<
@@ -2432,12 +3368,6 @@ async function instantiate(): Promise<DspCore> {
       ),
     ],
     [
-      WAVEGUIDE_TRUMPET_ALGORITHM_ID,
-      makeWaveguideRenderNote(exports.tpt_note_frames, (m, v, r, l, rt, mx) =>
-        exports.tpt_render(m, v, r, l, rt, mx),
-      ),
-    ],
-    [
       WAVEGUIDE_GUITAR_CLEAN_ALGORITHM_ID,
       makeWaveguideRenderNote(exports.gtr_note_frames, (m, v, r, l, rt, mx) =>
         exports.gtr_render(m, v, r, 0, l, rt, mx),
@@ -2570,8 +3500,24 @@ async function instantiate(): Promise<DspCore> {
       algorithmId: CONCERT_GRAND_RENDERER_ALGORITHM_ID,
       wasmSha256: CONCERT_GRAND_WASM_SHA256,
       attackSamplesSha256: PIANO_ATTACK_SAMPLES_SHA256,
+      ...(renderPhysicalAttackCooperatively === undefined
+        ? {}
+        : {
+            physicalAttackAlgorithmId:
+              CONCERT_GRAND_PHYSICAL_V2_ALGORITHM_ID,
+            renderPhysicalAttackCooperatively,
+            ...(renderPhysicalNoteCooperatively === undefined
+              ? {}
+              : { renderPhysicalNoteCooperatively }),
+            ...(renderPhysicalChordAttackCooperatively === undefined
+              ? {}
+              : { renderPhysicalChordAttackCooperatively }),
+          }),
       renderNote,
       renderSynthesizedNote,
+      ...(renderSynthesizedNoteCooperatively === undefined
+        ? {}
+        : { renderSynthesizedNoteCooperatively }),
       attackSliceFor: selectAttackSlice,
       analyzeWindow,
       validatePhysicalAbiV2,

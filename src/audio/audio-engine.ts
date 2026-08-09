@@ -102,9 +102,6 @@ import {
   AUDIO_PERSISTENT_GRAPH_SETTINGS,
   type AudioInstrumentRecipe,
   type AudioRenderedInstrumentRecipe,
-  PLUCKED_CHORD_COURSE_CAPACITY,
-  PLUCKED_OPEN_STRING_MIDIS,
-  pluckedChordAssignmentFeasible,
   foldMidiPitchIntoWindow,
   playableMidiWindowForRecipeId,
 } from "./instrument-recipes-contract";
@@ -686,8 +683,6 @@ function recipeForInstrument(instrumentId: InstrumentId): AudioInstrumentRecipe 
       return AUDIO_INSTRUMENT_RECIPES[13];
     case "ukulele":
       return AUDIO_INSTRUMENT_RECIPES[14];
-    case "trumpet":
-      return AUDIO_INSTRUMENT_RECIPES[15];
   }
 }
 
@@ -1089,82 +1084,24 @@ function createAudioEngineInternal(
 
   function canonicalRenderedChordPairs(
     voices: readonly RenderedChordVoice[],
-    algorithmId?: string,
   ): readonly RenderedChordPair[] {
-    const sorted = voices
-      .map((voice) => Object.freeze({
-        midiPitch: voice.midiPitch,
-        velocity: quantizeRenderVelocity(
-          voice.physicalGesture === null
-            ? voice.velocity
-            : physicalGestureExcitationVelocity(
-                voice.physicalGesture,
-                voice.velocity,
-              ),
+    return Object.freeze(
+      voices
+        .map((voice) => Object.freeze({
+          midiPitch: voice.midiPitch,
+          velocity: quantizeRenderVelocity(
+            voice.physicalGesture === null
+              ? voice.velocity
+              : physicalGestureExcitationVelocity(
+                  voice.physicalGesture,
+                  voice.velocity,
+                ),
+          ),
+        }))
+        .sort((left, right) =>
+          left.midiPitch - right.midiPitch || left.velocity - right.velocity
         ),
-      }))
-      .sort((left, right) =>
-        left.midiPitch - right.midiPitch || left.velocity - right.velocity
-      );
-    /*
-     * Course-capacity voicing (realization policy, one authority for cache
-     * key AND render call): a chart chord wider than the modeled
-     * instrument's physical courses keeps its LOWEST pitches — a bassist
-     * voices the bottom of the chord. Deterministic because the sort above
-     * is total; the Rust chord ABI remains the refusing backstop for any
-     * caller that bypasses this seam. See PLUCKED_CHORD_COURSE_CAPACITY.
-     */
-    const capacity = algorithmId === undefined
-      ? undefined
-      : PLUCKED_CHORD_COURSE_CAPACITY[algorithmId];
-    let voiced = capacity !== undefined && sorted.length > capacity
-      ? sorted.slice(0, capacity)
-      : sorted;
-    /*
-     * Assignability voicing (same realization-policy charter): the Rust
-     * chord ABI places each simultaneous note on a distinct course at fret
-     * 0..=24 and refuses an unplayable cluster. A chart comp voicing folded
-     * to the top of the bass window (e.g. 59-60-64-67 on four bass strings)
-     * is exactly such a cluster; a bassist plays it an octave down, so the
-     * whole voiced group shifts down by octaves until it is assignable,
-     * preserving the chord's interval shape. If no shift lands (bounded by
-     * the instrument's floor), the TOP voice drops — the bottom of the
-     * chord survives, consistent with capacity voicing above. This runs at
-     * the one authority shared by cache key and render call, so warmed
-     * buffers and attacks agree.
-     */
-    if (algorithmId !== undefined && voiced.length > 1) {
-      const opens = PLUCKED_OPEN_STRING_MIDIS[algorithmId];
-      if (opens !== undefined) {
-        const floor = Math.min(...opens);
-        let pitches = voiced.map((pair) => pair.midiPitch);
-        let guard = 0;
-        while (
-          !pluckedChordAssignmentFeasible(algorithmId, pitches) &&
-          guard < 16
-        ) {
-          guard += 1;
-          if (pitches.every((pitch) => pitch - 12 >= floor)) {
-            pitches = pitches.map((pitch) => pitch - 12);
-          } else if (pitches.length > 1) {
-            pitches = pitches.slice(0, -1);
-          } else {
-            break;
-          }
-        }
-        if (pitches.length !== voiced.length ||
-            pitches.some((pitch, index) => pitch !== voiced[index]?.midiPitch)) {
-          const revoiced = pitches.map((midiPitch, index) => Object.freeze({
-            midiPitch: makeMidiPitch(midiPitch).ok
-              ? (makeMidiPitch(midiPitch) as { ok: true; value: MidiPitch }).value
-              : voiced[index]?.midiPitch ?? (midiPitch as MidiPitch),
-            velocity: voiced[index]?.velocity ?? 96,
-          }));
-          voiced = revoiced;
-        }
-      }
-    }
-    return Object.freeze(voiced);
+    );
   }
 
   function isSharedPluckedChordRecipe(
@@ -1198,7 +1135,7 @@ function createAudioEngineInternal(
         ),
       ),
     ].sort();
-    const pairs = canonicalRenderedChordPairs(voices, chordRenderer.algorithmId);
+    const pairs = canonicalRenderedChordPairs(voices);
     const pitchVelocities = pairs.map((pair) =>
       `${String(pair.midiPitch)}@${String(pair.velocity)}`
     ).join(",");
@@ -1377,7 +1314,7 @@ function createAudioEngineInternal(
     const cache = recipeBufferCache(recipe.id);
     const cached = touchRenderedBufferEntry(cache, key);
     if (cached !== undefined) return cached.buffer;
-    const pairs = canonicalRenderedChordPairs(voices, chordRenderer.algorithmId);
+    const pairs = canonicalRenderedChordPairs(voices);
     const pcm = await chordRenderer.renderChordCooperatively(
       pairs.map((pair) => pair.midiPitch),
       pairs.map((pair) => pair.velocity),
@@ -3569,9 +3506,6 @@ function createAudioEngineInternal(
           gateSecondsValue === undefined
             ? PREPARE_RENDER_SECONDS
             : gatedRenderWindowSeconds(gateSecondsValue, recipe);
-        const explicitEventId = typeof noteValue["eventId"] === "string"
-          ? noteValue["eventId"]
-          : undefined;
         pluckedNotes.push(
           Object.freeze({
             midiPitch: foldPitchForRecipe(recipe.id, midiPitchRaw.value),
@@ -3579,15 +3513,7 @@ function createAudioEngineInternal(
             physicalGesture,
             seconds,
             bucket: bucketRenderSecondsForRecipe(seconds, recipe),
-            /*
-             * Chord identity, in preference order: the caller's explicit
-             * event id (chart preparation names the event even for
-             * gesture-less instruments — without it a whole leading window
-             * collapsed into one impossible pseudo-chord and refused; the
-             * upright bass shipped that failure), then the gesture's event,
-             * then null (a preview's one bounded request IS the chord).
-             */
-            eventId: explicitEventId ?? physicalGesture?.eventId ?? null,
+            eventId: physicalGesture?.eventId ?? null,
           }),
         );
       }
@@ -3604,12 +3530,7 @@ function createAudioEngineInternal(
           group.push(note);
           groups.set(groupKey, group);
         }
-        /*
-         * Course-capacity voicing at the canonical seam reduces every group
-         * to the instrument's physical strings; the only refusal left here
-         * is the ABI ceiling a single event can never legitimately exceed.
-         */
-        if ([...groups.values()].some((group) => group.length > 12)) {
+        if ([...groups.values()].some((group) => group.length > 6)) {
           return refuse({
             code: "audio.renderer_unavailable",
             path: ["instrumentId"],
