@@ -56,7 +56,8 @@ const PLUCKED_INSTRUMENTS = new Set<InstrumentId>([
   "blues-guitar",
   "dreadnought-guitar",
   "ukulele",
-  "upright-bass",
+  /* upright-bass reverted to the sampled per-voice renderer (owner
+   * mandate 2026-08-09, bead jcpe-3q4c) — no composite chord source. */
 ]);
 
 function pairs<Value>(values: readonly Value[]): readonly (readonly Value[])[] {

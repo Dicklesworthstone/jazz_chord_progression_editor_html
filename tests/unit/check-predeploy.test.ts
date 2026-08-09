@@ -9,7 +9,15 @@
  */
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { describe, expect, test } from "bun:test";
+import { describe, expect, setDefaultTimeout, test } from "bun:test";
+
+/*
+ * The flute/plucked replay tests render through the full embedded WASM and
+ * measure 5.0-6.3 s under full-suite CPU contention — over bun's 5 s
+ * default. Wall time is never a musical law; the budget carries headroom
+ * (same idiom as validated-document-cast-policy.test.ts).
+ */
+setDefaultTimeout(60_000);
 
 import {
   CONCERT_GRAND_WASM_BASE64,

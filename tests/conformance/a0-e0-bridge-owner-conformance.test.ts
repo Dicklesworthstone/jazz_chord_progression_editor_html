@@ -1,4 +1,8 @@
-import { afterAll, describe, expect, test } from "bun:test";
+import { afterAll, describe, expect, setDefaultTimeout, test } from "bun:test";
+
+/* Full-suite CPU contention pushes the replacement-publication replays past
+ * bun's 5 s default timeout (5.9 s measured); wall budget, not a law. */
+setDefaultTimeout(60_000);
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
