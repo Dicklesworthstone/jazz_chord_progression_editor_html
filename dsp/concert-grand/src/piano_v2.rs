@@ -29,6 +29,10 @@ use core::{
 };
 use libm::{cos, exp, pow, sin, sqrt, tan};
 
+#[path = "piano_v2_scale.rs"]
+pub mod piano_v2_scale;
+use piano_v2_scale::reviewed_string_scale_row;
+
 const PI: f64 = core::f64::consts::PI;
 const TAU: f64 = 2.0 * PI;
 const LN_1000: f64 = 6.907_755_278_982_137;
@@ -50,7 +54,9 @@ pub const MAXIMUM_STATE_BYTES: usize = 64 * 1024;
 
 const AIR_DENSITY_KG_M3: f64 = 1.2041;
 const AIR_SOUND_SPEED_M_PER_S: f64 = 343.21;
-const STEEL_YOUNG_MODULUS_PA: f64 = 2.0e11;
+// INRIA RT-0425, section 3.2. The full wrapped-string parameter pack uses
+// this modulus together with its reported diameter and equivalent density.
+const STEEL_YOUNG_MODULUS_PA: f64 = 2.02e11;
 const RADIATION_DISTANCE_M: f64 = 1.0;
 // A bare piano string is an extremely poor acoustic radiator because its
 // transverse dimension is tiny compared with the wavelength and its acoustic
@@ -1644,7 +1650,13 @@ impl PianoStem {
                 matrix[row][column] =
                     half_dt_squared_stiffness * self.soundboard_compliance[row][column];
             }
-            matrix[row][row] += 1.0 + half_dt_squared_stiffness * string_compliance[row];
+            // Match the conditioned one-key solve exactly: the diagonal sees
+            // one product of the combined string+board compliance. Adding two
+            // separately rounded products made a one-note chord differ from
+            // the same physical voice at the first output frame.
+            matrix[row][row] = 1.0
+                + half_dt_squared_stiffness
+                    * (string_compliance[row] + self.soundboard_compliance[row][row]);
         }
         let coordinates =
             solve_bridge_contact_coordinates(matrix, right_hand_side, self.note_count)?;
@@ -1864,39 +1876,26 @@ pub fn string_geometry(midi: i32) -> Result<StringGeometry, PianoError> {
     }
     let register = (midi - MIN_MIDI) as f64 / (MAX_MIDI - MIN_MIDI) as f64;
     let fundamental_hz = midi_frequency_hz(midi);
-    // Stulov 1995, table 1, gives the string rows paired with the hammer rows
-    // already consumed above: A0/A3/C4/A6 speaking length, tension, linear
-    // density, and outside diameter. The published values are rounded (their
-    // L/T/mu triples miss the named pitch by up to 12 cents), and four sparse
-    // lengths cannot be interpolated linearly across a logarithmic keyboard:
-    // doing that made the old MIDI-48 geometry naturally tune near 76 Hz while
-    // the modal bank silently forced 131 Hz. Interpolate the independently
-    // physical T/mu rows, then derive L=sqrt(T/mu)/(2*f) from the named key.
-    // This stays within 0.7% of every reported anchor and remains causal for
-    // every intervening and upper-tail key instead of retuning a wrong length.
-    let tension_n = interpolate_keyboard_anchor(
-        midi,
-        &[(21, 1_629.0), (57, 834.0), (60, 670.0), (93, 774.0)],
-    )?;
-    let linear_density_kg_m = interpolate_keyboard_anchor(
-        midi,
-        &[(21, 0.1307), (57, 0.0071), (60, 0.0063), (93, 0.0047)],
-    )?;
-    let equivalent_diameter_m = interpolate_keyboard_anchor(
-        midi,
-        &[
-            (21, 0.0049),
-            (57, 0.001_075),
-            (60, 0.001_025),
-            (93, 0.000_875),
-        ],
-    )?;
-    let speaking_length_m = sqrt(tension_n / linear_density_kg_m) / (2.0 * fundamental_hz);
+    // RT-0425 appendix A publishes the wrapped Steinway-D scale for every
+    // C1..B7 key. Its bass rows deliberately use a high equivalent density
+    // to represent winding mass, while section 3.2 defines A=pi*d^2/4 and
+    // I=pi*d^4/64 for the homogenized string. The four boundary keys omitted
+    // by the report use only the adjacent measured slope (see the pack), not
+    // a second instrument's sparse four-row interpolation.
+    let reviewed = reviewed_string_scale_row(midi).ok_or(PianoError::InvalidMidi)?;
+    let speaking_length_m = reviewed.speaking_length_m;
+    let equivalent_diameter_m = reviewed.diameter_m;
+    let cross_section_area_m2 = PI * equivalent_diameter_m * equivalent_diameter_m / 4.0;
+    let linear_density_kg_m = reviewed.density_kg_m3 * cross_section_area_m2;
+    // Appendix tensions are integer-rounded and use A4=441 Hz. Retain the
+    // measured length/diameter/density and derive the exact concert-pitch
+    // tension, so the geometry and modal bank describe the same tuned string.
+    let tension_n = linear_density_kg_m
+        * (2.0 * speaking_length_m * fundamental_hz)
+        * (2.0 * speaking_length_m * fundamental_hz);
     let duplex_length_m = duplex_length_m_for_midi(midi)?;
     let total_length_m = speaking_length_m + duplex_length_m;
-    let wound_core_fraction = 0.45 + 0.55 * smooth_step((midi as f64 - 40.0) / 18.0);
-    let bending_radius_m = 0.5 * equivalent_diameter_m * wound_core_fraction;
-    let second_moment_m4 = PI * pow(bending_radius_m, 4.0) / 4.0;
+    let second_moment_m4 = PI * pow(equivalent_diameter_m, 4.0) / 64.0;
     let inharmonicity_coefficient = PI * PI * STEEL_YOUNG_MODULUS_PA * second_moment_m4
         / (tension_n * speaking_length_m * speaking_length_m);
     let string_count = if midi < 32 {
@@ -2865,9 +2864,4 @@ fn felt_force_n(stiffness: f64, exponent: f64, before_m: f64, after_m: f64) -> f
     // refuses tensile felt. Do not splice in a relaxation constant measured
     // from a different hammer: that hybrid reverses hard/soft ordering.
     felt_potential_gradient(stiffness, exponent, before, after).max(0.0)
-}
-
-fn smooth_step(value: f64) -> f64 {
-    let x = value.clamp(0.0, 1.0);
-    x * x * (3.0 - 2.0 * x)
 }

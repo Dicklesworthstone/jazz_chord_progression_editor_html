@@ -63,24 +63,28 @@ fn one_key_stem_is_bit_identical_to_the_existing_physical_voice() {
     voice.begin_strike(strike).unwrap();
     let mut stem = PianoStem::new(&[60], &[91], 48_000.0, parameters).unwrap();
     assert_eq!(stem.note_count(), 1);
-    for _ in 0..4_096 {
+    for frame in 0..4_096 {
         let expected = voice.step().unwrap();
         let actual = stem.step().unwrap();
         assert_eq!(
             actual.left_pressure_pa.to_bits(),
-            expected.left_pressure_pa.to_bits()
+            expected.left_pressure_pa.to_bits(),
+            "left pressure diverged at frame {frame}"
         );
         assert_eq!(
             actual.right_pressure_pa.to_bits(),
-            expected.right_pressure_pa.to_bits()
+            expected.right_pressure_pa.to_bits(),
+            "right pressure diverged at frame {frame}"
         );
         assert_eq!(
             actual.string_energy_j.to_bits(),
-            expected.string_energy_j.to_bits()
+            expected.string_energy_j.to_bits(),
+            "string energy diverged at frame {frame}"
         );
         assert_eq!(
             actual.soundboard_energy_j.to_bits(),
-            expected.soundboard_energy_j.to_bits()
+            expected.soundboard_energy_j.to_bits(),
+            "soundboard energy diverged at frame {frame}"
         );
     }
 }

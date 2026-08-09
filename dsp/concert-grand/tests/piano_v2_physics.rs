@@ -8,6 +8,7 @@
 mod piano_v2;
 
 use libm::sqrt;
+use piano_v2::piano_v2_scale::{reviewed_string_scale_row, REVIEWED_STRING_SCALE};
 use piano_v2::{
     bridge_contact_pair_midpoint_step, duplex_length_m_for_midi, hammer_head_radius_m_for_midi,
     hammer_mass_kg_for_midi, hammer_strike_position_over_length, midi_frequency_hz,
@@ -302,29 +303,60 @@ fn string_pack_is_geometry_derived_and_keeps_the_measured_fundamental() {
     assert!(low.linear_density_kg_m > middle.linear_density_kg_m);
     assert!(middle.linear_density_kg_m > high.linear_density_kg_m);
     assert!(low.equivalent_diameter_m > high.equivalent_diameter_m);
-    // Stulov table 1 is independently literal here. The reported values are
-    // rounded, so production consumes T/mu/diameter exactly and derives the
-    // causally tuned length, which must remain within 0.7% of the table row.
-    for (midi, reported_length_m, tension_n, density_kg_m, diameter_m) in [
-        (21, 2.016, 1_629.0, 0.1307, 0.0049),
-        (57, 0.777, 834.0, 0.0071, 0.001_075),
-        (60, 0.620, 670.0, 0.0063, 0.001_025),
-        (93, 0.115, 774.0, 0.0047, 0.000_875),
+    // INRIA RT-0425 appendix A is independently literal here. It provides a
+    // complete C1..B7 wrapped Steinway-D scale rather than four interpolation
+    // anchors from a second instrument.
+    assert_eq!(REVIEWED_STRING_SCALE.len(), 84);
+    for (index, row) in REVIEWED_STRING_SCALE.iter().enumerate() {
+        assert_eq!(row.midi, 24 + index as i32);
+    }
+    for (midi, length_m, diameter_m, density_kg_m3, reported_tension_n) in [
+        (24, 2.007, 0.001_480, 57_787.0, 1_722.0),
+        (36, 1.602, 0.001_051, 23_919.0, 915.0),
+        (48, 1.259, 0.001_063, 7_850.0, 759.0),
+        (60, 0.657, 0.001_006, 7_850.0, 741.0),
+        (72, 0.344, 0.000_932, 7_850.0, 696.0),
+        (84, 0.180, 0.000_891, 7_850.0, 697.0),
+        (96, 0.095, 0.000_831, 7_850.0, 670.0),
+        (107, 0.052, 0.000_743, 7_850.0, 588.0),
     ] {
+        let row = reviewed_string_scale_row(midi).unwrap();
+        assert_eq!(row.speaking_length_m, length_m);
+        assert_eq!(row.diameter_m, diameter_m);
+        assert_eq!(row.density_kg_m3, density_kg_m3);
+        assert_eq!(row.reported_tension_n, reported_tension_n);
         let geometry = string_geometry(midi).unwrap();
-        assert!((geometry.tension_n - tension_n).abs() < 1.0e-12);
-        assert!((geometry.linear_density_kg_m - density_kg_m).abs() < 1.0e-15);
-        assert!((geometry.equivalent_diameter_m - diameter_m).abs() < 1.0e-15);
+        let expected_linear_density =
+            density_kg_m3 * core::f64::consts::PI * diameter_m * diameter_m / 4.0;
+        let expected_tension = expected_linear_density
+            * (2.0 * length_m * midi_frequency_hz(midi))
+            * (2.0 * length_m * midi_frequency_hz(midi));
+        assert_eq!(geometry.speaking_length_m, length_m);
+        assert_eq!(geometry.equivalent_diameter_m, diameter_m);
+        assert!((geometry.linear_density_kg_m - expected_linear_density).abs() < 1.0e-15);
+        assert!((geometry.tension_n - expected_tension).abs() < 1.0e-10);
+        // Integer-rounded tension and A4=441 in the report may differ slightly
+        // from this app's exact A4=440 tuning, but never by an invented scale.
         assert!(
-            ((geometry.speaking_length_m / reported_length_m) - 1.0).abs() < 0.007,
-            "derived length no longer agrees with rounded Table-I row: midi={midi}, derived={}, reported={reported_length_m}",
-            geometry.speaking_length_m,
+            ((expected_tension / reported_tension_n) - 1.0).abs() < 0.025,
+            "tuned tension left the reviewed rounded row: midi={midi}, tuned={expected_tension}, reported={reported_tension_n}"
         );
-        let table_pitch_hz = sqrt(tension_n / density_kg_m) / (2.0 * reported_length_m);
-        assert!(
-            cents(table_pitch_hz, midi_frequency_hz(midi)).abs() < 15.0,
-            "rounded table row no longer describes the named key: midi={midi}, table={table_pitch_hz}"
-        );
+        let second_moment = core::f64::consts::PI * diameter_m.powi(4) / 64.0;
+        let expected_b = core::f64::consts::PI.powi(2) * 2.02e11 * second_moment
+            / (expected_tension * length_m * length_m);
+        assert!((geometry.inharmonicity_coefficient - expected_b).abs() < 1.0e-15);
+    }
+
+    // The C2 wound row uses its equivalent density, not ordinary steel.
+    assert!(reviewed_string_scale_row(36).unwrap().density_kg_m3 > 3.0 * 7_850.0);
+    // The four report-boundary keys remain positive bounded extrapolations of
+    // adjacent rows rather than falling back to the superseded sparse scale.
+    for midi in [21, 22, 23, 108] {
+        let row = reviewed_string_scale_row(midi).unwrap();
+        assert!(row.speaking_length_m > 0.0);
+        assert!(row.diameter_m > 0.0);
+        assert!(row.density_kg_m3 > 0.0);
+        assert!(row.reported_tension_n > 0.0);
     }
 
     for midi in 21..=108 {

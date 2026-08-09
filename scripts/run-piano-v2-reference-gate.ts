@@ -199,6 +199,7 @@ export const PIANO_V2_REFERENCE_SOURCE_PATHS = Object.freeze([
   "dsp/concert-grand/Cargo.lock",
   "dsp/concert-grand/src/lib.rs",
   "dsp/concert-grand/src/piano_v2.rs",
+  "dsp/concert-grand/src/piano_v2_scale.rs",
   "scripts/build-dsp.ts",
   "scripts/run-piano-v2-reference-gate.ts",
   "src/audio/wasm/concert-grand-wasm.ts",
