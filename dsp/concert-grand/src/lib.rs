@@ -50,6 +50,7 @@ mod guitar;
 mod physical;
 mod plucked_v2;
 mod smf;
+mod trumpet;
 
 use libm::{cos, exp, log2, pow, sin, sqrt};
 

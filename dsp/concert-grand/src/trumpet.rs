@@ -1282,7 +1282,10 @@ impl TrumpetModel {
             )
             .max(0.0);
         let jet_area_m2 =
-            self.parameters.lip_width_m * opening_m * (1.0 - controls.tongue_contact).powi(2);
+            self.parameters.lip_width_m * opening_m * {
+                let open = 1.0 - controls.tongue_contact;
+                open * open
+            };
         if jet_area_m2 > 0.0 {
             let jet_inertance_pa_s2_m3 = AIR_DENSITY_KG_M3 * LIP_THICKNESS_M / jet_area_m2;
             energy +=
@@ -1303,7 +1306,10 @@ impl TrumpetModel {
         for face in 1..BORE_CELLS {
             let dx = 0.5 * (self.cell_length_m[face - 1] + self.cell_length_m[face]);
             let inertance = AIR_DENSITY_KG_M3 * dx / self.face_area_m2[face];
-            energy += 0.5 * inertance * self.volume_flow_m3_s[face].powi(2);
+            energy += 0.5
+                * inertance
+                * self.volume_flow_m3_s[face]
+                * self.volume_flow_m3_s[face];
             for pole in 0..WALL_LOSS_POLES {
                 energy += 0.5 * inertance
                     * self.face_wall_strength_per_second[face][pole]
@@ -1313,7 +1319,9 @@ impl TrumpetModel {
             }
         }
         // Storage for Z(s)=R*s/(s+w): E=R*q^2/(2w).
-        energy += self.bell_resistance_pa_s_m3 * self.bell_memory_flow_m3_s.powi(2)
+        energy += self.bell_resistance_pa_s_m3
+            * self.bell_memory_flow_m3_s
+            * self.bell_memory_flow_m3_s
             / (2.0 * self.bell_corner_rad_s);
         energy
     }
@@ -1731,7 +1739,10 @@ impl TrumpetModel {
             let opening_m = self
                 .lip_aperture_m(controls, normal_displacement_m, streamwise_displacement_m)
                 .max(0.0);
-            let tongue_open_fraction = (1.0 - controls.tongue_contact).powi(2);
+            let tongue_open_fraction = {
+                let open = 1.0 - controls.tongue_contact;
+                open * open
+            };
             let jet_area_m2 = self.parameters.lip_width_m * opening_m * tongue_open_fraction;
             let (jet_flow_residual_m3_s, lip_opening_pressure_pa, jet_acceleration_m3_s2) =
                 if jet_area_m2 > 0.0 {
@@ -2545,4 +2556,251 @@ fn nonlinear_characteristic_euler(
         advanced[cell] = state[cell] - dt / cell_length_m[cell] * (flux[cell + 1] - flux[cell]);
     }
     advanced
+}
+
+// ---------------------------------------------------------------------------
+// Round-11 note table and per-note render exports
+// (jcpe-trumpet-lock-completion-el46). Provenance: the operating-table sweep
+// tests/trumpet_note_sweep.rs — standard Bb-trumpet fingerings on bore
+// regimes 2/3/4, lip target = ratio x 12-TET, every row measured locking the
+// RIGHT regime within +-5.4 cents at periodicity >= 0.996 at both 48 kHz and
+// 44.1 kHz. The player dynamics law (damping firming +0.00751 zeta/kPa over
+// the 5.5 kPa excess) is the round-11 co-design knee, the same constants the
+// wall test pins.
+
+/// (midi, [valve1, valve2, valve3], lip target ratio vs 12-TET).
+pub const TRUMPET_NOTE_TABLE: [(i32, [f64; 3], f64); 19] = [
+    (52, [1.0, 1.0, 1.0], 1.16),
+    (53, [1.0, 0.0, 1.0], 1.16),
+    (54, [0.0, 1.0, 1.0], 1.16),
+    (55, [1.0, 1.0, 0.0], 1.16),
+    (56, [1.0, 0.0, 0.0], 1.16),
+    (57, [0.0, 1.0, 0.0], 1.16),
+    (58, [0.0, 0.0, 0.0], 1.18),
+    (59, [1.0, 1.0, 1.0], 1.16),
+    (60, [1.0, 0.0, 1.0], 1.16),
+    (61, [0.0, 1.0, 1.0], 1.16),
+    (62, [1.0, 1.0, 0.0], 1.14),
+    (63, [1.0, 0.0, 0.0], 1.14),
+    (64, [0.0, 1.0, 0.0], 1.12),
+    (65, [0.0, 0.0, 0.0], 1.12),
+    (66, [0.0, 1.0, 1.0], 1.10),
+    (67, [1.0, 1.0, 0.0], 1.12),
+    (68, [1.0, 0.0, 0.0], 1.14),
+    (69, [0.0, 1.0, 0.0], 1.16),
+    (70, [0.0, 0.0, 0.0], 1.20),
+];
+
+const TPT_CAP_SECONDS: f64 = 3.0;
+
+/// Round-11 dynamics compensation (tests/trumpet_dynamics_calibration.rs):
+/// per-note relative lip-target multipliers measured at excess pressures
+/// 1.0..=5.0 kPa in 0.5 kPa steps (the operating-table sweep point is
+/// 6.5 kPa mouth pressure = 1 kPa excess, multiplier 1.0 by construction;
+/// the half-kPa grid resolves the low-register regime cliff). Piecewise-linear
+/// interpolation between the points holds every table note within
+/// +-2.5 cents of 12-TET across the full velocity->pressure band at
+/// periodicity >= 0.99; parametric (linear/quadratic-in-excess) laws were
+/// measured and left +-33-cent mid-band residuals on the lowest notes.
+pub const TPT_LIP_COMP: [(i32, [f64; 9]); 19] = [
+    (52, [1.00000, 0.96514, 0.82374, 0.81049, 0.80152, 0.79459, 0.78917, 0.78917, 0.78610]),
+    (53, [1.00000, 0.98113, 0.95693, 0.93933, 0.84056, 0.83254, 0.82687, 0.82687, 0.82196]),
+    (54, [1.00000, 0.98329, 0.97361, 0.95064, 0.93650, 0.90179, 0.89378, 0.88644, 0.88002]),
+    (55, [1.00000, 0.98594, 0.97568, 0.96672, 0.95191, 0.93898, 0.92703, 0.91659, 0.90698]),
+    (56, [1.00000, 0.98928, 0.97823, 0.96897, 0.96088, 0.94920, 0.93817, 0.92790, 0.91835]),
+    (57, [1.00000, 0.99246, 0.98054, 0.97095, 0.96248, 0.95508, 0.94627, 0.93694, 0.92764]),
+    (58, [1.00000, 0.97679, 0.96542, 0.95546, 0.94682, 0.93923, 0.93254, 0.92092, 0.91332]),
+    (59, [1.00000, 0.97966, 0.96680, 0.95599, 0.94676, 0.93881, 0.93192, 0.93192, 0.91885]),
+    (60, [1.00000, 0.98278, 0.96856, 0.95686, 0.94691, 0.93837, 0.93096, 0.93096, 0.91731]),
+    (61, [1.00000, 0.99038, 0.97686, 0.96368, 0.95210, 0.94215, 0.93358, 0.92617, 0.91973]),
+    (62, [1.00000, 1.00621, 0.99754, 0.98479, 0.97233, 0.96130, 0.95176, 0.94352, 0.93638]),
+    (63, [1.00000, 1.00000, 1.00000, 0.99013, 0.97777, 0.96596, 0.95557, 0.94657, 0.93877]),
+    (64, [1.00000, 1.00769, 1.00769, 1.00769, 1.00124, 0.98945, 0.97812, 0.96816, 0.95952]),
+    (65, [1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 0.98770, 0.97711, 0.96757]),
+    (66, [1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00197, 1.00197]),
+    (67, [1.00000, 0.98898, 0.98898, 0.98898, 0.98898, 0.98898, 0.98898, 0.98898, 0.98898]),
+    (68, [1.00000, 0.98830, 0.98345, 0.98345, 0.98345, 0.98345, 0.98345, 0.98345, 0.98345]),
+    (69, [1.00000, 1.00000, 0.98556, 0.98556, 0.98556, 0.97967, 0.97967, 0.97967, 0.97967]),
+    (70, [1.00000, 0.99061, 0.98317, 0.96757, 0.96757, 0.96757, 0.96757, 0.95900, 0.95900]),
+];
+
+/// Test-visible alias for the compensation interpolator.
+pub fn tpt_lip_comp_multiplier_for_tests(midi: i32, excess_kpa: f64) -> f64 {
+    tpt_lip_comp_multiplier(midi, excess_kpa)
+}
+
+fn tpt_lip_comp_multiplier(midi: i32, excess_kpa: f64) -> f64 {
+    let row = TPT_LIP_COMP
+        .iter()
+        .find(|entry| entry.0 == midi)
+        .map(|entry| entry.1)
+        .unwrap_or([1.0; 9]);
+    if excess_kpa <= 1.0 {
+        return row[0];
+    }
+    let clamped = excess_kpa.min(5.0);
+    let position = (clamped - 1.0) * 2.0;
+    let lower = (position as usize).min(7);
+    let fraction = position - lower as f64;
+    row[lower] + (row[lower + 1] - row[lower]) * fraction
+}
+
+
+/// Round-11 phonation floors (tests/trumpet_dynamics_calibration.rs,
+/// per_note_pressure_floors): the measured minimum mouth pressure at which
+/// each note's seeded oscillation sustains, plus 10% margin (3.2 kPa map
+/// minimum where the note sustains everywhere). The velocity map is
+/// anchored at this floor so no chart velocity can ask the lip pair for a
+/// note below its phonation threshold — the top of the table needs
+/// ~7.7 kPa where the bottom speaks at the map minimum, exactly the real
+/// instrument's compressed piano range upstairs.
+pub const TPT_PRESSURE_FLOOR: [(i32, f64); 19] = [
+    (52, 3200.0),
+    (53, 3200.0),
+    (54, 3200.0),
+    (55, 3200.0),
+    (56, 3200.0),
+    (57, 3200.0),
+    (58, 3200.0),
+    (59, 4132.0),
+    (60, 4304.0),
+    (61, 4508.0),
+    (62, 4775.0),
+    (63, 5041.0),
+    (64, 5449.0),
+    (65, 5778.0),
+    (66, 7332.0),
+    (67, 7550.0),
+    (68, 7801.0),
+    (69, 8099.0),
+    (70, 8523.0),
+];
+
+pub const TPT_DAMPING_SLOPE_PER_KPA: f64 = 0.007_51;
+
+fn tpt_note_row(midi: i32) -> Option<&'static (i32, [f64; 3], f64)> {
+    TRUMPET_NOTE_TABLE.iter().find(|row| row.0 == midi)
+}
+
+fn tpt_disjoint(left: usize, left_bytes: usize, right: usize, right_bytes: usize) -> bool {
+    let left_end = match left.checked_add(left_bytes) {
+        Some(value) => value,
+        None => return false,
+    };
+    let right_end = match right.checked_add(right_bytes) {
+        Some(value) => value,
+        None => return false,
+    };
+    left_end <= right || right_end <= left
+}
+
+#[no_mangle]
+pub extern "C" fn tpt_note_frames(midi: i32, sample_rate: f32) -> i32 {
+    let rate = sample_rate as f64;
+    if tpt_note_row(midi).is_none() || !(8_000.0..=192_000.0).contains(&rate) {
+        return 0;
+    }
+    (TPT_CAP_SECONDS * rate) as i32
+}
+
+/// Per-note trumpet render. Velocity maps to blowing pressure (3.2..12 kPa);
+/// the note speaks via the seeded normal regime, sustains under the round-11
+/// embouchure-firming law, and releases with a pressure taper over the final
+/// 120 ms of the requested span. No per-note loudness normalization: level
+/// and spectrum follow the physics (the wall-test law), and the recipe's
+/// output level owns mixing.
+#[no_mangle]
+pub extern "C" fn tpt_render(
+    midi: i32,
+    velocity: i32,
+    sample_rate: f32,
+    left: *mut f32,
+    right: *mut f32,
+    max_frames: i32,
+) -> i32 {
+    let natural = tpt_note_frames(midi, sample_rate);
+    if natural == 0 || max_frames <= 0 || left.is_null() || right.is_null() {
+        return 0;
+    }
+    let row = match tpt_note_row(midi) {
+        Some(row) => row,
+        None => return 0,
+    };
+    let frames = natural.min(max_frames) as usize;
+    let channel_bytes = match frames.checked_mul(core::mem::size_of::<f32>()) {
+        Some(value) => value,
+        None => return 0,
+    };
+    if !tpt_disjoint(left as usize, channel_bytes, right as usize, channel_bytes) {
+        return 0;
+    }
+    let out_left = unsafe { core::slice::from_raw_parts_mut(left, frames) };
+    let out_right = unsafe { core::slice::from_raw_parts_mut(right, frames) };
+    let rate = sample_rate as f64;
+    let clamped_velocity = velocity.clamp(1, 127) as f64;
+    /*
+     * Velocity map anchored at the note's phonation floor and capped at the
+     * calibrated 10.5 kPa (excess 5) band edge of TPT_LIP_COMP.
+     */
+    let pressure_floor_pa = TPT_PRESSURE_FLOOR
+        .iter()
+        .find(|entry| entry.0 == midi)
+        .map(|entry| entry.1)
+        .unwrap_or(3_200.0);
+    let pressure_pa =
+        pressure_floor_pa + (10_500.0 - pressure_floor_pa) * (clamped_velocity / 127.0);
+    let target_hz = 440.0 * libm::pow(2.0, (midi as f64 - 69.0) / 12.0);
+    /*
+     * Round-11 embouchure dynamics: the sounding pitch of a fixed lip
+     * target drifts with mouth pressure at a regime-dependent rate, so the
+     * lip target follows the measured per-note compensation table
+     * (TPT_LIP_COMP) as pressure sweeps with velocity.
+     */
+    let lip_base_hz = target_hz * row.2;
+    let mut model = match TrumpetModel::new(rate, TrumpetParameters::canonical()) {
+        Ok(model) => model,
+        Err(_) => return 0,
+    };
+    let mut controls = TrumpetControls {
+        mouth_pressure_pa: 0.0,
+        lip_resonance_hz: lip_base_hz,
+        lip_damping_ratio: 1.0 / 3.0,
+        equilibrium_opening_m: 0.0,
+        tongue_contact: 1.0,
+        valves: row.1,
+    };
+    let attack_frames = ((0.03 * rate) as usize).max(1);
+    let release_frames = ((0.12 * rate) as usize).min(frames / 4).max(1);
+    let release_start = frames.saturating_sub(release_frames);
+    for frame in 0..frames {
+        let attack = (frame as f64 / attack_frames as f64).min(1.0);
+        let release = if frame >= release_start {
+            1.0 - (frame - release_start) as f64 / release_frames as f64
+        } else {
+            1.0
+        };
+        controls.mouth_pressure_pa = pressure_pa * attack * release;
+        let excess_kpa = ((controls.mouth_pressure_pa - 5_500.0) / 1_000.0).clamp(0.0, 5.0);
+        controls.lip_resonance_hz =
+            lip_base_hz * tpt_lip_comp_multiplier(midi, excess_kpa);
+        controls.lip_damping_ratio =
+            (1.0 / 3.0 + TPT_DAMPING_SLOPE_PER_KPA * excess_kpa).clamp(0.05, 0.95);
+        if frame == attack_frames {
+            if model.seed_open_normal_regime(100.0).is_err() {
+                return 0;
+            }
+            controls.tongue_contact = 0.0;
+        }
+        let sample = match model.process_sample(controls) {
+            Ok(sample) => sample,
+            Err(_) => return frame as i32,
+        };
+        let value = sample as f32;
+        if !value.is_finite() {
+            return frame as i32;
+        }
+        out_left[frame] = value;
+        out_right[frame] = value;
+    }
+    frames as i32
 }

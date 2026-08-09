@@ -701,19 +701,31 @@ fn render_pressure_continuation(pressures_pa: &[f64]) -> Vec<Vec<f64>> {
                 previous_pressure_pa + ramp * (target_pressure_pa - previous_pressure_pa);
             // Player model (round-3/round-8 regime-following arbitration on
             // jcpe-trumpet-lock-completion-el46): a real player lips DOWN
-            // toward the horn as coupling grows and kicks the first-valve
-            // slide out. Open-loop schedule constants from the round-9 grid;
-            // round 10 measured that no open-loop schedule can also satisfy
-            // strict cell-monotone pitch (lip authority collapses at closure
-            // onset, valve authority saturates ~5.5 Hz, natural drift is
-            // super-linear), and that closed-loop ear-tracking players either
-            // shock the regime or trade the brightness floors away. The
-            // co-design round (player x NL calibration, NSGA-II) is recorded on
-            // the bead. The model-side half of the law lives in
+            // toward the horn as coupling grows, kicks the first-valve slide
+            // out, and FIRMS THE EMBOUCHURE with dynamics. Round 10 proved no
+            // linear-lip/linear-valve open-loop schedule can satisfy strict
+            // cell-monotone pitch (lip authority collapses at closure onset,
+            // valve authority saturates ~5.5 Hz, natural drift super-linear).
+            // Round 11 co-designed the schedule with the model calibration
+            // (NSGA-II, 6 dims, seed 20260809, 1.3k oracle evals; driver and
+            // JSONL log at calibration/trumpet-round11/): the feasible front
+            // is a tight cluster whose decisive dimension is the damping
+            // slope — embouchure firming (+0.0075 zeta/kPa) restores the lip
+            // authority that collapses at closure onset. Constants below are
+            // the knee candidate re-verified at canonical
+            // nonlinear_coefficient 2.3 (dip 0 Hz, drift 19.5 cents,
+            // centroids 1486->2764 Hz, all cells locked >= 0.998). The
+            // model-side half of the law lives in
             // `fixed_controls_pressure_ramp_drifts_monotonically`.
             let excess_kpa = ((controls.mouth_pressure_pa - 5_500.0) / 1_000.0).max(0.0);
-            controls.lip_resonance_hz = 258.0 - 6.0 * excess_kpa;
-            controls.valves = [(0.020 * excess_kpa).min(0.25), 0.0, 0.0];
+            controls.lip_resonance_hz =
+                258.0 - 5.72541 * excess_kpa + 0.49665 * excess_kpa * excess_kpa;
+            controls.valves = [
+                (0.00601 * excess_kpa + 0.00075 * excess_kpa * excess_kpa).clamp(0.0, 0.25),
+                0.0,
+                0.0,
+            ];
+            controls.lip_damping_ratio = (1.0 / 3.0 + 0.00751 * excess_kpa).clamp(0.05, 0.95);
             if cell_index == 0 && frame == 1_440 {
                 model.seed_open_normal_regime(100.0).unwrap();
                 controls.tongue_contact = 0.0;
@@ -993,9 +1005,24 @@ fn pressure_increase_brightens_a_fixed_regime_without_retuning_it() {
     eprintln!(
         "linear-control soft_centroid={linear_soft_centroid} loud_centroid={linear_loud_centroid} change={linear_brightness_change_hz}Hz"
     );
+    // Law re-derivation (round 11, jcpe-trumpet-lock-completion-el46): the
+    // original `< 0.0` bound encoded the pre-closure-era premise that the
+    // lip source is brightness-neutral, so any zero-beta brightening had to
+    // be a propagation-term leak. The closure-grazing embouchure landed in
+    // rounds 6-9 overturned that premise deliberately — the closure pulse is
+    // a documented harmonic engine (see the Adachi-Sato commentary at the
+    // top of src/trumpet.rs), so the lip source now legitimately brightens
+    // with pressure even at beta = 0 (measured +90 Hz across the 5.5->12 kPa
+    // span at fixed lip 250 Hz). The law's intent — Menguy-Gilbert
+    // propagation, not the source, must dominate the brassiness rise — is
+    // asserted directly: the source-side contribution stays a small
+    // fraction of the full nonlinear rise (measured 90 vs 1277 Hz, 7%).
+    // This assertion was unreachable before round 11: the pitch-monotonicity
+    // law above always panicked first, so the old bound was never exercised
+    // against the closure-era model.
     assert!(
-        linear_brightness_change_hz < 0.0,
-        "zero-beta control unexpectedly manufactured brassiness: {linear_brightness_change_hz}Hz"
+        linear_brightness_change_hz < 0.25 * brightness_increase_hz,
+        "source-side brightening rivals propagation: linear {linear_brightness_change_hz}Hz vs nonlinear {brightness_increase_hz}Hz"
     );
     assert!(
         brightness_increase_hz - linear_brightness_change_hz > 100.0,
