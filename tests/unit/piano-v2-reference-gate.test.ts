@@ -357,6 +357,17 @@ describe("piano-v2 exact-WASM Salamander reference gate", () => {
     };
     expect(verifyPianoV2ReferenceEvidence(threshold)).toBe(false);
 
+    const truncated = cloneJson(evidence) as Record<string, unknown>;
+    const truncatedCells = truncated["cells"] as Array<Record<string, unknown>>;
+    const truncatedFeatures = truncatedCells[0]?.["features"] as Record<string, unknown>;
+    const truncatedProfile = truncatedFeatures["harmonicProfileDb"] as number[];
+    truncatedFeatures["harmonicProfileDb"] = truncatedProfile.slice(0, -1);
+    truncatedCells[0] = {
+      ...(truncatedCells[0] ?? {}),
+      harmonicDistanceDb: 0,
+    };
+    expect(verifyPianoV2ReferenceEvidence(resignEvidence(truncated))).toBe(false);
+
     const authority = cloneJson(evidence) as Record<string, unknown>;
     const policy = authority["policy"] as Record<string, unknown>;
     const stringAuthority = policy["stringAuthority"] as Record<string, unknown>;

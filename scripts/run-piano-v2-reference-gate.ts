@@ -445,8 +445,10 @@ export function profileDistanceDb(
   left: readonly number[],
   right: readonly number[],
 ): number {
-  const count = Math.min(left.length, right.length);
-  if (count === 0) return Number.POSITIVE_INFINITY;
+  if (left.length === 0 || left.length !== right.length) {
+    return Number.POSITIVE_INFINITY;
+  }
+  const count = left.length;
   let sum = 0;
   for (let index = 0; index < count; index += 1) {
     const delta = (left[index] ?? 0) - (right[index] ?? 0);
@@ -1106,6 +1108,8 @@ export function verifyPianoV2ReferenceEvidence(
         cell.id !== `m${String(midi)}v${String(velocity)}`) return false;
       const reference = references.get(cell.id);
       if (reference === undefined) return false;
+      if (cell.features.harmonicProfileDb.length !==
+        reference.features.harmonicProfileDb.length) return false;
       const expectedSlice = {
         byteOffset: reference.slice.byteOffset,
         frameCount: reference.slice.frameCount,
