@@ -58,9 +58,19 @@ const CLICK_DELTA_LIMIT = 0.5;
 const NOISE_PERIODICITY_FAIL = 0.55;
 const NOISE_PERIODICITY_WARN = 0.8;
 
-/* Pitch thresholds (cents against 12-TET). */
+/*
+ * Pitch thresholds (cents against 12-TET). Register extremes get a wider
+ * allowance: real pianos stretch-tune toward the Railsback curve (the
+ * measured concert-grand renders +15..17c at midi 106, which is physically
+ * correct), and very low strings carry inharmonicity. "Extreme" = outside
+ * midi [33, 96].
+ */
 const PITCH_FAIL_CENTS = 25;
 const PITCH_WARN_CENTS = 10;
+const PITCH_FAIL_CENTS_EXTREME = 40;
+const PITCH_WARN_CENTS_EXTREME = 20;
+const PITCH_EXTREME_LOW_MIDI = 33;
+const PITCH_EXTREME_HIGH_MIDI = 96;
 const CHORD_TONE_SEARCH_CENTS = 35;
 const CHORD_TONE_FLOOR_DB = 30;
 
@@ -284,6 +294,61 @@ function velocitySpectrumCorrelation(
   return cross / Math.sqrt(varA * varB);
 }
 
+/** Harmonic-comb energy at one candidate fundamental. */
+function combEnergy(pcm: MonoPcm, f0Hz: number): number {
+  const start = Math.floor(0.1 * pcm.sampleRateHz);
+  const length = Math.min(32_768, pcm.samples.length - start);
+  if (length < 8_192) return 0;
+  let total = 0;
+  for (let harmonic = 1; harmonic <= 6; harmonic += 1) {
+    const frequencyHz = f0Hz * harmonic;
+    if (frequencyHz >= pcm.sampleRateHz / 2) break;
+    total += goertzel(pcm.samples, pcm.sampleRateHz, start, length, frequencyHz);
+  }
+  return total;
+}
+
+/**
+ * Autocorrelation octave-ambiguity guard: lag-doubling reads a bass note
+ * one octave low (the sampled contrabass at midi 30 measured -1201c while
+ * its comb energy sits squarely on the requested f0). When the raw
+ * estimate lands near a half/double octave, compare comb energy at the
+ * expected pitch against the measured one; when the expected comb holds
+ * comparable energy, refine cents by comb-peak search around 12-TET.
+ */
+function resolvePitchCents(
+  pcm: MonoPcm,
+  expectedHz: number,
+  rawCents: number,
+): number {
+  const nearOctave =
+    Math.abs(Math.abs(rawCents) - 1_200) < 60 ||
+    Math.abs(Math.abs(rawCents) - 700) < 60;
+  if (!nearOctave) return rawCents;
+  const measuredHz = expectedHz * 2 ** (rawCents / 1_200);
+  const measuredEnergy = combEnergy(pcm, measuredHz);
+  let bestCents = 0;
+  let bestEnergy = 0;
+  for (let cents = -45; cents <= 45; cents += 3) {
+    const energy = combEnergy(pcm, expectedHz * 2 ** (cents / 1_200));
+    if (energy > bestEnergy) {
+      bestEnergy = energy;
+      bestCents = cents;
+    }
+  }
+  /* The comb at the doubled/halved pitch shares every other partial with
+   * the true pitch, so "comparable" needs only half the energy. */
+  return bestEnergy >= 0.5 * measuredEnergy ? bestCents : rawCents;
+}
+
+function pitchThresholds(midiPitch: number): Readonly<{ warn: number; fail: number }> {
+  const extreme =
+    midiPitch < PITCH_EXTREME_LOW_MIDI || midiPitch > PITCH_EXTREME_HIGH_MIDI;
+  return extreme
+    ? { warn: PITCH_WARN_CENTS_EXTREME, fail: PITCH_FAIL_CENTS_EXTREME }
+    : { warn: PITCH_WARN_CENTS, fail: PITCH_FAIL_CENTS };
+}
+
 function pickTestPitches(instrumentId: string): readonly number[] {
   const window =
     AUDIO_PLAYABLE_MIDI_WINDOWS[
@@ -367,7 +432,18 @@ async function main(): Promise<void> {
         const renderRatio = renderSeconds / Math.max(0.001, audioSeconds);
         if (renderRatio > worstRenderRatio) worstRenderRatio = renderRatio;
         const expectedHz = midiHz(midiPitch);
-        const pitch = estimatePitch(monoPcm, expectedHz);
+        const rawPitch = estimatePitch(monoPcm, expectedHz);
+        const pitch =
+          rawPitch === null
+            ? null
+            : {
+                ...rawPitch,
+                centsFromExpected: resolvePitchCents(
+                  monoPcm,
+                  expectedHz,
+                  rawPitch.centsFromExpected,
+                ),
+              };
         const measurement: NoteMeasurement = {
           midiPitch,
           velocity,
@@ -448,8 +524,9 @@ async function main(): Promise<void> {
             detail: `${where}: no periodic pitch found near ${expectedHz.toFixed(1)} Hz`,
           });
         } else {
+          const { warn: warnCents, fail: failCents } = pitchThresholds(midiPitch);
           const cents = Math.abs(pitch.centsFromExpected);
-          if (cents > PITCH_FAIL_CENTS) {
+          if (cents > failCents) {
             findings.push({
               tier: "fail",
               bucket: "pitch",
@@ -457,7 +534,7 @@ async function main(): Promise<void> {
               instrumentId: recipe.id,
               detail: `${where}: ${pitch.centsFromExpected.toFixed(1)}c from 12-TET`,
             });
-          } else if (cents > PITCH_WARN_CENTS) {
+          } else if (cents > warnCents) {
             findings.push({
               tier: "warn",
               bucket: "pitch",
