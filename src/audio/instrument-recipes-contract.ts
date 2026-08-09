@@ -313,7 +313,7 @@ export const AUDIO_INSTRUMENT_RECIPES = Object.freeze([
     designClaim:
       "physically modeled flute: jet-drive waveguide with breath turbulence and delayed vibrato",
     synthesis: "rendered",
-    outputLevel: 0.5,
+    outputLevel: 2.8,
     polyphonyLimit: 32,
     renderer: Object.freeze({
       algorithmId: "changes.dsp.waveguide-flute@2",
@@ -368,7 +368,7 @@ export const AUDIO_INSTRUMENT_RECIPES = Object.freeze([
     designClaim:
       "recorded solo contrabass pizzicato, nearest recorded key transposed onto pitch",
     synthesis: "rendered",
-    outputLevel: 0.5,
+    outputLevel: 0.17,
     polyphonyLimit: 32,
     renderer: Object.freeze({
       algorithmId: "changes.dsp.sampled-upright-bass@1",
@@ -386,7 +386,7 @@ export const AUDIO_INSTRUMENT_RECIPES = Object.freeze([
     designClaim:
       "recorded vibraphone, soft mallets, nearest recorded key transposed onto pitch",
     synthesis: "rendered",
-    outputLevel: 0.42,
+    outputLevel: 0.1,
     polyphonyLimit: 48,
     renderer: Object.freeze({
       algorithmId: "changes.dsp.sampled-vibraphone@1",
@@ -422,7 +422,7 @@ export const AUDIO_INSTRUMENT_RECIPES = Object.freeze([
     designClaim:
       "physically modeled clarinet: reed-driven closed-open waveguide with breath dynamics",
     synthesis: "rendered",
-    outputLevel: 0.48,
+    outputLevel: 1.1,
     polyphonyLimit: 32,
     renderer: Object.freeze({
       algorithmId: "changes.dsp.waveguide-clarinet@1",
@@ -458,7 +458,7 @@ export const AUDIO_INSTRUMENT_RECIPES = Object.freeze([
     designClaim:
       "physically modeled re-entrant nylon ukulele: g4-c4-e4-a4 courses, finite finger contact, compact braced plate, and geometry-derived air resonance",
     synthesis: "rendered",
-    outputLevel: 0.54,
+    outputLevel: 0.65,
     polyphonyLimit: 32,
     renderer: Object.freeze({
       algorithmId: "changes.dsp.plucked-ukulele@1",
@@ -467,6 +467,23 @@ export const AUDIO_INSTRUMENT_RECIPES = Object.freeze([
       bufferCacheLimit: 64,
     }),
     amplitude: Object.freeze({ attackSeconds: 0.002, decaySeconds: 0, sustainLevel: 1, releaseSeconds: 0.24 }),
+    filter: Object.freeze({ type: "lowpass", attackHz: 16_000, peakHz: 16_000, sustainHz: 16_000, q: 0.5, decaySeconds: 0.1 }),
+  }),
+  Object.freeze({
+    id: "trumpet",
+    label: "Trumpet",
+    designClaim:
+      "physically modeled Bb trumpet: outward-striking two-mode lip pair, measured valve table, three-band viscothermal bore with MC-limited Menguy-Gilbert steepening, and the round-11 co-designed embouchure dynamics",
+    synthesis: "rendered",
+    outputLevel: 0.55,
+    polyphonyLimit: 16,
+    renderer: Object.freeze({
+      algorithmId: "changes.dsp.waveguide-trumpet@1",
+      channels: 2,
+      maximumRenderSeconds: 3,
+      bufferCacheLimit: 48,
+    }),
+    amplitude: Object.freeze({ attackSeconds: 0.005, decaySeconds: 0, sustainLevel: 1, releaseSeconds: 0.16 }),
     filter: Object.freeze({ type: "lowpass", attackHz: 16_000, peakHz: 16_000, sustainHz: 16_000, q: 0.5, decaySeconds: 0.1 }),
   }),
 ] as const satisfies readonly AudioInstrumentRecipe[]);
@@ -524,15 +541,36 @@ export const AUDIO_PLAYABLE_MIDI_WINDOWS = Object.freeze({
   "warm-pad": Object.freeze({ low: 21, high: 108 }),
   "analog-poly": Object.freeze({ low: 21, high: 108 }),
   "concert-grand": Object.freeze({ low: 21, high: 108 }),
-  flute: Object.freeze({ low: 60, high: 96 }),
+  /*
+   * Narrowed 2026-08-08 to the measured all-dynamics-clean register of the
+   * shipping flute@2 phrase renderer. The second register is octave-unstable
+   * outside the UIowa-certified pp/mf islands (m73/74@40, m77-79, m83
+   * -1902c, m84, m86-88 -- full sweep on the fix bead); folding charts into
+   * the working octave beats folding them onto broken cells. Widen only
+   * when the register-2 work certifies the full window at all dynamics.
+   */
+  flute: Object.freeze({ low: 60, high: 72 }),
   organ: Object.freeze({ low: 21, high: 108 }),
   guitar: Object.freeze({ low: 40, high: 88 }),
   "upright-bass": Object.freeze({ low: 28, high: 67 }),
   "concert-vibes": Object.freeze({ low: 53, high: 89 }),
   "blues-guitar": Object.freeze({ low: 40, high: 88 }),
-  clarinet: Object.freeze({ low: 50, high: 89 }),
+  /*
+   * Top narrowed 2026-08-08: the altissimo cells octave-drop through the
+   * shipping clarinet@2 path (m83@120, m86-89 broadly, measured sweep on
+   * the fix bead). 50-82 is clean at all dynamics; charts fold onto it.
+   */
+  clarinet: Object.freeze({ low: 50, high: 82 }),
   "dreadnought-guitar": Object.freeze({ low: 40, high: 88 }),
   ukulele: Object.freeze({ low: 60, high: 93 }),
+  /*
+   * Round-11 operating table (jcpe-trumpet-lock-completion-el46): every note
+   * MIDI 52..=70 measured locking the right bore regime within +-5.4 cents
+   * at periodicity >= 0.996 at 44.1 and 48 kHz (tests/trumpet_note_sweep.rs).
+   * Chart notes outside the window reach the model via the documented
+   * octave-fold realization policy like every other instrument.
+   */
+  trumpet: Object.freeze({ low: 52, high: 70 }),
 } as const satisfies Readonly<Record<string, Readonly<{ low: number; high: number }>>>);
 
 export type PlayableMidiWindow = Readonly<{ low: number; high: number }>;

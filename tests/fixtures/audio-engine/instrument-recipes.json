@@ -273,7 +273,7 @@
       "label": "Flute",
       "designClaim": "physically modeled flute: jet-drive waveguide with breath turbulence and delayed vibrato",
       "synthesis": "rendered",
-      "outputLevel": 0.5,
+      "outputLevel": 2.8,
       "polyphonyLimit": 32,
       "scheduledSourceCount": 1,
       "renderer": {
@@ -398,7 +398,7 @@
       "label": "Upright Bass",
       "designClaim": "recorded solo contrabass pizzicato, nearest recorded key transposed onto pitch",
       "synthesis": "rendered",
-      "outputLevel": 0.5,
+      "outputLevel": 0.17,
       "polyphonyLimit": 32,
       "scheduledSourceCount": 1,
       "renderer": {
@@ -427,7 +427,7 @@
       "label": "Concert Vibes",
       "designClaim": "recorded vibraphone, soft mallets, nearest recorded key transposed onto pitch",
       "synthesis": "rendered",
-      "outputLevel": 0.42,
+      "outputLevel": 0.1,
       "polyphonyLimit": 48,
       "scheduledSourceCount": 1,
       "renderer": {
@@ -485,7 +485,7 @@
       "label": "Clarinet",
       "designClaim": "physically modeled clarinet: reed-driven closed-open waveguide with breath dynamics",
       "synthesis": "rendered",
-      "outputLevel": 0.48,
+      "outputLevel": 1.1,
       "polyphonyLimit": 32,
       "scheduledSourceCount": 1,
       "renderer": {
@@ -543,7 +543,7 @@
       "label": "Re-entrant Ukulele",
       "designClaim": "physically modeled re-entrant nylon ukulele: g4-c4-e4-a4 courses, finite finger contact, compact braced plate, and geometry-derived air resonance",
       "synthesis": "rendered",
-      "outputLevel": 0.54,
+      "outputLevel": 0.65,
       "polyphonyLimit": 32,
       "scheduledSourceCount": 1,
       "renderer": {

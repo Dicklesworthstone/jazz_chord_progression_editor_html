@@ -190,7 +190,7 @@ const EXPECTED_SCHEMAS: Readonly<Record<ExpectedFilename, string>> = {
 };
 
 export const X0_REVIEWED_CONTRACT_BYTE_DIGEST =
-  "0d618deed951d999ea8f17723dca9b57cd16898179f0113dfe0d42c1453db606";
+  "034b047676e267ade4c18ae9f049d1ec63f1bc54471cf6f66e770dffc9f154cc";
 
 export const X0_REVIEWED_BYTE_DIGESTS: Readonly<
   Record<CompanionFilename, string>
@@ -200,7 +200,7 @@ export const X0_REVIEWED_BYTE_DIGESTS: Readonly<
   "impulse-golden.json":
     "9330b747b85defb801b6456ad7d4ee519f78bdf83ea22a4b6ab47268b3b79888",
   "instrument-recipes.json":
-    "e85f31cccd7e4c1037055c1525783c8e847b0680e9260551debe38705d280dde",
+    "75021eeb0f6c7896885dead79c3b408618be5dc300a3566f54cb8c6cc9ca75f3",
   "lifecycle-cases.json":
     "3ad712126fe22bf314ea76e41fb501ee549be2ef944a45aafbe1c1f2e8b8dcf5",
   "listening-rubric.json":
@@ -395,9 +395,19 @@ export const X0_REVIEWED_RECIPE_IDS = [
   "ukulele",
 ] as const;
 
+/*
+ * Re-pinned 2026-08-08 from the measured real-browser master-output
+ * calibration (owner complaint: winds inaudible, vibes/bass booming).
+ * Live playback measured a 27 dB spread across instruments at the master
+ * bus; these levels bring every instrument within ~2 dB of concert-grand:
+ * flute 0.5->2.8 (was -16 dB), clarinet 0.48->1.1 (was -7.9 dB),
+ * concert-vibes 0.42->0.1 (was +11.0 dB), upright-bass 0.5->0.17
+ * (was +9.4 dB), ukulele 0.54->0.65 (was -2.2 dB). Recipe order matches
+ * X0_REVIEWED_RECIPE_IDS.
+ */
 export const X0_REVIEWED_RECIPE_LEVELS = [
-  0.62, 0.48, 0.5, 0.3, 0.34, 0.3, 0.5, 0.44, 0.5, 0.5, 0.42, 0.46, 0.48,
-  0.5, 0.54,
+  0.62, 0.48, 0.5, 0.3, 0.34, 0.3, 2.8, 0.44, 0.5, 0.17, 0.1, 0.46, 1.1,
+  0.5, 0.65,
 ] as const;
 export const X0_REVIEWED_RECIPE_POLYPHONY = [
   64, 48, 48, 32, 48, 64, 32, 48, 48, 32, 48, 48, 32, 48, 32,
@@ -453,7 +463,7 @@ export const X0_REVIEWED_RENDERED_RECIPES = [
   designClaim:
     "physically modeled flute: jet-drive waveguide with breath turbulence and delayed vibrato",
   synthesis: "rendered",
-  outputLevel: 0.5,
+  outputLevel: 2.8,
   polyphonyLimit: 32,
   scheduledSourceCount: 1,
   renderer: {
@@ -513,7 +523,7 @@ export const X0_REVIEWED_RENDERED_RECIPES = [
   designClaim:
     "recorded solo contrabass pizzicato, nearest recorded key transposed onto pitch",
   synthesis: "rendered",
-  outputLevel: 0.5,
+  outputLevel: 0.17,
   polyphonyLimit: 32,
   scheduledSourceCount: 1,
   renderer: {
@@ -543,7 +553,7 @@ export const X0_REVIEWED_RENDERED_RECIPES = [
   designClaim:
     "recorded vibraphone, soft mallets, nearest recorded key transposed onto pitch",
   synthesis: "rendered",
-  outputLevel: 0.42,
+  outputLevel: 0.1,
   polyphonyLimit: 48,
   scheduledSourceCount: 1,
   renderer: {
@@ -603,14 +613,14 @@ export const X0_REVIEWED_RENDERED_RECIPES = [
   designClaim:
     "physically modeled clarinet: reed-driven closed-open waveguide with breath dynamics",
   synthesis: "rendered",
-  outputLevel: 0.48,
+  outputLevel: 1.1,
   polyphonyLimit: 32,
   scheduledSourceCount: 1,
   renderer: {
     algorithmId: "changes.dsp.waveguide-clarinet@1",
     channels: 2,
     maximumRenderSeconds: 5,
-    bufferCacheLimit: 64,
+    bufferCacheLimit: 128,
   },
   amplitude: {
     attackSeconds: 0.002,
@@ -663,7 +673,7 @@ export const X0_REVIEWED_RENDERED_RECIPES = [
   designClaim:
     "physically modeled re-entrant nylon ukulele: g4-c4-e4-a4 courses, finite finger contact, compact braced plate, and geometry-derived air resonance",
   synthesis: "rendered",
-  outputLevel: 0.54,
+  outputLevel: 0.65,
   polyphonyLimit: 32,
   scheduledSourceCount: 1,
   renderer: {
@@ -776,7 +786,7 @@ const REVIEWED_CANONICAL_DIGESTS = {
   graphEdges: "86f0e0d8307ab85e40d9ed1f1f1d7547f34018bf117a754521d3814ca4c526b0",
   graphSettings: "ed4816e5e4ea9fbcb1a941cddb2479db072453f54a44272f35717a6ebf9c53a5",
   routingCases: "cb78dae03ce88d9bc853f8c8a6339f6de64f53ad8d38d566d7b311191834b2cc",
-  recipes: "7e9fdd52ea73683576d786096a2f59a57cc46cc7dcc22606af35eb132b190138",
+  recipes: "6bf6232e019c0d133d106d9ac6ed4ae808dd3aca5c17d88210d4c4e2e2528352",
   normalization: "8e7ef43050fda93f9ab646b72a51f96da666385a812172df1a8c2cbded7534bc",
   pulse: "e5bad32f09dbfe03ef87124d811125144145168bc8f07a48ef78b530b1c1e839",
   impulseCheckpoints: "29ffb97240f4a5f80f24812ff592df1a15413bf2a21d1b8f314ef0e2ee15c1d8",

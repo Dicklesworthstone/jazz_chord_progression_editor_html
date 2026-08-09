@@ -347,6 +347,8 @@ function instrumentLabel(instrumentId: InstrumentId): string {
       return "Steel Dreadnought";
     case "ukulele":
       return "Re-entrant Ukulele";
+    case "trumpet":
+      return "Trumpet";
   }
 }
 

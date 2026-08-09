@@ -48,6 +48,9 @@ import {
   type FluteV2ReferenceRunResult,
 } from "./run-uiowa-flute-v2-reference";
 import {
+  verifyTrumpetReleaseEvidence,
+} from "./run-trumpet-release-gate";
+import {
   verifyPluckedV2ReleaseEvidence,
 } from "./run-plucked-v2-release-gate";
 
@@ -238,6 +241,11 @@ export function evaluateGate(
           evidencedAlgorithmIds = [matrix.policy.rendererAlgorithmId];
           evidencedWasmSha256 = matrix.wasmSha256;
         } else if (verifyPluckedV2ReleaseEvidence(evidence)) {
+          const matrix = evidence;
+          semanticPass = true;
+          evidencedAlgorithmIds = matrix.algorithmIds;
+          evidencedWasmSha256 = matrix.wasmSha256;
+        } else if (verifyTrumpetReleaseEvidence(evidence)) {
           const matrix = evidence;
           semanticPass = true;
           evidencedAlgorithmIds = matrix.algorithmIds;

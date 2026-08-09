@@ -278,7 +278,7 @@ function sourceCount(recipe: (typeof AUDIO_INSTRUMENT_RECIPES)[number]): number 
         algorithmId: "changes.dsp.waveguide-clarinet@1",
         channels: 2,
         maximumRenderSeconds: 5,
-        bufferCacheLimit: 64,
+        bufferCacheLimit: 128,
       },
       "dreadnought-guitar": {
         algorithmId: "changes.dsp.plucked-dreadnought@1",
